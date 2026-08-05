@@ -234,6 +234,12 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                         'start_tick': 21,
                         'placement': 'background',
                     },
+                    {
+                        'id': 'illusion-foreground',
+                        'slot': 0,
+                        'action_id': 'action_canhong_illusion_a1',
+                        'start_tick': 30,
+                    },
                 ],
                 'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
                 'initial_energy': 200,
@@ -243,6 +249,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         enter = next(detail for detail in result['details'] if detail['step_id'] == 'enter')
         leave = next(detail for detail in result['details'] if detail['step_id'] == 'leave')
         background = next(detail for detail in result['details'] if detail['step_id'] == 'illusion-background')
+        foreground = next(detail for detail in result['details'] if detail['step_id'] == 'illusion-foreground')
         illusion_state = next(
             buff for buff in enter['triggered_buffs']
             if buff['definition_id'] == 'character_canhong_illusion_state'
@@ -270,7 +277,8 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             buff['definition_id'] == 'character_canhong_illusion_state'
             for buff in background['applied_buffs']
         ))
-        self.assertIn('动作需要处于 幻境状态 状态。', background['warnings'])
+        self.assertNotIn('动作需要处于 幻境状态 状态。', background['warnings'])
+        self.assertIn('动作需要处于 幻境状态 状态。', foreground['warnings'])
 
         c_result = simulate([3])
         c_leave = next(detail for detail in c_result['details'] if detail['step_id'] == 'leave')

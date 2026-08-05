@@ -3921,8 +3921,11 @@
         ));
       }
       slotEnergy = energyBySlot.get(slot) ?? slotEnergy;
+      const requiredBuffPlacements = strSet(action.required_buff_placements);
+      const shouldValidateRequiredBuff = !requiredBuffPlacements.size
+        || requiredBuffPlacements.has(placement(isBackground));
       const requiredBuffKey = String(action.required_buff_key || '');
-      if (requiredBuffKey && !activeBuffs.some((buff) => (
+      if (shouldValidateRequiredBuff && requiredBuffKey && !activeBuffs.some((buff) => (
         String(buff.definition_id || '') === requiredBuffKey
         && int(buff.owner_slot) === slot
         && buffTick >= int(buff.start_tick)
@@ -3931,7 +3934,7 @@
         warnings.push(`动作需要处于 ${String(action.required_buff_name || requiredBuffKey)} 状态。`);
       }
       const requiredBuffAnyKeys = strSet(action.required_buff_any_keys);
-      if (requiredBuffAnyKeys.size && !activeBuffs.some((buff) => (
+      if (shouldValidateRequiredBuff && requiredBuffAnyKeys.size && !activeBuffs.some((buff) => (
         requiredBuffAnyKeys.has(String(buff.definition_id || ''))
         && int(buff.owner_slot) === slot
         && buffTick >= int(buff.start_tick)

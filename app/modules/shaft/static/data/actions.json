@@ -9200,19 +9200,19 @@
   },
   {
     "id": "action_canhong_illusion_a1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻a1", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.3, "duration_ticks": 3,
-    "multipliers": {"atk": 0.183, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 1.2, "harmony": 1.5, "stagger": 0.2, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_note": "回能、环合与倾陷为按低倍率追击前段给出的经验估值。"
+    "multipliers": {"atk": 0.183, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 1.2, "harmony": 1.5, "stagger": 0.2, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_note": "回能、环合与倾陷为按低倍率追击前段给出的经验估值。"
   },
   {
     "id": "action_canhong_illusion_a2", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻a2", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.7, "duration_ticks": 7,
-    "multipliers": {"atk": 0.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 2.8, "harmony": 3.5, "stagger": 0.6, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_note": "回能、环合与倾陷为按追击中段给出的经验估值。"
+    "multipliers": {"atk": 0.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 2.8, "harmony": 3.5, "stagger": 0.6, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_note": "回能、环合与倾陷为按追击中段给出的经验估值。"
   },
   {
     "id": "action_canhong_illusion_a3", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻a3", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
-    "multipliers": {"atk": 0.988, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2", "hit_count": 4, "energy_gain": 3.0, "harmony": 4.0, "stagger": 0.7, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层", "牵引"], "source_note": "回能、环合与倾陷为按多段追击给出的经验估值。"
+    "multipliers": {"atk": 0.988, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2", "hit_count": 4, "energy_gain": 3.0, "harmony": 4.0, "stagger": 0.7, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层", "牵引"], "source_note": "回能、环合与倾陷为按多段追击给出的经验估值。"
   },
   {
     "id": "action_canhong_illusion_a4", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻a4", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1.1, "duration_ticks": 11,
-    "multipliers": {"atk": 2.82, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%", "hit_count": 3, "energy_gain": 4.8, "harmony": 7.5, "stagger": 1.6, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_note": "回能、环合与倾陷为按高倍率追击终段给出的经验估值。"
+    "multipliers": {"atk": 2.82, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%", "hit_count": 3, "energy_gain": 4.8, "harmony": 7.5, "stagger": 1.6, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_note": "回能、环合与倾陷为按高倍率追击终段给出的经验估值。"
   },
   {
     "id": "action_canhong_illusion_z1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻z", "action_type": "普攻", "damage_type": "追击", "extra_tag": "长按普攻", "is_background_damage": false, "duration_seconds": 1.1, "duration_ticks": 11,

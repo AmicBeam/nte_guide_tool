@@ -331,9 +331,14 @@ def api_balance_analytics():
 def api_kongmu_catalog():
     try:
         player = _optional_current_player()
-        return jsonify(get_kongmu_catalog_payload(include_test_characters=bool(
+        response = jsonify(get_kongmu_catalog_payload(include_test_characters=bool(
             player and player.shaft_test_whitelisted
         )))
+        # This URL returns a different catalog for test-whitelisted accounts.
+        # Never let an anonymous response mask the authenticated variant.
+        response.headers['Cache-Control'] = 'private, no-store'
+        response.headers.add('Vary', 'Authorization')
+        return response
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400
     except Exception:

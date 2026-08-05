@@ -113,6 +113,43 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertFalse(any('CD 尚未结束' in warning for warning in ready_illusion_e['warnings']))
         self.assertTrue(any('CD 尚未结束' in warning for warning in early_normal_e['warnings']))
 
+    def test_canhong_illusion_attacks_can_be_manually_placed_in_background(self) -> None:
+        action_ids = (
+            'action_canhong_illusion_a1',
+            'action_canhong_illusion_a2',
+            'action_canhong_illusion_a3',
+            'action_canhong_illusion_a4',
+        )
+        actions = {action['id']: action for action in load_shaft_catalog()['actions']}
+
+        for action_id in action_ids:
+            with self.subTest(action_id=action_id):
+                self.assertTrue(actions[action_id]['can_background_override'])
+                payload = {
+                    'team': [{
+                        'slot': 0,
+                        'character_id': 'char_076a1f4e53',
+                        'arc_id': '',
+                        'cartridge_id': '',
+                    }],
+                    'steps': [{
+                        'id': 'illusion-a',
+                        'slot': 0,
+                        'action_id': action_id,
+                        'start_tick': 0,
+                        'placement': 'background',
+                    }],
+                    'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+                }
+
+                normalized = normalize_axis_payload(payload)
+                detail = simulate_shaft_axis(payload)['result']['details'][0]
+
+                self.assertEqual(normalized['steps'][0]['placement'], 'background')
+                self.assertTrue(detail['is_background_damage'])
+                self.assertTrue(detail['is_basic_background'])
+                self.assertGreater(detail['direct_damage'], 0)
+
     def test_canhong_hunt_covers_all_damage_and_restores_after_illusion(self) -> None:
         base_payload = {
             'team': [{
@@ -168,6 +205,126 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             buff['rule_id'] == 'character_canhong_hunt_natural_restore'
             for buff in details['after']['applied_buffs']
         ))
+
+    def test_canhong_leaving_foreground_clears_illusion_state_immediately(self) -> None:
+        def simulate(awakening_nodes: list[int] | None = None) -> dict:
+            return simulate_shaft_axis({
+                'team': [
+                    {
+                        'slot': 0,
+                        'character_id': 'char_076a1f4e53',
+                        'awakening_nodes': awakening_nodes or [],
+                        'arc_id': '',
+                        'cartridge_id': '',
+                    },
+                    {
+                        'slot': 1,
+                        'character_id': 'char_c78f7a08d5',
+                        'arc_id': '',
+                        'cartridge_id': '',
+                    },
+                ],
+                'steps': [
+                    {'id': 'enter', 'slot': 0, 'action_id': 'action_canhong_e1', 'start_tick': 0},
+                    {'id': 'leave', 'slot': 1, 'action_id': 'action_2745f804a5', 'start_tick': 20},
+                    {
+                        'id': 'illusion-background',
+                        'slot': 0,
+                        'action_id': 'action_canhong_illusion_a1',
+                        'start_tick': 21,
+                        'placement': 'background',
+                    },
+                    {
+                        'id': 'illusion-foreground',
+                        'slot': 0,
+                        'action_id': 'action_canhong_illusion_a1',
+                        'start_tick': 30,
+                    },
+                ],
+                'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+                'initial_energy': 200,
+            })['result']
+
+        result = simulate()
+        enter = next(detail for detail in result['details'] if detail['step_id'] == 'enter')
+        leave = next(detail for detail in result['details'] if detail['step_id'] == 'leave')
+        background = next(detail for detail in result['details'] if detail['step_id'] == 'illusion-background')
+        foreground = next(detail for detail in result['details'] if detail['step_id'] == 'illusion-foreground')
+        illusion_state = next(
+            buff for buff in enter['triggered_buffs']
+            if buff['definition_id'] == 'character_canhong_illusion_state'
+        )
+        restored_hunt = next(
+            buff for buff in leave['triggered_buffs']
+            if buff['definition_id'] == 'character_canhong_hunt'
+            and buff['start_tick'] == 20
+        )
+        delayed_delusion = next(
+            buff for buff in leave['triggered_buffs']
+            if buff['definition_id'] == 'character_canhong_delusion'
+            and buff['start_tick'] == 20
+        )
+        clear = next(
+            buff for buff in leave['triggered_buffs']
+            if buff['rule_id'] == 'character_canhong_illusion_state_foreground_leave_clear'
+        )
+
+        self.assertEqual(illusion_state['end_tick'], 20)
+        self.assertGreater(restored_hunt['end_tick'], 100000000)
+        self.assertEqual(delayed_delusion['end_tick'], 100)
+        self.assertIn('character_canhong_illusion_state', clear['cleared_buff_keys'])
+        self.assertFalse(any(
+            buff['definition_id'] == 'character_canhong_illusion_state'
+            for buff in background['applied_buffs']
+        ))
+        self.assertNotIn('动作需要处于 幻境状态 状态。', background['warnings'])
+        self.assertIn('动作需要处于 幻境状态 状态。', foreground['warnings'])
+
+        c_result = simulate([3])
+        c_leave = next(detail for detail in c_result['details'] if detail['step_id'] == 'leave')
+        c_regeneration = next(
+            buff for buff in c_leave['triggered_buffs']
+            if buff['definition_id'] == 'character_canhong_c_delusion_regeneration'
+            and buff['start_tick'] == 20
+        )
+        self.assertEqual(c_regeneration['end_tick'], 100)
+
+    def test_canhong_active_and_natural_illusion_exit_clear_state(self) -> None:
+        active_result = simulate_shaft_axis({
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_076a1f4e53',
+                'arc_id': '',
+                'cartridge_id': '',
+            }],
+            'steps': [
+                {'id': 'enter', 'slot': 0, 'action_id': 'action_canhong_e1', 'start_tick': 0},
+                {'id': 'exit', 'slot': 0, 'action_id': 'action_canhong_E2', 'start_tick': 50},
+                {'id': 'after', 'slot': 0, 'action_id': 'action_canhong_illusion_a1', 'start_tick': 51},
+            ],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+            'initial_energy': 200,
+        })['result']
+        active_details = {detail['step_id']: detail for detail in active_result['details']}
+        self.assertNotIn('动作需要处于 幻境状态 状态。', active_details['exit']['warnings'])
+        self.assertIn('动作需要处于 幻境状态 状态。', active_details['after']['warnings'])
+
+        natural_result = simulate_shaft_axis({
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_076a1f4e53',
+                'arc_id': '',
+                'cartridge_id': '',
+            }],
+            'steps': [
+                {'id': 'enter', 'slot': 0, 'action_id': 'action_canhong_e1', 'start_tick': 0},
+                {'id': 'after', 'slot': 0, 'action_id': 'action_canhong_illusion_a1', 'start_tick': 81},
+            ],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+            'initial_energy': 200,
+        })['result']
+        natural_after = next(detail for detail in natural_result['details'] if detail['step_id'] == 'after')
+        self.assertIn('动作需要处于 幻境状态 状态。', natural_after['warnings'])
 
     def test_noop_only_switches_front_without_triggering_reaction_or_q_cover(self) -> None:
         catalog = load_shaft_catalog()
@@ -1592,8 +1749,63 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         primed = [effect for effect in result['reaction_effects'] if effect['loop_primed']]
         self.assertEqual(len(primed), 1)
         self.assertEqual(primed[0]['start_tick'], -2)
+        self.assertEqual(len([
+            effect for effect in result['reaction_effects']
+            if effect['reaction'] == '创生'
+        ]), 1)
+        self.assertTrue(primed[0]['refreshed_in_loop'])
+        self.assertEqual(primed[0]['end_tick'], 131)
         self.assertEqual(result['summary']['duration_ticks'], 33)
         self.assertEqual([event['tick'] for event in result['reaction_damage_events']], [8, 18, 28])
+
+    def test_loop_axis_refreshes_carried_turbid_burn_without_duplicate_effects(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [
+                {
+                    'slot': 0,
+                    'character_id': 'char_076a1f4e53',
+                    'awakening_nodes': [2],
+                    'arc_id': '',
+                    'cartridge_id': '',
+                },
+                {'slot': 1, 'character_id': 'char_c78f7a08d5', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                {'id': 'canhong-a1', 'slot': 0, 'action_id': 'action_canhong_a1', 'start_tick': 0},
+                {'id': 'requiem-support', 'slot': 1, 'action_id': 'action_2635f721a8', 'start_tick': 10},
+                {'id': 'axis-end', 'slot': 0, 'action_id': 'action_none_076a1f4e53', 'start_tick': 30},
+            ],
+            'options': {
+                'loop_enabled': True,
+                'switch_loss_ticks': 0,
+                'loop_initial_resources': {
+                    'char_076a1f4e53': {'energy': 200, 'harmony': 100, 'personal_resources': {}},
+                    'char_c78f7a08d5': {'energy': 200, 'harmony': 100, 'personal_resources': {}},
+                },
+            },
+            'initial_energy': 200,
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+
+        turbid_effects = [
+            effect for effect in result['reaction_effects']
+            if effect['reaction'] == '浊燃'
+        ]
+        self.assertEqual(len(turbid_effects), 1)
+        self.assertEqual(turbid_effects[0]['start_tick'], -7)
+        self.assertEqual(turbid_effects[0]['end_tick'], 173)
+        self.assertTrue(turbid_effects[0]['refreshed_in_loop'])
+        self.assertEqual(
+            len({event['tick'] for event in result['reaction_damage_events'] if event['reaction'] == '浊燃'}),
+            len([event for event in result['reaction_damage_events'] if event['reaction'] == '浊燃']),
+        )
+
+        support = next(detail for detail in result['details'] if detail['step_id'] == 'requiem-support')
+        self.assertEqual(support['triggered_reaction']['id'], turbid_effects[0]['id'])
+        self.assertEqual(len([
+            buff for buff in support['triggered_buffs']
+            if buff['rule_id'] == 'character_canhong_b_blaze_stack'
+        ]), 1)
 
     def test_loop_axis_resource_display_excludes_priming_passes(self) -> None:
         result = simulate_shaft_axis({
@@ -4994,6 +5206,16 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
     def test_requiem_nightmare_has_independent_three_second_layers_and_settlement(self) -> None:
         catalog = load_shaft_catalog()
+        requiem_far_a5 = next(
+            action
+            for action in catalog['actions']
+            if action['character_id'] == 'char_c78f7a08d5' and action['name'] == 'a5远'
+        )
+        self.assertEqual(requiem_far_a5['duration_seconds'], 2)
+        self.assertEqual(requiem_far_a5['duration_ticks'], 20)
+        self.assertNotIn('duration_pending', requiem_far_a5)
+        self.assertIn('用户 2026-08-06 补充', requiem_far_a5['source_note'])
+
         requiem_q = next(
             action
             for action in catalog['actions']
@@ -7255,6 +7477,49 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         )
 
     def test_canhong_illusion_attacks_add_one_layer_to_every_active_dot(self) -> None:
+        expected_layers = {
+            'action_canhong_illusion_a1': 2,
+            'action_canhong_illusion_a2': 4,
+            'action_canhong_illusion_a3': 5,
+            'action_canhong_illusion_a4': 4,
+        }
+        for action_id, layer_count in expected_layers.items():
+            with self.subTest(action_id=action_id):
+                hit_result = simulate_shaft_axis({
+                    'team': [{
+                        'slot': 0,
+                        'character_id': 'char_076a1f4e53',
+                        'arc_id': '',
+                        'cartridge_id': '',
+                    }],
+                    'steps': [
+                        {'id': 'illusion-hit', 'slot': 0, 'action_id': action_id, 'start_tick': 0},
+                        {'id': 'inspect-hit', 'slot': 0, 'action_id': 'action_none_076a1f4e53', 'start_tick': 20},
+                    ],
+                    'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+                    'initial_energy': 200,
+                })['result']
+                illusion_hit = next(detail for detail in hit_result['details'] if detail['step_id'] == 'illusion-hit')
+                inspect_hit = next(detail for detail in hit_result['details'] if detail['step_id'] == 'inspect-hit')
+                corrosion_trigger = next(
+                    buff for buff in illusion_hit['triggered_buffs']
+                    if buff['rule_id'] == 'character_canhong_corrosion_heart'
+                    and buff.get('trigger_event') == 'action_hit'
+                )
+                spread_triggers = [
+                    buff for buff in illusion_hit['triggered_buffs']
+                    if buff['definition_id'] == 'character_canhong_illusion_dot_spread'
+                ]
+                corrosion_layers = [
+                    buff for buff in inspect_hit['applied_buffs']
+                    if buff['definition_id'] == 'character_canhong_corrosion_heart'
+                ]
+
+                self.assertEqual(corrosion_trigger['stack_count'], layer_count - 1)
+                self.assertEqual(len(spread_triggers), 1)
+                self.assertEqual(spread_triggers[0]['dot_layer_additions'][0]['stack_count'], layer_count)
+                self.assertEqual(len(corrosion_layers), layer_count)
+
         result = simulate_shaft_axis({
             'team': [
                 {
@@ -7601,6 +7866,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             if action.get('character_id') == 'char_076a1f4e53'
         }
         expected = {
+            'action_canhong_support': (6.5, 2.5),
             'action_canhong_a1': (2.4, 0.3),
             'action_canhong_a2': (2.1, 0.3),
             'action_canhong_a3': (3.3, 0.7),

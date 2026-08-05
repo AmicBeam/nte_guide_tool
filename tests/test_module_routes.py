@@ -22,17 +22,33 @@ class ModuleRoutesTest(RoomFlowTestCase):
         self._assert_asset('/static/card_game/js/home.js')
 
     def test_kongmu_module_page_catalog_and_asset(self) -> None:
-        self.assertEqual(self.client.get('/kongmu').status_code, 200)
+        page = self.client.get('/kongmu')
+        self.assertEqual(page.status_code, 200)
+        page_text = page.get_data(as_text=True)
+        self.assertLess(
+            page_text.index('/static/common/js/common.js'),
+            page_text.index('/static/kongmu/js/kongmu.js'),
+        )
         catalog = self.client.get('/api/kongmu/catalog')
         self.assertEqual(catalog.status_code, 200)
         self.assertTrue(catalog.is_json)
         zero = next(character for character in catalog.get_json()['characters'] if character['name'] == '「零」')
-        self.assertIn('player_009_256.webp', zero['avatar'])
+        self.assertEqual(zero['avatar'], '/static/images/characters/avatar/男主.webp')
+        avatar = self.client.get(zero['avatar'])
+        try:
+            self.assertEqual(avatar.status_code, 200)
+            self.assertIn('max-age=31536000', avatar.headers.get('Cache-Control', ''))
+            self.assertIn('immutable', avatar.headers.get('Cache-Control', ''))
+        finally:
+            avatar.close()
+        self.assertEqual(catalog.headers.get('Cache-Control'), 'private, no-store')
+        self.assertIn('Authorization', catalog.headers.get('Vary', ''))
         frontend = (
             ROOT / 'app' / 'modules' / 'kongmu' / 'static' / 'js' / 'kongmu.js'
         ).read_text(encoding='utf-8')
         self.assertNotIn('pickCharacterAvatar', frontend)
         self.assertNotIn('avatarChoiceIndexes', frontend)
+        self.assertIn("{cache: 'no-store'}", frontend)
         self.assertNotIn('残红', [character['name'] for character in catalog.get_json()['characters']])
         self.assertIn('headers.Authorization = `Bearer ${token}`', frontend)
         self._assert_asset('/static/kongmu/js/kongmu.js')

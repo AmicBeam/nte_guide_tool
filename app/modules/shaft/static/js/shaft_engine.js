@@ -51,7 +51,7 @@
     flat_def: 'flat_def',
   };
   const CURTAIN_PASSIVE_TYPES = ['type2', 'type3', 'type4'];
-  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'loop_start', 'reaction_trigger', 'periodic_damage', 'full_stack']);
+  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'periodic_damage', 'full_stack']);
   const PERMANENT_BUFF_END_TICK = 1000000000;
   const HARMONY_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
   const SPECIAL_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
@@ -2312,6 +2312,60 @@
       return [];
     }
 
+    function carriedReactionEffectAtTick(reaction, tick) {
+      return reactionEffects.find((effect) => (
+        String(effect.reaction || '') === String(reaction || '')
+        && !effect.source_reaction
+        && effect.disabled !== true
+        && (effect.loop_primed === true || effect.looped === true)
+        && int(effect.start_tick) <= int(tick)
+        && int(tick) < int(effect.end_tick)
+      )) || null;
+    }
+
+    function refreshCarriedReactionEffect(effect, reaction, tick, source, primeLoop = false) {
+      const durationTicks = int(REACTION_DURATIONS[reaction]);
+      const retainedDamageTicks = asList(effect.damage_ticks)
+        .map((damageTick) => int(damageTick))
+        .filter((damageTick) => damageTick <= int(tick));
+      const refreshedDamageTicks = reactionDamageTicks(reaction, tick);
+      for (let index = reactionDamageEvents.length - 1; index >= 0; index -= 1) {
+        const event = reactionDamageEvents[index];
+        if (
+          String(event.effect_id || '') === String(effect.id || '')
+          && int(event.tick) > int(tick)
+        ) {
+          reactionDamageEvents.splice(index, 1);
+        }
+      }
+      Object.assign(effect, source, {
+        end_tick: int(tick) + durationTicks,
+        duration_ticks: int(tick) + durationTicks - int(effect.start_tick),
+        damage_ticks: retainedDamageTicks.concat(refreshedDamageTicks),
+        refreshed_in_loop: true,
+      });
+      refreshedDamageTicks.forEach((damageTick, index) => {
+        const isDot = reaction === '浊燃';
+        reactionDamageEvents.push({
+          effect_id: effect.id,
+          reaction,
+          tick: damageTick,
+          sequence: retainedDamageTicks.length + index + 1,
+          trigger_slot: effect.trigger_slot,
+          contributor_slot: effect.contributor_slot,
+          contributor_character_id: effect.contributor_character_id,
+          contributor_character_name: effect.contributor_character_name,
+          extra_tag: isDot ? 'DOT' : '',
+          tags: isDot ? ['DOT'] : [],
+          frequency_multiplier: effect.frequency_multiplier,
+          loop_primed: primeLoop,
+          damage: null,
+        });
+      });
+      enemyDebuffs[reaction] = Math.max(int(enemyDebuffs[reaction]), int(effect.end_tick) + 1);
+      return effect;
+    }
+
     function canReceiveEnergy(snapshot, currentFrontSlot) {
       if (String(snapshot?.character?.id || '') !== ZHENHONG_CHARACTER_ID) return true;
       return int(snapshot?.slot) === int(currentFrontSlot);
@@ -2549,6 +2603,30 @@
       }
       const durationTicks = int(REACTION_DURATIONS[reaction]);
       const frequencyMultiplier = reaction === '创生' && teamHasJiuyuan() ? 2 : 1;
+      const carriedEffect = carriedReactionEffectAtTick(reaction, tick);
+      if (carriedEffect) {
+        return {
+          effect: refreshCarriedReactionEffect(carriedEffect, reaction, tick, {
+            support_slot: supportSnapshot.slot,
+            support_character_id: supportSnapshot.character?.id || '',
+            support_character_name: supportSnapshot.character?.name || '',
+            previous_slot: previousSnapshot.slot,
+            previous_character_id: previousSnapshot.character?.id || '',
+            previous_character_name: previousSnapshot.character?.name || '',
+            trigger_slot: contributor.slot,
+            trigger_character_id: contributor.character?.id || '',
+            trigger_character_name: contributor.character?.name || '',
+            contributor_slot: contributor.slot,
+            contributor_character_id: contributor.character?.id || '',
+            contributor_character_name: contributor.character?.name || '',
+            frequency_multiplier: Math.max(
+              frequencyMultiplier,
+              num(carriedEffect.frequency_multiplier, num(carriedEffect.stack_count, 1)),
+            ),
+          }, primeLoop),
+          warning: '',
+        };
+      }
       const effect = {
         id: `reaction_${nextReactionEffectId}`,
         reaction,
@@ -3884,6 +3962,20 @@
       syncBuffLayerResources(buffTick);
       syncFrontTimeBuffs(buffTick);
       const triggeredBuffs = [];
+      if (!isBackground && previousRuntimeFrontSlot != null && previousRuntimeFrontSlot !== slot) {
+        const previousSnapshot = snapshots.get(int(previousRuntimeFrontSlot));
+        if (previousSnapshot) {
+          triggeredBuffs.push(...triggerBuffsForEvent(
+            'foreground_leave',
+            startTick,
+            {id: String(step.id || ''), slot: previousRuntimeFrontSlot},
+            {id: 'foreground_leave', name: '离开前台', action_type: '切人', damage_type: '切人', tags: []},
+            previousSnapshot,
+            false,
+            {visual_trigger_tick: visualStartTick},
+          ));
+        }
+      }
       if (!isBackground && previousRuntimeFrontSlot !== slot) {
         triggeredBuffs.push(...triggerBuffsForEvent(
           'foreground_enter',
@@ -3907,8 +3999,11 @@
         ));
       }
       slotEnergy = energyBySlot.get(slot) ?? slotEnergy;
+      const requiredBuffPlacements = strSet(action.required_buff_placements);
+      const shouldValidateRequiredBuff = !requiredBuffPlacements.size
+        || requiredBuffPlacements.has(placement(isBackground));
       const requiredBuffKey = String(action.required_buff_key || '');
-      if (requiredBuffKey && !activeBuffs.some((buff) => (
+      if (shouldValidateRequiredBuff && requiredBuffKey && !activeBuffs.some((buff) => (
         String(buff.definition_id || '') === requiredBuffKey
         && int(buff.owner_slot) === slot
         && buffTick >= int(buff.start_tick)
@@ -3917,7 +4012,7 @@
         warnings.push(`动作需要处于 ${String(action.required_buff_name || requiredBuffKey)} 状态。`);
       }
       const requiredBuffAnyKeys = strSet(action.required_buff_any_keys);
-      if (requiredBuffAnyKeys.size && !activeBuffs.some((buff) => (
+      if (shouldValidateRequiredBuff && requiredBuffAnyKeys.size && !activeBuffs.some((buff) => (
         requiredBuffAnyKeys.has(String(buff.definition_id || ''))
         && int(buff.owner_slot) === slot
         && buffTick >= int(buff.start_tick)

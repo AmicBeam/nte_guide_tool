@@ -72,6 +72,11 @@ FIXED_CHARACTER_AVATAR_SOURCE_ICONS = {
     '1051': '/Game/UI/UI_Icon/AvatarImage/256/player_009_256',
 }
 
+FIXED_CHARACTER_AVATAR_LOCAL_PATHS = {
+    '1046': 'images/characters/avatar/男主.webp',
+    '1051': 'images/characters/avatar/男主.webp',
+}
+
 TEST_CHARACTER_IDS = {'char_076a1f4e53'}
 
 
@@ -530,7 +535,10 @@ def compact_character(record: dict[str, Any], detail: dict[str, Any] | None = No
         character_id,
         record.get('icon') or detail.get('icon'),
     )
-    local_avatar = character_avatar_path(character_id, character_name, source_icon)
+    local_avatar = (
+        FIXED_CHARACTER_AVATAR_LOCAL_PATHS.get(character_id)
+        or character_avatar_path(character_id, character_name, source_icon)
+    )
     source_avatar = nanoka_icon_url(source_icon)
     return {
         'id': character_id,
@@ -554,7 +562,10 @@ def compact_character_avatar_choice(record: dict[str, Any], detail: dict[str, An
     character_name = record.get('name') or detail.get('name') or character_id
     source_icon = record.get('icon') or detail.get('icon')
     source_avatar = nanoka_icon_url(source_icon)
-    local_avatar = character_avatar_path(character_id, character_name, source_icon)
+    local_avatar = (
+        FIXED_CHARACTER_AVATAR_LOCAL_PATHS.get(character_id)
+        or character_avatar_path(character_id, character_name, source_icon)
+    )
     return {
         'id': character_id,
         'avatar': static_asset_url(local_avatar) if local_avatar else source_avatar,

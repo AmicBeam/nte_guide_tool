@@ -287,12 +287,16 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('id="shaft-axis-preview-dialog"', template)
         self.assertIn('id="shaft-axis-preview-viewport"', template)
         self.assertIn('id="shaft-axis-preview-meta"', template)
+        self.assertIn('id="shaft-axis-preview-summary"', template)
         self.assertIn('id="shaft-axis-preview-cancel-btn"', template)
         self.assertIn('id="shaft-axis-preview-save-btn"', template)
         self.assertIn('function groupedPreviewActions', source)
         self.assertIn('return startsForeground(step, action);', source)
-        self.assertIn(".join('+')", source)
+        self.assertIn(".join(' ')", source)
         self.assertIn('previous.durationTicks += detail.durationTicks', source)
+        self.assertIn('function previewDamageTypeShares', source)
+        self.assertIn('Math.round(damage / totalDamage * 100)', source)
+        self.assertIn('function prioritizeAxisPreviewActionLabels', source)
         self.assertIn('function handleAxisPreviewWheel', source)
         self.assertIn('function previewMinimumTickPx', source)
         self.assertIn('async function openMarketAxisPreview(axisId, trigger)', source)
@@ -307,6 +311,9 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('shaft-buff-trigger-line', source[source.index('function renderAxisPreview'):source.index('function fitAxisPreview')])
         self.assertNotIn('shaft-reaction-damage-marker', source[source.index('function renderAxisPreview'):source.index('function fitAxisPreview')])
         self.assertIn('.shaft-axis-preview-bubble', css)
+        self.assertIn('.shaft-axis-preview-summary', css)
+        self.assertIn('.shaft-axis-preview-bubble.hide-duration > em', css)
+        self.assertIn('padding-inline: 3px;', css)
         self.assertIn('.shaft-axis-preview-footer', css)
 
     def test_timeline_length_uses_foreground_and_clips_after_one_second_padding(self) -> None:
@@ -460,6 +467,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('落月', actions)
         self.assertIn('下落', actions)
         self.assertIn('闪反', actions)
+        self.assertIn('援护', actions)
         self.assertNotIn('折楼', actions)
         self.assertNotIn('折楼（最高）', actions)
         self.assertNotIn('虚徊', actions)
@@ -476,6 +484,18 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         )
         self.assertEqual(actions['幻a1']['duration_ticks'], 3)
         self.assertEqual(actions['幻a4']['duration_ticks'], 11)
+        self.assertEqual(actions['援护']['duration_ticks'], 15)
+        self.assertEqual(actions['援护']['multipliers']['atk'], 2.0)
+        self.assertEqual(actions['援护']['energy_gain'], 6.5)
+        self.assertEqual(actions['援护']['harmony'], 0)
+        self.assertEqual(actions['援护']['stagger'], 2.5)
+        self.assertEqual(actions['援护']['hit_count'], 1)
+        self.assertFalse(actions['援护']['is_background_damage'])
+        self.assertIn('经验估值', actions['援护']['source_note'])
+        self.assertTrue(all(
+            actions[name]['can_background_override']
+            for name in ('幻a1', '幻a2', '幻a3', '幻a4')
+        ))
         self.assertEqual(actions['焚天']['duration_ticks'], 0)
         self.assertEqual(actions['强化焚天']['duration_ticks'], 0)
         self.assertEqual(actions['血宴']['duration_ticks'], 0)
@@ -943,12 +963,12 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('aria-label="${escapeHtml(tooltip)}" tabindex="0"', source)
         self.assertNotIn('.shaft-awakening-dot[data-tooltip]:focus-visible::after', css)
 
-    def test_build_and_rotation_avatar_badges_show_active_awakening_count(self) -> None:
+    def test_build_rotation_and_plaza_avatar_badges_show_active_awakening_count(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
 
         self.assertIn('function activeAwakeningCount(member) {', source)
         self.assertIn('normalizeAwakeningNodes(member?.awakening_nodes, member?.awakening).length', source)
-        self.assertEqual(source.count('const awakeningCount = activeAwakeningCount('), 2)
+        self.assertEqual(source.count('const awakeningCount = activeAwakeningCount('), 3)
         self.assertEqual(
             source.count('<b aria-label="已激活 ${awakeningCount} 个觉醒">${awakeningCount}</b>'),
             2,
@@ -1155,6 +1175,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const reactionDamageMarkers = groupedDamageEvents', source)
         self.assertIn("return event.events.map((item) => damageMarkerTooltip(item)).join('\\n');", source)
         self.assertIn('class="shaft-reaction-damage-marker ${isPeriodicDamage ?', source)
+        self.assertIn('const opensUpward = isPeriodicDamage && Number(member.slot) === 3;', source)
+        self.assertIn("${opensUpward ? 'shaft-damage-tooltip-above' : ''}", source)
         self.assertIn('function damageMarkerTooltip(event) {', source)
         self.assertIn("addZone('基础区', isPeriodicDamage ? formula.unscaled_base : formula.base);", source)
         self.assertNotIn("['噩梦', '蚀心'].includes", source)
@@ -1209,6 +1231,9 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('border-top: 0;', periodic_marker_css)
         self.assertIn('border-bottom: 5px solid', periodic_marker_css)
         self.assertIn('filter: none;', periodic_marker_css)
+        self.assertIn('.shaft-reaction-damage-marker.shaft-damage-tooltip-above::after {', css)
+        self.assertIn('bottom: 9px;', css)
+        self.assertIn('.shaft-reaction-damage-marker.shaft-damage-tooltip-above:hover::after,', css)
         self.assertIn("isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9", source)
         self.assertIn('const warnings = Array.from(new Set([...axisWarnings, ...simulationWarnings]));', source)
 
@@ -1602,6 +1627,12 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('data-unpublish-axis="${axis.id}"', market_card)
         self.assertIn('member.character_avatar', market_card)
         self.assertIn('shaft-market-character', market_card)
+        self.assertIn('const awakeningCount = activeAwakeningCount(member);', market_card)
+        self.assertIn('shaft-market-character-avatar', market_card)
+        self.assertIn('shaft-market-character-awakening', market_card)
+        self.assertIn('aria-label="已激活 ${awakeningCount} 个觉醒"', market_card)
+        self.assertIn('.shaft-market-character-awakening {', css)
+        self.assertIn('font-size: 8px;', css)
         self.assertIn('descriptionCharacters.slice(0, 64)', market_card)
         self.assertIn("descriptionPreview || '暂无备注'", market_card)
         self.assertIn('min-height: 1.4em;', css)

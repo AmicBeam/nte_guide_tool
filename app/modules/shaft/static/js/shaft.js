@@ -3182,6 +3182,76 @@
     );
   }
 
+  function previewResult() {
+    return state.axisPreviewPayload?.result || freshResult() || state.result || null;
+  }
+
+  function previewDamageTypeShares(result = previewResult()) {
+    const damageByType = new Map();
+    const additionalTags = new Set(['追击', '附着']);
+    (result?.damage_by_action_by_slot || []).forEach((contribution) => {
+      (contribution.actions || []).forEach((action) => {
+        const damageType = String(action.damage_type || '');
+        const actionType = String(action.action_type || '');
+        const label = additionalTags.has(damageType)
+          ? (actionType || '其他')
+          : (damageType || actionType || '其他');
+        damageByType.set(label, (damageByType.get(label) || 0) + Math.max(0, Number(action.damage || 0)));
+      });
+    });
+    const summary = result?.summary || {};
+    const harmonyDamage = Math.max(0, Number(summary.harmony_damage || 0));
+    const staggerDamage = Math.max(0, Number(summary.stagger_damage || 0));
+    if (harmonyDamage > 0) damageByType.set('环合', (damageByType.get('环合') || 0) + harmonyDamage);
+    if (staggerDamage > 0) damageByType.set('倾陷', (damageByType.get('倾陷') || 0) + staggerDamage);
+    const totalDamage = Math.max(
+      0,
+      Number(summary.total_damage || 0),
+      Array.from(damageByType.values()).reduce((sum, damage) => sum + damage, 0),
+    );
+    return Array.from(damageByType.entries())
+      .filter(([, damage]) => damage > 0)
+      .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], 'zh-CN'))
+      .map(([label, damage]) => ({
+        label,
+        percent: totalDamage > 0 ? Math.round(damage / totalDamage * 100) : 0,
+      }));
+  }
+
+  function renderAxisPreviewSummary() {
+    const node = $('shaft-axis-preview-summary');
+    if (!node) return;
+    const result = previewResult();
+    const summary = result?.summary || {};
+    const damageTypes = previewDamageTypeShares(result);
+    node.innerHTML = `
+      <div class="shaft-axis-preview-stat"><span>DPS</span><strong>${formatNumber(summary.dps || 0)}</strong></div>
+      <div class="shaft-axis-preview-stat"><span>轴长</span><strong>${formatNumber(summary.duration_seconds || 0, 1)}s</strong></div>
+      <div class="shaft-axis-preview-damage-types">
+        <span>伤害类型</span>
+        <div>${damageTypes.length
+          ? damageTypes.map((item) => `<b>${escapeHtml(item.label)} ${item.percent}%</b>`).join('')
+          : '<b>暂无伤害</b>'}</div>
+      </div>
+    `;
+  }
+
+  function prioritizeAxisPreviewActionLabels() {
+    $('shaft-axis-preview-canvas')?.querySelectorAll('.shaft-axis-preview-bubble').forEach((bubble) => {
+      const name = bubble.querySelector(':scope > span');
+      const duration = bubble.querySelector(':scope > em');
+      if (!name || !duration) return;
+      bubble.classList.remove('hide-duration');
+      const styles = window.getComputedStyle(bubble);
+      const availableWidth = bubble.clientWidth
+        - Number.parseFloat(styles.paddingLeft || 0)
+        - Number.parseFloat(styles.paddingRight || 0);
+      if (name.scrollWidth + duration.scrollWidth + 6 > availableWidth) {
+        bubble.classList.add('hide-duration');
+      }
+    });
+  }
+
   function previewMinimumTickPx(details = previewDetails()) {
     const viewport = $('shaft-axis-preview-viewport');
     const availableWidth = Math.max(PREVIEW_MIN_BODY_PX, Number(viewport?.clientWidth || 0) - PREVIEW_LABEL_PX - 20);
@@ -3216,7 +3286,7 @@
     const tracks = previewTeam.slice(0, 4).map((member) => {
       const color = SLOT_COLORS[Number(member.slot) % SLOT_COLORS.length];
       const bubbles = groupedPreviewActions(details, member.slot).map((group) => {
-        const joinedName = group.names.filter(Boolean).join('+');
+        const joinedName = group.names.filter(Boolean).join(' ');
         const visibleEndTick = Math.max(group.visualEndTick, group.startTick + group.durationTicks);
         const duration = group.durationTicks > 0 ? `<em>${escapeHtml(ticksToSeconds(group.durationTicks))}s</em>` : '';
         return `
@@ -3250,6 +3320,8 @@
       </div>
       ${tracks || '<div class="shaft-empty">当前动作轴没有角色</div>'}
     `;
+    renderAxisPreviewSummary();
+    prioritizeAxisPreviewActionLabels();
   }
 
   function fitAxisPreview() {
@@ -4845,12 +4917,18 @@
           </div>
         </div>
         <div class="shaft-market-team" aria-label="队伍角色">
-          ${team.map((member) => `
-            <span class="shaft-market-character">
-              <img src="${escapeHtml(member.character_avatar || '')}" alt="${escapeHtml(member.character_name || '')}" loading="lazy" decoding="async">
-              <b>${escapeHtml(member.character_name || '')}</b>
-            </span>
-          `).join('')}
+          ${team.map((member) => {
+            const awakeningCount = activeAwakeningCount(member);
+            return `
+              <span class="shaft-market-character">
+                <span class="shaft-market-character-avatar" title="${escapeHtml(member.character_name || '')} · 已激活 ${awakeningCount} 个觉醒">
+                  <img src="${escapeHtml(member.character_avatar || '')}" alt="${escapeHtml(member.character_name || '')}" loading="lazy" decoding="async">
+                  <span class="shaft-market-character-awakening" aria-label="已激活 ${awakeningCount} 个觉醒">${awakeningCount}</span>
+                </span>
+                <b>${escapeHtml(member.character_name || '')}</b>
+              </span>
+            `;
+          }).join('')}
         </div>
         <p class="shaft-market-description ${description ? '' : 'is-empty'}" title="${escapeHtml(description)}">${escapeHtml(descriptionPreview || '暂无备注')}</p>
         <div class="shaft-market-stats">

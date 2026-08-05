@@ -1406,6 +1406,69 @@ body:has(.shaft-page) .shell {
     white-space: nowrap;
 }
 
+.shaft-axis-preview-bubble.hide-duration {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding-inline: 3px;
+}
+
+.shaft-axis-preview-bubble.hide-duration > em {
+    display: none;
+}
+
+.shaft-axis-preview-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid rgba(126, 224, 219, 0.16);
+    border-radius: 10px;
+    background: rgba(5, 10, 17, 0.78);
+}
+
+.shaft-axis-preview-stat,
+.shaft-axis-preview-damage-types {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+}
+
+.shaft-axis-preview-stat > span,
+.shaft-axis-preview-damage-types > span {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 850;
+    white-space: nowrap;
+}
+
+.shaft-axis-preview-stat > strong {
+    color: #f8fbff;
+    font-size: 14px;
+    font-weight: 950;
+}
+
+.shaft-axis-preview-damage-types {
+    flex: 1 1 360px;
+}
+
+.shaft-axis-preview-damage-types > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+}
+
+.shaft-axis-preview-damage-types b {
+    color: rgba(243, 247, 255, 0.94);
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
 .shaft-axis-preview-footer {
     display: flex;
     justify-content: flex-end;
@@ -2727,14 +2790,38 @@ body.shaft-dragging .shaft-action-bar {
     font-size: 11px;
 }
 
-.shaft-market-character img {
+.shaft-market-character-avatar {
+    position: relative;
     width: 30px;
     height: 30px;
     flex: 0 0 auto;
+}
+
+.shaft-market-character-avatar img {
+    width: 30px;
+    height: 30px;
     object-fit: cover;
     border: 1px solid rgba(255,255,255,0.14);
     border-radius: 8px;
     background: rgba(255,255,255,0.06);
+}
+
+.shaft-market-character-awakening {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    display: grid;
+    place-items: center;
+    width: 13px;
+    height: 13px;
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 50%;
+    color: #071016;
+    font-size: 8px;
+    font-weight: 950;
+    line-height: 1;
+    background: rgba(220, 247, 246, 0.96);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.42);
 }
 
 .shaft-market-character b {

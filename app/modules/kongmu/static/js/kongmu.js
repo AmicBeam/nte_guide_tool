@@ -31,7 +31,7 @@ bootstrapKongmu();
 async function bootstrapKongmu() {
   try {
     kongmuEls.planBtn.textContent = '读取中';
-    kongmuState.catalog = await kongmuRequest('/api/kongmu/catalog');
+    kongmuState.catalog = await kongmuRequest('/api/kongmu/catalog', {cache: 'no-store'});
     const params = new URLSearchParams(window.location.search);
     const characters = kongmuState.catalog.characters || [];
     const cartridges = kongmuState.catalog.cartridges || [];

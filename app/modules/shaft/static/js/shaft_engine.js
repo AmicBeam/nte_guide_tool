@@ -51,7 +51,7 @@
     flat_def: 'flat_def',
   };
   const CURTAIN_PASSIVE_TYPES = ['type2', 'type3', 'type4'];
-  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'loop_start', 'reaction_trigger', 'periodic_damage', 'full_stack']);
+  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'periodic_damage', 'full_stack']);
   const PERMANENT_BUFF_END_TICK = 1000000000;
   const HARMONY_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
   const SPECIAL_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
@@ -3884,6 +3884,20 @@
       syncBuffLayerResources(buffTick);
       syncFrontTimeBuffs(buffTick);
       const triggeredBuffs = [];
+      if (!isBackground && previousRuntimeFrontSlot != null && previousRuntimeFrontSlot !== slot) {
+        const previousSnapshot = snapshots.get(int(previousRuntimeFrontSlot));
+        if (previousSnapshot) {
+          triggeredBuffs.push(...triggerBuffsForEvent(
+            'foreground_leave',
+            startTick,
+            {id: String(step.id || ''), slot: previousRuntimeFrontSlot},
+            {id: 'foreground_leave', name: '离开前台', action_type: '切人', damage_type: '切人', tags: []},
+            previousSnapshot,
+            false,
+            {visual_trigger_tick: visualStartTick},
+          ));
+        }
+      }
       if (!isBackground && previousRuntimeFrontSlot !== slot) {
         triggeredBuffs.push(...triggerBuffsForEvent(
           'foreground_enter',

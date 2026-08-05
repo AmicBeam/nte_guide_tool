@@ -4573,10 +4573,11 @@
         ))
         .map((event) => {
           const isPeriodicDamage = Boolean(event.kind);
+          const opensUpward = isPeriodicDamage && Number(member.slot) === 3;
           const tooltip = damageMarkerTooltip(event);
           return `
           <span
-            class="shaft-reaction-damage-marker ${isPeriodicDamage ? 'shaft-periodic-damage-marker' : ''}"
+            class="shaft-reaction-damage-marker ${isPeriodicDamage ? 'shaft-periodic-damage-marker' : ''} ${opensUpward ? 'shaft-damage-tooltip-above' : ''}"
             style="left:${leftPx(Number(event.visual_tick ?? event.tick ?? 0))}px; top:${isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9}px; --reaction-color:${reactionLineColor(event.reaction)}"
             data-tooltip="${escapeHtml(tooltip)}"
             tabindex="0"

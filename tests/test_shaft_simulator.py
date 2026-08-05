@@ -1749,8 +1749,63 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         primed = [effect for effect in result['reaction_effects'] if effect['loop_primed']]
         self.assertEqual(len(primed), 1)
         self.assertEqual(primed[0]['start_tick'], -2)
+        self.assertEqual(len([
+            effect for effect in result['reaction_effects']
+            if effect['reaction'] == '创生'
+        ]), 1)
+        self.assertTrue(primed[0]['refreshed_in_loop'])
+        self.assertEqual(primed[0]['end_tick'], 131)
         self.assertEqual(result['summary']['duration_ticks'], 33)
         self.assertEqual([event['tick'] for event in result['reaction_damage_events']], [8, 18, 28])
+
+    def test_loop_axis_refreshes_carried_turbid_burn_without_duplicate_effects(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [
+                {
+                    'slot': 0,
+                    'character_id': 'char_076a1f4e53',
+                    'awakening_nodes': [2],
+                    'arc_id': '',
+                    'cartridge_id': '',
+                },
+                {'slot': 1, 'character_id': 'char_c78f7a08d5', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                {'id': 'canhong-a1', 'slot': 0, 'action_id': 'action_canhong_a1', 'start_tick': 0},
+                {'id': 'requiem-support', 'slot': 1, 'action_id': 'action_2635f721a8', 'start_tick': 10},
+                {'id': 'axis-end', 'slot': 0, 'action_id': 'action_none_076a1f4e53', 'start_tick': 30},
+            ],
+            'options': {
+                'loop_enabled': True,
+                'switch_loss_ticks': 0,
+                'loop_initial_resources': {
+                    'char_076a1f4e53': {'energy': 200, 'harmony': 100, 'personal_resources': {}},
+                    'char_c78f7a08d5': {'energy': 200, 'harmony': 100, 'personal_resources': {}},
+                },
+            },
+            'initial_energy': 200,
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+
+        turbid_effects = [
+            effect for effect in result['reaction_effects']
+            if effect['reaction'] == '浊燃'
+        ]
+        self.assertEqual(len(turbid_effects), 1)
+        self.assertEqual(turbid_effects[0]['start_tick'], -7)
+        self.assertEqual(turbid_effects[0]['end_tick'], 173)
+        self.assertTrue(turbid_effects[0]['refreshed_in_loop'])
+        self.assertEqual(
+            len({event['tick'] for event in result['reaction_damage_events'] if event['reaction'] == '浊燃'}),
+            len([event for event in result['reaction_damage_events'] if event['reaction'] == '浊燃']),
+        )
+
+        support = next(detail for detail in result['details'] if detail['step_id'] == 'requiem-support')
+        self.assertEqual(support['triggered_reaction']['id'], turbid_effects[0]['id'])
+        self.assertEqual(len([
+            buff for buff in support['triggered_buffs']
+            if buff['rule_id'] == 'character_canhong_b_blaze_stack'
+        ]), 1)
 
     def test_loop_axis_resource_display_excludes_priming_passes(self) -> None:
         result = simulate_shaft_axis({
@@ -5151,6 +5206,16 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
     def test_requiem_nightmare_has_independent_three_second_layers_and_settlement(self) -> None:
         catalog = load_shaft_catalog()
+        requiem_far_a5 = next(
+            action
+            for action in catalog['actions']
+            if action['character_id'] == 'char_c78f7a08d5' and action['name'] == 'a5远'
+        )
+        self.assertEqual(requiem_far_a5['duration_seconds'], 2)
+        self.assertEqual(requiem_far_a5['duration_ticks'], 20)
+        self.assertNotIn('duration_pending', requiem_far_a5)
+        self.assertIn('用户 2026-08-06 补充', requiem_far_a5['source_note'])
+
         requiem_q = next(
             action
             for action in catalog['actions']

@@ -1175,6 +1175,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const reactionDamageMarkers = groupedDamageEvents', source)
         self.assertIn("return event.events.map((item) => damageMarkerTooltip(item)).join('\\n');", source)
         self.assertIn('class="shaft-reaction-damage-marker ${isPeriodicDamage ?', source)
+        self.assertIn('const opensUpward = isPeriodicDamage && Number(member.slot) === 3;', source)
+        self.assertIn("${opensUpward ? 'shaft-damage-tooltip-above' : ''}", source)
         self.assertIn('function damageMarkerTooltip(event) {', source)
         self.assertIn("addZone('基础区', isPeriodicDamage ? formula.unscaled_base : formula.base);", source)
         self.assertNotIn("['噩梦', '蚀心'].includes", source)
@@ -1229,6 +1231,9 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('border-top: 0;', periodic_marker_css)
         self.assertIn('border-bottom: 5px solid', periodic_marker_css)
         self.assertIn('filter: none;', periodic_marker_css)
+        self.assertIn('.shaft-reaction-damage-marker.shaft-damage-tooltip-above::after {', css)
+        self.assertIn('bottom: 9px;', css)
+        self.assertIn('.shaft-reaction-damage-marker.shaft-damage-tooltip-above:hover::after,', css)
         self.assertIn("isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9", source)
         self.assertIn('const warnings = Array.from(new Set([...axisWarnings, ...simulationWarnings]));', source)
 

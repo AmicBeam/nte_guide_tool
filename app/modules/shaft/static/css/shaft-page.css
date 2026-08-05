@@ -3771,6 +3771,17 @@ body.shaft-dragging .shaft-action-bar {
     filter: none;
 }
 
+.shaft-reaction-damage-marker.shaft-damage-tooltip-above::after {
+    top: auto;
+    bottom: 9px;
+    transform: translate(calc(-50% + var(--damage-tooltip-shift-x, 0px)), -4px);
+}
+
+.shaft-reaction-damage-marker.shaft-damage-tooltip-above:hover::after,
+.shaft-reaction-damage-marker.shaft-damage-tooltip-above:focus-visible::after {
+    transform: translate(calc(-50% + var(--damage-tooltip-shift-x, 0px)), 0);
+}
+
 .shaft-action-bar {
     top: 24px;
     z-index: 4;

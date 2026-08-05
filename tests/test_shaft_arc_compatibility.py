@@ -15,6 +15,7 @@ EXPECTED_CHARACTER_ADAPTATIONS = {
     '浔': '固态',
     '小吱': '气态',
     '埃德嘉': '液态',
+    '残红': '气态',
     '伊洛伊': '液态',
     '娜娜莉': '等离子',
     '九原': '固态',
@@ -96,18 +97,20 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
                     msg=f"{characters[character_id]['name']} 默认卡带属性不匹配",
                 )
 
-    def test_backend_rejects_active_cartridge_element_mismatch(self) -> None:
-        with self.assertRaisesRegex(RuleValidationError, '角色属性与卡带的属伤加成不一致'):
-            normalize_axis_payload({
-                'team': [{
-                    'slot': 0,
-                    'character_id': 'char_b52cc8f160',
-                    'arc_id': '',
-                    'cartridge_id': 'cartridge_29793225a0',
-                }],
-            })
+    def test_backend_keeps_active_cross_element_cartridge(self) -> None:
+        normalized = normalize_axis_payload({
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_b52cc8f160',
+                'arc_id': '',
+                'cartridge_id': 'cartridge_29793225a0',
+            }],
+            'steps': [],
+        })
 
-    def test_backend_clears_inactive_build_cartridge_element_mismatch(self) -> None:
+        self.assertEqual(normalized['team'][0]['cartridge_id'], 'cartridge_29793225a0')
+
+    def test_backend_keeps_inactive_cross_element_cartridge(self) -> None:
         normalized = normalize_axis_payload({
             'team': [{
                 'slot': 0,
@@ -125,16 +128,20 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
             },
         })
 
-        self.assertEqual(normalized['character_builds']['char_b2e3b2bf7a']['cartridge_id'], '')
+        self.assertEqual(
+            normalized['character_builds']['char_b2e3b2bf7a']['cartridge_id'],
+            'cartridge_f4282fad3f',
+        )
 
-    def test_frontend_filters_and_repairs_cartridge_options_by_element(self) -> None:
+    def test_frontend_shows_all_cartridges_without_element_restrictions(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
 
-        self.assertIn('function cartridgesForCharacter(characterId)', source)
-        self.assertIn("const requiredElement = String(cartridge.required_element || '');", source)
-        self.assertIn('requiredElement === element', source)
+        self.assertIn('function cartridgesForCharacter()', source)
+        self.assertIn('return state.catalog?.cartridges || [];', source)
         self.assertIn('function ensureMemberCompatibleCartridge(member)', source)
         self.assertIn('optionHtml(compatibleCartridges, member.cartridge_id)', source)
+        self.assertNotIn('function cartridgeMatchesCharacter(', source)
+        self.assertNotIn('（需${cartridge.required_element}属性）', source)
         self.assertGreaterEqual(source.count('ensureMemberCompatibleCartridge(member);'), 2)
 
     def test_backend_rejects_active_incompatible_arc(self) -> None:

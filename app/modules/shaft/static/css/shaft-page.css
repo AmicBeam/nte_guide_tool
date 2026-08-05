@@ -648,6 +648,15 @@ body:has(.shaft-page) .shell {
     background: var(--slot-color, var(--primary));
 }
 
+.shaft-bond-toggle:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.48;
+}
+
+.shaft-bond-toggle:has(input:disabled) span::before {
+    background: rgba(255,255,255,0.12);
+}
+
 .shaft-skill-levels {
     display: grid;
     grid-template-columns: minmax(130px, auto) minmax(0, 1fr);
@@ -1225,6 +1234,19 @@ body:has(.shaft-page) .shell {
     gap: 16px;
 }
 
+.shaft-axis-preview-meta {
+    max-width: min(720px, 70vw);
+    margin: 5px 0 0;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
 .shaft-axis-preview-actions {
     display: flex;
     align-items: center;
@@ -1382,6 +1404,17 @@ body:has(.shaft-page) .shell {
     font-style: normal;
     font-weight: 900;
     white-space: nowrap;
+}
+
+.shaft-axis-preview-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.shaft-axis-preview-meta[hidden],
+.shaft-axis-preview-footer[hidden] {
+    display: none;
 }
 
 .shaft-shortcut-modal {
@@ -2495,11 +2528,41 @@ body.shaft-dragging .shaft-action-bar {
 
 .shaft-market-filters {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 130px;
+    grid-template-columns: minmax(150px, 1fr) minmax(0, 1fr) 130px;
 }
 
 .shaft-my-axis-filters {
-    grid-template-columns: 104px minmax(0, 1fr) 112px;
+    grid-template-columns: minmax(150px, 1fr) 104px minmax(0, 1fr) 112px;
+}
+
+.shaft-axis-total {
+    margin-left: 4px;
+    color: var(--muted);
+    font-size: 0.72em;
+    font-variant-numeric: tabular-nums;
+}
+
+.shaft-search-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+}
+
+.shaft-search-loading::before {
+    width: 14px;
+    height: 14px;
+    content: "";
+    border: 2px solid rgba(88, 216, 210, 0.24);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: shaft-search-spin 0.7s linear infinite;
+}
+
+@keyframes shaft-search-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .shaft-character-filter {
@@ -2647,6 +2710,53 @@ body.shaft-dragging .shaft-action-bar {
     border: 1px solid rgba(88, 216, 210, 0.34);
     border-radius: 999px;
     background: rgba(88, 216, 210, 0.1);
+}
+
+.shaft-market-team {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.shaft-market-character {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 5px;
+    color: var(--text);
+    font-size: 11px;
+}
+
+.shaft-market-character img {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+}
+
+.shaft-market-character b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shaft-market-description {
+    min-height: 1.4em;
+    margin: 0;
+    overflow: hidden;
+    color: rgba(232, 241, 248, 0.78);
+    font-size: 12px;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shaft-market-description.is-empty {
+    color: var(--muted);
+    font-style: italic;
 }
 
 .shaft-toast {
@@ -3171,7 +3281,8 @@ body.shaft-dragging .shaft-action-bar {
     font-weight: 900;
 }
 
-.shaft-loop-resource-row input {
+.shaft-loop-resource-row input,
+.shaft-loop-resource-row select {
     width: 100%;
 }
 

@@ -52,6 +52,57 @@ python3 scripts/seed_mock_account.py
 - 玩家号：`10001`
 - 密码：`654321`
 
+## Windows Server 应用目录发布
+
+仓库提供仅更新服务器 `app/` 目录的推送式发布脚本。发布源固定为当前 Git `HEAD`
+中已提交的 `app/`；如果 `app/` 存在已暂存、未暂存或未跟踪改动，检查、打包和发布
+都会拒绝执行，避免把本地半成品同步到服务器。脚本不要求提交已经推送或合入
+`main`，发布版本由当前分支的 `HEAD` 决定。脚本不会上传或覆盖项目根目录的
+`.env`、数据库、日志、虚拟环境和其他目录。
+
+首次使用时复制本机配置模板并填写真实 SSH 地址和 Windows 项目路径；本机配置已被
+Git 忽略，不会把服务器信息提交到仓库：
+
+```bash
+cp scripts/deploy_windows_app.env.example scripts/deploy_windows_app.local.env
+```
+
+只检查本机准备情况，不连接服务器：
+
+```bash
+scripts/deploy_windows_app.sh --check
+```
+
+只在 `dist/deploy/` 生成当前 `HEAD` 的 `app/` 发布包，不连接服务器：
+
+```bash
+scripts/deploy_windows_app.sh --prepare
+```
+
+确认发布时必须显式执行：
+
+```bash
+scripts/deploy_windows_app.sh --deploy
+```
+
+远端替换前会把旧 `app/` 移到 Windows 临时目录中作为备份。当前服务器通过
+`start_waitress.bat` 启动 Waitress，因此脚本默认停止监听 `8000` 端口的旧进程，
+替换 `app/` 后通过 Windows WMI 创建脱离 SSH 会话的独立进程来运行该批处理，并等待
+端口连续稳定监听。批处理的标准输入会重定向到 `NUL`，避免其末尾的 `pause` 在进程
+退出后遗留隐藏窗口；后台输出追加写入 `logs/waitress-deploy.log`。Caddy 配置不在
+`app/` 中，发布时无需重启 Caddy。
+
+如果以后改成 Windows 服务，可设置 `NTE_DEPLOY_SERVICE`，让发布成功后改为重启服务：
+
+```bash
+NTE_DEPLOY_SERVICE=NteBoardGame scripts/deploy_windows_app.sh --deploy
+```
+
+服务器地址、项目路径可分别通过 `NTE_DEPLOY_HOST` 和
+`NTE_DEPLOY_PROJECT` 覆盖。Waitress 批处理和监听端口可分别通过
+`NTE_DEPLOY_RESTART_BATCH` 和 `NTE_DEPLOY_LISTEN_PORT` 覆盖；把
+`NTE_DEPLOY_RESTART_BATCH` 设置为空字符串可禁用进程重启。
+
 ## 共享工程约定
 
 - 路由只负责参数校验、鉴权和调用服务，业务计算留在对应模块的服务或领域层。

@@ -46,10 +46,19 @@ def _add_compatible_columns(models: list[type[Model]]) -> None:
                 'ALTER TABLE "shaftaxis" '
                 'ADD COLUMN "share_token" VARCHAR(64)'
             )
+        if table_name == 'shaftaxis' and 'forked_from_id' not in existing_columns:
+            db.execute_sql(
+                'ALTER TABLE "shaftaxis" '
+                'ADD COLUMN "forked_from_id" INTEGER REFERENCES "shaftaxis" ("id") ON DELETE SET NULL'
+            )
         if table_name == 'shaftaxis':
             db.execute_sql(
                 'CREATE UNIQUE INDEX IF NOT EXISTS "shaftaxis_share_token" '
                 'ON "shaftaxis" ("share_token")'
+            )
+            db.execute_sql(
+                'CREATE INDEX IF NOT EXISTS "shaftaxis_forked_from_visibility" '
+                'ON "shaftaxis" ("forked_from_id", "visibility")'
             )
 
 

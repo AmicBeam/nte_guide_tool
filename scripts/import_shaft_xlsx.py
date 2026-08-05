@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,10 @@ CHARACTER_IMAGE_OVERRIDES = {
     '伊洛伊': {
         'avatar': '/static/kongmu/images/characters/player_yiluoyi_256.webp',
         'portrait': '/static/kongmu/images/characters/player_yiluoyi_256.webp',
+    },
+    '残红': {
+        'avatar': '/static/shaft/images/characters/canhong-placeholder.svg',
+        'portrait': '/static/shaft/images/characters/canhong-placeholder.svg',
     },
 }
 
@@ -258,7 +263,52 @@ def extract_characters(wb_values: Any) -> list[dict[str, Any]]:
             'bond_bonus': bond_by_name.get(str(name), parse_bond_bonus('')),
             'source_row': row,
         })
+    if not any(str(record.get('name') or '') == '残红' for record in records):
+        panel_template = next(
+            (record for record in records if str(record.get('name') or '') in {'安魂曲', '娜娜莉'}),
+            None,
+        )
+        if panel_template:
+            placeholder = deepcopy(panel_template)
+            placeholder.update({
+                'id': stable_id('char', '残红'),
+                'name': '残红',
+                'element': '咒',
+                'adaptation': '液态',
+                'avatar': CHARACTER_IMAGE_OVERRIDES['残红']['avatar'],
+                'portrait': CHARACTER_IMAGE_OVERRIDES['残红']['portrait'],
+                'source_row': 0,
+                'placeholder': True,
+                'source_note': '2026-08-04 用户截图占位；Nanoka 当前未收录残红。基础面板暂时复用安魂曲/娜娜莉。',
+            })
+            records.append(placeholder)
     return records
+
+
+def preserve_placeholder_awakenings(
+    output_dir: Path,
+    awakenings: dict[str, list[dict[str, Any]]],
+    characters: list[dict[str, Any]],
+) -> dict[str, list[dict[str, Any]]]:
+    placeholder_names = {
+        str(character.get('name') or '')
+        for character in characters
+        if character.get('placeholder')
+    }
+    existing_path = output_dir / 'awakenings.json'
+    if not placeholder_names or not existing_path.exists():
+        return awakenings
+    try:
+        existing = json.loads(existing_path.read_text(encoding='utf-8'))
+    except (OSError, TypeError, ValueError):
+        return awakenings
+    if not isinstance(existing, dict):
+        return awakenings
+    for character_name in placeholder_names:
+        entries = existing.get(character_name)
+        if character_name not in awakenings and isinstance(entries, list):
+            awakenings[character_name] = entries
+    return awakenings
 
 
 def normalize_awakening_character_name(value: Any) -> str:
@@ -685,6 +735,7 @@ def main() -> int:
 
     characters = extract_characters(wb_values)
     awakenings = extract_awakenings(wb_values)
+    awakenings = preserve_placeholder_awakenings(args.output_dir, awakenings, characters)
     arcs = extract_arcs(wb_values)
     cartridges = extract_cartridges(wb_values)
     actions = extract_actions(wb_values, characters)

@@ -123,6 +123,7 @@ class ShaftAxis(BaseModel):
     favorite_count = IntegerField(default=0)
     dedupe_hash = CharField(max_length=64, default='')
     share_token = CharField(max_length=64, null=True, unique=True)
+    forked_from = ForeignKeyField('self', backref='published_snapshots', null=True, on_delete='SET NULL')
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
     published_at = DateTimeField(null=True)
@@ -131,6 +132,7 @@ class ShaftAxis(BaseModel):
         indexes = (
             (('visibility', 'updated_at'), False),
             (('visibility', 'dedupe_hash'), False),
+            (('forked_from', 'visibility'), False),
         )
 
 

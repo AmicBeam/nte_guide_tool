@@ -168,15 +168,15 @@ class RoomFlowTestCase(unittest.TestCase):
 
 
 class SoloRoomFlowTest(RoomFlowTestCase):
-    def test_yiloyi_selection_requires_shaft_test_account(self) -> None:
+    def test_canhong_selection_requires_shaft_test_account(self) -> None:
         public_catalog = self._get('/api/shaft/catalog')
-        public_yiloyi = next(character for character in public_catalog['characters'] if character['name'] == '伊洛伊')
-        self.assertTrue(public_yiloyi['selection_disabled'])
+        public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残红')
+        self.assertTrue(public_canhong['selection_disabled'])
 
         regular_token = self._issue_login_and_get_token('regular-shaft-player')
         regular_catalog = self._get('/api/shaft/catalog', token=regular_token)
-        regular_yiloyi = next(character for character in regular_catalog['characters'] if character['name'] == '伊洛伊')
-        self.assertTrue(regular_yiloyi['selection_disabled'])
+        regular_canhong = next(character for character in regular_catalog['characters'] if character['name'] == '残红')
+        self.assertTrue(regular_canhong['selection_disabled'])
 
         test_token = self._issue_login_and_get_token('shaft-whitelisted-player')
         models_module = importlib.import_module('app.models')
@@ -184,31 +184,31 @@ class SoloRoomFlowTest(RoomFlowTestCase):
             models_module.Player.player_uid == 'shaft-whitelisted-player'
         ).execute()
         test_catalog = self._get('/api/shaft/catalog', token=test_token)
-        test_yiloyi = next(character for character in test_catalog['characters'] if character['name'] == '伊洛伊')
-        self.assertFalse(test_yiloyi['selection_disabled'])
+        test_canhong = next(character for character in test_catalog['characters'] if character['name'] == '残红')
+        self.assertFalse(test_canhong['selection_disabled'])
 
         restricted_axis = dict(public_catalog['starter_axis'])
         restricted_axis['team'] = [{
             **restricted_axis['team'][0],
-            'character_id': public_yiloyi['id'],
+            'character_id': public_canhong['id'],
             'arc_id': '',
             'cartridge_id': '',
         }]
         restricted_axis['character_builds'] = {}
         restricted_axis['steps'] = []
         denied = self._post('/api/shaft/axes', {
-            'title': '普通账号伊洛伊',
+            'title': '普通账号残红',
             'axis': restricted_axis,
             'result': self._shaft_client_result(restricted_axis),
         }, token=regular_token, expected_status=400)
         self.assertIn('仅对测试账号开放', denied['error'])
 
         allowed = self._post('/api/shaft/axes', {
-            'title': '测试账号伊洛伊',
+            'title': '测试账号残红',
             'axis': restricted_axis,
             'result': self._shaft_client_result(restricted_axis),
         }, token=test_token)
-        self.assertEqual(allowed['team'][0]['character_id'], public_yiloyi['id'])
+        self.assertEqual(allowed['team'][0]['character_id'], public_canhong['id'])
 
         published = self._post(
             f"/api/shaft/axes/{allowed['id']}/publish",
@@ -220,9 +220,9 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         anonymous_market = self._get('/api/shaft/market')
         regular_market = self._get('/api/shaft/market', token=regular_token)
         test_market = self._get('/api/shaft/market', token=test_token)
-        self.assertNotIn('测试账号伊洛伊', [axis['title'] for axis in anonymous_market['items']])
-        self.assertNotIn('测试账号伊洛伊', [axis['title'] for axis in regular_market['items']])
-        self.assertIn('测试账号伊洛伊', [axis['title'] for axis in test_market['items']])
+        self.assertNotIn('测试账号残红', [axis['title'] for axis in anonymous_market['items']])
+        self.assertNotIn('测试账号残红', [axis['title'] for axis in regular_market['items']])
+        self.assertIn('测试账号残红', [axis['title'] for axis in test_market['items']])
 
         for token in (None, regular_token):
             hidden_detail = self.client.get(
@@ -250,13 +250,13 @@ class SoloRoomFlowTest(RoomFlowTestCase):
             token=regular_token,
         )
         visible_favorites = self._get('/api/shaft/me/favorites', token=regular_token)
-        self.assertIn('测试账号伊洛伊', [axis['title'] for axis in visible_favorites['items']])
+        self.assertIn('测试账号残红', [axis['title'] for axis in visible_favorites['items']])
 
         models_module.Player.update(shaft_test_whitelisted=False).where(
             models_module.Player.player_uid == 'regular-shaft-player'
         ).execute()
         hidden_favorites = self._get('/api/shaft/me/favorites', token=regular_token)
-        self.assertNotIn('测试账号伊洛伊', [axis['title'] for axis in hidden_favorites['items']])
+        self.assertNotIn('测试账号残红', [axis['title'] for axis in hidden_favorites['items']])
         models_module.Player.update(shaft_test_whitelisted=False).where(
             models_module.Player.player_uid == 'shaft-whitelisted-player'
         ).execute()
@@ -268,13 +268,18 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         )
         self.assertIn('仅对测试账号开放', denied_publish['error'])
 
-    def test_published_shaft_character_is_available_without_whitelist(self) -> None:
+    def test_yiloyi_is_released_and_persisted_as_public(self) -> None:
         models_module = importlib.import_module('app.models')
         publication = models_module.ShaftCharacterPublication.get(
             models_module.ShaftCharacterPublication.character_name == '伊洛伊'
         )
-        publication.is_published = True
+        publication.is_published = False
         publication.save(only=[models_module.ShaftCharacterPublication.is_published])
+
+        shaft_service = importlib.import_module('app.modules.shaft.service')
+        shaft_service.initialize_shaft_character_publications()
+        publication = models_module.ShaftCharacterPublication.get_by_id(publication.id)
+        self.assertTrue(publication.is_published)
 
         public_catalog = self._get('/api/shaft/catalog')
         public_yiloyi = next(
@@ -463,6 +468,217 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         )
         self.assertIn('无效或已失效', expired['error'])
 
+    def test_shaft_owner_can_unpublish_snapshot_without_deleting_private_source(self) -> None:
+        token = self._issue_login_and_get_token('shaft-unpublish-owner')
+        catalog = self._get('/api/shaft/catalog')
+        axis = dict(catalog['starter_axis'])
+        axis['steps'] = []
+        axis['buff_rules'] = []
+
+        saved = self._post('/api/shaft/axes', {
+            'title': '待下架快照',
+            'description': '用于筛选的下架备注',
+            'axis': axis,
+            'result': self._shaft_client_result(axis),
+        }, token=token)
+        snapshot = self._post(f'/api/shaft/axes/{saved["id"]}/publish', token=token)
+
+        filtered = self._get('/api/shaft/me/axes?q=下架备注', token=token)
+        self.assertEqual([item['id'] for item in filtered['items']], [saved['id']])
+        self.assertEqual(filtered['items'][0]['published_snapshot_id'], snapshot['id'])
+
+        delete_response = self.client.delete(
+            f'/api/shaft/axes/{snapshot["id"]}',
+            headers=self._auth_headers(token),
+        )
+        self.assertEqual(delete_response.status_code, 200, delete_response.get_data(as_text=True))
+        self.assertTrue(delete_response.get_json()['ok'])
+
+        market = self._get('/api/shaft/market')
+        self.assertNotIn(snapshot['id'], [item['id'] for item in market['items']])
+        mine = self._get('/api/shaft/me/axes?sort=new', token=token)
+        self.assertIn(saved['id'], [item['id'] for item in mine['items']])
+        private_source = self._get(f'/api/shaft/axes/{saved["id"]}', token=token)
+        self.assertEqual(private_source['visibility'], 'private')
+
+    def test_shaft_market_can_search_title_or_description(self) -> None:
+        token = self._issue_login_and_get_token('shaft-market-search-owner')
+        catalog = self._get('/api/shaft/catalog')
+
+        title_axis = dict(catalog['starter_axis'])
+        title_source = self._post('/api/shaft/axes', {
+            'title': 'market-name-token',
+            'description': '普通介绍',
+            'axis': title_axis,
+            'result': self._shaft_client_result(title_axis),
+        }, token=token)
+        title_snapshot = self._post(f'/api/shaft/axes/{title_source["id"]}/publish', token=token)
+
+        description_axis = dict(catalog['starter_axis'])
+        description_axis['steps'] = []
+        description_axis['buff_rules'] = []
+        description_source = self._post('/api/shaft/axes', {
+            'title': '另一条公开轴',
+            'description': '包含 market-note-token 的备注',
+            'axis': description_axis,
+            'result': self._shaft_client_result(description_axis),
+        }, token=token)
+        description_snapshot = self._post(
+            f'/api/shaft/axes/{description_source["id"]}/publish',
+            token=token,
+        )
+
+        name_response = self.client.get(
+            '/api/shaft/market?q=market-name-token',
+            headers={'X-Shaft-Visitor-Key': 'market-title-search'},
+        )
+        self.assertEqual(name_response.status_code, 200, name_response.get_data(as_text=True))
+        name_results = name_response.get_json()
+        self.assertEqual([item['id'] for item in name_results['items']], [title_snapshot['id']])
+
+        note_response = self.client.get(
+            '/api/shaft/market?q=market-note-token',
+            headers={'X-Shaft-Visitor-Key': 'market-description-search'},
+        )
+        self.assertEqual(note_response.status_code, 200, note_response.get_data(as_text=True))
+        note_results = note_response.get_json()
+        self.assertEqual(
+            [item['id'] for item in note_results['items']],
+            [description_snapshot['id']],
+        )
+
+    def test_shaft_market_search_is_rate_limited_to_once_per_three_seconds(self) -> None:
+        headers = {'X-Shaft-Visitor-Key': 'market-rate-limit-visitor'}
+
+        first = self.client.get('/api/shaft/market?q=第一次', headers=headers)
+        self.assertEqual(first.status_code, 200, first.get_data(as_text=True))
+
+        limited = self.client.get('/api/shaft/market?q=第二次', headers=headers)
+        self.assertEqual(limited.status_code, 429, limited.get_data(as_text=True))
+        payload = limited.get_json()
+        self.assertEqual(payload['code'], 'shaft_market_search_rate_limited')
+        self.assertGreater(payload['retry_after_ms'], 0)
+        self.assertLessEqual(payload['retry_after_ms'], 3000)
+
+        unfiltered = self.client.get('/api/shaft/market', headers=headers)
+        self.assertEqual(unfiltered.status_code, 200, unfiltered.get_data(as_text=True))
+
+    def test_shaft_private_axis_limit_is_fifty_without_exposing_limit_in_my_axes(self) -> None:
+        token = self._issue_login_and_get_token('shaft-axis-limit-owner')
+        catalog = self._get('/api/shaft/catalog')
+        axis = dict(catalog['starter_axis'])
+        models_module = importlib.import_module('app.models')
+        player = models_module.Player.get(
+            models_module.Player.player_uid == 'shaft-axis-limit-owner'
+        )
+        with self.db_module.atomic_transaction():
+            records = [
+                models_module.ShaftAxis.create(
+                    owner=player,
+                    title=f'数量限制轴 {index + 1}',
+                    visibility='private',
+                )
+                for index in range(50)
+            ]
+
+        mine = self._get('/api/shaft/me/axes', token=token)
+        self.assertEqual(mine['total'], 50)
+        self.assertEqual(len(mine['items']), 50)
+        self.assertNotIn('limit', mine)
+        self.assertNotIn('max', mine)
+
+        create_payload = {
+            'title': '第 51 条轴',
+            'axis': axis,
+            'result': self._shaft_client_result(axis),
+        }
+        denied_create = self._post(
+            '/api/shaft/axes',
+            create_payload,
+            token=token,
+            expected_status=400,
+        )
+        self.assertIn('最多创建 50 个排轴', denied_create['error'])
+
+        denied_backup = self._post(
+            f'/api/shaft/axes/{records[0].id}/backup',
+            token=token,
+            expected_status=400,
+        )
+        self.assertIn('最多创建 50 个排轴', denied_backup['error'])
+
+        update_response = self.client.put(
+            f'/api/shaft/axes/{records[0].id}',
+            json={
+                **create_payload,
+                'title': '已存在轴更新后',
+            },
+            headers=self._auth_headers(token),
+        )
+        self.assertEqual(update_response.status_code, 200, update_response.get_data(as_text=True))
+
+        delete_response = self.client.delete(
+            f'/api/shaft/axes/{records[1].id}',
+            headers=self._auth_headers(token),
+        )
+        self.assertEqual(delete_response.status_code, 200, delete_response.get_data(as_text=True))
+        created_after_delete = self._post('/api/shaft/axes', create_payload, token=token)
+        self.assertEqual(created_after_delete['title'], '第 51 条轴')
+
+    def test_public_shaft_snapshot_can_be_saved_as_private_author_suffixed_copy(self) -> None:
+        owner_token = self._issue_login_and_get_token('shaft-preview-author')
+        recipient_token = self._issue_login_and_get_token('shaft-preview-recipient')
+        catalog = self._get('/api/shaft/catalog')
+        axis = dict(catalog['starter_axis'])
+        axis['steps'] = []
+        axis['buff_rules'] = []
+
+        source = self._post('/api/shaft/axes', {
+            'title': '广场预览轴',
+            'description': '公开轴完整备注',
+            'axis': axis,
+            'result': self._shaft_client_result(axis),
+        }, token=owner_token)
+        snapshot = self._post(f'/api/shaft/axes/{source["id"]}/publish', token=owner_token)
+
+        preview = self._get(f'/api/shaft/axes/{snapshot["id"]}')
+        author_name = preview['owner']['nickname']
+        copied = self._post('/api/shaft/axes', {
+            'title': f'{preview["title"]} - {author_name}',
+            'description': preview['description'],
+            'axis': preview['axis'],
+            'result': preview['result'],
+        }, token=recipient_token)
+
+        self.assertEqual(copied['title'], f'广场预览轴 - {author_name}')
+        self.assertEqual(copied['description'], '公开轴完整备注')
+        self.assertEqual(copied['visibility'], 'private')
+        self.assertEqual(copied['owner']['player_uid'], 'shaft-preview-recipient')
+        self.assertEqual(copied['axis'], preview['axis'])
+        self.assertEqual(copied['result'], preview['result'])
+
+    def test_deleting_private_source_keeps_uploaded_snapshot(self) -> None:
+        token = self._issue_login_and_get_token('shaft-delete-source-owner')
+        catalog = self._get('/api/shaft/catalog')
+        axis = dict(catalog['starter_axis'])
+        axis['steps'] = []
+        axis['buff_rules'] = []
+        saved = self._post('/api/shaft/axes', {
+            'title': '删除私有源',
+            'axis': axis,
+            'result': self._shaft_client_result(axis),
+        }, token=token)
+        snapshot = self._post(f'/api/shaft/axes/{saved["id"]}/publish', token=token)
+
+        delete_response = self.client.delete(
+            f'/api/shaft/axes/{saved["id"]}',
+            headers=self._auth_headers(token),
+        )
+        self.assertEqual(delete_response.status_code, 200, delete_response.get_data(as_text=True))
+        market = self._get('/api/shaft/market')
+        market_snapshot = next(item for item in market['items'] if item['id'] == snapshot['id'])
+        self.assertIsNone(market_snapshot['source_axis_id'])
+
     def test_shaft_publish_is_snapshot_and_same_name_save_can_overwrite(self) -> None:
         token = self._issue_login_and_get_token('shaft-snapshot-axis')
         catalog = self._get('/api/shaft/catalog')
@@ -532,6 +748,16 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         mine = self._get('/api/shaft/me/axes?sort=new', token=token)
         self.assertEqual([item['id'] for item in mine['items']], [saved['id']])
         self.assertEqual(mine['items'][0]['title'], '本地修改版')
+        self.assertEqual(mine['items'][0]['published_snapshot_id'], snapshot['id'])
+
+        refreshed_snapshot = self._post(f'/api/shaft/axes/{saved["id"]}/publish', token=token)
+        self.assertEqual(refreshed_snapshot['id'], snapshot['id'])
+        self.assertEqual(refreshed_snapshot['title'], '本地修改版')
+        refreshed_market = self._get('/api/shaft/market')
+        refreshed_market_snapshot = next(
+            item for item in refreshed_market['items'] if item['id'] == snapshot['id']
+        )
+        self.assertEqual(refreshed_market_snapshot['description'], '保存后的版本')
 
         conflict = self._post('/api/shaft/axes', {
             'title': '本地修改版',
@@ -565,13 +791,28 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         self.assertEqual(no_match['items'], [])
 
         models_module = importlib.import_module('app.models')
-        shaft_service = importlib.import_module('app.modules.shaft.service')
         models_module.ShaftAxis.update(source_version='异环云配队 V0.2.7').execute()
-        self.assertEqual(shaft_service.migrate_shaft_source_versions(), 2)
-        migrated_mine = self._get('/api/shaft/me/axes', token=token)
-        migrated_market = self._get('/api/shaft/market')
-        self.assertEqual(migrated_mine['items'][0]['source_version'], '异环云配队 1.0.0')
-        self.assertEqual(migrated_market['items'][0]['source_version'], '异环云配队 1.0.0')
+        self.app_module.create_app()
+        preserved_mine = self._get('/api/shaft/me/axes', token=token)
+        preserved_market = self._get('/api/shaft/market')
+        self.assertEqual(preserved_mine['items'][0]['source_version'], '异环云配队 V0.2.7')
+        self.assertEqual(preserved_market['items'][0]['source_version'], '异环云配队 V0.2.7')
+
+        resave_response = self.client.put(
+            f'/api/shaft/axes/{saved["id"]}',
+            json={
+                'title': '本地修改版',
+                'description': '按新版本再次保存',
+                'axis': axis,
+                'result': self._shaft_client_result(axis),
+            },
+            headers=self._auth_headers(token),
+        )
+        self.assertEqual(resave_response.status_code, 200, resave_response.get_data(as_text=True))
+        resaved_mine = self._get('/api/shaft/me/axes', token=token)
+        unchanged_market = self._get('/api/shaft/market')
+        self.assertEqual(resaved_mine['items'][0]['source_version'], '异环云配队 1.0.2')
+        self.assertEqual(unchanged_market['items'][0]['source_version'], '异环云配队 V0.2.7')
 
     def test_balance_analytics_requires_login(self) -> None:
         payload = self._get('/api/analytics/balance', expected_status=401)

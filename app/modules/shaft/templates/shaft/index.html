@@ -1,12 +1,12 @@
 {% extends 'common/base.html' %}
-{% block title %}异环排轴计算{% endblock %}
+{% block title %}异环云配队——排轴计算{% endblock %}
 {% block head %}<link rel="stylesheet" href="{{ url_for('shaft_module.static', filename='css/shaft-page.css', v=shaft_asset_version('css/shaft-page.css')) }}">{% endblock %}
 {% block body %}
 <main class="shaft-page" data-active-page="{{ active_shaft_page }}">
     <section class="glass-card panel-header shaft-header">
         <div>
             <p class="eyebrow">Shaft Lab</p>
-            <h1>异环排轴计算</h1>
+            <h1>异环云配队——排轴计算</h1>
         </div>
         <nav class="shaft-page-tabs" aria-label="排轴模块">
             <a class="shaft-page-tab" data-shaft-page-link="build" href="{{ url_for('main.shaft_page', page='build') }}">配装</a>
@@ -197,11 +197,12 @@
                 <div class="section-title-row">
                     <div>
                         <span class="shaft-panel-kicker">个人收藏夹</span>
-                        <h2>我的排轴</h2>
+                        <h2>我的排轴 <span class="shaft-axis-total" id="shaft-my-axis-total">0</span></h2>
                     </div>
                     <button class="secondary-btn" id="shaft-my-refresh-btn" type="button">刷新</button>
                 </div>
                 <div class="shaft-market-filters shaft-my-axis-filters" aria-label="我的排轴筛选">
+                    <input id="shaft-my-axis-query" type="search" maxlength="80" placeholder="筛选名称或备注" aria-label="按名称或备注筛选我的排轴">
                     <select id="shaft-my-axis-scope" aria-label="排轴范围">
                         <option value="mine">我的</option>
                         <option value="favorites">收藏的</option>
@@ -232,6 +233,7 @@
                     <button class="secondary-btn" id="shaft-market-refresh-btn" type="button">刷新</button>
                 </div>
                 <div class="shaft-market-filters">
+                    <input id="shaft-market-query" type="search" maxlength="80" placeholder="搜索名称或备注" aria-label="按名称或备注搜索排轴广场">
                     <div class="shaft-character-filter" id="shaft-market-character-filter">
                         <button class="shaft-character-filter-trigger" id="shaft-character-filter-trigger" type="button" aria-expanded="false">
                             <span id="shaft-character-filter-summary">全部角色</span>
@@ -407,6 +409,7 @@
                 <div>
                     <span class="shaft-panel-kicker">只读视图</span>
                     <h2 id="shaft-axis-preview-title">动作轴预览</h2>
+                    <p class="shaft-axis-preview-meta" id="shaft-axis-preview-meta" hidden></p>
                 </div>
                 <div class="shaft-axis-preview-actions">
                     <span class="shaft-axis-preview-hint">滚轮缩放时间轴</span>
@@ -416,6 +419,10 @@
             </div>
             <div class="shaft-axis-preview-viewport" id="shaft-axis-preview-viewport">
                 <div class="shaft-axis-preview-canvas" id="shaft-axis-preview-canvas"></div>
+            </div>
+            <div class="shaft-axis-preview-footer" id="shaft-axis-preview-footer" hidden>
+                <button class="secondary-btn" id="shaft-axis-preview-cancel-btn" type="button">取消</button>
+                <button class="primary-btn" id="shaft-axis-preview-save-btn" type="button">保存到本地</button>
             </div>
         </div>
     </dialog>
@@ -452,7 +459,7 @@
                 <input id="shaft-loop-enabled" type="checkbox">
                 <span>
                     <strong>开启循环轴</strong>
-                    <small>轴尾仍在持续的增益会衔接到下一轮轴开头。</small>
+                    <small>轴尾仍在持续的增益会衔接到下一轮轴开头，也可为每名角色选择一个起始持续环合。</small>
                 </span>
             </label>
             <div class="shaft-loop-resource-list" id="shaft-loop-resource-list"></div>

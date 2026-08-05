@@ -396,6 +396,10 @@ function normalizeKongmuQuery(value) {
 
 async function kongmuRequest(url, options = {}) {
   const headers = Object.assign({}, options.headers || {});
+  const token = typeof getToken === 'function' ? getToken() : '';
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
   headers['X-Log-Id'] = `kongmu-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
   const response = await fetch(url, Object.assign({}, options, {headers}));
   let payload = {};

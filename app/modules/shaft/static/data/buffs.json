@@ -107,6 +107,39 @@
     "duration": {"type": "permanent"}, "effects": {"hp_pct": 0.2}, "display": {"line": false}
   },
   {
+    "id": "character_edgar_truth_key_self",
+    "name": "埃德嘉·真理之匙",
+    "providers": [{"kind": "character", "id": "char_31c5130304"}],
+    "priority": 100,
+    "trigger": {
+      "event": "action_end",
+      "source": {"scope": "registrar", "action_ids": ["action_f63e1b71a3", "action_4a29818248"]}
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
+    "activation": {"personal_resource_gain": {"真理之匙": 1}},
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_edgar_a1_truth_key_team_support",
+    "name": "埃德嘉1觉·队友援护真理之匙",
+    "providers": [{"kind": "character", "id": "char_31c5130304"}],
+    "priority": 100,
+    "trigger": {
+      "event": "action_end",
+      "source": {"scope": "non_registrar", "action_types": ["援护"]},
+      "conditions": [{"type": "awakening_min", "min": 1}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
+    "activation": {"personal_resource_gain": {"真理之匙": 1}},
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
     "id": "character_iloy_a6_team_crit_dmg", "name": "伊洛伊满觉·全队暴伤",
     "providers": [{"kind": "character", "id": "char_a01c39f576"}], "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_count_min", "min": 6}]}, "target": {"scope": "team"},
@@ -120,6 +153,37 @@
     "duration": {"type": "time", "ticks": 9990, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "effects": {}
+  },
+  {
+    "id": "character_iloy_a1_imagination_gain",
+    "name": "伊洛伊1觉·臆想积攒效率",
+    "providers": [{"kind": "character", "id": "char_a01c39f576"}],
+    "priority": 20,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 1}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent"},
+    "effects": {"personal_resource_gain_pct_臆想": 0.25},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_iloy_a6_regressed_entry_resources",
+    "name": "伊洛伊6觉·退行切前台回复",
+    "providers": [{"kind": "character", "id": "char_a01c39f576"}],
+    "priority": 100,
+    "trigger": {
+      "event": "foreground_enter",
+      "source": {"scope": "registrar"},
+      "conditions": [
+        {"type": "awakening_min", "min": 6},
+        {"type": "active_buff_key", "key": "character_iloy_regressed_teammates"}
+      ]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
+    "activation": {"energy_gain": 50, "harmony_gain": 50},
+    "effects": {},
+    "display": {"line": false}
   },
   {
     "id": "character_iloy_full_regressed_teammate_damage", "name": "伊洛伊满觉·退行队友增伤",
@@ -181,12 +245,13 @@
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 1},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "activation": {"duration_from_personal_resource": {"resource": "臆想", "per_second": 10}},
+    "activation": {"duration_from_personal_resource": {"resource": "臆想", "per_second": 10, "min_ticks": 16}},
     "resource_effects": {
       "ignore_cost": {"臆想": {"tags": ["蓄力", "重击"]}},
       "block_gain": {"臆想": true}
     },
-    "effects": {}
+    "effects": {},
+    "display": {"line": false}
   },
   {
     "id": "character_iloy_q_ivory_dream", "name": "伊洛伊·象牙门梦境",
@@ -218,6 +283,23 @@
     "effects": {"atk_pct": 0.02}, "display": {"line": false}
   },
   {
+    "id": "character_nanali_a1_pursuit_energy",
+    "name": "娜娜莉1觉·追加攻击回能",
+    "providers": [{"kind": "character", "id": "char_bdc43f82c6"}],
+    "priority": 20,
+    "trigger": {
+      "event": "action_end",
+      "source": {"scope": "registrar", "tags": ["追击"]},
+      "conditions": [{"type": "awakening_min", "min": 1}],
+      "cooldown_ticks": 10
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1, "loop_carry": false},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
+    "activation": {"energy_gain": 2.5},
+    "effects": {}
+  },
+  {
     "id": "character_nanali_offhand_damage", "name": "娜娜莉4觉·副手强化",
     "providers": [{"kind": "character", "id": "char_bdc43f82c6"}], "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 4}]},
@@ -240,6 +322,17 @@
     "duration": {"type": "time", "ticks": 120, "ticks_by_awakening_node": {"6": 150}, "delay_ticks": 4, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "reset": {"owner_leaves_foreground_after_start": true},
+    "effects": {}
+  },
+  {
+    "id": "character_nanali_offhand",
+    "name": "娜娜莉·副手",
+    "providers": [{"kind": "character", "id": "char_bdc43f82c6"}],
+    "priority": 100,
+    "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 60, "ticks_by_awakening_node": {"2": 90}, "loop_carry": true},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
     "effects": {}
   },
   {
@@ -274,6 +367,24 @@
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 6}]},
     "target": {"scope": "registrar", "conditions": [{"type": "enemy_hp_below", "threshold": 0.4}]},
     "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.15}, "display": {"line": false}
+  },
+  {
+    "id": "character_mint_a1_counter_reset_e",
+    "name": "薄荷1觉·闪反重置变轨冷却",
+    "providers": [{"kind": "character", "id": "char_dda9fae1ef"}],
+    "priority": 100,
+    "trigger": {
+      "event": "action_hit",
+      "source": {"scope": "registrar", "action_ids": ["action_cc06c5dd84"]},
+      "conditions": [{"type": "awakening_min", "min": 1}],
+      "cooldown_ticks": 30
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
+    "activation": {"reset_action_cooldowns": ["action_6b96f24d8c"]},
+    "effects": {},
+    "display": {"line": false}
   },
   {
     "id": "character_baizang_atk", "name": "白藏·攻击提升",
@@ -341,7 +452,18 @@
     "id": "character_daphne_stagger", "name": "达芙蒂尔·倾陷伤害提升",
     "providers": [{"kind": "character", "id": "char_e8ad982185"}], "priority": 20,
     "trigger": {"event": "passive"}, "target": {"scope": "registrar"},
-    "duration": {"type": "permanent"}, "effects": {"stagger_strength": 60}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"stagger_damage_bonus": 0.2}, "display": {"line": false}
+  },
+  {
+    "id": "character_daphne_a4_insight_stagger",
+    "name": "达芙蒂尔4觉·洞察倾陷伤害",
+    "providers": [{"kind": "character", "id": "char_e8ad982185"}],
+    "priority": 20,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 4}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent"},
+    "effects": {"stagger_strength": 45},
+    "display": {"line": false}
   },
   {
     "id": "character_daphne_shift_damage", "name": "达芙蒂尔·幻影移行强化",
@@ -1392,6 +1514,29 @@
     "effects": {}
   },
   {
+    "id": "character_haiyue_a2_huacai_extend",
+    "name": "海月2觉·闪反或援护进入华彩",
+    "providers": [{"kind": "character", "id": "char_699966e2e7"}],
+    "priority": 100,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": ["action_4c11b71469", "action_ec98ddd32d", "action_592e2c7563"]
+      },
+      "conditions": [{"type": "awakening_min", "min": 2}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 50, "loop_carry": true},
+    "stacking": {
+      "key": "character_haiyue_huacai",
+      "mode": "extend_duration",
+      "max_stacks": 1,
+      "max_duration_ticks": 120
+    },
+    "effects": {}
+  },
+  {
     "id": "character_haiyue_a1_huacai_crit",
     "name": "海月1觉·华彩暴击",
     "providers": [{"kind": "character", "id": "char_699966e2e7"}],
@@ -1588,6 +1733,40 @@
     "target": {"scope": "registrar"},
     "duration": {"type": "permanent"},
     "stacking": {"mode": "add_stack", "max_stacks": 6, "stack_gain": 2},
+    "activation": {"personal_resource_gain": {"闪送之力": 2}, "energy_gain": 10},
+    "effects": {"all_dmg": 0.01}
+  },
+  {
+    "id": "character_hathor_a1_first_long_e_flash_force",
+    "name": "哈索尔1觉·首次长按变轨闪送之力",
+    "providers": [{"kind": "character", "id": "char_912dbfe17c"}],
+    "priority": 100,
+    "trigger": {
+      "event": "action_start",
+      "source": {"scope": "registrar", "action_ids": ["action_e3ab099393", "action_6b6bace5c8"]},
+      "conditions": [{"type": "awakening_min", "min": 1}, {"type": "non_loop_axis"}],
+      "cooldown_ticks": 1000000
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent"},
+    "stacking": {"key": "character_hathor_flash_force", "mode": "add_stack", "max_stacks": 6, "stack_gain": 6},
+    "activation": {"personal_resource_set_to_cap": ["闪送之力"], "energy_gain": 30},
+    "effects": {"all_dmg": 0.01}
+  },
+  {
+    "id": "character_hathor_a2_good_review_flash_force",
+    "name": "哈索尔2觉·优评锁定闪送之力",
+    "providers": [{"kind": "character", "id": "char_912dbfe17c"}],
+    "priority": 100,
+    "trigger": {
+      "event": "action_start",
+      "source": {"scope": "registrar", "action_ids": ["action_hathor_a2_good_review"]},
+      "conditions": [{"type": "awakening_min", "min": 2}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent"},
+    "stacking": {"key": "character_hathor_flash_force", "mode": "add_stack", "max_stacks": 6, "stack_gain": 1},
+    "activation": {"personal_resource_gain": {"闪送之力": 1}, "energy_gain": 5},
     "effects": {"all_dmg": 0.01}
   },
   {
@@ -1628,6 +1807,38 @@
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "effects": {"def_ignore": 0.2},
     "display": {"line": false}
+  },
+  {
+    "id": "character_chaos_a1_license_resource_gain",
+    "name": "卡厄斯1觉·追缉许可罪状获取",
+    "providers": [{"kind": "character", "id": "char_d38b672525"}],
+    "priority": 20,
+    "trigger": {
+      "event": "action_hit",
+      "source": {"scope": "registrar", "action_types": ["E", "Q"]},
+      "conditions": [{"type": "awakening_min", "min": 1}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 150, "loop_carry": true},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
+    "effects": {"personal_resource_gain_pct_罪状": 0.4},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_chaos_a6_refill_sin",
+    "name": "卡厄斯6觉·罪状补满",
+    "providers": [{"kind": "character", "id": "char_d38b672525"}],
+    "priority": 20,
+    "trigger": {
+      "event": "action_start",
+      "source": {"scope": "registrar", "action_types": ["Q"]},
+      "conditions": [{"type": "awakening_min", "min": 6}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1, "loop_carry": false},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
+    "activation": {"personal_resource_set_to_cap": ["罪状"]},
+    "effects": {}
   },
   {
     "id": "character_chaos_a5_license_damage",
@@ -1808,6 +2019,8 @@
       "source": "噩梦",
       "action_type": "普攻",
       "damage_type": "普攻",
+      "extra_tag": "DOT",
+      "layer_resource": "噩梦",
       "interval_ticks": 10,
       "shared_cadence": true,
       "atk_multiplier": 0.06,
@@ -1910,22 +2123,6 @@
     },
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 250, "delay_ticks": 50, "loop_carry": true},
-    "stacking": {"key": "character_jiuyuan_rose_settle", "mode": "refresh", "max_stacks": 1},
-    "effects": {}
-  },
-  {
-    "id": "character_jiuyuan_genesis_refresh_settle_window",
-    "name": "九原·致命玫约可清算",
-    "providers": [{"kind": "character", "id": "char_b2e3b2bf7a"}],
-    "priority": 104,
-    "trigger": {
-      "event": "action_hit",
-      "periodic_damage": true,
-      "source": {"scope": "team", "action_names": ["创生", "创生复制体"]},
-      "conditions": [{"type": "active_buff_key", "key": "character_jiuyuan_rose_settle"}]
-    },
-    "target": {"scope": "registrar"},
-    "duration": {"type": "time", "ticks": 250, "loop_carry": true},
     "stacking": {"key": "character_jiuyuan_rose_settle", "mode": "refresh", "max_stacks": 1},
     "effects": {}
   },
@@ -2095,9 +2292,7 @@
     "dynamic_effects": {
       "negative_effect_count": {
         "requires_enemy_debuffs": ["浊燃"],
-        "enemy_debuffs": ["浊燃"],
-        "buff_keys": ["character_requiem_nightmare"],
-        "periodic_action_ids": ["action_10c15dd4d1", "action_881b816d9f"],
+        "damage_tags": ["DOT"],
         "effect_key": "final_dmg",
         "per_count": 0.25,
         "max_count": 4
@@ -2116,9 +2311,7 @@
     "duration": {"type": "permanent"},
     "dynamic_effects": {
       "negative_effect_count": {
-        "enemy_debuffs": ["浊燃"],
-        "buff_keys": ["character_requiem_nightmare"],
-        "periodic_action_ids": ["action_10c15dd4d1", "action_881b816d9f"],
+        "damage_tags": ["DOT"],
         "effect_key": "all_dmg",
         "per_count": 0.03,
         "max_count": 4
@@ -2194,5 +2387,420 @@
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "dynamic_effects": {"elapsed_ticks": {"effect_key": "attach_dmg", "interval_ticks": 10, "per_interval": 0.02, "max_value": 0.4}},
     "effects": {}
+  },
+  {
+    "id": "character_canhong_harmony_strength",
+    "name": "残红·余焰未熄",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 20,
+    "trigger": {"event": "passive"},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent"},
+    "effects": {"harmony_strength": 100},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_three_node_resonance_ultimate_multiplier",
+    "name": "残红·三觉共鸣终结倍率强化",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 20,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_count_min", "min": 3}]},
+    "target": {"scope": "registrar", "action_ids": ["action_canhong_q", "action_canhong_q_enhanced", "action_canhong_q_blood_banquet"]},
+    "duration": {"type": "permanent"},
+    "effects": {"base_multiplier_pct": 0.2},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_six_node_resonance_attack",
+    "name": "残红·六觉共鸣攻击强化",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 110,
+    "trigger": {
+      "event": "action_hit",
+      "periodic_damage": true,
+      "source": {"scope": "registrar"},
+      "conditions": [{"type": "awakening_count_min", "min": 6}, {"type": "hit_count_positive"}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 200, "loop_carry": true},
+    "stacking": {"key": "character_canhong_six_node_resonance_attack", "mode": "refresh", "max_stacks": 1},
+    "effects": {"atk_pct": 0.4},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_canhong_hunt",
+    "name": "残红·狩",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 20,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_max", "max": 0}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent"},
+    "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
+    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
+    "effects": {"all_dmg": 0.25},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_hunt_illusion_delay",
+    "name": "残红·狩（进入幻境延迟清除）",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 21,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 80, "loop_carry": true},
+    "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
+    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
+    "effects": {"all_dmg": 0.25},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_canhong_hunt_reality_restore",
+    "name": "残红·狩（返回现实）",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 22,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2", "action_canhong_q_blood_banquet"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent"},
+    "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
+    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
+    "effects": {"all_dmg": 0.25},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_hunt_natural_restore",
+    "name": "残红·狩（幻境自然结束）",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 23,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent", "delay_ticks": 80},
+    "stacking": {"key": "character_canhong_hunt_natural_restore", "mode": "refresh", "max_stacks": 1},
+    "reset": {"action_ids": ["action_canhong_e1", "action_canhong_E1"]},
+    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
+    "effects": {"all_dmg": 0.25},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_a1_hunt",
+    "name": "残红1觉·永久狩",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 20,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 1}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent"},
+    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
+    "effects": {"all_dmg": 0.6},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_delusion",
+    "name": "残红·惑（全队DOT暴伤）",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 20,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
+    "target": {"scope": "team", "tags": ["DOT"]},
+    "duration": {"type": "time", "ticks": 160, "loop_carry": true},
+    "stacking": {"key": "character_canhong_delusion", "mode": "refresh", "max_stacks": 1},
+    "effects": {"crit_dmg": 0.25},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_canhong_delusion_exit_delay",
+    "name": "残红·惑（全队DOT暴伤，离开幻境延迟清除）",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 21,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2", "action_canhong_q_blood_banquet"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
+    "target": {"scope": "team", "tags": ["DOT"]},
+    "duration": {"type": "time", "ticks": 80, "loop_carry": true},
+    "stacking": {"key": "character_canhong_delusion", "mode": "refresh", "max_stacks": 1},
+    "effects": {"crit_dmg": 0.25},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_canhong_a1_delusion",
+    "name": "残红1觉·永久惑（全队DOT暴伤）",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 20,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 1}]},
+    "target": {"scope": "team", "tags": ["DOT"]},
+    "duration": {"type": "permanent"},
+    "effects": {"crit_dmg": 0.5},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_c_hunt_interrupt_resistance",
+    "name": "残红C觉·狩抗打断强化",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 21,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 3}]},
+    "target": {
+      "scope": "registrar",
+      "conditions": [{"type": "active_buff_any", "keys": ["character_canhong_hunt", "character_canhong_hunt_natural_restore", "character_canhong_a1_hunt"]}]
+    },
+    "duration": {"type": "permanent"},
+    "effects": {"interrupt_resistance": 0.5},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_c_delusion_regeneration",
+    "name": "残红C觉·惑生命回复",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 22,
+    "trigger": {
+      "event": "action_hit",
+      "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]},
+      "conditions": [{"type": "awakening_min", "min": 3}, {"type": "awakening_max", "max": 0}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 160, "loop_carry": true},
+    "stacking": {"key": "character_canhong_c_delusion_regeneration", "mode": "refresh", "max_stacks": 1},
+    "periodic_heal": {"source": "惑", "interval_ticks": 10, "max_hp_ratio": 0.04},
+    "effects": {},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_canhong_c_delusion_regeneration_exit_delay",
+    "name": "残红C觉·惑生命回复（离开幻境延迟清除）",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 23,
+    "trigger": {
+      "event": "action_hit",
+      "source": {"scope": "registrar", "action_ids": ["action_canhong_E2", "action_canhong_q_blood_banquet"]},
+      "conditions": [{"type": "awakening_min", "min": 3}, {"type": "awakening_max", "max": 0}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 80, "loop_carry": true},
+    "stacking": {"key": "character_canhong_c_delusion_regeneration", "mode": "refresh", "max_stacks": 1},
+    "periodic_heal": {"source": "惑", "interval_ticks": 10, "max_hp_ratio": 0.04},
+    "effects": {},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_canhong_ac_delusion_regeneration_permanent",
+    "name": "残红A+C觉·永久惑生命回复",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 20,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 1}, {"type": "awakening_min", "min": 3}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent"},
+    "periodic_heal": {"source": "惑", "interval_ticks": 10, "max_hp_ratio": 0.04},
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_corrosion_heart",
+    "name": "残红·蚀心",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 100,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_illusion_a1", "action_canhong_illusion_a2", "action_canhong_illusion_a3", "action_canhong_illusion_a4"]}},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 300, "loop_carry": true},
+    "stacking": {"key": "character_canhong_corrosion_heart", "mode": "independent", "max_stacks": 10, "stack_gain": 1},
+    "periodic_damage": {"source": "蚀心", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "DOT", "interval_ticks": 10, "shared_cadence": true, "atk_multiplier": 0.015},
+    "effects": {}
+  },
+  {
+    "id": "character_canhong_illusion_dot_spread",
+    "name": "残红·魔舞（全部持续伤害加层）",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 101,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_illusion_a1", "action_canhong_illusion_a2", "action_canhong_illusion_a3", "action_canhong_illusion_a4", "action_canhong_illusion_z1"]}},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "independent", "max_stacks": 1},
+    "activation": {"increase_all_active_dot_layers": true},
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_a_dot_spread",
+    "name": "残红A觉·持续伤害扩散",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 103,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_canhong_a1", "action_canhong_a2", "action_canhong_a3", "action_canhong_a4", "action_canhong_a5",
+          "action_canhong_z1", "action_canhong_dodge_counter", "action_canhong_E1", "action_canhong_E2"
+        ]
+      },
+      "conditions": [{"type": "awakening_min", "min": 1}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "independent", "max_stacks": 1},
+    "activation": {"increase_all_active_dot_layers": true},
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_corrosion_heart_five",
+    "name": "残红·蚀心（5层）",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 101,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E1", "action_canhong_E2"]}},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 300, "loop_carry": true},
+    "stacking": {"key": "character_canhong_corrosion_heart", "mode": "independent", "max_stacks": 10, "stack_gain": 5},
+    "periodic_damage": {"source": "蚀心", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "DOT", "interval_ticks": 10, "shared_cadence": true, "atk_multiplier": 0.015},
+    "effects": {}
+  },
+  {
+    "id": "character_canhong_poison_fire_five",
+    "name": "残红·鸩火",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 102,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]}},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 300, "loop_carry": true},
+    "stacking": {"key": "character_canhong_poison_fire", "mode": "independent", "max_stacks": 10, "stack_gain": 5},
+    "periodic_damage": {"source": "鸩火", "action_type": "Q", "damage_type": "Q", "extra_tag": "DOT", "interval_ticks": 10, "shared_cadence": true, "atk_multiplier": 0.015},
+    "effects": {}
+  },
+  {
+    "id": "character_canhong_a5_team_stagger_damage",
+    "name": "残红5觉·倾陷伤害强化",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 20,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 5}]},
+    "target": {"scope": "team"},
+    "duration": {"type": "permanent"},
+    "effects": {"stagger_damage_bonus": 3},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_b_blaze_stack",
+    "name": "残红B觉·蓄焰",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 110,
+    "trigger": {
+      "event": "reaction_trigger",
+      "source": {"scope": "team"},
+      "conditions": [
+        {"type": "awakening_min", "min": 2},
+        {"type": "reaction_owner_involved"},
+        {"type": "reaction_type", "reactions": ["浊燃", "覆纹"]}
+      ]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 9990, "loop_carry": true},
+    "stacking": {"key": "character_canhong_b_blaze_stack", "mode": "add_stack", "max_stacks": 2},
+    "effects": {},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_canhong_b_blaze_fentian_damage",
+    "name": "残红B觉·蓄焰强化焚天",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 120,
+    "trigger": {
+      "event": "action_start",
+      "source": {"scope": "registrar", "action_ids": ["action_canhong_q", "action_canhong_q_enhanced"]},
+      "conditions": [{"type": "awakening_min", "min": 2}, {"type": "active_buff_key", "key": "character_canhong_b_blaze_stack"}]
+    },
+    "target": {"scope": "registrar", "action_ids": ["action_canhong_q", "action_canhong_q_enhanced"]},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
+    "activation": {
+      "clear_keys": ["character_canhong_b_blaze_stack"],
+      "effects_from_stack": {
+        "key": "character_canhong_b_blaze_stack",
+        "per_stack_from_effect": {"final_dmg": {"source": "blaze_final_dmg", "factor": 1}}
+      }
+    },
+    "effects": {"blaze_final_dmg": 1},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_d_blaze_blood_banquet_damage",
+    "name": "残红D觉·蓄焰强化血宴",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 120,
+    "trigger": {
+      "event": "action_start",
+      "source": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]},
+      "conditions": [{"type": "awakening_min", "min": 4}, {"type": "active_buff_key", "key": "character_canhong_b_blaze_stack"}]
+    },
+    "target": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
+    "activation": {
+      "effects_from_stack": {
+        "key": "character_canhong_b_blaze_stack",
+        "per_stack_from_effect": {"final_dmg": {"source": "blaze_final_dmg", "factor": 1}}
+      }
+    },
+    "effects": {"blaze_final_dmg": 1},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_blood_banquet_active",
+    "name": "残红·血宴已激活",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 115,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2"]}},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 9990, "loop_carry": true},
+    "stacking": {"key": "character_canhong_blood_banquet_active", "mode": "refresh", "max_stacks": 1},
+    "effects": {},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_canhong_blood_banquet_consume_activation",
+    "name": "残红·释放血宴",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 130,
+    "trigger": {"event": "action_end", "source": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]}},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "refresh", "max_stacks": 1},
+    "activation": {"clear_keys": ["character_canhong_blood_banquet_active"]},
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_canhong_enhanced_fentian_window",
+    "name": "残红·强化焚天可释放",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 125,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]}},
+    "target": {"scope": "registrar", "action_ids": ["action_canhong_q_enhanced"]},
+    "duration": {"type": "time", "ticks": 50, "loop_carry": false},
+    "stacking": {"key": "character_canhong_enhanced_fentian_window", "mode": "refresh", "max_stacks": 1},
+    "consume_on_apply": true,
+    "effects": {},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_canhong_f_annihilation_dot_layers",
+    "name": "残红F觉·灭层蚀强化",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 20,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 6}]},
+    "target": {"scope": "registrar", "action_ids": ["action_canhong_E2"]},
+    "duration": {"type": "permanent"},
+    "dynamic_effects": {
+      "active_dot_layer_count": {
+        "effect_key": "base_multiplier_pct",
+        "per_count": 0.12,
+        "max_count": 20,
+        "action_last_hit_ratio": true
+      }
+    },
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
+    "id": "arc_canhong_devouring_heart_crit_damage",
+    "name": "噬心诡刃·咒伤暴伤",
+    "providers": [{"kind": "arc", "id": "arc_canhong_devouring_heart"}],
+    "priority": 100,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "elements": ["咒"]}, "cooldown_ticks": 3},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 150, "loop_carry": true},
+    "stacking": {"key": "arc_canhong_devouring_heart_crit_damage", "mode": "add_stack", "max_stacks": 7},
+    "effects": {"crit_dmg": 0.09}
   }
 ]

@@ -57,6 +57,9 @@ class NTEShaftCharacterPublication(NTEBaseModel):
 
 
 DEFAULT_UNPUBLISHED_CHARACTERS = {
+    '残红': 'char_076a1f4e53',
+}
+RELEASED_CHARACTERS = {
     '伊洛伊': 'char_a01c39f576',
 }
 
@@ -73,6 +76,21 @@ def ensure_nte_tables():
                 'is_published': False,
             },
         )
+    for character_name, character_id in RELEASED_CHARACTERS.items():
+        publication, _ = NTEShaftCharacterPublication.get_or_create(
+            character_id=character_id,
+            defaults={
+                'character_name': character_name,
+                'is_published': True,
+            },
+        )
+        if not publication.is_published:
+            publication.is_published = True
+            publication.updated_at = datetime.utcnow()
+            publication.save(only=[
+                NTEShaftCharacterPublication.is_published,
+                NTEShaftCharacterPublication.updated_at,
+            ])
 
 
 def normalize_nickname(nickname: str):

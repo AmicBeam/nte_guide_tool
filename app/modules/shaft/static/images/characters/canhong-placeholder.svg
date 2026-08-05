@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">残红占位头像</title>
+  <desc id="desc">等待正式角色资源替换的排轴模块占位图</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4b1724"/>
+      <stop offset="1" stop-color="#be405e"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="44" fill="url(#bg)"/>
+  <circle cx="128" cy="105" r="50" fill="#f5d7dc" opacity=".92"/>
+  <path d="M45 236c8-48 38-76 83-76s75 28 83 76" fill="#f5d7dc" opacity=".92"/>
+  <text x="128" y="226" text-anchor="middle" font-family="sans-serif" font-size="36" font-weight="700" fill="#65192b">残红</text>
+  <path d="M195 30l8 17 18 3-13 13 3 19-16-9-17 9 4-19-14-13 19-3z" fill="#ffd0db" opacity=".88"/>
+</svg>

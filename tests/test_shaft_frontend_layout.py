@@ -30,11 +30,11 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertNotIn('id="shaft-run-btn"', template)
         self.assertNotIn("$('shaft-run-btn')", source)
 
-    def test_shaft_source_version_is_1_0_1(self) -> None:
+    def test_shaft_source_version_is_1_0_2(self) -> None:
         catalog = get_shaft_catalog_payload()
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
 
-        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.0.1')
+        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.0.2')
         self.assertIn('{% block title %}异环云配队——排轴计算{% endblock %}', template)
         self.assertIn('<h1>异环云配队——排轴计算</h1>', template)
 
@@ -42,9 +42,15 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         catalog = get_shaft_catalog_payload()
         source = SHAFT_JS.read_text(encoding='utf-8')
 
-        self.assertFalse(catalog['awakenings']['浔'][2]['implemented'])
-        self.assertFalse(catalog['awakenings']['埃德嘉'][0]['implemented'])
+        self.assertNotIn('implemented', catalog['awakenings']['浔'][2])
+        self.assertNotIn('implemented', catalog['awakenings']['埃德嘉'][0])
+        self.assertEqual(
+            catalog['awakenings']['浔'][3]['implementation_status'],
+            'out_of_scope',
+        )
         self.assertNotIn('implemented', catalog['awakenings']['浔'][0])
+        self.assertIn("entry.implementation_status === 'out_of_scope'", source)
+        self.assertIn("? '（不实装）'", source)
         self.assertIn("entry.implemented === false ? '（未实装）' : ''", source)
         self.assertIn("`${entry.title || '未命名'}${implementationLabel}", source)
 
@@ -65,6 +71,7 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         source = SHAFT_JS.read_text(encoding='utf-8')
 
         self.assertIn("char_a01c39f576: ['臆想']", source)
+        self.assertIn("char_31c5130304: ['真理之匙']", source)
         self.assertIn("new Set(['噩梦'])", source)
         self.assertIn(
             'timelinePersonalResourceEntries(character, resources.personalResources)',
@@ -88,10 +95,14 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertIn('id="shaft-loop-resource-list"', template)
         self.assertIn('data-loop-initial-energy', source)
         self.assertIn('data-loop-initial-harmony', source)
+        self.assertIn('data-loop-initial-reaction', source)
+        self.assertIn("'<option value=\"\">不携带</option>'", source)
+        self.assertIn('.filter((option) => option && Number(option.duration_ticks) > 0)', source)
         self.assertIn('data-loop-initial-personal-resource', source)
         self.assertIn('function loopPersonalResourceDefinitions(member)', source)
         self.assertIn("'personal_resource_cost', 'personal_resource_gain', 'personal_resource_threshold'", source)
         self.assertIn('personal_resources: personalResources,', source)
+        self.assertIn('reaction,', source)
         self.assertIn('function confirmLoopSettings()', source)
         self.assertNotIn("$('shaft-loop-enabled').addEventListener('change', (event) => {", source)
 
@@ -408,19 +419,106 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             source,
         )
 
-    def test_yiloyi_is_only_available_to_shaft_test_accounts(self) -> None:
+    def test_canhong_is_only_available_to_shaft_test_accounts_and_yiloyi_is_public(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         public_catalog = get_shaft_catalog_payload()
         test_catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
+        public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残红')
+        test_canhong = next(character for character in test_catalog['characters'] if character['name'] == '残红')
         public_yiloyi = next(character for character in public_catalog['characters'] if character['name'] == '伊洛伊')
-        test_yiloyi = next(character for character in test_catalog['characters'] if character['name'] == '伊洛伊')
 
-        self.assertTrue(public_yiloyi['selection_disabled'])
-        self.assertFalse(test_yiloyi['selection_disabled'])
+        self.assertTrue(public_canhong['selection_disabled'])
+        self.assertFalse(test_canhong['selection_disabled'])
+        self.assertFalse(public_yiloyi['selection_disabled'])
         self.assertIn("record.selection_disabled ? 'disabled' : ''", source)
         self.assertIn(".filter((character) => !character.selection_disabled)", source)
         self.assertIn('const disabledCharacterIds = new Set(', source)
         self.assertIn('state.axis.steps = state.axis.steps.filter((step) => !restrictedSlots.has(Number(step.slot)));', source)
+
+    def test_canhong_uses_tencent_document_panel_and_actions(self) -> None:
+        catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
+        characters = {character['name']: character for character in catalog['characters']}
+        canhong = characters['残红']
+        protagonist = characters['主角']
+
+        self.assertTrue(canhong['test_character'])
+        self.assertNotIn('bond_bonus', canhong)
+        self.assertNotIn('bond_bonus', protagonist)
+        self.assertEqual(canhong['element'], '咒')
+        self.assertEqual(canhong['adaptation'], '气态')
+        self.assertEqual(canhong['base_stats'], {'atk': 660.0, 'hp': 15513.0, 'def': 909.0})
+        actions = {action['name']: action for action in catalog['actions_by_character'][canhong['id']]}
+        self.assertIn('a1', actions)
+        self.assertIn('e', actions)
+        self.assertIn('强化e', actions)
+        self.assertIn('幻e', actions)
+        self.assertNotIn('离魂错', actions)
+        self.assertIn('血宴', actions)
+        self.assertIn('z', actions)
+        self.assertIn('幻z', actions)
+        self.assertNotIn('绰影', actions)
+        self.assertNotIn('落月', actions)
+        self.assertIn('下落', actions)
+        self.assertIn('闪反', actions)
+        self.assertNotIn('折楼', actions)
+        self.assertNotIn('折楼（最高）', actions)
+        self.assertNotIn('虚徊', actions)
+        self.assertEqual(actions['幻e']['multipliers']['atk'], 4.498)
+        self.assertEqual(actions['幻e']['harmony'], 19)
+        self.assertEqual(actions['幻e']['stagger'], 6)
+        self.assertEqual(actions['血宴']['energy_cost'], 120)
+        self.assertEqual(actions['e']['duration_ticks'], 10)
+        self.assertEqual(actions['强化e']['duration_ticks'], 10)
+        self.assertEqual(actions['幻e']['duration_ticks'], 22)
+        self.assertEqual(
+            {actions[name]['cooldown_group'] for name in ('e', '强化e', '幻e')},
+            {'canhong_e'},
+        )
+        self.assertEqual(actions['幻a1']['duration_ticks'], 3)
+        self.assertEqual(actions['幻a4']['duration_ticks'], 11)
+        self.assertEqual(actions['焚天']['duration_ticks'], 0)
+        self.assertEqual(actions['强化焚天']['duration_ticks'], 0)
+        self.assertEqual(actions['血宴']['duration_ticks'], 0)
+        self.assertTrue(all(
+            action['duration_ticks'] > 0
+            for action in actions.values()
+            if action['action_type'] not in {'无', 'Q'}
+        ))
+        self.assertTrue(all(
+            action.get('is_background_damage') is not True
+            for action in actions.values()
+        ))
+        buff_ids = {buff['id'] for buff in catalog['buffs']}
+        self.assertIn('character_canhong_corrosion_heart', buff_ids)
+        self.assertIn('character_canhong_poison_fire_five', buff_ids)
+        self.assertIn('character_canhong_harmony_strength', buff_ids)
+        self.assertIn('character_canhong_a5_team_stagger_damage', buff_ids)
+        buffs = {buff['id']: buff for buff in catalog['buffs']}
+        self.assertEqual(buffs['character_canhong_delusion']['target']['tags'], ['DOT'])
+        self.assertEqual(buffs['character_canhong_delusion']['duration']['ticks'], 160)
+        self.assertEqual(buffs['character_canhong_delusion_exit_delay']['duration']['ticks'], 80)
+        self.assertEqual(buffs['character_canhong_a1_delusion']['target']['tags'], ['DOT'])
+        self.assertEqual(buffs['character_canhong_hunt']['target'], {'scope': 'registrar'})
+        self.assertEqual(buffs['character_canhong_hunt']['effects']['all_dmg'], 0.25)
+        self.assertEqual(buffs['character_canhong_hunt_illusion_delay']['duration']['ticks'], 80)
+        self.assertEqual(buffs['character_canhong_hunt_reality_restore']['duration']['type'], 'permanent')
+        self.assertEqual(buffs['character_canhong_hunt_natural_restore']['duration']['delay_ticks'], 80)
+        self.assertEqual(
+            buffs['character_canhong_hunt_natural_restore']['calculation']['team_unique_key'],
+            'character_canhong_hunt_effect',
+        )
+        self.assertTrue(
+            buffs['character_canhong_illusion_dot_spread']['activation']['increase_all_active_dot_layers']
+        )
+        canhong_arc = next(arc for arc in catalog['arcs'] if arc['name'] == '噬心诡刃')
+        self.assertEqual(catalog['arcs'][0]['id'], canhong_arc['id'])
+        self.assertEqual(canhong_arc['adaptation'], '气态')
+        self.assertEqual(canhong_arc['base_atk'], 570)
+        self.assertEqual(catalog['arc_refinements']['arcs'][canhong_arc['id']]['levels']['5']['panel_modifiers']['crit_rate'], 0.56)
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        self.assertIn('function characterHasBondBonus(characterId)', source)
+        self.assertIn("const bondLabel = hasBondBonus ? character.bond_bonus.label : '无羁绊加成';", source)
+        self.assertIn("${hasBondBonus ? '' : 'disabled'}", source)
 
     def test_yiloyi_bond_bonus_is_five_percent_attack(self) -> None:
         catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
@@ -527,14 +625,16 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('<div><span>直伤</span><strong>${formatNumber(workbenchDirectDamage)}</strong></div>', source)
         self.assertIn('<div><span>环合</span><strong>${formatNumber(summary.harmony_damage || 0)}</strong></div>', source)
         self.assertIn('<div><span>倾陷</span><strong>${formatNumber(summary.stagger_damage || 0)}</strong></div>', source)
-        self.assertIn("const HARMONY_DAMAGE_SOURCES = ['创生', '创生复制体', '浊燃', '黯星'];", engine)
-        self.assertIn("const SPECIAL_DAMAGE_SOURCES = ['创生', '创生复制体', '浊燃', '黯星'];", engine)
+        self.assertIn("const HARMONY_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];", engine)
+        self.assertIn("const SPECIAL_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];", engine)
         self.assertIn("{ source: '创生', members: ['创生', '创生复制体'] }", engine)
+        self.assertIn("{ source: '覆纹', members: ['覆纹'] }", engine)
         self.assertNotIn("const SPECIAL_DAMAGE_SOURCES = ['创生', '浊燃', '黯星', '噩梦'];", engine)
         self.assertIn("return SPECIAL_DAMAGE_SOURCES.includes(explicitSource) ? explicitSource : '';", engine)
         self.assertNotIn("actionName.includes(source)", engine)
         self.assertIn("{ source: '倾陷', damage: staggerDamage }", engine)
         self.assertIn('const sourceBars = (result?.damage_by_source || []).map', source)
+        self.assertIn('<span>覆纹伤害</span><strong>${formatNumber(detail.fuwen_damage)}</strong>', source)
 
         catalog = load_shaft_catalog()
         dark_star_action = next(action for action in catalog['actions'] if action.get('name') == '黯星扣血')
@@ -671,7 +771,12 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('data-analysis-dimension="type"', source)
         self.assertIn('data-analysis-view="bars"', source)
         self.assertIn('shaft-action-contribution-segment', source)
+        self.assertIn("const additionalTags = new Set(['追击', '附着']);", source)
+        self.assertIn("additionalTags.has(damageType)", source)
+        self.assertIn("? (actionType || '其他')", source)
         self.assertIn('damage_type: detail.damage_type', SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
+        self.assertIn("if (tags.has('追击')) total += panelMods.follow_dmg;", SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
+        self.assertIn("if (tags.has('附着')) total += panelMods.attach_dmg;", SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
         self.assertIn('damage_by_action_by_slot: clone(result.damage_by_action_by_slot || [])', source)
         self.assertIn('function mergeActionAnalysisComparison(', source)
         self.assertIn("'被动': '#ff5aa5'", source)
@@ -755,7 +860,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('function renderStaggerAnalysis()', source)
         self.assertIn('不计入角色自身伤害占比或动作贡献', source)
         self.assertIn('result.stagger_contributions_by_slot', source)
-        self.assertIn('平均倾陷强度', source)
+        self.assertIn('平均倾陷增伤', source)
+        self.assertIn('item.average_stagger_damage_bonus', source)
         self.assertIn('.shaft-stagger-contribution-list', css)
 
     def test_build_page_has_separate_harmony_contribution_dialog(self) -> None:
@@ -930,6 +1036,9 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertLess(selection_body.index(confirmation), selection_body.index('rememberMemberBuild(member);'))
         self.assertLess(selection_body.index(confirmation), selection_body.index('member.character_id = characterId;'))
         self.assertLess(selection_body.index(confirmation), selection_body.index('removeInvalidStepsForSlot(member.slot);'))
+        self.assertIn('!state.characterSwitchUnsavedConfirmed', selection_body)
+        self.assertIn('state.characterSwitchUnsavedConfirmed = true;', selection_body)
+        self.assertIn('state.characterSwitchUnsavedConfirmed = false;', source)
 
     def test_history_paste_and_delete_reveal_the_affected_timeline_position(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -950,6 +1059,26 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         paste_end = source.index('function addBuffRule()', paste_start)
         paste_body = source[paste_start:paste_end]
         self.assertIn('revealTimelineTick(state.cursorTick);', paste_body)
+        self.assertIn('const clipboardSpanTicks = Math.max(1,', paste_body)
+        self.assertIn('step.start_tick = Number(step.start_tick || 0) + clipboardSpanTicks;', paste_body)
+        self.assertIn('normalizeEditedSteps(new Set(newIds));', paste_body)
+
+        self.assertIn('function compactSpaceReleasedByDeletion(', source)
+        self.assertIn('beforeDeleteResult?.time_axis?.frozen_intervals', remove_body)
+        self.assertIn('compactSpaceReleasedByDeletion(', remove_body)
+        self.assertIn('oldEnd > newEnd', source)
+        self.assertIn('originalTick - releasedBeforeStep', source)
+
+    def test_batch_drag_preserves_each_selected_action_placement(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+
+        drag_start = source.index('function updateTimelineDrag(event)')
+        drag_end = source.index('function updateTimelineInteraction', drag_start)
+        drag_body = source[drag_start:drag_end]
+        self.assertIn('const canChangePlacement = dragStepIds.size === 1;', drag_body)
+        self.assertIn('const placementChanged = canChangePlacement && dragPlacementWouldChange', drag_body)
+        self.assertIn('if (canChangePlacement) {', drag_body)
+        self.assertIn('applyDraggedPlacement(item, drag, deltaY);', drag_body)
 
     def test_native_background_action_multiplier_uses_confirmation_dialog_and_is_visible_on_bar(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1027,14 +1156,20 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("return event.events.map((item) => damageMarkerTooltip(item)).join('\\n');", source)
         self.assertIn('class="shaft-reaction-damage-marker ${isPeriodicDamage ?', source)
         self.assertIn('function damageMarkerTooltip(event) {', source)
-        self.assertIn("addZone('九原频率乘区', formula.frequency_multiplier);", source)
+        self.assertIn("addZone('基础区', isPeriodicDamage ? formula.unscaled_base : formula.base);", source)
+        self.assertNotIn("['噩梦', '蚀心'].includes", source)
+        self.assertNotIn('攻击力（基础区）', source)
+        self.assertIn("addZone('频率乘区', formula.frequency_multiplier);", source)
+        self.assertNotIn("addZone('九原频率乘区', formula.frequency_multiplier);", source)
         self.assertNotIn('const frequencyText = Number(effect.frequency_multiplier || 1) > 1', source)
         self.assertIn('tooltip: `${effect.reaction} · ${ticksToSeconds(effect.duration_ticks || 1)}s`', source)
         self.assertNotIn("addZone('技能等级', formula.skill_multiplier);", source)
         self.assertIn("addZone('最终倍率区', formula.final_multiplier);", source)
         self.assertEqual(source.count("addZone('最终倍率区', formula.final_multiplier);"), 2)
         self.assertIn("if (String(event?.reaction || '') !== '黯星') addZone('防御', formula.defense);", source)
-        self.assertIn("if (String(event?.reaction || '') === '浊燃') addZone('暴击', formula.critical);", source)
+        self.assertIn("addZone('双暴区', formula.critical);", source)
+        self.assertEqual(source.count("addZone('双暴区', formula.critical);"), 2)
+        self.assertIn("if (String(event?.reaction || '') === '浊燃') addZone('双暴区', formula.critical);", source)
         self.assertIn('data-tooltip="${escapeHtml(tooltip)}"', source)
         self.assertIn('tabindex="0"', source)
         self.assertIn('function positionDamageMarkerTooltip(event) {', source)
@@ -1114,13 +1249,27 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         source = SHAFT_JS.read_text(encoding='utf-8')
 
         self.assertIn(
-            '.map((buff) => `${buff.id}:${buff.name}:${buffStackKey(buff.stackCount)}`)',
+            '.map((buff) => `${buff.id}:${buff.name}`)',
             source,
         )
         self.assertNotIn(
             '.map((buff) => `${buff.id}:${buff.name}:${buffStackKey(buff.stackCount)}:${Number(buff.endTick || 0)}`)',
             source,
         )
+
+    def test_buff_line_merges_stack_only_changes_in_loop_and_non_loop_axes(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+
+        self.assertIn('.map((buff) => `${buff.id}:${buff.name}`)', source)
+        self.assertNotIn(
+            '.map((buff) => `${buff.id}:${buff.name}:${buffStackKey(buff.stackCount)}`)',
+            source,
+        )
+        self.assertIn('previous.tooltipItems.push(...tooltipItems);', source)
+        self.assertIn('visualStartTick: startTick,', source)
+        self.assertIn('visualEndTick: endTick,', source)
+        self.assertIn('Number(item.visualStartTick) <= pointerVisualTick', source)
+        self.assertIn('pointerVisualTick < Number(item.visualEndTick)', source)
 
     def test_buff_lines_follow_buff_owner_and_hide_very_long_durations(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1501,7 +1650,12 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('id="shaft-save-as-btn"', template)
         self.assertIn('function canSaveAxisAs() {', source)
         self.assertIn('currentTitle !== normalizedAxisTitle(state.savedAxisTitle)', source)
+        self.assertIn('saveAsButton.disabled = state.sharedReadOnly || !state.savedAxisId;', source)
         self.assertIn('async function saveAxisAsNamedCopy() {', source)
+        self.assertIn("showToast('请先填写新的轴名，再点击另存', 'warning');", source)
+        self.assertIn("$('shaft-title-input');", source)
+        self.assertIn('titleInput.focus();', source)
+        self.assertIn('titleInput.select();', source)
         self.assertIn("$('shaft-save-as-btn').addEventListener('click', saveAxisAsNamedCopy);", source)
 
     def test_iloy_lucid_dream_can_move_from_foreground_to_background(self) -> None:

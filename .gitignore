@@ -23,6 +23,9 @@ env/
 .env
 scripts/deploy_windows_app.local.env
 
+# Local-only data source notes
+docs/kongmu-data-source.local.md
+
 # Local database and logs
 *.db
 *.db-shm

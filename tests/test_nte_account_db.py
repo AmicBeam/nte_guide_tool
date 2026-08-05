@@ -25,11 +25,12 @@ class NTEAccountDatabaseTest(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def test_publish_shaft_character_is_persistent_and_idempotent(self) -> None:
-        self.assertEqual(self.module.publish_shaft_character('伊洛伊'), 'published')
         self.assertEqual(self.module.publish_shaft_character('伊洛伊'), 'already_published')
+        self.assertEqual(self.module.publish_shaft_character('残红'), 'published')
+        self.assertEqual(self.module.publish_shaft_character('残红'), 'already_published')
         self.assertEqual(self.module.publish_shaft_character('不存在'), 'not_found')
 
         publication = self.module.NTEShaftCharacterPublication.get(
-            self.module.NTEShaftCharacterPublication.character_name == '伊洛伊'
+            self.module.NTEShaftCharacterPublication.character_name == '残红'
         )
         self.assertTrue(publication.is_published)

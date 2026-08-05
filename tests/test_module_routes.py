@@ -1,3 +1,4 @@
+import importlib
 from pathlib import Path
 
 from tests.test_solo_room_flow import RoomFlowTestCase
@@ -32,7 +33,39 @@ class ModuleRoutesTest(RoomFlowTestCase):
         ).read_text(encoding='utf-8')
         self.assertNotIn('pickCharacterAvatar', frontend)
         self.assertNotIn('avatarChoiceIndexes', frontend)
+        self.assertNotIn('残红', [character['name'] for character in catalog.get_json()['characters']])
+        self.assertIn('headers.Authorization = `Bearer ${token}`', frontend)
         self._assert_asset('/static/kongmu/js/kongmu.js')
+
+    def test_kongmu_test_character_requires_test_permission(self) -> None:
+        anonymous_catalog = self.client.get('/api/kongmu/catalog').get_json()
+        self.assertNotIn('残红', [character['name'] for character in anonymous_catalog['characters']])
+
+        token = self._issue_login_and_get_token('kongmu-tester')
+        regular_headers = {'Authorization': f'Bearer {token}'}
+        regular_catalog = self.client.get('/api/kongmu/catalog', headers=regular_headers).get_json()
+        self.assertNotIn('残红', [character['name'] for character in regular_catalog['characters']])
+
+        denied = self.client.post('/api/kongmu/plan', json={
+            'character_id': 'char_076a1f4e53',
+            'cartridge_id': 'attack',
+        }, headers=regular_headers)
+        self.assertEqual(denied.status_code, 400)
+
+        models_module = importlib.import_module('app.models')
+        models_module.Player.update(shaft_test_whitelisted=True).where(
+            models_module.Player.player_uid == 'kongmu-tester'
+        ).execute()
+        allowed_catalog = self.client.get('/api/kongmu/catalog', headers=regular_headers).get_json()
+        canhong = next(character for character in allowed_catalog['characters'] if character['name'] == '残红')
+        self.assertEqual(canhong['owner_grid_count'], 3)
+        self.assertIn('16%', canhong['kongmu_passive']['text'])
+
+        allowed = self.client.post('/api/kongmu/plan', json={
+            'character_id': canhong['id'],
+            'cartridge_id': 'attack',
+        }, headers=regular_headers)
+        self.assertEqual(allowed.status_code, 200)
 
     def test_preteam_module_page_and_asset(self) -> None:
         page = self.client.get('/preteam')

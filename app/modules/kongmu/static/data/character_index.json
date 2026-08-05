@@ -293,6 +293,19 @@
       "element_id": "COSMOS",
       "rarity": 5,
       "icon": "/Game/UI/UI_Icon/AvatarImage/256/player_zhenhong_256"
+    },
+    {
+      "id": "char_076a1f4e53",
+      "name": "残红",
+      "names": {
+        "zh": "残红"
+      },
+      "element": "Incantation",
+      "element_id": "INCANTATION",
+      "rarity": 5,
+      "icon": "",
+      "test_character": true,
+      "source_note": "2026-08-04 用户提供的腾讯文档；Nanoka 当前未收录该角色。"
     }
   ]
 }

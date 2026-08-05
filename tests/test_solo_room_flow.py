@@ -168,15 +168,15 @@ class RoomFlowTestCase(unittest.TestCase):
 
 
 class SoloRoomFlowTest(RoomFlowTestCase):
-    def test_yiloyi_selection_requires_shaft_test_account(self) -> None:
+    def test_canhong_selection_requires_shaft_test_account(self) -> None:
         public_catalog = self._get('/api/shaft/catalog')
-        public_yiloyi = next(character for character in public_catalog['characters'] if character['name'] == '伊洛伊')
-        self.assertTrue(public_yiloyi['selection_disabled'])
+        public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残红')
+        self.assertTrue(public_canhong['selection_disabled'])
 
         regular_token = self._issue_login_and_get_token('regular-shaft-player')
         regular_catalog = self._get('/api/shaft/catalog', token=regular_token)
-        regular_yiloyi = next(character for character in regular_catalog['characters'] if character['name'] == '伊洛伊')
-        self.assertTrue(regular_yiloyi['selection_disabled'])
+        regular_canhong = next(character for character in regular_catalog['characters'] if character['name'] == '残红')
+        self.assertTrue(regular_canhong['selection_disabled'])
 
         test_token = self._issue_login_and_get_token('shaft-whitelisted-player')
         models_module = importlib.import_module('app.models')
@@ -184,31 +184,31 @@ class SoloRoomFlowTest(RoomFlowTestCase):
             models_module.Player.player_uid == 'shaft-whitelisted-player'
         ).execute()
         test_catalog = self._get('/api/shaft/catalog', token=test_token)
-        test_yiloyi = next(character for character in test_catalog['characters'] if character['name'] == '伊洛伊')
-        self.assertFalse(test_yiloyi['selection_disabled'])
+        test_canhong = next(character for character in test_catalog['characters'] if character['name'] == '残红')
+        self.assertFalse(test_canhong['selection_disabled'])
 
         restricted_axis = dict(public_catalog['starter_axis'])
         restricted_axis['team'] = [{
             **restricted_axis['team'][0],
-            'character_id': public_yiloyi['id'],
+            'character_id': public_canhong['id'],
             'arc_id': '',
             'cartridge_id': '',
         }]
         restricted_axis['character_builds'] = {}
         restricted_axis['steps'] = []
         denied = self._post('/api/shaft/axes', {
-            'title': '普通账号伊洛伊',
+            'title': '普通账号残红',
             'axis': restricted_axis,
             'result': self._shaft_client_result(restricted_axis),
         }, token=regular_token, expected_status=400)
         self.assertIn('仅对测试账号开放', denied['error'])
 
         allowed = self._post('/api/shaft/axes', {
-            'title': '测试账号伊洛伊',
+            'title': '测试账号残红',
             'axis': restricted_axis,
             'result': self._shaft_client_result(restricted_axis),
         }, token=test_token)
-        self.assertEqual(allowed['team'][0]['character_id'], public_yiloyi['id'])
+        self.assertEqual(allowed['team'][0]['character_id'], public_canhong['id'])
 
         published = self._post(
             f"/api/shaft/axes/{allowed['id']}/publish",
@@ -220,9 +220,9 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         anonymous_market = self._get('/api/shaft/market')
         regular_market = self._get('/api/shaft/market', token=regular_token)
         test_market = self._get('/api/shaft/market', token=test_token)
-        self.assertNotIn('测试账号伊洛伊', [axis['title'] for axis in anonymous_market['items']])
-        self.assertNotIn('测试账号伊洛伊', [axis['title'] for axis in regular_market['items']])
-        self.assertIn('测试账号伊洛伊', [axis['title'] for axis in test_market['items']])
+        self.assertNotIn('测试账号残红', [axis['title'] for axis in anonymous_market['items']])
+        self.assertNotIn('测试账号残红', [axis['title'] for axis in regular_market['items']])
+        self.assertIn('测试账号残红', [axis['title'] for axis in test_market['items']])
 
         for token in (None, regular_token):
             hidden_detail = self.client.get(
@@ -250,13 +250,13 @@ class SoloRoomFlowTest(RoomFlowTestCase):
             token=regular_token,
         )
         visible_favorites = self._get('/api/shaft/me/favorites', token=regular_token)
-        self.assertIn('测试账号伊洛伊', [axis['title'] for axis in visible_favorites['items']])
+        self.assertIn('测试账号残红', [axis['title'] for axis in visible_favorites['items']])
 
         models_module.Player.update(shaft_test_whitelisted=False).where(
             models_module.Player.player_uid == 'regular-shaft-player'
         ).execute()
         hidden_favorites = self._get('/api/shaft/me/favorites', token=regular_token)
-        self.assertNotIn('测试账号伊洛伊', [axis['title'] for axis in hidden_favorites['items']])
+        self.assertNotIn('测试账号残红', [axis['title'] for axis in hidden_favorites['items']])
         models_module.Player.update(shaft_test_whitelisted=False).where(
             models_module.Player.player_uid == 'shaft-whitelisted-player'
         ).execute()
@@ -268,13 +268,18 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         )
         self.assertIn('仅对测试账号开放', denied_publish['error'])
 
-    def test_published_shaft_character_is_available_without_whitelist(self) -> None:
+    def test_yiloyi_is_released_and_persisted_as_public(self) -> None:
         models_module = importlib.import_module('app.models')
         publication = models_module.ShaftCharacterPublication.get(
             models_module.ShaftCharacterPublication.character_name == '伊洛伊'
         )
-        publication.is_published = True
+        publication.is_published = False
         publication.save(only=[models_module.ShaftCharacterPublication.is_published])
+
+        shaft_service = importlib.import_module('app.modules.shaft.service')
+        shaft_service.initialize_shaft_character_publications()
+        publication = models_module.ShaftCharacterPublication.get_by_id(publication.id)
+        self.assertTrue(publication.is_published)
 
         public_catalog = self._get('/api/shaft/catalog')
         public_yiloyi = next(
@@ -806,7 +811,7 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         self.assertEqual(resave_response.status_code, 200, resave_response.get_data(as_text=True))
         resaved_mine = self._get('/api/shaft/me/axes', token=token)
         unchanged_market = self._get('/api/shaft/market')
-        self.assertEqual(resaved_mine['items'][0]['source_version'], '异环云配队 1.0.1')
+        self.assertEqual(resaved_mine['items'][0]['source_version'], '异环云配队 1.0.2')
         self.assertEqual(unchanged_market['items'][0]['source_version'], '异环云配队 V0.2.7')
 
     def test_balance_analytics_requires_login(self) -> None:

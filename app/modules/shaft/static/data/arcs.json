@@ -1,5 +1,37 @@
 [
   {
+    "id": "arc_canhong_devouring_heart",
+    "name": "噬心诡刃",
+    "level": 80,
+    "rarity": "S",
+    "adaptation": "气态",
+    "detail": "暴击率提升16%~32%；造成咒属性伤害后暴击伤害提升9%~18%，持续15秒、最多7层，每0.3秒最多触发1次，重复触发刷新持续时间（用户腾讯文档）",
+    "base_atk": 570,
+    "modifiers": {
+      "crit_rate": 0.4,
+      "crit_dmg": 0,
+      "atk_pct": 0,
+      "hp_pct": 0,
+      "def_pct": 0,
+      "energy_recharge": 0,
+      "harmony_strength": 0,
+      "stagger_strength": 0,
+      "def_ignore": 0,
+      "res_down": 0,
+      "all_dmg": 0,
+      "basic_dmg": 0,
+      "dodge_counter_dmg": 0,
+      "skill_dmg": 0,
+      "ultimate_dmg": 0,
+      "mind_dmg": 0,
+      "follow_dmg": 0,
+      "attach_dmg": 0
+    },
+    "element_dmg": {"光": 0, "灵": 0, "咒": 0, "暗": 0, "魂": 0, "相": 0},
+    "source_row": 0,
+    "source_note": "2026-08-04用户提供的腾讯文档；Nanoka当前未收录。基础24%暴击率与1精16%被动暴击率合并为40%面板。"
+  },
+  {
     "id": "arc_7d0ca08e3d",
     "name": "行进于时间之外",
     "level": 80,

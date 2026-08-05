@@ -1,7 +1,17 @@
 {
+  "loop_initial_reaction_options": [
+    {"id": "创生", "duration_ticks": 100},
+    {"id": "延滞", "duration_ticks": 50},
+    {"id": "覆纹", "duration_ticks": 120},
+    {"id": "浊燃", "duration_ticks": 150},
+    {"id": "黯星", "duration_ticks": 50},
+    {"id": "浸染", "duration_ticks": 120}
+  ],
   "personal_resource_caps": {
+    "char_31c5130304": {"真理之匙": 3},
     "char_701295143d": {"言灵字": 4},
     "char_912dbfe17c": {"闪送之力": 6},
+    "char_d38b672525": {"罪状": 1000},
     "char_a01c39f576": {"臆想": 100}
   },
   "hidden_personal_resources": ["噩梦"],
@@ -303,6 +313,14 @@
       }
     },
     "char_d38b672525": {
+      "cartridge_main_stat": "属伤",
+      "curtain_bonus": {
+        "value": 16,
+        "stat": "暴伤",
+        "passive_type": "type3"
+      }
+    },
+    "char_076a1f4e53": {
       "cartridge_main_stat": "属伤",
       "curtain_bonus": {
         "value": 16,

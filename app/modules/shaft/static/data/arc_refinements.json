@@ -4852,6 +4852,20 @@
           }
         }
       }
+    },
+    "arc_canhong_devouring_heart": {
+      "name": "噬心诡刃",
+      "default_level": 1,
+      "source": "2026-08-04用户腾讯文档",
+      "effect_name": "噬心",
+      "effect_description": "暴击率提升{0}。造成咒属性伤害后，暴击伤害提升{1}，持续15秒，最多7层，每0.3秒最多触发1次，重复触发刷新持续时间。",
+      "levels": {
+        "1": {"effect_values": ["16%", "9%"], "panel_modifiers": {"crit_rate": 0.4}, "element_dmg": {}, "buff_effects": {"arc_canhong_devouring_heart_crit_damage": {"crit_dmg": 0.09}}},
+        "2": {"effect_values": ["20%", "11.25%"], "panel_modifiers": {"crit_rate": 0.44}, "element_dmg": {}, "buff_effects": {"arc_canhong_devouring_heart_crit_damage": {"crit_dmg": 0.1125}}},
+        "3": {"effect_values": ["24%", "13.5%"], "panel_modifiers": {"crit_rate": 0.48}, "element_dmg": {}, "buff_effects": {"arc_canhong_devouring_heart_crit_damage": {"crit_dmg": 0.135}}},
+        "4": {"effect_values": ["28%", "15.75%"], "panel_modifiers": {"crit_rate": 0.52}, "element_dmg": {}, "buff_effects": {"arc_canhong_devouring_heart_crit_damage": {"crit_dmg": 0.1575}}},
+        "5": {"effect_values": ["32%", "18%"], "panel_modifiers": {"crit_rate": 0.56}, "element_dmg": {}, "buff_effects": {"arc_canhong_devouring_heart_crit_damage": {"crit_dmg": 0.18}}}
+      }
     }
   }
 }

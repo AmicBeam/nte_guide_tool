@@ -36,6 +36,9 @@ MAX_BACKGROUND_ACTION_MULTIPLIER = 999
 VISIBILITIES = frozenset({'private', 'public'})
 MARKET_SORTS = frozenset({'dps', 'likes', 'favorites', 'new'})
 DEFAULT_UNPUBLISHED_CHARACTERS = {
+    'char_076a1f4e53': '残红',
+}
+RELEASED_CHARACTERS = {
     'char_a01c39f576': '伊洛伊',
 }
 ELEMENTS = ('光', '灵', '咒', '暗', '魂', '相')
@@ -98,7 +101,7 @@ SKILL_LEVEL_DEFAULTS = {
 CURTAIN_PASSIVE_TYPES = ('type2', 'type3', 'type4')
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SHAFT_COMPUTE_SCRIPT = PROJECT_ROOT / 'scripts' / 'shaft_compute.js'
-SHAFT_SOURCE_VERSION = '异环云配队 1.0.1'
+SHAFT_SOURCE_VERSION = '异环云配队 1.0.2'
 
 
 class ShaftAxisNameConflictError(RuleValidationError):
@@ -129,17 +132,46 @@ def initialize_shaft_character_publications() -> None:
                     'updated_at': now,
                 },
             )
+        for character_id, character_name in RELEASED_CHARACTERS.items():
+            publication, _ = ShaftCharacterPublication.get_or_create(
+                character_id=character_id,
+                defaults={
+                    'character_name': character_name,
+                    'is_published': True,
+                    'updated_at': now,
+                },
+            )
+            if not publication.is_published:
+                publication.is_published = True
+                publication.updated_at = now
+                publication.save(only=[
+                    ShaftCharacterPublication.is_published,
+                    ShaftCharacterPublication.updated_at,
+                ])
 
 
 def _unpublished_character_ids() -> frozenset[str]:
     if not ShaftCharacterPublication.table_exists():
         return frozenset(DEFAULT_UNPUBLISHED_CHARACTERS)
-    return frozenset(
-        publication.character_id
+    publication_states = {
+        publication.character_id: bool(publication.is_published)
         for publication in ShaftCharacterPublication.select(
             ShaftCharacterPublication.character_id,
-        ).where(ShaftCharacterPublication.is_published == False)
+            ShaftCharacterPublication.is_published,
+        )
+    }
+    unpublished = {
+        character_id
+        for character_id in DEFAULT_UNPUBLISHED_CHARACTERS
+        if not publication_states.get(character_id, False)
+    }
+    unpublished.update(
+        character_id
+        for character_id, is_published in publication_states.items()
+        if not is_published
     )
+    unpublished.difference_update(RELEASED_CHARACTERS)
+    return frozenset(unpublished)
 
 
 def _json_dumps(payload: Any) -> str:
@@ -306,11 +338,6 @@ def _normalize_awakening_nodes(raw_nodes: Any, legacy_awakening: Any = 0) -> lis
     return list(range(1, legacy_level + 1))
 
 
-def _cartridge_matches_character(cartridge: dict[str, Any] | None, character: dict[str, Any] | None) -> bool:
-    required_element = str((cartridge or {}).get('required_element') or '')
-    return not required_element or required_element == str((character or {}).get('element') or '')
-
-
 def _normalize_team(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
     team = raw if isinstance(raw, list) and raw else catalog['starter_axis']['team']
     characters = get_record_map(catalog['characters'])
@@ -342,9 +369,8 @@ def _normalize_team(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
         if arc and str(arc.get('adaptation') or '') != str(character.get('adaptation') or ''):
             raise RuleValidationError('角色与弧盘的适配类型不一致。')
         cartridge = cartridges.get(cartridge_id)
-        if cartridge and not _cartridge_matches_character(cartridge, character):
-            raise RuleValidationError('角色属性与卡带的属伤加成不一致。')
         awakening_nodes = _normalize_awakening_nodes(member.get('awakening_nodes'), member.get('awakening'))
+        has_bond_bonus = bool((character.get('bond_bonus') or {}).get('modifiers'))
         normalized.append({
             'slot': slot,
             'character_id': character_id,
@@ -356,8 +382,8 @@ def _normalize_team(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
             'cartridge_name': (cartridge or {}).get('name') or '',
             'awakening': len(awakening_nodes),
             'awakening_nodes': awakening_nodes,
-            'bond_level': max(0, min(1, _int(member.get('bond_level'), 1 if member.get('bond_full') else 0))),
-            'bond_full': bool(member.get('bond_full')) or _int(member.get('bond_level')) > 0,
+            'bond_level': max(0, min(1, _int(member.get('bond_level'), 1 if member.get('bond_full') else 0))) if has_bond_bonus else 0,
+            'bond_full': (bool(member.get('bond_full')) or _int(member.get('bond_level')) > 0) if has_bond_bonus else False,
             'skill_levels': _normalize_skill_levels(member.get('skill_levels')),
             'cartridge_main_stat': _normalize_cartridge_main_stat(member.get('cartridge_main_stat'), character_id, catalog),
             'curtain_bonus': _normalize_curtain_bonus(member.get('curtain_bonus'), character_id, catalog),
@@ -391,10 +417,8 @@ def _normalize_character_builds(raw: Any, team: list[dict[str, Any]], catalog: d
         if arc and str(arc.get('adaptation') or '') != str(characters[character_id].get('adaptation') or ''):
             arc_id = ''
         cartridge_id = str(build.get('cartridge_id') or '')
-        cartridge = cartridges.get(cartridge_id)
-        if cartridge and not _cartridge_matches_character(cartridge, characters[character_id]):
-            cartridge_id = ''
         awakening_nodes = _normalize_awakening_nodes(build.get('awakening_nodes'), build.get('awakening'))
+        has_bond_bonus = bool((characters[character_id].get('bond_bonus') or {}).get('modifiers'))
         normalized[character_id] = {
             'character_id': character_id,
             'character_name': characters[character_id].get('name') or '',
@@ -405,8 +429,8 @@ def _normalize_character_builds(raw: Any, team: list[dict[str, Any]], catalog: d
             'cartridge_name': (cartridges.get(cartridge_id) or {}).get('name') or '',
             'awakening': len(awakening_nodes),
             'awakening_nodes': awakening_nodes,
-            'bond_level': max(0, min(1, _int(build.get('bond_level'), 1 if build.get('bond_full') else 0))),
-            'bond_full': bool(build.get('bond_full')) or _int(build.get('bond_level')) > 0,
+            'bond_level': max(0, min(1, _int(build.get('bond_level'), 1 if build.get('bond_full') else 0))) if has_bond_bonus else 0,
+            'bond_full': (bool(build.get('bond_full')) or _int(build.get('bond_level')) > 0) if has_bond_bonus else False,
             'skill_levels': _normalize_skill_levels(build.get('skill_levels')),
             'cartridge_main_stat': _normalize_cartridge_main_stat(build.get('cartridge_main_stat'), character_id, catalog),
             'curtain_bonus': _normalize_curtain_bonus(build.get('curtain_bonus'), character_id, catalog),
@@ -509,6 +533,13 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
     formula_constants = catalog.get('formula_constants') if isinstance(catalog.get('formula_constants'), dict) else {}
     personal_resource_caps = formula_constants.get('personal_resource_caps')
     personal_resource_caps = personal_resource_caps if isinstance(personal_resource_caps, dict) else {}
+    sustained_reactions = {
+        str(option.get('id') or '')
+        for option in formula_constants.get('loop_initial_reaction_options', [])
+        if isinstance(option, dict)
+        and str(option.get('id') or '')
+        and _int(option.get('duration_ticks')) > 0
+    }
     hidden_personal_resources = {
         str(name)
         for name in formula_constants.get('hidden_personal_resources', [])
@@ -544,6 +575,8 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
         loop_initial_resources[character_id] = {
             'energy': max(0, min(energy_capacity, _num(configured.get('energy')))),
             'harmony': max(0, min(100, _num(configured.get('harmony')))),
+            'reaction': str(configured.get('reaction') or '')
+            if str(configured.get('reaction') or '') in sustained_reactions else '',
             'personal_resources': normalized_personal,
         }
     return {
@@ -958,7 +991,7 @@ def serialize_shaft_axis(
     summary = result.get('summary') if isinstance(result, dict) and isinstance(result.get('summary'), dict) else {}
     harmony_damage = summary.get('harmony_damage')
     if harmony_damage is None:
-        harmony_sources = {'创生', '创生复制体', '浊燃', '黯星'}
+        harmony_sources = {'创生', '创生复制体', '覆纹', '浊燃', '黯星'}
         harmony_damage = sum(
             _num(item.get('damage'))
             for item in (result.get('damage_by_source') or [])
@@ -1131,7 +1164,7 @@ def save_shaft_axis(player: Player, payload: dict[str, Any], axis_id: int | None
         record.enemy_json = _json_dumps(axis_payload['enemy'])
         record.result_json = _json_dumps(result)
         record.duration_ticks = _int(summary.get('duration_ticks'))
-        record.direct_damage = _int(summary.get('direct_damage'))
+        record.direct_damage = _int(summary.get('character_damage', summary.get('direct_damage')))
         record.stagger_damage = _int(summary.get('stagger_damage'))
         record.total_damage = _int(summary.get('total_damage'))
         record.dps_x100 = _int(_num(summary.get('dps')) * 100)

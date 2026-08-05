@@ -330,7 +330,10 @@ def api_balance_analytics():
 @main_bp.get('/api/kongmu/catalog')
 def api_kongmu_catalog():
     try:
-        return jsonify(get_kongmu_catalog_payload())
+        player = _optional_current_player()
+        return jsonify(get_kongmu_catalog_payload(include_test_characters=bool(
+            player and player.shaft_test_whitelisted
+        )))
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400
     except Exception:
@@ -346,7 +349,12 @@ def api_kongmu_plan():
     if source_lock is None:
         return jsonify({'error': '同一来源已有空幕计算正在进行，请稍后再试。'}), 429
     try:
-        return jsonify(plan_kongmu_layout(str(payload.get('character_id', '')), str(payload.get('cartridge_id', ''))))
+        player = _optional_current_player()
+        return jsonify(plan_kongmu_layout(
+            str(payload.get('character_id', '')),
+            str(payload.get('cartridge_id', '')),
+            include_test_characters=bool(player and player.shaft_test_whitelisted),
+        ))
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400
     except Exception:

@@ -1,0 +1,31 @@
+{
+  "id": "char_076a1f4e53",
+  "name": "残红",
+  "element": "Incantation",
+  "element_id": "INCANTATION",
+  "rarity": 5,
+  "test_character": true,
+  "source_note": "空幕类型与被动数值来自2026-08-04用户提供的腾讯文档；格子拓扑暂时复用同为Ⅲ型特化、每个Ⅲ型驱动增加16%暴击伤害的真红。",
+  "equip_slots": {
+    "description_template": "每装配一个Ⅲ型驱动，使{0}增加{1}%",
+    "special_desc": "Ⅲ型特化",
+    "owner_grid_count": 3,
+    "stats": [
+      {
+        "id_stats": "CritDamageBase",
+        "name": "暴击伤害",
+        "value": 16,
+        "b_show_percent": true
+      }
+    ],
+    "slots": [
+      [-1, -1, -1, -1, -1, -1, -1],
+      [-1, -1, -1, -1, -1, -1, -1],
+      [-1, 0, 0, 0, 0, 0, -1],
+      [-1, 0, 0, 0, 0, 0, -1],
+      [-1, 0, 0, 0, 0, 0, -1],
+      [-1, 0, 0, 0, 0, 0, -1],
+      [-1, -1, -1, -1, -1, -1, -1]
+    ]
+  }
+}

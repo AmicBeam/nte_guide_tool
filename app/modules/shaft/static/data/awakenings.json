@@ -45,11 +45,13 @@
     {
       "title": "无想",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「明悟之慧佑」的护盾吸收量提升20%。"
     },
     {
       "title": "无行",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「明悟之慧佑」碎裂时，基于阿德勒50%防御力吸收部分溢出伤害。"
     },
     {
@@ -72,17 +74,16 @@
   "埃德嘉": [
     {
       "title": "热爱异象的观察员",
-      "implemented": false,
       "description": "任意队友释放「援护技」时，埃德嘉获得一把「真理之匙」。"
     },
     {
       "title": "尚在实习的异象猎人",
-      "implemented": false,
       "description": "持续使用「变轨技能：狂流」导致的冷却延长最多3秒"
     },
     {
       "title": "伊波恩侦探之一",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「变轨技能：狂流」对当前生命低于30%的队友治疗效果提高15%"
     },
     {
@@ -104,6 +105,7 @@
     {
       "title": "敏锐洞察",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "队友的安危牵动着埃德嘉的思绪。任意队友损失3%最大生命值可转换为1点「极轨终结：芬尼根守灵夜」的充能值，最多可转换20点，释放「极轨终结：芬尼根守灵夜」后重置。"
     }
   ],
@@ -126,7 +128,6 @@
     },
     {
       "title": "强化玻璃径受审判",
-      "implemented": false,
       "description": "安魂曲造成「噩梦」伤害时，额外削减目标生命值上限，削减量为本次「噩梦」伤害值的200%。每3秒，安魂曲基于期间造成的「噩梦」伤害回复自身生命值，回复量为期间「噩梦」总伤害值的1.5%。目标受到治疗时，不再移除「噩梦」层数。"
     },
     {
@@ -157,7 +158,6 @@
     },
     {
       "title": "亦或是祝祷",
-      "implemented": false,
       "description": "「判予秋」期间，当任意1个言灵字被触发时，白藏额外恢复5%的最大生命值。"
     },
     {
@@ -180,7 +180,6 @@
   "薄荷": [
     {
       "title": "特遣行动",
-      "implemented": false,
       "description": "「极限反击：焦糖脆片」命中敌人时可重置「变轨技能：奥义·超级连风爪」的冷却时间，该效果每3秒可触发一次。"
     },
     {
@@ -215,12 +214,10 @@
   "达芙蒂尔": [
     {
       "title": "目",
-      "implemented": false,
       "description": "全队角色每次释放援护技时为「变轨技能：同振」提升的伤害值变为100%，倾陷值变为250%。"
     },
     {
       "title": "机械游行",
-      "implemented": false,
       "description": "如果未能使用「幻影移行」成功承轨反击目标，最后一段攻击可对目标造成高额伤害，产生倾陷值，并为「极轨终结：见此终幕」蓄满充能。"
     },
     {
@@ -229,12 +226,10 @@
     },
     {
       "title": "于隐匿中",
-      "implemented": false,
       "description": "如果目标在「洞察」效果期间进入倾陷，每有1层「洞察」，达芙蒂尔额外造成的倾陷伤害提升15%。"
     },
     {
       "title": "完美真相",
-      "implemented": false,
       "description": "如果目标在「洞察」效果期间进入倾陷，每有1层「洞察」，目标额外受到1次达芙蒂尔造成的倾陷伤害。"
     },
     {
@@ -254,11 +249,13 @@
     {
       "title": "欲盖弥彰的圣洁",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "法帝娅的伤害分摊比例提升至75%。"
     },
     {
       "title": "无可否认的本能",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "敌方单位通过「破灭体验」承受的伤害比例提升至600%，上限提升至法帝娅生命上限的25%。当「破灭体验」被移除时，立刻造成敌方单位已承受伤害与「破灭体验」造成伤害上限差值的伤害。"
     },
     {
@@ -268,6 +265,7 @@
     {
       "title": "僭越禁忌之人",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「敌神者」状态下法帝娅的回复比例提升至30%生命上限，在已损失生命值大于等于「破灭阈值」时回复比例提升至60%生命上限。"
     },
     {
@@ -277,6 +275,7 @@
     {
       "title": "爱与死的使徒",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「变轨技能：存在证明的体验」可为范围内最多10个目标施加「破灭体验」，每个目标单独计算「破灭体验」持续时间及通过「破灭体验」所承受的伤害上限。"
     },
     {
@@ -292,6 +291,7 @@
     {
       "title": "新人！天才转校生报道",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「主角光环」的累积上限提升至6层，使得「超异科魔法炮」最多可弹射6次。"
     },
     {
@@ -326,17 +326,16 @@
   "哈索尔": [
     {
       "title": "精英快递员",
-      "implemented": false,
       "description": "入战后首次长按「变轨技能」，将直接获得6层「闪送之力」。"
     },
     {
       "title": "荆棘支配",
-      "implemented": false,
       "description": "「优评锁定」和「满星追踪」自然结束时，哈索尔同样可获得「闪送之力」。"
     },
     {
       "title": "一翼失衡",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "哈索尔对非Boss目标造成的伤害提升15%。"
     },
     {
@@ -367,7 +366,6 @@
     },
     {
       "title": "一支特别的歌",
-      "implemented": false,
       "description": "成功进行极限闪避或释放「援护技：不协和音」后，海月将进入持续5秒的「华彩」状态。如已处于该状态，则其持续时间在原有基础上延长5秒。「华彩」状态最多可持续12秒。"
     },
     {
@@ -406,7 +404,6 @@
     },
     {
       "title": "优势初成",
-      "implemented": false,
       "description": "释放「极轨终结：终局清账」触发「致约清算」时，对清算目标额外扣除4点倾陷值。"
     },
     {
@@ -419,7 +416,6 @@
     },
     {
       "title": "知晓每一条秘密",
-      "implemented": false,
       "description": "已缔结「致命玫约」的目标，每次释放技能时受到 200% 倍率的伤害，间隔 5 秒生效。"
     },
     {
@@ -442,7 +438,6 @@
     },
     {
       "title": "夕阳下的海滩",
-      "implemented": false,
       "description": "切换角色不会移除「威慑凝视」，真红在后台时也会增长凝视层数。"
     },
     {
@@ -451,7 +446,6 @@
     },
     {
       "title": "欢声笑语的客厅",
-      "implemented": false,
       "description": "「升腾之赤」持续期间，真红防御力提升50%，抗打断系数提升50%，并在释放「变轨技能：天降赤锋」后获得相当于自身基础攻击力*300%的生命值回复。"
     },
     {
@@ -478,12 +472,12 @@
     },
     {
       "title": "垂目须臾",
-      "implemented": false,
       "description": "使用「变轨技能：今景复映」并完成记录后，快速回复使用「变轨技能：今景复映」所消耗的能量，每60秒最多触发一次。在回复能量的过程中进行消耗能量的行为会打断能量恢复。"
     },
     {
       "title": "旧藏遗散",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "未回拨指针期间，全队每击败1个目标，「非闭合时计」额外积蓄10点能量，最多生效3次。释放「极轨终结：浮世来潮」重置计数。"
     },
     {
@@ -506,27 +500,30 @@
   "小吱": [
     {
       "title": "太阳太阳请回答",
-      "implemented": false,
       "description": "「金谷」和「金谷贷款」的存储上限提升10%。"
     },
     {
       "title": "烟花，悄然无声",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "当小吱处于「盈余」状态时，每秒可获得当前「金谷」10%的利息。"
     },
     {
       "title": "倘若没有雨天",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「金谷K线」中「金谷」价格上涨的概率提高50%。"
     },
     {
       "title": "致饭团·绷带·方斯",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「金谷」的获取速率提升20%。"
     },
     {
       "title": "日记的空白页",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "小吱入战后立刻获得当前「金谷」存储上限100%的「金谷」。"
     },
     {
@@ -536,6 +533,7 @@
     {
       "title": "是朋友，是家人",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「负债」状态下，「金谷」的获取效率额外提升50%。"
     },
     {
@@ -543,10 +541,43 @@
       "description": "小吱对目标造成伤害时，降低目标10%光属性异能伤害抗性。"
     }
   ],
+  "残红": [
+    {
+      "title": "余烬长明",
+      "description": "燎原、z、闪反、强化e和幻e命中时，使原目标身上每种已有持续伤害各增加1层；残红永久拥有「狩」与「惑」。「狩」使残红造成的伤害提高至60%；「惑」使全队持续伤害暴击伤害提高至50%。当前单敌轴按原目标结算扩散，角色阵亡不在项目触发。"
+    },
+    {
+      "title": "蓄焰",
+      "description": "残红作为环合双方之一参与触发「浊燃」或「覆纹」时获得1层「蓄焰」，最多2层；每层使下一次「焚天」最终伤害提高100%，最多200%，可预先积累，焚天结算时消耗全部层数。"
+    },
+    {
+      "title": "狩惑强化",
+      "description": "「狩」额外使残红抗打断能力提升50%；「惑」额外使残红每秒回复4%最大生命值。排轴详情面板展示抗打断，并在回复事件中逐秒结算生命回复。"
+    },
+    {
+      "title": "血宴共燃",
+      "description": "「焚天」进入可释放状态时立刻激活「血宴」；「蓄焰」增伤同时作用于血宴且不会被血宴消耗。自检会校验血宴激活条件，并在血宴激活时提示优先释放血宴。"
+    },
+    {
+      "title": "焚尽顽敌",
+      "description": "非循环轴中，强化e首次命中目标时必定使其倾陷，每个目标单场最多1次；残红在队伍时，全队倾陷伤害提升300%。当前单敌轴记录该敌人是否已触发过强制倾陷。"
+    },
+    {
+      "title": "灭·层蚀",
+      "description": "「灭」最后一段命中单个目标时，该目标身上每1层持续伤害使本段伤害提升12%，最多提升240%。当前单敌轴按最后一段命中前的目标持续伤害总层数结算。"
+    },
+    {
+      "title": "三觉共鸣",
+      "description": "点亮任意3个觉醒节点后生效：技能等级+1；极轨终结「血宴入梦时」与「焚天烬灭舞」技能倍率提升20%。排轴中血宴、焚天与强化焚天均按该倍率提升结算。"
+    },
+    {
+      "title": "六觉共鸣",
+      "description": "点亮全部6个觉醒节点后生效：残红造成伤害后自身攻击力提升40%，持续20秒；不可叠加，重复触发刷新持续时间。击败浊燃目标后获得60秒强化、强化期间施加浊燃直接满层的效果按用户口径不在当前项目触发，已忽略。"
+    }
+  ],
   "伊洛伊": [
     {
       "title": "重复囚徒困境",
-      "implemented": false,
       "description": "伊洛伊处于后台时，可以缓慢以0.5秒恢复1点「臆想」。并且所有「臆想」的积攒效率增加25%。"
     },
     {
@@ -556,11 +587,11 @@
     {
       "title": "策略特性：善良",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "伊洛伊对生命值低于50%的友方角色，治疗效果提升25%。"
     },
     {
       "title": "策略特性：可激怒",
-      "implemented": false,
       "description": "「退行」状态小羊们的攻击倍率提升\n莫尔甫斯：\n再睡会吧增加20%的倍率\n多睡会吧增加20%的倍率\n\n伊刻洛斯：\n打一针吧增加20%的倍率\n多打几针增加20%的倍率\n\n方塔苏斯：\n来首歌吧增加20%的倍率\n不好听吗增加20%的倍率"
     },
     {
@@ -569,7 +600,6 @@
     },
     {
       "title": "策略特性：宽容",
-      "implemented": false,
       "description": "伊洛伊释放「极轨终结：三十八亿年的海市蜃楼」后复活的角色，获得100%生命值、50点环合值、50点极轨终结能量。"
     },
     {
@@ -584,12 +614,10 @@
   "娜娜莉": [
     {
       "title": "帮派初建成",
-      "implemented": false,
       "description": "娜娜莉每造成1次追加攻击，自身获得2.5点终结能量，该效果每1秒最多触发1次。"
     },
     {
       "title": "第二位成员",
-      "implemented": false,
       "description": "「副手」的持续时间延长3秒。"
     },
     {
@@ -621,6 +649,7 @@
     {
       "title": "弥散性的朦白",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「极轨终结：千钧隆重的饕餮宴」造成的无法移动效果持续时间延长至6秒。"
     },
     {
@@ -630,6 +659,7 @@
     {
       "title": "黏附性的啮合",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "基于全队角色击败的敌人数量，在之后的15秒内提升「变轨技能：一口吞食」和「极轨终结：千钧隆重的饕餮宴」的伤害。每击败1名敌人，提升6%的伤害，累计最大提升60%，此效果脱战清空。"
     },
     {
@@ -639,11 +669,13 @@
     {
       "title": "失觉性的崩落",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "「变轨技能：一口吞食」成功使目标浮空时，「极轨终结：千钧隆重的饕餮宴」立即蓄满终结能量，并清空冷却时间。"
     },
     {
       "title": "溶解性的暴食",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "鬼郎丸在「摄食模式」下，最多可吞噬并同时消化3个目标，每个目标独立计算消化时间。"
     },
     {
@@ -658,7 +690,6 @@
   "卡厄斯": [
     {
       "title": "灼见",
-      "implemented": false,
       "description": "卡厄斯在攻击带有「追缉许可」的敌人时，能够额外获取40%的「罪状」。"
     },
     {
@@ -672,6 +703,7 @@
     {
       "title": "海潮漫延",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "卡厄斯击败带有「追缉许可」的目标时，该「追缉许可」会传递至附近未被标记的目标，重新计算持续时间。"
     },
     {
@@ -680,7 +712,6 @@
     },
     {
       "title": "伪原点",
-      "implemented": false,
       "description": "卡厄斯使用「极轨终结：罪业清偿」后，立即将「罪状」补充至上限。"
     },
     {
@@ -707,12 +738,12 @@
     },
     {
       "title": "划定常规的决议",
-      "implemented": false,
       "description": "「尾追」状态的持续时间延长至12秒。目标每被附着1秒，受到的附着伤害提高2%，最高提升至40%。"
     },
     {
       "title": "社会适应的重任",
       "implemented": false,
+      "implementation_status": "out_of_scope",
       "description": "目标每被1个「兽牙影刺」锁定，质量提升50点，移动速度降低20%。"
     },
     {

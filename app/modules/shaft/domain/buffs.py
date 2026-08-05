@@ -612,10 +612,19 @@ def buff_effects(instance: dict[str, Any], context: dict[str, Any] | None = None
     if negative.get('effect_key'):
         enemy_debuffs = set((runtime.get('enemy_debuffs') or {}).keys())
         active_keys = {str(key) for key in _as_list(runtime.get('active_buff_keys'))}
+        damage_tags = {str(tag) for tag in _as_list(negative.get('damage_tags'))}
+        tagged_damage_types = {
+            str(source.get('type_id') or '')
+            for source in _as_list(runtime.get('active_damage_sources'))
+            if isinstance(source, dict)
+            and str(source.get('type_id') or '')
+            and damage_tags.intersection(str(tag) for tag in _as_list(source.get('tags')))
+        }
         count = min(
             max(0, _int(negative.get('max_count'), 1)),
             sum(str(key) in enemy_debuffs for key in _as_list(negative.get('enemy_debuffs')))
-            + sum(str(key) in active_keys for key in _as_list(negative.get('buff_keys'))),
+            + sum(str(key) in active_keys for key in _as_list(negative.get('buff_keys')))
+            + len(tagged_damage_types),
         )
         effect_key = str(negative.get('effect_key'))
         resolved[effect_key] = _num(resolved.get(effect_key)) + count * _num(negative.get('per_count'))

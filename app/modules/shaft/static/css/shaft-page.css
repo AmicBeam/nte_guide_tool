@@ -648,6 +648,15 @@ body:has(.shaft-page) .shell {
     background: var(--slot-color, var(--primary));
 }
 
+.shaft-bond-toggle:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.48;
+}
+
+.shaft-bond-toggle:has(input:disabled) span::before {
+    background: rgba(255,255,255,0.12);
+}
+
 .shaft-skill-levels {
     display: grid;
     grid-template-columns: minmax(130px, auto) minmax(0, 1fr);
@@ -3272,7 +3281,8 @@ body.shaft-dragging .shaft-action-bar {
     font-weight: 900;
 }
 
-.shaft-loop-resource-row input {
+.shaft-loop-resource-row input,
+.shaft-loop-resource-row select {
     width: 100%;
 }
 

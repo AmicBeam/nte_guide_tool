@@ -2416,9 +2416,10 @@
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 110,
     "trigger": {
-      "event": "dot_applied",
+      "event": "action_hit",
+      "periodic_damage": true,
       "source": {"scope": "registrar"},
-      "conditions": [{"type": "awakening_count_min", "min": 6}]
+      "conditions": [{"type": "awakening_count_min", "min": 6}, {"type": "hit_count_positive"}]
     },
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},

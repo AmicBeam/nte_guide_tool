@@ -7255,7 +7255,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                     1.08 * 1.2,
                 )
 
-    def test_canhong_six_node_resonance_attack_buff_triggers_on_dot_application_and_refreshes_without_stacking(self) -> None:
+    def test_canhong_six_node_resonance_attack_buff_triggers_after_damage_and_refreshes_without_stacking(self) -> None:
         result = simulate_shaft_axis({
             'team': [{
                 'slot': 0,
@@ -7266,10 +7266,8 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             }],
             'steps': [
                 {'id': 'first', 'slot': 0, 'action_id': 'action_canhong_a1', 'start_tick': 0},
-                {'id': 'dot-first', 'slot': 0, 'action_id': 'action_canhong_illusion_a1', 'start_tick': 10},
-                {'id': 'dot-refresh', 'slot': 0, 'action_id': 'action_canhong_E1', 'start_tick': 100},
-                {'id': 'inside-window', 'slot': 0, 'action_id': 'action_canhong_support', 'start_tick': 250},
-                {'id': 'after-window', 'slot': 0, 'action_id': 'action_canhong_support', 'start_tick': 305},
+                {'id': 'second', 'slot': 0, 'action_id': 'action_canhong_a2', 'start_tick': 100},
+                {'id': 'third', 'slot': 0, 'action_id': 'action_canhong_a3', 'start_tick': 250},
             ],
             'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
             'initial_energy': 200,
@@ -7281,11 +7279,9 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             for buff in details['first']['applied_buffs']
         ))
         self.assertAlmostEqual(details['first']['panel']['atk'], 660)
-        self.assertAlmostEqual(details['dot-first']['panel']['atk'], 660)
-        self.assertAlmostEqual(details['dot-refresh']['panel']['atk'], 660 * 1.4)
-        self.assertAlmostEqual(details['inside-window']['panel']['atk'], 660 * 1.4)
-        self.assertAlmostEqual(details['after-window']['panel']['atk'], 660)
-        for step_id in ('dot-refresh', 'inside-window'):
+        self.assertAlmostEqual(details['second']['panel']['atk'], 660 * 1.4)
+        self.assertAlmostEqual(details['third']['panel']['atk'], 660 * 1.4)
+        for step_id in ('second', 'third'):
             active = [
                 buff for buff in details[step_id]['applied_buffs']
                 if buff['rule_id'] == 'character_canhong_six_node_resonance_attack'
@@ -7298,16 +7294,13 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                 buff for buff in details[step_id]['triggered_buffs']
                 if buff['rule_id'] == 'character_canhong_six_node_resonance_attack'
             )
-            for step_id in ('dot-first', 'dot-refresh')
+            for step_id in ('first', 'second', 'third')
         }
-        self.assertEqual(refreshed['dot-first']['end_tick'], 210)
-        self.assertEqual(refreshed['dot-refresh']['end_tick'], 300)
-        self.assertFalse(any(
-            buff['rule_id'] == 'character_canhong_six_node_resonance_attack'
-            for buff in details['inside-window']['triggered_buffs']
-        ))
+        self.assertEqual(refreshed['first']['end_tick'], 200)
+        self.assertEqual(refreshed['second']['end_tick'], 300)
+        self.assertEqual(refreshed['third']['end_tick'], 450)
 
-    def test_canhong_six_node_resonance_attack_buff_is_not_refreshed_by_periodic_damage(self) -> None:
+    def test_canhong_six_node_resonance_attack_buff_is_refreshed_by_own_periodic_damage(self) -> None:
         result = simulate_shaft_axis({
             'team': [{
                 'slot': 0,
@@ -7324,11 +7317,13 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             'initial_energy': 200,
         })['result']
         first_periodic = result['periodic_damage_events'][0]
+        refreshed = next(
+            buff for buff in first_periodic['triggered_buffs']
+            if buff['rule_id'] == 'character_canhong_six_node_resonance_attack'
+        )
+
         self.assertEqual(first_periodic['tick'], 10)
-        self.assertFalse(any(
-            buff['rule_id'] == 'character_canhong_six_node_resonance_attack'
-            for buff in first_periodic['triggered_buffs']
-        ))
+        self.assertEqual(refreshed['end_tick'], 210)
 
     def test_loop_priming_keeps_signature_arc_stacks_across_axis_end(self) -> None:
         result = simulate_shaft_axis({

@@ -51,7 +51,7 @@
     flat_def: 'flat_def',
   };
   const CURTAIN_PASSIVE_TYPES = ['type2', 'type3', 'type4'];
-  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'dot_applied', 'periodic_damage', 'full_stack']);
+  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'periodic_damage', 'full_stack']);
   const PERMANENT_BUFF_END_TICK = 1000000000;
   const HARMONY_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
   const SPECIAL_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
@@ -3671,16 +3671,6 @@
       return triggered;
     }
 
-    function triggeredBuffsApplyDot(triggered) {
-      const periodicRuleIds = new Set(buffRules
-        .filter((rule) => rule.periodic_damage && typeof rule.periodic_damage === 'object')
-        .map((rule) => String(rule.id || '')));
-      return asList(triggered).some((summary) => (
-        periodicRuleIds.has(String(summary?.rule_id || ''))
-        || periodicRuleIds.has(String(summary?.definition_id || ''))
-      ));
-    }
-
     if (options.loop_enabled && loopDurationTicks > 0) {
       const configuredLoopInitialReactions = [];
       snapshots.forEach((snapshot) => {
@@ -3718,7 +3708,7 @@
               loop_prime_only: true,
             },
           );
-          const loopActionHitBuffs = triggerBuffsForEvent(
+          triggerBuffsForEvent(
             'action_hit',
             startTick,
             step,
@@ -3731,20 +3721,6 @@
               expected_critical_hits: expectedCriticalHits(action, calculateActionDamage(snapshot, action, enemy, mods())),
             },
           );
-          if (triggeredBuffsApplyDot(loopActionHitBuffs)) {
-            triggerBuffsForEvent(
-              'dot_applied',
-              startTick,
-              step,
-              action,
-              snapshot,
-              scheduled.is_background,
-              {
-                visual_trigger_tick: int(scheduled.visual_start_tick) - loopDurationTicks,
-                loop_prime_only: true,
-              },
-            );
-          }
           triggerBuffsForEvent(
             'action_end',
             endTick,
@@ -3779,20 +3755,6 @@
             loop_prime_only: true,
           },
         );
-        if (reactionTrigger.effect === '浊燃') {
-          triggerBuffsForEvent(
-            'dot_applied',
-            reactionTick - loopDurationTicks,
-            scheduled.step,
-            scheduled.action,
-            snapshot,
-            scheduled.is_background,
-            {
-              visual_trigger_tick: reactionTriggerTick(scheduled),
-              loop_prime_only: true,
-            },
-          );
-        }
         activeBuffs
           .filter((instance) => !previousInstances.has(instance))
           .forEach((instance) => {
@@ -4173,18 +4135,12 @@
       const appliedEnemyDebuffs = applyEnemyDebuffs(enemyDebuffs, action, buffTick);
       if (!action.periodic_damage) {
         for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
-          const actionHitBuffs = triggerBuffsForEvent('action_hit', startTick, step, action, snapshot, isBackground, {
+          triggeredBuffs.push(...triggerBuffsForEvent('action_hit', startTick, step, action, snapshot, isBackground, {
             visual_trigger_tick: visualStartTick,
             expected_critical_hits: criticalHitsPerAction,
             applied_enemy_debuffs: appliedEnemyDebuffs,
             enemy_debuffs: activeEnemyDebuffs(enemyDebuffs, buffTick),
-          });
-          triggeredBuffs.push(...actionHitBuffs);
-          if (triggeredBuffsApplyDot(actionHitBuffs)) {
-            triggeredBuffs.push(...triggerBuffsForEvent('dot_applied', startTick, step, action, snapshot, isBackground, {
-              visual_trigger_tick: visualStartTick,
-            }));
-          }
+          }));
         }
       }
       const reactionAmplification = reactionAmplificationMultiplier(snapshot, calc.panel, buffTick);
@@ -4296,17 +4252,6 @@
             visual_trigger_tick: reactionTriggerTick(scheduled),
           },
         ));
-        if (triggeredReaction === '浊燃') {
-          triggeredBuffs.push(...triggerBuffsForEvent(
-            'dot_applied',
-            reactionTick,
-            step,
-            action,
-            snapshot,
-            isBackground,
-            { visual_trigger_tick: reactionTriggerTick(scheduled) },
-          ));
-        }
       }
       if (reactionTrigger.warning) {
         warnings.push(reactionTrigger.warning);

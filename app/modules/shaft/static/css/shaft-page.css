@@ -1428,7 +1428,7 @@ body:has(.shaft-page) .shell {
 }
 
 .shaft-axis-preview-stat,
-.shaft-axis-preview-damage-types {
+.shaft-axis-preview-contributions {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1439,7 +1439,7 @@ body:has(.shaft-page) .shell {
 }
 
 .shaft-axis-preview-stat > span,
-.shaft-axis-preview-damage-types > span {
+.shaft-axis-preview-contributions > span {
     color: var(--muted);
     font-size: 11px;
     font-weight: 850;
@@ -1452,17 +1452,17 @@ body:has(.shaft-page) .shell {
     font-weight: 950;
 }
 
-.shaft-axis-preview-damage-types {
+.shaft-axis-preview-contributions {
     flex: 1 1 360px;
 }
 
-.shaft-axis-preview-damage-types > div {
+.shaft-axis-preview-contributions > div {
     display: flex;
     flex-wrap: wrap;
     gap: 6px 12px;
 }
 
-.shaft-axis-preview-damage-types b {
+.shaft-axis-preview-contributions b {
     color: rgba(243, 247, 255, 0.94);
     font-size: 11px;
     font-weight: 900;

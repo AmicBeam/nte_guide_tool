@@ -2510,6 +2510,36 @@
     buffList.innerHTML = items || '<div class="shaft-empty">暂无触发增益</div>';
   }
 
+  function damageContributionShares(result) {
+    const summary = result?.summary || {};
+    const totalDamage = Number(summary.total_damage || 0);
+    const characterShares = (result?.damage_by_slot || []).map((item) => ({
+      kind: 'character',
+      slot: Number(item.slot || 0),
+      label: item.character_name || memberName(item.slot),
+      damage: Number(item.damage || 0),
+      percent: Number(item.percent || 0),
+      color: SLOT_COLORS[Number(item.slot || 0) % SLOT_COLORS.length],
+    }));
+    return [
+      ...characterShares,
+      {
+        kind: 'harmony',
+        label: '环合伤害',
+        damage: Number(summary.harmony_damage || 0),
+        percent: totalDamage > 0 ? Number(summary.harmony_damage || 0) / totalDamage * 100 : 0,
+        color: DAMAGE_SOURCE_COLORS['创生'],
+      },
+      {
+        kind: 'stagger',
+        label: '倾陷伤害',
+        damage: Number(summary.stagger_damage || 0),
+        percent: totalDamage > 0 ? Number(summary.stagger_damage || 0) / totalDamage * 100 : 0,
+        color: DAMAGE_SOURCE_COLORS['倾陷'],
+      },
+    ];
+  }
+
   function renderResults() {
     renderSelfCheck();
     const result = freshResult();
@@ -2533,40 +2563,22 @@
     renderResultCard('shaft-stagger-damage', '倾陷伤害', summary.stagger_damage || 0, compareSummary?.stagger_damage, summary.total_damage || 0);
     renderResultCard('shaft-total-damage', '总伤', summary.total_damage || 0, compareSummary?.total_damage, summary.total_damage || 0);
     renderResultCard('shaft-dps', 'DPS', summary.dps || 0, compareSummary?.dps, null);
-    const contribution = result?.damage_by_slot || [];
+    const contributionShares = damageContributionShares(result);
+    const contribution = contributionShares.filter((item) => item.kind === 'character');
     const characterRows = contribution.map((item) => `
       <div class="shaft-contribution-row">
-        <span>${escapeHtml(item.character_name)}</span>
+        <span>${escapeHtml(item.label)}</span>
         <div class="shaft-contribution-bar"><span style="width: ${Math.max(0, Math.min(100, Number(item.percent || 0)))}%; --contribution-color:${SLOT_COLORS[Number(item.slot) % SLOT_COLORS.length]}"></span></div>
         <span>${formatNumber(item.percent || 0, 1)}%</span>
         <button class="secondary-btn shaft-action-contribution-btn" data-action-contribution-slot="${Number(item.slot)}" type="button" ${Number(item.damage || 0) > 0 ? '' : 'disabled'}>分析详情</button>
       </div>
     `).join('');
-    const independentRows = [
-      {
-        label: '环合伤害',
-        damage: Number(summary.harmony_damage || 0),
-        percent: Number(summary.total_damage || 0) > 0
-          ? Number(summary.harmony_damage || 0) / Number(summary.total_damage) * 100
-          : 0,
-        color: DAMAGE_SOURCE_COLORS['创生'],
-        trigger: 'data-open-harmony-analysis',
-      },
-      {
-        label: '倾陷伤害',
-        damage: Number(summary.stagger_damage || 0),
-        percent: Number(summary.total_damage || 0) > 0
-          ? Number(summary.stagger_damage || 0) / Number(summary.total_damage) * 100
-          : 0,
-        color: DAMAGE_SOURCE_COLORS['倾陷'],
-        trigger: 'data-open-stagger-analysis',
-      },
-    ].map((item) => `
+    const independentRows = contributionShares.filter((item) => item.kind !== 'character').map((item) => `
       <div class="shaft-contribution-row shaft-contribution-source-row">
         <span>${escapeHtml(item.label)}</span>
         <div class="shaft-contribution-bar"><span style="width: ${Math.max(0, Math.min(100, item.percent))}%; --contribution-color:${item.color}"></span></div>
         <span>${formatNumber(item.percent || 0, 1)}%</span>
-        <button class="secondary-btn shaft-action-contribution-btn" ${item.trigger} type="button" aria-haspopup="dialog" ${item.damage > 0 ? '' : 'disabled'}>分析详情</button>
+        <button class="secondary-btn shaft-action-contribution-btn" ${item.kind === 'harmony' ? 'data-open-harmony-analysis' : 'data-open-stagger-analysis'} type="button" aria-haspopup="dialog" ${item.damage > 0 ? '' : 'disabled'}>分析详情</button>
       </div>
     `).join('');
     $('shaft-contribution-list').innerHTML = (characterRows || independentRows)
@@ -3186,36 +3198,11 @@
     return state.axisPreviewPayload?.result || freshResult() || state.result || null;
   }
 
-  function previewDamageTypeShares(result = previewResult()) {
-    const damageByType = new Map();
-    const additionalTags = new Set(['追击', '附着']);
-    (result?.damage_by_action_by_slot || []).forEach((contribution) => {
-      (contribution.actions || []).forEach((action) => {
-        const damageType = String(action.damage_type || '');
-        const actionType = String(action.action_type || '');
-        const label = additionalTags.has(damageType)
-          ? (actionType || '其他')
-          : (damageType || actionType || '其他');
-        damageByType.set(label, (damageByType.get(label) || 0) + Math.max(0, Number(action.damage || 0)));
-      });
-    });
-    const summary = result?.summary || {};
-    const harmonyDamage = Math.max(0, Number(summary.harmony_damage || 0));
-    const staggerDamage = Math.max(0, Number(summary.stagger_damage || 0));
-    if (harmonyDamage > 0) damageByType.set('环合', (damageByType.get('环合') || 0) + harmonyDamage);
-    if (staggerDamage > 0) damageByType.set('倾陷', (damageByType.get('倾陷') || 0) + staggerDamage);
-    const totalDamage = Math.max(
-      0,
-      Number(summary.total_damage || 0),
-      Array.from(damageByType.values()).reduce((sum, damage) => sum + damage, 0),
-    );
-    return Array.from(damageByType.entries())
-      .filter(([, damage]) => damage > 0)
-      .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], 'zh-CN'))
-      .map(([label, damage]) => ({
-        label,
-        percent: totalDamage > 0 ? Math.round(damage / totalDamage * 100) : 0,
-      }));
+  function previewContributionShares(result = previewResult()) {
+    return damageContributionShares(result).map((item) => ({
+      label: item.label,
+      percent: Math.round(Number(item.percent || 0)),
+    }));
   }
 
   function renderAxisPreviewSummary() {
@@ -3223,14 +3210,14 @@
     if (!node) return;
     const result = previewResult();
     const summary = result?.summary || {};
-    const damageTypes = previewDamageTypeShares(result);
+    const contributionShares = previewContributionShares(result);
     node.innerHTML = `
       <div class="shaft-axis-preview-stat"><span>DPS</span><strong>${formatNumber(summary.dps || 0)}</strong></div>
       <div class="shaft-axis-preview-stat"><span>轴长</span><strong>${formatNumber(summary.duration_seconds || 0, 1)}s</strong></div>
-      <div class="shaft-axis-preview-damage-types">
-        <span>伤害类型</span>
-        <div>${damageTypes.length
-          ? damageTypes.map((item) => `<b>${escapeHtml(item.label)} ${item.percent}%</b>`).join('')
+      <div class="shaft-axis-preview-contributions">
+        <span>伤害占比</span>
+        <div>${contributionShares.length
+          ? contributionShares.map((item) => `<b>${escapeHtml(item.label)} ${item.percent}%</b>`).join('')
           : '<b>暂无伤害</b>'}</div>
       </div>
     `;
@@ -6657,6 +6644,9 @@
       closeContextMenu();
       return;
     }
+    if (state.page !== 'rotation') {
+      return;
+    }
     if (state.sharedReadOnly) {
       return;
     }
@@ -6729,7 +6719,7 @@
   }
 
   function handleClipboardCopy(event) {
-    if (state.sharedReadOnly) {
+    if (state.page !== 'rotation' || state.sharedReadOnly) {
       return;
     }
     if (isEditableTarget(event.target) || !selectedStepIds().length) {
@@ -6745,7 +6735,7 @@
   }
 
   function handleClipboardPaste(event) {
-    if (state.sharedReadOnly) {
+    if (state.page !== 'rotation' || state.sharedReadOnly) {
       return;
     }
     if (isEditableTarget(event.target) || !state.clipboardSteps.length) {

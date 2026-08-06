@@ -2565,7 +2565,7 @@
     "target": {"scope": "registrar"},
     "duration": {"type": "permanent"},
     "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.6},
+    "effects": {"all_dmg": 0.4},
     "display": {"line": false}
   },
   {

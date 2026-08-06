@@ -7231,6 +7231,8 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             'character_canhong_three_node_resonance_ultimate_multiplier',
             {buff['rule_id'] for buff in single_c_node['applied_buffs']},
         )
+        support_with_resonance = simulate('action_canhong_support', [1, 2, 4])
+        self.assertEqual(support_with_resonance['formula_parts']['skill_level'], 10)
 
         for action_id in (
             'action_canhong_q',
@@ -7675,6 +7677,12 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
         self.assertEqual(nightmare['stack_count'], 3)
 
+        hunt = next(
+            buff for buff in reality_attack['applied_buffs']
+            if buff['rule_id'] == 'character_canhong_a1_hunt'
+        )
+        self.assertEqual(hunt['effects']['all_dmg'], 0.4)
+
     def test_canhong_b_awakening_stores_blaze_and_consumes_it_on_fentian(self) -> None:
         result = simulate_shaft_axis({
             'team': [
@@ -7858,7 +7866,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertAlmostEqual(awakened['formula_parts']['base_multiplier_factor'], 1 + expected_bonus)
         self.assertAlmostEqual(awakened['direct_damage'] / baseline['direct_damage'], 1 + expected_bonus)
 
-    def test_canhong_missing_energy_and_stagger_values_use_documented_estimates(self) -> None:
+    def test_canhong_actions_match_uploaded_skill_damage_workbook(self) -> None:
         catalog = load_shaft_catalog()
         actions = {
             action['id']: action
@@ -7866,62 +7874,38 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             if action.get('character_id') == 'char_076a1f4e53'
         }
         expected = {
-            'action_canhong_support': (6.5, 2.5),
-            'action_canhong_a1': (2.4, 0.3),
-            'action_canhong_a2': (2.1, 0.3),
-            'action_canhong_a3': (3.3, 0.7),
-            'action_canhong_a4': (4.2, 1.1),
-            'action_canhong_a5': (4.8, 1.3),
-            'action_canhong_z1': (4.5, 1.4),
-            'action_canhong_illusion_a1': (1.2, 0.2),
-            'action_canhong_illusion_a2': (2.8, 0.6),
-            'action_canhong_illusion_a3': (3.0, 0.7),
-            'action_canhong_illusion_a4': (4.8, 1.6),
-            'action_canhong_illusion_z1': (4.2, 1.3),
-            'action_canhong_plunge': (2.8, 0.7),
-            'action_canhong_dodge_counter': (4.0, 2.5),
-            'action_canhong_e1': (6.3, 1.4),
-            'action_canhong_E1': (7.0, 2.0),
-            'action_canhong_E2': (9.5, 6.0),
-            'action_canhong_q': (0.0, 2.5),
-            'action_canhong_q_enhanced': (0.0, 2.5),
-            'action_canhong_q_blood_banquet': (0.0, 2.5),
+            'action_canhong_support': (2.0, 1, 5.2, 0.0, 2.5, 44),
+            'action_canhong_a1': (0.432, 2, 1.444, 2.405, 0.435, 2),
+            'action_canhong_a2': (0.352, 1, 1.176, 1.958, 0.355, 4),
+            'action_canhong_a3': (1.114, 3, 3.719, 6.193, 1.121, 5),
+            'action_canhong_a4': (1.782, 5, 5.948, 9.905, 1.793, 8),
+            'action_canhong_a5': (2.467, 6, 8.239, 13.719, 2.483, 13),
+            'action_canhong_z1': (2.178, 4, 7.301, 12.1, 2.25, 17),
+            'action_canhong_illusion_a1': (0.183, 1, 0.61, 1.018, 0.121, 21),
+            'action_canhong_illusion_a2': (0.999, 3, 3.321, 5.544, 0.661, 22),
+            'action_canhong_illusion_a3': (0.988, 4, 3.288, 5.486, 0.654, 25),
+            'action_canhong_illusion_a4': (2.82, 3, 9.38, 15.653, 1.865, 27),
+            'action_canhong_illusion_z1': (2.138, 5, 7.099, 11.901, 1.399, 29),
+            'action_canhong_plunge': (0.574, 1, 2.1, 3.4, 0.4, 19),
+            'action_canhong_dodge_counter': (1.75, 1, 2.5, 4.2, 2.5, 20),
+            'action_canhong_e1': (1.5, 5, 3.8, 6.3, 0.8, 34),
+            'action_canhong_E1': (1.752, 5, 3.8, 6.3, 6.0, 36),
+            'action_canhong_E2': (4.498, 7, 24.999, 18.901, 2.299, 41),
+            'action_canhong_q': (4.2, 2, 0.0, 0.0, 2.5, 45),
+            'action_canhong_q_enhanced': (5.5, 2, 0.0, 0.0, 2.5, 47),
+            'action_canhong_q_blood_banquet': (6.999, 4, 0.0, 0.0, 2.5, 49),
         }
 
         self.assertEqual(set(expected), set(actions) - {'action_none_076a1f4e53', 'action_canhong_illusion_enter'})
-        for action_id, (energy, stagger) in expected.items():
+        for action_id, (atk, hit_count, energy, harmony, stagger, source_row) in expected.items():
             with self.subTest(action_id=action_id):
+                self.assertEqual(actions[action_id]['multipliers']['atk'], atk)
+                self.assertEqual(actions[action_id]['hit_count'], hit_count)
                 self.assertEqual(actions[action_id].get('energy_gain', 0), energy)
+                self.assertEqual(actions[action_id].get('harmony', 0), harmony)
                 self.assertEqual(actions[action_id].get('stagger', 0), stagger)
-                note = actions[action_id].get('source_note', '')
-                self.assertTrue('估值' in note or '用户口径' in note)
-
-    def test_canhong_basic_attack_harmony_uses_documented_estimates(self) -> None:
-        actions = {
-            action['id']: action
-            for action in load_shaft_catalog()['actions']
-            if action.get('character_id') == 'char_076a1f4e53'
-        }
-        expected = {
-            'action_canhong_a1': 2.5,
-            'action_canhong_a2': 2.0,
-            'action_canhong_a3': 4.0,
-            'action_canhong_a4': 6.0,
-            'action_canhong_a5': 7.0,
-            'action_canhong_z1': 6.5,
-            'action_canhong_illusion_a1': 1.5,
-            'action_canhong_illusion_a2': 3.5,
-            'action_canhong_illusion_a3': 4.0,
-            'action_canhong_illusion_a4': 7.5,
-            'action_canhong_illusion_z1': 6.5,
-            'action_canhong_plunge': 4.6,
-            'action_canhong_dodge_counter': 6.3,
-        }
-
-        for action_id, harmony in expected.items():
-            with self.subTest(action_id=action_id):
-                self.assertEqual(actions[action_id].get('harmony'), harmony)
-                self.assertIn('经验估值', actions[action_id].get('source_note', ''))
+                self.assertEqual(actions[action_id]['source_row'], source_row)
+                self.assertIn('SkillDamageData_Zankou_Radio.xlsx', actions[action_id].get('source_note', ''))
 
 
 if __name__ == '__main__':

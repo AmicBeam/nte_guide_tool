@@ -409,7 +409,10 @@
     }
     const levels = snapshot.skill_levels || {};
     const baseLevel = Math.max(1, int(levels[category], SKILL_LEVEL_DEFAULTS[category]));
-    const effectiveLevel = Math.max(1, baseLevel + int(snapshot.skill_level_bonus));
+    const resonanceBonus = action?.resonance_skill_level_bonus === false
+      ? 0
+      : int(snapshot.skill_level_bonus);
+    const effectiveLevel = Math.max(1, baseLevel + resonanceBonus);
     return {
       category,
       level: effectiveLevel,

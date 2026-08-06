@@ -2416,10 +2416,9 @@
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 110,
     "trigger": {
-      "event": "action_hit",
-      "periodic_damage": true,
+      "event": "dot_applied",
       "source": {"scope": "registrar"},
-      "conditions": [{"type": "awakening_count_min", "min": 6}, {"type": "hit_count_positive"}]
+      "conditions": [{"type": "awakening_count_min", "min": 6}]
     },
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},
@@ -2762,7 +2761,7 @@
     },
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 9990, "loop_carry": true},
-    "stacking": {"key": "character_canhong_b_blaze_stack", "mode": "add_stack", "max_stacks": 2},
+    "stacking": {"key": "character_canhong_b_blaze_stack", "mode": "add_stack", "max_stacks": 1},
     "effects": {},
     "display": {"line": true}
   },
@@ -2786,7 +2785,7 @@
         "per_stack_from_effect": {"final_dmg": {"source": "blaze_final_dmg", "factor": 1}}
       }
     },
-    "effects": {"blaze_final_dmg": 1},
+    "effects": {"blaze_final_dmg": 1.5},
     "display": {"line": false}
   },
   {
@@ -2808,7 +2807,7 @@
         "per_stack_from_effect": {"final_dmg": {"source": "blaze_final_dmg", "factor": 1}}
       }
     },
-    "effects": {"blaze_final_dmg": 1},
+    "effects": {"blaze_final_dmg": 1.5},
     "display": {"line": false}
   },
   {

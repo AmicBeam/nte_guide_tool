@@ -3455,8 +3455,9 @@
     if (!node) {
       return;
     }
-    const axisWarnings = window.ShaftSelfCheck?.inspectAxis(state.axis, state.catalog) || [];
-    const simulationWarnings = (freshResult()?.details || []).flatMap((detail) =>
+    const resultDetails = freshResult()?.details || [];
+    const axisWarnings = window.ShaftSelfCheck?.inspectAxis(state.axis, state.catalog, resultDetails) || [];
+    const simulationWarnings = resultDetails.flatMap((detail) =>
       (detail.warnings || []).map((warning) =>
         `${detail.character_name || memberName(detail.slot)}「${detail.action_name || '动作'}」：${warning}`
       )

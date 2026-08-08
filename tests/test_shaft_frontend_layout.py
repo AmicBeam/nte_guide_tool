@@ -1249,6 +1249,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('.shaft-reaction-damage-marker.shaft-damage-tooltip-above:hover::after,', css)
         self.assertIn("isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9", source)
         self.assertIn('const warnings = Array.from(new Set([...axisWarnings, ...simulationWarnings]));', source)
+        self.assertIn('inspectAxis(state.axis, state.catalog, resultDetails)', source)
 
     def test_buff_line_uses_only_the_latest_stack_snapshot(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')

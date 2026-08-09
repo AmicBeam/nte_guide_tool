@@ -723,7 +723,7 @@
           snapshot,
           'stagger',
           'stagger_by_awakening_node',
-        ) * (1 + panelMods.stagger_strength / 300) * (1 + panelMods.stagger_multiplier),
+        ) * (1 + panelMods.stagger_multiplier),
       ),
       harmony: num(action.harmony),
       energy_gain: num(action.energy_gain) * (1 + panelMods.energy_recharge),

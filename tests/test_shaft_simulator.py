@@ -4604,6 +4604,56 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             )
         self.assertTrue(all(item['damage'] > 0 for item in contributions))
 
+    def test_stagger_strength_only_increases_stagger_damage_not_stagger_amount_or_frequency(self) -> None:
+        catalog = load_shaft_catalog()
+        action = next(
+            item for item in catalog['actions']
+            if float(item.get('stagger') or 0) > 0
+            and float((item.get('multipliers') or {}).get('atk') or 0) > 0
+        )
+        character = next(
+            item for item in catalog['characters']
+            if item['id'] == action['character_id']
+        )
+
+        def simulate(stagger_substats: int) -> dict:
+            return simulate_shaft_axis({
+                'team': [{
+                    'slot': 0,
+                    'character_id': character['id'],
+                    'arc_id': '',
+                    'cartridge_id': '',
+                    'substat_counts': {'stagger_strength': stagger_substats},
+                }],
+                'steps': [{
+                    'id': 'stagger-strength-regression',
+                    'slot': 0,
+                    'action_id': action['id'],
+                    'start_tick': 0,
+                }],
+                'initial_energy': 200,
+            })['result']
+
+        baseline = simulate(0)
+        strengthened = simulate(5)
+
+        self.assertAlmostEqual(
+            strengthened['details'][0]['stagger_amount'],
+            baseline['details'][0]['stagger_amount'],
+        )
+        self.assertAlmostEqual(
+            strengthened['summary']['total_stagger'],
+            baseline['summary']['total_stagger'],
+        )
+        self.assertAlmostEqual(
+            strengthened['summary']['stagger_frequency'],
+            baseline['summary']['stagger_frequency'],
+        )
+        self.assertGreater(
+            strengthened['stagger_contributions_by_slot'][0]['damage_per_trigger'],
+            baseline['stagger_contributions_by_slot'][0]['damage_per_trigger'],
+        )
+
     def test_stagger_damage_bonus_adds_strength_daphne_and_canhong_awakening(self) -> None:
         def simulate(canhong_awakening_nodes: list[int]) -> dict:
             result = simulate_shaft_axis({

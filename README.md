@@ -56,9 +56,10 @@ python3 scripts/seed_mock_account.py
 
 仓库提供仅更新服务器 `app/` 目录的推送式发布脚本。发布源固定为当前 Git `HEAD`
 中已提交的 `app/`；如果 `app/` 存在已暂存、未暂存或未跟踪改动，检查、打包和发布
-都会拒绝执行，避免把本地半成品同步到服务器。脚本不要求提交已经推送或合入
-`main`，发布版本由当前分支的 `HEAD` 决定。脚本不会上传或覆盖项目根目录的
-`.env`、数据库、日志、虚拟环境和其他目录。
+默认都会拒绝执行，避免把本地半成品同步到服务器。确认只需发布当前提交时，可以显式
+传入 `--allow-dirty-app` 跳过该检查；发布包仍通过 Git `HEAD` 生成，不包含本地未提交
+文件。脚本不要求提交已经推送或合入 `main`，发布版本由当前分支的 `HEAD` 决定。
+脚本不会上传或覆盖项目根目录的 `.env`、数据库、日志、虚拟环境和其他目录。
 
 首次使用时复制本机配置模板并填写真实 SSH 地址和 Windows 项目路径；本机配置已被
 Git 忽略，不会把服务器信息提交到仓库：
@@ -83,6 +84,12 @@ scripts/deploy_windows_app.sh --prepare
 
 ```bash
 scripts/deploy_windows_app.sh --deploy
+```
+
+如果当前工作区保留着其他尚未提交的 `app/` 改动，但确认只部署 Git `HEAD` 中的内容：
+
+```bash
+scripts/deploy_windows_app.sh --deploy --allow-dirty-app
 ```
 
 远端替换前会把旧 `app/` 移到 Windows 临时目录中作为备份。当前服务器通过

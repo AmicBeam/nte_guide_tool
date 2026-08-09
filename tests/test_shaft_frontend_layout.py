@@ -1,4 +1,7 @@
+import json
 import re
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -761,6 +764,108 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('shaft-contribution-source-row', render_results)
         self.assertIn('--contribution-color:${item.color}', render_results)
         self.assertIn('.shaft-contribution-source-row .shaft-contribution-bar span', css)
+
+    def test_substat_contribution_analysis_is_local_normalized_and_non_mutating(self) -> None:
+        template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
+        css = SHAFT_CSS.read_text(encoding='utf-8')
+
+        self.assertIn('id="shaft-substat-contribution-btn"', template)
+        self.assertIn('id="shaft-substat-contribution-dialog"', template)
+        self.assertIn('id="shaft-substat-contribution-content"', template)
+        self.assertIn('>副词条贡献度</button>', template)
+        self.assertIn('>副词条贡献度</h2>', template)
+        self.assertNotIn('>计算词条贡献度</button>', template)
+        self.assertIn('以8类主要副词条各 ${formatNumber(analysis.base_count || 0)} 条', source)
+        self.assertIn('纯前端计算，不改配装或对比快照', source)
+        self.assertNotIn('基准临时将每位角色的通伤', source)
+        self.assertIn('.shaft-substat-contribution-table', css)
+        self.assertIn('max-height: calc(100vh - 28px);', css)
+        self.assertIn('overflow-y: auto;', css)
+        self.assertIn('function analyzeSubstatContributions(', engine)
+        self.assertIn("{ key: 'all_dmg', label: '通伤' }", engine)
+        self.assertIn("{ key: 'def_pct', label: '防御%' }", engine)
+        self.assertIn("'flat_atk'", engine)
+        self.assertIn("'flat_hp'", engine)
+        self.assertIn("'flat_def'", engine)
+        self.assertIn('const BASELINE_SUBSTAT_FIELDS = SUBSTAT_CONTRIBUTION_FIELDS.slice(0, 8);', engine)
+        self.assertIn('num(candidateMember.substat_counts[field.key]) + incrementCount', engine)
+        self.assertIn('row.increase_damage / maxIncreaseDamage * 100', engine)
+        self.assertIn('const contributionByCell = new Map', source)
+        self.assertIn('const topContributionRanksBySlot = new Map', source)
+        self.assertIn('.slice(0, 4);', source)
+        self.assertIn('contribution-rank-${rank}', source)
+        self.assertIn("contribution > 0 ? `${formatNumber(contribution, 1)}%` : '—'", source)
+        for rank in range(1, 5):
+            self.assertIn(f'td.contribution-rank-{rank}', css)
+
+        open_analysis = source[
+            source.index('async function openSubstatContributionAnalysis'):
+            source.index('function closeSubstatContributionAnalysis')
+        ]
+        self.assertIn('window.ShaftEngine.analyzeSubstatContributions(state.axis, state.catalog', open_analysis)
+        self.assertNotIn('shaftRequest(', open_analysis)
+        self.assertNotIn('state.compareSnapshot =', open_analysis)
+
+        node_bin = shutil.which('node')
+        if not node_bin:
+            self.skipTest('node is required for shaft engine regression tests')
+        catalog = get_shaft_catalog_payload()
+        action = next(
+            item
+            for item in catalog['actions']
+            if item.get('action_type') == '普攻'
+            and float((item.get('multipliers') or {}).get('atk') or 0) > 0
+        )
+        character = next(item for item in catalog['characters'] if item['id'] == action['character_id'])
+        axis = {
+            'team': [{
+                'slot': 0,
+                'character_id': character['id'],
+                'character_name': character['name'],
+                'arc_id': '',
+                'cartridge_id': '',
+                'substat_counts': {'all_dmg': 30, 'flat_atk': 30},
+            }],
+            'steps': [{
+                'id': 'substat-analysis-action',
+                'slot': 0,
+                'action_id': action['id'],
+                'start_tick': 0,
+            }],
+            'enemy': {'level': 90, 'initial_resistance': 0.3},
+            'initial_energy': 1000,
+        }
+        completed = subprocess.run(
+            [node_bin, str(ROOT / 'scripts' / 'shaft_compute.js')],
+            input=json.dumps({
+                'operation': 'analyze_substats',
+                'axis': axis,
+                'catalog': catalog,
+                'options': {'base_count': 15, 'increment_count': 5},
+            }),
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+        analysis = json.loads(completed.stdout)['result']
+        self.assertEqual(analysis['base_count'], 15)
+        self.assertEqual(analysis['increment_count'], 5)
+        self.assertGreater(analysis['baseline_total_damage'], 0)
+        self.assertTrue(analysis['rows'])
+        self.assertAlmostEqual(analysis['rows'][0]['contribution_percent'], 100.0)
+        self.assertTrue(all(row['increase_damage'] > 0 for row in analysis['rows']))
+        self.assertEqual(
+            {field['key'] for field in analysis['fields']},
+            {
+                'all_dmg', 'crit_rate', 'crit_dmg', 'harmony_strength',
+                'stagger_strength', 'atk_pct', 'hp_pct', 'def_pct',
+                'flat_atk', 'flat_hp', 'flat_def',
+            },
+        )
+        self.assertIn('flat_atk', {row['stat_key'] for row in analysis['rows']})
 
     def test_character_action_contribution_dialog_aggregates_repeated_actions(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')

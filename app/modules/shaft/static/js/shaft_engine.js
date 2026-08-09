@@ -4650,6 +4650,95 @@
     };
   }
 
+  const SUBSTAT_CONTRIBUTION_FIELDS = [
+    { key: 'all_dmg', label: '通伤' },
+    { key: 'crit_rate', label: '暴击' },
+    { key: 'crit_dmg', label: '暴伤' },
+    { key: 'harmony_strength', label: '环合' },
+    { key: 'stagger_strength', label: '倾陷' },
+    { key: 'atk_pct', label: '攻击%' },
+    { key: 'hp_pct', label: '生命%' },
+    { key: 'def_pct', label: '防御%' },
+    { key: 'flat_atk', label: '攻击' },
+    { key: 'flat_hp', label: '生命' },
+    { key: 'flat_def', label: '防御' },
+  ];
+
+  const BASELINE_SUBSTAT_FIELDS = SUBSTAT_CONTRIBUTION_FIELDS.slice(0, 8);
+
+  function axisWithContributionSubstats(axisPayload, baseCount = 15) {
+    const axis = JSON.parse(JSON.stringify(axisPayload || {}));
+    const baseSubstats = Object.fromEntries(SUBSTAT_CONTRIBUTION_FIELDS.map((field) => [field.key, 0]));
+    BASELINE_SUBSTAT_FIELDS.forEach((field) => {
+      baseSubstats[field.key] = baseCount;
+    });
+    axis.team = asList(axis.team).map((member) => ({
+      ...member,
+      substat_counts: { ...baseSubstats },
+    }));
+    return axis;
+  }
+
+  function analyzeSubstatContributions(axisPayload, catalog, options = {}) {
+    if (!asList(axisPayload?.steps).length) {
+      throw new Error('请先在动作轴中添加动作。');
+    }
+    const baseCount = Math.max(0, int(options.base_count, 15));
+    const incrementCount = Math.max(1, int(options.increment_count, 5));
+    const baselineAxis = axisWithContributionSubstats(axisPayload, baseCount);
+    const baselineResult = simulateAxis(baselineAxis, catalog);
+    const baselineTotalDamage = num(baselineResult?.summary?.total_damage);
+    const rows = [];
+
+    asList(baselineAxis.team).forEach((member) => {
+      SUBSTAT_CONTRIBUTION_FIELDS.forEach((field) => {
+        const candidateAxis = JSON.parse(JSON.stringify(baselineAxis));
+        const candidateMember = asList(candidateAxis.team)
+          .find((item) => int(item.slot) === int(member.slot));
+        if (!candidateMember) return;
+        candidateMember.substat_counts[field.key] = num(candidateMember.substat_counts[field.key]) + incrementCount;
+        const candidateResult = simulateAxis(candidateAxis, catalog);
+        const candidateTotalDamage = num(candidateResult?.summary?.total_damage);
+        const increaseDamage = candidateTotalDamage - baselineTotalDamage;
+        const epsilon = Math.max(1e-8, Math.abs(baselineTotalDamage) * 1e-12);
+        if (increaseDamage <= epsilon) return;
+        rows.push({
+          slot: int(member.slot),
+          character_id: String(member.character_id || ''),
+          character_name: String(member.character_name || ''),
+          stat_key: field.key,
+          stat_label: field.label,
+          boosted_total_damage: candidateTotalDamage,
+          increase_damage: increaseDamage,
+          increase_percent: baselineTotalDamage > 0 ? increaseDamage / baselineTotalDamage * 100 : 0,
+        });
+      });
+    });
+
+    const maxIncreaseDamage = Math.max(0, ...rows.map((row) => row.increase_damage));
+    rows.forEach((row) => {
+      row.contribution_percent = maxIncreaseDamage > 0
+        ? row.increase_damage / maxIncreaseDamage * 100
+        : 0;
+    });
+    rows.sort((left, right) => (
+      right.contribution_percent - left.contribution_percent
+      || right.increase_damage - left.increase_damage
+      || left.slot - right.slot
+      || SUBSTAT_CONTRIBUTION_FIELDS.findIndex((field) => field.key === left.stat_key)
+        - SUBSTAT_CONTRIBUTION_FIELDS.findIndex((field) => field.key === right.stat_key)
+    ));
+
+    return {
+      base_count: baseCount,
+      increment_count: incrementCount,
+      baseline_total_damage: baselineTotalDamage,
+      max_increase_damage: maxIncreaseDamage,
+      fields: SUBSTAT_CONTRIBUTION_FIELDS.map((field) => ({ ...field })),
+      rows,
+    };
+  }
+
   return {
     ELEMENTS,
     ZERO_ACTION_VISUAL_TICKS,
@@ -4658,5 +4747,6 @@
     buildSnapshot,
     buildPanelProjection,
     simulateAxis,
+    analyzeSubstatContributions,
   };
 }));

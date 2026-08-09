@@ -11,7 +11,9 @@ function readStdin() {
 
 try {
   const input = JSON.parse(readStdin() || '{}');
-  const result = engine.simulateAxis(input.axis || {}, input.catalog || {});
+  const result = input.operation === 'analyze_substats'
+    ? engine.analyzeSubstatContributions(input.axis || {}, input.catalog || {}, input.options || {})
+    : engine.simulateAxis(input.axis || {}, input.catalog || {});
   process.stdout.write(`${JSON.stringify({ ok: true, result })}\n`);
 } catch (error) {
   process.stdout.write(`${JSON.stringify({ ok: false, error: error && error.message ? error.message : String(error) })}\n`);

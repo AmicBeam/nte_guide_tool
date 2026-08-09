@@ -171,6 +171,7 @@
     previewTickPx: 0,
     axisPreviewPayload: null,
     axisPreviewSaving: false,
+    substatAnalysisInFlight: false,
   };
 
   function $(id) {
@@ -3098,6 +3099,105 @@
     if (returnFocus?.isConnected) {
       returnFocus.focus();
     }
+  }
+
+  function renderSubstatContributionAnalysis(analysis) {
+    const content = $('shaft-substat-contribution-content');
+    if (!content) return;
+    const rows = analysis?.rows || [];
+    const fields = (analysis?.fields || []).filter((field) => (
+      rows.some((row) => row.stat_key === field.key && Number(row.contribution_percent || 0) > 0)
+    ));
+    const characters = Array.from(new Map(rows.map((row) => [Number(row.slot), {
+      slot: Number(row.slot),
+      name: row.character_name || memberName(row.slot),
+    }])).values()).sort((left, right) => left.slot - right.slot);
+    const contributionByCell = new Map(rows.map((row) => [
+      `${Number(row.slot)}:${row.stat_key}`,
+      Number(row.contribution_percent || 0),
+    ]));
+    const topContributionRanksBySlot = new Map(characters.map((character) => {
+      const rankedFields = fields
+        .map((field, fieldIndex) => ({
+          key: field.key,
+          fieldIndex,
+          contribution: contributionByCell.get(`${character.slot}:${field.key}`) || 0,
+        }))
+        .filter((entry) => entry.contribution > 0)
+        .sort((left, right) => right.contribution - left.contribution || left.fieldIndex - right.fieldIndex)
+        .slice(0, 4);
+      return [character.slot, new Map(rankedFields.map((entry, index) => [entry.key, index + 1]))];
+    }));
+    content.innerHTML = `
+      <div class="shaft-substat-contribution-note">
+        以8类主要副词条各 ${formatNumber(analysis.base_count || 0)} 条、小攻击/生命/防御为 0 作基准，逐角色测试11类副词条各 +${formatNumber(analysis.increment_count || 0)}。最高收益为100%，—表示无提升；纯前端计算，不改配装或对比快照。
+      </div>
+      ${characters.length && fields.length ? `
+        <div class="shaft-substat-contribution-table-wrap">
+          <table class="shaft-substat-contribution-table">
+            <thead><tr><th>角色</th>${fields.map((field) => `<th>${escapeHtml(field.label)}</th>`).join('')}</tr></thead>
+            <tbody>${characters.map((character) => `
+              <tr>
+                <th scope="row">${escapeHtml(character.name)}</th>
+                ${fields.map((field) => {
+                  const contribution = contributionByCell.get(`${character.slot}:${field.key}`) || 0;
+                  const rank = topContributionRanksBySlot.get(character.slot)?.get(field.key) || 0;
+                  const rankClass = rank ? ` contribution-rank-${rank}` : '';
+                  const rankTitle = rank ? ` title="${escapeHtml(character.name)}收益第 ${rank} 名"` : '';
+                  return `<td class="${contribution > 0 ? `has-contribution${rankClass}` : 'has-no-contribution'}"${rankTitle}>${contribution > 0 ? `${formatNumber(contribution, 1)}%` : '—'}</td>`;
+                }).join('')}
+              </tr>
+            `).join('')}</tbody>
+          </table>
+        </div>
+      ` : '<div class="shaft-empty">当前轴中没有可产生正向总伤提升的词条组合。</div>'}
+    `;
+  }
+
+  async function openSubstatContributionAnalysis(trigger = null) {
+    if (state.substatAnalysisInFlight) return;
+    if (!Array.isArray(state.axis?.steps) || !state.axis.steps.length) {
+      showToast('请先在动作轴中添加动作', 'warning');
+      return;
+    }
+    if (!window.ShaftEngine || typeof window.ShaftEngine.analyzeSubstatContributions !== 'function') {
+      showToast('副词条贡献度计算引擎未加载', 'warning');
+      return;
+    }
+    const button = $('shaft-substat-contribution-btn');
+    const originalText = button?.textContent || '副词条贡献度';
+    state.substatAnalysisInFlight = true;
+    if (button) {
+      button.disabled = true;
+      button.textContent = `正在计算 ${Math.max(0, (state.axis.team || []).length * 11)} 组方案…`;
+    }
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+      const analysis = window.ShaftEngine.analyzeSubstatContributions(state.axis, state.catalog, {
+        base_count: 15,
+        increment_count: 5,
+      });
+      renderSubstatContributionAnalysis(analysis);
+      const dialog = $('shaft-substat-contribution-dialog');
+      dialog._returnFocus = trigger || button;
+      dialog.showModal();
+    } catch (error) {
+      showToast(error.message || '副词条贡献度计算失败', 'warning');
+    } finally {
+      state.substatAnalysisInFlight = false;
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+  }
+
+  function closeSubstatContributionAnalysis() {
+    const dialog = $('shaft-substat-contribution-dialog');
+    if (!dialog?.open) return;
+    const returnFocus = dialog._returnFocus;
+    dialog.close();
+    if (returnFocus?.isConnected) returnFocus.focus();
   }
 
   function openShortcutHelp() {
@@ -8019,6 +8119,14 @@
     $('shaft-compare-controls').addEventListener('click', handleCompareControls);
     $('shaft-compare-controls').addEventListener('change', handleCompareControlChange);
     $('shaft-contribution-list').addEventListener('click', handleContributionClick);
+    $('shaft-substat-contribution-btn').addEventListener('click', (event) => {
+      openSubstatContributionAnalysis(event.currentTarget);
+    });
+    $('shaft-substat-contribution-dialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget || event.target.closest('[data-close-substat-contribution]')) {
+        closeSubstatContributionAnalysis();
+      }
+    });
     $('shaft-stagger-analysis-dialog').addEventListener('click', (event) => {
       if (event.target === event.currentTarget || event.target.closest('[data-close-stagger-analysis]')) {
         closeStaggerAnalysis();

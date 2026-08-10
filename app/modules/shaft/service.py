@@ -1053,6 +1053,24 @@ def serialize_shaft_axis(
     if include_axis:
         payload['axis'] = axis_payload
         payload['result'] = result
+        payload['local_copy_id'] = None
+        if player is not None and axis.visibility == 'public' and axis.owner_id != player.id:
+            local_copy = ShaftAxis.select().where(
+                (ShaftAxis.owner == player) &
+                (ShaftAxis.visibility == 'private') &
+                (ShaftAxis.forked_from == axis)
+            ).order_by(ShaftAxis.updated_at.desc()).first()
+            if local_copy is None:
+                author = (axis.owner.nickname or axis.owner.player_uid or '作者').strip() or '作者'
+                suffix = f' - {author}'
+                base_title = (axis.title or '未命名排轴').strip() or '未命名排轴'
+                legacy_title = f'{base_title[:max(1, MAX_AXIS_TITLE_LENGTH - len(suffix))]}{suffix}'
+                local_copy = ShaftAxis.select().where(
+                    (ShaftAxis.owner == player) &
+                    (ShaftAxis.visibility == 'private') &
+                    (ShaftAxis.title == legacy_title)
+                ).order_by(ShaftAxis.updated_at.desc()).first()
+            payload['local_copy_id'] = local_copy.id if local_copy is not None else None
     return payload
 
 
@@ -1130,13 +1148,34 @@ def save_shaft_axis(player: Player, payload: dict[str, Any], axis_id: int | None
     summary = result['summary']
     title = _clean_text(payload.get('title') or '未命名排轴', MAX_AXIS_TITLE_LENGTH) or '未命名排轴'
     description = _clean_text(payload.get('description'), MAX_AXIS_DESCRIPTION_LENGTH)
+    source_axis_id = _int(payload.get('source_axis_id'))
 
     with atomic_transaction():
+        source_axis: ShaftAxis | None = None
+        if source_axis_id > 0:
+            source_axis = ShaftAxis.select().where(
+                (ShaftAxis.id == source_axis_id) &
+                (ShaftAxis.visibility == 'public')
+            ).first()
+            if source_axis is None or source_axis.owner_id == player.id:
+                raise RuleValidationError('在线排轴来源无效。')
         record: ShaftAxis | None = None
         if axis_id is not None:
             record = _private_axis_query_for_player(axis_id, player)
             if record is None:
                 raise RuleValidationError('没有保存这个排轴的权限。')
+        elif source_axis is not None:
+            record = ShaftAxis.select().where(
+                (ShaftAxis.owner == player) &
+                (ShaftAxis.visibility == 'private') &
+                (ShaftAxis.forked_from == source_axis)
+            ).order_by(ShaftAxis.updated_at.desc()).first()
+            if record is None:
+                record = ShaftAxis.select().where(
+                    (ShaftAxis.owner == player) &
+                    (ShaftAxis.visibility == 'private') &
+                    (ShaftAxis.title == title)
+                ).order_by(ShaftAxis.updated_at.desc()).first()
         duplicate_title_query = ShaftAxis.select().where(
             (ShaftAxis.owner == player) &
             (ShaftAxis.visibility == 'private') &
@@ -1169,6 +1208,8 @@ def save_shaft_axis(player: Player, payload: dict[str, Any], axis_id: int | None
         record.total_damage = _int(summary.get('total_damage'))
         record.dps_x100 = _int(_num(summary.get('dps')) * 100)
         record.dedupe_hash = dedupe_hash
+        if source_axis is not None:
+            record.forked_from = source_axis
         record.updated_at = now
         record.published_at = None
         record.save()

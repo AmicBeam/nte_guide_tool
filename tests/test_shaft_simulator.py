@@ -36,7 +36,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 self.assertEqual(actions_by_character[character['id']][-1]['name'], '无')
 
     def test_characters_without_bond_bonus_cannot_enable_bond(self) -> None:
-        for character_id in ('char_dd034941ef', 'char_076a1f4e53'):
+        for character_id in ('char_dd034941ef',):
             with self.subTest(character_id=character_id):
                 normalized = normalize_axis_payload({
                     'team': [{
@@ -912,6 +912,27 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         with_bond = panel_with_bond(True)
         self.assertAlmostEqual(with_bond['atk'] - without_bond['atk'], 596.0 * 0.05)
         self.assertEqual(with_bond['crit_rate'], without_bond['crit_rate'])
+
+    def test_canhong_bond_bonus_adds_four_percent_crit_rate(self) -> None:
+        def panel_with_bond(enabled: bool) -> dict:
+            result = simulate_shaft_axis({
+                'team': [{
+                    'slot': 0,
+                    'character_id': 'char_076a1f4e53',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                    'bond_full': enabled,
+                }],
+                'steps': [{'id': 'a1', 'slot': 0, 'action_id': 'action_canhong_a1', 'start_tick': 0}],
+                'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+                'initial_energy': 0,
+            })['result']
+            return result['details'][0]['panel']
+
+        without_bond = panel_with_bond(False)
+        with_bond = panel_with_bond(True)
+        self.assertAlmostEqual(with_bond['crit_rate'] - without_bond['crit_rate'], 0.04)
+        self.assertEqual(with_bond['atk'], without_bond['atk'])
 
     def test_character_timed_buff_triggers_and_applies_to_later_action(self) -> None:
         result = simulate_shaft_axis({

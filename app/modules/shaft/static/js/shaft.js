@@ -3474,6 +3474,9 @@
       ? `${ownerName || '未知作者'} · ${String(payload.description || '').trim() || '暂无备注'}`
       : '';
     $('shaft-axis-preview-footer').hidden = !marketPreview;
+    $('shaft-axis-preview-save-btn').textContent = Number(payload?.local_copy_id || 0)
+      ? '更新到本地'
+      : '保存到本地';
     dialog._returnFocus = trigger;
     dialog.showModal();
     state.previewTickPx = 0;
@@ -3529,26 +3532,30 @@
     }
     state.axisPreviewSaving = true;
     const button = $('shaft-axis-preview-save-btn');
+    const localCopyId = Number(payload.local_copy_id || 0);
+    const updateLocalCopy = localCopyId > 0;
     button.disabled = true;
-    button.textContent = '保存中';
+    button.textContent = updateLocalCopy ? '更新中' : '保存中';
     try {
-      const saved = await shaftRequest('/api/shaft/axes', {
-        method: 'POST',
+      const saved = await shaftRequest(updateLocalCopy ? `/api/shaft/axes/${localCopyId}` : '/api/shaft/axes', {
+        method: updateLocalCopy ? 'PUT' : 'POST',
         body: JSON.stringify({
           title: marketAxisLocalTitle(payload),
           description: String(payload.description || ''),
           axis: payload.axis,
           result: payload.result,
+          source_axis_id: payload.is_owner ? 0 : Number(payload.id || 0),
         }),
       }, { authRequired: true });
+      payload.local_copy_id = saved.id;
       await loadMyAxes();
       closeAxisPreview();
-      setStatus('已保存到本地');
-      showToast(`已保存为「${saved.title}」`);
+      setStatus(updateLocalCopy ? '已更新到本地' : '已保存到本地');
+      showToast(updateLocalCopy ? `已更新「${saved.title}」` : `已保存为「${saved.title}」`);
     } catch (error) {
       state.axisPreviewSaving = false;
       button.disabled = false;
-      button.textContent = '保存到本地';
+      button.textContent = updateLocalCopy ? '更新到本地' : '保存到本地';
       setStatus(error.message, 'error');
     }
   }

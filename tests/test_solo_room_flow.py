@@ -656,6 +656,32 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         self.assertEqual(copied['owner']['player_uid'], 'shaft-preview-recipient')
         self.assertEqual(copied['axis'], preview['axis'])
         self.assertEqual(copied['result'], preview['result'])
+        self.assertIsNone(copied['source_axis_id'])
+
+        repeated_preview = self._get(f'/api/shaft/axes/{snapshot["id"]}', token=recipient_token)
+        self.assertEqual(repeated_preview['local_copy_id'], copied['id'])
+
+        updated = self.client.put(
+            f'/api/shaft/axes/{copied["id"]}',
+            json={
+                'title': f'{preview["title"]} - {author_name}',
+                'description': '在线轴更新后的备注',
+                'axis': preview['axis'],
+                'result': preview['result'],
+                'source_axis_id': snapshot['id'],
+            },
+            headers=self._auth_headers(recipient_token),
+        )
+        self.assertEqual(updated.status_code, 200, updated.get_data(as_text=True))
+        updated_payload = updated.get_json()
+        self.assertEqual(updated_payload['id'], copied['id'])
+        self.assertEqual(updated_payload['source_axis_id'], snapshot['id'])
+        self.assertEqual(updated_payload['description'], '在线轴更新后的备注')
+
+        linked_preview = self._get(f'/api/shaft/axes/{snapshot["id"]}', token=recipient_token)
+        self.assertEqual(linked_preview['local_copy_id'], copied['id'])
+        mine = self._get('/api/shaft/me/axes', token=recipient_token)
+        self.assertEqual(mine['total'], 1)
 
     def test_deleting_private_source_keeps_uploaded_snapshot(self) -> None:
         token = self._issue_login_and_get_token('shaft-delete-source-owner')

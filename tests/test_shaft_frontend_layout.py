@@ -318,6 +318,10 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const suffix = ` - ${author}`;', source)
         self.assertIn('async function saveMarketAxisToLocal()', source)
         self.assertIn('title: marketAxisLocalTitle(payload)', source)
+        self.assertIn("? '更新到本地'", source)
+        self.assertIn('const localCopyId = Number(payload.local_copy_id || 0);', source)
+        self.assertIn("method: updateLocalCopy ? 'PUT' : 'POST'", source)
+        self.assertIn('source_axis_id: payload.is_owner ? 0 : Number(payload.id || 0)', source)
         self.assertIn('axis: payload.axis', source)
         self.assertIn('result: payload.result', source)
         self.assertNotIn('shaft-buff-trigger-line', source[source.index('function renderAxisPreview'):source.index('function fitAxisPreview')])
@@ -462,7 +466,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         protagonist = characters['主角']
 
         self.assertTrue(canhong['test_character'])
-        self.assertNotIn('bond_bonus', canhong)
+        self.assertEqual(canhong['bond_bonus']['label'], '4暴击')
+        self.assertEqual(canhong['bond_bonus']['modifiers']['crit_rate'], 0.04)
         self.assertNotIn('bond_bonus', protagonist)
         self.assertEqual(canhong['element'], '咒')
         self.assertEqual(canhong['adaptation'], '气态')

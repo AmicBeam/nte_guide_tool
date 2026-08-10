@@ -5546,6 +5546,21 @@
       }, []);
   }
 
+  function compactReleasedTimelineIntervals(intervals) {
+    const mergedIntervals = mergeReleasedTimelineIntervals(intervals);
+    if (!mergedIntervals.length) {
+      return false;
+    }
+    state.axis.steps.forEach((step) => {
+      const originalTick = Math.max(0, Number(step.start_tick || 0));
+      const releasedBeforeStep = mergedIntervals.reduce((sum, interval) => (
+        sum + Math.max(0, Math.min(originalTick, interval.end) - interval.start)
+      ), 0);
+      step.start_tick = Math.max(0, originalTick - releasedBeforeStep);
+    });
+    return true;
+  }
+
   function compactSpaceReleasedByDeletion(removedSteps, beforeDetails, beforeFrozenIntervals) {
     if (!state.axis || !removedSteps?.length) {
       return;
@@ -5590,17 +5605,65 @@
         releasedIntervals.push({ start: newEnd, end: oldEnd });
       }
     });
-    const mergedIntervals = mergeReleasedTimelineIntervals(releasedIntervals);
-    if (!mergedIntervals.length) {
+    compactReleasedTimelineIntervals(releasedIntervals);
+  }
+
+  function removeGapBeforeCurrentStep() {
+    const currentStep = state.axis?.steps?.find((step) => step.id === state.selectedStepId);
+    if (!currentStep) {
+      setStatus('请先选择一个动作', 'error');
       return;
     }
+    const result = freshResult();
+    const details = state.timelineDisplayDetails?.length
+      ? state.timelineDisplayDetails
+      : result?.details || [];
+    const detailById = new Map(details.map((detail) => [String(detail?.step_id || ''), detail]));
+    const currentDetail = detailById.get(String(currentStep.id || '')) || {};
+    const currentStart = Math.max(0, Number(
+      currentDetail?.display_start_tick ??
+      currentDetail?.visual_start_tick ??
+      currentStep.start_tick ??
+      0,
+    ));
+    let gapStart = 0;
+    let overlapsCurrentStart = false;
     state.axis.steps.forEach((step) => {
-      const originalTick = Math.max(0, Number(step.start_tick || 0));
-      const releasedBeforeStep = mergedIntervals.reduce((sum, interval) => (
-        sum + Math.max(0, Math.min(originalTick, interval.end) - interval.start)
-      ), 0);
-      step.start_tick = Math.max(0, originalTick - releasedBeforeStep);
+      if (step.id === currentStep.id) {
+        return;
+      }
+      const action = actionForStep(step);
+      const detail = detailById.get(String(step.id || '')) || {};
+      const start = Math.max(0, Number(
+        detail?.display_start_tick ?? detail?.visual_start_tick ?? step.start_tick ?? 0,
+      ));
+      const end = Math.max(start, Number(
+        detail?.display_visual_end_tick ??
+        detail?.visual_end_tick ??
+        start + actionVisualDurationTicks(action, step),
+      ));
+      if (start < currentStart && end > currentStart) {
+        overlapsCurrentStart = true;
+      } else if (end <= currentStart) {
+        gapStart = Math.max(gapStart, end);
+      }
     });
+    if (overlapsCurrentStart || gapStart >= currentStart) {
+      setStatus('当前动作左侧没有可删除的空隙');
+      return;
+    }
+    pushUndoSnapshot();
+    compactReleasedTimelineIntervals([{ start: gapStart, end: currentStart }]);
+    normalizeEditedSteps(new Set([currentStep.id]));
+    const shiftedStep = state.axis.steps.find((step) => step.id === currentStep.id);
+    state.cursorTick = Number(shiftedStep?.start_tick || 0);
+    syncAddTimeInput(state.cursorTick);
+    syncSelection(true);
+    closeContextMenu();
+    renderAll();
+    scheduleSimulation();
+    revealTimelineTick(state.cursorTick);
+    setStatus(`已删除当前动作左侧 ${(currentStart - gapStart) / 10}s 空隙`);
   }
 
   function pasteStepsAtCursor() {
@@ -6786,6 +6849,11 @@
       event.preventDefault();
       state.suppressClipboardPasteUntil = Date.now() + 250;
       pasteStepsAtCursor();
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'Backspace') {
+      event.preventDefault();
+      removeGapBeforeCurrentStep();
       return;
     }
     if ((event.key === 'Delete' || event.key === 'Backspace') && selectedStepIds().length) {

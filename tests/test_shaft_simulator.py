@@ -113,6 +113,35 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertFalse(any('CD 尚未结束' in warning for warning in ready_illusion_e['warnings']))
         self.assertTrue(any('CD 尚未结束' in warning for warning in early_normal_e['warnings']))
 
+    def test_loop_axis_checks_action_cooldown_across_the_cycle_boundary(self) -> None:
+        base_payload = {
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_bdc43f82c6',
+                'arc_id': '',
+                'cartridge_id': '',
+            }],
+            'steps': [
+                {'id': 'e', 'slot': 0, 'action_id': 'action_5870d8ba67', 'start_tick': 0},
+                {'id': 'axis-end', 'slot': 0, 'action_id': 'action_none_bdc43f82c6', 'start_tick': 50},
+            ],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        }
+
+        non_loop_details = simulate_shaft_axis(base_payload)['result']['details']
+        self.assertFalse(any('CD 尚未结束' in warning for warning in non_loop_details[0]['warnings']))
+
+        loop_payload = deepcopy(base_payload)
+        loop_payload['options'] = {'loop_enabled': True}
+        loop_details = simulate_shaft_axis(loop_payload)['result']['details']
+        self.assertIn('动作 CD 尚未结束，需等到 7.0s。', loop_details[0]['warnings'])
+
+        ready_loop_payload = deepcopy(base_payload)
+        ready_loop_payload['steps'][1]['start_tick'] = 120
+        ready_loop_payload['options'] = {'loop_enabled': True}
+        ready_loop_details = simulate_shaft_axis(ready_loop_payload)['result']['details']
+        self.assertFalse(any('CD 尚未结束' in warning for warning in ready_loop_details[0]['warnings']))
+
     def test_canhong_illusion_attacks_can_be_manually_placed_in_background(self) -> None:
         action_ids = (
             'action_canhong_illusion_a1',

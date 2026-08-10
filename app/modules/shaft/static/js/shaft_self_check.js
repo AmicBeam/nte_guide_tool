@@ -13,7 +13,11 @@
 
   function isBackgroundStep(step, action) {
     const marker = `${action?.name || ''} ${action?.extra_tag || ''}`;
-    return Boolean(action?.is_background_damage) || marker.includes('后台') || step?.placement === 'background';
+    const isNativeBackground = Boolean(action?.is_background_damage) || marker.includes('后台');
+    const isManualBasicBackground = Boolean(action?.can_background_override) &&
+      isBasicAction(action) &&
+      step?.placement === 'background';
+    return isNativeBackground || isManualBasicBackground;
   }
 
   function basicAttackStage(action) {
@@ -31,6 +35,14 @@
   function isMaskingForegroundQ(step, action) {
     return !isBackgroundStep(step, action) &&
       isQAction(action) &&
+      Math.max(0, Number(action?.duration_ticks || 0)) === 0;
+  }
+
+  function hasUnimplementedForegroundDuration(step, action) {
+    return Boolean(action?.id) &&
+      !isBackgroundStep(step, action) &&
+      !isQAction(action) &&
+      !Boolean(action?.is_instant_switch) &&
       Math.max(0, Number(action?.duration_ticks || 0)) === 0;
   }
 
@@ -105,8 +117,23 @@
       ));
     const warnings = [];
     const abnormalCharacters = new Set();
+    const missingDurationActions = new Set();
 
     warnings.push(...foregroundReturnWarnings(orderedSteps));
+
+    orderedSteps.forEach(({ step, action }) => {
+      if (!hasUnimplementedForegroundDuration(step, action)) {
+        return;
+      }
+      const actionKey = String(action?.id || `${action?.character_name || ''}:${action?.name || ''}`);
+      if (missingDurationActions.has(actionKey)) {
+        return;
+      }
+      missingDurationActions.add(actionKey);
+      const characterName = String(action?.character_name || '该角色');
+      const actionName = String(action?.name || '动作');
+      warnings.push(`${characterName}「${actionName}」：该动作的时长未实装。`);
+    });
 
     for (let index = 1; index < orderedSteps.length; index += 1) {
       const previous = orderedSteps[index - 1];
@@ -136,6 +163,7 @@
   return {
     MIN_FOREGROUND_RETURN_TICKS,
     basicAttackStage,
+    hasUnimplementedForegroundDuration,
     isMaskingForegroundQ,
     inspectAxis,
   };

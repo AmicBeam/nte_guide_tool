@@ -1202,10 +1202,30 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('normalizeEditedSteps(new Set(newIds));', paste_body)
 
         self.assertIn('function compactSpaceReleasedByDeletion(', source)
+        self.assertIn('function compactReleasedTimelineIntervals(intervals) {', source)
         self.assertIn('beforeDeleteResult?.time_axis?.frozen_intervals', remove_body)
         self.assertIn('compactSpaceReleasedByDeletion(', remove_body)
         self.assertIn('oldEnd > newEnd', source)
         self.assertIn('originalTick - releasedBeforeStep', source)
+        self.assertIn('compactReleasedTimelineIntervals(releasedIntervals);', source)
+
+    def test_modifier_backspace_removes_the_empty_interval_before_current_action(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
+
+        shortcut_start = source.index('function removeGapBeforeCurrentStep()')
+        shortcut_end = source.index('function pasteStepsAtCursor()', shortcut_start)
+        shortcut_body = source[shortcut_start:shortcut_end]
+        keydown = source[source.index('function handleKeydown(event) {'):source.index('function handleClipboardCopy(event) {')]
+
+        self.assertIn('state.selectedStepId', shortcut_body)
+        self.assertIn('detail?.display_visual_end_tick', shortcut_body)
+        self.assertIn('start < currentStart && end > currentStart', shortcut_body)
+        self.assertIn('compactReleasedTimelineIntervals([{ start: gapStart, end: currentStart }]);', shortcut_body)
+        self.assertIn('normalizeEditedSteps(new Set([currentStep.id]));', shortcut_body)
+        self.assertIn("(event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'Backspace'", keydown)
+        self.assertIn('removeGapBeforeCurrentStep();', keydown)
+        self.assertIn('<kbd>Ctrl / ⌘</kbd><span>+</span><kbd>Backspace</kbd>', template)
 
     def test_batch_drag_preserves_each_selected_action_placement(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')

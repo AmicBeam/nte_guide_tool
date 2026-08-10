@@ -1963,6 +1963,25 @@
     }));
     const harmonyBySlot = new Map(initialHarmonyBySlot);
     const cooldownUntil = new Map();
+    function recordActionCooldown(slot, action, snapshot, startTick, durationTicks) {
+      if (snapshot?.character?.uses_cooldowns === false) return;
+      const actionCooldownTicks = Math.max(0, int(actionValueForAwakeningNodes(
+        action,
+        snapshot,
+        'cooldown_ticks',
+        'cooldown_ticks_by_awakening_node',
+      )));
+      const occupiedTicks = Math.max(
+        actionCooldownTicks,
+        Math.max(0, int(durationTicks)),
+      );
+      if (occupiedTicks <= 0) return;
+      const cooldownKey = actionCooldownKey(slot, action);
+      cooldownUntil.set(
+        cooldownKey,
+        Math.max(cooldownUntil.get(cooldownKey) || 0, int(startTick) + occupiedTicks),
+      );
+    }
     const forcedStaggerTargets = new Set();
     const periodicHealingStates = new Map();
     const personalResources = new Map(Array.from(snapshots.keys()).map((slot) => [slot, {}]));
@@ -3721,6 +3740,37 @@
               expected_critical_hits: expectedCriticalHits(action, calculateActionDamage(snapshot, action, enemy, mods())),
             },
           );
+        }
+        recordActionCooldown(
+          int(scheduled.slot),
+          action,
+          snapshot,
+          startTick,
+          int(scheduled.duration_ticks),
+        );
+        const reactionTick = calculationTickFromVisualIntervals(reactionTriggerTick(scheduled), qVirtualIntervals);
+        const previousInstances = new Set(activeBuffs);
+        const reactionTrigger = triggerReaction(
+          scheduled,
+          reactionTick - loopDurationTicks,
+          { primeLoop: true },
+        );
+        if (reactionTrigger.effect) {
+          triggerBuffsForEvent(
+            'reaction_trigger',
+            reactionTick - loopDurationTicks,
+            scheduled.step,
+            scheduled.action,
+            snapshot,
+            scheduled.is_background,
+            {
+              reaction: reactionTrigger.effect,
+              visual_trigger_tick: reactionTriggerTick(scheduled),
+              loop_prime_only: true,
+            },
+          );
+        }
+        for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
           triggerBuffsForEvent(
             'action_end',
             endTick,
@@ -3734,27 +3784,7 @@
             },
           );
         }
-        const reactionTick = calculationTickFromVisualIntervals(reactionTriggerTick(scheduled), qVirtualIntervals);
-        const previousInstances = new Set(activeBuffs);
-        const reactionTrigger = triggerReaction(
-          scheduled,
-          reactionTick - loopDurationTicks,
-          { primeLoop: true },
-        );
         if (!reactionTrigger.effect) return;
-        triggerBuffsForEvent(
-          'reaction_trigger',
-          reactionTick - loopDurationTicks,
-          scheduled.step,
-          scheduled.action,
-          snapshot,
-          scheduled.is_background,
-          {
-            reaction: reactionTrigger.effect,
-            visual_trigger_tick: reactionTriggerTick(scheduled),
-            loop_prime_only: true,
-          },
-        );
         activeBuffs
           .filter((instance) => !previousInstances.has(instance))
           .forEach((instance) => {
@@ -4215,17 +4245,7 @@
       });
       slotEnergy = energyBySlot.get(slot) ?? slotEnergy;
       const displayedEnergyGain = plannedEnergy.get(slot) || 0;
-      const actionCooldownTicks = Math.max(0, int(actionValueForAwakeningNodes(
-        action,
-        snapshot,
-        'cooldown_ticks',
-        'cooldown_ticks_by_awakening_node',
-      )));
-      if (usesCooldowns && durationTicks > 0) {
-        cooldownUntil.set(cooldownKey, Math.max(cooldownUntil.get(cooldownKey) || 0, startTick + Math.max(durationTicks, actionCooldownTicks)));
-      } else if (usesCooldowns && actionCooldownTicks > 0) {
-        cooldownUntil.set(cooldownKey, Math.max(cooldownUntil.get(cooldownKey) || 0, startTick + actionCooldownTicks));
-      }
+      recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
       if (!isBackground) {
         frontEvents.push({
           slot,

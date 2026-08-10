@@ -4295,34 +4295,43 @@
     }
     const formula = event?.formula_parts || {};
     const isPeriodicDamage = Boolean(event?.kind);
-    const zones = [];
-    const addZone = (label, value) => {
-      const multiplier = Number(value);
-      if (Number.isFinite(multiplier)) {
-        zones.push(`${label} ×${formatNumber(multiplier, 3)}`);
-      }
+    const lines = [];
+    const percent = (value) => `${formatNumber(Number(value || 0) * 100, 1)}%`;
+    const addScalingStat = (parts, statKey, statLabel) => {
+      const multiplier = Number(formula?.scaling_multipliers?.[statKey] || 0);
+      if (!multiplier) return;
+      const stat = Number(formula?.scaling_stats?.[statKey] || 0);
+      parts.push(`${statLabel} ${formatNumber(stat, 1)}`);
+      parts.push(`${statKey === 'atk' ? '倍率' : `${statLabel}倍率`} ${percent(multiplier)}`);
     };
-    addZone('基础区', isPeriodicDamage ? formula.unscaled_base : formula.base);
     if (isPeriodicDamage) {
-      addZone('周期系数', formula.periodic_scale);
-      addZone('增伤', 1 + Number(formula.damage_bonus || 0));
-      addZone('双暴区', formula.critical);
-      addZone('防御', formula.defense);
-      addZone('抗性', formula.resistance);
-      addZone('最终倍率区', formula.final_multiplier);
+      const scalingParts = [];
+      addScalingStat(scalingParts, 'atk', '攻击力');
+      addScalingStat(scalingParts, 'hp', '生命');
+      addScalingStat(scalingParts, 'def', '防御');
+      const flat = Number(formula?.scaling_multipliers?.flat || 0);
+      if (flat) scalingParts.push(`固定值 ${formatNumber(flat, 1)}`);
+      scalingParts.push(`层数 ${formatNumber(formula.periodic_scale ?? 1, 1)}`);
+      lines.push(scalingParts.join('　'));
+      lines.push(`增伤 ${percent(formula.damage_bonus)}　暴击 ${percent(formula.crit_rate)}　暴伤 ${percent(formula.crit_dmg)}`);
     } else {
-      addZone('环合强度', formula.strength);
-      if (Number(formula.damage_scale) !== 1) addZone('复制倍率', formula.damage_scale);
-      if (Number(formula.frequency_multiplier || 1) > 1) {
-        addZone('频率乘区', formula.frequency_multiplier);
+      const reactionParts = [
+        `基础值 ${formatNumber(formula.base || 0, 1)}`,
+        `环合强度 ${formatNumber(formula.harmony_strength || 0, 1)}`,
+        `频率 ×${formatNumber(formula.frequency_multiplier ?? 1, 2)}`,
+      ];
+      if (Number(formula.damage_scale ?? 1) !== 1) {
+        reactionParts.push(`伤害倍率 ×${formatNumber(formula.damage_scale, 2)}`);
       }
-      if (String(event?.reaction || '') !== '黯星') addZone('防御', formula.defense);
-      if (String(event?.reaction || '') === '浊燃') addZone('双暴区', formula.critical);
-      addZone('抗性', formula.resistance);
-      addZone('最终倍率区', formula.final_multiplier);
+      lines.push(reactionParts.join('　'));
+      if (Number(formula.crit_rate || 0) > 0) {
+        lines.push(`暴击 ${percent(formula.crit_rate)}　暴伤 ${percent(formula.crit_dmg)}`);
+      }
     }
-    const heading = `${event?.reaction || '伤害'} · ${event?.contributor_character_name || memberName(event?.contributor_slot)} · ${formatNumber(event?.damage || 0)} 伤害`;
-    return zones.length ? `${heading}\n乘区　${zones.join('　')}` : heading;
+    lines.push(`减防 ${percent(formula.def_down)}　穿防 ${percent(formula.def_ignore)}　减抗 ${percent(formula.res_down)}`);
+    lines.push(`最终增伤 ${percent(formula.final_dmg)}　最终 ${formatNumber(event?.damage || 0)} 伤害`);
+    const heading = `${event?.reaction || '伤害'} · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;
+    return `${heading}\n${lines.join('\n')}`;
   }
 
   function groupedTimelineDamageEvents(events) {

@@ -2924,18 +2924,31 @@
         const defense = defenseMultiplier(enemy, panelMods);
         const resistance = resistanceMultiplier(snapshot.character, enemy, panelMods);
         const finalMultiplier = 1 + panelMods.final_dmg;
+        const damageElement = String(snapshot.character?.element || '') || '心灵';
         event.formula_parts = {
           base,
           unscaled_base: unscaledBase,
           periodic_scale: periodicScale,
+          scaling_stats: {atk, hp, def},
+          scaling_multipliers: {
+            atk: num(multipliers.atk) * skill.multiplier,
+            hp: num(multipliers.hp) * skill.multiplier,
+            def: num(multipliers.def) * skill.multiplier,
+            flat: num(multipliers.flat),
+          },
           skill_category: skill.category,
           skill_level: skill.level,
           skill_multiplier: skill.multiplier,
           damage_bonus: damageBonus,
           crit_rate: critRate,
+          crit_dmg: Math.max(0, num(panelMods.crit_dmg)),
           critical,
+          def_down: Math.min(1, Math.max(0, num(panelMods.def_down))),
+          def_ignore: Math.min(1, Math.max(0, num(panelMods.def_ignore))),
+          res_down: num(panelMods.res_down) + num(panelMods[`res_down_${damageElement}`]),
           defense,
           resistance,
+          final_dmg: num(panelMods.final_dmg),
           final_multiplier: finalMultiplier,
         };
         return Math.max(0, base * (1 + damageBonus) * critical * defense * resistance * finalMultiplier);
@@ -2961,14 +2974,21 @@
       const finalMultiplier = 1 + panelMods.final_dmg;
       const damageScale = event.damage_scale == null ? 1 : Math.max(0, num(event.damage_scale));
       const frequencyMultiplier = Math.max(1, num(event.frequency_multiplier, 1));
+      const damageElement = String(resistanceCharacter?.element || '') || '心灵';
       event.formula_parts = {
         base,
+        harmony_strength: num(panelMods.harmony_strength),
         strength,
         frequency_multiplier: frequencyMultiplier,
+        def_down: Math.min(1, Math.max(0, num(panelMods.def_down))),
+        def_ignore: Math.min(1, Math.max(0, num(panelMods.def_ignore))),
+        res_down: num(panelMods.res_down) + num(panelMods[`res_down_${damageElement}`]),
         defense,
         crit_rate: critRate,
+        crit_dmg: Math.max(0, num(panelMods.crit_dmg)),
         critical,
         resistance,
+        final_dmg: num(panelMods.final_dmg),
         final_multiplier: finalMultiplier,
         damage_scale: damageScale,
       };

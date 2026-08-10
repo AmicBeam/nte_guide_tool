@@ -1553,6 +1553,13 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(result['resources_by_slot'][0]['harmony'], 0)
         self.assertEqual([event['tick'] for event in result['reaction_damage_events']], [41, 51, 61, 71, 81, 91, 101, 111, 121, 131])
         self.assertTrue(all(event['damage'] > 0 for event in result['reaction_damage_events']))
+        reaction_formula = result['reaction_damage_events'][0]['formula_parts']
+        self.assertIn('harmony_strength', reaction_formula)
+        self.assertEqual(reaction_formula['frequency_multiplier'], 1)
+        self.assertEqual(reaction_formula['def_down'], 0)
+        self.assertEqual(reaction_formula['def_ignore'], 0)
+        self.assertEqual(reaction_formula['res_down'], 0)
+        self.assertEqual(reaction_formula['final_dmg'], 0)
         self.assertEqual(result['summary']['duration_ticks'], 33)
 
     def test_genesis_without_nanali_keeps_five_two_second_flowers(self) -> None:
@@ -5369,6 +5376,19 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             first_periodic['formula_parts']['skill_multiplier'],
             1.08 ** 9,
         )
+        self.assertGreater(first_periodic['formula_parts']['scaling_stats']['atk'], 0)
+        self.assertAlmostEqual(
+            first_periodic['formula_parts']['scaling_multipliers']['atk'],
+            first_periodic['atk_multiplier'] * (1.08 ** 9),
+        )
+        self.assertAlmostEqual(
+            first_periodic['formula_parts']['crit_dmg'],
+            (first_periodic['formula_parts']['critical'] - 1) / first_periodic['formula_parts']['crit_rate'],
+        )
+        self.assertEqual(first_periodic['formula_parts']['def_down'], 0)
+        self.assertEqual(first_periodic['formula_parts']['def_ignore'], 0)
+        self.assertEqual(first_periodic['formula_parts']['res_down'], 0)
+        self.assertEqual(first_periodic['formula_parts']['final_dmg'], 0)
         self.assertNotIn('噩梦', {
             item['source']
             for item in result['damage_by_source']

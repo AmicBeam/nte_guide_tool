@@ -142,16 +142,50 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         ready_loop_details = simulate_shaft_axis(ready_loop_payload)['result']['details']
         self.assertFalse(any('CD 尚未结束' in warning for warning in ready_loop_details[0]['warnings']))
 
-    def test_canhong_illusion_attacks_can_be_manually_placed_in_background(self) -> None:
-        action_ids = (
+    def test_canhong_basic_chains_follow_shared_background_placement_rule(self) -> None:
+        fixed_foreground_ids = (
+            'action_canhong_a1',
             'action_canhong_illusion_a1',
+        )
+        background_capable_ids = (
+            'action_canhong_a2',
+            'action_canhong_a3',
+            'action_canhong_a4',
+            'action_canhong_a5',
             'action_canhong_illusion_a2',
             'action_canhong_illusion_a3',
             'action_canhong_illusion_a4',
         )
         actions = {action['id']: action for action in load_shaft_catalog()['actions']}
 
-        for action_id in action_ids:
+        for action_id in fixed_foreground_ids:
+            with self.subTest(action_id=action_id):
+                self.assertFalse(actions[action_id]['can_background_override'])
+                payload = {
+                    'team': [{
+                        'slot': 0,
+                        'character_id': 'char_076a1f4e53',
+                        'arc_id': '',
+                        'cartridge_id': '',
+                    }],
+                    'steps': [{
+                        'id': 'a1',
+                        'slot': 0,
+                        'action_id': action_id,
+                        'start_tick': 0,
+                        'placement': 'background',
+                    }],
+                    'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+                }
+
+                normalized = normalize_axis_payload(payload)
+                detail = simulate_shaft_axis(payload)['result']['details'][0]
+
+                self.assertNotIn('placement', normalized['steps'][0])
+                self.assertFalse(detail['is_background_damage'])
+                self.assertFalse(detail['is_basic_background'])
+
+        for action_id in background_capable_ids:
             with self.subTest(action_id=action_id):
                 self.assertTrue(actions[action_id]['can_background_override'])
                 payload = {
@@ -259,7 +293,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                     {
                         'id': 'illusion-background',
                         'slot': 0,
-                        'action_id': 'action_canhong_illusion_a1',
+                        'action_id': 'action_canhong_illusion_a2',
                         'start_tick': 21,
                         'placement': 'background',
                     },

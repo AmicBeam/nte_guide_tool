@@ -512,9 +512,11 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions['援护']['hit_count'], 1)
         self.assertFalse(actions['援护']['is_background_damage'])
         self.assertIn('SkillDamageData_Zankou_Radio.xlsx', actions['援护']['source_note'])
+        self.assertFalse(actions['a1']['can_background_override'])
+        self.assertFalse(actions['幻a1']['can_background_override'])
         self.assertTrue(all(
             actions[name]['can_background_override']
-            for name in ('幻a1', '幻a2', '幻a3', '幻a4')
+            for name in ('a2', 'a3', 'a4', 'a5', '幻a2', '幻a3', '幻a4')
         ))
         self.assertEqual(actions['焚天']['duration_ticks'], 0)
         self.assertEqual(actions['强化焚天']['duration_ticks'], 0)

@@ -9175,23 +9175,23 @@
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 5.2, "harmony": 0, "stagger": 2.5, "resonance_skill_level_bonus": false, "tags": ["援护", "饲火"], "source_row": 44, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 44；耗时1.5秒来自用户2026-08-06补充，无额外援护效果。"
   },
   {
-    "id": "action_canhong_a1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "duration_seconds": 0.6, "duration_ticks": 6,
+    "id": "action_canhong_a1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": false, "duration_seconds": 0.6, "duration_ticks": 6,
     "multipliers": {"atk": 0.432, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 1.444, "harmony": 2.405, "stagger": 0.435, "tags": ["燎原", "现实形态"], "source_row": 2, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 2-3，按倍率呈现方式聚合。"
   },
   {
-    "id": "action_canhong_a2", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "duration_seconds": 0.6, "duration_ticks": 6,
+    "id": "action_canhong_a2", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.6, "duration_ticks": 6,
     "multipliers": {"atk": 0.352, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 1.176, "harmony": 1.958, "stagger": 0.355, "tags": ["燎原", "现实形态"], "source_row": 4, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 4。"
   },
   {
-    "id": "action_canhong_a3", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "duration_seconds": 0.8, "duration_ticks": 8,
+    "id": "action_canhong_a3", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.8, "duration_ticks": 8,
     "multipliers": {"atk": 1.114, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.719, "harmony": 6.193, "stagger": 1.121, "tags": ["燎原", "现实形态"], "source_row": 5, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 5-7，按倍率呈现方式聚合。"
   },
   {
-    "id": "action_canhong_a4", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "duration_seconds": 1.1, "duration_ticks": 11,
+    "id": "action_canhong_a4", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.1, "duration_ticks": 11,
     "multipliers": {"atk": 1.782, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%+{4}%", "hit_count": 5, "energy_gain": 5.948, "harmony": 9.905, "stagger": 1.793, "tags": ["燎原", "现实形态"], "source_row": 8, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 8-12，按倍率呈现方式聚合；命中后可强化e。"
   },
   {
-    "id": "action_canhong_a5", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "duration_seconds": 1.2, "duration_ticks": 12,
+    "id": "action_canhong_a5", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.2, "duration_ticks": 12,
     "multipliers": {"atk": 2.467, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2+{2}%+{3}%", "hit_count": 6, "energy_gain": 8.239, "harmony": 13.719, "stagger": 2.483, "tags": ["燎原", "现实形态", "牵引"], "source_row": 13, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 13-16，按倍率呈现方式聚合；命中后可强化e，牵引不进入单敌伤害计算。"
   },
   {
@@ -9199,7 +9199,7 @@
     "multipliers": {"atk": 2.178, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 7.301, "harmony": 12.1, "stagger": 2.25, "tags": ["z", "现实形态"], "source_row": 17, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 17-18，按倍率呈现方式聚合；对应「绰影」，仅可在a1或a2期间触发。"
   },
   {
-    "id": "action_canhong_illusion_a1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻a1", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.3, "duration_ticks": 3,
+    "id": "action_canhong_illusion_a1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻a1", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": false, "duration_seconds": 0.3, "duration_ticks": 3,
     "multipliers": {"atk": 0.183, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0.61, "harmony": 1.018, "stagger": 0.121, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 21, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 21；对应「魇舞」一段。"
   },
   {

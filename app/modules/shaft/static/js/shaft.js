@@ -1284,6 +1284,22 @@
     return Math.max(0, safeTick - offset);
   }
 
+  function visualTickFromCalculation(calculationTick, qStarts = qVirtualStartTicks()) {
+    const safeCalculationTick = Math.max(0, Number(calculationTick || 0));
+    let visualTick = safeCalculationTick;
+    qStarts
+      .slice()
+      .sort((left, right) => qVirtualStartTick(left) - qVirtualStartTick(right))
+      .forEach((qInterval) => {
+        const startTick = qVirtualStartTick(qInterval);
+        const endTick = qVirtualEndTick(qInterval);
+        if (calculationTickFromVisual(startTick, qStarts) < safeCalculationTick) {
+          visualTick += Math.max(0, endTick - startTick);
+        }
+      });
+    return visualTick;
+  }
+
   function visualTickParts(visualTick, qStarts = qVirtualStartTicks()) {
     const safeTick = Math.max(0, Number(visualTick || 0));
     const calculationTick = calculationTickFromVisual(safeTick, qStarts);
@@ -3245,6 +3261,8 @@
         return startsForeground(step, action);
       })
       .map((detail) => {
+        const step = stepById.get(detail.step_id) || { action_id: detail.action_id };
+        const action = actionForStep(step);
         const startTick = Math.max(0, Number(detail.display_start_tick ?? detail.start_tick ?? 0));
         const durationTicks = Math.max(0, Number(detail.display_duration_ticks ?? detail.duration_ticks ?? 0));
         const visualEndTick = Math.max(
@@ -3258,6 +3276,7 @@
           endTick: Math.max(startTick, startTick + durationTicks),
           visualEndTick,
           durationTicks,
+          isZeroForegroundQ: isZeroForegroundQStep(step, action),
         };
       });
   }
@@ -3292,6 +3311,22 @@
       1,
       ...details.map((detail) => Math.max(detail.visualEndTick, detail.endTick)),
     );
+  }
+
+  function previewQVirtualIntervals(details = previewDetails()) {
+    const frozenIntervals = previewResult()?.time_axis?.frozen_intervals;
+    if (Array.isArray(frozenIntervals)) {
+      return frozenIntervals.map((interval) => ({
+        start_tick: Math.max(0, Number(interval?.start_tick || 0)),
+        end_tick: Math.max(0, Number(interval?.end_tick || 0)),
+      }));
+    }
+    return details
+      .filter((detail) => detail.isZeroForegroundQ)
+      .map((detail) => ({
+        start_tick: detail.startTick,
+        end_tick: detail.visualEndTick,
+      }));
   }
 
   function previewResult() {
@@ -3359,14 +3394,22 @@
     const totalWidth = PREVIEW_LABEL_PX + bodyWidth;
     const leftPx = (tick) => PREVIEW_LABEL_PX + Math.max(0, Number(tick || 0)) * tickPx;
     const widthPx = (start, end) => Math.max(4, (Math.max(Number(end || start), Number(start || 0) + 0.1) - Number(start || 0)) * tickPx);
+    const previewQStarts = previewQVirtualIntervals(details);
+    const calculationEndTick = calculationTickFromVisual(endTick, previewQStarts);
     const rulerStepTicks = tickPx >= 8 ? 10 : (tickPx >= 3 ? 20 : 50);
     const rulerMarks = [];
-    for (let tick = 0; tick <= endTick; tick += rulerStepTicks) {
+    for (let tick = 0; tick <= calculationEndTick; tick += rulerStepTicks) {
+      const visualTick = visualTickFromCalculation(tick, previewQStarts);
       rulerMarks.push(`
-        <span class="shaft-axis-preview-mark" style="left:${leftPx(tick)}px">
+        <span class="shaft-axis-preview-mark" style="left:${leftPx(visualTick)}px">
           <span>${escapeHtml(ticksToSeconds(tick))}s</span>
         </span>
       `);
+    }
+    const gridMarks = [];
+    for (let tick = 0; tick <= calculationEndTick; tick += 10) {
+      const visualTick = visualTickFromCalculation(tick, previewQStarts);
+      gridMarks.push(`<span class="shaft-axis-preview-grid-mark" style="left:${visualTick * tickPx}px"></span>`);
     }
     const previewAxis = state.axisPreviewPayload?.axis || state.axis;
     const previewTeam = state.axisPreviewPayload?.team || previewAxis?.team || [];
@@ -3393,7 +3436,7 @@
             <img src="${escapeHtml(member.character_avatar || '')}" alt="">
             <span>${escapeHtml(member.character_name || '')}</span>
           </span>
-          <span class="shaft-axis-preview-grid" style="background-size:${Math.max(1, tickPx * 10)}px 100%"></span>
+          <span class="shaft-axis-preview-grid">${gridMarks.join('')}</span>
           ${bubbles}
         </div>
       `;

@@ -94,7 +94,80 @@
     return warnings;
   }
 
-  function inspectAxis(axis, catalog, resultDetails = []) {
+  function loopInitialReactionWarnings(axis, catalog, simulationResult) {
+    if (!axis?.options?.loop_enabled) return [];
+    const configuredResources = axis.options.loop_initial_resources;
+    if (!configuredResources || typeof configuredResources !== 'object') return [];
+
+    const policies = new Map((catalog?.formula_constants?.loop_initial_reaction_options || []).map((option) => [
+      String(option?.id || ''),
+      option || {},
+    ]));
+    const characterNames = new Map((catalog?.characters || []).map((character) => [
+      String(character?.id || ''),
+      String(character?.name || character?.id || '未知角色'),
+    ]));
+    const teamCharacterIds = new Set((axis?.team || []).map((member) => String(member?.character_id || '')));
+    const configuredByReaction = new Map();
+    Object.entries(configuredResources).forEach(([characterId, resources]) => {
+      if (!teamCharacterIds.has(String(characterId)) || !resources || typeof resources !== 'object') return;
+      const reaction = String(resources.reaction || '');
+      if (!reaction || !policies.has(reaction)) return;
+      if (!configuredByReaction.has(reaction)) configuredByReaction.set(reaction, []);
+      configuredByReaction.get(reaction).push({
+        character_id: String(characterId),
+        character_name: characterNames.get(String(characterId)) || String(characterId),
+      });
+    });
+
+    const axisEffectsByReaction = new Map();
+    const reactionsRecordedFromDetails = new Set();
+    function recordAxisEffect(effect) {
+      if (!effect || typeof effect !== 'object' || effect?.source_reaction) return;
+      const reaction = String(effect?.reaction || '');
+      if (!configuredByReaction.has(reaction)) return;
+      if (!axisEffectsByReaction.has(reaction)) axisEffectsByReaction.set(reaction, []);
+      axisEffectsByReaction.get(reaction).push(effect);
+    }
+    (simulationResult?.details || []).forEach((detail) => {
+      // A current-cycle trigger may refresh the carried loop-initial instance in place,
+      // so reaction_effects alone cannot prove whether the axis produced it again.
+      const effect = detail?.triggered_reaction;
+      recordAxisEffect(effect);
+      if (effect?.reaction) reactionsRecordedFromDetails.add(String(effect.reaction));
+    });
+    (simulationResult?.reaction_effects || []).forEach((effect) => {
+      if (effect?.loop_initial === true) return;
+      if (reactionsRecordedFromDetails.has(String(effect?.reaction || ''))) return;
+      recordAxisEffect(effect);
+    });
+
+    const warnings = [];
+    configuredByReaction.forEach((carriers, reaction) => {
+      const policy = policies.get(reaction) || {};
+      const maxInstances = Math.max(1, Number(policy.max_instances || 1));
+      const axisEffects = axisEffectsByReaction.get(reaction) || [];
+      const logicalInstanceCount = carriers.length + axisEffects.length;
+      if (logicalInstanceCount <= maxInstances) return;
+
+      const carrierNames = Array.from(new Set(carriers.map((carrier) => carrier.character_name)));
+      const axisProducerNames = Array.from(new Set(axisEffects.map((effect) => (
+        String(effect?.trigger_character_name || effect?.contributor_character_name || '轴内动作')
+      ))));
+      const sources = [];
+      if (carrierNames.length) sources.push(`${carrierNames.join('、')}自带`);
+      if (axisProducerNames.length) sources.push(`轴内由${axisProducerNames.join('、')}产生`);
+      warnings.push(
+        `循环轴自带环合「${reaction}」冲突：${sources.join('，且')}；原始机制最多同时存在 ${maxInstances} 个实例，刷新或额外加层能力不放宽此自检。${reaction === '黯星' ? ' 黯星冲突会立即结算上一个实例的伤害。' : ''}`,
+      );
+    });
+    return warnings;
+  }
+
+  function inspectAxis(axis, catalog, simulationResult = {}) {
+    const resultDetails = Array.isArray(simulationResult)
+      ? simulationResult
+      : (simulationResult?.details || []);
     const actions = new Map((catalog?.actions || []).map((action) => [String(action.id || ''), action]));
     const details = new Map((resultDetails || []).map((detail) => [String(detail?.step_id || ''), detail]));
     const orderedSteps = (axis?.steps || [])
@@ -120,6 +193,7 @@
     const missingDurationActions = new Set();
 
     warnings.push(...foregroundReturnWarnings(orderedSteps));
+    warnings.push(...loopInitialReactionWarnings(axis, catalog, Array.isArray(simulationResult) ? {} : simulationResult));
 
     orderedSteps.forEach(({ step, action }) => {
       if (!hasUnimplementedForegroundDuration(step, action)) {
@@ -165,6 +239,7 @@
     basicAttackStage,
     hasUnimplementedForegroundDuration,
     isMaskingForegroundQ,
+    loopInitialReactionWarnings,
     inspectAxis,
   };
 }));

@@ -3605,8 +3605,9 @@
     if (!node) {
       return;
     }
-    const resultDetails = freshResult()?.details || [];
-    const axisWarnings = window.ShaftSelfCheck?.inspectAxis(state.axis, state.catalog, resultDetails) || [];
+    const simulationResult = freshResult() || {};
+    const resultDetails = simulationResult.details || [];
+    const axisWarnings = window.ShaftSelfCheck?.inspectAxis(state.axis, state.catalog, simulationResult) || [];
     const simulationWarnings = resultDetails.flatMap((detail) =>
       (detail.warnings || []).map((warning) =>
         `${detail.character_name || memberName(detail.slot)}「${detail.action_name || '动作'}」：${warning}`
@@ -4329,8 +4330,8 @@
       }
     }
     lines.push(`减防 ${percent(formula.def_down)}　穿防 ${percent(formula.def_ignore)}　减抗 ${percent(formula.res_down)}`);
-    lines.push(`最终增伤 ${percent(formula.final_dmg)}　最终 ${formatNumber(event?.damage || 0)} 伤害`);
-    const heading = `${event?.reaction || '伤害'} · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;
+    lines.push(`最终增伤 ${percent(formula.final_dmg)}`);
+    const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害 · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;
     return `${heading}\n${lines.join('\n')}`;
   }
 

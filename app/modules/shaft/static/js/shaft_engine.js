@@ -77,6 +77,14 @@
     '黯星': 50,
     '浸染': 120,
   };
+  const REACTION_INSTANCE_LIMITS = {
+    '创生': 3,
+    '延滞': 1,
+    '覆纹': 1,
+    '浊燃': 1,
+    '黯星': 1,
+    '浸染': 1,
+  };
   const REACTION_BASE_DAMAGE = {
     5: { '创生': 80, '浊燃': 20, '黯星': 400 },
     10: { '创生': 120, '浊燃': 35, '黯星': 600 },
@@ -2334,58 +2342,44 @@
       return [];
     }
 
-    function carriedReactionEffectAtTick(reaction, tick) {
-      return reactionEffects.find((effect) => (
+    function activeReactionEffectsAtTick(reaction, tick) {
+      return reactionEffects.filter((effect) => (
         String(effect.reaction || '') === String(reaction || '')
         && !effect.source_reaction
         && effect.disabled !== true
-        && (effect.loop_primed === true || effect.looped === true)
         && int(effect.start_tick) <= int(tick)
         && int(tick) < int(effect.end_tick)
-      )) || null;
+      ));
     }
 
-    function refreshCarriedReactionEffect(effect, reaction, tick, source, primeLoop = false) {
-      const durationTicks = int(REACTION_DURATIONS[reaction]);
-      const retainedDamageTicks = asList(effect.damage_ticks)
-        .map((damageTick) => int(damageTick))
-        .filter((damageTick) => damageTick <= int(tick));
-      const refreshedDamageTicks = reactionDamageTicks(reaction, tick);
+    function evictReactionEffect(effect, tick, { settleDamage = false } = {}) {
+      const pendingEvents = reactionDamageEvents.filter((event) => (
+        String(event.effect_id || '') === String(effect?.id || '')
+        && event.damage == null
+        && int(event.tick) > int(tick)
+      ));
+      const settlement = settleDamage ? pendingEvents[0] : null;
       for (let index = reactionDamageEvents.length - 1; index >= 0; index -= 1) {
         const event = reactionDamageEvents[index];
         if (
           String(event.effect_id || '') === String(effect.id || '')
-          && int(event.tick) > int(tick)
-        ) {
-          reactionDamageEvents.splice(index, 1);
-        }
+          && event.damage == null
+          && event !== settlement
+        ) reactionDamageEvents.splice(index, 1);
       }
-      Object.assign(effect, source, {
-        end_tick: int(tick) + durationTicks,
-        duration_ticks: int(tick) + durationTicks - int(effect.start_tick),
-        damage_ticks: retainedDamageTicks.concat(refreshedDamageTicks),
-        refreshed_in_loop: true,
-      });
-      refreshedDamageTicks.forEach((damageTick, index) => {
-        const isDot = reaction === '浊燃';
-        reactionDamageEvents.push({
-          effect_id: effect.id,
-          reaction,
-          tick: damageTick,
-          sequence: retainedDamageTicks.length + index + 1,
-          trigger_slot: effect.trigger_slot,
-          contributor_slot: effect.contributor_slot,
-          contributor_character_id: effect.contributor_character_id,
-          contributor_character_name: effect.contributor_character_name,
-          extra_tag: isDot ? 'DOT' : '',
-          tags: isDot ? ['DOT'] : [],
-          frequency_multiplier: effect.frequency_multiplier,
-          loop_primed: primeLoop,
-          damage: null,
-        });
-      });
-      enemyDebuffs[reaction] = Math.max(int(enemyDebuffs[reaction]), int(effect.end_tick) + 1);
-      return effect;
+      effect.end_tick = int(tick);
+      effect.duration_ticks = Math.max(0, int(tick) - int(effect.start_tick));
+      effect.damage_ticks = asList(effect.damage_ticks)
+        .map((damageTick) => int(damageTick))
+        .filter((damageTick) => damageTick <= int(tick));
+      effect.evicted_by_instance_limit = true;
+      if (settlement) {
+        settlement.tick = int(tick);
+        settlement.conflict_settlement = true;
+        effect.damage_ticks.push(int(tick));
+        effect.settled_by_conflict = true;
+        settleReactionDamage(int(tick));
+      }
     }
 
     function canReceiveEnergy(snapshot, currentFrontSlot) {
@@ -2619,35 +2613,17 @@
       }
       const contributor = reactionContributor(reaction, previousSnapshot, supportSnapshot, tick);
       if (!contributor) return { effect: null, warning: '' };
+      const durationTicks = int(REACTION_DURATIONS[reaction]);
+      const frequencyMultiplier = reaction === '创生' && teamHasJiuyuan() ? 2 : 1;
+      const activeEffects = activeReactionEffectsAtTick(reaction, tick)
+        .sort((left, right) => int(left.start_tick) - int(right.start_tick));
+      const instanceLimit = Math.max(1, int(REACTION_INSTANCE_LIMITS[reaction], 1));
       if (!primeLoop && !scheduled.action?.preserve_harmony && !scheduled.step?.preserve_harmony) {
         const currentConsumption = Math.min(previousCurrentHarmony, 100);
         harmonyBySlot.set(previousSnapshot.slot, Math.max(0, previousCurrentHarmony - currentConsumption));
       }
-      const durationTicks = int(REACTION_DURATIONS[reaction]);
-      const frequencyMultiplier = reaction === '创生' && teamHasJiuyuan() ? 2 : 1;
-      const carriedEffect = carriedReactionEffectAtTick(reaction, tick);
-      if (carriedEffect) {
-        return {
-          effect: refreshCarriedReactionEffect(carriedEffect, reaction, tick, {
-            support_slot: supportSnapshot.slot,
-            support_character_id: supportSnapshot.character?.id || '',
-            support_character_name: supportSnapshot.character?.name || '',
-            previous_slot: previousSnapshot.slot,
-            previous_character_id: previousSnapshot.character?.id || '',
-            previous_character_name: previousSnapshot.character?.name || '',
-            trigger_slot: contributor.slot,
-            trigger_character_id: contributor.character?.id || '',
-            trigger_character_name: contributor.character?.name || '',
-            contributor_slot: contributor.slot,
-            contributor_character_id: contributor.character?.id || '',
-            contributor_character_name: contributor.character?.name || '',
-            frequency_multiplier: Math.max(
-              frequencyMultiplier,
-              num(carriedEffect.frequency_multiplier, num(carriedEffect.stack_count, 1)),
-            ),
-          }, primeLoop),
-          warning: '',
-        };
+      while (activeEffects.length >= instanceLimit) {
+        evictReactionEffect(activeEffects.shift(), tick, { settleDamage: reaction === '黯星' });
       }
       const effect = {
         id: `reaction_${nextReactionEffectId}`,
@@ -2761,6 +2737,12 @@
     function seedLoopInitialReaction(reaction, snapshot, startTick = 0) {
       const durationTicks = Math.max(0, int(REACTION_DURATIONS[reaction]));
       if (!durationTicks || !snapshot) return null;
+      const instanceLimit = Math.max(1, int(REACTION_INSTANCE_LIMITS[reaction], 1));
+      const activeEffects = activeReactionEffectsAtTick(reaction, startTick)
+        .sort((left, right) => int(left.start_tick) - int(right.start_tick));
+      while (activeEffects.length >= instanceLimit) {
+        evictReactionEffect(activeEffects.shift(), startTick, { settleDamage: reaction === '黯星' });
+      }
       const frequencyMultiplier = reaction === '创生' && teamHasJiuyuan() ? 2 : 1;
       const damageTicks = reactionDamageTicks(reaction, startTick);
       const effect = {
@@ -3005,18 +2987,21 @@
       );
     }
 
-    function settleReactionDamage(untilTick) {
+    function settleReactionDamage(untilTick, countedUntilTick = untilTick) {
       reactionDamageEvents
         .filter((event) => event.damage == null && int(event.tick) >= 0 && int(event.tick) <= untilTick)
         .sort((a, b) => int(a.tick) - int(b.tick) || int(a.sequence) - int(b.sequence))
         .forEach((event) => {
           event.damage = reactionDamageAtTick(event);
-          directDamage += event.damage;
-          specialDamageBySource.set(event.reaction, (specialDamageBySource.get(event.reaction) || 0) + event.damage);
-          reactionDamageBySlot.set(
-            int(event.contributor_slot),
-            (reactionDamageBySlot.get(int(event.contributor_slot)) || 0) + event.damage,
-          );
+          event._counted_in_total = int(event.tick) <= countedUntilTick;
+          if (event._counted_in_total) {
+            directDamage += event.damage;
+            specialDamageBySource.set(event.reaction, (specialDamageBySource.get(event.reaction) || 0) + event.damage);
+            reactionDamageBySlot.set(
+              int(event.contributor_slot),
+              (reactionDamageBySlot.get(int(event.contributor_slot)) || 0) + event.damage,
+            );
+          }
           const reactionName = String(event.reaction || '');
           const triggersPeriodicDamageBuffs = Boolean(event.kind)
             || ['浊燃', '创生', '创生复制体'].includes(reactionName);
@@ -4401,7 +4386,12 @@
       });
     });
 
-    settleReactionDamage(options.loop_enabled ? loopDurationTicks : Number.POSITIVE_INFINITY);
+    if (options.loop_enabled) {
+      settleReactionDamage(loopDurationTicks);
+    } else {
+      // Preserve complete delayed-event projections, but exclude damage after the real axis end from totals.
+      settleReactionDamage(Number.POSITIVE_INFINITY, scheduledLastTick);
+    }
     reactionEffects.forEach((effect) => {
       effect.visual_start_tick = visualTickFromCalculationTick(int(effect.start_tick), qVirtualIntervals);
       effect.visual_end_tick = visualTickFromCalculationTick(int(effect.end_tick), qVirtualIntervals);
@@ -4538,7 +4528,7 @@
       actionDamage.set(actionKey, current);
     });
     reactionDamageEvents
-      .filter((event) => num(event.damage) > 0)
+      .filter((event) => num(event.damage) > 0 && event._counted_in_total !== false)
       .forEach((event) => {
       const slot = int(event.contributor_slot);
       const isHarmonyDamage = !event.kind && HARMONY_DAMAGE_SOURCES.includes(String(event.reaction || ''));

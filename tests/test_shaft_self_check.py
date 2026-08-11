@@ -17,16 +17,28 @@ class ShaftSelfCheckTestCase(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.catalog = load_shaft_catalog()
 
-    def inspect(self, steps: list[dict], details: list[dict] | None = None) -> list[str]:
+    def inspect(
+        self,
+        steps: list[dict],
+        details: list[dict] | None = None,
+        *,
+        team: list[dict] | None = None,
+        options: dict | None = None,
+        reaction_effects: list[dict] | None = None,
+    ) -> list[str]:
         script = """
 const selfCheck = require(process.argv[1]);
 const payload = JSON.parse(process.argv[2]);
-process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.catalog, payload.details)));
+process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.catalog, payload.result)));
 """
         payload = {
-            'axis': {'steps': steps},
-            'catalog': {'actions': self.catalog['actions']},
-            'details': details or [],
+            'axis': {'steps': steps, 'team': team or [], 'options': options or {}},
+            'catalog': {
+                'actions': self.catalog['actions'],
+                'characters': self.catalog['characters'],
+                'formula_constants': self.catalog['formula_constants'],
+            },
+            'result': {'details': details or [], 'reaction_effects': reaction_effects or []},
         }
         completed = subprocess.run(
             ['node', '-e', script, str(SELF_CHECK_JS), json.dumps(payload, ensure_ascii=False)],
@@ -227,6 +239,119 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
         ]
 
         self.assertEqual(self.inspect(steps, details), [])
+
+    def test_warns_when_multiple_characters_carry_the_same_non_overlapping_reaction(self) -> None:
+        team = [
+            {'slot': 0, 'character_id': 'char_076a1f4e53'},
+            {'slot': 1, 'character_id': 'char_dd034941ef'},
+        ]
+        warnings = self.inspect([], team=team, options={
+            'loop_enabled': True,
+            'loop_initial_resources': {
+                'char_076a1f4e53': {'reaction': '浊燃'},
+                'char_dd034941ef': {'reaction': '浊燃'},
+            },
+        })
+
+        self.assertEqual(len(warnings), 1)
+        self.assertIn('循环轴自带环合「浊燃」冲突', warnings[0])
+        self.assertIn('最多同时存在 1 个实例', warnings[0])
+
+    def test_warns_when_axis_also_produces_a_carried_reaction_even_if_it_can_be_refreshed(self) -> None:
+        team = [{'slot': 0, 'character_id': 'char_076a1f4e53'}]
+        warnings = self.inspect(
+            [],
+            details=[{
+                'step_id': 'support',
+                'triggered_reaction': {
+                    'reaction': '浊燃',
+                    'trigger_character_id': 'char_076a1f4e53',
+                    'trigger_character_name': '残红',
+                    'frequency_multiplier': 3,
+                    'loop_initial': True,
+                },
+            }],
+            team=team,
+            options={
+                'loop_enabled': True,
+                'loop_initial_resources': {
+                    'char_076a1f4e53': {'reaction': '浊燃'},
+                },
+            },
+        )
+
+        self.assertEqual(len(warnings), 1)
+        self.assertIn('残红自带，且轴内由残红产生', warnings[0])
+        self.assertIn('刷新或额外加层能力不放宽此自检', warnings[0])
+
+    def test_genesis_allows_three_instances_but_warns_on_the_fourth(self) -> None:
+        team = [
+            {'slot': index, 'character_id': character_id}
+            for index, character_id in enumerate([
+                'char_076a1f4e53',
+                'char_dd034941ef',
+                'char_c78f7a08d5',
+                'char_1895e259be',
+            ])
+        ]
+        three_resources = {
+            member['character_id']: {'reaction': '创生'}
+            for member in team[:3]
+        }
+        self.assertEqual(self.inspect([], team=team, options={
+            'loop_enabled': True,
+            'loop_initial_resources': three_resources,
+        }), [])
+
+        four_resources = {
+            member['character_id']: {'reaction': '创生'}
+            for member in team
+        }
+        warnings = self.inspect([], team=team, options={
+            'loop_enabled': True,
+            'loop_initial_resources': four_resources,
+        })
+        self.assertEqual(len(warnings), 1)
+        self.assertIn('最多同时存在 3 个实例', warnings[0])
+
+        generated_warnings = self.inspect(
+            [],
+            details=[{
+                'step_id': 'support',
+                'triggered_reaction': {
+                    'reaction': '创生',
+                    'trigger_character_name': '主角',
+                },
+            }],
+            team=team[:3],
+            options={
+                'loop_enabled': True,
+                'loop_initial_resources': three_resources,
+            },
+        )
+        self.assertEqual(len(generated_warnings), 1)
+        self.assertIn('最多同时存在 3 个实例', generated_warnings[0])
+
+    def test_does_not_warn_for_distinct_carried_reactions_or_non_loop_axis(self) -> None:
+        team = [
+            {'slot': 0, 'character_id': 'char_076a1f4e53'},
+            {'slot': 1, 'character_id': 'char_dd034941ef'},
+        ]
+        resources = {
+            'char_076a1f4e53': {'reaction': '浊燃'},
+            'char_dd034941ef': {'reaction': '创生'},
+        }
+        self.assertEqual(self.inspect([], team=team, options={
+            'loop_enabled': True,
+            'loop_initial_resources': resources,
+        }), [])
+        self.assertEqual(self.inspect([], team=team, options={
+            'loop_enabled': False,
+            'loop_initial_resources': {
+                'char_076a1f4e53': {'reaction': '浊燃'},
+                'char_dd034941ef': {'reaction': '浊燃'},
+            },
+        }), [])
 
 
 if __name__ == '__main__':

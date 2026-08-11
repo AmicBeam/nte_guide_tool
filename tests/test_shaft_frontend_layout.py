@@ -1337,7 +1337,9 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('`环合强度 ${formatNumber(formula.harmony_strength || 0, 1)}`', source)
         self.assertIn('`频率 ×${formatNumber(formula.frequency_multiplier ?? 1, 2)}`', source)
         self.assertIn('`减防 ${percent(formula.def_down)}　穿防 ${percent(formula.def_ignore)}　减抗 ${percent(formula.res_down)}`', source)
-        self.assertIn('`最终增伤 ${percent(formula.final_dmg)}　最终 ${formatNumber(event?.damage || 0)} 伤害`', source)
+        self.assertIn('lines.push(`最终增伤 ${percent(formula.final_dmg)}`);', source)
+        self.assertIn("const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害 · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;", source)
+        self.assertNotIn('最终 ${formatNumber(event?.damage || 0)} 伤害', source)
         self.assertNotIn('const zones = [];', source)
         self.assertNotIn('乘区　${zones.join', source)
         self.assertNotIn("['噩梦', '蚀心'].includes", source)
@@ -1387,7 +1389,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('.shaft-reaction-damage-marker.shaft-damage-tooltip-above:hover::after,', css)
         self.assertIn("isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9", source)
         self.assertIn('const warnings = Array.from(new Set([...axisWarnings, ...simulationWarnings]));', source)
-        self.assertIn('inspectAxis(state.axis, state.catalog, resultDetails)', source)
+        self.assertIn('inspectAxis(state.axis, state.catalog, simulationResult)', source)
 
     def test_buff_line_uses_only_the_latest_stack_snapshot(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')

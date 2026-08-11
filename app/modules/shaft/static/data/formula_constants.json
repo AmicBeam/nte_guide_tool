@@ -1,12 +1,16 @@
 {
   "loop_initial_reaction_options": [
-    {"id": "创生", "duration_ticks": 100},
-    {"id": "延滞", "duration_ticks": 50},
-    {"id": "覆纹", "duration_ticks": 120},
-    {"id": "浊燃", "duration_ticks": 150},
-    {"id": "黯星", "duration_ticks": 50},
-    {"id": "浸染", "duration_ticks": 120}
+    {"id": "创生", "duration_ticks": 100, "instance_mode": "independent", "max_instances": 3},
+    {"id": "延滞", "duration_ticks": 50, "instance_mode": "non_overlap", "max_instances": 1},
+    {"id": "覆纹", "duration_ticks": 120, "instance_mode": "non_overlap", "max_instances": 1},
+    {"id": "浊燃", "duration_ticks": 150, "instance_mode": "non_overlap", "max_instances": 1},
+    {"id": "黯星", "duration_ticks": 50, "instance_mode": "replace_and_settle", "max_instances": 1},
+    {"id": "浸染", "duration_ticks": 120, "instance_mode": "non_overlap", "max_instances": 1}
   ],
+  "loop_initial_reaction_conflict_policy": {
+    "source": "用户 2026-08-11 补充口径",
+    "note": "循环自带环合按原始机制校验实例数量上限；创生最多3个独立实例，其他环合最多1个，角色提供的刷新或额外加层能力不放宽。"
+  },
   "personal_resource_caps": {
     "char_31c5130304": {"真理之匙": 3},
     "char_701295143d": {"言灵字": 4},

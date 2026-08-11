@@ -1605,11 +1605,13 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             'steps': [
                 {'id': 'gain', 'slot': 0, 'action_id': 'action_982c67944f', 'start_tick': 0},
                 {'id': 'support', 'slot': 1, 'action_id': 'action_01209221c1', 'start_tick': 20},
+                {'id': 'axis_end', 'slot': 0, 'action_id': 'action_none_dd034941ef', 'start_tick': 168},
             ],
             'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
         })['result']
 
-        self.assertEqual(result['details'][-1]['triggered_reaction']['reaction'], '创生')
+        support_detail = next(detail for detail in result['details'] if detail['step_id'] == 'support')
+        self.assertEqual(support_detail['triggered_reaction']['reaction'], '创生')
         genesis_events = [
             event for event in result['reaction_damage_events']
             if event['reaction'] == '创生'
@@ -1642,7 +1644,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             effect for effect in result['reaction_effects']
             if effect['reaction'] == '创生复制体'
         )
-        genesis_effect = result['details'][-1]['triggered_reaction']
+        genesis_effect = support_detail['triggered_reaction']
         self.assertEqual(clone_effect['start_tick'], genesis_effect['start_tick'] + 30)
         self.assertEqual(clone_effect['contributor_slot'], genesis_effect['contributor_slot'])
 
@@ -1823,7 +1825,87 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 self.assertEqual(result['details'][-1]['triggered_reaction']['reaction'], reaction)
                 self.assertEqual(len(result['reaction_damage_events']), damage_events)
 
-    def test_loop_axis_primes_previous_reaction_without_extending_loop_height(self) -> None:
+    def test_genesis_generates_a_new_instance_and_evicts_the_oldest_beyond_three(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [
+                {'slot': 0, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 1, 'character_id': 'char_bdc43f82c6', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 2, 'character_id': 'char_c78f7a08d5', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                {'id': 'gain', 'slot': 0, 'action_id': 'action_982c67944f', 'start_tick': 0},
+                {'id': 'support', 'slot': 1, 'action_id': 'action_482b5d9df7', 'start_tick': 20},
+                {'id': 'axis-end', 'slot': 0, 'action_id': 'action_none_dd034941ef', 'start_tick': 40},
+            ],
+            'options': {
+                'loop_enabled': True,
+                'loop_initial_resources': {
+                    'char_dd034941ef': {'harmony': 100, 'reaction': '创生'},
+                    'char_bdc43f82c6': {'harmony': 0, 'reaction': '创生'},
+                    'char_c78f7a08d5': {'harmony': 0, 'reaction': '创生'},
+                },
+            },
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+
+        genesis_effects = [
+            effect for effect in result['reaction_effects']
+            if effect['reaction'] == '创生' and not effect.get('source_reaction')
+        ]
+        support = next(detail for detail in result['details'] if detail['step_id'] == 'support')
+        active_genesis = [effect for effect in genesis_effects if not effect.get('evicted_by_instance_limit')]
+        evicted_genesis = [effect for effect in genesis_effects if effect.get('evicted_by_instance_limit')]
+        self.assertEqual(len(active_genesis), 3)
+        self.assertEqual(len(evicted_genesis), 1)
+        self.assertEqual(support['triggered_reaction']['reaction'], '创生')
+        self.assertEqual(support['warnings'], [])
+        self.assertEqual(result['resources_by_slot'][0]['harmony'], 0)
+
+    def test_doom_star_conflict_immediately_settles_previous_instance(self) -> None:
+        first_gain_steps = [
+            {'id': f'gain-{index}', 'slot': 0, 'action_id': 'action_6d2645f71e', 'start_tick': index * 2}
+            for index in range(7)
+        ]
+        second_gain_steps = [
+            {'id': f'regain-{index}', 'slot': 0, 'action_id': 'action_6d2645f71e', 'start_tick': 44 + index * 2}
+            for index in range(7)
+        ]
+        result = simulate_shaft_axis({
+            'team': [
+                {'slot': 0, 'character_id': 'char_c78f7a08d5', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 1, 'character_id': 'char_caa6c2e5a8', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                *first_gain_steps,
+                {
+                    'id': 'first-support',
+                    'slot': 1,
+                    'action_id': 'action_b0e5fd6662',
+                    'start_tick': 40,
+                },
+                *second_gain_steps,
+                {
+                    'id': 'second-support',
+                    'slot': 1,
+                    'action_id': 'action_b0e5fd6662',
+                    'start_tick': 70,
+                },
+                {'id': 'axis-end', 'slot': 0, 'action_id': 'action_none_c78f7a08d5', 'start_tick': 140},
+            ],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+
+        doom_star_effects = [effect for effect in result['reaction_effects'] if effect['reaction'] == '黯星']
+        doom_star_events = [event for event in result['reaction_damage_events'] if event['reaction'] == '黯星']
+        self.assertEqual(len(doom_star_effects), 2)
+        self.assertEqual(len(doom_star_events), 2)
+        self.assertTrue(doom_star_effects[0]['settled_by_conflict'])
+        self.assertEqual(doom_star_effects[0]['end_tick'], doom_star_effects[1]['start_tick'])
+        self.assertTrue(doom_star_events[0]['conflict_settlement'])
+        self.assertEqual(doom_star_events[0]['tick'], doom_star_effects[1]['start_tick'])
+        self.assertEqual(doom_star_events[1]['tick'], doom_star_effects[1]['start_tick'] + 50)
+
+    def test_loop_axis_carries_previous_genesis_as_an_independent_instance(self) -> None:
         result = simulate_shaft_axis({
             'team': [
                 {'slot': 0, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''},
@@ -1843,13 +1925,13 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(len([
             effect for effect in result['reaction_effects']
             if effect['reaction'] == '创生'
-        ]), 1)
-        self.assertTrue(primed[0]['refreshed_in_loop'])
-        self.assertEqual(primed[0]['end_tick'], 131)
+        ]), 2)
+        self.assertNotIn('refreshed_in_loop', primed[0])
+        self.assertEqual(primed[0]['end_tick'], 98)
         self.assertEqual(result['summary']['duration_ticks'], 33)
         self.assertEqual([event['tick'] for event in result['reaction_damage_events']], [8, 18, 28])
 
-    def test_loop_axis_refreshes_carried_turbid_burn_without_duplicate_effects(self) -> None:
+    def test_loop_axis_turbid_burn_evicts_carried_instance_and_generates_a_new_one(self) -> None:
         result = simulate_shaft_axis({
             'team': [
                 {
@@ -1882,17 +1964,19 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             effect for effect in result['reaction_effects']
             if effect['reaction'] == '浊燃'
         ]
-        self.assertEqual(len(turbid_effects), 1)
+        self.assertEqual(len(turbid_effects), 2)
         self.assertEqual(turbid_effects[0]['start_tick'], -7)
-        self.assertEqual(turbid_effects[0]['end_tick'], 173)
-        self.assertTrue(turbid_effects[0]['refreshed_in_loop'])
+        self.assertEqual(turbid_effects[0]['end_tick'], 23)
+        self.assertTrue(turbid_effects[0]['evicted_by_instance_limit'])
+        self.assertEqual(turbid_effects[1]['start_tick'], 23)
+        self.assertEqual(turbid_effects[1]['end_tick'], 173)
         self.assertEqual(
             len({event['tick'] for event in result['reaction_damage_events'] if event['reaction'] == '浊燃'}),
             len([event for event in result['reaction_damage_events'] if event['reaction'] == '浊燃']),
         )
 
         support = next(detail for detail in result['details'] if detail['step_id'] == 'requiem-support')
-        self.assertEqual(support['triggered_reaction']['id'], turbid_effects[0]['id'])
+        self.assertEqual(support['triggered_reaction']['id'], turbid_effects[1]['id'])
         self.assertEqual(len([
             buff for buff in support['triggered_buffs']
             if buff['rule_id'] == 'character_canhong_b_blaze_stack'
@@ -6951,6 +7035,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             'steps': [
                 {'id': 'baizang_dot', 'slot': 0, 'action_id': 'action_10c15dd4d1', 'start_tick': 0},
                 {'id': 'adler_dot', 'slot': 1, 'action_id': 'action_881b816d9f', 'start_tick': 0},
+                {'id': 'axis_end', 'slot': 0, 'action_id': 'action_none_701295143d', 'start_tick': 160},
             ],
             'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
             'initial_energy': 200,
@@ -6978,6 +7063,64 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         buff_rule_ids = {buff['id'] for buff in catalog['buffs']}
         self.assertNotIn('character_sagiri_baizang_dot_marker', buff_rule_ids)
         self.assertNotIn('character_sagiri_adler_dot_marker', buff_rule_ids)
+
+    def test_non_loop_axis_excludes_periodic_and_reaction_damage_after_axis_end(self) -> None:
+        periodic_result = simulate_shaft_axis({
+            'team': [
+                {'slot': 0, 'character_id': 'char_701295143d', 'awakening': 0, 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                {'id': 'baizang_dot', 'slot': 0, 'action_id': 'action_10c15dd4d1', 'start_tick': 0},
+                {'id': 'axis_end', 'slot': 0, 'action_id': 'action_none_701295143d', 'start_tick': 50},
+            ],
+            'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+            'initial_energy': 200,
+        })['result']
+        periodic_events = [
+            event for event in periodic_result['periodic_damage_events']
+            if event.get('action_id') == 'action_10c15dd4d1'
+        ]
+
+        self.assertEqual(periodic_result['summary']['duration_ticks'], 50)
+        self.assertEqual([event['tick'] for event in periodic_events], list(range(10, 161, 10)))
+        self.assertAlmostEqual(
+            periodic_result['summary']['direct_damage'],
+            sum(event['damage'] for event in periodic_events if event['tick'] <= 50),
+        )
+        self.assertAlmostEqual(
+            periodic_result['summary']['total_damage'],
+            sum(event['damage'] for event in periodic_events if event['tick'] <= 50),
+        )
+
+        reaction_result = simulate_shaft_axis({
+            'team': [
+                {'slot': 0, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 1, 'character_id': 'char_bdc43f82c6', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                {'id': 'gain', 'slot': 0, 'action_id': 'action_982c67944f', 'start_tick': 0},
+                {'id': 'support', 'slot': 1, 'action_id': 'action_482b5d9df7', 'start_tick': 20},
+                {'id': 'axis_end', 'slot': 1, 'action_id': 'action_none_bdc43f82c6', 'start_tick': 50},
+            ],
+            'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+        reaction_events = [
+            event for event in reaction_result['reaction_damage_events']
+            if event['reaction'] == '创生'
+        ]
+        genesis_effect = next(
+            effect for effect in reaction_result['reaction_effects']
+            if effect['reaction'] == '创生'
+        )
+
+        self.assertEqual(reaction_result['summary']['duration_ticks'], 50)
+        self.assertGreater(genesis_effect['end_tick'], 50)
+        self.assertTrue(reaction_events)
+        self.assertTrue(any(event['tick'] > 50 for event in reaction_events))
+        self.assertAlmostEqual(
+            reaction_result['summary']['harmony_damage'],
+            sum(event['damage'] for event in reaction_events if event['tick'] <= 50),
+        )
 
     def test_sagiri_reads_active_periodic_dot_actions_without_own_marker_buffs(self) -> None:
         def first_baizang_dot_event(include_sagiri):

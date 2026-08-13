@@ -83,6 +83,14 @@ class ModuleRoutesTest(RoomFlowTestCase):
         }, headers=regular_headers)
         self.assertEqual(allowed.status_code, 200)
 
+        invited_token = self._issue_login_and_get_token('kongmu-invited')
+        models_module.Player.update(shaft_invited=True).where(
+            models_module.Player.player_uid == 'kongmu-invited'
+        ).execute()
+        invited_headers = {'Authorization': f'Bearer {invited_token}'}
+        invited_catalog = self.client.get('/api/kongmu/catalog', headers=invited_headers).get_json()
+        self.assertIn('残红', [character['name'] for character in invited_catalog['characters']])
+
     def test_preteam_module_page_and_asset(self) -> None:
         page = self.client.get('/preteam')
         self.assertEqual(page.status_code, 200)

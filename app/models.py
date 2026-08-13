@@ -14,6 +14,7 @@ class Player(BaseModel):
     id = AutoField()
     player_uid = CharField(unique=True, max_length=64)
     nickname = CharField(default='')
+    shaft_invited = BooleanField(default=False)
     shaft_test_whitelisted = BooleanField(default=False)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
@@ -23,6 +24,7 @@ class ShaftCharacterPublication(BaseModel):
     id = AutoField()
     character_id = CharField(unique=True, max_length=64)
     character_name = CharField(unique=True, max_length=64)
+    access_level = CharField(default='test', max_length=16)
     is_published = BooleanField(default=False)
     updated_at = DateTimeField(default=datetime.utcnow)
 

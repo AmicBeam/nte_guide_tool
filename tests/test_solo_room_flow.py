@@ -168,7 +168,7 @@ class RoomFlowTestCase(unittest.TestCase):
 
 
 class SoloRoomFlowTest(RoomFlowTestCase):
-    def test_canhong_selection_requires_shaft_test_account(self) -> None:
+    def test_canhong_selection_requires_invited_or_test_account(self) -> None:
         public_catalog = self._get('/api/shaft/catalog')
         public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残红')
         self.assertTrue(public_canhong['selection_disabled'])
@@ -178,8 +178,16 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         regular_canhong = next(character for character in regular_catalog['characters'] if character['name'] == '残红')
         self.assertTrue(regular_canhong['selection_disabled'])
 
-        test_token = self._issue_login_and_get_token('shaft-whitelisted-player')
+        invited_token = self._issue_login_and_get_token('shaft-invited-player')
         models_module = importlib.import_module('app.models')
+        models_module.Player.update(shaft_invited=True).where(
+            models_module.Player.player_uid == 'shaft-invited-player'
+        ).execute()
+        invited_catalog = self._get('/api/shaft/catalog', token=invited_token)
+        invited_canhong = next(character for character in invited_catalog['characters'] if character['name'] == '残红')
+        self.assertFalse(invited_canhong['selection_disabled'])
+
+        test_token = self._issue_login_and_get_token('shaft-whitelisted-player')
         models_module.Player.update(shaft_test_whitelisted=True).where(
             models_module.Player.player_uid == 'shaft-whitelisted-player'
         ).execute()
@@ -201,7 +209,14 @@ class SoloRoomFlowTest(RoomFlowTestCase):
             'axis': restricted_axis,
             'result': self._shaft_client_result(restricted_axis),
         }, token=regular_token, expected_status=400)
-        self.assertIn('仅对测试账号开放', denied['error'])
+        self.assertIn('当前账号无权使用', denied['error'])
+
+        invited_allowed = self._post('/api/shaft/axes', {
+            'title': '受邀账号残红',
+            'axis': restricted_axis,
+            'result': self._shaft_client_result(restricted_axis),
+        }, token=invited_token)
+        self.assertEqual(invited_allowed['team'][0]['character_id'], public_canhong['id'])
 
         allowed = self._post('/api/shaft/axes', {
             'title': '测试账号残红',
@@ -219,9 +234,11 @@ class SoloRoomFlowTest(RoomFlowTestCase):
 
         anonymous_market = self._get('/api/shaft/market')
         regular_market = self._get('/api/shaft/market', token=regular_token)
+        invited_market = self._get('/api/shaft/market', token=invited_token)
         test_market = self._get('/api/shaft/market', token=test_token)
         self.assertNotIn('测试账号残红', [axis['title'] for axis in anonymous_market['items']])
         self.assertNotIn('测试账号残红', [axis['title'] for axis in regular_market['items']])
+        self.assertIn('测试账号残红', [axis['title'] for axis in invited_market['items']])
         self.assertIn('测试账号残红', [axis['title'] for axis in test_market['items']])
 
         for token in (None, regular_token):
@@ -266,7 +283,25 @@ class SoloRoomFlowTest(RoomFlowTestCase):
             token=test_token,
             expected_status=400,
         )
-        self.assertIn('仅对测试账号开放', denied_publish['error'])
+        self.assertIn('当前账号无权使用', denied_publish['error'])
+
+    def test_invited_permission_is_below_test_permission(self) -> None:
+        shaft_service = importlib.import_module('app.modules.shaft.service')
+        invited = type('PlayerStub', (), {
+            'shaft_invited': True,
+            'shaft_test_whitelisted': False,
+        })()
+        tester = type('PlayerStub', (), {
+            'shaft_invited': False,
+            'shaft_test_whitelisted': True,
+        })()
+        with patch.object(shaft_service, '_character_access_levels', return_value={
+            'half-open': 'invited',
+            'test-only': 'test',
+        }):
+            self.assertTrue(shaft_service._character_is_accessible('half-open', invited))
+            self.assertFalse(shaft_service._character_is_accessible('test-only', invited))
+            self.assertTrue(shaft_service._character_is_accessible('test-only', tester))
 
     def test_yiloyi_is_released_and_persisted_as_public(self) -> None:
         models_module = importlib.import_module('app.models')

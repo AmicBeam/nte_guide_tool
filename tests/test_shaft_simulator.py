@@ -8142,13 +8142,14 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         loop_result = simulate_shaft_axis(loop_payload)['result']
         self.assertFalse(any(detail['forced_stagger'] for detail in loop_result['details']))
 
-    def test_canhong_f_awakening_scales_annihilation_last_hit_by_dot_layers(self) -> None:
+    def test_canhong_f_awakening_adds_annihilation_last_hit_bonus_to_damage_zone(self) -> None:
         payload = {
             'team': [{
                 'slot': 0,
                 'character_id': 'char_076a1f4e53',
                 'arc_id': '',
-                'cartridge_id': '',
+                'cartridge_id': 'cartridge_505ea4a58f',
+                'substat_counts': {'all_dmg': 20},
             }],
             'steps': [{'id': 'annihilation', 'slot': 0, 'action_id': 'action_canhong_E2', 'start_tick': 0}],
             'initial_energy': 200,
@@ -8160,8 +8161,17 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         expected_bonus = 5 * 0.12 * (2.498 / 4.498)
 
         self.assertEqual(awakened['formula_parts']['active_dot_layer_count'], 5)
-        self.assertAlmostEqual(awakened['formula_parts']['base_multiplier_factor'], 1 + expected_bonus)
-        self.assertAlmostEqual(awakened['direct_damage'] / baseline['direct_damage'], 1 + expected_bonus)
+        self.assertGreater(baseline['panel']['element_dmg'], 0)
+        self.assertAlmostEqual(awakened['formula_parts']['base_multiplier_factor'], 1)
+        self.assertAlmostEqual(
+            awakened['formula_parts']['dmg_bonus'] - baseline['formula_parts']['dmg_bonus'],
+            expected_bonus,
+        )
+        self.assertAlmostEqual(
+            awakened['direct_damage'] / baseline['direct_damage'],
+            (1 + baseline['formula_parts']['dmg_bonus'] + expected_bonus)
+            / (1 + baseline['formula_parts']['dmg_bonus']),
+        )
 
     def test_canhong_actions_match_uploaded_skill_damage_workbook(self) -> None:
         catalog = load_shaft_catalog()

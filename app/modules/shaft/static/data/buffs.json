@@ -2859,7 +2859,7 @@
     "duration": {"type": "permanent"},
     "dynamic_effects": {
       "active_dot_layer_count": {
-        "effect_key": "base_multiplier_pct",
+        "effect_key": "all_dmg",
         "per_count": 0.12,
         "max_count": 20,
         "action_last_hit_ratio": true

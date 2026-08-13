@@ -36,6 +36,20 @@ def _add_compatible_columns(models: list[type[Model]]) -> None:
                 'ALTER TABLE "player" '
                 'ADD COLUMN "shaft_test_whitelisted" INTEGER NOT NULL DEFAULT 0'
             )
+        if table_name == 'player' and 'shaft_invited' not in existing_columns:
+            db.execute_sql(
+                'ALTER TABLE "player" '
+                'ADD COLUMN "shaft_invited" INTEGER NOT NULL DEFAULT 0'
+            )
+        if table_name == 'shaftcharacterpublication' and 'access_level' not in existing_columns:
+            db.execute_sql(
+                'ALTER TABLE "shaftcharacterpublication" '
+                'ADD COLUMN "access_level" VARCHAR(16) NOT NULL DEFAULT \'test\''
+            )
+            db.execute_sql(
+                'UPDATE "shaftcharacterpublication" SET "access_level" = \'public\' '
+                'WHERE "is_published" = 1'
+            )
         if table_name == 'shaftaxis' and 'dislike_count' not in existing_columns:
             db.execute_sql(
                 'ALTER TABLE "shaftaxis" '

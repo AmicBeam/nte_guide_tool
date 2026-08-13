@@ -49,6 +49,7 @@ class NTEShaftCharacterPublication(NTEBaseModel):
     id = AutoField()
     character_id = CharField(unique=True, max_length=64)
     character_name = CharField(unique=True, max_length=64)
+    access_level = CharField(default='test', max_length=16)
     is_published = BooleanField(default=False)
     updated_at = DateTimeField(default=datetime.utcnow)
 
@@ -67,28 +68,52 @@ RELEASED_CHARACTERS = {
 def ensure_nte_tables():
     if nte_account_db.is_closed():
         nte_account_db.connect(reuse_if_open=True)
+    if nte_account_db.table_exists('shaftcharacterpublication'):
+        existing_columns = {
+            column.name for column in nte_account_db.get_columns('shaftcharacterpublication')
+        }
+        if 'access_level' not in existing_columns:
+            nte_account_db.execute_sql(
+                'ALTER TABLE "shaftcharacterpublication" '
+                'ADD COLUMN "access_level" VARCHAR(16) NOT NULL DEFAULT \'test\''
+            )
+            nte_account_db.execute_sql(
+                'UPDATE "shaftcharacterpublication" SET "access_level" = \'public\' '
+                'WHERE "is_published" = 1'
+            )
     nte_account_db.create_tables([NTEPlayer, NTELoginCode, NTEShaftCharacterPublication])
     for character_name, character_id in DEFAULT_UNPUBLISHED_CHARACTERS.items():
-        NTEShaftCharacterPublication.get_or_create(
+        publication, _ = NTEShaftCharacterPublication.get_or_create(
             character_id=character_id,
             defaults={
                 'character_name': character_name,
+                'access_level': 'invited',
                 'is_published': False,
             },
         )
+        if not publication.is_published and publication.access_level != 'invited':
+            publication.access_level = 'invited'
+            publication.updated_at = datetime.utcnow()
+            publication.save(only=[
+                NTEShaftCharacterPublication.access_level,
+                NTEShaftCharacterPublication.updated_at,
+            ])
     for character_name, character_id in RELEASED_CHARACTERS.items():
         publication, _ = NTEShaftCharacterPublication.get_or_create(
             character_id=character_id,
             defaults={
                 'character_name': character_name,
+                'access_level': 'public',
                 'is_published': True,
             },
         )
-        if not publication.is_published:
+        if not publication.is_published or publication.access_level != 'public':
             publication.is_published = True
+            publication.access_level = 'public'
             publication.updated_at = datetime.utcnow()
             publication.save(only=[
                 NTEShaftCharacterPublication.is_published,
+                NTEShaftCharacterPublication.access_level,
                 NTEShaftCharacterPublication.updated_at,
             ])
 
@@ -137,9 +162,11 @@ def publish_shaft_character(character_name: str) -> str:
     if publication.is_published:
         return 'already_published'
     publication.is_published = True
+    publication.access_level = 'public'
     publication.updated_at = datetime.utcnow()
     publication.save(only=[
         NTEShaftCharacterPublication.is_published,
+        NTEShaftCharacterPublication.access_level,
         NTEShaftCharacterPublication.updated_at,
     ])
     return 'published'

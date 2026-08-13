@@ -443,15 +443,21 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             source,
         )
 
-    def test_canhong_is_only_available_to_shaft_test_accounts_and_yiloyi_is_public(self) -> None:
+    def test_canhong_is_available_to_invited_and_test_accounts_and_yiloyi_is_public(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         public_catalog = get_shaft_catalog_payload()
+        invited_catalog = get_shaft_catalog_payload(player=SimpleNamespace(
+            shaft_invited=True,
+            shaft_test_whitelisted=False,
+        ))
         test_catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
         public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残红')
+        invited_canhong = next(character for character in invited_catalog['characters'] if character['name'] == '残红')
         test_canhong = next(character for character in test_catalog['characters'] if character['name'] == '残红')
         public_yiloyi = next(character for character in public_catalog['characters'] if character['name'] == '伊洛伊')
 
         self.assertTrue(public_canhong['selection_disabled'])
+        self.assertFalse(invited_canhong['selection_disabled'])
         self.assertFalse(test_canhong['selection_disabled'])
         self.assertFalse(public_yiloyi['selection_disabled'])
         self.assertIn("record.selection_disabled ? 'disabled' : ''", source)

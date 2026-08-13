@@ -38,6 +38,9 @@ MARKET_SORTS = frozenset({'dps', 'likes', 'favorites', 'new'})
 DEFAULT_UNPUBLISHED_CHARACTERS = {
     'char_076a1f4e53': '残红',
 }
+HALF_OPEN_CHARACTERS = {
+    'char_076a1f4e53': '残红',
+}
 RELEASED_CHARACTERS = {
     'char_a01c39f576': '伊洛伊',
 }
@@ -124,54 +127,89 @@ def initialize_shaft_character_publications() -> None:
     now = datetime.utcnow()
     with atomic_transaction():
         for character_id, character_name in DEFAULT_UNPUBLISHED_CHARACTERS.items():
-            ShaftCharacterPublication.get_or_create(
+            publication, created = ShaftCharacterPublication.get_or_create(
                 character_id=character_id,
                 defaults={
                     'character_name': character_name,
+                    'access_level': 'invited' if character_id in HALF_OPEN_CHARACTERS else 'test',
                     'is_published': False,
                     'updated_at': now,
                 },
             )
+            expected_level = 'invited' if character_id in HALF_OPEN_CHARACTERS else 'test'
+            if not publication.is_published and publication.access_level != expected_level:
+                publication.access_level = expected_level
+                publication.updated_at = now
+                publication.save(only=[
+                    ShaftCharacterPublication.access_level,
+                    ShaftCharacterPublication.updated_at,
+                ])
         for character_id, character_name in RELEASED_CHARACTERS.items():
             publication, _ = ShaftCharacterPublication.get_or_create(
                 character_id=character_id,
                 defaults={
                     'character_name': character_name,
+                    'access_level': 'public',
                     'is_published': True,
                     'updated_at': now,
                 },
             )
-            if not publication.is_published:
+            if not publication.is_published or publication.access_level != 'public':
                 publication.is_published = True
+                publication.access_level = 'public'
                 publication.updated_at = now
                 publication.save(only=[
                     ShaftCharacterPublication.is_published,
+                    ShaftCharacterPublication.access_level,
                     ShaftCharacterPublication.updated_at,
                 ])
 
 
-def _unpublished_character_ids() -> frozenset[str]:
+def _character_access_levels() -> dict[str, str]:
     if not ShaftCharacterPublication.table_exists():
-        return frozenset(DEFAULT_UNPUBLISHED_CHARACTERS)
-    publication_states = {
-        publication.character_id: bool(publication.is_published)
-        for publication in ShaftCharacterPublication.select(
-            ShaftCharacterPublication.character_id,
-            ShaftCharacterPublication.is_published,
+        return {
+            character_id: ('invited' if character_id in HALF_OPEN_CHARACTERS else 'test')
+            for character_id in DEFAULT_UNPUBLISHED_CHARACTERS
+        }
+    existing_columns = {
+        column.name for column in ShaftCharacterPublication._meta.database.get_columns(
+            ShaftCharacterPublication._meta.table_name
         )
     }
-    unpublished = {
+    has_access_level = 'access_level' in existing_columns
+    selected_fields = [
+        ShaftCharacterPublication.character_id,
+        ShaftCharacterPublication.is_published,
+    ]
+    if has_access_level:
+        selected_fields.append(ShaftCharacterPublication.access_level)
+    publication_states = {}
+    for publication in ShaftCharacterPublication.select(*selected_fields):
+        if publication.is_published:
+            access_level = 'public'
+        elif has_access_level:
+            access_level = str(publication.access_level or 'test')
+        else:
+            access_level = (
+                'invited' if publication.character_id in HALF_OPEN_CHARACTERS else 'test'
+            )
+        publication_states[publication.character_id] = access_level
+    for character_id in DEFAULT_UNPUBLISHED_CHARACTERS:
+        publication_states.setdefault(
+            character_id,
+            'invited' if character_id in HALF_OPEN_CHARACTERS else 'test',
+        )
+    for character_id in RELEASED_CHARACTERS:
+        publication_states[character_id] = 'public'
+    return publication_states
+
+
+def _unpublished_character_ids() -> frozenset[str]:
+    return frozenset(
         character_id
-        for character_id in DEFAULT_UNPUBLISHED_CHARACTERS
-        if not publication_states.get(character_id, False)
-    }
-    unpublished.update(
-        character_id
-        for character_id, is_published in publication_states.items()
-        if not is_published
+        for character_id, access_level in _character_access_levels().items()
+        if access_level != 'public'
     )
-    unpublished.difference_update(RELEASED_CHARACTERS)
-    return frozenset(unpublished)
 
 
 def _json_dumps(payload: Any) -> str:
@@ -775,42 +813,63 @@ def _is_shaft_test_player(player: Player | None) -> bool:
     return bool(player and getattr(player, 'shaft_test_whitelisted', False))
 
 
-def _team_contains_disabled_character(team: Any) -> bool:
-    unpublished_character_ids = _unpublished_character_ids()
+def shaft_player_access_level(player: Player | None) -> str:
+    if _is_shaft_test_player(player):
+        return 'test'
+    if player and getattr(player, 'shaft_invited', False):
+        return 'invited'
+    return 'public'
+
+
+def _character_is_accessible(
+    character_id: str,
+    player: Player | None,
+    access_levels: dict[str, str] | None = None,
+) -> bool:
+    required_level = (access_levels or _character_access_levels()).get(character_id, 'public')
+    player_level = shaft_player_access_level(player)
+    access_rank = {'public': 0, 'invited': 1, 'test': 2}
+    return access_rank.get(player_level, 0) >= access_rank.get(required_level, 2)
+
+
+def _team_contains_disabled_character(team: Any, player: Player | None = None) -> bool:
     return isinstance(team, list) and any(
         isinstance(member, dict)
-        and str(member.get('character_id') or '') in unpublished_character_ids
+        and not _character_is_accessible(str(member.get('character_id') or ''), player)
         for member in team
     )
 
 
-def _axis_contains_disabled_character(axis: ShaftAxis) -> bool:
-    return _team_contains_disabled_character(_safe_json_loads(axis.team_json, []))
+def _axis_contains_disabled_character(axis: ShaftAxis, player: Player | None = None) -> bool:
+    return _team_contains_disabled_character(_safe_json_loads(axis.team_json, []), player)
 
 
 def _filter_visible_character_axes(query, player: Player | None):
-    if _is_shaft_test_player(player):
-        return query
-    unpublished_character_ids = _unpublished_character_ids()
-    if not unpublished_character_ids:
+    access_levels = _character_access_levels()
+    inaccessible_character_ids = {
+        character_id
+        for character_id in access_levels
+        if not _character_is_accessible(character_id, player, access_levels)
+    }
+    if not inaccessible_character_ids:
         return query
     restricted_axis_ids = ShaftAxisCharacter.select(ShaftAxisCharacter.axis).where(
-        ShaftAxisCharacter.character_id.in_(unpublished_character_ids)
+        ShaftAxisCharacter.character_id.in_(inaccessible_character_ids)
     )
     return query.where(ShaftAxis.id.not_in(restricted_axis_ids))
 
 
 def get_shaft_catalog_payload(player: Player | None = None) -> dict[str, Any]:
     catalog = load_shaft_catalog()
-    can_select_test_characters = _is_shaft_test_player(player)
-    unpublished_character_ids = _unpublished_character_ids()
+    access_levels = _character_access_levels()
     return {
         'characters': [
             {
                 **character,
                 'selection_disabled': (
-                    str(character.get('id') or '') in unpublished_character_ids
-                    and not can_select_test_characters
+                    not _character_is_accessible(
+                        str(character.get('id') or ''), player, access_levels
+                    )
                 ),
             }
             for character in catalog['characters']
@@ -908,8 +967,7 @@ def _visible_axis(axis_id: int, player: Player | None = None) -> ShaftAxis:
         raise RuleValidationError('没有查看这个排轴的权限。')
     if (
         axis.visibility == 'public'
-        and not _is_shaft_test_player(player)
-        and _axis_contains_disabled_character(axis)
+        and _axis_contains_disabled_character(axis, player)
     ):
         raise RuleValidationError('排轴不存在。')
     return axis
@@ -1139,8 +1197,8 @@ def save_shaft_axis(player: Player, payload: dict[str, Any], axis_id: int | None
     if conflict_action not in {'', 'overwrite'}:
         raise RuleValidationError('未知的同名排轴处理方式。')
     axis_payload = normalize_axis_payload(payload)
-    if not _is_shaft_test_player(player) and _team_contains_disabled_character(axis_payload.get('team')):
-        raise RuleValidationError('队伍中存在当前仅对测试账号开放的角色。')
+    if _team_contains_disabled_character(axis_payload.get('team'), player):
+        raise RuleValidationError('队伍中存在当前账号无权使用的角色。')
     result = _submitted_axis_result(payload, axis_payload)
     axis_payload['duration_ticks'] = _int(result['summary'].get('duration_ticks'), axis_payload['duration_ticks'])
     dedupe_hash = calculate_axis_hash(axis_payload)
@@ -1324,8 +1382,8 @@ def publish_shaft_axis_snapshot(player: Player, axis_id: int) -> dict[str, Any]:
         source = _private_axis_query_for_player(axis_id, player)
         if source is None:
             raise RuleValidationError('没有上传这个排轴的权限。')
-        if not _is_shaft_test_player(player) and _axis_contains_disabled_character(source):
-            raise RuleValidationError('队伍中存在当前仅对测试账号开放的角色。')
+        if _axis_contains_disabled_character(source, player):
+            raise RuleValidationError('队伍中存在当前账号无权使用的角色。')
         snapshot = ShaftAxis.select().where(
             (ShaftAxis.owner == player) &
             (ShaftAxis.visibility == 'public') &

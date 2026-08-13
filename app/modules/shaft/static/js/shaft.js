@@ -5606,16 +5606,34 @@
       }, []);
   }
 
-  function compactReleasedTimelineIntervals(intervals) {
+  function compactReleasedTimelineIntervals(intervals, preserveRelativeAfterTick = null) {
     const mergedIntervals = mergeReleasedTimelineIntervals(intervals);
     if (!mergedIntervals.length) {
       return false;
     }
+    const originalTicks = new Map((state.axis.steps || []).map((step) => [
+      step.id,
+      Math.max(0, Number(step.start_tick || 0)),
+    ]));
+    const relativeTailSteps = preserveRelativeAfterTick === null
+      ? []
+      : (state.axis.steps || []).filter((step) => (
+        originalTicks.get(step.id) > Number(preserveRelativeAfterTick)
+      ));
+    const releasedBeforeTick = (tick) => mergedIntervals.reduce((sum, interval) => (
+      sum + Math.max(0, Math.min(tick, interval.end) - interval.start)
+    ), 0);
+    const relativeTailShift = relativeTailSteps.length
+      ? Math.min(...relativeTailSteps.map((step) => releasedBeforeTick(originalTicks.get(step.id))))
+      : 0;
     state.axis.steps.forEach((step) => {
-      const originalTick = Math.max(0, Number(step.start_tick || 0));
-      const releasedBeforeStep = mergedIntervals.reduce((sum, interval) => (
-        sum + Math.max(0, Math.min(originalTick, interval.end) - interval.start)
-      ), 0);
+      const originalTick = originalTicks.get(step.id);
+      const preserveTailPosition = preserveRelativeAfterTick !== null && (
+        originalTick > Number(preserveRelativeAfterTick)
+      );
+      const releasedBeforeStep = preserveTailPosition
+        ? relativeTailShift
+        : releasedBeforeTick(originalTick);
       step.start_tick = Math.max(0, originalTick - releasedBeforeStep);
     });
     return true;
@@ -5635,15 +5653,17 @@
     }
     const detailById = new Map((beforeDetails || []).map((detail) => [detail.step_id, detail]));
     const releasedIntervals = [];
+    let latestRemovedStart = 0;
     removedSteps.forEach((step) => {
       const action = actionForStep(step);
-      if (!blocksSlotOverlap(step, action) || isZeroForegroundQStep(step, action)) {
-        return;
-      }
       const detail = detailById.get(step.id);
       const start = Math.max(0, Number(
         detail?.display_start_tick ?? detail?.visual_start_tick ?? step.start_tick ?? 0,
       ));
+      latestRemovedStart = Math.max(latestRemovedStart, start);
+      if (!blocksSlotOverlap(step, action) || isZeroForegroundQStep(step, action)) {
+        return;
+      }
       const end = Math.max(start, Number(
         detail?.display_visual_end_tick ??
         detail?.visual_end_tick ??
@@ -5665,7 +5685,7 @@
         releasedIntervals.push({ start: newEnd, end: oldEnd });
       }
     });
-    compactReleasedTimelineIntervals(releasedIntervals);
+    compactReleasedTimelineIntervals(releasedIntervals, latestRemovedStart);
   }
 
   function removeGapBeforeCurrentStep() {

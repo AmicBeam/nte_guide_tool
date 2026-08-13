@@ -1222,12 +1222,16 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('normalizeEditedSteps(new Set(newIds));', paste_body)
 
         self.assertIn('function compactSpaceReleasedByDeletion(', source)
-        self.assertIn('function compactReleasedTimelineIntervals(intervals) {', source)
+        self.assertIn('function compactReleasedTimelineIntervals(intervals, preserveRelativeAfterTick = null) {', source)
         self.assertIn('beforeDeleteResult?.time_axis?.frozen_intervals', remove_body)
         self.assertIn('compactSpaceReleasedByDeletion(', remove_body)
         self.assertIn('oldEnd > newEnd', source)
         self.assertIn('originalTick - releasedBeforeStep', source)
-        self.assertIn('compactReleasedTimelineIntervals(releasedIntervals);', source)
+        self.assertIn('let latestRemovedStart = 0;', source)
+        self.assertIn('latestRemovedStart = Math.max(latestRemovedStart, start);', source)
+        self.assertIn('const relativeTailShift = relativeTailSteps.length', source)
+        self.assertIn('originalTick > Number(preserveRelativeAfterTick)', source)
+        self.assertIn('compactReleasedTimelineIntervals(releasedIntervals, latestRemovedStart);', source)
 
     def test_modifier_backspace_removes_the_empty_interval_before_current_action(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')

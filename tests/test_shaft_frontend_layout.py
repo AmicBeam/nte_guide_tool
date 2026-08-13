@@ -459,6 +459,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertTrue(public_canhong['selection_disabled'])
         self.assertFalse(invited_canhong['selection_disabled'])
         self.assertFalse(test_canhong['selection_disabled'])
+        self.assertEqual(public_canhong['avatar'], '/static/images/characters/avatar/残红.png')
+        self.assertEqual(public_canhong['portrait'], '/static/images/characters/avatar/残红.png')
         self.assertFalse(public_yiloyi['selection_disabled'])
         self.assertIn("record.selection_disabled ? 'disabled' : ''", source)
         self.assertIn(".filter((character) => !character.selection_disabled)", source)

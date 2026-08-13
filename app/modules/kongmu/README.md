@@ -7,10 +7,11 @@
 - 页面展示角色、卡带和计算结果。
 - 浏览器只提交选择并渲染结果，方案计算由后端应用服务完成。
 - 该模块不依赖异象对决的房间、对局快照或规则结算。
-- 残红属于半开放角色。服务端仅对排轴受邀用户或测试用户把残红加入目录并允许计算；正式账号和未登录访客均不可见，直接调用计算接口也按角色不存在处理。浏览器会在空幕请求中携带已有登录 token，但可见性判定只在服务端完成。
+- 空幕规划器公开展示并允许计算半开放角色；残红无需登录或排轴受邀/测试权限即可使用。该公开范围只属于空幕模块，不改变排轴模块的角色权限。
 - 角色目录会随登录账号权限变化，因此目录接口使用私有不缓存响应，并按 `Authorization` 区分变体，避免匿名目录覆盖测试账号目录。
 - 主角目录头像使用共享本地角色资源，通过长效 immutable 静态缓存加载，不依赖 Nanoka 远程回退。
-- 残红的Ⅲ型特化与“每个Ⅲ型驱动增加16%暴击伤害”来自2026-08-04用户提供的腾讯文档。文档未提供空幕格子拓扑，当前暂时复用真红的同类型格子拓扑，并在角色数据中标明来源边界。
+- 残红头像使用共享资源 `app/static/images/characters/avatar/残红.png`，空幕与排轴统一引用该文件。
+- 残红的Ⅲ型特化、“每个Ⅲ型驱动增加16%暴击伤害”和20格空幕拓扑已按 Nanoka NTE 1.3.4 正式角色 ID `1036` 的角色详情接入；规划器仍使用半开放角色 ID，以保持受邀/测试权限边界。
 
 ## 代码边界
 
@@ -25,7 +26,7 @@
 
 ```bash
 python3 -m unittest tests.test_module_routes.ModuleRoutesTest.test_kongmu_module_page_catalog_and_asset
-python3 -m unittest tests.test_module_routes.ModuleRoutesTest.test_kongmu_test_character_requires_test_permission
+python3 -m unittest tests.test_module_routes.ModuleRoutesTest.test_kongmu_half_open_character_is_public
 ```
 
 涉及交互调整时，还需通过 `/kongmu` 检查角色选择、卡带选择、方案生成和返回工具主页。

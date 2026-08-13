@@ -49,24 +49,33 @@ class ModuleRoutesTest(RoomFlowTestCase):
         self.assertNotIn('pickCharacterAvatar', frontend)
         self.assertNotIn('avatarChoiceIndexes', frontend)
         self.assertIn("{cache: 'no-store'}", frontend)
-        self.assertNotIn('残红', [character['name'] for character in catalog.get_json()['characters']])
+        canhong = next(character for character in catalog.get_json()['characters'] if character['name'] == '残红')
+        self.assertEqual(canhong['avatar'], '/static/images/characters/avatar/残红.png')
+        self._assert_asset(canhong['avatar'])
         self.assertIn('headers.Authorization = `Bearer ${token}`', frontend)
         self._assert_asset('/static/kongmu/js/kongmu.js')
 
-    def test_kongmu_test_character_requires_test_permission(self) -> None:
+    def test_kongmu_half_open_character_is_public(self) -> None:
         anonymous_catalog = self.client.get('/api/kongmu/catalog').get_json()
-        self.assertNotIn('残红', [character['name'] for character in anonymous_catalog['characters']])
+        anonymous_canhong = next(character for character in anonymous_catalog['characters'] if character['name'] == '残红')
+        self.assertEqual(anonymous_canhong['avatar'], '/static/images/characters/avatar/残红.png')
+
+        anonymous_plan = self.client.post('/api/kongmu/plan', json={
+            'character_id': anonymous_canhong['id'],
+            'cartridge_id': 'attack',
+        })
+        self.assertEqual(anonymous_plan.status_code, 200)
 
         token = self._issue_login_and_get_token('kongmu-tester')
         regular_headers = {'Authorization': f'Bearer {token}'}
         regular_catalog = self.client.get('/api/kongmu/catalog', headers=regular_headers).get_json()
-        self.assertNotIn('残红', [character['name'] for character in regular_catalog['characters']])
+        regular_canhong = next(character for character in regular_catalog['characters'] if character['name'] == '残红')
 
-        denied = self.client.post('/api/kongmu/plan', json={
-            'character_id': 'char_076a1f4e53',
+        allowed_without_permission = self.client.post('/api/kongmu/plan', json={
+            'character_id': regular_canhong['id'],
             'cartridge_id': 'attack',
         }, headers=regular_headers)
-        self.assertEqual(denied.status_code, 400)
+        self.assertEqual(allowed_without_permission.status_code, 200)
 
         models_module = importlib.import_module('app.models')
         models_module.Player.update(shaft_test_whitelisted=True).where(
@@ -82,6 +91,18 @@ class ModuleRoutesTest(RoomFlowTestCase):
             'cartridge_id': 'attack',
         }, headers=regular_headers)
         self.assertEqual(allowed.status_code, 200)
+        self.assertEqual(
+            allowed.get_json()['character']['equip_slots']['slots'],
+            [
+                [-1, -1, -1, -1, -1, -1, -1],
+                [-1, -1, 0, 0, 0, 0, -1],
+                [-1, 0, 0, 0, 0, 0, -1],
+                [-1, 0, 0, 0, -1, 0, -1],
+                [-1, 0, 0, -1, -1, 0, -1],
+                [-1, 0, 0, 0, 0, -1, -1],
+                [-1, -1, -1, -1, -1, -1, -1],
+            ],
+        )
 
         invited_token = self._issue_login_and_get_token('kongmu-invited')
         models_module.Player.update(shaft_invited=True).where(

@@ -29,8 +29,8 @@ CHARACTER_IMAGE_OVERRIDES = {
         'portrait': '/static/kongmu/images/characters/player_yiluoyi_256.webp',
     },
     '残红': {
-        'avatar': '/static/shaft/images/characters/canhong-placeholder.svg',
-        'portrait': '/static/shaft/images/characters/canhong-placeholder.svg',
+        'avatar': '/static/images/characters/avatar/残红.png',
+        'portrait': '/static/images/characters/avatar/残红.png',
     },
 }
 

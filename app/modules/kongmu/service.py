@@ -75,9 +75,11 @@ FIXED_CHARACTER_AVATAR_SOURCE_ICONS = {
 FIXED_CHARACTER_AVATAR_LOCAL_PATHS = {
     '1046': 'images/characters/avatar/男主.webp',
     '1051': 'images/characters/avatar/男主.webp',
+    'char_076a1f4e53': 'images/characters/avatar/残红.png',
 }
 
 TEST_CHARACTER_IDS = {'char_076a1f4e53'}
+PUBLIC_KONGMU_CHARACTER_IDS = {'char_076a1f4e53'}
 
 
 @dataclass(frozen=True)
@@ -698,7 +700,10 @@ def get_drives_by_geometry() -> dict[str, dict[str, Any]]:
 
 
 def is_test_character(record: dict[str, Any]) -> bool:
-    return bool(record.get('test_character')) or str(record.get('id') or '') in TEST_CHARACTER_IDS
+    character_id = str(record.get('id') or '')
+    if character_id in PUBLIC_KONGMU_CHARACTER_IDS:
+        return False
+    return bool(record.get('test_character')) or character_id in TEST_CHARACTER_IDS
 
 
 @lru_cache(maxsize=2)

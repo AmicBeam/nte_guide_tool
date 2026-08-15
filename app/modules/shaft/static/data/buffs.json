@@ -2676,6 +2676,23 @@
     "effects": {}
   },
   {
+    "id": "character_canhong_tianyi_turbid_burn_layer",
+    "name": "残红·天翼",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 99,
+    "trigger": {
+      "event": "dot_layer_applied",
+      "source": {"scope": "team"},
+      "conditions": [{"type": "enemy_debuff_active", "debuffs": ["浊燃"]}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "independent", "max_stacks": 1},
+    "activation": {"increase_active_turbid_burn_layer": true},
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
     "id": "character_canhong_illusion_dot_spread",
     "name": "残红·魔舞（全部持续伤害加层）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],

@@ -51,7 +51,7 @@
     flat_def: 'flat_def',
   };
   const CURTAIN_PASSIVE_TYPES = ['type2', 'type3', 'type4'];
-  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'periodic_damage', 'full_stack']);
+  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'periodic_damage', 'dot_layer_applied', 'full_stack']);
   const PERMANENT_BUFF_END_TICK = 1000000000;
   const HARMONY_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
   const SPECIAL_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
@@ -3419,6 +3419,7 @@
 
     function triggerBuffsForEvent(event, triggerTick, step, action, snapshot, isBackground, extraContext = {}) {
       const triggered = [];
+      const dotLayerApplications = [];
       const decorateTriggeredSummary = (summary, runtimeRule, triggerEvent = event) => {
         summary.trigger_event = triggerEvent;
         summary.trigger_tick = triggerTick;
@@ -3615,6 +3616,29 @@
         const dotLayerExpansion = activation.increase_all_active_dot_layers === true
           ? increaseAllActiveDotLayers(triggerTick)
           : {additions: [], addedBuffs: []};
+        dotLayerExpansion.additions
+          .filter((addition) => !(addition.kind === 'reaction' && addition.name === '浊燃'))
+          .forEach((addition) => dotLayerApplications.push({
+            kind: String(addition.kind || ''),
+            name: String(addition.name || ''),
+          }));
+        let turbidBurnStackCount = 0;
+        if (activation.increase_active_turbid_burn_layer === true) {
+          const turbidBurnEffect = reactionEffects
+            .filter((effect) => (
+              effect.disabled !== true
+              && String(effect.reaction || '') === '浊燃'
+              && triggerTick >= int(effect.start_tick)
+              && triggerTick < int(effect.end_tick)
+            ))
+            .sort((left, right) => (
+              int(right.end_tick) - int(left.end_tick)
+              || int(right.start_tick) - int(left.start_tick)
+            ))[0];
+          if (turbidBurnEffect) {
+            turbidBurnStackCount = increaseTurbidBurnLayer(turbidBurnEffect, triggerTick);
+          }
+        }
         asList(activation.reset_action_cooldowns).map(String).filter(Boolean).forEach((actionId) => {
           const resetAction = actionsById.get(actionId);
           cooldownUntil.set(
@@ -3633,13 +3657,26 @@
           .reduce((sum, candidate) => sum + Math.max(0, num(candidate.stack_count, 1)), 0);
         const instance = activateBuff(activeBuffs, runtimeRule, triggerTick, stackGain, context);
         if (!instance) return;
-        activeBuffs
-          .filter((candidate) => !previousInstances.has(candidate) && candidate.rule?.periodic_damage)
-          .forEach((candidate) => schedulePeriodicBuffDamage(candidate, candidate.rule));
+        const addedPeriodicBuffs = activeBuffs
+          .filter((candidate) => !previousInstances.has(candidate) && candidate.rule?.periodic_damage);
+        addedPeriodicBuffs.forEach((candidate) => {
+          schedulePeriodicBuffDamage(candidate, candidate.rule);
+        });
+        const appliedPeriodicBuff = addedPeriodicBuffs[0];
+        if (appliedPeriodicBuff) {
+          const periodic = appliedPeriodicBuff.rule.periodic_damage;
+          if (actionTags({extra_tag: periodic.extra_tag, tags: periodic.tags}).has('DOT')) {
+            dotLayerApplications.push({
+              kind: 'buff_periodic',
+              name: String(periodic.source || appliedPeriodicBuff.name || appliedPeriodicBuff.definition_id || ''),
+            });
+          }
+        }
         if (instance.rule?.periodic_heal) registerPeriodicHealing(instance);
         if (cooldownTicks > 0) buffTriggerCooldowns.set(cooldownKey, triggerTick + cooldownTicks);
         const summary = buffSummary(instance);
         if (dotLayerExpansion.additions.length) summary.dot_layer_additions = dotLayerExpansion.additions;
+        if (turbidBurnStackCount > 0) summary.turbid_burn_stack_count = turbidBurnStackCount;
         if (clearedBuffKeys.length) {
           summary.cleared_buff_keys = clearedBuffKeys;
         }
@@ -3692,6 +3729,22 @@
           }
         }
       });
+      if (event !== 'dot_layer_applied') {
+        dotLayerApplications.forEach((application) => {
+          triggered.push(...triggerBuffsForEvent(
+            'dot_layer_applied',
+            triggerTick,
+            step,
+            action,
+            snapshot,
+            isBackground,
+            Object.assign({}, extraContext, {
+              dot_layer_kind: application.kind,
+              dot_layer_name: application.name,
+            }),
+          ));
+        });
+      }
       return triggered;
     }
 
@@ -4177,6 +4230,21 @@
             enemy_debuffs: activeEnemyDebuffs(enemyDebuffs, buffTick),
           }));
         }
+      } else if (actionTagsForSnapshot(action, snapshot).has('DOT')) {
+        triggeredBuffs.push(...triggerBuffsForEvent(
+          'dot_layer_applied',
+          startTick,
+          step,
+          action,
+          snapshot,
+          isBackground,
+          {
+            visual_trigger_tick: visualStartTick,
+            dot_layer_kind: 'action_periodic',
+            dot_layer_name: String(action.name || action.id || ''),
+            enemy_debuffs: activeEnemyDebuffs(enemyDebuffs, buffTick),
+          },
+        ));
       }
       const reactionAmplification = reactionAmplificationMultiplier(snapshot, calc.panel, buffTick);
       const fuwenAmplification = reactionAmplificationMultiplier(snapshot, calc.panel, buffTick, '覆纹');

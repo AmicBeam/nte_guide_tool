@@ -7883,7 +7883,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertNotIn(25, [event['tick'] for event in turbid_burn])
         self.assertEqual(len({event['effect_id'] for event in turbid_burn}), 1)
         self.assertTrue(all(event['damage'] > 0 for event in turbid_burn))
-        self.assertTrue(all(event['formula_parts']['frequency_multiplier'] == 2 for event in turbid_burn))
+        self.assertTrue(all(event['formula_parts']['frequency_multiplier'] == 3 for event in turbid_burn))
         self.assertEqual(
             [
                 (
@@ -7894,7 +7894,74 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                 )
                 for effect in turbid_effects
             ],
-            [(13, 165, 2, 2)],
+            [(13, 165, 3, 3)],
+        )
+
+    def test_canhong_tianyi_adds_one_turbid_burn_layer_for_team_dot_application(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [
+                {
+                    'slot': 0,
+                    'character_id': 'char_076a1f4e53',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                },
+                {
+                    'slot': 1,
+                    'character_id': 'char_c78f7a08d5',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                },
+                {
+                    'slot': 2,
+                    'character_id': 'char_701295143d',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                },
+            ],
+            'steps': [
+                {'id': 'turbid-burn', 'slot': 1, 'action_id': 'action_2635f721a8', 'start_tick': 0},
+                {'id': 'nightmare-five-layers', 'slot': 1, 'action_id': 'action_2745f804a5', 'start_tick': 15},
+                {'id': 'action-periodic-dot', 'slot': 2, 'action_id': 'action_10c15dd4d1', 'start_tick': 20},
+                {'id': 'axis-end', 'slot': 0, 'action_id': 'action_none_076a1f4e53', 'start_tick': 30},
+            ],
+            'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+            'initial_energy': 200,
+        })['result']
+
+        nightmare = next(
+            detail for detail in result['details']
+            if detail['step_id'] == 'nightmare-five-layers'
+        )
+        tianyi = [
+            buff
+            for detail in result['details']
+            for buff in detail['triggered_buffs']
+            if buff['definition_id'] == 'character_canhong_tianyi_turbid_burn_layer'
+        ]
+        turbid_effects = [
+            effect for effect in result['reaction_effects']
+            if effect['reaction'] == '浊燃'
+        ]
+
+        self.assertEqual(len([
+            buff for buff in nightmare['triggered_buffs']
+            if buff['definition_id'] == 'character_canhong_tianyi_turbid_burn_layer'
+        ]), 1)
+        self.assertEqual(len(tianyi), 2)
+        self.assertEqual(tianyi[0]['turbid_burn_stack_count'], 2)
+        self.assertEqual(tianyi[1]['turbid_burn_stack_count'], 3)
+        self.assertEqual(
+            [
+                (
+                    effect['start_tick'],
+                    effect['end_tick'],
+                    effect['stack_count'],
+                    effect['frequency_multiplier'],
+                )
+                for effect in turbid_effects
+            ],
+            [(13, 170, 3, 3)],
         )
 
     def test_canhong_illusion_attack_adds_and_projects_requiem_nightmare_layer(self) -> None:

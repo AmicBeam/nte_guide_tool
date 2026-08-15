@@ -2081,7 +2081,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(initial_effects[0]['reaction'], '浊燃')
         self.assertEqual(initial_effects[0]['contributor_slot'], 0)
         self.assertEqual(initial_effects[0]['start_tick'], 0)
-        self.assertEqual(initial_effects[0]['end_tick'], 150)
+        self.assertEqual(initial_effects[0]['end_tick'], 120)
         self.assertTrue(all(event.get('loop_initial') for event in result['reaction_damage_events']))
         resources = {item['slot']: item for item in result['resources_by_slot']}
         self.assertEqual(resources[0]['initial_reaction'], '浊燃')
@@ -2127,9 +2127,46 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertTrue(turbid_effects[0]['looped'])
         self.assertEqual(turbid_effects[0]['stack_count'], 3)
         self.assertEqual(turbid_effects[0]['frequency_multiplier'], 3)
+        self.assertEqual(turbid_effects[0]['start_tick'], 0)
+        self.assertEqual(turbid_effects[0]['end_tick'], 170)
         self.assertTrue(turbid_events)
+        self.assertEqual(turbid_events[0]['tick'], 0)
         self.assertTrue(all(event['damage'] > 0 for event in turbid_events))
         self.assertTrue(all(event['formula_parts']['frequency_multiplier'] == 3 for event in turbid_events))
+
+    def test_loop_axis_preserves_initial_turbid_burn_cadence_across_zero_q_freeze(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_076a1f4e53',
+                'arc_id': '',
+                'cartridge_id': '',
+            }],
+            'steps': [
+                {'id': 'blood-banquet', 'slot': 0, 'action_id': 'action_canhong_q_blood_banquet', 'start_tick': 0},
+                {'id': 'axis-end', 'slot': 0, 'action_id': 'action_none_076a1f4e53', 'start_tick': 50},
+            ],
+            'options': {
+                'loop_enabled': True,
+                'loop_initial_resources': {
+                    'char_076a1f4e53': {
+                        'energy': 200,
+                        'harmony': 0,
+                        'reaction': '浊燃',
+                        'personal_resources': {},
+                    },
+                },
+            },
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+            'initial_energy': 200,
+        })['result']
+
+        turbid_events = [
+            event for event in result['reaction_damage_events']
+            if event['reaction'] == '浊燃'
+        ]
+        self.assertEqual(result['time_axis']['frozen_intervals'], [{'start_tick': 0, 'end_tick': 5}])
+        self.assertEqual((turbid_events[0]['tick'], turbid_events[0]['visual_tick']), (5, 10))
 
     def test_loop_axis_uses_per_character_initial_personal_resources(self) -> None:
         payload = {

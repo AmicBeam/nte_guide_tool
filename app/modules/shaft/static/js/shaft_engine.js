@@ -3883,33 +3883,31 @@
           && int(effect.start_tick) <= 0
           && int(effect.end_tick) > 0
         ));
-        const carriedFrequency = carriedEffects.reduce(
-          (maximum, effect) => Math.max(
-            maximum,
-            num(effect.frequency_multiplier, num(effect.stack_count, 1)),
-          ),
-          1,
-        );
         const carriedIds = new Set(carriedEffects.map((effect) => String(effect.id || '')));
-        for (let index = reactionEffects.length - 1; index >= 0; index -= 1) {
-          if (carriedIds.has(String(reactionEffects[index].id || ''))) reactionEffects.splice(index, 1);
-        }
-        for (let index = reactionDamageEvents.length - 1; index >= 0; index -= 1) {
-          if (carriedIds.has(String(reactionDamageEvents[index].effect_id || ''))) reactionDamageEvents.splice(index, 1);
+        if (carriedEffects.length > 0) {
+          carriedEffects.forEach((effect) => {
+            effect.start_tick = 0;
+            effect.duration_ticks = Math.max(0, int(effect.end_tick));
+            effect.damage_ticks = asList(effect.damage_ticks)
+              .map((damageTick) => int(damageTick))
+              .filter((damageTick) => damageTick >= 0);
+            effect.looped = true;
+            effect.loop_primed = false;
+          });
+          for (let index = reactionDamageEvents.length - 1; index >= 0; index -= 1) {
+            const event = reactionDamageEvents[index];
+            if (!carriedIds.has(String(event.effect_id || ''))) continue;
+            if (int(event.tick) < 0) {
+              reactionDamageEvents.splice(index, 1);
+              continue;
+            }
+            event.loop_primed = false;
+          }
+          return;
         }
         const initialEffect = seedLoopInitialReaction(reaction, snapshot, 0);
         if (!initialEffect) return;
-        initialEffect.looped = carriedEffects.length > 0;
-        if (reaction === '浊燃') {
-          const inheritedFrequency = Math.min(3, Math.max(1, carriedFrequency));
-          initialEffect.stack_count = inheritedFrequency;
-          initialEffect.frequency_multiplier = inheritedFrequency;
-          reactionDamageEvents.forEach((event) => {
-            if (String(event.effect_id || '') === String(initialEffect.id || '')) {
-              event.frequency_multiplier = inheritedFrequency;
-            }
-          });
-        }
+        initialEffect.looped = false;
       });
     }
 

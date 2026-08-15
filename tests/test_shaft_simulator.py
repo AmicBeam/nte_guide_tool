@@ -1874,6 +1874,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             'team': [
                 {'slot': 0, 'character_id': 'char_c78f7a08d5', 'arc_id': '', 'cartridge_id': ''},
                 {'slot': 1, 'character_id': 'char_caa6c2e5a8', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 2, 'character_id': 'char_e0a4292b4e', 'arc_id': '', 'cartridge_id': ''},
             ],
             'steps': [
                 *first_gain_steps,
@@ -1904,6 +1905,23 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertTrue(doom_star_events[0]['conflict_settlement'])
         self.assertEqual(doom_star_events[0]['tick'], doom_star_effects[1]['start_tick'])
         self.assertEqual(doom_star_events[1]['tick'], doom_star_effects[1]['start_tick'] + 50)
+        self.assertFalse(any(
+            buff['rule_id'] == 'character_haniya_dark_star_end_team_flat_atk'
+            for buff in doom_star_events[0].get('triggered_buffs', [])
+        ))
+        second_friendship = next(
+            buff for buff in doom_star_events[1]['triggered_buffs']
+            if buff['rule_id'] == 'character_haniya_dark_star_end_team_flat_atk'
+        )
+        self.assertEqual(second_friendship['stack_count'], 1)
+        self.assertAlmostEqual(second_friendship['effects']['flat_atk'], 493.0 * 0.08)
+        axis_end = next(detail for detail in result['details'] if detail['step_id'] == 'axis-end')
+        applied_friendship = next(
+            buff for buff in axis_end['applied_buffs']
+            if buff['rule_id'] == 'character_haniya_dark_star_end_team_flat_atk'
+        )
+        self.assertEqual(applied_friendship['stack_count'], 1)
+        self.assertAlmostEqual(applied_friendship['effects']['flat_atk'], 493.0 * 0.08)
 
     def test_loop_axis_carries_previous_genesis_as_an_independent_instance(self) -> None:
         result = simulate_shaft_axis({

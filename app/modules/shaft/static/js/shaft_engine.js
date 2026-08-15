@@ -51,7 +51,7 @@
     flat_def: 'flat_def',
   };
   const CURTAIN_PASSIVE_TYPES = ['type2', 'type3', 'type4'];
-  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'periodic_damage', 'dot_layer_applied', 'full_stack']);
+  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'reaction_end', 'periodic_damage', 'dot_layer_applied', 'full_stack']);
   const PERMANENT_BUFF_END_TICK = 1000000000;
   const HARMONY_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
   const SPECIAL_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
@@ -3003,6 +3003,36 @@
             );
           }
           const reactionName = String(event.reaction || '');
+          if (
+            reactionName === '黯星'
+            && event.conflict_settlement !== true
+            && event.reaction_end_triggered !== true
+          ) {
+            const effect = reactionEffects.find(
+              (candidate) => String(candidate.id || '') === String(event.effect_id || ''),
+            );
+            const contributorSlot = int(event.contributor_slot);
+            const snapshot = snapshots.get(contributorSlot);
+            if (effect && snapshot) {
+              const reactionAction = {
+                id: `reaction-end:${reactionName}`,
+                name: `${reactionName}状态结束`,
+                action_type: '环合结束',
+                damage_type: '环合伤害',
+                hit_count: 0,
+              };
+              event.reaction_end_triggered = true;
+              event.triggered_buffs = triggerBuffsForEvent(
+                'reaction_end',
+                int(event.tick),
+                {id: reactionAction.id, slot: contributorSlot},
+                reactionAction,
+                snapshot,
+                true,
+                {reaction: effect},
+              );
+            }
+          }
           const triggersPeriodicDamageBuffs = Boolean(event.kind)
             || ['浊燃', '创生', '创生复制体'].includes(reactionName);
           if (triggersPeriodicDamageBuffs && event.damage > 0) {
@@ -3019,14 +3049,14 @@
                 tags: isDotDamage ? ['DOT'] : [],
                 hit_count: 1,
               };
-              event.triggered_buffs = triggerBuffsForEvent(
+              event.triggered_buffs = asList(event.triggered_buffs).concat(triggerBuffsForEvent(
                 'periodic_damage',
                 int(event.tick),
                 {id: periodicAction.id, slot: contributorSlot},
                 periodicAction,
                 snapshot,
                 true,
-              );
+              ));
             }
           }
         });

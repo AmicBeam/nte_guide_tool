@@ -1572,6 +1572,23 @@
     "effects": {"element_dmg": 0.08}
   },
   {
+    "id": "character_haniya_dark_star_end_team_flat_atk",
+    "name": "哈尼娅·是友情啊",
+    "description": "黯星状态结束时，全队获得哈尼娅8%基础攻击的数值攻击，最多2层（累计16%）。",
+    "providers": [{"kind": "character", "id": "char_e0a4292b4e"}],
+    "priority": 90,
+    "trigger": {
+      "event": "reaction_end",
+      "source": {"scope": "team"},
+      "conditions": [{"type": "reaction_type", "reactions": ["黯星"]}]
+    },
+    "target": {"scope": "team"},
+    "duration": {"type": "permanent", "loop_carry": true},
+    "stacking": {"mode": "add_stack", "max_stacks": 2},
+    "activation": {"effects_from_owner_base": {"stat": "atk", "factor": 0.08, "effect_key": "flat_atk"}},
+    "effects": {}
+  },
+  {
     "id": "character_haniya_e_team_flat_atk",
     "name": "哈尼娅·咕咕子全队加攻",
     "providers": [{"kind": "character", "id": "char_e0a4292b4e"}],

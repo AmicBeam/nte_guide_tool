@@ -226,7 +226,7 @@ buff/debuff 不再由玩家在页面手动填写名称和覆盖率，而是由�
 
 字段口径：
 
-- `trigger.event` 支持 `action_start`、`action_hit`、`action_end`、`front_change`、`resource_change`、`reaction`、`loop_start`。
+- `trigger.event` 当前支持 `passive`、`action_start`、`action_hit`、`action_end`、`foreground_enter`、`foreground_leave`、`loop_start`、`reaction_trigger`、`reaction_end`、`periodic_damage`、`dot_layer_applied` 和 `full_stack`。
 - `source` 用角色、动作名、动作类型、标签和前后台位置过滤触发动作，不依赖玩家输入的 buff 名。
 - `conditions` 用结构化条件描述待补机制，例如资源层数、敌人弱点、是否轨外之境、是否循环轴、前一个动作、动作命中段数。
 - `target` 同时过滤角色和动作。一个 buff 可以只影响指定角色、指定动作、指定标签、指定前后台位置。
@@ -240,9 +240,10 @@ buff/debuff 不再由玩家在页面手动填写名称和覆盖率，而是由�
 
 1. 进入动作前生成 `action_start`，用于启动 buff、消耗资源、切换前台状态。
 2. 计算伤害前生成 `action_hit`，用于命中前加成、按段数叠层、按动作类型筛选加成。
-3. 伤害和资源结算后生成 `resource_change`，用于由能量、环合、噩梦、罪状等资源触发的规则。
-4. 动作结束生成 `action_end`，用于结束状态或触发后续状态。
-5. 循环轴开启时，在轴头补发 `loop_start`，只处理轴尾仍未结束且允许结转的状态。
+3. 环合生成和状态自然结束分别生成 `reaction_trigger` 与 `reaction_end`；黯星被新实例顶替时只提前结算伤害，不生成 `reaction_end`。
+4. 周期伤害结算和持续伤害层施加分别生成 `periodic_damage` 与 `dot_layer_applied`。
+5. 动作结束生成 `action_end`，用于结束状态或触发后续状态。
+6. 循环轴开启时，在轴头补发 `loop_start`，只处理轴尾仍未结束且允许结转的状态。
 
 同一 tick 内按 `priority` 从小到大执行；同优先级按动作轴顺序执行。这样 0 秒动作也有稳定结算顺序。
 

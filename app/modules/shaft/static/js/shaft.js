@@ -1448,6 +1448,7 @@
 
   function renderEditorActions() {
     const undoButton = $('shaft-undo-btn');
+    const moveEarlierButton = $('shaft-move-earlier-btn');
     const redoButton = $('shaft-redo-btn');
     const deleteButton = $('shaft-delete-step-btn');
     const copyButton = $('shaft-copy-step-btn');
@@ -1457,6 +1458,9 @@
     const selectionCount = selectedStepIds().length;
     if (undoButton) {
       undoButton.disabled = state.undoStack.length === 0;
+    }
+    if (moveEarlierButton) {
+      moveEarlierButton.disabled = selectionCount === 0;
     }
     if (redoButton) {
       redoButton.disabled = state.redoStack.length === 0;
@@ -5429,8 +5433,30 @@
     ) {
       return target;
     }
-    const interval = actionIntervalAtTick(tick);
+    const interval = actionIntervalAtTick(tick, slot);
     return interval ? interval.end : target;
+  }
+
+  function preparePasteInsertionTick(tick) {
+    let baseTick = Math.max(0, Number(tick || 0));
+    const maxPasses = Math.max(2, state.clipboardSteps.length + 1);
+    for (let pass = 0; pass < maxPasses; pass += 1) {
+      const previousBaseTick = baseTick;
+      state.clipboardSteps.forEach((source) => {
+        const relativeTick = Number(source.relative_start_tick || 0);
+        const action = getActionMap().get(source.action_id) || {};
+        const preparedTick = prepareInsertionTick(
+          baseTick + relativeTick,
+          action,
+          Number(source.slot || 0),
+        );
+        baseTick = Math.max(baseTick, preparedTick - relativeTick);
+      });
+      if (baseTick === previousBaseTick) {
+        break;
+      }
+    }
+    return baseTick;
   }
 
   function duplicateStartTick(tick, ignoreStepId = '', actionId = '') {
@@ -5484,6 +5510,19 @@
     return state.cursorTick;
   }
 
+  function reserveZeroQInsertionSpan(insertTick, action, candidateStep) {
+    if (!isZeroForegroundQStep(candidateStep, action)) {
+      return 0;
+    }
+    const spanTicks = actionVisualDurationTicks(action, candidateStep);
+    state.axis.steps.forEach((step) => {
+      if (Number(step.start_tick || 0) >= insertTick) {
+        step.start_tick = Number(step.start_tick || 0) + spanTicks;
+      }
+    });
+    return spanTicks;
+  }
+
   function addActionAt(slot, actionId, startTick) {
     const action = getActionMap().get(actionId) || {};
     if (!actionId) {
@@ -5501,6 +5540,7 @@
       repeat: 1,
       tags: [],
     };
+    reserveZeroQInsertionSpan(insertTick, action, step);
     state.axis.steps.push(step);
     normalizeEditedSteps(new Set([step.id]));
     selectStep(step.id, false);
@@ -5688,52 +5728,123 @@
     compactReleasedTimelineIntervals(releasedIntervals, latestRemovedStart);
   }
 
-  function removeGapBeforeCurrentStep() {
+  function earliestStartTickPreservingActionOrder(currentStep) {
+    if (!currentStep) {
+      return 0;
+    }
+    const orderedSteps = (state.axis?.steps || [])
+      .filter((step) => {
+        const action = actionForStep(step);
+        return startsForeground(step, action) || blocksSlotOverlap(step, action);
+      })
+      .slice()
+      .sort(foregroundConflictStepOrder);
+    const currentIndex = orderedSteps.findIndex((step) => step.id === currentStep.id);
+    if (currentIndex < 0) {
+      return 0;
+    }
+    const simulatedSteps = orderedSteps.slice(0, currentIndex).map((step) => clone(step));
+    const simulatedCurrentStep = clone(currentStep);
+    simulatedCurrentStep.start_tick = 0;
+    simulatedSteps.push(simulatedCurrentStep);
+    applyForegroundConflictOrder(simulatedSteps);
+    return earliestVisualTickRespectingForegroundReturn(
+      currentStep,
+      Math.max(0, Number(simulatedCurrentStep.start_tick || 0)),
+    );
+  }
+
+  function earliestVisualTickRespectingForegroundReturn(currentStep, proposedVisualTick) {
+    const currentAction = actionForStep(currentStep);
+    if (!startsForeground(currentStep, currentAction)) {
+      return proposedVisualTick;
+    }
+    const result = freshResult();
+    const details = new Map((result?.details || []).map((detail) => [String(detail?.step_id || ''), detail]));
+    const orderedSteps = (state.axis?.steps || [])
+      .map((step, order) => {
+        const detail = details.get(String(step.id || '')) || {};
+        return {
+          step,
+          order,
+          action: actionForStep(step),
+          calculationTick: Number(detail.start_tick ?? step.start_tick ?? 0),
+          calculationSequence: Number(detail.calculation_start_sequence ?? 0),
+          visualTick: Number(detail.visual_start_tick ?? step.start_tick ?? 0),
+        };
+      })
+      .sort((left, right) => (
+        left.calculationTick - right.calculationTick ||
+        left.calculationSequence - right.calculationSequence ||
+        left.visualTick - right.visualTick ||
+        left.order - right.order
+      ));
+    const currentIndex = orderedSteps.findIndex((item) => item.step.id === currentStep.id);
+    if (currentIndex < 0) {
+      return proposedVisualTick;
+    }
+    const pendingReturns = new Map();
+    let foregroundSlot = null;
+    orderedSteps.slice(0, currentIndex).forEach(({ step, action, calculationTick }) => {
+      if (!startsForeground(step, action)) {
+        return;
+      }
+      const slot = Number(step.slot || 0);
+      const maskingQ = Boolean(window.ShaftSelfCheck?.isMaskingForegroundQ(step, action));
+      if (foregroundSlot === slot) {
+        if (maskingQ) {
+          pendingReturns.forEach((pending) => { pending.masked = true; });
+        }
+        return;
+      }
+      if (maskingQ) {
+        pendingReturns.forEach((pending, pendingSlot) => {
+          if (pendingSlot !== slot) {
+            pending.masked = true;
+          }
+        });
+      }
+      pendingReturns.delete(slot);
+      if (foregroundSlot !== null) {
+        pendingReturns.set(foregroundSlot, {
+          departureTick: Math.max(0, Number(calculationTick || 0)),
+          masked: maskingQ,
+        });
+      }
+      foregroundSlot = slot;
+    });
+    const returning = pendingReturns.get(Number(currentStep.slot || 0));
+    if (foregroundSlot === Number(currentStep.slot || 0) || !returning || returning.masked) {
+      return proposedVisualTick;
+    }
+    const minReturnTicks = Math.max(0, Number(window.ShaftSelfCheck?.MIN_FOREGROUND_RETURN_TICKS || 12));
+    const requiredCalculationTick = returning.departureTick + minReturnTicks;
+    let visualTick = Math.max(0, Number(proposedVisualTick || 0));
+    while (calculationTickFromVisual(visualTick) < requiredCalculationTick) {
+      visualTick += 1;
+    }
+    return visualTick;
+  }
+
+  function moveCurrentStepEarlier() {
     const currentStep = state.axis?.steps?.find((step) => step.id === state.selectedStepId);
     if (!currentStep) {
       setStatus('请先选择一个动作', 'error');
       return;
     }
-    const result = freshResult();
-    const details = state.timelineDisplayDetails?.length
-      ? state.timelineDisplayDetails
-      : result?.details || [];
-    const detailById = new Map(details.map((detail) => [String(detail?.step_id || ''), detail]));
-    const currentDetail = detailById.get(String(currentStep.id || '')) || {};
-    const currentStart = Math.max(0, Number(
-      currentDetail?.display_start_tick ??
-      currentDetail?.visual_start_tick ??
-      currentStep.start_tick ??
-      0,
-    ));
-    let gapStart = 0;
-    let overlapsCurrentStart = false;
-    state.axis.steps.forEach((step) => {
-      if (step.id === currentStep.id) {
-        return;
-      }
-      const action = actionForStep(step);
-      const detail = detailById.get(String(step.id || '')) || {};
-      const start = Math.max(0, Number(
-        detail?.display_start_tick ?? detail?.visual_start_tick ?? step.start_tick ?? 0,
-      ));
-      const end = Math.max(start, Number(
-        detail?.display_visual_end_tick ??
-        detail?.visual_end_tick ??
-        start + actionVisualDurationTicks(action, step),
-      ));
-      if (start < currentStart && end > currentStart) {
-        overlapsCurrentStart = true;
-      } else if (end <= currentStart) {
-        gapStart = Math.max(gapStart, end);
-      }
-    });
-    if (overlapsCurrentStart || gapStart >= currentStart) {
-      setStatus('当前动作左侧没有可删除的空隙');
+    const currentStart = Math.max(0, Number(currentStep.start_tick || 0));
+    const earliestStart = earliestStartTickPreservingActionOrder(currentStep);
+    if (earliestStart >= currentStart) {
+      setStatus('当前动作已经位于允许的最早位置');
       return;
     }
     pushUndoSnapshot();
-    compactReleasedTimelineIntervals([{ start: gapStart, end: currentStart }]);
+    const shiftTicks = currentStart - earliestStart;
+    state.axis.steps.forEach((step) => {
+      if (Number(step.start_tick || 0) >= currentStart) {
+        step.start_tick = Math.max(0, Number(step.start_tick || 0) - shiftTicks);
+      }
+    });
     normalizeEditedSteps(new Set([currentStep.id]));
     const shiftedStep = state.axis.steps.find((step) => step.id === currentStep.id);
     state.cursorTick = Number(shiftedStep?.start_tick || 0);
@@ -5743,7 +5854,7 @@
     renderAll();
     scheduleSimulation();
     revealTimelineTick(state.cursorTick);
-    setStatus(`已删除当前动作左侧 ${(currentStart - gapStart) / 10}s 空隙`);
+    setStatus(`已将当前及后续动作前移 ${shiftTicks / 10}s`);
   }
 
   function pasteStepsAtCursor() {
@@ -5751,7 +5862,7 @@
       return;
     }
     pushUndoSnapshot();
-    const baseTick = prepareInsertionTick(state.cursorTick);
+    const baseTick = preparePasteInsertionTick(state.cursorTick);
     const newIds = [];
     const clipboardSpanTicks = Math.max(1, ...state.clipboardSteps.map((source) => {
       const action = getActionMap().get(source.action_id) || {};
@@ -6933,7 +7044,7 @@
     }
     if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'Backspace') {
       event.preventDefault();
-      removeGapBeforeCurrentStep();
+      moveCurrentStepEarlier();
       return;
     }
     if ((event.key === 'Delete' || event.key === 'Backspace') && selectedStepIds().length) {
@@ -8112,6 +8223,7 @@
     });
     $('shaft-description-input').addEventListener('input', persistAxisDraft);
     $('shaft-undo-btn').addEventListener('click', undoLastEdit);
+    $('shaft-move-earlier-btn').addEventListener('click', moveCurrentStepEarlier);
     $('shaft-redo-btn').addEventListener('click', redoLastEdit);
     $('shaft-copy-step-btn').addEventListener('click', copySelectedSteps);
     $('shaft-paste-step-btn').addEventListener('click', pasteStepsAtCursor);

@@ -1220,6 +1220,10 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const clipboardSpanTicks = Math.max(1,', paste_body)
         self.assertIn('step.start_tick = Number(step.start_tick || 0) + clipboardSpanTicks;', paste_body)
         self.assertIn('normalizeEditedSteps(new Set(newIds));', paste_body)
+        self.assertIn('const baseTick = preparePasteInsertionTick(state.cursorTick);', paste_body)
+        self.assertIn('function preparePasteInsertionTick(tick) {', source)
+        self.assertIn('Number(source.slot || 0)', source)
+        self.assertIn('const interval = actionIntervalAtTick(tick, slot);', source)
 
         self.assertIn('function compactSpaceReleasedByDeletion(', source)
         self.assertIn('function compactReleasedTimelineIntervals(intervals, preserveRelativeAfterTick = null) {', source)
@@ -1237,19 +1241,25 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         source = SHAFT_JS.read_text(encoding='utf-8')
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
 
-        shortcut_start = source.index('function removeGapBeforeCurrentStep()')
+        shortcut_start = source.index('function earliestStartTickPreservingActionOrder(currentStep)')
         shortcut_end = source.index('function pasteStepsAtCursor()', shortcut_start)
         shortcut_body = source[shortcut_start:shortcut_end]
         keydown = source[source.index('function handleKeydown(event) {'):source.index('function handleClipboardCopy(event) {')]
 
         self.assertIn('state.selectedStepId', shortcut_body)
-        self.assertIn('detail?.display_visual_end_tick', shortcut_body)
-        self.assertIn('start < currentStart && end > currentStart', shortcut_body)
-        self.assertIn('compactReleasedTimelineIntervals([{ start: gapStart, end: currentStart }]);', shortcut_body)
+        self.assertIn('applyForegroundConflictOrder(simulatedSteps);', shortcut_body)
+        self.assertIn('function earliestVisualTickRespectingForegroundReturn(currentStep, proposedVisualTick)', shortcut_body)
+        self.assertIn('window.ShaftSelfCheck?.isMaskingForegroundQ(step, action)', shortcut_body)
+        self.assertIn('window.ShaftSelfCheck?.MIN_FOREGROUND_RETURN_TICKS || 12', shortcut_body)
+        self.assertIn('calculationTickFromVisual(visualTick) < requiredCalculationTick', shortcut_body)
+        self.assertIn('const shiftTicks = currentStart - earliestStart;', shortcut_body)
+        self.assertIn('Number(step.start_tick || 0) >= currentStart', shortcut_body)
         self.assertIn('normalizeEditedSteps(new Set([currentStep.id]));', shortcut_body)
         self.assertIn("(event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'Backspace'", keydown)
-        self.assertIn('removeGapBeforeCurrentStep();', keydown)
+        self.assertIn('moveCurrentStepEarlier();', keydown)
         self.assertIn('<kbd>Ctrl / ⌘</kbd><span>+</span><kbd>Backspace</kbd>', template)
+        self.assertIn('id="shaft-move-earlier-btn"', template)
+        self.assertIn("$('shaft-move-earlier-btn').addEventListener('click', moveCurrentStepEarlier);", source)
 
     def test_batch_drag_preserves_each_selected_action_placement(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1620,6 +1630,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         add_body = add_match.group('body')
         self.assertNotIn('shiftStepsFromTick', source)
         self.assertIn('const insertTick = prepareInsertionTick(startTick, action, slot);', add_body)
+        self.assertIn('reserveZeroQInsertionSpan(insertTick, action, step);', add_body)
         self.assertIn('startsForeground(candidateStep, action || {})', source)
         self.assertIn('!actionIntervalAtTick(target, slot)', source)
         self.assertIn('!startsForeground(candidateStep, action || {}) && !blocksSlotOverlap(candidateStep, action || {})', source)
@@ -1629,6 +1640,23 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('renderAll();', add_body)
         self.assertLess(add_body.index('scheduleSimulation();'), add_body.index('revealTimelineTick(state.cursorTick);'))
         self.assertIn("const shell = timeline?.closest('.shaft-timeline-shell');", source)
+
+    def test_zero_q_insertion_reserves_one_virtual_span_for_every_following_step(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        helper_match = re.search(
+            r'function\s+reserveZeroQInsertionSpan\s*\([^)]*\)\s*{\s*(?P<body>.*?)\n  }\n\n  function addActionAt',
+            source,
+            re.S,
+        )
+        if not helper_match:
+            raise AssertionError('reserveZeroQInsertionSpan function is missing.')
+
+        helper_body = helper_match.group('body')
+        self.assertIn('if (!isZeroForegroundQStep(candidateStep, action))', helper_body)
+        self.assertIn('const spanTicks = actionVisualDurationTicks(action, candidateStep);', helper_body)
+        self.assertIn('Number(step.start_tick || 0) >= insertTick', helper_body)
+        self.assertIn('step.start_tick = Number(step.start_tick || 0) + spanTicks;', helper_body)
+        self.assertIn('return spanTicks;', helper_body)
 
     def test_drag_preview_keeps_timeline_and_buff_snapshots_until_drop(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')

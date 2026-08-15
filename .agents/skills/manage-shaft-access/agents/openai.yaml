@@ -1,0 +1,4 @@
+interface:
+  display_name: "排轴权限管理"
+  short_description: "管理排轴模块受邀用户、测试用户以及角色开放等级配置流程"
+  default_prompt: "使用 $manage-shaft-access 为排轴账号或角色配置正确的访问权限。"

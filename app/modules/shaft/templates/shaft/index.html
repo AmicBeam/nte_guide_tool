@@ -161,6 +161,7 @@
                     <div class="shaft-editor-actions">
                         <span id="shaft-unlined-buff-indicator" class="shaft-unlined-buff-warning" hidden aria-label=""></span>
                         <button class="secondary-btn shaft-loop-settings-btn" id="shaft-loop-settings-btn" type="button" aria-haspopup="dialog">循环轴</button>
+                        <button class="secondary-btn" id="shaft-move-earlier-btn" type="button" title="将当前及后续动作前移到满足占位与切人间隔的最早位置（Ctrl / ⌘ + Backspace）">前移</button>
                         <button class="secondary-btn" id="shaft-undo-btn" type="button">撤销</button>
                         <button class="secondary-btn" id="shaft-redo-btn" type="button">重做</button>
                         <button class="secondary-btn" id="shaft-copy-step-btn" type="button">复制</button>
@@ -355,7 +356,7 @@
                         <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>A</kbd></dt><dd>全选动作</dd></div>
                         <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>C</kbd></dt><dd>复制所选动作</dd></div>
                         <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>V</kbd></dt><dd>粘贴到时间光标</dd></div>
-                        <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>Backspace</kbd></dt><dd>删除当前动作左侧的连续空隙</dd></div>
+                        <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>Backspace</kbd></dt><dd>将当前及后续动作前移到满足占位与切人间隔的最早位置</dd></div>
                         <div><dt><kbd>Delete</kbd><span>/</span><kbd>Backspace</kbd></dt><dd>删除所选动作</dd></div>
                         <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>Z</kbd></dt><dd>撤销</dd></div>
                         <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>Z</kbd></dt><dd>重做（也支持 Ctrl / ⌘ + Y）</dd></div>

@@ -941,6 +941,12 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         baseline = simulate_shaft_axis(base_payload)['result']['build_panels_by_slot'][0]
         equipped_payload = deepcopy(base_payload)
         equipped_payload['team'][0]['cartridge_id'] = 'cartridge_505ea4a58f'
+        canonical = simulate_shaft_axis(equipped_payload)['result']['build_panels_by_slot'][0]
+        equipped_payload['team'][0]['curtain_bonus'] = {
+            'value': 16,
+            'stat': '属伤',
+            'passive_type': 'type3',
+        }
         result = simulate_shaft_axis({
             **equipped_payload,
         })['result']
@@ -956,6 +962,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             build['panel']['crit_dmg'] - baseline['panel']['crit_dmg'],
             0.16 * 4,
         )
+        self.assertEqual(build['panel'], canonical['panel'])
 
     def test_iloy_bond_bonus_adds_five_percent_attack_not_crit(self) -> None:
         def panel_with_bond(enabled: bool) -> dict:

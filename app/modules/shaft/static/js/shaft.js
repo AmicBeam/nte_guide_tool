@@ -69,6 +69,7 @@
   const SIMULATION_DEBOUNCE_MS = 320;
   const MARKET_SEARCH_INTERVAL_MS = 3000;
   const MARKET_SEARCH_EDIT_DELAY_MS = 600;
+  const CANHONG_CHARACTER_ID = 'char_076a1f4e53';
   const DRAFT_STORAGE_KEY = 'shaft_axis_draft_v1';
   const TIMELINE_FIXED_PERSONAL_RESOURCES = {
     char_31c5130304: ['真理之匙'],
@@ -806,7 +807,7 @@
     const source = raw && typeof raw === 'object' ? raw : {};
     const options = curtainStatOptions();
     const defaultStat = normalizeStatName(defaults.stat) || Object.keys(options)[0] || '';
-    const stat = normalizeStatName(source.stat) || defaultStat;
+    const stat = characterId === CANHONG_CHARACTER_ID ? defaultStat : (normalizeStatName(source.stat) || defaultStat);
     const passiveType = CURTAIN_PASSIVE_TYPES.some((item) => item.key === source.passive_type)
       ? source.passive_type
       : (CURTAIN_PASSIVE_TYPES.some((item) => item.key === defaults.passive_type) ? defaults.passive_type : 'type3');

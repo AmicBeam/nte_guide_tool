@@ -515,7 +515,7 @@ seconds = tick / 10
 | `title` | CharField(80) | 标题 |
 | `description` | TextField | 简介 |
 | `visibility` | CharField | `public/private/unlisted`，市场只展示 public |
-| `source_version` | CharField | 该轴最近一次保存时使用的数据版本，例如 `异环云配队 1.0.2`；应用启动或版本发布不得批量改写历史轴 |
+| `source_version` | CharField | 该轴最近一次保存时使用的数据版本，例如 `异环云配队 1.0.3`；应用启动或版本发布不得批量改写历史轴 |
 | `team_json` | TextField | 4 人队伍与构筑摘要 |
 | `axis_json` | TextField | 轴步骤 |
 | `enemy_json` | TextField | 敌人配置 |

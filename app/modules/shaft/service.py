@@ -102,9 +102,10 @@ SKILL_LEVEL_DEFAULTS = {
     'support': 10,
 }
 CURTAIN_PASSIVE_TYPES = ('type2', 'type3', 'type4')
+CANHONG_CHARACTER_ID = 'char_076a1f4e53'
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SHAFT_COMPUTE_SCRIPT = PROJECT_ROOT / 'scripts' / 'shaft_compute.js'
-SHAFT_SOURCE_VERSION = '异环云配队 1.0.2'
+SHAFT_SOURCE_VERSION = '异环云配队 1.0.3'
 
 
 class ShaftAxisNameConflictError(RuleValidationError):
@@ -354,7 +355,11 @@ def _normalize_curtain_bonus(raw: Any, character_id: str, catalog: dict[str, Any
     default_bonus = defaults if isinstance(defaults, dict) else {}
     source = raw if isinstance(raw, dict) else {}
     default_stat = _normalize_stat_name(default_bonus.get('stat')) or next(iter(stat_options), '')
-    stat = _normalize_stat_name(source.get('stat')) or default_stat
+    stat = (
+        default_stat
+        if character_id == CANHONG_CHARACTER_ID
+        else (_normalize_stat_name(source.get('stat')) or default_stat)
+    )
     passive_type = str(source.get('passive_type') or default_bonus.get('passive_type') or 'type3')
     if passive_type not in CURTAIN_PASSIVE_TYPES:
         passive_type = 'type3'

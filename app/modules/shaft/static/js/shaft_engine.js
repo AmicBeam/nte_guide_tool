@@ -2368,6 +2368,7 @@
         ) reactionDamageEvents.splice(index, 1);
       }
       effect.end_tick = int(tick);
+      effect.evicted_at_tick = int(tick);
       effect.duration_ticks = Math.max(0, int(tick) - int(effect.start_tick));
       effect.damage_ticks = asList(effect.damage_ticks)
         .map((damageTick) => int(damageTick))
@@ -2987,6 +2988,38 @@
       );
     }
 
+    function triggerNaturalReactionEndBuffs(event) {
+      const reactionName = String(event.reaction || '');
+      if (
+        reactionName !== '黯星'
+        || event.conflict_settlement === true
+        || event.reaction_end_triggered === true
+      ) return;
+      const effect = reactionEffects.find(
+        (candidate) => String(candidate.id || '') === String(event.effect_id || ''),
+      );
+      const contributorSlot = int(event.contributor_slot);
+      const snapshot = snapshots.get(contributorSlot);
+      if (!effect || !snapshot) return;
+      const reactionAction = {
+        id: `reaction-end:${reactionName}`,
+        name: `${reactionName}状态结束`,
+        action_type: '环合结束',
+        damage_type: '环合伤害',
+        hit_count: 0,
+      };
+      event.reaction_end_triggered = true;
+      event.triggered_buffs = triggerBuffsForEvent(
+        'reaction_end',
+        int(event.tick),
+        {id: reactionAction.id, slot: contributorSlot},
+        reactionAction,
+        snapshot,
+        true,
+        {reaction: effect},
+      );
+    }
+
     function settleReactionDamage(untilTick, countedUntilTick = untilTick) {
       reactionDamageEvents
         .filter((event) => event.damage == null && int(event.tick) >= 0 && int(event.tick) <= untilTick)
@@ -3003,36 +3036,7 @@
             );
           }
           const reactionName = String(event.reaction || '');
-          if (
-            reactionName === '黯星'
-            && event.conflict_settlement !== true
-            && event.reaction_end_triggered !== true
-          ) {
-            const effect = reactionEffects.find(
-              (candidate) => String(candidate.id || '') === String(event.effect_id || ''),
-            );
-            const contributorSlot = int(event.contributor_slot);
-            const snapshot = snapshots.get(contributorSlot);
-            if (effect && snapshot) {
-              const reactionAction = {
-                id: `reaction-end:${reactionName}`,
-                name: `${reactionName}状态结束`,
-                action_type: '环合结束',
-                damage_type: '环合伤害',
-                hit_count: 0,
-              };
-              event.reaction_end_triggered = true;
-              event.triggered_buffs = triggerBuffsForEvent(
-                'reaction_end',
-                int(event.tick),
-                {id: reactionAction.id, slot: contributorSlot},
-                reactionAction,
-                snapshot,
-                true,
-                {reaction: effect},
-              );
-            }
-          }
+          triggerNaturalReactionEndBuffs(event);
           const triggersPeriodicDamageBuffs = Boolean(event.kind)
             || ['浊燃', '创生', '创生复制体'].includes(reactionName);
           if (triggersPeriodicDamageBuffs && event.damage > 0) {
@@ -3237,7 +3241,13 @@
         num(effect.frequency_multiplier, num(effect.stack_count, 1)),
       );
       const nextFrequency = Math.min(maxStacks, currentFrequency + 1);
-      const refreshedEndTick = triggerTick + int(REACTION_DURATIONS['浊燃']);
+      const evictionTick = effect.evicted_by_instance_limit === true
+        ? int(effect.evicted_at_tick, effect.end_tick)
+        : Number.POSITIVE_INFINITY;
+      const refreshedEndTick = Math.min(
+        triggerTick + int(REACTION_DURATIONS['浊燃']),
+        evictionTick,
+      );
       effect.end_tick = refreshedEndTick;
       effect.duration_ticks = Math.max(0, refreshedEndTick - int(effect.start_tick));
       effect.stack_count = nextFrequency;
@@ -3879,6 +3889,10 @@
             instance.looped = true;
           });
       });
+      reactionDamageEvents
+        .filter((event) => int(event.tick) < 0)
+        .sort((left, right) => int(left.tick) - int(right.tick) || int(left.sequence) - int(right.sequence))
+        .forEach((event) => triggerNaturalReactionEndBuffs(event));
       activeBuffs = activeBuffs.filter((instance) => (
         String(instance.rule?.trigger?.event || '') === 'passive'
         || (instance.rule?.duration?.loop_carry === true && int(instance.end_tick) > 0)

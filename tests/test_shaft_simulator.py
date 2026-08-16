@@ -1923,6 +1923,40 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(applied_friendship['stack_count'], 1)
         self.assertAlmostEqual(applied_friendship['effects']['flat_atk'], 493.0 * 0.08)
 
+    def test_loop_axis_carries_haniya_attack_from_previous_natural_doom_star_expiry(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [
+                {'slot': 0, 'character_id': 'char_c78f7a08d5', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 1, 'character_id': 'char_caa6c2e5a8', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 2, 'character_id': 'char_e0a4292b4e', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                *[
+                    {'id': f'gain-{index}', 'slot': 0, 'action_id': 'action_6d2645f71e', 'start_tick': index * 2}
+                    for index in range(7)
+                ],
+                {'id': 'support', 'slot': 1, 'action_id': 'action_b0e5fd6662', 'start_tick': 40},
+                {'id': 'axis-end', 'slot': 0, 'action_id': 'action_none_c78f7a08d5', 'start_tick': 140},
+            ],
+            'options': {'loop_enabled': True},
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+
+        details = {detail['step_id']: detail for detail in result['details']}
+        opening_friendship = next(
+            buff for buff in details['gain-0']['applied_buffs']
+            if buff['rule_id'] == 'character_haniya_dark_star_end_team_flat_atk'
+        )
+        completed_friendship = next(
+            buff for buff in details['axis-end']['applied_buffs']
+            if buff['rule_id'] == 'character_haniya_dark_star_end_team_flat_atk'
+        )
+
+        self.assertEqual(opening_friendship['stack_count'], 1)
+        self.assertAlmostEqual(opening_friendship['effects']['flat_atk'], 493.0 * 0.08)
+        self.assertEqual(completed_friendship['stack_count'], 2)
+        self.assertAlmostEqual(completed_friendship['effects']['flat_atk'], 493.0 * 0.16)
+
     def test_loop_axis_carries_previous_genesis_as_an_independent_instance(self) -> None:
         result = simulate_shaft_axis({
             'team': [
@@ -1964,7 +1998,14 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             'steps': [
                 {'id': 'canhong-a1', 'slot': 0, 'action_id': 'action_canhong_a1', 'start_tick': 0},
                 {'id': 'requiem-support', 'slot': 1, 'action_id': 'action_2635f721a8', 'start_tick': 10},
-                {'id': 'axis-end', 'slot': 0, 'action_id': 'action_none_076a1f4e53', 'start_tick': 30},
+                {
+                    'id': 'overlap-dot',
+                    'slot': 1,
+                    'action_id': 'action_24c60040ec',
+                    'start_tick': 12,
+                    'placement': 'background',
+                },
+                {'id': 'axis-end', 'slot': 0, 'action_id': 'action_none_076a1f4e53', 'start_tick': 40},
             ],
             'options': {
                 'loop_enabled': True,
@@ -1983,11 +2024,17 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             if effect['reaction'] == '浊燃'
         ]
         self.assertEqual(len(turbid_effects), 2)
-        self.assertEqual(turbid_effects[0]['start_tick'], -7)
+        self.assertEqual(turbid_effects[0]['start_tick'], -17)
         self.assertEqual(turbid_effects[0]['end_tick'], 23)
+        self.assertEqual(turbid_effects[0]['evicted_at_tick'], 23)
         self.assertTrue(turbid_effects[0]['evicted_by_instance_limit'])
         self.assertEqual(turbid_effects[1]['start_tick'], 23)
         self.assertEqual(turbid_effects[1]['end_tick'], 173)
+        self.assertFalse(any(
+            left['start_tick'] < right['end_tick'] and right['start_tick'] < left['end_tick']
+            for index, left in enumerate(turbid_effects)
+            for right in turbid_effects[index + 1:]
+        ))
         self.assertEqual(
             len({event['tick'] for event in result['reaction_damage_events'] if event['reaction'] == '浊燃'}),
             len([event for event in result['reaction_damage_events'] if event['reaction'] == '浊燃']),

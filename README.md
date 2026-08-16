@@ -92,7 +92,10 @@ scripts/deploy_windows_app.sh --deploy
 scripts/deploy_windows_app.sh --deploy --allow-dirty-app
 ```
 
-远端替换前会把旧 `app/` 移到 Windows 临时目录中作为备份。当前服务器通过
+远端替换前会把旧 `app/` 移到 Windows 临时目录中作为备份，再用 Windows 自带的
+`robocopy` 把已校验的暂存包复制到新的 `app/`；复制结果会再次检查
+`app/__init__.py`。复制失败或新进程未稳定监听时，脚本会移走不完整的新目录并恢复
+旧 `app/`。当前服务器通过
 `start_waitress.bat` 启动 Waitress，因此脚本默认停止监听 `8000` 端口的旧进程，
 替换 `app/` 后通过 Windows WMI 创建脱离 SSH 会话的独立进程来运行该批处理，并等待
 端口连续稳定监听。批处理的标准输入会重定向到 `NUL`，避免其末尾的 `pause` 在进程

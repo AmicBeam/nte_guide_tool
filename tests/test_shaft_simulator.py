@@ -213,7 +213,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 self.assertTrue(detail['is_basic_background'])
                 self.assertGreater(detail['direct_damage'], 0)
 
-    def test_canhong_hunt_covers_all_damage_and_restores_after_illusion(self) -> None:
+    def test_canhong_hunt_always_covers_all_damage_without_timeline_switching(self) -> None:
         base_payload = {
             'team': [{
                 'slot': 0,
@@ -247,7 +247,10 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                     buff for buff in detail['applied_buffs']
                     if buff['rule_id'] == 'character_canhong_hunt'
                 )
-                self.assertEqual(hunt['effects']['all_dmg'], 0.25)
+                self.assertEqual(hunt['effects']['other_dmg'], 0.25)
+                self.assertFalse(hunt['display_as_line'])
+                self.assertEqual(hunt['line_hidden_reason'], 'passive')
+                self.assertEqual(detail['panel']['other_dmg'], 0.25)
 
         illusion_payload = deepcopy(base_payload)
         illusion_payload['steps'] = [
@@ -255,19 +258,27 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             {'id': 'during', 'slot': 0, 'action_id': 'action_canhong_illusion_a1', 'start_tick': 50},
             {'id': 'after', 'slot': 0, 'action_id': 'action_canhong_a1', 'start_tick': 90},
         ]
+        illusion_payload['options'] = {
+            'loop_enabled': True,
+            'loop_initial_resources': {
+                'char_076a1f4e53': {
+                    'energy': 500,
+                    'harmony': 0,
+                    'reaction': '',
+                    'personal_resources': {},
+                },
+            },
+        }
         details = {
             detail['step_id']: detail
             for detail in simulate_shaft_axis(illusion_payload)['result']['details']
         }
-        self.assertTrue(any(
-            buff['rule_id'] == 'character_canhong_hunt'
-            and buff['effects'].get('all_dmg') == 0.25
-            for buff in details['during']['applied_buffs']
-        ))
-        self.assertTrue(any(
-            buff['rule_id'] == 'character_canhong_hunt_natural_restore'
-            for buff in details['after']['applied_buffs']
-        ))
+        for step_id in ('enter', 'during', 'after'):
+            self.assertTrue(any(
+                buff['rule_id'] == 'character_canhong_hunt'
+                and buff['effects'].get('other_dmg') == 0.25
+                for buff in details[step_id]['applied_buffs']
+            ))
 
     def test_canhong_leaving_foreground_clears_illusion_state_immediately(self) -> None:
         def simulate(awakening_nodes: list[int] | None = None) -> dict:
@@ -317,11 +328,6 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             buff for buff in enter['triggered_buffs']
             if buff['definition_id'] == 'character_canhong_illusion_state'
         )
-        restored_hunt = next(
-            buff for buff in leave['triggered_buffs']
-            if buff['definition_id'] == 'character_canhong_hunt'
-            and buff['start_tick'] == 20
-        )
         delayed_delusion = next(
             buff for buff in leave['triggered_buffs']
             if buff['definition_id'] == 'character_canhong_delusion'
@@ -333,7 +339,6 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         )
 
         self.assertEqual(illusion_state['end_tick'], 20)
-        self.assertGreater(restored_hunt['end_tick'], 100000000)
         self.assertEqual(delayed_delusion['end_tick'], 100)
         self.assertIn('character_canhong_illusion_state', clear['cleared_buff_keys'])
         self.assertFalse(any(
@@ -342,6 +347,11 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         ))
         self.assertNotIn('动作需要处于 幻境状态 状态。', background['warnings'])
         self.assertIn('动作需要处于 幻境状态 状态。', foreground['warnings'])
+        for detail in (enter, background, foreground):
+            self.assertTrue(any(
+                buff['rule_id'] == 'character_canhong_hunt'
+                for buff in detail['applied_buffs']
+            ))
 
         c_result = simulate([3])
         c_leave = next(detail for detail in c_result['details'] if detail['step_id'] == 'leave')
@@ -388,18 +398,13 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             buff for buff in active_details['exit']['triggered_buffs']
             if buff['definition_id'] == 'character_canhong_delusion'
         )
-        enter_hunt = next(
-            buff for buff in active_details['enter']['triggered_buffs']
-            if buff['definition_id'] == 'character_canhong_hunt'
-        )
-        exit_hunt = next(
-            buff for buff in active_details['exit']['triggered_buffs']
-            if buff['definition_id'] == 'character_canhong_hunt'
-        )
         self.assertEqual((enter_delusion['start_tick'], enter_delusion['end_tick']), (0, 50))
         self.assertEqual((exit_delusion['start_tick'], exit_delusion['end_tick']), (50, 130))
-        self.assertEqual((enter_hunt['start_tick'], enter_hunt['end_tick']), (0, 50))
-        self.assertGreater(exit_hunt['end_tick'], 100000000)
+        for detail in active_details.values():
+            self.assertTrue(any(
+                buff['rule_id'] == 'character_canhong_hunt'
+                for buff in detail['applied_buffs']
+            ))
         self.assertNotIn('动作需要处于 幻境状态 状态。', active_details['exit']['warnings'])
         self.assertIn('动作需要处于 幻境状态 状态。', active_details['after']['warnings'])
 
@@ -8185,7 +8190,8 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             buff for buff in reality_attack['applied_buffs']
             if buff['rule_id'] == 'character_canhong_a1_hunt'
         )
-        self.assertEqual(hunt['effects']['all_dmg'], 0.4)
+        self.assertEqual(hunt['effects']['other_dmg'], 0.4)
+        self.assertEqual(reality_attack['panel']['other_dmg'], 0.4)
 
     def test_canhong_b_awakening_stores_blaze_and_consumes_it_on_fentian(self) -> None:
         result = simulate_shaft_axis({

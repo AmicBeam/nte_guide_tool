@@ -375,6 +375,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const finalDamageBonus = Number(panelStats.final_dmg || 0);', source)
         self.assertIn('...(finalDamageBonus ? [`<div class="shaft-detail-kv"><span>最终伤害</span><strong>${formatNumber(finalDamageBonus * 100, 1)}%</strong></div>`] : [])', source)
         self.assertIn('panelStats.other_dmg', source)
+        self.assertIn("other_dmg: '其他增伤'", source)
         self.assertIn('- Number(panelStats.all_dmg || 0)', source)
         self.assertIn('- Number(panelStats.element_dmg || 0)', source)
         self.assertIn('<div class="shaft-detail-kv"><span>其他增伤</span><strong>${formatNumber(otherDamageBonus * 100, 1)}%</strong></div>', source)
@@ -549,19 +550,17 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(buffs['character_canhong_delusion_exit_delay']['duration']['ticks'], 80)
         self.assertEqual(buffs['character_canhong_a1_delusion']['target']['tags'], ['DOT'])
         self.assertEqual(buffs['character_canhong_hunt']['target'], {'scope': 'registrar'})
-        self.assertEqual(buffs['character_canhong_hunt']['effects']['all_dmg'], 0.25)
-        self.assertEqual(buffs['character_canhong_a1_hunt']['effects']['all_dmg'], 0.4)
+        self.assertEqual(buffs['character_canhong_hunt']['effects']['other_dmg'], 0.25)
+        self.assertEqual(buffs['character_canhong_a1_hunt']['effects']['other_dmg'], 0.4)
+        self.assertFalse(buffs['character_canhong_hunt']['display']['line'])
+        self.assertFalse(buffs['character_canhong_a1_hunt']['display']['line'])
         self.assertEqual(buffs['character_canhong_b_blaze_stack']['stacking']['max_stacks'], 1)
         self.assertEqual(buffs['character_canhong_b_blaze_fentian_damage']['effects']['blaze_final_dmg'], 1.5)
         self.assertEqual(buffs['character_canhong_six_node_resonance_attack']['trigger']['event'], 'action_hit')
         self.assertTrue(buffs['character_canhong_six_node_resonance_attack']['trigger']['periodic_damage'])
-        self.assertEqual(buffs['character_canhong_hunt_illusion_delay']['duration']['ticks'], 80)
-        self.assertEqual(buffs['character_canhong_hunt_reality_restore']['duration']['type'], 'permanent')
-        self.assertEqual(buffs['character_canhong_hunt_natural_restore']['duration']['delay_ticks'], 80)
-        self.assertEqual(
-            buffs['character_canhong_hunt_natural_restore']['calculation']['team_unique_key'],
-            'character_canhong_hunt_effect',
-        )
+        self.assertNotIn('character_canhong_hunt_illusion_delay', buffs)
+        self.assertNotIn('character_canhong_hunt_reality_restore', buffs)
+        self.assertNotIn('character_canhong_hunt_natural_restore', buffs)
         self.assertTrue(
             buffs['character_canhong_illusion_dot_spread']['activation']['increase_all_active_dot_layers']
         )

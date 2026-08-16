@@ -2457,19 +2457,6 @@
     "display": {"line": true}
   },
   {
-    "id": "character_canhong_hunt_foreground_leave_restore",
-    "name": "残红·离开前台恢复现实",
-    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
-    "priority": 11,
-    "trigger": {"event": "foreground_leave", "conditions": [{"type": "active_buff_key", "key": "character_canhong_illusion_state"}, {"type": "awakening_max", "max": 0}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "permanent"},
-    "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
-    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.25},
-    "display": {"line": false}
-  },
-  {
     "id": "character_canhong_delusion_foreground_leave_delay",
     "name": "残红·离开前台后惑延迟清除",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
@@ -2502,7 +2489,7 @@
     "trigger": {"event": "foreground_leave", "conditions": [{"type": "active_buff_key", "key": "character_canhong_illusion_state"}]},
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 1},
-    "activation": {"clear_keys": ["character_canhong_illusion_state", "character_canhong_hunt_natural_restore"]},
+    "activation": {"clear_keys": ["character_canhong_illusion_state"]},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "effects": {},
     "display": {"line": false}
@@ -2515,7 +2502,7 @@
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2", "action_canhong_q_blood_banquet"]}},
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 1},
-    "activation": {"clear_keys": ["character_canhong_illusion_state", "character_canhong_hunt_natural_restore"]},
+    "activation": {"clear_keys": ["character_canhong_illusion_state"]},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "effects": {},
     "display": {"line": false}
@@ -2530,47 +2517,7 @@
     "duration": {"type": "permanent"},
     "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
     "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.25},
-    "display": {"line": false}
-  },
-  {
-    "id": "character_canhong_hunt_illusion_delay",
-    "name": "残红·狩（进入幻境延迟清除）",
-    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
-    "priority": 21,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "time", "ticks": 80, "loop_carry": true},
-    "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
-    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.25},
-    "display": {"line": true}
-  },
-  {
-    "id": "character_canhong_hunt_reality_restore",
-    "name": "残红·狩（返回现实）",
-    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
-    "priority": 22,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2", "action_canhong_q_blood_banquet"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "permanent"},
-    "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
-    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.25},
-    "display": {"line": false}
-  },
-  {
-    "id": "character_canhong_hunt_natural_restore",
-    "name": "残红·狩（幻境自然结束）",
-    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
-    "priority": 23,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "permanent", "delay_ticks": 80},
-    "stacking": {"key": "character_canhong_hunt_natural_restore", "mode": "refresh", "max_stacks": 1},
-    "reset": {"action_ids": ["action_canhong_e1", "action_canhong_E1"]},
-    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.25},
+    "effects": {"other_dmg": 0.25},
     "display": {"line": false}
   },
   {
@@ -2582,7 +2529,7 @@
     "target": {"scope": "registrar"},
     "duration": {"type": "permanent"},
     "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.4},
+    "effects": {"other_dmg": 0.4},
     "display": {"line": false}
   },
   {
@@ -2628,7 +2575,7 @@
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 3}]},
     "target": {
       "scope": "registrar",
-      "conditions": [{"type": "active_buff_any", "keys": ["character_canhong_hunt", "character_canhong_hunt_natural_restore", "character_canhong_a1_hunt"]}]
+      "conditions": [{"type": "active_buff_any", "keys": ["character_canhong_hunt", "character_canhong_a1_hunt"]}]
     },
     "duration": {"type": "permanent"},
     "effects": {"interrupt_resistance": 0.5},

@@ -62,6 +62,7 @@ SUBSTAT_KEYS = (
 )
 MODIFIER_KEYS = (
     'all_dmg',
+    'other_dmg',
     'crit_rate',
     'crit_dmg',
     'atk_pct',

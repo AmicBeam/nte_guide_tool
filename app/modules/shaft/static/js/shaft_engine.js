@@ -251,6 +251,7 @@
       skill_dmg: 0,
       ultimate_dmg: 0,
       all_dmg: 0,
+      other_dmg: 0,
       final_dmg: 0,
       base_multiplier_pct: 0,
     };
@@ -432,7 +433,7 @@
     const actionType = String(action?.action_type || '');
     const damageType = String(action?.damage_type || '');
     const tags = actionTags(action);
-    let total = panelMods.all_dmg;
+    let total = panelMods.all_dmg + panelMods.other_dmg;
     if (actionType === '普攻' || damageType === '普攻') total += panelMods.basic_dmg;
     if (actionType === '闪反' || damageType === '闪反') total += panelMods.dodge_counter_dmg;
     if (actionType === 'E' || damageType === 'E') total += panelMods.skill_dmg;

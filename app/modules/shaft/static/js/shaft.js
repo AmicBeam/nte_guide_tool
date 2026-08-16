@@ -4894,7 +4894,7 @@
       dodge_counter_dmg: '闪反增伤',
       skill_dmg: '变轨增伤', ultimate_dmg: '终结增伤', follow_dmg: '追击增伤',
       mind_dmg: '心灵增伤', attach_dmg: '附着增伤', element_dmg: '属性增伤',
-      all_dmg: '全伤增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升',
+      all_dmg: '全伤增伤', other_dmg: '其他增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升',
     };
     const flatBuffEffects = new Set(['flat_atk', 'flat_hp', 'flat_def', 'harmony_strength', 'stagger_strength']);
     const describeBuff = (buff) => {

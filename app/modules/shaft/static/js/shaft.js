@@ -4931,7 +4931,16 @@
         current.effects[effectKey] = Number(current.effects[effectKey] || 0) + Number(value || 0);
       });
       return groups;
-    }, new Map()).values());
+    }, new Map()).values())
+      .map((buff, originalIndex) => ({ buff, originalIndex }))
+      .sort((left, right) => {
+        const leftOwnerSlot = Number(left.buff?.owner_slot);
+        const rightOwnerSlot = Number(right.buff?.owner_slot);
+        const leftGroup = Number.isInteger(leftOwnerSlot) && leftOwnerSlot >= 0 ? leftOwnerSlot : Number.MAX_SAFE_INTEGER;
+        const rightGroup = Number.isInteger(rightOwnerSlot) && rightOwnerSlot >= 0 ? rightOwnerSlot : Number.MAX_SAFE_INTEGER;
+        return leftGroup - rightGroup || left.originalIndex - right.originalIndex;
+      })
+      .map(({ buff }) => buff);
     const appliedBuffExplanations = mergedAppliedBuffs.map((buff) => {
       const stackCount = Number(buff?.stack_count || 0);
       const stackSuffix = stackCount > 1 ? ` · ${formatNumber(stackCount, 0)}层` : '';

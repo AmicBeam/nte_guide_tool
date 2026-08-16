@@ -437,6 +437,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("const key = String(buff?.definition_id || buff?.rule_id || buff?.name || '');", source)
         self.assertIn('current.stack_count = Number(current.stack_count || 0) + Number(buff?.stack_count || 0);', source)
         self.assertIn('current.effects[effectKey] = Number(current.effects[effectKey] || 0) + Number(value || 0);', source)
+        self.assertIn('const leftOwnerSlot = Number(left.buff?.owner_slot);', source)
+        self.assertIn('return leftGroup - rightGroup || left.originalIndex - right.originalIndex;', source)
         self.assertIn("const stackSuffix = stackCount > 1 ? ` · ${formatNumber(stackCount, 0)}层` : '';", source)
         self.assertIn('if (Number(nightmareStacks) > 0) {', source)
         self.assertIn(

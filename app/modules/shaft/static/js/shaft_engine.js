@@ -1475,10 +1475,21 @@
           : extendedEndTick;
         return instance;
       }
+      const previousActivationRuleId = String(instance._last_activation_rule_id || existingRule.id || '');
+      if (previousActivationRuleId !== String(rule.id || '')) {
+        truncateBuffTimelineAt(
+          instance,
+          startTick,
+          startTick === triggerTick
+            ? int(context.visual_trigger_tick, startTick)
+            : startTick,
+        );
+      }
       instance.start_tick = startTick;
       instance.end_tick = endTick;
       instance.stack_count = Math.min(maxStacks, Math.max(1, gain));
       instance.excluded_step_id = context.exclude_trigger_action ? String(context.source_step_id || '') : '';
+      instance._last_activation_rule_id = String(rule.id || '');
       return instance;
     }
     if (mode === 'independent') {
@@ -1502,6 +1513,7 @@
           end_tick: endTick,
           stack_count: 1,
           excluded_step_id: context.exclude_trigger_action ? String(context.source_step_id || '') : '',
+          _last_activation_rule_id: String(rule.id || ''),
         };
         if (stacking.unique_source_slots) latestInstance.source_slots = [int(context.source_slot, -1)];
         activeBuffs.push(latestInstance);
@@ -1517,6 +1529,7 @@
       end_tick: endTick,
       stack_count: Math.min(maxStacks, mode === 'add_stack' ? gain : Math.max(1, gain)),
       excluded_step_id: context.exclude_trigger_action ? String(context.source_step_id || '') : '',
+      _last_activation_rule_id: String(rule.id || ''),
     };
     if (stacking.unique_source_slots) instance.source_slots = [int(context.source_slot, -1)];
     activeBuffs.push(instance);

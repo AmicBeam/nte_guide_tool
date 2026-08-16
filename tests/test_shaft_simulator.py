@@ -365,10 +365,41 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 {'id': 'exit', 'slot': 0, 'action_id': 'action_canhong_E2', 'start_tick': 50},
                 {'id': 'after', 'slot': 0, 'action_id': 'action_canhong_illusion_a1', 'start_tick': 51},
             ],
+            'options': {
+                'loop_enabled': True,
+                'loop_initial_resources': {
+                    'char_076a1f4e53': {
+                        'energy': 200,
+                        'harmony': 0,
+                        'reaction': '',
+                        'personal_resources': {},
+                    },
+                },
+            },
             'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
             'initial_energy': 200,
         })['result']
         active_details = {detail['step_id']: detail for detail in active_result['details']}
+        enter_delusion = next(
+            buff for buff in active_details['enter']['triggered_buffs']
+            if buff['definition_id'] == 'character_canhong_delusion'
+        )
+        exit_delusion = next(
+            buff for buff in active_details['exit']['triggered_buffs']
+            if buff['definition_id'] == 'character_canhong_delusion'
+        )
+        enter_hunt = next(
+            buff for buff in active_details['enter']['triggered_buffs']
+            if buff['definition_id'] == 'character_canhong_hunt'
+        )
+        exit_hunt = next(
+            buff for buff in active_details['exit']['triggered_buffs']
+            if buff['definition_id'] == 'character_canhong_hunt'
+        )
+        self.assertEqual((enter_delusion['start_tick'], enter_delusion['end_tick']), (0, 50))
+        self.assertEqual((exit_delusion['start_tick'], exit_delusion['end_tick']), (50, 130))
+        self.assertEqual((enter_hunt['start_tick'], enter_hunt['end_tick']), (0, 50))
+        self.assertGreater(exit_hunt['end_tick'], 100000000)
         self.assertNotIn('动作需要处于 幻境状态 状态。', active_details['exit']['warnings'])
         self.assertIn('动作需要处于 幻境状态 状态。', active_details['after']['warnings'])
 

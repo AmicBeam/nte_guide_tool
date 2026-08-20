@@ -864,15 +864,25 @@
     return isBackgroundAction(action) && !isSupportAction(action) && !Boolean(action?.pre_input_node);
   }
 
+  function isDetachedStep(step, action) {
+    return Boolean(step?.detached) && Boolean(action?.can_detach);
+  }
+
+  function configuredActionDurationTicks(step, action) {
+    return isDetachedStep(step, action)
+      ? Math.max(0, int(action?.detached_duration_ticks))
+      : Math.max(0, int(action?.duration_ticks));
+  }
+
   function actionCalculationDurationTicks(step, action) {
-    return isInstantNativeBackgroundAction(step, action) ? 0 : Math.max(0, int(action?.duration_ticks));
+    return isInstantNativeBackgroundAction(step, action) ? 0 : configuredActionDurationTicks(step, action);
   }
 
   function actionVisualDurationTicks(step, action) {
     if (isInstantNativeBackgroundAction(step, action)) {
       return ZERO_ACTION_VISUAL_TICKS;
     }
-    const durationTicks = Math.max(0, int(action?.duration_ticks));
+    const durationTicks = configuredActionDurationTicks(step, action);
     return durationTicks > 0 ? durationTicks : ZERO_ACTION_VISUAL_TICKS;
   }
 
@@ -973,7 +983,7 @@
   }
 
   function isZeroForegroundQStep(step, action) {
-    return startsForeground(step, action) && isQAction(action) && Math.max(0, int(action?.duration_ticks)) === 0;
+    return startsForeground(step, action) && isQAction(action) && configuredActionDurationTicks(step, action) === 0;
   }
 
   function isQCoverImmuneScheduled(scheduled) {
@@ -4490,6 +4500,7 @@
         character_name: snapshot.character.name,
         action_id: action.id,
         action_name: action.name,
+        is_detached: isDetachedStep(step, action),
         action_type: action.action_type,
         damage_type: action.damage_type,
         damage_element: action.damage_element || snapshot.character.element || '',

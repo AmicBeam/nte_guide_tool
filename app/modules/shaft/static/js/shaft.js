@@ -165,6 +165,7 @@
     undoStack: [],
     redoStack: [],
     suppressTimelineClickUntil: 0,
+    lastTimelineActionClick: { stepId: '', at: 0 },
     buffDraft: {
       triggerSlot: 0,
       modifierKey: 'all_dmg',
@@ -1141,6 +1142,12 @@
       return;
     }
     const action = actionForStep(step);
+    if (!Boolean(action?.can_detach)) {
+      delete step.detached;
+    }
+    if (step.detached) {
+      delete step.placement;
+    }
     if (!isManualBackgroundOverride(step, action)) {
       delete step.placement;
     }
@@ -1187,19 +1194,30 @@
     });
   }
 
-  function actionDurationTicks(action) {
+  function isDetachedStep(step, action = actionForStep(step)) {
+    return Boolean(step?.detached) && Boolean(action?.can_detach);
+  }
+
+  function actionDurationTicks(action, step = null) {
+    if (isDetachedStep(step, action)) {
+      return Math.max(0, Number(action?.detached_duration_ticks || 0));
+    }
     return Math.max(0, Number(action?.duration_ticks || 0));
   }
 
+  function actionDisplayName(step, action = actionForStep(step)) {
+    return action?.name || step?.action_name || '';
+  }
+
   function actionCalculationDurationTicks(action, step = null) {
-    return isInstantNativeBackgroundAction(step, action) ? 0 : actionDurationTicks(action);
+    return isInstantNativeBackgroundAction(step, action) ? 0 : actionDurationTicks(action, step);
   }
 
   function actionEditorDurationTicks(action, step = null) {
     if (isInstantNativeBackgroundAction(step, action)) {
       return ZERO_ACTION_VISUAL_TICKS;
     }
-    return Math.max(1, actionDurationTicks(action));
+    return Math.max(1, actionDurationTicks(action, step));
   }
 
   function qVisualDurationTicks(action) {
@@ -1215,7 +1233,7 @@
   }
 
   function isZeroForegroundQStep(step, action = actionForStep(step)) {
-    return startsForeground(step, action) && isQAction(action) && actionDurationTicks(action) === 0;
+    return startsForeground(step, action) && isQAction(action) && actionDurationTicks(action, step) === 0;
   }
 
   function locksForegroundSwitch(step, action = actionForStep(step)) {
@@ -1379,7 +1397,7 @@
 
   function stepEndTick(step, visual = false, qStarts = qVirtualStartTicks()) {
     const action = actionForStep(step);
-    const duration = actionDurationTicks(action);
+    const duration = actionDurationTicks(action, step);
     if (visual) {
       return Number(step?.start_tick || 0) + actionVisualDurationTicks(action, step);
     }
@@ -1960,6 +1978,38 @@
       ? state.axis.team.slice(0, 4)
       : clone(state.catalog.starter_axis.team);
     state.axis.steps = Array.isArray(state.axis.steps) ? state.axis.steps : [];
+    const legacyActionMigrations = state.catalog?.legacy_action_migrations || {};
+    state.axis.steps = state.axis.steps.flatMap((step, index) => {
+      const migration = legacyActionMigrations[step?.action_id];
+      if (!migration) {
+        return [step];
+      }
+      const migrated = Object.assign({}, step, {
+        action_id: migration.action_id,
+        action_name: getActionMap().get(migration.action_id)?.name || step.action_name || '',
+      });
+      if (migration.detached) {
+        migrated.detached = true;
+      }
+      if (!migration.append_dodge) {
+        return [migrated];
+      }
+      const action = getActionMap().get(migration.action_id) || {};
+      const dodgeActionId = `action_dodge_${String(action.character_id || '').replace(/^char_/, '')}`;
+      const dodgeAction = getActionMap().get(dodgeActionId);
+      if (!dodgeAction) {
+        return [migrated];
+      }
+      return [migrated, {
+        id: `${String(step.id || `step_${index + 1}`).slice(0, 32)}_dodge`,
+        slot: Number(step.slot || 0),
+        action_id: dodgeActionId,
+        action_name: dodgeAction.name || '闪',
+        start_tick: Number(step.start_tick || 0) + Number(action.detached_duration_ticks || 5),
+        repeat: 1,
+        tags: [],
+      }];
+    });
     const disabledCharacterIds = new Set(
       (state.catalog?.characters || [])
         .filter((character) => character.selection_disabled)
@@ -4429,7 +4479,7 @@
     };
     const projectedDetails = (state.axis.steps || []).map((step) => {
       const action = actionForStep(step);
-      const durationTicks = actionDurationTicks(action);
+      const durationTicks = actionDurationTicks(action, step);
       const startTick = Number(step.start_tick || 0);
       const matchedResultDetail = resultDetailByStepId.get(step.id) || null;
       const canUseResultTiming = resultDetailMatchesTimelineStep(step, matchedResultDetail);
@@ -4476,7 +4526,8 @@
         step_id: step.id,
         slot: Number(step.slot || 0),
         action_id: step.action_id,
-        action_name: action.name || step.action_name || '',
+        action_name: actionDisplayName(step, action),
+        is_detached: isDetachedStep(step, action),
         action_type: action.action_type || '',
         raw_start_tick: startTick,
         start_tick: renderStartTick,
@@ -4795,8 +4846,8 @@
           ].filter(Boolean).join(' · ');
           const durationLabel = actionMeta ? `<em>${actionMeta}</em>` : '';
           return `
-            <span class="shaft-action-bar ${actionTypeClass(detail.action_type)} ${detail.is_background_damage ? 'background-damage' : ''} ${basicBackground} ${frontStart} ${qInstant} ${selected} ${dragging}" data-step-id="${escapeHtml(detail.step_id)}" style="left:${entry.startPx}px; top:${top}px; width:${entry.cardWidth}px; --slot-color:${color}" title="${escapeHtml(detail.action_name)}${detail.q_instant_release ? ' · Q即时释放' : ''}">
-              <span>${escapeHtml(detail.action_name)}</span>
+            <span class="shaft-action-bar ${actionTypeClass(detail.action_type)} ${detail.is_background_damage ? 'background-damage' : ''} ${basicBackground} ${frontStart} ${qInstant} ${detail.is_detached ? 'detached-action' : ''} ${selected} ${dragging}" data-step-id="${escapeHtml(detail.step_id)}" style="left:${entry.startPx}px; top:${top}px; width:${entry.cardWidth}px; --slot-color:${color}" title="${escapeHtml(detail.action_name)}${detail.q_instant_release ? ' · Q即时释放' : ''}">
+              <span class="shaft-action-name">${escapeHtml(detail.action_name)}</span>
               ${durationLabel}
             </span>
           `;
@@ -5932,6 +5983,7 @@
         start_tick: baseTick + Number(source.relative_start_tick || 0),
         repeat: Math.max(1, Number(source.repeat || 1)),
         placement: source.placement === 'background' ? 'background' : undefined,
+        detached: Boolean(source.detached) || undefined,
         tags: clone(source.tags || []),
       });
     });
@@ -6251,6 +6303,69 @@
     renderTimeline();
     renderStepDetail();
     scheduleSimulation();
+  }
+
+  function openActionEditor(stepId, trigger = null) {
+    const dialog = $('shaft-action-edit-dialog');
+    const step = state.axis.steps.find((item) => item.id === stepId);
+    const action = step ? actionForStep(step) : null;
+    if (!dialog || !step || !action?.id || dialog.open || state.sharedReadOnly) {
+      return;
+    }
+    const canDetach = Boolean(action.can_detach);
+    dialog.dataset.stepId = step.id;
+    dialog._returnFocus = trigger;
+    $('shaft-action-edit-summary').textContent = `${memberName(step.slot)} · ${action.name || '动作'} · ${visualTickLabel(step.start_tick)}`;
+    $('shaft-action-edit-detached-row').hidden = !canDetach;
+    $('shaft-action-edit-empty').hidden = canDetach;
+    $('shaft-action-edit-detached').checked = isDetachedStep(step, action);
+    $('shaft-action-edit-detached-hint').textContent = canDetach
+      ? `勾选后动作占用 ${ticksToSeconds(action.detached_duration_ticks || 0)} 秒；时间轴名称不变，以黄色字体标识。`
+      : '';
+    dialog.showModal();
+    window.requestAnimationFrame(() => {
+      (canDetach ? $('shaft-action-edit-detached') : $('shaft-action-edit-confirm')).focus();
+    });
+  }
+
+  function closeActionEditor({ restoreFocus = true } = {}) {
+    const dialog = $('shaft-action-edit-dialog');
+    if (!dialog?.open) {
+      return;
+    }
+    const returnFocus = dialog._returnFocus;
+    dialog.close();
+    dialog.removeAttribute('data-step-id');
+    dialog._returnFocus = null;
+    if (restoreFocus && returnFocus?.isConnected) {
+      returnFocus.focus();
+    }
+  }
+
+  function confirmActionEditor() {
+    const dialog = $('shaft-action-edit-dialog');
+    const step = state.axis.steps.find((item) => item.id === String(dialog?.dataset.stepId || ''));
+    const action = step ? actionForStep(step) : null;
+    if (!dialog?.open || !step || !action?.id) {
+      closeActionEditor();
+      return;
+    }
+    const nextDetached = Boolean(action.can_detach) && $('shaft-action-edit-detached').checked;
+    if (isDetachedStep(step, action) !== nextDetached) {
+      pushUndoSnapshot();
+      if (nextDetached) {
+        step.detached = true;
+        delete step.placement;
+      } else {
+        delete step.detached;
+      }
+      normalizeEditedSteps(new Set([step.id]));
+      renderSteps();
+      renderTimeline();
+      renderStepDetail();
+      scheduleSimulation();
+    }
+    closeActionEditor();
   }
 
   function openBackgroundActionMultiplier(stepId, trigger = null) {
@@ -6781,14 +6896,39 @@
     closeContextMenu();
     const bar = event.target.closest('[data-step-id]');
     if (bar) {
+      const now = Date.now();
+      const previousClick = state.lastTimelineActionClick || {};
+      state.lastTimelineActionClick = { stepId: bar.dataset.stepId, at: now };
+      if (
+        previousClick.stepId === bar.dataset.stepId &&
+        now - Number(previousClick.at || 0) <= 420 &&
+        !state.sharedReadOnly
+      ) {
+        state.lastTimelineActionClick = { stepId: '', at: 0 };
+        selectStep(bar.dataset.stepId);
+        openActionEditor(bar.dataset.stepId, bar);
+        return;
+      }
       selectStep(bar.dataset.stepId, true, event.ctrlKey || event.metaKey);
       return;
     }
+    state.lastTimelineActionClick = { stepId: '', at: 0 };
     state.cursorTick = timelineTickFromEvent(event);
     syncAddTimeInput(state.cursorTick);
     renderTimeline();
     renderStepDetail();
     renderEditorActions();
+  }
+
+  function handleTimelineDoubleClick(event) {
+    const bar = event.target.closest('.shaft-action-bar[data-step-id]');
+    if (!bar || state.sharedReadOnly) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    selectStep(bar.dataset.stepId);
+    openActionEditor(bar.dataset.stepId, bar);
   }
 
   function handleTimelineContextMenu(event) {
@@ -7021,6 +7161,10 @@
       }
       if ($('shaft-background-multiplier-dialog')?.open) {
         closeBackgroundActionMultiplier();
+        return;
+      }
+      if ($('shaft-action-edit-dialog')?.open) {
+        closeActionEditor();
         return;
       }
       if ($('shaft-loop-settings-dialog')?.open) {
@@ -8289,6 +8433,12 @@
         closeBackgroundActionMultiplier();
       }
     });
+    $('shaft-action-edit-dialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget || event.target.closest('[data-close-action-edit]')) {
+        closeActionEditor();
+      }
+    });
+    $('shaft-action-edit-confirm').addEventListener('click', confirmActionEditor);
     $('shaft-background-multiplier-confirm').addEventListener('click', confirmBackgroundActionMultiplier);
     $('shaft-background-multiplier-input').addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
@@ -8502,6 +8652,7 @@
     }
     $('shaft-step-detail').addEventListener('click', handleStepDetailClick);
     $('shaft-timeline').addEventListener('click', handleTimelineClick);
+    $('shaft-timeline').addEventListener('dblclick', handleTimelineDoubleClick);
     $('shaft-timeline').addEventListener('contextmenu', handleTimelineContextMenu);
     $('shaft-timeline').addEventListener('mousedown', handleTimelineMouseDown);
     $('shaft-timeline').addEventListener('pointermove', positionBuffLineTooltip);

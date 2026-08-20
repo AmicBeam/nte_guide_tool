@@ -233,7 +233,7 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
         self.assertIn('真红「q」：角色切换 CD 尚未结束，需等到 1.4s。', warnings)
 
     def test_departure_q_uses_calculation_ticks_and_exempts_switch_cooldown(self) -> None:
-        requiem_a4 = self.action('安魂曲', 'a4脱手')
+        requiem_a4 = self.action('安魂曲', 'a4远')
         iloy_q = self.action('伊洛伊', 'q')
         iloy_z1 = self.action('伊洛伊', 'z1')
         requiem_a1 = self.action('安魂曲', 'a1远')
@@ -243,6 +243,7 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
             self.step(iloy_z1, 71, slot=2),
             self.step(requiem_a1, 73, slot=0),
         ]
+        steps[0]['detached'] = True
         calculation_ticks = [23, 28, 28, 30]
         details = [
             {

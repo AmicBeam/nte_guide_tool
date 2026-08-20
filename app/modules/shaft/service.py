@@ -22,7 +22,12 @@ from app.models import (
     ShaftAxisLike,
     ShaftCharacterPublication,
 )
-from app.modules.shaft.domain.catalog import LEGACY_ARC_SELECTIONS, get_record_map, load_shaft_catalog
+from app.modules.shaft.domain.catalog import (
+    LEGACY_ACTION_MIGRATIONS,
+    LEGACY_ARC_SELECTIONS,
+    get_record_map,
+    load_shaft_catalog,
+)
 from app.utils.logger import get_logger
 
 
@@ -525,9 +530,13 @@ def _normalize_steps(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
     actions = get_record_map(catalog['actions'])
     normalized: list[dict[str, Any]] = []
     for index, step in enumerate(steps[:MAX_AXIS_STEPS]):
+        if len(normalized) >= MAX_AXIS_STEPS:
+            break
         if not isinstance(step, dict):
             continue
-        action_id = str(step.get('action_id') or '')
+        original_action_id = str(step.get('action_id') or '')
+        migration = LEGACY_ACTION_MIGRATIONS.get(original_action_id)
+        action_id = migration[0] if migration else original_action_id
         action = actions.get(action_id)
         if not action:
             raise RuleValidationError('轴中存在未知动作。')
@@ -547,9 +556,25 @@ def _normalize_steps(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
             'repeat': repeat,
             'tags': step.get('tags') if isinstance(step.get('tags'), list) else [],
         }
-        if placement == 'background' and not _is_background_action(action):
+        detached = bool(migration[1]) if migration else bool(step.get('detached'))
+        if detached and bool(action.get('can_detach')):
+            normalized_step['detached'] = True
+        if placement == 'background' and not detached and not _is_background_action(action):
             normalized_step['placement'] = 'background'
         normalized.append(normalized_step)
+        if migration and migration[2] and len(normalized) < MAX_AXIS_STEPS:
+            dodge_action_id = f'action_dodge_{str(action.get("character_id") or "").removeprefix("char_")}'
+            dodge_action = actions.get(dodge_action_id)
+            if dodge_action:
+                normalized.append({
+                    'id': f'{normalized_step["id"][:32]}_dodge',
+                    'slot': normalized_step['slot'],
+                    'action_id': dodge_action_id,
+                    'action_name': '闪',
+                    'start_tick': start_tick + max(0, _int(action.get('detached_duration_ticks'), 5)),
+                    'repeat': 1,
+                    'tags': [],
+                })
     normalized.sort(key=lambda item: (item['start_tick'], item['slot'], item['action_id']))
     return normalized
 
@@ -725,6 +750,12 @@ def _is_zero_foreground_q_step(step: dict[str, Any], action: dict[str, Any]) -> 
     )
 
 
+def _action_duration_ticks(step: dict[str, Any], action: dict[str, Any]) -> int:
+    if bool(step.get('detached')) and bool(action.get('can_detach')):
+        return max(0, _int(action.get('detached_duration_ticks')))
+    return max(0, _int(action.get('duration_ticks')))
+
+
 def calculate_axis_duration_ticks(steps: list[dict[str, Any]], actions_by_id: dict[str, dict[str, Any]]) -> int:
     last_tick = 0
     for step in steps:
@@ -735,7 +766,7 @@ def calculate_axis_duration_ticks(steps: list[dict[str, Any]], actions_by_id: di
         ):
             continue
         start_tick = max(0, _int(step.get('start_tick')))
-        duration_ticks = max(0, _int(action.get('duration_ticks')))
+        duration_ticks = _action_duration_ticks(step, action)
         if _is_zero_foreground_q_step(step, action):
             visual_duration_ticks = ZERO_ACTION_VISUAL_TICKS
         else:
@@ -907,6 +938,7 @@ def get_shaft_catalog_payload(player: Player | None = None) -> dict[str, Any]:
         'formula_constants': catalog['formula_constants'],
         'source_meta': catalog['source_meta'],
         'starter_axis': catalog['starter_axis'],
+        'legacy_action_migrations': catalog['legacy_action_migrations'],
     }
 
 
@@ -1173,6 +1205,8 @@ def normalize_axis_for_hash(axis_payload: dict[str, Any]) -> dict[str, Any]:
         }
         if str(step.get('placement') or '') == 'background':
             item['placement'] = 'background'
+        if bool(step.get('detached')):
+            item['detached'] = True
         steps.append(item)
     return {
         'team': sorted(team, key=lambda item: item['slot']),

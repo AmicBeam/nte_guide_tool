@@ -22,6 +22,11 @@ LEGACY_ARC_SELECTIONS: dict[str, tuple[str, int]] = {
     'arc_92353a7626': ('arc_1ddecc32f3', 5),
     'arc_a01731d2ff': ('arc_6e7753edf5', 1),
 }
+LEGACY_ACTION_MIGRATIONS: dict[str, tuple[str, bool, bool]] = {
+    # 旧 a4脱手 -> a4远脱手；旧 a4闪 -> a4远脱手后接通用“闪”。
+    'action_97ef5c83d2': ('action_6d2645f71e', True, False),
+    'action_182423b934': ('action_6d2645f71e', True, True),
+}
 
 
 def _load_json(filename: str) -> Any:
@@ -140,10 +145,41 @@ def _noop_action(character: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _dodge_action(character: dict[str, Any]) -> dict[str, Any]:
+    character_id = str(character.get('id') or '')
+    return {
+        'id': f'action_dodge_{character_id.removeprefix("char_")}',
+        'character_id': character_id,
+        'character_name': str(character.get('name') or ''),
+        'name': '闪',
+        'action_type': '无',
+        'damage_type': '无',
+        'extra_tag': '闪避',
+        'is_background_damage': False,
+        'duration_seconds': 0.5,
+        'duration_ticks': 5,
+        'multipliers': {'atk': 0, 'hp': 0, 'def': 0, 'flat': 0},
+        'energy_gain': 0,
+        'harmony': 0,
+        'stagger': 0,
+        'energy_return': 0,
+        'self_modifiers': {},
+        'cooldown_ticks': 0,
+        'energy_cost': 0,
+        'personal_resource_cost': {},
+        'personal_resource_gain': {},
+        'source_row': 0,
+        'can_background_override': False,
+        'hit_count': 0,
+        'tags': ['闪避'],
+    }
+
+
 @lru_cache(maxsize=1)
 def load_shaft_catalog() -> dict[str, Any]:
     characters = _load_json('characters.json')
     actions = [_normalize_action(action) for action in _load_json('actions.json')]
+    actions.extend(_dodge_action(character) for character in characters)
     actions.extend(_noop_action(character) for character in characters)
     energy_capacity_by_character: dict[str, float] = {}
     for action in actions:
@@ -196,7 +232,8 @@ def load_shaft_catalog() -> dict[str, Any]:
         actions_by_character.setdefault(str(action.get('character_id') or ''), []).append(action)
     for items in actions_by_character.values():
         items.sort(key=lambda item: (
-            str(item.get('action_type') or '') == '无',
+            str(item.get('name') or '') == '无',
+            str(item.get('name') or '') == '闪',
             str(item.get('action_type') or ''),
             str(item.get('name') or ''),
         ))
@@ -213,6 +250,14 @@ def load_shaft_catalog() -> dict[str, Any]:
         'formula_constants': formula_constants,
         'source_meta': source_meta,
         'starter_axis': starter_axis,
+        'legacy_action_migrations': {
+            action_id: {
+                'action_id': migration[0],
+                'detached': migration[1],
+                'append_dodge': migration[2],
+            }
+            for action_id, migration in LEGACY_ACTION_MIGRATIONS.items()
+        },
     }
 
 

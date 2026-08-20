@@ -442,6 +442,30 @@
             </div>
         </div>
     </dialog>
+    <dialog class="shaft-action-edit-dialog" id="shaft-action-edit-dialog" aria-labelledby="shaft-action-edit-title">
+        <div class="shaft-action-edit-modal">
+            <div class="section-title-row">
+                <div>
+                    <span class="shaft-panel-kicker">动作设置</span>
+                    <h2 id="shaft-action-edit-title">编辑动作</h2>
+                </div>
+                <button class="secondary-btn shaft-dialog-close" data-close-action-edit type="button" aria-label="关闭">×</button>
+            </div>
+            <p class="shaft-action-edit-summary" id="shaft-action-edit-summary"></p>
+            <label class="shaft-action-edit-toggle" id="shaft-action-edit-detached-row">
+                <input id="shaft-action-edit-detached" type="checkbox">
+                <span>
+                    <strong>脱手</strong>
+                    <small id="shaft-action-edit-detached-hint"></small>
+                </span>
+            </label>
+            <p class="shaft-action-edit-empty" id="shaft-action-edit-empty" hidden>该动作暂无可编辑选项。</p>
+            <div class="shaft-action-edit-actions">
+                <button class="secondary-btn" data-close-action-edit type="button">取消</button>
+                <button class="primary-btn" id="shaft-action-edit-confirm" type="button">确认</button>
+            </div>
+        </div>
+    </dialog>
     <dialog class="shaft-background-multiplier-dialog" id="shaft-background-multiplier-dialog" aria-labelledby="shaft-background-multiplier-title">
         <div class="shaft-background-multiplier-modal">
             <div class="section-title-row">

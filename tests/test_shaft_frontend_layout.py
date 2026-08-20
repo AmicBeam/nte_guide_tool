@@ -1322,6 +1322,21 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("actionMultiplier > 1 ? `×${actionMultiplier}` : ''", source)
         self.assertIn('step.repeat = backgroundActionMultiplier(step, action);', source)
 
+    def test_actions_open_double_click_editor_and_detached_steps_use_distinct_name_color(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
+        template = (ROOT / 'app' / 'modules' / 'shaft' / 'templates' / 'shaft' / 'index.html').read_text(encoding='utf-8')
+        css = (ROOT / 'app' / 'modules' / 'shaft' / 'static' / 'css' / 'shaft-page.css').read_text(encoding='utf-8')
+
+        self.assertIn("$('shaft-timeline').addEventListener('dblclick', handleTimelineDoubleClick);", source)
+        self.assertIn('function openActionEditor(stepId, trigger = null) {', source)
+        self.assertIn('step.detached = true;', source)
+        self.assertIn('detached_duration_ticks', source)
+        self.assertIn('configuredActionDurationTicks(step, action)', engine)
+        self.assertIn('id="shaft-action-edit-dialog"', template)
+        self.assertIn('id="shaft-action-edit-detached"', template)
+        self.assertIn('.shaft-action-bar.detached-action .shaft-action-name {', css)
+
     def test_native_background_actions_display_as_zero_seconds_with_five_tick_footprint(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
@@ -2051,7 +2066,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         source = SHAFT_JS.read_text(encoding='utf-8')
 
         self.assertIn('function isZeroForegroundQStep(step, action = actionForStep(step)) {', source)
-        self.assertIn('startsForeground(step, action) && isQAction(action) && actionDurationTicks(action) === 0', source)
+        self.assertIn('startsForeground(step, action) && isQAction(action) && actionDurationTicks(action, step) === 0', source)
         self.assertIn('const actionIsQ = isZeroForegroundQStep(step, action);', source)
         self.assertIn('.filter((item) => isZeroForegroundQStep(item.step, item.action))', source)
         self.assertIn('isZeroForegroundQStep(candidateStep, action || {}) ||', source)

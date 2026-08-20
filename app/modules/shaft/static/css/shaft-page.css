@@ -3318,6 +3318,7 @@ body.shaft-dragging .shaft-action-bar {
     min-width: 82px;
 }
 
+.shaft-action-edit-dialog,
 .shaft-background-multiplier-dialog {
     width: min(380px, calc(100vw - 32px));
     max-width: none;
@@ -3328,11 +3329,13 @@ body.shaft-dragging .shaft-action-bar {
     color: var(--text);
 }
 
+.shaft-action-edit-dialog::backdrop,
 .shaft-background-multiplier-dialog::backdrop {
     background: rgba(2, 6, 12, 0.72);
     backdrop-filter: blur(4px);
 }
 
+.shaft-action-edit-modal,
 .shaft-background-multiplier-modal {
     display: grid;
     gap: 16px;
@@ -3367,6 +3370,39 @@ body.shaft-dragging .shaft-action-bar {
 }
 
 .shaft-background-multiplier-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.shaft-action-edit-summary,
+.shaft-action-edit-empty {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.shaft-action-edit-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+}
+
+.shaft-action-edit-toggle span {
+    display: grid;
+    gap: 4px;
+}
+
+.shaft-action-edit-toggle small {
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.shaft-action-edit-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -3950,6 +3986,10 @@ body.shaft-dragging .shaft-action-bar {
     line-height: 1.1;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.shaft-action-bar.detached-action .shaft-action-name {
+    color: #ffd36f;
 }
 
 .shaft-action-bar em {

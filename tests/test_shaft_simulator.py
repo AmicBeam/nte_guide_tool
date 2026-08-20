@@ -36,6 +36,60 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 self.assertNotIn('triggers_reaction_on_switch', noop)
                 self.assertEqual(actions_by_character[character['id']][-1]['name'], '无')
 
+    def test_every_character_has_foreground_dodge_before_noop(self) -> None:
+        catalog = load_shaft_catalog()
+        for character in catalog['characters']:
+            with self.subTest(character=character['name']):
+                actions = catalog['actions_by_character'][character['id']]
+                dodge = next(action for action in actions if action['name'] == '闪')
+                self.assertEqual(dodge['duration_ticks'], 5)
+                self.assertEqual(dodge['hit_count'], 0)
+                self.assertFalse(dodge['can_background_override'])
+                self.assertEqual([action['name'] for action in actions[-2:]], ['闪', '无'])
+
+    def test_requiem_detached_actions_and_legacy_a4_migrations(self) -> None:
+        catalog = load_shaft_catalog()
+        requiem_actions = {
+            action['name']: action
+            for action in catalog['actions_by_character']['char_c78f7a08d5']
+        }
+        self.assertEqual(
+            {name for name, action in requiem_actions.items() if action.get('can_detach')},
+            {'a4远', 'e'},
+        )
+        self.assertNotIn('a4闪', requiem_actions)
+        self.assertNotIn('a4脱手', requiem_actions)
+
+        team = [{'slot': 0, 'character_id': 'char_c78f7a08d5', 'arc_id': '', 'cartridge_id': ''}]
+        migrated = normalize_axis_payload({
+            'team': team,
+            'steps': [
+                {'id': 'legacy-detached', 'slot': 0, 'action_id': 'action_97ef5c83d2', 'start_tick': 0},
+                {'id': 'legacy-dodge', 'slot': 0, 'action_id': 'action_182423b934', 'start_tick': 10},
+            ],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        })
+        self.assertEqual(
+            [(step['action_name'], step['start_tick'], bool(step.get('detached'))) for step in migrated['steps']],
+            [('a4远', 0, True), ('a4远', 10, True), ('闪', 15, False)],
+        )
+
+        detached_result = simulate_shaft_axis({
+            'team': team,
+            'steps': [{
+                'id': 'detached',
+                'slot': 0,
+                'action_id': requiem_actions['a4远']['id'],
+                'start_tick': 0,
+                'detached': True,
+            }],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        })
+        detail = detached_result['result']['details'][0]
+        self.assertEqual(detail['action_name'], 'a4远')
+        self.assertTrue(detail['is_detached'])
+        self.assertEqual(detail['duration_ticks'], 5)
+
     def test_background_noop_still_switches_the_current_foreground_character(self) -> None:
         payload = {
             'team': [
@@ -5613,8 +5667,10 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             for action in catalog['actions']
             if action['character_id'] == 'char_c78f7a08d5' and action['name'] == 'a4远'
         )
-        self.assertEqual(requiem_far_a4['duration_seconds'], 1.7)
-        self.assertEqual(requiem_far_a4['duration_ticks'], 17)
+        self.assertEqual(requiem_far_a4['duration_seconds'], 1.2)
+        self.assertEqual(requiem_far_a4['duration_ticks'], 12)
+        self.assertTrue(requiem_far_a4['can_detach'])
+        self.assertEqual(requiem_far_a4['detached_duration_ticks'], 5)
         self.assertNotIn('duration_pending', requiem_far_a4)
         self.assertIn('用户 2026-08-20 补充', requiem_far_a4['source_note'])
 
@@ -8502,7 +8558,14 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             'action_canhong_q_blood_banquet': (6.999, 4, 0.0, 0.0, 2.5, 49),
         }
 
-        self.assertEqual(set(expected), set(actions) - {'action_none_076a1f4e53', 'action_canhong_illusion_enter'})
+        self.assertEqual(
+            set(expected),
+            set(actions) - {
+                'action_none_076a1f4e53',
+                'action_dodge_076a1f4e53',
+                'action_canhong_illusion_enter',
+            },
+        )
         for action_id, (atk, hit_count, energy, harmony, stagger, source_row) in expected.items():
             with self.subTest(action_id=action_id):
                 self.assertEqual(actions[action_id]['multipliers']['atk'], atk)

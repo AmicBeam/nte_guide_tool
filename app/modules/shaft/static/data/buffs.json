@@ -1492,17 +1492,6 @@
     "effects": {"atk_pct": 0.15}
   },
   {
-    "id": "character_fadia_enemy_slayer_crit",
-    "name": "法帝娅5觉·敌神者追击暴击",
-    "providers": [{"kind": "character", "id": "char_caa6c2e5a8"}],
-    "priority": 100,
-    "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 5}]},
-    "target": {"scope": "registrar", "action_ids": ["action_441d3aa300"]},
-    "duration": {"type": "permanent"},
-    "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"crit_rate": 0.5}
-  },
-  {
     "id": "character_haiyue_huacai",
     "name": "海月：华彩",
     "providers": [{"kind": "character", "id": "char_699966e2e7"}],

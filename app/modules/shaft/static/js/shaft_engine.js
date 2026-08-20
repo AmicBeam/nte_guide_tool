@@ -877,6 +877,8 @@
   function isInterruptedStep(step, action) {
     return Boolean(step?.interrupted)
       && !isSupportAction(action)
+      && !isInstantNativeBackgroundAction(step, action)
+      && action?.can_interrupt !== false
       && baseConfiguredActionDurationTicks(step, action) > 0;
   }
 

@@ -25,6 +25,7 @@ from app.models import (
 from app.modules.shaft.domain.catalog import (
     LEGACY_ACTION_MIGRATIONS,
     LEGACY_ARC_SELECTIONS,
+    REMOVED_ACTION_IDS,
     get_record_map,
     load_shaft_catalog,
 )
@@ -535,6 +536,8 @@ def _normalize_steps(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(step, dict):
             continue
         original_action_id = str(step.get('action_id') or '')
+        if original_action_id in REMOVED_ACTION_IDS:
+            continue
         migration = LEGACY_ACTION_MIGRATIONS.get(original_action_id)
         action_id = migration[0] if migration else original_action_id
         action = actions.get(action_id)
@@ -562,7 +565,13 @@ def _normalize_steps(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
         base_duration_ticks = max(0, _int(
             action.get('detached_duration_ticks') if normalized_step.get('detached') else action.get('duration_ticks'),
         ))
-        if bool(step.get('interrupted')) and base_duration_ticks > 0 and not _is_support_action(action):
+        if (
+            bool(step.get('interrupted'))
+            and base_duration_ticks > 0
+            and not _is_support_action(action)
+            and not _is_instant_native_background_action(action)
+            and action.get('can_interrupt') is not False
+        ):
             normalized_step['interrupted'] = True
             normalized_step['interrupt_duration_ticks'] = max(
                 1,
@@ -768,7 +777,13 @@ def _action_duration_ticks(step: dict[str, Any], action: dict[str, Any]) -> int:
         base_duration_ticks = max(0, _int(action.get('detached_duration_ticks')))
     else:
         base_duration_ticks = max(0, _int(action.get('duration_ticks')))
-    if bool(step.get('interrupted')) and base_duration_ticks > 0 and not _is_support_action(action):
+    if (
+        bool(step.get('interrupted'))
+        and base_duration_ticks > 0
+        and not _is_support_action(action)
+        and not _is_instant_native_background_action(action)
+        and action.get('can_interrupt') is not False
+    ):
         return max(1, min(base_duration_ticks, _int(step.get('interrupt_duration_ticks'), base_duration_ticks)))
     return base_duration_ticks
 

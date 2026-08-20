@@ -27,6 +27,10 @@ LEGACY_ACTION_MIGRATIONS: dict[str, tuple[str, bool, bool]] = {
     'action_97ef5c83d2': ('action_6d2645f71e', True, False),
     'action_182423b934': ('action_6d2645f71e', True, True),
 }
+REMOVED_ACTION_IDS = frozenset({
+    'action_4c5142a40f',  # 早雾 5a
+    'action_441d3aa300',  # 法帝娅 q后5a
+})
 
 
 def _load_json(filename: str) -> Any:
@@ -263,6 +267,7 @@ def load_shaft_catalog() -> dict[str, Any]:
             }
             for action_id, migration in LEGACY_ACTION_MIGRATIONS.items()
         },
+        'removed_action_ids': sorted(REMOVED_ACTION_IDS),
     }
 
 

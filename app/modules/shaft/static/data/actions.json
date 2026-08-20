@@ -938,6 +938,7 @@
     "character_id": "char_b52cc8f160",
     "character_name": "真红",
     "name": "龙e",
+    "can_interrupt": false,
     "action_type": "E",
     "damage_type": "E",
     "extra_tag": "",
@@ -4928,47 +4929,6 @@
     "hit_count": 1
   },
   {
-    "id": "action_4c5142a40f",
-    "character_id": "char_1895e259be",
-    "character_name": "早雾",
-    "name": "5a",
-    "action_type": "普攻",
-    "damage_type": "普攻",
-    "extra_tag": "",
-    "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "multipliers": {
-      "atk": 3.717,
-      "hp": 0,
-      "def": 0,
-      "flat": 0
-    },
-    "energy_gain": 18.588,
-    "harmony": 30.946,
-    "stagger": 3.698,
-    "energy_return": 0,
-    "self_modifiers": {
-      "crit_rate": 0,
-      "crit_dmg": 0,
-      "all_dmg": 0,
-      "flat_atk": 0,
-      "atk_pct": 0,
-      "hp_pct": 0,
-      "def_pct": 0,
-      "harmony_strength": 0,
-      "def_ignore": 0,
-      "res_down": 0
-    },
-    "cooldown_ticks": 0,
-    "energy_cost": 0,
-    "personal_resource_cost": {},
-    "personal_resource_gain": {},
-    "source_row": 85,
-    "can_background_override": false,
-    "hit_count": 10
-  },
-  {
     "id": "action_fc0889c388",
     "character_id": "char_1895e259be",
     "character_name": "早雾",
@@ -5998,7 +5958,7 @@
     "detached_duration_seconds": 0.5,
     "detached_duration_ticks": 5,
     "nightmare_stacks": 5,
-    "hit_count": 5
+    "hit_count": 1
   },
   {
     "id": "action_b9b3237c74",
@@ -6639,50 +6599,6 @@
     "source_row": 119,
     "can_background_override": false,
     "hit_count": 6,
-    "tags": [
-      "心灵"
-    ]
-  },
-  {
-    "id": "action_441d3aa300",
-    "character_id": "char_caa6c2e5a8",
-    "character_name": "法帝娅",
-    "name": "q后5a",
-    "action_type": "Q",
-    "damage_type": "Q",
-    "extra_tag": "心灵",
-    "is_background_damage": false,
-    "duration_seconds": 3,
-    "duration_ticks": 30,
-    "multipliers": {
-      "atk": 0,
-      "hp": 0.35100000000000003,
-      "def": 0,
-      "flat": 0
-    },
-    "energy_gain": 18.898,
-    "harmony": 31.401,
-    "stagger": 3.799,
-    "energy_return": 0,
-    "self_modifiers": {
-      "crit_rate": 0,
-      "crit_dmg": 0,
-      "all_dmg": 0,
-      "flat_atk": 0,
-      "atk_pct": 0,
-      "hp_pct": 0,
-      "def_pct": 0,
-      "harmony_strength": 0,
-      "def_ignore": 0,
-      "res_down": 0
-    },
-    "cooldown_ticks": 0,
-    "energy_cost": 0,
-    "personal_resource_cost": {},
-    "personal_resource_gain": {},
-    "source_row": 120,
-    "can_background_override": false,
-    "hit_count": 13,
     "tags": [
       "心灵"
     ]
@@ -9106,7 +9022,7 @@
   },
   {
     "id": "action_canhong_a5", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.2, "duration_ticks": 12,
-    "multipliers": {"atk": 2.467, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2+{2}%+{3}%", "hit_count": 6, "energy_gain": 8.239, "harmony": 13.719, "stagger": 2.483, "tags": ["燎原", "现实形态", "牵引"], "source_row": 13, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 13-16，按倍率呈现方式聚合；命中后可强化e，牵引不进入单敌伤害计算。"
+    "multipliers": {"atk": 2.579, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2+{2}%+{3}%", "hit_count": 6, "energy_gain": 8.611, "harmony": 14.339, "stagger": 2.595, "tags": ["燎原", "现实形态", "牵引"], "source_row": 590, "source_note": "腾讯文档《角色属性》tab 000003 rows 590-593，按倍率呈现方式聚合；命中后可强化e，牵引不进入单敌伤害计算。"
   },
   {
     "id": "action_canhong_z1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "z", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "长按普攻", "duration_seconds": 1.0, "duration_ticks": 10,

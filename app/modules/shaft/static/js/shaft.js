@@ -1152,7 +1152,13 @@
       delete step.placement;
     }
     const baseDurationTicks = baseActionDurationTicks(action, step);
-    if (!step.interrupted || baseDurationTicks <= 0 || isSupportAction(action)) {
+    if (
+      !step.interrupted
+      || baseDurationTicks <= 0
+      || isSupportAction(action)
+      || isInstantNativeBackgroundAction(step, action)
+      || action?.can_interrupt === false
+    ) {
       delete step.interrupted;
       delete step.interrupt_duration_ticks;
       delete step.interrupt_hit_count;
@@ -1215,7 +1221,11 @@
   }
 
   function isInterruptedStep(step, action = actionForStep(step)) {
-    return Boolean(step?.interrupted) && baseActionDurationTicks(action, step) > 0;
+    return Boolean(step?.interrupted)
+      && !isSupportAction(action)
+      && !isInstantNativeBackgroundAction(step, action)
+      && action?.can_interrupt !== false
+      && baseActionDurationTicks(action, step) > 0;
   }
 
   function actionDurationTicks(action, step = null) {
@@ -1998,6 +2008,8 @@
       ? state.axis.team.slice(0, 4)
       : clone(state.catalog.starter_axis.team);
     state.axis.steps = Array.isArray(state.axis.steps) ? state.axis.steps : [];
+    const removedActionIds = new Set(state.catalog?.removed_action_ids || []);
+    state.axis.steps = state.axis.steps.filter((step) => !removedActionIds.has(step?.action_id));
     const legacyActionMigrations = state.catalog?.legacy_action_migrations || {};
     state.axis.steps = state.axis.steps.flatMap((step, index) => {
       const migration = legacyActionMigrations[step?.action_id];
@@ -6337,7 +6349,10 @@
       return;
     }
     const canDetach = Boolean(action.can_detach);
-    const canInterrupt = baseActionDurationTicks(action, step) > 0 && !isSupportAction(action);
+    const canInterrupt = baseActionDurationTicks(action, step) > 0
+      && !isSupportAction(action)
+      && !isInstantNativeBackgroundAction(step, action)
+      && action.can_interrupt !== false;
     dialog.dataset.stepId = step.id;
     dialog._returnFocus = trigger;
     $('shaft-action-edit-summary').textContent = `${memberName(step.slot)} · ${action.name || '动作'} · ${visualTickLabel(step.start_tick)}`;
@@ -6426,6 +6441,8 @@
     }
     const nextDetached = Boolean(action.can_detach) && $('shaft-action-edit-detached').checked;
     const nextInterrupted = !isSupportAction(action)
+      && !isInstantNativeBackgroundAction(step, action)
+      && action.can_interrupt !== false
       && baseActionDurationTicks(action, Object.assign({}, step, { detached: nextDetached })) > 0
       && $('shaft-action-edit-interrupted').checked;
     const nextDurationTicks = Number($('shaft-action-edit-duration').value || 1);

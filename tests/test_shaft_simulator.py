@@ -32,8 +32,40 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 self.assertEqual(noop['duration_ticks'], 0)
                 self.assertEqual(noop['hit_count'], 0)
                 self.assertTrue(noop['is_instant_switch'])
+                self.assertTrue(noop['can_background_override'])
                 self.assertNotIn('triggers_reaction_on_switch', noop)
                 self.assertEqual(actions_by_character[character['id']][-1]['name'], '无')
+
+    def test_background_noop_still_switches_the_current_foreground_character(self) -> None:
+        payload = {
+            'team': [
+                {'slot': 0, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 1, 'character_id': 'char_bdc43f82c6', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                {'id': 'first', 'slot': 0, 'action_id': 'action_none_dd034941ef', 'start_tick': 0},
+                {
+                    'id': 'background-switch',
+                    'slot': 1,
+                    'action_id': 'action_none_bdc43f82c6',
+                    'start_tick': 5,
+                    'placement': 'background',
+                },
+                {'id': 'return', 'slot': 0, 'action_id': 'action_none_dd034941ef', 'start_tick': 10},
+            ],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        }
+
+        normalized = normalize_axis_payload(payload)
+        result = simulate_shaft_axis(payload)['result']
+        details = {detail['step_id']: detail for detail in result['details']}
+
+        self.assertEqual(normalized['steps'][1]['placement'], 'background')
+        self.assertEqual(normalized['duration_ticks'], 10)
+        self.assertTrue(details['background-switch']['is_background_damage'])
+        self.assertFalse(details['background-switch']['is_basic_background'])
+        self.assertTrue(details['background-switch']['switches_foreground'])
+        self.assertEqual([window['slot'] for window in result['front_windows']], [0, 1, 0])
 
     def test_characters_without_bond_bonus_cannot_enable_bond(self) -> None:
         for character_id in ('char_dd034941ef',):

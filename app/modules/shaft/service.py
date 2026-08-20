@@ -693,12 +693,18 @@ def _is_support_action(action: dict[str, Any]) -> bool:
     return str(action.get('action_type') or '') == '援护'
 
 
+def _is_instant_switch_action(action: dict[str, Any]) -> bool:
+    return bool(action.get('is_instant_switch'))
+
+
 def _is_instant_native_background_action(action: dict[str, Any]) -> bool:
     return _is_background_action(action) and not _is_support_action(action) and not bool(action.get('pre_input_node'))
 
 
 def _can_background_override(action: dict[str, Any]) -> bool:
-    return bool(action.get('can_background_override')) and _is_basic_action(action)
+    return bool(action.get('can_background_override')) and (
+        _is_basic_action(action) or _is_instant_switch_action(action)
+    )
 
 
 def _normalize_step_placement(step: dict[str, Any], action: dict[str, Any]) -> str:
@@ -723,7 +729,10 @@ def calculate_axis_duration_ticks(steps: list[dict[str, Any]], actions_by_id: di
     last_tick = 0
     for step in steps:
         action = actions_by_id.get(str(step.get('action_id') or '')) or {}
-        if _normalize_step_placement(step, action) == 'background':
+        if (
+            _normalize_step_placement(step, action) == 'background' and
+            not _is_instant_switch_action(action)
+        ):
             continue
         start_tick = max(0, _int(step.get('start_tick')))
         duration_ticks = max(0, _int(action.get('duration_ticks')))

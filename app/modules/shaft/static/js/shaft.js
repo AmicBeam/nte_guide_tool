@@ -1111,15 +1111,21 @@
   }
 
   function canBackgroundOverride(action) {
-    return Boolean(action?.can_background_override) && isBasicAction(action);
+    return Boolean(action?.can_background_override) && (
+      isBasicAction(action) || isInstantSwitchAction(action)
+    );
   }
 
-  function isBasicBackgroundOverride(step, action = actionForStep(step)) {
+  function isManualBackgroundOverride(step, action = actionForStep(step)) {
     return !isBackgroundAction(action) && canBackgroundOverride(action) && step?.placement === 'background';
   }
 
+  function isBasicBackgroundOverride(step, action = actionForStep(step)) {
+    return isManualBackgroundOverride(step, action) && isBasicAction(action);
+  }
+
   function isStepBackground(step, action = actionForStep(step)) {
-    return isBackgroundAction(action) || isBasicBackgroundOverride(step, action);
+    return isBackgroundAction(action) || isManualBackgroundOverride(step, action);
   }
 
   function startsForeground(step, action = actionForStep(step)) {
@@ -1135,7 +1141,7 @@
       return;
     }
     const action = actionForStep(step);
-    if (!isBasicBackgroundOverride(step, action)) {
+    if (!isManualBackgroundOverride(step, action)) {
       delete step.placement;
     }
     step.repeat = backgroundActionMultiplier(step, action);
@@ -1155,6 +1161,10 @@
 
   function isInstantSwitchAction(action) {
     return Boolean(action?.is_instant_switch);
+  }
+
+  function switchesForeground(step, action = actionForStep(step)) {
+    return startsForeground(step, action) || isInstantSwitchAction(action);
   }
 
   function tickHasInstantSwitchAction(tick, ignoreStepId = '') {
@@ -1378,7 +1388,7 @@
 
   function axisEndTick(visual = false) {
     const qStarts = qVirtualStartTicks();
-    const foregroundSteps = (state.axis?.steps || []).filter((step) => startsForeground(step, actionForStep(step)));
+    const foregroundSteps = (state.axis?.steps || []).filter((step) => switchesForeground(step, actionForStep(step)));
     return Math.max(
       0,
       ...foregroundSteps.map((step) => stepEndTick(step, visual, qStarts)),
@@ -3287,7 +3297,7 @@
       .filter((detail) => {
         const step = stepById.get(detail.step_id) || { action_id: detail.action_id };
         const action = actionForStep(step);
-        return startsForeground(step, action);
+        return switchesForeground(step, action);
       })
       .map((detail) => {
         const step = stepById.get(detail.step_id) || { action_id: detail.action_id };
@@ -3807,7 +3817,9 @@
   }
 
   function renderedAxisEndTick(details = []) {
-    const foregroundDetails = details.filter((detail) => !detail.is_background_damage);
+    const foregroundDetails = details.filter((detail) => (
+      !detail.is_background_damage || isInstantSwitchAction(actionForStep({ action_id: detail.action_id }))
+    ));
     return Math.max(
       0,
       ...foregroundDetails.map((detail) => Math.max(
@@ -4480,6 +4492,7 @@
         nominal_display_visual_end_tick: nominalDisplayVisualEndTick,
         is_background_damage: isStepBackground(step, action),
         is_basic_background: isBasicBackgroundOverride(step, action),
+        switches_foreground: switchesForeground(step, action),
         placement: step.placement || 'foreground',
       });
     });
@@ -5007,7 +5020,7 @@
     panel.innerHTML = `
       <div class="shaft-detail-hero">
         <strong>${escapeHtml(action.name)}</strong>
-        <span class="shaft-detail-muted">${escapeHtml(memberName(step.slot))} · ${escapeHtml(action.action_type || '动作')} · ${isStepBackground(step, action) ? (isBasicBackgroundOverride(step, action) ? '后台普攻' : '后台伤害') : '前台动作'}</span>
+        <span class="shaft-detail-muted">${escapeHtml(memberName(step.slot))} · ${escapeHtml(action.action_type || '动作')} · ${isStepBackground(step, action) ? (isInstantSwitchAction(action) ? '后台切人' : (isBasicBackgroundOverride(step, action) ? '后台普攻' : '后台伤害')) : '前台动作'}</span>
       </div>
       ${isBackgroundAction(action) ? `
         <div class="shaft-detail-multiplier">

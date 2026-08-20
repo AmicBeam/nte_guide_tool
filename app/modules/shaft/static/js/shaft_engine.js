@@ -831,15 +831,21 @@
   }
 
   function canBackgroundOverride(action) {
-    return Boolean(action?.can_background_override) && isBasicAction(action);
+    return Boolean(action?.can_background_override) && (
+      isBasicAction(action) || isInstantSwitchAction(action)
+    );
   }
 
-  function isBasicBackgroundOverride(step, action) {
+  function isManualBackgroundOverride(step, action) {
     return !isBackgroundAction(action) && canBackgroundOverride(action) && String(step?.placement || '') === 'background';
   }
 
+  function isBasicBackgroundOverride(step, action) {
+    return isManualBackgroundOverride(step, action) && isBasicAction(action);
+  }
+
   function isStepBackground(step, action) {
-    return isBackgroundAction(action) || isBasicBackgroundOverride(step, action);
+    return isBackgroundAction(action) || isManualBackgroundOverride(step, action);
   }
 
   function startsForeground(step, action) {
@@ -876,6 +882,10 @@
 
   function isInstantSwitchAction(action) {
     return Boolean(action?.is_instant_switch);
+  }
+
+  function switchesForeground(step, action) {
+    return startsForeground(step, action) || isInstantSwitchAction(action);
   }
 
   function locksForegroundSwitch(step, action) {
@@ -939,7 +949,7 @@
           visualStartTick = earliestStartTick;
         }
       }
-      if (!isBackground) {
+      if (switchesForeground(step, action)) {
         previousForegroundSlot = int(step.slot);
         previousForegroundStartTick = visualStartTick;
       }
@@ -1854,7 +1864,13 @@
         scheduled.visual_end_tick = int(scheduled.visual_end_tick) + carriedShiftTicks;
         shiftedAny = true;
       }
-      if (scheduled.is_background || scheduled.q_instant_release) return;
+      if (scheduled.is_background || scheduled.q_instant_release) {
+        if (scheduled.is_background && isInstantSwitchAction(scheduled.action || {})) {
+          previousForegroundSlot = int(scheduled.slot);
+          previousForegroundStartTick = int(scheduled.visual_start_tick);
+        }
+        return;
+      }
       const originalStartTick = int(scheduled.visual_start_tick);
       let visualStartTick = originalStartTick;
       let lockEndTick = Math.max(
@@ -2057,7 +2073,7 @@
     const scheduledSteps = [];
     const loopOpeningFrontSlot = options.loop_enabled
       ? orderedStepEntries
-        .filter(({ step }) => startsForeground(step, actionsById.get(String(step.action_id || '')) || {}))
+        .filter(({ step }) => switchesForeground(step, actionsById.get(String(step.action_id || '')) || {}))
         .map(({ step }) => int(step.slot))
         .at(-1) ?? null
       : null;
@@ -2103,7 +2119,7 @@
         original_calculation_end_sequence: 0,
         original_visual_end_tick: visualEndTick,
       });
-      if (!isBackground) {
+      if (switchesForeground(step, action)) {
         scheduleFrontSlot = slot;
       }
     });
@@ -4112,6 +4128,7 @@
       const startTick = int(scheduled.start_tick);
       const visualStartTick = int(scheduled.visual_start_tick, startTick);
       const isBackground = Boolean(scheduled.is_background);
+      const changesForeground = switchesForeground(step, action);
       const actionMultiplier = backgroundActionMultiplier(step, action);
       const durationTicks = Math.max(0, int(scheduled.duration_ticks));
       const endTick = int(scheduled.end_tick);
@@ -4133,7 +4150,7 @@
       if (energyCost > slotEnergy) warnings.push('终结技能量不足。');
       const buffTick = startTick;
       const previousRuntimeFrontSlot = runtimeFrontSlot;
-      if (!isBackground && runtimeFrontSlot !== slot) {
+      if (changesForeground && runtimeFrontSlot !== slot) {
         runtimeFrontSlot = slot;
         runtimeFrontSinceTick = buffTick;
       }
@@ -4147,7 +4164,7 @@
           buff,
           step,
           action,
-          isBackground,
+          isBackground && !changesForeground,
           buffTick,
           previousRuntimeFrontSlot,
           visualStartTick,
@@ -4156,7 +4173,7 @@
       syncBuffLayerResources(buffTick);
       syncFrontTimeBuffs(buffTick);
       const triggeredBuffs = [];
-      if (!isBackground && previousRuntimeFrontSlot != null && previousRuntimeFrontSlot !== slot) {
+      if (changesForeground && previousRuntimeFrontSlot != null && previousRuntimeFrontSlot !== slot) {
         const previousSnapshot = snapshots.get(int(previousRuntimeFrontSlot));
         if (previousSnapshot) {
           triggeredBuffs.push(...triggerBuffsForEvent(
@@ -4170,7 +4187,7 @@
           ));
         }
       }
-      if (!isBackground && previousRuntimeFrontSlot !== slot) {
+      if (changesForeground && previousRuntimeFrontSlot !== slot) {
         triggeredBuffs.push(...triggerBuffsForEvent(
           'foreground_enter',
           startTick,
@@ -4422,7 +4439,7 @@
       slotEnergy = energyBySlot.get(slot) ?? slotEnergy;
       const displayedEnergyGain = plannedEnergy.get(slot) || 0;
       recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
-      if (!isBackground) {
+      if (changesForeground) {
         frontEvents.push({
           slot,
           start_tick: startTick,
@@ -4510,6 +4527,7 @@
         q_cover_target_step_ids: asList(scheduled.q_cover_target_step_ids),
         is_background_damage: isBackground,
         is_basic_background: isBasicBackgroundOverride(step, action),
+        switches_foreground: changesForeground,
         action_multiplier: actionMultiplier,
         action_tags: Array.from(actionTagsForSnapshot(action, snapshot)).sort(),
         hit_count: actionHitCount(action) * actionMultiplier,
@@ -4599,7 +4617,7 @@
     const durationTicks = Math.max(
       0,
       ...scheduledSteps
-        .filter((scheduled) => !scheduled.is_background)
+        .filter((scheduled) => !scheduled.is_background || isInstantSwitchAction(scheduled.action || {}))
         .map((scheduled) => Math.max(int(scheduled.end_tick), int(scheduled.start_tick))),
     );
     settlePeriodicHealing(options.loop_enabled ? loopDurationTicks : durationTicks);

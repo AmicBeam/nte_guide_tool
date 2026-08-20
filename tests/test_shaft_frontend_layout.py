@@ -297,7 +297,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('id="shaft-axis-preview-cancel-btn"', template)
         self.assertIn('id="shaft-axis-preview-save-btn"', template)
         self.assertIn('function groupedPreviewActions', source)
-        self.assertIn('return startsForeground(step, action);', source)
+        self.assertIn('return switchesForeground(step, action);', source)
         self.assertIn(".join(' ')", source)
         self.assertIn('previous.durationTicks += detail.durationTicks', source)
         self.assertIn('function damageContributionShares', source)
@@ -336,14 +336,14 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('padding-inline: 3px;', css)
         self.assertIn('.shaft-axis-preview-footer', css)
 
-    def test_timeline_length_uses_foreground_and_clips_after_one_second_padding(self) -> None:
+    def test_timeline_length_uses_foreground_switches_and_clips_after_one_second_padding(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
 
         self.assertIn(
-            'const foregroundSteps = (state.axis?.steps || []).filter((step) => startsForeground(step, actionForStep(step)));',
+            'const foregroundSteps = (state.axis?.steps || []).filter((step) => switchesForeground(step, actionForStep(step)));',
             source,
         )
-        self.assertIn('const foregroundDetails = details.filter((detail) => !detail.is_background_damage);', source)
+        self.assertIn("!detail.is_background_damage || isInstantSwitchAction(actionForStep({ action_id: detail.action_id }))", source)
         self.assertIn('const displayCutoffTick = foregroundAxisEndTick + TIMELINE_END_PADDING_TICKS;', source)
         self.assertIn(
             '.filter((detail) => Number(detail.display_start_tick ?? detail.start_tick ?? 0) < displayCutoffTick)',
@@ -1275,6 +1275,19 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const placementChanged = canChangePlacement && dragPlacementWouldChange', drag_body)
         self.assertIn('if (canChangePlacement) {', drag_body)
         self.assertIn('applyDraggedPlacement(item, drag, deltaY);', drag_body)
+
+    def test_noop_can_move_to_background_without_losing_foreground_switch_semantics(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
+        catalog = load_shaft_catalog()
+        noop = next(action for action in catalog['actions'] if action['name'] == '无')
+
+        self.assertTrue(noop['can_background_override'])
+        self.assertIn('isBasicAction(action) || isInstantSwitchAction(action)', source)
+        self.assertIn('function switchesForeground(step, action = actionForStep(step)) {', source)
+        self.assertIn("isInstantSwitchAction(action) ? '后台切人'", source)
+        self.assertIn('function switchesForeground(step, action) {', engine)
+        self.assertIn('const changesForeground = switchesForeground(step, action);', engine)
 
     def test_native_background_action_multiplier_uses_confirmation_dialog_and_is_visible_on_bar(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')

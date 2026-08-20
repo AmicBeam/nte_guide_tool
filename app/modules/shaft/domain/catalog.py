@@ -133,7 +133,7 @@ def _noop_action(character: dict[str, Any]) -> dict[str, Any]:
         'personal_resource_cost': {},
         'personal_resource_gain': {},
         'source_row': 0,
-        'can_background_override': False,
+        'can_background_override': True,
         'hit_count': 0,
         'is_instant_switch': True,
         'tags': ['切人'],

@@ -109,6 +109,22 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
             self.step(instant_switch, 5),
         ]), [])
 
+    def test_background_instant_switch_still_participates_in_return_cooldown(self) -> None:
+        zhenhong_a1 = self.action('真红', 'a1')
+        nanali_switch = self.action('娜娜莉', '无')
+        zhenhong_a2 = self.action('真红', 'a2')
+        switch_step = self.step(nanali_switch, 2, slot=1)
+        switch_step['placement'] = 'background'
+
+        self.assertIn(
+            '真红「a2」：角色切换 CD 尚未结束，需等到 1.4s。',
+            self.inspect([
+                self.step(zhenhong_a1, 0, slot=0),
+                switch_step,
+                self.step(zhenhong_a2, 6, slot=0),
+            ]),
+        )
+
     def test_manual_background_zero_duration_action_does_not_warn_for_missing_duration(self) -> None:
         requiem_a2 = self.action('安魂曲', 'a2近')
         step = self.step(requiem_a2, 0)

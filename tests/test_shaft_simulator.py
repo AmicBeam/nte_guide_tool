@@ -5576,6 +5576,16 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
     def test_requiem_nightmare_has_independent_three_second_layers_and_settlement(self) -> None:
         catalog = load_shaft_catalog()
+        requiem_far_a4 = next(
+            action
+            for action in catalog['actions']
+            if action['character_id'] == 'char_c78f7a08d5' and action['name'] == 'a4远'
+        )
+        self.assertEqual(requiem_far_a4['duration_seconds'], 1.7)
+        self.assertEqual(requiem_far_a4['duration_ticks'], 17)
+        self.assertNotIn('duration_pending', requiem_far_a4)
+        self.assertIn('用户 2026-08-20 补充', requiem_far_a4['source_note'])
+
         requiem_far_a5 = next(
             action
             for action in catalog['actions']

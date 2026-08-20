@@ -5732,8 +5732,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 2.411,
       "hp": 0,
@@ -5763,7 +5763,7 @@
       "噩梦": 4
     },
     "source_row": 96,
-    "duration_pending": true,
+    "source_note": "耗时 1.7 秒来自用户 2026-08-20 补充；倍率与资源数据来自腾讯表 row 96。",
     "source_formula": "{0}%*3+{1}%",
     "can_background_override": true,
     "nightmare_stacks": 4,

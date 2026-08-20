@@ -85,17 +85,17 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
         )
 
     def test_warns_once_for_each_zero_duration_non_q_foreground_action(self) -> None:
-        requiem_a4 = self.action('安魂曲', 'a4远')
+        requiem_a2 = self.action('安魂曲', 'a2近')
         xun_falling = self.action('浔', '跳A')
 
         self.assertEqual(
             self.inspect([
-                self.step(requiem_a4, 0),
-                self.step(requiem_a4, 5),
+                self.step(requiem_a2, 0),
+                self.step(requiem_a2, 5),
                 self.step(xun_falling, 10, slot=1),
             ]),
             [
-                '安魂曲「a4远」：该动作的时长未实装。',
+                '安魂曲「a2近」：该动作的时长未实装。',
                 '浔「跳A」：该动作的时长未实装。',
             ],
         )
@@ -110,8 +110,8 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
         ]), [])
 
     def test_manual_background_zero_duration_action_does_not_warn_for_missing_duration(self) -> None:
-        requiem_a4 = self.action('安魂曲', 'a4远')
-        step = self.step(requiem_a4, 0)
+        requiem_a2 = self.action('安魂曲', 'a2近')
+        step = self.step(requiem_a2, 0)
         step['placement'] = 'background'
 
         self.assertEqual(self.inspect([step]), [])

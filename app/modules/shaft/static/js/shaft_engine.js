@@ -350,7 +350,7 @@
       ? String(source.passive_type)
       : (CURTAIN_PASSIVE_TYPES.includes(String(defaults.passive_type || '')) ? String(defaults.passive_type) : 'type3');
     return {
-      value: Math.max(0, Math.min(100, num(source.value, num(defaults.value)))),
+      value: Math.max(0, Math.min(100, num(defaults.value))),
       stat: Object.prototype.hasOwnProperty.call(options, stat) ? stat : fallback,
       passive_type: passiveType,
     };

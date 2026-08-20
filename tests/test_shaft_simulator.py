@@ -1054,6 +1054,52 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         )
         self.assertEqual(build['panel'], canonical['panel'])
 
+    def test_nanali_and_jiuyuan_curtain_bonus_adds_six_percent_crit_per_type2_drive(self) -> None:
+        cases = [
+            ('char_bdc43f82c6', 'action_7d6ec164ca'),
+            ('char_b2e3b2bf7a', 'action_08d9487c2c'),
+        ]
+        for character_id, action_id in cases:
+            with self.subTest(character_id=character_id):
+                base_payload = {
+                    'team': [{
+                        'slot': 0,
+                        'character_id': character_id,
+                        'arc_id': '',
+                        'cartridge_id': '',
+                    }],
+                    'steps': [{
+                        'id': 'basic',
+                        'slot': 0,
+                        'action_id': action_id,
+                        'start_tick': 0,
+                    }],
+                    'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+                    'initial_energy': 200,
+                }
+                baseline = simulate_shaft_axis(base_payload)['result']['build_panels_by_slot'][0]
+                equipped_payload = deepcopy(base_payload)
+                equipped_payload['team'][0].update({
+                    'cartridge_id': 'cartridge_29793225a0',
+                    'curtain_bonus': {
+                        'value': 5,
+                        'stat': '暴击',
+                        'passive_type': 'type2',
+                    },
+                })
+                build = simulate_shaft_axis(equipped_payload)['result']['build_panels_by_slot'][0]
+
+                self.assertEqual(build['build_options']['curtain_bonus'], {
+                    'value': 6,
+                    'stat': '暴击',
+                    'passive_type': 'type2',
+                    'layers': 5,
+                })
+                self.assertAlmostEqual(
+                    build['panel']['crit_rate'] - baseline['panel']['crit_rate'],
+                    0.06 * 5,
+                )
+
     def test_iloy_bond_bonus_adds_five_percent_attack_not_crit(self) -> None:
         def panel_with_bond(enabled: bool) -> dict:
             result = simulate_shaft_axis({

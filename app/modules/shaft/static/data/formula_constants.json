@@ -231,7 +231,7 @@
     "char_bdc43f82c6": {
       "cartridge_main_stat": "暴击",
       "curtain_bonus": {
-        "value": 5,
+        "value": 6,
         "stat": "暴击",
         "passive_type": "type2"
       }
@@ -239,7 +239,7 @@
     "char_b2e3b2bf7a": {
       "cartridge_main_stat": "属伤",
       "curtain_bonus": {
-        "value": 5,
+        "value": 6,
         "stat": "暴击",
         "passive_type": "type2"
       }

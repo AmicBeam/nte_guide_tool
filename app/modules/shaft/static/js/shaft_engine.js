@@ -136,6 +136,10 @@
   const CANHONG_FENTIAN_ACTION_ID = 'action_canhong_q';
   const CANHONG_BLOOD_BANQUET_ACTION_ID = 'action_canhong_q_blood_banquet';
   const CANHONG_BLOOD_BANQUET_BUFF_ID = 'character_canhong_blood_banquet_active';
+  const CANHONG_LOOP_INITIAL_DOTS = [
+    {name: '蚀心', rule_id: 'character_canhong_corrosion_heart', definition_id: 'character_canhong_corrosion_heart'},
+    {name: '鸩火', rule_id: 'character_canhong_poison_fire_five', definition_id: 'character_canhong_poison_fire'},
+  ];
   const HARMONY_CAPACITY = 100;
   const TEAMMATE_ENERGY_SHARE_RATIO = 0.6;
 
@@ -3802,14 +3806,47 @@
       return triggered;
     }
 
+    function seedLoopInitialDot(config, snapshot, layers, startTick) {
+      const layerCount = Math.max(0, Math.min(10, int(layers)));
+      if (!snapshot || layerCount <= 0) return [];
+      const rule = buffRules.find((candidate) => (
+        int(candidate.owner_slot) === int(snapshot.slot)
+        && String(candidate.id || '') === String(config.rule_id || '')
+      ));
+      if (!rule) return [];
+      const previousInstances = new Set(activeBuffs);
+      activateBuff(activeBuffs, rule, startTick, layerCount, {
+        source_slot: int(snapshot.slot),
+        source_step_id: '',
+      });
+      const addedInstances = activeBuffs.filter((instance) => !previousInstances.has(instance));
+      addedInstances.forEach((instance) => {
+        instance.loop_initial_dot = true;
+        schedulePeriodicBuffDamage(instance, instance.rule);
+      });
+      return addedInstances;
+    }
+
     if (options.loop_enabled && loopDurationTicks > 0) {
       const configuredLoopInitialReactions = [];
+      const configuredLoopInitialDots = [];
       snapshots.forEach((snapshot) => {
         const configured = loopInitialResources[String(snapshot.character?.id || '')];
         const reaction = configured && typeof configured === 'object' ? String(configured.reaction || '') : '';
-        if (!reaction) return;
-        configuredLoopInitialReactions.push({reaction, snapshot});
-        seedLoopInitialReaction(reaction, snapshot, -loopDurationTicks);
+        if (reaction) {
+          configuredLoopInitialReactions.push({reaction, snapshot});
+          seedLoopInitialReaction(reaction, snapshot, -loopDurationTicks);
+        }
+        if (String(snapshot.character?.id || '') !== CANHONG_CHARACTER_ID) return;
+        const dotLayers = configured?.dot_layers && typeof configured.dot_layers === 'object'
+          ? configured.dot_layers
+          : {};
+        CANHONG_LOOP_INITIAL_DOTS.forEach((dotConfig) => {
+          const layers = Math.max(0, Math.min(10, int(dotLayers[dotConfig.name])));
+          if (layers <= 0) return;
+          configuredLoopInitialDots.push({...dotConfig, layers, snapshot});
+          seedLoopInitialDot(dotConfig, snapshot, layers, -loopDurationTicks);
+        });
       });
       scheduledSteps.forEach((scheduled) => {
         const scheduledStartTick = int(scheduled.start_tick);
@@ -3966,6 +4003,16 @@
         const initialEffect = seedLoopInitialReaction(reaction, snapshot, 0);
         if (!initialEffect) return;
         initialEffect.looped = false;
+      });
+      configuredLoopInitialDots.forEach((dotConfig) => {
+        const carriedLayers = activeBuffs.filter((instance) => (
+          int(instance.owner_slot) === int(dotConfig.snapshot.slot)
+          && String(instance.definition_id || '') === String(dotConfig.definition_id || '')
+          && int(instance.start_tick) <= 0
+          && int(instance.end_tick) > 0
+        ));
+        if (carriedLayers.length > 0) return;
+        seedLoopInitialDot(dotConfig, dotConfig.snapshot, dotConfig.layers, 0);
       });
     }
 
@@ -4779,6 +4826,13 @@
         initial_reaction: options.loop_enabled
           ? String(loopInitialResources[String(snapshots.get(slot).character?.id || '')]?.reaction || '')
           : '',
+        initial_dot_layers: options.loop_enabled
+          && String(snapshots.get(slot).character?.id || '') === CANHONG_CHARACTER_ID
+          ? Object.fromEntries(CANHONG_LOOP_INITIAL_DOTS.map(({name}) => [
+            name,
+            Math.max(0, Math.min(10, int(loopInitialResources[String(snapshots.get(slot).character?.id || '')]?.dot_layers?.[name]))),
+          ]).filter(([, layers]) => layers > 0))
+          : {},
         initial_personal_resources: initialPersonalResourcesBySlot.get(slot) || {},
         personal_resources: personalResources.get(slot) || {},
       })),

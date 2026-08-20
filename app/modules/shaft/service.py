@@ -608,6 +608,8 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
         energy_capacity = max(0, _num((characters.get(character_id) or {}).get('energy_capacity'), 100))
         configured_personal = configured.get('personal_resources')
         configured_personal = configured_personal if isinstance(configured_personal, dict) else {}
+        configured_dot_layers = configured.get('dot_layers')
+        configured_dot_layers = configured_dot_layers if isinstance(configured_dot_layers, dict) else {}
         character_caps = personal_resource_caps.get(character_id)
         character_caps = character_caps if isinstance(character_caps, dict) else {}
         normalized_personal = {}
@@ -623,6 +625,11 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
             if str(configured.get('reaction') or '') in sustained_reactions else '',
             'personal_resources': normalized_personal,
         }
+        if character_id == 'char_076a1f4e53':
+            loop_initial_resources[character_id]['dot_layers'] = {
+                name: max(0, min(10, _int(configured_dot_layers.get(name))))
+                for name in ('蚀心', '鸩火')
+            }
     return {
         'switch_gap_ticks': switch_gap_ticks,
         'switch_loss_ticks': switch_gap_ticks,

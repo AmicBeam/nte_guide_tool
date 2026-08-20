@@ -1499,6 +1499,9 @@
     const configuredPersonal = configured?.personal_resources && typeof configured.personal_resources === 'object'
       ? configured.personal_resources
       : {};
+    const configuredDotLayers = configured?.dot_layers && typeof configured.dot_layers === 'object'
+      ? configured.dot_layers
+      : {};
     return {
       energy: !usesEnergy ? 0 : configured && typeof configured === 'object'
         ? Math.max(0, Number(configured.energy || 0))
@@ -1512,6 +1515,12 @@
       energyCapacity,
       usesEnergy,
       personalResources: configuredPersonal,
+      dotLayers: String(member?.character_id || '') === CANHONG_CHARACTER_ID
+        ? {
+          '蚀心': Math.max(0, Math.min(10, Number(configuredDotLayers['蚀心'] || 0))),
+          '鸩火': Math.max(0, Math.min(10, Number(configuredDotLayers['鸩火'] || 0))),
+        }
+        : {},
     };
   }
 
@@ -1564,6 +1573,12 @@
           <input data-loop-initial-personal-resource="${escapeHtml(definition.name)}" type="number" min="0"${maximum} step="1" value="${value}">
         </label>`;
       }).join('');
+      const dotLayerFields = String(member.character_id || '') === CANHONG_CHARACTER_ID
+        ? ['蚀心', '鸩火'].map((name) => `<label>
+          <span>自带${name}</span>
+          <input data-loop-initial-dot-layer="${name}" type="number" min="0" max="10" step="1" inputmode="numeric" value="${resources.dotLayers[name] || 0}">
+        </label>`).join('')
+        : '';
       return `
         <div class="shaft-loop-resource-row" data-loop-resource-character="${escapeHtml(member.character_id)}">
           <span class="shaft-loop-resource-character">
@@ -1584,6 +1599,7 @@
               <select data-loop-initial-reaction>${reactionFields}</select>
             </label>
             ${personalResourceFields}
+            ${dotLayerFields}
           </div>
         </div>
       `;
@@ -1640,11 +1656,19 @@
           personalResources[name] = Math.max(0, Math.min(maximum, Number(input.value || 0)));
         }
       });
+      const dotLayers = {};
+      row.querySelectorAll('[data-loop-initial-dot-layer]').forEach((input) => {
+        const name = String(input.dataset.loopInitialDotLayer || '');
+        if (name) {
+          dotLayers[name] = Math.max(0, Math.min(10, Math.round(Number(input.value || 0))));
+        }
+      });
       resources[characterId] = {
         energy: energyCapacity > 0 ? Math.min(energyCapacity, energy) : energy,
         harmony,
         reaction,
         personal_resources: personalResources,
+        dot_layers: dotLayers,
       };
     });
     pushUndoSnapshot();

@@ -7576,6 +7576,50 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         ))
         self.assertGreater(poison_ticks[0]['formula_parts']['critical'], 1.3)
 
+    def test_canhong_loop_axis_can_start_with_configured_dot_layers(self) -> None:
+        def simulate(corrosion_layers: int, poison_layers: int) -> dict:
+            return simulate_shaft_axis({
+                'team': [{
+                    'slot': 0,
+                    'character_id': 'char_076a1f4e53',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                }],
+                'steps': [{
+                    'id': 'axis-end',
+                    'slot': 0,
+                    'action_id': 'action_none_076a1f4e53',
+                    'start_tick': 40,
+                }],
+                'options': {
+                    'loop_enabled': True,
+                    'loop_initial_resources': {
+                        'char_076a1f4e53': {
+                            'dot_layers': {'蚀心': corrosion_layers, '鸩火': poison_layers},
+                        },
+                    },
+                },
+                'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+                'initial_energy': 200,
+            })['result']
+
+        carried = simulate(2, 3)
+        resources = carried['resources_by_slot'][0]
+        self.assertEqual(resources['initial_dot_layers'], {'蚀心': 2, '鸩火': 3})
+        corrosion = [event for event in carried['periodic_damage_events'] if event['reaction'] == '蚀心']
+        poison = [event for event in carried['periodic_damage_events'] if event['reaction'] == '鸩火']
+        self.assertEqual(corrosion[0]['tick'], 0)
+        self.assertEqual(poison[0]['tick'], 0)
+        self.assertTrue(all(event['stack_count'] == 2 for event in corrosion))
+        self.assertTrue(all(event['stack_count'] == 3 for event in poison))
+
+        omitted = simulate(0, 0)
+        self.assertEqual(omitted['resources_by_slot'][0]['initial_dot_layers'], {})
+        self.assertFalse(any(
+            event['reaction'] in {'蚀心', '鸩火'}
+            for event in omitted['periodic_damage_events']
+        ))
+
     def test_canhong_fuwen_bonus_is_reported_separately_from_direct_damage(self) -> None:
         def simulate(ignore_harmony_requirement: bool) -> dict:
             return simulate_shaft_axis({

@@ -112,7 +112,7 @@ CURTAIN_PASSIVE_TYPES = ('type2', 'type3', 'type4')
 CANHONG_CHARACTER_ID = 'char_076a1f4e53'
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SHAFT_COMPUTE_SCRIPT = PROJECT_ROOT / 'scripts' / 'shaft_compute.js'
-SHAFT_SOURCE_VERSION = '异环云配队 1.0.3'
+SHAFT_SOURCE_VERSION = '异环云配队 1.0.4'
 
 
 class ShaftAxisNameConflictError(RuleValidationError):

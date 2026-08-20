@@ -2019,6 +2019,42 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         })
         self.assertEqual([step['id'] for step in normalized['steps']], ['kept'])
 
+    def test_hit_profiles_only_cover_interruptible_actions(self) -> None:
+        catalog = load_shaft_catalog()
+        profiled = [action for action in catalog['actions'] if action.get('hit_profile')]
+        self.assertTrue(profiled)
+        for action in profiled:
+            with self.subTest(action_id=action['id']):
+                marker = f"{action.get('name', '')} {action.get('extra_tag', '')}"
+                native_background = (
+                    (bool(action.get('is_background_damage')) or '后台' in marker)
+                    and action.get('action_type') != '援护'
+                    and not bool(action.get('pre_input_node'))
+                )
+                self.assertNotEqual(action.get('action_type'), '援护')
+                self.assertIsNot(action.get('can_interrupt'), False)
+                self.assertGreater(action.get('duration_ticks', 0), 0)
+                self.assertGreater(action.get('hit_count', 0), 0)
+                self.assertFalse(native_background)
+
+        fallback = {
+            (action['character_name'], action['name'])
+            for action in profiled
+            if action['hit_profile'].get('source') == 'aggregate-fallback'
+        }
+        self.assertEqual(fallback, {
+            ('主角', 'e'),
+            ('九原', '6枪'), ('九原', 'e'),
+            ('白藏', '长闪'), ('白藏', 'e'),
+            ('哈尼娅', '蓄力'),
+            ('海月', '水母弹'), ('海月', '水母闪反'),
+            ('卡厄斯', 'e'),
+            ('哈索尔', '长e尾刀'), ('哈索尔', 'e持续'),
+            ('哈索尔', 'E1'), ('哈索尔', 'E2'), ('哈索尔', 'E3'),
+            ('翳', 'e'),
+            ('伊洛伊', '清明梦'),
+        })
+
     def test_all_element_pairs_resolve_to_documented_reactions(self) -> None:
         cases = [
             ('延滞', 'char_dd034941ef', 'action_982c67944f', 1, 'char_912dbfe17c', 'action_f229587fd2', 0),

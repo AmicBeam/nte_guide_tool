@@ -3318,7 +3318,16 @@ body.shaft-dragging .shaft-action-bar {
     min-width: 82px;
 }
 
-.shaft-action-edit-dialog,
+.shaft-action-edit-dialog {
+    width: min(560px, calc(100vw - 32px));
+    max-width: none;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--text);
+}
+
 .shaft-background-multiplier-dialog {
     width: min(380px, calc(100vw - 32px));
     max-width: none;

@@ -1151,6 +1151,15 @@
     if (!isManualBackgroundOverride(step, action)) {
       delete step.placement;
     }
+    const baseDurationTicks = baseActionDurationTicks(action, step);
+    if (!step.interrupted || baseDurationTicks <= 0) {
+      delete step.interrupted;
+      delete step.interrupt_duration_ticks;
+      delete step.interrupt_hit_count;
+    } else {
+      step.interrupt_duration_ticks = Math.max(1, Math.min(baseDurationTicks, Number(step.interrupt_duration_ticks || baseDurationTicks)));
+      step.interrupt_hit_count = Math.max(0, Math.min(Number(action?.hit_count || 0), Number(step.interrupt_hit_count ?? action?.hit_count ?? 0)));
+    }
     step.repeat = backgroundActionMultiplier(step, action);
   }
 
@@ -1198,11 +1207,22 @@
     return Boolean(step?.detached) && Boolean(action?.can_detach);
   }
 
-  function actionDurationTicks(action, step = null) {
+  function baseActionDurationTicks(action, step = null) {
     if (isDetachedStep(step, action)) {
       return Math.max(0, Number(action?.detached_duration_ticks || 0));
     }
     return Math.max(0, Number(action?.duration_ticks || 0));
+  }
+
+  function isInterruptedStep(step, action = actionForStep(step)) {
+    return Boolean(step?.interrupted) && baseActionDurationTicks(action, step) > 0;
+  }
+
+  function actionDurationTicks(action, step = null) {
+    const baseDurationTicks = baseActionDurationTicks(action, step);
+    return isInterruptedStep(step, action)
+      ? Math.max(1, Math.min(baseDurationTicks, Number(step?.interrupt_duration_ticks || baseDurationTicks)))
+      : baseDurationTicks;
   }
 
   function actionDisplayName(step, action = actionForStep(step)) {
@@ -4528,6 +4548,7 @@
         action_id: step.action_id,
         action_name: actionDisplayName(step, action),
         is_detached: isDetachedStep(step, action),
+        is_interrupted: isInterruptedStep(step, action),
         action_type: action.action_type || '',
         raw_start_tick: startTick,
         start_tick: renderStartTick,
@@ -4846,7 +4867,7 @@
           ].filter(Boolean).join(' · ');
           const durationLabel = actionMeta ? `<em>${actionMeta}</em>` : '';
           return `
-            <span class="shaft-action-bar ${actionTypeClass(detail.action_type)} ${detail.is_background_damage ? 'background-damage' : ''} ${basicBackground} ${frontStart} ${qInstant} ${detail.is_detached ? 'detached-action' : ''} ${selected} ${dragging}" data-step-id="${escapeHtml(detail.step_id)}" style="left:${entry.startPx}px; top:${top}px; width:${entry.cardWidth}px; --slot-color:${color}" title="${escapeHtml(detail.action_name)}${detail.q_instant_release ? ' · Q即时释放' : ''}">
+            <span class="shaft-action-bar ${actionTypeClass(detail.action_type)} ${detail.is_background_damage ? 'background-damage' : ''} ${basicBackground} ${frontStart} ${qInstant} ${detail.is_detached ? 'detached-action' : ''} ${detail.is_interrupted ? 'interrupted-action' : ''} ${selected} ${dragging}" data-step-id="${escapeHtml(detail.step_id)}" style="left:${entry.startPx}px; top:${top}px; width:${entry.cardWidth}px; --slot-color:${color}" title="${escapeHtml(detail.action_name)}${detail.q_instant_release ? ' · Q即时释放' : ''}${detail.is_interrupted ? ' · 已打断' : ''}">
               <span class="shaft-action-name">${escapeHtml(detail.action_name)}</span>
               ${durationLabel}
             </span>
@@ -5984,6 +6005,9 @@
         repeat: Math.max(1, Number(source.repeat || 1)),
         placement: source.placement === 'background' ? 'background' : undefined,
         detached: Boolean(source.detached) || undefined,
+        interrupted: Boolean(source.interrupted) || undefined,
+        interrupt_duration_ticks: source.interrupt_duration_ticks,
+        interrupt_hit_count: source.interrupt_hit_count,
         tags: clone(source.tags || []),
       });
     });
@@ -6313,19 +6337,74 @@
       return;
     }
     const canDetach = Boolean(action.can_detach);
+    const canInterrupt = baseActionDurationTicks(action, step) > 0;
     dialog.dataset.stepId = step.id;
     dialog._returnFocus = trigger;
     $('shaft-action-edit-summary').textContent = `${memberName(step.slot)} · ${action.name || '动作'} · ${visualTickLabel(step.start_tick)}`;
     $('shaft-action-edit-detached-row').hidden = !canDetach;
-    $('shaft-action-edit-empty').hidden = canDetach;
+    $('shaft-action-edit-interrupt-row').hidden = !canInterrupt;
+    $('shaft-action-edit-empty').hidden = canDetach || canInterrupt;
     $('shaft-action-edit-detached').checked = isDetachedStep(step, action);
     $('shaft-action-edit-detached-hint').textContent = canDetach
       ? `勾选后动作占用 ${ticksToSeconds(action.detached_duration_ticks || 0)} 秒；时间轴名称不变，以黄色字体标识。`
       : '';
+    $('shaft-action-edit-interrupted').checked = isInterruptedStep(step, action);
+    $('shaft-action-edit-duration').value = String(step.interrupt_duration_ticks || baseActionDurationTicks(action, step));
+    $('shaft-action-edit-hits').value = String(step.interrupt_hit_count ?? action.hit_count ?? 0);
+    updateActionEditorInterruptPreview();
     dialog.showModal();
     window.requestAnimationFrame(() => {
-      (canDetach ? $('shaft-action-edit-detached') : $('shaft-action-edit-confirm')).focus();
+      (canDetach ? $('shaft-action-edit-detached') : (canInterrupt ? $('shaft-action-edit-interrupted') : $('shaft-action-edit-confirm'))).focus();
     });
+  }
+
+  function actionEditProfileEntry(action, hitCount) {
+    return (action?.hit_profile?.cumulative || []).find((item) => Number(item.hit_count) === Number(hitCount)) || null;
+  }
+
+  function actionEditMultiplierText(action, profile) {
+    const full = actionEditProfileEntry(action, Number(action?.hit_count || 0));
+    const damageRatio = Number(full?.damage || 0) > 0
+      ? Number(profile?.damage || 0) / Number(full.damage)
+      : (Number(action?.hit_count || 0) > 0 ? Number(profile?.hit_count || 0) / Number(action.hit_count) : 0);
+    const labels = { atk: '攻击', hp: '生命', def: '防御', flat: '固定' };
+    const values = Object.entries(action?.multipliers || {})
+      .filter(([, value]) => Number(value || 0) !== 0)
+      .map(([key, value]) => key === 'flat'
+        ? `${formatNumber(Number(value) * damageRatio, 1)}${labels[key]}`
+        : `${formatNumber(Number(value) * damageRatio * 100, 1)}%${labels[key] || key}`);
+    return values.join(' + ') || '0%';
+  }
+
+  function updateActionEditorInterruptPreview() {
+    const dialog = $('shaft-action-edit-dialog');
+    const step = state.axis?.steps?.find((item) => item.id === String(dialog?.dataset.stepId || ''));
+    const action = step ? actionForStep(step) : null;
+    if (!action) return;
+    const enabled = $('shaft-action-edit-interrupted').checked;
+    const detached = Boolean(action.can_detach) && $('shaft-action-edit-detached').checked;
+    const maxDuration = Math.max(1, Number(detached ? action.detached_duration_ticks : action.duration_ticks) || 1);
+    const durationInput = $('shaft-action-edit-duration');
+    const hitInput = $('shaft-action-edit-hits');
+    durationInput.max = String(maxDuration);
+    durationInput.value = String(Math.max(1, Math.min(maxDuration, Number(durationInput.value || maxDuration))));
+    hitInput.max = String(Math.max(0, Number(action.hit_count || 0)));
+    hitInput.value = String(Math.max(0, Math.min(Number(hitInput.max), Number(hitInput.value || 0))));
+    $('shaft-action-edit-interrupt-settings').hidden = !enabled;
+    $('shaft-action-edit-duration-output').textContent = `${ticksToSeconds(durationInput.value)}s`;
+    $('shaft-action-edit-hit-output').textContent = `${hitInput.value} / ${hitInput.max}`;
+    const profile = actionEditProfileEntry(action, Number(hitInput.value)) || {
+      hit_count: Number(hitInput.value), damage: 0, energy: 0, harmony: 0, stagger: 0,
+    };
+    $('shaft-action-edit-preview-multiplier').textContent = actionEditMultiplierText(action, profile);
+    $('shaft-action-edit-preview-energy').textContent = formatNumber(profile.energy || 0, 1);
+    $('shaft-action-edit-preview-harmony').textContent = formatNumber(profile.harmony || 0, 1);
+    $('shaft-action-edit-preview-stagger').textContent = formatNumber(profile.stagger || 0, 2);
+    $('shaft-action-edit-profile-hint').textContent = !action?.hit_profile
+      ? '该动作没有伤害段；打断只改变动作时长。'
+      : (action.hit_profile.source === 'aggregate-fallback'
+        ? '该动作缺少逐段原值，预览按当前聚合数据均分。'
+        : '预览按技能表逐段数据累计，数值不按段数等比例缩放。');
   }
 
   function closeActionEditor({ restoreFocus = true } = {}) {
@@ -6351,7 +6430,17 @@
       return;
     }
     const nextDetached = Boolean(action.can_detach) && $('shaft-action-edit-detached').checked;
-    if (isDetachedStep(step, action) !== nextDetached) {
+    const nextInterrupted = baseActionDurationTicks(action, Object.assign({}, step, { detached: nextDetached })) > 0
+      && $('shaft-action-edit-interrupted').checked;
+    const nextDurationTicks = Number($('shaft-action-edit-duration').value || 1);
+    const nextHitCount = Number($('shaft-action-edit-hits').value || 0);
+    const changed = isDetachedStep(step, action) !== nextDetached
+      || isInterruptedStep(step, action) !== nextInterrupted
+      || (nextInterrupted && (
+        Number(step.interrupt_duration_ticks) !== nextDurationTicks
+        || Number(step.interrupt_hit_count) !== nextHitCount
+      ));
+    if (changed) {
       pushUndoSnapshot();
       if (nextDetached) {
         step.detached = true;
@@ -6359,6 +6448,16 @@
       } else {
         delete step.detached;
       }
+      if (nextInterrupted) {
+        step.interrupted = true;
+        step.interrupt_duration_ticks = nextDurationTicks;
+        step.interrupt_hit_count = nextHitCount;
+      } else {
+        delete step.interrupted;
+        delete step.interrupt_duration_ticks;
+        delete step.interrupt_hit_count;
+      }
+      sanitizeStepPlacement(step);
       normalizeEditedSteps(new Set([step.id]));
       renderSteps();
       renderTimeline();
@@ -8439,6 +8538,10 @@
       }
     });
     $('shaft-action-edit-confirm').addEventListener('click', confirmActionEditor);
+    $('shaft-action-edit-detached').addEventListener('change', updateActionEditorInterruptPreview);
+    $('shaft-action-edit-interrupted').addEventListener('change', updateActionEditorInterruptPreview);
+    $('shaft-action-edit-duration').addEventListener('input', updateActionEditorInterruptPreview);
+    $('shaft-action-edit-hits').addEventListener('input', updateActionEditorInterruptPreview);
     $('shaft-background-multiplier-confirm').addEventListener('click', confirmBackgroundActionMultiplier);
     $('shaft-background-multiplier-input').addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {

@@ -178,7 +178,12 @@ def _dodge_action(character: dict[str, Any]) -> dict[str, Any]:
 @lru_cache(maxsize=1)
 def load_shaft_catalog() -> dict[str, Any]:
     characters = _load_json('characters.json')
+    hit_profiles = _load_json('action_hit_profiles.json')
     actions = [_normalize_action(action) for action in _load_json('actions.json')]
+    for action in actions:
+        profile = hit_profiles.get(str(action.get('id') or ''))
+        if profile:
+            action['hit_profile'] = profile
     actions.extend(_dodge_action(character) for character in characters)
     actions.extend(_noop_action(character) for character in characters)
     energy_capacity_by_character: dict[str, float] = {}

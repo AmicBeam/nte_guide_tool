@@ -3402,6 +3402,63 @@ body.shaft-dragging .shaft-action-bar {
     line-height: 1.4;
 }
 
+.shaft-action-edit-interrupt-settings {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 111, 111, 0.28);
+    border-radius: 12px;
+    background: rgba(117, 24, 34, 0.12);
+}
+
+.shaft-action-edit-interrupt-settings[hidden] {
+    display: none;
+}
+
+.shaft-action-edit-interrupt-settings > label {
+    display: grid;
+    gap: 6px;
+}
+
+.shaft-action-edit-interrupt-settings label span {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.shaft-action-edit-interrupt-settings output {
+    color: #ff9c9c;
+    font-weight: 900;
+}
+
+.shaft-action-edit-preview {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.shaft-action-edit-preview div {
+    display: grid;
+    gap: 3px;
+    padding: 8px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.05);
+}
+
+.shaft-action-edit-preview span,
+.shaft-action-edit-profile-hint {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.shaft-action-edit-preview strong {
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .shaft-action-edit-actions {
     display: flex;
     justify-content: flex-end;
@@ -4068,6 +4125,16 @@ body.shaft-dragging .shaft-action-bar {
 
 .shaft-action-bar.basic-background {
     border-style: dashed;
+}
+
+.shaft-action-bar.interrupted-action,
+.shaft-action-bar.q-instant-release.interrupted-action,
+.shaft-action-bar.basic-background.interrupted-action {
+    border: 2px solid #ff4f5e;
+    box-shadow:
+        0 0 0 1px rgba(255, 79, 94, 0.32),
+        0 12px 24px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.18);
 }
 
 .shaft-hit-marker {

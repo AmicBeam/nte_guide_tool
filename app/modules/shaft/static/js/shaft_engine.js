@@ -868,10 +868,58 @@
     return Boolean(step?.detached) && Boolean(action?.can_detach);
   }
 
-  function configuredActionDurationTicks(step, action) {
+  function baseConfiguredActionDurationTicks(step, action) {
     return isDetachedStep(step, action)
       ? Math.max(0, int(action?.detached_duration_ticks))
       : Math.max(0, int(action?.duration_ticks));
+  }
+
+  function isInterruptedStep(step, action) {
+    return Boolean(step?.interrupted) && baseConfiguredActionDurationTicks(step, action) > 0;
+  }
+
+  function configuredActionDurationTicks(step, action) {
+    const baseDurationTicks = baseConfiguredActionDurationTicks(step, action);
+    return isInterruptedStep(step, action)
+      ? Math.max(1, Math.min(baseDurationTicks, int(step?.interrupt_duration_ticks, baseDurationTicks)))
+      : baseDurationTicks;
+  }
+
+  function interruptedAction(step, action) {
+    if (!isInterruptedStep(step, action)) return action;
+    const originalHitCount = Math.max(0, int(action?.hit_count));
+    const selectedHitCount = Math.max(0, Math.min(originalHitCount, int(step?.interrupt_hit_count, originalHitCount)));
+    const cumulative = asList(action?.hit_profile?.cumulative);
+    const selected = cumulative.find((item) => int(item?.hit_count, -1) === selectedHitCount);
+    const full = cumulative.find((item) => int(item?.hit_count, -1) === originalHitCount);
+    const ratio = (key) => {
+      const fullValue = num(full?.[key]);
+      if (fullValue > 0) return Math.max(0, num(selected?.[key]) / fullValue);
+      return originalHitCount > 0 ? selectedHitCount / originalHitCount : 0;
+    };
+    const damageRatio = ratio('damage');
+    const staggerRatio = ratio('stagger');
+    const scaledMap = (values, scale) => Object.fromEntries(
+      Object.entries(values || {}).map(([key, value]) => [key, num(value) * scale]),
+    );
+    return Object.assign({}, action, {
+      multipliers: scaledMap(action.multipliers, damageRatio),
+      multipliers_add_by_awakening_node: Object.fromEntries(
+        Object.entries(action.multipliers_add_by_awakening_node || {})
+          .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
+      ),
+      stagger: num(action.stagger) * staggerRatio,
+      stagger_by_awakening_node: scaledMap(action.stagger_by_awakening_node, staggerRatio),
+      harmony: num(action.harmony) * ratio('harmony'),
+      energy_gain: num(action.energy_gain) * ratio('energy'),
+      hit_count: selectedHitCount,
+      periodic_damage: selectedHitCount > 0 ? action.periodic_damage : undefined,
+      nightmare_stacks: action.nightmare_stacks == null
+        ? action.nightmare_stacks
+        : Math.min(num(action.nightmare_stacks), selectedHitCount),
+      interrupted_hit_count: selectedHitCount,
+      original_hit_count: originalHitCount,
+    });
   }
 
   function actionCalculationDurationTicks(step, action) {
@@ -2097,7 +2145,7 @@
       const slot = int(step.slot);
       const snapshot = snapshots.get(slot);
       if (!snapshot) return;
-      const action = actionsById.get(String(step.action_id || ''));
+      const action = interruptedAction(step, actionsById.get(String(step.action_id || '')));
       const visualStartTick = scheduledVisualStartTick;
       const isBackground = isStepBackground(step, action);
       const calculationAtStartOnly = isInstantNativeBackgroundAction(step, action) || isInstantSwitchAction(action);
@@ -2650,12 +2698,9 @@
       }
       const previousCurrentHarmony = harmonyBySlot.get(previousSnapshot.slot) || 0;
       const previousHarmony = Math.min(HARMONY_CAPACITY, previousCurrentHarmony);
-      if (!primeLoop && previousHarmony < 100 && !supportBypassesHarmony(scheduled)) {
-        return {
-          effect: null,
-          warning: `${previousSnapshot.character?.name || '上一前台角色'}环合值不足：需要 100，当前 ${Math.max(0, previousHarmony).toFixed(1)}。`,
-        };
-      }
+      const underfundedWarning = !primeLoop && previousHarmony < 100 && !supportBypassesHarmony(scheduled)
+        ? `${previousSnapshot.character?.name || '上一前台角色'}环合值不足：需要 100，当前 ${Math.max(0, previousHarmony).toFixed(1)}，不足 ${(100 - Math.max(0, previousHarmony)).toFixed(1)}。`
+        : '';
       const contributor = reactionContributor(reaction, previousSnapshot, supportSnapshot, tick);
       if (!contributor) return { effect: null, warning: '' };
       const durationTicks = int(REACTION_DURATIONS[reaction]);
@@ -2776,7 +2821,7 @@
           });
         }
       }
-      return { effect, warning: '' };
+      return { effect, warning: underfundedWarning };
     }
 
     function seedLoopInitialReaction(reaction, snapshot, startTick = 0) {
@@ -4350,8 +4395,9 @@
       }
       const criticalHitsPerAction = expectedCriticalHits(action, calc);
       const criticalHits = criticalHitsPerAction * actionMultiplier;
-      const appliedEnemyDebuffs = applyEnemyDebuffs(enemyDebuffs, action, buffTick);
-      if (!action.periodic_damage) {
+      const hasResolvedHit = action.interrupted_hit_count !== 0;
+      const appliedEnemyDebuffs = hasResolvedHit ? applyEnemyDebuffs(enemyDebuffs, action, buffTick) : [];
+      if (!action.periodic_damage && hasResolvedHit) {
         for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
           triggeredBuffs.push(...triggerBuffsForEvent('action_hit', startTick, step, action, snapshot, isBackground, {
             visual_trigger_tick: visualStartTick,
@@ -4360,7 +4406,7 @@
             enemy_debuffs: activeEnemyDebuffs(enemyDebuffs, buffTick),
           }));
         }
-      } else if (actionTagsForSnapshot(action, snapshot).has('DOT')) {
+      } else if (hasResolvedHit && actionTagsForSnapshot(action, snapshot).has('DOT')) {
         triggeredBuffs.push(...triggerBuffsForEvent(
           'dot_layer_applied',
           startTick,
@@ -4501,6 +4547,9 @@
         action_id: action.id,
         action_name: action.name,
         is_detached: isDetachedStep(step, action),
+        is_interrupted: isInterruptedStep(step, action),
+        interrupted_hit_count: action.interrupted_hit_count,
+        original_hit_count: action.original_hit_count,
         action_type: action.action_type,
         damage_type: action.damage_type,
         damage_element: action.damage_element || snapshot.character.element || '',

@@ -1902,7 +1902,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertTrue(details['background']['is_background_damage'])
         self.assertEqual(details['background']['visual_end_tick'], 60)
 
-    def test_invalid_or_underfunded_support_is_reported_without_reaction(self) -> None:
+    def test_underfunded_support_reports_shortfall_but_still_triggers_reaction(self) -> None:
         underfunded = simulate_shaft_axis({
             'team': [
                 {'slot': 0, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''},
@@ -1913,8 +1913,12 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 {'id': 'support', 'slot': 1, 'action_id': 'action_482b5d9df7', 'start_tick': 20},
             ],
         })['result']
-        self.assertFalse(underfunded['reaction_effects'])
-        self.assertIn('环合值不足', underfunded['details'][-1]['warnings'][0])
+        support = underfunded['details'][-1]
+        self.assertEqual(support['triggered_reaction']['reaction'], '创生')
+        self.assertIn('环合值不足', support['warnings'][0])
+        self.assertIn('不足 100.0', support['warnings'][0])
+        previous_resources = next(item for item in support['resources_after_by_slot'] if item['slot'] == 0)
+        self.assertEqual(previous_resources['harmony'], 0)
 
         invalid_pair = simulate_shaft_axis({
             'team': [
@@ -1928,6 +1932,33 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         })['result']
         self.assertFalse(invalid_pair['reaction_effects'])
         self.assertIn('无法产生异能环合', invalid_pair['details'][-1]['warnings'][0])
+
+    def test_interrupted_action_uses_data_aware_cumulative_hit_values(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [
+                {'slot': 0, 'character_id': 'char_c78f7a08d5', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [{
+                'id': 'interrupted_a4',
+                'slot': 0,
+                'action_id': 'action_6d2645f71e',
+                'start_tick': 0,
+                'interrupted': True,
+                'interrupt_duration_ticks': 6,
+                'interrupt_hit_count': 3,
+            }],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+
+        detail = result['details'][0]
+        self.assertTrue(detail['is_interrupted'])
+        self.assertEqual(detail['duration_ticks'], 6)
+        self.assertEqual(detail['hit_count'], 3)
+        self.assertAlmostEqual(detail['base_energy_gain'], 0.69841521)
+        self.assertAlmostEqual(detail['harmony'], 1.16341888)
+        self.assertAlmostEqual(detail['stagger_amount'], 0.13803381)
+        self.assertEqual(detail['nightmare_stacks'], 3)
+        self.assertLess(detail['direct_damage'], 1512.038095675326 * 0.25)
 
     def test_all_element_pairs_resolve_to_documented_reactions(self) -> None:
         cases = [
@@ -2449,9 +2480,13 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         details = {detail['step_id']: detail for detail in result['details']}
         self.assertEqual(
             details['support']['warnings'],
-            ['主角环合值不足：需要 100，当前 0.0。'],
+            ['主角环合值不足：需要 100，当前 0.0，不足 100.0。'],
         )
-        self.assertIsNone(details['support']['triggered_reaction'])
+        self.assertEqual(details['support']['triggered_reaction']['reaction'], '创生')
+        support_previous_resources = next(
+            item for item in details['support']['resources_after_by_slot'] if item['slot'] == 0
+        )
+        self.assertEqual(support_previous_resources['harmony'], 0)
         self.assertEqual(result['resources_by_slot'][0]['harmony'], 100)
 
     def test_zhenhong_to_yi_support_warns_when_loop_initial_harmony_is_zero(self) -> None:
@@ -2477,9 +2512,11 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         support = next(detail for detail in result['details'] if detail['step_id'] == 'yi_support')
         self.assertEqual(
             support['warnings'],
-            ['真红环合值不足：需要 100，当前 0.0。'],
+            ['真红环合值不足：需要 100，当前 0.0，不足 100.0。'],
         )
-        self.assertIsNone(support['triggered_reaction'])
+        self.assertEqual(support['triggered_reaction']['reaction'], '延滞')
+        previous_resources = next(item for item in support['resources_after_by_slot'] if item['slot'] == 0)
+        self.assertEqual(previous_resources['harmony'], 0)
 
     def test_passive_damage_actions_do_not_scale_with_skill_level(self) -> None:
         payload = {

@@ -559,6 +559,19 @@ def _normalize_steps(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
         detached = bool(migration[1]) if migration else bool(step.get('detached'))
         if detached and bool(action.get('can_detach')):
             normalized_step['detached'] = True
+        base_duration_ticks = max(0, _int(
+            action.get('detached_duration_ticks') if normalized_step.get('detached') else action.get('duration_ticks'),
+        ))
+        if bool(step.get('interrupted')) and base_duration_ticks > 0:
+            normalized_step['interrupted'] = True
+            normalized_step['interrupt_duration_ticks'] = max(
+                1,
+                min(base_duration_ticks, _int(step.get('interrupt_duration_ticks'), base_duration_ticks)),
+            )
+            normalized_step['interrupt_hit_count'] = max(
+                0,
+                min(max(0, _int(action.get('hit_count'))), _int(step.get('interrupt_hit_count'), _int(action.get('hit_count')))),
+            )
         if placement == 'background' and not detached and not _is_background_action(action):
             normalized_step['placement'] = 'background'
         normalized.append(normalized_step)
@@ -752,8 +765,12 @@ def _is_zero_foreground_q_step(step: dict[str, Any], action: dict[str, Any]) -> 
 
 def _action_duration_ticks(step: dict[str, Any], action: dict[str, Any]) -> int:
     if bool(step.get('detached')) and bool(action.get('can_detach')):
-        return max(0, _int(action.get('detached_duration_ticks')))
-    return max(0, _int(action.get('duration_ticks')))
+        base_duration_ticks = max(0, _int(action.get('detached_duration_ticks')))
+    else:
+        base_duration_ticks = max(0, _int(action.get('duration_ticks')))
+    if bool(step.get('interrupted')) and base_duration_ticks > 0:
+        return max(1, min(base_duration_ticks, _int(step.get('interrupt_duration_ticks'), base_duration_ticks)))
+    return base_duration_ticks
 
 
 def calculate_axis_duration_ticks(steps: list[dict[str, Any]], actions_by_id: dict[str, dict[str, Any]]) -> int:
@@ -1207,6 +1224,10 @@ def normalize_axis_for_hash(axis_payload: dict[str, Any]) -> dict[str, Any]:
             item['placement'] = 'background'
         if bool(step.get('detached')):
             item['detached'] = True
+        if bool(step.get('interrupted')):
+            item['interrupted'] = True
+            item['interrupt_duration_ticks'] = max(1, _int(step.get('interrupt_duration_ticks'), 1))
+            item['interrupt_hit_count'] = max(0, _int(step.get('interrupt_hit_count')))
         steps.append(item)
     return {
         'team': sorted(team, key=lambda item: item['slot']),

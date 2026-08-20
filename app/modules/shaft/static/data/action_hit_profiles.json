@@ -1,0 +1,7820 @@
+{
+  "action_33c0ac631e": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 7.7,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_982c67944f": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 3.0,
+        "energy": 8.801,
+        "harmony": 100.0,
+        "stagger": 1.8
+      }
+    ]
+  },
+  "action_4e1fab68e7": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_b356b46da2": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 5.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.501
+      }
+    ]
+  },
+  "action_e98dde3662": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 5.3,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_c5f19361cb": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.182,
+        "energy": 0.76,
+        "harmony": 1.266,
+        "stagger": 0.151
+      }
+    ]
+  },
+  "action_a01a545590": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.308,
+        "energy": 1.285,
+        "harmony": 2.14,
+        "stagger": 0.256
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.513,
+        "energy": 2.138,
+        "harmony": 3.559,
+        "stagger": 0.426
+      }
+    ]
+  },
+  "action_c6ff824434": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.294,
+        "energy": 1.225,
+        "harmony": 2.039,
+        "stagger": 0.244
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.468,
+        "energy": 1.949,
+        "harmony": 3.245,
+        "stagger": 0.388
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.665,
+        "energy": 2.769,
+        "harmony": 4.61,
+        "stagger": 0.551
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.0859999999999999,
+        "energy": 4.522,
+        "harmony": 7.528,
+        "stagger": 0.9
+      }
+    ]
+  },
+  "action_52f46aeea8": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.815,
+        "energy": 3.399,
+        "harmony": 5.658,
+        "stagger": 0.676
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.3130000000000002,
+        "energy": 5.474,
+        "harmony": 9.112,
+        "stagger": 1.089
+      }
+    ]
+  },
+  "action_d034326379": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.129,
+        "energy": 4.706,
+        "harmony": 7.834,
+        "stagger": 0.936
+      }
+    ]
+  },
+  "action_12b7f98163": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.096,
+        "energy": 0.4,
+        "harmony": 0.671,
+        "stagger": 0.077
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.264,
+        "energy": 1.1,
+        "harmony": 1.845,
+        "stagger": 0.212
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.516,
+        "energy": 2.15,
+        "harmony": 3.606,
+        "stagger": 0.415
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.7440000000000001,
+        "energy": 3.1,
+        "harmony": 5.2,
+        "stagger": 0.599
+      }
+    ]
+  },
+  "action_7bbad1d899": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.77,
+        "energy": 1.56,
+        "harmony": 2.56,
+        "stagger": 0.8
+      }
+    ]
+  },
+  "action_40e3b63106": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.35,
+        "energy": 1.349,
+        "harmony": 2.242,
+        "stagger": 0.27
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.626,
+        "energy": 2.415,
+        "harmony": 4.013,
+        "stagger": 0.483
+      }
+    ]
+  },
+  "action_c2c019771f": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.408,
+        "energy": 1.573,
+        "harmony": 2.614,
+        "stagger": 0.315
+      }
+    ]
+  },
+  "action_f0625f9268": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.254,
+        "energy": 1.90465394,
+        "harmony": 3.16397513,
+        "stagger": 0.37975
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.332,
+        "energy": 2.02192315,
+        "harmony": 3.3589801,
+        "stagger": 0.403
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.41,
+        "energy": 2.13919236,
+        "harmony": 3.55398508,
+        "stagger": 0.42625
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.488,
+        "energy": 2.25646157,
+        "harmony": 3.74899005,
+        "stagger": 0.4495
+      },
+      {
+        "hit_count": 5,
+        "damage": 0.566,
+        "energy": 2.37373079,
+        "harmony": 3.94399503,
+        "stagger": 0.47275
+      },
+      {
+        "hit_count": 6,
+        "damage": 0.644,
+        "energy": 2.491,
+        "harmony": 4.139,
+        "stagger": 0.496
+      }
+    ]
+  },
+  "action_5cd7ad2380": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.536,
+        "energy": 2.069,
+        "harmony": 3.438,
+        "stagger": 0.414
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.2229999999999999,
+        "energy": 4.723,
+        "harmony": 7.848,
+        "stagger": 0.945
+      }
+    ]
+  },
+  "action_cf3b21dac1": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.465,
+        "energy": 1.796,
+        "harmony": 2.984,
+        "stagger": 0.359
+      }
+    ]
+  },
+  "action_f8e8e72eba": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 3.0,
+        "energy": 3.75,
+        "harmony": 18.75,
+        "stagger": 0.5
+      }
+    ]
+  },
+  "action_912513ea93": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 9.0,
+        "energy": 3.75,
+        "harmony": 56.25,
+        "stagger": 0.5
+      }
+    ]
+  },
+  "action_28759c6e0b": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 20.4,
+        "energy": 3.75,
+        "harmony": 106.25,
+        "stagger": 0.5
+      }
+    ]
+  },
+  "action_5e62f427cb": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 4.0,
+        "energy": 10.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_3987d8ff2d": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.17310102,
+        "energy": 0.75,
+        "harmony": 1.255,
+        "stagger": 0.144
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.4042359,
+        "energy": 1.75,
+        "harmony": 2.928,
+        "stagger": 0.336
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.2007007007007,
+        "energy": 5.2,
+        "harmony": 8.7,
+        "stagger": 0.999
+      }
+    ]
+  },
+  "action_7773821d79": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.2,
+        "energy": 0.0,
+        "harmony": 4.45,
+        "stagger": 0.55
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.4,
+        "energy": 0.0,
+        "harmony": 8.9,
+        "stagger": 1.1
+      }
+    ]
+  },
+  "action_c32b4b9417": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.185,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.07272842
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.385,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.54704421
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.935,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.59068126
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.485,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.63431832
+      },
+      {
+        "hit_count": 5,
+        "damage": 3.035,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.67795537
+      },
+      {
+        "hit_count": 6,
+        "damage": 3.585,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.72159242
+      },
+      {
+        "hit_count": 7,
+        "damage": 4.135,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.76522947
+      },
+      {
+        "hit_count": 8,
+        "damage": 5.575,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.33440842
+      },
+      {
+        "hit_count": 9,
+        "damage": 6.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.502
+      }
+    ]
+  },
+  "action_a17ac7c5b7": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.6,
+        "energy": 0.0,
+        "harmony": 3.333,
+        "stagger": 0.125
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.2,
+        "energy": 0.0,
+        "harmony": 6.666,
+        "stagger": 0.25
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.8,
+        "energy": 0.0,
+        "harmony": 9.999,
+        "stagger": 0.375
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.4,
+        "energy": 0.0,
+        "harmony": 13.332,
+        "stagger": 0.5
+      }
+    ]
+  },
+  "action_e3711f0cf5": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.2,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.00714286
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.4,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.01428571
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.6,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.02142857
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.8,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.02857143
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.03571429
+      },
+      {
+        "hit_count": 6,
+        "damage": 1.2,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.04285714
+      },
+      {
+        "hit_count": 7,
+        "damage": 1.4,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.05
+      },
+      {
+        "hit_count": 8,
+        "damage": 1.6,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.05714286
+      },
+      {
+        "hit_count": 9,
+        "damage": 1.8,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.06428571
+      },
+      {
+        "hit_count": 10,
+        "damage": 2.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.07142857
+      },
+      {
+        "hit_count": 11,
+        "damage": 6.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_682c19cea4": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 9.5,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_81e7c96a64": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.48,
+        "energy": 3.0,
+        "harmony": 5.0,
+        "stagger": 0.6
+      }
+    ]
+  },
+  "action_0c4da30973": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.39986671,
+        "energy": 0.47273356,
+        "harmony": 0.78546721,
+        "stagger": 0.09286695
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.79973342,
+        "energy": 0.94546712,
+        "harmony": 1.57093442,
+        "stagger": 0.18573391
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.19960013,
+        "energy": 1.41820068,
+        "harmony": 2.35640163,
+        "stagger": 0.27860086
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.59946684,
+        "energy": 1.89093423,
+        "harmony": 3.14186884,
+        "stagger": 0.37146781
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.99933356,
+        "energy": 2.36366779,
+        "harmony": 3.92733604,
+        "stagger": 0.46433476
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.39920027,
+        "energy": 2.83640135,
+        "harmony": 4.71280325,
+        "stagger": 0.55720172
+      },
+      {
+        "hit_count": 7,
+        "damage": 3.0,
+        "energy": 7.097,
+        "harmony": 11.794,
+        "stagger": 1.396
+      }
+    ]
+  },
+  "action_50de5ed4be": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.3,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.15
+      },
+      {
+        "hit_count": 2,
+        "damage": 4.6,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.3
+      },
+      {
+        "hit_count": 3,
+        "damage": 6.9,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.45
+      },
+      {
+        "hit_count": 4,
+        "damage": 9.2,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.6
+      },
+      {
+        "hit_count": 5,
+        "damage": 11.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.75
+      },
+      {
+        "hit_count": 6,
+        "damage": 13.8,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.9
+      },
+      {
+        "hit_count": 7,
+        "damage": 16.1,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.05
+      },
+      {
+        "hit_count": 8,
+        "damage": 18.4,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.2
+      },
+      {
+        "hit_count": 9,
+        "damage": 20.7,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.35
+      },
+      {
+        "hit_count": 10,
+        "damage": 23.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_346621dbef": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 8.6,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_605c800d26": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.345,
+        "energy": 1.727,
+        "harmony": 2.872,
+        "stagger": 0.35
+      }
+    ]
+  },
+  "action_944dd340e9": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.171,
+        "energy": 0.855,
+        "harmony": 1.421,
+        "stagger": 0.173
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.342,
+        "energy": 1.71,
+        "harmony": 2.842,
+        "stagger": 0.346
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.513,
+        "energy": 2.565,
+        "harmony": 4.263,
+        "stagger": 0.519
+      }
+    ]
+  },
+  "action_9586f42260": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.56,
+        "energy": 2.804,
+        "harmony": 4.662,
+        "stagger": 0.568
+      }
+    ]
+  },
+  "action_bc6c8ca82b": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.209,
+        "energy": 1.046,
+        "harmony": 1.739,
+        "stagger": 0.212
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.418,
+        "energy": 2.092,
+        "harmony": 3.478,
+        "stagger": 0.424
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.627,
+        "energy": 3.138,
+        "harmony": 5.217,
+        "stagger": 0.636
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.836,
+        "energy": 4.184,
+        "harmony": 6.956,
+        "stagger": 0.848
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.045,
+        "energy": 5.23,
+        "harmony": 8.695,
+        "stagger": 1.06
+      }
+    ]
+  },
+  "action_d99994f07b": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.397,
+        "energy": 1.987,
+        "harmony": 3.303,
+        "stagger": 0.402
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.794,
+        "energy": 3.974,
+        "harmony": 6.606,
+        "stagger": 0.804
+      }
+    ]
+  },
+  "action_b8a5eed5a9": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.775,
+        "energy": 3.9,
+        "harmony": 6.45,
+        "stagger": 0.8
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.55,
+        "energy": 7.8,
+        "harmony": 12.9,
+        "stagger": 1.6
+      }
+    ]
+  },
+  "action_74c569be81": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.96,
+        "energy": 4.8,
+        "harmony": 8.0,
+        "stagger": 0.95
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.92,
+        "energy": 9.6,
+        "harmony": 16.0,
+        "stagger": 1.9
+      }
+    ]
+  },
+  "action_d21b280f8e": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.3,
+        "energy": 1.34291696,
+        "harmony": 2.22458526,
+        "stagger": 0.94962
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.9,
+        "energy": 4.027,
+        "harmony": 6.672,
+        "stagger": 2.85
+      }
+    ]
+  },
+  "action_09ad16cdd4": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.19,
+        "energy": 0.966,
+        "harmony": 1.578,
+        "stagger": 0.193
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.59,
+        "energy": 3.0,
+        "harmony": 4.9,
+        "stagger": 0.6
+      }
+    ]
+  },
+  "action_6d0d0f28a5": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.532,
+        "energy": 2.65,
+        "harmony": 4.45,
+        "stagger": 0.55
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.064,
+        "energy": 5.3,
+        "harmony": 8.9,
+        "stagger": 1.1
+      }
+    ]
+  },
+  "action_9ce74dc556": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.283,
+        "energy": 3.11065158,
+        "harmony": 5.17089245,
+        "stagger": 0.60526316
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.701,
+        "energy": 4.64076772,
+        "harmony": 7.71359496,
+        "stagger": 0.90350877
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.119,
+        "energy": 6.17088386,
+        "harmony": 10.25629748,
+        "stagger": 1.20175439
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.537,
+        "energy": 7.701,
+        "harmony": 12.799,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_25559001a0": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.25,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_ed6a3e3c26": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 6187.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_7a3c3c0406": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 16500.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_c4a0eb3489": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 33000.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_5a1fdcd131": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 33000.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_fa751813d2": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.44582167,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.04572338
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.89164334,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.09144677
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.33746501,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.13717015
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.78328669,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.18289354
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.23010796,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.36578708
+      },
+      {
+        "hit_count": 6,
+        "damage": 5.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_f63e1b71a3": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 3.6,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_4a29818248": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.8,
+        "energy": 3.2,
+        "harmony": 5.329,
+        "stagger": 0.643
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.6,
+        "energy": 6.4,
+        "harmony": 10.658,
+        "stagger": 1.286
+      },
+      {
+        "hit_count": 3,
+        "damage": 2.4,
+        "energy": 9.6,
+        "harmony": 15.987,
+        "stagger": 1.929
+      },
+      {
+        "hit_count": 4,
+        "damage": 3.2,
+        "energy": 12.8,
+        "harmony": 21.316,
+        "stagger": 2.572
+      },
+      {
+        "hit_count": 5,
+        "damage": 4.0,
+        "energy": 16.0,
+        "harmony": 26.645,
+        "stagger": 3.215
+      },
+      {
+        "hit_count": 6,
+        "damage": 4.8,
+        "energy": 19.2,
+        "harmony": 31.974,
+        "stagger": 3.858
+      },
+      {
+        "hit_count": 7,
+        "damage": 5.6,
+        "energy": 22.4,
+        "harmony": 37.303,
+        "stagger": 4.501
+      }
+    ]
+  },
+  "action_16e181ce7c": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 4.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_482b5d9df7": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 7.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_85906994df": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_8510ca415f": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.6,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_7d6ec164ca": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.29600000000000004,
+        "energy": 1.138,
+        "harmony": 1.9,
+        "stagger": 0.226
+      }
+    ]
+  },
+  "action_8724db7bac": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.38799999999999996,
+        "energy": 1.492,
+        "harmony": 2.49,
+        "stagger": 0.297
+      }
+    ]
+  },
+  "action_8fd4a72c7d": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.122,
+        "energy": 0.47,
+        "harmony": 0.784,
+        "stagger": 0.093
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.332,
+        "energy": 1.276,
+        "harmony": 2.128,
+        "stagger": 0.253
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.6019999999999999,
+        "energy": 6.16,
+        "harmony": 10.279,
+        "stagger": 1.224
+      }
+    ]
+  },
+  "action_51235d8709": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.069,
+        "energy": 0.267,
+        "harmony": 0.446,
+        "stagger": 0.053
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.138,
+        "energy": 0.534,
+        "harmony": 0.892,
+        "stagger": 0.106
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.207,
+        "energy": 0.801,
+        "harmony": 1.338,
+        "stagger": 0.159
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.276,
+        "energy": 1.068,
+        "harmony": 1.784,
+        "stagger": 0.212
+      },
+      {
+        "hit_count": 5,
+        "damage": 0.345,
+        "energy": 1.335,
+        "harmony": 2.23,
+        "stagger": 0.265
+      },
+      {
+        "hit_count": 6,
+        "damage": 0.414,
+        "energy": 1.602,
+        "harmony": 2.676,
+        "stagger": 0.318
+      },
+      {
+        "hit_count": 7,
+        "damage": 0.483,
+        "energy": 1.869,
+        "harmony": 3.122,
+        "stagger": 0.371
+      }
+    ]
+  },
+  "action_74adab43b7": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.771,
+        "energy": 2.966,
+        "harmony": 4.948,
+        "stagger": 0.59
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.544,
+        "energy": 5.94,
+        "harmony": 9.91,
+        "stagger": 1.181
+      }
+    ]
+  },
+  "action_2a1e2207f2": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.25,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_e386c01333": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.225,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_b2844b7de0": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.425,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.825,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_9e0a496d30": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.317,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.634,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.951,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_e7f047fd5d": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.45,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.05,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_5e226a1a33": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.06,
+        "energy": 0.231,
+        "harmony": 0.384,
+        "stagger": 0.046
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.733,
+        "energy": 2.827,
+        "harmony": 4.704,
+        "stagger": 0.561
+      }
+    ]
+  },
+  "action_628c13f6b5": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.116,
+        "energy": 0.25101265,
+        "harmony": 0.418011,
+        "stagger": 0.04987381
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.232,
+        "energy": 0.5020253,
+        "harmony": 0.836022,
+        "stagger": 0.09974763
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.079,
+        "energy": 4.163,
+        "harmony": 6.928,
+        "stagger": 0.826
+      }
+    ]
+  },
+  "action_f07f2aaea0": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.585,
+        "energy": 6.111,
+        "harmony": 10.169,
+        "stagger": 1.213
+      }
+    ]
+  },
+  "action_98cf65a8b3": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.311,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_66821759a0": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.22,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.421,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.136,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_0640f9e8b4": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.466,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.932,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.3980000000000001,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_60e3cd8706": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.66,
+        "energy": 4.2,
+        "harmony": 6.9,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_2346434fc4": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.857,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_bc774c77fa": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.5,
+        "energy": 2.5,
+        "harmony": 4.2,
+        "stagger": 0.5
+      }
+    ]
+  },
+  "action_2d0c051441": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_5870d8ba67": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.0,
+        "energy": 1.26,
+        "harmony": 2.08,
+        "stagger": 0.26
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.0,
+        "energy": 2.52,
+        "harmony": 4.16,
+        "stagger": 0.52
+      },
+      {
+        "hit_count": 3,
+        "damage": 3.0,
+        "energy": 3.78,
+        "harmony": 6.24,
+        "stagger": 0.78
+      },
+      {
+        "hit_count": 4,
+        "damage": 4.0,
+        "energy": 5.04,
+        "harmony": 8.32,
+        "stagger": 1.04
+      },
+      {
+        "hit_count": 5,
+        "damage": 5.0,
+        "energy": 6.3,
+        "harmony": 10.4,
+        "stagger": 1.3
+      }
+    ]
+  },
+  "action_634a6398e3": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.24,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.48,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.72,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.96,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.2,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_0f1e29b8ca": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.931,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.52969502
+      },
+      {
+        "hit_count": 2,
+        "damage": 3.354,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.54486356
+      },
+      {
+        "hit_count": 3,
+        "damage": 3.777,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.5600321
+      },
+      {
+        "hit_count": 4,
+        "damage": 4.2,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.57520064
+      },
+      {
+        "hit_count": 5,
+        "damage": 4.623,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.59036918
+      },
+      {
+        "hit_count": 6,
+        "damage": 5.046,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.60553772
+      },
+      {
+        "hit_count": 7,
+        "damage": 10.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_8a8000d4a4": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 4.9,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_39d4605011": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.23681818,
+        "energy": 1.48172727,
+        "harmony": 2.46827273,
+        "stagger": 0.29545455
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.47363636,
+        "energy": 2.96345455,
+        "harmony": 4.93654545,
+        "stagger": 0.59090909
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.71045455,
+        "energy": 4.44518182,
+        "harmony": 7.40481818,
+        "stagger": 0.88636364
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.94727273,
+        "energy": 5.92690909,
+        "harmony": 9.87309091,
+        "stagger": 1.18181818
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.18409091,
+        "energy": 7.40863636,
+        "harmony": 12.34136364,
+        "stagger": 1.47727273
+      },
+      {
+        "hit_count": 6,
+        "damage": 1.42090909,
+        "energy": 8.89036364,
+        "harmony": 14.80963636,
+        "stagger": 1.77272727
+      },
+      {
+        "hit_count": 7,
+        "damage": 1.65772727,
+        "energy": 10.37209091,
+        "harmony": 17.27790909,
+        "stagger": 2.06818182
+      },
+      {
+        "hit_count": 8,
+        "damage": 1.89454545,
+        "energy": 11.85381818,
+        "harmony": 19.74618182,
+        "stagger": 2.36363636
+      },
+      {
+        "hit_count": 9,
+        "damage": 2.13136364,
+        "energy": 13.33554545,
+        "harmony": 22.21445455,
+        "stagger": 2.65909091
+      },
+      {
+        "hit_count": 10,
+        "damage": 2.36818182,
+        "energy": 14.81727273,
+        "harmony": 24.68272727,
+        "stagger": 2.95454545
+      },
+      {
+        "hit_count": 11,
+        "damage": 2.605,
+        "energy": 16.299,
+        "harmony": 27.151,
+        "stagger": 3.25
+      }
+    ]
+  },
+  "action_4f1cc1b94f": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.04,
+        "energy": 2.6,
+        "harmony": 4.3,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_08d9487c2c": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.13333333,
+        "energy": 0.83333333,
+        "harmony": 1.38333333,
+        "stagger": 0.16666667
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.26666667,
+        "energy": 1.66666667,
+        "harmony": 2.76666667,
+        "stagger": 0.33333333
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.4,
+        "energy": 2.5,
+        "harmony": 4.15,
+        "stagger": 0.5
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.53333333,
+        "energy": 3.33333333,
+        "harmony": 5.53333333,
+        "stagger": 0.66666667
+      },
+      {
+        "hit_count": 5,
+        "damage": 0.66666667,
+        "energy": 4.16666667,
+        "harmony": 6.91666667,
+        "stagger": 0.83333333
+      },
+      {
+        "hit_count": 6,
+        "damage": 0.8,
+        "energy": 5.0,
+        "harmony": 8.3,
+        "stagger": 1.0
+      }
+    ]
+  },
+  "action_d8430d0b9e": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.15,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_4edb91866d": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_7809042596": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 4.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_jiuyuan_f_secret_recoil": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_4a803029af": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.15,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_fbc91559f8": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.5,
+        "energy": 1.18333333,
+        "harmony": 1.967,
+        "stagger": 0.23333333
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.0,
+        "energy": 2.36666667,
+        "harmony": 3.934,
+        "stagger": 0.46666667
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.5,
+        "energy": 3.55,
+        "harmony": 5.901,
+        "stagger": 0.7
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.0,
+        "energy": 4.73333333,
+        "harmony": 7.868,
+        "stagger": 0.93333333
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.5,
+        "energy": 5.91666667,
+        "harmony": 9.835,
+        "stagger": 1.16666667
+      },
+      {
+        "hit_count": 6,
+        "damage": 3.0,
+        "energy": 7.1,
+        "harmony": 11.802,
+        "stagger": 1.4
+      }
+    ]
+  },
+  "action_5501c87ce7": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.61810302,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.31334232
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.40223371,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.44541779
+      },
+      {
+        "hit_count": 3,
+        "damage": 2.18636439,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.57749326
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.97049508,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.70956873
+      },
+      {
+        "hit_count": 5,
+        "damage": 3.21453576,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.72718521
+      },
+      {
+        "hit_count": 6,
+        "damage": 3.45857643,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.74480169
+      },
+      {
+        "hit_count": 7,
+        "damage": 3.7026171,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.76241817
+      },
+      {
+        "hit_count": 8,
+        "damage": 3.94665778,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.78003466
+      },
+      {
+        "hit_count": 9,
+        "damage": 4.19069845,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.79765114
+      },
+      {
+        "hit_count": 10,
+        "damage": 4.43473912,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.81526762
+      },
+      {
+        "hit_count": 11,
+        "damage": 4.6787798,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.8328841
+      },
+      {
+        "hit_count": 12,
+        "damage": 6.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_094bfbdf0a": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 8.4,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_7fad97e891": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.104,
+        "energy": 0.578,
+        "harmony": 0.966,
+        "stagger": 0.116
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.335,
+        "energy": 1.861,
+        "harmony": 3.108,
+        "stagger": 0.373
+      }
+    ]
+  },
+  "action_ccc48be26d": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.17,
+        "energy": 0.943,
+        "harmony": 1.575,
+        "stagger": 0.189
+      }
+    ]
+  },
+  "action_005f707db0": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.262,
+        "energy": 1.455,
+        "harmony": 2.429,
+        "stagger": 0.291
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.603,
+        "energy": 3.348,
+        "harmony": 5.59,
+        "stagger": 0.67
+      }
+    ]
+  },
+  "action_f34f4c25b8": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.184,
+        "energy": 1.023,
+        "harmony": 1.708,
+        "stagger": 0.205
+      }
+    ]
+  },
+  "action_3705623d51": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.255,
+        "energy": 1.417,
+        "harmony": 2.366,
+        "stagger": 0.283
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.778,
+        "energy": 4.324,
+        "harmony": 7.219,
+        "stagger": 0.864
+      }
+    ]
+  },
+  "action_cc06c5dd84": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.74,
+        "energy": 4.4,
+        "harmony": 7.3,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_6b96f24d8c": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.9,
+        "energy": 2.45,
+        "harmony": 5.1,
+        "stagger": 0.5
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.8,
+        "energy": 4.9,
+        "harmony": 10.2,
+        "stagger": 1.0
+      }
+    ]
+  },
+  "action_9670752877": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.14285714,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.21428571
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.28571429,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.42857143
+      },
+      {
+        "hit_count": 3,
+        "damage": 3.42857143,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.64285714
+      },
+      {
+        "hit_count": 4,
+        "damage": 4.57142857,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.85714286
+      },
+      {
+        "hit_count": 5,
+        "damage": 5.71428571,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.07142857
+      },
+      {
+        "hit_count": 6,
+        "damage": 6.85714286,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.28571429
+      },
+      {
+        "hit_count": 7,
+        "damage": 8.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_222f577087": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 5.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_0e38ba383c": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.475,
+        "energy": 2.257,
+        "harmony": 3.771,
+        "stagger": 0.449
+      }
+    ]
+  },
+  "action_e2bbed29c7": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.423,
+        "energy": 2.009,
+        "harmony": 3.356,
+        "stagger": 0.4
+      }
+    ]
+  },
+  "action_51ca6f3be5": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.19,
+        "energy": 5.656,
+        "harmony": 9.448,
+        "stagger": 1.125
+      }
+    ]
+  },
+  "action_4ef736ae6c": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.251,
+        "energy": 1.193,
+        "harmony": 1.993,
+        "stagger": 0.237
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.502,
+        "energy": 2.386,
+        "harmony": 3.986,
+        "stagger": 0.474
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.753,
+        "energy": 3.579,
+        "harmony": 5.979,
+        "stagger": 0.711
+      }
+    ]
+  },
+  "action_208b8ec7c2": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.863,
+        "energy": 4.099,
+        "harmony": 6.846,
+        "stagger": 0.815
+      }
+    ]
+  },
+  "action_83feeefb58": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.635,
+        "energy": 7.094,
+        "harmony": 11.851,
+        "stagger": 1.411
+      }
+    ]
+  },
+  "action_62e42c9e75": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.725,
+        "energy": 3.0,
+        "harmony": 5.0,
+        "stagger": 0.6
+      }
+    ]
+  },
+  "action_b38e023917": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.6,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_0ae4bd5b1a": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.44,
+        "energy": 3.6,
+        "harmony": 6.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_c18c2d7577": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.2,
+        "energy": 3.4,
+        "harmony": 5.6,
+        "stagger": 0.7
+      }
+    ]
+  },
+  "action_c234af7127": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.05,
+        "energy": 0.837,
+        "harmony": 1.4,
+        "stagger": 0.175
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.1,
+        "energy": 1.674,
+        "harmony": 2.8,
+        "stagger": 0.35
+      },
+      {
+        "hit_count": 3,
+        "damage": 3.15,
+        "energy": 2.511,
+        "harmony": 4.2,
+        "stagger": 0.525
+      },
+      {
+        "hit_count": 4,
+        "damage": 4.2,
+        "energy": 3.348,
+        "harmony": 5.6,
+        "stagger": 0.7
+      }
+    ]
+  },
+  "action_d737daad2b": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 3,
+        "damage": 3.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_9166cd44f2": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.8,
+        "energy": 3.4,
+        "harmony": 5.6,
+        "stagger": 0.7
+      }
+    ]
+  },
+  "action_a9fb500d88": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_9307778f01": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 4.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_10c15dd4d1": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_dee1ceb970": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 10.9,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_4c5142a40f": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.3717,
+        "energy": 1.8588,
+        "harmony": 3.0946,
+        "stagger": 0.3698
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.7434,
+        "energy": 3.7176,
+        "harmony": 6.1892,
+        "stagger": 0.7396
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.1151,
+        "energy": 5.5764,
+        "harmony": 9.2838,
+        "stagger": 1.1094
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.4868,
+        "energy": 7.4352,
+        "harmony": 12.3784,
+        "stagger": 1.4792
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.8585,
+        "energy": 9.294,
+        "harmony": 15.473,
+        "stagger": 1.849
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.2302,
+        "energy": 11.1528,
+        "harmony": 18.5676,
+        "stagger": 2.2188
+      },
+      {
+        "hit_count": 7,
+        "damage": 2.6019,
+        "energy": 13.0116,
+        "harmony": 21.6622,
+        "stagger": 2.5886
+      },
+      {
+        "hit_count": 8,
+        "damage": 2.9736,
+        "energy": 14.8704,
+        "harmony": 24.7568,
+        "stagger": 2.9584
+      },
+      {
+        "hit_count": 9,
+        "damage": 3.3453,
+        "energy": 16.7292,
+        "harmony": 27.8514,
+        "stagger": 3.3282
+      },
+      {
+        "hit_count": 10,
+        "damage": 3.717,
+        "energy": 18.588,
+        "harmony": 30.946,
+        "stagger": 3.698
+      }
+    ]
+  },
+  "action_fc0889c388": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.678,
+        "energy": 3.902,
+        "harmony": 6.546,
+        "stagger": 0.797
+      },
+      {
+        "hit_count": 2,
+        "damage": 4.0,
+        "energy": 9.3,
+        "harmony": 15.6,
+        "stagger": 1.9
+      }
+    ]
+  },
+  "action_43a333a290": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.903,
+        "energy": 3.161,
+        "harmony": 5.283,
+        "stagger": 0.632
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.091,
+        "energy": 7.32,
+        "harmony": 12.234,
+        "stagger": 1.464
+      },
+      {
+        "hit_count": 3,
+        "damage": 4.0,
+        "energy": 14.001,
+        "harmony": 23.4,
+        "stagger": 2.8
+      }
+    ]
+  },
+  "action_0db78d1f01": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.2,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.14279588
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.4,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.28559177
+      },
+      {
+        "hit_count": 3,
+        "damage": 3.6,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.42838765
+      },
+      {
+        "hit_count": 4,
+        "damage": 4.8,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.57118353
+      },
+      {
+        "hit_count": 5,
+        "damage": 6.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.71397942
+      },
+      {
+        "hit_count": 6,
+        "damage": 9.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_b646db1098": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 3.00149380278875,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_55c8843d1c": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 6.1,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_25fea9f7cb": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.7,
+        "energy": 4.0,
+        "harmony": 6.7,
+        "stagger": 0.8
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.4,
+        "energy": 8.0,
+        "harmony": 13.4,
+        "stagger": 1.6
+      },
+      {
+        "hit_count": 3,
+        "damage": 2.1,
+        "energy": 12.0,
+        "harmony": 20.1,
+        "stagger": 2.4
+      }
+    ]
+  },
+  "action_881b816d9f": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_95733904eb": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 5.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_2635f721a8": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 7.8,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_00edea34a8": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.642,
+        "energy": 2.471,
+        "harmony": 4.119,
+        "stagger": 0.494
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.8740000000000001,
+        "energy": 3.364,
+        "harmony": 5.608,
+        "stagger": 0.673
+      }
+    ]
+  },
+  "action_9029121faa": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.199,
+        "energy": 0.766,
+        "harmony": 1.277,
+        "stagger": 0.153
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.39799999999999996,
+        "energy": 1.532,
+        "harmony": 2.554,
+        "stagger": 0.306
+      }
+    ]
+  },
+  "action_9dd4a360d0": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.246,
+        "energy": 1.65375,
+        "harmony": 2.75546844,
+        "stagger": 0.33043709
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.393,
+        "energy": 1.9845,
+        "harmony": 3.30597896,
+        "stagger": 0.39629139
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.54,
+        "energy": 2.31525,
+        "harmony": 3.85648948,
+        "stagger": 0.4621457
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.687,
+        "energy": 2.646,
+        "harmony": 4.407,
+        "stagger": 0.528
+      }
+    ]
+  },
+  "action_82b936e67b": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.709,
+        "energy": 2.727,
+        "harmony": 4.545,
+        "stagger": 0.545
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.982,
+        "energy": 3.777,
+        "harmony": 6.294,
+        "stagger": 0.755
+      }
+    ]
+  },
+  "action_a7443f657f": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.233,
+        "energy": 0.39352854,
+        "harmony": 0.65568801,
+        "stagger": 0.07860343
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.466,
+        "energy": 0.78705707,
+        "harmony": 1.31137601,
+        "stagger": 0.15720686
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.699,
+        "energy": 1.18058561,
+        "harmony": 1.96706402,
+        "stagger": 0.23581028
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.932,
+        "energy": 7.434,
+        "harmony": 12.39,
+        "stagger": 1.486
+      }
+    ]
+  },
+  "action_39502832da": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.371,
+        "energy": 1.428,
+        "harmony": 2.376,
+        "stagger": 0.283
+      }
+    ]
+  },
+  "action_de60da4553": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.16,
+        "energy": 0.614,
+        "harmony": 1.022,
+        "stagger": 0.122
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.32,
+        "energy": 1.228,
+        "harmony": 2.044,
+        "stagger": 0.244
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.48,
+        "energy": 1.842,
+        "harmony": 3.066,
+        "stagger": 0.366
+      }
+    ]
+  },
+  "action_ae46a26f6e": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.139,
+        "energy": 4.386,
+        "harmony": 7.296,
+        "stagger": 0.869
+      }
+    ]
+  },
+  "action_6d2645f71e": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.158,
+        "energy": 0.23280507,
+        "harmony": 0.38780629,
+        "stagger": 0.04601127
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.316,
+        "energy": 0.46561014,
+        "harmony": 0.77561259,
+        "stagger": 0.09202254
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.474,
+        "energy": 0.69841521,
+        "harmony": 1.16341888,
+        "stagger": 0.13803381
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.411,
+        "energy": 9.275,
+        "harmony": 15.434,
+        "stagger": 1.837
+      }
+    ]
+  },
+  "action_24c60040ec": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.239,
+        "energy": 4.767,
+        "harmony": 7.93,
+        "stagger": 0.945
+      }
+    ]
+  },
+  "action_907f25722f": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.79,
+        "energy": 4.0,
+        "harmony": 6.6,
+        "stagger": 0.8
+      }
+    ]
+  },
+  "action_5e20c982d6": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.883,
+        "energy": 4.4,
+        "harmony": 7.4,
+        "stagger": 0.9
+      }
+    ]
+  },
+  "action_4d428c72e8": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.0,
+        "energy": 4.39611168,
+        "harmony": 7.24710025,
+        "stagger": 2.03463319
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.228,
+        "energy": 4.59648935,
+        "harmony": 7.5774802,
+        "stagger": 2.12730656
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.456,
+        "energy": 4.79686701,
+        "harmony": 7.90786015,
+        "stagger": 2.21997992
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.684,
+        "energy": 4.99724467,
+        "harmony": 8.2382401,
+        "stagger": 2.31265328
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.912,
+        "energy": 5.19762234,
+        "harmony": 8.56862005,
+        "stagger": 2.40532664
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.14,
+        "energy": 5.398,
+        "harmony": 8.899,
+        "stagger": 2.498
+      }
+    ]
+  },
+  "action_2745f804a5": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.6,
+        "energy": 1.28,
+        "harmony": 2.14,
+        "stagger": 0.26
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.2,
+        "energy": 2.56,
+        "harmony": 4.28,
+        "stagger": 0.52
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.8,
+        "energy": 3.84,
+        "harmony": 6.42,
+        "stagger": 0.78
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.4,
+        "energy": 5.12,
+        "harmony": 8.56,
+        "stagger": 1.04
+      },
+      {
+        "hit_count": 5,
+        "damage": 3.0,
+        "energy": 6.4,
+        "harmony": 10.7,
+        "stagger": 1.3
+      }
+    ]
+  },
+  "action_b9b3237c74": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 4.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_7af75245df": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 3.64,
+        "energy": 3.0,
+        "harmony": 4.0,
+        "stagger": 0.6
+      },
+      {
+        "hit_count": 2,
+        "damage": 7.28,
+        "energy": 6.0,
+        "harmony": 8.0,
+        "stagger": 1.2
+      }
+    ]
+  },
+  "action_0b958faf88": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.25,
+        "energy": 0.1875,
+        "harmony": 0.15625,
+        "stagger": 0.0203125
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.5,
+        "energy": 0.375,
+        "harmony": 0.3125,
+        "stagger": 0.040625
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.75,
+        "energy": 0.5625,
+        "harmony": 0.46875,
+        "stagger": 0.0609375
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.0,
+        "energy": 0.75,
+        "harmony": 0.625,
+        "stagger": 0.08125
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.25,
+        "energy": 0.9375,
+        "harmony": 0.78125,
+        "stagger": 0.1015625
+      },
+      {
+        "hit_count": 6,
+        "damage": 1.5,
+        "energy": 1.125,
+        "harmony": 0.9375,
+        "stagger": 0.121875
+      },
+      {
+        "hit_count": 7,
+        "damage": 1.75,
+        "energy": 1.3125,
+        "harmony": 1.09375,
+        "stagger": 0.1421875
+      },
+      {
+        "hit_count": 8,
+        "damage": 2.0,
+        "energy": 1.5,
+        "harmony": 1.25,
+        "stagger": 0.1625
+      },
+      {
+        "hit_count": 9,
+        "damage": 2.25,
+        "energy": 1.6875,
+        "harmony": 1.40625,
+        "stagger": 0.1828125
+      },
+      {
+        "hit_count": 10,
+        "damage": 2.5,
+        "energy": 1.875,
+        "harmony": 1.5625,
+        "stagger": 0.203125
+      },
+      {
+        "hit_count": 11,
+        "damage": 2.75,
+        "energy": 2.0625,
+        "harmony": 1.71875,
+        "stagger": 0.2234375
+      },
+      {
+        "hit_count": 12,
+        "damage": 3.0,
+        "energy": 2.25,
+        "harmony": 1.875,
+        "stagger": 0.24375
+      },
+      {
+        "hit_count": 13,
+        "damage": 3.25,
+        "energy": 2.4375,
+        "harmony": 2.03125,
+        "stagger": 0.2640625
+      },
+      {
+        "hit_count": 14,
+        "damage": 3.5,
+        "energy": 2.625,
+        "harmony": 2.1875,
+        "stagger": 0.284375
+      },
+      {
+        "hit_count": 15,
+        "damage": 3.75,
+        "energy": 2.8125,
+        "harmony": 2.34375,
+        "stagger": 0.3046875
+      },
+      {
+        "hit_count": 16,
+        "damage": 4.0,
+        "energy": 3.0,
+        "harmony": 2.5,
+        "stagger": 0.325
+      },
+      {
+        "hit_count": 17,
+        "damage": 4.25,
+        "energy": 3.1875,
+        "harmony": 2.65625,
+        "stagger": 0.3453125
+      },
+      {
+        "hit_count": 18,
+        "damage": 4.5,
+        "energy": 3.375,
+        "harmony": 2.8125,
+        "stagger": 0.365625
+      },
+      {
+        "hit_count": 19,
+        "damage": 4.75,
+        "energy": 3.5625,
+        "harmony": 2.96875,
+        "stagger": 0.3859375
+      },
+      {
+        "hit_count": 20,
+        "damage": 5.0,
+        "energy": 3.75,
+        "harmony": 3.125,
+        "stagger": 0.40625
+      },
+      {
+        "hit_count": 21,
+        "damage": 5.25,
+        "energy": 3.9375,
+        "harmony": 3.28125,
+        "stagger": 0.4265625
+      },
+      {
+        "hit_count": 22,
+        "damage": 5.5,
+        "energy": 4.125,
+        "harmony": 3.4375,
+        "stagger": 0.446875
+      },
+      {
+        "hit_count": 23,
+        "damage": 5.75,
+        "energy": 4.3125,
+        "harmony": 3.59375,
+        "stagger": 0.4671875
+      },
+      {
+        "hit_count": 24,
+        "damage": 6.0,
+        "energy": 4.5,
+        "harmony": 3.75,
+        "stagger": 0.4875
+      },
+      {
+        "hit_count": 25,
+        "damage": 6.25,
+        "energy": 4.6875,
+        "harmony": 3.90625,
+        "stagger": 0.5078125
+      },
+      {
+        "hit_count": 26,
+        "damage": 6.5,
+        "energy": 4.875,
+        "harmony": 4.0625,
+        "stagger": 0.528125
+      },
+      {
+        "hit_count": 27,
+        "damage": 6.75,
+        "energy": 5.0625,
+        "harmony": 4.21875,
+        "stagger": 0.5484375
+      },
+      {
+        "hit_count": 28,
+        "damage": 7.0,
+        "energy": 5.25,
+        "harmony": 4.375,
+        "stagger": 0.56875
+      },
+      {
+        "hit_count": 29,
+        "damage": 7.25,
+        "energy": 5.4375,
+        "harmony": 4.53125,
+        "stagger": 0.5890625
+      },
+      {
+        "hit_count": 30,
+        "damage": 7.5,
+        "energy": 5.625,
+        "harmony": 4.6875,
+        "stagger": 0.609375
+      },
+      {
+        "hit_count": 31,
+        "damage": 7.75,
+        "energy": 5.8125,
+        "harmony": 4.84375,
+        "stagger": 0.6296875
+      },
+      {
+        "hit_count": 32,
+        "damage": 8.0,
+        "energy": 6.0,
+        "harmony": 5.0,
+        "stagger": 0.65
+      }
+    ]
+  },
+  "action_1104de864b": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.94190581,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.08191578
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.88381162,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.16383157
+      },
+      {
+        "hit_count": 3,
+        "damage": 2.82571743,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.24574735
+      },
+      {
+        "hit_count": 4,
+        "damage": 3.76762324,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.32766313
+      },
+      {
+        "hit_count": 5,
+        "damage": 10.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_5d4664d859": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 5.6,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_5e2016e57b": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.681,
+        "energy": 0.98945249,
+        "harmony": 1.64485991,
+        "stagger": 0.20366748
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.234,
+        "energy": 1.19024811,
+        "harmony": 1.97913238,
+        "stagger": 0.24517115
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.787,
+        "energy": 1.39104374,
+        "harmony": 2.31340484,
+        "stagger": 0.28667482
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.34,
+        "energy": 1.59183937,
+        "harmony": 2.64767731,
+        "stagger": 0.32817848
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.893,
+        "energy": 1.79263499,
+        "harmony": 2.98194977,
+        "stagger": 0.36968215
+      },
+      {
+        "hit_count": 6,
+        "damage": 3.998,
+        "energy": 3.399,
+        "harmony": 5.651,
+        "stagger": 0.7
+      }
+    ]
+  },
+  "action_016c708ddb": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 3.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.0
+      }
+    ]
+  },
+  "action_1e0fbc62b9": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.40886371,
+        "energy": 1.00259098,
+        "harmony": 1.66000956,
+        "stagger": 0.19759036
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.81772742,
+        "energy": 2.00518196,
+        "harmony": 3.32001911,
+        "stagger": 0.39518072
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.15461513,
+        "energy": 2.33575949,
+        "harmony": 3.86724319,
+        "stagger": 0.46024096
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.49150283,
+        "energy": 2.66633703,
+        "harmony": 4.41446727,
+        "stagger": 0.5253012
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.82839054,
+        "energy": 2.99691456,
+        "harmony": 4.96169135,
+        "stagger": 0.59036145
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.16527824,
+        "energy": 3.32749209,
+        "harmony": 5.50891543,
+        "stagger": 0.65542169
+      },
+      {
+        "hit_count": 7,
+        "damage": 2.50216594,
+        "energy": 3.65806962,
+        "harmony": 6.05613951,
+        "stagger": 0.72048193
+      },
+      {
+        "hit_count": 8,
+        "damage": 3.0,
+        "energy": 6.1,
+        "harmony": 10.1,
+        "stagger": 1.2
+      }
+    ]
+  },
+  "action_5206179376": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.40886371,
+        "energy": 1.00259098,
+        "harmony": 1.66000956,
+        "stagger": 0.44457831
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.81772742,
+        "energy": 2.00518196,
+        "harmony": 3.32001911,
+        "stagger": 0.88915663
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.15461513,
+        "energy": 2.33575949,
+        "harmony": 3.86724319,
+        "stagger": 1.03554217
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.49150283,
+        "energy": 2.66633703,
+        "harmony": 4.41446727,
+        "stagger": 1.18192771
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.82839054,
+        "energy": 2.99691456,
+        "harmony": 4.96169135,
+        "stagger": 1.32831325
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.16527824,
+        "energy": 3.32749209,
+        "harmony": 5.50891543,
+        "stagger": 1.4746988
+      },
+      {
+        "hit_count": 7,
+        "damage": 2.50216594,
+        "energy": 3.65806962,
+        "harmony": 6.05613951,
+        "stagger": 1.62108434
+      },
+      {
+        "hit_count": 8,
+        "damage": 3.0,
+        "energy": 6.1,
+        "harmony": 10.1,
+        "stagger": 2.7
+      }
+    ]
+  },
+  "action_351bba97e4": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.34811604,
+        "energy": 0.28106209,
+        "harmony": 0.46529874,
+        "stagger": 0.19305556
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.69623208,
+        "energy": 0.56212417,
+        "harmony": 0.93059748,
+        "stagger": 0.38611111
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.04434812,
+        "energy": 0.84318626,
+        "harmony": 1.39589623,
+        "stagger": 0.57916667
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.39246415,
+        "energy": 1.12424834,
+        "harmony": 1.86119497,
+        "stagger": 0.77222222
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.74058019,
+        "energy": 1.40531043,
+        "harmony": 2.32649371,
+        "stagger": 0.96527778
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.08869623,
+        "energy": 1.68637251,
+        "harmony": 2.79179245,
+        "stagger": 1.15833333
+      },
+      {
+        "hit_count": 7,
+        "damage": 3.0,
+        "energy": 6.1,
+        "harmony": 10.1,
+        "stagger": 4.2
+      }
+    ]
+  },
+  "action_f5e921e6d8": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.49312328,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.1194276
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.98624656,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.23885519
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.47936984,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.35828279
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.73243311,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.4195476
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.98549637,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.4808124
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.23855964,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.54207721
+      },
+      {
+        "hit_count": 7,
+        "damage": 2.74968742,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.59525462
+      },
+      {
+        "hit_count": 8,
+        "damage": 3.2608152,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.64843203
+      },
+      {
+        "hit_count": 9,
+        "damage": 3.77194299,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.70160944
+      },
+      {
+        "hit_count": 10,
+        "damage": 4.28307077,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.75478684
+      },
+      {
+        "hit_count": 11,
+        "damage": 4.79419855,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.80796425
+      },
+      {
+        "hit_count": 12,
+        "damage": 5.30532633,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.86114166
+      },
+      {
+        "hit_count": 13,
+        "damage": 5.81645411,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.91431907
+      },
+      {
+        "hit_count": 14,
+        "damage": 8.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.501
+      }
+    ]
+  },
+  "action_b0e5fd6662": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 7.6,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_72051426d5": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.016,
+        "energy": 1.111,
+        "harmony": 1.83524173,
+        "stagger": 0.217
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.041,
+        "energy": 2.853,
+        "harmony": 4.71362087,
+        "stagger": 0.558
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.066,
+        "energy": 4.595,
+        "harmony": 7.592,
+        "stagger": 0.899
+      }
+    ]
+  },
+  "action_bdc49de5c5": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.5002489671314589,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_122b6bf962": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.025,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.41666667
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.05,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.83333333
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.075,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.25
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.1,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.66666667
+      },
+      {
+        "hit_count": 5,
+        "damage": 0.125,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.08333333
+      },
+      {
+        "hit_count": 6,
+        "damage": 0.15,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_441d3aa300": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.027,
+        "energy": 1.45369231,
+        "harmony": 2.41546154,
+        "stagger": 0.29223077
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.054,
+        "energy": 2.90738462,
+        "harmony": 4.83092308,
+        "stagger": 0.58446154
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.081,
+        "energy": 4.36107692,
+        "harmony": 7.24638462,
+        "stagger": 0.87669231
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.108,
+        "energy": 5.81476923,
+        "harmony": 9.66184615,
+        "stagger": 1.16892308
+      },
+      {
+        "hit_count": 5,
+        "damage": 0.135,
+        "energy": 7.26846154,
+        "harmony": 12.07730769,
+        "stagger": 1.46115385
+      },
+      {
+        "hit_count": 6,
+        "damage": 0.162,
+        "energy": 8.72215385,
+        "harmony": 14.49276923,
+        "stagger": 1.75338462
+      },
+      {
+        "hit_count": 7,
+        "damage": 0.189,
+        "energy": 10.17584615,
+        "harmony": 16.90823077,
+        "stagger": 2.04561538
+      },
+      {
+        "hit_count": 8,
+        "damage": 0.216,
+        "energy": 11.62953846,
+        "harmony": 19.32369231,
+        "stagger": 2.33784615
+      },
+      {
+        "hit_count": 9,
+        "damage": 0.243,
+        "energy": 13.08323077,
+        "harmony": 21.73915385,
+        "stagger": 2.63007692
+      },
+      {
+        "hit_count": 10,
+        "damage": 0.27,
+        "energy": 14.53692308,
+        "harmony": 24.15461538,
+        "stagger": 2.92230769
+      },
+      {
+        "hit_count": 11,
+        "damage": 0.297,
+        "energy": 15.99061538,
+        "harmony": 26.57007692,
+        "stagger": 3.21453846
+      },
+      {
+        "hit_count": 12,
+        "damage": 0.324,
+        "energy": 17.44430769,
+        "harmony": 28.98553846,
+        "stagger": 3.50676923
+      },
+      {
+        "hit_count": 13,
+        "damage": 0.35100000000000003,
+        "energy": 18.898,
+        "harmony": 31.401,
+        "stagger": 3.799
+      }
+    ]
+  },
+  "action_5ae28c8f59": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 5.9,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_519f3d978a": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.16,
+        "energy": 5.28,
+        "harmony": 8.76,
+        "stagger": 1.08
+      }
+    ]
+  },
+  "action_db30565b20": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.0,
+        "energy": 1.8,
+        "harmony": 3.0,
+        "stagger": 0.35
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.0,
+        "energy": 3.6,
+        "harmony": 6.0,
+        "stagger": 0.7
+      }
+    ]
+  },
+  "action_d44546c512": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.2,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_8cadfa76a4": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.2,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.4,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.6,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.8,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_3529c3d915": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 3.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_4c11b71469": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_18cf1ad6b6": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.4386,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_ec98ddd32d": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.95,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_592e2c7563": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.68,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.36,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 3,
+        "damage": 2.04,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.72,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_ccdf9fbe9e": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_36a6d1d153": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.0,
+        "energy": 7.3,
+        "harmony": 12.2,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_952b4b561f": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.83333333,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.41666667
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.66666667,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.83333333
+      },
+      {
+        "hit_count": 3,
+        "damage": 2.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.25
+      },
+      {
+        "hit_count": 4,
+        "damage": 3.33333333,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.66666667
+      },
+      {
+        "hit_count": 5,
+        "damage": 4.16666667,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.08333333
+      },
+      {
+        "hit_count": 6,
+        "damage": 5.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_17efab5dbd": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 6.4,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_40d0576f80": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.182,
+        "energy": 0.913,
+        "harmony": 1.519,
+        "stagger": 0.181
+      }
+    ]
+  },
+  "action_48204bed53": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.151,
+        "energy": 0.754,
+        "harmony": 1.256,
+        "stagger": 0.149
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.541,
+        "energy": 2.705,
+        "harmony": 4.503,
+        "stagger": 0.535
+      }
+    ]
+  },
+  "action_09bd76720d": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.144,
+        "energy": 0.719,
+        "harmony": 1.197,
+        "stagger": 0.142
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.28800000000000003,
+        "energy": 1.438,
+        "harmony": 2.394,
+        "stagger": 0.284
+      }
+    ]
+  },
+  "action_90b1619681": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.268,
+        "energy": 1.45112195,
+        "harmony": 2.41579078,
+        "stagger": 0.2869926
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.37,
+        "energy": 1.72726829,
+        "harmony": 2.87491014,
+        "stagger": 0.34168365
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.472,
+        "energy": 2.00341463,
+        "harmony": 3.3340295,
+        "stagger": 0.39637469
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.3319999999999999,
+        "energy": 6.66,
+        "harmony": 11.086,
+        "stagger": 1.318
+      }
+    ]
+  },
+  "action_0055a29f98": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.249,
+        "energy": 0.77114084,
+        "harmony": 1.28355944,
+        "stagger": 0.15220656
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.498,
+        "energy": 1.54228168,
+        "harmony": 2.56711888,
+        "stagger": 0.30441313
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.296,
+        "energy": 6.486,
+        "harmony": 10.797,
+        "stagger": 1.282
+      }
+    ]
+  },
+  "action_75401b587d": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.06,
+        "energy": 2.7,
+        "harmony": 4.4,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_2fe17b70d8": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.45,
+        "energy": 4.3,
+        "harmony": 7.2,
+        "stagger": 0.9
+      }
+    ]
+  },
+  "action_0dc6b76620": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.575,
+        "energy": 1.75,
+        "harmony": 2.925,
+        "stagger": 0.35
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.15,
+        "energy": 3.5,
+        "harmony": 5.85,
+        "stagger": 0.7
+      }
+    ]
+  },
+  "action_b4b1388f15": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 4.0,
+        "energy": 1.175,
+        "harmony": 1.95,
+        "stagger": 0.225
+      },
+      {
+        "hit_count": 2,
+        "damage": 8.0,
+        "energy": 2.35,
+        "harmony": 3.9,
+        "stagger": 0.45
+      }
+    ]
+  },
+  "action_2d3f8642dd": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.75,
+        "energy": 1.825,
+        "harmony": 3.0,
+        "stagger": 0.375
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.5,
+        "energy": 3.65,
+        "harmony": 6.0,
+        "stagger": 0.75
+      },
+      {
+        "hit_count": 3,
+        "damage": 2.25,
+        "energy": 5.475,
+        "harmony": 9.0,
+        "stagger": 1.125
+      },
+      {
+        "hit_count": 4,
+        "damage": 3.0,
+        "energy": 7.3,
+        "harmony": 12.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_dbd682321e": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.27284089,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.1143176
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.54568179,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.2286352
+      },
+      {
+        "hit_count": 3,
+        "damage": 3.81852268,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.34295281
+      },
+      {
+        "hit_count": 4,
+        "damage": 5.09136358,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.45727041
+      },
+      {
+        "hit_count": 5,
+        "damage": 8.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_be26cd6a7c": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 8.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_82c5415d69": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 32.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_f229587fd2": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.639,
+        "energy": 2.62,
+        "harmony": 0.0,
+        "stagger": 0.799
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.0,
+        "energy": 8.2,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_61c61302f2": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.0,
+        "energy": 2.12475,
+        "harmony": 3.54975,
+        "stagger": 0.42525
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.0,
+        "energy": 4.2495,
+        "harmony": 7.0995,
+        "stagger": 0.8505
+      },
+      {
+        "hit_count": 3,
+        "damage": 3.0,
+        "energy": 8.499,
+        "harmony": 14.199,
+        "stagger": 1.701
+      }
+    ]
+  },
+  "action_e3ab099393": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.439,
+        "energy": 1.0735,
+        "harmony": 1.7899,
+        "stagger": 0.2136
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.878,
+        "energy": 2.147,
+        "harmony": 3.5798,
+        "stagger": 0.4272
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.317,
+        "energy": 3.2205,
+        "harmony": 5.3697,
+        "stagger": 0.6408
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.756,
+        "energy": 4.294,
+        "harmony": 7.1596,
+        "stagger": 0.8544
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.195,
+        "energy": 5.3675,
+        "harmony": 8.9495,
+        "stagger": 1.068
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.634,
+        "energy": 6.441,
+        "harmony": 10.7394,
+        "stagger": 1.2816
+      },
+      {
+        "hit_count": 7,
+        "damage": 3.073,
+        "energy": 7.5145,
+        "harmony": 12.5293,
+        "stagger": 1.4952
+      },
+      {
+        "hit_count": 8,
+        "damage": 3.512,
+        "energy": 8.588,
+        "harmony": 14.3192,
+        "stagger": 1.7088
+      },
+      {
+        "hit_count": 9,
+        "damage": 3.951,
+        "energy": 9.6615,
+        "harmony": 16.1091,
+        "stagger": 1.9224
+      },
+      {
+        "hit_count": 10,
+        "damage": 4.39,
+        "energy": 10.735,
+        "harmony": 17.899,
+        "stagger": 2.136
+      }
+    ]
+  },
+  "action_6b6bace5c8": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.55,
+        "energy": 1.359,
+        "harmony": 2.267,
+        "stagger": 0.27
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.1,
+        "energy": 2.718,
+        "harmony": 4.534,
+        "stagger": 0.54
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.65,
+        "energy": 4.077,
+        "harmony": 6.801,
+        "stagger": 0.81
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.2,
+        "energy": 5.436,
+        "harmony": 9.068,
+        "stagger": 1.08
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.75,
+        "energy": 6.795,
+        "harmony": 11.335,
+        "stagger": 1.35
+      },
+      {
+        "hit_count": 6,
+        "damage": 3.3,
+        "energy": 8.154,
+        "harmony": 13.602,
+        "stagger": 1.62
+      },
+      {
+        "hit_count": 7,
+        "damage": 3.85,
+        "energy": 9.513,
+        "harmony": 15.869,
+        "stagger": 1.89
+      },
+      {
+        "hit_count": 8,
+        "damage": 4.4,
+        "energy": 10.872,
+        "harmony": 18.136,
+        "stagger": 2.16
+      },
+      {
+        "hit_count": 9,
+        "damage": 4.95,
+        "energy": 12.231,
+        "harmony": 20.403,
+        "stagger": 2.43
+      },
+      {
+        "hit_count": 10,
+        "damage": 5.5,
+        "energy": 13.59,
+        "harmony": 22.67,
+        "stagger": 2.7
+      },
+      {
+        "hit_count": 11,
+        "damage": 6.05,
+        "energy": 14.949,
+        "harmony": 24.937,
+        "stagger": 2.97
+      },
+      {
+        "hit_count": 12,
+        "damage": 6.6,
+        "energy": 16.308,
+        "harmony": 27.204,
+        "stagger": 3.24
+      },
+      {
+        "hit_count": 13,
+        "damage": 7.15,
+        "energy": 17.667,
+        "harmony": 29.471,
+        "stagger": 3.51
+      },
+      {
+        "hit_count": 14,
+        "damage": 7.7,
+        "energy": 19.026,
+        "harmony": 31.738,
+        "stagger": 3.78
+      },
+      {
+        "hit_count": 15,
+        "damage": 8.25,
+        "energy": 20.385,
+        "harmony": 34.005,
+        "stagger": 4.05
+      },
+      {
+        "hit_count": 16,
+        "damage": 8.8,
+        "energy": 21.744,
+        "harmony": 36.272,
+        "stagger": 4.32
+      },
+      {
+        "hit_count": 17,
+        "damage": 9.35,
+        "energy": 23.103,
+        "harmony": 38.539,
+        "stagger": 4.59
+      },
+      {
+        "hit_count": 18,
+        "damage": 9.9,
+        "energy": 24.462,
+        "harmony": 40.806,
+        "stagger": 4.86
+      },
+      {
+        "hit_count": 19,
+        "damage": 10.45,
+        "energy": 25.821,
+        "harmony": 43.073,
+        "stagger": 5.13
+      },
+      {
+        "hit_count": 20,
+        "damage": 11.0,
+        "energy": 27.18,
+        "harmony": 45.34,
+        "stagger": 5.4
+      }
+    ]
+  },
+  "action_cc530277d3": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.5
+      },
+      {
+        "hit_count": 2,
+        "damage": 4.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.0
+      },
+      {
+        "hit_count": 3,
+        "damage": 6.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_0dfd7dfab8": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.28571429,
+        "energy": 1.271,
+        "harmony": 2.12857143,
+        "stagger": 0.257
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.57142857,
+        "energy": 2.542,
+        "harmony": 4.25714286,
+        "stagger": 0.514
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.85714286,
+        "energy": 3.813,
+        "harmony": 6.38571429,
+        "stagger": 0.771
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.14285714,
+        "energy": 5.084,
+        "harmony": 8.51428571,
+        "stagger": 1.028
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.42857143,
+        "energy": 6.355,
+        "harmony": 10.64285714,
+        "stagger": 1.285
+      },
+      {
+        "hit_count": 6,
+        "damage": 1.71428571,
+        "energy": 7.626,
+        "harmony": 12.77142857,
+        "stagger": 1.542
+      },
+      {
+        "hit_count": 7,
+        "damage": 2.0,
+        "energy": 8.897,
+        "harmony": 14.9,
+        "stagger": 1.799
+      }
+    ]
+  },
+  "action_85ee761950": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.16666667,
+        "energy": 2.267,
+        "harmony": 3.76666667,
+        "stagger": 0.46633333
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.33333333,
+        "energy": 4.534,
+        "harmony": 7.53333333,
+        "stagger": 0.93266667
+      },
+      {
+        "hit_count": 3,
+        "damage": 3.5,
+        "energy": 6.801,
+        "harmony": 11.3,
+        "stagger": 1.399
+      }
+    ]
+  },
+  "action_c9326f9e35": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 4.35,
+        "harmony": 7.25,
+        "stagger": 0.85
+      },
+      {
+        "hit_count": 2,
+        "damage": 4.0,
+        "energy": 8.7,
+        "harmony": 14.5,
+        "stagger": 1.7
+      }
+    ]
+  },
+  "action_31c54a4e71": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 6.7,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_2e072f2b0b": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.33333333,
+        "energy": 0.9,
+        "harmony": 1.5,
+        "stagger": 0.18333333
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.66666667,
+        "energy": 1.8,
+        "harmony": 3.0,
+        "stagger": 0.36666667
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.0,
+        "energy": 2.7,
+        "harmony": 4.5,
+        "stagger": 0.55
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.33333333,
+        "energy": 3.6,
+        "harmony": 6.0,
+        "stagger": 0.73333333
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.66666667,
+        "energy": 4.5,
+        "harmony": 7.5,
+        "stagger": 0.91666667
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.0,
+        "energy": 5.4,
+        "harmony": 9.0,
+        "stagger": 1.1
+      }
+    ]
+  },
+  "action_ff4f07b530": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.1,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_8380c01e01": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.55,
+        "energy": 1.814,
+        "harmony": 3.029,
+        "stagger": 0.364
+      }
+    ]
+  },
+  "action_6ece34aff8": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.25,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.375
+      },
+      {
+        "hit_count": 2,
+        "damage": 2.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.75
+      },
+      {
+        "hit_count": 3,
+        "damage": 3.75,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.125
+      },
+      {
+        "hit_count": 4,
+        "damage": 5.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_01209221c1": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 3.9,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_5ce7a08ca0": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.76,
+        "energy": 2.431,
+        "harmony": 4.048,
+        "stagger": 0.484
+      }
+    ]
+  },
+  "action_d3328cde94": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.159,
+        "energy": 0.332,
+        "harmony": 0.553,
+        "stagger": 0.066
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.318,
+        "energy": 0.664,
+        "harmony": 1.106,
+        "stagger": 0.132
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.477,
+        "energy": 0.996,
+        "harmony": 1.659,
+        "stagger": 0.198
+      }
+    ]
+  },
+  "action_ace58eb0ce": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.103,
+        "energy": 0.08025,
+        "harmony": 0.133625,
+        "stagger": 0.016
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.206,
+        "energy": 0.1605,
+        "harmony": 0.26725,
+        "stagger": 0.032
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.309,
+        "energy": 0.24075,
+        "harmony": 0.400875,
+        "stagger": 0.048
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.412,
+        "energy": 0.321,
+        "harmony": 0.5345,
+        "stagger": 0.064
+      },
+      {
+        "hit_count": 5,
+        "damage": 0.515,
+        "energy": 0.40125,
+        "harmony": 0.668125,
+        "stagger": 0.08
+      },
+      {
+        "hit_count": 6,
+        "damage": 0.618,
+        "energy": 0.4815,
+        "harmony": 0.80175,
+        "stagger": 0.096
+      },
+      {
+        "hit_count": 7,
+        "damage": 0.721,
+        "energy": 0.56175,
+        "harmony": 0.935375,
+        "stagger": 0.112
+      },
+      {
+        "hit_count": 8,
+        "damage": 0.824,
+        "energy": 0.642,
+        "harmony": 1.069,
+        "stagger": 0.128
+      }
+    ]
+  },
+  "action_iloy_z1": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.368,
+        "energy": 0.533,
+        "harmony": 0.9,
+        "stagger": 0.1
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.736,
+        "energy": 1.066,
+        "harmony": 1.8,
+        "stagger": 0.2
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.104,
+        "energy": 1.599,
+        "harmony": 2.7,
+        "stagger": 0.3
+      }
+    ]
+  },
+  "action_iloy_lucid_dream": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.237,
+        "energy": 0.766,
+        "harmony": 0.2,
+        "stagger": 0.186
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.474,
+        "energy": 1.532,
+        "harmony": 0.4,
+        "stagger": 0.372
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.711,
+        "energy": 2.298,
+        "harmony": 0.6,
+        "stagger": 0.558
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.948,
+        "energy": 3.064,
+        "harmony": 0.8,
+        "stagger": 0.744
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.185,
+        "energy": 3.83,
+        "harmony": 1.0,
+        "stagger": 0.93
+      },
+      {
+        "hit_count": 6,
+        "damage": 1.422,
+        "energy": 4.596,
+        "harmony": 1.2,
+        "stagger": 1.116
+      },
+      {
+        "hit_count": 7,
+        "damage": 1.659,
+        "energy": 5.362,
+        "harmony": 1.4,
+        "stagger": 1.302
+      },
+      {
+        "hit_count": 8,
+        "damage": 1.896,
+        "energy": 6.128,
+        "harmony": 1.6,
+        "stagger": 1.488
+      },
+      {
+        "hit_count": 9,
+        "damage": 2.133,
+        "energy": 6.894,
+        "harmony": 1.8,
+        "stagger": 1.674
+      },
+      {
+        "hit_count": 10,
+        "damage": 2.37,
+        "energy": 7.66,
+        "harmony": 2.0,
+        "stagger": 1.86
+      },
+      {
+        "hit_count": 11,
+        "damage": 2.607,
+        "energy": 8.426,
+        "harmony": 2.2,
+        "stagger": 2.046
+      },
+      {
+        "hit_count": 12,
+        "damage": 2.844,
+        "energy": 9.192,
+        "harmony": 2.4,
+        "stagger": 2.232
+      },
+      {
+        "hit_count": 13,
+        "damage": 3.081,
+        "energy": 9.958,
+        "harmony": 2.6,
+        "stagger": 2.418
+      },
+      {
+        "hit_count": 14,
+        "damage": 3.318,
+        "energy": 10.724,
+        "harmony": 2.8,
+        "stagger": 2.604
+      },
+      {
+        "hit_count": 15,
+        "damage": 3.555,
+        "energy": 11.49,
+        "harmony": 3.0,
+        "stagger": 2.79
+      },
+      {
+        "hit_count": 16,
+        "damage": 3.792,
+        "energy": 12.256,
+        "harmony": 3.2,
+        "stagger": 2.976
+      },
+      {
+        "hit_count": 17,
+        "damage": 4.029,
+        "energy": 13.022,
+        "harmony": 3.4,
+        "stagger": 3.162
+      },
+      {
+        "hit_count": 18,
+        "damage": 4.266,
+        "energy": 13.788,
+        "harmony": 3.6,
+        "stagger": 3.348
+      },
+      {
+        "hit_count": 19,
+        "damage": 4.503,
+        "energy": 14.554,
+        "harmony": 3.8,
+        "stagger": 3.534
+      },
+      {
+        "hit_count": 20,
+        "damage": 4.74,
+        "energy": 15.32,
+        "harmony": 4.0,
+        "stagger": 3.72
+      },
+      {
+        "hit_count": 21,
+        "damage": 4.977,
+        "energy": 16.086,
+        "harmony": 4.2,
+        "stagger": 3.906
+      },
+      {
+        "hit_count": 22,
+        "damage": 5.214,
+        "energy": 16.852,
+        "harmony": 4.4,
+        "stagger": 4.092
+      },
+      {
+        "hit_count": 23,
+        "damage": 5.451,
+        "energy": 17.618,
+        "harmony": 4.6,
+        "stagger": 4.278
+      },
+      {
+        "hit_count": 24,
+        "damage": 5.688,
+        "energy": 18.384,
+        "harmony": 4.8,
+        "stagger": 4.464
+      },
+      {
+        "hit_count": 25,
+        "damage": 5.925,
+        "energy": 19.15,
+        "harmony": 5.0,
+        "stagger": 4.65
+      },
+      {
+        "hit_count": 26,
+        "damage": 6.162,
+        "energy": 19.916,
+        "harmony": 5.2,
+        "stagger": 4.836
+      },
+      {
+        "hit_count": 27,
+        "damage": 6.399,
+        "energy": 20.682,
+        "harmony": 5.4,
+        "stagger": 5.022
+      },
+      {
+        "hit_count": 28,
+        "damage": 6.636,
+        "energy": 21.448,
+        "harmony": 5.6,
+        "stagger": 5.208
+      },
+      {
+        "hit_count": 29,
+        "damage": 6.873,
+        "energy": 22.214,
+        "harmony": 5.8,
+        "stagger": 5.394
+      },
+      {
+        "hit_count": 30,
+        "damage": 7.11,
+        "energy": 22.98,
+        "harmony": 6.0,
+        "stagger": 5.58
+      },
+      {
+        "hit_count": 31,
+        "damage": 7.347,
+        "energy": 23.746,
+        "harmony": 6.2,
+        "stagger": 5.766
+      },
+      {
+        "hit_count": 32,
+        "damage": 7.584,
+        "energy": 24.512,
+        "harmony": 6.4,
+        "stagger": 5.952
+      },
+      {
+        "hit_count": 33,
+        "damage": 7.821,
+        "energy": 25.278,
+        "harmony": 6.6,
+        "stagger": 6.138
+      },
+      {
+        "hit_count": 34,
+        "damage": 8.058,
+        "energy": 26.044,
+        "harmony": 6.8,
+        "stagger": 6.324
+      },
+      {
+        "hit_count": 35,
+        "damage": 8.295,
+        "energy": 26.81,
+        "harmony": 7.0,
+        "stagger": 6.51
+      }
+    ]
+  },
+  "action_afea1e6fb2": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.5,
+        "energy": 1.29210054,
+        "harmony": 2.08934169,
+        "stagger": 0.43799127
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.679,
+        "energy": 1.66988612,
+        "harmony": 2.69465383,
+        "stagger": 0.5187068
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.858,
+        "energy": 2.04767171,
+        "harmony": 3.29996597,
+        "stagger": 0.59942233
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.037,
+        "energy": 2.4254573,
+        "harmony": 3.9052781,
+        "stagger": 0.68013787
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.216,
+        "energy": 2.80324288,
+        "harmony": 4.51059024,
+        "stagger": 0.7608534
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.395,
+        "energy": 3.18102847,
+        "harmony": 5.11590237,
+        "stagger": 0.84156893
+      },
+      {
+        "hit_count": 7,
+        "damage": 2.574,
+        "energy": 3.55881405,
+        "harmony": 5.72121451,
+        "stagger": 0.92228447
+      },
+      {
+        "hit_count": 8,
+        "damage": 2.753,
+        "energy": 3.93659964,
+        "harmony": 6.32652665,
+        "stagger": 1.003
+      },
+      {
+        "hit_count": 9,
+        "damage": 4.003,
+        "energy": 4.798,
+        "harmony": 7.998,
+        "stagger": 1.003
+      }
+    ]
+  },
+  "action_iloy_long_e": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.5,
+        "energy": 1.29210054,
+        "harmony": 2.08934169,
+        "stagger": 0.43799127
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.679,
+        "energy": 1.66988612,
+        "harmony": 2.69465383,
+        "stagger": 0.5187068
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.858,
+        "energy": 2.04767171,
+        "harmony": 3.29996597,
+        "stagger": 0.59942233
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.037,
+        "energy": 2.4254573,
+        "harmony": 3.9052781,
+        "stagger": 0.68013787
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.216,
+        "energy": 2.80324288,
+        "harmony": 4.51059024,
+        "stagger": 0.7608534
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.395,
+        "energy": 3.18102847,
+        "harmony": 5.11590237,
+        "stagger": 0.84156893
+      },
+      {
+        "hit_count": 7,
+        "damage": 2.574,
+        "energy": 3.55881405,
+        "harmony": 5.72121451,
+        "stagger": 0.92228447
+      },
+      {
+        "hit_count": 8,
+        "damage": 2.753,
+        "energy": 3.93659964,
+        "harmony": 6.32652665,
+        "stagger": 1.003
+      },
+      {
+        "hit_count": 9,
+        "damage": 4.003,
+        "energy": 4.798,
+        "harmony": 7.998,
+        "stagger": 1.003
+      }
+    ]
+  },
+  "action_307ad00e8e": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 3.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
+      }
+    ]
+  },
+  "action_c371c893ce": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.25,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.125
+      }
+    ]
+  },
+  "action_0b76fe2aaa": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_iloy_regressed_morpheus_1": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.555,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_iloy_regressed_morpheus_2": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.416,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.832,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.248,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.664,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.08,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_iloy_regressed_ikelos_1": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.892,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_iloy_regressed_ikelos_2": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.784,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_iloy_regressed_phantasus_1": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.942,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_iloy_regressed_phantasus_2": {
+    "source": "tencent-sheet",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.884,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_canhong_support": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 5.2,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_canhong_a1": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.216,
+        "energy": 0.722,
+        "harmony": 1.2025,
+        "stagger": 0.2175
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.432,
+        "energy": 1.444,
+        "harmony": 2.405,
+        "stagger": 0.435
+      }
+    ]
+  },
+  "action_canhong_a2": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.352,
+        "energy": 1.176,
+        "harmony": 1.958,
+        "stagger": 0.355
+      }
+    ]
+  },
+  "action_canhong_a3": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.37133333,
+        "energy": 1.23966667,
+        "harmony": 2.06433333,
+        "stagger": 0.37366667
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.74266667,
+        "energy": 2.47933333,
+        "harmony": 4.12866667,
+        "stagger": 0.74733333
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.114,
+        "energy": 3.719,
+        "harmony": 6.193,
+        "stagger": 1.121
+      }
+    ]
+  },
+  "action_canhong_a4": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.3564,
+        "energy": 1.1896,
+        "harmony": 1.981,
+        "stagger": 0.3586
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.7128,
+        "energy": 2.3792,
+        "harmony": 3.962,
+        "stagger": 0.7172
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.0692,
+        "energy": 3.5688,
+        "harmony": 5.943,
+        "stagger": 1.0758
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.4256,
+        "energy": 4.7584,
+        "harmony": 7.924,
+        "stagger": 1.4344
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.782,
+        "energy": 5.948,
+        "harmony": 9.905,
+        "stagger": 1.793
+      }
+    ]
+  },
+  "action_canhong_a5": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.41116667,
+        "energy": 1.37316667,
+        "harmony": 2.2865,
+        "stagger": 0.41383333
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.82233333,
+        "energy": 2.74633333,
+        "harmony": 4.573,
+        "stagger": 0.82766667
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.2335,
+        "energy": 4.1195,
+        "harmony": 6.8595,
+        "stagger": 1.2415
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.64466667,
+        "energy": 5.49266667,
+        "harmony": 9.146,
+        "stagger": 1.65533333
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.05583333,
+        "energy": 6.86583333,
+        "harmony": 11.4325,
+        "stagger": 2.06916667
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.467,
+        "energy": 8.239,
+        "harmony": 13.719,
+        "stagger": 2.483
+      }
+    ]
+  },
+  "action_canhong_z1": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.5445,
+        "energy": 1.82525,
+        "harmony": 3.025,
+        "stagger": 0.5625
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.089,
+        "energy": 3.6505,
+        "harmony": 6.05,
+        "stagger": 1.125
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.6335,
+        "energy": 5.47575,
+        "harmony": 9.075,
+        "stagger": 1.6875
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.178,
+        "energy": 7.301,
+        "harmony": 12.1,
+        "stagger": 2.25
+      }
+    ]
+  },
+  "action_canhong_illusion_a1": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.183,
+        "energy": 0.61,
+        "harmony": 1.018,
+        "stagger": 0.121
+      }
+    ]
+  },
+  "action_canhong_illusion_a2": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.333,
+        "energy": 1.107,
+        "harmony": 1.848,
+        "stagger": 0.22033333
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.666,
+        "energy": 2.214,
+        "harmony": 3.696,
+        "stagger": 0.44066667
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.999,
+        "energy": 3.321,
+        "harmony": 5.544,
+        "stagger": 0.661
+      }
+    ]
+  },
+  "action_canhong_illusion_a3": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.247,
+        "energy": 0.822,
+        "harmony": 1.3715,
+        "stagger": 0.1635
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.494,
+        "energy": 1.644,
+        "harmony": 2.743,
+        "stagger": 0.327
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.741,
+        "energy": 2.466,
+        "harmony": 4.1145,
+        "stagger": 0.4905
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.988,
+        "energy": 3.288,
+        "harmony": 5.486,
+        "stagger": 0.654
+      }
+    ]
+  },
+  "action_canhong_illusion_a4": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.94,
+        "energy": 3.12666667,
+        "harmony": 5.21766667,
+        "stagger": 0.62166667
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.88,
+        "energy": 6.25333333,
+        "harmony": 10.43533333,
+        "stagger": 1.24333333
+      },
+      {
+        "hit_count": 3,
+        "damage": 2.82,
+        "energy": 9.38,
+        "harmony": 15.653,
+        "stagger": 1.865
+      }
+    ]
+  },
+  "action_canhong_illusion_z1": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.4276,
+        "energy": 1.4198,
+        "harmony": 2.3802,
+        "stagger": 0.2798
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.8552,
+        "energy": 2.8396,
+        "harmony": 4.7604,
+        "stagger": 0.5596
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.2828,
+        "energy": 4.2594,
+        "harmony": 7.1406,
+        "stagger": 0.8394
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.7104,
+        "energy": 5.6792,
+        "harmony": 9.5208,
+        "stagger": 1.1192
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.138,
+        "energy": 7.099,
+        "harmony": 11.901,
+        "stagger": 1.399
+      }
+    ]
+  },
+  "action_canhong_plunge": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.574,
+        "energy": 2.1,
+        "harmony": 3.4,
+        "stagger": 0.4
+      }
+    ]
+  },
+  "action_canhong_dodge_counter": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.75,
+        "energy": 2.5,
+        "harmony": 4.2,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_canhong_e1": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.3,
+        "energy": 0.76,
+        "harmony": 1.26,
+        "stagger": 0.16
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.6,
+        "energy": 1.52,
+        "harmony": 2.52,
+        "stagger": 0.32
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.9,
+        "energy": 2.28,
+        "harmony": 3.78,
+        "stagger": 0.48
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.2,
+        "energy": 3.04,
+        "harmony": 5.04,
+        "stagger": 0.64
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.5,
+        "energy": 3.8,
+        "harmony": 6.3,
+        "stagger": 0.8
+      }
+    ]
+  },
+  "action_canhong_E1": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.3504,
+        "energy": 0.76,
+        "harmony": 1.26,
+        "stagger": 1.2
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.7008,
+        "energy": 1.52,
+        "harmony": 2.52,
+        "stagger": 2.4
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.0512,
+        "energy": 2.28,
+        "harmony": 3.78,
+        "stagger": 3.6
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.4016,
+        "energy": 3.04,
+        "harmony": 5.04,
+        "stagger": 4.8
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.752,
+        "energy": 3.8,
+        "harmony": 6.3,
+        "stagger": 6.0
+      }
+    ]
+  },
+  "action_canhong_E2": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.64257143,
+        "energy": 3.57128571,
+        "harmony": 2.70014286,
+        "stagger": 0.32842857
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.28514286,
+        "energy": 7.14257143,
+        "harmony": 5.40028571,
+        "stagger": 0.65685714
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.92771429,
+        "energy": 10.71385714,
+        "harmony": 8.10042857,
+        "stagger": 0.98528571
+      },
+      {
+        "hit_count": 4,
+        "damage": 2.57028571,
+        "energy": 14.28514286,
+        "harmony": 10.80057143,
+        "stagger": 1.31371429
+      },
+      {
+        "hit_count": 5,
+        "damage": 3.21285714,
+        "energy": 17.85642857,
+        "harmony": 13.50071429,
+        "stagger": 1.64214286
+      },
+      {
+        "hit_count": 6,
+        "damage": 3.85542857,
+        "energy": 21.42771429,
+        "harmony": 16.20085714,
+        "stagger": 1.97057143
+      },
+      {
+        "hit_count": 7,
+        "damage": 4.498,
+        "energy": 24.999,
+        "harmony": 18.901,
+        "stagger": 2.299
+      }
+    ]
+  },
+  "action_canhong_q": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.1,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.25
+      },
+      {
+        "hit_count": 2,
+        "damage": 4.2,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_canhong_q_enhanced": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 2.75,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.25
+      },
+      {
+        "hit_count": 2,
+        "damage": 5.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_canhong_q_blood_banquet": {
+    "source": "aggregate-fallback",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.74975,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.625
+      },
+      {
+        "hit_count": 2,
+        "damage": 3.4995,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.25
+      },
+      {
+        "hit_count": 3,
+        "damage": 5.24925,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.875
+      },
+      {
+        "hit_count": 4,
+        "damage": 6.999,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 2.5
+      }
+    ]
+  }
+}
+

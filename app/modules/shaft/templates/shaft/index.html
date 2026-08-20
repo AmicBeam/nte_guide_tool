@@ -459,6 +459,30 @@
                     <small id="shaft-action-edit-detached-hint"></small>
                 </span>
             </label>
+            <label class="shaft-action-edit-toggle" id="shaft-action-edit-interrupt-row">
+                <input id="shaft-action-edit-interrupted" type="checkbox">
+                <span>
+                    <strong>打断动作</strong>
+                    <small>缩短动作占用时间，并只结算指定伤害段数。</small>
+                </span>
+            </label>
+            <div class="shaft-action-edit-interrupt-settings" id="shaft-action-edit-interrupt-settings" hidden>
+                <label>
+                    <span>动作时长 <output id="shaft-action-edit-duration-output"></output></span>
+                    <input id="shaft-action-edit-duration" type="range" min="1" step="1">
+                </label>
+                <label>
+                    <span>伤害段数 <output id="shaft-action-edit-hit-output"></output></span>
+                    <input id="shaft-action-edit-hits" type="range" min="0" step="1">
+                </label>
+                <div class="shaft-action-edit-preview" aria-live="polite">
+                    <div><span>倍率</span><strong id="shaft-action-edit-preview-multiplier"></strong></div>
+                    <div><span>回能</span><strong id="shaft-action-edit-preview-energy"></strong></div>
+                    <div><span>环合</span><strong id="shaft-action-edit-preview-harmony"></strong></div>
+                    <div><span>倾陷</span><strong id="shaft-action-edit-preview-stagger"></strong></div>
+                </div>
+                <small class="shaft-action-edit-profile-hint" id="shaft-action-edit-profile-hint"></small>
+            </div>
             <p class="shaft-action-edit-empty" id="shaft-action-edit-empty" hidden>该动作暂无可编辑选项。</p>
             <div class="shaft-action-edit-actions">
                 <button class="secondary-btn" data-close-action-edit type="button">取消</button>

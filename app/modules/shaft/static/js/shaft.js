@@ -6400,11 +6400,6 @@
     $('shaft-action-edit-preview-energy').textContent = formatNumber(profile.energy || 0, 1);
     $('shaft-action-edit-preview-harmony').textContent = formatNumber(profile.harmony || 0, 1);
     $('shaft-action-edit-preview-stagger').textContent = formatNumber(profile.stagger || 0, 2);
-    $('shaft-action-edit-profile-hint').textContent = !action?.hit_profile
-      ? '该动作没有伤害段；打断只改变动作时长。'
-      : (action.hit_profile.source === 'aggregate-fallback'
-        ? '该动作缺少逐段原值，预览按当前聚合数据均分。'
-        : '预览按技能表逐段数据累计，数值不按段数等比例缩放。');
   }
 
   function closeActionEditor({ restoreFocus = true } = {}) {

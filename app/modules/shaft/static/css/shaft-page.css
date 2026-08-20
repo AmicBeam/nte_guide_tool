@@ -3401,6 +3401,10 @@ body.shaft-dragging .shaft-action-bar {
     background: rgba(255,255,255,0.04);
 }
 
+.shaft-action-edit-toggle[hidden] {
+    display: none;
+}
+
 .shaft-action-edit-toggle span {
     display: grid;
     gap: 4px;
@@ -3455,8 +3459,7 @@ body.shaft-dragging .shaft-action-bar {
     background: rgba(255,255,255,0.05);
 }
 
-.shaft-action-edit-preview span,
-.shaft-action-edit-profile-hint {
+.shaft-action-edit-preview span {
     color: var(--muted);
     font-size: 11px;
 }

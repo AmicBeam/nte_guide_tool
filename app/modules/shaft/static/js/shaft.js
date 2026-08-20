@@ -1152,7 +1152,7 @@
       delete step.placement;
     }
     const baseDurationTicks = baseActionDurationTicks(action, step);
-    if (!step.interrupted || baseDurationTicks <= 0) {
+    if (!step.interrupted || baseDurationTicks <= 0 || isSupportAction(action)) {
       delete step.interrupted;
       delete step.interrupt_duration_ticks;
       delete step.interrupt_hit_count;
@@ -6337,7 +6337,7 @@
       return;
     }
     const canDetach = Boolean(action.can_detach);
-    const canInterrupt = baseActionDurationTicks(action, step) > 0;
+    const canInterrupt = baseActionDurationTicks(action, step) > 0 && !isSupportAction(action);
     dialog.dataset.stepId = step.id;
     dialog._returnFocus = trigger;
     $('shaft-action-edit-summary').textContent = `${memberName(step.slot)} · ${action.name || '动作'} · ${visualTickLabel(step.start_tick)}`;
@@ -6425,7 +6425,8 @@
       return;
     }
     const nextDetached = Boolean(action.can_detach) && $('shaft-action-edit-detached').checked;
-    const nextInterrupted = baseActionDurationTicks(action, Object.assign({}, step, { detached: nextDetached })) > 0
+    const nextInterrupted = !isSupportAction(action)
+      && baseActionDurationTicks(action, Object.assign({}, step, { detached: nextDetached })) > 0
       && $('shaft-action-edit-interrupted').checked;
     const nextDurationTicks = Number($('shaft-action-edit-duration').value || 1);
     const nextHitCount = Number($('shaft-action-edit-hits').value || 0);

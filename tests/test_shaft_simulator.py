@@ -1960,6 +1960,32 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(detail['nightmare_stacks'], 3)
         self.assertLess(detail['direct_damage'], 1512.038095675326 * 0.25)
 
+    def test_support_action_ignores_interruption_fields(self) -> None:
+        payload = {
+            'team': [
+                {'slot': 0, 'character_id': 'char_bdc43f82c6', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [{
+                'id': 'support',
+                'slot': 0,
+                'action_id': 'action_482b5d9df7',
+                'start_tick': 0,
+                'interrupted': True,
+                'interrupt_duration_ticks': 1,
+                'interrupt_hit_count': 0,
+            }],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        }
+
+        normalized = normalize_axis_payload(payload)
+        self.assertNotIn('interrupted', normalized['steps'][0])
+        self.assertNotIn('interrupt_duration_ticks', normalized['steps'][0])
+        self.assertNotIn('interrupt_hit_count', normalized['steps'][0])
+        detail = simulate_shaft_axis(payload)['result']['details'][0]
+        self.assertFalse(detail['is_interrupted'])
+        self.assertEqual(detail['duration_ticks'], 13)
+        self.assertEqual(detail['hit_count'], 1)
+
     def test_all_element_pairs_resolve_to_documented_reactions(self) -> None:
         cases = [
             ('延滞', 'char_dd034941ef', 'action_982c67944f', 1, 'char_912dbfe17c', 'action_f229587fd2', 0),

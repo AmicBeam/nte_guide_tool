@@ -875,7 +875,9 @@
   }
 
   function isInterruptedStep(step, action) {
-    return Boolean(step?.interrupted) && baseConfiguredActionDurationTicks(step, action) > 0;
+    return Boolean(step?.interrupted)
+      && !isSupportAction(action)
+      && baseConfiguredActionDurationTicks(step, action) > 0;
   }
 
   function configuredActionDurationTicks(step, action) {

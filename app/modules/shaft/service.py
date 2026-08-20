@@ -562,7 +562,7 @@ def _normalize_steps(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
         base_duration_ticks = max(0, _int(
             action.get('detached_duration_ticks') if normalized_step.get('detached') else action.get('duration_ticks'),
         ))
-        if bool(step.get('interrupted')) and base_duration_ticks > 0:
+        if bool(step.get('interrupted')) and base_duration_ticks > 0 and not _is_support_action(action):
             normalized_step['interrupted'] = True
             normalized_step['interrupt_duration_ticks'] = max(
                 1,
@@ -768,7 +768,7 @@ def _action_duration_ticks(step: dict[str, Any], action: dict[str, Any]) -> int:
         base_duration_ticks = max(0, _int(action.get('detached_duration_ticks')))
     else:
         base_duration_ticks = max(0, _int(action.get('duration_ticks')))
-    if bool(step.get('interrupted')) and base_duration_ticks > 0:
+    if bool(step.get('interrupted')) and base_duration_ticks > 0 and not _is_support_action(action):
         return max(1, min(base_duration_ticks, _int(step.get('interrupt_duration_ticks'), base_duration_ticks)))
     return base_duration_ticks
 

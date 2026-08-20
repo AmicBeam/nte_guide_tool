@@ -1989,6 +1989,8 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         cases = [
             ('char_701295143d', 'action_10c15dd4d1'),
             ('char_b52cc8f160', 'action_7773821d79'),
+            ('char_699966e2e7', 'action_18cf1ad6b6'),
+            ('char_699966e2e7', 'action_592e2c7563'),
         ]
         for character_id, action_id in cases:
             with self.subTest(action_id=action_id):
@@ -2042,18 +2044,36 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             for action in profiled
             if action['hit_profile'].get('source') == 'aggregate-fallback'
         }
-        self.assertEqual(fallback, {
-            ('主角', 'e'),
-            ('九原', '6枪'), ('九原', 'e'),
-            ('白藏', '长闪'), ('白藏', 'e'),
-            ('哈尼娅', '蓄力'),
-            ('海月', '水母弹'), ('海月', '水母闪反'),
-            ('卡厄斯', 'e'),
-            ('哈索尔', '长e尾刀'), ('哈索尔', 'e持续'),
-            ('哈索尔', 'E1'), ('哈索尔', 'E2'), ('哈索尔', 'E3'),
-            ('翳', 'e'),
-            ('伊洛伊', '清明梦'),
-        })
+        self.assertEqual(fallback, set())
+
+        by_action = {action['id']: action for action in profiled}
+        expected_hits = {
+            'action_982c67944f': 4,
+            'action_08d9487c2c': 6,
+            'action_fbc91559f8': 6,
+            'action_62e42c9e75': 1,
+            'action_c18c2d7577': 1,
+            'action_519f3d978a': 6,
+            'action_2d3f8642dd': 2,
+            'action_e3ab099393': 10,
+            'action_6b6bace5c8': 20,
+            'action_0dfd7dfab8': 7,
+            'action_85ee761950': 3,
+            'action_c9326f9e35': 2,
+            'action_2e072f2b0b': 7,
+            'action_iloy_lucid_dream': 35,
+        }
+        for action_id, hit_count in expected_hits.items():
+            with self.subTest(action_id=action_id):
+                action = by_action[action_id]
+                self.assertEqual(action['hit_count'], hit_count)
+                self.assertEqual(action['hit_profile']['source'], 'tencent-sheet')
+                endpoint = action['hit_profile']['cumulative'][-1]
+                self.assertEqual(endpoint['hit_count'], hit_count)
+                self.assertAlmostEqual(endpoint['damage'], max(action['multipliers'].values()))
+                self.assertAlmostEqual(endpoint['energy'], action['energy_gain'])
+                self.assertAlmostEqual(endpoint['harmony'], action['harmony'])
+                self.assertAlmostEqual(endpoint['stagger'], action['stagger'])
 
     def test_all_element_pairs_resolve_to_documented_reactions(self) -> None:
         cases = [
@@ -6465,6 +6485,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             for action in catalog['actions']
         }
         expected_hit_counts = {
+            ('主角', 'e'): 4,
             ('真红', 'e'): 3, ('真红', '龙e'): 2, ('真红', 'q'): 9,
             ('真红', '穿梭'): 4, ('真红', 'q2'): 11,
             ('浔', 'e'): 7, ('浔', 'q'): 10,
@@ -6474,19 +6495,20 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             ('娜娜莉', 'e'): 5, ('娜娜莉', 'q'): 7,
             ('九原', '5a'): 11, ('九原', '6枪'): 6, ('九原', 'e'): 6, ('九原', 'q'): 12,
             ('薄荷', 'e'): 2, ('薄荷', 'q'): 7,
+            ('白藏', '长闪'): 1, ('白藏', 'e'): 1,
             ('白藏', '单E'): 4, ('白藏', '单E额外'): 3,
             ('早雾', 'e'): 2, ('早雾', '长e'): 3, ('早雾', 'q'): 6,
             ('阿德勒', 'e'): 3,
             ('达芙蒂尔', 'e'): 8, ('达芙蒂尔', '1层e'): 8,
             ('达芙蒂尔', '2层e'): 7, ('达芙蒂尔', 'q'): 14,
             ('法帝娅', 'e'): 3, ('法帝娅', 'q'): 6,
-            ('哈尼娅', 'e'): 2, ('哈尼娅', '强化后台'): 4,
+            ('哈尼娅', '蓄力'): 6, ('哈尼娅', 'e'): 2, ('哈尼娅', '强化后台'): 4,
             ('海月', '水母闪反'): 4, ('海月', 'q'): 6,
-            ('卡厄斯', 'z'): 2, ('卡厄斯', 'z2'): 2, ('卡厄斯', 'e'): 4, ('卡厄斯', 'q'): 5,
+            ('卡厄斯', 'z'): 2, ('卡厄斯', 'z2'): 2, ('卡厄斯', 'e'): 2, ('卡厄斯', 'q'): 5,
             ('哈索尔', '援护'): 2, ('哈索尔', 'e'): 3, ('哈索尔', '长e尾刀'): 10,
             ('哈索尔', 'e持续'): 20, ('哈索尔', 'q'): 3,
             ('哈索尔', 'E1'): 7, ('哈索尔', 'E2'): 3, ('哈索尔', 'E3'): 2,
-            ('翳', 'e'): 6, ('翳', 'q'): 4,
+            ('翳', 'e'): 7, ('翳', 'q'): 4,
         }
         for key, expected in expected_hit_counts.items():
             with self.subTest(character=key[0], action=key[1]):

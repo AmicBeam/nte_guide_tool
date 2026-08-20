@@ -81,8 +81,9 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 5,
+    "source_formula": "{0}%+{1}%+{2}%+{3}%",
     "can_background_override": false,
-    "hit_count": 1
+    "hit_count": 4
   },
   {
     "id": "action_4e1fab68e7",
@@ -3425,14 +3426,14 @@
     "duration_seconds": 1.3,
     "duration_ticks": 13,
     "multipliers": {
-      "atk": 0.8,
+      "atk": 1.998,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 5,
-    "harmony": 8.3,
-    "stagger": 1,
+    "energy_gain": 0,
+    "harmony": 0,
+    "stagger": 0,
     "energy_return": 0,
     "self_modifiers": {
       "crit_rate": 0,
@@ -3451,7 +3452,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 59,
-    "source_formula": "{0}%",
+    "source_formula": "{0}%*6",
     "can_background_override": false,
     "hit_count": 6
   },
@@ -3731,6 +3732,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 64,
+    "source_formula": "{0}%+{1}%*4+{2}%",
     "can_background_override": false,
     "hit_count": 6
   },
@@ -4478,7 +4480,7 @@
     "duration_seconds": 0.7,
     "duration_ticks": 7,
     "multipliers": {
-      "atk": 1.725,
+      "atk": 0.66,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -4504,6 +4506,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 74,
+    "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -4628,6 +4631,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 77,
+    "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -6682,8 +6686,9 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 122,
+    "source_formula": "{0}%*6",
     "can_background_override": false,
-    "hit_count": 1
+    "hit_count": 6
   },
   {
     "id": "action_db30565b20",
@@ -6972,6 +6977,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 129,
+    "can_interrupt": false,
     "can_background_override": false,
     "hit_count": 1
   },
@@ -7054,6 +7060,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 131,
+    "can_interrupt": false,
     "can_background_override": false,
     "hit_count": 4
   },
@@ -7645,7 +7652,7 @@
       "flat": 0
     },
     "energy_gain": 7.3,
-    "harmony": 12,
+    "harmony": 12.2,
     "stagger": 1.5,
     "energy_return": 0,
     "self_modifiers": {
@@ -7667,9 +7674,10 @@
       "罪状": 100
     },
     "source_row": 141,
+    "source_formula": "{0}%+{1}%",
     "can_background_override": false,
     "sin_recovery": 100,
-    "hit_count": 4
+    "hit_count": 2
   },
   {
     "id": "action_dbd682321e",
@@ -7926,6 +7934,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 147,
+    "source_formula": "{0}%*4+{1}%+{2}%*5",
     "can_background_override": false,
     "hit_count": 10
   },
@@ -7941,7 +7950,7 @@
     "duration_seconds": 4.5,
     "duration_ticks": 45,
     "multipliers": {
-      "atk": 11,
+      "atk": 11.12,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -7967,6 +7976,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 148,
+    "source_formula": "每段{0}%*20",
     "can_background_override": false,
     "hit_count": 20
   },
@@ -8023,13 +8033,13 @@
     "duration_seconds": 1.3,
     "duration_ticks": 13,
     "multipliers": {
-      "atk": 2,
+      "atk": 3.003,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
     "energy_gain": 8.897,
-    "harmony": 14.9,
+    "harmony": 14.903,
     "stagger": 1.799,
     "energy_return": 0,
     "self_modifiers": {
@@ -8049,6 +8059,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 150,
+    "source_formula": "{0}%*7",
     "can_background_override": false,
     "hit_count": 7
   },
@@ -8064,7 +8075,7 @@
     "duration_seconds": 1.5,
     "duration_ticks": 15,
     "multipliers": {
-      "atk": 3.5,
+      "atk": 4.0,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -8090,6 +8101,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 151,
+    "source_formula": "{0}%+{1}%+{2}%",
     "can_background_override": false,
     "hit_count": 3
   },
@@ -8105,7 +8117,7 @@
     "duration_seconds": 1.7,
     "duration_ticks": 17,
     "multipliers": {
-      "atk": 4,
+      "atk": 5.5,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -8131,6 +8143,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 152,
+    "source_formula": "{0}%+{1}%",
     "can_background_override": false,
     "hit_count": 2
   },
@@ -8233,9 +8246,9 @@
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 5.4,
-    "harmony": 9,
-    "stagger": 1.1,
+    "energy_gain": 8.7,
+    "harmony": 14.6,
+    "stagger": 1.8,
     "energy_return": 0,
     "self_modifiers": {
       "crit_rate": 0,
@@ -8254,8 +8267,9 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 155,
+    "source_formula": "{0}%*4+{1}%+{2}%+{3}%",
     "can_background_override": false,
-    "hit_count": 6
+    "hit_count": 7
   },
   {
     "id": "action_ff4f07b530",

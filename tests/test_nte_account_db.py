@@ -26,11 +26,24 @@ class NTEAccountDatabaseTest(unittest.TestCase):
 
     def test_publish_shaft_character_is_persistent_and_idempotent(self) -> None:
         self.assertEqual(self.module.publish_shaft_character('伊洛伊'), 'already_published')
-        self.assertEqual(self.module.publish_shaft_character('残红'), 'published')
-        self.assertEqual(self.module.publish_shaft_character('残红'), 'already_published')
+        self.assertEqual(self.module.publish_shaft_character('残虹'), 'published')
+        self.assertEqual(self.module.publish_shaft_character('残虹'), 'already_published')
         self.assertEqual(self.module.publish_shaft_character('不存在'), 'not_found')
 
         publication = self.module.NTEShaftCharacterPublication.get(
-            self.module.NTEShaftCharacterPublication.character_name == '残红'
+            self.module.NTEShaftCharacterPublication.character_name == '残虹'
         )
         self.assertTrue(publication.is_published)
+
+    def test_ensure_tables_synchronizes_character_name_by_stable_id(self) -> None:
+        self.module.ensure_nte_tables()
+        publication = self.module.NTEShaftCharacterPublication.get(
+            self.module.NTEShaftCharacterPublication.character_id == 'char_076a1f4e53'
+        )
+        publication.character_name = '旧称'
+        publication.save()
+
+        self.module.ensure_nte_tables()
+
+        publication = self.module.NTEShaftCharacterPublication.get_by_id(publication.id)
+        self.assertEqual(publication.character_name, '残虹')

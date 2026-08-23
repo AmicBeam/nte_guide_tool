@@ -234,13 +234,13 @@
   },
   {
     "id": "char_076a1f4e53",
-    "name": "残红",
+    "name": "残虹",
     "element": "咒",
     "adaptation": "气态",
     "rarity": "S",
     "level": 80,
-    "avatar": "/static/images/characters/avatar/残红.png",
-    "portrait": "/static/images/characters/avatar/残红.png",
+    "avatar": "/static/images/characters/avatar/残虹.png",
+    "portrait": "/static/images/characters/avatar/残虹.png",
     "base_stats": {
       "atk": 660.0,
       "hp": 15513.0,
@@ -281,7 +281,7 @@
     "source_row": 0,
     "test_character": true,
     "initial_harmony_non_loop": 100,
-    "source_note": "2026-08-04 用户提供的腾讯文档；Nanoka 当前未收录残红。1级攻击83、生命1280、防御75；80级攻击660、生命15513、防御909。排轴基础面板使用80级数值；武器类型未实装。2026-08-10 用户补充羁绊解锁提供4%暴击率。2026-08-13 头像使用用户提供图片。"
+    "source_note": "2026-08-04 用户提供的腾讯文档；Nanoka 当前未收录残虹。1级攻击83、生命1280、防御75；80级攻击660、生命15513、防御909。排轴基础面板使用80级数值；武器类型未实装。2026-08-10 用户补充羁绊解锁提供4%暴击率。2026-08-13 头像使用用户提供图片。"
   },
   {
     "id": "char_a01c39f576",

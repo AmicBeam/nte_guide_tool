@@ -42,10 +42,10 @@ MAX_BACKGROUND_ACTION_MULTIPLIER = 999
 VISIBILITIES = frozenset({'private', 'public'})
 MARKET_SORTS = frozenset({'dps', 'likes', 'favorites', 'new'})
 DEFAULT_UNPUBLISHED_CHARACTERS = {
-    'char_076a1f4e53': '残红',
+    'char_076a1f4e53': '残虹',
 }
 HALF_OPEN_CHARACTERS = {
-    'char_076a1f4e53': '残红',
+    'char_076a1f4e53': '残虹',
 }
 RELEASED_CHARACTERS = {
     'char_a01c39f576': '伊洛伊',
@@ -145,11 +145,17 @@ def initialize_shaft_character_publications() -> None:
                 },
             )
             expected_level = 'invited' if character_id in HALF_OPEN_CHARACTERS else 'test'
+            fields_to_update = []
+            if publication.character_name != character_name:
+                publication.character_name = character_name
+                fields_to_update.append(ShaftCharacterPublication.character_name)
             if not publication.is_published and publication.access_level != expected_level:
                 publication.access_level = expected_level
+                fields_to_update.append(ShaftCharacterPublication.access_level)
+            if fields_to_update:
                 publication.updated_at = now
                 publication.save(only=[
-                    ShaftCharacterPublication.access_level,
+                    *fields_to_update,
                     ShaftCharacterPublication.updated_at,
                 ])
         for character_id, character_name in RELEASED_CHARACTERS.items():
@@ -162,13 +168,20 @@ def initialize_shaft_character_publications() -> None:
                     'updated_at': now,
                 },
             )
-            if not publication.is_published or publication.access_level != 'public':
+            fields_to_update = []
+            if publication.character_name != character_name:
+                publication.character_name = character_name
+                fields_to_update.append(ShaftCharacterPublication.character_name)
+            if not publication.is_published:
                 publication.is_published = True
+                fields_to_update.append(ShaftCharacterPublication.is_published)
+            if publication.access_level != 'public':
                 publication.access_level = 'public'
+                fields_to_update.append(ShaftCharacterPublication.access_level)
+            if fields_to_update:
                 publication.updated_at = now
                 publication.save(only=[
-                    ShaftCharacterPublication.is_published,
-                    ShaftCharacterPublication.access_level,
+                    *fields_to_update,
                     ShaftCharacterPublication.updated_at,
                 ])
 

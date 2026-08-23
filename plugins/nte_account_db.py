@@ -58,7 +58,7 @@ class NTEShaftCharacterPublication(NTEBaseModel):
 
 
 DEFAULT_UNPUBLISHED_CHARACTERS = {
-    '残红': 'char_076a1f4e53',
+    '残虹': 'char_076a1f4e53',
 }
 RELEASED_CHARACTERS = {
     '伊洛伊': 'char_a01c39f576',
@@ -91,11 +91,17 @@ def ensure_nte_tables():
                 'is_published': False,
             },
         )
+        fields_to_update = []
+        if publication.character_name != character_name:
+            publication.character_name = character_name
+            fields_to_update.append(NTEShaftCharacterPublication.character_name)
         if not publication.is_published and publication.access_level != 'invited':
             publication.access_level = 'invited'
+            fields_to_update.append(NTEShaftCharacterPublication.access_level)
+        if fields_to_update:
             publication.updated_at = datetime.utcnow()
             publication.save(only=[
-                NTEShaftCharacterPublication.access_level,
+                *fields_to_update,
                 NTEShaftCharacterPublication.updated_at,
             ])
     for character_name, character_id in RELEASED_CHARACTERS.items():
@@ -107,13 +113,20 @@ def ensure_nte_tables():
                 'is_published': True,
             },
         )
-        if not publication.is_published or publication.access_level != 'public':
+        fields_to_update = []
+        if publication.character_name != character_name:
+            publication.character_name = character_name
+            fields_to_update.append(NTEShaftCharacterPublication.character_name)
+        if not publication.is_published:
             publication.is_published = True
+            fields_to_update.append(NTEShaftCharacterPublication.is_published)
+        if publication.access_level != 'public':
             publication.access_level = 'public'
+            fields_to_update.append(NTEShaftCharacterPublication.access_level)
+        if fields_to_update:
             publication.updated_at = datetime.utcnow()
             publication.save(only=[
-                NTEShaftCharacterPublication.is_published,
-                NTEShaftCharacterPublication.access_level,
+                *fields_to_update,
                 NTEShaftCharacterPublication.updated_at,
             ])
 

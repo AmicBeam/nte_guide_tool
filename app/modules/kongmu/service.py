@@ -75,7 +75,7 @@ FIXED_CHARACTER_AVATAR_SOURCE_ICONS = {
 FIXED_CHARACTER_AVATAR_LOCAL_PATHS = {
     '1046': 'images/characters/avatar/男主.webp',
     '1051': 'images/characters/avatar/男主.webp',
-    'char_076a1f4e53': 'images/characters/avatar/残红.png',
+    'char_076a1f4e53': 'images/characters/avatar/残虹.png',
 }
 
 TEST_CHARACTER_IDS = {'char_076a1f4e53'}

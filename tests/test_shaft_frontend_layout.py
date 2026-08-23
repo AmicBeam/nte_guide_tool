@@ -457,16 +457,16 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             shaft_test_whitelisted=False,
         ))
         test_catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
-        public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残红')
-        invited_canhong = next(character for character in invited_catalog['characters'] if character['name'] == '残红')
-        test_canhong = next(character for character in test_catalog['characters'] if character['name'] == '残红')
+        public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残虹')
+        invited_canhong = next(character for character in invited_catalog['characters'] if character['name'] == '残虹')
+        test_canhong = next(character for character in test_catalog['characters'] if character['name'] == '残虹')
         public_yiloyi = next(character for character in public_catalog['characters'] if character['name'] == '伊洛伊')
 
         self.assertTrue(public_canhong['selection_disabled'])
         self.assertFalse(invited_canhong['selection_disabled'])
         self.assertFalse(test_canhong['selection_disabled'])
-        self.assertEqual(public_canhong['avatar'], '/static/images/characters/avatar/残红.png')
-        self.assertEqual(public_canhong['portrait'], '/static/images/characters/avatar/残红.png')
+        self.assertEqual(public_canhong['avatar'], '/static/images/characters/avatar/残虹.png')
+        self.assertEqual(public_canhong['portrait'], '/static/images/characters/avatar/残虹.png')
         self.assertFalse(public_yiloyi['selection_disabled'])
         self.assertIn("record.selection_disabled ? 'disabled' : ''", source)
         self.assertIn(".filter((character) => !character.selection_disabled)", source)
@@ -476,7 +476,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
     def test_canhong_uses_tencent_document_panel_and_actions(self) -> None:
         catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
         characters = {character['name']: character for character in catalog['characters']}
-        canhong = characters['残红']
+        canhong = characters['残虹']
         protagonist = characters['主角']
 
         self.assertTrue(canhong['test_character'])

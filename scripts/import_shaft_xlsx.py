@@ -28,9 +28,9 @@ CHARACTER_IMAGE_OVERRIDES = {
         'avatar': '/static/kongmu/images/characters/player_yiluoyi_256.webp',
         'portrait': '/static/kongmu/images/characters/player_yiluoyi_256.webp',
     },
-    '残红': {
-        'avatar': '/static/images/characters/avatar/残红.png',
-        'portrait': '/static/images/characters/avatar/残红.png',
+    '残虹': {
+        'avatar': '/static/images/characters/avatar/残虹.png',
+        'portrait': '/static/images/characters/avatar/残虹.png',
     },
 }
 
@@ -263,7 +263,7 @@ def extract_characters(wb_values: Any) -> list[dict[str, Any]]:
             'bond_bonus': bond_by_name.get(str(name), parse_bond_bonus('')),
             'source_row': row,
         })
-    if not any(str(record.get('name') or '') == '残红' for record in records):
+    if not any(str(record.get('name') or '') == '残虹' for record in records):
         panel_template = next(
             (record for record in records if str(record.get('name') or '') in {'安魂曲', '娜娜莉'}),
             None,
@@ -271,15 +271,15 @@ def extract_characters(wb_values: Any) -> list[dict[str, Any]]:
         if panel_template:
             placeholder = deepcopy(panel_template)
             placeholder.update({
-                'id': stable_id('char', '残红'),
-                'name': '残红',
+                'id': stable_id('char', '残虹'),
+                'name': '残虹',
                 'element': '咒',
                 'adaptation': '液态',
-                'avatar': CHARACTER_IMAGE_OVERRIDES['残红']['avatar'],
-                'portrait': CHARACTER_IMAGE_OVERRIDES['残红']['portrait'],
+                'avatar': CHARACTER_IMAGE_OVERRIDES['残虹']['avatar'],
+                'portrait': CHARACTER_IMAGE_OVERRIDES['残虹']['portrait'],
                 'source_row': 0,
                 'placeholder': True,
-                'source_note': '2026-08-04 用户截图占位；Nanoka 当前未收录残红。基础面板暂时复用安魂曲/娜娜莉。',
+                'source_note': '2026-08-04 用户截图占位；Nanoka 当前未收录残虹。基础面板暂时复用安魂曲/娜娜莉。',
             })
             records.append(placeholder)
     return records

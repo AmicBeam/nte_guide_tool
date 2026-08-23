@@ -2396,7 +2396,7 @@
   },
   {
     "id": "character_canhong_harmony_strength",
-    "name": "残红·余焰未熄",
+    "name": "残虹·余焰未熄",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive"},
@@ -2407,7 +2407,7 @@
   },
   {
     "id": "character_canhong_three_node_resonance_ultimate_multiplier",
-    "name": "残红·三觉共鸣终结倍率强化",
+    "name": "残虹·三觉共鸣终结倍率强化",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_count_min", "min": 3}]},
@@ -2418,7 +2418,7 @@
   },
   {
     "id": "character_canhong_six_node_resonance_attack",
-    "name": "残红·六觉共鸣攻击强化",
+    "name": "残虹·六觉共鸣攻击强化",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 110,
     "trigger": {
@@ -2435,7 +2435,7 @@
   },
   {
     "id": "character_canhong_illusion_state",
-    "name": "残红·幻境状态",
+    "name": "残虹·幻境状态",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 10,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}},
@@ -2447,7 +2447,7 @@
   },
   {
     "id": "character_canhong_delusion_foreground_leave_delay",
-    "name": "残红·离开前台后惑延迟清除",
+    "name": "残虹·离开前台后惑延迟清除",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 12,
     "trigger": {"event": "foreground_leave", "conditions": [{"type": "active_buff_key", "key": "character_canhong_illusion_state"}, {"type": "awakening_max", "max": 0}]},
@@ -2459,7 +2459,7 @@
   },
   {
     "id": "character_canhong_c_delusion_regeneration_foreground_leave_delay",
-    "name": "残红C觉·离开前台后惑生命回复",
+    "name": "残虹C觉·离开前台后惑生命回复",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 13,
     "trigger": {"event": "foreground_leave", "conditions": [{"type": "active_buff_key", "key": "character_canhong_illusion_state"}, {"type": "awakening_min", "min": 3}, {"type": "awakening_max", "max": 0}]},
@@ -2472,7 +2472,7 @@
   },
   {
     "id": "character_canhong_illusion_state_foreground_leave_clear",
-    "name": "残红·离开前台清除幻境",
+    "name": "残虹·离开前台清除幻境",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 19,
     "trigger": {"event": "foreground_leave", "conditions": [{"type": "active_buff_key", "key": "character_canhong_illusion_state"}]},
@@ -2485,7 +2485,7 @@
   },
   {
     "id": "character_canhong_illusion_state_action_exit_clear",
-    "name": "残红·主动解除幻境",
+    "name": "残虹·主动解除幻境",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 30,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2", "action_canhong_q_blood_banquet"]}},
@@ -2498,7 +2498,7 @@
   },
   {
     "id": "character_canhong_hunt",
-    "name": "残红·狩",
+    "name": "残虹·狩",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_max", "max": 0}]},
@@ -2511,7 +2511,7 @@
   },
   {
     "id": "character_canhong_a1_hunt",
-    "name": "残红1觉·永久狩",
+    "name": "残虹1觉·永久狩",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 1}]},
@@ -2523,7 +2523,7 @@
   },
   {
     "id": "character_canhong_delusion",
-    "name": "残红·惑（全队DOT暴伤）",
+    "name": "残虹·惑（全队DOT暴伤）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
@@ -2535,7 +2535,7 @@
   },
   {
     "id": "character_canhong_delusion_exit_delay",
-    "name": "残红·惑（全队DOT暴伤，离开幻境延迟清除）",
+    "name": "残虹·惑（全队DOT暴伤，离开幻境延迟清除）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 21,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2", "action_canhong_q_blood_banquet"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
@@ -2547,7 +2547,7 @@
   },
   {
     "id": "character_canhong_a1_delusion",
-    "name": "残红1觉·永久惑（全队DOT暴伤）",
+    "name": "残虹1觉·永久惑（全队DOT暴伤）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 1}]},
@@ -2558,7 +2558,7 @@
   },
   {
     "id": "character_canhong_c_hunt_interrupt_resistance",
-    "name": "残红C觉·狩抗打断强化",
+    "name": "残虹C觉·狩抗打断强化",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 21,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 3}]},
@@ -2572,7 +2572,7 @@
   },
   {
     "id": "character_canhong_c_delusion_regeneration",
-    "name": "残红C觉·惑生命回复",
+    "name": "残虹C觉·惑生命回复",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 22,
     "trigger": {
@@ -2589,7 +2589,7 @@
   },
   {
     "id": "character_canhong_c_delusion_regeneration_exit_delay",
-    "name": "残红C觉·惑生命回复（离开幻境延迟清除）",
+    "name": "残虹C觉·惑生命回复（离开幻境延迟清除）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 23,
     "trigger": {
@@ -2606,7 +2606,7 @@
   },
   {
     "id": "character_canhong_ac_delusion_regeneration_permanent",
-    "name": "残红A+C觉·永久惑生命回复",
+    "name": "残虹A+C觉·永久惑生命回复",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 1}, {"type": "awakening_min", "min": 3}]},
@@ -2618,7 +2618,7 @@
   },
   {
     "id": "character_canhong_corrosion_heart",
-    "name": "残红·蚀心",
+    "name": "残虹·蚀心",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 100,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_illusion_a1", "action_canhong_illusion_a2", "action_canhong_illusion_a3", "action_canhong_illusion_a4"]}},
@@ -2630,7 +2630,7 @@
   },
   {
     "id": "character_canhong_tianyi_turbid_burn_layer",
-    "name": "残红·天翼",
+    "name": "残虹·天翼",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 99,
     "trigger": {
@@ -2647,7 +2647,7 @@
   },
   {
     "id": "character_canhong_illusion_dot_spread",
-    "name": "残红·魔舞（全部持续伤害加层）",
+    "name": "残虹·魔舞（全部持续伤害加层）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 101,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_illusion_a1", "action_canhong_illusion_a2", "action_canhong_illusion_a3", "action_canhong_illusion_a4", "action_canhong_illusion_z1"]}},
@@ -2660,7 +2660,7 @@
   },
   {
     "id": "character_canhong_a_dot_spread",
-    "name": "残红A觉·持续伤害扩散",
+    "name": "残虹A觉·持续伤害扩散",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 103,
     "trigger": {
@@ -2683,7 +2683,7 @@
   },
   {
     "id": "character_canhong_corrosion_heart_five",
-    "name": "残红·蚀心（5层）",
+    "name": "残虹·蚀心（5层）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 101,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E1", "action_canhong_E2"]}},
@@ -2695,7 +2695,7 @@
   },
   {
     "id": "character_canhong_poison_fire_five",
-    "name": "残红·鸩火",
+    "name": "残虹·鸩火",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 102,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]}},
@@ -2707,7 +2707,7 @@
   },
   {
     "id": "character_canhong_a5_team_stagger_damage",
-    "name": "残红5觉·倾陷伤害强化",
+    "name": "残虹5觉·倾陷伤害强化",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 5}]},
@@ -2718,7 +2718,7 @@
   },
   {
     "id": "character_canhong_b_blaze_stack",
-    "name": "残红B觉·蓄焰",
+    "name": "残虹B觉·蓄焰",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 110,
     "trigger": {
@@ -2738,7 +2738,7 @@
   },
   {
     "id": "character_canhong_b_blaze_fentian_damage",
-    "name": "残红B觉·蓄焰强化焚天",
+    "name": "残虹B觉·蓄焰强化焚天",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 120,
     "trigger": {
@@ -2761,7 +2761,7 @@
   },
   {
     "id": "character_canhong_d_blaze_blood_banquet_damage",
-    "name": "残红D觉·蓄焰强化血宴",
+    "name": "残虹D觉·蓄焰强化血宴",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 120,
     "trigger": {
@@ -2783,7 +2783,7 @@
   },
   {
     "id": "character_canhong_blood_banquet_active",
-    "name": "残红·血宴已激活",
+    "name": "残虹·血宴已激活",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 115,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2"]}},
@@ -2795,7 +2795,7 @@
   },
   {
     "id": "character_canhong_blood_banquet_consume_activation",
-    "name": "残红·释放血宴",
+    "name": "残虹·释放血宴",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 130,
     "trigger": {"event": "action_end", "source": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]}},
@@ -2808,7 +2808,7 @@
   },
   {
     "id": "character_canhong_enhanced_fentian_window",
-    "name": "残红·强化焚天可释放",
+    "name": "残虹·强化焚天可释放",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 125,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]}},
@@ -2821,7 +2821,7 @@
   },
   {
     "id": "character_canhong_f_annihilation_dot_layers",
-    "name": "残红F觉·灭层蚀强化",
+    "name": "残虹F觉·灭层蚀强化",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 6}]},

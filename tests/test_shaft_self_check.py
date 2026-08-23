@@ -283,7 +283,7 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
                 'triggered_reaction': {
                     'reaction': '浊燃',
                     'trigger_character_id': 'char_076a1f4e53',
-                    'trigger_character_name': '残红',
+                    'trigger_character_name': '残虹',
                     'frequency_multiplier': 3,
                     'loop_initial': True,
                 },
@@ -298,7 +298,7 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
         )
 
         self.assertEqual(len(warnings), 1)
-        self.assertIn('残红自带，且轴内由残红产生', warnings[0])
+        self.assertIn('残虹自带，且轴内由残虹产生', warnings[0])
         self.assertIn('刷新或额外加层能力不放宽此自检', warnings[0])
 
     def test_genesis_allows_three_instances_but_warns_on_the_fourth(self) -> None:

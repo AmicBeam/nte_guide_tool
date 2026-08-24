@@ -586,7 +586,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("const bondLabel = hasBondBonus ? character.bond_bonus.label : '无羁绊加成';", source)
         self.assertIn("${hasBondBonus ? '' : 'disabled'}", source)
 
-    def test_lingke_uses_user_panel_mapping_and_only_support_e_q_actions(self) -> None:
+    def test_lingke_uses_user_panel_mapping_and_manual_joint_actions(self) -> None:
         catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
         lingke = next(character for character in catalog['characters'] if character['name'] == '灵可')
         actions = catalog['actions_by_character'][lingke['id']]
@@ -597,9 +597,15 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(lingke['base_stats'], {'atk': 652.0, 'hp': 15513.0, 'def': 921.1})
         self.assertEqual(
             {action['name'] for action in actions},
-            {'援护', 'e', 'q', '灵可同频', '小贞同频', '4觉同频追加', '闪', '无'},
+            {
+                '恶灵闪击战', '援护', 'e', 'q', '光同频', '灵同频', '咒同频',
+                '暗同频', '魂同频', '相同频', '小贞同频', '4觉同频追加', '闪', '无',
+            },
         )
         actions_by_name = {action['name']: action for action in actions}
+        self.assertEqual(actions_by_name['恶灵闪击战']['multipliers']['atk'], 0.5)
+        self.assertEqual(actions_by_name['恶灵闪击战']['cooldown_ticks'], 80)
+        self.assertEqual(actions_by_name['恶灵闪击战']['cooldown_ticks_by_awakening_node'], {'1': 60})
         self.assertEqual(actions_by_name['援护']['duration_ticks'], 15)
         self.assertEqual(actions_by_name['e']['duration_ticks'], 10)
         self.assertEqual(actions_by_name['e']['multipliers']['atk'], 1.0)
@@ -607,9 +613,13 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions_by_name['q']['multipliers']['atk'], 11.544)
         self.assertEqual(actions_by_name['q']['energy_cost'], 100)
         self.assertEqual(actions_by_name['q']['hit_count'], 8)
-        self.assertEqual(actions_by_name['灵可同频']['duration_ticks'], 0)
-        self.assertEqual(actions_by_name['灵可同频']['multipliers']['atk'], 5.0)
-        self.assertEqual(actions_by_name['灵可同频']['harmony'], 15)
+        for element in ('光', '灵', '咒', '暗', '魂', '相'):
+            joint = actions_by_name[f'{element}同频']
+            self.assertEqual(joint['duration_ticks'], 0)
+            self.assertEqual(joint['multipliers']['atk'], 5.0)
+            self.assertEqual(joint['harmony'], 15)
+            self.assertEqual(joint['damage_element'], element)
+            self.assertTrue(joint['disable_reaction'])
         self.assertEqual(actions_by_name['小贞同频']['multipliers']['atk'], 1.999)
         self.assertEqual(actions_by_name['小贞同频']['hit_count'], 4)
         self.assertEqual(actions_by_name['小贞同频']['stagger'], 1.667)
@@ -989,7 +999,10 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("additionalTags.has(damageType)", source)
         self.assertIn("? (actionType || '其他')", source)
         self.assertIn('damage_type: detail.damage_type', SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
-        self.assertIn("if (tags.has('追击')) total += panelMods.follow_dmg;", SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
+        self.assertIn(
+            "if (damageType === '追击' || tags.has('追击') || tags.has('追加攻击')) total += panelMods.follow_dmg;",
+            SHAFT_ENGINE_JS.read_text(encoding='utf-8'),
+        )
         self.assertIn("if (tags.has('附着')) total += panelMods.attach_dmg;", SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
         self.assertIn('damage_by_action_by_slot: clone(result.damage_by_action_by_slot || [])', source)
         self.assertIn('function mergeActionAnalysisComparison(', source)

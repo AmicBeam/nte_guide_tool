@@ -442,10 +442,15 @@
     if (actionType === '闪反' || damageType === '闪反') total += panelMods.dodge_counter_dmg;
     if (actionType === 'E' || damageType === 'E') total += panelMods.skill_dmg;
     if (actionType === 'Q' || damageType === 'Q') total += panelMods.ultimate_dmg;
-    if (tags.has('追击')) total += panelMods.follow_dmg;
+    if (damageType === '追击' || tags.has('追击') || tags.has('追加攻击')) total += panelMods.follow_dmg;
     if (tags.has('心灵')) total += panelMods.mind_dmg;
     if (tags.has('附着')) total += panelMods.attach_dmg;
     return total;
+  }
+
+  function damageCharacterForAction(snapshot, action) {
+    const element = String(action?.damage_element || snapshot?.character?.element || '');
+    return Object.assign({}, snapshot?.character || {}, {element});
   }
 
   function buildSnapshot(member, catalog, teamPanelBonus) {
@@ -721,7 +726,9 @@
     const otherDamageBonus = actionDamageBonus - panelMods.all_dmg;
     const dmgBonus = actionDamageBonus + panelMods.element_dmg;
     const crit = critMultiplier(action, panelMods);
-    const resistanceCharacter = actionTags(action).has('心灵') ? { element: '' } : snapshot.character;
+    const resistanceCharacter = actionTags(action).has('心灵')
+      ? { element: '' }
+      : damageCharacterForAction(snapshot, action);
     const effectiveResistance = settledResistance(resistanceCharacter, enemy, panelMods);
     const effectiveDefense = settledDefense(enemy, panelMods);
     const resistance = resistanceMultiplier(resistanceCharacter, enemy, panelMods);
@@ -751,6 +758,7 @@
         crit_dmg: stats.crit_dmg,
         all_dmg: panelMods.all_dmg,
         element_dmg: panelMods.element_dmg,
+        follow_dmg: panelMods.follow_dmg,
         other_dmg: otherDamageBonus,
         final_dmg: panelMods.final_dmg,
       },
@@ -1194,7 +1202,7 @@
     const placements = strSet(source?.placements);
     if (placements.size && !placements.has(placement(isBackground))) return false;
     const elements = strSet(source?.elements);
-    if (elements.size && !elements.has(String(snapshot.character?.element || ''))) return false;
+    if (elements.size && !elements.has(String(damageCharacterForAction(snapshot, action).element || ''))) return false;
     return true;
   }
 
@@ -1412,7 +1420,7 @@
     const placements = strSet(target?.placements);
     if (placements.size && !placements.has(placement(isBackground))) return false;
     const elements = strSet(target?.elements);
-    if (elements.size && !elements.has(String(snapshot.character?.element || ''))) return false;
+    if (elements.size && !elements.has(String(damageCharacterForAction(snapshot, action).element || ''))) return false;
     if (!conditionsMatch(target?.conditions, Object.assign({}, context, { snapshot }))) return false;
     return true;
   }
@@ -2409,6 +2417,10 @@
       return Array.from(snapshots.values()).some((snapshot) => String(snapshot?.character?.id || '') === JIUYUAN_CHARACTER_ID);
     }
 
+    function teamHasLingke() {
+      return Array.from(snapshots.values()).some((snapshot) => String(snapshot?.character?.id || '') === 'char_0846d632e0');
+    }
+
     function evenlySpacedDamageTicks(startTick, durationTicks, count) {
       const safeCount = Math.max(0, int(count));
       const safeDuration = Math.max(0, int(durationTicks));
@@ -2674,6 +2686,7 @@
 
     function triggerReaction(scheduled, tick, { primeLoop = false } = {}) {
       if (!isSupportAction(scheduled.action)) return { effect: null, warning: '' };
+      if (scheduled.action?.disable_reaction === true) return { effect: null, warning: '' };
       const supportSnapshot = snapshots.get(int(scheduled.slot));
       const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
       if (!supportSnapshot || !previousSnapshot) {
@@ -3512,17 +3525,19 @@
       return Math.max(0, count);
     }
 
-    function reactionAmplificationMultiplier(snapshot, calcPanel, tick, reactionFilter = '') {
+    function reactionAmplificationMultiplier(snapshot, action, calcPanel, tick, reactionFilter = '') {
       let multiplier = 1;
       reactionEffects.forEach((effect) => {
         if (tick < int(effect.start_tick) || tick >= int(effect.end_tick)) return;
         if (reactionFilter && String(effect.reaction || '') !== reactionFilter) return;
-        const element = String(snapshot.character?.element || '');
+        const element = String(damageCharacterForAction(snapshot, action).element || '');
         if (effect.reaction === '浸染' && ['魂', '相'].includes(element)) {
           multiplier *= reactionAmplificationMultiplierForStrength(calcPanel?.harmony_strength);
         }
         if (effect.reaction === '覆纹' && ['灵', '咒'].includes(element)) {
-          multiplier *= reactionAmplificationMultiplierForStrength(calcPanel?.harmony_strength);
+          const strength = Math.max(0, num(calcPanel?.harmony_strength));
+          const strengthBonus = strength > 0 ? 0.2 * strength / (strength + 180) : 0;
+          multiplier *= (teamHasLingke() ? 1.3 : 1.2) * (1 + strengthBonus);
         }
       });
       return multiplier;
@@ -4426,12 +4441,18 @@
           },
         ));
       }
-      const reactionAmplification = reactionAmplificationMultiplier(snapshot, calc.panel, buffTick);
-      const fuwenAmplification = reactionAmplificationMultiplier(snapshot, calc.panel, buffTick, '覆纹');
+      const reactionAmplification = reactionAmplificationMultiplier(snapshot, action, calc.panel, buffTick);
+      const fuwenAmplification = reactionAmplificationMultiplier(snapshot, action, calc.panel, buffTick, '覆纹');
       const baseActionDirectDamage = calc.direct_damage * actionMultiplier;
-      const amplifiedActionDamage = baseActionDirectDamage * reactionAmplification;
-      const fuwenDamage = Math.max(0, baseActionDirectDamage * (fuwenAmplification - 1));
-      const multipliedDirectDamage = Math.max(0, amplifiedActionDamage - fuwenDamage);
+      const nonFuwenAmplification = fuwenAmplification > 1
+        ? reactionAmplification / fuwenAmplification
+        : reactionAmplification;
+      const multipliedDirectDamage = Math.max(0, baseActionDirectDamage * nonFuwenAmplification);
+      const fuwenFollowMultiplier = 1 + Math.max(0, num(calc.panel.follow_dmg));
+      const fuwenDamage = Math.max(
+        0,
+        multipliedDirectDamage * (fuwenAmplification - 1) * fuwenFollowMultiplier,
+      );
       let multipliedStagger = calc.stagger_amount * actionMultiplier;
       let forcedStagger = false;
       const forceStaggerNodes = action.force_stagger_by_awakening_node || {};
@@ -4632,6 +4653,8 @@
           action_multiplier: actionMultiplier,
           reaction_amplification: reactionAmplification,
           fuwen_amplification: fuwenAmplification,
+          non_fuwen_amplification: nonFuwenAmplification,
+          fuwen_follow_multiplier: fuwenFollowMultiplier,
           active_dot_layer_count: buffContext.active_dot_layer_count,
         }),
         stagger_profile: calc.stagger_profile,

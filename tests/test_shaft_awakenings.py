@@ -31,8 +31,14 @@ class ShaftAwakeningDataTestCase(unittest.TestCase):
         ]
 
         self.assertEqual(len(entries), 176)
-        self.assertEqual(len(pending), 6)
+        self.assertEqual(len(pending), 0)
         self.assertEqual(len(out_of_scope), 25)
+        self.assertTrue(all(entry.get('implemented') is True for entry in awakenings['灵可'][:4]))
+        self.assertEqual(
+            [entry.get('implementation_status') for entry in awakenings['灵可'][4:6]],
+            ['out_of_scope', 'out_of_scope'],
+        )
+        self.assertTrue(all(entry.get('implemented') is True for entry in awakenings['灵可'][6:]))
         self.assertNotIn(
             'implemented',
             next(entry for entry in awakenings['残虹'] if entry['title'] == '猩红盛宴'),

@@ -401,7 +401,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                         'start_tick': 30,
                     },
                 ],
-                'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+                'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
                 'initial_energy': 200,
             })['result']
 
@@ -472,7 +472,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                     },
                 },
             },
-            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+            'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
             'initial_energy': 200,
         })['result']
         active_details = {detail['step_id']: detail for detail in active_result['details']}
@@ -644,7 +644,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                     {'id': 'first', 'slot': 0, 'action_id': 'action_db30565b20', 'start_tick': 0},
                     {'id': 'second', 'slot': 0, 'action_id': 'action_db30565b20', 'start_tick': 80},
                 ],
-                'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+                'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
                 'initial_energy': 200,
             })['result']
             return next(detail for detail in result['details'] if detail['step_id'] == 'second')['warnings']
@@ -751,7 +751,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 {'id': 'counter', 'slot': 0, 'action_id': 'action_cc06c5dd84', 'start_tick': 20},
                 {'id': 'second-e', 'slot': 0, 'action_id': 'action_6b96f24d8c', 'start_tick': 45},
             ],
-            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+            'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
             'initial_energy': 200,
         })['result']
 
@@ -4973,6 +4973,82 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             0.44,
         )
 
+    def test_lingke_manual_blitz_and_first_four_awakenings(self) -> None:
+        def simulate(nodes: list[int]) -> dict:
+            return simulate_shaft_axis({
+                'team': [{
+                    'slot': 0,
+                    'character_id': 'char_0846d632e0',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                    'awakening_nodes': nodes,
+                }],
+                'steps': [
+                    {'id': 'blitz-1', 'slot': 0, 'action_id': 'action_lingke_ghost_blitz', 'start_tick': 0},
+                    {'id': 'e-1', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 5},
+                    {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 20},
+                    {'id': 'e-2', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 30},
+                    {'id': 'a4', 'slot': 0, 'action_id': 'action_lingke_a4_joint_extra', 'start_tick': 40},
+                    {'id': 'blitz-2', 'slot': 0, 'action_id': 'action_lingke_ghost_blitz', 'start_tick': 65},
+                ],
+                'initial_energy': 200,
+                'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+            })['result']
+
+        base = {detail['step_id']: detail for detail in simulate([])['details']}
+        awakened = {detail['step_id']: detail for detail in simulate([1, 2, 3, 4])['details']}
+
+        self.assertTrue(any('8.0s' in warning for warning in base['blitz-2']['warnings']))
+        self.assertFalse(any('CD 尚未结束' in warning for warning in awakened['blitz-2']['warnings']))
+        self.assertAlmostEqual(
+            awakened['q']['formula_parts']['raw_base'] / base['q']['formula_parts']['raw_base'],
+            (12.64695 / 11.544) * 1.1,
+        )
+        self.assertFalse(any('CD 尚未结束' in warning for warning in awakened['e-2']['warnings']))
+        self.assertFalse(any('共鸣领域' in warning for warning in awakened['a4']['warnings']))
+        self.assertTrue(any('觉醒节点' in warning for warning in base['a4']['warnings']))
+
+    def test_lingke_joint_elements_precise_tuning_and_resonances(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_0846d632e0',
+                'arc_id': '',
+                'cartridge_id': '',
+                'awakening_nodes': [1, 2, 3, 4, 5, 6],
+            }],
+            'steps': [
+                {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 0},
+                {'id': 'light-1', 'slot': 0, 'action_id': 'action_lingke_joint_light', 'start_tick': 1},
+                {'id': 'light-2', 'slot': 0, 'action_id': 'action_lingke_joint_light', 'start_tick': 10},
+                {'id': 'curse', 'slot': 0, 'action_id': 'action_lingke_joint_curse', 'start_tick': 20},
+                {'id': 'late-a4', 'slot': 0, 'action_id': 'action_lingke_a4_joint_extra', 'start_tick': 129},
+            ],
+            'enemy': {'resistances': {'光': 0.3, '灵': 0.3, '咒': 0.3, '暗': 0.3, '魂': 0.3, '相': 0.3}},
+            'initial_energy': 200,
+            'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+        details = {detail['step_id']: detail for detail in result['details']}
+
+        self.assertEqual(details['light-1']['damage_element'], '光')
+        self.assertEqual(details['curse']['damage_element'], '咒')
+        self.assertAlmostEqual(details['light-1']['formula_parts']['settled_resistance'], 0.3)
+        self.assertAlmostEqual(details['light-2']['formula_parts']['settled_resistance'], 0.22)
+        self.assertIn(
+            'character_lingke_precise_tuning_light',
+            {buff['rule_id'] for buff in details['light-2']['applied_buffs']},
+        )
+        self.assertFalse(details['light-1']['triggered_reaction'])
+        self.assertAlmostEqual(details['curse']['panel']['element_dmg'], 0.495)
+        self.assertFalse(any('共鸣领域' in warning for warning in details['late-a4']['warnings']))
+        self.assertAlmostEqual(details['q']['panel']['atk'] / details['light-1']['panel']['atk'], 1)
+        self.assertEqual(details['q']['formula_parts']['skill_level'], 11)
+        field = next(
+            buff for buff in details['q']['triggered_buffs']
+            if buff['rule_id'] == 'character_lingke_resonance_field_full'
+        )
+        self.assertEqual(field['end_tick'] - field['start_tick'], 130)
+
     def test_last_rose_e_and_dot_share_one_ten_layer_buff(self) -> None:
         catalog = load_shaft_catalog()
         rules = registered_buff_rules(
@@ -7962,6 +8038,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                 'team': [
                     {'slot': 0, 'character_id': 'char_076a1f4e53', 'arc_id': '', 'cartridge_id': ''},
                     {'slot': 1, 'character_id': 'char_b2e3b2bf7a', 'arc_id': '', 'cartridge_id': ''},
+                    {'slot': 2, 'character_id': 'char_0846d632e0', 'arc_id': '', 'cartridge_id': ''},
                 ],
                 'steps': [
                     {'id': 'canhong', 'slot': 0, 'action_id': 'action_canhong_a1', 'start_tick': 0},
@@ -7986,18 +8063,23 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(fuwen_blood['direct_damage'], baseline_blood['direct_damage'])
         self.assertGreater(fuwen_blood['fuwen_damage'], 0)
-        expected_amplification = 1.2 * (1 + 0.2 * 100 / (100 + 180))
+        expected_amplification = 1.3 * (1 + 0.2 * 100 / (100 + 180))
         self.assertAlmostEqual(
             fuwen_blood['formula_parts']['reaction_amplification'],
             expected_amplification,
         )
         self.assertAlmostEqual(
             fuwen_blood['fuwen_damage'],
-            baseline_blood['direct_damage'] * (expected_amplification - 1),
+            fuwen_blood['direct_damage'] * (expected_amplification - 1) * 1.1,
         )
         self.assertAlmostEqual(
             fuwen_blood['direct_damage'] + fuwen_blood['fuwen_damage'],
-            baseline_blood['direct_damage'] * fuwen_blood['formula_parts']['reaction_amplification'],
+            fuwen_blood['direct_damage'] + fuwen_blood['direct_damage'] * (expected_amplification - 1) * 1.1,
+        )
+        self.assertEqual(fuwen_blood['formula_parts']['fuwen_follow_multiplier'], 1.1)
+        self.assertIn(
+            'character_lingke_fuwen_follow_damage',
+            {buff['rule_id'] for buff in fuwen_blood['applied_buffs']},
         )
         self.assertAlmostEqual(damage_by_source['覆纹']['damage'], fuwen_blood['fuwen_damage'])
         self.assertAlmostEqual(

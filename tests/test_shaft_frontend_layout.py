@@ -599,7 +599,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             {action['name'] for action in actions},
             {
                 '恶灵闪击战', '援护', 'e', 'q', '光同频', '灵同频', '咒同频',
-                '暗同频', '魂同频', '相同频', '小贞同频', '4觉同频追加', '闪', '无',
+                '暗同频', '魂同频', '相同频', '消耗标记同频', '小贞同频',
+                '4觉同频追加', '闪', '无',
             },
         )
         actions_by_name = {action['name']: action for action in actions}
@@ -620,6 +621,15 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             self.assertEqual(joint['harmony'], 15)
             self.assertEqual(joint['damage_element'], element)
             self.assertTrue(joint['disable_reaction'])
+        mark_joint = actions_by_name['消耗标记同频']
+        self.assertEqual(mark_joint['damage_element'], '灵')
+        self.assertEqual(mark_joint['duration_ticks'], 0)
+        self.assertEqual(mark_joint['multipliers']['atk'], 5.0)
+        self.assertEqual(mark_joint['harmony'], 15)
+        self.assertEqual(mark_joint['stagger'], 2.5)
+        self.assertTrue(mark_joint['is_background_damage'])
+        self.assertTrue(mark_joint['disable_reaction'])
+        self.assertIn('消耗标记', mark_joint['tags'])
         self.assertEqual(actions_by_name['小贞同频']['multipliers']['atk'], 1.999)
         self.assertEqual(actions_by_name['小贞同频']['hit_count'], 4)
         self.assertEqual(actions_by_name['小贞同频']['stagger'], 1.667)

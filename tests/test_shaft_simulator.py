@@ -5022,6 +5022,8 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                 {'id': 'light-1', 'slot': 0, 'action_id': 'action_lingke_joint_light', 'start_tick': 1},
                 {'id': 'light-2', 'slot': 0, 'action_id': 'action_lingke_joint_light', 'start_tick': 10},
                 {'id': 'curse', 'slot': 0, 'action_id': 'action_lingke_joint_curse', 'start_tick': 20},
+                {'id': 'mark-1', 'slot': 0, 'action_id': 'action_lingke_mark_joint', 'start_tick': 30},
+                {'id': 'mark-2', 'slot': 0, 'action_id': 'action_lingke_mark_joint', 'start_tick': 31},
                 {'id': 'late-a4', 'slot': 0, 'action_id': 'action_lingke_a4_joint_extra', 'start_tick': 129},
             ],
             'enemy': {'resistances': {'光': 0.3, '灵': 0.3, '咒': 0.3, '暗': 0.3, '魂': 0.3, '相': 0.3}},
@@ -5034,6 +5036,10 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertEqual(details['curse']['damage_element'], '咒')
         self.assertAlmostEqual(details['light-1']['formula_parts']['settled_resistance'], 0.3)
         self.assertAlmostEqual(details['light-2']['formula_parts']['settled_resistance'], 0.22)
+        self.assertEqual(details['mark-1']['damage_element'], '灵')
+        self.assertAlmostEqual(details['mark-1']['formula_parts']['settled_resistance'], 0.3)
+        self.assertAlmostEqual(details['mark-2']['formula_parts']['settled_resistance'], 0.22)
+        self.assertFalse(details['mark-1']['triggered_reaction'])
         self.assertIn(
             'character_lingke_precise_tuning_light',
             {buff['rule_id'] for buff in details['light-2']['applied_buffs']},

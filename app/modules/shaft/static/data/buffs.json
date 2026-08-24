@@ -3003,7 +3003,7 @@
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_count_min", "min": 3}]},
     "target": {"scope": "registrar"},
     "duration": {"type": "permanent"},
-    "effects": {"atk_pct": 0.1},
+    "effects": {"atk_pct": 0.2},
     "display": {"line": false}
   },
   {
@@ -3015,7 +3015,7 @@
     "target": {"scope": "team", "elements": ["灵", "咒"]},
     "duration": {"type": "time", "ticks": 130, "loop_carry": true},
     "stacking": {"key": "character_lingke_six_node_resonance_element_damage", "mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.12},
+    "effects": {"element_dmg": 0.3},
     "display": {"line": true}
   },
   {

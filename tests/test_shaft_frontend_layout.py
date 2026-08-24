@@ -628,7 +628,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions_by_name['q多段']['energy_cost'], 0)
         self.assertEqual(actions_by_name['q爆发']['multipliers']['atk'], 7.353)
         self.assertEqual(actions_by_name['q爆发']['hit_count'], 1)
-        self.assertEqual(actions_by_name['q爆发']['multipliers_add_by_awakening_node']['2']['atk'], 1.10295)
+        self.assertEqual(actions_by_name['q爆发']['multipliers_add_by_awakening_node']['2']['atk'], 2.2059)
         for element in ('光', '灵', '咒', '暗', '魂', '相'):
             joint = actions_by_name[f'{element}同频']
             self.assertEqual(joint['duration_ticks'], 15)

@@ -5003,11 +5003,11 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertFalse(any('CD 尚未结束' in warning for warning in awakened['blitz-2']['warnings']))
         self.assertAlmostEqual(
             awakened['q']['formula_parts']['raw_base'] / base['q']['formula_parts']['raw_base'],
-            1.1,
+            1.2,
         )
         self.assertAlmostEqual(
             awakened['q-burst']['formula_parts']['raw_base'] / base['q-burst']['formula_parts']['raw_base'],
-            (8.45595 / 7.353) * 1.1,
+            (9.5589 / 7.353) * 1.2,
         )
         self.assertFalse(any('CD 尚未结束' in warning for warning in awakened['e-2']['warnings']))
         self.assertFalse(any('共鸣领域' in warning for warning in awakened['a4']['warnings']))
@@ -5052,7 +5052,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             {buff['rule_id'] for buff in details['light-2']['applied_buffs']},
         )
         self.assertFalse(details['light-1']['triggered_reaction'])
-        self.assertAlmostEqual(details['curse']['panel']['element_dmg'], 0.495)
+        self.assertAlmostEqual(details['curse']['panel']['element_dmg'], 0.675)
         self.assertFalse(any('共鸣领域' in warning for warning in details['late-a4']['warnings']))
         self.assertAlmostEqual(details['q']['panel']['atk'] / details['light-1']['panel']['atk'], 1)
         self.assertEqual(details['q']['formula_parts']['skill_level'], 11)

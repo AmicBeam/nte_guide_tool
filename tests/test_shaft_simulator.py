@@ -5040,6 +5040,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertAlmostEqual(details['mark-1']['formula_parts']['settled_resistance'], 0.3)
         self.assertAlmostEqual(details['mark-2']['formula_parts']['settled_resistance'], 0.22)
         self.assertFalse(details['mark-1']['triggered_reaction'])
+        self.assertEqual(result['resources_by_slot'][0]['harmony'], 0)
         self.assertIn(
             'character_lingke_precise_tuning_light',
             {buff['rule_id'] for buff in details['light-2']['applied_buffs']},

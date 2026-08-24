@@ -9115,31 +9115,31 @@
   },
   {
     "id": "action_lingke_team_joint", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "灵同频", "action_type": "援护", "damage_type": "追击", "damage_element": "灵", "extra_tag": "同频合击", "is_background_damage": true, "disable_reaction": true, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 15, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "腾讯文档《角色属性》tab 000003 row 488；Nanoka 2026-08-24核实「同频合击」属于特殊援护技，伤害属性取发起角色属性，伤害视为追加攻击，并受灵可面板与援护技技能等级影响。按用户2026-08-24口径拆为六属性0秒动作；5觉暂不实装，因此不触发环合。"
+    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "腾讯文档《角色属性》tab 000003 row 488；Nanoka 2026-08-24核实「同频合击」属于特殊援护技，伤害属性取发起角色属性，伤害视为追加攻击，并受灵可面板与援护技技能等级影响。按用户2026-08-24口径拆为六属性0秒动作；按用户2026-08-25纠正，同频合击没有环合值。5觉暂不实装，因此不触发环合。"
   },
   {
     "id": "action_lingke_mark_joint", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "消耗标记同频", "action_type": "援护", "damage_type": "追击", "damage_element": "灵", "extra_tag": "小鬼打这里！", "is_background_damage": true, "disable_reaction": true, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 15, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击", "消耗标记"], "source_row": 488, "source_note": "腾讯文档《角色属性》tab 000003 row 488提供灵可同频500%倍率、15环合与2.5倾陷；Nanoka 2026-08-24核实前台角色E命中可消耗「小鬼打这里！」并触发灵可同频。按用户2026-08-25明确口径作为玩家手工排入的0秒后台动作，固定为灵属性，使用灵可面板与援护技等级；不建立或校验真实标记，5觉暂不实装因此不触发环合反应。"
+    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击", "消耗标记"], "source_row": 488, "source_note": "腾讯文档《角色属性》tab 000003 row 488提供灵可同频500%倍率与2.5倾陷；Nanoka 2026-08-24核实前台角色E命中可消耗「小鬼打这里！」并触发灵可同频。按用户2026-08-25明确口径作为玩家手工排入的0秒后台动作，固定为灵属性、环合值为0，使用灵可面板与援护技等级；不建立或校验真实标记，5觉暂不实装因此不触发环合反应。"
   },
   {
     "id": "action_lingke_joint_light", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "光同频", "action_type": "援护", "damage_type": "追击", "damage_element": "光", "extra_tag": "同频合击", "is_background_damage": true, "disable_reaction": true, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 15, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为光。"
+    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为光。"
   },
   {
     "id": "action_lingke_joint_curse", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "咒同频", "action_type": "援护", "damage_type": "追击", "damage_element": "咒", "extra_tag": "同频合击", "is_background_damage": true, "disable_reaction": true, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 15, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为咒。"
+    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为咒。"
   },
   {
     "id": "action_lingke_joint_dark", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "暗同频", "action_type": "援护", "damage_type": "追击", "damage_element": "暗", "extra_tag": "同频合击", "is_background_damage": true, "disable_reaction": true, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 15, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为暗。"
+    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为暗。"
   },
   {
     "id": "action_lingke_joint_soul", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "魂同频", "action_type": "援护", "damage_type": "追击", "damage_element": "魂", "extra_tag": "同频合击", "is_background_damage": true, "disable_reaction": true, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 15, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为魂。"
+    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为魂。"
   },
   {
     "id": "action_lingke_joint_phase", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "相同频", "action_type": "援护", "damage_type": "追击", "damage_element": "相", "extra_tag": "同频合击", "is_background_damage": true, "disable_reaction": true, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 15, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为相。"
+    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为相。"
   },
   {
     "id": "action_lingke_xiaozhen_joint", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "小贞同频", "action_type": "援护", "damage_type": "追击", "extra_tag": "同频合击", "is_background_damage": true, "duration_seconds": 0, "duration_ticks": 0,

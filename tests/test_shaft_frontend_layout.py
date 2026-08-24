@@ -618,14 +618,14 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             joint = actions_by_name[f'{element}同频']
             self.assertEqual(joint['duration_ticks'], 0)
             self.assertEqual(joint['multipliers']['atk'], 5.0)
-            self.assertEqual(joint['harmony'], 15)
+            self.assertEqual(joint['harmony'], 0)
             self.assertEqual(joint['damage_element'], element)
             self.assertTrue(joint['disable_reaction'])
         mark_joint = actions_by_name['消耗标记同频']
         self.assertEqual(mark_joint['damage_element'], '灵')
         self.assertEqual(mark_joint['duration_ticks'], 0)
         self.assertEqual(mark_joint['multipliers']['atk'], 5.0)
-        self.assertEqual(mark_joint['harmony'], 15)
+        self.assertEqual(mark_joint['harmony'], 0)
         self.assertEqual(mark_joint['stagger'], 2.5)
         self.assertTrue(mark_joint['is_background_damage'])
         self.assertTrue(mark_joint['disable_reaction'])

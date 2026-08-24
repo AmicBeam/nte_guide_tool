@@ -1,0 +1,4 @@
+interface:
+  display_name: "排轴内容维护"
+  short_description: "维护排轴角色、动作、弧盘、卡带、Buff及目录顺序"
+  default_prompt: "使用 $shaft-content-maintenance 按仓库约定维护排轴内容与验证。"

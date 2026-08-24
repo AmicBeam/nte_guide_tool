@@ -8070,13 +8070,19 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         )
         self.assertAlmostEqual(
             fuwen_blood['fuwen_damage'],
-            fuwen_blood['direct_damage'] * (expected_amplification - 1) * 1.1,
+            fuwen_blood['direct_damage']
+            * ((1 + 0.3 * 1.1) * (1 + 0.2 * 100 / (100 + 180)) - 1),
         )
         self.assertAlmostEqual(
             fuwen_blood['direct_damage'] + fuwen_blood['fuwen_damage'],
-            fuwen_blood['direct_damage'] + fuwen_blood['direct_damage'] * (expected_amplification - 1) * 1.1,
+            fuwen_blood['direct_damage']
+            * (1 + ((1 + 0.3 * 1.1) * (1 + 0.2 * 100 / (100 + 180)) - 1)),
         )
         self.assertEqual(fuwen_blood['formula_parts']['fuwen_follow_multiplier'], 1.1)
+        self.assertAlmostEqual(
+            fuwen_blood['formula_parts']['fuwen_damage_multiplier'],
+            (1 + 0.3 * 1.1) * (1 + 0.2 * 100 / (100 + 180)) - 1,
+        )
         self.assertIn(
             'character_lingke_fuwen_follow_damage',
             {buff['rule_id'] for buff in fuwen_blood['applied_buffs']},

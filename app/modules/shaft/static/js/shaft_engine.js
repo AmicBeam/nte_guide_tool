@@ -4449,9 +4449,17 @@
         : reactionAmplification;
       const multipliedDirectDamage = Math.max(0, baseActionDirectDamage * nonFuwenAmplification);
       const fuwenFollowMultiplier = 1 + Math.max(0, num(calc.panel.follow_dmg));
+      const fuwenBaseRatio = teamHasLingke() ? 0.3 : 0.2;
+      const fuwenStrengthMultiplier = fuwenAmplification > 1
+        ? fuwenAmplification / (1 + fuwenBaseRatio)
+        : 1;
+      // User-defined special formula: D * [(1 + R * (1 + P)) * (1 + S) - 1].
+      const fuwenDamageMultiplier = fuwenAmplification > 1
+        ? (1 + fuwenBaseRatio * fuwenFollowMultiplier) * fuwenStrengthMultiplier - 1
+        : 0;
       const fuwenDamage = Math.max(
         0,
-        multipliedDirectDamage * (fuwenAmplification - 1) * fuwenFollowMultiplier,
+        multipliedDirectDamage * fuwenDamageMultiplier,
       );
       let multipliedStagger = calc.stagger_amount * actionMultiplier;
       let forcedStagger = false;
@@ -4655,6 +4663,8 @@
           fuwen_amplification: fuwenAmplification,
           non_fuwen_amplification: nonFuwenAmplification,
           fuwen_follow_multiplier: fuwenFollowMultiplier,
+          fuwen_strength_multiplier: fuwenStrengthMultiplier,
+          fuwen_damage_multiplier: fuwenDamageMultiplier,
           active_dot_layer_count: buffContext.active_dot_layer_count,
         }),
         stagger_profile: calc.stagger_profile,

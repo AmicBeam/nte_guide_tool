@@ -575,6 +575,53 @@
       "description": "点亮全部6个觉醒节点后生效：残虹造成伤害后自身攻击力提升40%，持续20秒；不可叠加，重复触发刷新持续时间。击败浊燃目标后获得60秒强化、强化期间施加持续伤害使浊燃直接满层的效果按用户口径不在当前项目触发，已忽略。"
     }
   ],
+  "灵可": [
+    {
+      "title": "万物电台已接通！",
+      "implemented": false,
+      "implementation_status": "out_of_scope",
+      "description": "灵可处于后台时，「普通攻击：恶灵闪击战！」的出现间隔缩短25%。"
+    },
+    {
+      "title": "幽灵其实很可爱！",
+      "implemented": false,
+      "description": "「极轨终结：超负荷共鸣」的灵属性爆发伤害的倍率提升15%。"
+    },
+    {
+      "title": "将孤岛彼此相连！",
+      "implemented": false,
+      "description": "释放「极轨终结：超负荷共鸣！」将刷新「变轨技能：瞬息全频振」冷却时间。"
+    },
+    {
+      "title": "星星也说悄悄话！",
+      "implemented": false,
+      "implementation_status": "out_of_scope",
+      "description": "在「共鸣领域」内，每次触发「同频合击」时额外造成一次100%倍率的范围性灵属性异能伤害。该攻击可消耗「小鬼打这里！」标记并触发「同频合击」。"
+    },
+    {
+      "title": "向全频段呼唤爱！",
+      "implemented": false,
+      "implementation_status": "out_of_scope",
+      "description": "「变轨技能：瞬息全频振」触发的「同频合击」可以触发环合效果。若所选队友与灵可无法发生环合，则本次「同频合击」获得20%增伤。"
+    },
+    {
+      "title": "世界将予你回声！",
+      "implemented": false,
+      "implementation_status": "out_of_scope",
+      "description": "灵可在队伍时，队伍角色的「同频合击」额外增加25%暴击率，并且队友的「同频合击」可以获得充能效果。"
+    },
+    {
+      "title": "心跳重叠于此时！",
+      "implemented": false,
+      "description": "点亮任意3个觉醒节点后生效：「援护技：恶灵左直拳！」、「变轨技能：瞬息全频振」、「极轨终结：超负荷共鸣」等级+1；灵可自身的攻击力提升10%。"
+    },
+    {
+      "title": "万籁同频的刹那！",
+      "implemented": false,
+      "implementation_status": "out_of_scope",
+      "description": "点亮全部6个觉醒节点后生效：「共鸣领域」持续时间延长5秒，期间全队获得12%灵和咒属性增伤。"
+    }
+  ],
   "伊洛伊": [
     {
       "title": "重复囚徒困境",

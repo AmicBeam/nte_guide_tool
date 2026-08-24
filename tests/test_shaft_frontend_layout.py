@@ -449,7 +449,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             source,
         )
 
-    def test_canhong_is_available_to_invited_and_test_accounts_and_yiloyi_is_public(self) -> None:
+    def test_canhong_is_public_lingke_is_test_only_and_yiloyi_is_public(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         public_catalog = get_shaft_catalog_payload()
         invited_catalog = get_shaft_catalog_payload(player=SimpleNamespace(
@@ -460,11 +460,17 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残虹')
         invited_canhong = next(character for character in invited_catalog['characters'] if character['name'] == '残虹')
         test_canhong = next(character for character in test_catalog['characters'] if character['name'] == '残虹')
+        public_lingke = next(character for character in public_catalog['characters'] if character['name'] == '灵可')
+        invited_lingke = next(character for character in invited_catalog['characters'] if character['name'] == '灵可')
+        test_lingke = next(character for character in test_catalog['characters'] if character['name'] == '灵可')
         public_yiloyi = next(character for character in public_catalog['characters'] if character['name'] == '伊洛伊')
 
-        self.assertTrue(public_canhong['selection_disabled'])
+        self.assertFalse(public_canhong['selection_disabled'])
         self.assertFalse(invited_canhong['selection_disabled'])
         self.assertFalse(test_canhong['selection_disabled'])
+        self.assertTrue(public_lingke['selection_disabled'])
+        self.assertTrue(invited_lingke['selection_disabled'])
+        self.assertFalse(test_lingke['selection_disabled'])
         self.assertEqual(public_canhong['avatar'], '/static/images/characters/avatar/残虹.png')
         self.assertEqual(public_canhong['portrait'], '/static/images/characters/avatar/残虹.png')
         self.assertFalse(public_yiloyi['selection_disabled'])
@@ -479,7 +485,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         canhong = characters['残虹']
         protagonist = characters['主角']
 
-        self.assertTrue(canhong['test_character'])
+        self.assertNotIn('test_character', canhong)
         self.assertEqual(canhong['bond_bonus']['label'], '4暴击')
         self.assertEqual(canhong['bond_bonus']['modifiers']['crit_rate'], 0.04)
         self.assertNotIn('bond_bonus', protagonist)
@@ -508,6 +514,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions['幻e']['harmony'], 18.901)
         self.assertEqual(actions['幻e']['stagger'], 2.299)
         self.assertEqual(actions['血宴']['multipliers']['atk'], 6.999)
+
         self.assertEqual(actions['血宴']['energy_cost'], 120)
         self.assertEqual(actions['e']['duration_ticks'], 10)
         self.assertEqual(actions['强化e']['duration_ticks'], 10)
@@ -578,6 +585,24 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('function characterHasBondBonus(characterId)', source)
         self.assertIn("const bondLabel = hasBondBonus ? character.bond_bonus.label : '无羁绊加成';", source)
         self.assertIn("${hasBondBonus ? '' : 'disabled'}", source)
+
+    def test_lingke_uses_user_panel_mapping_and_only_support_e_q_actions(self) -> None:
+        catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
+        lingke = next(character for character in catalog['characters'] if character['name'] == '灵可')
+        actions = catalog['actions_by_character'][lingke['id']]
+
+        self.assertTrue(lingke['test_character'])
+        self.assertEqual(lingke['element'], '灵')
+        self.assertEqual(lingke['adaptation'], '等离子')
+        self.assertEqual(lingke['base_stats'], {'atk': 652.0, 'hp': 15513.0, 'def': 921.1})
+        self.assertEqual({action['name'] for action in actions}, {'援护', 'e', 'q', '闪', '无'})
+        actions_by_name = {action['name']: action for action in actions}
+        self.assertEqual(actions_by_name['援护']['duration_ticks'], 0)
+        self.assertEqual(actions_by_name['e']['multipliers']['atk'], 1.0)
+        self.assertEqual(actions_by_name['e']['hit_count'], 4)
+        self.assertEqual(actions_by_name['q']['multipliers']['atk'], 11.544)
+        self.assertEqual(actions_by_name['q']['energy_cost'], 100)
+        self.assertEqual(actions_by_name['q']['hit_count'], 8)
 
     def test_yiloyi_bond_bonus_is_five_percent_attack(self) -> None:
         catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))

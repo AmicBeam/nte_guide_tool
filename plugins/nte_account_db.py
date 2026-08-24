@@ -58,10 +58,11 @@ class NTEShaftCharacterPublication(NTEBaseModel):
 
 
 DEFAULT_UNPUBLISHED_CHARACTERS = {
-    '残虹': 'char_076a1f4e53',
+    '灵可': 'char_0846d632e0',
 }
 RELEASED_CHARACTERS = {
     '伊洛伊': 'char_a01c39f576',
+    '残虹': 'char_076a1f4e53',
 }
 
 
@@ -87,7 +88,7 @@ def ensure_nte_tables():
             character_id=character_id,
             defaults={
                 'character_name': character_name,
-                'access_level': 'invited',
+                'access_level': 'test',
                 'is_published': False,
             },
         )
@@ -95,8 +96,8 @@ def ensure_nte_tables():
         if publication.character_name != character_name:
             publication.character_name = character_name
             fields_to_update.append(NTEShaftCharacterPublication.character_name)
-        if not publication.is_published and publication.access_level != 'invited':
-            publication.access_level = 'invited'
+        if not publication.is_published and publication.access_level != 'test':
+            publication.access_level = 'test'
             fields_to_update.append(NTEShaftCharacterPublication.access_level)
         if fields_to_update:
             publication.updated_at = datetime.utcnow()

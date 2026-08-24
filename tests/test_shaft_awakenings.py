@@ -30,9 +30,9 @@ class ShaftAwakeningDataTestCase(unittest.TestCase):
             if entry.get('implementation_status') == 'out_of_scope'
         ]
 
-        self.assertEqual(len(entries), 168)
-        self.assertEqual(len(pending), 0)
-        self.assertEqual(len(out_of_scope), 23)
+        self.assertEqual(len(entries), 176)
+        self.assertEqual(len(pending), 3)
+        self.assertEqual(len(out_of_scope), 28)
         self.assertNotIn(
             'implemented',
             next(entry for entry in awakenings['残虹'] if entry['title'] == '猩红盛宴'),

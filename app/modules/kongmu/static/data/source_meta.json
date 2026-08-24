@@ -5,5 +5,8 @@
   "locale": "zh",
   "updated_at": "2026-07-01T07:32:04+00:00",
   "console_url": "https://static.nanoka.cc/nte/1.2+476873/zh/console.json",
-  "character_url": "https://static.nanoka.cc/nte/1.2+476873/character.json"
+  "character_url": "https://static.nanoka.cc/nte/1.2+476873/character.json",
+  "local_updates": [
+    "2026-08-24由Nanoka实时GraphQL数据补充测试角色灵可（ID 1072）：Ⅲ型特化，每个Ⅲ型驱动提供8%暴击率；残虹按用户口径转为公开角色。"
+  ]
 }

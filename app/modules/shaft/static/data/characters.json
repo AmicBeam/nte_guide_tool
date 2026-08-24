@@ -279,9 +279,49 @@
       }
     },
     "source_row": 0,
-    "test_character": true,
     "initial_harmony_non_loop": 100,
-    "source_note": "2026-08-04 用户提供的腾讯文档；Nanoka 当前未收录残虹。1级攻击83、生命1280、防御75；80级攻击660、生命15513、防御909。排轴基础面板使用80级数值；武器类型未实装。2026-08-10 用户补充羁绊解锁提供4%暴击率。2026-08-13 头像使用用户提供图片。"
+    "source_note": "2026-08-04 用户提供的腾讯文档；1级攻击83、生命1280、防御75；80级攻击660、生命15513、防御909。排轴基础面板使用80级数值；武器类型未实装。2026-08-10 用户补充羁绊解锁提供4%暴击率。2026-08-13 头像使用用户提供图片。2026-08-24 按用户口径转为公开角色。"
+  },
+  {
+    "id": "char_0846d632e0",
+    "name": "灵可",
+    "element": "灵",
+    "adaptation": "等离子",
+    "rarity": "S",
+    "level": 80,
+    "avatar": "/static/images/characters/avatar/灵可.png",
+    "portrait": "/static/images/characters/avatar/灵可.png",
+    "base_stats": {
+      "atk": 652.0,
+      "hp": 15513.0,
+      "def": 921.1
+    },
+    "modifiers": {
+      "crit_rate": 0.05,
+      "crit_dmg": 0.5,
+      "atk_pct": 0.0,
+      "flat_atk": 0.0,
+      "hp_pct": 0.0,
+      "flat_hp": 0.0,
+      "def_pct": 0.0,
+      "flat_def": 0.0,
+      "def_ignore": 0.0,
+      "res_down": 0.0,
+      "energy_recharge": 0.0,
+      "harmony_strength": 0.0,
+      "stagger_strength": 0.0,
+      "basic_dmg": 0.0,
+      "element_dmg": 0.0,
+      "follow_dmg": 0.0,
+      "mind_dmg": 0.0,
+      "attach_dmg": 0.0,
+      "skill_dmg": 0.0,
+      "ultimate_dmg": 0.0,
+      "all_dmg": 0.0
+    },
+    "source_row": 0,
+    "test_character": true,
+    "source_note": "Nanoka 2026-08-24 实时核实：角色ID 1072、灵属性、等离子适应、5星。基础面板按用户2026-08-24指定映射：攻击取浔652、生命取残虹15513、防御取卡厄斯921.1；这些基础数值不是Nanoka数据。"
   },
   {
     "id": "char_a01c39f576",

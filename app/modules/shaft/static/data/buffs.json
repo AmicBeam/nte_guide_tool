@@ -2851,6 +2851,49 @@
     "display": {"line": true}
   },
   {
+    "id": "character_lingke_harmonic_joint_damage",
+    "name": "灵可·谐频同频强化",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 20,
+    "trigger": {"event": "passive"},
+    "target": {"scope": "registrar", "action_ids": ["action_lingke_joint_light", "action_lingke_team_joint", "action_lingke_joint_curse", "action_lingke_joint_dark", "action_lingke_joint_soul", "action_lingke_joint_phase"]},
+    "duration": {"type": "permanent"},
+    "dynamic_effects": {
+      "personal_resource_value": {
+        "resource": "谐频",
+        "effect_key": "all_dmg",
+        "base_value": 1.5,
+        "per_point": 0.004,
+        "max_amount": 100,
+        "max_extra": 0.4
+      }
+    },
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_lingke_q_burst_negative_damage",
+    "name": "灵可·超负荷共鸣负面增伤",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 20,
+    "trigger": {"event": "passive"},
+    "target": {"scope": "registrar", "action_ids": ["action_lingke_q_burst"]},
+    "duration": {"type": "permanent"},
+    "dynamic_effects": {
+      "negative_effect_count": {
+        "include_all_enemy_debuffs": true,
+        "count_def_down": true,
+        "count_res_down": true,
+        "damage_tags": ["DOT"],
+        "effect_key": "all_dmg",
+        "per_count": 0.04,
+        "max_count": 5
+      }
+    },
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
     "id": "character_lingke_precise_tuning_light",
     "name": "灵可·精确调频·光抗降低",
     "providers": [{"kind": "character", "id": "char_0846d632e0"}],

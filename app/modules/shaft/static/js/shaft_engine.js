@@ -30,6 +30,7 @@
     char_912dbfe17c: { '闪送之力': 6 },
     char_d38b672525: { '罪状': 1000 },
     char_a01c39f576: { '臆想': 100 },
+    char_0846d632e0: { '谐频': 100 },
   };
   const SKILL_LEVEL_DEFAULTS = {
     basic: 10,
@@ -1636,24 +1637,52 @@
       const activeKeys = new Set(asList(context.active_buff_keys).map(String));
       const activePeriodicActionIds = new Set(asList(context.active_periodic_action_ids).map(String));
       const damageTags = new Set(asList(negative.damage_tags).map(String));
-      const taggedDamageTypeCount = damageTags.size
+      const taggedDamageTypeIds = damageTags.size
         ? new Set(asList(context.active_damage_sources)
           .filter((source) => asList(source?.tags).map(String).some((tag) => damageTags.has(tag)))
           .map((source) => String(source?.type_id || ''))
-          .filter(Boolean)).size
-        : 0;
+          .filter(Boolean))
+        : new Set();
       const requiredEnemyDebuffs = asList(negative.requires_enemy_debuffs).map(String);
       const enabled = requiredEnemyDebuffs.every((key) => enemyDebuffs.has(key));
+      const includedEnemyDebuffs = negative.include_all_enemy_debuffs === true
+        ? enemyDebuffs.size
+        : asList(negative.enemy_debuffs).filter((key) => enemyDebuffs.has(String(key))).length;
+      const taggedDamageTypeCount = Array.from(taggedDamageTypeIds)
+        .filter((key) => negative.include_all_enemy_debuffs !== true || !enemyDebuffs.has(key)).length;
+      const activeNegativeEffectMaps = asList(context.active_buffs)
+        .map((buff) => buff?.rule?.effects)
+        .filter((effects) => effects && typeof effects === 'object');
+      const hasDefDown = activeNegativeEffectMaps.some((effects) => num(effects.def_down) > 0);
+      const hasResDown = activeNegativeEffectMaps.some((effects) => Object.entries(effects)
+        .some(([key, value]) => (key === 'res_down' || key.startsWith('res_down_')) && num(value) > 0));
       const count = enabled
         ? Math.min(
           Math.max(0, int(negative.max_count, 1)),
-          asList(negative.enemy_debuffs).filter((key) => enemyDebuffs.has(String(key))).length
+          includedEnemyDebuffs
             + asList(negative.buff_keys).filter((key) => activeKeys.has(String(key))).length
             + asList(negative.periodic_action_ids).filter((key) => activePeriodicActionIds.has(String(key))).length
-            + taggedDamageTypeCount,
+            + taggedDamageTypeCount
+            + (negative.count_def_down === true && hasDefDown ? 1 : 0)
+            + (negative.count_res_down === true && hasResDown ? 1 : 0),
         )
         : 0;
       resolved[String(negative.effect_key)] = num(resolved[String(negative.effect_key)]) + count * num(negative.per_count);
+    }
+    const personalResource = dynamic.personal_resource_value && typeof dynamic.personal_resource_value === 'object'
+      ? dynamic.personal_resource_value
+      : {};
+    if (personalResource.effect_key && personalResource.resource) {
+      const amount = Math.min(
+        Math.max(0, num(personalResource.max_amount, Number.POSITIVE_INFINITY)),
+        Math.max(0, num(context.personal_resources?.[String(personalResource.resource)])),
+      );
+      const extra = Math.min(
+        Math.max(0, num(personalResource.max_extra, Number.POSITIVE_INFINITY)),
+        amount * num(personalResource.per_point),
+      );
+      resolved[String(personalResource.effect_key)] = num(resolved[String(personalResource.effect_key)])
+        + num(personalResource.base_value) + extra;
     }
     const activeStack = dynamic.active_stack_count && typeof dynamic.active_stack_count === 'object'
       ? dynamic.active_stack_count
@@ -4334,6 +4363,7 @@
         active_periodic_action_ids: activePeriodicActionIds(buffTick),
         active_damage_sources: activeDamageSources(buffTick),
         active_dot_layer_count: activeDotLayerCount(buffTick, action),
+        personal_resources: personalResources.get(slot) || {},
       };
       applicableBuffContributions(activeBuffs, step, action, snapshot, isBackground, buffContext)
         .forEach(({ buff, effects }) => {
@@ -4359,6 +4389,9 @@
         }
         if ((slotResources[key] || 0) < totalCost) warnings.push(`个人资源 ${key} 不足。`);
         slotResources[key] = Math.max(0, (slotResources[key] || 0) - totalCost);
+      });
+      asList(action.personal_resource_consume_all).map(String).filter(Boolean).forEach((key) => {
+        slotResources[key] = 0;
       });
       Object.entries(resourceMap(action.personal_resource_gain)).forEach(([key, gain]) => {
         if (activeResourceEffectConfigs(activeBuffs, slot, buffTick, 'block_gain', key, step, action, snapshot, isBackground).length) {

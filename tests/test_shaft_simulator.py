@@ -4987,9 +4987,10 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                     {'id': 'blitz-1', 'slot': 0, 'action_id': 'action_lingke_ghost_blitz', 'start_tick': 0},
                     {'id': 'e-1', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 5},
                     {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 20},
+                    {'id': 'q-burst', 'slot': 0, 'action_id': 'action_lingke_q_burst', 'start_tick': 25},
                     {'id': 'e-2', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 30},
                     {'id': 'a4', 'slot': 0, 'action_id': 'action_lingke_a4_joint_extra', 'start_tick': 40},
-                    {'id': 'blitz-2', 'slot': 0, 'action_id': 'action_lingke_ghost_blitz', 'start_tick': 65},
+                    {'id': 'blitz-2', 'slot': 0, 'action_id': 'action_lingke_ghost_blitz', 'start_tick': 70},
                 ],
                 'initial_energy': 200,
                 'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
@@ -5002,7 +5003,11 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertFalse(any('CD 尚未结束' in warning for warning in awakened['blitz-2']['warnings']))
         self.assertAlmostEqual(
             awakened['q']['formula_parts']['raw_base'] / base['q']['formula_parts']['raw_base'],
-            (12.64695 / 11.544) * 1.1,
+            1.1,
+        )
+        self.assertAlmostEqual(
+            awakened['q-burst']['formula_parts']['raw_base'] / base['q-burst']['formula_parts']['raw_base'],
+            (8.45595 / 7.353) * 1.1,
         )
         self.assertFalse(any('CD 尚未结束' in warning for warning in awakened['e-2']['warnings']))
         self.assertFalse(any('共鸣领域' in warning for warning in awakened['a4']['warnings']))
@@ -5040,7 +5045,8 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertAlmostEqual(details['mark-1']['formula_parts']['settled_resistance'], 0.3)
         self.assertAlmostEqual(details['mark-2']['formula_parts']['settled_resistance'], 0.22)
         self.assertFalse(details['mark-1']['triggered_reaction'])
-        self.assertEqual(result['resources_by_slot'][0]['harmony'], 0)
+        self.assertEqual(result['resources_by_slot'][0]['harmony'], 30)
+        self.assertEqual(result['resources_by_slot'][0]['personal_resources']['谐频'], 68)
         self.assertIn(
             'character_lingke_precise_tuning_light',
             {buff['rule_id'] for buff in details['light-2']['applied_buffs']},
@@ -5055,6 +5061,75 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             if buff['rule_id'] == 'character_lingke_resonance_field_full'
         )
         self.assertEqual(field['end_tick'] - field['start_tick'], 130)
+
+    def test_lingke_harmonic_resource_and_q_negative_status_damage(self) -> None:
+        def simulate_joint(mark_count: int) -> dict:
+            steps = [
+                {'id': f'mark-{index}', 'slot': 0, 'action_id': 'action_lingke_mark_joint', 'start_tick': index}
+                for index in range(mark_count)
+            ]
+            steps.append({
+                'id': 'joint',
+                'slot': 0,
+                'action_id': 'action_lingke_joint_light',
+                'start_tick': max(0, mark_count),
+            })
+            return simulate_shaft_axis({
+                'team': [{
+                    'slot': 0,
+                    'character_id': 'char_0846d632e0',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                }],
+                'steps': steps,
+                'initial_energy': 200,
+                'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+            })['result']
+
+        base = simulate_joint(0)
+        full = simulate_joint(3)
+        base_joint = next(detail for detail in base['details'] if detail['step_id'] == 'joint')
+        full_joint = next(detail for detail in full['details'] if detail['step_id'] == 'joint')
+        base_buff = next(
+            buff for buff in base_joint['applied_buffs']
+            if buff['rule_id'] == 'character_lingke_harmonic_joint_damage'
+        )
+        full_buff = next(
+            buff for buff in full_joint['applied_buffs']
+            if buff['rule_id'] == 'character_lingke_harmonic_joint_damage'
+        )
+
+        self.assertEqual(base_buff['effects']['all_dmg'], 1.5)
+        self.assertEqual(full_buff['effects']['all_dmg'], 1.9)
+        self.assertAlmostEqual(full_joint['panel']['all_dmg'] - base_joint['panel']['all_dmg'], 0.4)
+        self.assertGreater(full_joint['direct_damage'], base_joint['direct_damage'])
+        self.assertEqual(full_joint['personal_resources_after']['谐频'], 0)
+        self.assertEqual(full['resources_by_slot'][0]['harmony'], 45)
+
+        q_result = simulate_shaft_axis({
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_0846d632e0',
+                'arc_id': '',
+                'cartridge_id': '',
+            }],
+            'steps': [
+                {'id': 'q-open', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 0},
+                {'id': 'light', 'slot': 0, 'action_id': 'action_lingke_joint_light', 'start_tick': 2},
+                {'id': 'q-burst', 'slot': 0, 'action_id': 'action_lingke_q_burst', 'start_tick': 18},
+            ],
+            'enemy': {'debuffs': {'覆纹': 100, '浊燃': 100}},
+            'initial_energy': 200,
+            'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+        q_details = {detail['step_id']: detail for detail in q_result['details']}
+        q_buff = next(
+            buff for buff in q_details['q-burst']['applied_buffs']
+            if buff['rule_id'] == 'character_lingke_q_burst_negative_damage'
+        )
+        self.assertEqual(q_buff['effects']['all_dmg'], 0.12)
+        self.assertEqual(q_details['q-open']['energy_after'], 0)
+        self.assertEqual(q_details['q-burst']['energy_after'], 0)
 
     def test_last_rose_e_and_dot_share_one_ten_layer_buff(self) -> None:
         catalog = load_shaft_catalog()

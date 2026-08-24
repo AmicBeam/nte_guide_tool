@@ -598,7 +598,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(
             {action['name'] for action in actions},
             {
-                '恶灵闪击战', '援护', 'e', 'q', '光同频', '灵同频', '咒同频',
+                '恶灵闪击战', '援护', 'e', 'q展开', 'q多段', 'q爆发',
+                '光同频', '灵同频', '咒同频',
                 '暗同频', '魂同频', '相同频', '消耗标记同频', '小贞同频',
                 '4觉同频追加', '闪', '无',
             },
@@ -617,22 +618,30 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions_by_name['e']['duration_ticks'], 10)
         self.assertEqual(actions_by_name['e']['multipliers']['atk'], 1.0)
         self.assertEqual(actions_by_name['e']['hit_count'], 4)
-        self.assertEqual(actions_by_name['q']['multipliers']['atk'], 11.544)
-        self.assertEqual(actions_by_name['q']['energy_cost'], 100)
-        self.assertEqual(actions_by_name['q']['hit_count'], 8)
+        self.assertEqual(actions_by_name['q展开']['multipliers']['atk'], 0.735)
+        self.assertEqual(actions_by_name['q展开']['energy_cost'], 100)
+        self.assertEqual(actions_by_name['q展开']['hit_count'], 1)
+        self.assertEqual(actions_by_name['q多段']['multipliers']['atk'], 3.456)
+        self.assertEqual(actions_by_name['q多段']['hit_count'], 6)
+        self.assertEqual(actions_by_name['q多段']['energy_cost'], 0)
+        self.assertEqual(actions_by_name['q爆发']['multipliers']['atk'], 7.353)
+        self.assertEqual(actions_by_name['q爆发']['hit_count'], 1)
+        self.assertEqual(actions_by_name['q爆发']['multipliers_add_by_awakening_node']['2']['atk'], 1.10295)
         for element in ('光', '灵', '咒', '暗', '魂', '相'):
             joint = actions_by_name[f'{element}同频']
             self.assertEqual(joint['duration_ticks'], 15)
-            self.assertEqual(joint['multipliers']['atk'], 5.0)
+            self.assertEqual(joint['multipliers']['atk'], 2.0)
             self.assertEqual(joint['harmony'], 0)
             self.assertEqual(joint['damage_element'], element)
+            self.assertEqual(joint['personal_resource_consume_all'], ['谐频'])
             self.assertFalse(joint['is_background_damage'])
             self.assertTrue(joint['disable_reaction'])
         mark_joint = actions_by_name['消耗标记同频']
         self.assertEqual(mark_joint['damage_element'], '灵')
         self.assertEqual(mark_joint['duration_ticks'], 0)
         self.assertEqual(mark_joint['multipliers']['atk'], 5.0)
-        self.assertEqual(mark_joint['harmony'], 0)
+        self.assertEqual(mark_joint['harmony'], 15)
+        self.assertEqual(mark_joint['personal_resource_gain'], {'谐频': 34})
         self.assertEqual(mark_joint['stagger'], 2.5)
         self.assertTrue(mark_joint['is_background_damage'])
         self.assertTrue(mark_joint['disable_reaction'])

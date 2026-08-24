@@ -9155,6 +9155,6 @@
   },
   {
     "id": "action_lingke_a4_joint_extra", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "4觉同频追加", "action_type": "被动", "damage_type": "追击", "extra_tag": "星星也说悄悄话！", "is_background_damage": true, "duration_seconds": 0, "duration_ticks": 0,
-    "damage_element": "灵", "multipliers": {"atk": 1.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 1.5, "cooldown_ticks": 0, "energy_cost": 0, "required_awakening": 4, "required_buff_key": "character_lingke_resonance_field", "required_buff_name": "共鸣领域", "tags": ["同频合击相关", "追加攻击", "范围"], "source_row": 484, "source_note": "腾讯文档《角色属性》tab 000003 row 484；Nanoka 4觉描述核实为共鸣领域内每次触发同频合击时追加100%范围灵属性伤害。按用户2026-08-24口径耗时0秒，由玩家在每次同频后手工排入；按用户最新口径不建立「小鬼打这里！」标记系统。"
+    "damage_element": "灵", "skill_level_category": "ultimate", "multipliers": {"atk": 1.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 1.5, "cooldown_ticks": 0, "energy_cost": 0, "required_awakening": 4, "required_buff_key": "character_lingke_resonance_field", "required_buff_name": "共鸣领域", "tags": ["同频合击相关", "追加攻击", "范围"], "source_row": 484, "source_note": "腾讯文档《角色属性》tab 000003 row 484；Nanoka 4觉描述核实为共鸣领域内每次触发同频合击时追加100%范围灵属性伤害。按用户2026-08-25补充，该额外攻击依据极轨终结技能等级成长倍率；动作仍保留被动与追加攻击分类。动作耗时0秒，由玩家在每次同频后手工排入；不建立「小鬼打这里！」标记系统。"
   }
 ]

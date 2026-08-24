@@ -590,11 +590,13 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
         lingke = next(character for character in catalog['characters'] if character['name'] == '灵可')
         actions = catalog['actions_by_character'][lingke['id']]
+        action_by_name = {action['name']: action for action in actions}
 
         self.assertTrue(lingke['test_character'])
         self.assertEqual(lingke['element'], '灵')
         self.assertEqual(lingke['adaptation'], '等离子')
         self.assertEqual(lingke['base_stats'], {'atk': 652.0, 'hp': 15513.0, 'def': 921.1})
+        self.assertEqual(action_by_name['4觉同频追加']['skill_level_category'], 'ultimate')
         self.assertEqual(
             {action['name'] for action in actions},
             {

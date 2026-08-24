@@ -5062,6 +5062,37 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         )
         self.assertEqual(field['end_tick'] - field['start_tick'], 130)
 
+    def test_lingke_a4_joint_extra_uses_ultimate_skill_level_growth(self) -> None:
+        def simulate(ultimate_level: int) -> dict:
+            result = simulate_shaft_axis({
+                'team': [{
+                    'slot': 0,
+                    'character_id': 'char_0846d632e0',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                    'awakening_nodes': [1, 2, 3, 4],
+                    'skill_levels': {'ultimate': ultimate_level},
+                }],
+                'steps': [
+                    {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 0},
+                    {'id': 'a4', 'slot': 0, 'action_id': 'action_lingke_a4_joint_extra', 'start_tick': 1},
+                ],
+                'initial_energy': 200,
+                'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+            })['result']
+            return next(detail for detail in result['details'] if detail['step_id'] == 'a4')
+
+        level_one = simulate(1)
+        level_ten = simulate(10)
+
+        self.assertEqual(level_one['formula_parts']['skill_level_category'], 'ultimate')
+        self.assertEqual(level_one['formula_parts']['skill_level'], 2)
+        self.assertEqual(level_ten['formula_parts']['skill_level'], 11)
+        self.assertAlmostEqual(
+            level_ten['formula_parts']['base'] / level_one['formula_parts']['base'],
+            1.08 ** 9,
+        )
+
     def test_lingke_harmonic_resource_and_q_negative_status_damage(self) -> None:
         def simulate_joint(mark_count: int) -> dict:
             steps = [

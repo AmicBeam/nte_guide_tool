@@ -244,6 +244,8 @@ def load_shaft_catalog() -> dict[str, Any]:
             str(item.get('name') or '') == '无',
             str(item.get('name') or '') == '闪',
             str(item.get('action_type') or ''),
+            item.get('display_order') is None,
+            _num(item.get('display_order'), 0),
             str(item.get('name') or ''),
         ))
     return {

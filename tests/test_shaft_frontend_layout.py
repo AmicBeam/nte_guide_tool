@@ -604,6 +604,12 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             },
         )
         actions_by_name = {action['name']: action for action in actions}
+        action_names = [action['name'] for action in actions]
+        joint_start = action_names.index('光同频')
+        self.assertEqual(
+            action_names[joint_start:joint_start + 6],
+            ['光同频', '灵同频', '咒同频', '暗同频', '魂同频', '相同频'],
+        )
         self.assertEqual(actions_by_name['恶灵闪击战']['multipliers']['atk'], 0.5)
         self.assertEqual(actions_by_name['恶灵闪击战']['cooldown_ticks'], 80)
         self.assertEqual(actions_by_name['恶灵闪击战']['cooldown_ticks_by_awakening_node'], {'1': 60})
@@ -616,10 +622,11 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions_by_name['q']['hit_count'], 8)
         for element in ('光', '灵', '咒', '暗', '魂', '相'):
             joint = actions_by_name[f'{element}同频']
-            self.assertEqual(joint['duration_ticks'], 0)
+            self.assertEqual(joint['duration_ticks'], 15)
             self.assertEqual(joint['multipliers']['atk'], 5.0)
             self.assertEqual(joint['harmony'], 0)
             self.assertEqual(joint['damage_element'], element)
+            self.assertFalse(joint['is_background_damage'])
             self.assertTrue(joint['disable_reaction'])
         mark_joint = actions_by_name['消耗标记同频']
         self.assertEqual(mark_joint['damage_element'], '灵')
@@ -633,6 +640,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions_by_name['小贞同频']['multipliers']['atk'], 1.999)
         self.assertEqual(actions_by_name['小贞同频']['hit_count'], 4)
         self.assertEqual(actions_by_name['小贞同频']['stagger'], 1.667)
+        self.assertEqual(actions_by_name['小贞同频']['duration_ticks'], 15)
+        self.assertFalse(actions_by_name['小贞同频']['is_background_damage'])
         self.assertEqual(actions_by_name['4觉同频追加']['required_awakening'], 4)
 
         arc = next(arc for arc in catalog['arcs'] if arc['name'] == '远行者之声')

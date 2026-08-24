@@ -2158,5 +2158,44 @@
       "相": 0
     },
     "source_row": 58
+  },
+  {
+    "id": "arc_614aec6ed1",
+    "name": "远行者之声",
+    "level": 80,
+    "rarity": "S",
+    "adaptation": "等离子",
+    "detail": "攻击力提升24%~48%；援护技暴击伤害提升66%~132%；每次援护技造成伤害，使极轨终结暴击伤害提升22%~44%，持续3秒、最多3层，重复触发刷新（随精炼等级）",
+    "base_atk": 570,
+    "modifiers": {
+      "crit_rate": 0.24,
+      "crit_dmg": 0,
+      "atk_pct": 0.24,
+      "hp_pct": 0,
+      "def_pct": 0,
+      "energy_recharge": 0,
+      "harmony_strength": 0,
+      "stagger_strength": 0,
+      "def_ignore": 0,
+      "res_down": 0,
+      "all_dmg": 0,
+      "basic_dmg": 0,
+      "dodge_counter_dmg": 0,
+      "skill_dmg": 0,
+      "ultimate_dmg": 0,
+      "mind_dmg": 0,
+      "follow_dmg": 0,
+      "attach_dmg": 0
+    },
+    "element_dmg": {
+      "光": 0,
+      "灵": 0,
+      "咒": 0,
+      "暗": 0,
+      "魂": 0,
+      "相": 0
+    },
+    "source_row": 59,
+    "source_note": "Nanoka NTE 1.3.9 weapon/fork_GoldRecord.json；用户2026-08-24明确该等离子弧盘为灵可专属弧盘。"
   }
 ]

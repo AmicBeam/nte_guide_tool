@@ -4928,6 +4928,51 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertEqual(rule['effects'], {'attach_dmg': 0.15})
         self.assertEqual(rule['duration']['ticks'], 60)
 
+    def test_lingke_gold_record_support_and_q_crit_damage(self) -> None:
+        payload = {
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_0846d632e0',
+                'arc_id': 'arc_614aec6ed1',
+                'arc_refinement': 1,
+                'cartridge_id': '',
+            }],
+            'steps': [
+                {'id': 'support', 'slot': 0, 'action_id': 'action_lingke_support', 'start_tick': 0},
+                {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 15},
+            ],
+            'initial_energy': 200,
+            'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+        }
+
+        result = simulate_shaft_axis(payload)['result']
+        support = next(detail for detail in result['details'] if detail['step_id'] == 'support')
+        q = next(detail for detail in result['details'] if detail['step_id'] == 'q')
+        support_buffs = {buff['rule_id']: buff for buff in support['applied_buffs']}
+        q_buffs = {buff['rule_id']: buff for buff in q['applied_buffs']}
+
+        self.assertEqual(
+            support_buffs['arc_gold_record_support_crit_damage']['effects']['crit_dmg'],
+            0.66,
+        )
+        self.assertEqual(q_buffs['arc_gold_record_q_crit_damage']['effects']['crit_dmg'], 0.22)
+        self.assertEqual(q_buffs['arc_gold_record_q_crit_damage']['stack_count'], 1)
+
+        payload['team'][0]['arc_refinement'] = 5
+        refined = simulate_shaft_axis(payload)['result']
+        refined_support = next(detail for detail in refined['details'] if detail['step_id'] == 'support')
+        refined_q = next(detail for detail in refined['details'] if detail['step_id'] == 'q')
+        refined_support_buffs = {buff['rule_id']: buff for buff in refined_support['applied_buffs']}
+        refined_q_buffs = {buff['rule_id']: buff for buff in refined_q['applied_buffs']}
+        self.assertEqual(
+            refined_support_buffs['arc_gold_record_support_crit_damage']['effects']['crit_dmg'],
+            1.32,
+        )
+        self.assertEqual(
+            refined_q_buffs['arc_gold_record_q_crit_damage']['effects']['crit_dmg'],
+            0.44,
+        )
+
     def test_last_rose_e_and_dot_share_one_ten_layer_buff(self) -> None:
         catalog = load_shaft_catalog()
         rules = registered_buff_rules(

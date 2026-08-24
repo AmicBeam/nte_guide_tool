@@ -9095,15 +9095,29 @@
     "multipliers": {"atk": 6.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 200, "cooldown_group": "canhong_q", "energy_cost": 120, "canhong_blood_activation_required": true, "tags": ["追击", "血宴", "鸩火5层", "解除幻境"], "source_row": 49, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 49-50，按倍率呈现方式聚合；表内倾陷聚合为2.499，按用户明确口径记为2.5。血宴激活时优先于焚天，施加5层独立DOT「鸩火」并解除幻境；灭或D觉可激活血宴，极轨终结不自回能。"
   },
   {
-    "id": "action_lingke_support", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "恶灵左直拳！", "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 5.2, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "耗时未实装"], "source_row": 487, "source_note": "腾讯文档《角色属性》tab 000003 row 487；技能描述由Nanoka 2026-08-24实时核实。在线表未提供动作耗时，当前记0秒并由排轴自检提示“时长未实装”。不收录援护等级触发的同频合击特殊动作。"
+    "id": "action_lingke_support", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "恶灵左直拳！", "is_background_damage": false,
+    "duration_seconds": 1.5, "duration_ticks": 15,
+    "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 5.2, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护"], "source_row": 487, "source_note": "腾讯文档《角色属性》tab 000003 row 487；技能描述由Nanoka 2026-08-24实时核实。动作耗时1.5秒来自用户2026-08-24补充。"
   },
   {
-    "id": "action_lingke_e", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "e", "action_type": "E", "damage_type": "E", "extra_tag": "瞬息全频振", "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 1.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%", "hit_count": 4, "energy_gain": 8.4, "harmony": 14.099, "stagger": 1.7, "cooldown_ticks": 120, "cooldown_group": "lingke_e", "energy_cost": 0, "tags": ["瞬息全频振", "耗时未实装"], "source_row": 479, "source_note": "腾讯文档《角色属性》tab 000003 rows 479-482：17.8%+13.8%+23.8%+44.6%=100%，回能8.4、环合14.099、倾陷1.7；12秒CD与技能描述由Nanoka 2026-08-24实时核实。在线表未提供动作耗时，当前记0秒并由排轴自检提示“时长未实装”。不收录技能后触发的同频合击特殊动作。"
+    "id": "action_lingke_e", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "e", "action_type": "E", "damage_type": "E", "extra_tag": "瞬息全频振", "is_background_damage": false,
+    "duration_seconds": 1.0, "duration_ticks": 10,
+    "multipliers": {"atk": 1.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%", "hit_count": 4, "energy_gain": 8.4, "harmony": 14.099, "stagger": 1.7, "cooldown_ticks": 120, "cooldown_group": "lingke_e", "energy_cost": 0, "tags": ["瞬息全频振"], "source_row": 479, "source_note": "腾讯文档《角色属性》tab 000003 rows 479-482：17.8%+13.8%+23.8%+44.6%=100%，回能8.4、环合14.099、倾陷1.7；12秒CD与技能描述由Nanoka 2026-08-24实时核实。动作耗时1秒来自用户2026-08-24补充。"
   },
   {
     "id": "action_lingke_q", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣", "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 11.544, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%*6+{2}%", "hit_count": 8, "energy_gain": 0, "harmony": 0, "stagger": 0.924, "cooldown_ticks": 200, "cooldown_group": "lingke_q", "energy_cost": 100, "tags": ["超负荷共鸣", "共鸣领域"], "source_row": 483, "source_note": "腾讯文档《角色属性》tab 000003 rows 483、485-486：73.5%+57.6%×6+735.3%=1154.4%，基础倾陷0.074+0.115+0.735=0.924；100终结能量、20秒CD与8秒共鸣领域由Nanoka 2026-08-24实时核实。按项目统一口径Q为0秒；未计入row 484的4觉追加伤害，也不收录领域内同频合击等特殊动作。"
+    "multipliers": {"atk": 11.544, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%*6+{2}%", "hit_count": 8, "energy_gain": 0, "harmony": 0, "stagger": 0.924, "cooldown_ticks": 200, "cooldown_group": "lingke_q", "energy_cost": 100, "tags": ["超负荷共鸣", "共鸣领域"], "source_row": 483, "source_note": "腾讯文档《角色属性》tab 000003 rows 483、485-486：73.5%+57.6%×6+735.3%=1154.4%，基础倾陷0.074+0.115+0.735=0.924；100终结能量、20秒CD与8秒共鸣领域由Nanoka 2026-08-24实时核实。按项目统一口径Q为0秒；row 484的4觉追加伤害拆为独立动作。"
+  },
+  {
+    "id": "action_lingke_team_joint", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "灵可同频", "action_type": "援护", "damage_type": "追击", "extra_tag": "同频合击", "is_background_damage": true, "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 15, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击"], "source_row": 488, "source_note": "腾讯文档《角色属性》tab 000003 row 488；Nanoka 2026-08-24核实「同频合击」属于特殊援护技、伤害视为追加攻击，并受灵可面板与援护技技能等级影响。按用户2026-08-24口径耗时0秒。"
+  },
+  {
+    "id": "action_lingke_xiaozhen_joint", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "小贞同频", "action_type": "援护", "damage_type": "追击", "extra_tag": "同频合击", "is_background_damage": true, "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 1.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 0, "harmony": 0, "stagger": 1.667, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击", "小贞"], "source_row": 489, "source_note": "腾讯文档《角色属性》tab 000003 rows 489-490：33.3%×3+100%=199.9%，倾陷0.417+1.25=1.667；Nanoka 2026-08-24核实小贞发起时为灵属性，伤害受灵可面板与援护技技能等级影响。按用户2026-08-24口径耗时0秒。"
+  },
+  {
+    "id": "action_lingke_a4_joint_extra", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "4觉同频追加", "action_type": "被动", "damage_type": "追击", "extra_tag": "星星也说悄悄话！", "is_background_damage": true, "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 1.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 1.5, "cooldown_ticks": 0, "energy_cost": 0, "required_awakening": 4, "tags": ["同频合击相关", "追加攻击", "范围"], "source_row": 484, "source_note": "腾讯文档《角色属性》tab 000003 row 484；Nanoka 4觉描述核实为共鸣领域内每次触发同频合击时追加100%范围灵属性伤害。按用户2026-08-24口径耗时0秒；消耗「小鬼打这里！」并再次触发同频合击的递归部分仍由玩家手工排入对应同频动作。"
   }
 ]

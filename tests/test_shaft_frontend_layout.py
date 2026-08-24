@@ -595,14 +595,41 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(lingke['element'], '灵')
         self.assertEqual(lingke['adaptation'], '等离子')
         self.assertEqual(lingke['base_stats'], {'atk': 652.0, 'hp': 15513.0, 'def': 921.1})
-        self.assertEqual({action['name'] for action in actions}, {'援护', 'e', 'q', '闪', '无'})
+        self.assertEqual(
+            {action['name'] for action in actions},
+            {'援护', 'e', 'q', '灵可同频', '小贞同频', '4觉同频追加', '闪', '无'},
+        )
         actions_by_name = {action['name']: action for action in actions}
-        self.assertEqual(actions_by_name['援护']['duration_ticks'], 0)
+        self.assertEqual(actions_by_name['援护']['duration_ticks'], 15)
+        self.assertEqual(actions_by_name['e']['duration_ticks'], 10)
         self.assertEqual(actions_by_name['e']['multipliers']['atk'], 1.0)
         self.assertEqual(actions_by_name['e']['hit_count'], 4)
         self.assertEqual(actions_by_name['q']['multipliers']['atk'], 11.544)
         self.assertEqual(actions_by_name['q']['energy_cost'], 100)
         self.assertEqual(actions_by_name['q']['hit_count'], 8)
+        self.assertEqual(actions_by_name['灵可同频']['duration_ticks'], 0)
+        self.assertEqual(actions_by_name['灵可同频']['multipliers']['atk'], 5.0)
+        self.assertEqual(actions_by_name['灵可同频']['harmony'], 15)
+        self.assertEqual(actions_by_name['小贞同频']['multipliers']['atk'], 1.999)
+        self.assertEqual(actions_by_name['小贞同频']['hit_count'], 4)
+        self.assertEqual(actions_by_name['小贞同频']['stagger'], 1.667)
+        self.assertEqual(actions_by_name['4觉同频追加']['required_awakening'], 4)
+
+        arc = next(arc for arc in catalog['arcs'] if arc['name'] == '远行者之声')
+        self.assertEqual(arc['adaptation'], '等离子')
+        self.assertEqual(arc['base_atk'], 570)
+        self.assertEqual(arc['modifiers']['crit_rate'], 0.24)
+        refinements = catalog['arc_refinements']['arcs'][arc['id']]
+        self.assertEqual(refinements['nanoka_id'], 'fork_GoldRecord')
+        self.assertEqual(refinements['levels']['1']['panel_modifiers']['atk_pct'], 0.24)
+        self.assertEqual(refinements['levels']['5']['panel_modifiers']['atk_pct'], 0.48)
+        self.assertEqual(
+            refinements['levels']['5']['buff_effects']['arc_gold_record_support_crit_damage']['crit_dmg'],
+            1.32,
+        )
+        buffs = {buff['id']: buff for buff in catalog['buffs']}
+        self.assertEqual(buffs['arc_gold_record_support_crit_damage']['effects']['crit_dmg'], 0.66)
+        self.assertEqual(buffs['arc_gold_record_q_crit_damage']['stacking']['max_stacks'], 3)
 
     def test_yiloyi_bond_bonus_is_five_percent_attack(self) -> None:
         catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))

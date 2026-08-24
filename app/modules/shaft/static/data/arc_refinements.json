@@ -1,6 +1,7 @@
 {
   "source": "nanoka.cc",
   "version": "1.2",
+  "supplemental_versions": ["1.3.9"],
   "generated_from": "https://static.nanoka.cc/nte/1.2/zh/weapon/{id}.json",
   "arcs": {
     "arc_7d0ca08e3d": {
@@ -4849,6 +4850,61 @@
             "arc_danger_game_stagger": {
               "stagger_strength": 84.0
             }
+          }
+        }
+      }
+    },
+    "arc_614aec6ed1": {
+      "nanoka_id": "fork_GoldRecord",
+      "name": "远行者之声",
+      "default_level": 1,
+      "source_url": "https://static.nanoka.cc/nte/1.3.9/zh/weapon/fork_GoldRecord.json",
+      "effect_name": "「金唱片」",
+      "effect_description": "攻击力提高<lv>{0}</>。\r\n装备者「援护技」造成的暴击伤害增加<lv>{1}</>，并且装备者每次「援护技」造成伤害，都会使得「极轨终结」造成的暴击伤害增加<lv>{2}</>，持续<lv>{3}</>秒，最多叠加<lv>3</>层，重复触发刷新持续时间。",
+      "levels": {
+        "1": {
+          "effect_values": ["24%", "66%", "22%", "3"],
+          "panel_modifiers": {"crit_rate": 0.24, "atk_pct": 0.24},
+          "element_dmg": {},
+          "buff_effects": {
+            "arc_gold_record_support_crit_damage": {"crit_dmg": 0.66},
+            "arc_gold_record_q_crit_damage": {"crit_dmg": 0.22}
+          }
+        },
+        "2": {
+          "effect_values": ["30%", "82.5%", "27.5%", "3"],
+          "panel_modifiers": {"crit_rate": 0.24, "atk_pct": 0.3},
+          "element_dmg": {},
+          "buff_effects": {
+            "arc_gold_record_support_crit_damage": {"crit_dmg": 0.825},
+            "arc_gold_record_q_crit_damage": {"crit_dmg": 0.275}
+          }
+        },
+        "3": {
+          "effect_values": ["36%", "99%", "33%", "3"],
+          "panel_modifiers": {"crit_rate": 0.24, "atk_pct": 0.36},
+          "element_dmg": {},
+          "buff_effects": {
+            "arc_gold_record_support_crit_damage": {"crit_dmg": 0.99},
+            "arc_gold_record_q_crit_damage": {"crit_dmg": 0.33}
+          }
+        },
+        "4": {
+          "effect_values": ["42%", "115.5%", "38.5%", "3"],
+          "panel_modifiers": {"crit_rate": 0.24, "atk_pct": 0.42},
+          "element_dmg": {},
+          "buff_effects": {
+            "arc_gold_record_support_crit_damage": {"crit_dmg": 1.155},
+            "arc_gold_record_q_crit_damage": {"crit_dmg": 0.385}
+          }
+        },
+        "5": {
+          "effect_values": ["48%", "132%", "44%", "3"],
+          "panel_modifiers": {"crit_rate": 0.24, "atk_pct": 0.48},
+          "element_dmg": {},
+          "buff_effects": {
+            "arc_gold_record_support_crit_damage": {"crit_dmg": 1.32},
+            "arc_gold_record_q_crit_damage": {"crit_dmg": 0.44}
           }
         }
       }

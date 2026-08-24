@@ -595,19 +595,16 @@
     {
       "title": "星星也说悄悄话！",
       "implemented": false,
-      "implementation_status": "out_of_scope",
       "description": "在「共鸣领域」内，每次触发「同频合击」时额外造成一次100%倍率的范围性灵属性异能伤害。该攻击可消耗「小鬼打这里！」标记并触发「同频合击」。"
     },
     {
       "title": "向全频段呼唤爱！",
       "implemented": false,
-      "implementation_status": "out_of_scope",
       "description": "「变轨技能：瞬息全频振」触发的「同频合击」可以触发环合效果。若所选队友与灵可无法发生环合，则本次「同频合击」获得20%增伤。"
     },
     {
       "title": "世界将予你回声！",
       "implemented": false,
-      "implementation_status": "out_of_scope",
       "description": "灵可在队伍时，队伍角色的「同频合击」额外增加25%暴击率，并且队友的「同频合击」可以获得充能效果。"
     },
     {

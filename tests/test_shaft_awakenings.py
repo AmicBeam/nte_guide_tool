@@ -31,8 +31,8 @@ class ShaftAwakeningDataTestCase(unittest.TestCase):
         ]
 
         self.assertEqual(len(entries), 176)
-        self.assertEqual(len(pending), 3)
-        self.assertEqual(len(out_of_scope), 28)
+        self.assertEqual(len(pending), 6)
+        self.assertEqual(len(out_of_scope), 25)
         self.assertNotIn(
             'implemented',
             next(entry for entry in awakenings['残虹'] if entry['title'] == '猩红盛宴'),

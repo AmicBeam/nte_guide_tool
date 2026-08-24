@@ -2839,6 +2839,28 @@
     "display": {"line": false}
   },
   {
+    "id": "arc_gold_record_support_crit_damage",
+    "name": "远行者之声·援护暴伤",
+    "providers": [{"kind": "arc", "id": "arc_614aec6ed1"}],
+    "priority": 100,
+    "trigger": {"event": "passive"},
+    "target": {"scope": "registrar", "action_types": ["援护"]},
+    "duration": {"type": "permanent"},
+    "effects": {"crit_dmg": 0.66},
+    "display": {"line": false}
+  },
+  {
+    "id": "arc_gold_record_q_crit_damage",
+    "name": "远行者之声·援护后终结暴伤",
+    "providers": [{"kind": "arc", "id": "arc_614aec6ed1"}],
+    "priority": 101,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_types": ["援护"]}},
+    "target": {"scope": "registrar", "action_types": ["Q"]},
+    "duration": {"type": "time", "ticks": 30, "loop_carry": true},
+    "stacking": {"key": "arc_gold_record_q_crit_damage", "mode": "add_stack", "max_stacks": 3},
+    "effects": {"crit_dmg": 0.22}
+  },
+  {
     "id": "arc_canhong_devouring_heart_crit_damage",
     "name": "噬心诡刃·咒伤暴伤",
     "providers": [{"kind": "arc", "id": "arc_canhong_devouring_heart"}],

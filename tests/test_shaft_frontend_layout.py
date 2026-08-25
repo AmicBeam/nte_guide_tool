@@ -600,7 +600,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(
             {action['name'] for action in actions},
             {
-                '恶灵闪击战', '援护', 'e', 'q展开', 'q多段', 'q爆发',
+                '恶灵闪击战', '援护', 'e', 'q展开', 'q多段', 'q爆发', '时停选人',
                 '光同频', '灵同频', '咒同频',
                 '暗同频', '魂同频', '相同频', '消耗标记同频', '小贞同频',
                 '4觉同频追加', '闪', '无',
@@ -629,6 +629,15 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions_by_name['q爆发']['multipliers']['atk'], 7.353)
         self.assertEqual(actions_by_name['q爆发']['hit_count'], 1)
         self.assertEqual(actions_by_name['q爆发']['multipliers_add_by_awakening_node']['2']['atk'], 2.2059)
+        time_stop_select = actions_by_name['时停选人']
+        self.assertEqual(time_stop_select['action_type'], '无')
+        self.assertEqual(time_stop_select['duration_ticks'], 0)
+        self.assertEqual(time_stop_select['hit_count'], 0)
+        self.assertEqual(time_stop_select['energy_cost'], 0)
+        self.assertEqual(time_stop_select['energy_gain'], 0)
+        self.assertEqual(time_stop_select['harmony'], 0)
+        self.assertEqual(time_stop_select['stagger'], 0)
+        self.assertTrue(time_stop_select['is_timeline_mask'])
         for element in ('光', '灵', '咒', '暗', '魂', '相'):
             joint = actions_by_name[f'{element}同频']
             self.assertEqual(joint['duration_ticks'], 15)
@@ -2163,7 +2172,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         source = SHAFT_JS.read_text(encoding='utf-8')
 
         self.assertIn('function isZeroForegroundQStep(step, action = actionForStep(step)) {', source)
-        self.assertIn('startsForeground(step, action) && isQAction(action) && actionDurationTicks(action, step) === 0', source)
+        self.assertIn('startsForeground(step, action) && hasTimelineMaskAbility(action) && actionDurationTicks(action, step) === 0', source)
+        self.assertIn("return isQAction(action) || Boolean(action?.is_timeline_mask);", source)
         self.assertIn('const actionIsQ = isZeroForegroundQStep(step, action);', source)
         self.assertIn('.filter((item) => isZeroForegroundQStep(item.step, item.action))', source)
         self.assertIn('isZeroForegroundQStep(candidateStep, action || {}) ||', source)

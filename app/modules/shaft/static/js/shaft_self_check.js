@@ -32,6 +32,10 @@
     return String(action?.action_type || '') === 'Q' || String(action?.damage_type || '') === 'Q';
   }
 
+  function hasTimelineMaskAbility(action) {
+    return isQAction(action) || Boolean(action?.is_timeline_mask);
+  }
+
   function actionDurationTicks(step, action) {
     return Boolean(step?.detached) && Boolean(action?.can_detach)
       ? Math.max(0, Number(action?.detached_duration_ticks || 0))
@@ -40,14 +44,14 @@
 
   function isMaskingForegroundQ(step, action) {
     return !isBackgroundStep(step, action) &&
-      isQAction(action) &&
+      hasTimelineMaskAbility(action) &&
       actionDurationTicks(step, action) === 0;
   }
 
   function hasUnimplementedForegroundDuration(step, action) {
     return Boolean(action?.id) &&
       !isBackgroundStep(step, action) &&
-      !isQAction(action) &&
+      !hasTimelineMaskAbility(action) &&
       !Boolean(action?.is_instant_switch) &&
       actionDurationTicks(step, action) === 0;
   }

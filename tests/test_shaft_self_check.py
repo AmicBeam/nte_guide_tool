@@ -182,6 +182,21 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
             self.step(zhenhong_a2, 6, slot=0),
         ]), [])
 
+    def test_lingke_time_stop_select_masks_early_return_without_being_q(self) -> None:
+        zhenhong_a1 = self.action('真红', 'a1')
+        lingke_e = self.action('灵可', 'e')
+        time_stop_select = self.action('灵可', '时停选人')
+        zhenhong_a2 = self.action('真红', 'a2')
+
+        self.assertEqual(time_stop_select['action_type'], '无')
+        self.assertTrue(time_stop_select['is_timeline_mask'])
+        self.assertEqual(self.inspect([
+            self.step(zhenhong_a1, 0, slot=0),
+            self.step(lingke_e, 2, slot=1),
+            self.step(time_stop_select, 4, slot=1),
+            self.step(zhenhong_a2, 6, slot=0),
+        ]), [])
+
     def test_other_characters_q_on_departure_node_allows_early_return(self) -> None:
         zhenhong_a1 = self.action('真红', 'a1')
         nanali_q = self.action('娜娜莉', 'q')

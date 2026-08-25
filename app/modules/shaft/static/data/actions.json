@@ -9122,6 +9122,10 @@
     "multipliers": {"atk": 7.353, "hp": 0, "def": 0, "flat": 0}, "multipliers_add_by_awakening_node": {"2": {"atk": 2.2059}}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 0.735, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["超负荷共鸣", "爆发", "负面状态增伤"], "source_row": 486, "source_note": "腾讯文档《角色属性》tab 000003 row 486：爆发伤害735.3%、倾陷0.735；按腾讯文档《灵可角色资料汇总》2026-08-25最新口径，2觉使该段倍率提升30%。Nanoka 2026-08-25实时核实爆发根据目标负面状态种类增伤且上限20%；按用户2026-08-25口径每种+4%，负面包括减防、减抗、各类DOT与延滞/覆纹/浸染/浊燃/黯星等，每类去重。"
   },
   {
+    "id": "action_lingke_time_stop_select", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "时停选人", "action_type": "无", "damage_type": "无", "extra_tag": "时停选人", "display_order": 23, "is_background_damage": false, "is_timeline_mask": true, "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "", "hit_count": 0, "energy_gain": 0, "harmony": 0, "stagger": 0, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["时停", "选人", "遮罩"], "source_row": 0, "source_note": "用户2026-08-25明确新增：灵可专属0秒无效果动作，仅用于时间轴遮罩和选人占位；不视为Q，不触发Q类技能、Buff、耗能或资源效果。"
+  },
+  {
     "id": "action_lingke_joint_light", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "光同频", "action_type": "援护", "damage_type": "追击", "damage_element": "光", "extra_tag": "同频合击", "display_order": 10, "is_background_damage": false, "disable_reaction": true, "duration_seconds": 1.5, "duration_ticks": 15,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "personal_resource_consume_all": ["谐频"], "tags": ["援护", "同频合击", "追加攻击", "谐频强化"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为光。"
   },

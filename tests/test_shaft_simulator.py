@@ -4039,6 +4039,44 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertEqual(same_column['q_instant_release_start_sequence'], 0)
         self.assertEqual(same_column['q_instant_release_end_sequence'], 1)
 
+    def test_lingke_time_stop_select_masks_without_q_or_resource_effects(self) -> None:
+        payload = {
+            'team': [
+                {
+                    'slot': 0,
+                    'character_id': 'char_b52cc8f160',
+                    'arc_id': 'arc_27dc4a7281',
+                    'cartridge_id': 'cartridge_f4282fad3f',
+                },
+                {
+                    'slot': 1,
+                    'character_id': 'char_0846d632e0',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                },
+            ],
+            'steps': [
+                {'id': 'foreground_e', 'slot': 0, 'action_id': 'action_3987d8ff2d', 'start_tick': 0},
+                {'id': 'mask', 'slot': 1, 'action_id': 'action_lingke_time_stop_select', 'start_tick': 4},
+            ],
+            'options': {'switch_loss_ticks': 0},
+            'initial_energy': 200,
+        }
+
+        result = simulate_shaft_axis(payload)['result']
+        details = {detail['step_id']: detail for detail in result['details']}
+        mask = details['mask']
+
+        self.assertTrue(details['foreground_e']['q_instant_release'])
+        self.assertEqual(mask['action_type'], '无')
+        self.assertEqual(mask['duration_ticks'], 0)
+        self.assertEqual(mask['direct_damage'], 0)
+        self.assertEqual(mask['energy_gain'], 0)
+        self.assertEqual(mask['harmony'], 0)
+        self.assertEqual(mask['triggered_buffs'], [])
+        self.assertEqual(mask['q_cover_target_step_ids'], ['foreground_e'])
+        self.assertEqual(result['time_axis']['real_duration_ticks'], 4)
+
     def test_q_instant_release_keeps_q_visual_width(self) -> None:
         payload = {
             'team': [

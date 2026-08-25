@@ -955,6 +955,10 @@
     return String(action?.action_type || '') === 'Q' || String(action?.damage_type || '') === 'Q';
   }
 
+  function hasTimelineMaskAbility(action) {
+    return isQAction(action) || Boolean(action?.is_timeline_mask);
+  }
+
   function isInstantSwitchAction(action) {
     return Boolean(action?.is_instant_switch);
   }
@@ -1048,7 +1052,7 @@
   }
 
   function isZeroForegroundQStep(step, action) {
-    return startsForeground(step, action) && isQAction(action) && configuredActionDurationTicks(step, action) === 0;
+    return startsForeground(step, action) && hasTimelineMaskAbility(action) && configuredActionDurationTicks(step, action) === 0;
   }
 
   function isQCoverImmuneScheduled(scheduled) {

@@ -1181,6 +1181,10 @@
     return String(action?.action_type || '') === 'Q' || String(action?.damage_type || '') === 'Q';
   }
 
+  function hasTimelineMaskAbility(action) {
+    return isQAction(action) || Boolean(action?.is_timeline_mask);
+  }
+
   function isInstantSwitchAction(action) {
     return Boolean(action?.is_instant_switch);
   }
@@ -1263,7 +1267,7 @@
   }
 
   function isZeroForegroundQStep(step, action = actionForStep(step)) {
-    return startsForeground(step, action) && isQAction(action) && actionDurationTicks(action, step) === 0;
+    return startsForeground(step, action) && hasTimelineMaskAbility(action) && actionDurationTicks(action, step) === 0;
   }
 
   function locksForegroundSwitch(step, action = actionForStep(step)) {
@@ -4626,7 +4630,7 @@
       const blocksTrack = !detail.is_background_damage || detail.is_basic_background;
       const isZeroForegroundQ = displayDurationTicks === 0 &&
         !detail.is_background_damage &&
-        isQAction(actionForStep({ action_id: detail.action_id }));
+        hasTimelineMaskAbility(actionForStep({ action_id: detail.action_id }));
       if (!blocksTrack && !isZeroForegroundQ) {
         return;
       }
@@ -4677,7 +4681,7 @@
     const bandWidthPx = (start, end) => Math.max(1, visualOffsetPx(Math.max(Number(end || start), Number(start || 0) + 1)) - visualOffsetPx(start));
     const rulerMarks = [];
     const timelineQStarts = details
-      .filter((detail) => Number(detail.display_duration_ticks ?? detail.duration_ticks ?? 0) === 0 && !detail.is_background_damage && isQAction(actionForStep({ action_id: detail.action_id })))
+      .filter((detail) => Number(detail.display_duration_ticks ?? detail.duration_ticks ?? 0) === 0 && !detail.is_background_damage && hasTimelineMaskAbility(actionForStep({ action_id: detail.action_id })))
       .map((detail) => ({
         start_tick: Number(detail.display_start_tick ?? detail.start_tick ?? 0),
         end_tick: Math.max(
@@ -4746,7 +4750,7 @@
         if (
           Number(detail.display_duration_ticks ?? detail.duration_ticks ?? 0) === 0 &&
           !detail.is_background_damage &&
-          isQAction(actionForStep({ action_id: detail.action_id }))
+          hasTimelineMaskAbility(actionForStep({ action_id: detail.action_id }))
         ) {
           cardWidth = MIN_ACTION_CARD_PX;
           if (displayVisualEndTick > displayStartTick + ZERO_ACTION_VISUAL_TICKS) {

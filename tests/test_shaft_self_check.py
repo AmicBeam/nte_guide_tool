@@ -109,6 +109,18 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
             self.step(instant_switch, 5),
         ]), [])
 
+    def test_explicit_zero_duration_lingke_joint_actions_do_not_warn(self) -> None:
+        joints = [
+            self.action('灵可', f'{element}同频')
+            for element in ('光', '灵', '咒', '暗', '魂', '相')
+        ]
+
+        self.assertTrue(all(action.get('duration_implemented') for action in joints))
+        self.assertEqual(
+            self.inspect([self.step(action, index) for index, action in enumerate(joints)]),
+            [],
+        )
+
     def test_background_instant_switch_still_participates_in_return_cooldown(self) -> None:
         zhenhong_a1 = self.action('真红', 'a1')
         nanali_switch = self.action('娜娜莉', '无')

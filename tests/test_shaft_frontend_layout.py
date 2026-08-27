@@ -640,12 +640,14 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertTrue(time_stop_select['is_timeline_mask'])
         for element in ('光', '灵', '咒', '暗', '魂', '相'):
             joint = actions_by_name[f'{element}同频']
-            self.assertEqual(joint['duration_ticks'], 15)
+            self.assertEqual(joint['duration_ticks'], 0)
+            self.assertTrue(joint['duration_implemented'])
             self.assertEqual(joint['multipliers']['atk'], 2.0)
             self.assertEqual(joint['harmony'], 0)
             self.assertEqual(joint['damage_element'], element)
             self.assertEqual(joint['personal_resource_consume_all'], ['谐频'])
             self.assertFalse(joint['is_background_damage'])
+            self.assertFalse(joint.get('is_timeline_mask', False))
             self.assertTrue(joint['disable_reaction'])
         mark_joint = actions_by_name['消耗标记同频']
         self.assertEqual(mark_joint['damage_element'], '灵')

@@ -53,6 +53,7 @@
       !isBackgroundStep(step, action) &&
       !hasTimelineMaskAbility(action) &&
       !Boolean(action?.is_instant_switch) &&
+      !Boolean(action?.duration_implemented) &&
       actionDurationTicks(step, action) === 0;
   }
 

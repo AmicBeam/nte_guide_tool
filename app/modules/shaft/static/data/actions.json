@@ -9100,7 +9100,7 @@
     "multipliers": {"atk": 1.752, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 6.0, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "force_stagger_by_awakening_node": {"5": true}, "tags": ["强化", "现实转幻境", "蚀心5层", "乱"], "source_row": 36, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 36-37，按倍率呈现方式聚合；需在燎原a4/a5、z或闪反后释放，施加5层蚀心，与e、幻e共享5秒冷却；E觉仅在非循环轴首次命中强制倾陷。"
   },
   {
-    "id": "action_canhong_E2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻e", "action_type": "E", "damage_type": "追击", "is_background_damage": false, "duration_seconds": 2.2, "duration_ticks": 22,
+    "id": "action_canhong_E2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻e", "action_type": "E", "damage_type": "追击", "is_background_damage": false, "locks_foreground_switch": true, "duration_seconds": 2.2, "duration_ticks": 22,
     "multipliers": {"atk": 4.498, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*4+{2}%", "hit_count": 7, "last_hit_atk_multiplier": 2.498, "dot_layers_applied_before_last_hit": 5, "energy_gain": 24.999, "harmony": 18.901, "stagger": 2.299, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["强化", "追击", "幻境转现实", "蚀心5层", "灭"], "source_row": 41, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 41-43，按强化「离魂错」的倍率呈现方式聚合；仅在幻境结束前3秒可强化，施加5层蚀心并触发灭，与e、强化e共享5秒冷却；技能时停敌人但不暂停轴计时。F觉按最后一段命中时目标DOT总层数强化该段。"
   },
   {
@@ -9217,7 +9217,7 @@
     "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 15, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "personal_resource_gain": {"谐频": 34}, "tags": ["援护", "同频合击", "追加攻击", "消耗标记"], "source_row": 488, "source_note": "腾讯文档《角色属性》tab 000003 row 488提供灵可同频500%倍率与2.5倾陷；Nanoka 2026-08-25实时核实前台角色E命中可消耗「小鬼打这里！」并触发灵可同频，同时积攒34谐频与15环合。按用户口径作为玩家手工排入的0秒后台动作，固定为灵属性并使用灵可面板与援护技等级；不建立或校验真实标记，5觉暂不实装因此不触发环合反应。"
   },
   {
-    "id": "action_lingke_xiaozhen_joint", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "小贞同频", "action_type": "援护", "damage_type": "追击", "extra_tag": "同频合击", "is_background_damage": false, "duration_seconds": 1.5, "duration_ticks": 15,
+    "id": "action_lingke_xiaozhen_joint", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "小贞同频", "action_type": "援护", "damage_type": "追击", "extra_tag": "同频合击", "is_background_damage": false, "locks_foreground_switch": false, "duration_seconds": 1.5, "duration_ticks": 15,
     "damage_element": "灵", "disable_reaction": true, "multipliers": {"atk": 1.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 0, "harmony": 0, "stagger": 1.667, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击", "小贞"], "source_row": 489, "source_note": "腾讯文档《角色属性》tab 000003 rows 489-490：33.3%×3+100%=199.9%，倾陷0.417+1.25=1.667；Nanoka 2026-08-24核实小贞发起时为灵属性，伤害受灵可面板与援护技技能等级影响。按用户2026-08-25最新口径改为前台动作，耗时1.5秒；5觉暂不实装，因此不触发环合。"
   },
   {

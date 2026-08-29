@@ -513,6 +513,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions['幻e']['energy_gain'], 24.999)
         self.assertEqual(actions['幻e']['harmony'], 18.901)
         self.assertEqual(actions['幻e']['stagger'], 2.299)
+        self.assertTrue(actions['幻e']['locks_foreground_switch'])
         self.assertEqual(actions['血宴']['multipliers']['atk'], 6.999)
 
         self.assertEqual(actions['血宴']['energy_cost'], 120)
@@ -689,6 +690,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions_by_name['小贞同频']['stagger'], 1.667)
         self.assertEqual(actions_by_name['小贞同频']['duration_ticks'], 15)
         self.assertFalse(actions_by_name['小贞同频']['is_background_damage'])
+        self.assertFalse(actions_by_name['小贞同频']['locks_foreground_switch'])
         self.assertEqual(actions_by_name['4觉同频追加']['required_awakening'], 4)
 
         arc = next(arc for arc in catalog['arcs'] if arc['name'] == '远行者之声')

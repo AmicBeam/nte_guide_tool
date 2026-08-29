@@ -971,7 +971,13 @@
   }
 
   function locksForegroundSwitch(step, action) {
-    return startsForeground(step, action) && (
+    if (!startsForeground(step, action)) {
+      return false;
+    }
+    if (typeof action?.locks_foreground_switch === 'boolean') {
+      return action.locks_foreground_switch;
+    }
+    return (
       (isSupportAction(action) && !isTimeStopZeroForegroundStep(step, action)) ||
       isZeroForegroundQStep(step, action)
     );

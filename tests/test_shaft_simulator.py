@@ -3451,6 +3451,50 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(details['intruding_e']['foreground_lock_ticks'], 9)
         self.assertEqual(details['intruding_e']['switch_gap_ticks'], 0)
 
+    def test_canhong_illusion_e_locks_other_characters_until_its_end(self) -> None:
+        payload = {
+            'team': [
+                {'slot': 0, 'character_id': 'char_076a1f4e53', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 1, 'character_id': 'char_bdc43f82c6', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                {'id': 'illusion_e', 'slot': 0, 'action_id': 'action_canhong_E2', 'start_tick': 0},
+                {'id': 'intruding_e', 'slot': 1, 'action_id': 'action_5870d8ba67', 'start_tick': 5},
+            ],
+            'options': {'switch_loss_ticks': 0},
+            'initial_energy': 200,
+        }
+
+        result = simulate_shaft_axis(payload)['result']
+        details = {detail['step_id']: detail for detail in result['details']}
+
+        self.assertEqual(details['illusion_e']['visual_end_tick'], 22)
+        self.assertEqual(details['intruding_e']['raw_start_tick'], 5)
+        self.assertEqual(details['intruding_e']['visual_start_tick'], 22)
+        self.assertEqual(details['intruding_e']['foreground_lock_ticks'], 17)
+
+    def test_lingke_xiaozhen_joint_does_not_lock_other_characters(self) -> None:
+        payload = {
+            'team': [
+                {'slot': 0, 'character_id': 'char_0846d632e0', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 1, 'character_id': 'char_bdc43f82c6', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                {'id': 'xiaozhen_joint', 'slot': 0, 'action_id': 'action_lingke_xiaozhen_joint', 'start_tick': 0},
+                {'id': 'intruding_e', 'slot': 1, 'action_id': 'action_5870d8ba67', 'start_tick': 5},
+            ],
+            'options': {'switch_loss_ticks': 0},
+            'initial_energy': 200,
+        }
+
+        result = simulate_shaft_axis(payload)['result']
+        details = {detail['step_id']: detail for detail in result['details']}
+
+        self.assertEqual(details['xiaozhen_joint']['visual_end_tick'], 15)
+        self.assertEqual(details['intruding_e']['raw_start_tick'], 5)
+        self.assertEqual(details['intruding_e']['visual_start_tick'], 5)
+        self.assertEqual(details['intruding_e']['foreground_lock_ticks'], 0)
+
     def test_zero_duration_q_locks_other_characters_for_its_visual_ticks(self) -> None:
         payload = {
             'team': [

@@ -1277,20 +1277,21 @@
   }
 
   function locksForegroundSwitch(step, action = actionForStep(step)) {
-    return startsForeground(step, action) && (
+    if (!startsForeground(step, action)) {
+      return false;
+    }
+    if (typeof action?.locks_foreground_switch === 'boolean') {
+      return action.locks_foreground_switch;
+    }
+    return (
       (isSupportAction(action) && !isTimeStopZeroForegroundStep(step, action)) ||
       isZeroForegroundQStep(step, action)
     );
   }
 
   function foregroundLockEndTick(step, action, startTick) {
-    if (isSupportAction(action)) {
-      return isTimeStopZeroForegroundStep(step, action)
-        ? startTick
-        : startTick + actionVisualDurationTicks(action, step);
-    }
     if (!isZeroForegroundQStep(step, action)) {
-      return startTick;
+      return startTick + actionVisualDurationTicks(action, step);
     }
     const detail = (timelineResult()?.details || []).find((item) => item.step_id === step?.id);
     const qSpanTicks = resultDetailMatchesStep(detail, step)

@@ -947,6 +947,9 @@
     if (isInstantNativeBackgroundAction(step, action)) {
       return ZERO_ACTION_VISUAL_TICKS;
     }
+    if (isTimeStopZeroForegroundStep(step, action)) {
+      return ZERO_ACTION_VISUAL_TICKS;
+    }
     const durationTicks = configuredActionDurationTicks(step, action);
     return durationTicks > 0 ? durationTicks : ZERO_ACTION_VISUAL_TICKS;
   }
@@ -956,7 +959,7 @@
   }
 
   function hasTimelineMaskAbility(action) {
-    return isQAction(action) || Boolean(action?.is_timeline_mask);
+    return isQAction(action) || Boolean(action?.is_timeline_mask) || Boolean(action?.is_time_stop_zero);
   }
 
   function isInstantSwitchAction(action) {
@@ -969,7 +972,7 @@
 
   function locksForegroundSwitch(step, action) {
     return startsForeground(step, action) && (
-      (isSupportAction(action) && !isExplicitZeroForegroundStep(step, action)) ||
+      (isSupportAction(action) && !isTimeStopZeroForegroundStep(step, action)) ||
       isZeroForegroundQStep(step, action)
     );
   }
@@ -1052,12 +1055,12 @@
   }
 
   function isZeroForegroundQStep(step, action) {
-    return startsForeground(step, action) && hasTimelineMaskAbility(action) && configuredActionDurationTicks(step, action) === 0;
+    return isTimeStopZeroForegroundStep(step, action) && hasTimelineMaskAbility(action);
   }
 
-  function isExplicitZeroForegroundStep(step, action) {
+  function isTimeStopZeroForegroundStep(step, action) {
     return startsForeground(step, action)
-      && Boolean(action?.duration_implemented)
+      && Boolean(action?.is_time_stop_zero)
       && configuredActionDurationTicks(step, action) === 0;
   }
 
@@ -1846,7 +1849,7 @@
       .sort((a, b) => int(a.visual_start_tick, int(a.start_tick)) - int(b.visual_start_tick, int(b.start_tick)) || int(a.slot) - int(b.slot));
     let qVirtualIntervals = normalizeFrozenIntervals(scheduledSteps
       .filter((scheduled) => (
-        isExplicitZeroForegroundStep(scheduled.step || {}, scheduled.action || {})
+        isTimeStopZeroForegroundStep(scheduled.step || {}, scheduled.action || {})
         && !isZeroForegroundQStep(scheduled.step || {}, scheduled.action || {})
       ))
       .map((scheduled) => ({
@@ -4658,7 +4661,9 @@
         display_start_tick: visualStartTick,
         display_end_tick: visualEndTick,
         display_duration_ticks: Math.max(0, int(scheduled.original_duration_ticks)),
-        tick_duration_ticks: Math.max(0, visualEndTick - visualStartTick),
+        tick_duration_ticks: isTimeStopZeroForegroundStep(step, action)
+          ? 0
+          : Math.max(0, visualEndTick - visualStartTick),
         display_visual_end_tick: visualEndTick,
         original_start_tick: int(scheduled.original_start_tick, startTick),
         original_calculation_start_sequence: int(scheduled.original_calculation_start_sequence),

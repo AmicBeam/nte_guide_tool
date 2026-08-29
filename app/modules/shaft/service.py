@@ -776,10 +776,10 @@ def _is_q_action(action: dict[str, Any]) -> bool:
     return str(action.get('action_type') or '') == 'Q' or str(action.get('damage_type') or '') == 'Q'
 
 
-def _is_zero_foreground_q_step(step: dict[str, Any], action: dict[str, Any]) -> bool:
+def _is_time_stop_zero_step(step: dict[str, Any], action: dict[str, Any]) -> bool:
     return (
         _normalize_step_placement(step, action) != 'background' and
-        _is_q_action(action) and
+        bool(action.get('is_time_stop_zero')) and
         max(0, _int(action.get('duration_ticks'))) == 0
     )
 
@@ -811,7 +811,7 @@ def calculate_axis_duration_ticks(steps: list[dict[str, Any]], actions_by_id: di
             continue
         start_tick = max(0, _int(step.get('start_tick')))
         duration_ticks = _action_duration_ticks(step, action)
-        if _is_zero_foreground_q_step(step, action):
+        if _is_time_stop_zero_step(step, action):
             visual_duration_ticks = ZERO_ACTION_VISUAL_TICKS
         else:
             visual_duration_ticks = duration_ticks

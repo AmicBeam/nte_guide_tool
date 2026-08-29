@@ -661,10 +661,12 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(time_stop_select['harmony'], 0)
         self.assertEqual(time_stop_select['stagger'], 0)
         self.assertTrue(time_stop_select['is_timeline_mask'])
+        self.assertTrue(time_stop_select['is_time_stop_zero'])
         for element in ('光', '灵', '咒', '暗', '魂', '相'):
             joint = actions_by_name[f'{element}同频']
             self.assertEqual(joint['duration_ticks'], 0)
             self.assertTrue(joint['duration_implemented'])
+            self.assertTrue(joint['is_time_stop_zero'])
             self.assertEqual(joint['multipliers']['atk'], 2.0)
             self.assertEqual(joint['harmony'], 0)
             self.assertEqual(joint['damage_element'], element)
@@ -1793,7 +1795,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         add_body = add_match.group('body')
         self.assertNotIn('shiftStepsFromTick', source)
         self.assertIn('const insertTick = prepareInsertionTick(startTick, action, slot);', add_body)
-        self.assertIn('reserveVirtualZeroInsertionSpan(insertTick, action, step);', add_body)
+        self.assertIn('reserveTimeStopZeroInsertionSpan(insertTick, action, step);', add_body)
         self.assertIn('startsForeground(candidateStep, action || {})', source)
         self.assertIn('!actionIntervalAtTick(target, slot)', source)
         self.assertIn('!startsForeground(candidateStep, action || {}) && !blocksSlotOverlap(candidateStep, action || {})', source)
@@ -1804,18 +1806,18 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertLess(add_body.index('scheduleSimulation();'), add_body.index('revealTimelineTick(state.cursorTick);'))
         self.assertIn("const shell = timeline?.closest('.shaft-timeline-shell');", source)
 
-    def test_virtual_zero_insertion_reserves_one_visual_span_for_every_following_step(self) -> None:
+    def test_time_stop_zero_insertion_reserves_one_virtual_span_for_every_following_step(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         helper_match = re.search(
-            r'function\s+reserveVirtualZeroInsertionSpan\s*\([^)]*\)\s*{\s*(?P<body>.*?)\n  }\n\n  function addActionAt',
+            r'function\s+reserveTimeStopZeroInsertionSpan\s*\([^)]*\)\s*{\s*(?P<body>.*?)\n  }\n\n  function addActionAt',
             source,
             re.S,
         )
         if not helper_match:
-            raise AssertionError('reserveVirtualZeroInsertionSpan function is missing.')
+            raise AssertionError('reserveTimeStopZeroInsertionSpan function is missing.')
 
         helper_body = helper_match.group('body')
-        self.assertIn('if (!isVirtualZeroForegroundStep(candidateStep, action))', helper_body)
+        self.assertIn('if (!isTimeStopZeroForegroundStep(candidateStep, action))', helper_body)
         self.assertIn('const spanTicks = actionVisualDurationTicks(action, candidateStep);', helper_body)
         self.assertIn('Number(step.start_tick || 0) >= insertTick', helper_body)
         self.assertIn('step.start_tick = Number(step.start_tick || 0) + spanTicks;', helper_body)
@@ -2196,15 +2198,17 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
     def test_q_timeline_abilities_require_zero_duration_foreground_q(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
 
+        self.assertTrue(all(action.get('is_time_stop_zero') for action in _zero_q_actions()))
         self.assertIn('function isZeroForegroundQStep(step, action = actionForStep(step)) {', source)
-        self.assertIn('startsForeground(step, action) && hasTimelineMaskAbility(action) && actionDurationTicks(action, step) === 0', source)
-        self.assertIn("return isQAction(action) || Boolean(action?.is_timeline_mask);", source)
+        self.assertIn('return isTimeStopZeroForegroundStep(step, action) && hasTimelineMaskAbility(action);', source)
+        self.assertIn("return isQAction(action) || Boolean(action?.is_timeline_mask) || Boolean(action?.is_time_stop_zero);", source)
         self.assertIn('const actionIsQ = isZeroForegroundQStep(step, action);', source)
-        self.assertIn('.filter((item) => isVirtualZeroForegroundStep(item.step, item.action))', source)
-        self.assertIn('isVirtualZeroForegroundStep(candidateStep, action || {}) ||', source)
+        self.assertIn('.filter((item) => isTimeStopZeroForegroundStep(item.step, item.action))', source)
+        self.assertIn('isZeroForegroundQStep(candidateStep, action || {}) ||', source)
+        self.assertIn('isTimeStopZeroForegroundStep(candidateStep, action || {}) ||', source)
         self.assertIn('tickHasForegroundQ(target) ||', source)
-        self.assertIn('function isExplicitZeroForegroundStep(step, action = actionForStep(step)) {', source)
-        self.assertIn('function isVirtualZeroForegroundStep(step, action = actionForStep(step)) {', source)
+        self.assertIn('function isTimeStopZeroForegroundStep(step, action = actionForStep(step)) {', source)
+        self.assertIn('Boolean(action?.is_time_stop_zero)', source)
         self.assertNotIn('const currentIsQ = foregroundStart && isQAction(action);', source)
 
     def test_noop_switch_has_independent_timeline_semantics(self) -> None:

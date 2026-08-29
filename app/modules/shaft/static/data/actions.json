@@ -130,6 +130,7 @@
   },
   {
     "id": "action_b356b46da2",
+    "is_time_stop_zero": true,
     "character_id": "char_dd034941ef",
     "character_name": "主角",
     "name": "q",
@@ -980,6 +981,7 @@
   },
   {
     "id": "action_c32b4b9417",
+    "is_time_stop_zero": true,
     "character_id": "char_b52cc8f160",
     "character_name": "真红",
     "name": "q",
@@ -1063,6 +1065,7 @@
   },
   {
     "id": "action_e3711f0cf5",
+    "is_time_stop_zero": true,
     "character_id": "char_b52cc8f160",
     "character_name": "真红",
     "name": "q2",
@@ -1227,6 +1230,7 @@
   },
   {
     "id": "action_50de5ed4be",
+    "is_time_stop_zero": true,
     "character_id": "char_15f458f7ef",
     "character_name": "浔",
     "name": "q",
@@ -1980,6 +1984,7 @@
   },
   {
     "id": "action_fa751813d2",
+    "is_time_stop_zero": true,
     "character_id": "char_4f917797cb",
     "character_name": "小吱",
     "name": "q",
@@ -2105,6 +2110,7 @@
   },
   {
     "id": "action_16e181ce7c",
+    "is_time_stop_zero": true,
     "character_id": "char_31c5130304",
     "character_name": "埃德嘉",
     "name": "q",
@@ -3252,6 +3258,7 @@
   },
   {
     "id": "action_0f1e29b8ca",
+    "is_time_stop_zero": true,
     "character_id": "char_bdc43f82c6",
     "character_name": "娜娜莉",
     "name": "q",
@@ -3738,6 +3745,7 @@
   },
   {
     "id": "action_5501c87ce7",
+    "is_time_stop_zero": true,
     "character_id": "char_b2e3b2bf7a",
     "character_name": "九原",
     "name": "q",
@@ -4125,6 +4133,7 @@
   },
   {
     "id": "action_9670752877",
+    "is_time_stop_zero": true,
     "character_id": "char_dda9fae1ef",
     "character_name": "薄荷",
     "name": "q",
@@ -4803,6 +4812,7 @@
   },
   {
     "id": "action_9307778f01",
+    "is_time_stop_zero": true,
     "character_id": "char_701295143d",
     "character_name": "白藏",
     "name": "q",
@@ -5016,6 +5026,7 @@
   },
   {
     "id": "action_0db78d1f01",
+    "is_time_stop_zero": true,
     "character_id": "char_1895e259be",
     "character_name": "早雾",
     "name": "q",
@@ -5230,6 +5241,7 @@
   },
   {
     "id": "action_95733904eb",
+    "is_time_stop_zero": true,
     "character_id": "char_6f46705fd1",
     "character_name": "阿德勒",
     "name": "q",
@@ -6093,6 +6105,7 @@
   },
   {
     "id": "action_1104de864b",
+    "is_time_stop_zero": true,
     "character_id": "char_c78f7a08d5",
     "character_name": "安魂曲",
     "name": "q",
@@ -6391,6 +6404,7 @@
   },
   {
     "id": "action_f5e921e6d8",
+    "is_time_stop_zero": true,
     "character_id": "char_e8ad982185",
     "character_name": "达芙蒂尔",
     "name": "q",
@@ -6565,6 +6579,7 @@
   },
   {
     "id": "action_122b6bf962",
+    "is_time_stop_zero": true,
     "character_id": "char_caa6c2e5a8",
     "character_name": "法帝娅",
     "name": "q",
@@ -6818,6 +6833,7 @@
   },
   {
     "id": "action_3529c3d915",
+    "is_time_stop_zero": true,
     "character_id": "char_e0a4292b4e",
     "character_name": "哈尼娅",
     "name": "q",
@@ -7154,6 +7170,7 @@
   },
   {
     "id": "action_952b4b561f",
+    "is_time_stop_zero": true,
     "character_id": "char_699966e2e7",
     "character_name": "海月",
     "name": "q",
@@ -7681,6 +7698,7 @@
   },
   {
     "id": "action_dbd682321e",
+    "is_time_stop_zero": true,
     "character_id": "char_d38b672525",
     "character_name": "卡厄斯",
     "name": "q",
@@ -7982,6 +8000,7 @@
   },
   {
     "id": "action_cc530277d3",
+    "is_time_stop_zero": true,
     "character_id": "char_912dbfe17c",
     "character_name": "哈索尔",
     "name": "q",
@@ -8362,6 +8381,7 @@
   },
   {
     "id": "action_6ece34aff8",
+    "is_time_stop_zero": true,
     "character_id": "char_7578b18979",
     "character_name": "翳",
     "name": "q",
@@ -8622,6 +8642,7 @@
   },
   {
     "id": "action_307ad00e8e",
+    "is_time_stop_zero": true,
     "character_id": "char_a01c39f576",
     "character_name": "伊洛伊",
     "name": "q",
@@ -9084,14 +9105,17 @@
   },
   {
     "id": "action_canhong_q", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "焚天", "action_type": "Q", "damage_type": "Q", "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 4.2, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 200, "cooldown_group": "canhong_q", "energy_cost": 120, "tags": ["焚天"], "source_row": 45, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 45-46，按倍率呈现方式聚合；极轨终结不自回能。"
   },
   {
     "id": "action_canhong_q_enhanced", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "强化焚天", "action_type": "Q", "damage_type": "Q", "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 5.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 200, "energy_cost": 0, "required_buff_key": "character_canhong_enhanced_fentian_window", "required_buff_name": "血宴后的5秒强化焚天窗口", "tags": ["强化", "焚天"], "source_row": 47, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 47-48，按倍率呈现方式聚合；成功释放血宴后5秒内可不消耗终结能量释放1次，窗口由自检校验，释放后消耗；极轨终结不自回能。"
   },
   {
     "id": "action_canhong_q_blood_banquet", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "血宴", "action_type": "Q", "damage_type": "追击", "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 6.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 200, "cooldown_group": "canhong_q", "energy_cost": 120, "canhong_blood_activation_required": true, "tags": ["追击", "血宴", "鸩火5层", "解除幻境"], "source_row": 49, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 49-50，按倍率呈现方式聚合；表内倾陷聚合为2.499，按用户明确口径记为2.5。血宴激活时优先于焚天，施加5层独立DOT「鸩火」并解除幻境；灭或D觉可激活血宴，极轨终结不自回能。"
   },
   {
@@ -9136,6 +9160,7 @@
   },
   {
     "id": "action_lingke_q", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q展开", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·展开", "display_order": 20, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "", "hit_count": 0, "energy_gain": 0, "harmony": 0, "stagger": 0, "cooldown_ticks": 200, "cooldown_group": "lingke_q", "energy_cost": 100, "tags": ["超负荷共鸣", "共鸣领域", "展开"], "source_row": 483, "source_note": "Nanoka 2026-08-25实时核实100终结能量、20秒CD与8秒共鸣领域；按用户2026-08-29最新口径，q展开仅作为消耗终结能量并触发领域的0秒启动动作，本身倍率、命中段数和倾陷均为0，原展开范围伤害移至手工后台动作q范围。"
   },
   {
@@ -9144,38 +9169,47 @@
   },
   {
     "id": "action_lingke_q_multi", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q多段", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·多段", "display_order": 22, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 3.456, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*6", "hit_count": 6, "energy_gain": 0, "harmony": 0, "stagger": 0.115, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["超负荷共鸣", "多段"], "source_row": 485, "source_note": "腾讯文档《角色属性》tab 000003 row 485：57.6%×6=345.6%、倾陷0.115。按用户2026-08-25口径从原聚合Q拆出，动作耗时0秒且不重复消耗终结能量。"
   },
   {
     "id": "action_lingke_q_burst", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q爆发", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·爆发", "display_order": 23, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 7.353, "hp": 0, "def": 0, "flat": 0}, "multipliers_add_by_awakening_node": {"2": {"atk": 2.2059}}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 0.735, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["超负荷共鸣", "爆发", "负面状态增伤"], "source_row": 486, "source_note": "腾讯文档《角色属性》tab 000003 row 486：爆发伤害735.3%、倾陷0.735；按腾讯文档《灵可角色资料汇总》2026-08-25最新口径，2觉使该段倍率提升30%。Nanoka 2026-08-25实时核实爆发根据目标负面状态种类增伤且上限20%；按用户2026-08-25口径每种+4%，负面包括减防、减抗、各类DOT与延滞/覆纹/浸染/浊燃/黯星等，每类去重。"
   },
   {
     "id": "action_lingke_time_stop_select", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "时停选人", "action_type": "无", "damage_type": "无", "extra_tag": "时停选人", "display_order": 24, "is_background_damage": false, "is_timeline_mask": true, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "", "hit_count": 0, "energy_gain": 0, "harmony": 0, "stagger": 0, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["时停", "选人", "遮罩"], "source_row": 0, "source_note": "用户2026-08-25明确新增：灵可专属0秒无效果动作，仅用于时间轴遮罩和选人占位；不视为Q，不触发Q类技能、Buff、耗能或资源效果。"
   },
   {
     "id": "action_lingke_joint_light", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "光同频", "action_type": "援护", "damage_type": "追击", "damage_element": "光", "extra_tag": "同频合击", "display_order": 10, "is_background_damage": false, "disable_reaction": true, "duration_implemented": true, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "personal_resource_consume_all": ["谐频"], "tags": ["援护", "同频合击", "追加攻击", "谐频强化"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为光。"
   },
   {
     "id": "action_lingke_team_joint", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "灵同频", "action_type": "援护", "damage_type": "追击", "damage_element": "灵", "extra_tag": "同频合击", "display_order": 11, "is_background_damage": false, "disable_reaction": true, "duration_implemented": true, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "personal_resource_consume_all": ["谐频"], "tags": ["援护", "同频合击", "追加攻击", "谐频强化"], "source_row": 488, "source_note": "腾讯文档《角色属性》tab 000003 row 488；Nanoka 2026-08-25核实「同频合击」属于特殊援护技，伤害属性取发起角色属性，伤害视为追加攻击，并受灵可面板与援护技技能等级影响。按用户2026-08-25口径，六属性同频基础倍率200%，其他增伤区基础+150%，并按消耗的0至100点谐频线性额外增加0%至40%，结算后清空谐频，环合值0；按用户2026-08-27最新口径，六属性同频均为前台0秒动作。5觉暂不实装，因此不触发环合。"
   },
   {
     "id": "action_lingke_joint_curse", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "咒同频", "action_type": "援护", "damage_type": "追击", "damage_element": "咒", "extra_tag": "同频合击", "display_order": 12, "is_background_damage": false, "disable_reaction": true, "duration_implemented": true, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "personal_resource_consume_all": ["谐频"], "tags": ["援护", "同频合击", "追加攻击", "谐频强化"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为咒。"
   },
   {
     "id": "action_lingke_joint_dark", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "暗同频", "action_type": "援护", "damage_type": "追击", "damage_element": "暗", "extra_tag": "同频合击", "display_order": 13, "is_background_damage": false, "disable_reaction": true, "duration_implemented": true, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "personal_resource_consume_all": ["谐频"], "tags": ["援护", "同频合击", "追加攻击", "谐频强化"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为暗。"
   },
   {
     "id": "action_lingke_joint_soul", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "魂同频", "action_type": "援护", "damage_type": "追击", "damage_element": "魂", "extra_tag": "同频合击", "display_order": 14, "is_background_damage": false, "disable_reaction": true, "duration_implemented": true, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "personal_resource_consume_all": ["谐频"], "tags": ["援护", "同频合击", "追加攻击", "谐频强化"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为魂。"
   },
   {
     "id": "action_lingke_joint_phase", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "相同频", "action_type": "援护", "damage_type": "追击", "damage_element": "相", "extra_tag": "同频合击", "display_order": 15, "is_background_damage": false, "disable_reaction": true, "duration_implemented": true, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "personal_resource_consume_all": ["谐频"], "tags": ["援护", "同频合击", "追加攻击", "谐频强化"], "source_row": 488, "source_note": "同「灵同频」；发起角色属性为相。"
   },
   {

@@ -5138,6 +5138,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertTrue(all(detail['start_tick'] == 0 for detail in details))
         self.assertTrue(all(detail['end_tick'] == 0 for detail in details))
         self.assertTrue(all(detail['duration_ticks'] == 0 for detail in details))
+        self.assertTrue(all(detail['tick_duration_ticks'] == 0 for detail in details))
         self.assertEqual(result['summary']['duration_ticks'], 0)
         self.assertEqual(result['time_axis']['frozen_intervals'], [{'start_tick': 0, 'end_tick': 30}])
 

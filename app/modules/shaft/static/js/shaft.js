@@ -1182,7 +1182,7 @@
   }
 
   function hasTimelineMaskAbility(action) {
-    return isQAction(action) || Boolean(action?.is_timeline_mask);
+    return isQAction(action) || Boolean(action?.is_timeline_mask) || Boolean(action?.is_time_stop_zero);
   }
 
   function isInstantSwitchAction(action) {
@@ -1260,36 +1260,32 @@
   }
 
   function actionVisualDurationTicks(action, step = null) {
-    if (step && isVirtualZeroForegroundStep(step, action)) {
+    if (step && isTimeStopZeroForegroundStep(step, action)) {
       return qVisualDurationTicks(action);
     }
     return actionEditorDurationTicks(action, step);
   }
 
   function isZeroForegroundQStep(step, action = actionForStep(step)) {
-    return startsForeground(step, action) && hasTimelineMaskAbility(action) && actionDurationTicks(action, step) === 0;
+    return isTimeStopZeroForegroundStep(step, action) && hasTimelineMaskAbility(action);
   }
 
-  function isExplicitZeroForegroundStep(step, action = actionForStep(step)) {
+  function isTimeStopZeroForegroundStep(step, action = actionForStep(step)) {
     return startsForeground(step, action)
-      && Boolean(action?.duration_implemented)
+      && Boolean(action?.is_time_stop_zero)
       && actionDurationTicks(action, step) === 0;
-  }
-
-  function isVirtualZeroForegroundStep(step, action = actionForStep(step)) {
-    return isZeroForegroundQStep(step, action) || isExplicitZeroForegroundStep(step, action);
   }
 
   function locksForegroundSwitch(step, action = actionForStep(step)) {
     return startsForeground(step, action) && (
-      (isSupportAction(action) && !isExplicitZeroForegroundStep(step, action)) ||
+      (isSupportAction(action) && !isTimeStopZeroForegroundStep(step, action)) ||
       isZeroForegroundQStep(step, action)
     );
   }
 
   function foregroundLockEndTick(step, action, startTick) {
     if (isSupportAction(action)) {
-      return isExplicitZeroForegroundStep(step, action)
+      return isTimeStopZeroForegroundStep(step, action)
         ? startTick
         : startTick + actionVisualDurationTicks(action, step);
     }
@@ -1319,7 +1315,7 @@
     const resultDetailByStepId = new Map(resultDetails.map((detail) => [detail.step_id, detail]));
     return (steps || [])
       .map((step, order) => ({ step, order, action: actionForStep(step) }))
-      .filter((item) => isVirtualZeroForegroundStep(item.step, item.action))
+      .filter((item) => isTimeStopZeroForegroundStep(item.step, item.action))
       .sort((a, b) => Number(a.step.start_tick || 0) - Number(b.step.start_tick || 0) || a.order - b.order)
       .map((item) => {
         const detail = resultDetailByStepId.get(item.step.id);
@@ -5564,7 +5560,8 @@
     const target = Math.max(0, Number(tick || 0));
     const candidateStep = { action_id: action?.id || '' };
     if (
-      isVirtualZeroForegroundStep(candidateStep, action || {}) ||
+      isZeroForegroundQStep(candidateStep, action || {}) ||
+      isTimeStopZeroForegroundStep(candidateStep, action || {}) ||
       isInstantSwitchAction(action || {}) ||
       tickHasForegroundQ(target) ||
       tickHasInstantSwitchAction(target)
@@ -5613,7 +5610,8 @@
       return false;
     }
     if (
-      isVirtualZeroForegroundStep(candidateStep, candidateAction) ||
+      isZeroForegroundQStep(candidateStep, candidateAction) ||
+      isTimeStopZeroForegroundStep(candidateStep, candidateAction) ||
       isInstantSwitchAction(candidateAction) ||
       tickHasForegroundQ(tick, ignoreStepId) ||
       tickHasInstantSwitchAction(tick, ignoreStepId)
@@ -5657,8 +5655,8 @@
     return state.cursorTick;
   }
 
-  function reserveVirtualZeroInsertionSpan(insertTick, action, candidateStep) {
-    if (!isVirtualZeroForegroundStep(candidateStep, action)) {
+  function reserveTimeStopZeroInsertionSpan(insertTick, action, candidateStep) {
+    if (!isTimeStopZeroForegroundStep(candidateStep, action)) {
       return 0;
     }
     const spanTicks = actionVisualDurationTicks(action, candidateStep);
@@ -5687,7 +5685,7 @@
       repeat: 1,
       tags: [],
     };
-    reserveVirtualZeroInsertionSpan(insertTick, action, step);
+    reserveTimeStopZeroInsertionSpan(insertTick, action, step);
     state.axis.steps.push(step);
     normalizeEditedSteps(new Set([step.id]));
     selectStep(step.id, false);
@@ -5848,7 +5846,11 @@
         detail?.display_start_tick ?? detail?.visual_start_tick ?? step.start_tick ?? 0,
       ));
       latestRemovedStart = Math.max(latestRemovedStart, start);
-      if (!blocksSlotOverlap(step, action) || isVirtualZeroForegroundStep(step, action)) {
+      if (
+        !blocksSlotOverlap(step, action)
+        || isZeroForegroundQStep(step, action)
+        || isTimeStopZeroForegroundStep(step, action)
+      ) {
         return;
       }
       const end = Math.max(start, Number(

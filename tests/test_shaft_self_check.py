@@ -121,6 +121,17 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
             [],
         )
 
+    def test_lingke_basic_attack_duration_remains_explicitly_unimplemented(self) -> None:
+        a1 = self.action('灵可', 'a1')
+        a2 = self.action('灵可', 'a2')
+        background_a2 = self.step(a2, 1)
+        background_a2['placement'] = 'background'
+
+        self.assertEqual(
+            self.inspect([self.step(a1, 0), background_a2]),
+            ['灵可「a1」：该动作的时长未实装。'],
+        )
+
     def test_background_instant_switch_still_participates_in_return_cooldown(self) -> None:
         zhenhong_a1 = self.action('真红', 'a1')
         nanali_switch = self.action('娜娜莉', '无')

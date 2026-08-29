@@ -1882,6 +1882,14 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const mappedDisplayTick = Math.max(0, tickFromTimelineXWithScale(', source)
         self.assertIn('const mappedTick = axisTickFromDragDisplayTick(drag, mappedDisplayTick);', source)
 
+    def test_drag_cursor_uses_the_projected_action_display_tick(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+
+        self.assertIn('function timelineDisplayTickForResultStep(step, result = timelineResult()) {', source)
+        self.assertIn("const detail = (result?.details || []).find((item) => item.step_id === step?.id);", source)
+        self.assertIn('state.cursorTick = timelineDisplayTickForResultStep(normalizedStep, drag.previewResult);', source)
+        self.assertIn('state.cursorTick = timelineDisplayTickForResultStep(primary, drag.previewResult);', source)
+
     def test_drag_priority_does_not_reverse_when_crossing_yi_e_to_support_end(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
 

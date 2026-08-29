@@ -1007,8 +1007,20 @@
   }
 
   function timelineDisplayTickForStep(step) {
-    const detail = (state.timelineDisplayDetails || []).find((item) => item.step_id === step?.id) ||
-      (timelineResult()?.details || []).find((item) => item.step_id === step?.id);
+    const detail = (state.timelineDisplayDetails || []).find((item) => item.step_id === step?.id);
+    if (detail) {
+      return Math.max(0, Number(
+        detail.display_start_tick ??
+        detail.visual_start_tick ??
+        step?.start_tick ??
+        0
+      ));
+    }
+    return timelineDisplayTickForResultStep(step);
+  }
+
+  function timelineDisplayTickForResultStep(step, result = timelineResult()) {
+    const detail = (result?.details || []).find((item) => item.step_id === step?.id);
     return Math.max(0, Number(
       detail?.display_start_tick ??
       detail?.visual_start_tick ??
@@ -7527,7 +7539,7 @@
     }
     syncSelection(false);
     const normalizedStep = state.axis.steps.find((item) => item.id === drag.stepId);
-    state.cursorTick = Number(normalizedStep?.start_tick ?? nextTick);
+    state.cursorTick = timelineDisplayTickForResultStep(normalizedStep, drag.previewResult);
     syncAddTimeInput(state.cursorTick);
     renderSteps();
     renderTimeline();
@@ -7736,7 +7748,7 @@
       normalizeEditedSteps(new Set(stepIds));
       syncSelection(false);
       const primary = state.axis.steps.find((item) => item.id === drag.stepId) || movedSteps[0];
-      state.cursorTick = Number(primary?.start_tick || 0);
+      state.cursorTick = timelineDisplayTickForResultStep(primary, drag.previewResult);
       state.suppressTimelineClickUntil = Date.now() + 250;
       renderSteps();
       renderStepDetail();

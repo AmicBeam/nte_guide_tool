@@ -1389,7 +1389,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('state.selectedStepId', shortcut_body)
         self.assertIn('applyForegroundConflictOrder(simulatedSteps);', shortcut_body)
         self.assertIn('function earliestVisualTickRespectingForegroundReturn(currentStep, proposedVisualTick)', shortcut_body)
-        self.assertIn('window.ShaftSelfCheck?.isMaskingForegroundQ(step, action)', shortcut_body)
+        self.assertIn('window.ShaftSelfCheck?.isMaskingTimeStopZero(step, action)', shortcut_body)
         self.assertIn('window.ShaftSelfCheck?.MIN_FOREGROUND_RETURN_TICKS || 12', shortcut_body)
         self.assertIn('calculationTickFromVisual(visualTick) < requiredCalculationTick', shortcut_body)
         self.assertIn('const shiftTicks = currentStart - earliestStart;', shortcut_body)

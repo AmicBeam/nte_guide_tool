@@ -220,6 +220,21 @@ process.stdout.write(JSON.stringify(selfCheck.inspectAxis(payload.axis, payload.
             self.step(zhenhong_a2, 6, slot=0),
         ]), [])
 
+    def test_lingke_elemental_joint_masks_early_return_via_time_stop_zero_property(self) -> None:
+        zhenhong_a1 = self.action('真红', 'a1')
+        lingke_e = self.action('灵可', 'e')
+        lingke_joint = self.action('灵可', '光同频')
+        zhenhong_a2 = self.action('真红', 'a2')
+
+        self.assertEqual(lingke_joint['action_type'], '援护')
+        self.assertTrue(lingke_joint['is_time_stop_zero'])
+        self.assertEqual(self.inspect([
+            self.step(zhenhong_a1, 0, slot=0),
+            self.step(lingke_e, 2, slot=1),
+            self.step(lingke_joint, 4, slot=1),
+            self.step(zhenhong_a2, 6, slot=0),
+        ]), [])
+
     def test_other_characters_q_on_departure_node_allows_early_return(self) -> None:
         zhenhong_a1 = self.action('真红', 'a1')
         nanali_q = self.action('娜娜莉', 'q')

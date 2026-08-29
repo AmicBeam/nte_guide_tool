@@ -5980,14 +5980,14 @@
         return;
       }
       const slot = Number(step.slot || 0);
-      const maskingQ = Boolean(window.ShaftSelfCheck?.isMaskingForegroundQ(step, action));
+      const maskingTimeStopZero = Boolean(window.ShaftSelfCheck?.isMaskingTimeStopZero(step, action));
       if (foregroundSlot === slot) {
-        if (maskingQ) {
+        if (maskingTimeStopZero) {
           pendingReturns.forEach((pending) => { pending.masked = true; });
         }
         return;
       }
-      if (maskingQ) {
+      if (maskingTimeStopZero) {
         pendingReturns.forEach((pending, pendingSlot) => {
           if (pendingSlot !== slot) {
             pending.masked = true;
@@ -5998,7 +5998,7 @@
       if (foregroundSlot !== null) {
         pendingReturns.set(foregroundSlot, {
           departureTick: Math.max(0, Number(calculationTick || 0)),
-          masked: maskingQ,
+          masked: maskingTimeStopZero,
         });
       }
       foregroundSlot = slot;

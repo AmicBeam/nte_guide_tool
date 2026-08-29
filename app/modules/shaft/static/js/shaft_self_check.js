@@ -28,12 +28,8 @@
     return match ? Number(match[1]) : null;
   }
 
-  function isQAction(action) {
-    return String(action?.action_type || '') === 'Q' || String(action?.damage_type || '') === 'Q';
-  }
-
   function hasTimelineMaskAbility(action) {
-    return isQAction(action) || Boolean(action?.is_timeline_mask);
+    return Boolean(action?.is_time_stop_zero);
   }
 
   function actionDurationTicks(step, action) {
@@ -42,7 +38,7 @@
       : Math.max(0, Number(action?.duration_ticks || 0));
   }
 
-  function isMaskingForegroundQ(step, action) {
+  function isMaskingTimeStopZero(step, action) {
     return !isBackgroundStep(step, action) &&
       hasTimelineMaskAbility(action) &&
       actionDurationTicks(step, action) === 0;
@@ -69,14 +65,14 @@
       const slot = Number(step?.slot || 0);
       const tick = Math.max(0, Number(calculationTick || 0));
       if (foregroundSlot === slot) {
-        if (isMaskingForegroundQ(step, action)) {
+        if (isMaskingTimeStopZero(step, action)) {
           pendingReturns.forEach((pending) => { pending.masked = true; });
         }
         return;
       }
 
       const returning = pendingReturns.get(slot);
-      if (isMaskingForegroundQ(step, action)) {
+      if (isMaskingTimeStopZero(step, action)) {
         pendingReturns.forEach((pending, pendingSlot) => {
           if (pendingSlot !== slot) pending.masked = true;
         });
@@ -96,7 +92,7 @@
       if (foregroundSlot !== null) {
         pendingReturns.set(foregroundSlot, {
           departure_tick: tick,
-          masked: isMaskingForegroundQ(step, action),
+          masked: isMaskingTimeStopZero(step, action),
         });
       }
       foregroundSlot = slot;
@@ -249,7 +245,7 @@
     MIN_FOREGROUND_RETURN_TICKS,
     basicAttackStage,
     hasUnimplementedForegroundDuration,
-    isMaskingForegroundQ,
+    isMaskingTimeStopZero,
     loopInitialReactionWarnings,
     inspectAxis,
   };

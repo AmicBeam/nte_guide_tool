@@ -675,6 +675,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             self.assertFalse(joint['is_background_damage'])
             self.assertFalse(joint.get('is_timeline_mask', False))
             self.assertTrue(joint['disable_reaction'])
+            self.assertEqual(joint['trigger_character_selector'], 'same_element_non_lingke')
         mark_joint = actions_by_name['消耗标记同频']
         self.assertEqual(mark_joint['damage_element'], '灵')
         self.assertEqual(mark_joint['duration_ticks'], 0)
@@ -1470,6 +1471,10 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('configuredActionDurationTicks(step, action)', engine)
         self.assertIn('id="shaft-action-edit-dialog"', template)
         self.assertIn('id="shaft-action-edit-detached"', template)
+        self.assertIn('id="shaft-action-edit-trigger-character"', template)
+        self.assertIn('function triggerCharactersForAction(action) {', source)
+        self.assertIn('step.trigger_character_id = nextTriggerCharacterId;', source)
+        self.assertIn('.shaft-action-edit-trigger-character {', css)
         self.assertIn('.shaft-action-bar.detached-action .shaft-action-name {', css)
 
     def test_native_background_actions_display_as_zero_seconds_with_five_tick_footprint(self) -> None:

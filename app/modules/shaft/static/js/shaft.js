@@ -70,6 +70,7 @@
   const MARKET_SEARCH_INTERVAL_MS = 3000;
   const MARKET_SEARCH_EDIT_DELAY_MS = 600;
   const CANHONG_CHARACTER_ID = 'char_076a1f4e53';
+  const LINGKE_CHARACTER_ID = 'char_0846d632e0';
   const DRAFT_STORAGE_KEY = 'shaft_axis_draft_v1';
   const TIMELINE_FIXED_PERSONAL_RESOURCES = {
     char_31c5130304: ['真理之匙'],
@@ -1108,6 +1109,27 @@
     return state.catalog?.actions_by_character?.[member.character_id] || [];
   }
 
+  function triggerCharactersForAction(action) {
+    if (String(action?.trigger_character_selector || '') !== 'same_element_non_lingke') {
+      return [];
+    }
+    const element = String(action?.damage_element || '');
+    return (state.axis?.team || [])
+      .filter((member) => {
+        const character = getCharacterMap().get(String(member?.character_id || ''));
+        return String(member?.character_id || '') !== LINGKE_CHARACTER_ID
+          && String(character?.element || '') === element;
+      })
+      .sort((left, right) => Number(left.slot || 0) - Number(right.slot || 0));
+  }
+
+  function triggerCharacterForStep(step, action = actionForStep(step)) {
+    const candidates = triggerCharactersForAction(action);
+    return candidates.find((member) => String(member.character_id || '') === String(step?.trigger_character_id || ''))
+      || candidates[0]
+      || null;
+  }
+
   function isBackgroundAction(action) {
     const marker = `${action?.name || ''} ${action?.extra_tag || ''}`;
     return Boolean(action?.is_background_damage) || marker.includes('后台');
@@ -1154,6 +1176,12 @@
       return;
     }
     const action = actionForStep(step);
+    const triggerCharacter = triggerCharacterForStep(step, action);
+    if (String(action?.trigger_character_selector || '') === 'same_element_non_lingke' && triggerCharacter) {
+      step.trigger_character_id = triggerCharacter.character_id;
+    } else {
+      delete step.trigger_character_id;
+    }
     if (!Boolean(action?.can_detach)) {
       delete step.detached;
     }
@@ -6384,12 +6412,28 @@
       && !isSupportAction(action)
       && !isInstantNativeBackgroundAction(step, action)
       && action.can_interrupt !== false;
+    const canSelectTriggerCharacter = String(action.trigger_character_selector || '') === 'same_element_non_lingke';
+    const triggerCandidates = triggerCharactersForAction(action);
+    const selectedTriggerCharacter = triggerCharacterForStep(step, action);
     dialog.dataset.stepId = step.id;
     dialog._returnFocus = trigger;
     $('shaft-action-edit-summary').textContent = `${memberName(step.slot)} · ${action.name || '动作'} · ${visualTickLabel(step.start_tick)}`;
     $('shaft-action-edit-detached-row').hidden = !canDetach;
     $('shaft-action-edit-interrupt-row').hidden = !canInterrupt;
-    $('shaft-action-edit-empty').hidden = canDetach || canInterrupt;
+    $('shaft-action-edit-trigger-character-row').hidden = !canSelectTriggerCharacter;
+    $('shaft-action-edit-empty').hidden = canDetach || canInterrupt || canSelectTriggerCharacter;
+    const triggerSelect = $('shaft-action-edit-trigger-character');
+    triggerSelect.replaceChildren(...triggerCandidates.map((member) => {
+      const option = document.createElement('option');
+      option.value = String(member.character_id || '');
+      option.textContent = `${Number(member.slot || 0) + 1}号位 · ${memberName(member.slot)}`;
+      return option;
+    }));
+    triggerSelect.disabled = triggerCandidates.length === 0;
+    if (selectedTriggerCharacter) triggerSelect.value = String(selectedTriggerCharacter.character_id || '');
+    $('shaft-action-edit-trigger-character-hint').textContent = triggerCandidates.length
+      ? `默认选择队伍顺位最靠前的${action.damage_element || ''}属性非灵可角色；E/F觉醒、环合强度与回能均读取该角色。`
+      : `当前队伍没有可选的${action.damage_element || ''}属性非灵可角色。`;
     $('shaft-action-edit-detached').checked = isDetachedStep(step, action);
     $('shaft-action-edit-detached-hint').textContent = canDetach
       ? `勾选后动作占用 ${ticksToSeconds(action.detached_duration_ticks || 0)} 秒；时间轴名称不变，以黄色字体标识。`
@@ -6400,7 +6444,9 @@
     updateActionEditorInterruptPreview();
     dialog.showModal();
     window.requestAnimationFrame(() => {
-      (canDetach ? $('shaft-action-edit-detached') : (canInterrupt ? $('shaft-action-edit-interrupted') : $('shaft-action-edit-confirm'))).focus();
+      (canSelectTriggerCharacter && !triggerSelect.disabled
+        ? triggerSelect
+        : (canDetach ? $('shaft-action-edit-detached') : (canInterrupt ? $('shaft-action-edit-interrupted') : $('shaft-action-edit-confirm')))).focus();
     });
   }
 
@@ -6478,8 +6524,11 @@
       && $('shaft-action-edit-interrupted').checked;
     const nextDurationTicks = Number($('shaft-action-edit-duration').value || 1);
     const nextHitCount = Number($('shaft-action-edit-hits').value || 0);
+    const nextTriggerCharacterId = String($('shaft-action-edit-trigger-character')?.value || '');
+    const canSelectTriggerCharacter = String(action.trigger_character_selector || '') === 'same_element_non_lingke';
     const changed = isDetachedStep(step, action) !== nextDetached
       || isInterruptedStep(step, action) !== nextInterrupted
+      || (canSelectTriggerCharacter && String(step.trigger_character_id || '') !== nextTriggerCharacterId)
       || (nextInterrupted && (
         Number(step.interrupt_duration_ticks) !== nextDurationTicks
         || Number(step.interrupt_hit_count) !== nextHitCount
@@ -6500,6 +6549,11 @@
         delete step.interrupted;
         delete step.interrupt_duration_ticks;
         delete step.interrupt_hit_count;
+      }
+      if (canSelectTriggerCharacter && nextTriggerCharacterId) {
+        step.trigger_character_id = nextTriggerCharacterId;
+      } else {
+        delete step.trigger_character_id;
       }
       sanitizeStepPlacement(step);
       normalizeEditedSteps(new Set([step.id]));

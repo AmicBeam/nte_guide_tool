@@ -538,9 +538,15 @@ def _apply_character_builds_to_team(team: list[dict[str, Any]], character_builds
     return merged_team
 
 
-def _normalize_steps(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
+def _normalize_steps(
+    raw: Any,
+    catalog: dict[str, Any],
+    team: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     steps = raw if isinstance(raw, list) else catalog['starter_axis']['steps']
     actions = get_record_map(catalog['actions'])
+    characters = get_record_map(catalog['characters'])
+    team_members = sorted(team or [], key=lambda member: _int(member.get('slot')))
     normalized: list[dict[str, Any]] = []
     for index, step in enumerate(steps[:MAX_AXIS_STEPS]):
         if len(normalized) >= MAX_AXIS_STEPS:
@@ -571,6 +577,21 @@ def _normalize_steps(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
             'repeat': repeat,
             'tags': step.get('tags') if isinstance(step.get('tags'), list) else [],
         }
+        if str(action.get('trigger_character_selector') or '') == 'same_element_non_lingke':
+            action_element = str(action.get('damage_element') or '')
+            candidates = [
+                member
+                for member in team_members
+                if str(member.get('character_id') or '') != 'char_0846d632e0'
+                and str(characters.get(str(member.get('character_id') or ''), {}).get('element') or '') == action_element
+            ]
+            requested_character_id = str(step.get('trigger_character_id') or '')
+            selected = next(
+                (member for member in candidates if str(member.get('character_id') or '') == requested_character_id),
+                candidates[0] if candidates else None,
+            )
+            if selected:
+                normalized_step['trigger_character_id'] = str(selected.get('character_id') or '')
         detached = bool(migration[1]) if migration else bool(step.get('detached'))
         if detached and bool(action.get('can_detach')):
             normalized_step['detached'] = True
@@ -890,7 +911,7 @@ def normalize_axis_payload(payload: dict[str, Any]) -> dict[str, Any]:
     team = _normalize_team(body.get('team'), catalog)
     character_builds = _normalize_character_builds(body.get('character_builds'), team, catalog)
     team = _apply_character_builds_to_team(team, character_builds)
-    steps = _normalize_steps(body.get('steps'), catalog)
+    steps = _normalize_steps(body.get('steps'), catalog, team)
     _validate_step_team_actions(team, steps, catalog)
     axis_payload = {
         'team': team,
@@ -1255,6 +1276,8 @@ def normalize_axis_for_hash(axis_payload: dict[str, Any]) -> dict[str, Any]:
             item['interrupted'] = True
             item['interrupt_duration_ticks'] = max(1, _int(step.get('interrupt_duration_ticks'), 1))
             item['interrupt_hit_count'] = max(0, _int(step.get('interrupt_hit_count')))
+        if str(step.get('trigger_character_id') or ''):
+            item['trigger_character_id'] = str(step.get('trigger_character_id') or '')
         steps.append(item)
     return {
         'team': sorted(team, key=lambda item: item['slot']),

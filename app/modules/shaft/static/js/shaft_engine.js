@@ -134,6 +134,7 @@
   const ZHENHONG_ASCENDANT_EXIT_ACTION_ID = 'action_e3711f0cf5';
   const ZHENHONG_ASCENDANT_ENERGY_CAPACITY = 12;
   const CANHONG_CHARACTER_ID = 'char_076a1f4e53';
+  const LINGKE_CHARACTER_ID = 'char_0846d632e0';
   const CANHONG_FENTIAN_ACTION_ID = 'action_canhong_q';
   const CANHONG_BLOOD_BANQUET_ACTION_ID = 'action_canhong_q_blood_banquet';
   const CANHONG_BLOOD_BANQUET_BUFF_ID = 'character_canhong_blood_banquet_active';
@@ -2308,6 +2309,69 @@
       return int(requiemFreeSupportSource(scheduled)?.previous_front_slot, int(scheduled?.previous_front_slot, -1));
     }
 
+    function isLingkeElementJointAction(action) {
+      return String(action?.trigger_character_selector || '') === 'same_element_non_lingke';
+    }
+
+    function lingkeJointTriggerSnapshot(scheduled) {
+      if (!isLingkeElementJointAction(scheduled?.action)) return null;
+      const element = String(scheduled?.action?.damage_element || '');
+      const candidates = Array.from(snapshots.values())
+        .filter((candidate) => (
+          String(candidate?.character?.id || '') !== LINGKE_CHARACTER_ID
+          && String(candidate?.character?.element || '') === element
+        ))
+        .sort((left, right) => int(left.slot) - int(right.slot));
+      const requestedId = String(scheduled?.step?.trigger_character_id || '');
+      return candidates.find((candidate) => String(candidate?.character?.id || '') === requestedId)
+        || candidates[0]
+        || null;
+    }
+
+    function lingkeJointAwakeningEnabled(scheduled, node) {
+      const lingkeSnapshot = snapshots.get(int(scheduled?.slot));
+      return isLingkeElementJointAction(scheduled?.action)
+        && String(lingkeSnapshot?.character?.id || '') === LINGKE_CHARACTER_ID
+        && hasAwakeningNode(lingkeSnapshot, node);
+    }
+
+    function reactionSupportSnapshot(scheduled) {
+      if (lingkeJointAwakeningEnabled(scheduled, 5)) {
+        return lingkeJointTriggerSnapshot(scheduled);
+      }
+      return snapshots.get(int(scheduled?.slot));
+    }
+
+    function lingkeJointReactionContext(scheduled) {
+      const triggerSnapshot = lingkeJointTriggerSnapshot(scheduled);
+      const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
+      const reaction = triggerSnapshot && previousSnapshot && triggerSnapshot.slot !== previousSnapshot.slot
+        ? reactionForElements(previousSnapshot.character?.element, triggerSnapshot.character?.element)
+        : '';
+      return { triggerSnapshot, previousSnapshot, reaction };
+    }
+
+    function supportActionForSnapshot(snapshot) {
+      return Array.from(actionsById.values()).find((candidate) => (
+        String(candidate?.character_id || '') === String(snapshot?.character?.id || '')
+        && String(candidate?.action_type || '') === '援护'
+      )) || null;
+    }
+
+    function lingkeJointAppliedBuff(ruleId, name, effects, ownerSlot) {
+      return {
+        rule_id: ruleId,
+        definition_id: ruleId,
+        name,
+        owner_slot: int(ownerSlot),
+        start_tick: 0,
+        end_tick: PERMANENT_BUFF_END_TICK,
+        duration_type: 'permanent',
+        effects,
+        display_as_line: false,
+      };
+    }
+
     function reactionTriggerTick(scheduled, offsetTicks = 0) {
       const visualStartTick = int(scheduled?.visual_start_tick, int(scheduled?.start_tick));
       const visualEndTick = int(scheduled?.visual_end_tick, int(scheduled?.end_tick, visualStartTick));
@@ -2326,8 +2390,9 @@
           ),
         );
         if (!isSupportAction(scheduled.action)) return;
+        if (scheduled.action?.disable_reaction === true && !lingkeJointAwakeningEnabled(scheduled, 5)) return;
         const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
-        const supportSnapshot = snapshots.get(slot);
+        const supportSnapshot = reactionSupportSnapshot(scheduled);
         if (!previousSnapshot || !supportSnapshot || previousSnapshot.slot === supportSnapshot.slot) return;
         if (!reactionForElements(previousSnapshot.character?.element, supportSnapshot.character?.element)) return;
         const previousHarmony = warmHarmony.get(previousSnapshot.slot) || 0;
@@ -2481,7 +2546,7 @@
     }
 
     function teamHasLingke() {
-      return Array.from(snapshots.values()).some((snapshot) => String(snapshot?.character?.id || '') === 'char_0846d632e0');
+      return Array.from(snapshots.values()).some((snapshot) => String(snapshot?.character?.id || '') === LINGKE_CHARACTER_ID);
     }
 
     function evenlySpacedDamageTicks(startTick, durationTicks, count) {
@@ -2749,8 +2814,9 @@
 
     function triggerReaction(scheduled, tick, { primeLoop = false } = {}) {
       if (!isSupportAction(scheduled.action)) return { effect: null, warning: '' };
-      if (scheduled.action?.disable_reaction === true) return { effect: null, warning: '' };
-      const supportSnapshot = snapshots.get(int(scheduled.slot));
+      const isLingkeAwakeningJoint = lingkeJointAwakeningEnabled(scheduled, 5);
+      if (scheduled.action?.disable_reaction === true && !isLingkeAwakeningJoint) return { effect: null, warning: '' };
+      const supportSnapshot = reactionSupportSnapshot(scheduled);
       const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
       if (!supportSnapshot || !previousSnapshot) {
         return {
@@ -2781,7 +2847,9 @@
       const underfundedWarning = !primeLoop && previousHarmony < 100 && !supportBypassesHarmony(scheduled)
         ? `${previousSnapshot.character?.name || '上一前台角色'}环合值不足：需要 100，当前 ${Math.max(0, previousHarmony).toFixed(1)}，不足 ${(100 - Math.max(0, previousHarmony)).toFixed(1)}。`
         : '';
-      const contributor = reactionContributor(reaction, previousSnapshot, supportSnapshot, tick);
+      const contributor = isLingkeAwakeningJoint && ['覆纹', '浸染'].includes(reaction)
+        ? supportSnapshot
+        : reactionContributor(reaction, previousSnapshot, supportSnapshot, tick);
       if (!contributor) return { effect: null, warning: '' };
       const durationTicks = int(REACTION_DURATIONS[reaction]);
       const frequencyMultiplier = reaction === '创生' && teamHasJiuyuan() ? 2 : 1;
@@ -2816,6 +2884,10 @@
         frequency_multiplier: frequencyMultiplier,
         damage_ticks: reactionDamageTicks(reaction, tick),
         loop_primed: primeLoop,
+        lingke_joint_trigger: isLingkeAwakeningJoint,
+        harmony_strength_source_slot: isLingkeAwakeningJoint && ['覆纹', '浸染'].includes(reaction)
+          ? supportSnapshot.slot
+          : null,
       };
       nextReactionEffectId += 1;
       reactionEffects.push(effect);
@@ -3594,11 +3666,15 @@
         if (tick < int(effect.start_tick) || tick >= int(effect.end_tick)) return;
         if (reactionFilter && String(effect.reaction || '') !== reactionFilter) return;
         const element = String(damageCharacterForAction(snapshot, action).element || '');
+        const strengthSourceSnapshot = snapshots.get(int(effect.harmony_strength_source_slot, -1));
+        const strengthPanel = strengthSourceSnapshot
+          ? effectiveReactionPanel(strengthSourceSnapshot, tick)
+          : calcPanel;
         if (effect.reaction === '浸染' && ['魂', '相'].includes(element)) {
-          multiplier *= reactionAmplificationMultiplierForStrength(calcPanel?.harmony_strength);
+          multiplier *= reactionAmplificationMultiplierForStrength(strengthPanel?.harmony_strength);
         }
         if (effect.reaction === '覆纹' && ['灵', '咒'].includes(element)) {
-          const strength = Math.max(0, num(calcPanel?.harmony_strength));
+          const strength = Math.max(0, num(strengthPanel?.harmony_strength));
           const strengthBonus = strength > 0 ? 0.2 * strength / (strength + 180) : 0;
           multiplier *= (teamHasLingke() ? 1.3 : 1.2) * (1 + strengthBonus);
         }
@@ -4410,6 +4486,31 @@
           });
           appliedBuffs.push(buffSummary(buff, buffContext));
         });
+      const jointReactionContext = isLingkeElementJointAction(action)
+        ? lingkeJointReactionContext(scheduled)
+        : { triggerSnapshot: null, previousSnapshot: null, reaction: '' };
+      if (
+        lingkeJointAwakeningEnabled(scheduled, 5)
+        && jointReactionContext.triggerSnapshot
+        && !jointReactionContext.reaction
+      ) {
+        mergeMods(buffModifiers, { all_dmg: 0.5 });
+        appliedBuffs.push(lingkeJointAppliedBuff(
+          'character_lingke_awakening_e_joint_damage',
+          '灵可E觉·无法环合增伤',
+          { all_dmg: 0.5 },
+          slot,
+        ));
+      }
+      if (lingkeJointAwakeningEnabled(scheduled, 6) && jointReactionContext.triggerSnapshot) {
+        mergeMods(buffModifiers, { crit_rate: 0.25 });
+        appliedBuffs.push(lingkeJointAppliedBuff(
+          'character_lingke_awakening_f_joint_crit',
+          '灵可F觉·队友同频暴击',
+          { crit_rate: 0.25 },
+          slot,
+        ));
+      }
       const slotResources = personalResources.get(slot) || {};
       Object.entries(resourceMap(action.personal_resource_threshold)).forEach(([key, threshold]) => {
         if ((slotResources[key] || 0) < threshold && action.personal_resource_threshold_warning === true) {
@@ -4551,8 +4652,28 @@
       );
       const actionHarmonyScale = baseActionHarmony !== 0 ? calc.harmony / baseActionHarmony : 1;
       const multipliedHarmony = awakeningActionHarmony * actionHarmonyScale * actionMultiplier;
-      const baseActionEnergyGain = num(action.energy_gain) * actionMultiplier;
-      const actorActionEnergyGain = calc.energy_gain * actionMultiplier;
+      let energyActorSlot = slot;
+      let baseActionEnergyGain = num(action.energy_gain) * actionMultiplier;
+      let actorActionEnergyGain = calc.energy_gain * actionMultiplier;
+      if (lingkeJointAwakeningEnabled(scheduled, 6) && jointReactionContext.triggerSnapshot) {
+        const triggerSupportAction = supportActionForSnapshot(jointReactionContext.triggerSnapshot);
+        if (triggerSupportAction) {
+          energyActorSlot = int(jointReactionContext.triggerSnapshot.slot);
+          baseActionEnergyGain = actionValueForAwakeningNodes(
+            triggerSupportAction,
+            jointReactionContext.triggerSnapshot,
+            'energy_gain',
+            'energy_gain_by_awakening_node',
+          ) * actionMultiplier;
+          actorActionEnergyGain = baseActionEnergyGain * (
+            1 + energyRechargeForRecipient(
+              jointReactionContext.triggerSnapshot,
+              buffTick,
+              runtimeFrontSlot,
+            )
+          );
+        }
+      }
       let actionEnergyReturnPerAction = num(action.energy_return);
       Object.entries(action.energy_return_by_awakening_node || {}).forEach(([level, value]) => {
         if (hasAwakeningNode(snapshot, level)) actionEnergyReturnPerAction += num(value);
@@ -4582,7 +4703,7 @@
         settleActionEnergy(startTick);
       }
       const plannedEnergy = scheduleActionEnergy({
-        actorSlot: slot,
+        actorSlot: energyActorSlot,
         baseActionEnergy: baseActionEnergyGain,
         actorEnergyGain: actorActionEnergyGain,
         extraEnergyReturn: actionEnergyReturn,
@@ -4593,7 +4714,7 @@
         actionId: action.id,
       });
       slotEnergy = energyBySlot.get(slot) ?? slotEnergy;
-      const displayedEnergyGain = plannedEnergy.get(slot) || 0;
+      const displayedEnergyGain = plannedEnergy.get(energyActorSlot) || 0;
       recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
       if (changesForeground) {
         frontEvents.push({
@@ -4644,6 +4765,9 @@
         slot,
         character_id: snapshot.character.id,
         character_name: snapshot.character.name,
+        trigger_character_slot: jointReactionContext.triggerSnapshot?.slot ?? null,
+        trigger_character_id: jointReactionContext.triggerSnapshot?.character?.id || '',
+        trigger_character_name: jointReactionContext.triggerSnapshot?.character?.name || '',
         action_id: action.id,
         action_name: action.name,
         is_detached: isDetachedStep(step, action),
@@ -4703,6 +4827,7 @@
         harmony: multipliedHarmony,
         energy_gain: displayedEnergyGain,
         base_energy_gain: actorActionEnergyGain,
+        energy_source_slot: energyActorSlot,
         energy_return: actionEnergyReturn,
         energy_gain_timing: durationTicks > 0 ? 'uniform' : 'instant',
         energy_gain_start_tick: startTick,

@@ -3391,6 +3391,36 @@ body.shaft-dragging .shaft-action-bar {
     line-height: 1.5;
 }
 
+.shaft-action-edit-trigger-character {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.8fr);
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+    border: 1px solid rgba(88, 216, 210, 0.26);
+    border-radius: 12px;
+    background: rgba(88, 216, 210, 0.07);
+}
+
+.shaft-action-edit-trigger-character[hidden] {
+    display: none;
+}
+
+.shaft-action-edit-trigger-character span {
+    display: grid;
+    gap: 4px;
+}
+
+.shaft-action-edit-trigger-character small {
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.shaft-action-edit-trigger-character select {
+    width: 100%;
+    min-height: 42px;
+}
+
 .shaft-action-edit-toggle {
     display: flex;
     align-items: flex-start;

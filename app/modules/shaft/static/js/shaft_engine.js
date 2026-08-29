@@ -969,7 +969,7 @@
 
   function locksForegroundSwitch(step, action) {
     return startsForeground(step, action) && (
-      isSupportAction(action) ||
+      (isSupportAction(action) && !isExplicitZeroForegroundStep(step, action)) ||
       isZeroForegroundQStep(step, action)
     );
   }
@@ -1053,6 +1053,12 @@
 
   function isZeroForegroundQStep(step, action) {
     return startsForeground(step, action) && hasTimelineMaskAbility(action) && configuredActionDurationTicks(step, action) === 0;
+  }
+
+  function isExplicitZeroForegroundStep(step, action) {
+    return startsForeground(step, action)
+      && Boolean(action?.duration_implemented)
+      && configuredActionDurationTicks(step, action) === 0;
   }
 
   function isQCoverImmuneScheduled(scheduled) {
@@ -1838,7 +1844,18 @@
     const qEvents = scheduledSteps
       .filter((scheduled) => isZeroForegroundQStep(scheduled.step || {}, scheduled.action || {}))
       .sort((a, b) => int(a.visual_start_tick, int(a.start_tick)) - int(b.visual_start_tick, int(b.start_tick)) || int(a.slot) - int(b.slot));
-    let qVirtualIntervals = [];
+    let qVirtualIntervals = normalizeFrozenIntervals(scheduledSteps
+      .filter((scheduled) => (
+        isExplicitZeroForegroundStep(scheduled.step || {}, scheduled.action || {})
+        && !isZeroForegroundQStep(scheduled.step || {}, scheduled.action || {})
+      ))
+      .map((scheduled) => ({
+        start_tick: int(scheduled.visual_start_tick, int(scheduled.start_tick)),
+        end_tick: Math.max(
+          int(scheduled.visual_start_tick, int(scheduled.start_tick)) + ZERO_ACTION_VISUAL_TICKS,
+          int(scheduled.visual_end_tick, int(scheduled.visual_start_tick, int(scheduled.start_tick)) + ZERO_ACTION_VISUAL_TICKS),
+        ),
+      })));
     qEvents.forEach((qEvent) => {
       const qStartTick = int(qEvent.visual_start_tick, int(qEvent.start_tick));
       const qCalculationStartTick = calculationTickFromVisualIntervals(qStartTick, qVirtualIntervals);

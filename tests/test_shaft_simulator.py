@@ -5103,6 +5103,44 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         )
         self.assertEqual(field['end_tick'] - field['start_tick'], 130)
 
+    def test_lingke_elemental_joint_actions_are_true_zero_time(self) -> None:
+        action_ids = [
+            'action_lingke_joint_light',
+            'action_lingke_team_joint',
+            'action_lingke_joint_curse',
+            'action_lingke_joint_dark',
+            'action_lingke_joint_soul',
+            'action_lingke_joint_phase',
+        ]
+        result = simulate_shaft_axis({
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_0846d632e0',
+                'arc_id': '',
+                'cartridge_id': '',
+            }],
+            'steps': [
+                {
+                    'id': f'joint-{index}',
+                    'slot': 0,
+                    'action_id': action_id,
+                    'start_tick': index * 5,
+                }
+                for index, action_id in enumerate(action_ids)
+            ],
+            'initial_energy': 200,
+            'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+
+        details = result['details']
+        self.assertEqual([detail['visual_start_tick'] for detail in details], [0, 5, 10, 15, 20, 25])
+        self.assertTrue(all(detail['visual_end_tick'] - detail['visual_start_tick'] == 5 for detail in details))
+        self.assertTrue(all(detail['start_tick'] == 0 for detail in details))
+        self.assertTrue(all(detail['end_tick'] == 0 for detail in details))
+        self.assertTrue(all(detail['duration_ticks'] == 0 for detail in details))
+        self.assertEqual(result['summary']['duration_ticks'], 0)
+        self.assertEqual(result['time_axis']['frozen_intervals'], [{'start_tick': 0, 'end_tick': 30}])
+
     def test_lingke_a4_joint_extra_uses_ultimate_skill_level_growth(self) -> None:
         def simulate(ultimate_level: int) -> dict:
             result = simulate_shaft_axis({

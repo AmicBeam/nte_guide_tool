@@ -1260,7 +1260,7 @@
   }
 
   function actionVisualDurationTicks(action, step = null) {
-    if (step && isZeroForegroundQStep(step, action)) {
+    if (step && isVirtualZeroForegroundStep(step, action)) {
       return qVisualDurationTicks(action);
     }
     return actionEditorDurationTicks(action, step);
@@ -1270,16 +1270,28 @@
     return startsForeground(step, action) && hasTimelineMaskAbility(action) && actionDurationTicks(action, step) === 0;
   }
 
+  function isExplicitZeroForegroundStep(step, action = actionForStep(step)) {
+    return startsForeground(step, action)
+      && Boolean(action?.duration_implemented)
+      && actionDurationTicks(action, step) === 0;
+  }
+
+  function isVirtualZeroForegroundStep(step, action = actionForStep(step)) {
+    return isZeroForegroundQStep(step, action) || isExplicitZeroForegroundStep(step, action);
+  }
+
   function locksForegroundSwitch(step, action = actionForStep(step)) {
     return startsForeground(step, action) && (
-      isSupportAction(action) ||
+      (isSupportAction(action) && !isExplicitZeroForegroundStep(step, action)) ||
       isZeroForegroundQStep(step, action)
     );
   }
 
   function foregroundLockEndTick(step, action, startTick) {
     if (isSupportAction(action)) {
-      return startTick + actionVisualDurationTicks(action, step);
+      return isExplicitZeroForegroundStep(step, action)
+        ? startTick
+        : startTick + actionVisualDurationTicks(action, step);
     }
     if (!isZeroForegroundQStep(step, action)) {
       return startTick;
@@ -1307,7 +1319,7 @@
     const resultDetailByStepId = new Map(resultDetails.map((detail) => [detail.step_id, detail]));
     return (steps || [])
       .map((step, order) => ({ step, order, action: actionForStep(step) }))
-      .filter((item) => isZeroForegroundQStep(item.step, item.action))
+      .filter((item) => isVirtualZeroForegroundStep(item.step, item.action))
       .sort((a, b) => Number(a.step.start_tick || 0) - Number(b.step.start_tick || 0) || a.order - b.order)
       .map((item) => {
         const detail = resultDetailByStepId.get(item.step.id);
@@ -5552,7 +5564,7 @@
     const target = Math.max(0, Number(tick || 0));
     const candidateStep = { action_id: action?.id || '' };
     if (
-      isZeroForegroundQStep(candidateStep, action || {}) ||
+      isVirtualZeroForegroundStep(candidateStep, action || {}) ||
       isInstantSwitchAction(action || {}) ||
       tickHasForegroundQ(target) ||
       tickHasInstantSwitchAction(target)
@@ -5601,7 +5613,7 @@
       return false;
     }
     if (
-      isZeroForegroundQStep(candidateStep, candidateAction) ||
+      isVirtualZeroForegroundStep(candidateStep, candidateAction) ||
       isInstantSwitchAction(candidateAction) ||
       tickHasForegroundQ(tick, ignoreStepId) ||
       tickHasInstantSwitchAction(tick, ignoreStepId)
@@ -5645,8 +5657,8 @@
     return state.cursorTick;
   }
 
-  function reserveZeroQInsertionSpan(insertTick, action, candidateStep) {
-    if (!isZeroForegroundQStep(candidateStep, action)) {
+  function reserveVirtualZeroInsertionSpan(insertTick, action, candidateStep) {
+    if (!isVirtualZeroForegroundStep(candidateStep, action)) {
       return 0;
     }
     const spanTicks = actionVisualDurationTicks(action, candidateStep);
@@ -5675,7 +5687,7 @@
       repeat: 1,
       tags: [],
     };
-    reserveZeroQInsertionSpan(insertTick, action, step);
+    reserveVirtualZeroInsertionSpan(insertTick, action, step);
     state.axis.steps.push(step);
     normalizeEditedSteps(new Set([step.id]));
     selectStep(step.id, false);
@@ -5836,7 +5848,7 @@
         detail?.display_start_tick ?? detail?.visual_start_tick ?? step.start_tick ?? 0,
       ));
       latestRemovedStart = Math.max(latestRemovedStart, start);
-      if (!blocksSlotOverlap(step, action) || isZeroForegroundQStep(step, action)) {
+      if (!blocksSlotOverlap(step, action) || isVirtualZeroForegroundStep(step, action)) {
         return;
       }
       const end = Math.max(start, Number(

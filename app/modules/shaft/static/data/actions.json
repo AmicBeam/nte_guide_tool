@@ -9100,6 +9100,31 @@
     "multipliers": {"atk": 0.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 0, "cooldown_ticks": 80, "cooldown_ticks_by_awakening_node": {"1": 60}, "cooldown_group": "lingke_ghost_blitz", "energy_cost": 0, "tags": ["后台攻击"], "source_row": 0, "source_note": "Nanoka 2026-08-24实时核实：小贞攻击1级倍率50%，灵可处于后台时基础间隔8秒，1觉后缩短25%为6秒。按用户2026-08-24口径作为0秒手工后台动作，不建立「小鬼打这里！」标记系统，未提供的回能、环合与倾陷不计。"
   },
   {
+    "id": "action_lingke_a1", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 1, "is_background_damage": false, "can_background_override": false,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.496, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 3.105, "harmony": 5.161, "stagger": 0.618, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 466, "source_note": "腾讯文档《角色属性》tab 000003 row 466：1级倍率49.6%、1段，回能3.105、环合5.161、倾陷0.618。表格未提供动作耗时，当前0秒表示耗时待录入，前台排轴由自检提示。"
+  },
+  {
+    "id": "action_lingke_a2", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 2, "is_background_damage": false, "can_background_override": true,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.34, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2", "hit_count": 2, "energy_gain": 1.065, "harmony": 1.77, "stagger": 0.212, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 467, "source_note": "腾讯文档《角色属性》tab 000003 row 467：17%×2=34%、2段，回能1.065、环合1.77、倾陷0.212。表格未提供动作耗时，当前0秒表示耗时待录入；可按普攻后段规则手动放到后台。"
+  },
+  {
+    "id": "action_lingke_a3", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 3, "is_background_damage": false, "can_background_override": true,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.404, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.531, "harmony": 4.207, "stagger": 0.504, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 468, "source_note": "腾讯文档《角色属性》tab 000003 row 468：1级倍率40.4%、1段，回能2.531、环合4.207、倾陷0.504。表格未提供动作耗时，当前0秒表示耗时待录入；可按普攻后段规则手动放到后台。"
+  },
+  {
+    "id": "action_lingke_a4", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 4, "is_background_damage": false, "can_background_override": true,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 1.47, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%*5+{3}%", "hit_count": 8, "energy_gain": 5.725, "harmony": 9.516, "stagger": 1.14, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 469, "source_note": "腾讯文档《角色属性》tab 000003 rows 469-472：13.3%+29.8%+13.9%×5+34.4%=147%、8段，回能5.725、环合9.516、倾陷1.14。表格未提供动作耗时，当前0秒表示耗时待录入；可按普攻后段规则手动放到后台。"
+  },
+  {
+    "id": "action_lingke_a5", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 5, "is_background_damage": false, "can_background_override": true,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.74, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 4.635, "harmony": 7.703, "stagger": 0.923, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 473, "source_note": "腾讯文档《角色属性》tab 000003 row 473：1级倍率74%、1段，回能4.635、环合7.703、倾陷0.923。表格未提供动作耗时，当前0秒表示耗时待录入；可按普攻后段规则手动放到后台。"
+  },
+  {
     "id": "action_lingke_support", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "恶灵左直拳！", "is_background_damage": false,
     "duration_seconds": 1.5, "duration_ticks": 15,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 5.2, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护"], "source_row": 487, "source_note": "腾讯文档《角色属性》tab 000003 row 487；技能描述由Nanoka 2026-08-24实时核实。动作耗时1.5秒来自用户2026-08-24补充。"
@@ -9111,18 +9136,22 @@
   },
   {
     "id": "action_lingke_q", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q展开", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·展开", "display_order": 20, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 0.735, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 0.074, "cooldown_ticks": 200, "cooldown_group": "lingke_q", "energy_cost": 100, "tags": ["超负荷共鸣", "共鸣领域", "展开"], "source_row": 483, "source_note": "腾讯文档《角色属性》tab 000003 row 483：展开范围伤害73.5%、倾陷0.074。Nanoka 2026-08-25实时核实100终结能量、20秒CD与8秒共鸣领域；按用户2026-08-25口径拆为独立0秒动作，由本动作消耗终结能量并触发领域。"
+    "multipliers": {"atk": 0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "", "hit_count": 0, "energy_gain": 0, "harmony": 0, "stagger": 0, "cooldown_ticks": 200, "cooldown_group": "lingke_q", "energy_cost": 100, "tags": ["超负荷共鸣", "共鸣领域", "展开"], "source_row": 483, "source_note": "Nanoka 2026-08-25实时核实100终结能量、20秒CD与8秒共鸣领域；按用户2026-08-29最新口径，q展开仅作为消耗终结能量并触发领域的0秒启动动作，本身倍率、命中段数和倾陷均为0，原展开范围伤害移至手工后台动作q范围。"
   },
   {
-    "id": "action_lingke_q_multi", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q多段", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·多段", "display_order": 21, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
+    "id": "action_lingke_q_range", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q范围", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·范围", "display_order": 21, "is_background_damage": true, "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.735, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 0.074, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["超负荷共鸣", "范围", "后台攻击"], "source_row": 483, "source_note": "腾讯文档《角色属性》tab 000003 row 483：展开范围伤害73.5%、倾陷0.074。按用户2026-08-29最新口径从q展开拆出为可手工排入的0秒后台动作，不重复耗能、CD或共鸣领域触发。"
+  },
+  {
+    "id": "action_lingke_q_multi", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q多段", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·多段", "display_order": 22, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
     "multipliers": {"atk": 3.456, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*6", "hit_count": 6, "energy_gain": 0, "harmony": 0, "stagger": 0.115, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["超负荷共鸣", "多段"], "source_row": 485, "source_note": "腾讯文档《角色属性》tab 000003 row 485：57.6%×6=345.6%、倾陷0.115。按用户2026-08-25口径从原聚合Q拆出，动作耗时0秒且不重复消耗终结能量。"
   },
   {
-    "id": "action_lingke_q_burst", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q爆发", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·爆发", "display_order": 22, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
+    "id": "action_lingke_q_burst", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q爆发", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·爆发", "display_order": 23, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
     "multipliers": {"atk": 7.353, "hp": 0, "def": 0, "flat": 0}, "multipliers_add_by_awakening_node": {"2": {"atk": 2.2059}}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 0.735, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["超负荷共鸣", "爆发", "负面状态增伤"], "source_row": 486, "source_note": "腾讯文档《角色属性》tab 000003 row 486：爆发伤害735.3%、倾陷0.735；按腾讯文档《灵可角色资料汇总》2026-08-25最新口径，2觉使该段倍率提升30%。Nanoka 2026-08-25实时核实爆发根据目标负面状态种类增伤且上限20%；按用户2026-08-25口径每种+4%，负面包括减防、减抗、各类DOT与延滞/覆纹/浸染/浊燃/黯星等，每类去重。"
   },
   {
-    "id": "action_lingke_time_stop_select", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "时停选人", "action_type": "无", "damage_type": "无", "extra_tag": "时停选人", "display_order": 23, "is_background_damage": false, "is_timeline_mask": true, "duration_seconds": 0, "duration_ticks": 0,
+    "id": "action_lingke_time_stop_select", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "时停选人", "action_type": "无", "damage_type": "无", "extra_tag": "时停选人", "display_order": 24, "is_background_damage": false, "is_timeline_mask": true, "duration_seconds": 0, "duration_ticks": 0,
     "multipliers": {"atk": 0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "", "hit_count": 0, "energy_gain": 0, "harmony": 0, "stagger": 0, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["时停", "选人", "遮罩"], "source_row": 0, "source_note": "用户2026-08-25明确新增：灵可专属0秒无效果动作，仅用于时间轴遮罩和选人占位；不视为Q，不触发Q类技能、Buff、耗能或资源效果。"
   },
   {

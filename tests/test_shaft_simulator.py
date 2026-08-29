@@ -5025,6 +5025,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                     {'id': 'blitz-1', 'slot': 0, 'action_id': 'action_lingke_ghost_blitz', 'start_tick': 0},
                     {'id': 'e-1', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 5},
                     {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 20},
+                    {'id': 'q-range', 'slot': 0, 'action_id': 'action_lingke_q_range', 'start_tick': 21},
                     {'id': 'q-burst', 'slot': 0, 'action_id': 'action_lingke_q_burst', 'start_tick': 25},
                     {'id': 'e-2', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 30},
                     {'id': 'a4', 'slot': 0, 'action_id': 'action_lingke_a4_joint_extra', 'start_tick': 40},
@@ -5039,8 +5040,10 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
         self.assertTrue(any('8.0s' in warning for warning in base['blitz-2']['warnings']))
         self.assertFalse(any('CD 尚未结束' in warning for warning in awakened['blitz-2']['warnings']))
+        self.assertEqual(base['q']['direct_damage'], 0)
+        self.assertEqual(awakened['q']['direct_damage'], 0)
         self.assertAlmostEqual(
-            awakened['q']['formula_parts']['raw_base'] / base['q']['formula_parts']['raw_base'],
+            awakened['q-range']['formula_parts']['raw_base'] / base['q-range']['formula_parts']['raw_base'],
             1.2,
         )
         self.assertAlmostEqual(

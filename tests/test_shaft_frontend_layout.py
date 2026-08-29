@@ -600,7 +600,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(
             {action['name'] for action in actions},
             {
-                '恶灵闪击战', '援护', 'e', 'q展开', 'q多段', 'q爆发', '时停选人',
+                '恶灵闪击战', 'a1', 'a2', 'a3', 'a4', 'a5', '援护', 'e',
+                'q展开', 'q范围', 'q多段', 'q爆发', '时停选人',
                 '光同频', '灵同频', '咒同频',
                 '暗同频', '魂同频', '相同频', '消耗标记同频', '小贞同频',
                 '4觉同频追加', '闪', '无',
@@ -616,13 +617,35 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions_by_name['恶灵闪击战']['multipliers']['atk'], 0.5)
         self.assertEqual(actions_by_name['恶灵闪击战']['cooldown_ticks'], 80)
         self.assertEqual(actions_by_name['恶灵闪击战']['cooldown_ticks_by_awakening_node'], {'1': 60})
+        expected_basic_attacks = {
+            'a1': (0.496, 1, 3.105, 5.161, 0.618, False),
+            'a2': (0.34, 2, 1.065, 1.77, 0.212, True),
+            'a3': (0.404, 1, 2.531, 4.207, 0.504, True),
+            'a4': (1.47, 8, 5.725, 9.516, 1.14, True),
+            'a5': (0.74, 1, 4.635, 7.703, 0.923, True),
+        }
+        for name, (multiplier, hits, energy, harmony, stagger, can_background) in expected_basic_attacks.items():
+            action = actions_by_name[name]
+            self.assertEqual(action['multipliers']['atk'], multiplier)
+            self.assertEqual(action['hit_count'], hits)
+            self.assertEqual(action['energy_gain'], energy)
+            self.assertEqual(action['harmony'], harmony)
+            self.assertEqual(action['stagger'], stagger)
+            self.assertEqual(action['duration_ticks'], 0)
+            self.assertEqual(action['can_background_override'], can_background)
         self.assertEqual(actions_by_name['援护']['duration_ticks'], 15)
         self.assertEqual(actions_by_name['e']['duration_ticks'], 10)
         self.assertEqual(actions_by_name['e']['multipliers']['atk'], 1.0)
         self.assertEqual(actions_by_name['e']['hit_count'], 4)
-        self.assertEqual(actions_by_name['q展开']['multipliers']['atk'], 0.735)
+        self.assertEqual(actions_by_name['q展开']['multipliers']['atk'], 0)
         self.assertEqual(actions_by_name['q展开']['energy_cost'], 100)
-        self.assertEqual(actions_by_name['q展开']['hit_count'], 1)
+        self.assertEqual(actions_by_name['q展开']['hit_count'], 0)
+        self.assertEqual(actions_by_name['q展开']['stagger'], 0)
+        self.assertEqual(actions_by_name['q范围']['multipliers']['atk'], 0.735)
+        self.assertEqual(actions_by_name['q范围']['energy_cost'], 0)
+        self.assertEqual(actions_by_name['q范围']['hit_count'], 1)
+        self.assertEqual(actions_by_name['q范围']['stagger'], 0.074)
+        self.assertTrue(actions_by_name['q范围']['is_background_damage'])
         self.assertEqual(actions_by_name['q多段']['multipliers']['atk'], 3.456)
         self.assertEqual(actions_by_name['q多段']['hit_count'], 6)
         self.assertEqual(actions_by_name['q多段']['energy_cost'], 0)

@@ -8700,6 +8700,74 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertAlmostEqual(fuwen_hit['formula_parts']['reaction_amplification'], 1.2)
         self.assertAlmostEqual(fuwen_hit['fuwen_damage'], fuwen_hit['direct_damage'] * 0.2)
 
+    def test_ordinary_fuwen_reads_the_damage_dealers_harmony_strength_outside_slot_zero(self) -> None:
+        def simulate(harmony_substats: int) -> dict:
+            result = simulate_shaft_axis({
+                'team': [
+                    {'slot': 0, 'character_id': 'char_076a1f4e53', 'arc_id': '', 'cartridge_id': ''},
+                    {
+                        'slot': 1,
+                        'character_id': 'char_0846d632e0',
+                        'arc_id': '',
+                        'cartridge_id': '',
+                        'substat_counts': {'harmony_strength': harmony_substats},
+                    },
+                ],
+                'steps': [
+                    {'id': 'lingke-first', 'slot': 1, 'action_id': 'action_lingke_a1', 'start_tick': 0},
+                    {'id': 'support', 'slot': 0, 'action_id': 'action_canhong_support', 'start_tick': 10},
+                    {'id': 'lingke-hit', 'slot': 1, 'action_id': 'action_lingke_a5', 'start_tick': 30},
+                ],
+                'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+                'initial_energy': 200,
+            })['result']
+            return {detail['step_id']: detail for detail in result['details']}
+
+        baseline = simulate(0)
+        strengthened = simulate(20)
+
+        self.assertEqual(baseline['support']['triggered_reaction']['reaction'], '覆纹')
+        self.assertIsNone(baseline['support']['triggered_reaction']['harmony_strength_source_slot'])
+        self.assertEqual(baseline['lingke-hit']['panel']['harmony_strength'], 0)
+        self.assertEqual(strengthened['lingke-hit']['panel']['harmony_strength'], 120)
+        self.assertAlmostEqual(baseline['lingke-hit']['formula_parts']['fuwen_strength_multiplier'], 1)
+        self.assertAlmostEqual(strengthened['lingke-hit']['formula_parts']['fuwen_strength_multiplier'], 1.08)
+        self.assertGreater(strengthened['lingke-hit']['fuwen_damage'], baseline['lingke-hit']['fuwen_damage'])
+
+    def test_ordinary_infiltration_reads_the_damage_dealers_harmony_strength_outside_slot_zero(self) -> None:
+        def simulate(harmony_substats: int) -> dict:
+            result = simulate_shaft_axis({
+                'team': [
+                    {'slot': 0, 'character_id': 'char_7578b18979', 'arc_id': '', 'cartridge_id': ''},
+                    {
+                        'slot': 1,
+                        'character_id': 'char_e0a4292b4e',
+                        'arc_id': '',
+                        'cartridge_id': '',
+                        'substat_counts': {'harmony_strength': harmony_substats},
+                    },
+                ],
+                'steps': [
+                    {'id': 'soul-first', 'slot': 1, 'action_id': 'action_db30565b20', 'start_tick': 0},
+                    {'id': 'support', 'slot': 0, 'action_id': 'action_31c54a4e71', 'start_tick': 10},
+                    {'id': 'soul-hit', 'slot': 1, 'action_id': 'action_3529c3d915', 'start_tick': 30},
+                ],
+                'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+                'initial_energy': 200,
+            })['result']
+            return {detail['step_id']: detail for detail in result['details']}
+
+        baseline = simulate(0)
+        strengthened = simulate(20)
+
+        self.assertEqual(baseline['support']['triggered_reaction']['reaction'], '浸染')
+        self.assertIsNone(baseline['support']['triggered_reaction']['harmony_strength_source_slot'])
+        self.assertEqual(baseline['soul-hit']['panel']['harmony_strength'], 0)
+        self.assertEqual(strengthened['soul-hit']['panel']['harmony_strength'], 120)
+        self.assertAlmostEqual(baseline['soul-hit']['formula_parts']['reaction_amplification'], 1.2)
+        self.assertAlmostEqual(strengthened['soul-hit']['formula_parts']['reaction_amplification'], 1.296)
+        self.assertGreater(strengthened['soul-hit']['direct_damage'], baseline['soul-hit']['direct_damage'])
+
     def test_canhong_three_node_resonance_increases_skill_level_and_all_ultimate_multipliers(self) -> None:
         def simulate(action_id: str, awakening_nodes: list[int]) -> dict:
             return simulate_shaft_axis({

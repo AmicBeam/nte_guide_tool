@@ -3717,7 +3717,10 @@
         if (tick < int(effect.start_tick) || tick >= int(effect.end_tick)) return;
         if (reactionFilter && String(effect.reaction || '') !== reactionFilter) return;
         const element = String(damageCharacterForAction(snapshot, action).element || '');
-        const strengthSourceSnapshot = snapshots.get(int(effect.harmony_strength_source_slot, -1));
+        const strengthSourceSlot = effect.harmony_strength_source_slot;
+        const strengthSourceSnapshot = strengthSourceSlot == null
+          ? null
+          : snapshots.get(int(strengthSourceSlot, -1));
         const strengthPanel = strengthSourceSnapshot
           ? effectiveReactionPanel(strengthSourceSnapshot, tick)
           : calcPanel;

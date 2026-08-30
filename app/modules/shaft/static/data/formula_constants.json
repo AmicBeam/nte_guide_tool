@@ -333,6 +333,14 @@
         "passive_type": "type3"
       }
     },
+    "char_0846d632e0": {
+      "cartridge_main_stat": "属伤",
+      "curtain_bonus": {
+        "value": 8,
+        "stat": "暴击",
+        "passive_type": "type3"
+      }
+    },
     "char_912dbfe17c": {
       "cartridge_main_stat": "属伤",
       "curtain_bonus": {

@@ -597,6 +597,10 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(lingke['element'], '灵')
         self.assertEqual(lingke['adaptation'], '等离子')
         self.assertEqual(lingke['base_stats'], {'atk': 652.0, 'hp': 15513.0, 'def': 921.1})
+        self.assertEqual(
+            catalog['formula_constants']['default_build_options'][lingke['id']]['curtain_bonus'],
+            {'value': 8, 'stat': '暴击', 'passive_type': 'type3'},
+        )
         self.assertEqual(action_by_name['4觉同频追加']['skill_level_category'], 'ultimate')
         self.assertEqual(
             {action['name'] for action in actions},

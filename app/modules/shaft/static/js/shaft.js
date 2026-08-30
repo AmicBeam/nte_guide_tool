@@ -835,10 +835,14 @@
     const source = raw && typeof raw === 'object' ? raw : {};
     const options = curtainStatOptions();
     const defaultStat = normalizeStatName(defaults.stat) || Object.keys(options)[0] || '';
-    const stat = characterId === CANHONG_CHARACTER_ID ? defaultStat : (normalizeStatName(source.stat) || defaultStat);
-    const passiveType = CURTAIN_PASSIVE_TYPES.some((item) => item.key === source.passive_type)
-      ? source.passive_type
-      : (CURTAIN_PASSIVE_TYPES.some((item) => item.key === defaults.passive_type) ? defaults.passive_type : 'type3');
+    const stat = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+      ? defaultStat
+      : (normalizeStatName(source.stat) || defaultStat);
+    const passiveType = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+      ? (CURTAIN_PASSIVE_TYPES.some((item) => item.key === defaults.passive_type) ? defaults.passive_type : 'type3')
+      : (CURTAIN_PASSIVE_TYPES.some((item) => item.key === source.passive_type)
+        ? source.passive_type
+        : (CURTAIN_PASSIVE_TYPES.some((item) => item.key === defaults.passive_type) ? defaults.passive_type : 'type3'));
     return {
       value: Math.max(0, Math.min(100, numberValue(defaults.value))),
       stat: Object.prototype.hasOwnProperty.call(options, stat) ? stat : defaultStat,

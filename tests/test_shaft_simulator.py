@@ -1129,6 +1129,41 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                     0.06 * 5,
                 )
 
+    def test_lingke_curtain_bonus_adds_eight_percent_crit_per_type3_drive(self) -> None:
+        base_payload = {
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_0846d632e0',
+                'arc_id': '',
+                'cartridge_id': '',
+            }],
+            'steps': [{'id': 'e', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 0}],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+            'initial_energy': 0,
+        }
+        baseline = simulate_shaft_axis(base_payload)['result']['build_panels_by_slot'][0]
+        equipped_payload = deepcopy(base_payload)
+        equipped_payload['team'][0].update({
+            'cartridge_id': 'cartridge_505ea4a58f',
+            'curtain_bonus': {
+                'value': 0,
+                'stat': '属伤',
+                'passive_type': 'type2',
+            },
+        })
+        build = simulate_shaft_axis(equipped_payload)['result']['build_panels_by_slot'][0]
+
+        self.assertEqual(build['build_options']['curtain_bonus'], {
+            'value': 8,
+            'stat': '暴击',
+            'passive_type': 'type3',
+            'layers': 4,
+        })
+        self.assertAlmostEqual(
+            build['panel']['crit_rate'] - baseline['panel']['crit_rate'],
+            0.08 * 4,
+        )
+
     def test_iloy_bond_bonus_adds_five_percent_attack_not_crit(self) -> None:
         def panel_with_bond(enabled: bool) -> dict:
             result = simulate_shaft_axis({

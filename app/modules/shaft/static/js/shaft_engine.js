@@ -353,10 +353,14 @@
     const source = member?.curtain_bonus && typeof member.curtain_bonus === 'object' ? member.curtain_bonus : {};
     const options = constants?.curtain_bonus_stat_options || {};
     const fallback = normalizeStatName(defaults.stat) || Object.keys(options)[0] || '';
-    const stat = characterId === CANHONG_CHARACTER_ID ? fallback : (normalizeStatName(source.stat) || fallback);
-    const passiveType = CURTAIN_PASSIVE_TYPES.includes(String(source.passive_type || ''))
-      ? String(source.passive_type)
-      : (CURTAIN_PASSIVE_TYPES.includes(String(defaults.passive_type || '')) ? String(defaults.passive_type) : 'type3');
+    const stat = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+      ? fallback
+      : (normalizeStatName(source.stat) || fallback);
+    const passiveType = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+      ? (CURTAIN_PASSIVE_TYPES.includes(String(defaults.passive_type || '')) ? String(defaults.passive_type) : 'type3')
+      : (CURTAIN_PASSIVE_TYPES.includes(String(source.passive_type || ''))
+        ? String(source.passive_type)
+        : (CURTAIN_PASSIVE_TYPES.includes(String(defaults.passive_type || '')) ? String(defaults.passive_type) : 'type3'));
     return {
       value: Math.max(0, Math.min(100, num(defaults.value))),
       stat: Object.prototype.hasOwnProperty.call(options, stat) ? stat : fallback,

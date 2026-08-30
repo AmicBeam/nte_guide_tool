@@ -80,7 +80,7 @@
   "cartridge_main_stat_options": {
     "属伤": {
       "label": "属伤",
-      "modifier_key": "element_dmg",
+      "modifier_key": "character_element_dmg",
       "unit_value": 0.375,
       "kind": "percent"
     },
@@ -136,7 +136,7 @@
   "curtain_bonus_stat_options": {
     "属伤": {
       "label": "属伤",
-      "modifier_key": "element_dmg",
+      "modifier_key": "character_element_dmg",
       "kind": "percent"
     },
     "暴击": {

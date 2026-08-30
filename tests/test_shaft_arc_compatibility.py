@@ -66,10 +66,8 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
             if arc:
                 self.assertEqual(characters[character_id]['adaptation'], arc['adaptation'])
 
-    def test_cartridge_element_restrictions_and_starter_builds_match(self) -> None:
+    def test_cartridge_two_piece_damage_uses_explicit_element_fields(self) -> None:
         catalog = load_shaft_catalog()
-        characters = get_record_map(catalog['characters'])
-        cartridges = get_record_map(catalog['cartridges'])
         expected_elements = {
             '失落光芒': '光',
             '森林萤火之心': '灵',
@@ -80,23 +78,15 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
         }
 
         self.assertFalse(any(cartridge['name'].startswith('【借】') for cartridge in catalog['cartridges']))
-        self.assertEqual(
-            {
-                cartridge['name']: cartridge.get('required_element')
-                for cartridge in catalog['cartridges']
-                if cartridge.get('required_element')
-            },
-            expected_elements,
-        )
-        for character_id, raw_build in catalog['starter_axis']['character_builds'].items():
-            build = raw_build[0] if isinstance(raw_build, list) else raw_build
-            cartridge = cartridges.get(str(build.get('cartridge_id') or ''))
-            if cartridge and cartridge.get('required_element'):
-                self.assertEqual(
-                    characters[character_id]['element'],
-                    cartridge['required_element'],
-                    msg=f"{characters[character_id]['name']} 默认卡带属性不匹配",
-                )
+        cartridges = {cartridge['name']: cartridge for cartridge in catalog['cartridges']}
+        self.assertFalse(any('required_element' in cartridge for cartridge in catalog['cartridges']))
+        for name, element in expected_elements.items():
+            modifiers = cartridges[name]['modifiers']
+            self.assertEqual(modifiers.get(f'element_dmg_{element}'), 0.1, name)
+            self.assertFalse(any(
+                key.startswith('element_dmg_') and key != f'element_dmg_{element}' and value
+                for key, value in modifiers.items()
+            ), name)
 
     def test_backend_keeps_active_cross_element_cartridge(self) -> None:
         normalized = normalize_axis_payload({

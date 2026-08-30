@@ -430,10 +430,10 @@
     "providers": [{"kind": "character", "id": "char_6f46705fd1"}],
     "priority": 95,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["E"]}, "conditions": [{"type": "awakening_count_min", "min": 6}]},
-    "target": {"scope": "team", "elements": ["咒"]},
+    "target": {"scope": "team"},
     "duration": {"type": "time", "ticks": 80, "ticks_by_awakening_node": {"6": 120}, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.1}
+    "effects": {"element_dmg_咒": 0.1}
   },
   {
     "id": "character_requiem_a2_support_damage", "name": "安魂曲2觉·援护入场增伤",
@@ -788,10 +788,10 @@
     "providers": [{"kind": "arc", "id": "arc_bab179ec33"}],
     "priority": 100,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar"}, "conditions": [{"type": "heal"}]},
-    "target": {"scope": "registrar", "elements": ["灵"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.3}
+    "effects": {"element_dmg_灵": 0.3}
   },
   {
     "id": "arc_wrong_door_heal_team_damage",
@@ -860,10 +860,10 @@
     "providers": [{"kind": "arc", "id": "arc_112b3492d8"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar"}, "conditions": [{"type": "fons_full"}]},
-    "target": {"scope": "registrar", "elements": ["光"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 9999, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.25}
+    "effects": {"element_dmg_光": 0.25}
   },
   {
     "id": "arc_thinking_cat_full_fons_light",
@@ -871,10 +871,10 @@
     "providers": [{"kind": "arc", "id": "arc_5fb06c9645"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar"}, "conditions": [{"type": "fons_full"}]},
-    "target": {"scope": "registrar", "elements": ["光"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 9999, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.45}
+    "effects": {"element_dmg_光": 0.45}
   },
   {
     "id": "arc_bit_game_background_front_atk",
@@ -912,11 +912,11 @@
     "providers": [{"kind": "arc", "id": "arc_a5b483cca6"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "placements": ["foreground"]}},
-    "target": {"scope": "front_registrar", "elements": ["魂"]},
+    "target": {"scope": "front_registrar"},
     "duration": {"type": "time", "ticks": 9990, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "calculation": {"team_unique_key": "arc_bit_game_foreground_psyche_dmg"},
-    "effects": {"element_dmg": 0.12}
+    "effects": {"element_dmg_魂": 0.12}
   },
   {
     "id": "arc_bit_game_basic_psyche_stack",
@@ -929,12 +929,12 @@
       "conditions": [{"type": "hit_count_positive"}],
       "cooldown_ticks": 3
     },
-    "target": {"scope": "front_registrar", "elements": ["魂"]},
+    "target": {"scope": "front_registrar"},
     "duration": {"type": "time", "ticks": 9990, "loop_carry": true},
     "stacking": {"mode": "add_stack", "max_stacks": 10},
     "reset": {"owner_leaves_foreground": true},
     "calculation": {"team_unique_key": "arc_bit_game_basic_psyche_stack"},
-    "effects": {"element_dmg": 0.02}
+    "effects": {"element_dmg_魂": 0.02}
   },
   {
     "id": "arc_good_dog_q_team_atk",
@@ -992,10 +992,10 @@
     "providers": [{"kind": "arc", "id": "arc_320435ce51"}],
     "priority": 110,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["E"]}},
-    "target": {"scope": "registrar", "elements": ["相"], "conditions": [{"type": "enemy_debuff_active", "debuffs": ["延滞", "浸染"]}]},
+    "target": {"scope": "registrar", "conditions": [{"type": "enemy_debuff_active", "debuffs": ["延滞", "浸染"]}]},
     "duration": {"type": "time", "ticks": 150, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.18}
+    "effects": {"element_dmg_相": 0.18}
   },
   {
     "id": "arc_ready_eq_basic_dodge",
@@ -1048,10 +1048,10 @@
     "providers": [{"kind": "arc", "id": "arc_27dc4a7281"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}},
-    "target": {"scope": "registrar", "elements": ["光"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.32, "def_ignore": 0.12}
+    "effects": {"element_dmg_光": 0.32, "def_ignore": 0.12}
   },
   {
     "id": "arc_crimson_mirage_full_q_light_def",
@@ -1059,10 +1059,10 @@
     "providers": [{"kind": "arc", "id": "arc_2b6d5881ef"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}},
-    "target": {"scope": "registrar", "elements": ["光"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.512, "def_ignore": 0.192}
+    "effects": {"element_dmg_光": 0.512, "def_ignore": 0.192}
   },
   {
     "id": "arc_searched_eq_crit",
@@ -1555,10 +1555,10 @@
     "providers": [{"kind": "character", "id": "char_699966e2e7"}],
     "priority": 110,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}, "conditions": [{"type": "awakening_count_min", "min": 6}]},
-    "target": {"scope": "team", "elements": ["魂"]},
+    "target": {"scope": "team"},
     "duration": {"type": "time", "ticks": 150, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.08}
+    "effects": {"element_dmg_魂": 0.08}
   },
   {
     "id": "character_haniya_dark_star_end_team_flat_atk",
@@ -1636,10 +1636,10 @@
     "providers": [{"kind": "character", "id": "char_e0a4292b4e"}],
     "priority": 20,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}, "conditions": [{"type": "awakening_min", "min": 5}]},
-    "target": {"scope": "registrar", "elements": ["魂"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 100, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.3},
+    "effects": {"element_dmg_魂": 0.3},
     "display": {"line": false}
   },
   {
@@ -3028,10 +3028,10 @@
     "providers": [{"kind": "character", "id": "char_0846d632e0"}],
     "priority": 90,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_ids": ["action_lingke_q"]}, "conditions": [{"type": "awakening_count_min", "min": 6}]},
-    "target": {"scope": "team", "elements": ["灵", "咒"]},
+    "target": {"scope": "team"},
     "duration": {"type": "time", "ticks": 130, "loop_carry": true},
     "stacking": {"key": "character_lingke_six_node_resonance_element_damage", "mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.3},
+    "effects": {"element_dmg_灵": 0.3, "element_dmg_咒": 0.3},
     "display": {"line": true}
   },
   {

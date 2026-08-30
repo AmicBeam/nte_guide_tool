@@ -84,7 +84,12 @@ MODIFIER_KEYS = (
     'stagger_strength',
     'basic_dmg',
     'dodge_counter_dmg',
-    'element_dmg',
+    'element_dmg_光',
+    'element_dmg_灵',
+    'element_dmg_咒',
+    'element_dmg_暗',
+    'element_dmg_魂',
+    'element_dmg_相',
     'follow_dmg',
     'mind_dmg',
     'attach_dmg',
@@ -111,7 +116,7 @@ CURTAIN_PASSIVE_TYPES = ('type2', 'type3', 'type4')
 CANHONG_CHARACTER_ID = 'char_076a1f4e53'
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SHAFT_COMPUTE_SCRIPT = PROJECT_ROOT / 'scripts' / 'shaft_compute.js'
-SHAFT_SOURCE_VERSION = '异环云配队 1.0.4'
+SHAFT_SOURCE_VERSION = '异环云配队 1.0.5'
 
 
 class ShaftAxisNameConflictError(RuleValidationError):

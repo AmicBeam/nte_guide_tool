@@ -67,7 +67,7 @@ SUBSTAT_UNITS = {
 }
 
 CARTRIDGE_MAIN_STAT_OPTIONS = {
-    '属伤': {'label': '属伤', 'modifier_key': 'element_dmg', 'unit_value': 0.375, 'kind': 'percent'},
+    '属伤': {'label': '属伤', 'modifier_key': 'character_element_dmg', 'unit_value': 0.375, 'kind': 'percent'},
     '暴击': {'label': '暴击', 'modifier_key': 'crit_rate', 'unit_value': 0.3, 'kind': 'percent'},
     '暴伤': {'label': '暴伤', 'modifier_key': 'crit_dmg', 'unit_value': 0.6, 'kind': 'percent'},
     '精通': {'label': '环合强度', 'modifier_key': 'harmony_strength', 'unit_value': 180, 'kind': 'flat'},
@@ -79,7 +79,7 @@ CARTRIDGE_MAIN_STAT_OPTIONS = {
 }
 
 CURTAIN_BONUS_STAT_OPTIONS = {
-    '属伤': {'label': '属伤', 'modifier_key': 'element_dmg', 'kind': 'percent'},
+    '属伤': {'label': '属伤', 'modifier_key': 'character_element_dmg', 'kind': 'percent'},
     '暴击': {'label': '暴击', 'modifier_key': 'crit_rate', 'kind': 'percent'},
     '暴伤': {'label': '暴伤', 'modifier_key': 'crit_dmg', 'kind': 'percent'},
     '充能': {'label': '充能', 'modifier_key': 'energy_recharge', 'kind': 'percent'},
@@ -252,7 +252,6 @@ def extract_characters(wb_values: Any) -> list[dict[str, Any]]:
                 'harmony_strength': 0.0,
                 'stagger_strength': 0.0,
                 'basic_dmg': 0.0,
-                'element_dmg': 0.0,
                 'follow_dmg': 0.0,
                 'mind_dmg': 0.0,
                 'attach_dmg': 0.0,
@@ -395,17 +394,21 @@ def extract_cartridges(wb_values: Any) -> list[dict[str, Any]]:
             continue
         detail = web_text(ws.cell(row, 10).value)
         element_damage = number(ws.cell(row, 2).value)
-        required_element = next(
+        bonus_element = next(
             (element for element in ELEMENTS if element_damage and f'{element}伤' in detail),
             '',
+        )
+        element_modifiers = (
+            {f'element_dmg_{bonus_element}': element_damage}
+            if bonus_element
+            else {f'element_dmg_{element}': element_damage for element in ELEMENTS if element_damage}
         )
         records.append({
             'id': stable_id('cartridge', str(name)),
             'name': name,
             'detail': detail,
-            'required_element': required_element,
             'modifiers': {
-                'element_dmg': element_damage,
+                **element_modifiers,
                 'atk_pct': number(ws.cell(row, 3).value) + number(ws.cell(row, 15).value),
                 'hp_pct': number(ws.cell(row, 4).value) + number(ws.cell(row, 16).value),
                 'def_pct': number(ws.cell(row, 5).value),
@@ -756,7 +759,7 @@ def main() -> int:
         'source_name': args.xlsx_path.name,
         'source_hash': source_hash,
         'imported_at': datetime.now(timezone.utc).isoformat(),
-        'version_label': '异环云配队 1.0.0',
+        'version_label': '异环云配队 1.0.5',
         'sheets': {
             sheet_name: {
                 'rows': wb_values[sheet_name].max_row,

@@ -951,6 +951,35 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             {element: 0.42 for element in ('光', '灵', '咒', '暗', '魂', '相', '心灵')},
         )
 
+    def test_element_damage_main_stat_follows_character_and_actions_read_only_their_element(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_0846d632e0',
+                'arc_id': '',
+                'cartridge_id': '',
+                'cartridge_main_stat': '属伤',
+            }],
+            'steps': [
+                {'id': 'light', 'slot': 0, 'action_id': 'action_lingke_joint_light', 'start_tick': 0},
+                {'id': 'spirit', 'slot': 0, 'action_id': 'action_lingke_team_joint', 'start_tick': 5},
+            ],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+            'initial_energy': 200,
+        })['result']
+        details = {detail['step_id']: detail for detail in result['details']}
+        panel = result['build_panels_by_slot'][0]['panel']
+
+        self.assertAlmostEqual(panel['element_dmg_灵'], 0.375)
+        self.assertTrue(all(
+            panel[f'element_dmg_{element}'] == 0
+            for element in ('光', '咒', '暗', '魂', '相')
+        ))
+        self.assertAlmostEqual(
+            details['spirit']['formula_parts']['dmg_bonus'] - details['light']['formula_parts']['dmg_bonus'],
+            0.375,
+        )
+
     def test_starter_builds_match_configured_character_defaults(self) -> None:
         starter = load_shaft_catalog()['starter_axis']
         builds = starter['character_builds']
@@ -4563,7 +4592,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             if buff['rule_id'] == 'arc_thinking_cat_fons_light'
         )
 
-        self.assertEqual(thinking_buff['effects'], {'element_dmg': 0.25})
+        self.assertEqual(thinking_buff['effects'], {'element_dmg_光': 0.25})
 
         spring = simulate_shaft_axis({
             'team': [{
@@ -5137,7 +5166,9 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             {buff['rule_id'] for buff in details['light-2']['applied_buffs']},
         )
         self.assertFalse(details['light-1']['triggered_reaction'])
-        self.assertAlmostEqual(details['curse']['panel']['element_dmg'], 0.675)
+        self.assertAlmostEqual(details['curse']['panel']['element_dmg_咒'], 0.3)
+        self.assertAlmostEqual(details['curse']['panel']['element_dmg_灵'], 0.675)
+        self.assertAlmostEqual(details['light-1']['panel']['element_dmg_光'], 0.0)
         self.assertFalse(any('共鸣领域' in warning for warning in details['late-a4']['warnings']))
         self.assertAlmostEqual(details['q']['panel']['atk'] / details['light-1']['panel']['atk'], 1)
         self.assertEqual(details['q']['formula_parts']['skill_level'], 11)
@@ -5925,7 +5956,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertTrue(all(layer['stacking_mode'] == 'independent' for layer in layers))
         self.assertTrue(all(layer['max_stacks'] == 7 for layer in layers))
 
-    def test_cross_element_cartridge_suppresses_two_piece_element_damage_but_keeps_four_piece_trigger(self) -> None:
+    def test_cross_element_cartridge_keeps_designated_damage_field_and_four_piece_trigger(self) -> None:
         result = simulate_shaft_axis({
             'team': [
                 {
@@ -5955,7 +5986,8 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             if buff['rule_id'] == 'cartridge_forest_firefly_crit_stack'
         ]
 
-        self.assertAlmostEqual(wearer_hit['panel']['element_dmg'], 0.0)
+        self.assertAlmostEqual(wearer_hit['panel']['element_dmg_灵'], 0.1)
+        self.assertAlmostEqual(wearer_hit['panel']['element_dmg_咒'], 0.0)
         self.assertEqual(len(firefly_buffs), 1)
         self.assertAlmostEqual(firefly_buffs[0]['effects']['crit_dmg'], 0.08)
 
@@ -6792,8 +6824,8 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
         buff_one = next(buff for buff in refined_one['applied_buffs'] if buff['rule_id'] == 'arc_crimson_mirage_q_light_def')
         buff_five = next(buff for buff in refined_five['applied_buffs'] if buff['rule_id'] == 'arc_crimson_mirage_q_light_def')
-        self.assertEqual(buff_one['effects'], {'element_dmg': 0.32, 'def_ignore': 0.12})
-        self.assertEqual(buff_five['effects'], {'element_dmg': 0.512, 'def_ignore': 0.192})
+        self.assertEqual(buff_one['effects'], {'element_dmg_光': 0.32, 'def_ignore': 0.12})
+        self.assertEqual(buff_five['effects'], {'element_dmg_光': 0.512, 'def_ignore': 0.192})
         self.assertGreater(refined_five['panel']['atk'], refined_one['panel']['atk'])
         self.assertAlmostEqual(current_default['panel']['atk'], refined_one['panel']['atk'])
 
@@ -7015,7 +7047,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         details = {detail['step_id']: detail for detail in result['details']}
         panel = next(item for item in result['build_panels_by_slot'] if item['slot'] == 0)
 
-        self.assertAlmostEqual(panel['panel']['element_dmg'], 0.0)
+        self.assertAlmostEqual(panel['panel']['element_dmg_魂'], 0.0)
         self.assertIn(
             'arc_bit_game_foreground_psyche_dmg',
             {buff['rule_id'] for buff in details['first_basic']['applied_buffs']},
@@ -7196,7 +7228,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         )
         self.assertFalse(q1_triggered_buffs['character_zhenhong_ascendant_red']['display_as_line'])
         self.assertAlmostEqual(details['q1_trigger']['panel']['all_dmg'], 0.3)
-        self.assertAlmostEqual(details['q1_trigger']['panel']['element_dmg'], 0.0)
+        self.assertAlmostEqual(details['q1_trigger']['panel']['element_dmg_咒'], 0.0)
         self.assertNotIn(
             'character_zhenhong_q1_self_all_dmg',
             {buff['rule_id'] for buff in details['q1_trigger']['triggered_buffs']},
@@ -7354,7 +7386,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertAlmostEqual(detail['formula_parts']['dmg_bonus'], 0.3)
         self.assertAlmostEqual(detail['panel']['all_dmg'], 0.3)
         self.assertAlmostEqual(detail['formula_parts']['base_multiplier_factor'], 1.3)
-        self.assertAlmostEqual(detail['panel']['element_dmg'], 0.0)
+        self.assertAlmostEqual(detail['panel']['element_dmg_咒'], 0.0)
 
     def test_fons_condition_defaults_to_full_stacks(self) -> None:
         payload = {
@@ -9275,7 +9307,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         expected_bonus = 5 * 0.12 * (2.498 / 4.498)
 
         self.assertEqual(awakened['formula_parts']['active_dot_layer_count'], 5)
-        self.assertGreater(baseline['panel']['element_dmg'], 0)
+        self.assertGreater(baseline['panel']['element_dmg_咒'], 0)
         self.assertAlmostEqual(awakened['formula_parts']['base_multiplier_factor'], 1)
         self.assertAlmostEqual(
             awakened['formula_parts']['dmg_bonus'] - baseline['formula_parts']['dmg_bonus'],

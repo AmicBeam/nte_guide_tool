@@ -1,5 +1,6 @@
 (function () {
   const ELEMENTS = ['光', '灵', '咒', '暗', '魂', '相'];
+  const ELEMENT_DAMAGE_KEYS = Object.fromEntries(ELEMENTS.map((element) => [element, `element_dmg_${element}`]));
   const RESISTANCE_ELEMENTS = [...ELEMENTS, '心灵'];
   const SLOT_COLORS = ['#58d8d2', '#ffbf57', '#ff5aa5', '#77e36f'];
   const ACTION_CONTRIBUTION_COLORS = ['#58d8d2', '#ffbf57', '#ff5aa5', '#77e36f', '#b28cff', '#62b7ff', '#ff7a63', '#d8e26a'];
@@ -493,11 +494,11 @@
       follow_dmg: '追击伤害',
       mind_dmg: '心灵伤害',
       attach_dmg: '附着伤害',
-      element_dmg: '属性伤害',
       all_dmg: '伤害',
       final_dmg: '最终伤害',
       base_multiplier_pct: '基础倍率',
     };
+    if (String(key).startsWith('element_dmg_')) return `${String(key).slice('element_dmg_'.length)}属性伤害`;
     return labels[key] || (String(key).startsWith('res_down_') ? `${String(key).slice('res_down_'.length)}属性抗性降低` : '');
   }
 
@@ -710,7 +711,12 @@
       harmony_strength: 0,
       stagger_strength: 0,
       basic_dmg: 0,
-      element_dmg: 0,
+      element_dmg_光: 0,
+      element_dmg_灵: 0,
+      element_dmg_咒: 0,
+      element_dmg_暗: 0,
+      element_dmg_魂: 0,
+      element_dmg_相: 0,
       follow_dmg: 0,
       mind_dmg: 0,
       attach_dmg: 0,
@@ -793,6 +799,26 @@
     return state.catalog?.formula_constants?.cartridge_main_stat_options || {};
   }
 
+  function elementDamageKey(element) {
+    return ELEMENT_DAMAGE_KEYS[String(element || '')] || '';
+  }
+
+  function elementDamageValue(panel, element) {
+    const key = elementDamageKey(element);
+    return key ? numberValue(panel?.[key]) : 0;
+  }
+
+  function mergeElementDamageMap(mods, values) {
+    ELEMENTS.forEach((element) => {
+      mods[elementDamageKey(element)] += numberValue(values?.[element]);
+    });
+    return mods;
+  }
+
+  function buildStatLabel(stat, character) {
+    return stat === '属伤' ? `${character?.element || ''}属性伤害` : stat;
+  }
+
   function curtainStatOptions() {
     return state.catalog?.formula_constants?.curtain_bonus_stat_options || {};
   }
@@ -826,21 +852,21 @@
     return Math.max(0, Math.round(numberValue(cartridge?.passive_counts?.[bonus.passive_type])));
   }
 
-  function mainStatPanelMods(mainStat) {
+  function mainStatPanelMods(mainStat, element) {
     const mods = emptyPanelMods();
     const option = mainStatOptions()[mainStat] || {};
-    const key = option.modifier_key || '';
+    const key = option.modifier_key === 'character_element_dmg' ? elementDamageKey(element) : (option.modifier_key || '');
     if (Object.prototype.hasOwnProperty.call(mods, key)) {
       mods[key] += numberValue(option.unit_value);
     }
     return mods;
   }
 
-  function curtainBonusPanelMods(member) {
+  function curtainBonusPanelMods(member, element) {
     const mods = emptyPanelMods();
     const bonus = normalizeCurtainBonus(member?.curtain_bonus, member?.character_id || '');
     const option = curtainStatOptions()[bonus.stat] || {};
-    const key = option.modifier_key || '';
+    const key = option.modifier_key === 'character_element_dmg' ? elementDamageKey(element) : (option.modifier_key || '');
     if (Object.prototype.hasOwnProperty.call(mods, key)) {
       mods[key] += numberValue(bonus.value) / 100 * curtainPassiveLayers(member);
     }
@@ -855,7 +881,7 @@
     const key = String(option.modifier_key || '');
     const isPercent = option.kind === 'percent' || key.endsWith('_pct') || key.includes('dmg') || key.includes('crit');
     return {
-      stat: option.label || bonus.stat || '空幕',
+      stat: bonus.stat === '属伤' ? `${getCharacterMap().get(member?.character_id || '')?.element || ''}属性伤害` : (option.label || bonus.stat || '空幕'),
       passive: CURTAIN_PASSIVE_TYPES.find((item) => item.key === bonus.passive_type)?.label || bonus.passive_type,
       layers,
       display: isPercent ? `+${formatNumber(value * 100, 1)}%` : `+${formatNumber(value, 0)}`,
@@ -884,20 +910,12 @@
     if (arc) {
       mergePanelMods(mods, arcRefinement?.panel_modifiers || arc.modifiers);
     }
-    if (cartridge) {
-      const cartridgeModifiers = { ...(cartridge.modifiers || {}) };
-      const requiredElement = String(cartridge.required_element || '');
-      if (requiredElement && requiredElement !== String(character.element || '')) {
-        cartridgeModifiers.element_dmg = 0;
-      }
-      mergePanelMods(mods, cartridgeModifiers);
-    }
-    mergePanelMods(mods, mainStatPanelMods(normalizeCartridgeMainStat(member.cartridge_main_stat, member.character_id)));
-    mergePanelMods(mods, curtainBonusPanelMods(member));
+    if (cartridge) mergePanelMods(mods, cartridge.modifiers);
+    mergePanelMods(mods, mainStatPanelMods(normalizeCartridgeMainStat(member.cartridge_main_stat, member.character_id), character.element));
+    mergePanelMods(mods, curtainBonusPanelMods(member, character.element));
     mergePanelMods(mods, substatPanelMods(member.substat_counts));
     mergePanelMods(mods, teamPanelBonusMods());
-    const element = character.element || '';
-    mods.element_dmg += numberValue((arcRefinement?.element_dmg || arc?.element_dmg)?.[element]);
+    mergeElementDamageMap(mods, arcRefinement?.element_dmg || arc?.element_dmg);
 
     const baseStats = character.base_stats || {};
     const baseAtk = numberValue(baseStats.atk) + numberValue(arc?.base_atk);
@@ -909,7 +927,7 @@
       def: baseDef * (1 + mods.def_pct) + mods.flat_def,
       crit_rate: mods.crit_rate,
       crit_dmg: mods.crit_dmg,
-      element_dmg: mods.element_dmg,
+      ...Object.fromEntries(ELEMENTS.map((element) => [elementDamageKey(element), elementDamageValue(mods, element)])),
       energy_recharge: mods.energy_recharge,
       harmony_strength: mods.harmony_strength,
       stagger_strength: mods.stagger_strength,
@@ -2367,7 +2385,7 @@
         </button>
       `).join('');
       const mainStatSelect = Object.entries(mainStatOptions()).map(([key, meta]) => `
-        <option value="${escapeHtml(key)}" ${key === mainStat ? 'selected' : ''}>${escapeHtml(meta.label || key)}</option>
+        <option value="${escapeHtml(key)}" ${key === mainStat ? 'selected' : ''}>${escapeHtml(key === '属伤' ? buildStatLabel(key, character) : (meta.label || key))}</option>
       `).join('');
       const substatUsed = substatTotal(member.substat_counts);
       const substats = SUBSTAT_ORDER.map((key) => {
@@ -3890,7 +3908,7 @@
       ['环合强度', formatNumber(panelStats.harmony_strength || 0)],
       ['倾陷强度', formatNumber(panelStats.stagger_strength || 0)],
       ['通伤', formatPercent(panelStats.all_dmg || 0)],
-      ['属伤', formatPercent(panelStats.element_dmg || 0)],
+      [`${member.element || getCharacterMap().get(member.character_id || '')?.element || ''}属性伤害`, formatPercent(elementDamageValue(panelStats, member.element || getCharacterMap().get(member.character_id || '')?.element))],
       ['充能', formatPercent(panelStats.energy_recharge || 0)],
     ].map(([label, value]) => `
       <div class="shaft-panel-minor">
@@ -3905,7 +3923,7 @@
           <span>当前查看</span>
           <strong>${escapeHtml(member.character_name || panel.character_name || '角色')}</strong>
         </div>
-        <small>${escapeHtml(member.arc_name || '')} · ${escapeHtml(member.cartridge_name || '')} · 主词条 ${escapeHtml(buildOptions.cartridge_main_stat || '')} · 空幕 ${escapeHtml(curtain.value || 0)}${escapeHtml(curtain.stat || '')} x ${formatNumber(curtain.layers || 0, 0)}</small>
+        <small>${escapeHtml(member.arc_name || '')} · ${escapeHtml(member.cartridge_name || '')} · 主词条 ${escapeHtml(buildStatLabel(buildOptions.cartridge_main_stat || '', getCharacterMap().get(member.character_id || '')))} · 空幕 ${escapeHtml(curtain.value || 0)}${escapeHtml(buildStatLabel(curtain.stat || '', getCharacterMap().get(member.character_id || '')))} x ${formatNumber(curtain.layers || 0, 0)}</small>
       </div>
       <div class="shaft-panel-major-grid">${mainStats}</div>
       <div class="shaft-panel-minor-grid">${minorStats}</div>
@@ -5013,13 +5031,15 @@
     }
     badge.textContent = visualTickLabel(step.start_tick);
     const panelStats = detail?.panel || {};
+    const actionElement = String(detail?.damage_element || action?.damage_element || getCharacterMap().get(memberBySlot(step.slot)?.character_id || '')?.element || '');
+    const actionElementDamage = elementDamageValue(panelStats, actionElement);
     const finalDamageBonus = Number(panelStats.final_dmg || 0);
     const otherDamageBonus = Number(
       panelStats.other_dmg
       ?? (
         Number(detail?.formula_parts?.dmg_bonus || 0)
         - Number(panelStats.all_dmg || 0)
-        - Number(panelStats.element_dmg || 0)
+        - actionElementDamage
       )
     );
     const panelParticipation = actionPanelParticipation(action, detail, step.slot);
@@ -5044,7 +5064,7 @@
         `<div class="shaft-detail-kv"><span>暴击</span><strong>${formatNumber((panelStats.crit_rate || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>暴伤</span><strong>${formatNumber((panelStats.crit_dmg || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>通伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>`,
-        `<div class="shaft-detail-kv"><span>属伤</span><strong>${formatNumber((panelStats.element_dmg || 0) * 100, 1)}%</strong></div>`,
+        `<div class="shaft-detail-kv"><span>${escapeHtml(actionElement)}属性伤害</span><strong>${formatNumber(actionElementDamage * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>其他增伤</span><strong>${formatNumber(otherDamageBonus * 100, 1)}%</strong></div>`,
         ...(finalDamageBonus ? [`<div class="shaft-detail-kv"><span>最终伤害</span><strong>${formatNumber(finalDamageBonus * 100, 1)}%</strong></div>`] : []),
         `<div class="shaft-detail-kv"><span>敌人结算属抗</span><strong>${formatNumber(Number(detail?.formula_parts?.settled_resistance || 0) * 100, 1)}%</strong></div>`,
@@ -5067,14 +5087,16 @@
       stagger_damage_bonus: '倾陷伤害增伤',
       dodge_counter_dmg: '闪反增伤',
       skill_dmg: '变轨增伤', ultimate_dmg: '终结增伤', follow_dmg: '追击增伤',
-      mind_dmg: '心灵增伤', attach_dmg: '附着增伤', element_dmg: '属性增伤',
+      mind_dmg: '心灵增伤', attach_dmg: '附着增伤',
       all_dmg: '全伤增伤', other_dmg: '其他增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升',
     };
     const flatBuffEffects = new Set(['flat_atk', 'flat_hp', 'flat_def', 'harmony_strength', 'stagger_strength']);
     const describeBuff = (buff) => {
       const effects = Object.entries(buff?.effects || {}).filter(([, value]) => Number(value));
       const effectText = effects.map(([key, value]) => {
-        const label = buffEffectLabels[key] || (key.startsWith('res_down_') ? `${key.slice('res_down_'.length)}抗降低` : key);
+        const label = buffEffectLabels[key]
+          || (key.startsWith('element_dmg_') ? `${key.slice('element_dmg_'.length)}属性增伤` : '')
+          || (key.startsWith('res_down_') ? `${key.slice('res_down_'.length)}抗降低` : key);
         return `${label} ${Number(value) >= 0 ? '+' : ''}${flatBuffEffects.has(key) ? formatNumber(value, 1) : `${formatNumber(Number(value) * 100, 1)}%`}`;
       }).join('、');
       return `${buff?.name || '未命名增益'}${effectText ? `：${effectText}` : ''}`;

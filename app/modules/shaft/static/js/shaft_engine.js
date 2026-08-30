@@ -6,6 +6,7 @@
   }
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const ELEMENTS = ['光', '灵', '咒', '暗', '魂', '相'];
+  const ELEMENT_DAMAGE_KEYS = Object.fromEntries(ELEMENTS.map((element) => [element, `element_dmg_${element}`]));
   const ZERO_ACTION_VISUAL_TICKS = 5;
   const MIN_FOREGROUND_START_GAP_TICKS = 2;
   const MAX_BACKGROUND_ACTION_MULTIPLIER = 999;
@@ -250,7 +251,12 @@
       interrupt_resistance: 0,
       basic_dmg: 0,
       dodge_counter_dmg: 0,
-      element_dmg: 0,
+      element_dmg_光: 0,
+      element_dmg_灵: 0,
+      element_dmg_咒: 0,
+      element_dmg_暗: 0,
+      element_dmg_魂: 0,
+      element_dmg_相: 0,
       follow_dmg: 0,
       mind_dmg: 0,
       attach_dmg: 0,
@@ -363,20 +369,38 @@
     return Math.max(0, int(cartridge?.passive_counts?.[type]));
   }
 
-  function mainStatMods(mainStat, constants) {
+  function elementDamageKey(element) {
+    return ELEMENT_DAMAGE_KEYS[String(element || '')] || '';
+  }
+
+  function elementDamage(panelMods, element) {
+    const key = elementDamageKey(element);
+    return key ? num(panelMods?.[key]) : 0;
+  }
+
+  function mergeElementDamageMap(panelMods, values) {
+    ELEMENTS.forEach((element) => {
+      panelMods[elementDamageKey(element)] += num(values?.[element]);
+    });
+    return panelMods;
+  }
+
+  function mainStatMods(mainStat, constants, element) {
     const out = mods();
     const option = constants?.cartridge_main_stat_options?.[mainStat] || {};
-    const key = String(option.modifier_key || '');
+    const configuredKey = String(option.modifier_key || '');
+    const key = configuredKey === 'character_element_dmg' ? elementDamageKey(element) : configuredKey;
     if (Object.prototype.hasOwnProperty.call(out, key)) {
       out[key] += num(option.unit_value);
     }
     return out;
   }
 
-  function curtainBonusMods(bonus, cartridge, constants) {
+  function curtainBonusMods(bonus, cartridge, constants, element) {
     const out = mods();
     const option = constants?.curtain_bonus_stat_options?.[normalizeStatName(bonus.stat)] || {};
-    const key = String(option.modifier_key || '');
+    const configuredKey = String(option.modifier_key || '');
+    const key = configuredKey === 'character_element_dmg' ? elementDamageKey(element) : configuredKey;
     const layers = cartridgePassiveLayers(cartridge, String(bonus.passive_type || 'type3'));
     if (Object.prototype.hasOwnProperty.call(out, key)) {
       out[key] += num(bonus.value) / 100 * layers;
@@ -479,7 +503,8 @@
     const panelMods = mods();
     const mainStat = cartridgeMainStat(member, constants);
     const bonus = curtainBonus(member, constants);
-    const curtain = curtainBonusMods(bonus, cartridge, constants);
+    const characterElement = String(character.element || '');
+    const curtain = curtainBonusMods(bonus, cartridge, constants, characterElement);
     // Character-sheet modifiers historically contained baked passive/awakening
     // bonuses. They are deliberately ignored; character buffs are registry rules.
     panelMods.crit_rate = 0.05;
@@ -488,20 +513,12 @@
       mergeMods(panelMods, character.bond_bonus?.modifiers);
     }
     if (arc) mergeMods(panelMods, arcRefinement?.panel_modifiers || arc.modifiers);
-    if (cartridge) {
-      const cartridgeModifiers = { ...(cartridge.modifiers || {}) };
-      const requiredElement = String(cartridge.required_element || '');
-      if (requiredElement && requiredElement !== String(character.element || '')) {
-        cartridgeModifiers.element_dmg = 0;
-      }
-      mergeMods(panelMods, cartridgeModifiers);
-    }
-    mergeMods(panelMods, mainStatMods(mainStat, constants));
+    if (cartridge) mergeMods(panelMods, cartridge.modifiers);
+    mergeMods(panelMods, mainStatMods(mainStat, constants, characterElement));
     mergeMods(panelMods, curtain.modifiers);
     mergeMods(panelMods, substatMods(member?.substat_counts || {}, constants));
     mergeMods(panelMods, teamPanelBonusMods(teamPanelBonus, catalog));
-    const element = String(character.element || '');
-    panelMods.element_dmg += num((arcRefinement?.element_dmg || arc?.element_dmg)?.[element]);
+    mergeElementDamageMap(panelMods, arcRefinement?.element_dmg || arc?.element_dmg);
     const baseStats = character.base_stats || {};
     const baseAtk = num(baseStats.atk) + num(arc?.base_atk);
     const baseHp = num(baseStats.hp);
@@ -569,7 +586,10 @@
         def: num(stats.def),
         crit_rate: num(stats.crit_rate),
         crit_dmg: num(stats.crit_dmg),
-        element_dmg: num(panelMods.element_dmg),
+        ...Object.fromEntries(ELEMENTS.map((element) => [
+          elementDamageKey(element),
+          elementDamage(panelMods, element),
+        ])),
         energy_recharge: num(panelMods.energy_recharge),
         harmony_strength: num(stats.harmony_strength),
         stagger_strength: num(stats.stagger_strength),
@@ -730,7 +750,9 @@
     }
     const actionDamageBonus = actionTypeBonus(action, panelMods);
     const otherDamageBonus = actionDamageBonus - panelMods.all_dmg;
-    const dmgBonus = actionDamageBonus + panelMods.element_dmg;
+    const damageElement = actionTags(action).has('心灵') ? '' : damageCharacterForAction(snapshot, action).element;
+    const actionElementDamage = elementDamage(panelMods, damageElement);
+    const dmgBonus = actionDamageBonus + actionElementDamage;
     const crit = critMultiplier(action, panelMods);
     const resistanceCharacter = actionTags(action).has('心灵')
       ? { element: '' }
@@ -763,7 +785,10 @@
         crit_rate: stats.crit_rate,
         crit_dmg: stats.crit_dmg,
         all_dmg: panelMods.all_dmg,
-        element_dmg: panelMods.element_dmg,
+        ...Object.fromEntries(ELEMENTS.map((element) => [
+          elementDamageKey(element),
+          elementDamage(panelMods, element),
+        ])),
         follow_dmg: panelMods.follow_dmg,
         other_dmg: otherDamageBonus,
         final_dmg: panelMods.final_dmg,
@@ -3142,13 +3167,14 @@
         const periodicScale = (event.periodic_scale == null ? 1 : Math.max(0, num(event.periodic_scale)))
           * Math.max(1, num(actionPeriodicWindow?.stack_count, 1));
         const base = unscaledBase * periodicScale;
-        const damageBonus = actionTypeBonus(periodicAction, panelMods) + panelMods.element_dmg;
+        const damageElement = String(periodicAction?.damage_element || snapshot.character?.element || '');
+        const damageBonus = actionTypeBonus(periodicAction, panelMods) + elementDamage(panelMods, damageElement);
         const critRate = 0.5;
         const critical = 1 + critRate * Math.max(0, num(panelMods.crit_dmg));
         const defense = defenseMultiplier(enemy, panelMods);
-        const resistance = resistanceMultiplier(snapshot.character, enemy, panelMods);
+        const resistance = resistanceMultiplier(damageCharacterForAction(snapshot, periodicAction), enemy, panelMods);
         const finalMultiplier = 1 + panelMods.final_dmg;
-        const damageElement = String(snapshot.character?.element || '') || '心灵';
+        const resistanceElement = damageElement || '心灵';
         event.formula_parts = {
           base,
           unscaled_base: unscaledBase,
@@ -3169,7 +3195,7 @@
           critical,
           def_down: Math.min(1, Math.max(0, num(panelMods.def_down))),
           def_ignore: Math.min(1, Math.max(0, num(panelMods.def_ignore))),
-          res_down: num(panelMods.res_down) + num(panelMods[`res_down_${damageElement}`]),
+          res_down: num(panelMods.res_down) + num(panelMods[`res_down_${resistanceElement}`]),
           defense,
           resistance,
           final_dmg: num(panelMods.final_dmg),

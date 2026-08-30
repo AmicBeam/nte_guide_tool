@@ -862,10 +862,10 @@
               "atk_pct": 0.02
             },
             "arc_bit_game_foreground_psyche_dmg": {
-              "element_dmg": 0.12
+              "element_dmg_魂": 0.12
             },
             "arc_bit_game_basic_psyche_stack": {
-              "element_dmg": 0.02
+              "element_dmg_魂": 0.02
             }
           }
         },
@@ -889,10 +889,10 @@
               "atk_pct": 0.023
             },
             "arc_bit_game_foreground_psyche_dmg": {
-              "element_dmg": 0.14
+              "element_dmg_魂": 0.14
             },
             "arc_bit_game_basic_psyche_stack": {
-              "element_dmg": 0.023
+              "element_dmg_魂": 0.023
             }
           }
         },
@@ -916,10 +916,10 @@
               "atk_pct": 0.026
             },
             "arc_bit_game_foreground_psyche_dmg": {
-              "element_dmg": 0.16
+              "element_dmg_魂": 0.16
             },
             "arc_bit_game_basic_psyche_stack": {
-              "element_dmg": 0.026
+              "element_dmg_魂": 0.026
             }
           }
         },
@@ -943,10 +943,10 @@
               "atk_pct": 0.029
             },
             "arc_bit_game_foreground_psyche_dmg": {
-              "element_dmg": 0.18
+              "element_dmg_魂": 0.18
             },
             "arc_bit_game_basic_psyche_stack": {
-              "element_dmg": 0.029
+              "element_dmg_魂": 0.029
             }
           }
         },
@@ -970,10 +970,10 @@
               "atk_pct": 0.032
             },
             "arc_bit_game_foreground_psyche_dmg": {
-              "element_dmg": 0.2
+              "element_dmg_魂": 0.2
             },
             "arc_bit_game_basic_psyche_stack": {
-              "element_dmg": 0.032
+              "element_dmg_魂": 0.032
             }
           }
         }
@@ -1250,7 +1250,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_wrong_door_heal_spirit": {
-              "element_dmg": 0.3
+              "element_dmg_灵": 0.3
             },
             "arc_wrong_door_heal_team_damage": {
               "all_dmg": 0.15
@@ -1270,7 +1270,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_wrong_door_heal_spirit": {
-              "element_dmg": 0.375
+              "element_dmg_灵": 0.375
             },
             "arc_wrong_door_heal_team_damage": {
               "all_dmg": 0.1875
@@ -1290,7 +1290,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_wrong_door_heal_spirit": {
-              "element_dmg": 0.45
+              "element_dmg_灵": 0.45
             },
             "arc_wrong_door_heal_team_damage": {
               "all_dmg": 0.225
@@ -1310,7 +1310,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_wrong_door_heal_spirit": {
-              "element_dmg": 0.525
+              "element_dmg_灵": 0.525
             },
             "arc_wrong_door_heal_team_damage": {
               "all_dmg": 0.2625
@@ -1330,7 +1330,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_wrong_door_heal_spirit": {
-              "element_dmg": 0.6
+              "element_dmg_灵": 0.6
             },
             "arc_wrong_door_heal_team_damage": {
               "all_dmg": 0.3
@@ -2193,7 +2193,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_thinking_cat_fons_light": {
-              "element_dmg": 0.25
+              "element_dmg_光": 0.25
             }
           }
         },
@@ -2208,7 +2208,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_thinking_cat_fons_light": {
-              "element_dmg": 0.3
+              "element_dmg_光": 0.3
             }
           }
         },
@@ -2223,7 +2223,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_thinking_cat_fons_light": {
-              "element_dmg": 0.35
+              "element_dmg_光": 0.35
             }
           }
         },
@@ -2238,7 +2238,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_thinking_cat_fons_light": {
-              "element_dmg": 0.4
+              "element_dmg_光": 0.4
             }
           }
         },
@@ -2253,7 +2253,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_thinking_cat_fons_light": {
-              "element_dmg": 0.45
+              "element_dmg_光": 0.45
             }
           }
         }
@@ -2278,7 +2278,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_thinking_cat_full_fons_light": {
-              "element_dmg": 0.25
+              "element_dmg_光": 0.25
             }
           }
         },
@@ -2293,7 +2293,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_thinking_cat_full_fons_light": {
-              "element_dmg": 0.3
+              "element_dmg_光": 0.3
             }
           }
         },
@@ -2308,7 +2308,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_thinking_cat_full_fons_light": {
-              "element_dmg": 0.35
+              "element_dmg_光": 0.35
             }
           }
         },
@@ -2323,7 +2323,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_thinking_cat_full_fons_light": {
-              "element_dmg": 0.4
+              "element_dmg_光": 0.4
             }
           }
         },
@@ -2338,7 +2338,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_thinking_cat_full_fons_light": {
-              "element_dmg": 0.45
+              "element_dmg_光": 0.45
             }
           }
         }
@@ -2622,7 +2622,7 @@
               "atk_pct": 0.1
             },
             "arc_overhead_delay_element": {
-              "element_dmg": 0.1
+              "element_dmg_相": 0.1
             }
           }
         },
@@ -2641,7 +2641,7 @@
               "atk_pct": 0.12
             },
             "arc_overhead_delay_element": {
-              "element_dmg": 0.12
+              "element_dmg_相": 0.12
             }
           }
         },
@@ -2660,7 +2660,7 @@
               "atk_pct": 0.14
             },
             "arc_overhead_delay_element": {
-              "element_dmg": 0.14
+              "element_dmg_相": 0.14
             }
           }
         },
@@ -2679,7 +2679,7 @@
               "atk_pct": 0.16
             },
             "arc_overhead_delay_element": {
-              "element_dmg": 0.16
+              "element_dmg_相": 0.16
             }
           }
         },
@@ -2698,7 +2698,7 @@
               "atk_pct": 0.18
             },
             "arc_overhead_delay_element": {
-              "element_dmg": 0.18
+              "element_dmg_相": 0.18
             }
           }
         }
@@ -3641,7 +3641,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_crimson_mirage_q_light_def": {
-              "element_dmg": 0.32,
+              "element_dmg_光": 0.32,
               "def_ignore": 0.12
             }
           }
@@ -3660,7 +3660,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_crimson_mirage_q_light_def": {
-              "element_dmg": 0.368,
+              "element_dmg_光": 0.368,
               "def_ignore": 0.138
             }
           }
@@ -3679,7 +3679,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_crimson_mirage_q_light_def": {
-              "element_dmg": 0.416,
+              "element_dmg_光": 0.416,
               "def_ignore": 0.156
             }
           }
@@ -3698,7 +3698,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_crimson_mirage_q_light_def": {
-              "element_dmg": 0.464,
+              "element_dmg_光": 0.464,
               "def_ignore": 0.174
             }
           }
@@ -3717,7 +3717,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_crimson_mirage_q_light_def": {
-              "element_dmg": 0.512,
+              "element_dmg_光": 0.512,
               "def_ignore": 0.192
             }
           }
@@ -3746,7 +3746,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_crimson_mirage_full_q_light_def": {
-              "element_dmg": 0.32,
+              "element_dmg_光": 0.32,
               "def_ignore": 0.12
             }
           }
@@ -3765,7 +3765,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_crimson_mirage_full_q_light_def": {
-              "element_dmg": 0.368,
+              "element_dmg_光": 0.368,
               "def_ignore": 0.138
             }
           }
@@ -3784,7 +3784,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_crimson_mirage_full_q_light_def": {
-              "element_dmg": 0.416,
+              "element_dmg_光": 0.416,
               "def_ignore": 0.156
             }
           }
@@ -3803,7 +3803,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_crimson_mirage_full_q_light_def": {
-              "element_dmg": 0.464,
+              "element_dmg_光": 0.464,
               "def_ignore": 0.174
             }
           }
@@ -3822,7 +3822,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_crimson_mirage_full_q_light_def": {
-              "element_dmg": 0.512,
+              "element_dmg_光": 0.512,
               "def_ignore": 0.192
             }
           }

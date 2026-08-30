@@ -37,7 +37,7 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         catalog = get_shaft_catalog_payload()
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
 
-        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.0.4')
+        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.0.5')
         self.assertIn('{% block title %}异环云配队——排轴计算{% endblock %}', template)
         self.assertIn('<h1>异环云配队——排轴计算</h1>', template)
 
@@ -374,13 +374,13 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('const appliedBuffs =', source)
         self.assertIn('<strong class="shaft-detail-line-list">${detailLines(appliedBuffExplanations)}</strong>', source)
         self.assertIn('<div class="shaft-detail-kv"><span>通伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>', source)
-        self.assertIn('<div class="shaft-detail-kv"><span>属伤</span><strong>${formatNumber((panelStats.element_dmg || 0) * 100, 1)}%</strong></div>', source)
+        self.assertIn('<div class="shaft-detail-kv"><span>${escapeHtml(actionElement)}属性伤害</span><strong>${formatNumber(actionElementDamage * 100, 1)}%</strong></div>', source)
         self.assertIn('const finalDamageBonus = Number(panelStats.final_dmg || 0);', source)
         self.assertIn('...(finalDamageBonus ? [`<div class="shaft-detail-kv"><span>最终伤害</span><strong>${formatNumber(finalDamageBonus * 100, 1)}%</strong></div>`] : [])', source)
         self.assertIn('panelStats.other_dmg', source)
         self.assertIn("other_dmg: '其他增伤'", source)
         self.assertIn('- Number(panelStats.all_dmg || 0)', source)
-        self.assertIn('- Number(panelStats.element_dmg || 0)', source)
+        self.assertIn('- actionElementDamage', source)
         self.assertIn('<div class="shaft-detail-kv"><span>其他增伤</span><strong>${formatNumber(otherDamageBonus * 100, 1)}%</strong></div>', source)
         self.assertIn('<span>敌人结算属抗</span>', source)
         self.assertIn('detail?.formula_parts?.settled_resistance', source)
@@ -773,13 +773,14 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         ).read_text(encoding='utf-8')
 
         self.assertIn("{ key: 'all_dmg', label: '通伤', percent: true }", source)
-        self.assertIn("['属伤', formatPercent(panelStats.element_dmg || 0)]", source)
+        self.assertIn('formatPercent(elementDamageValue(panelStats, member.element', source)
+        self.assertIn('属性伤害`, formatPercent', source)
         self.assertIn("['通伤', formatPercent(panelStats.all_dmg || 0)]", source)
         self.assertIn('"label": "通伤"', formula_constants)
 
-        labels = ['暴击', '暴伤', '环合强度', '倾陷强度', '通伤', '属伤', '充能']
-        positions = [source.index(f"['{label}',", source.index('const minorStats = [')) for label in labels]
-        self.assertEqual(positions, sorted(positions))
+        self.assertIn('buildStatLabel(key, character)', source)
+        engine_source = (ROOT / 'app' / 'modules' / 'shaft' / 'static' / 'js' / 'shaft_engine.js').read_text(encoding='utf-8')
+        self.assertIn("configuredKey === 'character_element_dmg' ? elementDamageKey(element)", engine_source)
 
     def test_team_furniture_bonus_displays_actual_caps(self) -> None:
         defaults = _frontend_team_panel_bonus_defaults()

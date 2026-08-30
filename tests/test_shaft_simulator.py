@@ -5394,16 +5394,23 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         )
 
     def test_lingke_harmonic_resource_and_q_negative_status_damage(self) -> None:
-        def simulate_joint(mark_count: int) -> dict:
+        def simulate_joint(mark_count: int, joint_delay_ticks: int = 0) -> dict:
             steps = [
                 {'id': f'mark-{index}', 'slot': 0, 'action_id': 'action_lingke_mark_joint', 'start_tick': index}
                 for index in range(mark_count)
             ]
+            e_start_tick = max(0, mark_count)
+            steps.append({
+                'id': 'e',
+                'slot': 0,
+                'action_id': 'action_lingke_e',
+                'start_tick': e_start_tick,
+            })
             steps.append({
                 'id': 'joint',
                 'slot': 0,
                 'action_id': 'action_lingke_joint_light',
-                'start_tick': max(0, mark_count),
+                'start_tick': e_start_tick + 10 + joint_delay_ticks,
             })
             return simulate_shaft_axis({
                 'team': [{
@@ -5419,8 +5426,15 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
         base = simulate_joint(0)
         full = simulate_joint(3)
+        expired = simulate_joint(3, 1)
         base_joint = next(detail for detail in base['details'] if detail['step_id'] == 'joint')
         full_joint = next(detail for detail in full['details'] if detail['step_id'] == 'joint')
+        expired_joint = next(detail for detail in expired['details'] if detail['step_id'] == 'joint')
+        e_detail = next(detail for detail in full['details'] if detail['step_id'] == 'e')
+        check_window = next(
+            buff for buff in e_detail['triggered_buffs']
+            if buff['rule_id'] == 'character_lingke_frequency_check_window'
+        )
         base_buff = next(
             buff for buff in base_joint['applied_buffs']
             if buff['rule_id'] == 'character_lingke_harmonic_joint_damage'
@@ -5432,10 +5446,16 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
         self.assertEqual(base_buff['effects']['all_dmg'], 1.5)
         self.assertEqual(full_buff['effects']['all_dmg'], 1.9)
+        self.assertEqual(check_window['end_tick'] - check_window['start_tick'], 1)
+        self.assertNotIn(
+            'character_lingke_harmonic_joint_damage',
+            {buff['rule_id'] for buff in expired_joint['applied_buffs']},
+        )
+        self.assertEqual(expired_joint['personal_resources_after']['谐频'], 0)
         self.assertAlmostEqual(full_joint['panel']['all_dmg'] - base_joint['panel']['all_dmg'], 0.4)
         self.assertGreater(full_joint['direct_damage'], base_joint['direct_damage'])
         self.assertEqual(full_joint['personal_resources_after']['谐频'], 0)
-        self.assertEqual(full['resources_by_slot'][0]['harmony'], 45)
+        self.assertAlmostEqual(full['resources_by_slot'][0]['harmony'], 59.099)
 
         q_result = simulate_shaft_axis({
             'team': [{

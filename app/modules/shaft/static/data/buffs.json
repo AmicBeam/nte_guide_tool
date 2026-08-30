@@ -2851,12 +2851,28 @@
     "display": {"line": true}
   },
   {
+    "id": "character_lingke_frequency_check_window",
+    "name": "灵可·协频判定",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 20,
+    "trigger": {"event": "action_end", "source": {"scope": "registrar", "action_ids": ["action_lingke_e"]}},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"key": "character_lingke_frequency_check_window", "mode": "refresh", "max_stacks": 1},
+    "effects": {},
+    "display": {"line": true}
+  },
+  {
     "id": "character_lingke_harmonic_joint_damage",
     "name": "灵可·谐频同频强化",
     "providers": [{"kind": "character", "id": "char_0846d632e0"}],
     "priority": 20,
     "trigger": {"event": "passive"},
-    "target": {"scope": "registrar", "action_ids": ["action_lingke_joint_light", "action_lingke_team_joint", "action_lingke_joint_curse", "action_lingke_joint_dark", "action_lingke_joint_soul", "action_lingke_joint_phase"]},
+    "target": {
+      "scope": "registrar",
+      "action_ids": ["action_lingke_joint_light", "action_lingke_team_joint", "action_lingke_joint_curse", "action_lingke_joint_dark", "action_lingke_joint_soul", "action_lingke_joint_phase"],
+      "conditions": [{"type": "active_buff_key", "key": "character_lingke_frequency_check_window"}]
+    },
     "duration": {"type": "permanent"},
     "dynamic_effects": {
       "personal_resource_value": {

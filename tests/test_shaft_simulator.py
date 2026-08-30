@@ -5218,36 +5218,83 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                     {'slot': 1, 'character_id': 'char_e0a4292b4e', 'arc_id': '', 'cartridge_id': ''},
                     {'slot': 2, 'character_id': 'char_7578b18979', 'arc_id': '', 'cartridge_id': ''},
                 ],
-                'steps': [{
-                    'id': 'soul-joint',
-                    'slot': 0,
-                    'action_id': 'action_lingke_joint_soul',
-                    'trigger_character_id': 'char_e0a4292b4e',
-                    'start_tick': 0,
-                }],
+                'steps': [
+                    {'id': 'e', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 0},
+                    {
+                        'id': 'soul-joint',
+                        'slot': 0,
+                        'action_id': 'action_lingke_joint_soul',
+                        'trigger_character_id': 'char_e0a4292b4e',
+                        'start_tick': 10,
+                    },
+                ],
                 'initial_energy': 0,
                 'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
             })['result']
 
         base = simulate([])
         awakened = simulate([5, 6])
-        base_detail = base['details'][0]
-        detail = awakened['details'][0]
+        base_detail = next(item for item in base['details'] if item['step_id'] == 'soul-joint')
+        detail = next(item for item in awakened['details'] if item['step_id'] == 'soul-joint')
+        base_resources = {item['slot']: item for item in base['resources_by_slot']}
         resources = {item['slot']: item for item in awakened['resources_by_slot']}
 
         self.assertEqual(detail['trigger_character_id'], 'char_e0a4292b4e')
         self.assertEqual(detail['trigger_character_name'], '哈尼娅')
         self.assertEqual(detail['energy_source_slot'], 1)
         self.assertAlmostEqual(detail['energy_gain'], 5.9)
-        self.assertAlmostEqual(resources[1]['energy'], 5.9)
-        self.assertAlmostEqual(resources[0]['energy'], 5.9 * 0.6)
-        self.assertAlmostEqual(resources[2]['energy'], 5.9 * 0.6)
+        self.assertAlmostEqual(resources[1]['energy'] - base_resources[1]['energy'], 5.9)
+        self.assertAlmostEqual(resources[0]['energy'] - base_resources[0]['energy'], 5.9 * 0.6)
+        self.assertAlmostEqual(resources[2]['energy'] - base_resources[2]['energy'], 5.9 * 0.6)
         self.assertAlmostEqual(detail['panel']['crit_rate'] - base_detail['panel']['crit_rate'], 0.25)
         self.assertAlmostEqual(detail['panel']['all_dmg'] - base_detail['panel']['all_dmg'], 0.5)
         self.assertGreater(detail['direct_damage'], base_detail['direct_damage'])
         applied_ids = {buff['rule_id'] for buff in detail['applied_buffs']}
         self.assertIn('character_lingke_awakening_e_joint_damage', applied_ids)
         self.assertIn('character_lingke_awakening_f_joint_crit', applied_ids)
+
+    def test_lingke_e_reaction_only_triggers_during_frequency_check_window(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [
+                {
+                    'slot': 0,
+                    'character_id': 'char_0846d632e0',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                    'awakening_nodes': [5],
+                },
+                {'slot': 1, 'character_id': 'char_076a1f4e53', 'arc_id': '', 'cartridge_id': ''},
+            ],
+            'steps': [
+                {'id': 'e', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 0},
+                {
+                    'id': 'inside',
+                    'slot': 0,
+                    'action_id': 'action_lingke_joint_curse',
+                    'trigger_character_id': 'char_076a1f4e53',
+                    'start_tick': 10,
+                },
+                {
+                    'id': 'outside',
+                    'slot': 0,
+                    'action_id': 'action_lingke_joint_curse',
+                    'trigger_character_id': 'char_076a1f4e53',
+                    'start_tick': 16,
+                },
+            ],
+            'initial_energy': 0,
+            'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
+        })['result']
+        details = {detail['step_id']: detail for detail in result['details']}
+
+        self.assertEqual(details['inside']['triggered_reaction']['reaction'], '覆纹')
+        self.assertFalse(any('环合值不足' in warning for warning in details['inside']['warnings']))
+        self.assertAlmostEqual(details['inside']['harmony_after'], details['e']['harmony_after'])
+        self.assertFalse(details['outside']['triggered_reaction'])
+        self.assertNotIn(
+            'character_lingke_awakening_e_joint_damage',
+            {buff['rule_id'] for buff in details['outside']['applied_buffs']},
+        )
 
     def test_lingke_joint_amplification_reads_selected_teammate_harmony_strength(self) -> None:
         def simulate(trigger_character_id: str) -> dict:
@@ -5276,15 +5323,15 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                     },
                 ],
                 'steps': [
-                    {'id': 'select', 'slot': 0, 'action_id': 'action_lingke_time_stop_select', 'start_tick': 0},
+                    {'id': 'e', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 0},
                     {
                         'id': 'curse-joint',
                         'slot': 0,
                         'action_id': 'action_lingke_joint_curse',
                         'trigger_character_id': trigger_character_id,
-                        'start_tick': 5,
+                        'start_tick': 10,
                     },
-                    {'id': 'follow-up', 'slot': 0, 'action_id': 'action_lingke_a1', 'start_tick': 10},
+                    {'id': 'follow-up', 'slot': 0, 'action_id': 'action_lingke_a1', 'start_tick': 11},
                 ],
                 'initial_energy': 0,
                 'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
@@ -5313,32 +5360,33 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
         infiltration = simulate_shaft_axis({
             'team': [
+                {'slot': 0, 'character_id': 'char_e0a4292b4e', 'arc_id': '', 'cartridge_id': ''},
                 {
-                    'slot': 0,
-                    'character_id': 'char_0846d632e0',
-                    'arc_id': '',
-                    'cartridge_id': '',
-                    'awakening_nodes': [5],
-                },
-                {'slot': 1, 'character_id': 'char_e0a4292b4e', 'arc_id': '', 'cartridge_id': ''},
-                {
-                    'slot': 2,
+                    'slot': 1,
                     'character_id': 'char_7578b18979',
                     'arc_id': '',
                     'cartridge_id': '',
                     'substat_counts': {'harmony_strength': 100},
                 },
+                {
+                    'slot': 2,
+                    'character_id': 'char_0846d632e0',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                    'awakening_nodes': [5],
+                },
             ],
             'steps': [
-                {'id': 'soul-front', 'slot': 1, 'action_id': 'action_db30565b20', 'start_tick': 0},
+                {'id': 'e', 'slot': 2, 'action_id': 'action_lingke_e', 'start_tick': 0},
+                {'id': 'soul-front', 'slot': 0, 'action_id': 'action_db30565b20', 'start_tick': 8},
                 {
                     'id': 'phase-joint',
-                    'slot': 0,
+                    'slot': 2,
                     'action_id': 'action_lingke_joint_phase',
                     'trigger_character_id': 'char_7578b18979',
-                    'start_tick': 15,
+                    'start_tick': 10,
                 },
-                {'id': 'soul-follow-up', 'slot': 1, 'action_id': 'action_db30565b20', 'start_tick': 20},
+                {'id': 'soul-follow-up', 'slot': 0, 'action_id': 'action_db30565b20', 'start_tick': 15},
             ],
             'initial_energy': 0,
             'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
@@ -5347,7 +5395,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertEqual(infiltration_details['phase-joint']['triggered_reaction']['reaction'], '浸染')
         self.assertEqual(
             infiltration_details['phase-joint']['triggered_reaction']['harmony_strength_source_slot'],
-            2,
+            1,
         )
         self.assertGreater(
             infiltration_details['soul-follow-up']['formula_parts']['reaction_amplification'],

@@ -2353,11 +2353,23 @@
         || null;
     }
 
+    function lingkeFrequencyCheckWindowActive(scheduled) {
+      if (!isLingkeElementJointAction(scheduled?.action)) return false;
+      const jointTick = int(scheduled?.start_tick);
+      return scheduledSteps.some((candidate) => (
+        int(candidate?.slot) === int(scheduled?.slot)
+        && String(candidate?.action?.id || '') === 'action_lingke_e'
+        && jointTick >= int(candidate?.end_tick)
+        && jointTick < int(candidate?.end_tick) + 1
+      ));
+    }
+
     function lingkeJointAwakeningEnabled(scheduled, node) {
       const lingkeSnapshot = snapshots.get(int(scheduled?.slot));
       return isLingkeElementJointAction(scheduled?.action)
         && String(lingkeSnapshot?.character?.id || '') === LINGKE_CHARACTER_ID
-        && hasAwakeningNode(lingkeSnapshot, node);
+        && hasAwakeningNode(lingkeSnapshot, node)
+        && (int(node) !== 5 || lingkeFrequencyCheckWindowActive(scheduled));
     }
 
     function reactionSupportSnapshot(scheduled) {
@@ -2415,15 +2427,16 @@
           ),
         );
         if (!isSupportAction(scheduled.action)) return;
-        if (scheduled.action?.disable_reaction === true && !lingkeJointAwakeningEnabled(scheduled, 5)) return;
+        const isLingkeAwakeningJoint = lingkeJointAwakeningEnabled(scheduled, 5);
+        if (scheduled.action?.disable_reaction === true && !isLingkeAwakeningJoint) return;
         const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
         const supportSnapshot = reactionSupportSnapshot(scheduled);
         if (!previousSnapshot || !supportSnapshot || previousSnapshot.slot === supportSnapshot.slot) return;
         if (!reactionForElements(previousSnapshot.character?.element, supportSnapshot.character?.element)) return;
         const previousHarmony = warmHarmony.get(previousSnapshot.slot) || 0;
-        if (previousHarmony < 100 && !supportBypassesHarmony(scheduled)) return;
+        if (previousHarmony < 100 && !supportBypassesHarmony(scheduled) && !isLingkeAwakeningJoint) return;
         loopPrimedReactionStepIds.add(String(scheduled.step?.id || ''));
-        if (!scheduled.action?.preserve_harmony && !scheduled.step?.preserve_harmony) {
+        if (!isLingkeAwakeningJoint && !scheduled.action?.preserve_harmony && !scheduled.step?.preserve_harmony) {
           warmHarmony.set(previousSnapshot.slot, Math.max(0, previousHarmony - 100));
         }
       });
@@ -2869,7 +2882,10 @@
       }
       const previousCurrentHarmony = harmonyBySlot.get(previousSnapshot.slot) || 0;
       const previousHarmony = Math.min(HARMONY_CAPACITY, previousCurrentHarmony);
-      const underfundedWarning = !primeLoop && previousHarmony < 100 && !supportBypassesHarmony(scheduled)
+      const underfundedWarning = !primeLoop
+        && previousHarmony < 100
+        && !supportBypassesHarmony(scheduled)
+        && !isLingkeAwakeningJoint
         ? `${previousSnapshot.character?.name || '上一前台角色'}环合值不足：需要 100，当前 ${Math.max(0, previousHarmony).toFixed(1)}，不足 ${(100 - Math.max(0, previousHarmony)).toFixed(1)}。`
         : '';
       const contributor = isLingkeAwakeningJoint && ['覆纹', '浸染'].includes(reaction)
@@ -2881,7 +2897,12 @@
       const activeEffects = activeReactionEffectsAtTick(reaction, tick)
         .sort((left, right) => int(left.start_tick) - int(right.start_tick));
       const instanceLimit = Math.max(1, int(REACTION_INSTANCE_LIMITS[reaction], 1));
-      if (!primeLoop && !scheduled.action?.preserve_harmony && !scheduled.step?.preserve_harmony) {
+      if (
+        !primeLoop
+        && !isLingkeAwakeningJoint
+        && !scheduled.action?.preserve_harmony
+        && !scheduled.step?.preserve_harmony
+      ) {
         const currentConsumption = Math.min(previousCurrentHarmony, 100);
         harmonyBySlot.set(previousSnapshot.slot, Math.max(0, previousCurrentHarmony - currentConsumption));
       }

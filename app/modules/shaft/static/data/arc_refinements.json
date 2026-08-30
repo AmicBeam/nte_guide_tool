@@ -2976,6 +2976,13 @@
       "source_url": "https://static.nanoka.cc/nte/1.2/zh/weapon/fork_BoxingCandy.json",
       "effect_name": "「拳击糖」",
       "effect_description": "装备者造成的伤害增加<lv>{0}</>，对于生命值低于50%的敌人，该效果提升至<lv>{1}</>。",
+      "active_mechanisms": [
+        {
+          "id": "arc_unyielding_expected_damage",
+          "name": "拳击糖·半血期望增伤",
+          "effect_key": "all_dmg"
+        }
+      ],
       "levels": {
         "1": {
           "effect_values": [
@@ -3216,6 +3223,13 @@
       "source_url": "https://static.nanoka.cc/nte/1.2/zh/weapon/fork_Whale.json",
       "effect_name": "「深蓝之恸」",
       "effect_description": "攻击力提高<lv>{0}</>。\n装备者对处于倾陷状态的敌人造成的伤害提高<lv>{1}</>，如果敌人在倾陷状态下被击杀，则回复装备者<lv>{2}</>生命值，该效果<lv>{3}</>秒内最多触发<lv>1</>次。",
+      "active_mechanisms": [
+        {
+          "id": "arc_whale_expected_damage",
+          "name": "深蓝之恸·倾陷期望增伤",
+          "effect_key": "all_dmg"
+        }
+      ],
       "levels": {
         "1": {
           "effect_values": [

@@ -632,6 +632,25 @@
       }
       rulesByKind[String(provider.kind)].push(activeRule);
     });
+    const arcRefinementDefinition = state.catalog?.arc_refinements?.arcs?.[selectedProviders.arc] || {};
+    const activeArcRefinement = arcRefinementRecord(member);
+    (arcRefinementDefinition.active_mechanisms || []).forEach((mechanism) => {
+      const effectKey = String(mechanism?.effect_key || '');
+      const effectValue = numberValue(activeArcRefinement?.panel_modifiers?.[effectKey]);
+      if (!mechanismEffectLabel(effectKey) || !effectValue) {
+        return;
+      }
+      rulesByKind.arc.push({
+        id: String(mechanism?.id || `${selectedProviders.arc}:${effectKey}`),
+        name: String(mechanism?.name || '常驻机制'),
+        trigger: { event: 'passive' },
+        target: { scope: 'registrar' },
+        duration: { type: 'permanent' },
+        stacking: { mode: 'refresh', max_stacks: 1 },
+        effects: { [effectKey]: effectValue },
+        display: { line: false },
+      });
+    });
 
     const sourceNames = {
       character: getCharacterMap().get(member?.character_id)?.name || member?.character_name || '角色',

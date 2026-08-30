@@ -201,6 +201,22 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
             [refinements['arc_d75aa15b91']['levels'][str(level)]['panel_modifiers']['all_dmg'] for level in range(1, 6)],
             [0.04, 0.0466666667, 0.0533333333, 0.06, 0.0666666667],
         )
+        self.assertEqual(
+            refinements['arc_b22de80f07']['active_mechanisms'],
+            [{
+                'id': 'arc_unyielding_expected_damage',
+                'name': '拳击糖·半血期望增伤',
+                'effect_key': 'all_dmg',
+            }],
+        )
+        self.assertEqual(
+            refinements['arc_d75aa15b91']['active_mechanisms'],
+            [{
+                'id': 'arc_whale_expected_damage',
+                'name': '深蓝之恸·倾陷期望增伤',
+                'effect_key': 'all_dmg',
+            }],
+        )
         self.assertNotIn('arc_unyielding_low_hp_bonus', buffs)
         self.assertNotIn('arc_unyielding_full_low_hp_bonus', buffs)
 

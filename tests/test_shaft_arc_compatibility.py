@@ -188,6 +188,22 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
             for arc in catalog['arcs']
         ))
 
+    def test_expected_value_arc_damage_is_stored_as_permanent_panel_modifier(self) -> None:
+        catalog = load_shaft_catalog()
+        refinements = catalog['arc_refinements']['arcs']
+        buffs = {buff['id'] for buff in catalog['buffs']}
+
+        self.assertEqual(
+            [refinements['arc_b22de80f07']['levels'][str(level)]['panel_modifiers']['all_dmg'] for level in range(1, 6)],
+            [0.25, 0.3, 0.35, 0.4, 0.45],
+        )
+        self.assertEqual(
+            [refinements['arc_d75aa15b91']['levels'][str(level)]['panel_modifiers']['all_dmg'] for level in range(1, 6)],
+            [0.04, 0.0466666667, 0.0533333333, 0.06, 0.0666666667],
+        )
+        self.assertNotIn('arc_unyielding_low_hp_bonus', buffs)
+        self.assertNotIn('arc_unyielding_full_low_hp_bonus', buffs)
+
     def test_legacy_arc_options_migrate_to_refinement_selection(self) -> None:
         catalog = load_shaft_catalog()
         axis = dict(catalog['starter_axis'])

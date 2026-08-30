@@ -2984,14 +2984,10 @@
           ],
           "panel_modifiers": {
             "atk_pct": 0.275,
-            "all_dmg": 0.22
+            "all_dmg": 0.25
           },
           "element_dmg": {},
-          "buff_effects": {
-            "arc_unyielding_low_hp_bonus": {
-              "all_dmg": 0.06
-            }
-          }
+          "buff_effects": {}
         },
         "2": {
           "effect_values": [
@@ -3000,14 +2996,10 @@
           ],
           "panel_modifiers": {
             "atk_pct": 0.275,
-            "all_dmg": 0.26
+            "all_dmg": 0.3
           },
           "element_dmg": {},
-          "buff_effects": {
-            "arc_unyielding_low_hp_bonus": {
-              "all_dmg": 0.08
-            }
-          }
+          "buff_effects": {}
         },
         "3": {
           "effect_values": [
@@ -3016,14 +3008,10 @@
           ],
           "panel_modifiers": {
             "atk_pct": 0.275,
-            "all_dmg": 0.3
+            "all_dmg": 0.35
           },
           "element_dmg": {},
-          "buff_effects": {
-            "arc_unyielding_low_hp_bonus": {
-              "all_dmg": 0.1
-            }
-          }
+          "buff_effects": {}
         },
         "4": {
           "effect_values": [
@@ -3032,14 +3020,10 @@
           ],
           "panel_modifiers": {
             "atk_pct": 0.275,
-            "all_dmg": 0.34
+            "all_dmg": 0.4
           },
           "element_dmg": {},
-          "buff_effects": {
-            "arc_unyielding_low_hp_bonus": {
-              "all_dmg": 0.12
-            }
-          }
+          "buff_effects": {}
         },
         "5": {
           "effect_values": [
@@ -3048,14 +3032,10 @@
           ],
           "panel_modifiers": {
             "atk_pct": 0.275,
-            "all_dmg": 0.38
+            "all_dmg": 0.45
           },
           "element_dmg": {},
-          "buff_effects": {
-            "arc_unyielding_low_hp_bonus": {
-              "all_dmg": 0.14
-            }
-          }
+          "buff_effects": {}
         }
       }
     },
@@ -3074,14 +3054,10 @@
           ],
           "panel_modifiers": {
             "atk_pct": 0.275,
-            "all_dmg": 0.22
+            "all_dmg": 0.25
           },
           "element_dmg": {},
-          "buff_effects": {
-            "arc_unyielding_full_low_hp_bonus": {
-              "all_dmg": 0.06
-            }
-          }
+          "buff_effects": {}
         },
         "2": {
           "effect_values": [
@@ -3090,14 +3066,10 @@
           ],
           "panel_modifiers": {
             "atk_pct": 0.275,
-            "all_dmg": 0.26
+            "all_dmg": 0.3
           },
           "element_dmg": {},
-          "buff_effects": {
-            "arc_unyielding_full_low_hp_bonus": {
-              "all_dmg": 0.08
-            }
-          }
+          "buff_effects": {}
         },
         "3": {
           "effect_values": [
@@ -3106,14 +3078,10 @@
           ],
           "panel_modifiers": {
             "atk_pct": 0.275,
-            "all_dmg": 0.3
+            "all_dmg": 0.35
           },
           "element_dmg": {},
-          "buff_effects": {
-            "arc_unyielding_full_low_hp_bonus": {
-              "all_dmg": 0.1
-            }
-          }
+          "buff_effects": {}
         },
         "4": {
           "effect_values": [
@@ -3122,14 +3090,10 @@
           ],
           "panel_modifiers": {
             "atk_pct": 0.275,
-            "all_dmg": 0.34
+            "all_dmg": 0.4
           },
           "element_dmg": {},
-          "buff_effects": {
-            "arc_unyielding_full_low_hp_bonus": {
-              "all_dmg": 0.12
-            }
-          }
+          "buff_effects": {}
         },
         "5": {
           "effect_values": [
@@ -3138,14 +3102,10 @@
           ],
           "panel_modifiers": {
             "atk_pct": 0.275,
-            "all_dmg": 0.38
+            "all_dmg": 0.45
           },
           "element_dmg": {},
-          "buff_effects": {
-            "arc_unyielding_full_low_hp_bonus": {
-              "all_dmg": 0.14
-            }
-          }
+          "buff_effects": {}
         }
       }
     },
@@ -3265,7 +3225,8 @@
             "30"
           ],
           "panel_modifiers": {
-            "atk_pct": 0.395
+            "atk_pct": 0.395,
+            "all_dmg": 0.04
           },
           "element_dmg": {},
           "buff_effects": {}
@@ -3278,7 +3239,8 @@
             "30"
           ],
           "panel_modifiers": {
-            "atk_pct": 0.415
+            "atk_pct": 0.415,
+            "all_dmg": 0.0466666667
           },
           "element_dmg": {},
           "buff_effects": {}
@@ -3291,7 +3253,8 @@
             "30"
           ],
           "panel_modifiers": {
-            "atk_pct": 0.435
+            "atk_pct": 0.435,
+            "all_dmg": 0.0533333333
           },
           "element_dmg": {},
           "buff_effects": {}
@@ -3304,7 +3267,8 @@
             "30"
           ],
           "panel_modifiers": {
-            "atk_pct": 0.455
+            "atk_pct": 0.455,
+            "all_dmg": 0.06
           },
           "element_dmg": {},
           "buff_effects": {}
@@ -3317,7 +3281,8 @@
             "30"
           ],
           "panel_modifiers": {
-            "atk_pct": 0.475
+            "atk_pct": 0.475,
+            "all_dmg": 0.0666666667
           },
           "element_dmg": {},
           "buff_effects": {}

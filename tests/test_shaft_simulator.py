@@ -4564,6 +4564,43 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
 
 
 class ShaftEquipmentBuffTestCase(unittest.TestCase):
+    def test_unyielding_and_whale_use_expected_value_as_permanent_damage(self) -> None:
+        def detail(arc_id: str, refinement: int, hp_ratio: float = 1.0) -> dict:
+            return simulate_shaft_axis({
+                'team': [{
+                    'slot': 0,
+                    'character_id': 'char_bdc43f82c6',
+                    'arc_id': arc_id,
+                    'arc_refinement': refinement,
+                    'cartridge_id': '',
+                }],
+                'steps': [{
+                    'id': 'e',
+                    'slot': 0,
+                    'action_id': 'action_5870d8ba67',
+                    'start_tick': 0,
+                }],
+                'enemy': {'hp_ratio': hp_ratio},
+                'initial_energy': 200,
+            })['result']['details'][0]
+
+        unyielding_full_hp = detail('arc_b22de80f07', 1, 1.0)
+        unyielding_low_hp = detail('arc_b22de80f07', 1, 0.1)
+        unyielding_max = detail('arc_b22de80f07', 5)
+        whale_min = detail('arc_d75aa15b91', 1)
+        whale_max = detail('arc_d75aa15b91', 5)
+
+        self.assertAlmostEqual(unyielding_full_hp['panel']['all_dmg'], 0.25)
+        self.assertAlmostEqual(unyielding_low_hp['panel']['all_dmg'], 0.25)
+        self.assertAlmostEqual(unyielding_low_hp['direct_damage'], unyielding_full_hp['direct_damage'])
+        self.assertAlmostEqual(unyielding_max['panel']['all_dmg'], 0.45)
+        self.assertFalse(any(
+            buff['rule_id'].startswith('arc_unyielding_')
+            for buff in unyielding_low_hp['applied_buffs']
+        ))
+        self.assertAlmostEqual(whale_min['panel']['all_dmg'], 0.04)
+        self.assertAlmostEqual(whale_max['panel']['all_dmg'], 0.2 / 3)
+
     def test_speed_cotton_stacks_each_front_second_and_clears_on_leave(self) -> None:
         result = simulate_shaft_axis({
             'team': [

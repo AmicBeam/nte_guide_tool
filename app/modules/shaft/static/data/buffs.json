@@ -1120,28 +1120,6 @@
     "effects": {"mind_dmg": 0.1}
   },
   {
-    "id": "arc_unyielding_low_hp_bonus",
-    "name": "不屈之绵：半血下增伤提升",
-    "providers": [{"kind": "arc", "id": "arc_b22de80f07"}],
-    "priority": 100,
-    "trigger": {"event": "action_start", "source": {"scope": "registrar"}, "conditions": [{"type": "enemy_hp_below", "threshold": 0.5}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "time", "ticks": 9999, "loop_carry": true},
-    "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"all_dmg": 0.06}
-  },
-  {
-    "id": "arc_unyielding_full_low_hp_bonus",
-    "name": "不屈之绵·满精：半血下增伤提升",
-    "providers": [{"kind": "arc", "id": "arc_0a681d8e81"}],
-    "priority": 100,
-    "trigger": {"event": "action_start", "source": {"scope": "registrar"}, "conditions": [{"type": "enemy_hp_below", "threshold": 0.5}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "time", "ticks": 9999, "loop_carry": true},
-    "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"all_dmg": 0.14}
-  },
-  {
     "id": "arc_spring_shield_atk",
     "name": "愚者种春：护盾时攻击",
     "providers": [{"kind": "arc", "id": "arc_5fdc5b1847"}],

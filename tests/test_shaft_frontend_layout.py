@@ -41,6 +41,49 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertIn('{% block title %}异环云配队——排轴计算{% endblock %}', template)
         self.assertIn('<h1>异环云配队——排轴计算</h1>', template)
 
+    def test_main_q_cooldowns_match_nanoka_except_xun(self) -> None:
+        catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
+        characters_by_name = {character['name']: character for character in catalog['characters']}
+        expected_ticks = {
+            '主角': 150,
+            '真红': 200,
+            '小吱': 150,
+            '埃德嘉': 200,
+            '娜娜莉': 150,
+            '九原': 150,
+            '薄荷': 150,
+            '白藏': 200,
+            '早雾': 200,
+            '阿德勒': 200,
+            '安魂曲': 200,
+            '达芙蒂尔': 200,
+            '法帝娅': 200,
+            '哈尼娅': 200,
+            '海月': 150,
+            '卡厄斯': 150,
+            '哈索尔': 150,
+            '翳': 150,
+            '伊洛伊': 160,
+        }
+
+        for character_name, cooldown_ticks in expected_ticks.items():
+            character = characters_by_name[character_name]
+            q_action = next(
+                action
+                for action in catalog['actions_by_character'][character['id']]
+                if action['name'] == 'q'
+            )
+            self.assertEqual(q_action['cooldown_ticks'], cooldown_ticks, character_name)
+            self.assertIn('Nanoka 2026-09-01 实时核实', q_action['source_note'])
+
+        xun = characters_by_name['浔']
+        xun_q = next(
+            action
+            for action in catalog['actions_by_character'][xun['id']]
+            if action['name'] == 'q'
+        )
+        self.assertEqual(xun_q['cooldown_ticks'], 0)
+
     def test_unimplemented_awakenings_are_marked_in_tooltips(self) -> None:
         catalog = get_shaft_catalog_payload()
         source = SHAFT_JS.read_text(encoding='utf-8')

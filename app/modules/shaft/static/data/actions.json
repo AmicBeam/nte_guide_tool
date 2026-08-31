@@ -162,11 +162,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 7,
+    "source_note": "Nanoka 2026-09-01 实时核实：「零」两个角色 ID（1046/1051）的极轨终结「奇零除尽」冷却时间均为15秒。",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -1013,11 +1014,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 60,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 18,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「沸血赤红」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 9
   },
@@ -2016,11 +2018,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 38,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「零和博弈」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 6
   },
@@ -2142,11 +2145,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 41,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「芬尼根守灵夜」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 1,
     "tags": ["heal", "治疗"]
@@ -3290,11 +3294,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 55,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「柯林斯·终极术」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 7
   },
@@ -3777,11 +3782,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 65,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「终局清账」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 12
   },
@@ -4165,11 +4171,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 70,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「奥义·霹雳疾风斩」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 7
   },
@@ -4844,11 +4851,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 82,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「判予秋」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -5058,11 +5066,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 88,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「千钧隆重的饕餮宴」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 6
   },
@@ -5276,11 +5285,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 93,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「万象澄寂」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -6137,13 +6147,14 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {
       "噩梦": 5
     },
     "source_row": 108,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「工作日最终审判」冷却时间为20秒。",
     "source_formula": "{0}%*4+{1}%",
     "source_action_name": "工作日最终审判（汽车）",
     "can_background_override": false,
@@ -6436,11 +6447,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 115,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「见此终幕」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 14
   },
@@ -6611,11 +6623,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 119,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「痛苦让位于狂喜」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 6,
     "tags": [
@@ -6865,11 +6878,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 126,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「名为『哈尼娅』的旋律」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -7202,11 +7216,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 134,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「众声轮唱」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 6
   },
@@ -7730,11 +7745,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 142,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「罪业清偿」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 5
   },
@@ -8032,11 +8048,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 149,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「铁骑速递」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 3
   },
@@ -8413,11 +8430,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 158,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「群犬吠形」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 4
   },
@@ -8658,12 +8676,13 @@
     "stagger": 1.5,
     "energy_return": 0,
     "self_modifiers": {},
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 160,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "personal_resource_threshold": {"臆想": 30},
     "source_row": 44,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「三十八亿年的海市蜃楼」冷却时间为16秒。",
     "can_background_override": false,
     "hit_count": 1,
     "tags": ["heal", "治疗"]

@@ -792,9 +792,7 @@ def _is_instant_native_background_action(action: dict[str, Any]) -> bool:
 
 
 def _can_background_override(action: dict[str, Any]) -> bool:
-    return bool(action.get('can_background_override')) and (
-        _is_basic_action(action) or _is_instant_switch_action(action)
-    )
+    return bool(action.get('can_background_override'))
 
 
 def _normalize_step_placement(step: dict[str, Any], action: dict[str, Any]) -> str:

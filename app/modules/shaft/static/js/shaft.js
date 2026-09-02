@@ -1187,9 +1187,7 @@
   }
 
   function canBackgroundOverride(action) {
-    return Boolean(action?.can_background_override) && (
-      isBasicAction(action) || isInstantSwitchAction(action)
-    );
+    return Boolean(action?.can_background_override);
   }
 
   function isManualBackgroundOverride(step, action = actionForStep(step)) {

@@ -121,6 +121,33 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertTrue(details['background-switch']['switches_foreground'])
         self.assertEqual([window['slot'] for window in result['front_windows']], [0, 1, 0])
 
+    def test_lingke_xiaozhen_joint_can_move_to_background(self) -> None:
+        payload = {
+            'team': [{
+                'slot': 0,
+                'character_id': 'char_0846d632e0',
+                'arc_id': '',
+                'cartridge_id': '',
+            }],
+            'steps': [{
+                'id': 'xiaozhen-joint',
+                'slot': 0,
+                'action_id': 'action_lingke_xiaozhen_joint',
+                'start_tick': 0,
+                'placement': 'background',
+            }],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+        }
+
+        normalized = normalize_axis_payload(payload)
+        detail = simulate_shaft_axis(payload)['result']['details'][0]
+
+        self.assertEqual(normalized['steps'][0]['placement'], 'background')
+        self.assertTrue(detail['is_background_damage'])
+        self.assertFalse(detail['is_basic_background'])
+        self.assertEqual(detail['duration_ticks'], 15)
+        self.assertGreater(detail['direct_damage'], 0)
+
     def test_characters_without_bond_bonus_cannot_enable_bond(self) -> None:
         for character_id in ('char_dd034941ef',):
             with self.subTest(character_id=character_id):

@@ -14,9 +14,7 @@
   function isBackgroundStep(step, action) {
     const marker = `${action?.name || ''} ${action?.extra_tag || ''}`;
     const isNativeBackground = Boolean(action?.is_background_damage) || marker.includes('后台');
-    const isManualBackground = Boolean(action?.can_background_override) &&
-      (isBasicAction(action) || Boolean(action?.is_instant_switch)) &&
-      step?.placement === 'background';
+    const isManualBackground = Boolean(action?.can_background_override) && step?.placement === 'background';
     return isNativeBackground || isManualBackground;
   }
 

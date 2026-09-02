@@ -738,6 +738,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions_by_name['小贞同频']['stagger'], 1.667)
         self.assertEqual(actions_by_name['小贞同频']['duration_ticks'], 15)
         self.assertFalse(actions_by_name['小贞同频']['is_background_damage'])
+        self.assertTrue(actions_by_name['小贞同频']['can_background_override'])
         self.assertFalse(actions_by_name['小贞同频']['locks_foreground_switch'])
         self.assertEqual(actions_by_name['4觉同频追加']['required_awakening'], 4)
 
@@ -1470,7 +1471,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         noop = next(action for action in catalog['actions'] if action['name'] == '无')
 
         self.assertTrue(noop['can_background_override'])
-        self.assertIn('isBasicAction(action) || isInstantSwitchAction(action)', source)
+        self.assertIn('return Boolean(action?.can_background_override);', source)
+        self.assertIn('return Boolean(action?.can_background_override);', engine)
         self.assertIn('function switchesForeground(step, action = actionForStep(step)) {', source)
         self.assertIn("isInstantSwitchAction(action) ? '后台切人'", source)
         self.assertIn('function switchesForeground(step, action) {', engine)

@@ -6102,6 +6102,32 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertTrue(all(layer['end_tick'] == 100 for layer in layers))
         self.assertAlmostEqual(sum(layer['effects']['crit_dmg'] for layer in layers), 0.56)
 
+    def test_sagiri_q_fills_twin_butterfly_stacks_from_hit_count(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [
+                {'slot': 0, 'character_id': 'char_1895e259be', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 1, 'character_id': 'char_b52cc8f160', 'arc_id': '', 'cartridge_id': 'cartridge_505ea4a58f'},
+            ],
+            'steps': [
+                {'id': 'sagiri_q', 'slot': 0, 'action_id': 'action_0db78d1f01', 'start_tick': 0},
+                {'id': 'inspect', 'slot': 1, 'action_id': 'action_none_b52cc8f160', 'start_tick': 6},
+            ],
+            'initial_energy': 200,
+        })['result']
+        sagiri_q = next(detail for detail in result['details'] if detail['step_id'] == 'sagiri_q')
+        inspect = next(detail for detail in result['details'] if detail['step_id'] == 'inspect')
+        layers = [
+            buff
+            for buff in inspect['applied_buffs']
+            if buff['rule_id'] == 'cartridge_twin_butterfly_atk_stack'
+        ]
+
+        self.assertEqual(sagiri_q['hit_count'], 6)
+        self.assertEqual(len(layers), 6)
+        self.assertTrue(all(layer['stack_count'] == 1 for layer in layers))
+        self.assertTrue(all(layer['end_tick'] == 100 for layer in layers))
+        self.assertAlmostEqual(sum(layer['effects']['atk_pct'] for layer in layers), 0.36)
+
     def test_cross_element_cartridge_keeps_designated_damage_field_and_four_piece_trigger(self) -> None:
         result = simulate_shaft_axis({
             'team': [

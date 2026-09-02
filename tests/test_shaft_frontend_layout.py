@@ -645,6 +645,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             {'value': 8, 'stat': '暴击', 'passive_type': 'type3'},
         )
         self.assertEqual(action_by_name['4觉同频追加']['skill_level_category'], 'ultimate')
+        self.assertEqual(action_by_name['4觉同频追加']['action_type'], 'Q')
+        self.assertEqual(action_by_name['4觉同频追加']['damage_type'], '追击')
         self.assertEqual(
             {action['name'] for action in actions},
             {

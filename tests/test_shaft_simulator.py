@@ -5146,10 +5146,12 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                 'arc_id': 'arc_614aec6ed1',
                 'arc_refinement': 1,
                 'cartridge_id': '',
+                'awakening_nodes': [1, 2, 3, 4],
             }],
             'steps': [
                 {'id': 'support', 'slot': 0, 'action_id': 'action_lingke_support', 'start_tick': 0},
                 {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 15},
+                {'id': 'a4-extra', 'slot': 0, 'action_id': 'action_lingke_a4_joint_extra', 'start_tick': 16},
             ],
             'initial_energy': 200,
             'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
@@ -5158,8 +5160,10 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         result = simulate_shaft_axis(payload)['result']
         support = next(detail for detail in result['details'] if detail['step_id'] == 'support')
         q = next(detail for detail in result['details'] if detail['step_id'] == 'q')
+        a4_extra = next(detail for detail in result['details'] if detail['step_id'] == 'a4-extra')
         support_buffs = {buff['rule_id']: buff for buff in support['applied_buffs']}
         q_buffs = {buff['rule_id']: buff for buff in q['applied_buffs']}
+        a4_extra_buffs = {buff['rule_id']: buff for buff in a4_extra['applied_buffs']}
 
         self.assertEqual(
             support_buffs['arc_gold_record_support_crit_damage']['effects']['crit_dmg'],
@@ -5167,13 +5171,18 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         )
         self.assertEqual(q_buffs['arc_gold_record_q_crit_damage']['effects']['crit_dmg'], 0.22)
         self.assertEqual(q_buffs['arc_gold_record_q_crit_damage']['stack_count'], 1)
+        self.assertEqual(a4_extra_buffs['arc_gold_record_q_crit_damage']['effects']['crit_dmg'], 0.22)
+        self.assertEqual(a4_extra_buffs['arc_gold_record_q_crit_damage']['stack_count'], 1)
+        self.assertAlmostEqual(a4_extra['panel']['crit_dmg'], 0.72)
 
         payload['team'][0]['arc_refinement'] = 5
         refined = simulate_shaft_axis(payload)['result']
         refined_support = next(detail for detail in refined['details'] if detail['step_id'] == 'support')
         refined_q = next(detail for detail in refined['details'] if detail['step_id'] == 'q')
+        refined_a4_extra = next(detail for detail in refined['details'] if detail['step_id'] == 'a4-extra')
         refined_support_buffs = {buff['rule_id']: buff for buff in refined_support['applied_buffs']}
         refined_q_buffs = {buff['rule_id']: buff for buff in refined_q['applied_buffs']}
+        refined_a4_extra_buffs = {buff['rule_id']: buff for buff in refined_a4_extra['applied_buffs']}
         self.assertEqual(
             refined_support_buffs['arc_gold_record_support_crit_damage']['effects']['crit_dmg'],
             1.32,
@@ -5182,6 +5191,11 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             refined_q_buffs['arc_gold_record_q_crit_damage']['effects']['crit_dmg'],
             0.44,
         )
+        self.assertEqual(
+            refined_a4_extra_buffs['arc_gold_record_q_crit_damage']['effects']['crit_dmg'],
+            0.44,
+        )
+        self.assertAlmostEqual(refined_a4_extra['panel']['crit_dmg'], 0.94)
 
     def test_lingke_manual_blitz_and_first_four_awakenings(self) -> None:
         def simulate(nodes: list[int]) -> dict:

@@ -1226,7 +1226,7 @@
     "trigger": {"event": "action_hit", "source": {"scope": "team", "elements": ["灵"]}},
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 100, "loop_carry": true},
-    "stacking": {"mode": "independent", "max_stacks": 7},
+    "stacking": {"mode": "independent", "max_stacks": 7, "stack_gain_from": "hit_count"},
     "effects": {"crit_dmg": 0.08}
   },
   {

@@ -6076,6 +6076,32 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertTrue(all(layer['stacking_mode'] == 'independent' for layer in layers))
         self.assertTrue(all(layer['max_stacks'] == 7 for layer in layers))
 
+    def test_iloy_e_fills_lingke_forest_firefly_stacks_from_hit_count(self) -> None:
+        result = simulate_shaft_axis({
+            'team': [
+                {'slot': 0, 'character_id': 'char_a01c39f576', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 1, 'character_id': 'char_0846d632e0', 'arc_id': '', 'cartridge_id': 'cartridge_29793225a0'},
+            ],
+            'steps': [
+                {'id': 'iloy_e', 'slot': 0, 'action_id': 'action_afea1e6fb2', 'start_tick': 0},
+                {'id': 'inspect', 'slot': 1, 'action_id': 'action_none_0846d632e0', 'start_tick': 4},
+            ],
+            'initial_energy': 200,
+        })['result']
+        iloy_e = next(detail for detail in result['details'] if detail['step_id'] == 'iloy_e')
+        inspect = next(detail for detail in result['details'] if detail['step_id'] == 'inspect')
+        layers = [
+            buff
+            for buff in inspect['applied_buffs']
+            if buff['rule_id'] == 'cartridge_forest_firefly_crit_stack'
+        ]
+
+        self.assertEqual(iloy_e['hit_count'], 9)
+        self.assertEqual(len(layers), 7)
+        self.assertTrue(all(layer['stack_count'] == 1 for layer in layers))
+        self.assertTrue(all(layer['end_tick'] == 100 for layer in layers))
+        self.assertAlmostEqual(sum(layer['effects']['crit_dmg'] for layer in layers), 0.56)
+
     def test_cross_element_cartridge_keeps_designated_damage_field_and_four_piece_trigger(self) -> None:
         result = simulate_shaft_axis({
             'team': [

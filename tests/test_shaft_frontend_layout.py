@@ -640,6 +640,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(lingke['element'], '灵')
         self.assertEqual(lingke['adaptation'], '等离子')
         self.assertEqual(lingke['base_stats'], {'atk': 652.0, 'hp': 15513.0, 'def': 921.1})
+        self.assertEqual(lingke['bond_bonus']['label'], '4暴击')
+        self.assertEqual(lingke['bond_bonus']['modifiers']['crit_rate'], 0.04)
         self.assertEqual(
             catalog['formula_constants']['default_build_options'][lingke['id']]['curtain_bonus'],
             {'value': 8, 'stat': '暴击', 'passive_type': 'type3'},

@@ -1233,6 +1233,27 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertAlmostEqual(with_bond['crit_rate'] - without_bond['crit_rate'], 0.04)
         self.assertEqual(with_bond['atk'], without_bond['atk'])
 
+    def test_lingke_bond_bonus_adds_four_percent_crit_rate(self) -> None:
+        def panel_with_bond(enabled: bool) -> dict:
+            result = simulate_shaft_axis({
+                'team': [{
+                    'slot': 0,
+                    'character_id': 'char_0846d632e0',
+                    'arc_id': '',
+                    'cartridge_id': '',
+                    'bond_full': enabled,
+                }],
+                'steps': [{'id': 'e', 'slot': 0, 'action_id': 'action_lingke_e', 'start_tick': 0}],
+                'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+                'initial_energy': 0,
+            })['result']
+            return result['details'][0]['panel']
+
+        without_bond = panel_with_bond(False)
+        with_bond = panel_with_bond(True)
+        self.assertAlmostEqual(with_bond['crit_rate'] - without_bond['crit_rate'], 0.04)
+        self.assertEqual(with_bond['atk'], without_bond['atk'])
+
     def test_character_timed_buff_triggers_and_applies_to_later_action(self) -> None:
         result = simulate_shaft_axis({
             'team': [{

@@ -2131,6 +2131,19 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(lucid_dream['action_type'], '普攻')
         self.assertTrue(lucid_dream['can_background_override'])
 
+    def test_dafutier_yixing_can_move_from_foreground_to_background(self) -> None:
+        catalog = load_shaft_catalog()
+        yixing = next(
+            action for action in catalog['actions']
+            if action['id'] == 'action_5e2016e57b'
+        )
+
+        self.assertEqual(yixing['character_name'], '达芙蒂尔')
+        self.assertEqual(yixing['name'], '移行')
+        self.assertEqual(yixing['action_type'], '普攻')
+        self.assertEqual(yixing['duration_ticks'], 10)
+        self.assertTrue(yixing['can_background_override'])
+
     def test_market_dislike_uses_authenticated_toggle_and_refreshes_market(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
 

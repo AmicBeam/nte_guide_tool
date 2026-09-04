@@ -6240,8 +6240,9 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 110,
+    "source_note": "按用户 2026-09-04 补充口径，移行默认前台但可手动放到后台。",
     "source_formula": "{0}%+{1}%*4+{2}%",
-    "can_background_override": false,
+    "can_background_override": true,
     "hit_count": 6
   },
   {

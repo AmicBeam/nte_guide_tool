@@ -5446,12 +5446,13 @@
     const slotBlockingEnd = new Map();
     let previousForegroundSlot = null;
     let previousForegroundStartTick = null;
+    let previousForegroundAction = null;
     const foregroundLocks = [];
     for (const step of orderedSteps) {
       const action = actionForStep(step);
       const foregroundStart = startsForeground(step, action);
       const slotBlocking = blocksSlotOverlap(step, action) && !isInstantSwitchAction(action);
-      if (!foregroundStart && !slotBlocking) {
+      if (!foregroundStart && !slotBlocking && !isInstantSwitchAction(action)) {
         continue;
       }
       let startTick = Math.max(0, Number(step.start_tick || 0));
@@ -5482,13 +5483,17 @@
         previousForegroundStartTick !== null &&
         !isInstantSwitchAction(action)
       ) {
-        startTick = Math.max(startTick, previousForegroundStartTick + MIN_FOREGROUND_START_GAP_TICKS);
+        startTick = Math.max(startTick, previousForegroundStartTick + Math.min(
+          MIN_FOREGROUND_START_GAP_TICKS,
+          Math.max(0, Number(previousForegroundAction?.switch_gap_after_ticks ?? MIN_FOREGROUND_START_GAP_TICKS)),
+        ));
       }
       step.start_tick = startTick;
       const endTick = startTick + actionVisualDurationTicks(action, step);
-      if (foregroundStart) {
+      if (switchesForeground(step, action)) {
         previousForegroundSlot = Number(step.slot);
         previousForegroundStartTick = startTick;
+        previousForegroundAction = action;
       }
       if (slotBlocking) {
         slotBlockingEnd.set(Number(step.slot), endTick);
@@ -5530,7 +5535,7 @@
     sortSteps();
     const prioritySteps = state.axis.steps
       .filter((step) => priorityIds.has(step.id) && (
-        startsForeground(step, actionForStep(step)) || blocksSlotOverlap(step, actionForStep(step))
+        switchesForeground(step, actionForStep(step)) || blocksSlotOverlap(step, actionForStep(step))
       ))
       .sort(foregroundConflictStepOrder);
     if (!prioritySteps.length) {
@@ -5542,7 +5547,7 @@
     const postSteps = [];
     state.axis.steps.forEach((step) => {
       const action = actionForStep(step);
-      if (priorityIds.has(step.id) || (!startsForeground(step, action) && !blocksSlotOverlap(step, action))) {
+      if (priorityIds.has(step.id) || (!switchesForeground(step, action) && !blocksSlotOverlap(step, action))) {
         return;
       }
       const startTick = Number(step.start_tick || 0);
@@ -5969,7 +5974,7 @@
     const orderedSteps = (state.axis?.steps || [])
       .filter((step) => {
         const action = actionForStep(step);
-        return startsForeground(step, action) || blocksSlotOverlap(step, action);
+        return switchesForeground(step, action) || blocksSlotOverlap(step, action);
       })
       .slice()
       .sort(foregroundConflictStepOrder);

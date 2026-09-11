@@ -32,9 +32,37 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 self.assertEqual(noop['duration_ticks'], 0)
                 self.assertEqual(noop['hit_count'], 0)
                 self.assertTrue(noop['is_instant_switch'])
+                self.assertEqual(noop['switch_gap_after_ticks'], 1)
+                self.assertFalse(noop.get('is_time_stop_zero', False))
                 self.assertTrue(noop['can_background_override'])
                 self.assertNotIn('triggers_reaction_on_switch', noop)
                 self.assertEqual(actions_by_character[character['id']][-1]['name'], '无')
+
+    def test_noop_allows_one_tick_switch_gap_without_freezing_parallel_actions(self) -> None:
+        # User 2026-09-11: 0.1s after 无, with no time stop or action cover.
+        for placement in ('foreground', 'background'):
+            for requested_tick, expected_tick in ((0, 1), (1, 1), (2, 2)):
+                with self.subTest(placement=placement, requested_tick=requested_tick):
+                    result = simulate_shaft_axis({
+                        'team': [
+                            {'slot': 0, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''},
+                            {'slot': 1, 'character_id': 'char_bdc43f82c6', 'arc_id': '', 'cartridge_id': ''},
+                        ],
+                        'steps': [
+                            {'id': 'parallel', 'slot': 1, 'action_id': 'action_5870d8ba67', 'start_tick': 0},
+                            {'id': 'noop', 'slot': 0, 'action_id': 'action_none_dd034941ef', 'start_tick': 5, 'placement': placement},
+                            {'id': 'next', 'slot': 1, 'action_id': 'action_dodge_bdc43f82c6', 'start_tick': 5 + requested_tick},
+                        ],
+                        'options': {'switch_gap_ticks': 2},
+                    })['result']
+                    details = {detail['step_id']: detail for detail in result['details']}
+                    self.assertEqual(details['next']['start_tick'], 5 + expected_tick)
+                    self.assertEqual(details['parallel']['start_tick'], 0)
+                    self.assertEqual(details['parallel']['duration_ticks'], 11)
+                    self.assertEqual(details['noop']['duration_ticks'], 0)
+                    self.assertEqual(result['time_axis']['frozen_intervals'], [])
+                    self.assertTrue(all(not detail['q_instant_release'] for detail in details.values()))
+                    self.assertTrue(all(not detail['q_cover_target_step_ids'] for detail in details.values()))
 
     def test_every_character_has_foreground_dodge_before_noop(self) -> None:
         catalog = load_shaft_catalog()

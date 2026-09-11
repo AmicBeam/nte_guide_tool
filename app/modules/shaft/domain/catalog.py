@@ -145,6 +145,7 @@ def _noop_action(character: dict[str, Any]) -> dict[str, Any]:
         'can_background_override': True,
         'hit_count': 0,
         'is_instant_switch': True,
+        'switch_gap_after_ticks': 1,
         'tags': ['切人'],
     }
 

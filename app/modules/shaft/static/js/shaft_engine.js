@@ -1024,6 +1024,7 @@
     });
     let previousForegroundSlot = null;
     let previousForegroundStartTick = null;
+    let previousForegroundAction = null;
     const foregroundLocks = [];
     const carriedShiftBySlot = new Map();
     return ordered.map((step) => {
@@ -1059,7 +1060,10 @@
         previousForegroundStartTick !== null &&
         !isInstantSwitchAction(action)
       ) {
-        const earliestStartTick = previousForegroundStartTick + Math.max(0, int(switchGapTicks));
+        const earliestStartTick = previousForegroundStartTick + Math.min(
+          Math.max(0, int(switchGapTicks)),
+          Math.max(0, int(previousForegroundAction?.switch_gap_after_ticks, switchGapTicks)),
+        );
         if (visualStartTick < earliestStartTick) {
           switchLossTicks = earliestStartTick - visualStartTick;
           visualStartTick = earliestStartTick;
@@ -1068,6 +1072,7 @@
       if (switchesForeground(step, action)) {
         previousForegroundSlot = int(step.slot);
         previousForegroundStartTick = visualStartTick;
+        previousForegroundAction = action;
       }
       if (locksForegroundSwitch(step, action)) {
         foregroundLocks.push({
@@ -2006,6 +2011,7 @@
     const foregroundLocks = [];
     let previousForegroundSlot = null;
     let previousForegroundStartTick = null;
+    let previousForegroundAction = null;
     const carriedShiftBySlot = new Map();
     const ordered = scheduledSteps.slice().sort((left, right) => {
       const startDelta = int(left.visual_start_tick) - int(right.visual_start_tick);
@@ -2029,6 +2035,7 @@
         if (scheduled.is_background && isInstantSwitchAction(scheduled.action || {})) {
           previousForegroundSlot = int(scheduled.slot);
           previousForegroundStartTick = int(scheduled.visual_start_tick);
+          previousForegroundAction = scheduled.action;
         }
         return;
       }
@@ -2057,7 +2064,10 @@
       ) {
         visualStartTick = Math.max(
           visualStartTick,
-          previousForegroundStartTick + Math.max(0, int(switchGapTicks)),
+          previousForegroundStartTick + Math.min(
+            Math.max(0, int(switchGapTicks)),
+            Math.max(0, int(previousForegroundAction?.switch_gap_after_ticks, switchGapTicks)),
+          ),
         );
       }
       if (visualStartTick > originalStartTick) {
@@ -2070,6 +2080,7 @@
       }
       previousForegroundSlot = int(scheduled.slot);
       previousForegroundStartTick = int(scheduled.visual_start_tick);
+      previousForegroundAction = scheduled.action;
       if (locksForegroundSwitch(scheduled.step || {}, scheduled.action || {})) {
         foregroundLocks.push({
           slot: int(scheduled.slot),

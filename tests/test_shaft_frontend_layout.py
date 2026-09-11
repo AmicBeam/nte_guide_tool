@@ -1968,7 +1968,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         source = SHAFT_JS.read_text(encoding='utf-8')
 
         self.assertIn('const slotBlockingEnd = new Map();', source)
-        self.assertIn('previousForegroundStartTick + MIN_FOREGROUND_START_GAP_TICKS', source)
+        self.assertIn('previousForegroundAction?.switch_gap_after_ticks ?? MIN_FOREGROUND_START_GAP_TICKS', source)
         self.assertIn('function locksForegroundSwitch(step, action = actionForStep(step)) {', source)
         self.assertIn('function foregroundLockEndTick(step, action, startTick) {', source)
         self.assertIn('detail.display_visual_end_tick ?? detail.visual_end_tick', source)

@@ -2141,7 +2141,8 @@
     );
     const restrictedSlots = new Set();
     state.axis.team = state.axis.team.map((member, index) => {
-      if (!disabledCharacterIds.has(member?.character_id)) {
+      // A read-only share may display restricted characters without granting selection access.
+      if (state.sharedReadOnly || !disabledCharacterIds.has(member?.character_id)) {
         return member;
       }
       const slot = Number(member?.slot ?? index);

@@ -2003,6 +2003,39 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('`/api/shaft/axes/${axisId}/backup`', source)
         self.assertIn("await loadAxis(Number(backup.id), 'mine');", source)
 
+    @unittest.skipUnless(shutil.which('node'), 'Node.js is required')
+    def test_readonly_share_preserves_restricted_character_and_steps(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        filtering = source[source.index('    const disabledCharacterIds = new Set('):
+                           source.index('    state.axis.steps.forEach(sanitizeStepPlacement);')]
+        script = """
+const clone = (value) => JSON.parse(JSON.stringify(value));
+const run = (readOnly) => {
+  const state = {
+    sharedReadOnly: readOnly,
+    catalog: {
+      characters: [{id: 'test_character', selection_disabled: true}],
+      starter_axis: {team: [{slot: 0, character_id: 'public_character'}]},
+    },
+    axis: {
+      team: [{slot: 0, character_id: 'test_character'}],
+      steps: [{slot: 0, action_id: 'test_action'}, {slot: 1, action_id: 'public_action'}],
+    },
+  };
+""" + filtering + """
+  return state.axis;
+};
+process.stdout.write(JSON.stringify([run(true), run(false)]));
+"""
+        completed = subprocess.run([shutil.which('node'), '-e', script],
+                                   capture_output=True, text=True, check=True)
+        shared, editable = json.loads(completed.stdout)
+        self.assertEqual(shared['team'][0]['character_id'], 'test_character')
+        self.assertEqual([step['action_id'] for step in shared['steps']],
+                         ['test_action', 'public_action'])
+        self.assertEqual(editable['team'][0]['character_id'], 'public_character')
+        self.assertEqual([step['action_id'] for step in editable['steps']], ['public_action'])
+
     def test_my_axis_share_link_copies_and_opening_protects_dirty_workspace(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')

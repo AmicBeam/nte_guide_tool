@@ -1,0 +1,627 @@
+(function (root) {
+  const V2 = root.NTE_V2;
+  const TABLE = root.NTE_V2_TABLE = root.NTE_V2_TABLE || {};
+  const OPTIONS_KEY = 'nte_v2_table_options';
+  const CHARACTER_ORDER = (V2 && V2.CHARACTER_ORDER) || ['nanali', 'zero', 'jiuyuan', 'xun'];
+
+  function clone(value) {
+    if (value == null) {
+      return value;
+    }
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch (error) {
+      return value;
+    }
+  }
+
+  function entityId(side, id) {
+    if (!id && id !== 0) {
+      return null;
+    }
+    const token = String(id);
+    if (token.indexOf(':') >= 0) {
+      return token;
+    }
+    if (token === 'player') {
+      return String(side || 'a') + ':player';
+    }
+    return String(side || 'a') + ':' + token;
+  }
+
+  function parseEntityId(value) {
+    const token = String(value || '');
+    const index = token.indexOf(':');
+    if (index < 0) {
+      return { side: null, id: token };
+    }
+    return { side: token.slice(0, index), id: token.slice(index + 1) };
+  }
+
+  function canonicalEntityId(value) {
+    const token = String(value || '');
+    if (!token || token.indexOf(':') < 0) {
+      return null;
+    }
+    return token;
+  }
+
+  function sameEntityId(left, right) {
+    const a = canonicalEntityId(left);
+    const b = canonicalEntityId(right);
+    return Boolean(a && b && a === b);
+  }
+
+  function viewerSide(game) {
+    return V2.viewerSide(game);
+  }
+
+  function opponentSide(game) {
+    return V2.opponentSide(game);
+  }
+
+  function sideState(game, side) {
+    return V2.sideState(game, side) || {};
+  }
+
+  function characterMap(side) {
+    const map = {};
+    ((side && side.characters) || []).forEach(function (item) {
+      if (item && item.id) {
+        map[item.id] = item;
+      }
+    });
+    return map;
+  }
+
+  function findCharacter(game, characterId, preferredSide) {
+    const parsed = parseEntityId(characterId);
+    const wanted = parsed.id;
+    const sides = [];
+    if (parsed.side) {
+      sides.push(parsed.side);
+    }
+    if (preferredSide) {
+      sides.push(preferredSide);
+    }
+    if (game) {
+      sides.push(viewerSide(game), opponentSide(game), 'a', 'b');
+    }
+    for (let index = 0; index < sides.length; index += 1) {
+      const side = sides[index];
+      const found = characterMap(sideState(game, side))[wanted];
+      if (found) {
+        return { character: found, side: side };
+      }
+    }
+    const fallback = V2.characterFallback(wanted);
+    return fallback ? { character: fallback, side: preferredSide || parsed.side || 'a' } : null;
+  }
+
+  function cardByInstance(game, instanceId) {
+    const wanted = String(instanceId || '');
+    if (!wanted || !game) {
+      return null;
+    }
+    const piles = [];
+    ['a', 'b'].forEach(function (side) {
+      const state = sideState(game, side);
+      piles.push.apply(piles, state.hand || []);
+      piles.push.apply(piles, state.discard || []);
+    });
+    if (game.resolving_card) {
+      piles.push(game.resolving_card);
+    }
+    return piles.find(function (card) {
+      return card && String(card.instance_id) === wanted;
+    }) || null;
+  }
+
+  function mergeCharacters(existing, patchList) {
+    const byId = {};
+    (existing || []).forEach(function (item) {
+      if (item && item.id) {
+        byId[item.id] = Object.assign({}, item);
+      }
+    });
+    (patchList || []).forEach(function (item) {
+      if (!item || !item.id) {
+        return;
+      }
+      byId[item.id] = Object.assign({}, byId[item.id] || { id: item.id }, item);
+    });
+    const seen = {};
+    const next = [];
+    (existing || []).forEach(function (item) {
+      if (!item || !item.id) {
+        return;
+      }
+      next.push(byId[item.id]);
+      seen[item.id] = true;
+    });
+    (patchList || []).forEach(function (item) {
+      if (item && item.id && !seen[item.id]) {
+        next.push(byId[item.id]);
+      }
+    });
+    return next;
+  }
+
+  function hiddenCard() {
+    return { hidden: true };
+  }
+
+  function isHiddenCard(card) {
+    return !card || card.hidden || (!card.copy && !card.instance_id && !card.name);
+  }
+
+  function isPublicCopy(card) {
+    return Boolean(card && card.copy && (card.instance_id || card.name));
+  }
+
+  function reconcileHandCount(team, count, options) {
+    options = options || {};
+    const next = Object.assign({}, team || {});
+    const hand = Array.isArray(next.hand) ? next.hand.slice() : [];
+    const target = Number(count);
+    if (!Number.isFinite(target)) {
+      next.hand = hand;
+      return next;
+    }
+    next.hand_count = target;
+    while (hand.length > target) {
+      let index = -1;
+      for (let i = hand.length - 1; i >= 0; i -= 1) {
+        if (isHiddenCard(hand[i]) && !isPublicCopy(hand[i])) {
+          index = i;
+          break;
+        }
+      }
+      if (index < 0) {
+        if (options.allowNamed) {
+          index = hand.length - 1;
+        } else {
+          break;
+        }
+      }
+      hand.splice(index, 1);
+    }
+    while (hand.length < target) {
+      if (options.inventNamed) {
+        break;
+      }
+      hand.push(hiddenCard());
+    }
+    next.hand = hand;
+    return next;
+  }
+
+  function removePlayedCard(hand, event, isSelf) {
+    const next = Array.isArray(hand) ? hand.slice() : [];
+    const card = event && event.card;
+    if (isSelf && card && card.instance_id) {
+      const index = next.findIndex(function (item) {
+        return item && String(item.instance_id) === String(card.instance_id);
+      });
+      if (index >= 0) {
+        next.splice(index, 1);
+        return next;
+      }
+    }
+    if (!isSelf && card && card.copy && card.instance_id) {
+      const copyIndex = next.findIndex(function (item) {
+        return item && String(item.instance_id) === String(card.instance_id);
+      });
+      if (copyIndex >= 0) {
+        next.splice(copyIndex, 1);
+        return next;
+      }
+    }
+    if (!isSelf) {
+      const backIndex = next.findIndex(function (item) {
+        return isHiddenCard(item) && !isPublicCopy(item);
+      });
+      if (backIndex >= 0) {
+        next.splice(backIndex, 1);
+      }
+    }
+    return next;
+  }
+
+  function applyEventToHand(game, event) {
+    if (!game || !event || !event.side || !game.sides || !game.sides[event.side]) {
+      return game;
+    }
+    const type = String(event.type || '');
+    if (['play', 'discard', 'remove', 'draw', 'gain'].indexOf(type) < 0) {
+      return game;
+    }
+    const next = clone(game);
+    const team = Object.assign({}, next.sides[event.side] || {});
+    const isSelf = event.side === viewerSide(next);
+    let hand = Array.isArray(team.hand) ? team.hand.slice() : [];
+    if (type === 'play' || type === 'discard' || type === 'remove') {
+      hand = removePlayedCard(hand, event, isSelf);
+      if (team.hand_count != null) {
+        team.hand_count = Math.max(0, Number(team.hand_count) - 1);
+      }
+    } else if (type === 'draw' || type === 'gain') {
+      if (isSelf && event.card && !event.card.hidden) {
+        const exists = hand.some(function (item) {
+          return item && event.card.instance_id && String(item.instance_id) === String(event.card.instance_id);
+        });
+        if (!exists) {
+          hand.push(clone(event.card));
+        }
+      } else if (!isSelf) {
+        if (event.card && event.card.copy) {
+          hand.push(clone(event.card));
+        } else {
+          hand.push(hiddenCard());
+        }
+      }
+      if (team.hand_count != null) {
+        team.hand_count = Number(team.hand_count) + 1;
+      }
+    }
+    team.hand = hand;
+    next.sides[event.side] = team;
+    return next;
+  }
+
+  function applyPatch(game, patch, event) {
+    if (!game) {
+      return patch ? clone(patch) : game;
+    }
+    let next = clone(game);
+    if (event) {
+      next = applyEventToHand(next, event);
+    }
+    if (!patch || typeof patch !== 'object') {
+      return next;
+    }
+    ['phase', 'active_side', 'turn', 'winner', 'reason'].forEach(function (key) {
+      if (patch[key] !== undefined) {
+        next[key] = patch[key];
+      }
+    });
+    if (patch.sides && typeof patch.sides === 'object') {
+      next.sides = next.sides || {};
+      Object.keys(patch.sides).forEach(function (side) {
+        const src = patch.sides[side] || {};
+        let dst = Object.assign({}, next.sides[side] || {});
+        Object.keys(src).forEach(function (key) {
+          if (key === 'characters') {
+            dst.characters = mergeCharacters(dst.characters, src.characters);
+            return;
+          }
+          if (key === 'hand') {
+            dst.hand = clone(src.hand);
+            return;
+          }
+          if (key === 'hand_count') {
+            return;
+          }
+          dst[key] = clone(src[key]);
+        });
+        if (src.hand) {
+          dst.hand = clone(src.hand);
+        }
+        if (src.hand_count != null) {
+          dst = reconcileHandCount(dst, src.hand_count, {
+            allowNamed: side === viewerSide(next),
+          });
+        }
+        next.sides[side] = dst;
+      });
+    }
+    return next;
+  }
+
+  function publicPlayFromEvent(event) {
+    if (!event || event.type !== 'play') {
+      return null;
+    }
+    const card = event.card;
+    if (!card || card.hidden || event.private_side) {
+      return null;
+    }
+    if (!card.name && !card.card_id && !card.instance_id) {
+      return null;
+    }
+    return {
+      seq: event.seq,
+      side: event.side,
+      text: event.text || '',
+      actor: event.actor || null,
+      card: clone(card),
+    };
+  }
+
+  function appendPublicPlay(history, event) {
+    const item = publicPlayFromEvent(event);
+    const list = Array.isArray(history) ? history.slice() : [];
+    if (!item) {
+      return list;
+    }
+    const exists = list.some(function (row) {
+      return Number(row && row.seq) === Number(item.seq);
+    });
+    if (exists) {
+      return list;
+    }
+    list.push(item);
+    return list.slice(-12);
+  }
+
+  function presentationFrom(payload, game) {
+    const raw = (payload && payload.presentation) || null;
+    const events = Array.isArray(raw && raw.events)
+      ? raw.events
+      : (Array.isArray(game && game.events) ? game.events : []);
+    const seqs = events.map(function (event) { return Number(event && event.seq); }).filter(function (value) {
+      return Number.isFinite(value);
+    });
+    const cursor = raw && raw.cursor != null ? Number(raw.cursor) : (seqs.length ? Math.max.apply(null, seqs) : -1);
+    const oldest = raw && raw.oldest_seq != null ? Number(raw.oldest_seq) : (seqs.length ? Math.min.apply(null, seqs) : 0);
+    return {
+      schema_version: raw && raw.schema_version ? raw.schema_version : 1,
+      cursor: Number.isFinite(cursor) ? cursor : -1,
+      oldest_seq: Number.isFinite(oldest) ? oldest : 0,
+      events: events,
+    };
+  }
+
+  function eventsAfter(events, cursor) {
+    return (events || []).filter(function (event) {
+      const seq = Number(event && event.seq);
+      return Number.isFinite(seq) && seq > Number(cursor);
+    });
+  }
+
+  function loadOptions() {
+    const fallback = { muted: false, reducedMotion: false, speed: 1 };
+    try {
+      const raw = root.localStorage.getItem(OPTIONS_KEY);
+      if (!raw) {
+        return fallback;
+      }
+      const parsed = JSON.parse(raw);
+      return {
+        muted: Boolean(parsed && parsed.muted),
+        reducedMotion: Boolean(parsed && parsed.reducedMotion),
+        speed: Number(parsed && parsed.speed) === 2 ? 2 : 1,
+      };
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function saveOptions(options) {
+    try {
+      root.localStorage.setItem(OPTIONS_KEY, JSON.stringify(options));
+    } catch (error) {
+      // ignore private-mode persistence failures
+    }
+  }
+
+  function actionTargetId(action) {
+    return canonicalEntityId(action && action.target_id);
+  }
+
+  function inferInteraction(game, entry) {
+    const action = (entry && entry.action) || {};
+    const side = viewerSide(game);
+    if (action.type === 'attack') {
+      return { kind: 'attack', actor_id: entityId(side, action.character_id), target_ids: [] };
+    }
+    if (action.type === 'awaken') {
+      return { kind: 'awaken', actor_id: entityId(side, action.character_id), target_ids: [] };
+    }
+    if (action.type === 'play_card') {
+      const card = cardByInstance(game, action.card_id);
+      if (card && card.type === 'form') {
+        const selfId = entityId(side, card.character_id);
+        return { kind: 'form', actor_id: selfId, target_ids: [selfId] };
+      }
+      const target = actionTargetId(action);
+      if (target) {
+        return {
+          kind: 'target',
+          actor_id: card ? entityId(side, card.character_id) : null,
+          target_ids: [target],
+        };
+      }
+      if (action.target_id) {
+        return { kind: 'choice', actor_id: card ? entityId(side, card.character_id) : null, target_ids: [] };
+      }
+      return { kind: 'cast', actor_id: card ? entityId(side, card.character_id) : null, target_ids: [] };
+    }
+    if (action.type === 'choose' || action.type === 'cycle' || action.type === 'mulligan') {
+      return { kind: 'choice', actor_id: null, target_ids: [] };
+    }
+    return { kind: 'other', actor_id: null, target_ids: [] };
+  }
+
+  function interactionOf(game, entry) {
+    const raw = entry && entry.interaction;
+    if (raw && raw.kind) {
+      const targets = Array.isArray(raw.target_ids)
+        ? raw.target_ids.map(canonicalEntityId).filter(Boolean)
+        : [];
+      return {
+        kind: raw.kind,
+        actor_id: raw.actor_id || null,
+        target_ids: targets,
+      };
+    }
+    return inferInteraction(game, entry);
+  }
+
+  function entryMatchesTarget(entry, targetId) {
+    if (!entry || !targetId) {
+      return false;
+    }
+    const wanted = canonicalEntityId(targetId);
+    if (!wanted) {
+      return false;
+    }
+    const actionTarget = actionTargetId(entry.action);
+    if (actionTarget) {
+      return actionTarget === wanted;
+    }
+    const ids = (entry.interaction && entry.interaction.target_ids) || [];
+    return ids.indexOf(wanted) >= 0;
+  }
+
+  function legalEntries(game) {
+    return V2.legalEntries(game);
+  }
+
+  function groupPlayEntries(game, entries) {
+    const groups = { cast: [], target: [], form: [], other: [] };
+    (entries || []).forEach(function (entry) {
+      const interaction = interactionOf(game, entry);
+      entry.interaction = interaction;
+      if (interaction.kind === 'form') groups.form.push(entry);
+      else if (interaction.kind === 'target') groups.target.push(entry);
+      else if (interaction.kind === 'cast' || interaction.kind === 'attack') groups.cast.push(entry);
+      else groups.other.push(entry);
+    });
+    return { entries: entries || [], groups: groups };
+  }
+
+  function legalDropFor(kind, grouped, zone, attackEntry) {
+    if (!zone) return null;
+    const roleNode = zone.closest ? zone.closest('[data-drop-role]') : null;
+    const role = roleNode && roleNode.getAttribute ? roleNode.getAttribute('data-drop-role') : '';
+    const entityNode = zone.closest ? zone.closest('[data-entity-id]') : null;
+    if (kind === 'character') {
+      return role === 'player-front' ? (attackEntry || null) : null;
+    }
+    grouped = grouped || { entries: [], groups: { cast: [], target: [], form: [], other: [] } };
+    if (!grouped.entries.length) {
+      return null;
+    }
+    if (role === 'cast') {
+      return grouped.groups.cast[0] || grouped.groups.form[0] || null;
+    }
+    const targetId = canonicalEntityId(entityNode && entityNode.getAttribute && entityNode.getAttribute('data-entity-id'));
+    if (targetId) {
+      const match = grouped.groups.target.concat(grouped.groups.form).find(function (entry) {
+        return entryMatchesTarget(entry, targetId);
+      });
+      return match || null;
+    }
+    return null;
+  }
+
+  function resourceLine(character) {
+    const data = character || {};
+    const bits = [
+      '攻击 ' + (data.attack == null ? '-' : data.attack),
+      '生命 ' + (data.hp == null ? '-' : data.hp) + '/' + (data.max_hp == null ? '-' : data.max_hp),
+      '护盾 ' + (data.shield == null ? 0 : data.shield),
+      '环合 ' + (data.harmony == null ? 0 : data.harmony),
+      '能量 ' + (data.energy == null ? 0 : data.energy),
+    ];
+    if (data.growth != null && data.growth !== '') {
+      bits.push('成长 ' + data.growth);
+    }
+    if (data.shape) {
+      bits.push('形态 ' + data.shape);
+    }
+    if (data.awakened) {
+      bits.push('已觉醒');
+    }
+    if (Number(data.down_turns) > 0) {
+      bits.push('倒地 ' + data.down_turns);
+    }
+    return bits.join(' · ');
+  }
+
+  function FallbackPlayer(config) {
+    this.root = config && config.root;
+    this.applyPatch = (config && config.applyPatch) || function () {};
+    this.onBusy = (config && config.onBusy) || function () {};
+    this.onPublicCard = (config && config.onPublicCard) || function () {};
+    this.options = { muted: false, reducedMotion: false, speed: 1 };
+    this._cancelled = false;
+    this._seen = {};
+  }
+
+  FallbackPlayer.prototype.setOptions = function (options) {
+    this.options = Object.assign({}, this.options, options || {});
+  };
+
+  FallbackPlayer.prototype.cancel = function () {
+    this._cancelled = true;
+    this.onBusy(false);
+  };
+
+  FallbackPlayer.prototype.play = function (events, playOptions) {
+    const self = this;
+    this._cancelled = false;
+    const list = Array.isArray(events) ? events : [];
+    this.onBusy(true);
+    return Promise.resolve().then(function () {
+      list.forEach(function (event) {
+        if (self._cancelled) {
+          return;
+        }
+        const key = String((event && event.seq) + ':' + (event && event.action_id));
+        if (self._seen[key]) {
+          return;
+        }
+        self._seen[key] = true;
+        if (event && event.card) {
+          self.onPublicCard(event.card, event);
+        }
+        self.applyPatch((event && event.patch) || {}, event);
+      });
+      self.onBusy(false);
+      return { instant: Boolean(playOptions && playOptions.instant), cancelled: self._cancelled };
+    });
+  };
+
+  function createPlayer(config) {
+    const Player = root.NTEDuelPresentation && root.NTEDuelPresentation.Player;
+    if (typeof Player === 'function') {
+      return new Player(config);
+    }
+    return new FallbackPlayer(config);
+  }
+
+  TABLE.OPTIONS_KEY = OPTIONS_KEY;
+  TABLE.CHARACTER_ORDER = CHARACTER_ORDER;
+  TABLE.clone = clone;
+  TABLE.entityId = entityId;
+  TABLE.parseEntityId = parseEntityId;
+  TABLE.canonicalEntityId = canonicalEntityId;
+  TABLE.sameEntityId = sameEntityId;
+  TABLE.viewerSide = viewerSide;
+  TABLE.opponentSide = opponentSide;
+  TABLE.sideState = sideState;
+  TABLE.characterMap = characterMap;
+  TABLE.findCharacter = findCharacter;
+  TABLE.cardByInstance = cardByInstance;
+  TABLE.applyPatch = applyPatch;
+  TABLE.applyEventToHand = applyEventToHand;
+  TABLE.reconcileHandCount = reconcileHandCount;
+  TABLE.publicPlayFromEvent = publicPlayFromEvent;
+  TABLE.appendPublicPlay = appendPublicPlay;
+  TABLE.presentationFrom = presentationFrom;
+  TABLE.eventsAfter = eventsAfter;
+  TABLE.loadOptions = loadOptions;
+  TABLE.saveOptions = saveOptions;
+  TABLE.interactionOf = interactionOf;
+  TABLE.inferInteraction = inferInteraction;
+  TABLE.entryMatchesTarget = entryMatchesTarget;
+  TABLE.actionTargetId = actionTargetId;
+  TABLE.legalEntries = legalEntries;
+  TABLE.groupPlayEntries = groupPlayEntries;
+  TABLE.legalDropFor = legalDropFor;
+  TABLE.resourceLine = resourceLine;
+  TABLE.FallbackPlayer = FallbackPlayer;
+  TABLE.createPlayer = createPlayer;
+}(window));

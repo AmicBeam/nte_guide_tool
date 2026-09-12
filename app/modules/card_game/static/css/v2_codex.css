@@ -1,0 +1,65 @@
+
+.v2-codex-shell {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 14px;
+}
+
+.v2-codex-nav {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+}
+
+.v2-codex-nav button {
+    text-align: left;
+}
+
+.v2-codex-nav button.selected {
+    border-color: rgba(88,216,210,0.7);
+}
+
+.v2-codex-body {
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line);
+    background: var(--panel);
+    display: grid;
+    gap: 16px;
+}
+
+.v2-codex-hero {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: 16px;
+}
+
+.v2-codex-hero-art {
+    height: 180px;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: #0b121d;
+}
+
+.v2-codex-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+}
+
+.v2-codex-card {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    display: grid;
+    gap: 8px;
+    cursor: pointer;
+}
+
+@media (max-width: 860px) {
+    .v2-codex-shell,
+    .v2-codex-hero {
+        grid-template-columns: 1fr;
+    }
+}

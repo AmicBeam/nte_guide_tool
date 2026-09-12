@@ -1,0 +1,32 @@
+{% extends 'common/base.html' %}
+{% block title %}图鉴{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_common.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_codex.css') }}">
+{% endblock %}
+{% block body %}
+<main class="codex-page v2-page v2-codex-page">
+    <section class="glass-card panel-header">
+        <div>
+            <p class="eyebrow">空间档案</p>
+            <h1>四人轮替图鉴</h1>
+            <p class="subtle" id="v2-codex-summary">正在读取角色、被动、觉醒与卡面效果。</p>
+        </div>
+        <div class="header-actions">
+            <a class="secondary-btn" href="{{ url_for('main.card_game_home') }}">返回主界面</a>
+            <a class="secondary-btn" href="{{ url_for('main.build_page') }}">构筑</a>
+        </div>
+    </section>
+    <section class="glass-card v2-banner" id="v2-codex-banner" hidden></section>
+    <section class="v2-codex-shell" id="v2-codex-shell">
+        <div class="v2-codex-nav" id="v2-codex-nav"></div>
+        <div class="v2-codex-body" id="v2-codex-body">
+            <div class="v2-skel v2-skel-block"></div>
+        </div>
+    </section>
+    <aside class="v2-detail-layer" id="v2-codex-detail" aria-hidden="true"></aside>
+</main>
+<script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_codex.js') }}"></script>
+{% endblock %}

@@ -104,6 +104,55 @@ class GameRun(BaseModel):
     updated_at = DateTimeField(default=datetime.utcnow)
 
 
+class DuelV2Build(BaseModel):
+    id = AutoField()
+    player = ForeignKeyField(Player, backref='duel_v2_builds', on_delete='CASCADE', unique=True)
+    payload = TextField(default='{}')
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_build'
+
+
+class DuelV2Room(BaseModel):
+    id = AutoField()
+    room_code = CharField(unique=True, max_length=12)
+    mode = CharField(default='solo', max_length=12)
+    status = CharField(default='waiting', max_length=16)
+    host = ForeignKeyField(Player, backref='duel_v2_hosted_rooms', on_delete='CASCADE')
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_room'
+
+
+class DuelV2Member(BaseModel):
+    id = AutoField()
+    room = ForeignKeyField(DuelV2Room, backref='members', on_delete='CASCADE')
+    player = ForeignKeyField(Player, backref='duel_v2_memberships', on_delete='CASCADE')
+    side = CharField(max_length=1)
+    is_ready = BooleanField(default=False)
+    deck = TextField(default='{}')
+    joined_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_member'
+        indexes = ((('room', 'player'), True), (('room', 'side'), True))
+
+
+class DuelV2Run(BaseModel):
+    id = AutoField()
+    room = ForeignKeyField(DuelV2Room, backref='runs', on_delete='CASCADE', unique=True)
+    generation = CharField(max_length=32)
+    revision = IntegerField(default=0)
+    snapshot = TextField(default='{}')
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_run'
+
+
 class ShaftAxis(BaseModel):
     id = AutoField()
     owner = ForeignKeyField(Player, backref='shaft_axes', on_delete='CASCADE')

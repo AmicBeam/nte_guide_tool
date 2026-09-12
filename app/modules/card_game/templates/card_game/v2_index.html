@@ -1,0 +1,97 @@
+{% extends 'common/base.html' %}
+{% block title %}异象对决{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_common.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_home.css') }}">
+{% endblock %}
+{% block body %}
+<main class="main-page v2-page v2-home-page">
+    <section class="glass-card panel-header home-header">
+        <div class="home-brand-block">
+            <img class="home-brand-logo" src="{{ url_for('static', filename='images/brand/duel-logo.webp') }}" alt="异象对决" width="858" height="282">
+            <div class="home-brand-copy">
+                <p class="eyebrow">四人轮替</p>
+                <h1>异象对决</h1>
+                <p class="subtle">固定预组：娜娜莉、主角「零」、九原、浔。玩家生命胜负，单人战斗区，行动力出牌，角色独立环合与能量。</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <a class="secondary-btn" href="{{ url_for('main.profile_page') }}">账号设置</a>
+            <a class="secondary-btn" href="{{ url_for('main.build_page') }}">构筑</a>
+            <a class="secondary-btn" href="{{ url_for('main.codex_page') }}">图鉴</a>
+            <a class="secondary-btn" href="{{ url_for('main.default_page') }}">工具主页</a>
+        </div>
+    </section>
+
+    <section class="glass-card v2-banner" id="v2-home-banner" hidden></section>
+
+    <section class="glass-card v2-resume-card" id="v2-resume-card" hidden>
+        <div>
+            <p class="eyebrow">进行中</p>
+            <h2 id="v2-resume-title">已有房间</h2>
+            <p class="subtle" id="v2-resume-copy">检测到未结束的房间，可直接返回牌桌。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="primary-btn" id="v2-resume-btn" href="{{ url_for('main.table_page') }}">返回牌桌</a>
+            <button class="secondary-btn" id="v2-leave-btn" type="button">离开房间</button>
+        </div>
+    </section>
+
+    <section class="glass-card v2-starter-panel">
+        <div class="section-title-row">
+            <div>
+                <h2>置顶基础预组</h2>
+                <p class="subtle" id="v2-starter-copy">正在读取四人预组。</p>
+            </div>
+            <div class="note-box compact-note">
+                <strong id="v2-home-name">-</strong>
+                <p id="v2-home-uid">账号：-</p>
+            </div>
+        </div>
+        <div class="v2-starter-grid" id="v2-starter-grid" aria-label="固定四人预组">
+            <article class="v2-starter-card" data-character-id="nanali"><div class="v2-skel"></div></article>
+            <article class="v2-starter-card" data-character-id="zero"><div class="v2-skel"></div></article>
+            <article class="v2-starter-card" data-character-id="jiuyuan"><div class="v2-skel"></div></article>
+            <article class="v2-starter-card" data-character-id="xun"><div class="v2-skel"></div></article>
+        </div>
+    </section>
+
+    <section class="glass-card mode-panel">
+        <div class="section-title-row">
+            <div>
+                <h2>开始对局</h2>
+                <p class="subtle">人机立即开局；1v1 先创建或加入房间，准备完成后由房主开始。</p>
+            </div>
+        </div>
+        <div class="v2-mode-grid">
+            <article class="build-card selected" id="v2-mode-solo">
+                <h2>人机对战</h2>
+                <p class="card-meta">使用已保存的构筑练习；尚未保存时，使用置顶基础预组。</p>
+            </article>
+            <article class="build-card" id="v2-mode-pvp">
+                <h2>创建 1v1 房间</h2>
+                <p class="card-meta">生成房间码等待对手加入。准备与开局也可在牌桌完成。</p>
+            </article>
+        </div>
+        <div class="v2-join-row">
+            <label class="field-label">
+                <span>输入房间码加入</span>
+                <input id="v2-room-code-input" type="text" maxlength="6" spellcheck="false" autocomplete="off" placeholder="6 位房间码">
+            </label>
+            <button class="secondary-btn" id="v2-join-btn" type="button">加入房间</button>
+        </div>
+        <div class="note-box">
+            <strong>当前牌组</strong>
+            <p id="v2-build-summary">尚未读取牌组。</p>
+        </div>
+        <div class="hero-actions">
+            <button class="primary-btn" id="v2-start-btn" type="button">开始人机对局</button>
+            <a class="secondary-btn" href="{{ url_for('main.build_page') }}">调整构筑</a>
+            <a class="secondary-btn" href="{{ url_for('main.codex_page') }}">查看图鉴</a>
+        </div>
+    </section>
+</main>
+<script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_home.js') }}"></script>
+{% endblock %}

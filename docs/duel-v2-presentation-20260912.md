@@ -1,0 +1,36 @@
+# V2 公开演出协议（2026-09-12）
+
+日期：2026-09-12。本批由 Grok 实现专业牌桌与演出所需的后端公开协议；浏览器验收仍由主任务进行。本文不是规则真源，不表示已经上线或已经平衡，也不覆盖 [2026-09-09 验收记录](duel-v2-acceptance.md) 或旧盖卡规则。RL 接口、权重和训练状态保持只读。
+
+规则仍以 [完整手册 V2.4](everness-item-chain-card-design.md) 为准。接口冻结见 [实现契约](duel-v2-implementation-contract.md)。
+
+## 本批范围
+
+- 保留原有 6 个纯规则接口和全部公开字段。
+- `observe(state, side, after_seq=None)` 增加 `game.presentation`。
+- `legal_actions[]` 增加 `interaction`，action 本体不变。
+- `GET /api/duel-v2/state?after_seq=` 只过滤演出 events。
+
+## presentation
+
+`{schema_version:1, cursor, oldest_seq, events}`。
+
+- `cursor` 是最新公开事件 seq；`oldest_seq` 是当前窗口最早 seq。
+- 事件含 `seq/action_id/action_version/type/side/text`，以及规范 `actor/target`。
+- `action_id` 至少由对应动作 version 组成；pending 的 `choose` 是下一次 `apply_action`，使用新 version，不和出牌合成一个 ID。
+- 已公开卡牌进入 play/gain/record/shape；对手普通抽牌、私有检视候选不会进入对方 presentation。
+- `patch` 按角色 id 合并公开变化。从动作前公开 board 按 seq 应用本动作 patch 后，应等于动作后公开 board。
+- 同时攻守同 `group_id`，连击不同组。
+- 旧快照缺少演出元数据时不补卡名；首次新动作仍生成可回放 patch。起始观察不回放全部历史。
+
+## interaction
+
+每条合法动作单独匹配：`{kind, actor_id, target_ids}`。
+
+- N06 每条候选的 `target_ids` 等于该条 action 的规范 `target_id`。
+- 复制 N06 归属浔，排除自己；规范 ID 保留阵营。
+- 形态指向本人；敌前排战术指向合法前排；弃牌堆回收/手牌选择返回 `choice`。
+
+## 验证
+
+本批自动化覆盖 presentation 单测，包括 N06 逐条目标、复制排除自己、出击/护盾生命混合伤害/形态/N06/X08 多击复制，以及去掉演出元数据后的首次新动作回放。浏览器验收、平衡试玩和生产发布不在本批声明范围内。

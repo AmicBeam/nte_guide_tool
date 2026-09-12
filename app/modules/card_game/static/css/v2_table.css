@@ -1,0 +1,64 @@
+@import url("./v2_table/layout.css");
+@import url("./v2_table/cards.css");
+
+.v2-table-page #v2-fx-stage {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  overflow: hidden;
+}
+
+.v2-table-page.presentation-busy .v2-hand-card,
+.v2-table-page.presentation-busy .v2-character-card {
+  pointer-events: none;
+}
+
+.v2-table-page.presentation-busy #v2-end-turn-btn,
+.v2-table-page.presentation-busy #v2-mulligan-btn {
+  pointer-events: none;
+}
+
+.v2-skip-strip .secondary-btn {
+  min-height: 24px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.v2-bench-slot {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.v2-target-line[hidden] {
+  display: none !important;
+}
+
+.v2-arena {
+  position: relative;
+}
+
+.v2-combat-core {
+  position: relative;
+}
+
+.v2-bench-placeholder {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  min-height: 28px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.v2-bench-row.opponent { padding-left: 62px; }
+.v2-bench-row.player { padding-right: 62px; }
+
+.v2-front-zone.drop-target,
+.v2-character-card.drop-target,
+.v2-cast-zone.drop-target {
+  outline: 2px solid rgba(255, 191, 87, 0.85);
+}

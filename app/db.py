@@ -92,5 +92,8 @@ def _reset_incompatible_snapshot_tables(models: list[type[Model]]) -> None:
 def atomic_transaction() -> Iterator[object]:
     if db.is_closed():
         db.connect(reuse_if_open=True)
-    with db.atomic() as txn:
+    # Acquire the write reservation before reading. In WAL mode, a deferred
+    # read-then-write transaction cannot upgrade after the snapshot worker has
+    # committed; SQLite raises SQLITE_BUSY_SNAPSHOT without waiting.
+    with db.atomic('IMMEDIATE') as txn:
         yield txn

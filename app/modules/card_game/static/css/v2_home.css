@@ -1,0 +1,70 @@
+
+.v2-home-page .v2-starter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.v2-starter-card {
+    min-height: 220px;
+    padding: 14px;
+    display: grid;
+    gap: 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255,255,255,0.1);
+    background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+}
+
+.v2-starter-art {
+    height: 96px;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: #0b121d;
+}
+
+.v2-starter-card h3 {
+    font-size: 20px;
+}
+
+.v2-resume-card,
+.v2-join-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 16px;
+    padding: 18px 22px;
+}
+
+.v2-join-row {
+    align-items: end;
+    padding: 0;
+}
+
+.v2-join-row .field-label {
+    flex: 1;
+    display: grid;
+    gap: 6px;
+}
+
+.v2-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+@media (max-width: 900px) {
+    .v2-home-page .v2-starter-grid,
+    .v2-mode-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .v2-home-page .v2-starter-grid,
+    .v2-mode-grid,
+    .v2-resume-card,
+    .v2-join-row {
+        grid-template-columns: 1fr;
+        display: grid;
+    }
+}

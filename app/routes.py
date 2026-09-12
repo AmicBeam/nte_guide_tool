@@ -148,7 +148,7 @@ def favicon():
 
 @main_bp.get('/card-game')
 def card_game_home():
-    return render_template('card_game/index.html')
+    return render_template('card_game/index.html' if request.args.get('legacy') == '1' else 'card_game/v2_index.html')
 
 
 @main_bp.get('/login')
@@ -163,12 +163,12 @@ def profile_page():
 
 @main_bp.get('/build')
 def build_page():
-    return render_template('card_game/build.html')
+    return render_template('card_game/build.html' if request.args.get('legacy') == '1' else 'card_game/v2_build.html')
 
 
 @main_bp.get('/codex')
 def codex_page():
-    return render_template('card_game/codex.html')
+    return render_template('card_game/codex.html' if request.args.get('legacy') == '1' else 'card_game/v2_codex.html')
 
 
 @main_bp.get('/analytics')
@@ -206,7 +206,7 @@ def shaft_page(page: str = 'rotation'):
 
 @main_bp.get('/table')
 def table_page():
-    return render_template('card_game/table.html')
+    return render_template('card_game/table.html' if request.args.get('legacy') == '1' else 'card_game/v2_table.html')
 
 
 @main_bp.get('/preteam')

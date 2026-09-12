@@ -1,0 +1,176 @@
+{% extends 'common/base.html' %}
+{% block title %}异象对决{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_common.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_animation.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_table.css') }}">
+{% endblock %}
+{% block body %}
+<main class="v2-page v2-table-page" id="v2-table-page">
+    <p class="v2-rotate-hint">建议横屏对战：双方前排、生命、行动力和结束回合同屏可见。</p>
+    <header class="v2-hud v2-hud-top" aria-label="对手信息">
+        <article class="v2-player-hud opponent" id="v2-opponent-life" data-player-side="b">
+            <div class="v2-hud-identity">
+                <span class="v2-hud-kicker">对手生命</span>
+                <strong class="v2-hud-name" id="v2-opponent-name">对手</strong>
+            </div>
+            <strong class="v2-hp" id="v2-opponent-hp">-</strong>
+            <div class="v2-hud-subline">
+                <small id="v2-opponent-shield">护盾 -</small>
+                <em id="v2-opponent-ap">行动力 -</em>
+            </div>
+        </article>
+        <div class="v2-hand-backs" id="v2-opponent-hand" data-hand-side="b" aria-label="对手手牌"></div>
+        <div class="v2-hud-meta">
+            <strong id="v2-round-label">第 - 回合</strong>
+            <span class="phase-chip" id="v2-phase-chip">加载中</span>
+            <span class="v2-room-chip" id="v2-room-chip">房间 --</span>
+            <span class="v2-connection-chip" id="v2-connection-chip">同步中</span>
+            <button class="secondary-btn" id="v2-menu-btn" type="button">菜单</button>
+        </div>
+    </header>
+
+    <section class="v2-banner" id="v2-table-banner" hidden></section>
+    <section class="v2-empty-state" id="v2-empty-state" hidden>
+        <h2 id="v2-empty-title">没有进行中的房间</h2>
+        <p class="subtle" id="v2-empty-copy">可以从主页开始人机、创建房间或输入房间码加入。</p>
+        <div class="hero-actions">
+            <a class="primary-btn" href="{{ url_for('main.card_game_home') }}">前往主页</a>
+            <a class="secondary-btn" href="{{ url_for('main.login_page') }}">重新登录</a>
+        </div>
+    </section>
+
+    <section class="v2-room-panel" id="v2-room-panel" hidden>
+        <div>
+            <p class="eyebrow">房间</p>
+            <h2 id="v2-room-title">等待对手</h2>
+            <p class="subtle" id="v2-room-copy">将房间码告诉对手，双方准备后即可开始。</p>
+        </div>
+        <div class="v2-member-list" id="v2-member-list"></div>
+        <div class="hero-actions">
+            <button class="secondary-btn" id="v2-ready-btn" type="button" hidden>准备</button>
+            <button class="primary-btn" id="v2-room-start-btn" type="button" hidden>开始对局</button>
+        </div>
+    </section>
+
+    <section class="v2-arena" id="v2-table-layout" aria-label="牌桌">
+        <div class="v2-bench-row opponent" id="v2-opponent-bench" aria-label="对手编队"></div>
+        <div class="v2-front-axis">
+            <div class="v2-front-zone opponent is-empty" id="v2-opponent-front" data-drop-role="opponent-front" aria-label="对手前排">
+                <div class="v2-zone-label">对手前排</div>
+                <div class="v2-front-slot" id="v2-opponent-front-slot"></div>
+            </div>
+            <div class="v2-combat-core">
+                <div class="v2-turn-board">
+                    <p id="v2-turn-copy">等待局面。</p>
+                    <div class="v2-recent-plays" id="v2-records" aria-label="浔的公开记录"></div>
+                </div>
+                <div class="v2-wait-chip" id="v2-wait-chip">同步中</div>
+                <div class="v2-cast-zone" id="v2-cast-zone" data-drop-role="cast" hidden>施放到这里</div>
+                <div class="v2-play-history" id="v2-play-history" aria-label="最近公开出牌"></div>
+                <div class="v2-fx-stage" id="v2-fx-stage" aria-hidden="true"></div>
+            </div>
+            <div class="v2-front-zone player can-drop is-empty" id="v2-player-front" data-drop-role="player-front" aria-label="我方前排">
+                <div class="v2-zone-label">我方前排 · 拖入出击</div>
+                <div class="v2-front-slot" id="v2-player-front-slot"></div>
+            </div>
+        </div>
+        <div class="v2-bench-row player" id="v2-player-bench" aria-label="我方编队"></div>
+        <div class="v2-piles opponent-piles">
+            <button class="v2-pile" id="v2-opponent-deck" type="button" data-pile="opponent-deck">牌库 <strong>0</strong></button>
+            <button class="v2-pile" id="v2-opponent-discard" type="button" data-pile="opponent-discard">弃牌 <strong>0</strong></button>
+        </div>
+        <div class="v2-piles player-piles">
+            <button class="v2-pile" id="v2-player-deck" type="button" data-pile="player-deck">牌库 <strong>0</strong></button>
+            <button class="v2-pile" id="v2-player-discard" type="button" data-pile="player-discard">弃牌 <strong>0</strong></button>
+        </div>
+        <div class="v2-entity-pool" id="v2-entity-pool">
+            <article class="v2-character-card" data-entity-id="a:nanali" data-character-id="nanali" data-drag-kind="character" data-side="a"></article>
+            <article class="v2-character-card" data-entity-id="a:zero" data-character-id="zero" data-drag-kind="character" data-side="a"></article>
+            <article class="v2-character-card" data-entity-id="a:jiuyuan" data-character-id="jiuyuan" data-drag-kind="character" data-side="a"></article>
+            <article class="v2-character-card" data-entity-id="a:xun" data-character-id="xun" data-drag-kind="character" data-side="a"></article>
+            <article class="v2-character-card" data-entity-id="b:nanali" data-character-id="nanali" data-drag-kind="character" data-side="b"></article>
+            <article class="v2-character-card" data-entity-id="b:zero" data-character-id="zero" data-drag-kind="character" data-side="b"></article>
+            <article class="v2-character-card" data-entity-id="b:jiuyuan" data-character-id="jiuyuan" data-drag-kind="character" data-side="b"></article>
+            <article class="v2-character-card" data-entity-id="b:xun" data-character-id="xun" data-drag-kind="character" data-side="b"></article>
+        </div>
+    </section>
+
+    <section class="v2-hud v2-hud-bottom" id="v2-hand-dock" aria-label="我方信息与手牌">
+        <article class="v2-player-hud player" id="v2-player-life" data-player-side="a">
+            <div class="v2-hud-identity">
+                <span class="v2-hud-kicker">我方生命</span>
+                <strong class="v2-hud-name" id="v2-player-name">我方</strong>
+            </div>
+            <strong class="v2-hp" id="v2-player-hp">-</strong>
+            <div class="v2-hud-subline">
+                <small id="v2-player-shield">护盾 -</small>
+            </div>
+        </article>
+        <div class="v2-hand-stack">
+            <div class="v2-hand-meta">
+                <strong id="v2-hand-count">手牌 0</strong>
+                <span id="v2-mulligan-hint">起手最多换 3 张</span>
+                <span id="v2-normal-attack">普通出击 -</span>
+                <button class="primary-btn" id="v2-mulligan-btn" type="button" hidden>确认换牌</button>
+            </div>
+            <div class="v2-hand-rail" id="v2-player-hand" data-hand-side="a" aria-label="我方手牌"></div>
+        </div>
+        <div class="v2-action-stack">
+            <div class="v2-ap-readout">
+                <span>行动力</span>
+                <strong id="v2-player-ap">-</strong>
+            </div>
+            <div class="v2-skip-strip">
+                <button class="secondary-btn" id="v2-skip-inline-btn" type="button">跳过演出</button>
+            </div>
+            <button class="primary-btn" id="v2-end-turn-btn" type="button" disabled>结束回合</button>
+            <button class="secondary-btn" id="v2-history-btn" type="button">历史</button>
+        </div>
+    </section>
+
+    <aside class="v2-history-drawer" id="v2-history-drawer" aria-hidden="true">
+        <div class="section-title-row">
+            <h2>历史</h2>
+            <button class="icon-btn" id="v2-history-close" type="button" aria-label="关闭历史">×</button>
+        </div>
+        <div class="v2-play-history-detail" id="v2-play-history-detail" aria-label="公开出牌详情"></div>
+        <div class="v2-log-list" id="v2-log-list"></div>
+    </aside>
+
+    <section class="v2-menu-overlay" id="v2-menu-overlay" aria-hidden="true">
+        <div class="v2-menu-dialog">
+            <div class="section-title-row">
+                <h2>对局菜单</h2>
+                <button class="icon-btn" id="v2-menu-close" type="button" aria-label="关闭菜单">×</button>
+            </div>
+            <label class="v2-menu-toggle"><input id="v2-mute-toggle" type="checkbox"> 静音</label>
+            <label class="v2-menu-toggle"><input id="v2-motion-toggle" type="checkbox"> 减弱动态</label>
+            <div class="v2-menu-row">
+                <span>演出速度</span>
+                <button class="secondary-btn" id="v2-speed-1" type="button">1x</button>
+                <button class="secondary-btn" id="v2-speed-2" type="button">2x</button>
+            </div>
+            <button class="secondary-btn" id="v2-skip-btn" type="button">跳过演出</button>
+            <button class="secondary-btn danger-btn" id="v2-concede-btn" type="button" disabled>认输</button>
+            <a class="secondary-btn" id="v2-home-link" href="{{ url_for('main.card_game_home') }}">返回主页</a>
+        </div>
+    </section>
+
+    <section class="v2-choice-overlay" id="v2-choice-overlay" aria-hidden="true"></section>
+    <section class="v2-pile-modal" id="v2-pile-modal" aria-hidden="true"></section>
+    <aside class="v2-detail-layer" id="v2-card-preview" aria-hidden="true"></aside>
+    <div class="v2-drag-ghost" id="v2-drag-ghost" aria-hidden="true"></div>
+    <div class="v2-preview-box" id="v2-drag-preview" hidden></div>
+    <div class="v2-toast" id="v2-toast" aria-hidden="true"></div>
+    <div class="v2-target-line" id="v2-target-line" hidden></div>
+</main>
+<script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_animation.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_table/helpers.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_table/render.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_table/interaction.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_table/sync.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_table.js') }}"></script>
+{% endblock %}

@@ -47,7 +47,8 @@ class DuelAdapter:
     def __init__(self, backend: Backend, encoder: Encoder, *, learning_side: str = 'a',
                  opponent: FrozenPolicy | None = None, action_capacity: int = ACTION_CAPACITY,
                  max_game_actions: int = 1000, max_opponent_actions: int = 100,
-                 strict_isolation: bool = True, allow_concede: bool = True) -> None:
+                 strict_isolation: bool = True, allow_concede: bool = True,
+                 capture_opening: bool = False) -> None:
         if learning_side not in ('a', 'b'):
             raise ValueError('learning_side must be a/b')
         if action_capacity != ACTION_CAPACITY:
@@ -62,6 +63,7 @@ class DuelAdapter:
         self.max_game_actions, self.max_opponent_actions = max_game_actions, max_opponent_actions
         self.strict_isolation = bool(strict_isolation)
         self.allow_concede = bool(allow_concede)
+        self.capture_opening = bool(capture_opening)
         self._state: Json | None = None
         self._opening_state: Json | None = None
         self._revision = 0
@@ -74,7 +76,7 @@ class DuelAdapter:
 
     def reset(self, *, seed: int = 0, **options: Any) -> Transition:
         self._state = self.backend.new_game(seed=seed, **options)
-        self._opening_state = deepcopy(self._state)
+        self._opening_state = deepcopy(self._state) if self.capture_opening else None
         self._count, self._truncated, self._cached = 0, False, None
         self._truncation_reason = ''
         self._episode_shaping = 0.0

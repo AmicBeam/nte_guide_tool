@@ -96,6 +96,7 @@ def replay_from_eval_record(record: dict[str, Any], *, deck: dict[str, Any] | No
         CountingBackend(V2Backend(), budget), V2Encoder(),
         learning_side=learning_side, opponent=VisibleEngineRulePolicy(),
         max_game_actions=1000, max_opponent_actions=100, allow_concede=False,
+        capture_opening=True,
     )
     adapter.reset(seed=seed, decks={'a': used, 'b': deepcopy(used)})
     for saved in record.get('actions') or []:

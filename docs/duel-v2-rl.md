@@ -14,7 +14,7 @@
 - `checkpoint.py`：`--check` 仍只读写无权重元数据；训练产物另存 `model.zip` + `checkpoint.json`（累计步数、更新次数、版本）。
 - `networks.py`：`CandidateScoringPolicy` 在 GPU 上对每个候选打分，不把 256×199 展平进 MLP。打分拆成通用分（动作类型、卡类、费用、目标座位）和卡身份分（catalog ID embedding）。
 - `transfer.py`：单套牌解析、同角色换卡、新卡 embedding 从同类旧卡初始化；换牌时冻住通用分，可选对共享动作做 KL。一次训练只使用一套牌，不混合多构筑。
-- `scripts/train_duel_v2.py`：`--check` 不创建对局；`--train --output DIR` 默认 8 环境 spawn、候选打分策略。学习方（训练和评估）不提供认输动作，网站玩家仍可认输。评估对手仍是公开规则 AI。
+- `scripts/train_duel_v2.py`：`--check` 不创建对局；`--train --output DIR` 默认按 CPU 核数开进程采样（上限 32），GPU 候选打分。学习方（训练和评估）不提供认输动作，网站玩家仍可认输。评估对手仍是公开规则 AI。
 
 核心接口依赖现有网站环境即可导入；NumPy/Gymnasium/SB3 仅列在独立 `requirements-rl.txt`。不要在网站启动链路中创建训练器或环境。导入 `app.modules.card_game.rl` 不创建对局、不调用 reset/step/predict/learn。
 
@@ -56,7 +56,7 @@ python3 scripts/train_duel_v2.py --train --output artifacts/duel-v2-rl-adapt \
 python3 scripts/rl_monitor.py
 ```
 
-训练状态页是独立服务，默认 `http://127.0.0.1:5002/`，不挂大厅导航。只读 `artifacts/` 下带 `status.json` 或 `train.log` 的目录。Windows 上多环境采样用同进程线程，避免 spawn 管道在大观察上断开；每 10 次更新写入 `model.zip`。超过几分钟的训练用 `python scripts/rl_train_detached.py -- --train --output DIR ...` 拉起，避免被外壳作业对象杀掉。
+训练状态页是独立服务，默认 `http://127.0.0.1:5002/`，不挂大厅导航。只读 `artifacts/` 下带 `status.json` 或 `train.log` 的目录。多环境采样默认按 CPU 核数开进程（上限 32，`--n-envs` 最大 128）；观察矩阵走共享内存，避免 Windows 管道被大观察撑断。牌局仍在 CPU 进程里结算，GPU 只做候选打分。每 10 次更新写入 `model.zip`。超过几分钟的训练用 `python scripts/rl_train_detached.py -- --train --output DIR ...` 拉起，避免被外壳作业对象杀掉。
 
 `--check` 不创建对局或模型。`--train` 需要新的 `--output` 目录；总预算默认 10000 原始引擎动作 / 128 开局 / 1800 秒，训练先为评估预留额度。`n_updates=0`、随机自对弈或仅 `predict` 成功都不算训练完成。训练和评估不自动写网页录像；要看某次评估对局时，对输出目录执行 `--export-replays DIR`，按 `eval_games.jsonl` 里的种子和动作重放成公开 `replays/*.json`。在 `/replays` 导入该 JSON 后，用 `/table?replay=<房间码>` 播放；不含隐藏手牌、牌序或种子。
 

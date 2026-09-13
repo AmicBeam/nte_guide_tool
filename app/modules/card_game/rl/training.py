@@ -15,6 +15,14 @@ from .gym_compat import make_gym_env
 from .policies import RuleFrozenPolicy, VisibleEngineRulePolicy
 from .transfer import default_training_deck
 
+MAX_N_ENVS = 128
+DEFAULT_N_ENVS_CAP = 32
+
+
+def default_n_envs() -> int:
+    cpus = int(os.cpu_count() or 8)
+    return max(8, min(DEFAULT_N_ENVS_CAP, cpus))
+
 
 def atomic_write(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -154,7 +162,7 @@ def build_training_env(config: dict[str, Any], budget: TrainBudget | None = None
 def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0,
                        n_steps: int = 128, batch_size: int = 256, n_epochs: int = 2,
                        learning_rate: float = 3e-4, resume_from: Path | None = None,
-                       n_envs: int = 8, hidden_dim: int = 256,
+                       n_envs: int | None = None, hidden_dim: int = 256,
                        deck: dict[str, Any] | None = None,
                        freeze_generic: bool = False, generic_lr_mult: float = 1.0,
                        kl_coef: float = 0.0,
@@ -257,7 +265,7 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
                     log(f'phase=checkpoint n_updates={updates} path={output / "model.zip"}')
             return True
 
-    n_envs = max(1, int(n_envs))
+    n_envs = max(1, min(MAX_N_ENVS, int(n_envs if n_envs is not None else default_n_envs())))
     rollout = n_steps * n_envs
     if batch_size > rollout:
         batch_size = rollout
@@ -270,18 +278,7 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
         'max_opponent_actions': 80, 'learning_side': 'a',
         'deck': training_deck,
     }
-    if n_envs > 1 and os.name == 'nt':
-        from .budget import make_thread_counters
-        from .thread_vec_env import ThreadedVecEnv
-        shared = make_thread_counters()
-        budget.attach_shared(shared)
-        env_fns = [
-            lambda rank=rank: build_training_env({**env_config, 'rank': rank}, budget=budget)
-            for rank in range(n_envs)
-        ]
-        vec = ThreadedVecEnv(env_fns)
-        log(f'phase=sampling vec=thread n_envs={n_envs}')
-    elif n_envs > 1:
+    if n_envs > 1:
         shared = make_shared_counters()
         budget.attach_shared(shared)
         from functools import partial
@@ -293,16 +290,34 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
             for rank in range(n_envs)
         ]
         try:
-            vec = SubprocVecEnv(env_fns, start_method='spawn')
-            log(f'phase=sampling vec=subproc n_envs={n_envs}')
+            from .process_vec_env import ProcessVecEnv
+            vec = ProcessVecEnv(env_fns)
+            log(f'phase=sampling vec=process n_envs={n_envs}')
         except Exception as exc:  # noqa: BLE001
-            log(f'phase=warn subproc_failed {type(exc).__name__}: {exc}; falling back to 1 env')
-            n_envs = 1
-            rollout = n_steps * n_envs
-            if batch_size > rollout:
-                batch_size = rollout
-            budget.attach_shared(None)
-            vec = DummyVecEnv([lambda: build_training_env({**env_config, 'rank': 0}, budget=budget)])
+            log(f'phase=warn process_vec_failed {type(exc).__name__}: {exc}')
+            if os.name == 'nt':
+                from .budget import make_thread_counters
+                from .thread_vec_env import ThreadedVecEnv
+                shared = make_thread_counters()
+                budget.attach_shared(shared)
+                thread_fns = [
+                    lambda rank=rank: build_training_env({**env_config, 'rank': rank}, budget=budget)
+                    for rank in range(n_envs)
+                ]
+                vec = ThreadedVecEnv(thread_fns)
+                log(f'phase=sampling vec=thread n_envs={n_envs}')
+            else:
+                try:
+                    vec = SubprocVecEnv(env_fns, start_method='spawn')
+                    log(f'phase=sampling vec=subproc n_envs={n_envs}')
+                except Exception as subproc_exc:  # noqa: BLE001
+                    log(f'phase=warn subproc_failed {type(subproc_exc).__name__}: {subproc_exc}; falling back to 1 env')
+                    n_envs = 1
+                    rollout = n_steps * n_envs
+                    if batch_size > rollout:
+                        batch_size = rollout
+                    budget.attach_shared(None)
+                    vec = DummyVecEnv([lambda: build_training_env({**env_config, 'rank': 0}, budget=budget)])
     else:
         vec = DummyVecEnv([lambda: build_training_env({**env_config, 'rank': 0}, budget=budget)])
     callback = _Callback()

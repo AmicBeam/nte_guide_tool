@@ -298,6 +298,32 @@ class GymTruncationTrainTest(unittest.TestCase):
         finally:
             vec.close()
 
+    def test_process_vec_env_steps_two_envs(self):
+        import numpy as np
+        from app.modules.card_game.rl.gym_compat import make_gym_env
+        from app.modules.card_game.rl.process_vec_env import ProcessVecEnv
+
+        def make_env():
+            adapter = DuelAdapter(
+                FakeBackend([('a', None)] * 80), TinyEncoder(),
+                max_game_actions=40, strict_isolation=False,
+            )
+            return make_gym_env(adapter)
+
+        vec = ProcessVecEnv([make_env, make_env])
+        try:
+            obs = vec.reset()
+            self.assertEqual(obs['candidates'].shape[0], 2)
+            vec.step_async(np.array([0, 0]))
+            obs, rewards, dones, infos = vec.step_wait()
+            self.assertEqual(len(rewards), 2)
+            self.assertEqual(len(dones), 2)
+            self.assertEqual(len(infos), 2)
+            masks = vec.env_method('action_masks')
+            self.assertEqual(len(masks), 2)
+        finally:
+            vec.close()
+
 
 @unittest.skipUnless(
     importlib.util.find_spec('sb3_contrib') and importlib.util.find_spec('stable_baselines3')

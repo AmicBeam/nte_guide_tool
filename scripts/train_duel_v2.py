@@ -48,7 +48,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument('--n-steps', type=int, default=128)
     parser.add_argument('--batch-size', type=int, default=256)
     parser.add_argument('--n-epochs', type=int, default=2)
-    parser.add_argument('--n-envs', type=int, default=8)
+    parser.add_argument('--n-envs', type=int, default=None,
+                        help='Parallel game processes. Default is CPU count, capped at 32. Max 128.')
     parser.add_argument('--hidden-dim', type=int, default=256)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--eval-matches-per-seat', type=int, default=MATCHES_PER_SEAT)
@@ -64,8 +65,11 @@ def _require_budget(parser: argparse.ArgumentParser, args: argparse.Namespace) -
         parser.error(f'--max-seconds must be 1..{HARD_MAX_SECONDS}')
     if args.n_steps < 8 or args.batch_size < 8:
         parser.error('--n-steps and --batch-size must be >= 8')
-    if args.n_envs < 1 or args.n_envs > 32:
-        parser.error('--n-envs must be 1..32')
+    from app.modules.card_game.rl.training import MAX_N_ENVS, default_n_envs
+    if args.n_envs is None:
+        args.n_envs = default_n_envs()
+    if args.n_envs < 1 or args.n_envs > MAX_N_ENVS:
+        parser.error(f'--n-envs must be 1..{MAX_N_ENVS}')
     if args.generic_lr_mult < 0:
         parser.error('--generic-lr-mult must be >= 0')
     if args.kl_coef < 0:

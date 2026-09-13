@@ -100,16 +100,55 @@ class CombatSliceIrTest(unittest.TestCase):
         if not torch.cuda.is_available():
             self.skipTest('CUDA not available')
         compiled = compile_program(cuda=True)
-        cpu, launch = compiled['cpu'], compiled['cuda']
         states, opts = _make_cases(128)
         rows = torch.tensor([_pack(s, o) for s, o in zip(states, opts)], dtype=torch.int32)
-        x = rows.clone()
+        expected = compiled['cpu_steps'](rows, 4)
         gpu = rows.cuda()
         out = torch.empty_like(gpu)
-        for k in range(4):
-            side = k % 2
-            x = cpu(x, side)
-            launch(gpu, out, side)
+        compiled['cuda'](gpu, out, 4)
+        torch.cuda.synchronize()
+        self.assertTrue(torch.equal(out.cpu(), expected))
+
+    def test_generated_cuda_matches_handwritten_and_throughput(self):
+        import statistics
+        import time
+        import torch
+        from app.modules.card_game.rl.rule_ir import compile_program
+        from app.modules.card_game.rl.rule_ir.handwritten_combat import HANDWRITTEN_FN, HANDWRITTEN_SOURCE
+        from app.modules.card_game.rl.rule_ir.lower_cuda import compile_cuda_source
+        if not torch.cuda.is_available():
+            self.skipTest('CUDA not available')
+        compiled = compile_program(cuda=True)
+        hand = compile_cuda_source(HANDWRITTEN_SOURCE, HANDWRITTEN_FN)
+        states, opts = _make_cases(256)
+        rows = torch.tensor([_pack(s, o) for s, o in zip(states, opts)], dtype=torch.int32)
+        gpu = rows.cuda()
+        gen_out = torch.empty_like(gpu)
+        hand_out = torch.empty_like(gpu)
+        compiled['cuda'](gpu, gen_out, 4)
+        hand(gpu, hand_out, 4)
+        torch.cuda.synchronize()
+        self.assertTrue(torch.equal(gen_out, hand_out))
+        self.assertTrue(torch.equal(gen_out.cpu(), compiled['cpu_steps'](rows, 4)))
+
+        def median_ms(launch, n, repeats=80):
+            data = rows.cuda().repeat((n + rows.shape[0] - 1) // rows.shape[0], 1)[:n]
+            out = torch.empty_like(data)
+            for _ in range(5):
+                launch(data, out, 4)
             torch.cuda.synchronize()
-            gpu = out.clone()
-            self.assertTrue(torch.equal(gpu.cpu(), x), msg=f'step {k}')
+            samples = []
+            for _ in range(3):
+                torch.cuda.synchronize()
+                start = time.perf_counter()
+                for _ in range(repeats):
+                    launch(data, out, 4)
+                torch.cuda.synchronize()
+                samples.append((time.perf_counter() - start) / repeats)
+            return statistics.median(samples) * 1000
+
+        gen_ms = median_ms(compiled['cuda'], 4096)
+        hand_ms = median_ms(hand, 4096)
+        ratio = hand_ms / gen_ms if gen_ms else 0
+        # Report target: generated kernel ~80% of handwritten slice throughput.
+        self.assertGreaterEqual(ratio, 0.8, msg=f'generated {gen_ms:.4f}ms vs handwritten {hand_ms:.4f}ms ({ratio:.2f}x)')

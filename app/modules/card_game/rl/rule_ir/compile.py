@@ -10,8 +10,15 @@ def compile_program(program: Program | None = None, *, cuda: bool = False):
     program = program or COMBAT_SLICE
     validate(program)
     cpu = lower_cpu(program)
+
+    def cpu_steps(x, steps: int = 4):
+        y = x
+        for k in range(int(steps)):
+            y = cpu(y, k % 2)
+        return y
+
     gpu = None
     if cuda:
         from .lower_cuda import compile_cuda
         gpu = compile_cuda(program)
-    return {'cpu': cpu, 'cuda': gpu, 'program': program}
+    return {'cpu': cpu, 'cpu_steps': cpu_steps, 'cuda': gpu, 'program': program}

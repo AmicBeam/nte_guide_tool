@@ -36,44 +36,44 @@ def _c_expr(expr) -> str:
 
 
 def emit_cuda(program: Program) -> str:
+    """Emit a multi-step kernel with the same launch shape as the experimental handwritten slice."""
     validate(program)
-    alias_init = [f'  int {name}=x[{idx}];' for name, idx in FIELD_INDEX.items()]
+    reload = [f'   int {name}=x[{idx}];' for name, idx in FIELD_INDEX.items()]
     for alias, a_name, b_name in SIDE_ALIASES:
         ia, ib = FIELD_INDEX[a_name], FIELD_INDEX[b_name]
-        alias_init.append(f'  int {alias}=side?x[{ib}]:x[{ia}];')
-    binds = [f'  int {bind.name}={_c_expr(bind.expr)};' for bind in program.binds]
+        reload.append(f'   int {alias}=side?x[{ib}]:x[{ia}];')
+    binds = [f'   int {bind.name}={_c_expr(bind.expr)};' for bind in program.binds]
     stores = []
     for store in program.stores:
         if store.field in FIELD_INDEX:
-            idx = f'{FIELD_INDEX[store.field]}'
+            idx = str(FIELD_INDEX[store.field])
         else:
             a_name, b_name = next((a, b) for alias, a, b in SIDE_ALIASES if alias == store.field)
             idx = f'(side?{FIELD_INDEX[b_name]}:{FIELD_INDEX[a_name]})'
-        stores.append(f'  x[{idx}]={_c_expr(store.expr)};')
+        stores.append(f'   x[{idx}]={_c_expr(store.expr)};')
     skip = _c_expr(program.skip_when)
-    body = '\n'.join([
-        f'extern "C" __global__ void {program.name}(const int* input, int* output, int n, int side) {{',
+    return '\n'.join([
+        f'extern "C" __global__ void {program.name}(const int* input, int* output, int n, int steps) {{',
         ' int row=blockIdx.x*blockDim.x+threadIdx.x;',
         ' if(row>=n)return;',
         f' int x[{N_FIELDS}];',
         ' #pragma unroll',
         f' for(int j=0;j<{N_FIELDS};j++)x[j]=input[row*{N_FIELDS}+j];',
-        *alias_init,
-        f' if({skip}){{',
-        '  #pragma unroll',
-        f'  for(int j=0;j<{N_FIELDS};j++)output[row*{N_FIELDS}+j]=x[j];',
-        '  return;',
-        ' }',
+        ' for(int k=0;k<steps;k++){',
+        '  int side=k%2;',
+        *reload,
+        f'  if({skip})continue;',
         *binds,
         *stores,
+        ' }',
         ' #pragma unroll',
         f' for(int j=0;j<{N_FIELDS};j++)output[row*{N_FIELDS}+j]=x[j];',
         '}',
     ])
-    return body
 
 
-def compile_cuda(program: Program):
+def compile_cuda_source(source: str, fn_name: str):
+    """NVRTC helper. Experimental handwritten kernels also go through here."""
     import ctypes as C
     from pathlib import Path
 
@@ -82,9 +82,8 @@ def compile_cuda(program: Program):
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA is required to compile the IR kernel')
     torch.cuda.init()
-    _anchor = torch.zeros(1, device='cuda')
+    anchor = torch.zeros(1, device='cuda')
     torch.cuda.synchronize()
-    source = emit_cuda(program)
     libdir = Path(torch.__file__).parent / 'lib'
     nv = C.WinDLL(str(next(path for path in libdir.glob('nvrtc64_*.dll') if '.alt.' not in path.name)))
 
@@ -114,13 +113,13 @@ def compile_cuda(program: Program):
     mod = C.c_void_p()
     check(drv.cuModuleLoadData(C.byref(mod), ptx))
     fn = C.c_void_p()
-    check(drv.cuModuleGetFunction(C.byref(fn), mod, program.name.encode()))
+    check(drv.cuModuleGetFunction(C.byref(fn), mod, fn_name.encode()))
 
-    def launch(inp, out, side: int):
+    def launch(inp, out, steps: int = 4):
         p = C.c_void_p(inp.data_ptr())
         q = C.c_void_p(out.data_ptr())
         n = C.c_int(inp.shape[0])
-        s = C.c_int(int(side))
+        s = C.c_int(int(steps))
         params = (C.c_void_p * 4)(
             C.cast(C.byref(p), C.c_void_p),
             C.cast(C.byref(q), C.c_void_p),
@@ -134,6 +133,12 @@ def compile_cuda(program: Program):
         ))
 
     launch.source = source
-    launch.keep = (drv, mod, fn)
+    launch.keep = (drv, mod, fn, anchor)
     launch.program_version = SLICE_VERSION
+    return launch
+
+
+def compile_cuda(program: Program):
+    launch = compile_cuda_source(emit_cuda(program), program.name)
+    launch.program_version = program.version
     return launch

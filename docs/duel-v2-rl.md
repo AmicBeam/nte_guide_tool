@@ -55,7 +55,7 @@ python3 scripts/train_duel_v2.py --train --output artifacts/duel-v2-rl-adapt \
   --resume artifacts/duel-v2-rl-run --swap N03:N05 --freeze-generic --kl-coef 0.1
 ```
 
-`--check` 不创建对局或模型。`--train` 需要新的 `--output` 目录；总预算默认 10000 原始引擎动作 / 128 开局 / 1800 秒，训练先为评估预留额度。`n_updates=0`、随机自对弈或仅 `predict` 成功都不算训练完成。评估会把每场对局写成 `replays/*.json`（开局公开 board + 带 patch 的公开事件）。已有 `eval_games.jsonl` 可用 `--export-replays DIR` 按种子和动作重放到同一格式。在 `/replays` 导入该 JSON 后，用 `/table?replay=<房间码>` 播放；导入走现有公开回放表，不含隐藏手牌、牌序或种子。
+`--check` 不创建对局或模型。`--train` 需要新的 `--output` 目录；总预算默认 10000 原始引擎动作 / 128 开局 / 1800 秒，训练先为评估预留额度。`n_updates=0`、随机自对弈或仅 `predict` 成功都不算训练完成。训练和评估不自动写网页录像；要看某次评估对局时，对输出目录执行 `--export-replays DIR`，按 `eval_games.jsonl` 里的种子和动作重放成公开 `replays/*.json`。在 `/replays` 导入该 JSON 后，用 `/table?replay=<房间码>` 播放；不含隐藏手牌、牌序或种子。
 
 默认训练牌组是当前 catalog 的官方创生预组；学习方和冻结规则 AI 对手都用这一套。编码器座位与卡表跟随创生预组四人（含伊洛伊的 Y 卡），浊燃等其他人的官方预组仍不能直接编码。换少数卡用 `--swap OLD:NEW`（必须同角色），或传入同四人座位的 `--deck` JSON。创生预组卡表变化会改变 `character_ids` / `card_ids` / catalog 哈希，旧权重不能加载。
 

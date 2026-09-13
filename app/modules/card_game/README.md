@@ -66,7 +66,7 @@ node --check app/modules/card_game/static/js/v2_replays.js
 
 ## 存档与协议
 
-`/api/duel-v2` 提供 catalog/build/build-select/build-delete/build-reorder/start/join/ready/room-start/state/action/leave，以及回放入口 `GET /replays`、`POST /replay-star`、`POST /replay-import` 与 `GET /replay/<房间码>`。训练评估导出的 `replays/*.json` 可在回放页导入。回放列表用双方开局四人头像表示构筑，可收藏；未收藏最多保留 30 场。`state` 只返回本人视角；对手未公开手牌、牌序和随机状态不返回。完整公开回放日志独立于 `observe()` 的最近 200 条窗口，开局公开 board 加后续带 patch 的公开事件，按 `seq` / `action_id` 步进还原牌桌。完整请求与投影字段见 [实现契约](../../../docs/duel-v2-implementation-contract.md)。 2026-09-12 公开演出字段、action_id 续步、规范实体、interaction 单条匹配和 `GET state?after_seq=` 见 [演出协议](../../../docs/duel-v2-presentation-20260912.md)；大厅导航进入 `/replays` 列表，观看时仍复用现有牌桌。功能测试不能视为已上线或已平衡。
+`/api/duel-v2` 提供 catalog/build/build-select/build-delete/build-reorder/start/join/ready/room-start/state/action/leave，以及回放入口 `GET /replays`、`POST /replay-star`、`POST /replay-import` 与 `GET /replay/<房间码>`。训练对局要看时再 `--export-replays` 转成公开 JSON，可在回放页导入。回放列表用双方开局四人头像表示构筑，可收藏；未收藏最多保留 30 场。`state` 只返回本人视角；对手未公开手牌、牌序和随机状态不返回。完整公开回放日志独立于 `observe()` 的最近 200 条窗口，开局公开 board 加后续带 patch 的公开事件，按 `seq` / `action_id` 步进还原牌桌。完整请求与投影字段见 [实现契约](../../../docs/duel-v2-implementation-contract.md)。 2026-09-12 公开演出字段、action_id 续步、规范实体、interaction 单条匹配和 `GET state?after_seq=` 见 [演出协议](../../../docs/duel-v2-presentation-20260912.md)；大厅导航进入 `/replays` 列表，观看时仍复用现有牌桌。功能测试不能视为已上线或已平衡。
 
 新版使用构筑/房间/成员/快照/回放专表，旧构筑与旧快照不会被转换或覆盖。公开回放日志与对局快照分开保存，离开房间后仍可按房间码观看。普通动作先更新单进程最新态再异步入库，进程异常时可能丢失尚未入库的最后一步；正式结束结果与房间结束状态同步提交。刷新不会重新扣费，网络重试应复用 request_id，并携带 room_code 和 expected_version，旧房间请求不能作用于新房间。当前并发保证以单进程服务为边界，跨进程部署前需要增加集中式状态协调。
 

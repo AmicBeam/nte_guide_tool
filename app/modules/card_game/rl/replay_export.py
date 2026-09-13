@@ -78,7 +78,19 @@ def replay_from_eval_record(record: dict[str, Any], *, deck: dict[str, Any] | No
 
     learning_side = str(record.get('learning_side') or 'a')
     seed = int(record.get('seed') or 0)
-    used = deepcopy(deck or default_training_deck())
+    recorded = record.get('deck') if isinstance(record.get('deck'), dict) else None
+    if deck is not None:
+        used = deepcopy(deck)
+    elif recorded and recorded.get('character_ids') and recorded.get('card_ids'):
+        from app.modules.card_game.content.duel_v2 import validate_deck
+        used = validate_deck({
+            'id': recorded.get('id') or 'eval',
+            'name': recorded.get('name') or 'eval',
+            'character_ids': list(recorded['character_ids']),
+            'card_ids': list(recorded['card_ids']),
+        })
+    else:
+        used = default_training_deck()
     budget = TrainBudget(max_raw_steps=100_000, max_games=8, max_seconds=600)
     adapter = DuelAdapter(
         CountingBackend(V2Backend(), budget), V2Encoder(),

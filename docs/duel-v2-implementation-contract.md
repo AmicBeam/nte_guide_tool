@@ -114,7 +114,7 @@ preview 至少给出 `ap_cost`，攻击可给 `attack, counter, harmony, will_sw
 - `POST /leave` -> `{ok:true}`。
 - `GET /replays` -> `{replays:[{room_code,mode,status,winner,viewer_side,name_a,name_b,favorited,characters_a,characters_b,event_count,updated_at}], unfavorited_limit, unfavorited_count}`，仅当前玩家参加过的人机/1v1 对局。`characters_*` 为双方开局四人头像摘要。收藏的回放始终列出；未收藏最多保留 30 场，超出的最旧未收藏对当前玩家不可见，若对方也不再保留则删除。
 - `POST /replay-star`，body `{room_code, favorited}` -> 与 `GET /replays` 相同的列表信封。
-- `POST /replay-import`，body 为训练导出的公开回放 JSON（含 `views`，或单视角 `opening_board`+`events`）-> 写入当前玩家可看的已结束回放，返回与 `GET /replay/<房间码>` 相同信封。不得包含隐藏手牌、牌序或种子。
+- `POST /replay-import`，body 为按需 `--export-replays` 得到的公开回放 JSON（含 `views`，或单视角 `opening_board`+`events`）-> 写入当前玩家可看的已结束回放，返回与 `GET /replay/<房间码>` 相同信封。不得包含隐藏手牌、牌序或种子。训练过程不自动写入这些文件。
 - `GET /replay/<room_code>` -> `{room, replay:{opening_board, events, viewer_side, favorited, ...}}`。`opening_board` 是开局公开局面；`events` 为完整公开演出事件（含 `seq` / `action_id` / `patch`），不截断为 200 条。回放不得包含对手隐藏手牌、牌库顺序、种子、未公开候选或 `legal_actions`。页面入口为 `/table?replay=<房间码>`，用现有牌桌渲染，提供播放/暂停/上一步/下一步。未收藏且已超出 30 场上限的回放返回 404。
 
 room 补充字段：viewer_side、is_host、can_start；members 条目使用 `{side,name,nickname,is_ready,is_host,is_self}`，不返回对方构筑。新版使用独立的构筑/房间/快照表保留旧数据，开局和最终结果同步落盘，普通对局动作采用最新态缓存与异步版本写入。

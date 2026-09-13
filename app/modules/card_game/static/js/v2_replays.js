@@ -33,7 +33,7 @@ async function bootstrapReplays() {
   function renderReplayList(payload) {
     const items = (payload && payload.replays) || [];
     const limit = payload && payload.unfavorited_limit ? payload.unfavorited_limit : 30;
-    replayCopy.textContent = '只展示你参加过的对局公开局面。可收藏；未收藏最多保留 ' + limit + ' 场。训练目录 replays/*.json 可在此导入后观看。';
+    replayCopy.textContent = '只展示你参加过的对局公开局面。可收藏；未收藏最多保留 ' + limit + ' 场。训练评估可用 --export-replays 转成 JSON 后再导入观看。';
     if (!items.length) {
       replayList.innerHTML = '<p class="subtle" id="v2-replay-empty">还没有可回放的对局。开始一局人机或 1v1 后即可在此查看。</p>';
       return;

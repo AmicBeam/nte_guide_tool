@@ -7,7 +7,7 @@ from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
 
 from .contracts import ACTION_TYPES, PHASES, RULES_VERSION, SIDES
 
-FEATURE_VERSION = 'duel_v2_obs_v3'
+FEATURE_VERSION = 'duel_v2_obs_v4'
 ACTION_FEATURE_VERSION = 'duel_v2_act_v2'
 ENCODER_VERSION = f'{FEATURE_VERSION}+{ACTION_FEATURE_VERSION}'
 
@@ -107,7 +107,11 @@ ACTION_ALLOWED_FIELDS = {
     'concede': {'type'},
 }
 
-USED_KEYS = ('cycle', 'growth', 'record', 'redeem', 'N05', 'Z03', 'J02', 'J05', 'X02')
+USED_KEYS = (
+    'cycle', 'growth', 'record', 'redeem', 'instant', 'sync', 'gaze',
+    'N05', 'Z03', 'J02', 'J05', 'X02',
+    'A07', 'C07', 'S07', 'S08', 'K08', 'H08', 'R07',
+)
 PUBLIC_CARD_WIDTH = 2 + len(CARD_IDS) + len(CHARACTER_IDS) * 2 + len(CARD_TYPES) + 4
 CHARACTER_WIDTH = 2 + 8 + len(FORM_CARD_IDS) + 1 + 2 + 7
 RECORD_WIDTH = 1 + len(CARD_IDS) + len(CHARACTER_IDS) + len(CARD_TYPES)

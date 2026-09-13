@@ -80,7 +80,8 @@ class EncodingTest(unittest.TestCase):
     def test_public_counters_and_status_are_encoded(self):
         base = self.encoder.encode_observation(self.view)
         for key, value in [('last_front', 'zero'), ('turn_count', 21), ('fatigue', 1),
-                           ('used', {'record': True}), ('harmonized', {'zero': True}), ('extra_flower', True)]:
+                           ('used', {'record': True, 'instant': True}), ('harmonized', {'zero': True}),
+                           ('extra_flower', True)]:
             view = deepcopy(self.view)
             view['sides']['a'][key] = value
             with self.subTest(key=key):

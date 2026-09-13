@@ -157,6 +157,20 @@ class BudgetAndPolicyTest(unittest.TestCase):
         rng = __import__('random').Random(0)
         self.assertIn(RandomMaskedPolicy(rng)(observation, actions), range(len(actions)))
 
+    def test_thread_budget_counts_without_lost_increments(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from app.modules.card_game.rl.budget import make_thread_counters
+        budget = TrainBudget(max_raw_steps=10000, max_games=10000, max_seconds=60)
+        budget.attach_shared(make_thread_counters())
+
+        def work(_rank):
+            for _ in range(100):
+                budget.consume_step()
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(work, range(8)))
+        self.assertEqual(budget.raw_steps, 800)
+
     def test_status_board_reads_artifact_dir(self):
         from app.modules.card_game.rl.status_board import list_run_snapshots, resolve_run, snapshot_run
         folder = Path(tempfile.mkdtemp())
@@ -259,6 +273,30 @@ class GymTruncationTrainTest(unittest.TestCase):
         self.assertFalse(terminated)
         self.assertEqual(reward, 0)
         self.assertFalse(info.get('bootstrap_allowed'))
+
+    def test_threaded_vec_env_steps_two_envs(self):
+        import numpy as np
+        from app.modules.card_game.rl.gym_compat import make_gym_env
+        from app.modules.card_game.rl.thread_vec_env import ThreadedVecEnv
+
+        def make_env():
+            adapter = DuelAdapter(
+                FakeBackend([('a', None)] * 80), TinyEncoder(),
+                max_game_actions=40, strict_isolation=False,
+            )
+            return make_gym_env(adapter)
+
+        vec = ThreadedVecEnv([make_env, make_env])
+        try:
+            obs = vec.reset()
+            self.assertEqual(obs['candidates'].shape[0], 2)
+            vec.step_async(np.array([0, 0]))
+            obs, rewards, dones, infos = vec.step_wait()
+            self.assertEqual(len(rewards), 2)
+            self.assertEqual(len(dones), 2)
+            self.assertEqual(len(infos), 2)
+        finally:
+            vec.close()
 
 
 @unittest.skipUnless(

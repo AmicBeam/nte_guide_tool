@@ -180,6 +180,7 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
             super().__init__(verbose=0)
             self.n_rollouts = 0
             self.last_update = -1
+            self.last_checkpoint = 0
             self._episodes_path = output / 'episodes.jsonl'
 
         def _on_training_start(self):
@@ -247,6 +248,13 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
                     'num_timesteps': int(self.model.num_timesteps), 'n_updates': updates,
                     'loss': row.get('train/loss'),
                 })
+                if updates - self.last_checkpoint >= 10:
+                    write_training_checkpoint(output, self.model, {
+                        'num_timesteps': int(self.model.num_timesteps),
+                        'n_updates': updates,
+                    })
+                    self.last_checkpoint = updates
+                    log(f'phase=checkpoint n_updates={updates} path={output / "model.zip"}')
             return True
 
     n_envs = max(1, int(n_envs))
@@ -262,7 +270,18 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
         'max_opponent_actions': 80, 'learning_side': 'a',
         'deck': training_deck,
     }
-    if n_envs > 1:
+    if n_envs > 1 and os.name == 'nt':
+        from .budget import make_thread_counters
+        from .thread_vec_env import ThreadedVecEnv
+        shared = make_thread_counters()
+        budget.attach_shared(shared)
+        env_fns = [
+            lambda rank=rank: build_training_env({**env_config, 'rank': rank}, budget=budget)
+            for rank in range(n_envs)
+        ]
+        vec = ThreadedVecEnv(env_fns)
+        log(f'phase=sampling vec=thread n_envs={n_envs}')
+    elif n_envs > 1:
         shared = make_shared_counters()
         budget.attach_shared(shared)
         from functools import partial
@@ -275,6 +294,7 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
         ]
         try:
             vec = SubprocVecEnv(env_fns, start_method='spawn')
+            log(f'phase=sampling vec=subproc n_envs={n_envs}')
         except Exception as exc:  # noqa: BLE001
             log(f'phase=warn subproc_failed {type(exc).__name__}: {exc}; falling back to 1 env')
             n_envs = 1

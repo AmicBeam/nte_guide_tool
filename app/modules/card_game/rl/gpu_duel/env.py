@@ -9,7 +9,9 @@ from app.modules.card_game.content.duel_v2 import STARTER_DECK
 from app.modules.card_game.engine.duel_v2 import new_game
 
 from .catalog import STARTER_LOCK, assert_starter_deck
+from .opponent import advance_to_actor
 from .pack import pack_python, snapshot_mechan
+from .reset import reset_native, reset_rows
 from .rules import rebuild_legal, step_index
 from .state import GpuState
 
@@ -27,6 +29,7 @@ class GpuDuelEnv:
         self.lock = STARTER_LOCK
         self.deck = assert_starter_deck(STARTER_DECK)
         self.state: GpuState | None = None
+        self.learner = torch.zeros(n, dtype=torch.int32, device=self.device)
 
     def reset_from_python(self, states: list[dict[str, Any]]) -> GpuState:
         if len(states) != self.n:
@@ -35,13 +38,35 @@ class GpuDuelEnv:
         rebuild_legal(self.state)
         return self.state
 
-    def reset(self, seeds: list[int] | None = None, *, skip_mulligan: bool = True) -> GpuState:
+    def reset(self, seeds: list[int] | None = None, *, skip_mulligan: bool = True,
+              native: bool = True) -> GpuState:
         seeds = list(seeds or range(self.n))
         if len(seeds) != self.n:
             raise ValueError('seeds must match batch size')
+        seed_t = torch.tensor(seeds, dtype=torch.int32, device=self.device)
+        # Half the batch learns as first player, half as second.
+        self.learner = (seed_t % 2).to(torch.int32)
+        if native and skip_mulligan:
+            self.state = reset_native(self.state, self.n, self.device, seed_t)
+            advance_to_actor(self.state, self.learner)
+            return self.state
         decks = {'a': self.deck, 'b': self.deck}
         states = [new_game(seed=int(seed), skip_mulligan=skip_mulligan, decks=decks) for seed in seeds]
-        return self.reset_from_python(states)
+        self.reset_from_python(states)
+        advance_to_actor(self.state, self.learner)
+        return self.state
+
+    def reset_finished(self, seeds: torch.Tensor | None = None) -> None:
+        if self.state is None:
+            return
+        done, _winner = self.outcome()
+        if not bool(done.any()):
+            return
+        if seeds is None:
+            seeds = (self.state.rng + 7919) & 0x7FFFFFFF
+        reset_rows(self.state, done, seeds)
+        # keep learner assignment
+        advance_to_actor(self.state, self.learner)
 
     def legal_count(self) -> torch.Tensor:
         return self.state.legal_n
@@ -53,6 +78,21 @@ class GpuDuelEnv:
             action_index = torch.tensor(action_index, dtype=torch.int32, device=self.device)
         action_index = action_index.to(self.device).reshape(self.n)
         step_index(self.state, action_index)
+        return self.state
+
+    def step_learner(self, action_index: torch.Tensor | list[int]) -> GpuState:
+        if self.state is None:
+            raise RuntimeError('reset first')
+        if not torch.is_tensor(action_index):
+            action_index = torch.tensor(action_index, dtype=torch.int32, device=self.device)
+        action_index = action_index.to(self.device).reshape(self.n)
+        done, _winner = self.outcome()
+        acting = self.state.active == self.learner
+        action_index = torch.where(acting & ~done, action_index, torch.full_like(action_index, -1))
+        step_index(self.state, action_index)
+        rebuild_legal(self.state)
+        advance_to_actor(self.state, self.learner)
+        self.reset_finished()
         return self.state
 
     def snapshot(self, row: int = 0) -> dict[str, Any]:

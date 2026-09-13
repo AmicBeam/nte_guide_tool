@@ -121,6 +121,21 @@ class GpuDuelOracleTest(unittest.TestCase):
             state = apply_action(state, side, action)
             self.assertEqual(env.snapshot(0), self.python_mechan(state))
 
+    def test_native_reset_and_learner_step(self):
+        import torch
+        env = self.GpuDuelEnv(8, device='cpu')
+        env.reset(seeds=list(range(8)), native=True)
+        self.assertTrue((env.legal_count() > 0).all())
+        self.assertTrue(((env.learner == 0) | (env.learner == 1)).all())
+        from app.modules.card_game.rl.gpu_duel.observe import compact_observe
+        from app.modules.card_game.rl.gpu_duel.ppo import CompactScorer, collect_rollout, ppo_update, rollout_to_batch
+        state, cand, _ = compact_observe(env.state)
+        net = CompactScorer(state.shape[-1], cand.shape[-1], hidden=16)
+        opt = torch.optim.Adam(net.parameters(), lr=1e-3)
+        rollout = collect_rollout(env, net, horizon=2)
+        ppo_update(net, opt, rollout_to_batch(rollout), epochs=1, minibatch=16)
+        self.assertEqual(rollout['reward'].shape, (8, 2))
+
     def test_batch_reset_legal_and_step(self):
         env = self.GpuDuelEnv(8, device='cpu')
         env.reset(seeds=list(range(8)))

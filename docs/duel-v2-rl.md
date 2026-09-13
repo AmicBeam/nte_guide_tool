@@ -15,7 +15,7 @@
 - `networks.py`：`CandidateScoringPolicy` 在 GPU 上对每个候选打分，不把 256×199 展平进 MLP。打分拆成通用分（动作类型、卡类、费用、目标座位）和卡身份分（catalog ID embedding）。
 - `transfer.py`：单套牌解析、同角色换卡、新卡 embedding 从同类旧卡初始化；换牌时冻住通用分，可选对共享动作做 KL。一次训练只使用一套牌，不混合多构筑。
 - `rule_ir/`：共享规则 IR。第一片是攻击/护盾/同时伤害/倒地/胜负；同一程序生成 CPU 张量内核和 NVRTC CUDA（一次 launch 多步，提交方式和手写切片相同）。生成 CUDA 与手写实验核、Python `combat.attack` 对拍；4096 行吞吐对照要求不低于手写核约 80%。手写核只作对照，不是业务真源。网站 Python 引擎仍是 oracle。`gpu_duel/` 仍是脚手架，不再往里手写新卡效。
-- `gpu_duel/`：冻结创生预组的定长 GPU 对局环境（PyTorch 整型张量）。开局可用 Python 引擎装箱做 oracle 对拍；合法动作是定长槽位；`step` 覆盖出击、结束回合、出牌（含检视/检索/治疗/复活/枚约）、终结与选择。`scripts/train_duel_v2_gpu.py` 是驻留显存的短程 PPO，观察尚未与网站 encoder 对齐。网站引擎仍是规则真源。
+- `gpu_duel/`：冻结创生预组的定长对局环境。开局可 Python 装箱或 GPU 内洗牌重置；学习方动作后由 GPU 规则对手推进到下一次学习方决策。`scripts/train_duel_v2_gpu.py --n 1024 --horizon 32` 按报告做同步 PPO（规则张量默认在 CPU 上批量执行，网络在 CUDA；1024 行整数核的 CUDA launch 开销更大）。观察尚未与网站 encoder 对齐。网站引擎仍是 oracle。
 - `scripts/train_duel_v2.py`：`--check` 不创建对局；`--train --output DIR` 默认按 CPU 核数开进程采样（上限 32），GPU 候选打分。学习方（训练和评估）不提供认输动作，网站玩家仍可认输。评估对手仍是公开规则 AI。
 
 核心接口依赖现有网站环境即可导入；NumPy/Gymnasium/SB3 仅列在独立 `requirements-rl.txt`。不要在网站启动链路中创建训练器或环境。导入 `app.modules.card_game.rl` 不创建对局、不调用 reset/step/predict/learn。

@@ -36,15 +36,17 @@ def _sample(logits):
     return action, dist.log_prob(action), dist.entropy()
 
 
-def _terminal_reward(env: GpuDuelEnv, learner_side: int, prev_hp_foe, prev_down_foe) -> torch.Tensor:
+def _terminal_reward(env: GpuDuelEnv, prev_hp_foe, prev_down_foe) -> torch.Tensor:
     done, winner = env.outcome()
-    foe = 1 - learner_side
-    hp = env.state.hp[:, foe].to(torch.float32)
-    down = (env.state.ch_hp[:, foe] <= 0).sum(dim=1).to(torch.float32)
+    b = torch.arange(env.n, device=env.device)
+    learner = env.learner
+    foe = 1 - learner
+    hp = env.state.hp[b, foe].to(torch.float32)
+    down = (env.state.ch_hp[b, foe] <= 0).sum(dim=1).to(torch.float32)
     shaping = 0.02 * (prev_hp_foe - hp).clamp(min=0) + 0.10 * (down - prev_down_foe).clamp(min=0)
     shaping = shaping.clamp(max=0.5)
     term = torch.zeros_like(shaping)
-    term = torch.where(done & (winner == learner_side), torch.full_like(term, 10.0), term)
+    term = torch.where(done & (winner == learner), torch.full_like(term, 10.0), term)
     term = torch.where(done & (winner == foe), torch.full_like(term, -10.0), term)
     return torch.where(done, term, shaping)
 
@@ -70,21 +72,30 @@ def ppo_update(net: CompactScorer, opt, batch, clip=0.2, epochs=2, minibatch=102
 
 
 def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_side: int = 0):
+    from .opponent import advance_to_actor
     rebuild_legal(env.state)
+    advance_to_actor(env.state, env.learner)
     states, cands, masks, actions, logps, values, rewards, dones = [], [], [], [], [], [], [], []
+    b = torch.arange(env.n, device=env.device)
+    net_device = next(net.parameters()).device
     for _ in range(horizon):
         state, cand, mask = compact_observe(env.state)
+        net_device = next(net.parameters()).device
+        state = state.to(net_device)
+        cand = cand.to(net_device)
+        mask = mask.to(net_device)
         empty = ~mask.any(dim=1)
         if bool(empty.any()):
             mask = mask.clone()
             mask[empty, 0] = True
         logits, value = net(state, cand, mask)
         action, logp, _ent = _sample(logits)
-        foe = 1 - learner_side
-        prev_hp = env.state.hp[:, foe].to(torch.float32)
-        prev_down = (env.state.ch_hp[:, foe] <= 0).sum(dim=1).to(torch.float32)
-        env.step(action)
-        reward = _terminal_reward(env, learner_side, prev_hp, prev_down)
+        env_action = action.to(env.device)
+        foe = 1 - env.learner
+        prev_hp = env.state.hp[b, foe].to(torch.float32)
+        prev_down = (env.state.ch_hp[b, foe] <= 0).sum(dim=1).to(torch.float32)
+        env.step_learner(env_action)
+        reward = _terminal_reward(env, prev_hp, prev_down).to(net_device)
         done, _winner = env.outcome()
         states.append(state)
         cands.append(cand)
@@ -93,7 +104,7 @@ def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_s
         logps.append(logp.detach())
         values.append(value.detach())
         rewards.append(reward.detach())
-        dones.append(done.to(reward.dtype))
+        dones.append(done.to(device=net_device, dtype=reward.dtype))
     state_bt = torch.stack(states, dim=1)
     cand_bt = torch.stack(cands, dim=1)
     mask_bt = torch.stack(masks, dim=1)
@@ -107,7 +118,7 @@ def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_s
         'value': torch.stack(values, dim=1),
         'reward': torch.stack(rewards, dim=1),
         'done': torch.stack(dones, dim=1),
-        'last_value': net(*compact_observe(env.state))[1].detach(),
+        'last_value': net(*[item.to(net_device) if torch.is_tensor(item) else item for item in compact_observe(env.state)])[1].detach(),
     }
 
 

@@ -347,21 +347,30 @@ def draw(s: GpuState, side: torch.Tensor, mask: torch.Tensor, count: int = 1) ->
 
 
 def compact_deck(s: GpuState, si: int, mask: torch.Tensor) -> None:
-    kinds = s.deck_kind[:, si]
-    insts = s.deck_inst[:, si]
-    pos = torch.zeros(s.n, dtype=torch.int32, device=s.device)
-    new_k = torch.full_like(kinds, -1)
-    new_i = torch.zeros_like(insts)
-    for slot in range(32):
-        take = mask & (kinds[:, slot] >= 0)
-        for dest in range(32):
-            put = take & (pos == dest)
-            new_k[:, dest] = torch.where(put, kinds[:, slot], new_k[:, dest])
-            new_i[:, dest] = torch.where(put, insts[:, slot], new_i[:, dest])
-        pos = pos + take.to(pos.dtype)
-    s.deck_kind[:, si] = torch.where(mask.unsqueeze(-1), new_k, kinds)
-    s.deck_inst[:, si] = torch.where(mask.unsqueeze(-1), new_i, insts)
-    s.deck_n[:, si] = torch.where(mask, pos, s.deck_n[:, si])
+    if not bool(mask.any()):
+        return
+    kinds = s.deck_kind[:, si].tolist()
+    insts = s.deck_inst[:, si].tolist()
+    flags = mask.tolist()
+    counts = []
+    for row, keep in enumerate(flags):
+        if not keep:
+            counts.append(s.deck_n[row, si].item())
+            continue
+        packed_k, packed_i = [], []
+        for slot in range(32):
+            kind = kinds[row][slot]
+            if kind >= 0:
+                packed_k.append(kind)
+                packed_i.append(insts[row][slot])
+        counts.append(len(packed_k))
+        packed_k.extend([-1] * (32 - len(packed_k)))
+        packed_i.extend([0] * (32 - len(packed_i)))
+        kinds[row] = packed_k
+        insts[row] = packed_i
+    s.deck_kind[:, si] = torch.tensor(kinds, dtype=torch.int32, device=s.device)
+    s.deck_inst[:, si] = torch.tensor(insts, dtype=torch.int32, device=s.device)
+    s.deck_n[:, si] = torch.tensor(counts, dtype=torch.int32, device=s.device)
 
 
 def to_discard(s: GpuState, side: torch.Tensor, kind: torch.Tensor, mask: torch.Tensor) -> None:
@@ -762,7 +771,7 @@ def step_index(s: GpuState, index: torch.Tensor) -> None:
     rebuild_legal(s)
     b = _b(s)
     idx = index.clamp(min=0)
-    valid = _live(s) & (idx < s.legal_n)
+    valid = _live(s) & (idx >= 0) & (idx < s.legal_n)
     typ = s.legal_type[b, idx]
     actor = s.legal_actor[b, idx]
     hand = s.legal_hand[b, idx]

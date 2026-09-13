@@ -1,0 +1,139 @@
+"""Lower IR to an NVRTC CUDA kernel. Generated code, not a second rule source."""
+from __future__ import annotations
+
+from .ast import Bin, ClampMin, Cmp, Const, Name, Not, Program, Select, validate
+from .schema import FIELD_INDEX, FIELDS, N_FIELDS, SIDE_ALIASES, SLICE_VERSION
+
+
+def _c_expr(expr) -> str:
+    if isinstance(expr, Const):
+        return str(int(expr.value))
+    if isinstance(expr, Name):
+        return expr.ident
+    if isinstance(expr, Not):
+        return f'(!({_c_expr(expr.inner)}))'
+    if isinstance(expr, ClampMin):
+        return f'max({expr.lo},{_c_expr(expr.inner)})'
+    if isinstance(expr, Select):
+        return f'(({_c_expr(expr.cond)})?({_c_expr(expr.then)}):({_c_expr(expr.orelse)}))'
+    if isinstance(expr, Cmp):
+        ops = {'eq': '==', 'ne': '!=', 'lt': '<', 'le': '<=', 'gt': '>', 'ge': '>='}
+        return f'(({_c_expr(expr.left)}){ops[expr.op]}({_c_expr(expr.right)}))'
+    if isinstance(expr, Bin):
+        if expr.op == 'add':
+            return f'(({_c_expr(expr.left)})+({_c_expr(expr.right)}))'
+        if expr.op == 'sub':
+            return f'(({_c_expr(expr.left)})-({_c_expr(expr.right)}))'
+        if expr.op == 'min':
+            return f'min({_c_expr(expr.left)},{_c_expr(expr.right)})'
+        if expr.op == 'max':
+            return f'max({_c_expr(expr.left)},{_c_expr(expr.right)})'
+        if expr.op == 'and':
+            return f'(({_c_expr(expr.left)})&&({_c_expr(expr.right)}))'
+        if expr.op == 'or':
+            return f'(({_c_expr(expr.left)})||({_c_expr(expr.right)}))'
+    raise ValueError(f'cannot emit {type(expr).__name__}')
+
+
+def emit_cuda(program: Program) -> str:
+    validate(program)
+    alias_init = [f'  int {name}=x[{idx}];' for name, idx in FIELD_INDEX.items()]
+    for alias, a_name, b_name in SIDE_ALIASES:
+        ia, ib = FIELD_INDEX[a_name], FIELD_INDEX[b_name]
+        alias_init.append(f'  int {alias}=side?x[{ib}]:x[{ia}];')
+    binds = [f'  int {bind.name}={_c_expr(bind.expr)};' for bind in program.binds]
+    stores = []
+    for store in program.stores:
+        if store.field in FIELD_INDEX:
+            idx = f'{FIELD_INDEX[store.field]}'
+        else:
+            a_name, b_name = next((a, b) for alias, a, b in SIDE_ALIASES if alias == store.field)
+            idx = f'(side?{FIELD_INDEX[b_name]}:{FIELD_INDEX[a_name]})'
+        stores.append(f'  x[{idx}]={_c_expr(store.expr)};')
+    skip = _c_expr(program.skip_when)
+    body = '\n'.join([
+        f'extern "C" __global__ void {program.name}(const int* input, int* output, int n, int side) {{',
+        ' int row=blockIdx.x*blockDim.x+threadIdx.x;',
+        ' if(row>=n)return;',
+        f' int x[{N_FIELDS}];',
+        ' #pragma unroll',
+        f' for(int j=0;j<{N_FIELDS};j++)x[j]=input[row*{N_FIELDS}+j];',
+        *alias_init,
+        f' if({skip}){{',
+        '  #pragma unroll',
+        f'  for(int j=0;j<{N_FIELDS};j++)output[row*{N_FIELDS}+j]=x[j];',
+        '  return;',
+        ' }',
+        *binds,
+        *stores,
+        ' #pragma unroll',
+        f' for(int j=0;j<{N_FIELDS};j++)output[row*{N_FIELDS}+j]=x[j];',
+        '}',
+    ])
+    return body
+
+
+def compile_cuda(program: Program):
+    import ctypes as C
+    from pathlib import Path
+
+    import torch
+
+    if not torch.cuda.is_available():
+        raise RuntimeError('CUDA is required to compile the IR kernel')
+    torch.cuda.init()
+    _anchor = torch.zeros(1, device='cuda')
+    torch.cuda.synchronize()
+    source = emit_cuda(program)
+    libdir = Path(torch.__file__).parent / 'lib'
+    nv = C.WinDLL(str(next(path for path in libdir.glob('nvrtc64_*.dll') if '.alt.' not in path.name)))
+
+    def check(rc):
+        if rc:
+            raise RuntimeError('CUDA/NVRTC result ' + str(rc))
+
+    prog = C.c_void_p()
+    src = source.encode()
+    check(nv.nvrtcCreateProgram(C.byref(prog), C.c_char_p(src), C.c_char_p(b'ir.cu'), 0, None, None))
+    arch = (' --gpu-architecture=compute_%d%d' % torch.cuda.get_device_capability()).strip().encode()
+    options = (C.c_char_p * 2)(arch, b'--std=c++17')
+    rc = nv.nvrtcCompileProgram(prog, 2, options)
+    if rc:
+        size = C.c_size_t()
+        nv.nvrtcGetProgramLogSize(prog, C.byref(size))
+        buf = C.create_string_buffer(size.value)
+        nv.nvrtcGetProgramLog(prog, buf)
+        raise RuntimeError(buf.value.decode())
+    size = C.c_size_t()
+    check(nv.nvrtcGetPTXSize(prog, C.byref(size)))
+    ptx = C.create_string_buffer(size.value)
+    check(nv.nvrtcGetPTX(prog, ptx))
+    check(nv.nvrtcDestroyProgram(C.byref(prog)))
+    drv = C.WinDLL('nvcuda.dll')
+    check(drv.cuInit(0))
+    mod = C.c_void_p()
+    check(drv.cuModuleLoadData(C.byref(mod), ptx))
+    fn = C.c_void_p()
+    check(drv.cuModuleGetFunction(C.byref(fn), mod, program.name.encode()))
+
+    def launch(inp, out, side: int):
+        p = C.c_void_p(inp.data_ptr())
+        q = C.c_void_p(out.data_ptr())
+        n = C.c_int(inp.shape[0])
+        s = C.c_int(int(side))
+        params = (C.c_void_p * 4)(
+            C.cast(C.byref(p), C.c_void_p),
+            C.cast(C.byref(q), C.c_void_p),
+            C.cast(C.byref(n), C.c_void_p),
+            C.cast(C.byref(s), C.c_void_p),
+        )
+        check(drv.cuLaunchKernel(
+            fn, C.c_uint((n.value + 127) // 128), C.c_uint(1), C.c_uint(1),
+            C.c_uint(128), C.c_uint(1), C.c_uint(1), C.c_uint(0),
+            C.c_void_p(torch.cuda.current_stream().cuda_stream), params, None,
+        ))
+
+    launch.source = source
+    launch.keep = (drv, mod, fn)
+    launch.program_version = SLICE_VERSION
+    return launch

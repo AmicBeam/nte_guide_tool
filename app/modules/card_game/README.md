@@ -53,7 +53,7 @@
 
 ```bash
 python3 -m unittest tests.test_module_routes.ModuleRoutesTest.test_card_game_module_page_and_asset
-python3 -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_rl tests.test_duel_v2_rl_train tests.test_duel_v2_gpu_duel tests.test_duel_v2_table_contract
+python3 -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_rl tests.test_duel_v2_rl_train tests.test_duel_v2_gpu_duel tests.test_duel_v2_rule_ir tests.test_duel_v2_table_contract
 node --check app/modules/card_game/static/js/v2_api.js
 node --check app/modules/card_game/static/js/v2_build.js
 node --check app/modules/card_game/static/js/v2_table.js

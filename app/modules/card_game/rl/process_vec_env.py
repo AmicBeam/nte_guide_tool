@@ -225,6 +225,12 @@ class ProcessVecEnv(VecEnv):
                 pass
         self.closed = True
 
+    def has_attr(self, attr_name: str, indices=None) -> bool:
+        remotes = self._target(indices)
+        for remote in remotes:
+            remote.send(('has_attr', attr_name))
+        return all(remote.recv() for remote in remotes)
+
     def get_attr(self, attr_name: str, indices=None) -> list[Any]:
         remotes = self._target(indices)
         for remote in remotes:

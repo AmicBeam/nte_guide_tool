@@ -150,6 +150,14 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['N08']['name'], '预备备')
         self.assertEqual(CARDS['S08']['name'], '好狗狗走四方')
         self.assertEqual(CARDS['S08']['source']['type'], 'arc')
+        self.assertEqual(CARDS['X07']['name'], '壶中往昔')
+        self.assertEqual(CARDS['A07']['name'], '广告拍摄中！')
+        self.assertEqual(CARDS['C07']['name'], '惑心谲影')
+        self.assertEqual(CARDS['K07']['name'], '宇宙的频段')
+        self.assertEqual(CARDS['R07']['name'], '梦的边缘')
+        self.assertEqual(CARDS['Y07']['name'], '想做什么梦？')
+        self.assertEqual(CARDS['S07']['name'], '捉鬼之绵')
+        self.assertEqual(CARDS['H07']['name'], '役徊生之绵')
         for character_id, prefix in CARD_PREFIXES.items():
             self.assertEqual(CARDS[f'{prefix}08']['type'], 'form', character_id)
         for character_id in CATALOG_ORDER:
@@ -158,8 +166,10 @@ class DuelV2CatalogTest(unittest.TestCase):
             self.assertEqual(card_08['source']['type'], 'arc', character_id)
             if character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc', character_id)
-            else:
+            elif character_id in ('zaowu', 'hathor', 'jiuyuan'):
                 self.assertEqual(card_07['source']['type'], 'ability', character_id)
+            else:
+                self.assertEqual(card_07['source']['type'], 'pv', character_id)
         if APPROVED_ROWS_PATH.is_file():
             approved = {row['id']: row for row in _approved_rows()}
             for card_id, row in approved.items():
@@ -193,11 +203,13 @@ class DuelV2CatalogTest(unittest.TestCase):
             self.assertEqual(card_08['source']['type'], 'arc')
             if character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc')
-            else:
+            elif character_id in ('jiuyuan',):
                 self.assertEqual(card_07['source']['type'], 'ability')
+            else:
+                self.assertEqual(card_07['source']['type'], 'pv')
             self.assertTrue(str(card_08['name']))
-            if character_id not in ('zero', 'nanali', 'jiuyuan'):
-                self.assertTrue(str(card_07['name']).endswith('之绵'))
+            if character_id == 'xun':
+                self.assertEqual(card_07['name'], '壶中往昔')
 
     def test_starter_deck_uses_two_copies_of_each_selected_card(self) -> None:
         self.assertEqual(STARTER_DECK['id'], 'starter')

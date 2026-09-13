@@ -314,7 +314,7 @@
       "effect_id": "N07",
       "source": {
         "character_id": 1010,
-        "type": "ability",
+        "type": "pv",
         "index": 1
       },
       "type": "form",
@@ -740,11 +740,11 @@
     {
       "id": "X07",
       "character_id": "xun",
-      "name": "杜伊诺之绵",
+      "name": "壶中往昔",
       "effect_id": "X07",
       "source": {
         "character_id": 1052,
-        "type": "ability",
+        "type": "pv",
         "index": 1
       },
       "type": "form",
@@ -878,11 +878,11 @@
     {
       "id": "A07",
       "character_id": "anhunqu",
-      "name": "弥撒之绵",
+      "name": "广告拍摄中！",
       "effect_id": "A07",
       "source": {
         "character_id": 1004,
-        "type": "ability",
+        "type": "pv",
         "index": 1
       },
       "type": "form",
@@ -1018,11 +1018,11 @@
     {
       "id": "C07",
       "character_id": "canhong",
-      "name": "惑乱之绵",
+      "name": "惑心谲影",
       "effect_id": "C07",
       "source": {
         "character_id": 1036,
-        "type": "ability",
+        "type": "pv",
         "index": 1
       },
       "type": "form",
@@ -1292,11 +1292,11 @@
     {
       "id": "K07",
       "character_id": "lingke",
-      "name": "心电之绵",
+      "name": "宇宙的频段",
       "effect_id": "K07",
       "source": {
         "character_id": 1072,
-        "type": "ability",
+        "type": "pv",
         "index": 1
       },
       "type": "form",
@@ -1432,11 +1432,11 @@
     {
       "id": "R07",
       "character_id": "zhenhong",
-      "name": "红龙之绵",
+      "name": "梦的边缘",
       "effect_id": "R07",
       "source": {
         "character_id": 1076,
-        "type": "ability",
+        "type": "pv",
         "index": 1
       },
       "type": "form",
@@ -1701,11 +1701,11 @@
     {
       "id": "Y07",
       "character_id": "iloy",
-      "name": "梦境之绵",
+      "name": "想做什么梦？",
       "effect_id": "Y07",
       "source": {
         "character_id": 1075,
-        "type": "ability",
+        "type": "pv",
         "index": 1
       },
       "type": "form",

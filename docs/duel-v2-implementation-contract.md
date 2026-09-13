@@ -28,11 +28,11 @@ validate_deck(deck: dict) -> dict  # 不合法抛 ValueError，合法返回规�
 
 角色字段：`id, name, attribute`（中文光/灵）, `attack, max_hp, avatar, portrait, passive, awakened_passive`。图片复用共享角色头像和立绘；zero 使用鉴定师图片。
 
-卡牌字段：`id, character_id, name, type`（`battle/tactic/form`）, `cost, terminal, description, effect_id, source`。effect_id 默认与卡牌 ID 相同。source 至少含 Everness 角色 ID、`awaken/resonance` 类型和从 1 开始的原作条目序号。
+卡牌字段：`id, character_id, name, type`（`battle/tactic/form`）, `cost, terminal, description, effect_id, source`。`cost` 一律为 1。弧盘另有 `stat`（`attack` 或 `hp`）与 `stat_value`；战斗牌另有 `shield`（护盾值，可为 0），并可另有 `attack`（无条件攻击加成，至少为 1）。浔的兑现战斗牌另有 `redeem: true`。可选 `instant`、`response`、`derived`。`derived: true` 为对局内衍生牌，展示「不可构筑」，不能进入构筑。effect_id 默认与卡牌 ID 相同。`terminal` 保留为协议字段，现行卡表一律为 false。**08 固定为专属武备**；**07 优先用官方角色 PV 名**，尚无角色 PV 的暂留「XX之绵」。零另有第 6 张「诓定解放」也是武备。source 至少含 Everness 角色 ID；`type` 为 `awaken`（01–06）、`arc`（专属武备，08）、`pv`（官方角色 PV）或 `ability`（尚无 PV 时的之绵/短片），衍生牌为 `derived`。
 
 标准构筑 JSON：`{id, name, character_ids: [4个ID], card_ids: [32个卡牌ID]}`。card_ids 是重复展开列表。validate_deck 严格验证恰好 4 名不同已实现角色、每人 8 张、总数 32、同名最多 2、没有未知或其他角色卡，不能静默截断。返回独立副本。
 
-get_catalog 返回 `{rules_version: "duel_v2", characters: [...], cards: [...], starter_deck: {...}, deck_rules: {size: 32, per_character: 8, max_copies: 2, character_count: 4}}`。
+get_catalog 返回 `{rules_version: "duel_v2", characters: [...], cards: [...], starter_deck: {...}, starter_decks: [...], deck_rules: {size: 32, per_character: 8, max_copies: 2, character_count: 4}}`。账号首次读取 catalog 时，把官方预组写入该玩家构筑库，之后按普通 saved_builds 处理，可删除；已完成首次赠送后不再重复发放。旧的单套构筑会保留，并补齐尚未拥有的预组。
 
 ## 纯内存引擎契约
 
@@ -63,8 +63,7 @@ choose_action(state: dict, side: str) -> dict  # 非训练的轻量规则/确定
 {"type":"mulligan","card_ids":["手牌实例ID"]}
 {"type":"attack","character_id":"nanali"}
 {"type":"play_card","card_id":"手牌实例ID","target_id":"a:zero"}
-{"type":"awaken","character_id":"zero"}
-{"type":"cycle","card_id":"手牌实例ID"}
+{"type":"ultimate","character_id":"zero"}
 {"type":"choose","choice_id":"候选ID"}
 {"type":"end_turn"}
 {"type":"concede"}
@@ -75,15 +74,15 @@ choose_action(state: dict, side: str) -> dict  # 非训练的轻量规则/确定
 observe 的稳定 JSON：
 
 ```text
-rules_version, version, phase, active_side, viewer_side, is_my_turn,
+rules_version, version, phase, active_side, first_side, viewer_side, is_my_turn,
 turn, winner,
 sides: {
   a/b: {name, hp, shield, ap, normal_attack_available,
         front: 角色ID或null,
         characters: [{id,name,attribute,attack,hp,max_hp,shield,
-                      harmony,energy,awakened,growth,shape,down_turns,
+                      harmony,energy,awakened,ultimate_turns,growth,shape,down_turns,
                       avatar,portrait,passive,awakened_passive}],
-        hand: [公开卡牌或{hidden:true}], hand_count, deck_count,
+        hand: [公开卡牌或{hidden:true}；本人手牌按该方编队角色顺序排列，同角色保持原相对顺序], hand_count, deck_count,
         discard: [公开卡牌], records: [公开记录]}
 },
 pending_choice: {side,kind,prompt,choices:[{id,label,card?}]} 或 null,
@@ -99,17 +98,23 @@ preview 至少给出 `ap_cost`，攻击可给 `attack, counter, harmony, will_sw
 
 ## Web 接口（主任务实现）
 
-页面：`/card-game` 首页、`/build` 构筑、`/codex` 图鉴、`/table` 牌桌切换为 V2；旧快照通过 rules_version 判别，旧接口暂保留供旧对局恢复，不让新页调用旧部署接口。
+页面：`/card-game` 大厅、`/build` 构筑、`/codex` 图鉴、`/replays` 回放列表、`/table` 牌桌切换为 V2；`/table?replay=<房间码>` 回放公开局面。旧快照通过 rules_version 判别，旧接口暂保留供旧对局恢复，不让新页调用旧部署接口。
 
 新 API 使用 `/api/duel-v2` 前缀，沿用 Bearer token：
 
-- `GET /catalog` -> 内容 catalog 加 `saved_build`。
-- `POST /build`，body 为构筑 JSON -> `{build: 规范化构筑}`。
+- `GET /catalog` -> 内容 catalog 加 `saved_build`（当前启用的一套）、`saved_builds`（已保存列表）和 `active_build_id`。
+- `POST /build`，body 为构筑 JSON -> `{build, saved_build, saved_builds, active_build_id}`。无 id 或 id 为 starter/custom 时新建一套；最多 8 套。
+- `POST /build-select`，body `{id}` -> 切换当前启用构筑。
+- `POST /build-delete`，body `{id}` -> 删除一套；若删的是当前启用套，改启用剩余第一套。
+- `POST /build-reorder`，body `{ids:[构筑id...]}` -> 按传入顺序重排已保存构筑；必须是现有 id 的全排列，不改变当前启用套。
 - `POST /start`，body `{mode:"solo"|"pvp", deck?:构筑}` -> 房间/对局投影。solo 立即对局，pvp 创建等待房间。
 - `POST /join`，body `{room_code}` -> 房间投影；`POST /ready` body `{is_ready:true}`；`POST /room-start` 正式开局。
-- `GET /state` -> `{room: {room_code,mode,status,members}, game: observe结果或null}`；没有房间返回404。可选 `after_seq` 只过滤 `game.presentation.events`，不改变局势、合法动作或 cursor。
+- `GET /state` -> `{room: {room_code,mode,status,members,has_replay,replay_code}, game: observe结果或null}`；没有房间返回404。可选 `after_seq` 只过滤 `game.presentation.events`，不改变局势、合法动作或 cursor。
 - `POST /action`，body `{room_code, request_id, expected_version, action}` -> 同样的 room/game 信封。
 - `POST /leave` -> `{ok:true}`。
+- `GET /replays` -> `{replays:[{room_code,mode,status,winner,viewer_side,name_a,name_b,favorited,characters_a,characters_b,event_count,updated_at}], unfavorited_limit, unfavorited_count}`，仅当前玩家参加过的人机/1v1 对局。`characters_*` 为双方开局四人头像摘要。收藏的回放始终列出；未收藏最多保留 30 场，超出的最旧未收藏对当前玩家不可见，若对方也不再保留则删除。
+- `POST /replay-star`，body `{room_code, favorited}` -> 与 `GET /replays` 相同的列表信封。
+- `GET /replay/<room_code>` -> `{room, replay:{opening_board, events, viewer_side, favorited, ...}}`。`opening_board` 是开局公开局面；`events` 为完整公开演出事件（含 `seq` / `action_id` / `patch`），不截断为 200 条。回放不得包含对手隐藏手牌、牌库顺序、种子、未公开候选或 `legal_actions`。页面入口为 `/table?replay=<房间码>`，用现有牌桌渲染，提供播放/暂停/上一步/下一步。未收藏且已超出 30 场上限的回放返回 404。
 
 room 补充字段：viewer_side、is_host、can_start；members 条目使用 `{side,name,nickname,is_ready,is_host,is_self}`，不返回对方构筑。新版使用独立的构筑/房间/快照表保留旧数据，开局和最终结果同步落盘，普通对局动作采用最新态缓存与异步版本写入。
 
@@ -117,9 +122,9 @@ room 补充字段：viewer_side、is_host、can_start；members 条目使用 `{s
 
 ## 页面交互与验收
 
-入口突出固定四人预组，可选人机、创建双人房间、输入房间码加入。构筑页按四人分组，每卡0/1/2张，显示每人8张与总32张，保存与恢复由后端严格校验。
+入口突出固定四人预组，可选人机、创建双人房间、输入房间码加入。构筑页可创建、编辑、删除最多 8 套构筑；每卡 0/1/2 张，显示每人 8 张与总 32 张，保存与恢复由后端严格校验。
 
-牌桌布局明确双方玩家生命、单人战斗区、四人备战/倒地信息、自己的手牌、双方牌库/弃牌堆、行动力、日志。主操作必须支持拖动角色出击、拖动手牌出牌、点击的等价操作、后端候选选择、主动觉醒、结束回合和撤退。触屏采用 pointer events 或有可用点击替代，不能只实现桌面 dragstart。
+牌桌布局明确双方玩家生命、单人战斗区、四人备战/倒地信息、自己的手牌、双方牌库/弃牌堆、行动力、日志。主操作必须支持拖动角色出击、拖动手牌出牌、点击的等价操作、后端候选选择、终结、结束回合和撤退。触屏采用 pointer events 或有可用点击替代，不能只实现桌面 dragstart。
 
 所有角色/卡牌/目标合法性来自 game.legal_actions。拖动使用现有候选预览，不触发写请求；松开到合法区才提交一次，非法区域回弹。请求期间禁重入，动画完成自然更新。观察对手行动时轮询可刷新，但不泄露隐藏信息。
 
@@ -138,8 +143,8 @@ room 补充字段：viewer_side、is_host、can_start；members 条目使用 `{s
 
 ## 已实现的补充公开字段
 
-- side：`last_front`、`turn_count`、`fatigue`、`used`（稀疏已用次数）、`harmonized`（各角色是否在本局触发过环合）、`extra_flower`。
-- character：`shape_id`（卡牌 ID，`shape` 是中文名）、`shape_description`、`harmony_max`、`energy_max`、`next_attack_bonus`、`return_after_sortie`、`slow`（amount/end 或 null）、`burn`（剩余次数）、`star`（到期己方回合或 null）。到期计数按该角色所属侧的 `turn_count` 解释。
+- side：`last_front`、`turn_count`、`fatigue`、`used`（稀疏已用次数）、`harmonized`（各角色是否在本局触发过环合）、`extra_flower`、`harmony_available`（当前是否有角色入场会触发环合）。
+- character：`shape_id`（卡牌 ID，`shape` 是中文名）、`shape_description`、`harmony_max`、`energy_max`（光/灵/相为 4，暗/魂/咒为 5）、`family`（娜娜莉的家族壮大点数）、`next_attack_bonus`、`return_after_sortie`、`slow`（amount/end 或 null）、`burn`（剩余次数）、`star`（到期己方回合或 null）、`harmony_source`（上一名存活且满环合的出战角色）、`harmony_ready`（入场会触发环合）。到期计数按该角色所属侧的 `turn_count` 解释。
 - 临时复制：`original_character_id` 表示原作者，`character_id` 始终是浔；复制的 `expires_turn` 是所属侧的己方回合计数，不是全局 `turn`。`unavailable_reason` 只作为 UI 提示，不由前端据此推算规则。
 - `resolving_card`：正在结算的公开牌或 null。pending_choice.kind 实际为 `discard/inspect_top/enemy_hand`；后两者的私有候选仅选择者可见，候选最多受 10 张手牌上限约束。
 - events/logs 为最近 200 条公开事件，日志按观察者显示我方/对手；不包含隐蔽抽牌名称或未公开候选。
@@ -159,7 +164,7 @@ oldest_seq: 当前窗口最早 seq
 events: 投影后的公开演出事件
 ```
 
-事件最低字段：`seq, action_id, action_version, type, side, text`。`action_id` 至少由对应动作 `version` 组成稳定 ID；一次 `apply_action` 及其后续 `choose` 续步按新 version 分步，不把出牌和 pending 选择合成一个 ID。不同人机动作不能合并。稳定类别包括 play, attack, combat, damage, flower, followup, penetration, move, enter, down, revive, awaken, shape, growth, resource, draw, gain, remove, discard, turn, finish, record, redeem；其他事件可按 instant 处理。
+事件最低字段：`seq, action_id, action_version, type, side, text`。`action_id` 至少由对应动作 `version` 组成稳定 ID；一次 `apply_action` 及其后续 `choose` 续步按新 version 分步，不把出牌和 pending 选择合成一个 ID。不同人机动作不能合并。稳定类别包括 play, attack, combat, damage, flower, followup, penetration, move, enter, down, revive, ultimate, shape, growth, resource, draw, gain, remove, discard, turn, finish, record, redeem；其他事件可按 instant 处理。
 
 `actor`/`target` 使用 `a:角色ID` / `b:角色ID` / `a:player` 规范，缺省允许 null。规范 ID 必须保留阵营，不能把裸角色名默认成观察者或当前行动方。`source` 继续保留兼容。play/gain/record/shape 等已公开卡牌带最小投影 `{instance_id,card_id,character_id,name,type,cost,terminal,description,copy,...}`；对手普通抽牌不得带牌名、实例 ID 或私有候选。`private_card`/`private_side` 不得进入对方 presentation，也不得留在对方 `events`/`logs`。
 
@@ -167,4 +172,4 @@ events: 投影后的公开演出事件
 
 起始观察直接用最终快照，不回放旧事件。旧存档缺少演出元数据时兼容回退，不解析中文日志伪造卡牌；旧快照上的首次新动作仍应生成可回放 patch。`GET /state?after_seq=` 只过滤新增演出 events；不传参数仍返回完整最近窗口。
 
-`legal_actions[]` 每条新增 `interaction`，不改变 action 本体：`{kind:attack|cast|target|form|awaken|choice|other, actor_id, target_ids}`。UI 必须按单条 action 匹配提示。N06 这类已展开的友方目标，每条 hint 的 `target_ids` 只能是该条 action 的规范 `target_id`，不能把全部存活队友塞进每一条。复制 N06 归属浔，排除自己；规范 ID 不得忽略阵营。
+`legal_actions[]` 每条新增 `interaction`，不改变 action 本体：`{kind:attack|cast|target|form|ultimate|choice|other, actor_id, target_ids}`。UI 必须按单条 action 匹配提示。N06 这类已展开的友方目标，每条 hint 的 `target_ids` 只能是该条 action 的规范 `target_id`，不能把全部存活队友塞进每一条。复制 N06 归属浔，排除自己；规范 ID 不得忽略阵营。

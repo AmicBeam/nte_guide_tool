@@ -17,7 +17,7 @@ ACTION_TYPES = (
     'mulligan',
     'attack',
     'play_card',
-    'awaken',
+    'ultimate',
     'cycle',
     'choose',
     'end_turn',

@@ -3,11 +3,12 @@ import unittest
 from copy import deepcopy
 
 from app.modules.card_game.content.duel_v2 import CARDS
+from app.modules.card_game.content.duel_v2.catalog import LIGHT_ENERGY_MAX
 from app.modules.card_game.engine.duel_v2 import apply_action, choose_action, legal_actions, observe
 from app.modules.card_game.engine.duel_v2.flow import new_game
 from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
 from app.modules.card_game.engine.duel_v2.projection import preview
-from app.modules.card_game.engine.duel_v2.state import card_instance, hero
+from app.modules.card_game.engine.duel_v2.state import card_instance, hero, new_character
 
 
 class DuelV2PresentationTest(unittest.TestCase):
@@ -15,6 +16,10 @@ class DuelV2PresentationTest(unittest.TestCase):
         state = new_game(seed=9, first_side='a', skip_mulligan=True)
         state['sides']['a']['ap'] = 2
         state['sides']['b']['shield'] = 0
+        for side in ('a', 'b'):
+            if 'xun' not in state['sides'][side]['characters']:
+                state['sides'][side]['characters']['xun'] = new_character('xun')
+                state['sides'][side]['order'].append('xun')
         return state
 
     def hand(self, state, card_id, side='a', copy=False):
@@ -65,7 +70,7 @@ class DuelV2PresentationTest(unittest.TestCase):
     def test_double_hit_uses_separate_groups(self):
         state = self.game()
         state['sides']['b']['front'] = 'zero'
-        after, _ = self.play(state, 'X08')
+        after, _ = self.play(state, 'X05')
         own = observe(after, 'a')
         attacks = self.events(own, 'attack')
         self.assertEqual(len(attacks), 2)
@@ -82,14 +87,22 @@ class DuelV2PresentationTest(unittest.TestCase):
         after, _ = self.play(state, 'N01')
         own = observe(after, 'a')
         enemy = observe(after, 'b')
-        draws = self.events(own, 'draw')
+        draws = [event for event in self.events(own, 'draw') if event.get('side') == 'a']
         self.assertTrue(draws)
         self.assertIn('card', draws[-1])
         self.assertTrue(draws[-1]['card']['name'])
-        hidden = self.events(enemy, 'draw')[-1]
+        self.assertIn(draws[-1]['card']['name'], draws[-1]['text'])
+        own_log = next(event for event in own['events'] if event['type'] == 'draw' and event.get('side') == 'a')
+        self.assertIn('card', own_log)
+        self.assertIn(own_log['card']['name'], own_log['text'])
+        hidden = next(event for event in self.events(enemy, 'draw') if event.get('side') == 'a')
         self.assertNotIn('card', hidden)
         self.assertNotIn('private_card', hidden)
-        inspect = self.play(after, 'J03')[0]
+        self.assertNotIn('「', hidden['text'])
+        enemy_log = next(event for event in enemy['events'] if event['type'] == 'draw' and event.get('side') == 'a')
+        self.assertNotIn('card', enemy_log)
+        self.assertNotIn('「', enemy_log['text'])
+        inspect = self.play(after, 'J01')[0]
         own_view, enemy_view = observe(inspect, 'a'), observe(inspect, 'b')
         secret = own_view['pending_choice']['choices'][0]['card']['name']
         dumped = json.dumps(enemy_view, ensure_ascii=False)
@@ -97,11 +110,36 @@ class DuelV2PresentationTest(unittest.TestCase):
         self.assertNotIn(secret, json.dumps(enemy_view['presentation'], ensure_ascii=False))
         self.assertEqual(enemy_view['pending_choice']['choices'], [])
 
+    def test_turn_start_draw_is_after_turn_and_marked_present(self):
+        state = self.game()
+        after = apply_action(state, 'a', {'type': 'end_turn'})
+        view = observe(after, 'b')
+        events = view['presentation']['events']
+        turn_at = next(index for index, event in enumerate(events)
+                       if event['type'] == 'turn' and event.get('side') == 'b')
+        draw_at = next(index for index, event in enumerate(events)
+                       if event['type'] == 'draw' and event.get('side') == 'b' and index > turn_at)
+        self.assertGreater(draw_at, turn_at)
+        self.assertTrue(events[turn_at].get('present'))
+        self.assertTrue(events[draw_at].get('present'))
+        self.assertIn('card', events[draw_at])
+        self.assertTrue(all(
+            event['type'] != 'draw' or event.get('side') != 'b'
+            for event in events[turn_at + 1:draw_at]
+        ))
+
+    def test_resource_and_finish_are_queued_not_silent(self):
+        from app.modules.card_game.engine.duel_v2.presentation import SILENT_PRESENT_TYPES
+        self.assertNotIn('resource', SILENT_PRESENT_TYPES)
+        self.assertNotIn('finish', SILENT_PRESENT_TYPES)
+        self.assertNotIn('initiative', SILENT_PRESENT_TYPES)
+        self.assertNotIn('mulligan', SILENT_PRESENT_TYPES)
+
     def test_interaction_hints_cover_card_policies(self):
         state = self.game()
         mapping = {
             'N03': 'cast',
-            'N02': 'form',
+            'N07': 'form',
             'N06': 'target',
             'Z01': 'target',
             'J06': 'choice',
@@ -203,7 +241,7 @@ class DuelV2PresentationTest(unittest.TestCase):
         form_state['sides']['a']['ap'] = 2
         self.sync_public_board(form_state)
         form_before = deepcopy(form_state)
-        form_after, _ = self.play(form_state, 'N02')
+        form_after, _ = self.play(form_state, 'N07')
         form_events = self.replay_action_board(form_before, form_after)
         self.assertTrue(any(event['type'] == 'shape' for event in form_events))
 
@@ -223,7 +261,7 @@ class DuelV2PresentationTest(unittest.TestCase):
             {'card_id': 'N01', 'name': CARDS['N01']['name'], 'type': 'tactic', 'character_id': 'nanali'}]
         self.sync_public_board(x08_state)
         x08_before = deepcopy(x08_state)
-        x08_after, _ = self.play(x08_state, 'X08')
+        x08_after, _ = self.play(x08_state, 'X05')
         x08_events = self.replay_action_board(x08_before, x08_after)
         attacks = [event for event in x08_events if event['type'] == 'attack']
         self.assertEqual(len(attacks), 2)
@@ -300,7 +338,7 @@ class DuelV2PresentationTest(unittest.TestCase):
     def test_preview_and_observe_do_not_leak_future_or_hidden_cards(self):
         state = self.game()
         state['sides']['a']['front'] = 'nanali'
-        hero(state, 'a', 'zero')['harmony'] = 2
+        hero(state, 'a', 'nanali')['harmony'] = 2
         state['sides']['b']['front'] = 'zero'
         secret = 'SECRET-FUTURE-CARD'
         for card in state['sides']['a']['deck'] + state['sides']['b']['deck'] + state['sides']['b']['hand']:
@@ -315,18 +353,19 @@ class DuelV2PresentationTest(unittest.TestCase):
     def test_awaken_shape_growth_record_copy_down_revive(self):
         state = self.game()
         nanali = hero(state, 'a', 'nanali')
-        nanali.update(energy=4, shape='N02')
-        after = apply_action(state, 'a', {'type': 'awaken', 'character_id': 'nanali'})
-        awaken = self.events(observe(after, 'a'), 'awaken')[-1]
+        nanali.update(energy=LIGHT_ENERGY_MAX, shape='N07')
+        after = apply_action(state, 'a', {'type': 'ultimate', 'character_id': 'nanali'})
+        awaken = self.events(observe(after, 'a'), 'ultimate')[-1]
         self.assertEqual(awaken['actor'], 'a:nanali')
         self.assertEqual(awaken['after']['awakened'], True)
+        self.assertEqual(awaken['after']['ultimate_turns'], 2)
         after['sides']['a']['ap'] = 2
-        after, _ = self.play(after, 'N02')
+        after, _ = self.play(after, 'N07')
         shape = self.events(observe(after, 'a'), 'shape')[-1]
         self.assertEqual(shape['card']['type'], 'form')
         after['sides']['a']['front'] = 'zero'
         after['sides']['a']['ap'] = 2
-        hero(after, 'a', 'nanali')['harmony'] = 2
+        hero(after, 'a', 'zero')['harmony'] = 2
         after['sides']['b']['front'] = 'zero'
         hero(after, 'b', 'zero')['hp'] = 1
         after, _ = self.play(after, 'N03')

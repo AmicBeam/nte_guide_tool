@@ -4,9 +4,9 @@ from app.modules.card_game.engine.events import GameEvent
 
 
 def _front_hero(c):
-    from app.modules.card_game.engine.duel_v2.state import front_target, hero
+    from app.modules.card_game.engine.duel_v2.state import front_target, hero, is_esper
     enemy, target_id = front_target(c.state, c.side)
-    if not target_id:
+    if not is_esper(target_id):
         return None, None, None
     return enemy, target_id, hero(c.state, enemy, target_id)
 

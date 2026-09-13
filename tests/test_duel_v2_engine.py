@@ -3,9 +3,11 @@ import unittest
 from copy import deepcopy
 
 from app.modules.card_game.content.duel_v2 import CARDS, STARTER_DECKS
+from app.modules.card_game.content.duel_v2.catalog import DARK_ENERGY_MAX, LIGHT_ENERGY_MAX
 from app.modules.card_game.engine.duel_v2 import (new_game, apply_action, legal_actions,
                                                 observe, acting_side, choose_action)
-from app.modules.card_game.engine.duel_v2.state import card_instance, hero, attack_value, new_character, reduce_max_hp
+from app.modules.card_game.engine.duel_v2.state import (PLAYER_ID, card_instance, damage, front_target,
+                                                        hero, attack_value, new_character, reduce_max_hp)
 
 
 class DuelV2EngineTest(unittest.TestCase):
@@ -44,11 +46,18 @@ class DuelV2EngineTest(unittest.TestCase):
         s = new_game(seed=12, first_side='b')
         self.assertEqual(s['sides']['a']['shield'], 5)
         self.assertTrue(all(t['front'] is None for t in s['sides'].values()))
+        initiative = next(event for event in s['events'] if event['type'] == 'initiative')
+        self.assertEqual(initiative['first_side'], 'b')
+        self.assertTrue(initiative.get('present', True))
+        self.assertLess(initiative['seq'], next(event['seq'] for event in s['events'] if event['type'] == 'draw'))
         ids = [c['instance_id'] for c in s['sides']['a']['hand'][:3]]
         old = deepcopy(s)
         s = apply_action(s, 'a', {'type': 'mulligan', 'card_ids': ids[::-1]})
         self.assertEqual(old['version'], 0)
         self.assertFalse(set(ids) & {c['instance_id'] for c in s['sides']['a']['hand']})
+        mulligan = next(event for event in s['events'] if event['type'] == 'mulligan')
+        self.assertEqual(set(mulligan['card_ids']), set(ids))
+        self.assertEqual(mulligan['amount'], 3)
         s = apply_action(s, 'b', {'type': 'mulligan', 'card_ids': []})
         self.assertEqual(s['sides']['b']['ap'], 1)
         self.assertEqual(len(s['sides']['b']['hand']), 6)
@@ -100,19 +109,53 @@ class DuelV2EngineTest(unittest.TestCase):
     def test_zero_resources_personal_and_battle_extra_sortie(self):
         s = apply_action(self.game(), 'a', {'type': 'attack', 'character_id': 'zero'})
         self.assertEqual((hero(s, 'a', 'zero')['harmony'], hero(s, 'a', 'zero')['energy']), (1, 2))
-        self.assertEqual(hero(s, 'a', 'nanali')['energy'], 0)
+        self.assertEqual(hero(s, 'a', 'nanali')['energy'], 1)
+        self.assertEqual(hero(s, 'a', 'nanali')['harmony'], 0)
         self.assertFalse(any(a['type'] == 'attack' for a in legal_actions(s, 'a')))
         s = self.play(s, 'N03')
         self.assertEqual(s['sides']['a']['front'], 'nanali')
+        self.assertEqual(hero(s, 'a', 'nanali')['energy'], 3)
+        self.assertEqual(hero(s, 'a', 'zero')['energy'], 3)
         self.assertEqual(s['sides']['a']['ap'], 0)
         self.assertFalse(s['sides']['a']['normal_attack_available'])
+
+    def test_nanali_followup_knockdown_grants_family_seed(self):
+        s = self.game()
+        s['sides']['b']['front'] = 'jiuyuan'
+        hero(s, 'b', 'jiuyuan').update(hp=4, energy=0)
+        s['sides']['a']['nanali_family'] = 1
+        before = sum(1 for e in s['events'] if e['type'] == 'gain' and '家族壮大' in e.get('text', ''))
+        s = self.play(s, 'N03')
+        self.assertEqual(hero(s, 'b', 'jiuyuan')['hp'], 0)
+        self.assertEqual(hero(s, 'b', 'jiuyuan')['down_turns'], 3)
+        self.assertEqual(s['sides']['a']['nanali_family'], 2)
+        self.assertEqual(sum(1 for e in s['events'] if e['type'] == 'gain' and '家族壮大' in e.get('text', '')),
+                         before + 1)
+
+    def test_nanali_genesis_knockdown_grants_family_seed(self):
+        s = self.game()
+        s['sides']['a']['front'] = 'zero'
+        s['sides']['a']['last_front'] = 'zero'
+        hero(s, 'a', 'zero')['harmony'] = 2
+        s['sides']['b']['front'] = 'jiuyuan'
+        hero(s, 'b', 'jiuyuan').update(hp=1, energy=0)
+        s['sides']['a']['nanali_family'] = 1
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'nanali'})
+        self.assertTrue(any(e['type'] == 'genesis' for e in s['events']))
+        self.assertEqual(hero(s, 'b', 'jiuyuan')['hp'], 0)
+        self.assertEqual(s['sides']['a']['nanali_family'], 2)
+        genesis = next(e for e in s['events'] if e['type'] == 'genesis')
+        self.assertEqual(genesis.get('source'), 'a:nanali')
+        self.assertEqual(genesis.get('source_side'), 'a')
 
     def test_response_battle_joins_as_counter_not_new_combat(self):
         s = self.game()
         s['sides']['b']['front'] = 'zero'
+        s['sides']['b']['ap'] = 1
         s['sides']['b']['hand'] = [card_instance(s, 'N02', 'b')]
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'xun'})
         self.assertEqual(s['sides']['b']['front'], 'nanali')
+        self.assertEqual(s['sides']['b']['ap'], 0)
         self.assertEqual(hero(s, 'b', 'zero')['hp'], 5)
         self.assertEqual(hero(s, 'b', 'nanali')['hp'], 5)
         self.assertEqual(hero(s, 'b', 'nanali')['shield'], 0)
@@ -129,10 +172,56 @@ class DuelV2EngineTest(unittest.TestCase):
 
         s = self.game()
         s['sides']['b']['front'] = 'zero'
+        s['sides']['b']['ap'] = 1
+        hero(s, 'b', 'zero')['harmony'] = 2
+        s['sides']['b']['hand'] = [card_instance(s, 'N02', 'b')]
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'xun'})
+        self.assertEqual(s['sides']['b']['front'], 'nanali')
+        self.assertEqual(hero(s, 'b', 'zero')['harmony'], 0)
+        self.assertTrue(any(e['type'] == 'harmony' and '创生' in e['text'] for e in s['events']))
+        attacks = [e for e in s['events'] if e['type'] == 'attack']
+        self.assertEqual(len(attacks), 1)
+        self.assertGreater(attacks[0]['counter'], 0)
+        self.assertEqual(int((hero(s, 'a', 'xun').get('flags') or {}).get('collapse_count') or 0), 0)
+        self.assertEqual((hero(s, 'b', 'nanali')['harmony'], hero(s, 'b', 'nanali')['energy']), (0, 0))
+        self.assertEqual((hero(s, 'a', 'xun')['harmony'], hero(s, 'a', 'xun')['energy']), (1, 2))
+
+        s = self.game()
+        s['sides']['b']['front'] = 'zero'
         s = self.play(s, 'N02')
         self.assertEqual(s['sides']['a']['front'], 'nanali')
         self.assertEqual((hero(s, 'a', 'nanali')['harmony'], hero(s, 'a', 'nanali')['energy']), (1, 2))
         self.assertEqual(len([e for e in s['events'] if e['type'] == 'attack']), 1)
+
+    def test_response_requires_and_spends_action_points(self):
+        s = self.game()
+        s['sides']['b']['front'] = 'zero'
+        s['sides']['b']['ap'] = 0
+        s['sides']['b']['used'] = {'instant': True}
+        s['sides']['b']['hand'] = [card_instance(s, 'N02', 'b')]
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'xun'})
+        self.assertEqual(s['sides']['b']['front'], 'zero')
+        self.assertTrue(any(c['card_id'] == 'N02' for c in s['sides']['b']['hand']))
+        self.assertFalse(any(c['card_id'] == 'N02' for c in s['sides']['b']['discard']))
+
+        s = self.game()
+        s['sides']['b']['front'] = 'zero'
+        s['sides']['b']['ap'] = 0
+        s['sides']['b']['used'] = {}
+        card = card_instance(s, 'N02', 'b')
+        card['instant'] = True
+        s['sides']['b']['hand'] = [card]
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'xun'})
+        self.assertEqual(s['sides']['b']['front'], 'nanali')
+        self.assertEqual(s['sides']['b']['ap'], 0)
+        self.assertTrue(s['sides']['b']['used'].get('instant'))
+        self.assertTrue(any(c['card_id'] == 'N02' for c in s['sides']['b']['discard']))
+
+        s = self.game()
+        s['sides']['a']['ap'] = 2
+        s = apply_action(s, 'a', {'type': 'end_turn'})
+        self.assertEqual(s['sides']['a']['ap'], 2)
+        self.assertEqual(s['active_side'], 'b')
 
     def test_counter_does_not_grant_combat_resources(self):
         s = self.game()
@@ -172,9 +261,41 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(s['sides']['a']['nanali_family'], 2)
         self.assertTrue(any(e['type'] == 'followup' for e in s['events']))
 
+    def test_z08_turn_end_adds_attack_on_front_even_with_form_panel(self):
+        s = self.game()
+        n = hero(s, 'a', 'nanali')
+        n.update(base_attack=3, max_hp=6, hp=6, shape='N07')
+        hero(s, 'a', 'zero')['shape'] = 'Z08'
+        s['sides']['a']['front'] = 'nanali'
+        s['sides']['b']['front'] = 'zero'
+        self.assertEqual(attack_value(n), 3)
+        s = apply_action(s, 'a', {'type': 'end_turn'})
+        n = hero(s, 'a', 'nanali')
+        self.assertEqual(n['flags'].get('atk_buff'), 2)
+        self.assertEqual(attack_value(n), 5)
+        shown = {item['id']: item for item in observe(s, 'a')['sides']['a']['characters']}
+        self.assertEqual(shown['nanali']['attack'], 5)
+        self.assertTrue(any(e['type'] == 'effect' and '倾世之雨' in e['text'] and '娜娜莉' in e['text']
+                            for e in s['events']))
+        s = apply_action(s, 'b', {'type': 'attack', 'character_id': 'zero'})
+        attack_log = next(event for event in reversed(s['events']) if event['type'] == 'attack')
+        self.assertEqual(attack_log['counter'], 5)
+        s = apply_action(s, 'b', {'type': 'end_turn'})
+        n = hero(s, 'a', 'nanali')
+        self.assertEqual(n['flags'].get('atk_buff'), 2)
+        self.assertEqual(attack_value(n), 5)
+        self.assertIsNone(s['sides']['a']['front'])
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'nanali'})
+        attack_log = next(event for event in reversed(s['events']) if event['type'] == 'attack')
+        self.assertEqual(attack_log['attack'], 5)
+        from app.modules.card_game.engine.duel_v2.state import knockdowns
+        hero(s, 'a', 'nanali')['hp'] = 0
+        knockdowns(s)
+        self.assertFalse((hero(s, 'a', 'nanali').get('flags') or {}).get('atk_buff'))
+
     def test_growth_cap_shape_and_awaken_does_not_refresh(self):
         s = self.game()
-        hero(s, 'a', 'nanali').update(energy=4)
+        hero(s, 'a', 'nanali').update(energy=LIGHT_ENERGY_MAX)
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'nanali'})
         n = hero(s, 'a', 'nanali')
         self.assertTrue(n['awakened'])
@@ -182,26 +303,38 @@ class DuelV2EngineTest(unittest.TestCase):
 
     def test_ultimate_is_once_per_turn_and_free(self):
         s = self.game()
-        hero(s, 'a', 'nanali').update(energy=4)
+        hero(s, 'a', 'nanali').update(energy=LIGHT_ENERGY_MAX)
         s['sides']['a']['ap'] = 0
         self.assertTrue(s['sides']['a']['ultimate_available'])
         self.assertIn('ultimate', {a['type'] for a in legal_actions(s, 'a') if a.get('character_id') == 'nanali'})
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'nanali'})
         self.assertEqual(s['sides']['a']['ap'], 0)
         self.assertFalse(s['sides']['a']['ultimate_available'])
-        hero(s, 'a', 'zero').update(energy=4)
+        hero(s, 'a', 'zero').update(energy=LIGHT_ENERGY_MAX)
         self.assertFalse(any(a['type'] == 'ultimate' for a in legal_actions(s, 'a')))
+
+    def test_iloy_ultimate_grants_team_energy_next_own_turn(self):
+        s = self.game()
+        hero(s, 'a', 'iloy').update(energy=LIGHT_ENERGY_MAX)
+        s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'iloy'})
+        self.assertEqual({cid: hero(s, 'a', cid)['energy'] for cid in s['sides']['a']['order']
+                          if cid != 'xun'},
+                         {'nanali': 0, 'iloy': 0, 'zero': 0, 'jiuyuan': 0})
+        s = self.next_own_turn(s)
+        energies = {cid: hero(s, 'a', cid)['energy'] for cid in ('nanali', 'iloy', 'zero', 'jiuyuan')}
+        self.assertEqual(energies, {'nanali': 1, 'iloy': 1, 'zero': 1, 'jiuyuan': 1})
+        self.assertTrue(any('因伊洛伊的终结获得 1 点能量' in e.get('text', '') for e in s['events']))
 
     def test_ultimate_from_bench_lasts_two_own_turns(self):
         s = self.game()
-        hero(s, 'a', 'nanali').update(energy=4, growth=3)
+        hero(s, 'a', 'nanali').update(energy=LIGHT_ENERGY_MAX, growth=3)
         self.assertIsNone(s['sides']['a']['front'])
         self.assertIn('ultimate', {a['type'] for a in legal_actions(s, 'a') if a.get('character_id') == 'nanali'})
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'nanali'})
         n = hero(s, 'a', 'nanali')
         self.assertTrue(n['awakened'])
         self.assertEqual(n['ultimate_turns'], 2)
-        self.assertEqual(s['sides']['a']['front'], 'nanali')
+        self.assertIsNone(s['sides']['a']['front'])
         s = self.next_own_turn(s)
         self.assertTrue(hero(s, 'a', 'nanali')['awakened'])
         self.assertEqual(hero(s, 'a', 'nanali')['ultimate_turns'], 1)
@@ -209,6 +342,8 @@ class DuelV2EngineTest(unittest.TestCase):
         n = hero(s, 'a', 'nanali')
         self.assertFalse(n['awakened'])
         self.assertEqual(n['ultimate_turns'], 0)
+        ended = next(event for event in s['events'] if '终结结束' in (event.get('text') or ''))
+        self.assertFalse(ended.get('present'))
 
     def test_form_hp_and_battle_shield_value(self):
         s = self.game()
@@ -217,6 +352,13 @@ class DuelV2EngineTest(unittest.TestCase):
         s = self.play(s, 'N08')
         n = hero(s, 'a', 'nanali')
         self.assertEqual((n['shape'], attack_value(n), n['hp'], n['max_hp']), ('N08', 2, 6, 6))
+        s = self.game()
+        family = next(c for c in s['sides']['a']['hand'] if c['card_id'] == 'NF01')
+        s = apply_action(s, 'a', {'type': 'play_card', 'card_id': family['instance_id']})
+        s['sides']['a']['ap'] = 1
+        s = self.play(s, 'N08')
+        n = hero(s, 'a', 'nanali')
+        self.assertEqual((attack_value(n), n['hp'], n['max_hp']), (3, 7, 7))
         s = self.game()
         s = self.play(s, 'N04')
         self.assertEqual(hero(s, 'a', 'nanali')['shield'], 2)
@@ -235,6 +377,9 @@ class DuelV2EngineTest(unittest.TestCase):
         s = self.game()
         card = self.hand(s, 'N01')
         s['sides']['a']['ap'] = 0
+        view = observe(s, 'a')
+        shown = next(item for item in view['sides']['a']['hand'] if item.get('instance_id') == card['instance_id'])
+        self.assertTrue(shown.get('instant'))
         self.assertTrue(any(a['type'] == 'play_card' and a['card_id'] == card['instance_id']
                             for a in legal_actions(s, 'a')))
         s = apply_action(s, 'a', {'type': 'play_card', 'card_id': card['instance_id']})
@@ -270,10 +415,16 @@ class DuelV2EngineTest(unittest.TestCase):
         s = self.game()
         s['sides']['a']['last_front'] = 'nanali'
         hero(s, 'a', 'nanali')['harmony'] = 2
+        s['sides']['b']['front'] = 'nanali'
+        hero(s, 'b', 'nanali')['hp'] = 5
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
         self.assertTrue(s['sides']['a']['harmonized']['zero'])
         self.assertEqual(hero(s, 'a', 'nanali')['harmony'], 0)
         self.assertEqual(hero(s, 'a', 'zero')['harmony'], 1)
+        self.assertEqual(hero(s, 'a', 'zero')['shield'], 0)
+        self.assertEqual(sum(1 for e in s['events'] if e['type'] == 'genesis'), 2)
+        self.assertEqual(hero(s, 'b', 'nanali')['hp'], 1)
+        self.assertFalse(any(e['type'] == 'shield' for e in s['events']))
         before = sum(e['type'] == 'harmony' for e in s['events'])
         s = self.play(s, 'Z03')
         self.assertEqual(sum(e['type'] == 'harmony' for e in s['events']), before)
@@ -283,6 +434,17 @@ class DuelV2EngineTest(unittest.TestCase):
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
         self.assertFalse(s['sides']['a']['harmonized'])
         self.assertEqual(hero(s, 'a', 'zero')['harmony'], 2)
+
+    def test_front_target_empty_front_uses_player_id(self):
+        s = self.game()
+        s['sides']['b']['front'] = None
+        s['sides']['b']['hp'] = 10
+        s['sides']['b']['shield'] = 0
+        enemy, cid = front_target(s, 'a')
+        self.assertEqual((enemy, cid), ('b', PLAYER_ID))
+        damage(s, *front_target(s, 'a'), 3, source='a:zero')
+        self.assertEqual(s['sides']['b']['hp'], 7)
+        self.assertTrue(any(e.get('target') == 'b:player' and e['amount'] == 3 for e in s['events']))
 
     def test_shelter_genesis_hits_player_when_no_front(self):
         s = self.game()
@@ -433,6 +595,22 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertFalse(any(c.get('copy') for c in s['sides']['a']['hand']))
         self.assertEqual(hero(s, 'a', 'xun')['harmony'], 0)
 
+    def test_iloy_kindness_can_heal_injured_player(self):
+        s = self.game()
+        s['sides']['a']['hp'] = 24
+        s['sides']['a']['ap'] = 1
+        card = card_instance(s, 'Y03', 'a')
+        s['sides']['a']['hand'] = [card]
+        actions = [item for item in legal_actions(s, 'a')
+                   if item.get('type') == 'play_card' and item.get('card_id') == card['instance_id']]
+        self.assertTrue(any(item.get('target_id') == 'a:player' for item in actions))
+        s = apply_action(s, 'a', {
+            'type': 'play_card',
+            'card_id': card['instance_id'],
+            'target_id': 'a:player',
+        })
+        self.assertEqual(s['sides']['a']['hp'], 29)
+
     def test_iloy_door_shape_does_not_recurse_on_knockdown_damage(self):
         from app.modules.card_game.engine.duel_v2.state import knockdowns
         s = self.game()
@@ -463,37 +641,43 @@ class DuelV2EngineTest(unittest.TestCase):
     def test_return_after_sortie_keeps_combat_resources_and_clears_shield(self):
         s = self.game()
         s = self.play(s, 'X03')
+        self.assertEqual(hero(s, 'a', 'xun')['energy'], 0)
         hero(s, 'a', 'xun')['shield'] = 2
         before = len(s['sides']['a']['deck'])
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'xun'})
         self.assertIsNone(s['sides']['a']['front'])
         self.assertEqual(hero(s, 'a', 'xun')['shield'], 0)
         self.assertEqual(hero(s, 'a', 'xun')['energy'], 2)
+        self.assertEqual(hero(s, 'a', 'nanali')['energy'], 1)
         self.assertEqual(len(s['sides']['a']['deck']), before - 1)
 
     def test_front_combat_energy_doubles_bench_cards_stay_one(self):
         s = apply_action(self.game(), 'a', {'type': 'attack', 'character_id': 'zero'})
         self.assertEqual(hero(s, 'a', 'zero')['energy'], 2)
-        self.assertEqual(observe(s, 'a')['sides']['a']['characters'][1]['energy_max'], 4)
+        self.assertEqual(hero(s, 'a', 'nanali')['energy'], 1)
+        self.assertEqual(hero(s, 'a', 'jiuyuan')['energy'], 1)
+        self.assertEqual(observe(s, 'a')['sides']['a']['characters'][1]['energy_max'], LIGHT_ENERGY_MAX)
         s = self.play(s, 'N01')
-        self.assertEqual(hero(s, 'a', 'nanali')['energy'], 0)
-        hero(s, 'a', 'zero')['energy'] = 3
+        self.assertEqual(hero(s, 'a', 'nanali')['energy'], 1)
+        self.assertEqual(hero(s, 'a', 'zero')['energy'], 2)
+        hero(s, 'a', 'zero')['energy'] = LIGHT_ENERGY_MAX - 1
         s['sides']['a']['ap'] = 1
         s['sides']['a']['normal_attack_available'] = True
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
-        self.assertEqual(hero(s, 'a', 'zero')['energy'], 4)
+        self.assertEqual(hero(s, 'a', 'zero')['energy'], LIGHT_ENERGY_MAX)
+        self.assertEqual(hero(s, 'a', 'nanali')['energy'], 2)
 
-    def test_dark_attribute_energy_cap_is_five(self):
+    def test_dark_attribute_energy_cap_is_six(self):
         deck = next(item for item in STARTER_DECKS if item['id'] == 'requiem')
         s = new_game(seed=3, first_side='a', skip_mulligan=True, decks={'a': deck, 'b': deck})
         s['sides']['a']['ap'] = 2
         s['sides']['b']['shield'] = 0
-        self.assertEqual(observe(s, 'a')['sides']['a']['characters'][0]['energy_max'], 5)
-        hero(s, 'a', 'anhunqu')['energy'] = 4
+        self.assertEqual(observe(s, 'a')['sides']['a']['characters'][0]['energy_max'], DARK_ENERGY_MAX)
+        hero(s, 'a', 'anhunqu')['energy'] = DARK_ENERGY_MAX - 1
         self.assertFalse(any(a['type'] == 'ultimate' and a.get('character_id') == 'anhunqu'
                              for a in legal_actions(s, 'a')))
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'anhunqu'})
-        self.assertEqual(hero(s, 'a', 'anhunqu')['energy'], 5)
+        self.assertEqual(hero(s, 'a', 'anhunqu')['energy'], DARK_ENERGY_MAX)
         s['sides']['a']['ap'] = 1
         self.assertTrue(any(a['type'] == 'ultimate' and a.get('character_id') == 'anhunqu'
                             for a in legal_actions(s, 'a')))
@@ -615,6 +799,7 @@ class DuelV2EngineTest(unittest.TestCase):
                 s['sides']['a']['harmony_damage'] = True
                 s['sides']['a']['surplus'] = True
                 s['sides']['a']['front'] = 'nanali'
+                hero(s, 'a', 'nanali')['hp'] = 4
                 dummy = 'zaowu' if owner != 'zaowu' else 'canhong'
                 for side in ('a', 'b'):
                     if dummy not in s['sides'][side]['characters']:

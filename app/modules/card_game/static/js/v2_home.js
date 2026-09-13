@@ -9,7 +9,10 @@ async function bootstrapHome() {
   const resumeCard = document.getElementById('v2-resume-card');
   const resumeTitle = document.getElementById('v2-resume-title');
   const resumeCopy = document.getElementById('v2-resume-copy');
+  const resumeEyebrow = document.getElementById('v2-resume-eyebrow');
+  const resumeBtn = document.getElementById('v2-resume-btn');
   const leaveBtn = document.getElementById('v2-leave-btn');
+  const resumeReplay = document.getElementById('v2-resume-replay');
   const starterGrid = document.getElementById('v2-starter-grid');
   const starterCopy = document.getElementById('v2-starter-copy');
   const buildSummary = document.getElementById('v2-build-summary');
@@ -31,50 +34,48 @@ async function bootstrapHome() {
     busy = Boolean(next);
     startBtn.disabled = busy;
     joinBtn.disabled = busy;
-    leaveBtn.disabled = busy;
+    if (leaveBtn) leaveBtn.disabled = busy;
+    if (resumeBtn) resumeBtn.classList.toggle('is-disabled', busy);
   }
 
   function renderProfile() {
     nameNode.textContent = '已登录';
-    uidNode.textContent = '构筑与对局进度自动保存。';
+    uidNode.textContent = '进度已保存';
   }
 
   function renderStarter() {
-    const characters = V2.sortedCharacters(catalog && catalog.characters);
-    const cards = catalog && catalog.cards || [];
-    starterGrid.innerHTML = characters.map(function (character) {
-      const owned = V2.cardsForCharacter(cards, character.id);
+    const byId = V2.indexById(V2.sortedCharacters(catalog && catalog.characters));
+    const saved = catalog && catalog.saved_build;
+    const starter = catalog && catalog.starter_deck;
+    const deck = saved || starter || {};
+    const ids = Array.isArray(deck.character_ids) && deck.character_ids.length
+      ? deck.character_ids.slice(0, 4)
+      : ['nanali', 'zero', 'jiuyuan', 'iloy'];
+    starterGrid.innerHTML = ids.map(function (id) {
+      const character = Object.assign({}, V2.characterFallback(id) || { id: id }, byId[id] || {});
       const portrait = V2.characterAsset(character, 'portrait') || V2.characterAsset(character, 'avatar');
       return (
-        '<article class="v2-starter-card" data-character-id="' + V2.escapeAttr(character.id) + '">' +
-          '<div class="v2-starter-art">' + V2.imageMarkup(portrait, character.name, 'v2-portrait') + '</div>' +
-          '<div>' +
-            '<h3>' + V2.escapeHtml(character.name) + '</h3>' +
-            V2.attributeMarkup(character.attribute) +
-          '</div>' +
-          '<p class="card-meta">' + V2.escapeHtml(character.role || character.passive || '固定预组成员') + '</p>' +
-          '<p class="subtle">攻击 ' + V2.escapeHtml(character.attack) + ' · 生命 ' + V2.escapeHtml(character.max_hp) + ' · 候选 ' + owned.length + ' 种</p>' +
+        '<article class="v2-home-esper">' +
+          '<div class="v2-home-esper-art">' + V2.imageMarkup(portrait, character.name, 'v2-portrait') + '</div>' +
+          '<h3>' + V2.escapeHtml(character.name || id) + '</h3>' +
         '</article>'
       );
     }).join('');
-    const starter = catalog && catalog.starter_deck;
-    starterCopy.textContent = starter && starter.name
-      ? '基础预组「' + starter.name + '」：' + characters.map(function (item) { return item.name; }).join('、') + '。'
-      : '固定展示顺序为娜娜莉、主角「零」、九原、浔。';
+    starterCopy.textContent = '每方 4 名角色、单人战斗区、玩家生命胜负。首次进入会获赠官方预组，可在构筑页更换或删除。';
   }
 
   function renderBuildSummary() {
     const saved = catalog && catalog.saved_build;
     const starter = catalog && catalog.starter_deck;
     if (saved && Array.isArray(saved.card_ids)) {
-      buildSummary.textContent = '已保存构筑「' + (saved.name || '自定义') + '」，共 ' + saved.card_ids.length + ' 张。';
+      buildSummary.textContent = '当前构筑「' + (saved.name || '自定义') + '」· ' + saved.card_ids.length + ' 张';
       return;
     }
     if (starter && Array.isArray(starter.card_ids)) {
-      buildSummary.textContent = '尚未保存自定义构筑，将使用基础预组「' + (starter.name || '置顶预组') + '」。';
+      buildSummary.textContent = '将使用基础预组「' + (starter.name || '置顶预组') + '」';
       return;
     }
-    buildSummary.textContent = '正在读取牌组，请稍候。';
+    buildSummary.textContent = '正在读取牌组。';
   }
 
   function renderResume() {
@@ -85,8 +86,29 @@ async function bootstrapHome() {
       return;
     }
     V2.setHidden(resumeCard, false);
+    const finished = Boolean((game && (game.phase === 'finished' || game.winner)) || room.status === 'finished');
     resumeTitle.textContent = room.room_code ? ('房间 ' + room.room_code) : '已有房间';
-    resumeCopy.textContent = V2.roomStatusLabel(room, game) + (game && game.phase === 'finished' ? '。可查看结果，或开始新对局。' : '。可直接返回牌桌继续。');
+    if (resumeEyebrow) resumeEyebrow.textContent = finished ? '已结束' : '进行中';
+    resumeCopy.textContent = V2.roomStatusLabel(room, game) + (finished ? '。可观看回放，或离开房间后开始新对局。' : '。可直接返回牌桌继续。');
+    if (resumeBtn) {
+      resumeBtn.textContent = finished ? '离开房间' : '返回牌桌';
+      if (finished) {
+        resumeBtn.removeAttribute('href');
+        resumeBtn.setAttribute('role', 'button');
+        resumeBtn.setAttribute('tabindex', '0');
+      } else {
+        resumeBtn.setAttribute('href', '/table');
+        resumeBtn.removeAttribute('role');
+        resumeBtn.removeAttribute('tabindex');
+      }
+    }
+    V2.setHidden(leaveBtn, finished);
+    const replayCode = room.replay_code || room.room_code;
+    if (resumeReplay) {
+      const canReplay = Boolean(room.has_replay && replayCode);
+      V2.setHidden(resumeReplay, !canReplay);
+      if (canReplay) resumeReplay.href = '/table?replay=' + encodeURIComponent(replayCode);
+    }
   }
 
   function goTable() {
@@ -162,7 +184,7 @@ async function bootstrapHome() {
       joinRoom();
     }
   });
-  leaveBtn.addEventListener('click', async function () {
+  async function leaveCurrentRoom() {
     if (busy) {
       return;
     }
@@ -171,12 +193,30 @@ async function bootstrapHome() {
       await V2.leaveRoom();
       roomState = null;
       renderResume();
+      await refreshState();
       V2.showBanner(banner, '已离开房间。', 'ok');
     } catch (error) {
       showError(error);
+      await refreshState();
     } finally {
       setBusy(false);
     }
+  }
+
+  if (resumeBtn) {
+    resumeBtn.addEventListener('click', function (event) {
+      const game = roomState && roomState.game;
+      const room = roomState && roomState.room;
+      const finished = Boolean((game && (game.phase === 'finished' || game.winner)) || (room && room.status === 'finished'));
+      if (!finished) {
+        return;
+      }
+      event.preventDefault();
+      leaveCurrentRoom();
+    });
+  }
+  leaveBtn.addEventListener('click', function () {
+    leaveCurrentRoom();
   });
 
   renderProfile();

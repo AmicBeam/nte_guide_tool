@@ -4,7 +4,11 @@
     gap: 16px;
 }
 
-.v2-page [hidden] {
+.v2-page [hidden],
+.v2-home-page [hidden],
+.v2-build-page [hidden],
+.v2-codex-page [hidden],
+.v2-replays-page [hidden] {
     display: none !important;
 }
 
@@ -72,6 +76,61 @@
     background: rgba(255,255,255,0.06);
 }
 
+.v2-frame-stats {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.v2-character-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 6px 0;
+}
+
+.v2-stat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px 4px 6px;
+    border-radius: 999px;
+    background: rgba(8, 14, 22, 0.92);
+    border: 1px solid rgba(203, 174, 105, 0.85);
+    color: #f4e4b8;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.v2-stat-badge em {
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+}
+
+.v2-stat-icon {
+    width: 16px;
+    height: 16px;
+    display: block;
+    flex: none;
+}
+
+.v2-stat-badge.is-shield {
+    border-color: rgba(127, 183, 231, 0.8);
+    color: #d4ecff;
+}
+
+.v2-stat-badge.is-atk {
+    border-color: rgba(255, 122, 110, 0.8);
+    color: #ffc4ba;
+}
+
+.v2-stat-badge.is-hp {
+    border-color: rgba(119, 227, 111, 0.75);
+    color: #c8f5c4;
+}
+
 .v2-chip {
     display: inline-flex;
     align-items: center;
@@ -82,6 +141,64 @@
     background: rgba(255,255,255,0.06);
     font-size: 12px;
     font-weight: 800;
+}
+
+[data-card-type="battle"] {
+    --card-type-color: #ffc4ba;
+    --card-type-border: rgba(255, 122, 110, 0.9);
+    --card-type-glow: rgba(255, 122, 110, 0.22);
+}
+
+[data-card-type="tactic"] {
+    --card-type-color: #c5dcff;
+    --card-type-border: rgba(110, 168, 254, 0.9);
+    --card-type-glow: rgba(110, 168, 254, 0.22);
+}
+
+[data-card-type="form"] {
+    --card-type-color: #f3e0a8;
+    --card-type-border: rgba(232, 201, 136, 0.92);
+    --card-type-glow: rgba(232, 201, 136, 0.24);
+}
+
+.v2-hand-card[data-card-type],
+.v2-build-card[data-card-type],
+.v2-codex-card[data-card-type],
+.v2-hover-card[data-card-type] {
+    border-color: var(--card-type-border);
+    box-shadow: inset 0 0 0 1px var(--card-type-glow);
+}
+
+.v2-hand-card p strong,
+.v2-build-card p strong,
+.v2-codex-card p strong,
+.v2-hover-card p strong,
+.v2-fx-card-desc strong {
+    font-weight: 800;
+}
+
+.v2-hand-card[data-card-type] {
+    border-width: 2px;
+}
+
+.v2-drag-ghost[data-card-type] {
+    border: 2px solid var(--card-type-border);
+    border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--card-type-glow);
+}
+
+.v2-hand-card[data-card-type="battle"] {
+    border-radius: 8px;
+}
+
+.v2-hand-card[data-card-type="form"] {
+    border-radius: 14px;
+}
+
+.v2-chip[data-card-type] {
+    border-color: var(--card-type-border);
+    color: var(--card-type-color);
+    background: var(--card-type-glow);
 }
 
 .v2-chip.copy {
@@ -214,4 +331,37 @@ body.v2-dragging {
     display: block;
     color: var(--muted);
     font-weight: 600;
+}
+
+.v2-choice-dialog.is-cards {
+    width: min(1120px, calc(100vw - 24px));
+    max-height: min(90vh, 920px);
+}
+
+.v2-choice-grid.has-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+}
+
+.v2-choice-card {
+    appearance: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+}
+
+.v2-choice-card .v2-hover-card {
+    width: min(280px, 78vw);
+    min-height: 420px;
+}
+
+.v2-choice-card:hover .v2-hover-card,
+.v2-choice-card:focus-visible .v2-hover-card {
+    box-shadow: 0 28px 64px rgba(0, 0, 0, 0.55), 0 0 0 2px var(--amber, #e2b95f);
 }

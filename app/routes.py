@@ -209,6 +209,11 @@ def table_page():
     return render_template('card_game/table.html' if request.args.get('legacy') == '1' else 'card_game/v2_table.html')
 
 
+@main_bp.get('/replays')
+def replays_page():
+    return render_template('card_game/v2_replays.html')
+
+
 @main_bp.get('/preteam')
 def preteam_page():
     return render_template(

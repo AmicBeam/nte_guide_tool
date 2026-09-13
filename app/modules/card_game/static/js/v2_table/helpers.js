@@ -64,6 +64,28 @@
     return V2.sideState(game, side) || {};
   }
 
+  function characterOrderIndex(side, characterId) {
+    const list = Array.isArray(side && side.characters) ? side.characters : [];
+    for (let index = 0; index < list.length; index += 1) {
+      if (list[index] && list[index].id === characterId) {
+        return index;
+      }
+    }
+    return list.length;
+  }
+
+  function sortHandCards(cards, side) {
+    const typeOrder = { tactic: 0, battle: 1, form: 2 };
+    const list = Array.isArray(cards) ? cards.slice() : [];
+    return list.sort(function (left, right) {
+      const byOwner = characterOrderIndex(side, left && left.character_id) - characterOrderIndex(side, right && right.character_id);
+      if (byOwner) {
+        return byOwner;
+      }
+      return (typeOrder[left && left.type] || 9) - (typeOrder[right && right.type] || 9);
+    });
+  }
+
   function characterMap(side) {
     const map = {};
     ((side && side.characters) || []).forEach(function (item) {
@@ -72,6 +94,30 @@
       }
     });
     return map;
+  }
+
+  function harmonySourceCharacter(state) {
+    const list = (state && state.characters) || [];
+    for (let index = 0; index < list.length; index += 1) {
+      if (list[index] && list[index].harmony_source) {
+        return list[index];
+      }
+    }
+    return null;
+  }
+
+  function harmonySourceCaptionHtml(character) {
+    if (!character) {
+      return '';
+    }
+    const data = Object.assign({}, V2.characterFallback(character.id) || {}, character);
+    const name = data.name || data.id || '角色';
+    const attribute = data.attribute || '';
+    const icon = V2.elementIcon(attribute);
+    const iconHtml = icon
+      ? V2.imageMarkup(icon, attribute, 'v2-harmony-source-icon')
+      : (attribute ? V2.escapeHtml(attribute) : '');
+    return '环合来源方：' + iconHtml + V2.escapeHtml(name);
   }
 
   function findCharacter(game, characterId, preferredSide) {
@@ -187,13 +233,27 @@
       hand.splice(index, 1);
     }
     while (hand.length < target) {
-      if (options.inventNamed) {
+      if (options.allowNamed || options.inventNamed) {
         break;
       }
       hand.push(hiddenCard());
     }
     next.hand = hand;
     return next;
+  }
+
+  function copyViewerHand(display, live, viewer) {
+    if (!display || !live || !viewer) {
+      return display;
+    }
+    const from = sideState(live, viewer);
+    const to = sideState(display, viewer);
+    if (!from || !to) {
+      return display;
+    }
+    to.hand = clone(from.hand || []);
+    to.hand_count = from.hand_count != null ? from.hand_count : to.hand.length;
+    return display;
   }
 
   function removePlayedCard(hand, event, isSelf) {
@@ -253,6 +313,8 @@
         if (!exists) {
           hand.push(clone(event.card));
         }
+      } else if (isSelf) {
+        // Own draws without a visible card must not become opponent-style backs.
       } else if (!isSelf) {
         if (event.card && event.card.copy) {
           hand.push(clone(event.card));
@@ -318,6 +380,20 @@
     return next;
   }
 
+  function historyDescription(event) {
+    if (!event) {
+      return '';
+    }
+    const card = event.card || (event.item && event.item.card) || null;
+    if (card && !card.hidden && card.description) {
+      return String(card.description).trim();
+    }
+    if (event.description) {
+      return String(event.description).trim();
+    }
+    return '';
+  }
+
   function publicPlayFromEvent(event) {
     if (!event || event.type !== 'play') {
       return null;
@@ -336,6 +412,32 @@
       actor: event.actor || null,
       card: clone(card),
     };
+  }
+
+  function publicPlayOwner(side, viewer) {
+    if (side !== 'a' && side !== 'b') {
+      return '';
+    }
+    return side === viewer ? '我方' : '对手';
+  }
+
+  function appendPresentedEvent(game, event) {
+    if (!game || !event) {
+      return game;
+    }
+    const events = Array.isArray(game.events) ? game.events.slice() : [];
+    const seq = Number(event.seq);
+    if (Number.isFinite(seq) && events.some(function (item) {
+      return Number(item && item.seq) === seq;
+    })) {
+      return game;
+    }
+    events.push(clone(event));
+    game.events = events;
+    game.logs = events.map(function (item) {
+      return (item && item.text) || '';
+    });
+    return game;
   }
 
   function appendPublicPlay(history, event) {
@@ -379,6 +481,29 @@
     });
   }
 
+  function splitPresentationAtTurn(events) {
+    const list = Array.isArray(events) ? events : [];
+    let index = -1;
+    for (let i = 0; i < list.length; i += 1) {
+      if (list[i] && list[i].type === 'turn') {
+        index = i;
+        break;
+      }
+    }
+    if (index < 0) {
+      return { settle: list.slice(), follow: [] };
+    }
+    return { settle: list.slice(0, index), follow: list.slice(index) };
+  }
+
+  function applyEventPatches(board, events) {
+    let next = board;
+    (Array.isArray(events) ? events : []).forEach(function (event) {
+      next = applyPatch(next, (event && event.patch) || {}, event);
+    });
+    return next;
+  }
+
   function loadOptions() {
     const fallback = { muted: false, reducedMotion: false, speed: 1 };
     try {
@@ -415,8 +540,8 @@
     if (action.type === 'attack') {
       return { kind: 'attack', actor_id: entityId(side, action.character_id), target_ids: [] };
     }
-    if (action.type === 'awaken') {
-      return { kind: 'awaken', actor_id: entityId(side, action.character_id), target_ids: [] };
+    if (action.type === 'ultimate') {
+      return { kind: 'ultimate', actor_id: entityId(side, action.character_id), target_ids: [] };
     }
     if (action.type === 'play_card') {
       const card = cardByInstance(game, action.card_id);
@@ -491,27 +616,40 @@
     return { entries: entries || [], groups: groups };
   }
 
-  function legalDropFor(kind, grouped, zone, attackEntry) {
+  function isPlayAreaRole(role) {
+    return role === 'cast' || role === 'play-area' || role === 'player-front' || role === 'opponent-front' || role === 'combat-core';
+  }
+
+  function legalDropFor(kind, grouped, zone, attackEntry, options) {
     if (!zone) return null;
+    options = options || {};
     const roleNode = zone.closest ? zone.closest('[data-drop-role]') : null;
     const role = roleNode && roleNode.getAttribute ? roleNode.getAttribute('data-drop-role') : '';
     const entityNode = zone.closest ? zone.closest('[data-entity-id]') : null;
     if (kind === 'character') {
-      return role === 'player-front' ? (attackEntry || null) : null;
+      if (!attackEntry) {
+        return null;
+      }
+      if (options.fromFront) {
+        return role === 'opponent-front' ? attackEntry : null;
+      }
+      return isPlayAreaRole(role) ? attackEntry : null;
     }
     grouped = grouped || { entries: [], groups: { cast: [], target: [], form: [], other: [] } };
     if (!grouped.entries.length) {
       return null;
-    }
-    if (role === 'cast') {
-      return grouped.groups.cast[0] || grouped.groups.form[0] || null;
     }
     const targetId = canonicalEntityId(entityNode && entityNode.getAttribute && entityNode.getAttribute('data-entity-id'));
     if (targetId) {
       const match = grouped.groups.target.concat(grouped.groups.form).find(function (entry) {
         return entryMatchesTarget(entry, targetId);
       });
-      return match || null;
+      if (match) {
+        return match;
+      }
+    }
+    if (isPlayAreaRole(role)) {
+      return grouped.groups.cast[0] || grouped.groups.form[0] || grouped.groups.target[0] || grouped.entries[0] || null;
     }
     return null;
   }
@@ -523,16 +661,21 @@
       '生命 ' + (data.hp == null ? '-' : data.hp) + '/' + (data.max_hp == null ? '-' : data.max_hp),
       '护盾 ' + (data.shield == null ? 0 : data.shield),
       '环合 ' + (data.harmony == null ? 0 : data.harmony),
-      '能量 ' + (data.energy == null ? 0 : data.energy),
+      '能量 ' + (data.energy == null ? 0 : data.energy) + '/' + (data.energy_max == null ? 5 : data.energy_max),
     ];
     if (data.growth != null && data.growth !== '') {
       bits.push('成长 ' + data.growth);
     }
     if (data.shape) {
-      bits.push('形态 ' + data.shape);
+      bits.push('武备 ' + data.shape);
     }
     if (data.awakened) {
-      bits.push('已觉醒');
+      bits.push(data.ultimate_turns ? ('终结 ' + data.ultimate_turns) : '终结中');
+    }
+    if (data.collapse) {
+      bits.push('倾陷');
+    } else if (data.collapse_count) {
+      bits.push('倾陷 ' + data.collapse_count + '/' + (data.collapse_max == null ? 5 : data.collapse_max));
     }
     if (Number(data.down_turns) > 0) {
       bits.push('倒地 ' + data.down_turns);
@@ -592,6 +735,69 @@
     return new FallbackPlayer(config);
   }
 
+  function mulliganCardNode(rail, id) {
+    if (!rail || typeof rail.querySelector !== 'function' || id == null || id === '') {
+      return null;
+    }
+    const key = String(id);
+    try {
+      return rail.querySelector('[data-instance-id="' + key + '"]')
+        || rail.querySelector('[data-card-id="' + key + '"]');
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function animateMulliganSwap(config) {
+    config = config || {};
+    const rail = config.rail;
+    const outgoingIds = (config.outgoingIds || []).map(String).filter(Boolean);
+    const incomingIds = (config.incomingIds || []).map(String).filter(Boolean);
+    const reduced = Boolean(config.reducedMotion);
+    const replace = typeof config.replace === 'function' ? config.replace : function () {};
+    const cancelled = typeof config.cancelled === 'function' ? config.cancelled : function () { return false; };
+    const selectMs = reduced ? 0 : 380;
+    const moveMs = reduced ? 0 : 420;
+    const holdMs = reduced ? 0 : 1000;
+    const wait = typeof config.wait === 'function'
+      ? config.wait
+      : function (ms) {
+        if (!ms || cancelled()) return Promise.resolve();
+        return new Promise(function (resolve) {
+          const timer = setTimeout(resolve, ms);
+          if (cancelled()) {
+            clearTimeout(timer);
+            resolve();
+          }
+        });
+      };
+
+    function mark(ids, className) {
+      ids.forEach(function (id) {
+        const node = mulliganCardNode(rail, id);
+        if (node && node.classList) node.classList.add(className);
+      });
+    }
+
+    return Promise.resolve().then(function () {
+      if (cancelled()) return;
+      mark(outgoingIds, 'selected');
+      return wait(outgoingIds.length ? selectMs : 0);
+    }).then(function () {
+      if (cancelled()) return;
+      mark(outgoingIds, 'is-leaving');
+      return wait(outgoingIds.length ? moveMs : 0);
+    }).then(function () {
+      if (cancelled()) return;
+      replace();
+      mark(incomingIds, 'is-entering');
+      return wait(incomingIds.length ? moveMs : 0);
+    }).then(function () {
+      if (cancelled() || !incomingIds.length) return;
+      return wait(holdMs);
+    });
+  }
+
   TABLE.OPTIONS_KEY = OPTIONS_KEY;
   TABLE.CHARACTER_ORDER = CHARACTER_ORDER;
   TABLE.clone = clone;
@@ -602,16 +808,26 @@
   TABLE.viewerSide = viewerSide;
   TABLE.opponentSide = opponentSide;
   TABLE.sideState = sideState;
+  TABLE.characterOrderIndex = characterOrderIndex;
+  TABLE.sortHandCards = sortHandCards;
   TABLE.characterMap = characterMap;
+  TABLE.harmonySourceCharacter = harmonySourceCharacter;
+  TABLE.harmonySourceCaptionHtml = harmonySourceCaptionHtml;
   TABLE.findCharacter = findCharacter;
   TABLE.cardByInstance = cardByInstance;
   TABLE.applyPatch = applyPatch;
   TABLE.applyEventToHand = applyEventToHand;
   TABLE.reconcileHandCount = reconcileHandCount;
+  TABLE.copyViewerHand = copyViewerHand;
+  TABLE.historyDescription = historyDescription;
   TABLE.publicPlayFromEvent = publicPlayFromEvent;
+  TABLE.publicPlayOwner = publicPlayOwner;
+  TABLE.appendPresentedEvent = appendPresentedEvent;
   TABLE.appendPublicPlay = appendPublicPlay;
   TABLE.presentationFrom = presentationFrom;
   TABLE.eventsAfter = eventsAfter;
+  TABLE.splitPresentationAtTurn = splitPresentationAtTurn;
+  TABLE.applyEventPatches = applyEventPatches;
   TABLE.loadOptions = loadOptions;
   TABLE.saveOptions = saveOptions;
   TABLE.interactionOf = interactionOf;
@@ -620,8 +836,11 @@
   TABLE.actionTargetId = actionTargetId;
   TABLE.legalEntries = legalEntries;
   TABLE.groupPlayEntries = groupPlayEntries;
+  TABLE.isPlayAreaRole = isPlayAreaRole;
   TABLE.legalDropFor = legalDropFor;
   TABLE.resourceLine = resourceLine;
   TABLE.FallbackPlayer = FallbackPlayer;
   TABLE.createPlayer = createPlayer;
+  TABLE.mulliganCardNode = mulliganCardNode;
+  TABLE.animateMulliganSwap = animateMulliganSwap;
 }(window));

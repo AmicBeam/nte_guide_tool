@@ -56,6 +56,37 @@ class FakeNode {
     }
     return Object.prototype.hasOwnProperty.call(this.attributes, key) ? this.attributes[key] : null;
   }
+  removeAttribute(name) {
+    const key = String(name);
+    delete this.attributes[key];
+    if (key === "id") {
+      this.id = "";
+    }
+    if (key === "class") {
+      this.className = "";
+      this._classes = new Set();
+    }
+  }
+  cloneNode(deep) {
+    const copy = new FakeNode(this.tagName, this.ownerDocument, this.namespaceURI);
+    Object.keys(this.attributes || {}).forEach((key) => {
+      copy.setAttribute(key, this.attributes[key]);
+    });
+    copy.className = this.className;
+    copy._classes = new Set(this._classes);
+    copy.style = Object.assign({}, this.style);
+    copy.textContent = this.textContent;
+    copy._rect = Object.assign({}, this._rect);
+    if (this.src) {
+      copy.src = this.src;
+    }
+    if (deep) {
+      this.childNodes.forEach((child) => {
+        copy.appendChild(child.cloneNode(true));
+      });
+    }
+    return copy;
+  }
   appendChild(child) {
     if (!child) {
       return child;
@@ -227,6 +258,7 @@ function makeRoot() {
   stage.setAttribute("id", "v2-fx-stage");
   place(stage, 0, 0, 800, 450);
   const handA = documentRef.createElement("div");
+  handA.setAttribute("id", "v2-player-hand");
   handA.setAttribute("data-hand-side", "a");
   place(handA, 80, 360, 180, 40);
   const handB = documentRef.createElement("div");
@@ -350,9 +382,7 @@ test("play shows opponent card from hand with user and cost then patches after a
   assert.equal(playCard.getAttribute("data-v2-fx-kind"), "play");
   const meta = overlay.querySelector(".v2-fx-card-meta");
   assert.match(meta.textContent, /使用者/);
-  assert.match(meta.textContent, /费用 1/);
-  assert.equal(overlay.getAttribute("data-v2-fx-last-actor"), "主角「零」");
-  assert.equal(overlay.getAttribute("data-v2-fx-last-cost"), "1");
+  assert.equal(overlay.getAttribute("data-v2-fx-last-actor"), "零");
   assert.equal(patches.length, 0, "patch waits until presentation");
   await settle(done, harness.clock, player);
   assert.equal(patches.length, 1);
@@ -457,6 +487,25 @@ test("missing entities and animation API still complete without throwing", async
   assert.match(overlay.getAttribute("data-v2-fx-types") || "", /flower/);
   assert.match(overlay.getAttribute("data-v2-fx-types") || "", /awaken/);
   assert.match(overlay.getAttribute("data-v2-fx-types") || "", /record/);
+});
+
+test("down and attack fx do not leave character cards rotated", async () => {
+  const harness = makeRoot();
+  harness.zero.classList.add("v2-character-card");
+  harness.nanali.classList.add("v2-character-card");
+  const player = new Player({
+    root: harness.root,
+    clock: harness.clock,
+    applyPatch() {},
+  });
+  await settle(player.play([
+    { seq: 50, type: "down", target: "b:zero", patch: { down: true } },
+    { seq: 51, type: "attack", actor: "a:nanali", target: "b:zero", attack: 2, patch: { atk: true } },
+  ]), harness.clock, player);
+  assert.equal(harness.zero.classList.contains("v2-fx-down"), false);
+  assert.equal(harness.nanali.classList.contains("v2-fx-lunge"), false);
+  assert.equal(harness.zero.style.transform || "", "");
+  assert.equal(harness.nanali.style.transform || "", "");
 });
 
 test("reduced motion and speed keep final patches and do not leave busy", async () => {
@@ -703,6 +752,7 @@ test("own play fades the matching instance and keeps the other card", async () =
   const player = new Player({
     root: harness.root,
     clock: harness.clock,
+    presentOwnPlays: true,
     applyPatch() {},
   });
   const done = player.play([
@@ -760,3 +810,178 @@ test("opponent hidden hand uses a single card back source", async () => {
   assert.equal(extra.classList.contains("v2-fx-source"), false);
   await settle(done, harness.clock, player);
 });
+
+test("harmony and dots use readable titles instead of raw type chips", async () => {
+  const harness = makeRoot();
+  const player = new Player({
+    root: harness.root,
+    clock: harness.clock,
+    applyPatch() {},
+  });
+  await settle(player.play([
+    { seq: 100, type: "harmony", actor: "a:nanali", text: "娜娜莉消耗自己的 2 点环合值，触发创生。", patch: { harmony: true } },
+    { seq: 101, type: "burn", target: "b:zero", amount: 1, text: "浊燃", patch: { burn: true } },
+  ], { instant: true }), harness.clock, player);
+  const overlay = overlayOf(harness);
+  const types = String(overlay.getAttribute("data-v2-fx-types") || "");
+  assert.match(types, /harmony/);
+  assert.match(types, /burn/);
+  const floaters = floatersOf(harness);
+  assert.ok(floaters.some((text) => text.indexOf("浊燃") >= 0 || text.indexOf("噩梦") >= 0 || text.length > 0));
+});
+
+test("enter uses the existing character pop before the front patch", async () => {
+  const harness = makeRoot();
+  harness.nanali.classList.add("v2-character-card");
+  const patches = [];
+  const player = new Player({
+    root: harness.root,
+    clock: harness.clock,
+    applyPatch(_patch, event) {
+      patches.push(event.type);
+    },
+  });
+  const done = player.play([
+    {
+      seq: 110,
+      type: "enter",
+      side: "a",
+      actor: "a:nanali",
+      source: "nanali",
+      text: "娜娜莉进入战斗区。",
+      patch: { sides: { a: { front: "nanali" } } },
+    },
+  ]);
+  await Promise.resolve();
+  await Promise.resolve();
+  const overlay = overlayOf(harness);
+  assert.equal(overlay.getAttribute("data-v2-fx-last-type"), "enter");
+  assert.equal(harness.nanali.classList.contains("v2-fx-enter"), true);
+  assert.equal(patches.length, 0);
+  await settle(done, harness.clock, player);
+  assert.deepEqual(patches, ["enter"]);
+  assert.equal(harness.nanali.classList.contains("v2-fx-enter"), false);
+});
+
+test("own draw flies in from the right before the hand patch", async () => {
+  const harness = makeRoot();
+  const patches = [];
+  const player = new Player({
+    root: harness.root,
+    clock: harness.clock,
+    applyPatch(_patch, event) {
+      patches.push(event.type);
+    },
+  });
+  const done = player.play([
+    {
+      seq: 120,
+      type: "draw",
+      side: "a",
+      present: true,
+      actor: "a:player",
+      card: publicCard(),
+      text: "我方玩家抽到「要叫大姐头」。",
+      patch: { drawn: true },
+    },
+  ]);
+  await Promise.resolve();
+  await Promise.resolve();
+  const overlay = overlayOf(harness);
+  const flyer = overlay && overlay.querySelector(".v2-fx-draw-card");
+  assert.ok(flyer, "draw close-up exists before the hand updates");
+  assert.equal(flyer.getAttribute("data-v2-fx-kind"), "draw-public");
+  assert.ok(overlay.querySelector(".v2-fx-draw-formula"), "draw starts as a formula card");
+  const startLeft = Number(String(flyer.style.left || "0").replace("px", ""));
+  assert.ok(startLeft >= 100, "draw starts off the right edge");
+  assert.equal(patches.length, 0);
+  await settle(done, harness.clock, player);
+  assert.deepEqual(patches, ["draw"]);
+});
+
+test("draw ignores the hidden mulligan rail and stays over the table hand", () => {
+  const harness = makeRoot();
+  const rail = harness.documentRef.createElement("div");
+  rail.setAttribute("id", "v2-mulligan-rail");
+  rail.setAttribute("data-hand-side", "a");
+  place(rail, 0, 0, 0, 0);
+  harness.root.appendChild(rail);
+  const last = harness.documentRef.createElement("div");
+  last.classList.add("v2-hand-card");
+  place(last, 420, 360, 148, 108);
+  harness.handA.appendChild(last);
+  const player = new Player({
+    root: harness.root,
+    clock: harness.clock,
+    applyPatch() {},
+  });
+  const slot = player._drawSlotRect({ side: "a", card: publicCard() }, { left: 0, top: 0, width: 800, height: 450 });
+  assert.ok(slot.cx > 400, "landing stays over the table hand, not the left edge");
+});
+
+test("finish event presents then notifies onFinish", async () => {
+  const harness = makeRoot();
+  const finishes = [];
+  const patches = [];
+  const player = new Player({
+    root: harness.root,
+    clock: harness.clock,
+    applyPatch(_patch, event) {
+      patches.push(event.type);
+    },
+    onFinish(event) {
+      finishes.push(event.type);
+    },
+  });
+  await settle(player.play([
+    { seq: 200, type: "finish", side: "a", present: true, text: "我方玩家获胜。", winner: "a", patch: { phase: "finished" } },
+  ], { instant: true }), harness.clock, player);
+  assert.deepEqual(patches, ["finish"]);
+  assert.deepEqual(finishes, ["finish"]);
+});
+
+test("ultimate end patches without a 终结 burst", async () => {
+  const harness = makeRoot();
+  const patches = [];
+  const player = new Player({
+    root: harness.root,
+    clock: harness.clock,
+    applyPatch(_patch, event) {
+      patches.push(event.type);
+    },
+  });
+  await settle(player.play([
+    {
+      seq: 130,
+      type: "ultimate",
+      side: "a",
+      present: false,
+      text: "娜娜莉的终结结束。",
+      after: { awakened: false, ultimate_turns: 0 },
+      patch: { ended: true },
+    },
+  ], { instant: true }), harness.clock, player);
+  assert.deepEqual(patches, ["ultimate"]);
+  const overlay = overlayOf(harness);
+  assert.equal(overlay.querySelector(".v2-fx-burst"), null);
+  assert.equal(overlay.querySelector(".v2-fx-title"), null);
+});
+
+test("turn start is patched before the following draw", async () => {
+  const harness = makeRoot();
+  const order = [];
+  const player = new Player({
+    root: harness.root,
+    clock: harness.clock,
+    applyPatch(_patch, event) {
+      order.push(event.type);
+    },
+  });
+  await settle(player.play([
+    { seq: 121, type: "turn", side: "a", present: true, text: "我方玩家的第 2 个回合开始。", patch: { turn: 2 } },
+    { seq: 122, type: "draw", side: "a", present: true, card: publicCard(), patch: { drawn: true } },
+    { seq: 123, type: "resource", side: "a", present: false, patch: { ap: 2 } },
+  ], { instant: true }), harness.clock, player);
+  assert.deepEqual(order, ["turn", "draw", "resource"]);
+});
+

@@ -2,34 +2,41 @@
 {% block title %}构筑{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_common.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_home.css') }}">
 <link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_build.css') }}">
 {% endblock %}
 {% block body %}
-<main class="v2-page v2-build-page">
-    <section class="glass-card panel-header v2-build-command">
-        <div>
-            <p class="eyebrow">四人构筑</p>
-            <h1>出战构筑</h1>
-            <p class="subtle">每人从八种角色卡中携带 8 张，同名最多 2 张，全队共 32 张。</p>
+<main class="v2-build-page" id="v2-build-page">
+    <header class="v2-home-nav">
+        <a class="v2-home-logo" href="{{ url_for('main.card_game_home') }}">
+            <img src="{{ url_for('static', filename='images/brand/duel-logo.webp') }}" alt="异象对决" width="858" height="282">
+        </a>
+        <nav class="v2-home-links" aria-label="大厅导航">
+            <a href="{{ url_for('main.card_game_home') }}">大厅</a>
+            <a class="is-current" href="{{ url_for('main.build_page') }}">构筑</a>
+            <a href="{{ url_for('main.codex_page') }}">图鉴</a>
+            <a href="{{ url_for('main.replays_page') }}">回放</a>
+        </nav>
+        <div class="v2-home-account">
+            <div class="v2-build-summary-bar">
+                <input id="v2-build-name" type="text" maxlength="16" placeholder="构筑名称" spellcheck="false">
+                <p id="v2-build-total">总牌数 0 / 32</p>
+                <p id="v2-build-source">尚未读取构筑。</p>
+            </div>
+            <button class="secondary-btn" id="v2-build-new-btn" type="button">新建</button>
+            <button class="secondary-btn" id="v2-build-delete-btn" type="button">删除</button>
+            <button class="primary-btn" id="v2-save-build-btn" type="button">保存</button>
         </div>
-        <div class="header-actions">
-            <a class="secondary-btn" href="{{ url_for('main.card_game_home') }}">返回</a>
-            <button class="secondary-btn" id="v2-reset-starter-btn" type="button">重置预组</button>
-            <button class="primary-btn" id="v2-save-build-btn" type="button">保存构筑</button>
+    </header>
+    <section class="v2-banner" id="v2-build-banner" hidden></section>
+    <section class="v2-build-stage">
+        <div class="v2-build-toolbar">
+            <section id="v2-build-library" aria-label="我的构筑"></section>
         </div>
+        <section class="v2-build-board" id="v2-build-groups" aria-label="配卡"></section>
+        <footer class="v2-build-team" id="v2-build-team" aria-label="出战四人"></footer>
+        <aside class="v2-build-gallery" id="v2-build-roster" hidden aria-label="选择角色"></aside>
     </section>
-    <section class="glass-card v2-banner" id="v2-build-banner" hidden></section>
-    <section class="glass-card v2-build-summary-bar">
-        <p id="v2-build-total">总牌数 0 / 32</p>
-        <p id="v2-build-source">尚未读取构筑。</p>
-    </section>
-    <section class="v2-build-groups" id="v2-build-groups" aria-label="四人卡组">
-        <article class="glass-card v2-build-group" data-character-id="nanali"><div class="v2-skel"></div></article>
-        <article class="glass-card v2-build-group" data-character-id="zero"><div class="v2-skel"></div></article>
-        <article class="glass-card v2-build-group" data-character-id="jiuyuan"><div class="v2-skel"></div></article>
-        <article class="glass-card v2-build-group" data-character-id="xun"><div class="v2-skel"></div></article>
-    </section>
-    <aside class="v2-detail-layer" id="v2-build-detail" aria-hidden="true"></aside>
 </main>
 <script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>

@@ -1,9 +1,9 @@
 """Explicit capability context passed down to card content callbacks."""
-from app.modules.card_game.content.duel_v2 import CARDS
+from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
 from app.modules.card_game.content.duel_v2.effects import shape_event
 from . import combat
 from .state import (add_hand, alive, consume_once, damage, draw, energy, finished,
-                    front_target, heal, hero, log, other, shield)
+                    front_target, heal, hero, is_esper, log, other, shield)
 
 
 class EffectContext:
@@ -46,27 +46,53 @@ class EffectContext:
     def set_shape(self):
         from .presentation import public_card
         previous = self.character['shape']
+        before = {'shape_id': previous, 'hp': self.character['hp'], 'max_hp': self.character['max_hp']}
         self.character['shape'] = self.card['card_id']
-        log(self.state, f"{self.character['name']}切换形态：{self.card['name']}。",
+        panel_hp = int(self.card.get('hp') or 0)
+        if panel_hp:
+            catalog_hp = int(CHARACTERS.get(self.cid, {}).get('max_hp') or 0)
+            perm_hp = int(self.character.get('base_max_hp') or catalog_hp) - catalog_hp
+            self.character['max_hp'] = panel_hp + max(0, perm_hp)
+            self.character['hp'] = self.character['max_hp']
+        log(self.state, f"{self.character['name']}装备武备：{self.card['name']}。",
             'shape', side=self.side, source=self.cid, actor=f'{self.side}:{self.cid}',
             target=f'{self.side}:{self.cid}', card=public_card(self.card),
-            before={'shape_id': previous}, after={'shape_id': self.card['card_id']})
+            before=before,
+            after={'shape_id': self.card['card_id'], 'hp': self.character['hp'],
+                   'max_hp': self.character['max_hp']})
+
+    def attach_pact(self, side, cid):
+        if finished(self.state) or not is_esper(cid) or not alive(self.state, side, cid):
+            return
+        hero(self.state, side, cid).setdefault('flags', {})['pact'] = True
+
+    def add_atk_debuff(self, side, cid, amount=2):
+        if finished(self.state) or not is_esper(cid) or not alive(self.state, side, cid):
+            return
+        flags = hero(self.state, side, cid).setdefault('flags', {})
+        flags['atk_debuff'] = int(flags.get('atk_debuff') or 0) + amount
 
     def sortie(self, **spec):
         combat.sortie(self, **spec)
 
     def hit_front(self, amount, bypass=False):
+        from .state import reduce_max_hp
         side, cid = front_target(self.state, self.side)
-        if cid:
-            damage(self.state, side, cid, amount, bypass=bypass, source=f'{self.side}:{self.cid}')
+        if bypass:
+            reduce_max_hp(self.state, side, cid, amount, source=f'{self.side}:{self.cid}')
+        else:
+            damage(self.state, side, cid, amount, source=f'{self.side}:{self.cid}')
 
     def front_wounded(self):
         side, cid = front_target(self.state, self.side)
-        return bool(cid and hero(self.state, side, cid)['hp'] < hero(self.state, side, cid)['max_hp'])
+        if not is_esper(cid):
+            return False
+        h = hero(self.state, side, cid)
+        return h['hp'] < h['max_hp']
 
     def clear_front_shield(self):
         side, cid = front_target(self.state, self.side)
-        if cid and not finished(self.state):
+        if is_esper(cid) and not finished(self.state):
             hero(self.state, side, cid)['shield'] = 0
 
     def heal_target(self, amount, front_shield=0):
@@ -77,7 +103,7 @@ class EffectContext:
 
     def followup(self, target, amount):
         side, cid = target
-        if cid and (not alive(self.state, side, cid) or self.state['sides'][side]['front'] != cid):
+        if is_esper(cid) and (not alive(self.state, side, cid) or self.state['sides'][side]['front'] != cid):
             return
         from .presentation import next_group_id
         damage(self.state, side, cid, amount, source=f'{self.side}:{self.cid}',
@@ -133,6 +159,24 @@ class EffectContext:
     def extra_flower(self):
         if not finished(self.state):
             self.state['sides'][self.side]['extra_flower'] = True
+
+    def extra_delay(self):
+        if not finished(self.state):
+            self.state['sides'][self.side]['extra_delay'] = True
+
+    def grant_harmony(self, cid, amount=1):
+        if finished(self.state) or not alive(self.state, self.side, cid):
+            return
+        h = hero(self.state, self.side, cid)
+        h['harmony'] = min(2, h['harmony'] + amount)
+
+    def add_gaze(self, amount=1, cap=None):
+        if finished(self.state) or self.character['hp'] <= 0:
+            return 0
+        limit = cap if cap is not None else (4 if self.character['awakened'] else 2)
+        before = self.character.get('gaze', 0)
+        self.character['gaze'] = min(limit, before + amount)
+        return self.character['gaze'] - before
 
     def recover_target(self):
         team = self.state['sides'][self.side]

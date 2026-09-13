@@ -29,17 +29,145 @@
       node.innerHTML = '';
     }
 
+    function isTouchLike(pointerType) {
+      if (pointerType === 'mouse' || pointerType === 'keyboard') {
+        return false;
+      }
+      if (pointerType === 'touch') {
+        return true;
+      }
+      try {
+        return window.matchMedia('(hover: none), (pointer: coarse)').matches;
+      } catch (_error) {
+        return false;
+      }
+    }
+
+    function hideHoverPreview(options) {
+      options = options || {};
+      if (ctx.hoverPinned && !options.force) {
+        return;
+      }
+      ctx.hoverPinned = false;
+      cardPreview.className = 'v2-hover-preview';
+      cardPreview.setAttribute('aria-hidden', 'true');
+      cardPreview.innerHTML = '';
+    }
+
+    function hoverCardMarkup(card) {
+      const owner = (V2.characterFallback(card.character_id) || {}).name || '';
+      const portrait = V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'portrait')
+        || V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'avatar');
+      return (
+        '<article class="v2-hover-card"' + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '>' +
+          '<div class="v2-hover-art">' + V2.imageMarkup(portrait, card.name, 'v2-portrait') + '</div>' +
+          V2.cardCostBadge(card) +
+          V2.cardFrameStat(card) +
+          '<div class="v2-stat-row">' + V2.cardTypeChip(card.type, card.terminal) +
+            (card.copy ? '<span class="v2-chip copy">复制</span>' : '') + '</div>' +
+          (owner ? '<span class="v2-card-owner">' + V2.escapeHtml(owner) + '</span>' : '') +
+          '<h2>' + V2.escapeHtml(card.name || '卡牌') + '</h2>' +
+          V2.cardDescriptionHtml(card.description, '正在读取卡牌效果。') +
+        '</article>'
+      );
+    }
+
+    function hoverCharacterMarkup(character) {
+      const found = character || {};
+      const portrait = V2.characterAsset(found, 'portrait') || V2.characterAsset(found, 'avatar');
+      const lines = [
+        '<p>异能：' + V2.escapeHtml(found.passive || '尚未提供') + '</p>',
+        '<p>终结：' + V2.escapeHtml(found.awakened_passive || '尚未提供') + '</p>',
+      ];
+      if (found.shape_description) {
+        lines.push('<p>弧盘：' + V2.escapeHtml(found.shape_description) + '</p>');
+      }
+      const resources = TABLE.resourceLine(found);
+      if (resources) {
+        lines.push('<p class="subtle">' + V2.escapeHtml(resources) + '</p>');
+      }
+      return (
+        '<article class="v2-hover-card is-character">' +
+          '<div class="v2-hover-art">' + V2.imageMarkup(portrait, found.name, 'v2-portrait') + '</div>' +
+          '<h2>' + V2.escapeHtml(found.name || '角色') + '</h2>' +
+          (found.attribute ? V2.attributeMarkup(found.attribute) : '') +
+          '<p class="subtle">攻击 ' + V2.escapeHtml(found.attack == null ? '-' : found.attack) +
+            ' · 生命 ' + V2.escapeHtml((found.hp == null ? '-' : found.hp) + '/' + (found.max_hp == null ? '-' : found.max_hp)) + '</p>' +
+          lines.join('') +
+        '</article>'
+      );
+    }
+
+    function payloadFromNode(node) {
+      if (!node || !node.getAttribute) {
+        return null;
+      }
+      const publicCopy = node.getAttribute('data-public-copy');
+      if (publicCopy) {
+        const card = ((TABLE.sideState(ctx.game, ctx.opponent()).hand) || []).find(function (item) {
+          return item.instance_id === publicCopy;
+        });
+        return card && !card.hidden ? { kind: 'card', card: card } : null;
+      }
+      const dragKind = node.getAttribute('data-drag-kind');
+      const cardId = node.getAttribute('data-card-id');
+      if (dragKind === 'card' || (cardId && node.classList && node.classList.contains('v2-hand-card'))) {
+        const card = TABLE.cardByInstance(ctx.game, cardId);
+        return card && !card.hidden ? { kind: 'card', card: card } : null;
+      }
+      const characterId = node.getAttribute('data-character-id');
+      if (characterId) {
+        const parsed = TABLE.parseEntityId(node.getAttribute('data-entity-id'));
+        const side = parsed.side || ctx.viewer();
+        const character = TABLE.characterMap(TABLE.sideState(ctx.game, side))[characterId]
+          || TABLE.characterMap(TABLE.sideState(ctx.game, ctx.viewer()))[characterId]
+          || TABLE.characterMap(TABLE.sideState(ctx.game, ctx.opponent()))[characterId]
+          || V2.characterFallback(characterId);
+        return character ? { kind: 'character', character: character } : null;
+      }
+      return null;
+    }
+
+    function showHoverPreview(payload, sourceNode, options) {
+      options = options || {};
+      if (!payload || ctx.dragState) {
+        return;
+      }
+      ctx.hoverPinned = Boolean(options.pinned);
+      const touchLike = isTouchLike(options.pointerType);
+      const rect = sourceNode && sourceNode.getBoundingClientRect ? sourceNode.getBoundingClientRect() : null;
+      const placeLeft = Boolean(rect && rect.left > (window.innerWidth * 0.55));
+      cardPreview.className = 'v2-hover-preview open' + (placeLeft ? ' is-left' : ' is-right') +
+        (ctx.hoverPinned ? ' is-pinned' : '') + (touchLike ? ' is-touch' : '');
+      cardPreview.setAttribute('aria-hidden', 'false');
+      const body = payload.kind === 'character' ? hoverCharacterMarkup(payload.character) : hoverCardMarkup(payload.card);
+      const closeBtn = (ctx.hoverPinned || touchLike)
+        ? '<button class="icon-btn preview-close" type="button" data-hover-close="1" aria-label="关闭">×</button>'
+        : '';
+      cardPreview.innerHTML = closeBtn + body;
+    }
+
     function openChoice(config) {
       const choices = config.choices || [];
+      const hasCards = choices.some(function (choice) {
+        return Boolean(choice && choice.card && !choice.card.hidden);
+      });
       choiceOverlay.innerHTML =
-        '<div class="v2-choice-dialog">' +
+        '<div class="v2-choice-dialog' + (hasCards ? ' is-cards' : '') + '">' +
           '<div class="section-title-row"><h2>' + V2.escapeHtml(config.title || '请选择') + '</h2><button class="icon-btn" id="v2-choice-close" type="button" aria-label="关闭">×</button></div>' +
-          '<div class="v2-choice-grid">' + (choices.length ? choices.map(function (choice) {
+          '<div class="v2-choice-grid' + (hasCards ? ' has-cards' : '') + '">' + (choices.length ? choices.map(function (choice) {
             const card = choice.card;
+            if (card && !card.hidden) {
+              return (
+                '<button class="v2-choice-card" type="button" data-choice-id="' + V2.escapeAttr(choice.id) + '">' +
+                  hoverCardMarkup(card) +
+                '</button>'
+              );
+            }
             return (
               '<button class="secondary-btn" type="button" data-choice-id="' + V2.escapeAttr(choice.id) + '">' +
                 V2.escapeHtml(choice.label || (card && card.name) || choice.id) +
-                (card && card.description ? '<small>' + V2.escapeHtml(card.description) + '</small>' : '') +
+                (card && card.description ? '<small>' + V2.cardDescriptionMarkup(card.description) + '</small>' : '') +
               '</button>'
             );
           }).join('') : '<p class="subtle">没有候选。</p>') + '</div>' +
@@ -47,6 +175,7 @@
       choiceOverlay.classList.add('open');
       choiceOverlay.setAttribute('aria-hidden', 'false');
       document.getElementById('v2-choice-close').addEventListener('click', function () {
+        markRaisedCard(ctx.localChoice && ctx.localChoice.cardId, false);
         ctx.localChoice = null;
         closeOverlay(choiceOverlay);
         ctx.flushPendingEnvelope();
@@ -67,7 +196,7 @@
           '<div class="section-title-row"><h2>' + V2.escapeHtml(title) + '</h2><button class="icon-btn" id="v2-pile-close" type="button" aria-label="关闭">×</button></div>' +
           '<div class="v2-pile-grid">' + ((cards || []).length ? cards.map(function (card) {
             if (card.hidden) return '<div class="v2-hidden-card"></div>';
-            return '<article class="v2-codex-card"><strong>' + V2.escapeHtml(card.name || '卡牌') + '</strong><p class="subtle">' + V2.escapeHtml(V2.cardTypeLabel(card.type, card.terminal)) + '</p><p>' + V2.escapeHtml(card.description || '') + '</p></article>';
+            return '<article class="v2-codex-card"' + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '><strong>' + V2.escapeHtml(card.name || '卡牌') + '</strong><p class="subtle">' + V2.cardTypeChip(card.type, card.terminal) + '</p>' + V2.cardDescriptionHtml(card.description) + '</article>';
           }).join('') : '<p class="subtle">空</p>') + '</div>' +
         '</div>';
       pileModal.classList.add('open');
@@ -75,45 +204,16 @@
       document.getElementById('v2-pile-close').addEventListener('click', function () { closeOverlay(pileModal); });
     }
 
-    function showCardDetail(card, extraActions) {
-      extraActions = extraActions || [];
-      cardPreview.innerHTML =
-        '<div class="v2-detail-card">' +
-          '<div class="section-title-row"><h2>' + V2.escapeHtml(card.name || '卡牌') + '</h2><button class="icon-btn" id="v2-preview-close" type="button" aria-label="关闭">×</button></div>' +
-          '<p class="subtle">' + V2.escapeHtml(V2.cardTypeLabel(card.type, card.terminal)) + ' · 费用 ' + V2.escapeHtml(card.cost) + (card.copy ? ' · 复制' : '') + '</p>' +
-          '<p>' + V2.escapeHtml(card.description || '正在读取卡牌效果。') + '</p>' +
-          (extraActions.length ? '<div class="hero-actions">' + extraActions.map(function (item, index) {
-            return '<button class="' + (item.primary ? 'primary-btn' : 'secondary-btn') + '" type="button" data-extra-action="' + index + '">' + V2.escapeHtml(item.label || '操作') + '</button>';
-          }).join('') + '</div>' : '') +
-        '</div>';
-      cardPreview.classList.add('open');
-      cardPreview.setAttribute('aria-hidden', 'false');
-      document.getElementById('v2-preview-close').addEventListener('click', function () { closeOverlay(cardPreview); });
-      cardPreview.querySelectorAll('[data-extra-action]').forEach(function (button) {
-        button.addEventListener('click', function () {
-          const action = extraActions[Number(button.getAttribute('data-extra-action'))];
-          closeOverlay(cardPreview);
-          if (action && action.onPick) action.onPick();
-          else if (action && action.entry) ctx.resolveAndSubmit(action.entry, action.entries);
-        });
-      });
+    function showCardDetail(card, extraActions, sourceNode) {
+      showHoverPreview({ kind: 'card', card: card || {} }, sourceNode, { pinned: true, pointerType: 'touch' });
     }
 
-    function showCharacterDetail(character, isOpponent) {
-      const found = character || {};
-      const attack = !isOpponent ? ctx.findAction('attack', { character_id: found.id }) : null;
-      const awaken = !isOpponent ? ctx.findAction('awaken', { character_id: found.id }) : null;
-      showCardDetail({
-        name: found.name,
-        type: 'form',
-        cost: '',
-        description: ((found.awakened ? found.awakened_passive : found.passive) || '') + '\n' +
-          (found.shape_description ? '形态：' + found.shape_description + '\n' : '') +
-          TABLE.resourceLine(found),
-      }, [
-        attack ? { label: attack.label || '确认出击', entry: attack, primary: true } : null,
-        awaken ? { label: awaken.label || '主动觉醒（1 行动力）', entry: awaken } : null,
-      ].filter(Boolean));
+    function showCharacterDetail(character, isOpponent, sourceNode) {
+      showHoverPreview(
+        { kind: 'character', character: character || {} },
+        sourceNode,
+        { pinned: isTouchLike(), pointerType: isTouchLike() ? 'touch' : 'mouse' }
+      );
     }
 
     function groupedPlay(cardId) {
@@ -151,17 +251,42 @@
     }
 
     function clearCastUi() {
+      page.classList.remove('v2-playing-card', 'v2-playing-attack-front');
       V2.setHidden(castZone, true);
       V2.setHidden(targetLine, true);
+      if (nodes.playArea) nodes.playArea.classList.remove('drop-target', 'drop-target-top');
+      [nodes.playerFrontZone, nodes.opponentFrontZone, castZone].forEach(function (node) {
+        if (node) node.classList.remove('drop-target');
+      });
       page.querySelectorAll('.target-legal').forEach(function (node) { node.classList.remove('target-legal'); });
       page.querySelectorAll('.v2-hand-card.raised').forEach(function (node) { node.classList.remove('raised'); });
       ctx.raisedCardId = null;
     }
 
-    function legalDrop(kind, id, zone) {
+    function characterFromFront(sourceNode) {
+      return Boolean(sourceNode && sourceNode.closest && sourceNode.closest('#v2-player-front, [data-drop-role="player-front"]'));
+    }
+
+    function inPlayArea(zone) {
+      return Boolean(zone && zone.closest && zone.closest('[data-drop-role="play-area"]'));
+    }
+
+    function inPlayAreaTopHalf(point) {
+      if (!point || !nodes.playArea) {
+        return false;
+      }
+      const box = nodes.playArea.getBoundingClientRect();
+      return point.y < box.top + box.height / 2;
+    }
+
+    function legalDrop(kind, id, zone, point, fromFront) {
       const grouped = kind === 'card' ? groupedPlay(id) : null;
       const attackEntry = kind === 'character' ? ctx.findAction('attack', { character_id: id }) : null;
-      return TABLE.legalDropFor(kind, grouped, zone, attackEntry);
+      const front = fromFront != null ? fromFront : Boolean(ctx.dragState && ctx.dragState.fromFront);
+      if (kind === 'character' && front && attackEntry && inPlayArea(zone)) {
+        return inPlayAreaTopHalf(point) ? attackEntry : null;
+      }
+      return TABLE.legalDropFor(kind, grouped, zone, attackEntry, { fromFront: front });
     }
 
     function dropZoneAt(x, y) {
@@ -173,11 +298,20 @@
     }
 
     function highlightDrop(zone, legal) {
-      [nodes.playerFrontZone, nodes.opponentFrontZone, castZone].forEach(function (node) {
-        if (node) node.classList.toggle('drop-target', Boolean(legal && zone === node));
-      });
-      page.querySelectorAll('[data-entity-id]').forEach(function (node) {
-        node.classList.toggle('drop-target', Boolean(legal && zone === node));
+      const playArea = nodes.playArea;
+      const kind = ctx.dragState && ctx.dragState.kind;
+      const fromFront = Boolean(ctx.dragState && ctx.dragState.fromFront);
+      const wholeCenter = Boolean((kind === 'card' || (kind === 'character' && !fromFront)) && legal && inPlayArea(zone));
+      const opponentHalf = Boolean(kind === 'character' && fromFront && legal);
+      if (playArea) {
+        playArea.classList.toggle('drop-target', wholeCenter);
+        playArea.classList.toggle('drop-target-top', opponentHalf);
+      }
+      if (nodes.opponentFrontZone) {
+        nodes.opponentFrontZone.classList.toggle('drop-target', opponentHalf);
+      }
+      [nodes.playerFrontZone, castZone].forEach(function (node) {
+        if (node) node.classList.remove('drop-target');
       });
     }
 
@@ -192,13 +326,16 @@
       if (event.pointerType === 'mouse' && event.buttons !== 1) return;
       if (kind === 'card') {
         const grouped = groupedPlay(id);
-        const known = grouped.groups.cast.length + grouped.groups.target.length + grouped.groups.form.length;
-        if (!known) {
+        if (!(grouped.entries && grouped.entries.length)) {
           return;
         }
       }
+      if (kind === 'character' && !ctx.findAction('attack', { character_id: id })) {
+        return;
+      }
       event.preventDefault();
       if (typeof sourceNode.setPointerCapture === 'function') sourceNode.setPointerCapture(event.pointerId);
+      const fromFront = kind === 'character' && characterFromFront(sourceNode);
       ctx.dragState = {
         pointerId: event.pointerId,
         kind: kind,
@@ -207,20 +344,24 @@
         startX: event.clientX,
         startY: event.clientY,
         moved: false,
+        fromFront: fromFront,
       };
+      hideHoverPreview({ force: true });
       sourceNode.classList.add('dragging-source');
       ghost.innerHTML = sourceNode.innerHTML;
       ghost.classList.add('open');
+      const ghostType = sourceNode.getAttribute && sourceNode.getAttribute('data-card-type');
+      if (ghostType) ghost.setAttribute('data-card-type', ghostType);
+      else ghost.removeAttribute('data-card-type');
       document.body.classList.add('v2-dragging');
-      if (kind === 'card') {
-        ctx.raisedCardId = id;
-        sourceNode.classList.add('raised');
-        const grouped = groupedPlay(id);
-        const needsCast = grouped.groups.cast.length || grouped.groups.form.length;
-        V2.setHidden(castZone, !needsCast);
-        highlightTargets([].concat.apply([], grouped.groups.target.concat(grouped.groups.form).map(function (entry) {
-          return (entry.interaction && entry.interaction.target_ids) || [];
-        })), true);
+      if (kind === 'card' || (kind === 'character' && !fromFront)) {
+        if (kind === 'card') {
+          ctx.raisedCardId = id;
+          sourceNode.classList.add('raised');
+        }
+        page.classList.add('v2-playing-card');
+      } else if (kind === 'character' && fromFront) {
+        page.classList.add('v2-playing-attack-front');
       }
       moveGhost(event.clientX, event.clientY);
       sourceNode.addEventListener('pointermove', onDragMove);
@@ -236,6 +377,7 @@
       ctx.dragState.sourceNode.removeEventListener('pointercancel', onDragCancel);
       ghost.classList.remove('open');
       ghost.innerHTML = '';
+      ghost.removeAttribute('data-card-type');
       document.body.classList.remove('v2-dragging');
       highlightDrop(null, false);
       V2.setHidden(previewBox, true);
@@ -250,15 +392,13 @@
       const distance = Math.hypot(event.clientX - ctx.dragState.startX, event.clientY - ctx.dragState.startY);
       if (distance > CLICK_DISTANCE) ctx.dragState.moved = true;
       const zone = dropZoneAt(event.clientX, event.clientY);
-      const legal = legalDrop(ctx.dragState.kind, ctx.dragState.id, zone);
+      const legal = legalDrop(ctx.dragState.kind, ctx.dragState.id, zone, { x: event.clientX, y: event.clientY });
       highlightDrop(zone, Boolean(legal));
       if (ctx.dragState.kind === 'character') {
         showPreview(ctx.findAction('attack', { character_id: ctx.dragState.id }));
       } else {
         showPreview(legal || ctx.playEntries(ctx.dragState.id)[0] || null);
-        if (zone && zone.getAttribute && zone.getAttribute('data-entity-id')) {
-          drawTargetLine(ctx.dragState.sourceNode, zone);
-        }
+        V2.setHidden(targetLine, true);
       }
     }
 
@@ -275,7 +415,7 @@
       if (!state.moved || distance < CLICK_DISTANCE) {
         ctx.suppressClick = true;
         window.setTimeout(function () { ctx.suppressClick = false; }, 0);
-        handleActivate(state.kind, state.id, state.sourceNode);
+        handleActivate(state.kind, state.id, state.sourceNode, event.pointerType);
         clearCastUi();
         ctx.flushPendingEnvelope();
         return;
@@ -283,16 +423,178 @@
       ctx.suppressClick = true;
       window.setTimeout(function () { ctx.suppressClick = false; }, 0);
       const zone = dropZoneAt(event.clientX, event.clientY);
-      const legal = legalDrop(state.kind, state.id, zone);
+      const legal = legalDrop(state.kind, state.id, zone, { x: event.clientX, y: event.clientY }, state.fromFront);
       clearCastUi();
       if (!legal) {
-        ctx.showToast('未放到合法区域，已回弹。');
+        ctx.showToast(state.kind === 'character' && state.fromFront ? '未放到对手区域，已回弹。' : '未放到中央区域，已回弹。');
         ctx.flushPendingEnvelope();
         return;
       }
       if (state.kind === 'character') ctx.submitEntry(legal);
-      else ctx.resolveAndSubmit(legal, [legal]);
+      else beginPlayCard(state.id, zone);
       ctx.flushPendingEnvelope();
+    }
+
+    function isBoardTargetId(value) {
+      const token = TABLE.canonicalEntityId(value);
+      if (!token || token.indexOf(':') < 0) return '';
+      const id = token.split(':')[1];
+      if (!id) return '';
+      return token;
+    }
+
+    function boardTargetEntries(entries) {
+      const map = {};
+      (entries || []).forEach(function (entry) {
+        const actionId = isBoardTargetId(entry.action && entry.action.target_id);
+        if (actionId) {
+          map[actionId] = entry;
+          return;
+        }
+        ((entry.interaction && entry.interaction.target_ids) || []).forEach(function (raw) {
+          const id = isBoardTargetId(raw);
+          if (id && !map[id] && entry.action && entry.action.target_id) {
+            map[id] = entry;
+          }
+        });
+      });
+      return map;
+    }
+
+    function applyTargetClasses(byId) {
+      const ids = Object.keys(byId || {});
+      page.querySelectorAll('.v2-character-card, .v2-player-hud').forEach(function (node) {
+        const eid = TABLE.canonicalEntityId(node.getAttribute('data-entity-id'));
+        const legal = Boolean(eid && ids.indexOf(eid) >= 0);
+        node.classList.toggle('target-legal', legal);
+        if (node.classList.contains('v2-character-card')) {
+          node.classList.toggle('target-dim', !legal);
+        }
+      });
+    }
+
+    function markRaisedCard(cardId, on) {
+      if (on) ctx.raisedCardId = cardId || null;
+      else if (!cardId || String(ctx.raisedCardId) === String(cardId)) ctx.raisedCardId = null;
+      page.querySelectorAll('.v2-hand-card.raised').forEach(function (node) {
+        if (!on || String(node.getAttribute('data-card-id')) !== String(cardId)) {
+          node.classList.remove('raised');
+        }
+      });
+      if (on && cardId) {
+        const handCard = page.querySelector('.v2-hand-card[data-card-id="' + cardId + '"]');
+        if (handCard) handCard.classList.add('raised');
+      }
+      if (!ctx.dragState) {
+        page.classList.remove('v2-playing-card');
+      }
+    }
+
+    function endBoardTargetSelect() {
+      if (ctx.localChoice && ctx.localChoice.kind === 'board-target') {
+        markRaisedCard(ctx.localChoice.cardId, false);
+        ctx.localChoice = null;
+      }
+      page.classList.remove('is-targeting');
+      page.querySelectorAll('.target-legal, .target-dim').forEach(function (node) {
+        node.classList.remove('target-legal');
+        node.classList.remove('target-dim');
+      });
+      if (ctx.targetMask) V2.setHidden(ctx.targetMask, true);
+    }
+
+    function reapplyBoardTargetSelect() {
+      if (!ctx.localChoice || ctx.localChoice.kind !== 'board-target') return;
+      const cardId = ctx.localChoice.cardId;
+      const grouped = cardId ? groupedPlay(cardId) : { entries: [] };
+      const byId = boardTargetEntries(grouped.entries || []);
+      if (!Object.keys(byId).length) {
+        endBoardTargetSelect();
+        return;
+      }
+      ctx.localChoice.byId = byId;
+      page.classList.add('is-targeting');
+      applyTargetClasses(byId);
+      markRaisedCard(cardId, true);
+      if (ctx.targetMask) V2.setHidden(ctx.targetMask, false);
+    }
+
+    function startBoardTargetSelect(entries, card) {
+      const byId = boardTargetEntries(entries);
+      const ids = Object.keys(byId);
+      if (!ids.length) {
+        ctx.submitEntry(entries[0]);
+        return;
+      }
+      hideHoverPreview({ force: true });
+      ctx.localChoice = { kind: 'board-target', byId: byId, cardId: card && card.instance_id };
+      page.classList.add('is-targeting');
+      applyTargetClasses(byId);
+      markRaisedCard(card && card.instance_id, true);
+      if (ctx.targetCopy) {
+        ctx.targetCopy.textContent = (card && card.name ? '选择「' + card.name + '」的目标' : '选择一个目标');
+      }
+      if (ctx.targetMask) V2.setHidden(ctx.targetMask, false);
+    }
+
+    function startChoiceSelect(entries, card) {
+      hideHoverPreview({ force: true });
+      ctx.localChoice = { kind: 'choice-target', cardId: card && card.instance_id };
+      markRaisedCard(card && card.instance_id, true);
+      ctx.openChoice({
+        title: card && card.name ? '选择「' + card.name + '」的目标' : '选择一个目标',
+        choices: entries.map(function (entry, index) {
+          const tid = entry.action && entry.action.target_id;
+          const found = TABLE.cardByInstance(ctx.game, tid);
+          return {
+            id: String(index),
+            label: entry.label || (found && found.name) || tid || ('目标 ' + (index + 1)),
+            card: found,
+            entry: entry,
+          };
+        }),
+        onPick: function (picked) {
+          markRaisedCard(card && card.instance_id, false);
+          ctx.localChoice = null;
+          if (picked && picked.entry) ctx.submitEntry(picked.entry);
+        },
+      });
+    }
+
+    function beginPlayCard(cardId, zone) {
+      const grouped = groupedPlay(cardId);
+      const list = grouped.entries || [];
+      if (!list.length) {
+        ctx.showToast('没有合法动作。');
+        return;
+      }
+      const entityNode = zone && zone.closest ? zone.closest('[data-entity-id]') : null;
+      const droppedOn = TABLE.canonicalEntityId(entityNode && entityNode.getAttribute && entityNode.getAttribute('data-entity-id'));
+      if (droppedOn) {
+        const direct = list.find(function (entry) { return TABLE.entryMatchesTarget(entry, droppedOn); });
+        if (direct) {
+          ctx.submitEntry(direct);
+          return;
+        }
+      }
+      const byId = boardTargetEntries(list);
+      const needsBoardPick = Object.keys(byId).length > 0 && list.some(function (entry) {
+        return Boolean(isBoardTargetId(entry.action && entry.action.target_id));
+      });
+      if (needsBoardPick) {
+        startBoardTargetSelect(list, TABLE.cardByInstance(ctx.game, cardId));
+        return;
+      }
+      const choiceKeys = [];
+      list.forEach(function (entry) {
+        const tid = entry.action && entry.action.target_id;
+        if (tid && !isBoardTargetId(tid) && choiceKeys.indexOf(tid) < 0) choiceKeys.push(tid);
+      });
+      if (choiceKeys.length > 1) {
+        startChoiceSelect(list, TABLE.cardByInstance(ctx.game, cardId));
+        return;
+      }
+      ctx.submitEntry(list[0]);
     }
 
     function resolveAndSubmit(entry, entries) {
@@ -301,63 +603,30 @@
         ctx.showToast('没有合法动作。');
         return;
       }
-      if (list.length === 1 && !list[0].action.target_id) {
-        ctx.submitEntry(list[0]);
-        return;
-      }
-      if (list.length === 1 && list[0].action.target_id) {
-        ctx.submitEntry(list[0]);
-        return;
-      }
-      ctx.localChoice = { kind: 'target' };
-      openChoice({
-        title: '选择完整目标',
-        choices: list.map(function (item, index) {
-          return { id: String(index), label: item.label || item.action.target_id || ('候选 ' + (index + 1)) };
-        }),
-        onPick: function (choice) {
-          ctx.localChoice = null;
-          ctx.submitEntry(list[Number(choice.id)]);
-        },
-      });
+      beginPlayCard((entry && entry.action && entry.action.card_id) || (list[0].action && list[0].action.card_id), null);
     }
     ctx.resolveAndSubmit = resolveAndSubmit;
+    ctx.endBoardTargetSelect = endBoardTargetSelect;
+    ctx.reapplyBoardTargetSelect = reapplyBoardTargetSelect;
 
-    function handleActivate(kind, id, sourceNode) {
+    function handleActivate(kind, id, sourceNode, pointerType) {
       if (ctx.playingEvents && ctx.settlePresentation) ctx.settlePresentation();
       if (ctx.game && ctx.game.phase === 'mulligan' && kind === 'card') {
         ctx.toggleMulligan(id);
         return;
       }
-      if (kind === 'character') {
-        const parsed = TABLE.parseEntityId(sourceNode && sourceNode.getAttribute('data-entity-id'));
-        const isOpponent = parsed.side === ctx.opponent();
-        const character = TABLE.characterMap(TABLE.sideState(ctx.game, parsed.side || ctx.viewer()))[id]
-          || TABLE.characterMap(TABLE.sideState(ctx.game, ctx.viewer()))[id]
-          || TABLE.characterMap(TABLE.sideState(ctx.game, ctx.opponent()))[id]
-          || V2.characterFallback(id);
-        showCharacterDetail(character, isOpponent);
-        return;
-      }
-      const grouped = groupedPlay(id);
-      const cycle = ctx.findAction('cycle', { card_id: id });
-      const card = TABLE.cardByInstance(ctx.game, id) || { name: '卡牌', description: '' };
-      const extras = [];
-      if (grouped.groups.cast.length === 1 && !grouped.groups.target.length && !grouped.groups.form.length) {
-        extras.push({ label: grouped.groups.cast[0].label || '施放', entry: grouped.groups.cast[0], entries: grouped.groups.cast, primary: true });
-      } else {
-        grouped.entries.forEach(function (entry) {
-          extras.push({ label: entry.label || '打出', entry: entry, entries: grouped.entries });
-        });
-      }
-      if (cycle) extras.push({ label: cycle.label || '弃一抽一', entry: cycle });
-      showCardDetail(card, extras);
+      const payload = payloadFromNode(sourceNode) || (
+        kind === 'card'
+          ? { kind: 'card', card: TABLE.cardByInstance(ctx.game, id) || { name: '卡牌', description: '' } }
+          : { kind: 'character', character: V2.characterFallback(id) }
+      );
+      showHoverPreview(payload, sourceNode, { pinned: isTouchLike(pointerType), pointerType: pointerType });
     }
 
     function bindPointer(container, kindAttr, idAttr) {
       container.addEventListener('pointerdown', function (event) {
         const source = event.target.closest('[' + kindAttr + ']');
-        if (!source || ctx.busy || event.target.closest('.v2-inspect, .v2-attack-btn, .v2-awaken-btn, [data-inspect-character]')) return;
+        if (!source || ctx.busy || event.target.closest('.v2-inspect, .v2-awaken-btn, [data-inspect-character]')) return;
         const kind = source.getAttribute(kindAttr);
         const id = source.getAttribute(idAttr);
         if (!kind || !id) return;
@@ -369,56 +638,82 @@
           event.preventDefault();
           return;
         }
-        const attackBtn = event.target.closest('[data-attack-character]');
-        if (attackBtn) {
-          event.preventDefault();
-          ctx.submitEntry(ctx.findAction('attack', { character_id: attackBtn.getAttribute('data-attack-character') }));
-          return;
-        }
-        const awakenBtn = event.target.closest('[data-awaken-id]');
+        const awakenBtn = event.target.closest('[data-ultimate-id], [data-awaken-id]');
         if (awakenBtn) {
           event.preventDefault();
-          ctx.submitEntry(ctx.findAction('awaken', { character_id: awakenBtn.getAttribute('data-awaken-id') }));
+          ctx.submitEntry(ctx.findAction('ultimate', {
+            character_id: awakenBtn.getAttribute('data-ultimate-id') || awakenBtn.getAttribute('data-awaken-id'),
+          }));
           return;
         }
         const inspect = event.target.closest('[data-inspect-character]');
         if (inspect) return;
         const source = event.target.closest('[' + idAttr + ']');
         if (!source || ctx.busy || ctx.dragState) return;
-        handleActivate(source.getAttribute(kindAttr) === 'character' ? 'character' : 'card', source.getAttribute(idAttr), source);
+        handleActivate(source.getAttribute(kindAttr) === 'character' ? 'character' : 'card', source.getAttribute(idAttr), source, event.pointerType);
       });
     }
+
+    page.addEventListener('pointerover', function (event) {
+      if (event.pointerType === 'touch' || ctx.dragState || ctx.busy) return;
+      if (ctx.game && ctx.game.phase === 'mulligan') return;
+      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      if (!source || source.classList.contains('v2-hidden-card')) return;
+      const payload = payloadFromNode(source);
+      if (payload) showHoverPreview(payload, source, { pointerType: event.pointerType || 'mouse' });
+    });
+    page.addEventListener('pointerout', function (event) {
+      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      if (!source) return;
+      if (source.contains(event.relatedTarget)) return;
+      hideHoverPreview();
+    });
+    page.addEventListener('focusin', function (event) {
+      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      const payload = source ? payloadFromNode(source) : null;
+      if (payload) showHoverPreview(payload, source, { pointerType: 'keyboard' });
+    });
+    page.addEventListener('focusout', function (event) {
+      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      if (!source || source.contains(event.relatedTarget)) return;
+      hideHoverPreview();
+    });
 
     page.addEventListener('click', function (event) {
       const inspect = event.target.closest('[data-inspect-character]');
       if (!inspect || ctx.busy) return;
       const isOpponent = inspect.dataset.opponent === 'true';
       const character = TABLE.characterMap(TABLE.sideState(ctx.game, isOpponent ? ctx.opponent() : ctx.viewer()))[inspect.dataset.inspectCharacter];
-      if (character) showCharacterDetail(character, isOpponent);
-      const playChip = event.target.closest('[data-play-seq]');
-      if (playChip && ctx.historyDrawer) {
-        ctx.historyDrawer.classList.add('open');
-        ctx.historyDrawer.setAttribute('aria-hidden', 'false');
-      }
+      if (character) showCharacterDetail(character, isOpponent, inspect.closest('[data-character-id]'));
     });
+    function opponentPublicCard(button) {
+      return (TABLE.sideState(ctx.game, ctx.opponent()).hand || []).find(function (item) {
+        return item.instance_id === button.dataset.publicCopy;
+      });
+    }
     nodes.opponentHand.addEventListener('click', function (event) {
       const button = event.target.closest('[data-public-copy]');
       if (!button) return;
-      const card = (TABLE.sideState(ctx.game, ctx.opponent()).hand || []).find(function (item) {
-        return item.instance_id === button.dataset.publicCopy;
-      });
-      if (card) showCardDetail(card, []);
+      const card = opponentPublicCard(button);
+      if (card) showCardDetail(card, [], button);
+    });
+    nodes.opponentHand.addEventListener('mouseover', function (event) {
+      const button = event.target.closest('[data-public-copy]');
+      if (!button || ctx.hoverPinned) return;
+      const card = opponentPublicCard(button);
+      if (card) showHoverPreview({ kind: 'card', card: card }, button, { pointerType: 'mouse' });
     });
 
     bindPointer(nodes.playerBench, 'data-drag-kind', 'data-character-id');
     bindPointer(nodes.playerFront, 'data-drag-kind', 'data-character-id');
     bindPointer(nodes.playerHand, 'data-drag-kind', 'data-card-id');
+    if (nodes.mulliganRail) bindPointer(nodes.mulliganRail, 'data-drag-kind', 'data-card-id');
     function inspectOpponent(event) {
       const source = event.target.closest('[data-character-id]');
       if (!source || ctx.busy) return;
       if (event.target.closest('.v2-inspect')) return;
       const character = TABLE.characterMap(TABLE.sideState(ctx.game, ctx.opponent()))[source.getAttribute('data-character-id')];
-      if (character) showCharacterDetail(character, true);
+      if (character) showCharacterDetail(character, true, source);
     }
     nodes.opponentBench.addEventListener('click', inspectOpponent);
     nodes.opponentFront.addEventListener('click', inspectOpponent);
@@ -436,17 +731,78 @@
     });
     choiceOverlay.addEventListener('click', function (event) {
       if (event.target === choiceOverlay) {
+        markRaisedCard(ctx.localChoice && ctx.localChoice.cardId, false);
         ctx.localChoice = null;
         closeOverlay(choiceOverlay);
       }
     });
     pileModal.addEventListener('click', function (event) { if (event.target === pileModal) closeOverlay(pileModal); });
-    cardPreview.addEventListener('click', function (event) { if (event.target === cardPreview) closeOverlay(cardPreview); });
+    cardPreview.addEventListener('click', function (event) {
+      if (event.target.closest('[data-hover-close]') || event.target === cardPreview) {
+        hideHoverPreview({ force: true });
+      }
+    });
+    function cancelBoardTarget() {
+      endBoardTargetSelect();
+      ctx.flushPendingEnvelope();
+    }
+    page.addEventListener('click', function (event) {
+      if (!ctx.localChoice || ctx.localChoice.kind !== 'board-target') return;
+      if (ctx.suppressClick) {
+        ctx.suppressClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.target.closest('#v2-card-preview')) return;
+      if (event.target.closest('#v2-target-cancel')) {
+        event.preventDefault();
+        event.stopPropagation();
+        cancelBoardTarget();
+        return;
+      }
+      if (event.target.closest('.v2-target-bar')) return;
+      const legal = event.target.closest('.v2-character-card.target-legal, .v2-player-hud.target-legal');
+      if (legal) {
+        event.preventDefault();
+        event.stopPropagation();
+        const eid = TABLE.canonicalEntityId(legal.getAttribute('data-entity-id'))
+          || (legal.getAttribute('data-player-side') ? legal.getAttribute('data-player-side') + ':player' : '');
+        const entry = ctx.localChoice.byId[eid];
+        endBoardTargetSelect();
+        if (entry) ctx.submitEntry(entry);
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      cancelBoardTarget();
+    }, true);
+    if (ctx.targetCancel) {
+      ctx.targetCancel.addEventListener('click', function (event) {
+        event.preventDefault();
+        cancelBoardTarget();
+      });
+    }
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      if (ctx.localChoice && ctx.localChoice.kind === 'board-target') {
+        cancelBoardTarget();
+        return;
+      }
+      hideHoverPreview({ force: true });
+    });
+    document.addEventListener('pointerdown', function (event) {
+      if (!cardPreview.classList.contains('is-pinned') && !cardPreview.classList.contains('is-touch')) return;
+      if (event.target.closest('#v2-card-preview') || event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card')) return;
+      hideHoverPreview({ force: true });
+    });
 
     ctx.openChoice = openChoice;
     ctx.closeOverlay = closeOverlay;
     ctx.showCardDetail = showCardDetail;
     ctx.showCharacterDetail = showCharacterDetail;
+    ctx.showHoverPreview = showHoverPreview;
+    ctx.hideHoverPreview = hideHoverPreview;
     ctx.showPreview = showPreview;
     ctx.clearCastUi = clearCastUi;
     ctx.handleActivate = handleActivate;

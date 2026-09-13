@@ -42,29 +42,55 @@
     }
 
     function interactionLocked() {
-      return Boolean(ctx.busy || ctx.dragState || ctx.localChoice || ctx.choiceOverlay.classList.contains('open') || ctx.playingEvents);
+      return Boolean(ctx.replayMode || ctx.busy || ctx.dragState || ctx.localChoice || ctx.choiceOverlay.classList.contains('open') || ctx.playingEvents);
     }
     ctx.interactionLocked = interactionLocked;
 
+    function currentViewer() {
+      if (typeof ctx.viewer === 'function') {
+        return ctx.viewer();
+      }
+      const game = ctx.displayGame || ctx.game;
+      return ctx.viewer || TABLE.viewerSide(game) || 'a';
+    }
+
+    function currentOpponent() {
+      if (typeof ctx.opponent === 'function') {
+        return ctx.opponent();
+      }
+      return ctx.opponent || (currentViewer() === 'b' ? 'a' : 'b');
+    }
+
     function renderCtx() {
-      const locked = ctx.busy || ctx.playingEvents;
+      const targeting = Boolean(ctx.localChoice && (ctx.localChoice.kind === 'board-target' || ctx.localChoice.kind === 'choice-target'));
+      const locked = ctx.busy || ctx.playingEvents || targeting;
       return {
         game: ctx.displayGame || ctx.game,
         room: ctx.room,
-        viewer: ctx.viewer(),
-        opponent: ctx.opponent(),
+        viewer: currentViewer(),
+        opponent: currentOpponent(),
         nodes: ctx.nodes,
         pool: ctx.pool,
         busy: locked,
         mulliganIds: ctx.mulliganIds,
         raisedCardId: ctx.raisedCardId,
         playHistory: ctx.playHistory,
+        page: ctx.page,
+        showMulligan: ctx.forceMulliganStage ? true : (ctx.replayMode ? Boolean(ctx.replayShowMulligan) : undefined),
         findAction: locked ? function () { return null; } : findAction,
         playEntries: locked ? function () { return []; } : ctx.playEntries,
       };
     }
 
     function bindPlayer() {
+      if (ctx.player && typeof ctx.player.cancel === 'function') {
+        ctx.player.cancel();
+      }
+      if (ctx.page && typeof ctx.page.querySelectorAll === 'function') {
+        Array.prototype.slice.call(ctx.page.querySelectorAll('.v2-fx-overlay')).forEach(function (node) {
+          if (node && node.parentNode) node.parentNode.removeChild(node);
+        });
+      }
       ctx.playerGeneration += 1;
       const generation = ctx.playerGeneration;
       ctx.player = TABLE.createPlayer({
@@ -78,15 +104,16 @@
           ctx.playingEvents = Boolean(busy);
           ctx.page.classList.toggle('presentation-busy', Boolean(busy));
           if (ctx.nodes.waitChip) ctx.nodes.waitChip.textContent = busy ? '演出中' : (ctx.game && ctx.game.is_my_turn ? '你的回合' : '对手回合');
+          if (!busy && typeof ctx.syncResultDialog === 'function') ctx.syncResultDialog();
           if (ctx.nodes.connectionChip) {
             ctx.nodes.connectionChip.dataset.state = busy ? 'busy' : 'live';
             ctx.nodes.connectionChip.textContent = busy ? '演出中' : '已同步';
           }
         },
-        onPublicCard: function (card, event) {
+        onPublicCard: function () {},
+        onFinish: function () {
           if (generation !== ctx.playerGeneration) return;
-          ctx.playHistory = TABLE.appendPublicPlay(ctx.playHistory, event || { type: 'play', card: card });
-          TABLE.renderPlayHistory(renderCtx());
+          if (typeof ctx.openResultFromEvent === 'function') ctx.openResultFromEvent();
         },
       });
       if (ctx.player && typeof ctx.player.setOptions === 'function') {
@@ -102,8 +129,16 @@
       ctx.playHistory = [];
       ctx.pendingEnvelope = null;
       ctx.mulliganIds = [];
+      ctx.mulliganHold = null;
+      ctx.forceMulliganStage = false;
       ctx.raisedCardId = null;
       ctx.playingEvents = false;
+      ctx.initiativePlayed = false;
+      if (ctx.initiativeTimer) {
+        window.clearTimeout(ctx.initiativeTimer);
+        ctx.initiativeTimer = null;
+      }
+      if (ctx.endBoardTargetSelect) ctx.endBoardTargetSelect();
       ctx.lastVersion = -1;
       ctx.page.classList.remove('presentation-busy');
       if (ctx.player && typeof ctx.player.cancel === 'function') {
@@ -131,6 +166,12 @@
       const statusLabel = V2.roomStatusLabel(ctx.room, ctx.game);
       ctx.nodes.roomChip.textContent = (ctx.room && ctx.room.room_code) ? ('房间 ' + ctx.room.room_code) : '无房间';
       ctx.nodes.phaseChip.textContent = statusLabel;
+      const replayCode = ctx.room && (ctx.room.replay_code || ctx.room.room_code);
+      const canReplay = Boolean(!ctx.replayMode && ctx.room && ctx.room.has_replay && replayCode && ctx.nodes.replayLink);
+      if (ctx.nodes.replayLink) {
+        V2.setHidden(ctx.nodes.replayLink, !canReplay);
+        if (canReplay) ctx.nodes.replayLink.href = '/table?replay=' + encodeURIComponent(replayCode);
+      }
       const lobby = Boolean(ctx.room) && !ctx.game && ctx.room.mode === 'pvp' && (ctx.room.status === 'waiting' || ctx.room.status === 'ready');
       const canReady = lobby;
       const canStart = Boolean(lobby && ctx.room.can_start);
@@ -148,6 +189,7 @@
       } else {
         V2.setHidden(ctx.roomPanel, true);
       }
+      if (typeof ctx.syncResultDialog === 'function') ctx.syncResultDialog();
     }
 
     function renderEmpty(title, copy, kind) {
@@ -167,14 +209,23 @@
     function renderMulliganChrome() {
       const inMulligan = Boolean(ctx.game && ctx.game.phase === 'mulligan');
       const canMulligan = inMulligan && actionsOf('mulligan').length > 0;
+      ctx.page.classList.toggle('is-mulligan', inMulligan);
+      if (ctx.nodes.mulliganStage) V2.setHidden(ctx.nodes.mulliganStage, !inMulligan);
       V2.setHidden(ctx.nodes.mulliganBtn, !canMulligan);
-      ctx.nodes.mulliganHint.textContent = canMulligan
-        ? ('已选 ' + ctx.mulliganIds.length + ' / 3，点选手牌后确认。')
-        : (inMulligan ? '已完成换牌，等待对手。' : '行动力支付出牌；能量只用于主动觉醒。');
+      const selected = ctx.mulliganIds.length;
+      if (ctx.nodes.mulliganStageCopy) {
+        ctx.nodes.mulliganStageCopy.textContent = canMulligan
+          ? ('已选 ' + selected + ' / 3。点选不要的牌，确认后立即换入新牌。')
+          : '已完成换牌，等待对手。';
+      }
+      ctx.nodes.mulliganHint.textContent = inMulligan
+        ? (canMulligan ? ('已选 ' + selected + ' / 3') : '等待对手换牌')
+        : '行动力支付出牌；能量只用于终结。';
       ctx.nodes.mulliganBtn.disabled = ctx.busy || !canMulligan;
     }
 
     function renderChoiceFromServer() {
+      if (ctx.replayMode) return;
       const pending = ctx.game && ctx.game.pending_choice;
       if (ctx.localChoice || ctx.dragState) return;
       if (!pending || pending.side !== ctx.viewer()) {
@@ -208,19 +259,106 @@
       V2.setHidden(ctx.tableLayout, false);
       V2.setHidden(ctx.handDock, false);
       TABLE.renderGame(renderCtx());
+      updateInitiative(ctx.game);
+      if (ctx.reapplyBoardTargetSelect) ctx.reapplyBoardTargetSelect();
       renderAuthoritativeControls();
+    }
+
+    function updateInitiative(game) {
+      const overlay = document.getElementById('v2-initiative-overlay');
+      const chip = document.getElementById('v2-initiative-chip');
+      const label = document.getElementById('v2-initiative-label');
+      const copy = document.getElementById('v2-initiative-copy');
+      if (!overlay || !chip) {
+        return;
+      }
+      if (!game || !game.first_side || !game.viewer_side) {
+        V2.setHidden(overlay, true);
+        V2.setHidden(chip, true);
+        return;
+      }
+      const isFirst = game.first_side === game.viewer_side;
+      const title = isFirst ? '先手' : '后手';
+      if (label) {
+        label.textContent = title;
+      }
+      if (copy) {
+        copy.textContent = isFirst ? '你先行动。' : '对手先行动。你有 5 点开局护盾。';
+      }
+      chip.textContent = title;
+      chip.classList.toggle('is-second', !isFirst);
+      overlay.classList.toggle('is-second', !isFirst);
+      if (game.phase === 'mulligan') {
+        V2.setHidden(chip, false);
+        if (ctx.replayMode) {
+          V2.setHidden(overlay, true);
+          return;
+        }
+        if (!ctx.initiativePlayed) {
+          ctx.initiativePlayed = true;
+          overlay.classList.remove('is-leaving');
+          overlay.classList.add('is-playing');
+          V2.setHidden(overlay, false);
+          if (ctx.initiativeTimer) {
+            window.clearTimeout(ctx.initiativeTimer);
+          }
+          ctx.initiativeTimer = window.setTimeout(function () {
+            overlay.classList.add('is-leaving');
+            ctx.initiativeTimer = window.setTimeout(function () {
+              V2.setHidden(overlay, true);
+              overlay.classList.remove('is-playing', 'is-leaving');
+            }, 280);
+          }, 1400);
+        }
+        return;
+      }
+      V2.setHidden(overlay, true);
+      V2.setHidden(chip, true);
+      overlay.classList.remove('is-playing', 'is-leaving');
     }
 
     function applyDisplayPatch(patch, event) {
       ctx.displayGame = TABLE.applyPatch(ctx.displayGame || ctx.game, patch || {}, event);
-      if (event) ctx.playHistory = TABLE.appendPublicPlay(ctx.playHistory, event);
+      ctx.displayGame = TABLE.appendPresentedEvent(ctx.displayGame, event);
+      if (!ctx.replayMode && !ctx.playingEvents) {
+        ctx.displayGame = TABLE.copyViewerHand(ctx.displayGame, ctx.game, currentViewer());
+      }
       TABLE.renderGame(renderCtx());
+      if (ctx.reapplyBoardTargetSelect) ctx.reapplyBoardTargetSelect();
     }
 
     function alignAuthoritative() {
       ctx.displayGame = TABLE.clone(ctx.game);
       if (ctx.game) paintBoard();
       else renderRoomChrome();
+    }
+
+    function lastEventSeq(events, fallback) {
+      const seqs = (events || []).map(function (event) { return Number(event && event.seq); }).filter(function (value) {
+        return Number.isFinite(value);
+      });
+      if (!seqs.length) {
+        return fallback;
+      }
+      return Math.max.apply(null, seqs);
+    }
+
+    function waitMulliganHandDeal(firsts) {
+      if (ctx.options && ctx.options.reducedMotion) {
+        dealMulliganToHand(firsts);
+        return Promise.resolve();
+      }
+      return new Promise(function (resolve) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            if (ctx.nodes.playerHand) {
+              void ctx.nodes.playerHand.offsetWidth;
+            }
+            dealMulliganToHand(firsts);
+            window.setTimeout(resolve, 720);
+          });
+        });
+      });
     }
 
     function consumePresentation(payload, options) {
@@ -262,6 +400,99 @@
         ctx.page.classList.remove('presentation-busy');
         setConnection('live', '已同步');
         alignAuthoritative();
+      });
+    }
+
+    function handInstanceIds(game, side) {
+      return (TABLE.sideState(game, side).hand || []).map(function (card) {
+        return card && card.instance_id != null ? String(card.instance_id) : '';
+      }).filter(Boolean);
+    }
+
+    function incomingMulliganIds(before, after, side) {
+      const beforeIds = {};
+      handInstanceIds(before, side).forEach(function (id) { beforeIds[id] = true; });
+      return handInstanceIds(after, side).filter(function (id) { return !beforeIds[id]; });
+    }
+
+    function playMulliganSwapThen(nextGame, afterSwap) {
+      const hold = ctx.mulliganHold;
+      ctx.mulliganHold = null;
+      if (!hold || !ctx.nodes.mulliganRail) {
+        return Promise.resolve().then(afterSwap);
+      }
+      const viewer = currentViewer();
+      const incomingIds = incomingMulliganIds(hold.snapshot, nextGame, viewer);
+      const outgoingIds = (hold.outgoingIds || []).slice();
+      if (!outgoingIds.length && !incomingIds.length) {
+        return Promise.resolve().then(afterSwap);
+      }
+      ctx.forceMulliganStage = true;
+      ctx.displayGame = hold.snapshot;
+      TABLE.renderGame(renderCtx());
+      ctx.playingEvents = true;
+      ctx.page.classList.add('presentation-busy');
+      return TABLE.animateMulliganSwap({
+        rail: ctx.nodes.mulliganRail,
+        outgoingIds: outgoingIds,
+        incomingIds: incomingIds,
+        reducedMotion: ctx.options && ctx.options.reducedMotion,
+        replace: function () {
+          ctx.displayGame = TABLE.clone(nextGame);
+          TABLE.renderGame(renderCtx());
+        },
+      }).then(function () {
+        ctx.forceMulliganStage = false;
+        ctx.playingEvents = false;
+        ctx.page.classList.remove('presentation-busy');
+        return afterSwap();
+      });
+    }
+
+    function captureMulliganRects() {
+      const map = {};
+      const rail = ctx.nodes.mulliganRail;
+      if (!rail) return map;
+      Array.prototype.forEach.call(rail.querySelectorAll('[data-card-id]'), function (node) {
+        const id = node.getAttribute('data-card-id');
+        if (id) map[id] = node.getBoundingClientRect();
+      });
+      return map;
+    }
+
+    function dealMulliganToHand(firsts) {
+      if (!firsts || (ctx.options && ctx.options.reducedMotion)) return;
+      const hand = ctx.nodes.playerHand;
+      if (!hand) return;
+      Array.prototype.forEach.call(hand.querySelectorAll('[data-card-id]'), function (node) {
+        const first = firsts[node.getAttribute('data-card-id')];
+        const last = node.getBoundingClientRect();
+        if (!first || last.width < 40 || last.height < 40) {
+          node.classList.add('mulligan-arrive');
+          return;
+        }
+        const dx = first.left - last.left;
+        const dy = first.top - last.top;
+        const sx = first.width / Math.max(last.width, 1);
+        const sy = first.height / Math.max(last.height, 1);
+        node.style.transformOrigin = 'top left';
+        node.style.transition = 'none';
+        node.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + sx + ',' + sy + ')';
+        node.style.zIndex = '8';
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            node.style.transition = 'transform 420ms cubic-bezier(.2,.8,.2,1)';
+            node.style.transform = 'none';
+          });
+        });
+        node.addEventListener('transitionend', function cleanup(event) {
+          if (event.propertyName && event.propertyName !== 'transform') return;
+          node.style.transform = '';
+          node.style.transition = '';
+          node.style.zIndex = '';
+          node.style.transformOrigin = '';
+          node.removeEventListener('transitionend', cleanup);
+        });
       });
     }
 
@@ -343,6 +574,7 @@
     async function submitEntry(entry, options) {
       options = options || {};
       let retryMulligan = null;
+      if (ctx.replayMode) return;
       if (!entry || !entry.action) {
         ctx.showToast('没有合法动作。');
         return;
@@ -367,6 +599,12 @@
         expectedVersion: expectedVersion,
         action: entry.action,
       };
+      if (entry.action.type === 'mulligan') {
+        ctx.mulliganHold = {
+          outgoingIds: (entry.action.card_ids || []).map(String),
+          snapshot: TABLE.clone(ctx.displayGame || ctx.game),
+        };
+      }
       ctx.busy = true;
       renderRoomChrome();
       if (ctx.game) {
@@ -383,6 +621,7 @@
         });
         ctx.pendingRequest = null;
         ctx.localChoice = null;
+        if (entry.action.type === 'mulligan') ctx.mulliganIds = [];
         window.clearTimeout(ctx.toastTimer);
         ctx.toast.classList.remove('open');
         ctx.toast.setAttribute('aria-hidden', 'true');
@@ -390,6 +629,7 @@
         V2.showBanner(ctx.banner, '', '');
         setConnection('live', '已同步');
       } catch (error) {
+        ctx.mulliganHold = null;
         if (error && error.status === 409) {
           await refreshState({ force: true });
           if (entry.action.type === 'mulligan' && !options.retryingMulligan && ctx.room && ctx.room.room_code === actionRoomCode) {
@@ -475,6 +715,7 @@
     ctx.setConnection = setConnection;
 
     ctx.startPolling = function () {
+      if (ctx.replayMode) return;
       ctx.pollTimer = window.setInterval(function () {
         if (document.hidden || interactionLocked()) return;
         refreshState({ ignoreIfBusy: true });

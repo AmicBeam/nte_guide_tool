@@ -23,6 +23,9 @@ async function bootstrapTable() {
   const historyDrawer = document.getElementById('v2-history-drawer');
   const menuOverlay = document.getElementById('v2-menu-overlay');
   const castZone = document.getElementById('v2-cast-zone');
+  const targetMask = document.getElementById('v2-target-mask');
+  const targetCopy = document.getElementById('v2-target-copy');
+  const targetCancel = document.getElementById('v2-target-cancel');
   const targetLine = document.getElementById('v2-target-line');
   const pool = document.getElementById('v2-entity-pool');
   const nodes = {
@@ -30,10 +33,18 @@ async function bootstrapTable() {
     phaseChip: document.getElementById('v2-phase-chip'),
     roomChip: document.getElementById('v2-room-chip'),
     connectionChip: document.getElementById('v2-connection-chip'),
+    replayLink: document.getElementById('v2-replay-link'),
     readyBtn: document.getElementById('v2-ready-btn'),
     roomStartBtn: document.getElementById('v2-room-start-btn'),
     endTurnBtn: document.getElementById('v2-end-turn-btn'),
     concedeBtn: document.getElementById('v2-concede-btn'),
+    homeLink: document.getElementById('v2-home-link'),
+    resultOverlay: document.getElementById('v2-result-overlay'),
+    resultTitle: document.getElementById('v2-result-title'),
+    resultCopy: document.getElementById('v2-result-copy'),
+    resultClose: document.getElementById('v2-result-close'),
+    resultStar: document.getElementById('v2-result-star'),
+    resultLeave: document.getElementById('v2-result-leave'),
     opponentHp: document.getElementById('v2-opponent-hp'),
     opponentShield: document.getElementById('v2-opponent-shield'),
     opponentAp: document.getElementById('v2-opponent-ap'),
@@ -55,13 +66,16 @@ async function bootstrapTable() {
     turnCopy: document.getElementById('v2-turn-copy'),
     waitChip: document.getElementById('v2-wait-chip'),
     records: document.getElementById('v2-records'),
-    playHistory: document.getElementById('v2-play-history'),
     playHistoryDetail: document.getElementById('v2-play-history-detail'),
     logList: document.getElementById('v2-log-list'),
     normalAttack: document.getElementById('v2-normal-attack'),
+    ultimate: document.getElementById('v2-ultimate'),
     handCount: document.getElementById('v2-hand-count'),
     mulliganHint: document.getElementById('v2-mulligan-hint'),
     mulliganBtn: document.getElementById('v2-mulligan-btn'),
+    mulliganStage: document.getElementById('v2-mulligan-stage'),
+    mulliganRail: document.getElementById('v2-mulligan-rail'),
+    mulliganStageCopy: document.getElementById('v2-mulligan-stage-copy'),
     opponentHand: document.getElementById('v2-opponent-hand'),
     playerHand: document.getElementById('v2-player-hand'),
     roomTitle: document.getElementById('v2-room-title'),
@@ -69,6 +83,12 @@ async function bootstrapTable() {
     memberList: document.getElementById('v2-member-list'),
     playerFrontZone: document.getElementById('v2-player-front'),
     opponentFrontZone: document.getElementById('v2-opponent-front'),
+    playerFrontDebuff: document.getElementById('v2-player-front-debuff'),
+    opponentFrontDebuff: document.getElementById('v2-opponent-front-debuff'),
+    playArea: document.getElementById('v2-play-area'),
+    targetMask: targetMask,
+    targetCopy: targetCopy,
+    targetCancel: targetCancel,
   };
 
   const options = TABLE.loadOptions();
@@ -90,6 +110,9 @@ async function bootstrapTable() {
     historyDrawer: historyDrawer,
     menuOverlay: menuOverlay,
     castZone: castZone,
+    targetMask: targetMask,
+    targetCopy: targetCopy,
+    targetCancel: targetCancel,
     targetLine: targetLine,
     pool: pool,
     nodes: nodes,
@@ -103,6 +126,7 @@ async function bootstrapTable() {
     pendingRequest: null,
     pendingEnvelope: null,
     playHistory: [],
+    replayMode: false,
     playerGeneration: 0,
     dragState: null,
     localChoice: null,
@@ -151,16 +175,6 @@ async function bootstrapTable() {
     document.getElementById('v2-speed-2').classList.toggle('primary-btn', ctx.options.speed === 2);
   }
 
-  function skipPresentation() {
-    if (ctx.settlePresentation) ctx.settlePresentation();
-    else {
-      if (ctx.player && typeof ctx.player.cancel === 'function') ctx.player.cancel();
-      ctx.playingEvents = false;
-      page.classList.remove('presentation-busy');
-      ctx.alignAuthoritative();
-    }
-  }
-
   document.getElementById('v2-menu-btn').addEventListener('click', function () { setMenuOpen(true); });
   document.getElementById('v2-menu-close').addEventListener('click', function () { setMenuOpen(false); });
   document.getElementById('v2-history-btn').addEventListener('click', function () { setHistoryOpen(true); });
@@ -181,11 +195,152 @@ async function bootstrapTable() {
     ctx.options.speed = 2;
     applyPlayerOptions();
   });
-  document.getElementById('v2-skip-btn').addEventListener('click', skipPresentation);
-  document.getElementById('v2-skip-inline-btn').addEventListener('click', skipPresentation);
   menuOverlay.addEventListener('click', function (event) {
     if (event.target === menuOverlay) setMenuOpen(false);
   });
+  function leaveToHome() {
+    const href = (nodes.homeLink && nodes.homeLink.getAttribute('href')) || '/card-game';
+    return V2.leaveRoom().catch(function () { return null; }).then(function () {
+      window.location.href = href;
+    });
+  }
+
+  function resultDialogKey() {
+    const code = ctx.room && ctx.room.room_code;
+    const version = ctx.game && ctx.game.version;
+    return String(code || '') + ':' + String(version == null ? '' : version);
+  }
+
+  function gameHasEnded() {
+    return Boolean(!ctx.replayMode && ctx.game && (ctx.game.phase === 'finished' || ctx.game.winner));
+  }
+
+  function resultCopy() {
+    const reason = ctx.game && ctx.game.reason;
+    if (reason === 'concede') {
+      return ctx.game.winner === ctx.game.viewer_side ? '对方认输。' : '你已认输。';
+    }
+    if (reason === 'empty_draw') {
+      return '牌库已空，无法抽牌。';
+    }
+    return '';
+  }
+
+  function fillResultDialog() {
+    if (nodes.resultTitle) {
+      nodes.resultTitle.textContent = V2.roomStatusLabel(ctx.room, ctx.game) || '对局结束';
+    }
+    if (nodes.resultCopy) {
+      nodes.resultCopy.textContent = resultCopy();
+      V2.setHidden(nodes.resultCopy, !resultCopy());
+    }
+    const replayCode = ctx.room && (ctx.room.replay_code || ctx.room.room_code);
+    const canStar = Boolean(ctx.room && ctx.room.has_replay && replayCode);
+    if (nodes.resultStar) {
+      nodes.resultStar.disabled = !canStar || ctx.busy;
+      nodes.resultStar.textContent = ctx.room && ctx.room.favorited ? '已收藏' : '收藏录像';
+    }
+  }
+
+  function setResultOpen(open) {
+    if (!nodes.resultOverlay) return;
+    nodes.resultOverlay.classList.toggle('open', Boolean(open));
+    nodes.resultOverlay.setAttribute('aria-hidden', open ? 'false' : 'true');
+    if (open) fillResultDialog();
+  }
+
+  function hasUnplayedPresentation() {
+    if (ctx.playingEvents) {
+      return true;
+    }
+    if (ctx.seenCursor == null) {
+      return false;
+    }
+    const game = ctx.game;
+    if (!game || typeof TABLE.eventsAfter !== 'function') {
+      return false;
+    }
+    const presentation = TABLE.presentationFrom({ game: game }, game);
+    const fresh = TABLE.eventsAfter(presentation.events, ctx.seenCursor);
+    return Boolean(fresh.length);
+  }
+
+  function syncResultDialog() {
+    if (!gameHasEnded()) {
+      setResultOpen(false);
+      return;
+    }
+    if (hasUnplayedPresentation()) {
+      return;
+    }
+    if (ctx.resultDialogDismissed === resultDialogKey()) {
+      return;
+    }
+    setResultOpen(true);
+  }
+  ctx.syncResultDialog = syncResultDialog;
+
+  function openResultFromEvent() {
+    if (ctx.replayMode) {
+      return;
+    }
+    if (ctx.resultDialogDismissed === resultDialogKey()) {
+      return;
+    }
+    setResultOpen(true);
+  }
+  ctx.openResultFromEvent = openResultFromEvent;
+
+  if (nodes.homeLink) {
+    nodes.homeLink.addEventListener('click', function (event) {
+      event.preventDefault();
+      leaveToHome();
+    });
+  }
+  if (nodes.resultClose) {
+    nodes.resultClose.addEventListener('click', function () {
+      ctx.resultDialogDismissed = resultDialogKey();
+      setResultOpen(false);
+    });
+  }
+  if (nodes.resultOverlay) {
+    nodes.resultOverlay.addEventListener('click', function (event) {
+      if (event.target !== nodes.resultOverlay) return;
+      ctx.resultDialogDismissed = resultDialogKey();
+      setResultOpen(false);
+    });
+  }
+  if (nodes.resultLeave) {
+    nodes.resultLeave.addEventListener('click', function () {
+      if (ctx.busy) return;
+      ctx.busy = true;
+      nodes.resultLeave.disabled = true;
+      leaveToHome().finally(function () {
+        ctx.busy = false;
+        nodes.resultLeave.disabled = false;
+      });
+    });
+  }
+  if (nodes.resultStar) {
+    nodes.resultStar.addEventListener('click', async function () {
+      const replayCode = ctx.room && (ctx.room.replay_code || ctx.room.room_code);
+      if (!replayCode || ctx.busy) return;
+      const next = !(ctx.room && ctx.room.favorited);
+      ctx.busy = true;
+      nodes.resultStar.disabled = true;
+      try {
+        await V2.starReplay(replayCode, next);
+        if (ctx.room) ctx.room.favorited = next;
+        if (ctx.room) ctx.room.has_replay = true;
+        fillResultDialog();
+      } catch (error) {
+        V2.showBanner(banner, error.message || '无法收藏录像。', 'error');
+      } finally {
+        ctx.busy = false;
+        fillResultDialog();
+      }
+    });
+  }
 
   ctx.nodes.readyBtn.addEventListener('click', async function () {
     if (ctx.busy) return;
@@ -217,6 +372,11 @@ async function bootstrapTable() {
   });
 
   applyPlayerOptions();
+  const replayCode = TABLE.replayQueryCode();
+  if (replayCode) {
+    await TABLE.startReplay(ctx, replayCode);
+    return;
+  }
   await ctx.refreshState({ force: true, initial: true });
   ctx.startPolling();
 }

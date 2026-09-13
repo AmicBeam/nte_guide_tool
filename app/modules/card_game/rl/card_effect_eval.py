@@ -15,6 +15,7 @@ from typing import Any, Callable
 
 from app.modules.card_game.content.duel_v2.catalog import (
     CARD_ID_ORDER,
+    CARDS,
     CHARACTER_ORDER,
     STARTER_DECK,
     validate_deck,
@@ -32,15 +33,19 @@ PER_GAME_ACTIONS = 500
 SIDES = ('a', 'b')
 ACTION_WEIGHTS = {
     'play_card': 16, 'choose': 12, 'mulligan': 8, 'attack': 6,
-    'awaken': 6, 'cycle': 4, 'end_turn': 1, 'concede': 0,
+    'ultimate': 6, 'cycle': 4, 'end_turn': 1, 'concede': 0,
 }
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 def coverage_deck() -> dict[str, Any]:
+    character_ids = list(STARTER_DECK['character_ids'])
+    allowed = set(character_ids)
     return validate_deck({
         'id': 'coverage_all8', 'name': 'coverage_all8',
-        'character_ids': list(CHARACTER_ORDER), 'card_ids': list(CARD_ID_ORDER),
+        'character_ids': character_ids,
+        'card_ids': [card_id for card_id in CARD_ID_ORDER
+                     if CARDS[card_id]['character_id'] in allowed],
     })
 
 
@@ -307,7 +312,7 @@ class CardEffectEvaluator:
     def _log_step(self, action: dict[str, Any], event_types: list[str]) -> bool:
         if self.raw_steps == 1 or self.raw_steps % 10 == 0:
             return True
-        if action.get('type') in ('play_card', 'choose', 'awaken', 'cycle'):
+        if action.get('type') in ('play_card', 'choose', 'ultimate', 'cycle'):
             return True
         return any(kind not in {'turn', 'move', 'finish'} for kind in event_types)
 

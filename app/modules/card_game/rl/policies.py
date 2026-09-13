@@ -1,6 +1,7 @@
 """Frozen policies that only see a public observation and legal actions."""
 from __future__ import annotations
 
+from random import Random
 from typing import Sequence
 
 from .contracts import FrozenPolicy, Json
@@ -10,7 +11,7 @@ ACTION_PRIORITY = {
     'choose': 0,
     'mulligan': 1,
     'play_card': 2,
-    'awaken': 3,
+    'ultimate': 3,
     'attack': 4,
     'cycle': 5,
     'end_turn': 6,
@@ -35,6 +36,74 @@ class FirstLegalPolicy:
             raise ValueError('Frozen policy only accepts an observation object')
         _require_actions(legal_actions)
         return 0
+
+
+class RandomMaskedPolicy:
+    """Uniform among currently legal candidates. Untrained baseline, not a network."""
+
+    def __init__(self, rng: Random | None = None) -> None:
+        self.rng = rng or Random(0)
+
+    def __call__(self, observation: Json, legal_actions: tuple[Json, ...]) -> int:
+        if not isinstance(observation, dict):
+            raise ValueError('Frozen policy only accepts an observation object')
+        actions = tuple(action for action in _require_actions(legal_actions) if action.get('type') != 'concede') or _require_actions(legal_actions)
+        return self.rng.randrange(len(actions))
+
+
+class VisibleEngineRulePolicy:
+    """Same public ranking as engine choose_action; never reads hidden state."""
+
+    def __call__(self, observation: Json, legal_actions: tuple[Json, ...]) -> int:
+        if not isinstance(observation, dict):
+            raise ValueError('Frozen policy only accepts an observation object')
+        actions = _require_actions(legal_actions)
+        entries = observation.get('legal_actions') or []
+        by_key = {}
+        for entry in entries:
+            action = (entry or {}).get('action')
+            if isinstance(action, dict):
+                by_key[_action_key(action)] = entry
+        for kind in ('mulligan', 'choose'):
+            for index, action in enumerate(actions):
+                if action.get('type') == kind:
+                    return index
+        viewer = observation.get('viewer_side')
+        cards = {}
+        for card in ((observation.get('sides') or {}).get(viewer) or {}).get('hand') or []:
+            if isinstance(card, dict) and card.get('instance_id'):
+                cards[card['instance_id']] = card
+
+        def score(index: int) -> float:
+            action = actions[index]
+            entry = by_key.get(_action_key(action), {})
+            preview = entry.get('preview') if isinstance(entry, dict) else {}
+            preview = preview if isinstance(preview, dict) else {}
+            kind = action.get('type')
+            if kind == 'concede':
+                return -1000.0
+            if kind == 'end_turn':
+                return -100.0
+            if kind == 'ultimate':
+                return 6.0
+            if kind == 'cycle':
+                return 1.0
+            card = cards.get(action.get('card_id')) if kind == 'play_card' else None
+            if kind == 'attack' or (kind == 'play_card' and isinstance(card, dict) and card.get('type') == 'battle'):
+                return (float(preview.get('attack') or 0) * float(preview.get('攻击次数') or 1)
+                        + float(preview.get('创生花伤害') or 0)
+                        - float(preview.get('counter') or 0) * 0.4 + 3.0)
+            return 2.0
+
+        return max(range(len(actions)), key=lambda index: (score(index), -index))
+
+
+def _action_key(action: Json) -> str:
+    try:
+        import json
+        return json.dumps(action, sort_keys=True, ensure_ascii=False, default=str)
+    except TypeError:
+        return str(action)
 
 
 class RuleFrozenPolicy:
@@ -68,7 +137,9 @@ class MaskablePolicy:
 
     def __call__(self, observation, legal_actions):
         import numpy as np
-        actions = _require_actions(legal_actions)
+        actions = tuple(action for action in _require_actions(legal_actions) if action.get('type') != 'concede')
+        if not actions:
+            raise ValueError('Model policy has no non-concede actions')
         if len(actions) > self.action_capacity:
             raise ValueError('Legal candidate capacity exceeded')
         state = self.encoder.encode_observation(observation)

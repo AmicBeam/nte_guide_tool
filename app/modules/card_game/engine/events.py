@@ -29,6 +29,8 @@ class GameEvent(str, Enum):
     V2_FLOWER_RESOLVED = 'v2_flower_resolved'
     V2_COPY_FINISHED = 'v2_copy_finished'
     V2_RECORD_REDEEMED = 'v2_record_redeemed'
+    V2_GAME_START = 'v2_game_start'
+    V2_ROUT = 'v2_rout'
 
 
 REPLACEABLE_EVENTS = frozenset({

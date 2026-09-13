@@ -187,7 +187,7 @@ class FakeEvalTest(unittest.TestCase):
             self.assertEqual(result['coverage']['N01'], 'NOT_COVERED')
             self.assertEqual(result['event_counts']['play'], 1)
             self.assertEqual(result['event_counts']['damage'], 1)
-            self.assertEqual(sum(1 for cid in CARD_ID_ORDER if result['coverage'][cid] == 'NOT_COVERED'), 31)
+            self.assertEqual(sum(1 for cid in CARD_ID_ORDER if result['coverage'][cid] == 'NOT_COVERED'), len(CARD_ID_ORDER) - 1)
 
     def test_copy_use_separate_and_half_decks(self):
         copy_card = {'instance_id': 'a-9', 'card_id': 'X07', 'copy': True}

@@ -1,18 +1,81 @@
 (() => {
   const CHARACTER_NAMES = {
     nanali: "娜娜莉",
-    zero: "主角「零」",
+    zero: "零",
     jiuyuan: "九原",
     xun: "浔",
+    anhunqu: "安魂曲",
+    canhong: "残虹",
+    zaowu: "早雾",
+    lingke: "灵可",
+    zhenhong: "真红",
+    hathor: "哈索尔",
+    iloy: "伊洛伊",
   };
   const TYPE_LABELS = {
     battle: "战斗",
     tactic: "战术",
-    form: "形态",
-    shape: "形态",
+    form: "武备",
+    shape: "武备",
   };
   const NS = "http://www.w3.org/2000/svg";
-  const MAX_EVENT_MS = 2400;
+  const MAX_EVENT_MS = 3600;
+  const ACTOR_FX_CLASSES = [
+    "v2-fx-lunge", "v2-fx-enter", "v2-fx-hurt", "v2-fx-shield", "v2-fx-heal",
+    "v2-fx-down", "v2-fx-revive", "v2-fx-awaken", "v2-fx-shape", "v2-fx-growth",
+  ];
+  const BEATS = {
+    playFly: 640,
+    playFlip: 240,
+    playHold: 1200,
+    playAim: 320,
+    attackLunge: 460,
+    attackHold: 300,
+    damageHold: 640,
+    flowerHold: 560,
+    statusHold: 720,
+    titleHold: 820,
+    bannerHold: 520,
+    moveHold: 420,
+    drawFly: 420,
+    drawHold: 640,
+    drawInsert: 380,
+    markHold: 640,
+    floaterHold: 520,
+    gap: 280,
+    linger: 240,
+  };
+  const TYPE_TITLES = {
+    play: "出牌",
+    attack: "出击",
+    enter: "入场",
+    move: "返回备战区",
+    harmony: "环合",
+    flower: "创生花",
+    delay: "延滞",
+    burn: "浊燃",
+    nightmare: "噩梦",
+    star: "黯星",
+    awaken: "觉醒",
+    ultimate: "终结",
+    shape: "武备",
+    growth: "成长",
+    family: "家族壮大",
+    resource: "资源",
+    record: "记录",
+    redeem: "兑现",
+    draw: "抽牌",
+    heal: "回复",
+    shield: "护盾",
+    down: "倒地",
+    revive: "恢复",
+    turn: "回合",
+    finish: "胜负",
+    gain: "获得",
+    discard: "弃牌",
+    remove: "移出",
+    fatigue: "疲劳",
+  };
 
   function noop() {}
 
@@ -52,8 +115,7 @@
     if (!card) {
       return "";
     }
-    const base = TYPE_LABELS[card.type] || String(card.type || "");
-    return card.terminal ? base + "·终结" : base;
+    return TYPE_LABELS[card.type] || String(card.type || "");
   }
 
   function eventKey(event) {
@@ -190,11 +252,13 @@
       this.applyPatch = typeof options.applyPatch === "function" ? options.applyPatch : noop;
       this.onBusy = typeof options.onBusy === "function" ? options.onBusy : noop;
       this.onPublicCard = typeof options.onPublicCard === "function" ? options.onPublicCard : noop;
+      this.onFinish = typeof options.onFinish === "function" ? options.onFinish : noop;
       this._clock = options.clock || null;
       this.options = {
         muted: options.muted == null ? true : !!options.muted,
         reducedMotion: !!options.reducedMotion,
         speed: options.speed === 2 ? 2 : 1,
+        presentOwnPlays: !!options.presentOwnPlays,
       };
       this._generation = 0;
       this._cancelled = false;
@@ -225,6 +289,9 @@
       }
       if (next.speed === 1 || next.speed === 2) {
         this.options.speed = next.speed;
+      }
+      if (next.presentOwnPlays != null) {
+        this.options.presentOwnPlays = !!next.presentOwnPlays;
       }
       this._syncOverlayFlags();
       if (this.options.muted) {
@@ -259,6 +326,7 @@
       this._setBusy(true);
       try {
         const batches = this._batch(events);
+        let played = 0;
         for (let index = 0; index < batches.length; index += 1) {
           if (this._cancelled || token !== this._generation) {
             break;
@@ -267,7 +335,15 @@
           if (!batch.length) {
             continue;
           }
+          if (played > 0) {
+            await this._wait(this._duration(instant, BEATS.gap));
+            this._clearFx(false);
+          }
           await this._playBatch(batch, instant);
+          played += 1;
+        }
+        if (played > 0 && !this._cancelled && token === this._generation) {
+          await this._wait(this._duration(instant, BEATS.linger));
         }
       } catch (_error) {
         this._flushPatches(events);
@@ -334,22 +410,54 @@
         }
         await this._present(others[index], instant);
         this._patch(others[index]);
+        const silent = this._isSilent(others[index]);
+        if (!silent && (index < others.length - 1 || packets.length)) {
+          await this._wait(this._duration(instant, BEATS.gap));
+        }
       }
       if (!packets.length) {
         return;
       }
       await Promise.all(packets.map((event) => this._present(event, instant)));
       packets.forEach((event) => this._patch(event));
-      this._clearFx(false);
+      await this._wait(this._duration(instant, BEATS.linger));
     }
 
     async _present(event, instant) {
       const kind = event && event.type ? String(event.type) : "instant";
       try {
         this._note(event, kind);
+        if (this._isSilent(event)) {
+          return;
+        }
+        if (kind === "draw") {
+          await this._presentDraw(event, instant);
+          return;
+        }
         this._tone(kind);
+        if (kind === "initiative") {
+          await this._presentInitiative(event, instant);
+          return;
+        }
+        if (kind === "mulligan") {
+          await this._presentMulligan(event, instant);
+          return;
+        }
+        if (kind === "finish") {
+          await this._presentBanner(event, instant);
+          try {
+            this.onFinish(event);
+          } catch (_error) {}
+          return;
+        }
+        if (kind === "resource") {
+          await this._presentFloater(event, instant, "growth", event && event.text ? event.text : "资源");
+          return;
+        }
         if (kind === "play") {
-          await this._presentPlay(event, instant);
+          if (this._isOpponentPlay(event) || this.options.presentOwnPlays) {
+            await this._presentPlay(event, instant);
+          }
           return;
         }
         if (kind === "attack") {
@@ -364,7 +472,19 @@
           await this._presentFlower(event, instant);
           return;
         }
-        if (kind === "move" || kind === "enter") {
+        if (kind === "harmony") {
+          await this._presentHarmony(event, instant);
+          return;
+        }
+        if (kind === "delay" || kind === "burn" || kind === "nightmare" || kind === "star" || kind === "fatigue") {
+          await this._presentDot(event, instant, kind);
+          return;
+        }
+        if (kind === "enter") {
+          await this._presentEnter(event, instant);
+          return;
+        }
+        if (kind === "move") {
           await this._presentMove(event, instant);
           return;
         }
@@ -376,24 +496,20 @@
           await this._presentStatus(event, instant, "revive", "恢复");
           return;
         }
-        if (kind === "awaken") {
-          await this._presentStatus(event, instant, "awaken", "觉醒");
+        if (kind === "awaken" || kind === "ultimate") {
+          await this._presentStatus(event, instant, "awaken", kind === "ultimate" ? "终结" : "觉醒");
           return;
         }
         if (kind === "shape") {
-          await this._presentStatus(event, instant, "shape", event.shape || (event.card && event.card.name) || "形态");
+          await this._presentStatus(event, instant, "shape", event.shape || (event.card && event.card.name) || "武备");
+          return;
+        }
+        if (kind === "family") {
+          await this._presentFloater(event, instant, "growth", "家族壮大");
           return;
         }
         if (kind === "growth") {
           await this._presentFloater(event, instant, "growth", "成长");
-          return;
-        }
-        if (kind === "resource") {
-          await this._presentFloater(event, instant, "resource", "资源");
-          return;
-        }
-        if (kind === "draw") {
-          await this._presentDraw(event, instant);
           return;
         }
         if (kind === "record") {
@@ -404,7 +520,7 @@
           await this._presentMark(event, instant, "copy", "复制");
           return;
         }
-        if (kind === "gain" || kind === "remove" || kind === "discard" || kind === "turn" || kind === "finish") {
+        if (kind === "gain" || kind === "remove" || kind === "discard" || kind === "turn") {
           await this._presentBanner(event, instant);
           return;
         }
@@ -430,6 +546,9 @@
       if (card && card.instance_id) {
         node.setAttribute("data-instance-id", String(card.instance_id));
       }
+      if (card && (card.type === "battle" || card.type === "tactic" || card.type === "form")) {
+        node.setAttribute("data-card-type", String(card.type));
+      }
       const portraitSrc = this._safePortrait(event && (event.actor || event.source));
       if (portraitSrc) {
         overlay.setAttribute("data-v2-fx-last-portrait", portraitSrc);
@@ -451,8 +570,6 @@
       } else {
         front.appendChild(this._el("div", "v2-fx-card-art is-fallback"));
       }
-      const cost = this._el("span", "v2-fx-card-cost");
-      cost.textContent = card && card.cost != null ? String(card.cost) : "";
       const name = this._el("strong", "v2-fx-card-name");
       name.textContent = hasPublicCard(card) ? String(card.name || card.card_id || "") : "";
       const kind = this._el("span", "v2-fx-card-type");
@@ -460,13 +577,17 @@
       const owner = this._el("span", "v2-fx-card-owner");
       const userName = displayName(event && (event.actor || event.source), card);
       owner.textContent = userName;
-      front.appendChild(cost);
       front.appendChild(name);
       front.appendChild(kind);
       front.appendChild(owner);
       if (card && card.description) {
         const desc = this._el("p", "v2-fx-card-desc");
-        desc.textContent = String(card.description);
+        const api = typeof window !== "undefined" ? window.NTE_V2 : null;
+        if (api && api.cardDescriptionMarkup) {
+          desc.innerHTML = api.cardDescriptionMarkup(card.description);
+        } else {
+          desc.textContent = String(card.description);
+        }
         front.appendChild(desc);
       }
       if (card && card.copy) {
@@ -477,43 +598,68 @@
       shell.appendChild(front);
       node.appendChild(shell);
       const meta = this._el("div", "v2-fx-card-meta");
-      const costText = card && card.cost != null ? String(card.cost) : "-";
-      meta.textContent = "使用者 " + (userName || "未知") + " · 费用 " + costText;
+      meta.textContent = "使用者 " + (userName || "未知");
       node.appendChild(meta);
       overlay.appendChild(node);
       if (sourceCard && sourceCard.classList) {
         sourceCard.classList.add("v2-fx-source");
       }
-      const startX = fromRect.left - stageRect.left;
-      const startY = fromRect.top - stageRect.top;
-      const endX = stageRect.width / 2 - 84;
-      const endY = stageRect.height / 2 - 118;
+      const cardW = 300;
+      node.style.width = cardW + "px";
+      node.style.height = "auto";
+      const measured = readRect(node);
+      const cardH = Math.max(430, (measured && measured.height) || 430);
+      node.style.height = cardH + "px";
+      const landing = this._playLanding(stageRect, cardW, cardH);
+      const startScale = Math.max(0.1, Math.min(0.55, (fromRect.width || 18) / cardW));
+      const startX = fromRect.left - stageRect.left + (fromRect.width || 0) / 2 - cardW / 2;
+      const startY = fromRect.top - stageRect.top + (fromRect.height || 0) / 2 - cardH / 2;
+      const endX = landing.x;
+      const endY = landing.y;
       node.style.left = startX + "px";
       node.style.top = startY + "px";
+      const opponent = this._isOpponentPlay(event);
+      if (!opponent) {
+        shell.classList.add("is-flipped");
+      }
       if (hasPublicCard(card)) {
         try {
           this.onPublicCard(card, event);
         } catch (_error) {}
       }
-      const fly = this._duration(instant, 420);
-      await this._animate(node, [
-        { transform: "translate(0px, 0px) scale(0.42)" },
-        { transform: "translate(" + (endX - startX) + "px, " + (endY - startY) + "px) scale(1)" },
+      this._veil(true);
+      this._caption(hasPublicCard(card) ? String(card.name || "") : "出牌", event && event.text);
+      const fly = this._duration(instant, BEATS.playFly);
+      const flip = opponent ? this._duration(instant, BEATS.playFlip) : 0;
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const flyAnim = this._animate(node, [
+        { transform: "translate(0px, 0px) scale(" + startScale + ")", opacity: 0.95 },
+        { transform: "translate(" + dx + "px, " + dy + "px) scale(1.03)", offset: 0.82, opacity: 1 },
+        { transform: "translate(" + dx + "px, " + dy + "px) scale(1)", opacity: 1 },
       ], fly);
-      node.style.left = endX + "px";
-      node.style.top = endY + "px";
-      const flip = this._duration(instant, 280);
-      await this._animate(shell, [
-        { transform: "rotateY(0deg)" },
-        { transform: "rotateY(180deg)" },
-      ], flip);
-      shell.classList.add("is-flipped");
+      if (flip) {
+        await Promise.all([
+          flyAnim,
+          (async () => {
+            await this._wait(Math.max(0, Math.round(fly * 0.62)));
+            await this._animate(shell, [
+              { transform: "rotateY(0deg)" },
+              { transform: "rotateY(180deg)" },
+            ], flip);
+            shell.classList.add("is-flipped");
+          })(),
+        ]);
+      } else {
+        await flyAnim;
+      }
+      this._settlePlayCard(node, endX, endY);
+      await this._wait(this._duration(instant, BEATS.playHold));
       if (event && event.target) {
         this._arrow(centerOf(readRect(node) || { cx: stageRect.cx, cy: stageRect.cy }), this._point(event.target, stageRect), "cast");
-        await this._wait(this._duration(instant, 220));
-      } else {
-        await this._wait(this._duration(instant, 260));
+        await this._wait(this._duration(instant, BEATS.playAim));
       }
+      this._veil(false);
     }
 
     async _presentAttack(event, instant) {
@@ -527,20 +673,34 @@
       const attackCount = Number(overlay.getAttribute("data-v2-fx-attack-count") || 0) + 1;
       overlay.setAttribute("data-v2-fx-attack-count", String(attackCount));
       overlay.setAttribute("data-v2-fx-last-attack", "1");
+      const attackValue = numericValue(event && (event.attack != null ? event.attack : event.amount));
+      this._caption(attackValue != null ? "出击 " + attackValue : "出击", event && event.text);
+      this._impact(to, stageRect, "attack");
       if (actor) {
         actor.classList.add("v2-fx-lunge");
-        await this._animate(actor, [
-          { transform: "translate(0px, 0px)" },
-          { transform: "translate(" + Math.max(-24, Math.min(24, (to.x - from.x) * 0.08)) + "px, " + Math.max(-16, Math.min(16, (to.y - from.y) * 0.08)) + "px)" },
-          { transform: "translate(0px, 0px)" },
-        ], this._duration(instant, 280));
-        actor.classList.remove("v2-fx-lunge");
+        try {
+          await this._animate(actor, [
+            { transform: "translate(0px, 0px) scale(1)" },
+            { transform: "translate(" + Math.max(-36, Math.min(36, (to.x - from.x) * 0.14)) + "px, " + Math.max(-28, Math.min(28, (to.y - from.y) * 0.14)) + "px) scale(1.06)" },
+            { transform: "translate(0px, 0px) scale(1)" },
+          ], this._duration(instant, BEATS.attackLunge));
+        } finally {
+          actor.classList.remove("v2-fx-lunge");
+          this._resetActorStyle(actor);
+        }
       }
       const counterValue = numericValue(event && event.counter);
       if (counterValue != null && counterValue > 0 && target) {
         this._arrow(to, from, "counter");
+        this._floater(from, stageRect, "反击 " + String(counterValue), "counter");
       }
-      await this._wait(this._duration(instant, 160));
+      if (target) {
+        target.classList.add("v2-fx-hurt");
+      }
+      await this._wait(this._duration(instant, BEATS.attackHold));
+      if (target) {
+        target.classList.remove("v2-fx-hurt");
+      }
     }
 
     async _presentDamage(event, instant) {
@@ -594,7 +754,11 @@
       spark.style.left = (point.x - stageRect.left) + "px";
       spark.style.top = (point.y - stageRect.top) + "px";
       overlay.appendChild(spark);
-      await this._wait(this._duration(instant, 260));
+      if (!isHeal) {
+        this._flash();
+        this._shake();
+      }
+      await this._wait(this._duration(instant, BEATS.damageHold));
       if (target) {
         target.classList.remove("v2-fx-hurt");
         target.classList.remove("v2-fx-shield");
@@ -614,43 +778,124 @@
       flower.style.top = (to.y - stageRect.top) + "px";
       overlay.appendChild(flower);
       const value = amountOf(event);
+      this._caption("创生花", event && event.text);
       this._floater(to, stageRect, value != null ? "-" + String(value) : "创生花", "harmony");
-      await this._wait(this._duration(instant, 280));
+      await this._wait(this._duration(instant, BEATS.flowerHold));
     }
 
     async _presentMove(event, instant) {
       const actor = this._entity(event && (event.actor || event.source || event.target));
       if (actor) {
         actor.classList.add("v2-fx-lunge");
-        await this._animate(actor, [
-          { transform: "translateY(0px)", opacity: 1 },
-          { transform: "translateY(-10px)", opacity: 0.7 },
-          { transform: "translateY(0px)", opacity: 1 },
-        ], this._duration(instant, 240));
-        actor.classList.remove("v2-fx-lunge");
+        try {
+          await this._animate(actor, [
+            { transform: "translateY(0px)", opacity: 1 },
+            { transform: "translateY(-10px)", opacity: 0.7 },
+            { transform: "translateY(0px)", opacity: 1 },
+          ], this._duration(instant, BEATS.moveHold));
+        } finally {
+          actor.classList.remove("v2-fx-lunge");
+          this._resetActorStyle(actor);
+        }
       } else {
         await this._presentBanner(event, instant);
       }
     }
 
-    async _presentStatus(event, instant, klass, label) {
-      const node = this._entity(event && (event.target || event.actor || event.source));
-      if (node) {
-        node.classList.add("v2-fx-" + klass);
+    async _presentEnter(event, instant) {
+      const actor = this._entity(event && (event.actor || event.source || event.target));
+      this._caption("入场", event && event.text);
+      if (actor) {
+        actor.classList.add("v2-fx-enter");
+        try {
+          await this._animate(actor, [
+            { transform: "translateY(28px) scale(0.92)", opacity: 0.35 },
+            { transform: "translateY(-8px) scale(1.06)", opacity: 1 },
+            { transform: "translateY(0px) scale(1)", opacity: 1 },
+          ], this._duration(instant, BEATS.moveHold + 80));
+        } finally {
+          actor.classList.remove("v2-fx-enter");
+          this._resetActorStyle(actor);
+        }
+      } else {
+        await this._presentTitle(event, instant, "入场");
       }
-      this._banner(label);
+    }
+
+    async _presentHarmony(event, instant) {
+      this._veil(true);
+      await this._presentTitle(event, instant, "环合");
       const overlay = this._ensureOverlay();
-      const stageRect = readRect(overlay) || { cx: 400, cy: 225, left: 0, top: 0, width: 800, height: 450 };
-      const point = centerOf(readRect(node), { x: stageRect.cx, y: stageRect.cy });
-      const burst = this._el("div", klass === "awaken" ? "v2-fx-burst" : "v2-fx-spark");
-      burst.setAttribute("data-v2-fx-kind", klass);
+      const stageRect = readRect(overlay) || { cx: 400, cy: 225, left: 0, top: 0 };
+      const actor = this._entity(event && (event.actor || event.source));
+      const burst = this._el("div", "v2-fx-burst is-harmony");
+      const point = centerOf(readRect(actor), { x: stageRect.cx, y: stageRect.cy });
       burst.style.left = (point.x - stageRect.left) + "px";
       burst.style.top = (point.y - stageRect.top) + "px";
       overlay.appendChild(burst);
-      if (klass === "awaken" || klass === "shape" || klass === "revive") {
-        this._floater(point, stageRect, label, klass === "awaken" ? "awaken" : klass);
+      await this._wait(this._duration(instant, BEATS.linger));
+      this._veil(false);
+    }
+
+    async _presentDot(event, instant, kind) {
+      const overlay = this._ensureOverlay();
+      const stageRect = readRect(overlay) || { cx: 400, cy: 225, left: 0, top: 0 };
+      const target = this._entity(event && (event.target || event.actor || event.source));
+      const point = centerOf(readRect(target), { x: stageRect.cx, y: stageRect.cy });
+      const label = TYPE_TITLES[kind] || kind;
+      this._caption(label, event && event.text);
+      if (target) {
+        target.classList.add("v2-fx-" + kind);
       }
-      await this._wait(this._duration(instant, 300));
+      const spark = this._el("div", "v2-fx-spark is-" + kind);
+      spark.setAttribute("data-v2-fx-kind", kind);
+      spark.style.left = (point.x - stageRect.left) + "px";
+      spark.style.top = (point.y - stageRect.top) + "px";
+      overlay.appendChild(spark);
+      const value = amountOf(event);
+      this._floater(point, stageRect, value != null ? label + " -" + String(value) : label, kind);
+      await this._wait(this._duration(instant, BEATS.statusHold));
+      if (target) {
+        target.classList.remove("v2-fx-" + kind);
+      }
+    }
+
+    async _presentTitle(event, instant, fallback) {
+      const overlay = this._ensureOverlay();
+      const title = this._el("div", "v2-fx-title");
+      title.textContent = (event && event.text) || fallback || TYPE_TITLES[event && event.type] || "";
+      overlay.appendChild(title);
+      this._caption(title.textContent);
+      await this._wait(this._duration(instant, BEATS.titleHold));
+    }
+
+    async _presentStatus(event, instant, klass, label) {
+      const node = this._entity(event && (event.target || event.actor || event.source));
+      const className = "v2-fx-" + klass;
+      try {
+        if (node) {
+          node.classList.add(className);
+        }
+        this._banner(label);
+        const overlay = this._ensureOverlay();
+        const stageRect = readRect(overlay) || { cx: 400, cy: 225, left: 0, top: 0, width: 800, height: 450 };
+        const point = centerOf(readRect(node), { x: stageRect.cx, y: stageRect.cy });
+        const burst = this._el("div", klass === "awaken" ? "v2-fx-burst" : "v2-fx-spark");
+        burst.setAttribute("data-v2-fx-kind", klass);
+        burst.style.left = (point.x - stageRect.left) + "px";
+        burst.style.top = (point.y - stageRect.top) + "px";
+        overlay.appendChild(burst);
+        if (klass === "awaken" || klass === "shape" || klass === "revive") {
+          this._floater(point, stageRect, label, klass === "awaken" ? "awaken" : klass);
+        }
+        this._caption(label, event && event.text);
+        await this._wait(this._duration(instant, BEATS.statusHold));
+      } finally {
+        if (node) {
+          node.classList.remove(className);
+          this._resetActorStyle(node);
+        }
+      }
     }
 
     async _presentFloater(event, instant, klass, label) {
@@ -663,42 +908,269 @@
         node.classList.add("v2-fx-" + klass);
       }
       this._floater(point, stageRect, value != null ? label + " +" + String(value) : label, klass);
-      await this._wait(this._duration(instant, 240));
+      this._caption(label, event && event.text);
+      await this._wait(this._duration(instant, BEATS.floaterHold));
       if (node) {
         node.classList.remove("v2-fx-" + klass);
       }
+    }
+
+    _isSilent(event) {
+      if (!event) {
+        return true;
+      }
+      if (event.present === false) {
+        return true;
+      }
+      if (event.type === "ultimate" && /终结结束/.test(String(event.text || ""))) {
+        return true;
+      }
+      if (event.present === true) {
+        return false;
+      }
+      return false;
+    }
+
+    async _presentInitiative(event, instant) {
+      const overlay = this.root && typeof this.root.querySelector === "function"
+        ? this.root.querySelector("#v2-initiative-overlay")
+        : null;
+      const first = (event && (event.first_side || event.side)) || "";
+      const viewer = this._viewerSide();
+      const isFirst = Boolean(viewer && first && first === viewer);
+      this._caption(isFirst ? "先手" : "后手", event && event.text);
+      if (!overlay) {
+        await this._presentBanner(event, instant);
+        return;
+      }
+      overlay.classList.toggle("is-second", !isFirst);
+      const label = typeof overlay.querySelector === "function" ? overlay.querySelector("#v2-initiative-label") : null;
+      const copy = typeof overlay.querySelector === "function" ? overlay.querySelector("#v2-initiative-copy") : null;
+      if (label) {
+        label.textContent = isFirst ? "先手" : "后手";
+      }
+      if (copy) {
+        copy.textContent = isFirst ? "你先行动。" : "对手先行动。你有 5 点开局护盾。";
+      }
+      overlay.classList.add("is-playing");
+      overlay.classList.remove("is-leaving");
+      if (typeof overlay.removeAttribute === "function") {
+        overlay.removeAttribute("hidden");
+      }
+      overlay.hidden = false;
+      await this._wait(this._duration(instant, 1400));
+      overlay.classList.add("is-leaving");
+      await this._wait(this._duration(instant, 280));
+      overlay.hidden = true;
+      overlay.classList.remove("is-playing", "is-leaving");
+    }
+
+    async _presentMulligan(event, instant) {
+      this._caption("起手换牌", event && event.text);
+      const table = typeof window !== "undefined" ? window.NTE_V2_TABLE : null;
+      const rail = this.root && typeof this.root.querySelector === "function"
+        ? this.root.querySelector("#v2-mulligan-rail")
+        : null;
+      const outgoing = ((event && event.card_ids) || []).map(String).filter(Boolean);
+      if (this._isOpponentPlay(event) || !outgoing.length || !table || typeof table.animateMulliganSwap !== "function" || !rail) {
+        await this._presentBanner(event, instant);
+        return;
+      }
+      await table.animateMulliganSwap({
+        rail: rail,
+        outgoingIds: outgoing,
+        incomingIds: [],
+        reducedMotion: instant || (this.options && this.options.reducedMotion),
+        replace: function () {},
+      });
+    }
+
+    _drawSlotRect(event, stageRect) {
+      const hand = this._hand(sideOf(event));
+      const card = event && event.card;
+      let slot = null;
+      if (hand && typeof hand.querySelector === "function") {
+        if (card && card.instance_id) {
+          try {
+            slot = hand.querySelector('[data-instance-id="' + cssEscape(card.instance_id) + '"]')
+              || hand.querySelector('[data-card-id="' + cssEscape(card.instance_id) + '"]');
+          } catch (_error) {}
+        }
+        if (!slot && typeof hand.querySelectorAll === "function") {
+          const cards = Array.from(hand.querySelectorAll(".v2-hand-card") || []);
+          const backs = Array.from(hand.querySelectorAll(".v2-hidden-card") || []);
+          const nodes = cards.concat(backs);
+          slot = nodes.length ? nodes[nodes.length - 1] : null;
+        }
+      }
+      const slotRect = readRect(slot);
+      const handRect = readRect(hand);
+      const usable = function (rect) {
+        return Boolean(rect && rect.width > 8 && rect.height > 8);
+      };
+      const width = (usable(slotRect) && slotRect.width) || (hasPublicCard(event && event.card) ? 148 : 22);
+      const height = (usable(slotRect) && slotRect.height) || (hasPublicCard(event && event.card) ? 108 : 32);
+      if (usable(slotRect)) {
+        const left = slotRect.right + 8;
+        return {
+          left: left,
+          top: slotRect.top,
+          width: width,
+          height: height,
+          cx: left + width / 2,
+          cy: slotRect.cy,
+          right: left + width,
+          bottom: slotRect.bottom,
+        };
+      }
+      if (usable(handRect)) {
+        const left = handRect.left + Math.max(0, ((handRect.width || width) - width) / 2);
+        return {
+          left: left,
+          top: handRect.top,
+          width: width,
+          height: height,
+          cx: left + width / 2,
+          cy: handRect.top + height / 2,
+          right: left + width,
+          bottom: handRect.top + height,
+        };
+      }
+      const stageW = (stageRect && stageRect.width) || 800;
+      const stageH = (stageRect && stageRect.height) || 450;
+      return {
+        left: stageW / 2 - width / 2,
+        top: stageH - height - 24,
+        width: width,
+        height: height,
+        cx: stageW / 2,
+        cy: stageH - height / 2 - 24,
+        right: stageW / 2 + width / 2,
+        bottom: stageH - 24,
+      };
     }
 
     async _presentDraw(event, instant) {
       const overlay = this._ensureOverlay();
       const card = event && event.card;
       const publicCard = hasPublicCard(card);
-      const node = this._el("div", "v2-fx-play-card");
+      const opponent = this._isOpponentPlay(event);
+      const portraitSrc = this._safePortrait(event && (event.actor || event.source))
+        || this._safePortrait(sideOf(event) + ":" + ((card && card.character_id) || ""));
+      const node = this._el("div", "v2-fx-draw-card");
       node.setAttribute("data-v2-fx-kind", publicCard ? "draw-public" : "draw-hidden");
-      const shell = this._el("div", "v2-fx-card-3d");
-      shell.appendChild(this._el("div", "v2-fx-card-face v2-fx-card-back"));
+      const show = this._el("div", "v2-fx-card-front v2-fx-draw-formula");
+      if (card && card.type) {
+        show.setAttribute("data-card-type", String(card.type));
+        node.setAttribute("data-card-type", String(card.type));
+      }
       if (publicCard) {
-        const front = this._el("div", "v2-fx-card-face v2-fx-card-front");
+        if (portraitSrc) {
+          const art = this._el("div", "v2-fx-card-art");
+          const img = this._el("img", "v2-fx-card-portrait");
+          img.setAttribute("src", portraitSrc);
+          img.setAttribute("alt", "");
+          art.appendChild(img);
+          show.appendChild(art);
+        }
         const name = this._el("strong", "v2-fx-card-name");
-        name.textContent = String(card.name || "");
-        front.appendChild(name);
-        shell.appendChild(front);
-        shell.classList.add("is-flipped");
+        name.textContent = String(card.name || card.card_id || "");
+        show.appendChild(name);
+        const kind = this._el("span", "v2-fx-card-type");
+        kind.textContent = typeLabel(card);
+        show.appendChild(kind);
+        if (card.description) {
+          const desc = this._el("p", "v2-fx-card-desc");
+          const api = typeof window !== "undefined" ? window.NTE_V2 : null;
+          if (api && api.cardDescriptionMarkup) {
+            desc.innerHTML = api.cardDescriptionMarkup(card.description);
+          } else {
+            desc.textContent = String(card.description);
+          }
+          show.appendChild(desc);
+        }
         try {
           this.onPublicCard(card, event);
         } catch (_error) {}
+      } else {
+        show.classList.add("v2-fx-card-back");
       }
-      node.appendChild(shell);
+      const handFace = this._el("article", "v2-hand-card v2-fx-draw-hand");
+      if (!publicCard) {
+        handFace.className = "v2-hidden-card v2-fx-draw-hand";
+      } else {
+        if (card && card.type) {
+          handFace.setAttribute("data-card-type", String(card.type));
+        }
+        if (portraitSrc && handFace.style) {
+          const art = "url(" + JSON.stringify(portraitSrc) + ")";
+          if (typeof handFace.style.setProperty === "function") {
+            handFace.style.setProperty("--card-art", art);
+          } else {
+            handFace.style["--card-art"] = art;
+          }
+        }
+        const handName = this._el("strong");
+        handName.textContent = String(card.name || card.card_id || "卡牌");
+        handFace.appendChild(handName);
+        if (card && card.description) {
+          const handDesc = this._el("p", "subtle");
+          const api = typeof window !== "undefined" ? window.NTE_V2 : null;
+          if (api && api.cardDescriptionMarkup) {
+            handDesc.innerHTML = api.cardDescriptionMarkup(card.description);
+          } else {
+            handDesc.textContent = String(card.description);
+          }
+          handFace.appendChild(handDesc);
+        }
+      }
+      node.appendChild(show);
+      node.appendChild(handFace);
       overlay.appendChild(node);
-      const stageRect = readRect(overlay) || { width: 800, height: 450, left: 0, top: 0 };
-      const hand = this._hand(sideOf(event));
-      const from = readRect(hand) || { left: stageRect.left + 40, top: stageRect.top + 40 };
-      node.style.left = (from.left - stageRect.left) + "px";
-      node.style.top = (from.top - stageRect.top) + "px";
+      const stageRect = readRect(overlay) || { left: 0, top: 0, width: 800, height: 450, cx: 400, cy: 225 };
+      const cardW = 300;
+      node.style.width = cardW + "px";
+      node.style.height = "auto";
+      const measured = readRect(node);
+      const cardH = Math.max(430, (measured && measured.height) || 430);
+      node.style.height = cardH + "px";
+      const slot = this._drawSlotRect(event, stageRect);
+      const slotLeft = slot.left - stageRect.left;
+      const slotTop = slot.top - stageRect.top;
+      let hoverX = slot.cx - stageRect.left - cardW / 2;
+      hoverX = Math.max(12, Math.min(hoverX, (stageRect.width || 800) - cardW - 12));
+      let hoverY = opponent
+        ? slot.bottom - stageRect.top + 12
+        : slot.top - stageRect.top - 16 - cardH;
+      hoverY = Math.max(8, Math.min(hoverY, (stageRect.height || 450) - cardH - 8));
+      const startX = (stageRect.width || 800) + 36;
+      node.style.left = startX + "px";
+      node.style.top = hoverY + "px";
+      this._caption(publicCard ? String(card.name || "抽牌") : "抽牌", event && event.text);
+      const fly = this._duration(instant, BEATS.drawFly);
       await this._animate(node, [
-        { transform: "translateY(-24px) scale(0.6)", opacity: 0.4 },
-        { transform: "translateY(0px) scale(0.8)", opacity: 1 },
-      ], this._duration(instant, 220));
+        { transform: "translate(0px, 0px)", opacity: 0.35 },
+        { transform: "translate(" + (hoverX - startX) + "px, 0px)", opacity: 1 },
+      ], fly);
+      this._settlePlayCard(node, hoverX, hoverY);
+      await this._wait(this._duration(instant, publicCard ? BEATS.drawHold : BEATS.linger));
+      node.classList.add("is-dropping");
+      const insert = this._duration(instant, BEATS.drawInsert);
+      const scaleX = Math.max(0.18, (slot.width || 148) / cardW);
+      const scaleY = Math.max(0.18, (slot.height || 108) / cardH);
+      await Promise.all([
+        this._animate(node, [
+          { transform: "translate(0px, 0px) scale(1, 1)", opacity: 1 },
+          { transform: "translate(" + (slotLeft - hoverX) + "px, " + (slotTop - hoverY) + "px) scale(" + scaleX + ", " + scaleY + ")", opacity: 1 },
+        ], insert),
+        this._animate(show, [{ opacity: 1 }, { opacity: 0 }], insert),
+        this._animate(handFace, [{ opacity: 0 }, { opacity: 1 }], insert),
+      ]);
+      if (node.parentNode) {
+        try {
+          node.parentNode.removeChild(node);
+        } catch (_error) {}
+      }
     }
 
     async _presentMark(event, instant, klass, label) {
@@ -718,13 +1190,15 @@
           this.onPublicCard(card, event);
         } catch (_error) {}
       }
-      await this._wait(this._duration(instant, 280));
+      this._caption(chip.textContent, event && event.text);
+      await this._wait(this._duration(instant, BEATS.markHold));
     }
 
     async _presentBanner(event, instant) {
-      const label = event && event.type ? String(event.type) : "";
+      const label = (event && event.text) || TYPE_TITLES[event && event.type] || (event && event.type) || "";
       this._banner(label);
-      await this._wait(this._duration(instant, 140));
+      this._caption(label);
+      await this._wait(this._duration(instant, BEATS.bannerHold));
     }
 
     _note(event, kind) {
@@ -733,7 +1207,6 @@
       const card = event && event.card;
       if (hasPublicCard(card)) {
         overlay.setAttribute("data-v2-fx-last-card", String(card.name || card.card_id || ""));
-        overlay.setAttribute("data-v2-fx-last-cost", card.cost == null ? "" : String(card.cost));
         overlay.setAttribute("data-v2-fx-last-desc", card.description ? String(card.description) : "");
       }
       const actor = displayName(event && (event.actor || event.source), card);
@@ -754,6 +1227,54 @@
       overlay.appendChild(node);
     }
 
+    _caption(title, detail) {
+      const overlay = this._ensureOverlay();
+      let node = overlay && typeof overlay.querySelector === "function"
+        ? overlay.querySelector(".v2-fx-caption")
+        : null;
+      if (!node) {
+        node = this._el("div", "v2-fx-caption");
+        overlay.appendChild(node);
+      }
+      const headline = String(title || "").trim();
+      const body = String(detail || "").trim();
+      node.textContent = body && body !== headline ? headline + " · " + body : (headline || body);
+      node.hidden = !node.textContent;
+    }
+
+    _veil(on) {
+      const overlay = this._ensureOverlay();
+      overlay.classList.toggle("is-veiled", !!on);
+    }
+
+    _flash() {
+      const overlay = this._ensureOverlay();
+      const flash = this._el("div", "v2-fx-flash");
+      overlay.appendChild(flash);
+    }
+
+    _shake() {
+      const stage = this._stage();
+      if (!stage || !stage.classList) {
+        return;
+      }
+      stage.classList.add("v2-fx-shake");
+      this._wait(this._duration(this._instant, 280)).then(() => {
+        if (stage.classList) {
+          stage.classList.remove("v2-fx-shake");
+        }
+      }).catch(noop);
+    }
+
+    _impact(point, stageRect, klass) {
+      const overlay = this._ensureOverlay();
+      const node = this._el("div", "v2-fx-impact" + (klass ? " is-" + klass : ""));
+      node.style.left = (point.x - stageRect.left) + "px";
+      node.style.top = (point.y - stageRect.top) + "px";
+      overlay.appendChild(node);
+      return node;
+    }
+
     _floater(point, stageRect, text, klass) {
       const overlay = this._ensureOverlay();
       const node = this._el("div", "v2-fx-floater is-" + klass);
@@ -765,7 +1286,7 @@
       overlay.setAttribute("data-v2-fx-last-floater-kind", String(klass || ""));
       const seen = overlay.getAttribute("data-v2-fx-floaters") || "";
       overlay.setAttribute("data-v2-fx-floaters", seen ? seen + "|" + String(text) : String(text));
-      const duration = this._duration(this._instant, 420);
+      const duration = this._duration(this._instant, 900);
       if (duration > 0) {
         this._animate(node, [
           { transform: "translate(-50%, -50%) scale(0.8)", opacity: 0.2 },
@@ -895,8 +1416,41 @@
       } finally {
         if (animation) {
           this._anims.delete(animation);
+          try {
+            if (typeof animation.cancel === "function") {
+              animation.cancel();
+            }
+          } catch (_error) {}
+        }
+        if (node && node.classList && node.classList.contains("v2-character-card")) {
+          this._resetActorStyle(node);
         }
       }
+    }
+
+    _resetActorStyle(node) {
+      if (!node || !node.style) {
+        return;
+      }
+      node.style.transform = "";
+      node.style.opacity = "";
+    }
+
+    _resetActorFx() {
+      const root = this.root;
+      if (!root || typeof root.querySelectorAll !== "function") {
+        return;
+      }
+      Array.from(root.querySelectorAll(".v2-character-card")).forEach((node) => {
+        if (node.classList) {
+          ACTOR_FX_CLASSES.forEach((name) => {
+            try {
+              node.classList.remove(name);
+            } catch (_error) {}
+          });
+        }
+        this._resetActorStyle(node);
+      });
     }
 
     _stopAnims() {
@@ -967,6 +1521,14 @@
 
     _clearFx(removeOverlay) {
       this._stopAnims();
+      this._resetActorFx();
+      const stage = this._stage();
+      if (stage && stage.classList) {
+        stage.classList.remove("v2-fx-shake");
+      }
+      if (this._overlay && this._overlay.classList) {
+        this._overlay.classList.remove("is-veiled");
+      }
       if (this._layer) {
         this._empty(this._layer);
       }
@@ -1052,12 +1614,99 @@
       return this._el(tag);
     }
 
+    _viewerSide() {
+      if (this.options && this.options.viewerSide) {
+        return String(this.options.viewerSide);
+      }
+      if (!this.root || typeof this.root.querySelector !== "function") {
+        return "";
+      }
+      const hand = this.root.querySelector("#v2-player-hand[data-hand-side]");
+      return hand ? String(hand.getAttribute("data-hand-side") || "") : "";
+    }
+
+    _isOpponentPlay(event) {
+      const side = sideOf(event);
+      const viewer = this._viewerSide();
+      if (viewer) {
+        return !!(side && side !== viewer);
+      }
+      return side === "b";
+    }
+
+    _playLanding(stageRect, cardW, cardH) {
+      const board = this.root && typeof this.root.querySelector === "function"
+        ? this.root.querySelector("#v2-turn-board")
+        : null;
+      const rect = readRect(board);
+      if (rect && rect.width) {
+        return {
+          x: rect.left - stageRect.left + rect.width / 2 - cardW / 2,
+          y: rect.top - stageRect.top + Math.max(8, rect.height / 2 - cardH / 2),
+        };
+      }
+      return {
+        x: Math.max(8, (stageRect.width || 800) * 0.06),
+        y: Math.max(8, (stageRect.height || 450) / 2 - cardH / 2),
+      };
+    }
+
+    _settlePlayCard(node, endX, endY) {
+      if (!node || !node.style) {
+        return;
+      }
+      try {
+        if (typeof node.getAnimations === "function") {
+          node.getAnimations().forEach((anim) => {
+            try {
+              anim.cancel();
+            } catch (_error) {}
+          });
+        }
+      } catch (_error) {}
+      node.style.left = endX + "px";
+      node.style.top = endY + "px";
+      node.style.transform = "none";
+    }
+
     _hand(side) {
       if (!this.root || typeof this.root.querySelector !== "function" || !side) {
         return null;
       }
+      if (this.root.classList && this.root.classList.contains("is-mulligan")) {
+        const rail = this.root.querySelector("#v2-mulligan-rail");
+        if (rail) {
+          return rail;
+        }
+      }
+      const viewer = this._viewerSide();
       try {
-        return this.root.querySelector('[data-hand-side="' + cssEscape(side) + '"]');
+        if (viewer && side === viewer) {
+          const playerHand = this.root.querySelector("#v2-player-hand");
+          if (playerHand) {
+            return playerHand;
+          }
+        }
+        if (viewer && side && side !== viewer) {
+          const opponentHand = this.root.querySelector("#v2-opponent-hand");
+          if (opponentHand) {
+            return opponentHand;
+          }
+        }
+        const nodes = typeof this.root.querySelectorAll === "function"
+          ? Array.from(this.root.querySelectorAll('[data-hand-side="' + cssEscape(side) + '"]'))
+          : [];
+        for (let index = 0; index < nodes.length; index += 1) {
+          const node = nodes[index];
+          if (!node || node.id === "v2-mulligan-rail") {
+            continue;
+          }
+          const rect = readRect(node);
+          if (rect && rect.width > 8 && rect.height > 8) {
+            return node;
+          }
+        }
+        return this.root.querySelector("#v2-player-hand") || nodes[0] || null;
       } catch (_error) {
         return null;
       }

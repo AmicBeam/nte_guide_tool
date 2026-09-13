@@ -12,9 +12,10 @@ class V2Backend:
     rules_version = RULES_VERSION
     design_version = DESIGN_VERSION
 
-    def __init__(self, engine: Any = None) -> None:
+    def __init__(self, engine: Any = None, *, copy_on_apply: bool = True) -> None:
         # Injection supports bounded synthetic contract tests before engine delivery.
         self._engine = engine
+        self.copy_on_apply = bool(copy_on_apply)
 
     @property
     def engine(self) -> Any:
@@ -40,8 +41,9 @@ class V2Backend:
         return [deepcopy(item['action']) for item in self.observe(state, side)['legal_actions']]
 
     def apply_action(self, state: Json, side: str, action: Json) -> Json:
-        incoming = deepcopy(state)
-        result = self.engine.apply_action(incoming, side, deepcopy(action))
+        incoming = deepcopy(state) if self.copy_on_apply else state
+        payload = deepcopy(action) if self.copy_on_apply else action
+        result = self.engine.apply_action(incoming, side, payload)
         if result is incoming:
             result = deepcopy(result)
         return result

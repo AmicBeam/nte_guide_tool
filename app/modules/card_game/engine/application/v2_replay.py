@@ -60,6 +60,9 @@ def _new_payload(room, game: dict, members) -> dict:
             'opening_board': opening,
             'events': [],
         }
+        setup = [event for event in (game.get('events') or []) if event.get('type') == 'initiative']
+        if setup:
+            _append_view(views[member.side], game, member.side, setup, name_a, name_b)
     return {
         'schema_version': 1,
         'room_code': room.room_code,

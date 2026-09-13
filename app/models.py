@@ -153,6 +153,35 @@ class DuelV2Run(BaseModel):
         table_name = 'duel_v2_run'
 
 
+class DuelV2Replay(BaseModel):
+    id = AutoField()
+    room = ForeignKeyField(DuelV2Room, backref='replay', on_delete='CASCADE', unique=True)
+    room_code = CharField(max_length=12, index=True)
+    mode = CharField(default='solo', max_length=12)
+    status = CharField(default='playing', max_length=16)
+    winner = CharField(null=True, max_length=8)
+    player_a_id = IntegerField(null=True, index=True)
+    player_b_id = IntegerField(null=True, index=True)
+    name_a = CharField(default='', max_length=32)
+    name_b = CharField(default='', max_length=32)
+    payload = TextField(default='{}')
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_replay'
+
+
+class DuelV2ReplayStar(BaseModel):
+    id = AutoField()
+    player = ForeignKeyField(Player, backref='duel_v2_replay_stars', on_delete='CASCADE')
+    replay = ForeignKeyField(DuelV2Replay, backref='stars', on_delete='CASCADE')
+    created_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_replay_star'
+        indexes = ((('player', 'replay'), True),)
+
+
 class ShaftAxis(BaseModel):
     id = AutoField()
     owner = ForeignKeyField(Player, backref='shaft_axes', on_delete='CASCADE')

@@ -2,14 +2,15 @@ from app.modules.card_game.content.duel_v2.characters.common import (
     draw_owned_card, revive_character, set_shape,
 )
 from app.modules.card_game.content.duel_v2.registry import register
-from app.modules.card_game.engine.duel_v2.state import damage, energy, front_target, heal, hero, shield
+from app.modules.card_game.engine.duel_v2.state import (
+    add_atk_buff, damage, energy, front_target, heal, hero, is_player, log, shield,
+)
 
 
 def _mark_healed(c, side, cid):
-    if side != c.side or cid in (None, 'player'):
+    if side != c.side or is_player(cid):
         return
-    flags = hero(c.state, side, cid).setdefault('flags', {})
-    flags['atk_buff'] = int(flags.get('atk_buff') or 0) + 1
+    add_atk_buff(hero(c.state, side, cid), 1)
 
 
 def _y01(c):
@@ -38,13 +39,25 @@ def _y04(c):
 
 
 def _y05(c):
-    side, cid = c.operation['target_id'].split(':', 1)
-    revive_character(c, side, cid, temporary=True)
+    from app.modules.card_game.engine.duel_v2.state import alive, hero, knockdowns, team_order
+    marked = []
+    for cid in team_order(c.state, c.side):
+        if cid == c.cid or not alive(c.state, c.side, cid):
+            continue
+        hero(c.state, c.side, cid)['hp'] = 0
+        marked.append(cid)
+    knockdowns(c.state)
+    for cid in marked:
+        h = hero(c.state, c.side, cid)
+        if h.get('down_turns'):
+            h['down_turns'] = 2
+    c.draw(2)
 
 
 def _y06(c):
     side, cid = c.operation['target_id'].split(':', 1)
     revive_character(c, side, cid)
+    _mark_healed(c, side, cid)
 
 
 @register
@@ -57,8 +70,7 @@ class Iloy:
     }
     target_policies = {
         'Y02': 'living_ally',
-        'Y03': 'living_role',
-        'Y05': 'downed_ally',
+        'Y03': 'injured_role',
         'Y06': 'downed_ally',
     }
 
@@ -73,24 +85,37 @@ class Iloy:
     @staticmethod
     def on_ultimate(c):
         c.character.setdefault('flags', {})['energy_next'] = True
-        if c.character.get('shape') != 'Y07':
+
+    @staticmethod
+    def after_genesis(c, entering=None, **_data):
+        if c.character.get('shape') != 'Y08' or c.character['hp'] <= 0:
             return
-        cid = c.state['sides'][c.side].get('front')
-        if cid:
-            heal(c.state, c.side, cid, 3)
-            _mark_healed(c, c.side, cid)
+        team = c.state['sides'][c.side]
+        if team.get('extra_genesis_pending'):
+            return
+        team['extra_genesis_pending'] = True
+        team['extra_genesis_actor'] = entering or c.cid
 
     @staticmethod
     def on_turn_begin(c):
         if not c.character.get('flags', {}).pop('energy_next', False):
             return
         for item in c.state['sides'][c.side]['characters'].values():
-            if item['hp'] > 0:
-                energy(c.state, c.side, item['id'], 1)
+            if item['hp'] <= 0:
+                continue
+            cid = item['id']
+            before = item['energy']
+            energy(c.state, c.side, cid, 1)
+            gained = item['energy'] - before
+            if gained:
+                log(c.state, f"{item['name']}因伊洛伊的终结获得 1 点能量。", 'resource',
+                    side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}',
+                    target=f'{c.side}:{cid}', energy_delta=gained,
+                    before={'energy': before}, after={'energy': item['energy']})
 
     @staticmethod
     def on_ally_down(c, downed=None, **_data):
-        if c.character.get('shape') != 'Y08':
+        if c.character.get('shape') != 'Y07':
             return
         side, cid = front_target(c.state, c.side)
         damage(c.state, side, cid, 2, source=f'{c.side}:{c.cid}', settle=False)

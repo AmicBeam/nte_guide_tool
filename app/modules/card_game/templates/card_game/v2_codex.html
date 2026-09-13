@@ -2,29 +2,32 @@
 {% block title %}图鉴{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_common.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_home.css') }}">
 <link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_codex.css') }}">
 {% endblock %}
 {% block body %}
-<main class="codex-page v2-page v2-codex-page">
-    <section class="glass-card panel-header">
-        <div>
-            <p class="eyebrow">空间档案</p>
-            <h1>四人轮替图鉴</h1>
-            <p class="subtle" id="v2-codex-summary">正在读取角色、被动、觉醒与卡面效果。</p>
+<main class="v2-codex-page" id="v2-codex-page">
+    <header class="v2-home-nav">
+        <a class="v2-home-logo" href="{{ url_for('main.card_game_home') }}">
+            <img src="{{ url_for('static', filename='images/brand/duel-logo.webp') }}" alt="异象对决" width="858" height="282">
+        </a>
+        <nav class="v2-home-links" aria-label="大厅导航">
+            <a href="{{ url_for('main.card_game_home') }}">大厅</a>
+            <a href="{{ url_for('main.build_page') }}">构筑</a>
+            <a class="is-current" href="{{ url_for('main.codex_page') }}">图鉴</a>
+            <a href="{{ url_for('main.replays_page') }}">回放</a>
+        </nav>
+        <div class="v2-home-account">
+            <p class="subtle" id="v2-codex-summary">角色、被动与八种卡牌。</p>
         </div>
-        <div class="header-actions">
-            <a class="secondary-btn" href="{{ url_for('main.card_game_home') }}">返回主界面</a>
-            <a class="secondary-btn" href="{{ url_for('main.build_page') }}">构筑</a>
-        </div>
-    </section>
-    <section class="glass-card v2-banner" id="v2-codex-banner" hidden></section>
-    <section class="v2-codex-shell" id="v2-codex-shell">
-        <div class="v2-codex-nav" id="v2-codex-nav"></div>
+    </header>
+    <section class="v2-banner" id="v2-codex-banner" hidden></section>
+    <section class="v2-codex-stage">
+        <aside class="v2-codex-nav" id="v2-codex-nav" aria-label="角色列表"></aside>
         <div class="v2-codex-body" id="v2-codex-body">
             <div class="v2-skel v2-skel-block"></div>
         </div>
     </section>
-    <aside class="v2-detail-layer" id="v2-codex-detail" aria-hidden="true"></aside>
 </main>
 <script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>

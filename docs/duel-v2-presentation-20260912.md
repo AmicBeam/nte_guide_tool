@@ -17,6 +17,9 @@
 
 - `cursor` 是最新公开事件 seq；`oldest_seq` 是当前窗口最早 seq。
 - 事件含 `seq/action_id/action_version/type/side/text`，以及规范 `actor/target`。
+- `present` 由后端决定该事件要不要演出。前端必须按 `events` 数组顺序播放，不得把后面的抽牌、结束弹窗或手牌变化提前套到当前画面。
+- 先后手为 `initiative`，起手换牌为 `mulligan`，对局结束为 `finish`。这三类都进队列；结束弹窗只在 `finish` 演出时打开。
+- `resource` 是环合/能量等数值变化，仍按 seq 排队，用小飘字演出，不插队。回合开始抽牌的 seq 在 `turn` 之后。
 - `action_id` 至少由对应动作 version 组成；pending 的 `choose` 是下一次 `apply_action`，使用新 version，不和出牌合成一个 ID。
 - 已公开卡牌进入 play/gain/record/shape；对手普通抽牌、私有检视候选不会进入对方 presentation。
 - `patch` 按角色 id 合并公开变化。从动作前公开 board 按 seq 应用本动作 patch 后，应等于动作后公开 board。
@@ -29,8 +32,8 @@
 
 - N06 每条候选的 `target_ids` 等于该条 action 的规范 `target_id`。
 - 复制 N06 归属浔，排除自己；规范 ID 保留阵营。
-- 形态指向本人；敌前排战术指向合法前排；弃牌堆回收/手牌选择返回 `choice`。
+- 弧盘指向本人；敌前排战术指向合法前排；弃牌堆回收/手牌选择返回 `choice`。
 
 ## 验证
 
-本批自动化覆盖 presentation 单测，包括 N06 逐条目标、复制排除自己、出击/护盾生命混合伤害/形态/N06/X08 多击复制，以及去掉演出元数据后的首次新动作回放。浏览器验收、平衡试玩和生产发布不在本批声明范围内。
+本批自动化覆盖 presentation 单测，包括 N06 逐条目标、复制排除自己、出击/护盾生命混合伤害/弧盘/N06/X08 多击复制，以及去掉演出元数据后的首次新动作回放。浏览器验收、平衡试玩和生产发布不在本批声明范围内。

@@ -1,6 +1,6 @@
 from app.modules.card_game.content.duel_v2.characters.common import set_shape
 from app.modules.card_game.content.duel_v2.registry import register
-from app.modules.card_game.engine.duel_v2.state import alive, attack_value, damage, hero, other
+from app.modules.card_game.engine.duel_v2.state import alive, damage, energy, front_target, hero, is_esper, other
 
 
 def _j01(c):
@@ -10,8 +10,8 @@ def _j01(c):
 def _j02(c):
     from app.modules.card_game.engine.duel_v2.state import front_target
     side, cid = front_target(c.state, c.side)
-    if cid:
-        c.add_atk_debuff(side, cid, 2)
+    if is_esper(cid):
+        damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}')
         c.attach_pact(side, cid)
 
 
@@ -27,8 +27,12 @@ def _j04(c):
 
 
 def _j05(c):
-    side, cid = c.operation['target_id'].split(':', 1)
-    c.add_atk_debuff(side, cid, 2)
+    foe = other(c.side)
+    revealed = set(c.state['sides'][foe].get('revealed_ids') or [])
+    count = sum(1 for card in c.state['sides'][foe]['hand'] if card.get('instance_id') in revealed)
+    if count:
+        side, cid = front_target(c.state, c.side)
+        damage(c.state, side, cid, count, source=f'{c.side}:{c.cid}')
 
 
 def _j06(c):
@@ -54,7 +58,6 @@ class Jiuyuan:
         'J02': 'enemy_front',
         'J03': 'downed_enemy',
         'J04': 'living_enemy',
-        'J05': 'living_enemy',
     }
 
     @staticmethod
@@ -72,6 +75,8 @@ class Jiuyuan:
             if flags.get('pact'):
                 amount += 2
                 flags.pop('pact', None)
+                if c.character.get('shape') == 'J07':
+                    energy(c.state, c.side, c.cid, 2)
             damage(c.state, foe, cid, amount, source=f'{c.side}:{c.cid}')
 
     @staticmethod
@@ -79,17 +84,8 @@ class Jiuyuan:
         if c.character.get('shape') != 'J08' or not target:
             return
         side, cid = target
-        if cid and not alive(c.state, side, cid):
+        if is_esper(cid) and not alive(c.state, side, cid):
             return
         damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}')
-        if cid:
-            c.attach_pact(side, cid)
+        c.attach_pact(side, cid)
 
-    @staticmethod
-    def on_damage_dealt(c, target_side=None, target_id=None, amount=0, **_data):
-        if c.character.get('shape') != 'J07' or not target_id or amount <= 0:
-            return
-        if not alive(c.state, target_side, target_id):
-            return
-        if attack_value(hero(c.state, target_side, target_id)) == 0:
-            hero(c.state, target_side, target_id)['hp'] = 0

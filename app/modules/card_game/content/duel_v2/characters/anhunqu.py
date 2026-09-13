@@ -4,9 +4,9 @@ from app.modules.card_game.engine.events import GameEvent
 
 
 def _front_hero(c):
-    from app.modules.card_game.engine.duel_v2.state import front_target, hero
+    from app.modules.card_game.engine.duel_v2.state import front_target, hero, is_esper
     enemy, target_id = front_target(c.state, c.side)
-    if not target_id:
+    if not is_esper(target_id):
         return None, None, None
     return enemy, target_id, hero(c.state, enemy, target_id)
 
@@ -78,9 +78,9 @@ class Anhunqu:
 
     @staticmethod
     def on_burn_applied(c, enemy=None, target_id=None, **_data):
-        if not target_id:
+        from app.modules.card_game.engine.duel_v2.state import hero, is_esper
+        if not is_esper(target_id):
             return
-        from app.modules.card_game.engine.duel_v2.state import hero
         target = hero(c.state, enemy, target_id)
         layers = 3 if c.character['awakened'] else 2
         grant_nightmare(target, layers)

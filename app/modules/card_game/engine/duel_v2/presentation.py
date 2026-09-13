@@ -1,12 +1,14 @@
 """Structured public presentation for V2 observe(); never infers cards from log text."""
 from copy import deepcopy
 
-from app.modules.card_game.content.duel_v2 import CARDS
+from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
+from app.modules.card_game.content.duel_v2.catalog import CHARACTER_ORDER
 from app.modules.card_game.content.duel_v2.effects import TARGET_POLICIES, interaction_kind
+from app.modules.card_game.content.duel_v2.registry import copy_owner_text, text_name
 from app.modules.card_game.engine.events import V2_PRESENTATION_SCHEMA
 
 SIDES = ('a', 'b')
-ORDER = ('nanali', 'zero', 'jiuyuan', 'xun')
+ORDER = CHARACTER_ORDER
 
 
 def other(side):
@@ -15,25 +17,29 @@ def other(side):
 CARD_FIELDS = (
     'instance_id', 'card_id', 'character_id', 'name', 'type', 'cost', 'terminal',
     'description', 'copy', 'expires_turn', 'original_character_id',
+    'stat', 'stat_value', 'shield', 'attack', 'hp', 'instant', 'response', 'require', 'redeem',
+    'derived',
 )
-ENTITY_CHARS = set(ORDER)
+ENTITY_CHARS = set(CHARACTERS)
 PRIVATE_EVENT_KEYS = ('private_card', 'private_side')
-INTERACTION_KINDS = ('attack', 'cast', 'target', 'form', 'awaken', 'choice', 'other')
+INTERACTION_KINDS = ('attack', 'cast', 'target', 'form', 'awaken', 'ultimate', 'choice', 'other')
+SILENT_PRESENT_TYPES = frozenset()
 
 
 def public_card(card):
     result = {key: deepcopy(card[key]) for key in CARD_FIELDS if key in card}
     if card.get('copy'):
-        original = {'nanali': '娜娜莉', 'zero': '零', 'jiuyuan': '九原'}.get(card.get('original_character_id'))
+        original = text_name(card.get('original_character_id'))
         if original:
-            result['description'] = result.get('description', '').replace(original, '浔')
+            result['description'] = result.get('description', '').replace(original, copy_owner_text())
     return result
 
 
 def entity_id(side, cid):
     if side not in SIDES:
         return None
-    if cid in (None, 'player'):
+    from .state import is_player
+    if is_player(cid):
         return f'{side}:player'
     return f'{side}:{cid}'
 
@@ -59,7 +65,7 @@ def capture_public_board(state):
             team['deck_count'] += len(pending.get('cards') or ())
         from . import state as duel_state
         characters = []
-        for cid in ORDER:
+        for cid in duel_state.team_order(state, ps):
             hero = source['characters'][cid]
             shape_id = hero.get('shape')
             characters.append({
@@ -70,9 +76,14 @@ def capture_public_board(state):
                 'attack': duel_state.attack_value(hero),
                 'harmony': hero['harmony'],
                 'energy': hero['energy'],
+                'energy_max': duel_state.energy_max(hero),
                 'awakened': hero['awakened'],
+                'ultimate_turns': hero.get('ultimate_turns', 0),
                 'down_turns': hero['down_turns'],
-                'growth': hero['growth'],
+                'growth': hero.get('growth', 0),
+                'family': hero.get('family', 0),
+                'gaze': hero.get('gaze', 0),
+                'dream': hero.get('dream', 0),
                 'shape': CARDS[shape_id]['name'] if shape_id else None,
                 'shape_id': shape_id,
             })
@@ -86,9 +97,10 @@ def diff_public(before, after):
     if not before:
         return deepcopy(after) if after else {}
     patch = {}
-    for key in ('phase', 'active_side', 'turn', 'winner'):
+    for key in ('phase', 'active_side', 'turn', 'winner', 'version', 'reason',
+                'pending_choice', 'resolving_card'):
         if before.get(key) != after.get(key):
-            patch[key] = after.get(key)
+            patch[key] = deepcopy(after.get(key))
     sides = {}
     for ps in SIDES:
         previous_side = (before.get('sides') or {}).get(ps)
@@ -187,7 +199,7 @@ def derive_actor(event):
     normalized = _normalize_entity(side, source)
     if normalized:
         return normalized
-    if event.get('type') in ('draw', 'turn', 'finish', 'fatigue') and side in SIDES:
+    if event.get('type') in ('draw', 'turn', 'finish', 'fatigue', 'initiative', 'mulligan') and side in SIDES:
         return entity_id(side, 'player')
     return None
 
@@ -215,6 +227,8 @@ def enrich_log(state, event):
         event['card'] = public_card(event['card'])
     if event.get('private_card') is not None:
         event['private_card'] = public_card(event['private_card'])
+    if 'present' not in event:
+        event['present'] = event.get('type') not in SILENT_PRESENT_TYPES
     previous = state.get('_public_board')
     current = capture_public_board(state)
     event['patch'] = diff_public(previous, current)
@@ -245,7 +259,8 @@ def project_event(event, viewer):
         'source': event.get('source'),
     }
     for key in ('amount', 'attack', 'counter', 'group_id', 'harmony_delta', 'energy_delta',
-                'hit_index', 'before', 'after'):
+                'hit_index', 'before', 'after', 'source_side', 'card_ids', 'description', 'present',
+                'first_side', 'winner', 'reason'):
         if key in event:
             item[key] = deepcopy(event[key])
     if 'attack' not in item and event.get('type') == 'attack' and 'amount' in event:
@@ -263,6 +278,13 @@ def localize_text(event, viewer):
     text = event.get('text') or ''
     text = text.replace('甲方玩家', '我方玩家' if viewer == 'a' else '对手玩家')
     text = text.replace('乙方玩家', '我方玩家' if viewer == 'b' else '对手玩家')
+    card = _visible_card(event, viewer)
+    if event.get('type') == 'draw' and card and card.get('name') and '抽到「' not in text:
+        name = card['name']
+        if '抽 1 张牌' in text:
+            text = text.replace('抽 1 张牌', f'抽到「{name}」')
+        else:
+            text = text.rstrip('。') + f"：「{name}」。"
     if event.get('side') in SIDES:
         prefix = '我方 · ' if event['side'] == viewer else '对手 · '
         text = prefix + text
@@ -273,7 +295,10 @@ def sanitize_public_event(event, viewer):
     item = deepcopy(event)
     for key in PRIVATE_EVENT_KEYS + ('_public_board',):
         item.pop(key, None)
-    if event.get('private_side') and event.get('private_side') != viewer:
+    card = _visible_card(event, viewer)
+    if card is not None:
+        item['card'] = card
+    else:
         item.pop('card', None)
         item.pop('private_card', None)
     item['text'] = localize_text(event, viewer)
@@ -306,9 +331,9 @@ def presentation_bundle(state, viewer, after_seq=None):
 
 
 def _enemy_front_targets(state, side):
-    enemy = other(side)
-    front = state['sides'][enemy]['front']
-    return [entity_id(enemy, front if front else 'player')]
+    from .state import front_target
+    enemy, cid = front_target(state, side)
+    return [entity_id(enemy, cid)]
 
 
 def interaction_for_action(state, side, action):
@@ -319,9 +344,9 @@ def interaction_for_action(state, side, action):
             'actor_id': entity_id(side, action.get('character_id')),
             'target_ids': _enemy_front_targets(state, side),
         }
-    if kind == 'awaken':
+    if kind == 'ultimate':
         actor = entity_id(side, action.get('character_id'))
-        return {'kind': 'awaken', 'actor_id': actor, 'target_ids': [actor] if actor else []}
+        return {'kind': 'ultimate', 'actor_id': actor, 'target_ids': [actor] if actor else []}
     if kind == 'play_card':
         card = next(c for c in state['sides'][side]['hand'] if c['instance_id'] == action['card_id'])
         actor = entity_id(side, card['character_id'])
@@ -334,7 +359,7 @@ def interaction_for_action(state, side, action):
             return {'kind': 'target', 'actor_id': actor, 'target_ids': [target] if target else []}
         if policy == 'enemy_front':
             return {'kind': 'target', 'actor_id': actor, 'target_ids': _enemy_front_targets(state, side)}
-        if policy in ('enemy_hand', 'own_nonterminal_tactic_discard'):
+        if policy in ('enemy_hand', 'own_tactic_discard'):
             return {'kind': 'choice', 'actor_id': actor, 'target_ids': []}
         return {'kind': 'cast', 'actor_id': actor, 'target_ids': []}
     if kind in ('choose', 'mulligan', 'cycle'):

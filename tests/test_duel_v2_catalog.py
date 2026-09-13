@@ -148,6 +148,8 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['N08']['type'], 'form')
         self.assertEqual(CARDS['N07']['name'], '心有猛虎')
         self.assertEqual(CARDS['N08']['name'], '预备备')
+        self.assertEqual(CARDS['S08']['name'], '好狗狗走四方')
+        self.assertEqual(CARDS['S08']['source']['type'], 'arc')
         for character_id, prefix in CARD_PREFIXES.items():
             self.assertEqual(CARDS[f'{prefix}08']['type'], 'form', character_id)
         for character_id in CATALOG_ORDER:

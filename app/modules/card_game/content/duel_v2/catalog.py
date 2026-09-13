@@ -5,13 +5,6 @@ import json
 
 
 CATALOG_PATH = Path(__file__).with_name('catalog.json')
-
-CHARACTER_ORDER = ('nanali', 'zero', 'jiuyuan', 'xun')
-CARD_ID_ORDER = tuple(
-    f'{prefix}{index:02d}'
-    for prefix in ('N', 'Z', 'J', 'X')
-    for index in range(1, 9)
-)
 REQUIRED_CHARACTER_FIELDS = (
     'id',
     'name',
@@ -35,7 +28,14 @@ REQUIRED_CARD_FIELDS = (
     'source',
 )
 STARTER_DECK_ID = 'starter'
-STARTER_DECK_NAME = '基础预组'
+STARTER_DECK_NAME = '创生预组'
+DARK_ENERGY_ATTRIBUTES = frozenset(('暗', '魂', '咒'))
+LIGHT_ENERGY_MAX = 5
+DARK_ENERGY_MAX = 6
+
+
+def energy_max_for_attribute(attribute: str) -> int:
+    return DARK_ENERGY_MAX if attribute in DARK_ENERGY_ATTRIBUTES else LIGHT_ENERGY_MAX
 
 
 def _load_raw_catalog() -> dict[str, Any]:
@@ -61,7 +61,12 @@ def _character_public(raw: dict[str, Any]) -> dict[str, Any]:
     missing = [field for field in REQUIRED_CHARACTER_FIELDS if field not in raw]
     if missing:
         raise ValueError(f'角色缺少字段: {", ".join(missing)}')
-    return {field: deepcopy(raw[field]) for field in REQUIRED_CHARACTER_FIELDS}
+    public = {field: deepcopy(raw[field]) for field in REQUIRED_CHARACTER_FIELDS}
+    public['energy_max'] = energy_max_for_attribute(public['attribute'])
+    for extra in ('everness_id', 'ultimate'):
+        if extra in raw:
+            public[extra] = deepcopy(raw[extra])
+    return public
 
 
 def _card_public(raw: dict[str, Any]) -> dict[str, Any]:
@@ -72,7 +77,37 @@ def _card_public(raw: dict[str, Any]) -> dict[str, Any]:
     for field in ('character_id', 'type', 'index'):
         if field not in source:
             raise ValueError(f'卡牌 {raw.get("id")} 的 source 缺少 {field}')
-    return {field: deepcopy(raw[field]) for field in REQUIRED_CARD_FIELDS}
+    public = {field: deepcopy(raw[field]) for field in REQUIRED_CARD_FIELDS}
+    public['starter_copies'] = int(raw.get('starter_copies') or 0)
+    card_id = raw.get('id')
+    kind = raw.get('type')
+    if public['cost'] != 1:
+        raise ValueError(f'卡牌 {card_id} 必须是 1 费')
+    if kind == 'form':
+        attack = int(raw.get('attack') or 0)
+        hp = int(raw.get('hp') or 0)
+        if 'stat' in raw and 'attack' not in raw and 'hp' not in raw:
+            if raw['stat'] == 'attack':
+                attack = int(raw.get('stat_value') or 0)
+            elif raw['stat'] == 'hp':
+                hp = int(raw.get('stat_value') or 0)
+        if attack < 0 or hp < 0:
+            raise ValueError(f'武备 {card_id} 的攻击与生命不能为负')
+        public['attack'] = attack
+        public['hp'] = hp
+    elif kind == 'battle':
+        attack = int(raw.get('attack') or 0)
+        shield = int(raw.get('shield') or 0)
+        if attack < 0 or shield < 0:
+            raise ValueError(f'战斗牌 {card_id} 的攻击与护盾不能为负')
+        public['attack'] = attack
+        public['shield'] = shield
+    for extra in ('instant', 'response', 'redeem', 'require', 'derived', 'playable_downed'):
+        if extra in raw:
+            public[extra] = deepcopy(raw[extra])
+    if public.get('derived'):
+        public['starter_copies'] = 0
+    return public
 
 
 def _index_by_id(items: list[dict[str, Any]], label: str) -> dict[str, dict[str, Any]]:
@@ -92,11 +127,38 @@ _RAW_CHARACTERS = [_require_mapping(item, '角色') for item in _require_list(_R
 _RAW_CARDS = [_require_mapping(item, '卡牌') for item in _require_list(_RAW_CATALOG.get('cards'), 'cards')]
 _RAW_CHARACTER_INDEX = _index_by_id(_RAW_CHARACTERS, '角色')
 _RAW_CARD_INDEX = _index_by_id(_RAW_CARDS, '卡牌')
+CHARACTER_ORDER = tuple(character['id'] for character in _RAW_CHARACTERS)
+CARD_ID_ORDER = tuple(card['id'] for card in _RAW_CARDS)
 
-if tuple(character['id'] for character in _RAW_CHARACTERS) != CHARACTER_ORDER:
-    raise ValueError('角色顺序必须为 nanali, zero, jiuyuan, xun')
-if tuple(card['id'] for card in _RAW_CARDS) != CARD_ID_ORDER:
-    raise ValueError('卡牌顺序必须为 N01-N08、Z01-Z08、J01-J08、X01-X08')
+_raw_public_ids = _RAW_CATALOG.get('public_character_ids')
+if _raw_public_ids is None:
+    PUBLIC_CHARACTER_IDS = frozenset(CHARACTER_ORDER)
+else:
+    if not isinstance(_raw_public_ids, list) or not _raw_public_ids:
+        raise ValueError('public_character_ids 必须是非空列表')
+    _public_ids: list[str] = []
+    for item in _raw_public_ids:
+        if not isinstance(item, str) or not item:
+            raise ValueError('public_character_ids 含有无效 id')
+        if item not in _RAW_CHARACTER_INDEX:
+            raise ValueError(f'public_character_ids 含有未知角色: {item}')
+        _public_ids.append(item)
+    PUBLIC_CHARACTER_IDS = frozenset(_public_ids)
+
+
+def is_public_character(character_id: str) -> bool:
+    return str(character_id) in PUBLIC_CHARACTER_IDS
+
+
+def character_access_level(character_id: str) -> str:
+    return 'public' if is_public_character(character_id) else 'test'
+
+
+def deck_uses_test_characters(deck: dict[str, Any] | None) -> bool:
+    if not isinstance(deck, dict):
+        return False
+    return any(not is_public_character(item) for item in (deck.get('character_ids') or []))
+
 
 _DECK_RULES = _require_mapping(_RAW_CATALOG.get('deck_rules'), 'deck_rules')
 DECK_SIZE = int(_DECK_RULES['size'])
@@ -116,37 +178,92 @@ _CARDS: dict[str, dict[str, Any]] = {
 }
 
 
-def _starter_card_ids() -> list[str]:
+def _starter_card_ids(character_ids: list[str]) -> list[str]:
+    allowed = set(character_ids)
     card_ids: list[str] = []
     for card_id in CARD_ID_ORDER:
-        copies = int(_RAW_CARD_INDEX[card_id].get('starter_copies') or 0)
+        raw = _RAW_CARD_INDEX[card_id]
+        if raw.get('character_id') not in allowed:
+            continue
+        if raw.get('derived'):
+            continue
+        copies = int(raw.get('starter_copies') or 0)
         if copies < 0 or copies > MAX_COPIES:
             raise ValueError(f'卡牌 {card_id} 的预组数量非法')
         card_ids.extend([card_id] * copies)
     if len(card_ids) != DECK_SIZE:
-        raise ValueError('基础预组必须恰好 32 张')
+        raise ValueError(f'预组必须恰好 {DECK_SIZE} 张，实际 {len(card_ids)}')
     return card_ids
 
 
+def _preset_decks() -> list[dict[str, Any]]:
+    raw_presets = _RAW_CATALOG.get('starter_decks')
+    if not raw_presets:
+        return [{
+            'id': STARTER_DECK_ID,
+            'name': STARTER_DECK_NAME,
+            'official': True,
+            'character_ids': ['nanali', 'zero', 'jiuyuan', 'xun'],
+            'card_ids': _starter_card_ids(['nanali', 'zero', 'jiuyuan', 'xun']),
+        }]
+    decks = []
+    for item in _require_list(raw_presets, 'starter_decks'):
+        preset = _require_mapping(item, '预组')
+        character_ids = list(preset['character_ids'])
+        if 'card_ids' in preset:
+            card_ids = [str(card_id) for card_id in list(preset['card_ids'])]
+            if len(card_ids) != DECK_SIZE:
+                raise ValueError(f'预组 {preset.get("id")} 必须恰好 {DECK_SIZE} 张，实际 {len(card_ids)}')
+        else:
+            card_ids = _starter_card_ids(character_ids)
+        decks.append({
+            'id': str(preset['id']),
+            'name': str(preset['name']),
+            'official': bool(preset.get('official', True)),
+            'character_ids': character_ids,
+            'card_ids': card_ids,
+        })
+    return decks
+
+
+_PRESET_DECKS = _preset_decks()
 _STARTER_DECK: dict[str, Any] = {
-    'id': STARTER_DECK_ID,
-    'name': STARTER_DECK_NAME,
-    'character_ids': list(CHARACTER_ORDER),
-    'card_ids': _starter_card_ids(),
+    key: deepcopy(_PRESET_DECKS[0][key])
+    for key in ('id', 'name', 'character_ids', 'card_ids')
 }
 
 CHARACTERS: dict[str, dict[str, Any]] = deepcopy(_CHARACTERS)
 CARDS: dict[str, dict[str, Any]] = deepcopy(_CARDS)
 STARTER_DECK: dict[str, Any] = deepcopy(_STARTER_DECK)
+STARTER_DECKS: list[dict[str, Any]] = deepcopy(_PRESET_DECKS)
 
 
-def get_catalog() -> dict[str, Any]:
-    return {
+def _filter_catalog(payload: dict[str, Any], *, include_test_characters: bool) -> dict[str, Any]:
+    if include_test_characters:
+        return payload
+    visible = set(PUBLIC_CHARACTER_IDS)
+    payload['characters'] = [item for item in payload['characters'] if item.get('id') in visible]
+    payload['cards'] = [item for item in payload['cards'] if item.get('character_id') in visible]
+    payload['starter_decks'] = [
+        item for item in payload['starter_decks'] if not deck_uses_test_characters(item)
+    ]
+    starter = payload.get('starter_deck')
+    if deck_uses_test_characters(starter):
+        payload['starter_deck'] = deepcopy(payload['starter_decks'][0]) if payload['starter_decks'] else starter
+    return payload
+
+
+def get_catalog(*, include_test_characters: bool = True) -> dict[str, Any]:
+    payload = {
         'rules_version': RULES_VERSION,
         'schema_version': SCHEMA_VERSION,
-        'characters': [deepcopy(_CHARACTERS[character_id]) for character_id in CHARACTER_ORDER],
+        'characters': [
+            {**deepcopy(_CHARACTERS[character_id]), 'access_level': character_access_level(character_id)}
+            for character_id in CHARACTER_ORDER
+        ],
         'cards': [deepcopy(_CARDS[card_id]) for card_id in CARD_ID_ORDER],
         'starter_deck': deepcopy(_STARTER_DECK),
+        'starter_decks': deepcopy(_PRESET_DECKS),
         'deck_rules': {
             'size': DECK_SIZE,
             'per_character': PER_CHARACTER,
@@ -154,6 +271,7 @@ def get_catalog() -> dict[str, Any]:
             'character_count': CHARACTER_COUNT,
         },
     }
+    return _filter_catalog(payload, include_test_characters=include_test_characters)
 
 
 def _require_text(value: Any, label: str) -> str:
@@ -199,6 +317,8 @@ def validate_deck(deck: dict) -> dict:
         card = _CARDS.get(card_id)
         if card is None:
             raise ValueError(f'构筑包含未知卡牌: {card_id}')
+        if card.get('derived'):
+            raise ValueError(f'衍生牌不可构筑: {card_id}')
         owner = card['character_id']
         if owner not in per_character_counts:
             raise ValueError(f'构筑包含其他角色的卡牌: {card_id}')

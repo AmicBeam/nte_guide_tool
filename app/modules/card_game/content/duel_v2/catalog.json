@@ -11,6 +11,12 @@
     "id": "starter",
     "name": "创生预组"
   },
+  "public_character_ids": [
+    "nanali",
+    "zero",
+    "jiuyuan",
+    "iloy"
+  ],
   "characters": [
     {
       "id": "zero",
@@ -72,7 +78,7 @@
       "avatar": "/static/images/characters/avatar/娜娜莉.webp",
       "portrait": "/static/images/characters/portrait/娜娜莉.webp",
       "passive": "首个己方回合开始时获得 1 张「家族壮大」。娜娜莉击退对方异能者时，若仍存活且在战斗区，再获得 1 张「家族壮大」。至多获得 3 次。",
-      "awakened_passive": "娜娜莉每次战斗附加 1 点追击伤害，持续 2 个己方回合。发动时立刻出击。",
+      "awakened_passive": "娜娜莉每次战斗附加 1 点追击伤害，持续 2 个己方回合。",
       "everness_id": 1010,
       "role": "击退换取「家族壮大」，永久强化自身",
       "ultimate": {
@@ -123,7 +129,7 @@
       "avatar": "/static/kongmu/images/characters/player_yiluoyi_256.webp",
       "portrait": "/static/images/characters/portrait/伊洛伊.webp",
       "role": "治疗加攻与复活",
-      "passive": "受到伊洛伊治疗的己方异能者攻击 +1。",
+      "passive": "受到伊洛伊治疗或复活的己方异能者攻击 +1。",
       "awakened_passive": "下个己方回合开始时，所有己方异能者获得 1 点能量。",
       "everness_id": 1075,
       "ultimate": {
@@ -338,7 +344,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "娜娜莉造成的追击伤害 +1。",
+      "description": "娜娜莉造成的追击伤害 +2。",
       "starter_copies": 0,
       "attack": 2,
       "hp": 6
@@ -407,7 +413,7 @@
       "cost": 1,
       "terminal": false,
       "description": "",
-      "starter_copies": 2,
+      "starter_copies": 0,
       "attack": 0,
       "shield": 2
     },
@@ -425,7 +431,7 @@
         "type": "awaken",
         "index": 4
       },
-      "starter_copies": 0,
+      "starter_copies": 2,
       "attack": 2,
       "shield": 0
     },
@@ -515,7 +521,7 @@
         "type": "awaken",
         "index": 1
       },
-      "starter_copies": 0
+      "starter_copies": 2
     },
     {
       "id": "J02",
@@ -530,7 +536,8 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对方前排攻击 -2，并附着枚约。",
+      "description": "瞬发。对对方前排造成 1 点伤害，并附着枚约。",
+      "instant": true,
       "starter_copies": 2
     },
     {
@@ -578,8 +585,8 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "使 1 名对方异能者攻击 -2。",
-      "starter_copies": 2
+      "description": "造成等同于对方公开手牌数的伤害。前排优先。",
+      "starter_copies": 0
     },
     {
       "id": "J06",
@@ -610,10 +617,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "对攻击为 0 的对方异能者造成伤害后，将其消灭。",
+      "description": "九原的终结成功清算枚约时，每个目标使九原获得 2 点能量。",
       "starter_copies": 0,
       "attack": 3,
-      "hp": 5
+      "hp": 4
     },
     {
       "id": "J08",
@@ -631,7 +638,7 @@
       "description": "创生造成伤害时，对该目标额外造成 1 点伤害，并附着枚约。",
       "starter_copies": 2,
       "attack": 3,
-      "hp": 4
+      "hp": 5
     },
     {
       "id": "X01",
@@ -1630,8 +1637,9 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "选择 1 名己方异能者。抽 1 张该异能者的牌。",
-      "starter_copies": 0
+      "description": "瞬发。选择 1 名己方异能者。抽 1 张该异能者的牌。",
+      "instant": true,
+      "starter_copies": 2
     },
     {
       "id": "Y03",
@@ -1640,7 +1648,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "使 1 名角色回复 5 点生命。",
+      "description": "使 1 名受伤的角色回复 5 点生命。",
       "effect_id": "Y03",
       "source": {
         "character_id": 1075,
@@ -1663,7 +1671,7 @@
         "type": "awaken",
         "index": 4
       },
-      "starter_copies": 2
+      "starter_copies": 0
     },
     {
       "id": "Y05",
@@ -1678,8 +1686,8 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。仅在本回合内，复活 1 名己方异能者。",
-      "starter_copies": 2,
+      "description": "瞬发。将其他己方存活的异能者变为 2 回合倒计时的倒地状态。抽 2 张牌。",
+      "starter_copies": 0,
       "instant": true
     },
     {
@@ -1696,7 +1704,7 @@
         "type": "awaken",
         "index": 6
       },
-      "starter_copies": 0
+      "starter_copies": 2
     },
     {
       "id": "Y07",
@@ -1711,10 +1719,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "伊洛伊的终结会使己方前排回复 3 点生命。",
-      "starter_copies": 2,
-      "attack": 2,
-      "hp": 6
+      "description": "己方异能者倒地时，造成 2 点伤害。前排优先。若伊洛伊倒地，先结算此效果再卸下武备。",
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 5
     },
     {
       "id": "Y08",
@@ -1729,10 +1737,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "己方异能者倒地时，造成 2 点伤害。前排优先。若伊洛伊倒地，先结算此效果再卸下武备。",
-      "starter_copies": 0,
-      "attack": 3,
-      "hp": 5
+      "description": "【创生强化】触发创生后，下个己方回合开始时额外触发一次创生。不可叠加。",
+      "starter_copies": 2,
+      "attack": 2,
+      "hp": 6
     }
   ],
   "starter_decks": [
@@ -1756,29 +1764,29 @@
         "N07",
         "N07",
         "Z02",
-        "Z03",
-        "Z03",
+        "Z04",
+        "Z04",
         "Z05",
         "Z05",
         "Z07",
         "Z07",
         "Z08",
+        "J01",
+        "J01",
         "J02",
         "J02",
         "J04",
         "J04",
-        "J05",
-        "J05",
         "J08",
         "J08",
+        "Y02",
+        "Y02",
         "Y03",
         "Y03",
-        "Y04",
-        "Y04",
-        "Y05",
-        "Y05",
-        "Y07",
-        "Y07"
+        "Y06",
+        "Y06",
+        "Y08",
+        "Y08"
       ]
     },
     {

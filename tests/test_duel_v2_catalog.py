@@ -7,12 +7,18 @@ from pathlib import Path
 from app.modules.card_game.content.duel_v2 import (
     CARDS,
     CHARACTERS,
+    PUBLIC_CHARACTER_IDS,
     STARTER_DECK,
     STARTER_DECKS,
+    deck_uses_test_characters,
     get_catalog,
     validate_deck,
 )
-from app.modules.card_game.content.duel_v2.catalog import CHARACTER_ORDER as CATALOG_ORDER
+from app.modules.card_game.content.duel_v2.catalog import (
+    CHARACTER_ORDER as CATALOG_ORDER,
+    DARK_ENERGY_MAX,
+    LIGHT_ENERGY_MAX,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,12 +65,14 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CHARACTERS['zero']['attribute'], '光')
         self.assertEqual(CHARACTERS['jiuyuan']['attribute'], '灵')
         self.assertEqual(CHARACTERS['xun']['attribute'], '光')
-        self.assertEqual(CHARACTERS['nanali']['energy_max'], 4)
-        self.assertEqual(CHARACTERS['zero']['energy_max'], 4)
-        self.assertEqual(CHARACTERS['hathor']['energy_max'], 4)
-        self.assertEqual(CHARACTERS['anhunqu']['energy_max'], 5)
-        self.assertEqual(CHARACTERS['canhong']['energy_max'], 5)
-        self.assertEqual(CHARACTERS['zaowu']['energy_max'], 5)
+        self.assertEqual(LIGHT_ENERGY_MAX, 5)
+        self.assertEqual(DARK_ENERGY_MAX, 6)
+        self.assertEqual(CHARACTERS['nanali']['energy_max'], LIGHT_ENERGY_MAX)
+        self.assertEqual(CHARACTERS['zero']['energy_max'], LIGHT_ENERGY_MAX)
+        self.assertEqual(CHARACTERS['hathor']['energy_max'], LIGHT_ENERGY_MAX)
+        self.assertEqual(CHARACTERS['anhunqu']['energy_max'], DARK_ENERGY_MAX)
+        self.assertEqual(CHARACTERS['canhong']['energy_max'], DARK_ENERGY_MAX)
+        self.assertEqual(CHARACTERS['zaowu']['energy_max'], DARK_ENERGY_MAX)
         self.assertEqual((CHARACTERS['nanali']['attack'], CHARACTERS['nanali']['max_hp']), (2, 5))
         self.assertEqual((CHARACTERS['zero']['attack'], CHARACTERS['zero']['max_hp']), (2, 5))
         self.assertEqual((CHARACTERS['jiuyuan']['attack'], CHARACTERS['jiuyuan']['max_hp']), (3, 4))
@@ -84,6 +92,14 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertIn('延滞', CHARACTERS['hathor']['passive'])
         self.assertIn('记录', CHARACTERS['xun']['passive'])
         self.assertIn('记录容量', CHARACTERS['xun']['awakened_passive'])
+        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy')))
+        access = {item['id']: item['access_level'] for item in catalog['characters']}
+        self.assertEqual(access['nanali'], 'public')
+        self.assertEqual(access['zero'], 'public')
+        self.assertEqual(access['jiuyuan'], 'public')
+        self.assertEqual(access['iloy'], 'public')
+        self.assertEqual(access['xun'], 'test')
+        self.assertEqual(access['canhong'], 'test')
 
     def test_cards_keep_thirty_two_official_names_and_four_by_eight_groups(self) -> None:
         named = {card_id: card for card_id, card in CARDS.items() if not card.get('derived')}
@@ -139,6 +155,7 @@ class DuelV2CatalogTest(unittest.TestCase):
                 self.assertIsNone(sortie.search(card['description'] or ''), card['id'])
         self.assertEqual(CARDS['N07']['description'], '本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。')
         self.assertEqual(CARDS['Z08']['name'], '倾世之雨')
+        self.assertEqual(CARDS['Z08']['description'], '回合结束时，己方前排攻击 +2。')
         self.assertEqual(CARDS['Z07']['name'], '休息日')
         self.assertEqual(CARDS['Z06']['type'], 'form')
         self.assertEqual(CARDS['Z03']['shield'], 2)
@@ -260,6 +277,17 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['N01']['name'], '帮派初建成')
         self.assertEqual(len(STARTER_DECK['card_ids']), 32)
         self.assertEqual(second['characters'][0]['name'], CHARACTERS[CATALOG_ORDER[0]]['name'])
+
+    def test_public_catalog_hides_test_characters_and_their_presets(self) -> None:
+        public = get_catalog(include_test_characters=False)
+        self.assertEqual({item['id'] for item in public['characters']}, set(PUBLIC_CHARACTER_IDS))
+        self.assertTrue(all(item['character_id'] in PUBLIC_CHARACTER_IDS for item in public['cards']))
+        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组'])
+        self.assertFalse(deck_uses_test_characters(public['starter_deck']))
+        self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'requiem')))
+        full = get_catalog()
+        self.assertEqual(len(full['characters']), 11)
+        self.assertEqual(len(full['starter_decks']), 4)
 
     def test_existing_character_images_are_present(self) -> None:
         for character_id, (avatar, portrait) in STATIC_FILES.items():

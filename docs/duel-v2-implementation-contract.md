@@ -32,7 +32,7 @@ validate_deck(deck: dict) -> dict  # 不合法抛 ValueError，合法返回规�
 
 标准构筑 JSON：`{id, name, character_ids: [4个ID], card_ids: [32个卡牌ID]}`。card_ids 是重复展开列表。validate_deck 严格验证恰好 4 名不同已实现角色、每人 8 张、总数 32、同名最多 2、没有未知或其他角色卡，不能静默截断。返回独立副本。
 
-get_catalog 返回 `{rules_version: "duel_v2", characters: [...], cards: [...], starter_deck: {...}, starter_decks: [...], deck_rules: {size: 32, per_character: 8, max_copies: 2, character_count: 4}}`。账号首次读取 catalog 时，把官方预组写入该玩家构筑库，之后按普通 saved_builds 处理，可删除；已完成首次赠送后不再重复发放。旧的单套构筑会保留，并补齐尚未拥有的预组。
+get_catalog 返回 `{rules_version: "duel_v2", characters: [...], cards: [...], starter_deck: {...}, starter_decks: [...], deck_rules: {size: 32, per_character: 8, max_copies: 2, character_count: 4}}`。内容层默认返回完整卡表；`GET /api/duel-v2/catalog` 按账号过滤：未加入测试白名单的账号只看到公开角色（娜娜莉、零、九原、伊洛伊）及其卡牌，以及不含测试角色的官方预组。账号首次读取 catalog 时，把当前可见的官方预组写入该玩家构筑库，之后按普通 saved_builds 处理，可删除；已完成首次赠送后不再重复发放，但账号升级为测试账号后会补发此前不可见的官方预组。旧的单套构筑会保留，并补齐尚未拥有且当前可见的预组。保存、开局或加入房间时，非测试账号不能使用含测试角色的构筑。
 
 ## 纯内存引擎契约
 

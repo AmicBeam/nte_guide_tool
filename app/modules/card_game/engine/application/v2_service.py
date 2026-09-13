@@ -63,6 +63,30 @@ def _validate_deck(payload: dict) -> dict:
         raise RuleValidationError(str(exc)) from exc
 
 
+def _player_can_use_test_content(player) -> bool:
+    return bool(player and getattr(player, 'shaft_test_whitelisted', False))
+
+
+def _deck_visible(deck: dict, player) -> bool:
+    if _player_can_use_test_content(player):
+        return True
+    return not _content().deck_uses_test_characters(deck)
+
+
+def _require_visible_deck(player, deck: dict, *, joining: bool = False) -> dict:
+    if _deck_visible(deck, player):
+        return deck
+    raise RuleValidationError('该房间使用尚未公开的角色。' if joining else '该构筑包含尚未公开的角色。')
+
+
+def _allowed_presets(player) -> list[dict]:
+    content = _content()
+    presets = list(getattr(content, 'STARTER_DECKS', None) or [content.STARTER_DECK])
+    if _player_can_use_test_content(player):
+        return presets
+    return [item for item in presets if not content.deck_uses_test_characters(item)]
+
+
 def _clip_build_name(value) -> str:
     text = ' '.join(str(value or '').split())
     if not text:
@@ -74,8 +98,15 @@ def _new_build_id() -> str:
     return 'deck-' + token_hex(4)
 
 
+def _granted_preset_ids(raw) -> list[str]:
+    if not isinstance(raw, dict) or not isinstance(raw.get('granted_preset_ids'), list):
+        return []
+    return [str(item) for item in raw.get('granted_preset_ids') or [] if item]
+
+
 def _normalize_store(raw) -> dict:
     granted = bool(isinstance(raw, dict) and raw.get('starter_granted'))
+    granted_preset_ids = _granted_preset_ids(raw)
     if isinstance(raw, dict) and isinstance(raw.get('builds'), list):
         builds = []
         for item in raw.get('builds') or []:
@@ -87,14 +118,29 @@ def _normalize_store(raw) -> dict:
         ids = {item['id'] for item in builds}
         if active not in ids:
             active = builds[0]['id'] if builds else None
-        return {'active_id': active, 'builds': builds, 'starter_granted': granted}
+        return {
+            'active_id': active,
+            'builds': builds,
+            'starter_granted': granted,
+            'granted_preset_ids': granted_preset_ids,
+        }
     if isinstance(raw, dict) and raw.get('card_ids'):
         try:
             deck = _validate_deck(raw)
-            return {'active_id': deck['id'], 'builds': [deck], 'starter_granted': granted}
+            return {
+                'active_id': deck['id'],
+                'builds': [deck],
+                'starter_granted': granted,
+                'granted_preset_ids': granted_preset_ids,
+            }
         except (RuleValidationError, ValueError, TypeError, KeyError):
             pass
-    return {'active_id': None, 'builds': [], 'starter_granted': granted}
+    return {
+        'active_id': None,
+        'builds': [],
+        'starter_granted': granted,
+        'granted_preset_ids': granted_preset_ids,
+    }
 
 
 def _preset_name(preset: dict) -> str:
@@ -107,15 +153,25 @@ def _owned_preset_keys(store: dict) -> tuple[set[str], set[tuple[str, ...]]]:
     return names, teams
 
 
-def _grant_starter_decks(store: dict) -> bool:
-    if store.get('starter_granted'):
-        return False
+def _grant_starter_decks(store: dict, player=None) -> bool:
     content = _content()
-    presets = list(getattr(content, 'STARTER_DECKS', None) or [content.STARTER_DECK])
+    all_presets = list(getattr(content, 'STARTER_DECKS', None) or [content.STARTER_DECK])
+    allowed = _allowed_presets(player)
+    granted_ids = {str(item) for item in store.get('granted_preset_ids') or [] if item}
+    changed = False
+    if store.get('starter_granted') and not granted_ids:
+        granted_ids = {str(preset.get('id') or '') for preset in all_presets}
+        granted_ids.discard('')
+        changed = True
     owned_names, owned_teams = _owned_preset_keys(store)
-    for preset in presets:
+    for preset in allowed:
+        preset_id = str(preset.get('id') or '')
+        if not preset_id or preset_id in granted_ids:
+            continue
+        granted_ids.add(preset_id)
+        changed = True
         if len(store['builds']) >= _MAX_SAVED_BUILDS:
-            break
+            continue
         name = _preset_name(preset)
         team = tuple(preset['character_ids'])
         if name in owned_names or team in owned_teams:
@@ -130,14 +186,40 @@ def _grant_starter_decks(store: dict) -> bool:
         owned_teams.add(team)
     if store['builds'] and not store.get('active_id'):
         store['active_id'] = store['builds'][0]['id']
-    store['starter_granted'] = True
-    return True
+        changed = True
+    granted_list = sorted(granted_ids)
+    if list(store.get('granted_preset_ids') or []) != granted_list:
+        store['granted_preset_ids'] = granted_list
+        changed = True
+    if not store.get('starter_granted'):
+        store['starter_granted'] = True
+        changed = True
+    return changed
+
+
+def _visible_store(store: dict, player) -> dict:
+    builds = [item for item in store['builds'] if _deck_visible(item, player)]
+    active = store.get('active_id')
+    ids = {item['id'] for item in builds}
+    if active not in ids:
+        active = builds[0]['id'] if builds else None
+    return {
+        'active_id': active,
+        'builds': builds,
+        'starter_granted': store.get('starter_granted'),
+        'granted_preset_ids': list(store.get('granted_preset_ids') or []),
+    }
 
 
 def _load_store(player) -> dict:
     with atomic_transaction():
         store = _normalize_store(repository.get_build(player))
-        if _grant_starter_decks(store):
+        changed = _grant_starter_decks(store, player)
+        visible = _visible_store(store, player)
+        if store.get('active_id') != visible.get('active_id'):
+            store['active_id'] = visible.get('active_id')
+            changed = True
+        if changed:
             repository.save_build(player, store)
         return store
 
@@ -147,7 +229,8 @@ def complete_starter_presets(player) -> dict:
     with atomic_transaction():
         store = _normalize_store(repository.get_build(player))
         store['starter_granted'] = False
-        if _grant_starter_decks(store):
+        store['granted_preset_ids'] = []
+        if _grant_starter_decks(store, player):
             repository.save_build(player, store)
         return store
 
@@ -163,15 +246,16 @@ def _public_store(store: dict) -> dict:
 
 def _selected_deck(player, supplied: dict | None = None) -> dict:
     if supplied is not None:
-        return _validate_deck(supplied)
-    store = _load_store(player)
+        return _require_visible_deck(player, _validate_deck(supplied))
+    store = _visible_store(_load_store(player), player)
     active = next((item for item in store['builds'] if item['id'] == store.get('active_id')), None)
-    return _validate_deck(active if active is not None else deepcopy(_content().STARTER_DECK))
+    fallback = deepcopy((_allowed_presets(player) or [_content().STARTER_DECK])[0])
+    return _validate_deck(active if active is not None else fallback)
 
 
 def catalog(player) -> dict:
-    payload = _content().get_catalog()
-    payload.update(_public_store(_load_store(player)))
+    payload = _content().get_catalog(include_test_characters=_player_can_use_test_content(player))
+    payload.update(_public_store(_visible_store(_load_store(player), player)))
     return payload
 
 
@@ -180,19 +264,20 @@ def save_build(player, payload: dict) -> dict:
     body['name'] = _clip_build_name(body.get('name'))
     if not body.get('id') or body.get('id') in ('starter', 'custom'):
         body['id'] = _new_build_id()
-    deck = _validate_deck(body)
+    deck = _require_visible_deck(player, _validate_deck(body))
     with atomic_transaction():
         store = _load_store(player)
         existing = [item['id'] for item in store['builds']]
+        visible_count = len(_visible_store(store, player)['builds'])
         if deck['id'] in existing:
             store['builds'] = [deck if item['id'] == deck['id'] else item for item in store['builds']]
         else:
-            if len(store['builds']) >= _MAX_SAVED_BUILDS:
+            if visible_count >= _MAX_SAVED_BUILDS:
                 raise RuleValidationError(f'最多保存 {_MAX_SAVED_BUILDS} 套构筑。')
             store['builds'].append(deck)
         store['active_id'] = deck['id']
         repository.save_build(player, store)
-    return {'build': deck, **_public_store(store)}
+    return {'build': deck, **_public_store(_visible_store(store, player))}
 
 
 def delete_build(player, payload: dict) -> dict:
@@ -201,25 +286,27 @@ def delete_build(player, payload: dict) -> dict:
         raise RuleValidationError('缺少要删除的构筑。')
     with atomic_transaction():
         store = _load_store(player)
-        kept = [item for item in store['builds'] if item['id'] != build_id]
-        if len(kept) == len(store['builds']):
+        visible_ids = {item['id'] for item in _visible_store(store, player)['builds']}
+        if build_id not in visible_ids:
             raise DuelV2NotFound('没有这套构筑。')
+        kept = [item for item in store['builds'] if item['id'] != build_id]
         store['builds'] = kept
-        if store.get('active_id') == build_id:
-            store['active_id'] = kept[0]['id'] if kept else None
+        visible = _visible_store(store, player)
+        store['active_id'] = visible.get('active_id')
         repository.save_build(player, store)
-    return {'ok': True, **_public_store(store)}
+    return {'ok': True, **_public_store(visible)}
 
 
 def select_build(player, payload: dict) -> dict:
     build_id = str((payload or {}).get('id') or '')
     with atomic_transaction():
         store = _load_store(player)
-        if build_id not in {item['id'] for item in store['builds']}:
+        visible = _visible_store(store, player)
+        if build_id not in {item['id'] for item in visible['builds']}:
             raise DuelV2NotFound('没有这套构筑。')
         store['active_id'] = build_id
         repository.save_build(player, store)
-    return {'ok': True, **_public_store(store)}
+    return {'ok': True, **_public_store(_visible_store(store, player))}
 
 
 def reorder_builds(player, payload: dict) -> dict:
@@ -231,13 +318,15 @@ def reorder_builds(player, payload: dict) -> dict:
         raise RuleValidationError('构筑顺序不完整。')
     with atomic_transaction():
         store = _load_store(player)
-        current = [item['id'] for item in store['builds']]
+        visible = _visible_store(store, player)
+        hidden = [item for item in store['builds'] if item['id'] not in {entry['id'] for entry in visible['builds']}]
+        current = [item['id'] for item in visible['builds']]
         if set(ids) != set(current) or len(ids) != len(current):
             raise RuleValidationError('构筑顺序不完整。')
-        by_id = {item['id']: item for item in store['builds']}
-        store['builds'] = [by_id[item_id] for item_id in ids]
+        by_id = {item['id']: item for item in visible['builds']}
+        store['builds'] = [by_id[item_id] for item_id in ids] + hidden
         repository.save_build(player, store)
-    return {'ok': True, **_public_store(store)}
+    return {'ok': True, **_public_store(_visible_store(store, player))}
 
 
 def _require_room(player):
@@ -361,8 +450,12 @@ def join(player, payload: dict) -> dict:
             room = repository.get_room(room.id)
             if room is None or room.mode != 'pvp' or room.status not in {'waiting', 'ready'}:
                 raise RuleValidationError('该房间当前不能加入。')
-            if len(repository.members(room)) >= 2:
+            people = repository.members(room)
+            if len(people) >= 2:
                 raise RuleValidationError('房间已满。')
+            host = next((entry for entry in people if entry.side == 'a'), None)
+            if host is not None:
+                _require_visible_deck(player, _validate_deck(repository.member_deck(host)), joining=True)
             repository.add_member(room, player, 'b', _selected_deck(player), False)
             repository.set_status(room, 'waiting')
         return _response(room, player)

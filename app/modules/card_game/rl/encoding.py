@@ -7,15 +7,19 @@ from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
 
 from .contracts import ACTION_TYPES, PHASES, RULES_VERSION, SIDES
 
-FEATURE_VERSION = 'duel_v2_obs_v2'
+FEATURE_VERSION = 'duel_v2_obs_v3'
 ACTION_FEATURE_VERSION = 'duel_v2_act_v2'
 ENCODER_VERSION = f'{FEATURE_VERSION}+{ACTION_FEATURE_VERSION}'
 
-CHARACTER_IDS = tuple(CHARACTERS)
-CARD_IDS = tuple(CARDS)
-ATTRIBUTES = ('光', '灵')
+# Encoder seats are the V2.4 four-character duel, not the expanded catalog.
+CHARACTER_IDS = tuple(cid for cid in ('nanali', 'zero', 'jiuyuan', 'xun') if cid in CHARACTERS)
+CARD_IDS = tuple(
+    card_id for prefix in ('N', 'Z', 'J', 'X') for n in range(1, 9)
+    if (card_id := f'{prefix}{n:02d}') in CARDS
+) + tuple(card_id for card_id, card in CARDS.items() if card.get('derived'))
+ATTRIBUTES = tuple(sorted({CHARACTERS[cid]['attribute'] for cid in CHARACTER_IDS}))
 CARD_TYPES = ('battle', 'tactic', 'form')
-FORM_CARD_IDS = tuple(card_id for card_id, card in CARDS.items() if card['type'] == 'form')
+FORM_CARD_IDS = tuple(card_id for card_id in CARD_IDS if CARDS[card_id]['type'] == 'form')
 FORM_NAME_TO_ID = {CARDS[card_id]['name']: card_id for card_id in FORM_CARD_IDS}
 HAND_SLOTS = 10
 RECORD_SLOTS = 2
@@ -29,7 +33,7 @@ MAX_ATTACK = 10.0
 MAX_HP_CHARACTER = 10.0
 MAX_SHIELD_CHARACTER = 10.0
 MAX_HARMONY = 2.0
-MAX_ENERGY = 4.0
+MAX_ENERGY = 5.0
 MAX_GROWTH = 4.0
 MAX_DOWN = 3.0
 MAX_HAND = float(HAND_SLOTS)
@@ -58,7 +62,7 @@ EVENT_TYPES = (
     'mulligan',
     'attack',
     'play_card',
-    'awaken',
+    'ultimate',
     'cycle',
     'choose',
     'end_turn',
@@ -96,7 +100,7 @@ ACTION_ALLOWED_FIELDS = {
     'mulligan': {'type', 'card_ids'},
     'attack': {'type', 'character_id'},
     'play_card': {'type', 'card_id', 'target_id'},
-    'awaken': {'type', 'character_id'},
+    'ultimate': {'type', 'character_id'},
     'cycle': {'type', 'card_id'},
     'choose': {'type', 'choice_id'},
     'end_turn': {'type'},
@@ -118,6 +122,105 @@ ACTION_DIM = (
     + len(SIDES) + len(CHARACTER_IDS) + 1 + len(CARD_IDS) + 1 + HAND_SLOTS + 1
     + PUBLIC_CARD_WIDTH * 2
 )
+SHARED_ACTION_TYPES = ('mulligan', 'attack', 'ultimate', 'end_turn')
+PUBLIC_CARD_ID_OFFSET = 2
+
+
+def _take_slice(cursor: int, width: int) -> tuple[slice, int]:
+    return slice(cursor, cursor + width), cursor + width
+
+
+def action_feature_layout() -> dict[str, slice]:
+    cursor = 0
+    layout: dict[str, slice] = {}
+    layout['action_type'], cursor = _take_slice(cursor, len(ACTION_TYPES))
+    layout['actor_character'], cursor = _take_slice(cursor, len(CHARACTER_IDS))
+    layout['action_card_id'], cursor = _take_slice(cursor, len(CARD_IDS))
+    layout['action_card_type'], cursor = _take_slice(cursor, len(CARD_TYPES))
+    layout['action_card_meta'], cursor = _take_slice(cursor, 3)
+    layout['target_side'], cursor = _take_slice(cursor, len(SIDES))
+    layout['target_character'], cursor = _take_slice(cursor, len(CHARACTER_IDS))
+    layout['target_is_card'], cursor = _take_slice(cursor, 1)
+    layout['target_card_id'], cursor = _take_slice(cursor, len(CARD_IDS))
+    layout['mulligan_count'], cursor = _take_slice(cursor, 1)
+    layout['mulligan_hand'], cursor = _take_slice(cursor, HAND_SLOTS)
+    layout['choose_index'], cursor = _take_slice(cursor, 1)
+    layout['played_card'], cursor = _take_slice(cursor, PUBLIC_CARD_WIDTH)
+    layout['choice_card'], cursor = _take_slice(cursor, PUBLIC_CARD_WIDTH)
+    if cursor != ACTION_DIM:
+        raise RuntimeError(f'Action feature layout width {cursor} != {ACTION_DIM}')
+    return layout
+
+
+ACTION_LAYOUT = action_feature_layout()
+CARD_IDENTITY_SLICES = (
+    ACTION_LAYOUT['action_card_id'],
+    ACTION_LAYOUT['target_card_id'],
+    slice(
+        ACTION_LAYOUT['played_card'].start + PUBLIC_CARD_ID_OFFSET,
+        ACTION_LAYOUT['played_card'].start + PUBLIC_CARD_ID_OFFSET + len(CARD_IDS),
+    ),
+    slice(
+        ACTION_LAYOUT['choice_card'].start + PUBLIC_CARD_ID_OFFSET,
+        ACTION_LAYOUT['choice_card'].start + PUBLIC_CARD_ID_OFFSET + len(CARD_IDS),
+    ),
+)
+
+
+def _one_hot_index(values: Sequence[float], width: int) -> int:
+    if width <= 0 or len(values) < width:
+        return 0
+    best = 0
+    score = -1.0
+    for index in range(width):
+        item = float(values[index])
+        if item > score:
+            score = item
+            best = index
+    return best + 1 if score > 0.0 else 0
+
+
+def card_identity_index(vector: Sequence[float]) -> int:
+    """Map a candidate to CARD_IDS index+1; 0 means no catalog card."""
+    if len(vector) != ACTION_DIM:
+        return 0
+    played = ACTION_LAYOUT['action_card_id']
+    index = _one_hot_index(vector[played], len(CARD_IDS))
+    if index:
+        return index
+    for key in ('played_card', 'choice_card'):
+        block = ACTION_LAYOUT[key]
+        visible = float(vector[block.start])
+        if visible <= 0.0:
+            continue
+        start = block.start + PUBLIC_CARD_ID_OFFSET
+        index = _one_hot_index(vector[start:start + len(CARD_IDS)], len(CARD_IDS))
+        if index:
+            return index
+    target = ACTION_LAYOUT['target_card_id']
+    return _one_hot_index(vector[target], len(CARD_IDS))
+
+
+def zero_card_identity(vector: Sequence[float]) -> list[float]:
+    """Keep type/cost/target seats; drop catalog card one-hots."""
+    generic = list(vector)
+    if len(generic) != ACTION_DIM:
+        return generic
+    for region in CARD_IDENTITY_SLICES:
+        for index in range(region.start, region.stop):
+            generic[index] = 0.0
+    return generic
+
+
+def is_shared_action_vector(vector: Sequence[float], overlap_card_indexes: Sequence[int] = ()) -> bool:
+    if len(vector) != ACTION_DIM:
+        return False
+    types = ACTION_LAYOUT['action_type']
+    for offset, action_type in enumerate(ACTION_TYPES):
+        if action_type in SHARED_ACTION_TYPES and float(vector[types.start + offset]) > 0.5:
+            return True
+    card_index = card_identity_index(vector)
+    return bool(card_index) and card_index in set(overlap_card_indexes)
 
 
 def _mapping(value: Any, label: str) -> dict[str, Any]:
@@ -280,7 +383,7 @@ def _character_vector(character: Mapping[str, Any], front: str | None, turn_coun
     vector.append(_norm(character['harmony'], MAX_HARMONY, 'harmony'))
     vector.append(_norm(character['energy'], MAX_ENERGY, 'energy'))
     vector.append(_bool(character['awakened'], 'awakened'))
-    vector.append(_norm(character['growth'], MAX_GROWTH, 'growth'))
+    vector.append(_norm(character.get('family', character.get('growth', 0)), MAX_GROWTH, 'growth'))
     vector.extend(_one_hot(shape_id, FORM_CARD_IDS, 'shape', required=False))
     vector.append(1.0 if shape_id is None else 0.0)
     vector.append(_norm(character['down_turns'], MAX_DOWN, 'down_turns'))
@@ -337,8 +440,8 @@ def _discard_bag(cards: list[Any], label: str) -> list[float]:
 
 
 def _ordered_characters(characters: list[Any], front: str | None, side_id: str, turn_count: float = 0) -> list[list[float]]:
-    if len(characters) != len(CHARACTER_IDS):
-        raise ValueError(f'side {side_id} must expose four characters')
+    if len(characters) < len(CHARACTER_IDS):
+        raise ValueError(f'side {side_id} must expose {len(CHARACTER_IDS)} duel characters')
     by_id: dict[str, list[float]] = {}
     for character in characters:
         payload = _mapping(character, 'character')
@@ -592,7 +695,7 @@ class V2Encoder:
             viewer_hand = _list(_mapping(view['sides'].get(viewer_side), 'viewer side').get('hand'), 'viewer hand')
         vector = _one_hot(action_type, ACTION_TYPES, 'action.type', required=True)
         character_id = None
-        if action_type in ('attack', 'awaken'):
+        if action_type in ('attack', 'ultimate'):
             character_id = _character_id(payload.get('character_id'), 'action.character_id')
         vector.extend(_one_hot(character_id, CHARACTER_IDS, 'action.character_id', required=False))
         resolved_card_id = None

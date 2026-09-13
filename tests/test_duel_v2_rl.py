@@ -10,10 +10,15 @@ import unittest
 from unittest.mock import patch
 
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
+from app.modules.card_game.rl.encoding import CHARACTER_IDS
 from app.modules.card_game.rl import DuelAdapter, V2Backend, V2Encoder
 from app.modules.card_game.rl.contracts import Outcome
-from app.modules.card_game.rl.encoding import OBSERVATION_DIM, ACTION_DIM, PUBLIC_CARD_WIDTH, _public_card_vector
+from app.modules.card_game.rl.encoding import (
+    ACTION_DIM, ACTION_LAYOUT, CARD_IDS, OBSERVATION_DIM, PUBLIC_CARD_WIDTH,
+    _public_card_vector, card_identity_index, is_shared_action_vector, zero_card_identity,
+)
 from app.modules.card_game.rl.checkpoint import current_checkpoint_config, validate_checkpoint, read_checkpoint_metadata, write_checkpoint_metadata
+from app.modules.card_game.rl.rewards import TERMINAL_LOSS, TERMINAL_WIN
 
 
 def card(cid='N03', instance='a-1', copied=False, expiry=21):
@@ -27,7 +32,8 @@ def projection():
     sides = {}
     for side in ('a', 'b'):
         characters = []
-        for cid, definition in CHARACTERS.items():
+        for cid in CHARACTER_IDS:
+            definition = CHARACTERS[cid]
             characters.append(dict(deepcopy(definition), hp=definition['max_hp'], shield=0,
                 harmony=0, energy=0, awakened=False, growth=0, shape=None, shape_id=None,
                 down_turns=0, next_attack_bonus=0, return_after_sortie=False, slow=None, burn=0, star=None))
@@ -46,7 +52,7 @@ class EncodingTest(unittest.TestCase):
         self.view = projection()
 
     def test_dimensions_finite_and_shape_id(self):
-        self.view['sides']['a']['characters'][0].update(shape_id='N02', shape='display can change')
+        self.view['sides']['a']['characters'][0].update(shape_id='N07', shape='display can change')
         vector = self.encoder.encode_observation(self.view)
         self.assertEqual(len(vector), OBSERVATION_DIM)
         self.assertTrue(all(0 <= x <= 1 for x in vector))
@@ -103,7 +109,7 @@ class EncodingTest(unittest.TestCase):
     def test_actions_target_mulligan_copy_and_expiry(self):
         self.view['sides']['a']['hand'] = [card('N06', 'a-1'), card('N03', 'a-2', True), card('N03', 'a-3', True, 22)]
         actions = [dict(type='play_card', card_id='a-1', target_id='a:zero'),
-                   dict(type='attack', character_id='nanali'), dict(type='awaken', character_id='zero'),
+                   dict(type='attack', character_id='nanali'), dict(type='ultimate', character_id='zero'),
                    dict(type='cycle', card_id='a-1'), dict(type='end_turn'), dict(type='concede')]
         for action in actions:
             self.assertEqual(len(self.encoder.encode_action(self.view, action)), ACTION_DIM)
@@ -111,6 +117,22 @@ class EncodingTest(unittest.TestCase):
                             self.encoder.encode_action(self.view, dict(type='mulligan', card_ids=['a-2'])))
         self.assertNotEqual(self.encoder.encode_action(self.view, dict(type='play_card', card_id='a-2')),
                             self.encoder.encode_action(self.view, dict(type='play_card', card_id='a-3')))
+
+    def test_generic_action_features_drop_card_identity(self):
+        self.assertEqual(ACTION_LAYOUT['choice_card'].stop, ACTION_DIM)
+        self.view['sides']['a']['hand'] = [card('N03', 'a-1'), card('N04', 'a-2')]
+        play_a = self.encoder.encode_action(self.view, dict(type='play_card', card_id='a-1'))
+        play_b = self.encoder.encode_action(self.view, dict(type='play_card', card_id='a-2'))
+        attack = self.encoder.encode_action(self.view, dict(type='attack', character_id='nanali'))
+        end_turn = self.encoder.encode_action(self.view, dict(type='end_turn'))
+        self.assertNotEqual(play_a, play_b)
+        self.assertEqual(zero_card_identity(play_a), zero_card_identity(play_b))
+        self.assertEqual(card_identity_index(play_a), CARD_IDS.index('N03') + 1)
+        self.assertEqual(card_identity_index(attack), 0)
+        self.assertTrue(is_shared_action_vector(attack))
+        self.assertTrue(is_shared_action_vector(end_turn))
+        self.assertFalse(is_shared_action_vector(play_a))
+        self.assertTrue(is_shared_action_vector(play_a, overlap_card_indexes=(CARD_IDS.index('N03') + 1,)))
 
     def test_real_event_names_and_unknown(self):
         for event in ('turn', 'enter', 'resource', 'play', 'shape', 'revive', 'finish', 'flower', 'new_cosmetic_event'):
@@ -180,7 +202,10 @@ class AdapterTest(unittest.TestCase):
                 env = self.make([(seat, None), (None, winner)], learning_side=seat, max_game_actions=1)
                 t = env.reset()
                 result = env.step(0, revision=t.decision.revision)
-                self.assertEqual(result.reward, 0 if winner == 'draw' else 1 if winner == seat else -1)
+                self.assertEqual(
+                    result.reward,
+                    0 if winner == 'draw' else TERMINAL_WIN if winner == seat else TERMINAL_LOSS,
+                )
                 self.assertTrue(result.terminated)
                 self.assertFalse(result.truncated)
                 self.assertFalse(any(result.decision.mask))
@@ -252,7 +277,9 @@ class CheckpointAndCliTest(unittest.TestCase):
             with self.assertRaises(SystemExit) as help_exit:
                 cli.main(['--help'])
             self.assertEqual(help_exit.exception.code, 0)
-            for arguments in ([], ['--enable-training'], ['--train']):
+            for arguments in ([], ['--enable-training'], ['--train'],
+                              ['--train', '--output', 'unused', '--freeze-generic'],
+                              ['--train', '--output', 'unused', '--kl-coef', '0.1']):
                 with self.assertRaises(SystemExit) as disabled:
                     cli.main(arguments)
                 self.assertNotEqual(disabled.exception.code, 0)
@@ -278,7 +305,7 @@ class OptionalGymTest(unittest.TestCase):
         self.assertTrue(env.observation_space.contains(observation))
         self.assertTrue(env.action_masks()[0])
 
-    def test_reset_done_and_opponent_truncation_rejected(self):
+    def test_reset_done_rejected_and_opponent_truncation_is_not_a_loss(self):
         from app.modules.card_game.rl.gym_compat import make_gym_env
         env = make_gym_env(DuelAdapter(FakeBackend([(None, 'draw')]), TinyEncoder()))
         with self.assertRaises(RuntimeError):
@@ -286,8 +313,12 @@ class OptionalGymTest(unittest.TestCase):
         adapter = DuelAdapter(FakeBackend([('a', None), ('b', None)]), TinyEncoder(), max_game_actions=1)
         env = make_gym_env(adapter)
         env.reset()
-        with self.assertRaises(RuntimeError):
-            env.step(0)
+        observation, reward, terminated, truncated, info = env.step(0)
+        self.assertTrue(truncated)
+        self.assertFalse(terminated)
+        self.assertEqual(reward, 0)
+        self.assertFalse(info.get('bootstrap_allowed'))
+        self.assertTrue(env.observation_space.contains(observation))
 
     def test_maskable_predict_receives_candidates_and_mask(self):
         import numpy as np
@@ -309,7 +340,11 @@ class RealEngineSmokeTest(unittest.TestCase):
         # This is an API compatibility check, never a rollout or training episode.
         backend = V2Backend()
         encoder = V2Encoder()
-        state = backend.new_game(seed=7, first_side='a', skip_mulligan=True)
+        from app.modules.card_game.rl.transfer import encoder_seat_deck
+        deck = encoder_seat_deck()
+        state = backend.new_game(
+            seed=7, first_side='a', skip_mulligan=True, decks={'a': deck, 'b': deck},
+        )
         before = deepcopy(state)
         view = backend.observe(state, 'a')
         self.assertEqual(len(encoder.encode_observation(view)), OBSERVATION_DIM)

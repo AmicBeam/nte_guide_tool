@@ -1,0 +1,198 @@
+"""Single-deck transfer helpers. One deck per run; freeze generic ops when adapting."""
+from __future__ import annotations
+
+import json
+from copy import deepcopy
+from pathlib import Path
+from typing import Any, Mapping
+
+from app.modules.card_game.content.duel_v2 import CARDS, STARTER_DECKS, validate_deck
+from app.modules.card_game.content.duel_v2.catalog import CARD_ID_ORDER
+
+from .encoding import CARD_IDS, CHARACTER_IDS
+
+
+def encoder_seat_deck() -> dict[str, Any]:
+    """Default RL deck: encoder's four seats, not the expanded official presets."""
+    allowed = set(CHARACTER_IDS)
+    card_ids: list[str] = []
+    for character_id in CHARACTER_IDS:
+        kinds = [
+            card_id for card_id in CARD_ID_ORDER
+            if card_id in CARD_IDS
+            and CARDS[card_id]['character_id'] == character_id
+            and not CARDS[card_id].get('derived')
+        ]
+        selected: list[str] = []
+        for card_id in kinds:
+            copies = int(CARDS[card_id].get('starter_copies') or 0)
+            selected.extend([card_id] * copies)
+        if len(selected) > 8:
+            selected = selected[:8]
+        if len(selected) < 8:
+            for card_id in kinds:
+                while len(selected) < 8 and selected.count(card_id) < 2:
+                    selected.append(card_id)
+                if len(selected) >= 8:
+                    break
+        if len(selected) != 8:
+            raise ValueError(f'Cannot fill 8 cards for encoder seat {character_id}')
+        card_ids.extend(selected)
+    return validate_deck({
+        'id': 'encoder-seats',
+        'name': '编码器四人预组',
+        'character_ids': list(CHARACTER_IDS),
+        'card_ids': card_ids,
+    })
+
+
+def assert_encoder_compatible(deck: Mapping[str, Any]) -> dict[str, Any]:
+    payload = validate_deck(dict(deck))
+    missing = [character_id for character_id in CHARACTER_IDS if character_id not in payload['character_ids']]
+    extra = [character_id for character_id in payload['character_ids'] if character_id not in CHARACTER_IDS]
+    if missing or extra:
+        raise ValueError(
+            'RL encoder seats are nanali/zero/jiuyuan/xun; this deck uses '
+            + ','.join(payload['character_ids'])
+        )
+    unknown = [card_id for card_id in payload['card_ids'] if card_id not in CARD_IDS]
+    if unknown:
+        raise ValueError('Deck contains cards the RL encoder cannot represent: ' + ','.join(sorted(set(unknown))))
+    return payload
+
+
+def _preset_by_id(deck_id: str) -> dict[str, Any] | None:
+    for preset in STARTER_DECKS:
+        if preset.get('id') == deck_id:
+            return deepcopy(preset)
+    return None
+
+
+def resolve_training_deck(spec: str | Path | Mapping[str, Any] | None = None) -> dict[str, Any]:
+    if spec is None or spec == '' or spec == 'default' or spec == 'encoder-seats':
+        return encoder_seat_deck()
+    if isinstance(spec, Mapping):
+        return assert_encoder_compatible(spec)
+    text = str(spec)
+    preset = _preset_by_id(text)
+    if preset is not None:
+        return assert_encoder_compatible(preset)
+    path = Path(text)
+    if path.is_file():
+        payload = json.loads(path.read_text(encoding='utf-8'))
+        if not isinstance(payload, dict):
+            raise ValueError('Deck JSON must be an object')
+        return assert_encoder_compatible(payload)
+    raise ValueError(f'Unknown training deck: {text}')
+
+
+def parse_card_swaps(text: str | None) -> list[tuple[str, str]]:
+    if not text:
+        return []
+    pairs: list[tuple[str, str]] = []
+    for item in text.split(','):
+        raw = item.strip()
+        if not raw:
+            continue
+        if ':' not in raw and '=' not in raw:
+            raise ValueError(f'Card swap must be OLD:NEW, got {raw!r}')
+        left, right = raw.replace('=', ':', 1).split(':', 1)
+        old, new = left.strip(), right.strip()
+        if old not in CARD_IDS or new not in CARD_IDS:
+            raise ValueError(f'Card swap {old}->{new} is outside the encoder catalog')
+        if CARDS[old]['character_id'] != CARDS[new]['character_id']:
+            raise ValueError(f'Card swap {old}->{new} must stay on the same character')
+        pairs.append((old, new))
+    return pairs
+
+
+def apply_card_swaps(deck: Mapping[str, Any], swaps: list[tuple[str, str]]) -> dict[str, Any]:
+    payload = assert_encoder_compatible(deck)
+    if not swaps:
+        return payload
+    mapping = dict(swaps)
+    card_ids = [mapping.get(card_id, card_id) for card_id in payload['card_ids']]
+    return validate_deck({
+        'id': payload.get('id') or 'custom',
+        'name': (payload.get('name') or 'custom') + '+swap',
+        'character_ids': list(payload['character_ids']),
+        'card_ids': card_ids,
+    })
+
+
+def similar_card_sources(previous_card_ids: list[str] | tuple[str, ...],
+                         next_card_ids: list[str] | tuple[str, ...]) -> dict[str, list[str]]:
+    previous = [card_id for card_id in previous_card_ids if card_id in CARD_IDS]
+    nxt = [card_id for card_id in next_card_ids if card_id in CARD_IDS]
+    mapping: dict[str, list[str]] = {}
+    previous_set = set(previous)
+    for card_id in nxt:
+        if card_id in previous_set:
+            continue
+        catalog = CARDS[card_id]
+        similar = [
+            item for item in previous
+            if CARDS[item]['character_id'] == catalog['character_id']
+            and CARDS[item]['type'] == catalog['type']
+        ]
+        if not similar:
+            similar = [item for item in previous if CARDS[item]['type'] == catalog['type']]
+        mapping[card_id] = similar
+    return mapping
+
+
+def unique_card_ids(deck: Mapping[str, Any]) -> list[str]:
+    seen: list[str] = []
+    for card_id in deck.get('card_ids') or []:
+        if card_id not in seen:
+            seen.append(card_id)
+    return seen
+
+
+def apply_transfer(
+    model,
+    *,
+    freeze_generic: bool,
+    generic_lr_mult: float,
+    learning_rate: float,
+    kl_coef: float,
+    teacher=None,
+    previous_card_ids: list[str] | None = None,
+    next_card_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    policy = model.policy
+    init_info: dict[str, Any] = {'initialized': [], 'new_cards': []}
+    if previous_card_ids is not None and next_card_ids is not None:
+        init_info = policy.init_new_card_embeddings(previous_card_ids, next_card_ids)
+    if freeze_generic:
+        policy.freeze_generic()
+        generic_lr_mult = 0.0
+    card_params = list(policy.card_parameters())
+    generic_params = [param for param in policy.generic_parameters() if param.requires_grad]
+    trainable = card_params + generic_params
+    if not trainable:
+        raise ValueError('Transfer left no trainable parameters')
+    if generic_params and generic_lr_mult != 1.0:
+        param_groups = [
+            {'params': generic_params, 'lr': learning_rate * generic_lr_mult},
+            {'params': card_params, 'lr': learning_rate},
+        ]
+    else:
+        param_groups = [{'params': trainable, 'lr': learning_rate}]
+    policy.optimizer = policy.optimizer_class(param_groups, **policy.optimizer_kwargs)
+    overlap = sorted(set(previous_card_ids or []) & set(next_card_ids or []))
+    if kl_coef > 0:
+        if teacher is None:
+            raise ValueError('--kl-coef requires --resume so the previous policy can stay frozen')
+        teacher.eval()
+        for param in teacher.parameters():
+            param.requires_grad = False
+        ent_coef = float(getattr(model, 'ent_coef', 0.01) or 0.01)
+        policy.attach_teacher(teacher, kl_coef=kl_coef, ent_coef=ent_coef, overlap_card_ids=overlap)
+    return {
+        'freeze_generic': freeze_generic,
+        'generic_lr_mult': generic_lr_mult,
+        'kl_coef': kl_coef,
+        'overlap_cards': overlap,
+        **init_info,
+    }

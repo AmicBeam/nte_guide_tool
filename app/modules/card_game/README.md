@@ -70,4 +70,4 @@ node --check app/modules/card_game/static/js/v2_replays.js
 
 新版使用构筑/房间/成员/快照/回放专表，旧构筑与旧快照不会被转换或覆盖。公开回放日志与对局快照分开保存，离开房间后仍可按房间码观看。普通动作先更新单进程最新态再异步入库，进程异常时可能丢失尚未入库的最后一步；正式结束结果与房间结束状态同步提交。刷新不会重新扣费，网络重试应复用 request_id，并携带 room_code 和 expected_version，旧房间请求不能作用于新房间。当前并发保证以单进程服务为边界，跨进程部署前需要增加集中式状态协调。
 
-[强化学习说明](../../../docs/duel-v2-rl.md)：`python3 scripts/train_duel_v2.py --check` 只检查配置；`--train --output DIR` 使用 GPU 候选打分与多进程采样，对抗冻结规则启发式，再做固定种子策略评估。网站不加载训练权重。小样本结果不是平衡证据。
+[强化学习说明](../../../docs/duel-v2-rl.md)：`python3 scripts/train_duel_v2.py --check` 只检查配置；`--train --output DIR` 使用 GPU 候选打分与多进程采样，对抗冻结规则启发式，再做固定种子策略评估。换少数卡时用 `--resume` 加 `--freeze-generic`（可选 `--kl-coef`），一次训练只打一套牌。网站不加载训练权重。小样本结果不是平衡证据。

@@ -71,15 +71,17 @@ def ppo_update(net: CompactScorer, opt, batch, clip=0.2, epochs=2, minibatch=102
             opt.step()
 
 
-def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_side: int = 0):
+def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_side: int = 0,
+                    observe_fn=None):
     from .opponent import advance_to_actor
+    observe = observe_fn or compact_observe
     rebuild_legal(env.state)
     advance_to_actor(env.state, env.learner)
     states, cands, masks, actions, logps, values, rewards, dones = [], [], [], [], [], [], [], []
     b = torch.arange(env.n, device=env.device)
     net_device = next(net.parameters()).device
     for _ in range(horizon):
-        state, cand, mask = compact_observe(env.state)
+        state, cand, mask = observe(env.state)
         net_device = next(net.parameters()).device
         state = state.to(net_device)
         cand = cand.to(net_device)
@@ -118,7 +120,7 @@ def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_s
         'value': torch.stack(values, dim=1),
         'reward': torch.stack(rewards, dim=1),
         'done': torch.stack(dones, dim=1),
-        'last_value': net(*[item.to(net_device) if torch.is_tensor(item) else item for item in compact_observe(env.state)])[1].detach(),
+        'last_value': net(*[item.to(net_device) if torch.is_tensor(item) else item for item in observe(env.state)])[1].detach(),
     }
 
 

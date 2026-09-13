@@ -11,6 +11,8 @@ from .backend import V2Backend
 from .budget import BudgetStop, CountingBackend, TrainBudget
 from .checkpoint import write_training_checkpoint
 from .encoding import V2Encoder
+import gymnasium as gym
+
 from .gym_compat import make_gym_env
 from .policies import RuleFrozenPolicy, VisibleEngineRulePolicy
 from .transfer import default_training_deck
@@ -66,13 +68,84 @@ def build_training_env_spawn(rank, raw, games, lock, start, config: dict[str, An
     return build_training_env(config)
 
 
+class SeededTrainingWrapper(gym.Wrapper):
+    """Module-level gym wrapper so ProcessVecEnv can pickle action_masks."""
+
+    def __init__(self, env, *, start_seed: int, config: dict[str, Any], budget: TrainBudget):
+        super().__init__(env)
+        self.next_seed = start_seed
+        self.episodes_finished = 0
+        self._dead = False
+        self._last_obs = None
+        self._config = config
+        self._budget = budget
+
+    def action_masks(self):
+        if self._dead:
+            import numpy as np
+            return np.zeros(self.action_space.n, dtype=bool)
+        return self.env.action_masks()
+
+    def _dead_payload(self, reason: str):
+        import numpy as np
+        if self._last_obs is None:
+            sample = self.observation_space.sample()
+            self._last_obs = {key: np.zeros_like(value) for key, value in sample.items()}
+        return self._last_obs, {'budget_stop': True, 'truncation_reason': reason, 'bootstrap_allowed': False}
+
+    def reset(self, *, seed=None, options=None):
+        if self._dead:
+            return self._dead_payload(self._budget.remaining_reason() or 'exhausted')
+        last_error = None
+        config = self._config
+        for _ in range(16):
+            seed_used = self.next_seed if seed is None else seed
+            self.next_seed = int(seed_used) + int(config.get('n_envs', 1))
+            reset_options = dict(options or {})
+            deck = config.get('deck') or default_training_deck()
+            reset_options.setdefault('decks', {'a': deck, 'b': deck})
+            try:
+                observation, info = self.env.reset(seed=seed_used, options=reset_options)
+            except (RuntimeError, BudgetStop) as exc:
+                last_error = exc
+                if isinstance(exc, BudgetStop) or 'budget' in str(exc).lower():
+                    self._dead = True
+                    return self._dead_payload(getattr(exc, 'reason', None) or 'exhausted')
+                continue
+            info = dict(info)
+            info['match_seed'] = seed_used
+            self._last_obs = observation
+            return observation, info
+        raise RuntimeError(f'Reset could not reach a live learner decision: {last_error}')
+
+    def step(self, action):
+        if self._dead:
+            observation, info = self._dead_payload(self._budget.remaining_reason() or 'exhausted')
+            return observation, 0.0, False, True, info
+        try:
+            observation, reward, terminated, truncated, info = self.env.step(action)
+        except BudgetStop as exc:
+            self._dead = True
+            observation, info = self._dead_payload(exc.reason)
+            return observation, 0.0, False, True, info
+        self._last_obs = observation
+        if terminated or truncated:
+            self.episodes_finished += 1
+            info = dict(info)
+            info['episodes_finished'] = self.episodes_finished
+        return observation, reward, terminated, truncated, info
+
+
+def _action_masks(env):
+    return env.action_masks()
+
+
 def build_training_env(config: dict[str, Any], budget: TrainBudget | None = None):
     """Picklable env factory for DummyVecEnv / Windows spawn SubprocVecEnv."""
     import sys
     root = str(Path(__file__).resolve().parents[4])
     if root not in sys.path:
         sys.path.insert(0, root)
-    import gymnasium as gym
     from sb3_contrib.common.wrappers import ActionMasker
 
     if budget is None:
@@ -92,71 +165,8 @@ def build_training_env(config: dict[str, Any], budget: TrainBudget | None = None
     )
     inner = make_gym_env(adapter)
     start_seed = int(config.get('start_seed', 0)) + int(config.get('rank', 0)) * 100_003
-
-    class SeededWrapper(gym.Wrapper):
-        def __init__(self, env):
-            super().__init__(env)
-            self.next_seed = start_seed
-            self.episodes_finished = 0
-            self._dead = False
-            self._last_obs = None
-
-        def action_masks(self):
-            if self._dead:
-                import numpy as np
-                return np.zeros(self.action_space.n, dtype=bool)
-            return self.env.action_masks()
-
-        def _dead_payload(self, reason: str):
-            import numpy as np
-            if self._last_obs is None:
-                sample = self.observation_space.sample()
-                self._last_obs = {key: np.zeros_like(value) for key, value in sample.items()}
-            return self._last_obs, {'budget_stop': True, 'truncation_reason': reason, 'bootstrap_allowed': False}
-
-        def reset(self, *, seed=None, options=None):
-            if self._dead:
-                return self._dead_payload(budget.remaining_reason() or 'exhausted')
-            last_error = None
-            for _ in range(16):
-                seed_used = self.next_seed if seed is None else seed
-                self.next_seed = int(seed_used) + int(config.get('n_envs', 1))
-                reset_options = dict(options or {})
-                deck = config.get('deck') or default_training_deck()
-                reset_options.setdefault('decks', {'a': deck, 'b': deck})
-                try:
-                    observation, info = self.env.reset(seed=seed_used, options=reset_options)
-                except (RuntimeError, BudgetStop) as exc:
-                    last_error = exc
-                    if isinstance(exc, BudgetStop) or 'budget' in str(exc).lower():
-                        self._dead = True
-                        return self._dead_payload(getattr(exc, 'reason', None) or 'exhausted')
-                    continue
-                info = dict(info)
-                info['match_seed'] = seed_used
-                self._last_obs = observation
-                return observation, info
-            raise RuntimeError(f'Reset could not reach a live learner decision: {last_error}')
-
-        def step(self, action):
-            if self._dead:
-                observation, info = self._dead_payload(budget.remaining_reason() or 'exhausted')
-                return observation, 0.0, False, True, info
-            try:
-                observation, reward, terminated, truncated, info = self.env.step(action)
-            except BudgetStop as exc:
-                self._dead = True
-                observation, info = self._dead_payload(exc.reason)
-                return observation, 0.0, False, True, info
-            self._last_obs = observation
-            if terminated or truncated:
-                self.episodes_finished += 1
-                info = dict(info)
-                info['episodes_finished'] = self.episodes_finished
-            return observation, reward, terminated, truncated, info
-
-    wrapped = SeededWrapper(inner)
-    return ActionMasker(wrapped, lambda env: env.action_masks())
+    wrapped = SeededTrainingWrapper(inner, start_seed=start_seed, config=config, budget=budget)
+    return ActionMasker(wrapped, _action_masks)
 
 
 def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0,

@@ -153,3 +153,26 @@ class CombatSliceIrTest(unittest.TestCase):
         # 80% is the report's engineering target. Sub-millisecond times are noisy under load.
         if hand_ms >= 0.05:
             self.assertGreaterEqual(ratio, 0.8, msg=f'generated {gen_ms:.4f}ms vs handwritten {hand_ms:.4f}ms ({ratio:.2f}x)')
+
+
+class StarterEffectIrTest(unittest.TestCase):
+    def test_starter_ir_covers_appearing_cards(self):
+        from app.modules.card_game.content.duel_v2 import STARTER_DECK
+        from app.modules.card_game.rl.rule_ir.starter import STARTER_APPEARING, STARTER_CARDS, validate_starter_ir
+        validate_starter_ir()
+        appearing = set(STARTER_APPEARING)
+        self.assertTrue(set(STARTER_DECK['card_ids']) <= appearing)
+        self.assertIn('NF01', appearing)
+        self.assertEqual({program.card_id for program in STARTER_CARDS}, appearing)
+
+    def test_effect_tables_match_catalog_index(self):
+        from app.modules.card_game.rl.gpu_duel.catalog import CARD_IDS, CARD_INDEX
+        from app.modules.card_game.rl.rule_ir.lower_effects import compile_effect_tables
+        tables = compile_effect_tables(CARD_IDS)
+        self.assertEqual(tables['sortie'][CARD_INDEX['N03']], 1)
+        self.assertEqual(tables['followup'][CARD_INDEX['N03']], 1)
+        self.assertEqual(tables['form'][CARD_INDEX['N07']], 1)
+        self.assertEqual(tables['draw_owned_target'][CARD_INDEX['Y02']], 1)
+        self.assertEqual(tables['inspect_top'][CARD_INDEX['J01']], 3)
+        self.assertEqual(tables['pact_front'][CARD_INDEX['J02']], 1)
+        self.assertEqual(tables['count_seed'][CARD_INDEX['NF01']], 1)

@@ -185,3 +185,34 @@ class GpuDuelOracleTest(unittest.TestCase):
         self.assertEqual(env.state.hp.device.type, 'cuda')
         env.step([0] * 32)
         self.assertTrue(int(env.legal_count().min()) >= 0)
+
+    def test_encoder_observe_matches_v2encoder(self):
+        import torch
+        from app.modules.card_game.rl.encoding import V2Encoder
+        from app.modules.card_game.rl.gpu_duel.encoder_obs import encoder_observe, reconstruct_observation
+        state = self._py(seed=7)
+        env = self.GpuDuelEnv(1, device='cpu')
+        env.reset_from_python([state])
+        viewer = int(env.state.active[0])
+        recon = reconstruct_observation(env.state, 0, viewer)
+        encoder = V2Encoder()
+        expected = encoder.encode_observation(recon)
+        got, cand, mask = encoder_observe(env.state)
+        self.assertTrue(torch.allclose(got[0], torch.tensor(expected, dtype=torch.float32), atol=1e-6))
+        self.assertEqual(int(mask[0].sum()), int((env.state.legal_type[0] >= 0).sum()))
+        self.assertGreater(int(mask[0].sum()), 0)
+        self.assertEqual(cand.shape[-1], encoder.action_dim)
+
+    def test_encoder_policy_one_update(self):
+        import torch
+        from app.modules.card_game.rl.gpu_duel.encoder_obs import encoder_observe
+        from app.modules.card_game.rl.gpu_duel.policy import GpuCandidatePolicy
+        from app.modules.card_game.rl.gpu_duel.ppo import collect_rollout, ppo_update, rollout_to_batch
+        env = self.GpuDuelEnv(2, device='cpu')
+        env.reset(seeds=[0, 1], native=True)
+        state, cand, _mask = encoder_observe(env.state)
+        net = GpuCandidatePolicy(state.shape[-1], cand.shape[-1], hidden=16)
+        opt = torch.optim.Adam(net.parameters(), lr=1e-3)
+        rollout = collect_rollout(env, net, horizon=2, observe_fn=encoder_observe)
+        ppo_update(net, opt, rollout_to_batch(rollout), epochs=1, minibatch=8)
+        self.assertEqual(rollout['state'].shape[-1], state.shape[-1])

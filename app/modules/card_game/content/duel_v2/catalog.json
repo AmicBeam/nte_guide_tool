@@ -1154,7 +1154,7 @@
     {
       "id": "S07",
       "character_id": "zaowu",
-      "name": "捉鬼之绵",
+      "name": "小鬼头大胃口",
       "effect_id": "S07",
       "source": {
         "character_id": 1003,
@@ -1568,7 +1568,7 @@
     {
       "id": "H07",
       "character_id": "hathor",
-      "name": "役徊生之绵",
+      "name": "铁骑速递",
       "effect_id": "H07",
       "source": {
         "character_id": 1025,

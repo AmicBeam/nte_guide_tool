@@ -129,6 +129,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertTrue(CARDS['N01']['instant'])
         self.assertTrue(CARDS['N01']['description'].startswith('瞬发。'))
         self.assertTrue(CARDS['N02']['description'].startswith('响应。'))
+        self.assertIn('反击方', CARDS['N02']['description'])
         self.assertEqual(CARDS['N03']['description'], '额外造成 1 点追击伤害。')
         self.assertEqual(CARDS['N04']['description'], '')
         names = '|'.join(re.escape(character['name']) for character in CHARACTERS.values())
@@ -156,8 +157,8 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['K07']['name'], '宇宙的频段')
         self.assertEqual(CARDS['R07']['name'], '梦的边缘')
         self.assertEqual(CARDS['Y07']['name'], '想做什么梦？')
-        self.assertEqual(CARDS['S07']['name'], '捉鬼之绵')
-        self.assertEqual(CARDS['H07']['name'], '役徊生之绵')
+        self.assertEqual(CARDS['S07']['name'], '小鬼头大胃口')
+        self.assertEqual(CARDS['H07']['name'], '铁骑速递')
         for character_id, prefix in CARD_PREFIXES.items():
             self.assertEqual(CARDS[f'{prefix}08']['type'], 'form', character_id)
         for character_id in CATALOG_ORDER:

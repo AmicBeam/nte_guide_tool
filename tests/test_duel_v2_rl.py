@@ -372,6 +372,27 @@ class RealEngineSmokeTest(unittest.TestCase):
         self.assertTrue(backend.outcome(ended).terminated)
         self.assertEqual(len(encoder.encode_observation(backend.observe(ended, 'a'))), OBSERVATION_DIM)
 
+    def test_engine_states_convert_to_public_replay(self):
+        from app.modules.card_game.engine.duel_v2.replay_log import (
+            assemble_replay_game, build_match_payload, leak_markers,
+        )
+        from app.modules.card_game.rl.transfer import default_training_deck
+        backend = V2Backend()
+        deck = default_training_deck()
+        opening = backend.new_game(
+            seed=7, first_side='a', skip_mulligan=True, decks={'a': deck, 'b': deck},
+        )
+        after = backend.apply_action(opening, 'a', {'type': 'attack', 'character_id': 'nanali'})
+        payload = build_match_payload(opening, after, room_code='RTEST1', learning_side='a')
+        self.assertEqual(leak_markers(payload), [])
+        view = payload['views']['a']
+        self.assertGreaterEqual(len(view['events']), 1)
+        assembled = assemble_replay_game(view['opening_board'], view['events'])
+        live = backend.observe(after, 'a')
+        self.assertEqual(assembled['sides']['a']['hp'], live['sides']['a']['hp'])
+        self.assertEqual(assembled['sides']['b']['hp'], live['sides']['b']['hp'])
+        self.assertEqual(assembled['phase'], live['phase'])
+
 
 if __name__ == '__main__':
     unittest.main()

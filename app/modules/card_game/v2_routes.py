@@ -55,6 +55,24 @@ def save_build():
     return service.save_build(g.current_player, _body())
 
 
+@blueprint.post('/build-delete')
+@_api
+def delete_build():
+    return service.delete_build(g.current_player, _body())
+
+
+@blueprint.post('/build-select')
+@_api
+def select_build():
+    return service.select_build(g.current_player, _body())
+
+
+@blueprint.post('/build-reorder')
+@_api
+def reorder_builds():
+    return service.reorder_builds(g.current_player, _body())
+
+
 @blueprint.post('/start')
 @_api
 def start():
@@ -96,6 +114,30 @@ def start_room():
 @_api
 def action():
     return service.submit_action(g.current_player, _body())
+
+
+@blueprint.get('/replays')
+@_api
+def list_replays():
+    return service.list_replays(g.current_player)
+
+
+@blueprint.get('/replay/<room_code>')
+@_api
+def get_replay(room_code):
+    return service.get_replay(g.current_player, room_code)
+
+
+@blueprint.post('/replay-star')
+@_api
+def star_replay():
+    return service.star_replay(g.current_player, _body())
+
+
+@blueprint.post('/replay-import')
+@_api
+def import_replay():
+    return service.import_training_replay(g.current_player, _body())
 
 
 @blueprint.post('/leave')

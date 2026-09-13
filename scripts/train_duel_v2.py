@@ -28,6 +28,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument('--check', action='store_true', help='Validate metadata; no game or model')
     parser.add_argument('--check-config', metavar='JSON', help='Validate inspect-only metadata JSON')
     parser.add_argument('--train', action='store_true', help='Run budgeted MaskablePPO training then eval')
+    parser.add_argument('--export-replays', type=Path,
+                        help='Convert eval_games.jsonl (file or train dir) into public replay JSON')
     parser.add_argument('--enable-training', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--resume', type=Path)
@@ -175,8 +177,20 @@ def main(argv=None) -> int:
         print(json.dumps({'ok': True, 'training_enabled': False, 'checkpoint': metadata},
                          ensure_ascii=False, indent=2))
         return 0
+    if args.export_replays:
+        from app.modules.card_game.rl.replay_export import export_eval_games
+        try:
+            written = export_eval_games(args.export_replays)
+        except (OSError, ValueError) as exc:
+            parser.error(str(exc))
+        print(json.dumps({
+            'ok': True,
+            'count': len(written),
+            'replays': [str(path) for path in written],
+        }, ensure_ascii=False, indent=2))
+        return 0
     if not train:
-        parser.error('Use --check / --check-config JSON, or --train --output DIR')
+        parser.error('Use --check / --check-config JSON, --export-replays DIR, or --train --output DIR')
     _require_budget(parser, args)
     output = _prepare_output(parser, args)
     try:

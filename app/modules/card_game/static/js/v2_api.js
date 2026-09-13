@@ -2,53 +2,25 @@
   const API_ROOT = '/api/duel-v2';
   const TOKEN_KEY = 'nte_token';
   const LOGIN_REDIRECT_KEY = 'nte_login_redirect';
-  const CHARACTER_ORDER = ['nanali', 'zero', 'jiuyuan', 'xun'];
+  const CHARACTER_ORDER = ['zero', 'xun', 'zhenhong', 'nanali', 'jiuyuan', 'lingke', 'iloy', 'hathor', 'anhunqu', 'canhong', 'zaowu'];
   const CHARACTER_FALLBACK = {
-    nanali: {
-      id: 'nanali',
-      name: '娜娜莉',
-      attribute: '灵',
-      attack: 3,
-      max_hp: 7,
-      avatar: '/static/images/characters/avatar/娜娜莉.webp',
-      portrait: '/static/images/characters/portrait/娜娜莉.webp',
-      role: '主要攻击手，自身成长提高攻击',
-    },
-    zero: {
-      id: 'zero',
-      name: '主角「零」',
-      attribute: '光',
-      attack: 2,
-      max_hp: 9,
-      avatar: '/static/images/characters/avatar/鉴定师.webp',
-      portrait: '/static/images/characters/portrait/鉴定师.webp',
-      role: '快速积累自己的环合值',
-    },
-    jiuyuan: {
-      id: 'jiuyuan',
-      name: '九原',
-      attribute: '灵',
-      attack: 2,
-      max_hp: 8,
-      avatar: '/static/images/characters/avatar/九原.webp',
-      portrait: '/static/images/characters/portrait/九原.webp',
-      role: '强化全队创生',
-    },
-    xun: {
-      id: 'xun',
-      name: '浔',
-      attribute: '光',
-      attack: 2,
-      max_hp: 8,
-      avatar: '/static/images/characters/avatar/浔.webp',
-      portrait: '/static/images/characters/portrait/浔.webp',
-      role: '记录队友牌并以终结战斗牌兑现',
-    },
+    nanali: { id: 'nanali', name: '娜娜莉', attribute: '灵', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/娜娜莉.webp', portrait: '/static/images/characters/portrait/娜娜莉.webp' },
+    zero: { id: 'zero', name: '零', attribute: '光', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/鉴定师.webp', portrait: '/static/images/characters/portrait/鉴定师.webp' },
+    jiuyuan: { id: 'jiuyuan', name: '九原', attribute: '灵', attack: 3, max_hp: 4, avatar: '/static/images/characters/avatar/九原.webp', portrait: '/static/images/characters/portrait/九原.webp' },
+    xun: { id: 'xun', name: '浔', attribute: '光', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/浔.webp', portrait: '/static/images/characters/portrait/浔.webp' },
+    anhunqu: { id: 'anhunqu', name: '安魂曲', attribute: '暗', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/安魂曲.webp', portrait: '/static/images/characters/portrait/安魂曲.webp' },
+    canhong: { id: 'canhong', name: '残虹', attribute: '咒', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/残虹.png', portrait: '/static/images/characters/portrait/残虹.webp' },
+    zaowu: { id: 'zaowu', name: '早雾', attribute: '咒', attack: 3, max_hp: 4, avatar: '/static/images/characters/avatar/早雾.webp', portrait: '/static/images/characters/portrait/早雾.webp' },
+    lingke: { id: 'lingke', name: '灵可', attribute: '灵', attack: 3, max_hp: 4, avatar: '/static/images/characters/avatar/灵可.png', portrait: '/static/images/characters/portrait/灵可.webp' },
+    zhenhong: { id: 'zhenhong', name: '真红', attribute: '光', attack: 3, max_hp: 4, avatar: '/static/kongmu/images/characters/player_zhenhong_256.webp', portrait: '/static/images/characters/portrait/真红.webp' },
+    hathor: { id: 'hathor', name: '哈索尔', attribute: '相', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/哈索尔.webp', portrait: '/static/images/characters/portrait/哈索尔.webp' },
+    iloy: { id: 'iloy', name: '伊洛伊', attribute: '灵', attack: 1, max_hp: 6, avatar: '/static/kongmu/images/characters/player_yiluoyi_256.webp', portrait: '/static/images/characters/portrait/伊洛伊.webp' },
   };
+  const CARD_TYPE_ORDER = { tactic: 0, battle: 1, form: 2 };
   const CARD_TYPE_LABELS = {
     battle: '战斗',
     tactic: '战术',
-    form: '形态',
+    form: '武备',
   };
 
   function getToken() {
@@ -193,6 +165,28 @@
     return request('/state');
   }
 
+  function listReplays() {
+    return request('/replays');
+  }
+
+  function getReplay(roomCode) {
+    return request('/replay/' + encodeURIComponent(String(roomCode || '').trim()));
+  }
+
+  function starReplay(roomCode, favorited) {
+    return request('/replay-star', {
+      method: 'POST',
+      body: {
+        room_code: String(roomCode || '').trim(),
+        favorited: favorited !== false,
+      },
+    });
+  }
+
+  function importReplay(payload) {
+    return request('/replay-import', { method: 'POST', body: payload || {} });
+  }
+
   function startGame(body) {
     return request('/start', { method: 'POST', body: body || {} });
   }
@@ -211,6 +205,18 @@
 
   function saveBuild(build) {
     return request('/build', { method: 'POST', body: build });
+  }
+
+  function deleteBuild(buildId) {
+    return request('/build-delete', { method: 'POST', body: { id: buildId } });
+  }
+
+  function selectBuild(buildId) {
+    return request('/build-select', { method: 'POST', body: { id: buildId } });
+  }
+
+  function reorderBuilds(ids) {
+    return request('/build-reorder', { method: 'POST', body: { ids: ids || [] } });
   }
 
   function sendAction(params) {
@@ -237,6 +243,21 @@
     return request('/leave', { method: 'POST', body: {} });
   }
 
+  function formatReplayTime(value) {
+    if (!value) {
+      return '';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+    const pad = function (n) {
+      return String(n).padStart(2, '0');
+    };
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate())
+      + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+  }
+
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
       return ({
@@ -247,6 +268,21 @@
         "'": '&#39;',
       })[char];
     });
+  }
+
+  function cardDescriptionMarkup(text, fallback) {
+    const source = text == null ? fallback : text;
+    return escapeHtml(source || '').replace(/瞬发|响应/g, function (keyword) {
+      return '<strong>' + keyword + '</strong>';
+    });
+  }
+
+  function cardDescriptionHtml(text, fallback, className) {
+    const html = cardDescriptionMarkup(text, fallback);
+    if (!html) {
+      return '';
+    }
+    return '<p' + (className ? ' class="' + escapeAttr(className) + '"' : '') + '>' + html + '</p>';
   }
 
   function escapeAttr(value) {
@@ -287,22 +323,150 @@
   }
 
   function cardTypeLabel(type, terminal) {
-    const base = CARD_TYPE_LABELS[type] || type || '卡牌';
-    return terminal ? base + '·终结' : base;
+    return CARD_TYPE_LABELS[type] || type || '卡牌';
+  }
+
+  function cardTypeToken(type) {
+    return type === 'battle' || type === 'tactic' || type === 'form' ? type : '';
+  }
+
+  function cardTimingClass(card) {
+    const instant = !!(card && card.instant);
+    const response = !!(card && card.response);
+    if (instant && response) {
+      return 'is-instant-response';
+    }
+    if (response) {
+      return 'is-response';
+    }
+    if (instant) {
+      return 'is-instant';
+    }
+    return '';
+  }
+
+  function cardCostBadge(card) {
+    return '';
+  }
+
+  function cardTypeChip(type, terminal) {
+    const token = cardTypeToken(type);
+    return '<span class="v2-chip"' +
+      (token ? ' data-card-type="' + escapeAttr(token) + '"' : '') + '>' +
+      escapeHtml(cardTypeLabel(type, terminal)) + '</span>';
+  }
+
+  function cardDerivedChip(card) {
+    if (!card || !card.derived) {
+      return '';
+    }
+    return '<span class="v2-chip">不可构筑</span>';
+  }
+
+  function cardFrameStatText(card) {
+    if (!card) {
+      return '';
+    }
+    const parts = [];
+    if (card.type === 'form') {
+      if (Number(card.attack) > 0) {
+        parts.push('攻击 ' + card.attack);
+      }
+      if (Number(card.hp) > 0) {
+        parts.push('生命 ' + card.hp);
+      }
+    }
+    if (card.type === 'battle') {
+      if (Number(card.attack) > 0) {
+        parts.push('攻击 +' + card.attack);
+      }
+      if (Number(card.shield) > 0) {
+        parts.push('护盾 ' + card.shield);
+      }
+    }
+    return parts.join(' · ');
+  }
+
+  function statIconSvg(kind) {
+    if (kind === 'hp') {
+      return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 14s-6-3.6-6-7.2C2 4.6 3.6 3 5.4 3c1.1 0 2.1.6 2.6 1.5C8.5 3.6 9.5 3 10.6 3 12.4 3 14 4.6 14 6.8 14 10.4 8 14 8 14z"/></svg>';
+    }
+    if (kind === 'atk') {
+      return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M13.7 2.3 9 3.8 7.2 5.6 6 5.3 4.6 6.7l1.8 1.8-3.7 3.7-.9 2 2-.9 3.7-3.7 1.8 1.8 1.4-1.4-.3-1.2 1.8-1.8 1.5-4.7z"/></svg>';
+    }
+    return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 2c1.6 1.2 3.2 1.8 4.8 1.8V8c0 3.1-2.1 5.4-4.8 6.2C5.3 13.4 3.2 11.1 3.2 8V3.8C4.8 3.8 6.4 3.2 8 2z"/></svg>';
+  }
+
+  function statBadge(kind, shown, title) {
+    return '<span class="v2-stat-badge is-' + kind + '" title="' + escapeAttr(title) + '">' +
+      statIconSvg(kind) + '<em>' + escapeHtml(shown) + '</em></span>';
+  }
+
+  function energyMaxForAttribute(attribute) {
+    const token = String(attribute || '').trim();
+    return token === '暗' || token === '魂' || token === '咒' ? 6 : 5;
+  }
+
+  function characterEnergyMax(character) {
+    if (character && character.energy_max != null && character.energy_max !== '') {
+      const value = Number(character.energy_max);
+      if (Number.isFinite(value) && value > 0) {
+        return value;
+      }
+    }
+    return energyMaxForAttribute(character && character.attribute);
+  }
+
+  function characterStatMarkup(character) {
+    const attack = character && character.attack != null ? character.attack : '-';
+    const hp = character && character.max_hp != null ? character.max_hp : '-';
+    return '<span class="v2-frame-stats v2-character-stats">' +
+      statBadge('atk', String(attack), '攻击 ' + attack) +
+      statBadge('hp', String(hp), '生命 ' + hp) +
+      '</span>';
+  }
+
+  function characterUltimateLabel(character) {
+    return '终结（' + characterEnergyMax(character) + '）';
+  }
+
+  function cardFrameStat(card) {
+    if (!card) {
+      return '';
+    }
+    const parts = [];
+    if (card.type === 'form') {
+      if (Number(card.attack) > 0) {
+        parts.push(statBadge('atk', String(card.attack), '攻击 ' + card.attack));
+      }
+      if (Number(card.hp) > 0) {
+        parts.push(statBadge('hp', String(card.hp), '生命 ' + card.hp));
+      }
+    }
+    if (card.type === 'battle') {
+      if (Number(card.attack) > 0) {
+        parts.push(statBadge('atk', '+' + card.attack, '攻击 +' + card.attack));
+      }
+      if (Number(card.shield) > 0) {
+        parts.push(statBadge('shield', String(card.shield), '护盾 ' + card.shield));
+      }
+    }
+    if (!parts.length) {
+      return '';
+    }
+    return '<span class="v2-frame-stats">' + parts.join('') + '</span>';
   }
 
   function sortedCharacters(characters) {
-    const byId = {};
-    (Array.isArray(characters) ? characters : []).forEach(function (item) {
-      if (item && item.id) {
-        byId[item.id] = item;
-      }
-    });
+    const list = Array.isArray(characters) ? characters : [];
+    if (list.length) {
+      return list.map(function (item) {
+        return Object.assign({}, CHARACTER_FALLBACK[item && item.id] || { id: item && item.id }, item || {});
+      });
+    }
     return CHARACTER_ORDER.map(function (id) {
-      return Object.assign({}, CHARACTER_FALLBACK[id] || { id: id }, byId[id] || {});
-    }).concat((Array.isArray(characters) ? characters : []).filter(function (item) {
-      return item && item.id && CHARACTER_ORDER.indexOf(item.id) < 0;
-    }));
+      return Object.assign({}, CHARACTER_FALLBACK[id] || { id: id });
+    });
   }
 
   function indexById(list) {
@@ -315,10 +479,27 @@
     return map;
   }
 
-  function cardsForCharacter(cards, characterId) {
+  function cardsForCharacter(cards, characterId, options) {
+    const buildableOnly = options && options.buildableOnly;
     return (Array.isArray(cards) ? cards : []).filter(function (card) {
-      return card && card.character_id === characterId;
+      if (!card || card.character_id !== characterId) {
+        return false;
+      }
+      if (buildableOnly && card.derived) {
+        return false;
+      }
+      return true;
     }).sort(function (left, right) {
+      const derived = Number(Boolean(left && left.derived)) - Number(Boolean(right && right.derived));
+      if (derived) {
+        return derived;
+      }
+      const leftType = CARD_TYPE_ORDER[left && left.type];
+      const rightType = CARD_TYPE_ORDER[right && right.type];
+      const byType = (leftType == null ? 9 : leftType) - (rightType == null ? 9 : rightType);
+      if (byType) {
+        return byType;
+      }
       return String(left.id || '').localeCompare(String(right.id || ''));
     });
   }
@@ -504,6 +685,7 @@
     CHARACTER_ORDER: CHARACTER_ORDER,
     CHARACTER_FALLBACK: CHARACTER_FALLBACK,
     CARD_TYPE_LABELS: CARD_TYPE_LABELS,
+    CARD_TYPE_ORDER: CARD_TYPE_ORDER,
     V2ApiError: V2ApiError,
     getToken: getToken,
     ensureLogin: ensureLogin,
@@ -512,14 +694,24 @@
     request: request,
     getCatalog: getCatalog,
     getState: getState,
+    listReplays: listReplays,
+    getReplay: getReplay,
+    starReplay: starReplay,
+    importReplay: importReplay,
     startGame: startGame,
     joinRoom: joinRoom,
     setReady: setReady,
     roomStart: roomStart,
     saveBuild: saveBuild,
+    deleteBuild: deleteBuild,
+    selectBuild: selectBuild,
+    reorderBuilds: reorderBuilds,
     sendAction: sendAction,
     leaveRoom: leaveRoom,
+    formatReplayTime: formatReplayTime,
     escapeHtml: escapeHtml,
+    cardDescriptionMarkup: cardDescriptionMarkup,
+    cardDescriptionHtml: cardDescriptionHtml,
     escapeAttr: escapeAttr,
     elementIcon: elementIcon,
     characterFallback: characterFallback,
@@ -527,6 +719,18 @@
     imageMarkup: imageMarkup,
     attributeMarkup: attributeMarkup,
     cardTypeLabel: cardTypeLabel,
+    cardTypeToken: cardTypeToken,
+    cardTypeChip: cardTypeChip,
+    cardDerivedChip: cardDerivedChip,
+    cardTimingClass: cardTimingClass,
+    cardCostBadge: cardCostBadge,
+    cardFrameStatText: cardFrameStatText,
+    cardFrameStat: cardFrameStat,
+    statIconSvg: statIconSvg,
+    energyMaxForAttribute: energyMaxForAttribute,
+    characterEnergyMax: characterEnergyMax,
+    characterStatMarkup: characterStatMarkup,
+    characterUltimateLabel: characterUltimateLabel,
     sortedCharacters: sortedCharacters,
     indexById: indexById,
     cardsForCharacter: cardsForCharacter,

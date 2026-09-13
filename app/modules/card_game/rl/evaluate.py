@@ -12,6 +12,7 @@ from .backend import V2Backend
 from .budget import BudgetStop, CountingBackend, TrainBudget
 from .encoding import V2Encoder
 from .policies import MaskablePolicy, RandomMaskedPolicy, VisibleEngineRulePolicy
+from .replay_export import payload_from_adapter, write_replay_json
 from .transfer import default_training_deck
 
 
@@ -35,6 +36,7 @@ def _play_match(budget: TrainBudget, learner, opponent, *, seed: int, learning_s
         'seed': seed, 'learning_side': learning_side, 'first_side': None,
         'winner': None, 'truncated': False, 'terminated': False,
         'truncation_reason': '', 'actions': actions, 'error': None,
+        '_adapter': adapter,
     }
     state = adapter._state or {}
     info['first_side'] = state.get('first_side') or state.get('active_side')
@@ -73,6 +75,7 @@ def _play_match(budget: TrainBudget, learner, opponent, *, seed: int, learning_s
             info['episode_shaping'] = transition.info.get('episode_shaping')
             info['episode_score'] = transition.info.get('episode_score')
             info['game_actions'] = transition.info.get('game_actions')
+            info['_adapter'] = adapter
             return info
 
 
@@ -138,6 +141,16 @@ def evaluate_strategies(
                 match = _play_match(budget, policy, rule, seed=seed, learning_side=seat, deck=deck)
                 match['agent'] = name
                 match['opponent'] = 'rule'
+                adapter = match.pop('_adapter', None)
+                if adapter is not None and getattr(adapter, '_opening_state', None) is not None:
+                    payload = payload_from_adapter(
+                        adapter, agent=name, opponent='rule', seed=seed, learning_side=seat,
+                    )
+                    write_replay_json(
+                        output / 'replays' / f"{payload['room_code']}-{name}-{seat}.json", payload,
+                    )
+                    match['replay_code'] = payload['room_code']
+                    match['replay_events'] = payload['last_seq']
                 with games_path.open('a', encoding='utf-8') as handle:
                     handle.write(json.dumps(match, ensure_ascii=False, default=str) + '\n')
                 _tally(summary['results'][key], match, seat)

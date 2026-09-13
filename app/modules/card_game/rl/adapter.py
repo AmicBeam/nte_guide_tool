@@ -8,6 +8,7 @@ from numbers import Integral
 from typing import Any
 
 from .contracts import ACTION_CAPACITY, Backend, Encoder, FrozenPolicy, Json, Outcome
+from .rewards import TERMINAL_LOSS, TERMINAL_WIN, shape_reward
 
 
 @dataclass(frozen=True)
@@ -45,7 +46,8 @@ def _index(index: Any, count: int) -> int:
 class DuelAdapter:
     def __init__(self, backend: Backend, encoder: Encoder, *, learning_side: str = 'a',
                  opponent: FrozenPolicy | None = None, action_capacity: int = ACTION_CAPACITY,
-                 max_game_actions: int = 1000, max_opponent_actions: int = 100) -> None:
+                 max_game_actions: int = 1000, max_opponent_actions: int = 100,
+                 strict_isolation: bool = True, allow_concede: bool = True) -> None:
         if learning_side not in ('a', 'b'):
             raise ValueError('learning_side must be a/b')
         if action_capacity != ACTION_CAPACITY:
@@ -58,20 +60,28 @@ class DuelAdapter:
         self.learning_side, self.opponent = learning_side, opponent
         self.action_capacity = action_capacity
         self.max_game_actions, self.max_opponent_actions = max_game_actions, max_opponent_actions
+        self.strict_isolation = bool(strict_isolation)
+        self.allow_concede = bool(allow_concede)
         self._state: Json | None = None
+        self._opening_state: Json | None = None
         self._revision = 0
         self._count = 0
         self._truncated = False
         self._truncation_reason = ''
         self._cached: Decision | None = None
+        self._reward_seq = 0
+        self._episode_shaping = 0.0
 
     def reset(self, *, seed: int = 0, **options: Any) -> Transition:
         self._state = self.backend.new_game(seed=seed, **options)
+        self._opening_state = deepcopy(self._state)
         self._count, self._truncated, self._cached = 0, False, None
         self._truncation_reason = ''
+        self._episode_shaping = 0.0
+        self._reward_seq = int((self._state or {}).get('event_seq') or 0)
         self._revision += 1  # Never reuse revisions across resets.
         self._advance_opponent()
-        return self._transition()
+        return self._transition(shaped=False)
 
     def _outcome(self) -> Outcome:
         if self._state is None:
@@ -80,8 +90,11 @@ class DuelAdapter:
 
     def _visible(self, side: str) -> tuple[Json, tuple[Json, ...]]:
         assert self._state is not None
-        observation = deepcopy(self.backend.observe(self._state, side))
-        actions = tuple(deepcopy(item['action']) for item in observation['legal_actions'])
+        observation = self.backend.observe(self._state, side)
+        if self.strict_isolation:
+            observation = deepcopy(observation)
+        actions = tuple((deepcopy(item['action']) if self.strict_isolation else item['action'])
+                        for item in observation['legal_actions'])
         if len(actions) > self.action_capacity:
             raise ValueError('Legal candidate capacity exceeded; no candidates were truncated')
         if not actions and not self._outcome().terminated:
@@ -92,11 +105,21 @@ class DuelAdapter:
             raise ValueError('Duplicate legal action')
         return observation, actions
 
+    def _learner_actions(self, actions: tuple[Json, ...]) -> tuple[Json, ...]:
+        if self.allow_concede:
+            return actions
+        playable = tuple(action for action in actions if action.get('type') != 'concede')
+        if not playable and actions and not self._outcome().terminated:
+            self._truncated = True
+            if not self._truncation_reason:
+                self._truncation_reason = 'no_non_concede_actions'
+        return playable
+
     def _apply(self, side: str, action: Json) -> None:
         assert self._state is not None
-        # Extra copy isolates even a misbehaving injected backend from prior state.
-        next_state = self.backend.apply_action(deepcopy(self._state), side, deepcopy(action))
-        self._state = next_state
+        payload = deepcopy(action) if self.strict_isolation else action
+        state = deepcopy(self._state) if self.strict_isolation else self._state
+        self._state = self.backend.apply_action(state, side, payload)
         self._count += 1
         self._revision += 1
         self._cached = None
@@ -121,7 +144,10 @@ class DuelAdapter:
             if self.opponent is None:
                 raise RuntimeError('An explicit frozen opponent is required when the other seat acts')
             observation, actions = self._visible(side)
-            choice = _index(self.opponent(deepcopy(observation), deepcopy(actions)), len(actions))
+            if self.strict_isolation:
+                choice = _index(self.opponent(deepcopy(observation), deepcopy(actions)), len(actions))
+            else:
+                choice = _index(self.opponent(observation, actions), len(actions))
             self._apply(side, actions[choice])
             count += 1
 
@@ -130,7 +156,9 @@ class DuelAdapter:
         if self._cached is None:
             assert self._state is not None
             if outcome.terminated:
-                observation = deepcopy(self.backend.observe(self._state, self.learning_side))
+                observation = self.backend.observe(self._state, self.learning_side)
+                if self.strict_isolation:
+                    observation = deepcopy(observation)
                 # Only true terminals have no next action.
                 observation['legal_actions'] = []
                 actions: tuple[Json, ...] = ()
@@ -138,15 +166,17 @@ class DuelAdapter:
                 if not self._truncated and self.backend.current_player(self._state) != self.learning_side:
                     raise RuntimeError('Learning side does not own this decision')
                 observation, actions = self._visible(self.learning_side)
-            state_features = _vector(self.encoder.encode_observation(deepcopy(observation)), self.encoder.observation_dim)
+                actions = self._learner_actions(actions)
+            state_features = _vector(self.encoder.encode_observation(observation), self.encoder.observation_dim)
             action_view = {key: value for key, value in observation.items()
                            if key not in ('legal_actions', 'events', 'logs')}
-            rows = [_vector(self.encoder.encode_action(deepcopy(action_view), deepcopy(action)), self.encoder.action_dim)
+            rows = [_vector(self.encoder.encode_action(action_view, action), self.encoder.action_dim)
                     for action in actions]
-            rows += [(0.0,) * self.encoder.action_dim] * (self.action_capacity - len(rows))
+            if self.strict_isolation:
+                rows += [(0.0,) * self.encoder.action_dim] * (self.action_capacity - len(rows))
             self._cached = Decision(self._revision, observation, actions, state_features,
                                     tuple(rows), tuple(i < len(actions) for i in range(self.action_capacity)))
-        return deepcopy(self._cached)
+        return deepcopy(self._cached) if self.strict_isolation else self._cached
 
     def step(self, index: int, *, revision: int) -> Transition:
         if self._outcome().terminated or self._truncated:
@@ -155,23 +185,46 @@ class DuelAdapter:
         if isinstance(revision, bool) or not isinstance(revision, Integral) or revision != decision.revision:
             raise ValueError('Stale decision revision')
         index = _index(index, len(decision.actions))
-        # Recheck visibility/candidates in case an injected backend changed externally.
-        observation, actions = self._visible(self.learning_side)
-        if observation != decision.observation or actions != decision.actions:
-            raise ValueError('Decision changed; reset the adapter')
+        if self.strict_isolation:
+            observation, actions = self._visible(self.learning_side)
+            actions = self._learner_actions(actions)
+            if observation != decision.observation or actions != decision.actions:
+                raise ValueError('Decision changed; reset the adapter')
         self._apply(self.learning_side, decision.actions[index])
         self._advance_opponent()
         return self._transition()
 
-    def _transition(self) -> Transition:
+    def _transition(self, *, shaped: bool = True) -> Transition:
         outcome = self._outcome()
-        reward = 0.0
+        terminal = 0.0
         if outcome.terminated and outcome.winner != 'draw':
-            reward = 1.0 if outcome.winner == self.learning_side else -1.0
+            terminal = TERMINAL_WIN if outcome.winner == self.learning_side else TERMINAL_LOSS
+        parts: dict = {'harmony': 0, 'awaken': 0, 'damage_hp': 0, 'down': 0, 'collapse': 0, 'shaping': 0.0}
+        extra = 0.0
+        if shaped and self._state is not None:
+            extra, parts = shape_reward(self._state.get('events'), self.learning_side, self._reward_seq)
+            self._episode_shaping += extra
+        if self._state is not None:
+            self._reward_seq = int(self._state.get('event_seq') or 0)
+        # Terminal step is exactly ±10 / 0. Mid-game shaping stays on earlier steps.
+        reward = terminal if outcome.terminated else extra
+        info = {
+            'winner': outcome.winner, 'reason': outcome.reason,
+            'game_actions': self._count, 'revision': self._revision,
+            'truncation_reason': self._truncation_reason,
+            'shaping': parts,
+            'episode_shaping': round(self._episode_shaping, 6),
+            'terminal_reward': terminal,
+            'bootstrap_allowed': (not outcome.terminated and
+                self.backend.current_player(self._state) == self.learning_side),
+        }
+        if outcome.terminated or self._truncated:
+            info['episode_score'] = {
+                'terminal': terminal,
+                'shaping': round(self._episode_shaping, 6),
+                'winner': outcome.winner,
+                'truncated': bool(self._truncated and not outcome.terminated),
+                'game_actions': self._count,
+            }
         return Transition(self.decision(), reward, outcome.terminated,
-                          self._truncated and not outcome.terminated,
-                          {'winner': outcome.winner, 'reason': outcome.reason,
-                           'game_actions': self._count, 'revision': self._revision,
-                           'truncation_reason': self._truncation_reason,
-                           'bootstrap_allowed': (not outcome.terminated and
-                               self.backend.current_player(self._state) == self.learning_side)})
+                          self._truncated and not outcome.terminated, info)

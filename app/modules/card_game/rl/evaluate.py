@@ -12,7 +12,7 @@ from .backend import V2Backend
 from .budget import BudgetStop, CountingBackend, TrainBudget
 from .encoding import V2Encoder
 from .policies import MaskablePolicy, RandomMaskedPolicy, VisibleEngineRulePolicy
-from .transfer import encoder_seat_deck
+from .transfer import default_training_deck
 
 
 EVAL_SEED_BASE = 20_260_912
@@ -27,7 +27,7 @@ def _play_match(budget: TrainBudget, learner, opponent, *, seed: int, learning_s
         max_game_actions=max_game_actions, max_opponent_actions=max_opponent_actions,
         allow_concede=False,
     )
-    used = deepcopy(deck or encoder_seat_deck())
+    used = deepcopy(deck or default_training_deck())
     decks = {'a': used, 'b': deepcopy(used)}
     actions: list[dict[str, Any]] = []
     transition = adapter.reset(seed=seed, decks=decks)
@@ -118,7 +118,7 @@ def evaluate_strategies(
         'eval_seed_base': EVAL_SEED_BASE, 'matches_per_seat': matches_per_seat,
         'agents': [name for name, _ in agents],
         'results': {}, 'by_seat': {}, 'exceptions': 0,
-        'training_deck_id': (deck or encoder_seat_deck()).get('id'),
+        'training_deck_id': (deck or default_training_deck()).get('id'),
     }
     match_index = 0
     for name, policy in agents:

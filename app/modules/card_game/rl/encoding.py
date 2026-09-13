@@ -3,20 +3,23 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Mapping, Sequence
 
-from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
+from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK
+from app.modules.card_game.content.duel_v2.catalog import CARD_ID_ORDER
 
 from .contracts import ACTION_TYPES, PHASES, RULES_VERSION, SIDES
 
-FEATURE_VERSION = 'duel_v2_obs_v4'
-ACTION_FEATURE_VERSION = 'duel_v2_act_v2'
+FEATURE_VERSION = 'duel_v2_obs_v5'
+ACTION_FEATURE_VERSION = 'duel_v2_act_v3'
 ENCODER_VERSION = f'{FEATURE_VERSION}+{ACTION_FEATURE_VERSION}'
 
-# Encoder seats are the V2.4 four-character duel, not the expanded catalog.
-CHARACTER_IDS = tuple(cid for cid in ('nanali', 'zero', 'jiuyuan', 'xun') if cid in CHARACTERS)
+# Encoder seats follow the current official 创生预组, not the expanded 11-character catalog.
+CHARACTER_IDS = tuple(STARTER_DECK['character_ids'])
+if len(CHARACTER_IDS) != 4 or any(character_id not in CHARACTERS for character_id in CHARACTER_IDS):
+    raise RuntimeError('RL encoder requires the official starter four characters')
 CARD_IDS = tuple(
-    card_id for prefix in ('N', 'Z', 'J', 'X') for n in range(1, 9)
-    if (card_id := f'{prefix}{n:02d}') in CARDS
-) + tuple(card_id for card_id, card in CARDS.items() if card.get('derived'))
+    card_id for card_id in CARD_ID_ORDER
+    if CARDS[card_id].get('character_id') in CHARACTER_IDS
+)
 ATTRIBUTES = tuple(sorted({CHARACTERS[cid]['attribute'] for cid in CHARACTER_IDS}))
 CARD_TYPES = ('battle', 'tactic', 'form')
 FORM_CARD_IDS = tuple(card_id for card_id in CARD_IDS if CARDS[card_id]['type'] == 'form')
@@ -348,12 +351,16 @@ def _public_card_vector(card: Mapping[str, Any] | None, *, hidden: bool, turn_co
     catalog = CARDS[card_id]
     card_type = _text(card['type'], 'card type')
     copied = bool(_copy_flag(card.get('copy', False)))
-    expected_owner = 'xun' if copied else catalog['character_id']
-    if character_id != expected_owner or card_type != catalog['type']:
-        raise ValueError(f'card {card_id} does not match catalog identity')
     original = card.get('original_character_id', catalog['character_id'])
     if original != catalog['character_id']:
         raise ValueError('Original card author does not match catalog')
+    if card_type != catalog['type']:
+        raise ValueError(f'card {card_id} does not match catalog identity')
+    if copied:
+        if character_id not in CHARACTER_IDS:
+            raise ValueError(f'copy holder {character_id} is not an encoder seat')
+    elif character_id != catalog['character_id']:
+        raise ValueError(f'card {card_id} does not match catalog identity')
     vector.extend(_one_hot(card_id, CARD_IDS, 'card_id', required=True))
     vector.extend(_one_hot(character_id, CHARACTER_IDS, 'character_id', required=True))
     vector.extend(_one_hot(original, CHARACTER_IDS, 'original_character_id', required=True))
@@ -414,7 +421,7 @@ def _record_vector(record: Any) -> list[float]:
     name = payload.get('name')
     if card_id is None:
         if not isinstance(name, str) or name == '':
-            raise ValueError('xun record needs a public card_id or name')
+            raise ValueError('Public record needs a public card_id or name')
         matches = [item_id for item_id, card in CARDS.items() if card['name'] == name]
         if len(matches) != 1:
             raise ValueError(f'Unknown public record name: {name}')
@@ -733,7 +740,8 @@ class V2Encoder:
             target_text = _text(payload.get('target_id'), 'action.target_id')
             if ':' in target_text and target_text.split(':', 1)[0] in SIDES:
                 target_side, raw_character = target_text.split(':', 1)
-                target_character = _character_id(raw_character, 'target character')
+                if raw_character != 'player':
+                    target_character = _character_id(raw_character, 'target character')
             elif target_text in visible:
                 target_is_card = 1.0
                 target_card = _card_id(visible[target_text].get('card_id'), 'target card_id')

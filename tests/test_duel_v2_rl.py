@@ -21,10 +21,19 @@ from app.modules.card_game.rl.checkpoint import current_checkpoint_config, valid
 from app.modules.card_game.rl.rewards import TERMINAL_LOSS, TERMINAL_WIN
 
 
+def _copy_holder(card_id: str) -> str:
+    owner = CARDS[card_id]['character_id']
+    return next((cid for cid in CHARACTER_IDS if cid != owner), CHARACTER_IDS[0])
+
+
 def card(cid='N03', instance='a-1', copied=False, expiry=21):
     result = dict(deepcopy(CARDS[cid]), card_id=cid, instance_id=instance, copy=copied)
     if copied:
-        result.update(character_id='xun', original_character_id=CARDS[cid]['character_id'], expires_turn=expiry)
+        result.update(
+            character_id=_copy_holder(cid),
+            original_character_id=CARDS[cid]['character_id'],
+            expires_turn=expiry,
+        )
     return result
 
 
@@ -118,6 +127,11 @@ class EncodingTest(unittest.TestCase):
                             self.encoder.encode_action(self.view, dict(type='mulligan', card_ids=['a-2'])))
         self.assertNotEqual(self.encoder.encode_action(self.view, dict(type='play_card', card_id='a-2')),
                             self.encoder.encode_action(self.view, dict(type='play_card', card_id='a-3')))
+        self.view['sides']['a']['hand'].append(card('Y03', 'a-4'))
+        player = self.encoder.encode_action(self.view, dict(type='play_card', card_id='a-4', target_id='a:player'))
+        ally = self.encoder.encode_action(self.view, dict(type='play_card', card_id='a-4', target_id='a:zero'))
+        self.assertEqual(len(player), ACTION_DIM)
+        self.assertNotEqual(player, ally)
 
     def test_generic_action_features_drop_card_identity(self):
         self.assertEqual(ACTION_LAYOUT['choice_card'].stop, ACTION_DIM)
@@ -341,8 +355,8 @@ class RealEngineSmokeTest(unittest.TestCase):
         # This is an API compatibility check, never a rollout or training episode.
         backend = V2Backend()
         encoder = V2Encoder()
-        from app.modules.card_game.rl.transfer import encoder_seat_deck
-        deck = encoder_seat_deck()
+        from app.modules.card_game.rl.transfer import default_training_deck
+        deck = default_training_deck()
         state = backend.new_game(
             seed=7, first_side='a', skip_mulligan=True, decks={'a': deck, 'b': deck},
         )

@@ -14,7 +14,7 @@ from app.modules.card_game.rl.checkpoint import assert_compatible_identity, curr
 from app.modules.card_game.rl.encoding import CARD_IDS, CHARACTER_IDS
 from app.modules.card_game.rl.policies import RandomMaskedPolicy, VisibleEngineRulePolicy
 from app.modules.card_game.rl.transfer import (
-    apply_card_swaps, encoder_seat_deck, parse_card_swaps, resolve_training_deck, similar_card_sources,
+    apply_card_swaps, default_training_deck, parse_card_swaps, resolve_training_deck, similar_card_sources,
 )
 from app.modules.card_game.rl.rewards import (
     SHAPE_AWAKEN, SHAPE_COLLAPSE, SHAPE_DAMAGE, SHAPE_DOWN, SHAPE_HARMONY, TERMINAL_LOSS,
@@ -156,12 +156,16 @@ class BudgetAndPolicyTest(unittest.TestCase):
         rng = __import__('random').Random(0)
         self.assertIn(RandomMaskedPolicy(rng)(observation, actions), range(len(actions)))
 
-    def test_encoder_seat_deck_and_same_character_swap(self):
-        deck = encoder_seat_deck()
-        self.assertEqual(list(deck['character_ids']), list(CHARACTER_IDS))
-        self.assertEqual(len(deck['card_ids']), 32)
-        self.assertTrue(set(deck['card_ids']) <= set(CARD_IDS))
-        self.assertEqual(resolve_training_deck(None)['id'], deck['id'])
+    def test_default_training_deck_is_official_starter(self):
+        deck = default_training_deck()
+        self.assertEqual(deck['id'], STARTER_DECK['id'])
+        self.assertEqual(deck['name'], STARTER_DECK['name'])
+        self.assertEqual(list(deck['character_ids']), list(STARTER_DECK['character_ids']))
+        self.assertEqual(list(deck['card_ids']), list(STARTER_DECK['card_ids']))
+        self.assertEqual(list(CHARACTER_IDS), list(STARTER_DECK['character_ids']))
+        self.assertEqual(set(deck['card_ids']) <= set(CARD_IDS), True)
+        self.assertEqual(resolve_training_deck(None)['card_ids'], deck['card_ids'])
+        self.assertEqual(resolve_training_deck('starter')['id'], 'starter')
         in_deck = set(deck['card_ids'])
         pair = None
         for card_id in CARD_IDS:
@@ -187,11 +191,9 @@ class BudgetAndPolicyTest(unittest.TestCase):
         self.assertIn(unused, swapped['card_ids'])
         sources = similar_card_sources([owned], [owned, unused])
         self.assertEqual(sources[unused], [owned])
+        other = next(item for item in STARTER_DECKS if item['id'] != STARTER_DECK['id'])
         with self.assertRaises(ValueError):
-            resolve_training_deck(STARTER_DECKS[0]['id'] if STARTER_DECKS[0]['character_ids'] != list(CHARACTER_IDS) else 'missing-preset')
-        if list(STARTER_DECK.get('character_ids') or []) != list(CHARACTER_IDS):
-            with self.assertRaises(ValueError):
-                resolve_training_deck(STARTER_DECK)
+            resolve_training_deck(other['id'])
 
     def test_inspect_checkpoint_still_rejects_weights(self):
         config = current_checkpoint_config()

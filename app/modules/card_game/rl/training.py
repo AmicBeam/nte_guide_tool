@@ -13,7 +13,7 @@ from .checkpoint import write_training_checkpoint
 from .encoding import V2Encoder
 from .gym_compat import make_gym_env
 from .policies import RuleFrozenPolicy, VisibleEngineRulePolicy
-from .transfer import encoder_seat_deck
+from .transfer import default_training_deck
 
 
 def atomic_write(path: Path, payload: dict[str, Any]) -> None:
@@ -114,7 +114,7 @@ def build_training_env(config: dict[str, Any], budget: TrainBudget | None = None
                 seed_used = self.next_seed if seed is None else seed
                 self.next_seed = int(seed_used) + int(config.get('n_envs', 1))
                 reset_options = dict(options or {})
-                deck = config.get('deck') or encoder_seat_deck()
+                deck = config.get('deck') or default_training_deck()
                 reset_options.setdefault('decks', {'a': deck, 'b': deck})
                 try:
                     observation, info = self.env.reset(seed=seed_used, options=reset_options)
@@ -253,7 +253,7 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
     rollout = n_steps * n_envs
     if batch_size > rollout:
         batch_size = rollout
-    training_deck = deck or encoder_seat_deck()
+    training_deck = deck or default_training_deck()
     env_config = {
         'max_raw_steps': budget.max_raw_steps, 'max_games': budget.max_games,
         'max_seconds': budget.max_seconds, 'reserve_raw_steps': budget.reserve_raw_steps,

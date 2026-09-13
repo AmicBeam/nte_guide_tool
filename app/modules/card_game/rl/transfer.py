@@ -6,44 +6,18 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Mapping
 
-from app.modules.card_game.content.duel_v2 import CARDS, STARTER_DECKS, validate_deck
-from app.modules.card_game.content.duel_v2.catalog import CARD_ID_ORDER
+from app.modules.card_game.content.duel_v2 import CARDS, STARTER_DECK, STARTER_DECKS, validate_deck
 
 from .encoding import CARD_IDS, CHARACTER_IDS
 
 
+def default_training_deck() -> dict[str, Any]:
+    """Official 创生预组; both learner and rule-AI opponent use this unless --deck is set."""
+    return assert_encoder_compatible(STARTER_DECK)
+
+
 def encoder_seat_deck() -> dict[str, Any]:
-    """Default RL deck: encoder's four seats, not the expanded official presets."""
-    allowed = set(CHARACTER_IDS)
-    card_ids: list[str] = []
-    for character_id in CHARACTER_IDS:
-        kinds = [
-            card_id for card_id in CARD_ID_ORDER
-            if card_id in CARD_IDS
-            and CARDS[card_id]['character_id'] == character_id
-            and not CARDS[card_id].get('derived')
-        ]
-        selected: list[str] = []
-        for card_id in kinds:
-            copies = int(CARDS[card_id].get('starter_copies') or 0)
-            selected.extend([card_id] * copies)
-        if len(selected) > 8:
-            selected = selected[:8]
-        if len(selected) < 8:
-            for card_id in kinds:
-                while len(selected) < 8 and selected.count(card_id) < 2:
-                    selected.append(card_id)
-                if len(selected) >= 8:
-                    break
-        if len(selected) != 8:
-            raise ValueError(f'Cannot fill 8 cards for encoder seat {character_id}')
-        card_ids.extend(selected)
-    return validate_deck({
-        'id': 'encoder-seats',
-        'name': '编码器四人预组',
-        'character_ids': list(CHARACTER_IDS),
-        'card_ids': card_ids,
-    })
+    return default_training_deck()
 
 
 def assert_encoder_compatible(deck: Mapping[str, Any]) -> dict[str, Any]:
@@ -52,7 +26,9 @@ def assert_encoder_compatible(deck: Mapping[str, Any]) -> dict[str, Any]:
     extra = [character_id for character_id in payload['character_ids'] if character_id not in CHARACTER_IDS]
     if missing or extra:
         raise ValueError(
-            'RL encoder seats are nanali/zero/jiuyuan/xun; this deck uses '
+            'RL encoder seats follow the official starter deck ('
+            + ','.join(CHARACTER_IDS)
+            + '); this deck uses '
             + ','.join(payload['character_ids'])
         )
     unknown = [card_id for card_id in payload['card_ids'] if card_id not in CARD_IDS]
@@ -69,8 +45,8 @@ def _preset_by_id(deck_id: str) -> dict[str, Any] | None:
 
 
 def resolve_training_deck(spec: str | Path | Mapping[str, Any] | None = None) -> dict[str, Any]:
-    if spec is None or spec == '' or spec == 'default' or spec == 'encoder-seats':
-        return encoder_seat_deck()
+    if spec in (None, '', 'default', 'starter', 'encoder-seats'):
+        return default_training_deck()
     if isinstance(spec, Mapping):
         return assert_encoder_compatible(spec)
     text = str(spec)

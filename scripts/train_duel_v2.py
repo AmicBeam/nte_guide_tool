@@ -31,7 +31,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument('--enable-training', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--resume', type=Path)
-    parser.add_argument('--deck', help='encoder-seats, official preset id, or deck JSON path')
+    parser.add_argument('--deck', help='default/starter 创生预组, other official preset id, or deck JSON path')
     parser.add_argument('--swap', help='Replace cards in the training deck, e.g. N03:N05,Z04:Z08')
     parser.add_argument('--freeze-generic', action='store_true',
                         help='When resuming, freeze board/generic-action weights and train card identity')

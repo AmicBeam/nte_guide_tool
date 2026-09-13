@@ -79,10 +79,11 @@ class Jiuyuan:
         if c.character.get('shape') != 'J08' or not target:
             return
         side, cid = target
-        if not cid or not alive(c.state, side, cid):
+        if cid and not alive(c.state, side, cid):
             return
         damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}')
-        c.attach_pact(side, cid)
+        if cid:
+            c.attach_pact(side, cid)
 
     @staticmethod
     def on_damage_dealt(c, target_side=None, target_id=None, amount=0, **_data):

@@ -284,6 +284,36 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertFalse(s['sides']['a']['harmonized'])
         self.assertEqual(hero(s, 'a', 'zero')['harmony'], 2)
 
+    def test_shelter_genesis_hits_player_when_no_front(self):
+        s = self.game()
+        s['sides']['a']['last_front'] = 'nanali'
+        hero(s, 'a', 'nanali')['harmony'] = 2
+        hero(s, 'a', 'jiuyuan')['shape'] = 'J08'
+        s['sides']['b']['front'] = None
+        s['sides']['b']['hp'] = 10
+        s['sides']['b']['shield'] = 0
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
+        genesis = [e for e in s['events'] if e['type'] == 'genesis']
+        extras = [e for e in s['events'] if e['type'] == 'damage' and e.get('source') == 'a:jiuyuan']
+        self.assertEqual(len(genesis), 2)
+        self.assertEqual(len(extras), 2)
+        self.assertTrue(all(e.get('target') == 'b:player' for e in genesis + extras))
+        self.assertEqual(sum(e['amount'] for e in genesis + extras), 4)
+
+    def test_shelter_genesis_attaches_pact_on_front(self):
+        s = self.game()
+        s['sides']['a']['last_front'] = 'nanali'
+        hero(s, 'a', 'nanali')['harmony'] = 2
+        hero(s, 'a', 'jiuyuan')['shape'] = 'J08'
+        s['sides']['b']['front'] = 'nanali'
+        hero(s, 'b', 'nanali')['hp'] = 8
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
+        extras = [e for e in s['events'] if e['type'] == 'damage' and e.get('source') == 'a:jiuyuan']
+        self.assertEqual(sum(1 for e in s['events'] if e['type'] == 'genesis'), 2)
+        self.assertEqual(len(extras), 2)
+        self.assertEqual(hero(s, 'b', 'nanali')['hp'], 2)
+        self.assertTrue(hero(s, 'b', 'nanali').get('flags', {}).get('pact'))
+
     def test_downed_previous_keeps_harmony_but_does_not_pay(self):
         s = self.game()
         s['sides']['a']['front'] = 'zero'

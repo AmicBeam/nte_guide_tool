@@ -2,33 +2,35 @@
 
 异象对决是仓库内的网页卡牌桌游模块，页面入口为 `/card-game`。它提供账号登录后的构筑、图鉴、对局数据和单战场牌桌体验。
 
-## 四人轮替 V2
+## 四人轮替
 
-- [四人轮替版完整手册](../../../docs/everness-item-chain-card-design.md) 是新版唯一设计真源，开头置顶娜娜莉、主角「零」（鉴定师）、九原、浔及其 32 张基础预组。
-- 新版设计为每方 4 人、单人战斗区、玩家生命胜负和完整回合轮替；玩家行动力支付费用，每名角色独立保存环合值与能量。角色开局有基础被动，能量满后可主动支付 1 行动力觉醒，无需觉醒卡，觉醒后替换被动。
-- 每角色八种卡名固定为本人六个觉醒名＋两个觉醒共鸣名，均已通过 Everness 核实；从中选择 8 张带入牌库，同名最多 2 张。形态牌提供与被动、战斗牌的配合，不再用 PV/EP 补位。
-- 核心职责：娜娜莉自身成长主攻、零自身环合加速、九原强化创生、浔记录队友 1 费原牌并通过终结战斗牌兑现爆发与临时复制。浔的兑现独立于自身环合，临时复制仍需付费且不能递归生成。
-- 默认主页、构筑、图鉴与牌桌已接入 V2，提供人机和 1v1 房间。旧教程和看板仍使用盖卡模式；旧对局可经 `/table?legacy=1` 恢复。旧规则见 [盖卡版归档](../../../docs/archive/duel-simultaneous-deployment-2026-09-08.md)。
+- [四人轮替完整手册](../../../docs/everness-item-chain-card-design.md) 是唯一设计真源。当前 11 名角色、88 种卡牌；官方预组为创生预组、浊燃预组、盈蓄预组和覆纹预组。
+- 新版设计为每方 4 人、单人战斗区、玩家生命胜负和完整回合轮替；玩家行动力支付费用，所有手牌均为 1 费，每名角色独立保存环合值与能量。角色开局有异能；主动前排战斗 +2 能量，反击不获得基础资源，卡牌仍给 1 点；光/灵/相满槽 4、暗/魂/咒满槽 5。能量满后可发动终结，不消耗行动力，每回合限 1 次，备战区也可使用。终结是持续若干己方回合的状态或一次性效果。自己的回合开始时前排自动返回备战区（倾陷除外）。入场环合只检测上一名存活出战角色，不要求将其换下。倒地时保留环合与能量，倒地角色不提供环合、不再获得资源。
+- 每名异能者八种卡名为本人六个觉醒名、一个专属武备名和一个「XX之绵」；08 为专属武备，07 为「XX之绵」或官方 PV/EP。零的 07/08 都是武备，娜娜莉已按此编号。从中选择 8 张带入牌库，同名最多 2 张。武备牌刷新所属异能者的攻击与生命面板。牌面用语见 [卡牌描述术语](../../../docs/duel-v2-card-text.md)。角色 = 异能者 + 玩家；对面称对方。
+- 核心职责：娜娜莉自身成长主攻、零自身环合加速、九原强化创生、浔记录兑现、安魂曲噩梦、残虹焚印、早雾负面增伤、灵可同频、真红凝视、哈索尔延滞、伊洛伊臆想回复。
+- 默认主页、构筑、图鉴与牌桌使用现行四人轮替；旧教程和看板仍使用盖卡模式；旧对局可经 `/table?legacy=1` 恢复。旧规则见 [盖卡版归档](../../../docs/archive/duel-simultaneous-deployment-2026-09-08.md)。
 - 规则数值仍是试玩参数，功能测试不能证明已经平衡。完整验收目标见手册末节。
 
 ## 当前运行模块范围
 
 - 固定四人开局备战，每人从自己的八种卡中携带八张，同名最多两张；总计 32 张。
-- 后端负责个人资源、行动力、攻击、换人、创生、主动觉醒、复制、抽牌、倒地恢复和胜负。人机使用确定性规则策略，不依赖训练模型。
-- 前端展示合法动作与后端预览，支持角色/卡牌拖动、卡牌详情、后续选择、起手换牌和刷新恢复。
+- 后端负责个人资源、行动力、攻击、换人、创生、终结、复制、抽牌、倒地恢复和胜负。人机使用确定性规则策略，不依赖训练模型。
+- 前端展示合法动作与后端预览，支持角色/卡牌拖动、卡牌详情、起手换牌和刷新恢复。出牌拖到中央区域即可；无目标卡立即结算，有目标卡再进入可取消的遮罩选择，合法目标高亮、其余变暗。
 - 玩家、登录态、构筑、房间和对局快照写入共享数据库。
 
 新版规则、术语与卡表以完整手册为准；维护旧对局时参照归档。平衡流程与历史报告索引见 [异象对决平衡迭代](../../../docs/duel-balance-iteration.md)。
 
 ## 页面入口
 
-- `/card-game`：模块主页。
+- `/card-game`：模块大厅。
 - `/login`：登录页。
 - `/profile`：账号设置。
-- `/build`：构筑页。
+- `/build`：构筑页，首次进入获赠官方预组，之后与普通构筑相同，最多 8 套，可切换、拖动排序、编辑、删除。
 - `/codex`：空间档案。
+- `/replays`：对局回放列表。
 - `/analytics`：旧盖卡对局数据，尚未迁移到 V2。
 - `/table`：牌桌。
+- `/table?replay=<房间码>`：用现有牌桌回放该对局的公开局面。
 
 模块不再提供 `/home` 入口。
 
@@ -37,7 +39,7 @@
 - `app/modules/card_game/content/`：卡牌、异能者、构筑和通用效果定义。
 - `app/modules/card_game/engine/`：对局应用服务、流程、规则、AI、投影与状态契约。
 - `engine/duel_v2/`：六个纯规则接口及内部状态、战斗、上下文、回合和投影。
-- `content/duel_v2/`：八种/每人卡池、构筑校验和卡牌效果。
+- `content/duel_v2/`：卡池、构筑校验、角色包（被动/弧盘/卡效）和效果注册表。引擎发追加时机 `fire` 与决策覆盖 `decide`（如环合种类），不按角色 ID 写死被动。旧盖卡事件总线不用于 V2。代码 `form` 对应玩家可见的「弧盘」。
 - `engine/application/v2_*.py` 与 `v2_routes.py`：新版房间、幂等请求、版本校验、同步关键资料与异步快照。
 - `app/room_service.py`：旧盖卡房间与开局协作。
 - `app/modules/card_game/templates/card_game/`：页面模板。
@@ -51,18 +53,21 @@
 
 ```bash
 python3 -m unittest tests.test_module_routes.ModuleRoutesTest.test_card_game_module_page_and_asset
-python3 -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_api tests.test_duel_v2_rl
+python3 -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_rl tests.test_duel_v2_rl_train tests.test_duel_v2_table_contract
 node --check app/modules/card_game/static/js/v2_api.js
 node --check app/modules/card_game/static/js/v2_build.js
 node --check app/modules/card_game/static/js/v2_table.js
+node --check app/modules/card_game/static/js/v2_table/replay.js
+node --check app/modules/card_game/static/js/v2_home.js
+node --check app/modules/card_game/static/js/v2_replays.js
 ```
 
 涉及真实交互或动画时，还需从 `/card-game` 通过页面进入牌桌完成浏览器验收。本次结果见 [V2 实现验收](../../../docs/duel-v2-acceptance.md)。
 
 ## 存档与协议
 
-`/api/duel-v2` 提供 catalog/build/start/join/ready/room-start/state/action/leave。`state` 只返回本人视角；对手未公开手牌、牌序和随机状态不返回。完整请求与投影字段见 [实现契约](../../../docs/duel-v2-implementation-contract.md)。 2026-09-12 公开演出字段、action_id 续步、规范实体、interaction 单条匹配和 `GET state?after_seq=` 见 [演出协议](../../../docs/duel-v2-presentation-20260912.md)；本批由 Grok 实现，浏览器验收仍由主任务进行，不能视为已上线或已平衡。
+`/api/duel-v2` 提供 catalog/build/build-select/build-delete/build-reorder/start/join/ready/room-start/state/action/leave，以及回放入口 `GET /replays`、`POST /replay-star` 与 `GET /replay/<房间码>`。回放列表用双方开局四人头像表示构筑，可收藏；未收藏最多保留 30 场。`state` 只返回本人视角；对手未公开手牌、牌序和随机状态不返回。完整公开回放日志独立于 `observe()` 的最近 200 条窗口，开局公开 board 加后续带 patch 的公开事件，按 `seq` / `action_id` 步进还原牌桌。完整请求与投影字段见 [实现契约](../../../docs/duel-v2-implementation-contract.md)。 2026-09-12 公开演出字段、action_id 续步、规范实体、interaction 单条匹配和 `GET state?after_seq=` 见 [演出协议](../../../docs/duel-v2-presentation-20260912.md)；大厅导航进入 `/replays` 列表，观看时仍复用现有牌桌。功能测试不能视为已上线或已平衡。
 
-新版使用四张专表，旧构筑与旧快照不会被转换或覆盖。普通动作先更新单进程最新态再异步入库，进程异常时可能丢失尚未入库的最后一步；正式结束结果与房间结束状态同步提交。刷新不会重新扣费，网络重试应复用 request_id，并携带 room_code 和 expected_version，旧房间请求不能作用于新房间。当前并发保证以单进程服务为边界，跨进程部署前需要增加集中式状态协调。
+新版使用构筑/房间/成员/快照/回放专表，旧构筑与旧快照不会被转换或覆盖。公开回放日志与对局快照分开保存，离开房间后仍可按房间码观看。普通动作先更新单进程最新态再异步入库，进程异常时可能丢失尚未入库的最后一步；正式结束结果与房间结束状态同步提交。刷新不会重新扣费，网络重试应复用 request_id，并携带 room_code 和 expected_version，旧房间请求不能作用于新房间。当前并发保证以单进程服务为边界，跨进程部署前需要增加集中式状态协调。
 
-[强化学习框架说明](../../../docs/duel-v2-rl.md) 与 `python3 scripts/train_duel_v2.py --check` 可查看配置。强化学习仅提供与 V2 六接口对接的独立框架；不自动训练，不用旧版动作空间。部署网站无需安装训练依赖。
+[强化学习说明](../../../docs/duel-v2-rl.md)：`python3 scripts/train_duel_v2.py --check` 只检查配置；`--train --output DIR` 使用 GPU 候选打分与多进程采样，对抗冻结规则启发式，再做固定种子策略评估。网站不加载训练权重。小样本结果不是平衡证据。

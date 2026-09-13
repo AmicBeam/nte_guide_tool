@@ -5,14 +5,17 @@ import torch
 
 from .catalog import (
     ACT_ATTACK, ACT_CHOOSE, ACT_CONCEDE, ACT_END, ACT_PLAY, ACT_ULTIMATE, CARD_INDEX,
-    HAND_SLOTS, HARMONY_GENESIS, MAX_LEGAL, N_SEATS, PHASE_CHOICE, PHASE_FINISHED,
-    PHASE_PLAYING, SEAT_INDEX, SIDES, TARGET_NONE, TARGET_PLAYER, TARGET_SEAT,
+    DISCARD_SLOTS, HAND_SLOTS, HARMONY_GENESIS, LEGAL_ATK, LEGAL_END, LEGAL_PLAY,
+    LEGAL_ULT, LEGAL_WIDTH, MAX_LEGAL, N_SEATS, PHASE_CHOICE, PHASE_FINISHED,
+    PHASE_PLAYING, PLAY_TARGETS, POLICY_ALLY, POLICY_DOWN_ALLY, POLICY_ENEMY,
+    POLICY_ENEMY_FRONT, POLICY_INJURED, POLICY_NONE, SIDES,
 )
 from .state import GpuState, other_side
 
 NANALI, ILOY, ZERO, JIUYUAN = 0, 1, 2, 3
 N03 = CARD_INDEX['N03']
 N07 = CARD_INDEX.get('N07', -1)
+N02 = CARD_INDEX.get('N02', -1)
 NF01 = CARD_INDEX.get('NF01', -1)
 Y03 = CARD_INDEX.get('Y03', -1)
 Y02 = CARD_INDEX.get('Y02', -1)
@@ -119,6 +122,31 @@ def knockdown(s: GpuState) -> None:
                 _apply_hp(s, torch.full_like(s.active, foe), ~has_f, 0, amt, hit & ~has_f)
 
 
+def _trigger_ally_attacked(s: GpuState, side: torch.Tensor, seat: int, mask: torch.Tensor) -> None:
+    """Auto-play the first affordable ally_attacked response on the defending side."""
+    b = _b(s)
+    foe = other_side(side)
+    target_seat = s.front[b, foe]
+    fired = torch.zeros(s.n, dtype=torch.bool, device=s.device)
+    for hs in range(HAND_SLOTS):
+        kind = s.hand_kind[b, foe, hs]
+        valid = mask & _live(s) & (kind >= 0) & ~fired
+        resp = valid & (s.catalog_response[kind.clamp(min=0)] > 0)
+        owner = s.catalog_owner[kind.clamp(min=0)]
+        cost = s.catalog_cost[kind.clamp(min=0)]
+        can = resp & (target_seat >= 0) & (owner != target_seat)
+        for own in range(N_SEATS):
+            alive_own = (owner == own) & (s.ch_hp[b, foe, own] > 0)
+            afford = (s.ap[b, foe] >= cost) | ((s.catalog_instant[kind.clamp(min=0)] > 0) & (s.used_instant[b, foe] == 0))
+            fire = can & alive_own & afford
+            if not bool(fire.any()):
+                continue
+            fired = fired | fire
+            s.ap[b, foe] = torch.where(fire, s.ap[b, foe] - cost, s.ap[b, foe])
+            remove_hand_slot(s, foe, torch.full_like(s.active, hs), fire)
+            enter(s, foe, own, fire, support=False)
+
+
 def _front_target(s: GpuState, side: torch.Tensor):
     foe = other_side(side)
     b = _b(s)
@@ -175,6 +203,9 @@ def resolve_genesis(s: GpuState, side: torch.Tensor, seat: int, mask: torch.Tens
         still = mask & _live(s) & (ticks > 0) & _alive(s, side, seat)
         _deal_front(s, side, torch.ones_like(s.hp[:, 0]), still)
         ticks = ticks - still.to(ticks.dtype)
+    y08 = mask & (s.ch_shape[_b(s), side, ILOY] == Y08) & (s.ch_hp[_b(s), side, ILOY] > 0) & (s.extra_genesis[_b(s), side] == 0)
+    s.extra_genesis[_b(s), side] = torch.where(y08, torch.ones_like(s.extra_genesis[_b(s), side]), s.extra_genesis[_b(s), side])
+    s.extra_genesis_actor[_b(s), side] = torch.where(y08, torch.full_like(s.extra_genesis_actor[_b(s), side], seat), s.extra_genesis_actor[_b(s), side])
     flowers = torch.where(mask, s.extra_flower[_b(s), side], torch.zeros_like(s.extra_flower[_b(s), side]))
     s.extra_flower[_b(s), side] = torch.where(mask, torch.zeros_like(s.extra_flower[_b(s), side]), s.extra_flower[_b(s), side])
     for _ in range(2):
@@ -219,6 +250,7 @@ def attack_once(s: GpuState, side: torch.Tensor, seat: int, mask: torch.Tensor, 
     mask = mask & _live(s) & _alive(s, side, seat) & (s.front[b, side] == seat)
     bonus = torch.zeros(s.n, dtype=torch.int32, device=s.device) if bonus is None else bonus
     no_counter = torch.zeros(s.n, dtype=torch.bool, device=s.device) if no_counter is None else no_counter
+    _trigger_ally_attacked(s, side, seat, mask)
     atk = attack_power(s, side, seat) + bonus
     foe, has, _ = _front_target(s, side)
     # iloy before_hits already folded into bonus
@@ -290,10 +322,9 @@ def draw(s: GpuState, side: torch.Tensor, mask: torch.Tensor, count: int = 1) ->
         s.phase = torch.where(empty, torch.full_like(s.phase, PHASE_FINISHED), s.phase)
         s.winner = torch.where(empty, foe, s.winner)
         s.reason = torch.where(empty, torch.full_like(s.reason, 2), s.reason)
-        can = still & (s.deck_n[b, side] > 0) & (s.hand_n[b, side] < HAND_SLOTS)
+        can = still & (s.deck_n[b, side] > 0)
         if not bool(can.any()):
             continue
-        # gather deck[0] per-row; loop seats not rows
         for si in range(SIDES):
             pick = can & (side == si)
             if not bool(pick.any()):
@@ -301,16 +332,46 @@ def draw(s: GpuState, side: torch.Tensor, mask: torch.Tensor, count: int = 1) ->
             hn = s.hand_n[:, si]
             kind0 = s.deck_kind[:, si, 0]
             inst0 = s.deck_inst[:, si, 0]
+            room = pick & (hn < HAND_SLOTS)
+            full = pick & (hn >= HAND_SLOTS)
             for slot in range(HAND_SLOTS):
-                here = pick & (hn == slot)
+                here = room & (hn == slot)
                 s.hand_kind[:, si, slot] = torch.where(here, kind0, s.hand_kind[:, si, slot])
                 s.hand_inst[:, si, slot] = torch.where(here, inst0, s.hand_inst[:, si, slot])
-            s.hand_n[:, si] = torch.where(pick, hn + 1, hn)
-            # shift deck
+            s.hand_n[:, si] = torch.where(room, hn + 1, hn)
+            to_discard(s, torch.full_like(s.active, si), kind0, full)
             s.deck_kind[:, si, :-1] = torch.where(pick.unsqueeze(-1), s.deck_kind[:, si, 1:], s.deck_kind[:, si, :-1])
             s.deck_inst[:, si, :-1] = torch.where(pick.unsqueeze(-1), s.deck_inst[:, si, 1:], s.deck_inst[:, si, :-1])
             s.deck_kind[:, si, -1] = torch.where(pick, torch.full_like(s.deck_kind[:, si, -1], -1), s.deck_kind[:, si, -1])
             s.deck_n[:, si] = torch.where(pick, s.deck_n[:, si] - 1, s.deck_n[:, si])
+
+
+def compact_deck(s: GpuState, si: int, mask: torch.Tensor) -> None:
+    kinds = s.deck_kind[:, si]
+    insts = s.deck_inst[:, si]
+    pos = torch.zeros(s.n, dtype=torch.int32, device=s.device)
+    new_k = torch.full_like(kinds, -1)
+    new_i = torch.zeros_like(insts)
+    for slot in range(32):
+        take = mask & (kinds[:, slot] >= 0)
+        for dest in range(32):
+            put = take & (pos == dest)
+            new_k[:, dest] = torch.where(put, kinds[:, slot], new_k[:, dest])
+            new_i[:, dest] = torch.where(put, insts[:, slot], new_i[:, dest])
+        pos = pos + take.to(pos.dtype)
+    s.deck_kind[:, si] = torch.where(mask.unsqueeze(-1), new_k, kinds)
+    s.deck_inst[:, si] = torch.where(mask.unsqueeze(-1), new_i, insts)
+    s.deck_n[:, si] = torch.where(mask, pos, s.deck_n[:, si])
+
+
+def to_discard(s: GpuState, side: torch.Tensor, kind: torch.Tensor, mask: torch.Tensor) -> None:
+    for si in range(SIDES):
+        here = mask & (side == si) & (kind >= 0)
+        n = s.discard_n[:, si]
+        for slot in range(DISCARD_SLOTS):
+            put = here & (n == slot)
+            s.discard_kind[:, si, slot] = torch.where(put, kind, s.discard_kind[:, si, slot])
+        s.discard_n[:, si] = torch.where(here & (n < DISCARD_SLOTS), n + 1, n)
 
 
 def remove_hand_slot(s: GpuState, side: torch.Tensor, slot: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -354,13 +415,22 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
             s.last_front[:, si] = torch.where(leaving, torch.full_like(s.front[:, si], seat), s.last_front[:, si])
             s.ch_shield[:, si, seat] = torch.where(leaving, torch.zeros_like(s.ch_shield[:, si, seat]), s.ch_shield[:, si, seat])
         s.front[:, si] = torch.where(here, torch.full_like(s.front[:, si], -1), s.front[:, si])
+        pending = here & (s.extra_genesis[:, si] > 0)
+        actor = s.extra_genesis_actor[:, si]
+        s.extra_genesis[:, si] = torch.where(here, torch.zeros_like(s.extra_genesis[:, si]), s.extra_genesis[:, si])
+        s.extra_genesis_actor[:, si] = torch.where(here, torch.full_like(actor, -1), actor)
+        for seat in range(N_SEATS):
+            resolve_genesis(s, torch.full_like(s.active, si), seat, pending & (actor == seat) & (s.ch_hp[:, si, seat] > 0))
         # nanali first-turn seed
         first = here & (s.turn_count[:, si] == 1) & (s.ch_hp[:, si, NANALI] > 0) & (s.nanali_seed[:, si] < 3)
         if NF01 >= 0:
+            room = first & (s.hand_n[:, si] < HAND_SLOTS)
+            full = first & (s.hand_n[:, si] >= HAND_SLOTS)
             for slot in range(HAND_SLOTS):
-                put = first & (s.hand_n[:, si] == slot)
+                put = room & (s.hand_n[:, si] == slot)
                 s.hand_kind[:, si, slot] = torch.where(put, torch.full_like(s.hand_kind[:, si, slot], NF01), s.hand_kind[:, si, slot])
-            s.hand_n[:, si] = torch.where(first & (s.hand_n[:, si] < HAND_SLOTS), s.hand_n[:, si] + 1, s.hand_n[:, si])
+            s.hand_n[:, si] = torch.where(room, s.hand_n[:, si] + 1, s.hand_n[:, si])
+            to_discard(s, torch.full_like(s.active, si), torch.full((s.n,), NF01, dtype=torch.int32, device=s.device), full)
             s.nanali_seed[:, si] = torch.where(first, s.nanali_seed[:, si] + 1, s.nanali_seed[:, si])
         # iloy energy_next
         give = here & (s.ch_energy_next[:, si, ILOY] > 0)
@@ -418,6 +488,10 @@ def _play_effects(s: GpuState, side: torch.Tensor, seat: int, kind: torch.Tensor
     s.ch_shield[b, side, seat] = torch.where(mask & is_battle, s.ch_shield[b, side, seat] + shield, s.ch_shield[b, side, seat])
     n03 = mask & (kind == N03)
     fu = torch.where(n03, torch.ones_like(kind), torch.zeros_like(kind))
+    n07 = s.ch_shape[b, side, seat] == N07
+    played = s.nanali_seed_played[b, side]
+    bonus = bonus + torch.where(mask & is_battle & n07, played, torch.zeros_like(bonus))
+    shield = shield + torch.where(mask & is_battle & n07, played, torch.zeros_like(shield))
     do_sortie = mask & is_battle
     sortie(s, side, seat, do_sortie, card_bonus=torch.where(do_sortie, bonus, torch.zeros_like(bonus)), followup=fu)
     # zero after battle: harmony = 2
@@ -432,6 +506,83 @@ def _play_effects(s: GpuState, side: torch.Tensor, seat: int, kind: torch.Tensor
     new_max = torch.where(panel > 0, panel + perm, s.ch_max_hp[b, side, seat])
     s.ch_max_hp[b, side, seat] = torch.where(form & (panel > 0), new_max, s.ch_max_hp[b, side, seat])
     s.ch_hp[b, side, seat] = torch.where(form & (panel > 0), new_max, s.ch_hp[b, side, seat])
+    nf = mask & (kind == NF01)
+    s.ch_base_atk[b, side, seat] = torch.where(nf, s.ch_base_atk[b, side, seat] + 1, s.ch_base_atk[b, side, seat])
+    s.ch_max_hp[b, side, seat] = torch.where(nf, s.ch_max_hp[b, side, seat] + 1, s.ch_max_hp[b, side, seat])
+    s.ch_base_max[b, side, seat] = torch.where(nf, s.ch_base_max[b, side, seat] + 1, s.ch_base_max[b, side, seat])
+    s.ch_hp[b, side, seat] = torch.where(nf, s.ch_hp[b, side, seat] + 1, s.ch_hp[b, side, seat])
+    s.nanali_seed_played[b, side] = torch.where(nf, s.nanali_seed_played[b, side] + 1, s.nanali_seed_played[b, side])
+    y02 = mask & (kind == Y02)
+    # draw first deck card owned by tseat
+    for si in range(SIDES):
+        here = y02 & (side == si)
+        for ally in range(N_SEATS):
+            want = here & (tseat == ally)
+            if not bool(want.any()):
+                continue
+            for dslot in range(32):
+                kind_d = s.deck_kind[:, si, dslot]
+                match = want & (kind_d >= 0) & (s.catalog_owner[kind_d.clamp(min=0)] == ally) & (s.catalog_derived[kind_d.clamp(min=0)] == 0)
+                # take first match only
+                # mark taken
+                taken = torch.zeros(s.n, dtype=torch.bool, device=s.device)
+                fire = match & ~taken
+                # compact is hard; pull into hand then set that deck slot -1 and compact later
+                hn = s.hand_n[:, si]
+                for hslot in range(HAND_SLOTS):
+                    put = fire & (hn == hslot)
+                    s.hand_kind[:, si, hslot] = torch.where(put, kind_d, s.hand_kind[:, si, hslot])
+                    s.hand_inst[:, si, hslot] = torch.where(put, s.deck_inst[:, si, dslot], s.hand_inst[:, si, hslot])
+                s.hand_n[:, si] = torch.where(fire & (hn < HAND_SLOTS), hn + 1, hn)
+                s.deck_kind[:, si, dslot] = torch.where(fire, torch.full_like(kind_d, -1), kind_d)
+                taken = taken | fire
+                want = want & ~fire
+    z02 = mask & (kind == Z02)
+    for si in range(SIDES):
+        here = z02 & (side == si)
+        found = torch.zeros(s.n, dtype=torch.int32, device=s.device)
+        for dslot in range(32):
+            kind_d = s.deck_kind[:, si, dslot]
+            is_form = (kind_d >= 0) & (s.catalog_type[kind_d.clamp(min=0)] == 2)
+            fire = here & is_form & (found < 2)
+            hn = s.hand_n[:, si]
+            for hslot in range(HAND_SLOTS):
+                put = fire & (hn == hslot)
+                s.hand_kind[:, si, hslot] = torch.where(put, kind_d, s.hand_kind[:, si, hslot])
+                s.hand_inst[:, si, hslot] = torch.where(put, s.deck_inst[:, si, dslot], s.hand_inst[:, si, hslot])
+            s.hand_n[:, si] = torch.where(fire & (hn < HAND_SLOTS), hn + 1, hn)
+            s.deck_kind[:, si, dslot] = torch.where(fire, torch.full_like(kind_d, -1), kind_d)
+            found = found + fire.to(found.dtype)
+        compact_deck(s, si, here)
+    for si in range(SIDES):
+        compact_deck(s, si, y02 & (side == si))
+    j01 = mask & (kind == J01)
+    # take top 3 deck into pending
+    for si in range(SIDES):
+        here = j01 & (side == si)
+        if not bool(here.any()):
+            continue
+        count = torch.minimum(s.deck_n[:, si], torch.full_like(s.deck_n[:, si], 3))
+        s.pending_kind = torch.where(here, torch.ones_like(s.pending_kind), s.pending_kind)
+        s.pending_side = torch.where(here, torch.full_like(s.pending_side, si), s.pending_side)
+        s.pending_count = torch.where(here, count, s.pending_count)
+        for i in range(3):
+            take = here & (s.deck_n[:, si] > 0)
+            s.pending_card[:, i] = torch.where(take, s.deck_kind[:, si, 0], s.pending_card[:, i])
+            # shift deck
+            s.deck_kind[:, si, :-1] = torch.where(take.unsqueeze(-1), s.deck_kind[:, si, 1:], s.deck_kind[:, si, :-1])
+            s.deck_inst[:, si, :-1] = torch.where(take.unsqueeze(-1), s.deck_inst[:, si, 1:], s.deck_inst[:, si, :-1])
+            s.deck_n[:, si] = torch.where(take, s.deck_n[:, si] - 1, s.deck_n[:, si])
+        one = here & (count == 1)
+        # auto add
+        hn = s.hand_n[:, si]
+        for hslot in range(HAND_SLOTS):
+            put = one & (hn == hslot)
+            s.hand_kind[:, si, hslot] = torch.where(put, s.pending_card[:, 0], s.hand_kind[:, si, hslot])
+        s.hand_n[:, si] = torch.where(one & (hn < HAND_SLOTS), hn + 1, hn)
+        choose = here & (count > 1)
+        s.phase = torch.where(choose, torch.full_like(s.phase, PHASE_CHOICE), s.phase)
+        s.pending_kind = torch.where(one, torch.full_like(s.pending_kind, -1), s.pending_kind)
     # Y03 heal 5 + atk buff
     y03 = mask & (kind == Y03)
     for ally in range(N_SEATS):
@@ -477,6 +628,34 @@ def play_card(s: GpuState, side: torch.Tensor, hand_slot: torch.Tensor, mask: to
         s.ap[:, si] = torch.where(here & ~free, s.ap[:, si] - cost, s.ap[:, si])
     for seat in range(N_SEATS):
         _play_effects(s, side, seat, kind, mask & (owner == seat), tside, tseat)
+    to_discard(s, side, kind, mask & (kind >= 0))
+
+
+def choose_pending(s: GpuState, slot: torch.Tensor, mask: torch.Tensor) -> None:
+    mask = mask & (s.phase == PHASE_CHOICE) & _live(s)
+    side = s.pending_side.clamp(min=0)
+    b = _b(s)
+    selected = torch.zeros(s.n, dtype=torch.int32, device=s.device)
+    for i in range(10):
+        selected = torch.where(slot == i, s.pending_card[:, i], selected)
+    for si in range(SIDES):
+        here = mask & (side == si)
+        hn = s.hand_n[:, si]
+        for hslot in range(HAND_SLOTS):
+            put = here & (hn == hslot)
+            s.hand_kind[:, si, hslot] = torch.where(put, selected, s.hand_kind[:, si, hslot])
+        s.hand_n[:, si] = torch.where(here & (hn < HAND_SLOTS), hn + 1, hn)
+        # rest of pending to deck bottom
+        for i in range(10):
+            rest = here & (i < s.pending_count) & (slot != i) & (s.pending_card[:, i] >= 0)
+            n = s.deck_n[:, si]
+            for dslot in range(32):
+                put = rest & (n == dslot)
+                s.deck_kind[:, si, dslot] = torch.where(put, s.pending_card[:, i], s.deck_kind[:, si, dslot])
+            s.deck_n[:, si] = torch.where(rest & (n < 32), n + 1, n)
+    s.phase = torch.where(mask, torch.full_like(s.phase, PHASE_PLAYING), s.phase)
+    s.pending_kind = torch.where(mask, torch.full_like(s.pending_kind, -1), s.pending_kind)
+    s.pending_count = torch.where(mask, torch.zeros_like(s.pending_count), s.pending_count)
 
 
 def start_ultimate(s: GpuState, side: torch.Tensor, seat: int, mask: torch.Tensor) -> None:
@@ -507,80 +686,76 @@ def rebuild_legal(s: GpuState) -> None:
     s.legal_hand.fill_(-1)
     s.legal_tside.fill_(-1)
     s.legal_tseat.fill_(-1)
-    s.legal_n.zero_()
     b = _b(s)
-    playing = s.phase == PHASE_PLAYING
-    for row in range(s.n):
-        if int(s.phase[row]) == PHASE_FINISHED:
-            continue
-        side = int(s.active[row])
-        n = 0
-        def push(typ, actor=-1, hand=-1, tside=-1, tseat=-1):
-            nonlocal n
-            if n >= MAX_LEGAL:
-                raise ValueError('Legal action overflow')
-            s.legal_type[row, n] = typ
-            s.legal_actor[row, n] = actor
-            s.legal_hand[row, n] = hand
-            s.legal_tside[row, n] = tside
-            s.legal_tseat[row, n] = tseat
-            n += 1
-        if int(s.phase[row]) != PHASE_PLAYING:
-            s.legal_n[row] = 0
-            continue
-        push(ACT_END)
-        ap = int(s.ap[row, side])
-        if ap >= 1 and int(s.normal_atk[row, side]):
-            for seat in range(N_SEATS):
-                if int(s.ch_hp[row, side, seat]) > 0 and int(s.ch_down[row, side, seat]) == 0:
-                    push(ACT_ATTACK, seat)
-        if int(s.ultimate_ok[row, side]):
-            for seat in range(N_SEATS):
-                if int(s.ch_hp[row, side, seat]) > 0 and int(s.ch_energy[row, side, seat]) >= int(s.ch_energy_max[row, side, seat]):
-                    push(ACT_ULTIMATE, seat)
-        hand_n = int(s.hand_n[row, side])
-        for hs in range(hand_n):
-            kind = int(s.hand_kind[row, side, hs])
-            if kind < 0:
-                continue
-            owner = int(s.catalog_owner[kind])
-            if int(s.ch_hp[row, side, owner]) <= 0:
-                continue
-            cost = int(s.catalog_cost[kind])
-            free = int(s.catalog_instant[kind]) and not int(s.used_instant[row, side])
-            if not free and ap < cost:
-                continue
-            from .catalog import CARD_IDS
-            card_id = CARD_IDS[kind]
-            if card_id in ('Y03',):
-                injured = False
-                if int(s.hp[row, side]) < 30:
-                    push(ACT_PLAY, owner, hs, side, -1)
-                    injured = True
-                for ally in range(N_SEATS):
-                    if 0 < int(s.ch_hp[row, side, ally]) < int(s.ch_max_hp[row, side, ally]):
-                        push(ACT_PLAY, owner, hs, side, ally)
-                        injured = True
-                if not injured:
-                    continue
-            elif card_id in ('Y02',):
-                for ally in range(N_SEATS):
-                    if int(s.ch_hp[row, side, ally]) > 0:
-                        push(ACT_PLAY, owner, hs, side, ally)
-            elif card_id in ('Y06',):
-                for ally in range(N_SEATS):
-                    if int(s.ch_down[row, side, ally]) > 0 or int(s.ch_hp[row, side, ally]) <= 0:
-                        push(ACT_PLAY, owner, hs, side, ally)
-            elif card_id in ('J04',):
-                foe = 1 - side
-                for enemy in range(N_SEATS):
-                    if int(s.ch_hp[row, foe, enemy]) > 0:
-                        push(ACT_PLAY, owner, hs, foe, enemy)
-            else:
-                push(ACT_PLAY, owner, hs, -1, -1)
-        s.legal_n[row] = n
-        if n > MAX_LEGAL:
-            raise ValueError('Legal action overflow')
+    playing = (s.phase == PHASE_PLAYING) & _live(s)
+    choice = (s.phase == PHASE_CHOICE) & _live(s)
+    side = s.active
+    ap = s.ap[b, side]
+    s.legal_type[:, LEGAL_END] = torch.where(playing, torch.full_like(s.legal_type[:, 0], ACT_END), -1)
+    for seat in range(N_SEATS):
+        can_atk = playing & (ap >= 1) & (s.normal_atk[b, side] > 0) & (s.ch_hp[b, side, seat] > 0) & (s.ch_down[b, side, seat] == 0)
+        s.legal_type[:, LEGAL_ATK + seat] = torch.where(can_atk, torch.full_like(s.legal_type[:, 0], ACT_ATTACK), -1)
+        s.legal_actor[:, LEGAL_ATK + seat] = torch.where(can_atk, torch.full_like(s.legal_actor[:, 0], seat), -1)
+        can_ult = playing & (s.ultimate_ok[b, side] > 0) & (s.ch_hp[b, side, seat] > 0) & (s.ch_energy[b, side, seat] >= s.ch_energy_max[b, side, seat])
+        s.legal_type[:, LEGAL_ULT + seat] = torch.where(can_ult, torch.full_like(s.legal_type[:, 0], ACT_ULTIMATE), -1)
+        s.legal_actor[:, LEGAL_ULT + seat] = torch.where(can_ult, torch.full_like(s.legal_actor[:, 0], seat), -1)
+    foe = other_side(side)
+    for hs in range(HAND_SLOTS):
+        kind = torch.where(side == 0, s.hand_kind[b, 0, hs], s.hand_kind[b, 1, hs])
+        valid_card = playing & (kind >= 0)
+        owner = torch.where(kind >= 0, s.catalog_owner[kind.clamp(min=0)], torch.zeros_like(kind))
+        cost = torch.where(kind >= 0, s.catalog_cost[kind.clamp(min=0)], torch.zeros_like(kind))
+        policy = torch.where(kind >= 0, s.catalog_policy[kind.clamp(min=0)], torch.zeros_like(kind))
+        owner_hp = torch.zeros_like(kind)
+        for seat in range(N_SEATS):
+            owner_hp = torch.where(owner == seat, s.ch_hp[b, side, seat], owner_hp)
+        instant = (kind >= 0) & (s.catalog_instant[kind.clamp(min=0)] > 0)
+        is_form = (kind >= 0) & (s.catalog_type[kind.clamp(min=0)] == 2)
+        zero_shaped = (s.ch_hp[b, side, ZERO] > 0) & (s.ch_shape[b, side, ZERO] >= 0)
+        free = (instant | (is_form & zero_shaped)) & (s.used_instant[b, side] == 0)
+        playable = valid_card & (owner_hp > 0) & (free | (ap >= cost))
+        base = LEGAL_PLAY + hs * PLAY_TARGETS
+        none_ok = playable & ((policy == POLICY_NONE) | ((policy == POLICY_ENEMY_FRONT) & (s.front[b, foe] >= 0)))
+        s.legal_type[:, base] = torch.where(none_ok, torch.full_like(kind, ACT_PLAY), -1)
+        s.legal_actor[:, base] = torch.where(none_ok, owner, -1)
+        s.legal_hand[:, base] = torch.where(none_ok, torch.full_like(kind, hs), -1)
+        for ally in range(N_SEATS):
+            slot = base + 1 + ally
+            ally_ok = playable & (
+                ((policy == POLICY_ALLY) & (s.ch_hp[b, side, ally] > 0))
+                | ((policy == POLICY_INJURED) & (s.ch_hp[b, side, ally] > 0) & (s.ch_hp[b, side, ally] < s.ch_max_hp[b, side, ally]))
+                | ((policy == POLICY_DOWN_ALLY) & ((s.ch_down[b, side, ally] > 0) | (s.ch_hp[b, side, ally] <= 0)))
+            )
+            s.legal_type[:, slot] = torch.where(ally_ok, torch.full_like(kind, ACT_PLAY), -1)
+            s.legal_actor[:, slot] = torch.where(ally_ok, owner, -1)
+            s.legal_hand[:, slot] = torch.where(ally_ok, torch.full_like(kind, hs), -1)
+            s.legal_tside[:, slot] = torch.where(ally_ok, side, -1)
+            s.legal_tseat[:, slot] = torch.where(ally_ok, torch.full_like(kind, ally), -1)
+        for enemy in range(N_SEATS):
+            slot = base + 5 + enemy
+            en_ok = playable & (policy == POLICY_ENEMY) & (s.ch_hp[b, foe, enemy] > 0)
+            s.legal_type[:, slot] = torch.where(en_ok, torch.full_like(kind, ACT_PLAY), -1)
+            s.legal_actor[:, slot] = torch.where(en_ok, owner, -1)
+            s.legal_hand[:, slot] = torch.where(en_ok, torch.full_like(kind, hs), -1)
+            s.legal_tside[:, slot] = torch.where(en_ok, foe, -1)
+            s.legal_tseat[:, slot] = torch.where(en_ok, torch.full_like(kind, enemy), -1)
+        slot = base + 9
+        ply = playable & (policy == POLICY_INJURED) & (s.hp[b, side] < 30)
+        s.legal_type[:, slot] = torch.where(ply, torch.full_like(kind, ACT_PLAY), -1)
+        s.legal_actor[:, slot] = torch.where(ply, owner, -1)
+        s.legal_hand[:, slot] = torch.where(ply, torch.full_like(kind, hs), -1)
+        s.legal_tside[:, slot] = torch.where(ply, side, -1)
+        s.legal_tseat[:, slot] = torch.where(ply, torch.full_like(kind, -1), -1)
+    for cs in range(10):
+        ok = choice & (cs < s.pending_count)
+        s.legal_type[:, cs] = torch.where(ok, torch.full_like(s.legal_type[:, 0], ACT_CHOOSE), s.legal_type[:, cs])
+        s.legal_hand[:, cs] = torch.where(ok, torch.full_like(s.legal_hand[:, 0], cs), s.legal_hand[:, cs])
+    valid = s.legal_type >= 0
+    # compact? keep sparse fixed layout; legal_n is last valid+1
+    slots = torch.arange(MAX_LEGAL, device=s.device).unsqueeze(0).expand(s.n, -1)
+    s.legal_n = torch.where(valid, slots + 1, torch.zeros_like(slots)).max(dim=1).values
+    if int((s.legal_n > MAX_LEGAL).any()):
+        raise ValueError('Legal action overflow')
 
 
 def step_index(s: GpuState, index: torch.Tensor) -> None:
@@ -609,6 +784,8 @@ def step_index(s: GpuState, index: torch.Tensor) -> None:
         start_ultimate(s, side, seat, ult)
     play = valid & (typ == ACT_PLAY)
     play_card(s, side, hand, play, tside, tseat)
+    choose = valid & (typ == ACT_CHOOSE)
+    choose_pending(s, hand, choose)
     conc = valid & (typ == ACT_CONCEDE)
     s.phase = torch.where(conc, torch.full_like(s.phase, PHASE_FINISHED), s.phase)
     s.winner = torch.where(conc, other_side(side), s.winner)

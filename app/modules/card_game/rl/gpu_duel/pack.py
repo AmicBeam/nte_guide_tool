@@ -144,8 +144,11 @@ def snapshot_mechan(gpu: GpuState, row: int = 0) -> dict[str, Any]:
             'last_front': int(s.last_front[row, side]),
             'turn_count': int(s.turn_count[row, side]),
             'hand_n': int(s.hand_n[row, side]), 'deck_n': int(s.deck_n[row, side]),
+            'discard_n': int(s.discard_n[row, side]),
             'normal_atk': int(s.normal_atk[row, side]),
             'ultimate_ok': int(s.ultimate_ok[row, side]),
+            'used_instant': int(s.used_instant[row, side]),
+            'seed': int(s.nanali_seed[row, side]),
             'characters': chars,
         })
     return {

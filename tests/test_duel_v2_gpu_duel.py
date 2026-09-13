@@ -130,6 +130,37 @@ class GpuDuelOracleTest(unittest.TestCase):
         done, _winner = env.outcome()
         self.assertEqual(int(done.sum()), int((env.state.phase == 3).sum()))
 
+    def test_random_walk_longer_seeds(self):
+        for seed in (3, 11, 21):
+            state = self._py(seed=seed)
+            env = self.GpuDuelEnv(1, device='cpu')
+            env.reset_from_python([state])
+            for _ in range(20):
+                if state.get('phase') == 'finished':
+                    break
+                side = acting_side(state)
+                actions = [item for item in legal_actions(state, side) if item.get('type') != 'concede']
+                if not actions:
+                    break
+                action = actions[0]
+                index = self._gpu_index(env, action)
+                env.step([index])
+                state = apply_action(state, side, action)
+                self.assertEqual(env.snapshot(0), self.python_mechan(state), msg=f'seed={seed} action={action}')
+
+    def test_compact_ppo_one_update(self):
+        import torch
+        from app.modules.card_game.rl.gpu_duel.observe import compact_observe
+        from app.modules.card_game.rl.gpu_duel.ppo import CompactScorer, collect_rollout, ppo_update, rollout_to_batch
+        env = self.GpuDuelEnv(4, device='cpu')
+        env.reset(seeds=[0, 1, 2, 3])
+        state, cand, _mask = compact_observe(env.state)
+        net = CompactScorer(state.shape[-1], cand.shape[-1], hidden=32)
+        opt = torch.optim.Adam(net.parameters(), lr=1e-3)
+        rollout = collect_rollout(env, net, horizon=4)
+        ppo_update(net, opt, rollout_to_batch(rollout), epochs=1, minibatch=16)
+        self.assertGreater(rollout['state'].shape[0], 0)
+
     def test_cuda_batch_if_available(self):
         import torch
         if not torch.cuda.is_available():

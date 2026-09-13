@@ -89,6 +89,7 @@ class GpuState:
     catalog_response: torch.Tensor
     catalog_instant: torch.Tensor
     catalog_derived: torch.Tensor
+    catalog_policy: torch.Tensor
     char_attr: torch.Tensor
     char_base_atk: torch.Tensor
     char_base_hp: torch.Tensor
@@ -150,7 +151,7 @@ def empty_state(n: int, device: str | torch.device = 'cpu') -> GpuState:
         catalog_shield=cat(table['shield']), catalog_hp=cat(table['hp']),
         catalog_type=cat(table['type']), catalog_owner=cat(table['owner']),
         catalog_response=cat(table['response']), catalog_instant=cat(table['instant']),
-        catalog_derived=cat(table['derived']),
+        catalog_derived=cat(table['derived']), catalog_policy=cat(table['policy']),
         char_attr=cat(table['attr']), char_base_atk=cat(table['base_atk']),
         char_base_hp=cat(table['base_hp']), char_energy_max=cat(table['energy_max']),
         char_ult_kind=cat(table['ult_kind']), char_ult_turns=cat(table['ult_turns']),

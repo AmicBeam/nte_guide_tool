@@ -5,7 +5,6 @@ from hashlib import sha256
 from typing import Any
 
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, validate_deck
-from app.modules.card_game.content.duel_v2.characters import TARGET_POLICIES
 from app.modules.card_game.content.duel_v2.catalog import CARD_ID_ORDER, energy_max_for_attribute
 
 SEATS = tuple(STARTER_DECK['character_ids'])
@@ -61,6 +60,7 @@ def assert_starter_deck(deck: dict[str, Any] | None = None) -> dict[str, Any]:
 
 
 def card_table() -> dict[str, list[int]]:
+    from app.modules.card_game.content.duel_v2.characters import TARGET_POLICIES
     cost, atk, shield, hp, typ, owner, response, instant, derived, policy = [], [], [], [], [], [], [], [], [], []
     for card_id in CARD_IDS:
         card = CARDS[card_id]

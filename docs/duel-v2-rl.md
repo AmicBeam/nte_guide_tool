@@ -53,7 +53,10 @@ python3 scripts/train_duel_v2.py --check-config /path/to/checkpoint-metadata.jso
 python3 scripts/train_duel_v2.py --train --output artifacts/duel-v2-rl-run
 python3 scripts/train_duel_v2.py --train --output artifacts/duel-v2-rl-adapt \
   --resume artifacts/duel-v2-rl-run --swap N03:N05 --freeze-generic --kl-coef 0.1
+python3 scripts/rl_monitor.py
 ```
+
+训练状态页是独立服务，默认 `http://127.0.0.1:5002/`，不挂大厅导航。只读 `artifacts/` 下带 `status.json` 或 `train.log` 的目录。
 
 `--check` 不创建对局或模型。`--train` 需要新的 `--output` 目录；总预算默认 10000 原始引擎动作 / 128 开局 / 1800 秒，训练先为评估预留额度。`n_updates=0`、随机自对弈或仅 `predict` 成功都不算训练完成。训练和评估不自动写网页录像；要看某次评估对局时，对输出目录执行 `--export-replays DIR`，按 `eval_games.jsonl` 里的种子和动作重放成公开 `replays/*.json`。在 `/replays` 导入该 JSON 后，用 `/table?replay=<房间码>` 播放；不含隐藏手牌、牌序或种子。
 

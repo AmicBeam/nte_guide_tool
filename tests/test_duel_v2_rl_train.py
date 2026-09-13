@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -155,6 +156,31 @@ class BudgetAndPolicyTest(unittest.TestCase):
         self.assertEqual(VisibleEngineRulePolicy()(observation, actions), 0)
         rng = __import__('random').Random(0)
         self.assertIn(RandomMaskedPolicy(rng)(observation, actions), range(len(actions)))
+
+    def test_status_board_reads_artifact_dir(self):
+        from app.modules.card_game.rl.status_board import list_run_snapshots, resolve_run, snapshot_run
+        folder = Path(tempfile.mkdtemp())
+        run = folder / 'duel-v2-rl-demo'
+        run.mkdir()
+        (run / 'status.json').write_text(json.dumps({
+            'ok': True, 'phase': 'update', 'elapsed_seconds': 12, 'max_seconds': 60,
+            'num_timesteps': 128, 'n_updates': 2, 'raw_steps': 40, 'games_started': 3, 'loss': 1.25,
+        }), encoding='utf-8')
+        (run / 'train.log').write_text('phase=update n_updates=2\n', encoding='utf-8')
+        (run / 'metrics.jsonl').write_text(
+            json.dumps({'event': 'rollout_end', 'train/loss': 1.25, 'env_steps_per_sec': 10}) + '\n',
+            encoding='utf-8',
+        )
+        listed = list_run_snapshots(folder)
+        self.assertEqual(listed[0]['name'], 'duel-v2-rl-demo')
+        self.assertEqual(listed[0]['n_updates'], 2)
+        snap = snapshot_run(resolve_run(folder, 'duel-v2-rl-demo'))
+        self.assertEqual(snap['phase'], 'update')
+        self.assertEqual(snap['loss_series'], [1.25])
+        self.assertIsNone(resolve_run(folder, '../secrets'))
+        from app.modules.card_game.rl.status_board import pid_alive
+        self.assertTrue(pid_alive(os.getpid()))
+        self.assertFalse(pid_alive(0))
 
     def test_default_training_deck_is_official_starter(self):
         deck = default_training_deck()

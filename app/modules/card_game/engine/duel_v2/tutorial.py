@@ -256,7 +256,7 @@ def project_tutorial(state, side):
         'level_count': int(flags.get('level_count') or 12),
         'step_id': (step or {}).get('id'),
         'ack_required': bool((step or {}).get('ack_required')),
-        'can_skip_step': True,
+        'can_skip_step': False,
         'can_skip_tutorial': False,
         'can_retry': True,
         'character_slots': int(flags.get('character_slots') or 2),

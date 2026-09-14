@@ -345,6 +345,33 @@ def skip_tutorial(player, payload: dict | None = None) -> dict:
     return tutorial_progress(player)
 
 
+def _enter_tutorial_level(player, scenario_id: str) -> None:
+    if scenario_id not in CAMPAIGN_LEVELS:
+        return
+    with atomic_transaction():
+        row = _progress_row(player)
+        completed = _completed_levels(row)
+        if scenario_id in completed:
+            return
+        index = CAMPAIGN_LEVELS.index(scenario_id)
+        for prior in CAMPAIGN_LEVELS[:index]:
+            if prior not in completed:
+                completed.append(prior)
+        row.completed_levels = json.dumps(completed, ensure_ascii=False)
+        row.current_level = scenario_id
+        row.completed = len(completed) >= len(CAMPAIGN_LEVELS)
+        row.updated_at = datetime.utcnow()
+        row.save()
+
+
+def _close_tutorial_room(room) -> None:
+    if room is None or room.mode != 'tutorial':
+        return
+    repository.set_status(room, 'closed')
+    repository.invalidate_run(room)
+    storage.invalidate(room.id)
+
+
 def _mark_tutorial_level(player, scenario_id: str) -> None:
     with atomic_transaction():
         row = _progress_row(player)
@@ -563,18 +590,21 @@ def start(player, payload: dict) -> dict:
     deck = {} if mode == 'tutorial' else _selected_deck(player, payload.get('deck'))
     with _lobby_lock:
         existing = repository.current_room(player)
-        if existing is not None and existing.status in {'waiting', 'ready', 'playing'}:
-            if existing.mode != mode:
-                if existing.mode == 'tutorial':
-                    raise DuelV2Conflict('正在进行新手教学，请先返回或离开。')
-                if mode == 'tutorial':
-                    raise DuelV2Conflict('请先离开当前房间，再开始教学。')
-                raise DuelV2Conflict('请先退出当前房间，再切换模式。')
-            return get_state(player)
-        if existing is not None and existing.status == 'finished' and existing.mode == 'tutorial':
-            repository.set_status(existing, 'closed')
-            repository.invalidate_run(existing)
-            storage.invalidate(existing.id)
+        if mode == 'tutorial':
+            if existing is not None and existing.mode != 'tutorial' and existing.status in {'waiting', 'ready', 'playing'}:
+                raise DuelV2Conflict('请先离开当前房间，再开始教学。')
+            if existing is not None and existing.mode == 'tutorial':
+                _close_tutorial_room(existing)
+            _enter_tutorial_level(player, scenario)
+        else:
+            if existing is not None and existing.status in {'waiting', 'ready', 'playing'}:
+                if existing.mode != mode:
+                    if existing.mode == 'tutorial':
+                        raise DuelV2Conflict('正在进行新手教学，请先返回或离开。')
+                    raise DuelV2Conflict('请先退出当前房间，再切换模式。')
+                return get_state(player)
+            if existing is not None and existing.status == 'finished' and existing.mode == 'tutorial':
+                _close_tutorial_room(existing)
         with atomic_transaction():
             room = repository.create_room(player, mode)
             repository.add_member(room, player, 'a', deck, ready=(mode in {'solo', 'tutorial'}))

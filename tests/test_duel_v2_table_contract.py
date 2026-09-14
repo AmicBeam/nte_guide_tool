@@ -108,6 +108,7 @@ class DuelV2TableContractTest(unittest.TestCase):
         self.assertIn('id="v2-tutorial-start"', home)
         self.assertIn('进入', home)
         self.assertNotIn('跳过新手教学', home)
+        self.assertNotIn('跳过说明', (ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'js' / 'v2_table' / 'tutorial.js').read_text(encoding='utf-8'))
         self.assertNotIn('再打这一关', home)
         self.assertNotIn('开始这一关', home)
         self.assertIn('v2-replay-bar', html)

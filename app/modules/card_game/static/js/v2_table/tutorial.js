@@ -265,9 +265,6 @@
               '<button class="primary-btn" type="button" data-tutorial-primary="1">' +
                 V2.escapeHtml((info.modal && info.modal.primary) || '继续') +
               '</button>' +
-              (info.can_skip_step
-                ? '<button class="secondary-btn" type="button" data-tutorial-skip-step="1">跳过说明</button>'
-                : '') +
             '</div>' +
           '</div>';
       }
@@ -326,19 +323,8 @@
     if (modal) {
       modal.addEventListener('click', function (event) {
         const primary = event.target.closest('[data-tutorial-primary]');
-        const skip = event.target.closest('[data-tutorial-skip-step]');
         const info = tutorial(ctx.game);
         if (primary && info) {
-          if (info.ack_required) {
-            if (typeof ctx.submitEntry === 'function') {
-              ctx.submitEntry({ action: { type: 'tutorial_ack' } });
-            }
-          } else {
-            ctx.tutorialModalDismissed = info.step_id;
-            renderTutorial(ctx);
-          }
-        }
-        if (skip && info) {
           if (info.ack_required) {
             if (typeof ctx.submitEntry === 'function') {
               ctx.submitEntry({ action: { type: 'tutorial_ack' } });

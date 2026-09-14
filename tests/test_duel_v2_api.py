@@ -410,3 +410,43 @@ class DuelV2ApiTest(RoomFlowTestCase):
             'action': ack,
         }, token=self.a)['game']
         self.assertEqual(next_view['tutorial']['step_id'], 'l01_bench')
+        self.assertFalse(game['tutorial'].get('can_skip_step'))
+
+    def test_tutorial_start_replaces_existing_room_and_records_current_level(self):
+        first = self._post('/api/duel-v2/start', {'mode': 'tutorial'}, token=self.a)
+        first_code = first['room']['room_code']
+        self.assertEqual(first['game']['tutorial']['scenario'], 'tutorial_l01_board')
+        catalog = self._get('/api/duel-v2/catalog', token=self.a)
+        self.assertEqual(catalog['tutorial']['current_level'], 'tutorial_l01_board')
+
+        replay = self._post('/api/duel-v2/start', {
+            'mode': 'tutorial',
+            'scenario': 'tutorial_l01_board',
+        }, token=self.a)
+        self.assertNotEqual(replay['room']['room_code'], first_code)
+        self.assertEqual(replay['game']['tutorial']['scenario'], 'tutorial_l01_board')
+        self.assertEqual(replay['game']['tutorial']['step_id'], 'l01_intro')
+
+        from app.models import DuelV2TutorialProgress, Player
+        player = Player.get(Player.player_uid == 'duel-v2-a')
+        row = DuelV2TutorialProgress.get(DuelV2TutorialProgress.player == player)
+        row.completed_levels = '["tutorial_l01_board"]'
+        row.current_level = 'tutorial_l02_hand'
+        row.save()
+        second = self._post('/api/duel-v2/start', {
+            'mode': 'tutorial',
+            'scenario': 'tutorial_l02_hand',
+        }, token=self.a)
+        self.assertEqual(second['game']['tutorial']['scenario'], 'tutorial_l02_hand')
+        catalog = self._get('/api/duel-v2/catalog', token=self.a)
+        self.assertEqual(catalog['tutorial']['current_level'], 'tutorial_l02_hand')
+        titles = [item['title'] for item in catalog['tutorial']['levels'] if item['available']]
+        self.assertIn('第二关 手牌', titles)
+
+        back = self._post('/api/duel-v2/start', {
+            'mode': 'tutorial',
+            'scenario': 'tutorial_l01_board',
+        }, token=self.a)
+        self.assertNotEqual(back['room']['room_code'], second['room']['room_code'])
+        self.assertEqual(back['game']['tutorial']['scenario'], 'tutorial_l01_board')
+        self.assertEqual(back['game']['tutorial']['step_id'], 'l01_intro')

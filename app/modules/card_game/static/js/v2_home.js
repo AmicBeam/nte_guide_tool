@@ -18,7 +18,6 @@ async function bootstrapHome() {
   const buildSummary = document.getElementById('v2-build-summary');
   const startBtn = document.getElementById('v2-start-btn');
   const tutorialStart = document.getElementById('v2-tutorial-start');
-  const tutorialCopy = document.getElementById('v2-tutorial-copy');
   const tutorialTitle = document.getElementById('v2-tutorial-level-title');
   const tutorialPrev = document.getElementById('v2-tutorial-prev');
   const tutorialNext = document.getElementById('v2-tutorial-next');
@@ -39,6 +38,7 @@ async function bootstrapHome() {
     busy = Boolean(next);
     startBtn.disabled = busy;
     joinBtn.disabled = busy;
+    if (tutorialStart) tutorialStart.disabled = busy;
     if (leaveBtn) leaveBtn.disabled = busy;
     if (resumeBtn) resumeBtn.classList.toggle('is-disabled', busy);
   }
@@ -201,7 +201,6 @@ async function bootstrapHome() {
     const available = selectableTutorialLevels();
     if (!available.length) {
       if (tutorialTitle) tutorialTitle.textContent = '第一关 牌桌与回合';
-      if (tutorialCopy) tutorialCopy.textContent = '逐步认识牌桌与回合。';
       if (tutorialStart) tutorialStart.disabled = true;
       if (tutorialPrev) tutorialPrev.disabled = true;
       if (tutorialNext) tutorialNext.disabled = true;
@@ -217,12 +216,9 @@ async function bootstrapHome() {
     const current = available[index];
     selectedTutorialId = current.id;
     if (tutorialTitle) tutorialTitle.textContent = current.title;
-    if (tutorialCopy) {
-      tutorialCopy.textContent = current.completed ? '已完成，可再打一遍。' : '尚未完成，从这一关继续。';
-    }
     if (tutorialStart) {
       tutorialStart.disabled = false;
-      tutorialStart.textContent = current.completed ? '再打这一关' : '开始这一关';
+      tutorialStart.textContent = '进入';
     }
     if (tutorialPrev) tutorialPrev.disabled = index <= 0;
     if (tutorialNext) tutorialNext.disabled = index >= available.length - 1;

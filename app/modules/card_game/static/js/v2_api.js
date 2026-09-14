@@ -679,9 +679,21 @@
     if (!node) {
       return;
     }
+    if (node._bannerTimer) {
+      window.clearTimeout(node._bannerTimer);
+      node._bannerTimer = 0;
+    }
     node.textContent = message || '';
     node.dataset.kind = kind || (message ? 'info' : '');
     setHidden(node, !message);
+    if (message && kind === 'ok') {
+      node._bannerTimer = window.setTimeout(function () {
+        node._bannerTimer = 0;
+        if (node.dataset.kind === 'ok') {
+          showBanner(node, '', '');
+        }
+      }, 2400);
+    }
   }
 
   window.NTE_V2 = {

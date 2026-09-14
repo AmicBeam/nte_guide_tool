@@ -8,12 +8,12 @@
 
 - `app/modules/card_game/rl/backend.py`：仅对接 `engine.duel_v2` 六接口中的开局、行动方、投影、动作和结果；不依赖旧盖卡模型、HTTP 或数据库服务。
 - `contracts.py`、`adapter.py`：可注入的纯内存接口与决策适配。策略仅收到观察投影和合法动作，不收到原始 state。
-- `encoding.py`：固定尺寸公开局势和候选动作编码。观察与单候选维度随 catalog 变化，当前约 2468 / 203，动作容量 256；容量溢出显式报错，不删除候选。
+- `encoding.py`：固定尺寸公开局势和候选动作编码。观察与单候选维度随 catalog 变化，当前约 3416 / 279（创生+覆纹快攻座位），动作容量 256；容量溢出显式报错，不删除候选。
 - `policies.py`：`VisibleEngineRulePolicy` 用公开 `legal_actions` 复现引擎规则 AI；`RandomMaskedPolicy` 是未训练基线；`MaskablePolicy` 对已加载模型做 mask 推理。
 - `gym_compat.py`：可选 Gymnasium Env 工厂；只有调用 `make_gym_env` 才导入 Gymnasium 和 NumPy。
 - `checkpoint.py`：`--check` 仍只读写无权重元数据；训练产物另存 `model.zip` + `checkpoint.json`（累计步数、更新次数、版本）。
 - `networks.py`：`CandidateScoringPolicy` 在 GPU 上对每个候选打分，不把 256×199 展平进 MLP。打分拆成通用分（动作类型、卡类、费用、目标座位）和卡身份分（catalog ID embedding）。
-- `transfer.py`：单套牌解析、同角色换卡、新卡 embedding 从同类旧卡初始化；换牌时冻住通用分，可选对共享动作做 KL。一次训练只使用一套牌，不混合多构筑。
+- `transfer.py`：单套牌解析、同角色换卡、新卡 embedding 从同类旧卡初始化；换牌时冻住通用分，可选对共享动作做 KL。一次训练只使用一套牌（创生镜像或覆纹快攻镜像），不混合多构筑。
 - `rule_ir/`：共享规则 IR。战斗切片是攻击/护盾/同时伤害/倒地/胜负，同一程序生成 CPU 张量内核和 NVRTC CUDA。创生预组卡效、被动挂钩和衍生牌是第二份 IR（`starter.py`），编译成整数表再由 `gpu_duel` 张量核执行，不再按卡 ID 往规则里加长期分支。生成 CUDA 与手写实验核、Python `combat.attack` 对拍；4096 行吞吐对照要求不低于手写核约 80%。手写核只作对照，不是业务真源。网站 Python 引擎仍是 oracle。
 - `gpu_duel/`：冻结创生预组的定长对局环境。开局可 Python 装箱或 GPU 内洗牌重置；学习方动作后由规则对手推进到下一次学习方决策。默认观察走网站 `V2Encoder` 布局，策略是 generic+card 拆分，权重可在 Python 引擎上评估。`scripts/train_duel_v2_gpu.py --n 1024 --horizon 32` 按报告做同步 PPO（规则张量默认在 CPU 上批量执行，网络在 CUDA）。`--compact` 才用短观察。`scripts/compare_duel_v2_trainers.py` 对照 CPU 多进程训练器的学习方步/秒。
 - `scripts/train_duel_v2.py`：`--check` 不创建对局；`--train --output DIR` 默认按 CPU 核数开进程采样（上限 32），GPU 候选打分。学习方（训练和评估）不提供认输动作，网站玩家仍可认输。评估对手仍是公开规则 AI。
@@ -24,7 +24,7 @@
 
 引擎的 `observe(state, side)` 是唯一信息边界。己方手牌、双方角色/资源/弃牌/记录可见；对手手牌通常隐藏，公开复制保留。九原检视对手手牌及其他检视效果，仅在引擎开放的 pending choice 中编码候选。
 
-角色座位跟随当前官方创生预组（现为 `nanali/iloy/zero/jiuyuan`），卡牌按这些角色在 catalog 中的顺序编码；元数据校验这些顺序。使用 `shape_id`；保留 last_front、各方 turn_count、疲劳、已用次数（含瞬发/同频及角色 once 键）、是否曾环合、花伤加成、下次攻击加成、返回标记和负面状态。未知 `used` 键会报错，需升级编码器，不能静默丢掉。复制按公开归属座位编码，并保留原作者；复制期限和负面状态期限以对应操作者回合计数计算剩余时间。记录不要求实体卡实例 ID，结算中卡牌单独编码。
+角色座位是创生预组与覆纹快攻的并集（`nanali/iloy/zero/jiuyuan/bohe/baicang`），卡牌按这些角色在 catalog 中的顺序编码；元数据校验这些顺序。每方对局仍是 4 人，缺席座位填空。使用 `shape_id`；保留 last_front、各方 turn_count、疲劳、已用次数（含瞬发/同频及角色 once 键）、是否曾环合、花伤加成、下次攻击加成、返回标记和负面状态。未知 `used` 键会报错，需升级编码器，不能静默丢掉。复制按公开归属座位编码，并保留原作者；复制期限和负面状态期限以对应操作者回合计数计算剩余时间。记录不要求实体卡实例 ID，结算中卡牌单独编码。
 
 手牌最多 10 个槽位，记录 2 个，私有选择 10 个。选择、弃牌和检视都作为独立动作；起手换牌以手牌槽位的多选标记表示。普通出击/终结编码角色，出牌编码可见实体牌，目标编码双方角色或公开牌；choose 同时保留选择下标和候选卡牌特征。对局不再提供弃一抽一。
 
@@ -53,6 +53,7 @@ python3 scripts/train_duel_v2.py --help
 python3 scripts/train_duel_v2.py --check
 python3 scripts/train_duel_v2.py --check-config /path/to/checkpoint-metadata.json
 python3 scripts/train_duel_v2.py --train --output artifacts/duel-v2-rl-run
+python3 scripts/train_duel_v2.py --train --output artifacts/duel-v2-rl-rush --deck weave-rush
 python3 scripts/train_duel_v2.py --train --output artifacts/duel-v2-rl-adapt \
   --resume artifacts/duel-v2-rl-run --swap N03:N05 --freeze-generic --kl-coef 0.1
 python3 scripts/train_duel_v2_gpu.py --output artifacts/duel-v2-gpu-1024 --n 1024 --horizon 32 --updates 8
@@ -64,7 +65,7 @@ python3 scripts/rl_monitor.py
 
 `--check` 不创建对局或模型。`--train` 需要新的 `--output` 目录；总预算默认 10000 原始引擎动作 / 128 开局 / 1800 秒，训练先为评估预留额度。`n_updates=0`、随机自对弈或仅 `predict` 成功都不算训练完成。训练和评估不自动写网页录像；要看某次评估对局时，对输出目录执行 `--export-replays DIR`，按 `eval_games.jsonl` 里的种子和动作重放成公开 `replays/*.json`。在 `/replays` 导入该 JSON 后，用 `/table?replay=<房间码>` 播放；不含隐藏手牌、牌序或种子。
 
-默认训练牌组是当前 catalog 的官方创生预组；学习方和冻结规则 AI 对手都用这一套。编码器座位与卡表跟随创生预组四人（含伊洛伊的 Y 卡），浊燃等其他人的官方预组仍不能直接编码。换少数卡用 `--swap OLD:NEW`（必须同角色），或传入同四人座位的 `--deck` JSON。创生预组卡表变化会改变 `character_ids` / `card_ids` / catalog 哈希，旧权重不能加载。
+默认训练牌组是当前 catalog 的官方创生预组；学习方和冻结规则 AI 对手都用这一套。`--deck weave-rush` 改为覆纹快攻镜像（双方同一套快攻）。浊燃、盈蓄、覆纹预组以及创生对快攻交叉对局仍不能训练。换少数卡用 `--swap OLD:NEW`（必须同角色且都在编码器卡表内）。卡表或座位变化会改变 `character_ids` / `card_ids` / catalog 哈希，旧权重不能加载。
 
 换牌适应走顺序微调，不在一次训练里混合多套牌：
 

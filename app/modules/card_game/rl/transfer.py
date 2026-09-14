@@ -22,15 +22,16 @@ def encoder_seat_deck() -> dict[str, Any]:
 
 def assert_encoder_compatible(deck: Mapping[str, Any]) -> dict[str, Any]:
     payload = validate_deck(dict(deck))
-    missing = [character_id for character_id in CHARACTER_IDS if character_id not in payload['character_ids']]
     extra = [character_id for character_id in payload['character_ids'] if character_id not in CHARACTER_IDS]
-    if missing or extra:
+    if extra:
         raise ValueError(
-            'RL encoder seats follow the official starter deck ('
+            'RL encoder seats are 创生预组 plus 覆纹快攻 ('
             + ','.join(CHARACTER_IDS)
             + '); this deck uses '
             + ','.join(payload['character_ids'])
         )
+    if len(payload['character_ids']) != 4:
+        raise ValueError('Training decks must still use exactly 4 characters')
     unknown = [card_id for card_id in payload['card_ids'] if card_id not in CARD_IDS]
     if unknown:
         raise ValueError('Deck contains cards the RL encoder cannot represent: ' + ','.join(sorted(set(unknown))))

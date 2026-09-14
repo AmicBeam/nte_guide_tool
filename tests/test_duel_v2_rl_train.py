@@ -202,10 +202,16 @@ class BudgetAndPolicyTest(unittest.TestCase):
         self.assertEqual(deck['name'], STARTER_DECK['name'])
         self.assertEqual(list(deck['character_ids']), list(STARTER_DECK['character_ids']))
         self.assertEqual(list(deck['card_ids']), list(STARTER_DECK['card_ids']))
-        self.assertEqual(list(CHARACTER_IDS), list(STARTER_DECK['character_ids']))
+        self.assertEqual(list(CHARACTER_IDS)[:4], list(STARTER_DECK['character_ids']))
+        self.assertIn('bohe', CHARACTER_IDS)
+        self.assertIn('baicang', CHARACTER_IDS)
         self.assertEqual(set(deck['card_ids']) <= set(CARD_IDS), True)
         self.assertEqual(resolve_training_deck(None)['card_ids'], deck['card_ids'])
         self.assertEqual(resolve_training_deck('starter')['id'], 'starter')
+        rush = resolve_training_deck('weave-rush')
+        self.assertEqual(rush['id'], 'weave-rush')
+        self.assertEqual(set(rush['character_ids']), {'bohe', 'baicang', 'zero', 'iloy'})
+        self.assertEqual(set(rush['card_ids']) <= set(CARD_IDS), True)
         in_deck = set(deck['card_ids'])
         pair = None
         for card_id in CARD_IDS:
@@ -231,7 +237,7 @@ class BudgetAndPolicyTest(unittest.TestCase):
         self.assertIn(unused, swapped['card_ids'])
         sources = similar_card_sources([owned], [owned, unused])
         self.assertEqual(sources[unused], [owned])
-        other = next(item for item in STARTER_DECKS if item['id'] != STARTER_DECK['id'])
+        other = next(item for item in STARTER_DECKS if item['id'] not in ('starter', 'weave-rush'))
         with self.assertRaises(ValueError):
             resolve_training_deck(other['id'])
 

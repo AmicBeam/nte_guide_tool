@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
+from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, STARTER_DECKS
 from app.modules.card_game.rl.encoding import CHARACTER_IDS
 from app.modules.card_game.rl import DuelAdapter, V2Backend, V2Encoder
 from app.modules.card_game.rl.contracts import Outcome
@@ -41,7 +41,7 @@ def projection():
     sides = {}
     for side in ('a', 'b'):
         characters = []
-        for cid in CHARACTER_IDS:
+        for cid in STARTER_DECK['character_ids']:
             definition = CHARACTERS[cid]
             characters.append(dict(deepcopy(definition), hp=definition['max_hp'], shield=0,
                 harmony=0, energy=0, awakened=False, growth=0, shape=None, shape_id=None,
@@ -371,6 +371,21 @@ class RealEngineSmokeTest(unittest.TestCase):
         ended = backend.apply_action(state2, 'a', {'type': 'concede'})
         self.assertTrue(backend.outcome(ended).terminated)
         self.assertEqual(len(encoder.encode_observation(backend.observe(ended, 'a'))), OBSERVATION_DIM)
+
+    def test_encodes_weave_rush_mirror(self):
+        backend = V2Backend()
+        encoder = V2Encoder()
+        rush = next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')
+        state = backend.new_game(
+            seed=7, first_side='a', skip_mulligan=True, decks={'a': rush, 'b': rush},
+        )
+        view = backend.observe(state, 'a')
+        self.assertEqual(len(encoder.encode_observation(view)), OBSERVATION_DIM)
+        self.assertTrue(any(character['id'] == 'bohe' for character in view['sides']['a']['characters']))
+        for entry in view['legal_actions']:
+            self.assertEqual(len(encoder.encode_action(view, entry['action'])), ACTION_DIM)
+        state2 = backend.apply_action(state, 'a', {'type': 'attack', 'character_id': 'bohe'})
+        self.assertEqual(len(encoder.encode_observation(backend.observe(state2, 'a'))), OBSERVATION_DIM)
 
     def test_engine_states_convert_to_public_replay(self):
         from app.modules.card_game.engine.duel_v2.replay_log import (

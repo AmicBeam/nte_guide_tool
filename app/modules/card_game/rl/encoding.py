@@ -3,19 +3,37 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Mapping, Sequence
 
-from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK
+from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECKS
 from app.modules.card_game.content.duel_v2.catalog import CARD_ID_ORDER
 
 from .contracts import ACTION_TYPES, PHASES, RULES_VERSION, SIDES
 
-FEATURE_VERSION = 'duel_v2_obs_v6'
-ACTION_FEATURE_VERSION = 'duel_v2_act_v3'
+FEATURE_VERSION = 'duel_v2_obs_v7'
+ACTION_FEATURE_VERSION = 'duel_v2_act_v4'
 ENCODER_VERSION = f'{FEATURE_VERSION}+{ACTION_FEATURE_VERSION}'
 
-# Encoder seats follow the current official 创生预组, not the expanded 11-character catalog.
-CHARACTER_IDS = tuple(STARTER_DECK['character_ids'])
-if len(CHARACTER_IDS) != 4 or any(character_id not in CHARACTERS for character_id in CHARACTER_IDS):
-    raise RuntimeError('RL encoder requires the official starter four characters')
+MIRROR_DECK_IDS = ('starter', 'weave-rush')
+
+
+def _mirror_character_ids() -> tuple[str, ...]:
+    ordered: list[str] = []
+    for deck_id in MIRROR_DECK_IDS:
+        preset = next((item for item in STARTER_DECKS if item.get('id') == deck_id), None)
+        if preset is None:
+            raise RuntimeError(f'RL encoder requires official preset {deck_id}')
+        for character_id in preset['character_ids']:
+            if character_id not in CHARACTERS:
+                raise RuntimeError(f'RL encoder seat {character_id} is not in the catalog')
+            if character_id not in ordered:
+                ordered.append(character_id)
+    if len(ordered) < 4:
+        raise RuntimeError('RL encoder requires the official starter and weave-rush seats')
+    return tuple(ordered)
+
+
+# Seats are the union of 创生预组 and 覆纹快攻. Mirror training still uses one preset
+# on both sides; missing seats are padded. Mixed matchups stay rejected in transfer.
+CHARACTER_IDS = _mirror_character_ids()
 CARD_IDS = tuple(
     card_id for card_id in CARD_ID_ORDER
     if CARDS[card_id].get('character_id') in CHARACTER_IDS
@@ -61,7 +79,7 @@ PENDING_KINDS = (
 EVENT_TYPES = (
     'turn', 'enter', 'move', 'play', 'shape', 'resource', 'redeem', 'revive',
     'finish', 'discard', 'gain', 'remove', 'reveal', 'effect', 'combat', 'flower',
-    'followup', 'fatigue', 'burn', 'star', 'penetration', 'unknown',
+    'followup', 'fatigue', 'burn', 'star', 'overlay', 'penetration', 'unknown',
     'mulligan',
     'attack',
     'play_card',
@@ -116,7 +134,7 @@ USED_KEYS = (
     'A07', 'C07', 'S07', 'S08', 'K08', 'H08', 'R07',
 )
 PUBLIC_CARD_WIDTH = 2 + len(CARD_IDS) + len(CHARACTER_IDS) * 2 + len(CARD_TYPES) + 4
-CHARACTER_WIDTH = 2 + 8 + len(FORM_CARD_IDS) + 1 + 2 + 7
+CHARACTER_WIDTH = 1 + len(ATTRIBUTES) + 8 + len(FORM_CARD_IDS) + 1 + 2 + 7
 RECORD_WIDTH = 1 + len(CARD_IDS) + len(CHARACTER_IDS) + len(CARD_TYPES)
 SIDE_WIDTH = 9 + 3 + len(CHARACTER_IDS) * 2 + len(USED_KEYS) + len(CHARACTER_IDS) * CHARACTER_WIDTH + HAND_SLOTS * PUBLIC_CARD_WIDTH + len(CARD_IDS) + RECORD_SLOTS * RECORD_WIDTH
 PENDING_WIDTH = 3 + len(PENDING_KINDS) + CHOICE_SLOTS * PUBLIC_CARD_WIDTH
@@ -375,6 +393,10 @@ def _public_card_vector(card: Mapping[str, Any] | None, *, hidden: bool, turn_co
     return vector
 
 
+def _empty_character_vector() -> list[float]:
+    return [0.0] * CHARACTER_WIDTH
+
+
 def _character_vector(character: Mapping[str, Any], front: str | None, turn_count: float = 0) -> list[float]:
     _require_keys(character, REQUIRED_CHARACTER_KEYS, 'character')
     character_id = _character_id(character['id'], 'character id')
@@ -385,7 +407,7 @@ def _character_vector(character: Mapping[str, Any], front: str | None, turn_coun
     if attribute != catalog['attribute']:
         raise ValueError(f'character {character_id} attribute mismatch')
     shape_id = _shape_card_id(character.get('shape_id', character.get('shape')))
-    vector: list[float] = []
+    vector: list[float] = [1.0]
     vector.extend(_one_hot(attribute, ATTRIBUTES, 'attribute', required=True))
     vector.append(_norm(character['attack'], MAX_ATTACK, 'attack'))
     vector.append(_norm(character['hp'], MAX_HP_CHARACTER, 'hp'))
@@ -451,19 +473,18 @@ def _discard_bag(cards: list[Any], label: str) -> list[float]:
 
 
 def _ordered_characters(characters: list[Any], front: str | None, side_id: str, turn_count: float = 0) -> list[list[float]]:
-    if len(characters) < len(CHARACTER_IDS):
-        raise ValueError(f'side {side_id} must expose {len(CHARACTER_IDS)} duel characters')
     by_id: dict[str, list[float]] = {}
     for character in characters:
         payload = _mapping(character, 'character')
         character_id = _character_id(payload.get('id'), 'character id')
+        if character_id not in CHARACTER_IDS:
+            raise ValueError(f'character {character_id} is not an encoder seat')
         if character_id in by_id:
             raise ValueError(f'Duplicate character in side {side_id}')
         by_id[character_id] = _character_vector(payload, front, turn_count)
-    missing = [character_id for character_id in CHARACTER_IDS if character_id not in by_id]
-    if missing:
-        raise ValueError(f'side {side_id} missing characters: {", ".join(missing)}')
-    return [by_id[character_id] for character_id in CHARACTER_IDS]
+    if len(by_id) != 4:
+        raise ValueError(f'side {side_id} must expose 4 duel characters')
+    return [by_id.get(character_id) or _empty_character_vector() for character_id in CHARACTER_IDS]
 
 
 def _hand_rows(hand: list[Any], *, viewer: bool, turn_count: float = 0) -> list[list[float]]:

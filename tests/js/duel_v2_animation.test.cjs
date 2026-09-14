@@ -584,6 +584,32 @@ function arrowsOf(harness) {
   return overlay ? overlay.querySelectorAll(".v2-fx-arrow") : [];
 }
 
+test("damage floater stays hidden and is removed after its animation finishes", async () => {
+  const harness = makeRoot();
+  const player = new Player({ root: harness.root, clock: harness.clock });
+  let finish;
+  player._animate = () => new Promise((resolve) => { finish = resolve; });
+  const node = player._floater({ x: 40, y: 40 }, { left: 0, top: 0 }, "-2", "damage");
+  assert.ok(node.parentNode);
+  assert.equal(node.style.opacity, "0", "base style must stay invisible when animation is cancelled");
+  finish();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(node.parentNode, null);
+});
+
+test("attack presentation does not announce damage numbers before damage packets", async () => {
+  const harness = makeRoot();
+  const player = new Player({ root: harness.root, clock: harness.clock });
+  const captions = [];
+  player._caption = (...args) => captions.push(args);
+  await settle(player.play([{ seq: 1, type: "attack", actor: "a:nanali", target: "b:zero",
+    attack: 4, counter: 2, text: "攻击 4，反击 2。" }], { instant: true }), harness.clock, player);
+  assert.deepEqual(captions, []);
+  assert.deepEqual(floatersOf(harness), []);
+});
+
 test("attack plus combat counter penetration is one strike with parallel damage", async () => {
   const harness = makeRoot();
   const order = [];
@@ -984,4 +1010,3 @@ test("turn start is patched before the following draw", async () => {
   ], { instant: true }), harness.clock, player);
   assert.deepEqual(order, ["turn", "draw", "resource"]);
 });
-

@@ -669,8 +669,6 @@
       const attackCount = Number(overlay.getAttribute("data-v2-fx-attack-count") || 0) + 1;
       overlay.setAttribute("data-v2-fx-attack-count", String(attackCount));
       overlay.setAttribute("data-v2-fx-last-attack", "1");
-      const attackValue = numericValue(event && (event.attack != null ? event.attack : event.amount));
-      this._caption(attackValue != null ? "出击 " + attackValue : "出击", event && event.text);
       this._impact(to, stageRect, "attack");
       if (actor) {
         actor.classList.add("v2-fx-lunge");
@@ -1304,11 +1302,15 @@
       overlay.setAttribute("data-v2-fx-floaters", seen ? seen + "|" + String(text) : String(text));
       const duration = this._duration(this._instant, 900);
       if (duration > 0) {
+        // Cancelling the finished Web Animation must not reveal the base element again.
+        node.style.opacity = "0";
         this._animate(node, [
           { transform: "translate(-50%, -50%) scale(0.8)", opacity: 0.2 },
           { transform: "translate(-50%, -120%) scale(1)", opacity: 1 },
           { transform: "translate(-50%, -160%) scale(1)", opacity: 0 },
-        ], duration).catch(noop);
+        ], duration).catch(noop).finally(() => {
+          if (node.parentNode) node.parentNode.removeChild(node);
+        });
       }
       return node;
     }

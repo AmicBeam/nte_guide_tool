@@ -604,11 +604,14 @@
       if (sourceCard && sourceCard.classList) {
         sourceCard.classList.add("v2-fx-source");
       }
-      const cardW = 300;
+      const mobile = typeof window !== "undefined" && typeof window.matchMedia === "function"
+        && window.matchMedia("(pointer: coarse) and (max-width: 1200px)").matches;
+      const cardW = mobile ? Math.min(220, stageRect.width * 0.3) : 300;
       node.style.width = cardW + "px";
       node.style.height = "auto";
       const measured = readRect(node);
-      const cardH = Math.max(430, (measured && measured.height) || 430);
+      const cardH = mobile ? Math.min(300, stageRect.height * 0.65)
+        : Math.max(430, (measured && measured.height) || 430);
       node.style.height = cardH + "px";
       const landing = this._playLanding(stageRect, cardW, cardH);
       const startScale = Math.max(0.1, Math.min(0.55, (fromRect.width || 18) / cardW));

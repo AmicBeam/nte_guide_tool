@@ -553,3 +553,20 @@
 .v2-fx-source {
   opacity: 0.28;
 }
+
+/* Revealed opponent plays must fit a phone's landscape viewport. */
+@media (pointer: coarse) and (max-width: 1200px) {
+  .v2-fx-play-card { min-height: 0; }
+  .v2-fx-play-card .v2-fx-card-front {
+    grid-template-rows: 64px auto auto auto minmax(0, 1fr);
+    align-content: start;
+    gap: 4px;
+    padding: 8px 10px;
+  }
+  .v2-fx-play-card .v2-fx-card-art { height: 64px; }
+  .v2-fx-play-card .v2-fx-card-name { font-size: 16px; }
+  .v2-fx-play-card .v2-fx-card-desc { font-size: 12px; line-height: 1.4; margin: 0; overflow-y: auto; min-height: 0; }
+  .v2-fx-play-card .v2-fx-card-type,
+  .v2-fx-play-card .v2-fx-card-owner,
+  .v2-fx-play-card .v2-fx-card-meta { font-size: 10px; }
+}

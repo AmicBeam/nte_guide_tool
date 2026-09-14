@@ -225,8 +225,9 @@
       });
       addFocusFrame(rect);
     });
+    const dismissed = ctx.tutorialModalDismissed === info.step_id;
     if (mask) {
-      const showMask = Boolean(info.mask) && Boolean(info.ack_required);
+      const showMask = Boolean(info.mask) && (Boolean(info.ack_required) || !dismissed);
       if (showMask) {
         mask.removeAttribute('hidden');
         paintMaskHoles(mask, holes);
@@ -241,7 +242,6 @@
     if (info.click_cue) {
       addClickCue(resolveNode(ctx, info.click_cue));
     }
-    const dismissed = ctx.tutorialModalDismissed === info.step_id;
     if (modal) {
       modal.className = 'v2-tutorial-modal placement-' + String(info.placement || 'bottom-right');
       if (!info.modal || dismissed) {
@@ -266,7 +266,7 @@
       }
     }
     if (cue) {
-      const hint = !info.ack_required ? String(info.cue || '').trim() : '';
+      const hint = !info.ack_required && dismissed ? String(info.cue || '').trim() : '';
       if (hint) {
         cue.textContent = hint;
         cue.removeAttribute('hidden');

@@ -1118,7 +1118,9 @@
         || this._safePortrait(sideOf(event) + ":" + ((card && card.character_id) || ""));
       const node = this._el("div", "v2-fx-draw-card");
       node.setAttribute("data-v2-fx-kind", generated ? "gain-generated" : (publicCard ? "draw-public" : "draw-hidden"));
-      const show = this._el("div", "v2-fx-card-front v2-fx-draw-formula");
+      const show = this._el("div", publicCard
+        ? "v2-fx-card-front v2-fx-draw-formula"
+        : "v2-fx-card-back v2-fx-draw-formula");
       if (card && card.type) {
         show.setAttribute("data-card-type", String(card.type));
         node.setAttribute("data-card-type", String(card.type));
@@ -1151,8 +1153,6 @@
         try {
           this.onPublicCard(card, event);
         } catch (_error) {}
-      } else {
-        show.classList.add("v2-fx-card-back");
       }
       const handFace = this._el("article", "v2-hand-card v2-fx-draw-hand");
       if (!publicCard || (generated && opponent)) {
@@ -1187,11 +1187,14 @@
       node.appendChild(handFace);
       overlay.appendChild(node);
       const stageRect = readRect(overlay) || { left: 0, top: 0, width: 800, height: 450, cx: 400, cy: 225 };
-      const cardW = 300;
+      const compactBack = !publicCard && typeof window !== "undefined" && typeof window.matchMedia === "function"
+        && window.matchMedia("(pointer: coarse) and (max-width: 1200px)").matches;
+      const cardW = compactBack ? Math.min(160, stageRect.width * 0.22) : 300;
       node.style.width = cardW + "px";
       node.style.height = "auto";
       const measured = readRect(node);
-      const cardH = Math.max(430, (measured && measured.height) || 430);
+      const cardH = compactBack ? Math.min(230, stageRect.height * 0.5)
+        : Math.max(430, (measured && measured.height) || 430);
       node.style.height = cardH + "px";
       const slot = this._drawSlotRect(event, stageRect);
       const slotLeft = slot.left - stageRect.left;

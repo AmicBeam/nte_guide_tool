@@ -217,7 +217,7 @@
   transform-origin: top center;
 }
 
-.v2-fx-card-front.v2-fx-draw-formula {
+.v2-fx-draw-formula {
   position: relative;
   inset: auto;
   transform: none;
@@ -569,4 +569,12 @@
   .v2-fx-play-card .v2-fx-card-type,
   .v2-fx-play-card .v2-fx-card-owner,
   .v2-fx-play-card .v2-fx-card-meta { font-size: 10px; }
+}
+
+.v2-fx-card-back.v2-fx-draw-formula {
+  background: url("/static/images/cards/card-back.svg") center / cover;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  border-radius: calc(14px * var(--table-layout-scale, 1));
 }

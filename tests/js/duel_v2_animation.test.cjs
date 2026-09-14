@@ -1132,3 +1132,17 @@ test("discard events update state without notices", async () => {
   assert.deepEqual(patches, [601]);
   assert.deepEqual(notices, []);
 });
+
+test("hidden opponent draw uses only the card back during close-up", async () => {
+  const harness = makeRoot();
+  const player = new Player({ root: harness.root, clock: harness.clock });
+  const done = player.play([{ seq: 990, type: "draw", side: "b", actor: "b:player", card: { hidden: true } }]);
+  await Promise.resolve();
+  await Promise.resolve();
+  const formula = overlayOf(harness).querySelector(".v2-fx-draw-formula");
+  assert.ok(formula.classList.contains("v2-fx-card-back"));
+  assert.equal(formula.classList.contains("v2-fx-card-front"), false);
+  assert.equal(formula.querySelector(".v2-fx-card-name"), null);
+  assert.equal(formula.querySelector(".v2-fx-card-portrait"), null);
+  await settle(done, harness.clock, player);
+});

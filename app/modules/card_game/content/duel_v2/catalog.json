@@ -2037,7 +2037,7 @@
       },
       "starter_copies": 0,
       "attack": 3,
-      "hp": 8
+      "hp": 7
     },
     {
       "id": "B08",
@@ -2055,7 +2055,7 @@
       },
       "starter_copies": 2,
       "attack": 3,
-      "hp": 10
+      "hp": 9
     }
   ],
   "starter_decks": [

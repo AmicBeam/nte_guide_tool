@@ -891,8 +891,8 @@ class DuelV2EngineTest(unittest.TestCase):
         atk = attack_value(hero(s, 'a', 'baicang'))
         s = self.play(s, 'B08')
         self.assertEqual(hero(s, 'a', 'baicang')['shape'], 'B08')
-        self.assertEqual(hero(s, 'a', 'baicang')['max_hp'], 10)
-        self.assertEqual(hero(s, 'a', 'baicang')['hp'], 6)
+        self.assertEqual(hero(s, 'a', 'baicang')['max_hp'], 9)
+        self.assertEqual(hero(s, 'a', 'baicang')['hp'], 5)
         self.assertGreaterEqual(attack_value(hero(s, 'a', 'baicang')), atk + 1)
 
     def test_baicang_stacks_attack_from_combat_and_self_damage(self):

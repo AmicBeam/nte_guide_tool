@@ -14,6 +14,9 @@
     if (raw === 'end_turn') {
       return ctx.nodes.endTurnBtn;
     }
+    if (raw === 'play_area') {
+      return ctx.nodes.playArea;
+    }
     if (raw === 'turn') {
       return ctx.nodes.waitChip || ctx.nodes.turnCopy || ctx.nodes.roundLabel;
     }

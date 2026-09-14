@@ -270,11 +270,11 @@ _L01_STEPS = [
         'mask': True,
         'placement': 'bottom-right',
         'spotlights': [
-            'character:a:tutorial_protagonist', 'zone:b:front', 'player_hp:b',
+            'character:a:tutorial_protagonist', 'play_area',
         ],
         'drag_arrow': {
             'from': 'character:a:tutorial_protagonist',
-            'to': 'zone:b:front',
+            'to': 'play_area',
         },
         'modal': {
             'title': '把异能者拖进战斗区',
@@ -372,10 +372,10 @@ _L01_STEPS = [
         'ack_required': False,
         'mask': True,
         'placement': 'bottom-right',
-        'spotlights': ['character:a:tutorial_bohe', 'zone:b:front', 'player_hp:b'],
+        'spotlights': ['character:a:tutorial_bohe', 'play_area'],
         'drag_arrow': {
             'from': 'character:a:tutorial_bohe',
-            'to': 'zone:b:front',
+            'to': 'play_area',
         },
         'modal': {
             'title': '空前排打玩家生命',

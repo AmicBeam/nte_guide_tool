@@ -1,5 +1,4 @@
 import copy
-import json
 import re
 import unittest
 from pathlib import Path
@@ -23,8 +22,6 @@ from app.modules.card_game.content.duel_v2.catalog import (
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC_ROOT = ROOT / 'app' / 'static'
-APPROVED_ROWS_PATH = Path('/private/tmp/nte-duel-v2-impl-20260909/approved-card-rows.json')
-CORE_DIR = Path('/private/tmp/nte-duel-manual-20260909')
 
 STARTER_CHARACTERS = ('nanali', 'iloy', 'zero', 'jiuyuan')
 ATTRIBUTE_ORDER = ('光', '灵', '相', '暗', '咒', '魂')
@@ -38,14 +35,6 @@ STATIC_FILES = {
     'bohe': ('images/characters/avatar/薄荷.webp', 'images/characters/portrait/薄荷.webp'),
     'baicang': ('images/characters/avatar/白藏.webp', 'images/characters/portrait/白藏.webp'),
 }
-
-
-def _approved_rows() -> list[dict]:
-    return json.loads(APPROVED_ROWS_PATH.read_text(encoding='utf-8'))
-
-
-def _core(name: str) -> dict:
-    return json.loads((CORE_DIR / name).read_text(encoding='utf-8'))['character']
 
 
 class DuelV2CatalogTest(unittest.TestCase):
@@ -226,32 +215,17 @@ class DuelV2CatalogTest(unittest.TestCase):
                 self.assertEqual(card_07['source']['type'], 'ability', character_id)
             else:
                 self.assertEqual(card_07['source']['type'], 'pv', character_id)
-        if APPROVED_ROWS_PATH.is_file():
-            approved = {row['id']: row for row in _approved_rows()}
-            for card_id, row in approved.items():
-                card = CARDS[card_id]
-                self.assertEqual(card['name'], row['name'])
 
-    def test_source_keeps_everness_awaken_and_arc_ability_slots(self) -> None:
-        if not CORE_DIR.is_dir():
-            self.skipTest('everness core snapshot not present')
-        cores = {
-            'nanali': _core('nanali-core.json'),
-            'zero': _core('zero-core.json'),
-            'jiuyuan': _core('jiuyuan-core.json'),
-            'xun': _core('xun-core.json'),
-        }
+    def test_source_metadata_keeps_character_ids_and_naming_slots(self) -> None:
+        # Offline metadata contract; official-name verification belongs to the
+        # source review documented in docs/everness-item-chain-card-design.md.
         expected_ids = {'nanali': 1010, 'zero': 1051, 'jiuyuan': 1055, 'xun': 1052}
         for character_id, prefix in CARD_PREFIXES.items():
-            core = cores[character_id]
-            self.assertEqual(len(core['awaken']), 6)
-            self.assertEqual(len(core['resonance']), 2)
             for index in range(1, 7):
                 card = CARDS[f'{prefix}{index:02d}']
                 self.assertEqual(card['source']['character_id'], expected_ids[character_id])
                 self.assertEqual(card['source']['type'], 'awaken')
                 self.assertEqual(card['source']['index'], index)
-                self.assertEqual(card['name'], core['awaken'][index - 1]['name'])
             card_07 = CARDS[f'{prefix}07']
             card_08 = CARDS[f'{prefix}08']
             self.assertEqual(card_07['source']['character_id'], expected_ids[character_id])

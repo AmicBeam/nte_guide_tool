@@ -330,7 +330,7 @@
     const title = reason ? ' title="' + V2.escapeAttr(reason) + '"' : '';
     const label = (card.name || '卡牌') + (reason ? '，' + reason : '');
     return (
-      '<article class="' + classes.join(' ') + '" draggable="false" data-card-id="' + V2.escapeAttr(card.instance_id) + '" data-drag-kind="card" data-card-type="' + V2.escapeAttr(card.type || '') + '"' + instanceAttr + style + title + ' aria-label="' + V2.escapeAttr(label) + '">' +
+      '<article class="' + classes.join(' ') + '" draggable="false" data-card-id="' + V2.escapeAttr(card.instance_id) + '" data-drag-kind="card" data-card-owner="' + V2.escapeAttr(card.character_id || '') + '" data-card-type="' + V2.escapeAttr(card.type || '') + '"' + instanceAttr + style + title + ' aria-label="' + V2.escapeAttr(label) + '">' +
         (card.copy ? '<span class="v2-chip copy">复制</span>' : '') +
         (card.derived ? '<span class="v2-chip">不可构筑</span>' : '') +
         '<strong>' + V2.escapeHtml(card.name || '卡牌') + '</strong>' +
@@ -394,6 +394,9 @@
     const mine = TABLE.sideState(ctx.game, ctx.viewer);
     const theirs = TABLE.sideState(ctx.game, ctx.opponent);
     const myHand = TABLE.sortHandCards(Array.isArray(mine.hand) ? mine.hand : [], mine);
+    if (ctx.nodes.playerHand && ctx.nodes.playerHand.setAttribute) {
+      ctx.nodes.playerHand.setAttribute('data-character-order', JSON.stringify((mine.characters || []).map(function (item) { return item.id; })));
+    }
     const selected = {};
     (ctx.mulliganIds || []).forEach(function (id) { selected[id] = true; });
     const inMulligan = ctx.showMulligan != null

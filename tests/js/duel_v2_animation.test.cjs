@@ -1096,3 +1096,27 @@ test("generated and copied cards appear centrally before entering either hand", 
     }
   }
 });
+
+test("draw lands after its owner group or before the next owner group", () => {
+  const harness = makeRoot();
+  harness.handA.setAttribute("data-character-order", JSON.stringify(["zero", "nanali", "jiuyuan", "iloy"]));
+  function add(owner, id, left) {
+    const node = harness.documentRef.createElement("article");
+    node.classList.add("v2-hand-card");
+    node.setAttribute("data-card-owner", owner);
+    node.setAttribute("data-instance-id", id);
+    place(node, left, 360, 100, 108);
+    harness.handA.appendChild(node);
+    return node;
+  }
+  add("nanali", "n1", 100);
+  add("nanali", "n2", 208);
+  add("iloy", "i1", 330);
+  const player = new Player({ root: harness.root, clock: harness.clock, applyPatch() {} });
+  const slot = (owner, id = "new") => player._drawSlotRect({ side: "a", card: { ...publicCard(), character_id: owner, instance_id: id } }, {});
+  assert.equal(slot("nanali").left, 316, "append to own group, not the final iloy card");
+  assert.equal(slot("zero").left, 100, "new first group inserts before existing cards");
+  assert.equal(slot("jiuyuan").left, 330, "new middle group inserts before later owner");
+  assert.equal(slot("iloy").left, 438);
+  assert.equal(slot("nanali", "n2").left, 208, "an existing instance uses its own slot");
+});

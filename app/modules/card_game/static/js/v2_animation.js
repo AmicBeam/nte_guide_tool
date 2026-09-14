@@ -1006,6 +1006,8 @@
       const hand = this._hand(sideOf(event));
       const card = event && event.card;
       let slot = null;
+      let insertBefore = false;
+      let existing = false;
       if (hand && typeof hand.querySelector === "function") {
         if (card && card.instance_id) {
           try {
@@ -1013,11 +1015,24 @@
               || hand.querySelector('[data-card-id="' + cssEscape(card.instance_id) + '"]');
           } catch (_error) {}
         }
+        existing = Boolean(slot);
         if (!slot && typeof hand.querySelectorAll === "function") {
           const cards = Array.from(hand.querySelectorAll(".v2-hand-card") || []);
           const backs = Array.from(hand.querySelectorAll(".v2-hidden-card") || []);
           const nodes = cards.concat(backs);
-          slot = nodes.length ? nodes[nodes.length - 1] : null;
+          const owner = card && card.character_id;
+          const owned = owner ? cards.filter((node) => node.getAttribute("data-card-owner") === owner) : [];
+          slot = owned.length ? owned[owned.length - 1] : null;
+          if (!slot && owner) {
+            let order = [];
+            try { order = JSON.parse(hand.getAttribute("data-character-order") || "[]"); } catch (_error) {}
+            const ownerIndex = order.indexOf(owner);
+            if (ownerIndex >= 0) {
+              slot = cards.find((node) => order.indexOf(node.getAttribute("data-card-owner")) > ownerIndex) || null;
+              insertBefore = Boolean(slot);
+            }
+          }
+          if (!slot) slot = nodes.length ? nodes[nodes.length - 1] : null;
         }
       }
       const slotRect = readRect(slot);
@@ -1028,7 +1043,7 @@
       const width = (usable(slotRect) && slotRect.width) || (hasPublicCard(event && event.card) ? 148 : 22);
       const height = (usable(slotRect) && slotRect.height) || (hasPublicCard(event && event.card) ? 108 : 32);
       if (usable(slotRect)) {
-        const left = slotRect.right + 8;
+        const left = existing || insertBefore ? slotRect.left : slotRect.right + 8;
         return {
           left: left,
           top: slotRect.top,

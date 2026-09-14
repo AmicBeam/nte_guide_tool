@@ -18,7 +18,7 @@
             <a href="{{ url_for('main.replays_page') }}">回放</a>
         </nav>
         <div class="v2-home-account">
-            <p class="subtle" id="v2-codex-summary">角色、被动与八种卡牌。</p>
+            <button class="v2-codex-help" id="v2-codex-help" type="button" aria-label="查看机制词表" aria-haspopup="dialog" aria-controls="v2-codex-glossary" title="机制词表">?</button>
         </div>
     </header>
     <section class="v2-banner" id="v2-codex-banner" hidden></section>
@@ -29,6 +29,7 @@
         </div>
     </section>
 </main>
+{% include 'card_game/v2_codex_glossary.html' %}
 <script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_codex.js') }}"></script>

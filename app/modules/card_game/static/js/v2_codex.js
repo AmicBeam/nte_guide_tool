@@ -1,5 +1,44 @@
 const V2 = window.NTE_V2;
 
+const glossary = document.getElementById('v2-codex-glossary');
+const glossaryHelp = document.getElementById('v2-codex-help');
+const glossarySearch = document.getElementById('v2-glossary-search');
+const glossaryEntries = Array.from(glossary.querySelectorAll('article'));
+
+glossaryHelp.addEventListener('click', function () {
+  glossary.showModal();
+  glossarySearch.focus();
+});
+document.getElementById('v2-glossary-close').addEventListener('click', function () {
+  glossary.close();
+});
+glossary.addEventListener('keydown', function (event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    glossary.close();
+  }
+});
+glossary.addEventListener('click', function (event) {
+  const rect = glossary.getBoundingClientRect();
+  if (event.target === glossary && (event.clientX < rect.left || event.clientX > rect.right ||
+      event.clientY < rect.top || event.clientY > rect.bottom)) {
+    glossary.close();
+  }
+});
+glossary.addEventListener('close', function () {
+  glossaryHelp.focus();
+});
+glossarySearch.addEventListener('input', function () {
+  const query = glossarySearch.value.trim().toLocaleLowerCase();
+  glossaryEntries.forEach(function (entry) {
+    entry.hidden = !entry.textContent.toLocaleLowerCase().includes(query);
+  });
+  glossary.querySelectorAll('[data-glossary-group]').forEach(function (group) {
+    group.hidden = !Array.from(group.querySelectorAll('article')).some(function (entry) { return !entry.hidden; });
+  });
+  document.getElementById('v2-glossary-empty').hidden = glossaryEntries.some(function (entry) { return !entry.hidden; });
+});
+
 if (V2.ensureLogin()) {
   bootstrapCodex();
 }
@@ -8,7 +47,6 @@ async function bootstrapCodex() {
   const banner = document.getElementById('v2-codex-banner');
   const nav = document.getElementById('v2-codex-nav');
   const body = document.getElementById('v2-codex-body');
-  const summary = document.getElementById('v2-codex-summary');
   let catalog = null;
   let selectedId = 'nanali';
 
@@ -61,7 +99,6 @@ async function bootstrapCodex() {
         );
       }).join('') + '</section>'
     );
-    if (summary) summary.textContent = character.name + ' · 八种卡牌';
   }
 
   nav.addEventListener('click', function (event) {

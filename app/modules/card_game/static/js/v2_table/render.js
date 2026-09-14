@@ -132,10 +132,14 @@
         '<div class="v2-character-note"><span title="' + V2.escapeAttr(note) + '">' + V2.escapeHtml(note) + '</span>' + actions.join('') + '</div>' +
       '</div>';
     if (prevPanel && prevPanel !== panelSig) {
-      const statsNode = node.querySelector('.v2-character-stats');
-      if (statsNode) {
-        statsNode.classList.add('v2-stat-pop');
-      }
+      const previous = prevPanel.split('|');
+      const current = panelSig.split('|');
+      [['.is-atk', 0], ['.is-hp', 1], ['.is-shield', 2], ['.harmony', 3], ['.energy', 4]].forEach(function (stat) {
+        if (previous[stat[1]] === current[stat[1]]) return;
+        node.querySelectorAll(stat[0]).forEach(function (badge) {
+          badge.classList.add('v2-stat-pop');
+        });
+      });
     }
     return node;
   }

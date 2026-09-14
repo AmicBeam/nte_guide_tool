@@ -450,10 +450,6 @@
           } catch (_error) {}
           return;
         }
-        if (kind === "resource") {
-          await this._presentFloater(event, instant, "growth", event && event.text ? event.text : "资源");
-          return;
-        }
         if (kind === "play") {
           if (this._isOpponentPlay(event) || this.options.presentOwnPlays) {
             await this._presentPlay(event, instant);
@@ -916,6 +912,9 @@
 
     _isSilent(event) {
       if (!event) {
+        return true;
+      }
+      if (event.type === "resource") {
         return true;
       }
       if (event.present === false) {

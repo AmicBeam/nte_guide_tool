@@ -89,7 +89,7 @@ TUTORIAL_CARDS = {
     'tutorial_z08': {
         'id': 'tutorial_z08', 'card_id': 'tutorial_z08', 'character_id': 'tutorial_protagonist',
         'name': '倾世之雨', 'type': 'form', 'cost': 1, 'terminal': False,
-        'description': '', 'effect_id': 'tutorial_z08', 'attack': 3, 'hp': 6,
+        'description': '这一张武备牌。', 'effect_id': 'tutorial_z08', 'attack': 3, 'hp': 6,
         'source': {'character_id': 'tutorial_protagonist', 'type': 'tutorial', 'index': 8},
         'tutorial_only': True,
     },
@@ -472,7 +472,7 @@ _L06_STEPS = [
          '武备牌花费 1 点行动力，给所属异能者换上一套新的攻击和生命。普通离场会保留武备；倒地会卸下武备，面板回到基础值。',
          ['hand:a-1', 'character:a:tutorial_protagonist']),
     _act('l06_play', '装备武备',
-         '把武备拖到主角或对战区。主角的攻击和生命会刷新成武备上的数值。',
+         '把这一张武备牌拖到主角或对战区。主角的攻击和生命会刷新成武备上的数值。',
          ['hand:a-1', 'character:a:tutorial_protagonist'],
          [{'type': 'play_card'}],
          cue='把武备拖到主角身上', primary='拖动卡牌',

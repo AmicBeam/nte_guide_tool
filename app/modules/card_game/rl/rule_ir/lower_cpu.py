@@ -44,22 +44,26 @@ def _eval(expr, env: dict[str, torch.Tensor]) -> torch.Tensor:
     raise ValueError(f'cannot lower {type(expr).__name__}')
 
 
-def _aliases(x: torch.Tensor, side: int) -> dict[str, torch.Tensor]:
-    env = {name: x[:, FIELD_INDEX[name]] for name in FIELDS}
+def _aliases(x: torch.Tensor, side: int, fields=FIELDS, aliases=SIDE_ALIASES) -> dict[str, torch.Tensor]:
+    field_index = {name: i for i, name in enumerate(fields)}
+    env = {name: x[:, field_index[name]] for name in fields}
     pick = 2 if side else 1
-    for alias, a_name, b_name in SIDE_ALIASES:
-        env[alias] = x[:, FIELD_INDEX[a_name if pick == 1 else b_name]]
+    for alias, a_name, b_name in aliases:
+        env[alias] = x[:, field_index[a_name if pick == 1 else b_name]]
     env['side'] = torch.full((x.shape[0],), side, dtype=torch.int32, device=x.device)
     return env
 
 
 def lower_cpu(program: Program):
     validate(program)
+    fields = program.fields or FIELDS
+    field_index = {name: i for i, name in enumerate(fields)}
+    aliases = program.aliases if program.aliases is not None else SIDE_ALIASES
 
     def step(x: torch.Tensor, side: int) -> torch.Tensor:
-        if x.ndim != 2 or x.shape[1] != N_FIELDS:
-            raise ValueError(f'expected [N,{N_FIELDS}] state')
-        env = _aliases(x, side)
+        if x.ndim != 2 or x.shape[1] != len(fields):
+            raise ValueError(f'expected [N,{len(fields)}] state')
+        env = _aliases(x, side, fields, aliases)
         skip = _eval(program.skip_when, env).bool()
         live = ~skip
         for bind in program.binds:
@@ -67,11 +71,11 @@ def lower_cpu(program: Program):
         y = x.clone()
         for store in program.stores:
             value = _eval(store.expr, env)
-            if store.field in FIELD_INDEX:
-                idx = FIELD_INDEX[store.field]
+            if store.field in field_index:
+                idx = field_index[store.field]
             else:
-                a_name, b_name = next((a, b) for alias, a, b in SIDE_ALIASES if alias == store.field)
-                idx = FIELD_INDEX[a_name if side == 0 else b_name]
+                a_name, b_name = next((a, b) for alias, a, b in aliases if alias == store.field)
+                idx = field_index[a_name if side == 0 else b_name]
             y[:, idx] = torch.where(live, value, x[:, idx])
         return y
 

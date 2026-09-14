@@ -70,6 +70,8 @@ class Program:
     skip_when: Expr
     binds: tuple[Bind, ...]
     stores: tuple[Store, ...]
+    fields: tuple[str, ...] | None = None
+    aliases: tuple[tuple[str, str, str], ...] | None = None
 
 
 ALLOWED_BIN = frozenset({'add', 'sub', 'min', 'max', 'and', 'or'})
@@ -80,7 +82,20 @@ def validate(program: Program) -> None:
     from .schema import FIELDS, SIDE_ALIASES
     if program.skip_when is None or not program.binds or not program.stores:
         raise ValueError('IR program is empty')
-    aliases = {alias for alias, _a, _b in SIDE_ALIASES}
+    FIELDS = program.fields or FIELDS
+    SIDE_ALIASES = program.aliases if program.aliases is not None else SIDE_ALIASES
+    import re
+    identifiers = [program.name, *FIELDS, *(a for a, _, _ in SIDE_ALIASES), *(b.name for b in program.binds)]
+    if any(not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name) for name in identifiers):
+        raise ValueError('IR identifiers must be valid code-generation symbols')
+    if len(set(FIELDS)) != len(FIELDS) or 'side' in FIELDS:
+        raise ValueError('IR layout has duplicate or reserved fields')
+    if any(a not in FIELDS or b not in FIELDS for _, a, b in SIDE_ALIASES):
+        raise ValueError('IR alias targets an unknown field')
+    alias_names = [alias for alias, _, _ in SIDE_ALIASES]
+    if len(set(alias_names)) != len(alias_names) or set(alias_names) & (set(FIELDS) | {'side'}):
+        raise ValueError('IR alias conflicts with layout')
+    aliases = set(alias_names)
     seen = {'side'} | set(FIELDS) | aliases
     _check_expr(program.skip_when, seen)
     for bind in program.binds:

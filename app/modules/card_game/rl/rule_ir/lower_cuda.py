@@ -38,27 +38,31 @@ def _c_expr(expr) -> str:
 def emit_cuda(program: Program) -> str:
     """Emit a multi-step kernel with the same launch shape as the experimental handwritten slice."""
     validate(program)
-    reload = [f'   int {name}=x[{idx}];' for name, idx in FIELD_INDEX.items()]
-    for alias, a_name, b_name in SIDE_ALIASES:
-        ia, ib = FIELD_INDEX[a_name], FIELD_INDEX[b_name]
+    fields = program.fields or FIELDS
+    field_index = {name: i for i, name in enumerate(fields)}
+    aliases = program.aliases if program.aliases is not None else SIDE_ALIASES
+    n_fields = len(fields)
+    reload = [f'   int {name}=x[{idx}];' for name, idx in field_index.items()]
+    for alias, a_name, b_name in aliases:
+        ia, ib = field_index[a_name], field_index[b_name]
         reload.append(f'   int {alias}=side?x[{ib}]:x[{ia}];')
     binds = [f'   int {bind.name}={_c_expr(bind.expr)};' for bind in program.binds]
     stores = []
     for store in program.stores:
-        if store.field in FIELD_INDEX:
-            idx = str(FIELD_INDEX[store.field])
+        if store.field in field_index:
+            idx = str(field_index[store.field])
         else:
-            a_name, b_name = next((a, b) for alias, a, b in SIDE_ALIASES if alias == store.field)
-            idx = f'(side?{FIELD_INDEX[b_name]}:{FIELD_INDEX[a_name]})'
+            a_name, b_name = next((a, b) for alias, a, b in aliases if alias == store.field)
+            idx = f'(side?{field_index[b_name]}:{field_index[a_name]})'
         stores.append(f'   x[{idx}]={_c_expr(store.expr)};')
     skip = _c_expr(program.skip_when)
     return '\n'.join([
         f'extern "C" __global__ void {program.name}(const int* input, int* output, int n, int steps) {{',
         ' int row=blockIdx.x*blockDim.x+threadIdx.x;',
         ' if(row>=n)return;',
-        f' int x[{N_FIELDS}];',
+        f' int x[{n_fields}];',
         ' #pragma unroll',
-        f' for(int j=0;j<{N_FIELDS};j++)x[j]=input[row*{N_FIELDS}+j];',
+        f' for(int j=0;j<{n_fields};j++)x[j]=input[row*{n_fields}+j];',
         ' for(int k=0;k<steps;k++){',
         '  int side=k%2;',
         *reload,
@@ -67,7 +71,7 @@ def emit_cuda(program: Program) -> str:
         *stores,
         ' }',
         ' #pragma unroll',
-        f' for(int j=0;j<{N_FIELDS};j++)output[row*{N_FIELDS}+j]=x[j];',
+        f' for(int j=0;j<{n_fields};j++)output[row*{n_fields}+j]=x[j];',
         '}',
     ])
 

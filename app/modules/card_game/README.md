@@ -53,6 +53,8 @@
 
 ## 验证
 
+显式共享规则编译试点及未提速结论见 [双后端试验报告](../../../docs/duel-v2-compiled-executor-trial.md)。
+
 张量训练的 CPU 批量优化与等价验收见 [CPU 优化报告](../../../docs/duel-v2-cpu-batch-optimization.md)。
 
 张量训练的终局、批次屏蔽和短训验收见 [训练转移修复](../../../docs/duel-v2-gpu-transition-fix.md)。

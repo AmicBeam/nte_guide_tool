@@ -3,10 +3,11 @@ from __future__ import annotations
 
 from .ast import Program, validate
 from .combat_slice import COMBAT_SLICE
-from .lower_cpu import lower_cpu
 
 
 def compile_program(program: Program | None = None, *, cuda: bool = False):
+    from .lower_cpu import lower_cpu
+
     program = program or COMBAT_SLICE
     validate(program)
     cpu = lower_cpu(program)

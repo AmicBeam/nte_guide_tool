@@ -454,3 +454,75 @@ body:has(.v2-build-page) .shell {
   .v2-roster-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .v2-build-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Phones use CSS viewport dimensions; DPR must not scale the layout. */
+@media (max-width: 980px), (pointer: coarse) and (max-height: 600px) {
+  body:has(.v2-build-page) {
+    height: auto;
+    overflow: auto;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body:has(.v2-build-page) .shell,
+  .v2-build-page {
+    height: auto;
+    min-height: 100dvh;
+    max-height: none;
+    overflow: visible;
+  }
+  .v2-build-page { grid-template-rows: auto auto; }
+  .v2-build-page .v2-home-nav {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 16px;
+    padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+  }
+  .v2-build-page .v2-home-links { justify-content: flex-end; }
+  .v2-build-page .v2-home-account {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .v2-build-summary-bar { margin-right: auto; justify-items: start; }
+  .v2-build-summary-bar p { white-space: normal; text-align: left; }
+  .v2-build-page #v2-build-name { width: min(240px, 44vw); font-size: 16px; }
+  .v2-build-stage {
+    grid-template-rows: auto auto auto;
+    padding: 10px max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+  .v2-build-toolbar { grid-row: 1; }
+  .v2-build-team { grid-row: 2; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .v2-build-board { grid-row: 3; grid-template-columns: 1fr; overflow: visible; }
+  .v2-build-focus { display: none; }
+  .v2-build-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: none;
+    grid-auto-rows: minmax(200px, auto);
+    gap: 10px;
+  }
+  .v2-build-card { grid-template-rows: minmax(0, 1fr) auto; }
+  .v2-build-card-body { padding: 12px 10px 8px; }
+  .v2-build-card h3 { padding-right: 30px; }
+  .v2-build-card p { overflow: visible; }
+  .v2-build-card-foot { flex-wrap: wrap; padding: 8px; }
+  .v2-team-slot { grid-template-columns: 64px minmax(0, 1fr); min-height: 92px; }
+  .v2-team-art { width: 64px; height: 100%; aspect-ratio: auto; }
+  .v2-team-meta { padding: 6px; }
+  .v2-build-page button { min-height: 44px; }
+  .v2-build-page .v2-stepper button { width: 44px; min-width: 44px; }
+  .v2-team-change { padding: 4px; }
+  .v2-build-gallery { position: fixed; inset: 12px; }
+  .v2-build-page .v2-banner { position: fixed; width: min(360px, calc(100vw - 24px)); }
+}
+
+@media (max-width: 600px) {
+  .v2-build-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .v2-build-team { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .v2-build-page .v2-home-nav { column-gap: 6px; }
+  .v2-build-page .v2-home-links { gap: 0; }
+  .v2-build-page .v2-home-links a { padding: 10px 8px; }
+  .v2-build-page .v2-home-logo { width: 100px; }
+  .v2-build-page .v2-home-account { gap: 6px; }
+  .v2-build-page .v2-home-account button { padding: 8px 10px; }
+  .v2-build-summary-bar { flex: 1 0 100%; }
+  .v2-roster-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

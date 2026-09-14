@@ -236,8 +236,12 @@ def legal_actions(state, side=None):
         if side in state['mulligan_done']:
             return result
         ids = [c['instance_id'] for c in state['sides'][side]['hand']]
-        return result + [{'type': 'mulligan', 'card_ids': list(group)}
-                         for size in range(min(3, len(ids)) + 1) for group in combinations(ids, size)]
+        result = result + [{'type': 'mulligan', 'card_ids': list(group)}
+                           for size in range(min(3, len(ids)) + 1) for group in combinations(ids, size)]
+        from .tutorial import filter_legal_actions, is_tutorial
+        if is_tutorial(state):
+            return filter_legal_actions(state, side, result)
+        return result
     if side != acting_side(state):
         return result
     if phase == 'choice':
@@ -279,7 +283,8 @@ def legal_actions(state, side=None):
 
 
 def ultimate_spec(cid):
-    spec = (CHARACTERS.get(cid) or {}).get('ultimate') or {}
+    from app.modules.card_game.content.duel_v2.tutorial import lookup_character
+    spec = (lookup_character(cid) or {}).get('ultimate') or {}
     kind = spec.get('kind') or 'status'
     if kind not in ('status', 'instant'):
         kind = 'status'
@@ -288,6 +293,7 @@ def ultimate_spec(cid):
 
 
 def start_ultimate(state, side, cid, *, spent_ap=False):
+    from app.modules.card_game.content.duel_v2.tutorial import lookup_character
     h = hero(state, side, cid)
     spec = ultimate_spec(cid)
     team = state['sides'][side]
@@ -304,7 +310,7 @@ def start_ultimate(state, side, cid, *, spent_ap=False):
         text = f"{h['name']}消耗满槽能量，发动终结（持续 {spec['turns']} 个己方回合）。"
     log(state, text, 'ultimate', side=side, source=h['id'], actor=f'{side}:{h["id"]}',
         target=f'{side}:{h["id"]}',
-        description=CHARACTERS.get(cid, {}).get('awakened_passive') or '',
+        description=(lookup_character(cid) or {}).get('awakened_passive') or '',
         before=before,
         after={'energy': 0, 'awakened': h['awakened'], 'ultimate_turns': h['ultimate_turns'], 'ap': team['ap']})
     fire(EffectContext(state, side, cid, {'side': side}), 'on_ultimate', actor_only=True)

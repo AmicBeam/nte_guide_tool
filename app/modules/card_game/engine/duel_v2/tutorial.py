@@ -50,7 +50,7 @@ def new_tutorial_game(scenario_id, seed=0):
         'events': [],
         'pending_choice': None,
         'operation': None,
-        'mulligan_done': list(SIDES),
+        'mulligan_done': [],
         'current_action_id': 'setup',
         'current_action_version': 0,
         'combat_group': 0,
@@ -76,7 +76,7 @@ def new_tutorial_game(scenario_id, seed=0):
             'ap': 0,
             'normal_attack_available': False,
             'ultimate_available': False,
-            'front': None,
+            'front': scenario.get(f'front_{side}'),
             'last_front': None,
             'order': list(order),
             'characters': {cid: new_character(cid) for cid in order},
@@ -93,14 +93,45 @@ def new_tutorial_game(scenario_id, seed=0):
             'extra_delay': False,
             'front_debuff': {},
         }
+        for cid, stats in (scenario.get('stats') or {}).items():
+            hero = state['sides'][side]['characters'].get(cid)
+            if not hero or not isinstance(stats, dict):
+                continue
+            if 'attack' in stats:
+                hero['attack'] = int(stats['attack'])
+                hero['base_attack'] = int(stats['attack'])
+            if 'hp' in stats:
+                hero['hp'] = int(stats['hp'])
+            if 'max_hp' in stats:
+                hero['max_hp'] = int(stats['max_hp'])
+                hero['base_max_hp'] = int(stats['max_hp'])
+            if 'energy' in stats:
+                hero['energy'] = int(stats['energy'])
+            if 'harmony' in stats:
+                hero['harmony'] = int(stats['harmony'])
         for card_id in scenario.get(f'hand_{side}') or []:
             state['sides'][side]['hand'].append(card_instance(state, card_id, side))
         for card_id in scenario.get(f'deck_{side}') or []:
             state['sides'][side]['deck'].append(card_instance(state, card_id, side))
         if not flags.get('fixed_rng'):
             shuffle(state, state['sides'][side]['deck'])
+        opening_draw = int(flags.get('opening_draw') or 0)
+        if opening_draw:
+            from .state import draw
+            draw(state, side, opening_draw)
     from .flow import begin_turn
-    begin_turn(state, first_side)
+    skip_mulligan = flags.get('skip_mulligan', True)
+    if skip_mulligan:
+        state['mulligan_done'] = list(SIDES)
+        begin_turn(state, first_side)
+        opening = list(scenario.get('opening_b') or [])
+        if first_side == 'b' and opening:
+            from .flow import apply_action as apply_opening
+            for action in opening:
+                state = apply_opening(state, 'b', action)
+    else:
+        state['phase'] = 'mulligan'
+        state['mulligan_done'] = ['b']
     state['_public_board'] = capture_public_board(state)
     return state
 
@@ -139,7 +170,10 @@ def apply_tutorial_ack(state, side):
     result['current_action_version'] = result['version']
     result['current_action_id'] = f"v{result['version']}"
     result['combat_group'] = 0
-    _advance_step(result)
+    if step.get('finish_level'):
+        _complete_level(result)
+    else:
+        _advance_step(result)
     bump_public_patch(result)
     return result
 
@@ -153,7 +187,10 @@ def after_player_action(state, action):
     allowed = list(step.get('allowed') or [])
     if not any(_same_action(action, spec) for spec in allowed if spec.get('type') != 'tutorial_ack'):
         return state
-    _advance_step(state)
+    if step.get('finish_level'):
+        _complete_level(state)
+    else:
+        _advance_step(state)
     return state
 
 
@@ -161,6 +198,16 @@ def _advance_step(state):
     flags = tutorial_flags(state)
     flags['step_index'] = int(flags.get('step_index') or 0) + 1
     state['flags']['tutorial'] = flags
+
+
+def _complete_level(state):
+    from .state import log
+    if state.get('phase') == 'finished':
+        return
+    state['phase'] = 'finished'
+    state['winner'] = 'a'
+    state['reason'] = 'tutorial_complete'
+    log(state, '本关完成。', 'system', side='a', actor='a:player')
 
 
 def scripted_actions(state):

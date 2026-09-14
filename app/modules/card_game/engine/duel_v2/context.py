@@ -50,7 +50,8 @@ class EffectContext:
         self.character['shape'] = self.card['card_id']
         panel_hp = int(self.card.get('hp') or 0)
         if panel_hp:
-            catalog_hp = int(CHARACTERS.get(self.cid, {}).get('max_hp') or 0)
+            from app.modules.card_game.content.duel_v2.tutorial import lookup_character
+            catalog_hp = int((lookup_character(self.cid) or {}).get('max_hp') or 0)
             perm_hp = int(self.character.get('base_max_hp') or catalog_hp) - catalog_hp
             self.character['max_hp'] = panel_hp + max(0, perm_hp)
             self.character['hp'] = self.character['max_hp']

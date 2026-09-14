@@ -53,20 +53,28 @@ class DuelV2TutorialTest(unittest.TestCase):
         self.assertTrue(any('娜娜莉攻击主角' in text for text in observe(state, 'a')['logs']))
 
         state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+        self.assertEqual(observe(state, 'a')['tutorial']['step_id'], 'l01_p2_return')
         state = apply_action(state, 'a', {'type': 'tutorial_ack'})
-        self.assertEqual(observe(state, 'a')['tutorial']['step_id'], 'l01_p2_attack')
-        state = apply_action(state, 'a', {'type': 'attack', 'character_id': 'tutorial_protagonist'})
-        self.assertEqual(state['sides']['a']['characters']['tutorial_protagonist']['hp'], 1)
-        self.assertEqual(state['sides']['b']['characters']['tutorial_nanali']['hp'], 1)
-        state = apply_action(state, 'a', {'type': 'end_turn'})
-        self.assertIsNone(state['sides']['b']['front'])
-        self.assertEqual(observe(state, 'a')['tutorial']['step_id'], 'l01_p3_win')
-        with self.assertRaises(ValueError):
-            apply_action(state, 'a', {'type': 'attack', 'character_id': 'tutorial_protagonist'})
-        state = apply_action(state, 'a', {'type': 'attack', 'character_id': 'tutorial_bohe'})
         self.assertEqual(state['winner'], 'a')
-        self.assertEqual(state['sides']['b']['hp'], 0)
-        self.assertTrue(any('我方玩家获胜' in text for text in observe(state, 'a')['logs']))
+        self.assertEqual(state['reason'], 'tutorial_complete')
+        self.assertTrue(any('本关完成' in text for text in observe(state, 'a')['logs']))
+
+    def test_later_levels_are_playable(self) -> None:
+        from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS, load_scenario
+        for scenario_id in CAMPAIGN_LEVELS:
+            load_scenario(scenario_id)
+            state = new_game(scenario=scenario_id)
+            self.assertEqual(state['flags']['tutorial']['scenario'], scenario_id)
+
+    def test_level_three_plays_battle_card(self) -> None:
+        state = new_game(scenario='tutorial_l03_hand')
+        self.assertEqual(len(state['sides']['a']['hand']), 1)
+        state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+        plays = [item['action'] for item in observe(state, 'a')['legal_actions']
+                 if item['action']['type'] == 'play_card']
+        self.assertTrue(plays)
+        state = apply_action(state, 'a', plays[0])
+        self.assertEqual(state['sides']['b']['hp'], 10)
 
     def test_level_one_rejects_end_turn_before_attack(self) -> None:
         state = new_game(scenario='tutorial_l01_board')

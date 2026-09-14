@@ -2,6 +2,7 @@
 from copy import deepcopy
 
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
+from app.modules.card_game.content.duel_v2.tutorial import lookup_card
 from app.modules.card_game.content.duel_v2.catalog import CHARACTER_ORDER
 from app.modules.card_game.content.duel_v2.effects import TARGET_POLICIES, interaction_kind
 from app.modules.card_game.content.duel_v2.registry import copy_owner_text, text_name
@@ -84,7 +85,7 @@ def capture_public_board(state):
                 'family': hero.get('family', 0),
                 'gaze': hero.get('gaze', 0),
                 'dream': hero.get('dream', 0),
-                'shape': CARDS[shape_id]['name'] if shape_id else None,
+                'shape': (lookup_card(shape_id) or {}).get('name') if shape_id else None,
                 'shape_id': shape_id,
             })
         team['characters'] = characters

@@ -17,6 +17,13 @@
     if (raw === 'play_area') {
       return ctx.nodes.playArea;
     }
+    if (raw === 'mulligan') {
+      return document.getElementById('v2-mulligan-stage') || document.getElementById('v2-mulligan-btn');
+    }
+    if (raw.indexOf('deck:') === 0) {
+      const side = raw.slice(5);
+      return side === ctx.viewer ? ctx.nodes.playerDeck : ctx.nodes.opponentDeck;
+    }
     if (raw === 'turn') {
       return ctx.nodes.waitChip || ctx.nodes.turnCopy || ctx.nodes.roundLabel;
     }

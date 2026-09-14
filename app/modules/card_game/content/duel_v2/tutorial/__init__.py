@@ -1,5 +1,6 @@
 """Independent V2 tutorial characters, cards, and scenario scripts."""
 
+from . import effects as _effects  # noqa: F401
 from .pack import (
     CAMPAIGN_LEVELS,
     LEVEL_META,

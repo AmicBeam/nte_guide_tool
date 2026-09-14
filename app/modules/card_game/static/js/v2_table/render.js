@@ -21,6 +21,22 @@
     return data.name || data.id || '角色';
   }
 
+  function fitResources(node) {
+    const row = node.matches('.v2-resource-row') ? node : node.querySelector('.v2-resource-row');
+    if (!row || !row.clientWidth) return;
+    const labels = row.querySelectorAll('[data-resource-full]');
+    labels.forEach(function (label) { label.textContent = label.dataset.resourceFull; });
+    const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+    const required = Array.from(row.children).reduce(function (sum, item) { return sum + item.getBoundingClientRect().width; }, 0) + gap * Math.max(0, row.children.length - 1);
+    if (required > row.getBoundingClientRect().width) {
+      labels.forEach(function (label) { label.textContent = label.dataset.resourceShort; });
+    }
+  }
+  const resourceRows = new WeakMap();
+  const resourceObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(function (entries) {
+    entries.forEach(function (entry) { fitResources(entry.target); });
+  }) : null;
+
   function fillCharacterCard(node, character, options) {
     options = options || {};
     const data = Object.assign({}, V2.characterFallback(character && character.id) || {}, character || {});
@@ -72,16 +88,19 @@
     const page = document.getElementById('v2-table-page');
     const hideHarmony = Boolean(page && page.classList.contains('tutorial-hide-harmony'));
     const hideEnergy = Boolean(page && page.classList.contains('tutorial-hide-energy'));
-    const stats = compact
-      ? [
-          { html: combatStat('atk', attack, '攻击 ' + attack) },
-          { html: combatStat('hp', hp, '生命 ' + hp) },
-          { html: combatStat('shield', shield, '护盾 ' + shield) },
-        ].concat(hideHarmony ? [] : [{ cls: 'harmony', text: '环 ' + (data.harmony == null ? 0 : data.harmony) }])
-         .concat(hideEnergy ? [] : [{ cls: 'energy', text: data.awakened ? ('终 ' + (data.ultimate_turns == null ? 0 : data.ultimate_turns) + ' 能 ' + energyNow + '/' + energyMax) : ('能 ' + energyNow + '/' + energyMax) }])
-      : []
-        .concat(hideHarmony ? [] : [{ cls: 'harmony', text: '环合 ' + (data.harmony == null ? 0 : data.harmony) + '/2' }])
-        .concat(hideEnergy ? [] : [{ cls: 'energy', text: data.awakened ? ('终结 ' + (data.ultimate_turns == null ? 0 : data.ultimate_turns) + ' · 能 ' + energyNow + '/' + energyMax) : ('能量 ' + energyNow + '/' + energyMax) }]);
+    function resourceLabel(full, short, value, cls) {
+      return '<span class="' + cls + '" title="' + V2.escapeAttr(full + ' ' + value) + '">' +
+        '<span data-resource-full="' + full + ' " data-resource-short="' + short + '">' + full + ' </span>' + V2.escapeHtml(value) + '</span>';
+    }
+    const resourceHtml = (hideHarmony ? '' : resourceLabel('环合', '环', String(data.harmony || 0) + '/2', 'harmony')) +
+      (hideEnergy ? '' : resourceLabel('能量', '能', energyNow + '/' + energyMax, 'energy'));
+    const stats = compact ? [
+      { html: combatStat('atk', attack, '攻击 ' + attack) },
+      { html: combatStat('hp', hp, '生命 ' + hp) },
+      { html: combatStat('shield', shield, '护盾 ' + shield) },
+    ] : [];
+    if (resourceHtml) stats.push({ html: '<div class="v2-resource-row">' + resourceHtml + '</div>' });
+    if (!hideEnergy && data.awakened) stats.push({ cls: 'energy', text: '终结 ' + (data.ultimate_turns || 0) });
     if (Number(data.growth) > 0) {
       stats.push({ cls: '', text: '成长 ' + data.growth });
     }
@@ -107,6 +126,7 @@
     const downTurns = Number(data.down_turns) > 0 ? Number(data.down_turns) : 0;
     const note = (page && page.classList.contains('is-tutorial') && !data.shape) ? '' : (data.shape || '无武备');
     const portrait = V2.characterAsset(data, options.usePortrait ? 'portrait' : 'avatar') || V2.characterAsset(data, 'avatar');
+    const mobileCard = window.matchMedia('(pointer: coarse) and (max-width: 1200px)').matches;
     const actions = [];
     if (options.canAwaken) {
       actions.push('<button class="v2-awaken-btn" type="button" data-ultimate-id="' + V2.escapeAttr(data.id) + '">终结</button>');
@@ -115,8 +135,8 @@
     const prevPanel = node.getAttribute('data-pop-sig');
     node.setAttribute('data-pop-sig', panelSig);
     node.innerHTML =
-      '<div class="v2-character-art' + (actions.length ? ' has-ultimate' : '') + '">' + V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar') +
-      vitalsHtml + actions.join('') + '</div>' +
+      '<div class="v2-character-art' + (actions.length && !mobileCard ? ' has-ultimate' : '') + '">' + V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar') +
+      vitalsHtml + (mobileCard ? '' : actions.join('')) + '</div>' +
       '<div class="v2-character-panel">' +
         '<div class="v2-character-heading">' +
           '<strong title="' + V2.escapeAttr(data.name || '') + '">' + V2.escapeHtml(shortName(data)) + '</strong>' +
@@ -131,7 +151,8 @@
         }).join('') + '</div>' +
         recordsHtml(options.records) +
         '<div class="v2-character-note"><span title="' + V2.escapeAttr(note) + '">' + V2.escapeHtml(note) + '</span></div>' +
-      '</div>' + effectMarkersHtml(options.placeholder ? [] : data.effect_markers, 'v2-character-effects');
+      '</div>' + (mobileCard ? '<div class="v2-character-extras">' + actions.join('') : '') +
+      effectMarkersHtml(options.placeholder ? [] : data.effect_markers, 'v2-character-effects') + (mobileCard ? '</div>' : '');
     if (prevPanel && prevPanel !== panelSig) {
       const previous = prevPanel.split('|');
       const current = panelSig.split('|');
@@ -142,6 +163,13 @@
         });
       });
     }
+    if (resourceObserver && !options.ghost) {
+      const previousRow = resourceRows.get(node);
+      if (previousRow) resourceObserver.unobserve(previousRow);
+      const row = node.querySelector('.v2-resource-row');
+      if (row) { resourceObserver.observe(row); resourceRows.set(node, row); }
+    }
+    requestAnimationFrame(function () { fitResources(node); });
     return node;
   }
 

@@ -210,3 +210,59 @@
   .v2-table-page .v2-rotate-hint a { font-size: 16px; min-height: 44px; }
   .v2-table-page > :not(.v2-rotate-hint) { visibility: hidden; }
 }
+
+.v2-resource-row {
+  display: flex;
+  flex: 0 0 100%;
+  min-width: 0;
+  gap: .35em;
+  white-space: nowrap;
+}
+@media (pointer: coarse) and (orientation: landscape) {
+  .v2-table-page #v2-player-hand { align-items: stretch; padding-block: 4px; box-sizing: border-box; }
+  .v2-table-page #v2-player-hand .v2-hand-card {
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    flex-basis: calc(148px * var(--table-layout-scale, 1));
+    width: calc(148px * var(--table-layout-scale, 1));
+    padding-bottom: calc(22px * var(--table-layout-scale, 1));
+  }
+  .v2-table-page #v2-player-hand .v2-hand-card p {
+    display: block;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+  .v2-table-page #v2-player-hand .v2-hand-card.raised { transform: none; }
+}
+@media (pointer: coarse) and (max-width: 1200px) {
+  .v2-table-page { --portrait-min: calc(40px * var(--table-layout-scale, 1)); }
+  .v2-table-page .v2-portrait-vitals {
+    padding: calc(2px * var(--table-layout-scale, 1));
+    gap: calc(2px * var(--table-layout-scale, 1));
+  }
+  .v2-table-page .v2-portrait-vitals .v2-stat-icon {
+    width: calc(14px * var(--table-layout-scale, 1));
+    height: calc(14px * var(--table-layout-scale, 1));
+  }
+  .v2-table-page .v2-portrait-vitals .is-shield { margin: 0; }
+}
+
+.v2-bench-row .v2-character-card,
+.v2-front-slot .v2-character-card { grid-template-columns: minmax(0, 1fr); }
+.v2-resource-row { width: 100%; max-width: 100%; flex-wrap: wrap; }
+@media (pointer: coarse) and (max-width: 1200px) {
+  .v2-character-card:has(.v2-character-extras:not(:empty)) { overflow: visible; }
+  .v2-character-extras { position: absolute; top: calc(100% + 3px); left: 0; width: 100%; display: flex; flex-direction: column; gap: 3px; z-index: 4; }
+  .v2-character-extras:empty { display: none; }
+  .v2-character-card.is-opponent .v2-character-extras { top: auto; bottom: calc(100% + 3px); }
+  .v2-table-page .v2-character-extras .v2-awaken-btn { position: static; transform: none; min-width: 0; max-width: none; width: 100%; min-height: 28px; padding: 4px; font-size: 12px; }
+  .v2-table-page .v2-character-extras .v2-character-effects { position: static; }
+}
+
+.v2-resource-row > span { flex: none; }
+@media (pointer: coarse) and (max-width: 1200px) {
+  .v2-table-page .v2-bench-row.player .v2-bench-slot:has(.v2-character-extras .v2-awaken-btn) { bottom: max(3%, 36px); }
+  .v2-table-page .v2-front-axis:has(.v2-character-extras .v2-awaken-btn) { padding-bottom: 36px; overflow: visible; }
+}

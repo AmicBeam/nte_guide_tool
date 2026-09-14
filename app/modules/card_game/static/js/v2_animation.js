@@ -1211,7 +1211,7 @@
     async _presentBanner(event, instant) {
       const label = (event && event.text) || TYPE_TITLES[event && event.type] || (event && event.type) || "";
       this._banner(label);
-      this._caption(label);
+      this._caption(event && event.type === "turn" ? "" : label);
       await this._wait(this._duration(instant, BEATS.bannerHold));
     }
 

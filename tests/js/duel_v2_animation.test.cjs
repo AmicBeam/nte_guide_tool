@@ -996,6 +996,8 @@ test("ultimate end patches without a 终结 burst", async () => {
 test("turn start is patched before the following draw", async () => {
   const harness = makeRoot();
   const order = [];
+  const banners = [];
+  const captions = [];
   const player = new Player({
     root: harness.root,
     clock: harness.clock,
@@ -1003,10 +1005,17 @@ test("turn start is patched before the following draw", async () => {
       order.push(event.type);
     },
   });
+  const banner = player._banner.bind(player);
+  const caption = player._caption.bind(player);
+  player._banner = (text) => { banners.push(text); banner(text); };
+  player._caption = (title, detail) => { captions.push([title, detail]); caption(title, detail); };
   await settle(player.play([
     { seq: 121, type: "turn", side: "a", present: true, text: "我方玩家的第 2 个回合开始。", patch: { turn: 2 } },
     { seq: 122, type: "draw", side: "a", present: true, card: publicCard(), patch: { drawn: true } },
     { seq: 123, type: "resource", side: "a", present: false, patch: { ap: 2 } },
   ], { instant: true }), harness.clock, player);
   assert.deepEqual(order, ["turn", "draw", "resource"]);
+  const turnText = "我方玩家的第 2 个回合开始。";
+  assert.equal(banners.filter((text) => text === turnText).length, 1);
+  assert.equal(captions.some(([title, detail]) => title === turnText || detail === turnText), false);
 });

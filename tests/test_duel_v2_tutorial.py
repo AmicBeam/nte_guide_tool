@@ -16,6 +16,8 @@ class DuelV2TutorialTest(unittest.TestCase):
         view = observe(state, 'a')
         self.assertTrue(view['tutorial']['enabled'])
         self.assertEqual(view['tutorial']['step_id'], 'l01_intro')
+        self.assertEqual(view['tutorial']['placement'], 'center')
+        self.assertIn('回合制卡牌对战', view['tutorial']['modal']['body'])
         self.assertIn('bench:a', view['tutorial']['spotlights'])
         types = {item['action']['type'] for item in view['legal_actions']}
         self.assertEqual(types, {'tutorial_ack'})
@@ -23,7 +25,9 @@ class DuelV2TutorialTest(unittest.TestCase):
         self.assertEqual(view['sides']['a']['hand'], [])
 
         state = apply_action(state, 'a', {'type': 'tutorial_ack'})
-        self.assertEqual(observe(state, 'a')['tutorial']['step_id'], 'l01_zones')
+        zones = observe(state, 'a')['tutorial']
+        self.assertEqual(zones['step_id'], 'l01_zones')
+        self.assertEqual(zones['placement'], 'bottom-right')
         state = apply_action(state, 'a', {'type': 'tutorial_ack'})
         self.assertEqual(observe(state, 'a')['tutorial']['step_id'], 'l01_p1_attack')
         actions = [item['action'] for item in observe(state, 'a')['legal_actions']]

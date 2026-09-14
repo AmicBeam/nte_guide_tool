@@ -23,7 +23,7 @@
     }
     if (raw.indexOf('player_hp:') === 0) {
       const side = raw.slice(10);
-      return ctx.page.querySelector('[data-player-side="' + CSS.escape(side) + '"]');
+      return document.querySelector('[data-player-side="' + CSS.escape(side) + '"]');
     }
     if (raw.indexOf('bench:') === 0) {
       const side = raw.slice(6);
@@ -44,45 +44,109 @@
     }
     if (raw.indexOf('character:') === 0) {
       const parts = raw.split(':');
-      return ctx.page.querySelector('[data-entity-id="' + CSS.escape(parts[1] + ':' + parts[2]) + '"]');
+      return document.querySelector('[data-entity-id="' + CSS.escape(parts[1] + ':' + parts[2]) + '"]');
     }
-    return ctx.page.querySelector('[data-tutorial-id="' + CSS.escape(raw) + '"]');
+    return document.querySelector('[data-tutorial-id="' + CSS.escape(raw) + '"]');
   }
 
-  function centerOf(node) {
+  function visibleRect(node) {
     if (!node || typeof node.getBoundingClientRect !== 'function') {
       return null;
     }
     const rect = node.getBoundingClientRect();
-    const page = ctxPageRect();
-    return {
-      x: rect.left + rect.width / 2 - page.left,
-      y: rect.top + rect.height / 2 - page.top,
-    };
+    const style = window.getComputedStyle(node);
+    if (rect.width < 8 || rect.height < 8 || style.display === 'none' || style.visibility === 'hidden') {
+      return null;
+    }
+    return rect;
   }
 
-  function ctxPageRect() {
-    const page = document.getElementById('v2-table-page');
-    return page ? page.getBoundingClientRect() : { left: 0, top: 0 };
+  function clearCues() {
+    document.querySelectorAll('.v2-tutorial-focus-frame, .v2-tutorial-drag-cue, .v2-tutorial-click-cue').forEach(function (node) {
+      node.remove();
+    });
   }
 
-  function drawArrow(svg, from, to, klass) {
-    if (!svg || !from || !to) {
+  function addFocusFrame(rect) {
+    const frame = document.createElement('div');
+    frame.className = 'v2-tutorial-focus-frame';
+    frame.style.left = Math.max(4, rect.left - 6) + 'px';
+    frame.style.top = Math.max(4, rect.top - 6) + 'px';
+    frame.style.width = Math.max(24, rect.width + 12) + 'px';
+    frame.style.height = Math.max(24, rect.height + 12) + 'px';
+    document.body.appendChild(frame);
+  }
+
+  function addDragCue(fromNode, toNode) {
+    const from = visibleRect(fromNode);
+    const to = visibleRect(toNode);
+    if (!from || !to) {
       return;
     }
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('class', 'v2-fx-arrow' + (klass ? ' ' + klass : ''));
-    const midX = (from.x + to.x) / 2;
-    const midY = Math.min(from.y, to.y) - 36;
-    path.setAttribute('d', 'M ' + from.x + ' ' + from.y + ' Q ' + midX + ' ' + midY + ' ' + to.x + ' ' + to.y);
-    svg.appendChild(path);
+    const x1 = from.left + from.width / 2;
+    const y1 = from.top + from.height / 2;
+    const x2 = to.left + to.width / 2;
+    const y2 = to.top + to.height / 2;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.hypot(dx, dy);
+    if (length < 16) {
+      return;
+    }
+    const cue = document.createElement('div');
+    cue.className = 'v2-tutorial-drag-cue';
+    cue.style.left = x1 + 'px';
+    cue.style.top = y1 + 'px';
+    cue.style.width = length + 'px';
+    cue.style.transform = 'rotate(' + (Math.atan2(dy, dx) * 180 / Math.PI) + 'deg)';
+    cue.innerHTML = '<span class="v2-tutorial-drag-cue-runner"></span>';
+    document.body.appendChild(cue);
   }
 
-  function clearArrows(ctx) {
-    const svg = ctx.tutorialArrows;
-    if (svg) {
-      svg.innerHTML = '';
+  function addClickCue(node) {
+    const rect = visibleRect(node);
+    if (!rect) {
+      return;
     }
+    const cue = document.createElement('div');
+    cue.className = 'v2-tutorial-click-cue';
+    cue.style.left = (rect.left + rect.width / 2) + 'px';
+    cue.style.top = (rect.top + rect.height / 2) + 'px';
+    document.body.appendChild(cue);
+  }
+
+  function roundedHole(x, y, w, h, radius) {
+    const r = Math.max(0, Math.min(radius, w / 2, h / 2));
+    return 'M' + (x + r) + ',' + y +
+      'H' + (x + w - r) +
+      'A' + r + ',' + r + ' 0 0 1 ' + (x + w) + ',' + (y + r) +
+      'V' + (y + h - r) +
+      'A' + r + ',' + r + ' 0 0 1 ' + (x + w - r) + ',' + (y + h) +
+      'H' + (x + r) +
+      'A' + r + ',' + r + ' 0 0 1 ' + x + ',' + (y + h - r) +
+      'V' + (y + r) +
+      'A' + r + ',' + r + ' 0 0 1 ' + (x + r) + ',' + y + 'Z';
+  }
+
+  function paintMaskHoles(svg, holes) {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+    svg.setAttribute('width', String(width));
+    svg.setAttribute('height', String(height));
+    let shade = svg.querySelector('[data-shade="1"]');
+    if (!shade) {
+      shade = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      shade.setAttribute('data-shade', '1');
+      shade.setAttribute('fill', 'rgba(1, 4, 9, 0.46)');
+      shade.setAttribute('fill-rule', 'evenodd');
+      svg.appendChild(shade);
+    }
+    let path = 'M0,0H' + width + 'V' + height + 'H0Z';
+    holes.forEach(function (hole) {
+      path += roundedHole(hole.x, hole.y, hole.w, hole.h, 12);
+    });
+    shade.setAttribute('d', path);
   }
 
   function applyHide(ctx, hide) {
@@ -100,10 +164,8 @@
     const info = tutorial(ctx.game);
     const mask = ctx.tutorialMask || document.getElementById('v2-tutorial-mask');
     const modal = ctx.tutorialModal || document.getElementById('v2-tutorial-modal');
-    const svg = ctx.tutorialArrows || document.getElementById('v2-tutorial-arrows');
     ctx.tutorialMask = mask;
     ctx.tutorialModal = modal;
-    ctx.tutorialArrows = svg;
     ctx.page.classList.toggle('is-tutorial', Boolean(info && info.enabled));
     if (ctx.nodes.playerBench) {
       ctx.nodes.playerBench.setAttribute('data-count', String((info && info.character_slots) || 4));
@@ -111,20 +173,20 @@
     if (ctx.nodes.opponentBench) {
       ctx.nodes.opponentBench.setAttribute('data-count', String((info && info.character_slots) || 4));
     }
+    clearCues();
     if (!info || !info.enabled) {
       applyHide(ctx, []);
       ctx.page.querySelectorAll('.tutorial-spotlight').forEach(function (node) {
         node.classList.remove('tutorial-spotlight');
       });
       if (mask) {
-        mask.hidden = true;
+        mask.setAttribute('hidden', '');
         mask.setAttribute('aria-hidden', 'true');
       }
       if (modal) {
-        modal.hidden = true;
+        modal.setAttribute('hidden', '');
         modal.innerHTML = '';
       }
-      clearArrows(ctx);
       ctx.tutorialModalDismissed = null;
       return;
     }
@@ -132,22 +194,43 @@
     ctx.page.querySelectorAll('.tutorial-spotlight').forEach(function (node) {
       node.classList.remove('tutorial-spotlight');
     });
+    const holes = [];
     (info.spotlights || []).forEach(function (token) {
       const node = resolveNode(ctx, token);
-      if (node) {
-        node.classList.add('tutorial-spotlight');
+      if (!node) {
+        return;
       }
+      node.classList.add('tutorial-spotlight');
+      const rect = visibleRect(node);
+      if (!rect) {
+        return;
+      }
+      holes.push({
+        x: Math.max(0, rect.left - 8),
+        y: Math.max(0, rect.top - 8),
+        w: rect.width + 16,
+        h: rect.height + 16,
+      });
+      addFocusFrame(rect);
     });
     if (mask) {
       if (info.mask) {
         mask.removeAttribute('hidden');
+        paintMaskHoles(mask, holes);
       } else {
         mask.setAttribute('hidden', '');
       }
       mask.setAttribute('aria-hidden', info.mask ? 'false' : 'true');
     }
+    if (info.drag_arrow) {
+      addDragCue(resolveNode(ctx, info.drag_arrow.from), resolveNode(ctx, info.drag_arrow.to));
+    }
+    if (info.click_cue) {
+      addClickCue(resolveNode(ctx, info.click_cue));
+    }
     const dismissed = ctx.tutorialModalDismissed === info.step_id;
     if (modal) {
+      modal.className = 'v2-tutorial-modal placement-' + String(info.placement || 'bottom-right');
       if (!info.modal || dismissed) {
         modal.setAttribute('hidden', '');
         modal.innerHTML = '';
@@ -169,12 +252,6 @@
           '</div>';
       }
     }
-    clearArrows(ctx);
-    if (svg && ctx.dragState && info.drag_arrow && info.drag_arrow.when === 'drag_attack') {
-      const from = centerOf(resolveNode(ctx, info.drag_arrow.from));
-      const to = centerOf(resolveNode(ctx, info.drag_arrow.to));
-      drawArrow(svg, from, to, 'is-guide');
-    }
   }
 
   function showBlocked(ctx, reason) {
@@ -192,7 +269,7 @@
   }
 
   function bindTutorial(ctx) {
-    ['tutorialModal', 'tutorialArrows', 'tutorialMask'].forEach(function (key) {
+    ['tutorialModal', 'tutorialMask'].forEach(function (key) {
       const node = ctx[key];
       if (node && node.parentElement !== document.body) {
         document.body.appendChild(node);
@@ -237,22 +314,11 @@
         }
       });
     }
-    ctx.page.addEventListener('pointerdown', function (event) {
-      const info = tutorial(ctx.game);
-      if (!info || !info.mask || info.ack_required) {
-        return;
+    window.addEventListener('resize', function () {
+      if (tutorial(ctx.game)) {
+        renderTutorial(ctx);
       }
-      const spotlight = event.target.closest('.tutorial-spotlight');
-      if (spotlight) {
-        return;
-      }
-      if (event.target.closest('.v2-tutorial-modal, .v2-tutorial-dialog, .v2-menu-overlay, .v2-result-overlay')) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      showBlocked(ctx);
-    }, true);
+    });
   }
 
   TABLE.tutorialInfo = tutorial;

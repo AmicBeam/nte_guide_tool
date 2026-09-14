@@ -15,8 +15,7 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(8, 10, 14, 0.45);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .v2-tutorial-mask[hidden] {
@@ -26,20 +25,120 @@
 .v2-table-page.is-tutorial .tutorial-spotlight {
   position: relative;
   z-index: 32;
-  box-shadow: 0 0 0 3px rgba(232, 201, 136, 0.95), 0 0 24px rgba(232, 201, 136, 0.45);
-  border-radius: 12px;
   pointer-events: auto;
-  filter: none;
-  opacity: 1;
+}
+
+.v2-tutorial-focus-frame {
+  position: fixed;
+  z-index: 61;
+  border: 2px solid rgba(255, 220, 134, 0.95);
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 5px rgba(255, 220, 134, 0.12),
+    0 0 30px rgba(86, 211, 255, 0.4);
+}
+
+.v2-tutorial-drag-cue {
+  position: fixed;
+  z-index: 62;
+  height: 0;
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+.v2-tutorial-drag-cue::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 12px;
+  top: -1px;
+  border-top: 2px dashed rgba(139, 215, 255, 0.88);
+  filter: drop-shadow(0 0 8px rgba(139, 215, 255, 0.45));
+}
+
+.v2-tutorial-drag-cue::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid rgba(255, 237, 200, 0.95);
+  border-top: 2px solid rgba(255, 237, 200, 0.95);
+  transform: rotate(45deg);
+}
+
+.v2-tutorial-drag-cue-runner {
+  position: absolute;
+  left: 0;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #ffedc8 0 34%, #8bd7ff 38% 68%, rgba(139, 215, 255, 0.08) 72%);
+  box-shadow: 0 0 16px rgba(139, 215, 255, 0.7);
+  animation: v2-tutorial-drag-runner 1800ms ease-in-out infinite;
+}
+
+.v2-tutorial-click-cue {
+  position: fixed;
+  z-index: 63;
+  width: 42px;
+  height: 42px;
+  margin: -21px 0 0 -21px;
+  pointer-events: none;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 237, 200, 0.95);
+  box-shadow: 0 0 18px rgba(139, 215, 255, 0.52);
+  animation: v2-tutorial-click-pulse 1300ms ease-in-out infinite;
+}
+
+.v2-tutorial-click-cue::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 999px;
+  background: #ffedc8;
+  box-shadow: 0 0 16px rgba(139, 215, 255, 0.72);
+}
+
+@keyframes v2-tutorial-drag-runner {
+  0% { transform: translateX(0); opacity: 0.2; }
+  18% { opacity: 1; }
+  100% { transform: translateX(calc(100% - 14px)); opacity: 0.15; }
+}
+
+@keyframes v2-tutorial-click-pulse {
+  0% { transform: scale(0.72); opacity: 0; }
+  22% { opacity: 1; }
+  70% { opacity: 0.9; }
+  100% { transform: scale(1.18); opacity: 0; }
 }
 
 .v2-tutorial-modal {
   position: fixed;
-  left: 16px;
-  bottom: 24px;
   z-index: 80;
   width: min(360px, calc(100vw - 32px));
   pointer-events: auto;
+}
+
+.v2-tutorial-modal.placement-center {
+  left: 50%;
+  top: 72px;
+  bottom: auto;
+  transform: translateX(-50%);
+}
+
+.v2-tutorial-modal.placement-bottom-right {
+  left: auto;
+  right: 188px;
+  top: auto;
+  bottom: 28px;
 }
 
 .v2-tutorial-modal[hidden] {
@@ -63,21 +162,6 @@
 .v2-tutorial-dialog p {
   margin: 0 0 12px;
   line-height: 1.45;
-}
-
-.v2-tutorial-arrows {
-  position: fixed;
-  inset: 0;
-  z-index: 75;
-  pointer-events: none;
-  overflow: visible;
-}
-
-.v2-fx-arrow.is-guide {
-  stroke: rgba(232, 201, 136, 0.95);
-  stroke-width: 3;
-  fill: none;
-  marker-end: url(#v2-arrow-head);
 }
 
 .v2-bench-row[data-count="2"].opponent .v2-bench-slot[data-arc="0"] {

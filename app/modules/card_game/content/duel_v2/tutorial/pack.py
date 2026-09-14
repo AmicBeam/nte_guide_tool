@@ -170,10 +170,11 @@ _L01_STEPS = [
         'id': 'l01_intro',
         'ack_required': True,
         'mask': True,
+        'placement': 'center',
         'spotlights': ['bench:a', 'bench:b'],
         'modal': {
             'title': '欢迎来到异象对决',
-            'body': '这一关只有 4 名异能者。开局都在备战区。胜负看玩家生命，不是把攻击加在一起。现在还不用手牌。',
+            'body': '异象对决是一款回合制卡牌对战。双方轮流行动，把异能者送进战斗区出击，把对方玩家生命打到 0 就赢。这一关先只看角色面板，还不用手牌。',
             'primary': '看看战场',
         },
         'allowed': [{'type': 'tutorial_ack'}],
@@ -183,6 +184,7 @@ _L01_STEPS = [
         'id': 'l01_zones',
         'ack_required': True,
         'mask': True,
+        'placement': 'bottom-right',
         'spotlights': ['zone:a:front', 'zone:b:front', 'player_hp:a', 'player_hp:b'],
         'modal': {
             'title': '战斗区和玩家生命',
@@ -196,13 +198,13 @@ _L01_STEPS = [
         'id': 'l01_p1_attack',
         'ack_required': False,
         'mask': True,
+        'placement': 'bottom-right',
         'spotlights': [
-            'character:a:tutorial_protagonist', 'zone:b:front', 'player_hp:b', 'ap:a',
+            'character:a:tutorial_protagonist', 'zone:b:front', 'player_hp:b',
         ],
         'drag_arrow': {
             'from': 'character:a:tutorial_protagonist',
             'to': 'zone:b:front',
-            'when': 'drag_attack',
         },
         'modal': {
             'title': '把异能者拖进战斗区',
@@ -216,7 +218,9 @@ _L01_STEPS = [
         'id': 'l01_p1_end',
         'ack_required': False,
         'mask': True,
+        'placement': 'bottom-right',
         'spotlights': ['end_turn'],
+        'click_cue': 'end_turn',
         'modal': {
             'title': '结束回合',
             'body': '行动做完就结束回合，交给对方。主角会留在前排防守，直到你的下一回合开始才返回备战区。',
@@ -233,6 +237,7 @@ _L01_STEPS = [
         'id': 'l01_o1_watch',
         'ack_required': True,
         'mask': True,
+        'placement': 'bottom-right',
         'spotlights': [
             'character:a:tutorial_protagonist', 'character:b:tutorial_nanali', 'log',
         ],
@@ -248,6 +253,7 @@ _L01_STEPS = [
         'id': 'l01_p2_return',
         'ack_required': True,
         'mask': True,
+        'placement': 'bottom-right',
         'spotlights': ['bench:a', 'character:b:tutorial_nanali'],
         'modal': {
             'title': '回合开始，前排返回',
@@ -261,11 +267,11 @@ _L01_STEPS = [
         'id': 'l01_p2_attack',
         'ack_required': False,
         'mask': True,
+        'placement': 'bottom-right',
         'spotlights': ['character:a:tutorial_protagonist', 'character:b:tutorial_nanali'],
         'drag_arrow': {
             'from': 'character:a:tutorial_protagonist',
             'to': 'character:b:tutorial_nanali',
-            'when': 'drag_attack',
         },
         'modal': {
             'title': '打对方前排',
@@ -279,7 +285,9 @@ _L01_STEPS = [
         'id': 'l01_p2_end',
         'ack_required': False,
         'mask': True,
+        'placement': 'bottom-right',
         'spotlights': ['end_turn'],
+        'click_cue': 'end_turn',
         'modal': {
             'title': '结束回合',
             'body': '对方这一回合不会再出击。注意对方战斗区空了。',
@@ -293,11 +301,11 @@ _L01_STEPS = [
         'id': 'l01_p3_win',
         'ack_required': False,
         'mask': True,
+        'placement': 'bottom-right',
         'spotlights': ['character:a:tutorial_bohe', 'zone:b:front', 'player_hp:b'],
         'drag_arrow': {
             'from': 'character:a:tutorial_bohe',
             'to': 'zone:b:front',
-            'when': 'drag_attack',
         },
         'modal': {
             'title': '空前排打玩家生命',

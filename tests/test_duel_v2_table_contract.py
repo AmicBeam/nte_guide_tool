@@ -310,7 +310,7 @@ class DuelV2TableContractTest(unittest.TestCase):
 
     def test_keyword_markup_bolds_pierce_in_passive_copy(self) -> None:
         api = (ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'js' / 'v2_api.js').read_text(encoding='utf-8')
-        self.assertIn('瞬发|响应|贯穿', api)
+        self.assertIn('瞬发|响应|穿透', api)
         self.assertIn("kind === 'ok'", api)
         self.assertIn('_bannerTimer', api)
         interaction = INTERACTION_JS.read_text(encoding='utf-8')

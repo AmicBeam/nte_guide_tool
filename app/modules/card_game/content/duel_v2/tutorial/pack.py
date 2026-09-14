@@ -151,7 +151,7 @@ LEVEL_META = (
     {'id': 'tutorial_l08_energy', 'title': '第八关 终结', 'short': '终结'},
     {'id': 'tutorial_l09_instant', 'title': '第九关 瞬发', 'short': '瞬发'},
     {'id': 'tutorial_l10_response', 'title': '第十关 响应', 'short': '响应'},
-    {'id': 'tutorial_l11_pierce', 'title': '第十一关 贯穿', 'short': '贯穿'},
+    {'id': 'tutorial_l11_pierce', 'title': '第十一关 穿透', 'short': '穿透'},
     {'id': 'tutorial_l12_roster4', 'title': '第十二关 四人编队', 'short': '四人编队'},
 )
 

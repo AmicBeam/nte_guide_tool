@@ -137,8 +137,7 @@ def lookup_card(card_id):
 
 CAMPAIGN_LEVELS = (
     'tutorial_l01_board',
-    'tutorial_l02_ap',
-    'tutorial_l03_hand',
+    'tutorial_l02_hand',
     'tutorial_l04_tactic',
     'tutorial_l05_down',
     'tutorial_l06_form',
@@ -152,17 +151,16 @@ CAMPAIGN_LEVELS = (
 
 LEVEL_META = (
     {'id': 'tutorial_l01_board', 'title': '第一关 牌桌与回合', 'short': '牌桌与回合'},
-    {'id': 'tutorial_l02_ap', 'title': '第二关 行动力', 'short': '行动力'},
-    {'id': 'tutorial_l03_hand', 'title': '第三关 手牌', 'short': '手牌'},
-    {'id': 'tutorial_l04_tactic', 'title': '第四关 战术', 'short': '战术'},
-    {'id': 'tutorial_l05_down', 'title': '第五关 倒地', 'short': '倒地'},
-    {'id': 'tutorial_l06_form', 'title': '第六关 武备', 'short': '武备'},
-    {'id': 'tutorial_l07_harmony', 'title': '第七关 环合', 'short': '环合'},
-    {'id': 'tutorial_l08_energy', 'title': '第八关 终结', 'short': '终结'},
-    {'id': 'tutorial_l09_instant', 'title': '第九关 瞬发', 'short': '瞬发'},
-    {'id': 'tutorial_l10_response', 'title': '第十关 响应', 'short': '响应'},
-    {'id': 'tutorial_l11_pierce', 'title': '第十一关 穿透', 'short': '穿透'},
-    {'id': 'tutorial_l12_roster4', 'title': '第十二关 四人编队', 'short': '四人编队'},
+    {'id': 'tutorial_l02_hand', 'title': '第二关 手牌', 'short': '手牌'},
+    {'id': 'tutorial_l04_tactic', 'title': '第三关 战术', 'short': '战术'},
+    {'id': 'tutorial_l05_down', 'title': '第四关 倒地', 'short': '倒地'},
+    {'id': 'tutorial_l06_form', 'title': '第五关 武备', 'short': '武备'},
+    {'id': 'tutorial_l07_harmony', 'title': '第六关 环合', 'short': '环合'},
+    {'id': 'tutorial_l08_energy', 'title': '第七关 终结', 'short': '终结'},
+    {'id': 'tutorial_l09_instant', 'title': '第八关 瞬发', 'short': '瞬发'},
+    {'id': 'tutorial_l10_response', 'title': '第九关 响应', 'short': '响应'},
+    {'id': 'tutorial_l11_pierce', 'title': '第十关 贯穿', 'short': '贯穿'},
+    {'id': 'tutorial_l12_roster4', 'title': '第十一关 四人编队', 'short': '四人编队'},
 )
 
 _L01_HIDE = [
@@ -425,52 +423,21 @@ _HIDE_RES = ['passive', 'ultimate', 'deck', 'mulligan', 'form']
 _HIDE_FULL = ['passive', 'deck']
 
 _L02_STEPS = [
-    _ack('l02_intro', '行动力',
-         '右侧面板显示剩余行动力，也就是费用。先攻第一回合有 1 点，其余回合开始时会变为 2 点。',
-         ['ap:a']),
-    _act('l02_attack', '先攻只有 1 点',
-         '先攻第一回合只有 1 点行动力。通常出击花费 1 点，所以这一回合只能出击一次。',
-         ['character:a:tutorial_protagonist', 'play_area'],
-         [{'type': 'attack', 'character_id': 'tutorial_protagonist'}],
-         cue='按住主角，并拖动到对战区', primary='拖动主角',
-         arrow={'from': 'character:a:tutorial_protagonist', 'to': 'play_area'}),
-    _act('l02_end', '结束回合',
-         '行动力用完后，点结束回合交给对方。',
-         ['end_turn'], [{'type': 'end_turn'}],
-         cue='点击「结束回合」', primary='结束回合', click='end_turn',
-         opponent=[{'type': 'end_turn'}]),
-    _ack('l02_two', '之后每回合 2 点',
-         '现在回合开始，行动力变为 2 点。通常出击每回合仍只能 1 次，剩下的 1 点留给出牌。',
-         ['ap:a']),
-    _act('l02_attack2', '再出击一次',
-         '2 点行动力里，通常出击仍然只能做一次。先把这 1 点用在出击上。',
-         ['character:a:tutorial_protagonist', 'play_area'],
-         [{'type': 'attack', 'character_id': 'tutorial_protagonist'}],
-         cue='按住主角，并拖动到对战区', primary='拖动主角',
-         arrow={'from': 'character:a:tutorial_protagonist', 'to': 'play_area'}),
-    _act('l02_done', '结束本关',
-         '剩下的 1 点这一关用不上。点结束回合，本关完成。',
-         ['end_turn'], [{'type': 'end_turn'}],
-         cue='点击「结束回合」', primary='结束回合', click='end_turn', finish=True),
-]
-
-_L03_STEPS = [
-    _ack('l03_intro', '手牌',
-         '出牌花费 1 点行动力。战斗牌打出后，所属异能者会额外出击一次，不占用通常出击次数。',
+    _ack('l02_intro', '手牌',
+         '出牌花费 1 点行动力。战斗牌打出后，所属异能者会额外出击一次，不占用通常出击次数。这一回合有 2 点，可以先出牌，再通常出击。',
          ['hand:a-1', 'ap:a']),
-    _act('l03_play', '打出战斗牌',
+    _act('l02_play', '打出战斗牌',
          '把战斗牌拖到对战区。这会花费 1 点行动力，并让主角额外出击。',
          ['hand:a-1', 'play_area'],
          [{'type': 'play_card'}],
          cue='把战斗牌拖到对战区', primary='拖动卡牌',
          arrow={'from': 'hand:a-1', 'to': 'play_area'}),
-    _ack('l03_note', '通常出击仍在',
-         '战斗牌的出击是额外的。这一回合如果还有行动力，仍然可以再做一次通常出击。',
-         ['ap:a', 'character:a:tutorial_protagonist']),
-    _act('l03_done', '结束本关',
-         '这一关先记住：出牌 1 费，战斗牌额外出击。点结束回合。',
-         ['end_turn'], [{'type': 'end_turn'}],
-         cue='点击「结束回合」', primary='结束回合', click='end_turn', finish=True),
+    _act('l02_attack', '再通常出击',
+         '战斗牌的出击是额外的。还剩 1 点行动力，可以再做一次通常出击。',
+         ['character:a:tutorial_protagonist', 'play_area'],
+         [{'type': 'attack', 'character_id': 'tutorial_protagonist'}],
+         cue='按住主角，并拖动到对战区', primary='拖动主角',
+         arrow={'from': 'character:a:tutorial_protagonist', 'to': 'play_area'}, finish=True),
 ]
 
 _L04_STEPS = [
@@ -632,55 +599,56 @@ _L12_STEPS = [
 SCENARIOS = {
     'tutorial_l01_board': _scene(
         'tutorial_l01_board', '第一关 牌桌与回合', 1, _L01_STEPS, flags=_L01_FLAGS),
-    'tutorial_l02_ap': _scene('tutorial_l02_ap', '第二关 行动力', 2, _L02_STEPS),
-    'tutorial_l03_hand': _scene(
-        'tutorial_l03_hand', '第三关 手牌', 3, _L03_STEPS,
+    'tutorial_l02_hand': _scene(
+        'tutorial_l02_hand', '第二关 手牌', 2, _L02_STEPS,
         flags=_flags(hide=_HIDE_HAND, disable_hand=False),
+        first_side='b',
+        opening_b=[{'type': 'end_turn'}],
         hand_a=['tutorial_z03']),
     'tutorial_l04_tactic': _scene(
-        'tutorial_l04_tactic', '第四关 战术', 4, _L04_STEPS,
+        'tutorial_l04_tactic', '第三关 战术', 3, _L04_STEPS,
         flags=_flags(hide=_HIDE_HAND, disable_hand=False),
         hand_a=['tutorial_z_heal'],
         stats={'tutorial_bohe': {'hp': 2}}),
     'tutorial_l05_down': _scene(
-        'tutorial_l05_down', '第五关 倒地', 5, _L05_STEPS,
+        'tutorial_l05_down', '第四关 倒地', 4, _L05_STEPS,
         stats={'tutorial_nanali': {'hp': 3, 'max_hp': 3}},
         front_b='tutorial_nanali'),
     'tutorial_l06_form': _scene(
-        'tutorial_l06_form', '第六关 武备', 6, _L06_STEPS,
+        'tutorial_l06_form', '第五关 武备', 5, _L06_STEPS,
         flags=_flags(hide=_HIDE_FORM, disable_hand=False),
         first_side='b',
         opening_b=[{'type': 'end_turn'}],
         hand_a=['tutorial_z08'],
         stats={'tutorial_zaowu': {'attack': 6}}),
     'tutorial_l07_harmony': _scene(
-        'tutorial_l07_harmony', '第七关 环合', 7, _L07_STEPS,
+        'tutorial_l07_harmony', '第六关 环合', 6, _L07_STEPS,
         flags=_flags(
             hide=['passive', 'energy', 'ultimate', 'hand', 'deck', 'mulligan', 'form'],
             disable_harmony_gain=False, disable_harmony_trigger=False)),
     'tutorial_l08_energy': _scene(
-        'tutorial_l08_energy', '第八关 终结', 8, _L08_STEPS,
+        'tutorial_l08_energy', '第七关 终结', 7, _L08_STEPS,
         flags=_flags(
             hide=['passive', 'harmony', 'hand', 'deck', 'mulligan', 'form'],
             disable_ultimate=False),
         stats={'tutorial_protagonist': {'energy': 5}}),
     'tutorial_l09_instant': _scene(
-        'tutorial_l09_instant', '第九关 瞬发', 9, _L09_STEPS,
+        'tutorial_l09_instant', '第八关 瞬发', 8, _L09_STEPS,
         flags=_flags(hide=_HIDE_HAND, disable_hand=False),
         hand_a=['tutorial_z_instant']),
     'tutorial_l10_response': _scene(
-        'tutorial_l10_response', '第十关 响应', 10, _L10_STEPS,
+        'tutorial_l10_response', '第九关 响应', 9, _L10_STEPS,
         flags=_flags(hide=_HIDE_HAND, disable_hand=False),
         first_side='b',
         opening_b=[{'type': 'end_turn'}],
         hand_a=['tutorial_m_response']),
     'tutorial_l11_pierce': _scene(
-        'tutorial_l11_pierce', '第十一关 穿透', 11, _L11_STEPS,
+        'tutorial_l11_pierce', '第十关 贯穿', 10, _L11_STEPS,
         flags=_flags(disable_overflow=False, disable_passives=False),
         stats={'tutorial_nanali': {'hp': 1, 'max_hp': 1}},
         front_b='tutorial_nanali'),
     'tutorial_l12_roster4': _scene(
-        'tutorial_l12_roster4', '第十二关 四人编队', 12, _L12_STEPS,
+        'tutorial_l12_roster4', '第十一关 四人编队', 11, _L12_STEPS,
         flags=_flags(
             hide=_HIDE_FULL, disable_hand=False, disable_draw=False,
             disable_mulligan=False, skip_mulligan=False, opening_draw=5,

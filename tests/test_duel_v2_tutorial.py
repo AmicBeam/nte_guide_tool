@@ -67,7 +67,7 @@ class DuelV2TutorialTest(unittest.TestCase):
             self.assertEqual(state['flags']['tutorial']['scenario'], scenario_id)
 
     def test_level_three_plays_battle_card(self) -> None:
-        state = new_game(scenario='tutorial_l03_hand')
+        state = new_game(scenario='tutorial_l02_hand')
         self.assertEqual(len(state['sides']['a']['hand']), 1)
         state = apply_action(state, 'a', {'type': 'tutorial_ack'})
         plays = [item['action'] for item in observe(state, 'a')['legal_actions']

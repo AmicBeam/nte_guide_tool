@@ -1,7 +1,7 @@
 """Tutorial overlay: scripted legal actions, opponent scripts, and guidance."""
 from copy import deepcopy
 
-from app.modules.card_game.content.duel_v2.tutorial import load_scenario
+from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS, load_scenario
 from .presentation import bump_public_patch, capture_public_board
 from .state import SIDES, card_instance, name, new_character, shuffle
 
@@ -61,7 +61,7 @@ def new_tutorial_game(scenario_id, seed=0):
                 'scenario': scenario['id'],
                 'title': scenario.get('title') or '',
                 'level_index': int(scenario.get('level_index') or 1),
-                'level_count': 12,
+                'level_count': len(CAMPAIGN_LEVELS),
                 'step_index': 0,
                 'steps': deepcopy(scenario.get('steps') or []),
                 'hide': list(flags.get('hide') or []),

@@ -171,7 +171,6 @@ _L01_FLAGS = {
     'disable_collapse': True,
     'disable_overflow': True,
     'enabled_kits': [],
-    'ap_per_turn': 1,
     'player_hp': 4,
     'player_shield': 0,
     'character_slots': 2,
@@ -245,7 +244,7 @@ _L01_STEPS = [
         'spotlights': ['ap:a'],
         'modal': {
             'title': '行动力',
-            'body': '右下角是你的行动力。出击和出牌都会消耗它。这一关每回合只有 1 点，刚好够行动一次。',
+            'body': '右侧面板会显示你的剩余行动力，也就是费用。先攻第一回合有1点，其余回合开始时会变为2点。',
             'primary': '下一处',
         },
         'allowed': [{'type': 'tutorial_ack'}],

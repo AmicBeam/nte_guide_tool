@@ -115,8 +115,8 @@
     const prevPanel = node.getAttribute('data-pop-sig');
     node.setAttribute('data-pop-sig', panelSig);
     node.innerHTML =
-      '<div class="v2-character-art">' + V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar') +
-      vitalsHtml + '</div>' +
+      '<div class="v2-character-art' + (actions.length ? ' has-ultimate' : '') + '">' + V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar') +
+      vitalsHtml + actions.join('') + '</div>' +
       '<div class="v2-character-panel">' +
         '<div class="v2-character-heading">' +
           '<strong title="' + V2.escapeAttr(data.name || '') + '">' + V2.escapeHtml(shortName(data)) + '</strong>' +
@@ -130,7 +130,7 @@
           return '<span class="' + item.cls + '">' + V2.escapeHtml(item.text) + '</span>';
         }).join('') + '</div>' +
         recordsHtml(options.records) +
-        '<div class="v2-character-note"><span title="' + V2.escapeAttr(note) + '">' + V2.escapeHtml(note) + '</span>' + actions.join('') + '</div>' +
+        '<div class="v2-character-note"><span title="' + V2.escapeAttr(note) + '">' + V2.escapeHtml(note) + '</span></div>' +
       '</div>' + effectMarkersHtml(options.placeholder ? [] : data.effect_markers, 'v2-character-effects');
     if (prevPanel && prevPanel !== panelSig) {
       const previous = prevPanel.split('|');

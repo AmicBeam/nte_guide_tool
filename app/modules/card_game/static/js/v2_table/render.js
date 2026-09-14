@@ -199,9 +199,10 @@
   function effectMarkersHtml(markers, className) {
     if (!Array.isArray(markers) || !markers.length) return '';
     return '<div class="' + className + '">' + markers.map(function (marker) {
+      const short = ({ energy_next: '回能', pending_atk: '加攻', next_battle: '攻盾', next_followup: '追击', next_attack: '强化', return_after: '回返' })[marker.id] || '待发';
       const detail = [marker.description, marker.timing, marker.clears_on_down ? '倒地时失去' : '倒地后保留'].filter(Boolean).join(' · ');
       return '<span class="v2-chip" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(marker.name + '：' + detail) + '">' +
-        V2.escapeHtml(marker.name) + '<small>' + V2.escapeHtml(marker.timing || '') + '</small></span>';
+        '<span class="v2-effect-short" aria-hidden="true">' + V2.escapeHtml(short) + '</span><span class="v2-effect-name">' + V2.escapeHtml(marker.name) + '</span><small>' + V2.escapeHtml(marker.timing || '') + '</small></span>';
     }).join('') + '</div>';
   }
 

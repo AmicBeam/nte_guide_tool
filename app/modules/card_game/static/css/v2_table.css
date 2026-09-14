@@ -252,17 +252,64 @@
 .v2-bench-row .v2-character-card,
 .v2-front-slot .v2-character-card { grid-template-columns: minmax(0, 1fr); }
 .v2-resource-row { width: 100%; max-width: 100%; flex-wrap: wrap; }
-@media (pointer: coarse) and (max-width: 1200px) {
-  .v2-character-card:has(.v2-character-extras:not(:empty)) { overflow: visible; }
-  .v2-character-extras { position: absolute; top: calc(100% + 3px); left: 0; width: 100%; display: flex; flex-direction: column; gap: 3px; z-index: 4; }
-  .v2-character-extras:empty { display: none; }
-  .v2-character-card.is-opponent .v2-character-extras { top: auto; bottom: calc(100% + 3px); }
-  .v2-table-page .v2-character-extras .v2-awaken-btn { position: static; transform: none; min-width: 0; max-width: none; width: 100%; min-height: 28px; padding: 4px; font-size: 12px; }
-  .v2-table-page .v2-character-extras .v2-character-effects { position: static; }
-}
 
 .v2-resource-row > span { flex: none; }
+.v2-effect-short { display: none; }
 @media (pointer: coarse) and (max-width: 1200px) {
-  .v2-table-page .v2-bench-row.player .v2-bench-slot:has(.v2-character-extras .v2-awaken-btn) { bottom: max(3%, 36px); }
-  .v2-table-page .v2-front-axis:has(.v2-character-extras .v2-awaken-btn) { padding-bottom: 36px; overflow: visible; }
+  .v2-character-card:has(.v2-character-extras:not(:empty)) { overflow: visible; }
+  .v2-character-extras { display: contents; }
+  .v2-table-page .v2-character-extras .v2-awaken-btn {
+    position: absolute;
+    left: calc(100% + 1px);
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    min-width: 22px;
+    max-width: none;
+    width: 22px;
+    min-height: 44px;
+    padding: 6px 3px;
+    font-size: 12px;
+    letter-spacing: 3px;
+    z-index: 4;
+  }
+  .v2-table-page .v2-character-extras .v2-character-effects {
+    position: absolute;
+    right: calc(100% + 1px);
+    left: auto;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    width: max-content;
+    flex-wrap: nowrap;
+    gap: 3px;
+  }
+  .v2-character-extras .v2-character-effects .v2-chip {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    width: 18px;
+    font-size: 11px;
+    min-height: 40px;
+    box-sizing: border-box;
+    padding: 5px 3px;
+    letter-spacing: 2px;
+  }
+  .v2-character-extras .v2-effect-short { display: inline; }
+  .v2-character-extras .v2-effect-name,
+  .v2-character-extras .v2-character-effects small { display: none; }
+  /* Side controls never move the character or reserve space below it. */
+  .v2-table-page .v2-bench-row.player .v2-bench-slot[data-arc="0"],
+  .v2-table-page .v2-bench-row.player .v2-bench-slot[data-arc="3"] { bottom: 12%; }
+  .v2-table-page .v2-bench-row.player .v2-bench-slot[data-arc="1"],
+  .v2-table-page .v2-bench-row.player .v2-bench-slot[data-arc="2"] { bottom: 3%; }
+  .v2-table-page .v2-bench-row.opponent .v2-bench-slot[data-arc="0"],
+  .v2-table-page .v2-bench-row.opponent .v2-bench-slot[data-arc="3"] { top: 16%; }
+  .v2-table-page .v2-bench-row.opponent .v2-bench-slot[data-arc="1"],
+  .v2-table-page .v2-bench-row.opponent .v2-bench-slot[data-arc="2"] { top: 4%; }
+  .v2-table-page .v2-front-axis:has(.v2-character-extras) {
+    padding: calc(10px * var(--table-layout-scale, 1)) calc(8px * var(--table-layout-scale, 1));
+    overflow: visible;
+  }
 }

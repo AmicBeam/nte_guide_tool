@@ -106,7 +106,8 @@ def knockdown(s: GpuState) -> None:
             if not bool(down.any()):
                 continue
             is_front = s.front[:, side] == seat
-            s.last_front[:, side] = torch.where(down & is_front, torch.full_like(s.front[:, side], seat), s.last_front[:, side])
+            expires = down & (is_front | (s.last_front[:, side] == seat))
+            s.last_front[:, side] = torch.where(expires, torch.full_like(s.last_front[:, side], -1), s.last_front[:, side])
             s.front[:, side] = torch.where(down & is_front, torch.full_like(s.front[:, side], -1), s.front[:, side])
             s.ch_down[:, side, seat] = torch.where(down, torch.full_like(s.ch_down[:, side, seat], 3), s.ch_down[:, side, seat])
             s.ch_shield[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_shield[:, side, seat]), s.ch_shield[:, side, seat])
@@ -456,6 +457,7 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
         for seat in range(N_SEATS):
             s.ch_shield[:, si, seat] = torch.where(here, torch.zeros_like(s.ch_shield[:, si, seat]), s.ch_shield[:, si, seat])
             recovering = here & (s.ch_down[:, si, seat] > 0)
+            s.last_front[:, si] = torch.where(recovering & (s.last_front[:, si] == seat), torch.full_like(s.last_front[:, si], -1), s.last_front[:, si])
             s.ch_down[:, si, seat] = torch.where(recovering, s.ch_down[:, si, seat] - 1, s.ch_down[:, si, seat])
             revived = recovering & (s.ch_down[:, si, seat] == 0)
             s.ch_hp[:, si, seat] = torch.where(revived, s.ch_max_hp[:, si, seat], s.ch_hp[:, si, seat])
@@ -698,6 +700,7 @@ def _play_effects(s: GpuState, side: torch.Tensor, seat: int, kind: torch.Tensor
     y06 = valid & (tables['revive_target'][k] > 0)
     for ally in range(N_SEATS):
         hit = y06 & (tseat == ally)
+        s.last_front[b, side] = torch.where(hit & (s.last_front[b, side] == ally), torch.full_like(s.last_front[b, side], -1), s.last_front[b, side])
         s.ch_down[b, side, ally] = torch.where(hit, torch.zeros_like(s.ch_down[b, side, ally]), s.ch_down[b, side, ally])
         s.ch_hp[b, side, ally] = torch.where(hit, s.ch_max_hp[b, side, ally], s.ch_hp[b, side, ally])
         s.ch_atk_buff[b, side, ally] = torch.where(hit, s.ch_atk_buff[b, side, ally] + buff_amt, s.ch_atk_buff[b, side, ally])

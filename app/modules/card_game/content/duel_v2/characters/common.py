@@ -44,10 +44,11 @@ def revive_self(c):
 
 
 def revive_character(c, side, cid, *, temporary=False):
-    from app.modules.card_game.engine.duel_v2.state import hero, log
+    from app.modules.card_game.engine.duel_v2.state import clear_harmony_source, hero, log
     h = hero(c.state, side, cid)
     if h['hp'] > 0 and not h.get('down_turns'):
         return
+    clear_harmony_source(c.state, side, cid)
     h['down_turns'] = 0
     h['hp'] = max(int(h['max_hp']), 1)
     if temporary:

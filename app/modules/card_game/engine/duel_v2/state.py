@@ -173,12 +173,19 @@ def victory(state):
         'finish', winner=state['winner'], reason=state.get('reason'))
 
 
+def clear_harmony_source(state, side, cid):
+    """Death expires a character's previous sortie, without consuming personal resources."""
+    team = state['sides'][side]
+    if team['last_front'] == cid:
+        team['last_front'] = None
+
+
 def move_out(state, side, cid):
     team = state['sides'][side]
     if team['front'] != cid:
         return
     h = hero(state, side, cid)
-    team['last_front'] = cid
+    team['last_front'] = cid if alive(state, side, cid) else None
     team['front'] = None
     before = {'hp': h['hp'], 'shield': h['shield'], 'front': cid}
     h['shield'] = 0
@@ -208,6 +215,7 @@ def knockdowns(state):
             if h['hp'] > 0 or h['down_turns'] > 0:
                 continue
             h['hp'] = 0
+            clear_harmony_source(state, side, cid)
             killer = h.pop('last_hit_source', None)
             move_out(state, side, cid)
             before = {'hp': 0, 'shield': h['shield'], 'harmony': h['harmony'], 'energy': h['energy'],

@@ -8,7 +8,7 @@ from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DEC
 from app.modules.card_game.content.duel_v2.registry import KITS, fire
 from .context import EffectContext
 from app.modules.card_game.engine.events import GameEvent
-from .state import (SIDES, add_hand, alive, card_instance, collapsed, damage, discard,
+from .state import (SIDES, add_hand, alive, card_instance, clear_harmony_source, collapsed, damage, discard,
                     draw, energy, energy_max, finished, front_debuff, hero, knockdowns, log, move_out, name,
                     new_character, other, shield, shuffle, team_order)
 
@@ -368,6 +368,7 @@ def begin_turn(state, side):
         h = hero(state, side, cid)
         h['shield'] = 0
         if h['down_turns']:
+            clear_harmony_source(state, side, cid)
             h['down_turns'] -= 1
             if not h['down_turns']:
                 h['hp'] = h['max_hp']

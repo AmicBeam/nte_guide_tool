@@ -603,7 +603,7 @@ test("attack presentation does not announce damage numbers before damage packets
   const harness = makeRoot();
   const player = new Player({ root: harness.root, clock: harness.clock });
   const captions = [];
-  player._caption = (...args) => captions.push(args);
+  player._notice = (...args) => captions.push(args);
   await settle(player.play([{ seq: 1, type: "attack", actor: "a:nanali", target: "b:zero",
     attack: 4, counter: 2, text: "攻击 4，反击 2。" }], { instant: true }), harness.clock, player);
   assert.deepEqual(captions, []);
@@ -1005,10 +1005,12 @@ test("turn start is patched before the following draw", async () => {
       order.push(event.type);
     },
   });
-  const banner = player._banner.bind(player);
-  const caption = player._caption.bind(player);
-  player._banner = (text) => { banners.push(text); banner(text); };
-  player._caption = (title, detail) => { captions.push([title, detail]); caption(title, detail); };
+  const notice = player._notice.bind(player);
+  player._notice = (title, detail, position) => {
+    if (position === "top") banners.push(title);
+    else captions.push([title, detail]);
+    return notice(title, detail, position);
+  };
   await settle(player.play([
     { seq: 121, type: "turn", side: "a", present: true, text: "我方玩家的第 2 个回合开始。", patch: { turn: 2 } },
     { seq: 122, type: "draw", side: "a", present: true, card: publicCard(), patch: { drawn: true } },
@@ -1018,4 +1020,22 @@ test("turn start is patched before the following draw", async () => {
   const turnText = "我方玩家的第 2 个回合开始。";
   assert.equal(banners.filter((text) => text === turnText).length, 1);
   assert.equal(captions.some(([title, detail]) => title === turnText || detail === turnText), false);
+});
+
+test("notice moves one element between top and bottom without losing content", () => {
+  const harness = makeRoot();
+  const player = new Player({ root: harness.root, clock: harness.clock });
+  const top = player._notice("恢复", "娜娜莉恢复了生命。", "top");
+  assert.equal(top.textContent, "恢复 · 娜娜莉恢复了生命。");
+  assert.equal(top.classList.contains("v2-fx-banner"), true);
+  const bottom = player._notice("抽牌", "抽牌", "bottom");
+  assert.equal(bottom, top);
+  assert.equal(bottom.textContent, "抽牌");
+  assert.equal(bottom.classList.contains("v2-fx-caption"), true);
+  assert.equal(bottom.classList.contains("v2-fx-banner"), false);
+  assert.equal(overlayOf(harness).querySelectorAll(".v2-fx-notice").length, 1);
+  player._notice("", "", "top");
+  assert.equal(top.hidden, true);
+  player._notice("你的回合", "", "top");
+  assert.equal(top.hidden, false);
 });

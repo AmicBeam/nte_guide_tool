@@ -624,7 +624,7 @@
         } catch (_error) {}
       }
       this._veil(true);
-      this._caption(hasPublicCard(card) ? String(card.name || "") : "出牌", event && event.text);
+      this._notice(hasPublicCard(card) ? String(card.name || "") : "出牌", event && event.text, "bottom");
       const fly = this._duration(instant, BEATS.playFly);
       const flip = opponent ? this._duration(instant, BEATS.playFlip) : 0;
       const dx = endX - startX;
@@ -771,7 +771,7 @@
       flower.style.top = (to.y - stageRect.top) + "px";
       overlay.appendChild(flower);
       const value = amountOf(event);
-      this._caption("创生花", event && event.text);
+      this._notice("创生花", event && event.text, "bottom");
       this._floater(to, stageRect, value != null ? "-" + String(value) : "创生花", "harmony");
       await this._wait(this._duration(instant, BEATS.flowerHold));
     }
@@ -797,7 +797,7 @@
 
     async _presentEnter(event, instant) {
       const actor = this._entity(event && (event.actor || event.source || event.target));
-      this._caption("入场", event && event.text);
+      this._notice("入场", event && event.text, "bottom");
       if (actor) {
         actor.classList.add("v2-fx-enter");
         try {
@@ -854,7 +854,7 @@
       const target = this._entity(event && (event.target || event.actor || event.source));
       const point = centerOf(readRect(target), { x: stageRect.cx, y: stageRect.cy });
       const label = TYPE_TITLES[kind] || kind;
-      this._caption(label, event && event.text);
+      this._notice(label, event && event.text, "bottom");
       if (target) {
         target.classList.add("v2-fx-" + kind);
       }
@@ -876,7 +876,7 @@
       const title = this._el("div", "v2-fx-title");
       title.textContent = (event && event.text) || fallback || TYPE_TITLES[event && event.type] || "";
       overlay.appendChild(title);
-      this._caption(title.textContent);
+      this._notice("", "", "bottom");
       await this._wait(this._duration(instant, BEATS.titleHold));
     }
 
@@ -887,7 +887,6 @@
         if (node) {
           node.classList.add(className);
         }
-        this._banner(label);
         const overlay = this._ensureOverlay();
         const stageRect = readRect(overlay) || { cx: 400, cy: 225, left: 0, top: 0, width: 800, height: 450 };
         const point = centerOf(readRect(node), { x: stageRect.cx, y: stageRect.cy });
@@ -899,7 +898,7 @@
         if (klass === "awaken" || klass === "shape" || klass === "revive") {
           this._floater(point, stageRect, label, klass === "awaken" ? "awaken" : klass);
         }
-        this._caption(label, event && event.text);
+        this._notice(label, event && event.text, "top");
         await this._wait(this._duration(instant, BEATS.statusHold));
       } finally {
         if (node) {
@@ -919,7 +918,7 @@
         node.classList.add("v2-fx-" + klass);
       }
       this._floater(point, stageRect, value != null ? label + " +" + String(value) : label, klass);
-      this._caption(label, event && event.text);
+      this._notice(label, event && event.text, "bottom");
       await this._wait(this._duration(instant, BEATS.floaterHold));
       if (node) {
         node.classList.remove("v2-fx-" + klass);
@@ -952,7 +951,7 @@
       const first = (event && (event.first_side || event.side)) || "";
       const viewer = this._viewerSide();
       const isFirst = Boolean(viewer && first && first === viewer);
-      this._caption(isFirst ? "先手" : "后手", event && event.text);
+      this._notice(isFirst ? "先手" : "后手", event && event.text, "bottom");
       if (!overlay) {
         await this._presentBanner(event, instant);
         return;
@@ -980,7 +979,7 @@
     }
 
     async _presentMulligan(event, instant) {
-      this._caption("起手换牌", event && event.text);
+      this._notice("起手换牌", event && event.text, "bottom");
       const table = typeof window !== "undefined" ? window.NTE_V2_TABLE : null;
       const rail = this.root && typeof this.root.querySelector === "function"
         ? this.root.querySelector("#v2-mulligan-rail")
@@ -1160,7 +1159,7 @@
       const startX = (stageRect.width || 800) + 36;
       node.style.left = startX + "px";
       node.style.top = hoverY + "px";
-      this._caption(publicCard ? String(card.name || "抽牌") : "抽牌", event && event.text);
+      this._notice(publicCard ? String(card.name || "抽牌") : "抽牌", event && event.text, "bottom");
       const fly = this._duration(instant, BEATS.drawFly);
       await this._animate(node, [
         { transform: "translate(0px, 0px)", opacity: 0.35 },
@@ -1204,14 +1203,13 @@
           this.onPublicCard(card, event);
         } catch (_error) {}
       }
-      this._caption(chip.textContent, event && event.text);
+      this._notice(chip.textContent, event && event.text, "bottom");
       await this._wait(this._duration(instant, BEATS.markHold));
     }
 
     async _presentBanner(event, instant) {
       const label = (event && event.text) || TYPE_TITLES[event && event.type] || (event && event.type) || "";
-      this._banner(label);
-      this._caption(event && event.type === "turn" ? "" : label);
+      this._notice(label, "", "top");
       await this._wait(this._duration(instant, BEATS.bannerHold));
     }
 
@@ -1231,29 +1229,21 @@
       overlay.setAttribute("data-v2-fx-types", seen ? seen + "," + kind : kind);
     }
 
-    _banner(text) {
-      if (!text) {
-        return;
-      }
+    _notice(title, detail = "", position = "bottom") {
       const overlay = this._ensureOverlay();
-      const node = this._el("div", "v2-fx-banner");
-      node.textContent = String(text);
-      overlay.appendChild(node);
-    }
-
-    _caption(title, detail) {
-      const overlay = this._ensureOverlay();
-      let node = overlay && typeof overlay.querySelector === "function"
-        ? overlay.querySelector(".v2-fx-caption")
-        : null;
+      let node = overlay.querySelector(".v2-fx-notice");
       if (!node) {
-        node = this._el("div", "v2-fx-caption");
+        node = this._el("div", "v2-fx-notice");
         overlay.appendChild(node);
       }
+      const placement = position === "top" ? "top" : "bottom";
+      node.setAttribute("class", "v2-fx-notice " + (placement === "top" ? "v2-fx-banner" : "v2-fx-caption"));
+      node.setAttribute("data-v2-fx-position", placement);
       const headline = String(title || "").trim();
       const body = String(detail || "").trim();
       node.textContent = body && body !== headline ? headline + " · " + body : (headline || body);
       node.hidden = !node.textContent;
+      return node;
     }
 
     _veil(on) {

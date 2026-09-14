@@ -303,3 +303,30 @@ body:has(.v2-codex-page) .shell {
     display: block;
   }
 }
+
+@media (max-width: 980px), (pointer: coarse) and (max-height: 600px) {
+  body:has(.v2-codex-page) { height: auto; overflow: auto; }
+  body:has(.v2-codex-page) .shell,
+  .v2-codex-page { height: auto; min-height: 100dvh; max-height: none; overflow: visible; }
+  .v2-codex-page { grid-template-rows: auto auto; }
+  .v2-codex-page .v2-home-nav { padding: 8px 12px; gap: 8px; }
+  .v2-codex-page .v2-home-links { justify-content: flex-end; }
+  .v2-codex-stage { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+  .v2-codex-nav { display: flex; overflow-x: auto; padding: 8px; }
+  .v2-codex-nav button { width: auto; flex: 0 0 auto; min-height: 44px; }
+  .v2-codex-body { grid-template-rows: auto auto; overflow: visible; padding: 12px; }
+  .v2-codex-hero { grid-template-columns: 120px minmax(0, 1fr); gap: 12px; }
+  .v2-codex-hero-art { height: 160px; }
+  .v2-codex-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); overflow: visible; }
+  .v2-codex-help,
+  .v2-glossary-header button { width: 44px; height: 44px; flex: 0 0 auto; }
+  .v2-glossary-search input { font-size: 16px; }
+}
+@media (max-width: 600px) {
+  .v2-codex-page .v2-home-logo { width: 80px; }
+  .v2-codex-page .v2-home-links { gap: 0; }
+  .v2-codex-page .v2-home-links a { padding: 10px 6px; }
+  .v2-codex-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .v2-codex-hero { grid-template-columns: 88px minmax(0, 1fr); }
+  .v2-codex-hero-art { height: 120px; }
+}

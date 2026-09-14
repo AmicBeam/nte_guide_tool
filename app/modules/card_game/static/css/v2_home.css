@@ -467,3 +467,38 @@ body:has(.v2-replays-page) .shell {
     font-size: 13px;
   }
 }
+
+@media (max-width: 980px), (pointer: coarse) and (max-height: 600px) {
+  body:has(.v2-home-page),
+  body:has(.v2-replays-page) { height: auto; overflow: auto; }
+  body:has(.v2-home-page) .shell,
+  body:has(.v2-replays-page) .shell,
+  .v2-home-page,
+  .v2-replays-page { height: auto; min-height: 100dvh; max-height: none; overflow: visible; }
+  .v2-home-page,
+  .v2-replays-page { grid-template-rows: auto auto; }
+  :is(.v2-home-page, .v2-replays-page) .v2-home-nav {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+    gap: 8px 12px;
+  }
+  :is(.v2-home-page, .v2-replays-page) .v2-home-links { justify-content: flex-end; }
+  :is(.v2-home-page, .v2-replays-page) .v2-home-account { display: flex; grid-column: 1 / -1; flex-wrap: wrap; }
+  .v2-home-stage { grid-template-rows: auto auto; padding: 12px; gap: 16px; }
+  .v2-home-hero,
+  .v2-home-play { overflow: visible; }
+  .v2-home-hero { grid-template-rows: auto; }
+  .v2-home-roster { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .v2-home-esper { grid-template-rows: 140px auto; }
+  .v2-home-esper-art { min-height: 0; height: 140px; }
+  :is(.v2-home-page, .v2-replays-page) button,
+  :is(.v2-home-page, .v2-replays-page) .secondary-btn { min-height: 44px; }
+  .v2-home-page .v2-banner { position: fixed; top: 8px; }
+  .v2-home-page input { font-size: 16px; }
+}
+@media (max-width: 600px) {
+  :is(.v2-home-page, .v2-replays-page) .v2-home-logo { width: 100px; }
+  :is(.v2-home-page, .v2-replays-page) .v2-home-links { gap: 0; }
+  :is(.v2-home-page, .v2-replays-page) .v2-home-links a { padding: 10px 8px; }
+  .v2-home-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

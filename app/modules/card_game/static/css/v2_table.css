@@ -178,3 +178,35 @@
 .v2-front-axis.drop-target-top .v2-front-zone.opponent {
   outline: calc(2px * var(--table-layout-scale, 1)) solid rgba(255, 191, 87, 0.85);
 }
+
+/* Phone base sizing is applied through the existing layout/font scale factors. */
+@media (max-width: 1200px) and (pointer: coarse) {
+  .v2-table-page { --portrait-min: calc(28px * var(--table-layout-scale, 1)); }
+  .v2-table-page .v2-character-heading { gap: calc(2px * var(--table-layout-scale, 1)); }
+  .v2-table-page .v2-character-heading strong { font-size: calc(12px * var(--table-font-scale, 1)); }
+  .v2-table-page .v2-side-actions button,
+  .v2-table-page #v2-menu-btn { min-height: 44px; }
+  .v2-table-page .v2-menu-dialog { max-height: calc(100dvh - 16px); }
+  .v2-table-page .v2-room-chip,
+  .v2-table-page .v2-connection-chip { display: none; }
+}
+
+@media (pointer: coarse) and (orientation: portrait) {
+  .v2-table-page .v2-rotate-hint {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 24px;
+    background: #10151d;
+    color: #f4e6c4;
+    font-size: 20px;
+    text-align: center;
+  }
+  .v2-table-page .v2-rotate-hint a { font-size: 16px; min-height: 44px; }
+  .v2-table-page > :not(.v2-rotate-hint) { visibility: hidden; }
+}

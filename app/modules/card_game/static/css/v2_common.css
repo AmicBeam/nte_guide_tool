@@ -365,3 +365,10 @@ body.v2-dragging {
 .v2-choice-card:focus-visible .v2-hover-card {
     box-shadow: 0 calc(28px * var(--table-layout-scale, 1)) calc(64px * var(--table-layout-scale, 1)) rgba(0, 0, 0, 0.55), 0 0 0 calc(2px * var(--table-layout-scale, 1)) var(--amber, #e2b95f);
 }
+
+@media (pointer: coarse) {
+  body:has([class*="v2-"]) {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}

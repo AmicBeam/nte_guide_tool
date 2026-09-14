@@ -173,13 +173,16 @@ async function bootstrapTable() {
     historyDrawer.setAttribute('aria-hidden', open ? 'false' : 'true');
   }
 
+  const mobileLayout = window.matchMedia('(pointer: coarse) and (max-width: 1200px)');
+
   function applyPlayerOptions() {
     const fontSize = Number.isInteger(ctx.options.fontSize) && ctx.options.fontSize >= 0 && ctx.options.fontSize <= 4 ? ctx.options.fontSize : 2;
     ctx.options.fontSize = fontSize;
     const layoutScale = [1, 1.5, 2].includes(ctx.options.layoutScale) ? ctx.options.layoutScale : 1;
     ctx.options.layoutScale = layoutScale;
-    page.style.setProperty('--table-layout-scale', layoutScale);
-    page.style.setProperty('--table-font-scale', [0.8, 0.9, 1, 1.1, 1.2][fontSize] * layoutScale);
+    const baseScale = mobileLayout.matches ? 0.8 : 1;
+    page.style.setProperty('--table-layout-scale', layoutScale * baseScale);
+    page.style.setProperty('--table-font-scale', [0.8, 0.9, 1, 1.1, 1.2][fontSize] * layoutScale * baseScale);
     page.querySelectorAll('[data-layout-scale]').forEach(function (button) {
       button.setAttribute('aria-pressed', String(Number(button.dataset.layoutScale) === layoutScale));
     });
@@ -198,6 +201,8 @@ async function bootstrapTable() {
     document.getElementById('v2-speed-1').classList.toggle('primary-btn', ctx.options.speed !== 2);
     document.getElementById('v2-speed-2').classList.toggle('primary-btn', ctx.options.speed === 2);
   }
+
+  mobileLayout.addEventListener('change', applyPlayerOptions);
 
   document.getElementById('v2-menu-btn').addEventListener('click', function () { setMenuOpen(true); });
   document.getElementById('v2-menu-close').addEventListener('click', function () { setMenuOpen(false); });

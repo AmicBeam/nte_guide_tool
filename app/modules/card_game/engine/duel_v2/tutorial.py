@@ -120,6 +120,9 @@ def new_tutorial_game(scenario_id, seed=0):
             from .state import draw
             draw(state, side, opening_draw)
     from .flow import begin_turn
+    for side, extra in (scenario.get('extra_ap') or {}).items():
+        if side in state['sides']:
+            state['sides'][side]['extra_ap'] = int(extra)
     skip_mulligan = flags.get('skip_mulligan', True)
     if skip_mulligan:
         state['mulligan_done'] = list(SIDES)

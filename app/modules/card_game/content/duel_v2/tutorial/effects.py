@@ -38,6 +38,20 @@ TARGET_POLICIES.update({
 
 
 @register
+class TutorialProtagonist:
+    id = 'tutorial_protagonist'
+    text_name = '主角'
+
+    @staticmethod
+    def after_card(c, *, actor_id, card, **_data):
+        if actor_id != c.cid or not card or card.get('type') != 'battle':
+            return
+        if c.character['hp'] <= 0:
+            return
+        c.character['harmony'] = 2
+
+
+@register
 class TutorialBohe:
     id = 'tutorial_bohe'
     text_name = '薄荷'

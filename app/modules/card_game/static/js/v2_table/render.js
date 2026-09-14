@@ -332,7 +332,6 @@
     return (
       '<article class="' + classes.join(' ') + '" draggable="false" data-card-id="' + V2.escapeAttr(card.instance_id) + '" data-drag-kind="card" data-card-owner="' + V2.escapeAttr(card.character_id || '') + '" data-card-type="' + V2.escapeAttr(card.type || '') + '"' + instanceAttr + style + title + ' aria-label="' + V2.escapeAttr(label) + '">' +
         (card.copy ? '<span class="v2-chip copy">复制</span>' : '') +
-        (card.derived ? '<span class="v2-chip">不可构筑</span>' : '') +
         '<strong>' + V2.escapeHtml(card.name || '卡牌') + '</strong>' +
         V2.cardDescriptionHtml(card.description, '正在读取卡牌效果。', 'subtle') +
         V2.cardFrameStat(card) +

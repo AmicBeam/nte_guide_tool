@@ -64,6 +64,7 @@
           V2.cardCostBadge(card) +
           V2.cardFrameStat(card) +
           '<div class="v2-stat-row">' + V2.cardTypeChip(card.type, card.terminal) +
+            V2.cardDerivedChip(card) +
             (card.copy ? '<span class="v2-chip copy">复制</span>' : '') + '</div>' +
           (owner ? '<span class="v2-card-owner">' + V2.escapeHtml(owner) + '</span>' : '') +
           '<h2>' + V2.escapeHtml(card.name || '卡牌') + '</h2>' +

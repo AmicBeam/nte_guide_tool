@@ -257,7 +257,8 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     klass = damage_class_for(kind, damage_class)
     attr = source_attribute(state, source)
     zone = front_debuff(state, side)
-    if kind == 'combat' and attr in ('魂', '相') and zone.get('stain'):
+    if (kind == 'combat' and attr in ('魂', '相') and zone.get('stain')
+            and (state['sides'][side]['front'] == cid or (not esper and not state['sides'][side]['front']))):
         amount += 2
     before = {'hp': target['hp'], 'shield': target['shield']}
     absorbed = 0 if bypass else min(target['shield'], amount)
@@ -299,15 +300,6 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
             if src_side in SIDES and src_cid in state['sides'][src_side]['characters']:
                 fire(EffectContext(state, src_side, src_cid, {'side': src_side}),
                      'on_damage_dealt', target_side=side, target_id=cid, amount=loss)
-    if (kind == 'combat' and attr in ('灵', '咒') and zone.get('weave')
-            and not state.get('_weave_lock') and not finished(state)):
-        state['_weave_lock'] = True
-        try:
-            from .presentation import next_group_id
-            damage(state, side, cid, 2, source=source, kind='overlay', settle=False,
-                   group_id=group_id or next_group_id(state), damage_class='harmony')
-        finally:
-            state['_weave_lock'] = False
     if settle:
         knockdowns(state)
         victory(state)

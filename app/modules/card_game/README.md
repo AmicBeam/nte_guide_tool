@@ -55,7 +55,7 @@
 
 ```bash
 python3 -m unittest tests.test_module_routes.ModuleRoutesTest.test_card_game_module_page_and_asset
-python3 -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_rl tests.test_duel_v2_rl_train tests.test_duel_v2_gpu_duel tests.test_duel_v2_rule_ir tests.test_duel_v2_table_contract tests.test_duel_v2_tutorial
+python3 -m unittest tests.test_duel_v2_zone_status tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_rl tests.test_duel_v2_rl_train tests.test_duel_v2_gpu_duel tests.test_duel_v2_rule_ir tests.test_duel_v2_table_contract tests.test_duel_v2_tutorial
 node --check app/modules/card_game/static/js/v2_api.js
 node --check app/modules/card_game/static/js/v2_build.js
 node --check app/modules/card_game/static/js/v2_table.js
@@ -74,3 +74,5 @@ node --check app/modules/card_game/static/js/v2_replays.js
 新版使用构筑/房间/成员/快照/回放专表，旧构筑与旧快照不会被转换或覆盖。公开回放日志与对局快照分开保存，离开房间后仍可按房间码观看。普通动作先更新单进程最新态再异步入库，进程异常时可能丢失尚未入库的最后一步；正式结束结果与房间结束状态同步提交。刷新不会重新扣费，网络重试应复用 request_id，并携带 room_code 和 expected_version，旧房间请求不能作用于新房间。当前并发保证以单进程服务为边界，跨进程部署前需要增加集中式状态协调。
 
 [强化学习说明](../../../docs/duel-v2-rl.md)：`python3 scripts/train_duel_v2.py --check` 只检查配置；`--train --output DIR` 使用 GPU 候选打分与多进程采样，默认双方都用当前创生预组，对抗冻结规则启发式，再做固定种子策略评估。`--deck weave-rush` 改为覆纹快攻镜像。1024 局张量环境用 `python3 scripts/train_duel_v2_gpu.py --output DIR --n 1024 --horizon 32`；`--deck weave-rush` 跑快攻镜像，`--matchup cross` 跑创生 vs 快攻，`--resume gpu_policy.pt` 接上一阶段。换少数卡时用 `--resume` 加 `--freeze-generic`（可选 `--kl-coef`），一次训练只打一套牌。训练状态页用 `python3 scripts/rl_monitor.py` 单独开在 5002，大厅无入口。网站不加载训练权重。小样本结果不是平衡证据。
+
+战斗区状态显示在牌桌战斗区右侧，附带倒计时或「本回合」。浊燃与黯星在区域所属方回合开始结算，无前排时伤害玩家；开始效果与倒计时处理后才退回前排，再通常抽牌。

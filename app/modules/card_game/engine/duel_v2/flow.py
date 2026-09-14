@@ -374,9 +374,6 @@ def begin_turn(state, side):
                 log(state, f"{h['name']}在备战区恢复。", 'revive', side=side, source=cid,
                     actor=f'{side}:{cid}', target=f'{side}:{cid}',
                     before={'hp': 0, 'down_turns': 1}, after={'hp': h['hp'], 'down_turns': 0})
-    front = team.get('front')
-    if front and not collapsed(hero(state, side, front)):
-        move_out(state, side, front)
     carrier = team_order(state, side)[0]
     fire(EffectContext(state, side, carrier, {'side': side}), 'on_turn_begin')
     if finished(state):
@@ -390,6 +387,17 @@ def begin_turn(state, side):
     other_side = other(side)
     other_carrier = team_order(state, other_side)[0]
     fire(EffectContext(state, other_side, other_carrier, {'side': other_side}), 'on_enemy_turn_begin')
+    if finished(state):
+        return
+    tick_front_debuff(state, side)
+    if finished(state):
+        return
+    tick_ultimates(state, side)
+    if finished(state):
+        return
+    front = team.get('front')
+    if front and not collapsed(hero(state, side, front)):
+        move_out(state, side, front)
     from .tutorial import tutorial_flags
     flags = tutorial_flags(state)
     if state['turn'] != 1 and not flags.get('disable_draw'):
@@ -405,37 +413,42 @@ def begin_turn(state, side):
 
 
 def tick_front_debuff(state, side):
+    """The affected battle zone ticks before its front returns and normal draw."""
     zone = front_debuff(state, side)
-    opponent = other(side)
-    opp_ctx = EffectContext(state, opponent, team_order(state, opponent)[0], {'side': opponent})
-    front = state['sides'][side]['front']
-    if zone.get('burn'):
-        if not zone['burn'].get('infinite'):
-            zone['burn']['left'] = int(zone['burn'].get('left') or 0) - 1
-        if front and alive(state, side, front):
-            by = zone['burn'].get('by')
-            damage(state, side, front, 1, kind='burn',
-                   source=f'{by}:burn' if by else None)
-            fire(opp_ctx, 'on_dot', target_id=front, kind='burn')
-        if not zone['burn'].get('infinite') and zone['burn']['left'] <= 0:
-            zone.pop('burn', None)
-        if finished(state):
-            return
-    if zone.get('star') and int(zone['star'].get('end') or 0) <= state['sides'][side]['turn_count']:
-        by = zone['star'].get('by')
-        zone.pop('star', None)
-        if front and alive(state, side, front):
-            damage(state, side, front, 3, kind='star',
-                   source=f'{by}:star' if by else None)
-        if finished(state):
-            return
-    if zone.get('delay') and int(zone['delay'].get('end') or 0) <= state['sides'][side]['turn_count']:
-        zone.pop('delay', None)
-    opp_zone = front_debuff(state, opponent)
-    if (opp_zone.get('weave') or {}).get('by') == side:
-        opp_zone.pop('weave', None)
-    if (opp_zone.get('stain') or {}).get('by') == side:
-        opp_zone.pop('stain', None)
+    for kind in ('burn', 'star', 'delay'):
+        status = zone.get(kind)
+        if not status or status.get('expires_side'):
+            continue
+        # Older snapshots stored an absolute end-turn index.
+        left = int(status.get('left', max(1, int(status.get('end', 0)) - state['sides'][side]['turn_count'] + 1)))
+        amount = 1 if kind == 'burn' else (2 if kind == 'star' and left <= 1 else 0)
+        if amount:
+            by = status.get('by') or other(side)
+            target = state['sides'][side]['front'] or 'player'
+            damage(state, side, target, amount, kind=kind, source=f'{by}:{kind}')
+            if finished(state):
+                return
+            fire(EffectContext(state, by, team_order(state, by)[0], {'side': by}),
+                 'on_dot', target_id=target, kind=kind)
+            if finished(state):
+                return
+        if not status.get('infinite'):
+            status['left'] = max(0, left - 1)
+            if status['left'] == 0:
+                zone.pop(kind, None)
+        log(state, '战斗区状态倒计时更新。', 'countdown', side=side,
+            actor=f'{side}:front', target=f'{side}:front')
+
+
+def expire_turn_zone_states(state, side):
+    for owner in SIDES:
+        zone = front_debuff(state, owner)
+        for kind in ('delay', 'weave', 'stain'):
+            status = zone.get(kind)
+            if status and status.get('expires_side', status.get('by') if kind != 'delay' else None) == side:
+                zone.pop(kind, None)
+                log(state, '本回合战斗区状态结束。', 'countdown', side=owner,
+                    actor=f'{owner}:front', target=f'{owner}:front')
 
 
 def end_turn(state, side):
@@ -448,9 +461,6 @@ def end_turn(state, side):
             h['hp'] = 0
             h['flags'].pop('temp_revive', None)
     knockdowns(state)
-    if finished(state):
-        return
-    tick_front_debuff(state, side)
     if finished(state):
         return
     for cid in team_order(state, side):
@@ -475,7 +485,7 @@ def end_turn(state, side):
             discard(state, side, card)
     team.update(normal_attack_available=False, ultimate_available=False,
                 extra_flower=False, extra_delay=False)
-    tick_ultimates(state, side)
+    expire_turn_zone_states(state, side)
     if finished(state):
         return
     begin_turn(state, other(side))

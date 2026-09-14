@@ -58,7 +58,7 @@ def capture_public_board(state):
         source = available.get(ps)
         if not source:
             continue
-        team = {key: deepcopy(source[key]) for key in ('hp', 'shield', 'ap', 'front', 'last_front')}
+        team = {key: deepcopy(source[key]) for key in ('hp', 'shield', 'ap', 'front', 'last_front', 'front_debuff')}
         team['hand_count'] = len(source['hand'])
         team['deck_count'] = len(source['deck'])
         pending = state.get('pending_choice')

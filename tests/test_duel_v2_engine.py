@@ -98,8 +98,8 @@ class DuelV2EngineTest(unittest.TestCase):
         deck = next(item for item in STARTER_DECKS if item['id'] == 'sync-curse')
         s = new_game(seed=3, first_side='a', skip_mulligan=True, decks={'a': deck, 'b': deck})
         s['sides']['a']['ap'] = 2
-        s['sides']['a']['front'] = 'canhong'
-        hero(s, 'a', 'canhong')['harmony'] = 2
+        s['sides']['a']['front'] = 'lingke'
+        hero(s, 'a', 'lingke')['harmony'] = 2
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'iloy'})
         self.assertTrue(any(e['type'] == 'harmony' and '同频' in e['text'] for e in s['events']))
         self.assertEqual(hero(s, 'a', 'iloy')['shield'], 1)
@@ -1011,7 +1011,7 @@ class DuelV2EngineTest(unittest.TestCase):
         s['sides']['b']['front'] = 'zero'
         hero(s, 'b', 'zero').update(hp=4)
         s = apply_action(s, 'b', {'type': 'end_turn'})
-        self.assertEqual(s['sides']['a']['front'], 'bohe')
+        self.assertIsNone(s['sides']['a']['front'])
         self.assertTrue(any(event['type'] == 'attack' and event.get('source') == 'bohe'
                             for event in s['events']))
 

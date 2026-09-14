@@ -40,8 +40,6 @@ def harmony_kind(state, side, cid):
         return None
     previous = harmony_previous(state, side, cid)
     kind = PAIRS.get(frozenset((hero(state, side, previous)['attribute'], hero(state, side, cid)['attribute'])))
-    if kind != '创生' and not state['sides'][other(side)]['front']:
-        return None
     return kind
 
 
@@ -137,11 +135,12 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
         duration = int(decide(c, 'delay_duration', 1) or 1)
         slow = int(decide(c, 'delay_slow', 1) or 0)
         front_debuff(s, enemy)['delay'] = {
-            'end': s['sides'][enemy]['turn_count'] + duration,
+            'left': duration,
+            'expires_side': s['active_side'] if duration == 1 else None,
             'slow': slow,
             'by': side,
         }
-        log(s, f"对手前台获得延滞（{duration} 回合）。", 'harmony',
+        log(s, f"对方战斗区获得延滞（{duration} 回合）。", 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
         hits = tally(c, 'delay_hits') + int(team.get('extra_delay'))
         team['extra_delay'] = False
@@ -157,7 +156,7 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
         zone = front_debuff(s, enemy)
         had_star = bool(zone.get('star'))
         zone['burn'] = {'left': 2, 'by': side}
-        log(s, '对手前台获得浊燃。', 'harmony',
+        log(s, '对方战斗区获得浊燃。', 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
         fire(c, 'on_burn_applied', enemy=enemy, target_id=target)
         if had_star:
@@ -167,20 +166,20 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
     elif kind == '黯星':
         zone = front_debuff(s, enemy)
         had_burn = bool(zone.get('burn'))
-        zone['star'] = {'end': s['sides'][enemy]['turn_count'] + 1, 'by': side}
-        log(s, '对手前台获得黯星。', 'harmony',
+        zone['star'] = {'left': 2, 'by': side}
+        log(s, '对方战斗区获得黯星。', 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
         if had_burn:
             add_collapse(s, enemy, target, 1, by=side)
             log(s, f"{c.character['name']}触发失谐。", 'harmony', side=side, source=cid,
                 actor=f'{side}:{cid}', target=f'{enemy}:{target}')
     elif kind == '覆纹':
-        front_debuff(s, enemy)['weave'] = {'by': side}
-        log(s, '对手前台获得覆纹。', 'harmony',
+        front_debuff(s, enemy)['weave'] = {'by': side, 'expires_side': s['active_side']}
+        log(s, '对方战斗区获得覆纹。', 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
     elif kind == '浸染':
-        front_debuff(s, enemy)['stain'] = {'by': side}
-        log(s, '对手前台获得浸染。', 'harmony',
+        front_debuff(s, enemy)['stain'] = {'by': side, 'expires_side': s['active_side']}
+        log(s, '对方战斗区获得浸染。', 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
     elif kind == '同频':
         team['used']['sync'] = True
@@ -298,6 +297,11 @@ def attack(c, spec, index):
         from .tutorial import tutorial_flags
         if tutorial_flags(s).get('disable_overflow'):
             overflow = 0
+    weave_targets = []
+    if h['attribute'] in ('灵', '咒') and front_debuff(s, enemy).get('weave'):
+        weave_targets.append((side, cid, enemy, target_id))
+    if is_esper(target_id) and not no_counter and target['attribute'] in ('灵', '咒') and front_debuff(s, side).get('weave'):
+        weave_targets.append((enemy, target_id, side, cid))
     # Counters deal simultaneous damage but do not accumulate combat resources.
     attacker = [side, cid]
     if attacker not in op['participants']:
@@ -330,6 +334,15 @@ def attack(c, spec, index):
     victory(s)
     if finished(s):
         return
+    for source_side, source_id, target_side, target_cid in weave_targets:
+        if not alive(s, source_side, source_id):
+            continue
+        if is_esper(target_cid) and (not alive(s, target_side, target_cid) or s['sides'][target_side]['front'] != target_cid):
+            continue
+        damage(s, target_side, target_cid, 2, source=f'{source_side}:{source_id}',
+               kind='overlay', group_id=next_group_id(s), damage_class='harmony')
+        if finished(s):
+            return
     # Attack-after shape effects occur per hit, after simultaneous death handling.
     for ps, pc, loss in [(side, cid, self_loss), (enemy, target_id, target_loss)]:
         if is_esper(pc) and loss > 0 and alive(s, ps, pc) and not finished(s):

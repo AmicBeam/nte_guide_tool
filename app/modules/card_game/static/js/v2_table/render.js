@@ -168,24 +168,14 @@
       return;
     }
     const zone = (state && state.front_debuff) || {};
-    const chips = [];
-    if (zone.delay) {
-      chips.push('延滞');
-    }
-    if (zone.burn) {
-      chips.push('浊燃');
-    }
-    if (zone.star) {
-      chips.push('黯星');
-    }
-    if (zone.weave) {
-      chips.push('覆纹');
-    }
-    if (zone.stain) {
-      chips.push('浸染');
-    }
-    node.innerHTML = chips.map(function (name) {
-      return '<span class="v2-chip">' + V2.escapeHtml(name) + '</span>';
+    const labels = { delay: '延滞', burn: '浊燃', star: '黯星', weave: '覆纹', stain: '浸染' };
+    const chips = Object.keys(labels).filter(function (key) { return Boolean(zone[key]); });
+    node.innerHTML = chips.map(function (key) {
+      const status = zone[key];
+      const duration = status.infinite ? '无限' : (status.expires_side || key === 'weave' || key === 'stain'
+        ? '本回合' : ('倒计时 ' + (status.left == null ? '—' : status.left)));
+      return '<span class="v2-chip">' + V2.escapeHtml(labels[key]) +
+        '<small>' + V2.escapeHtml(duration) + '</small></span>';
     }).join('');
     node.hidden = chips.length === 0;
   }

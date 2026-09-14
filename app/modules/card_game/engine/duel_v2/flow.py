@@ -152,9 +152,6 @@ def trigger_responses(state, defending_side, kind, target_id=None):
             continue
         if kind == 'self_lethal' and target_id != owner:
             continue
-        current = team['front']
-        if current and collapsed(hero(state, defending_side, current)):
-            continue
         if not can_afford_card(state, defending_side, card):
             continue
         team['hand'].remove(card)
@@ -378,7 +375,7 @@ def begin_turn(state, side):
                     actor=f'{side}:{cid}', target=f'{side}:{cid}',
                     before={'hp': 0, 'down_turns': 1}, after={'hp': h['hp'], 'down_turns': 0})
     front = team.get('front')
-    if front:
+    if front and not collapsed(hero(state, side, front)):
         move_out(state, side, front)
     carrier = team_order(state, side)[0]
     fire(EffectContext(state, side, carrier, {'side': side}), 'on_turn_begin')

@@ -173,13 +173,11 @@ def victory(state):
         'finish', winner=state['winner'], reason=state.get('reason'))
 
 
-def move_out(state, side, cid, *, force=False):
+def move_out(state, side, cid):
     team = state['sides'][side]
     if team['front'] != cid:
         return
     h = hero(state, side, cid)
-    if not force and collapsed(h):
-        return
     team['last_front'] = cid
     team['front'] = None
     before = {'hp': h['hp'], 'shield': h['shield'], 'front': cid}
@@ -211,7 +209,7 @@ def knockdowns(state):
                 continue
             h['hp'] = 0
             killer = h.pop('last_hit_source', None)
-            move_out(state, side, cid, force=True)
+            move_out(state, side, cid)
             before = {'hp': 0, 'shield': h['shield'], 'harmony': h['harmony'], 'energy': h['energy'],
                       'growth': h['growth'], 'shape_id': h['shape'], 'down_turns': h['down_turns']}
             kept_harmony = int(before['harmony'] or 0)

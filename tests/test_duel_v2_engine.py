@@ -555,6 +555,47 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertFalse(chars['zero']['harmony_source'])
         self.assertFalse(chars['nanali']['harmony_ready'])
 
+
+    def test_collapsed_front_can_be_replaced_but_cannot_normally_attack(self):
+        for battle_card in (False, True):
+            with self.subTest(battle_card=battle_card):
+                s = self.game()
+                s['sides']['a']['front'] = 'zero'
+                hero(s, 'a', 'zero')['flags']['collapse'] = {'side': 'b', 'until': 99}
+                blocked = {'type': 'attack', 'character_id': 'zero'}
+                self.assertNotIn(blocked, legal_actions(s, 'a'))
+                with self.assertRaises(ValueError):
+                    apply_action(s, 'a', blocked)
+                if battle_card:
+                    s = self.play(s, 'N03')
+                else:
+                    s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'nanali'})
+                self.assertEqual(s['sides']['a']['front'], 'nanali')
+                self.assertEqual(s['sides']['a']['last_front'], 'zero')
+                self.assertIn('collapse', hero(s, 'a', 'zero')['flags'])
+
+    def test_response_can_replace_collapsed_front(self):
+        s = self.game()
+        s['sides']['b']['front'] = 'zero'
+        s['sides']['b']['ap'] = 1
+        hero(s, 'b', 'zero')['flags']['collapse'] = {'side': 'a', 'until': 99}
+        card = self.hand(s, 'N02', side='b')
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
+        self.assertEqual(s['sides']['b']['front'], 'nanali')
+        self.assertEqual(s['sides']['b']['last_front'], 'zero')
+        self.assertEqual(s['sides']['b']['ap'], 0)
+        self.assertTrue(any(c['instance_id'] == card['instance_id'] for c in s['sides']['b']['discard']))
+        self.assertTrue(any(e['type'] == 'enter' and '反击方' in e['text'] for e in s['events']))
+
+    def test_return_effect_can_move_collapsed_front(self):
+        from app.modules.card_game.engine.duel_v2.state import move_out
+        s = self.game()
+        s['sides']['a']['front'] = 'zero'
+        hero(s, 'a', 'zero')['flags']['collapse'] = {'side': 'b', 'until': 99}
+        move_out(s, 'a', 'zero')
+        self.assertIsNone(s['sides']['a']['front'])
+        self.assertEqual(s['sides']['a']['last_front'], 'zero')
+
     def test_downed_character_does_not_gain_resources(self):
         from app.modules.card_game.engine.duel_v2.context import EffectContext
         from app.modules.card_game.engine.duel_v2.state import energy, knockdowns
@@ -774,7 +815,7 @@ class DuelV2EngineTest(unittest.TestCase):
         s['sides']['b']['front'] = 'zero'
         front_debuff(s, 'b')['burn'] = {'left': 2, 'by': 'a'}
         front_debuff(s, 'b')['weave'] = {'by': 'a'}
-        move_out(s, 'b', 'zero', force=True)
+        move_out(s, 'b', 'zero')
         s['sides']['b']['front'] = 'xun'
         self.assertEqual(front_debuff(s, 'b')['burn']['left'], 2)
         hp = hero(s, 'b', 'xun')['hp']

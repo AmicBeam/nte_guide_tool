@@ -196,7 +196,7 @@ def enter(c):
         return
     payer_id, kind = _pending_harmony(c)
     if team['front']:
-        move_out(s, side, team['front'], force=True)
+        move_out(s, side, team['front'])
         if team['front']:
             return
     team['front'] = cid
@@ -221,8 +221,6 @@ def intercept_enter(c):
         return
     payer_id, kind = _pending_harmony(c)
     if team['front']:
-        if collapsed(hero(s, side, team['front'])):
-            return
         move_out(s, side, team['front'])
         if team['front']:
             return

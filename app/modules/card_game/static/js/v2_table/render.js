@@ -450,6 +450,7 @@
   }
 
   function historyHeadline(event) {
+    if (event && event.type === 'discard') return '';
     const text = (event && event.text) || eventSourceText(event);
     const card = event && event.card;
     if (event && event.type === 'draw' && card && card.name && text && text.indexOf('「') < 0) {
@@ -463,7 +464,7 @@
     const logs = Array.isArray(ctx.game && ctx.game.logs) ? ctx.game.logs : [];
     let html = '';
     if (events.length) {
-      html = events.slice(-40).map(function (event) {
+      html = events.filter(function (event) { return event.type !== 'discard'; }).slice(-40).map(function (event) {
         const text = historyHeadline(event);
         if (!text) {
           return '';
@@ -473,7 +474,7 @@
         return '<div class="v2-log-item"><div>' + V2.escapeHtml(text) + '</div>' + extra + '</div>';
       }).filter(Boolean).join('');
     } else if (logs.length) {
-      html = logs.slice(-40).map(function (line) {
+      html = logs.filter(function (line) { return !/^「.*」进入弃牌堆[。！!]?$/u.test(String(line)); }).slice(-40).map(function (line) {
         return '<div class="v2-log-item">' + V2.escapeHtml(line) + '</div>';
       }).join('');
     }

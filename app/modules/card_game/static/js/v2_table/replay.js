@@ -37,6 +37,7 @@
       return '开局';
     }
     const event = events[index - 1] || {};
+    if (event.type === 'discard') return '';
     const seq = event.seq != null ? ('#' + event.seq + ' ') : '';
     return seq + (event.text || event.type || '公开事件');
   }

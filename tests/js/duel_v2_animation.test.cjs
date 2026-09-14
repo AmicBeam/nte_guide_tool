@@ -1120,3 +1120,15 @@ test("draw lands after its owner group or before the next owner group", () => {
   assert.equal(slot("iloy").left, 438);
   assert.equal(slot("nanali", "n2").left, 208, "an existing instance uses its own slot");
 });
+
+test("discard events update state without notices", async () => {
+  const harness = makeRoot();
+  const patches = [];
+  const notices = [];
+  const player = new Player({ root: harness.root, clock: harness.clock, applyPatch: (_patch, event) => patches.push(event.seq) });
+  player._notice = (...args) => notices.push(args);
+  player._wait = async () => {};
+  await player.play([{ seq: 601, type: "discard", side: "a", present: true, text: "「测试牌」进入弃牌堆。", card: publicCard(), patch: { discard_count: 1 } }]);
+  assert.deepEqual(patches, [601]);
+  assert.deepEqual(notices, []);
+});

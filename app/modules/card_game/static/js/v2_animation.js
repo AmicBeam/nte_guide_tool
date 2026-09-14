@@ -933,7 +933,7 @@
       if (!event) {
         return true;
       }
-      if (event.type === "resource") {
+      if (event.type === "resource" || event.type === "discard") {
         return true;
       }
       if (event.present === false) {

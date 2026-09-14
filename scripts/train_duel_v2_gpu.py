@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description='GPU PPO for the frozen 创生预组 tensor env.')
+    parser = argparse.ArgumentParser(description='GPU PPO for 创生/覆纹快攻 tensor env.')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--n', type=int, default=1024)
     parser.add_argument('--horizon', type=int, default=32)
@@ -23,6 +23,10 @@ def main(argv=None) -> int:
     parser.add_argument('--epochs', type=int, default=2)
     parser.add_argument('--device', default=None)
     parser.add_argument('--hidden', type=int, default=256)
+    parser.add_argument('--deck', default='starter', help='starter or weave-rush; ignored when --matchup cross')
+    parser.add_argument('--matchup', default='mirror', choices=('mirror', 'cross'),
+                        help='mirror uses --deck on both sides; cross is 创生 vs 覆纹快攻')
+    parser.add_argument('--resume', type=Path, help='load gpu_policy.pt from a previous GPU run')
     parser.add_argument('--compact', action='store_true',
                         help='compact observe (not website-encoder compatible)')
     parser.add_argument('--eval-games', type=int, default=2)
@@ -30,7 +34,7 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     import torch
     from app.modules.card_game.rl.encoding import encoder_metadata
-    from app.modules.card_game.rl.gpu_duel.catalog import STARTER_LOCK
+    from app.modules.card_game.rl.gpu_duel.catalog import GPU_LOCK
     from app.modules.card_game.rl.gpu_duel.env import GpuDuelEnv
     from app.modules.card_game.rl.gpu_duel.observe import compact_observe
     from app.modules.card_game.rl.gpu_duel.ppo import CompactScorer, collect_rollout, ppo_update, rollout_to_batch
@@ -42,7 +46,7 @@ def main(argv=None) -> int:
     env_device = 'cpu'
     output = args.output.expanduser().resolve()
     output.mkdir(parents=True, exist_ok=True)
-    env = GpuDuelEnv(args.n, device=env_device)
+    env = GpuDuelEnv(args.n, device=env_device, deck=args.deck, matchup=args.matchup)
     t0 = time.perf_counter()
     env.reset(seeds=list(range(args.n)), native=True)
     if args.compact:
@@ -55,6 +59,9 @@ def main(argv=None) -> int:
         observe_fn = encoder_observe
         state, cand, _mask = observe_fn(env.state)
         net = GpuCandidatePolicy(state.shape[-1], cand.shape[-1], hidden=args.hidden).to(net_device)
+    if args.resume:
+        ckpt = torch.load(args.resume, map_location=net_device, weights_only=False)
+        net.load_state_dict(ckpt['model'])
     opt = torch.optim.Adam(net.parameters(), lr=3e-4)
     log = []
     peak = 0.0
@@ -79,7 +86,9 @@ def main(argv=None) -> int:
             'reward_mean': float(rollout['reward'].mean()),
             'env_device': env_device,
             'net_device': str(net_device),
-            'starter_lock': STARTER_LOCK,
+            'gpu_lock': GPU_LOCK,
+            'deck': args.deck,
+            'matchup': args.matchup,
             'peak_cuda_mib': round(peak, 1),
             'encoder_compatible': not args.compact,
         }
@@ -90,7 +99,10 @@ def main(argv=None) -> int:
             'n': args.n,
             'update': update,
             'hidden': args.hidden,
-            'starter_lock': STARTER_LOCK,
+            'starter_lock': GPU_LOCK,
+            'gpu_lock': GPU_LOCK,
+            'deck': args.deck,
+            'matchup': args.matchup,
             'state_dim': state.shape[-1],
             'cand_dim': cand.shape[-1],
             'encoder_compatible': not args.compact,
@@ -103,7 +115,10 @@ def main(argv=None) -> int:
         }, indent=2) + '\n', encoding='utf-8')
     if not args.compact and not args.skip_eval and args.eval_games > 0:
         from app.modules.card_game.rl.gpu_duel.eval_python import eval_gpu_policy_on_python
-        eval_report = eval_gpu_policy_on_python(output / 'gpu_policy.pt', n_games=args.eval_games, device='cpu')
+        from app.modules.card_game.rl.gpu_duel.catalog import preset_by_id
+        eval_deck = preset_by_id('starter' if args.matchup == 'cross' else args.deck)
+        eval_report = eval_gpu_policy_on_python(
+            output / 'gpu_policy.pt', n_games=args.eval_games, device='cpu', deck=eval_deck)
         (output / 'python_eval.json').write_text(json.dumps(eval_report, indent=2) + '\n', encoding='utf-8')
         print(json.dumps({'python_eval': eval_report}, default=str), flush=True)
     return 0

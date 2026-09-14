@@ -15,7 +15,7 @@
 - `networks.py`：`CandidateScoringPolicy` 在 GPU 上对每个候选打分，不把 256×199 展平进 MLP。打分拆成通用分（动作类型、卡类、费用、目标座位）和卡身份分（catalog ID embedding）。
 - `transfer.py`：单套牌解析、同角色换卡、新卡 embedding 从同类旧卡初始化；换牌时冻住通用分，可选对共享动作做 KL。一次训练只使用一套牌（创生镜像或覆纹快攻镜像），不混合多构筑。
 - `rule_ir/`：共享规则 IR。战斗切片是攻击/护盾/同时伤害/倒地/胜负，同一程序生成 CPU 张量内核和 NVRTC CUDA。创生预组卡效、被动挂钩和衍生牌是第二份 IR（`starter.py`），编译成整数表再由 `gpu_duel` 张量核执行，不再按卡 ID 往规则里加长期分支。生成 CUDA 与手写实验核、Python `combat.attack` 对拍；4096 行吞吐对照要求不低于手写核约 80%。手写核只作对照，不是业务真源。网站 Python 引擎仍是 oracle。
-- `gpu_duel/`：冻结创生预组的定长对局环境。开局可 Python 装箱或 GPU 内洗牌重置；学习方动作后由规则对手推进到下一次学习方决策。默认观察走网站 `V2Encoder` 布局，策略是 generic+card 拆分，权重可在 Python 引擎上评估。`scripts/train_duel_v2_gpu.py --n 1024 --horizon 32` 按报告做同步 PPO（规则张量默认在 CPU 上批量执行，网络在 CUDA）。`--compact` 才用短观察。`scripts/compare_duel_v2_trainers.py` 对照 CPU 多进程训练器的学习方步/秒。
+- `gpu_duel/`：定长对局环境，座位与网站编码器相同（创生+覆纹快攻并集）。`--deck starter|weave-rush` 镜像，`--matchup cross` 为创生 vs 覆纹快攻。开局可 Python 装箱或 GPU 内洗牌重置；学习方动作后由规则对手推进到下一次学习方决策。默认观察走网站 `V2Encoder` 布局。`scripts/train_duel_v2_gpu.py --n 1024 --horizon 32` 同步 PPO（规则张量默认在 CPU 上批量执行，网络在 CUDA）。`--resume gpu_policy.pt` 可接上一阶段。`--compact` 才用短观察。
 - `scripts/train_duel_v2.py`：`--check` 不创建对局；`--train --output DIR` 默认按 CPU 核数开进程采样（上限 32），GPU 候选打分。学习方（训练和评估）不提供认输动作，网站玩家仍可认输。评估对手仍是公开规则 AI。
 
 核心接口依赖现有网站环境即可导入；NumPy/Gymnasium/SB3 仅列在独立 `requirements-rl.txt`。不要在网站启动链路中创建训练器或环境。导入 `app.modules.card_game.rl` 不创建对局、不调用 reset/step/predict/learn。
@@ -56,7 +56,9 @@ python3 scripts/train_duel_v2.py --train --output artifacts/duel-v2-rl-run
 python3 scripts/train_duel_v2.py --train --output artifacts/duel-v2-rl-rush --deck weave-rush
 python3 scripts/train_duel_v2.py --train --output artifacts/duel-v2-rl-adapt \
   --resume artifacts/duel-v2-rl-run --swap N03:N05 --freeze-generic --kl-coef 0.1
-python3 scripts/train_duel_v2_gpu.py --output artifacts/duel-v2-gpu-1024 --n 1024 --horizon 32 --updates 8
+python3 scripts/train_duel_v2_gpu.py --output artifacts/duel-v2-gpu-genesis --n 1024 --horizon 32 --updates 8
+python3 scripts/train_duel_v2_gpu.py --output artifacts/duel-v2-gpu-rush --deck weave-rush --n 1024 --horizon 32 --updates 8 --resume artifacts/duel-v2-gpu-genesis/gpu_policy.pt
+python3 scripts/train_duel_v2_gpu.py --output artifacts/duel-v2-gpu-cross --matchup cross --n 1024 --horizon 32 --updates 8 --resume artifacts/duel-v2-gpu-rush/gpu_policy.pt
 python3 scripts/compare_duel_v2_trainers.py --output artifacts/duel-v2-trainer-compare
 python3 scripts/rl_monitor.py
 ```
@@ -65,7 +67,7 @@ python3 scripts/rl_monitor.py
 
 `--check` 不创建对局或模型。`--train` 需要新的 `--output` 目录；总预算默认 10000 原始引擎动作 / 128 开局 / 1800 秒，训练先为评估预留额度。`n_updates=0`、随机自对弈或仅 `predict` 成功都不算训练完成。训练和评估不自动写网页录像；要看某次评估对局时，对输出目录执行 `--export-replays DIR`，按 `eval_games.jsonl` 里的种子和动作重放成公开 `replays/*.json`。在 `/replays` 导入该 JSON 后，用 `/table?replay=<房间码>` 播放；不含隐藏手牌、牌序或种子。
 
-默认训练牌组是当前 catalog 的官方创生预组；学习方和冻结规则 AI 对手都用这一套。`--deck weave-rush` 改为覆纹快攻镜像（双方同一套快攻）。浊燃、盈蓄、覆纹预组以及创生对快攻交叉对局仍不能训练。换少数卡用 `--swap OLD:NEW`（必须同角色且都在编码器卡表内）。卡表或座位变化会改变 `character_ids` / `card_ids` / catalog 哈希，旧权重不能加载。
+默认训练牌组是当前 catalog 的官方创生预组；学习方和冻结规则 AI 对手都用这一套。`--deck weave-rush` 改为覆纹快攻镜像。浊燃、盈蓄、覆纹预组仍不能训练。创生 vs 快攻走 GPU 张量环境 `--matchup cross`。换少数卡用 `--swap OLD:NEW`（必须同角色且都在编码器卡表内）。卡表或座位变化会改变 `character_ids` / `card_ids` / catalog 哈希，旧权重不能加载。
 
 换牌适应走顺序微调，不在一次训练里混合多套牌：
 

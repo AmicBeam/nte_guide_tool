@@ -3,13 +3,15 @@ from __future__ import annotations
 
 import torch
 
-from .catalog import CARD_INDEX, N_SEATS, PHASE_PLAYING, SIDES, STARTER_CARD_IDS
+from app.modules.card_game.content.duel_v2 import STARTER_DECK
+
+from .catalog import N_SEATS, PHASE_PLAYING, SIDES, deck_kind_ids, present_mask
 from .rules import begin_turn, draw, rebuild_legal
 from .state import GpuState, empty_state
 
 
-def starter_kind_row(device) -> torch.Tensor:
-    return torch.tensor([CARD_INDEX[cid] for cid in STARTER_CARD_IDS], dtype=torch.int32, device=device)
+def _kind_row(deck, device) -> torch.Tensor:
+    return torch.tensor(deck_kind_ids(deck), dtype=torch.int32, device=device)
 
 
 def _shuffle_rows(deck: torch.Tensor, rng: torch.Tensor) -> torch.Tensor:
@@ -26,7 +28,8 @@ def _shuffle_rows(deck: torch.Tensor, rng: torch.Tensor) -> torch.Tensor:
     return deck
 
 
-def reset_native(s: GpuState | None, n: int, device, seeds: torch.Tensor) -> GpuState:
+def reset_native(s: GpuState | None, n: int, device, seeds: torch.Tensor,
+                 *, deck_a=None, deck_b=None) -> GpuState:
     device = torch.device(device)
     if s is None or s.n != n:
         s = empty_state(n, device)
@@ -65,6 +68,11 @@ def reset_native(s: GpuState | None, n: int, device, seeds: torch.Tensor) -> Gpu
     s.nanali_seed_played.zero_()
     s.burn_left.zero_()
     s.delay_end.zero_()
+    s.weave.zero_()
+    s.ch_present.zero_()
+    s.ch_allied_hurt.zero_()
+    s.ch_pending_atk.zero_()
+    s.ch_share_overflow.zero_()
     s.hand_n.zero_()
     s.deck_n.zero_()
     s.discard_n.zero_()
@@ -74,23 +82,33 @@ def reset_native(s: GpuState | None, n: int, device, seeds: torch.Tensor) -> Gpu
     s.deck_kind.fill_(-1)
     s.deck_inst.zero_()
     s.discard_kind.fill_(-1)
-    kinds = starter_kind_row(device)
+    decks = (deck_a or STARTER_DECK, deck_b or STARTER_DECK)
+    presents = (
+        torch.tensor(present_mask(decks[0]), dtype=torch.int32, device=device),
+        torch.tensor(present_mask(decks[1]), dtype=torch.int32, device=device),
+    )
     for side in range(SIDES):
+        kinds = _kind_row(decks[side], device)
         deck = kinds.unsqueeze(0).repeat(n, 1).contiguous()
         deck = _shuffle_rows(deck, seeds + (side + 1) * 10007)
         s.deck_kind[:, side, :32] = deck
         s.deck_inst[:, side, :32] = torch.arange(1, 33, device=device).unsqueeze(0).expand(n, -1)
         s.deck_n[:, side] = 32
         for seat in range(N_SEATS):
-            s.ch_hp[:, side, seat] = s.char_base_hp[seat]
-            s.ch_max_hp[:, side, seat] = s.char_base_hp[seat]
-            s.ch_base_max[:, side, seat] = s.char_base_hp[seat]
+            here = int(presents[side][seat]) > 0
+            s.ch_present[:, side, seat] = 1 if here else 0
+            zero = torch.zeros((), dtype=s.char_base_hp.dtype, device=device)
+            base_hp = s.char_base_hp[seat] if here else zero
+            base_atk = s.char_base_atk[seat] if here else zero
+            s.ch_hp[:, side, seat] = base_hp
+            s.ch_max_hp[:, side, seat] = base_hp
+            s.ch_base_max[:, side, seat] = base_hp
             s.ch_shield[:, side, seat] = 0
-            s.ch_base_atk[:, side, seat] = s.char_base_atk[seat]
+            s.ch_base_atk[:, side, seat] = base_atk
             s.ch_growth[:, side, seat] = 0
             s.ch_harmony[:, side, seat] = 0
             s.ch_energy[:, side, seat] = 0
-            s.ch_energy_max[:, side, seat] = s.char_energy_max[seat]
+            s.ch_energy_max[:, side, seat] = s.char_energy_max[seat] if here else 0
             s.ch_down[:, side, seat] = 0
             s.ch_awakened[:, side, seat] = 0
             s.ch_ult_turns[:, side, seat] = 0
@@ -109,10 +127,10 @@ def reset_native(s: GpuState | None, n: int, device, seeds: torch.Tensor) -> Gpu
     return s
 
 
-def reset_rows(s: GpuState, mask: torch.Tensor, seeds: torch.Tensor) -> None:
+def reset_rows(s: GpuState, mask: torch.Tensor, seeds: torch.Tensor, *, deck_a=None, deck_b=None) -> None:
     if not bool(mask.any()):
         return
-    tmp = reset_native(None, s.n, s.device, seeds)
+    tmp = reset_native(None, s.n, s.device, seeds, deck_a=deck_a, deck_b=deck_b)
     for name in s.__dataclass_fields__:
         if name in ('n', 'device'):
             continue

@@ -51,11 +51,12 @@ class GpuWeightPolicy:
         return int(logits[0].argmax().item())
 
 
-def eval_gpu_policy_on_python(path: str | Path, *, n_games: int = 4, device: str = 'cpu') -> dict[str, Any]:
+def eval_gpu_policy_on_python(path: str | Path, *, n_games: int = 4, device: str = 'cpu',
+                              deck: dict[str, Any] | None = None) -> dict[str, Any]:
     net = load_gpu_policy(path, device=device)
     learner = GpuWeightPolicy(net, device=device)
     opponent = VisibleEngineRulePolicy()
-    deck = default_training_deck()
+    deck = deck or default_training_deck()
     budget = TrainBudget(max_raw_steps=50_000, max_games=n_games + 2, max_seconds=600)
     games = []
     wins = losses = draws = truncated = errors = 0

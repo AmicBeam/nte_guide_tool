@@ -1,9 +1,9 @@
-"""Starter-deck effect IR. Card identity lives here; tensor kernels are lowering."""
+"""GPU-deck effect IR. Card identity lives here; tensor kernels are lowering."""
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.modules.card_game.content.duel_v2 import CARDS, STARTER_DECK
+from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, STARTER_DECKS
 
 ALLOWED_OPS = frozenset({
     'sortie', 'form', 'perm_plus', 'count_seed',
@@ -13,6 +13,9 @@ ALLOWED_OPS = frozenset({
     'heal_front_full', 'next_followup', 'next_bonus',
     'sacrifice_draw', 'damage_per_downed', 'set_down',
     'reveal_front_hand', 'damage_revealed',
+    'ignore_shield', 'team_buff', 'pending_atk', 'share_overflow',
+    'hit_front_scaled', 'self_damage', 'draw_one', 'sortie_allied_extra',
+    'heal_after_hit',
 })
 
 
@@ -32,8 +35,26 @@ class CardProgram:
     ops: tuple[EffectOp, ...]
 
 
-# Closed set that can appear in a frozen 创生预组 game: the 32-card list plus NF01.
-STARTER_APPEARING = tuple(dict.fromkeys([*STARTER_DECK['card_ids'], 'NF01']))
+def _appearing_ids() -> tuple[str, ...]:
+    ids: list[str] = []
+    for deck_id in ('starter', 'weave-rush'):
+        preset = next(item for item in STARTER_DECKS if item['id'] == deck_id)
+        ids.extend(preset['card_ids'])
+    ids.append('NF01')
+    for extra in (
+        'N01', 'N02', 'N03', 'N04', 'N05', 'N06', 'N07', 'N08',
+        'Y01', 'Y02', 'Y03', 'Y04', 'Y05', 'Y06', 'Y07', 'Y08',
+        'Z01', 'Z02', 'Z03', 'Z04', 'Z05', 'Z06', 'Z07', 'Z08',
+        'J01', 'J02', 'J03', 'J04', 'J05', 'J06', 'J07', 'J08',
+        'M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08',
+        'B01', 'B02', 'B06', 'B07', 'B08',
+    ):
+        ids.append(extra)
+    return tuple(dict.fromkeys(ids))
+
+
+# Closed set for GPU: 创生 + 覆纹快攻 kits, plus NF01.
+STARTER_APPEARING = _appearing_ids()
 
 # Kits of the four starter seats. Extra kit cards are registered so a stray
 # identity cannot silently no-op; the env still rejects non-starter decks.
@@ -71,6 +92,19 @@ _CARD_OPS: dict[str, tuple[EffectOp, ...]] = {
     'J06': (EffectOp('reveal_front_hand'),),
     'J07': (EffectOp('form'),),
     'J08': (EffectOp('form'),),
+    'M01': (EffectOp('perm_plus', (1, 0)), EffectOp('sortie'),),
+    'M02': (EffectOp('team_buff', (1,)),),
+    'M03': (EffectOp('ignore_shield'), EffectOp('sortie'),),
+    'M04': (EffectOp('share_overflow'), EffectOp('sortie'),),
+    'M05': (EffectOp('pending_atk', (2,)),),
+    'M06': (EffectOp('hit_front_scaled', (2, 3)),),
+    'M07': (EffectOp('form'),),
+    'M08': (EffectOp('form'),),
+    'B01': (EffectOp('self_damage', (1,)), EffectOp('draw_one'),),
+    'B02': (EffectOp('heal_after_hit', (2,)), EffectOp('sortie'),),
+    'B06': (EffectOp('sortie_allied_extra', (1,)),),
+    'B07': (EffectOp('form'),),
+    'B08': (EffectOp('form'), EffectOp('self_damage', (4,)),),
 }
 
 STARTER_CARDS: tuple[CardProgram, ...] = tuple(
@@ -92,6 +126,10 @@ STARTER_HOOKS = {
     'seed_seat': 'nanali',
     'ult_energy_next_seat': 'iloy',
     'ult_pact_seat': 'jiuyuan',
+    'overflow_seat': 'bohe',
+    'stack_atk_seat': 'baicang',
+    'auto_attack_shape': 'M08',
+    'sleep_shape': 'M07',
 }
 
 
@@ -109,7 +147,12 @@ def validate_starter_ir() -> None:
             if op.op not in ALLOWED_OPS:
                 raise ValueError(f'unsupported op {op.op} on {program.card_id}')
     for key in ('scale_shape', 'payoff_card', 'turn_end_atk_shape', 'turn_end_heal_shape',
-                'genesis_pact_shape', 'extra_genesis_shape', 'seed_card'):
+                'genesis_pact_shape', 'extra_genesis_shape', 'seed_card',
+                'auto_attack_shape', 'sleep_shape'):
         card_id = STARTER_HOOKS[key]
         if card_id not in CARDS:
             raise ValueError(f'hook {key} unknown card {card_id}')
+    for key in ('after_battle_harmony_seat', 'genesis_extra_seat', 'seed_seat',
+                'ult_energy_next_seat', 'ult_pact_seat', 'overflow_seat', 'stack_atk_seat'):
+        if STARTER_HOOKS[key] not in CHARACTERS:
+            raise ValueError(f'hook {key} unknown seat {STARTER_HOOKS[key]}')

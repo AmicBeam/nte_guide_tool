@@ -1,4 +1,4 @@
-"""GPU-resident 创生预组 duel. CPU is used for startup/oracle pack only."""
+"""GPU-resident 创生/覆纹快攻 duel. CPU is used for startup/oracle pack only."""
 from __future__ import annotations
 
 from typing import Any
@@ -8,7 +8,7 @@ import torch
 from app.modules.card_game.content.duel_v2 import STARTER_DECK
 from app.modules.card_game.engine.duel_v2 import new_game
 
-from .catalog import STARTER_LOCK, assert_starter_deck
+from .catalog import GPU_LOCK, assert_gpu_deck, preset_by_id
 from .opponent import advance_to_actor
 from .pack import pack_python, snapshot_mechan
 from .reset import reset_native, reset_rows
@@ -19,15 +19,27 @@ from .state import GpuState
 class GpuDuelEnv:
     """Batched integer-state environment. device='cuda' keeps the loop on GPU."""
 
-    def __init__(self, n: int, device: str | torch.device | None = None):
+    def __init__(self, n: int, device: str | torch.device | None = None, *,
+                 deck: dict[str, Any] | str | None = None, matchup: str = 'mirror'):
         if n < 1:
             raise ValueError('n must be positive')
         if device is None:
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.device = torch.device(device)
         self.n = n
-        self.lock = STARTER_LOCK
-        self.deck = assert_starter_deck(STARTER_DECK)
+        self.lock = GPU_LOCK
+        self.matchup = matchup
+        if matchup == 'cross':
+            self.deck_a = preset_by_id('starter')
+            self.deck_b = preset_by_id('weave-rush')
+        else:
+            if isinstance(deck, str):
+                chosen = preset_by_id(deck)
+            else:
+                chosen = assert_gpu_deck(deck or STARTER_DECK)
+            self.deck_a = chosen
+            self.deck_b = chosen
+        self.deck = self.deck_a
         self.state: GpuState | None = None
         self.learner = torch.zeros(n, dtype=torch.int32, device=self.device)
 
@@ -47,10 +59,11 @@ class GpuDuelEnv:
         # Half the batch learns as first player, half as second.
         self.learner = (seed_t % 2).to(torch.int32)
         if native and skip_mulligan:
-            self.state = reset_native(self.state, self.n, self.device, seed_t)
+            self.state = reset_native(
+                self.state, self.n, self.device, seed_t, deck_a=self.deck_a, deck_b=self.deck_b)
             advance_to_actor(self.state, self.learner)
             return self.state
-        decks = {'a': self.deck, 'b': self.deck}
+        decks = {'a': self.deck_a, 'b': self.deck_b}
         states = [new_game(seed=int(seed), skip_mulligan=skip_mulligan, decks=decks) for seed in seeds]
         self.reset_from_python(states)
         advance_to_actor(self.state, self.learner)
@@ -64,7 +77,7 @@ class GpuDuelEnv:
             return
         if seeds is None:
             seeds = (self.state.rng + 7919) & 0x7FFFFFFF
-        reset_rows(self.state, done, seeds)
+        reset_rows(self.state, done, seeds, deck_a=self.deck_a, deck_b=self.deck_b)
         # keep learner assignment
         advance_to_actor(self.state, self.learner)
 

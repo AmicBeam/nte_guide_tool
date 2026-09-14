@@ -80,6 +80,11 @@ class GpuState:
     ch_pact: torch.Tensor
     ch_energy_next: torch.Tensor
     ch_harmonized: torch.Tensor
+    ch_present: torch.Tensor
+    ch_allied_hurt: torch.Tensor
+    ch_pending_atk: torch.Tensor
+    ch_share_overflow: torch.Tensor
+    weave: torch.Tensor
     catalog_cost: torch.Tensor
     catalog_atk: torch.Tensor
     catalog_shield: torch.Tensor
@@ -147,6 +152,9 @@ def empty_state(n: int, device: str | torch.device = 'cpu') -> GpuState:
         ch_next_bonus=t(SIDES, N_SEATS), ch_next_shield=t(SIDES, N_SEATS),
         ch_next_followup=t(SIDES, N_SEATS), ch_pact=t(SIDES, N_SEATS),
         ch_energy_next=t(SIDES, N_SEATS), ch_harmonized=t(SIDES, N_SEATS),
+        ch_present=t(SIDES, N_SEATS), ch_allied_hurt=t(SIDES, N_SEATS),
+        ch_pending_atk=t(SIDES, N_SEATS), ch_share_overflow=t(SIDES, N_SEATS),
+        weave=t(SIDES),
         catalog_cost=cat(table['cost']), catalog_atk=cat(table['atk']),
         catalog_shield=cat(table['shield']), catalog_hp=cat(table['hp']),
         catalog_type=cat(table['type']), catalog_owner=cat(table['owner']),

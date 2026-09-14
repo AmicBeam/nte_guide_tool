@@ -79,6 +79,8 @@ def reconstruct_observation(s: GpuState, row: int, viewer: int) -> dict[str, Any
     for side in range(SIDES):
         chars = []
         for seat, cid in enumerate(SEATS):
+            if int(s.ch_present[row, side, seat]) <= 0:
+                continue
             catalog = CHARACTERS[cid]
             shape = int(s.ch_shape[row, side, seat])
             shape_id = CARD_IDS[shape] if shape >= 0 else None

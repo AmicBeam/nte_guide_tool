@@ -4,9 +4,11 @@ from __future__ import annotations
 import importlib.util
 import unittest
 
-from app.modules.card_game.content.duel_v2 import STARTER_DECK
+from app.modules.card_game.content.duel_v2 import STARTER_DECK, STARTER_DECKS
 from app.modules.card_game.engine.duel_v2 import acting_side, apply_action, legal_actions, new_game
-from app.modules.card_game.rl.gpu_duel.catalog import ACT_ATTACK, ACT_END, ACT_PLAY, SEAT_INDEX, STARTER_LOCK, assert_starter_deck
+from app.modules.card_game.rl.gpu_duel.catalog import (
+    ACT_ATTACK, ACT_END, ACT_PLAY, N_SEATS, SEAT_INDEX, STARTER_LOCK, assert_gpu_deck, assert_starter_deck,
+)
 
 TORCH = importlib.util.find_spec('torch')
 
@@ -56,12 +58,28 @@ class GpuDuelOracleTest(unittest.TestCase):
     def test_starter_lock_rejects_other_seats(self):
         assert_starter_deck(STARTER_DECK)
         self.assertEqual(len(STARTER_LOCK), 64)
+        self.assertEqual(N_SEATS, 6)
+        rush = next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')
+        assert_gpu_deck(rush)
         with self.assertRaises(ValueError):
             assert_starter_deck({
                 'id': 'x', 'name': 'x',
                 'character_ids': ['nanali', 'zero', 'jiuyuan', 'xun'],
                 'card_ids': list(STARTER_DECK['card_ids']),
             })
+
+    def test_native_reset_accepts_weave_rush_and_cross(self):
+        rush = next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')
+        env = self.GpuDuelEnv(2, device='cpu', deck=rush)
+        env.reset(seeds=[1, 2], native=True)
+        self.assertGreater(int(env.legal_count()[0]), 0)
+        self.assertEqual(int(env.state.ch_present[0, 0, SEAT_INDEX['bohe']]), 1)
+        self.assertEqual(int(env.state.ch_present[0, 0, SEAT_INDEX['nanali']]), 0)
+        cross = self.GpuDuelEnv(2, device='cpu', matchup='cross')
+        cross.reset(seeds=[3, 4], native=True)
+        self.assertEqual(int(cross.state.ch_present[0, 0, SEAT_INDEX['nanali']]), 1)
+        self.assertEqual(int(cross.state.ch_present[0, 1, SEAT_INDEX['bohe']]), 1)
+        self.assertEqual(int(cross.state.ch_present[0, 1, SEAT_INDEX['nanali']]), 0)
 
     def test_pack_matches_python_opening(self):
         state = self._py()

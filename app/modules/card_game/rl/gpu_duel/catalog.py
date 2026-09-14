@@ -1,25 +1,23 @@
-"""Frozen 创生预组 identity for the GPU duel. Unsupported decks are rejected."""
+"""GPU duel identity: 创生预组 + 覆纹快攻 seats. Other presets are rejected."""
 from __future__ import annotations
 
 from hashlib import sha256
 from typing import Any
 
-from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, validate_deck
-from app.modules.card_game.content.duel_v2.catalog import CARD_ID_ORDER, energy_max_for_attribute
+from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, STARTER_DECKS, validate_deck
+from app.modules.card_game.content.duel_v2.catalog import energy_max_for_attribute
+from app.modules.card_game.rl.encoding import CARD_IDS as ENCODER_CARD_IDS, CHARACTER_IDS
 
-SEATS = tuple(STARTER_DECK['character_ids'])
-if len(SEATS) != 4:
-    raise RuntimeError('GPU duel requires the four-character official starter')
+SEATS = tuple(CHARACTER_IDS)
 SEAT_INDEX = {cid: i for i, cid in enumerate(SEATS)}
-CARD_IDS = tuple(
-    card_id for card_id in CARD_ID_ORDER
-    if CARDS[card_id].get('character_id') in SEAT_INDEX
-)
+NANALI, ILOY, ZERO, JIUYUAN, BOHE, BAICANG = (SEAT_INDEX[cid] for cid in (
+    'nanali', 'iloy', 'zero', 'jiuyuan', 'bohe', 'baicang'))
+CARD_IDS = tuple(ENCODER_CARD_IDS)
 CARD_INDEX = {card_id: i for i, card_id in enumerate(CARD_IDS)}
 ATTR_IDS = ('光', '灵', '相', '暗', '魂', '咒')
 ATTR_INDEX = {name: i for i, name in enumerate(ATTR_IDS)}
 TYPE_INDEX = {'battle': 0, 'tactic': 1, 'form': 2}
-HARMONY_NONE, HARMONY_GENESIS, HARMONY_DELAY = 0, 1, 2
+HARMONY_NONE, HARMONY_GENESIS, HARMONY_DELAY, HARMONY_OVERLAY = 0, 1, 2, 3
 PHASE_MULLIGAN, PHASE_PLAYING, PHASE_CHOICE, PHASE_FINISHED = 0, 1, 2, 3
 ACT_END, ACT_ATTACK, ACT_PLAY, ACT_ULTIMATE, ACT_MULLIGAN, ACT_CHOOSE, ACT_CONCEDE = range(7)
 TARGET_NONE, TARGET_SEAT, TARGET_PLAYER = 0, 1, 2
@@ -27,8 +25,9 @@ HAND_SLOTS, DECK_SLOTS, DISCARD_SLOTS, REMOVED_SLOTS = 10, 32, 32, 16
 CHOICE_SLOTS = 10
 MAX_LEGAL = 256
 SIDES = 2
-N_SEATS = 4
+N_SEATS = len(SEATS)
 POLICY_NONE, POLICY_ALLY, POLICY_INJURED, POLICY_DOWN_ALLY, POLICY_ENEMY, POLICY_ENEMY_FRONT = range(6)
+RESPONSE_NONE, RESPONSE_ALLY, RESPONSE_SELF = 0, 1, 2
 _POLICY = {
     'living_ally': POLICY_ALLY,
     'injured_role': POLICY_INJURED,
@@ -38,25 +37,53 @@ _POLICY = {
 }
 LEGAL_END = 0
 LEGAL_ATK = 1
-LEGAL_ULT = 5
-LEGAL_PLAY = 9
-PLAY_TARGETS = 10
+LEGAL_ULT = LEGAL_ATK + N_SEATS
+LEGAL_PLAY = LEGAL_ULT + N_SEATS
+PLAY_TARGETS = 1 + N_SEATS + N_SEATS + 1
 LEGAL_WIDTH = LEGAL_PLAY + HAND_SLOTS * PLAY_TARGETS
+if LEGAL_WIDTH > MAX_LEGAL:
+    raise RuntimeError(f'GPU legal layout {LEGAL_WIDTH} exceeds {MAX_LEGAL}')
 
+ALLOWED_PRESETS = ('starter', 'weave-rush')
 STARTER_CARD_IDS = tuple(STARTER_DECK['card_ids'])
-STARTER_LOCK = sha256(
-    ('|'.join(SEATS) + '#' + ','.join(STARTER_CARD_IDS)).encode('utf-8')
+GPU_LOCK = sha256(
+    ('|'.join(SEATS) + '#' + ','.join(CARD_IDS)).encode('utf-8')
 ).hexdigest()
+STARTER_LOCK = GPU_LOCK
 
 
-def assert_starter_deck(deck: dict[str, Any] | None = None) -> dict[str, Any]:
+def preset_by_id(deck_id: str) -> dict[str, Any]:
+    preset = next((item for item in STARTER_DECKS if item.get('id') == deck_id), None)
+    if preset is None:
+        raise ValueError(f'unknown GPU preset {deck_id}')
+    return assert_gpu_deck(preset)
+
+
+def assert_gpu_deck(deck: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = validate_deck(dict(deck or STARTER_DECK))
-    if tuple(payload['character_ids']) != SEATS:
-        raise ValueError('GPU duel only accepts official starter seats: ' + ','.join(SEATS))
+    extra = [cid for cid in payload['character_ids'] if cid not in SEAT_INDEX]
+    if extra:
+        raise ValueError('GPU duel seats are 创生预组 plus 覆纹快攻; got ' + ','.join(payload['character_ids']))
+    if len(payload['character_ids']) != 4:
+        raise ValueError('GPU duel still requires exactly 4 characters per side')
     unknown = [card_id for card_id in payload['card_ids'] if card_id not in CARD_INDEX]
     if unknown:
         raise ValueError('GPU duel cannot encode ' + ','.join(sorted(set(unknown))))
     return payload
+
+
+def assert_starter_deck(deck: dict[str, Any] | None = None) -> dict[str, Any]:
+    return assert_gpu_deck(deck)
+
+
+def present_mask(deck: dict[str, Any]) -> list[int]:
+    owned = set(assert_gpu_deck(deck)['character_ids'])
+    return [1 if cid in owned else 0 for cid in SEATS]
+
+
+def deck_kind_ids(deck: dict[str, Any]) -> list[int]:
+    payload = assert_gpu_deck(deck)
+    return [CARD_INDEX[card_id] for card_id in payload['card_ids']]
 
 
 def card_table() -> dict[str, list[int]]:
@@ -70,7 +97,11 @@ def card_table() -> dict[str, list[int]]:
         hp.append(int(card.get('hp') or 0))
         typ.append(TYPE_INDEX[card['type']])
         owner.append(SEAT_INDEX[card['character_id']])
-        response.append(1 if card.get('response') == 'ally_attacked' else 0)
+        response.append(
+            RESPONSE_ALLY if card.get('response') == 'ally_attacked'
+            else RESPONSE_SELF if card.get('response') == 'self_attacked'
+            else RESPONSE_NONE
+        )
         instant.append(1 if card.get('instant') else 0)
         derived.append(1 if card.get('derived') else 0)
         policy.append(_POLICY.get(TARGET_POLICIES.get(card_id), POLICY_NONE))

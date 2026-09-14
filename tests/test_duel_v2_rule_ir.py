@@ -158,7 +158,7 @@ class CombatSliceIrTest(unittest.TestCase):
 class StarterEffectIrTest(unittest.TestCase):
     def test_starter_ir_covers_appearing_cards(self):
         from app.modules.card_game.content.duel_v2 import STARTER_DECK
-        from app.modules.card_game.rl.rule_ir.starter import STARTER_APPEARING, STARTER_CARDS, validate_starter_ir
+        from app.modules.card_game.rl.rule_ir.starter import STARTER_APPEARING, STARTER_CARDS, validate_starter_ir  # noqa: PLC0415
         validate_starter_ir()
         appearing = set(STARTER_APPEARING)
         self.assertTrue(set(STARTER_DECK['card_ids']) <= appearing)
@@ -176,3 +176,9 @@ class StarterEffectIrTest(unittest.TestCase):
         self.assertEqual(tables['inspect_top'][CARD_INDEX['J01']], 3)
         self.assertEqual(tables['pact_front'][CARD_INDEX['J02']], 1)
         self.assertEqual(tables['count_seed'][CARD_INDEX['NF01']], 1)
+        self.assertEqual(tables['sortie'][CARD_INDEX['M01']], 1)
+        self.assertEqual(tables['perm_atk'][CARD_INDEX['M01']], 1)
+        self.assertEqual(tables['ignore_shield'][CARD_INDEX['M03']], 1)
+        self.assertEqual(tables['form'][CARD_INDEX['M08']], 1)
+        self.assertEqual(tables['self_damage'][CARD_INDEX['B08']], 4)
+        self.assertEqual(tables['sortie_allied_extra'][CARD_INDEX['B06']], 1)

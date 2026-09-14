@@ -14,6 +14,9 @@ TABLE_KEYS = (
     'heal_front_full', 'next_followup', 'next_bonus_atk', 'next_bonus_sh',
     'sacrifice_draw', 'damage_per_downed', 'set_down',
     'reveal_front_hand', 'damage_revealed',
+    'ignore_shield', 'team_buff', 'pending_atk', 'share_overflow',
+    'hit_front_base', 'hit_front_printed', 'self_damage', 'draw_one',
+    'sortie_allied_extra', 'heal_after_hit',
 )
 
 
@@ -74,6 +77,26 @@ def compile_effect_tables(card_ids: tuple[str, ...]) -> dict[str, list[int]]:
                 tables['reveal_front_hand'][row] = 1
             elif op.op == 'damage_revealed':
                 tables['damage_revealed'][row] = 1
+            elif op.op == 'ignore_shield':
+                tables['ignore_shield'][row] = 1
+            elif op.op == 'team_buff':
+                tables['team_buff'][row] = int(op.args[0]) if op.args else 1
+            elif op.op == 'pending_atk':
+                tables['pending_atk'][row] = int(op.args[0]) if op.args else 0
+            elif op.op == 'share_overflow':
+                tables['share_overflow'][row] = 1
+            elif op.op == 'hit_front_scaled':
+                tables['hit_front_base'][row] = int(op.args[0]) if op.args else 0
+                tables['hit_front_printed'][row] = int(op.args[1]) if len(op.args) > 1 else 0
+            elif op.op == 'self_damage':
+                tables['self_damage'][row] = int(op.args[0]) if op.args else 0
+            elif op.op == 'draw_one':
+                tables['draw_one'][row] = 1
+            elif op.op == 'sortie_allied_extra':
+                tables['sortie_allied_extra'][row] = int(op.args[0]) if op.args else 0
+                tables['sortie'][row] = 1
+            elif op.op == 'heal_after_hit':
+                tables['heal_after_hit'][row] = int(op.args[0]) if op.args else 0
             else:
                 raise ValueError(f'no lowering for {op.op}')
     tables['hooks'] = dict(STARTER_HOOKS)  # type: ignore[assignment]

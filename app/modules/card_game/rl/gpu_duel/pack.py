@@ -4,8 +4,8 @@ from __future__ import annotations
 from typing import Any
 
 from .catalog import (
-    CARD_INDEX, DECK_SLOTS, DISCARD_SLOTS, HAND_SLOTS, PHASE_CHOICE, PHASE_FINISHED,
-    PHASE_MULLIGAN, PHASE_PLAYING, SEAT_INDEX, SEATS, SIDES, assert_starter_deck,
+    CARD_INDEX, DECK_SLOTS, DISCARD_SLOTS, HAND_SLOTS, N_SEATS, PHASE_CHOICE, PHASE_FINISHED,
+    PHASE_MULLIGAN, PHASE_PLAYING, SEAT_INDEX, SEATS, SIDES,
 )
 from .state import GpuState, empty_state
 
@@ -88,7 +88,9 @@ def pack_python(states: list[dict[str, Any]], *, device='cpu') -> GpuState:
             order = list(team.get('order') or SEATS)
             for seat, cid in enumerate(SEATS):
                 if cid not in team['characters']:
-                    raise ValueError(f'starter seat {cid} missing from Python state')
+                    cpu.ch_present[row, side_i, seat] = 0
+                    continue
+                cpu.ch_present[row, side_i, seat] = 1
                 hero = team['characters'][cid]
                 cpu.ch_hp[row, side_i, seat] = int(hero['hp'])
                 cpu.ch_max_hp[row, side_i, seat] = int(hero['max_hp'])
@@ -112,8 +114,12 @@ def pack_python(states: list[dict[str, Any]], *, device='cpu') -> GpuState:
                 cpu.ch_pact[row, side_i, seat] = 1 if flags.get('pact') else 0
                 cpu.ch_energy_next[row, side_i, seat] = 1 if flags.get('energy_next') else 0
                 cpu.ch_harmonized[row, side_i, seat] = 1 if (team.get('harmonized') or {}).get(cid) else 0
+                cpu.ch_allied_hurt[row, side_i, seat] = 1 if flags.get('allied_hurt') else 0
+                cpu.ch_pending_atk[row, side_i, seat] = int(flags.get('pending_atk') or 0)
+                cpu.ch_share_overflow[row, side_i, seat] = 1 if flags.get('share_overflow') else 0
+            weave = (team.get('front_debuff') or {}).get('weave')
+            cpu.weave[row, side_i] = 1 if weave else 0
             if order != list(SEATS):
-                # Seats are encoder order; starter deck order must match.
                 pass
     return cpu.to(device) if str(device) != 'cpu' else cpu
 
@@ -124,8 +130,9 @@ def snapshot_mechan(gpu: GpuState, row: int = 0) -> dict[str, Any]:
     sides = []
     for side in range(SIDES):
         chars = []
-        for seat in range(4):
+        for seat in range(N_SEATS):
             chars.append({
+                'present': int(s.ch_present[row, side, seat]),
                 'hp': int(s.ch_hp[row, side, seat]),
                 'max_hp': int(s.ch_max_hp[row, side, seat]),
                 'shield': int(s.ch_shield[row, side, seat]),

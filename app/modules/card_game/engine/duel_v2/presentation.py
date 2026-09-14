@@ -1,6 +1,7 @@
 """Structured public presentation for V2 observe(); never infers cards from log text."""
 from copy import deepcopy
 
+from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
 from app.modules.card_game.content.duel_v2.tutorial import lookup_card
 from app.modules.card_game.content.duel_v2.catalog import CHARACTER_ORDER
@@ -62,6 +63,7 @@ def capture_public_board(state):
         team = {key: deepcopy(source[key]) for key in ('hp', 'shield', 'ap', 'front', 'last_front', 'front_debuff')}
         marks = harmony_marks(state, ps)
         team['harmony_available'] = marks['available']
+        team['effect_markers'] = team_effect_markers(source)
         team['hand_count'] = len(source['hand'])
         team['deck_count'] = len(source['deck'])
         pending = state.get('pending_choice')
@@ -74,6 +76,7 @@ def capture_public_board(state):
             shape_id = hero.get('shape')
             characters.append({
                 'id': cid,
+                'effect_markers': character_effect_markers(hero),
                 'hp': hero['hp'],
                 'max_hp': hero['max_hp'],
                 'shield': hero['shield'],

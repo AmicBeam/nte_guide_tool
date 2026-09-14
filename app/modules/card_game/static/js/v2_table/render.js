@@ -39,6 +39,7 @@
     node.removeAttribute('data-drop-role');
     node.classList.toggle('legal', Boolean(options.canAttack || options.canAwaken || options.canTarget));
     node.classList.toggle('down', Number(data.down_turns) > 0);
+    node.classList.toggle('is-opponent', Boolean(options.isOpponent));
     ['v2-fx-down', 'v2-fx-lunge', 'v2-fx-enter', 'v2-fx-hurt', 'v2-fx-revive'].forEach(function (name) {
       node.classList.remove(name);
     });
@@ -130,7 +131,7 @@
         }).join('') + '</div>' +
         recordsHtml(options.records) +
         '<div class="v2-character-note"><span title="' + V2.escapeAttr(note) + '">' + V2.escapeHtml(note) + '</span>' + actions.join('') + '</div>' +
-      '</div>';
+      '</div>' + effectMarkersHtml(options.placeholder ? [] : data.effect_markers, 'v2-character-effects');
     if (prevPanel && prevPanel !== panelSig) {
       const previous = prevPanel.split('|');
       const current = panelSig.split('|');
@@ -165,6 +166,15 @@
       if (pool) pool.appendChild(node);
     }
     return node;
+  }
+
+  function effectMarkersHtml(markers, className) {
+    if (!Array.isArray(markers) || !markers.length) return '';
+    return '<div class="' + className + '">' + markers.map(function (marker) {
+      const detail = [marker.description, marker.timing, marker.clears_on_down ? '倒地时失去' : '倒地后保留'].filter(Boolean).join(' · ');
+      return '<span class="v2-chip" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(marker.name + '：' + detail) + '">' +
+        V2.escapeHtml(marker.name) + '<small>' + V2.escapeHtml(marker.timing || '') + '</small></span>';
+    }).join('') + '</div>';
   }
 
   function fillFrontDebuff(node, state) {
@@ -224,6 +234,16 @@
       zone.classList.toggle('harmony-available', Boolean(state && state.harmony_available));
     }
     fillFrontDebuff(side === ctx.viewer ? ctx.nodes.playerFrontDebuff : ctx.nodes.opponentFrontDebuff, state);
+    if (zone) {
+      let effects = zone.querySelector('.v2-zone-effects');
+      if (!effects) {
+        effects = document.createElement('div');
+        effects.className = 'v2-zone-effects';
+        zone.appendChild(effects);
+      }
+      effects.innerHTML = effectMarkersHtml(state && state.effect_markers, 'v2-zone-effect-list');
+      effects.hidden = !effects.innerHTML;
+    }
     fillHarmonySourceCaption(zone, state, !frontId);
     if (!frontId) {
       emptyFront(slot, '战斗区空');
@@ -301,7 +321,8 @@
     if (options.raised) classes.push('raised');
     if (unusable) classes.push('is-unusable');
     if (options.groupStart) classes.push('v2-hand-group-start');
-    const timing = V2.cardTimingClass(card);
+    const timing = V2.cardTimingClass(options.instantSpent
+      ? Object.assign({}, card, { instant: false }) : card);
     if (timing) classes.push(timing);
     const portrait = V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'portrait');
     const style = portrait ? ' style="--card-art:url(\'' + String(portrait).replace(/'/g, '%27') + '\')"' : '';
@@ -384,6 +405,7 @@
           const previous = myHand[index - 1];
           return handCardHtml(card, {
             legal: !card.unavailable_reason && entries.length > 0,
+            instantSpent: Boolean(mine.used && mine.used.instant),
             selected: Boolean(selected[card.instance_id]),
             raised: ctx.raisedCardId && String(ctx.raisedCardId) === String(card.instance_id),
             phase: ctx.game && ctx.game.phase,

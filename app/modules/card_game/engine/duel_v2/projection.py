@@ -1,6 +1,7 @@
 """Viewer-specific projection. Never expose decks, RNG, or private choices."""
 from copy import deepcopy
 
+from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS
 from .flow import acting_side, apply_action, card_plays_instant, legal_actions
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
@@ -118,6 +119,7 @@ def observe(state, side, after_seq=None):
                 'front', 'last_front', 'turn_count', 'fatigue', 'records', 'used', 'harmonized',
                 'extra_flower', 'front_debuff') if k in source}
         team['harmony_available'] = marks['available']
+        team['effect_markers'] = team_effect_markers(source)
         chars = []
         for cid in team_order(state, ps):
             h = source['characters'][cid]
@@ -142,6 +144,7 @@ def observe(state, side, after_seq=None):
                      form_attack=int(flags.get('form_attack') or 0),
                      harmony_source=marks['payer'] == cid,
                      harmony_ready=cid in marks['ready'])
+            c['effect_markers'] = character_effect_markers(h)
             chars.append(c)
         team['characters'] = chars
         team['deck_count'] = len(source['deck'])

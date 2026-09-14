@@ -983,3 +983,34 @@
   outline: 3px solid rgba(255, 191, 87, 0.98);
   box-shadow: 0 0 22px rgba(255, 191, 87, 0.42);
 }
+
+/* Pending effects belong to the character and disappear when it is downed. */
+.v2-character-card:has(.v2-character-effects) { overflow: visible; }
+.v2-character-effects {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  z-index: 3;
+}
+.v2-character-card.is-opponent .v2-character-effects {
+  top: auto;
+  bottom: calc(100% + 5px);
+}
+.v2-character-effects .v2-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 6px;
+  border-color: rgba(232, 201, 136, .65);
+  background: rgba(22, 25, 31, .96);
+  color: #ffe6a8;
+  font-size: 11px;
+  line-height: 1.25;
+}
+.v2-character-effects small { font-size: 9px; color: #c6cbd4; }

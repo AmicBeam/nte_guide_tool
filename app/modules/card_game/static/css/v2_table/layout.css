@@ -853,3 +853,45 @@ body:has(.v2-table-page) .shell {
 }
 
 .v2-combat-core:has(.v2-cast-zone:not([hidden])) .v2-wait-chip { visibility: hidden; }
+
+/* Team effects survive character downing, opposite the harmony status rail. */
+.v2-zone-effects {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: max-content;
+  max-width: 110px;
+  z-index: 2;
+}
+.v2-zone-effects[hidden] { display: none; }
+.v2-zone-effect-list { display: flex; flex-direction: column; gap: 5px; }
+.v2-zone-effect-list .v2-chip { display: flex; flex-direction: column; background: rgba(12, 18, 28, .94); }
+.v2-zone-effect-list small { font-size: 10px; opacity: .8; }
+
+/* Keep the effect rails in the open space toward the middle of the table. */
+.v2-front-zone.opponent .v2-zone-effects,
+.v2-front-zone.opponent .v2-front-debuff {
+  top: auto;
+  bottom: -16px;
+  transform: none;
+}
+.v2-front-zone.player .v2-zone-effects,
+.v2-front-zone.player .v2-front-debuff {
+  top: -6px;
+  transform: none;
+}
+.v2-bench-row.opponent .v2-bench-slot:has(.v2-character-effects) {
+  top: max(8%, 40px);
+}
+.v2-bench-row.player .v2-bench-slot:has(.v2-character-effects) {
+  bottom: max(8%, 40px);
+}
+.v2-front-axis:has(.v2-zone-effects:not([hidden])) { overflow: visible; }
+.v2-zone-effects { width: 90px; }
+.v2-zone-effect-list .v2-chip { white-space: normal; font-size: 11px; }
+.v2-zone-effect-list small { font-size: 9px; }
+.v2-front-axis:has(.v2-character-effects) {
+  overflow: visible;
+  padding-block: 40px;
+}

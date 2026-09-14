@@ -118,6 +118,8 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(len(named), 104)
         self.assertTrue(CARDS['NF01']['derived'])
         self.assertEqual(CARDS['NF01']['name'], '家族壮大')
+        self.assertIn('第 6 个己方回合及以后具有瞬发', CARDS['NF01']['description'])
+        self.assertFalse(CARDS['NF01'].get('instant'))
         type_counts = {'battle': 0, 'tactic': 0, 'form': 0}
         for character_id in CATALOG_ORDER:
             owned = [card_id for card_id, card in named.items() if card['character_id'] == character_id]

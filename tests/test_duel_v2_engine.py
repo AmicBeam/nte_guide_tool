@@ -248,6 +248,26 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual((hero(s, 'a', 'nanali')['harmony'], hero(s, 'a', 'nanali')['energy']), (1, 2))
         self.assertEqual((hero(s, 'b', 'zero')['harmony'], hero(s, 'b', 'zero')['energy']), (0, 0))
 
+    def test_nanali_family_becomes_instant_from_own_turn_six(self):
+        s = self.game()
+        family = next(c for c in s['sides']['a']['hand'] if c['card_id'] == 'NF01')
+        shown = next(c for c in observe(s, 'a')['sides']['a']['hand'] if c.get('card_id') == 'NF01')
+        self.assertFalse(shown.get('instant'))
+        s['sides']['a']['turn_count'] = 5
+        shown = next(c for c in observe(s, 'a')['sides']['a']['hand'] if c.get('card_id') == 'NF01')
+        self.assertFalse(shown.get('instant'))
+        s['sides']['a']['turn_count'] = 6
+        s['sides']['a']['ap'] = 0
+        shown = next(c for c in observe(s, 'a')['sides']['a']['hand'] if c.get('card_id') == 'NF01')
+        self.assertTrue(shown.get('instant'))
+        playable = [item for item in legal_actions(s, 'a')
+                    if item.get('type') == 'play_card' and item.get('card_id') == family['instance_id']]
+        self.assertTrue(playable)
+        s = apply_action(s, 'a', playable[0])
+        self.assertEqual(s['sides']['a']['ap'], 0)
+        n = hero(s, 'a', 'nanali')
+        self.assertEqual((attack_value(n), n['hp'], n['max_hp']), (3, 6, 6))
+
     def test_nanali_family_card_and_n01_draws_owned(self):
         s = self.game()
         n = hero(s, 'a', 'nanali')

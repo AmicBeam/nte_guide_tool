@@ -56,6 +56,12 @@ class Nanali:
     on_rout = staticmethod(on_rout_seed)
 
     @staticmethod
+    def makes_instant(state, side, card):
+        if card.get('card_id') != 'NF01':
+            return False
+        return int(state['sides'][side].get('turn_count') or 0) >= 6
+
+    @staticmethod
     def after_sortie(c):
         extra = 0
         if c.card and c.card.get('card_id') == 'N03':

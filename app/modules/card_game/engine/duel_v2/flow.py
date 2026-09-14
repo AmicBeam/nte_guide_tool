@@ -78,8 +78,14 @@ def kit_makes_form_instant(state, side, card):
     return False
 
 
+def kit_makes_card_instant(state, side, card):
+    kit = KITS.get(card.get('character_id'))
+    fn = getattr(kit, 'makes_instant', None)
+    return bool(fn and fn(state, side, card))
+
+
 def card_plays_instant(state, side, card):
-    return bool(card.get('instant')) or kit_makes_form_instant(state, side, card)
+    return bool(card.get('instant')) or kit_makes_form_instant(state, side, card) or kit_makes_card_instant(state, side, card)
 
 
 def card_is_free_instant(state, side, card):

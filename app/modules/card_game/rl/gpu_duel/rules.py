@@ -637,6 +637,9 @@ def play_card(s: GpuState, side: torch.Tensor, hand_slot: torch.Tensor, mask: to
     owner = torch.where(kind >= 0, s.catalog_owner[kind.clamp(min=0)], torch.zeros_like(kind))
     cost = torch.where(kind >= 0, s.catalog_cost[kind.clamp(min=0)], torch.zeros_like(kind))
     instant = (kind >= 0) & (s.catalog_instant[kind.clamp(min=0)] > 0)
+    nf01 = CARD_INDEX.get('NF01', -1)
+    if nf01 >= 0:
+        instant = instant | ((kind == nf01) & (s.turn_count[b, side] >= 6))
     # zero shaped forms instant
     is_form = (kind >= 0) & (s.catalog_type[kind.clamp(min=0)] == 2)
     zero_shaped = (s.ch_hp[b, side, ZERO] > 0) & (s.ch_shape[b, side, ZERO] >= 0)
@@ -729,6 +732,9 @@ def rebuild_legal(s: GpuState) -> None:
         for seat in range(N_SEATS):
             owner_hp = torch.where(owner == seat, s.ch_hp[b, side, seat], owner_hp)
         instant = (kind >= 0) & (s.catalog_instant[kind.clamp(min=0)] > 0)
+        nf01 = CARD_INDEX.get('NF01', -1)
+        if nf01 >= 0:
+            instant = instant | ((kind == nf01) & (s.turn_count[b, side] >= 6))
         is_form = (kind >= 0) & (s.catalog_type[kind.clamp(min=0)] == 2)
         zero_shaped = (s.ch_hp[b, side, ZERO] > 0) & (s.ch_shape[b, side, ZERO] >= 0)
         free = (instant | (is_form & zero_shaped)) & (s.used_instant[b, side] == 0)

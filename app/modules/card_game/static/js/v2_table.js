@@ -178,7 +178,7 @@ async function bootstrapTable() {
   function applyPlayerOptions() {
     const fontSize = Number.isInteger(ctx.options.fontSize) && ctx.options.fontSize >= 0 && ctx.options.fontSize <= 4 ? ctx.options.fontSize : 2;
     ctx.options.fontSize = fontSize;
-    const layoutScale = [1, 1.5, 2].includes(ctx.options.layoutScale) ? ctx.options.layoutScale : 1;
+    const layoutScale = [0.8, 1, 1.5, 2].includes(ctx.options.layoutScale) ? ctx.options.layoutScale : 1;
     ctx.options.layoutScale = layoutScale;
     const baseScale = mobileLayout.matches ? 0.8 : 1;
     page.style.setProperty('--table-layout-scale', layoutScale * baseScale);

@@ -517,7 +517,7 @@
         dragTargeting: !parsed || parsed.dragTargeting !== false,
         reducedMotion: Boolean(parsed && parsed.reducedMotion),
         speed: Number(parsed && parsed.speed) === 2 ? 2 : 1,
-        layoutScale: parsed && [1, 1.5, 2].includes(parsed.layoutScale) ? parsed.layoutScale : 1,
+        layoutScale: parsed && [0.8, 1, 1.5, 2].includes(parsed.layoutScale) ? parsed.layoutScale : 1,
         fontSize: parsed && Number.isInteger(parsed.fontSize) && parsed.fontSize >= 0 && parsed.fontSize <= 4 ? parsed.fontSize : 2,
       };
     } catch (error) {

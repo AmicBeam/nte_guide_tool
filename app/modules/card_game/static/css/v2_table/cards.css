@@ -1061,4 +1061,4 @@
 .v2-table-page select,
 .v2-table-page textarea { font-size: calc(14px * var(--table-font-scale, 1)); }
 
-.v2-layout-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(6px * var(--table-layout-scale, 1)); }
+.v2-layout-presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: calc(6px * var(--table-layout-scale, 1)); }

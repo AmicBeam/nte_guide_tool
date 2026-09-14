@@ -297,6 +297,9 @@ def attack(c, spec, index):
             overflow = int(decide(EffectContext(s, enemy, target_id, op), 'combat_overflow', overflow,
                                   attacker_id=cid, defender_id=target_id, defender_side=enemy,
                                   raw_overflow=raw_overflow, spec=spec, index=index) or 0)
+        from .tutorial import tutorial_flags
+        if tutorial_flags(s).get('disable_overflow'):
+            overflow = 0
     # Counters deal simultaneous damage but do not accumulate combat resources.
     attacker = [side, cid]
     if attacker not in op['participants']:

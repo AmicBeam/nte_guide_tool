@@ -66,10 +66,16 @@ def name(state, side, cid=None):
 def attack_value(character):
     flags = character.get('flags') or {}
     shape_id = character.get('shape')
-    form = CARDS.get(shape_id) if shape_id else None
+    from app.modules.card_game.content.duel_v2.tutorial import lookup_card
+    form = lookup_card(shape_id) if shape_id else None
     form_attack = int((form or {}).get('attack') or 0)
     form_hp = int((form or {}).get('hp') or 0)
-    perm_atk = int(character.get('base_attack') or 0) - int(CHARACTERS.get(character.get('id'), {}).get('attack') or 0)
+    from app.modules.card_game.content.duel_v2.tutorial import lookup_character
+    try:
+        catalog_attack = int(lookup_character(character.get('id')).get('attack') or 0)
+    except (KeyError, TypeError):
+        catalog_attack = int(CHARACTERS.get(character.get('id'), {}).get('attack') or 0)
+    perm_atk = int(character.get('base_attack') or 0) - catalog_attack
     if form and form.get('type') == 'form' and form_attack > 0 and form_hp > 0:
         value = form_attack + max(0, perm_atk)
     else:
@@ -125,7 +131,8 @@ def damage_class_for(kind, damage_class=None):
 
 
 def new_character(cid):
-    c = CHARACTERS[cid]
+    from app.modules.card_game.content.duel_v2.tutorial import lookup_character
+    c = lookup_character(cid)
     return {**deepcopy(c), 'base_attack': c['attack'], 'hp': c['max_hp'],
             'base_max_hp': c['max_hp'], 'shield': 0,
             'harmony': 0, 'energy': 0, 'awakened': False, 'ultimate_turns': 0,
@@ -133,8 +140,9 @@ def new_character(cid):
 
 
 def card_instance(state, card_id, side, *, copy=False):
+    from app.modules.card_game.content.duel_v2.tutorial import lookup_card
     state['next_instance'] += 1
-    c = deepcopy(CARDS[card_id])
+    c = deepcopy(lookup_card(card_id) or CARDS[card_id])
     c.update(card_id=card_id, instance_id=f"{side}-{state['next_instance']}", copy=copy)
     if copy:
         c['original_character_id'] = c['character_id']
@@ -220,7 +228,8 @@ def knockdowns(state):
             if h.get('awakened') or h.get('ultimate_turns'):
                 from .flow import end_ultimate
                 end_ultimate(state, side, cid)
-            base_max = int(h.get('base_max_hp') or CHARACTERS[cid]['max_hp'])
+            from app.modules.card_game.content.duel_v2.tutorial import lookup_character
+            base_max = int(h.get('base_max_hp') or lookup_character(cid)['max_hp'])
             h.update(down_turns=3, harmony=kept_harmony, energy=kept_energy, shield=0, growth=0,
                      gaze=0, dream=0, shape=None, awakened=False, ultimate_turns=0,
                      max_hp=base_max, flags={})

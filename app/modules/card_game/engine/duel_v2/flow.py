@@ -13,7 +13,10 @@ from .state import (SIDES, add_hand, alive, card_instance, collapsed, damage, di
                     new_character, other, shield, shuffle, team_order)
 
 
-def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False):
+def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=None):
+    if scenario:
+        from .tutorial import new_tutorial_game
+        return new_tutorial_game(scenario, seed=seed)
     if type(seed) is not int or first_side not in (None, 'a', 'b'):
         raise ValueError('Invalid seed or first side')
     if type(skip_mulligan) is not bool:
@@ -269,6 +272,9 @@ def legal_actions(state, side=None):
         if can_afford_card(state, side, card):
             result.extend({'type': 'play_card', 'card_id': card['instance_id'], **target}
                           for target in targets(state, side, card))
+    from .tutorial import filter_legal_actions, is_tutorial
+    if is_tutorial(state):
+        return filter_legal_actions(state, side, result)
     return result
 
 
@@ -380,13 +386,18 @@ def begin_turn(state, side):
     fire(EffectContext(state, other_side, other_carrier, {'side': other_side}), 'on_enemy_turn_begin')
     log(state, f"{name(state, side)}的第 {team['turn_count']} 个回合开始。", 'turn', side=side,
         actor=f'{side}:player')
-    if state['turn'] != 1:
+    from .tutorial import tutorial_flags
+    flags = tutorial_flags(state)
+    if state['turn'] != 1 and not flags.get('disable_draw'):
         draw(state, side)
     if not finished(state):
         extra = int(team.pop('extra_ap', 0) or 0)
-        team['ap'] = (1 if state['turn'] == 1 else 2) + extra
+        if flags.get('ap_per_turn') is not None:
+            team['ap'] = int(flags['ap_per_turn']) + extra
+        else:
+            team['ap'] = (1 if state['turn'] == 1 else 2) + extra
         team['normal_attack_available'] = True
-        team['ultimate_available'] = True
+        team['ultimate_available'] = not flags.get('disable_ultimate')
 
 
 def tick_front_debuff(state, side):
@@ -493,7 +504,11 @@ def finish_operation(state):
         discard(state, side, card)
         fire(c, 'after_card', actor_id=cid, card=card)
     attackers = [(ps, pc) for ps, pc in (op.get('participants') or []) if alive(state, ps, pc)]
-    if attackers:
+    from .tutorial import tutorial_flags
+    flags = tutorial_flags(state)
+    gain_energy = not flags.get('disable_energy_gain')
+    gain_harmony = not flags.get('disable_harmony_gain')
+    if attackers and (gain_energy or gain_harmony):
         share_side = attackers[0][0]
         before = {}
         for ally_id in team_order(state, share_side):
@@ -501,20 +516,28 @@ def finish_operation(state):
                 continue
             h = hero(state, share_side, ally_id)
             before[ally_id] = {'harmony': h['harmony'], 'energy': h['energy']}
-            energy(state, share_side, ally_id, 1)
+            if gain_energy:
+                energy(state, share_side, ally_id, 1)
         for ps, pc in attackers:
             h = hero(state, ps, pc)
             extra = 0
             kit = KITS.get(pc)
             hook = getattr(kit, 'combat_harmony_extra', None) if kit else None
-            if hook:
+            if hook and gain_harmony:
                 extra = int(hook(EffectContext(state, ps, pc, op)) or 0)
-            h['harmony'] = min(2, h['harmony'] + 1 + extra)
-            energy(state, ps, pc, 1)
             snap = before.get(pc) or {'harmony': 0, 'energy': 0}
+            if gain_harmony:
+                h['harmony'] = min(2, h['harmony'] + 1 + extra)
+            if gain_energy:
+                energy(state, ps, pc, 1)
             dh, de = h['harmony'] - snap['harmony'], h['energy'] - snap['energy']
-            log(state, f"{h['name']}战斗积累：自己的环合 +{dh}、能量 +{de}；全队存活异能者分享能量 +1。",
-                'resource', side=ps, source=pc, actor=f'{ps}:{pc}', target=f'{ps}:{pc}',
+            if gain_harmony and gain_energy:
+                text = f"{h['name']}战斗积累：自己的环合 +{dh}、能量 +{de}；全队存活异能者分享能量 +1。"
+            elif gain_harmony:
+                text = f"{h['name']}战斗积累：自己的环合 +{dh}。"
+            else:
+                text = f"{h['name']}战斗积累：自己的能量 +{de}；全队存活异能者分享能量 +1。"
+            log(state, text, 'resource', side=ps, source=pc, actor=f'{ps}:{pc}', target=f'{ps}:{pc}',
                 harmony_delta=dh, energy_delta=de,
                 before=snap, after={'harmony': h['harmony'], 'energy': h['energy']})
     state['phase'] = 'playing'
@@ -546,6 +569,9 @@ def choose(state, side, choice_id):
 def apply_action(state, side, action):
     if side not in SIDES or not isinstance(action, dict):
         raise ValueError('无效的操作格式。')
+    from .tutorial import after_player_action, apply_tutorial_ack, is_tutorial
+    if is_tutorial(state) and action.get('type') == 'tutorial_ack':
+        return apply_tutorial_ack(state, side)
     candidate = deepcopy(action)
     if candidate.get('type') == 'mulligan' and isinstance(candidate.get('card_ids'), list):
         ids = candidate['card_ids']
@@ -598,5 +624,9 @@ def apply_action(state, side, action):
         card = next(c for c in team['hand'] if c['instance_id'] == candidate['card_id'])
         team['hand'].remove(card)
         resolve_play(result, side, card, candidate.get('target_id'), pay=True)
+    if is_tutorial(result) and side == 'a' and candidate.get('type') != 'concede':
+        after_player_action(result, candidate)
+        from .tutorial import run_scripted_opponent
+        result = run_scripted_opponent(result, apply_action)
     bump_public_patch(result)
     return result

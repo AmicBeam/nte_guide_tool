@@ -144,3 +144,9 @@ def import_replay():
 @_api
 def leave():
     return service.leave(g.current_player)
+
+
+@blueprint.post('/tutorial-skip')
+@_api
+def tutorial_skip():
+    return service.skip_tutorial(g.current_player, _body())

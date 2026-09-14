@@ -105,7 +105,10 @@ def _kit_handlers(c, hook: str, *, actor_only: bool = False, include_down: bool 
 def fire(c, hook: str, *, actor_only: bool = False, include_down: bool = False, **data) -> None:
     """Run append-only kit callbacks. Missing hooks are skipped."""
     from app.modules.card_game.engine.duel_v2.state import finished
+    from app.modules.card_game.engine.duel_v2.tutorial import tutorial_flags
     if finished(c.state):
+        return
+    if tutorial_flags(c.state).get('disable_passives'):
         return
     for cid, handler in _kit_handlers(c, hook, actor_only=actor_only, include_down=include_down):
         handler(c.for_character(c.side, cid), **data)
@@ -119,7 +122,10 @@ def decide(c, hook: str, default, *, actor_only: bool = False, include_down: boo
     This is a gate override, not the legacy event-bus replace queue.
     """
     from app.modules.card_game.engine.duel_v2.state import finished
+    from app.modules.card_game.engine.duel_v2.tutorial import tutorial_flags
     if finished(c.state):
+        return default
+    if tutorial_flags(c.state).get('disable_passives'):
         return default
     value = default
     for cid, handler in _kit_handlers(c, hook, actor_only=actor_only, include_down=include_down):

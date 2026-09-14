@@ -391,3 +391,22 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self._post('/api/duel-v2/build', deck, token=self.a)
         room = self._post('/api/duel-v2/start', {'mode': 'pvp', 'deck': deck}, token=self.a)
         self._post('/api/duel-v2/join', {'room_code': room['room']['room_code']}, token=self.b)
+
+    def test_tutorial_start_returns_guided_level_one(self):
+        catalog = self._get('/api/duel-v2/catalog', token=self.a)
+        self.assertEqual(catalog['tutorial']['current_level'], 'tutorial_l01_board')
+        started = self._post('/api/duel-v2/start', {'mode': 'tutorial'}, token=self.a)
+        self.assertEqual(started['room']['mode'], 'tutorial')
+        game = started['game']
+        self.assertEqual(game['tutorial']['step_id'], 'l01_intro')
+        self.assertTrue(game['tutorial']['mask'])
+        self.assertIn('bench:a', game['tutorial']['spotlights'])
+        self.assertEqual(len(game['sides']['a']['characters']), 2)
+        ack = next(entry['action'] for entry in game['legal_actions'] if entry['action']['type'] == 'tutorial_ack')
+        next_view = self._post('/api/duel-v2/action', {
+            'room_code': started['room']['room_code'],
+            'request_id': 'tut-ack-1',
+            'expected_version': game['version'],
+            'action': ack,
+        }, token=self.a)['game']
+        self.assertEqual(next_view['tutorial']['step_id'], 'l01_zones')

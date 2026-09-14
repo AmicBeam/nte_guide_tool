@@ -125,8 +125,10 @@ def observe(state, side, after_seq=None):
             c = {k: deepcopy(h[k]) for k in ('id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
                  'energy', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
                  'avatar', 'portrait', 'passive', 'awakened_passive') if k in h}
-            c.update(attack=attack_value(h), shape=CARDS[h['shape']]['name'] if h['shape'] else None,
-                     shape_id=h['shape'], shape_description=CARDS[h['shape']]['description'] if h['shape'] else None,
+            from app.modules.card_game.content.duel_v2.tutorial import lookup_card
+            form = lookup_card(h['shape']) if h['shape'] else None
+            c.update(attack=attack_value(h), shape=(form or {}).get('name') if form else None,
+                     shape_id=h['shape'], shape_description=(form or {}).get('description') if form else None,
                      harmony_max=2, energy_max=character_energy_max(h), gaze=h.get('gaze', 0), dream=h.get('dream', 0),
                      next_attack_bonus=flags.get('next_attack', 0),
                      return_after_sortie=flags.get('return_after', False),
@@ -188,6 +190,11 @@ def observe(state, side, after_seq=None):
                         for c in pending['cards']] if pending['side'] == side else []}
     op = state['operation']
     result['resolving_card'] = public_card(op['card']) if op and op['card'] else None
+    from .tutorial import is_tutorial, project_tutorial, strip_hidden_fields
+    if is_tutorial(state):
+        tutorial = project_tutorial(state, side)
+        result['tutorial'] = tutorial
+        strip_hidden_fields(result, tutorial)
     return result
 
 

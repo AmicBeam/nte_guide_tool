@@ -85,6 +85,9 @@ async function bootstrapTable() {
     opponentFrontZone: document.getElementById('v2-opponent-front'),
     playerFrontDebuff: document.getElementById('v2-player-front-debuff'),
     opponentFrontDebuff: document.getElementById('v2-opponent-front-debuff'),
+    tutorialMask: document.getElementById('v2-tutorial-mask'),
+    tutorialModal: document.getElementById('v2-tutorial-modal'),
+    tutorialArrows: document.getElementById('v2-tutorial-arrows'),
     playArea: document.getElementById('v2-play-area'),
     targetMask: targetMask,
     targetCopy: targetCopy,
@@ -114,6 +117,9 @@ async function bootstrapTable() {
     targetCopy: targetCopy,
     targetCancel: targetCancel,
     targetLine: targetLine,
+    tutorialMask: document.getElementById('v2-tutorial-mask'),
+    tutorialModal: document.getElementById('v2-tutorial-modal'),
+    tutorialArrows: document.getElementById('v2-tutorial-arrows'),
     pool: pool,
     nodes: nodes,
     room: null,
@@ -153,6 +159,9 @@ async function bootstrapTable() {
 
   TABLE.bindSync(ctx);
   TABLE.bindInteraction(ctx);
+  if (typeof TABLE.bindTutorial === 'function') {
+    TABLE.bindTutorial(ctx);
+  }
 
   function setMenuOpen(open) {
     menuOverlay.classList.toggle('open', Boolean(open));

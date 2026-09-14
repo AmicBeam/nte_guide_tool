@@ -354,6 +354,9 @@
       if (ghostType) ghost.setAttribute('data-card-type', ghostType);
       else ghost.removeAttribute('data-card-type');
       document.body.classList.add('v2-dragging');
+      if (typeof TABLE.drawTutorialDragArrow === 'function') {
+        TABLE.drawTutorialDragArrow(ctx);
+      }
       if (kind === 'card' || (kind === 'character' && !fromFront)) {
         if (kind === 'card') {
           ctx.raisedCardId = id;
@@ -379,6 +382,9 @@
       ghost.innerHTML = '';
       ghost.removeAttribute('data-card-type');
       document.body.classList.remove('v2-dragging');
+      if (typeof TABLE.drawTutorialDragArrow === 'function') {
+        TABLE.drawTutorialDragArrow(ctx);
+      }
       highlightDrop(null, false);
       V2.setHidden(previewBox, true);
       const state = ctx.dragState;

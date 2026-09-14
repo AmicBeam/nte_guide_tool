@@ -1,0 +1,274 @@
+"""Tutorial overlay: scripted legal actions, opponent scripts, and guidance."""
+from copy import deepcopy
+
+from app.modules.card_game.content.duel_v2.tutorial import load_scenario
+from .presentation import bump_public_patch, capture_public_board
+from .state import SIDES, card_instance, name, new_character, shuffle
+
+
+def is_tutorial(state):
+    flags = state.get('flags') if isinstance(state, dict) else None
+    return bool(isinstance(flags, dict) and flags.get('tutorial'))
+
+
+def tutorial_flags(state):
+    flags = (state.get('flags') or {}).get('tutorial') or {}
+    return flags if isinstance(flags, dict) else {}
+
+
+def current_step(state):
+    flags = tutorial_flags(state)
+    steps = flags.get('steps') or []
+    index = int(flags.get('step_index') or 0)
+    if 0 <= index < len(steps):
+        return steps[index]
+    return None
+
+
+def new_tutorial_game(scenario_id, seed=0):
+    scenario = load_scenario(scenario_id)
+    seed = int(scenario.get('seed') or seed or 0)
+    first_side = scenario.get('first_side') or 'a'
+    flags = deepcopy(scenario.get('flags') or {})
+    order_a = list(scenario.get('order_a') or [])
+    order_b = list(scenario.get('order_b') or [])
+    player_hp = int(flags.get('player_hp') or 30)
+    player_shield = int(flags.get('player_shield') or 0)
+    state = {
+        'rules_version': 'duel_v2',
+        'design_version': 'V2.5',
+        'version': 0,
+        'phase': 'playing',
+        'active_side': first_side,
+        'first_side': first_side,
+        'turn': 0,
+        'winner': None,
+        'reason': None,
+        'rng': seed,
+        'next_instance': 0,
+        'event_seq': 0,
+        'events': [],
+        'pending_choice': None,
+        'operation': None,
+        'mulligan_done': list(SIDES),
+        'current_action_id': 'setup',
+        'current_action_version': 0,
+        'combat_group': 0,
+        'sides': {},
+        'flags': {
+            'tutorial': {
+                **flags,
+                'scenario': scenario['id'],
+                'title': scenario.get('title') or '',
+                'level_index': int(scenario.get('level_index') or 1),
+                'level_count': 12,
+                'step_index': 0,
+                'steps': deepcopy(scenario.get('steps') or []),
+                'hide': list(flags.get('hide') or []),
+            },
+        },
+    }
+    for side, order in (('a', order_a), ('b', order_b)):
+        state['sides'][side] = {
+            'name': name(state, side),
+            'hp': player_hp,
+            'shield': player_shield,
+            'ap': 0,
+            'normal_attack_available': False,
+            'ultimate_available': False,
+            'front': None,
+            'last_front': None,
+            'order': list(order),
+            'characters': {cid: new_character(cid) for cid in order},
+            'hand': [],
+            'deck': [],
+            'discard': [],
+            'removed': [],
+            'records': [],
+            'turn_count': 0,
+            'fatigue': 0,
+            'used': {},
+            'harmonized': {},
+            'extra_flower': False,
+            'extra_delay': False,
+            'front_debuff': {},
+        }
+        for card_id in scenario.get(f'hand_{side}') or []:
+            state['sides'][side]['hand'].append(card_instance(state, card_id, side))
+        for card_id in scenario.get(f'deck_{side}') or []:
+            state['sides'][side]['deck'].append(card_instance(state, card_id, side))
+        if not flags.get('fixed_rng'):
+            shuffle(state, state['sides'][side]['deck'])
+    from .flow import begin_turn
+    begin_turn(state, first_side)
+    state['_public_board'] = capture_public_board(state)
+    return state
+
+
+def _same_action(action, spec):
+    if not isinstance(action, dict) or not isinstance(spec, dict):
+        return False
+    return all(action.get(key) == value for key, value in spec.items())
+
+
+def filter_legal_actions(state, side, actions):
+    if not is_tutorial(state):
+        return actions
+    step = current_step(state)
+    if step is None:
+        return []
+    if side != 'a':
+        return [item for item in actions if item.get('type') != 'concede']
+    allowed = list(step.get('allowed') or [])
+    result = []
+    for spec in allowed:
+        if spec.get('type') == 'tutorial_ack':
+            result.append({'type': 'tutorial_ack'})
+            continue
+        result.extend(item for item in actions if _same_action(item, spec))
+    return result
+
+
+def apply_tutorial_ack(state, side):
+    step = current_step(state)
+    if side != 'a' or not step or not step.get('ack_required'):
+        raise ValueError('当前不能执行此操作：请检查回合、行动力、角色状态和目标。')
+    result = deepcopy(state)
+    result['_public_board'] = capture_public_board(result)
+    result['version'] += 1
+    result['current_action_version'] = result['version']
+    result['current_action_id'] = f"v{result['version']}"
+    result['combat_group'] = 0
+    _advance_step(result)
+    bump_public_patch(result)
+    return result
+
+
+def after_player_action(state, action):
+    if not is_tutorial(state) or not isinstance(action, dict):
+        return state
+    step = current_step(state)
+    if step is None:
+        return state
+    allowed = list(step.get('allowed') or [])
+    if not any(_same_action(action, spec) for spec in allowed if spec.get('type') != 'tutorial_ack'):
+        return state
+    _advance_step(state)
+    return state
+
+
+def _advance_step(state):
+    flags = tutorial_flags(state)
+    flags['step_index'] = int(flags.get('step_index') or 0) + 1
+    state['flags']['tutorial'] = flags
+
+
+def scripted_actions(state):
+    flags = tutorial_flags(state)
+    index = int(flags.get('step_index') or 0)
+    if int(flags.get('scripted_for') or -1) == index:
+        return []
+    steps = flags.get('steps') or []
+    if index <= 0 or index > len(steps):
+        return []
+    previous = steps[index - 1]
+    return list(previous.get('opponent_then') or [])
+
+
+def run_scripted_opponent(state, apply_action):
+    from .flow import acting_side
+    if not is_tutorial(state) or state.get('phase') == 'finished':
+        return state
+    flags = tutorial_flags(state)
+    pending = list(scripted_actions(state))
+    flags['scripted_for'] = int(flags.get('step_index') or 0)
+    state.setdefault('flags', {})['tutorial'] = flags
+    for action in pending:
+        if acting_side(state) != 'b' or state.get('phase') == 'finished':
+            break
+        state = apply_action(state, 'b', action)
+    return state
+
+
+def project_tutorial(state, side):
+    if not is_tutorial(state):
+        return None
+    flags = tutorial_flags(state)
+    step = current_step(state)
+    hide = list(flags.get('hide') or [])
+    if flags.get('disable_hand'):
+        for key in ('hand', 'deck', 'mulligan'):
+            if key not in hide:
+                hide.append(key)
+    payload = {
+        'enabled': True,
+        'campaign_id': 'duel_v2',
+        'scenario': flags.get('scenario'),
+        'title': flags.get('title') or '',
+        'level_index': int(flags.get('level_index') or 1),
+        'level_count': int(flags.get('level_count') or 12),
+        'step_id': (step or {}).get('id'),
+        'ack_required': bool((step or {}).get('ack_required')),
+        'can_skip_step': True,
+        'can_skip_tutorial': True,
+        'can_retry': True,
+        'character_slots': int(flags.get('character_slots') or 2),
+        'hide': hide,
+        'mask': bool((step or {}).get('mask', True)),
+        'spotlights': list((step or {}).get('spotlights') or []),
+        'drag_arrow': deepcopy((step or {}).get('drag_arrow')),
+        'modal': deepcopy((step or {}).get('modal')),
+        'allowed_actions': deepcopy((step or {}).get('allowed') or []),
+        'blocked_reason': (step or {}).get('blocked_reason') or '',
+        'viewer_side': side,
+    }
+    return payload
+
+
+def strip_hidden_fields(observe_payload, tutorial):
+    if not tutorial:
+        return observe_payload
+    hide = set(tutorial.get('hide') or [])
+    for side in SIDES:
+        team = observe_payload.get('sides', {}).get(side) or {}
+        if 'hand' in hide:
+            team['hand'] = []
+            team['hand_count'] = 0
+        if 'deck' in hide:
+            team['deck_count'] = 0
+            team['discard'] = []
+        characters = []
+        for hero in team.get('characters') or []:
+            item = dict(hero)
+            if 'passive' in hide:
+                item.pop('passive', None)
+                item.pop('awakened_passive', None)
+            if 'harmony' in hide:
+                item.pop('harmony', None)
+                item.pop('harmony_max', None)
+                item.pop('harmony_ready', None)
+                item.pop('harmony_source', None)
+            if 'energy' in hide:
+                item.pop('energy', None)
+                item.pop('energy_max', None)
+                item.pop('awakened', None)
+                item.pop('ultimate_turns', None)
+            if 'form' in hide:
+                item['shape'] = None
+                item['shape_id'] = None
+                item['shape_description'] = None
+            if 'ultimate' in hide:
+                item.pop('awakened', None)
+                item.pop('ultimate_turns', None)
+            if tutorial.get('scenario') != 'tutorial_l11_pierce' or item.get('id') != 'tutorial_bohe':
+                if 'passive' in hide:
+                    item.pop('passive', None)
+            characters.append(item)
+        team['characters'] = characters
+        if 'harmony' in hide:
+            team.pop('harmony_available', None)
+            team.pop('front_debuff', None)
+        if 'ultimate' in hide:
+            team['ultimate_available'] = False
+        observe_payload['sides'][side] = team
+    return observe_payload

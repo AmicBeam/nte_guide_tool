@@ -1,5 +1,6 @@
 @import url("./v2_table/layout.css");
 @import url("./v2_table/cards.css");
+@import url("./v2_table/tutorial.css");
 
 .v2-table-page #v2-fx-stage {
   position: fixed;

@@ -66,7 +66,7 @@
     </section>
 
     <section class="v2-arena" id="v2-table-layout" aria-label="牌桌">
-        <div class="v2-bench-row opponent" id="v2-opponent-bench" aria-label="对手编队"></div>
+        <div class="v2-bench-row opponent" id="v2-opponent-bench" data-tutorial-id="bench-opponent" aria-label="对手编队"></div>
         <div class="v2-front-axis" id="v2-play-area" data-drop-role="play-area">
             <div class="v2-front-zone opponent is-empty" id="v2-opponent-front" data-drop-role="opponent-front" aria-label="对手前排">
                 <div class="v2-front-frame">
@@ -93,7 +93,7 @@
                 <div class="v2-harmony-source" id="v2-player-harmony-source" hidden></div>
             </div>
         </div>
-        <div class="v2-bench-row player" id="v2-player-bench" aria-label="我方编队"></div>
+        <div class="v2-bench-row player" id="v2-player-bench" data-tutorial-id="bench-player" aria-label="我方编队"></div>
         <div class="v2-mulligan-stage" id="v2-mulligan-stage" hidden>
             <p class="eyebrow">起手换牌</p>
             <p id="v2-mulligan-stage-copy">最多换 3 张。点选不要的牌，再确认。</p>
@@ -111,7 +111,7 @@
         <aside class="v2-side-actions" aria-label="行动力与回合">
             <div class="v2-ap-readout">
                 <span>行动力</span>
-                <strong id="v2-player-ap">-</strong>
+                <strong id="v2-player-ap" data-tutorial-id="ap">-</strong>
             </div>
             <div class="v2-ap-pair">
                 <div class="v2-ap-readout">
@@ -123,7 +123,7 @@
                     <strong id="v2-ultimate">-</strong>
                 </div>
             </div>
-            <button class="primary-btn" id="v2-end-turn-btn" type="button" disabled>结束回合</button>
+            <button class="primary-btn" id="v2-end-turn-btn" type="button" disabled data-tutorial-id="end_turn">结束回合</button>
             <button class="secondary-btn" id="v2-history-btn" type="button">历史</button>
         </aside>
         <div class="v2-piles opponent-piles">
@@ -221,6 +221,15 @@
     <div class="v2-toast" id="v2-toast" aria-hidden="true"></div>
     <div class="v2-target-line" id="v2-target-line" hidden></div>
     <div class="v2-fx-stage" id="v2-fx-stage" aria-hidden="true"></div>
+    <div class="v2-tutorial-mask" id="v2-tutorial-mask" hidden></div>
+    <svg class="v2-tutorial-arrows" id="v2-tutorial-arrows" aria-hidden="true">
+        <defs>
+            <marker id="v2-arrow-head" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" fill="rgba(232,201,136,0.95)"></path>
+            </marker>
+        </defs>
+    </svg>
+    <aside class="v2-tutorial-modal" id="v2-tutorial-modal" hidden></aside>
 </main>
 <script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
@@ -228,6 +237,7 @@
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/helpers.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/render.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/interaction.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_table/tutorial.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/sync.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/replay.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table.js') }}"></script>

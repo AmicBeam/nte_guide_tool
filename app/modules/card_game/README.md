@@ -22,7 +22,7 @@
 
 ## 页面入口
 
-- `/card-game`：模块大厅。
+- `/card-game`：模块大厅。大厅可进入 V2 新手教学第一关（2v2 面板出击）；完整关卡设计见 [新手教学](../../../docs/duel-v2-tutorial-design.md)。
 - `/login`：登录页。
 - `/profile`：账号设置。
 - `/build`：构筑页，首次进入获赠当前可见的官方预组，之后与普通构筑相同，最多 8 套，可切换、拖动排序、编辑、删除。测试角色与含测试角色的预组仅测试账号可见。
@@ -55,11 +55,12 @@
 
 ```bash
 python3 -m unittest tests.test_module_routes.ModuleRoutesTest.test_card_game_module_page_and_asset
-python3 -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_rl tests.test_duel_v2_rl_train tests.test_duel_v2_gpu_duel tests.test_duel_v2_rule_ir tests.test_duel_v2_table_contract
+python3 -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_rl tests.test_duel_v2_rl_train tests.test_duel_v2_gpu_duel tests.test_duel_v2_rule_ir tests.test_duel_v2_table_contract tests.test_duel_v2_tutorial
 node --check app/modules/card_game/static/js/v2_api.js
 node --check app/modules/card_game/static/js/v2_build.js
 node --check app/modules/card_game/static/js/v2_table.js
 node --check app/modules/card_game/static/js/v2_table/replay.js
+node --check app/modules/card_game/static/js/v2_table/tutorial.js
 node --check app/modules/card_game/static/js/v2_home.js
 node --check app/modules/card_game/static/js/v2_replays.js
 ```

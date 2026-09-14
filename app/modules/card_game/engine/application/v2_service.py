@@ -6,13 +6,16 @@ import json
 import re
 import threading
 from copy import deepcopy
+from datetime import datetime
 from secrets import randbits, token_hex
 
 from app.db import atomic_transaction, db
 from app.errors import PersistenceError, RuleValidationError
+from app.models import DuelV2TutorialProgress
 from app.modules.card_game.engine.application import v2_persistence as storage
 from app.modules.card_game.engine.application import v2_replay as replay
 from app.modules.card_game.engine.application import v2_repository as repository
+from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS, load_scenario, next_level
 
 _lobby_lock = threading.RLock()
 _locks_guard = threading.Lock()
@@ -256,7 +259,91 @@ def _selected_deck(player, supplied: dict | None = None) -> dict:
 def catalog(player) -> dict:
     payload = _content().get_catalog(include_test_characters=_player_can_use_test_content(player))
     payload.update(_public_store(_visible_store(_load_store(player), player)))
+    payload['tutorial'] = tutorial_progress(player)
     return payload
+
+
+def _progress_row(player) -> DuelV2TutorialProgress:
+    row = DuelV2TutorialProgress.get_or_none(DuelV2TutorialProgress.player == player)
+    if row is None:
+        row = DuelV2TutorialProgress.create(player=player)
+    return row
+
+
+def _completed_levels(row) -> list[str]:
+    try:
+        payload = json.loads(row.completed_levels or '[]')
+    except (TypeError, ValueError):
+        payload = []
+    return [str(item) for item in payload if item]
+
+
+def tutorial_progress(player) -> dict:
+    row = _progress_row(player)
+    completed = _completed_levels(row)
+    current = row.current_level or CAMPAIGN_LEVELS[0]
+    if current not in CAMPAIGN_LEVELS:
+        current = next_level(completed)
+    playable = True
+    try:
+        load_scenario(current)
+    except ValueError:
+        playable = current in completed
+    return {
+        'campaign_id': 'duel_v2',
+        'current_level': current,
+        'completed_levels': completed,
+        'skipped': bool(row.skipped),
+        'skipped_prompt': bool(row.skipped_prompt),
+        'completed': bool(row.completed),
+        'playable': playable,
+        'level_count': len(CAMPAIGN_LEVELS),
+    }
+
+
+def skip_tutorial(player, payload: dict | None = None) -> dict:
+    body = payload or {}
+    prompt_only = bool(body.get('skipped_prompt'))
+    with atomic_transaction():
+        row = _progress_row(player)
+        row.skipped_prompt = True
+        if not prompt_only:
+            row.skipped = True
+            row.completed = True
+        row.updated_at = datetime.utcnow()
+        row.save()
+    if not prompt_only:
+        try:
+            room = repository.current_room(player)
+            if room is not None and room.mode == 'tutorial':
+                repository.set_status(room, 'closed')
+                repository.invalidate_run(room)
+                storage.invalidate(room.id)
+        except Exception:
+            pass
+    return tutorial_progress(player)
+
+
+def _mark_tutorial_level(player, scenario_id: str) -> None:
+    with atomic_transaction():
+        row = _progress_row(player)
+        completed = _completed_levels(row)
+        if scenario_id not in completed:
+            completed.append(scenario_id)
+        nxt = next_level(completed)
+        row.completed_levels = json.dumps(completed, ensure_ascii=False)
+        row.current_level = nxt
+        row.completed = len(completed) >= len(CAMPAIGN_LEVELS)
+        row.updated_at = datetime.utcnow()
+        row.save()
+
+
+def _allowed_tutorial_scenarios(player) -> set[str]:
+    progress = tutorial_progress(player)
+    allowed = set(progress['completed_levels'])
+    allowed.add(progress['current_level'])
+    allowed.add(CAMPAIGN_LEVELS[0])
+    return {item for item in allowed if item in CAMPAIGN_LEVELS}
 
 
 def save_build(player, payload: dict) -> dict:
@@ -359,6 +446,8 @@ def _response(room, player, envelope: dict | None = None, after_seq=None) -> dic
             game['sides'][entry.side]['name'] = name
     if game and room.mode == 'solo' and 'b' in game['sides']:
         game['sides']['b']['name'] = '练习对手'
+    if game and room.mode == 'tutorial' and 'b' in game['sides']:
+        game['sides']['b']['name'] = '对手'
     has_replay = replay.available_for(room, player)
     favorited = False
     if has_replay:
@@ -383,9 +472,12 @@ def get_state(player, after_seq=None) -> dict:
 
 
 def _advance_ai(game: dict, mode: str) -> dict:
+    engine = _engine()
+    if mode == 'tutorial':
+        from app.modules.card_game.engine.duel_v2.tutorial import run_scripted_opponent
+        return run_scripted_opponent(game, engine.apply_action)
     if mode != 'solo':
         return game
-    engine = _engine()
     for _ in range(32):
         if game.get('phase') == 'finished' or engine.acting_side(game) != 'b':
             return game
@@ -398,7 +490,14 @@ def _advance_ai(game: dict, mode: str) -> dict:
     raise PersistenceError('练习对手动作超出单回合限制，请刷新后重试。')
 
 
-def _initialize_game(room) -> dict:
+def _initialize_game(room, scenario=None) -> dict:
+    if room.mode == 'tutorial':
+        game = _engine().new_game(seed=0, scenario=scenario or 'tutorial_l01_board')
+        game = _advance_ai(game, room.mode)
+        envelope = {'rules_version': 'duel_v2', 'game': game, 'requests': []}
+        storage.initialize(room, envelope)
+        repository.set_status(room, 'playing' if game['phase'] != 'finished' else 'finished')
+        return envelope
     people = repository.members(room)
     decks = {entry.side: _validate_deck(repository.member_deck(entry)) for entry in people}
     if room.mode == 'solo':
@@ -415,19 +514,37 @@ def _initialize_game(room) -> dict:
 
 def start(player, payload: dict) -> dict:
     mode = payload.get('mode', 'solo')
-    if mode not in {'solo', 'pvp'}:
+    if mode not in {'solo', 'pvp', 'tutorial'}:
         raise RuleValidationError('请选择人机或双人模式。')
-    deck = _selected_deck(player, payload.get('deck'))
+    scenario = payload.get('scenario')
+    if mode == 'tutorial':
+        progress = tutorial_progress(player)
+        scenario = str(scenario or progress['current_level'] or CAMPAIGN_LEVELS[0])
+        if scenario not in _allowed_tutorial_scenarios(player):
+            raise DuelV2Conflict('请按顺序进行新手教学。')
+        try:
+            load_scenario(scenario)
+        except ValueError as exc:
+            raise RuleValidationError(str(exc)) from exc
+    deck = {} if mode == 'tutorial' else _selected_deck(player, payload.get('deck'))
     with _lobby_lock:
         existing = repository.current_room(player)
         if existing is not None and existing.status in {'waiting', 'ready', 'playing'}:
             if existing.mode != mode:
+                if existing.mode == 'tutorial':
+                    raise DuelV2Conflict('正在进行新手教学，请先返回或离开。')
+                if mode == 'tutorial':
+                    raise DuelV2Conflict('请先离开当前房间，再开始教学。')
                 raise DuelV2Conflict('请先退出当前房间，再切换模式。')
             return get_state(player)
+        if existing is not None and existing.status == 'finished' and existing.mode == 'tutorial':
+            repository.set_status(existing, 'closed')
+            repository.invalidate_run(existing)
+            storage.invalidate(existing.id)
         with atomic_transaction():
             room = repository.create_room(player, mode)
-            repository.add_member(room, player, 'a', deck, ready=(mode == 'solo'))
-            envelope = _initialize_game(room) if mode == 'solo' else None
+            repository.add_member(room, player, 'a', deck, ready=(mode in {'solo', 'tutorial'}))
+            envelope = _initialize_game(room, scenario=scenario) if mode in {'solo', 'tutorial'} else None
         return _response(room, player, envelope)
 
 
@@ -542,7 +659,12 @@ def submit_action(player, payload: dict) -> dict:
                     {'side': member.side, 'id': request_id, 'fingerprint': fingerprint}][-_RECEIPT_LIMIT:]
         updated = {'rules_version': 'duel_v2', 'game': game, 'requests': receipts}
         storage.publish(room, updated, final=game['phase'] == 'finished')
-        replay.record(room, updated)
+        if room.mode != 'tutorial':
+            replay.record(room, updated)
+        if room.mode == 'tutorial' and game.get('phase') == 'finished' and game.get('winner') == member.side:
+            scenario = ((game.get('flags') or {}).get('tutorial') or {}).get('scenario')
+            if scenario:
+                _mark_tutorial_level(player, scenario)
         return _response(room, player, updated)
 
 

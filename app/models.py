@@ -171,6 +171,20 @@ class DuelV2Replay(BaseModel):
         table_name = 'duel_v2_replay'
 
 
+class DuelV2TutorialProgress(BaseModel):
+    id = AutoField()
+    player = ForeignKeyField(Player, backref='duel_v2_tutorial', on_delete='CASCADE', unique=True)
+    current_level = CharField(default='tutorial_l01_board', max_length=32)
+    completed_levels = TextField(default='[]')
+    skipped = BooleanField(default=False)
+    skipped_prompt = BooleanField(default=False)
+    completed = BooleanField(default=False)
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_tutorial_progress'
+
+
 class DuelV2ReplayStar(BaseModel):
     id = AutoField()
     player = ForeignKeyField(Player, backref='duel_v2_replay_stars', on_delete='CASCADE')

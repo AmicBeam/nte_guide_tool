@@ -21,7 +21,8 @@ REPLAYS_TEMPLATE = ROOT / 'app' / 'modules' / 'card_game' / 'templates' / 'card_
 TABLE_CSS = ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'css' / 'v2_table.css'
 LAYOUT_CSS = ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'css' / 'v2_table' / 'layout.css'
 CARDS_CSS = ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'css' / 'v2_table' / 'cards.css'
-JS_FILES = (TABLE_JS, HELPERS_JS, RENDER_JS, INTERACTION_JS, SYNC_JS, REPLAY_JS, HOME_JS, REPLAYS_JS)
+TUTORIAL_JS = ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'js' / 'v2_table' / 'tutorial.js'
+JS_FILES = (TABLE_JS, HELPERS_JS, RENDER_JS, INTERACTION_JS, TUTORIAL_JS, SYNC_JS, REPLAY_JS, HOME_JS, REPLAYS_JS)
 
 
 class DuelV2TableContractTest(unittest.TestCase):
@@ -64,6 +65,9 @@ class DuelV2TableContractTest(unittest.TestCase):
             'v2-replay-next',
             'v2-replay-step',
             'v2-replay-link',
+            'v2-tutorial-mask',
+            'v2-tutorial-modal',
+            'v2-tutorial-arrows',
         ]
         for node_id in required_ids:
             self.assertIn(f'id="{node_id}"', html, node_id)
@@ -90,12 +94,15 @@ class DuelV2TableContractTest(unittest.TestCase):
         table_css = html.index("filename='css/v2_table.css'")
         animation_js = html.index("filename='js/v2_animation.js'")
         helpers_js = html.index("filename='js/v2_table/helpers.js'")
+        tutorial_js = html.index("filename='js/v2_table/tutorial.js'")
         replay_js = html.index("filename='js/v2_table/replay.js'")
         table_js = html.index("filename='js/v2_table.js'")
         self.assertLess(animation_css, table_css)
         self.assertLess(animation_js, helpers_js)
         self.assertLess(helpers_js, table_js)
+        self.assertLess(tutorial_js, table_js)
         self.assertLess(replay_js, table_js)
+        self.assertIn('新手教学', HOME_TEMPLATE.read_text(encoding='utf-8'))
         self.assertIn('v2-replay-bar', html)
         home = HOME_TEMPLATE.read_text(encoding='utf-8')
         self.assertIn("url_for('main.replays_page')", home)

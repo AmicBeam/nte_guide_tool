@@ -1,0 +1,124 @@
+.v2-table-page.is-tutorial.tutorial-hide-hand .v2-hand-dock,
+.v2-table-page.is-tutorial.tutorial-hide-hand #v2-opponent-hand,
+.v2-table-page.is-tutorial.tutorial-hide-deck #v2-player-deck,
+.v2-table-page.is-tutorial.tutorial-hide-deck #v2-player-discard,
+.v2-table-page.is-tutorial.tutorial-hide-deck #v2-opponent-deck,
+.v2-table-page.is-tutorial.tutorial-hide-deck #v2-opponent-discard,
+.v2-table-page.is-tutorial.tutorial-hide-harmony .v2-harmony-source,
+.v2-table-page.is-tutorial.tutorial-hide-energy .v2-energy,
+.v2-table-page.is-tutorial.tutorial-hide-ultimate #v2-ultimate,
+.v2-table-page.is-tutorial.tutorial-hide-mulligan #v2-mulligan-stage {
+  display: none !important;
+}
+
+.v2-tutorial-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(8, 10, 14, 0.45);
+  pointer-events: none;
+}
+
+.v2-tutorial-mask[hidden] {
+  display: none;
+}
+
+.v2-table-page.is-tutorial .tutorial-spotlight {
+  position: relative;
+  z-index: 32;
+  box-shadow: 0 0 0 3px rgba(232, 201, 136, 0.95), 0 0 24px rgba(232, 201, 136, 0.45);
+  border-radius: 12px;
+  pointer-events: auto;
+  filter: none;
+  opacity: 1;
+}
+
+.v2-tutorial-modal {
+  position: fixed;
+  left: 16px;
+  bottom: 24px;
+  z-index: 80;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: auto;
+}
+
+.v2-tutorial-modal[hidden] {
+  display: none;
+}
+
+.v2-tutorial-dialog {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(16, 14, 12, 0.94);
+  border: 1px solid rgba(232, 201, 136, 0.28);
+  color: var(--text);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.v2-tutorial-dialog h2 {
+  margin: 4px 0 8px;
+  font-size: 18px;
+}
+
+.v2-tutorial-dialog p {
+  margin: 0 0 12px;
+  line-height: 1.45;
+}
+
+.v2-tutorial-arrows {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.v2-fx-arrow.is-guide {
+  stroke: rgba(232, 201, 136, 0.95);
+  stroke-width: 3;
+  fill: none;
+  marker-end: url(#v2-arrow-head);
+}
+
+.v2-bench-row[data-count="2"].opponent .v2-bench-slot[data-arc="0"] {
+  left: 22%;
+  top: 4%;
+  right: auto;
+  z-index: 3;
+}
+
+.v2-bench-row[data-count="2"].opponent .v2-bench-slot[data-arc="1"] {
+  left: auto;
+  right: 22%;
+  top: 4%;
+  z-index: 3;
+}
+
+.v2-bench-row[data-count="2"].player .v2-bench-slot[data-arc="0"] {
+  left: 22%;
+  bottom: 3%;
+  right: auto;
+  z-index: 3;
+}
+
+.v2-bench-row[data-count="2"].player .v2-bench-slot[data-arc="1"] {
+  left: auto;
+  right: 22%;
+  bottom: 3%;
+  z-index: 3;
+}
+
+.v2-home-tutorial {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(232, 201, 136, 0.24);
+  background: rgba(16, 14, 12, 0.55);
+}
+
+.v2-home-tutorial p {
+  margin: 0;
+}

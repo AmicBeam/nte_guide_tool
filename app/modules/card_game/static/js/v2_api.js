@@ -191,6 +191,10 @@
     return request('/start', { method: 'POST', body: body || {} });
   }
 
+  function skipTutorial(body) {
+    return request('/tutorial-skip', { method: 'POST', body: body || {} });
+  }
+
   function joinRoom(roomCode) {
     return request('/join', { method: 'POST', body: { room_code: String(roomCode || '').trim() } });
   }
@@ -698,6 +702,7 @@
     getReplay: getReplay,
     starReplay: starReplay,
     importReplay: importReplay,
+    skipTutorial: skipTutorial,
     startGame: startGame,
     joinRoom: joinRoom,
     setReady: setReady,

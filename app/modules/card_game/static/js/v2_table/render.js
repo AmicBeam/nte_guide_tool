@@ -68,18 +68,19 @@
             combatStat('hp', hp, '生命 ' + hp) +
           '</div></div>')
       : '';
+    const page = document.getElementById('v2-table-page');
+    const hideHarmony = Boolean(page && page.classList.contains('tutorial-hide-harmony'));
+    const hideEnergy = Boolean(page && page.classList.contains('tutorial-hide-energy'));
     const stats = compact
       ? [
           { html: combatStat('atk', attack, '攻击 ' + attack) },
           { html: combatStat('hp', hp, '生命 ' + hp) },
           { html: combatStat('shield', shield, '护盾 ' + shield) },
-          { cls: 'harmony', text: '环 ' + (data.harmony == null ? 0 : data.harmony) },
-          { cls: 'energy', text: data.awakened ? ('终 ' + (data.ultimate_turns == null ? 0 : data.ultimate_turns) + ' 能 ' + energyNow + '/' + energyMax) : ('能 ' + energyNow + '/' + energyMax) },
-        ]
-      : [
-          { cls: 'harmony', text: '环合 ' + (data.harmony == null ? 0 : data.harmony) + '/2' },
-          { cls: 'energy', text: data.awakened ? ('终结 ' + (data.ultimate_turns == null ? 0 : data.ultimate_turns) + ' · 能 ' + energyNow + '/' + energyMax) : ('能量 ' + energyNow + '/' + energyMax) },
-        ];
+        ].concat(hideHarmony ? [] : [{ cls: 'harmony', text: '环 ' + (data.harmony == null ? 0 : data.harmony) }])
+         .concat(hideEnergy ? [] : [{ cls: 'energy', text: data.awakened ? ('终 ' + (data.ultimate_turns == null ? 0 : data.ultimate_turns) + ' 能 ' + energyNow + '/' + energyMax) : ('能 ' + energyNow + '/' + energyMax) }])
+      : []
+        .concat(hideHarmony ? [] : [{ cls: 'harmony', text: '环合 ' + (data.harmony == null ? 0 : data.harmony) + '/2' }])
+        .concat(hideEnergy ? [] : [{ cls: 'energy', text: data.awakened ? ('终结 ' + (data.ultimate_turns == null ? 0 : data.ultimate_turns) + ' · 能 ' + energyNow + '/' + energyMax) : ('能量 ' + energyNow + '/' + energyMax) }]);
     if (Number(data.growth) > 0) {
       stats.push({ cls: '', text: '成长 ' + data.growth });
     }
@@ -103,7 +104,7 @@
       stats.push({ cls: '', text: '噩梦 ' + data.nightmare });
     }
     const downTurns = Number(data.down_turns) > 0 ? Number(data.down_turns) : 0;
-    const note = data.shape || '无武备';
+    const note = (page && page.classList.contains('is-tutorial') && !data.shape) ? '' : (data.shape || '无武备');
     const portrait = V2.characterAsset(data, options.usePortrait ? 'portrait' : 'avatar') || V2.characterAsset(data, 'avatar');
     const actions = [];
     if (options.canAwaken) {
@@ -474,6 +475,21 @@
     const mine = TABLE.sideState(game, ctx.viewer);
     const theirs = TABLE.sideState(game, ctx.opponent);
     bindHudSides(ctx);
+    const tutorial = game && game.tutorial;
+    const hide = (tutorial && tutorial.hide) || [];
+    ctx.page.classList.toggle('is-tutorial', Boolean(tutorial && tutorial.enabled));
+    ctx.page.classList.toggle('tutorial-hide-hand', hide.indexOf('hand') >= 0);
+    ctx.page.classList.toggle('tutorial-hide-deck', hide.indexOf('deck') >= 0);
+    ctx.page.classList.toggle('tutorial-hide-harmony', hide.indexOf('harmony') >= 0);
+    ctx.page.classList.toggle('tutorial-hide-energy', hide.indexOf('energy') >= 0);
+    ctx.page.classList.toggle('tutorial-hide-ultimate', hide.indexOf('ultimate') >= 0);
+    ctx.page.classList.toggle('tutorial-hide-mulligan', hide.indexOf('mulligan') >= 0);
+    const slots = tutorial && tutorial.character_slots ? String(tutorial.character_slots) : '4';
+    if (ctx.nodes.playerBench) ctx.nodes.playerBench.setAttribute('data-count', slots);
+    if (ctx.nodes.opponentBench) ctx.nodes.opponentBench.setAttribute('data-count', slots);
+    if (ctx.nodes.playerFrontZone) ctx.nodes.playerFrontZone.setAttribute('data-zone-side', ctx.viewer);
+    if (ctx.nodes.opponentFrontZone) ctx.nodes.opponentFrontZone.setAttribute('data-zone-side', ctx.opponent);
+    if (ctx.nodes.playerAp) ctx.nodes.playerAp.setAttribute('data-ap-side', ctx.viewer);
     ctx.nodes.roundLabel.textContent = game && game.turn ? ('第 ' + game.turn + ' 回合') : '第 - 回合';
     ctx.nodes.opponentHp.textContent = theirs.hp == null ? '-' : theirs.hp;
     ctx.nodes.opponentShield.textContent = '护盾 ' + (theirs.shield == null ? '-' : theirs.shield);
@@ -517,6 +533,9 @@
     ctx.nodes.turnCopy.textContent = V2.roomStatusLabel(ctx.room, game);
     if (ctx.nodes.waitChip) {
       ctx.nodes.waitChip.textContent = ctx.busy ? '演出中' : (game && game.is_my_turn ? '你的回合' : '对手回合');
+    }
+    if (typeof TABLE.renderTutorial === 'function') {
+      TABLE.renderTutorial(ctx);
     }
   }
 

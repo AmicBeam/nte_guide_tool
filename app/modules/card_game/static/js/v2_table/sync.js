@@ -76,6 +76,13 @@
         raisedCardId: ctx.raisedCardId,
         playHistory: ctx.playHistory,
         page: ctx.page,
+        toast: ctx.toast,
+        dragState: ctx.dragState,
+        tutorialMask: ctx.tutorialMask,
+        tutorialModal: ctx.tutorialModal,
+        tutorialArrows: ctx.tutorialArrows,
+        tutorialModalDismissed: ctx.tutorialModalDismissed,
+        sendAction: ctx.sendAction,
         showMulligan: ctx.forceMulliganStage ? true : (ctx.replayMode ? Boolean(ctx.replayShowMulligan) : undefined),
         findAction: locked ? function () { return null; } : findAction,
         playEntries: locked ? function () { return []; } : ctx.playEntries,
@@ -571,6 +578,7 @@
     }
     ctx.settlePresentation = settlePresentation;
 
+    ctx.submitEntry = submitEntry;
     async function submitEntry(entry, options) {
       options = options || {};
       let retryMulligan = null;

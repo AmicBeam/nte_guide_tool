@@ -1039,3 +1039,35 @@ test("notice moves one element between top and bottom without losing content", (
   player._notice("你的回合", "", "top");
   assert.equal(top.hidden, false);
 });
+
+test("mulligan replacement slides into its rail without a normal draw close-up", async () => {
+  const harness = makeRoot();
+  harness.root.classList.add("is-mulligan");
+  const rail = harness.documentRef.createElement("div");
+  rail.setAttribute("id", "v2-mulligan-rail");
+  harness.root.appendChild(rail);
+  const incoming = harness.documentRef.createElement("article");
+  incoming.setAttribute("data-card-id", "replacement-1");
+  incoming.classList.add("v2-hand-card");
+  const patches = [];
+  const player = new Player({
+    root: harness.root,
+    clock: harness.clock,
+    applyPatch(_patch, event) {
+      patches.push(event.seq);
+      rail.appendChild(incoming);
+    },
+  });
+  const done = player.play([{
+    seq: 501, type: "draw", side: "a", present: true,
+    card: { ...publicCard(), instance_id: "replacement-1" }, patch: { replacement: true },
+  }]);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.ok(incoming.classList.contains("is-entering"));
+  assert.equal(overlayOf(harness).querySelector(".v2-fx-draw-card"), null);
+  assert.deepEqual(patches, [501], "replacement patch precedes the rail animation");
+  await settle(done, harness.clock, player);
+  assert.deepEqual(patches, [501], "the outer queue must not apply the same draw twice");
+  assert.equal(incoming.classList.contains("is-entering"), false);
+});

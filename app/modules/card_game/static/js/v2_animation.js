@@ -1063,7 +1063,30 @@
       };
     }
 
+    async _presentMulliganDraw(event, instant) {
+      // Replacement draws belong in the opening rail, not the normal draw close-up.
+      this._patch(event);
+      const card = event && event.card;
+      const rail = this.root.querySelector("#v2-mulligan-rail");
+      if (this._isOpponentPlay(event) || !rail || !card || !card.instance_id) return;
+      const id = cssEscape(card.instance_id);
+      const node = rail.querySelector('[data-instance-id="' + id + '"]')
+        || rail.querySelector('[data-card-id="' + id + '"]');
+      if (!node) return;
+      if (instant || this.options.reducedMotion) return;
+      node.classList.add("is-entering");
+      try {
+        await this._wait(this._duration(instant, 420));
+      } finally {
+        node.classList.remove("is-entering");
+      }
+    }
+
     async _presentDraw(event, instant) {
+      if (this.root && this.root.classList && this.root.classList.contains("is-mulligan")) {
+        await this._presentMulliganDraw(event, instant);
+        return;
+      }
       const overlay = this._ensureOverlay();
       const card = event && event.card;
       const publicCard = hasPublicCard(card);

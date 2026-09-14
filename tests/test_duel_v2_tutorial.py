@@ -74,7 +74,7 @@ class DuelV2TutorialTest(unittest.TestCase):
                  if item['action']['type'] == 'play_card']
         self.assertTrue(plays)
         state = apply_action(state, 'a', plays[0])
-        self.assertEqual(state['sides']['b']['hp'], 10)
+        self.assertEqual(state['sides']['b']['hp'], 9)
 
     def test_level_one_rejects_end_turn_before_attack(self) -> None:
         state = new_game(scenario='tutorial_l01_board')

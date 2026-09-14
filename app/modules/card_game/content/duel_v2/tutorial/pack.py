@@ -74,7 +74,7 @@ TUTORIAL_CARDS = {
     'tutorial_z03': {
         'id': 'tutorial_z03', 'card_id': 'tutorial_z03', 'character_id': 'tutorial_protagonist',
         'name': '奇异记叙', 'type': 'battle', 'cost': 1, 'terminal': False,
-        'description': '', 'effect_id': 'tutorial_z03', 'attack': 0, 'shield': 0,
+        'description': '这一张战斗牌。', 'effect_id': 'tutorial_z03', 'attack': 1, 'shield': 0,
         'source': {'character_id': 'tutorial_protagonist', 'type': 'tutorial', 'index': 3},
         'tutorial_only': True,
     },
@@ -427,7 +427,7 @@ _L02_STEPS = [
          '出牌花费 1 点行动力。战斗牌打出后，所属异能者会额外出击一次，不占用通常出击次数。这一回合有 2 点，可以先出牌，再通常出击。',
          ['hand:a-1', 'ap:a']),
     _act('l02_play', '打出战斗牌',
-         '把战斗牌拖到对战区。这会花费 1 点行动力，并让主角额外出击。',
+         '把这一张战斗牌拖到对战区。这会花费 1 点行动力，并让主角额外出击，本次攻击 +1。',
          ['hand:a-1', 'play_area'],
          [{'type': 'play_card'}],
          cue='把战斗牌拖到对战区', primary='拖动卡牌',

@@ -267,7 +267,7 @@ _L01_STEPS = [
     {
         'id': 'l01_p1_attack',
         'ack_required': False,
-        'mask': True,
+        'mask': False,
         'placement': 'bottom-right',
         'spotlights': [
             'character:a:tutorial_protagonist', 'play_area',
@@ -287,7 +287,7 @@ _L01_STEPS = [
     {
         'id': 'l01_p1_end',
         'ack_required': False,
-        'mask': True,
+        'mask': False,
         'placement': 'bottom-right',
         'spotlights': ['end_turn'],
         'click_cue': 'end_turn',
@@ -336,7 +336,7 @@ _L01_STEPS = [
     {
         'id': 'l01_p2_attack',
         'ack_required': False,
-        'mask': True,
+        'mask': False,
         'placement': 'bottom-right',
         'spotlights': ['character:a:tutorial_protagonist', 'character:b:tutorial_nanali'],
         'drag_arrow': {
@@ -354,7 +354,7 @@ _L01_STEPS = [
     {
         'id': 'l01_p2_end',
         'ack_required': False,
-        'mask': True,
+        'mask': False,
         'placement': 'bottom-right',
         'spotlights': ['end_turn'],
         'click_cue': 'end_turn',
@@ -370,7 +370,7 @@ _L01_STEPS = [
     {
         'id': 'l01_p3_win',
         'ack_required': False,
-        'mask': True,
+        'mask': False,
         'placement': 'bottom-right',
         'spotlights': ['character:a:tutorial_bohe', 'play_area'],
         'drag_arrow': {

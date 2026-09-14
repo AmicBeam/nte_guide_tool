@@ -220,13 +220,14 @@
       addFocusFrame(rect);
     });
     if (mask) {
-      if (info.mask) {
+      const showMask = Boolean(info.mask) && Boolean(info.ack_required);
+      if (showMask) {
         mask.removeAttribute('hidden');
         paintMaskHoles(mask, holes);
       } else {
         mask.setAttribute('hidden', '');
       }
-      mask.setAttribute('aria-hidden', info.mask ? 'false' : 'true');
+      mask.setAttribute('aria-hidden', showMask ? 'false' : 'true');
     }
     if (info.drag_arrow) {
       addDragCue(resolveNode(ctx, info.drag_arrow.from), resolveNode(ctx, info.drag_arrow.to));

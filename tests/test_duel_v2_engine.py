@@ -852,6 +852,15 @@ class DuelV2EngineTest(unittest.TestCase):
                 self.assertTrue(any(c['instance_id'] == card['instance_id'] for c in s['sides']['a']['discard']))
                 json.dumps(observe(s, 'a'))
 
+    def test_baicang_tea_form_damages_self_on_equip(self):
+        s = self.rush_game()
+        atk = attack_value(hero(s, 'a', 'baicang'))
+        s = self.play(s, 'B08')
+        self.assertEqual(hero(s, 'a', 'baicang')['shape'], 'B08')
+        self.assertEqual(hero(s, 'a', 'baicang')['max_hp'], 10)
+        self.assertEqual(hero(s, 'a', 'baicang')['hp'], 6)
+        self.assertGreaterEqual(attack_value(hero(s, 'a', 'baicang')), atk + 1)
+
     def test_baicang_stacks_attack_from_combat_and_self_damage(self):
         s = self.rush_game()
         before = attack_value(hero(s, 'a', 'baicang'))

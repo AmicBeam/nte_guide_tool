@@ -2021,30 +2021,30 @@
     {
       "id": "B07",
       "character_id": "baicang",
-      "name": "茶话会",
-      "type": "form",
-      "cost": 1,
-      "terminal": false,
-      "description": "装备时对白藏造成 4 点伤害。",
-      "effect_id": "B07",
-      "source": {
-        "character_id": 1023,
-        "type": "pv",
-        "index": 1
-      },
-      "starter_copies": 0,
-      "attack": 4,
-      "hp": 10
-    },
-    {
-      "id": "B08",
-      "character_id": "baicang",
       "name": "判予秋",
       "type": "form",
       "cost": 1,
       "terminal": false,
       "instant": true,
       "description": "瞬发。",
+      "effect_id": "B07",
+      "source": {
+        "character_id": 1023,
+        "type": "ability",
+        "index": 1
+      },
+      "starter_copies": 0,
+      "attack": 4,
+      "hp": 8
+    },
+    {
+      "id": "B08",
+      "character_id": "baicang",
+      "name": "茶话会",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "装备时对白藏造成 4 点伤害。",
       "effect_id": "B08",
       "source": {
         "character_id": 1023,
@@ -2053,7 +2053,7 @@
       },
       "starter_copies": 2,
       "attack": 4,
-      "hp": 8
+      "hp": 10
     }
   ],
   "starter_decks": [

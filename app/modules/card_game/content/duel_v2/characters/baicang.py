@@ -44,7 +44,7 @@ def _b06(c):
     c.sortie(bonus=extra)
 
 
-def _b07(c):
+def _b08(c):
     set_shape(c)
     if alive(c.state, c.side, c.cid):
         damage(c.state, c.side, c.cid, 4, source=f'{c.side}:{c.cid}')
@@ -56,7 +56,7 @@ class Baicang:
     text_name = '白藏'
     effects = {
         'B01': _b01, 'B02': _b02, 'B03': _b03, 'B04': _b04,
-        'B05': _b05, 'B06': _b06, 'B07': _b07, 'B08': set_shape,
+        'B05': _b05, 'B06': _b06, 'B07': set_shape, 'B08': _b08,
     }
 
     @staticmethod

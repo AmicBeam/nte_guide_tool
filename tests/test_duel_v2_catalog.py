@@ -159,8 +159,8 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertTrue(CARDS['N02']['description'].startswith('响应。'))
         self.assertTrue(CARDS['B01']['instant'])
         self.assertTrue(CARDS['B01']['description'].startswith('瞬发。'))
-        self.assertTrue(CARDS['B08']['instant'])
-        self.assertTrue(CARDS['B08']['description'].startswith('瞬发。'))
+        self.assertTrue(CARDS['B07']['instant'])
+        self.assertTrue(CARDS['B07']['description'].startswith('瞬发。'))
         self.assertEqual(CARDS['B05']['response'], 'self_lethal')
         self.assertTrue(CARDS['B05']['description'].startswith('响应。'))
         self.assertEqual(CARDS['M04']['response'], 'self_attacked')
@@ -168,8 +168,8 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['B03']['require'], 'own_burn')
         self.assertEqual(CARDS['M07']['name'], '美好的一天从睡醒开始')
         self.assertEqual(CARDS['M08']['name'], '开始净空')
-        self.assertEqual(CARDS['B07']['name'], '茶话会')
-        self.assertEqual(CARDS['B08']['name'], '判予秋')
+        self.assertEqual(CARDS['B07']['name'], '判予秋')
+        self.assertEqual(CARDS['B08']['name'], '茶话会')
         self.assertIn('反击方', CARDS['N02']['description'])
         self.assertEqual(CARDS['N03']['description'], '额外造成 1 点追击伤害。')
         self.assertEqual(CARDS['N04']['description'], '')
@@ -209,7 +209,7 @@ class DuelV2CatalogTest(unittest.TestCase):
             self.assertEqual(card_08['source']['type'], 'arc', character_id)
             if character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc', character_id)
-            elif character_id in ('zaowu', 'hathor', 'jiuyuan'):
+            elif character_id in ('zaowu', 'hathor', 'jiuyuan', 'baicang'):
                 self.assertEqual(card_07['source']['type'], 'ability', character_id)
             else:
                 self.assertEqual(card_07['source']['type'], 'pv', character_id)

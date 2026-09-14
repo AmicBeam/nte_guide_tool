@@ -692,7 +692,6 @@
       const counterValue = numericValue(event && event.counter);
       if (counterValue != null && counterValue > 0 && target) {
         this._arrow(to, from, "counter");
-        this._floater(from, stageRect, "反击 " + String(counterValue), "counter");
       }
       if (target) {
         target.classList.add("v2-fx-hurt");

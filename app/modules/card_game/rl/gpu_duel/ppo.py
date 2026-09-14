@@ -83,7 +83,7 @@ def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_s
     observe = observe_fn or compact_observe
     env.reset_finished()
     rebuild_legal(env.state)
-    advance_to_actor(env.state, env.learner)
+    advance_to_actor(env.state, env.learner, legal_ready=True)
     states, cands, masks, actions, logps, values, rewards, dones = [], [], [], [], [], [], [], []
     winners = []
     b = torch.arange(env.n, device=env.device)

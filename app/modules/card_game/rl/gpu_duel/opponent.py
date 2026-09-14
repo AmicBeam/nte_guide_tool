@@ -27,8 +27,10 @@ def rule_action(s: GpuState) -> torch.Tensor:
     return chosen
 
 
-def advance_to_actor(s: GpuState, learner: torch.Tensor, *, max_ops: int = 24) -> None:
-    rebuild_legal(s)
+def advance_to_actor(s: GpuState, learner: torch.Tensor, *, max_ops: int = 24,
+                     legal_ready: bool = False) -> None:
+    if not legal_ready:
+        rebuild_legal(s)
     for _ in range(max_ops):
         done = s.phase == 3
         need = ~done & (s.active != learner)
@@ -36,5 +38,4 @@ def advance_to_actor(s: GpuState, learner: torch.Tensor, *, max_ops: int = 24) -
             return
         act = rule_action(s)
         act = torch.where(need, act, torch.full_like(act, -1))
-        step_index(s, act)
-        rebuild_legal(s)
+        step_index(s, act, legal_ready=True)

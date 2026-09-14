@@ -61,12 +61,12 @@ class GpuDuelEnv:
         if native and skip_mulligan:
             self.state = reset_native(
                 self.state, self.n, self.device, seed_t, deck_a=self.deck_a, deck_b=self.deck_b)
-            advance_to_actor(self.state, self.learner)
+            advance_to_actor(self.state, self.learner, legal_ready=True)
             return self.state
         decks = {'a': self.deck_a, 'b': self.deck_b}
         states = [new_game(seed=int(seed), skip_mulligan=skip_mulligan, decks=decks) for seed in seeds]
         self.reset_from_python(states)
-        advance_to_actor(self.state, self.learner)
+        advance_to_actor(self.state, self.learner, legal_ready=True)
         return self.state
 
     def reset_finished(self, seeds: torch.Tensor | None = None) -> None:
@@ -107,8 +107,7 @@ class GpuDuelEnv:
         acting = self.state.active == self.learner
         action_index = torch.where(acting & ~done, action_index, torch.full_like(action_index, -1))
         step_index(self.state, action_index)
-        rebuild_legal(self.state)
-        advance_to_actor(self.state, self.learner)
+        advance_to_actor(self.state, self.learner, legal_ready=True)
         return self.state
 
     def snapshot(self, row: int = 0) -> dict[str, Any]:

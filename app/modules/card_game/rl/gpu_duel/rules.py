@@ -29,6 +29,11 @@ def _hook_seat(s: GpuState, key: str) -> int:
     return SEAT_INDEX[_effect_tables(s)['hooks'][key]]
 
 
+def _cpu_mask_empty(mask: torch.Tensor) -> bool:
+    """Skip CPU no-op work without adding a CUDA-to-host synchronization."""
+    return mask.device.type == 'cpu' and not bool(mask.any())
+
+
 def _b(s: GpuState) -> torch.Tensor:
     return torch.arange(s.n, device=s.device)
 
@@ -163,6 +168,11 @@ def _front_target(s: GpuState, side: torch.Tensor):
 
 
 def _deal_front(s: GpuState, side: torch.Tensor, amount: torch.Tensor, mask: torch.Tensor) -> None:
+    if _cpu_mask_empty(mask):
+        # Settlement is part of this helper's contract even for a zero-row hit.
+        knockdown(s)
+        victory(s)
+        return
     foe, has, seat = _front_target(s, side)
     amount = torch.where(mask, amount, torch.zeros_like(amount))
     for foe_seat in range(N_SEATS):
@@ -631,6 +641,8 @@ def _play_effects(s: GpuState, side: torch.Tensor, seat: int, kind: torch.Tensor
     z02 = valid & (tables['draw_forms'][k] > 0)
     for si in range(SIDES):
         here = z02 & (side == si)
+        if _cpu_mask_empty(here):
+            continue
         found = torch.zeros(s.n, dtype=torch.int32, device=s.device)
         for dslot in range(32):
             kind_d = s.deck_kind[:, si, dslot]
@@ -726,6 +738,8 @@ def play_card(s: GpuState, side: torch.Tensor, hand_slot: torch.Tensor, mask: to
 
 def choose_pending(s: GpuState, slot: torch.Tensor, mask: torch.Tensor) -> None:
     mask = mask & (s.phase == PHASE_CHOICE) & _live(s)
+    if _cpu_mask_empty(mask):
+        return
     side = s.pending_side.clamp(min=0)
     b = _b(s)
     selected = torch.zeros(s.n, dtype=torch.int32, device=s.device)
@@ -854,8 +868,13 @@ def rebuild_legal(s: GpuState) -> None:
         raise ValueError('Legal action overflow')
 
 
-def step_index(s: GpuState, index: torch.Tensor) -> None:
-    rebuild_legal(s)
+def step_index(s: GpuState, index: torch.Tensor, *, legal_ready: bool = False) -> None:
+    """External callers rebuild; internal callers may reuse an unchanged action table.
+
+    Every successful return leaves the table rebuilt for the resulting state.
+    """
+    if not legal_ready:
+        rebuild_legal(s)
     b = _b(s)
     # Clamp only the gather index. Negative indices are batch no-ops, not slot 0.
     idx = index.clamp(min=0, max=s.legal_type.shape[1] - 1)

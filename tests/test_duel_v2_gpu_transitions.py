@@ -64,7 +64,7 @@ class GpuTransitionTest(unittest.TestCase):
         with torch.no_grad():
             for p in net.parameters(): p.zero_()
             net.value[-1].bias.fill_(2.)
-        def advance(s, learner):
+        def advance(s, learner, **kwargs):
             from app.modules.card_game.rl.gpu_duel.rules import rebuild_legal
             s.active.copy_(learner)
             rebuild_legal(s)

@@ -2,6 +2,7 @@
 
 from .pack import (
     CAMPAIGN_LEVELS,
+    LEVEL_META,
     TUTORIAL_CARDS,
     TUTORIAL_CHARACTERS,
     load_scenario,
@@ -12,6 +13,7 @@ from .pack import (
 
 __all__ = [
     'CAMPAIGN_LEVELS',
+    'LEVEL_META',
     'TUTORIAL_CARDS',
     'TUTORIAL_CHARACTERS',
     'load_scenario',

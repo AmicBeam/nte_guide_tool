@@ -140,6 +140,21 @@ CAMPAIGN_LEVELS = (
     'tutorial_l12_roster4',
 )
 
+LEVEL_META = (
+    {'id': 'tutorial_l01_board', 'title': '第一关 牌桌与回合', 'short': '牌桌与回合'},
+    {'id': 'tutorial_l02_ap', 'title': '第二关 行动力', 'short': '行动力'},
+    {'id': 'tutorial_l03_hand', 'title': '第三关 手牌', 'short': '手牌'},
+    {'id': 'tutorial_l04_tactic', 'title': '第四关 战术', 'short': '战术'},
+    {'id': 'tutorial_l05_down', 'title': '第五关 倒地', 'short': '倒地'},
+    {'id': 'tutorial_l06_form', 'title': '第六关 武备', 'short': '武备'},
+    {'id': 'tutorial_l07_harmony', 'title': '第七关 环合', 'short': '环合'},
+    {'id': 'tutorial_l08_energy', 'title': '第八关 终结', 'short': '终结'},
+    {'id': 'tutorial_l09_instant', 'title': '第九关 瞬发', 'short': '瞬发'},
+    {'id': 'tutorial_l10_response', 'title': '第十关 响应', 'short': '响应'},
+    {'id': 'tutorial_l11_pierce', 'title': '第十一关 贯穿', 'short': '贯穿'},
+    {'id': 'tutorial_l12_roster4', 'title': '第十二关 四人编队', 'short': '四人编队'},
+)
+
 _L01_HIDE = [
     'passive', 'harmony', 'energy', 'ultimate', 'hand', 'deck', 'mulligan', 'form',
 ]
@@ -174,25 +189,81 @@ _L01_STEPS = [
         'spotlights': ['bench:a', 'bench:b'],
         'modal': {
             'title': '欢迎来到异象对决',
-            'body': '异象对决是一款回合制卡牌对战。双方轮流行动，把异能者送进战斗区出击，把对方玩家生命打到 0 就赢。这一关先只看角色面板，还不用手牌。',
+            'body': '异象对决是一款回合制卡牌对战。双方轮流行动，把异能者送进战斗区出击，把对方玩家生命打到 0 就赢。先认识牌桌，这一关还不用马上开打。',
             'primary': '看看战场',
         },
         'allowed': [{'type': 'tutorial_ack'}],
         'blocked_reason': '先看看双方备战区。',
     },
     {
-        'id': 'l01_zones',
+        'id': 'l01_bench',
         'ack_required': True,
         'mask': True,
         'placement': 'bottom-right',
-        'spotlights': ['zone:a:front', 'zone:b:front', 'player_hp:a', 'player_hp:b'],
+        'spotlights': ['bench:a', 'bench:b'],
         'modal': {
-            'title': '战斗区和玩家生命',
-            'body': '每方只有 1 个战斗区，里面的人叫前排。没有人时，没有前排。把对方玩家生命打到 0 就赢。',
+            'title': '备战区',
+            'body': '开局 4 名异能者都在备战区。这一关每方只有 2 人，方便看清位置。稍后从这里把人拖进战斗区。',
+            'primary': '下一处',
+        },
+        'allowed': [{'type': 'tutorial_ack'}],
+        'blocked_reason': '先看备战区。',
+    },
+    {
+        'id': 'l01_front',
+        'ack_required': True,
+        'mask': True,
+        'placement': 'bottom-right',
+        'spotlights': ['zone:a:front', 'zone:b:front'],
+        'modal': {
+            'title': '战斗区',
+            'body': '每方只有 1 个战斗区。站在里面的人叫前排。现在是空的，所以没有前排。',
+            'primary': '下一处',
+        },
+        'allowed': [{'type': 'tutorial_ack'}],
+        'blocked_reason': '先看双方战斗区。',
+    },
+    {
+        'id': 'l01_life',
+        'ack_required': True,
+        'mask': True,
+        'placement': 'bottom-right',
+        'spotlights': ['player_hp:a', 'player_hp:b'],
+        'modal': {
+            'title': '玩家生命',
+            'body': '胜负看左下角和左上角的玩家生命，不是把角色攻击加在一起。把对方玩家生命打到 0 就赢。',
+            'primary': '下一处',
+        },
+        'allowed': [{'type': 'tutorial_ack'}],
+        'blocked_reason': '先看双方玩家生命。',
+    },
+    {
+        'id': 'l01_ap',
+        'ack_required': True,
+        'mask': True,
+        'placement': 'bottom-right',
+        'spotlights': ['ap:a'],
+        'modal': {
+            'title': '行动力',
+            'body': '右下角是你的行动力。出击和出牌都会消耗它。这一关每回合只有 1 点，刚好够行动一次。',
+            'primary': '下一处',
+        },
+        'allowed': [{'type': 'tutorial_ack'}],
+        'blocked_reason': '先看行动力。',
+    },
+    {
+        'id': 'l01_turn',
+        'ack_required': True,
+        'mask': True,
+        'placement': 'bottom-right',
+        'spotlights': ['turn', 'end_turn'],
+        'modal': {
+            'title': '回合',
+            'body': '现在是你的回合。做完这一回合的行动后，点「结束回合」交给对方。双方轮流，不会同时出招。',
             'primary': '开始出击',
         },
         'allowed': [{'type': 'tutorial_ack'}],
-        'blocked_reason': '先看战斗区和双方生命。',
+        'blocked_reason': '先看回合和结束回合。',
     },
     {
         'id': 'l01_p1_attack',
@@ -320,7 +391,7 @@ _L01_STEPS = [
 SCENARIOS = {
     'tutorial_l01_board': {
         'id': 'tutorial_l01_board',
-        'title': '第一关 出击',
+        'title': '第一关 牌桌与回合',
         'level_index': 1,
         'seed': 101,
         'first_side': 'a',

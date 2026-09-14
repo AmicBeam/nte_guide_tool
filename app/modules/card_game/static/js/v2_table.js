@@ -280,10 +280,37 @@ async function bootstrapTable() {
     if (hasUnplayedPresentation()) {
       return;
     }
+    if (ctx.room && ctx.room.mode === 'tutorial') {
+      setResultOpen(false);
+      advanceTutorialCampaign();
+      return;
+    }
     if (ctx.resultDialogDismissed === resultDialogKey()) {
       return;
     }
     setResultOpen(true);
+  }
+
+  function advanceTutorialCampaign() {
+    if (ctx.tutorialAdvancing) {
+      return;
+    }
+    ctx.tutorialAdvancing = true;
+    const next = ctx.game && ctx.game.tutorial && ctx.game.tutorial.next_scenario;
+    const home = (nodes.homeLink && nodes.homeLink.getAttribute('href')) || '/card-game';
+    V2.leaveRoom().catch(function () { return null; }).then(function () {
+      if (!next) {
+        window.location.href = home;
+        return null;
+      }
+      return V2.startGame({ mode: 'tutorial', scenario: next });
+    }).then(function (payload) {
+      if (payload) {
+        window.location.href = '/table';
+      }
+    }).catch(function () {
+      window.location.href = home;
+    });
   }
   ctx.syncResultDialog = syncResultDialog;
 

@@ -409,4 +409,4 @@ class DuelV2ApiTest(RoomFlowTestCase):
             'expected_version': game['version'],
             'action': ack,
         }, token=self.a)['game']
-        self.assertEqual(next_view['tutorial']['step_id'], 'l01_zones')
+        self.assertEqual(next_view['tutorial']['step_id'], 'l01_bench')

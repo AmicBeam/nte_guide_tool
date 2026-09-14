@@ -15,7 +15,7 @@ from app.models import DuelV2TutorialProgress
 from app.modules.card_game.engine.application import v2_persistence as storage
 from app.modules.card_game.engine.application import v2_replay as replay
 from app.modules.card_game.engine.application import v2_repository as repository
-from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS, load_scenario, next_level
+from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS, LEVEL_META, load_scenario, next_level
 
 _lobby_lock = threading.RLock()
 _locks_guard = threading.Lock()
@@ -289,6 +289,26 @@ def tutorial_progress(player) -> dict:
         load_scenario(current)
     except ValueError:
         playable = current in completed
+    levels = []
+    for index, meta in enumerate(LEVEL_META, start=1):
+        scenario_id = meta['id']
+        unlocked = scenario_id in completed or scenario_id == current or scenario_id == CAMPAIGN_LEVELS[0]
+        available = False
+        if unlocked:
+            try:
+                load_scenario(scenario_id)
+                available = True
+            except ValueError:
+                available = False
+        levels.append({
+            'id': scenario_id,
+            'title': meta['title'],
+            'short': meta.get('short') or meta['title'],
+            'index': index,
+            'completed': scenario_id in completed,
+            'unlocked': unlocked,
+            'available': available,
+        })
     return {
         'campaign_id': 'duel_v2',
         'current_level': current,
@@ -298,6 +318,7 @@ def tutorial_progress(player) -> dict:
         'completed': bool(row.completed),
         'playable': playable,
         'level_count': len(CAMPAIGN_LEVELS),
+        'levels': levels,
     }
 
 
@@ -448,6 +469,19 @@ def _response(room, player, envelope: dict | None = None, after_seq=None) -> dic
         game['sides']['b']['name'] = '练习对手'
     if game and room.mode == 'tutorial' and 'b' in game['sides']:
         game['sides']['b']['name'] = '对手'
+    if game and room.mode == 'tutorial' and game.get('tutorial'):
+        progress = tutorial_progress(player)
+        nxt = None
+        if game.get('phase') == 'finished' and game.get('winner') == member.side:
+            candidate = progress.get('current_level')
+            if candidate and candidate != game['tutorial'].get('scenario'):
+                try:
+                    load_scenario(candidate)
+                    nxt = candidate
+                except ValueError:
+                    nxt = None
+        game['tutorial']['next_scenario'] = nxt
+        game['tutorial']['campaign_complete'] = bool(progress.get('completed'))
     has_replay = replay.available_for(room, player)
     favorited = False
     if has_replay:

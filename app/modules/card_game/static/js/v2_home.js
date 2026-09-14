@@ -18,8 +18,10 @@ async function bootstrapHome() {
   const buildSummary = document.getElementById('v2-build-summary');
   const startBtn = document.getElementById('v2-start-btn');
   const tutorialStart = document.getElementById('v2-tutorial-start');
-  const tutorialSkip = document.getElementById('v2-tutorial-skip');
   const tutorialCopy = document.getElementById('v2-tutorial-copy');
+  const tutorialTitle = document.getElementById('v2-tutorial-level-title');
+  const tutorialPrev = document.getElementById('v2-tutorial-prev');
+  const tutorialNext = document.getElementById('v2-tutorial-next');
   const joinBtn = document.getElementById('v2-join-btn');
   const roomInput = document.getElementById('v2-room-code-input');
   const nameNode = document.getElementById('v2-home-name');
@@ -186,21 +188,55 @@ async function bootstrapHome() {
     document.getElementById('v2-mode-solo').classList.remove('selected');
     startBtn.textContent = '创建 1v1 房间';
   });
+  let selectedTutorialId = '';
+
+  function selectableTutorialLevels() {
+    const info = catalog && catalog.tutorial;
+    const levels = (info && info.levels) || [];
+    return levels.filter(function (item) { return item.available; });
+  }
+
   function renderTutorialCard() {
     const info = catalog && catalog.tutorial;
-    if (!tutorialCopy || !tutorialStart) {
+    const available = selectableTutorialLevels();
+    if (!available.length) {
+      if (tutorialTitle) tutorialTitle.textContent = '第一关 牌桌与回合';
+      if (tutorialCopy) tutorialCopy.textContent = '逐步认识牌桌与回合。';
+      if (tutorialStart) tutorialStart.disabled = true;
+      if (tutorialPrev) tutorialPrev.disabled = true;
+      if (tutorialNext) tutorialNext.disabled = true;
       return;
     }
-    if (!info || info.completed || info.skipped) {
-      tutorialCopy.textContent = info && info.completed ? '可以再看一遍第一关。' : '逐步学习出击与回合。';
-      tutorialStart.textContent = info && info.completed ? '再看一遍' : '新手教学';
-      if (tutorialSkip) tutorialSkip.hidden = Boolean(info && (info.completed || info.skipped));
+    const preferred = selectedTutorialId
+      || (info && info.current_level)
+      || available[0].id;
+    let index = available.findIndex(function (item) { return item.id === preferred; });
+    if (index < 0) {
+      index = available.length - 1;
+    }
+    const current = available[index];
+    selectedTutorialId = current.id;
+    if (tutorialTitle) tutorialTitle.textContent = current.title;
+    if (tutorialCopy) {
+      tutorialCopy.textContent = current.completed ? '已完成，可再打一遍。' : '尚未完成，从这一关继续。';
+    }
+    if (tutorialStart) {
+      tutorialStart.disabled = false;
+      tutorialStart.textContent = current.completed ? '再打这一关' : '开始这一关';
+    }
+    if (tutorialPrev) tutorialPrev.disabled = index <= 0;
+    if (tutorialNext) tutorialNext.disabled = index >= available.length - 1;
+  }
+
+  function flipTutorial(delta) {
+    const available = selectableTutorialLevels();
+    const index = available.findIndex(function (item) { return item.id === selectedTutorialId; });
+    const next = available[index + delta];
+    if (!next) {
       return;
     }
-    tutorialCopy.textContent = info.completed_levels && info.completed_levels.length
-      ? ('继续第 ' + (info.completed_levels.length + 1) + ' 关')
-      : '逐步学习出击与回合。';
-    tutorialStart.textContent = info.completed_levels && info.completed_levels.length ? '继续新手教学' : '新手教学';
+    selectedTutorialId = next.id;
+    renderTutorialCard();
   }
 
   async function startTutorial() {
@@ -208,7 +244,11 @@ async function bootstrapHome() {
     setBusy(true);
     V2.showBanner(banner, '', '');
     try {
-      await V2.startGame({ mode: 'tutorial' });
+      const payload = { mode: 'tutorial' };
+      if (selectedTutorialId) {
+        payload.scenario = selectedTutorialId;
+      }
+      await V2.startGame(payload);
       goTable();
     } catch (error) {
       showError(error);
@@ -217,23 +257,9 @@ async function bootstrapHome() {
     }
   }
 
-  async function skipTutorial() {
-    if (busy) return;
-    setBusy(true);
-    try {
-      catalog = catalog || {};
-      catalog.tutorial = await V2.skipTutorial({});
-      renderTutorialCard();
-      V2.showBanner(banner, '已跳过新手教学。', 'ok');
-    } catch (error) {
-      showError(error);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (tutorialStart) tutorialStart.addEventListener('click', startTutorial);
-  if (tutorialSkip) tutorialSkip.addEventListener('click', skipTutorial);
+  if (tutorialPrev) tutorialPrev.addEventListener('click', function () { flipTutorial(-1); });
+  if (tutorialNext) tutorialNext.addEventListener('click', function () { flipTutorial(1); });
   startBtn.addEventListener('click', startSelected);
   joinBtn.addEventListener('click', joinRoom);
   roomInput.addEventListener('keydown', function (event) {

@@ -210,7 +210,7 @@ def project_tutorial(state, side):
         'step_id': (step or {}).get('id'),
         'ack_required': bool((step or {}).get('ack_required')),
         'can_skip_step': True,
-        'can_skip_tutorial': True,
+        'can_skip_tutorial': False,
         'can_retry': True,
         'character_slots': int(flags.get('character_slots') or 2),
         'hide': hide,

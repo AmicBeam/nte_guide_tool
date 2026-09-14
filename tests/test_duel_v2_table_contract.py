@@ -102,6 +102,8 @@ class DuelV2TableContractTest(unittest.TestCase):
         self.assertLess(tutorial_js, table_js)
         self.assertLess(replay_js, table_js)
         self.assertIn('新手教学', HOME_TEMPLATE.read_text(encoding='utf-8'))
+        self.assertIn('id="v2-tutorial-prev"', HOME_TEMPLATE.read_text(encoding='utf-8'))
+        self.assertNotIn('跳过新手教学', HOME_TEMPLATE.read_text(encoding='utf-8'))
         self.assertIn('v2-replay-bar', html)
         home = HOME_TEMPLATE.read_text(encoding='utf-8')
         self.assertIn("url_for('main.replays_page')", home)

@@ -24,10 +24,10 @@ class DuelV2TutorialTest(unittest.TestCase):
         self.assertNotIn('passive', view['sides']['a']['characters'][0])
         self.assertEqual(view['sides']['a']['hand'], [])
 
-        state = apply_action(state, 'a', {'type': 'tutorial_ack'})
-        zones = observe(state, 'a')['tutorial']
-        self.assertEqual(zones['step_id'], 'l01_zones')
-        self.assertEqual(zones['placement'], 'bottom-right')
+        for expected in ('l01_bench', 'l01_front', 'l01_life', 'l01_ap', 'l01_turn'):
+            state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+            self.assertEqual(observe(state, 'a')['tutorial']['step_id'], expected)
+        self.assertEqual(observe(state, 'a')['tutorial']['placement'], 'bottom-right')
         state = apply_action(state, 'a', {'type': 'tutorial_ack'})
         self.assertEqual(observe(state, 'a')['tutorial']['step_id'], 'l01_p1_attack')
         actions = [item['action'] for item in observe(state, 'a')['legal_actions']]
@@ -69,8 +69,8 @@ class DuelV2TutorialTest(unittest.TestCase):
 
     def test_level_one_rejects_end_turn_before_attack(self) -> None:
         state = new_game(scenario='tutorial_l01_board')
-        state = apply_action(state, 'a', {'type': 'tutorial_ack'})
-        state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+        while observe(state, 'a')['tutorial']['step_id'] != 'l01_p1_attack':
+            state = apply_action(state, 'a', {'type': 'tutorial_ack'})
         types = {item['action']['type'] for item in observe(state, 'a')['legal_actions']}
         self.assertNotIn('end_turn', types)
         self.assertNotIn({'type': 'end_turn'}, legal_actions(state, 'a'))

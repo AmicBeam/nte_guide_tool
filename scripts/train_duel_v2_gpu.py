@@ -67,9 +67,15 @@ def main(argv=None) -> int:
     peak = 0.0
     for update in range(1, args.updates + 1):
         start = time.perf_counter()
+        before = [p.detach().clone() for p in net.parameters()]
         rollout = collect_rollout(env, net, args.horizon, observe_fn=observe_fn)
         batch = rollout_to_batch(rollout)
-        ppo_update(net, opt, batch, epochs=args.epochs, minibatch=min(args.minibatch, batch[0].shape[0]))
+        update_stats = ppo_update(net, opt, batch, epochs=args.epochs, minibatch=min(args.minibatch, batch[0].shape[0]))
+        if str(net_device).startswith('cuda'):
+            torch.cuda.synchronize()
+        parameter_delta = sum(float((p.detach() - old).abs().sum()) for p, old in zip(net.parameters(), before))
+        if not parameter_delta > 0:
+            raise RuntimeError('PPO update did not change model weights')
         done, winner = env.outcome()
         elapsed = time.perf_counter() - start
         steps = args.n * args.horizon
@@ -82,7 +88,13 @@ def main(argv=None) -> int:
             'learner_steps': steps,
             'seconds': round(elapsed, 3),
             'learner_steps_per_s': round(steps / elapsed, 2) if elapsed else 0,
-            'done_frac': float(done.float().mean()),
+            'done_frac': float(rollout['done'].mean()),
+            'episodes_finished': int(rollout['done'].sum()),
+            'terminal_wins': int(((rollout['done'] > 0) & (rollout['winner'] == env.learner.to(net_device).unsqueeze(1))).sum()),
+            'terminal_losses': int(((rollout['done'] > 0) & (rollout['winner'] == (1 - env.learner.to(net_device)).unsqueeze(1))).sum()),
+            'terminal_draws': int(((rollout['done'] > 0) & (rollout['winner'] == 2)).sum()),
+            'parameter_delta_l1': parameter_delta,
+            **update_stats,
             'reward_mean': float(rollout['reward'].mean()),
             'env_device': env_device,
             'net_device': str(net_device),

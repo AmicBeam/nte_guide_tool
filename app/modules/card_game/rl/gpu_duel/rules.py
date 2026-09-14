@@ -857,8 +857,9 @@ def rebuild_legal(s: GpuState) -> None:
 def step_index(s: GpuState, index: torch.Tensor) -> None:
     rebuild_legal(s)
     b = _b(s)
-    idx = index.clamp(min=0)
-    valid = _live(s) & (idx >= 0) & (idx < s.legal_n)
+    # Clamp only the gather index. Negative indices are batch no-ops, not slot 0.
+    idx = index.clamp(min=0, max=s.legal_type.shape[1] - 1)
+    valid = _live(s) & (index >= 0) & (index < s.legal_n) & (index < s.legal_type.shape[1])
     typ = s.legal_type[b, idx]
     actor = s.legal_actor[b, idx]
     hand = s.legal_hand[b, idx]

@@ -55,6 +55,7 @@ def ppo_update(net: CompactScorer, opt, batch, clip=0.2, epochs=2, minibatch=102
     state, cand, mask, action, old_logp, old_value, ret, adv = batch
     n = state.shape[0]
     adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+    optimizer_steps = 0
     for _ in range(epochs):
         perm = torch.randperm(n, device=state.device)
         for start in range(0, n, minibatch):
@@ -65,22 +66,31 @@ def ppo_update(net: CompactScorer, opt, batch, clip=0.2, epochs=2, minibatch=102
             ratio = (logp - old_logp[idx]).exp()
             surr = torch.minimum(ratio * adv[idx], ratio.clamp(1 - clip, 1 + clip) * adv[idx])
             loss = -surr.mean() + vf_coef * (values - ret[idx]).pow(2).mean() - ent_coef * dist.entropy().mean()
+            if not bool(torch.isfinite(loss)):
+                raise RuntimeError('Non-finite PPO loss')
             opt.zero_grad()
             loss.backward()
-            nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+            nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=True)
             opt.step()
+            optimizer_steps += 1
+    return {'optimizer_steps': optimizer_steps, 'last_loss': float(loss.detach())}
 
 
+@torch.no_grad()
 def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_side: int = 0,
                     observe_fn=None):
     from .opponent import advance_to_actor
     observe = observe_fn or compact_observe
+    env.reset_finished()
     rebuild_legal(env.state)
     advance_to_actor(env.state, env.learner)
     states, cands, masks, actions, logps, values, rewards, dones = [], [], [], [], [], [], [], []
+    winners = []
     b = torch.arange(env.n, device=env.device)
     net_device = next(net.parameters()).device
     for _ in range(horizon):
+        if bool((env.outcome()[0] | (env.state.active != env.learner)).any()):
+            raise RuntimeError('Rollout requires a live learner decision in every row')
         state, cand, mask = observe(env.state)
         net_device = next(net.parameters()).device
         state = state.to(net_device)
@@ -88,8 +98,7 @@ def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_s
         mask = mask.to(net_device)
         empty = ~mask.any(dim=1)
         if bool(empty.any()):
-            mask = mask.clone()
-            mask[empty, 0] = True
+            raise RuntimeError('Live learner decision has no legal actions')
         logits, value = net(state, cand, mask)
         action, logp, _ent = _sample(logits)
         env_action = action.to(env.device)
@@ -98,7 +107,7 @@ def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_s
         prev_down = (env.state.ch_hp[b, foe] <= 0).sum(dim=1).to(torch.float32)
         env.step_learner(env_action)
         reward = _terminal_reward(env, prev_hp, prev_down).to(net_device)
-        done, _winner = env.outcome()
+        done, winner = env.outcome()
         states.append(state)
         cands.append(cand)
         masks.append(mask)
@@ -106,7 +115,10 @@ def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_s
         logps.append(logp.detach())
         values.append(value.detach())
         rewards.append(reward.detach())
-        dones.append(done.to(device=net_device, dtype=reward.dtype))
+        dones.append(done.to(device=net_device, dtype=reward.dtype).clone())
+        winners.append(winner.to(net_device).clone())
+        # Outcome and reward belong to the old episode. Only now start a new one.
+        env.reset_finished()
     state_bt = torch.stack(states, dim=1)
     cand_bt = torch.stack(cands, dim=1)
     mask_bt = torch.stack(masks, dim=1)
@@ -120,6 +132,7 @@ def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_s
         'value': torch.stack(values, dim=1),
         'reward': torch.stack(rewards, dim=1),
         'done': torch.stack(dones, dim=1),
+        'winner': torch.stack(winners, dim=1),
         'last_value': net(*[item.to(net_device) if torch.is_tensor(item) else item for item in observe(env.state)])[1].detach(),
     }
 

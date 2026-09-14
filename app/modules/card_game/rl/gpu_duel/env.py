@@ -94,6 +94,10 @@ class GpuDuelEnv:
         return self.state
 
     def step_learner(self, action_index: torch.Tensor | list[int]) -> GpuState:
+        """Advance to the next decision or terminal, without resetting.
+
+        The collector must record reward/done before calling reset_finished().
+        """
         if self.state is None:
             raise RuntimeError('reset first')
         if not torch.is_tensor(action_index):
@@ -105,7 +109,6 @@ class GpuDuelEnv:
         step_index(self.state, action_index)
         rebuild_legal(self.state)
         advance_to_actor(self.state, self.learner)
-        self.reset_finished()
         return self.state
 
     def snapshot(self, row: int = 0) -> dict[str, Any]:

@@ -120,6 +120,44 @@
   100% { transform: scale(1.18); opacity: 0; }
 }
 
+.v2-tutorial-cue {
+  position: fixed;
+  left: 50%;
+  top: 14px;
+  z-index: 86;
+  transform: translateX(-50%);
+  max-width: min(420px, calc(100vw - 280px));
+  padding: 8px 16px 12px;
+  border-radius: 14px;
+  background: rgba(16, 22, 32, 0.94);
+  border: 1px solid rgba(139, 215, 255, 0.55);
+  color: #eef8ff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), 0 0 18px rgba(139, 215, 255, 0.18);
+}
+
+.v2-tutorial-cue::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  background: rgba(16, 22, 32, 0.94);
+  border-right: 1px solid rgba(139, 215, 255, 0.55);
+  border-bottom: 1px solid rgba(139, 215, 255, 0.55);
+  transform: rotate(45deg);
+}
+
+.v2-tutorial-cue[hidden] {
+  display: none;
+}
+
 .v2-tutorial-modal {
   position: fixed;
   z-index: 80;

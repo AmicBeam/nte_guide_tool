@@ -170,8 +170,10 @@
     const info = tutorial(ctx.game);
     const mask = ctx.tutorialMask || document.getElementById('v2-tutorial-mask');
     const modal = ctx.tutorialModal || document.getElementById('v2-tutorial-modal');
+    const cue = ctx.tutorialCue || document.getElementById('v2-tutorial-cue');
     ctx.tutorialMask = mask;
     ctx.tutorialModal = modal;
+    ctx.tutorialCue = cue;
     ctx.page.classList.toggle('is-tutorial', Boolean(info && info.enabled));
     if (ctx.nodes.playerBench) {
       ctx.nodes.playerBench.setAttribute('data-count', String((info && info.character_slots) || 4));
@@ -192,6 +194,10 @@
       if (modal) {
         modal.setAttribute('hidden', '');
         modal.innerHTML = '';
+      }
+      if (cue) {
+        cue.setAttribute('hidden', '');
+        cue.textContent = '';
       }
       ctx.tutorialModalDismissed = null;
       return;
@@ -259,6 +265,16 @@
           '</div>';
       }
     }
+    if (cue) {
+      const hint = !info.ack_required ? String(info.cue || '').trim() : '';
+      if (hint) {
+        cue.textContent = hint;
+        cue.removeAttribute('hidden');
+      } else {
+        cue.textContent = '';
+        cue.setAttribute('hidden', '');
+      }
+    }
   }
 
   function showBlocked(ctx, reason) {
@@ -276,7 +292,7 @@
   }
 
   function bindTutorial(ctx) {
-    ['tutorialModal', 'tutorialMask'].forEach(function (key) {
+    ['tutorialModal', 'tutorialMask', 'tutorialCue'].forEach(function (key) {
       const node = ctx[key];
       if (node && node.parentElement !== document.body) {
         document.body.appendChild(node);

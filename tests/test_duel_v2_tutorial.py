@@ -30,6 +30,7 @@ class DuelV2TutorialTest(unittest.TestCase):
         self.assertEqual(observe(state, 'a')['tutorial']['placement'], 'bottom-right')
         state = apply_action(state, 'a', {'type': 'tutorial_ack'})
         self.assertEqual(observe(state, 'a')['tutorial']['step_id'], 'l01_p1_attack')
+        self.assertEqual(observe(state, 'a')['tutorial']['cue'], '按住主角，并拖动到对战区')
         actions = [item['action'] for item in observe(state, 'a')['legal_actions']]
         self.assertEqual(actions, [{'type': 'attack', 'character_id': 'tutorial_protagonist'}])
 

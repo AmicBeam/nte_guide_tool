@@ -80,6 +80,7 @@
         dragState: ctx.dragState,
         tutorialMask: ctx.tutorialMask,
         tutorialModal: ctx.tutorialModal,
+        tutorialCue: ctx.tutorialCue,
         tutorialModalDismissed: ctx.tutorialModalDismissed,
         sendAction: ctx.sendAction,
         showMulligan: ctx.forceMulliganStage ? true : (ctx.replayMode ? Boolean(ctx.replayShowMulligan) : undefined),

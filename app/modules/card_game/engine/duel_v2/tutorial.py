@@ -219,6 +219,7 @@ def project_tutorial(state, side):
         'spotlights': list((step or {}).get('spotlights') or []),
         'drag_arrow': deepcopy((step or {}).get('drag_arrow')),
         'click_cue': (step or {}).get('click_cue'),
+        'cue': (step or {}).get('cue') or '',
         'modal': deepcopy((step or {}).get('modal')),
         'allowed_actions': deepcopy((step or {}).get('allowed') or []),
         'blocked_reason': (step or {}).get('blocked_reason') or '',

@@ -67,6 +67,7 @@ class DuelV2TableContractTest(unittest.TestCase):
             'v2-replay-link',
             'v2-tutorial-mask',
             'v2-tutorial-modal',
+            'v2-tutorial-cue',
         ]
         for node_id in required_ids:
             self.assertIn(f'id="{node_id}"', html, node_id)

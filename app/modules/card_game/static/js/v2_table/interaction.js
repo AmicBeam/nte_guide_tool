@@ -312,7 +312,10 @@
       const playArea = nodes.playArea;
       const kind = ctx.dragState && ctx.dragState.kind;
       const fromFront = Boolean(ctx.dragState && ctx.dragState.fromFront);
-      const wholeCenter = Boolean((kind === 'card' || (kind === 'character' && !fromFront)) && legal && inPlayArea(zone));
+      const centerEnabled = kind === 'card'
+        ? ctx.options.dragTargeting === false || page.classList.contains('is-drag-cast')
+        : kind === 'character' && !fromFront;
+      const wholeCenter = Boolean(centerEnabled && legal && inPlayArea(zone));
       const opponentHalf = Boolean(kind === 'character' && fromFront && legal);
       if (playArea) {
         playArea.classList.toggle('drop-target', wholeCenter);
@@ -380,6 +383,7 @@
       if (kind === 'card' && ctx.options.dragTargeting !== false) {
         const byId = boardTargetEntries(groupedPlay(id).entries, true);
         const hasTargets = Object.keys(byId).length > 0;
+        page.classList.toggle('v2-playing-card', !hasTargets);
         page.classList.add('is-targeting');
         page.classList.toggle('is-drag-cast', !hasTargets);
         page.classList.add('is-drag-targeting');

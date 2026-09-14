@@ -1,7 +1,8 @@
+from app.modules.card_game.content.duel_v2 import CHARACTERS
 from app.modules.card_game.content.duel_v2.characters.common import perm_plus, set_shape
 from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.engine.duel_v2.state import (
-    add_atk_buff, alive, attack_value, collapsed, finished,
+    add_atk_buff, alive, collapsed, finished,
 )
 
 
@@ -32,7 +33,8 @@ def _m05(c):
 
 
 def _m06(c):
-    extra = max(0, attack_value(c.character) - 3)
+    printed = int(CHARACTERS[c.cid]['attack'])
+    extra = max(0, int(c.character.get('base_attack') or printed) - printed)
     c.hit_front(2 + extra)
 
 

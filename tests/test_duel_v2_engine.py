@@ -958,7 +958,7 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertLess(s['sides']['a']['hp'], before)
         self.assertTrue(any(item['card_id'] == 'M04' for item in s['sides']['a']['discard']))
 
-    def test_bohe_front_damage_scales_with_attack(self):
+    def test_bohe_front_damage_scales_with_permanent_attack(self):
         s = self.rush_game()
         s['sides']['b']['front'] = 'zero'
         hero(s, 'b', 'zero').update(hp=8)
@@ -967,6 +967,13 @@ class DuelV2EngineTest(unittest.TestCase):
         s = self.rush_game()
         add = hero(s, 'a', 'bohe')
         add['flags'] = {'atk_buff': 2}
+        add['shape'] = 'M07'
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'b', 'zero').update(hp=8)
+        s = self.play(s, 'M06')
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], 6)
+        s = self.rush_game()
+        hero(s, 'a', 'bohe')['base_attack'] = 5
         s['sides']['b']['front'] = 'zero'
         hero(s, 'b', 'zero').update(hp=8)
         s = self.play(s, 'M06')

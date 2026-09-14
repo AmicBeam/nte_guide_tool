@@ -1870,7 +1870,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对对方前排造成 2 点伤害。薄荷的攻击每高于 3，此伤害 +1。",
+      "description": "对对方前排造成 2 点伤害。薄荷的基础攻击每高于 3，此伤害 +1。",
       "effect_id": "M06",
       "source": {
         "character_id": 1019,

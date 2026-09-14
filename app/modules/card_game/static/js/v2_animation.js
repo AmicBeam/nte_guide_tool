@@ -434,6 +434,10 @@
           await this._presentDraw(event, instant);
           return;
         }
+        if (kind === "gain" && hasPublicCard(event.card) && (event.card.derived || event.card.copy)) {
+          await this._presentDraw(event, instant);
+          return;
+        }
         this._tone(kind);
         if (kind === "initiative") {
           await this._presentInitiative(event, instant);
@@ -1083,7 +1087,8 @@
     }
 
     async _presentDraw(event, instant) {
-      if (this.root && this.root.classList && this.root.classList.contains("is-mulligan")) {
+      const generated = event && event.type === "gain";
+      if (!generated && this.root && this.root.classList && this.root.classList.contains("is-mulligan")) {
         await this._presentMulliganDraw(event, instant);
         return;
       }
@@ -1094,7 +1099,7 @@
       const portraitSrc = this._safePortrait(event && (event.actor || event.source))
         || this._safePortrait(sideOf(event) + ":" + ((card && card.character_id) || ""));
       const node = this._el("div", "v2-fx-draw-card");
-      node.setAttribute("data-v2-fx-kind", publicCard ? "draw-public" : "draw-hidden");
+      node.setAttribute("data-v2-fx-kind", generated ? "gain-generated" : (publicCard ? "draw-public" : "draw-hidden"));
       const show = this._el("div", "v2-fx-card-front v2-fx-draw-formula");
       if (card && card.type) {
         show.setAttribute("data-card-type", String(card.type));
@@ -1132,7 +1137,7 @@
         show.classList.add("v2-fx-card-back");
       }
       const handFace = this._el("article", "v2-hand-card v2-fx-draw-hand");
-      if (!publicCard) {
+      if (!publicCard || (generated && opponent)) {
         handFace.className = "v2-hidden-card v2-fx-draw-hand";
       } else {
         if (card && card.type) {
@@ -1179,18 +1184,28 @@
         ? slot.bottom - stageRect.top + 12
         : slot.top - stageRect.top - 16 - cardH;
       hoverY = Math.max(8, Math.min(hoverY, (stageRect.height || 450) - cardH - 8));
-      const startX = (stageRect.width || 800) + 36;
+      if (generated) {
+        hoverX = ((stageRect.width || 800) - cardW) / 2;
+        hoverY = ((stageRect.height || 450) - cardH) / 2;
+      }
+      const startX = generated ? hoverX : (stageRect.width || 800) + 36;
       node.style.left = startX + "px";
       node.style.top = hoverY + "px";
-      this._notice(publicCard ? String(card.name || "抽牌") : "抽牌", event && event.text, "bottom");
+      if (generated) node.style.transformOrigin = "center center";
+      this._notice(generated ? "" : (publicCard ? String(card.name || "抽牌") : "抽牌"), generated ? "" : event && event.text, "bottom");
       const fly = this._duration(instant, BEATS.drawFly);
-      await this._animate(node, [
+      await this._animate(node, generated ? [
+        { transform: "scale(0.6)", opacity: 0 },
+        { transform: "scale(1.05)", opacity: 1, offset: 0.75 },
+        { transform: "scale(1)", opacity: 1 },
+      ] : [
         { transform: "translate(0px, 0px)", opacity: 0.35 },
         { transform: "translate(" + (hoverX - startX) + "px, 0px)", opacity: 1 },
       ], fly);
       this._settlePlayCard(node, hoverX, hoverY);
       await this._wait(this._duration(instant, publicCard ? BEATS.drawHold : BEATS.linger));
       node.classList.add("is-dropping");
+      if (generated) node.style.transformOrigin = "top left";
       const insert = this._duration(instant, BEATS.drawInsert);
       const scaleX = Math.max(0.18, (slot.width || 148) / cardW);
       const scaleY = Math.max(0.18, (slot.height || 108) / cardH);

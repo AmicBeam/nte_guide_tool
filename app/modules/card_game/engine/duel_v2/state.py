@@ -415,7 +415,7 @@ def add_hand(state, side, card, *, reveal=False):
         discard(state, side, card)
     else:
         team['hand'].append(card)
-        if reveal or card.get('copy'):
+        if reveal or card.get('copy') or card.get('derived'):
             log(state, f"{name(state, side)}获得{'临时复制' if card.get('copy') else ''}「{card['name']}」。",
                 'gain', side=side, card=public_card(card), actor=f'{side}:player')
 

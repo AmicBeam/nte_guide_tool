@@ -1071,3 +1071,28 @@ test("mulligan replacement slides into its rail without a normal draw close-up",
   assert.deepEqual(patches, [501], "the outer queue must not apply the same draw twice");
   assert.equal(incoming.classList.contains("is-entering"), false);
 });
+
+test("generated and copied cards appear centrally before entering either hand", async () => {
+  for (const side of ["a", "b"]) {
+    for (const kind of ["derived", "copy"]) {
+      const harness = makeRoot();
+      const patches = [];
+      const player = new Player({ root: harness.root, clock: harness.clock, viewerSide: "a",
+        applyPatch(_patch, event) { patches.push(event.seq); } });
+      const card = Object.assign(publicCard(), { [kind]: true });
+      const done = player.play([{ seq: 130, type: "gain", side, actor: side + ":player", card, patch: { gained: true } }]);
+      await Promise.resolve();
+      await Promise.resolve();
+      const overlay = overlayOf(harness);
+      const flyer = overlay.querySelector(".v2-fx-draw-card");
+      assert.ok(flyer);
+      assert.equal(flyer.getAttribute("data-v2-fx-kind"), "gain-generated");
+      assert.equal(parseFloat(flyer.style.left), (overlay.getBoundingClientRect().width - 300) / 2);
+      assert.equal(flyer.style.transformOrigin, "center center");
+      assert.deepEqual(patches, []);
+      await settle(done, harness.clock, player);
+      assert.deepEqual(patches, [130]);
+      assert.equal(flyer.parentNode, null);
+    }
+  }
+});

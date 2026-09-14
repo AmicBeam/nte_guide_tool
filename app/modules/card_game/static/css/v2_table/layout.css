@@ -595,6 +595,10 @@ body:has(.v2-table-page) .shell {
 
 .v2-turn-board { grid-column: 1; }
 .v2-wait-chip { grid-column: 2; }
+
+.v2-table-page:not(.replay-mode) #v2-turn-copy {
+  display: none;
+}
 .v2-cast-zone { grid-column: 2; }
 
 .v2-turn-board {

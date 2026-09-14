@@ -530,7 +530,9 @@
     renderHands(ctx);
     renderLogs(ctx);
     renderRecords(ctx);
-    ctx.nodes.turnCopy.textContent = V2.roomStatusLabel(ctx.room, game);
+    if (ctx.nodes.turnCopy && !ctx.replayMode) {
+      ctx.nodes.turnCopy.textContent = '';
+    }
     if (ctx.nodes.waitChip) {
       ctx.nodes.waitChip.textContent = ctx.busy ? '演出中' : (game && game.is_my_turn ? '你的回合' : '对手回合');
     }

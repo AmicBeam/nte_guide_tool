@@ -270,9 +270,15 @@
       if (hint) {
         cue.textContent = hint;
         cue.removeAttribute('hidden');
+        const play = visibleRect(ctx.nodes.playArea);
+        const hand = visibleRect(document.getElementById('v2-opponent-hand'));
+        cue.style.left = play ? ((play.left + play.width / 2) + 'px') : '50%';
+        cue.style.top = (hand ? (hand.top + Math.max(6, (hand.height - 44) / 2)) : 14) + 'px';
       } else {
         cue.textContent = '';
         cue.setAttribute('hidden', '');
+        cue.style.left = '';
+        cue.style.top = '';
       }
     }
   }

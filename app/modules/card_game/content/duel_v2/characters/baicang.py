@@ -40,7 +40,7 @@ def _b05(c):
 
 
 def _b06(c):
-    extra = 2 if (c.character.get('flags') or {}).get('allied_hurt') else 0
+    extra = 1 if (c.character.get('flags') or {}).get('allied_hurt') else 0
     c.sortie(bonus=extra)
 
 

@@ -170,6 +170,17 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['M08']['name'], '开始净空')
         self.assertEqual(CARDS['B07']['name'], '判予秋')
         self.assertEqual(CARDS['B08']['name'], '茶话会')
+        self.assertEqual(CARDS['B07']['attack'], 3)
+        self.assertEqual(CARDS['B08']['attack'], 3)
+        self.assertEqual(CARDS['B06']['description'], '若本回合白藏受到过己方伤害，额外 +1 攻击。')
+        self.assertEqual(CARDS['M06']['description'], '对对方前排造成 2 点伤害。薄荷的永久攻击每高于 3，此伤害 +1。')
+        self.assertEqual(CARDS['Y06']['description'], '复活 1 名己方异能者。')
+        rush = next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')
+        self.assertEqual(
+            sorted(set(rush['card_ids'])),
+            ['B01', 'B02', 'B06', 'B08', 'M01', 'M03', 'M04', 'M08', 'Y01', 'Y03', 'Y06', 'Y07', 'Z03', 'Z04', 'Z05', 'Z08'],
+        )
+        self.assertTrue(all(rush['card_ids'].count(card_id) == 2 for card_id in set(rush['card_ids'])))
         self.assertIn('反击方', CARDS['N02']['description'])
         self.assertEqual(CARDS['N03']['description'], '额外造成 1 点追击伤害。')
         self.assertEqual(CARDS['N04']['description'], '')

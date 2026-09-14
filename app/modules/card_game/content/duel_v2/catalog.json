@@ -1842,7 +1842,7 @@
         "type": "awaken",
         "index": 4
       },
-      "starter_copies": 0,
+      "starter_copies": 2,
       "attack": 2,
       "shield": 1,
       "response": "self_attacked"
@@ -1870,14 +1870,14 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对对方前排造成 2 点伤害。薄荷的基础攻击每高于 3，此伤害 +1。",
+      "description": "对对方前排造成 2 点伤害。薄荷的永久攻击每高于 3，此伤害 +1。",
       "effect_id": "M06",
       "source": {
         "character_id": 1019,
         "type": "awaken",
         "index": 6
       },
-      "starter_copies": 2
+      "starter_copies": 0
     },
     {
       "id": "M07",
@@ -2007,7 +2007,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若本回合白藏受到过己方伤害，额外 +2 攻击。",
+      "description": "若本回合白藏受到过己方伤害，额外 +1 攻击。",
       "effect_id": "B06",
       "source": {
         "character_id": 1023,
@@ -2034,7 +2034,7 @@
         "index": 1
       },
       "starter_copies": 0,
-      "attack": 4,
+      "attack": 3,
       "hp": 8
     },
     {
@@ -2052,7 +2052,7 @@
         "index": 1
       },
       "starter_copies": 2,
-      "attack": 4,
+      "attack": 3,
       "hp": 10
     }
   ],
@@ -2252,8 +2252,8 @@
         "M01",
         "M03",
         "M03",
-        "M06",
-        "M06",
+        "M04",
+        "M04",
         "M08",
         "M08",
         "B01",
@@ -2274,12 +2274,12 @@
         "Z08",
         "Y01",
         "Y01",
-        "Y02",
-        "Y02",
         "Y03",
         "Y03",
-        "Y08",
-        "Y08"
+        "Y06",
+        "Y06",
+        "Y07",
+        "Y07"
       ]
     }
   ]

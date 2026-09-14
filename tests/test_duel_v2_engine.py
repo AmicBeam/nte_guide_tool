@@ -852,6 +852,20 @@ class DuelV2EngineTest(unittest.TestCase):
                 self.assertTrue(any(c['instance_id'] == card['instance_id'] for c in s['sides']['a']['discard']))
                 json.dumps(observe(s, 'a'))
 
+    def test_baicang_b06_allied_hurt_adds_one_attack(self):
+        s = self.rush_game()
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'b', 'zero').update(hp=10, shield=0, base_attack=0)
+        s = self.play(s, 'B06')
+        plain = next(event for event in reversed(s['events']) if event['type'] == 'attack')
+        s = self.rush_game()
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'b', 'zero').update(hp=10, shield=0, base_attack=0)
+        hero(s, 'a', 'baicang').setdefault('flags', {})['allied_hurt'] = True
+        s = self.play(s, 'B06')
+        boosted = next(event for event in reversed(s['events']) if event['type'] == 'attack')
+        self.assertEqual(boosted['attack'] - plain['attack'], 1)
+
     def test_baicang_tea_form_damages_self_on_equip(self):
         s = self.rush_game()
         atk = attack_value(hero(s, 'a', 'baicang'))

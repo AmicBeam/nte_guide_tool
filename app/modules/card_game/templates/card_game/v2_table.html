@@ -65,7 +65,7 @@
         </div>
     </section>
 
-    <section class="v2-arena" id="v2-table-layout" aria-label="牌桌">
+    <section class="v2-arena" id="v2-table-layout" data-drop-role="battle-area" aria-label="牌桌">
         <div class="v2-bench-row opponent" id="v2-opponent-bench" data-tutorial-id="bench-opponent" aria-label="对手编队"></div>
         <div class="v2-front-axis" id="v2-play-area" data-drop-role="play-area">
             <div class="v2-front-zone opponent is-empty" id="v2-opponent-front" data-drop-role="opponent-front" aria-label="对手前排">
@@ -182,7 +182,7 @@
                 <button class="icon-btn" id="v2-menu-close" type="button" aria-label="关闭菜单">×</button>
             </div>
             <label class="v2-menu-toggle"><input id="v2-drag-targeting-toggle" type="checkbox" checked aria-describedby="v2-drag-targeting-help"> 拖动选择目标</label>
-            <p class="subtle" id="v2-drag-targeting-help">开启：拖到高亮目标松开。关闭：拖到中央松开，再点选目标。</p>
+            <p class="subtle" id="v2-drag-targeting-help">开启：有目标牌拖到高亮目标。无目标牌或关闭开关时，拖到战斗大区松开，需要目标时再点选。</p>
             <label class="v2-menu-toggle"><input id="v2-mute-toggle" type="checkbox"> 静音</label>
             <label class="v2-menu-toggle"><input id="v2-motion-toggle" type="checkbox"> 减弱动态</label>
             <div class="v2-menu-row">

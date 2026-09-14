@@ -271,6 +271,10 @@
       return Boolean(zone && zone.closest && zone.closest('[data-drop-role="play-area"]'));
     }
 
+    function inBattleArea(zone) {
+      return Boolean(zone && zone.closest && zone.closest('[data-drop-role="battle-area"]'));
+    }
+
     function inPlayAreaTopHalf(point) {
       if (!point || !nodes.playArea) {
         return false;
@@ -283,14 +287,15 @@
       const grouped = kind === 'card' ? groupedPlay(id) : null;
       if (kind === 'card' && grouped) {
         if (ctx.options.dragTargeting === false) {
-          return inPlayArea(zone) ? grouped.entries[0] || null : null;
+          return inBattleArea(zone) ? grouped.entries[0] || null : null;
         }
-        const byId = boardTargetEntries(grouped.entries, true);
+        const byId = boardTargetEntries(grouped.entries);
         if (Object.keys(byId).length) {
           const entity = zone && zone.closest('[data-entity-id], [data-player-side]');
           const id = entity && (entity.getAttribute('data-entity-id') || entity.getAttribute('data-player-side') + ':player');
           return byId[TABLE.canonicalEntityId(id)] || null;
         }
+        return inBattleArea(zone) ? grouped.entries[0] || null : null;
       }
       const attackEntry = kind === 'character' ? ctx.findAction('attack', { character_id: id }) : null;
       const front = fromFront != null ? fromFront : Boolean(ctx.dragState && ctx.dragState.fromFront);
@@ -312,9 +317,7 @@
       const playArea = nodes.playArea;
       const kind = ctx.dragState && ctx.dragState.kind;
       const fromFront = Boolean(ctx.dragState && ctx.dragState.fromFront);
-      const centerEnabled = kind === 'card'
-        ? ctx.options.dragTargeting === false || page.classList.contains('is-drag-cast')
-        : kind === 'character' && !fromFront;
+      const centerEnabled = kind === 'character' && !fromFront;
       const wholeCenter = Boolean(centerEnabled && legal && inPlayArea(zone));
       const opponentHalf = Boolean(kind === 'character' && fromFront && legal);
       if (playArea) {
@@ -380,16 +383,16 @@
       } else if (kind === 'character' && fromFront) {
         page.classList.add('v2-playing-attack-front');
       }
-      if (kind === 'card' && ctx.options.dragTargeting !== false) {
-        const byId = boardTargetEntries(groupedPlay(id).entries, true);
+      if (kind === 'card') {
+        const byId = ctx.options.dragTargeting === false ? {} : boardTargetEntries(groupedPlay(id).entries);
         const hasTargets = Object.keys(byId).length > 0;
-        page.classList.toggle('v2-playing-card', !hasTargets);
+        page.classList.remove('v2-playing-card');
         page.classList.add('is-targeting');
         page.classList.toggle('is-drag-cast', !hasTargets);
         page.classList.add('is-drag-targeting');
-        applyTargetClasses(byId);
+        if (hasTargets) applyTargetClasses(byId);
         if (ctx.targetCopy) ctx.targetCopy.textContent = hasTargets
-          ? '拖到高亮目标松开；松在其他位置回弹' : '拖到中央松开出牌';
+          ? '拖到高亮目标松开；松在其他位置回弹' : '拖到战斗大区松开出牌';
         if (ctx.targetCancel) V2.setHidden(ctx.targetCancel, true);
         if (ctx.targetMask) V2.setHidden(ctx.targetMask, false);
       }
@@ -460,11 +463,11 @@
       const legal = legalDrop(state.kind, state.id, zone, { x: event.clientX, y: event.clientY }, state.fromFront);
       clearCastUi();
       const directTarget = state.kind === 'card' && ctx.options.dragTargeting !== false
-        && Object.keys(boardTargetEntries(groupedPlay(state.id).entries, true)).length > 0;
+        && Object.keys(boardTargetEntries(groupedPlay(state.id).entries)).length > 0;
       if (!legal) {
         const message = directTarget ? '未放到合法目标，已回弹。'
           : state.kind === 'character' && state.fromFront ? '未放到对手区域，已回弹。'
-          : '未放到中央区域，已回弹。';
+          : state.kind === 'card' ? '未放到战斗大区，已回弹。' : '未放到中央区域，已回弹。';
         ctx.showToast(message);
         ctx.flushPendingEnvelope();
         return;
@@ -485,7 +488,7 @@
       return token;
     }
 
-    function boardTargetEntries(entries, includeFixed) {
+    function boardTargetEntries(entries) {
       const map = {};
       (entries || []).forEach(function (entry) {
         const actionId = isBoardTargetId(entry.action && entry.action.target_id);
@@ -495,7 +498,7 @@
         }
         ((entry.interaction && entry.interaction.target_ids) || []).forEach(function (raw) {
           const id = isBoardTargetId(raw);
-          if (id && !map[id] && (includeFixed || (entry.action && entry.action.target_id))) {
+          if (id && !map[id] && (entry.action && entry.action.target_id)) {
             map[id] = entry;
           }
         });

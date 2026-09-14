@@ -979,7 +979,7 @@
   pointer-events: auto;
 }
 
-.v2-table-page.is-drag-cast .v2-front-axis {
+.v2-table-page.is-drag-cast .v2-arena {
   outline: 3px solid rgba(255, 191, 87, 0.98);
   box-shadow: 0 0 22px rgba(255, 191, 87, 0.42);
 }

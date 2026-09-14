@@ -338,10 +338,29 @@ _L01_STEPS = [
         'modal': {
             'title': '回合开始',
             'body': '到你的回合开始时，自己的前排会自动返回备战区。对方前排仍留在战斗区防守。',
-            'primary': '完成本关',
+            'primary': '再出击',
         },
         'allowed': [{'type': 'tutorial_ack'}],
         'blocked_reason': '先看主角回到备战区。',
+    },
+    {
+        'id': 'l01_p2_attack',
+        'ack_required': False,
+        'mask': True,
+        'placement': 'bottom-right',
+        'spotlights': ['character:a:tutorial_protagonist', 'character:b:tutorial_nanali'],
+        'drag_arrow': {
+            'from': 'character:a:tutorial_protagonist',
+            'to': 'character:b:tutorial_nanali',
+        },
+        'modal': {
+            'title': '打对方前排',
+            'body': '再让主角出击。对方有前排时，会与其互相攻击，不会打到玩家。',
+            'primary': '拖动主角',
+        },
+        'cue': '按住主角，并拖动到对战区',
+        'allowed': [{'type': 'attack', 'character_id': 'tutorial_protagonist'}],
+        'blocked_reason': '这一步请让主角出击。',
         'finish_level': True,
     },
 ]

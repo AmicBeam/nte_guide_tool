@@ -818,18 +818,36 @@
     }
 
     async _presentHarmony(event, instant) {
-      this._veil(true);
-      await this._presentTitle(event, instant, "环合");
       const overlay = this._ensureOverlay();
       const stageRect = readRect(overlay) || { cx: 400, cy: 225, left: 0, top: 0 };
-      const actor = this._entity(event && (event.actor || event.source));
-      const burst = this._el("div", "v2-fx-burst is-harmony");
-      const point = centerOf(readRect(actor), { x: stageRect.cx, y: stageRect.cy });
-      burst.style.left = (point.x - stageRect.left) + "px";
-      burst.style.top = (point.y - stageRect.top) + "px";
-      overlay.appendChild(burst);
-      await this._wait(this._duration(instant, BEATS.linger));
-      this._veil(false);
+      const names = { "创生": "01", "覆纹": "02", "黯星": "03", "浊燃": "04", "浸染": "05", "延滞": "06", "盈蓄": "07", "失谐": "08" };
+      const text = String(event && event.text || "");
+      const name = Object.keys(names).find((value) => text.includes(value)) || "环合";
+      const area = this.root && this.root.querySelector ? this.root.querySelector('#v2-play-area') : null;
+      const point = centerOf(readRect(area), { x: stageRect.cx, y: stageRect.cy });
+      const art = this._el("div", "v2-fx-harmony-art");
+      art.setAttribute("aria-label", name);
+      art.style.left = (point.x - stageRect.left) + "px";
+      art.style.top = (point.y - stageRect.top) + "px";
+      if (names[name]) {
+        ["01", "02"].forEach((part) => {
+          const img = this._el("img", "v2-fx-harmony-glyph");
+          img.src = "/static/card_game/images/harmony/fanying" + names[name] + "_" + part + "_8.png";
+          img.alt = "";
+          art.appendChild(img);
+        });
+      } else {
+        art.textContent = name;
+      }
+      overlay.appendChild(art);
+      await this._animate(art, [
+        { transform: "translate(-50%, -50%) scale(0.35)", opacity: 0 },
+        { transform: "translate(-50%, -50%) scale(1.12)", opacity: 1, offset: 0.2 },
+        { transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.35 },
+        { transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.78 },
+        { transform: "translate(-50%, -56%) scale(1.04)", opacity: 0 },
+      ], this._duration(instant, 1100));
+      art.remove();
     }
 
     async _presentDot(event, instant, kind) {

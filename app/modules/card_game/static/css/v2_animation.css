@@ -11,6 +11,32 @@
   overflow: hidden;
 }
 
+.v2-fx-harmony-art {
+  position: absolute;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  width: clamp(240px, 38vw, 460px);
+  max-width: 80%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  font-size: 72px;
+  font-weight: 900;
+  color: #9ffff0;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
+}
+
+.v2-fx-harmony-glyph {
+  display: block;
+  width: 60%;
+  flex: 0 0 60%;
+  height: auto;
+}
+
+.v2-fx-harmony-glyph + .v2-fx-harmony-glyph {
+  margin-left: -20%;
+}
+
 .v2-fx-overlay.is-veiled::before {
   content: "";
   position: absolute;

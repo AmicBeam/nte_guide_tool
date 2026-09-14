@@ -968,3 +968,18 @@
     transform: translate(-50%, 0) scale(1);
   }
 }
+
+/* Drag targeting keeps the hint from intercepting a drop on the player HUD. */
+.v2-table-page.is-drag-targeting .v2-target-bar {
+  pointer-events: none;
+}
+
+.v2-table-page.is-drag-cast .v2-combat-core {
+  filter: none;
+  pointer-events: auto;
+}
+
+.v2-table-page.is-drag-cast .v2-front-axis {
+  outline: 3px solid rgba(255, 191, 87, 0.98);
+  box-shadow: 0 0 22px rgba(255, 191, 87, 0.42);
+}

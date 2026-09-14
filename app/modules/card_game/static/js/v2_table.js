@@ -178,6 +178,7 @@ async function bootstrapTable() {
     if (ctx.player && typeof ctx.player.setOptions === 'function') {
       ctx.player.setOptions(ctx.options);
     }
+    document.getElementById('v2-drag-targeting-toggle').checked = ctx.options.dragTargeting !== false;
     document.getElementById('v2-mute-toggle').checked = Boolean(ctx.options.muted);
     document.getElementById('v2-motion-toggle').checked = Boolean(ctx.options.reducedMotion);
     document.getElementById('v2-speed-1').classList.toggle('primary-btn', ctx.options.speed !== 2);
@@ -188,6 +189,11 @@ async function bootstrapTable() {
   document.getElementById('v2-menu-close').addEventListener('click', function () { setMenuOpen(false); });
   document.getElementById('v2-history-btn').addEventListener('click', function () { setHistoryOpen(true); });
   document.getElementById('v2-history-close').addEventListener('click', function () { setHistoryOpen(false); });
+  document.getElementById('v2-drag-targeting-toggle').addEventListener('change', function (event) {
+    ctx.endBoardTargetSelect();
+    ctx.options.dragTargeting = Boolean(event.target.checked);
+    applyPlayerOptions();
+  });
   document.getElementById('v2-mute-toggle').addEventListener('change', function (event) {
     ctx.options.muted = Boolean(event.target.checked);
     applyPlayerOptions();

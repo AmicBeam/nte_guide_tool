@@ -281,6 +281,17 @@
 
     function legalDrop(kind, id, zone, point, fromFront) {
       const grouped = kind === 'card' ? groupedPlay(id) : null;
+      if (kind === 'card' && grouped) {
+        if (ctx.options.dragTargeting === false) {
+          return inPlayArea(zone) ? grouped.entries[0] || null : null;
+        }
+        const byId = boardTargetEntries(grouped.entries, true);
+        if (Object.keys(byId).length) {
+          const entity = zone && zone.closest('[data-entity-id], [data-player-side]');
+          const id = entity && (entity.getAttribute('data-entity-id') || entity.getAttribute('data-player-side') + ':player');
+          return byId[TABLE.canonicalEntityId(id)] || null;
+        }
+      }
       const attackEntry = kind === 'character' ? ctx.findAction('attack', { character_id: id }) : null;
       const front = fromFront != null ? fromFront : Boolean(ctx.dragState && ctx.dragState.fromFront);
       if (kind === 'character' && front && attackEntry && inPlayArea(zone)) {
@@ -366,6 +377,18 @@
       } else if (kind === 'character' && fromFront) {
         page.classList.add('v2-playing-attack-front');
       }
+      if (kind === 'card' && ctx.options.dragTargeting !== false) {
+        const byId = boardTargetEntries(groupedPlay(id).entries, true);
+        const hasTargets = Object.keys(byId).length > 0;
+        page.classList.add('is-targeting');
+        page.classList.toggle('is-drag-cast', !hasTargets);
+        page.classList.add('is-drag-targeting');
+        applyTargetClasses(byId);
+        if (ctx.targetCopy) ctx.targetCopy.textContent = hasTargets
+          ? '拖到高亮目标松开；松在其他位置回弹' : '拖到中央松开出牌';
+        if (ctx.targetCancel) V2.setHidden(ctx.targetCancel, true);
+        if (ctx.targetMask) V2.setHidden(ctx.targetMask, false);
+      }
       moveGhost(event.clientX, event.clientY);
       sourceNode.addEventListener('pointermove', onDragMove);
       sourceNode.addEventListener('pointerup', onDragEnd);
@@ -389,6 +412,7 @@
       V2.setHidden(previewBox, true);
       const state = ctx.dragState;
       ctx.dragState = null;
+      if (page.classList.contains('is-drag-targeting')) endBoardTargetSelect();
       return state;
     }
 
@@ -431,13 +455,21 @@
       const zone = dropZoneAt(event.clientX, event.clientY);
       const legal = legalDrop(state.kind, state.id, zone, { x: event.clientX, y: event.clientY }, state.fromFront);
       clearCastUi();
+      const directTarget = state.kind === 'card' && ctx.options.dragTargeting !== false
+        && Object.keys(boardTargetEntries(groupedPlay(state.id).entries, true)).length > 0;
       if (!legal) {
-        ctx.showToast(state.kind === 'character' && state.fromFront ? '未放到对手区域，已回弹。' : '未放到中央区域，已回弹。');
+        const message = directTarget ? '未放到合法目标，已回弹。'
+          : state.kind === 'character' && state.fromFront ? '未放到对手区域，已回弹。'
+          : '未放到中央区域，已回弹。';
+        ctx.showToast(message);
         ctx.flushPendingEnvelope();
         return;
       }
-      if (state.kind === 'character') ctx.submitEntry(legal);
-      else beginPlayCard(state.id, zone);
+      if (state.kind === 'character' || directTarget) {
+        ctx.submitEntry(legal);
+      } else {
+        beginPlayCard(state.id, null);
+      }
       ctx.flushPendingEnvelope();
     }
 
@@ -449,7 +481,7 @@
       return token;
     }
 
-    function boardTargetEntries(entries) {
+    function boardTargetEntries(entries, includeFixed) {
       const map = {};
       (entries || []).forEach(function (entry) {
         const actionId = isBoardTargetId(entry.action && entry.action.target_id);
@@ -459,7 +491,7 @@
         }
         ((entry.interaction && entry.interaction.target_ids) || []).forEach(function (raw) {
           const id = isBoardTargetId(raw);
-          if (id && !map[id] && entry.action && entry.action.target_id) {
+          if (id && !map[id] && (includeFixed || (entry.action && entry.action.target_id))) {
             map[id] = entry;
           }
         });
@@ -501,7 +533,8 @@
         markRaisedCard(ctx.localChoice.cardId, false);
         ctx.localChoice = null;
       }
-      page.classList.remove('is-targeting');
+      page.classList.remove('is-targeting', 'is-drag-targeting', 'is-drag-cast');
+      if (ctx.targetCancel) V2.setHidden(ctx.targetCancel, false);
       page.querySelectorAll('.target-legal, .target-dim').forEach(function (node) {
         node.classList.remove('target-legal');
         node.classList.remove('target-dim');

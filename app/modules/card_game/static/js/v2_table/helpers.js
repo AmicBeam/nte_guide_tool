@@ -505,7 +505,7 @@
   }
 
   function loadOptions() {
-    const fallback = { muted: false, reducedMotion: false, speed: 1 };
+    const fallback = { muted: false, reducedMotion: false, speed: 1, dragTargeting: true };
     try {
       const raw = root.localStorage.getItem(OPTIONS_KEY);
       if (!raw) {
@@ -514,6 +514,7 @@
       const parsed = JSON.parse(raw);
       return {
         muted: Boolean(parsed && parsed.muted),
+        dragTargeting: !parsed || parsed.dragTargeting !== false,
         reducedMotion: Boolean(parsed && parsed.reducedMotion),
         speed: Number(parsed && parsed.speed) === 2 ? 2 : 1,
       };

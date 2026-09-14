@@ -42,6 +42,15 @@ class DuelV2EngineTest(unittest.TestCase):
         s = apply_action(s, 'a', {'type': 'end_turn'})
         return apply_action(s, 'b', {'type': 'end_turn'})
 
+    def rush_game(self):
+        deck = next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')
+        s = new_game(seed=9, first_side='a', skip_mulligan=True, decks={'a': deck, 'b': deck})
+        s['sides']['a']['ap'] = 2
+        s['sides']['b']['shield'] = 0
+        for side in ('a', 'b'):
+            s['sides'][side]['hand'] = [c for c in s['sides'][side]['hand'] if not c.get('response')]
+        return s
+
     def test_setup_mulligan_and_first_second_action_points(self):
         s = new_game(seed=12, first_side='b')
         self.assertEqual(s['sides']['a']['shield'], 5)
@@ -299,7 +308,7 @@ class DuelV2EngineTest(unittest.TestCase):
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'nanali'})
         n = hero(s, 'a', 'nanali')
         self.assertTrue(n['awakened'])
-        self.assertEqual(s['sides']['a']['front'], 'nanali')
+        self.assertIsNone(s['sides']['a']['front'])
 
     def test_ultimate_is_once_per_turn_and_free(self):
         s = self.game()
@@ -614,8 +623,8 @@ class DuelV2EngineTest(unittest.TestCase):
     def test_iloy_door_shape_does_not_recurse_on_knockdown_damage(self):
         from app.modules.card_game.engine.duel_v2.state import knockdowns
         s = self.game()
-        hero(s, 'a', 'iloy').update(shape='Y08')
-        hero(s, 'b', 'iloy').update(shape='Y08', hp=2)
+        hero(s, 'a', 'iloy').update(shape='Y07')
+        hero(s, 'b', 'iloy').update(shape='Y07', hp=2)
         s['sides']['b']['front'] = 'iloy'
         hero(s, 'a', 'nanali')['hp'] = 0
         knockdowns(s)
@@ -753,6 +762,31 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertTrue(any(e['type'] == 'overlay' for e in s['events']))
         self.assertEqual(hero(s, 'b', 'xun')['hp'], hp - 4)
 
+    def test_weave_and_stain_apply_only_to_combat_attacks(self):
+        from app.modules.card_game.engine.duel_v2.state import front_debuff
+        s = self.game()
+        s['sides']['b']['front'] = 'zero'
+        front_debuff(s, 'b')['weave'] = {'by': 'a'}
+        hp = hero(s, 'b', 'zero')['hp']
+        s = self.play(s, 'J02')
+        self.assertFalse(any(e['type'] == 'overlay' for e in s['events']))
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], hp - 1)
+        s = self.game()
+        if 'hathor' not in s['sides']['a']['characters']:
+            s['sides']['a']['characters']['hathor'] = new_character('hathor')
+            s['sides']['a']['order'].append('hathor')
+        s['sides']['b']['front'] = 'zero'
+        front_debuff(s, 'b')['stain'] = {'by': 'a'}
+        hp = hero(s, 'b', 'zero')['hp']
+        damage(s, 'b', 'zero', 2, source='a:hathor', kind='followup')
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], hp - 2)
+        hero(s, 'b', 'zero')['hp'] = 5
+        s['sides']['a']['front'] = 'hathor'
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'hathor'})
+        attack_log = next(event for event in reversed(s['events']) if event['type'] == 'attack')
+        self.assertEqual(attack_log['attack'], attack_value(hero(s, 'a', 'hathor')))
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], 5 - attack_log['attack'] - 2)
+
     def test_fatigue_empty_inspect_and_finished_stops_remaining_effects(self):
         s = self.game()
         s['sides']['a']['deck'] = []
@@ -798,6 +832,8 @@ class DuelV2EngineTest(unittest.TestCase):
                 card = self.hand(s, cid)
                 s['sides']['a']['harmony_damage'] = True
                 s['sides']['a']['surplus'] = True
+                from app.modules.card_game.engine.duel_v2.state import front_debuff
+                front_debuff(s, 'b')['burn'] = {'left': 2, 'by': 'a'}
                 s['sides']['a']['front'] = 'nanali'
                 hero(s, 'a', 'nanali')['hp'] = 4
                 dummy = 'zaowu' if owner != 'zaowu' else 'canhong'
@@ -815,6 +851,117 @@ class DuelV2EngineTest(unittest.TestCase):
                 self.assertEqual(s['sides']['a']['ap'], 2 - spent)
                 self.assertTrue(any(c['instance_id'] == card['instance_id'] for c in s['sides']['a']['discard']))
                 json.dumps(observe(s, 'a'))
+
+    def test_baicang_stacks_attack_from_combat_and_self_damage(self):
+        s = self.rush_game()
+        before = attack_value(hero(s, 'a', 'baicang'))
+        s['sides']['b']['front'] = 'zero'
+        s['sides']['a']['front'] = 'baicang'
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'baicang'})
+        self.assertGreaterEqual(attack_value(hero(s, 'a', 'baicang')), before + 1)
+        s['sides']['a']['ap'] = 1
+        s = self.play(s, 'B01')
+        self.assertEqual(len(s['sides']['a']['hand']), 1)
+        self.assertGreaterEqual(attack_value(hero(s, 'a', 'baicang')), before + 2)
+        self.assertTrue((hero(s, 'a', 'baicang').get('flags') or {}).get('allied_hurt'))
+
+    def test_baicang_execute_finishes_low_hp_esper_not_self(self):
+        s = self.rush_game()
+        hero(s, 'a', 'baicang').update(awakened=True, energy=0)
+        hero(s, 'b', 'zero').update(hp=3)
+        s['sides']['b']['front'] = 'zero'
+        s['sides']['a']['front'] = 'baicang'
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'baicang'})
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], 0)
+        self.assertEqual(hero(s, 'b', 'zero')['down_turns'], 3)
+        s = self.rush_game()
+        hero(s, 'a', 'baicang').update(awakened=True, hp=2)
+        s = self.play(s, 'B01')
+        self.assertEqual(hero(s, 'a', 'baicang')['hp'], 1)
+        self.assertEqual(hero(s, 'a', 'baicang')['down_turns'], 0)
+
+    def test_baicang_b02_heals_before_knockdown(self):
+        s = self.rush_game()
+        hero(s, 'a', 'baicang').update(hp=1)
+        hero(s, 'b', 'zero').update(hp=5, base_attack=3)
+        s['sides']['b']['front'] = 'zero'
+        s = self.play(s, 'B02')
+        self.assertGreater(hero(s, 'a', 'baicang')['hp'], 0)
+        self.assertEqual(hero(s, 'a', 'baicang')['down_turns'], 0)
+
+    def test_baicang_lethal_response_keeps_one_hp(self):
+        s = self.rush_game()
+        card = card_instance(s, 'B05', 'a')
+        s['sides']['a']['hand'] = [card]
+        s['sides']['a']['ap'] = 1
+        s['sides']['a']['front'] = 'baicang'
+        hero(s, 'a', 'baicang').update(hp=1)
+        s['sides']['b']['front'] = 'zero'
+        s = apply_action(s, 'a', {'type': 'end_turn'})
+        s = apply_action(s, 'b', {'type': 'attack', 'character_id': 'zero'})
+        self.assertEqual(hero(s, 'a', 'baicang')['hp'], 1)
+        self.assertTrue(any(item['card_id'] == 'B05' for item in s['sides']['a']['discard']))
+
+    def test_baicang_burn_can_become_infinite(self):
+        from app.modules.card_game.engine.duel_v2.state import front_debuff
+        s = self.rush_game()
+        s['sides']['b']['front'] = 'zero'
+        front_debuff(s, 'b')['burn'] = {'left': 1, 'by': 'a'}
+        s = self.play(s, 'B03')
+        self.assertTrue(front_debuff(s, 'b')['burn'].get('infinite'))
+        s = self.next_own_turn(s)
+        self.assertTrue(front_debuff(s, 'b').get('burn', {}).get('infinite'))
+
+    def test_bohe_overflow_ignore_shield_and_auto_attack(self):
+        s = self.rush_game()
+        hero(s, 'b', 'zero').update(hp=3, shield=2)
+        s['sides']['b']['front'] = 'zero'
+        s['sides']['b']['hp'] = 30
+        s = self.play(s, 'M03')
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], 0)
+        self.assertEqual(s['sides']['b']['hp'], 28)
+        s = self.rush_game()
+        s = self.play(s, 'M08')
+        self.assertEqual(hero(s, 'a', 'bohe')['shape'], 'M08')
+        s = apply_action(s, 'a', {'type': 'end_turn'})
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'b', 'zero').update(hp=4)
+        s = apply_action(s, 'b', {'type': 'end_turn'})
+        self.assertEqual(s['sides']['a']['front'], 'bohe')
+        self.assertTrue(any(event['type'] == 'attack' and event.get('source') == 'bohe'
+                            for event in s['events']))
+
+    def test_bohe_share_overflow_on_self_attacked_and_sleep_form(self):
+        s = self.rush_game()
+        s = self.play(s, 'M07')
+        self.assertEqual(hero(s, 'a', 'bohe')['shape'], 'M07')
+        s['sides']['a']['front'] = 'bohe'
+        s['sides']['a']['ap'] = 1
+        card = card_instance(s, 'M04', 'a')
+        s['sides']['a']['hand'] = [card]
+        s = apply_action(s, 'a', {'type': 'end_turn'})
+        hero(s, 'b', 'zero').update(base_attack=12)
+        s['sides']['b']['front'] = 'zero'
+        before = s['sides']['a']['hp']
+        s = apply_action(s, 'b', {'type': 'attack', 'character_id': 'zero'})
+        attack_log = next(event for event in reversed(s['events']) if event['type'] == 'attack')
+        self.assertEqual(attack_log['counter'], 0)
+        self.assertLess(s['sides']['a']['hp'], before)
+        self.assertTrue(any(item['card_id'] == 'M04' for item in s['sides']['a']['discard']))
+
+    def test_bohe_front_damage_scales_with_attack(self):
+        s = self.rush_game()
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'b', 'zero').update(hp=8)
+        s = self.play(s, 'M06')
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], 6)
+        s = self.rush_game()
+        add = hero(s, 'a', 'bohe')
+        add['flags'] = {'atk_buff': 2}
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'b', 'zero').update(hp=8)
+        s = self.play(s, 'M06')
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], 4)
 
     def test_rule_opponent_and_bounded_game_completion(self):
         s = self.game()

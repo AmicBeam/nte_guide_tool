@@ -237,6 +237,7 @@ def attack(c, spec, index):
     enemy, target_id = front_target(s, side)
     if index == 0 and is_esper(target_id):
         from .flow import trigger_responses
+        trigger_responses(s, enemy, 'self_attacked', target_id=target_id)
         trigger_responses(s, enemy, 'ally_attacked', target_id=target_id)
         if finished(s) or not alive(s, side, cid):
             return
@@ -259,6 +260,8 @@ def attack(c, spec, index):
     bonus += tally(c, 'attack_bonus', attacker_id=cid, target=target, target_id=target_id,
                    spec=spec, index=index)
     attack_amount = max(0, attack_value(h) + bonus - _zone_slow(s, side, cid))
+    attack_amount = max(0, int(decide(c, 'outgoing_attack', attack_amount, attacker_id=cid,
+                                      target=target, target_id=target_id, spec=spec, index=index) or 0))
     extra_counter = 0
     if is_esper(target_id):
         extra_counter = int((target.get('flags') or {}).pop('counter_bonus', 0) or 0)
@@ -266,7 +269,11 @@ def attack(c, spec, index):
                   or (spec.get('no_counter_harmony') and op['harmony'])
                   or (is_esper(target_id) and collapsed(target)))
     if is_esper(target_id) and not no_counter:
+        from .context import EffectContext
         counter = max(0, attack_value(target) + extra_counter - _zone_slow(s, enemy, target_id))
+        counter = max(0, int(decide(EffectContext(s, enemy, target_id, op), 'outgoing_attack',
+                                    counter, attacker_id=target_id, target=h, target_id=cid,
+                                    spec=spec, index=index) or 0))
     else:
         counter = 0
     bypass = bool(spec.get('bypass'))
@@ -277,8 +284,19 @@ def attack(c, spec, index):
     if spec.get('penetrate_brand') and is_esper(target_id) and (target.get('flags') or {}).get('brand', 0) >= spec['penetrate_brand']:
         penetrate = True
     overflow = 0
-    if is_esper(target_id) and penetrate and not cut_max:
-        overflow = max(0, attack_amount - target['shield'] - target['hp'])
+    raw_overflow = 0
+    if is_esper(target_id) and not cut_max:
+        blocked = 0 if spec.get('ignore_shield') else int(target['shield'] or 0)
+        raw_overflow = max(0, attack_amount - blocked - target['hp'])
+        overflow = raw_overflow if penetrate else 0
+        overflow = int(decide(c, 'combat_overflow', overflow, attacker_id=cid,
+                              defender_id=target_id, defender_side=enemy,
+                              raw_overflow=raw_overflow, spec=spec, index=index) or 0)
+        if is_esper(target_id):
+            from .context import EffectContext
+            overflow = int(decide(EffectContext(s, enemy, target_id, op), 'combat_overflow', overflow,
+                                  attacker_id=cid, defender_id=target_id, defender_side=enemy,
+                                  raw_overflow=raw_overflow, spec=spec, index=index) or 0)
     # Counters deal simultaneous damage but do not accumulate combat resources.
     attacker = [side, cid]
     if attacker not in op['participants']:
@@ -295,7 +313,8 @@ def attack(c, spec, index):
                       settle=False, group_id=group_id)
         target_loss = 0
     else:
-        target_loss = damage(s, enemy, target_id, attack_amount, bypass=False, source=f'{side}:{cid}',
+        target_loss = damage(s, enemy, target_id, attack_amount,
+                             bypass=bool(spec.get('ignore_shield')), source=f'{side}:{cid}',
                              kind='combat', settle=False, group_id=group_id)
     self_loss = damage(s, side, cid, counter, source=f'{enemy}:{target_id}',
                        kind='combat', settle=False, group_id=group_id) if is_esper(target_id) else 0
@@ -304,6 +323,8 @@ def attack(c, spec, index):
                settle=False, group_id=group_id)
     if op.get('support') and is_esper(target_id) and alive(s, enemy, target_id):
         add_collapse(s, enemy, target_id, 1, by=side)
+    fire(c, 'after_hits', actor_only=True, include_down=True, target_loss=target_loss,
+         self_loss=self_loss, target_id=target_id, enemy=enemy)
     knockdowns(s)
     victory(s)
     if finished(s):

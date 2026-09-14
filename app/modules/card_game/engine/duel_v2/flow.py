@@ -4,7 +4,7 @@ from itertools import combinations
 from random import Random
 
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, validate_deck
-from app.modules.card_game.content.duel_v2.effects import EFFECTS, TARGET_POLICIES
+
 from app.modules.card_game.content.duel_v2.registry import KITS, fire
 from .context import EffectContext
 from app.modules.card_game.engine.events import GameEvent
@@ -118,6 +118,7 @@ def resolve_play(state, side, card, target_id=None, *, pay=True):
                 flags['counter_bonus'] = int(flags.get('counter_bonus') or 0) + attack
             else:
                 c.operation['card_bonus'] = attack
+    from app.modules.card_game.content.duel_v2.effects import EFFECTS
     EFFECTS[card['effect_id']](c)
     if form_bonus and not finished(state) and alive(state, side, card['character_id']):
         draw(state, side, 1)
@@ -137,6 +138,10 @@ def trigger_responses(state, defending_side, kind, target_id=None):
         if not alive(state, defending_side, owner) or collapsed(hero(state, defending_side, owner)):
             continue
         if kind == 'ally_attacked' and (not target_id or target_id == owner):
+            continue
+        if kind == 'self_attacked' and target_id != owner:
+            continue
+        if kind == 'self_lethal' and target_id != owner:
             continue
         current = team['front']
         if current and collapsed(hero(state, defending_side, current)):
@@ -165,6 +170,7 @@ def acting_side(state):
 
 
 def targets(state, side, card):
+    from app.modules.card_game.content.duel_v2.effects import TARGET_POLICIES
     policy = TARGET_POLICIES.get(card['card_id'])
     team, enemy = state['sides'][side], state['sides'][other(side)]
     if policy == 'living_ally':
@@ -250,6 +256,10 @@ def legal_actions(state, side=None):
             continue
         if card.get('require') == 'surplus' and not team.get('surplus'):
             continue
+        if card.get('require') == 'own_burn':
+            burn = front_debuff(state, other(side)).get('burn') or {}
+            if burn.get('by') != side:
+                continue
         if can_afford_card(state, side, card):
             result.extend({'type': 'play_card', 'card_id': card['instance_id'], **target}
                           for target in targets(state, side, card))
@@ -351,6 +361,8 @@ def begin_turn(state, side):
         move_out(state, side, front)
     carrier = team_order(state, side)[0]
     fire(EffectContext(state, side, carrier, {'side': side}), 'on_turn_begin')
+    if finished(state):
+        return
     if team.pop('extra_genesis_pending', False):
         from .combat import resolve_genesis
         actor = team.pop('extra_genesis_actor', None)
@@ -377,18 +389,23 @@ def tick_front_debuff(state, side):
     opp_ctx = EffectContext(state, opponent, team_order(state, opponent)[0], {'side': opponent})
     front = state['sides'][side]['front']
     if zone.get('burn'):
-        zone['burn']['left'] = int(zone['burn'].get('left') or 0) - 1
+        if not zone['burn'].get('infinite'):
+            zone['burn']['left'] = int(zone['burn'].get('left') or 0) - 1
         if front and alive(state, side, front):
-            damage(state, side, front, 1, kind='burn')
+            by = zone['burn'].get('by')
+            damage(state, side, front, 1, kind='burn',
+                   source=f'{by}:burn' if by else None)
             fire(opp_ctx, 'on_dot', target_id=front, kind='burn')
-        if zone['burn']['left'] <= 0:
+        if not zone['burn'].get('infinite') and zone['burn']['left'] <= 0:
             zone.pop('burn', None)
         if finished(state):
             return
     if zone.get('star') and int(zone['star'].get('end') or 0) <= state['sides'][side]['turn_count']:
+        by = zone['star'].get('by')
         zone.pop('star', None)
         if front and alive(state, side, front):
-            damage(state, side, front, 3, kind='star')
+            damage(state, side, front, 3, kind='star',
+                   source=f'{by}:star' if by else None)
         if finished(state):
             return
     if zone.get('delay') and int(zone['delay'].get('end') or 0) <= state['sides'][side]['turn_count']:
@@ -421,7 +438,9 @@ def end_turn(state, side):
             h['flags']['nightmare'] -= 1
             if not h['flags']['nightmare']:
                 h['flags'].pop('nightmare', None)
-            damage(state, side, cid, 1, kind='nightmare')
+            by = (h.get('flags') or {}).get('nightmare_by')
+            damage(state, side, cid, 1, kind='nightmare',
+                   source=f'{by}:nightmare' if by else None)
             fire(opp_ctx, 'on_dot', target_id=cid, kind='nightmare')
         if finished(state):
             return

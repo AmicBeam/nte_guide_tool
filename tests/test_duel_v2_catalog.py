@@ -35,6 +35,8 @@ STATIC_FILES = {
     'zero': ('images/characters/avatar/鉴定师.webp', 'images/characters/portrait/鉴定师.webp'),
     'jiuyuan': ('images/characters/avatar/九原.webp', 'images/characters/portrait/九原.webp'),
     'xun': ('images/characters/avatar/浔.webp', 'images/characters/portrait/浔.webp'),
+    'bohe': ('images/characters/avatar/薄荷.webp', 'images/characters/portrait/薄荷.webp'),
+    'baicang': ('images/characters/avatar/白藏.webp', 'images/characters/portrait/白藏.webp'),
 }
 
 
@@ -80,6 +82,10 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual((CHARACTERS['zaowu']['attack'], CHARACTERS['zaowu']['max_hp']), (3, 4))
         self.assertEqual((CHARACTERS['lingke']['attack'], CHARACTERS['lingke']['max_hp']), (3, 4))
         self.assertEqual((CHARACTERS['xun']['attack'], CHARACTERS['xun']['max_hp']), (2, 5))
+        self.assertEqual((CHARACTERS['bohe']['attack'], CHARACTERS['bohe']['max_hp']), (3, 4))
+        self.assertEqual((CHARACTERS['baicang']['attack'], CHARACTERS['baicang']['max_hp']), (2, 6))
+        self.assertEqual(CHARACTERS['bohe']['energy_max'], LIGHT_ENERGY_MAX)
+        self.assertEqual(CHARACTERS['baicang']['energy_max'], DARK_ENERGY_MAX)
         self.assertIn('家族壮大', CHARACTERS['nanali']['passive'])
         self.assertIn('追击', CHARACTERS['nanali']['awakened_passive'])
         self.assertIn('充满自己的环合值', CHARACTERS['zero']['passive'])
@@ -90,6 +96,10 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertIn('枚约', CHARACTERS['jiuyuan']['awakened_passive'])
         self.assertIn('前排优先', CHARACTERS['lingke']['passive'])
         self.assertIn('延滞', CHARACTERS['hathor']['passive'])
+        self.assertIn('溢出伤害', CHARACTERS['bohe']['passive'])
+        self.assertIn('免疫对方的非战斗伤害', CHARACTERS['bohe']['awakened_passive'])
+        self.assertIn('受到伤害', CHARACTERS['baicang']['passive'])
+        self.assertIn('消灭', CHARACTERS['baicang']['awakened_passive'])
         self.assertIn('记录', CHARACTERS['xun']['passive'])
         self.assertIn('记录容量', CHARACTERS['xun']['awakened_passive'])
         self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy')))
@@ -100,10 +110,12 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(access['iloy'], 'public')
         self.assertEqual(access['xun'], 'test')
         self.assertEqual(access['canhong'], 'test')
+        self.assertEqual(access['bohe'], 'test')
+        self.assertEqual(access['baicang'], 'test')
 
     def test_cards_keep_thirty_two_official_names_and_four_by_eight_groups(self) -> None:
         named = {card_id: card for card_id, card in CARDS.items() if not card.get('derived')}
-        self.assertEqual(len(named), 88)
+        self.assertEqual(len(named), 104)
         self.assertTrue(CARDS['NF01']['derived'])
         self.assertEqual(CARDS['NF01']['name'], '家族壮大')
         type_counts = {'battle': 0, 'tactic': 0, 'form': 0}
@@ -145,6 +157,19 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertTrue(CARDS['N01']['instant'])
         self.assertTrue(CARDS['N01']['description'].startswith('瞬发。'))
         self.assertTrue(CARDS['N02']['description'].startswith('响应。'))
+        self.assertTrue(CARDS['B01']['instant'])
+        self.assertTrue(CARDS['B01']['description'].startswith('瞬发。'))
+        self.assertTrue(CARDS['B08']['instant'])
+        self.assertTrue(CARDS['B08']['description'].startswith('瞬发。'))
+        self.assertEqual(CARDS['B05']['response'], 'self_lethal')
+        self.assertTrue(CARDS['B05']['description'].startswith('响应。'))
+        self.assertEqual(CARDS['M04']['response'], 'self_attacked')
+        self.assertTrue(CARDS['M04']['description'].startswith('响应。'))
+        self.assertEqual(CARDS['B03']['require'], 'own_burn')
+        self.assertEqual(CARDS['M07']['name'], '美好的一天从睡醒开始')
+        self.assertEqual(CARDS['M08']['name'], '开始净空')
+        self.assertEqual(CARDS['B07']['name'], '茶话会')
+        self.assertEqual(CARDS['B08']['name'], '判予秋')
         self.assertIn('反击方', CARDS['N02']['description'])
         self.assertEqual(CARDS['N03']['description'], '额外造成 1 点追击伤害。')
         self.assertEqual(CARDS['N04']['description'], '')
@@ -286,8 +311,13 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
         self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'requiem')))
         full = get_catalog()
-        self.assertEqual(len(full['characters']), 11)
-        self.assertEqual(len(full['starter_decks']), 4)
+        self.assertEqual(len(full['characters']), 13)
+        self.assertEqual(len(full['starter_decks']), 5)
+        self.assertEqual(
+            [item['name'] for item in full['starter_decks']],
+            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻'],
+        )
+        self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')))
 
     def test_existing_character_images_are_present(self) -> None:
         for character_id, (avatar, portrait) in STATIC_FILES.items():
@@ -310,7 +340,7 @@ class DuelV2CatalogTest(unittest.TestCase):
             validate_deck(duplicate_characters)
 
         unknown_character = copy.deepcopy(STARTER_DECK)
-        unknown_character['character_ids'][-1] = 'bohe'
+        unknown_character['character_ids'][-1] = 'not-a-hero'
         with self.assertRaises(ValueError):
             validate_deck(unknown_character)
 

@@ -241,16 +241,31 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     if esper and target['hp'] <= 0:
         return 0
     amount = max(0, int(amount))
+    if esper:
+        from app.modules.card_game.content.duel_v2.registry import decide
+        from .context import EffectContext
+        amount = decide(EffectContext(state, side, cid, {'side': side}), 'incoming_damage',
+                        amount, kind=kind, target_id=cid, source=source)
+        amount = max(0, int(amount or 0))
     klass = damage_class_for(kind, damage_class)
     attr = source_attribute(state, source)
     zone = front_debuff(state, side)
-    if klass == 'esper' and attr in ('魂', '相') and zone.get('stain'):
+    if kind == 'combat' and attr in ('魂', '相') and zone.get('stain'):
         amount += 2
     before = {'hp': target['hp'], 'shield': target['shield']}
     absorbed = 0 if bypass else min(target['shield'], amount)
     target['shield'] -= absorbed
     loss = amount - absorbed
-    target['hp'] = max(0, target['hp'] - loss)
+    floor = 0
+    if esper:
+        from app.modules.card_game.content.duel_v2.registry import decide
+        from .context import EffectContext
+        if target['hp'] - loss <= 0:
+            from .flow import trigger_responses
+            trigger_responses(state, side, 'self_lethal', target_id=cid)
+        floor = int(decide(EffectContext(state, side, cid, {'side': side}), 'hp_floor', 0,
+                           target_id=cid) or 0)
+    target['hp'] = max(floor, target['hp'] - loss)
     after = {'hp': target['hp'], 'shield': target['shield']}
     extra = {}
     if group_id:
@@ -267,7 +282,17 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         src_side = source.split(':', 1)[0]
         if src_side in SIDES:
             state['sides'][src_side]['harmony_damage'] = True
-    if (klass == 'esper' and attr in ('灵', '咒') and zone.get('weave')
+    if loss and esper:
+        from app.modules.card_game.content.duel_v2.registry import fire
+        from .context import EffectContext
+        fire(EffectContext(state, side, cid, {'side': side}), 'on_damage_taken',
+             actor_only=True, amount=loss, source=source)
+        if isinstance(source, str) and ':' in source:
+            src_side, src_cid = source.split(':', 1)
+            if src_side in SIDES and src_cid in state['sides'][src_side]['characters']:
+                fire(EffectContext(state, src_side, src_cid, {'side': src_side}),
+                     'on_damage_dealt', target_side=side, target_id=cid, amount=loss)
+    if (kind == 'combat' and attr in ('灵', '咒') and zone.get('weave')
             and not state.get('_weave_lock') and not finished(state)):
         state['_weave_lock'] = True
         try:
@@ -277,13 +302,6 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         finally:
             state['_weave_lock'] = False
     if settle:
-        if loss and isinstance(source, str) and ':' in source and esper:
-            src_side, src_cid = source.split(':', 1)
-            if src_side in SIDES and src_cid in state['sides'][src_side]['characters']:
-                from app.modules.card_game.content.duel_v2.registry import fire
-                from .context import EffectContext
-                fire(EffectContext(state, src_side, src_cid, {'side': src_side}),
-                     'on_damage_dealt', target_side=side, target_id=cid, amount=loss)
         knockdowns(state)
         victory(state)
     return loss
@@ -357,9 +375,11 @@ def heal(state, side, cid, amount):
             actor=f'{side}:player', target=f'{side}:player', amount=actual,
             before=before, after={'hp': team['hp'], 'shield': team['shield']})
         return
-    if not alive(state, side, cid):
-        return
     h = hero(state, side, cid)
+    if h.get('down_turns'):
+        return
+    if h['hp'] < 0:
+        h['hp'] = 0
     actual = min(amount, h['max_hp'] - h['hp'])
     before = {'hp': h['hp'], 'shield': h['shield']}
     h['hp'] += actual

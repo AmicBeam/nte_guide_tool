@@ -320,17 +320,19 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self._set_test_whitelist('duel-v2-tester')
         catalog = self._get('/api/duel-v2/catalog', token=token)
         names = {item['name'] for item in catalog['characters']}
-        self.assertEqual(len(catalog['characters']), 11)
+        self.assertEqual(len(catalog['characters']), 13)
         self.assertIn('浔', names)
         self.assertIn('残虹', names)
-        self.assertEqual(len(catalog['cards']), 89)
+        self.assertIn('薄荷', names)
+        self.assertIn('白藏', names)
+        self.assertEqual(len(catalog['cards']), 105)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组'],
+            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻'],
         )
         self.assertEqual(
             [item['name'] for item in catalog['saved_builds']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组'],
+            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻'],
         )
 
     def test_regular_account_cannot_save_or_start_with_test_characters(self):
@@ -359,7 +361,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         upgraded = self._get('/api/duel-v2/catalog', token=token)
         self.assertEqual(
             [item['name'] for item in upgraded['saved_builds']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组'],
+            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻'],
         )
 
     def test_regular_account_does_not_see_existing_test_character_builds(self):

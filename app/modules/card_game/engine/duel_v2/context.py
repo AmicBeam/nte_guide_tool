@@ -1,6 +1,6 @@
 """Explicit capability context passed down to card content callbacks."""
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
-from app.modules.card_game.content.duel_v2.effects import shape_event
+from app.modules.card_game.content.duel_v2.registry import shape_event
 from . import combat
 from .state import (add_hand, alive, consume_once, damage, draw, energy, finished,
                     front_target, heal, hero, is_esper, log, other, shield)

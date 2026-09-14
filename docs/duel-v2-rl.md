@@ -87,3 +87,18 @@ python3 -m unittest tests.test_duel_v2_rl tests.test_duel_v2_rl_train
 框架测试覆盖编码、隔离、截断、`--check`、通用/卡身份特征拆分，以及编码器四人预组换卡。训练测试覆盖预算计数、对手窗口截断不为输、可选的 MaskablePPO 一次更新、以及冻住通用分后卡身份参数仍可训练。没有吞吐或平衡结论。网站加载模型仍属下一阶段。
 
 参考：[MaskablePPO 官方说明](https://sb3-contrib.readthedocs.io/en/master/modules/ppo_mask.html)。
+
+## 2026-09-15：常驻 CUDA 双预组训练
+
+`python scripts/train_duel_v2_session.py --output DIR --n 4096 --horizon 16 --seconds 10800 --deadline 2026-09-15T09:00:00+08:00 --detach` 是本次有界训练入口。日期为本次用户指定窗口，未来运行必须显式设置新截止时间；已过期时拒绝启动。Windows 子进程使用 breakaway 标志离开 SSH Job Object。`--resume-root DIR` 分别加载各预组的 best/latest 模型和优化器，校验观察、卡池及规则源码版本；两种预组不共享权重。
+
+- `compiled_backend='cuda'` 使用连续 int32 状态，GpuState 各字段是同一 CUDA 存储的视图；共享 C 源同时生成 native/CUDA 内核。step/reset 不逐局 pack/unpack，也不落回 Python/旧张量规则。仅允许精确的创生、覆纹快攻镜像构筑；cross、自选卡和其他预组仍未获此路径验收。
+- `resident_obs.py` 以张量运算编码双方公开角色、个人资源/标记、玩家资源、自己完整手牌和公开弃牌计数；不编码对手暗牌、牌库顺序和 RNG。schema 为 `resident_public_v1`，没有历史记忆，不兼容网站 V2Encoder 权重。不要把默认 `encoder_observe()` 的逐局 JSON 路径当作高并发入口。
+- 学习方座位与先手独立分配；两模型轮流更新，对手是固定批量规则策略。独立验收使用 Python 正式引擎和 `VisibleEngineRulePolicy`，不能将批量训练对手的终局胜率当验收胜率。
+- 默认每 300 秒对每模型做 64 对种子配对（128 局），同一种子互换先后手。每套牌独立要求先后手等权总体胜率 ≥50%，平局不算胜，分别报告先手/后手和 Wilson 95% 区间；任何截断或不完整配对均不能达标。
+- 默认平台期为连续 6 次完整评估没有超过 0.01 的胜率改善，且至少 1800 秒没有显著改善。只有最佳完整评估已达到 50% 才能平台期停止。两套均达标并平台期、整体 3 小时或绝对截止时间取最早；时间到但未达标如实记录。有限样本的经验胜率门槛不等于证明真实胜率下界 ≥50%。
+- `metrics.jsonl` 保存 reward、loss、value loss、KL、熵、clip fraction、explained variance、优化器步数和吞吐；训练期间不收集出牌分析日志。每 10 次更新及退出时保存 latest；独立评估改善时保存 best。
+- 优化结束后各自加载最佳有效模型，另跑有限日志评估：默认 128 对/256 局、每套最多 600 秒，不更新参数。此额外评估可在训练截止后完成。`final-play-log.jsonl` 保存元数据、game_start、successful_play、game_end，按 game_id 连接卡牌、出牌方、先后手、种子、模型版本及结果；同方同局同卡可去重，未出现的卡无样本。只存原始数据，不自动输出每卡胜率分析。
+- `run_status.json` 的 phase、stop_reason、exit_code 与 `final-eval.json` 用于确认退出结果；训练完成与胜率达标分别记录。日志文件完整性在短训验收。
+
+验证：`python scripts/verify_duel_v2_compiled.py --backend cuda --deck starter --trajectories 48`、对应 `--deck weave-rush --trajectories 96`，以及 `python -m unittest tests.test_duel_v2_compiled tests.test_duel_v2_resident tests.test_duel_v2_gpu_transitions`。完整结果与性能见 [常驻编译引擎验收](duel-v2-compiled-migration.md)。

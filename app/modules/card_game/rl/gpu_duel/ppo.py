@@ -51,14 +51,17 @@ def _terminal_reward(env: GpuDuelEnv, prev_hp_foe, prev_down_foe) -> torch.Tenso
     return torch.where(done, term, shaping)
 
 
-def ppo_update(net: CompactScorer, opt, batch, clip=0.2, epochs=2, minibatch=1024, vf_coef=0.5, ent_coef=0.01):
+def ppo_update(net: CompactScorer, opt, batch, clip=0.2, epochs=2, minibatch=1024, vf_coef=0.5, ent_coef=0.01, stop_check=None):
     state, cand, mask, action, old_logp, old_value, ret, adv = batch
     n = state.shape[0]
     adv = (adv - adv.mean()) / (adv.std() + 1e-8)
     optimizer_steps = 0
+    diagnostics = []
     for _ in range(epochs):
         perm = torch.randperm(n, device=state.device)
         for start in range(0, n, minibatch):
+            if stop_check:
+                stop_check()
             idx = perm[start:start + minibatch]
             logits, values = net(state[idx], cand[idx], mask[idx])
             dist = torch.distributions.Categorical(logits=logits)
@@ -73,22 +76,33 @@ def ppo_update(net: CompactScorer, opt, batch, clip=0.2, epochs=2, minibatch=102
             nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=True)
             opt.step()
             optimizer_steps += 1
-    return {'optimizer_steps': optimizer_steps, 'last_loss': float(loss.detach())}
+            with torch.no_grad():
+                logratio = logp - old_logp[idx]
+                diagnostics.append(torch.stack((loss.detach(), dist.entropy().mean(),
+                    ((logratio.exp() - 1) - logratio).mean(),
+                    ((ratio - 1).abs() > clip).float().mean(),
+                    (values - ret[idx]).pow(2).mean())))
+    stats = torch.stack(diagnostics).mean(0).tolist()
+    variance = ret.var(unbiased=False)
+    explained = 1 - (ret - old_value).var(unbiased=False) / variance.clamp(min=1e-8)
+    return dict(optimizer_steps=optimizer_steps, last_loss=float(loss.detach()),
+                loss_mean=stats[0], entropy=stats[1], approx_kl=stats[2],
+                clip_fraction=stats[3], value_loss=stats[4], explained_variance=float(explained))
 
 
 @torch.no_grad()
 def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_side: int = 0,
-                    observe_fn=None):
-    from .opponent import advance_to_actor
+                    observe_fn=None, stop_check=None):
     observe = observe_fn or compact_observe
     env.reset_finished()
-    rebuild_legal(env.state)
-    advance_to_actor(env.state, env.learner, legal_ready=True)
+    env.prepare_decision()
     states, cands, masks, actions, logps, values, rewards, dones = [], [], [], [], [], [], [], []
     winners = []
     b = torch.arange(env.n, device=env.device)
     net_device = next(net.parameters()).device
     for _ in range(horizon):
+        if stop_check:
+            stop_check()
         if bool((env.outcome()[0] | (env.state.active != env.learner)).any()):
             raise RuntimeError('Rollout requires a live learner decision in every row')
         state, cand, mask = observe(env.state)

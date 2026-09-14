@@ -105,3 +105,6 @@ node --check app/modules/card_game/static/js/v2_replays.js
 [强化学习说明](../../../docs/duel-v2-rl.md)：`python3 scripts/train_duel_v2.py --check` 只检查配置；`--train --output DIR` 使用 GPU 候选打分与多进程采样，默认双方都用当前创生预组，对抗冻结规则启发式，再做固定种子策略评估。`--deck weave-rush` 改为覆纹快攻镜像。1024 局张量环境用 `python3 scripts/train_duel_v2_gpu.py --output DIR --n 1024 --horizon 32`；`--deck weave-rush` 跑快攻镜像，`--matchup cross` 跑创生 vs 快攻，`--resume gpu_policy.pt` 接上一阶段。换少数卡时用 `--resume` 加 `--freeze-generic`（可选 `--kl-coef`），一次训练只打一套牌。训练状态页用 `python3 scripts/rl_monitor.py` 单独开在 5002，大厅无入口。网站不加载训练权重。小样本结果不是平衡证据。
 
 战斗区状态显示在牌桌战斗区右侧，附带倒计时或「本回合」。浊燃与黯星在区域所属方回合开始结算，无前排时伤害玩家；开始效果与倒计时处理后才退回前排，再通常抽牌。
+
+
+常驻 CUDA 双预组训练使用 `scripts/train_duel_v2_session.py`：创生与覆纹快攻分别训练，默认有界时间、等量先后手独立评估和 ≥50% 总体胜率加平台期门槛；训练结束后另跑有限日志对局。4096 并发性能、完整规则对拍与短训证据见 [常驻编译引擎验收](../../../docs/duel-v2-compiled-migration.md)，配置和日志字段见 [强化学习说明](../../../docs/duel-v2-rl.md)。网站仍不加载训练权重。

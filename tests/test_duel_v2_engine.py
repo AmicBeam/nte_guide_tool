@@ -936,6 +936,20 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(hero(s, 'a', 'baicang')['hp'], 5)
         self.assertGreaterEqual(attack_value(hero(s, 'a', 'baicang')), atk + 1)
 
+    def test_baicang_damage_hooks_are_personal(self):
+        s = self.rush_game()
+        bc = hero(s, 'a', 'baicang')
+        before = attack_value(bc)
+        damage(s, 'a', 'zero', 1, source='a:zero')
+        self.assertEqual(attack_value(bc), before)
+        self.assertFalse(bc['flags'].get('allied_hurt'))
+        bc['awakened'] = True
+        hero(s, 'b', 'zero')['hp'] = 3
+        damage(s, 'b', 'zero', 1, source='a:iloy')
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], 2)
+        damage(s, 'b', 'zero', 1, source='a:baicang')
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], 0)
+
     def test_baicang_stacks_attack_from_combat_and_self_damage(self):
         s = self.rush_game()
         before = attack_value(hero(s, 'a', 'baicang'))

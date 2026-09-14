@@ -31,6 +31,9 @@ class GpuState:
     pending_side: torch.Tensor
     pending_count: torch.Tensor
     pending_card: torch.Tensor
+    pending_inst: torch.Tensor
+    pending_play_kind: torch.Tensor
+    pending_play_inst: torch.Tensor
     hp: torch.Tensor
     shield: torch.Tensor
     ap: torch.Tensor
@@ -84,6 +87,9 @@ class GpuState:
     ch_allied_hurt: torch.Tensor
     ch_pending_atk: torch.Tensor
     ch_share_overflow: torch.Tensor
+    ch_collapse_count: torch.Tensor
+    ch_collapse_by: torch.Tensor
+    ch_collapse_until: torch.Tensor
     weave: torch.Tensor
     catalog_cost: torch.Tensor
     catalog_atk: torch.Tensor
@@ -131,7 +137,8 @@ def empty_state(n: int, device: str | torch.device = 'cpu') -> GpuState:
         phase=t(), active=t(), first=t(), turn=t(),
         winner=t() - 1, reason=t(), rng=t(), next_instance=t(),
         pending_kind=t() - 1, pending_side=t() - 1, pending_count=t(),
-        pending_card=t(CHOICE_SLOTS) - 1,
+        pending_card=t(CHOICE_SLOTS) - 1, pending_inst=t(CHOICE_SLOTS),
+        pending_play_kind=t() - 1, pending_play_inst=t(),
         hp=t(SIDES), shield=t(SIDES), ap=t(SIDES),
         front=t(SIDES) - 1, last_front=t(SIDES) - 1,
         turn_count=t(SIDES), fatigue=t(SIDES),
@@ -154,6 +161,8 @@ def empty_state(n: int, device: str | torch.device = 'cpu') -> GpuState:
         ch_energy_next=t(SIDES, N_SEATS), ch_harmonized=t(SIDES, N_SEATS),
         ch_present=t(SIDES, N_SEATS), ch_allied_hurt=t(SIDES, N_SEATS),
         ch_pending_atk=t(SIDES, N_SEATS), ch_share_overflow=t(SIDES, N_SEATS),
+        ch_collapse_count=t(SIDES, N_SEATS), ch_collapse_by=t(SIDES, N_SEATS) - 1,
+        ch_collapse_until=t(SIDES, N_SEATS),
         weave=t(SIDES),
         catalog_cost=cat(table['cost']), catalog_atk=cat(table['atk']),
         catalog_shield=cat(table['shield']), catalog_hp=cat(table['hp']),

@@ -307,7 +307,7 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
             src_side, src_cid = source.split(':', 1)
             if src_side in SIDES and src_cid in state['sides'][src_side]['characters']:
                 fire(EffectContext(state, src_side, src_cid, {'side': src_side}),
-                     'on_damage_dealt', target_side=side, target_id=cid, amount=loss)
+                     'on_damage_dealt', actor_only=True, target_side=side, target_id=cid, amount=loss)
     if settle:
         knockdowns(state)
         victory(state)

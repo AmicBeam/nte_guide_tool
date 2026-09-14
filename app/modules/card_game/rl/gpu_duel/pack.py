@@ -58,6 +58,11 @@ def pack_python(states: list[dict[str, Any]], *, device='cpu') -> GpuState:
                 raise ValueError('Choice overflow')
             for index, card in enumerate(cards[:10]):
                 cpu.pending_card[row, index] = CARD_INDEX[card.get('card_id') or card.get('id')]
+                cpu.pending_inst[row, index] = _instance_int(card.get('instance_id') or '')
+            settling = (state.get('operation') or {}).get('card')
+            if settling:
+                cpu.pending_play_kind[row] = CARD_INDEX[settling.get('card_id') or settling.get('id')]
+                cpu.pending_play_inst[row] = _instance_int(settling.get('instance_id') or '')
         for side_i, side in enumerate(('a', 'b')):
             team = state['sides'][side]
             cpu.hp[row, side_i] = int(team['hp'])
@@ -117,6 +122,14 @@ def pack_python(states: list[dict[str, Any]], *, device='cpu') -> GpuState:
                 cpu.ch_allied_hurt[row, side_i, seat] = 1 if flags.get('allied_hurt') else 0
                 cpu.ch_pending_atk[row, side_i, seat] = int(flags.get('pending_atk') or 0)
                 cpu.ch_share_overflow[row, side_i, seat] = 1 if flags.get('share_overflow') else 0
+                collapse = flags.get('collapse') or {}
+                cpu.ch_collapse_count[row, side_i, seat] = int(flags.get('collapse_count') or 0)
+                if collapse:
+                    cpu.ch_collapse_by[row, side_i, seat] = 0 if collapse.get('side') == 'a' else 1
+                    cpu.ch_collapse_until[row, side_i, seat] = int(collapse.get('until') or 0)
+                else:
+                    cpu.ch_collapse_by[row, side_i, seat] = -1
+                    cpu.ch_collapse_until[row, side_i, seat] = 0
             weave = (team.get('front_debuff') or {}).get('weave')
             cpu.weave[row, side_i] = 1 if weave else 0
             if order != list(SEATS):

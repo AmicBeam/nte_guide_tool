@@ -31,6 +31,10 @@ def main(argv=None) -> int:
                         help='compact observe (not website-encoder compatible)')
     parser.add_argument('--eval-games', type=int, default=2)
     parser.add_argument('--skip-eval', action='store_true')
+    parser.add_argument('--compiled-backend', choices=('native', 'cuda'), default=None,
+                        help='explicit compiled starter engine; never enabled by metadata')
+    parser.add_argument('--compiled-dir', type=Path, default=None,
+                        help='native compiler cache directory; required for --compiled-backend native')
     args = parser.parse_args(argv)
     import torch
     from app.modules.card_game.rl.encoding import encoder_metadata
@@ -43,10 +47,21 @@ def main(argv=None) -> int:
     validate_starter_ir()
     net_device = args.device or ('cuda' if torch.cuda.is_available() else 'cpu')
     # Integer rule tensors of a few thousand rows launch faster on CPU than as many tiny CUDA kernels.
-    env_device = 'cpu'
+    env_device = 'cuda' if args.compiled_backend == 'cuda' else 'cpu'
     output = args.output.expanduser().resolve()
     output.mkdir(parents=True, exist_ok=True)
-    env = GpuDuelEnv(args.n, device=env_device, deck=args.deck, matchup=args.matchup)
+    if args.compiled_backend:
+        from app.modules.card_game.rl.rule_ir.completeness import validate_compiled_deck
+        validate_compiled_deck(args.deck)
+        if args.matchup != 'mirror':
+            raise SystemExit('compiled backend is restricted to supported preset mirror matchups')
+        if args.compiled_backend == 'native' and args.compiled_dir is None:
+            raise SystemExit('--compiled-dir is required for native compiled backend')
+    env = GpuDuelEnv(
+        args.n, device=env_device, deck=args.deck, matchup=args.matchup,
+        compiled_backend=args.compiled_backend,
+        compiled_dir=str(args.compiled_dir) if args.compiled_dir else None,
+    )
     t0 = time.perf_counter()
     env.reset(seeds=list(range(args.n)), native=True)
     if args.compact:

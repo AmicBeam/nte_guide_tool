@@ -363,6 +363,13 @@
         moved: false,
         fromFront: fromFront,
       };
+      sourceNode.addEventListener('pointermove', onDragMove);
+      sourceNode.addEventListener('pointerup', onDragEnd);
+      sourceNode.addEventListener('pointercancel', onDragCancel);
+    }
+
+    function showDragUi() {
+      const { kind, id, sourceNode, fromFront } = ctx.dragState;
       hideHoverPreview({ force: true });
       sourceNode.classList.add('dragging-source');
       ghost.innerHTML = sourceNode.innerHTML;
@@ -396,10 +403,6 @@
         if (ctx.targetCancel) V2.setHidden(ctx.targetCancel, true);
         if (ctx.targetMask) V2.setHidden(ctx.targetMask, false);
       }
-      moveGhost(event.clientX, event.clientY);
-      sourceNode.addEventListener('pointermove', onDragMove);
-      sourceNode.addEventListener('pointerup', onDragEnd);
-      sourceNode.addEventListener('pointercancel', onDragCancel);
     }
 
     function cleanupDrag() {
@@ -425,9 +428,13 @@
 
     function onDragMove(event) {
       if (!ctx.dragState || event.pointerId !== ctx.dragState.pointerId) return;
-      moveGhost(event.clientX, event.clientY);
       const distance = Math.hypot(event.clientX - ctx.dragState.startX, event.clientY - ctx.dragState.startY);
-      if (distance > CLICK_DISTANCE) ctx.dragState.moved = true;
+      if (!ctx.dragState.moved) {
+        if (distance <= CLICK_DISTANCE) return;
+        ctx.dragState.moved = true;
+        showDragUi();
+      }
+      moveGhost(event.clientX, event.clientY);
       const zone = dropZoneAt(event.clientX, event.clientY);
       const legal = legalDrop(ctx.dragState.kind, ctx.dragState.id, zone, { x: event.clientX, y: event.clientY });
       highlightDrop(zone, Boolean(legal));

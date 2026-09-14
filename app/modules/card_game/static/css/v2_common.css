@@ -1,7 +1,7 @@
 
 .v2-page {
     display: grid;
-    gap: 16px;
+    gap: calc(16px * var(--table-layout-scale, 1));
 }
 
 .v2-page [hidden],
@@ -13,8 +13,8 @@
 }
 
 .v2-banner {
-    padding: 12px 16px;
-    border: 1px solid rgba(255,191,87,0.28);
+    padding: calc(12px * var(--table-layout-scale, 1)) calc(16px * var(--table-layout-scale, 1));
+    border: calc(1px * var(--table-layout-scale, 1)) solid rgba(255,191,87,0.28);
     background: rgba(255,191,87,0.08);
     color: var(--text);
     font-weight: 700;
@@ -31,7 +31,7 @@
 }
 
 .v2-skel {
-    min-height: 84px;
+    min-height: calc(84px * var(--table-layout-scale, 1));
     border-radius: var(--radius-md);
     background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.12), rgba(255,255,255,0.04));
     background-size: 200% 100%;
@@ -39,7 +39,7 @@
 }
 
 .v2-skel-block {
-    min-height: 240px;
+    min-height: calc(240px * var(--table-layout-scale, 1));
 }
 
 @keyframes v2-skel {
@@ -50,13 +50,13 @@
 .v2-attribute {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: calc(6px * var(--table-layout-scale, 1));
     font-weight: 800;
 }
 
 .v2-attribute img {
-    width: 16px;
-    height: 16px;
+    width: calc(16px * var(--table-layout-scale, 1));
+    height: calc(16px * var(--table-layout-scale, 1));
     object-fit: contain;
 }
 
@@ -79,25 +79,25 @@
 .v2-frame-stats {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: calc(6px * var(--table-layout-scale, 1));
 }
 
 .v2-character-meta {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: calc(8px * var(--table-layout-scale, 1));
     flex-wrap: wrap;
-    margin: 6px 0;
+    margin: calc(6px * var(--table-layout-scale, 1)) 0;
 }
 
 .v2-stat-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 8px 4px 6px;
-    border-radius: 999px;
+    gap: calc(4px * var(--table-layout-scale, 1));
+    padding: calc(4px * var(--table-layout-scale, 1)) calc(8px * var(--table-layout-scale, 1)) calc(4px * var(--table-layout-scale, 1)) calc(6px * var(--table-layout-scale, 1));
+    border-radius: calc(999px * var(--table-layout-scale, 1));
     background: rgba(8, 14, 22, 0.92);
-    border: 1px solid rgba(203, 174, 105, 0.85);
+    border: calc(1px * var(--table-layout-scale, 1)) solid rgba(203, 174, 105, 0.85);
     color: #f4e4b8;
     font-size: calc(14px * var(--table-font-scale, 1));
     font-weight: 800;
@@ -110,8 +110,8 @@
 }
 
 .v2-stat-icon {
-    width: 16px;
-    height: 16px;
+    width: calc(16px * var(--table-layout-scale, 1));
+    height: calc(16px * var(--table-layout-scale, 1));
     display: block;
     flex: none;
 }
@@ -134,10 +134,10 @@
 .v2-chip {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.14);
+    gap: calc(4px * var(--table-layout-scale, 1));
+    padding: calc(3px * var(--table-layout-scale, 1)) calc(8px * var(--table-layout-scale, 1));
+    border-radius: calc(999px * var(--table-layout-scale, 1));
+    border: calc(1px * var(--table-layout-scale, 1)) solid rgba(255,255,255,0.14);
     background: rgba(255,255,255,0.06);
     font-size: calc(12px * var(--table-font-scale, 1));
     font-weight: 800;
@@ -166,7 +166,7 @@
 .v2-codex-card[data-card-type],
 .v2-hover-card[data-card-type] {
     border-color: var(--card-type-border);
-    box-shadow: inset 0 0 0 1px var(--card-type-glow);
+    box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) var(--card-type-glow);
 }
 
 .v2-hand-card p strong,
@@ -178,21 +178,21 @@
 }
 
 .v2-hand-card[data-card-type] {
-    border-width: 2px;
+    border-width: calc(2px * var(--table-layout-scale, 1));
 }
 
 .v2-drag-ghost[data-card-type] {
-    border: 2px solid var(--card-type-border);
-    border-radius: 10px;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--card-type-glow);
+    border: calc(2px * var(--table-layout-scale, 1)) solid var(--card-type-border);
+    border-radius: calc(10px * var(--table-layout-scale, 1));
+    box-shadow: 0 calc(10px * var(--table-layout-scale, 1)) calc(24px * var(--table-layout-scale, 1)) rgba(0, 0, 0, 0.35), 0 0 0 calc(1px * var(--table-layout-scale, 1)) var(--card-type-glow);
 }
 
 .v2-hand-card[data-card-type="battle"] {
-    border-radius: 8px;
+    border-radius: calc(8px * var(--table-layout-scale, 1));
 }
 
 .v2-hand-card[data-card-type="form"] {
-    border-radius: 14px;
+    border-radius: calc(14px * var(--table-layout-scale, 1));
 }
 
 .v2-chip[data-card-type] {
@@ -224,7 +224,7 @@
     z-index: 80;
     display: none;
     place-items: center;
-    padding: 24px;
+    padding: calc(24px * var(--table-layout-scale, 1));
     background: rgba(3, 6, 12, 0.62);
 }
 
@@ -237,34 +237,34 @@
 .v2-detail-card,
 .v2-choice-dialog,
 .v2-pile-dialog {
-    width: min(640px, calc(100vw - 32px));
-    max-height: min(80vh, 720px);
+    width: min(calc(640px * var(--table-layout-scale, 1)), calc(100vw - calc(32px * var(--table-layout-scale, 1))));
+    max-height: min(80vh, calc(720px * var(--table-layout-scale, 1)));
     overflow: auto;
-    padding: 20px;
+    padding: calc(20px * var(--table-layout-scale, 1));
     border-radius: var(--radius-lg);
-    border: 1px solid var(--line);
+    border: calc(1px * var(--table-layout-scale, 1)) solid var(--line);
     background: var(--panel-strong);
     display: grid;
-    gap: 12px;
+    gap: calc(12px * var(--table-layout-scale, 1));
 }
 
 .v2-choice-grid,
 .v2-pile-grid {
     display: grid;
-    gap: 10px;
+    gap: calc(10px * var(--table-layout-scale, 1));
 }
 
 .v2-toast {
     position: fixed;
     left: 50%;
-    bottom: 24px;
+    bottom: calc(24px * var(--table-layout-scale, 1));
     z-index: 90;
     transform: translateX(-50%);
     display: none;
-    padding: 10px 14px;
+    padding: calc(10px * var(--table-layout-scale, 1)) calc(14px * var(--table-layout-scale, 1));
     border-radius: var(--radius-sm);
     background: rgba(8,12,19,0.94);
-    border: 1px solid rgba(255,255,255,0.16);
+    border: calc(1px * var(--table-layout-scale, 1)) solid rgba(255,255,255,0.16);
 }
 
 .v2-toast.open {
@@ -273,14 +273,14 @@
 
 .v2-preview-list {
     margin: 0;
-    padding-left: 18px;
+    padding-left: calc(18px * var(--table-layout-scale, 1));
     color: var(--muted);
 }
 
 .v2-stat-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: calc(8px * var(--table-layout-scale, 1));
 }
 
 button:disabled,
@@ -301,10 +301,10 @@ body.v2-dragging {
     top: 0;
     left: 0;
     z-index: 100;
-    width: 120px;
+    width: calc(120px * var(--table-layout-scale, 1));
     pointer-events: none;
     opacity: 0;
-    transform: translate(-999px, -999px);
+    transform: translate(calc(-999px * var(--table-layout-scale, 1)), calc(-999px * var(--table-layout-scale, 1)));
 }
 
 .v2-drag-ghost.open {
@@ -316,13 +316,13 @@ body.v2-dragging {
 }
 
 .drop-target {
-    box-shadow: inset 0 0 0 2px rgba(88,216,210,0.86), 0 0 24px rgba(88,216,210,0.18);
+    box-shadow: inset 0 0 0 calc(2px * var(--table-layout-scale, 1)) rgba(88,216,210,0.86), 0 0 calc(24px * var(--table-layout-scale, 1)) rgba(88,216,210,0.18);
 }
 
 
 .v2-choice-grid .secondary-btn {
     display: grid;
-    gap: 4px;
+    gap: calc(4px * var(--table-layout-scale, 1));
     text-align: left;
     white-space: normal;
 }
@@ -334,15 +334,15 @@ body.v2-dragging {
 }
 
 .v2-choice-dialog.is-cards {
-    width: min(1120px, calc(100vw - 24px));
-    max-height: min(90vh, 920px);
+    width: min(calc(1120px * var(--table-layout-scale, 1)), calc(100vw - calc(24px * var(--table-layout-scale, 1))));
+    max-height: min(90vh, calc(920px * var(--table-layout-scale, 1)));
 }
 
 .v2-choice-grid.has-cards {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 16px;
+    gap: calc(16px * var(--table-layout-scale, 1));
 }
 
 .v2-choice-card {
@@ -357,11 +357,11 @@ body.v2-dragging {
 }
 
 .v2-choice-card .v2-hover-card {
-    width: min(280px, 78vw);
-    min-height: 420px;
+    width: min(calc(280px * var(--table-layout-scale, 1)), 78vw);
+    min-height: calc(420px * var(--table-layout-scale, 1));
 }
 
 .v2-choice-card:hover .v2-hover-card,
 .v2-choice-card:focus-visible .v2-hover-card {
-    box-shadow: 0 28px 64px rgba(0, 0, 0, 0.55), 0 0 0 2px var(--amber, #e2b95f);
+    box-shadow: 0 calc(28px * var(--table-layout-scale, 1)) calc(64px * var(--table-layout-scale, 1)) rgba(0, 0, 0, 0.55), 0 0 0 calc(2px * var(--table-layout-scale, 1)) var(--amber, #e2b95f);
 }

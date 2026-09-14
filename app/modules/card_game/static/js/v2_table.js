@@ -176,7 +176,13 @@ async function bootstrapTable() {
   function applyPlayerOptions() {
     const fontSize = Number.isInteger(ctx.options.fontSize) && ctx.options.fontSize >= 0 && ctx.options.fontSize <= 4 ? ctx.options.fontSize : 2;
     ctx.options.fontSize = fontSize;
-    page.style.setProperty('--table-font-scale', [0.8, 0.9, 1, 1.1, 1.2][fontSize]);
+    const layoutScale = [1, 1.5, 2].includes(ctx.options.layoutScale) ? ctx.options.layoutScale : 1;
+    ctx.options.layoutScale = layoutScale;
+    page.style.setProperty('--table-layout-scale', layoutScale);
+    page.style.setProperty('--table-font-scale', [0.8, 0.9, 1, 1.1, 1.2][fontSize] * layoutScale);
+    page.querySelectorAll('[data-layout-scale]').forEach(function (button) {
+      button.setAttribute('aria-pressed', String(Number(button.dataset.layoutScale) === layoutScale));
+    });
     page.querySelectorAll('[data-font-size]').forEach(function (button) {
       const selected = Number(button.dataset.fontSize) === fontSize;
       button.setAttribute('aria-pressed', String(selected));
@@ -205,6 +211,12 @@ async function bootstrapTable() {
   page.querySelectorAll('[data-font-size]').forEach(function (button) {
     button.addEventListener('click', function () {
       ctx.options.fontSize = Number(button.dataset.fontSize);
+      applyPlayerOptions();
+    });
+  });
+  page.querySelectorAll('[data-layout-scale]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      ctx.options.layoutScale = Number(button.dataset.layoutScale);
       applyPlayerOptions();
     });
   });

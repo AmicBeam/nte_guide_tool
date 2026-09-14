@@ -505,7 +505,7 @@
   }
 
   function loadOptions() {
-    const fallback = { muted: false, reducedMotion: false, speed: 1, dragTargeting: true };
+    const fallback = { muted: false, reducedMotion: false, speed: 1, dragTargeting: true, fontSize: 2 };
     try {
       const raw = root.localStorage.getItem(OPTIONS_KEY);
       if (!raw) {
@@ -517,6 +517,7 @@
         dragTargeting: !parsed || parsed.dragTargeting !== false,
         reducedMotion: Boolean(parsed && parsed.reducedMotion),
         speed: Number(parsed && parsed.speed) === 2 ? 2 : 1,
+        fontSize: parsed && Number.isInteger(parsed.fontSize) && parsed.fontSize >= 0 && parsed.fontSize <= 4 ? parsed.fontSize : 2,
       };
     } catch (error) {
       return fallback;

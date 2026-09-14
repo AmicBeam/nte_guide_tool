@@ -12,14 +12,14 @@ body:has(.v2-table-page) .shell {
 }
 
 .v2-table-page {
-  --table-top: 68px;
-  --table-bottom: 136px;
+  --table-top: calc(68px * max(1, var(--table-font-scale, 1)));
+  --table-bottom: calc(136px * max(1, var(--table-font-scale, 1)));
   --bench-card-w: min(124px, 13.5vw);
   --front-card-w: min(200px, 28vw);
   --portrait-min: 72px;
   --avatar-size: 42px;
   --side-actions: 148px;
-  font-size: 16px;
+  font-size: calc(16px * var(--table-font-scale, 1));
   position: relative;
   height: 100dvh;
   max-height: 100dvh;
@@ -104,7 +104,7 @@ body:has(.v2-table-page) .shell {
 
 .v2-hud-kicker {
   display: block;
-  font-size: 12px;
+  font-size: calc(12px * var(--table-font-scale, 1));
   letter-spacing: 0.08em;
   color: var(--muted);
 }
@@ -112,7 +112,7 @@ body:has(.v2-table-page) .shell {
 .v2-hud-name {
   display: block;
   overflow: hidden;
-  font-size: 16px;
+  font-size: calc(16px * var(--table-font-scale, 1));
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -121,7 +121,7 @@ body:has(.v2-table-page) .shell {
   grid-column: 2;
   grid-row: 1 / span 2;
   align-self: center;
-  font-size: 32px;
+  font-size: calc(32px * var(--table-font-scale, 1));
   line-height: 1;
   color: #ffe8ee;
   text-shadow: 0 0 18px rgba(255, 90, 165, 0.35);
@@ -145,7 +145,7 @@ body:has(.v2-table-page) .shell {
 
 .v2-player-hud small,
 .v2-player-hud em {
-  font-size: 13px;
+  font-size: calc(13px * var(--table-font-scale, 1));
   font-style: normal;
   color: var(--muted);
   white-space: nowrap;
@@ -204,7 +204,7 @@ body:has(.v2-table-page) .shell {
   min-height: 44px;
   width: 100%;
   padding: 6px 10px;
-  font-size: 16px;
+  font-size: calc(16px * var(--table-font-scale, 1));
 }
 
 .v2-front-debuff {
@@ -229,7 +229,7 @@ body:has(.v2-table-page) .shell {
 }
 
 .v2-front-debuff small {
-  font-size: 10px;
+  font-size: calc(10px * var(--table-font-scale, 1));
   opacity: 0.8;
 }
 
@@ -249,13 +249,13 @@ body:has(.v2-table-page) .shell {
   justify-items: center;
   gap: 2px;
   color: #e8c988;
-  font-size: 13px;
+  font-size: calc(13px * var(--table-font-scale, 1));
   font-weight: 800;
   letter-spacing: 0.12em;
 }
 
 .v2-ap-readout strong {
-  font-size: 40px;
+  font-size: calc(40px * var(--table-font-scale, 1));
   line-height: 1;
   color: #f4e6c4;
   text-shadow: 0 0 18px rgba(232, 201, 136, 0.35);
@@ -273,7 +273,7 @@ body:has(.v2-table-page) .shell {
 .v2-room-chip,
 .v2-connection-chip,
 .v2-table-page .phase-chip {
-  font-size: 11px;
+  font-size: calc(11px * var(--table-font-scale, 1));
   border-radius: 999px;
   padding: 3px 8px;
   background: rgba(255, 255, 255, 0.08);
@@ -382,7 +382,7 @@ body:has(.v2-table-page) .shell {
 
 .v2-initiative-card strong {
   display: block;
-  font-size: 42px;
+  font-size: calc(42px * var(--table-font-scale, 1));
   line-height: 1.1;
   color: #ffe6a8;
 }
@@ -412,7 +412,7 @@ body:has(.v2-table-page) .shell {
   border: 1px solid rgba(232, 201, 136, 0.55);
   background: rgba(12, 18, 28, 0.92);
   color: #ffe6a8;
-  font-size: 14px;
+  font-size: calc(14px * var(--table-font-scale, 1));
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -565,7 +565,7 @@ body:has(.v2-table-page) .shell {
   justify-content: center;
   gap: 2px;
   margin-top: 8px;
-  font-size: 12px;
+  font-size: calc(12px * var(--table-font-scale, 1));
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.2;
@@ -587,7 +587,7 @@ body:has(.v2-table-page) .shell {
 }
 
 .v2-zone-label {
-  font-size: 12px;
+  font-size: calc(12px * var(--table-font-scale, 1));
   letter-spacing: 0.08em;
   color: var(--muted);
   text-align: center;
@@ -623,7 +623,7 @@ body:has(.v2-table-page) .shell {
 .v2-turn-board {
   display: grid;
   gap: 4px;
-  font-size: 14px;
+  font-size: calc(14px * var(--table-font-scale, 1));
   min-width: 0;
 }
 
@@ -645,7 +645,7 @@ body:has(.v2-table-page) .shell {
   background: rgba(255, 191, 87, 0.12);
   color: #ffe6a8;
   font-weight: 800;
-  font-size: 15px;
+  font-size: calc(15px * var(--table-font-scale, 1));
 }
 
 .v2-cast-zone[hidden] {
@@ -682,7 +682,7 @@ body:has(.v2-table-page) .shell {
   display: grid;
   place-items: center;
   gap: 2px;
-  font-size: 12px;
+  font-size: calc(12px * var(--table-font-scale, 1));
   color: var(--text);
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -690,7 +690,7 @@ body:has(.v2-table-page) .shell {
 }
 
 .v2-pile strong {
-  font-size: 18px;
+  font-size: calc(18px * var(--table-font-scale, 1));
 }
 
 .v2-pile.is-ap {
@@ -719,7 +719,7 @@ body:has(.v2-table-page) .shell {
   gap: 8px;
   min-width: 0;
   overflow: hidden;
-  font-size: 13px;
+  font-size: calc(13px * var(--table-font-scale, 1));
   color: var(--muted);
   white-space: nowrap;
 }
@@ -743,20 +743,20 @@ body:has(.v2-table-page) .shell {
 
 @media (max-height: 760px) {
   .v2-table-page {
-    --table-top: 60px;
-    --table-bottom: 118px;
+    --table-top: calc(60px * max(1, var(--table-font-scale, 1)));
+    --table-bottom: calc(118px * max(1, var(--table-font-scale, 1)));
     --bench-card-w: min(104px, 12.5vw);
     --front-card-w: min(176px, 26vw);
     --side-actions: 132px;
   }
-  .v2-hp { font-size: 28px; }
+  .v2-hp { font-size: calc(28px * var(--table-font-scale, 1)); }
 }
 
 @media (max-height: 520px) and (min-width: 700px),
        (max-height: 430px) {
   .v2-table-page {
-    --table-top: 50px;
-    --table-bottom: 96px;
+    --table-top: calc(50px * max(1, var(--table-font-scale, 1)));
+    --table-bottom: calc(96px * max(1, var(--table-font-scale, 1)));
     --bench-card-w: min(84px, 11vw);
     --front-card-w: min(132px, 22vw);
     --portrait-min: 48px;
@@ -766,17 +766,17 @@ body:has(.v2-table-page) .shell {
   .v2-hud { padding: 2px 8px; gap: 6px; }
   .v2-hud-top { grid-template-columns: 148px minmax(0, 1fr) minmax(186px, 0.86fr); }
   .v2-hud-bottom { grid-template-columns: 132px minmax(0, 1fr); }
-  .v2-hp { font-size: 22px; }
+  .v2-hp { font-size: calc(22px * var(--table-font-scale, 1)); }
   .v2-combat-core { min-height: 24px; padding: 0 6px; }
   .v2-side-actions { padding: 10px 8px; gap: 8px; }
   .v2-side-actions .primary-btn,
-  .v2-side-actions .secondary-btn { min-height: 36px; font-size: 14px; }
-  .v2-ap-readout strong { font-size: 28px; }
+  .v2-side-actions .secondary-btn { min-height: 36px; font-size: calc(14px * var(--table-font-scale, 1)); }
+  .v2-ap-readout strong { font-size: calc(28px * var(--table-font-scale, 1)); }
   .v2-piles { transform: scale(0.86); transform-origin: top left; }
   .v2-piles.player-piles { transform-origin: bottom right; }
   .v2-zone-label { display: none; }
-  .v2-hud-kicker { font-size: 11px; }
-  .v2-hud-name { font-size: 14px; }
+  .v2-hud-kicker { font-size: calc(11px * var(--table-font-scale, 1)); }
+  .v2-hud-name { font-size: calc(14px * var(--table-font-scale, 1)); }
   .v2-front-axis { width: min(40%, 360px); }
 }
 
@@ -796,8 +796,8 @@ body:has(.v2-table-page) .shell {
     overflow: hidden;
   }
   .v2-table-page {
-    --table-top: 96px;
-    --table-bottom: 176px;
+    --table-top: calc(96px * max(1, var(--table-font-scale, 1)));
+    --table-bottom: calc(176px * max(1, var(--table-font-scale, 1)));
     --bench-card-w: min(78px, 20vw);
     --front-card-w: min(176px, 48vw);
     --avatar-size: 40px;
@@ -834,7 +834,7 @@ body:has(.v2-table-page) .shell {
     gap: 8px;
     letter-spacing: 0;
   }
-  .v2-ap-readout strong { font-size: 22px; }
+  .v2-ap-readout strong { font-size: calc(22px * var(--table-font-scale, 1)); }
   .v2-hud-meta,
   .v2-hand-meta {
     flex-wrap: wrap;
@@ -846,7 +846,7 @@ body:has(.v2-table-page) .shell {
   .v2-rotate-hint {
     display: block;
     padding: 4px 10px;
-    font-size: 12px;
+    font-size: calc(12px * var(--table-font-scale, 1));
     color: var(--amber);
     text-align: center;
   }
@@ -867,7 +867,7 @@ body:has(.v2-table-page) .shell {
 .v2-zone-effects[hidden] { display: none; }
 .v2-zone-effect-list { display: flex; flex-direction: column; gap: 5px; }
 .v2-zone-effect-list .v2-chip { display: flex; flex-direction: column; background: rgba(12, 18, 28, .94); }
-.v2-zone-effect-list small { font-size: 10px; opacity: .8; }
+.v2-zone-effect-list small { font-size: calc(10px * var(--table-font-scale, 1)); opacity: .8; }
 
 /* Keep the effect rails in the open space toward the middle of the table. */
 .v2-front-zone.opponent .v2-zone-effects,
@@ -889,8 +889,8 @@ body:has(.v2-table-page) .shell {
 }
 .v2-front-axis:has(.v2-zone-effects:not([hidden])) { overflow: visible; }
 .v2-zone-effects { width: 90px; }
-.v2-zone-effect-list .v2-chip { white-space: normal; font-size: 11px; }
-.v2-zone-effect-list small { font-size: 9px; }
+.v2-zone-effect-list .v2-chip { white-space: normal; font-size: calc(11px * var(--table-font-scale, 1)); }
+.v2-zone-effect-list small { font-size: calc(9px * var(--table-font-scale, 1)); }
 .v2-front-axis:has(.v2-character-effects) {
   overflow: visible;
   padding-block: 40px;

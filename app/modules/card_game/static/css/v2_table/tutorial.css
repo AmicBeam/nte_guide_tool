@@ -130,7 +130,7 @@
   background: rgba(16, 22, 32, 0.94);
   border: 1px solid rgba(139, 215, 255, 0.55);
   color: #eef8ff;
-  font-size: 22px;
+  font-size: calc(22px * var(--table-font-scale, 1));
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1.3;
@@ -179,7 +179,7 @@
 
 .v2-tutorial-dialog h2 {
   margin: 4px 0 8px;
-  font-size: 18px;
+  font-size: calc(18px * var(--table-font-scale, 1));
 }
 
 .v2-tutorial-dialog p {

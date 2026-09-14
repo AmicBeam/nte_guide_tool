@@ -174,6 +174,14 @@ async function bootstrapTable() {
   }
 
   function applyPlayerOptions() {
+    const fontSize = Number.isInteger(ctx.options.fontSize) && ctx.options.fontSize >= 0 && ctx.options.fontSize <= 4 ? ctx.options.fontSize : 2;
+    ctx.options.fontSize = fontSize;
+    page.style.setProperty('--table-font-scale', [0.8, 0.9, 1, 1.1, 1.2][fontSize]);
+    page.querySelectorAll('[data-font-size]').forEach(function (button) {
+      const selected = Number(button.dataset.fontSize) === fontSize;
+      button.setAttribute('aria-pressed', String(selected));
+      button.classList.toggle('primary-btn', selected);
+    });
     TABLE.saveOptions(ctx.options);
     if (ctx.player && typeof ctx.player.setOptions === 'function') {
       ctx.player.setOptions(ctx.options);
@@ -193,6 +201,12 @@ async function bootstrapTable() {
     ctx.endBoardTargetSelect();
     ctx.options.dragTargeting = Boolean(event.target.checked);
     applyPlayerOptions();
+  });
+  page.querySelectorAll('[data-font-size]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      ctx.options.fontSize = Number(button.dataset.fontSize);
+      applyPlayerOptions();
+    });
   });
   document.getElementById('v2-mute-toggle').addEventListener('change', function (event) {
     ctx.options.muted = Boolean(event.target.checked);

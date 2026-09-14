@@ -99,7 +99,7 @@
     background: rgba(8, 14, 22, 0.92);
     border: 1px solid rgba(203, 174, 105, 0.85);
     color: #f4e4b8;
-    font-size: 14px;
+    font-size: calc(14px * var(--table-font-scale, 1));
     font-weight: 800;
     line-height: 1;
 }
@@ -139,7 +139,7 @@
     border-radius: 999px;
     border: 1px solid rgba(255,255,255,0.14);
     background: rgba(255,255,255,0.06);
-    font-size: 12px;
+    font-size: calc(12px * var(--table-font-scale, 1));
     font-weight: 800;
 }
 

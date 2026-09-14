@@ -91,14 +91,14 @@
   flex: 0 0 auto;
   min-height: 32px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: calc(12px * var(--table-font-scale, 1));
   white-space: nowrap;
 }
 
 .v2-replay-time {
   flex: 0 0 auto;
   margin: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--table-font-scale, 1));
   color: var(--muted);
   white-space: nowrap;
 }
@@ -107,7 +107,7 @@
   flex: 1 1 160px;
   min-width: 140px;
   margin: 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--table-font-scale, 1));
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;

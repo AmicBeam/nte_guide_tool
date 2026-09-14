@@ -135,6 +135,26 @@ class DuelV2PresentationTest(unittest.TestCase):
         self.assertNotIn('initiative', SILENT_PRESENT_TYPES)
         self.assertNotIn('mulligan', SILENT_PRESENT_TYPES)
 
+    def test_turn_banner_precedes_recovery_return_and_start_effects(self):
+        state = self.game()
+        state['sides']['b']['front'] = 'zero'
+        hero(state, 'b', 'zero')['shield'] = 2
+        hero(state, 'b', 'jiuyuan').update(hp=0, down_turns=1)
+        self.sync_public_board(state)
+        after = apply_action(state, 'a', {'type': 'end_turn'})
+        for viewer in ('a', 'b'):
+            events = self.replay_action_board(state, after, viewer)
+            turn_at = next(i for i, event in enumerate(events) if event['type'] == 'turn')
+            for kind in ('revive', 'move', 'gain', 'draw'):
+                event_at = next(i for i, event in enumerate(events) if event['type'] == kind)
+                self.assertGreater(event_at, turn_at, kind)
+            banner_board = replay_public_board(capture_public_board(state), events[:turn_at + 1])
+            self.assertEqual(banner_board['active_side'], 'b')
+            self.assertEqual(banner_board['sides']['b']['front'], 'zero')
+            characters = {h['id']: h for h in banner_board['sides']['b']['characters']}
+            self.assertEqual(characters['zero']['shield'], 2)
+            self.assertEqual(characters['jiuyuan']['hp'], 0)
+
     def test_interaction_hints_cover_card_policies(self):
         state = self.game()
         mapping = {

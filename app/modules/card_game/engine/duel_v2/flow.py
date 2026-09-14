@@ -350,6 +350,9 @@ def begin_turn(state, side):
     team['used'] = {}
     team['harmony_damage'] = False
     team['surplus'] = False
+    # Announce the turn before any start-of-turn board changes are presented.
+    log(state, f"{name(state, side)}的第 {team['turn_count']} 个回合开始。", 'turn', side=side,
+        actor=f'{side}:player')
     for ps in SIDES:
         for cid in team_order(state, ps):
             h = hero(state, ps, cid)
@@ -384,8 +387,6 @@ def begin_turn(state, side):
     other_side = other(side)
     other_carrier = team_order(state, other_side)[0]
     fire(EffectContext(state, other_side, other_carrier, {'side': other_side}), 'on_enemy_turn_begin')
-    log(state, f"{name(state, side)}的第 {team['turn_count']} 个回合开始。", 'turn', side=side,
-        actor=f'{side}:player')
     from .tutorial import tutorial_flags
     flags = tutorial_flags(state)
     if state['turn'] != 1 and not flags.get('disable_draw'):

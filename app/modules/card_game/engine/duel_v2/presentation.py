@@ -46,6 +46,7 @@ def entity_id(side, cid):
 
 
 def capture_public_board(state):
+    from .combat import harmony_marks
     board = {
         'phase': state.get('phase'),
         'active_side': state.get('active_side'),
@@ -59,6 +60,8 @@ def capture_public_board(state):
         if not source:
             continue
         team = {key: deepcopy(source[key]) for key in ('hp', 'shield', 'ap', 'front', 'last_front', 'front_debuff')}
+        marks = harmony_marks(state, ps)
+        team['harmony_available'] = marks['available']
         team['hand_count'] = len(source['hand'])
         team['deck_count'] = len(source['deck'])
         pending = state.get('pending_choice')
@@ -76,6 +79,8 @@ def capture_public_board(state):
                 'shield': hero['shield'],
                 'attack': duel_state.attack_value(hero),
                 'harmony': hero['harmony'],
+                'harmony_source': marks['payer'] == cid,
+                'harmony_ready': cid in marks['ready'],
                 'energy': hero['energy'],
                 'energy_max': duel_state.energy_max(hero),
                 'awakened': hero['awakened'],

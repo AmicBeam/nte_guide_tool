@@ -12,6 +12,25 @@ from app.modules.card_game.engine.duel_v2.state import card_instance, hero, new_
 
 
 class DuelV2PresentationTest(unittest.TestCase):
+    def test_front_knockdown_clears_harmony_marks_in_event_patches(self):
+        from app.modules.card_game.engine.duel_v2.state import damage
+        state = self.game()
+        state['sides']['a']['front'] = 'zero'
+        hero(state, 'a', 'zero')['harmony'] = 2
+        before = capture_public_board(state)
+        state['_public_board'] = deepcopy(before)
+        self.assertTrue(before['sides']['a']['harmony_available'])
+        self.assertTrue(any(c['harmony_ready'] for c in before['sides']['a']['characters']))
+        state['events'] = []
+        damage(state, 'a', 'zero', 100, source='b:nanali', kind='combat')
+        down_index = next(i for i, e in enumerate(state['events']) if e['type'] == 'down')
+        board = replay_public_board(before, state['events'][:down_index + 1])
+        team = board['sides']['a']
+        self.assertIsNone(team['front'])
+        self.assertFalse(team['harmony_available'])
+        self.assertTrue(all(not c['harmony_source'] and not c['harmony_ready'] for c in team['characters']))
+        self.assertEqual(board['turn'], before['turn'])
+
     def game(self):
         state = new_game(seed=9, first_side='a', skip_mulligan=True)
         state['sides']['a']['ap'] = 2

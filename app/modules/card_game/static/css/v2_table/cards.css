@@ -252,8 +252,26 @@
 }
 
 .v2-awaken-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  z-index: 3;
+  transform: translateX(-50%);
+  min-width: 88px;
+  min-height: 44px;
+  max-width: calc(100% - 12px);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+  background: linear-gradient(180deg, #685027, #32291a);
   border-color: rgba(255, 191, 87, 0.7);
   color: #ffe6a8;
+}
+
+.v2-character-art.has-ultimate .v2-portrait-vitals {
+  bottom: 54px;
 }
 
 .v2-bench-row .v2-character-card,

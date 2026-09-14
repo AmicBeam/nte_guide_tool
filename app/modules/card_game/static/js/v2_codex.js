@@ -42,8 +42,8 @@ async function bootstrapCodex() {
           '<h2>' + V2.escapeHtml(character.name) + '</h2>' +
           V2.attributeMarkup(character.attribute) +
           '<p class="v2-character-meta">' + V2.characterStatMarkup(character) + '</p>' +
-          '<p>异能：' + V2.escapeHtml(character.passive || '尚未提供') + '</p>' +
-          '<p>' + V2.escapeHtml(V2.characterUltimateLabel(character)) + '：' + V2.escapeHtml(character.awakened_passive || '尚未提供') + '</p>' +
+          '<p>异能：' + V2.cardDescriptionMarkup(character.passive || '尚未提供') + '</p>' +
+          '<p>' + V2.escapeHtml(V2.characterUltimateLabel(character)) + '：' + V2.cardDescriptionMarkup(character.awakened_passive || '尚未提供') + '</p>' +
         '</div>' +
       '</section>' +
       '<section class="v2-codex-cards">' + owned.map(function (card) {

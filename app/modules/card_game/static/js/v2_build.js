@@ -196,8 +196,8 @@ async function bootstrapBuild() {
             '<p class="v2-character-meta">' + V2.characterStatMarkup(character) +
             '<span class="v2-count ' + (used === 8 ? 'ok' : 'bad') + '">' + used + ' / 8</span></p>' +
             '<div class="v2-passive-box">' +
-              '<p>异能：' + V2.escapeHtml(character.passive || '尚未提供') + '</p>' +
-              '<p>' + V2.escapeHtml(V2.characterUltimateLabel(character)) + '：' + V2.escapeHtml(character.awakened_passive || '尚未提供') + '</p>' +
+              '<p>异能：' + V2.cardDescriptionMarkup(character.passive || '尚未提供') + '</p>' +
+              '<p>' + V2.escapeHtml(V2.characterUltimateLabel(character)) + '：' + V2.cardDescriptionMarkup(character.awakened_passive || '尚未提供') + '</p>' +
             '</div>' +
           '</div>' +
         '</section>' +

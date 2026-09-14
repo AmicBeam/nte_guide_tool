@@ -148,7 +148,7 @@
       "avatar": "/static/images/characters/avatar/薄荷.webp",
       "portrait": "/static/images/characters/portrait/薄荷.webp",
       "role": "溢出伤害转打玩家的快攻",
-      "passive": "薄荷对异能者攻击造成的溢出伤害转移至对方玩家。",
+      "passive": "薄荷战斗造成的溢出伤害贯穿至玩家。",
       "awakened_passive": "2 个己方回合内，薄荷免疫对方的非战斗伤害。",
       "everness_id": 1019,
       "ultimate": {

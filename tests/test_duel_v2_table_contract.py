@@ -15,6 +15,7 @@ REPLAY_JS = ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'js' / 'v2_table
 HOME_JS = ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'js' / 'v2_home.js'
 REPLAYS_JS = ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'js' / 'v2_replays.js'
 BUILD_JS = ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'js' / 'v2_build.js'
+CODEX_JS = ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'js' / 'v2_codex.js'
 HOME_TEMPLATE = ROOT / 'app' / 'modules' / 'card_game' / 'templates' / 'card_game' / 'v2_index.html'
 REPLAYS_TEMPLATE = ROOT / 'app' / 'modules' / 'card_game' / 'templates' / 'card_game' / 'v2_replays.html'
 TABLE_CSS = ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'css' / 'v2_table.css'
@@ -292,6 +293,14 @@ class DuelV2TableContractTest(unittest.TestCase):
         self.assertIn('character_ids: []', source)
         self.assertIn("nameInput.value = '新的构筑'", source)
         self.assertNotIn("applyDeck(starterDeck(), '已创建草稿", source)
+
+    def test_keyword_markup_bolds_pierce_in_passive_copy(self) -> None:
+        api = (ROOT / 'app' / 'modules' / 'card_game' / 'static' / 'js' / 'v2_api.js').read_text(encoding='utf-8')
+        self.assertIn('瞬发|响应|贯穿', api)
+        interaction = INTERACTION_JS.read_text(encoding='utf-8')
+        self.assertIn("cardDescriptionMarkup(found.passive", interaction)
+        self.assertIn("cardDescriptionMarkup(character.passive", CODEX_JS.read_text(encoding='utf-8'))
+        self.assertIn("cardDescriptionMarkup(character.passive", BUILD_JS.read_text(encoding='utf-8'))
 
     def test_javascript_syntax(self) -> None:
         for path in JS_FILES:

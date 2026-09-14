@@ -76,8 +76,8 @@
       const found = character || {};
       const portrait = V2.characterAsset(found, 'portrait') || V2.characterAsset(found, 'avatar');
       const lines = [
-        '<p>异能：' + V2.escapeHtml(found.passive || '尚未提供') + '</p>',
-        '<p>终结：' + V2.escapeHtml(found.awakened_passive || '尚未提供') + '</p>',
+        '<p>异能：' + V2.cardDescriptionMarkup(found.passive || '尚未提供') + '</p>',
+        '<p>终结：' + V2.cardDescriptionMarkup(found.awakened_passive || '尚未提供') + '</p>',
       ];
       if (found.shape_description) {
         lines.push('<p>弧盘：' + V2.escapeHtml(found.shape_description) + '</p>');

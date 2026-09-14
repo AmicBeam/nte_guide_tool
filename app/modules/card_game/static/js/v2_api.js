@@ -272,7 +272,7 @@
 
   function cardDescriptionMarkup(text, fallback) {
     const source = text == null ? fallback : text;
-    return escapeHtml(source || '').replace(/瞬发|响应/g, function (keyword) {
+    return escapeHtml(source || '').replace(/瞬发|响应|贯穿/g, function (keyword) {
       return '<strong>' + keyword + '</strong>';
     });
   }

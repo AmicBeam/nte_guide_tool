@@ -41,11 +41,10 @@ MAX_BUFF_RULES = 48
 MAX_BACKGROUND_ACTION_MULTIPLIER = 999
 VISIBILITIES = frozenset({'private', 'public'})
 MARKET_SORTS = frozenset({'dps', 'likes', 'favorites', 'new'})
-DEFAULT_UNPUBLISHED_CHARACTERS = {
-    'char_0846d632e0': '灵可',
-}
+DEFAULT_UNPUBLISHED_CHARACTERS = {}
 HALF_OPEN_CHARACTERS = {}
 RELEASED_CHARACTERS = {
+    'char_0846d632e0': '灵可',
     'char_a01c39f576': '伊洛伊',
     'char_076a1f4e53': '残虹',
 }

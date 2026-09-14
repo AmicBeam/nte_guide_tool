@@ -57,10 +57,9 @@ class NTEShaftCharacterPublication(NTEBaseModel):
         table_name = 'shaftcharacterpublication'
 
 
-DEFAULT_UNPUBLISHED_CHARACTERS = {
-    '灵可': 'char_0846d632e0',
-}
+DEFAULT_UNPUBLISHED_CHARACTERS = {}
 RELEASED_CHARACTERS = {
+    '灵可': 'char_0846d632e0',
     '伊洛伊': 'char_a01c39f576',
     '残虹': 'char_076a1f4e53',
 }

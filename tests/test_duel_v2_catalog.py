@@ -102,7 +102,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertIn('消灭', CHARACTERS['baicang']['awakened_passive'])
         self.assertIn('记录', CHARACTERS['xun']['passive'])
         self.assertIn('记录容量', CHARACTERS['xun']['awakened_passive'])
-        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy')))
+        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang')))
         access = {item['id']: item['access_level'] for item in catalog['characters']}
         self.assertEqual(access['nanali'], 'public')
         self.assertEqual(access['zero'], 'public')
@@ -110,8 +110,8 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(access['iloy'], 'public')
         self.assertEqual(access['xun'], 'test')
         self.assertEqual(access['canhong'], 'test')
-        self.assertEqual(access['bohe'], 'test')
-        self.assertEqual(access['baicang'], 'test')
+        self.assertEqual(access['bohe'], 'public')
+        self.assertEqual(access['baicang'], 'public')
 
     def test_cards_keep_thirty_two_official_names_and_four_by_eight_groups(self) -> None:
         named = {card_id: card for card_id, card in CARDS.items() if not card.get('derived')}
@@ -320,7 +320,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         public = get_catalog(include_test_characters=False)
         self.assertEqual({item['id'] for item in public['characters']}, set(PUBLIC_CHARACTER_IDS))
         self.assertTrue(all(item['character_id'] in PUBLIC_CHARACTER_IDS for item in public['cards']))
-        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组'])
+        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹快攻'])
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
         self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'requiem')))
         full = get_catalog()
@@ -330,7 +330,7 @@ class DuelV2CatalogTest(unittest.TestCase):
             [item['name'] for item in full['starter_decks']],
             ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻'],
         )
-        self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')))
+        self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')))
 
     def test_existing_character_images_are_present(self) -> None:
         for character_id, (avatar, portrait) in STATIC_FILES.items():

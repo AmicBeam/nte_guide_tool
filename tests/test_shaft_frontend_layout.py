@@ -492,7 +492,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             source,
         )
 
-    def test_canhong_is_public_lingke_is_test_only_and_yiloyi_is_public(self) -> None:
+    def test_canhong_lingke_and_yiloyi_are_public(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         public_catalog = get_shaft_catalog_payload()
         invited_catalog = get_shaft_catalog_payload(player=SimpleNamespace(
@@ -511,8 +511,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertFalse(public_canhong['selection_disabled'])
         self.assertFalse(invited_canhong['selection_disabled'])
         self.assertFalse(test_canhong['selection_disabled'])
-        self.assertTrue(public_lingke['selection_disabled'])
-        self.assertTrue(invited_lingke['selection_disabled'])
+        self.assertFalse(public_lingke['selection_disabled'])
+        self.assertFalse(invited_lingke['selection_disabled'])
         self.assertFalse(test_lingke['selection_disabled'])
         self.assertEqual(public_canhong['avatar'], '/static/images/characters/avatar/残虹.png')
         self.assertEqual(public_canhong['portrait'], '/static/images/characters/avatar/残虹.png')
@@ -636,7 +636,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         actions = catalog['actions_by_character'][lingke['id']]
         action_by_name = {action['name']: action for action in actions}
 
-        self.assertTrue(lingke['test_character'])
+        self.assertNotIn('test_character', lingke)
         self.assertEqual(lingke['element'], '灵')
         self.assertEqual(lingke['adaptation'], '等离子')
         self.assertEqual(lingke['base_stats'], {'atk': 652.0, 'hp': 15513.0, 'def': 921.1})

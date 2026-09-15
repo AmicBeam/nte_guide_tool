@@ -401,7 +401,7 @@ def begin_turn(state, side):
         move_out(state, side, front)
     from .tutorial import tutorial_flags
     flags = tutorial_flags(state)
-    if state['turn'] != 1 and not flags.get('disable_draw'):
+    if not flags.get('disable_draw'):
         draw(state, side)
     if not finished(state):
         extra = int(team.pop('extra_ap', 0) or 0)

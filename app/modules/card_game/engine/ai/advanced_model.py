@@ -100,7 +100,8 @@ class FrozenModel:
                 or manifest.get('seat_ids') != list(SEATS)):
             raise ValueError('Model version does not match current content')
         from app.modules.card_game.rl.rule_ir.completeness import compiled_rule_hash
-        if (manifest.get('rule_identity') or {}).get('rule_hash') != compiled_rule_hash(deck_id):
+        runtime_rule_hash = manifest.get('runtime_rule_hash') or (manifest.get('rule_identity') or {}).get('rule_hash')
+        if runtime_rule_hash != compiled_rule_hash(deck_id):
             raise ValueError('Model rule version does not match current rules')
         path = directory / f'{deck_id}.npz'
         digest = hashlib.sha256(path.read_bytes()).hexdigest()

@@ -800,7 +800,7 @@ static void begin_turn(int *row, int s){
     }
   }
   if(SI(FRONT,s)>=0 && !collapsed(row,s,SI(FRONT,s))) move_out(row,s,SI(FRONT,s));
-  if(row[OFF_TURN]!=1) draw_one(row,s);
+  draw_one(row,s);
   if(!live(row)) return;
   int extra=SI(EXTRA_AP,s);
   SI(EXTRA_AP,s)=0;

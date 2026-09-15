@@ -88,6 +88,18 @@ class CpuEncoderTest(unittest.TestCase):
         for deck in ('starter','weave-rush'):
             self.assertTrue(FrozenModel(directory,deck).version)
 
+    def test_runtime_rule_compatibility_still_rejects_other_rules(self):
+        import json
+        from unittest.mock import patch
+        from app.modules.card_game.engine.ai.advanced_model import FrozenModel
+        directory = Path(__file__).resolve().parents[1] / 'app/modules/card_game/engine/ai/models'
+        for deck in ('starter', 'weave-rush'):
+            manifest = json.loads((directory / f'{deck}.json').read_text())
+            self.assertNotEqual(manifest['runtime_rule_hash'], manifest['rule_identity']['rule_hash'])
+            with patch('app.modules.card_game.rl.rule_ir.completeness.compiled_rule_hash', return_value='unrelated'):
+                with self.assertRaisesRegex(ValueError, 'rule version'):
+                    FrozenModel(directory, deck)
+
     def test_hidden_cards_do_not_change_encoding(self):
         import numpy as np
         from app.modules.card_game.engine.duel_v2 import new_game,legal_actions,acting_side

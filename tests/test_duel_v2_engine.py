@@ -69,7 +69,8 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(mulligan['amount'], 3)
         s = apply_action(s, 'b', {'type': 'mulligan', 'card_ids': []})
         self.assertEqual(s['sides']['b']['ap'], 1)
-        self.assertEqual(len(s['sides']['b']['hand']), 6)
+        self.assertEqual(len(s['sides']['b']['hand']), 7)
+        self.assertEqual(len(s['sides']['b']['deck']), 26)
         s = apply_action(s, 'b', {'type': 'end_turn'})
         self.assertEqual(s['sides']['a']['ap'], 2)
 

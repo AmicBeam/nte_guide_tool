@@ -503,8 +503,7 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
         if auto_id >= 0:
             auto = here & (s.ch_shape[:, si, BOHE] == auto_id) & (s.ch_present[:, si, BOHE] > 0) & (s.ch_hp[:, si, BOHE] > 0)
             sortie(s, torch.full_like(s.active, si), BOHE, auto)
-    not_first_game_turn = mask & (s.turn != 1)
-    draw(s, side, not_first_game_turn, 1)
+    draw(s, side, mask, 1)
 
 
 def end_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:

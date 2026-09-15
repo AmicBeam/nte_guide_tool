@@ -1,5 +1,7 @@
 {
   "schema": "resident_public_v1",
+  "runtime_rule_hash": "3bb084ed285991eee1648e268d6fdac605bf9324dce3e72876993e9d875e3e7b",
+  "runtime_rule_note": "2026-09-15: first player draws on turn one; unchanged weights and observation/action schema. rule_identity retains training provenance; strength under the new rule is not evaluated.",
   "deck": "starter",
   "hidden": 128,
   "state_dim": 447,

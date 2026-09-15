@@ -208,9 +208,13 @@ class CompiledNativeOracleNoTorchTest(unittest.TestCase):
             snap = mechan_from_row(row)
             self.assertIn(snap['active'], (0, 1))
             first = snap['active']
+            self.assertEqual(snap['sides'][first]['deck_n'], 26)
+            self.assertEqual(snap['sides'][first]['hand_n'], 7)
             total = snap['sides'][first]['hand_n'] + snap['sides'][first]['deck_n'] + snap['sides'][first]['discard_n']
             self.assertEqual(total, 33)  # 32 starter cards plus first-turn NF01
             other = 1 - first
+            self.assertEqual(snap['sides'][other]['deck_n'], 27)
+            self.assertEqual(snap['sides'][other]['hand_n'], 5)
             other_total = snap['sides'][other]['hand_n'] + snap['sides'][other]['deck_n'] + snap['sides'][other]['discard_n']
             self.assertEqual(other_total, 32)
         self.assertEqual(self.backend.stats['fallback_rows'], 0)

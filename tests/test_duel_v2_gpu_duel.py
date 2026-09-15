@@ -88,6 +88,14 @@ class GpuDuelOracleTest(unittest.TestCase):
         self.assertEqual(env.snapshot(0), self.python_mechan(state))
         self.assertGreater(int(env.legal_count()[0]), 0)
 
+    def test_native_opening_draws_for_first_player(self):
+        env = self.GpuDuelEnv(2, device='cpu')
+        env.reset(seeds=[1, 2], native=True)
+        for index in range(2):
+            first = int(env.state.active[index])
+            self.assertEqual(int(env.state.deck_n[index, first]), 26)
+            self.assertEqual(int(env.state.deck_n[index, 1 - first]), 27)
+
     def test_attack_matches_python(self):
         state = self._py()
         side = acting_side(state)

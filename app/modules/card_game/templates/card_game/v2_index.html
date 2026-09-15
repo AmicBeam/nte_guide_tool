@@ -1,5 +1,5 @@
 {% extends 'common/base.html' %}
-{% block title %}异象对决{% endblock %}
+{% block title %}异能对决{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_common.css') }}">
 <link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_home.css') }}">
@@ -8,7 +8,7 @@
 <main class="v2-home-page" id="v2-home-page">
     <header class="v2-home-nav">
         <a class="v2-home-logo" href="{{ url_for('main.card_game_home') }}">
-            <img src="{{ url_for('static', filename='images/brand/duel-logo.webp') }}" alt="异象对决" width="858" height="282">
+            <img src="{{ url_for('static', filename='images/brand/esper-duel-logo.webp') }}" alt="异能对决" width="1086" height="362">
         </a>
         <nav class="v2-home-links" aria-label="大厅导航">
             <a class="is-current" href="{{ url_for('main.card_game_home') }}">大厅</a>
@@ -31,7 +31,7 @@
     <section class="v2-home-stage">
         <section class="v2-home-hero" aria-label="当前编队">
             <p class="eyebrow">四人轮替</p>
-            <h1>异象对决</h1>
+            <h1>异能对决</h1>
             <p class="subtle" id="v2-starter-copy">每方 4 名角色、单人战斗区、玩家生命胜负。</p>
             <div class="v2-home-roster" id="v2-starter-grid" aria-label="当前出战四人">
                 <article class="v2-home-esper"><div class="v2-skel"></div></article>

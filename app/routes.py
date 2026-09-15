@@ -143,7 +143,7 @@ def default_page():
 
 @main_bp.get('/favicon.ico')
 def favicon():
-    return redirect(url_for('static', filename='images/brand/duel-icon.webp'))
+    return redirect(url_for('static', filename='images/brand/esper-duel-icon.webp'))
 
 
 @main_bp.get('/card-game')

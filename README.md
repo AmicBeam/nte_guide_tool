@@ -10,12 +10,12 @@
 
 | 模块 | 入口 | 说明 | 用途 |
 | --- | --- | --- | --- |
-| 异象对决 | `/card-game` | [模块 README](app/modules/card_game/README.md) | 现行四人轮替牌桌、构筑、图鉴、回放、教学与人机 |
+| 异能对决 | `/card-game` | [模块 README](app/modules/card_game/README.md) | 现行四人轮替牌桌、构筑、图鉴、回放、教学与人机 |
 | 空幕计算 | `/kongmu` | [模块 README](app/modules/kongmu/README.md) | 角色空幕与卡带搭配计算 |
 | 排轴计算 | `/shaft` | [模块 README](app/modules/shaft/README.md) | 配装、动作轴、伤害计算与方案广场 |
 | 预配队 | `/preteam` | [模块 README](app/modules/preteam/README.md) | 即将下线，由排轴取代；当前仍可预览主 C、队友和属性搭配 |
 
-异象对决的现行规则见 [完整手册](docs/everness-item-chain-card-design.md)。默认页面已是四人轮替；旧盖卡入口与数据看板尚未迁移，见模块 README。
+异能对决的现行规则见 [完整手册](docs/everness-item-chain-card-design.md)。默认页面已是四人轮替；旧盖卡入口与数据看板尚未迁移，见模块 README。
 
 新增或修改模块时，先更新对应模块 README；只有模块索引、共享设施或全仓库运行方式变化时才改本文件。
 
@@ -23,12 +23,12 @@
 
 - `app/`：Flask 应用与共享账号、数据库、鉴权和路由适配。
 - `app/modules/`：四个业务模块；各自维护 README、模板和静态资源。
-- `app/modules/card_game/content/duel_v2/`、`engine/duel_v2/`：现行异象对决卡池与纯规则引擎。
+- `app/modules/card_game/content/duel_v2/`、`engine/duel_v2/`：现行异能对决卡池与纯规则引擎。
 - `app/modules/card_game/rl/`：训练框架；导入或启动网站时不会自动训练。
 - `app/modules/shaft/domain/`：排轴领域计算。
 - `app/templates/`、`app/static/`：仓库入口、共享基础模板和跨模块静态资源。
 - `plugins/`：机器人账号桥接；与网站只通过共享数据库交互，不能引用 `app/`。
-- `docs/`：跨模块设计资料。异象对决规则以完整手册为准，排轴机制以对应验收文档为准。
+- `docs/`：跨模块设计资料。异能对决规则以完整手册为准，排轴机制以对应验收文档为准。
 - `scripts/`：本地联调、数据导入、训练入口和 Windows 发布脚本。
 - `tests/`：后端、页面与前端静态检查。
 
@@ -57,7 +57,7 @@ python3 scripts/seed_mock_account.py
 
 可选依赖不进入默认网站环境：
 
-- 异象对决「高级人机」：`pip install -r requirements-ai.txt`，仅 CPU 推理。两套镜像模型随 `app/` 发布，路径见 [模块说明](app/modules/card_game/README.md#高级人机)。
+- 异能对决「高级人机」：`pip install -r requirements-ai.txt`，仅 CPU 推理。两套镜像模型随 `app/` 发布，路径见 [模块说明](app/modules/card_game/README.md#高级人机)。
 - 训练与评估：`pip install -r requirements-rl.txt`。网站启动不会加载训练权重或开始训练；命令见 [公开卡池训练](docs/duel-v2-public-training.md)。
 
 ## Windows 发布
@@ -79,7 +79,7 @@ scripts/deploy_windows_app.sh --deploy
 
 - 路由只做参数校验、鉴权和调用服务；业务计算留在对应模块。
 - 模块可共享账号、数据库和页面基础设施，不能把一个模块的领域规则写入另一个模块。
-- 账号、构筑、房间等关键资料同步入库；异象对决对局快照使用进程内最新态加异步入库。
+- 账号、构筑、房间等关键资料同步入库；异能对决对局快照使用进程内最新态加异步入库。
 - 模块入口使用能表达模块含义的路径。
 
 ## 验证

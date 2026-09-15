@@ -18,8 +18,10 @@ class ModuleRoutesTest(RoomFlowTestCase):
     def test_card_game_module_page_and_asset(self) -> None:
         page = self.client.get('/card-game')
         self.assertEqual(page.status_code, 200)
-        self.assertIn('异象对决', page.get_data(as_text=True))
+        self.assertIn('异能对决', page.get_data(as_text=True))
         self._assert_asset('/static/card_game/js/home.js')
+        self._assert_asset('/static/images/brand/esper-duel-logo.webp')
+        self._assert_asset('/static/images/brand/esper-duel-icon.webp')
 
     def test_kongmu_module_page_catalog_and_asset(self) -> None:
         page = self.client.get('/kongmu')

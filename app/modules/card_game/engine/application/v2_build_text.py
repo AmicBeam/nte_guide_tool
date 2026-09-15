@@ -15,7 +15,7 @@ def parse(text):
             fields = shlex.split(line, comments=True)
             if not fields:
                 continue
-            if fields == ['异象对决构筑', '1'] and not version:
+            if fields in (['异能对决构筑', '1'], ['异象对决构筑', '1']) and not version:
                 version = True
             elif fields[0] == '名称' and len(fields) == 2 and not deck['name']:
                 deck['name'] = fields[1]
@@ -28,7 +28,7 @@ def parse(text):
         except ValueError as exc:
             raise ValueError(f'第 {number} 行：{exc}') from exc
     if not version:
-        raise ValueError('缺少或不支持格式版本：异象对决构筑 1。')
+        raise ValueError('缺少或不支持格式版本：异能对决构筑 1。')
     if not deck['name'].strip() or len(deck['name']) > 16:
         raise ValueError('构筑名称须为 1–16 个字符。')
     return content.validate_deck(deck)
@@ -38,8 +38,8 @@ def format_build(deck):
     deck = content.validate_deck(deck)
     characters = {item['id']: item for item in content.get_catalog()['characters']}
     cards = {item['id']: item for item in content.get_catalog()['cards']}
-    lines = ['# 异象对决构筑；# 后为注释，名称含空格或 # 时保留引号',
-             '异象对决构筑 1', '名称 ' + shlex.quote(deck['name'])]
+    lines = ['# 异能对决构筑；# 后为注释，名称含空格或 # 时保留引号',
+             '异能对决构筑 1', '名称 ' + shlex.quote(deck['name'])]
     counts = Counter(deck['card_ids'])
     for character_id in deck['character_ids']:
         lines.append(f"角色 {character_id} # {characters[character_id]['name']}")

@@ -48,6 +48,10 @@ class DuelV2ApiTest(RoomFlowTestCase):
         before = self._get('/api/duel-v2/catalog', token=self.a)
         original = dict(self.deck, name="测试 # '组")
         text = self._post('/api/duel-v2/build-export', original, token=self.a)['text']
+        self.assertIn('异能对决构筑 1', text)
+        legacy = self._post('/api/duel-v2/build-import',
+                            {'text': text.replace('异能对决构筑', '异象对决构筑')}, token=self.a)['build']
+        self.assertCountEqual(legacy['card_ids'], original['card_ids'])
         self.assertTrue(all(line.strip() for line in text.split('\n')))
         imported = self._post('/api/duel-v2/build-import',
                               {'text': '\ufeff# 注释\r\n' + text.replace('\n', '\r\n')}, token=self.a)['build']
@@ -66,7 +70,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         from app.modules.card_game.content import duel_v2
         text = format_build(self.deck)
         bad = ['# only comments', text + '\n卡牌 N01 2',
-               text.replace('异象对决构筑 1', '异象对决构筑 2'),
+               text.replace('异能对决构筑 1', '异能对决构筑 2'),
                text.replace('卡牌 ' + self.deck['card_ids'][0] + ' 2', '卡牌 ' + self.deck['card_ids'][0] + ' -2'),
                text + '\n未知字段 abc', 'x' * 16385]
         hidden = next(deck for deck in duel_v2.STARTER_DECKS if duel_v2.deck_uses_test_characters(deck))

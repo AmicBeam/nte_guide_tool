@@ -556,7 +556,7 @@ async function bootstrapBuild() {
     const url = URL.createObjectURL(new Blob([transferText.value], { type: 'text/plain;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = '异象对决构筑.txt';
+    link.download = '异能对决构筑.txt';
     link.click();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   });

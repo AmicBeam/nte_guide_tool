@@ -53,7 +53,7 @@ def _s02_shape(c, **_data):
         return
     enemy, _, target = _front_hero(c)
     if target and negative_kinds(target, c.state, enemy):
-        c.heal(1)
+        c.heal(1, reason='目标有负面状态，「好狗狗走四方」触发')
 
 
 def _s05_shape(c, **_data):
@@ -62,7 +62,7 @@ def _s05_shape(c, **_data):
     from app.modules.card_game.engine.duel_v2.state import front_target
     enemy, _, target = _front_hero(c)
     if target and negative_kinds(target, c.state, enemy):
-        c.followup(front_target(c.state, c.side), 1)
+        c.followup(front_target(c.state, c.side), 1, reason='目标有负面状态，「小鬼头大胃口」触发')
 
 
 @register

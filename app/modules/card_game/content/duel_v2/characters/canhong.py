@@ -47,6 +47,7 @@ def _c08(c):
 def _c02_shape(c, **data):
     if data.get('operation', {}).get('harmony') == '浊燃':
         data['operation']['first_bonus'] += 1
+        c.history('触发浊燃，「噬心诡刃」触发：残虹本次第一次攻击伤害 +1。')
 
 
 def _c05_shape(c, **_data):
@@ -55,7 +56,7 @@ def _c05_shape(c, **_data):
     _, _, target = _front_hero(c)
     if target and (target.get('flags') or {}).get('brand'):
         from app.modules.card_game.engine.duel_v2.state import front_target
-        c.followup(front_target(c.state, c.side), 1)
+        c.followup(front_target(c.state, c.side), 1, reason='目标有焚印，「惑心谲影」触发')
 
 
 @register
@@ -91,6 +92,9 @@ class Canhong:
         from app.modules.card_game.engine.duel_v2.state import finished
         if finished(c.state) or c.character['hp'] <= 0:
             return
-        _, _, target = _front_hero(c)
+        enemy, target_id, target = _front_hero(c)
         if target:
-            add_brand(target, 1)
+            gained = add_brand(target, 1)
+            if gained:
+                c.history(f"出击结束，残虹的异能触发：{target['name']}焚印 +{gained}（现有 {target['flags']['brand']} 层）。",
+                          target_side=enemy, target_id=target_id)

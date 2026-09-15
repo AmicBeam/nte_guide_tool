@@ -1,6 +1,6 @@
 from app.modules.card_game.content.duel_v2.characters.common import set_shape
 from app.modules.card_game.content.duel_v2.registry import register
-from app.modules.card_game.engine.duel_v2.state import alive, damage, energy, front_target, hero, is_esper, other
+from app.modules.card_game.engine.duel_v2.state import alive, damage, front_target, hero, is_esper, other
 
 
 def _j01(c):
@@ -75,8 +75,10 @@ class Jiuyuan:
             if flags.get('pact'):
                 amount += 2
                 flags.pop('pact', None)
+                c.history(f"九原的终结清算{hero(c.state, foe, cid)['name']}的枚约，本次伤害 +2。",
+                          target_side=foe, target_id=cid)
                 if c.character.get('shape') == 'J07':
-                    energy(c.state, c.side, c.cid, 2)
+                    c.energy(2, reason='「使命必达」触发')
             damage(c.state, foe, cid, amount, source=f'{c.side}:{c.cid}')
 
     @staticmethod
@@ -86,6 +88,5 @@ class Jiuyuan:
         side, cid = target
         if is_esper(cid) and not alive(c.state, side, cid):
             return
-        damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}')
+        damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}', reason='创生造成伤害，「现实避难所」触发')
         c.attach_pact(side, cid)
-

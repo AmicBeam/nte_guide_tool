@@ -389,6 +389,8 @@ def begin_turn(state, side):
         from .combat import resolve_genesis
         actor = team.pop('extra_genesis_actor', None)
         if actor and alive(state, side, actor):
+            EffectContext(state, side, actor, {'side': side}).history(
+                '回合开始，结算「错误的门」留下的追加创生。')
             resolve_genesis(EffectContext(state, side, actor, {'side': side, 'actor': actor}),
                             arm_delay=False)
     other_side = other(side)
@@ -415,6 +417,9 @@ def begin_turn(state, side):
             team['ap'] = int(flags['ap_per_turn']) + extra
         else:
             team['ap'] = (1 if state['turn'] == 1 else 2) + extra
+        if extra:
+            log(state, f'回合开始，结算延后效果：额外获得 {extra} 点行动力。',
+                'effect', side=side, actor=f'{side}:player', target=f'{side}:player', present=False)
         team['normal_attack_available'] = True
         team['ultimates_used'] = 0
         team['ultimate_available'] = not flags.get('disable_ultimate')

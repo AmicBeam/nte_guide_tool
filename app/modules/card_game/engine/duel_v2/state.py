@@ -247,7 +247,7 @@ def knockdowns(state):
 
 
 def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage', settle=True,
-           group_id=None, damage_class=None):
+           group_id=None, damage_class=None, reason=None):
     if finished(state):
         return 0
     esper = is_esper(cid)
@@ -291,7 +291,7 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         extra['source_side'] = src_side
     if esper and source:
         target['last_hit_source'] = source
-    log(state, f"{name(state, side, cid)}受到 {amount} 点伤害（护盾吸收 {absorbed}）。",
+    log(state, (f'{reason}：' if reason else '') + f"{name(state, side, cid)}受到 {amount} 点伤害（护盾吸收 {absorbed}）。",
         kind, side=side, source=source, actor=source, target=f'{side}:{cid}',
         amount=amount, before=before, after=after, **extra)
     if klass == 'harmony' and isinstance(source, str) and ':' in source:
@@ -368,7 +368,7 @@ def add_collapse(state, side, cid, amount=1, *, by=None):
             target=f'{side}:{cid}', after={'collapse': True})
 
 
-def heal(state, side, cid, amount):
+def heal(state, side, cid, amount, *, reason=None):
     if finished(state):
         return
     if is_player(cid):
@@ -378,7 +378,7 @@ def heal(state, side, cid, amount):
             return
         before = {'hp': team['hp'], 'shield': team['shield']}
         team['hp'] += actual
-        log(state, f"{name(state, side)}回复 {actual} 点生命。", 'heal', side=side,
+        log(state, (f'{reason}：' if reason else '') + f"{name(state, side)}回复 {actual} 点生命。", 'heal', side=side,
             actor=f'{side}:player', target=f'{side}:player', amount=actual,
             before=before, after={'hp': team['hp'], 'shield': team['shield']})
         return
@@ -391,18 +391,18 @@ def heal(state, side, cid, amount):
     before = {'hp': h['hp'], 'shield': h['shield']}
     h['hp'] += actual
     if actual:
-        log(state, f"{h['name']}回复 {actual} 点生命。", 'heal', side=side, source=cid,
+        log(state, (f'{reason}：' if reason else '') + f"{h['name']}回复 {actual} 点生命。", 'heal', side=side, source=cid,
             actor=f'{side}:{cid}', target=f'{side}:{cid}', amount=actual,
             before=before, after={'hp': h['hp'], 'shield': h['shield']})
 
 
-def shield(state, side, cid, amount):
+def shield(state, side, cid, amount, *, reason=None):
     if finished(state) or not alive(state, side, cid):
         return
     h = hero(state, side, cid)
     before = {'hp': h['hp'], 'shield': h['shield']}
     h['shield'] = max(h['shield'], amount)
-    log(state, f"{h['name']}获得 {amount} 点护盾。", 'shield', side=side, source=cid,
+    log(state, (f'{reason}：' if reason else '') + f"{h['name']}获得 {amount} 点护盾。", 'shield', side=side, source=cid,
         actor=f'{side}:{cid}', target=f'{side}:{cid}', amount=amount,
         before=before, after={'hp': h['hp'], 'shield': h['shield']})
 
@@ -415,7 +415,7 @@ def energy(state, side, cid, amount=1):
     h['energy'] = min(energy_cap(state, h), h['energy'] + amount)
 
 
-def add_hand(state, side, card, *, reveal=False):
+def add_hand(state, side, card, *, reveal=False, reason=None):
     from .presentation import public_card
     if finished(state):
         return
@@ -425,7 +425,7 @@ def add_hand(state, side, card, *, reveal=False):
     else:
         team['hand'].append(card)
         if reveal or card.get('copy') or card.get('derived'):
-            log(state, f"{name(state, side)}获得{'临时复制' if card.get('copy') else ''}「{card['name']}」。",
+            log(state, (f'{reason}：' if reason else '') + f"{name(state, side)}获得{'临时复制' if card.get('copy') else ''}「{card['name']}」。",
                 'gain', side=side, card=public_card(card), actor=f'{side}:player')
 
 

@@ -15,7 +15,7 @@ def draw_owned_card(c, character_id=None):
             return
 
 
-def grant_seed(c, limit=3):
+def grant_seed(c, limit=3, *, reason=None):
     from app.modules.card_game.content.duel_v2.registry import KITS
     from app.modules.card_game.engine.duel_v2.state import add_hand, card_instance
     kit = KITS.get(c.cid)
@@ -28,7 +28,7 @@ def grant_seed(c, limit=3):
     if gained >= limit:
         return
     team[key] = gained + 1
-    add_hand(c.state, c.side, card_instance(c.state, card_id, c.side))
+    add_hand(c.state, c.side, card_instance(c.state, card_id, c.side), reason=reason)
 
 
 def perm_plus(c, atk=1, hp=1):
@@ -37,6 +37,13 @@ def perm_plus(c, atk=1, hp=1):
     h['max_hp'] = int(h['max_hp']) + hp
     h['base_max_hp'] = int(h.get('base_max_hp') or h['max_hp']) + hp
     h['hp'] = int(h['hp']) + hp
+    changes = []
+    if atk:
+        changes.append(f'永久攻击 +{atk}')
+    if hp:
+        changes.append(f'生命与生命上限 +{hp}')
+    if changes:
+        c.history(f"{h['name']}获得{'、'.join(changes)}。")
 
 
 def revive_self(c):
@@ -58,19 +65,28 @@ def revive_character(c, side, cid, *, temporary=False):
 
 
 def deal_combat_followup(c, extra=0):
+    from app.modules.card_game.content.duel_v2 import CARDS
     from app.modules.card_game.content.duel_v2.registry import KITS
     from app.modules.card_game.engine.duel_v2.state import front_target
     kit = KITS.get(c.cid)
     amount = extra
+    reasons = []
     if c.character.get('awakened'):
         amount += 1
-    amount += int(c.character.get('flags', {}).pop('next_followup', 0) or 0)
+        reasons.append('终结')
+    pending = int(c.character.get('flags', {}).pop('next_followup', 0) or 0)
+    amount += pending
+    if pending:
+        reasons.append('预备的追击')
     if kit and c.card and c.card.get('card_id') == getattr(kit, 'payoff_card', None):
         amount += 1
+        reasons.append(f"「{c.card['name']}」")
     if kit and c.character.get('shape') == getattr(kit, 'followup_shape', None):
         amount += 2
+        reasons.append(f"「{CARDS[c.character['shape']]['name']}」")
     if amount > 0:
-        c.followup(front_target(c.state, c.side), amount)
+        reason = f"{c.character['name']}的{'、'.join(reasons)}触发追击" if reasons else None
+        c.followup(front_target(c.state, c.side), amount, reason=reason)
 
 
 def scale_battle_frame(c, attack, shield):
@@ -84,17 +100,17 @@ def scale_battle_frame(c, attack, shield):
 
 def on_first_turn_seed(c):
     if c.state['sides'][c.side].get('turn_count') == 1:
-        grant_seed(c)
+        grant_seed(c, reason=f"首个己方回合开始，{c.character['name']}的异能触发")
 
 
 def on_game_start_seed(c):
-    grant_seed(c)
+    grant_seed(c, reason=f"对局开始，{c.character['name']}的异能触发")
 
 
 def on_rout_seed(c, **_data):
     team = c.state['sides'][c.side]
     if c.character['hp'] > 0 and team.get('front') == c.cid:
-        grant_seed(c)
+        grant_seed(c, reason=f"击退对方异能者，{c.character['name']}的异能触发")
 
 
 def negative_kinds(character, state=None, side=None) -> list[str]:

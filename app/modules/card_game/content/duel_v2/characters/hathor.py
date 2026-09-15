@@ -33,12 +33,13 @@ def _h08(c):
 
 def _h02_shape(c, **data):
     if c.once('H08') and data.get('target'):
-        c.followup(data['target'], 1)
+        c.followup(data['target'], 1, reason='「焰魂狂飙」触发')
 
 
 def _h04_shape(c, **data):
     if data.get('operation', {}).get('harmony') == '延滞':
         data['operation']['no_counter'] = True
+        c.history('触发延滞，「铁骑速递」触发：哈索尔本次出击不受反击。')
 
 
 @register

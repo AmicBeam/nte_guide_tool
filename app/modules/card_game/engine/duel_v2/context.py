@@ -2,7 +2,7 @@
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
 from app.modules.card_game.content.duel_v2.registry import shape_event
 from . import combat
-from .state import (add_hand, alive, consume_once, damage, draw, energy, finished,
+from .state import (add_hand, alive, attack_value, consume_once, damage, draw, energy, finished,
                     front_target, heal, hero, is_esper, log, other, shield)
 
 
@@ -25,20 +25,37 @@ class EffectContext:
     def once(self, key):
         return consume_once(self.state, self.side, key)
 
+    def history(self, text, *, target_id=None, target_side=None, **fields):
+        """Record a resolved public effect without adding an animation pause.
+
+        Call at the actual trigger, after its mutation; never from eligibility
+        checks. Do not attach the operation card: it may belong to someone else
+        (or be a hidden response card).
+        """
+        log(self.state, text, 'effect', side=self.side, source=self.cid,
+            actor=f'{self.side}:{self.cid}',
+            target=f'{target_side or self.side}:{target_id or self.cid}',
+            present=False, **fields)
+
     def is_enemy_turn(self):
         return self.state['active_side'] != self.side
 
     def draw(self, count):
         draw(self.state, self.side, count)
 
-    def energy(self):
-        energy(self.state, self.side, self.cid)
+    def energy(self, amount=1, *, reason=None):
+        before = self.character['energy']
+        energy(self.state, self.side, self.cid, amount)
+        gained = self.character['energy'] - before
+        if gained:
+            self.history(f"{reason or self.character['name'] + '的效果'}：{self.character['name']}获得 {gained} 点能量。",
+                         before={'energy': before}, after={'energy': self.character['energy']})
 
-    def heal(self, amount):
-        heal(self.state, self.side, self.cid, amount)
+    def heal(self, amount, *, reason=None):
+        heal(self.state, self.side, self.cid, amount, reason=reason)
 
-    def shield(self, amount):
-        shield(self.state, self.side, self.cid, amount)
+    def shield(self, amount, *, reason=None):
+        shield(self.state, self.side, self.cid, amount, reason=reason)
 
     def heal_character(self, cid, amount):
         heal(self.state, self.side, cid, amount)
@@ -65,13 +82,24 @@ class EffectContext:
     def attach_pact(self, side, cid):
         if finished(self.state) or not is_esper(cid) or not alive(self.state, side, cid):
             return
-        hero(self.state, side, cid).setdefault('flags', {})['pact'] = True
+        h = hero(self.state, side, cid)
+        before = bool(h.setdefault('flags', {}).get('pact'))
+        h['flags']['pact'] = True
+        if not before:
+            self.history(f"{self.character['name']}的效果：为{h['name']}附着枚约。",
+                         target_side=side, target_id=cid)
 
     def add_atk_debuff(self, side, cid, amount=2):
         if finished(self.state) or not is_esper(cid) or not alive(self.state, side, cid):
             return
-        flags = hero(self.state, side, cid).setdefault('flags', {})
+        h = hero(self.state, side, cid)
+        before = attack_value(h)
+        flags = h.setdefault('flags', {})
         flags['atk_debuff'] = int(flags.get('atk_debuff') or 0) + amount
+        if amount:
+            self.history(f"{self.character['name']}的效果：{h['name']}攻击 -{amount}。",
+                         target_side=side, target_id=cid,
+                         before={'attack': before}, after={'attack': attack_value(h)})
 
     def sortie(self, **spec):
         combat.sortie(self, **spec)
@@ -102,13 +130,13 @@ class EffectContext:
         if self.state['sides'][side]['front'] == cid:
             shield(self.state, side, cid, front_shield)
 
-    def followup(self, target, amount):
+    def followup(self, target, amount, *, reason=None):
         side, cid = target
         if is_esper(cid) and (not alive(self.state, side, cid) or self.state['sides'][side]['front'] != cid):
             return
         from .presentation import next_group_id
         damage(self.state, side, cid, amount, source=f'{self.side}:{self.cid}',
-               kind='followup', group_id=next_group_id(self.state))
+               kind='followup', group_id=next_group_id(self.state), reason=reason)
 
     def choose(self, kind, cards, prompt):
         if finished(self.state) or not cards:
@@ -165,12 +193,17 @@ class EffectContext:
         if not finished(self.state):
             self.state['sides'][self.side]['extra_delay'] = True
 
-    def grant_harmony(self, cid, amount=1):
+    def grant_harmony(self, cid, amount=1, *, reason=None):
         if finished(self.state) or not alive(self.state, self.side, cid):
             return
         h = hero(self.state, self.side, cid)
         from .escalation import harmony_cap
+        before = h['harmony']
         h['harmony'] = min(harmony_cap(self.state), h['harmony'] + amount)
+        gained = h['harmony'] - before
+        if gained:
+            self.history(f"{reason or self.character['name'] + '的效果'}：{h['name']}获得 {gained} 点环合值。",
+                         target_id=cid, before={'harmony': before}, after={'harmony': h['harmony']})
 
     def add_gaze(self, amount=1, cap=None):
         if finished(self.state) or self.character['hp'] <= 0:
@@ -178,7 +211,11 @@ class EffectContext:
         limit = cap if cap is not None else (4 if self.character['awakened'] else 2)
         before = self.character.get('gaze', 0)
         self.character['gaze'] = min(limit, before + amount)
-        return self.character['gaze'] - before
+        gained = self.character['gaze'] - before
+        if gained:
+            self.history(f"{self.character['name']}获得 {gained} 层凝视（现有 {self.character['gaze']} 层）。",
+                         before={'gaze': before}, after={'gaze': self.character['gaze']})
+        return gained
 
     def recover_target(self):
         team = self.state['sides'][self.side]

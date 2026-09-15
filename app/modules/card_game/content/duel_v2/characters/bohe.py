@@ -2,7 +2,7 @@ from app.modules.card_game.content.duel_v2 import CHARACTERS
 from app.modules.card_game.content.duel_v2.characters.common import perm_plus, set_shape
 from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.engine.duel_v2.state import (
-    add_atk_buff, alive, collapsed, finished,
+    add_atk_buff, alive, attack_value, collapsed, finished,
 )
 
 
@@ -94,12 +94,16 @@ class Bohe:
         flags.pop('share_overflow', None)
         pending = int(flags.pop('pending_atk', 0) or 0)
         if pending:
+            before = attack_value(c.character)
             add_atk_buff(c.character, pending)
+            c.history(f'回合开始，「第一直觉」触发：薄荷攻击 +{pending}。',
+                      before={'attack': before}, after={'attack': attack_value(c.character)})
         if c.character.get('shape') != 'M08':
             return
         if finished(c.state) or not alive(c.state, c.side, c.cid) or collapsed(c.character):
             return
         from app.modules.card_game.engine.duel_v2.flow import finish_operation, operation
+        c.history('回合开始，「开始净空」触发：薄荷自动出击。')
         parent = c.state.get('operation')
         operation(c.state, c.side, c.cid).sortie()
         if c.state['phase'] != 'choice' and not finished(c.state):

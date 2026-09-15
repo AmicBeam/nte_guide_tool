@@ -63,6 +63,7 @@ def _a08(c):
 def _a02_shape(c, **data):
     if data.get('operation', {}).get('harmony'):
         data['operation']['first_bonus'] += 1
+        c.history('触发环合，「最后一朵玫瑰」触发：安魂曲本次第一次攻击伤害 +1。')
 
 
 @register
@@ -83,7 +84,10 @@ class Anhunqu:
             return
         target = hero(c.state, enemy, target_id)
         layers = 3 if c.character['awakened'] else 2
-        grant_nightmare(target, layers)
+        gained = grant_nightmare(target, layers)
+        if gained:
+            c.history(f"施加浊燃，安魂曲的异能触发：{target['name']}噩梦 +{gained}（现有 {target['flags']['nightmare']} 层）。",
+                      target_side=enemy, target_id=target_id)
 
     @staticmethod
     def after_sortie(c):
@@ -94,7 +98,8 @@ class Anhunqu:
             take = settle_nightmare_on(target, 1)
             if take:
                 from app.modules.card_game.engine.duel_v2.state import front_target
-                c.followup(front_target(c.state, c.side), take)
+                c.followup(front_target(c.state, c.side), take,
+                           reason=f'安魂曲的终结触发，消耗 {take} 层噩梦')
 
     @staticmethod
     def on_dot(c, target_id=None, kind=None, **_data):
@@ -103,7 +108,7 @@ class Anhunqu:
         from app.modules.card_game.engine.duel_v2.state import front_target
         _, front = front_target(c.state, c.side)
         if target_id == front and c.once('A07'):
-            c.heal(1)
+            c.heal(1, reason='浊燃或噩梦造成伤害，「广告拍摄中！」触发')
 
     @staticmethod
     def on_enemy_turn_begin(c):

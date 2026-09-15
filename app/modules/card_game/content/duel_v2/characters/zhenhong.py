@@ -43,7 +43,7 @@ def _r02_bypass(c, current=False, attacker_id=None, target=None, target_id=None,
 
 def _r04_shape(c, **_data):
     if c.once('R07'):
-        c.shield(1)
+        c.shield(1, reason='获得凝视，「梦的边缘」触发')
 
 
 @register

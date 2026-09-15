@@ -3,14 +3,18 @@ from app.modules.card_game.content.duel_v2.characters.common import (
 )
 from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.engine.duel_v2.state import (
-    add_atk_buff, damage, energy, front_target, heal, hero, is_player, log, shield,
+    add_atk_buff, attack_value, damage, energy, front_target, heal, hero, is_player, log, shield,
 )
 
 
 def _mark_healed(c, side, cid):
     if side != c.side or is_player(cid):
         return
-    add_atk_buff(hero(c.state, side, cid), 1)
+    target = hero(c.state, side, cid)
+    before = attack_value(target)
+    add_atk_buff(target, 1)
+    c.history(f"{c.character['name']}的治疗效果：{target['name']}攻击 +1。", target_side=side, target_id=cid,
+              before={'attack': before}, after={'attack': attack_value(target)})
 
 
 def _y01(c):
@@ -77,7 +81,10 @@ class Iloy:
     @staticmethod
     def before_hits(c):
         flags = c.character.setdefault('flags', {})
-        c.operation['first_bonus'] += int(flags.pop('next_bonus', 0) or 0)
+        bonus = int(flags.pop('next_bonus', 0) or 0)
+        c.operation['first_bonus'] += bonus
+        if bonus:
+            c.history(f'「策略特性：可激怒」触发：伊洛伊本次第一次攻击伤害 +{bonus}。')
         extra_shield = int(flags.pop('next_shield', 0) or 0)
         if extra_shield:
             shield(c.state, c.side, c.cid, extra_shield)
@@ -85,6 +92,7 @@ class Iloy:
     @staticmethod
     def on_ultimate(c):
         c.character.setdefault('flags', {})['energy_next'] = True
+        c.history('伊洛伊的终结生效：下个己方回合开始时，己方存活异能者各获得 1 点能量。')
 
     @staticmethod
     def after_genesis(c, entering=None, **_data):
@@ -95,6 +103,8 @@ class Iloy:
             return
         team['extra_genesis_pending'] = True
         team['extra_genesis_actor'] = entering or c.cid
+        c.history('「错误的门」触发：下个己方回合开始时追加一次创生。',
+                  target_id=entering or c.cid)
 
     @staticmethod
     def on_turn_begin(c):
@@ -118,9 +128,9 @@ class Iloy:
         if c.character.get('shape') != 'Y07':
             return
         side, cid = front_target(c.state, c.side)
-        damage(c.state, side, cid, 2, source=f'{c.side}:{c.cid}', settle=False)
+        damage(c.state, side, cid, 2, source=f'{c.side}:{c.cid}', settle=False,
+               reason='己方异能者倒地，「想做什么梦？」触发')
 
     @staticmethod
     def on_ultimate_end(c):
         c.character.get('flags', {}).pop('energy_next', None)
-

@@ -34,12 +34,13 @@ def _k08(c):
 
 def _k02_shape(c, **_data):
     if c.is_enemy_turn() and c.once('K08'):
-        c.shield(1)
+        c.shield(1, reason='对方回合战斗受伤，「远行者之声」触发')
 
 
 def _k05_shape(c, **data):
     if data.get('operation', {}).get('harmony') == '同频':
         data['operation']['first_bonus'] += 1
+        c.history('触发同频，「宇宙的频段」触发：灵可本次第一次攻击伤害 +1。')
 
 
 @register

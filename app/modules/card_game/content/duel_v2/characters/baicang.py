@@ -1,7 +1,7 @@
 from app.modules.card_game.content.duel_v2.characters.common import set_shape
 from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.engine.duel_v2.state import (
-    add_atk_buff, alive, damage, front_debuff, heal, hero, is_esper, log, other, team_order,
+    add_atk_buff, alive, attack_value, damage, front_debuff, heal, hero, is_esper, log, other, team_order,
 )
 
 
@@ -63,12 +63,15 @@ class Baicang:
     def on_damage_taken(c, amount=0, source=None, **_data):
         if int(amount or 0) <= 0:
             return
+        before = attack_value(c.character)
         add_atk_buff(c.character, 1)
         src_side = None
         if isinstance(source, str) and ':' in source:
             src_side = source.split(':', 1)[0]
         if src_side == c.side:
             c.character.setdefault('flags', {})['allied_hurt'] = True
+        c.history('白藏受到伤害，触发异能：攻击 +1。',
+                  before={'attack': before}, after={'attack': attack_value(c.character)})
 
     @staticmethod
     def on_damage_dealt(c, target_side=None, target_id=None, amount=0, **_data):
@@ -79,14 +82,14 @@ class Baicang:
         target = hero(c.state, target_side, target_id)
         if 0 < int(target['hp']) <= 2:
             target['hp'] = 0
-            log(c.state, f"{c.character['name']}将{target['name']}消灭。", 'effect',
+            log(c.state, f"白藏造成伤害，触发终结：将{target['name']}消灭。", 'effect',
                 side=target_side, source=c.cid, actor=f'{c.side}:{c.cid}',
                 target=f'{target_side}:{target_id}')
 
     @staticmethod
     def after_hits(c, target_loss=0, **_data):
         if c.card and c.card.get('card_id') == 'B02' and int(target_loss or 0) > 0:
-            heal(c.state, c.side, c.cid, 2)
+            heal(c.state, c.side, c.cid, 2, reason='造成伤害，「招魂幡」触发')
 
     @staticmethod
     def hp_floor(c, current=0, target_id=None, **_data):

@@ -757,7 +757,9 @@ seconds = tick / 10
 - `duration.pause_off_field` 把前台有效时长按已编译前台切换映射为墙钟时间，后台停表；显式退出仍截断同一状态线。
 - `action.resource_damage` 把实际支付的个人资源按独立伤害类型与技能等级结算；`resource_damage` 与 `personal_resources_consumed` 写入动作详情，避免沿用E/援护增伤来计算普攻追加。
 - `required_additional_buff_keys` 校验额外激活状态；`forbidden_buff_key` 校验形态冲突；`consume_buff_stack_key` 消耗手工协同窗口次数。均保留既有非法轴警告但继续试算的模式。
-- 黑羽黯星只额外续生一次；不受增益的累计追加在本轮事件结算后按时间账本计算，不重复进入常规伤害乘区。用户明确暂不计入倾陷；跨轮伤害账本待接入。
+- 黑羽黯星只额外续生一次；不受增益的累计追加在本轮事件结算后按时间账本计算，不重复进入常规伤害乘区。用户明确暂不计入倾陷；按用户最新口径明确不做跨轮累计，本轮从空伤害账本开始，不再作为待接入项。
 - 弧盘可声明 `available_levels`，未提供档位不能选择或保存，未知档位归一到默认档。
 
 具体资料边界、已接入范围与缺口见排轴README及Buff配置验收清单的黑羽章节。
+
+黑羽A觉使用动作级 `personal_resource_consume_all_by_awakening_node`，只在指定节点激活时清空并记录实际消耗。恶意追加使用独立动作ID和资源伤害标签，避免动作本体的E/Q倍率强化误作用于追加；C觉只匹配该资源伤害标签。

@@ -9970,10 +9970,21 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 26,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 26，GEName=GE_Player_BlackBird_Evolve_UltraSkill_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 26，GEName=GE_Player_BlackBird_Evolve_UltraSkill_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。 用户2026-09-16确认A觉二段大消耗全部剩余恶意。",
     "is_time_stop_zero": true,
     "required_buff_key": "character_heiyu_form",
-    "required_buff_name": "二形态"
+    "required_buff_name": "二形态",
+    "personal_resource_consume_all_by_awakening_node": {
+      "1": [
+        "恶意"
+      ]
+    },
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.4,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
   },
   {
     "id": "action_heiyu_support",

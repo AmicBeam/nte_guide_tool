@@ -4660,7 +4660,12 @@
         consumedResources[key] = Math.min(slotResources[key] || 0, totalCost);
         slotResources[key] = Math.max(0, (slotResources[key] || 0) - totalCost);
       });
-      asList(action.personal_resource_consume_all).map(String).filter(Boolean).forEach((key) => {
+      const consumeAllResources = new Set(asList(action.personal_resource_consume_all).map(String).filter(Boolean));
+      Object.entries(action.personal_resource_consume_all_by_awakening_node || {}).forEach(([node, resources]) => {
+        if (hasAwakeningNode(snapshot, node)) asList(resources).map(String).filter(Boolean).forEach((key) => consumeAllResources.add(key));
+      });
+      consumeAllResources.forEach((key) => {
+        consumedResources[key] = num(consumedResources[key]) + num(slotResources[key]);
         slotResources[key] = 0;
       });
       Object.entries(resourceMap(action.personal_resource_gain)).forEach(([key, gain]) => {
@@ -4700,6 +4705,10 @@
       const resourceDamage = action.resource_damage;
       if (resourceDamage && num(consumedResources[resourceDamage.resource]) > 0) {
         const extraAction = Object.assign({}, action, {
+          id: `${action.id}:resource`,
+          name: `${resourceDamage.resource}追加伤害`,
+          tags: [`${resourceDamage.resource}伤害`],
+          extra_tag: `${resourceDamage.resource}伤害`,
           action_type: resourceDamage.damage_type,
           damage_type: resourceDamage.damage_type,
           skill_level_category: resourceDamage.skill_level_category,
@@ -4708,7 +4717,14 @@
         });
         const extraModifiers = mods();
         applicableBuffContributions(activeBuffs, step, extraAction, snapshot, isBackground, Object.assign({}, buffContext, {action: extraAction}))
-          .forEach(({effects}) => mergeMods(extraModifiers, effects));
+          .forEach(({buff, effects}) => {
+            mergeMods(extraModifiers, effects);
+            if (!appliedBuffs.some((summary) => summary.rule_id === buff.rule?.id)) {
+              const summary = buffSummary(buff, Object.assign({}, buffContext, {action: extraAction}));
+              summary.name = `${summary.name}（仅${resourceDamage.resource}追加）`;
+              appliedBuffs.push(summary);
+            }
+          });
         calc.resource_damage = calculateActionDamage(snapshot, extraAction, enemy, extraModifiers).direct_damage;
         calc.direct_damage += calc.resource_damage;
       }
@@ -5097,8 +5113,7 @@
     // This damage is already a final value and bypasses every modifier/resistance area.
     if (teamHasHeiyu()) {
       const owner = Array.from(snapshots.values()).find((snapshot) => snapshot.character.id === HEIYU_CHARACTER_ID);
-      if (options.loop_enabled && reactionEffects.some((effect) => effect.reaction === '黯星' && int(effect.start_tick) < 0)
-        && details.length) details[0].warnings.push('黑羽黯星跨轮伤害账本尚未接入；当前累计不含上一轮伤害。');
+      // User scope: each loop starts a fresh damage ledger; no cross-loop accumulation.
       const ledger = details.map((detail) => ({tick: int(detail.start_tick), step_id: detail.step_id,
         damage: num(detail.direct_damage) + num(detail.fuwen_damage)}));
       const settled = reactionDamageEvents.filter((event) => event._counted_in_total && num(event.damage) >= 0)

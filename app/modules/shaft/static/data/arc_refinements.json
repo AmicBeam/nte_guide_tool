@@ -4906,10 +4906,14 @@
       "name": "罪与罚",
       "default_level": 1,
       "available_levels": [
-        1
+        1,
+        2,
+        3,
+        4,
+        5
       ],
       "source_url": "https://docs.qq.com/aio/DVVRZempSSmZ4THVj",
-      "source_note": "用户2026-09-15腾讯文档《黑羽资料汇总》，非Nanoka数据；只提供一档数值，暂按1精录入，不推算其他精炼。",
+      "source_note": "用户2026-09-16腾讯文档提供1精/5精端点；2–4精按用户本次明确口径等差插值，非Nanoka核实数值。",
       "effect_name": "罪与罚（测试资料）",
       "levels": {
         "1": {
@@ -4926,7 +4930,106 @@
           "element_dmg": {
             "魂": 0.2
           },
-          "buff_effects": {}
+          "buff_effects": {
+            "arc_heiyu_team_crit": {
+              "crit_dmg": 0.16
+            },
+            "arc_heiyu_ember": {
+              "crit_dmg": 0.24
+            }
+          }
+        },
+        "2": {
+          "effect_values": [
+            "90",
+            "25%",
+            "20%",
+            "30%"
+          ],
+          "panel_modifiers": {
+            "crit_rate": 0.24,
+            "harmony_strength": 90.0
+          },
+          "element_dmg": {
+            "魂": 0.25
+          },
+          "buff_effects": {
+            "arc_heiyu_team_crit": {
+              "crit_dmg": 0.2
+            },
+            "arc_heiyu_ember": {
+              "crit_dmg": 0.3
+            }
+          }
+        },
+        "3": {
+          "effect_values": [
+            "108",
+            "30%",
+            "24%",
+            "36%"
+          ],
+          "panel_modifiers": {
+            "crit_rate": 0.24,
+            "harmony_strength": 108.0
+          },
+          "element_dmg": {
+            "魂": 0.3
+          },
+          "buff_effects": {
+            "arc_heiyu_team_crit": {
+              "crit_dmg": 0.24
+            },
+            "arc_heiyu_ember": {
+              "crit_dmg": 0.36
+            }
+          }
+        },
+        "4": {
+          "effect_values": [
+            "126",
+            "35%",
+            "28%",
+            "42%"
+          ],
+          "panel_modifiers": {
+            "crit_rate": 0.24,
+            "harmony_strength": 126.0
+          },
+          "element_dmg": {
+            "魂": 0.35
+          },
+          "buff_effects": {
+            "arc_heiyu_team_crit": {
+              "crit_dmg": 0.28
+            },
+            "arc_heiyu_ember": {
+              "crit_dmg": 0.42
+            }
+          }
+        },
+        "5": {
+          "effect_values": [
+            "144",
+            "40%",
+            "32%",
+            "48%"
+          ],
+          "panel_modifiers": {
+            "crit_rate": 0.24,
+            "harmony_strength": 144.0
+          },
+          "element_dmg": {
+            "魂": 0.4
+          },
+          "buff_effects": {
+            "arc_heiyu_team_crit": {
+              "crit_dmg": 0.32
+            },
+            "arc_heiyu_ember": {
+              "crit_dmg": 0.48
+            }
+          }
         }
       }
     }

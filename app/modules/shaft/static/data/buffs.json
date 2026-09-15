@@ -3147,7 +3147,13 @@
         "action_ids": [
           "action_heiyu_q1"
         ]
-      }
+      },
+      "conditions": [
+        {
+          "type": "awakening_max",
+          "max": 3
+        }
+      ]
     },
     "target": {
       "scope": "team"
@@ -3369,6 +3375,508 @@
     "consume_on_apply": true,
     "activation": {
       "exclude_trigger_action": true
+    }
+  },
+  {
+    "id": "character_heiyu_a_e",
+    "name": "黑羽A觉·二形态变轨倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_heiyu_form_e"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 2
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_b_e",
+    "name": "黑羽B觉·变轨倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_heiyu_e"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 1
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_b_malice",
+    "name": "黑羽B觉·协同获得恶意",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_end",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        },
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_heiyu_form"
+          ]
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_assist"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "effects": {},
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "activation": {
+      "personal_resource_gain": {
+        "恶意": 4
+      }
+    },
+    "stacking": {
+      "key": "character_heiyu_b_malice",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_c_malice",
+    "name": "黑羽C觉·恶意伤害",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "tags": [
+        "恶意伤害"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "all_dmg": 0.5
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_d_attack",
+    "name": "黑羽D觉·全队攻击提升",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 4
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_q_attack",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "atk_pct": 0.3
+    }
+  },
+  {
+    "id": "character_heiyu_e_res_action_hit",
+    "name": "黑羽E觉·魂相咒抗性降低",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_hit",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 5
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "damage_types": [
+          "普攻",
+          "下落",
+          "闪反",
+          "E",
+          "Q",
+          "援护"
+        ]
+      }
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {
+      "res_down_魂": 0.08,
+      "res_down_相": 0.08,
+      "res_down_咒": 0.08
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "stacking": {
+      "key": "character_heiyu_e_res",
+      "mode": "refresh",
+      "max_stacks": 1
+    }
+  },
+  {
+    "id": "character_heiyu_e_res_periodic_damage",
+    "name": "黑羽E觉·魂相咒抗性降低",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "periodic_damage",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 5
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "damage_types": [
+          "普攻",
+          "下落",
+          "闪反",
+          "E",
+          "Q",
+          "援护"
+        ]
+      }
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {
+      "res_down_魂": 0.08,
+      "res_down_相": 0.08,
+      "res_down_咒": 0.08
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "stacking": {
+      "key": "character_heiyu_e_res",
+      "mode": "refresh",
+      "max_stacks": 1
+    }
+  },
+  {
+    "id": "character_heiyu_f_soul",
+    "name": "黑羽F觉·魂伤提升",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_start",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 6
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {
+      "element_dmg_魂": 0.25
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "stacking": {
+      "key": "character_heiyu_f_soul",
+      "mode": "refresh",
+      "max_stacks": 1
+    }
+  },
+  {
+    "id": "character_heiyu_three_q1",
+    "name": "黑羽三觉共鸣·一段终结倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_heiyu_q1"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 1
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_three_q2",
+    "name": "黑羽三觉共鸣·二段终结倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_heiyu_q2"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 0.5
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_three_malice",
+    "name": "黑羽三觉共鸣·终结获得恶意",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 10,
+    "trigger": {
+      "event": "action_start",
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "effects": {},
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "activation": {
+      "personal_resource_gain": {
+        "恶意": 20
+      }
+    },
+    "stacking": {
+      "key": "character_heiyu_three_malice",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_six_crit",
+    "name": "黑羽六觉共鸣·全队暴伤",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "crit_dmg": 0.3
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "display": {
+      "line": false
     }
   }
 ]

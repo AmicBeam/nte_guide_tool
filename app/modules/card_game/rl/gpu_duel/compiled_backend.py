@@ -181,7 +181,8 @@ class CompiledStarterBackend:
             raise ValueError('Reset seeds must have one entry per environment')
         if deck_rows_a.shape != (state.n, 36) or deck_rows_b.shape != (state.n, 36):
             raise ValueError('public deck rows must be int32 [n,36]')
-        if any(t.device != state.device for t in (rows, seeds, deck_rows_a, deck_rows_b)):
+        # torch.device('cuda') is an alias; allocated tensors report cuda:<index>.
+        if any(t.device != rows.device for t in (seeds, deck_rows_a, deck_rows_b)):
             raise ValueError('public reset tensors must already live on the compiled device')
         public_reset(rows, seeds, deck_rows_a, deck_rows_b, 1 if escalation else 0)
         from app.modules.card_game.rl.rule_ir.layout import OFFSETS

@@ -221,10 +221,29 @@ def compile_cuda_engine(*, deck_id="starter"):
     return launch
 
 
+def _cuda_jit_optimization_level():
+    """Optional short-test compiler profile; unset preserves driver defaults."""
+    value = os.environ.get('NTE_CUDA_JIT_OPT_LEVEL')
+    if value is None:
+        return None
+    if value not in ('0', '1', '2', '3', '4'):
+        raise ValueError('NTE_CUDA_JIT_OPT_LEVEL must be an integer from 0 to 4')
+    return int(value)
+
+
+def _cuda_fast_compile_level():
+    value = os.environ.get('NTE_CUDA_FAST_COMPILE', '0')
+    if value not in ('0', 'min', 'mid', 'max'):
+        raise ValueError('NTE_CUDA_FAST_COMPILE must be 0, min, mid, or max')
+    return value
+
+
 def _compile_cuda_engine_nvrtc(source: str):
     import ctypes as C
     from pathlib import Path
 
+    jit_level = _cuda_jit_optimization_level()
+    fast_compile = _cuda_fast_compile_level()
     import torch
 
     if not torch.cuda.is_available():
@@ -247,8 +266,11 @@ def _compile_cuda_engine_nvrtc(source: str):
     src = source.encode()
     check(nv.nvrtcCreateProgram(C.byref(prog), C.c_char_p(src), C.c_char_p(b'starter_engine.cu'), 0, None, None))
     arch = (' --gpu-architecture=compute_%d%d' % torch.cuda.get_device_capability()).strip().encode()
-    options = (C.c_char_p * 2)(arch, b'--std=c++17')
-    rc = nv.nvrtcCompileProgram(prog, 2, options)
+    flags = [arch, b'--std=c++17']
+    if fast_compile != '0':
+        flags.append(f'--Ofast-compile={fast_compile}'.encode())
+    options = (C.c_char_p * len(flags))(*flags)
+    rc = nv.nvrtcCompileProgram(prog, len(flags), options)
     if rc:
         size = C.c_size_t()
         nv.nvrtcGetProgramLogSize(prog, C.byref(size))
@@ -266,7 +288,13 @@ def _compile_cuda_engine_nvrtc(source: str):
         drv = C.CDLL('libcuda.so.1')
     check(drv.cuInit(0), 'cuInit')
     mod = C.c_void_p()
-    check(drv.cuModuleLoadData(C.byref(mod), ptx), 'cuModuleLoadData')
+    if jit_level is None:
+        check(drv.cuModuleLoadData(C.byref(mod), ptx), 'cuModuleLoadData')
+    else:
+        # CU_JIT_OPTIMIZATION_LEVEL = 7; option values are cast to void*, not pointers to integers.
+        options = (C.c_int * 1)(7)
+        values = (C.c_void_p * 1)(jit_level)
+        check(drv.cuModuleLoadDataEx(C.byref(mod), ptx, 1, options, values), 'cuModuleLoadDataEx')
     fn = C.c_void_p()
     check(drv.cuModuleGetFunction(C.byref(fn), mod, ENGINE_NAME.encode()), 'cuModuleGetFunction')
 

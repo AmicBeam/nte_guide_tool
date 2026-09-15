@@ -147,3 +147,16 @@ python -m unittest tests.test_duel_v2_card_tuning tests.test_duel_v2_card_tuning
 ```
 
 配牌核心和 checkpoint 测试需要可选 Torch；无 Torch 的网站环境仍可运行 `--check`。本轮未运行正式训练或 CUDA 实机测试，合成奖励测试不代表构筑强度。
+
+## Windows 短训练实测补充（2026-09-15）
+
+已在 RTX 5060 Ti 上通过 16 局面 CUDA 预检，并完成出牌 3 次更新及固定角色配牌 1 次更新；详见 [Windows 短训练记录](duel-v2-windows-short-training-20260915.md)。早先“本机尚未执行 Windows”的记录保留原时点边界。
+
+SSH 启动预检前须加载已安装 Visual Studio 的 x64 编译环境，确保 `cl` 能找到系统头文件。默认驱动 JIT 在本次设备上出现较长内核装载等待；可在**短测进程**中显式启用以下编译档：
+
+```powershell
+$env:NTE_CUDA_FAST_COMPILE='max'
+$env:NTE_CUDA_JIT_OPT_LEVEL='0'
+```
+
+`NTE_CUDA_FAST_COMPILE` 接受 `0/min/mid/max`，默认 `0` 不追加 NVRTC 快速编译选项。`NTE_CUDA_JIT_OPT_LEVEL` 接受 `0..4`，未设置时保留 CUDA 驱动默认行为。非法值直接报错。上述短测档会减少编译优化，运行性能不能当作默认编译档的吞吐证据；测试结束后可移除这两个进程环境变量。网站运行不读取它们，规则源码和训练日志策略不因此改变。

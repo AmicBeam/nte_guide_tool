@@ -17,7 +17,10 @@
     "char_912dbfe17c": {"闪送之力": 6},
     "char_d38b672525": {"罪状": 1000},
     "char_a01c39f576": {"臆想": 100},
-    "char_0846d632e0": {"谐频": 100}
+    "char_0846d632e0": {"谐频": 100},
+    "char_heiyu": {
+      "恶意": 60
+    }
   },
   "hidden_personal_resources": ["噩梦"],
   "substat_units": {
@@ -354,6 +357,14 @@
       "curtain_bonus": {
         "value": 10,
         "stat": "攻击",
+        "passive_type": "type3"
+      }
+    },
+    "char_heiyu": {
+      "cartridge_main_stat": "属伤",
+      "curtain_bonus": {
+        "value": 8,
+        "stat": "暴击",
         "passive_type": "type3"
       }
     }

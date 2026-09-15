@@ -31,3 +31,17 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 ```
 
 涉及交互调整时，还需通过 `/kongmu` 检查角色选择、卡带选择、方案生成和返回工具主页。
+
+## 黑羽（测试角色，2026-09-16）
+
+黑羽使用稳定ID `char_heiyu`，魂属性；仅 `shaft_test_whitelisted` 测试账号可见和计算，受邀用户不能访问。来源为用户提供的[腾讯文档《黑羽资料汇总》](https://docs.qq.com/aio/DVVRZempSSmZ4THVj?p=MluEyftYtfADwlqnzgRzww)，Everness暂无匹配记录。Ⅲ型特化，每个Ⅲ型驱动提供8%暴击率。5×5拓扑按文档原始方向录入：
+
+```text
+11110
+11110
+11011
+01111
+01111
+```
+
+1表示可用格，合计20格；0表示空洞。头像暂用共享文字占位 `images/characters/avatar/黑羽.svg`，未借用其他角色图。验证见 `tests.test_shaft_heiyu` 和 `tests.test_shaft_publication`。

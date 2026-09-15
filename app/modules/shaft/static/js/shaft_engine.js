@@ -136,6 +136,7 @@
   const ZHENHONG_ASCENDANT_ENERGY_CAPACITY = 12;
   const CANHONG_CHARACTER_ID = 'char_076a1f4e53';
   const LINGKE_CHARACTER_ID = 'char_0846d632e0';
+  const HEIYU_CHARACTER_ID = 'char_heiyu';
   const CANHONG_FENTIAN_ACTION_ID = 'action_canhong_q';
   const CANHONG_BLOOD_BANQUET_ACTION_ID = 'action_canhong_q_blood_banquet';
   const CANHONG_BLOOD_BANQUET_BUFF_ID = 'character_canhong_blood_banquet_active';
@@ -353,10 +354,10 @@
     const source = member?.curtain_bonus && typeof member.curtain_bonus === 'object' ? member.curtain_bonus : {};
     const options = constants?.curtain_bonus_stat_options || {};
     const fallback = normalizeStatName(defaults.stat) || Object.keys(options)[0] || '';
-    const stat = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+    const stat = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, HEIYU_CHARACTER_ID].includes(characterId)
       ? fallback
       : (normalizeStatName(source.stat) || fallback);
-    const passiveType = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+    const passiveType = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, HEIYU_CHARACTER_ID].includes(characterId)
       ? (CURTAIN_PASSIVE_TYPES.includes(String(defaults.passive_type || '')) ? String(defaults.passive_type) : 'type3')
       : (CURTAIN_PASSIVE_TYPES.includes(String(source.passive_type || ''))
         ? String(source.passive_type)
@@ -2207,6 +2208,7 @@
       Object.assign(resources, resourceMap(initialPersonalResources[String(slot)] || initialPersonalResources[slot] || {}));
       const snapshot = snapshots.get(slot);
       const characterId = String(snapshot?.character?.id || '');
+      if (!options.loop_enabled) Object.assign(resources, snapshot.character?.initial_personal_resources || {});
       const loopResources = loopInitialResources[characterId];
       const configuredPersonal = loopResources?.personal_resources && typeof loopResources.personal_resources === 'object'
         ? resourceMap(loopResources.personal_resources)
@@ -2600,6 +2602,38 @@
       return Array.from(snapshots.values()).some((snapshot) => String(snapshot?.character?.id || '') === LINGKE_CHARACTER_ID);
     }
 
+    function teamHasHeiyu() {
+      return Array.from(snapshots.values()).some((snapshot) => String(snapshot?.character?.id || '') === HEIYU_CHARACTER_ID);
+    }
+
+    // Convert an on-field duration to wall-clock ticks using the compiled rotation.
+    // Repeat the rotation when warming a loop; an off-field tail preserves the state.
+    function onFieldDurationTicks(ownerSlot, startTick, remainingTicks) {
+      const events = [];
+      const cycles = options.loop_enabled
+        ? Array.from({length: Math.ceil(remainingTicks) + 3}, (_, index) => index - 1)
+        : [0];
+      cycles.forEach((cycle) => scheduledSteps.forEach((entry) => {
+        if (switchesForeground(entry.step, entry.action)) {
+          events.push({tick: int(entry.start_tick) + cycle * loopDurationTicks, slot: int(entry.slot)});
+        }
+      }));
+      events.sort((a, b) => a.tick - b.tick);
+      let front = options.loop_enabled ? loopOpeningFrontSlot : null;
+      let cursor = startTick;
+      for (const event of events) {
+        if (event.tick <= startTick) { front = event.slot; continue; }
+        if (front === ownerSlot) {
+          const elapsed = event.tick - cursor;
+          if (remainingTicks <= elapsed) return cursor + remainingTicks - startTick;
+          remainingTicks -= elapsed;
+        }
+        cursor = event.tick;
+        front = event.slot;
+      }
+      return cursor - startTick + (front === ownerSlot ? remainingTicks : 9990);
+    }
+
     function evenlySpacedDamageTicks(startTick, durationTicks, count) {
       const safeCount = Math.max(0, int(count));
       const safeDuration = Math.max(0, int(durationTicks));
@@ -2905,7 +2939,7 @@
         ? supportSnapshot
         : reactionContributor(reaction, previousSnapshot, supportSnapshot, tick);
       if (!contributor) return { effect: null, warning: '' };
-      const durationTicks = int(REACTION_DURATIONS[reaction]);
+      const durationTicks = reaction === '浸染' && teamHasHeiyu() ? 200 : int(REACTION_DURATIONS[reaction]);
       const frequencyMultiplier = reaction === '创生' && teamHasJiuyuan() ? 2 : 1;
       const activeEffects = activeReactionEffectsAtTick(reaction, tick)
         .sort((left, right) => int(left.start_tick) - int(right.start_tick));
@@ -2924,6 +2958,7 @@
       }
       const effect = {
         id: `reaction_${nextReactionEffectId}`,
+        source_step_id: String(scheduled.step?.id || ''),
         reaction,
         support_slot: supportSnapshot.slot,
         support_character_id: supportSnapshot.character?.id || '',
@@ -3291,6 +3326,24 @@
 
     function triggerNaturalReactionEndBuffs(event) {
       const reactionName = String(event.reaction || '');
+      if (reactionName === '黯星' && teamHasHeiyu() && !event.heiyu_recast_checked) {
+        event.heiyu_recast_checked = true;
+        const original = reactionEffects.find((effect) => effect.id === event.effect_id);
+        if (original && !original.heiyu_extra) {
+          const start = int(event.tick);
+          const extra = {...original, id: `reaction_${nextReactionEffectId++}`, start_tick: start,
+            end_tick: start + 50, duration_ticks: 50, damage_ticks: [start + 50], heiyu_extra: true,
+            heiyu_parent_id: original.id, source_step_id: '', evicted_by_instance_limit: false,
+            evicted_at_tick: null, settled_by_conflict: false};
+          reactionEffects.push(extra);
+          enemyDebuffs['黯星'] = Math.max(int(enemyDebuffs['黯星']), extra.end_tick + 1);
+          reactionDamageEvents.push({effect_id: extra.id, reaction: '黯星', tick: extra.end_tick,
+            sequence: 1, contributor_slot: extra.contributor_slot,
+            contributor_character_id: extra.contributor_character_id,
+            contributor_character_name: extra.contributor_character_name, damage: null});
+          if (event.conflict_settlement) evictReactionEffect(extra, start, {settleDamage: true});
+        }
+      }
       if (
         reactionName !== '黯星'
         || event.conflict_settlement === true
@@ -3322,6 +3375,8 @@
     }
 
     function settleReactionDamage(untilTick, countedUntilTick = untilTick) {
+      // Ending a reaction may enqueue one non-recursive follow-up inside this window.
+      while (reactionDamageEvents.some((event) => event.damage == null && int(event.tick) >= 0 && int(event.tick) <= untilTick)) {
       reactionDamageEvents
         .filter((event) => event.damage == null && int(event.tick) >= 0 && int(event.tick) <= untilTick)
         .sort((a, b) => int(a.tick) - int(b.tick) || int(a.sequence) - int(b.sequence))
@@ -3365,6 +3420,7 @@
             }
           }
         });
+      }
     }
 
     function schedulePeriodicBuffDamage(instance, rule) {
@@ -3734,7 +3790,7 @@
           ? effectiveReactionPanel(strengthSourceSnapshot, tick)
           : calcPanel;
         if (effect.reaction === '浸染' && ['魂', '相'].includes(element)) {
-          multiplier *= reactionAmplificationMultiplierForStrength(strengthPanel?.harmony_strength);
+          multiplier *= reactionAmplificationMultiplierForStrength(strengthPanel?.harmony_strength) * (teamHasHeiyu() ? 1.3 / 1.2 : 1);
         }
         if (effect.reaction === '覆纹' && ['灵', '咒'].includes(element)) {
           const strength = Math.max(0, num(strengthPanel?.harmony_strength));
@@ -3827,6 +3883,9 @@
         if (cooldownTicks > 0 && triggerTick < cooldownUntilTick) return;
         const activation = rule.activation && typeof rule.activation === 'object' ? rule.activation : {};
         const runtimeRule = clone(rule);
+        if (runtimeRule.duration?.pause_off_field === true) {
+          runtimeRule.duration.ticks = onFieldDurationTicks(ownerSlot, triggerTick, durationTicksForRule(rule));
+        }
         const resourceDuration = activation.duration_from_personal_resource
           && typeof activation.duration_from_personal_resource === 'object'
           ? activation.duration_from_personal_resource
@@ -4415,6 +4474,7 @@
       const usesEnergy = snapshot.character?.uses_energy !== false;
       const isInstantForegroundQ = isZeroForegroundQStep(step, action);
       const warnings = [];
+      if (action.validation_note) warnings.push(String(action.validation_note));
       settleActionEnergy(isInstantForegroundQ ? startTick - 1 : startTick);
       if (int(action.required_awakening) > 0 && !hasAwakeningNode(snapshot, action.required_awakening)) {
         const awakeningLabel = 'ABCDEF'[int(action.required_awakening) - 1] || String(int(action.required_awakening));
@@ -4490,6 +4550,10 @@
       const shouldValidateRequiredBuff = !requiredBuffPlacements.size
         || requiredBuffPlacements.has(placement(isBackground));
       const requiredBuffKey = String(action.required_buff_key || '');
+      if (action.forbidden_buff_key && activeBuffs.some((buff) => String(buff.definition_id) === action.forbidden_buff_key
+        && int(buff.owner_slot) === slot && buffTick >= int(buff.start_tick) && buffTick < int(buff.end_tick))) {
+        warnings.push('当前形态不能使用该动作。');
+      }
       if (shouldValidateRequiredBuff && requiredBuffKey && !activeBuffs.some((buff) => (
         String(buff.definition_id || '') === requiredBuffKey
         && int(buff.owner_slot) === slot
@@ -4499,6 +4563,12 @@
         warnings.push(`动作需要处于 ${String(action.required_buff_name || requiredBuffKey)} 状态。`);
       }
       const requiredBuffAnyKeys = strSet(action.required_buff_any_keys);
+      asList(action.required_additional_buff_keys).forEach((key) => {
+        if (!activeBuffs.some((buff) => String(buff.definition_id) === key && int(buff.owner_slot) === slot
+          && buffTick >= int(buff.start_tick) && buffTick < int(buff.end_tick))) {
+          warnings.push('动作所需的额外激活状态尚未获得。');
+        }
+      });
       if (shouldValidateRequiredBuff && requiredBuffAnyKeys.size && !activeBuffs.some((buff) => (
         requiredBuffAnyKeys.has(String(buff.definition_id || ''))
         && int(buff.owner_slot) === slot
@@ -4575,6 +4645,7 @@
         ));
       }
       const slotResources = personalResources.get(slot) || {};
+      const consumedResources = {};
       Object.entries(resourceMap(action.personal_resource_threshold)).forEach(([key, threshold]) => {
         if ((slotResources[key] || 0) < threshold && action.personal_resource_threshold_warning === true) {
           warnings.push(`个人资源 ${key} 未达到 ${threshold} 点阈值。`);
@@ -4586,6 +4657,7 @@
           return;
         }
         if ((slotResources[key] || 0) < totalCost) warnings.push(`个人资源 ${key} 不足。`);
+        consumedResources[key] = Math.min(slotResources[key] || 0, totalCost);
         slotResources[key] = Math.max(0, (slotResources[key] || 0) - totalCost);
       });
       asList(action.personal_resource_consume_all).map(String).filter(Boolean).forEach((key) => {
@@ -4625,6 +4697,34 @@
         slotEnergy = 0;
       }
       const calc = calculateActionDamage(snapshot, action, enemy, buffModifiers);
+      const resourceDamage = action.resource_damage;
+      if (resourceDamage && num(consumedResources[resourceDamage.resource]) > 0) {
+        const extraAction = Object.assign({}, action, {
+          action_type: resourceDamage.damage_type,
+          damage_type: resourceDamage.damage_type,
+          skill_level_category: resourceDamage.skill_level_category,
+          resonance_skill_level_bonus: true,
+          multipliers: {atk: num(consumedResources[resourceDamage.resource]) / actionMultiplier * num(resourceDamage.atk_per_point)},
+        });
+        const extraModifiers = mods();
+        applicableBuffContributions(activeBuffs, step, extraAction, snapshot, isBackground, Object.assign({}, buffContext, {action: extraAction}))
+          .forEach(({effects}) => mergeMods(extraModifiers, effects));
+        calc.resource_damage = calculateActionDamage(snapshot, extraAction, enemy, extraModifiers).direct_damage;
+        calc.direct_damage += calc.resource_damage;
+      }
+      const consumedStackKey = String(action.consume_buff_stack_key || '');
+      if (consumedStackKey) {
+        const charge = activeBuffs.find((buff) => String(buff.definition_id) === consumedStackKey
+          && int(buff.owner_slot) === slot && buffTick >= int(buff.start_tick) && buffTick < int(buff.end_tick));
+        if (charge) {
+          if (num(charge.stack_count) < actionMultiplier) warnings.push('协同攻击剩余次数不足。');
+          charge.stack_count = Math.max(0, num(charge.stack_count) - actionMultiplier);
+          if (!charge.stack_count) {
+            truncateBuffTimelineAt(charge, buffTick, visualStartTick);
+            activeBuffs = activeBuffs.filter((buff) => buff !== charge);
+          }
+        }
+      }
       const consumedBuffs = new Set(
         activeBuffs
           .filter((buff) => (
@@ -4884,6 +4984,8 @@
         applied_enemy_debuffs: appliedEnemyDebuffs,
         enemy_debuffs: activeEnemyDebuffs(enemyDebuffs, buffTick),
         direct_damage: multipliedDirectDamage,
+        resource_damage: num(calc.resource_damage) * actionMultiplier * nonFuwenAmplification,
+        personal_resources_consumed: consumedResources,
         fuwen_damage: fuwenDamage,
         stagger_amount: multipliedStagger,
         forced_stagger: forcedStagger,
@@ -4991,6 +5093,44 @@
       (sum, interval) => sum + Math.max(0, int(interval.end_tick) - int(interval.start_tick)),
       0,
     );
+    // User 2026-09-16: count only time-located damage; aggregate stagger is excluded.
+    // This damage is already a final value and bypasses every modifier/resistance area.
+    if (teamHasHeiyu()) {
+      const owner = Array.from(snapshots.values()).find((snapshot) => snapshot.character.id === HEIYU_CHARACTER_ID);
+      if (options.loop_enabled && reactionEffects.some((effect) => effect.reaction === '黯星' && int(effect.start_tick) < 0)
+        && details.length) details[0].warnings.push('黑羽黯星跨轮伤害账本尚未接入；当前累计不含上一轮伤害。');
+      const ledger = details.map((detail) => ({tick: int(detail.start_tick), step_id: detail.step_id,
+        damage: num(detail.direct_damage) + num(detail.fuwen_damage)}));
+      const settled = reactionDamageEvents.filter((event) => event._counted_in_total && num(event.damage) >= 0)
+        .sort((a, b) => int(a.tick) - int(b.tick));
+      settled.forEach((event) => {
+        if (event.reaction === '黯星') {
+          const effect = reactionEffects.find((item) => item.id === event.effect_id);
+          if (effect) {
+            const accumulated = ledger.filter((item) => (item.tick > int(effect.start_tick) || (item.step_id && item.tick === int(effect.start_tick)))
+              && item.tick <= int(event.tick) && item.step_id !== effect.source_step_id
+              && !(item.step_id && item.tick === int(event.tick)))
+              .reduce((sum, item) => sum + item.damage, 0);
+            const extraDamage = Math.min(accumulated * 0.2, num(owner.base_stats.atk) * 1000);
+            if (extraDamage > 0) {
+              const extra = {reaction: '黯星', heiyu_accumulation: true, effect_id: effect.id,
+                tick: int(event.tick), visual_tick: event.visual_tick, sequence: 2,
+                contributor_slot: owner.slot, contributor_character_id: owner.character.id,
+                contributor_character_name: owner.character.name, damage: extraDamage, _counted_in_total: true,
+                formula_parts: {base: accumulated, damage_scale: 0.2, damage_cap: num(owner.base_stats.atk) * 1000,
+                  excludes_stagger: true, ignores_modifiers: true}};
+              reactionDamageEvents.push(extra);
+              directDamage += extraDamage;
+              specialDamageBySource.set('黯星', (specialDamageBySource.get('黯星') || 0) + extraDamage);
+              reactionDamageBySlot.set(owner.slot, (reactionDamageBySlot.get(owner.slot) || 0) + extraDamage);
+              ledger.push({tick: int(event.tick), damage: extraDamage});
+            }
+          }
+        }
+        ledger.push({tick: int(event.tick), damage: num(event.damage)});
+      });
+      reactionDamageEvents.sort((a, b) => int(a.tick) - int(b.tick) || int(a.sequence) - int(b.sequence));
+    }
     const harmonyDamage = HARMONY_DAMAGE_SOURCES.reduce(
       (sum, source) => sum + (specialDamageBySource.get(source) || 0),
       0,

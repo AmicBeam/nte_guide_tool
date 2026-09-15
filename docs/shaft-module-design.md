@@ -750,3 +750,14 @@ seconds = tick / 10
 1. 市场排序第一版是否只需要 `DPS / 最新 / 点赞`？收藏数可展示但不作为默认排序。
 2. 数据导入是否以 `异环云配队 V0.2.7` 为第一版真源？如果后续 xlsx 更新，需要用 `source_version` 做兼容。
 3. 动作触发 buff 的具体生效条件尚未补全，需要后续按角色机制逐条确认。
+
+## 黑羽测试扩展（2026-09-16）
+
+- `character.initial_personal_resources` 提供非循环入战资源；循环使用用户配置。
+- `duration.pause_off_field` 把前台有效时长按已编译前台切换映射为墙钟时间，后台停表；显式退出仍截断同一状态线。
+- `action.resource_damage` 把实际支付的个人资源按独立伤害类型与技能等级结算；`resource_damage` 与 `personal_resources_consumed` 写入动作详情，避免沿用E/援护增伤来计算普攻追加。
+- `required_additional_buff_keys` 校验额外激活状态；`forbidden_buff_key` 校验形态冲突；`consume_buff_stack_key` 消耗手工协同窗口次数。均保留既有非法轴警告但继续试算的模式。
+- 黑羽黯星只额外续生一次；不受增益的累计追加在本轮事件结算后按时间账本计算，不重复进入常规伤害乘区。用户明确暂不计入倾陷；跨轮伤害账本待接入。
+- 弧盘可声明 `available_levels`，未提供档位不能选择或保存，未知档位归一到默认档。
+
+具体资料边界、已接入范围与缺口见排轴README及Buff配置验收清单的黑羽章节。

@@ -621,7 +621,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             buffs['character_canhong_illusion_dot_spread']['activation']['increase_all_active_dot_layers']
         )
         canhong_arc = next(arc for arc in catalog['arcs'] if arc['name'] == '噬心诡刃')
-        self.assertEqual(catalog['arcs'][0]['id'], canhong_arc['id'])
+        self.assertEqual(next(arc for arc in catalog['arcs'] if arc['adaptation'] == '气态')['name'], '罪与罚')
         self.assertEqual(canhong_arc['adaptation'], '气态')
         self.assertEqual(canhong_arc['base_atk'], 570)
         self.assertEqual(catalog['arc_refinements']['arcs'][canhong_arc['id']]['levels']['5']['panel_modifiers']['crit_rate'], 0.56)

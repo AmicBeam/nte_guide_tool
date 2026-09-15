@@ -800,5 +800,53 @@
       "title": "工作模范准则",
       "description": "每个「兽牙影刺」降低其锁定目标2%的相异能属性抗性，最多降低6%。"
     }
+  ],
+  "黑羽": [
+    {
+      "title": "A觉（待资料）",
+      "description": "用户测试资料未提供效果，暂不参与计算。",
+      "implemented": false,
+      "implementation_status": "pending_source"
+    },
+    {
+      "title": "B觉（待资料）",
+      "description": "用户测试资料未提供效果，暂不参与计算。",
+      "implemented": false,
+      "implementation_status": "pending_source"
+    },
+    {
+      "title": "C觉（待资料）",
+      "description": "用户测试资料未提供效果，暂不参与计算。",
+      "implemented": false,
+      "implementation_status": "pending_source"
+    },
+    {
+      "title": "D觉（待资料）",
+      "description": "用户测试资料未提供效果，暂不参与计算。",
+      "implemented": false,
+      "implementation_status": "pending_source"
+    },
+    {
+      "title": "E觉（待资料）",
+      "description": "用户测试资料未提供效果，暂不参与计算。",
+      "implemented": false,
+      "implementation_status": "pending_source"
+    },
+    {
+      "title": "F觉（待资料）",
+      "description": "用户测试资料未提供效果，暂不参与计算。",
+      "implemented": false,
+      "implementation_status": "pending_source"
+    },
+    {
+      "title": "三觉共鸣",
+      "description": "普通攻击、变轨技能与极轨终结技能等级+1。来源：用户腾讯文档。"
+    },
+    {
+      "title": "六觉共鸣（待资料）",
+      "description": "用户测试资料未提供效果，暂不参与计算。",
+      "implemented": false,
+      "implementation_status": "pending_source"
+    }
   ]
 }

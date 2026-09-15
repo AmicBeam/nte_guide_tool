@@ -3044,5 +3044,331 @@
     "duration": {"type": "time", "ticks": 150, "loop_carry": true},
     "stacking": {"key": "arc_canhong_devouring_heart_crit_damage", "mode": "add_stack", "max_stacks": 7},
     "effects": {"crit_dmg": 0.09}
+  },
+  {
+    "id": "character_heiyu_form",
+    "name": "黑羽·二形态",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 160,
+      "loop_carry": true,
+      "pause_off_field": true
+    },
+    "stacking": {
+      "key": "character_heiyu_form",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "crit_dmg": 0.25
+    },
+    "resource_effects": {
+      "block_gain": {
+        "恶意": true
+      }
+    }
+  },
+  {
+    "id": "character_heiyu_form_exit",
+    "name": "黑羽·退出二形态",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q2"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_form_exit",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_heiyu_form",
+        "character_heiyu_e_ready"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_q_attack",
+    "name": "黑羽·全队攻击提升",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_q_attack",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "atk_pct": 0.2
+    }
+  },
+  {
+    "id": "character_heiyu_e_ready",
+    "name": "黑羽·二形态变轨激活",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_form_a5",
+          "action_heiyu_parry"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_heiyu_form"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_e_ready",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_heiyu_e_ready_clear",
+    "name": "黑羽·消耗二形态变轨激活",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_form_e"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_e_ready_clear",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_heiyu_e_ready"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_assist_window",
+    "name": "黑羽·失乐鸟",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_e"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_assist_window",
+      "mode": "refresh",
+      "max_stacks": 5,
+      "stack_gain": 5
+    },
+    "effects": {}
+  },
+  {
+    "id": "arc_heiyu_team_crit",
+    "name": "罪与罚·全队暴伤",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_heiyu_crime_punishment"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_types": [
+          "Q"
+        ]
+      }
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_heiyu_team_crit",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "crit_dmg": 0.16
+    }
+  },
+  {
+    "id": "arc_heiyu_ember",
+    "name": "罪与罚·烬羽",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_heiyu_crime_punishment"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_types": [
+          "Q"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "arc_heiyu_ember"
+          ]
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_types": [
+        "Q"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_heiyu_ember",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "crit_dmg": 0.24
+    },
+    "consume_on_apply": true,
+    "activation": {
+      "exclude_trigger_action": true
+    }
   }
 ]

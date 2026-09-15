@@ -1,5 +1,23 @@
 [
   {
+    "id": "arc_heiyu_crime_punishment",
+    "name": "罪与罚",
+    "level": 80,
+    "rarity": "",
+    "adaptation": "气态",
+    "detail": "用户测试资料：环合强度+72、魂伤+20%；Q后全队暴伤+16%/15秒；进入烬羽，下一次Q暴伤+24%并消耗烬羽。仅录入已提供档位，其他精炼待资料。",
+    "base_atk": 570,
+    "modifiers": {
+      "crit_rate": 0.24,
+      "harmony_strength": 72
+    },
+    "element_dmg": {
+      "魂": 0.2
+    },
+    "source_row": 0,
+    "source_note": "用户2026-09-15腾讯文档《黑羽资料汇总》，非Nanoka数据；只提供一档数值，暂按1精录入，不推算其他精炼。"
+  },
+  {
     "id": "arc_canhong_devouring_heart",
     "name": "噬心诡刃",
     "level": 80,

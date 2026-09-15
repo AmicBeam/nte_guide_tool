@@ -1946,6 +1946,8 @@
 
   function clampArcRefinement(value, arcId = '') {
     const level = Math.round(Number(value));
+    const available = state.catalog?.arc_refinements?.arcs?.[arcId]?.available_levels;
+    if (available && !available.includes(level)) return defaultArcRefinement(arcId);
     return level >= 1 && level <= 5 ? level : defaultArcRefinement(arcId);
   }
 
@@ -2474,7 +2476,8 @@
                 <select data-slot="${member.slot}" data-field="arc_refinement" aria-label="弧盘精炼等级">
                   ${Array.from({ length: 5 }, (_, index) => {
                     const level = index + 1;
-                    return `<option value="${level}" ${arcRefinement === level ? 'selected' : ''}>精炼 ${level}</option>`;
+                    const available = state.catalog?.arc_refinements?.arcs?.[member.arc_id]?.available_levels;
+                    return `<option value="${level}" ${arcRefinement === level ? 'selected' : ''} ${available && !available.includes(level) ? 'disabled' : ''}>精炼 ${level}${available && !available.includes(level) ? '（待资料）' : ''}</option>`;
                   }).join('')}
                 </select>
               </label>
@@ -4511,6 +4514,9 @@
       return event.events.map((item) => damageMarkerTooltip(item)).join('\n');
     }
     const formula = event?.formula_parts || {};
+    if (event?.heiyu_accumulation) {
+      return `黑羽·黯星追加 · ${formatNumber(event.damage)} 伤害\n累计伤害 ${formatNumber(formula.base)} × 20%（不含倾陷）\n上限 ${formatNumber(formula.damage_cap)}；不受其他增益影响`;
+    }
     const isPeriodicDamage = Boolean(event?.kind);
     const lines = [];
     const percent = (value) => `${formatNumber(Number(value || 0) * 100, 1)}%`;

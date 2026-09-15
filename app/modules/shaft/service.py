@@ -41,7 +41,7 @@ MAX_BUFF_RULES = 48
 MAX_BACKGROUND_ACTION_MULTIPLIER = 999
 VISIBILITIES = frozenset({'private', 'public'})
 MARKET_SORTS = frozenset({'dps', 'likes', 'favorites', 'new'})
-DEFAULT_UNPUBLISHED_CHARACTERS = {}
+DEFAULT_UNPUBLISHED_CHARACTERS = {'char_heiyu': '黑羽'}
 HALF_OPEN_CHARACTERS = {}
 RELEASED_CHARACTERS = {
     'char_0846d632e0': '灵可',
@@ -339,6 +339,9 @@ def _default_arc_refinement(arc_id: str, catalog: dict[str, Any]) -> int:
 
 def _normalize_arc_refinement(raw: Any, arc_id: str, catalog: dict[str, Any]) -> int:
     level = _int(raw)
+    available = (((catalog.get('arc_refinements') or {}).get('arcs') or {}).get(arc_id) or {}).get('available_levels')
+    if available and level not in available:
+        return _default_arc_refinement(arc_id, catalog)
     if 1 <= level <= 5:
         return level
     return _default_arc_refinement(arc_id, catalog)
@@ -381,12 +384,12 @@ def _normalize_curtain_bonus(raw: Any, character_id: str, catalog: dict[str, Any
     default_stat = _normalize_stat_name(default_bonus.get('stat')) or next(iter(stat_options), '')
     stat = (
         default_stat
-        if character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID}
+        if character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, 'char_heiyu'}
         else (_normalize_stat_name(source.get('stat')) or default_stat)
     )
     passive_type = str(
         default_bonus.get('passive_type')
-        if character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID}
+        if character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, 'char_heiyu'}
         else (source.get('passive_type') or default_bonus.get('passive_type') or 'type3')
     )
     if passive_type not in CURTAIN_PASSIVE_TYPES:

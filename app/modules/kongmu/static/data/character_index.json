@@ -318,6 +318,16 @@
       "rarity": 5,
       "icon": "",
       "source_note": "Nanoka NTE 1.3.4 已收录正式角色 ID 1036；本记录保留排轴稳定角色 ID，并于2026-08-24按用户口径转为公开角色。"
+    },
+    {
+      "id": "char_heiyu",
+      "name": "黑羽",
+      "names": {
+        "zh": "黑羽"
+      },
+      "element": "Psyche",
+      "element_id": "PSYCHE",
+      "source_note": "用户2026-09-15提供：腾讯文档《黑羽资料汇总》UTYzjRJfxLuc；Everness同日按黑羽检索无匹配，属于用户测试资料，非Nanoka核实数据。"
     }
   ]
 }

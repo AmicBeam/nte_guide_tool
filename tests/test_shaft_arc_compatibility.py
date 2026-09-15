@@ -17,6 +17,7 @@ EXPECTED_CHARACTER_ADAPTATIONS = {
     '埃德嘉': '液态',
     '残虹': '气态',
     '灵可': '等离子',
+    '黑羽': '气态',
     '伊洛伊': '液态',
     '娜娜莉': '等离子',
     '九原': '固态',
@@ -51,7 +52,7 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
         self.assertEqual(refinements['source'], 'nanoka.cc')
         self.assertEqual(set(refinements['arcs']), {arc['id'] for arc in catalog['arcs']})
         self.assertTrue(all(
-            set(record['levels']) == {'1', '2', '3', '4', '5'}
+            set(record['levels']) == {str(level) for level in record.get('available_levels', [1, 2, 3, 4, 5])}
             for record in refinements['arcs'].values()
         ))
 

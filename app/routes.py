@@ -338,7 +338,7 @@ def api_kongmu_catalog():
     try:
         player = _optional_current_player()
         response = jsonify(get_kongmu_catalog_payload(
-            include_test_characters=shaft_player_access_level(player) in {'invited', 'test'}
+            include_test_characters=shaft_player_access_level(player) == 'test'
         ))
         # This URL returns a different catalog for test-whitelisted accounts.
         # Never let an anonymous response mask the authenticated variant.
@@ -364,7 +364,7 @@ def api_kongmu_plan():
         return jsonify(plan_kongmu_layout(
             str(payload.get('character_id', '')),
             str(payload.get('cartridge_id', '')),
-            include_test_characters=shaft_player_access_level(player) in {'invited', 'test'},
+            include_test_characters=shaft_player_access_level(player) == 'test',
         ))
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400

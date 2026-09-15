@@ -234,6 +234,11 @@
     min-height: 0;
     overflow: auto;
   }
+  /* A scrollable description otherwise lets the browser cancel card drags. */
+  .v2-table-page #v2-player-hand .v2-hand-card.legal,
+  .v2-table-page #v2-player-hand .v2-hand-card.legal * {
+    touch-action: none;
+  }
   .v2-table-page #v2-player-hand .v2-hand-card.raised { transform: none; }
 }
 @media (pointer: coarse) and (max-width: 1200px) {

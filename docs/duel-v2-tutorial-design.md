@@ -4,11 +4,42 @@
 | --- | --- |
 | 文档路径（入库后） | [docs/duel-v2-tutorial-design.md](duel-v2-tutorial-design.md) |
 | 作者 | TBD |
-| 日期 | 2026-09-14 |
-| 状态 | 设计案 |
+| 日期 | 2026-09-15 |
+| 状态 | 当前实现摘要；原 12 关设计案保留为历史参考 |
 | 规则真源 | [everness-item-chain-card-design.md](everness-item-chain-card-design.md) |
 | 牌面用语 | [duel-v2-card-text.md](duel-v2-card-text.md) |
 | 演出 | [duel-v2-presentation-20260912.md](duel-v2-presentation-20260912.md)、`v2_animation.js`、`v2_table/interaction.js` |
+
+## 当前实现与文案（2026-09-15）
+
+当前为 **11 关**。行动力教学已合并到第一关；前 10 关为 2v2，第 11 关为 4v4。scenario ID 保留历史编号，不等于玩家看到的关卡序号。运行配置见 `app/modules/card_game/content/duel_v2/tutorial/pack.py`。
+
+| 显示序号 | 名称 | scenario |
+| ---: | --- | --- |
+| 1 | 牌桌与回合 | `tutorial_l01_board` |
+| 2 | 手牌 | `tutorial_l02_hand` |
+| 3 | 战术 | `tutorial_l04_tactic` |
+| 4 | 倒地 | `tutorial_l05_down` |
+| 5 | 武备 | `tutorial_l06_form` |
+| 6 | 环合 | `tutorial_l07_harmony` |
+| 7 | 终结 | `tutorial_l08_energy` |
+| 8 | 瞬发 | `tutorial_l09_instant` |
+| 9 | 响应 | `tutorial_l10_response` |
+| 10 | 穿透 | `tutorial_l11_pierce` |
+| 11 | 四人编队 | `tutorial_l12_roster4` |
+
+- 第十关的目录、关卡标题与弹窗统一使用「穿透」。
+- 第十一关步骤为 `l12_mulligan` → `l12_roster` → `l12_empty`。换牌可选 0–3 张，不强制指定某张；空库为说明步骤，确认后完成教学，不运行旧案的空抽获胜脚本。
+- 四人编队说明区分正式对局的 4 人 / 32 张和教学专用牌库，不声称教学牌库就是正式构筑。
+- 回合抽牌统一说明为「自己的回合开始时，抽 1 张牌。」不单独强调先手。前面的固定教学关卡关闭通常抽牌，第十一关开启。
+- 空库提示为「抽牌时若牌库已空，会立刻失败。留意剩余牌数，合理使用抽牌效果，避免空库时再次抽牌。」不提示通过构筑增加牌库，也不把抽走最后一张牌当成失败。
+- 先手首回合 1 点行动力、其他普通回合 2 点；终结不消耗行动力。固定教学不启用白热化。
+
+验证：`python3 -m unittest tests.test_duel_v2_tutorial`，覆盖全关脚本、公开文案与标题一致性。
+
+## 历史参考：2026-09-14 原 12 关设计案
+
+> **以下全部内容（包括 Overview、关卡总表、逐关脚本、验收及 PR Plan）为旧设计快照，不再作为当前实现或文案的验收口径。** 旧案中的 12 关、指定换牌、首回合不抽牌、完整空抽获胜演示等已被上方当前实现说明替代；保留只用于追溯设计过程。
 
 V2 多关教学，不是盖卡迁移。正式 4 人 / 32 张不变。手册 §3「终结耗 1 行动力」过期，教学按 AGENTS.md 与 `start_ultimate(..., spent_ap=False)`。手册 §3 另改。
 

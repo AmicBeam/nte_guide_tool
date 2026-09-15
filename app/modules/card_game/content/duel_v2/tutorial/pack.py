@@ -163,7 +163,7 @@ LEVEL_META = (
     {'id': 'tutorial_l08_energy', 'title': '第七关 终结', 'short': '终结'},
     {'id': 'tutorial_l09_instant', 'title': '第八关 瞬发', 'short': '瞬发'},
     {'id': 'tutorial_l10_response', 'title': '第九关 响应', 'short': '响应'},
-    {'id': 'tutorial_l11_pierce', 'title': '第十关 贯穿', 'short': '贯穿'},
+    {'id': 'tutorial_l11_pierce', 'title': '第十关 穿透', 'short': '穿透'},
     {'id': 'tutorial_l12_roster4', 'title': '第十一关 四人编队', 'short': '四人编队'},
 )
 
@@ -612,10 +612,10 @@ _L12_STEPS = [
          ['mulligan'], [{'type': 'mulligan'}],
          cue='选择要换的手牌，然后确认', primary='去换牌'),
     _ack('l12_roster', '四人编队',
-         '常规对战每方 4 名不同角色。新手教学前面用 2 人，是为了看清位置。现在按正式编制开局。',
+         '常规对战每方 4 名不同角色，牌库共 32 张。新手教学前面用 2 人，是为了看清位置。这一关使用四人编队，牌库仍为教学专用。',
          ['bench:a', 'bench:b']),
     _ack('l12_empty', '空牌库',
-         '之后每次抽牌，如果牌库已经空了，会立刻失败。构筑时要留足牌库，不要把抽牌手段用尽。',
+         '自己的回合开始时，抽 1 张牌。抽牌时若牌库已空，会立刻失败。留意剩余牌数，合理使用抽牌效果，避免空库时再次抽牌。',
          ['deck:a'], finish=True, primary='完成教学'),
 ]
 
@@ -671,7 +671,7 @@ SCENARIOS = {
         opening_b=[{'type': 'end_turn'}],
         hand_a=['tutorial_m_response']),
     'tutorial_l11_pierce': _scene(
-        'tutorial_l11_pierce', '第十关 贯穿', 10, _L11_STEPS,
+        'tutorial_l11_pierce', '第十关 穿透', 10, _L11_STEPS,
         flags=_flags(disable_overflow=False, disable_passives=False),
         stats={'tutorial_nanali': {'hp': 1, 'max_hp': 1}},
         front_b='tutorial_nanali'),

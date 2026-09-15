@@ -4,6 +4,48 @@ from app.modules.card_game.engine.duel_v2 import apply_action, legal_actions, ne
 
 
 class DuelV2TutorialTest(unittest.TestCase):
+    def test_all_campaign_scripts_complete(self) -> None:
+        from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS
+        for scenario_id in CAMPAIGN_LEVELS:
+            with self.subTest(scenario=scenario_id):
+                state = new_game(scenario=scenario_id)
+                for step in range(100):
+                    if state['phase'] == 'finished':
+                        break
+                    actions = legal_actions(state, 'a')
+                    self.assertTrue(actions)
+                    state = apply_action(state, 'a', actions[0])
+                self.assertEqual(state['reason'], 'tutorial_complete')
+
+    def test_campaign_titles_use_current_terminology(self) -> None:
+        from app.modules.card_game.content.duel_v2.tutorial.pack import CAMPAIGN_LEVELS, LEVEL_META, SCENARIOS
+        self.assertEqual(len(CAMPAIGN_LEVELS), 11)
+        self.assertEqual([level['id'] for level in LEVEL_META], list(CAMPAIGN_LEVELS))
+        for level in LEVEL_META:
+            self.assertEqual(level['title'], SCENARIOS[level['id']]['title'])
+            self.assertNotIn('贯穿', level['title'])
+        state = new_game(scenario='tutorial_l11_pierce')
+        tutorial = observe(state, 'a')['tutorial']
+        self.assertEqual(tutorial['title'], '第十关 穿透')
+        self.assertEqual(tutorial['modal']['title'], '穿透')
+
+    def test_roster_tutorial_explains_draw_and_fixed_deck_size(self) -> None:
+        state = new_game(scenario='tutorial_l12_roster4')
+        state = apply_action(state, 'a', {'type': 'mulligan', 'card_ids': []})
+        tutorial = observe(state, 'a')['tutorial']
+        self.assertEqual(tutorial['step_id'], 'l12_roster')
+        self.assertIn('牌库共 32 张', tutorial['modal']['body'])
+        self.assertIn('牌库仍为教学专用', tutorial['modal']['body'])
+        state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+        tutorial = observe(state, 'a')['tutorial']
+        self.assertEqual(tutorial['step_id'], 'l12_empty')
+        self.assertIn('自己的回合开始时，抽 1 张牌。', tutorial['modal']['body'])
+        self.assertIn('抽牌时若牌库已空，会立刻失败。', tutorial['modal']['body'])
+        self.assertNotIn('先手', tutorial['modal']['body'])
+        self.assertNotIn('构筑时要留足牌库', tutorial['modal']['body'])
+        state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+        self.assertEqual(state['reason'], 'tutorial_complete')
+
     def test_level_one_board_script(self) -> None:
         state = new_game(scenario='tutorial_l01_board')
         self.assertEqual(state['sides']['a']['hp'], 4)

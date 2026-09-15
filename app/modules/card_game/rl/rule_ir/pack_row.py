@@ -35,6 +35,7 @@ def empty_row() -> list[int]:
         row[OFFSETS['extra_genesis_actor'] + side] = -1
         for slot in range(HAND_SLOTS):
             row[OFFSETS['hand_kind'] + side * HAND_SLOTS + slot] = -1
+            row[OFFSETS['hand_revealed'] + side * HAND_SLOTS + slot] = 0
         for slot in range(DECK_SLOTS):
             row[OFFSETS['deck_kind'] + side * DECK_SLOTS + slot] = -1
         for slot in range(DISCARD_SLOTS):
@@ -61,6 +62,7 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
     row[OFFSETS['reason']] = _REASON.get(state.get('reason'), 0)
     row[OFFSETS['rng']] = int(state.get('rng') or 0) & 0x7FFFFFFF
     row[OFFSETS['next_instance']] = int(state.get('next_instance') or 0)
+    row[OFFSETS['escalation_enabled']] = 1 if state.get('escalation_enabled') else 0
     pending = state.get('pending_choice')
     if pending:
         row[OFFSETS['pending_kind']] = {'inspect_top': 1, 'discard': 2, 'enemy_hand': 3}.get(pending.get('kind'), 0)
@@ -90,7 +92,9 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
         row[OFFSETS['fatigue'] + side_i] = int(team.get('fatigue') or 0)
         row[OFFSETS['normal_atk'] + side_i] = 1 if team.get('normal_attack_available') else 0
         row[OFFSETS['ultimate_ok'] + side_i] = 1 if team.get('ultimate_available') else 0
+        row[OFFSETS['ultimates_used'] + side_i] = int(team.get('ultimates_used') or 0)
         row[OFFSETS['used_instant'] + side_i] = 1 if (team.get('used') or {}).get('instant') else 0
+        row[OFFSETS['harmony_damage'] + side_i] = 1 if team.get('harmony_damage') else 0
         row[OFFSETS['extra_flower'] + side_i] = 1 if team.get('extra_flower') else 0
         row[OFFSETS['extra_ap'] + side_i] = int(team.get('extra_ap') or 0)
         row[OFFSETS['extra_genesis'] + side_i] = 1 if team.get('extra_genesis_pending') else 0
@@ -102,7 +106,10 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
         burn = (team.get('front_debuff') or {}).get('burn') or {}
         delay = (team.get('front_debuff') or {}).get('delay') or {}
         row[OFFSETS['burn_left'] + side_i] = int(burn.get('left') or 0)
-        row[OFFSETS['delay_end'] + side_i] = int(delay.get('end') or 0)
+        row[OFFSETS['burn_infinite'] + side_i] = 1 if burn.get('infinite') else 0
+        burn_by = burn.get('by')
+        row[OFFSETS['burn_by'] + side_i] = 0 if burn_by == 'a' else 1 if burn_by == 'b' else -1
+        row[OFFSETS['delay_end'] + side_i] = int(delay.get('end') or delay.get('left') or 0)
         weave = (team.get('front_debuff') or {}).get('weave')
         row[OFFSETS['weave'] + side_i] = 1 if weave else 0
 
@@ -119,6 +126,9 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
                 row[inst_off + side_i * limit + index] = _instance_int(card.get('instance_id') or '')
 
         fill('hand', OFFSETS['hand_kind'], OFFSETS['hand_inst'], HAND_SLOTS, OFFSETS['hand_n'])
+        revealed = set(team.get('revealed_ids') or [])
+        for index, card in enumerate((team.get('hand') or [])[:HAND_SLOTS]):
+            row[OFFSETS['hand_revealed'] + side_i * HAND_SLOTS + index] = 1 if card.get('instance_id') in revealed else 0
         fill('deck', OFFSETS['deck_kind'], OFFSETS['deck_inst'], DECK_SLOTS, OFFSETS['deck_n'])
         fill('discard', OFFSETS['discard_kind'], OFFSETS['discard_inst'], DISCARD_SLOTS, OFFSETS['discard_n'])
         row[OFFSETS['removed_n'] + side_i] = len(team.get('removed') or [])
@@ -155,6 +165,9 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
             row[OFFSETS['ch_allied_hurt'] + base] = 1 if flags.get('allied_hurt') else 0
             row[OFFSETS['ch_pending_atk'] + base] = int(flags.get('pending_atk') or 0)
             row[OFFSETS['ch_share_overflow'] + base] = 1 if flags.get('share_overflow') else 0
+            row[OFFSETS['ch_hp_floor'] + base] = 1 if flags.get('hp_floor') else 0
+            order = list(team.get('order') or [])
+            row[OFFSETS['ch_order'] + base] = order.index(cid) + 1 if cid in order else 0
             collapse = flags.get('collapse') or {}
             row[OFFSETS['ch_collapse_count'] + base] = int(flags.get('collapse_count') or 0)
             if collapse:
@@ -196,6 +209,9 @@ def pack_gpu_row(state, row: int = 0) -> list[int]:
                 packed[OFFSETS[name] + base] = int(getattr(state, name)[row, side, seat])
             packed[OFFSETS['last_hit_side'] + base] = -1
             packed[OFFSETS['last_hit_seat'] + base] = -1
+        if hasattr(state, 'hand_revealed'):
+            for slot in range(HAND_SLOTS):
+                packed[OFFSETS['hand_revealed'] + side * HAND_SLOTS + slot] = int(state.hand_revealed[row, side, slot])
     for name in LEGAL_FIELDS:
         for index in range(MAX_LEGAL):
             packed[OFFSETS[name] + index] = int(getattr(state, name)[row, index])
@@ -220,6 +236,8 @@ def unpack_gpu_row(state, packed: list[int], row: int = 0) -> None:
         for slot in range(HAND_SLOTS):
             state.hand_kind[row, side, slot] = packed[OFFSETS['hand_kind'] + side * HAND_SLOTS + slot]
             state.hand_inst[row, side, slot] = packed[OFFSETS['hand_inst'] + side * HAND_SLOTS + slot]
+            if hasattr(state, 'hand_revealed'):
+                state.hand_revealed[row, side, slot] = packed[OFFSETS['hand_revealed'] + side * HAND_SLOTS + slot]
         for slot in range(DECK_SLOTS):
             state.deck_kind[row, side, slot] = packed[OFFSETS['deck_kind'] + side * DECK_SLOTS + slot]
             state.deck_inst[row, side, slot] = packed[OFFSETS['deck_inst'] + side * DECK_SLOTS + slot]
@@ -312,7 +330,7 @@ def bind_gpu_rows(state, *, device=None):
     names = (*GPU_STATE_SCALARS, 'pending_play_kind', 'pending_play_inst',
              'pending_card', 'pending_inst', *SIDE_SCALARS,
              'hand_kind', 'hand_inst', 'deck_kind', 'deck_inst',
-             'discard_kind', 'discard_inst', *CHAR_FIELDS, *LEGAL_FIELDS, 'legal_n')
+             'discard_kind', 'discard_inst', 'hand_revealed', *CHAR_FIELDS, *LEGAL_FIELDS, 'legal_n')
     for name in names:
         old = getattr(state, name)
         width = old[0].numel()

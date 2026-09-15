@@ -55,10 +55,14 @@ class GpuDuelEnv:
     def reset_from_python(self, states: list[dict[str, Any]]) -> GpuState:
         if len(states) != self.n:
             raise ValueError(f'expected {self.n} python states, got {len(states)}')
-        self.state = pack_python(states, device=self.device)
         if self.compiled is not None:
+            from .state import empty_state
+            from ..rule_ir.pack_row import bind_gpu_rows,pack_python_row
+            self.state=empty_state(self.n,self.device)
+            bind_gpu_rows(self.state).copy_(torch.tensor([pack_python_row(s) for s in states],dtype=torch.int32,device=self.device))
             self.compiled.step_gpu_state(self.state, [-1] * self.n)
         else:
+            self.state = pack_python(states, device=self.device)
             rebuild_legal(self.state)
         return self.state
 
@@ -84,6 +88,32 @@ class GpuDuelEnv:
         decks = {'a': self.deck_a, 'b': self.deck_b}
         states = [new_game(seed=int(seed), skip_mulligan=skip_mulligan, decks=decks) for seed in seeds]
         self.reset_from_python(states)
+        self._advance_to_actor(legal_ready=True)
+        return self.state
+
+    def reset_public(self, seeds: list[int] | None = None, *,
+                     deck_rows_a=None, deck_rows_b=None, escalation: bool = True) -> GpuState:
+        """Reset compiled rows from public custom four-person decks.
+
+        Preset ``reset()`` / ``reset_gpu_state`` remain unchanged. Custom decks
+        must already be encoded as int32 [n,36] rows on this env device.
+        """
+        seeds = list(seeds or range(self.n))
+        if len(seeds) != self.n:
+            raise ValueError('seeds must match batch size')
+        if deck_rows_a is None or deck_rows_b is None:
+            raise ValueError('public reset requires deck_rows_a and deck_rows_b')
+        seed_t = torch.as_tensor(seeds, dtype=torch.int32, device=self.device).contiguous()
+        deck_a = torch.as_tensor(deck_rows_a, dtype=torch.int32, device=self.device).contiguous()
+        deck_b = torch.as_tensor(deck_rows_b, dtype=torch.int32, device=self.device).contiguous()
+        self.learner = ((seed_t // 2) % 2).to(torch.int32)
+        from app.modules.card_game.rl.gpu_duel.state import empty_state
+        self.state = empty_state(self.n, self.device)
+        if self.compiled is not None:
+            self.compiled.reset_public_gpu_state(self.state, seed_t, deck_a, deck_b, escalation=escalation)
+        else:
+            from .reset import reset_public_gpu_state
+            reset_public_gpu_state(self.state, seed_t, deck_a, deck_b, escalation=escalation)
         self._advance_to_actor(legal_ready=True)
         return self.state
 

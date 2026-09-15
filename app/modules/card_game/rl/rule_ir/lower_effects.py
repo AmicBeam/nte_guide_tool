@@ -17,6 +17,7 @@ TABLE_KEYS = (
     'ignore_shield', 'team_buff', 'pending_atk', 'share_overflow',
     'hit_front_base', 'hit_front_printed', 'self_damage', 'draw_one',
     'sortie_allied_extra', 'heal_after_hit',
+    'burn_infinite', 'damage_missing_others', 'hp_floor',
 )
 
 
@@ -97,6 +98,12 @@ def compile_effect_tables(card_ids: tuple[str, ...]) -> dict[str, list[int]]:
                 tables['sortie'][row] = 1
             elif op.op == 'heal_after_hit':
                 tables['heal_after_hit'][row] = int(op.args[0]) if op.args else 0
+            elif op.op == 'burn_infinite':
+                tables['burn_infinite'][row] = 1
+            elif op.op == 'damage_missing_others':
+                tables['damage_missing_others'][row] = 1
+            elif op.op == 'hp_floor':
+                tables['hp_floor'][row] = int(op.args[0]) if op.args else 1
             else:
                 raise ValueError(f'no lowering for {op.op}')
     tables['hooks'] = dict(STARTER_HOOKS)  # type: ignore[assignment]

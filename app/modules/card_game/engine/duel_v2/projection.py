@@ -162,7 +162,7 @@ def observe(state, side, after_seq=None):
                 card = public_card(raw)
                 if ps == side and card_plays_instant(state, ps, raw):
                     card['instant'] = True
-                if raw.get('instance_id') in revealed and ps != side:
+                if raw.get('instance_id') in revealed:
                     card['revealed'] = True
             else:
                 card = {'hidden': True}
@@ -200,6 +200,9 @@ def observe(state, side, after_seq=None):
         tutorial = project_tutorial(state, side)
         result['tutorial'] = tutorial
         strip_hidden_fields(result, tutorial)
+    else:
+        from .policy_state import public_policy_state
+        result['policy_state'] = public_policy_state(state)
     return result
 
 

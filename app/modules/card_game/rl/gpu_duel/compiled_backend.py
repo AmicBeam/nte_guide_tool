@@ -156,3 +156,51 @@ class CompiledStarterBackend:
         from app.modules.card_game.rl.rule_ir.layout import OFFSETS
         if bool((rows[:, OFFSETS['error']] != 0).any()):
             raise CompiledEngineError('Compiled reset failed')
+
+    def reset_public_gpu_state(self, state, seeds, deck_rows_a, deck_rows_b, escalation=True) -> None:
+        """Reset compiled rows from public custom four-person decks.
+
+        seeds: int32 [n]; a negative seed preserves that row.
+        deck_rows_a/b: int32 [n,36] with the first 4 values as seat indices in
+        actual team order and the remaining 32 as card-kind indices. All tensors
+        must already live on the compiled executor device.
+        escalation=True enables global-turn 6/13/20 white-heat rules; False keeps
+        the legacy old-model path with one ultimate and original resource caps.
+        """
+        import torch
+        if self.closed:
+            raise CompiledEngineError('compiled backend is closed')
+        public_reset = getattr(self.launch, 'public_reset', None)
+        if public_reset is None:
+            raise CompiledEngineError('compiled backend has no public reset; no Python/tensor fallback')
+        rows = self._state_rows(state)
+        seeds = torch.as_tensor(seeds, dtype=torch.int32, device=state.device).contiguous()
+        deck_rows_a = torch.as_tensor(deck_rows_a, dtype=torch.int32, device=state.device).contiguous()
+        deck_rows_b = torch.as_tensor(deck_rows_b, dtype=torch.int32, device=state.device).contiguous()
+        if seeds.ndim != 1 or seeds.shape[0] != state.n:
+            raise ValueError('Reset seeds must have one entry per environment')
+        if deck_rows_a.shape != (state.n, 36) or deck_rows_b.shape != (state.n, 36):
+            raise ValueError('public deck rows must be int32 [n,36]')
+        if any(t.device != state.device for t in (rows, seeds, deck_rows_a, deck_rows_b)):
+            raise ValueError('public reset tensors must already live on the compiled device')
+        public_reset(rows, seeds, deck_rows_a, deck_rows_b, 1 if escalation else 0)
+        from app.modules.card_game.rl.rule_ir.layout import OFFSETS
+        if bool((rows[:, OFFSETS['error']] != 0).any()):
+            raise CompiledEngineError('Compiled public reset failed')
+
+    def reset_public_lists(self, seeds, deck_rows_a, deck_rows_b, escalation=True):
+        if self.closed:
+            raise CompiledEngineError('compiled backend is closed')
+        public_reset_lists = getattr(self.launch, 'public_reset_lists', None)
+        if public_reset_lists is None:
+            raise CompiledEngineError('compiled backend has no public reset; no Python/tensor fallback')
+        from app.modules.card_game.rl.rule_ir.pack_row import empty_row
+        rows = [empty_row() for _ in seeds]
+        out = public_reset_lists(rows, list(seeds), list(deck_rows_a), list(deck_rows_b), 1 if escalation else 0)
+        from app.modules.card_game.rl.rule_ir.layout import OFFSETS
+        errors = sum(1 for row in out if row[OFFSETS['error']])
+        if errors:
+            raise CompiledEngineError(
+                f'compiled public reset hit {errors} unsupported/error rows; no Python/tensor fallback'
+            )
+        return out

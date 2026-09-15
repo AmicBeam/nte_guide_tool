@@ -11,33 +11,43 @@ from typing import Any
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, STARTER_DECKS
 from app.modules.card_game.content.duel_v2.characters import EFFECTS, TARGET_POLICIES
 from app.modules.card_game.content.duel_v2.registry import KITS
-from app.modules.card_game.rl.gpu_duel.catalog import CARD_IDS, CARD_INDEX, SEATS
+from app.modules.card_game.rl.gpu_duel.catalog import CARD_IDS, CARD_INDEX, SEATS, public_card_ids
 from app.modules.card_game.rl.rule_ir.lower_effects import TABLE_KEYS, compile_effect_tables
 from app.modules.card_game.rl.rule_ir.starter import ALLOWED_OPS, STARTER_CARDS, STARTER_HOOKS, validate_starter_ir
 
 COMPILED_DECK_ID = 'starter'
 COMPILED_DECK_NAME = '创生预组'
 COMPILED_CHARACTERS = tuple(STARTER_DECK['character_ids'])
-COMPILED_CARDS = tuple(dict.fromkeys([*STARTER_DECK['card_ids'], 'NF01']))
+COMPILED_CARDS = public_card_ids()
 
 # Ops the generated engine has a real handler for. Extra IR ops used only by
 # other GPU presets stay on the tensor path.
 IMPLEMENTED_OPS = frozenset({
     'sortie', 'form', 'perm_plus', 'count_seed',
-    'draw_owned_target', 'draw_forms',
+    'draw_owned_self', 'draw_owned_target', 'draw_forms',
     'heal_target', 'buff_target', 'revive_target', 'heal_player',
     'inspect_top', 'pact_front', 'pact_target',
-    'ignore_shield', 'share_overflow', 'self_damage', 'draw_one',
-    'sortie_allied_extra', 'heal_after_hit', 'damage_per_downed',
+    'heal_front_full', 'next_followup', 'next_bonus',
+    'sacrifice_draw', 'damage_per_downed', 'set_down',
+    'reveal_front_hand', 'damage_revealed',
+    'ignore_shield', 'team_buff', 'pending_atk', 'share_overflow',
+    'hit_front_scaled', 'self_damage', 'draw_one',
+    'sortie_allied_extra', 'heal_after_hit',
+    'burn_infinite', 'damage_missing_others', 'hp_floor',
 })
 
 IMPLEMENTED_TABLES = frozenset({
     'sortie', 'followup', 'form', 'perm_atk', 'perm_hp', 'count_seed',
-    'draw_owned_target', 'draw_forms',
+    'draw_owned_self', 'draw_owned_target', 'draw_forms',
     'heal_target', 'buff_target', 'revive_target', 'heal_player',
     'inspect_top', 'pact_front', 'pact_target',
-    'ignore_shield', 'share_overflow', 'self_damage', 'draw_one',
-    'sortie_allied_extra', 'heal_after_hit', 'damage_per_downed',
+    'heal_front_full', 'next_followup', 'next_bonus_atk', 'next_bonus_sh',
+    'sacrifice_draw', 'damage_per_downed', 'set_down',
+    'reveal_front_hand', 'damage_revealed',
+    'ignore_shield', 'team_buff', 'pending_atk', 'share_overflow',
+    'hit_front_base', 'hit_front_printed', 'self_damage', 'draw_one',
+    'sortie_allied_extra', 'heal_after_hit',
+    'burn_infinite', 'damage_missing_others', 'hp_floor',
 })
 
 # Character hooks that can fire with the frozen starter kit. Names must match
@@ -106,6 +116,7 @@ def compiled_rule_hash(deck_id='starter') -> str:
         deck_id,
         ','.join(COMPILED_CHARACTERS),
         ','.join(COMPILED_CARDS),
+        'public_compiled',
         ','.join(sorted(IMPLEMENTED_OPS)),
         str(ROW_WIDTH),
         ','.join(CARD_IDS),
@@ -127,7 +138,7 @@ def _deck(deck_id):
 
 def support_manifest(deck_id='starter') -> dict[str, Any]:
     deck = _deck(deck_id)
-    cards = list(dict.fromkeys(deck['card_ids'] + (['NF01'] if 'nanali' in deck['character_ids'] else [])))
+    cards = list(public_card_ids())
     return {
         'deck_id': deck_id,
         'deck_name': deck['name'],
@@ -230,6 +241,7 @@ def validate_compiled_deck(deck_id="starter") -> dict[str, Any]:
         'choose_pending', 'start_ultimate', 'sortie', 'attack_once',
         'trigger_response', 'resolve_genesis', 'knockdown', 'draw_one',
         'grant_combat_resources', 'starter_reset', 'reset_one',
+        'public_reset', 'begin_escalation', 'reset_one_with_decks',
     )
     for name in required_handlers:
         if f'static void {name}(' not in engine_src and f'void {name}(' not in engine_src:

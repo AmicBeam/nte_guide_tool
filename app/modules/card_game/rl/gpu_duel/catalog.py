@@ -26,14 +26,22 @@ CHOICE_SLOTS = 10
 MAX_LEGAL = 256
 SIDES = 2
 N_SEATS = len(SEATS)
-POLICY_NONE, POLICY_ALLY, POLICY_INJURED, POLICY_DOWN_ALLY, POLICY_ENEMY, POLICY_ENEMY_FRONT = range(6)
-RESPONSE_NONE, RESPONSE_ALLY, RESPONSE_SELF = 0, 1, 2
+POLICY_NONE, POLICY_ALLY, POLICY_INJURED, POLICY_DOWN_ALLY, POLICY_ENEMY, POLICY_ENEMY_FRONT, POLICY_DOWN_ENEMY, POLICY_ALLY_FRONT = range(8)
+RESPONSE_NONE, RESPONSE_ALLY, RESPONSE_SELF, RESPONSE_SELF_LETHAL = 0, 1, 2, 3
+REQUIRE_NONE, REQUIRE_OWN_BURN, REQUIRE_SURPLUS, REQUIRE_HARMONY_DAMAGE = 0, 1, 2, 3
 _POLICY = {
     'living_ally': POLICY_ALLY,
     'injured_role': POLICY_INJURED,
     'downed_ally': POLICY_DOWN_ALLY,
     'living_enemy': POLICY_ENEMY,
     'enemy_front': POLICY_ENEMY_FRONT,
+    'downed_enemy': POLICY_DOWN_ENEMY,
+    'ally_front': POLICY_ALLY_FRONT,
+}
+_REQUIRE = {
+    'own_burn': REQUIRE_OWN_BURN,
+    'surplus': REQUIRE_SURPLUS,
+    'harmony_damage': REQUIRE_HARMONY_DAMAGE,
 }
 LEGAL_END = 0
 LEGAL_ATK = 1
@@ -76,6 +84,46 @@ def assert_starter_deck(deck: dict[str, Any] | None = None) -> dict[str, Any]:
     return assert_gpu_deck(deck)
 
 
+PUBLIC_CHARACTER_IDS = tuple(cid for cid in SEATS)
+
+
+def public_card_ids() -> tuple[str, ...]:
+    from app.modules.card_game.content.duel_v2 import CARDS
+    return tuple(
+        card_id for card_id in CARD_IDS
+        if CARDS[card_id].get('character_id') in SEAT_INDEX
+        and (not CARDS[card_id].get('derived') or card_id == 'NF01')
+    )
+
+
+def encode_public_deck_row(deck: dict[str, Any]) -> list[int]:
+    """Pack one public four-person deck as [4 seat indices in team order] + [32 card kinds]."""
+    payload = assert_gpu_deck(deck)
+    seats = [SEAT_INDEX[cid] for cid in payload['character_ids']]
+    if len(seats) != 4:
+        raise ValueError('public compiled decks require exactly 4 characters')
+    kinds = [CARD_INDEX[card_id] for card_id in payload['card_ids']]
+    if len(kinds) != 32:
+        raise ValueError('public compiled decks require exactly 32 cards')
+    return seats + kinds
+
+
+def decode_public_deck_row(row) -> dict[str, Any]:
+    values = [int(v) for v in row]
+    if len(values) != 36:
+        raise ValueError('public deck row must be 36 ints')
+    seats = values[:4]
+    kinds = values[4:]
+    if any(seat < 0 or seat >= N_SEATS for seat in seats) or len(set(seats)) != 4:
+        raise ValueError('public deck seats must be four distinct catalog seats')
+    unknown = [kind for kind in kinds if kind < 0 or kind >= len(CARD_IDS)]
+    if unknown:
+        raise ValueError('public deck contains unknown card kinds')
+    character_ids = [SEATS[seat] for seat in seats]
+    card_ids = [CARD_IDS[kind] for kind in kinds]
+    return assert_gpu_deck({'character_ids': character_ids, 'card_ids': card_ids})
+
+
 def present_mask(deck: dict[str, Any]) -> list[int]:
     owned = set(assert_gpu_deck(deck)['character_ids'])
     return [1 if cid in owned else 0 for cid in SEATS]
@@ -88,7 +136,7 @@ def deck_kind_ids(deck: dict[str, Any]) -> list[int]:
 
 def card_table() -> dict[str, list[int]]:
     from app.modules.card_game.content.duel_v2.characters import TARGET_POLICIES
-    cost, atk, shield, hp, typ, owner, response, instant, derived, policy = [], [], [], [], [], [], [], [], [], []
+    cost, atk, shield, hp, typ, owner, response, instant, derived, policy, require = [], [], [], [], [], [], [], [], [], [], []
     for card_id in CARD_IDS:
         card = CARDS[card_id]
         cost.append(int(card.get('cost') or 0))
@@ -100,11 +148,13 @@ def card_table() -> dict[str, list[int]]:
         response.append(
             RESPONSE_ALLY if card.get('response') == 'ally_attacked'
             else RESPONSE_SELF if card.get('response') == 'self_attacked'
+            else RESPONSE_SELF_LETHAL if card.get('response') == 'self_lethal'
             else RESPONSE_NONE
         )
         instant.append(1 if card.get('instant') else 0)
         derived.append(1 if card.get('derived') else 0)
         policy.append(_POLICY.get(TARGET_POLICIES.get(card_id), POLICY_NONE))
+        require.append(_REQUIRE.get(card.get('require'), REQUIRE_NONE))
     attr = [ATTR_INDEX[CHARACTERS[cid]['attribute']] for cid in SEATS]
     base_atk = [int(CHARACTERS[cid]['attack']) for cid in SEATS]
     base_hp = [int(CHARACTERS[cid]['max_hp']) for cid in SEATS]
@@ -114,6 +164,8 @@ def card_table() -> dict[str, list[int]]:
     return {
         'cost': cost, 'atk': atk, 'shield': shield, 'hp': hp, 'type': typ, 'owner': owner,
         'response': response, 'instant': instant, 'derived': derived, 'policy': policy,
+        'require': require,
+        'playable_downed':[int(bool(CARDS[c].get('playable_downed'))) for c in CARD_IDS],
         'attr': attr, 'base_atk': base_atk, 'base_hp': base_hp, 'energy_max': energy_max,
         'ult_kind': ult_kind, 'ult_turns': ult_turns,
     }

@@ -9,8 +9,9 @@ from app.modules.card_game.rl.gpu_duel.catalog import (
     ACT_ATTACK, ACT_CHOOSE, ACT_END, ACT_PLAY, ACT_ULTIMATE, CARD_IDS, CARD_INDEX,
     HARMONY_GENESIS, ILOY, JIUYUAN, LEGAL_ATK, LEGAL_END, LEGAL_PLAY, LEGAL_ULT,
     LEGAL_WIDTH, MAX_LEGAL, NANALI, N_SEATS, PLAY_TARGETS, POLICY_ALLY,
-    POLICY_DOWN_ALLY, POLICY_ENEMY, POLICY_ENEMY_FRONT, POLICY_INJURED, POLICY_NONE,
-    RESPONSE_ALLY, RESPONSE_SELF, ZERO, BOHE, BAICANG, SEAT_INDEX, card_table,
+    POLICY_DOWN_ALLY, POLICY_DOWN_ENEMY, POLICY_ALLY_FRONT, POLICY_ENEMY, POLICY_ENEMY_FRONT, POLICY_INJURED, POLICY_NONE,
+    RESPONSE_ALLY, RESPONSE_SELF, RESPONSE_SELF_LETHAL, REQUIRE_NONE, REQUIRE_OWN_BURN, REQUIRE_SURPLUS, REQUIRE_HARMONY_DAMAGE,
+    HARMONY_DELAY, HARMONY_OVERLAY, ZERO, BOHE, BAICANG, SEAT_INDEX, card_table,
 )
 from app.modules.card_game.rl.rule_ir.completeness import validate_compiled_deck, IMPLEMENTED_TABLES
 from app.modules.card_game.rl.rule_ir.layout import ENGINE_NAME, c_defines
@@ -40,6 +41,8 @@ def _tables(deck_id="starter") -> str:
         f'#define CARD_Z08 {CARD_INDEX["Z08"]}',
         f'#define CARD_Y08 {CARD_INDEX["Y08"]}',
         f'#define CARD_J08 {CARD_INDEX["J08"]}',
+        f'#define CARD_J07 {CARD_INDEX["J07"]}',
+        f'#define CARD_M07 {CARD_INDEX["M07"]}',
         f'#define CARD_Y07 {CARD_INDEX.get("Y07", -1)}',
         f'#define CARD_Z06 {CARD_INDEX.get("Z06", -1)}',
         f'#define ACT_END {ACT_END}',
@@ -59,9 +62,20 @@ def _tables(deck_id="starter") -> str:
         f'#define POLICY_DOWN_ALLY {POLICY_DOWN_ALLY}',
         f'#define POLICY_ENEMY {POLICY_ENEMY}',
         f'#define POLICY_ENEMY_FRONT {POLICY_ENEMY_FRONT}',
+        f'#define POLICY_DOWN_ENEMY {POLICY_DOWN_ENEMY}',
+        f'#define POLICY_ALLY_FRONT {POLICY_ALLY_FRONT}',
         f'#define RESPONSE_ALLY {RESPONSE_ALLY}',
         f'#define RESPONSE_SELF {RESPONSE_SELF}',
+        f'#define RESPONSE_SELF_LETHAL {RESPONSE_SELF_LETHAL}',
+        f'#define REQUIRE_NONE {REQUIRE_NONE}',
+        f'#define REQUIRE_OWN_BURN {REQUIRE_OWN_BURN}',
+        f'#define REQUIRE_SURPLUS {REQUIRE_SURPLUS}',
+        f'#define REQUIRE_HARMONY_DAMAGE {REQUIRE_HARMONY_DAMAGE}',
         f'#define HARMONY_GENESIS {HARMONY_GENESIS}',
+        f'#define HARMONY_DELAY {HARMONY_DELAY}',
+        f'#define HARMONY_OVERLAY {HARMONY_OVERLAY}',
+        f'#define HARMONY_BURN 4',
+        f'#define HARMONY_STAR 5',
         f'#define PHASE_PLAYING 1',
         f'#define PHASE_CHOICE 2',
         f'#define PHASE_FINISHED 3',
@@ -85,7 +99,7 @@ def _tables(deck_id="starter") -> str:
     for key in TABLE_KEYS:
         lines.append(_c_array(f'TAB_{key.upper()}', effects[key]))
     unimplemented = [key for key in TABLE_KEYS if key not in IMPLEMENTED_TABLES]
-    checks = ' || '.join(f'TAB_{key.upper()}[k]' for key in unimplemented)
+    checks = ' || '.join(f'TAB_{key.upper()}[k]' for key in unimplemented) or '0'
     lines.append(f'static int unsupported_effect(int k){{ return k<0?1:({checks}); }}')
     return '\n'.join(lines)
 
@@ -120,6 +134,11 @@ ENGINE_BODY = r'''
 #define LK(i) row[OFF_LEGAL_TSEAT + (i)]
 
 static int live(int *row){ return row[OFF_PHASE] != PHASE_FINISHED && row[OFF_ERROR]==0; }
+static int lcg(int *rng){
+  int x = (*rng * 1103515245 + 12345) & 0x7FFFFFFF;
+  *rng = x;
+  return x;
+}
 static int other_side(int s){ return 1-s; }
 static int present_alive(int *row, int s, int k){
   return CH(CH_PRESENT,s,k)>0 && CH(CH_HP,s,k)>0 && CH(CH_DOWN,s,k)==0;
@@ -149,18 +168,25 @@ static int apply_hp(int *row, int s, int is_player, int seat, int amount){
   int absorb = MIN(*sh, amount);
   *sh -= absorb;
   int loss = amount - absorb;
+  int floor = (!is_player && CH(CH_HP_FLOOR,s,seat)>0) ? 1 : 0;
   int nhp = *hp - loss;
-  if(nhp<0) nhp=0;
+  if(nhp<floor) nhp=floor;
   *hp = nhp;
   return loss;
 }
 /* Source-aware damage: character-local hooks, no implicit settlement. */
+static void trigger_response(int *row, int atk_side, int atk_seat);
+static void trigger_self_lethal(int *row, int ts, int tk);
 static int deal_damage(int *row, int ts, int player, int tk, int amount, int ss, int sk, int combat, int bypass){
   if(!live(row) || amount<=0) return 0;
   if(!player && tk==SEAT_BOHE && CH(CH_AWAKENED,ts,tk)>0 && ss!=ts && !combat) return 0;
   int saved=0;
   int *shield_ptr=player? &SI(SHIELD,ts) : &CH(CH_SHIELD,ts,tk);
   if(bypass){ saved=*shield_ptr; *shield_ptr=0; }
+  int *hp = player ? &SI(HP,ts) : &CH(CH_HP,ts,tk);
+  int *sh = shield_ptr;
+  int projected = *hp - (amount - MIN(*sh, amount));
+  if(!player && projected<=0) trigger_self_lethal(row, ts, tk);
   int loss=apply_hp(row,ts,player,tk,amount);
   if(bypass) *shield_ptr=saved;
   if(!player){
@@ -199,16 +225,24 @@ static void to_discard(int *row, int s, int kind, int inst);
 static void grant_seed(int *row, int s);
 static void resolve_genesis(int *row, int s, int seat, int arm_delay);
 static void deal_front(int *row, int s, int amount, int src_seat);
+static void play_effects(int *row, int s, int seat, int kind, int tside, int tseat);
+static int card_free(int *row, int s, int kind);
 
 static void compact_hand(int *row, int s){
   int n=0;
   for(int i=0;i<HAND_SLOTS;i++){
     if(HK(s,i)>=0){
-      if(n!=i){ HK(s,n)=HK(s,i); HI(s,n)=HI(s,i); }
+      if(n!=i){
+        HK(s,n)=HK(s,i); HI(s,n)=HI(s,i);
+        row[OFF_HAND_REVEALED + (s*HAND_SLOTS + n)] = row[OFF_HAND_REVEALED + (s*HAND_SLOTS + i)];
+      }
       n++;
     }
   }
-  for(int i=n;i<HAND_SLOTS;i++){ HK(s,i)=-1; HI(s,i)=0; }
+  for(int i=n;i<HAND_SLOTS;i++){
+    HK(s,i)=-1; HI(s,i)=0;
+    row[OFF_HAND_REVEALED + (s*HAND_SLOTS + i)]=0;
+  }
   SI(HAND_N,s)=n;
 }
 static void compact_deck(int *row, int s){
@@ -227,7 +261,9 @@ static void add_hand(int *row, int s, int kind, int inst){
   if(!live(row) || kind<0) return;
   int n=SI(HAND_N,s);
   if(n>=HAND_SLOTS){ to_discard(row,s,kind,inst); return; }
-  HK(s,n)=kind; HI(s,n)=inst; SI(HAND_N,s)=n+1;
+  HK(s,n)=kind; HI(s,n)=inst;
+  row[OFF_HAND_REVEALED + (s*HAND_SLOTS + n)]=0;
+  SI(HAND_N,s)=n+1;
 }
 static void to_discard(int *row, int s, int kind, int inst){
   if(kind<0) return;
@@ -240,6 +276,7 @@ static int remove_hand_slot(int *row, int s, int slot, int *out_inst){
   int kind=HK(s,slot);
   if(out_inst) *out_inst = HI(s,slot);
   HK(s,slot)=-1; HI(s,slot)=0;
+  row[OFF_HAND_REVEALED + (s*HAND_SLOTS + slot)]=0;
   compact_hand(row,s);
   return kind;
 }
@@ -281,8 +318,7 @@ static void knockdown(int *row){
   if(live(row)){
     progressed=0;
     for(int s=0;s<N_SIDES;s++){
-      for(int slot=0;slot<4;slot++){
-        int k=DECK_SEATS[slot];
+      for(int k=0;k<N_SEATS;k++){
         if(!(CH(CH_PRESENT,s,k)>0 && CH(CH_HP,s,k)<=0 && CH(CH_DOWN,s,k)==0)) continue;
         progressed=1;
         int killer_side=CH(LAST_HIT_SIDE,s,k);
@@ -316,6 +352,7 @@ static void knockdown(int *row){
         CH(CH_ALLIED_HURT,s,k)=0;
         CH(CH_PENDING_ATK,s,k)=0;
         CH(CH_SHARE_OVERFLOW,s,k)=0;
+        CH(CH_HP_FLOOR,s,k)=0;
         CH(CH_COLLAPSE_COUNT,s,k)=0;
         CH(CH_COLLAPSE_BY,s,k)=-1;
         CH(CH_COLLAPSE_UNTIL,s,k)=0;
@@ -330,11 +367,29 @@ static void knockdown(int *row){
   }
 }
 
+static int energy_cap_for(int *row, int seat){
+  int cap = CAT_ENERGY_MAX[seat];
+  if(row[OFF_ESCALATION_ENABLED] && row[OFF_TURN] >= 13) cap -= 1;
+  if(cap<1) cap=1;
+  return cap;
+}
+static int harmony_cap_for(int *row){
+  return (row[OFF_ESCALATION_ENABLED] && row[OFF_TURN] >= 20) ? 1 : 2;
+}
+static int ultimate_limit_for(int *row){
+  return (row[OFF_ESCALATION_ENABLED] && row[OFF_TURN] >= 6) ? 2 : 1;
+}
+static int team_rank(int *row, int s, int k){
+  int rank=CH(CH_ORDER,s,k);
+  if(rank>0) return rank;
+  if(CH(CH_PRESENT,s,k)==0) return 1000 + k;
+  return k+1;
+}
 static int harmony_payer(int *row, int s, int seat){
   if(SI(FRONT,s)==seat) return -1;
   int prev = SI(FRONT,s)>=0 ? SI(FRONT,s) : SI(LAST_FRONT,s);
   if(prev<0 || prev==seat) return -1;
-  if(!(CH(CH_HP,s,prev)>0 && CH(CH_HARMONY,s,prev)>=2)) return -1;
+  if(!(CH(CH_HP,s,prev)>0 && CH(CH_HARMONY,s,prev)>=harmony_cap_for(row))) return -1;
   return prev;
 }
 static int harmony_kind(int *row, int s, int seat){
@@ -342,11 +397,10 @@ static int harmony_kind(int *row, int s, int seat){
   if(payer<0) return 0;
   int a=CAT_ATTR[seat], b=CAT_ATTR[payer];
   if((a==0&&b==1)||(a==1&&b==0)) return HARMONY_GENESIS;
-  if((a==1&&b==5)||(a==5&&b==1)) return 2;
-  /* 延滞/浊燃 are not in the frozen starter; unmatched pairs are a no-op. */
-  if((a==1&&b==5)||(a==5&&b==1)||(a==0&&b==2)||(a==2&&b==0)||(a==3&&b==5)||(a==5&&b==3)||(a==3&&b==4)||(a==4&&b==3)||(a==4&&b==2)||(a==2&&b==4)){
-    fail(row, ERR_UNSUPPORTED);
-  }
+  if((a==0&&b==2)||(a==2&&b==0)) return HARMONY_DELAY;
+  if((a==1&&b==5)||(a==5&&b==1)) return HARMONY_OVERLAY;
+  if((a==3&&b==5)||(a==5&&b==3)) return HARMONY_BURN;
+  if((a==3&&b==4)||(a==4&&b==3)) return HARMONY_STAR;
   return 0;
 }
 
@@ -369,6 +423,7 @@ static void resolve_genesis(int *row, int s, int seat, int arm_delay){
   int ticks = 1 + extra;
   for(int i=0;i<ticks && live(row) && present_alive(row,s,seat);i++){
     int original_target=SI(FRONT,other_side(s));
+    SI(HARMONY_DAMAGE,s)=1;
     deal_front(row,s,1,seat);
     if(!live(row) || !present_alive(row,s,seat)) break;
     if(CH(CH_SHAPE,s,SEAT_JIUYUAN)==CARD_J08 && CH(CH_HP,s,SEAT_JIUYUAN)>0){
@@ -398,17 +453,25 @@ static void enter(int *row, int s, int seat, int as_support){
   if(SI(FRONT,s)>=0) move_out(row,s,SI(FRONT,s));
   SI(FRONT,s)=seat;
   if(kind && payer>=0){
-    CH(CH_HARMONY,s,payer)-=2;
+    CH(CH_HARMONY,s,payer)-=harmony_cap_for(row);
     CH(CH_HARMONIZED,s,seat)=1;
+    int foe=other_side(s);
     if(kind==HARMONY_GENESIS) resolve_genesis(row,s,seat,1);
-    else SI(WEAVE,other_side(s))=1;
+    else if(kind==HARMONY_OVERLAY) SI(WEAVE,foe)=1;
+    else if(kind==HARMONY_DELAY) SI(DELAY_END,foe)=1;
+    else if(kind==HARMONY_BURN){
+      SI(BURN_LEFT,foe)=2;
+      SI(BURN_BY,foe)=s;
+      SI(BURN_INFINITE,foe)=0;
+    } else if(kind==HARMONY_STAR){
+      /* public kits do not currently consume 黯星 beyond applying it as a zone flag. */
+      SI(DELAY_END,foe)=SI(DELAY_END,foe);
+    }
   }
 }
 
-static int card_instant(int *row, int s, int kind){
+static int form_draw_bonus(int *row, int s, int kind){
   if(kind<0) return 0;
-  if(CAT_INSTANT[kind]) return 1;
-  if(kind==CARD_NF01 && SI(TURN_COUNT,s)>=6) return 1;
   if(CAT_TYPE[kind]==2){
     if(CH(CH_HP,s,SEAT_ZERO)>0 && CH(CH_AWAKENED,s,SEAT_ZERO)>0) return 1;
     int owner=CAT_OWNER[kind];
@@ -416,8 +479,33 @@ static int card_instant(int *row, int s, int kind){
   }
   return 0;
 }
+static int card_instant(int *row, int s, int kind){
+  if(kind<0) return 0;
+  return CAT_INSTANT[kind] || (kind==CARD_NF01 && SI(TURN_COUNT,s)>=6) || form_draw_bonus(row,s,kind);
+}
 static int card_free(int *row, int s, int kind){
   return card_instant(row,s,kind) && SI(USED_INSTANT,s)==0;
+}
+
+static void trigger_self_lethal(int *row, int ts, int tk){
+  if(!live(row) || tk<0) return;
+  for(int hs=0; hs<HAND_SLOTS; hs++){
+    int kind=HK(ts,hs);
+    if(kind<0) continue;
+    if(CAT_RESPONSE[kind]!=RESPONSE_SELF_LETHAL) continue;
+    int owner=CAT_OWNER[kind];
+    if(owner!=tk || !present_alive(row,ts,owner) || collapsed(row,ts,owner)) continue;
+    int cost=CAT_COST[kind];
+    int afford = card_free(row,ts,kind) || SI(AP,ts)>=cost;
+    if(!afford) continue;
+    int inst=0;
+    remove_hand_slot(row,ts,hs,&inst);
+    if(card_free(row,ts,kind)) SI(USED_INSTANT,ts)=1;
+    else SI(AP,ts)-=cost;
+    play_effects(row,ts,owner,kind,-1,-1);
+    to_discard(row,ts,kind,inst);
+    return;
+  }
 }
 
 static void trigger_response(int *row, int atk_side, int atk_seat){
@@ -465,11 +553,13 @@ static void attack_once(int *row, int s, int seat, int bonus, int support, int i
   trigger_response(row,s,seat);
   if(!live(row) || !present_alive(row,s,seat) || SI(FRONT,s)!=seat) return;
   int atk=MAX(0,attack_power(row,s,seat)+bonus);
+  if(seat==SEAT_BOHE && CH(CH_SHAPE,s,seat)==CARD_M07 && row[OFF_ACTIVE]!=s) atk=0;
   int foe=other_side(s), t=SI(FRONT,foe), counter=0, target_loss=0;
   int weave_atk=SI(WEAVE,foe)>0 && (CAT_ATTR[seat]==1 || CAT_ATTR[seat]==5);
   int weave_counter=0;
   if(t>=0){
     counter=(!support && !collapsed(row,foe,t)) ? MAX(0,attack_power(row,foe,t)+row[OFF_ACTION]) : 0;
+    if(t==SEAT_BOHE && CH(CH_SHAPE,foe,t)==CARD_M07 && row[OFF_ACTIVE]!=foe) counter=0;
     weave_counter=!support && !collapsed(row,foe,t) && SI(WEAVE,s)>0 && (CAT_ATTR[t]==1 || CAT_ATTR[t]==5);
     int raw=MAX(0,atk-(ignore_shield?0:CH(CH_SHIELD,foe,t))-CH(CH_HP,foe,t));
     int overflow=(seat==SEAT_BOHE || (t==SEAT_BOHE && CH(CH_SHARE_OVERFLOW,foe,t)))?raw:0;
@@ -493,10 +583,12 @@ static void attack_once(int *row, int s, int seat, int bonus, int support, int i
   knockdown(row); victory(row);
   if(!live(row)) return;
   if(weave_atk && present_alive(row,s,seat) && (t<0 || (SI(FRONT,foe)==t && present_alive(row,foe,t)))){
+    SI(HARMONY_DAMAGE,s)=1;
     deal_damage(row,foe,t<0,MAX(0,t),2,s,seat,0,0);
     knockdown(row); victory(row);
   }
   if(live(row) && weave_counter && present_alive(row,foe,t) && SI(FRONT,s)==seat && present_alive(row,s,seat)){
+    SI(HARMONY_DAMAGE,foe)=1;
     deal_damage(row,s,0,seat,2,foe,t,0,0);
     knockdown(row); victory(row);
   }
@@ -507,16 +599,19 @@ static void grant_combat_resources(int *row, int s, int seat){
   for(int k=0;k<N_SEATS;k++){
     if(CH(CH_HP,s,k)>0 && CH(CH_DOWN,s,k)==0){
       int e=CH(CH_ENERGY,s,k)+1;
-      if(e>CH(CH_ENERGY_MAX,s,k)) e=CH(CH_ENERGY_MAX,s,k);
+      int cap=energy_cap_for(row,k);
+      if(e>cap) e=cap;
       CH(CH_ENERGY,s,k)=e;
     }
   }
   if(present_alive(row,s,seat)){
     int e=CH(CH_ENERGY,s,seat)+1;
-    if(e>CH(CH_ENERGY_MAX,s,seat)) e=CH(CH_ENERGY_MAX,s,seat);
+    int cap=energy_cap_for(row,seat);
+    if(e>cap) e=cap;
     CH(CH_ENERGY,s,seat)=e;
     int h=CH(CH_HARMONY,s,seat)+1;
-    if(h>2) h=2;
+    int hcap=harmony_cap_for(row);
+    if(h>hcap) h=hcap;
     CH(CH_HARMONY,s,seat)=h;
   }
 }
@@ -537,7 +632,12 @@ static void sortie(int *row, int s, int seat, int card_bonus, int followup, int 
   fu += CH(CH_NEXT_FOLLOWUP,s,seat);
   CH(CH_NEXT_FOLLOWUP,s,seat)=0;
   if(seat==SEAT_NANALI && CH(CH_SHAPE,s,SEAT_NANALI)==FOLLOWUP_FORM) fu+=2;
-  if(live(row) && present_alive(row,s,seat) && SI(FRONT,s)==seat && fu>0) deal_front(row,s,fu,seat);
+  if(live(row) && present_alive(row,s,seat) && SI(FRONT,s)==seat && fu>0){
+    int foe=other_side(s), target=SI(FRONT,foe);
+    /* Followup is ability damage and is not blocked by Bohe's non-battle immunity. */
+    deal_damage(row,foe,target<0,MAX(0,target),fu,s,seat,1,0);
+    knockdown(row); victory(row);
+  }
 }
 
 static void play_effects(int *row, int s, int seat, int kind, int tside, int tseat){
@@ -583,6 +683,17 @@ static void play_effects(int *row, int s, int seat, int kind, int tside, int tse
     grant_shield(row,s,seat,shield);
     int fu=TAB_FOLLOWUP[kind];
     sortie(row,s,seat,bonus,fu,0,TAB_IGNORE_SHIELD[kind],TAB_HEAL_AFTER_HIT[kind]);
+  }
+  if(TAB_DRAW_OWNED_SELF[kind]){
+    for(int d=0; d<DECK_SLOTS; d++){
+      int dk=DK(s,d);
+      if(dk>=0 && CAT_OWNER[dk]==seat && CAT_DERIVED[dk]==0){
+        int inst=DI(s,d);
+        DK(s,d)=-1; compact_deck(row,s);
+        add_hand(row,s,dk,inst);
+        break;
+      }
+    }
   }
   if(TAB_DRAW_OWNED_TARGET[kind] && tseat>=0 && tside==s){
     for(int d=0; d<DECK_SLOTS; d++){
@@ -643,6 +754,7 @@ static void play_effects(int *row, int s, int seat, int kind, int tside, int tse
     if(hp>30) hp=30;
     SI(HP,s)=hp;
   }
+  if(TAB_REVIVE_TARGET[kind] && CAT_POLICY[kind]==POLICY_NONE) tseat=seat;
   if(TAB_REVIVE_TARGET[kind] && tseat>=0){
     if(SI(LAST_FRONT,s)==tseat) SI(LAST_FRONT,s)=-1;
     CH(CH_DOWN,s,tseat)=0;
@@ -662,13 +774,94 @@ static void play_effects(int *row, int s, int seat, int kind, int tside, int tse
     if(CH(CH_HP,foe,tseat)>0) CH(CH_PACT,foe,tseat)=1;
     knockdown(row); victory(row);
   }
+  if(TAB_HEAL_FRONT_FULL[kind]){
+    int front=SI(FRONT,s);
+    if(front>=0 && present_alive(row,s,front)){
+      CH(CH_HP,s,front)=CH(CH_MAX_HP,s,front);
+    }
+  }
+  if(TAB_NEXT_FOLLOWUP[kind]) CH(CH_NEXT_FOLLOWUP,s,seat) += TAB_NEXT_FOLLOWUP[kind];
+  if(TAB_NEXT_BONUS_ATK[kind] || TAB_NEXT_BONUS_SH[kind]){
+    CH(CH_NEXT_BONUS,s,seat) += TAB_NEXT_BONUS_ATK[kind];
+    CH(CH_NEXT_SHIELD,s,seat) += TAB_NEXT_BONUS_SH[kind];
+  }
+  if(TAB_SACRIFICE_DRAW[kind]){
+    for(int k=0;k<N_SEATS;k++){
+      if(k==seat || !present_alive(row,s,k)) continue;
+      CH(CH_HP,s,k)=0;
+    }
+    knockdown(row);
+    for(int k=0;k<N_SEATS;k++){
+      if(k==seat) continue;
+      if(CH(CH_PRESENT,s,k)>0 && CH(CH_DOWN,s,k)>0) CH(CH_DOWN,s,k)=2;
+    }
+    draw_n(row,s,TAB_SACRIFICE_DRAW[kind]);
+  }
+  if(TAB_SET_DOWN[kind] && tseat>=0 && tside==other_side(s)){
+    /* Python J03 only writes down_turns; knockdowns() skips already-downed units. */
+    CH(CH_DOWN,tside,tseat)=TAB_SET_DOWN[kind];
+  }
+  if(TAB_REVEAL_FRONT_HAND[kind]){
+    int foe=other_side(s);
+    int front=SI(FRONT,foe);
+    if(front>=0){
+      for(int i=0;i<HAND_SLOTS;i++){
+        int dk=HK(foe,i);
+        if(dk>=0 && CAT_OWNER[dk]==front) row[OFF_HAND_REVEALED + (foe*HAND_SLOTS + i)]=1;
+      }
+    }
+  }
+  if(TAB_DAMAGE_REVEALED[kind]){
+    int foe=other_side(s);
+    int count=0;
+    for(int i=0;i<HAND_SLOTS;i++){
+      if(HK(foe,i)>=0 && row[OFF_HAND_REVEALED + (foe*HAND_SLOTS + i)]) count++;
+    }
+    if(count) deal_front(row,s,count,seat);
+  }
+  if(TAB_TEAM_BUFF[kind]){
+    for(int k=0;k<N_SEATS;k++){
+      if(present_alive(row,s,k)) CH(CH_ATK_BUFF,s,k) += TAB_TEAM_BUFF[kind];
+    }
+  }
+  if(TAB_PENDING_ATK[kind]) CH(CH_PENDING_ATK,s,seat) += TAB_PENDING_ATK[kind];
+  if(TAB_HIT_FRONT_BASE[kind]){
+    int extra = CH(CH_BASE_ATK,s,seat) - TAB_HIT_FRONT_PRINTED[kind];
+    if(extra<0) extra=0;
+    deal_front(row,s,TAB_HIT_FRONT_BASE[kind]+extra,seat);
+  }
+  if(TAB_BURN_INFINITE[kind]){
+    int foe=other_side(s);
+    if(SI(BURN_LEFT,foe)>0 && SI(BURN_BY,foe)==s) SI(BURN_INFINITE,foe)=1;
+  }
+  if(TAB_DAMAGE_MISSING_OTHERS[kind]){
+    int missing = CH(CH_MAX_HP,s,seat) - CH(CH_HP,s,seat);
+    if(missing<0) missing=0;
+    if(missing>0){
+      for(int os=0; os<N_SIDES; os++){
+        for(int rank=1; rank<=N_SEATS; rank++){
+          int k=-1;
+          for(int cand=0; cand<N_SEATS; cand++){
+            if(team_rank(row,os,cand)==rank){ k=cand; break; }
+          }
+          if(k<0 || k==seat) continue;
+          if(present_alive(row,os,k)){
+            deal_damage(row,os,0,k,missing,s,seat,0,0);
+            set_last_hit(row,os,k,s,seat);
+          }
+        }
+      }
+      knockdown(row); victory(row);
+    }
+  }
+  if(TAB_HP_FLOOR[kind]) CH(CH_HP_FLOOR,s,seat)=1;
 }
 
 static void finish_play(int *row, int s, int kind, int inst, int owner){
   if(kind<0 || !live(row)) return;
   to_discard(row,s,kind,inst);
   if(CAT_TYPE[kind]==0 && present_alive(row,s,SEAT_ZERO) && owner==SEAT_ZERO)
-    CH(CH_HARMONY,s,SEAT_ZERO)=2;
+    CH(CH_HARMONY,s,SEAT_ZERO)=harmony_cap_for(row);
 }
 
 static void grant_op_resources(int *row, int s, int seat){
@@ -682,7 +875,7 @@ static void play_card(int *row, int s, int hand_slot, int tside, int tseat){
   if(kind<0) return;
   int owner=CAT_OWNER[kind];
   int cost=CAT_COST[kind];
-  int form_bonus = card_instant(row,s,kind) && CAT_TYPE[kind]==2;
+  int form_bonus = form_draw_bonus(row,s,kind);
   if(card_free(row,s,kind)) SI(USED_INSTANT,s)=1;
   else SI(AP,s)-=cost;
   play_effects(row,s,owner,kind,tside,tseat);
@@ -727,12 +920,18 @@ static void start_ultimate(int *row, int s, int seat){
   if(CAT_ULT_KIND[seat]==0){
     /* instant: jiuyuan */
     int foe=other_side(s);
-    for(int k=0;k<N_SEATS;k++){
+    for(int rank=1;rank<=N_SEATS && live(row);rank++){
+      int k=-1;
+      for(int candidate=0;candidate<N_SEATS;candidate++) if(team_rank(row,foe,candidate)==rank){ k=candidate;break; }
+      if(k<0) continue;
       if(CH(CH_HP,foe,k)<=0) continue;
       int amt = CH(CH_PACT,foe,k)>0 ? 3 : 1;
+      if(CH(CH_PACT,foe,k)>0 && CH(CH_SHAPE,s,seat)==CARD_J07 && present_alive(row,s,seat))
+        CH(CH_ENERGY,s,seat)=MIN(energy_cap_for(row,seat),CH(CH_ENERGY,s,seat)+2);
       if(CH(CH_PACT,foe,k)>0) CH(CH_PACT,foe,k)=0;
       deal_damage(row,foe,0,k,amt,s,seat,0,0);
       set_last_hit(row,foe,k,s,seat);
+      knockdown(row); victory(row);
     }
     knockdown(row); victory(row);
   } else {
@@ -740,6 +939,53 @@ static void start_ultimate(int *row, int s, int seat){
     CH(CH_ULT_TURNS,s,seat)=CAT_ULT_TURNS[seat];
     if(seat==SEAT_ILOY) CH(CH_ENERGY_NEXT,s,SEAT_ILOY)=1;
   }
+}
+
+static void clamp_resources(int *row){
+  if(!row[OFF_ESCALATION_ENABLED]) return;
+  for(int os=0; os<N_SIDES; os++){
+    for(int k=0;k<N_SEATS;k++){
+      if(CH(CH_PRESENT,os,k)==0) continue;
+      int ecap=energy_cap_for(row,k);
+      if(CH(CH_ENERGY,os,k)>ecap) CH(CH_ENERGY,os,k)=ecap;
+      int hcap=harmony_cap_for(row);
+      if(CH(CH_HARMONY,os,k)>hcap) CH(CH_HARMONY,os,k)=hcap;
+    }
+  }
+}
+
+static void begin_escalation(int *row, int s){
+  if(!(row[OFF_ESCALATION_ENABLED] && row[OFF_TURN] >= 6)) return;
+  int ties[N_SEATS];
+  int n_tie=0;
+  int best_energy=1<<30;
+  for(int rank=1; rank<=N_SEATS; rank++){
+    int k=-1;
+    for(int cand=0; cand<N_SEATS; cand++){
+      if(team_rank(row,s,cand)==rank){ k=cand; break; }
+    }
+    if(k<0 || !present_alive(row,s,k)) continue;
+    int e=CH(CH_ENERGY,s,k);
+    if(n_tie==0 || e<best_energy){
+      best_energy=e;
+      n_tie=1;
+      ties[0]=k;
+    } else if(e==best_energy){
+      ties[n_tie++]=k;
+    }
+  }
+  if(n_tie<=0) return;
+  if(n_tie>1){
+    for(int i=n_tie-1;i>0;i--){
+      int j = lcg(&row[OFF_RNG]) % (i+1);
+      int tmp=ties[i]; ties[i]=ties[j]; ties[j]=tmp;
+    }
+  }
+  int best=ties[0];
+  int e=CH(CH_ENERGY,s,best)+1;
+  int cap=energy_cap_for(row,best);
+  if(e>cap) e=cap;
+  CH(CH_ENERGY,s,best)=e;
 }
 
 static void begin_turn(int *row, int s){
@@ -750,10 +996,20 @@ static void begin_turn(int *row, int s){
   SI(TURN_COUNT,s)+=1;
   SI(USED_INSTANT,s)=0;
   SI(SURPLUS,s)=0;
+  SI(HARMONY_DAMAGE,s)=0;
   SI(WEAVE,0)=0; SI(WEAVE,1)=0;
   CH(CH_ALLIED_HURT,s,SEAT_BAICANG)=0;
   CH(CH_SHARE_OVERFLOW,0,SEAT_BOHE)=0;
   CH(CH_SHARE_OVERFLOW,1,SEAT_BOHE)=0;
+  for(int k=0;k<N_SEATS;k++){
+    CH(CH_HP_FLOOR,s,k)=0;
+    CH(CH_HP_FLOOR,other_side(s),k)=0;
+    if(CH(CH_PENDING_ATK,s,k)>0){
+      CH(CH_ATK_BUFF,s,k) += CH(CH_PENDING_ATK,s,k);
+      CH(CH_PENDING_ATK,s,k)=0;
+    }
+  }
+  clamp_resources(row);
   for(int os=0; os<N_SIDES; os++){
     for(int k=0;k<N_SEATS;k++){
       if(CH(CH_COLLAPSE_UNTIL,os,k)>0 && CH(CH_COLLAPSE_BY,os,k)==s && CH(CH_COLLAPSE_UNTIL,os,k)<=SI(TURN_COUNT,s)){
@@ -770,13 +1026,15 @@ static void begin_turn(int *row, int s){
       if(CH(CH_DOWN,s,k)==0) CH(CH_HP,s,k)=CH(CH_MAX_HP,s,k);
     }
   }
+  begin_escalation(row,s);
   if(SI(TURN_COUNT,s)==1) grant_seed(row,s);
   if(present_alive(row,s,SEAT_ILOY) && CH(CH_ENERGY_NEXT,s,SEAT_ILOY)>0){
     CH(CH_ENERGY_NEXT,s,SEAT_ILOY)=0;
     for(int k=0;k<N_SEATS;k++){
       if(CH(CH_HP,s,k)>0){
         int e=CH(CH_ENERGY,s,k)+1;
-        if(e>CH(CH_ENERGY_MAX,s,k)) e=CH(CH_ENERGY_MAX,s,k);
+        int cap=energy_cap_for(row,k);
+        if(e>cap) e=cap;
         CH(CH_ENERGY,s,k)=e;
       }
     }
@@ -793,6 +1051,19 @@ static void begin_turn(int *row, int s){
     if(actor>=0 && CH(CH_HP,s,actor)>0) resolve_genesis(row,s,actor,0);
   }
   if(!live(row)) return;
+  if(SI(BURN_LEFT,s)>0){
+    int by = SI(BURN_BY,s)>=0 ? SI(BURN_BY,s) : other_side(s);
+    SI(HARMONY_DAMAGE,by)=1;
+    int target = SI(FRONT,s);
+    if(target>=0) deal_damage(row,s,0,target,1,by,-1,0,0);
+    else deal_damage(row,s,1,0,1,by,-1,0,0);
+    knockdown(row); victory(row);
+    if(!SI(BURN_INFINITE,s)){
+      SI(BURN_LEFT,s)-=1;
+      if(SI(BURN_LEFT,s)<=0){ SI(BURN_LEFT,s)=0; SI(BURN_BY,s)=-1; SI(BURN_INFINITE,s)=0; }
+    }
+  }
+  if(!live(row)) return;
   for(int k=0;k<N_SEATS;k++){
     if(CH(CH_ULT_TURNS,s,k)>0){
       CH(CH_ULT_TURNS,s,k)-=1;
@@ -806,6 +1077,7 @@ static void begin_turn(int *row, int s){
   SI(EXTRA_AP,s)=0;
   SI(AP,s)=(row[OFF_TURN]==1?1:2)+extra;
   SI(NORMAL_ATK,s)=1;
+  SI(ULTIMATES_USED,s)=0;
   SI(ULTIMATE_OK,s)=1;
 }
 
@@ -853,7 +1125,9 @@ static void rebuild_legal(int *row){
   for(int k=0;k<N_SEATS;k++){
     int can_atk = ap>=1 && SI(NORMAL_ATK,s)>0 && present_alive(row,s,k) && !collapsed(row,s,k);
     if(can_atk){ LT(LEGAL_ATK+k)=ACT_ATTACK; LA(LEGAL_ATK+k)=k; }
-    int can_ult = SI(ULTIMATE_OK,s)>0 && present_alive(row,s,k) && CH(CH_ENERGY,s,k)>=CH(CH_ENERGY_MAX,s,k);
+    int can_ult = SI(ULTIMATE_OK,s)>0 && present_alive(row,s,k)
+      && CH(CH_ENERGY,s,k)>=energy_cap_for(row,k)
+      && SI(ULTIMATES_USED,s)<ultimate_limit_for(row);
     if(can_ult){ LT(LEGAL_ULT+k)=ACT_ULTIMATE; LA(LEGAL_ULT+k)=k; }
   }
   for(int hs=0; hs<HAND_SLOTS; hs++){
@@ -862,12 +1136,17 @@ static void rebuild_legal(int *row){
     int owner=CAT_OWNER[kind];
     int cost=CAT_COST[kind];
     int policy=CAT_POLICY[kind];
-    if(!(CH(CH_HP,s,owner)>0)) continue;
+    if(!(CH(CH_HP,s,owner)>0) && !CAT_PLAYABLE_DOWNED[kind]) continue;
     if(collapsed(row,s,owner)) continue;
     int free = card_free(row,s,kind);
     if(!(free || ap>=cost)) continue;
+    int require=CAT_REQUIRE[kind];
+    if(require==REQUIRE_OWN_BURN && !(SI(BURN_LEFT,foe)>0 && SI(BURN_BY,foe)==s)) continue;
+    if(require==REQUIRE_SURPLUS && SI(SURPLUS,s)==0) continue;
+    if(require==REQUIRE_HARMONY_DAMAGE && SI(HARMONY_DAMAGE,s)==0) continue;
     int base=LEGAL_PLAY + hs*PLAY_TARGETS;
-    int none_ok = (policy==POLICY_NONE) || (policy==POLICY_ENEMY_FRONT && SI(FRONT,foe)>=0);
+    int none_ok = (policy==POLICY_NONE) || (policy==POLICY_ENEMY_FRONT && SI(FRONT,foe)>=0)
+      || (policy==POLICY_ALLY_FRONT && SI(FRONT,s)>=0);
     if(none_ok){ LT(base)=ACT_PLAY; LA(base)=owner; LH(base)=hs; }
     for(int ally=0; ally<N_SEATS; ally++){
       int slot=base+1+ally;
@@ -875,13 +1154,17 @@ static void rebuild_legal(int *row){
       if(CH(CH_PRESENT,s,ally)>0){
         if(policy==POLICY_ALLY && CH(CH_HP,s,ally)>0) ok=1;
         if(policy==POLICY_INJURED && CH(CH_HP,s,ally)>0 && CH(CH_HP,s,ally)<CH(CH_MAX_HP,s,ally)) ok=1;
-        if(policy==POLICY_DOWN_ALLY && (CH(CH_DOWN,s,ally)>0)) ok=1;
+        if(policy==POLICY_DOWN_ALLY && (CH(CH_DOWN,s,ally)>0 || CH(CH_HP,s,ally)<=0)) ok=1;
       }
       if(ok){ LT(slot)=ACT_PLAY; LA(slot)=owner; LH(slot)=hs; LS(slot)=s; LK(slot)=ally; }
     }
     for(int en=0; en<N_SEATS; en++){
       int slot=base+1+N_SEATS+en;
-      int ok = policy==POLICY_ENEMY && CH(CH_PRESENT,foe,en)>0 && CH(CH_HP,foe,en)>0;
+      int ok = 0;
+      if(CH(CH_PRESENT,foe,en)>0){
+        if(policy==POLICY_ENEMY && CH(CH_HP,foe,en)>0) ok=1;
+        if(policy==POLICY_DOWN_ENEMY && CH(CH_DOWN,foe,en)>0) ok=1;
+      }
       if(ok){ LT(slot)=ACT_PLAY; LA(slot)=owner; LH(slot)=hs; LS(slot)=foe; LK(slot)=en; }
     }
     int slot=base+1+2*N_SEATS;
@@ -908,7 +1191,8 @@ static void step_one(int *row, int action){
     sortie(row,s,actor,0,0,0,0,0);
     grant_op_resources(row,s,actor);
   } else if(typ==ACT_ULTIMATE){
-    SI(ULTIMATE_OK,s)=0;
+    SI(ULTIMATES_USED,s)+=1;
+    if(SI(ULTIMATES_USED,s) >= ultimate_limit_for(row)) SI(ULTIMATE_OK,s)=0;
     start_ultimate(row,s,actor);
   } else if(typ==ACT_PLAY){
     play_card(row,s,hand,tside,tseat);
@@ -942,12 +1226,6 @@ void starter_engine(int *rows, const int *actions, int n){
 #endif
 }
 
-static int lcg(int *rng){
-  int x = (*rng * 1103515245 + 12345) & 0x7FFFFFFF;
-  *rng = x;
-  return x;
-}
-
 static void clear_row(int *row){
   for(int i=0;i<ROW_WIDTH;i++) row[i]=0;
   row[OFF_WINNER]=-1;
@@ -957,7 +1235,8 @@ static void clear_row(int *row){
   for(int i=0;i<CHOICE_SLOTS;i++){ PC(i)=-1; PI(i)=0; }
   for(int s=0;s<N_SIDES;s++){
     SI(FRONT,s)=-1; SI(LAST_FRONT,s)=-1; SI(EXTRA_GENESIS_ACTOR,s)=-1;
-    for(int i=0;i<HAND_SLOTS;i++) HK(s,i)=-1;
+    SI(BURN_BY,s)=-1;
+    for(int i=0;i<HAND_SLOTS;i++){ HK(s,i)=-1; row[OFF_HAND_REVEALED + (s*HAND_SLOTS + i)]=0; }
     for(int i=0;i<DECK_SLOTS;i++) DK(s,i)=-1;
     for(int i=0;i<DISCARD_SLOTS;i++) XK(s,i)=-1;
     for(int k=0;k<N_SEATS;k++){
@@ -981,19 +1260,23 @@ static void shuffle_deck(int *row, int s, int rng){
   }
 }
 
-static void reset_one(int *row, int seed){
+static void reset_one_with_decks(int *row, int seed, const int *deck_a, const int *deck_b, int escalation){
   clear_row(row);
   int first = (seed & 0x7FFFFFFF) % 2;
   row[OFF_RNG]=seed & 0x7FFFFFFF;
   row[OFF_FIRST]=first;
   row[OFF_ACTIVE]=first;
-  row[OFF_NEXT_INSTANCE]=STARTER_DECK_N;
+  row[OFF_ESCALATION_ENABLED]=escalation ? 1 : 0;
+  row[OFF_NEXT_INSTANCE]=32;
+  const int *decks[2] = {deck_a, deck_b};
   for(int s=0;s<N_SIDES;s++){
     SI(HP,s)=30;
     SI(SHIELD,s)=(s==first)?0:5;
+    const int *deck = decks[s];
     for(int slot=0;slot<4;slot++){
-      int k=DECK_SEATS[slot];
+      int k=deck[slot];
       CH(CH_PRESENT,s,k)=1;
+      CH(CH_ORDER,s,k)=slot+1;
       CH(CH_HP,s,k)=CAT_BASE_HP[k];
       CH(CH_MAX_HP,s,k)=CAT_BASE_HP[k];
       CH(CH_BASE_MAX,s,k)=CAT_BASE_HP[k];
@@ -1004,11 +1287,11 @@ static void reset_one(int *row, int seed){
       CH(LAST_HIT_SIDE,s,k)=-1;
       CH(LAST_HIT_SEAT,s,k)=-1;
     }
-    for(int i=0;i<STARTER_DECK_N;i++){
-      DK(s,i)=STARTER_DECK_KINDS[i];
+    for(int i=0;i<32;i++){
+      DK(s,i)=deck[4+i];
       DI(s,i)=i+1;
     }
-    SI(DECK_N,s)=STARTER_DECK_N;
+    SI(DECK_N,s)=32;
     shuffle_deck(row,s,(seed & 0x7FFFFFFF) + (s+1)*10007);
     draw_n(row,s,5);
   }
@@ -1017,6 +1300,12 @@ static void reset_one(int *row, int seed){
   rebuild_legal(row);
 }
 
+static void reset_one(int *row, int seed){
+  int preset[36];
+  for(int i=0;i<4;i++) preset[i]=DECK_SEATS[i];
+  for(int i=0;i<STARTER_DECK_N;i++) preset[4+i]=STARTER_DECK_KINDS[i];
+  reset_one_with_decks(row, seed, preset, preset, 1);
+}
 #ifdef __CUDACC__
 extern "C" __global__
 #endif
@@ -1035,6 +1324,28 @@ void starter_reset(int *rows, const int *seeds, int n){
 #else
   for(int row_i=0; row_i<n; row_i++){
     if(seeds[row_i]>=0) reset_one(rows + row_i*ROW_WIDTH, seeds[row_i]);
+  }
+#endif
+}
+
+#ifdef __CUDACC__
+extern "C" __global__
+#endif
+#ifndef __CUDACC__
+#ifdef _WIN32
+__declspec(dllexport)
+#else
+__attribute__((visibility("default")))
+#endif
+#endif
+void public_reset(int *rows, const int *seeds, const int *deck_a, const int *deck_b, int n, int escalation){
+#ifdef __CUDACC__
+  int row_i = blockIdx.x*blockDim.x+threadIdx.x;
+  if(row_i>=n) return;
+  if(seeds[row_i]>=0) reset_one_with_decks(rows + row_i*ROW_WIDTH, seeds[row_i], deck_a + row_i*36, deck_b + row_i*36, escalation);
+#else
+  for(int row_i=0; row_i<n; row_i++){
+    if(seeds[row_i]>=0) reset_one_with_decks(rows + row_i*ROW_WIDTH, seeds[row_i], deck_a + row_i*36, deck_b + row_i*36, escalation);
   }
 #endif
 }

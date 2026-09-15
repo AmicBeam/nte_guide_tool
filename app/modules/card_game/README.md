@@ -120,7 +120,7 @@ node --check app/modules/card_game/static/js/v2_replays.js
 
 大厅选择「高级人机」，再选择对手使用的「创生预组」或「覆纹快攻」。我方构筑可选择「与对手相同的预组」或「当前保存的构筑（仅公开角色）」，保存的个人构筑不会被覆盖。自定义构筑需要对应模型已声明支持；当前随 app 保存的旧模型只支持镜像预组，不能当作已完成自由构筑训练。房间模式为 `advanced`。起手换牌时模型保留全部起手牌，后续选择来自训练策略。对手名及回放显示「高级人机」，刷新后继续同一模型版本的对局。
 
-公开构筑框架与夜间训练入口见 [强化学习说明](../../../docs/duel-v2-rl.md#2026-09-15固定-ai-预组与公开玩家构筑)。本轮提供固定学习方预组、变化公开对手构筑的 Python 规则采样接口；当前网页 `resident_public_v1` 导出仍仅支持镜像，自定义构筑模型须完成新的观察与导出适配后才能接入。验证增加 `python -m unittest tests.test_duel_v2_public_training`；本轮没有启动正式训练。
+完整公开卡池训练入口见 [训练、按需分析与录像指南](../../../docs/duel-v2-public-training.md)。`train_duel_v2_public.py` 使用共享 native/CUDA 完整公开规则、固定学习方预组、设备内公开对手构筑采样和冻结历史模型池；`resident_public_v2` 统一训练及 NumPy 推理观察，包含白热化与明牌信息。独立的 `analyze_duel_v2_policy.py` 按需生成报告和公开录像，`--export-game` 直接选择已记录的一局，不重新模拟。导出模型须匹配完整评估后才允许网页使用；当前随 app 保存的旧权重仍仅开放镜像。本轮没有正式训练，Windows CUDA 实机须先通过预检。
 
 服务端仅依赖可选的 NumPy CPU 推理包：`pip install -r requirements-ai.txt`。默认读取随 app 发布的 `app/modules/card_game/engine/ai/models/{starter,weave-rush}.{npz,json}`，可用 `NTE_DUEL_AI_MODEL_DIR` 指定目录。数字权重不允许 pickle，加载时校验 SHA-256、卡池/座位顺序、观察 schema、规则哈希和参数形状；缺依赖、缺文件或版本不匹配会在创建房间前明确拒绝，不降级冒充高级人机。旧房间保留模型摘要，换模型版本后须重新开局。
 

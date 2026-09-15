@@ -12,14 +12,15 @@ from app.modules.card_game.rl.gpu_duel.catalog import (
 )
 
 ENGINE_NAME = 'starter_engine'
-ENGINE_VERSION = 'compiled_starter_v1'
+ENGINE_VERSION = 'compiled_public_v1'
 
 SIDE_SCALARS = (
     'hp', 'shield', 'ap', 'front', 'last_front', 'turn_count', 'fatigue',
     'normal_atk', 'ultimate_ok', 'used_instant', 'extra_flower', 'extra_ap',
     'extra_genesis', 'extra_genesis_actor', 'surplus', 'nanali_seed',
     'nanali_seed_played', 'burn_left', 'delay_end', 'hand_n', 'deck_n',
-    'discard_n', 'removed_n', 'weave',
+    'discard_n', 'removed_n', 'weave', 'ultimates_used', 'burn_by',
+    'burn_infinite', 'harmony_damage',
 )
 CHAR_FIELDS = (
     'ch_hp', 'ch_max_hp', 'ch_base_max', 'ch_shield', 'ch_base_atk', 'ch_growth',
@@ -28,15 +29,17 @@ CHAR_FIELDS = (
     'ch_next_followup', 'ch_pact', 'ch_energy_next', 'ch_harmonized', 'ch_present',
     'ch_allied_hurt', 'ch_pending_atk', 'ch_share_overflow',
     'ch_collapse_count', 'ch_collapse_by', 'ch_collapse_until',
+    'ch_hp_floor', 'ch_order',
 )
 ROW_SCALARS = (
     'phase', 'active', 'first', 'turn', 'winner', 'reason', 'rng', 'next_instance',
     'pending_kind', 'pending_side', 'pending_count',
     'pending_play_kind', 'pending_play_inst', 'error', 'action',
+    'escalation_enabled',
 )
 GPU_STATE_SCALARS = (
     'phase', 'active', 'first', 'turn', 'winner', 'reason', 'rng', 'next_instance',
-    'pending_kind', 'pending_side', 'pending_count',
+    'pending_kind', 'pending_side', 'pending_count', 'escalation_enabled',
 )
 LEGAL_FIELDS = ('legal_type', 'legal_actor', 'legal_hand', 'legal_tside', 'legal_tseat')
 
@@ -62,6 +65,7 @@ def _build_offsets() -> dict[str, int]:
     place('deck_inst', SIDES * DECK_SLOTS)
     place('discard_kind', SIDES * DISCARD_SLOTS)
     place('discard_inst', SIDES * DISCARD_SLOTS)
+    place('hand_revealed', SIDES * HAND_SLOTS)
     for name in CHAR_FIELDS:
         place(name, SIDES * N_SEATS)
     place('last_hit_side', SIDES * N_SEATS)

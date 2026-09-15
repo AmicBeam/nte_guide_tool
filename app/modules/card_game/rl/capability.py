@@ -1,7 +1,7 @@
 """Public-character training/serving capability. No training is started here.
 
 Encoder seats already cover the six public characters and their 48 kit cards
-plus derived NF01. Compiled CUDA still only accepts exact 创生/覆纹快攻 mirrors.
+plus derived NF01. Shared compiled rules support public custom decks.
 """
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from app.modules.card_game.rl.rule_ir.starter import STARTER_CARDS
 
 LEGACY_MIRROR_KIND = 'legacy_exact_mirror'
 PUBLIC_ASYMMETRIC_KIND = 'public_asymmetric_v1'
+PUBLIC_CANDIDATE_KIND = 'public_candidate_v1'
 COMPILED_PRESETS = ('starter', 'weave-rush')
 PUBLIC_CHARACTERS = tuple(cid for cid in CHARACTER_IDS if cid in PUBLIC_CHARACTER_IDS)
 PUBLIC_KIT_CARDS = tuple(
@@ -55,13 +56,17 @@ def encoder_public_support() -> dict[str, Any]:
 
 
 def compiled_public_support() -> dict[str, Any]:
+    from .rule_ir.completeness import validate_compiled_deck
+    for preset_id in COMPILED_PRESETS:
+        validate_compiled_deck(preset_id)
     return {
-        'ok': False,
+        'ok': not PUBLIC_GPU_IR_MISSING,
         'presets': list(COMPILED_PRESETS),
-        'cuda_full_public': False,
+        'cuda_full_public': not PUBLIC_GPU_IR_MISSING,
+        'cuda_runtime_verified': False,
         'missing_ir_cards': list(PUBLIC_GPU_IR_MISSING),
         'ir_public_cards': list(PUBLIC_GPU_IR_CARDS),
-        'note': 'Compiled CUDA/native backends accept only exact starter and weave-rush mirrors.',
+        'note': 'Shared compiled rules support public custom reset; actual CUDA hardware must pass preflight.',
     }
 
 
@@ -97,9 +102,12 @@ def assert_public_encoder_deck(deck: Mapping[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def sample_public_deck(seed: int, *, name: str = '公开自组') -> dict[str, Any]:
+def sample_public_deck(seed: int, *, name: str = '公开自组', character_ids=None) -> dict[str, Any]:
     rng = Random(int(seed))
-    characters = list(PUBLIC_CHARACTERS)
+    characters = list(PUBLIC_CHARACTERS if character_ids is None else character_ids)
+    if character_ids is not None and (len(characters)!=4 or len(set(characters))!=4
+                                      or not set(characters)<=set(PUBLIC_CHARACTERS)):
+        raise ValueError('Sampling team must contain four distinct public characters')
     rng.shuffle(characters)
     character_ids = characters[:4]
     card_ids: list[str] = []
@@ -180,6 +188,10 @@ def resolve_model_capability(manifest: Mapping[str, Any], deck_id: str) -> dict[
     if not isinstance(raw, dict):
         raise ValueError('Model capability must be an object')
     kind = raw.get('kind')
+    if kind == PUBLIC_CANDIDATE_KIND:
+        if raw.get('human_public_custom') is not False or raw.get('bot_preset') != deck_id:
+            raise ValueError('Invalid unvalidated public candidate capability')
+        return deepcopy(raw)
     if raw.get('human_public_custom') and kind not in (PUBLIC_ASYMMETRIC_KIND,):
         raise ValueError('Existing exact-mirror weights are not trained or validated on public custom decks')
     if kind in (None, LEGACY_MIRROR_KIND):

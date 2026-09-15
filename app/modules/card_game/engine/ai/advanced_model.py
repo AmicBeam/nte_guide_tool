@@ -44,6 +44,8 @@ def require_human_deck(model, deck, deck_id):
             {'capability': getattr(model, 'capability', None)}, deck_id)
     except ValueError as exc:
         raise RuleValidationError(str(exc)) from exc
+    if capability['kind'] == 'public_candidate_v1':
+        raise RuleValidationError('该高级人机尚未通过独立评估，暂不能用于网页对局。')
     if not capability['human_public_custom'] and not is_exact_preset(deck, deck_id):
         raise RuleValidationError('该高级人机尚未开放自由构筑，请选择与对手相同的预组。')
     return capability
@@ -126,31 +128,42 @@ class FrozenModel:
         import numpy as np
         directory = Path(directory)
         manifest = json.loads((directory / f'{deck_id}.json').read_text(encoding='utf-8'))
-        if (manifest.get('schema') != SCHEMA or manifest.get('gpu_lock') != GPU_LOCK
+        from app.modules.card_game.rl.public_schema import SCHEMA as PUBLIC_SCHEMA, state_dim, rule_identity, CAND_DIM
+        self.schema = manifest.get('schema')
+        if (self.schema not in (SCHEMA, PUBLIC_SCHEMA) or manifest.get('gpu_lock') != GPU_LOCK
                 or manifest.get('deck') != deck_id or manifest.get('card_ids') != list(CARD_IDS)
                 or manifest.get('seat_ids') != list(SEATS)):
             raise ValueError('Model version does not match current content')
         from app.modules.card_game.rl.rule_ir.completeness import compiled_rule_hash
         runtime_rule_hash = manifest.get('runtime_rule_hash') or (manifest.get('rule_identity') or {}).get('rule_hash')
-        if runtime_rule_hash != compiled_rule_hash(deck_id):
+        expected_rule_hash = rule_identity() if self.schema == PUBLIC_SCHEMA else compiled_rule_hash(deck_id)
+        if runtime_rule_hash != expected_rule_hash:
             raise ValueError('Model rule version does not match current rules')
         path = directory / f'{deck_id}.npz'
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         if digest != manifest.get('sha256'):
             raise ValueError('Model checksum mismatch')
         self.capability = resolve_model_capability(manifest, deck_id)
-        if self.capability['human_public_custom']:
+        if self.capability['human_public_custom'] and self.schema != PUBLIC_SCHEMA:
             raise ValueError('Public custom serving requires an expanded observation/export contract; resident_public_v1 is mirror-only')
+        if self.capability['human_public_custom']:
+            validation=manifest.get('validation') or {}
+            if (validation.get('complete') is not True or validation.get('model_sha256')!=digest
+                    or validation.get('rule_hash')!=expected_rule_hash):
+                raise ValueError('Public model lacks matching completed evaluation evidence')
         h = int(manifest['hidden'])
         d = 2 + 2*len(SIDE_FIELDS) + 2*N_SEATS*len(CHAR_FIELDS) + 3*len(CARD_IDS)
+        if self.schema == PUBLIC_SCHEMA:
+            d = state_dim()
+        cand_dim = CAND_DIM if self.schema == PUBLIC_SCHEMA else 10
         shapes = {
             'state_net.0.weight': (h, d), 'state_net.0.bias': (h,),
             'state_net.2.weight': (h, h), 'state_net.2.bias': (h,),
-            'cand_net.0.weight': (h, 10), 'cand_net.0.bias': (h,),
+            'cand_net.0.weight': (h, cand_dim), 'cand_net.0.bias': (h,),
             'cand_net.2.weight': (h, h), 'cand_net.2.bias': (h,),
             'score.weight': (1, h), 'score.bias': (1,),
         }
-        if not 1 <= h <= 2048 or manifest['state_dim'] != d or manifest['cand_dim'] != 10:
+        if not 1 <= h <= 2048 or manifest['state_dim'] != d or manifest['cand_dim'] != cand_dim:
             raise ValueError('Invalid model dimensions')
         with np.load(path, allow_pickle=False) as arrays:
             self.weights = {name: arrays[name].astype(np.float32, copy=True) for name in shapes}
@@ -162,6 +175,16 @@ class FrozenModel:
         self.version = digest
         self.hidden = h
         self.deck_id = deck_id
+
+    def select_public_action(self, view, actions):
+        """Offline/report policy contract: visible observation in, legal index out."""
+        from app.modules.card_game.rl.public_observation import encode_public
+        if not actions:
+            raise ValueError('No legal actions')
+        if view.get('phase') == 'mulligan':
+            return next(i for i,a in enumerate(actions) if a['type']=='mulligan' and not a.get('card_ids'))
+        state, candidates = encode_public(view, actions, schema=self.schema)
+        return int(self.scores(state, candidates).argmax())
 
     def scores(self, state, candidates):
         import numpy as np
@@ -203,6 +226,10 @@ def choose_action(state, side='b'):
     if state['phase'] == 'mulligan':
         # The model was trained with the initial hand retained.
         return next(a for a in actions if not a.get('card_ids'))
+    from app.modules.card_game.rl.public_schema import SCHEMA as PUBLIC_SCHEMA
+    if model.schema == PUBLIC_SCHEMA:
+        from app.modules.card_game.engine.duel_v2 import observe
+        return actions[model.select_public_action(observe(state, side), actions)]
     try:
         values, candidates = encode(state, side, actions)
     except (KeyError, ValueError) as exc:

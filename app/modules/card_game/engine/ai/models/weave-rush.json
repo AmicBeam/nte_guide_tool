@@ -1,7 +1,7 @@
 {
   "schema": "resident_public_v1",
-  "runtime_rule_hash": "65bc43c1a235e2333f38271e293f92caa7a6d2a36652dfb2f2da2489fd56c480",
-  "runtime_rule_note": "2026-09-15: first player draws on turn one; unchanged weights and observation/action schema. rule_identity retains training provenance; strength under the new rule is not evaluated.",
+  "runtime_rule_hash": "ff37be430741caf72166c3e5a3364959628b3537f931fd3dc70cfc0a3468d941",
+  "runtime_rule_note": "兼容公开卡池编译布局更新；保留 resident_public_v1 输入与原训练规则身份，不重训，仍仅开放镜像预组。兼容性不代表新规则下最优。",
   "deck": "weave-rush",
   "hidden": 128,
   "state_dim": 447,

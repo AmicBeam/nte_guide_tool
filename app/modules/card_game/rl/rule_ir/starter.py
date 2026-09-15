@@ -16,6 +16,7 @@ ALLOWED_OPS = frozenset({
     'ignore_shield', 'team_buff', 'pending_atk', 'share_overflow',
     'hit_front_scaled', 'self_damage', 'draw_one', 'sortie_allied_extra',
     'heal_after_hit',
+    'burn_infinite', 'damage_missing_others', 'hp_floor',
 })
 
 
@@ -47,7 +48,7 @@ def _appearing_ids() -> tuple[str, ...]:
         'Z01', 'Z02', 'Z03', 'Z04', 'Z05', 'Z06', 'Z07', 'Z08',
         'J01', 'J02', 'J03', 'J04', 'J05', 'J06', 'J07', 'J08',
         'M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08',
-        'B01', 'B02', 'B06', 'B07', 'B08',
+        'B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08',
     ):
         ids.append(extra)
     return tuple(dict.fromkeys(ids))
@@ -102,6 +103,9 @@ _CARD_OPS: dict[str, tuple[EffectOp, ...]] = {
     'M08': (EffectOp('form'),),
     'B01': (EffectOp('self_damage', (1,)), EffectOp('draw_one'),),
     'B02': (EffectOp('heal_after_hit', (2,)), EffectOp('sortie'),),
+    'B03': (EffectOp('burn_infinite'),),
+    'B04': (EffectOp('damage_missing_others'),),
+    'B05': (EffectOp('hp_floor', (1,)),),
     'B06': (EffectOp('sortie_allied_extra', (1,)),),
     'B07': (EffectOp('form'),),
     'B08': (EffectOp('form'), EffectOp('self_damage', (4,)),),

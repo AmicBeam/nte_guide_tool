@@ -1,0 +1,128 @@
+"""Numeric export for the public resident scorer; exporting never trains."""
+from pathlib import Path
+import hashlib
+import json
+
+from .public_schema import SCHEMA, state_dim, rule_identity, CAND_DIM
+from .gpu_duel.catalog import CARD_IDS, SEATS, GPU_LOCK
+from .capability import PUBLIC_CANDIDATE_KIND
+
+
+def export_checkpoint(source, output):
+    import numpy as np
+    import torch
+    from .gpu_duel.ppo import CompactScorer
+    source, output = Path(source), Path(output)
+    checkpoint = torch.load(source, map_location='cpu', weights_only=True)
+    if checkpoint.get('schema') != SCHEMA or checkpoint.get('gpu_lock') != GPU_LOCK:
+        raise ValueError('Checkpoint observation/catalog mismatch')
+    if checkpoint.get('rule_identity',{}).get('rule_hash') != rule_identity():
+        raise ValueError('Checkpoint rule identity mismatch')
+    if checkpoint.get('state_dim') != state_dim() or checkpoint.get('cand_dim') != CAND_DIM:
+        raise ValueError('Checkpoint dimensions mismatch')
+    deck = checkpoint.get('deck')
+    if deck not in ('starter','weave-rush'):
+        raise ValueError('Unknown learner preset')
+    hidden = checkpoint['hidden']
+    if type(hidden) is not int or not 1 <= hidden <= 2048:
+        raise ValueError('Invalid hidden dimension')
+    network = CompactScorer(state_dim(),CAND_DIM,hidden)
+    network.load_state_dict(checkpoint['model'])
+    network.eval()
+    arrays = {k:v.detach().cpu().numpy() for k,v in network.state_dict().items() if not k.startswith('value.')}
+    if not all(np.isfinite(a).all() for a in arrays.values()):
+        raise ValueError('Non-finite checkpoint weights')
+    if output.exists():
+        raise ValueError('Choose a new export directory')
+    output.mkdir(parents=True)
+    path = output/f'{deck}.npz'
+    np.savez_compressed(path,**arrays)
+    manifest = {k:checkpoint[k] for k in ('schema','deck','hidden','state_dim','cand_dim','gpu_lock','update','rule_identity')}
+    manifest.update(sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                    source_checkpoint_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+                    card_ids=list(CARD_IDS),seat_ids=list(SEATS),
+                    capability={'kind':PUBLIC_CANDIDATE_KIND,'bot_preset':deck,
+                                'human_public_custom':False,'validated_distribution':None})
+    (output/f'{deck}.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    # Verify exported math on varied public observations. This is parity, not strength evaluation.
+    from app.modules.card_game.engine.ai.advanced_model import FrozenModel
+    from app.modules.card_game.engine.duel_v2 import new_game, observe, legal_actions, acting_side
+    from .capability import sample_public_deck,preset_opponent_deck
+    from .public_observation import encode_public
+    model = FrozenModel(output,deck)
+    largest = 0.0
+    for seed in range(8):
+        state = new_game(seed=seed,skip_mulligan=True,
+                         decks={'a':preset_opponent_deck(deck),'b':sample_public_deck(seed)})
+        side = acting_side(state)
+        actions = [a for a in legal_actions(state,side) if a['type']!='concede']
+        values,candidates = encode_public(observe(state,side),actions)
+        with torch.no_grad():
+            logits,_ = network(torch.tensor(values)[None],torch.tensor(candidates)[None],
+                               torch.ones(1,len(actions),dtype=torch.bool))
+        expected = logits[0].numpy()
+        got = model.scores(values,candidates)
+        np.testing.assert_allclose(got,expected,rtol=1e-4,atol=1e-5)
+        if got.argmax()!=expected.argmax():
+            raise ValueError('Export action parity failed')
+        largest = max(largest,float(np.max(np.abs(got-expected))))
+    result = {'model':str(path),'model_sha256':model.version,'cases':8,'max_error':largest,
+              'validated_for_serving':False}
+    (output/'export-check.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
+    return result
+
+
+def approve_candidate(model_path, report_path, *, min_pairs=32, min_win_rate=0.5):
+    """Attach completed, matching public evaluation evidence to numeric weights."""
+    from .capability import capability_ready_manifest
+    model_path,report_path=Path(model_path),Path(report_path)
+    manifest_path=model_path.with_suffix('.json')
+    manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
+    report=json.loads(report_path.read_text(encoding='utf-8'))
+    digest=hashlib.sha256(model_path.read_bytes()).hexdigest()
+    if type(min_pairs) is not int or min_pairs<1 or not 0<=min_win_rate<=1:
+        raise ValueError('Invalid acceptance threshold')
+    if manifest.get('schema')!=SCHEMA or manifest.get('sha256')!=digest or int(manifest.get('update',0))<1:
+        raise ValueError('Only a trained public checkpoint can be approved')
+    identity=rule_identity()
+    model=report.get('model') or {}
+    if (model.get('sha256'),model.get('schema'),model.get('rule_hash'),report.get('preset')) != (
+            digest,SCHEMA,identity,manifest.get('deck')):
+        raise ValueError('Report does not match the exact model, rules, and preset')
+    if (manifest.get('rule_identity') or {}).get('rule_hash')!=identity:
+        raise ValueError('Model rule identity changed')
+    if report.get('sampled_opponent') is not True or len(report.get('by_opponent_team') or {})<15:
+        raise ValueError('Evaluation must cover all 15 public opponent teams')
+    games=report.get('games_index') or []
+    if not games or any(not g.get('terminated') or g.get('truncated') or g.get('error') for g in games):
+        raise ValueError('Evaluation contains incomplete/error games')
+    from .capability import PUBLIC_CHARACTERS
+    teams={tuple(sorted(g.get('opponent_team') or [])) for g in games}
+    if len(teams)!=15 or any(len(set(team))!=4 or not set(team)<=set(PUBLIC_CHARACTERS) for team in teams):
+        raise ValueError('Game index must cover all 15 actual public teams')
+    if len(games)!=int(report.get('pairs',0))*2 or len(games)<min_pairs*2:
+        raise ValueError('Not enough complete paired evaluation games')
+    pairs={}
+    for game in games:
+        pair=pairs.setdefault(game['pair'],{})
+        if game['position'] in pair:raise ValueError('Duplicate evaluation seat')
+        pair[game['position']]=game
+    if any(set(pair)!= {'first','second'} or pair['first']['opponent_team']!=pair['second']['opponent_team']
+           for pair in pairs.values()):
+        raise ValueError('Evaluation pairs are inconsistent')
+    wins=sum(g.get('winner')=='a' for g in games)
+    if wins/len(games)<min_win_rate:raise ValueError('Evaluation win-rate threshold not met')
+    engine=report.get('engine') or {}
+    if engine.get('escalation') is not True or engine.get('first_turn_draw') is not True:
+        raise ValueError('Evaluation omitted current rules')
+    from app.modules.card_game.engine.ai.advanced_model import FrozenModel
+    FrozenModel(model_path.parent,manifest['deck'])  # Numeric shape/hash validation before approval.
+    manifest['capability']=capability_ready_manifest(manifest['deck'])
+    manifest['validation']={'complete':True,'model_sha256':digest,'rule_hash':identity,
+                            'games':len(games),'wins':wins,'min_pairs':min_pairs,
+                            'min_win_rate':min_win_rate,'opponent_teams':15,
+                            'report_sha256':hashlib.sha256(report_path.read_bytes()).hexdigest()}
+    temp=manifest_path.with_suffix('.json.tmp')
+    temp.write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    temp.replace(manifest_path)
+    return manifest['validation']

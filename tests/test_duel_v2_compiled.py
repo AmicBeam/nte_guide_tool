@@ -241,7 +241,10 @@ class CompiledStarterOracleTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def _py(self, seed=7):
-        return new_game(seed=seed, skip_mulligan=True, decks={'a': STARTER_DECK, 'b': STARTER_DECK})
+        # Exact legacy trajectories exclude stochastic escalation. Public boundary
+        # and tie-selection invariants have dedicated tests in the public suites.
+        return new_game(seed=seed, skip_mulligan=True, escalation=False,
+                        decks={'a': STARTER_DECK, 'b': STARTER_DECK})
 
     def _load(self, *states):
         if len(states) == 1:

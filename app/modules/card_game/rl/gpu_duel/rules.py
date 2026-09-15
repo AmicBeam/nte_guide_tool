@@ -8,8 +8,9 @@ from .catalog import (
     BOHE, CARD_INDEX, DISCARD_SLOTS, HAND_SLOTS, HARMONY_GENESIS, HARMONY_OVERLAY,
     ILOY, JIUYUAN, LEGAL_ATK, LEGAL_END, LEGAL_PLAY, LEGAL_ULT, LEGAL_WIDTH,
     MAX_LEGAL, N_SEATS, PHASE_CHOICE, PHASE_FINISHED, PHASE_PLAYING, PLAY_TARGETS,
-    POLICY_ALLY, POLICY_DOWN_ALLY, POLICY_ENEMY, POLICY_ENEMY_FRONT, POLICY_INJURED,
-    POLICY_NONE, RESPONSE_ALLY, RESPONSE_SELF, SIDES, ZERO,
+    POLICY_ALLY, POLICY_DOWN_ALLY, POLICY_DOWN_ENEMY, POLICY_ALLY_FRONT, POLICY_ENEMY, POLICY_ENEMY_FRONT, POLICY_INJURED,
+    POLICY_NONE, RESPONSE_ALLY, RESPONSE_SELF, RESPONSE_SELF_LETHAL,
+    REQUIRE_OWN_BURN, REQUIRE_SURPLUS, REQUIRE_HARMONY_DAMAGE, SIDES, ZERO,
 )
 from .state import GpuState, other_side
 
@@ -27,6 +28,28 @@ def _hook_card(s: GpuState, key: str) -> int:
 def _hook_seat(s: GpuState, key: str) -> int:
     from .catalog import SEAT_INDEX
     return SEAT_INDEX[_effect_tables(s)['hooks'][key]]
+
+
+def _energy_cap(s: GpuState, seat: int) -> torch.Tensor:
+    cap = s.char_energy_max[seat].expand(s.n)
+    if hasattr(s, 'escalation_enabled'):
+        cap = cap - ((s.escalation_enabled > 0) & (s.turn >= 13)).to(cap.dtype)
+        cap = cap.clamp(min=1)
+    return cap
+
+
+def _harmony_cap(s: GpuState) -> torch.Tensor:
+    cap = torch.full((s.n,), 2, dtype=torch.int32, device=s.device)
+    if hasattr(s, 'escalation_enabled'):
+        cap = torch.where((s.escalation_enabled > 0) & (s.turn >= 20), torch.ones_like(cap), cap)
+    return cap
+
+
+def _ultimate_limit(s: GpuState) -> torch.Tensor:
+    limit = torch.ones(s.n, dtype=torch.int32, device=s.device)
+    if hasattr(s, 'escalation_enabled'):
+        limit = torch.where((s.escalation_enabled > 0) & (s.turn >= 6), torch.full_like(limit, 2), limit)
+    return limit
 
 
 def _cpu_mask_empty(mask: torch.Tensor) -> bool:
@@ -71,7 +94,10 @@ def _apply_hp(s: GpuState, side: torch.Tensor, is_player: torch.Tensor, seat: in
     hp = torch.where(is_player, s.hp[b, side], s.ch_hp[b, side, seat])
     absorb = torch.minimum(sh, amount)
     loss = amount - absorb
-    nhp = (hp - loss).clamp(min=0)
+    floor = torch.zeros_like(hp)
+    if hasattr(s, 'ch_hp_floor'):
+        floor = torch.where(is_player, torch.zeros_like(hp), (s.ch_hp_floor[b, side, seat] > 0).to(hp.dtype))
+    nhp = torch.maximum(hp - loss, floor)
     nsh = sh - absorb
     player_hp = torch.where(mask & is_player, nhp, s.hp[b, side])
     player_sh = torch.where(mask & is_player, nsh, s.shield[b, side])
@@ -204,7 +230,7 @@ def _payer(s: GpuState, side: torch.Tensor, seat: int) -> torch.Tensor:
     prev = torch.where(same, torch.full_like(prev, -1), prev)
     ok = torch.zeros_like(prev, dtype=torch.bool)
     for pseat in range(N_SEATS):
-        cand = (prev == pseat) & (s.ch_hp[b, side, pseat] > 0) & (s.ch_harmony[b, side, pseat] >= 2)
+        cand = (prev == pseat) & (s.ch_hp[b, side, pseat] > 0) & (s.ch_harmony[b, side, pseat] >= _harmony_cap(s))
         ok = ok | cand
         prev = torch.where(cand, prev, prev)
     alive_pay = torch.zeros_like(prev, dtype=torch.bool)
@@ -212,7 +238,7 @@ def _payer(s: GpuState, side: torch.Tensor, seat: int) -> torch.Tensor:
     for pseat in range(N_SEATS):
         hit = prev == pseat
         alive_pay = alive_pay | (hit & (s.ch_hp[b, side, pseat] > 0))
-        enough = enough | (hit & (s.ch_harmony[b, side, pseat] >= 2))
+        enough = enough | (hit & (s.ch_harmony[b, side, pseat] >= _harmony_cap(s)))
     return torch.where((prev >= 0) & alive_pay & enough & (s.front[b, side] != seat), prev, torch.full_like(prev, -1))
 
 
@@ -259,13 +285,20 @@ def enter(s: GpuState, side: torch.Tensor, seat: int, mask: torch.Tensor, *, sup
     s.front[b, side] = torch.where(mask, torch.full_like(s.front[b, side], seat), s.front[b, side])
     # pay harmony
     for pseat in range(N_SEATS):
-        pay = mask & (kind == HARMONY_GENESIS) & (payer == pseat)
-        s.ch_harmony[b, side, pseat] = torch.where(pay, s.ch_harmony[b, side, pseat] - 2, s.ch_harmony[b, side, pseat])
+        pay = mask & (kind > 0) & (payer == pseat)
+        s.ch_harmony[b, side, pseat] = torch.where(pay, s.ch_harmony[b, side, pseat] - _harmony_cap(s), s.ch_harmony[b, side, pseat])
     s.ch_harmonized[b, side, seat] = torch.where(
         mask & ((kind == HARMONY_GENESIS) | (kind == HARMONY_OVERLAY)),
         torch.ones_like(s.ch_harmonized[b, side, seat]), s.ch_harmonized[b, side, seat])
     foe = other_side(side)
     s.weave[b, foe] = torch.where(mask & (kind == HARMONY_OVERLAY), torch.ones_like(s.weave[b, foe]), s.weave[b, foe])
+    if hasattr(s, 'burn_left'):
+        burn = mask & (kind == 4)
+        s.burn_left[b, foe] = torch.where(burn, torch.full_like(s.burn_left[b, foe], 2), s.burn_left[b, foe])
+        s.burn_by[b, foe] = torch.where(burn, side, s.burn_by[b, foe])
+        s.burn_infinite[b, foe] = torch.where(burn, torch.zeros_like(s.burn_infinite[b, foe]), s.burn_infinite[b, foe])
+        delay = mask & (kind == 2)
+        s.delay_end[b, foe] = torch.where(delay, torch.ones_like(s.delay_end[b, foe]), s.delay_end[b, foe])
     resolve_genesis(s, side, seat, mask & (kind == HARMONY_GENESIS))
 
 
@@ -306,14 +339,14 @@ def _grant_combat_resources(s: GpuState, side: torch.Tensor, seat: int, mask: to
     for ally in range(N_SEATS):
         live = mask & (s.ch_hp[b, side, ally] > 0) & (s.ch_down[b, side, ally] == 0)
         s.ch_energy[b, side, ally] = torch.where(
-            live, torch.minimum(s.ch_energy[b, side, ally] + 1, s.ch_energy_max[b, side, ally]),
+            live, torch.minimum(s.ch_energy[b, side, ally] + 1, _energy_cap(s, ally)),
             s.ch_energy[b, side, ally])
     attacker = mask & _alive(s, side, seat)
     s.ch_energy[b, side, seat] = torch.where(
-        attacker, torch.minimum(s.ch_energy[b, side, seat] + 1, s.ch_energy_max[b, side, seat]),
+        attacker, torch.minimum(s.ch_energy[b, side, seat] + 1, _energy_cap(s, seat)),
         s.ch_energy[b, side, seat])
     s.ch_harmony[b, side, seat] = torch.where(
-        attacker, torch.minimum(s.ch_harmony[b, side, seat] + 1, torch.full_like(s.ch_harmony[b, side, seat], 2)),
+        attacker, torch.minimum(s.ch_harmony[b, side, seat] + 1, _harmony_cap(s)),
         s.ch_harmony[b, side, seat])
 
 
@@ -448,12 +481,17 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
         s.turn_count[:, si] = torch.where(here, s.turn_count[:, si] + 1, s.turn_count[:, si])
         s.used_instant[:, si] = torch.where(here, torch.zeros_like(s.used_instant[:, si]), s.used_instant[:, si])
         s.surplus[:, si] = torch.where(here, torch.zeros_like(s.surplus[:, si]), s.surplus[:, si])
+        if hasattr(s, 'harmony_damage'):
+            s.harmony_damage[:, si] = torch.where(here, torch.zeros_like(s.harmony_damage[:, si]), s.harmony_damage[:, si])
         s.weave[:, 1 - si] = torch.where(here, torch.zeros_like(s.weave[:, 1 - si]), s.weave[:, 1 - si])
         for seat in range(N_SEATS):
             pending = s.ch_pending_atk[:, si, seat]
             s.ch_atk_buff[:, si, seat] = torch.where(here, s.ch_atk_buff[:, si, seat] + pending, s.ch_atk_buff[:, si, seat])
             s.ch_pending_atk[:, si, seat] = torch.where(here, torch.zeros_like(pending), pending)
             s.ch_allied_hurt[:, si, seat] = torch.where(here, torch.zeros_like(s.ch_allied_hurt[:, si, seat]), s.ch_allied_hurt[:, si, seat])
+            if hasattr(s, 'ch_hp_floor'):
+                s.ch_hp_floor[:, si, seat] = torch.where(here, torch.zeros_like(s.ch_hp_floor[:, si, seat]), s.ch_hp_floor[:, si, seat])
+                s.ch_hp_floor[:, 1 - si, seat] = torch.where(here, torch.zeros_like(s.ch_hp_floor[:, 1 - si, seat]), s.ch_hp_floor[:, 1 - si, seat])
         for seat in range(N_SEATS):
             s.ch_shield[:, si, seat] = torch.where(here, torch.zeros_like(s.ch_shield[:, si, seat]), s.ch_shield[:, si, seat])
             recovering = here & (s.ch_down[:, si, seat] > 0)
@@ -461,6 +499,40 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
             s.ch_down[:, si, seat] = torch.where(recovering, s.ch_down[:, si, seat] - 1, s.ch_down[:, si, seat])
             revived = recovering & (s.ch_down[:, si, seat] == 0)
             s.ch_hp[:, si, seat] = torch.where(revived, s.ch_max_hp[:, si, seat], s.ch_hp[:, si, seat])
+        if hasattr(s, 'escalation_enabled'):
+            for seat in range(N_SEATS):
+                s.ch_energy[:, si, seat] = torch.where(here, torch.minimum(s.ch_energy[:, si, seat], _energy_cap(s, seat)), s.ch_energy[:, si, seat])
+                s.ch_harmony[:, si, seat] = torch.where(here, torch.minimum(s.ch_harmony[:, si, seat], _harmony_cap(s)), s.ch_harmony[:, si, seat])
+            # lowest-alive-energy +1 at global turn >= 6
+            escalate = here & (s.escalation_enabled > 0) & (s.turn >= 6)
+            if bool(escalate.any()) if escalate.device.type == 'cpu' else True:
+                alive_mask = []
+                energies = []
+                for seat in range(N_SEATS):
+                    live = (s.ch_present[:, si, seat] > 0) & (s.ch_hp[:, si, seat] > 0) & (s.ch_down[:, si, seat] == 0)
+                    alive_mask.append(live)
+                    energies.append(torch.where(live, s.ch_energy[:, si, seat], torch.full_like(s.ch_energy[:, si, seat], 10**6)))
+                stacked = torch.stack(energies, dim=1)
+                lowest = stacked.min(dim=1).values
+                eligible = []
+                for seat in range(N_SEATS):
+                    eligible.append(escalate & alive_mask[seat] & (s.ch_energy[:, si, seat] == lowest))
+                chosen = torch.zeros(s.n, dtype=torch.int32, device=s.device)
+                remaining = escalate.clone()
+                rng = s.rng
+                for seat in range(N_SEATS):
+                    cand = remaining & eligible[seat]
+                    # among remaining candidates, keep seat with LCG if multiple
+                    chosen = torch.where(cand & (chosen == 0), torch.full_like(chosen, seat + 1), chosen)
+                    # if already chosen and this is also candidate, maybe replace
+                    both = cand & (chosen > 0) & (chosen != seat + 1)
+                    rng = (rng * 1103515245 + 12345) & 0x7FFFFFFF
+                    replace = both & ((rng % 2) == 0)
+                    chosen = torch.where(replace, torch.full_like(chosen, seat + 1), chosen)
+                s.rng = torch.where(escalate, rng, s.rng)
+                for seat in range(N_SEATS):
+                    hit = escalate & (chosen == seat + 1)
+                    s.ch_energy[:, si, seat] = torch.where(hit, torch.minimum(s.ch_energy[:, si, seat] + 1, _energy_cap(s, seat)), s.ch_energy[:, si, seat])
         # return front
         for seat in range(N_SEATS):
             leaving = here & (s.front[:, si] == seat)
@@ -491,7 +563,7 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
         for seat in range(N_SEATS):
             s.ch_energy[:, si, seat] = torch.where(
                 give & (s.ch_hp[:, si, seat] > 0),
-                torch.minimum(s.ch_energy[:, si, seat] + 1, s.ch_energy_max[:, si, seat]),
+                torch.minimum(s.ch_energy[:, si, seat] + 1, _energy_cap(s, seat)),
                 s.ch_energy[:, si, seat])
         extra = s.extra_ap[:, si]
         s.extra_ap[:, si] = torch.where(here, torch.zeros_like(extra), extra)
@@ -499,6 +571,8 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
         s.ap[:, si] = torch.where(here, ap, s.ap[:, si])
         s.normal_atk[:, si] = torch.where(here, torch.ones_like(s.normal_atk[:, si]), s.normal_atk[:, si])
         s.ultimate_ok[:, si] = torch.where(here, torch.ones_like(s.ultimate_ok[:, si]), s.ultimate_ok[:, si])
+        if hasattr(s, 'ultimates_used'):
+            s.ultimates_used[:, si] = torch.where(here, torch.zeros_like(s.ultimates_used[:, si]), s.ultimates_used[:, si])
         auto_id = CARD_INDEX.get('M08', -1)
         if auto_id >= 0:
             auto = here & (s.ch_shape[:, si, BOHE] == auto_id) & (s.ch_present[:, si, BOHE] > 0) & (s.ch_hp[:, si, BOHE] > 0)
@@ -711,6 +785,66 @@ def _play_effects(s: GpuState, side: torch.Tensor, seat: int, kind: torch.Tensor
         hit = j04 & (tseat == foe_seat)
         _apply_hp(s, foe, torch.zeros_like(hit), foe_seat, tables['pact_target'][k], hit)
         s.ch_pact[b, foe, foe_seat] = torch.where(hit | (j02 & (s.front[b, foe] == foe_seat)), torch.ones_like(s.ch_pact[b, foe, foe_seat]), s.ch_pact[b, foe, foe_seat])
+    heal_front = valid & (tables['heal_front_full'][k] > 0)
+    for ally in range(N_SEATS):
+        hit = heal_front & (s.front[b, side] == ally)
+        s.ch_hp[b, side, ally] = torch.where(hit, s.ch_max_hp[b, side, ally], s.ch_hp[b, side, ally])
+    n01 = valid & (tables['draw_owned_self'][k] > 0)
+    for si in range(SIDES):
+        here = n01 & (side == si)
+        want = here
+        for dslot in range(32):
+            kind_d = s.deck_kind[:, si, dslot]
+            match = want & (kind_d >= 0) & (s.catalog_owner[kind_d.clamp(min=0)] == seat) & (s.catalog_derived[kind_d.clamp(min=0)] == 0)
+            hn = s.hand_n[:, si]
+            for hslot in range(HAND_SLOTS):
+                put = match & (hn == hslot)
+                s.hand_kind[:, si, hslot] = torch.where(put, kind_d, s.hand_kind[:, si, hslot])
+                s.hand_inst[:, si, hslot] = torch.where(put, s.deck_inst[:, si, dslot], s.hand_inst[:, si, hslot])
+            s.hand_n[:, si] = torch.where(match & (hn < HAND_SLOTS), hn + 1, hn)
+            s.deck_kind[:, si, dslot] = torch.where(match, torch.full_like(kind_d, -1), kind_d)
+            want = want & ~match
+    sac = valid & (tables['sacrifice_draw'][k] > 0)
+    for ally in range(N_SEATS):
+        hit = sac & (ally != seat) & (s.ch_hp[b, side, ally] > 0)
+        s.ch_hp[b, side, ally] = torch.where(hit, torch.zeros_like(s.ch_hp[b, side, ally]), s.ch_hp[b, side, ally])
+    knockdown(s)
+    for ally in range(N_SEATS):
+        hit = sac & (ally != seat) & (s.ch_down[b, side, ally] > 0)
+        s.ch_down[b, side, ally] = torch.where(hit, torch.full_like(s.ch_down[b, side, ally], 2), s.ch_down[b, side, ally])
+    from .catalog import HAND_SLOTS as _HS
+    draw(s, side, sac, 2)
+    setd = valid & (tables['set_down'][k] > 0)
+    foe = other_side(side)
+    for foe_seat in range(N_SEATS):
+        hit = setd & (tseat == foe_seat)
+        s.ch_down[b, foe, foe_seat] = torch.where(hit, tables['set_down'][k], s.ch_down[b, foe, foe_seat])
+    if hasattr(s, 'hand_revealed'):
+        reveal = valid & (tables['reveal_front_hand'][k] > 0)
+        front = s.front[b, foe]
+        for hs in range(HAND_SLOTS):
+            kind_h = s.hand_kind[b, foe, hs]
+            own = torch.where(kind_h >= 0, s.catalog_owner[kind_h.clamp(min=0)], torch.full_like(kind_h, -1))
+            mark = reveal & (kind_h >= 0) & (front >= 0) & (own == front)
+            s.hand_revealed[b, foe, hs] = torch.where(mark, torch.ones_like(s.hand_revealed[b, foe, hs]), s.hand_revealed[b, foe, hs])
+        dmg_rev = valid & (tables['damage_revealed'][k] > 0)
+        count = torch.zeros(s.n, dtype=torch.int32, device=s.device)
+        for hs in range(HAND_SLOTS):
+            count = count + ((s.hand_kind[b, foe, hs] >= 0) & (s.hand_revealed[b, foe, hs] > 0)).to(torch.int32)
+        _deal_front(s, side, count, dmg_rev & (count > 0))
+    if hasattr(s, 'burn_infinite'):
+        binf = valid & (tables['burn_infinite'][k] > 0)
+        own = (s.burn_left[b, foe] > 0) & (s.burn_by[b, foe] == side)
+        s.burn_infinite[b, foe] = torch.where(binf & own, torch.ones_like(s.burn_infinite[b, foe]), s.burn_infinite[b, foe])
+    missing = valid & (tables['damage_missing_others'][k] > 0)
+    miss = (s.ch_max_hp[b, side, seat] - s.ch_hp[b, side, seat]).clamp(min=0)
+    for os in range(2):
+        for other_seat in range(N_SEATS):
+            hit = missing & (miss > 0) & (torch.full_like(tseat, other_seat) != seat) & (s.ch_present[b, os, other_seat] > 0) & (s.ch_hp[b, os, other_seat] > 0)
+            _apply_hp(s, torch.full_like(side, os), torch.zeros_like(hit), other_seat, miss, hit)
+    if hasattr(s, 'ch_hp_floor'):
+        floor = valid & (tables['hp_floor'][k] > 0)
+        s.ch_hp_floor[b, side, seat] = torch.where(floor, torch.ones_like(s.ch_hp_floor[b, side, seat]), s.ch_hp_floor[b, side, seat])
     knockdown(s)
     victory(s)
 
@@ -805,7 +939,11 @@ def rebuild_legal(s: GpuState) -> None:
         can_atk = playing & (ap >= 1) & (s.normal_atk[b, side] > 0) & (s.ch_present[b, side, seat] > 0) & (s.ch_hp[b, side, seat] > 0) & (s.ch_down[b, side, seat] == 0)
         s.legal_type[:, LEGAL_ATK + seat] = torch.where(can_atk, torch.full_like(s.legal_type[:, 0], ACT_ATTACK), -1)
         s.legal_actor[:, LEGAL_ATK + seat] = torch.where(can_atk, torch.full_like(s.legal_actor[:, 0], seat), -1)
-        can_ult = playing & (s.ultimate_ok[b, side] > 0) & (s.ch_present[b, side, seat] > 0) & (s.ch_hp[b, side, seat] > 0) & (s.ch_energy[b, side, seat] >= s.ch_energy_max[b, side, seat])
+        energy_ok = s.ch_energy[b, side, seat] >= _energy_cap(s, seat)
+        remaining_ok = True
+        if hasattr(s, 'ultimates_used'):
+            remaining_ok = s.ultimates_used[b, side] < _ultimate_limit(s)
+        can_ult = playing & (s.ultimate_ok[b, side] > 0) & (s.ch_present[b, side, seat] > 0) & (s.ch_hp[b, side, seat] > 0) & energy_ok & remaining_ok
         s.legal_type[:, LEGAL_ULT + seat] = torch.where(can_ult, torch.full_like(s.legal_type[:, 0], ACT_ULTIMATE), -1)
         s.legal_actor[:, LEGAL_ULT + seat] = torch.where(can_ult, torch.full_like(s.legal_actor[:, 0], seat), -1)
     foe = other_side(side)
@@ -826,8 +964,14 @@ def rebuild_legal(s: GpuState) -> None:
         zero_shaped = (s.ch_hp[b, side, ZERO] > 0) & (s.ch_shape[b, side, ZERO] >= 0)
         free = (instant | (is_form & zero_shaped)) & (s.used_instant[b, side] == 0)
         playable = valid_card & (owner_hp > 0) & (free | (ap >= cost))
+        if hasattr(s, 'catalog_require'):
+            require = torch.where(kind >= 0, s.catalog_require[kind.clamp(min=0)], torch.zeros_like(kind))
+            own_burn = (require != REQUIRE_OWN_BURN) | ((s.burn_left[b, foe] > 0) & (s.burn_by[b, foe] == side))
+            surplus_ok = (require != REQUIRE_SURPLUS) | (s.surplus[b, side] > 0)
+            harm_ok = (require != REQUIRE_HARMONY_DAMAGE) | (s.harmony_damage[b, side] > 0)
+            playable = playable & own_burn & surplus_ok & harm_ok
         base = LEGAL_PLAY + hs * PLAY_TARGETS
-        none_ok = playable & ((policy == POLICY_NONE) | ((policy == POLICY_ENEMY_FRONT) & (s.front[b, foe] >= 0)))
+        none_ok = playable & ((policy == POLICY_NONE) | ((policy == POLICY_ENEMY_FRONT) & (s.front[b, foe] >= 0)) | ((policy == POLICY_ALLY_FRONT) & (s.front[b, side] >= 0)))
         s.legal_type[:, base] = torch.where(none_ok, torch.full_like(kind, ACT_PLAY), -1)
         s.legal_actor[:, base] = torch.where(none_ok, owner, -1)
         s.legal_hand[:, base] = torch.where(none_ok, torch.full_like(kind, hs), -1)
@@ -845,7 +989,10 @@ def rebuild_legal(s: GpuState) -> None:
             s.legal_tseat[:, slot] = torch.where(ally_ok, torch.full_like(kind, ally), -1)
         for enemy in range(N_SEATS):
             slot = base + 1 + N_SEATS + enemy
-            en_ok = playable & (policy == POLICY_ENEMY) & (s.ch_present[b, foe, enemy] > 0) & (s.ch_hp[b, foe, enemy] > 0)
+            en_ok = playable & (s.ch_present[b, foe, enemy] > 0) & (
+                ((policy == POLICY_ENEMY) & (s.ch_hp[b, foe, enemy] > 0))
+                | ((policy == POLICY_DOWN_ENEMY) & (s.ch_down[b, foe, enemy] > 0))
+            )
             s.legal_type[:, slot] = torch.where(en_ok, torch.full_like(kind, ACT_PLAY), -1)
             s.legal_actor[:, slot] = torch.where(en_ok, owner, -1)
             s.legal_hand[:, slot] = torch.where(en_ok, torch.full_like(kind, hs), -1)
@@ -898,7 +1045,13 @@ def step_index(s: GpuState, index: torch.Tensor, *, legal_ready: bool = False) -
         sortie(s, side, seat, atk)
         ult = valid & (typ == ACT_ULTIMATE) & (actor == seat)
         for si in range(SIDES):
-            s.ultimate_ok[:, si] = torch.where(ult & (side == si), torch.zeros_like(s.ultimate_ok[:, si]), s.ultimate_ok[:, si])
+            here = ult & (side == si)
+            if hasattr(s, 'ultimates_used'):
+                s.ultimates_used[:, si] = torch.where(here, s.ultimates_used[:, si] + 1, s.ultimates_used[:, si])
+                exhausted = here & (s.ultimates_used[:, si] >= _ultimate_limit(s))
+                s.ultimate_ok[:, si] = torch.where(exhausted, torch.zeros_like(s.ultimate_ok[:, si]), s.ultimate_ok[:, si])
+            else:
+                s.ultimate_ok[:, si] = torch.where(here, torch.zeros_like(s.ultimate_ok[:, si]), s.ultimate_ok[:, si])
         start_ultimate(s, side, seat, ult)
     play = valid & (typ == ACT_PLAY)
     play_card(s, side, hand, play, tside, tseat)

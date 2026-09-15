@@ -51,6 +51,13 @@ def compile_native_engine(directory: str | Path, *, deck_id="starter"):
     if reset_fn is not None:
         reset_fn.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int]
         reset_fn.restype = None
+    public_reset_fn = getattr(dll, 'public_reset', None)
+    if public_reset_fn is not None:
+        public_reset_fn.argtypes = [
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+            ctypes.c_int, ctypes.c_int,
+        ]
+        public_reset_fn.restype = None
     closed = False
 
     def close():
@@ -133,8 +140,71 @@ def compile_native_engine(directory: str | Path, *, deck_id="starter"):
     launch.engine_version = ENGINE_VERSION
     launch.row_width = ROW_WIDTH
     launch.launch_lists = launch_lists
+    def public_reset_lists(rows, seeds, deck_rows_a, deck_rows_b, escalation=1):
+        if closed:
+            raise RuntimeError('Native engine is closed')
+        if public_reset_fn is None:
+            raise RuntimeError('Native engine has no compiled public reset')
+        n = len(rows)
+        if n != len(seeds) or n != len(deck_rows_a) or n != len(deck_rows_b):
+            raise ValueError('row/seed/deck count mismatch')
+        flat = []
+        for row in rows:
+            if len(row) != ROW_WIDTH:
+                raise ValueError(f'Native engine requires width {ROW_WIDTH}')
+            flat.extend(int(v) for v in row)
+        row_arr = (ctypes.c_int * (n * ROW_WIDTH))(*flat)
+        seed_arr = (ctypes.c_int * n)(*[int(v) for v in seeds])
+        def flatten_decks(decks):
+            out = []
+            for deck in decks:
+                values = list(deck)
+                if len(values) != 36:
+                    raise ValueError('public deck rows must be [n,36]')
+                out.extend(int(v) for v in values)
+            return out
+        deck_a_arr = (ctypes.c_int * (n * 36))(*flatten_decks(deck_rows_a))
+        deck_b_arr = (ctypes.c_int * (n * 36))(*flatten_decks(deck_rows_b))
+        public_reset_fn(
+            ctypes.addressof(row_arr), ctypes.addressof(seed_arr),
+            ctypes.addressof(deck_a_arr), ctypes.addressof(deck_b_arr),
+            n, int(escalation),
+        )
+        out = []
+        for i in range(n):
+            out.append([row_arr[i * ROW_WIDTH + j] for j in range(ROW_WIDTH)])
+        return out
+
+    def public_reset(rows, seeds, deck_rows_a, deck_rows_b, escalation=1):
+        if closed:
+            raise RuntimeError('Native engine is closed')
+        if public_reset_fn is None:
+            raise RuntimeError('Native engine has no compiled public reset')
+        import torch
+        if not torch.is_tensor(rows):
+            return public_reset_lists(rows, seeds, deck_rows_a, deck_rows_b, escalation)
+        if any(t.device.type != 'cpu' for t in (rows, seeds, deck_rows_a, deck_rows_b)):
+            raise ValueError('Native public reset requires CPU tensors')
+        if any(t.dtype != torch.int32 for t in (rows, seeds, deck_rows_a, deck_rows_b)):
+            raise ValueError('Native public reset requires int32 tensors')
+        if not all(t.is_contiguous() for t in (rows, seeds, deck_rows_a, deck_rows_b)):
+            raise ValueError('Native public reset requires contiguous tensors')
+        if rows.ndim != 2 or rows.shape[1] != ROW_WIDTH:
+            raise ValueError(f'Native engine requires [N,{ROW_WIDTH}] rows')
+        if seeds.ndim != 1 or seeds.shape[0] != rows.shape[0]:
+            raise ValueError('public reset seeds must be [N]')
+        if deck_rows_a.shape != (rows.shape[0], 36) or deck_rows_b.shape != (rows.shape[0], 36):
+            raise ValueError('public reset decks must be [N,36]')
+        public_reset_fn(
+            rows.data_ptr(), seeds.data_ptr(),
+            deck_rows_a.data_ptr(), deck_rows_b.data_ptr(),
+            int(rows.shape[0]), int(escalation),
+        )
+
     launch.reset_lists = reset_lists
     launch.reset = lambda rows, seeds: reset_fn(rows.data_ptr(), seeds.data_ptr(), int(rows.shape[0]))
+    launch.public_reset_lists = public_reset_lists
+    launch.public_reset = public_reset
     return launch
 
 
@@ -202,7 +272,46 @@ def _compile_cuda_engine_nvrtc(source: str):
 
     reset_fn = C.c_void_p()
     check(drv.cuModuleGetFunction(C.byref(reset_fn), mod, b'starter_reset'), 'reset function')
+    public_reset_fn = C.c_void_p()
+    check(drv.cuModuleGetFunction(C.byref(public_reset_fn), mod, b'public_reset'), 'public reset function')
     closed = False
+
+    def invoke_public(kernel, rows, seeds, deck_a, deck_b, escalation):
+        if closed:
+            raise RuntimeError('CUDA engine is closed')
+        import torch
+        tensors = (rows, seeds, deck_a, deck_b)
+        if any(t.device.type != 'cuda' for t in tensors):
+            raise ValueError('CUDA public reset requires CUDA tensors')
+        if any(t.dtype != torch.int32 for t in tensors):
+            raise ValueError('CUDA public reset requires int32 tensors')
+        if not all(t.is_contiguous() for t in tensors):
+            raise ValueError('CUDA public reset requires contiguous tensors')
+        if rows.ndim != 2 or rows.shape[1] != ROW_WIDTH:
+            raise ValueError(f'CUDA engine requires [N,{ROW_WIDTH}] rows')
+        if seeds.ndim != 1 or seeds.shape[0] != rows.shape[0]:
+            raise ValueError('public reset seeds must be [N]')
+        if deck_a.shape != (rows.shape[0], 36) or deck_b.shape != (rows.shape[0], 36):
+            raise ValueError('public reset decks must be [N,36]')
+        p = C.c_void_p(rows.data_ptr())
+        q = C.c_void_p(seeds.data_ptr())
+        da = C.c_void_p(deck_a.data_ptr())
+        db = C.c_void_p(deck_b.data_ptr())
+        n = C.c_int(rows.shape[0])
+        esc = C.c_int(int(escalation))
+        params = (C.c_void_p * 6)(
+            C.cast(C.byref(p), C.c_void_p),
+            C.cast(C.byref(q), C.c_void_p),
+            C.cast(C.byref(da), C.c_void_p),
+            C.cast(C.byref(db), C.c_void_p),
+            C.cast(C.byref(n), C.c_void_p),
+            C.cast(C.byref(esc), C.c_void_p),
+        )
+        check(drv.cuLaunchKernel(
+            kernel, C.c_uint((n.value + 127) // 128), C.c_uint(1), C.c_uint(1),
+            C.c_uint(128), C.c_uint(1), C.c_uint(1), C.c_uint(0),
+            C.c_void_p(torch.cuda.current_stream().cuda_stream), params, None,
+        ), 'cuLaunchKernel')
 
     def invoke(kernel, rows, actions):
         if closed:
@@ -251,9 +360,23 @@ def _compile_cuda_engine_nvrtc(source: str):
             check(drv.cuModuleUnload(mod), 'cuModuleUnload')
             closed = True
 
+    def public_reset(rows, seeds, deck_a, deck_b, escalation=1):
+        invoke_public(public_reset_fn, rows, seeds, deck_a, deck_b, escalation)
+
+    def public_reset_lists(rows, seeds, deck_rows_a, deck_rows_b, escalation=1):
+        import torch
+        rows_t = torch.tensor(rows, dtype=torch.int32, device='cuda')
+        seeds_t = torch.tensor(seeds, dtype=torch.int32, device='cuda')
+        deck_a_t = torch.tensor(deck_rows_a, dtype=torch.int32, device='cuda')
+        deck_b_t = torch.tensor(deck_rows_b, dtype=torch.int32, device='cuda')
+        invoke_public(public_reset_fn, rows_t, seeds_t, deck_a_t, deck_b_t, escalation)
+        return rows_t.cpu().tolist()
+
     launch.reset = reset
     launch.launch_lists = lambda rows, actions: lists_call(rows, actions, fn)
     launch.reset_lists = lambda rows, seeds: lists_call(rows, seeds, reset_fn)
+    launch.public_reset = public_reset
+    launch.public_reset_lists = public_reset_lists
     launch.close = close
-    launch.keep = (drv, mod, fn, reset_fn, anchor)
+    launch.keep = (drv, mod, fn, reset_fn, public_reset_fn, anchor)
     return launch

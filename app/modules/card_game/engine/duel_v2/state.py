@@ -411,7 +411,8 @@ def energy(state, side, cid, amount=1):
     if finished(state) or not alive(state, side, cid):
         return
     h = hero(state, side, cid)
-    h['energy'] = min(energy_max(h), h['energy'] + amount)
+    from .escalation import energy_cap
+    h['energy'] = min(energy_cap(state, h), h['energy'] + amount)
 
 
 def add_hand(state, side, card, *, reveal=False):

@@ -92,7 +92,7 @@
       return '<span class="' + cls + '" title="' + V2.escapeAttr(full + ' ' + value) + '">' +
         '<span data-resource-full="' + full + ' " data-resource-short="' + short + '">' + full + ' </span>' + V2.escapeHtml(value) + '</span>';
     }
-    const resourceHtml = (hideHarmony ? '' : resourceLabel('环合', '环', String(data.harmony || 0) + '/2', 'harmony')) +
+    const resourceHtml = (hideHarmony ? '' : resourceLabel('环合', '环', String(data.harmony || 0) + '/' + (data.harmony_max == null ? 2 : data.harmony_max), 'harmony')) +
       (hideEnergy ? '' : resourceLabel('能量', '能', energyNow + '/' + energyMax, 'energy'));
     const stats = compact ? [
       { html: combatStat('atk', attack, '攻击 ' + attack) },
@@ -523,6 +523,13 @@
     const mine = TABLE.sideState(game, ctx.viewer);
     const theirs = TABLE.sideState(game, ctx.opponent);
     bindHudSides(ctx);
+    const escalation = ctx.page.querySelector('#v2-escalation');
+    if (escalation) {
+      const progress = game && game.escalation;
+      escalation.hidden = !progress;
+      escalation.textContent = progress ? progress.hint : '';
+      escalation.title = progress ? [progress.description, (progress.active || []).length ? '已生效：' + progress.active.join('；') : '尚未生效'].filter(Boolean).join('\n') : '';
+    }
     const tutorial = game && game.tutorial;
     const hide = (tutorial && tutorial.hide) || [];
     ctx.page.classList.toggle('is-tutorial', Boolean(tutorial && tutorial.enabled));
@@ -556,7 +563,7 @@
     popIfChanged(ctx.nodes.playerHp && ctx.nodes.playerHp.closest('.v2-player-hud'), [mine.hp, mine.shield].join('|'));
     popIfChanged(playerApReadout, [mine.ap, instantSpent ? 1 : 0].join('|'));
     popIfChanged(ctx.nodes.normalAttack, mine.normal_attack_available ? '1' : '0');
-    popIfChanged(ctx.nodes.ultimate, mine.ultimate_available ? '1' : '0');
+    popIfChanged(ctx.nodes.ultimate, mine.ultimate_remaining == null ? (mine.ultimate_available ? '1' : '0') : String(mine.ultimate_remaining));
     ctx.nodes.playerName.textContent = mine.name || '我方';
     ctx.nodes.opponentName.textContent = theirs.name || '对手';
     const waiting = game.phase === 'mulligan' || mine.ap == null;
@@ -564,7 +571,7 @@
       ctx.nodes.normalAttack.textContent = waiting ? '-' : (mine.normal_attack_available ? '1' : '0');
     }
     if (ctx.nodes.ultimate) {
-      ctx.nodes.ultimate.textContent = waiting ? '-' : (mine.ultimate_available ? '1' : '0');
+      ctx.nodes.ultimate.textContent = waiting ? '-' : (mine.ultimate_remaining == null ? (mine.ultimate_available ? '1' : '0') : String(mine.ultimate_remaining));
     }
     setPileLabel(ctx.nodes.opponentDeck, '牌库', theirs.deck_count);
     setPileLabel(ctx.nodes.opponentDiscard, '弃牌', (theirs.discard || []).length);

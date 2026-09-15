@@ -9,16 +9,20 @@ from app.modules.card_game.content.duel_v2.registry import KITS, fire
 from .context import EffectContext
 from app.modules.card_game.engine.events import GameEvent
 from .state import (SIDES, add_hand, alive, card_instance, clear_harmony_source, collapsed, damage, discard,
-                    draw, energy, energy_max, finished, front_debuff, hero, knockdowns, log, move_out, name,
+                    draw, energy, finished, front_debuff, hero, knockdowns, log, move_out, name,
                     new_character, other, shield, shuffle, team_order)
 
+from .escalation import begin_escalation, clamp_resources, energy_cap, harmony_cap, ultimate_remaining
 
-def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=None):
+
+def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=None, escalation=True):
     if scenario:
         from .tutorial import new_tutorial_game
         return new_tutorial_game(scenario, seed=seed)
     if type(seed) is not int or first_side not in (None, 'a', 'b'):
         raise ValueError('Invalid seed or first side')
+    if type(escalation) is not bool:
+        raise ValueError('escalation must be boolean')
     if type(skip_mulligan) is not bool:
         raise ValueError('skip_mulligan must be boolean')
     if decks is not None and (not isinstance(decks, dict) or set(decks) != set(SIDES)):
@@ -31,7 +35,7 @@ def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=
              'turn': 0, 'winner': None, 'reason': None, 'rng': seed, 'next_instance': 0,
              'event_seq': 0, 'events': [], 'pending_choice': None, 'operation': None,
              'mulligan_done': [], 'current_action_id': 'setup', 'current_action_version': 0,
-             'combat_group': 0, 'sides': {}}
+             'combat_group': 0, 'sides': {}, 'escalation_enabled': bool(escalation)}
     for side in SIDES:
         order = list(selected[side]['character_ids'])
         state['sides'][side] = {
@@ -254,7 +258,7 @@ def legal_actions(state, side=None):
             continue
         if team['ap'] >= 1 and team['normal_attack_available'] and not collapsed(h):
             result.append({'type': 'attack', 'character_id': cid})
-        if team.get('ultimate_available') and h['energy'] >= energy_max(h):
+        if ultimate_remaining(state, side) and h['energy'] >= energy_cap(state, h):
             result.append({'type': 'ultimate', 'character_id': cid})
     for card in team['hand']:
         owner = card['character_id']
@@ -300,16 +304,16 @@ def start_ultimate(state, side, cid, *, spent_ap=False):
     if spec['kind'] == 'instant':
         h['awakened'] = False
         h['ultimate_turns'] = 0
-        text = f"{h['name']}消耗满槽能量，发动终结。"
+        text = f"{h['name']}消耗 {energy_cap(state, h)} 点能量，发动终结。"
     else:
         h['awakened'] = True
         h['ultimate_turns'] = spec['turns']
-        text = f"{h['name']}消耗满槽能量，发动终结（持续 {spec['turns']} 个己方回合）。"
+        text = f"{h['name']}消耗 {energy_cap(state, h)} 点能量，发动终结（持续 {spec['turns']} 个己方回合）。"
     log(state, text, 'ultimate', side=side, source=h['id'], actor=f'{side}:{h["id"]}',
         target=f'{side}:{h["id"]}',
         description=(lookup_character(cid) or {}).get('awakened_passive') or '',
         before=before,
-        after={'energy': 0, 'awakened': h['awakened'], 'ultimate_turns': h['ultimate_turns'], 'ap': team['ap']})
+        after={'energy': h['energy'], 'awakened': h['awakened'], 'ultimate_turns': h['ultimate_turns'], 'ap': team['ap']})
     fire(EffectContext(state, side, cid, {'side': side}), 'on_ultimate', actor_only=True)
     if getattr(KITS.get(cid), 'ultimate_sortie', False) and alive(state, side, cid):
         operation(state, side, cid).sortie()
@@ -353,6 +357,7 @@ def begin_turn(state, side):
     team['used'] = {}
     team['harmony_damage'] = False
     team['surplus'] = False
+    clamp_resources(state)
     # Announce the turn before any start-of-turn board changes are presented.
     log(state, f"{name(state, side)}的第 {team['turn_count']} 个回合开始。", 'turn', side=side,
         actor=f'{side}:player')
@@ -375,6 +380,7 @@ def begin_turn(state, side):
                 log(state, f"{h['name']}在备战区恢复。", 'revive', side=side, source=cid,
                     actor=f'{side}:{cid}', target=f'{side}:{cid}',
                     before={'hp': 0, 'down_turns': 1}, after={'hp': h['hp'], 'down_turns': 0})
+    begin_escalation(state, side)
     carrier = team_order(state, side)[0]
     fire(EffectContext(state, side, carrier, {'side': side}), 'on_turn_begin')
     if finished(state):
@@ -410,6 +416,7 @@ def begin_turn(state, side):
         else:
             team['ap'] = (1 if state['turn'] == 1 else 2) + extra
         team['normal_attack_available'] = True
+        team['ultimates_used'] = 0
         team['ultimate_available'] = not flags.get('disable_ultimate')
 
 
@@ -542,7 +549,7 @@ def finish_operation(state):
                 extra = int(hook(EffectContext(state, ps, pc, op)) or 0)
             snap = before.get(pc) or {'harmony': 0, 'energy': 0}
             if gain_harmony:
-                h['harmony'] = min(2, h['harmony'] + 1 + extra)
+                h['harmony'] = min(harmony_cap(state), h['harmony'] + 1 + extra)
             if gain_energy:
                 energy(state, ps, pc, 1)
             dh, de = h['harmony'] - snap['harmony'], h['energy'] - snap['energy']
@@ -628,7 +635,8 @@ def apply_action(state, side, action):
     elif kind == 'end_turn':
         end_turn(result, side)
     elif kind == 'ultimate':
-        team['ultimate_available'] = False
+        team['ultimates_used'] = int(team.get('ultimates_used', 0)) + 1
+        team['ultimate_available'] = bool(ultimate_remaining(result, side))
         start_ultimate(result, side, candidate['character_id'], spent_ap=False)
     elif kind == 'attack':
         team['ap'] -= 1

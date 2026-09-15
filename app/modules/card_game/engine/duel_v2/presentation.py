@@ -47,8 +47,10 @@ def entity_id(side, cid):
 
 
 def capture_public_board(state):
+    from .escalation import public_progress, energy_cap, harmony_cap, ultimate_remaining
     from .combat import harmony_marks
     board = {
+        'escalation': public_progress(state),
         'phase': state.get('phase'),
         'active_side': state.get('active_side'),
         'turn': state.get('turn'),
@@ -61,6 +63,7 @@ def capture_public_board(state):
         if not source:
             continue
         team = {key: deepcopy(source[key]) for key in ('hp', 'shield', 'ap', 'front', 'last_front', 'front_debuff')}
+        team['ultimate_remaining'] = ultimate_remaining(state, ps)
         marks = harmony_marks(state, ps)
         team['harmony_available'] = marks['available']
         team['effect_markers'] = team_effect_markers(source)
@@ -85,7 +88,8 @@ def capture_public_board(state):
                 'harmony_source': marks['payer'] == cid,
                 'harmony_ready': cid in marks['ready'],
                 'energy': hero['energy'],
-                'energy_max': duel_state.energy_max(hero),
+                'energy_max': energy_cap(state, hero),
+                'harmony_max': harmony_cap(state),
                 'awakened': hero['awakened'],
                 'ultimate_turns': hero.get('ultimate_turns', 0),
                 'down_turns': hero['down_turns'],
@@ -107,7 +111,7 @@ def diff_public(before, after):
         return deepcopy(after) if after else {}
     patch = {}
     for key in ('phase', 'active_side', 'turn', 'winner', 'version', 'reason',
-                'pending_choice', 'resolving_card'):
+                'pending_choice', 'resolving_card', 'escalation'):
         if before.get(key) != after.get(key):
             patch[key] = deepcopy(after.get(key))
     sides = {}

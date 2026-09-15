@@ -123,3 +123,9 @@ node --check app/modules/card_game/static/js/v2_replays.js
 `engine/ai/advanced_model.py` 负责纯 CPU 编码与选择；`rl/gpu_duel/resident_schema.py` 共享训练观察字段，避免顺序漂移。`scripts/export_duel_v2_ai.py` 在训练环境中把两个 best.pt 导出为数值权重和对照样本；`scripts/verify_duel_v2_ai_export.py --directory DIR` 在无 torch 的服务环境验证输出及动作一致性。按用户要求，Git 的 `engine/ai/models/` 仅保留两套当前使用的策略：各一个 `.npz` 和 `.json`，合计约 695 KB。`scripts/deploy_windows_app.sh --deploy` 会从 Git HEAD 将四个文件随 app 一起发布，无需另建目录或手动上传；服务器首次仍须在 Waitress 使用的 Python 环境安装 NumPy。更新策略时用验证过的新导出覆盖这四个固定文件名并提交；完整 checkpoint、优化器、对照样本、原始日志及备份仍留在 `artifacts/`，不进入 app 或 Git。
 
 验证：`python -m unittest tests.test_duel_v2_advanced_ai tests.test_duel_v2_api tests.test_duel_v2_replay`，其中真实模型完整对局用例使用 app 内置策略并需要 NumPy。2026-09-15 本机 37 项全部通过；96 个局面与 PyTorch 的动作选择一致，最大分数误差小于 0.000008。已在实际页面完成两种预组开局、出击、模型行动、历史和刷新恢复，无浏览器错误。
+
+## 对局白热化
+
+新建 V2 对局在总第 6 回合起，每回合开始为当前玩家最低能量存活异能者 +1 能量（同值随机），并有每回合 2 次终结机会；第 13 回合双方能量上限 -1；第 20 回合双方环合上限降为 1。上限变化会同步截断双方已有资源。战斗区中间左侧显示下一阶段倒计时，悬停显示已生效效果；旧快照和教学关卡不追加。完整口径见手册「对局白热化」。
+
+验证：`python3 -m unittest tests.test_duel_v2_escalation`。规则快攻镜像对照：`python3 scripts/evaluate_duel_v2_escalation.py --pairs 64 --workers 4 --output /private/tmp/nte-escalation-eval.json`；同时保留原规则与新规则的同种子先后手互换结果，不调用旧盖卡看板或训练模型。

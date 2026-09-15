@@ -7,7 +7,7 @@ from .flow import acting_side, apply_action, card_plays_instant, legal_actions
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
 from .combat import harmony_marks
-from .state import SIDES, attack_value, collapsed, energy_max as character_energy_max, hero, name, other, team_order
+from .state import SIDES, attack_value, collapsed, hero, name, other, team_order
 
 
 def _card(state, side, instance_id):
@@ -97,12 +97,13 @@ def preview(state, side, action):
 
 
 def observe(state, side, after_seq=None):
+    from .escalation import public_progress, energy_cap, harmony_cap, ultimate_remaining
     if side not in SIDES:
         raise ValueError('Unknown viewer')
     actions = legal_actions(state, side)
     playable = {a['card_id'] for a in actions if a['type'] == 'play_card'}
     result = {key: deepcopy(state[key]) for key in ('rules_version', 'version', 'phase', 'active_side', 'first_side', 'turn', 'winner', 'reason')}
-    result.update(viewer_side=side, is_my_turn=(side == acting_side(state) or
+    result.update(escalation=public_progress(state), viewer_side=side, is_my_turn=(side == acting_side(state) or
                   state['phase'] == 'mulligan' and side not in state['mulligan_done']), sides={},
                   legal_actions=[{'action': deepcopy(a), 'label': action_label(state, side, a),
                                   'preview': preview(state, side, a),
@@ -118,6 +119,7 @@ def observe(state, side, after_seq=None):
                 'ultimate_available',
                 'front', 'last_front', 'turn_count', 'fatigue', 'records', 'used', 'harmonized',
                 'extra_flower', 'front_debuff') if k in source}
+        team['ultimate_remaining'] = ultimate_remaining(state, ps)
         team['harmony_available'] = marks['available']
         team['effect_markers'] = team_effect_markers(source)
         chars = []
@@ -131,7 +133,7 @@ def observe(state, side, after_seq=None):
             form = lookup_card(h['shape']) if h['shape'] else None
             c.update(attack=attack_value(h), shape=(form or {}).get('name') if form else None,
                      shape_id=h['shape'], shape_description=(form or {}).get('description') if form else None,
-                     harmony_max=2, energy_max=character_energy_max(h), gaze=h.get('gaze', 0), dream=h.get('dream', 0),
+                     harmony_max=harmony_cap(state), energy_max=energy_cap(state, h), gaze=h.get('gaze', 0), dream=h.get('dream', 0),
                      next_attack_bonus=flags.get('next_attack', 0),
                      return_after_sortie=flags.get('return_after', False),
                      brand=flags.get('brand', 0),

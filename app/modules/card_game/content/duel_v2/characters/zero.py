@@ -57,7 +57,7 @@ class Zero:
             return
         if c.character['hp'] <= 0:
             return
-        c.character['harmony'] = 2
+        c.grant_harmony(c.cid, 2)
 
     @staticmethod
     def on_turn_end(c):

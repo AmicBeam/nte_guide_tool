@@ -895,3 +895,23 @@ body:has(.v2-table-page) .shell {
   overflow: visible;
   padding-block: calc(40px * var(--table-layout-scale, 1));
 }
+
+/* A backend-authored countdown in the open space left of the combat center. */
+.v2-combat-core:has(.v2-escalation:not([hidden])) { overflow: visible; }
+.v2-escalation {
+  position: absolute;
+  right: calc(100% + 24px * var(--table-layout-scale, 1));
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(180px * var(--table-layout-scale, 1));
+  padding: calc(6px * var(--table-layout-scale, 1));
+  border-left: 2px solid #dcaa60;
+  color: #f1d6a6;
+  background: rgba(27, 23, 24, .72);
+  font-size: calc(12px * var(--table-font-scale, 1));
+  line-height: 1.5;
+  pointer-events: auto;
+}
+.v2-escalation[hidden] { display: none; }
+
+.v2-front-axis:has(.v2-escalation:not([hidden])) { overflow: visible; }

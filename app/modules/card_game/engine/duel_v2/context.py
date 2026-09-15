@@ -169,7 +169,8 @@ class EffectContext:
         if finished(self.state) or not alive(self.state, self.side, cid):
             return
         h = hero(self.state, self.side, cid)
-        h['harmony'] = min(2, h['harmony'] + amount)
+        from .escalation import harmony_cap
+        h['harmony'] = min(harmony_cap(self.state), h['harmony'] + amount)
 
     def add_gaze(self, amount=1, cap=None):
         if finished(self.state) or self.character['hp'] <= 0:

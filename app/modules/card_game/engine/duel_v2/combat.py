@@ -5,6 +5,8 @@ from .state import (PLAYER_ID, add_collapse, alive, attack_value, collapsed, dam
                     finished, front_debuff, front_target, hero, is_esper, is_player, knockdowns,
                     log, move_out, name, other, reduce_max_hp, shield, victory)
 
+from .escalation import harmony_cap
+
 PAIRS = {frozenset(('光', '灵')): '创生', frozenset(('光', '相')): '延滞',
          frozenset(('暗', '咒')): '浊燃', frozenset(('暗', '魂')): '黯星',
          frozenset(('咒', '灵')): '覆纹', frozenset(('魂', '相')): '浸染'}
@@ -23,7 +25,7 @@ def harmony_payer(state, side, cid):
     previous = harmony_previous(state, side, cid)
     if not previous or not alive(state, side, previous):
         return None
-    if hero(state, side, previous)['harmony'] < 2:
+    if hero(state, side, previous)['harmony'] < harmony_cap(state):
         return None
     return previous
 
@@ -118,14 +120,14 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
     team = s['sides'][side]
     payer = hero(s, side, payer_id)
     before = payer['harmony']
-    payer['harmony'] -= 2
+    payer['harmony'] -= harmony_cap(s)
     c.character['flags']['has_harmonized'] = True
     # This once-per-game fact must survive death.
     team['harmonized'][cid] = True
     op['harmony'] = kind
     if as_support:
         op['support'] = True
-    log(s, f"{c.character['name']}入场，消耗{payer['name']}的 2 点环合值，触发{kind}。", 'harmony',
+    log(s, f"{c.character['name']}入场，消耗{payer['name']}的 {harmony_cap(s)} 点环合值，触发{kind}。", 'harmony',
         side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id}',
         before={'harmony': before}, after={'harmony': payer['harmony']})
     enemy, target = front_target(s, side)

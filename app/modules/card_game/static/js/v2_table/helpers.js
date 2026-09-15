@@ -342,7 +342,7 @@
     if (!patch || typeof patch !== 'object') {
       return next;
     }
-    ['phase', 'active_side', 'turn', 'winner', 'reason'].forEach(function (key) {
+    ['phase', 'active_side', 'turn', 'winner', 'reason', 'escalation'].forEach(function (key) {
       if (patch[key] !== undefined) {
         next[key] = patch[key];
       }

@@ -71,6 +71,7 @@ async function bootstrapTable() {
     normalAttack: document.getElementById('v2-normal-attack'),
     ultimate: document.getElementById('v2-ultimate'),
     handCount: document.getElementById('v2-hand-count'),
+    mulliganToggle: document.getElementById('v2-mulligan-toggle'),
     mulliganHint: document.getElementById('v2-mulligan-hint'),
     mulliganBtn: document.getElementById('v2-mulligan-btn'),
     mulliganStage: document.getElementById('v2-mulligan-stage'),

@@ -4,6 +4,8 @@
   const LOGIN_REDIRECT_KEY = 'nte_login_redirect';
   const CHARACTER_ORDER = ['zero', 'xun', 'zhenhong', 'nanali', 'jiuyuan', 'lingke', 'iloy', 'hathor', 'anhunqu', 'canhong', 'zaowu'];
   const CHARACTER_FALLBACK = {
+    baicang: { id: 'baicang', portrait: '/static/images/characters/portrait/白藏.webp', avatar: '/static/images/characters/avatar/白藏.webp' },
+    bohe: { id: 'bohe', portrait: '/static/images/characters/portrait/薄荷.webp', avatar: '/static/images/characters/avatar/薄荷.webp' },
     nanali: { id: 'nanali', name: '娜娜莉', attribute: '灵', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/娜娜莉.webp', portrait: '/static/images/characters/portrait/娜娜莉.webp' },
     zero: { id: 'zero', name: '零', attribute: '光', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/鉴定师.webp', portrait: '/static/images/characters/portrait/鉴定师.webp' },
     jiuyuan: { id: 'jiuyuan', name: '九原', attribute: '灵', attack: 3, max_hp: 4, avatar: '/static/images/characters/avatar/九原.webp', portrait: '/static/images/characters/portrait/九原.webp' },

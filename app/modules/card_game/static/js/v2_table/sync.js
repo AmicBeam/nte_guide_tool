@@ -217,6 +217,12 @@
       const inMulligan = Boolean(ctx.game && ctx.game.phase === 'mulligan');
       const canMulligan = inMulligan && actionsOf('mulligan').length > 0;
       ctx.page.classList.toggle('is-mulligan', inMulligan);
+      V2.setHidden(ctx.nodes.mulliganToggle, !inMulligan);
+      if (!inMulligan) {
+        ctx.page.classList.remove('mulligan-collapsed');
+        ctx.nodes.mulliganToggle.setAttribute('aria-expanded', 'true');
+        ctx.nodes.mulliganToggle.textContent = '收起换牌';
+      }
       if (ctx.nodes.mulliganStage) V2.setHidden(ctx.nodes.mulliganStage, !inMulligan);
       V2.setHidden(ctx.nodes.mulliganBtn, !canMulligan);
       const selected = ctx.mulliganIds.length;

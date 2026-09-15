@@ -774,6 +774,11 @@
 
     nodes.endTurnBtn.addEventListener('click', function () { ctx.submitEntry(ctx.findAction('end_turn')); });
     nodes.concedeBtn.addEventListener('click', function () { ctx.submitEntry(ctx.findAction('concede')); });
+    nodes.mulliganToggle.addEventListener('click', function () {
+      const collapsed = ctx.page.classList.toggle('mulligan-collapsed');
+      nodes.mulliganToggle.setAttribute('aria-expanded', String(!collapsed));
+      nodes.mulliganToggle.textContent = collapsed ? '展开换牌' : '收起换牌';
+    });
     nodes.mulliganBtn.addEventListener('click', ctx.submitMulligan);
     nodes.playerDiscard.addEventListener('click', function () { openPile('我方弃牌', TABLE.sideState(ctx.game, ctx.viewer()).discard || []); });
     nodes.opponentDiscard.addEventListener('click', function () { openPile('对手弃牌', TABLE.sideState(ctx.game, ctx.opponent()).discard || []); });

@@ -31,6 +31,7 @@
     <section class="v2-banner" id="v2-build-banner" hidden></section>
     <section class="v2-build-stage">
         <div class="v2-build-toolbar">
+            <div class="v2-build-transfer-actions"><button class="secondary-btn" id="v2-build-import-btn" type="button">导入</button><button class="secondary-btn" id="v2-build-export-btn" type="button">导出</button></div>
             <section id="v2-build-library" aria-label="我的构筑"></section>
         </div>
         <section class="v2-build-board" id="v2-build-groups" aria-label="配卡"></section>
@@ -38,6 +39,19 @@
         <aside class="v2-build-gallery" id="v2-build-roster" hidden aria-label="选择角色"></aside>
     </section>
 </main>
+<dialog id="v2-build-transfer" class="v2-build-transfer" aria-labelledby="v2-build-transfer-title">
+    <h2 id="v2-build-transfer-title">导入构筑</h2>
+    <p>纯文本，# 后为注释。导入后成为新草稿，点击保存后加入我的构筑。</p>
+    <label for="v2-build-text">构筑文本</label>
+    <textarea id="v2-build-text" rows="16" maxlength="16384" spellcheck="false"></textarea>
+    <p id="v2-build-transfer-error" role="status"></p>
+    <div class="v2-build-transfer-actions">
+        <button class="primary-btn" id="v2-build-import-apply" type="button">导入为新草稿</button>
+        <button class="secondary-btn" id="v2-build-copy" type="button">复制文本</button>
+        <button class="secondary-btn" id="v2-build-download" type="button">下载 .txt</button>
+        <button class="secondary-btn" id="v2-build-transfer-close" type="button">关闭</button>
+    </div>
+</dialog>
 <script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_build.js') }}"></script>

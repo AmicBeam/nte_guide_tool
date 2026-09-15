@@ -44,6 +44,42 @@ class DuelV2ApiTest(RoomFlowTestCase):
     def _action(view, kind):
         return next(entry['action'] for entry in view['legal_actions'] if entry['action']['type'] == kind)
 
+    def test_build_text_roundtrip_is_draft_until_saved(self):
+        before = self._get('/api/duel-v2/catalog', token=self.a)
+        original = dict(self.deck, name="测试 # '组")
+        text = self._post('/api/duel-v2/build-export', original, token=self.a)['text']
+        self.assertTrue(all(line.strip() for line in text.split('\n')))
+        imported = self._post('/api/duel-v2/build-import',
+                              {'text': '\ufeff# 注释\r\n' + text.replace('\n', '\r\n')}, token=self.a)['build']
+        self.assertEqual(imported['id'], '')
+        self.assertEqual(imported['name'], original['name'])
+        self.assertEqual(imported['character_ids'], original['character_ids'])
+        self.assertCountEqual(imported['card_ids'], original['card_ids'])
+        after = self._get('/api/duel-v2/catalog', token=self.a)
+        self.assertEqual(before['saved_builds'], after['saved_builds'])
+        self.assertEqual(before['active_build_id'], after['active_build_id'])
+        saved = self._post('/api/duel-v2/build', imported, token=self.a)
+        self.assertEqual(len(saved['saved_builds']), len(before['saved_builds']) + 1)
+
+    def test_build_text_rejects_invalid_or_hidden_content(self):
+        from app.modules.card_game.engine.application.v2_build_text import format_build
+        from app.modules.card_game.content import duel_v2
+        text = format_build(self.deck)
+        bad = ['# only comments', text + '\n卡牌 N01 2',
+               text.replace('异象对决构筑 1', '异象对决构筑 2'),
+               text.replace('卡牌 ' + self.deck['card_ids'][0] + ' 2', '卡牌 ' + self.deck['card_ids'][0] + ' -2'),
+               text + '\n未知字段 abc', 'x' * 16385]
+        hidden = next(deck for deck in duel_v2.STARTER_DECKS if duel_v2.deck_uses_test_characters(deck))
+        bad.append(format_build(hidden))
+        for value in bad:
+            with self.subTest(text=value[:60]):
+                response = self.client.post('/api/duel-v2/build-import', json={'text': value},
+                                            headers={'Authorization': 'Bearer ' + self.a})
+                self.assertEqual(response.status_code, 400, response.get_json())
+        response = self.client.post('/api/duel-v2/build-export', json=hidden,
+                                    headers={'Authorization': 'Bearer ' + self.a})
+        self.assertEqual(response.status_code, 400)
+
     def test_catalog_grants_official_presets_once(self):
         catalog = self._get('/api/duel-v2/catalog', token=self.b)
         official = [item['name'] for item in catalog['starter_decks']]

@@ -55,6 +55,18 @@ def save_build():
     return service.save_build(g.current_player, _body())
 
 
+@blueprint.post('/build-import')
+@_api
+def import_build_text():
+    return service.import_build_text(g.current_player, _body())
+
+
+@blueprint.post('/build-export')
+@_api
+def export_build_text():
+    return service.export_build_text(g.current_player, _body())
+
+
 @blueprint.post('/build-delete')
 @_api
 def delete_build():

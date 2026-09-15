@@ -401,6 +401,22 @@ def _allowed_tutorial_scenarios(player) -> set[str]:
     return {item for item in allowed if item in CAMPAIGN_LEVELS}
 
 
+def import_build_text(player, payload: dict) -> dict:
+    from . import v2_build_text
+    deck = _require_visible_deck(player, v2_build_text.parse(payload.get('text')))
+    deck['id'] = ''
+    return {'build': deck}
+
+
+def export_build_text(player, payload: dict) -> dict:
+    from . import v2_build_text
+    body = dict(payload)
+    body['id'] = 'export'
+    body['name'] = _clip_build_name(body.get('name'))
+    deck = _require_visible_deck(player, _validate_deck(body))
+    return {'text': v2_build_text.format_build(deck)}
+
+
 def save_build(player, payload: dict) -> dict:
     body = dict(payload or {})
     body['name'] = _clip_build_name(body.get('name'))

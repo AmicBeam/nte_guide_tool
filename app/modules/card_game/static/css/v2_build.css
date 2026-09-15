@@ -526,3 +526,9 @@ body:has(.v2-build-page) .shell {
   .v2-build-summary-bar { flex: 1 0 100%; }
   .v2-roster-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.v2-build-transfer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.v2-build-transfer { width: min(640px, calc(100vw - 32px)); max-height: 90dvh; overflow: auto; box-sizing: border-box; border: 1px solid #9c8963; border-radius: 16px; padding: 20px; background: #171b24; color: #f4e6c4; }
+.v2-build-transfer::backdrop { background: rgba(0, 0, 0, .7); }
+.v2-build-transfer textarea { display: block; box-sizing: border-box; width: 100%; margin: 8px 0; padding: 12px; background: #090d14; color: #f4e6c4; resize: vertical; font: 14px/1.5 monospace; }
+#v2-build-transfer-error { color: #efc98d; }

@@ -466,6 +466,7 @@ async function bootstrapBuild() {
 
   if (newBtn) {
     newBtn.addEventListener('click', function () {
+      if (busy) return;
       activeBuildId = '';
       focusId = '';
       if (nameInput) nameInput.value = '新的构筑';
@@ -494,6 +495,71 @@ async function bootstrapBuild() {
       }
     });
   }
+
+  const transfer = document.getElementById('v2-build-transfer');
+  const transferText = document.getElementById('v2-build-text');
+  const transferError = document.getElementById('v2-build-transfer-error');
+  const importApply = document.getElementById('v2-build-import-apply');
+  function openTransfer(exporting, text) {
+    document.getElementById('v2-build-transfer-title').textContent = exporting ? '导出构筑' : '导入构筑';
+    transferText.value = text || '';
+    transferText.readOnly = exporting;
+    importApply.hidden = exporting;
+    document.getElementById('v2-build-copy').hidden = !exporting;
+    document.getElementById('v2-build-download').hidden = !exporting;
+    transferError.textContent = '';
+    transfer.showModal();
+    transferText.focus();
+  }
+  document.getElementById('v2-build-import-btn').addEventListener('click', function () {
+    if (!busy && catalog) openTransfer(false);
+  });
+  document.getElementById('v2-build-export-btn').addEventListener('click', async function () {
+    if (busy || !catalog) return;
+    busy = true;
+    try {
+      const payload = await V2.request('/build-export', { method: 'POST', body: currentBuild() });
+      openTransfer(true, payload.text);
+    } catch (error) {
+      V2.showBanner(banner, error.message || '导出失败。', 'error');
+    } finally { busy = false; }
+  });
+  importApply.addEventListener('click', async function () {
+    if (busy) return;
+    busy = true;
+    importApply.disabled = true;
+    transferError.textContent = '';
+    try {
+      const payload = await V2.request('/build-import', { method: 'POST', body: { text: transferText.value } });
+      activeBuildId = '';
+      applyDeck(payload.build, '已导入新草稿，点击保存后加入我的构筑。');
+      transfer.close();
+    } catch (error) {
+      transferError.textContent = error.message || '导入失败，原草稿仍保留。';
+    } finally { busy = false; importApply.disabled = false; }
+  });
+  document.getElementById('v2-build-transfer-close').addEventListener('click', function () {
+    if (!busy) transfer.close();
+  });
+  transfer.addEventListener('cancel', function (event) { if (busy) event.preventDefault(); });
+  document.getElementById('v2-build-copy').addEventListener('click', async function () {
+    try {
+      await navigator.clipboard.writeText(transferText.value);
+      transferError.textContent = '已复制。';
+    } catch (error) {
+      transferText.focus();
+      transferText.select();
+      transferError.textContent = '已选中文本，请长按或按 Ctrl/Cmd+C 复制。';
+    }
+  });
+  document.getElementById('v2-build-download').addEventListener('click', function () {
+    const url = URL.createObjectURL(new Blob([transferText.value], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '异象对决构筑.txt';
+    link.click();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  });
 
   saveBtn.addEventListener('click', async function () {
     if (busy) return;

@@ -42,6 +42,7 @@ def main(argv=None):
     p.add_argument('--learning-rate',type=float,default=.001)
     p.add_argument('--entropy-coef',type=float,default=.01)
     p.add_argument('--seed',type=int,default=20260915)
+    p.add_argument('--stop-if-stalled',action='store_true')
     p.add_argument('--detach',action='store_true')
     p.add_argument('--worker',action='store_true',help=argparse.SUPPRESS)
     args=p.parse_args(argv)
@@ -155,6 +156,8 @@ def main(argv=None):
                          'checkpoint_sha256':_sha256(args.resume) if args.resume else None,
                          'pairs':args.pairs,'n':args.n,'max_actions':args.max_actions,'seconds':args.seconds,
                          'detailed_training_logs':False,'learns_characters':False})
+    from app.modules.card_game.rl.progress_stop import ProgressStop
+    monitor=ProgressStop();stop_reason='budget_or_update_limit'
     started=time.monotonic();count=0;attempt=0;failed=False
     class Deadline(Exception):pass
     def stop():
@@ -205,6 +208,9 @@ def main(argv=None):
             write('status.json',{'phase':'tuning',**row})
             if count and count%10==0:save()
             del sample,result
+            stalled=args.stop_if_stalled and stats['updated'] and monitor.observe(row['seconds'],row)
+            if args.stop_if_stalled and monitor.last_summary:write('progress-windows.json',monitor.last_summary)
+            if stalled:stop_reason='no_progress';break
     except (Deadline,KeyboardInterrupt):pass
     except Exception as exc:
         failed=True;write('error.json',{'error':repr(exc)});raise
@@ -212,7 +218,7 @@ def main(argv=None):
         try:save()
         finally:evaluator.close()
         write('status.json',{'phase':'failed' if failed else 'stopped','update':update,
-                             'updates_this_run':count,'attempts':attempt,'formal_analysis_run':False})
+                             'updates_this_run':count,'attempts':attempt,'formal_analysis_run':False,'stop_reason':stop_reason})
     return 0 if count else 2
 
 

@@ -189,3 +189,18 @@ python scripts/train_duel_v2_public.py --train --deck starter --resume artifacts
 打包入口生成选定模型与配牌的 `final/` 目录，包含报告、轻量指标、候选、checkpoint/数字模型和一局公开录像；原始逐局私有记录及其余公开录像留在 Windows 运行目录。包内 `delivery-manifest.json` 提供逐文件 SHA-256。最终须把包传回 Mac 并校验，或将适合入库的 Markdown 汇总提交 Git；只有 Windows 上生成文件不算交付完成。权重和原始数据不提交 Git。
 
 2026-09-16 实机短测已完成 6 个训练阶段、34 个评估单元和 412 场评估，59 项相关自动化检查通过。最终报告包已传回 Mac 并完成 155 个文件校验；结果与限制见 [全链路短测验收记录](duel-v2-full-chain-smoke-20260916.md)。
+
+## 8. 综合训练与定时评估（2026-09-16）
+
+用户本轮授权：全部训练阶段共享最多 6 小时，或无实质进展时提前结束；09:00（Asia/Shanghai）另行取结果并运行最终评估。评估无异常后允许替换项目数字模型并推送私有分支，部署等待用户验收。
+
+```bash
+python scripts/launch_duel_v2_comprehensive.py --output artifacts/comprehensive-six-hour --seconds 21600 --starter-checkpoint PATH_TO_EXISTING_STARTER_PT
+python scripts/smoke_duel_v2_full.py --profile comprehensive --phase evaluate --seconds 7200 --output artifacts/comprehensive-six-hour
+```
+
+综合 profile 使用 hidden=64、1024 并行环境。每套基础出牌阶段最多 6600 秒，配牌和适应阶段各最多 1800 秒；筛选、初始化等也消耗共享预算。外层守护进程对整棵训练进程树设 21600 秒上限，内部预算提前 60 秒留出保存时间。阶段可提前结束，不要求把六小时用满。`--phase train` 在训练完成后标记 `training_complete`，不运行最终矩阵；`--phase evaluate` 读取同一目录的冻结产物，已完成的评估单元可复用。
+
+`--stop-if-stalled` 开启预先固定的无进展判定：每 300 秒计算窗口均值，连续 6 个窗口相对参考值均无实质变化时结束该阶段。出牌监测 value_loss（1% 相对/0.01 绝对容差取大者）、explained_variance（0.01）、entropy（0.01）、approx_kl（0.0001）、clip_fraction（0.01）；配牌监测 reward_mean（0.01）及 loss（1% 相对/0.01 绝对取大者）。任何超过容差的变化都会重新等待，首次参考窗后最早再等 30 分钟；这是保守的稳定性判定，不是最优或良好收敛证明。连续无完成对局的有效观察窗按健康异常处理。末窗摘要写入 `progress-windows.json`，停止原因写入阶段状态。
+
+本轮 Windows 目录：`D:/git/nte_board_game/.rl-comprehensive-20260916`，输出 `artifacts/comprehensive-six-hour`；创生续接第 672 次更新的 checkpoint，覆纹快攻从零初始化同规格模型。定时任务 `09-00` 于 2026-09-16 09:00 检查并评估；若届时训练仍在六小时预算内，先等待训练结束。推送遵循仓库发布技能，默认仅 private，不自动部署或公开。

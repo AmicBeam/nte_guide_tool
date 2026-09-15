@@ -18,7 +18,9 @@ def write_full_report(root):
     root=Path(root)
     index=read(root/'evaluation-index.json');decisions=read(root/'construction-decisions.json')
     config=read(root/'config.json')
-    lines=['# 双预组完整链路短测报告','','这是有界短训练的可行性验证，样本不用于证明套牌最优或游戏平衡。',
+    comprehensive=config.get('kind')=='comprehensive'
+    lines=['# 双预组综合训练报告' if comprehensive else '# 双预组完整链路短测报告','',
+           '这是本轮有界综合训练与冻结评估报告，单次结果不证明全局最优或游戏平衡。' if comprehensive else '这是有界短训练的可行性验证，样本不用于证明套牌最优或游戏平衡。',
            '',f"- 规则身份：`{config['rule_hash']}`。",
            '- 训练标量与冻结评估分别列出；报告生成不批准上线。',
            '- 预测胜率：未提供经校准的概率模型；附逐回合局势 CSV，原始价值分数不冒充胜率。',
@@ -30,7 +32,7 @@ def write_full_report(root):
         if base_config.is_file():
             setup=read(base_config)
             origin=setup.get('resume') or setup.get('warm_start') or '从零初始化'
-            lines += [f"本轮基础模型起点：{origin}；hidden={setup.get('hidden','未记录')}。这是短预算链路验证。",'']
+            lines += [f"本轮基础模型起点：{origin}；hidden={setup.get('hidden','未记录')}。训练预算及停止原因见阶段记录。",'']
         lines+=['| 队伍 | 阶段 | 累计更新 | 本轮更新 | 正常终局 | 用时秒 |','| --- | --- | ---: | ---: | ---: | ---: |']
         for stage in ('base','cards','adapted'):
             status=read(root/key/stage/'status.json')

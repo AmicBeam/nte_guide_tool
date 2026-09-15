@@ -137,3 +137,7 @@
 - 训练源码版本清单：`artifacts/windows-training-backup-20260915/paired-long-20260915-source-manifest.json`。
 
 关联说明：[强化学习框架](duel-v2-rl.md)、[当时的编译引擎验收](duel-v2-compiled-migration.md)、[当前公开卡池训练](duel-v2-public-training.md)。本报告是历史实验记录，不覆盖当前完整手册。
+
+## 2026-09-16 六小时综合运行补充
+
+本轮用户将全部训练阶段总预算设为最多 6 小时；09:00 单独检查与评估，不是每个阶段各 6 小时。新增的保守窗口判定、具体容差、外层时间保护和运行位置见 [综合训练与定时评估](duel-v2-public-training.md#8-综合训练与定时评估2026-09-16)。这是已实现的显式选项；不增加总体胜率门槛，无变化提前停不代表已证明收敛。

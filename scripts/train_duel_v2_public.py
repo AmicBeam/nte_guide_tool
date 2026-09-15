@@ -30,6 +30,7 @@ def main(argv=None):
     p.add_argument('--resume',type=Path)
     p.add_argument('--learner-deck',type=Path,help='Legal card allocation for the same preset characters')
     p.add_argument('--warm-start',type=Path,help='Transfer legacy input weights; start a fresh optimizer')
+    p.add_argument('--stop-if-stalled',action='store_true')
     p.add_argument('--detach',action='store_true')
     p.add_argument('--worker',action='store_true',help=argparse.SUPPRESS)
     args=p.parse_args(argv)
@@ -120,6 +121,8 @@ def main(argv=None):
     write('config.json',{**{k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()},
                          'schema':SCHEMA,'learner_build':learner_deck,'detailed_training_logs':False,'episode_return_cap':EPISODE_RETURN_CAP})
     write('preflight.json',{'ok':True,'backend':'cuda','cases':args.preflight_cases,'rule_hash':identity})
+    from app.modules.card_game.rl.progress_stop import ProgressStop
+    monitor=ProgressStop();stop_reason='budget_or_update_limit'
     code=0
     try:
         count=0
@@ -136,6 +139,9 @@ def main(argv=None):
             if update%args.snapshot_updates==0: league.add(net)
             if update%10==0: save()
             write('status.json',{'phase':'training',**row})
+            stalled=args.stop_if_stalled and monitor.observe(row['seconds'],row)
+            if args.stop_if_stalled and monitor.last_summary:write('progress-windows.json',monitor.last_summary)
+            if stalled:stop_reason='no_progress';break
     except (Deadline,KeyboardInterrupt):
         pass
     except Exception as exc:
@@ -146,7 +152,7 @@ def main(argv=None):
         save();env.close()
         write('position-results.json',{'opponents':env.terminal_counters.summary(),'unfinished_at_stop':int((env.state.phase!=3).sum())})
         write('status.json',{'phase':'failed' if code else 'stopped','update':update,
-                             'seconds':time.monotonic()-started,'analysis_run':False})
+                             'seconds':time.monotonic()-started,'analysis_run':False,'stop_reason':stop_reason})
     return code
 
 

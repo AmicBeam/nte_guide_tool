@@ -36,6 +36,7 @@ def main(argv=None):
     if min(args.n,args.horizon,args.seconds,args.hidden,args.history,args.snapshot_updates)<=0 or args.max_updates<0:
         p.error('Budgets and dimensions must be positive')
     if not 1 <= args.preflight_cases <= 1024:p.error('preflight-cases must be 1..1024')
+    from app.modules.card_game.rl.episode_return import EPISODE_RETURN_CAP
     from app.modules.card_game.rl.public_schema import SCHEMA,state_dim,rule_identity,CAND_DIM
     from app.modules.card_game.rl.gpu_duel.catalog import GPU_LOCK
     from app.modules.card_game.rl.capability import encoder_public_support
@@ -112,7 +113,7 @@ def main(argv=None):
     def stop():
         if time.monotonic()-started>=args.seconds: raise Deadline()
     write('config.json',{**{k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()},
-                         'schema':SCHEMA,'detailed_training_logs':False})
+                         'schema':SCHEMA,'detailed_training_logs':False,'episode_return_cap':EPISODE_RETURN_CAP})
     write('preflight.json',{'ok':True,'backend':'cuda','cases':args.preflight_cases,'rule_hash':identity})
     code=0
     try:

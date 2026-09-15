@@ -2,6 +2,8 @@
 from copy import deepcopy
 from collections import deque
 
+from .episode_return import reset_episode_return
+
 
 def warm_start_weights(checkpoint, network, deck_id):
     """Transfer v1 semantic input columns; optimizer/history always start fresh."""
@@ -108,6 +110,7 @@ class PublicTrainingEnv:
 
     def reset(self, done=None):
         import torch
+        full_reset = done is None
         if done is None:
             done = torch.ones(self.n,device=self.device,dtype=torch.bool)
         if not bool(done.any()):
@@ -118,6 +121,7 @@ class PublicTrainingEnv:
         a = torch.where((self.learner==0)[:,None],self.fixed,player)
         b = torch.where((self.learner==1)[:,None],self.fixed,player)
         self.compiled.reset_public_gpu_state(self.state,seed,a,b,escalation=True)
+        reset_episode_return(self, None if full_reset else done)
         # League snapshots update only between rollouts; assignment slots persist until reset.
         assignment = torch.randint(0,len(self.league.history)+1,(self.n,),device=self.device,dtype=torch.int32)
         self.assignment = torch.where(done,assignment,self.assignment)

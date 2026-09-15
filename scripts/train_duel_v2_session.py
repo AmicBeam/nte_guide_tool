@@ -73,6 +73,7 @@ def main():
         return 0
 
     import torch
+    from app.modules.card_game.rl.episode_return import EPISODE_RETURN_CAP
     from app.modules.card_game.rl.gpu_duel.env import GpuDuelEnv
     from app.modules.card_game.rl.gpu_duel.ppo import CompactScorer,collect_rollout,rollout_to_batch,ppo_update
     from app.modules.card_game.rl.gpu_duel.resident_obs import resident_observe,SCHEMA
@@ -92,6 +93,7 @@ def main():
     write_json(out/'run_status.json',status)
     config={**{k:(str(v) if isinstance(v,Path) else v) for k,v in vars(args).items()},'output':str(out),'resume_root':str(args.resume_root) if args.resume_root else None,'schema':SCHEMA,'gpu_lock':GPU_LOCK,
             'eval_seed_base':900_000_000,'log_seed_base':1_100_000_000,
+            'episode_return_cap':EPISODE_RETURN_CAP,
             'threshold':.5,'threshold_scope':'each deck: equal-weight first/second aggregate; draws not wins'}
     write_json(out/'config.json',config)
     cases=[]

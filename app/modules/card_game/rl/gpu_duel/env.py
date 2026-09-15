@@ -8,6 +8,7 @@ import torch
 from app.modules.card_game.content.duel_v2 import STARTER_DECK
 from app.modules.card_game.engine.duel_v2 import new_game
 
+from ..episode_return import reset_episode_return
 from .catalog import GPU_LOCK, assert_gpu_deck, preset_by_id
 from .opponent import advance_to_actor, rule_action
 from .pack import pack_python, snapshot_mechan
@@ -55,6 +56,7 @@ class GpuDuelEnv:
     def reset_from_python(self, states: list[dict[str, Any]]) -> GpuState:
         if len(states) != self.n:
             raise ValueError(f'expected {self.n} python states, got {len(states)}')
+        reset_episode_return(self)
         if self.compiled is not None:
             from .state import empty_state
             from ..rule_ir.pack_row import bind_gpu_rows,pack_python_row
@@ -71,6 +73,7 @@ class GpuDuelEnv:
         seeds = list(seeds or range(self.n))
         if len(seeds) != self.n:
             raise ValueError('seeds must match batch size')
+        reset_episode_return(self)
         seed_t = torch.tensor(seeds, dtype=torch.int32, device=self.device)
         # Half the batch learns as first player, half as second.
         self.learner = ((seed_t // 2) % 2).to(torch.int32)
@@ -103,6 +106,7 @@ class GpuDuelEnv:
             raise ValueError('seeds must match batch size')
         if deck_rows_a is None or deck_rows_b is None:
             raise ValueError('public reset requires deck_rows_a and deck_rows_b')
+        reset_episode_return(self)
         seed_t = torch.as_tensor(seeds, dtype=torch.int32, device=self.device).contiguous()
         deck_a = torch.as_tensor(deck_rows_a, dtype=torch.int32, device=self.device).contiguous()
         deck_b = torch.as_tensor(deck_rows_b, dtype=torch.int32, device=self.device).contiguous()
@@ -129,6 +133,7 @@ class GpuDuelEnv:
             self.compiled.reset_gpu_state(self.state, torch.where(done, seeds, -1))
         else:
             reset_rows(self.state, done, seeds, deck_a=self.deck_a, deck_b=self.deck_b)
+        reset_episode_return(self, done)
         # keep learner assignment
         self._advance_to_actor()
 

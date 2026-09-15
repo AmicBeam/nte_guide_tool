@@ -6,6 +6,7 @@ import math
 import torch
 from torch import nn
 
+from ..episode_return import cap_episode_reward
 from .catalog import MAX_LEGAL
 from .env import GpuDuelEnv
 from .observe import compact_observe
@@ -48,7 +49,7 @@ def _terminal_reward(env: GpuDuelEnv, prev_hp_foe, prev_down_foe) -> torch.Tenso
     term = torch.zeros_like(shaping)
     term = torch.where(done & (winner == learner), torch.full_like(term, 10.0), term)
     term = torch.where(done & (winner == foe), torch.full_like(term, -10.0), term)
-    return torch.where(done, term, shaping)
+    return cap_episode_reward(env, torch.where(done, term, shaping))
 
 
 def ppo_update(net: CompactScorer, opt, batch, clip=0.2, epochs=2, minibatch=1024, vf_coef=0.5, ent_coef=0.01, stop_check=None):

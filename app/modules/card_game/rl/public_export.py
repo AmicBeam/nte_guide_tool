@@ -23,6 +23,8 @@ def export_checkpoint(source, output):
     deck = checkpoint.get('deck')
     if deck not in ('starter','weave-rush'):
         raise ValueError('Unknown learner preset')
+    from .public_training import training_deck
+    learner_deck = training_deck(deck, checkpoint.get('learner_deck'))
     hidden = checkpoint['hidden']
     if type(hidden) is not int or not 1 <= hidden <= 2048:
         raise ValueError('Invalid hidden dimension')
@@ -38,6 +40,7 @@ def export_checkpoint(source, output):
     path = output/f'{deck}.npz'
     np.savez_compressed(path,**arrays)
     manifest = {k:checkpoint[k] for k in ('schema','deck','hidden','state_dim','cand_dim','gpu_lock','update','rule_identity')}
+    manifest['learner_deck'] = learner_deck
     manifest.update(sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                     source_checkpoint_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
                     card_ids=list(CARD_IDS),seat_ids=list(SEATS),
@@ -53,7 +56,7 @@ def export_checkpoint(source, output):
     largest = 0.0
     for seed in range(8):
         state = new_game(seed=seed,skip_mulligan=True,
-                         decks={'a':preset_opponent_deck(deck),'b':sample_public_deck(seed)})
+                         decks={'a':learner_deck,'b':sample_public_deck(seed)})
         side = acting_side(state)
         actions = [a for a in legal_actions(state,side) if a['type']!='concede']
         values,candidates = encode_public(observe(state,side),actions)
@@ -79,6 +82,9 @@ def approve_candidate(model_path, report_path, *, min_pairs=32, min_win_rate=0.5
     manifest_path=model_path.with_suffix('.json')
     manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
     report=json.loads(report_path.read_text(encoding='utf-8'))
+    from .capability import is_exact_preset
+    if manifest.get('learner_deck') and not is_exact_preset(manifest['learner_deck'],manifest.get('deck')):
+        raise ValueError('A custom learner model cannot approve a fixed-preset website model')
     if report.get('learner_is_preset',True) is not True:
         raise ValueError('A tuned-deck report cannot approve a fixed-preset website model')
     digest=hashlib.sha256(model_path.read_bytes()).hexdigest()

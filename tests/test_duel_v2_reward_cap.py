@@ -109,6 +109,7 @@ class RewardCapTest(unittest.TestCase):
         env = PublicTrainingEnv.__new__(PublicTrainingEnv)
         env.n, env.device = 4, t.device('cpu')
         env.state = object()
+        env.terminal_counters = SimpleNamespace(record=Mock(), reset=Mock())
         env.fixed = t.zeros((4,36), dtype=t.int32)
         env.learner = t.tensor([0,1,0,1], dtype=t.int32)
         env.assignment = t.zeros(4, dtype=t.int32)

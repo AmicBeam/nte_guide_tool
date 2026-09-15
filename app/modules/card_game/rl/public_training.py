@@ -84,18 +84,27 @@ def tensor_public_decks(n, device):
     return torch.cat((seats.int(),cards),1)
 
 
-def fixed_deck_rows(deck_id, n, device):
+def training_deck(deck_id, learner_deck=None):
+    from .capability import preset_opponent_deck, assert_public_encoder_deck
+    preset = preset_opponent_deck(deck_id)
+    deck = assert_public_encoder_deck(learner_deck) if learner_deck is not None else preset
+    if deck['character_ids'] != preset['character_ids']:
+        raise ValueError('Card adaptation cannot change preset characters or their order')
+    return deck
+
+
+def fixed_deck_rows(deck_id, n, device, learner_deck=None):
     import torch
     from .capability import preset_opponent_deck
     from .gpu_duel.catalog import CARD_INDEX, SEAT_INDEX
-    deck = preset_opponent_deck(deck_id)
+    deck = training_deck(deck_id, learner_deck)
     row = [SEAT_INDEX[c] for c in deck['character_ids']] + [CARD_INDEX[c] for c in deck['card_ids']]
     return torch.tensor(row,dtype=torch.int32,device=device)[None].expand(n,-1).contiguous()
 
 
 class PublicTrainingEnv:
     """Small adapter for the PPO collector; all game rows stay on the chosen device."""
-    def __init__(self, n, *, deck_id, league, device='cuda', compiled_dir=None):
+    def __init__(self, n, *, deck_id, league, device='cuda', compiled_dir=None, learner_deck=None):
         import torch
         from .gpu_duel.compiled_backend import CompiledStarterBackend
         from .gpu_duel.state import empty_state
@@ -103,18 +112,22 @@ class PublicTrainingEnv:
         self.compiled = CompiledStarterBackend(compiled_dir,
             backend='cuda' if self.device.type=='cuda' else 'native', deck_id=deck_id)
         self.state = empty_state(n, self.device)
-        self.fixed = fixed_deck_rows(deck_id,n,self.device)
+        self.fixed = fixed_deck_rows(deck_id,n,self.device,learner_deck)
         self.learner = torch.randint(0,2,(n,),device=self.device,dtype=torch.int32)
         self.assignment = torch.zeros(n,device=self.device,dtype=torch.int32)
+        from .training_metrics import TerminalCounters
+        self.terminal_counters = TerminalCounters(n, self.device)
         self.reset()
 
     def reset(self, done=None):
         import torch
+        self.terminal_counters.record(self.state, self.learner, self.assignment)
         full_reset = done is None
         if done is None:
             done = torch.ones(self.n,device=self.device,dtype=torch.bool)
         if not bool(done.any()):
             return
+        self.terminal_counters.reset(done)
         seed = torch.randint(0,2**30,(self.n,),device=self.device,dtype=torch.int32)
         seed = torch.where(done,seed,-1)
         player = tensor_public_decks(self.n,self.device)
@@ -145,6 +158,7 @@ class PublicTrainingEnv:
     def step_learner(self, actions):
         self.compiled.step_gpu_state(self.state,actions)
         self.prepare_decision()
+        self.terminal_counters.record(self.state, self.learner, self.assignment)
 
     def close(self):
         self.compiled.close()

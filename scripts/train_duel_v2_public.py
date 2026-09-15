@@ -28,6 +28,7 @@ def main(argv=None):
     p.add_argument('--max-updates',type=int,default=0)
     p.add_argument('--preflight-cases',type=int,default=32)
     p.add_argument('--resume',type=Path)
+    p.add_argument('--learner-deck',type=Path,help='Legal card allocation for the same preset characters')
     p.add_argument('--warm-start',type=Path,help='Transfer legacy input weights; start a fresh optimizer')
     p.add_argument('--detach',action='store_true')
     p.add_argument('--worker',action='store_true',help=argparse.SUPPRESS)
@@ -40,9 +41,11 @@ def main(argv=None):
     from app.modules.card_game.rl.public_schema import SCHEMA,state_dim,rule_identity,CAND_DIM
     from app.modules.card_game.rl.gpu_duel.catalog import GPU_LOCK
     from app.modules.card_game.rl.capability import encoder_public_support
+    from app.modules.card_game.rl.public_training import training_deck
+    learner_deck = training_deck(args.deck, json.loads(args.learner_deck.read_text(encoding='utf-8')) if args.learner_deck else None)
     if args.check:
         print(json.dumps({'schema':SCHEMA,'state_dim':state_dim(),'rule_hash':rule_identity(),
-                          'public_catalog':encoder_public_support(),'training_started':False},ensure_ascii=False))
+                          'public_catalog':encoder_public_support(),'learner_deck':learner_deck,'training_started':False},ensure_ascii=False))
         return 0
     if not args.train or not args.output:
         p.error('Use --check, or --train --output NEWDIR')
@@ -84,6 +87,8 @@ def main(argv=None):
         saved=torch.load(args.resume,map_location='cuda',weights_only=True)
         if (saved.get('schema'),saved.get('deck'),saved.get('rule_identity',{}).get('rule_hash')) != (SCHEMA,args.deck,identity):
             raise ValueError('Resume observation/deck/rule identity mismatch')
+        if not args.learner_deck:
+            learner_deck = training_deck(args.deck, saved.get('learner_deck'))
         net.load_state_dict(saved['model']);opt.load_state_dict(saved['optimizer'])
         update=int(saved['update'])
         for weights in saved.get('league',[]):
@@ -95,7 +100,7 @@ def main(argv=None):
             torch.cuda.set_rng_state_all([r.cpu() for r in saved['cuda_rng']])
     if not league.history:
         league.add(net)
-    env=PublicTrainingEnv(args.n,deck_id=args.deck,league=league,device='cuda')
+    env=PublicTrainingEnv(args.n,deck_id=args.deck,league=league,device='cuda',learner_deck=learner_deck)
     args.output.mkdir(parents=True,exist_ok=args.worker)
     started=time.monotonic()
     def write(name,value):
@@ -107,13 +112,13 @@ def main(argv=None):
                     'compiled_identity':env.compiled.identity(),'model':net.state_dict(),
                     'optimizer':opt.state_dict(),'update':update,'league':[n.state_dict() for n in league.history],
                     'torch_rng':torch.get_rng_state(),'cuda_rng':torch.cuda.get_rng_state_all(),
-                    'training_distribution':'public_asymmetric_v1','validated':False},temporary)
+                    'learner_deck':learner_deck,'training_distribution':'public_asymmetric_v1','validated':False},temporary)
         temporary.replace(args.output/'latest.pt')
     class Deadline(Exception): pass
     def stop():
         if time.monotonic()-started>=args.seconds: raise Deadline()
     write('config.json',{**{k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()},
-                         'schema':SCHEMA,'detailed_training_logs':False,'episode_return_cap':EPISODE_RETURN_CAP})
+                         'schema':SCHEMA,'learner_build':learner_deck,'detailed_training_logs':False,'episode_return_cap':EPISODE_RETURN_CAP})
     write('preflight.json',{'ok':True,'backend':'cuda','cases':args.preflight_cases,'rule_hash':identity})
     code=0
     try:
@@ -124,7 +129,7 @@ def main(argv=None):
             stats=ppo_update(net,opt,rollout_to_batch(rollout),stop_check=stop)
             update+=1;count+=1
             row={'update':update,'seconds':time.monotonic()-started,
-                 'finished_games':int(rollout['done'].sum()),**stats}
+                 'finished_games':int(rollout['done'].sum()),'by_opponent_position':env.terminal_counters.summary(),**stats}
             with (args.output/'metrics.jsonl').open('a',encoding='utf-8') as f:
                 f.write(json.dumps(row)+'\n')
             del rollout
@@ -139,6 +144,7 @@ def main(argv=None):
         raise
     finally:
         save();env.close()
+        write('position-results.json',{'opponents':env.terminal_counters.summary(),'unfinished_at_stop':int((env.state.phase!=3).sum())})
         write('status.json',{'phase':'failed' if code else 'stopped','update':update,
                              'seconds':time.monotonic()-started,'analysis_run':False})
     return code

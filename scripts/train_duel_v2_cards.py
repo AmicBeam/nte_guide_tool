@@ -170,6 +170,23 @@ def main(argv=None):
             stop();attempt+=1
             sample=tuner.sample(args.n)
             result=evaluator.evaluate(sample['rows'],pairs=args.pairs,max_actions=args.max_actions,stop_check=stop)
+            source_update = update
+            (args.output/'candidates').mkdir(exist_ok=True)
+            for i, card_row in enumerate(sample['rows']):
+                candidate = tuner.deck(card_row)
+                filename = f'candidates/attempt-{attempt:05d}-{i:03d}.json'
+                write(filename,candidate)
+                record = {'attempt':attempt,'sampling_update':source_update,'candidate_id':candidate['id'],
+                          'candidate_file':filename,'character_ids':team,'policy':policy_id,'opponents':opponent_ids,
+                          'rule_hash':identity,'valid':bool(result['valid'][i]),'trials':result['trials'],
+                          'score':float(result['rewards'][i]),'mean_turn':float(result['mean_turn'][i]),
+                          'wins':int(result['wins'][i]),'losses':int(result['losses'][i]),
+                          'truncated':int(result['truncated'][i]),'independently_evaluated':False,
+                          'generation':'sampled from allocation policy; not a mutation of a parent deck',
+                          'by_position':{position:{key:int(result[f'{position}_{key}'][i])
+                              for key in ('wins','losses','games')} for position in ('first','second')}}
+                with (args.output/'candidate-history.jsonl').open('a',encoding='utf-8') as stream:
+                    stream.write(json.dumps(record,ensure_ascii=False)+'\n')
             stats=update_tuner(tuner,optimizer,sample,result['rewards'],result['valid'],entropy_coef=args.entropy_coef)
             if stats['updated']:
                 update+=1;count+=1

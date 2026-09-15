@@ -21,6 +21,7 @@
 | [训练结束标准与首轮结果](../../../docs/duel-v2-training-stop-criteria.md) | 互搏训练停止口径及 2026-09-15 历史双预组结果 |
 | [公开卡池训练](../../../docs/duel-v2-public-training.md) | 现行完整公开卡池训练、分析与录像入口 |
 | [完整训练与报告要求](../../../docs/duel-v2-full-training-report-spec.md) | 双预组测试矩阵、配牌调整、先后手胜率、逐卡与机制分析的交付规范 |
+| [全链路短测验收](../../../docs/duel-v2-full-chain-smoke-20260916.md) | 双预组训练/配牌/互搏/报告生成及 Mac 交付的实测记录 |
 | [盖卡版归档](../../../docs/archive/duel-simultaneous-deployment-2026-09-08.md) | 仅用于维护尚未迁移的旧对局 |
 
 分层与依赖方向见仓库根目录 [AGENTS.md](../../../AGENTS.md)。
@@ -151,6 +152,8 @@
 训练对局要看时再 `--export-replays` 转成公开 JSON，可在回放页导入。完整请求与投影字段见实现契约和演出协议。
 
 ## 训练
+
+完整链路短测：`scripts/smoke_duel_v2_full.py`；报告打包：`scripts/package_duel_v2_report.py`。两套预组均支持固定角色候选配牌继续训练，并输出训练内先后手计数及冻结评估报告；运行和 Mac 交付约定见 [公开卡池训练](../../../docs/duel-v2-public-training.md#7-双预组全链路短测与报告交付)。
 
 Windows 已完成一次有界 CUDA 出牌/配牌短训练，启动所需 MSVC 环境与可选快速编译档见 [短训练记录](../../../docs/duel-v2-windows-short-training-20260915.md)。默认编译配置保持不变。
 

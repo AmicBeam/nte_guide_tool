@@ -188,7 +188,7 @@ def _append_action(recorded, *, side, action, card_id=None):
 
 
 def _opponent_team_key(deck: Mapping[str, Any]) -> str:
-    return ','.join(str(item) for item in (deck.get('character_ids') or []))
+    return ','.join(sorted(str(item) for item in (deck.get('character_ids') or [])))
 
 
 def _public_payload(opening, final, *, game_id):
@@ -296,6 +296,8 @@ def _play_game(*, policy, opponent_policy, learner_deck, opponent_deck, seed, fi
         info['truncation_reason'] = 'exception'
         return info
     opening = deepcopy(state)
+    from .report_telemetry import GameTelemetry
+    telemetry = GameTelemetry(state)
     recorded = info['actions']
     try:
         while state.get('phase') != 'finished':
@@ -312,6 +314,7 @@ def _play_game(*, policy, opponent_policy, learner_deck, opponent_deck, seed, fi
                 raise ValueError('Nonterminal game has no acting side')
             view = observe(state, side)
             actions = _legal_from_view(view)
+            telemetry.before(state,side,actions)
             chooser = policy if side == 'a' else opponent_policy
             index = _choose(chooser, view, actions)
             action = actions[index]
@@ -322,13 +325,16 @@ def _play_game(*, policy, opponent_policy, learner_deck, opponent_deck, seed, fi
                 card_id = _card_id_from_view(view, side, action.get('choice_id'))
             _append_action(recorded, side=side, action=action, card_id=card_id)
             previous_seq=state.get('event_seq',0)
+            previous_state=state
             state = apply_action(state, side, action)
+            telemetry.after(previous_state,state,action,side)
             for event in state.get('events',[]):
                 if event.get('seq',0)>previous_seq and event.get('type')=='play':
                     played=(event.get('card') or {}).get('card_id')
                     if played:
                         key='learner_card_ids' if event.get('side')=='a' else 'opponent_card_ids'
                         info[key].append(played)
+        info['telemetry'] = telemetry.finish(state)
         info['winner'] = state.get('winner')
         info['reason'] = str(state.get('reason') or '')
         info['terminated'] = state.get('phase') == 'finished'
@@ -476,6 +482,7 @@ def run_offline_analysis(
                 'learner_deck_id': learner_deck.get('id'),
                 'opponent_deck': result['opponent_deck'],
                 'actions': result['actions'],
+                'telemetry':result.get('telemetry'),
                 'learner_card_ids': result['learner_card_ids'],
                 'opponent_card_ids': result['opponent_card_ids'],
                 'winner': result.get('winner'),
@@ -531,6 +538,7 @@ def run_offline_analysis(
                 'truncation_reason': result.get('truncation_reason') or '',
                 'error': result.get('error'),
                 'action_count': len(result.get('actions') or []),
+                'final_turn':(result.get('telemetry') or {}).get('final_turn'),
                 'action_types': sorted({item.get('type') for item in result.get('actions') or [] if item.get('type')}),
                 'event_count': result.get('event_count') or 0,
                 'opponent_team': list(sampled.get('character_ids') or []),

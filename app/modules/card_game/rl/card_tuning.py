@@ -128,6 +128,7 @@ class CardBattleEvaluator:
         seeds = (seeds[:,None]+torch.arange(2,device=self.device,dtype=torch.int32)[None]).flatten()
         assignment = torch.randint(0,len(self.opponents)+1,(pairs,),device=self.device).repeat_interleave(2).repeat(n)
         self.backend.reset_public_gpu_state(state,seeds.repeat(n),candidates.repeat_interleave(trials,0),foes.repeat(n,1))
+        first = (state.first == 0).reshape(n,trials).clone()
         for _ in range(max_actions):
             if stop_check:stop_check()
             live = state.phase != 3
@@ -148,6 +149,10 @@ class CardBattleEvaluator:
         loss = (state.winner==1).reshape(n,trials) & done
         reward = (win.float()-loss.float()).mean(1)
         return {'rewards':reward,'valid':done.all(1),'wins':win.sum(1),'losses':loss.sum(1),
-                'truncated':(~done).sum(1),'trials':trials}
+                'truncated':(~done).sum(1),'trials':trials,
+                'first_wins':(win & first).sum(1),'first_losses':(loss & first).sum(1),
+                'first_games':(done & first).sum(1),'second_wins':(win & ~first).sum(1),
+                'second_losses':(loss & ~first).sum(1),'second_games':(done & ~first).sum(1),
+                'mean_turn':(state.turn.reshape(n,trials).float()*done).sum(1)/done.sum(1).clamp_min(1)}
 
     def close(self):self.backend.close()

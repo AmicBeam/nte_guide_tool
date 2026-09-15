@@ -162,3 +162,30 @@ $env:NTE_CUDA_JIT_OPT_LEVEL='0'
 ```
 
 `NTE_CUDA_FAST_COMPILE` 接受 `0/min/mid/max`，默认 `0` 不追加 NVRTC 快速编译选项。`NTE_CUDA_JIT_OPT_LEVEL` 接受 `0..4`，未设置时保留 CUDA 驱动默认行为。非法值直接报错。上述短测档会减少编译优化，运行性能不能当作默认编译档的吞吐证据；测试结束后可移除这两个进程环境变量。网站运行不读取它们，规则源码和训练日志策略不因此改变。
+
+## 7. 双预组全链路短测与报告交付
+
+`scripts/smoke_duel_v2_full.py` 串联两套预组的基础出牌训练、配牌学习、候选配牌适应训练、固定/变化规则对手、变化模型对手、同模型同构筑镜像、交叉互搏及新旧策略对照。短测使用少量更新；变化对手按 15 种无序公开四人组合覆盖。参数预算和筛选/最终评估种子在输出 `config.json` 及各报告元数据中固定，不能将短测结果称为充分的强度验收。
+
+```bash
+python scripts/smoke_duel_v2_full.py --output artifacts/full-chain-smoke --seconds 1800
+python scripts/package_duel_v2_report.py --source artifacts/full-chain-smoke --output artifacts/full-chain-report-bundle.zip
+```
+
+Windows 需沿用上述 MSVC 环境和已验证的快速编译档。两条命令均使用新输出路径；打包不训练、不发布。运行中状态见 `progress.json`、`evaluation-index.json`，结束状态见 `status.json`。超时或不完整评估会明确失败，不当成已验收通过。
+
+阶段衔接可单独使用：
+
+```bash
+python scripts/train_duel_v2_public.py --train --deck starter --resume artifacts/base/latest.pt --learner-deck artifacts/cards/candidate.json --hidden 64 --seconds 60 --max-updates 2 --output artifacts/adapted
+```
+
+`--learner-deck` 仅改变配牌，四名角色及顺序必须与指定的 `starter` 或 `weave-rush` 预组一致。checkpoint 保存实际 `learner_deck`；恢复时未显式指定新配牌则沿用 checkpoint 中的配牌。数字导出记录实际构筑并使用它做推理一致性检查；自定义配牌模型和报告不能直接批准为网站固定预组模型。
+
+训练期 `metrics.jsonl` 增加按规则/冻结模型对手及先后手的累计终局计数，最终另写 `position-results.json`。计数在设备上更新，不保留动作日志；预算中断时，终局计数可包含最后未完成优化更新的采样段，需与已完成更新的采样数区分。配牌阶段保存 `candidate-history.jsonl` 与 `candidates/`，包含全部已评估候选、先后手计数、评分、平均回合和截断情况。
+
+报告产物包括 `report.md`、`summary.json`、`card-metrics.csv`、`generated-card-metrics.csv`、`mechanism-metrics.csv`、`turn-states.csv`、`training-win-rates.csv`、`candidate-decisions.json` 和公开示例录像。逐卡来源与机制事件仅由额外正式引擎评估采集，不进入训练热路径。环合类型目前解析既有主事件的文本并保留来源，提供者/受益者由结构字段读取；同动作效果列表只说明关联，不声称隔离的因果贡献。没有经校准的概率预测时，曲线资料仅提供局势统计。
+
+打包入口生成选定模型与配牌的 `final/` 目录，包含报告、轻量指标、候选、checkpoint/数字模型和一局公开录像；原始逐局私有记录及其余公开录像留在 Windows 运行目录。包内 `delivery-manifest.json` 提供逐文件 SHA-256。最终须把包传回 Mac 并校验，或将适合入库的 Markdown 汇总提交 Git；只有 Windows 上生成文件不算交付完成。权重和原始数据不提交 Git。
+
+2026-09-16 实机短测已完成 6 个训练阶段、34 个评估单元和 412 场评估，59 项相关自动化检查通过。最终报告包已传回 Mac 并完成 155 个文件校验；结果与限制见 [全链路短测验收记录](duel-v2-full-chain-smoke-20260916.md)。

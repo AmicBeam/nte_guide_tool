@@ -3,7 +3,7 @@ from copy import deepcopy
 
 from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS, load_scenario
 from .presentation import bump_public_patch, capture_public_board
-from .state import SIDES, card_instance, name, new_character, shuffle
+from .state import SIDES, card_instance, name, new_character, other, shuffle
 
 
 def is_tutorial(state):
@@ -29,6 +29,8 @@ def new_tutorial_game(scenario_id, seed=0):
     scenario = load_scenario(scenario_id)
     seed = int(scenario.get('seed') or seed or 0)
     first_side = scenario.get('first_side') or 'a'
+    starting_turn = int(scenario.get('starting_turn', 1))
+    opening_side = first_side if starting_turn % 2 else other(first_side)
     flags = deepcopy(scenario.get('flags') or {})
     order_a = list(scenario.get('order_a') or [])
     order_b = list(scenario.get('order_b') or [])
@@ -39,9 +41,10 @@ def new_tutorial_game(scenario_id, seed=0):
         'design_version': 'V2.5',
         'version': 0,
         'phase': 'playing',
-        'active_side': first_side,
+        'active_side': opening_side,
         'first_side': first_side,
-        'turn': 0,
+        'turn': starting_turn - 1,
+        'escalation_enabled': bool(flags.get('escalation_enabled')),
         'winner': None,
         'reason': None,
         'rng': seed,
@@ -85,7 +88,7 @@ def new_tutorial_game(scenario_id, seed=0):
             'discard': [],
             'removed': [],
             'records': [],
-            'turn_count': 0,
+            'turn_count': (starting_turn - 1) // 2 + int(starting_turn % 2 == 0 and side == first_side),
             'fatigue': 0,
             'used': {},
             'harmonized': {},
@@ -126,9 +129,9 @@ def new_tutorial_game(scenario_id, seed=0):
     skip_mulligan = flags.get('skip_mulligan', True)
     if skip_mulligan:
         state['mulligan_done'] = list(SIDES)
-        begin_turn(state, first_side)
+        begin_turn(state, opening_side)
         opening = list(scenario.get('opening_b') or [])
-        if first_side == 'b' and opening:
+        if opening_side == 'b' and opening:
             from .flow import apply_action as apply_opening
             for action in opening:
                 state = apply_opening(state, 'b', action)

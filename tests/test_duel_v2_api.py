@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 import threading
 from copy import deepcopy
 from unittest.mock import patch
@@ -450,3 +451,35 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertNotEqual(back['room']['room_code'], second['room']['room_code'])
         self.assertEqual(back['game']['tutorial']['scenario'], 'tutorial_l01_board')
         self.assertEqual(back['game']['tutorial']['step_id'], 'l01_intro')
+
+
+    def test_old_tutorial_graduates_unlock_new_escalation_lesson(self):
+        from app.models import DuelV2TutorialProgress
+        from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS
+        self._get('/api/duel-v2/catalog', token=self.a)
+        row = DuelV2TutorialProgress.get()
+        row.completed_levels = json.dumps(list(CAMPAIGN_LEVELS[:-1]))
+        row.current_level = CAMPAIGN_LEVELS[-2]
+        row.completed = True
+        row.save()
+        tutorial = self._get('/api/duel-v2/catalog', token=self.a)['tutorial']
+        self.assertFalse(tutorial['completed'])
+        self.assertEqual(tutorial['current_level'], 'tutorial_l13_escalation')
+        self.assertTrue(tutorial['levels'][-1]['available'])
+        started = self._post('/api/duel-v2/start', {'mode': 'tutorial'}, token=self.a)
+        self.assertEqual(started['game']['turn'], 4)
+        self.assertEqual(started['game']['first_side'], 'b')
+        self.assertEqual(started['game']['tutorial']['level_index'], 12)
+        game = started['game']
+        for index in range(12):
+            if game['phase'] == 'finished':
+                break
+            game = self._post('/api/duel-v2/action', {
+                'room_code': started['room']['room_code'],
+                'request_id': f'escalation-lesson-{index}',
+                'expected_version': game['version'],
+                'action': game['legal_actions'][0]['action'],
+            }, token=self.a)['game']
+        self.assertEqual(game['reason'], 'tutorial_complete')
+        self.assertEqual(game['turn'], 6)
+        self.assertTrue(self._get('/api/duel-v2/catalog', token=self.a)['tutorial']['completed'])

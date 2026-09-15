@@ -151,6 +151,7 @@ CAMPAIGN_LEVELS = (
     'tutorial_l10_response',
     'tutorial_l11_pierce',
     'tutorial_l12_roster4',
+    'tutorial_l13_escalation',
 )
 
 LEVEL_META = (
@@ -165,6 +166,7 @@ LEVEL_META = (
     {'id': 'tutorial_l10_response', 'title': '第九关 响应', 'short': '响应'},
     {'id': 'tutorial_l11_pierce', 'title': '第十关 穿透', 'short': '穿透'},
     {'id': 'tutorial_l12_roster4', 'title': '第十一关 四人编队', 'short': '四人编队'},
+    {'id': 'tutorial_l13_escalation', 'title': '第十二关 白热化', 'short': '白热化'},
 )
 
 _L01_HIDE = [
@@ -616,11 +618,45 @@ _L12_STEPS = [
          ['bench:a', 'bench:b']),
     _ack('l12_empty', '空牌库',
          '自己的回合开始时，抽 1 张牌。抽牌时若牌库已空，会立刻失败。留意剩余牌数，合理使用抽牌效果，避免空库时再次抽牌。',
-         ['deck:a'], finish=True, primary='完成教学'),
+         ['deck:a'], finish=True, primary='完成本关'),
+]
+
+
+_L13_STEPS = [
+    _ack('l13_intro', '对局白热化',
+         '这一关从后手的第 4 回合局面开始。回合数按双方轮流行动累计：你行动后是第 5 回合，再轮到你就是第 6 回合。左侧提示下一阶段还要多久。',
+         ['round', 'escalation'], primary='看看能量'),
+    _ack('l13_energy', '准备迎接第 6 回合',
+         '主角现在有 4/5 能量，薄荷已有 5/5。第 6 回合起，每次回合开始，会为当前玩家能量最低的存活角色补 1 点能量，同值时随机选择；同时，每回合可发动两次终结。',
+         ['character:a:tutorial_protagonist', 'character:a:tutorial_bohe', 'ultimate_count']),
+    _act('l13_end', '进入下一次己方回合',
+         '结束第 4 回合。对手完成第 5 回合后，就会进入你的第 6 回合。',
+         ['end_turn'], [{'type': 'end_turn'}], click='end_turn',
+         cue='点击「结束回合」', opponent=[{'type': 'end_turn'}]),
+    _ack('l13_refill', '补能生效',
+         '第 6 回合开始，主角是能量最低的存活角色，获得 1 点能量，达到 5/5。右侧终结次数也变为 2。现在两人都可以发动终结。',
+         ['round', 'character:a:tutorial_protagonist', 'ultimate_count']),
+    _act('l13_first', '第一次终结',
+         '先点击主角的终结按钮。消耗她的满槽能量，不消耗行动力。',
+         ['character:a:tutorial_protagonist', 'ultimate_count'],
+         [{'type': 'ultimate', 'character_id': 'tutorial_protagonist'}], cue='点击主角的终结按钮'),
+    _act('l13_second', '同回合再用一次',
+         '本回合还剩 1 次终结机会。再点击薄荷的终结按钮，消耗薄荷自己的满槽能量。两次机会由全队共享，不是每人两次。',
+         ['character:a:tutorial_bohe', 'ultimate_count'],
+         [{'type': 'ultimate', 'character_id': 'tutorial_bohe'}], cue='点击薄荷的终结按钮'),
+    _ack('l13_done', '后续阶段',
+         '两次终结已用完，行动力仍为 2。白热化效果会叠加：第 13 回合起能量上限降低 1 点，第 20 回合起环合上限降为 1 点；已有资源超过新上限时也会降到新上限。记得留意左侧预告。本关到这里结束。',
+         ['ultimate_count', 'ap:a', 'escalation'], primary='完成教学', finish=True),
 ]
 
 
 SCENARIOS = {
+    'tutorial_l13_escalation': _scene(
+        'tutorial_l13_escalation', '第十二关 白热化', 12, _L13_STEPS,
+        flags=_flags(hide=['passive', 'harmony', 'hand', 'deck', 'mulligan', 'form'],
+                     disable_ultimate=False, escalation_enabled=True, player_hp=30),
+        first_side='b', starting_turn=4,
+        stats={'tutorial_protagonist': {'energy': 4}, 'tutorial_bohe': {'energy': 5}}),
     'tutorial_l01_board': _scene(
         'tutorial_l01_board', '第一关 牌桌与回合', 1, _L01_STEPS, flags=_L01_FLAGS),
     'tutorial_l02_hand': _scene(

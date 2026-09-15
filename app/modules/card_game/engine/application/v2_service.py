@@ -282,7 +282,8 @@ def tutorial_progress(player) -> dict:
     row = _progress_row(player)
     completed = _completed_levels(row)
     current = row.current_level or CAMPAIGN_LEVELS[0]
-    if current not in CAMPAIGN_LEVELS:
+    campaign_complete = all(level in completed for level in CAMPAIGN_LEVELS)
+    if current not in CAMPAIGN_LEVELS or (row.completed and not row.skipped and not campaign_complete):
         current = next_level(completed)
     playable = True
     try:
@@ -315,7 +316,7 @@ def tutorial_progress(player) -> dict:
         'completed_levels': completed,
         'skipped': bool(row.skipped),
         'skipped_prompt': bool(row.skipped_prompt),
-        'completed': bool(row.completed),
+        'completed': bool(row.skipped or campaign_complete),
         'playable': playable,
         'level_count': len(CAMPAIGN_LEVELS),
         'levels': levels,

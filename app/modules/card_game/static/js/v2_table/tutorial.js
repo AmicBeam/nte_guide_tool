@@ -11,6 +11,9 @@
       return null;
     }
     const raw = String(token);
+    if (raw === 'escalation') return ctx.page.querySelector('#v2-escalation');
+    if (raw === 'ultimate_count') return ctx.nodes.ultimate;
+    if (raw === 'round') return ctx.nodes.roundLabel;
     if (raw === 'end_turn') {
       return ctx.nodes.endTurnBtn;
     }

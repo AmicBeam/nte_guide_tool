@@ -19,7 +19,7 @@ class DuelV2TutorialTest(unittest.TestCase):
 
     def test_campaign_titles_use_current_terminology(self) -> None:
         from app.modules.card_game.content.duel_v2.tutorial.pack import CAMPAIGN_LEVELS, LEVEL_META, SCENARIOS
-        self.assertEqual(len(CAMPAIGN_LEVELS), 11)
+        self.assertEqual(len(CAMPAIGN_LEVELS), 12)
         self.assertEqual([level['id'] for level in LEVEL_META], list(CAMPAIGN_LEVELS))
         for level in LEVEL_META:
             self.assertEqual(level['title'], SCENARIOS[level['id']]['title'])
@@ -131,3 +131,36 @@ class DuelV2TutorialTest(unittest.TestCase):
         types = {item['action']['type'] for item in observe(state, 'a')['legal_actions']}
         self.assertNotIn('end_turn', types)
         self.assertNotIn({'type': 'end_turn'}, legal_actions(state, 'a'))
+
+
+    def test_escalation_lesson_only_plays_second_player_turns_four_to_six(self):
+        state = new_game(scenario='tutorial_l13_escalation')
+        self.assertEqual((state['first_side'], state['active_side'], state['turn']), ('b', 'a', 4))
+        self.assertEqual(state['sides']['a']['turn_count'], 2)
+        self.assertEqual(state['sides']['b']['turn_count'], 2)
+        self.assertEqual(observe(state, 'a')['sides']['a']['ultimate_remaining'], 1)
+        energies = lambda s: [s['sides']['a']['characters'][cid]['energy'] for cid in ('tutorial_protagonist', 'tutorial_bohe')]
+        self.assertEqual(energies(state), [4, 5])
+        for _ in range(2):
+            state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+        state = apply_action(state, 'a', {'type': 'end_turn'})
+        self.assertEqual(state['turn'], 6)
+        self.assertEqual(energies(state), [5, 5])
+        self.assertEqual(observe(state, 'a')['sides']['a']['ultimate_remaining'], 2)
+        state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+        for index, cid in enumerate(('tutorial_protagonist', 'tutorial_bohe')):
+            self.assertEqual(legal_actions(state, 'a'), [{'type': 'ultimate', 'character_id': cid}])
+            state = apply_action(state, 'a', {'type': 'ultimate', 'character_id': cid})
+            self.assertEqual(state['sides']['a']['ap'], 2)
+            self.assertEqual(observe(state, 'a')['sides']['a']['ultimate_remaining'], 1-index)
+        self.assertEqual(energies(state), [0, 0])
+        self.assertIn('第 13 回合', observe(state, 'a')['tutorial']['modal']['body'])
+        self.assertIn('第 20 回合', observe(state, 'a')['tutorial']['modal']['body'])
+        state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+        self.assertEqual(state['reason'], 'tutorial_complete')
+        self.assertEqual(state['turn'], 6)
+
+    def test_only_escalation_lesson_enables_escalation(self):
+        from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS
+        for scenario in CAMPAIGN_LEVELS:
+            self.assertEqual(new_game(scenario=scenario)['escalation_enabled'], scenario == 'tutorial_l13_escalation')

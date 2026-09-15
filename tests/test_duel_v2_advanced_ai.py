@@ -47,7 +47,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
             self.assertEqual(profile,{'deck_id':'weave-rush','version':'test-version'})
             switched=self.client.post('/api/duel-v2/start',json={'mode':'advanced','ai_deck':'starter'},headers={'Authorization':'Bearer '+self.token})
             self.assertEqual(switched.status_code,409)
-    @unittest.skipUnless(importlib.util.find_spec('numpy') and (Path(__file__).resolve().parents[1]/'artifacts/duel-v2-advanced-ai/starter.npz').exists(), 'local serving exports required')
+    @unittest.skipUnless(importlib.util.find_spec('numpy') and (Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models/starter.npz').exists(), 'bundled serving models and NumPy required')
     def test_real_models_finish_both_presets_and_save_replays(self):
         from app.modules.card_game.engine.duel_v2 import choose_action
         for deck in ('starter','weave-rush'):
@@ -80,6 +80,14 @@ class AdvancedRoomTest(RoomFlowTestCase):
 
 @unittest.skipUnless(importlib.util.find_spec('numpy'),'optional NumPy inference dependency')
 class CpuEncoderTest(unittest.TestCase):
+    def test_bundled_models_are_complete_and_loadable(self):
+        from app.modules.card_game.engine.ai.advanced_model import FrozenModel
+        directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
+        self.assertEqual({p.name for p in directory.iterdir()},
+                         {'starter.npz','starter.json','weave-rush.npz','weave-rush.json'})
+        for deck in ('starter','weave-rush'):
+            self.assertTrue(FrozenModel(directory,deck).version)
+
     def test_hidden_cards_do_not_change_encoding(self):
         import numpy as np
         from app.modules.card_game.engine.duel_v2 import new_game,legal_actions,acting_side

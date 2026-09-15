@@ -45,7 +45,7 @@ python run.py
 
 默认打开 `http://127.0.0.1:5001/`。
 
-异象对决的可选「高级人机」另需 `pip install -r requirements-ai.txt` 和已导出的模型文件，仅使用 CPU。安装和模型路径见 [异象对决模块说明](app/modules/card_game/README.md#高级人机)。
+异象对决的可选「高级人机」另需 `pip install -r requirements-ai.txt` ，仅使用 CPU；当前两套模型已随 `app/` 保存并由部署脚本同步，无需单独上传。安装和模型路径见 [异象对决模块说明](app/modules/card_game/README.md#高级人机)。
 
 当前环境不运行机器人时，可执行下面的命令创建本地联调账号：
 

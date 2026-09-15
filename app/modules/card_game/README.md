@@ -115,8 +115,8 @@ node --check app/modules/card_game/static/js/v2_replays.js
 
 大厅选择「高级人机」，再选择「创生预组」或「覆纹快攻」，点击「挑战高级人机」。双方使用所选的官方预组，房间模式为 `advanced`；保存的个人构筑不变。起手换牌时模型保留全部起手牌，后续选择来自训练策略。对手名及回放显示「高级人机」，刷新后继续同一模型版本的对局。
 
-服务端仅依赖可选的 NumPy CPU 推理包：`pip install -r requirements-ai.txt`。默认读取 `artifacts/duel-v2-advanced-ai/{starter,weave-rush}.{npz,json}`，可用 `NTE_DUEL_AI_MODEL_DIR` 指定目录。数字权重不允许 pickle，加载时校验 SHA-256、卡池/座位顺序、观察 schema、规则哈希和参数形状；缺依赖、缺文件或版本不匹配会在创建房间前明确拒绝，不降级冒充高级人机。旧房间保留模型摘要，换模型版本后须重新开局。
+服务端仅依赖可选的 NumPy CPU 推理包：`pip install -r requirements-ai.txt`。默认读取随 app 发布的 `app/modules/card_game/engine/ai/models/{starter,weave-rush}.{npz,json}`，可用 `NTE_DUEL_AI_MODEL_DIR` 指定目录。数字权重不允许 pickle，加载时校验 SHA-256、卡池/座位顺序、观察 schema、规则哈希和参数形状；缺依赖、缺文件或版本不匹配会在创建房间前明确拒绝，不降级冒充高级人机。旧房间保留模型摘要，换模型版本后须重新开局。
 
-`engine/ai/advanced_model.py` 负责纯 CPU 编码与选择；`rl/gpu_duel/resident_schema.py` 共享训练观察字段，避免顺序漂移。`scripts/export_duel_v2_ai.py` 在训练环境中把两个 best.pt 导出为数值权重和对照样本；`scripts/verify_duel_v2_ai_export.py --directory DIR` 在无 torch 的服务环境验证输出及动作一致性。权重属于运行产物，不加入 Git；部署 app 代码时须另外安装依赖、复制这四个模型文件。
+`engine/ai/advanced_model.py` 负责纯 CPU 编码与选择；`rl/gpu_duel/resident_schema.py` 共享训练观察字段，避免顺序漂移。`scripts/export_duel_v2_ai.py` 在训练环境中把两个 best.pt 导出为数值权重和对照样本；`scripts/verify_duel_v2_ai_export.py --directory DIR` 在无 torch 的服务环境验证输出及动作一致性。按用户要求，Git 的 `engine/ai/models/` 仅保留两套当前使用的策略：各一个 `.npz` 和 `.json`，合计约 695 KB。`scripts/deploy_windows_app.sh --deploy` 会从 Git HEAD 将四个文件随 app 一起发布，无需另建目录或手动上传；服务器首次仍须在 Waitress 使用的 Python 环境安装 NumPy。更新策略时用验证过的新导出覆盖这四个固定文件名并提交；完整 checkpoint、优化器、对照样本、原始日志及备份仍留在 `artifacts/`，不进入 app 或 Git。
 
-验证：`python -m unittest tests.test_duel_v2_advanced_ai tests.test_duel_v2_api tests.test_duel_v2_replay`，其中真实模型完整对局用例需要本机导出文件。2026-09-15 本机 37 项全部通过；96 个局面与 PyTorch 的动作选择一致，最大分数误差小于 0.000008。已在实际页面完成两种预组开局、出击、模型行动、历史和刷新恢复，无浏览器错误。
+验证：`python -m unittest tests.test_duel_v2_advanced_ai tests.test_duel_v2_api tests.test_duel_v2_replay`，其中真实模型完整对局用例使用 app 内置策略并需要 NumPy。2026-09-15 本机 37 项全部通过；96 个局面与 PyTorch 的动作选择一致，最大分数误差小于 0.000008。已在实际页面完成两种预组开局、出击、模型行动、历史和刷新恢复，无浏览器错误。

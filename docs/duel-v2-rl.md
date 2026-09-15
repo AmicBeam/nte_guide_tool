@@ -110,4 +110,4 @@ python3 -m unittest tests.test_duel_v2_rl tests.test_duel_v2_rl_train
 
 大厅 `advanced` 模式提供两套精确镜像预组。模型只给合法动作打分，实际出牌和胜负继续通过正式 Python 规则接口。训练用的 `resident_public_v1` 与 CPU 编码使用同一字段列表，并有导出数值/动作对照验证；对手暗牌和牌库顺序不进入输入。训练 checkpoint 与最终出牌分析日志仍作为训练产物保存，网页不加载这些日志。
 
-本次 CPU 推理导出文件约 345 / 344 KB，目录为 `artifacts/duel-v2-advanced-ai`。完整训练产物另已从 Windows 备份至 `artifacts/windows-training-backup-20260915/paired-long-20260915`，51 个文件逐个 SHA-256 校验通过，包含 best/latest、优化器、评估结果及最终出牌日志；未执行每卡胜率分析。
+本次 CPU 推理导出文件约 345 / 344 KB，按用户要求，当前用于人机的四个文件已放入 `app/modules/card_game/engine/ai/models/` 并随 app 部署；该目录只保留两套当前策略及版本校验文件。后续先向临时产物目录导出和验证，再仅覆盖这四个文件，不把原始 checkpoint、优化器、对照样本或日志放进 app。完整训练产物另已从 Windows 备份至 `artifacts/windows-training-backup-20260915/paired-long-20260915`，51 个文件逐个 SHA-256 校验通过，包含 best/latest、优化器、评估结果及最终出牌日志；未执行每卡胜率分析。

@@ -33,7 +33,9 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument('--enable-training', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--resume', type=Path)
-    parser.add_argument('--deck', help='default/starter 创生预组, other official preset id, or deck JSON path')
+    parser.add_argument('--deck', help='default/starter 创生预组, public-sample, other official public preset id, or deck JSON path')
+    parser.add_argument('--opponent-deck', dest='opponent_deck', help='Independent opponent deck: starter/weave-rush or JSON path')
+    parser.add_argument('--sample-public', action='store_true', help='Keep --deck fixed and sample public opponent decks each episode')
     parser.add_argument('--swap', help='Replace cards in the training deck, e.g. N03:N05,Z04:Z08')
     parser.add_argument('--freeze-generic', action='store_true',
                         help='When resuming, freeze board/generic-action weights and train card identity')
@@ -65,7 +67,7 @@ def _require_budget(parser: argparse.ArgumentParser, args: argparse.Namespace) -
         parser.error(f'--max-seconds must be 1..{HARD_MAX_SECONDS}')
     if args.n_steps < 8 or args.batch_size < 8:
         parser.error('--n-steps and --batch-size must be >= 8')
-    from app.modules.card_game.rl.training import MAX_N_ENVS, default_n_envs
+    from app.modules.card_game.rl.training_config import MAX_N_ENVS, default_n_envs
     if args.n_envs is None:
         args.n_envs = default_n_envs()
     if args.n_envs < 1 or args.n_envs > MAX_N_ENVS:
@@ -115,7 +117,7 @@ def run_training(args: argparse.Namespace, output: Path) -> int:
     from app.modules.card_game.rl.encoding import V2Encoder
     from app.modules.card_game.rl.evaluate import evaluate_strategies
     from app.modules.card_game.rl.training import train_maskable_ppo
-    from app.modules.card_game.rl.transfer import apply_card_swaps, parse_card_swaps, resolve_training_deck
+    from app.modules.card_game.rl.transfer import apply_card_swaps, parse_card_swaps, resolve_opponent_deck, resolve_training_deck
 
     log = _log_to(output)
     (output / 'train.pid').write_text(str(os.getpid()), encoding='utf-8')
@@ -132,6 +134,13 @@ def run_training(args: argparse.Namespace, output: Path) -> int:
     )
     try:
         deck = apply_card_swaps(resolve_training_deck(args.deck), parse_card_swaps(args.swap))
+        opponent_deck = resolve_opponent_deck(args.opponent_deck) if args.opponent_deck else deck
+        if args.sample_public:
+            from app.modules.card_game.rl.capability import COMPILED_PRESETS, is_exact_preset
+            if not any(is_exact_preset(deck, preset_id) for preset_id in COMPILED_PRESETS):
+                raise ValueError('--sample-public requires a fixed starter/weave-rush learner preset')
+            if args.opponent_deck:
+                raise ValueError('--sample-public cannot be combined with --opponent-deck')
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
     config = {
@@ -141,6 +150,8 @@ def run_training(args: argparse.Namespace, output: Path) -> int:
         'seed': args.seed, 'resume': str(args.resume) if args.resume else None,
         'eval_matches_per_seat': args.eval_matches_per_seat,
         'deck_id': deck.get('id'), 'deck_card_ids': list(deck.get('card_ids') or []),
+        'opponent_deck_id': opponent_deck.get('id'),
+        'sample_public': bool(args.sample_public),
         'swap': args.swap, 'freeze_generic': bool(args.freeze_generic),
         'generic_lr_mult': args.generic_lr_mult, 'kl_coef': args.kl_coef,
         'learning_rate': args.learning_rate,
@@ -156,6 +167,7 @@ def run_training(args: argparse.Namespace, output: Path) -> int:
         learning_rate=args.learning_rate, resume_from=args.resume, log=log,
         deck=deck, freeze_generic=bool(args.freeze_generic),
         generic_lr_mult=args.generic_lr_mult, kl_coef=args.kl_coef,
+        opponent_deck=opponent_deck, sample_public=bool(args.sample_public),
     )
     budget.begin_eval()
     model, _meta = load_training_checkpoint(output)
@@ -163,6 +175,7 @@ def run_training(args: argparse.Namespace, output: Path) -> int:
     evaluate_strategies(
         output, budget, model=model, encoder=V2Encoder(),
         matches_per_seat=args.eval_matches_per_seat, log=log, deck=deck,
+        opponent_deck=opponent_deck, sample_opponent=bool(args.sample_public),
     )
     log('phase=done')
     return 0 if int(stats.get('n_updates') or 0) > 0 else 1

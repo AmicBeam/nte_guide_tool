@@ -7,6 +7,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 from app.modules.card_game.content.duel_v2 import CARDS, STARTER_DECK, STARTER_DECKS
 from app.modules.card_game.rl.adapter import DuelAdapter
@@ -240,6 +241,45 @@ class BudgetAndPolicyTest(unittest.TestCase):
         other = next(item for item in STARTER_DECKS if item['id'] not in ('starter', 'weave-rush'))
         with self.assertRaises(ValueError):
             resolve_training_deck(other['id'])
+
+    def test_public_sample_and_asymmetric_eval_interfaces(self):
+        from app.modules.card_game.content.duel_v2.catalog import PUBLIC_CHARACTER_IDS
+        from app.modules.card_game.rl.capability import (
+            compiled_public_support, encoder_public_support, matchup_decks,
+            sample_public_deck,
+        )
+        from app.modules.card_game.rl.evaluate import _play_match
+        from app.modules.card_game.rl.policies import VisibleEngineRulePolicy
+        from app.modules.card_game.rl.transfer import resolve_opponent_deck
+        support = encoder_public_support()
+        self.assertTrue(support['ok'])
+        self.assertEqual(support['character_count'], 6)
+        self.assertEqual(support['kit_card_count'], 48)
+        compiled = compiled_public_support()
+        self.assertFalse(compiled['ok'])
+        deck = sample_public_deck(21)
+        self.assertEqual(set(deck['character_ids']) <= set(PUBLIC_CHARACTER_IDS), True)
+        opponent = resolve_opponent_deck('weave-rush')
+        self.assertEqual(opponent['id'], 'weave-rush')
+        matchup = matchup_decks(learning_side='a', learner_deck=deck, opponent_deck=opponent)
+        self.assertEqual(matchup['b']['id'], 'weave-rush')
+        self.assertNotEqual(matchup['a']['card_ids'], matchup['b']['card_ids'])
+        from app.modules.card_game.rl.budget import TrainBudget
+        report = _play_match(
+            TrainBudget(max_raw_steps=8, max_games=2, max_seconds=2),
+            VisibleEngineRulePolicy(), VisibleEngineRulePolicy(),
+            seed=3, learning_side='a', sample_opponent=True, deck=opponent,
+        )
+        self.assertEqual(report['deck']['id'], 'weave-rush')
+        self.assertTrue(set(report['opponent_deck']['character_ids']) <= set(PUBLIC_CHARACTER_IDS))
+        from app.modules.card_game.rl.capability import resolve_model_capability, capability_ready_manifest
+        legacy = resolve_model_capability({}, 'starter')
+        self.assertEqual(legacy['kind'], 'legacy_exact_mirror')
+        self.assertFalse(legacy['human_public_custom'])
+        with self.assertRaises(ValueError):
+            resolve_model_capability({'capability': {'kind': 'legacy_exact_mirror', 'human_public_custom': True}}, 'starter')
+        ready = resolve_model_capability({'capability': capability_ready_manifest('weave-rush')}, 'weave-rush')
+        self.assertTrue(ready['human_public_custom'])
 
     def test_inspect_checkpoint_still_rejects_weights(self):
         config = current_checkpoint_config()

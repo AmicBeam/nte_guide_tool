@@ -18,6 +18,10 @@ from app.modules.card_game.rl.gpu_duel.catalog import (
     DISCARD_SLOTS, ACT_ATTACK, ACT_CHOOSE, ACT_END, ACT_PLAY, ACT_ULTIMATE,
 )
 from app.modules.card_game.rl.gpu_duel.resident_schema import SCHEMA, SIDE_FIELDS, CHAR_FIELDS
+from app.modules.card_game.rl.capability import (
+    assert_public_encoder_deck, is_exact_preset,
+    resolve_model_capability,
+)
 from app.modules.card_game.rl.rule_ir.layout import OFFSETS
 from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
 
@@ -32,9 +36,36 @@ def preset(deck_id):
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
 
 
+def require_human_deck(model, deck, deck_id):
+    """Validate serving scope before creating any room or replay."""
+    try:
+        deck = assert_public_encoder_deck(deck)
+        capability = resolve_model_capability(
+            {'capability': getattr(model, 'capability', None)}, deck_id)
+    except ValueError as exc:
+        raise RuleValidationError(str(exc)) from exc
+    if not capability['human_public_custom'] and not is_exact_preset(deck, deck_id):
+        raise RuleValidationError('该高级人机尚未开放自由构筑，请选择与对手相同的预组。')
+    return capability
+
+
 def encode(state, side, actions):
     """Encode exactly the training schema, restricted to public information."""
     import numpy as np
+    from app.modules.card_game.rl.gpu_duel.catalog import CARD_INDEX as LIVE_CARD_INDEX
+    unknown = []
+    for team in (state.get('sides') or {}).values():
+        for zone in ('hand', 'deck', 'discard'):
+            for card in team.get(zone) or []:
+                card_id = card.get('card_id')
+                if card_id not in LIVE_CARD_INDEX:
+                    unknown.append(card_id)
+        for hero in (team.get('characters') or {}).values():
+            shape = hero.get('shape')
+            if shape and shape not in LIVE_CARD_INDEX:
+                unknown.append(shape)
+    if unknown:
+        raise ValueError('Encoder cannot represent ' + ','.join(sorted(set(str(item) for item in unknown if item))))
     row = pack_python_row(state)
     viewer = 'ab'.index(side)
     order = (viewer, 1 - viewer)
@@ -107,6 +138,9 @@ class FrozenModel:
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         if digest != manifest.get('sha256'):
             raise ValueError('Model checksum mismatch')
+        self.capability = resolve_model_capability(manifest, deck_id)
+        if self.capability['human_public_custom']:
+            raise ValueError('Public custom serving requires an expanded observation/export contract; resident_public_v1 is mirror-only')
         h = int(manifest['hidden'])
         d = 2 + 2*len(SIDE_FIELDS) + 2*N_SEATS*len(CHAR_FIELDS) + 3*len(CARD_IDS)
         shapes = {
@@ -127,6 +161,7 @@ class FrozenModel:
         self.manifest = manifest
         self.version = digest
         self.hidden = h
+        self.deck_id = deck_id
 
     def scores(self, state, candidates):
         import numpy as np
@@ -168,5 +203,8 @@ def choose_action(state, side='b'):
     if state['phase'] == 'mulligan':
         # The model was trained with the initial hand retained.
         return next(a for a in actions if not a.get('card_ids'))
-    values, candidates = encode(state, side, actions)
+    try:
+        values, candidates = encode(state, side, actions)
+    except (KeyError, ValueError) as exc:
+        raise RuleValidationError('高级人机无法编码当前公开构筑，请更换构筑或选择普通人机。') from exc
     return actions[int(model.scores(values, candidates).argmax())]

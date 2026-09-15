@@ -25,13 +25,18 @@ def main():
     for deck_id in ('starter','weave-rush'):
         path=args.root/deck_id/'best.pt'
         checkpoint=torch.load(path,map_location='cpu',weights_only=False)
+        from app.modules.card_game.rl.capability import resolve_model_capability
+        capability = resolve_model_capability(checkpoint, deck_id)
+        if capability['human_public_custom']:
+            raise ValueError('resident_public_v1 exporter only supports mirrors; public custom needs a matching export/observation contract')
         net=CompactScorer(checkpoint['state_dim'],checkpoint['cand_dim'],checkpoint['hidden'])
         net.load_state_dict(checkpoint['model']);net.eval()
         dest=args.output/f'{deck_id}.npz'
         np.savez_compressed(dest,**{k:v.numpy() for k,v in checkpoint['model'].items() if not k.startswith('value.')})
         manifest={k:checkpoint[k] for k in ('schema','deck','hidden','state_dim','cand_dim','gpu_lock','update','rule_identity')}
         manifest.update(sha256=hashlib.sha256(dest.read_bytes()).hexdigest(),card_ids=list(CARD_IDS),seat_ids=list(SEATS),
-                        source_checkpoint_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+                        source_checkpoint_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                        capability=capability)
         (args.output/f'{deck_id}.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
         cases=[]
         backend=CompiledStarterBackend(args.output/'native-cache',deck_id=deck_id)

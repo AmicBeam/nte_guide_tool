@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from app.modules.card_game.content.duel_v2 import CARDS, STARTER_DECK, STARTER_DECKS, validate_deck
+from app.modules.card_game.content.duel_v2.catalog import PUBLIC_CHARACTER_IDS
 
+from .capability import assert_public_encoder_deck, preset_opponent_deck, sample_public_deck
 from .encoding import CARD_IDS, CHARACTER_IDS
 
 
@@ -25,17 +27,20 @@ def assert_encoder_compatible(deck: Mapping[str, Any]) -> dict[str, Any]:
     extra = [character_id for character_id in payload['character_ids'] if character_id not in CHARACTER_IDS]
     if extra:
         raise ValueError(
-            'RL encoder seats are 创生预组 plus 覆纹快攻 ('
+            'RL encoder seats are the six public characters ('
             + ','.join(CHARACTER_IDS)
             + '); this deck uses '
             + ','.join(payload['character_ids'])
         )
+    unpublished = [character_id for character_id in payload['character_ids'] if character_id not in PUBLIC_CHARACTER_IDS]
+    if unpublished:
+        raise ValueError('Training decks must use public characters only: ' + ','.join(unpublished))
     if len(payload['character_ids']) != 4:
         raise ValueError('Training decks must still use exactly 4 characters')
     unknown = [card_id for card_id in payload['card_ids'] if card_id not in CARD_IDS]
     if unknown:
         raise ValueError('Deck contains cards the RL encoder cannot represent: ' + ','.join(sorted(set(unknown))))
-    return payload
+    return assert_public_encoder_deck(payload)
 
 
 def _preset_by_id(deck_id: str) -> dict[str, Any] | None:
@@ -48,6 +53,8 @@ def _preset_by_id(deck_id: str) -> dict[str, Any] | None:
 def resolve_training_deck(spec: str | Path | Mapping[str, Any] | None = None) -> dict[str, Any]:
     if spec in (None, '', 'default', 'starter', 'encoder-seats'):
         return default_training_deck()
+    if spec in ('public-sample', 'public'):
+        return sample_public_deck(0)
     if isinstance(spec, Mapping):
         return assert_encoder_compatible(spec)
     text = str(spec)
@@ -79,6 +86,8 @@ def parse_card_swaps(text: str | None) -> list[tuple[str, str]]:
             raise ValueError(f'Card swap {old}->{new} is outside the encoder catalog')
         if CARDS[old]['character_id'] != CARDS[new]['character_id']:
             raise ValueError(f'Card swap {old}->{new} must stay on the same character')
+        if CARDS[new]['character_id'] not in PUBLIC_CHARACTER_IDS:
+            raise ValueError(f'Card swap {old}->{new} must stay on public characters')
         pairs.append((old, new))
     return pairs
 
@@ -173,3 +182,15 @@ def apply_transfer(
         'overlap_cards': overlap,
         **init_info,
     }
+
+
+def resolve_opponent_deck(spec: str | Path | Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """Independent opponent policy deck. Default is the fixed 创生预组 mirror."""
+    if spec in (None, '', 'default', 'rule', 'starter'):
+        return preset_opponent_deck('starter')
+    if isinstance(spec, Mapping):
+        return assert_encoder_compatible(spec)
+    text = str(spec)
+    if text in ('starter', 'weave-rush'):
+        return preset_opponent_deck(text)
+    return resolve_training_deck(text)

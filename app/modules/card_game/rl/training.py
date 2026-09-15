@@ -14,16 +14,11 @@ from .encoding import V2Encoder
 import gymnasium as gym
 
 from .gym_compat import make_gym_env
+from .capability import training_matchup
 from .policies import RuleFrozenPolicy, VisibleEngineRulePolicy
 from .transfer import default_training_deck
 
-MAX_N_ENVS = 128
-DEFAULT_N_ENVS_CAP = 32
-
-
-def default_n_envs() -> int:
-    cpus = int(os.cpu_count() or 8)
-    return max(8, min(DEFAULT_N_ENVS_CAP, cpus))
+from .training_config import MAX_N_ENVS, DEFAULT_N_ENVS_CAP, default_n_envs
 
 
 def atomic_write(path: Path, payload: dict[str, Any]) -> None:
@@ -50,9 +45,10 @@ def _device() -> str:
 
 def make_rule_adapter(budget: TrainBudget, *, learning_side: str = 'a',
                       max_game_actions: int = 400, max_opponent_actions: int = 80,
-                      fast: bool = False) -> DuelAdapter:
+                      fast: bool = False, opponent=None) -> DuelAdapter:
     backend = CountingBackend(V2Backend(copy_on_apply=not fast), budget)
-    opponent = RuleFrozenPolicy() if fast else VisibleEngineRulePolicy()
+    if opponent is None:
+        opponent = RuleFrozenPolicy() if fast else VisibleEngineRulePolicy()
     adapter = DuelAdapter(
         backend, V2Encoder(), learning_side=learning_side, opponent=opponent,
         max_game_actions=max_game_actions, max_opponent_actions=max_opponent_actions,
@@ -102,8 +98,15 @@ class SeededTrainingWrapper(gym.Wrapper):
             seed_used = self.next_seed if seed is None else seed
             self.next_seed = int(seed_used) + int(config.get('n_envs', 1))
             reset_options = dict(options or {})
-            deck = config.get('deck') or default_training_deck()
-            reset_options.setdefault('decks', {'a': deck, 'b': deck})
+            if 'decks' not in reset_options:
+                learner = config.get('deck') or default_training_deck()
+                reset_options['decks'] = training_matchup(
+                    int(seed_used),
+                    learning_side=config.get('learning_side', 'a'),
+                    learner_deck=learner,
+                    opponent_deck=config.get('opponent_deck'),
+                    sample_public=bool(config.get('sample_public')),
+                )
             try:
                 observation, info = self.env.reset(seed=seed_used, options=reset_options)
             except (RuntimeError, BudgetStop) as exc:
@@ -157,11 +160,15 @@ def build_training_env(config: dict[str, Any], budget: TrainBudget | None = None
         shared = config.get('shared')
         if shared is not None:
             budget.attach_shared(shared)
+    opponent = None
+    if config.get('opponent_policy') == 'visible':
+        opponent = VisibleEngineRulePolicy()
     adapter = make_rule_adapter(
         budget, learning_side=config.get('learning_side', 'a'),
         max_game_actions=config.get('max_game_actions', 400),
         max_opponent_actions=config.get('max_opponent_actions', 80),
-        fast=True,
+        fast=config.get('opponent_policy') != 'visible',
+        opponent=opponent,
     )
     inner = make_gym_env(adapter)
     start_seed = int(config.get('start_seed', 0)) + int(config.get('rank', 0)) * 100_003
@@ -176,6 +183,8 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
                        deck: dict[str, Any] | None = None,
                        freeze_generic: bool = False, generic_lr_mult: float = 1.0,
                        kl_coef: float = 0.0,
+                       opponent_deck: dict[str, Any] | None = None,
+                       sample_public: bool = False,
                        log: Callable[[str], None] | None = None) -> dict[str, Any]:
     import torch
     from sb3_contrib import MaskablePPO
@@ -287,6 +296,9 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
         'start_seed': start_seed, 'n_envs': n_envs, 'max_game_actions': 400,
         'max_opponent_actions': 80, 'learning_side': 'a',
         'deck': training_deck,
+        'opponent_deck': opponent_deck or training_deck,
+        'sample_public': bool(sample_public),
+        'opponent_policy': 'rule',
     }
     if n_envs > 1:
         shared = make_shared_counters()
@@ -388,6 +400,8 @@ def train_maskable_ppo(output: Path, budget: TrainBudget, *, start_seed: int = 0
         'policy': 'CandidateScoringPolicy',
         'training_deck_id': training_deck.get('id'),
         'training_deck_card_ids': unique_card_ids(training_deck),
+        'opponent_deck': opponent_deck or training_deck,
+        'sample_public_opponent': bool(sample_public),
         'transfer': transfer_info,
     }
     write_training_checkpoint(output, model, stats)

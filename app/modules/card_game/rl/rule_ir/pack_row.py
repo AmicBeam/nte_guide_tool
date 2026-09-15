@@ -70,7 +70,10 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
         if len(cards) > CHOICE_SLOTS:
             raise ValueError('Choice overflow')
         for index, card in enumerate(cards[:CHOICE_SLOTS]):
-            row[OFFSETS['pending_card'] + index] = CARD_INDEX[card.get('card_id') or card.get('id')]
+            card_id = card.get('card_id') or card.get('id')
+            if card_id not in CARD_INDEX:
+                raise ValueError(f'Encoder cannot represent card {card_id}')
+            row[OFFSETS['pending_card'] + index] = CARD_INDEX[card_id]
             row[OFFSETS['pending_inst'] + index] = _instance_int(card.get('instance_id') or '')
         settling = (state.get('operation') or {}).get('card')
         if settling:
@@ -109,7 +112,10 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
                 raise ValueError(f'{zone} overflow')
             row[count_off + side_i] = len(cards)
             for index, card in enumerate(cards):
-                row[kind_off + side_i * limit + index] = CARD_INDEX[card.get('card_id') or card.get('id')]
+                card_id = card.get('card_id') or card.get('id')
+                if card_id not in CARD_INDEX:
+                    raise ValueError(f'Encoder cannot represent card {card_id}')
+                row[kind_off + side_i * limit + index] = CARD_INDEX[card_id]
                 row[inst_off + side_i * limit + index] = _instance_int(card.get('instance_id') or '')
 
         fill('hand', OFFSETS['hand_kind'], OFFSETS['hand_inst'], HAND_SLOTS, OFFSETS['hand_n'])

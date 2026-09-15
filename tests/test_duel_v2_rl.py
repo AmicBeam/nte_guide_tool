@@ -154,6 +154,29 @@ class EncodingTest(unittest.TestCase):
             self.view['events'] = [dict(type=event, amount=1, side='a')]
             self.assertEqual(len(self.encoder.encode_observation(self.view)), OBSERVATION_DIM)
 
+    def test_unpublished_character_and_unknown_card_fail_closed(self):
+        from app.modules.card_game.rl.capability import encoder_public_support
+        from app.modules.card_game.rl.transfer import assert_encoder_compatible, resolve_training_deck
+        support = encoder_public_support()
+        self.assertTrue(support['ok'])
+        self.assertEqual(len(support['kit_cards']), 48)
+        other = resolve_training_deck('starter')
+        other['character_ids'] = ['nanali', 'zero', 'jiuyuan', 'xun']
+        with self.assertRaises(ValueError):
+            assert_encoder_compatible(other)
+        view = deepcopy(self.view)
+        view['sides']['a']['hand'] = [card('A01')]
+        with self.assertRaises(ValueError):
+            self.encoder.encode_observation(view)
+        from app.modules.card_game.engine.duel_v2 import new_game, acting_side
+        from app.modules.card_game.content.duel_v2 import STARTER_DECK
+        from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
+        state = new_game(seed=4, skip_mulligan=True, decks={'a': STARTER_DECK, 'b': STARTER_DECK})
+        side = acting_side(state)
+        state['sides'][side]['hand'][0]['card_id'] = 'X99'
+        with self.assertRaisesRegex(ValueError, 'cannot represent'):
+            pack_python_row(state)
+
     def test_hidden_hand_contents_ignored_and_rng_rejected(self):
         self.view['sides']['b']['hand'] = [{'hidden': True}]
         before = self.encoder.encode_observation(self.view)

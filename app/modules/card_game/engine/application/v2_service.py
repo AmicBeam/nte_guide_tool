@@ -82,6 +82,12 @@ def _require_visible_deck(player, deck: dict, *, joining: bool = False) -> dict:
     raise RuleValidationError('该房间使用尚未公开的角色。' if joining else '该构筑包含尚未公开的角色。')
 
 
+def _require_public_deck(deck: dict, *, joining: bool = False) -> dict:
+    if _content().deck_uses_test_characters(deck):
+        raise RuleValidationError('该房间使用尚未公开的角色。' if joining else '高级人机仅支持公开角色构筑。')
+    return deck
+
+
 def _allowed_presets(player) -> list[dict]:
     content = _content()
     presets = list(getattr(content, 'STARTER_DECKS', None) or [content.STARTER_DECK])
@@ -569,11 +575,18 @@ def _initialize_game(room, scenario=None, ai_deck_id=None) -> dict:
     if room.mode == 'solo':
         decks['b'] = _solo_ai_deck()
     if room.mode == 'advanced':
-        from app.modules.card_game.engine.ai.advanced_model import load_model, preset
+        from app.modules.card_game.engine.ai.advanced_model import load_model, preset, require_human_deck
+        decks['a'] = _require_public_deck(_validate_deck(decks['a']))
         decks['b'] = _validate_deck(deepcopy(preset(ai_deck_id)))
+        require_human_deck(load_model(ai_deck_id), decks['a'], ai_deck_id)
     game = _engine().new_game(seed=randbits(31), decks=decks)
     if room.mode == 'advanced':
-        game['ai_profile'] = {'deck_id': ai_deck_id, 'version': load_model(ai_deck_id).version}
+        model = load_model(ai_deck_id)
+        game['ai_profile'] = {
+            'deck_id': ai_deck_id,
+            'version': model.version,
+            'capability': dict(getattr(model, 'capability', {}) or {}),
+        }
         game['sides']['b']['name'] = '高级人机'
     replay.begin(room, game)
     game = _advance_ai(game, room.mode)
@@ -606,7 +619,12 @@ def start(player, payload: dict) -> dict:
         except ValueError as exc:
             raise RuleValidationError(str(exc)) from exc
     if mode == 'advanced':
-        deck = _require_visible_deck(player, _validate_deck(deepcopy(preset(ai_deck_id))))
+        player_deck_mode = payload.get('ai_player_deck', 'mirror')
+        if player_deck_mode not in ('mirror', 'saved'):
+            raise RuleValidationError('请选择我方构筑。')
+        deck = (_validate_deck(deepcopy(preset(ai_deck_id))) if player_deck_mode == 'mirror'
+                else _selected_deck(player))
+        deck = _require_public_deck(deck)
     else:
         deck = {} if mode == 'tutorial' else _selected_deck(player, payload.get('deck'))
     with _lobby_lock:
@@ -631,6 +649,9 @@ def start(player, payload: dict) -> dict:
                 return get_state(player)
             if existing is not None and existing.status == 'finished' and existing.mode == 'tutorial':
                 _close_tutorial_room(existing)
+        if mode == 'advanced':
+            from app.modules.card_game.engine.ai.advanced_model import require_human_deck
+            require_human_deck(load_model(ai_deck_id), deck, ai_deck_id)
         with atomic_transaction():
             room = repository.create_room(player, mode)
             repository.add_member(room, player, 'a', deck, ready=(mode in {'solo', 'advanced', 'tutorial'}))

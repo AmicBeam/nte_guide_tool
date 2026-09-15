@@ -27,6 +27,8 @@ async function bootstrapHome() {
   const uidNode = document.getElementById('v2-home-uid');
   const aiDeck = document.getElementById('v2-ai-deck');
   const aiPicker = document.getElementById('v2-advanced-picker');
+  const aiPlayerDeck = document.getElementById('v2-ai-player-deck');
+  const aiDeckHint = document.getElementById('v2-ai-deck-hint');
   let selectedMode = 'solo';
   let busy = false;
   let catalog = null;
@@ -44,6 +46,7 @@ async function bootstrapHome() {
       document.getElementById('v2-mode-' + mode).disabled = busy;
     });
     aiDeck.disabled = busy;
+    aiPlayerDeck.disabled = busy;
     if (tutorialStart) tutorialStart.disabled = busy;
     if (leaveBtn) leaveBtn.disabled = busy;
     if (resumeBtn) resumeBtn.classList.toggle('is-disabled', busy);
@@ -58,7 +61,7 @@ async function bootstrapHome() {
     const byId = V2.indexById(V2.sortedCharacters(catalog && catalog.characters));
     const saved = catalog && catalog.saved_build;
     const starter = catalog && catalog.starter_deck;
-    const deck = selectedMode === 'advanced'
+    const deck = selectedMode === 'advanced' && aiPlayerDeck.value === 'mirror'
       ? ((catalog && catalog.starter_decks) || []).find(function (d) { return d.id === aiDeck.value; }) || starter || {}
       : saved || starter || {};
     const ids = Array.isArray(deck.character_ids) && deck.character_ids.length
@@ -81,7 +84,15 @@ async function bootstrapHome() {
     const saved = catalog && catalog.saved_build;
     const starter = catalog && catalog.starter_deck;
     if (selectedMode === 'advanced') {
-      buildSummary.textContent = '高级人机 · ' + aiDeck.options[aiDeck.selectedIndex].text + ' · 双方同构筑';
+      const opponentName = aiDeck.options[aiDeck.selectedIndex].text;
+      const custom = aiPlayerDeck.value === 'saved';
+      const playerDeck = saved || starter;
+      buildSummary.textContent = custom
+        ? '我方「' + ((playerDeck && playerDeck.name) || '当前构筑') + '」· 对手「' + opponentName + '」'
+        : '高级人机 · ' + opponentName + ' · 双方同构筑';
+      aiDeckHint.textContent = custom
+        ? '仅支持公开角色。需对手模型已开放自由构筑对战；当前构筑不会被修改。'
+        : '双方使用所选预组进行对战。';
       return;
     }
     if (saved && Array.isArray(saved.card_ids)) {
@@ -159,7 +170,10 @@ async function bootstrapHome() {
     V2.showBanner(banner, '', '');
     try {
       const payload = { mode: selectedMode };
-      if (selectedMode === 'advanced') payload.ai_deck = aiDeck.value;
+      if (selectedMode === 'advanced') {
+        payload.ai_deck = aiDeck.value;
+        payload.ai_player_deck = aiPlayerDeck.value;
+      }
       await V2.startGame(payload);
       goTable();
     } catch (error) {
@@ -207,6 +221,7 @@ async function bootstrapHome() {
     document.getElementById('v2-mode-' + mode).addEventListener('click', function () { selectMode(mode); });
   });
   aiDeck.addEventListener('change', function () { renderStarter(); renderBuildSummary(); });
+  aiPlayerDeck.addEventListener('change', function () { renderStarter(); renderBuildSummary(); });
   let selectedTutorialId = '';
 
   function selectableTutorialLevels() {

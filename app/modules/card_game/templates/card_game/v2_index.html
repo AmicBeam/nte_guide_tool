@@ -80,14 +80,19 @@
                 </button>
             </div>
 
-            <label class="field-label v2-advanced-picker" id="v2-advanced-picker" hidden>
-                <span>高级人机 · 对战预组</span>
+            <div class="field-label v2-advanced-picker" id="v2-advanced-picker" hidden>
+                <label for="v2-ai-deck">高级人机 · 对手预组</label>
                 <select id="v2-ai-deck">
                     <option value="starter">创生预组</option>
                     <option value="weave-rush">覆纹快攻</option>
                 </select>
-                <small class="subtle">双方使用所选预组进行对战。</small>
-            </label>
+                <label for="v2-ai-player-deck">我方构筑</label>
+                <select id="v2-ai-player-deck">
+                    <option value="mirror">与对手相同的预组</option>
+                    <option value="saved">当前保存的构筑（仅公开角色）</option>
+                </select>
+                <small class="subtle" id="v2-ai-deck-hint">双方使用所选预组进行对战。</small>
+            </div>
 
             <div class="v2-join-row">
                 <label class="field-label">

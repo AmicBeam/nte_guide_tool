@@ -8,9 +8,15 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True);args=p.parse_args()
     import numpy as np
     from app.modules.card_game.engine.ai.advanced_model import FrozenModel,encode
+    from app.modules.card_game.rl.capability import LEGACY_MIRROR_KIND, PUBLIC_ASYMMETRIC_KIND
     results={}
     for deck in ('starter','weave-rush'):
         model=FrozenModel(args.directory,deck)
+        kind=model.capability.get('kind')
+        if kind not in (LEGACY_MIRROR_KIND, PUBLIC_ASYMMETRIC_KIND):
+            raise SystemExit(f'unsupported capability {kind}')
+        if kind==LEGACY_MIRROR_KIND and model.capability.get('human_public_custom'):
+            raise SystemExit('legacy exact-mirror weights cannot claim public custom training')
         cases=json.loads((args.directory/f'{deck}-parity.json').read_text(encoding='utf-8'))
         largest=0.;elapsed=0.
         for case in cases:

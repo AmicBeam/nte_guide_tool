@@ -11,6 +11,7 @@ from .adapter import DuelAdapter
 from .backend import V2Backend
 from .budget import BudgetStop, CountingBackend, TrainBudget
 from .encoding import V2Encoder
+from .capability import matchup_decks, preset_opponent_deck, sample_public_deck
 from .policies import MaskablePolicy, RandomMaskedPolicy, VisibleEngineRulePolicy
 from .transfer import default_training_deck
 
@@ -20,7 +21,9 @@ EVAL_SEED_BASE = 20_260_912
 
 def _play_match(budget: TrainBudget, learner, opponent, *, seed: int, learning_side: str,
                 max_game_actions: int = 400, max_opponent_actions: int = 80,
-                deck: dict[str, Any] | None = None) -> dict[str, Any]:
+                deck: dict[str, Any] | None = None,
+                opponent_deck: dict[str, Any] | None = None,
+                sample_opponent: bool = False) -> dict[str, Any]:
     backend = CountingBackend(V2Backend(), budget)
     adapter = DuelAdapter(
         backend, V2Encoder(), learning_side=learning_side, opponent=opponent,
@@ -28,17 +31,24 @@ def _play_match(budget: TrainBudget, learner, opponent, *, seed: int, learning_s
         allow_concede=False,
     )
     used = deepcopy(deck or default_training_deck())
-    decks = {'a': used, 'b': deepcopy(used)}
+    foe = deepcopy(sample_public_deck(seed) if sample_opponent else (opponent_deck or used))
+    decks = matchup_decks(learning_side=learning_side, learner_deck=used, opponent_deck=foe)
     actions: list[dict[str, Any]] = []
-    transition = adapter.reset(seed=seed, decks=decks)
+    transition = adapter.reset(seed=seed, decks=decks, first_side='a')
     info = {
         'seed': seed, 'learning_side': learning_side, 'first_side': None,
+        'opponent_policy': type(opponent).__name__,
         'winner': None, 'truncated': False, 'terminated': False,
         'truncation_reason': '', 'actions': actions, 'error': None,
         'deck': {
             'id': used.get('id'), 'name': used.get('name'),
             'character_ids': list(used.get('character_ids') or []),
             'card_ids': list(used.get('card_ids') or []),
+        },
+        'opponent_deck': {
+            'id': foe.get('id'), 'name': foe.get('name'),
+            'character_ids': list(foe.get('character_ids') or []),
+            'card_ids': list(foe.get('card_ids') or []),
         },
     }
     state = adapter._state or {}
@@ -107,25 +117,30 @@ def evaluate_strategies(
     output: Path, budget: TrainBudget, *, model=None, encoder=None,
     matches_per_seat: int = 6, log: Callable[[str], None] | None = None,
     deck: dict[str, Any] | None = None,
+    opponent=None, opponent_deck: dict[str, Any] | None = None,
+    sample_opponent: bool = False,
 ) -> dict[str, Any]:
     log = log or print
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     games_path = output / 'eval_games.jsonl'
     random_policy = RandomMaskedPolicy(Random(EVAL_SEED_BASE))
-    rule = VisibleEngineRulePolicy()
+    rule = opponent or VisibleEngineRulePolicy()
     trained = MaskablePolicy(model, encoder) if model is not None and encoder is not None else None
     agents = [('random', random_policy), ('rule', rule)]
     if trained is not None:
         agents.append(('trained', trained))
+    eval_opponent_deck = deepcopy(opponent_deck or (None if sample_opponent else deck) or preset_opponent_deck('starter'))
     summary: dict[str, Any] = {
         'ok': True, 'label': 'fixed-seed strategy evaluation; small sample, not a balance claim',
         'eval_seed_base': EVAL_SEED_BASE, 'matches_per_seat': matches_per_seat,
         'agents': [name for name, _ in agents],
         'results': {}, 'by_seat': {}, 'exceptions': 0,
         'training_deck_id': (deck or default_training_deck()).get('id'),
+        'opponent_deck_id': eval_opponent_deck.get('id'),
+        'sample_opponent': bool(sample_opponent),
+        'independent_eval_policy': type(rule).__name__,
     }
-    match_index = 0
     for name, policy in agents:
         if name == 'rule':
             continue
@@ -137,10 +152,12 @@ def evaluate_strategies(
                 if budget.remaining_reason() or budget.games_exhausted():
                     summary['stopped_reason'] = budget.remaining_reason() or 'max_games'
                     break
-                seed = EVAL_SEED_BASE + match_index
-                match_index += 1
+                seed = EVAL_SEED_BASE + offset
                 log(f'phase=eval agent={name} seat={seat} seed={seed} raw_steps={budget.raw_steps}')
-                match = _play_match(budget, policy, rule, seed=seed, learning_side=seat, deck=deck)
+                match = _play_match(
+                    budget, policy, rule, seed=seed, learning_side=seat, deck=deck,
+                    opponent_deck=eval_opponent_deck, sample_opponent=sample_opponent,
+                )
                 match['agent'] = name
                 match['opponent'] = 'rule'
                 with games_path.open('a', encoding='utf-8') as handle:

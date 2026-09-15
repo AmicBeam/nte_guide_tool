@@ -98,7 +98,15 @@ def replay_from_eval_record(record: dict[str, Any], *, deck: dict[str, Any] | No
         max_game_actions=1000, max_opponent_actions=100, allow_concede=False,
         capture_opening=True,
     )
-    adapter.reset(seed=seed, decks={'a': used, 'b': deepcopy(used)})
+    from .capability import matchup_decks
+    if record.get('opponent_policy', 'VisibleEngineRulePolicy') != 'VisibleEngineRulePolicy':
+        raise ValueError('Replay export requires the recorded frozen opponent policy')
+    decks = matchup_decks(learning_side=learning_side, learner_deck=used,
+                          opponent_deck=record.get('opponent_deck') or used)
+    options = {'decks': decks}
+    if record.get('first_side') in ('a', 'b'):
+        options['first_side'] = record['first_side']
+    adapter.reset(seed=seed, **options)
     for saved in record.get('actions') or []:
         decision = adapter.decision()
         if adapter._outcome().terminated or not decision.actions:

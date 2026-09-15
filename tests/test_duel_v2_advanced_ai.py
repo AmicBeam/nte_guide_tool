@@ -29,8 +29,11 @@ class AdvancedRoomTest(RoomFlowTestCase):
             self.assertEqual(result['room']['mode'],'advanced')
             game = result['game']
             self.assertEqual(game['sides']['b']['name'],'高级人机')
-            self.assertEqual({h['id'] for h in game['sides']['a']['characters']},{'bohe','baicang','zero','iloy'})
+            catalog=self._get('/api/duel-v2/catalog', token=self.token)
+            human={'bohe','baicang','zero','iloy'}
+            self.assertEqual({h['id'] for h in game['sides']['a']['characters']}, human)
             self.assertEqual({h['id'] for h in game['sides']['b']['characters']},{'bohe','baicang','zero','iloy'})
+            self.assertEqual(catalog['saved_build']['character_ids'], self._get('/api/duel-v2/catalog', token=self.token)['saved_build']['character_ids'])
             code = result['room']['room_code']
             action = next(e['action'] for e in game['legal_actions'] if e['action']['type']=='mulligan' and not e['action']['card_ids'])
             result = self._post('/api/duel-v2/action', {'room_code':code,'expected_version':game['version'],'request_id':'ai-mulligan','action':action}, token=self.token)
@@ -44,7 +47,9 @@ class AdvancedRoomTest(RoomFlowTestCase):
             self.assertEqual(state['room']['mode'],'advanced')
             room = self.repository.room_by_code(code)
             profile = self.storage.load(room.id)['game']['ai_profile']
-            self.assertEqual(profile,{'deck_id':'weave-rush','version':'test-version'})
+            self.assertEqual(profile['deck_id'],'weave-rush')
+            self.assertEqual(profile['version'],'test-version')
+            self.assertIn('capability', profile)
             switched=self.client.post('/api/duel-v2/start',json={'mode':'advanced','ai_deck':'starter'},headers={'Authorization':'Bearer '+self.token})
             self.assertEqual(switched.status_code,409)
     @unittest.skipUnless(importlib.util.find_spec('numpy') and (Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models/starter.npz').exists(), 'bundled serving models and NumPy required')
@@ -76,6 +81,71 @@ class AdvancedRoomTest(RoomFlowTestCase):
     def test_unsupported_preset_is_rejected(self):
         response=self.client.post('/api/duel-v2/start',json={'mode':'advanced','ai_deck':'other'},headers={'Authorization':'Bearer '+self.token})
         self.assertEqual(response.status_code,400)
+
+    def test_legacy_rejects_saved_custom_before_room_creation(self):
+        from app.modules.card_game.content.duel_v2 import STARTER_DECK
+        custom = deepcopy(STARTER_DECK)
+        custom['card_ids'] = ['N01' if c == 'N02' else c for c in custom['card_ids']]
+        self._post('/api/duel-v2/build', custom, token=self.token)
+        with patch('app.modules.card_game.engine.ai.advanced_model.load_model',
+                   return_value=SimpleNamespace(version='legacy')):
+            result = self._post_error('/api/duel-v2/start',
+                {'mode':'advanced', 'ai_deck':'starter', 'ai_player_deck':'saved'}, token=self.token)
+        self.assertIn('尚未开放', result['error'])
+        player = self.dao_module.get_or_create_player('advanced-ai-test')[0]
+        self.assertIsNone(self.repository.current_room(player))
+        self.assertEqual(self._get('/api/duel-v2/catalog', token=self.token)['saved_build']['card_ids'], custom['card_ids'])
+
+    def test_invalid_player_deck_selection_is_rejected(self):
+        with patch('app.modules.card_game.engine.ai.advanced_model.load_model',
+                   return_value=SimpleNamespace(version='legacy')):
+            result = self._post_error('/api/duel-v2/start',
+                {'mode':'advanced', 'ai_player_deck':'unknown'}, token=self.token)
+        self.assertIn('我方构筑', result['error'])
+
+    def test_advanced_uses_saved_public_deck_not_bot_preset(self):
+        from app.modules.card_game.rl.capability import capability_ready_manifest
+        content = importlib.import_module('app.modules.card_game.content.duel_v2')
+        custom = deepcopy(content.STARTER_DECK)
+        custom['id'] = 'deck-public-custom'
+        custom['name'] = '公开自组'
+        custom['card_ids'] = [card_id if card_id != 'N02' else 'N01' for card_id in custom['card_ids']]
+        saved = self._post('/api/duel-v2/build', custom, token=self.token)
+        self.assertEqual(saved['saved_build']['id'], 'deck-public-custom')
+        module = 'app.modules.card_game.engine.ai.advanced_model.'
+        with patch(module+'load_model', return_value=SimpleNamespace(version='test-version', capability=capability_ready_manifest('weave-rush'))):
+            result = self._post('/api/duel-v2/start', {'mode':'advanced','ai_deck':'weave-rush','ai_player_deck':'saved'}, token=self.token)
+        self.assertEqual({h['id'] for h in result['game']['sides']['a']['characters']}, set(custom['character_ids']))
+        self.assertEqual({h['id'] for h in result['game']['sides']['b']['characters']}, {'bohe','baicang','zero','iloy'})
+        catalog = self._get('/api/duel-v2/catalog', token=self.token)
+        self.assertEqual(catalog['saved_build']['id'], 'deck-public-custom')
+        self.assertEqual(catalog['saved_build']['card_ids'], custom['card_ids'])
+
+    def test_privileged_account_cannot_use_test_characters_in_advanced(self):
+        token = self._issue_login_and_get_token('advanced-privileged')
+        models = importlib.import_module('app.models')
+        models.Player.update(shaft_test_whitelisted=True).where(
+            models.Player.player_uid == 'advanced-privileged'
+        ).execute()
+        content = importlib.import_module('app.modules.card_game.content.duel_v2')
+        requiem = deepcopy(next(item for item in content.STARTER_DECKS if item['id'] == 'requiem'))
+        self._post('/api/duel-v2/build', requiem, token=token)
+        module = 'app.modules.card_game.engine.ai.advanced_model.'
+        with patch(module+'load_model', return_value=SimpleNamespace(version='test-version', capability={'kind':'legacy_exact_mirror'})):
+            error = self._post_error('/api/duel-v2/start', {'mode':'advanced','ai_deck':'starter','ai_player_deck':'saved'}, token=token)
+        self.assertIn('公开', error['error'])
+        catalog = self._get('/api/duel-v2/catalog', token=token)
+        self.assertTrue(any(item['name'] == '浊燃预组' for item in catalog['saved_builds']))
+
+    def test_refresh_keeps_asymmetric_advanced_room(self):
+        module = 'app.modules.card_game.engine.ai.advanced_model.'
+        with patch(module+'load_model', return_value=SimpleNamespace(version='test-version', capability={'kind':'legacy_exact_mirror'})):
+            started = self._post('/api/duel-v2/start', {'mode':'advanced','ai_deck':'starter','ai_player_deck':'saved'}, token=self.token)
+            refreshed = self._get('/api/duel-v2/state', token=self.token)
+        self.assertEqual(started['room']['room_code'], refreshed['room']['room_code'])
+        self.assertEqual(started['game']['sides']['a']['characters'][0]['id'], refreshed['game']['sides']['a']['characters'][0]['id'])
+        self.assertEqual({h['id'] for h in refreshed['game']['sides']['b']['characters']}, {'nanali','iloy','zero','jiuyuan'})
+
 
 
 @unittest.skipUnless(importlib.util.find_spec('numpy'),'optional NumPy inference dependency')
@@ -116,6 +186,44 @@ class CpuEncoderTest(unittest.TestCase):
         changed['rng']=999
         after=encode(changed,side,actions)
         for a,b in zip(before,after):np.testing.assert_array_equal(a,b)
+    def test_unknown_public_card_encoding_fails_closed(self):
+        from app.modules.card_game.engine.duel_v2 import new_game,legal_actions,acting_side
+        from app.modules.card_game.content.duel_v2 import STARTER_DECK
+        from app.modules.card_game.engine.ai.advanced_model import encode
+        state=new_game(seed=4,skip_mulligan=True,decks={'a':STARTER_DECK,'b':STARTER_DECK})
+        side=acting_side(state)
+        actions=[a for a in legal_actions(state,side) if a['type']!='concede']
+        state['sides'][side]['hand'][0]['card_id']='X99'
+        with self.assertRaisesRegex(ValueError,'cannot represent'):
+            encode(state,side,actions)
+
+    def test_legacy_manifest_without_capability_still_loads(self):
+        import json
+        from app.modules.card_game.engine.ai.advanced_model import FrozenModel
+        from app.modules.card_game.rl.capability import LEGACY_MIRROR_KIND
+        directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
+        model=FrozenModel(directory,'starter')
+        self.assertEqual(model.capability['kind'], LEGACY_MIRROR_KIND)
+        self.assertFalse(model.capability['human_public_custom'])
+        manifest=json.loads((directory/'starter.json').read_text(encoding='utf-8'))
+        self.assertNotIn('capability', manifest)
+
+    def test_capability_gate_rejects_claiming_public_custom_on_legacy_weights(self):
+        import json
+        from app.modules.card_game.engine.ai.advanced_model import FrozenModel
+        from app.modules.card_game.rl.gpu_duel.catalog import GPU_LOCK,CARD_IDS,SEATS
+        from app.modules.card_game.rl.rule_ir.completeness import compiled_rule_hash
+        directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            (root/'starter.npz').write_bytes((directory/'starter.npz').read_bytes())
+            manifest=json.loads((directory/'starter.json').read_text(encoding='utf-8'))
+            manifest['capability']={'kind':'legacy_exact_mirror','human_public_custom':True}
+            (root/'starter.json').write_text(json.dumps(manifest),encoding='utf-8')
+            with self.assertRaisesRegex(ValueError,'public custom'):
+                FrozenModel(root,'starter')
+
+
     def test_numeric_export_rejects_bad_checksum(self):
         import json
         from app.modules.card_game.engine.ai.advanced_model import FrozenModel

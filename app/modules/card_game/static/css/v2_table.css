@@ -229,12 +229,13 @@
     padding-bottom: calc(22px * var(--table-layout-scale, 1));
   }
   .v2-table-page #v2-player-hand .v2-hand-card p {
-    display: block;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    overflow: hidden;
   }
-  /* A scrollable description otherwise lets the browser cancel card drags. */
+  /* Keep touch gestures on playable cards dedicated to dragging. */
   .v2-table-page #v2-player-hand .v2-hand-card.legal,
   .v2-table-page #v2-player-hand .v2-hand-card.legal * {
     touch-action: none;

@@ -1088,12 +1088,11 @@
   min-height: 0;
 }
 .v2-mulligan-rail .v2-hand-card p {
-  display: block;
+  display: -webkit-box;
   min-height: 0;
-  overflow-y: auto;
-  -webkit-line-clamp: unset;
+  overflow: hidden;
+  -webkit-line-clamp: 5;
   text-align: left;
-  touch-action: pan-y;
 }
 .v2-mulligan-stage > .primary-btn {
   position: relative;

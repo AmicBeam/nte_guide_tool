@@ -18,6 +18,7 @@
 | [实现验收](../../../docs/duel-v2-acceptance.md) | 功能验收记录，不是平衡证据 |
 | [平衡迭代](../../../docs/duel-balance-iteration.md) | 测试流程与报告索引 |
 | [强化学习](../../../docs/duel-v2-rl.md) | 训练框架、旧镜像入口与观察边界 |
+| [训练结束标准与首轮结果](../../../docs/duel-v2-training-stop-criteria.md) | 固定双预组的停止条件及 2026-09-15 历史指标 |
 | [公开卡池训练](../../../docs/duel-v2-public-training.md) | 现行完整公开卡池训练、分析与录像入口 |
 | [盖卡版归档](../../../docs/archive/duel-simultaneous-deployment-2026-09-08.md) | 仅用于维护尚未迁移的旧对局 |
 

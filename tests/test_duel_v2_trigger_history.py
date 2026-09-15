@@ -46,6 +46,28 @@ class TriggerHistoryTest(unittest.TestCase):
         self.assertEqual(replay_public_board(opening, events), capture_public_board(result))
         self.assertEqual(attack_value(hero(s, 'b', 'baicang')), 2)  # Input snapshot is immutable.
 
+    def test_support_counter_immunity_is_explicit_in_damage_slot(self):
+        s = self.game()
+        result = apply_action(s, 'a', {'type': 'attack', 'character_id': 'iloy'})
+        for viewer in ('a', 'b'):
+            events = observe(result, viewer)['presentation']['events']
+            immune = next(e for e in events if e.get('counter_immunity') == 'support')
+            attack = next(e for e in events if e['type'] == 'attack')
+            self.assertEqual(immune['type'], 'combat')
+            self.assertEqual(immune['target'], 'a:iloy')
+            self.assertEqual(immune['group_id'], attack['group_id'])
+            self.assertEqual(immune['amount'], 0)
+            self.assertEqual(immune['before'], immune['after'])
+            self.assertIn('免疫反击', immune['text'])
+        for defender, harmony in (('baicang', 0), (None, 2)):
+            s = self.game()
+            s['sides']['b']['front'] = defender
+            hero(s, 'a', 'zero')['harmony'] = harmony
+            if defender:
+                hero(s, 'b', defender)['base_attack'] = 0
+            result = apply_action(s, 'a', {'type': 'attack', 'character_id': 'iloy'})
+            self.assertFalse(any(e.get('counter_immunity') for e in result['events']))
+
     def test_absorbed_and_lethal_genesis_do_not_claim_buff(self):
         for hp, shield in ((6, 2), (1, 0)):
             with self.subTest(hp=hp, shield=shield):

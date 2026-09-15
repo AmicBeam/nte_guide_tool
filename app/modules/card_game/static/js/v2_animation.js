@@ -714,6 +714,11 @@
       const shieldGained = shieldLost == null ? null : -shieldLost;
       const rawAmount = numericValue(amountOf(event));
       const isHeal = event && event.type === "heal";
+      if (event && event.type === "combat" && event.counter_immunity === "support") {
+        this._floater(point, stageRect, "无敌", "invincible");
+        await this._wait(this._duration(instant, BEATS.damageHold));
+        return;
+      }
       let shown = false;
       if (isHeal) {
         const healValue = hpGained != null && hpGained > 0 ? hpGained : (rawAmount != null && rawAmount > 0 ? rawAmount : 0);

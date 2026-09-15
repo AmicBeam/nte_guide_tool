@@ -247,7 +247,7 @@ def knockdowns(state):
 
 
 def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage', settle=True,
-           group_id=None, damage_class=None, reason=None):
+           group_id=None, damage_class=None, reason=None, counter_immunity=None):
     if finished(state):
         return 0
     esper = is_esper(cid)
@@ -286,12 +286,16 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     extra = {}
     if group_id:
         extra['group_id'] = group_id
+    if counter_immunity == 'support' and kind == 'combat' and amount == 0:
+        extra['counter_immunity'] = 'support'
     src_side, src_cid = source_parts(source)
     if src_side:
         extra['source_side'] = src_side
     if esper and source:
         target['last_hit_source'] = source
-    log(state, (f'{reason}：' if reason else '') + f"{name(state, side, cid)}受到 {amount} 点伤害（护盾吸收 {absorbed}）。",
+    text = (f"{name(state, side, cid)}发动援护技，免疫反击。" if extra.get('counter_immunity') else
+            (f'{reason}：' if reason else '') + f"{name(state, side, cid)}受到 {amount} 点伤害（护盾吸收 {absorbed}）。")
+    log(state, text,
         kind, side=side, source=source, actor=source, target=f'{side}:{cid}',
         amount=amount, before=before, after=after, **extra)
     if klass == 'harmony' and isinstance(source, str) and ':' in source:

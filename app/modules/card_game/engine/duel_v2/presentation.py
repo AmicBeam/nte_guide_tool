@@ -273,7 +273,7 @@ def project_event(event, viewer):
     }
     for key in ('amount', 'attack', 'counter', 'group_id', 'harmony_delta', 'energy_delta',
                 'hit_index', 'before', 'after', 'source_side', 'card_ids', 'description', 'present',
-                'first_side', 'winner', 'reason'):
+                'first_side', 'winner', 'reason', 'counter_immunity'):
         if key in event:
             item[key] = deepcopy(event[key])
     if 'attack' not in item and event.get('type') == 'attack' and 'amount' in event:

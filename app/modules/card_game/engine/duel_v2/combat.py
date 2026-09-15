@@ -324,7 +324,8 @@ def attack(c, spec, index):
                              bypass=bool(spec.get('ignore_shield')), source=f'{side}:{cid}',
                              kind='combat', settle=False, group_id=group_id)
     self_loss = damage(s, side, cid, counter, source=f'{enemy}:{target_id}',
-                       kind='combat', settle=False, group_id=group_id) if is_esper(target_id) else 0
+                       kind='combat', settle=False, group_id=group_id,
+                       counter_immunity='support' if op.get('support') else None) if is_esper(target_id) else 0
     if overflow:
         damage(s, enemy, PLAYER_ID, overflow, source=f'{side}:{cid}', kind='penetration',
                settle=False, group_id=group_id)

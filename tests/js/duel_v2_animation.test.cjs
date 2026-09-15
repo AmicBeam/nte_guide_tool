@@ -1146,3 +1146,36 @@ test("hidden opponent draw uses only the card back during close-up", async () =>
   assert.equal(formula.querySelector(".v2-fx-card-portrait"), null);
   await settle(done, harness.clock, player);
 });
+
+test("support immunity floats at the counter damage slot and target", async () => {
+  const harness = makeRoot();
+  const player = new Player({ root: harness.root, clock: harness.clock });
+  const shown = [];
+  const original = player._floater.bind(player);
+  player._floater = (point, rect, text, kind) => {
+    shown.push({ point, text, kind, time: harness.clock.now });
+    return original(point, rect, text, kind);
+  };
+  await settle(player.play([
+    { seq: 900, type: "attack", group_id: "support", actor: "a:nanali", target: "b:zero", attack: 2, counter: 0 },
+    { seq: 901, type: "combat", group_id: "support", actor: "a:nanali", target: "b:zero", amount: 2,
+      before: { hp: 5, shield: 0 }, after: { hp: 3, shield: 0 } },
+    { seq: 902, type: "combat", group_id: "support", actor: "b:zero", target: "a:nanali", amount: 0,
+      counter_immunity: "support", before: { hp: 5, shield: 0 }, after: { hp: 5, shield: 0 } },
+  ], { instant: true }), harness.clock, player);
+  const immune = shown.find(item => item.text === "无敌");
+  const hit = shown.find(item => item.text === "-2");
+  assert.ok(immune && hit);
+  assert.equal(immune.time, hit.time);
+  assert.deepEqual(immune.point, { x: 365, y: 355 });
+  assert.equal(immune.kind, "invincible");
+  assert.equal(shown.filter(item => item.text === "无敌").length, 1);
+});
+
+test("ordinary zero damage does not float invincibility", async () => {
+  const harness = makeRoot();
+  const player = new Player({ root: harness.root, clock: harness.clock });
+  await settle(player.play([{ seq: 910, type: "combat", target: "a:nanali", amount: 0,
+    before: { hp: 5, shield: 0 }, after: { hp: 5, shield: 0 } }], { instant: true }), harness.clock, player);
+  assert.deepEqual(floatersOf(harness), []);
+});

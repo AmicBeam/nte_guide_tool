@@ -287,6 +287,10 @@
   color: #ff8a80;
 }
 
+.v2-fx-floater.is-invincible {
+  color: #ffe49a;
+}
+
 .v2-fx-floater.is-shield {
   color: #8ecbff;
 }

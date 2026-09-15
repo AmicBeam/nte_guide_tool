@@ -25,6 +25,8 @@ async function bootstrapHome() {
   const roomInput = document.getElementById('v2-room-code-input');
   const nameNode = document.getElementById('v2-home-name');
   const uidNode = document.getElementById('v2-home-uid');
+  const aiDeck = document.getElementById('v2-ai-deck');
+  const aiPicker = document.getElementById('v2-advanced-picker');
   let selectedMode = 'solo';
   let busy = false;
   let catalog = null;
@@ -38,6 +40,10 @@ async function bootstrapHome() {
     busy = Boolean(next);
     startBtn.disabled = busy;
     joinBtn.disabled = busy;
+    ['solo', 'advanced', 'pvp'].forEach(function (mode) {
+      document.getElementById('v2-mode-' + mode).disabled = busy;
+    });
+    aiDeck.disabled = busy;
     if (tutorialStart) tutorialStart.disabled = busy;
     if (leaveBtn) leaveBtn.disabled = busy;
     if (resumeBtn) resumeBtn.classList.toggle('is-disabled', busy);
@@ -52,7 +58,9 @@ async function bootstrapHome() {
     const byId = V2.indexById(V2.sortedCharacters(catalog && catalog.characters));
     const saved = catalog && catalog.saved_build;
     const starter = catalog && catalog.starter_deck;
-    const deck = saved || starter || {};
+    const deck = selectedMode === 'advanced'
+      ? ((catalog && catalog.starter_decks) || []).find(function (d) { return d.id === aiDeck.value; }) || starter || {}
+      : saved || starter || {};
     const ids = Array.isArray(deck.character_ids) && deck.character_ids.length
       ? deck.character_ids.slice(0, 4)
       : ['nanali', 'zero', 'jiuyuan', 'iloy'];
@@ -72,6 +80,10 @@ async function bootstrapHome() {
   function renderBuildSummary() {
     const saved = catalog && catalog.saved_build;
     const starter = catalog && catalog.starter_deck;
+    if (selectedMode === 'advanced') {
+      buildSummary.textContent = '高级人机 · ' + aiDeck.options[aiDeck.selectedIndex].text + ' · 双方同构筑';
+      return;
+    }
     if (saved && Array.isArray(saved.card_ids)) {
       buildSummary.textContent = '当前构筑「' + (saved.name || '自定义') + '」· ' + saved.card_ids.length + ' 张';
       return;
@@ -146,7 +158,9 @@ async function bootstrapHome() {
     setBusy(true);
     V2.showBanner(banner, '', '');
     try {
-      await V2.startGame({ mode: selectedMode });
+      const payload = { mode: selectedMode };
+      if (selectedMode === 'advanced') payload.ai_deck = aiDeck.value;
+      await V2.startGame(payload);
       goTable();
     } catch (error) {
       showError(error);
@@ -176,18 +190,23 @@ async function bootstrapHome() {
     }
   }
 
-  document.getElementById('v2-mode-solo').addEventListener('click', function () {
-    selectedMode = 'solo';
-    document.getElementById('v2-mode-solo').classList.add('selected');
-    document.getElementById('v2-mode-pvp').classList.remove('selected');
-    startBtn.textContent = '开始人机对局';
+  function selectMode(mode) {
+    if (busy) return;
+    selectedMode = mode;
+    ['solo', 'advanced', 'pvp'].forEach(function (value) {
+      const button = document.getElementById('v2-mode-' + value);
+      button.classList.toggle('selected', value === mode);
+      button.setAttribute('aria-pressed', String(value === mode));
+    });
+    V2.setHidden(aiPicker, mode !== 'advanced');
+    startBtn.textContent = mode === 'advanced' ? '挑战高级人机' : (mode === 'pvp' ? '创建 1v1 房间' : '开始人机对局');
+    renderStarter();
+    renderBuildSummary();
+  }
+  ['solo', 'advanced', 'pvp'].forEach(function (mode) {
+    document.getElementById('v2-mode-' + mode).addEventListener('click', function () { selectMode(mode); });
   });
-  document.getElementById('v2-mode-pvp').addEventListener('click', function () {
-    selectedMode = 'pvp';
-    document.getElementById('v2-mode-pvp').classList.add('selected');
-    document.getElementById('v2-mode-solo').classList.remove('selected');
-    startBtn.textContent = '创建 1v1 房间';
-  });
+  aiDeck.addEventListener('change', function () { renderStarter(); renderBuildSummary(); });
   let selectedTutorialId = '';
 
   function selectableTutorialLevels() {

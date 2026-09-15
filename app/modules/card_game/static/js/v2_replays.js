@@ -39,7 +39,7 @@ async function bootstrapReplays() {
       return;
     }
     replayList.innerHTML = items.map(function (item) {
-      const mode = item.mode === 'solo' ? '人机' : '1v1';
+      const mode = item.mode === 'advanced' ? '高级人机' : (item.mode === 'solo' ? '人机' : '1v1');
       const names = V2.escapeHtml((item.name_a || '我方') + ' vs ' + (item.name_b || '对手'));
       const starred = Boolean(item.favorited);
       const when = V2.formatReplayTime(item.updated_at);

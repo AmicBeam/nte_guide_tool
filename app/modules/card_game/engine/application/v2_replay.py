@@ -33,8 +33,8 @@ def _member_name(member) -> str:
 def _names_for(room, members) -> tuple[str, str]:
     by_side = {entry.side: entry for entry in members}
     name_a = _member_name(by_side['a']) if 'a' in by_side else '我方'
-    if room.mode == 'solo':
-        name_b = '练习对手'
+    if room.mode in {'solo', 'advanced'}:
+        name_b = '高级人机' if room.mode == 'advanced' else '练习对手'
     else:
         name_b = _member_name(by_side['b']) if 'b' in by_side else '对手'
     return name_a, name_b

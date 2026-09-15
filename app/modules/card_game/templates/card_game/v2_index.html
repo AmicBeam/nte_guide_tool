@@ -65,16 +65,29 @@
                 </div>
             </section>
 
-            <div class="v2-play-modes" role="tablist" aria-label="对局模式">
-                <button class="v2-play-mode selected" id="v2-mode-solo" type="button">
-                    <strong>人机对战</strong>
+            <div class="v2-play-modes" role="group" aria-label="对局模式">
+                <button class="v2-play-mode selected" id="v2-mode-solo" type="button" aria-pressed="true">
+                    <strong>普通人机</strong>
                     <span>使用已保存构筑立即开局</span>
                 </button>
-                <button class="v2-play-mode" id="v2-mode-pvp" type="button">
+                <button class="v2-play-mode" id="v2-mode-advanced" type="button" aria-pressed="false">
+                    <strong>高级人机</strong>
+                    <span>挑战训练后的对手</span>
+                </button>
+                <button class="v2-play-mode" id="v2-mode-pvp" type="button" aria-pressed="false">
                     <strong>创建 1v1</strong>
                     <span>生成房间码等待对手</span>
                 </button>
             </div>
+
+            <label class="field-label v2-advanced-picker" id="v2-advanced-picker" hidden>
+                <span>高级人机 · 对战预组</span>
+                <select id="v2-ai-deck">
+                    <option value="starter">创生预组</option>
+                    <option value="weave-rush">覆纹快攻</option>
+                </select>
+                <small class="subtle">双方使用所选预组进行对战。</small>
+            </label>
 
             <div class="v2-join-row">
                 <label class="field-label">

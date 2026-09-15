@@ -10,7 +10,7 @@ import torch
 from .catalog import CARD_IDS, HAND_SLOTS, MAX_LEGAL
 from .observe import compact_observe
 
-SCHEMA = 'resident_public_v1'
+from .resident_schema import SCHEMA, SIDE_FIELDS, CHAR_FIELDS
 
 
 def resident_observe(s):
@@ -19,15 +19,9 @@ def resident_observe(s):
     sides = torch.stack((viewer, 1 - viewer), dim=1)
     batch = b[:, None]
     pieces = [(s.turn.float() / 30).unsqueeze(1), (viewer == s.first).float().unsqueeze(1)]
-    for name in ('hp', 'shield', 'ap', 'front', 'last_front', 'turn_count', 'normal_atk',
-                 'ultimate_ok', 'used_instant', 'extra_genesis', 'extra_genesis_actor',
-                 'nanali_seed', 'nanali_seed_played', 'hand_n', 'deck_n', 'discard_n', 'weave'):
+    for name in SIDE_FIELDS:
         pieces.append(getattr(s, name)[batch, sides].float() / 10)
-    for name in ('ch_present', 'ch_hp', 'ch_max_hp', 'ch_base_atk', 'ch_growth',
-                 'ch_atk_buff', 'ch_shield', 'ch_harmony', 'ch_energy', 'ch_down',
-                 'ch_awakened', 'ch_ult_turns', 'ch_shape', 'ch_next_bonus',
-                 'ch_next_shield', 'ch_next_followup', 'ch_pact', 'ch_harmonized',
-                 'ch_collapse_count', 'ch_collapse_until', 'ch_allied_hurt', 'ch_energy_next'):
+    for name in CHAR_FIELDS:
         pieces.append(getattr(s, name)[batch, sides].flatten(1).float() / 10)
     # Complete own hand, including cards currently unusable; discard counts public.
     own = s.hand_kind[b, viewer]

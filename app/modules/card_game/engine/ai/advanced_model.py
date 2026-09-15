@@ -1,0 +1,171 @@
+"""CPU-only frozen policy selection. Rules still run in engine.duel_v2.
+
+The serving files contain only numeric NumPy arrays and JSON metadata. Neither
+PyTorch, CUDA, a compiler, nor a training loop is imported by this module.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import threading
+from pathlib import Path
+
+from app import config
+from app.errors import RuleValidationError
+from app.modules.card_game.content.duel_v2 import CARDS, STARTER_DECKS
+from app.modules.card_game.rl.gpu_duel.catalog import (
+    CARD_IDS, CARD_INDEX, GPU_LOCK, N_SEATS, SEATS, SEAT_INDEX, HAND_SLOTS,
+    DISCARD_SLOTS, ACT_ATTACK, ACT_CHOOSE, ACT_END, ACT_PLAY, ACT_ULTIMATE,
+)
+from app.modules.card_game.rl.gpu_duel.resident_schema import SCHEMA, SIDE_FIELDS, CHAR_FIELDS
+from app.modules.card_game.rl.rule_ir.layout import OFFSETS
+from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
+
+_CACHE = {}
+_LOCK = threading.RLock()
+PRESETS = ('starter', 'weave-rush')
+
+
+def preset(deck_id):
+    if deck_id not in PRESETS:
+        raise RuleValidationError('高级人机暂支持创生预组和覆纹快攻预组。')
+    return next(d for d in STARTER_DECKS if d['id'] == deck_id)
+
+
+def encode(state, side, actions):
+    """Encode exactly the training schema, restricted to public information."""
+    import numpy as np
+    row = pack_python_row(state)
+    viewer = 'ab'.index(side)
+    order = (viewer, 1 - viewer)
+    values = [row[OFFSETS['turn']] / 30, float(viewer == row[OFFSETS['first']])]
+    for name in SIDE_FIELDS:
+        values.extend(row[OFFSETS[name] + s] / 10 for s in order)
+    for name in CHAR_FIELDS:
+        values.extend(row[OFFSETS[name] + s*N_SEATS + k] / 10 for s in order for k in range(N_SEATS))
+    own = row[OFFSETS['hand_kind'] + viewer*HAND_SLOTS:OFFSETS['hand_kind'] + (viewer+1)*HAND_SLOTS]
+    zones = [own]
+    for s in order:
+        n = row[OFFSETS['discard_n'] + s]
+        zones.append(row[OFFSETS['discard_kind'] + s*DISCARD_SLOTS:OFFSETS['discard_kind'] + s*DISCARD_SLOTS + n])
+    for zone in zones:
+        counts = [0.0]*len(CARD_IDS)
+        for kind in zone:
+            if kind >= 0:
+                counts[kind] += .5
+        values.extend(counts)
+    hand = {c['instance_id']: c for c in state['sides'][side]['hand']}
+    choices = {c['instance_id']: c for c in (state.get('pending_choice') or {}).get('cards', [])}
+    candidates = []
+    for action in actions:
+        kind, actor, card_kind, target_side, target_seat = -1, -1, -1, -1, -1
+        card = None
+        if action['type'] == 'end_turn':
+            kind = ACT_END
+        elif action['type'] in ('attack', 'ultimate'):
+            kind = ACT_ATTACK if action['type'] == 'attack' else ACT_ULTIMATE
+            actor = SEAT_INDEX[action['character_id']]
+        elif action['type'] == 'play_card':
+            kind = ACT_PLAY
+            item = hand[action['card_id']]
+            card = CARDS[item['card_id']]
+            card_kind = CARD_INDEX[item['card_id']]
+            actor = SEAT_INDEX[item['character_id']]
+            if action.get('target_id'):
+                ts, tk = action['target_id'].split(':', 1)
+                target_side = 0 if ts == side else 1
+                target_seat = -1 if tk == 'player' else SEAT_INDEX[tk]
+        elif action['type'] == 'choose':
+            kind = ACT_CHOOSE
+            item = choices[action['choice_id']]
+            card = CARDS[item['card_id']]
+            card_kind = CARD_INDEX[item['card_id']]
+        else:
+            raise ValueError(f'Unsupported model action: {action["type"]}')
+        card = card or {}
+        candidates.append([kind, actor, card_kind, target_side, target_seat,
+                           int(card.get('cost') or 0), int(card.get('attack') or 0),
+                           int(card.get('shield') or 0), int(card.get('hp') or 0),
+                           int(bool(card.get('instant')))])
+    return np.asarray(values, dtype=np.float32), np.asarray(candidates, dtype=np.float32)
+
+
+class FrozenModel:
+    def __init__(self, directory, deck_id):
+        import numpy as np
+        directory = Path(directory)
+        manifest = json.loads((directory / f'{deck_id}.json').read_text(encoding='utf-8'))
+        if (manifest.get('schema') != SCHEMA or manifest.get('gpu_lock') != GPU_LOCK
+                or manifest.get('deck') != deck_id or manifest.get('card_ids') != list(CARD_IDS)
+                or manifest.get('seat_ids') != list(SEATS)):
+            raise ValueError('Model version does not match current content')
+        from app.modules.card_game.rl.rule_ir.completeness import compiled_rule_hash
+        if (manifest.get('rule_identity') or {}).get('rule_hash') != compiled_rule_hash(deck_id):
+            raise ValueError('Model rule version does not match current rules')
+        path = directory / f'{deck_id}.npz'
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if digest != manifest.get('sha256'):
+            raise ValueError('Model checksum mismatch')
+        h = int(manifest['hidden'])
+        d = 2 + 2*len(SIDE_FIELDS) + 2*N_SEATS*len(CHAR_FIELDS) + 3*len(CARD_IDS)
+        shapes = {
+            'state_net.0.weight': (h, d), 'state_net.0.bias': (h,),
+            'state_net.2.weight': (h, h), 'state_net.2.bias': (h,),
+            'cand_net.0.weight': (h, 10), 'cand_net.0.bias': (h,),
+            'cand_net.2.weight': (h, h), 'cand_net.2.bias': (h,),
+            'score.weight': (1, h), 'score.bias': (1,),
+        }
+        if not 1 <= h <= 2048 or manifest['state_dim'] != d or manifest['cand_dim'] != 10:
+            raise ValueError('Invalid model dimensions')
+        with np.load(path, allow_pickle=False) as arrays:
+            self.weights = {name: arrays[name].astype(np.float32, copy=True) for name in shapes}
+        for name, shape in shapes.items():
+            if self.weights[name].shape != shape or not np.isfinite(self.weights[name]).all():
+                raise ValueError(f'Invalid model tensor {name}')
+            self.weights[name].flags.writeable = False
+        self.manifest = manifest
+        self.version = digest
+        self.hidden = h
+
+    def scores(self, state, candidates):
+        import numpy as np
+        def linear(x, name):
+            # Small matrices: avoid a multi-thread BLAS pool per HTTP request.
+            return np.einsum('...j,ij->...i', x, self.weights[name+'.weight'], optimize=False) + self.weights[name+'.bias']
+        sh = np.maximum(linear(state, 'state_net.0'), 0)
+        sh = np.maximum(linear(sh, 'state_net.2'), 0)
+        ch = np.maximum(linear(candidates, 'cand_net.0'), 0)
+        ch = np.maximum(linear(ch, 'cand_net.2'), 0)
+        scores = np.sum(ch*sh, axis=-1)/np.sqrt(np.float32(self.hidden)) + linear(ch, 'score').reshape(-1)
+        if not np.isfinite(scores).all():
+            raise ValueError('Non-finite model scores')
+        return scores
+
+
+def load_model(deck_id):
+    preset(deck_id)
+    root = Path(config.DUEL_AI_MODEL_DIR).resolve()
+    key = (str(root), deck_id)
+    with _LOCK:
+        if key not in _CACHE:
+            try:
+                _CACHE[key] = FrozenModel(root, deck_id)
+            except (ImportError, OSError, ValueError, KeyError, TypeError) as exc:
+                raise RuleValidationError('高级人机模型暂不可用，请选择普通人机。') from exc
+        return _CACHE[key]
+
+
+def choose_action(state, side='b'):
+    from app.modules.card_game.engine.duel_v2 import legal_actions
+    profile = state.get('ai_profile') or {}
+    model = load_model(profile.get('deck_id'))
+    if profile.get('version') != model.version:
+        raise RuleValidationError('高级人机模型版本已变更，请重新开局。')
+    actions = [a for a in legal_actions(state, side) if a['type'] != 'concede']
+    if not actions:
+        raise RuleValidationError('高级人机没有可执行动作。')
+    if state['phase'] == 'mulligan':
+        # The model was trained with the initial hand retained.
+        return next(a for a in actions if not a.get('card_ids'))
+    values, candidates = encode(state, side, actions)
+    return actions[int(model.scores(values, candidates).argmax())]

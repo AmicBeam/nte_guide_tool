@@ -502,3 +502,8 @@ body:has(.v2-replays-page) .shell {
   :is(.v2-home-page, .v2-replays-page) .v2-home-links a { padding: 10px 8px; }
   .v2-home-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+#v2-mode-pvp { grid-column: 1 / -1; }
+.v2-advanced-picker { margin-top: 14px; }
+.v2-advanced-picker select { width: 100%; padding: 10px 12px; border-radius: 10px; }
+.v2-advanced-picker[hidden] { display: none; }

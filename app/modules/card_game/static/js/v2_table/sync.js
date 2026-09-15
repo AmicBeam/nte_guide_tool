@@ -191,7 +191,7 @@
       if (lobby || (ctx.room && !ctx.game)) {
         V2.setHidden(ctx.roomPanel, false);
         ctx.nodes.roomTitle.textContent = ctx.room.room_code ? ('房间 ' + ctx.room.room_code) : '等待对手';
-        ctx.nodes.roomCopy.textContent = (ctx.room.mode === 'solo' ? '人机对战' : '1v1 对战') + ' · ' + statusLabel + '。双方准备后，由房主开始。';
+        ctx.nodes.roomCopy.textContent = (ctx.room.mode === 'advanced' ? '高级人机' : (ctx.room.mode === 'solo' ? '人机对战' : '1v1 对战')) + ' · ' + statusLabel + '。双方准备后，由房主开始。';
         renderMembers();
       } else {
         V2.setHidden(ctx.roomPanel, true);

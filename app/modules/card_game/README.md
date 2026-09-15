@@ -20,6 +20,7 @@
 | [强化学习](../../../docs/duel-v2-rl.md) | 训练框架、旧镜像入口与观察边界 |
 | [训练结束标准与首轮结果](../../../docs/duel-v2-training-stop-criteria.md) | 互搏训练停止口径及 2026-09-15 历史双预组结果 |
 | [公开卡池训练](../../../docs/duel-v2-public-training.md) | 现行完整公开卡池训练、分析与录像入口 |
+| [完整训练与报告要求](../../../docs/duel-v2-full-training-report-spec.md) | 双预组测试矩阵、配牌调整、先后手胜率、逐卡与机制分析的交付规范 |
 | [盖卡版归档](../../../docs/archive/duel-simultaneous-deployment-2026-09-08.md) | 仅用于维护尚未迁移的旧对局 |
 
 分层与依赖方向见仓库根目录 [AGENTS.md](../../../AGENTS.md)。

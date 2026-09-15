@@ -1030,6 +1030,40 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertTrue(any(event['type'] == 'attack' and event.get('source') == 'bohe'
                             for event in s['events']))
 
+    def test_bohe_auto_attack_has_no_resources_but_manual_attack_does(self):
+        # User balance adjustment, 2026-09-15; not an original-game mechanic.
+        for enemy_front in (None, 'zero'):
+            with self.subTest(enemy_front=enemy_front):
+                s = self.play(self.rush_game(), 'M08')
+                s = apply_action(s, 'a', {'type': 'end_turn'})
+                s['sides']['b']['front'] = enemy_front
+                before = {cid: (h['harmony'], h['energy'])
+                          for cid, h in s['sides']['a']['characters'].items()}
+                s = apply_action(s, 'b', {'type': 'end_turn'})
+                self.assertEqual({cid: (h['harmony'], h['energy'])
+                                  for cid, h in s['sides']['a']['characters'].items()}, before)
+                self.assertEqual(s['sides']['a']['ap'], 2)
+                s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'bohe'})
+                self.assertEqual(hero(s, 'a', 'bohe')['harmony'], 1)
+                self.assertEqual(hero(s, 'a', 'bohe')['energy'], 2)
+                self.assertEqual(hero(s, 'a', 'zero')['energy'], 1)
+
+    def test_jiuyuan_pact_front_draw_checks_before_damage(self):
+        # User balance adjustment, 2026-09-15: first attachment does not draw.
+        for pact, hp in ((False, 5), (True, 5), (True, 1)):
+            with self.subTest(pact=pact, hp=hp):
+                s = self.game()
+                s['sides']['b']['front'] = 'zero'
+                target = hero(s, 'b', 'zero')
+                target['hp'] = hp
+                target['flags']['pact'] = pact
+                deck_size = len(s['sides']['a']['deck'])
+                s = self.play(s, 'J02')
+                self.assertEqual(len(s['sides']['a']['hand']), int(pact))
+                self.assertEqual(len(s['sides']['a']['deck']), deck_size - int(pact))
+                self.assertEqual(hero(s, 'b', 'zero')['hp'], hp - 1)
+                self.assertEqual(bool(hero(s, 'b', 'zero')['flags'].get('pact')), hp > 1)
+
     def test_bohe_share_overflow_on_self_attacked_and_sleep_form(self):
         s = self.rush_game()
         s = self.play(s, 'M07')

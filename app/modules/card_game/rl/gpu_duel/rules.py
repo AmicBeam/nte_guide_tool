@@ -352,7 +352,7 @@ def _grant_combat_resources(s: GpuState, side: torch.Tensor, seat: int, mask: to
 
 def sortie(s: GpuState, side: torch.Tensor, seat: int, mask: torch.Tensor, *,
            card_bonus: torch.Tensor | None = None, followup: torch.Tensor | None = None,
-           support: bool = True) -> None:
+           support: bool = True, grant_resources: bool = True) -> None:
     b = _b(s)
     mask = mask & _live(s) & _alive(s, side, seat)
     enter(s, side, seat, mask, support=support)
@@ -371,7 +371,8 @@ def sortie(s: GpuState, side: torch.Tensor, seat: int, mask: torch.Tensor, *,
     s.ch_next_followup[b, side, seat] = torch.where(mask, torch.zeros_like(s.ch_next_followup[b, side, seat]), s.ch_next_followup[b, side, seat])
     still = mask & _live(s) & _alive(s, side, seat) & (s.front[b, side] == seat)
     _deal_front(s, side, fu, still & (fu > 0))
-    _grant_combat_resources(s, side, seat, still)
+    if grant_resources:
+        _grant_combat_resources(s, side, seat, still)
 
 
 def _shift_left(kind: torch.Tensor, inst: torch.Tensor, count: torch.Tensor) -> None:
@@ -576,7 +577,7 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
         auto_id = CARD_INDEX.get('M08', -1)
         if auto_id >= 0:
             auto = here & (s.ch_shape[:, si, BOHE] == auto_id) & (s.ch_present[:, si, BOHE] > 0) & (s.ch_hp[:, si, BOHE] > 0)
-            sortie(s, torch.full_like(s.active, si), BOHE, auto)
+            sortie(s, torch.full_like(s.active, si), BOHE, auto, grant_resources=False)
     draw(s, side, mask, 1)
 
 
@@ -779,12 +780,16 @@ def _play_effects(s: GpuState, side: torch.Tensor, seat: int, kind: torch.Tensor
         s.ch_atk_buff[b, side, ally] = torch.where(hit, s.ch_atk_buff[b, side, ally] + buff_amt, s.ch_atk_buff[b, side, ally])
     j02 = valid & (tables['pact_front'][k] > 0)
     j04 = valid & (tables['pact_target'][k] > 0)
+    foe = other_side(side)
+    original_front = s.front[b, foe].clone()
+    had_pact = j02 & (original_front >= 0) & (s.ch_pact[b, foe, original_front.clamp(min=0)] > 0)
     _deal_front(s, side, tables['pact_front'][k], j02)
     for foe_seat in range(N_SEATS):
         foe = other_side(side)
         hit = j04 & (tseat == foe_seat)
         _apply_hp(s, foe, torch.zeros_like(hit), foe_seat, tables['pact_target'][k], hit)
         s.ch_pact[b, foe, foe_seat] = torch.where(hit | (j02 & (s.front[b, foe] == foe_seat)), torch.ones_like(s.ch_pact[b, foe, foe_seat]), s.ch_pact[b, foe, foe_seat])
+    draw(s, side, had_pact & _live(s), 1)
     heal_front = valid & (tables['heal_front_full'][k] > 0)
     for ally in range(N_SEATS):
         hit = heal_front & (s.front[b, side] == ally)

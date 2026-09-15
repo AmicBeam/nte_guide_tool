@@ -764,8 +764,10 @@ static void play_effects(int *row, int s, int seat, int kind, int tside, int tse
   if(TAB_PACT_FRONT[kind]){
     int foe=other_side(s);
     int t=SI(FRONT,foe);
+    int had_pact=t>=0 && CH(CH_PACT,foe,t)>0;
     deal_front(row,s,TAB_PACT_FRONT[kind],seat);
     if(t>=0 && CH(CH_HP,foe,t)>0) CH(CH_PACT,foe,t)=1;
+    if(had_pact && live(row)) draw_one(row,s);
   }
   if(TAB_PACT_TARGET[kind] && tseat>=0){
     int foe=other_side(s);
@@ -1041,7 +1043,7 @@ static void begin_turn(int *row, int s){
   }
   if(present_alive(row,s,SEAT_BOHE) && CH(CH_SHAPE,s,SEAT_BOHE)==CARD_M08 && !collapsed(row,s,SEAT_BOHE)){
     sortie(row,s,SEAT_BOHE,0,0,0,0,0);
-    grant_op_resources(row,s,SEAT_BOHE);
+    /* M08 automatic attack grants no combat resources. */
   }
   if(!live(row)) return;
   if(SI(EXTRA_GENESIS,s)>0){

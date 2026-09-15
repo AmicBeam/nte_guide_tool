@@ -306,7 +306,7 @@ def attack(c, spec, index):
         weave_targets.append((enemy, target_id, side, cid))
     # Counters deal simultaneous damage but do not accumulate combat resources.
     attacker = [side, cid]
-    if attacker not in op['participants']:
+    if not spec.get('no_combat_resources') and attacker not in op['participants']:
         op['participants'].append(attacker)
     from .presentation import next_group_id
     group_id = next_group_id(s)

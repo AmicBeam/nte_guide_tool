@@ -1,7 +1,7 @@
 {
   "schema": "resident_public_v1",
-  "runtime_rule_hash": "1e5889ffad882cb80938f24df7094828478db3716e7cbfbd9320430efaaeaee3",
-  "runtime_rule_note": "兼容公开卡池编译布局更新；保留 resident_public_v1 输入与原训练规则身份，不重训，仍仅开放镜像预组。兼容性不代表新规则下最优。",
+  "runtime_rule_hash": "39111c1ec960fab51c16afbb409ed7b26a2eedd37ff5ebcfc4d9325e30272b22",
+  "runtime_rule_note": "兼容 2026-09-15 薄荷自动攻击无资源、九原已有枚约抽牌规则；输入输出接口未变，保留原训练身份和权重，不代表新规则下最优。",
   "deck": "starter",
   "hidden": 128,
   "state_dim": 447,

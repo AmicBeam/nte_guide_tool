@@ -162,6 +162,18 @@ class PublicCompiledNativeTest(unittest.TestCase):
         out = self.backend.launch.public_reset_lists([preserved], [-1], [deck], [deck], 1)[0]
         self.assertEqual(out, preserved)
 
+    def test_j02_existing_pact_draw_matches_python(self):
+        for pact, hp in ((False, 5), (True, 5), (True, 1)):
+            with self.subTest(pact=pact, hp=hp):
+                state = new_game(seed=11, first_side='a', skip_mulligan=True)
+                state['sides']['b']['front'] = 'zero'
+                target = state['sides']['b']['characters']['zero']
+                target['hp'] = hp
+                target['flags']['pact'] = pact
+                card = _inject_hand(state, 'a', 'J02')
+                nxt, _ = self._check_play(state, {'type': 'play_card', 'card_id': card['instance_id']})
+                self.assertEqual(len(nxt['sides']['a']['hand']), int(pact))
+
     def test_j03_sets_down_without_zeroing_hp(self):
         state = new_game(seed=5, skip_mulligan=True, decks={'a': STARTER_DECK, 'b': STARTER_DECK})
         side = state['active_side']

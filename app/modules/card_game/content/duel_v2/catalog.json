@@ -572,7 +572,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。对对方前排造成 1 点伤害，并附着枚约。",
+      "description": "瞬发。对对方前排造成 1 点伤害，并附着枚约。若目标原本已有枚约，抽 1 张牌。",
       "instant": true,
       "starter_copies": 2
     },
@@ -1906,7 +1906,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "己方回合开始时，薄荷自动出击。",
+      "description": "己方回合开始时，薄荷自动出击。此次攻击不会获得环合值和能量。",
       "effect_id": "M08",
       "source": {
         "character_id": 1019,

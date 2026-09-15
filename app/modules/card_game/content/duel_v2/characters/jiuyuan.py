@@ -11,8 +11,12 @@ def _j02(c):
     from app.modules.card_game.engine.duel_v2.state import front_target
     side, cid = front_target(c.state, c.side)
     if is_esper(cid):
+        # User balance rule (2026-09-15): check before damage can clear the pact.
+        had_pact = bool(hero(c.state, side, cid).get('flags', {}).get('pact'))
         damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}')
         c.attach_pact(side, cid)
+        if had_pact:
+            c.draw(1)
 
 
 def _j03(c):

@@ -204,3 +204,7 @@ python scripts/smoke_duel_v2_full.py --profile comprehensive --phase evaluate --
 `--stop-if-stalled` 开启预先固定的无进展判定：每 300 秒计算窗口均值，连续 6 个窗口相对参考值均无实质变化时结束该阶段。出牌监测 value_loss（1% 相对/0.01 绝对容差取大者）、explained_variance（0.01）、entropy（0.01）、approx_kl（0.0001）、clip_fraction（0.01）；配牌监测 reward_mean（0.01）及 loss（1% 相对/0.01 绝对取大者）。任何超过容差的变化都会重新等待，首次参考窗后最早再等 30 分钟；这是保守的稳定性判定，不是最优或良好收敛证明。连续无完成对局的有效观察窗按健康异常处理。末窗摘要写入 `progress-windows.json`，停止原因写入阶段状态。
 
 本轮 Windows 目录：`D:/git/nte_board_game/.rl-comprehensive-20260916`，输出 `artifacts/comprehensive-six-hour`；创生续接第 672 次更新的 checkpoint，覆纹快攻从零初始化同规格模型。定时任务 `09-00` 于 2026-09-16 09:00 检查并评估；若届时训练仍在六小时预算内，先等待训练结束。推送遵循仓库发布技能，默认仅 private，不自动部署或公开。
+
+### 最终模型与高级人机配牌成套更新
+
+用户进一步授权将本轮选定的最佳构筑一并更新到高级人机，而不只替换权重。09:00 后续任务须核对实际开局、同构筑选项、模型/构筑清单与报告的一致性，保留玩家已保存构筑。候选配牌的发布应通过合法的成套加载与校验实现，不得修改元数据冒充旧固定预组。选择与交付细则见 [最终高级人机构筑交付](duel-v2-full-training-report-spec.md#8-最终高级人机构筑交付2026-09-16-用户补充)；验证无异常后推送 private，部署等待用户验收。

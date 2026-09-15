@@ -4,7 +4,7 @@
 
 本轮实现范围是 **6 名公开角色、48 张候选卡及衍生牌「家族壮大」**，不包含测试角色。
 
-- 学习方固定使用创生或覆纹快攻；对手构筑覆盖公开角色与候补卡。
+- 对局策略训练的学习方固定使用创生或覆纹快攻；对手构筑覆盖公开角色与候补卡。另有下述固定角色配牌学习入口。
 - 规则使用共享 C 程序生成 native/CUDA 后端，支持每行独立构筑和实际编队顺序。先手首回合抽牌、白热化 6/13/20 阶段进入编译规则。
 - `resident_public_v2` 同时用于训练与 NumPy 推理，包含白热化、剩余终结次数、动态资源上限、明牌信息与候补卡状态。候选动作额外区分同名牌中已明牌的那一张。
 - 历史对手池有固定容量，使用冻结模型快照及规则策略。快照仅在 rollout 之间替换，单个 rollout 内不更新对手参数。
@@ -101,3 +101,37 @@ python scripts/export_duel_v2_public.py  --model artifacts/public-starter-export
 - 本机 native 预检完成 32 个局面；逐卡矩阵同时核对 GPU 布局上的张量观察与正式公开投影的 NumPy 观察。
 - 隔离数据库额外跑 2 场规则策略对局，选出一场 28 回合、602 条原始事件的录像。通过真实页面导入，验证公开起手牌背、衍生牌展示、播放/暂停、逐步推进、刷新后重新加载，无浏览器错误。刷新会从头播放，不声称保留播放位置。
 - 本轮未执行 Windows CUDA 实机测试、正式训练或模型部署。现有两份旧权重未重训，仅更新编译布局兼容记录，能力仍为镜像预组。
+
+## 6. 固定四名角色，只学习配牌
+
+2026-09-15 用户明确限定：角色由用户指定，模型不能选择、替换或排序角色。独立配牌策略从这四人的各 8 种候选卡中逐张选择，每人恰好 8 张、同名最多 2 张，共 32 张。当前支持 6 名公开角色。
+
+```bash
+python scripts/train_duel_v2_cards.py --check --team starter
+python scripts/train_duel_v2_cards.py --train --team starter --policy-checkpoint artifacts/public-starter-run/latest.pt --n 32 --pairs 4 --seconds 3600 --output artifacts/cards-run --detach
+python scripts/train_duel_v2_cards.py --propose --resume artifacts/cards-run/latest.pt --n 8 --output artifacts/cards-proposals
+```
+
+也可用 `--team-json team.json` 指定四个角色 ID 的数组，或含 `character_ids` 数组的对象。`--check` 不加载 Torch、不训练；`--propose` 在 CPU 上抽取候选，不跑对局。正式配牌训练仅允许 CUDA，并先执行公开卡池预检；没有 GPU 时明确失败。恢复训练用 `--resume`，固定队伍、规则、卡池和冻结对局策略必须匹配。
+
+配牌策略与出牌策略分开：出牌模型和对手模型保持冻结，只有配牌网络更新。每批候选面对相同抽样对手构筑与策略池（规则策略加冻结模型），通过实际终局胜负获得奖励。`--opponent-checkpoint` 可额外指定最多 4 个冻结模型。每对试验覆盖先后手，编译执行器使用相邻偶/奇种子，洗牌并非相同；独立 Python 分析仍用同一种子交换先后手。某候选有任一截断对局时，该候选不参与更新；全批截断不算完成训练更新。
+
+训练只保存标量指标、状态、checkpoint，以及当批得分最高的 `candidate.json` 和分数摘要，不记录逐动作日志。该候选只代表当前出牌模型和抽样对手下的表现，不是独立评估结果或全局最优构筑。配牌模型不自动选角色，不自动修改玩家保存的构筑或网站高级人机预组。
+
+需要分析候选时，使用对应的已导出出牌模型额外跑一轮：
+
+```bash
+python scripts/analyze_duel_v2_policy.py --model artifacts/public-starter-export/starter.npz --deck starter --learner-deck artifacts/cards-run/candidate.json --pairs 32 --output artifacts/cards-report
+```
+
+报告记录实际学习方构筑，之后按第 4 节选择一局导出公开录像。使用不同于官方预组的候选所得报告不能用于批准网站固定预组模型。
+
+### 配牌入口本机验收（2026-09-15）
+
+27 项相关检查全部通过，覆盖全部 15 种公开固定编队的合法配牌、合成奖励梯度、真实 native 终局评分、截断不更新、冻结出牌模型与规则身份、CLI 恢复/导出/目录保护、独立分析和公开录像。检查命令：
+
+```bash
+python -m unittest tests.test_duel_v2_card_tuning tests.test_duel_v2_card_tuning_cli tests.test_duel_v2_public_training tests.test_duel_v2_public_approval tests.test_duel_v2_offline_analysis
+```
+
+配牌核心和 checkpoint 测试需要可选 Torch；无 Torch 的网站环境仍可运行 `--check`。本轮未运行正式训练或 CUDA 实机测试，合成奖励测试不代表构筑强度。

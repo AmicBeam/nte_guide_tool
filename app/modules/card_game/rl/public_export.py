@@ -79,6 +79,8 @@ def approve_candidate(model_path, report_path, *, min_pairs=32, min_win_rate=0.5
     manifest_path=model_path.with_suffix('.json')
     manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
     report=json.loads(report_path.read_text(encoding='utf-8'))
+    if report.get('learner_is_preset',True) is not True:
+        raise ValueError('A tuned-deck report cannot approve a fixed-preset website model')
     digest=hashlib.sha256(model_path.read_bytes()).hexdigest()
     if type(min_pairs) is not int or min_pairs<1 or not 0<=min_win_rate<=1:
         raise ValueError('Invalid acceptance threshold')

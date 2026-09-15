@@ -35,6 +35,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument('--output', type=Path, help='New report directory')
     parser.add_argument('--deck', choices=PRESETS, default='starter')
     parser.add_argument('--opponent-deck', type=Path, help='Optional explicit public deck JSON')
+    parser.add_argument('--learner-deck',type=Path,help='Optional card-tuning candidate JSON for independent analysis')
     parser.add_argument('--pairs', type=int, default=1)
     parser.add_argument('--max-seconds', type=float, default=30)
     parser.add_argument('--max-actions', type=int, default=80)
@@ -79,6 +80,7 @@ def main(argv=None) -> int:
         if args.opponent_model is not None:
             opponent = _load_frozen(args.opponent_model, None if args.opponent_model.suffix=='.npz' else args.deck)
         opponent_deck = load_public_deck(args.opponent_deck) if args.opponent_deck else None
+        learner_deck = load_public_deck(args.learner_deck) if args.learner_deck else None
     except ValueError as exc:
         parser.error(str(exc))
     summary = run_offline_analysis(
@@ -87,6 +89,7 @@ def main(argv=None) -> int:
         deck=args.deck,
         opponent_policy=opponent,
         opponent_deck=opponent_deck,
+        learner_deck=learner_deck,
         pairs=args.pairs,
         max_seconds=args.max_seconds,
         max_actions=args.max_actions,

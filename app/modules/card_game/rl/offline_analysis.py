@@ -349,7 +349,8 @@ def _play_game(*, policy, opponent_policy, learner_deck, opponent_deck, seed, fi
 def _write_report_md(path: Path, summary: Mapping[str, Any]) -> None:
     model=summary.get('model') or {}
     lines=['# 离线对局分析','','## 本轮设置','',
-           f"- AI 预组：{summary['preset']}",
+           f"- 打牌模型标识：{summary['preset']}",
+           f"- 本轮构筑：{summary['learner_build']['name']}；角色：{', '.join(summary['learner_build']['character_ids'])}",
            f"- 模型版本：{model.get('sha256') or '自定义策略（无权重版本）'}",
            f"- 对局：{summary['games']} 场；请求 {summary['pairs']} 对先后手配对。",
            '- 正式 Python 规则：先手首回合抽牌、白热化开启。',
@@ -365,7 +366,7 @@ def _write_report_md(path: Path, summary: Mapping[str, Any]) -> None:
     for team,r in summary['by_opponent_team'].items():
         lines.append(f"| {team} | {r['games']} | {r['win']} | {r['loss']} | {r['draw']} | {r['error']} | {r['truncated']} |")
     lines += ['', '## 双方卡牌使用','',
-              '统计成功打出的卡牌，包括自动响应。AI 使用固定预组，故其出牌覆盖不以全卡池为目标；未使用不代表卡牌弱。',
+              '统计成功打出的卡牌，包括自动响应。学习方使用本轮指定构筑，出牌覆盖不以全卡池为目标；未使用不代表卡牌弱。',
               '“使用时胜局”按各自所属方胜负统计，同方同局同名牌仅计一场关联对局。', '',
               '| 卡牌 | AI 出牌次数 | AI 使用局数 | AI 使用时胜局 | 对手出牌次数 | 对手使用局数 | 对手使用时胜局 |',
               '| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
@@ -392,6 +393,7 @@ def run_offline_analysis(
     deck: str = 'starter',
     opponent_policy: Policy | None = None,
     opponent_deck: Mapping[str, Any] | None = None,
+    learner_deck: Mapping[str, Any] | None = None,
     pairs: int = 1,
     max_seconds: float = 30,
     max_actions: int = 80,
@@ -409,7 +411,8 @@ def run_offline_analysis(
         raise ValueError(f'max_actions must be 1..{HARD_MAX_ACTIONS}')
     if not 0 < float(max_seconds) <= HARD_MAX_SECONDS:
         raise ValueError(f'max_seconds must be in (0, {HARD_MAX_SECONDS}]')
-    learner_deck = _preset_deck(deck)
+    baseline_deck = _preset_deck(deck)
+    learner_deck = load_public_deck(learner_deck) if learner_deck is not None else baseline_deck
     seed_base = randbits(31) if seed_base is None else int(seed_base)
     explicit_opponent = load_public_deck(opponent_deck) if opponent_deck is not None else None
     output_dir = Path(output)
@@ -540,6 +543,8 @@ def run_offline_analysis(
         'ok': True,
         'label': ANALYSIS_LABEL,
         'preset': deck,
+        'learner_build':deepcopy(learner_deck),
+        'learner_is_preset':is_exact_preset(learner_deck,deck),
         'model':deepcopy(getattr(policy,'model_metadata',{'type':type(policy).__name__})),
         'opponent_model':deepcopy(getattr(foe,'model_metadata',{'type':type(foe).__name__})),
         'sampled_opponent':explicit_opponent is None,

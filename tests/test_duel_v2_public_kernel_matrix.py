@@ -132,7 +132,7 @@ class PublicKernelMatrixTest(unittest.TestCase):
         state['sides']['a']['characters']['jiuyuan'].update(shape='J07',energy=5)
         for cid in ('zero','iloy'):state['sides']['b']['characters'][cid]['flags']['pact']=True
         after=self.check(state,{'type':'ultimate','character_id':'jiuyuan'})
-        self.assertEqual(after['sides']['a']['characters']['jiuyuan']['energy'],4)
+        self.assertEqual(after['sides']['a']['characters']['jiuyuan']['energy'],2)  # Two targets, current J07 grants 1 each.
         # Bohe's ultimate blocks non-battle damage, but explicitly allows followup.
         state=new_game(seed=8,first_side='a',skip_mulligan=True,
                        decks={'a':preset_opponent_deck('starter'),'b':preset_opponent_deck('weave-rush')})

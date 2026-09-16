@@ -30,3 +30,30 @@ class TerminalCounters:
                 result[opponent][position] = dict(games=games, win=win, loss=loss, draw=draw,
                     win_rate=win/games if games else None)
         return result
+
+
+class OpponentPoolCounters(TerminalCounters):
+    """Terminal results by actual sampling pool; independent of policy identity."""
+    names=('starter','weave-rush','public-random')
+
+    def __init__(self,n,device):
+        super().__init__(n,device)
+        import torch
+        self.counts=torch.zeros(len(self.names)*6,dtype=torch.int64,device=device)
+
+    def record(self,state,learner,pool):
+        import torch
+        done=state.phase==3;fresh=done & ~self.recorded
+        outcome=torch.where(state.winner==learner,0,torch.where(state.winner==1-learner,1,2))
+        index=pool.long()*6+(learner!=state.first).long()*3+outcome
+        self.counts.scatter_add_(0,index.long(),fresh.long())
+        self.recorded |= done
+
+    def summary(self):
+        result={}
+        for name,positions in zip(self.names,self.counts.reshape(len(self.names),2,3).cpu().tolist()):
+            result[name]={}
+            for position,(win,loss,draw) in zip(('first','second'),positions):
+                games=win+loss+draw
+                result[name][position]={'games':games,'win':win,'loss':loss,'draw':draw,'win_rate':win/games if games else None}
+        return result

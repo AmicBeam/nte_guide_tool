@@ -37,7 +37,7 @@ def main(argv=None):
             (('base',.20),('cards',.10),('adapt',.075),('selection',.10))}
     if args.check:
         print(json.dumps({'training_started':False,'presets':PRESETS,'profile':args.profile,
-              'training_order':'both bases, then each cards/selection/adaptation',
+              'training_order':'both bases, then each cards/selection/adaptation','learn_mulligan':True,'adaptation_pinned_peer':True,
               'seconds_total':args.seconds,'seconds_per_preset':budget,'reserve_seconds':args.seconds*.05,
               'candidate_plan':PROFILES[args.profile],'random_team_fraction':.2,'rule_fraction':.2,
               'selection_opponents':'both frozen models with fixed preset roles and variable cards',
@@ -51,7 +51,9 @@ def main(argv=None):
     if args.phase=='evaluate' and json.loads((out/'status.json').read_text()).get('phase') not in ('training_complete','failed','complete'):parser.error('Training is not complete')
     out.mkdir(parents=True,exist_ok=args.phase=='evaluate')
     started=time.monotonic();deadline=started+args.seconds
-    from app.modules.card_game.rl.public_schema import rule_identity
+    from app.modules.card_game.rl.public_schema import rule_identity as public_rule_identity
+    from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA
+    rule_identity=lambda:public_rule_identity(OPENING_SCHEMA)
     from app.modules.card_game.rl.capability import preset_opponent_deck
     from app.modules.card_game.rl.public_export import export_checkpoint
     from app.modules.card_game.rl.offline_analysis import run_offline_analysis,frozen_model_policy,export_game_replay
@@ -134,7 +136,14 @@ def main(argv=None):
                 write(f'{key}/original-deck.json',builds[key,'original'])
                 base=out/key/'base'
                 initial=args.starter_checkpoint if key=='starter' else args.weave_checkpoint
-                resume_options=['--resume',initial] if initial else []
+                resume_options=[]
+                if initial:
+                    import torch
+                    source=torch.load(initial,map_location='cpu',weights_only=True)
+                    exact=source.get('schema')==OPENING_SCHEMA and source.get('rule_identity',{}).get('rule_hash')==rule_identity()
+                    resume_options=['--resume' if exact else '--warm-start',initial]
+                peer_initial=args.weave_checkpoint if key=='starter' else args.starter_checkpoint
+                if peer_initial:resume_options+=['--opponent-checkpoint',peer_initial]
                 run(key+'-base','train_duel_v2_public.py',['--train','--deck',key,'--hidden',hidden,'--n',parallel,'--horizon',16,
                      '--seconds',budget['base'],'--max-updates',0 if full else 4,'--snapshot-updates',20 if full else 1,'--preflight-cases',16 if full else 4,'--output',base]+resume_options)
                 exported=export_checkpoint(base/'latest.pt',out/key/'base-export')
@@ -190,6 +199,7 @@ def main(argv=None):
             write('construction-decisions.json',choices)
             adapted=out/key/'adapted'
             run(key+'-adapt','train_duel_v2_public.py',['--train','--deck',key,'--resume',base/'latest.pt',
+                '--opponent-checkpoint',out/peer_key/'base/latest.pt',
                 '--learner-deck',out/key/'selected-deck.json','--hidden',hidden,'--n',parallel,'--horizon',16,
                 '--seconds',budget['adapt'],'--max-updates',0 if full else 2,'--snapshot-updates',20 if full else 1,'--preflight-cases',4,'--output',adapted])
             export_checkpoint(adapted/'latest.pt',out/key/'adapted-export')
@@ -219,6 +229,23 @@ def main(argv=None):
             policies[key,'candidate']=current
             evaluate(key+'-candidate-new-policy',key,'candidate',pairs=1,seed=202609260)
         if len(reports)!=34:raise RuntimeError('Incomplete full evaluation matrix')
+        if all(policies[key,'candidate'].model_metadata.get('schema')==OPENING_SCHEMA for key in PRESETS):
+            from scripts.analyze_duel_v2_opening import main as opening_main
+            opening_pairs=16 if full else 1
+            opening_models={key:out/key/('adapted-export' if choices[key]['selection']=='candidate' else 'base-export')/f'{key}.npz' for key in PRESETS}
+            opening_identity={'rules':rule_identity(),'pairs':opening_pairs,'seed':202609300,'max_actions':400,
+                'models':{key:policies[key,choices[key]['selection']].model_metadata for key in PRESETS},
+                'builds':{key:builds[key,choices[key]['selection']] for key in PRESETS}}
+            opening_root=out/'opening-analysis'
+            if opening_root.exists():
+                if (json.loads((opening_root/'cache-identity.json').read_text())!=opening_identity or
+                    not json.loads((opening_root/'opening-summary.json').read_text())['complete']):
+                    raise RuntimeError('Opening evaluation cache incomplete or identity changed')
+            else:
+                if opening_main(['--starter-model',str(opening_models['starter']),'--weave-model',str(opening_models['weave-rush']),
+                    '--output',str(opening_root),'--pairs',str(opening_pairs),'--seconds',str(max(1,min(7200,int(remaining())))),
+                    '--seed','202609300']):raise RuntimeError('Opening evaluation incomplete')
+                write('opening-analysis/cache-identity.json',opening_identity)
         sample=reports[0];r=json.loads((out/sample['report']).read_text(encoding='utf-8'))
         export_game_replay(out/'evaluations'/sample['label'],r['games_index'][0]['game_id'],out/'sample-replay.json')
         from app.modules.card_game.rl.full_report import write_full_report

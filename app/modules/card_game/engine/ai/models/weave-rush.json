@@ -182,32 +182,70 @@
   "previous_validation": {
     "complete": true,
     "model_sha256": "2020f91830f5c397776965dcbc0b6661e1b8e138c07179e0bf29a92fa8640ba7",
-    "rule_hash": "c1abaf1979bf377994a0c019e05e1bb4267098782562937d757c73baadc69d7b",
-    "games": 64,
-    "wins": 61,
-    "min_pairs": 32,
-    "min_win_rate": 0.5,
-    "opponent_teams": 15,
-    "report_sha256": "ea0d72cd1348a0f805c527fbc441fade05467cabbc85db43b22416b597807767",
-    "serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
-  },
-  "runtime_rule_hash": "ada7f5ef97a28037d3908b5e93317256e24f97e3e62f74e3fc9602d133bcbebc",
-  "runtime_revision": {
-    "reason": "User-directed Z06 immediate end-turn AP and health 5 to 6; starter Z06 x2 replaced by Z07 x2; user-confirmed B08 display name corrected to 茶花会",
-    "trained_again": false,
-    "replaced_copies": 0,
-    "previous_serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
-  },
-  "validation": {
-    "complete": true,
-    "model_sha256": "2020f91830f5c397776965dcbc0b6661e1b8e138c07179e0bf29a92fa8640ba7",
-    "rule_hash": "ada7f5ef97a28037d3908b5e93317256e24f97e3e62f74e3fc9602d133bcbebc",
+    "rule_hash": "d42a49c2ad4cee9d37a6cf40f4bc62b6baff14fb418885bef7dc915c56c0cb96",
     "games": 64,
     "wins": 60,
     "min_pairs": 32,
     "min_win_rate": 0.5,
     "opponent_teams": 15,
-    "report_sha256": "ee8ddbaa97bce68f031ccd2395f634ddbb39c8af216f69ac75015f731b38a2db",
+    "report_sha256": "3d5baa1f5630ef978058b70bc1a135a6df8ccf270f7ed20c38d45e68df5faa53",
+    "serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
+  },
+  "runtime_rule_hash": "57a18309dd0271aacb477a1dd89369da4b1c282c86096639e312521d238662f7",
+  "runtime_revision": {
+    "reason": "Joint opening framework and opponent mulligan event privacy; legacy v2 still keeps all cards",
+    "trained_again": false,
+    "opening_policy": "keep_all"
+  },
+  "validation_history": [
+    {
+      "complete": true,
+      "model_sha256": "2020f91830f5c397776965dcbc0b6661e1b8e138c07179e0bf29a92fa8640ba7",
+      "rule_hash": "c1abaf1979bf377994a0c019e05e1bb4267098782562937d757c73baadc69d7b",
+      "games": 64,
+      "wins": 61,
+      "min_pairs": 32,
+      "min_win_rate": 0.5,
+      "opponent_teams": 15,
+      "report_sha256": "ea0d72cd1348a0f805c527fbc441fade05467cabbc85db43b22416b597807767",
+      "serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
+    },
+    {
+      "complete": true,
+      "model_sha256": "2020f91830f5c397776965dcbc0b6661e1b8e138c07179e0bf29a92fa8640ba7",
+      "rule_hash": "ada7f5ef97a28037d3908b5e93317256e24f97e3e62f74e3fc9602d133bcbebc",
+      "games": 64,
+      "wins": 60,
+      "min_pairs": 32,
+      "min_win_rate": 0.5,
+      "opponent_teams": 15,
+      "report_sha256": "ee8ddbaa97bce68f031ccd2395f634ddbb39c8af216f69ac75015f731b38a2db",
+      "serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
+    }
+  ],
+  "runtime_revision_history": [
+    {
+      "reason": "User-directed Z06 immediate end-turn AP and health 5 to 6; starter Z06 x2 replaced by Z07 x2; user-confirmed B08 display name corrected to 茶花会",
+      "trained_again": false,
+      "replaced_copies": 0,
+      "previous_serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
+    },
+    {
+      "reason": "Optional learned opening framework; legacy v2 still keeps all opening cards; current rules revalidated",
+      "trained_again": false,
+      "opening_policy": "keep_all"
+    }
+  ],
+  "validation": {
+    "complete": true,
+    "model_sha256": "2020f91830f5c397776965dcbc0b6661e1b8e138c07179e0bf29a92fa8640ba7",
+    "rule_hash": "57a18309dd0271aacb477a1dd89369da4b1c282c86096639e312521d238662f7",
+    "games": 64,
+    "wins": 60,
+    "min_pairs": 32,
+    "min_win_rate": 0.5,
+    "opponent_teams": 15,
+    "report_sha256": "d2e831b3619d77511cbe2fa97a3695f8fdfd187ca2c0ae5d83e1a26604a3b868",
     "serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
   },
   "serving_build": {

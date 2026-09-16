@@ -6,6 +6,9 @@ import re
 class GameTelemetry:
     def __init__(self, state):
         self.cards={'a':{},'b':{}}
+        self.opening={side:{'initial_hand':[c['card_id'] for c in state['sides'][side]['hand']],
+            'opponent_characters':list(state['sides']['b' if side=='a' else 'a']['order']),
+            'position':'first' if side==state['first_side'] else 'second','first_turn_actions':[]} for side in ('a','b')}
         self.mechanisms=[]
         self.opportunities=set()
         self.turns=[]
@@ -50,13 +53,29 @@ class GameTelemetry:
         new_events=[e for e in after.get('events',[]) if e.get('seq',0)>before.get('event_seq',0)]
         turn=before.get('turn',0)
         obtained=set()
+        opening=self.opening[side]
+        if action['type']=='mulligan':
+            selected=set(action.get('card_ids',[]))
+            opening.update(kept=[c['card_id'] for c in before['sides'][side]['hand'] if c['instance_id'] not in selected],
+                           replaced=[c['card_id'] for c in before['sides'][side]['hand'] if c['instance_id'] in selected],replacement_draws=[])
+        elif before.get('phase')=='playing' and before['sides'][side].get('turn_count')==1:
+            hand={c['instance_id']:c['card_id'] for c in before['sides'][side]['hand']}
+            opening['first_turn_actions'].append({'type':action['type'],'character_id':action.get('character_id'),
+                'card_id':hand.get(action.get('card_id')),'target_id':action.get('target_id')})
+            if action['type']=='end_turn':
+                team=before['sides'][side]
+                opening['before_first_turn_end']={'hp':team['hp'],'ap':team['ap'],'front':team.get('front'),
+                    'energy':sum(h['energy'] for h in team['characters'].values()),
+                    'harmony':sum(h['harmony'] for h in team['characters'].values())}
+
         for event in new_events:
             kind=event.get('type');owner=event.get('side')
-            turn=(event.get('patch') or {}).get('turn',before.get('turn',0))
+            turn=(event.get('patch') or {}).get('turn',turn)
             card=event.get('private_card') or event.get('card') or {}
             if owner in self.cards and kind in ('draw','gain'):
                 if kind=='draw':
-                    source='mulligan' if action['type']=='mulligan' else 'draw'
+                    source='mulligan' if action['type']=='mulligan' and turn==0 else 'draw'
+                    if source=='mulligan' and owner==side:opening['replacement_draws'].append(card.get('card_id'))
                 elif any(c.get('instance_id')==card.get('instance_id') for c in before['sides'][owner].get('discard',[])):
                     source='recovered'
                 elif any(c.get('instance_id')==card.get('instance_id') for c in before['sides'][owner].get('deck',[])):
@@ -101,6 +120,6 @@ class GameTelemetry:
     def finish(self,state):
         return {'final_turn':state.get('turn',0),'cards':self.cards,'mechanisms':self.mechanisms,
                 'opportunities':[dict(kind=k,side=s,character_id=c,turn=t) for k,s,c,t in sorted(self.opportunities)],
-                'turn_states':self.turns,'prediction_probability':None,
+                'turn_states':self.turns,'opening':self.opening,'prediction_probability':None,
                 'opportunity_unit':'unique character/global turn with a legal ultimate or ordinary or battle-card attack harmony',
                 'effect_attribution':'same-action effect events may contain multiple sources; no causal win contribution claimed'}

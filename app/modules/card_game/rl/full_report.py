@@ -58,11 +58,12 @@ def write_full_report(root):
         lines+=['',f'### {key} 训练内先后手统计（出牌阶段）','',
                 '| 阶段 | 对手 | 位置 | 胜/负/平 | 胜率 |','| --- | --- | --- | --- | ---: |']
         for stage in ('base','adapted'):
-            groups=read(root/key/stage/'position-results.json')['opponents']
+            position_data=read(root/key/stage/'position-results.json')
+            groups={**position_data['opponents'],**{'阵容池/'+k:v for k,v in position_data.get('opponent_pools',{}).items()}}
             for foe,positions in groups.items():
                 for position,row in positions.items():
                     lines.append(f"| {stage} | {foe} | {position} | {row['win']}/{row['loss']}/{row['draw']} | {rate(row['win'],row['games'])} |")
-        lines+=['','每次更新的累计分组统计在对应 `metrics.jsonl`；停止时未完成局另见 `position-results.json`。']
+        lines+=['','每次更新的累计分组统计在对应 `metrics.jsonl`；停止时未完成局另见 `position-results.json`。对手类型与阵容池是同批对局的不同切分，不可相加。']
     lines+=['','## 冻结评估矩阵','','| 测试 | 场数 | 学习方先手胜率 | 学习方后手胜率 | 实际先手方胜率 | 平均全局回合 | 异常/截断 |',
             '| --- | ---: | ---: | ---: | ---: | ---: | --- |']
     generated_rows=[]
@@ -257,7 +258,7 @@ def write_full_report(root):
         for stage in ('base','adapted'):
             for text in (root/key/stage/'metrics.jsonl').read_text(encoding='utf-8').splitlines():
                 metric=json.loads(text)
-                for opponent,positions in metric.get('by_opponent_position',{}).items():
+                for opponent,positions in {**metric.get('by_opponent_position',{}),**{'阵容池/'+k:v for k,v in metric.get('by_opponent_pool_position',{}).items()}}.items():
                     for position,row in positions.items():
                         training_rows.append({'preset':key,'stage':stage,'update':metric['update'],
                             'seconds':metric['seconds'],'opponent':opponent,'position':position,**row})
@@ -265,12 +266,27 @@ def write_full_report(root):
         if training_rows:
             writer=csv.DictWriter(stream,fieldnames=list(training_rows[0]));writer.writeheader();writer.writerows(training_rows)
     (root/'candidate-decisions.json').write_text(json.dumps(candidate_decisions,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    opening_path=root/'opening-analysis/opening-summary.json'
+    opening=read(opening_path) if opening_path.is_file() else None
+    opening_required=any(row['model'].get('schema')=='resident_public_v3' for row in summary_rows)
+    from .opening_report import complete_opening_matrix
+    opening_complete=bool(opening and opening.get('complete') and complete_opening_matrix(opening.get('cells',[])))
+    if opening:
+        lines+=['','## 起手与首回合对照','',f"状态：{'完整' if opening_complete else '未完成'}；单元 {len(opening.get('cells',[]))}/8。",'',
+                '同一组模型、实际构筑及种子，仅改变学习方是否使用学习换牌；对手策略保持一致。详细留牌与首动作见 opening-analysis/opening-report.md。','',
+                '| 学习方 | 对手阵容 | 起手策略 | 位置 | 胜/完成 |', '| --- | --- | --- | --- | --- |']
+        for cell in opening['cells']:
+            for position,counts in cell['summary']['by_position'].items():
+                lines.append(f"| {cell['learner']} | {cell['opponent']} | {cell['mode']} | {position} | {counts['wins']}/{counts['games']} |")
+    elif opening_required:
+        lines+=['','## 起手与首回合对照','',f"状态：{'完整' if opening_complete else '未完成'}；单元 {len(opening.get('cells',[]))}/8。",'','缺少新模型的学习换牌／全留对照，报告未完成。']
     result={'config':config,'evaluations':summary_rows,'construction':construction,
             'card_metrics_source':{'kind':'final-identical-model-build-mirror','perspectives':['a','b'],
                                    'tests':sorted({r['test'] for r in chosen_card_rows}),
                                    'missing_presets':sorted(set(final_variants)-{r['preset'] for r in chosen_card_rows})},
+            'opening_analysis':{'required':opening_required,'complete':opening_complete},
             'prediction_probability':{'available':False,'reason':'No independently calibrated probability model'},
-            'serving_selection':serving_selection['choices'] if serving_selection else None,'report_complete':all(x['complete'] for x in summary_rows) and set(final_variants)=={r['preset'] for r in chosen_card_rows},
+            'serving_selection':serving_selection['choices'] if serving_selection else None,'report_complete':(not opening_required or opening_complete) and all(x['complete'] for x in summary_rows) and set(final_variants)=={r['preset'] for r in chosen_card_rows},
             'limitations':['finite sampled candidate search; not exhaustive optimum','effect events support inspection, not isolated causal contribution']}
     (root/'summary.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     (root/'report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')

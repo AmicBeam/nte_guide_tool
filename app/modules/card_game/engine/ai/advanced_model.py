@@ -135,14 +135,16 @@ class FrozenModel:
         directory = Path(directory)
         manifest = json.loads((directory / f'{deck_id}.json').read_text(encoding='utf-8'))
         from app.modules.card_game.rl.public_schema import SCHEMA as PUBLIC_SCHEMA, state_dim, rule_identity, CAND_DIM
+        from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA,OPENING_CAND_DIM
         self.schema = manifest.get('schema')
-        if (self.schema not in (SCHEMA, PUBLIC_SCHEMA) or manifest.get('gpu_lock') != GPU_LOCK
+        expanded=self.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA)
+        if (self.schema not in (SCHEMA, PUBLIC_SCHEMA,OPENING_SCHEMA) or manifest.get('gpu_lock') != GPU_LOCK
                 or manifest.get('deck') != deck_id or manifest.get('card_ids') != list(CARD_IDS)
                 or manifest.get('seat_ids') != list(SEATS)):
             raise ValueError('Model version does not match current content')
         from app.modules.card_game.rl.rule_ir.completeness import compiled_rule_hash
         runtime_rule_hash = manifest.get('runtime_rule_hash') or (manifest.get('rule_identity') or {}).get('rule_hash')
-        expected_rule_hash = rule_identity() if self.schema == PUBLIC_SCHEMA else compiled_rule_hash(deck_id)
+        expected_rule_hash = (rule_identity(OPENING_SCHEMA) if self.schema==OPENING_SCHEMA else rule_identity()) if expanded else compiled_rule_hash(deck_id)
         if runtime_rule_hash != expected_rule_hash:
             raise ValueError('Model rule version does not match current rules')
         path = directory / f'{deck_id}.npz'
@@ -150,7 +152,7 @@ class FrozenModel:
         if digest != manifest.get('sha256'):
             raise ValueError('Model checksum mismatch')
         self.capability = resolve_model_capability(manifest, deck_id)
-        if self.capability['human_public_custom'] and self.schema != PUBLIC_SCHEMA:
+        if self.capability['human_public_custom'] and not expanded:
             raise ValueError('Public custom serving requires an expanded observation/export contract; resident_public_v1 is mirror-only')
         if self.capability['human_public_custom']:
             validation=manifest.get('validation') or {}
@@ -167,14 +169,18 @@ class FrozenModel:
             raise ValueError('Custom allocation model requires an explicit serving build')
         if raw_build is not None:
             validation = manifest.get('validation') or {}
-            if (self.schema != PUBLIC_SCHEMA or not self.capability['human_public_custom']
+            if (not expanded or not self.capability['human_public_custom']
                     or validation.get('serving_build_sha256') != self.serving_build_sha256):
                 raise ValueError('Serving build lacks matching model/build evaluation evidence')
+        if self.schema!=OPENING_SCHEMA and manifest.get('opening_policy','keep_all')!='keep_all':
+            raise ValueError('Legacy schema cannot claim learned mulligan')
+        if self.schema==OPENING_SCHEMA and manifest.get('opening_policy')!='learned_joint_v1':
+            raise ValueError('Mulligan schema requires learned opening policy metadata')
         h = int(manifest['hidden'])
         d = 2 + 2*len(SIDE_FIELDS) + 2*N_SEATS*len(CHAR_FIELDS) + 3*len(CARD_IDS)
-        if self.schema == PUBLIC_SCHEMA:
+        if expanded:
             d = state_dim()
-        cand_dim = CAND_DIM if self.schema == PUBLIC_SCHEMA else 10
+        cand_dim = OPENING_CAND_DIM if self.schema==OPENING_SCHEMA else CAND_DIM if expanded else 10
         shapes = {
             'state_net.0.weight': (h, d), 'state_net.0.bias': (h,),
             'state_net.2.weight': (h, h), 'state_net.2.bias': (h,),
@@ -200,9 +206,10 @@ class FrozenModel:
         from app.modules.card_game.rl.public_observation import encode_public
         if not actions:
             raise ValueError('No legal actions')
-        if view.get('phase') == 'mulligan':
+        from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA,encode_opening
+        if view.get('phase') == 'mulligan' and self.schema!=OPENING_SCHEMA:
             return next(i for i,a in enumerate(actions) if a['type']=='mulligan' and not a.get('card_ids'))
-        state, candidates = encode_public(view, actions, schema=self.schema)
+        state, candidates = encode_opening(view,actions) if self.schema==OPENING_SCHEMA else encode_public(view, actions, schema=self.schema)
         return int(self.scores(state, candidates).argmax())
 
     def scores(self, state, candidates):
@@ -251,11 +258,12 @@ def choose_action(state, side='b'):
     actions = [a for a in legal_actions(state, side) if a['type'] != 'concede']
     if not actions:
         raise RuleValidationError('高级人机没有可执行动作。')
-    if state['phase'] == 'mulligan':
+    from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA
+    if state['phase'] == 'mulligan' and getattr(model,'schema',None)!=OPENING_SCHEMA:
         # The model was trained with the initial hand retained.
         return next(a for a in actions if not a.get('card_ids'))
     from app.modules.card_game.rl.public_schema import SCHEMA as PUBLIC_SCHEMA
-    if model.schema == PUBLIC_SCHEMA:
+    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA):
         from app.modules.card_game.engine.duel_v2 import observe
         return actions[model.select_public_action(observe(state, side), actions)]
     try:

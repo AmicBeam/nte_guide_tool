@@ -15,16 +15,16 @@ def state_dim():
     return GLOBAL_DIM + 2*len(SIDE_FIELDS) + 2*N_SEATS*len(CHAR_FIELDS) + 5*len(CARD_IDS)
 
 
-def rule_identity():
+def rule_identity(schema=SCHEMA):
     """Includes official rules, encoder, and compiled rules; no generated artifacts."""
     from hashlib import sha256
     from pathlib import Path
     root = Path(__file__).resolve().parents[1]
-    digest = sha256(SCHEMA.encode())
+    digest = sha256(schema.encode())
     files = []
     for directory in (root/'engine/duel_v2', root/'content/duel_v2', root/'rl/rule_ir'):
         files.extend(directory.rglob('*.py'))
-    files += [root/'content/duel_v2/catalog.json', Path(__file__), root/'rl/public_observation.py']
+    files += [root/'content/duel_v2/catalog.json', Path(__file__), root/'rl/public_observation.py',root/'rl/opening_observation.py']
     for path in sorted(set(files)):
         digest.update(path.relative_to(root).as_posix().encode())
         digest.update(path.read_text(encoding='utf-8').encode('utf-8'))

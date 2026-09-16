@@ -107,7 +107,7 @@ def frozen_model_policy(model):
     policy.model_metadata={'sha256':getattr(model,'version',None),
                            'schema':getattr(model,'schema',None),
                            'rule_hash':manifest.get('runtime_rule_hash') or (manifest.get('rule_identity') or {}).get('rule_hash'),
-                           'deck':manifest.get('deck'),
+                           'deck':manifest.get('deck'),'opening_policy':manifest.get('opening_policy','keep_all'),
                            'capability':(manifest.get('capability') or {}).get('kind','legacy_exact_mirror')}
     return policy
 

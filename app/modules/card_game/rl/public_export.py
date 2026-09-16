@@ -14,11 +14,14 @@ def export_checkpoint(source, output):
     from .gpu_duel.ppo import CompactScorer
     source, output = Path(source), Path(output)
     checkpoint = torch.load(source, map_location='cpu', weights_only=True)
-    if checkpoint.get('schema') != SCHEMA or checkpoint.get('gpu_lock') != GPU_LOCK:
+    from .opening_observation import OPENING_SCHEMA,OPENING_CAND_DIM,encode_opening
+    schema=checkpoint.get('schema')
+    cand_dim=OPENING_CAND_DIM if schema==OPENING_SCHEMA else CAND_DIM
+    if schema not in (SCHEMA,OPENING_SCHEMA) or checkpoint.get('gpu_lock') != GPU_LOCK:
         raise ValueError('Checkpoint observation/catalog mismatch')
-    if checkpoint.get('rule_identity',{}).get('rule_hash') != rule_identity():
+    if checkpoint.get('rule_identity',{}).get('rule_hash') != rule_identity(schema):
         raise ValueError('Checkpoint rule identity mismatch')
-    if checkpoint.get('state_dim') != state_dim() or checkpoint.get('cand_dim') != CAND_DIM:
+    if checkpoint.get('state_dim') != state_dim() or checkpoint.get('cand_dim') != cand_dim:
         raise ValueError('Checkpoint dimensions mismatch')
     deck = checkpoint.get('deck')
     if deck not in ('starter','weave-rush'):
@@ -28,12 +31,14 @@ def export_checkpoint(source, output):
     hidden = checkpoint['hidden']
     if type(hidden) is not int or not 1 <= hidden <= 2048:
         raise ValueError('Invalid hidden dimension')
-    network = CompactScorer(state_dim(),CAND_DIM,hidden)
+    network = CompactScorer(state_dim(),cand_dim,hidden)
     network.load_state_dict(checkpoint['model'])
     network.eval()
     arrays = {k:v.detach().cpu().numpy() for k,v in network.state_dict().items() if not k.startswith('value.')}
     if not all(np.isfinite(a).all() for a in arrays.values()):
         raise ValueError('Non-finite checkpoint weights')
+    if schema==OPENING_SCHEMA and (not checkpoint.get('learn_mulligan') or checkpoint.get('opening_policy')!='learned_joint_v1' or checkpoint.get('update',0)<1):
+        raise ValueError('Opening checkpoint must explicitly learn mulligan')
     if output.exists():
         raise ValueError('Choose a new export directory')
     output.mkdir(parents=True)
@@ -41,6 +46,10 @@ def export_checkpoint(source, output):
     np.savez_compressed(path,**arrays)
     manifest = {k:checkpoint[k] for k in ('schema','deck','hidden','state_dim','cand_dim','gpu_lock','update','rule_identity')}
     manifest['learner_deck'] = learner_deck
+    for field in ('training_distribution','opponent_distribution','pinned_opponents'):
+        if field in checkpoint:manifest[field]=checkpoint[field]
+    if schema==OPENING_SCHEMA:
+        manifest['opening_policy']='learned_joint_v1'
     manifest.update(sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                     source_checkpoint_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
                     card_ids=list(CARD_IDS),seat_ids=list(SEATS),
@@ -55,11 +64,11 @@ def export_checkpoint(source, output):
     model = FrozenModel(output,deck)
     largest = 0.0
     for seed in range(8):
-        state = new_game(seed=seed,skip_mulligan=True,
+        state = new_game(seed=seed,skip_mulligan=(schema!=OPENING_SCHEMA or seed%2==0),
                          decks={'a':learner_deck,'b':sample_public_deck(seed)})
         side = acting_side(state)
         actions = [a for a in legal_actions(state,side) if a['type']!='concede']
-        values,candidates = encode_public(observe(state,side),actions)
+        values,candidates = encode_opening(observe(state,side),actions) if schema==OPENING_SCHEMA else encode_public(observe(state,side),actions)
         with torch.no_grad():
             logits,_ = network(torch.tensor(values)[None],torch.tensor(candidates)[None],
                                torch.ones(1,len(actions),dtype=torch.bool))
@@ -96,18 +105,24 @@ def approve_candidate(model_path, report_path, *, min_pairs=32, min_win_rate=0.5
     digest=hashlib.sha256(model_path.read_bytes()).hexdigest()
     if type(min_pairs) is not int or min_pairs<1 or not 0<=min_win_rate<=1:
         raise ValueError('Invalid acceptance threshold')
-    if manifest.get('schema')!=SCHEMA or manifest.get('sha256')!=digest or int(manifest.get('update',0))<1:
+    from .opening_observation import OPENING_SCHEMA
+    schema=manifest.get('schema')
+    if schema not in (SCHEMA,OPENING_SCHEMA) or manifest.get('sha256')!=digest or int(manifest.get('update',0))<1:
         raise ValueError('Only a trained public checkpoint can be approved')
-    identity=rule_identity()
+    identity=rule_identity(schema)
     model=report.get('model') or {}
     if (model.get('sha256'),model.get('schema'),model.get('rule_hash'),report.get('preset')) != (
-            digest,SCHEMA,identity,manifest.get('deck')):
+            digest,schema,identity,manifest.get('deck')):
         raise ValueError('Report does not match the exact model, rules, and preset')
     if (manifest.get('runtime_rule_hash') or (manifest.get('rule_identity') or {}).get('rule_hash'))!=identity:
         raise ValueError('Model rule identity changed')
     if report.get('sampled_opponent') is not True or len(report.get('by_opponent_team') or {})<15:
         raise ValueError('Evaluation must cover all 15 public opponent teams')
     games=report.get('games_index') or []
+    if schema==OPENING_SCHEMA and (model.get('opening_policy')!='learned_joint_v1'
+            or model.get('opening_override') or report.get('engine',{}).get('skip_mulligan') is not False
+            or any('mulligan' not in g.get('action_types',[]) for g in games)):
+        raise ValueError('Opening model approval requires actual learned-mulligan evaluation')
     if not games or any(not g.get('terminated') or g.get('truncated') or g.get('error') for g in games):
         raise ValueError('Evaluation contains incomplete/error games')
     from .capability import PUBLIC_CHARACTERS

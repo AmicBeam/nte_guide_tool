@@ -4,7 +4,8 @@ from __future__ import annotations
 from typing import Any
 
 from app.modules.card_game.rl.gpu_duel.catalog import (
-    ACT_ATTACK, ACT_CHOOSE, ACT_END, ACT_PLAY, ACT_ULTIMATE, CARD_INDEX, SEAT_INDEX,
+    ACT_ATTACK, ACT_CHOOSE, ACT_END, ACT_MULLIGAN, ACT_PLAY, ACT_ULTIMATE, CARD_INDEX,
+    HAND_SLOTS, SEAT_INDEX,
 )
 from app.modules.card_game.rl.rule_ir.layout import OFFSETS, ROW_WIDTH
 from app.modules.card_game.rl.rule_ir.pack_row import legal_entries, mechan_from_row, pack_python_row
@@ -26,6 +27,24 @@ def map_python_action(row: list[int], state: dict[str, Any], action: dict[str, A
     if kind == 'end_turn':
         for item in entries:
             if item['type'] == ACT_END:
+                return item['index']
+    elif kind == 'mulligan':
+        ids = action.get('card_ids') or []
+        selected = {_instance_int(card_id) for card_id in ids}
+        side = row[OFFSETS['active']]
+        mask = 0
+        matched = 0
+        for hs in range(HAND_SLOTS):
+            if row[OFFSETS['hand_kind'] + side * HAND_SLOTS + hs] < 0:
+                continue
+            inst = row[OFFSETS['hand_inst'] + side * HAND_SLOTS + hs]
+            if inst in selected:
+                mask |= 1 << hs
+                matched += 1
+        if matched != len(selected):
+            raise ValueError(f'Unknown mulligan hand instances: {action}')
+        for item in entries:
+            if item['type'] == ACT_MULLIGAN and item['hand'] == mask:
                 return item['index']
     elif kind == 'attack':
         actor = SEAT_INDEX[action['character_id']]
@@ -53,7 +72,6 @@ def map_python_action(row: list[int], state: dict[str, Any], action: dict[str, A
     elif kind == 'play_card':
         inst = _instance_int(action['card_id'])
         side = 0 if state.get('active_side') == 'a' else 1
-        from app.modules.card_game.rl.gpu_duel.catalog import HAND_SLOTS
         hand_slot = None
         for hs in range(HAND_SLOTS):
             if row[OFFSETS['hand_inst'] + side * HAND_SLOTS + hs] == inst:
@@ -108,6 +126,8 @@ def canonical_row(row):
             n = row[OFFSETS[zone + '_n'] + side]
             out[f'{zone}:{side}'] = [(row[OFFSETS[zone + '_kind'] + side * capacity + k],
                                       row[OFFSETS[zone + '_inst'] + side * capacity + k]) for k in range(n)]
+    if row[OFFSETS['phase']] == 0:
+        out['pending_count'] = row[OFFSETS['pending_count']]
     if row[OFFSETS['phase']] == 2:
         for name in ('pending_kind', 'pending_side', 'pending_count', 'pending_play_kind', 'pending_play_inst'):
             out[name] = row[OFFSETS[name]]

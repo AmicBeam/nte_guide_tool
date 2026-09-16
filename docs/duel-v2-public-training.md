@@ -251,3 +251,30 @@ python scripts/smoke_duel_v2_full.py --check --profile comprehensive --seconds 2
 固定编队始终只限当前公开两套预组；不加入测试角色。网页模型与权重不因本次框架修改而自动更新。Windows CUDA 的完整链路执行仍需在设备上线后单独验证。
 
 本次框架验收：42 项本机测试通过，包含分级筛选的合成对照、预算/缓存保护、纯 Python 采样合法性和真实 native 编译对局。未进行 CUDA 正式训练；该结果证明框架行为，不是新构筑的强度结论。
+
+## 10. 学习起手换牌与开局专项报告
+
+新训练默认使用 `resident_public_v3`：状态仍包含对手具体角色、先后手及己方手牌，候选特征增加换出牌种数量。换牌最多三张，五张起手有 26 种合法子集；与出牌动作一起通过 PPO 的对局回报学习。`--keep-all-opening` 才使用旧 `resident_public_v2` 全留路径，不能将旧模型标为学会换牌。
+
+```bash
+python scripts/train_duel_v2_public.py --check
+python scripts/analyze_duel_v2_opening.py --check
+```
+
+出牌训练默认 80% 阵容来自创生／覆纹快攻，在每套固定角色内采样官方、当前高级人机及变化配牌，20% 来自任意公开四人组合。模型对手为主，规则对手占比默认 20%。`--random-team-fraction` 与 `--rule-fraction` 可调整；`--opponent-checkpoint` 固定额外历史/另一预组策略，最多四份，不随自身历史队列轮换淘汰。固定阵容优先使用对应预组训练的模型；没有匹配模型时才使用现有冻结池，并保留实际身份。仅有自身历史时不宣称已覆盖另一套实战模型。综合流程在适应训练中固定接入另一套基础模型。
+
+旧 v1/v2 权重使用 `--warm-start` 显式迁移，新换牌候选列置零并重建优化器；不能用 `--resume` 冒充同一训练过程。综合脚本对旧 schema 或规则不同的输入 checkpoint 选择 warm-start，并在配置中保留来源；完全匹配才 resume。新 checkpoint 记录 `learn_mulligan` 和 `opening_policy`，未完成更新的起手头标为未训练，不能导出为已学会换牌的模型。
+
+新候选特征较宽，训练默认并行数为 1024；更高并行数须在 Windows 按实际显存验证。GPU 预检除既有规则检查外，还对开局 reset、双方换牌、首回合抽牌及全部换牌候选的 NumPy/张量编码做 native/CUDA 对拍。没有 CUDA 时正式训练仍明确拒绝。正常训练不保存详细起手或动作日志，只记录设备内聚合计数；完整报告才额外获取私有起手遥测。
+
+训练后可执行：
+
+```bash
+python scripts/analyze_duel_v2_opening.py --starter-model PATH/starter.npz --weave-model PATH/weave-rush.npz --pairs 16 --seconds 3600 --output artifacts/opening-analysis
+```
+
+需要两套新 schema 数值导出。共八个单元：两套学习方 × 两套实际对手构筑 × 学习换牌/全部保留。每单元的两种起手策略使用相同配对种子；只改学习方起手，后续模型和对手不变。输出 `opening-report.md`、`opening-summary.json`，各单元的私有 `raw/` 与公开 `public/` 分离。默认四对仅用于有界验证，不能据此认定强度。
+
+综合流程对新模型自动执行这组对照，主报告展示胜负表并关联逐卡留换、首动作、首回合资源及早期局势。新模型缺少该对照时不能将总报告标为完整。模型批准仍需新规则下的真实学习换牌评估；全留覆盖模式的报告不能批准学习换牌模型。
+
+现有网站数值权重保持旧全留行为，直到真正完成新训练与评估后替换。增加观察字段和换牌接口不代表当前模型已经懂得对快攻留牌，也不保证新训练必然超过全留基线。

@@ -63,6 +63,12 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
     row[OFFSETS['rng']] = int(state.get('rng') or 0) & 0x7FFFFFFF
     row[OFFSETS['next_instance']] = int(state.get('next_instance') or 0)
     row[OFFSETS['escalation_enabled']] = 1 if state.get('escalation_enabled') else 0
+    if state.get('phase') == 'mulligan':
+        done = set(state.get('mulligan_done') or [])
+        chooser = next((side for side in ('a', 'b') if side not in done), None)
+        if chooser in ('a', 'b'):
+            row[OFFSETS['active']] = 0 if chooser == 'a' else 1
+        row[OFFSETS['pending_count']] = (1 if 'a' in done else 0) | (2 if 'b' in done else 0)
     pending = state.get('pending_choice')
     if pending:
         row[OFFSETS['pending_kind']] = {'inspect_top': 1, 'discard': 2, 'enemy_hand': 3}.get(pending.get('kind'), 0)

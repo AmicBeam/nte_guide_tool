@@ -90,12 +90,17 @@ def load_battle_policy(path, device):
     hidden = checkpoint.get('hidden') if isinstance(checkpoint, dict) else None
     if type(hidden) is not int or not 1 <= hidden <= 2048:
         raise ValueError('Invalid battle checkpoint hidden dimension')
-    net = CompactScorer(state_dim(),CAND_DIM,hidden).to(device)
+    from .opening_observation import OPENING_SCHEMA,OPENING_CAND_DIM
+    schema=checkpoint.get('schema')
+    if schema==OPENING_SCHEMA and checkpoint.get('opening_policy')!='learned_joint_v1':raise ValueError('Opening policy metadata missing')
+    cand_dim=OPENING_CAND_DIM if schema==OPENING_SCHEMA else CAND_DIM
+    net = CompactScorer(state_dim(),cand_dim,hidden).to(device)
+    net._public_schema=OPENING_SCHEMA if schema==OPENING_SCHEMA else PLAY_SCHEMA
     if checkpoint.get('schema') == 'resident_public_v1':
         warm_start_weights(checkpoint,net,checkpoint['deck'])
         transferred = True
     else:
-        if (checkpoint.get('schema'),checkpoint.get('gpu_lock'),checkpoint.get('rule_identity',{}).get('rule_hash')) != (PLAY_SCHEMA,GPU_LOCK,rule_identity()):
+        if schema not in (PLAY_SCHEMA,OPENING_SCHEMA) or (checkpoint.get('gpu_lock'),checkpoint.get('rule_identity',{}).get('rule_hash')) != (GPU_LOCK,rule_identity(schema)):
             raise ValueError('Battle checkpoint schema/catalog/rules mismatch')
         net.load_state_dict(checkpoint['model']);transferred = False
     net.eval()
@@ -111,6 +116,8 @@ class CardBattleEvaluator:
         from .gpu_duel.compiled_backend import CompiledStarterBackend
         self.device = torch.device(device)
         self.policy, self.opponents = policy, [policy, *opponents]
+        from .opening_observation import OPENING_SCHEMA
+        self.learn_mulligan=any(getattr(net,'_public_schema',None)==OPENING_SCHEMA for net in [policy,*opponents])
         self.model_ids = ['learner', *[f'peer-{i}' for i in range(len(opponents))]]
         self.backend = CompiledStarterBackend(compiled_dir,
             backend='cuda' if self.device.type=='cuda' else 'native',deck_id='starter')
@@ -141,7 +148,7 @@ class CardBattleEvaluator:
         assignment=assignment.repeat_interleave(2).repeat(n)
         if n*trials>16384:raise ValueError('Candidate batch exceeds 16384 games; reduce candidates, pairs or random fraction')
         state = empty_state(n*trials,self.device)
-        self.backend.reset_public_gpu_state(state,seeds.repeat(n),candidates.repeat_interleave(trials,0),foes.repeat(n,1))
+        self.backend.reset_public_gpu_state(state,seeds.repeat(n),candidates.repeat_interleave(trials,0),foes.repeat(n,1),mulligan=self.learn_mulligan)
         first = (state.first == 0).reshape(n,trials).clone()
         for _ in range(max_actions):
             if stop_check:stop_check()
@@ -149,13 +156,19 @@ class CardBattleEvaluator:
             if not bool(live.any()):break
             obs,cand,mask = public_observe(state)
             action = torch.where(live,rule_action(state),-1)
+            action = torch.where(live & (state.phase==0),0,action)
+            from .opening_observation import OPENING_SCHEMA,opening_observe
+            opening=opening_observe(state) if self.learn_mulligan else None
             groups=[(self.policy,live & (state.active==0))]
             groups += [(net,live & (state.active==1) & (assignment==i)) for i,net in enumerate(self.opponents,1)]
             for net,selected in groups:
+                trained_opening=getattr(net,'_public_schema',None)==OPENING_SCHEMA
+                if not trained_opening:selected=selected & (state.phase!=0)
+                current_obs,current_cand,current_mask=opening if trained_opening else (obs,cand,mask)
                 index=selected.nonzero().flatten()
                 if index.numel():
                     if not mask[index].any(1).all():raise RuntimeError('Live game has no legal action')
-                    logits,_=net(obs[index],cand[index],mask[index])
+                    logits,_=net(current_obs[index],current_cand[index],current_mask[index])
                     action[index]=logits.argmax(1).int()
             self.backend.step_gpu_state(state,action)
         done = (state.phase==3).reshape(n,trials)

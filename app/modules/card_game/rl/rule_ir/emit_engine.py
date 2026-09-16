@@ -1142,8 +1142,11 @@ static void rebuild_legal(int *row){
     if(n>5) n=5;
     int count=0;
     int limit = 1<<n;
-    for(int mask=0; mask<limit; mask++){
-      if(popcount_bits(mask)>3) continue;
+    /* Same subset ordering as Python combinations, including deterministic ties. */
+    const int masks[26]={0,1,2,4,8,16,3,5,9,17,6,10,18,12,20,24,7,11,19,13,21,25,14,22,26,28};
+    for(int mi=0; mi<26; mi++){
+      int mask=masks[mi];
+      if(mask>=limit) continue;
       LT(count)=ACT_MULLIGAN;
       LA(count)=-1;
       LH(count)=mask;

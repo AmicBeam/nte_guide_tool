@@ -37,12 +37,12 @@ class ReportTelemetryTest(unittest.TestCase):
     def test_sources_and_response_and_harmony_are_distinct(self):
         from app.modules.card_game.engine.duel_v2 import new_game
         from app.modules.card_game.rl.report_telemetry import GameTelemetry
-        state=new_game(seed=1,skip_mulligan=True)
+        state=new_game(seed=1,skip_mulligan=False)
         t=GameTelemetry(state);card=deepcopy(state['sides']['a']['hand'][0]);cid=card['card_id']
         card['response']='self_attacked'
         after=deepcopy(state);seq=state['event_seq']
         after['events'] += [
-            {'seq':seq+1,'type':'draw','side':'a','private_card':card,'patch':{'turn':3}},
+            {'seq':seq+1,'type':'draw','side':'a','private_card':card,'patch':{'turn':0}},
             {'seq':seq+2,'type':'play','side':'a','card':card,'patch':{'turn':3}},
             {'seq':seq+3,'type':'harmony','side':'a','actor':'a:nanali','target':'a:zero',
              'before':{'harmony':2},'after':{'harmony':0},'text':'入场，触发创生。','patch':{'turn':3}},

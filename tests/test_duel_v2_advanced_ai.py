@@ -52,6 +52,32 @@ class AdvancedRoomTest(RoomFlowTestCase):
             self.assertIn('capability', profile)
             switched=self.client.post('/api/duel-v2/start',json={'mode':'advanced','ai_deck':'starter'},headers={'Authorization':'Bearer '+self.token})
             self.assertEqual(switched.status_code,409)
+    @unittest.skipUnless(importlib.util.find_spec('numpy'),'NumPy required')
+    def test_joint_opening_policy_is_dispatched_and_opponent_swap_ids_stay_private(self):
+        # Synthetic scorer tests API plumbing, not trained strength.
+        from types import MethodType
+        from app.modules.card_game.engine.ai.advanced_model import FrozenModel
+        from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA
+        from app.modules.card_game.rl.capability import capability_ready_manifest,preset_opponent_deck,serving_deck_hash
+        deck=preset_opponent_deck('starter')
+        model=SimpleNamespace(version='opening-fixture',schema=OPENING_SCHEMA,capability=capability_ready_manifest('starter'),
+            serving_deck=deck,serving_build_sha256=serving_deck_hash(deck),scores=lambda state,candidates:candidates[:,11:].sum(1))
+        model.select_public_action=MethodType(FrozenModel.select_public_action,model)
+        with patch('app.modules.card_game.engine.ai.advanced_model.load_model',return_value=model):
+            result=self._post('/api/duel-v2/start',{'mode':'advanced','ai_deck':'starter'},token=self.token)
+            code=result['room']['room_code'];game=result['game']
+            result=self._post('/api/duel-v2/action',{'room_code':code,'expected_version':game['version'],
+                'request_id':'joint-opening','action':{'type':'mulligan','card_ids':[]}},token=self.token)
+            game=result['game']
+            events=[e for e in game['presentation']['events'] if e.get('type')=='mulligan' and e.get('side')=='b']
+            self.assertEqual(len(events),1)
+            self.assertEqual(events[0]['amount'],3)
+            self.assertNotIn('card_ids',events[0])
+            room=self.repository.room_by_code(code)
+            stored=self.storage.load(room.id)['game']
+            raw=next(e for e in stored['events'] if e.get('type')=='mulligan' and e.get('side')=='b')
+            self.assertEqual(len(raw['card_ids']),3)
+
     @unittest.skipUnless(importlib.util.find_spec('numpy') and (Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models/starter.npz').exists(), 'bundled serving models and NumPy required')
     def test_real_models_finish_both_presets_and_save_replays(self):
         from app.modules.card_game.engine.duel_v2 import choose_action

@@ -19,6 +19,14 @@ class CompiledEngineError(RuntimeError):
     pass
 
 
+def _public_reset_flags(escalation=True, mulligan=False) -> int:
+    """Pack public reset options into the existing escalation integer.
+
+    bit0: escalation enabled; bit1: optional opening mulligan.
+    """
+    return (1 if escalation else 0) | (2 if mulligan else 0)
+
+
 def _assert_compiled_deck(deck: dict[str, Any]) -> dict[str, Any]:
     from app.modules.card_game.content.duel_v2 import STARTER_DECKS
     payload = assert_gpu_deck(deck)
@@ -67,7 +75,12 @@ class CompiledStarterBackend:
             'row_width': self.row_width,
             'fallback_rows': self.stats['fallback_rows'],
             **support_manifest(self.deck_id),
+            'supports_mulligan': True,
         }
+
+    @property
+    def supports_mulligan(self) -> bool:
+        return True
 
     def step_lists(self, rows: list[list[int]], actions: list[int]) -> list[list[int]]:
         if self.closed:
@@ -157,7 +170,7 @@ class CompiledStarterBackend:
         if bool((rows[:, OFFSETS['error']] != 0).any()):
             raise CompiledEngineError('Compiled reset failed')
 
-    def reset_public_gpu_state(self, state, seeds, deck_rows_a, deck_rows_b, escalation=True) -> None:
+    def reset_public_gpu_state(self, state, seeds, deck_rows_a, deck_rows_b, escalation=True, mulligan=False) -> None:
         """Reset compiled rows from public custom four-person decks.
 
         seeds: int32 [n]; a negative seed preserves that row.
@@ -166,6 +179,8 @@ class CompiledStarterBackend:
         must already live on the compiled executor device.
         escalation=True enables global-turn 6/13/20 white-heat rules; False keeps
         the legacy old-model path with one ultimate and original resource caps.
+        mulligan=False preserves the keep-all playing-start reset. True starts in
+        PHASE_MULLIGAN with 5 original cards per side and no first-turn draw.
         """
         import torch
         if self.closed:
@@ -184,12 +199,12 @@ class CompiledStarterBackend:
         # torch.device('cuda') is an alias; allocated tensors report cuda:<index>.
         if any(t.device != rows.device for t in (seeds, deck_rows_a, deck_rows_b)):
             raise ValueError('public reset tensors must already live on the compiled device')
-        public_reset(rows, seeds, deck_rows_a, deck_rows_b, 1 if escalation else 0)
+        public_reset(rows, seeds, deck_rows_a, deck_rows_b, _public_reset_flags(escalation, mulligan))
         from app.modules.card_game.rl.rule_ir.layout import OFFSETS
         if bool((rows[:, OFFSETS['error']] != 0).any()):
             raise CompiledEngineError('Compiled public reset failed')
 
-    def reset_public_lists(self, seeds, deck_rows_a, deck_rows_b, escalation=True):
+    def reset_public_lists(self, seeds, deck_rows_a, deck_rows_b, escalation=True, mulligan=False):
         if self.closed:
             raise CompiledEngineError('compiled backend is closed')
         public_reset_lists = getattr(self.launch, 'public_reset_lists', None)
@@ -197,7 +212,7 @@ class CompiledStarterBackend:
             raise CompiledEngineError('compiled backend has no public reset; no Python/tensor fallback')
         from app.modules.card_game.rl.rule_ir.pack_row import empty_row
         rows = [empty_row() for _ in seeds]
-        out = public_reset_lists(rows, list(seeds), list(deck_rows_a), list(deck_rows_b), 1 if escalation else 0)
+        out = public_reset_lists(rows, list(seeds), list(deck_rows_a), list(deck_rows_b), _public_reset_flags(escalation, mulligan))
         from app.modules.card_game.rl.rule_ir.layout import OFFSETS
         errors = sum(1 for row in out if row[OFFSETS['error']])
         if errors:

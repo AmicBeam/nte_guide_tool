@@ -276,6 +276,8 @@ def project_event(event, viewer):
                 'first_side', 'winner', 'reason', 'counter_immunity'):
         if key in event:
             item[key] = deepcopy(event[key])
+    if event.get('type') == 'mulligan' and event.get('side') != viewer:
+        item.pop('card_ids', None)
     if 'attack' not in item and event.get('type') == 'attack' and 'amount' in event:
         item['attack'] = event['amount']
     card = _visible_card(event, viewer)
@@ -314,6 +316,8 @@ def sanitize_public_event(event, viewer):
     else:
         item.pop('card', None)
         item.pop('private_card', None)
+    if event.get('type') == 'mulligan' and event.get('side') != viewer:
+        item.pop('card_ids', None)
     item['text'] = localize_text(event, viewer)
     if 'actor' not in item:
         item['actor'] = derive_actor(event)

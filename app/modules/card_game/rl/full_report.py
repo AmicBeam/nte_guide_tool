@@ -186,11 +186,21 @@ def write_full_report(root):
         if tournament_path.is_file():
             tournament=read(tournament_path)
             lines+=['','#### 分级候选比较（筛选集，不是独立留出）','',
-                    f"完成：{tournament['complete']}；选择：{tournament['selection']}；{tournament['reason']}。",'',
-                    '| 层级 | 候选 | 对手阵容 | 位置 | 胜/完成 | 截断 |',
-                    '| --- | --- | --- | --- | --- | ---: |']
+                    f"完成：{tournament['complete']}；选择：{tournament['selection']}；{tournament['reason']}。",'']
+            if tournament.get('changes'):
+                lines+=['','局部搜索换牌过程（得分仅代表同轮共同筛选集）：','',
+                        '| 轮次 | 换出 | 换入 | 父配牌得分 | 选中得分 |',
+                        '| --- | --- | --- | ---: | ---: |']
+                for change in tournament['changes']:
+                    lines.append(f"| {change['round']} | {change['removed']} | {change['added']} | {change['parent_score']:.2%} | {change['selected_score']:.2%} |")
+                lines+=['','局部初筛仅展示前 8 及基线；完整候选、父配牌和计数见 JSON。','']
+            lines+=['| 层级 | 候选 | 对手阵容 | 位置 | 胜/完成 | 截断 |','| --- | --- | --- | --- | --- | ---: |']
             for stage in tournament['stages']:
-                for result in stage['results']:
+                shown=stage['results']
+                if str(stage['stage']).endswith('-screen'):
+                    ranked=sorted(shown,key=lambda r:-(r.get('metrics') or {}).get('utility',-1))[:8]
+                    shown=[r for r in shown if r in ranked or r['id']=='original']
+                for result in shown:
                     for lineup,positions in result['groups'].items():
                         for position,bucket in positions.items():
                             lines.append(f"| {stage['stage']} | {result['id']} | {lineup} | {position} | {bucket['wins']}/{bucket['games']} | {bucket.get('truncated',0)} |")

@@ -128,6 +128,7 @@ class CandidateSelectionTest(unittest.TestCase):
                  patch('app.modules.card_game.rl.card_tuning.load_battle_policy',return_value=(object(),{'sha256':'fake'})), \
                  patch('app.modules.card_game.rl.card_tuning.CardBattleEvaluator'), \
                  patch('app.modules.card_game.rl.candidate_selection.evaluate_tensor_candidates',return_value=[]), \
+                 patch('app.modules.card_game.rl.local_card_search.refine_locally',side_effect=lambda baseline,evaluate,**kw:fake_tournament([{'id':'original','build':baseline},{'id':'local','build':kw['initial']}],evaluate)), \
                  patch('app.modules.card_game.rl.candidate_selection.run_tournament',side_effect=fake_tournament):
                 with contextlib.redirect_stdout(io.StringIO()):main(['--output',str(root),'--phase','train'])
                 with contextlib.redirect_stdout(io.StringIO()):main(['--output',str(root),'--phase','evaluate'])

@@ -146,6 +146,9 @@ class FinalReportSelectionTest(unittest.TestCase):
                     'final_turn':2,'raw_log':'raw/game.json','opponent_team':deck['character_ids']}]})
                 index.append({'label':label,'preset':key,'variant':'original','report':path})
                 decisions[key]={'selection':'original','original_win_rate':1,'candidate_win_rate':1,'sample_games_each':1,'reason':'fixture'}
+                write(f'{key}/candidate-selection.json',{'complete':True,'selection':'original','reason':'local fixture',
+                    'changes':[{'round':1,'removed':{'N02':1},'added':{'N01':1},'parent_score':.5,'selected_score':.6}],
+                    'stages':[{'stage':'local-1-final','results':[{'id':'original','groups':{'starter':{'first':{'wins':1,'games':2}}}}]}]})
                 chosen[key]={'id':'original','model':'base-export','model_sha256':'synthetic','build':deck}
                 screen[key]={'candidates':[{'id':'original','wins':1,'games':1,'cells':[{'opponent':'rule','report':path}]}]}
                 shortlist[key]={'history_rows':1,'unique_allocations':1,'shortlist':[{}]}
@@ -171,6 +174,8 @@ class FinalReportSelectionTest(unittest.TestCase):
             write('selection/selected.json',{'complete':True,'choices':chosen,'reports':extra})
             write('selection/screen-results.json',screen);write('selection/shortlist.json',shortlist)
             summary=write_full_report(root)
+            self.assertIn('局部搜索换牌过程',(root/'report.md').read_text())
+            self.assertIn('50.00% | 60.00%',(root/'report.md').read_text())
             self.assertEqual(summary['serving_selection'],chosen)
             self.assertIn('最终模型与优选构筑',(root/'report.md').read_text())
             self.assertEqual(json.loads((root/'evaluation-index.json').read_text()),index)

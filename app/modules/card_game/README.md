@@ -227,3 +227,7 @@ python3 -m unittest discover -s tests -p 'test_duel_v2_*.py'
 ### 对局实体身份
 
 V2 玩家、异能者和每张实体卡牌均为独立类实例，使用 `entity_id` 区分身份；同名角色和同名牌不能按模板 ID 判为同一个对象。JSON 存档读回时恢复实体，旧字段保留作接口兼容。牌桌优先提交后端给出的实体动作，旧服务响应才回退旧动作。动作的实体寻址、暗牌边界与迁移细则见 [实现契约](../../../docs/duel-v2-implementation-contract.md#2026-09-16-对局实体身份)。白藏「亦或是祝祷」只排除施法实体，终结只斩杀对方异能者。
+
+### 局部配牌优化
+
+综合训练在整套配牌学习之外追加 4 轮单张／双张替换搜索；单独入口为 `scripts/refine_duel_v2_cards.py`。冻结出牌模型、固定四名角色，按四场景平均胜率筛选，输出替换过程而不自动部署。验证：`python -m unittest tests.test_duel_v2_local_card_search tests.test_duel_v2_candidate_selection`（后者部分用例需要 PyTorch）。详见公开卡池训练说明第 11 节。

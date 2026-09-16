@@ -37,12 +37,12 @@ def main(argv=None):
     from app.modules.card_game.rl.episode_return import REWARD_MODE
     full=args.profile=='comprehensive'
     budget={stage:args.seconds*fraction for stage,fraction in
-            (('base',.20),('cards',.10),('adapt',.075),('selection',.10))}
+            (('base',.15),('cards',.15),('adapt',.075),('selection',.10))}
     if args.check:
         print(json.dumps({'training_started':False,'reward_mode':REWARD_MODE,'presets':PRESETS,'profile':args.profile,
               'training_order':'both bases, then each cards/selection/adaptation','learn_mulligan':True,'adaptation_pinned_peer':True,
               'seconds_total':args.seconds,'seconds_per_preset':budget,'reserve_seconds':args.seconds*.05,
-              'candidate_plan':PROFILES[args.profile],'random_team_fraction':.2,'rule_fraction':.2,
+              'candidate_plan':PROFILES[args.profile],'local_search_rounds':4 if full else 1,'local_two_card_samples':128 if full else 4,'random_team_fraction':.2,'rule_fraction':.2,
               'selection_opponents':'both frozen models with fixed preset roles and variable cards',
               'selection_seed_ranges':[[400000000,402999999],[410000000,412999999]],
               'holdout_seed_base':202609160},ensure_ascii=False));return 0
@@ -93,6 +93,7 @@ def main(argv=None):
         'reward_mode':REWARD_MODE,'budget_seconds':args.seconds,'training_updates_base':0 if full else 4,'training_updates_adapt':0 if full else 2,'card_updates':0 if full else 1,
         'phase':args.phase,'hidden':hidden,'parallel':parallel,'base_seconds':budget['base'],'card_seconds':budget['cards'],'adapt_seconds':budget['adapt'],
         'selection_seconds':budget['selection'],'candidate_plan':PROFILES[args.profile],
+        'local_search':{'rounds':4 if full else 1,'two_limit':128 if full else 4,'screen_pairs':8 if full else 1,'final_pairs':128 if full else 2},
         'no_progress':{'window_seconds':300,'patience':6,'meaning':'six stable window means; not convergence'},'final_evaluation_separate':args.phase=='train',
         'fixed_pairs':fixed_pairs,'varied_pairs':varied_pairs,'screen_pairs':screen_pairs,'max_actions':400,
         'seed_base':202609160,'selection':'three-stage preset-lineup tournament; rule screen rows diagnostic only; holdout never selects',
@@ -178,6 +179,16 @@ def main(argv=None):
                 selected=run_tournament(candidate_pool(out/key,key),
                     lambda decks,schedule:evaluate_tensor_candidates(evaluator,decks,schedule,stop_check=selection_stop),
                     profile=args.profile,seed_base=400000000+PRESETS.index(key)*10000000,stop_check=selection_stop)
+                if selected['complete']:
+                    from app.modules.card_game.rl.local_card_search import refine_locally
+                    local=refine_locally(builds[key,'original'],
+                        lambda decks,schedule:evaluate_tensor_candidates(evaluator,decks,schedule,stop_check=selection_stop),
+                        initial=selected['build'],rounds=4 if full else 1,two_limit=128 if full else 4,
+                        screen_pairs=8 if full else 1,final_pairs=128 if full else 2,
+                        seed_base=420000000+PRESETS.index(key)*20000000,stop_check=selection_stop)
+                    write(f'{key}/local-search.json',local)
+                    local['stages']=selected['stages']+local['stages']
+                    selected=local
             finally:evaluator.close()
             selected['model_identities']={'learner':own_id,'peer-0':peer_id}
             selected['rule_hash']=rule_identity()

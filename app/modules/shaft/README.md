@@ -132,6 +132,8 @@ python3 -m unittest discover -s tests -p 'test_shaft_*.py'
 
 ## 黑羽测试接入（2026-09-16）
 
+角色选择列表中，黑羽位于魂属性组末尾（哈尼娅之后、卡厄斯之前），不追加在全部角色末尾。
+
 - 黑羽（`char_heiyu`）为魂属性、气态角色，排轴与空幕均仅测试账号可选；正式用户和受邀用户不能选择、保存或查看其公开轴。空幕不再将受邀用户当作测试用户。
 - 面板攻击668、生命15514、防御884，以及双形态、天赋、空幕和专武说明来自用户提供的[腾讯文档《黑羽资料汇总》](https://docs.qq.com/aio/DVVRZempSSmZ4THVj?p=MluEyftYtfADwlqnzgRzww)。Everness于2026-09-15按“黑羽”检索无匹配，不将这些数值称为Nanoka核实数据。稀有度、羁绊及头像未提供；头像使用明确标注“头像待补”的文字占位。
 - 动作来自用户附件 `SkillDamageData_BlackBird_Akane_Exe.xlsx` 的 `Sheet1` rows 2–30，按GEName去重，并以1级倍率及公式聚合倍率、命中段数、回能、环合和倾陷。普通E的100环合、16秒CD和40恶意取腾讯文档，覆盖表内基础命中环合。Q1消耗100能量、20秒CD；Q2不重复耗能。

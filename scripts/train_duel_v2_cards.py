@@ -75,7 +75,7 @@ def main(argv=None):
     if args.opponent_builds:
         try:historical_builds=json.loads(args.opponent_builds.read_text(encoding='utf-8'))
         except (OSError,ValueError) as exc:p.error(f'Cannot read opponent builds: {exc}')
-    distribution={'seed':args.seed,'historical_builds':historical_builds,'random_team_fraction':args.random_team_fraction,'rule_fraction':args.rule_fraction,
+    distribution={'scoring':'equal_four_scenario_win_rate_v1','seed':args.seed,'historical_builds':historical_builds,'random_team_fraction':args.random_team_fraction,'rule_fraction':args.rule_fraction,
                   'pairs_per_preset':args.pairs,'presets':['starter','weave-rush'],
                   'frozen_model_ids':['learner',*[f'peer-{i}' for i in range(len(args.opponent_checkpoint))]],
                   'peer_available':bool(args.opponent_checkpoint)}

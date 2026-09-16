@@ -63,21 +63,19 @@ def metrics(groups):
         seats.extend(g['wins']/g['games'] for g in group.values())
     macro=sum(rates)/len(rates)
     return {'macro':macro,'worst_lineup':min(rates),'worst_seat':min(seats),
-            'utility':.6*macro+.2*min(rates)+.2*min(seats)}
+            'utility':sum(seats)/len(seats)}
 
 
-def select_with_baseline(rows, *, max_regression=.03):
-    """Require improvement plus protection for every lineup/seat; ties retain baseline."""
+def select_with_baseline(rows):
+    """Choose the equal-weight four-scenario win rate; ties retain baseline."""
     baseline=next(r for r in rows if r['id']=='original')
     if not all(r['complete'] for r in rows):return baseline
-    def eligible(row):
-        for key in PRESETS:
-            a=row['groups'][key];b=baseline['groups'][key]
-            for position in ('first','second'):
-                if a[position]['wins']/a[position]['games']+max_regression < b[position]['wins']/b[position]['games']:return False
-        return row['metrics']['utility']>baseline['metrics']['utility']+1e-12
-    candidates=[r for r in rows if r['id']!='original' and eligible(r)]
-    return max(candidates,key=lambda r:(r['metrics']['utility'],r['metrics']['worst_seat'],r['id'])) if candidates else baseline
+    # Recompute from counts so saved results cannot retain an old scoring rule.
+    for row in rows:
+        row['metrics']=metrics(row['groups'])
+    candidates=[r for r in rows if r['id']!='original' and
+                r['metrics']['utility']>baseline['metrics']['utility']+1e-12]
+    return max(candidates,key=lambda r:(r['metrics']['utility'],r['id'])) if candidates else baseline
 
 
 def run_tournament(candidates, evaluate, *, profile='comprehensive', seed_base=400000000,
@@ -124,7 +122,8 @@ def run_tournament(candidates, evaluate, *, profile='comprehensive', seed_base=4
     return {'complete':complete,'selection':chosen['id'] if complete else 'original',
             'build':chosen['build'] if complete else baseline['build'],'stages':stages,
             'profile':profile,'plan':plan,'holdout_used_for_selection':False,
-            'reason':'Robust paired selection; each seat regression <=3 percentage points; baseline wins ties' if complete
+            'scoring':'equal_four_scenario_win_rate_v1',
+            'reason':'Equal-weight win rate across both lineups and both seats; baseline wins ties' if complete
                      else 'Insufficient or interrupted evaluation; baseline retained'}
 
 

@@ -25,17 +25,29 @@ def schedule(pairs, **kwargs):
 
 
 class CandidateSelectionTest(unittest.TestCase):
-    def test_high_average_cannot_hide_one_bad_matchup_or_seat(self):
+    def test_higher_overall_score_can_trade_off_one_matchup_or_seat(self):
         baseline={'id':'original','complete':True,'groups':groups(100,50)}
         bad={'id':'bad','complete':True,'groups':groups(100,100)}
         bad['groups']['weave-rush']['first']['wins']=30
         for r in (baseline,bad):r['metrics']=metrics(r['groups'])
         self.assertGreater(bad['metrics']['macro'],baseline['metrics']['macro'])
-        self.assertEqual(select_with_baseline([baseline,bad])['id'],'original')
+        self.assertEqual(select_with_baseline([baseline,bad])['id'],'bad')
+        self.assertAlmostEqual(bad['metrics']['utility'], .825)
         bad['groups']['weave-rush']['first']['wins']=60;bad['metrics']=metrics(bad['groups'])
         self.assertEqual(select_with_baseline([baseline,bad])['id'],'bad')
         bad['groups']=deepcopy(baseline['groups']);bad['metrics']=metrics(bad['groups'])
         self.assertEqual(select_with_baseline([baseline,bad])['id'],'original')
+
+    def test_same_average_keeps_baseline_despite_different_worst_seat(self):
+        baseline={'id':'original','complete':True,'groups':groups(100,50)}
+        candidate={'id':'new','complete':True,'groups':groups(100,50)}
+        candidate['groups']['starter']['first']['wins']=80
+        candidate['groups']['weave-rush']['second']['wins']=20
+        # Historical scores must not override the newly selected scoring rule.
+        baseline['metrics']={'utility':0}
+        candidate['metrics']={'utility':1}
+        self.assertEqual(select_with_baseline([baseline,candidate])['id'],'original')
+        self.assertEqual(candidate['metrics']['utility'],.5)
 
     def test_stage_budget_and_seeds_and_incomplete_fallback(self):
         deck=preset_opponent_deck('starter')

@@ -206,8 +206,8 @@ class CardBattleEvaluator:
                 if group is None:raise ValueError('Schedule must cover both public preset lineups')
                 rates.append(sum(v['wins'] for v in group.values())/sum(v['games'] for v in group.values()).clamp_min(1))
                 seat_rates.extend(v['wins']/v['games'].clamp_min(1) for v in group.values())
-            # Robust utility, not a calibrated probability or confidence interval.
-            utility=.6*torch.stack(rates).mean(0)+.2*torch.stack(rates).min(0).values+.2*torch.stack(seat_rates).min(0).values
+            # Equal weight for all four lineup/seat scenarios; no weakest-seat penalty.
+            utility=torch.stack(seat_rates).mean(0)
             result['rewards']=2*utility-1
         return result
 

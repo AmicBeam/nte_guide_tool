@@ -785,13 +785,14 @@ def _play_effects(s: GpuState, side: torch.Tensor, seat: int, kind: torch.Tensor
     foe = other_side(side)
     original_front = s.front[b, foe].clone()
     had_pact = j02 & (original_front >= 0) & (s.ch_pact[b, foe, original_front.clamp(min=0)] > 0)
+    hit_player = j02 & (original_front < 0)
     _deal_front(s, side, tables['pact_front'][k], j02)
     for foe_seat in range(N_SEATS):
         foe = other_side(side)
         hit = j04 & (tseat == foe_seat)
         _apply_hp(s, foe, torch.zeros_like(hit), foe_seat, tables['pact_target'][k], hit)
         s.ch_pact[b, foe, foe_seat] = torch.where(hit | (j02 & (s.front[b, foe] == foe_seat)), torch.ones_like(s.ch_pact[b, foe, foe_seat]), s.ch_pact[b, foe, foe_seat])
-    draw(s, side, had_pact & _live(s), 1)
+    draw(s, side, (had_pact | hit_player) & _live(s), 1)
     heal_front = valid & (tables['heal_front_full'][k] > 0)
     for ally in range(N_SEATS):
         hit = heal_front & (s.front[b, side] == ally)

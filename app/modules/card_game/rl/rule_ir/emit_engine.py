@@ -765,9 +765,10 @@ static void play_effects(int *row, int s, int seat, int kind, int tside, int tse
     int foe=other_side(s);
     int t=SI(FRONT,foe);
     int had_pact=t>=0 && CH(CH_PACT,foe,t)>0;
+    int hit_player=t<0;
     deal_front(row,s,TAB_PACT_FRONT[kind],seat);
     if(t>=0 && CH(CH_HP,foe,t)>0) CH(CH_PACT,foe,t)=1;
-    if(had_pact && live(row)) draw_one(row,s);
+    if((had_pact || hit_player) && live(row)) draw_one(row,s);
   }
   if(TAB_PACT_TARGET[kind] && tseat>=0){
     int foe=other_side(s);

@@ -1064,6 +1064,16 @@ class DuelV2EngineTest(unittest.TestCase):
                 self.assertEqual(hero(s, 'b', 'zero')['hp'], hp - 1)
                 self.assertEqual(bool(hero(s, 'b', 'zero')['flags'].get('pact')), hp > 1)
 
+    def test_jiuyuan_j02_empty_front_hits_player_and_draws(self):
+        s = self.game()
+        s['sides']['b']['front'] = None
+        s['sides']['b']['hp'] = 30
+        deck_size = len(s['sides']['a']['deck'])
+        s = self.play(s, 'J02')
+        self.assertEqual(s['sides']['b']['hp'], 29)
+        self.assertEqual(len(s['sides']['a']['hand']), 1)
+        self.assertEqual(len(s['sides']['a']['deck']), deck_size - 1)
+
     def test_bohe_share_overflow_on_self_attacked_and_sleep_form(self):
         s = self.rush_game()
         s = self.play(s, 'M07')

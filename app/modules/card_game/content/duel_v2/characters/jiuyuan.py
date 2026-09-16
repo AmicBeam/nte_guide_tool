@@ -8,15 +8,18 @@ def _j01(c):
 
 
 def _j02(c):
-    from app.modules.card_game.engine.duel_v2.state import front_target
+    from app.modules.card_game.engine.duel_v2.state import finished, front_target
     side, cid = front_target(c.state, c.side)
+    had_pact = False
+    hit_player = not is_esper(cid)
     if is_esper(cid):
         # User balance rule (2026-09-15): check before damage can clear the pact.
         had_pact = bool(hero(c.state, side, cid).get('flags', {}).get('pact'))
-        damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}')
+    damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}')
+    if is_esper(cid):
         c.attach_pact(side, cid)
-        if had_pact:
-            c.draw(1)
+    if (had_pact or hit_player) and not finished(c.state):
+        c.draw(1)
 
 
 def _j03(c):
@@ -59,7 +62,6 @@ class Jiuyuan:
         'J05': _j05, 'J06': _j06, 'J07': set_shape, 'J08': set_shape,
     }
     target_policies = {
-        'J02': 'enemy_front',
         'J03': 'downed_enemy',
         'J04': 'living_enemy',
     }

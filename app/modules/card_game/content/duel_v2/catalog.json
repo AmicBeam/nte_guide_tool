@@ -572,7 +572,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。对对方前排造成 1 点伤害，并附着枚约。若目标原本已有枚约，抽 1 张牌。",
+      "description": "瞬发。造成 1 点伤害。前排优先。若目标为异能者，附着枚约。若目标原本已有枚约，或目标是玩家，抽 1 张牌。",
       "instant": true,
       "starter_copies": 2
     },

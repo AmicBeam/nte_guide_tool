@@ -207,6 +207,16 @@ class PublicCompiledNativeTest(unittest.TestCase):
                 nxt, _ = self._check_play(state, {'type': 'play_card', 'card_id': card['instance_id']})
                 self.assertEqual(len(nxt['sides']['a']['hand']), int(pact))
 
+    def test_j02_empty_front_hits_player_and_draws_matches_python(self):
+        state = new_game(seed=11, first_side='a', skip_mulligan=True)
+        state['sides']['b']['front'] = None
+        state['sides']['b']['hp'] = 30
+        state['sides']['b']['shield'] = 0
+        card = _inject_hand(state, 'a', 'J02')
+        nxt, _ = self._check_play(state, {'type': 'play_card', 'card_id': card['instance_id']})
+        self.assertEqual(nxt['sides']['b']['hp'], 29)
+        self.assertEqual(len(nxt['sides']['a']['hand']), 1)
+
     def test_j03_sets_down_without_zeroing_hp(self):
         state = new_game(seed=5, skip_mulligan=True, decks={'a': STARTER_DECK, 'b': STARTER_DECK})
         side = state['active_side']

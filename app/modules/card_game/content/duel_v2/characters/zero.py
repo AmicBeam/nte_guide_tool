@@ -69,10 +69,10 @@ class Zero:
         front = team.get('front')
         if shape == 'Z08' and front:
             target = hero(c.state, c.side, front)
-            add_atk_buff(target, 2)
-            log(c.state, f"「倾世之雨」使{target['name']}攻击 +2。", 'effect',
+            add_atk_buff(target, 1)
+            log(c.state, f"「倾世之雨」使{target['name']}攻击 +1。", 'effect',
                 side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}',
-                target=f'{c.side}:{front}', amount=2)
+                target=f'{c.side}:{front}', amount=1)
         elif shape == 'Z07' and front:
             heal(c.state, c.side, front, 2, reason='回合结束，「休息日」触发')
         elif shape == 'Z06':

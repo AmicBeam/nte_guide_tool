@@ -249,15 +249,15 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual((hero(s, 'a', 'nanali')['harmony'], hero(s, 'a', 'nanali')['energy']), (1, 2))
         self.assertEqual((hero(s, 'b', 'zero')['harmony'], hero(s, 'b', 'zero')['energy']), (0, 0))
 
-    def test_nanali_family_becomes_instant_from_own_turn_six(self):
+    def test_nanali_family_becomes_instant_from_own_turn_five(self):
         s = self.game()
         family = next(c for c in s['sides']['a']['hand'] if c['card_id'] == 'NF01')
         shown = next(c for c in observe(s, 'a')['sides']['a']['hand'] if c.get('card_id') == 'NF01')
         self.assertFalse(shown.get('instant'))
-        s['sides']['a']['turn_count'] = 5
+        s['sides']['a']['turn_count'] = 4
         shown = next(c for c in observe(s, 'a')['sides']['a']['hand'] if c.get('card_id') == 'NF01')
         self.assertFalse(shown.get('instant'))
-        s['sides']['a']['turn_count'] = 6
+        s['sides']['a']['turn_count'] = 5
         s['sides']['a']['ap'] = 0
         shown = next(c for c in observe(s, 'a')['sides']['a']['hand'] if c.get('card_id') == 'NF01')
         self.assertTrue(shown.get('instant'))
@@ -301,23 +301,23 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(attack_value(n), 3)
         s = apply_action(s, 'a', {'type': 'end_turn'})
         n = hero(s, 'a', 'nanali')
-        self.assertEqual(n['flags'].get('atk_buff'), 2)
-        self.assertEqual(attack_value(n), 5)
+        self.assertEqual(n['flags'].get('atk_buff'), 1)
+        self.assertEqual(attack_value(n), 4)
         shown = {item['id']: item for item in observe(s, 'a')['sides']['a']['characters']}
-        self.assertEqual(shown['nanali']['attack'], 5)
+        self.assertEqual(shown['nanali']['attack'], 4)
         self.assertTrue(any(e['type'] == 'effect' and '倾世之雨' in e['text'] and '娜娜莉' in e['text']
                             for e in s['events']))
         s = apply_action(s, 'b', {'type': 'attack', 'character_id': 'zero'})
         attack_log = next(event for event in reversed(s['events']) if event['type'] == 'attack')
-        self.assertEqual(attack_log['counter'], 5)
+        self.assertEqual(attack_log['counter'], 4)
         s = apply_action(s, 'b', {'type': 'end_turn'})
         n = hero(s, 'a', 'nanali')
-        self.assertEqual(n['flags'].get('atk_buff'), 2)
-        self.assertEqual(attack_value(n), 5)
+        self.assertEqual(n['flags'].get('atk_buff'), 1)
+        self.assertEqual(attack_value(n), 4)
         self.assertIsNone(s['sides']['a']['front'])
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'nanali'})
         attack_log = next(event for event in reversed(s['events']) if event['type'] == 'attack')
-        self.assertEqual(attack_log['attack'], 5)
+        self.assertEqual(attack_log['attack'], 4)
         from app.modules.card_game.engine.duel_v2.state import knockdowns
         hero(s, 'a', 'nanali')['hp'] = 0
         knockdowns(s)
@@ -933,8 +933,8 @@ class DuelV2EngineTest(unittest.TestCase):
         atk = attack_value(hero(s, 'a', 'baicang'))
         s = self.play(s, 'B08')
         self.assertEqual(hero(s, 'a', 'baicang')['shape'], 'B08')
-        self.assertEqual(hero(s, 'a', 'baicang')['max_hp'], 9)
-        self.assertEqual(hero(s, 'a', 'baicang')['hp'], 5)
+        self.assertEqual(hero(s, 'a', 'baicang')['max_hp'], 8)
+        self.assertEqual(hero(s, 'a', 'baicang')['hp'], 4)
         self.assertGreaterEqual(attack_value(hero(s, 'a', 'baicang')), atk + 1)
 
     def test_baicang_damage_hooks_are_personal(self):

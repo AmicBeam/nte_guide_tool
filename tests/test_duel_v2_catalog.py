@@ -109,7 +109,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(len(named), 104)
         self.assertTrue(CARDS['NF01']['derived'])
         self.assertEqual(CARDS['NF01']['name'], '家族壮大')
-        self.assertIn('第 6 个己方回合及以后具有瞬发', CARDS['NF01']['description'])
+        self.assertIn('第 5 个己方回合及以后具有瞬发', CARDS['NF01']['description'])
         self.assertFalse(CARDS['NF01'].get('instant'))
         type_counts = {'battle': 0, 'tactic': 0, 'form': 0}
         for character_id in CATALOG_ORDER:
@@ -184,7 +184,7 @@ class DuelV2CatalogTest(unittest.TestCase):
                 self.assertIsNone(sortie.search(card['description'] or ''), card['id'])
         self.assertEqual(CARDS['N07']['description'], '本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。')
         self.assertEqual(CARDS['Z08']['name'], '倾世之雨')
-        self.assertEqual(CARDS['Z08']['description'], '回合结束时，己方前排攻击 +2。')
+        self.assertEqual(CARDS['Z08']['description'], '回合结束时，己方前排攻击 +1。')
         self.assertEqual(CARDS['Z07']['name'], '休息日')
         self.assertEqual(CARDS['Z06']['type'], 'form')
         self.assertEqual(CARDS['Z03']['shield'], 2)
@@ -203,6 +203,12 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['K07']['name'], '宇宙的频段')
         self.assertEqual(CARDS['R07']['name'], '梦的边缘')
         self.assertEqual(CARDS['Y07']['name'], '想做什么梦？')
+        self.assertEqual(CARDS['Y07']['attack'], 1)
+        self.assertEqual(CARDS['M08']['hp'], 4)
+        self.assertEqual(CARDS['B08']['hp'], 8)
+        self.assertEqual(CARDS['J07']['description'], '九原的终结成功清算枚约时，每个目标使九原获得 1 点能量。')
+        self.assertIn('伊洛伊永久获得攻击 +1、生命 +1', CARDS['Y05']['description'])
+        self.assertIn('第 5 个己方回合', CARDS['NF01']['description'])
         self.assertEqual(CARDS['S07']['name'], '小鬼头大胃口')
         self.assertEqual(CARDS['H07']['name'], '铁骑速递')
         for character_id, prefix in CARD_PREFIXES.items():

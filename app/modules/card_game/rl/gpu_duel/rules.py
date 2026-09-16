@@ -866,7 +866,7 @@ def play_card(s: GpuState, side: torch.Tensor, hand_slot: torch.Tensor, mask: to
     instant = (kind >= 0) & (s.catalog_instant[kind.clamp(min=0)] > 0)
     nf01 = CARD_INDEX.get('NF01', -1)
     if nf01 >= 0:
-        instant = instant | ((kind == nf01) & (s.turn_count[b, side] >= 6))
+        instant = instant | ((kind == nf01) & (s.turn_count[b, side] >= 5))
     # zero shaped forms instant
     is_form = (kind >= 0) & (s.catalog_type[kind.clamp(min=0)] == 2)
     zero_shaped = (s.ch_hp[b, side, ZERO] > 0) & (s.ch_shape[b, side, ZERO] >= 0)
@@ -919,13 +919,19 @@ def start_ultimate(s: GpuState, side: torch.Tensor, seat: int, mask: torch.Tenso
     # iloy: energy_next
     if seat == ILOY:
         s.ch_energy_next[b, side, ILOY] = torch.where(mask, torch.ones_like(s.ch_energy_next[b, side, ILOY]), s.ch_energy_next[b, side, ILOY])
-    # jiuyuan instant: damage all enemies, +2 if pact
+    # jiuyuan instant: damage all enemies, +2 if pact; J07 refunds 1 energy per pact
     if seat == JIUYUAN:
         foe = other_side(side)
+        j07_id = CARD_INDEX.get('J07', -1)
         for foe_seat in range(N_SEATS):
             hit = mask & (s.ch_hp[b, foe, foe_seat] > 0)
-            amt = torch.where(s.ch_pact[b, foe, foe_seat] > 0, torch.full_like(s.hp[:, 0], 3), torch.ones_like(s.hp[:, 0]))
-            s.ch_pact[b, foe, foe_seat] = torch.where(hit & (s.ch_pact[b, foe, foe_seat] > 0), torch.zeros_like(s.ch_pact[b, foe, foe_seat]), s.ch_pact[b, foe, foe_seat])
+            pact = s.ch_pact[b, foe, foe_seat] > 0
+            amt = torch.where(pact, torch.full_like(s.hp[:, 0], 3), torch.ones_like(s.hp[:, 0]))
+            refund = hit & pact & (s.ch_shape[b, side, seat] == j07_id) & (s.ch_hp[b, side, seat] > 0)
+            s.ch_energy[b, side, seat] = torch.where(
+                refund, torch.minimum(s.ch_energy[b, side, seat] + 1, s.ch_energy_max[b, side, seat]),
+                s.ch_energy[b, side, seat])
+            s.ch_pact[b, foe, foe_seat] = torch.where(hit & pact, torch.zeros_like(s.ch_pact[b, foe, foe_seat]), s.ch_pact[b, foe, foe_seat])
             _apply_hp(s, foe, torch.zeros_like(hit), foe_seat, amt, hit)
         knockdown(s)
         victory(s)
@@ -967,7 +973,7 @@ def rebuild_legal(s: GpuState) -> None:
         instant = (kind >= 0) & (s.catalog_instant[kind.clamp(min=0)] > 0)
         nf01 = CARD_INDEX.get('NF01', -1)
         if nf01 >= 0:
-            instant = instant | ((kind == nf01) & (s.turn_count[b, side] >= 6))
+            instant = instant | ((kind == nf01) & (s.turn_count[b, side] >= 5))
         is_form = (kind >= 0) & (s.catalog_type[kind.clamp(min=0)] == 2)
         zero_shaped = (s.ch_hp[b, side, ZERO] > 0) & (s.ch_shape[b, side, ZERO] >= 0)
         free = (instant | (is_form & zero_shaped)) & (s.used_instant[b, side] == 0)

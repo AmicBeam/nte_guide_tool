@@ -84,7 +84,7 @@ class Jiuyuan:
                 c.history(f"九原的终结清算{hero(c.state, foe, cid)['name']}的枚约，本次伤害 +2。",
                           target_side=foe, target_id=cid)
                 if c.character.get('shape') == 'J07':
-                    c.energy(2, reason='「使命必达」触发')
+                    c.energy(1, reason='「使命必达」触发')
             damage(c.state, foe, cid, amount, source=f'{c.side}:{c.cid}')
 
     @staticmethod

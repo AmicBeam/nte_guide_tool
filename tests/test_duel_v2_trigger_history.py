@@ -146,7 +146,7 @@ class TriggerHistoryTest(unittest.TestCase):
         fire(c, 'on_ultimate', actor_only=True)
         gains = [e for e in s['events'] if '「使命必达」触发' in e['text']]
         self.assertEqual(len(gains), 1)
-        self.assertEqual(gains[0]['after'], {'energy': 2})
+        self.assertEqual(gains[0]['after'], {'energy': 1})
         c = self.context(s, 'iloy')
         c.character['shape'] = 'Y08'
         fire(c, 'after_genesis', actor_only=True, entering='zero')

@@ -393,7 +393,7 @@
       "cost": 1,
       "terminal": false,
       "derived": true,
-      "description": "第 6 个己方回合及以后具有瞬发。娜娜莉永久获得攻击 +1、生命 +1。",
+      "description": "第 5 个己方回合及以后具有瞬发。娜娜莉永久获得攻击 +1、生命 +1。",
       "effect_id": "NF01",
       "source": {
         "character_id": 1010,
@@ -538,7 +538,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "回合结束时，己方前排攻击 +2。",
+      "description": "回合结束时，己方前排攻击 +1。",
       "starter_copies": 1,
       "attack": 3,
       "hp": 5
@@ -653,7 +653,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "九原的终结成功清算枚约时，每个目标使九原获得 2 点能量。",
+      "description": "九原的终结成功清算枚约时，每个目标使九原获得 1 点能量。",
       "starter_copies": 0,
       "attack": 3,
       "hp": 4
@@ -1722,7 +1722,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。将其他己方存活的异能者变为 2 回合倒计时的倒地状态。抽 2 张牌。",
+      "description": "瞬发。将其他己方存活的异能者变为 2 回合倒计时的倒地状态。抽 2 张牌。伊洛伊永久获得攻击 +1、生命 +1。",
       "starter_copies": 0,
       "instant": true
     },
@@ -1757,7 +1757,7 @@
       "terminal": false,
       "description": "己方异能者倒地时，造成 2 点伤害。前排优先。若伊洛伊倒地，先结算此效果再卸下武备。",
       "starter_copies": 0,
-      "attack": 3,
+      "attack": 1,
       "hp": 5
     },
     {
@@ -1915,7 +1915,7 @@
       },
       "starter_copies": 2,
       "attack": 3,
-      "hp": 5
+      "hp": 4
     },
     {
       "id": "B01",
@@ -2055,7 +2055,7 @@
       },
       "starter_copies": 2,
       "attack": 3,
-      "hp": 9
+      "hp": 8
     }
   ],
   "starter_decks": [

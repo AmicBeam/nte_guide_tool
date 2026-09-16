@@ -1,5 +1,5 @@
 from app.modules.card_game.content.duel_v2.characters.common import (
-    draw_owned_card, revive_character, set_shape,
+    draw_owned_card, perm_plus, revive_character, set_shape,
 )
 from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.engine.duel_v2.state import (
@@ -56,6 +56,7 @@ def _y05(c):
         if h.get('down_turns'):
             h['down_turns'] = 2
     c.draw(2)
+    perm_plus(c, atk=1, hp=1)
 
 
 def _y06(c):

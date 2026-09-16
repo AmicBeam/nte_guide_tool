@@ -267,6 +267,8 @@ class PublicCompiledNativeTest(unittest.TestCase):
         for cid, hero in nxt['sides'][side]['characters'].items():
             if cid == 'iloy':
                 self.assertGreater(hero['hp'], 0)
+                self.assertEqual(hero['base_attack'], 2)
+                self.assertEqual(hero['max_hp'], 7)
             else:
                 self.assertEqual(hero['hp'], 0)
                 self.assertEqual(hero['down_turns'], 2)

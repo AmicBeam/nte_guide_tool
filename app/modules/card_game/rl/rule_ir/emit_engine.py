@@ -6,7 +6,7 @@ generated functions are the only runtime rule implementation.
 from __future__ import annotations
 
 from app.modules.card_game.rl.gpu_duel.catalog import (
-    ACT_ATTACK, ACT_CHOOSE, ACT_END, ACT_PLAY, ACT_ULTIMATE, CARD_IDS, CARD_INDEX,
+    ACT_ATTACK, ACT_CHOOSE, ACT_END, ACT_MULLIGAN, ACT_PLAY, ACT_ULTIMATE, CARD_IDS, CARD_INDEX,
     HARMONY_GENESIS, ILOY, JIUYUAN, LEGAL_ATK, LEGAL_END, LEGAL_PLAY, LEGAL_ULT,
     LEGAL_WIDTH, MAX_LEGAL, NANALI, N_SEATS, PLAY_TARGETS, POLICY_ALLY,
     POLICY_DOWN_ALLY, POLICY_DOWN_ENEMY, POLICY_ALLY_FRONT, POLICY_ENEMY, POLICY_ENEMY_FRONT, POLICY_INJURED, POLICY_NONE,
@@ -49,6 +49,7 @@ def _tables(deck_id="starter") -> str:
         f'#define ACT_ATTACK {ACT_ATTACK}',
         f'#define ACT_PLAY {ACT_PLAY}',
         f'#define ACT_ULTIMATE {ACT_ULTIMATE}',
+        f'#define ACT_MULLIGAN {ACT_MULLIGAN}',
         f'#define ACT_CHOOSE {ACT_CHOOSE}',
         f'#define LEGAL_END {LEGAL_END}',
         f'#define LEGAL_ATK {LEGAL_ATK}',
@@ -76,6 +77,7 @@ def _tables(deck_id="starter") -> str:
         f'#define HARMONY_OVERLAY {HARMONY_OVERLAY}',
         f'#define HARMONY_BURN 4',
         f'#define HARMONY_STAR 5',
+        f'#define PHASE_MULLIGAN 0',
         f'#define PHASE_PLAYING 1',
         f'#define PHASE_CHOICE 2',
         f'#define PHASE_FINISHED 3',
@@ -223,6 +225,7 @@ static void victory(int *row){
 static void add_hand(int *row, int s, int kind, int inst);
 static void to_discard(int *row, int s, int kind, int inst);
 static void grant_seed(int *row, int s);
+static void apply_mulligan(int *row, int s, int mask);
 static void resolve_genesis(int *row, int s, int seat, int arm_delay);
 static void deal_front(int *row, int s, int amount, int src_seat);
 static void play_effects(int *row, int s, int seat, int kind, int tside, int tseat);
@@ -481,7 +484,7 @@ static int form_draw_bonus(int *row, int s, int kind){
 }
 static int card_instant(int *row, int s, int kind){
   if(kind<0) return 0;
-  return CAT_INSTANT[kind] || (kind==CARD_NF01 && SI(TURN_COUNT,s)>=6) || form_draw_bonus(row,s,kind);
+  return CAT_INSTANT[kind] || (kind==CARD_NF01 && SI(TURN_COUNT,s)>=5) || form_draw_bonus(row,s,kind);
 }
 static int card_free(int *row, int s, int kind){
   return card_instant(row,s,kind) && SI(USED_INSTANT,s)==0;
@@ -930,7 +933,7 @@ static void start_ultimate(int *row, int s, int seat){
       if(CH(CH_HP,foe,k)<=0) continue;
       int amt = CH(CH_PACT,foe,k)>0 ? 3 : 1;
       if(CH(CH_PACT,foe,k)>0 && CH(CH_SHAPE,s,seat)==CARD_J07 && present_alive(row,s,seat))
-        CH(CH_ENERGY,s,seat)=MIN(energy_cap_for(row,seat),CH(CH_ENERGY,s,seat)+2);
+        CH(CH_ENERGY,s,seat)=MIN(energy_cap_for(row,seat),CH(CH_ENERGY,s,seat)+1);
       if(CH(CH_PACT,foe,k)>0) CH(CH_PACT,foe,k)=0;
       deal_damage(row,foe,0,k,amt,s,seat,0,0);
       set_last_hit(row,foe,k,s,seat);
@@ -1109,6 +1112,17 @@ static void clear_legal(int *row){
   row[OFF_LEGAL_N]=0;
 }
 
+static int popcount_bits(int x){
+  int n=0;
+  while(x){ n += x&1; x >>= 1; }
+  return n;
+}
+static int mulligan_chooser(int *row){
+  int done = row[OFF_PENDING_COUNT] & 3;
+  if(!(done & 1)) return 0;
+  if(!(done & 2)) return 1;
+  return 0;
+}
 static void rebuild_legal(int *row){
   clear_legal(row);
   if(!live(row)) return;
@@ -1118,6 +1132,26 @@ static void rebuild_legal(int *row){
       LT(i)=ACT_CHOOSE; LH(i)=i;
     }
     row[OFF_LEGAL_N]=n;
+    return;
+  }
+  if(row[OFF_PHASE]==PHASE_MULLIGAN){
+    row[OFF_ACTIVE]=mulligan_chooser(row);
+    int s=row[OFF_ACTIVE];
+    if(row[OFF_PENDING_COUNT] & (1<<s)) return;
+    int n=SI(HAND_N,s);
+    if(n>5) n=5;
+    int count=0;
+    int limit = 1<<n;
+    for(int mask=0; mask<limit; mask++){
+      if(popcount_bits(mask)>3) continue;
+      LT(count)=ACT_MULLIGAN;
+      LA(count)=-1;
+      LH(count)=mask;
+      LS(count)=-1;
+      LK(count)=-1;
+      count++;
+    }
+    row[OFF_LEGAL_N]=count;
     return;
   }
   if(row[OFF_PHASE]!=PHASE_PLAYING) return;
@@ -1201,6 +1235,8 @@ static void step_one(int *row, int action){
     play_card(row,s,hand,tside,tseat);
   } else if(typ==ACT_CHOOSE){
     choose_pending(row,hand);
+  } else if(typ==ACT_MULLIGAN){
+    apply_mulligan(row,s,hand);
   }
   rebuild_legal(row);
 }
@@ -1262,14 +1298,62 @@ static void shuffle_deck(int *row, int s, int rng){
     DK(s,j)=tk; DI(s,j)=ti;
   }
 }
+static void shuffle_deck_lcg(int *row, int s){
+  int n=SI(DECK_N,s);
+  for(int i=n-1;i>0;i--){
+    int j = lcg(&row[OFF_RNG]) % (i+1);
+    int tk=DK(s,i), ti=DI(s,i);
+    DK(s,i)=DK(s,j); DI(s,i)=DI(s,j);
+    DK(s,j)=tk; DI(s,j)=ti;
+  }
+}
+static void apply_mulligan(int *row, int s, int mask){
+  if(row[OFF_PHASE]!=PHASE_MULLIGAN || !live(row)) return;
+  if(row[OFF_PENDING_COUNT] & (1<<s)) return;
+  int n=SI(HAND_N,s);
+  if(n>5) n=5;
+  if(mask<0 || mask>=(1<<n) || popcount_bits(mask)>3) return;
+  int removed_k[5];
+  int removed_i[5];
+  int n_rem=0;
+  for(int slot=0; slot<n; slot++){
+    if(!(mask & (1<<slot))) continue;
+    removed_k[n_rem]=HK(s,slot);
+    removed_i[n_rem]=HI(s,slot);
+    HK(s,slot)=-1; HI(s,slot)=0;
+    row[OFF_HAND_REVEALED + (s*HAND_SLOTS + slot)]=0;
+    n_rem++;
+  }
+  compact_hand(row,s);
+  draw_n(row,s,n_rem);
+  if(!live(row)) return;
+  for(int i=0;i<n_rem;i++){
+    int dn=SI(DECK_N,s);
+    if(dn>=DECK_SLOTS){ fail(row, ERR_UNSUPPORTED); return; }
+    DK(s,dn)=removed_k[i];
+    DI(s,dn)=removed_i[i];
+    SI(DECK_N,s)=dn+1;
+  }
+  shuffle_deck_lcg(row,s);
+  row[OFF_PENDING_COUNT] = (row[OFF_PENDING_COUNT] | (1<<s)) & 3;
+  if((row[OFF_PENDING_COUNT] & 3)==3){
+    row[OFF_PENDING_COUNT]=0;
+    begin_turn(row, row[OFF_FIRST]);
+  } else {
+    row[OFF_PHASE]=PHASE_MULLIGAN;
+    row[OFF_ACTIVE]=mulligan_chooser(row);
+  }
+}
 
 static void reset_one_with_decks(int *row, int seed, const int *deck_a, const int *deck_b, int escalation){
   clear_row(row);
   int first = (seed & 0x7FFFFFFF) % 2;
+  int enable_escalation = escalation & 1;
+  int enable_mulligan = (escalation >> 1) & 1;
   row[OFF_RNG]=seed & 0x7FFFFFFF;
   row[OFF_FIRST]=first;
   row[OFF_ACTIVE]=first;
-  row[OFF_ESCALATION_ENABLED]=escalation ? 1 : 0;
+  row[OFF_ESCALATION_ENABLED]=enable_escalation ? 1 : 0;
   row[OFF_NEXT_INSTANCE]=32;
   const int *decks[2] = {deck_a, deck_b};
   for(int s=0;s<N_SIDES;s++){
@@ -1297,6 +1381,13 @@ static void reset_one_with_decks(int *row, int seed, const int *deck_a, const in
     SI(DECK_N,s)=32;
     shuffle_deck(row,s,(seed & 0x7FFFFFFF) + (s+1)*10007);
     draw_n(row,s,5);
+  }
+  if(enable_mulligan){
+    row[OFF_PHASE]=PHASE_MULLIGAN;
+    row[OFF_ACTIVE]=0;
+    row[OFF_PENDING_COUNT]=0;
+    rebuild_legal(row);
+    return;
   }
   row[OFF_PHASE]=PHASE_PLAYING;
   begin_turn(row, first);

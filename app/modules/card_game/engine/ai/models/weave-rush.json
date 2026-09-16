@@ -179,19 +179,33 @@
       "B08"
     ]
   },
-  "previous_validation": {
-    "complete": true,
-    "model_sha256": "2020f91830f5c397776965dcbc0b6661e1b8e138c07179e0bf29a92fa8640ba7",
-    "rule_hash": "d42a49c2ad4cee9d37a6cf40f4bc62b6baff14fb418885bef7dc915c56c0cb96",
-    "games": 64,
-    "wins": 60,
-    "min_pairs": 32,
-    "min_win_rate": 0.5,
-    "opponent_teams": 15,
-    "report_sha256": "3d5baa1f5630ef978058b70bc1a135a6df8ccf270f7ed20c38d45e68df5faa53",
-    "serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
-  },
-  "runtime_rule_hash": "57a18309dd0271aacb477a1dd89369da4b1c282c86096639e312521d238662f7",
+  "previous_validation": [
+    {
+      "complete": true,
+      "model_sha256": "2020f91830f5c397776965dcbc0b6661e1b8e138c07179e0bf29a92fa8640ba7",
+      "rule_hash": "d42a49c2ad4cee9d37a6cf40f4bc62b6baff14fb418885bef7dc915c56c0cb96",
+      "games": 64,
+      "wins": 60,
+      "min_pairs": 32,
+      "min_win_rate": 0.5,
+      "opponent_teams": 15,
+      "report_sha256": "3d5baa1f5630ef978058b70bc1a135a6df8ccf270f7ed20c38d45e68df5faa53",
+      "serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
+    },
+    {
+      "complete": true,
+      "model_sha256": "2020f91830f5c397776965dcbc0b6661e1b8e138c07179e0bf29a92fa8640ba7",
+      "rule_hash": "57a18309dd0271aacb477a1dd89369da4b1c282c86096639e312521d238662f7",
+      "games": 64,
+      "wins": 60,
+      "min_pairs": 32,
+      "min_win_rate": 0.5,
+      "opponent_teams": 15,
+      "report_sha256": "d2e831b3619d77511cbe2fa97a3695f8fdfd187ca2c0ae5d83e1a26604a3b868",
+      "serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
+    }
+  ],
+  "runtime_rule_hash": "9100b1b7ac37fc139f78b306bed03249eb0188d692f4bad7a4b14ec52fabac4a",
   "runtime_revision": {
     "reason": "Joint opening framework and opponent mulligan event privacy; legacy v2 still keeps all cards",
     "trained_again": false,
@@ -239,13 +253,13 @@
   "validation": {
     "complete": true,
     "model_sha256": "2020f91830f5c397776965dcbc0b6661e1b8e138c07179e0bf29a92fa8640ba7",
-    "rule_hash": "57a18309dd0271aacb477a1dd89369da4b1c282c86096639e312521d238662f7",
+    "rule_hash": "9100b1b7ac37fc139f78b306bed03249eb0188d692f4bad7a4b14ec52fabac4a",
     "games": 64,
-    "wins": 60,
+    "wins": 61,
     "min_pairs": 32,
     "min_win_rate": 0.5,
     "opponent_teams": 15,
-    "report_sha256": "d2e831b3619d77511cbe2fa97a3695f8fdfd187ca2c0ae5d83e1a26604a3b868",
+    "report_sha256": "6eef817e6af6362186f735ca955746973ea0b54337c02d107f3e61472a778ce9",
     "serving_build_sha256": "f68d661ce484a83494dc8555d85e74a580ff405adce321bef898c7e132b49206"
   },
   "serving_build": {

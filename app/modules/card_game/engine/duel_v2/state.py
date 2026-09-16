@@ -209,11 +209,20 @@ def discard(state, side, card, *, bottom=False):
 
 
 def knockdowns(state):
+    # A downed character's effects can kill a character already visited in this
+    # pass. Drain those deaths here, before the damage stage can finish.
+    while _knockdown_pass(state):
+        pass
+
+
+def _knockdown_pass(state):
+    progressed = False
     for side in SIDES:
         for cid in team_order(state, side):
             h = hero(state, side, cid)
             if h['hp'] > 0 or h['down_turns'] > 0:
                 continue
+            progressed = True
             h['hp'] = 0
             clear_harmony_source(state, side, cid)
             killer = h.pop('last_hit_source', None)
@@ -244,6 +253,7 @@ def knockdowns(state):
                 before=before, after={'hp': 0, 'shield': 0, 'harmony': kept_harmony,
                                       'energy': kept_energy, 'growth': 0,
                                       'shape_id': None, 'down_turns': 3})
+    return progressed
 
 
 def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage', settle=True,

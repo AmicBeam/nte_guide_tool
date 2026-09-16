@@ -318,7 +318,7 @@ static void move_out(int *row, int s, int seat){
 static void knockdown(int *row){
   if(!live(row)) return;
   int progressed=1;
-  if(live(row)){
+  while(progressed){
     progressed=0;
     for(int s=0;s<N_SIDES;s++){
       for(int k=0;k<N_SEATS;k++){
@@ -366,8 +366,8 @@ static void knockdown(int *row){
         }
       }
     }
-    victory(row);
   }
+  victory(row);
 }
 
 static int energy_cap_for(int *row, int seat){

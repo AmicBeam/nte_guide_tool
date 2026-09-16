@@ -109,6 +109,32 @@ class PublicCompiledNativeTest(unittest.TestCase):
         self.assertEqual(mechan_from_row(got), mechan_from_row(py))
         return nxt, got
 
+    def test_knockdown_chain_and_b02_heal_match_python(self):
+        from app.modules.card_game.engine.duel_v2.state import hero
+        deck = next(d for d in STARTER_DECKS if d['id'] == 'weave-rush')
+        for side in ('a', 'b'):
+            for use_heal in (False, True):
+                with self.subTest(side=side, use_heal=use_heal):
+                    foe = 'b' if side == 'a' else 'a'
+                    state = new_game(seed=9, first_side=side, skip_mulligan=True,
+                                     decks={'a': deck, 'b': deck})
+                    for owner in ('a', 'b'):
+                        state['sides'][owner]['hand'] = []
+                    actor = 'baicang' if use_heal else 'bohe'
+                    target = 'zero' if use_heal else 'baicang'
+                    hero(state, side, actor)['hp'] = 1 if use_heal else 4
+                    hero(state, foe, target).update(hp=3, base_attack=3 if use_heal else 2)
+                    hero(state, foe, 'iloy')['shape'] = 'Y07'
+                    state['sides'][foe]['front'] = target
+                    if use_heal:
+                        card = _inject_hand(state, side, 'B02')
+                        action = {'type': 'play_card', 'card_id': card['instance_id']}
+                    else:
+                        action = {'type': 'attack', 'character_id': actor}
+                    nxt, _ = self._check_play(state, action)
+                    self.assertEqual(hero(nxt, side, actor)['down_turns'], 3)
+                    self.assertIsNone(nxt['sides'][side]['front'])
+
     def test_z06_refund_is_available_to_response_and_not_next_turn(self):
         from app.modules.card_game.engine.duel_v2.state import hero, card_instance
         for side in ('a', 'b'):

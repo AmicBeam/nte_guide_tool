@@ -694,6 +694,76 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(hero(s, 'b', 'iloy')['hp'], 0)
         self.assertEqual(hero(s, 'b', 'iloy')['down_turns'], 3)
 
+    def test_knockdown_damage_settles_both_seat_orders_before_next_action(self):
+        for attacker, defender in (('a', 'b'), ('b', 'a')):
+            with self.subTest(attacker=attacker):
+                s = self.rush_game()
+                s['active_side'] = attacker
+                for side in ('a', 'b'):
+                    s['sides'][side]['hand'] = []
+                    s['sides'][side]['ap'] = 2
+                    s['sides'][side]['normal_attack_available'] = True
+                    hero(s, side, 'iloy')['shape'] = 'Y07'
+                hero(s, attacker, 'bohe').update(hp=4, shape='M08', harmony=1, energy=2)
+                hero(s, defender, 'baicang').update(hp=3, base_attack=2)
+                s['sides'][defender]['front'] = 'baicang'
+                start = s['event_seq']
+                s = apply_action(s, attacker, {'type': 'attack', 'character_id': 'bohe'})
+                mint = hero(s, attacker, 'bohe')
+                self.assertEqual((mint['hp'], mint['down_turns'], mint['shape']), (0, 3, None))
+                self.assertEqual((mint['harmony'], mint['energy']), (1, 2))
+                self.assertIsNone(s['sides'][attacker]['front'])
+                events = [e for e in s['events'] if e['seq'] > start]
+                downs = [e['target'] for e in events if e['type'] == 'down']
+                self.assertCountEqual(downs, [attacker + ':bohe', defender + ':baicang'])
+                self.assertEqual(len([e for e in events if '想做什么梦？' in e.get('text', '')]), 2)
+                from app.modules.card_game.engine.duel_v2.state import knockdowns
+                seq = s['event_seq']
+                knockdowns(s)
+                self.assertEqual(s['event_seq'], seq)
+
+    def test_m08_start_turn_chain_finishes_before_draw_and_new_equipment(self):
+        s = self.rush_game()
+        s['active_side'] = 'b'
+        for side in ('a', 'b'):
+            s['sides'][side]['hand'] = []
+        hero(s, 'a', 'bohe').update(hp=4, shape='M08')
+        hero(s, 'b', 'baicang').update(hp=3, base_attack=2)
+        hero(s, 'b', 'iloy')['shape'] = 'Y07'
+        s['sides']['b']['front'] = 'baicang'
+        start = s['event_seq']
+        s = apply_action(s, 'b', {'type': 'end_turn'})
+        events = [e for e in s['events'] if e['seq'] > start]
+        down = next(e for e in events if e['type'] == 'down' and e['target'] == 'a:bohe')
+        draw = next(e for e in events if e['type'] == 'draw' and e['side'] == 'a')
+        self.assertLess(down['seq'], draw['seq'])
+        self.assertEqual(hero(s, 'a', 'bohe')['down_turns'], 3)
+        s = self.play(s, 'Y07')
+        hp = s['sides']['b']['hp']
+        start = s['event_seq']
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
+        self.assertEqual(s['sides']['b']['hp'], hp - 2)
+        self.assertFalse(any(e['type'] == 'down' for e in s['events'] if e['seq'] > start))
+
+    def test_b02_heal_precedes_knockdown_chain(self):
+        s = self.rush_game()
+        hero(s, 'a', 'baicang').update(hp=1)
+        hero(s, 'b', 'zero').update(hp=3, base_attack=3)
+        hero(s, 'b', 'iloy')['shape'] = 'Y07'
+        s['sides']['b']['front'] = 'zero'
+        s['sides']['b']['hand'] = []
+        start = s['event_seq']
+        s = self.play(s, 'B02')
+        events = [e for e in s['events'] if e['seq'] > start]
+        heal = next(e for e in events if e['type'] == 'heal' and e['target'] == 'a:baicang')
+        self.assertEqual(heal['before']['hp'], 0)
+        self.assertEqual(heal['after']['hp'], 2)
+        zero_down = next(e for e in events if e['type'] == 'down' and e['target'] == 'b:zero')
+        baicang_down = next(e for e in events if e['type'] == 'down' and e['target'] == 'a:baicang')
+        self.assertLess(heal['seq'], zero_down['seq'])
+        self.assertLess(zero_down['seq'], baicang_down['seq'])
+        self.assertEqual(hero(s, 'a', 'baicang')['down_turns'], 3)
+
     def test_record_first_only_and_distinct_authors_after_awaken(self):
         s = self.game()
         hero(s, 'a', 'xun')['awakened'] = True
@@ -1037,6 +1107,8 @@ class DuelV2EngineTest(unittest.TestCase):
                 s = self.play(self.rush_game(), 'M08')
                 s = apply_action(s, 'a', {'type': 'end_turn'})
                 s['sides']['b']['front'] = enemy_front
+                # M08 now has 4 HP; leave enough HP for both test attacks.
+                hero(s, 'b', 'zero')['base_attack'] = 1
                 before = {cid: (h['harmony'], h['energy'])
                           for cid, h in s['sides']['a']['characters'].items()}
                 s = apply_action(s, 'b', {'type': 'end_turn'})

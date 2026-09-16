@@ -46,7 +46,7 @@ def export_checkpoint(source, output):
     np.savez_compressed(path,**arrays)
     manifest = {k:checkpoint[k] for k in ('schema','deck','hidden','state_dim','cand_dim','gpu_lock','update','rule_identity')}
     manifest['learner_deck'] = learner_deck
-    for field in ('training_distribution','opponent_distribution','pinned_opponents'):
+    for field in ('training_distribution','opponent_distribution','pinned_opponents','reward_mode'):
         if field in checkpoint:manifest[field]=checkpoint[field]
     if schema==OPENING_SCHEMA:
         manifest['opening_policy']='learned_joint_v1'

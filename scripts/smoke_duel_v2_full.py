@@ -32,11 +32,12 @@ def main(argv=None):
     args=parser.parse_args(argv)
     if not 60<=args.seconds<=21600:parser.error('seconds must be 60..21600')
     from app.modules.card_game.rl.candidate_selection import PROFILES
+    from app.modules.card_game.rl.episode_return import REWARD_MODE
     full=args.profile=='comprehensive'
     budget={stage:args.seconds*fraction for stage,fraction in
             (('base',.20),('cards',.10),('adapt',.075),('selection',.10))}
     if args.check:
-        print(json.dumps({'training_started':False,'presets':PRESETS,'profile':args.profile,
+        print(json.dumps({'training_started':False,'reward_mode':REWARD_MODE,'presets':PRESETS,'profile':args.profile,
               'training_order':'both bases, then each cards/selection/adaptation','learn_mulligan':True,'adaptation_pinned_peer':True,
               'seconds_total':args.seconds,'seconds_per_preset':budget,'reserve_seconds':args.seconds*.05,
               'candidate_plan':PROFILES[args.profile],'random_team_fraction':.2,'rule_fraction':.2,
@@ -87,7 +88,7 @@ def main(argv=None):
         validate_training_output(stage_out)
         stages.append(label);write('progress.json',{'stages':stages,'evaluations':len(reports),'seconds':time.monotonic()-started})
     if args.phase!='evaluate':write('config.json',{'kind':'comprehensive' if full else 'full_chain_smoke','presets':PRESETS,'rule_hash':rule_identity(),
-        'budget_seconds':args.seconds,'training_updates_base':0 if full else 4,'training_updates_adapt':0 if full else 2,'card_updates':0 if full else 1,
+        'reward_mode':REWARD_MODE,'budget_seconds':args.seconds,'training_updates_base':0 if full else 4,'training_updates_adapt':0 if full else 2,'card_updates':0 if full else 1,
         'phase':args.phase,'hidden':hidden,'parallel':parallel,'base_seconds':budget['base'],'card_seconds':budget['cards'],'adapt_seconds':budget['adapt'],
         'selection_seconds':budget['selection'],'candidate_plan':PROFILES[args.profile],
         'no_progress':{'window_seconds':300,'patience':6,'meaning':'six stable window means; not convergence'},'final_evaluation_separate':args.phase=='train',
@@ -140,7 +141,7 @@ def main(argv=None):
                 if initial:
                     import torch
                     source=torch.load(initial,map_location='cpu',weights_only=True)
-                    exact=source.get('schema')==OPENING_SCHEMA and source.get('rule_identity',{}).get('rule_hash')==rule_identity()
+                    exact=source.get('reward_mode')==REWARD_MODE and source.get('schema')==OPENING_SCHEMA and source.get('rule_identity',{}).get('rule_hash')==rule_identity()
                     resume_options=['--resume' if exact else '--warm-start',initial]
                 peer_initial=args.weave_checkpoint if key=='starter' else args.starter_checkpoint
                 if peer_initial:resume_options+=['--opponent-checkpoint',peer_initial]

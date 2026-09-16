@@ -1,4 +1,4 @@
-"""Episode return cap: unchanged rewards, rollout continuity and row resets."""
+"""Episode return cap: outcome-only rewards, rollout continuity and row resets."""
 import importlib.util
 from types import SimpleNamespace
 import unittest
@@ -41,7 +41,7 @@ class RewardCapTest(unittest.TestCase):
         self.reset(self.env)
         self.assertEqual(self.env.episode_return.tolist(), [0.]*4)
 
-    def test_original_shaping_and_shield_behavior_are_unchanged(self):
+    def test_damage_knockdown_and_shield_award_zero(self):
         t = self.torch
         from app.modules.card_game.rl.gpu_duel.ppo import _terminal_reward
         env = self.env
@@ -56,7 +56,7 @@ class RewardCapTest(unittest.TestCase):
         env.state.hp[3, 0] -= 20
         env.state.ch_hp[3, 0, :2] = 0
         got = _terminal_reward(env, t.full((4,), 30.), t.zeros(4))
-        t.testing.assert_close(got, t.tensor([0., .04, .1, .5]))
+        t.testing.assert_close(got, t.zeros(4))
 
     def test_collector_keeps_cap_across_rollouts_and_clears_only_terminals(self):
         t = self.torch
@@ -69,7 +69,7 @@ class RewardCapTest(unittest.TestCase):
         states = [new_game(seed=i, skip_mulligan=True, decks={'a':STARTER_DECK,'b':STARTER_DECK}) for i in range(4)]
         env.reset_from_python(states)
         env.learner = env.state.active.clone()
-        env.episode_return.copy_(t.tensor([9.75, 3., 2., 4.]))
+        env.episode_return.zero_()
         s, c, _ = compact_observe(env.state)
         net = CompactScorer(s.shape[-1], c.shape[-1], hidden=8)
         count = 0
@@ -88,12 +88,12 @@ class RewardCapTest(unittest.TestCase):
         with patch('app.modules.card_game.rl.gpu_duel.env.step_index', side_effect=step), \
              patch('app.modules.card_game.rl.gpu_duel.env.advance_to_actor', side_effect=advance):
             first = collect_rollout(env, net, 1)
-            self.assertEqual(first['reward'][:, 0].tolist(), [.25, 0., 0., 0.])
-            self.assertEqual(env.episode_return.tolist(), [10., 3., 2., 4.])
+            self.assertEqual(first['reward'][:, 0].tolist(), [0., 0., 0., 0.])
+            self.assertEqual(env.episode_return.tolist(), [0., 0., 0., 0.])
             second = collect_rollout(env, net, 1)
-            self.assertEqual(second['reward'][:, 0].tolist(), [0., -10., 0., 0.])
+            self.assertEqual(second['reward'][:, 0].tolist(), [10., -10., 0., 0.])
             self.assertEqual(second['done'][:, 0].tolist(), [1., 1., 1., 0.])
-            self.assertEqual(env.episode_return.tolist(), [0., 0., 0., 4.])
+            self.assertEqual(env.episode_return.tolist(), [0., 0., 0., 0.])
             # New wins in the reset rows must have the full reward available.
             self.assertEqual(self.cap(env, t.tensor([10., 10., 10., 0.])).tolist(), [10., 10., 10., 0.])
         env.reset_from_python(states)
@@ -102,6 +102,13 @@ class RewardCapTest(unittest.TestCase):
             env.episode_return.fill_(8)
             env.reset(seeds=[0,1,2,3])
         self.assertEqual(env.episode_return.tolist(), [0.]*4)
+
+    def test_reward_resume_requires_same_objective(self):
+        from app.modules.card_game.rl.episode_return import REWARD_MODE, validate_reward_resume
+        for checkpoint in ({}, {'reward_mode': 'shaped'}):
+            with self.assertRaisesRegex(ValueError, 'warm-start'):
+                validate_reward_resume(checkpoint)
+        validate_reward_resume({'reward_mode': REWARD_MODE})
 
     def test_public_env_resets_selected_episode_totals(self):
         t = self.torch
@@ -113,12 +120,18 @@ class RewardCapTest(unittest.TestCase):
         env.fixed = t.zeros((4,36), dtype=t.int32)
         env.learner = t.tensor([0,1,0,1], dtype=t.int32)
         env.assignment = t.zeros(4, dtype=t.int32)
-        env.league = SimpleNamespace(history=[])
+        env.league = SimpleNamespace(history=[], policies=[])
+        env.pool_counters = SimpleNamespace(record=Mock(), reset=Mock())
+        env.first_action_recorded = t.zeros(4, dtype=t.bool)
+        env.opponent_lineup = t.zeros(4, dtype=t.int32)
+        env.random_team_fraction = .2
+        env.rule_fraction = .2
+        env.learn_mulligan = False
         env.compiled = SimpleNamespace(reset_public_gpu_state=Mock())
         env.prepare_decision = Mock()
         self.reset(env)
         env.episode_return.copy_(t.tensor([2.,3.,4.,5.]))
-        with patch('app.modules.card_game.rl.public_training.tensor_public_decks', return_value=env.fixed):
+        with patch('app.modules.card_game.rl.public_training.tensor_preset_opponents', return_value=(env.fixed, env.opponent_lineup)):
             env.reset(t.tensor([False, True, False, True]))
             self.assertEqual(env.episode_return.tolist(), [2.,0.,4.,0.])
             env.reset()

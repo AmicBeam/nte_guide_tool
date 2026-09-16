@@ -46,7 +46,7 @@ def main(argv=None):
     if not math.isfinite(args.seconds) or min(args.n,args.horizon,args.seconds,args.hidden,args.history,args.snapshot_updates)<=0 or args.max_updates<0:
         p.error('Budgets and dimensions must be positive')
     if not 1 <= args.preflight_cases <= 1024:p.error('preflight-cases must be 1..1024')
-    from app.modules.card_game.rl.episode_return import EPISODE_RETURN_CAP
+    from app.modules.card_game.rl.episode_return import EPISODE_RETURN_CAP, REWARD_MODE, validate_reward_resume
     from app.modules.card_game.rl.public_schema import SCHEMA,state_dim,rule_identity,CAND_DIM
     from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA,OPENING_CAND_DIM,opening_observe
     if learn_mulligan:SCHEMA,CAND_DIM=OPENING_SCHEMA,OPENING_CAND_DIM
@@ -56,7 +56,7 @@ def main(argv=None):
     from app.modules.card_game.rl.public_training import training_deck
     learner_deck = training_deck(args.deck, json.loads(args.learner_deck.read_text(encoding='utf-8')) if args.learner_deck else None)
     if args.check:
-        print(json.dumps({'schema':SCHEMA,'state_dim':state_dim(),'candidate_dim':CAND_DIM,'parallel_envs':args.n,'rule_hash':identity,'learn_mulligan':learn_mulligan,
+        print(json.dumps({'schema':SCHEMA,'reward_mode':REWARD_MODE,'state_dim':state_dim(),'candidate_dim':CAND_DIM,'parallel_envs':args.n,'rule_hash':identity,'learn_mulligan':learn_mulligan,
                           'opponent_distribution':{'presets':['starter','weave-rush'],'random_fraction':args.random_team_fraction,'rule_fraction':args.rule_fraction,'pinned_checkpoints':[str(p) for p in args.opponent_checkpoint]},
                           'public_catalog':encoder_public_support(),'learner_deck':learner_deck,'training_started':False},ensure_ascii=False))
         return 0
@@ -119,6 +119,7 @@ def main(argv=None):
         warm_start_weights(torch.load(args.warm_start,map_location='cuda',weights_only=True),net,args.deck)
     if args.resume:
         saved=torch.load(args.resume,map_location='cuda',weights_only=True)
+        validate_reward_resume(saved)
         if (saved.get('schema'),saved.get('deck'),saved.get('rule_identity',{}).get('rule_hash')) != (SCHEMA,args.deck,identity):
             raise ValueError('Resume observation/deck/rule identity mismatch')
         if learn_mulligan and (saved.get('opening_policy') not in ('learned_joint_v1','untrained_joint_v1') or not saved.get('learn_mulligan')):
@@ -149,7 +150,7 @@ def main(argv=None):
         (args.output/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     def save():
         temporary=args.output/'latest.tmp'
-        torch.save({'schema':SCHEMA,'deck':args.deck,'hidden':args.hidden,'state_dim':state_dim(),
+        torch.save({'schema':SCHEMA,'reward_mode':REWARD_MODE,'deck':args.deck,'hidden':args.hidden,'state_dim':state_dim(),
                     'cand_dim':CAND_DIM,'gpu_lock':GPU_LOCK,'rule_identity':{'rule_hash':identity},
                     'compiled_identity':env.compiled.identity(),'pinned_opponents':pinned,'model':net.state_dict(),
                     'optimizer':opt.state_dict(),'update':update,'league':[n.state_dict() for n in league.history],
@@ -163,7 +164,7 @@ def main(argv=None):
     def stop():
         if time.monotonic()-started>=args.seconds: raise Deadline()
     write('config.json',{**{k:str(v) if isinstance(v,Path) else [str(x) for x in v] if isinstance(v,list) else v for k,v in vars(args).items()},
-                         'schema':SCHEMA,'opening_policy':'learned_joint_v1' if learn_mulligan else 'keep_all','pinned_opponents':pinned,'learner_build':learner_deck,'detailed_training_logs':False,'episode_return_cap':EPISODE_RETURN_CAP})
+                         'schema':SCHEMA,'reward_mode':REWARD_MODE,'opening_policy':'learned_joint_v1' if learn_mulligan else 'keep_all','pinned_opponents':pinned,'learner_build':learner_deck,'detailed_training_logs':False,'episode_return_cap':EPISODE_RETURN_CAP})
     write('preflight.json',{'ok':True,'backend':'cuda','cases':args.preflight_cases,'rule_hash':identity,'opening':opening_preflight})
     from app.modules.card_game.rl.progress_stop import ProgressStop
     monitor=ProgressStop();stop_reason='budget_or_update_limit'

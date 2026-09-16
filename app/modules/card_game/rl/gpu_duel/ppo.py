@@ -37,19 +37,14 @@ def _sample(logits):
     return action, dist.log_prob(action), dist.entropy()
 
 
-def _terminal_reward(env: GpuDuelEnv, prev_hp_foe, prev_down_foe) -> torch.Tensor:
+def _terminal_reward(env: GpuDuelEnv, prev_hp_foe=None, prev_down_foe=None) -> torch.Tensor:
+    """Outcome only; damage, knockdowns and all unfinished steps award zero."""
     done, winner = env.outcome()
-    b = torch.arange(env.n, device=env.device)
     learner = env.learner
-    foe = 1 - learner
-    hp = env.state.hp[b, foe].to(torch.float32)
-    down = (env.state.ch_hp[b, foe] <= 0).sum(dim=1).to(torch.float32)
-    shaping = 0.02 * (prev_hp_foe - hp).clamp(min=0) + 0.10 * (down - prev_down_foe).clamp(min=0)
-    shaping = shaping.clamp(max=0.5)
-    term = torch.zeros_like(shaping)
+    term = torch.zeros(env.n, device=env.device, dtype=torch.float32)
     term = torch.where(done & (winner == learner), torch.full_like(term, 10.0), term)
-    term = torch.where(done & (winner == foe), torch.full_like(term, -10.0), term)
-    return cap_episode_reward(env, torch.where(done, term, shaping))
+    term = torch.where(done & (winner == 1 - learner), torch.full_like(term, -10.0), term)
+    return cap_episode_reward(env, term)
 
 
 def ppo_update(net: CompactScorer, opt, batch, clip=0.2, epochs=2, minibatch=1024, vf_coef=0.5, ent_coef=0.01, stop_check=None):
@@ -99,7 +94,6 @@ def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_s
     env.prepare_decision()
     states, cands, masks, actions, logps, values, rewards, dones = [], [], [], [], [], [], [], []
     winners = []
-    b = torch.arange(env.n, device=env.device)
     net_device = next(net.parameters()).device
     for _ in range(horizon):
         if stop_check:
@@ -117,11 +111,8 @@ def collect_rollout(env: GpuDuelEnv, net: CompactScorer, horizon: int, learner_s
         logits, value = net(state, cand, mask)
         action, logp, _ent = _sample(logits)
         env_action = action.to(env.device)
-        foe = 1 - env.learner
-        prev_hp = env.state.hp[b, foe].to(torch.float32)
-        prev_down = (env.state.ch_hp[b, foe] <= 0).sum(dim=1).to(torch.float32)
         env.step_learner(env_action)
-        reward = _terminal_reward(env, prev_hp, prev_down).to(net_device)
+        reward = _terminal_reward(env).to(net_device)
         done, winner = env.outcome()
         states.append(state)
         cands.append(cand)

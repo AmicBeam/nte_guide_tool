@@ -1,5 +1,12 @@
 """Per-game upper bound on emitted rewards; bookkeeping stays on env.device."""
+REWARD_MODE = "outcome_only_v1"
 EPISODE_RETURN_CAP = 10.0
+
+
+def validate_reward_resume(checkpoint):
+    """Old shaped checkpoints can warm-start, but cannot resume this objective."""
+    if checkpoint.get("reward_mode") != REWARD_MODE:
+        raise ValueError("Resume reward objective mismatch; use --warm-start for a fresh optimizer")
 
 
 def reset_episode_return(env, mask=None):

@@ -426,7 +426,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "从牌库将 2 张弧盘牌加入手牌。",
+      "description": "从牌库将 2 张武备牌加入手牌。",
       "effect_id": "Z02",
       "source": {
         "character_id": 1051,

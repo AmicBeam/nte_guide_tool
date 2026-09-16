@@ -162,7 +162,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['M07']['name'], '美好的一天从睡醒开始')
         self.assertEqual(CARDS['M08']['name'], '开始净空')
         self.assertEqual(CARDS['B07']['name'], '判予秋')
-        self.assertEqual(CARDS['B08']['name'], '茶话会')
+        self.assertEqual(CARDS['B08']['name'], '茶花会')
         self.assertEqual(CARDS['B07']['attack'], 3)
         self.assertEqual(CARDS['B08']['attack'], 3)
         self.assertEqual(CARDS['B06']['description'], '若本回合白藏受到过己方伤害，额外 +1 攻击。')

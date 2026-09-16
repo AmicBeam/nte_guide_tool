@@ -131,6 +131,14 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertIsNotNone(command_panel)
         self.assertIn('grid-template-columns: minmax(0, 1fr) auto;', command_panel.group('body'))
 
+    def test_heiyu_malice_stays_visible_when_empty_or_consumed(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        constants = source[source.index('  const TIMELINE_FIXED_PERSONAL_RESOURCES'):source.index('  const DETAIL_HIDDEN_APPLIED_BUFF_IDS')]
+        function = source[source.index('  function timelinePersonalResourceEntries('):source.index('  function memberName(')]
+        script = constants + function + "\nconsole.log(JSON.stringify([{}, {'恶意': 0}, {'恶意': 20}].map(resources => timelinePersonalResourceEntries({id: 'char_heiyu'}, resources))));"
+        result = subprocess.run(['node', '-e', script], check=True, capture_output=True, text=True)
+        self.assertEqual(json.loads(result.stdout), [[['恶意', 0]], [['恶意', 0]], [['恶意', 20]]])
+
     def test_loop_axis_uses_settings_dialog_with_character_resources(self) -> None:
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
         source = SHAFT_JS.read_text(encoding='utf-8')

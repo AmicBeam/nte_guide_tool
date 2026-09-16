@@ -76,6 +76,7 @@
   const TIMELINE_FIXED_PERSONAL_RESOURCES = {
     char_31c5130304: ['真理之匙'],
     char_a01c39f576: ['臆想'],
+    char_heiyu: ['恶意'],
   };
   const TIMELINE_HIDDEN_PERSONAL_RESOURCES = new Set(['噩梦']);
   const DETAIL_HIDDEN_APPLIED_BUFF_IDS = new Set([

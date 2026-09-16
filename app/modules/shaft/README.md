@@ -152,3 +152,5 @@ python3 -m unittest discover -s tests -p 'test_shaft_*.py'
 - 按用户2026-09-16最新口径，**不做跨轮黯星累计**：每轮伤害账本从本轮开始，只累计本轮可定位伤害；不列为缺口或后续待办，不产生缺失实现警告。此范围约定不取消黯星实例本身的剩余持续时间。
 
 验证：`python3 -m unittest tests.test_shaft_heiyu tests.test_shaft_publication tests.test_module_routes`；计算改动还需完整排轴回归。
+
+黑羽轨道头像下方常驻显示个人资源「恶意」，包括循环轴初始0点及A觉Q2耗尽后的0点；数值随时间光标读取对应资源快照，不因归零隐藏。

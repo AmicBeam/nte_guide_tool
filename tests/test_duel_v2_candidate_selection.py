@@ -49,6 +49,19 @@ class CandidateSelectionTest(unittest.TestCase):
         self.assertEqual(select_with_baseline([baseline,candidate])['id'],'original')
         self.assertEqual(candidate['metrics']['utility'],.5)
 
+    def test_previous_local_candidate_is_included_and_deduplicated(self):
+        from app.modules.card_game.rl.candidate_selection import candidate_pool,allocation_key
+        deck=preset_opponent_deck('starter')
+        candidate=deepcopy(deck)
+        candidate['card_ids']=['N01' if c=='N02' else c for c in candidate['card_ids']]
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'original-deck.json').write_text(json.dumps(deck))
+            (root/'seed-candidates.json').write_text(json.dumps([candidate,deck]))
+            rows=candidate_pool(root,'starter')
+            self.assertIn(allocation_key(candidate),[allocation_key(r['build']) for r in rows])
+            self.assertEqual(len(rows),len({allocation_key(r['build']) for r in rows}))
+
     def test_stage_budget_and_seeds_and_incomplete_fallback(self):
         deck=preset_opponent_deck('starter')
         candidates=[{'id':'original','build':deck},{'id':'new','build':{**deck,'name':'candidate'}}]

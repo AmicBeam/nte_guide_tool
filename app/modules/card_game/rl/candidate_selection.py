@@ -25,6 +25,11 @@ def candidate_pool(root, key, *, limit=8):
     if serving.is_file():
         deck=json.loads(serving.read_text(encoding='utf-8')).get('serving_build')
         if deck is not None:choices.append(('serving',deck))
+    seeds=root/'seed-candidates.json'
+    if seeds.is_file():
+        items=json.loads(seeds.read_text(encoding='utf-8'))
+        if not isinstance(items,list) or len(items)>2:raise ValueError('At most two seed builds per preset')
+        choices.extend((f'seed-{i}',b) for i,b in enumerate(items))
     last=root/'cards/candidate.json'
     if last.is_file():choices.append(('last',json.loads(last.read_text(encoding='utf-8'))))
     history=root/'cards/candidate-history.jsonl'

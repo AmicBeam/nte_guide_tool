@@ -28,6 +28,7 @@ def main(argv=None):
     parser.add_argument('--hidden',type=int,help='Policy hidden width; match warm-start checkpoints')
     parser.add_argument('--profile',choices=('smoke','comprehensive'),default='smoke')
     parser.add_argument('--phase',choices=('all','train','evaluate'),default='all')
+    parser.add_argument('--candidate-seeds',type=Path,help='Preset-to-list mapping of prior legal candidate decks')
     parser.add_argument('--starter-checkpoint',type=Path)
     parser.add_argument('--weave-checkpoint',type=Path)
     args=parser.parse_args(argv)
@@ -100,6 +101,12 @@ def main(argv=None):
         'prediction_probability':'unavailable; no calibrated probability model',
         'strength_claim':False})
     if args.phase=='evaluate':write('evaluation-config.json',{'fixed_pairs':fixed_pairs,'varied_pairs':varied_pairs,'budget_seconds':args.seconds,'phase':'frozen_evaluation'})
+    seed_candidates=json.loads(args.candidate_seeds.read_text(encoding='utf-8')) if args.candidate_seeds else {}
+    from app.modules.card_game.rl.capability import fixed_team_serving_deck
+    if not isinstance(seed_candidates,dict) or set(seed_candidates)-set(PRESETS):raise ValueError('Invalid candidate seed presets')
+    for key,items in seed_candidates.items():
+        if not isinstance(items,list) or len(items)>2:raise ValueError('At most two seed builds per preset')
+        seed_candidates[key]=[fixed_team_serving_deck(b,key) for b in items]
     policies={};builds={};choices={}
     def evaluate(label,key,variant,opponent=None,opponent_deck=None,pairs=1,seed=202609160):
         if pairs==1:pairs=fixed_pairs
@@ -138,14 +145,13 @@ def main(argv=None):
             for key in PRESETS:
                 builds[key,'original']=preset_opponent_deck(key)
                 write(f'{key}/original-deck.json',builds[key,'original'])
+                write(f'{key}/seed-candidates.json',seed_candidates.get(key,[]))
                 base=out/key/'base'
                 initial=args.starter_checkpoint if key=='starter' else args.weave_checkpoint
                 resume_options=[]
                 if initial:
-                    import torch
-                    source=torch.load(initial,map_location='cpu',weights_only=True)
-                    exact=source.get('reward_mode')==REWARD_MODE and source.get('schema')==OPENING_SCHEMA and source.get('rule_identity',{}).get('rule_hash')==rule_identity()
-                    resume_options=['--resume' if exact else '--warm-start',initial]
+                    # A new pipeline may change its pinned opponents; transfer weights only.
+                    resume_options=['--warm-start',initial]
                 peer_initial=args.weave_checkpoint if key=='starter' else args.starter_checkpoint
                 if peer_initial:resume_options+=['--opponent-checkpoint',peer_initial]
                 run(key+'-base','train_duel_v2_public.py',['--train','--deck',key,'--hidden',hidden,'--n',parallel,'--horizon',16,

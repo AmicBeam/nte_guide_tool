@@ -265,7 +265,7 @@ python scripts/analyze_duel_v2_opening.py --check
 
 出牌训练默认 80% 阵容来自创生／覆纹快攻，在每套固定角色内采样官方、当前高级人机及变化配牌，20% 来自任意公开四人组合。模型对手为主，规则对手占比默认 20%。`--random-team-fraction` 与 `--rule-fraction` 可调整；`--opponent-checkpoint` 固定额外历史/另一预组策略，最多四份，不随自身历史队列轮换淘汰。固定阵容优先使用对应预组训练的模型；没有匹配模型时才使用现有冻结池，并保留实际身份。仅有自身历史时不宣称已覆盖另一套实战模型。综合流程在适应训练中固定接入另一套基础模型。
 
-旧 v1/v2 权重使用 `--warm-start` 显式迁移，新换牌候选列置零并重建优化器；不能用 `--resume` 冒充同一训练过程。综合脚本对旧 schema 或规则不同的输入 checkpoint 选择 warm-start，并在配置中保留来源；完全匹配才 resume。新 checkpoint 记录 `learn_mulligan` 和 `opening_policy`，未完成更新的起手头标为未训练，不能导出为已学会换牌的模型。
+旧 v1/v2 权重使用 `--warm-start` 显式迁移，新换牌候选列置零并重建优化器；不能用 `--resume` 冒充同一训练过程。综合脚本的新一轮对输入 checkpoint 一律选择 warm-start，并保留来源：即使 schema 与规则匹配，新的固定对手也可能不同。单阶段命令只有模型、规则、奖励与固定对手均匹配时才允许 resume。新 checkpoint 记录 `learn_mulligan` 和 `opening_policy`，未完成更新的起手头标为未训练，不能导出为已学会换牌的模型。
 
 新候选特征较宽，训练默认并行数为 1024；更高并行数须在 Windows 按实际显存验证。GPU 预检除既有规则检查外，还对开局 reset、双方换牌、首回合抽牌及全部换牌候选的 NumPy/张量编码做 native/CUDA 对拍。没有 CUDA 时正式训练仍明确拒绝。正常训练不保存详细起手或动作日志，只记录设备内聚合计数；完整报告才额外获取私有起手遥测。
 
@@ -296,3 +296,5 @@ python scripts/analyze_duel_v2_opening.py --starter-model PATH/starter.npz --wea
 - 整轮仍受原总时限约束；配牌时间从总预算每套 10% 增至 15%，通过减少基础出牌时间抵消，不延长用户总预算。
 
 可单独使用 `scripts/refine_duel_v2_cards.py`，传入 `--baseline`、可选 `--initial`、双方冻结的 `--policy-checkpoint`／`--opponent-checkpoint` 和新 `--output`。默认 4 轮、600 秒局部搜索预算；生成 `selection.json` 和 `candidate.json`，不会自动替换网站构筑。
+
+综合入口可用 `--candidate-seeds` 指定预组 ID 到历史合法配牌列表的 JSON，每套最多两份；进入候选池前严格校验固定角色并按张数去重。种子配牌与其他候选一样重新筛选，不强制采用，也不覆盖原配牌对照。

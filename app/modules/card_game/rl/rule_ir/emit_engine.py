@@ -789,6 +789,9 @@ static void play_effects(int *row, int s, int seat, int kind, int tside, int tse
     if(CH(CH_HP,foe,tseat)>0) CH(CH_PACT,foe,tseat)=1;
     knockdown(row); victory(row);
   }
+  if(TAB_HEAL_SELF_FULL[kind] && present_alive(row,s,seat)){
+    CH(CH_HP,s,seat)=CH(CH_MAX_HP,s,seat);
+  }
   if(TAB_HEAL_FRONT_FULL[kind]){
     int front=SI(FRONT,s);
     if(front>=0 && present_alive(row,s,front)){

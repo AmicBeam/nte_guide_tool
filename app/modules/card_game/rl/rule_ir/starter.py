@@ -10,7 +10,7 @@ ALLOWED_OPS = frozenset({
     'draw_owned_self', 'draw_owned_target', 'draw_forms',
     'heal_target', 'buff_target', 'revive_target', 'heal_player',
     'inspect_top', 'pact_front', 'pact_target',
-    'heal_front_full', 'next_followup', 'next_bonus',
+    'heal_self_full', 'heal_front_full', 'next_followup', 'next_bonus',
     'sacrifice_draw', 'damage_per_downed', 'set_down',
     'reveal_front_hand', 'damage_revealed',
     'ignore_shield', 'team_buff', 'pending_atk', 'share_overflow',
@@ -60,7 +60,7 @@ STARTER_APPEARING = _appearing_ids()
 # Kits of the four starter seats. Extra kit cards are registered so a stray
 # identity cannot silently no-op; the env still rejects non-starter decks.
 _CARD_OPS: dict[str, tuple[EffectOp, ...]] = {
-    'N01': (EffectOp('draw_owned_self'),),
+    'N01': (EffectOp('heal_self_full'),),
     'N02': (EffectOp('sortie'),),
     'N03': (EffectOp('sortie', (1,)),),
     'N04': (EffectOp('sortie'),),

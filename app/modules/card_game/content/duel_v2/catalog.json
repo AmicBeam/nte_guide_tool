@@ -250,8 +250,8 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "instant": true,
-      "description": "瞬发。从牌库将 1 张属于娜娜莉的牌加入手牌。",
+      "instant": false,
+      "description": "回复娜娜莉的生命。",
       "effect_id": "N01",
       "source": {
         "character_id": 1010,

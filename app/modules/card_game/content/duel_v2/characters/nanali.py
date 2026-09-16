@@ -1,5 +1,5 @@
 from app.modules.card_game.content.duel_v2.characters.common import (
-    deal_combat_followup, draw_owned_card, on_first_turn_seed, on_rout_seed, perm_plus,
+    deal_combat_followup, on_first_turn_seed, on_rout_seed, perm_plus,
     revive_self, set_shape,
 )
 from app.modules.card_game.content.duel_v2.registry import register
@@ -7,7 +7,7 @@ from app.modules.card_game.engine.events import GameEvent
 
 
 def _n01(c):
-    draw_owned_card(c, 'nanali')
+    c.heal(max(0, c.character['max_hp'] - c.character['hp']))
 
 
 def _nf01(c):

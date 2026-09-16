@@ -269,7 +269,7 @@ class DuelV2EngineTest(unittest.TestCase):
         n = hero(s, 'a', 'nanali')
         self.assertEqual((attack_value(n), n['hp'], n['max_hp']), (3, 6, 6))
 
-    def test_nanali_family_card_and_n01_draws_owned(self):
+    def test_nanali_family_card_and_n01_heals_to_current_max(self):
         s = self.game()
         n = hero(s, 'a', 'nanali')
         self.assertEqual((attack_value(n), n['hp'], n['max_hp']), (2, 5, 5))
@@ -279,10 +279,13 @@ class DuelV2EngineTest(unittest.TestCase):
         n = hero(s, 'a', 'nanali')
         self.assertEqual((attack_value(n), n['hp'], n['max_hp']), (3, 6, 6))
         s['sides']['a']['deck'] = [card_instance(s, 'N03', 'a')] + s['sides']['a']['deck']
-        s['sides']['a']['ap'] = 0
+        n['hp'] = 1
+        deck_before = deepcopy(s['sides']['a']['deck'])
+        s['sides']['a']['ap'] = 1
         s = self.play(s, 'N01')
         self.assertEqual(s['sides']['a']['ap'], 0)
-        self.assertTrue(any(c['card_id'] == 'N03' for c in s['sides']['a']['hand']))
+        self.assertEqual(hero(s, 'a', 'nanali')['hp'], 6)
+        self.assertEqual(s['sides']['a']['deck'], deck_before)
         s['sides']['b']['front'] = 'zero'
         hero(s, 'b', 'zero')['hp'] = 1
         s['sides']['a']['ap'] = 1
@@ -403,9 +406,36 @@ class DuelV2EngineTest(unittest.TestCase):
         s = self.play(s, 'N04')
         self.assertEqual(hero(s, 'a', 'nanali')['shield'], 3)
 
-    def test_instant_first_card_skips_action_cost(self):
+    def test_n01_full_health_and_downed_boundaries(self):
+        for front in (None, 'nanali'):
+            s = self.game()
+            s['sides']['a']['front'] = front
+            n = hero(s, 'a', 'nanali')
+            n['max_hp'] = 9
+            n['hp'] = 2
+            s = self.play(s, 'N01')
+            self.assertEqual(hero(s, 'a', 'nanali')['hp'], 9)
+            self.assertEqual(s['sides']['a']['ap'], 1)
+            s = self.play(s, 'N01')
+            self.assertEqual(hero(s, 'a', 'nanali')['hp'], 9)
+            self.assertEqual(s['sides']['a']['ap'], 0)
         s = self.game()
         card = self.hand(s, 'N01')
+        hero(s, 'a', 'nanali').update(hp=0, down_turns=3)
+        with self.assertRaises(ValueError):
+            apply_action(s, 'a', {'type':'play_card','card_id':card['instance_id']})
+
+    def test_n01_copy_heals_its_current_owner(self):
+        s = self.game()
+        hero(s, 'a', 'xun')['hp'] = 1
+        hero(s, 'a', 'nanali')['hp'] = 2
+        s = self.play(s, 'N01', copy=True)
+        self.assertEqual(hero(s, 'a', 'xun')['hp'], hero(s, 'a', 'xun')['max_hp'])
+        self.assertEqual(hero(s, 'a', 'nanali')['hp'], 2)
+
+    def test_instant_first_card_skips_action_cost(self):
+        s = self.game()
+        card = self.hand(s, 'J02')
         s['sides']['a']['ap'] = 0
         view = observe(s, 'a')
         shown = next(item for item in view['sides']['a']['hand'] if item.get('instance_id') == card['instance_id'])

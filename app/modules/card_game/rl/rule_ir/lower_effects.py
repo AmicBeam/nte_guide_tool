@@ -11,7 +11,7 @@ TABLE_KEYS = (
     'draw_owned_self', 'draw_owned_target', 'draw_forms',
     'heal_target', 'buff_target', 'revive_target', 'heal_player',
     'inspect_top', 'pact_front', 'pact_target',
-    'heal_front_full', 'next_followup', 'next_bonus_atk', 'next_bonus_sh',
+    'heal_self_full', 'heal_front_full', 'next_followup', 'next_bonus_atk', 'next_bonus_sh',
     'sacrifice_draw', 'damage_per_downed', 'set_down',
     'reveal_front_hand', 'damage_revealed',
     'ignore_shield', 'team_buff', 'pending_atk', 'share_overflow',
@@ -61,6 +61,8 @@ def compile_effect_tables(card_ids: tuple[str, ...]) -> dict[str, list[int]]:
                 tables['pact_front'][row] = int(op.args[0]) if op.args else 0
             elif op.op == 'pact_target':
                 tables['pact_target'][row] = int(op.args[0]) if op.args else 0
+            elif op.op == 'heal_self_full':
+                tables['heal_self_full'][row] = 1
             elif op.op == 'heal_front_full':
                 tables['heal_front_full'][row] = 1
             elif op.op == 'next_followup':

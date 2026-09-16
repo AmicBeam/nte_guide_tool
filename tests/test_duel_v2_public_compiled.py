@@ -7,6 +7,7 @@ import unittest
 from app.modules.card_game.content.duel_v2 import CARDS, PUBLIC_CHARACTER_IDS, STARTER_DECK, STARTER_DECKS, validate_deck
 from app.modules.card_game.engine.duel_v2 import apply_action, legal_actions, new_game
 from app.modules.card_game.engine.duel_v2.flow import begin_turn
+from app.modules.card_game.engine.duel_v2.state import hero
 from app.modules.card_game.rl.gpu_duel.catalog import (
     ACT_END, ACT_PLAY, ACT_ULTIMATE, CARD_IDS, CARD_INDEX, SEAT_INDEX, SEATS,
     encode_public_deck_row, public_card_ids,
@@ -288,17 +289,18 @@ class PublicCompiledNativeTest(unittest.TestCase):
         self.assertEqual(packed_hp, 4)
         self.assertEqual(packed_down, 3)
 
-    def test_n01_draws_owned_self(self):
+    def test_n01_heals_self_full_without_drawing(self):
         state = new_game(seed=9, skip_mulligan=True)
         side = state['active_side']
         team = state['sides'][side]
-        owned = next(card for card in team['deck'] if card['character_id'] == 'nanali' and not card.get('derived'))
-        team['deck'] = [owned] + [card for card in team['deck'] if card is not owned]
+        hero(state, side, 'nanali')['hp'] = 1
         card = _inject_hand(state, side, 'N01')
         before = len(team['hand'])
+        deck_before = len(team['deck'])
         nxt, got = self._check_play(state, {'type': 'play_card', 'card_id': card['instance_id']})
-        self.assertEqual(len(nxt['sides'][side]['hand']), before)  # played N01, drew one
-        self.assertTrue(any(item['card_id'] == owned['card_id'] for item in nxt['sides'][side]['hand']))
+        self.assertEqual(len(nxt['sides'][side]['hand']), before - 1)
+        self.assertEqual(len(nxt['sides'][side]['deck']), deck_before)
+        self.assertEqual(hero(nxt, side, 'nanali')['hp'], hero(nxt, side, 'nanali')['max_hp'])
 
     def test_z01_heals_front_full(self):
         state = new_game(seed=8, skip_mulligan=True)

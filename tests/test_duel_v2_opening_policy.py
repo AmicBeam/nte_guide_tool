@@ -104,7 +104,8 @@ class OpeningNetworkTest(unittest.TestCase):
         from app.modules.card_game.rl.public_schema import state_dim,rule_identity
         from app.modules.card_game.rl.public_export import export_checkpoint
         from app.modules.card_game.engine.ai.advanced_model import FrozenModel
-        with tempfile.TemporaryDirectory() as directory:
+        with torch.random.fork_rng(), tempfile.TemporaryDirectory() as directory:
+            torch.manual_seed(20260916)
             root=Path(directory);net=CompactScorer(state_dim(),OPENING_CAND_DIM,8)
             torch.save({'schema':OPENING_SCHEMA,'deck':'starter','gpu_lock':GPU_LOCK,'model':net.state_dict(),
                 'hidden':8,'state_dim':state_dim(),'cand_dim':OPENING_CAND_DIM,'update':1,

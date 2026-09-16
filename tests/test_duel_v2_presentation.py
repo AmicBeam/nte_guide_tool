@@ -103,7 +103,7 @@ class DuelV2PresentationTest(unittest.TestCase):
 
     def test_private_draw_and_inspect_are_isolated(self):
         state = self.game()
-        after, _ = self.play(state, 'N01')
+        after, _ = self.play(state, 'J02')
         own = observe(after, 'a')
         enemy = observe(after, 'b')
         draws = [event for event in self.events(own, 'draw') if event.get('side') == 'a']

@@ -25,11 +25,13 @@ def main(argv=None):
     parser.add_argument('--output',type=Path)
     parser.add_argument('--check',action='store_true',help='Print opponent/stage budgets without importing ML or training')
     parser.add_argument('--seconds',type=int,default=1800)
+    parser.add_argument('--hidden',type=int,help='Policy hidden width; match warm-start checkpoints')
     parser.add_argument('--profile',choices=('smoke','comprehensive'),default='smoke')
     parser.add_argument('--phase',choices=('all','train','evaluate'),default='all')
     parser.add_argument('--starter-checkpoint',type=Path)
     parser.add_argument('--weave-checkpoint',type=Path)
     args=parser.parse_args(argv)
+    if args.hidden is not None and not 1<=args.hidden<=2048:parser.error('hidden must be 1..2048')
     if not 60<=args.seconds<=21600:parser.error('seconds must be 60..21600')
     from app.modules.card_game.rl.candidate_selection import PROFILES
     from app.modules.card_game.rl.episode_return import REWARD_MODE
@@ -45,7 +47,7 @@ def main(argv=None):
               'selection_seed_ranges':[[400000000,402999999],[410000000,412999999]],
               'holdout_seed_base':202609160},ensure_ascii=False));return 0
     if args.output is None:parser.error('--output is required unless --check')
-    hidden=64 if full else 32;parallel=1024 if full else 128
+    hidden=args.hidden or (64 if full else 32);parallel=1024 if full else 128
     fixed_pairs=16 if full else 1;varied_pairs=32 if full else 15;screen_pairs=16 if full else 2
     out=args.output.resolve()
     if out.exists() and args.phase!='evaluate':parser.error('Choose a new output directory')
@@ -199,7 +201,7 @@ def main(argv=None):
                 'worst_seat':winner['metrics']['worst_seat']}
             write('construction-decisions.json',choices)
             adapted=out/key/'adapted'
-            run(key+'-adapt','train_duel_v2_public.py',['--train','--deck',key,'--resume',base/'latest.pt',
+            run(key+'-adapt','train_duel_v2_public.py',['--train','--deck',key,'--warm-start',base/'latest.pt',
                 '--opponent-checkpoint',out/peer_key/'base/latest.pt',
                 '--learner-deck',out/key/'selected-deck.json','--hidden',hidden,'--n',parallel,'--horizon',16,
                 '--seconds',budget['adapt'],'--max-updates',0 if full else 2,'--snapshot-updates',20 if full else 1,'--preflight-cases',4,'--output',adapted])

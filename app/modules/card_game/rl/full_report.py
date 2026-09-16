@@ -83,35 +83,43 @@ def write_full_report(root):
             'mean_global_turn':mean_turn,'by_position':positions,'model':report['model'],
             'opponent_model':report['opponent_model'],'complete':report['complete'],
             'opponent_teams':len({tuple(sorted(g['opponent_team'])) for g in games})})
-        if entry['label'].endswith('-mirror'):
-            assert report['model']['sha256']==report['opponent_model']['sha256'],'Mirror model mismatch'
+        mirror=entry['label'].endswith('-mirror')
+        if mirror and (not report['model'].get('sha256') or report['model']['sha256']!=report['opponent_model'].get('sha256')):
+            raise ValueError('Mirror model mismatch')
         by_position=defaultdict(list)
         for game in complete:
             raw=read(root/entry['report'].rsplit('/',1)[0]/game['raw_log'].replace('\\','/'))
-            by_position[game['position']].append((game,raw['telemetry']))
+            if mirror:
+                opponent=raw['opponent_deck']
+                if (opponent['character_ids']!=report['learner_build']['character_ids'] or
+                        Counter(opponent['card_ids'])!=Counter(report['learner_build']['card_ids'])):
+                    raise ValueError('Mirror build mismatch')
+            for side in ('a','b') if mirror else ('a',):
+                position='first' if game['first_side']==side else 'second'
+                by_position[position].append((game,raw['telemetry'],side))
         counts=Counter(report['learner_build']['card_ids'])
         for position,samples in by_position.items():
-            all_ids={cid for _,data in samples for cid in data['cards']['a']}
+            all_ids={cid for _,data,side in samples for cid in data['cards'][side]}
             for cid in sorted(all_ids):
                 for origin,field,source in (('copy','copy_plays','copy'),('derived','derived_plays','generated')):
-                    selected=[(game,data['cards']['a'].get(cid,{})) for game,data in samples]
-                    plays=sum(card.get(field,0) for _,card in selected)
-                    received=sum(bool(card.get('sources',{}).get(source)) for _,card in selected)
-                    used=[game for game,card in selected if card.get(field,0)]
+                    selected=[(game,data['cards'][side].get(cid,{}),side) for game,data,side in samples]
+                    plays=sum(card.get(field,0) for _,card,_ in selected)
+                    received=sum(bool(card.get('sources',{}).get(source)) for _,card,_ in selected)
+                    used=[(game,side) for game,card,side in selected if card.get(field,0)]
                     if plays or received:
                         generated_rows.append({'test':entry['label'],'position':position,'card_id':cid,'origin':origin,
                             'games':len(samples),'received_games':received,'used_games':len(used),'plays':plays,
-                            'wins_when_used':sum(game['winner']=='a' for game in used),
-                            'mean_final_turn_when_used':sum(game['final_turn'] for game in used)/len(used) if used else None})
+                            'wins_when_used':sum(game['winner']==side for game,side in used),
+                            'mean_final_turn_when_used':sum(game['final_turn'] for game,_ in used)/len(used) if used else None})
             for cid,copies in counts.items():
                 seen=drawn=used=w_seen=w_drawn=w_used=plays=0;first_turns=[];used_lengths=[];sources=Counter()
-                for game,data in samples:
-                    card=data['cards']['a'].get(cid,{})
+                for game,data,side in samples:
+                    card=data['cards'][side].get(cid,{})
                     source=card.get('sources',{});sources.update(source)
                     has_seen=any(source.get(k,0) for k in ('opening','draw','mulligan','search','recovered','revealed_gain','other_gain'))
                     has_drawn=bool(source.get('draw'))
                     has_used=bool(card.get('original_plays'))
-                    win=game['winner']=='a'
+                    win=game['winner']==side
                     seen+=has_seen;drawn+=has_drawn;used+=has_used
                     w_seen+=has_seen and win;w_drawn+=has_drawn and win;w_used+=has_used and win
                     plays+=card.get('original_plays',0)
@@ -126,29 +134,30 @@ def write_full_report(root):
                     'mean_final_turn_when_used':sum(used_lengths)/len(used_lengths) if used_lengths else None,
                     'source_counts':json.dumps(sources,ensure_ascii=False)}
                 card_rows.append(row)
-                if entry['label']==f"{entry['preset']}-{final_variants[entry['preset']]}-rule-varied":chosen_card_rows.append(row)
+                if entry['label']==f"{entry['preset']}-{final_variants[entry['preset']]}-mirror":chosen_card_rows.append(row)
             for cid in report['learner_build']['character_ids']:
                 for kind in ('ultimate','harmony'):
-                    events=[];used_games=win_games=0;opportunities=0;used_opportunities=set()
-                    for game,data in samples:
-                        selected=[e for e in data['mechanisms'] if e['kind']==kind and e['actor']==f'a:{cid}']
-                        events.extend(selected);used_games+=bool(selected);win_games+=bool(selected) and game['winner']=='a'
+                    events=[];used_games=win_games=0;opportunities=0;used_opportunities=set();foe_hp_delta=0
+                    for game,data,side in samples:
+                        selected=[e for e in data['mechanisms'] if e['kind']==kind and e['actor']==f'{side}:{cid}']
+                        events.extend(selected);used_games+=bool(selected);win_games+=bool(selected) and game['winner']==side
                         opportunity_kind=kind
-                        opportunities+=sum(o['kind']==opportunity_kind and o['side']=='a' and o['character_id']==cid for o in data['opportunities'])
-                        used_opportunities.update((game['game_id'],e['turn']) for e in selected)
+                        opportunities+=sum(o['kind']==opportunity_kind and o['side']==side and o['character_id']==cid for o in data['opportunities'])
+                        used_opportunities.update((game['game_id'],side,e['turn']) for e in selected)
+                        foe_hp_delta+=sum(e['same_action_player_hp_change']['b' if side=='a' else 'a'] for e in selected)
                     row={'test':entry['label'],'position':position,'character':cid,'kind':kind,'games':len(samples),
                         'uses':len(events),'games_used':used_games,'wins_when_used':win_games,'eligible_character_turns':opportunities,
                         'used_character_turns':len(used_opportunities),'first_use_mean':None,
-                        'same_action_foe_hp_delta_sum':sum(e['same_action_player_hp_change']['b'] for e in events),
+                        'same_action_foe_hp_delta_sum':foe_hp_delta,
                         'attribution':'same-action association, not causal; opportunities count legal ordinary and battle-card attacks'}
-                    firsts=[min(e['turn'] for e in data['mechanisms'] if e['kind']==kind and e['actor']==f'a:{cid}')
-                            for _,data in samples if any(e['kind']==kind and e['actor']==f'a:{cid}' for e in data['mechanisms'])]
+                    firsts=[min(e['turn'] for e in data['mechanisms'] if e['kind']==kind and e['actor']==f'{side}:{cid}')
+                            for _,data,side in samples if any(e['kind']==kind and e['actor']==f'{side}:{cid}' for e in data['mechanisms'])]
                     row['first_use_mean']=sum(firsts)/len(firsts) if firsts else None
                     mechanism_rows.append(row)
-                    if entry['label']==f"{entry['preset']}-{final_variants[entry['preset']]}-rule-varied":chosen_mechanisms.append(row)
+                    if entry['label']==f"{entry['preset']}-{final_variants[entry['preset']]}-mirror":chosen_mechanisms.append(row)
             turns=defaultdict(list)
-            for game,data in samples:
-                for point in data['turn_states']:turns[point['turn']].append(point['sides']['a'])
+            for game,data,side in samples:
+                for point in data['turn_states']:turns[point['turn']].append(point['sides'][side])
             for turn,points in sorted(turns.items()):
                 curve_rows.append({'test':entry['label'],'position':position,'turn':turn,'surviving_games':len(points),
                     **{f'mean_{k}':sum(x[k] for x in points)/len(points) for k in ('hp','ap','energy','harmony')},
@@ -200,9 +209,11 @@ def write_full_report(root):
             changes=[cid for cid in sorted(original.keys()|chosen.keys()) if original[cid]!=chosen[cid]]
             for cid in changes:lines.append(f"| {cid} {CARDS[cid]['name']} | {original[cid]} | {chosen[cid]} |")
             if not changes:lines.append('| 配牌保持原始预组 | 32 | 32 |')
-    lines+=['','## 本轮选定配牌：逐卡与机制摘要','','下表以最终变化规则 AI 测试为样本；全部对阵细分见 CSV。抽到仅计 draw 事件，见到还包括起手、换牌、检索与回收等原卡入手。成功使用只计原卡，复制/衍生来源另列。',
+    lines+=['','## 本轮选定配牌：逐卡与机制摘要','','下表仅使用最终同模型、同构筑镜像互搏，统计双方并按实际先后手分组；规则 AI 不参与主逐卡统计，交叉互搏另列于诊断 CSV。每套 64 场时各有 64 个先手和后手观测，仍是 64 场（32 个种子配对），不是 128 场独立对局。未携带或未使用的卡没有对应使用胜率，不能据此声称全卡池已有覆盖。抽到仅计 draw 事件，见到还包括起手、换牌、检索与回收等原卡入手。成功使用只计原卡，复制/衍生来源另列。',
             '', '| 套牌 | 位置 | 卡牌 | 张数 | 见到局数/总数 | 打出局数 | 打出时胜率 | 平均首次打出回合 | 使用局平均结束回合 |',
             '| --- | --- | --- | ---: | --- | ---: | ---: | ---: | ---: |']
+    if not chosen_card_rows:
+        lines+=['','缺少最终镜像逐卡数据；本报告未完成，不以规则 AI 数据回填。','']
     for r in chosen_card_rows:
         val=lambda x:'—' if x is None else f'{x:.2f}'
         lines.append(f"| {r['preset']} | {r['position']} | {r['card_id']} {CARDS[r['card_id']]['name']} | {r['copies']} | {r['seen_games']}/{r['games']} | {r['used_games']} | {rate(r['wins_when_used'],r['used_games'])} | {val(r['mean_first_play_turn'])} | {val(r['mean_final_turn_when_used'])} |")
@@ -213,14 +224,14 @@ def write_full_report(root):
     lines+=['','环合类型、提供者、受益者、终结结束及源效果事件保留在每局 telemetry；机会以存在合法发动动作的角色·全局回合去重，包含普通出击和战斗牌；同回合多次触发另计次数。',
             '', '## 曲线与统计限制','',
             '- `turn-states.csv` 给出各回合仍在进行的样本量及平均生命、行动力、能量、环合值；没有概率预测。',
-            '- `card-metrics.csv` 包含抽到/见到/使用的分子分母、来源、平均次数和回合数。',
+            '- `selfplay-card-metrics.csv` 是主逐卡数据，仅含最终同模型同构筑镜像，双方按实际先后手统计。`card-metrics.csv` 是全矩阵诊断，规则 AI 与交叉互搏不能混入主统计；非镜像行仅统计学习方。包含抽到/见到/使用的分子分母、来源、平均次数和回合数。',
             '- `training-win-rates.csv` 保留各次更新按对手类型和先后手的胜率序列，不能混入冻结评估。',
             '- `generated-card-metrics.csv` 单列复制与衍生牌的获得、使用和胜负关联，不混入主牌组抽到率。',
             '- `mechanism-metrics.csv` 包含按角色/先后手的机会、次数和同动作生命变化。跨动作/跨回合的净因果收益尚未归因，不将相邻效果全算作某机制贡献。',
             '- `sample-replay.json` 是已记录对局的公开可播放录像；私有种子及隐藏牌库不在其中。',
             '- 全部测试可执行不等于本轮样本量足以判定强度；未使用的卡牌/机制不判弱。',
             '- 本轮不提供可靠预测胜率、长期收敛结论或机制的因果胜率贡献。']
-    for name,rows in [('card-metrics.csv',card_rows),('generated-card-metrics.csv',generated_rows),('mechanism-metrics.csv',mechanism_rows),('turn-states.csv',curve_rows)]:
+    for name,rows in [('selfplay-card-metrics.csv',chosen_card_rows),('selfplay-mechanism-metrics.csv',chosen_mechanisms),('card-metrics.csv',card_rows),('generated-card-metrics.csv',generated_rows),('mechanism-metrics.csv',mechanism_rows),('turn-states.csv',curve_rows)]:
         with (root/name).open('w',encoding='utf-8-sig',newline='') as stream:
             if rows:
                 writer=csv.DictWriter(stream,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
@@ -238,8 +249,11 @@ def write_full_report(root):
             writer=csv.DictWriter(stream,fieldnames=list(training_rows[0]));writer.writeheader();writer.writerows(training_rows)
     (root/'candidate-decisions.json').write_text(json.dumps(candidate_decisions,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     result={'config':config,'evaluations':summary_rows,'construction':construction,
+            'card_metrics_source':{'kind':'final-identical-model-build-mirror','perspectives':['a','b'],
+                                   'tests':sorted({r['test'] for r in chosen_card_rows}),
+                                   'missing_presets':sorted(set(final_variants)-{r['preset'] for r in chosen_card_rows})},
             'prediction_probability':{'available':False,'reason':'No independently calibrated probability model'},
-            'serving_selection':serving_selection['choices'] if serving_selection else None,'report_complete':all(x['complete'] for x in summary_rows),
+            'serving_selection':serving_selection['choices'] if serving_selection else None,'report_complete':all(x['complete'] for x in summary_rows) and set(final_variants)=={r['preset'] for r in chosen_card_rows},
             'limitations':['finite sampled candidate search; not exhaustive optimum','effect events support inspection, not isolated causal contribution']}
     (root/'summary.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     (root/'report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')

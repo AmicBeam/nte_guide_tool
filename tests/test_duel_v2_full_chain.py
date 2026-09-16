@@ -150,6 +150,22 @@ class FinalReportSelectionTest(unittest.TestCase):
                 screen[key]={'candidates':[{'id':'original','wins':1,'games':1,'cells':[{'opponent':'rule','report':path}]}]}
                 shortlist[key]={'history_rows':1,'unique_allocations':1,'shortlist':[{}]}
                 extra.append({'label':key+'-selected-rule-varied','preset':key,'report':path})
+                # Rule fixture wins for A; mirror fixture instead wins for B.
+                mirror=json.loads((root/path).read_text())
+                mirror['opponent_model']={'sha256':'synthetic'}
+                mirror['games_index'][0]['winner']='b'
+                mirror['by_position']['first']={**one,'win':0,'loss':1}
+                mirror_path=f'selection/holdout/{key}-selected-mirror/report.json'
+                write(mirror_path,mirror)
+                cid=deck['card_ids'][0];character=deck['character_ids'][0]
+                card={'sources':{'opening':1},'original_plays':3,'first_original_play_turn':1}
+                event={'kind':'ultimate','actor':f'b:{character}','turn':1,
+                       'same_action_player_hp_change':{'a':-7,'b':0}}
+                write(str(Path(mirror_path).parent/'raw/game.json'),{'opponent_deck':deck,
+                      'telemetry':{'cards':{'a':{cid:card},'b':{cid:card}},'mechanisms':[event,event],
+                      'opportunities':[{'kind':'ultimate','side':'b','character_id':character,'turn':1}],
+                      'turn_states':[],'final_turn':2}})
+                extra.append({'label':key+'-selected-mirror','preset':key,'report':mirror_path})
             write('config.json',{'kind':'comprehensive','rule_hash':'fixture'})
             write('evaluation-index.json',index);write('construction-decisions.json',decisions)
             write('selection/selected.json',{'complete':True,'choices':chosen,'reports':extra})
@@ -158,3 +174,35 @@ class FinalReportSelectionTest(unittest.TestCase):
             self.assertEqual(summary['serving_selection'],chosen)
             self.assertIn('最终模型与优选构筑',(root/'report.md').read_text())
             self.assertEqual(json.loads((root/'evaluation-index.json').read_text()),index)
+
+            import csv,io
+            rows=list(csv.DictReader(io.StringIO((root/'selfplay-card-metrics.csv').read_text(encoding='utf-8-sig'))))
+            used=[r for r in rows if int(r['used_games'])]
+            self.assertEqual(len(used),4)
+            self.assertEqual(summary['card_metrics_source']['missing_presets'],[])
+            for row in used:
+                self.assertTrue(row['test'].endswith('-selected-mirror'))
+                self.assertEqual(int(row['games']),1)
+                self.assertEqual(int(row['used_games']),1)  # three plays count once
+                self.assertEqual(int(row['plays']),3)
+                self.assertEqual(int(row['wins_when_used']),int(row['position']=='second'))
+            mechanisms=list(csv.DictReader(io.StringIO((root/'selfplay-mechanism-metrics.csv').read_text(encoding='utf-8-sig'))))
+            for row in [r for r in mechanisms if int(r['uses'])]:
+                self.assertEqual(row['position'],'second')
+                self.assertEqual(int(row['same_action_foe_hp_delta_sum']),-14)
+                self.assertEqual(int(row['wins_when_used']),1)
+                self.assertEqual(int(row['used_character_turns']),1)
+            mirror_file=root/extra[-1]['report']
+            bad=json.loads(mirror_file.read_text());bad['opponent_model']['sha256']='other'
+            mirror_file.write_text(json.dumps(bad))
+            with self.assertRaisesRegex(ValueError,'Mirror model mismatch'):write_full_report(root)
+            bad['opponent_model']['sha256']='synthetic';mirror_file.write_text(json.dumps(bad))
+            raw_file=mirror_file.parent/'raw/game.json';raw=json.loads(raw_file.read_text())
+            raw['opponent_deck']['card_ids'].pop();raw_file.write_text(json.dumps(raw))
+            with self.assertRaisesRegex(ValueError,'Mirror build mismatch'):write_full_report(root)
+            write('selection/selected.json',{'complete':True,'choices':chosen,
+                  'reports':[r for r in extra if not r['label'].endswith('-mirror')]})
+            incomplete=write_full_report(root)
+            self.assertFalse(incomplete['report_complete'])
+            self.assertEqual(incomplete['card_metrics_source']['tests'],[])
+            self.assertEqual((root/'selfplay-card-metrics.csv').read_text(encoding='utf-8-sig'),'')

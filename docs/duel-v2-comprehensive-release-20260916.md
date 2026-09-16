@@ -2,6 +2,8 @@
 
 ## 交付结论
 
+**逐卡口径更正：** 主逐卡表已改为互搏。当前 Mac 汇总只含学习方 A，各位置 32 场；Windows 已下线，双方完整统计与新交付包待补，原 ZIP 的旧逐卡主表已过期。模型与构筑无需变更。
+
 - 全部训练阶段共用 **5 小时 44 分 35 秒**，守护进程退出码 0；未超过 6 小时。各阶段按预算结束，未宣称已经收敛。
 - 09:00 后只运行冻结评估：核心矩阵 34 个单元、1472 场；候选复评 30 个单元、480 场；最终留出 15 个单元、632 场。共 **79 个单元、2584 场**，全部正常完成，无异常或截断。三类结果不混算为一个强度胜率。
 - 创生从整轮搜索短名单中选出 `history-bound`，独立筛选 46/48，原始配牌 43/48；在固定四名角色内更换 12 张配牌。采用第 2886 次更新的基础策略权重，而不是未经比较地取最后一个 checkpoint。
@@ -45,7 +47,7 @@
 - 最终相关回归 **92 项全部通过**，包含两套实际模型完成 API 对局、回放、公开玩家自组，以及模型/构筑绑定与报告打包。
 - 本地已通过模型／构筑篡改、缺失字段、角色顺序、缓存重载、旧对局版本保护、镜像一致性、玩家存档不变等回归；真实两套模型能完成 API 对局并保存回放，公开玩家自组开局通过。
 - Mac 完整报告与附件：`artifacts/rl-evals/comprehensive-20260916/report/`；精选模型与配牌在其 `final/`。
-- Mac 交付包：`artifacts/rl-evals/comprehensive-20260916/comprehensive-delivery.zip`，24,916,268 字节，33506 个文件校验通过。
+- 历史 Mac 交付包（逐卡主表已过期，不能作为更正后报告）：`artifacts/rl-evals/comprehensive-20260916/comprehensive-delivery.zip`，24,916,268 字节，33506 个文件校验通过。
 - 包 SHA-256：`93b8ff5ca99d2218d66681ec1f54e6761647f38ba58735f0d0ac7f60afc9580f`。
 - Windows 完整原始记录：`D:/git/nte_board_game/.rl-comprehensive-20260916/artifacts/comprehensive-six-hour/`。逐局私有日志及其余公开录像留在此处，未打入 Mac 交付包或 Git；公开示例录像随包。
 - 仅数字权重、模型清单和整理后的报告进入 Git，训练 checkpoint、候选全记录、CSV 和原始记录不进入 Git。
@@ -343,122 +345,124 @@
 | --- | ---: | ---: |
 | 配牌保持原始预组 | 32 | 32 |
 
-## 本轮选定配牌：逐卡与机制摘要
+## 本轮选定配牌：逐卡互搏摘要（学习方 A，待补双方统计）
 
-下表以最终变化规则 AI 测试为样本；全部对阵细分见 CSV。抽到仅计 draw 事件，见到还包括起手、换牌、检索与回收等原卡入手。成功使用只计原卡，复制/衍生来源另列。
+2026-09-16 更正：原主表误用了变化规则 AI 对局，已撤换。下表只取 Mac 已保存的最终同模型、同构筑镜像汇总，使用学习方 A 的记录，各位置 32 场。它不是双方完整统计；Windows 已下线，双方原始 telemetry 暂不可读，完整重算及新版交付包待 Windows 上线后补齐。原归档 ZIP 保留历史内容，不能用其中旧逐卡主表作为互搏结论。
 
-| 套牌 | 位置 | 卡牌 | 张数 | 见到局数/总数 | 打出局数 | 打出时胜率 | 平均首次打出回合 | 使用局平均结束回合 |
+对应附件：`selfplay-card-metrics-learner-only.csv`。32 个配对种子共 64 场；A 先手和 A 后手各 32 场。成功打出只计原卡，胜率按对局去重，多次使用另计次数。未携带或未打出的卡没有使用胜率，不能声称已覆盖全卡池。使用胜率是关联，不能直接归因为卡牌强弱。
+
+| 套牌 | A 的位置 | 卡牌 | 张数 | 见到局数/总数 | 打出局数 | 打出时胜率 | 平均首次打出回合 | 使用局平均结束回合 |
 | --- | --- | --- | ---: | --- | ---: | ---: | ---: | ---: |
-| starter | first | N08 预备备 | 2 | 23/32 | 20 | 100.0% | 14.30 | 18.20 |
-| starter | first | N04 不是闯祸精 | 2 | 30/32 | 28 | 96.4% | 10.07 | 17.75 |
-| starter | first | N03 要叫大姐头 | 2 | 25/32 | 23 | 95.7% | 6.39 | 18.35 |
-| starter | first | N02 第二位成员 | 2 | 27/32 | 27 | 96.3% | 8.78 | 17.85 |
-| starter | first | Y08 错误的门 | 2 | 28/32 | 8 | 100.0% | 13.50 | 19.75 |
-| starter | first | Y03 策略特性：善良 | 2 | 31/32 | 31 | 93.5% | 7.39 | 17.58 |
-| starter | first | Y06 策略特性：宽容 | 2 | 25/32 | 16 | 93.8% | 7.00 | 18.31 |
-| starter | first | Y07 想做什么梦？ | 2 | 19/32 | 16 | 100.0% | 9.00 | 18.88 |
-| starter | first | Z04 未决迷数 | 2 | 27/32 | 27 | 96.3% | 5.96 | 18.37 |
-| starter | first | Z08 倾世之雨 | 2 | 23/32 | 22 | 95.5% | 10.82 | 18.05 |
-| starter | first | Z06 诓定解放 | 2 | 28/32 | 20 | 90.0% | 11.50 | 17.60 |
-| starter | first | Z03 奇异记叙 | 2 | 27/32 | 23 | 95.7% | 10.57 | 17.65 |
-| starter | first | J08 现实避难所 | 2 | 24/32 | 10 | 100.0% | 13.40 | 18.20 |
-| starter | first | J03 优势初成 | 2 | 30/32 | 17 | 94.1% | 13.12 | 18.24 |
-| starter | first | J04 出手即致命 | 2 | 24/32 | 11 | 100.0% | 9.91 | 18.45 |
-| starter | first | J02 过往消息皆为利刃 | 1 | 18/32 | 1 | 0.0% | 9.00 | 12.00 |
-| starter | first | J07 使命必达 | 1 | 16/32 | 10 | 100.0% | 12.80 | 18.80 |
-| starter | second | N08 预备备 | 2 | 24/32 | 20 | 100.0% | 12.50 | 18.35 |
-| starter | second | N04 不是闯祸精 | 2 | 30/32 | 29 | 96.6% | 10.00 | 18.28 |
-| starter | second | N03 要叫大姐头 | 2 | 24/32 | 24 | 95.8% | 7.08 | 18.71 |
-| starter | second | N02 第二位成员 | 2 | 27/32 | 26 | 100.0% | 8.31 | 18.58 |
-| starter | second | Y08 错误的门 | 2 | 28/32 | 9 | 100.0% | 13.33 | 19.33 |
-| starter | second | Y03 策略特性：善良 | 2 | 30/32 | 29 | 100.0% | 8.34 | 18.38 |
-| starter | second | Y06 策略特性：宽容 | 2 | 24/32 | 16 | 100.0% | 8.38 | 19.69 |
-| starter | second | Y07 想做什么梦？ | 2 | 20/32 | 20 | 95.0% | 10.80 | 18.10 |
-| starter | second | Z04 未决迷数 | 2 | 26/32 | 26 | 100.0% | 5.77 | 19.04 |
-| starter | second | Z08 倾世之雨 | 2 | 24/32 | 22 | 100.0% | 11.09 | 19.09 |
-| starter | second | Z06 诓定解放 | 2 | 26/32 | 17 | 100.0% | 11.41 | 19.53 |
-| starter | second | Z03 奇异记叙 | 2 | 27/32 | 20 | 95.0% | 9.50 | 18.25 |
-| starter | second | J08 现实避难所 | 2 | 26/32 | 10 | 100.0% | 14.20 | 17.70 |
-| starter | second | J03 优势初成 | 2 | 27/32 | 16 | 100.0% | 13.75 | 19.12 |
-| starter | second | J04 出手即致命 | 2 | 24/32 | 15 | 100.0% | 13.33 | 18.33 |
-| starter | second | J02 过往消息皆为利刃 | 1 | 22/32 | 2 | 100.0% | 8.00 | 20.00 |
-| starter | second | J07 使命必达 | 1 | 18/32 | 13 | 92.3% | 13.08 | 19.00 |
-| weave-rush | first | M01 特遣行动 | 2 | 29/32 | 27 | 96.3% | 4.85 | 16.00 |
-| weave-rush | first | M03 全勤奖金 | 2 | 26/32 | 12 | 100.0% | 11.67 | 18.33 |
-| weave-rush | first | M04 午休时间 | 2 | 20/32 | 14 | 100.0% | 13.14 | 18.00 |
-| weave-rush | first | M08 开始净空 | 2 | 24/32 | 19 | 100.0% | 11.00 | 17.32 |
-| weave-rush | first | B01 唷 队长！ | 2 | 23/32 | 22 | 95.5% | 5.09 | 15.68 |
-| weave-rush | first | B02 招魂幡 | 2 | 27/32 | 25 | 96.0% | 10.04 | 16.48 |
-| weave-rush | first | B06 于五色为白 | 2 | 28/32 | 14 | 100.0% | 10.43 | 18.14 |
-| weave-rush | first | B08 茶话会 | 2 | 21/32 | 18 | 94.4% | 11.44 | 17.39 |
-| weave-rush | first | Z03 奇异记叙 | 2 | 22/32 | 14 | 92.9% | 8.71 | 19.64 |
-| weave-rush | first | Z04 未决迷数 | 2 | 25/32 | 18 | 94.4% | 9.44 | 17.50 |
-| weave-rush | first | Z05 默示赋命 | 2 | 26/32 | 24 | 95.8% | 7.42 | 17.12 |
-| weave-rush | first | Z08 倾世之雨 | 2 | 22/32 | 21 | 95.2% | 8.24 | 16.86 |
-| weave-rush | first | Y01 重复囚徒困境 | 2 | 23/32 | 4 | 75.0% | 15.00 | 18.75 |
-| weave-rush | first | Y03 策略特性：善良 | 2 | 27/32 | 24 | 95.8% | 8.83 | 16.88 |
-| weave-rush | first | Y06 策略特性：宽容 | 2 | 23/32 | 17 | 94.1% | 6.18 | 18.24 |
-| weave-rush | first | Y07 想做什么梦？ | 2 | 26/32 | 25 | 96.0% | 7.08 | 17.52 |
-| weave-rush | second | M01 特遣行动 | 2 | 28/32 | 28 | 92.9% | 6.43 | 15.36 |
-| weave-rush | second | M03 全勤奖金 | 2 | 22/32 | 8 | 87.5% | 11.75 | 18.88 |
-| weave-rush | second | M04 午休时间 | 2 | 19/32 | 15 | 86.7% | 10.40 | 17.07 |
-| weave-rush | second | M08 开始净空 | 2 | 22/32 | 18 | 94.4% | 8.89 | 16.61 |
-| weave-rush | second | B01 唷 队长！ | 2 | 25/32 | 22 | 90.9% | 5.64 | 14.00 |
-| weave-rush | second | B02 招魂幡 | 2 | 26/32 | 22 | 90.9% | 10.09 | 15.91 |
-| weave-rush | second | B06 于五色为白 | 2 | 25/32 | 18 | 88.9% | 11.78 | 16.00 |
-| weave-rush | second | B08 茶话会 | 2 | 21/32 | 19 | 94.7% | 7.68 | 15.63 |
-| weave-rush | second | Z03 奇异记叙 | 2 | 21/32 | 12 | 91.7% | 8.83 | 16.75 |
-| weave-rush | second | Z04 未决迷数 | 2 | 23/32 | 17 | 94.1% | 10.47 | 16.18 |
-| weave-rush | second | Z05 默示赋命 | 2 | 27/32 | 24 | 91.7% | 9.00 | 16.33 |
-| weave-rush | second | Z08 倾世之雨 | 2 | 21/32 | 18 | 94.4% | 5.78 | 15.17 |
-| weave-rush | second | Y01 重复囚徒困境 | 2 | 22/32 | 4 | 75.0% | 14.50 | 20.25 |
-| weave-rush | second | Y03 策略特性：善良 | 2 | 26/32 | 24 | 91.7% | 6.75 | 15.67 |
-| weave-rush | second | Y06 策略特性：宽容 | 2 | 22/32 | 17 | 100.0% | 6.94 | 16.24 |
-| weave-rush | second | Y07 想做什么梦？ | 2 | 24/32 | 24 | 91.7% | 6.58 | 16.33 |
+| starter | first | N08 预备备 | 2 | 23/32 | 15 | 46.7% | 14.20 | 23.13 |
+| starter | first | N04 不是闯祸精 | 2 | 23/32 | 20 | 55.0% | 10.00 | 22.30 |
+| starter | first | N03 要叫大姐头 | 2 | 24/32 | 23 | 47.8% | 7.87 | 21.57 |
+| starter | first | N02 第二位成员 | 2 | 27/32 | 24 | 41.7% | 7.33 | 21.96 |
+| starter | first | Y08 错误的门 | 2 | 26/32 | 13 | 30.8% | 15.31 | 21.85 |
+| starter | first | Y03 策略特性：善良 | 2 | 30/32 | 30 | 40.0% | 9.20 | 21.00 |
+| starter | first | Y06 策略特性：宽容 | 2 | 23/32 | 21 | 52.4% | 8.33 | 21.76 |
+| starter | first | Y07 想做什么梦？ | 2 | 23/32 | 22 | 45.5% | 10.00 | 21.68 |
+| starter | first | Z04 未决迷数 | 2 | 29/32 | 29 | 44.8% | 8.24 | 21.10 |
+| starter | first | Z08 倾世之雨 | 2 | 24/32 | 21 | 52.4% | 11.95 | 22.33 |
+| starter | first | Z06 诓定解放 | 2 | 27/32 | 19 | 47.4% | 13.84 | 21.89 |
+| starter | first | Z03 奇异记叙 | 2 | 29/32 | 29 | 44.8% | 11.28 | 21.14 |
+| starter | first | J08 现实避难所 | 2 | 26/32 | 11 | 63.6% | 14.09 | 23.27 |
+| starter | first | J03 优势初成 | 2 | 25/32 | 19 | 57.9% | 13.11 | 21.63 |
+| starter | first | J04 出手即致命 | 2 | 25/32 | 19 | 47.4% | 12.47 | 22.84 |
+| starter | first | J02 过往消息皆为利刃 | 1 | 16/32 | 2 | 50.0% | 16.00 | 23.50 |
+| starter | first | J07 使命必达 | 1 | 19/32 | 10 | 70.0% | 16.40 | 23.70 |
+| starter | second | N08 预备备 | 2 | 24/32 | 11 | 45.5% | 13.45 | 21.09 |
+| starter | second | N04 不是闯祸精 | 2 | 24/32 | 24 | 54.2% | 10.25 | 20.04 |
+| starter | second | N03 要叫大姐头 | 2 | 24/32 | 24 | 62.5% | 7.17 | 19.88 |
+| starter | second | N02 第二位成员 | 2 | 25/32 | 23 | 56.5% | 7.22 | 20.17 |
+| starter | second | Y08 错误的门 | 2 | 27/32 | 14 | 42.9% | 14.14 | 22.00 |
+| starter | second | Y03 策略特性：善良 | 2 | 29/32 | 28 | 50.0% | 9.57 | 19.64 |
+| starter | second | Y06 策略特性：宽容 | 2 | 24/32 | 22 | 50.0% | 8.91 | 20.50 |
+| starter | second | Y07 想做什么梦？ | 2 | 23/32 | 23 | 60.9% | 10.43 | 20.04 |
+| starter | second | Z04 未决迷数 | 2 | 25/32 | 25 | 48.0% | 8.24 | 20.60 |
+| starter | second | Z08 倾世之雨 | 2 | 24/32 | 21 | 52.4% | 9.90 | 19.33 |
+| starter | second | Z06 诓定解放 | 2 | 26/32 | 21 | 47.6% | 11.81 | 19.38 |
+| starter | second | Z03 奇异记叙 | 2 | 30/32 | 26 | 50.0% | 11.31 | 20.12 |
+| starter | second | J08 现实避难所 | 2 | 25/32 | 7 | 57.1% | 10.86 | 21.86 |
+| starter | second | J03 优势初成 | 2 | 22/32 | 15 | 60.0% | 12.93 | 21.07 |
+| starter | second | J04 出手即致命 | 2 | 25/32 | 16 | 37.5% | 12.12 | 19.50 |
+| starter | second | J02 过往消息皆为利刃 | 1 | 13/32 | 1 | 0.0% | 20.00 | 33.00 |
+| starter | second | J07 使命必达 | 1 | 17/32 | 9 | 77.8% | 14.00 | 21.11 |
+| weave-rush | first | M01 特遣行动 | 2 | 24/32 | 24 | 54.2% | 7.42 | 19.25 |
+| weave-rush | first | M03 全勤奖金 | 2 | 26/32 | 19 | 52.6% | 11.21 | 19.26 |
+| weave-rush | first | M04 午休时间 | 2 | 26/32 | 25 | 52.0% | 9.32 | 19.56 |
+| weave-rush | first | M08 开始净空 | 2 | 26/32 | 13 | 76.9% | 13.31 | 20.46 |
+| weave-rush | first | B01 唷 队长！ | 2 | 26/32 | 26 | 57.7% | 6.08 | 19.69 |
+| weave-rush | first | B02 招魂幡 | 2 | 22/32 | 22 | 63.6% | 9.00 | 20.00 |
+| weave-rush | first | B06 于五色为白 | 2 | 25/32 | 25 | 48.0% | 12.12 | 19.32 |
+| weave-rush | first | B08 茶话会 | 2 | 24/32 | 10 | 80.0% | 11.80 | 21.00 |
+| weave-rush | first | Z03 奇异记叙 | 2 | 23/32 | 17 | 58.8% | 11.00 | 20.06 |
+| weave-rush | first | Z04 未决迷数 | 2 | 27/32 | 21 | 66.7% | 11.67 | 20.19 |
+| weave-rush | first | Z05 默示赋命 | 2 | 27/32 | 26 | 46.2% | 7.31 | 19.00 |
+| weave-rush | first | Z08 倾世之雨 | 2 | 23/32 | 21 | 66.7% | 9.29 | 20.14 |
+| weave-rush | first | Y01 重复囚徒困境 | 2 | 28/32 | 20 | 55.0% | 12.00 | 20.35 |
+| weave-rush | first | Y03 策略特性：善良 | 2 | 22/32 | 21 | 57.1% | 9.00 | 20.14 |
+| weave-rush | first | Y06 策略特性：宽容 | 2 | 25/32 | 22 | 50.0% | 8.00 | 19.45 |
+| weave-rush | first | Y07 想做什么梦？ | 2 | 22/32 | 18 | 77.8% | 6.67 | 18.72 |
+| weave-rush | second | M01 特遣行动 | 2 | 22/32 | 22 | 50.0% | 6.55 | 17.09 |
+| weave-rush | second | M03 全勤奖金 | 2 | 25/32 | 14 | 50.0% | 10.00 | 18.07 |
+| weave-rush | second | M04 午休时间 | 2 | 23/32 | 20 | 55.0% | 9.90 | 18.10 |
+| weave-rush | second | M08 开始净空 | 2 | 23/32 | 14 | 71.4% | 12.14 | 19.00 |
+| weave-rush | second | B01 唷 队长！ | 2 | 25/32 | 24 | 45.8% | 6.83 | 18.29 |
+| weave-rush | second | B02 招魂幡 | 2 | 22/32 | 22 | 59.1% | 10.09 | 18.05 |
+| weave-rush | second | B06 于五色为白 | 2 | 23/32 | 20 | 45.0% | 10.50 | 18.10 |
+| weave-rush | second | B08 茶话会 | 2 | 23/32 | 14 | 50.0% | 8.71 | 17.43 |
+| weave-rush | second | Z03 奇异记叙 | 2 | 20/32 | 14 | 50.0% | 10.86 | 19.36 |
+| weave-rush | second | Z04 未决迷数 | 2 | 26/32 | 22 | 50.0% | 9.55 | 17.91 |
+| weave-rush | second | Z05 默示赋命 | 2 | 24/32 | 24 | 45.8% | 7.42 | 17.71 |
+| weave-rush | second | Z08 倾世之雨 | 2 | 24/32 | 20 | 45.0% | 6.90 | 18.10 |
+| weave-rush | second | Y01 重复囚徒困境 | 2 | 28/32 | 21 | 28.6% | 11.90 | 18.57 |
+| weave-rush | second | Y03 策略特性：善良 | 2 | 24/32 | 21 | 47.6% | 7.71 | 18.71 |
+| weave-rush | second | Y06 策略特性：宽容 | 2 | 23/32 | 21 | 42.9% | 8.57 | 18.10 |
+| weave-rush | second | Y07 想做什么梦？ | 2 | 21/32 | 20 | 60.0% | 6.70 | 18.00 |
 
-### 终结与环合
+### 终结与环合（同批互搏，学习方 A）
 
-| 测试 | 位置 | 角色 | 机制 | 次数 | 使用局数 | 使用局胜率 | 可用角色回合 | 首次使用回合 | 同动作对手生命变化/次 |
+| 测试 | A 的位置 | 角色 | 机制 | 次数 | 使用局数 | 使用局胜率 | 可用角色回合 | 首次使用回合 | 同动作对手生命变化/次 |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| starter-selected-rule-varied | first | nanali | ultimate | 81 | 31 | 96.8% | 88 | 8.67741935483871 | 0.0 |
-| starter-selected-rule-varied | first | nanali | harmony | 25 | 19 | 100.0% | 25 | 11.947368421052632 | -4.0 |
-| starter-selected-rule-varied | first | iloy | ultimate | 67 | 31 | 96.8% | 90 | 10.548387096774194 | 0.0 |
-| starter-selected-rule-varied | first | iloy | harmony | 0 | 0 | — | 32 | — | — |
-| starter-selected-rule-varied | first | zero | ultimate | 75 | 31 | 96.8% | 75 | 10.03225806451613 | 0.0 |
-| starter-selected-rule-varied | first | zero | harmony | 26 | 20 | 100.0% | 96 | 14.7 | -4.5 |
-| starter-selected-rule-varied | first | jiuyuan | ultimate | 53 | 31 | 96.8% | 60 | 11.387096774193548 | 0.0 |
-| starter-selected-rule-varied | first | jiuyuan | harmony | 6 | 6 | 83.3% | 23 | 12.0 | -2.0 |
-| starter-selected-rule-varied | second | nanali | ultimate | 82 | 32 | 96.9% | 89 | 8.3125 | 0.0 |
-| starter-selected-rule-varied | second | nanali | harmony | 15 | 11 | 100.0% | 32 | 11.636363636363637 | -3.4 |
-| starter-selected-rule-varied | second | iloy | ultimate | 67 | 32 | 96.9% | 89 | 10.375 | 0.0 |
-| starter-selected-rule-varied | second | iloy | harmony | 1 | 1 | 100.0% | 41 | 12.0 | 0.0 |
-| starter-selected-rule-varied | second | zero | ultimate | 75 | 31 | 100.0% | 75 | 9.806451612903226 | 0.0 |
-| starter-selected-rule-varied | second | zero | harmony | 16 | 14 | 100.0% | 92 | 15.0 | -4.8125 |
-| starter-selected-rule-varied | second | jiuyuan | ultimate | 57 | 31 | 100.0% | 62 | 10.064516129032258 | 0.0 |
-| starter-selected-rule-varied | second | jiuyuan | harmony | 10 | 10 | 100.0% | 35 | 10.6 | -3.8 |
-| weave-rush-selected-rule-varied | first | bohe | ultimate | 46 | 27 | 96.3% | 55 | 8.703703703703704 | 0.0 |
-| weave-rush-selected-rule-varied | first | bohe | harmony | 25 | 20 | 100.0% | 41 | 10.15 | -4.48 |
-| weave-rush-selected-rule-varied | first | baicang | ultimate | 48 | 29 | 96.6% | 52 | 8.448275862068966 | 0.0 |
-| weave-rush-selected-rule-varied | first | baicang | harmony | 6 | 6 | 83.3% | 8 | 14.0 | -4.166666666666667 |
-| weave-rush-selected-rule-varied | first | zero | ultimate | 75 | 32 | 96.9% | 75 | 7.3125 | 0.0 |
-| weave-rush-selected-rule-varied | first | zero | harmony | 7 | 6 | 100.0% | 32 | 9.0 | -3.857142857142857 |
-| weave-rush-selected-rule-varied | first | iloy | ultimate | 66 | 29 | 96.6% | 90 | 8.241379310344827 | 0.0 |
-| weave-rush-selected-rule-varied | first | iloy | harmony | 11 | 9 | 88.9% | 87 | 8.777777777777779 | -1.5454545454545454 |
-| weave-rush-selected-rule-varied | second | bohe | ultimate | 48 | 28 | 96.4% | 60 | 7.714285714285714 | 0.0 |
-| weave-rush-selected-rule-varied | second | bohe | harmony | 30 | 23 | 95.7% | 53 | 10.043478260869565 | -4.133333333333334 |
-| weave-rush-selected-rule-varied | second | baicang | ultimate | 50 | 31 | 93.5% | 56 | 8.709677419354838 | 0.0 |
-| weave-rush-selected-rule-varied | second | baicang | harmony | 13 | 13 | 92.3% | 16 | 13.538461538461538 | -4.076923076923077 |
-| weave-rush-selected-rule-varied | second | zero | ultimate | 66 | 32 | 93.8% | 66 | 8.25 | 0.0 |
-| weave-rush-selected-rule-varied | second | zero | harmony | 6 | 6 | 100.0% | 30 | 13.666666666666666 | -4.5 |
-| weave-rush-selected-rule-varied | second | iloy | ultimate | 66 | 31 | 93.5% | 95 | 7.935483870967742 | 0.0 |
-| weave-rush-selected-rule-varied | second | iloy | harmony | 4 | 4 | 75.0% | 84 | 11.5 | -1.5 |
+| starter-selected-mirror | first | nanali | ultimate | 67 | 30 | 43.3% | 71 | 8.87 | 0.00 |
+| starter-selected-mirror | first | nanali | harmony | 18 | 14 | 64.3% | 20 | 9.00 | -1.67 |
+| starter-selected-mirror | first | iloy | ultimate | 74 | 32 | 40.6% | 86 | 10.81 | 0.00 |
+| starter-selected-mirror | first | iloy | harmony | 10 | 10 | 40.0% | 37 | 16.20 | -1.90 |
+| starter-selected-mirror | first | zero | ultimate | 72 | 30 | 43.3% | 72 | 9.60 | 0.00 |
+| starter-selected-mirror | first | zero | harmony | 16 | 12 | 83.3% | 55 | 16.17 | -4.88 |
+| starter-selected-mirror | first | jiuyuan | ultimate | 58 | 27 | 48.1% | 61 | 9.89 | 0.00 |
+| starter-selected-mirror | first | jiuyuan | harmony | 8 | 8 | 75.0% | 24 | 17.25 | -4.62 |
+| starter-selected-mirror | second | nanali | ultimate | 66 | 31 | 51.6% | 69 | 7.23 | 0.00 |
+| starter-selected-mirror | second | nanali | harmony | 17 | 12 | 91.7% | 32 | 13.17 | -4.53 |
+| starter-selected-mirror | second | iloy | ultimate | 71 | 31 | 51.6% | 82 | 9.94 | 0.00 |
+| starter-selected-mirror | second | iloy | harmony | 4 | 4 | 50.0% | 41 | 13.50 | -0.50 |
+| starter-selected-mirror | second | zero | ultimate | 67 | 30 | 53.3% | 67 | 9.13 | 0.00 |
+| starter-selected-mirror | second | zero | harmony | 14 | 11 | 81.8% | 62 | 17.09 | -4.14 |
+| starter-selected-mirror | second | jiuyuan | ultimate | 48 | 28 | 53.6% | 50 | 10.07 | 0.00 |
+| starter-selected-mirror | second | jiuyuan | harmony | 7 | 6 | 66.7% | 32 | 13.67 | -2.57 |
+| weave-rush-selected-mirror | first | bohe | ultimate | 43 | 25 | 60.0% | 54 | 10.92 | 0.00 |
+| weave-rush-selected-mirror | first | bohe | harmony | 13 | 12 | 75.0% | 30 | 13.83 | -3.62 |
+| weave-rush-selected-mirror | first | baicang | ultimate | 48 | 30 | 56.7% | 53 | 9.93 | 0.00 |
+| weave-rush-selected-mirror | first | baicang | harmony | 9 | 9 | 66.7% | 12 | 14.56 | -4.44 |
+| weave-rush-selected-mirror | first | zero | ultimate | 77 | 31 | 54.8% | 76 | 8.03 | 0.00 |
+| weave-rush-selected-mirror | first | zero | harmony | 1 | 1 | 100.0% | 19 | 7.00 | 0.00 |
+| weave-rush-selected-mirror | first | iloy | ultimate | 81 | 32 | 53.1% | 96 | 8.31 | 0.00 |
+| weave-rush-selected-mirror | first | iloy | harmony | 5 | 4 | 100.0% | 67 | 9.50 | -2.40 |
+| weave-rush-selected-mirror | second | bohe | ultimate | 32 | 22 | 63.6% | 39 | 8.91 | 0.00 |
+| weave-rush-selected-mirror | second | bohe | harmony | 15 | 12 | 83.3% | 27 | 8.92 | -2.00 |
+| weave-rush-selected-mirror | second | baicang | ultimate | 44 | 30 | 53.3% | 48 | 9.93 | 0.00 |
+| weave-rush-selected-mirror | second | baicang | harmony | 4 | 4 | 100.0% | 4 | 15.50 | -2.25 |
+| weave-rush-selected-mirror | second | zero | ultimate | 66 | 31 | 51.6% | 66 | 8.13 | 0.00 |
+| weave-rush-selected-mirror | second | zero | harmony | 6 | 5 | 80.0% | 15 | 8.40 | -3.33 |
+| weave-rush-selected-mirror | second | iloy | ultimate | 65 | 31 | 48.4% | 82 | 8.06 | 0.00 |
+| weave-rush-selected-mirror | second | iloy | harmony | 11 | 8 | 62.5% | 65 | 10.50 | -1.64 |
 
-环合类型、提供者、受益者、终结结束及源效果事件保留在每局 telemetry；机会以存在合法发动动作的角色·全局回合去重，包含普通出击和战斗牌；同回合多次触发另计次数。
+同动作生命变化仅为关联证据，不是净因果收益。双方完整统计将使用相同镜像批次，不增加训练或混入规则 AI。
 
 ## 曲线与统计限制
 
 - `turn-states.csv` 给出各回合仍在进行的样本量及平均生命、行动力、能量、环合值；没有概率预测。
-- `card-metrics.csv` 包含抽到/见到/使用的分子分母、来源、平均次数和回合数。
+- `selfplay-card-metrics-learner-only.csv` 是当前更正主表，只有最终镜像学习方 A 的先后手数据；`card-metrics.csv` 保留全部测试诊断，不可将其中规则 AI 记录混入互搏统计。
 - `training-win-rates.csv` 保留各次更新按对手类型和先后手的胜率序列，不能混入冻结评估。
 - `generated-card-metrics.csv` 单列复制与衍生牌的获得、使用和胜负关联，不混入主牌组抽到率。
 - `mechanism-metrics.csv` 包含按角色/先后手的机会、次数和同动作生命变化。跨动作/跨回合的净因果收益尚未归因，不将相邻效果全算作某机制贡献。

@@ -1096,7 +1096,7 @@ static void end_turn(int *row, int s){
     CH(CH_HP,s,front)=hp;
   }
   if(CH(CH_SHAPE,s,SEAT_ZERO)==CARD_Z06 && CH(CH_HP,s,SEAT_ZERO)>0)
-    SI(EXTRA_AP,s) += 1;
+    SI(AP,s) += 1;
   SI(NORMAL_ATK,s)=0;
   SI(ULTIMATE_OK,s)=0;
   SI(EXTRA_FLOWER,s)=0;

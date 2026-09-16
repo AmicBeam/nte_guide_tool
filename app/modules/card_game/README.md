@@ -116,7 +116,9 @@
 
 服务端仅依赖可选的 NumPy CPU 推理：`pip install -r requirements-ai.txt`。默认读取 `app/modules/card_game/engine/ai/models/{starter,weave-rush}.{npz,json}`，可用 `NTE_DUEL_AI_MODEL_DIR` 指定目录。数字权重不允许 pickle；加载时校验 SHA-256、卡池/座位顺序、观察 schema、规则哈希和参数形状。缺依赖、缺文件或版本不匹配会在创建房间前明确拒绝，不降级冒充高级人机。
 
-当前模型使用完整规则哈希及模型/构筑独立评估证据。旧 `resident_public_v1` 的 runtime_rule_hash 兼容加载仍保留用于历史版本，不改变旧训练身份；历史胜率不能直接沿用为当前结果。
+2026-09-16 按用户指定将创生高级人机的 Z06 ×2 替换为 Z07「休息日」×2；这是人工换牌，不是重新训练或再次搜索的最优结论。「诓定解放」同步修复为回合结束立即回费，武备生命 5 → 6。
+
+当前模型使用完整规则哈希及模型/构筑独立评估证据。`rule_identity` 保留训练规则身份；规则修复后以 `runtime_rule_hash` 绑定实际执行规则，并在新规则、实际构筑下重新取得独立评估证据才允许加载。历史验证保存在 `previous_validation`，旧胜率不能直接沿用为当前结果。
 
 `engine/ai/advanced_model.py` 负责纯 CPU 编码与选择；`rl/public_schema.py` 和 `public_observation.py` 定义当前观察接口。`scripts/export_duel_v2_public.py` 导出数字模型，并可用 `--approve-report REPORT --serving-build BUILD` 验证模型与实际配牌的绑定。Git 的 `engine/ai/models/` 只保留两套当前数字策略及 JSON 清单；部署仍需用户验收授权。完整 checkpoint、优化器、对照样本和原始日志留在 `artifacts/`，不进入 app 或 Git。网站高级人机只加载数值导出文件，不加载训练 checkpoint，也不启动训练。
 
@@ -184,7 +186,7 @@ node --check app/modules/card_game/static/js/v2_replays.js
 高级人机：
 
 ```bash
-python3 -m unittest tests.test_duel_v2_advanced_ai tests.test_duel_v2_api tests.test_duel_v2_replay
+python3 -m unittest tests.test_duel_v2_zero_refund tests.test_duel_v2_serving_build tests.test_duel_v2_advanced_ai tests.test_duel_v2_api tests.test_duel_v2_replay
 ```
 
 训练框架或编译规则：

@@ -88,3 +88,23 @@ class ServingBuildTest(unittest.TestCase):
             state['ai_profile']={'deck_id':'starter','version':frozen.version,'build_sha256':'changed'}
             with patch('app.modules.card_game.engine.ai.advanced_model.load_model',return_value=frozen):
                 with self.assertRaisesRegex(RuleValidationError,'构筑版本'):choose_action(state,'b')
+
+    def test_runtime_revalidation_preserves_training_rule_identity(self):
+        from app.modules.card_game.rl.public_export import approve_candidate
+        from app.modules.card_game.rl.public_schema import rule_identity
+        from app.modules.card_game.engine.ai.advanced_model import FrozenModel
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);model,report,deck=self.fixture(root)
+            path=model.with_suffix('.json');manifest=json.loads(path.read_text())
+            manifest['rule_identity']={'rule_hash':'historical-training-rules'}
+            manifest['runtime_rule_hash']=rule_identity()
+            path.write_text(json.dumps(manifest))
+            old_report=json.loads(report.read_text())
+            old_report['model']['rule_hash']='historical-training-rules'
+            stale=root/'old-report.json';stale.write_text(json.dumps(old_report))
+            with self.assertRaisesRegex(ValueError,'does not match'):
+                approve_candidate(model,stale,serving_build=deck)
+            approve_candidate(model,report,serving_build=deck)
+            frozen=FrozenModel(root,'starter')
+            self.assertEqual(frozen.manifest['rule_identity']['rule_hash'],'historical-training-rules')
+            self.assertEqual(frozen.manifest['validation']['rule_hash'],rule_identity())

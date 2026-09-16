@@ -103,7 +103,7 @@ def approve_candidate(model_path, report_path, *, min_pairs=32, min_win_rate=0.5
     if (model.get('sha256'),model.get('schema'),model.get('rule_hash'),report.get('preset')) != (
             digest,SCHEMA,identity,manifest.get('deck')):
         raise ValueError('Report does not match the exact model, rules, and preset')
-    if (manifest.get('rule_identity') or {}).get('rule_hash')!=identity:
+    if (manifest.get('runtime_rule_hash') or (manifest.get('rule_identity') or {}).get('rule_hash'))!=identity:
         raise ValueError('Model rule identity changed')
     if report.get('sampled_opponent') is not True or len(report.get('by_opponent_team') or {})<15:
         raise ValueError('Evaluation must cover all 15 public opponent teams')

@@ -76,5 +76,5 @@ class Zero:
         elif shape == 'Z07' and front:
             heal(c.state, c.side, front, 2, reason='回合结束，「休息日」触发')
         elif shape == 'Z06':
-            team['extra_ap'] = int(team.get('extra_ap') or 0) + 1
-            c.history('回合结束，「诓定解放」触发：下个己方回合额外获得 1 点行动力。')
+            team['ap'] = int(team.get('ap') or 0) + 1
+            c.history('回合结束，「诓定解放」触发：获得 1 点行动力。')

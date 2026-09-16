@@ -179,7 +179,7 @@
       "B08"
     ]
   },
-  "validation": {
+  "previous_validation": {
     "complete": true,
     "model_sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
     "rule_hash": "c1abaf1979bf377994a0c019e05e1bb4267098782562937d757c73baadc69d7b",
@@ -191,8 +191,27 @@
     "report_sha256": "cdff4da181c2d81e8a2f227c80885b801a54947acace6cef10fb03ac7fed74df",
     "serving_build_sha256": "c618c7c7f25dfa6c7d7c8f01b570b0da3de587f2f2b2b9a92f3ace6a370ec21c"
   },
+  "runtime_rule_hash": "ada7f5ef97a28037d3908b5e93317256e24f97e3e62f74e3fc9602d133bcbebc",
+  "runtime_revision": {
+    "reason": "User-directed Z06 immediate end-turn AP and health 5 to 6; starter Z06 x2 replaced by Z07 x2; user-confirmed B08 display name corrected to 茶花会",
+    "trained_again": false,
+    "replaced_copies": 2,
+    "previous_serving_build_sha256": "c618c7c7f25dfa6c7d7c8f01b570b0da3de587f2f2b2b9a92f3ace6a370ec21c"
+  },
+  "validation": {
+    "complete": true,
+    "model_sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
+    "rule_hash": "ada7f5ef97a28037d3908b5e93317256e24f97e3e62f74e3fc9602d133bcbebc",
+    "games": 64,
+    "wins": 61,
+    "min_pairs": 32,
+    "min_win_rate": 0.5,
+    "opponent_teams": 15,
+    "report_sha256": "a68a0d48751a81c8caed1a7b5458293dc2aa523c5d1aa8f64b06ee9de9637578",
+    "serving_build_sha256": "b8a6229aa85f2dbd1c6f397156a36ba5a71cc1491d465c3dacf32177e4418fdd"
+  },
   "serving_build": {
-    "id": "ai-starter-c618c7c7f25d",
+    "id": "ai-starter-b8a6229aa85f",
     "name": "创生预组·高级人机",
     "character_ids": [
       "nanali",
@@ -221,10 +240,10 @@
       "Z08",
       "Z08",
       "Z04",
-      "Z06",
+      "Z07",
       "Z03",
       "Z03",
-      "Z06",
+      "Z07",
       "J08",
       "J03",
       "J08",

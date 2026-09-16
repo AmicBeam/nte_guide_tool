@@ -589,6 +589,8 @@ def end_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
     for si in range(SIDES):
         here = mask & (side == si)
         front = s.front[:, si]
+        z06 = here & (s.ch_shape[:, si, ZERO] == CARD_INDEX['Z06']) & (s.ch_present[:, si, ZERO] > 0) & (s.ch_hp[:, si, ZERO] > 0)
+        s.ap[:, si] = torch.where(z06, s.ap[:, si] + 1, s.ap[:, si])
         z08_id = _hook_card(s, 'turn_end_atk_shape')
         z07_id = _hook_card(s, 'turn_end_heal_shape')
         atk_amt = int(_effect_tables(s)['hooks']['turn_end_atk'])

@@ -95,7 +95,10 @@ class TriggerHistoryTest(unittest.TestCase):
         self.assertEqual(s['event_seq'], seq)
         hero(s, 'a', 'zero')['shape'] = 'Z06'
         fire(self.context(s, 'zero'), 'on_turn_end', actor_only=True)
-        self.assertIn('下个己方回合额外获得 1 点行动力', s['events'][-1]['text'])
+        self.assertIn('获得 1 点行动力', s['events'][-1]['text'])
+        self.assertNotIn('下个己方回合', s['events'][-1]['text'])
+        self.assertEqual(s['sides']['a']['ap'], 2)
+        self.assertEqual(s['sides']['a'].get('extra_ap', 0), 0)
 
     def test_healing_attack_is_distinct_from_heal_result(self):
         s = self.game()

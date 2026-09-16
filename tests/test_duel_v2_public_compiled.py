@@ -109,6 +109,39 @@ class PublicCompiledNativeTest(unittest.TestCase):
         self.assertEqual(mechan_from_row(got), mechan_from_row(py))
         return nxt, got
 
+    def test_z06_refund_is_available_to_response_and_not_next_turn(self):
+        from app.modules.card_game.engine.duel_v2.state import hero, card_instance
+        for side in ('a', 'b'):
+            for starting_ap in (0, 2):
+                state = new_game(seed=7, first_side=side, skip_mulligan=True)
+                foe = 'b' if side == 'a' else 'a'
+                for owner in ('a', 'b'):
+                    state['sides'][owner]['hand'] = []
+                state['sides'][side]['ap'] = starting_ap
+                hero(state, side, 'zero')['shape'] = 'Z06'
+                state, row = self._check_play(state, {'type': 'end_turn'})
+                self.assertEqual(row[OFFSETS['ap'] + 'ab'.index(side)], starting_ap + 1)
+                self.assertEqual(row[OFFSETS['extra_ap'] + 'ab'.index(side)], 0)
+                state, row = self._check_play(state, {'type': 'end_turn'})
+                self.assertEqual(row[OFFSETS['ap'] + 'ab'.index(side)], 2)
+        state = new_game(seed=7, first_side='a', skip_mulligan=True)
+        for owner in ('a', 'b'):
+            state['sides'][owner]['hand'] = []
+        state['sides']['a']['front'] = 'zero'
+        state['sides']['a']['ap'] = 0
+        hero(state, 'a', 'zero')['shape'] = 'Z06'
+        state['sides']['a']['hand'] = [card_instance(state, 'N02', 'a')]
+        state, row = self._check_play(state, {'type': 'end_turn'})
+        state, row = self._check_play(state, {'type': 'attack', 'character_id': 'zero'})
+        self.assertEqual(state['sides']['a']['front'], 'nanali')
+        self.assertEqual(row[OFFSETS['ap']], 0)
+        state = new_game(seed=7, first_side='a', skip_mulligan=True)
+        state['sides']['a']['ap'] = 1
+        card = card_instance(state, 'Z06', 'a')
+        state['sides']['a']['hand'] = [card]
+        state, row = self._check_play(state, {'type': 'play_card', 'card_id': card['instance_id']})
+        self.assertEqual(hero(state, 'a', 'zero')['max_hp'], 6)
+
     def test_preset_reset_still_works_with_escalation_on(self):
         rows = self.backend.reset_lists([7])
         row = rows[0]

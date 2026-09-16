@@ -28,7 +28,7 @@
                     <button class="secondary-btn" id="v2-replay-pause" type="button" hidden>暂停</button>
                     <button class="secondary-btn" id="v2-replay-next" type="button">下一步</button>
                 </div>
-                <p class="v2-replay-time" id="v2-replay-time" hidden></p>
+                <select class="v2-replay-turn" id="v2-replay-turn" aria-label="跳转回合" title="选择回合跳转，跳转后暂停播放" disabled><option value="0">开局</option></select>
                 <p class="v2-replay-step" id="v2-replay-step">开局</p>
                 <a class="secondary-btn" id="v2-replay-exit" href="{{ url_for('main.card_game_home') }}">退出回放</a>
             </section>

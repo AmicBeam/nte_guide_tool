@@ -49,7 +49,8 @@
     const playBtn = document.getElementById('v2-replay-play');
     const pauseBtn = document.getElementById('v2-replay-pause');
     const stepNode = document.getElementById('v2-replay-step');
-    const timeNode = document.getElementById('v2-replay-time');
+    const turnSelect = document.getElementById('v2-replay-turn');
+    let turnStops = [];
     const exitLink = document.getElementById('v2-replay-exit');
     const replayLink = document.getElementById('v2-replay-link');
 
@@ -116,6 +117,10 @@
       ctx.nodes.turnCopy.textContent = current && current.text ? current.text : '起手公开局面';
       if (ctx.nodes.waitChip) ctx.nodes.waitChip.textContent = ctx.playing ? '回放播放中' : '回放已暂停';
       stepNode.textContent = stepLabel(events, ctx.index) + ' · ' + ctx.index + '/' + max;
+      if (turnSelect) {
+        const currentStop = turnStops.filter(function (stop) { return stop.index <= ctx.index; }).pop();
+        turnSelect.value = String(currentStop ? currentStop.index : 0);
+      }
       prevBtn.disabled = ctx.index <= 0 || ctx.playing;
       nextBtn.disabled = ctx.index >= max || ctx.playing;
       V2.setHidden(playBtn, ctx.playing);
@@ -123,6 +128,14 @@
     }
 
     function paint() {
+      // Recreate the player so earlier events can animate again after a seek,
+      // and cancelled animation callbacks cannot overwrite the restored board.
+      if (typeof ctx.bindPlayer === 'function') ctx.bindPlayer();
+      ctx.playingEvents = false;
+      ctx.page.classList.remove('presentation-busy');
+      if (ctx.player && typeof ctx.player.setOptions === 'function') {
+        ctx.player.setOptions(Object.assign({}, ctx.options || {}, { presentOwnPlays: true }));
+      }
       const events = ctx.replayEvents || [];
       ctx.index = Math.max(0, Math.min(ctx.index || 0, events.length));
       ctx.game = gameAt(ctx.replayOpening, events, ctx.index);
@@ -151,6 +164,7 @@
       if (ctx.index >= events.length) {
         return false;
       }
+      const token = ctx.replayPlayToken;
       const event = events[ctx.index];
       ctx.index += 1;
       if (ctx.player && typeof ctx.player.play === 'function') {
@@ -159,6 +173,7 @@
         ctx.displayGame = TABLE.applyPatch(ctx.displayGame || ctx.replayOpening, (event && event.patch) || {}, event);
         TABLE.renderGame(replayRenderCtx());
       }
+      if (token !== ctx.replayPlayToken) return false;
       ctx.game = gameAt(ctx.replayOpening, events, ctx.index);
       paintChrome();
       return ctx.index < events.length;
@@ -200,6 +215,15 @@
       if (ctx.playing) return;
       presentNext();
     });
+    if (turnSelect) {
+      turnSelect.addEventListener('change', function () {
+        const index = Number(turnSelect.value);
+        if (!turnStops.some(function (stop) { return stop.index === index; })) return;
+        stopPlay();
+        ctx.index = index;
+        paint();
+      });
+    }
     playBtn.addEventListener('click', startPlay);
     pauseBtn.addEventListener('click', function () {
       stopPlay();
@@ -217,10 +241,29 @@
       if (ctx.player && typeof ctx.player.setOptions === 'function') {
         ctx.player.setOptions(Object.assign({}, ctx.options || {}, { presentOwnPlays: true }));
       }
-      if (timeNode) {
-        const when = V2.formatReplayTime(payload.replay && payload.replay.updated_at);
-        timeNode.textContent = when;
-        V2.setHidden(timeNode, !when);
+      turnStops = [{ index: 0, label: '开局' }];
+      let turn = ctx.replayOpening && ctx.replayOpening.turn;
+      let phase = ctx.replayOpening && ctx.replayOpening.phase;
+      if (turn > 0 && phase !== 'mulligan') turnStops[0].label = '第 ' + turn + ' 回合';
+      ctx.replayEvents.forEach(function (event, index) {
+        const patch = (event && event.patch) || {};
+        const nextTurn = patch.turn !== undefined ? patch.turn : turn;
+        const nextPhase = patch.phase !== undefined ? patch.phase : phase;
+        if (nextTurn > 0 && nextPhase !== 'mulligan' && (nextTurn !== turn || phase === 'mulligan')) {
+          turnStops.push({ index: index + 1, label: '第 ' + nextTurn + ' 回合' });
+        }
+        turn = nextTurn;
+        phase = nextPhase;
+      });
+      if (turnSelect) {
+        turnSelect.replaceChildren();
+        turnStops.forEach(function (stop) {
+          const option = document.createElement('option');
+          option.value = String(stop.index);
+          option.textContent = stop.label;
+          turnSelect.appendChild(option);
+        });
+        turnSelect.disabled = false;
       }
       if (exitLink) {
         exitLink.href = '/table';

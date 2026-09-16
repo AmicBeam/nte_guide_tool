@@ -126,11 +126,11 @@ class Iloy:
 
     @staticmethod
     def on_ally_down(c, downed=None, **_data):
-        if c.character.get('shape') != 'Y07':
+        if downed == c.cid or c.character['hp'] <= 0 or c.character.get('shape') != 'Y07':
             return
         side, cid = front_target(c.state, c.side)
         damage(c.state, side, cid, 2, source=f'{c.side}:{c.cid}', settle=False,
-               reason='己方异能者倒地，「想做什么梦？」触发')
+               reason='己方其他异能者倒地后，「想做什么梦？」触发')
 
     @staticmethod
     def on_ultimate_end(c):

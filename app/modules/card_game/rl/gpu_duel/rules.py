@@ -126,30 +126,35 @@ def victory(s: GpuState) -> None:
 
 
 def knockdown(s: GpuState) -> None:
-    for side in range(SIDES):
-        for seat in range(N_SEATS):
-            down = (s.ch_present[:, side, seat] > 0) & (s.ch_hp[:, side, seat] <= 0) & (s.ch_down[:, side, seat] == 0) & _live(s)
-            if not bool(down.any()):
-                continue
-            is_front = s.front[:, side] == seat
-            expires = down & (is_front | (s.last_front[:, side] == seat))
-            s.last_front[:, side] = torch.where(expires, torch.full_like(s.last_front[:, side], -1), s.last_front[:, side])
-            s.front[:, side] = torch.where(down & is_front, torch.full_like(s.front[:, side], -1), s.front[:, side])
-            s.ch_down[:, side, seat] = torch.where(down, torch.full_like(s.ch_down[:, side, seat], 3), s.ch_down[:, side, seat])
-            s.ch_shield[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_shield[:, side, seat]), s.ch_shield[:, side, seat])
-            s.ch_growth[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_growth[:, side, seat]), s.ch_growth[:, side, seat])
-            s.ch_shape[:, side, seat] = torch.where(down, torch.full_like(s.ch_shape[:, side, seat], -1), s.ch_shape[:, side, seat])
-            s.ch_awakened[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_awakened[:, side, seat]), s.ch_awakened[:, side, seat])
-            s.ch_ult_turns[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_ult_turns[:, side, seat]), s.ch_ult_turns[:, side, seat])
-            s.ch_atk_buff[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_atk_buff[:, side, seat]), s.ch_atk_buff[:, side, seat])
-            s.ch_max_hp[:, side, seat] = torch.where(down, s.ch_base_max[:, side, seat], s.ch_max_hp[:, side, seat])
+    while True:
+        pending = []
+        for side in range(SIDES):
+            for seat in range(N_SEATS):
+                down = (s.ch_present[:, side, seat] > 0) & (s.ch_hp[:, side, seat] <= 0) & (s.ch_down[:, side, seat] == 0) & _live(s)
+                if not bool(down.any()):
+                    continue
+                pending.append((side, seat, down))
+                is_front = s.front[:, side] == seat
+                expires = down & (is_front | (s.last_front[:, side] == seat))
+                s.last_front[:, side] = torch.where(expires, torch.full_like(s.last_front[:, side], -1), s.last_front[:, side])
+                s.front[:, side] = torch.where(down & is_front, torch.full_like(s.front[:, side], -1), s.front[:, side])
+                s.ch_down[:, side, seat] = torch.where(down, torch.full_like(s.ch_down[:, side, seat], 3), s.ch_down[:, side, seat])
+                s.ch_shield[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_shield[:, side, seat]), s.ch_shield[:, side, seat])
+                s.ch_growth[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_growth[:, side, seat]), s.ch_growth[:, side, seat])
+                s.ch_shape[:, side, seat] = torch.where(down, torch.full_like(s.ch_shape[:, side, seat], -1), s.ch_shape[:, side, seat])
+                s.ch_awakened[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_awakened[:, side, seat]), s.ch_awakened[:, side, seat])
+                s.ch_ult_turns[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_ult_turns[:, side, seat]), s.ch_ult_turns[:, side, seat])
+                s.ch_atk_buff[:, side, seat] = torch.where(down, torch.zeros_like(s.ch_atk_buff[:, side, seat]), s.ch_atk_buff[:, side, seat])
+                s.ch_max_hp[:, side, seat] = torch.where(down, s.ch_base_max[:, side, seat], s.ch_max_hp[:, side, seat])
+        if not pending:
+            break
+        for side, seat, down in pending:
             y07 = CARD_INDEX.get('Y07', -1)
             iloy_shape = s.ch_shape[:, side, ILOY] == y07
             iloy_live = s.ch_hp[:, side, ILOY] > 0
             if y07 >= 0:
                 foe = 1 - side
                 has_f = s.front[:, foe] >= 0
-                seat_f = s.front[:, foe].clamp(min=0)
                 hit = down & iloy_shape & iloy_live & (torch.arange(N_SEATS, device=s.device)[seat] != ILOY)
                 # 2 damage to enemy front or player
                 amt = torch.where(hit, torch.full_like(s.hp[:, foe], 2), torch.zeros_like(s.hp[:, foe]))

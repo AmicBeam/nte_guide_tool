@@ -320,6 +320,7 @@ static void knockdown(int *row){
   int progressed=1;
   while(progressed){
     progressed=0;
+    int downed[N_SIDES][N_SEATS]={0};
     for(int s=0;s<N_SIDES;s++){
       for(int k=0;k<N_SEATS;k++){
         if(!(CH(CH_PRESENT,s,k)>0 && CH(CH_HP,s,k)<=0 && CH(CH_DOWN,s,k)==0)) continue;
@@ -328,18 +329,7 @@ static void knockdown(int *row){
         int killer_seat=CH(LAST_HIT_SEAT,s,k);
         if(SI(LAST_FRONT,s)==k) SI(LAST_FRONT,s)=-1;
         if(SI(FRONT,s)==k) move_out(row,s,k);
-        /* Iloy Y07: damage enemy front 2 after ally down. Frozen starter has no Y07. */
-        if(CARD_Y07>=0 && CH(CH_SHAPE,s,SEAT_ILOY)==CARD_Y07){
-          int foe=other_side(s);
-          int amt=2;
-          if(SI(FRONT,foe)>=0){
-            int t=SI(FRONT,foe);
-            deal_damage(row,foe,0,t,amt,s,SEAT_ILOY,0,0);
-            set_last_hit(row,foe,t,s,SEAT_ILOY);
-          } else {
-            deal_damage(row,foe,1,0,amt,s,SEAT_ILOY,0,0);
-          }
-        }
+        downed[s][k]=1;
         CH(CH_DOWN,s,k)=3;
         CH(CH_SHIELD,s,k)=0;
         CH(CH_GROWTH,s,k)=0;
@@ -363,6 +353,24 @@ static void knockdown(int *row){
         if(killer_side==other_side(s) && killer_seat==SEAT_NANALI && present_alive(row,killer_side,SEAT_NANALI)
            && SI(FRONT,killer_side)==SEAT_NANALI){
           grant_seed(row, killer_side);
+        }
+      }
+    }
+    /* All simultaneous fronts have left before ally-down effects retarget. */
+    for(int s=0;s<N_SIDES;s++){
+      for(int k=0;k<N_SEATS;k++){
+        if(!downed[s][k] || k==SEAT_ILOY || !present_alive(row,s,SEAT_ILOY)) continue;
+        /* Iloy Y07: another ally has finished being knocked down. */
+        if(CARD_Y07>=0 && CH(CH_SHAPE,s,SEAT_ILOY)==CARD_Y07){
+          int foe=other_side(s);
+          int amt=2;
+          if(SI(FRONT,foe)>=0){
+            int t=SI(FRONT,foe);
+            deal_damage(row,foe,0,t,amt,s,SEAT_ILOY,0,0);
+            set_last_hit(row,foe,t,s,SEAT_ILOY);
+          } else {
+            deal_damage(row,foe,1,0,amt,s,SEAT_ILOY,0,0);
+          }
         }
       }
     }

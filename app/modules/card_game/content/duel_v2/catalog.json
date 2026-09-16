@@ -1755,7 +1755,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "己方异能者倒地时，造成 2 点伤害。前排优先。若伊洛伊倒地，先结算此效果再卸下武备。",
+      "description": "己方其他异能者倒地后，造成 2 点伤害。前排优先。",
       "starter_copies": 0,
       "attack": 1,
       "hp": 5

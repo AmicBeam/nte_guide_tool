@@ -216,13 +216,13 @@ def knockdowns(state):
 
 
 def _knockdown_pass(state):
-    progressed = False
+    downed = []
     for side in SIDES:
         for cid in team_order(state, side):
             h = hero(state, side, cid)
             if h['hp'] > 0 or h['down_turns'] > 0:
                 continue
-            progressed = True
+            downed.append((side, cid))
             h['hp'] = 0
             clear_harmony_source(state, side, cid)
             killer = h.pop('last_hit_source', None)
@@ -234,7 +234,6 @@ def _knockdown_pass(state):
             from app.modules.card_game.content.duel_v2.registry import fire
             from .context import EffectContext
             ctx = EffectContext(state, side, cid, {'side': side, 'downed': cid})
-            fire(ctx, 'on_ally_down', include_down=True, downed=cid)
             fire(ctx, 'on_knockdown', actor_only=True, include_down=True)
             killer_side, killer_cid = source_parts(killer)
             if killer_side and killer_cid and killer_side != side and alive(state, killer_side, killer_cid):
@@ -253,7 +252,11 @@ def _knockdown_pass(state):
                 before=before, after={'hp': 0, 'shield': 0, 'harmony': kept_harmony,
                                       'energy': kept_energy, 'growth': 0,
                                       'shape_id': None, 'down_turns': 3})
-    return progressed
+    # Finish every simultaneous knockdown before effects choose a new front.
+    for side, cid in downed:
+        ctx = EffectContext(state, side, cid, {'side': side, 'downed': cid})
+        fire(ctx, 'on_ally_down', downed=cid)
+    return bool(downed)
 
 
 def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage', settle=True,

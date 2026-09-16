@@ -109,6 +109,16 @@ class PublicCompiledNativeTest(unittest.TestCase):
         self.assertEqual(mechan_from_row(got), mechan_from_row(py))
         return nxt, got
 
+    def test_iloy_other_ally_down_after_both_fronts_leave(self):
+        from tests.test_duel_v2_iloy_knockdown import scenario
+        for side in ('a', 'b'):
+            for mutual, self_down in ((False, False), (True, False), (True, True)):
+                with self.subTest(side=side, mutual=mutual, self_down=self_down):
+                    state, action, defender = scenario(side, mutual, self_down)
+                    result, _ = self._check_play(state, action)
+                    self.assertEqual(result['sides'][defender]['hp'],
+                                     28 if mutual and not self_down else 30)
+
     def test_knockdown_chain_and_b02_heal_match_python(self):
         from app.modules.card_game.engine.duel_v2.state import hero
         deck = next(d for d in STARTER_DECKS if d['id'] == 'weave-rush')

@@ -958,6 +958,10 @@
       stagger_by_awakening_node: scaledMap(action.stagger_by_awakening_node, staggerRatio),
       harmony: num(action.harmony) * ratio('harmony'),
       energy_gain: num(action.energy_gain) * ratio('energy'),
+      personal_resource_gain: action.personal_resource_scale_with_damage_ratio
+        ? scaledMap(action.personal_resource_gain, damageRatio) : action.personal_resource_gain,
+      personal_resource_cost: action.personal_resource_scale_with_damage_ratio
+        ? scaledMap(action.personal_resource_cost, damageRatio) : action.personal_resource_cost,
       hit_count: selectedHitCount,
       periodic_damage: selectedHitCount > 0 ? action.periodic_damage : undefined,
       nightmare_stacks: action.nightmare_stacks == null

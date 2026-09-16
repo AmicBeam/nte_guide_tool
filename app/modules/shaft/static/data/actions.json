@@ -9255,8 +9255,8 @@
     "display_order": 1,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
     "multipliers": {
       "atk": 0.209,
       "hp": 0,
@@ -9271,9 +9271,13 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 2,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 2，GEName=GE_Player_BlackBird_Melee1_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
-    "validation_note": "普攻每段恶意变化待资料；当前只计算工作簿伤害与常规资源。",
-    "forbidden_buff_key": "character_heiyu_form"
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 2，GEName=GE_Player_BlackBird_Melee1_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.4秒，非实测帧数。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×20等比分配；尾段吸收小数舍入差额。",
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_gain": {
+      "恶意": 0.87101479
+    },
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_a2",
@@ -9286,8 +9290,8 @@
     "display_order": 2,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.84,
       "hp": 0,
@@ -9302,9 +9306,13 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 3,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 3，GEName=GE_Player_BlackBird_Melee2_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
-    "validation_note": "普攻每段恶意变化待资料；当前只计算工作簿伤害与常规资源。",
-    "forbidden_buff_key": "character_heiyu_form"
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 3，GEName=GE_Player_BlackBird_Melee2_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.6秒，非实测帧数。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×20等比分配；尾段吸收小数舍入差额。",
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_gain": {
+      "恶意": 3.50072932
+    },
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_a3",
@@ -9317,8 +9325,8 @@
     "display_order": 3,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
     "multipliers": {
       "atk": 1.04,
       "hp": 0,
@@ -9333,9 +9341,13 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 4,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 4，GEName=GE_Player_BlackBird_Melee3_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
-    "validation_note": "普攻每段恶意变化待资料；当前只计算工作簿伤害与常规资源。",
-    "forbidden_buff_key": "character_heiyu_form"
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 4，GEName=GE_Player_BlackBird_Melee3_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.8秒，非实测帧数。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×20等比分配；尾段吸收小数舍入差额。",
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_gain": {
+      "恶意": 4.3342363
+    },
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_a4",
@@ -9348,8 +9360,8 @@
     "display_order": 4,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 0.975,
       "hp": 0,
@@ -9364,9 +9376,13 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 5,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 5，GEName=GE_Player_BlackBird_Melee4_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
-    "validation_note": "普攻每段恶意变化待资料；当前只计算工作簿伤害与常规资源。",
-    "forbidden_buff_key": "character_heiyu_form"
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 5，GEName=GE_Player_BlackBird_Melee4_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1秒，非实测帧数。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×20等比分配；尾段吸收小数舍入差额。",
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_gain": {
+      "恶意": 4.06334653
+    },
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_a5",
@@ -9379,8 +9395,8 @@
     "display_order": 5,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 1.735,
       "hp": 0,
@@ -9395,9 +9411,13 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 6,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 6，GEName=GE_Player_BlackBird_Melee5_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
-    "validation_note": "普攻每段恶意变化待资料；当前只计算工作簿伤害与常规资源。",
-    "forbidden_buff_key": "character_heiyu_form"
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 6，GEName=GE_Player_BlackBird_Melee5_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1.2秒，非实测帧数。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×20等比分配；尾段吸收小数舍入差额。",
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_gain": {
+      "恶意": 7.23067306
+    },
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_z",
@@ -9410,8 +9430,8 @@
     "display_order": 6,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 1.005,
       "hp": 0,
@@ -9426,11 +9446,12 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 7,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 7，GEName=GE_Player_BlackBird_Branch1_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 7，GEName=GE_Player_BlackBird_Branch1_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1秒，非实测帧数。",
     "personal_resource_gain": {
       "恶意": 4.2
     },
-    "forbidden_buff_key": "character_heiyu_form"
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_plunge",
@@ -9443,8 +9464,8 @@
     "display_order": 7,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 0.42,
       "hp": 0,
@@ -9459,11 +9480,12 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 8,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 8，GEName=GE_Player_BlackBird_AirAttack_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 8，GEName=GE_Player_BlackBird_AirAttack_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.7秒，非实测帧数。",
     "personal_resource_gain": {
       "恶意": 1.8
     },
-    "forbidden_buff_key": "character_heiyu_form"
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_counter",
@@ -9476,8 +9498,8 @@
     "display_order": 8,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 1.125,
       "hp": 0,
@@ -9492,11 +9514,12 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 9,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 9，GEName=GE_Player_BlackBird_PerfectEvade_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 9，GEName=GE_Player_BlackBird_PerfectEvade_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1.2秒，非实测帧数。",
     "personal_resource_gain": {
       "恶意": 4.7
     },
-    "forbidden_buff_key": "character_heiyu_form"
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_form_a1",
@@ -9509,8 +9532,8 @@
     "display_order": 9,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
     "multipliers": {
       "atk": 0.324,
       "hp": 0,
@@ -9525,10 +9548,20 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 10,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 10，GEName=GE_Player_BlackBird_Evolve_Melee1_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 10，GEName=GE_Player_BlackBird_Evolve_Melee1_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.4秒，非实测帧数。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
-    "validation_note": "普攻每段恶意变化待资料；当前只计算工作簿伤害与常规资源。"
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_cost": {
+      "恶意": 0.56586826
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.4,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
   },
   {
     "id": "action_heiyu_form_a2",
@@ -9541,8 +9574,8 @@
     "display_order": 10,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.59,
       "hp": 0,
@@ -9557,10 +9590,20 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 11,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 11，GEName=GE_Player_BlackBird_Evolve_Melee2_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 11，GEName=GE_Player_BlackBird_Evolve_Melee2_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.6秒，非实测帧数。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
-    "validation_note": "普攻每段恶意变化待资料；当前只计算工作簿伤害与常规资源。"
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_cost": {
+      "恶意": 1.03043912
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.4,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
   },
   {
     "id": "action_heiyu_form_a3",
@@ -9573,8 +9616,8 @@
     "display_order": 11,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
     "multipliers": {
       "atk": 0.684,
       "hp": 0,
@@ -9589,10 +9632,20 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 12,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 12，GEName=GE_Player_BlackBird_Evolve_Melee3_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 12，GEName=GE_Player_BlackBird_Evolve_Melee3_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.8秒，非实测帧数。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
-    "validation_note": "普攻每段恶意变化待资料；当前只计算工作簿伤害与常规资源。"
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_cost": {
+      "恶意": 1.19461078
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.4,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
   },
   {
     "id": "action_heiyu_form_a4",
@@ -9605,8 +9658,8 @@
     "display_order": 12,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.712,
       "hp": 0,
@@ -9621,10 +9674,20 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 13,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 13，GEName=GE_Player_BlackBird_Evolve_Melee4_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 13，GEName=GE_Player_BlackBird_Evolve_Melee4_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.6秒，非实测帧数。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
-    "validation_note": "普攻每段恶意变化待资料；当前只计算工作簿伤害与常规资源。"
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_cost": {
+      "恶意": 1.24351297
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.4,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
   },
   {
     "id": "action_heiyu_form_a5",
@@ -9637,8 +9700,8 @@
     "display_order": 13,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 1.698,
       "hp": 0,
@@ -9653,10 +9716,20 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 14,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 14，GEName=GE_Player_BlackBird_Evolve_Melee5_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 14，GEName=GE_Player_BlackBird_Evolve_Melee5_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1秒，非实测帧数。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
-    "validation_note": "普攻每段恶意变化待资料；当前只计算工作簿伤害与常规资源。"
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_cost": {
+      "恶意": 2.96556887
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.4,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
   },
   {
     "id": "action_heiyu_form_z1",
@@ -9669,8 +9742,8 @@
     "display_order": 14,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 1.08,
       "hp": 0,
@@ -9685,7 +9758,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 15,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 15，GEName=GE_Player_BlackBird_Evolve_Branch1_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 15，GEName=GE_Player_BlackBird_Evolve_Branch1_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1秒，非实测帧数。",
     "personal_resource_cost": {
       "恶意": 3.8
     },
@@ -9696,7 +9769,8 @@
       "atk_per_point": 0.4,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    }
+    },
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_form_z2",
@@ -9709,8 +9783,8 @@
     "display_order": 15,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 1.085,
       "hp": 0,
@@ -9725,7 +9799,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 16,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 16，GEName=GE_Player_BlackBird_Evolve_Branch2_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 16，GEName=GE_Player_BlackBird_Evolve_Branch2_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1秒，非实测帧数。",
     "personal_resource_cost": {
       "恶意": 3.8
     },
@@ -9736,7 +9810,8 @@
       "atk_per_point": 0.4,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    }
+    },
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_form_plunge",
@@ -9749,8 +9824,8 @@
     "display_order": 16,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 0.28,
       "hp": 0,
@@ -9765,9 +9840,10 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 17,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 17，GEName=GE_Player_BlackBird_Evolve_AirAttack_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 17，GEName=GE_Player_BlackBird_Evolve_AirAttack_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.7秒，非实测帧数。",
     "required_buff_key": "character_heiyu_form",
-    "required_buff_name": "二形态"
+    "required_buff_name": "二形态",
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_form_counter",
@@ -9780,8 +9856,8 @@
     "display_order": 17,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 0.63,
       "hp": 0,
@@ -9796,9 +9872,10 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 18,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 18，GEName=GE_Player_BlackBird_Evolve_PerfectEvade_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 18，GEName=GE_Player_BlackBird_Evolve_PerfectEvade_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1秒，非实测帧数。",
     "required_buff_key": "character_heiyu_form",
-    "required_buff_name": "二形态"
+    "required_buff_name": "二形态",
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_e",
@@ -9811,8 +9888,8 @@
     "display_order": 18,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 4,
       "hp": 0,
@@ -9827,11 +9904,12 @@
     "cooldown_ticks": 160,
     "energy_cost": 0,
     "source_row": 19,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 19，GEName=GE_Player_BlackBird_Skill_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。 普通E环合100、16秒CD与恶意40取用户腾讯文档。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 19，GEName=GE_Player_BlackBird_Skill_Damage；1级倍率与资源按公式聚合。 普通E环合100、16秒CD与恶意40取用户腾讯文档。 用户2026-09-16授权使用经验耗时；当前暂估1.2秒，非实测帧数。",
     "personal_resource_gain": {
       "恶意": 40
     },
-    "forbidden_buff_key": "character_heiyu_form"
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_assist",
@@ -9860,14 +9938,15 @@
     "cooldown_ticks": 20,
     "energy_cost": 0,
     "source_row": 20,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 20，GEName=GE_Player_BlackBird_SkillAssist_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。 按既有单敌轴约定手工添加协同攻击，2秒CD、15秒窗口最多5次。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 20，GEName=GE_Player_BlackBird_SkillAssist_Damage；1级倍率与资源按公式聚合。 按既有单敌轴约定手工添加协同攻击，2秒CD、15秒窗口最多5次。 手工后台伤害不占用前台动作时间。",
     "tags": [
       "协同攻击",
       "后台攻击"
     ],
     "required_buff_key": "character_heiyu_assist_window",
     "required_buff_name": "失乐鸟（15秒、最多5次）",
-    "consume_buff_stack_key": "character_heiyu_assist_window"
+    "consume_buff_stack_key": "character_heiyu_assist_window",
+    "duration_source": "manual-background"
   },
   {
     "id": "action_heiyu_form_e",
@@ -9880,8 +9959,8 @@
     "display_order": 20,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 4.2,
       "hp": 0,
@@ -9896,7 +9975,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 21,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 21，GEName=GE_Player_BlackBird_Evolve_Skill_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 21，GEName=GE_Player_BlackBird_Evolve_Skill_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1.4秒，非实测帧数。",
     "personal_resource_cost": {
       "恶意": 20
     },
@@ -9910,7 +9989,8 @@
       "atk_per_point": 0.4,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    }
+    },
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_q1",
@@ -9939,9 +10019,10 @@
     "cooldown_ticks": 200,
     "energy_cost": 100,
     "source_row": 25,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 25，GEName=GE_Player_BlackBird_UltraSkill_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 25，GEName=GE_Player_BlackBird_UltraSkill_Damage；1级倍率与资源按公式聚合。 沿用排轴终结0秒时停口径。",
     "is_time_stop_zero": true,
-    "forbidden_buff_key": "character_heiyu_form"
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "existing-time-stop"
   },
   {
     "id": "action_heiyu_q2",
@@ -9970,7 +10051,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 26,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 26，GEName=GE_Player_BlackBird_Evolve_UltraSkill_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。 用户2026-09-16确认A觉二段大消耗全部剩余恶意。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 26，GEName=GE_Player_BlackBird_Evolve_UltraSkill_Damage；1级倍率与资源按公式聚合。 用户2026-09-16确认A觉二段大消耗全部剩余恶意。 沿用排轴终结0秒时停口径。",
     "is_time_stop_zero": true,
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
@@ -9984,7 +10065,8 @@
       "atk_per_point": 0.4,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    }
+    },
+    "duration_source": "existing-time-stop"
   },
   {
     "id": "action_heiyu_support",
@@ -9997,8 +10079,8 @@
     "display_order": 23,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -10013,12 +10095,13 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 29,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 29，GEName=GE_Player_BlackBird_QTE_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 29，GEName=GE_Player_BlackBird_QTE_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1.5秒，非实测帧数。",
     "resonance_skill_level_bonus": false,
     "personal_resource_gain": {
       "恶意": 20
     },
-    "forbidden_buff_key": "character_heiyu_form"
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_form_support",
@@ -10031,8 +10114,8 @@
     "display_order": 24,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -10047,7 +10130,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 30,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 30，GEName=GE_Player_BlackBird_Evolve_QTE_Damage；1级倍率与资源按公式聚合。耗时未提供，0秒为待录入。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 30，GEName=GE_Player_BlackBird_Evolve_QTE_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1.5秒，非实测帧数。",
     "resonance_skill_level_bonus": false,
     "personal_resource_cost": {
       "恶意": 3.5
@@ -10059,7 +10142,8 @@
       "atk_per_point": 0.4,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    }
+    },
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_parry",
@@ -10072,8 +10156,8 @@
     "display_order": 18,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "multipliers": {
       "atk": 0,
       "hp": 0,
@@ -10088,9 +10172,10 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 0,
-    "source_note": "用户腾讯文档：弹刀获得20恶意并激活二形态变轨；耗时未提供。",
+    "source_note": "用户腾讯文档：弹刀获得20恶意并激活二形态变轨； 用户2026-09-16授权使用经验耗时；当前暂估0.5秒，非实测帧数。",
     "personal_resource_gain": {
       "恶意": 20
-    }
+    },
+    "duration_source": "user-authorized-estimate"
   }
 ]

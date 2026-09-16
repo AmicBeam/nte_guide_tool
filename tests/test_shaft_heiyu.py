@@ -16,7 +16,7 @@ class HeiyuTest(unittest.TestCase):
                           for i, (slot, action, tick) in enumerate(steps)], 'options': options}
         return simulate_shaft_axis(axis)['result']
 
-    def test_source_rows_and_missing_durations(self):
+    def test_source_rows_and_estimated_durations(self):
         catalog = load_shaft_catalog()
         actions = {a['name']: a for a in catalog['actions_by_character'][CID]}
         self.assertAlmostEqual(actions['a5']['multipliers']['atk'], 1.735)
@@ -26,9 +26,44 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(actions['q1']['energy_cost'], 100)
         self.assertEqual(actions['q2']['energy_cost'], 0)
         self.assertEqual(actions['失乐鸟']['hit_count'], 5)
-        self.assertEqual(actions['a1']['duration_ticks'], 0)
-        self.assertFalse(actions['a1'].get('duration_implemented'))
+        self.assertEqual(actions['a1']['duration_ticks'], 4)
+        self.assertEqual(actions['a1']['duration_source'], 'user-authorized-estimate')
+        self.assertEqual(sum(actions[f'a{i}']['duration_ticks'] for i in range(1, 6)), 40)
+        self.assertEqual(sum(actions[f'二a{i}']['duration_ticks'] for i in range(1, 6)), 34)
         self.assertEqual(len([a for a in actions.values() if a.get('source_row') == 19]), 1)
+
+    def test_basic_malice_is_proportional_and_chain_totals_are_preserved(self):
+        actions = {a['name']: a for a in load_shaft_catalog()['actions_by_character'][CID]}
+        for prefix, amount, field in [('', 20, 'personal_resource_gain'), ('二', 7, 'personal_resource_cost')]:
+            chain = [actions[f'{prefix}a{i}'] for i in range(1, 6)]
+            weight = sum(a['multipliers']['atk'] for a in chain)
+            self.assertAlmostEqual(sum(a[field]['恶意'] for a in chain), amount)
+            for a in chain:
+                self.assertAlmostEqual(a[field]['恶意'], amount * a['multipliers']['atk'] / weight, places=7)
+                self.assertNotIn('validation_note', a)
+        r = self.simulate([(0, f'action_heiyu_a{i+1}', t) for i,t in enumerate([0,4,10,18,28])])
+        self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 40)
+        self.assertEqual(r['summary']['duration_ticks'], 40)
+        r = self.simulate([(0, 'action_heiyu_q1', 0)] + [(0, f'action_heiyu_form_a{i+1}', t) for i,t in enumerate([10,14,20,28,34])])
+        self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 13)
+        self.assertTrue(all(d['resource_damage'] > 0 for d in r['details'][1:]))
+
+    def test_interrupted_basic_scales_malice_by_retained_hits(self):
+        actions = {a['id']: a for a in load_shaft_catalog()['actions_by_character'][CID]}
+        for action_id, hits, key, ratio in [('action_heiyu_a2',1,'personal_resource_gain',.5),
+                                           ('action_heiyu_form_a2',2,'personal_resource_cost',.4),
+                                           ('action_heiyu_form_a2',0,'personal_resource_cost',0)]:
+            steps = [{'id':'q','slot':0,'action_id':'action_heiyu_q1','start_tick':0}] if 'form_' in action_id else []
+            steps.append({'id':'cut','slot':0,'action_id':action_id,'start_tick':20,
+                          'interrupted':True,'interrupt_duration_ticks':2,'interrupt_hit_count':hits})
+            r = simulate_shaft_axis({'team':[{'slot':0,'character_id':CID,'arc_id':'','cartridge_id':''}], 'steps':steps})['result']
+            d = r['details'][-1]
+            self.assertTrue(d['is_interrupted'])
+            amount = actions[action_id][key]['恶意'] * ratio
+            self.assertAlmostEqual(d['personal_resources_after']['恶意'], 20 + (amount if key.endswith('gain') else -amount))
+            if key.endswith('cost'):
+                self.assertAlmostEqual(d['personal_resources_consumed'].get('恶意', 0), amount)
+                self.assertEqual(d['resource_damage'] > 0, hits > 0)
 
     def test_kongmu_access_and_topology(self):
         self.assertNotIn(CID, [c['id'] for c in get_kongmu_catalog_payload()['characters']])

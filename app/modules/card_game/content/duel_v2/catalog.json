@@ -656,7 +656,7 @@
       "description": "九原的终结成功清算枚约时，每个目标使九原获得 1 点能量。",
       "starter_copies": 0,
       "attack": 3,
-      "hp": 4
+      "hp": 5
     },
     {
       "id": "J08",

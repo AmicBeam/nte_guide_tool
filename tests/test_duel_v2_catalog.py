@@ -210,6 +210,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['M08']['hp'], 4)
         self.assertEqual(CARDS['B08']['hp'], 8)
         self.assertEqual(CARDS['J07']['description'], '九原的终结成功清算枚约时，每个目标使九原获得 1 点能量。')
+        self.assertEqual(CARDS['J07']['hp'], 5)
         self.assertIn('伊洛伊永久获得攻击 +1、生命 +1', CARDS['Y05']['description'])
         self.assertIn('第 5 个己方回合', CARDS['NF01']['description'])
         self.assertEqual(CARDS['S07']['name'], '小鬼头大胃口')

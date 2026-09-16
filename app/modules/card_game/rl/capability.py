@@ -214,3 +214,19 @@ def resolve_model_capability(manifest: Mapping[str, Any], deck_id: str) -> dict[
                 raise ValueError(f'public asymmetric capability mismatch: {key}')
         return deepcopy(raw)
     raise ValueError(f'Unsupported model capability: {kind}')
+
+
+def fixed_team_serving_deck(deck, preset_id):
+    """Normalize a serving allocation without allowing character choice/reordering."""
+    payload = assert_public_encoder_deck(deck)
+    if payload['character_ids'] != preset_opponent_deck(preset_id)['character_ids']:
+        raise ValueError('Serving allocation must preserve preset characters and order')
+    return payload
+
+
+def serving_deck_hash(deck):
+    import hashlib
+    import json
+    payload = assert_public_encoder_deck(deck)
+    identity = {key: payload[key] for key in ('character_ids', 'card_ids')}
+    return hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(',', ':')).encode()).hexdigest()

@@ -17,6 +17,21 @@ def rate(win,total):
 def write_full_report(root):
     root=Path(root)
     index=read(root/'evaluation-index.json');decisions=read(root/'construction-decisions.json')
+    selected_path=root/'selection/selected.json'
+    serving_selection=read(selected_path) if selected_path.is_file() else None
+    if serving_selection is not None and not serving_selection.get('complete'):
+        raise ValueError('Final selection validation is incomplete')
+    final_variants={key:'selected' if serving_selection else value['selection'] for key,value in decisions.items()}
+    if serving_selection:
+        screening=read(root/'selection/screen-results.json')
+        for key,value in screening.items():
+            for candidate in value['candidates']:
+                for cell in candidate['cells']:
+                    index.append({'label':f"shortlist-{key}-{candidate['id']}-{cell['opponent']}",
+                                  'preset':key,'variant':'screening','report':cell['report'].replace('\\','/'),'phase':'screening'})
+        for cell in serving_selection['reports']:
+            index.append({'label':cell['label'],'preset':cell['preset'],'variant':'selected' if 'selected' in cell['label'] else 'old-website',
+                          'report':cell['report'].replace('\\','/'),'phase':'holdout'})
     config=read(root/'config.json')
     comprehensive=config.get('kind')=='comprehensive'
     lines=['# 双预组综合训练报告' if comprehensive else '# 双预组完整链路短测报告','',
@@ -61,10 +76,10 @@ def write_full_report(root):
         pos_rate=lambda p:rate(positions[p]['win'],sum(positions[p][k] for k in ('win','loss','draw')))
         mean_text=f'{mean_turn:.2f}' if mean_turn is not None else '—'
         lines.append(f"| {entry['label']} | {len(complete)} | {pos_rate('first')} | {pos_rate('second')} | {rate(first_wins,len(complete))} | {mean_text} | {sum(bool(g['error']) for g in games)}/{sum(bool(g['truncated']) for g in games)} |")
-        if entry['label'].startswith('cross-'):
+        if entry['label'].startswith('cross-') or entry['label']=='selected-cross':
             first=positions['second'];second=positions['first']
             lines.append(f"| {entry['label']}（覆纹快攻视角，同批对局） | {len(complete)} | {rate(first['loss'],sum(first[k] for k in ('win','loss','draw')))} | {rate(second['loss'],sum(second[k] for k in ('win','loss','draw')))} | {rate(first_wins,len(complete))} | {mean_text} | 同上，勿重复计局 |")
-        summary_rows.append({'label':entry['label'],'games':len(complete),'first_wins':first_wins,
+        summary_rows.append({'label':entry['label'],'phase':entry.get('phase','screening' if 'screen' in entry['label'] else 'matrix'),'games':len(complete),'first_wins':first_wins,
             'mean_global_turn':mean_turn,'by_position':positions,'model':report['model'],
             'opponent_model':report['opponent_model'],'complete':report['complete'],
             'opponent_teams':len({tuple(sorted(g['opponent_team'])) for g in games})})
@@ -111,7 +126,7 @@ def write_full_report(root):
                     'mean_final_turn_when_used':sum(used_lengths)/len(used_lengths) if used_lengths else None,
                     'source_counts':json.dumps(sources,ensure_ascii=False)}
                 card_rows.append(row)
-                if entry['label']==f"{entry['preset']}-{decisions[entry['preset']]['selection']}-rule-varied":chosen_card_rows.append(row)
+                if entry['label']==f"{entry['preset']}-{final_variants[entry['preset']]}-rule-varied":chosen_card_rows.append(row)
             for cid in report['learner_build']['character_ids']:
                 for kind in ('ultimate','harmony'):
                     events=[];used_games=win_games=0;opportunities=0;used_opportunities=set()
@@ -130,7 +145,7 @@ def write_full_report(root):
                             for _,data in samples if any(e['kind']==kind and e['actor']==f'a:{cid}' for e in data['mechanisms'])]
                     row['first_use_mean']=sum(firsts)/len(firsts) if firsts else None
                     mechanism_rows.append(row)
-                    if entry['label']==f"{entry['preset']}-{decisions[entry['preset']]['selection']}-rule-varied":chosen_mechanisms.append(row)
+                    if entry['label']==f"{entry['preset']}-{final_variants[entry['preset']]}-rule-varied":chosen_mechanisms.append(row)
             turns=defaultdict(list)
             for game,data in samples:
                 for point in data['turn_states']:turns[point['turn']].append(point['sides']['a'])
@@ -138,7 +153,7 @@ def write_full_report(root):
                 curve_rows.append({'test':entry['label'],'position':position,'turn':turn,'surviving_games':len(points),
                     **{f'mean_{k}':sum(x[k] for x in points)/len(points) for k in ('hp','ap','energy','harmony')},
                     'predicted_win_probability':None})
-    lines+=['','交叉互搏的首行以创生为学习方；第二行换算覆纹快攻视角，来自同批对局。','','## 构筑调整与理由','',
+    lines+=['','交叉互搏的首行以创生为学习方；第二行换算覆纹快攻视角，来自同批对局。','','## 训练末批候选对照（非最终发布选择）' if serving_selection else '## 构筑调整与理由','',
             '下表只依据独立于最终测试集的筛选样本；小样本用于验证选择流程，不能据此声称最优。候选生成过程是配牌策略采样，不伪造逐张换牌的模型内心理由。']
     construction=[]
     candidate_decisions=[]
@@ -154,17 +169,37 @@ def write_full_report(root):
                 '- 候选适应训练单独完成；本表筛选使用冻结基础策略，最终矩阵另外展示适应后效果。',
                 '', '| 卡牌 | 原始张数 | 候选张数 |','| --- | ---: | ---: |']
         lines += [f"| {x['card_id']} {x['name']} | {x['before']} | {x['after']} |" for x in delta]
-        lines+=['','| 采样版本 | 候选 | 先手胜/完成 | 后手胜/完成 | 筛选分 | 处理 |',
-                '| --- | --- | --- | --- | ---: | --- |']
+
+        display=[]
         for text in (root/key/'cards/candidate-history.jsonl').read_text(encoding='utf-8').splitlines():
             history=json.loads(text)
-            selected=history['candidate_id']==candidate['id'] and history['valid']
-            reason='选入额外配对筛选' if selected else '截断，排除更新' if not history['valid'] else '本批未选中；不据此认定构筑更差'
-            candidate_decisions.append({'preset':key,**history,'screened':selected,'reason':reason})
+            screened=history['candidate_id']==candidate['id'] and history['valid']
+            reason='选入训练末批配对筛选' if screened else '截断，排除更新' if not history['valid'] else '本批未选中；不据此认定构筑更差'
+            row={'preset':key,**history,'screened':screened,'reason':reason}
+            candidate_decisions.append(row);display.append(row)
+        lines += ['',f"本表仅列 {min(12,len(display))} 项代表记录；全部 {len(display)} 项保存在 candidate-decisions.json。",'']
+        lines+=['| 采样版本 | 候选 | 先手胜/完成 | 后手胜/完成 | 筛选分 | 处理 |','| --- | --- | --- | --- | ---: | --- |']
+        for history in sorted(display,key=lambda row:(row['screened'],row['valid'],row.get('score',-2),row.get('sampling_update',0)),reverse=True)[:12]:
             first=history.get('by_position',{}).get('first',{})
             second=history.get('by_position',{}).get('second',{})
-            lines.append(f"| {history.get('sampling_update','—')} | {history.get('candidate_id','—')} | {first.get('wins','—')}/{first.get('games','—')} | {second.get('wins','—')}/{second.get('games','—')} | {history.get('score','—')} | {reason} |")
+            lines.append(f"| {history.get('sampling_update','—')} | {history.get('candidate_id','—')} | {first.get('wins','—')}/{first.get('games','—')} | {second.get('wins','—')}/{second.get('games','—')} | {history.get('score','—')} | {history['reason']} |")
 
+    if serving_selection:
+        shortlist=read(root/'selection/shortlist.json')
+        lines+=['','## 最终模型与优选构筑','',
+                '从完整搜索记录形成有限短名单，再用独立配对筛选；最终留出集不参与选择。最高分同分时保留原始配牌，不声称穷举全局最优。']
+        for key,item in serving_selection['choices'].items():
+            lines+=['',f'### {key} 最终选择：{item["id"]}','',
+                    f"- 数值模型 SHA：`{item['model_sha256']}`；来源 `{key}/{item['model']}`。",
+                    f"- 搜索记录 {shortlist[key]['history_rows']} 条，去重构筑 {shortlist[key]['unique_allocations']} 套，短名单 {len(shortlist[key]['shortlist'])} 项。",
+                    '', '| 短名单候选 | 筛选胜/完成 | 胜率 |','| --- | ---: | ---: |']
+            for candidate in screening[key]['candidates']:
+                lines.append(f"| {candidate['id']} | {candidate['wins']}/{candidate['games']} | {rate(candidate['wins'],candidate['games'])} |")
+            original=Counter(read(root/key/'original-deck.json')['card_ids']);chosen=Counter(item['build']['card_ids'])
+            lines+=['','| 卡牌 | 原始张数 | 最终张数 |','| --- | ---: | ---: |']
+            changes=[cid for cid in sorted(original.keys()|chosen.keys()) if original[cid]!=chosen[cid]]
+            for cid in changes:lines.append(f"| {cid} {CARDS[cid]['name']} | {original[cid]} | {chosen[cid]} |")
+            if not changes:lines.append('| 配牌保持原始预组 | 32 | 32 |')
     lines+=['','## 本轮选定配牌：逐卡与机制摘要','','下表以最终变化规则 AI 测试为样本；全部对阵细分见 CSV。抽到仅计 draw 事件，见到还包括起手、换牌、检索与回收等原卡入手。成功使用只计原卡，复制/衍生来源另列。',
             '', '| 套牌 | 位置 | 卡牌 | 张数 | 见到局数/总数 | 打出局数 | 打出时胜率 | 平均首次打出回合 | 使用局平均结束回合 |',
             '| --- | --- | --- | ---: | --- | ---: | ---: | ---: | ---: |']
@@ -204,8 +239,8 @@ def write_full_report(root):
     (root/'candidate-decisions.json').write_text(json.dumps(candidate_decisions,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     result={'config':config,'evaluations':summary_rows,'construction':construction,
             'prediction_probability':{'available':False,'reason':'No independently calibrated probability model'},
-            'report_complete':all(x['complete'] for x in summary_rows),
-            'limitations':['short smoke samples','effect events support inspection, not isolated causal contribution']}
+            'serving_selection':serving_selection['choices'] if serving_selection else None,'report_complete':all(x['complete'] for x in summary_rows),
+            'limitations':['finite sampled candidate search; not exhaustive optimum','effect events support inspection, not isolated causal contribution']}
     (root/'summary.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     (root/'report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
     return result

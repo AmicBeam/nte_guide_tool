@@ -20,7 +20,7 @@ from app.modules.card_game.rl.gpu_duel.catalog import (
 from app.modules.card_game.rl.gpu_duel.resident_schema import SCHEMA, SIDE_FIELDS, CHAR_FIELDS
 from app.modules.card_game.rl.capability import (
     assert_public_encoder_deck, is_exact_preset,
-    resolve_model_capability,
+    resolve_model_capability, fixed_team_serving_deck, serving_deck_hash,
 )
 from app.modules.card_game.rl.rule_ir.layout import OFFSETS
 from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
@@ -34,6 +34,12 @@ def preset(deck_id):
     if deck_id not in PRESETS:
         raise RuleValidationError('高级人机暂支持创生预组和覆纹快攻预组。')
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
+
+
+def serving_deck(model, deck_id):
+    """Return a copy of the validated model/build pair, with legacy preset fallback."""
+    from copy import deepcopy
+    return deepcopy(getattr(model, 'serving_deck', preset(deck_id)))
 
 
 def require_human_deck(model, deck, deck_id):
@@ -151,6 +157,19 @@ class FrozenModel:
             if (validation.get('complete') is not True or validation.get('model_sha256')!=digest
                     or validation.get('rule_hash')!=expected_rule_hash):
                 raise ValueError('Public model lacks matching completed evaluation evidence')
+        raw_build = manifest.get('serving_build')
+        self.serving_deck = fixed_team_serving_deck(raw_build, deck_id) if raw_build is not None else preset(deck_id)
+        self.serving_build_sha256 = serving_deck_hash(self.serving_deck)
+        if raw_build is None and (manifest.get('validation') or {}).get('serving_build_sha256') is not None:
+            raise ValueError('Evaluated serving build is missing')
+        if (raw_build is None and self.capability['human_public_custom'] and manifest.get('learner_deck')
+                and not is_exact_preset(manifest['learner_deck'],deck_id)):
+            raise ValueError('Custom allocation model requires an explicit serving build')
+        if raw_build is not None:
+            validation = manifest.get('validation') or {}
+            if (self.schema != PUBLIC_SCHEMA or not self.capability['human_public_custom']
+                    or validation.get('serving_build_sha256') != self.serving_build_sha256):
+                raise ValueError('Serving build lacks matching model/build evaluation evidence')
         h = int(manifest['hidden'])
         d = 2 + 2*len(SIDE_FIELDS) + 2*N_SEATS*len(CHAR_FIELDS) + 3*len(CARD_IDS)
         if self.schema == PUBLIC_SCHEMA:
@@ -206,11 +225,15 @@ def load_model(deck_id):
     root = Path(config.DUEL_AI_MODEL_DIR).resolve()
     key = (str(root), deck_id)
     with _LOCK:
-        if key not in _CACHE:
-            try:
-                _CACHE[key] = FrozenModel(root, deck_id)
-            except (ImportError, OSError, ValueError, KeyError, TypeError) as exc:
-                raise RuleValidationError('高级人机模型暂不可用，请选择普通人机。') from exc
+        try:
+            signature=tuple((path.stat().st_mtime_ns,path.stat().st_size)
+                            for path in (root/f'{deck_id}.json',root/f'{deck_id}.npz'))
+            if key not in _CACHE or getattr(_CACHE[key], '_file_signature', None) != signature:
+                candidate = FrozenModel(root, deck_id)
+                candidate._file_signature = signature
+                _CACHE[key] = candidate
+        except (ImportError, OSError, ValueError, KeyError, TypeError) as exc:
+            raise RuleValidationError('高级人机模型暂不可用，请选择普通人机。') from exc
         return _CACHE[key]
 
 
@@ -220,6 +243,11 @@ def choose_action(state, side='b'):
     model = load_model(profile.get('deck_id'))
     if profile.get('version') != model.version:
         raise RuleValidationError('高级人机模型版本已变更，请重新开局。')
+    actual_build = serving_deck(model, profile.get('deck_id'))
+    expected_build_hash = serving_deck_hash(actual_build)
+    if (profile.get('build_sha256') is not None and profile['build_sha256'] != expected_build_hash
+            or profile.get('build_sha256') is None and not is_exact_preset(actual_build,profile.get('deck_id'))):
+        raise RuleValidationError('高级人机构筑版本已变更，请重新开局。')
     actions = [a for a in legal_actions(state, side) if a['type'] != 'concede']
     if not actions:
         raise RuleValidationError('高级人机没有可执行动作。')

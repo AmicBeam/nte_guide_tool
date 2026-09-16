@@ -75,7 +75,7 @@ def export_checkpoint(source, output):
     return result
 
 
-def approve_candidate(model_path, report_path, *, min_pairs=32, min_win_rate=0.5):
+def approve_candidate(model_path, report_path, *, min_pairs=32, min_win_rate=0.5, serving_build=None):
     """Attach completed, matching public evaluation evidence to numeric weights."""
     from .capability import capability_ready_manifest
     model_path,report_path=Path(model_path),Path(report_path)
@@ -83,10 +83,16 @@ def approve_candidate(model_path, report_path, *, min_pairs=32, min_win_rate=0.5
     manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
     report=json.loads(report_path.read_text(encoding='utf-8'))
     from .capability import is_exact_preset
-    if manifest.get('learner_deck') and not is_exact_preset(manifest['learner_deck'],manifest.get('deck')):
+    if serving_build is None and manifest.get('learner_deck') and not is_exact_preset(manifest['learner_deck'],manifest.get('deck')):
         raise ValueError('A custom learner model cannot approve a fixed-preset website model')
-    if report.get('learner_is_preset',True) is not True:
+    if serving_build is None and report.get('learner_is_preset',True) is not True:
         raise ValueError('A tuned-deck report cannot approve a fixed-preset website model')
+    if serving_build is not None:
+        from .capability import fixed_team_serving_deck, serving_deck_hash
+        serving_build = fixed_team_serving_deck(serving_build, manifest.get('deck'))
+        actual_report_build = fixed_team_serving_deck(report.get('learner_build') or {}, manifest.get('deck'))
+        if serving_deck_hash(serving_build) != serving_deck_hash(actual_report_build):
+            raise ValueError('Report does not match the exact serving build')
     digest=hashlib.sha256(model_path.read_bytes()).hexdigest()
     if type(min_pairs) is not int or min_pairs<1 or not 0<=min_win_rate<=1:
         raise ValueError('Invalid acceptance threshold')
@@ -130,6 +136,9 @@ def approve_candidate(model_path, report_path, *, min_pairs=32, min_win_rate=0.5
                             'games':len(games),'wins':wins,'min_pairs':min_pairs,
                             'min_win_rate':min_win_rate,'opponent_teams':15,
                             'report_sha256':hashlib.sha256(report_path.read_bytes()).hexdigest()}
+    if serving_build is not None:
+        manifest['serving_build'] = serving_build
+        manifest['validation']['serving_build_sha256'] = serving_deck_hash(serving_build)
     temp=manifest_path.with_suffix('.json.tmp')
     temp.write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     temp.replace(manifest_path)

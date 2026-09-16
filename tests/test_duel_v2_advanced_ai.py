@@ -71,6 +71,46 @@ class AdvancedRoomTest(RoomFlowTestCase):
             self.assertEqual(result['game']['sides']['b']['name'],'高级人机')
             self._post('/api/duel-v2/leave',token=self.token)
 
+    def test_evaluated_bot_allocation_and_mirror_match_without_changing_saved_build(self):
+        from collections import Counter
+        from app.modules.card_game.rl.capability import capability_ready_manifest,preset_opponent_deck,serving_deck_hash
+        from app.modules.card_game.engine.duel_v2 import choose_action
+        original=preset_opponent_deck('starter')
+        self._post('/api/duel-v2/build',original,token=self.token)
+        custom=deepcopy(original);custom['card_ids']=['N01' if c=='N02' else c for c in custom['card_ids']]
+        module='app.modules.card_game.engine.ai.advanced_model.'
+        model=SimpleNamespace(version='paired-version',capability=capability_ready_manifest('starter'),serving_deck=custom)
+        with patch(module+'load_model',return_value=model) as loader,patch(module+'choose_action',side_effect=choose_action):
+            self._post('/api/duel-v2/start',{'mode':'advanced','ai_deck':'starter','ai_player_deck':'mirror'},token=self.token)
+            loader.assert_called_once_with('starter')
+            player=self.dao_module.get_or_create_player('advanced-ai-test')[0]
+            room=self.repository.current_room(player)
+            state=self.storage.load(room.id)['game']
+            for side in ('a','b'):
+                cards=[c['card_id'] for zone in ('hand','deck','discard') for c in state['sides'][side][zone]]
+                self.assertEqual(Counter(cards),Counter(custom['card_ids']))
+            self.assertEqual(state['ai_profile']['build_sha256'],serving_deck_hash(custom))
+            saved=self._get('/api/duel-v2/catalog',token=self.token)['saved_build']
+            self.assertEqual(saved['card_ids'],original['card_ids'])
+
+    @unittest.skipUnless(importlib.util.find_spec('numpy'), 'NumPy required for serving')
+    def test_published_models_support_public_saved_builds(self):
+        from app.modules.card_game.rl.capability import sample_public_deck
+        from app.modules.card_game.engine.ai.advanced_model import load_model
+        custom=sample_public_deck(9016,character_ids=['nanali','bohe','baicang','jiuyuan'])
+        self._post('/api/duel-v2/build',custom,token=self.token)
+        for key in ('starter','weave-rush'):
+            self.assertTrue(load_model(key).capability['human_public_custom'])
+            started=self._post('/api/duel-v2/start',{'mode':'advanced','ai_deck':key,'ai_player_deck':'saved'},token=self.token)
+            room=self.repository.room_by_code(started['room']['room_code'])
+            state=self.storage.load(room.id)['game']
+            self.assertEqual(list(state['sides']['a']['characters']),custom['character_ids'])
+            action=next(item['action'] for item in started['game']['legal_actions'] if item['action']['type']=='mulligan' and not item['action']['card_ids'])
+            self._post('/api/duel-v2/action',{'room_code':room.room_code,'expected_version':started['game']['version'],
+                'request_id':key+'-public-mulligan','action':action},token=self.token)
+            self.assertEqual(self._get('/api/duel-v2/catalog',token=self.token)['saved_build']['card_ids'],custom['card_ids'])
+            self._post('/api/duel-v2/leave',token=self.token)
+
     def test_missing_models_fail_before_room_creation(self):
         from app.errors import RuleValidationError
         with patch('app.modules.card_game.engine.ai.advanced_model.load_model', side_effect=RuleValidationError('模型暂不可用')):
@@ -150,6 +190,23 @@ class AdvancedRoomTest(RoomFlowTestCase):
 
 @unittest.skipUnless(importlib.util.find_spec('numpy'),'optional NumPy inference dependency')
 class CpuEncoderTest(unittest.TestCase):
+    def _legacy_fixture(self, root):
+        import hashlib,json,numpy as np
+        from app.modules.card_game.rl.gpu_duel.catalog import GPU_LOCK,CARD_IDS,SEATS,N_SEATS
+        from app.modules.card_game.rl.gpu_duel.resident_schema import SIDE_FIELDS,CHAR_FIELDS
+        from app.modules.card_game.rl.rule_ir.completeness import compiled_rule_hash
+        width=2+2*len(SIDE_FIELDS)+2*N_SEATS*len(CHAR_FIELDS)+3*len(CARD_IDS)
+        shapes={'state_net.0.weight':(1,width),'state_net.0.bias':(1,),'state_net.2.weight':(1,1),'state_net.2.bias':(1,),
+                'cand_net.0.weight':(1,10),'cand_net.0.bias':(1,),'cand_net.2.weight':(1,1),'cand_net.2.bias':(1,),
+                'score.weight':(1,1),'score.bias':(1,)}
+        np.savez_compressed(root/'starter.npz',**{key:np.zeros(shape,np.float32) for key,shape in shapes.items()})
+        manifest={'schema':'resident_public_v1','deck':'starter','gpu_lock':GPU_LOCK,'card_ids':list(CARD_IDS),
+                  'seat_ids':list(SEATS),'sha256':hashlib.sha256((root/'starter.npz').read_bytes()).hexdigest(),
+                  'rule_identity':{'rule_hash':'historical-fixture'},'runtime_rule_hash':compiled_rule_hash('starter'),
+                  'hidden':1,'state_dim':width,'cand_dim':10}
+        (root/'starter.json').write_text(json.dumps(manifest),encoding='utf-8')
+        return manifest
+
     def test_bundled_models_are_complete_and_loadable(self):
         from app.modules.card_game.engine.ai.advanced_model import FrozenModel
         directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
@@ -165,8 +222,9 @@ class CpuEncoderTest(unittest.TestCase):
         directory = Path(__file__).resolve().parents[1] / 'app/modules/card_game/engine/ai/models'
         for deck in ('starter', 'weave-rush'):
             manifest = json.loads((directory / f'{deck}.json').read_text())
-            self.assertNotEqual(manifest['runtime_rule_hash'], manifest['rule_identity']['rule_hash'])
-            with patch('app.modules.card_game.rl.rule_ir.completeness.compiled_rule_hash', return_value='unrelated'):
+            target=('app.modules.card_game.rl.public_schema.rule_identity' if manifest['schema']=='resident_public_v2'
+                    else 'app.modules.card_game.rl.rule_ir.completeness.compiled_rule_hash')
+            with patch(target, return_value='unrelated'):
                 with self.assertRaisesRegex(ValueError, 'rule version'):
                     FrozenModel(directory, deck)
 
@@ -201,12 +259,12 @@ class CpuEncoderTest(unittest.TestCase):
         import json
         from app.modules.card_game.engine.ai.advanced_model import FrozenModel
         from app.modules.card_game.rl.capability import LEGACY_MIRROR_KIND
-        directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
-        model=FrozenModel(directory,'starter')
-        self.assertEqual(model.capability['kind'], LEGACY_MIRROR_KIND)
-        self.assertFalse(model.capability['human_public_custom'])
-        manifest=json.loads((directory/'starter.json').read_text(encoding='utf-8'))
-        self.assertNotIn('capability', manifest)
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);manifest=self._legacy_fixture(root)
+            model=FrozenModel(root,'starter')
+            self.assertEqual(model.capability['kind'], LEGACY_MIRROR_KIND)
+            self.assertFalse(model.capability['human_public_custom'])
+            self.assertNotIn('capability',manifest)
 
     def test_capability_gate_rejects_claiming_public_custom_on_legacy_weights(self):
         import json
@@ -216,8 +274,7 @@ class CpuEncoderTest(unittest.TestCase):
         directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
         with tempfile.TemporaryDirectory() as d:
             root=Path(d)
-            (root/'starter.npz').write_bytes((directory/'starter.npz').read_bytes())
-            manifest=json.loads((directory/'starter.json').read_text(encoding='utf-8'))
+            manifest=self._legacy_fixture(root)
             manifest['capability']={'kind':'legacy_exact_mirror','human_public_custom':True}
             (root/'starter.json').write_text(json.dumps(manifest),encoding='utf-8')
             with self.assertRaisesRegex(ValueError,'public custom'):

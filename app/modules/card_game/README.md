@@ -112,15 +112,15 @@
 
 ## 高级人机
 
-大厅选择「高级人机」，再选择对手使用的「创生预组」或「覆纹快攻」。我方构筑可选择「与对手相同的预组」或「当前保存的构筑（仅公开角色）」；保存的个人构筑不会被覆盖。自定义构筑需要对应模型已声明支持。当前随 app 保存的模型只支持镜像预组，不能当作已完成自由构筑训练。房间模式为 `advanced`。起手换牌时模型保留全部起手牌。对手名及回放显示「高级人机」。
+大厅选择「高级人机」，再选择对手使用的「创生预组」或「覆纹快攻」。我方构筑可选择「与对手相同的预组」或「当前保存的构筑（仅公开角色）」；保存的个人构筑不会被覆盖。当前随 app 发布 `resident_public_v2` 模型，已验证公开角色自组对战。高级人机实际配牌由清单中的 `serving_build` 决定；同构筑选项复制这份实际配牌，不修改普通官方预组或玩家存档。房间模式为 `advanced`。起手换牌时模型保留全部起手牌。对手名及回放显示「高级人机」。
 
 服务端仅依赖可选的 NumPy CPU 推理：`pip install -r requirements-ai.txt`。默认读取 `app/modules/card_game/engine/ai/models/{starter,weave-rush}.{npz,json}`，可用 `NTE_DUEL_AI_MODEL_DIR` 指定目录。数字权重不允许 pickle；加载时校验 SHA-256、卡池/座位顺序、观察 schema、规则哈希和参数形状。缺依赖、缺文件或版本不匹配会在创建房间前明确拒绝，不降级冒充高级人机。
 
-先手首回合抽牌调整后，随 app 发布的两套旧权重继续使用，不重训、不改变观察或动作接口。模型清单的 `rule_identity` 保留训练时规则，`runtime_rule_hash` 精确限定已核验可运行的新规则。该兼容性不代表旧策略在新规则下最优，历史胜率不能直接沿用。
+当前模型使用完整规则哈希及模型/构筑独立评估证据。旧 `resident_public_v1` 的 runtime_rule_hash 兼容加载仍保留用于历史版本，不改变旧训练身份；历史胜率不能直接沿用为当前结果。
 
-`engine/ai/advanced_model.py` 负责纯 CPU 编码与选择；`rl/gpu_duel/resident_schema.py` 共享训练观察字段。`scripts/export_duel_v2_ai.py` 把训练环境中的 `best.pt` 导出为数值权重；`scripts/verify_duel_v2_ai_export.py --directory DIR` 在无 torch 的服务环境验证输出。Git 的 `engine/ai/models/` 只保留两套当前策略，合计约 695 KB，随 `scripts/deploy_windows_app.sh --deploy` 发布。完整 checkpoint、优化器、对照样本和原始日志留在 `artifacts/`，不进入 app 或 Git。网站高级人机只加载数值导出文件，不加载训练 checkpoint，也不启动训练。
+`engine/ai/advanced_model.py` 负责纯 CPU 编码与选择；`rl/public_schema.py` 和 `public_observation.py` 定义当前观察接口。`scripts/export_duel_v2_public.py` 导出数字模型，并可用 `--approve-report REPORT --serving-build BUILD` 验证模型与实际配牌的绑定。Git 的 `engine/ai/models/` 只保留两套当前数字策略及 JSON 清单；部署仍需用户验收授权。完整 checkpoint、优化器、对照样本和原始日志留在 `artifacts/`，不进入 app 或 Git。网站高级人机只加载数值导出文件，不加载训练 checkpoint，也不启动训练。
 
-完整公开卡池训练入口见 [公开卡池训练](../../../docs/duel-v2-public-training.md)。导出模型须匹配完整评估后才允许网页使用；当前随 app 保存的权重仍仅开放镜像。
+完整公开卡池训练入口见 [公开卡池训练](../../../docs/duel-v2-public-training.md)。导出模型须匹配完整评估后才允许网页使用；本轮模型、优选配牌及验收结果见 [综合训练交付报告](../../../docs/duel-v2-comprehensive-release-20260916.md)。模型或构筑版本变化后，旧高级对局需要重新开局。
 
 ## 对局白热化
 

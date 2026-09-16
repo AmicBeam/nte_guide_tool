@@ -578,7 +578,7 @@ def _advance_ai(game: dict, mode: str) -> dict:
     raise PersistenceError('练习对手动作超出单回合限制，请刷新后重试。')
 
 
-def _initialize_game(room, scenario=None, ai_deck_id=None) -> dict:
+def _initialize_game(room, scenario=None, ai_deck_id=None, ai_model=None) -> dict:
     if room.mode == 'tutorial':
         game = _engine().new_game(seed=0, scenario=scenario or 'tutorial_l01_board')
         game = _advance_ai(game, room.mode)
@@ -591,16 +591,19 @@ def _initialize_game(room, scenario=None, ai_deck_id=None) -> dict:
     if room.mode == 'solo':
         decks['b'] = _solo_ai_deck()
     if room.mode == 'advanced':
-        from app.modules.card_game.engine.ai.advanced_model import load_model, preset, require_human_deck
+        from app.modules.card_game.engine.ai.advanced_model import load_model, serving_deck, require_human_deck
+        ai_model = ai_model if ai_model is not None else load_model(ai_deck_id)
         decks['a'] = _require_public_deck(_validate_deck(decks['a']))
-        decks['b'] = _validate_deck(deepcopy(preset(ai_deck_id)))
-        require_human_deck(load_model(ai_deck_id), decks['a'], ai_deck_id)
+        decks['b'] = _validate_deck(serving_deck(ai_model, ai_deck_id))
+        require_human_deck(ai_model, decks['a'], ai_deck_id)
     game = _engine().new_game(seed=randbits(31), decks=decks)
     if room.mode == 'advanced':
-        model = load_model(ai_deck_id)
+        model = ai_model
+        from app.modules.card_game.rl.capability import serving_deck_hash
         game['ai_profile'] = {
             'deck_id': ai_deck_id,
             'version': model.version,
+            'build_sha256': serving_deck_hash(decks['b']),
             'capability': dict(getattr(model, 'capability', {}) or {}),
         }
         game['sides']['b']['name'] = '高级人机'
@@ -618,12 +621,13 @@ def start(player, payload: dict) -> dict:
     if mode not in {'solo', 'advanced', 'pvp', 'tutorial'}:
         raise RuleValidationError('请选择人机或双人模式。')
     ai_deck_id = None
+    ai_model = None
     if mode == 'advanced':
-        from app.modules.card_game.engine.ai.advanced_model import load_model, preset
+        from app.modules.card_game.engine.ai.advanced_model import load_model, serving_deck
         ai_deck_id = payload.get('ai_deck', 'starter')
         if not isinstance(ai_deck_id, str):
             raise RuleValidationError('请选择高级人机的对战预组。')
-        load_model(ai_deck_id)  # Validate before creating a persistent room.
+        ai_model = load_model(ai_deck_id)  # Pin one validated model/build pair for room creation.
     scenario = payload.get('scenario')
     if mode == 'tutorial':
         progress = tutorial_progress(player)
@@ -638,7 +642,7 @@ def start(player, payload: dict) -> dict:
         player_deck_mode = payload.get('ai_player_deck', 'mirror')
         if player_deck_mode not in ('mirror', 'saved'):
             raise RuleValidationError('请选择我方构筑。')
-        deck = (_validate_deck(deepcopy(preset(ai_deck_id))) if player_deck_mode == 'mirror'
+        deck = (_validate_deck(serving_deck(ai_model,ai_deck_id)) if player_deck_mode == 'mirror'
                 else _selected_deck(player))
         deck = _require_public_deck(deck)
     else:
@@ -667,11 +671,11 @@ def start(player, payload: dict) -> dict:
                 _close_tutorial_room(existing)
         if mode == 'advanced':
             from app.modules.card_game.engine.ai.advanced_model import require_human_deck
-            require_human_deck(load_model(ai_deck_id), deck, ai_deck_id)
+            require_human_deck(ai_model, deck, ai_deck_id)
         with atomic_transaction():
             room = repository.create_room(player, mode)
             repository.add_member(room, player, 'a', deck, ready=(mode in {'solo', 'advanced', 'tutorial'}))
-            envelope = _initialize_game(room, scenario=scenario, ai_deck_id=ai_deck_id) if mode in {'solo', 'advanced', 'tutorial'} else None
+            envelope = _initialize_game(room, scenario=scenario, ai_deck_id=ai_deck_id, ai_model=ai_model) if mode in {'solo', 'advanced', 'tutorial'} else None
         return _response(room, player, envelope)
 
 

@@ -87,6 +87,8 @@ class ReportBundleTest(unittest.TestCase):
                 (root/key/'original-deck.json').write_text('{}')
             private=root/'evaluations'/'sample'/'raw';private.mkdir(parents=True)
             (private/'game.json').write_text('{"private_card":"excluded fixture"}')
+            selection_private=root/'selection/screen/case/raw';selection_private.mkdir(parents=True)
+            (selection_private/'game.json').write_text('{"private_card":"also excluded"}')
             (root/'report.md').write_text('# Synthetic report fixture')
             target=Path(directory)/'bundle.zip'
             result=package_report(root,target)
@@ -94,6 +96,7 @@ class ReportBundleTest(unittest.TestCase):
             with zipfile.ZipFile(target) as archive:
                 names=archive.namelist()
                 self.assertNotIn('evaluations/sample/raw/game.json',names)
+                self.assertNotIn('selection/screen/case/raw/game.json',names)
                 self.assertIn('final/starter/deck.json',names)
                 manifest=json.loads(archive.read('delivery-manifest.json'))
                 for name,digest in manifest['files'].items():
@@ -114,3 +117,44 @@ class PipelineGuardTest(unittest.TestCase):
                     validate_training_output(directory)
             path.write_text('{"update":1}\n')
             self.assertEqual(validate_training_output(directory),1)
+
+class FinalReportSelectionTest(unittest.TestCase):
+    def test_selection_survives_empty_mechanism_buckets_and_does_not_mutate_matrix(self):
+        from app.modules.card_game.rl.capability import preset_opponent_deck
+        from app.modules.card_game.rl.full_report import write_full_report
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            def write(name,value):
+                path=root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(value))
+            zero=dict(games=0,win=0,loss=0,draw=0,error=0,truncated=0)
+            one={**zero,'games':1,'win':1}
+            index=[];decisions={};chosen={};screen={};shortlist={};extra=[]
+            for key in ('starter','weave-rush'):
+                deck=preset_opponent_deck(key)
+                write(f'{key}/original-deck.json',deck);write(f'{key}/cards/candidate.json',deck)
+                for stage in ('base','cards','adapted'):
+                    write(f'{key}/{stage}/status.json',{'update':1,'seconds':1})
+                    write(f'{key}/{stage}/metrics.jsonl',{'update':1,'seconds':1,'finished_games':1})
+                    write(f'{key}/{stage}/position-results.json',{'opponents':{'rule':{'first':one,'second':zero}}})
+                write(f'{key}/cards/candidate-history.jsonl',{'candidate_id':deck['id'],'valid':True,'trials':1,'truncated':0,'score':1})
+                label=key+'-original-rule-varied';path=f'evaluations/{label}/report.json'
+                write(f'evaluations/{label}/raw/game.json',{'telemetry':{'cards':{'a':{}},'mechanisms':[],
+                      'opportunities':[],'turn_states':[],'final_turn':2}})
+                write(path,{'learner_build':deck,'model':{'sha256':'synthetic'},'opponent_model':{'type':'rule'},
+                    'complete':True,'by_position':{'first':one,'second':zero},'games_index':[{'game_id':'fixture',
+                    'winner':'a','first_side':'a','position':'first','terminated':True,'error':None,'truncated':False,
+                    'final_turn':2,'raw_log':'raw/game.json','opponent_team':deck['character_ids']}]})
+                index.append({'label':label,'preset':key,'variant':'original','report':path})
+                decisions[key]={'selection':'original','original_win_rate':1,'candidate_win_rate':1,'sample_games_each':1,'reason':'fixture'}
+                chosen[key]={'id':'original','model':'base-export','model_sha256':'synthetic','build':deck}
+                screen[key]={'candidates':[{'id':'original','wins':1,'games':1,'cells':[{'opponent':'rule','report':path}]}]}
+                shortlist[key]={'history_rows':1,'unique_allocations':1,'shortlist':[{}]}
+                extra.append({'label':key+'-selected-rule-varied','preset':key,'report':path})
+            write('config.json',{'kind':'comprehensive','rule_hash':'fixture'})
+            write('evaluation-index.json',index);write('construction-decisions.json',decisions)
+            write('selection/selected.json',{'complete':True,'choices':chosen,'reports':extra})
+            write('selection/screen-results.json',screen);write('selection/shortlist.json',shortlist)
+            summary=write_full_report(root)
+            self.assertEqual(summary['serving_selection'],chosen)
+            self.assertIn('最终模型与优选构筑',(root/'report.md').read_text())
+            self.assertEqual(json.loads((root/'evaluation-index.json').read_text()),index)

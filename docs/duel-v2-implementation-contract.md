@@ -49,7 +49,7 @@ choose_action(state: dict, side: str) -> dict  # 非训练的轻量规则/确定
 ```
 
 - side 固定 `a/b`。decks 为 `{"a": 构筑JSON, "b": 构筑JSON}`；默认两侧基础预组。
-- new_game 和 apply_action 返回可 JSON 序列化的普通 dict；apply_action 不修改输入，非法动作抛 ValueError，输入仍不变。每次成功动作增加 `version`。
+- new_game 和 apply_action 返回可 JSON 序列化的状态 dict，其中玩家、异能者、实体卡牌为专用 dict 兼容类实例；apply_action 不修改输入，非法动作抛 ValueError，输入仍不变。每次成功动作增加 `version`。
 - 同 seed、构筑和动作序列可重放，随机状态保存在内部 JSON；不使用全局 random 状态，不依赖 HTTP、Flask、DAO、ORM、线程或磁盘。
 - phase 为 `mulligan/playing/choice/finished`；`active_side` 是正常回合行动方，`acting_side()` 优先返回待选择的 side；换牌阶段按未完成的一方返回，结束返回 None。
 - `winner` 为 null、`a/b` 或 `draw`。`turn` 是全局连续回合号，双方自己回合计数另存以处理倒地和临时复制期限。
@@ -174,3 +174,18 @@ events: 投影后的公开演出事件
 起始观察直接用最终快照，不回放旧事件。旧存档缺少演出元数据时兼容回退，不解析中文日志伪造卡牌；旧快照上的首次新动作仍应生成可回放 patch。`GET /state?after_seq=` 只过滤新增演出 events；不传参数仍返回完整最近窗口。
 
 `legal_actions[]` 每条新增 `interaction`，不改变 action 本体：`{kind:attack|cast|target|form|ultimate|choice|other, actor_id, target_ids}`。UI 必须按单条 action 匹配提示。N06 这类已展开的友方目标，每条 hint 的 `target_ids` 只能是该条 action 的规范 `target_id`，不能把全部存活队友塞进每一条。复制 N06 归属浔，排除自己；规范 ID 不得忽略阵营。
+
+
+## 2026-09-16 对局实体身份
+
+`engine/duel_v2/entities.py` 定义 `PlayerEntity`、`CharacterEntity`、`CardEntity`。类保留 dict 访问和 JSON 序列化，减少现有规则与存储迁移风险；`entity_id` 才是对象身份，不能用 dict 值相等、角色模板 ID 或内存地址判断同一实体。对局内通过独立 `next_entity` 计数器分配 `eN`，与模板无关，保持确定性；跨对局须同时带房间/对局标识。单独构造、尚未入局的实体使用独立 standalone ID，正式开局与生成卡统一使用对局分配器。
+
+- 两名玩家、双方所有异能者、每张牌（含同名原牌、衍生、临时复制）分别持有唯一实体 ID。
+- 换区、倒地、复活不新建对象身份；复制牌创建新实体。`deepcopy` 创建新的 Python 对象但保留逻辑实体 ID；记录/事件投影是历史值，不是额外活实体。
+- 数据库存储仍为 JSON；`hydrate_entities` 在存档读取与动作副本边界恢复实例、选择区/结算中卡牌别名，并为旧存档按稳定遍历补齐 ID；拒绝重复/冲突 ID。只读观察旧存档时使用副本，不改写原输入。
+- `id`、`character_id`、`card_id` 仍标识目录模板或旧接口路由；卡牌 `instance_id` 作为既有唯一卡牌地址保留。阵营内 `front` 等字段暂保留兼容索引，不能把它们当成跨阵营实体身份。
+- 公开玩家、异能者和可见牌带 `entity_id`；暗牌仍不公开 ID。事件新增 `actor_entity_id` / `target_entity_id`；现有 `actor` / `target` 的 `a:角色ID` 地址用于旧页面渲染兼容。
+- `legal_actions[]` 保留旧 `action`，并提供推荐的新 `entity_action`。支持 `actor_entity_id`（出击/终结）、`card_entity_id`（出牌）、`target_entity_id`（目标）、`choice_entity_id`（选牌）、`card_entity_ids`（换牌）。动作入口先解析实体，再做完整合法性校验；不接受冒用对方角色或冲突的新旧地址。
+- native/CUDA 的扁平存储是加速表示，不在 GPU 中创建 Python 类；异能者身份以阵营与槽位组成的实体键比较，不能单用角色槽位排除对方同名对象。正式网站结算始终使用上述类实例。
+
+验证入口：`python3 -m unittest tests.test_duel_v2_entities tests.test_duel_v2_engine tests.test_duel_v2_public_compiled tests.test_duel_v2_api tests.test_duel_v2_tutorial`。

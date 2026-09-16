@@ -1,5 +1,6 @@
 """Pure immutable public commands and sequential turn/choice orchestration."""
 from copy import deepcopy
+from .entities import PlayerEntity, allocate_entity_id, clone_state, hydrate_entities, normalize_entity_action
 from itertools import combinations
 from random import Random
 
@@ -38,16 +39,16 @@ def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=
              'combat_group': 0, 'sides': {}, 'escalation_enabled': bool(escalation)}
     for side in SIDES:
         order = list(selected[side]['character_ids'])
-        state['sides'][side] = {
+        state['sides'][side] = PlayerEntity({
             'name': name(state, side), 'hp': 30, 'shield': 0 if side == first_side else 5,
             'ap': 0, 'normal_attack_available': False, 'ultimate_available': False,
             'front': None, 'last_front': None,
             'order': order,
-            'characters': {cid: new_character(cid) for cid in order},
+            'characters': {cid: new_character(cid, entity_id=allocate_entity_id(state), side=side) for cid in order},
             'hand': [], 'deck': [], 'discard': [], 'removed': [], 'records': [],
             'turn_count': 0, 'fatigue': 0, 'used': {}, 'harmonized': {},
             'extra_flower': False, 'extra_delay': False, 'front_debuff': {},
-        }
+        }, entity_id=allocate_entity_id(state), side=side)
         team = state['sides'][side]
         team['deck'] = [card_instance(state, cid, side) for cid in selected[side]['card_ids']]
         shuffle(state, team['deck'])
@@ -599,7 +600,8 @@ def apply_action(state, side, action):
     from .tutorial import after_player_action, apply_tutorial_ack, is_tutorial
     if is_tutorial(state) and action.get('type') == 'tutorial_ack':
         return apply_tutorial_ack(state, side)
-    candidate = deepcopy(action)
+    state = clone_state(state)
+    candidate = normalize_entity_action(state, side, action)
     if candidate.get('type') == 'mulligan' and isinstance(candidate.get('card_ids'), list):
         ids = candidate['card_ids']
         if any(not isinstance(x, str) for x in ids) or len(set(ids)) != len(ids):
@@ -609,7 +611,7 @@ def apply_action(state, side, action):
     if candidate not in legal_actions(state, side):
         raise ValueError('当前不能执行此操作：请检查回合、行动力、角色状态和目标。')
     from .presentation import bump_public_patch, capture_public_board
-    result = deepcopy(state)
+    result = state
     result['_public_board'] = capture_public_board(result)
     result['version'] += 1
     result['current_action_version'] = result['version']

@@ -259,7 +259,7 @@ def attack(c, spec, index):
     bonus += tally(c, 'attack_bonus', attacker_id=cid, target=target, target_id=target_id,
                    spec=spec, index=index)
     attack_amount = max(0, attack_value(h) + bonus - _zone_slow(s, side, cid))
-    attack_amount = max(0, int(decide(c, 'outgoing_attack', attack_amount, attacker_id=cid,
+    attack_amount = max(0, int(decide(c, 'outgoing_attack', attack_amount, attacker_id=cid, attacker_entity_id=h.entity_id,
                                       target=target, target_id=target_id, spec=spec, index=index) or 0))
     extra_counter = 0
     if is_esper(target_id):
@@ -271,7 +271,7 @@ def attack(c, spec, index):
         from .context import EffectContext
         counter = max(0, attack_value(target) + extra_counter - _zone_slow(s, enemy, target_id))
         counter = max(0, int(decide(EffectContext(s, enemy, target_id, op), 'outgoing_attack',
-                                    counter, attacker_id=target_id, target=h, target_id=cid,
+                                    counter, attacker_id=target_id, attacker_entity_id=target.entity_id, target=h, target_id=cid,
                                     spec=spec, index=index) or 0))
     else:
         counter = 0
@@ -290,11 +290,13 @@ def attack(c, spec, index):
         overflow = raw_overflow if penetrate else 0
         overflow = int(decide(c, 'combat_overflow', overflow, attacker_id=cid,
                               defender_id=target_id, defender_side=enemy,
+                              attacker_entity_id=h.entity_id, defender_entity_id=target.entity_id,
                               raw_overflow=raw_overflow, spec=spec, index=index) or 0)
         if is_esper(target_id):
             from .context import EffectContext
             overflow = int(decide(EffectContext(s, enemy, target_id, op), 'combat_overflow', overflow,
                                   attacker_id=cid, defender_id=target_id, defender_side=enemy,
+                              attacker_entity_id=h.entity_id, defender_entity_id=target.entity_id,
                                   raw_overflow=raw_overflow, spec=spec, index=index) or 0)
         from .tutorial import tutorial_flags
         if tutorial_flags(s).get('disable_overflow'):

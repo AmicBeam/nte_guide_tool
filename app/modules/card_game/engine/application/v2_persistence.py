@@ -6,6 +6,7 @@ import queue
 import threading
 import time
 from copy import deepcopy
+from app.modules.card_game.engine.duel_v2.entities import hydrate_entities
 
 from app.db import atomic_transaction, db
 from app.errors import PersistenceError
@@ -31,12 +32,15 @@ def load(room_id: int) -> dict | None:
             return deepcopy(entry['envelope'])
         entry = repository.get_run(room_id)
         if entry is not None:
+            hydrate_entities(entry['envelope']['game'])
             _cache[key] = entry
             return deepcopy(entry['envelope'])
     return None
 
 
 def initialize(room, envelope: dict) -> None:
+    envelope = deepcopy(envelope)
+    hydrate_entities(envelope['game'])
     generation = repository.replace_run(room, envelope)
     with _lock:
         _cache[_key(room.id)] = {'generation': generation,

@@ -29,7 +29,7 @@ def _b04(c):
         return
     for side in c.state['sides']:
         for cid in team_order(c.state, side):
-            if cid == c.cid:
+            if hero(c.state, side, cid).is_same_entity(c.character):
                 continue
             if alive(c.state, side, cid):
                 damage(c.state, side, cid, missing, source=f'{c.side}:{c.cid}')
@@ -77,9 +77,11 @@ class Baicang:
     def on_damage_dealt(c, target_side=None, target_id=None, amount=0, **_data):
         if not c.character.get('awakened') or int(amount or 0) <= 0:
             return
-        if target_id == c.cid or not is_esper(target_id) or not alive(c.state, target_side, target_id):
+        if target_side != other(c.side) or not is_esper(target_id) or not alive(c.state, target_side, target_id):
             return
         target = hero(c.state, target_side, target_id)
+        if target.is_same_entity(c.character):
+            return
         if 0 < int(target['hp']) <= 2:
             target['hp'] = 0
             log(c.state, f"白藏造成伤害，触发终结：将{target['name']}消灭。", 'effect',

@@ -604,6 +604,7 @@
         ctx.showToast('当前对局版本未知，请刷新后再操作。');
         return;
       }
+      const wireAction = entry.entity_action || entry.action;
       const requestId = (ctx.pendingRequest && ctx.pendingRequest.fingerprint === V2.actionFingerprint(entry.action) && ctx.pendingRequest.id)
         ? ctx.pendingRequest.id
         : V2.makeRequestId();
@@ -611,7 +612,7 @@
         id: requestId,
         fingerprint: V2.actionFingerprint(entry.action),
         expectedVersion: expectedVersion,
-        action: entry.action,
+        action: wireAction,
       };
       if (entry.action.type === 'mulligan') {
         ctx.mulliganHold = {
@@ -629,7 +630,7 @@
       try {
         const payload = await V2.sendAction({
           roomCode: actionRoomCode,
-          action: entry.action,
+          action: wireAction,
           expectedVersion: ctx.pendingRequest.expectedVersion,
           requestId: requestId,
         });

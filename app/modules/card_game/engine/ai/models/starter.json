@@ -203,9 +203,21 @@
       "opponent_teams": 15,
       "report_sha256": "620f3e89b13d4f2170c4d546b469f0f65201157eb81bdfd18c97b0541dc6bfbf",
       "serving_build_sha256": "b8a6229aa85f2dbd1c6f397156a36ba5a71cc1491d465c3dacf32177e4418fdd"
+    },
+    {
+      "complete": true,
+      "model_sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
+      "rule_hash": "9100b1b7ac37fc139f78b306bed03249eb0188d692f4bad7a4b14ec52fabac4a",
+      "games": 64,
+      "wins": 60,
+      "min_pairs": 32,
+      "min_win_rate": 0.5,
+      "opponent_teams": 15,
+      "report_sha256": "ad50783a7566ae9e22ff8d1656bdfa85fb1955bd9bd174a397a69f8419ff2372",
+      "serving_build_sha256": "b8a6229aa85f2dbd1c6f397156a36ba5a71cc1491d465c3dacf32177e4418fdd"
     }
   ],
-  "runtime_rule_hash": "9100b1b7ac37fc139f78b306bed03249eb0188d692f4bad7a4b14ec52fabac4a",
+  "runtime_rule_hash": "40526143e3e5e56cb3958cced61a1b66c3fc3cc0cdcbf1677e436c23cbad1bc1",
   "runtime_revision": {
     "reason": "Joint opening framework and opponent mulligan event privacy; legacy v2 still keeps all cards",
     "trained_again": false,
@@ -253,13 +265,13 @@
   "validation": {
     "complete": true,
     "model_sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
-    "rule_hash": "9100b1b7ac37fc139f78b306bed03249eb0188d692f4bad7a4b14ec52fabac4a",
+    "rule_hash": "40526143e3e5e56cb3958cced61a1b66c3fc3cc0cdcbf1677e436c23cbad1bc1",
     "games": 64,
     "wins": 60,
     "min_pairs": 32,
     "min_win_rate": 0.5,
     "opponent_teams": 15,
-    "report_sha256": "ad50783a7566ae9e22ff8d1656bdfa85fb1955bd9bd174a397a69f8419ff2372",
+    "report_sha256": "1edffe71766822c38e89e20ef39c1bad2d9ba143f66baade40152cbc3956c7ff",
     "serving_build_sha256": "b8a6229aa85f2dbd1c6f397156a36ba5a71cc1491d465c3dacf32177e4418fdd"
   },
   "serving_build": {

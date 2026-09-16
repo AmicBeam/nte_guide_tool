@@ -119,6 +119,24 @@ class PublicCompiledNativeTest(unittest.TestCase):
                     self.assertEqual(result['sides'][defender]['hp'],
                                      28 if mutual and not self_down else 30)
 
+    def test_b04_identity_and_enemy_only_execution(self):
+        from app.modules.card_game.engine.duel_v2.state import hero
+        deck = next(d for d in STARTER_DECKS if d['id'] == 'weave-rush')
+        for side in ('a', 'b'):
+            for awakened in (False, True):
+                with self.subTest(side=side, awakened=awakened):
+                    foe = 'b' if side == 'a' else 'a'
+                    s = new_game(seed=9,first_side=side,skip_mulligan=True,decks={'a':deck,'b':deck})
+                    for t in s['sides'].values():t['hand']=[]
+                    hero(s,side,'baicang').update(hp=4,awakened=awakened)
+                    hero(s,side,'zero')['hp']=3
+                    hero(s,foe,'baicang')['hp']=3
+                    hero(s,foe,'zero')['hp']=3
+                    card = _inject_hand(s,side,'B04')
+                    nxt,_ = self._check_play(s,{'type':'play_card','card_id':card['instance_id']})
+                    self.assertEqual(hero(nxt,side,'zero')['hp'],1)
+                    self.assertEqual(hero(nxt,foe,'baicang')['hp'],0 if awakened else 1)
+
     def test_knockdown_chain_and_b02_heal_match_python(self):
         from app.modules.card_game.engine.duel_v2.state import hero
         deck = next(d for d in STARTER_DECKS if d['id'] == 'weave-rush')

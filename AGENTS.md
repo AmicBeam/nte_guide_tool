@@ -149,7 +149,7 @@
 ## V2 实现边界
 
 - `content/duel_v2/catalog.json` 与 `catalog.py` 管理四人八种卡、默认 32 张构筑与严格校验；`public_character_ids` 控制图鉴/构筑可见性，当前公开娜娜莉、零、九原、伊洛伊、薄荷、白藏。角色被动、弧盘和卡效在 `content/duel_v2/characters/` 注册，`effects.py` 只做聚合导出。引擎通过 `fire` 追加时机和 `decide` 覆盖决策（如环合种类），不把角色 ID 写进主流程。旧 `event_bus` 只服务盖卡版。代码里的 `form` 对应玩家可见的「弧盘」。图鉴、构筑、官方预组与开局/加入按 `Player.shaft_test_whitelisted` 过滤测试角色。
-- `engine/duel_v2` 是纯 JSON、不可变动作接口，分为状态、战斗、效果上下文、回合/选择和公开投影；不得引用 DAO、Flask 或数据库。
+- `engine/duel_v2` 使用可 JSON 序列化的实体实例与不可变动作接口，分为状态、战斗、效果上下文、回合/选择和公开投影；不得引用 DAO、Flask 或数据库。玩家、异能者、实体卡牌分别由 `PlayerEntity`、`CharacterEntity`、`CardEntity` 表示，每个对象持有对局内独立且随快照保存的 `entity_id`。角色/卡牌模板 ID 只用于内容查询和兼容索引，跨对象身份判断必须使用实体 ID；JSON 读回后通过 `hydrate_entities` 恢复类实例。
 - `engine/application/v2_repository.py` 管理专用 ORM，`v2_persistence.py` 管理最新态缓存和异步快照，`v2_service.py` 负责鉴权后的房间编排与规则 AI。
 - V2 使用 `DuelV2Build/Room/Member/Run/Replay` 专表，不覆盖旧 `DeckBuild/Room/GameRun`。公开回放只存开局公开 board 与带 patch 的公开事件，不写入隐藏手牌、牌序或种子。动作带 `room_code`、`expected_version` 与 `request_id`，保留最近 128 条请求回执；结束结果和房间状态同步提交，普通中间态异步写入并用 generation/revision 防止旧写回。
 - 共享 SQLite 写事务在读取前取得 IMMEDIATE 写预留，避免异步快照提交导致登录等读后写事务升级失败；事务内不等待外部网络。

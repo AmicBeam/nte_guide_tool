@@ -17,7 +17,7 @@ def other(side):
     return 'b' if side == 'a' else 'a'
 
 CARD_FIELDS = (
-    'instance_id', 'card_id', 'character_id', 'name', 'type', 'cost', 'terminal',
+    'entity_id', 'instance_id', 'card_id', 'character_id', 'name', 'type', 'cost', 'terminal',
     'description', 'copy', 'expires_turn', 'original_character_id',
     'stat', 'stat_value', 'shield', 'attack', 'hp', 'instant', 'response', 'require', 'redeem',
     'derived',
@@ -63,6 +63,8 @@ def capture_public_board(state):
         if not source:
             continue
         team = {key: deepcopy(source[key]) for key in ('hp', 'shield', 'ap', 'front', 'last_front', 'front_debuff')}
+        if 'entity_id' in source:
+            team['entity_id'] = source['entity_id']
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
         marks = harmony_marks(state, ps)
         team['harmony_available'] = marks['available']
@@ -79,6 +81,7 @@ def capture_public_board(state):
             shape_id = hero.get('shape')
             characters.append({
                 'id': cid,
+                'entity_id': hero.get('entity_id'),
                 'effect_markers': character_effect_markers(hero),
                 'hp': hero['hp'],
                 'max_hp': hero['max_hp'],
@@ -236,6 +239,14 @@ def enrich_log(state, event):
         event['actor'] = derive_actor(event)
     else:
         event['actor'] = _normalize_entity(event.get('side'), event.get('actor')) or event.get('actor')
+    for field in ('actor', 'target'):
+        address = event.get(field)
+        if isinstance(address, str) and ':' in address:
+            side, cid = address.split(':', 1)
+            team = state.get('sides', {}).get(side, {})
+            entity = team if cid == 'player' else team.get('characters', {}).get(cid, {})
+            if entity.get('entity_id'):
+                event[field + '_entity_id'] = entity['entity_id']
     if event.get('card') is not None and not event.get('private_side'):
         event['card'] = public_card(event['card'])
     if event.get('private_card') is not None:
@@ -273,7 +284,7 @@ def project_event(event, viewer):
     }
     for key in ('amount', 'attack', 'counter', 'group_id', 'harmony_delta', 'energy_delta',
                 'hit_index', 'before', 'after', 'source_side', 'card_ids', 'description', 'present',
-                'first_side', 'winner', 'reason', 'counter_immunity'):
+                'first_side', 'winner', 'reason', 'counter_immunity', 'actor_entity_id', 'target_entity_id'):
         if key in event:
             item[key] = deepcopy(event[key])
     if event.get('type') == 'mulligan' and event.get('side') != viewer:

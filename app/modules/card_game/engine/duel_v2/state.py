@@ -2,6 +2,7 @@
 from copy import deepcopy
 from decimal import Decimal, ROUND_HALF_UP
 from random import Random
+from .entities import CharacterEntity, CardEntity, allocate_entity_id
 
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, energy_max_for_attribute
 from app.modules.card_game.content.duel_v2.catalog import CHARACTER_ORDER
@@ -130,13 +131,13 @@ def damage_class_for(kind, damage_class=None):
     return 'esper'
 
 
-def new_character(cid):
+def new_character(cid, *, entity_id=None, side=None):
     from app.modules.card_game.content.duel_v2.tutorial import lookup_character
     c = lookup_character(cid)
-    return {**deepcopy(c), 'base_attack': c['attack'], 'hp': c['max_hp'],
+    return CharacterEntity({**deepcopy(c), 'base_attack': c['attack'], 'hp': c['max_hp'],
             'base_max_hp': c['max_hp'], 'shield': 0,
             'harmony': 0, 'energy': 0, 'awakened': False, 'ultimate_turns': 0,
-            'growth': 0, 'family': 0, 'gaze': 0, 'dream': 0, 'shape': None, 'down_turns': 0, 'flags': {}}
+            'growth': 0, 'family': 0, 'gaze': 0, 'dream': 0, 'shape': None, 'down_turns': 0, 'flags': {}}, entity_id=entity_id, side=side)
 
 
 def card_instance(state, card_id, side, *, copy=False):
@@ -148,7 +149,7 @@ def card_instance(state, card_id, side, *, copy=False):
         c['original_character_id'] = c['character_id']
         c['character_id'] = copy_owner_id() or c['character_id']
         c['expires_turn'] = state['sides'][side]['turn_count'] + 1
-    return c
+    return CardEntity(c, entity_id=allocate_entity_id(state), side=side)
 
 
 def shuffle(state, cards):

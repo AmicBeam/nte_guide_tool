@@ -51,19 +51,19 @@ class Bohe:
     }
 
     @staticmethod
-    def combat_overflow(c, current=0, attacker_id=None, defender_id=None, raw_overflow=0, **_data):
+    def combat_overflow(c, current=0, attacker_entity_id=None, defender_entity_id=None, raw_overflow=0, **_data):
         raw = int(raw_overflow or 0)
-        if attacker_id == c.cid:
+        if attacker_entity_id == c.entity_id:
             return raw
         flags = c.character.setdefault('flags', {})
-        if defender_id == c.cid and flags.get('share_overflow'):
+        if defender_entity_id == c.entity_id and flags.get('share_overflow'):
             flags.pop('share_overflow', None)
             return raw
         return None
 
     @staticmethod
-    def outgoing_attack(c, current=0, attacker_id=None, **_data):
-        if attacker_id != c.cid:
+    def outgoing_attack(c, current=0, attacker_entity_id=None, **_data):
+        if attacker_entity_id != c.entity_id:
             return None
         if c.character.get('shape') == 'M07' and c.state.get('active_side') != c.side:
             return 0

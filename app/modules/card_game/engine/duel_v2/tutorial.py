@@ -1,5 +1,6 @@
 """Tutorial overlay: scripted legal actions, opponent scripts, and guidance."""
 from copy import deepcopy
+from .entities import PlayerEntity, allocate_entity_id, clone_state, hydrate_entities
 
 from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS, load_scenario
 from .presentation import bump_public_patch, capture_public_board
@@ -72,7 +73,7 @@ def new_tutorial_game(scenario_id, seed=0):
         },
     }
     for side, order in (('a', order_a), ('b', order_b)):
-        state['sides'][side] = {
+        state['sides'][side] = PlayerEntity({
             'name': name(state, side),
             'hp': player_hp,
             'shield': player_shield,
@@ -82,7 +83,7 @@ def new_tutorial_game(scenario_id, seed=0):
             'front': scenario.get(f'front_{side}'),
             'last_front': None,
             'order': list(order),
-            'characters': {cid: new_character(cid) for cid in order},
+            'characters': {cid: new_character(cid, entity_id=allocate_entity_id(state), side=side) for cid in order},
             'hand': [],
             'deck': [],
             'discard': [],
@@ -95,7 +96,7 @@ def new_tutorial_game(scenario_id, seed=0):
             'extra_flower': False,
             'extra_delay': False,
             'front_debuff': {},
-        }
+        }, entity_id=allocate_entity_id(state), side=side)
         for cid, stats in (scenario.get('stats') or {}).items():
             hero = state['sides'][side]['characters'].get(cid)
             if not hero or not isinstance(stats, dict):
@@ -170,7 +171,7 @@ def apply_tutorial_ack(state, side):
     step = current_step(state)
     if side != 'a' or not step or not step.get('ack_required'):
         raise ValueError('当前不能执行此操作：请检查回合、行动力、角色状态和目标。')
-    result = deepcopy(state)
+    result = clone_state(state)
     result['_public_board'] = capture_public_board(result)
     result['version'] += 1
     result['current_action_version'] = result['version']

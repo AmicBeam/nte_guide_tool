@@ -1,5 +1,6 @@
 """Viewer-specific projection. Never expose decks, RNG, or private choices."""
 from copy import deepcopy
+from .entities import clone_state, entity_action, needs_hydration
 
 from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS
@@ -100,12 +101,14 @@ def observe(state, side, after_seq=None):
     from .escalation import public_progress, energy_cap, harmony_cap, ultimate_remaining
     if side not in SIDES:
         raise ValueError('Unknown viewer')
+    if needs_hydration(state):
+        state = clone_state(state)
     actions = legal_actions(state, side)
     playable = {a['card_id'] for a in actions if a['type'] == 'play_card'}
     result = {key: deepcopy(state[key]) for key in ('rules_version', 'version', 'phase', 'active_side', 'first_side', 'turn', 'winner', 'reason')}
     result.update(escalation=public_progress(state), viewer_side=side, is_my_turn=(side == acting_side(state) or
                   state['phase'] == 'mulligan' and side not in state['mulligan_done']), sides={},
-                  legal_actions=[{'action': deepcopy(a), 'label': action_label(state, side, a),
+                  legal_actions=[{'action': deepcopy(a), 'entity_action': entity_action(state, side, a), 'label': action_label(state, side, a),
                                   'preview': preview(state, side, a),
                                   'interaction': interaction_for_action(state, side, a)} for a in actions],
                   events=[sanitize_public_event(event, side) for event in deepcopy(state['events'][-200:])],
@@ -115,7 +118,7 @@ def observe(state, side, after_seq=None):
     for ps in SIDES:
         source = state['sides'][ps]
         marks = harmony_marks(state, ps)
-        team = {k: deepcopy(source[k]) for k in ('name', 'hp', 'shield', 'ap', 'normal_attack_available',
+        team = {k: deepcopy(source[k]) for k in ('entity_id', 'name', 'hp', 'shield', 'ap', 'normal_attack_available',
                 'ultimate_available',
                 'front', 'last_front', 'turn_count', 'fatigue', 'records', 'used', 'harmonized',
                 'extra_flower', 'front_debuff') if k in source}
@@ -126,7 +129,7 @@ def observe(state, side, after_seq=None):
         for cid in team_order(state, ps):
             h = source['characters'][cid]
             flags = h.get('flags') or {}
-            c = {k: deepcopy(h[k]) for k in ('id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
+            c = {k: deepcopy(h[k]) for k in ('entity_id', 'id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
                  'energy', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
                  'avatar', 'portrait', 'passive', 'awakened_passive') if k in h}
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card

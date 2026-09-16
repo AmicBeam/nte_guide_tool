@@ -15,6 +15,10 @@ class EffectContext:
     def character(self):
         return hero(self.state, self.side, self.cid)
 
+    @property
+    def entity_id(self):
+        return self.character.entity_id
+
     def for_character(self, side, cid):
         return EffectContext(self.state, side, cid, self.operation)
 

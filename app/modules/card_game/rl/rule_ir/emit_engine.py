@@ -176,6 +176,7 @@ static int apply_hp(int *row, int s, int is_player, int seat, int amount){
   *hp = nhp;
   return loss;
 }
+static int character_entity_key(int side, int seat){ return side*N_SEATS+seat; }
 /* Source-aware damage: character-local hooks, no implicit settlement. */
 static void trigger_response(int *row, int atk_side, int atk_seat);
 static void trigger_self_lethal(int *row, int ts, int tk);
@@ -197,7 +198,7 @@ static int deal_damage(int *row, int ts, int player, int tk, int amount, int ss,
       CH(CH_ATK_BUFF,ts,tk)+=1;
       if(ss==ts) CH(CH_ALLIED_HURT,ts,tk)=1;
     }
-    if(loss>0 && sk==SEAT_BAICANG && tk!=sk && present_alive(row,ss,sk)
+    if(loss>0 && ts!=ss && sk==SEAT_BAICANG && character_entity_key(ts,tk)!=character_entity_key(ss,sk) && present_alive(row,ss,sk)
        && CH(CH_AWAKENED,ss,sk)>0 && CH(CH_HP,ts,tk)>0 && CH(CH_HP,ts,tk)<=2) CH(CH_HP,ts,tk)=0;
   }
   return loss;
@@ -858,7 +859,7 @@ static void play_effects(int *row, int s, int seat, int kind, int tside, int tse
           for(int cand=0; cand<N_SEATS; cand++){
             if(team_rank(row,os,cand)==rank){ k=cand; break; }
           }
-          if(k<0 || k==seat) continue;
+          if(k<0 || character_entity_key(os,k)==character_entity_key(s,seat)) continue;
           if(present_alive(row,os,k)){
             deal_damage(row,os,0,k,missing,s,seat,0,0);
             set_last_hit(row,os,k,s,seat);

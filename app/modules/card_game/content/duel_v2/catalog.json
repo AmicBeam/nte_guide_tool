@@ -234,7 +234,7 @@
       "portrait": "/static/images/characters/portrait/白藏.webp",
       "role": "自伤叠攻与斩杀",
       "passive": "每当白藏受到伤害时，白藏攻击 +1。",
-      "awakened_passive": "2 个己方回合内，白藏造成伤害后，若该异能者生命 ≤2，将其消灭。",
+      "awakened_passive": "2 个己方回合内，白藏对对方异能者造成伤害后，若其生命 ≤2，将其消灭。",
       "everness_id": 1023,
       "ultimate": {
         "kind": "status",

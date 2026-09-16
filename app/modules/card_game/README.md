@@ -22,6 +22,7 @@
 | [公开卡池训练](../../../docs/duel-v2-public-training.md) | 现行完整公开卡池训练、分析与录像入口 |
 | [完整训练与报告要求](../../../docs/duel-v2-full-training-report-spec.md) | 双预组测试矩阵、配牌调整、先后手胜率、逐卡与机制分析的交付规范 |
 | [全链路短测验收](../../../docs/duel-v2-full-chain-smoke-20260916.md) | 双预组训练/配牌/互搏/报告生成及 Mac 交付的实测记录 |
+| [纯胜负奖励与 N01 链路验证](../../../docs/duel-v2-outcome-chain-20260916.md) | 旧策略热启动、CUDA 换牌、纯胜负奖励、新卡效与 Mac 报告交付实测 |
 | [盖卡版归档](../../../docs/archive/duel-simultaneous-deployment-2026-09-08.md) | 仅用于维护尚未迁移的旧对局 |
 
 分层与依赖方向见仓库根目录 [AGENTS.md](../../../AGENTS.md)。

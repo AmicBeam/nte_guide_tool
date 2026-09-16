@@ -90,6 +90,13 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(r['details'][1]['resource_damage'], 0)
         self.assertTrue(any('恶意 不足' in w for w in r['details'][1]['warnings']))
 
+    def test_resource_multiplier_uses_actual_consumption_and_basic_level(self):
+        r = self.simulate([(0, 'action_heiyu_q1', 0),
+                           (0, 'action_heiyu_form_e', 10),
+                           (0, 'action_heiyu_form_z1', 30)])
+        self.assertAlmostEqual(r['details'][1]['resource_atk_multiplier'], 20 * .4)
+        self.assertEqual(r['details'][2]['resource_atk_multiplier'], 0)
+
     def test_q1_checks_form_before_start_and_q2_allows_reentry(self):
         warning = '当前形态不能使用该动作。'
         r = self.simulate([(0, 'action_heiyu_q1', 0),

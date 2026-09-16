@@ -156,3 +156,5 @@ python3 -m unittest discover -s tests -p 'test_shaft_*.py'
 验证：`python3 -m unittest tests.test_shaft_heiyu tests.test_shaft_publication tests.test_module_routes`；计算改动还需完整排轴回归。
 
 黑羽轨道头像下方常驻显示个人资源「恶意」，包括循环轴初始0点及A觉Q2耗尽后的0点；数值随时间光标读取对应资源快照，不因归零隐藏。
+
+动作详情的「动作倍率」只显示动作本体，其后单列「恶意追加倍率」，两项不合并。追加倍率由计算引擎输出 `resource_atk_multiplier`，按实际消耗及普攻技能等级计算；伤害仍按本体与追加各自的增益独立结算，不合并乘区。

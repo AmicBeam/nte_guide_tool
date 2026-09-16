@@ -4730,7 +4730,11 @@
               appliedBuffs.push(summary);
             }
           });
-        calc.resource_damage = calculateActionDamage(snapshot, extraAction, enemy, extraModifiers).direct_damage;
+        const resourceCalc = calculateActionDamage(snapshot, extraAction, enemy, extraModifiers);
+        calc.resource_damage = resourceCalc.direct_damage;
+        calc.resource_atk_multiplier = resourceCalc.panel.atk > 0
+          ? resourceCalc.formula_parts.base / resourceCalc.panel.atk
+          : 0;
         calc.direct_damage += calc.resource_damage;
       }
       const consumedStackKey = String(action.consume_buff_stack_key || '');
@@ -5006,6 +5010,7 @@
         enemy_debuffs: activeEnemyDebuffs(enemyDebuffs, buffTick),
         direct_damage: multipliedDirectDamage,
         resource_damage: num(calc.resource_damage) * actionMultiplier * nonFuwenAmplification,
+        resource_atk_multiplier: num(calc.resource_atk_multiplier) * actionMultiplier,
         personal_resources_consumed: consumedResources,
         fuwen_damage: fuwenDamage,
         stagger_amount: multipliedStagger,

@@ -5184,11 +5184,15 @@
     const actionMultiplier = backgroundActionMultiplier(step, action);
     const realtimeAtk = Number(panelStats.atk || 0);
     const actionBase = Number(detail?.formula_parts?.base || 0) * actionMultiplier;
+    const resourceAtkMultiplier = Number(detail?.resource_atk_multiplier || 0);
     const finalActionAtkMultiplier = realtimeAtk > 0
       ? actionBase / realtimeAtk
       : 0;
     const actionMultiplierText = `${formatNumber(finalActionAtkMultiplier * 100, 1)}%攻击`;
     specialStats.push(`<div class="shaft-detail-kv"><span>动作倍率</span><strong>${escapeHtml(actionMultiplierText)}</strong></div>`);
+    if (action.resource_damage) {
+      specialStats.push(`<div class="shaft-detail-kv"><span>${escapeHtml(action.resource_damage.resource)}追加倍率</span><strong>${formatNumber(resourceAtkMultiplier * 100, 1)}%攻击</strong></div>`);
+    }
     if (hitCount !== undefined && hitCount !== null) {
       specialStats.push(`<div class="shaft-detail-kv"><span>伤害段数</span><strong>${formatNumber(hitCount, 0)}</strong></div>`);
     }

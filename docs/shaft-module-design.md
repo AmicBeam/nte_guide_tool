@@ -767,3 +767,5 @@ seconds = tick / 10
 用户2026-09-16授权黑羽动作经验耗时与普攻恶意比例分配。动作 `duration_source=user-authorized-estimate` 区分估值与原始技能数值；`personal_resource_scale_with_damage_ratio` 使显式配置的普攻在打断后按逐段曲线的保留倍率比例同步缩减个人资源获取/消耗，保留0段时为0，未声明此字段的既有动作保持原口径。
 
 形态禁用条件 `forbidden_buff_key` 在当前动作派发 `action_start` 前检查，避免黑羽Q1因自身刚开启二形态而误报；已处于二形态时再次Q1仍告警，Q2结束清除状态后允许再次Q1（能量与CD独立校验）。
+
+动作详情的「动作倍率」只显示动作本体，其后单列「恶意追加倍率」，两项不合并。追加倍率由计算引擎输出 `resource_atk_multiplier`，按实际消耗及普攻技能等级计算；伤害仍按本体与追加各自的增益独立结算，不合并乘区。

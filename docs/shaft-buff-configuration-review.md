@@ -303,3 +303,5 @@
 验证：`python3 -m unittest tests.test_shaft_heiyu tests.test_shaft_publication tests.test_module_routes`；计算改动还需完整排轴回归。
 
 黑羽轨道头像下方常驻显示个人资源「恶意」，包括循环轴初始0点及A觉Q2耗尽后的0点；数值随时间光标读取对应资源快照，不因归零隐藏。
+
+形态禁用条件 `forbidden_buff_key` 在当前动作派发 `action_start` 前检查，避免黑羽Q1因自身刚开启二形态而误报；已处于二形态时再次Q1仍告警，Q2结束清除状态后允许再次Q1（能量与CD独立校验）。

@@ -90,6 +90,16 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(r['details'][1]['resource_damage'], 0)
         self.assertTrue(any('恶意 不足' in w for w in r['details'][1]['warnings']))
 
+    def test_q1_checks_form_before_start_and_q2_allows_reentry(self):
+        warning = '当前形态不能使用该动作。'
+        r = self.simulate([(0, 'action_heiyu_q1', 0),
+                           (0, 'action_heiyu_q1', 20),
+                           (0, 'action_heiyu_q2', 40),
+                           (0, 'action_heiyu_q1', 240)])
+        self.assertNotIn(warning, r['details'][0]['warnings'])
+        self.assertIn(warning, r['details'][1]['warnings'])
+        self.assertNotIn(warning, r['details'][3]['warnings'])
+
     def test_form_pauses_off_field_and_q2_clears(self):
         other = {'slot': 1, 'character_id': DARK, 'arc_id': '', 'cartridge_id': ''}
         r = self.simulate([(0, 'action_heiyu_q1', 0), (1, 'action_none_c78f7a08d5', 20),

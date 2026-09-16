@@ -4538,6 +4538,11 @@
           {visual_trigger_tick: visualStartTick},
         ));
       }
+      // Check the entry condition before this action creates its own form buff.
+      if (action.forbidden_buff_key && activeBuffs.some((buff) => String(buff.definition_id) === action.forbidden_buff_key
+        && int(buff.owner_slot) === slot && buffTick >= int(buff.start_tick) && buffTick < int(buff.end_tick))) {
+        warnings.push('当前形态不能使用该动作。');
+      }
       for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
         triggeredBuffs.push(...triggerBuffsForEvent(
           'action_start',
@@ -4554,10 +4559,6 @@
       const shouldValidateRequiredBuff = !requiredBuffPlacements.size
         || requiredBuffPlacements.has(placement(isBackground));
       const requiredBuffKey = String(action.required_buff_key || '');
-      if (action.forbidden_buff_key && activeBuffs.some((buff) => String(buff.definition_id) === action.forbidden_buff_key
-        && int(buff.owner_slot) === slot && buffTick >= int(buff.start_tick) && buffTick < int(buff.end_tick))) {
-        warnings.push('当前形态不能使用该动作。');
-      }
       if (shouldValidateRequiredBuff && requiredBuffKey && !activeBuffs.some((buff) => (
         String(buff.definition_id || '') === requiredBuffKey
         && int(buff.owner_slot) === slot

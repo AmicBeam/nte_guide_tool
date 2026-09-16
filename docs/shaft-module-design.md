@@ -765,3 +765,5 @@ seconds = tick / 10
 黑羽A觉使用动作级 `personal_resource_consume_all_by_awakening_node`，只在指定节点激活时清空并记录实际消耗。恶意追加使用独立动作ID和资源伤害标签，避免动作本体的E/Q倍率强化误作用于追加；C觉只匹配该资源伤害标签。
 
 用户2026-09-16授权黑羽动作经验耗时与普攻恶意比例分配。动作 `duration_source=user-authorized-estimate` 区分估值与原始技能数值；`personal_resource_scale_with_damage_ratio` 使显式配置的普攻在打断后按逐段曲线的保留倍率比例同步缩减个人资源获取/消耗，保留0段时为0，未声明此字段的既有动作保持原口径。
+
+形态禁用条件 `forbidden_buff_key` 在当前动作派发 `action_start` 前检查，避免黑羽Q1因自身刚开启二形态而误报；已处于二形态时再次Q1仍告警，Q2结束清除状态后允许再次Q1（能量与CD独立校验）。

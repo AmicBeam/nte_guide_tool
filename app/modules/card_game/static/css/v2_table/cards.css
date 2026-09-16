@@ -286,6 +286,13 @@
   max-height: 100%;
 }
 
+/* Fit both slot dimensions without stretching the card's 3:4 border box. */
+.v2-front-slot .v2-character-card {
+  box-sizing: border-box;
+  width: min(100cqw, 75cqh);
+  height: auto;
+}
+
 .v2-bench-row .v2-character-art,
 .v2-front-slot .v2-character-art {
   flex: none;

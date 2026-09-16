@@ -594,10 +594,13 @@ body:has(.v2-table-page) .shell {
 }
 
 .v2-front-slot {
+  /* The label is hidden on short screens; keep the card in the flexible row. */
+  grid-row: 2;
   min-height: 0;
   height: 100%;
   display: grid;
   place-items: center;
+  container-type: size;
 }
 
 .v2-combat-core {

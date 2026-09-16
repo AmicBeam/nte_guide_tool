@@ -123,7 +123,7 @@ class ModuleRoutesTest(RoomFlowTestCase):
         self.assertIn('排轴模块', page_text)
         self._assert_asset('/static/preteam/单位.jpg')
 
-    def test_portal_shows_community_links_record_and_preteam_sunset(self) -> None:
+    def test_portal_shows_community_links_record_without_preteam_entry(self) -> None:
         page = self.client.get('/')
         self.assertEqual(page.status_code, 200)
         page_text = page.get_data(as_text=True)
@@ -132,7 +132,8 @@ class ModuleRoutesTest(RoomFlowTestCase):
         self.assertIn('https://space.bilibili.com/9412490', page_text)
         self.assertIn('https://space.bilibili.com/3546651192986524', page_text)
         self.assertIn('津ICP备2026003916号', page_text)
-        self.assertIn('即将下线，并由排轴模块取代', page_text)
+        self.assertNotIn('预配队', page_text)
+        self.assertNotIn('href="/preteam"', page_text)
 
     def test_shaft_module_page_catalog_and_asset(self) -> None:
         self.assertEqual(self.client.get('/shaft/rotation').status_code, 200)

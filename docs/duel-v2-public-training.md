@@ -201,7 +201,7 @@ python scripts/launch_duel_v2_comprehensive.py --output artifacts/comprehensive-
 python scripts/smoke_duel_v2_full.py --profile comprehensive --phase evaluate --seconds 7200 --output artifacts/comprehensive-six-hour
 ```
 
-综合 profile 使用 hidden=64、1024 并行环境。每套基础出牌阶段最多 6600 秒，配牌和适应阶段各最多 1800 秒；筛选、初始化等也消耗共享预算。外层守护进程对整棵训练进程树设 21600 秒上限，内部预算提前 60 秒留出保存时间。阶段可提前结束，不要求把六小时用满。`--phase train` 在训练完成后标记 `training_complete`，不运行最终矩阵；`--phase evaluate` 读取同一目录的冻结产物，已完成的评估单元可复用。
+综合 profile 使用 hidden=64、1024 并行环境。2026-09-16 候选阶段加强后，每套基础出牌／配牌／适应／筛选的预算分别占总时限 20%／10%／7.5%／10%，两套共 95%，余下 5% 留给初始化、诊断及保存；所有操作仍受同一总截止时间约束。旧运行的 6600／1800／1800 秒分配仅是历史配置。外层守护进程对整棵训练进程树设 21600 秒上限，内部预算提前 60 秒留出保存时间。阶段可提前结束，不要求把六小时用满。`--phase train` 在训练完成后标记 `training_complete`，不运行最终矩阵；`--phase evaluate` 读取同一目录的冻结产物，已完成的评估单元可复用。
 
 `--stop-if-stalled` 开启预先固定的无进展判定：每 300 秒计算窗口均值，连续 6 个窗口相对参考值均无实质变化时结束该阶段。出牌监测 value_loss（1% 相对/0.01 绝对容差取大者）、explained_variance（0.01）、entropy（0.01）、approx_kl（0.0001）、clip_fraction（0.01）；配牌监测 reward_mean（0.01）及 loss（1% 相对/0.01 绝对取大者）。任何超过容差的变化都会重新等待，首次参考窗后最早再等 30 分钟；这是保守的稳定性判定，不是最优或良好收敛证明。连续无完成对局的有效观察窗按健康异常处理。末窗摘要写入 `progress-windows.json`，停止原因写入阶段状态。
 
@@ -226,3 +226,28 @@ python scripts/export_duel_v2_public.py --model PATH/starter.npz --approve-repor
 ### 逐卡报告的数据来源
 
 主逐卡表与 `selfplay-card-metrics.csv` 仅使用最终同模型同构筑镜像互搏，合并双方并按实际先后手分组。规则 AI 与交叉互搏保留为独立诊断，不混算。`selfplay-mechanism-metrics.csv` 同样使用镜像数据。64 场镜像各有 64 个先手、后手观测，仍只代表 64 场对局；未使用的卡不判弱，未携带的卡没有本构筑使用胜率。
+
+## 9. 预组阵容优先的候选训练与分级筛选
+
+本次只调整框架，不启动新训练。下次开始前先检查：
+
+```bash
+python scripts/train_duel_v2_cards.py --check --team starter --pairs 8 --opponent-checkpoint PATH_TO_FROZEN_WEAVE_CHECKPOINT
+python scripts/smoke_duel_v2_full.py --check --profile comprehensive --seconds 21600
+```
+
+- `--pairs` 现在表示**每个公开预组阵容的配对数**，默认 8：创生、快攻各 16 场，再追加泛化对手；不是全批总共 16 场。每个候选使用相同的对手计划。
+- 默认 80% 对手阵容来自两套公开预组，阵容内轮换官方配牌、当前高级人机配牌和随机合法配牌；20% 为任意公开四人组合。小批量按整数取整，实际构成以保存的计划为准。
+- 默认模型对手 80%、规则 AI 20%；用 `--random-team-fraction`、`--rule-fraction` 调整。未传入其他 checkpoint 时只有冻结学习方策略，不宣称具有快攻模型覆盖。
+- 可用 `--opponent-builds PATH.json` 传入按预组 ID 分组的历史构筑列表；非法卡牌、角色集合或顺序必须拒绝。`--opponent-checkpoint` 指定冻结模型，模型身份与实际阵容、配牌分别记录。
+- `opponent-schedules/attempt-*.json` 每批保存一份共同对手计划和模型身份，候选历史通过路径引用；只记配对种子、构筑、结果计数，不保存逐动作日志。
+- 综合流程先完成两套基础模型，再进行各自配牌搜索。候选池包含官方基线、当前高级人机构筑、最后候选与合法历史高分候选；按配牌数量去重，不把牌表顺序当成新构筑。
+- `candidate-selection.json` 记录三级筛选：每候选、每预组阵容分别 16／64／256 场；初始至多 8 项，之后保留基线及少量入围候选。筛选只用冻结模型；短测为 2／4／4 场，不作强度结论。
+- 评分为 `0.6 × 阵容等权平均胜率 + 0.2 × 最差阵容胜率 + 0.2 × 最弱位置胜率`。最终候选须评分严格超过基线，且每个阵容的每个先后手胜率相对基线下降不超过 3 个百分点；同分保留基线。这是预定经验筛选规则，不是统计显著性或校准概率。
+- 三级比较采用互不重叠的种子段；完整评估矩阵使用另一种子段，不参与选择。编译配对使用相邻偶/奇种子，交换先后手，但不声称洗牌相同。
+- `selected-deck.json` 是筛选结果，适应训练读取该文件；`cards/candidate.json` 仍保留训练末批候选，不能混淆。分级对阵结果进入总报告。
+- 评估缺局、截断或预算耗尽时保留基线，记为未完成并阻止整轮通过，不缩减样本后宣称完整。恢复评估时校验规则、双方模型、双方构筑、种子和预算身份；旧缓存缺少新身份文件时拒绝复用。
+
+固定编队始终只限当前公开两套预组；不加入测试角色。网页模型与权重不因本次框架修改而自动更新。Windows CUDA 的完整链路执行仍需在设备上线后单独验证。
+
+本次框架验收：42 项本机测试通过，包含分级筛选的合成对照、预算/缓存保护、纯 Python 采样合法性和真实 native 编译对局。未进行 CUDA 正式训练；该结果证明框架行为，不是新构筑的强度结论。

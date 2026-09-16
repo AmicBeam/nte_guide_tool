@@ -31,10 +31,13 @@ def main(argv=None):
     p.add_argument('--team-json',type=Path,help='User-specified four character_ids; never optimized')
     p.add_argument('--policy-checkpoint',type=Path)
     p.add_argument('--opponent-checkpoint',type=Path,action='append',default=[])
+    p.add_argument('--opponent-builds',type=Path,help='JSON mapping preset IDs to historical legal deck lists')
     p.add_argument('--resume',type=Path)
     p.add_argument('--output',type=Path)
     p.add_argument('--n',type=int,default=32)
-    p.add_argument('--pairs',type=int,default=4)
+    p.add_argument('--pairs',type=int,default=8,help='Pairs per public preset lineup')
+    p.add_argument('--random-team-fraction',type=float,default=.2)
+    p.add_argument('--rule-fraction',type=float,default=.2)
     p.add_argument('--max-actions',type=int,default=400)
     p.add_argument('--seconds',type=float,default=3600)
     p.add_argument('--max-updates',type=int,default=0)
@@ -67,9 +70,27 @@ def main(argv=None):
     if (not isinstance(team,list) or len(team)!=4 or not all(isinstance(c,str) for c in team)
             or len(set(team))!=4 or not set(team)<=set(PUBLIC_CHARACTERS)):
         p.error('Fixed team must contain four distinct public characters')
+    if not (0<=args.random_team_fraction<1 and 0<=args.rule_fraction<1):p.error('Opponent fractions must be finite and in [0,1)')
+    historical_builds=None
+    if args.opponent_builds:
+        try:historical_builds=json.loads(args.opponent_builds.read_text(encoding='utf-8'))
+        except (OSError,ValueError) as exc:p.error(f'Cannot read opponent builds: {exc}')
+    distribution={'seed':args.seed,'historical_builds':historical_builds,'random_team_fraction':args.random_team_fraction,'rule_fraction':args.rule_fraction,
+                  'pairs_per_preset':args.pairs,'presets':['starter','weave-rush'],
+                  'frozen_model_ids':['learner',*[f'peer-{i}' for i in range(len(args.opponent_checkpoint))]],
+                  'peer_available':bool(args.opponent_checkpoint)}
+    if not args.propose:
+        from app.modules.card_game.rl.candidate_opponents import build_opponent_schedule
+        try:
+            probe=build_opponent_schedule(3,seed=args.seed,random_fraction=args.random_team_fraction,
+                  rule_fraction=args.rule_fraction,model_ids=distribution['frozen_model_ids'],historical_builds=historical_builds)
+        except (ValueError,TypeError) as exc:p.error(str(exc))
+        distribution['serving_build_sha256']={row['lineup']:row['build_sha256'] for row in probe if row['allocation']=='serving'}
+        distribution['sampling_schema']='preset_lineups_v1'
     if args.check:
         print(json.dumps({'character_ids':team,'learns_characters':False,'cards_per_character':8,
-                          'max_copies':2,'training_started':False},ensure_ascii=False));return 0
+                          'max_copies':2,'training_started':False,'opponent_distribution':distribution,
+                          'peer_note':'Peer checkpoints provided' if args.opponent_checkpoint else 'Only frozen learner available; no peer model coverage'},ensure_ascii=False));return 0
     if not args.output:p.error('--output NEWDIR is required')
     if args.train and not args.policy_checkpoint:p.error('--policy-checkpoint is required for battle scoring')
     if args.propose and (not args.resume or args.detach):p.error('--propose requires --resume and cannot detach')
@@ -116,6 +137,7 @@ def main(argv=None):
             recorded=[item.get('sha256') if isinstance(item,dict) else None for item in saved_opponents]
             if actual!=recorded:
                 p.error('Resume requires the same frozen battle policies')
+            if saved.get('opponent_distribution')!=distribution:p.error('Resume requires the same opponent distribution')
     device='cuda' if args.train else 'cpu'
     if args.train and not torch.cuda.is_available():p.error('CUDA unavailable; no CPU training fallback')
     hidden=saved['hidden'] if saved else args.hidden
@@ -150,12 +172,13 @@ def main(argv=None):
         for group in optimizer.param_groups:group['lr']=args.learning_rate
         torch.set_rng_state(saved['torch_rng'].cpu())
         torch.cuda.set_rng_state_all([r.cpu() for r in saved['cuda_rng']])
+    from app.modules.card_game.rl.candidate_opponents import build_opponent_schedule
     evaluator=CardBattleEvaluator(policy,opponents=opponents,device=device)
     write('config.json',{**tuner.metadata(),'rule_hash':identity,'policy':policy_id,'opponents':opponent_ids,
                          'resume':str(args.resume) if args.resume else None,
                          'checkpoint_sha256':_sha256(args.resume) if args.resume else None,
                          'pairs':args.pairs,'n':args.n,'max_actions':args.max_actions,'seconds':args.seconds,
-                         'detailed_training_logs':False,'learns_characters':False})
+                         'detailed_training_logs':False,'learns_characters':False,'opponent_distribution':distribution})
     from app.modules.card_game.rl.progress_stop import ProgressStop
     monitor=ProgressStop();stop_reason='budget_or_update_limit'
     started=time.monotonic();count=0;attempt=0;failed=False
@@ -165,14 +188,20 @@ def main(argv=None):
     def save():
         temp=args.output/'latest.tmp'
         torch.save({**tuner.metadata(),'rule_hash':identity,'model':tuner.state_dict(),
-                    'optimizer':optimizer.state_dict(),'policy':policy_id,'opponents':opponent_ids,'update':update,
+                    'optimizer':optimizer.state_dict(),'opponent_distribution':distribution,'policy':policy_id,'opponents':opponent_ids,'update':update,
                     'torch_rng':torch.get_rng_state(),'cuda_rng':torch.cuda.get_rng_state_all()},temp)
         temp.replace(args.output/'latest.pt')
     try:
         while not args.max_updates or count<args.max_updates:
             stop();attempt+=1
             sample=tuner.sample(args.n)
-            result=evaluator.evaluate(sample['rows'],pairs=args.pairs,max_actions=args.max_actions,stop_check=stop)
+            schedule=build_opponent_schedule(args.pairs,seed=args.seed+update*1009+attempt,
+                random_fraction=args.random_team_fraction,rule_fraction=args.rule_fraction,model_ids=tuple(evaluator.model_ids),historical_builds=historical_builds)
+            (args.output/'opponent-schedules').mkdir(exist_ok=True)
+            schedule_file=f'opponent-schedules/attempt-{attempt:05d}.json'
+            write(schedule_file,{'pairs':schedule,'model_identities':dict(zip(evaluator.model_ids,[policy_id,*opponent_ids])),
+                                 'pairing':'compiled even/odd seeds swap seats, not identical shuffle'})
+            result=evaluator.evaluate(sample['rows'],schedule=schedule,max_actions=args.max_actions,stop_check=stop)
             source_update = update
             (args.output/'candidates').mkdir(exist_ok=True)
             for i, card_row in enumerate(sample['rows']):
@@ -186,6 +215,8 @@ def main(argv=None):
                           'wins':int(result['wins'][i]),'losses':int(result['losses'][i]),
                           'truncated':int(result['truncated'][i]),'independently_evaluated':False,
                           'generation':'sampled from allocation policy; not a mutation of a parent deck',
+                          'opponent_schedule':schedule_file,
+                          'by_opponent':{k:{pos:{f:int(v[i]) for f,v in counts.items()} for pos,counts in group.items()} for k,group in result['by_opponent'].items()},'by_lineup':{k:{pos:{f:int(v[i]) for f,v in counts.items()} for pos,counts in group.items()} for k,group in result['by_lineup'].items()},
                           'by_position':{position:{key:int(result[f'{position}_{key}'][i])
                               for key in ('wins','losses','games')} for position in ('first','second')}}
                 with (args.output/'candidate-history.jsonl').open('a',encoding='utf-8') as stream:

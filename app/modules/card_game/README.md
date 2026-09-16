@@ -161,6 +161,8 @@ Windows 已完成一次有界 CUDA 出牌/配牌短训练，启动所需 MSVC �
 
 对局策略训练在原奖励基础上增加每局累计回报上限 10；失败仍扣 10，过程分保留，计数跨 rollout 并逐局重置。奖励口径和验证命令见 [公开卡池训练](../../../docs/duel-v2-public-training.md#对局奖励累计上限2026-09-15)。
 
+候选训练以创生、覆纹快攻的固定四人阵容为重点，在阵容内变化配牌，保留少量任意公开队伍。综合流程先准备两套基础模型，再执行分级候选比较（每阵容 16／64／256 场）及适应训练；配置预览用 `scripts/smoke_duel_v2_full.py --check --profile comprehensive --seconds 21600`，不启动训练。细节见公开卡池训练文档第 9 节。
+
 固定角色配牌学习入口为 `scripts/train_duel_v2_cards.py`：用户指定四名公开角色，模型只调整每人 8 张配牌（同名最多 2 张）。冻结出牌策略执行终局评估，独立配牌网络学习；不自动更换角色或网站预组。先用 `--check --team starter` 检查配置，CUDA 训练与候选分析命令见公开卡池训练文档。
 
 网站运行时不加载训练权重，也不在导入 `rl/` 时自动训练。现行完整公开卡池入口是 `scripts/train_duel_v2_public.py`，分析与录像走 `scripts/analyze_duel_v2_policy.py`。旧镜像、SB3 和 `train_duel_v2_session.py` 只保留给既有实验。训练状态页用 `python3 scripts/rl_monitor.py` 单独开在 5002，大厅无入口。小样本结果不是平衡证据。命令、配置和日志字段见强化学习说明与公开卡池训练文档。
@@ -192,6 +194,7 @@ python3 -m unittest tests.test_duel_v2_zero_refund tests.test_duel_v2_serving_bu
 训练框架或编译规则：
 
 ```bash
+python3 -m unittest tests.test_duel_v2_candidate_opponents tests.test_duel_v2_candidate_selection tests.test_duel_v2_card_tuning tests.test_duel_v2_card_tuning_cli tests.test_duel_v2_full_chain
 python3 -m unittest tests.test_duel_v2_rl tests.test_duel_v2_rl_train tests.test_duel_v2_gpu_duel tests.test_duel_v2_rule_ir
 ```
 

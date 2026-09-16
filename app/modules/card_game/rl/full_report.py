@@ -168,16 +168,33 @@ def write_full_report(root):
     candidate_decisions=[]
     from app.modules.card_game.content.duel_v2 import CARDS
     for key,decision in decisions.items():
-        baseline=read(root/key/'original-deck.json');candidate=read(root/key/'cards/candidate.json')
+        baseline=read(root/key/'original-deck.json')
+        selected_deck=root/key/'selected-deck.json'
+        candidate=read(selected_deck if selected_deck.is_file() else root/key/'cards/candidate.json')
         a=Counter(baseline['card_ids']);b=Counter(candidate['card_ids'])
         delta=[{'card_id':cid,'name':CARDS[cid]['name'],'before':a[cid],'after':b[cid]} for cid in sorted(a.keys()|b.keys()) if a[cid]!=b[cid]]
         construction.append({'preset':key,**decision,'changes':delta})
         lines+=['',f'### {key}', '',f"- 原始筛选胜率：{decision['original_win_rate']:.1%}；候选：{decision['candidate_win_rate']:.1%}；每种 {decision['sample_games_each']} 场。",
                 f"- 选择：{decision['selection']}；理由：{decision['reason']}。",
                 f'- 全批候选及原始评分：`{key}/cards/candidate-history.jsonl`。',
+                f'- 筛选证据：`{decision.get("evidence", "旧版配对筛选")}`；最差阵容胜率：{decision.get("worst_lineup", "未记录")}；最弱位置胜率：{decision.get("worst_seat", "未记录")}。',
                 '- 候选适应训练单独完成；本表筛选使用冻结基础策略，最终矩阵另外展示适应后效果。',
                 '', '| 卡牌 | 原始张数 | 候选张数 |','| --- | ---: | ---: |']
         lines += [f"| {x['card_id']} {x['name']} | {x['before']} | {x['after']} |" for x in delta]
+        tournament_path=root/key/'candidate-selection.json'
+        if tournament_path.is_file():
+            tournament=read(tournament_path)
+            lines+=['','#### 分级候选比较（筛选集，不是独立留出）','',
+                    f"完成：{tournament['complete']}；选择：{tournament['selection']}；{tournament['reason']}。",'',
+                    '| 层级 | 候选 | 对手阵容 | 位置 | 胜/完成 | 截断 |',
+                    '| --- | --- | --- | --- | --- | ---: |']
+            for stage in tournament['stages']:
+                for result in stage['results']:
+                    for lineup,positions in result['groups'].items():
+                        for position,bucket in positions.items():
+                            lines.append(f"| {stage['stage']} | {result['id']} | {lineup} | {position} | {bucket['wins']}/{bucket['games']} | {bucket.get('truncated',0)} |")
+            lines+=['','模型身份与对手实际配牌分别记录在 candidate-selection.json；编译配对采用偶/奇种子，不声称牌序完全相同。']
+
 
         display=[]
         for text in (root/key/'cards/candidate-history.jsonl').read_text(encoding='utf-8').splitlines():

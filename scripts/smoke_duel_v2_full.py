@@ -22,7 +22,8 @@ def validate_training_output(directory):
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--output',type=Path)
+    parser.add_argument('--check',action='store_true',help='Print opponent/stage budgets without importing ML or training')
     parser.add_argument('--seconds',type=int,default=1800)
     parser.add_argument('--profile',choices=('smoke','comprehensive'),default='smoke')
     parser.add_argument('--phase',choices=('all','train','evaluate'),default='all')
@@ -30,7 +31,19 @@ def main(argv=None):
     parser.add_argument('--weave-checkpoint',type=Path)
     args=parser.parse_args(argv)
     if not 60<=args.seconds<=21600:parser.error('seconds must be 60..21600')
+    from app.modules.card_game.rl.candidate_selection import PROFILES
     full=args.profile=='comprehensive'
+    budget={stage:args.seconds*fraction for stage,fraction in
+            (('base',.20),('cards',.10),('adapt',.075),('selection',.10))}
+    if args.check:
+        print(json.dumps({'training_started':False,'presets':PRESETS,'profile':args.profile,
+              'training_order':'both bases, then each cards/selection/adaptation',
+              'seconds_total':args.seconds,'seconds_per_preset':budget,'reserve_seconds':args.seconds*.05,
+              'candidate_plan':PROFILES[args.profile],'random_team_fraction':.2,'rule_fraction':.2,
+              'selection_opponents':'both frozen models with fixed preset roles and variable cards',
+              'selection_seed_ranges':[[400000000,402999999],[410000000,412999999]],
+              'holdout_seed_base':202609160},ensure_ascii=False));return 0
+    if args.output is None:parser.error('--output is required unless --check')
     hidden=64 if full else 32;parallel=1024 if full else 128
     fixed_pairs=16 if full else 1;varied_pairs=32 if full else 15;screen_pairs=16 if full else 2
     out=args.output.resolve()
@@ -47,6 +60,8 @@ def main(argv=None):
     stages=[];reports=[]
     if args.phase=='evaluate':
         stages=json.loads((out/'status.json').read_text()).get('stages',[])
+        required={f'{key}-{stage}' for key in PRESETS for stage in ('base','cards','adapt')}
+        if not required<=set(stages):parser.error('Training stages incomplete; cannot run final evaluation')
         reports=json.loads((out/'evaluation-index.json').read_text())
     def write(name,data):
         path=out/name;path.parent.mkdir(parents=True,exist_ok=True)
@@ -71,10 +86,11 @@ def main(argv=None):
         stages.append(label);write('progress.json',{'stages':stages,'evaluations':len(reports),'seconds':time.monotonic()-started})
     if args.phase!='evaluate':write('config.json',{'kind':'comprehensive' if full else 'full_chain_smoke','presets':PRESETS,'rule_hash':rule_identity(),
         'budget_seconds':args.seconds,'training_updates_base':0 if full else 4,'training_updates_adapt':0 if full else 2,'card_updates':0 if full else 1,
-        'phase':args.phase,'hidden':hidden,'parallel':parallel,'base_seconds':6600 if full else 90,'card_seconds':1800 if full else 90,'adapt_seconds':1800 if full else 90,
+        'phase':args.phase,'hidden':hidden,'parallel':parallel,'base_seconds':budget['base'],'card_seconds':budget['cards'],'adapt_seconds':budget['adapt'],
+        'selection_seconds':budget['selection'],'candidate_plan':PROFILES[args.profile],
         'no_progress':{'window_seconds':300,'patience':6,'meaning':'six stable window means; not convergence'},'final_evaluation_separate':args.phase=='train',
         'fixed_pairs':fixed_pairs,'varied_pairs':varied_pairs,'screen_pairs':screen_pairs,'max_actions':400,
-        'seed_base':202609160,'selection':'screen candidates with fixed base policy; do not select using final test set',
+        'seed_base':202609160,'selection':'three-stage preset-lineup tournament; rule screen rows diagnostic only; holdout never selects',
         'prediction_probability':'unavailable; no calibrated probability model',
         'strength_claim':False})
     if args.phase=='evaluate':write('evaluation-config.json',{'fixed_pairs':fixed_pairs,'varied_pairs':varied_pairs,'budget_seconds':args.seconds,'phase':'frozen_evaluation'})
@@ -85,6 +101,12 @@ def main(argv=None):
         if existing.is_file():
             cached=json.loads(existing.read_text(encoding='utf-8'))
             if cached['complete']:
+                expected={'rules':rule_identity(),'seed':seed,'pairs':pairs,
+                          'learner':policies[key,variant].model_metadata,'learner_build':builds[key,variant],
+                          'opponent':getattr(opponent or VisibleEngineRulePolicy(),'model_metadata',{'type':'VisibleEngineRulePolicy'}),
+                          'opponent_build':opponent_deck,'max_actions':400}
+                if json.loads(existing.with_name('cache-identity.json').read_text(encoding='utf-8'))!=expected:
+                    raise RuntimeError(f'Cached opponent/seed/rule identity changed: {label}')
                 if cached['pairs']!=pairs or cached['model'].get('sha256')!=policies[key,variant].model_metadata.get('sha256') or cached['learner_build']!=builds[key,variant]:
                     raise RuntimeError(f'Cached evaluation identity changed: {label}')
                 if not any(entry['label']==label for entry in reports):
@@ -96,47 +118,80 @@ def main(argv=None):
         report=run_offline_analysis(out/'evaluations'/label,policies[key,variant],deck=key,
             learner_deck=builds[key,variant],opponent_policy=opponent or VisibleEngineRulePolicy(),
             opponent_deck=opponent_deck,pairs=pairs,max_actions=400,max_seconds=min(600 if full else 300,remaining()),seed_base=seed)
+        write(f'evaluations/{label}/cache-identity.json',{'rules':rule_identity(),'seed':seed,'pairs':pairs,
+              'learner':policies[key,variant].model_metadata,'learner_build':builds[key,variant],
+              'opponent':getattr(opponent or VisibleEngineRulePolicy(),'model_metadata',{'type':'VisibleEngineRulePolicy'}),
+              'opponent_build':opponent_deck,'max_actions':400})
         reports.append({'label':label,'preset':key,'variant':variant,'report':f'evaluations/{label}/report.json',
                         'complete':report['complete']})
         write('evaluation-index.json',reports)
         if not report['complete']:raise RuntimeError(f'Incomplete evaluation: {label}')
         return report
     try:
+        if args.phase!='evaluate':
+            for key in PRESETS:
+                builds[key,'original']=preset_opponent_deck(key)
+                write(f'{key}/original-deck.json',builds[key,'original'])
+                base=out/key/'base'
+                initial=args.starter_checkpoint if key=='starter' else args.weave_checkpoint
+                resume_options=['--resume',initial] if initial else []
+                run(key+'-base','train_duel_v2_public.py',['--train','--deck',key,'--hidden',hidden,'--n',parallel,'--horizon',16,
+                     '--seconds',budget['base'],'--max-updates',0 if full else 4,'--snapshot-updates',20 if full else 1,'--preflight-cases',16 if full else 4,'--output',base]+resume_options)
+                exported=export_checkpoint(base/'latest.pt',out/key/'base-export')
+                policies[key,'original']=frozen_model_policy(FrozenModel(out/key/'base-export',key))
         for key in PRESETS:
             if args.phase=='evaluate':
                 builds[key,'original']=json.loads((out/key/'original-deck.json').read_text(encoding='utf-8'))
-                builds[key,'candidate']=json.loads((out/key/'cards/candidate.json').read_text(encoding='utf-8'))
+                selected=out/key/'selected-deck.json'
+                builds[key,'candidate']=json.loads((selected if selected.exists() else out/key/'cards/candidate.json').read_text(encoding='utf-8'))
                 policies[key,'original']=frozen_model_policy(FrozenModel(out/key/'base-export',key))
                 policies[key,'candidate']=frozen_model_policy(FrozenModel(out/key/'adapted-export',key))
                 choices=json.loads((out/'construction-decisions.json').read_text(encoding='utf-8'))
                 continue
-            builds[key,'original']=preset_opponent_deck(key)
-            write(f'{key}/original-deck.json',builds[key,'original'])
             base=out/key/'base'
-            initial=args.starter_checkpoint if key=='starter' else args.weave_checkpoint
-            resume_options=['--resume',initial] if initial else []
-            run(key+'-base','train_duel_v2_public.py',['--train','--deck',key,'--hidden',hidden,'--n',parallel,'--horizon',16,
-                 '--seconds',6600 if full else 90,'--max-updates',0 if full else 4,'--snapshot-updates',20 if full else 1,'--preflight-cases',16 if full else 4,'--output',base]+resume_options)
-            exported=export_checkpoint(base/'latest.pt',out/key/'base-export')
-            policies[key,'original']=frozen_model_policy(FrozenModel(out/key/'base-export',key))
             cards=out/key/'cards'
             run(key+'-cards','train_duel_v2_cards.py',['--train','--team',key,'--policy-checkpoint',base/'latest.pt',
-                 '--hidden',64 if full else 16,'--n',16 if full else 4,'--pairs',4 if full else 1,'--max-actions',400,'--seconds',1800 if full else 90,'--max-updates',0 if full else 1,'--output',cards])
-            builds[key,'candidate']=json.loads((cards/'candidate.json').read_text(encoding='utf-8'))
+                 '--opponent-checkpoint',out/('weave-rush' if key=='starter' else 'starter')/'base/latest.pt',
+                 '--hidden',64 if full else 16,'--n',16 if full else 4,'--pairs',8 if full else 1,'--max-actions',400,'--seconds',budget['cards'],'--max-updates',0 if full else 1,'--output',cards])
+            from app.modules.card_game.rl.card_tuning import load_battle_policy,CardBattleEvaluator
+            from app.modules.card_game.rl.candidate_selection import candidate_pool,run_tournament,evaluate_tensor_candidates
+            own,own_id=load_battle_policy(base/'latest.pt','cuda')
+            peer_key='weave-rush' if key=='starter' else 'starter'
+            peer,peer_id=load_battle_policy(out/peer_key/'base/latest.pt','cuda')
+            selection_deadline=min(deadline,time.monotonic()+budget['selection'])
+            def selection_stop():
+                if time.monotonic()>=selection_deadline:raise TimeoutError('Candidate selection budget exhausted')
+            evaluator=CardBattleEvaluator(own,opponents=[peer],device='cuda')
+            try:
+                selected=run_tournament(candidate_pool(out/key,key),
+                    lambda decks,schedule:evaluate_tensor_candidates(evaluator,decks,schedule,stop_check=selection_stop),
+                    profile=args.profile,seed_base=400000000+PRESETS.index(key)*10000000,stop_check=selection_stop)
+            finally:evaluator.close()
+            selected['model_identities']={'learner':own_id,'peer-0':peer_id}
+            selected['rule_hash']=rule_identity()
+            write(f'{key}/candidate-selection.json',selected)
+            write(f'{key}/selected-deck.json',selected['build'])
+            if not selected['complete']:raise RuntimeError('Candidate selection incomplete; baseline retained')
+            builds[key,'candidate']=selected['build']
             policies[key,'candidate']=policies[key,'original']
-            # Paired construction comparison keeps the exact battle weights fixed.
+            # Legacy screen rows are diagnostic only; tournament above owns selection.
             before=evaluate(key+'-screen-original',key,'original',pairs=screen_pairs,seed=202609000)
             after=evaluate(key+'-screen-candidate',key,'candidate',pairs=screen_pairs,seed=202609000)
-            score=lambda r:sum(v['win'] for v in r['by_position'].values())/r['games']
-            choices[key]={'selection':'candidate' if score(after)>score(before) else 'original',
-                'reason':'Higher screening win rate' if score(after)>score(before) else 'Candidate did not beat baseline; retain baseline',
-                'original_win_rate':score(before),'candidate_win_rate':score(after),
-                'sample_games_each':before['games'],'evidence':'small paired screening sample, not proof of optimality'}
+            final=selected['stages'][-1]['results']
+            original=next(r for r in final if r['id']=='original')
+            winner=next(r for r in final if r['id']==selected['selection'])
+            choices[key]={'selection':'candidate' if selected['selection']!='original' else 'original',
+                'reason':selected['reason'],'original_win_rate':original['metrics']['macro'],
+                'candidate_win_rate':winner['metrics']['macro'],
+                'sample_games_each':sum(g['games'] for group in winner['groups'].values() for g in group.values()),
+                'evidence':f'{key}/candidate-selection.json','candidate_id':selected['selection'],
+                'selection_complete':True,'worst_lineup':winner['metrics']['worst_lineup'],
+                'worst_seat':winner['metrics']['worst_seat']}
             write('construction-decisions.json',choices)
             adapted=out/key/'adapted'
             run(key+'-adapt','train_duel_v2_public.py',['--train','--deck',key,'--resume',base/'latest.pt',
-                '--learner-deck',cards/'candidate.json','--hidden',hidden,'--n',parallel,'--horizon',16,
-                '--seconds',1800 if full else 90,'--max-updates',0 if full else 2,'--snapshot-updates',20 if full else 1,'--preflight-cases',4,'--output',adapted])
+                '--learner-deck',out/key/'selected-deck.json','--hidden',hidden,'--n',parallel,'--horizon',16,
+                '--seconds',budget['adapt'],'--max-updates',0 if full else 2,'--snapshot-updates',20 if full else 1,'--preflight-cases',4,'--output',adapted])
             export_checkpoint(adapted/'latest.pt',out/key/'adapted-export')
             policies[key,'candidate']=frozen_model_policy(FrozenModel(out/key/'adapted-export',key))
         if args.phase=='train':
@@ -167,7 +222,7 @@ def main(argv=None):
         sample=reports[0];r=json.loads((out/sample['report']).read_text(encoding='utf-8'))
         export_game_replay(out/'evaluations'/sample['label'],r['games_index'][0]['game_id'],out/'sample-replay.json')
         from app.modules.card_game.rl.full_report import write_full_report
-        write_full_report(out)
+        if not write_full_report(out)['report_complete']:raise RuntimeError('Final report incomplete')
         write('status.json',{'phase':'complete','seconds':time.monotonic()-started,'stages':stages,
                             'evaluations':len(reports),'prediction_probability':'unavailable'})
     except Exception as exc:

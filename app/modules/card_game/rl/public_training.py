@@ -144,7 +144,8 @@ def fixed_deck_rows(deck_id, n, device, learner_deck=None):
 class PublicTrainingEnv:
     """Small adapter for the PPO collector; all game rows stay on the chosen device."""
     def __init__(self, n, *, deck_id, league, device='cuda', compiled_dir=None, learner_deck=None,
-                 learn_mulligan=False,random_team_fraction=.2,rule_fraction=.2, fixed_opponent_deck=None):
+                 learn_mulligan=False,random_team_fraction=.2,rule_fraction=.2, fixed_opponent_deck=None,
+                 curriculum_rows=None, curriculum_fraction=0):
         import torch
         from .gpu_duel.compiled_backend import CompiledStarterBackend
         from .gpu_duel.state import empty_state
@@ -154,6 +155,11 @@ class PublicTrainingEnv:
         self.learn_mulligan=learn_mulligan
         self.random_team_fraction=random_team_fraction
         self.rule_fraction=rule_fraction
+        if not 0<=curriculum_fraction<=.5 or (curriculum_fraction and (not curriculum_rows or fixed_opponent_deck is None)):
+            raise ValueError("Curriculum requires fixed matchup states and fraction in [0, .5]")
+        self.curriculum_rows=curriculum_rows
+        self.curriculum_fraction=curriculum_fraction
+        self.curriculum_resets=0
         self.fixed_opponent_deck=fixed_opponent_deck
         if fixed_opponent_deck is not None:
             from .capability import assert_public_encoder_deck
@@ -202,6 +208,17 @@ class PublicTrainingEnv:
         a = torch.where((self.learner==0)[:,None],self.fixed,player)
         b = torch.where((self.learner==1)[:,None],self.fixed,player)
         self.compiled.reset_public_gpu_state(self.state,seed,a,b,escalation=True,mulligan=self.learn_mulligan)
+        if self.curriculum_fraction:
+            from .rule_ir.pack_row import bind_gpu_rows
+            selected=done & (torch.rand(self.n,device=self.device)<self.curriculum_fraction)
+            indices=selected.nonzero().flatten()
+            if indices.numel():
+                pool=torch.tensor(self.curriculum_rows,device=self.device,dtype=torch.int32)
+                rows=pool[torch.randint(0,len(pool),(len(indices),),device=self.device)]
+                bind_gpu_rows(self.state)[indices]=rows
+                self.learner[indices]=0  # Reservoir fixes learner to side A, with both initiatives.
+                self.curriculum_resets+=len(indices)
+                self.compiled.step_gpu_state(self.state,torch.full((self.n,),-1,device=self.device,dtype=torch.int32))
         reset_episode_return(self, None if full_reset else done)
         # League snapshots update only between rollouts; assignment slots persist until reset.
         assignment = torch.randint(1,len(self.league.policies)+1,(self.n,),device=self.device,dtype=torch.int32) if self.league.policies else torch.zeros_like(self.assignment)

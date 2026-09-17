@@ -245,3 +245,5 @@ V2 玩家、异能者和每张实体卡牌均为独立类实例，使用 `entity
 固定覆纹/N06 枚举训练：`scripts/train_duel_v2_fixed_n06.py`；入口参数和候选比较范围见 `docs/duel-v2-public-training.md`。固定对手重置与枚举契约可用带 PyTorch 的隔离环境运行 `python -m unittest tests.test_duel_v2_fixed_opponent`，网站环境不新增训练依赖。
 
 录像手牌计数以引擎事件 patch 为准，导出不再按抽牌/出牌/弃牌事件重复加减。中间态的隐藏占位同步至权威数量；私有换牌无法确定存留身份时隐藏不确定牌面，避免展示旧牌。已导出的旧文件需由原动作记录重新生成；回归命令：`python -m unittest tests.test_duel_v2_replay_hand_counts tests.test_duel_v2_replay`。
+
+策略质量诊断入口：`scripts/diagnose_duel_v2_strategy.py`。N06 专项流程现包含共同基础、等更新候选、固定验证选权重、合法中盘采样和综合巩固；不修改纯胜负奖励。隔离 PyTorch 环境验证：`python -m unittest tests.test_duel_v2_strategy_quality tests.test_duel_v2_fixed_opponent tests.test_duel_v2_public_training`。运行说明与训练/验证/留出种子边界见 `docs/duel-v2-public-training.md`。

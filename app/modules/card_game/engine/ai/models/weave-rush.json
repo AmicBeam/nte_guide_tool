@@ -196,16 +196,17 @@
       "B08"
     ]
   },
+  "runtime_rule_hash": "564acf493f28cbf1f302667fd5ee3d40770181f85366269b9a2e48fe0c0fdbd5",
   "validation": {
     "complete": true,
     "model_sha256": "d2d67ac564ac0e98e81663262d50a0795f588f5d0fcb32260f05c90e02f96cab",
-    "rule_hash": "4c3268dc86f75b18156ee7219f1b2a4fa888e47f4e37f701db8df42179615fbd",
+    "rule_hash": "564acf493f28cbf1f302667fd5ee3d40770181f85366269b9a2e48fe0c0fdbd5",
     "games": 64,
-    "wins": 62,
+    "wins": 63,
     "min_pairs": 32,
     "min_win_rate": 0.5,
     "opponent_teams": 15,
-    "report_sha256": "03bdd7435e035acc9aed45d1db1830df7090997becae21881f1a7f427390297e",
+    "report_sha256": "c2ca3810acc5929c7117462a72e64afebddb23a537ebb13af6f72092bb62cdb5",
     "serving_build_sha256": "727d0c11d3de614172aa7929f7390e41ee19514d6856b1a6121872f6e5a6e635"
   },
   "serving_build": {
@@ -251,5 +252,18 @@
       "Y07",
       "Y07"
     ]
-  }
+  },
+  "previous_validation": {
+    "complete": true,
+    "model_sha256": "d2d67ac564ac0e98e81663262d50a0795f588f5d0fcb32260f05c90e02f96cab",
+    "rule_hash": "4c3268dc86f75b18156ee7219f1b2a4fa888e47f4e37f701db8df42179615fbd",
+    "games": 64,
+    "wins": 62,
+    "min_pairs": 32,
+    "min_win_rate": 0.5,
+    "opponent_teams": 15,
+    "report_sha256": "03bdd7435e035acc9aed45d1db1830df7090997becae21881f1a7f427390297e",
+    "serving_build_sha256": "727d0c11d3de614172aa7929f7390e41ee19514d6856b1a6121872f6e5a6e635"
+  },
+  "previous_runtime_rule_hash": null
 }

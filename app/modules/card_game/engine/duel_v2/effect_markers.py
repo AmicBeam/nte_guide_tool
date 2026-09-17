@@ -11,6 +11,9 @@ def character_effect_markers(character):
         return []
     flags = character.get('flags') or {}
     markers = []
+    for attribute, value in (character.get('next_damage_resistance') or {}).items():
+        markers.append(_marker('next_resistance', attribute + '抗性', '下次受到该属性伤害',
+                               f'{attribute}属性伤害抗性 {value:+d}'))
     if flags.get('energy_next'):
         markers.append(_marker('energy_next', '终结 · 回能', '下个己方回合开始',
                                '己方存活异能者各获得 1 点能量'))
@@ -33,8 +36,11 @@ def character_effect_markers(character):
 
 
 def team_effect_markers(team):
+    markers = [_marker('next_resistance', attribute + '抗性', '玩家下次受到该属性伤害',
+                       f'{attribute}属性伤害抗性 {value:+d}', False)
+               for attribute, value in (team.get('next_damage_resistance') or {}).items()]
     if not team.get('extra_genesis_pending'):
-        return []
+        return markers
     actor = (team.get('characters') or {}).get(team.get('extra_genesis_actor')) or {}
-    return [_marker('extra_genesis', '错误的门', '下个己方回合开始',
+    return markers + [_marker('extra_genesis', '错误的门', '下个己方回合开始',
                     '伊洛伊倒地后保留；原环合角色' + actor.get('name', '') + '须存活，再触发一次创生', False)]

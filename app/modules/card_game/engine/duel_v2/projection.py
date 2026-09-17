@@ -4,7 +4,7 @@ from .entities import clone_state, entity_action, needs_hydration
 
 from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS
-from .flow import acting_side, apply_action, card_plays_instant, legal_actions
+from .flow import acting_side, apply_action, card_plays_instant, card_is_free_instant, legal_actions, normal_attack_payment
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
 from .combat import harmony_marks
@@ -57,8 +57,13 @@ def preview(state, side, action):
     cost = 1 if kind in ('attack', 'cycle') else 0
     card = _card(state, side, action['card_id']) if kind == 'play_card' else None
     if card:
-        cost = card['cost']
+        cost = 0 if card_is_free_instant(state, side, card) else card['cost']
+    payment = normal_attack_payment(state, side, action['character_id']) if kind == 'attack' else None
+    if payment is not None:
+        cost = payment['ap']
     value = {'ap_cost': cost}
+    if payment and payment.get('resource'):
+        value['额外消耗'] = '3 点金谷' if payment['resource'] == 'jingu' else '本回合瞬发机会'
     if kind != 'attack' and not (card and card['type'] == 'battle'):
         return value
     cid = action.get('character_id') or card['character_id']
@@ -77,9 +82,10 @@ def preview(state, side, action):
     harmony = next((e for e in events if e['type'] == 'harmony'), None)
     previous = state['sides'][side]['front']
     payer = previous or state['sides'][side].get('last_front')
-    value.update(will_switch=previous != cid, harmony=harmony['text'] if harmony else '不触发',
-                 入场=hero(state, side, cid)['name'],
-                 替换=hero(state, side, previous)['name'] if previous and previous != cid else '无')
+    enters = any(e['type'] == 'enter' and e.get('actor') == f'{side}:{cid}' for e in events)
+    value.update(will_switch=enters and previous != cid, harmony=harmony['text'] if harmony else '不触发',
+                 入场=hero(state, side, cid)['name'] if enters else '不入场',
+                 替换=hero(state, side, previous)['name'] if enters and previous and previous != cid else '无')
     if harmony and payer and payer != cid:
         value['消耗环合'] = hero(state, side, payer)['name']
     elif previous != cid:
@@ -130,7 +136,7 @@ def observe(state, side, after_seq=None):
             h = source['characters'][cid]
             flags = h.get('flags') or {}
             c = {k: deepcopy(h[k]) for k in ('entity_id', 'id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
-                 'energy', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
+                 'energy', 'jingu', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
                  'avatar', 'portrait', 'passive', 'awakened_passive') if k in h}
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None

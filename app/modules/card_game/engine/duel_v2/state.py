@@ -245,6 +245,7 @@ def _knockdown_pass(state):
                 end_ultimate(state, side, cid)
             from app.modules.card_game.content.duel_v2.tutorial import lookup_character
             base_max = int(h.get('base_max_hp') or lookup_character(cid)['max_hp'])
+            h.pop('next_damage_resistance', None)
             h.update(down_turns=3, harmony=kept_harmony, energy=kept_energy, shield=0, growth=0,
                      gaze=0, dream=0, shape=None, awakened=False, ultimate_turns=0,
                      max_hp=base_max, flags={})
@@ -282,6 +283,9 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     if (kind == 'combat' and attr in ('魂', '相') and zone.get('stain')
             and (state['sides'][side]['front'] == cid or (not esper and not state['sides'][side]['front']))):
         amount += 2
+    resistances = target.get('next_damage_resistance') or {}
+    if amount > 0 and attr in resistances:
+        amount = max(0, amount - int(resistances.pop(attr)))
     before = {'hp': target['hp'], 'shield': target['shield']}
     absorbed = 0 if bypass else min(target['shield'], amount)
     target['shield'] -= absorbed
@@ -316,11 +320,12 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         src_side = source.split(':', 1)[0]
         if src_side in SIDES:
             state['sides'][src_side]['harmony_damage'] = True
-    if loss and esper:
+    if loss:
         from app.modules.card_game.content.duel_v2.registry import fire
         from .context import EffectContext
-        fire(EffectContext(state, side, cid, {'side': side}), 'on_damage_taken',
-             actor_only=True, amount=loss, source=source)
+        if esper:
+            fire(EffectContext(state, side, cid, {'side': side}), 'on_damage_taken',
+                 actor_only=True, amount=loss, source=source)
         if isinstance(source, str) and ':' in source:
             src_side, src_cid = source.split(':', 1)
             if src_side in SIDES and src_cid in state['sides'][src_side]['characters']:

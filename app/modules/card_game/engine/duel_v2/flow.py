@@ -6,7 +6,7 @@ from random import Random
 
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, validate_deck
 
-from app.modules.card_game.content.duel_v2.registry import KITS, fire
+from app.modules.card_game.content.duel_v2.registry import KITS, fire, decide, tally
 from .context import EffectContext
 from app.modules.card_game.engine.events import GameEvent
 from .state import (SIDES, add_hand, alive, card_instance, clear_harmony_source, collapsed, damage, discard,
@@ -127,7 +127,7 @@ def resolve_play(state, side, card, target_id=None, *, pay=True):
         if value:
             shield(state, side, card['character_id'], value)
         if attack:
-            if state.get('_response_lock'):
+            if state.get('_response_intercept'):
                 flags = hero(state, side, card['character_id']).setdefault('flags', {})
                 flags['counter_bonus'] = int(flags.get('counter_bonus') or 0) + attack
             else:
@@ -157,15 +157,19 @@ def trigger_responses(state, defending_side, kind, target_id=None):
             continue
         if kind == 'self_lethal' and target_id != owner:
             continue
+        if kind == 'enemy_turn_end_empty' and state['sides'][other(defending_side)]['front']:
+            continue
         if not can_afford_card(state, defending_side, card):
             continue
         team['hand'].remove(card)
         parent_op = state.get('operation')
         state['_response_lock'] = True
+        state['_response_intercept'] = kind in ('self_attacked', 'ally_attacked', 'self_lethal')
         try:
             resolve_play(state, defending_side, card, pay=True)
         finally:
             state['_response_lock'] = False
+            state.pop('_response_intercept', None)
             state['operation'] = parent_op
         return
 
@@ -197,6 +201,10 @@ def targets(state, side, card):
         foe = other(side)
         return [{'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
                 if hero(state, foe, cid)['down_turns'] > 0]
+    if policy == 'enemy_bench':
+        foe = other(side)
+        return [{'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
+                if alive(state, foe, cid) and enemy['front'] != cid]
     if policy == 'living_enemy':
         foe = other(side)
         return [{'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
@@ -228,6 +236,14 @@ def targets(state, side, card):
     return [{}]
 
 
+def normal_attack_payment(state, side, cid):
+    """Pure payment offer shared by legality, execution and previews."""
+    team = state['sides'][side]
+    default = {'ap': 1, 'normal': True} if team['normal_attack_available'] else None
+    return decide(EffectContext(state, side, cid, {'side': side, 'actor': cid}),
+                  'normal_attack_payment', default, actor_only=True)
+
+
 def legal_actions(state, side=None):
     side = side or acting_side(state)
     if side not in SIDES or finished(state):
@@ -257,7 +273,8 @@ def legal_actions(state, side=None):
         h = hero(state, side, cid)
         if h['hp'] <= 0:
             continue
-        if team['ap'] >= 1 and team['normal_attack_available'] and not collapsed(h):
+        payment = normal_attack_payment(state, side, cid)
+        if payment is not None and team['ap'] >= payment['ap'] and not collapsed(h):
             result.append({'type': 'attack', 'character_id': cid})
         if ultimate_remaining(state, side) and h['energy'] >= energy_cap(state, h):
             result.append({'type': 'ultimate', 'character_id': cid})
@@ -356,6 +373,8 @@ def begin_turn(state, side):
     team = state['sides'][side]
     team['turn_count'] += 1
     team['used'] = {}
+    for ps in SIDES:
+        state['sides'][ps]['attacked_this_turn'] = []
     team['harmony_damage'] = False
     team['surplus'] = False
     clamp_resources(state)
@@ -439,6 +458,8 @@ def tick_front_debuff(state, side):
         if amount:
             by = status.get('by') or other(side)
             target = state['sides'][side]['front'] or 'player'
+            dot_context = EffectContext(state, by, team_order(state, by)[0], {'side': by})
+            amount += tally(dot_context, 'dot_damage_bonus', kind=kind)
             damage(state, side, target, amount, kind=kind, source=f'{by}:{kind}')
             if finished(state):
                 return
@@ -491,6 +512,9 @@ def end_turn(state, side):
             return
         h['flags'].pop('return_after', None)
     fire(EffectContext(state, side, team_order(state, side)[0], {'side': side}), 'on_turn_end')
+    if finished(state):
+        return
+    trigger_responses(state, opponent, 'enemy_turn_end_empty')
     if finished(state):
         return
     for card in list(team['hand']):
@@ -646,9 +670,14 @@ def apply_action(state, side, action):
         team['ultimate_available'] = bool(ultimate_remaining(result, side))
         start_ultimate(result, side, candidate['character_id'], spent_ap=False)
     elif kind == 'attack':
-        team['ap'] -= 1
-        team['normal_attack_available'] = False
-        operation(result, side, candidate['character_id']).sortie()
+        cid = candidate['character_id']
+        payment = normal_attack_payment(result, side, cid)
+        team['ap'] -= payment['ap']
+        if payment.get('normal'):
+            team['normal_attack_available'] = False
+        c = operation(result, side, cid)
+        fire(c, 'pay_normal_attack', actor_only=True, payment=payment)
+        c.sortie(bonus=payment.get('bonus', 0))
         finish_operation(result)
     else:
         card = next(c for c in team['hand'] if c['instance_id'] == candidate['card_id'])

@@ -394,6 +394,9 @@
   }
 
   function statIconSvg(kind) {
+    if (kind === 'jingu') {
+      return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="currentColor"/><path d="M6 5h4v6H6z" fill="none" stroke="#79520c" stroke-width="1.5"/><path d="M8 2v2M8 12v2" stroke="#79520c"/></svg>';
+    }
     if (kind === 'hp') {
       return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 14s-6-3.6-6-7.2C2 4.6 3.6 3 5.4 3c1.1 0 2.1.6 2.6 1.5C8.5 3.6 9.5 3 10.6 3 12.4 3 14 4.6 14 6.8 14 10.4 8 14 8 14z"/></svg>';
     }

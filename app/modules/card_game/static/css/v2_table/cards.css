@@ -1120,3 +1120,7 @@
   .v2-mulligan-stage > p { display: none; }
   .v2-mulligan-stage > .primary-btn { min-height: 36px; padding: 4px 16px; }
 }
+
+/* Personal gold resource, directly above the attack value in both card sizes. */
+.v2-attack-stack { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.v2-combat-stat.is-jingu { color: #ffda55; }

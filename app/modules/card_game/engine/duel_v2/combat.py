@@ -50,7 +50,10 @@ def resolved_harmony_kind(state, side, cid):
         return None
     kind = harmony_kind(state, side, cid)
     from .context import EffectContext
-    decided = decide(EffectContext(state, side, cid, {'side': side, 'actor': cid}),
+    ctx = EffectContext(state, side, cid, {'side': side, 'actor': cid})
+    if decide(ctx, 'sortie_from_bench', False, actor_only=True):
+        return None
+    decided = decide(ctx,
                      'harmony_kind', kind, previous=harmony_previous(state, side, cid))
     if decided is False:
         return None
@@ -233,14 +236,20 @@ def intercept_enter(c):
 
 def attack(c, spec, index):
     s, side, cid, op = c.state, c.side, c.cid, c.operation
-    enemy, target_id = front_target(s, side)
-    if index == 0 and is_esper(target_id):
+    enemy, target_id = spec.get('target') or front_target(s, side)
+    if is_esper(target_id) and not alive(s, enemy, target_id):
+        return
+    fire(c, 'before_attack', actor_only=True)
+    if index == 0 and is_esper(target_id) and not spec.get('target'):
         from .flow import trigger_responses
         trigger_responses(s, enemy, 'self_attacked', target_id=target_id)
         trigger_responses(s, enemy, 'ally_attacked', target_id=target_id)
         if finished(s) or not alive(s, side, cid):
             return
         enemy, target_id = front_target(s, side)
+    attacked = s['sides'][side].setdefault('attacked_this_turn', [])
+    if c.entity_id not in attacked:
+        attacked.append(c.entity_id)
     h = c.character
     target = hero(s, enemy, target_id) if is_esper(target_id) else s['sides'][enemy]
     bonus = spec.get('bonus', 0)
@@ -333,6 +342,7 @@ def attack(c, spec, index):
                settle=False, group_id=group_id)
     if op.get('support') and is_esper(target_id) and alive(s, enemy, target_id):
         add_collapse(s, enemy, target_id, 1, by=side)
+    op['last_attack_target'] = [enemy, target_id]
     fire(c, 'after_hits', actor_only=True, include_down=True, target_loss=target_loss,
          self_loss=self_loss, target_id=target_id, enemy=enemy)
     knockdowns(s)
@@ -358,20 +368,24 @@ def sortie(c, **spec):
     s, side, cid, op = c.state, c.side, c.cid, c.operation
     if finished(s) or not alive(s, side, cid):
         return
-    if s.get('_response_lock'):
+    if s.get('_response_intercept'):
         intercept_enter(c)
         return
-    enter(c)
+    stay_bench = bool(decide(c, 'sortie_from_bench', False, actor_only=True))
+    if stay_bench:
+        spec['no_counter'] = True
+    else:
+        enter(c)
     fire(c, 'before_hits', actor_only=True)
     for index in range(spec.get('hits', 1)):
-        if finished(s) or not alive(s, side, cid) or s['sides'][side]['front'] != cid:
+        if finished(s) or not alive(s, side, cid) or (not stay_bench and s['sides'][side]['front'] != cid):
             break
         attack(c, spec, index)
     if finished(s) or not alive(s, side, cid):
         return
     if spec.get('shield_after_shape') and c.character['shape']:
         c.shield(spec['shield_after_shape'])
-    if s['sides'][side]['front'] == cid:
+    if stay_bench or s['sides'][side]['front'] == cid:
         fire(c, 'after_sortie', actor_only=True)
         c.on_shape(GameEvent.V2_SORTIE_FINISHED)
         fire(c, 'ally_sortie')

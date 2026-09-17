@@ -100,6 +100,7 @@ def capture_public_board(state):
                 'family': hero.get('family', 0),
                 'gaze': hero.get('gaze', 0),
                 'dream': hero.get('dream', 0),
+                **({'jingu': hero['jingu']} if 'jingu' in hero else {}),
                 'shape': (lookup_card(shape_id) or {}).get('name') if shape_id else None,
                 'shape_id': shape_id,
             })

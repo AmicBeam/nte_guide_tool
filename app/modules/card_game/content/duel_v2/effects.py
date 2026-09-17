@@ -4,7 +4,7 @@ from app.modules.card_game.content.duel_v2.registry import shape_attack_bonus, s
 
 BOARD_TARGET_POLICIES = {
     'living_ally', 'other_living_ally', 'enemy_front', 'ally_front',
-    'downed_ally', 'downed_enemy', 'living_enemy', 'living_role', 'injured_role',
+    'enemy_bench', 'downed_ally', 'downed_enemy', 'living_enemy', 'living_role', 'injured_role',
 }
 CHOICE_TARGET_POLICIES = {'enemy_hand', 'own_tactic_discard'}
 

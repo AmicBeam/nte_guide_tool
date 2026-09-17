@@ -72,6 +72,22 @@
       }
     },
     {
+      "id": "xiaozhi",
+      "name": "小吱",
+      "attribute": "光",
+      "attack": 1,
+      "max_hp": 4,
+      "avatar": "/static/images/characters/avatar/小吱.webp",
+      "portrait": "/static/images/characters/portrait/小吱.webp",
+      "passive": "拥有个人资源「金谷」，初始 0 点。己方回合开始时及小吱对对方玩家造成伤害时，获得 1 点金谷。金谷可以为负，倒地时清零。",
+      "awakened_passive": "获得 3 点金谷。2 个己方回合内，小吱打出战斗牌后，随机获得 -1、0 或 +1 点金谷。终结结束时，扣除 3 点金谷。",
+      "everness_id": 1073,
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      }
+    },
+    {
       "id": "nanali",
       "name": "娜娜莉",
       "attribute": "灵",
@@ -236,6 +252,22 @@
       "passive": "每当白藏受到伤害时，白藏攻击 +1。",
       "awakened_passive": "2 个己方回合内，白藏对对方异能者造成伤害后，若其生命 ≤2，将其消灭。",
       "everness_id": 1023,
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      }
+    },
+    {
+      "id": "haiyue",
+      "name": "海月",
+      "attribute": "魂",
+      "attack": 3,
+      "max_hp": 4,
+      "avatar": "/static/images/characters/avatar/海月.webp",
+      "portrait": "/static/images/characters/portrait/海月.webp",
+      "passive": "海月攻击后返回备战区。",
+      "awakened_passive": "2 个己方回合内，海月从备战区出击时，不进入己方战斗区，也不受反击。",
+      "everness_id": 1070,
       "ultimate": {
         "kind": "status",
         "turns": 2
@@ -2057,6 +2089,329 @@
       "starter_copies": 2,
       "attack": 3,
       "hp": 8
+    },
+    {
+      "id": "Q01",
+      "character_id": "xiaozhi",
+      "name": "太阳太阳请回答",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "主动打出时，若有 3 点金谷，消耗 3 点并额外获得攻击 +3。",
+      "effect_id": "Q01",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 1,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 3,
+      "shield": 1
+    },
+    {
+      "id": "Q02",
+      "character_id": "xiaozhi",
+      "name": "烟花，悄然无声",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "命中后，使目标下次受到的光属性伤害抗性 -2；若有 3 点金谷，消耗 3 点并额外释放「太阳太阳请回答」。",
+      "effect_id": "Q02",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 2,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "shield": 1
+    },
+    {
+      "id": "Q03",
+      "character_id": "xiaozhi",
+      "name": "倘若没有雨天",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "若有 3 点金谷，消耗 3 点并额外释放「烟花，悄然无声」。",
+      "effect_id": "Q03",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 3,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "shield": 1
+    },
+    {
+      "id": "Q04",
+      "character_id": "xiaozhi",
+      "name": "致饭团·绷带·方斯",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "响应。小吱被攻击时自动打出。",
+      "effect_id": "Q04",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 4,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "attack": 4,
+      "shield": 0,
+      "response": "self_attacked"
+    },
+    {
+      "id": "Q05",
+      "character_id": "xiaozhi",
+      "name": "日记的空白页",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。获得 1 点金谷，将一张本牌的复制洗入牌库，并抽 1 张牌。",
+      "effect_id": "Q05",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 5,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "instant": true
+    },
+    {
+      "id": "Q06",
+      "character_id": "xiaozhi",
+      "name": "三十三天",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。本回合触发过盈蓄才能打出。使小吱充满能量。",
+      "effect_id": "Q06",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 6,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "instant": true,
+      "require": "surplus"
+    },
+    {
+      "id": "Q07",
+      "character_id": "xiaozhi",
+      "name": "Afterglow",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "小吱每有 2 点金谷，使战斗牌造成的伤害 +1。",
+      "effect_id": "Q07",
+      "source": {
+        "character_id": 1073,
+        "type": "ability",
+        "index": 7,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18",
+        "naming_note": "用户指定：官方 EP Afterglow"
+      },
+      "starter_copies": 0,
+      "attack": 1,
+      "hp": 5
+    },
+    {
+      "id": "Q08",
+      "character_id": "xiaozhi",
+      "name": "思考喵",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "没有普通出击次数时，小吱可以消耗 3 点金谷额外出击，不消耗行动力，此次攻击 +2。",
+      "effect_id": "Q08",
+      "source": {
+        "character_id": 1073,
+        "type": "arc",
+        "index": 8,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 1,
+      "hp": 5
+    },
+    {
+      "id": "U01",
+      "character_id": "haiyue",
+      "name": "未来序曲",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "在对方回合获得瞬发。响应。对方回合结束时，若对方前排为空，自动打出。",
+      "effect_id": "U01",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 1,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "shield": 0,
+      "response": "enemy_turn_end_empty"
+    },
+    {
+      "id": "U02",
+      "character_id": "haiyue",
+      "name": "一支特别的歌",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "本回合若有其他己方异能者攻击，本牌获得瞬发。",
+      "effect_id": "U02",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 2,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "shield": 0
+    },
+    {
+      "id": "U03",
+      "character_id": "haiyue",
+      "name": "三重奏的休止符",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "无视前排，直接攻击对方玩家。",
+      "effect_id": "U03",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 3,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "attack": 0,
+      "shield": 0
+    },
+    {
+      "id": "U04",
+      "character_id": "haiyue",
+      "name": "五线谱的空白处",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "选择 1 名对方备战区的存活异能者。本次战斗改为单方面攻击该目标。",
+      "effect_id": "U04",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 4,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "attack": 2,
+      "shield": 0
+    },
+    {
+      "id": "U05",
+      "character_id": "haiyue",
+      "name": "一支平凡的歌",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "【黯星强化】黯星的伤害 +1。",
+      "effect_id": "U05",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 5,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "hp": 6
+    },
+    {
+      "id": "U06",
+      "character_id": "haiyue",
+      "name": "往日赋格",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "海月每次攻击前，攻击 +1。",
+      "effect_id": "U06",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 6,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 4
+    },
+    {
+      "id": "U07",
+      "character_id": "haiyue",
+      "name": "海阔天空",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "本回合若有其他己方异能者攻击，本牌获得瞬发。",
+      "effect_id": "U07",
+      "source": {
+        "character_id": 1070,
+        "type": "ability",
+        "index": 7,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18",
+        "naming_note": "用户指定：官方技能 海阔天空"
+      },
+      "starter_copies": 0,
+      "attack": 5,
+      "hp": 4
+    },
+    {
+      "id": "U08",
+      "character_id": "haiyue",
+      "name": "银河暂留",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "本回合若有其他己方异能者攻击，海月可以消耗瞬发机会发起普通出击。",
+      "effect_id": "U08",
+      "source": {
+        "character_id": 1070,
+        "type": "arc",
+        "index": 8,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 5,
+      "hp": 4
     }
   ],
   "starter_decks": [

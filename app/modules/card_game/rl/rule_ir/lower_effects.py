@@ -7,7 +7,7 @@ from typing import Any
 from .starter import STARTER_CARDS, STARTER_HOOKS, validate_starter_ir
 
 TABLE_KEYS = (
-    'sortie', 'followup', 'form', 'perm_atk', 'perm_hp', 'count_seed',
+    'sortie', 'followup', 'form', 'perm_atk', 'perm_hp', 'count_seed', 'self_harmony',
     'draw_owned_self', 'draw_owned_target', 'draw_forms',
     'heal_target', 'buff_target', 'revive_target', 'heal_player',
     'inspect_top', 'pact_front', 'pact_target',
@@ -39,6 +39,8 @@ def compile_effect_tables(card_ids: tuple[str, ...]) -> dict[str, list[int]]:
             elif op.op == 'perm_plus':
                 tables['perm_atk'][row] = op.args[0] if op.args else 1
                 tables['perm_hp'][row] = op.args[1] if len(op.args) > 1 else 1
+            elif op.op == 'self_harmony':
+                tables['self_harmony'][row] = int(op.args[0])
             elif op.op == 'count_seed':
                 tables['count_seed'][row] = 1
             elif op.op == 'draw_owned_self':

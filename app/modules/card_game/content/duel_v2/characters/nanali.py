@@ -12,6 +12,7 @@ def _n01(c):
 
 def _nf01(c):
     perm_plus(c)
+    c.grant_harmony(c.cid, 1, reason='家族壮大')
     team = c.state['sides'][c.side]
     key = Nanali.seed_play_key
     team[key] = int(team.get(key) or 0) + 1

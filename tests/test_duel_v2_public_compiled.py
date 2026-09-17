@@ -110,6 +110,17 @@ class PublicCompiledNativeTest(unittest.TestCase):
         self.assertEqual(mechan_from_row(got), mechan_from_row(py))
         return nxt, got
 
+    def test_family_grants_harmony_with_cap(self):
+        for side in ('a', 'b'):
+            for existing in (0, 1, 2):
+                state = new_game(seed=9, first_side=side, skip_mulligan=True)
+                for team in state['sides'].values():
+                    team['hand'] = []
+                card = _inject_hand(state, side, 'NF01')
+                hero(state, side, 'nanali')['harmony'] = existing
+                result, _ = self._check_play(state, {'type': 'play_card', 'card_id': card['instance_id']})
+                self.assertEqual(hero(result, side, 'nanali')['harmony'], min(2, existing + 1))
+
     def test_n06_instant_revive_matches_python(self):
         for side in ('a', 'b'):
             for used, ap in ((False, 0), (True, 1)):

@@ -23,7 +23,7 @@ COMPILED_CARDS = public_card_ids()
 # Ops the generated engine has a real handler for. Extra IR ops used only by
 # other GPU presets stay on the tensor path.
 IMPLEMENTED_OPS = frozenset({
-    'sortie', 'form', 'perm_plus', 'count_seed',
+    'sortie', 'form', 'perm_plus', 'count_seed', 'self_harmony',
     'draw_owned_self', 'draw_owned_target', 'draw_forms',
     'heal_target', 'buff_target', 'revive_target', 'heal_player',
     'inspect_top', 'pact_front', 'pact_target',
@@ -37,7 +37,7 @@ IMPLEMENTED_OPS = frozenset({
 })
 
 IMPLEMENTED_TABLES = frozenset({
-    'sortie', 'followup', 'form', 'perm_atk', 'perm_hp', 'count_seed',
+    'sortie', 'followup', 'form', 'perm_atk', 'perm_hp', 'count_seed', 'self_harmony',
     'draw_owned_self', 'draw_owned_target', 'draw_forms',
     'heal_target', 'buff_target', 'revive_target', 'heal_player',
     'inspect_top', 'pact_front', 'pact_target',

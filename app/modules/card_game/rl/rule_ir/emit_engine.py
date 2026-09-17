@@ -661,6 +661,10 @@ static void play_effects(int *row, int s, int seat, int kind, int tside, int tse
     CH(CH_BASE_MAX,s,seat) += TAB_PERM_HP[kind];
     CH(CH_HP,s,seat) += TAB_PERM_HP[kind];
   }
+  if(TAB_SELF_HARMONY[kind] && CH(CH_HP,s,seat)>0){
+    int h=CH(CH_HARMONY,s,seat)+TAB_SELF_HARMONY[kind];
+    CH(CH_HARMONY,s,seat)=h<harmony_cap_for(row)?h:harmony_cap_for(row);
+  }
   if(TAB_COUNT_SEED[kind]) SI(NANALI_SEED_PLAYED,s) += 1;
   if(TAB_FORM[kind]){
     CH(CH_SHAPE,s,seat)=kind;

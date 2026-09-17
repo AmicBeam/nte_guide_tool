@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, STARTER_DECKS
 
 ALLOWED_OPS = frozenset({
-    'sortie', 'form', 'perm_plus', 'count_seed',
+    'sortie', 'form', 'perm_plus', 'count_seed', 'self_harmony',
     'draw_owned_self', 'draw_owned_target', 'draw_forms',
     'heal_target', 'buff_target', 'revive_target', 'heal_player',
     'inspect_top', 'pact_front', 'pact_target',
@@ -68,7 +68,7 @@ _CARD_OPS: dict[str, tuple[EffectOp, ...]] = {
     'N06': (EffectOp('revive_target'),),
     'N07': (EffectOp('form'),),
     'N08': (EffectOp('form'),),
-    'NF01': (EffectOp('perm_plus', (1, 1)), EffectOp('count_seed'),),
+    'NF01': (EffectOp('perm_plus', (1, 1)), EffectOp('count_seed'), EffectOp('self_harmony', (1,))),
     'Y01': (EffectOp('damage_per_downed', (3,)),),
     'Y02': (EffectOp('draw_owned_target'),),
     'Y03': (EffectOp('heal_target', (5,)), EffectOp('buff_target', (1,)), EffectOp('heal_player', (5,)),),

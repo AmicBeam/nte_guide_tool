@@ -305,7 +305,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "响应。娜娜莉进入战斗区，作为反击方（己方其他异能者被攻击时）。",
+      "description": "娜娜莉进入战斗区，作为反击方。响应：己方其他异能者被攻击时。",
       "starter_copies": 2,
       "shield": 2,
       "attack": 0,
@@ -360,7 +360,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对 1 名对方异能者造成 4 点追击伤害（仅限本回合造成过环合伤害时打出）。",
+      "description": "本回合造成过环合伤害才能打出。对 1 名对方异能者造成 4 点追击伤害。",
       "starter_copies": 0,
       "require": "harmony_damage"
     },
@@ -395,7 +395,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "娜娜莉的战斗牌获得额外攻击与护盾（本局每打出一次「家族壮大」，攻击与护盾各 +1）。",
+      "description": "本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。",
       "starter_copies": 2,
       "attack": 2,
       "hp": 5
@@ -426,7 +426,7 @@
       "cost": 1,
       "terminal": false,
       "derived": true,
-      "description": "娜娜莉永久获得攻击 +1、生命 +1，并获得 1 点环合值。瞬发（第 5 个己方回合及以后）。",
+      "description": "第 5 个己方回合及以后具有瞬发。娜娜莉永久获得攻击 +1、生命 +1，并获得 1 点环合值。",
       "effect_id": "NF01",
       "source": {
         "character_id": 1010,
@@ -442,7 +442,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "回复己方前排全部生命（仅限本回合触发过盈蓄时打出）。",
+      "description": "本回合触发盈蓄才能打出。回复己方前排全部生命。",
       "effect_id": "Z01",
       "source": {
         "character_id": 1051,
@@ -529,7 +529,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "获得 1 点行动力（己方回合结束时）。",
+      "description": "回合结束时，获得 1 点行动力。",
       "effect_id": "Z06",
       "source": {
         "character_id": 1051,
@@ -553,7 +553,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "己方前排回复 2 点生命（己方回合结束时）。",
+      "description": "回合结束时，己方前排回复 2 点生命。",
       "starter_copies": 2,
       "attack": 2,
       "hp": 6
@@ -571,7 +571,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "己方前排攻击 +1（己方回合结束时）。",
+      "description": "回合结束时，己方前排攻击 +1。",
       "starter_copies": 1,
       "attack": 3,
       "hp": 5
@@ -605,7 +605,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。造成 1 点伤害。前排优先。附着枚约（目标为异能者时）。抽 1 张牌（目标在伤害前已有枚约，或目标是玩家时）。",
+      "description": "瞬发。造成 1 点伤害。前排优先。若目标为异能者，附着枚约。若目标原本已有枚约，或目标是玩家，抽 1 张牌。",
       "instant": true,
       "starter_copies": 2
     },
@@ -686,7 +686,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "九原获得 1 点能量（九原终结每成功清算 1 个枚约目标时）。",
+      "description": "九原的终结成功清算枚约时，每个目标使九原获得 1 点能量。",
       "starter_copies": 0,
       "attack": 3,
       "hp": 5
@@ -704,7 +704,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "对该目标额外造成 1 点伤害，并附着枚约（创生造成伤害时）。",
+      "description": "创生造成伤害时，对该目标额外造成 1 点伤害，并附着枚约。",
       "starter_copies": 2,
       "attack": 3,
       "hp": 5
@@ -716,7 +716,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "抽 1 张牌。再抽 1 张牌（浔有记录时）。",
+      "description": "抽 1 张牌。若浔有记录，再抽 1 张牌。",
       "effect_id": "X01",
       "source": {
         "character_id": 1052,
@@ -738,7 +738,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "浔返回备战区，然后抽 1 张牌（本回合浔下次完成出击后，且仍存活并在战斗区时）。",
+      "description": "本回合浔下一次完成出击后，若仍存活且在战斗区：返回备战区，然后抽 1 张牌。",
       "starter_copies": 2
     },
     {
@@ -748,7 +748,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "浔返回备战区，然后抽 1 张牌（本回合浔下次完成出击后，且仍存活并在战斗区时）。",
+      "description": "本回合浔下一次完成出击后，若仍存活且在战斗区：返回备战区，然后抽 1 张牌。",
       "effect_id": "X03",
       "source": {
         "character_id": 1052,
@@ -826,7 +826,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "浔的战斗牌获得额外攻击与护盾（本局每打出一次「欣欣渐行」，攻击与护盾各 +1）。",
+      "description": "本局每使用过一次「欣欣渐行」，浔的战斗牌额外获得攻击 +1、护盾 +1。",
       "starter_copies": 2,
       "attack": 0,
       "hp": 0
@@ -878,7 +878,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2。本次攻击减少生命上限（目标有噩梦时）。",
+      "description": "本次攻击伤害 +2。若目标有噩梦，本次攻击减少生命上限。",
       "starter_copies": 2,
       "shield": 1,
       "attack": 2
@@ -890,7 +890,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1，并立刻结算 1 层噩梦（目标有噩梦时）。",
+      "description": "若目标有噩梦，本次攻击伤害 +1，并立刻结算 1 层噩梦。",
       "effect_id": "A03",
       "source": {
         "character_id": 1004,
@@ -926,7 +926,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对方前排受到 1 点伤害。安魂曲回复 1 点生命（目标有噩梦时）。",
+      "description": "对手前排受到 1 点伤害。若其有噩梦，安魂曲回复 1 点生命。",
       "effect_id": "A05",
       "source": {
         "character_id": 1004,
@@ -942,7 +942,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "安魂曲获得 1 点自己的环合值。再获得 1 点能量（安魂曲在备战区时）。",
+      "description": "安魂曲获得 1 点自己的环合值。若她在备战区，再获得 1 点能量。",
       "effect_id": "A06",
       "source": {
         "character_id": 1004,
@@ -964,7 +964,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "安魂曲回复 1 点生命（每个对方回合，对方前排首次受到浊燃或噩梦伤害后）。",
+      "description": "每个对手回合，对手前排首次受到浊燃或噩梦伤害后：安魂曲回复 1 点生命。",
       "starter_copies": 0,
       "attack": 0,
       "hp": 1
@@ -982,7 +982,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "本次出击第一次攻击伤害 +1（安魂曲入场触发环合后）。",
+      "description": "安魂曲入场触发环合后：本次出击第一次攻击伤害 +1。",
       "starter_copies": 2,
       "hp": 0,
       "attack": 1
@@ -1016,7 +1016,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2。本次攻击获得穿透（目标焚印不少于 2 层时）。",
+      "description": "本次攻击伤害 +2。若目标焚印不少于 2 层，本次攻击获得穿透。",
       "starter_copies": 2,
       "shield": 1,
       "attack": 2
@@ -1028,7 +1028,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1。残虹回复 1 点生命（拥有武备，且完成出击后仍存活时）。",
+      "description": "本次攻击伤害 +1。若残虹拥有弧盘，完成出击后仍存活：回复 1 点生命。",
       "effect_id": "C03",
       "source": {
         "character_id": 1036,
@@ -1046,7 +1046,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次战斗不受反击（目标有焚印、浊燃、噩梦、延滞或黯星时）。",
+      "description": "若目标有焚印、浊燃、噩梦、延滞或黯星，本次战斗不受反击。",
       "effect_id": "C04",
       "source": {
         "character_id": 1036,
@@ -1070,7 +1070,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2。加成改为 +4（目标有浊燃时）。",
+      "description": "本次攻击伤害 +2。若目标有浊燃，改为 +4。",
       "starter_copies": 0,
       "shield": 1,
       "attack": 2
@@ -1082,7 +1082,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对方前排受到 1 点伤害。再受到至多 3 点伤害（目标每有 1 层焚印，增加 1 点）。",
+      "description": "对手前排受到 1 点伤害。其每有 1 层焚印，再受到 1 点伤害，最多再 3 点。",
       "effect_id": "C06",
       "source": {
         "character_id": 1036,
@@ -1104,7 +1104,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "再对原目标造成 1 点追击伤害（每个己方回合首次完成主动出击后，且目标有焚印时）。",
+      "description": "每个己方回合首次完成主动出击后，若目标有焚印：再对其造成 1 点追击伤害。",
       "starter_copies": 0,
       "attack": 1,
       "hp": 0
@@ -1122,7 +1122,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "本次出击第一次攻击伤害 +1（残虹入场触发浊燃后）。",
+      "description": "残虹入场触发浊燃后：本次出击第一次攻击伤害 +1。",
       "starter_copies": 2,
       "attack": 1,
       "hp": 0
@@ -1134,7 +1134,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "抽 1 张牌。早雾获得 1 点能量（对方前排有负面时）。",
+      "description": "抽 1 张牌。若对手前排有负面，早雾获得 1 点能量。",
       "effect_id": "S01",
       "source": {
         "character_id": 1003,
@@ -1166,7 +1166,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1（目标有负面时）。",
+      "description": "若目标有负面，本次攻击伤害 +1。",
       "effect_id": "S03",
       "source": {
         "character_id": 1003,
@@ -1206,7 +1206,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1。伤害额外提高（目标每有 1 种负面，再 +1）。",
+      "description": "本次攻击伤害 +1。目标每有 1 种负面，再 +1。",
       "starter_copies": 2,
       "shield": 1,
       "attack": 1
@@ -1218,7 +1218,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对方前排受到 2 点伤害。抽 1 张牌（目标有负面时）。",
+      "description": "对手前排受到 2 点伤害。若其有负面，早雾抽 1 张牌。",
       "effect_id": "S06",
       "source": {
         "character_id": 1003,
@@ -1240,7 +1240,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "早雾再对原目标造成 1 点追击伤害（每个己方回合首次完成主动出击后，且目标有负面时）。",
+      "description": "每个己方回合，早雾首次完成主动出击后，若目标有负面：再对其造成 1 点追击伤害。",
       "starter_copies": 2,
       "hp": 0,
       "attack": 1
@@ -1258,7 +1258,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "早雾回复 1 点生命（每个己方回合，首次对有负面的对方前排完成主动出击后）。",
+      "description": "每个己方回合，首次对有负面的敌方前排完成主动出击后：早雾回复 1 点生命。",
       "starter_copies": 0,
       "attack": 0,
       "hp": 1
@@ -1292,7 +1292,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1。抽 1 张牌（本次从备战区入场时）。",
+      "description": "本次攻击伤害 +1。若本次从备战区入场，抽 1 张牌。",
       "starter_copies": 0,
       "shield": 0,
       "attack": 1
@@ -1304,7 +1304,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1（本次入场触发了环合或同频时）。",
+      "description": "若本次入场触发了环合或同频，本次攻击伤害 +1。",
       "effect_id": "K03",
       "source": {
         "character_id": 1072,
@@ -1322,7 +1322,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对对方前排造成 1 点伤害。伤害改为 2 点（本局已触发过同频时）。",
+      "description": "对对手前排造成 1 点伤害。若本局已触发过同频，改为 2 点。",
       "effect_id": "K04",
       "source": {
         "character_id": 1072,
@@ -1344,7 +1344,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "连续攻击 2 次。两次均不受反击（本次触发了环合或同频时）。",
+      "description": "连续攻击 2 次。若本次触发了环合或同频，两次均不受反击。",
       "starter_copies": 2,
       "shield": 1,
       "attack": 0
@@ -1378,7 +1378,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "本次出击第一次攻击伤害 +1（灵可入场触发同频后）。",
+      "description": "灵可入场触发同频后：本次出击第一次攻击伤害 +1。",
       "starter_copies": 0,
       "hp": 0,
       "attack": 1
@@ -1396,7 +1396,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "灵可获得 1 点护盾（每个对方回合，第一次受到战斗伤害且仍存活后）。",
+      "description": "每个对手回合，灵可第一次受到战斗伤害且仍存活后：获得 1 点护盾。",
       "starter_copies": 2,
       "attack": 0,
       "hp": 1
@@ -1430,7 +1430,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2。再获得 1 层凝视（真红处于终结时）。",
+      "description": "本次攻击伤害 +2。若真红处于终结，再获得 1 层凝视。",
       "starter_copies": 2,
       "shield": 1,
       "attack": 2
@@ -1466,7 +1466,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1。减少生命上限。攻击伤害加成改为 +3（真红处于终结且攻击玩家时）。",
+      "description": "本次攻击伤害 +1。减少生命上限。若真红处于终结且攻击玩家，改为 +3。",
       "starter_copies": 0,
       "shield": 1,
       "attack": 1
@@ -1478,7 +1478,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "真红回复 2 点生命。再获得 2 点护盾（真红在战斗区时）。",
+      "description": "真红回复 2 点生命。若在战斗区，再获得 2 点护盾。",
       "effect_id": "R05",
       "source": {
         "character_id": 1076,
@@ -1494,7 +1494,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2（真红凝视不少于 2 层时）。",
+      "description": "若真红凝视不少于 2 层，本次攻击伤害 +2。",
       "effect_id": "R06",
       "source": {
         "character_id": 1076,
@@ -1518,7 +1518,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "真红获得 1 点护盾（每个己方回合首次获得凝视后）。",
+      "description": "每个己方回合首次获得凝视后：获得 1 点护盾。",
       "starter_copies": 0,
       "attack": 0,
       "hp": 1
@@ -1536,7 +1536,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击减少生命上限（真红攻击有护盾的目标时）。",
+      "description": "真红攻击有护盾的目标时，本次攻击减少生命上限。",
       "starter_copies": 2,
       "hp": 0,
       "attack": 1
@@ -1580,7 +1580,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2（目标剩余生命不高于 4 时）。",
+      "description": "若目标剩余生命不高于 4，本次攻击伤害 +2。",
       "effect_id": "H03",
       "source": {
         "character_id": 1025,
@@ -1654,7 +1654,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "本次出击不受反击（装备本武备期间，哈索尔入场触发延滞后）。",
+      "description": "本弧盘期间，哈索尔入场触发延滞后：本次出击不受反击。",
       "starter_copies": 0,
       "attack": 1,
       "hp": 0
@@ -1672,7 +1672,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "哈索尔对该目标造成 1 点追击伤害（每个己方回合，己方首次结算延滞额外伤害后）。",
+      "description": "每个己方回合，己方首次结算延滞额外伤害后：哈索尔对该目标造成 1 点追击伤害。",
       "starter_copies": 2,
       "attack": 1,
       "hp": 0
@@ -1684,7 +1684,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "造成等同于己方倒地异能者数 ×3 的伤害。前排优先。",
+      "description": "每有 1 名己方倒地的异能者，造成 3 点伤害。前排优先。",
       "effect_id": "Y01",
       "source": {
         "character_id": 1075,
@@ -1789,7 +1789,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "随机使 1 名受伤的己方异能者回复 2 点生命（装备时，或伊洛伊终结于回合开始生效时）。",
+      "description": "装备时或伊洛伊的终结于回合开始生效时，随机使 1 名受伤的己方异能者回复 2 点生命。",
       "starter_copies": 0,
       "attack": 1,
       "hp": 7
@@ -1807,7 +1807,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "【创生强化】下个己方回合开始时额外触发一次创生（触发创生后）。不可叠加。",
+      "description": "【创生强化】触发创生后，下个己方回合开始时额外触发一次创生。不可叠加。",
       "starter_copies": 2,
       "attack": 2,
       "hp": 6
@@ -1871,7 +1871,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "响应。交战时，对方异能者攻击造成的溢出伤害也会转移至玩家（薄荷被攻击时自动打出）。",
+      "description": "交战时，对方异能者攻击造成的溢出伤害也会转移至玩家。响应：薄荷被攻击时。",
       "effect_id": "M04",
       "source": {
         "character_id": 1019,
@@ -1890,7 +1890,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "薄荷攻击 +2（下个己方回合开始时）。",
+      "description": "下个己方回合开始时，薄荷攻击 +2。",
       "effect_id": "M05",
       "source": {
         "character_id": 1019,
@@ -1906,7 +1906,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对对方前排造成 2 点伤害。伤害额外提高（薄荷的永久攻击每比 3 高 1 点，此伤害 +1）。",
+      "description": "对对方前排造成 2 点伤害。薄荷的永久攻击每比 3 高 1 点，此伤害 +1。",
       "effect_id": "M06",
       "source": {
         "character_id": 1019,
@@ -1922,7 +1922,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "薄荷的攻击视为 0（对方回合期间）。",
+      "description": "对方回合期间，薄荷的攻击视为 0。",
       "effect_id": "M07",
       "source": {
         "character_id": 1019,
@@ -1940,7 +1940,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "薄荷自动出击，此次攻击不会获得环合值和能量（己方回合开始时）。",
+      "description": "己方回合开始时，薄荷自动出击。此次攻击不会获得环合值和能量。",
       "effect_id": "M08",
       "source": {
         "character_id": 1019,
@@ -1975,7 +1975,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "白藏回复 2 点生命（造成伤害后，在判定倒地前结算）。",
+      "description": "造成伤害后，白藏回复 2 点生命。在判定倒地前结算。",
       "effect_id": "B02",
       "source": {
         "character_id": 1023,
@@ -1994,7 +1994,7 @@
       "cost": 1,
       "terminal": false,
       "require": "own_burn",
-      "description": "使己方施加的浊燃剩余时间变为无限（仅限该浊燃存在时打出）。",
+      "description": "存在己方施加的浊燃时才能打出。使该浊燃剩余时间变为无限。",
       "effect_id": "B03",
       "source": {
         "character_id": 1023,
@@ -2027,7 +2027,7 @@
       "cost": 1,
       "terminal": false,
       "response": "self_lethal",
-      "description": "响应。本回合白藏生命不会降到 1 以下（白藏受到致命伤害时自动打出）。",
+      "description": "本回合白藏生命不会降到 1 以下。响应：白藏受到致命伤害时。",
       "effect_id": "B05",
       "source": {
         "character_id": 1023,
@@ -2043,7 +2043,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "额外获得攻击 +1（本回合白藏受到过己方伤害时）。",
+      "description": "若本回合白藏受到过己方伤害，额外 +1 攻击。",
       "effect_id": "B06",
       "source": {
         "character_id": 1023,
@@ -2080,7 +2080,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "对白藏造成 4 点伤害（装备时）。",
+      "description": "装备时对白藏造成 4 点伤害。",
       "effect_id": "B08",
       "source": {
         "character_id": 1023,
@@ -2098,7 +2098,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "消耗 3 点金谷，额外获得攻击 +3（主动打出且金谷不少于 3 点时）。",
+      "description": "主动打出时，若有 3 点金谷，消耗 3 点并额外获得攻击 +3。",
       "effect_id": "Q01",
       "source": {
         "character_id": 1073,
@@ -2118,7 +2118,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "使目标下次受到的光属性伤害抗性 -2（命中后）。消耗 3 点金谷，额外释放「太阳太阳请回答」（命中后金谷不少于 3 点时）。",
+      "description": "命中后，使目标下次受到的光属性伤害抗性 -2；若有 3 点金谷，消耗 3 点并额外释放「太阳太阳请回答」。",
       "effect_id": "Q02",
       "source": {
         "character_id": 1073,
@@ -2138,7 +2138,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "消耗 3 点金谷，额外释放「烟花，悄然无声」（金谷不少于 3 点时）。",
+      "description": "若有 3 点金谷，消耗 3 点并额外释放「烟花，悄然无声」。",
       "effect_id": "Q03",
       "source": {
         "character_id": 1073,
@@ -2158,7 +2158,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "响应。自动打出（小吱被攻击时）。",
+      "description": "响应：小吱被攻击时自动打出。",
       "effect_id": "Q04",
       "source": {
         "character_id": 1073,
@@ -2198,7 +2198,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。使小吱充满能量（仅限本回合触发过盈蓄时打出）。",
+      "description": "瞬发。本回合触发过盈蓄才能打出。使小吱充满能量。",
       "effect_id": "Q06",
       "source": {
         "character_id": 1073,
@@ -2218,7 +2218,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "小吱可以消耗 3 点金谷额外出击，不消耗行动力，此次攻击 +2（没有普通出击次数时）。",
+      "description": "没有普通出击次数时，小吱可以消耗 3 点金谷额外出击，不消耗行动力，此次攻击 +2。",
       "effect_id": "Q07",
       "source": {
         "character_id": 1073,
@@ -2239,7 +2239,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "小吱的战斗牌伤害提高（每有 2 点金谷，伤害 +1）。",
+      "description": "小吱每有 2 点金谷，使战斗牌造成的伤害 +1。",
       "effect_id": "Q08",
       "source": {
         "character_id": 1073,
@@ -2259,7 +2259,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发（对方回合期间）。响应。自动打出（对方回合结束且对方前排为空时）。",
+      "description": "在对方回合获得瞬发。响应：对方回合结束时，若对方前排为空，自动打出。",
       "effect_id": "U01",
       "source": {
         "character_id": 1070,
@@ -2280,7 +2280,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发（本回合已有其他己方异能者攻击时）。",
+      "description": "本回合若有其他己方异能者攻击，本牌获得瞬发。",
       "effect_id": "U02",
       "source": {
         "character_id": 1070,
@@ -2360,7 +2360,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "海月可以消耗瞬发机会发起普通出击（本回合已有其他己方异能者攻击时）。",
+      "description": "本回合若有其他己方异能者攻击，海月可以消耗瞬发机会发起普通出击。",
       "effect_id": "U06",
       "source": {
         "character_id": 1070,
@@ -2380,7 +2380,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发（本回合已有其他己方异能者攻击时）。",
+      "description": "本回合若有其他己方异能者攻击，本牌获得瞬发。",
       "effect_id": "U07",
       "source": {
         "character_id": 1070,
@@ -2401,7 +2401,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "海月攻击 +1（每次攻击前）。",
+      "description": "海月每次攻击前，攻击 +1。",
       "effect_id": "U08",
       "source": {
         "character_id": 1070,

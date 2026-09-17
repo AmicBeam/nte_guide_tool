@@ -639,7 +639,7 @@ def start(player, payload: dict) -> dict:
         except ValueError as exc:
             raise RuleValidationError(str(exc)) from exc
     if mode == 'advanced':
-        player_deck_mode = payload.get('ai_player_deck', 'mirror')
+        player_deck_mode = payload.get('ai_player_deck', 'saved')
         if player_deck_mode not in ('mirror', 'saved'):
             raise RuleValidationError('请选择我方构筑。')
         deck = (_validate_deck(serving_deck(ai_model,ai_deck_id)) if player_deck_mode == 'mirror'

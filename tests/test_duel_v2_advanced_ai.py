@@ -24,13 +24,14 @@ class AdvancedRoomTest(RoomFlowTestCase):
     def test_advanced_room_persists_and_dispatches_model(self):
         from app.modules.card_game.engine.duel_v2 import choose_action
         module = 'app.modules.card_game.engine.ai.advanced_model.'
-        with patch(module+'load_model', return_value=SimpleNamespace(version='test-version')), patch(module+'choose_action', side_effect=choose_action) as model:
+        from app.modules.card_game.rl.capability import capability_ready_manifest
+        with patch(module+'load_model', return_value=SimpleNamespace(version='test-version', capability=capability_ready_manifest('weave-rush'))), patch(module+'choose_action', side_effect=choose_action) as model:
             result = self._post('/api/duel-v2/start', {'mode':'advanced','ai_deck':'weave-rush'}, token=self.token)
             self.assertEqual(result['room']['mode'],'advanced')
             game = result['game']
             self.assertEqual(game['sides']['b']['name'],'高级人机')
             catalog=self._get('/api/duel-v2/catalog', token=self.token)
-            human={'bohe','baicang','zero','iloy'}
+            human=set(catalog['saved_build']['character_ids'])
             self.assertEqual({h['id'] for h in game['sides']['a']['characters']}, human)
             self.assertEqual({h['id'] for h in game['sides']['b']['characters']},{'bohe','baicang','zero','iloy'})
             self.assertEqual(catalog['saved_build']['character_ids'], self._get('/api/duel-v2/catalog', token=self.token)['saved_build']['character_ids'])
@@ -180,7 +181,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
         self.assertEqual(saved['saved_build']['id'], 'deck-public-custom')
         module = 'app.modules.card_game.engine.ai.advanced_model.'
         with patch(module+'load_model', return_value=SimpleNamespace(version='test-version', capability=capability_ready_manifest('weave-rush'))):
-            result = self._post('/api/duel-v2/start', {'mode':'advanced','ai_deck':'weave-rush','ai_player_deck':'saved'}, token=self.token)
+            result = self._post('/api/duel-v2/start', {'mode':'advanced','ai_deck':'weave-rush'}, token=self.token)
         self.assertEqual({h['id'] for h in result['game']['sides']['a']['characters']}, set(custom['character_ids']))
         self.assertEqual({h['id'] for h in result['game']['sides']['b']['characters']}, {'bohe','baicang','zero','iloy'})
         catalog = self._get('/api/duel-v2/catalog', token=self.token)

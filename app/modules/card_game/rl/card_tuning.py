@@ -123,12 +123,15 @@ class CardBattleEvaluator:
             backend='cuda' if self.device.type=='cuda' else 'native',deck_id='starter')
 
     @torch.no_grad()
-    def evaluate(self, candidates, *, pairs=4, max_actions=400, stop_check=None, schedule=None):
+    def evaluate(self, candidates, *, pairs=4, max_actions=400, stop_check=None, schedule=None,
+                 required_lineups=('starter', 'weave-rush')):
         from .public_training import tensor_public_decks
         from .gpu_duel.state import empty_state
         from .public_observation import public_observe
         from .gpu_duel.opponent import rule_action
         if pairs<1 or max_actions<1:raise ValueError('Positive evaluation budgets required')
+        if not required_lineups or not set(required_lineups)<= {'starter','weave-rush'} or len(set(required_lineups))!=len(required_lineups):
+            raise ValueError('Expected unique public preset lineups')
         n = candidates.shape[0]
         if schedule is None:
             trials=pairs*2
@@ -201,7 +204,7 @@ class CardBattleEvaluator:
                     result['by_opponent'][opponent][position]={'wins':(win & mask).sum(1),'losses':(loss & mask).sum(1),
                         'games':(done & mask).sum(1),'draws':(done & ~win & ~loss & mask).sum(1),'truncated':(~done & mask).sum(1)}
             rates=[];seat_rates=[]
-            for lineup in ('starter','weave-rush'):
+            for lineup in required_lineups:
                 group=result['by_lineup'].get(lineup)
                 if group is None:raise ValueError('Schedule must cover both public preset lineups')
                 rates.append(sum(v['wins'] for v in group.values())/sum(v['games'] for v in group.values()).clamp_min(1))

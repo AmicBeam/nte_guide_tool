@@ -41,10 +41,11 @@ def warm_start_weights(checkpoint, network, deck_id):
 
 class FrozenLeague:
     """A current snapshot plus bounded historical opponents, frozen during each rollout."""
-    def __init__(self, max_history=4, *, learn_mulligan=False):
+    def __init__(self, max_history=4, *, learn_mulligan=False, greedy=False):
         if max_history < 1:
             raise ValueError('History capacity must be positive')
         self.learn_mulligan=learn_mulligan
+        self.greedy=greedy
         self.pinned=[]
         self.history = deque(maxlen=max_history)
         self.revision = 0
@@ -82,7 +83,7 @@ class FrozenLeague:
                     if not bool(mask[selected].any(1).all()):
                         raise RuntimeError('Opponent has no legal candidates')
                     logits, _ = policy(obs[selected], cand[selected], mask[selected])
-                    result[selected] = torch.distributions.Categorical(logits=logits).sample().int()
+                    result[selected] = (logits.argmax(1) if self.greedy else torch.distributions.Categorical(logits=logits).sample()).int()
         return result
 
 
@@ -143,7 +144,7 @@ def fixed_deck_rows(deck_id, n, device, learner_deck=None):
 class PublicTrainingEnv:
     """Small adapter for the PPO collector; all game rows stay on the chosen device."""
     def __init__(self, n, *, deck_id, league, device='cuda', compiled_dir=None, learner_deck=None,
-                 learn_mulligan=False,random_team_fraction=.2,rule_fraction=.2):
+                 learn_mulligan=False,random_team_fraction=.2,rule_fraction=.2, fixed_opponent_deck=None):
         import torch
         from .gpu_duel.compiled_backend import CompiledStarterBackend
         from .gpu_duel.state import empty_state
@@ -153,6 +154,12 @@ class PublicTrainingEnv:
         self.learn_mulligan=learn_mulligan
         self.random_team_fraction=random_team_fraction
         self.rule_fraction=rule_fraction
+        self.fixed_opponent_deck=fixed_opponent_deck
+        if fixed_opponent_deck is not None:
+            from .capability import assert_public_encoder_deck
+            self.fixed_opponent_deck=assert_public_encoder_deck(fixed_opponent_deck)
+            if random_team_fraction or rule_fraction or len(league.policies)!=1:
+                raise ValueError("Fixed opponent requires exactly one frozen policy and zero random/rule fractions")
         self.opponent_lineup=torch.zeros(n,device=self.device,dtype=torch.int32)
         self.opening_counts=torch.zeros(24,device=self.device,dtype=torch.int64)
         self.first_action_counts=torch.zeros(42,device=self.device,dtype=torch.int64)
@@ -182,7 +189,15 @@ class PublicTrainingEnv:
         self.first_action_recorded &= ~done
         seed = torch.randint(0,2**30,(self.n,),device=self.device,dtype=torch.int32)
         seed = torch.where(done,seed,-1)
-        player,lineup = tensor_preset_opponents(self.n,self.device,random_fraction=self.random_team_fraction)
+        if self.fixed_opponent_deck is None:
+            player,lineup = tensor_preset_opponents(self.n,self.device,random_fraction=self.random_team_fraction)
+        else:
+            from .gpu_duel.catalog import encode_public_deck_row
+            from .capability import preset_opponent_deck
+            row=encode_public_deck_row(self.fixed_opponent_deck)
+            player=torch.tensor(row,device=self.device,dtype=torch.int32)[None].expand(self.n,-1).contiguous()
+            pool=next((i for i,k in enumerate(("starter","weave-rush")) if preset_opponent_deck(k)["character_ids"]==self.fixed_opponent_deck["character_ids"]),2)
+            lineup=torch.full((self.n,),pool,device=self.device,dtype=torch.int32)
         self.opponent_lineup=torch.where(done,lineup.int(),self.opponent_lineup)
         a = torch.where((self.learner==0)[:,None],self.fixed,player)
         b = torch.where((self.learner==1)[:,None],self.fixed,player)

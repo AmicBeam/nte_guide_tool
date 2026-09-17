@@ -235,3 +235,5 @@ V2 玩家、异能者和每张实体卡牌均为独立类实例，使用 `entity
 本轮追加训练、4 轮局部搜索与独立复核结果见 [2026-09-17 局部配牌报告](../../../docs/duel-v2-local-cards-20260917.md)。
 
 2026-09-17 深度训练的两套 v3 模型与最终配牌已写入项目高级人机，包含学习换牌和纯胜负奖励训练；详见 [最终交付报告](../../../docs/duel-v2-deep-release-20260917.md)。生产部署等待用户验收。
+
+固定覆纹/N06 枚举训练：`scripts/train_duel_v2_fixed_n06.py`；入口参数和候选比较范围见 `docs/duel-v2-public-training.md`。固定对手重置与枚举契约可用带 PyTorch 的隔离环境运行 `python -m unittest tests.test_duel_v2_fixed_opponent`，网站环境不新增训练依赖。

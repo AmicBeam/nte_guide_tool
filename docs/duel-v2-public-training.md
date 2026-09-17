@@ -298,3 +298,15 @@ python scripts/analyze_duel_v2_opening.py --starter-model PATH/starter.npz --wea
 可单独使用 `scripts/refine_duel_v2_cards.py`，传入 `--baseline`、可选 `--initial`、双方冻结的 `--policy-checkpoint`／`--opponent-checkpoint` 和新 `--output`。默认 4 轮、600 秒局部搜索预算；生成 `selection.json` 和 `candidate.json`，不会自动替换网站构筑。
 
 综合入口可用 `--candidate-seeds` 指定预组 ID 到历史合法配牌列表的 JSON，每套最多两份；进入候选池前严格校验固定角色并按张数去重。种子配牌与其他候选一样重新筛选，不强制采用，也不覆盖原配牌对照。
+
+## 固定覆纹对手与 N06 全量换牌枚举
+
+`train_duel_v2_fixed_n06.py` 专用于在 N06 原携带量为零的创生基线上，枚举携带 0/1/2 张的合法同角色替换；其他三名角色及顺序不变。当前基线共 19 个方案（1/5/13），每个方案从相同权重、相同随机种子开始，采用相同时间预算适应；再按携带量各选一项追加相同预算训练。
+
+对手为传入的唯一冻结覆纹 checkpoint、固定 32 张配牌和 argmax 动作，不使用历史池、随机构筑或规则 AI。学习方仍以 PPO 概率采样探索，终局胜负奖励保持不变。`PublicTrainingEnv.fixed_opponent_deck` 要求唯一冻结对手且随机/规则比例都为零；`FrozenLeague.greedy` 只改变对手动作选择。候选评估可通过 `required_lineups` 指定只统计覆纹先后手；原综合流程仍默认两个阵容四场景。
+
+```bash
+python scripts/train_duel_v2_fixed_n06.py --check --learner STARTER.pt --opponent WEAVE.pt --learner-deck STARTER.json --opponent-deck WEAVE.json --output NEWDIR
+```
+
+去掉 `--check` 才实际训练；`--smoke` 对全部方案短测一次更新和全链路评估。最终三个携带量各自保留模型、构筑、编译筛选和正式引擎评估。正式引擎选择与留出使用独立种子，留出不反过来重新选择赢家。输出只是研究候选，不自动替换网站模型。

@@ -135,9 +135,9 @@ class NewTestCharacters(unittest.TestCase):
         self.assertEqual(hero(s,'a','xiaozhi')['energy'],5)
 
     def test_jingu_weapon_damage_and_free_extra_attack(self):
-        s=self.game();h=hero(s,'a','xiaozhi');h.update(shape='Q07',jingu=6)
+        s=self.game();h=hero(s,'a','xiaozhi');h.update(shape='Q08',jingu=6)
         s=self.play(s,'Q04');self.assertEqual(s['sides']['b']['hp'],22)
-        s=self.game();h=hero(s,'a','xiaozhi');h.update(shape='Q08',jingu=3)
+        s=self.game();h=hero(s,'a','xiaozhi');h.update(shape='Q07',jingu=3)
         s['sides']['a'].update(ap=0,normal_attack_available=False)
         action={'type':'attack','character_id':'xiaozhi'}
         self.assertEqual(preview(s,'a',action)['ap_cost'],0)
@@ -185,7 +185,7 @@ class NewTestCharacters(unittest.TestCase):
         s=self.game();s=self.attack(s,'zero');s['sides']['a']['ap']=0
         s=self.play(s,'U07');self.assertEqual(hero(s,'a','haiyue')['shape'],'U07')
         self.assertTrue(s['sides']['a']['used']['instant'])
-        s=self.game();s=self.attack(s,'zero');s['sides']['a']['ap']=0;hero(s,'a','haiyue')['shape']='U08'
+        s=self.game();s=self.attack(s,'zero');s['sides']['a']['ap']=0;hero(s,'a','haiyue')['shape']='U06'
         s=self.attack(s,'haiyue');self.assertTrue(s['sides']['a']['used']['instant'])
         self.assertFalse(s['sides']['a']['normal_attack_available'])
         self.assertNotIn({'type':'attack','character_id':'haiyue'},legal_actions(s,'a'))
@@ -194,7 +194,7 @@ class NewTestCharacters(unittest.TestCase):
         s=self.game();hero(s,'a','haiyue')['shape']='U05'
         s['sides']['b']['front_debuff']['star']={'by':'a','left':1}
         tick_front_debuff(s,'b');self.assertEqual(s['sides']['b']['hp'],27)
-        s=self.game();hero(s,'a','haiyue')['shape']='U06';s=self.play(s,'U02')
+        s=self.game();hero(s,'a','haiyue')['shape']='U08';s=self.play(s,'U02')
         self.assertEqual(hero(s,'a','haiyue')['flags']['atk_buff'],1)
         s=self.play(s,'U02');self.assertEqual(hero(s,'a','haiyue')['flags']['atk_buff'],2)
 
@@ -243,7 +243,7 @@ class NewTestCharacters(unittest.TestCase):
 
     def test_jingu_damage_bonus_applies_to_response(self):
         s = self.game(); s['sides']['b']['front'] = 'xiaozhi'
-        hero(s, 'b', 'xiaozhi').update(shape='Q07', jingu=4)
+        hero(s, 'b', 'xiaozhi').update(shape='Q08', jingu=4)
         s['sides']['b']['hand'] = [card_instance(s, 'Q04', 'b')]
         hero(s, 'a', 'zero').update(hp=30, max_hp=30)
         s = self.attack(s, 'zero')

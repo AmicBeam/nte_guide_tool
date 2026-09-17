@@ -22,8 +22,8 @@ class Haiyue:
     id = 'haiyue'
     text_name = '海月'
     effects = {'U01': lambda c: c.sortie(), 'U02': lambda c: c.sortie(),
-               'U03': _u03, 'U04': _u04, 'U05': set_shape, 'U06': set_shape,
-               'U07': set_shape, 'U08': set_shape}
+               'U03': _u03, 'U04': _u04, 'U05': set_shape, 'U08': set_shape,
+               'U07': set_shape, 'U06': set_shape}
     target_policies = {'U04': 'enemy_bench'}
 
     @staticmethod
@@ -42,7 +42,7 @@ class Haiyue:
 
     @staticmethod
     def before_attack(c):
-        if c.character.get('shape') == 'U06':
+        if c.character.get('shape') == 'U08':
             add_atk_buff(c.character, 1)
             c.history('海月攻击前，武备触发：攻击 +1。')
 
@@ -53,7 +53,7 @@ class Haiyue:
     @staticmethod
     def normal_attack_payment(c, current=None):
         team = c.state['sides'][c.side]
-        if (c.character.get('shape') == 'U08' and not team['used'].get('instant')
+        if (c.character.get('shape') == 'U06' and not team['used'].get('instant')
                 and teammate_attacked(c.state, c.side, c.cid)):
             return {'ap': 0, 'normal': False, 'resource': 'instant'}
         return None

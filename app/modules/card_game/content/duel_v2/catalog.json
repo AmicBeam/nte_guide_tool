@@ -2218,7 +2218,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "小吱每有 2 点金谷，使战斗牌造成的伤害 +1。",
+      "description": "没有普通出击次数时，小吱可以消耗 3 点金谷额外出击，不消耗行动力，此次攻击 +2。",
       "effect_id": "Q07",
       "source": {
         "character_id": 1073,
@@ -2239,7 +2239,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "没有普通出击次数时，小吱可以消耗 3 点金谷额外出击，不消耗行动力，此次攻击 +2。",
+      "description": "小吱每有 2 点金谷，使战斗牌造成的伤害 +1。",
       "effect_id": "Q08",
       "source": {
         "character_id": 1073,
@@ -2360,7 +2360,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "海月每次攻击前，攻击 +1。",
+      "description": "本回合若有其他己方异能者攻击，海月可以消耗瞬发机会发起普通出击。",
       "effect_id": "U06",
       "source": {
         "character_id": 1070,
@@ -2370,7 +2370,7 @@
         "rules_source": "user_tabletop_2026-09-18"
       },
       "starter_copies": 0,
-      "attack": 3,
+      "attack": 5,
       "hp": 4
     },
     {
@@ -2401,7 +2401,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "本回合若有其他己方异能者攻击，海月可以消耗瞬发机会发起普通出击。",
+      "description": "海月每次攻击前，攻击 +1。",
       "effect_id": "U08",
       "source": {
         "character_id": 1070,
@@ -2411,7 +2411,7 @@
         "rules_source": "user_tabletop_2026-09-18"
       },
       "starter_copies": 2,
-      "attack": 5,
+      "attack": 3,
       "hp": 4
     }
   ],

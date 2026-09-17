@@ -69,7 +69,7 @@ def _q03(c):
 
 
 def _q04(c):
-    if c.state.get('_response_intercept') and c.character.get('shape') == 'Q07':
+    if c.state.get('_response_intercept') and c.character.get('shape') == 'Q08':
         flags = c.character.setdefault('flags', {})
         flags['counter_bonus'] = int(flags.get('counter_bonus', 0)) + max(0, c.character.get('jingu', 0)) // 2
     c.sortie()
@@ -97,7 +97,7 @@ class Xiaozhi:
     id = 'xiaozhi'
     text_name = '小吱'
     effects = {'Q01': _q01, 'Q02': _q02, 'Q03': _q03, 'Q04': _q04,
-               'Q05': _q05, 'Q06': _q06, 'Q07': set_shape, 'Q08': set_shape}
+               'Q05': _q05, 'Q06': _q06, 'Q08': set_shape, 'Q07': set_shape}
 
     @staticmethod
     def on_game_start(c):
@@ -140,13 +140,13 @@ class Xiaozhi:
 
     @staticmethod
     def attack_bonus(c, attacker_id=None, **_):
-        if attacker_id == c.cid and c.character.get('shape') == 'Q07' and c.card and c.card['type'] == 'battle':
+        if attacker_id == c.cid and c.character.get('shape') == 'Q08' and c.card and c.card['type'] == 'battle':
             return max(0, int(c.character.get('jingu', 0))) // 2
         return 0
 
     @staticmethod
     def normal_attack_payment(c, current=None):
-        if current is None and c.character.get('shape') == 'Q08' and c.character.get('jingu', 0) >= 3:
+        if current is None and c.character.get('shape') == 'Q07' and c.character.get('jingu', 0) >= 3:
             return {'ap': 0, 'normal': False, 'resource': 'jingu', 'bonus': 2}
         return None
 

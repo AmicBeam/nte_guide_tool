@@ -109,7 +109,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(len(named), 120)
         self.assertTrue(CARDS['NF01']['derived'])
         self.assertEqual(CARDS['NF01']['name'], '家族壮大')
-        self.assertIn('第 5 个己方回合及以后具有瞬发', CARDS['NF01']['description'])
+        self.assertIn('瞬发（第 5 个己方回合及以后）', CARDS['NF01']['description'])
         self.assertFalse(CARDS['NF01'].get('instant'))
         type_counts = {'battle': 0, 'tactic': 0, 'form': 0}
         for character_id in CATALOG_ORDER:
@@ -167,8 +167,8 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['B08']['name'], '茶花会')
         self.assertEqual(CARDS['B07']['attack'], 2)
         self.assertEqual(CARDS['B08']['attack'], 3)
-        self.assertEqual(CARDS['B06']['description'], '若本回合白藏受到过己方伤害，额外 +1 攻击。')
-        self.assertEqual(CARDS['M06']['description'], '对对方前排造成 2 点伤害。薄荷的永久攻击每比 3 高 1 点，此伤害 +1。')
+        self.assertEqual(CARDS['B06']['description'], '额外获得攻击 +1（本回合白藏受到过己方伤害时）。')
+        self.assertEqual(CARDS['M06']['description'], '对对方前排造成 2 点伤害。伤害额外提高（薄荷的永久攻击每比 3 高 1 点，此伤害 +1）。')
         self.assertEqual(CARDS['Y06']['description'], '复活 1 名己方异能者。')
         rush = next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')
         self.assertEqual(
@@ -178,15 +178,15 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertTrue(all(rush['card_ids'].count(card_id) == 2 for card_id in set(rush['card_ids'])))
         self.assertIn('反击方', CARDS['N02']['description'])
         self.assertEqual(CARDS['N03']['description'], '额外造成 1 点追击伤害。')
-        self.assertEqual(CARDS['N04']['description'], '')
+        self.assertEqual(CARDS['N04']['description'], '本回合己方创生伤害 +1。')
         names = '|'.join(re.escape(character['name']) for character in CHARACTERS.values())
         sortie = re.compile(rf'(?:^|(?<=。))(?:{names})出击。')
         for card in CARDS.values():
             if card['type'] == 'battle':
                 self.assertIsNone(sortie.search(card['description'] or ''), card['id'])
-        self.assertEqual(CARDS['N07']['description'], '本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。')
+        self.assertEqual(CARDS['N07']['description'], '娜娜莉的战斗牌获得额外攻击与护盾（本局每打出一次「家族壮大」，攻击与护盾各 +1）。')
         self.assertEqual(CARDS['Z08']['name'], '倾世之雨')
-        self.assertEqual(CARDS['Z08']['description'], '回合结束时，己方前排攻击 +1。')
+        self.assertEqual(CARDS['Z08']['description'], '己方前排攻击 +1（己方回合结束时）。')
         self.assertEqual(CARDS['Z02']['description'], '从牌库将 2 张武备牌加入手牌。')
         self.assertEqual(CHARACTERS['zero']['passive'], '零使用战斗牌后，立刻充满自己的环合值。零已装备武备时，零的武备牌获得瞬发，使用时抽 1 张牌。')
         self.assertEqual(CHARACTERS['zero']['awakened_passive'], '2 个己方回合内，己方武备牌变为瞬发，使用时抽 1 张牌。')
@@ -211,7 +211,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['Y07']['attack'], 1)
         self.assertEqual(CARDS['M08']['hp'], 4)
         self.assertEqual(CARDS['B08']['hp'], 8)
-        self.assertEqual(CARDS['J07']['description'], '九原的终结成功清算枚约时，每个目标使九原获得 1 点能量。')
+        self.assertEqual(CARDS['J07']['description'], '九原获得 1 点能量（九原终结每成功清算 1 个枚约目标时）。')
         self.assertEqual(CARDS['J07']['hp'], 5)
         self.assertIn('伊洛伊永久获得攻击 +1、生命 +1', CARDS['Y05']['description'])
         self.assertIn('第 5 个己方回合', CARDS['NF01']['description'])

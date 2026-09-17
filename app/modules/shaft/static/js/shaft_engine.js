@@ -5124,7 +5124,9 @@
     if (teamHasHeiyu()) {
       const owner = Array.from(snapshots.values()).find((snapshot) => snapshot.character.id === HEIYU_CHARACTER_ID);
       // User scope: each loop starts a fresh damage ledger; no cross-loop accumulation.
-      const ledger = details.map((detail) => ({tick: int(detail.start_tick), step_id: detail.step_id,
+      // Every instance has its own window; no dark-star damage may feed another one.
+      const ledger = details.filter((detail) => detail.damage_source !== '黯星')
+        .map((detail) => ({tick: int(detail.start_tick), step_id: detail.step_id,
         damage: num(detail.direct_damage) + num(detail.fuwen_damage)}));
       const settled = reactionDamageEvents.filter((event) => event._counted_in_total && num(event.damage) >= 0)
         .sort((a, b) => int(a.tick) - int(b.tick));
@@ -5143,16 +5145,17 @@
                 contributor_slot: owner.slot, contributor_character_id: owner.character.id,
                 contributor_character_name: owner.character.name, damage: extraDamage, _counted_in_total: true,
                 formula_parts: {base: accumulated, damage_scale: 0.2, damage_cap: num(owner.base_stats.atk) * 1000,
-                  excludes_stagger: true, ignores_modifiers: true}};
+                  excludes_stagger: true, excludes_dark_star: true, ignores_modifiers: true}};
               reactionDamageEvents.push(extra);
               directDamage += extraDamage;
               specialDamageBySource.set('黯星', (specialDamageBySource.get('黯星') || 0) + extraDamage);
               reactionDamageBySlot.set(owner.slot, (reactionDamageBySlot.get(owner.slot) || 0) + extraDamage);
-              ledger.push({tick: int(event.tick), damage: extraDamage});
             }
           }
         }
-        ledger.push({tick: int(event.tick), damage: num(event.damage)});
+        if (event.reaction !== '黯星') {
+          ledger.push({tick: int(event.tick), damage: num(event.damage)});
+        }
       });
       reactionDamageEvents.sort((a, b) => int(a.tick) - int(b.tick) || int(a.sequence) - int(b.sequence));
     }

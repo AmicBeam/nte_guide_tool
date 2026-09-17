@@ -147,6 +147,43 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(len(r['reaction_effects']), 2)
         self.assertTrue(r['reaction_effects'][1]['heiyu_extra'])
 
+    def test_dark_star_recast_starts_a_fresh_damage_window(self):
+        other = {'slot': 1, 'character_id': DARK, 'arc_id': '', 'cartridge_id': ''}
+        for second_window_hit in (False, True):
+            with self.subTest(second_window_hit=second_window_hit):
+                steps = [(1, 'action_none_c78f7a08d5', 0),
+                         (0, 'action_heiyu_support', 2), (0, 'action_heiyu_e', 20)]
+                if second_window_hit:
+                    steps.append((0, 'action_heiyu_a1', 70))
+                steps.append((1, 'action_dodge_c78f7a08d5', 120))
+                r = self.simulate(steps, [other])
+                effects = [e for e in r['reaction_effects'] if e['reaction'] == '黯星']
+                extras = {e['effect_id']: e for e in r['reaction_damage_events']
+                          if e.get('heiyu_accumulation')}
+                self.assertEqual(len(effects), 2)
+                self.assertEqual(effects[1]['start_tick'], effects[0]['end_tick'])
+                self.assertAlmostEqual(extras[effects[0]['id']]['formula_parts']['base'],
+                                       r['details'][2]['direct_damage'])
+                if second_window_hit:
+                    self.assertAlmostEqual(extras[effects[1]['id']]['formula_parts']['base'],
+                                           r['details'][3]['direct_damage'])
+                else:
+                    self.assertNotIn(effects[1]['id'], extras)
+
+    def test_dark_star_ledger_excludes_explicit_dark_star_damage_sources(self):
+        # 用户2026-09-18：每个实例只累计期间的非黯星伤害，包括手工伤害来源过滤。
+        others = [{'slot': 1, 'character_id': DARK, 'arc_id': '', 'cartridge_id': ''},
+                  {'slot': 2, 'character_id': 'char_caa6c2e5a8', 'arc_id': '', 'cartridge_id': ''}]
+        r = self.simulate([(1, 'action_none_c78f7a08d5', 0),
+                           (0, 'action_heiyu_support', 2), (0, 'action_heiyu_e', 20),
+                           (2, 'action_bdc49de5c5', 30),
+                           (1, 'action_dodge_c78f7a08d5', 120)], others)
+        self.assertEqual(r['details'][3]['damage_source'], '黯星')
+        self.assertGreater(r['details'][3]['direct_damage'], 0)
+        extras = [e for e in r['reaction_damage_events'] if e.get('heiyu_accumulation')]
+        self.assertEqual(len(extras), 1)
+        self.assertAlmostEqual(extras[0]['formula_parts']['base'], r['details'][2]['direct_damage'])
+
     def test_arc_refinements_use_user_approved_interpolation(self):
         axis = normalize_axis_payload({'team': [{'slot': 0, 'character_id': CID, 'arc_id': ARC,
             'arc_refinement': 5, 'cartridge_id': ''}], 'steps': []})

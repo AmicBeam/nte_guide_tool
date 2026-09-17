@@ -233,3 +233,5 @@ V2 玩家、异能者和每张实体卡牌均为独立类实例，使用 `entity
 综合训练在整套配牌学习之外追加 4 轮单张／双张替换搜索；单独入口为 `scripts/refine_duel_v2_cards.py`。冻结出牌模型、固定四名角色，按四场景平均胜率筛选，输出替换过程而不自动部署。验证：`python -m unittest tests.test_duel_v2_local_card_search tests.test_duel_v2_candidate_selection`（后者部分用例需要 PyTorch）。详见公开卡池训练说明第 11 节。
 
 本轮追加训练、4 轮局部搜索与独立复核结果见 [2026-09-17 局部配牌报告](../../../docs/duel-v2-local-cards-20260917.md)。
+
+2026-09-17 深度训练的两套 v3 模型与最终配牌已写入项目高级人机，包含学习换牌和纯胜负奖励训练；详见 [最终交付报告](../../../docs/duel-v2-deep-release-20260917.md)。生产部署等待用户验收。

@@ -248,7 +248,7 @@ class CpuEncoderTest(unittest.TestCase):
         directory = Path(__file__).resolve().parents[1] / 'app/modules/card_game/engine/ai/models'
         for deck in ('starter', 'weave-rush'):
             manifest = json.loads((directory / f'{deck}.json').read_text())
-            target=('app.modules.card_game.rl.public_schema.rule_identity' if manifest['schema']=='resident_public_v2'
+            target=('app.modules.card_game.rl.public_schema.rule_identity' if manifest['schema'] in ('resident_public_v2','resident_public_v3')
                     else 'app.modules.card_game.rl.rule_ir.completeness.compiled_rule_hash')
             with patch(target, return_value='unrelated'):
                 with self.assertRaisesRegex(ValueError, 'rule version'):

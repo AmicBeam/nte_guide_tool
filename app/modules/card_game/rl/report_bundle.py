@@ -23,7 +23,23 @@ def package_report(root, destination):
         final=root/'final'/key;final.mkdir(parents=True,exist_ok=True)
         source=root/key/('base-export' if selected=='original' else 'adapted-export')
         deck=root/key/('original-deck.json' if selected=='original' else 'cards/candidate.json')
+        if selected=='candidate' and (root/key/'selected-deck.json').is_file():
+            deck=root/key/'selected-deck.json'
         selected_build=None
+        if not chosen and (root/'serving-models'/f'{key}.npz').is_file():
+            from .capability import fixed_team_serving_deck,serving_deck_hash
+            approved_dir=root/'serving-models'
+            approved=json.loads((approved_dir/f'{key}.json').read_text(encoding='utf-8'))
+            selected_build=fixed_team_serving_deck(json.loads(deck.read_text(encoding='utf-8')),key)
+            digest=hashlib.sha256((source/f'{key}.npz').read_bytes()).hexdigest()
+            if (approved.get('validation',{}).get('complete') is not True
+                    or approved.get('sha256')!=digest
+                    or hashlib.sha256((approved_dir/f'{key}.npz').read_bytes()).hexdigest()!=digest
+                    or approved.get('validation',{}).get('model_sha256')!=digest
+                    or approved.get('validation',{}).get('serving_build_sha256')!=serving_deck_hash(selected_build)
+                    or serving_deck_hash(approved.get('serving_build') or {})!=serving_deck_hash(selected_build)):
+                raise ValueError('Approved pipeline model/build mismatch')
+            source=approved_dir
         if chosen:
             from .capability import fixed_team_serving_deck,serving_deck_hash
             item=chosen['choices'][key]

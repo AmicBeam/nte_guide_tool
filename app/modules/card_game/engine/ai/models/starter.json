@@ -1,17 +1,17 @@
 {
-  "schema": "resident_public_v2",
+  "schema": "resident_public_v3",
   "deck": "starter",
   "hidden": 64,
   "state_dim": 664,
-  "cand_dim": 11,
+  "cand_dim": 60,
   "gpu_lock": "caaf2adb0c162ad915a5402945d9848dd64bc75596c26ca81a895b6f2ece3657",
-  "update": 2886,
+  "update": 572,
   "rule_identity": {
-    "rule_hash": "c1abaf1979bf377994a0c019e05e1bb4267098782562937d757c73baadc69d7b"
+    "rule_hash": "16601946435bb6145eb0b5888bf7db2c4b0dee16ce4f8eeff2ea8a241478bdd9"
   },
   "learner_deck": {
-    "id": "starter",
-    "name": "创生预组",
+    "id": "local-25c08f389eee",
+    "name": "局部配牌候选",
     "character_ids": [
       "nanali",
       "iloy",
@@ -26,35 +26,52 @@
       "N04",
       "N04",
       "N07",
-      "N07",
-      "Z02",
-      "Z04",
+      "N08",
+      "Y02",
+      "Y02",
+      "Y03",
+      "Y06",
+      "Y06",
+      "Y07",
+      "Y07",
+      "Y08",
+      "Z03",
+      "Z03",
       "Z04",
       "Z05",
       "Z05",
-      "Z07",
       "Z07",
       "Z08",
-      "J01",
+      "Z08",
       "J01",
       "J02",
       "J02",
+      "J03",
       "J04",
       "J04",
-      "J08",
-      "J08",
-      "Y02",
-      "Y02",
-      "Y03",
-      "Y03",
-      "Y06",
-      "Y06",
-      "Y08",
-      "Y08"
+      "J07",
+      "J08"
     ]
   },
-  "sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
-  "source_checkpoint_sha256": "80a5493f0d9fa21f088884e75640b2fa633ffb48d8353b954e5cd8208cc4cc5e",
+  "training_distribution": "preset_priority_v1",
+  "opponent_distribution": {
+    "random_fraction": 0.2,
+    "rule_fraction": 0.2
+  },
+  "pinned_opponents": [
+    {
+      "sha256": "0f0e464ded08d9018cb546bac35250af30a261e109374fc2e46a2d852bb37328",
+      "deck": "weave-rush",
+      "source_schema": "resident_public_v3",
+      "trained_rule_identity": {
+        "rule_hash": "16601946435bb6145eb0b5888bf7db2c4b0dee16ce4f8eeff2ea8a241478bdd9"
+      }
+    }
+  ],
+  "reward_mode": "outcome_only_v1",
+  "opening_policy": "learned_joint_v1",
+  "sha256": "55cb64291951d97c2ea5a470ca6a446618defa67e50ce10c78c62bf2590fe921",
+  "source_checkpoint_sha256": "44717b2e9597bd8e601723b88d39ed4a60050d2bec9007b00f71a254d0334c21",
   "card_ids": [
     "N01",
     "N02",
@@ -179,104 +196,21 @@
       "B08"
     ]
   },
-  "previous_validation": [
-    {
-      "complete": true,
-      "model_sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
-      "rule_hash": "d42a49c2ad4cee9d37a6cf40f4bc62b6baff14fb418885bef7dc915c56c0cb96",
-      "games": 64,
-      "wins": 64,
-      "min_pairs": 32,
-      "min_win_rate": 0.5,
-      "opponent_teams": 15,
-      "report_sha256": "752ee74ca700261439b43adbd10a182a4b87ca87ab21057d85a73f22068c4deb",
-      "serving_build_sha256": "b8a6229aa85f2dbd1c6f397156a36ba5a71cc1491d465c3dacf32177e4418fdd"
-    },
-    {
-      "complete": true,
-      "model_sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
-      "rule_hash": "57a18309dd0271aacb477a1dd89369da4b1c282c86096639e312521d238662f7",
-      "games": 64,
-      "wins": 64,
-      "min_pairs": 32,
-      "min_win_rate": 0.5,
-      "opponent_teams": 15,
-      "report_sha256": "620f3e89b13d4f2170c4d546b469f0f65201157eb81bdfd18c97b0541dc6bfbf",
-      "serving_build_sha256": "b8a6229aa85f2dbd1c6f397156a36ba5a71cc1491d465c3dacf32177e4418fdd"
-    },
-    {
-      "complete": true,
-      "model_sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
-      "rule_hash": "9100b1b7ac37fc139f78b306bed03249eb0188d692f4bad7a4b14ec52fabac4a",
-      "games": 64,
-      "wins": 60,
-      "min_pairs": 32,
-      "min_win_rate": 0.5,
-      "opponent_teams": 15,
-      "report_sha256": "ad50783a7566ae9e22ff8d1656bdfa85fb1955bd9bd174a397a69f8419ff2372",
-      "serving_build_sha256": "b8a6229aa85f2dbd1c6f397156a36ba5a71cc1491d465c3dacf32177e4418fdd"
-    }
-  ],
-  "runtime_rule_hash": "40526143e3e5e56cb3958cced61a1b66c3fc3cc0cdcbf1677e436c23cbad1bc1",
-  "runtime_revision": {
-    "reason": "Joint opening framework and opponent mulligan event privacy; legacy v2 still keeps all cards",
-    "trained_again": false,
-    "opening_policy": "keep_all"
-  },
-  "validation_history": [
-    {
-      "complete": true,
-      "model_sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
-      "rule_hash": "c1abaf1979bf377994a0c019e05e1bb4267098782562937d757c73baadc69d7b",
-      "games": 64,
-      "wins": 61,
-      "min_pairs": 32,
-      "min_win_rate": 0.5,
-      "opponent_teams": 15,
-      "report_sha256": "cdff4da181c2d81e8a2f227c80885b801a54947acace6cef10fb03ac7fed74df",
-      "serving_build_sha256": "c618c7c7f25dfa6c7d7c8f01b570b0da3de587f2f2b2b9a92f3ace6a370ec21c"
-    },
-    {
-      "complete": true,
-      "model_sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
-      "rule_hash": "ada7f5ef97a28037d3908b5e93317256e24f97e3e62f74e3fc9602d133bcbebc",
-      "games": 64,
-      "wins": 61,
-      "min_pairs": 32,
-      "min_win_rate": 0.5,
-      "opponent_teams": 15,
-      "report_sha256": "a68a0d48751a81c8caed1a7b5458293dc2aa523c5d1aa8f64b06ee9de9637578",
-      "serving_build_sha256": "b8a6229aa85f2dbd1c6f397156a36ba5a71cc1491d465c3dacf32177e4418fdd"
-    }
-  ],
-  "runtime_revision_history": [
-    {
-      "reason": "User-directed Z06 immediate end-turn AP and health 5 to 6; starter Z06 x2 replaced by Z07 x2; user-confirmed B08 display name corrected to 茶花会",
-      "trained_again": false,
-      "replaced_copies": 2,
-      "previous_serving_build_sha256": "c618c7c7f25dfa6c7d7c8f01b570b0da3de587f2f2b2b9a92f3ace6a370ec21c"
-    },
-    {
-      "reason": "Optional learned opening framework; legacy v2 still keeps all opening cards; current rules revalidated",
-      "trained_again": false,
-      "opening_policy": "keep_all"
-    }
-  ],
   "validation": {
     "complete": true,
-    "model_sha256": "2bc124623b2ad34c0ede0c63e4497d171d499f92786d22ccf08c983bfeb7396d",
-    "rule_hash": "40526143e3e5e56cb3958cced61a1b66c3fc3cc0cdcbf1677e436c23cbad1bc1",
+    "model_sha256": "55cb64291951d97c2ea5a470ca6a446618defa67e50ce10c78c62bf2590fe921",
+    "rule_hash": "16601946435bb6145eb0b5888bf7db2c4b0dee16ce4f8eeff2ea8a241478bdd9",
     "games": 64,
-    "wins": 60,
+    "wins": 61,
     "min_pairs": 32,
     "min_win_rate": 0.5,
     "opponent_teams": 15,
-    "report_sha256": "1edffe71766822c38e89e20ef39c1bad2d9ba143f66baade40152cbc3956c7ff",
-    "serving_build_sha256": "b8a6229aa85f2dbd1c6f397156a36ba5a71cc1491d465c3dacf32177e4418fdd"
+    "report_sha256": "d08cf9bfc3d882607db1ef788c3f5e41de81bbcd0cf4a4d82aa16a225a223d11",
+    "serving_build_sha256": "cd9c6ed53bb9f58a6886cd0517710d5ceea53dca0268158080c8bf6d259b2fe5"
   },
   "serving_build": {
-    "id": "ai-starter-b8a6229aa85f",
-    "name": "创生预组·高级人机",
+    "id": "local-25c08f389eee",
+    "name": "局部配牌候选",
     "character_ids": [
       "nanali",
       "iloy",
@@ -284,38 +218,38 @@
       "jiuyuan"
     ],
     "card_ids": [
-      "N08",
-      "N04",
+      "N02",
+      "N02",
       "N03",
       "N03",
       "N04",
+      "N04",
+      "N07",
       "N08",
-      "N02",
-      "N02",
-      "Y08",
+      "Y02",
+      "Y02",
       "Y03",
-      "Y08",
       "Y06",
-      "Y03",
-      "Y07",
       "Y06",
       "Y07",
-      "Z04",
-      "Z08",
-      "Z08",
-      "Z04",
-      "Z07",
+      "Y07",
+      "Y08",
       "Z03",
       "Z03",
+      "Z04",
+      "Z05",
+      "Z05",
       "Z07",
-      "J08",
-      "J03",
-      "J08",
-      "J03",
-      "J04",
-      "J04",
+      "Z08",
+      "Z08",
+      "J01",
       "J02",
-      "J07"
+      "J02",
+      "J03",
+      "J04",
+      "J04",
+      "J07",
+      "J08"
     ]
   }
 }

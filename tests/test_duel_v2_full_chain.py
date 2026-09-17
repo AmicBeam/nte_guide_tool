@@ -105,6 +105,24 @@ class ReportBundleTest(unittest.TestCase):
             (root/'status.json').write_text(json.dumps({'phase':'failed'}))
             with self.assertRaises(ValueError):package_report(root,Path(directory)/'failed.zip')
 
+    def test_bundle_uses_selected_local_build_not_last_tuner_sample(self):
+        from app.modules.card_game.rl.report_bundle import package_report
+        import zipfile
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/'run';root.mkdir()
+            (root/'status.json').write_text(json.dumps({'phase':'complete'}))
+            (root/'construction-decisions.json').write_text(json.dumps({k:{'selection':'candidate'} for k in ('starter','weave-rush')}))
+            for key in ('starter','weave-rush'):
+                export=root/key/'adapted-export';export.mkdir(parents=True)
+                (export/(key+'.npz')).write_bytes(b'fixture')
+                (export/(key+'.json')).write_text('{}')
+                (root/key/'cards').mkdir()
+                (root/key/'cards/candidate.json').write_text('{"id":"last-sample"}')
+                (root/key/'selected-deck.json').write_text('{"id":"selected-local"}')
+            archive=Path(directory)/'report.zip';package_report(root,archive)
+            with zipfile.ZipFile(archive) as z:
+                self.assertEqual(json.loads(z.read('final/starter/deck.json'))['id'],'selected-local')
+
 
 class PipelineGuardTest(unittest.TestCase):
     def test_successful_exit_without_update_is_not_a_pass(self):

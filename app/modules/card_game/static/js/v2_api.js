@@ -18,6 +18,31 @@
     hathor: { id: 'hathor', name: '哈索尔', attribute: '相', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/哈索尔.webp', portrait: '/static/images/characters/portrait/哈索尔.webp' },
     iloy: { id: 'iloy', name: '伊洛伊', attribute: '灵', attack: 1, max_hp: 6, avatar: '/static/kongmu/images/characters/player_yiluoyi_256.webp', portrait: '/static/images/characters/portrait/伊洛伊.webp' },
   };
+  // Server-provided identity/assets are authoritative; the static table only
+  // supports old snapshots. Do not cache mutable combat stats across sides.
+  const characterAssets = Object.create(null);
+
+  function registerCharacters(characters) {
+    (Array.isArray(characters) ? characters : []).forEach(function (character) {
+      if (!character || typeof character.id !== 'string' || !character.id) return;
+      const entry = characterAssets[character.id] || { id: character.id };
+      ['name', 'attribute', 'avatar', 'portrait'].forEach(function (key) {
+        if (typeof character[key] === 'string' && character[key]) entry[key] = character[key];
+      });
+      characterAssets[character.id] = entry;
+    });
+  }
+
+  function registerPayloadCharacters(payload) {
+    registerCharacters(payload && payload.characters);
+    const boards = [payload && payload.game, payload && payload.replay && payload.replay.opening_board];
+    boards.forEach(function (board) {
+      Object.values((board && board.sides) || {}).forEach(function (side) {
+        registerCharacters(side && side.characters);
+      });
+    });
+  }
+
   const CARD_TYPE_ORDER = { tactic: 0, battle: 1, form: 2 };
   const CARD_TYPE_LABELS = {
     battle: '战斗',
@@ -156,6 +181,7 @@
         logId: logId,
       });
     }
+    registerPayloadCharacters(payload);
     return payload;
   }
 
@@ -304,7 +330,10 @@
   }
 
   function characterFallback(characterId) {
-    return CHARACTER_FALLBACK[String(characterId || '')] || null;
+    const id = String(characterId || '');
+    const local = characterAssets[id];
+    const fallback = CHARACTER_FALLBACK[id];
+    return local ? Object.assign({}, fallback || {}, local) : fallback || null;
   }
 
   function characterAsset(character, kind) {
@@ -470,11 +499,11 @@
     const list = Array.isArray(characters) ? characters : [];
     if (list.length) {
       return list.map(function (item) {
-        return Object.assign({}, CHARACTER_FALLBACK[item && item.id] || { id: item && item.id }, item || {});
+        return Object.assign({}, characterFallback(item && item.id) || { id: item && item.id }, item || {});
       });
     }
     return CHARACTER_ORDER.map(function (id) {
-      return Object.assign({}, CHARACTER_FALLBACK[id] || { id: id });
+      return Object.assign({}, characterFallback(id) || { id: id });
     });
   }
 

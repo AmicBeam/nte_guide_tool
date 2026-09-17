@@ -27,11 +27,18 @@ def _n03(c):
 
 
 def _n04(c):
+    team = c.state['sides'][c.side]
+    team['genesis_damage_bonus'] = int(team.get('genesis_damage_bonus') or 0) + 1
+    c.history('「不是闯祸精」生效：本回合己方创生伤害 +1。')
     c.sortie()
 
 
 def _n05(c):
-    c.character.setdefault('flags', {})['next_followup'] = 3
+    from app.modules.card_game.engine.duel_v2.state import damage
+    side, cid = c.operation['target_id'].split(':', 1)
+    amount = 4 + (2 if c.character.get('shape') == 'N08' else 0)
+    damage(c.state, side, cid, amount, source=f'{c.side}:{c.cid}', kind='followup',
+           reason='「小弟遍天下」的追击伤害')
 
 
 def _n06(c):
@@ -53,6 +60,7 @@ class Nanali:
         'N05': _n05, 'N06': _n06, 'N07': set_shape, 'N08': set_shape,
         'NF01': _nf01,
     }
+    target_policies = {'N05': 'living_enemy'}
     on_turn_begin = staticmethod(on_first_turn_seed)
     on_rout = staticmethod(on_rout_seed)
 

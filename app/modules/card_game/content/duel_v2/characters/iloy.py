@@ -59,6 +59,25 @@ def _y05(c):
     perm_plus(c, atk=1, hp=1)
 
 
+def _y07_heal(c):
+    from app.modules.card_game.engine.duel_v2.state import alive, shuffle, team_order
+    candidates = [cid for cid in team_order(c.state, c.side)
+                  if alive(c.state, c.side, cid)
+                  and hero(c.state, c.side, cid)['hp'] < hero(c.state, c.side, cid)['max_hp']]
+    if not candidates:
+        return
+    if len(candidates) > 1:
+        shuffle(c.state, candidates)
+    cid = candidates[0]
+    heal(c.state, c.side, cid, 2, reason='「想做什么梦？」触发')
+    _mark_healed(c, c.side, cid)
+
+
+def _y07(c):
+    set_shape(c)
+    _y07_heal(c)
+
+
 def _y06(c):
     side, cid = c.operation['target_id'].split(':', 1)
     revive_character(c, side, cid)
@@ -71,7 +90,7 @@ class Iloy:
     text_name = '伊洛伊'
     effects = {
         'Y01': _y01, 'Y02': _y02, 'Y03': _y03, 'Y04': _y04,
-        'Y05': _y05, 'Y06': _y06, 'Y07': set_shape, 'Y08': set_shape,
+        'Y05': _y05, 'Y06': _y06, 'Y07': _y07, 'Y08': set_shape,
     }
     target_policies = {
         'Y02': 'living_ally',
@@ -124,13 +143,8 @@ class Iloy:
                     target=f'{c.side}:{cid}', energy_delta=gained,
                     before={'energy': before}, after={'energy': item['energy']})
 
-    @staticmethod
-    def on_ally_down(c, downed=None, **_data):
-        if downed == c.cid or c.character['hp'] <= 0 or c.character.get('shape') != 'Y07':
-            return
-        side, cid = front_target(c.state, c.side)
-        damage(c.state, side, cid, 2, source=f'{c.side}:{c.cid}', settle=False,
-               reason='己方其他异能者倒地后，「想做什么梦？」触发')
+        if c.character.get('shape') == 'Y07':
+            _y07_heal(c)
 
     @staticmethod
     def on_ultimate_end(c):

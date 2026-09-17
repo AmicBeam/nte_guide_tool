@@ -376,6 +376,7 @@ def begin_turn(state, side):
     for ps in SIDES:
         state['sides'][ps]['attacked_this_turn'] = []
     team['harmony_damage'] = False
+    team['genesis_damage_bonus'] = 0
     team['surplus'] = False
     clamp_resources(state)
     # Announce the turn before any start-of-turn board changes are presented.
@@ -522,7 +523,7 @@ def end_turn(state, side):
             team['hand'].remove(card)
             discard(state, side, card)
     team.update(normal_attack_available=False, ultimate_available=False,
-                extra_flower=False, extra_delay=False)
+                extra_flower=False, extra_delay=False, genesis_damage_bonus=0)
     expire_turn_zone_states(state, side)
     if finished(state):
         return

@@ -95,7 +95,7 @@ def resolve_genesis(c, *, arm_delay=True):
             break
         genesis_target = front_target(s, side)
         delayed = bool(is_esper(genesis_target[1]) and front_debuff(s, genesis_target[0]).get('delay'))
-        damage(s, *genesis_target, 1, source=f'{side}:{cid}', kind='genesis',
+        damage(s, *genesis_target, 1 + int(team.get('genesis_damage_bonus') or 0), source=f'{side}:{cid}', kind='genesis',
                group_id=next_group_id(s))
         if delayed and alive(s, side, cid):
             s['sides'][side]['surplus'] = True

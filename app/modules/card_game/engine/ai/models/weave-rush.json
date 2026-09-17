@@ -5,9 +5,9 @@
   "state_dim": 664,
   "cand_dim": 60,
   "gpu_lock": "caaf2adb0c162ad915a5402945d9848dd64bc75596c26ca81a895b6f2ece3657",
-  "update": 587,
+  "update": 35,
   "rule_identity": {
-    "rule_hash": "16601946435bb6145eb0b5888bf7db2c4b0dee16ce4f8eeff2ea8a241478bdd9"
+    "rule_hash": "4c3268dc86f75b18156ee7219f1b2a4fa888e47f4e37f701db8df42179615fbd"
   },
   "learner_deck": {
     "id": "local-7987ad220ccc",
@@ -55,23 +55,23 @@
   },
   "training_distribution": "preset_priority_v1",
   "opponent_distribution": {
-    "random_fraction": 0.2,
-    "rule_fraction": 0.2
+    "random_fraction": 0.0,
+    "rule_fraction": 0.0
   },
   "pinned_opponents": [
     {
-      "sha256": "68abf3f509383d7aa894c1843870225e5ec02d415b76abaae17aac7eb5c416ca",
+      "sha256": "5e5594da25e4456cccfc27a394e06488dc063f6d7d14454ddfa13df0eeaa853c",
       "deck": "starter",
       "source_schema": "resident_public_v3",
       "trained_rule_identity": {
-        "rule_hash": "16601946435bb6145eb0b5888bf7db2c4b0dee16ce4f8eeff2ea8a241478bdd9"
+        "rule_hash": "4c3268dc86f75b18156ee7219f1b2a4fa888e47f4e37f701db8df42179615fbd"
       }
     }
   ],
   "reward_mode": "outcome_only_v1",
   "opening_policy": "learned_joint_v1",
-  "sha256": "42e3a063f0a5d3b13f7593f75b48aebd2b10a5ce85ec908691a14583422d43ca",
-  "source_checkpoint_sha256": "aa33fe7ba63ce52818803a6cbe0c8117e45d3a48d87386b73751f6d068d97777",
+  "sha256": "d2d67ac564ac0e98e81663262d50a0795f588f5d0fcb32260f05c90e02f96cab",
+  "source_checkpoint_sha256": "7008dafd43de4db1e7052326084a5a051416a8efa797fb37f4c19e224f1d2666",
   "card_ids": [
     "N01",
     "N02",
@@ -198,14 +198,14 @@
   },
   "validation": {
     "complete": true,
-    "model_sha256": "42e3a063f0a5d3b13f7593f75b48aebd2b10a5ce85ec908691a14583422d43ca",
-    "rule_hash": "16601946435bb6145eb0b5888bf7db2c4b0dee16ce4f8eeff2ea8a241478bdd9",
+    "model_sha256": "d2d67ac564ac0e98e81663262d50a0795f588f5d0fcb32260f05c90e02f96cab",
+    "rule_hash": "4c3268dc86f75b18156ee7219f1b2a4fa888e47f4e37f701db8df42179615fbd",
     "games": 64,
-    "wins": 63,
+    "wins": 62,
     "min_pairs": 32,
     "min_win_rate": 0.5,
     "opponent_teams": 15,
-    "report_sha256": "11ab27bd5507f63096303fcea936ecbf0102c57e2d5f2b850ab1bfa762fe498e",
+    "report_sha256": "03bdd7435e035acc9aed45d1db1830df7090997becae21881f1a7f427390297e",
     "serving_build_sha256": "727d0c11d3de614172aa7929f7390e41ee19514d6856b1a6121872f6e5a6e635"
   },
   "serving_build": {

@@ -5,13 +5,13 @@
   "state_dim": 664,
   "cand_dim": 60,
   "gpu_lock": "caaf2adb0c162ad915a5402945d9848dd64bc75596c26ca81a895b6f2ece3657",
-  "update": 572,
+  "update": 39,
   "rule_identity": {
-    "rule_hash": "16601946435bb6145eb0b5888bf7db2c4b0dee16ce4f8eeff2ea8a241478bdd9"
+    "rule_hash": "4c3268dc86f75b18156ee7219f1b2a4fa888e47f4e37f701db8df42179615fbd"
   },
   "learner_deck": {
-    "id": "local-25c08f389eee",
-    "name": "局部配牌候选",
+    "id": "n06-0-baseline",
+    "name": "n06-0-baseline",
     "character_ids": [
       "nanali",
       "iloy",
@@ -43,9 +43,9 @@
       "Z07",
       "Z08",
       "Z08",
-      "J01",
       "J02",
       "J02",
+      "J03",
       "J03",
       "J04",
       "J04",
@@ -55,23 +55,23 @@
   },
   "training_distribution": "preset_priority_v1",
   "opponent_distribution": {
-    "random_fraction": 0.2,
-    "rule_fraction": 0.2
+    "random_fraction": 0.0,
+    "rule_fraction": 0.0
   },
   "pinned_opponents": [
     {
-      "sha256": "0f0e464ded08d9018cb546bac35250af30a261e109374fc2e46a2d852bb37328",
+      "sha256": "63a24b24206bb2479eb9d06bd671e15ba5b2362cd265de5d8d1223af7e4d2bfe",
       "deck": "weave-rush",
       "source_schema": "resident_public_v3",
       "trained_rule_identity": {
-        "rule_hash": "16601946435bb6145eb0b5888bf7db2c4b0dee16ce4f8eeff2ea8a241478bdd9"
+        "rule_hash": "dbcf029bfba051f3eaf27c5883d4c0d3f3422982b0cde3268521d4bb00c90623"
       }
     }
   ],
   "reward_mode": "outcome_only_v1",
   "opening_policy": "learned_joint_v1",
-  "sha256": "55cb64291951d97c2ea5a470ca6a446618defa67e50ce10c78c62bf2590fe921",
-  "source_checkpoint_sha256": "44717b2e9597bd8e601723b88d39ed4a60050d2bec9007b00f71a254d0334c21",
+  "sha256": "a5eb78aec4926d5deadbf0f7411741d17c922f1d18cd6562257880182fedee11",
+  "source_checkpoint_sha256": "5e5594da25e4456cccfc27a394e06488dc063f6d7d14454ddfa13df0eeaa853c",
   "card_ids": [
     "N01",
     "N02",
@@ -198,19 +198,19 @@
   },
   "validation": {
     "complete": true,
-    "model_sha256": "55cb64291951d97c2ea5a470ca6a446618defa67e50ce10c78c62bf2590fe921",
-    "rule_hash": "16601946435bb6145eb0b5888bf7db2c4b0dee16ce4f8eeff2ea8a241478bdd9",
+    "model_sha256": "a5eb78aec4926d5deadbf0f7411741d17c922f1d18cd6562257880182fedee11",
+    "rule_hash": "4c3268dc86f75b18156ee7219f1b2a4fa888e47f4e37f701db8df42179615fbd",
     "games": 64,
-    "wins": 61,
+    "wins": 62,
     "min_pairs": 32,
     "min_win_rate": 0.5,
     "opponent_teams": 15,
-    "report_sha256": "d08cf9bfc3d882607db1ef788c3f5e41de81bbcd0cf4a4d82aa16a225a223d11",
-    "serving_build_sha256": "cd9c6ed53bb9f58a6886cd0517710d5ceea53dca0268158080c8bf6d259b2fe5"
+    "report_sha256": "d2678d0f97635dab554ee170c0dfdcab4ce0bb3d756b3624038e1464a4a759bb",
+    "serving_build_sha256": "904eb3f9c744aa6c7ab2e094999ae684cd117765ba72fd4902df19fecfb4089c"
   },
   "serving_build": {
-    "id": "local-25c08f389eee",
-    "name": "局部配牌候选",
+    "id": "n06-0-baseline",
+    "name": "n06-0-baseline",
     "character_ids": [
       "nanali",
       "iloy",
@@ -242,9 +242,9 @@
       "Z07",
       "Z08",
       "Z08",
-      "J01",
       "J02",
       "J02",
+      "J03",
       "J03",
       "J04",
       "J04",

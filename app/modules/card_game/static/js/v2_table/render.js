@@ -101,7 +101,7 @@
       { html: combatStat('shield', shield, '护盾 ' + shield) },
     ] : [];
     if (resourceHtml) stats.push({ html: '<div class="v2-resource-row">' + resourceHtml + '</div>' });
-    if (!hideEnergy && data.awakened) stats.push({ cls: 'energy', text: '终结 ' + (data.ultimate_turns || 0) });
+    if (!hideEnergy && data.awakened) stats.push({ cls: 'energy', text: '终结 ' + (data.ultimate_expires === 'turn_end' ? '本回合' : (data.ultimate_turns || 0)) });
     if (Number(data.growth) > 0) {
       stats.push({ cls: '', text: '成长 ' + data.growth });
     }

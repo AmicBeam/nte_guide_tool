@@ -4,7 +4,7 @@ from .entities import clone_state, entity_action, needs_hydration
 
 from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS
-from .flow import acting_side, apply_action, card_plays_instant, card_is_free_instant, legal_actions, normal_attack_payment
+from .flow import acting_side, apply_action, card_plays_instant, card_is_free_instant, legal_actions, normal_attack_payment, ultimate_spec
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
 from .combat import harmony_marks
@@ -140,7 +140,7 @@ def observe(state, side, after_seq=None):
                  'avatar', 'portrait', 'passive', 'awakened_passive') if k in h}
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None
-            c.update(attack=attack_value(h), shape=(form or {}).get('name') if form else None,
+            c.update(ultimate_expires=ultimate_spec(cid)['expires'], attack=attack_value(h), shape=(form or {}).get('name') if form else None,
                      shape_id=h['shape'], shape_description=(form or {}).get('description') if form else None,
                      harmony_max=harmony_cap(state), energy_max=energy_cap(state, h), gaze=h.get('gaze', 0), dream=h.get('dream', 0),
                      next_attack_bonus=flags.get('next_attack', 0),

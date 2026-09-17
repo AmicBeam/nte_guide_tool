@@ -49,6 +49,7 @@ def entity_id(side, cid):
 def capture_public_board(state):
     from .escalation import public_progress, energy_cap, harmony_cap, ultimate_remaining
     from .combat import harmony_marks
+    from .flow import ultimate_spec
     board = {
         'escalation': public_progress(state),
         'phase': state.get('phase'),
@@ -95,6 +96,7 @@ def capture_public_board(state):
                 'harmony_max': harmony_cap(state),
                 'awakened': hero['awakened'],
                 'ultimate_turns': hero.get('ultimate_turns', 0),
+                'ultimate_expires': ultimate_spec(cid)['expires'],
                 'down_turns': hero['down_turns'],
                 'growth': hero.get('growth', 0),
                 'family': hero.get('family', 0),

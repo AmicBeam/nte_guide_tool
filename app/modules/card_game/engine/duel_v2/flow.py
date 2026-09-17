@@ -308,7 +308,7 @@ def ultimate_spec(cid):
     if kind not in ('status', 'instant'):
         kind = 'status'
     turns = int(spec.get('turns') or 2)
-    return {'kind': kind, 'turns': max(1, turns)}
+    return {'kind': kind, 'turns': max(1, turns), 'expires': spec.get('expires', 'turn_start')}
 
 
 def start_ultimate(state, side, cid, *, spent_ap=False):
@@ -326,7 +326,8 @@ def start_ultimate(state, side, cid, *, spent_ap=False):
     else:
         h['awakened'] = True
         h['ultimate_turns'] = spec['turns']
-        text = f"{h['name']}消耗 {energy_cap(state, h)} 点能量，发动终结（持续 {spec['turns']} 个己方回合）。"
+        duration = '持续至本回合结束' if spec['expires'] == 'turn_end' else f"持续 {spec['turns']} 个己方回合"
+        text = f"{h['name']}消耗 {energy_cap(state, h)} 点能量，发动终结（{duration}）。"
     log(state, text, 'ultimate', side=side, source=h['id'], actor=f'{side}:{h["id"]}',
         target=f'{side}:{h["id"]}',
         description=(lookup_character(cid) or {}).get('awakened_passive') or '',
@@ -525,6 +526,9 @@ def end_turn(state, side):
     team.update(normal_attack_available=False, ultimate_available=False,
                 extra_flower=False, extra_delay=False, genesis_damage_bonus=0)
     expire_turn_zone_states(state, side)
+    for cid in team_order(state, side):
+        if ultimate_spec(cid)['expires'] == 'turn_end':
+            end_ultimate(state, side, cid)
     if finished(state):
         return
     begin_turn(state, other(side))

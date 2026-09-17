@@ -369,11 +369,11 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertEqual(len(catalog['cards']), 121)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻'],
+            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻', '快攻预组'],
         )
         self.assertEqual(
             [item['name'] for item in catalog['saved_builds']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻'],
+            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻', '快攻预组'],
         )
 
     def test_regular_account_cannot_save_or_start_with_test_characters(self):

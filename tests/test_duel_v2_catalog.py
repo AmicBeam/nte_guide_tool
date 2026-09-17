@@ -173,9 +173,9 @@ class DuelV2CatalogTest(unittest.TestCase):
         rush = next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')
         self.assertEqual(
             sorted(set(rush['card_ids'])),
-            ['B01', 'B02', 'B06', 'B08', 'M01', 'M03', 'M04', 'M08', 'Y01', 'Y03', 'Y06', 'Y07', 'Z03', 'Z04', 'Z05', 'Z08'],
+            ['B01', 'B02', 'B06', 'B07', 'B08', 'M01', 'M03', 'M04', 'M07', 'Y02', 'Y03', 'Y04', 'Y06', 'Y07', 'Z03', 'Z04', 'Z05', 'Z08'],
         )
-        self.assertTrue(all(rush['card_ids'].count(card_id) == 2 for card_id in set(rush['card_ids'])))
+        self.assertTrue(all(1 <= rush['card_ids'].count(card_id) <= 2 for card_id in set(rush['card_ids'])))
         self.assertIn('反击方', CARDS['N02']['description'])
         self.assertEqual(CARDS['N03']['description'], '额外造成 1 点追击伤害。')
         self.assertEqual(CARDS['N04']['description'], '')
@@ -313,10 +313,10 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'requiem')))
         full = get_catalog()
         self.assertEqual(len(full['characters']), 15)
-        self.assertEqual(len(full['starter_decks']), 5)
+        self.assertEqual(len(full['starter_decks']), 6)
         self.assertEqual(
             [item['name'] for item in full['starter_decks']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻'],
+            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组', '覆纹快攻', '快攻预组'],
         )
         self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')))
 

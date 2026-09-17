@@ -39,13 +39,13 @@ def _content():
 
 
 def _solo_ai_deck() -> dict:
+    from secrets import choice
     content = _content()
-    for preset in getattr(content, 'STARTER_DECKS', None) or []:
-        if preset.get('id') == getattr(content, 'STARTER_DECK_ID', 'starter'):
-            return _validate_deck(deepcopy(preset))
-        if preset.get('name') == getattr(content, 'STARTER_DECK_NAME', '创生预组'):
-            return _validate_deck(deepcopy(preset))
-    return _validate_deck(deepcopy(content.STARTER_DECK))
+    presets = [preset for preset in getattr(content, 'STARTER_DECKS', None) or [content.STARTER_DECK]
+               if not content.deck_uses_test_characters(preset)]
+    if not presets:
+        raise RuleValidationError('暂无可用的公开预组。')
+    return _validate_deck(deepcopy(choice(presets)))
 
 
 def _engine():

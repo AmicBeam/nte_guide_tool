@@ -306,11 +306,12 @@
       "avatar": "/static/images/characters/avatar/海月.webp",
       "portrait": "/static/images/characters/portrait/海月.webp",
       "passive": "海月攻击后返回备战区。",
-      "awakened_passive": "2 个己方回合内，海月从备战区出击时，不进入己方战斗区，也不受反击。",
+      "awakened_passive": "海月从备战区出击时，不进入己方战斗区，也不受反击，持续至本回合结束。",
       "everness_id": 1070,
       "ultimate": {
         "kind": "status",
-        "turns": 2
+        "turns": 1,
+        "expires": "turn_end"
       }
     }
   ],
@@ -2410,7 +2411,7 @@
         "rules_source": "user_tabletop_2026-09-18"
       },
       "starter_copies": 0,
-      "attack": 5,
+      "attack": 4,
       "hp": 4
     },
     {
@@ -2593,7 +2594,7 @@
     },
     {
       "id": "sync-curse",
-      "name": "覆纹预组",
+      "name": "覆纹预组（测试）",
       "official": true,
       "character_ids": [
         "canhong",
@@ -2638,7 +2639,7 @@
     },
     {
       "id": "weave-rush",
-      "name": "覆纹快攻",
+      "name": "覆纹预组",
       "official": true,
       "character_ids": [
         "bohe",

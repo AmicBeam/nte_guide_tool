@@ -32,7 +32,7 @@ PRESETS = ('starter', 'weave-rush')
 
 def preset(deck_id):
     if deck_id not in PRESETS:
-        raise RuleValidationError('高级人机暂支持创生预组和覆纹快攻预组。')
+        raise RuleValidationError('高级人机暂支持创生预组和覆纹预组。')
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
 
 

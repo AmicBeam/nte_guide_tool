@@ -29,8 +29,8 @@
         return String(action.card_id) === String(cardId);
       });
     };
-    ctx.viewer = function () { return TABLE.viewerSide(ctx.game); };
-    ctx.opponent = function () { return TABLE.opponentSide(ctx.game); };
+    ctx.viewer = function () { return ctx.replayMode && ctx.replayViewerSide || TABLE.viewerSide(ctx.game); };
+    ctx.opponent = function () { return ctx.viewer() === 'b' ? 'a' : 'b'; };
     ctx.playHistory = ctx.playHistory || [];
     ctx.playerGeneration = ctx.playerGeneration || 0;
 

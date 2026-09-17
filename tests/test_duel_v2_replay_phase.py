@@ -30,7 +30,7 @@ async function scenario(animated) {
     sides: {a: {hand: [], hand_count: 0}, b: {hand: [], hand_count: 0}}};
   const events = [
     {seq: 1, type: 'mulligan', text: '换牌完成', patch: {}},
-    {seq: 2, type: 'turn', text: '第一回合', patch: {phase: 'playing', turn: 1}},
+    {seq: 2, side: 'a', type: 'turn', text: '我方 · 我方玩家的第一回合', patch: {phase: 'playing', turn: 1}},
     {seq: 3, type: 'draw', text: '抽牌', patch: {}},
   ];
   const window = {NTE_V2: {
@@ -55,7 +55,7 @@ async function scenario(animated) {
   // Keep the actual hand renderer: its phase drives panel visibility and card placement.
   table.renderGame = renderCtx => {
     table.renderHands(renderCtx);
-    frames.push({phase: renderCtx.game.phase, visible: !ctx.nodes.mulliganStage.hidden});
+    frames.push({phase: renderCtx.game.phase, visible: !ctx.nodes.mulliganStage.hidden, viewer: renderCtx.viewer, opponent: renderCtx.opponent});
   };
   table.bindSync(ctx);
   if (animated) {
@@ -86,6 +86,25 @@ async function scenario(animated) {
   select.value = '0'; select.listeners.change();
   select.value = '2'; select.listeners.change();
   assert.equal(ctx.nodes.mulliganStage.hidden, true);
+  const perspective = document.getElementById('v2-replay-perspective');
+  const before = JSON.stringify(ctx.game.sides);
+  perspective.listeners.click();
+  assert.equal(ctx.index, 2);
+  assert.equal(ctx.playing, false);
+  assert.equal(frames.at(-1).viewer, 'b');
+  assert.equal(frames.at(-1).opponent, 'a');
+  assert.equal(ctx.viewer(), 'b');
+  assert.equal(ctx.game.viewer_side, 'a'); // Reconstruction retains the recording's knowledge.
+  assert.equal(JSON.stringify(ctx.game.sides), before);
+  assert.equal(ctx.game.events[1].text, '对手 · 对手玩家的第一回合');
+  document.getElementById('v2-replay-next').listeners.click();
+  await new Promise(setImmediate);
+  assert.equal(frames.at(-1).viewer, 'b'); // Animated patch callbacks keep the selected view.
+  perspective.listeners.click();
+  assert.equal(ctx.index, 3);
+  assert.equal(ctx.viewer(), 'a');
+  assert.equal(ctx.game.events[1].text, '我方 · 我方玩家的第一回合');
+  assert.equal(events[1].text, '我方 · 我方玩家的第一回合');
 }
 (async () => { await scenario(true); await scenario(false); })().catch(error => { console.error(error); process.exitCode = 1; });
 '''

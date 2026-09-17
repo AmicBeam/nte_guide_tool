@@ -51,7 +51,7 @@
     const stepNode = document.getElementById('v2-replay-step');
     const turnSelect = document.getElementById('v2-replay-turn');
     let turnStops = [];
-    const exitLink = document.getElementById('v2-replay-exit');
+    const perspectiveBtn = document.getElementById('v2-replay-perspective');
     const replayLink = document.getElementById('v2-replay-link');
 
     ctx.replayMode = true;
@@ -61,6 +61,7 @@
     if (ctx.castZone) V2.setHidden(ctx.castZone, true);
 
     function replayViewer() {
+      if (ctx.replayViewerSide) return ctx.replayViewerSide;
       if (typeof ctx.viewer === 'function') {
         return ctx.viewer();
       }
@@ -93,6 +94,19 @@
       };
     }
 
+    function setPerspectiveEvents() {
+      const reversed = ctx.replayViewerSide !== (ctx.replayOpening.viewer_side || 'a');
+      ctx.replayEvents = ctx.replaySourceEvents.map(function (event) {
+        const copy = TABLE.clone(event);
+        if (reversed && copy.text) {
+          copy.text = copy.text.replace(/^我方 · |^对手 · |我方玩家|对手玩家/g, function (label) {
+            return label.indexOf('我方') === 0 ? label.replace('我方', '对手') : label.replace('对手', '我方');
+          });
+        }
+        return copy;
+      });
+    }
+
     function rebuildHistory(index) {
       ctx.playHistory = [];
     }
@@ -100,6 +114,11 @@
     function paintChrome() {
       const events = ctx.replayEvents || [];
       const max = events.length;
+      if (perspectiveBtn && ctx.replayOpening) {
+        const side = replayViewer();
+        const team = (ctx.replayOpening.sides || {})[side] || {};
+        perspectiveBtn.title = '当前视角：' + (team.name || (side === 'a' ? '玩家 A' : '玩家 B')) + '；点击切换并暂停';
+      }
       ctx.index = Math.max(0, Math.min(ctx.index || 0, max));
       ctx.nodes.roomChip.textContent = ctx.room && ctx.room.room_code ? ('回放 ' + ctx.room.room_code) : '回放';
       ctx.nodes.phaseChip.textContent = '对局回放';
@@ -221,6 +240,15 @@
         paint();
       });
     }
+    if (perspectiveBtn) {
+      perspectiveBtn.addEventListener('click', function () {
+        if (!ctx.replayOpening) return;
+        stopPlay();
+        ctx.replayViewerSide = replayViewer() === 'a' ? 'b' : 'a';
+        setPerspectiveEvents();
+        paint();
+      });
+    }
     playBtn.addEventListener('click', startPlay);
     pauseBtn.addEventListener('click', function () {
       stopPlay();
@@ -230,7 +258,9 @@
     return V2.getReplay(roomCode).then(function (payload) {
       ctx.room = payload.room || { room_code: roomCode, status: 'finished' };
       ctx.replayOpening = payload.replay && payload.replay.opening_board;
-      ctx.replayEvents = (payload.replay && payload.replay.events) || [];
+      ctx.replaySourceEvents = (payload.replay && payload.replay.events) || [];
+      ctx.replayViewerSide = ctx.replayOpening.viewer_side || 'a';
+      setPerspectiveEvents();
       ctx.index = 0;
       if (typeof ctx.bindPlayer === 'function') {
         ctx.bindPlayer();
@@ -262,11 +292,7 @@
         });
         turnSelect.disabled = false;
       }
-      if (exitLink) {
-        exitLink.href = '/table';
-        exitLink.textContent = ctx.room.status === 'playing' ? '返回牌桌' : '返回主页';
-        if (ctx.room.status !== 'playing') exitLink.href = '/card-game';
-      }
+      if (perspectiveBtn) perspectiveBtn.disabled = false;
       paint();
       if (ctx.showToast) ctx.showToast('回放从起手换牌开始，双方出牌都会演出。');
       startPlay();

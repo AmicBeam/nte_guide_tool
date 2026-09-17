@@ -980,6 +980,30 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(hero(s, 'a', 'nanali')['hp'], hero(s, 'a', 'nanali')['max_hp'])
         self.assertEqual(hero(s, 'a', 'nanali')['down_turns'], 0)
 
+    def test_n06_instant_revive_cost_and_exhausted_instant(self):
+        for used, ap, allowed in ((False, 0, True), (True, 0, False), (True, 1, True)):
+            with self.subTest(instant_used=used, ap=ap):
+                s = self.game()
+                card = self.hand(s, 'N06')
+                hero(s, 'a', 'nanali').update(hp=0, down_turns=3)
+                s['sides']['a']['ap'] = ap
+                s['sides']['a']['used']['instant'] = used
+                action = {'type': 'play_card', 'card_id': card['instance_id']}
+                available = any(a['type'] == 'play_card' and a['card_id'] == card['instance_id']
+                                for a in legal_actions(s))
+                self.assertEqual(available, allowed)
+                if not allowed:
+                    with self.assertRaises(ValueError):
+                        apply_action(s, 'a', action)
+                    continue
+                result = apply_action(s, 'a', action)
+                self.assertEqual(result['sides']['a']['ap'], 0)
+                self.assertTrue(result['sides']['a']['used']['instant'])
+                revived = hero(result, 'a', 'nanali')
+                self.assertEqual(revived['hp'], revived['max_hp'])
+                self.assertEqual(revived['down_turns'], 0)
+                self.assertFalse(revived.get('flags', {}).get('temp_revive'))
+
     def test_every_card_has_executable_legal_effect(self):
         for cid in CARDS:
             with self.subTest(card=cid):

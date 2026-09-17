@@ -110,6 +110,25 @@ class PublicCompiledNativeTest(unittest.TestCase):
         self.assertEqual(mechan_from_row(got), mechan_from_row(py))
         return nxt, got
 
+    def test_n06_instant_revive_matches_python(self):
+        for side in ('a', 'b'):
+            for used, ap in ((False, 0), (True, 1)):
+                with self.subTest(side=side, instant_used=used):
+                    state = new_game(seed=9, first_side=side, skip_mulligan=True)
+                    for team in state['sides'].values():
+                        team['hand'] = []
+                    card = _inject_hand(state, side, 'N06')
+                    hero(state, side, 'nanali').update(hp=0, down_turns=3)
+                    state['sides'][side]['ap'] = ap
+                    state['sides'][side]['used']['instant'] = used
+                    result, _ = self._check_play(state, {
+                        'type': 'play_card', 'card_id': card['instance_id'],
+                    })
+                    self.assertEqual(result['sides'][side]['ap'], 0)
+                    revived = hero(result, side, 'nanali')
+                    self.assertEqual(revived['hp'], revived['max_hp'])
+                    self.assertEqual(revived['down_turns'], 0)
+
     def test_iloy_other_ally_down_after_both_fronts_leave(self):
         from tests.test_duel_v2_iloy_knockdown import scenario
         for side in ('a', 'b'):

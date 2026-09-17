@@ -339,7 +339,8 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "复活娜娜莉。（娜娜莉倒地时也能打出）",
+      "description": "瞬发。复活娜娜莉。（娜娜莉倒地时也能打出）",
+      "instant": true,
       "playable_downed": true,
       "effect_id": "N06",
       "source": {

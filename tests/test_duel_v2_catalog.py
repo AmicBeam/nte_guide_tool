@@ -142,6 +142,8 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['N08']['hp'], 6)
         self.assertEqual(CARDS['N04']['shield'], 2)
         self.assertEqual(CARDS['N03']['attack'], 1)
+        self.assertTrue(CARDS['N06'].get('instant'))
+        self.assertTrue(CARDS['N06']['description'].startswith('瞬发。'))
         self.assertTrue(CARDS['N06'].get('playable_downed'))
         self.assertIn('倒地时也能打出', CARDS['N06']['description'])
         self.assertEqual(CARDS['N02']['response'], 'ally_attacked')

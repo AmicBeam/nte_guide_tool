@@ -165,7 +165,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['M08']['name'], '开始净空')
         self.assertEqual(CARDS['B07']['name'], '判予秋')
         self.assertEqual(CARDS['B08']['name'], '茶花会')
-        self.assertEqual(CARDS['B07']['attack'], 3)
+        self.assertEqual(CARDS['B07']['attack'], 2)
         self.assertEqual(CARDS['B08']['attack'], 3)
         self.assertEqual(CARDS['B06']['description'], '若本回合白藏受到过己方伤害，额外 +1 攻击。')
         self.assertEqual(CARDS['M06']['description'], '对对方前排造成 2 点伤害。薄荷的永久攻击每比 3 高 1 点，此伤害 +1。')

@@ -97,6 +97,11 @@ def apply_event_to_hand(board: dict, event: dict) -> dict:
     team = dict(result['sides'][event['side']] or {})
     viewer = result.get('viewer_side')
     is_self = event['side'] == viewer
+    # Engine patches already contain the post-event count. Only reconstruct
+    # identities/placeholders here; never account for the same movement twice.
+    patched = ((event.get('patch') or {}).get('sides') or {}).get(event['side'], {})
+    if 'hand' in patched:
+        return board
     hand = list(team.get('hand') or [])
     card = event.get('card') if isinstance(event.get('card'), dict) else None
     if kind in ('play', 'discard', 'remove'):
@@ -113,13 +118,11 @@ def apply_event_to_hand(board: dict, event: dict) -> dict:
                     hand.pop(index)
                     removed = True
                     break
-        if not removed and not is_self:
+        if not removed and not is_self and kind != 'discard':
             for index in range(len(hand) - 1, -1, -1):
                 if _is_hidden_card(hand[index]) and not (hand[index] or {}).get('copy'):
                     hand.pop(index)
                     break
-        if team.get('hand_count') is not None:
-            team['hand_count'] = max(0, int(team['hand_count']) - 1)
     elif kind in ('draw', 'gain'):
         if is_self and card and not card.get('hidden'):
             exists = any(
@@ -133,11 +136,29 @@ def apply_event_to_hand(board: dict, event: dict) -> dict:
                 hand.append(deepcopy(card))
             else:
                 hand.append(_hidden_card())
-        if team.get('hand_count') is not None:
-            team['hand_count'] = int(team['hand_count']) + 1
     team['hand'] = hand
     result['sides'][event['side']] = team
-    return result
+    return normalize_replay_hands(result)
+
+
+def normalize_replay_hands(board: dict) -> dict:
+    """Keep placeholders in sync, including private mulligan removals."""
+    for team in (board.get('sides') or {}).values():
+        if 'hand_count' not in team:
+            continue
+        hand = list(team.get('hand') or [])
+        count = max(0, int(team['hand_count']))
+        while len(hand) > count:
+            hidden = next((i for i in range(len(hand)-1, -1, -1) if _is_hidden_card(hand[i])), None)
+            if hidden is None:
+                # A private removal does not identify which old card survived.
+                # Hide the uncertain identities instead of displaying stale cards.
+                hand = [_hidden_card() for _ in range(count)]
+                break
+            hand.pop(hidden)
+        hand.extend(_hidden_card() for _ in range(max(0, count-len(hand))))
+        team['hand'] = hand
+    return board
 
 
 def assemble_replay_game(opening: dict, events: list, *, upto: int | None = None) -> dict:
@@ -201,7 +222,7 @@ def append_projected_events(
         engine_patch = item.get('patch') if isinstance(item.get('patch'), dict) else {}
         if index < len(projected) - 1:
             nxt = merge_patch(running, engine_patch)
-            nxt = apply_event_to_hand(nxt, item)
+            nxt = normalize_replay_hands(apply_event_to_hand(nxt, item))
             item['patch'] = diff_public(running, nxt)
             running = nxt
         else:

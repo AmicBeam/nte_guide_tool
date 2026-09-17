@@ -25,7 +25,14 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(actions['e']['harmony'], 100)
         self.assertEqual(actions['q1']['energy_cost'], 100)
         self.assertEqual(actions['q2']['energy_cost'], 0)
-        self.assertEqual(actions['失乐鸟']['hit_count'], 5)
+        # 用户2026-09-18口径：一个动作对应整套5次协同中的1次。
+        assist = actions['失乐鸟']
+        self.assertEqual(assist['hit_count'], 1)
+        self.assertEqual(assist['multipliers']['atk'], 2)
+        self.assertEqual(assist['source_formula'], '{0}%')
+        self.assertEqual(assist['energy_gain'], 2)
+        self.assertAlmostEqual(assist['harmony'], 3.34)
+        self.assertAlmostEqual(assist['stagger'], .4)
         self.assertEqual(actions['a1']['duration_ticks'], 4)
         self.assertEqual(actions['a1']['duration_source'], 'user-authorized-estimate')
         self.assertEqual(sum(actions[f'a{i}']['duration_ticks'] for i in range(1, 6)), 40)
@@ -119,6 +126,11 @@ class HeiyuTest(unittest.TestCase):
 
     def test_assist_five_charges_and_expiration(self):
         r = self.simulate([(0, 'action_heiyu_e', 0)] + [(0, 'action_heiyu_assist', t) for t in [10, 30, 50, 70, 90, 110]])
+        # 五次合法协同合计1000%，单次伤害为同属性同类型400%普通E的一半。
+        assists = r['details'][1:6]
+        for detail in assists:
+            self.assertAlmostEqual(detail['direct_damage'], r['details'][0]['direct_damage'] / 2)
+        self.assertAlmostEqual(sum(d['direct_damage'] for d in assists), r['details'][0]['direct_damage'] * 2.5)
         self.assertFalse(any('失乐鸟' in w for w in r['details'][5]['warnings']))
         self.assertTrue(any('失乐鸟' in w for w in r['details'][6]['warnings']))
         r = self.simulate([(0, 'action_heiyu_e', 0), (0, 'action_heiyu_assist', 160)])

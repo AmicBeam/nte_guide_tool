@@ -9925,20 +9925,20 @@
     "duration_seconds": 0,
     "duration_ticks": 0,
     "multipliers": {
-      "atk": 10,
+      "atk": 2,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "source_formula": "{0}%*5",
-    "hit_count": 5,
-    "energy_gain": 10,
-    "harmony": 16.7,
-    "stagger": 2.0,
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 2,
+    "harmony": 3.34,
+    "stagger": 0.4,
     "cooldown_ticks": 20,
     "energy_cost": 0,
     "source_row": 20,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 20，GEName=GE_Player_BlackBird_SkillAssist_Damage；1级倍率与资源按公式聚合。 按既有单敌轴约定手工添加协同攻击，2秒CD、15秒窗口最多5次。 手工后台伤害不占用前台动作时间。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 20，GEName=GE_Player_BlackBird_SkillAssist_Damage；用户2026-09-18纠正：200%×5表示整套5次协同，每个手工动作只结算1次、1级倍率200%；回能/环合/倾陷按原5次聚合值除以5还原为2/3.34/0.4，非Nanoka核实数据。 按既有单敌轴约定手工添加协同攻击，2秒CD、15秒窗口最多5次。 手工后台伤害不占用前台动作时间。",
     "tags": [
       "协同攻击",
       "后台攻击"

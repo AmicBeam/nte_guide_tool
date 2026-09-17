@@ -474,7 +474,6 @@
           return '<article class="v2-hidden-card" aria-label="对方手牌"></article>';
         }).join('')
       : '<div class="subtle">对手手牌 0</div>';
-    ctx.nodes.handCount.textContent = '手牌 ' + (mine.hand_count != null ? mine.hand_count : myHand.length);
   }
 
   function historyHeadline(event) {

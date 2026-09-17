@@ -113,10 +113,9 @@
       if (ctx.nodes.mulliganStageCopy) {
         ctx.nodes.mulliganStageCopy.textContent = inMulligan ? '回放起手换牌。' : '最多换 3 张。点选不要的牌，再确认。';
       }
-      const current = ctx.game && ctx.game.events ? ctx.game.events[ctx.game.events.length - 1] : null;
-      ctx.nodes.turnCopy.textContent = current && current.text ? current.text : '起手公开局面';
       if (ctx.nodes.waitChip) ctx.nodes.waitChip.textContent = ctx.playing ? '回放播放中' : '回放已暂停';
       stepNode.textContent = stepLabel(events, ctx.index) + ' · ' + ctx.index + '/' + max;
+      stepNode.title = stepNode.textContent;
       if (turnSelect) {
         const currentStop = turnStops.filter(function (stop) { return stop.index <= ctx.index; }).pop();
         turnSelect.value = String(currentStop ? currentStop.index : 0);

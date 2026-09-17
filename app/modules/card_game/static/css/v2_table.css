@@ -49,6 +49,10 @@
   grid-area: 1 / 1;
 }
 
+.v2-table-page.replay-mode .v2-hud-top {
+  grid-template-columns: calc(168px * var(--table-layout-scale, 1)) minmax(0, 1fr) auto;
+}
+
 .v2-replay-bar {
   z-index: 2;
   display: flex;
@@ -112,13 +116,14 @@
 
 .v2-replay-step {
   flex: 1 1 calc(160px * var(--table-layout-scale, 1));
-  min-width: calc(140px * var(--table-layout-scale, 1));
+  min-width: 0;
   margin: 0;
   font-size: calc(13px * var(--table-font-scale, 1));
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: help;
 }
 
 .v2-table-page.replay-mode #v2-end-turn-btn,

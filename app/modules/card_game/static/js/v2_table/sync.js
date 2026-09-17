@@ -231,9 +231,6 @@
           ? ('已选 ' + selected + ' / 3。点选不要的牌，确认后立即换入新牌。')
           : '已完成换牌，等待对手。';
       }
-      ctx.nodes.mulliganHint.textContent = inMulligan
-        ? (canMulligan ? ('已选 ' + selected + ' / 3') : '等待对手换牌')
-        : '行动力支付出牌；能量只用于终结。';
       ctx.nodes.mulliganBtn.disabled = ctx.busy || !canMulligan;
     }
 

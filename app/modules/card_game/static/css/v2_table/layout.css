@@ -618,7 +618,7 @@ body:has(.v2-table-page) .shell {
 .v2-turn-board { grid-column: 1; }
 .v2-wait-chip { grid-column: 2; }
 
-.v2-table-page:not(.replay-mode) #v2-turn-copy {
+.v2-table-page #v2-turn-copy {
   display: none;
 }
 .v2-cast-zone { grid-column: 2; }
@@ -709,27 +709,10 @@ body:has(.v2-table-page) .shell {
 
 .v2-hand-stack {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-}
-
-.v2-hand-meta {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: calc(8px * var(--table-layout-scale, 1));
-  min-width: 0;
-  overflow: hidden;
-  font-size: calc(13px * var(--table-font-scale, 1));
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.v2-hand-meta .primary-btn {
-  min-height: calc(22px * var(--table-layout-scale, 1));
-  padding: calc(1px * var(--table-layout-scale, 1)) calc(8px * var(--table-layout-scale, 1));
 }
 
 .v2-skip-strip {
@@ -838,8 +821,7 @@ body:has(.v2-table-page) .shell {
     letter-spacing: 0;
   }
   .v2-ap-readout strong { font-size: calc(22px * var(--table-font-scale, 1)); }
-  .v2-hud-meta,
-  .v2-hand-meta {
+  .v2-hud-meta {
     flex-wrap: wrap;
   }
   .v2-piles.player-piles { right: calc(10px * var(--table-layout-scale, 1)); }
@@ -899,14 +881,15 @@ body:has(.v2-table-page) .shell {
   padding-block: calc(40px * var(--table-layout-scale, 1));
 }
 
-/* A backend-authored countdown in the open space left of the combat center. */
+/* Keep the countdown inside the combat center, clear of the left bench. */
 .v2-combat-core:has(.v2-escalation:not([hidden])) { overflow: visible; }
 .v2-escalation {
   position: absolute;
-  right: calc(100% + 24px * var(--table-layout-scale, 1));
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: calc(180px * var(--table-layout-scale, 1));
+  width: min(45%, calc(180px * var(--table-layout-scale, 1)));
+  box-sizing: border-box;
   padding: calc(6px * var(--table-layout-scale, 1));
   border-left: 2px solid #dcaa60;
   color: #f1d6a6;

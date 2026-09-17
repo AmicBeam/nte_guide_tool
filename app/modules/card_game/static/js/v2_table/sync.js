@@ -83,7 +83,7 @@
         tutorialCue: ctx.tutorialCue,
         tutorialModalDismissed: ctx.tutorialModalDismissed,
         sendAction: ctx.sendAction,
-        showMulligan: ctx.forceMulliganStage ? true : (ctx.replayMode ? Boolean(ctx.replayShowMulligan) : undefined),
+        showMulligan: ctx.forceMulliganStage ? true : undefined,
         findAction: locked ? function () { return null; } : findAction,
         playEntries: locked ? function () { return []; } : ctx.playEntries,
       };

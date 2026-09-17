@@ -88,7 +88,6 @@
         raisedCardId: null,
         playHistory: ctx.playHistory,
         page: ctx.page,
-        showMulligan: Boolean(ctx.replayShowMulligan),
         findAction: function () { return null; },
         playEntries: function () { return []; },
       };
@@ -139,7 +138,6 @@
       ctx.index = Math.max(0, Math.min(ctx.index || 0, events.length));
       ctx.game = gameAt(ctx.replayOpening, events, ctx.index);
       ctx.displayGame = TABLE.clone(ctx.game);
-      ctx.replayShowMulligan = Boolean(ctx.index === 0 && ctx.game && ctx.game.phase === 'mulligan');
       ctx.mulliganIds = [];
       rebuildHistory(ctx.index);
       V2.setHidden(ctx.emptyState, true);

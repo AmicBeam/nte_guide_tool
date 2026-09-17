@@ -633,6 +633,9 @@ def _play_effects(s: GpuState, side: torch.Tensor, seat: int, kind: torch.Tensor
     s.ch_base_max[b, side, seat] = torch.where(nf, s.ch_base_max[b, side, seat] + perm_hp, s.ch_base_max[b, side, seat])
     s.ch_hp[b, side, seat] = torch.where(nf, s.ch_hp[b, side, seat] + perm_hp, s.ch_hp[b, side, seat])
     s.nanali_seed_played[b, side] = torch.where(valid & (tables['count_seed'][k] > 0), s.nanali_seed_played[b, side] + 1, s.nanali_seed_played[b, side])
+    harmony = tables['self_harmony'][k]
+    gain = valid & (harmony > 0) & (s.ch_hp[b, side, seat] > 0)
+    s.ch_harmony[b, side, seat] = torch.where(gain, torch.minimum(s.ch_harmony[b, side, seat] + harmony, _harmony_cap(s)), s.ch_harmony[b, side, seat])
     form = valid & (tables['form'][k] > 0)
     s.ch_shape[b, side, seat] = torch.where(form, kind, s.ch_shape[b, side, seat])
     panel = s.catalog_hp[k]

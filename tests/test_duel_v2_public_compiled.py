@@ -121,6 +121,18 @@ class PublicCompiledNativeTest(unittest.TestCase):
                 result, _ = self._check_play(state, {'type': 'play_card', 'card_id': card['instance_id']})
                 self.assertEqual(hero(result, side, 'nanali')['harmony'], min(2, existing + 1))
 
+    def test_family_harmony_respects_white_heat_cap(self):
+        for existing in (0, 1):
+            state = new_game(seed=9, first_side='a', skip_mulligan=True, escalation=True)
+            state['turn'] = 20
+            state['sides']['a']['turn_count'] = 10
+            for team in state['sides'].values():
+                team['hand'] = []
+            card = _inject_hand(state, 'a', 'NF01')
+            hero(state, 'a', 'nanali')['harmony'] = existing
+            result, _ = self._check_play(state, {'type': 'play_card', 'card_id': card['instance_id']})
+            self.assertEqual(hero(result, 'a', 'nanali')['harmony'], 1)
+
     def test_n06_instant_revive_matches_python(self):
         for side in ('a', 'b'):
             for used, ap in ((False, 0), (True, 1)):

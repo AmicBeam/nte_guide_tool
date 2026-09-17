@@ -574,8 +574,10 @@
     }
     setPileLabel(ctx.nodes.opponentDeck, '牌库', theirs.deck_count);
     setPileLabel(ctx.nodes.opponentDiscard, '弃牌', (theirs.discard || []).length);
+    setPileLabel(ctx.nodes.opponentHandCount, '手牌', theirs.hand_count != null ? theirs.hand_count : (theirs.hand || []).length);
     setPileLabel(ctx.nodes.playerDeck, '牌库', mine.deck_count);
     setPileLabel(ctx.nodes.playerDiscard, '弃牌', (mine.discard || []).length);
+    setPileLabel(ctx.nodes.playerHandCount, '手牌', mine.hand_count != null ? mine.hand_count : (mine.hand || []).length);
     const canAct = Boolean(game && game.is_my_turn && game.phase === 'playing' && !ctx.busy);
     placeFront(ctx, ctx.opponent, theirs.front, false);
     placeFront(ctx, ctx.viewer, mine.front, canAct);

@@ -4507,12 +4507,23 @@
       '浊燃': DAMAGE_SOURCE_COLORS['浊燃'],
       '黯星': DAMAGE_SOURCE_COLORS['黯星'],
       '浸染': '#65c8ff',
+      '失谐': '#d7a5ff',
     }[reaction] || '#ffffff';
   }
 
   function damageMarkerTooltip(event) {
     if (Array.isArray(event?.events)) {
       return event.events.map((item) => damageMarkerTooltip(item)).join('\n');
+    }
+    if (event?.reaction === '失谐') {
+      const lines = [`失谐 · 削减倾陷值 ${formatNumber(event.stagger_amount, 2)}`];
+      lines.push(`${event.heiyu_recast ? '黑羽重新施加黯星' : `施加${event.trigger_reaction || '环合'}`}触发`);
+      lines.push(`失谐削条 ${formatNumber(event.dissonance_stagger, 2)}　等级差 ${formatNumber(event.level_gap)}`);
+      if (Number(event.daphne_extra_stagger || 0) > 0) {
+        lines.push(`达芙·破鞘额外削条 ${formatNumber(event.daphne_extra_stagger, 2)}（不受等级差影响）`);
+        lines.push(`破鞘 ${formatNumber(event.daphne_stacks)}层　倾陷上限 ${formatNumber(event.stagger_limit_before, 1)} → ${formatNumber(event.stagger_limit_after, 1)}`);
+      }
+      return lines.join('\n');
     }
     const formula = event?.formula_parts || {};
     if (event?.heiyu_accumulation) {
@@ -4588,7 +4599,8 @@
     const reactionEffects = result?.reaction_effects || [];
     const periodicDamageEvents = result?.periodic_damage_events || [];
     const reactionDamageEvents = result?.reaction_damage_events || [];
-    const timelineDamageEvents = [...reactionDamageEvents, ...periodicDamageEvents];
+    const dissonanceEvents = result?.dissonance_events || [];
+    const timelineDamageEvents = [...reactionDamageEvents, ...periodicDamageEvents, ...dissonanceEvents];
     const groupedDamageEvents = groupedTimelineDamageEvents(timelineDamageEvents);
     const usesDragPreviewResult = Boolean(drag?.previewResult && result === drag.previewResult);
     const usesStaleResult = Boolean(state.isResultStale && state.result && result === state.result);
@@ -7915,6 +7927,7 @@
       details: [],
       reaction_effects: [],
       reaction_damage_events: [],
+      dissonance_events: [],
       front_windows: [],
       time_axis: {
         tick_seconds: 0.1,

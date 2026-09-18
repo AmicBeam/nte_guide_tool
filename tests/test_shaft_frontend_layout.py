@@ -26,6 +26,25 @@ def _js_number_constant(name: str) -> int:
 
 
 class ShaftBuffStatusUiTestCase(unittest.TestCase):
+    def test_dissonance_tooltip_and_same_tick_group_preserve_gauge_events(self):
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        functions = source[source.index('  function damageMarkerTooltip('):source.index('  function renderTimeline(')]
+        event = {'reaction': '失谐', 'tick': 36, 'visual_tick': 41, 'contributor_slot': 2,
+                 'stagger_amount': 8.27, 'dissonance_stagger': 1.27, 'level_gap': 10,
+                 'daphne_extra_stagger': 7, 'daphne_stacks': 2,
+                 'stagger_limit_before': 63, 'stagger_limit_after': 56, 'heiyu_recast': True}
+        script = 'const formatNumber = (v) => String(v); const memberName = () => "黑羽";\n' + functions
+        script += '\nconst e = ' + json.dumps(event, ensure_ascii=False) + ';'
+        script += 'const groups = groupedTimelineDamageEvents([e, {...e, effect_id: "second"}]); console.log(JSON.stringify({tooltip: damageMarkerTooltip(e), groups}));'
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertIn('削减倾陷值 8.27', result['tooltip'])
+        self.assertIn('黑羽重新施加黯星触发', result['tooltip'])
+        self.assertIn('63 → 56', result['tooltip'])
+        self.assertNotIn('伤害', result['tooltip'])
+        self.assertEqual(len(result['groups']), 1)
+        self.assertEqual(len(result['groups'][0]['events']), 2)
+        self.assertEqual(result['groups'][0]['visual_tick'], 41)
+
     def test_rotation_header_has_no_manual_calculation_button(self) -> None:
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1578,7 +1597,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("if (!loopEnabled || effect?.loop_primed || endTick <= Number(axisEndTick || 0)) {", source)
         self.assertIn('return segments.filter((segment) => segment.startTick > 0);', source)
         self.assertIn('reactionBuffLineSegments(effect, buffAxisEndTick, loopEnabled).forEach((segment) => {', source)
-        self.assertIn('const timelineDamageEvents = [...reactionDamageEvents, ...periodicDamageEvents];', source)
+        self.assertIn('const timelineDamageEvents = [...reactionDamageEvents, ...periodicDamageEvents, ...dissonanceEvents];', source)
         self.assertIn('function groupedTimelineDamageEvents(events) {', source)
         self.assertIn('const groupedDamageEvents = groupedTimelineDamageEvents(timelineDamageEvents);', source)
         self.assertIn('const reactionDamageMarkers = groupedDamageEvents', source)

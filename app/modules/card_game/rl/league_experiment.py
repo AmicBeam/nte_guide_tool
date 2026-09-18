@@ -10,7 +10,8 @@ import numpy as np
 from .league_schema import *
 from .league_policy import export_model,network_from_old,LeagueModel
 from .league_rollout import play,decision,determinize
-from .league_learning import ordinary_update,branch_update
+from .league_learning import ordinary_update,branch_update,tensors
+from .league_replay import ErrorReplay,OptimizerBudget
 
 def write(path,data):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True);p=path.with_suffix(path.suffix+'.tmp');p.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8');p.replace(path)
@@ -37,8 +38,8 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
         optimizers[key]=torch.optim.Adam(nets[key].parameters(),lr=1e-4)
         export_model(nets[key],out/'baseline',key,builds[key],origin=origins[key])
         current[key]=out/'baseline'
-    write(out/'config.json',{'schema':SCHEMA,'rule_hash':rule_hash(),'deadline_epoch':deadline,'device':device,'rules_backend':'official_python','source_manifest_sha256':hashlib.sha256((Path(__file__).resolve().parents[4]/'source-manifest.json').read_bytes()).hexdigest(),'workers':workers,'presets':PRESETS,'builds':builds,'origins':origins,'reward':'terminal +/-10, draw 0; unfinished excluded','branches_per_ordinary_batch':3,'ordinary_games':4,'candidates':6,'particles':8,'online_search':False,'automatic_serving_approval':False,'smoke':smoke,'selection_seed_segment':830000000,'branch_target_temperature':4,'branch_anchor_kl':.05,'phase_selection':'keep starting/best model unless at least 2/32 extra validation wins'})
-    total={k:{'ordinary_updates':0,'branch_updates':0,'ordinary_games':0,'branch_games':0,'informative_roots':0,'attempted_roots':0} for k in PRESETS}
+    write(out/'config.json',{'schema':SCHEMA,'rule_hash':rule_hash(),'deadline_epoch':deadline,'device':device,'rules_backend':'official_python','source_manifest_sha256':hashlib.sha256((Path(__file__).resolve().parents[4]/'source-manifest.json').read_bytes()).hexdigest(),'workers':workers,'presets':PRESETS,'builds':builds,'origins':origins,'reward':'terminal +/-10, draw 0; unfinished excluded','learning_version':'error_replay_v2','minimum_branch_steps_per_ordinary_step':3,'max_ordinary_steps_per_cycle':1,'max_branch_steps_per_cycle':3,'error_replay_capacity':256,'error_replay_ttl_cycles':5,'error_replay_max_uses':3,'minimum_return_gap':2.5,'ordinary_games':4,'candidates':6,'particles':8,'online_search':False,'automatic_serving_approval':False,'smoke':smoke,'selection_seed_segment':830000000,'branch_policy_loss':'pairwise_terminal_ranking','branch_value_target_temperature':4,'disable_anchor_return_gap':2.5,'branch_anchor_kl':.05,'phase_selection':'keep starting/best model unless at least 2/32 extra validation wins'})
+    total={k:{'ordinary_updates':0,'branch_updates':0,'ordinary_games':0,'branch_games':0,'informative_roots':0,'attempted_roots':0,'ordinary_optimizer_steps':0,'branch_optimizer_steps':0} for k in PRESETS}
     from .league_gate import evaluate as evaluate_gate
     for key in PRESETS:write(out/(key+'-gate-before.json'),evaluate_gate(LeagueModel(out/'baseline',key)))
     pool=ProcessPoolExecutor(max_workers=workers,mp_context=get_context('spawn'))
@@ -53,6 +54,7 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
                 cycle=0;started=time.time()
                 peers=[p for p in PRESETS if p!=key]
                 anchor_model=LeagueModel(dest,key)
+                replay=ErrorReplay();budget=OptimizerBudget()
                 def selection_check():
                     jobs=[]
                     for pi,foe in enumerate(peers):
@@ -72,7 +74,12 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
                     for j in range(4):
                         foe=peers[j%2];jobs.append({'deadline':phase_end,'seed':seed+j,'first':'ab'[j//2], 'viewer':'a','decks':{'a':builds[key],'b':builds[foe]},'policies':{'a':(str(dest),key),'b':(str(pinned[foe]),foe)},'sample':True,'collect':True})
                     games=list(pool.map(play,jobs));total[key]['ordinary_games']+=sum(g['complete'] for g in games)
-                    stat=ordinary_update(nets[key],optimizers[key],games,seed);total[key]['ordinary_updates']+=stat['updates']
+                    stat={'updates':0,'optimizer_steps':0,'samples':0,'reason':'waiting_for_branch_credit'}
+                    if budget.can_update_ordinary():
+                        stat=ordinary_update(nets[key],optimizers[key],games,seed)
+                        budget.record_ordinary(stat.get('optimizer_steps',0))
+                    total[key]['ordinary_updates']+=stat['updates']
+                    total[key]['ordinary_optimizer_steps']+=stat.get('optimizer_steps',0)
                     metric(out,{'stage':stage,'cycle':cycle,'kind':'ordinary',**stat})
                     roots=[(r,jobs[i]) for i,g in enumerate(games) for r in g.get('roots',[])];rng=Random(seed);rng.shuffle(roots)
                     teacher=LeagueModel(dest,key)
@@ -92,15 +99,30 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
                         results=list(pool.map(play,branches));total[key]['branch_games']+=sum(g['complete'] for g in results)
                         if not all(g['complete'] for g in results):continue
                         q=np.array([g['reward'] for g in results],dtype=np.float32).reshape(len(selected),8).mean(1)
-                        result=branch_update(nets[key],optimizers[key],x,c[selected],q,anchor_logits=anchor_model.scores(x,c),all_candidates=c)
-                        total[key]['branch_updates']+=result['updates'];total[key]['informative_roots']+=result['updates']
-                        metric(out,{'stage':stage,'cycle':cycle,'kind':'branch','particles':8,'candidates':len(selected),'terminal_returns':q.tolist(),**result})
+                        kept=replay.add(x,c,selected,q,cycle)
+                        total[key]['informative_roots']+=int(kept)
+                        metric(out,{'stage':stage,'cycle':cycle,'kind':'branch_collect','particles':8,'candidates':len(selected),'terminal_returns':q.tolist(),'replay_admitted':kept})
+                    def current_scores(x,c):
+                        with torch.no_grad():
+                            xx,cc,mm=tensors([(x,c)],next(nets[key].parameters()).device)
+                            return nets[key](xx,cc,mm)[0][0].cpu().numpy()
+                    for _ in range(3):
+                        if time.time()>=phase_end:break
+                        error=replay.take(current_scores,cycle)
+                        if error is None:break
+                        x,c=error['x'],error['c'];selected=list(error['selected'])
+                        result=branch_update(nets[key],optimizers[key],x,c[selected],error['q'],anchor_logits=anchor_model.scores(x,c),all_candidates=c,selected_indices=selected)
+                        budget.record_branch(result.get('optimizer_steps',0))
+                        total[key]['branch_updates']+=result['updates']
+                        total[key]['branch_optimizer_steps']+=result.get('optimizer_steps',0)
+                        metric(out,{'stage':stage,'cycle':cycle,'kind':'branch','sample_age_cycles':cycle-error['cycle'],'sample_uses':error['uses'],'error_priority':error['priority'],**result})
                     export_model(nets[key],dest,key,builds[key],origin=origins[key])
                     if (cycle%5==0 or max_cycles) and time.time()<phase_end-5:
                         checked=selection_check();decision_label='keep_best'
                         if checked['complete'] and checked['wins']>=best_check['wins']+2:
                             best_check=checked;best_weights=deepcopy(nets[key].state_dict());best_optimizer=deepcopy(optimizers[key].state_dict());selected_cycle=cycle;decision_label='select_candidate'
                         elif checked['complete'] and checked['wins']<=best_check['wins']-4:
+                            replay.clear()
                             prior_lr=min(g['lr'] for g in optimizers[key].param_groups)
                             nets[key].load_state_dict(best_weights);optimizers[key].load_state_dict(best_optimizer)
                             for group in optimizers[key].param_groups:group['lr']=max(1e-5,min(group['lr'],prior_lr)*.5)

@@ -100,6 +100,7 @@
       { html: combatStat('hp', hp, '生命 ' + hp) },
       { html: combatStat('shield', shield, '护盾 ' + shield) },
     ] : [];
+    if (data.truth_keys != null) stats.push({ cls: 'truth-keys', text: '真理之匙 ' + data.truth_keys });
     if (data.arid != null) stats.push({ cls: 'arid', text: '荒时 ' + data.arid });
     if (resourceHtml && !data.summoned) stats.push({ html: '<div class="v2-resource-row">' + resourceHtml + '</div>' });
     if (!hideEnergy && data.awakened) stats.push({ cls: 'energy', text: '终结 ' + (data.ultimate_expires === 'turn_end' ? '本回合' : (data.ultimate_turns || 0)) });

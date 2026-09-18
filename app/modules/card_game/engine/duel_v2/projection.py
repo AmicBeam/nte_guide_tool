@@ -49,6 +49,8 @@ def action_label(state, side, action):
         return f"弃一抽一：「{_card(state, side, action['card_id'])['name']}」"
     if kind == 'mulligan':
         return f"替换 {len(action['card_ids'])} 张起手牌" if action['card_ids'] else '保留全部起手牌'
+    if kind == 'choose_cards':
+        return f"调度 {len(action['card_ids'])} 张手牌"
     if kind == 'choose':
         card = next(c for c in state['pending_choice']['cards'] if c['instance_id'] == action['choice_id'])
         return f"选择「{card['name']}」"
@@ -146,7 +148,7 @@ def observe(state, side, after_seq=None):
             h = source['characters'][cid]
             flags = h.get('flags') or {}
             c = {k: deepcopy(h[k]) for k in ('entity_id', 'id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
-                 'energy', 'jingu', 'arid', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
+                 'energy', 'jingu', 'arid', 'truth_keys', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
                  'avatar', 'portrait', 'passive', 'awakened_passive') if k in h}
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None
@@ -214,6 +216,7 @@ def observe(state, side, after_seq=None):
     if pending:
         result['pending_choice'] = {'side': pending['side'], 'kind': pending['kind'],
             'prompt': pending['prompt'] if pending['side'] == side else '对手正在选择',
+            'max_select': pending.get('max_select') if pending['side'] == side else None,
             'choices': [{'id': c['instance_id'], 'label': c['name'], 'card': public_card(c)}
                         for c in pending['cards']] if pending['side'] == side else []}
     op = state['operation']
@@ -237,7 +240,7 @@ def choose_action(state, side):
                if not held.get(e['action'].get('card_id'), {}).get('training_excluded')]
     if not entries:
         raise ValueError('No legal action')
-    for kind in ('mulligan', 'choose'):
+    for kind in ('mulligan', 'choose', 'choose_cards'):
         choice = next((e for e in entries if e['action']['type'] == kind), None)
         if choice:
             return choice['action']

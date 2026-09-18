@@ -967,6 +967,9 @@ class DuelV2EngineTest(unittest.TestCase):
                 card = self.hand(s, cid)
                 s['sides']['a']['harmony_damage'] = True
                 s['sides']['a']['surplus'] = True
+                s['sides']['a']['surplus_ever'] = True
+                if cid == 'E03':
+                    s['sides']['a']['hand'].append(card_instance(s, 'Z03', 'a'))
                 from app.modules.card_game.engine.duel_v2.state import front_debuff
                 front_debuff(s, 'b')['burn'] = {'left': 2, 'by': 'a'}
                 s['sides']['a']['front'] = 'nanali'
@@ -986,7 +989,7 @@ class DuelV2EngineTest(unittest.TestCase):
                 a = next(a for a in legal_actions(s) if a['type'] == 'play_card' and a['card_id'] == card['instance_id'])
                 s = apply_action(s, 'a', a)
                 if s['phase'] == 'choice':
-                    s = apply_action(s, 'a', next(a for a in legal_actions(s) if a['type'] == 'choose'))
+                    s = apply_action(s, 'a', next(a for a in legal_actions(s) if a['type'] in ('choose', 'choose_cards')))
                 self.assertEqual(s['phase'], 'playing')
                 spent = 0 if CARDS[cid].get('instant') else CARDS[cid]['cost']
                 if cid == 'X04': spent = 2

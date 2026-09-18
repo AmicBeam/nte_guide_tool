@@ -84,7 +84,7 @@ def capture_public_board(state):
             shape_id = hero.get('shape')
             characters.append({
                 'id': cid,
-                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid') if k in hero},
+                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys') if k in hero},
                 'entity_id': hero.get('entity_id'),
                 'effect_markers': character_effect_markers(hero),
                 'hp': hero['hp'],
@@ -410,7 +410,7 @@ def interaction_for_action(state, side, action):
         if policy in ('enemy_hand', 'own_tactic_discard'):
             return {'kind': 'choice', 'actor_id': actor, 'target_ids': []}
         return {'kind': 'cast', 'actor_id': actor, 'target_ids': []}
-    if kind in ('choose', 'mulligan', 'cycle'):
+    if kind in ('choose', 'choose_cards', 'mulligan', 'cycle'):
         actor = None
         operation = state.get('operation')
         if operation:

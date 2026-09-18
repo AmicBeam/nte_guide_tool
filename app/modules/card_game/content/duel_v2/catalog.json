@@ -133,6 +133,23 @@
       "faction": "德沃夏克家族"
     },
     {
+      "id": "edgar",
+      "name": "埃德嘉",
+      "attribute": "光",
+      "attack": 1,
+      "max_hp": 6,
+      "avatar": "/static/images/characters/avatar/埃德嘉.webp",
+      "portrait": "/static/images/characters/portrait/埃德嘉.webp",
+      "everness_id": 1021,
+      "faction": "伊波恩古董店",
+      "passive": "起手手牌数 +1。拥有个人资源「真理之匙」，初始 0 点，倒地时失去。己方异能者发动援护技时，获得 1 点真理之匙。",
+      "awakened_passive": "发动时及己方回合开始时，回复 2 点生命，己方前排优先。持续 1 个己方回合；消耗全部真理之匙，每点使持续时间延长 1 个己方回合。",
+      "ultimate": {
+        "kind": "status",
+        "turns": 1
+      }
+    },
+    {
       "id": "nanali",
       "name": "娜娜莉",
       "attribute": "灵",
@@ -2559,6 +2576,143 @@
         "type": "derived",
         "index": 0
       }
+    },
+    {
+      "id": "E01",
+      "character_id": "edgar",
+      "name": "热爱异象的观察员",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "本局触发过盈蓄才能打出。此后，无牌可抽时改为获胜。",
+      "effect_id": "E01",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "E02",
+      "character_id": "edgar",
+      "name": "尚在实习的异象猎人",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "抽 2 张牌。",
+      "effect_id": "E02",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "E03",
+      "character_id": "edgar",
+      "name": "伊波恩侦探之一",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。进行一次手牌调度，最多查阅 6 张手牌，选择至多 3 张替换。",
+      "effect_id": "E03",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "instant": true
+    },
+    {
+      "id": "E04",
+      "character_id": "edgar",
+      "name": "熟练的计划制定家",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。其他己方异能者每有 1 点已损生命，埃德嘉获得 1 点能量。",
+      "effect_id": "E04",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "E05",
+      "character_id": "edgar",
+      "name": "古董店灯火的守望者",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。随机获得其他己方异能者各 1 张卡牌，并使它们获得瞬发。",
+      "effect_id": "E05",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "E06",
+      "character_id": "edgar",
+      "name": "好奇星球的来客",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "使生命最低的己方角色回复 5 点生命。获得 1 点真理之匙。",
+      "effect_id": "E06",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 2,
+      "attack": 0,
+      "shield": 0
+    },
+    {
+      "id": "E07",
+      "character_id": "edgar",
+      "name": "芬尼根守灵夜",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方回合的通常抽牌改为：检视牌库顶 3 张，选择 1 张加入手牌，其余置于牌库底。",
+      "effect_id": "E07",
+      "source": {
+        "character_id": 1021,
+        "type": "ability",
+        "index": 0
+      },
+      "starter_copies": 0,
+      "attack": 1,
+      "hp": 7
+    },
+    {
+      "id": "E08",
+      "character_id": "edgar",
+      "name": "扭曲之城的呼唤",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "埃德嘉的治疗效果 +1。每回合一次，己方回复任意角色生命后，抽 1 张牌。",
+      "effect_id": "E08",
+      "source": {
+        "character_id": 1021,
+        "type": "arc",
+        "index": 0
+      },
+      "starter_copies": 2,
+      "attack": 1,
+      "hp": 7
     }
   ],
   "starter_decks": [

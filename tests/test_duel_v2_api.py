@@ -44,6 +44,37 @@ class DuelV2ApiTest(RoomFlowTestCase):
     def _action(view, kind):
         return next(entry['action'] for entry in view['legal_actions'] if entry['action']['type'] == kind)
 
+    def test_edgar_redraw_is_private_idempotent_and_reloadable(self):
+        self._pvp()
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.engine.duel_v2.state import card_instance
+        deck = dict(id='edgar-test', name='埃德嘉', character_ids=['edgar','zero','jiuyuan','hathor'],
+                    card_ids=[p+str(i).zfill(2) for p in ('E','Z','J','H') for i in range(1,5) for _ in range(2)])
+        game = new_game(seed=71, first_side='a', skip_mulligan=True, decks={'a':deck,'b':deck})
+        spell = card_instance(game,'E03','a')
+        game['sides']['a']['hand'] = [spell] + [card_instance(game,'Z03','a') for _ in range(7)]
+        room = self.repository.room_by_code(self.code)
+        self.storage.initialize(room, {'rules_version':'duel_v2','game':game,'requests':[]})
+        from app.modules.card_game.engine.application import v2_replay
+        v2_replay.begin(room,game)
+        body = dict(room_code=self.code, request_id='edgar-redraw-open', expected_version=0,
+                    action={'type':'play_card','card_id':spell['instance_id']})
+        view = self._post('/api/duel-v2/action',body,token=self.a)['game']
+        self.assertEqual(len(view['pending_choice']['choices']),6)
+        self.assertEqual(view['pending_choice']['max_select'],3)
+        self.assertEqual(self._get('/api/duel-v2/state',token=self.b)['game']['pending_choice']['choices'],[])
+        self.assertTrue(self.storage.flush(5));self.storage.clear_cache()
+        view = self._get('/api/duel-v2/state',token=self.a)['game']
+        choices = [c['id'] for c in view['pending_choice']['choices'][:2]]
+        body = dict(room_code=self.code, request_id='edgar-redraw-finish', expected_version=view['version'],
+                    action={'type':'choose_cards','card_ids':choices})
+        result = self._post('/api/duel-v2/action',body,token=self.a)
+        retried = self._post('/api/duel-v2/action',body,token=self.a)
+        self.assertEqual(result['game']['version'],retried['game']['version'])
+        self.assertEqual(result['game']['phase'],'playing')
+        self.assertEqual(result['game']['sides']['a']['hand_count'],7)
+        self.assertFalse(set(choices) & {c.get('instance_id') for c in result['game']['sides']['a']['hand']})
+
     def test_xun_rewind_retry_and_reload_preserve_version_and_removal(self):
         self._pvp()
         from app.modules.card_game.engine.duel_v2 import new_game, apply_action, legal_actions
@@ -389,12 +420,12 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self._set_test_whitelist('duel-v2-tester')
         catalog = self._get('/api/duel-v2/catalog', token=token)
         names = {item['name'] for item in catalog['characters']}
-        self.assertEqual(len(catalog['characters']), 15)
+        self.assertEqual(len(catalog['characters']), 16)
         self.assertIn('浔', names)
         self.assertIn('残虹', names)
         self.assertIn('薄荷', names)
         self.assertIn('白藏', names)
-        self.assertEqual(len(catalog['cards']), 123)
+        self.assertEqual(len(catalog['cards']), 131)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
             ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '快攻预组'],

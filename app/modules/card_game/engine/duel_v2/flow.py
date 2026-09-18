@@ -310,6 +310,10 @@ def legal_actions(state, side=None):
         return result
     if side != acting_side(state):
         return result
+    if phase == 'choice' and state['pending_choice']['kind'] == 'hand_redraw':
+        ids = [c['instance_id'] for c in state['pending_choice']['cards']]
+        return result + [{'type': 'choose_cards', 'card_ids': list(group)}
+                         for size in range(min(3, len(ids)) + 1) for group in combinations(ids, size)]
     if phase == 'choice':
         return result + [{'type': 'choose', 'choice_id': c['instance_id']}
                          for c in state['pending_choice']['cards']]
@@ -381,6 +385,8 @@ def start_ultimate(state, side, cid, *, spent_ap=False):
         text = f"{h['name']}消耗 {energy_cap(state, h)} 点{h.get('resource_name', '能量')}，发动终结。"
     else:
         h['awakened'] = True
+        spec['turns'] = int(decide(EffectContext(state, side, cid, {'side': side}),
+                                   'ultimate_duration', spec['turns'], actor_only=True))
         h['ultimate_turns'] = spec['turns']
         duration = '持续至本回合结束' if spec['expires'] == 'turn_end' else f"持续 {spec['turns']} 个己方回合"
         text = f"{h['name']}消耗 {energy_cap(state, h)} 点{h.get('resource_name', '能量')}，发动终结（{duration}）。"
@@ -491,7 +497,16 @@ def begin_turn(state, side):
     from .tutorial import tutorial_flags
     flags = tutorial_flags(state)
     if not flags.get('disable_draw'):
-        draw(state, side)
+        inspect = decide(EffectContext(state, side, carrier, {'side': side}), 'turn_draw_inspect', None)
+        if inspect and team['deck']:
+            c = operation(state, side, inspect['character_id'])
+            c.inspect_top_choice(inspect['count'])
+            if state['phase'] != 'choice':
+                finish_operation(state)
+            else:
+                state['turn_start_pending'] = side
+        else:
+            draw(state, side)
     if not finished(state):
         extra = int(team.pop('extra_ap', 0) or 0)
         if flags.get('ap_per_turn') is not None:
@@ -699,6 +714,26 @@ def choose(state, side, choice_id):
         fire(EffectContext(state, side, op['actor'], op), 'on_choice', actor_only=True, selected=selected)
     if state['phase'] != 'choice':
         finish_operation(state)
+        if state.get('turn_start_pending'):
+            from .temporal import save_turn_start
+            save_turn_start(state, state.pop('turn_start_pending'))
+
+
+def redraw_hand(state, side, card_ids):
+    from .presentation import public_card
+    team = state['sides'][side]
+    selected = [c for c in team['hand'] if c['instance_id'] in card_ids]
+    team['hand'] = [c for c in team['hand'] if c['instance_id'] not in card_ids]
+    state['pending_choice'] = None
+    state['phase'] = 'playing'
+    log(state, f"{name(state, side)}调度 {len(selected)} 张手牌。", 'mulligan', side=side,
+        amount=len(selected), card_ids=card_ids, private_side=side,
+        private_hand=[public_card(c) for c in team['hand']])
+    draw(state, side, len(selected))
+    team['deck'].extend(selected)
+    if selected:
+        shuffle(state, team['deck'])
+    finish_operation(state)
 
 
 def apply_action(state, side, action):
@@ -709,7 +744,7 @@ def apply_action(state, side, action):
         return apply_tutorial_ack(state, side)
     state = clone_state(state)
     candidate = normalize_entity_action(state, side, action)
-    if candidate.get('type') == 'mulligan' and isinstance(candidate.get('card_ids'), list):
+    if candidate.get('type') in ('mulligan', 'choose_cards') and isinstance(candidate.get('card_ids'), list):
         ids = candidate['card_ids']
         if any(not isinstance(x, str) for x in ids) or len(set(ids)) != len(ids):
             raise ValueError('换牌选择无效。')
@@ -744,6 +779,8 @@ def apply_action(state, side, action):
         result['mulligan_done'].append(side)
         if len(result['mulligan_done']) == 2:
             begin_turn(result, result['first_side'])
+    elif kind == 'choose_cards':
+        redraw_hand(result, side, candidate['card_ids'])
     elif kind == 'choose':
         choose(result, side, candidate['choice_id'])
     elif kind == 'end_turn':

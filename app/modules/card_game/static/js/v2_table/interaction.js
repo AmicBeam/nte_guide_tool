@@ -162,11 +162,13 @@
 
     function openChoice(config) {
       const choices = config.choices || [];
+      const selectedIds = new Set();
+      const maxSelect = Number(config.maxSelect) || 0;
       const hasCards = choices.some(function (choice) {
         return Boolean(choice && choice.card && !choice.card.hidden);
       });
       choiceOverlay.innerHTML =
-        '<div class="v2-choice-dialog' + (hasCards ? ' is-cards' : '') + '">' +
+        '<div class="v2-choice-dialog' + (hasCards ? ' is-cards' : '') + (maxSelect ? ' is-multi' : '') + '">' +
           '<div class="section-title-row"><h2>' + V2.escapeHtml(config.title || '请选择') + '</h2><button class="icon-btn" id="v2-choice-close" type="button" aria-label="关闭">×</button></div>' +
           '<div class="v2-choice-grid' + (hasCards ? ' has-cards' : '') + '">' + (choices.length ? choices.map(function (choice) {
             const card = choice.card;
@@ -184,6 +186,7 @@
               '</button>'
             );
           }).join('') : '<p class="subtle">没有候选。</p>') + '</div>' +
+          (maxSelect ? '<button class="primary-btn" id="v2-choice-confirm" type="button">确认调度（0 / ' + maxSelect + '）</button>' : '') +
         '</div>';
       choiceOverlay.classList.add('open');
       choiceOverlay.setAttribute('aria-hidden', 'false');
@@ -193,9 +196,24 @@
         closeOverlay(choiceOverlay);
         ctx.flushPendingEnvelope();
       });
+      const confirm = choiceOverlay.querySelector('#v2-choice-confirm');
+      if (confirm) confirm.addEventListener('click', function () {
+        ctx.localChoice = null;
+        closeOverlay(choiceOverlay);
+        config.onPick({ ids: Array.from(selectedIds) });
+      });
       choiceOverlay.querySelectorAll('[data-choice-id]').forEach(function (button) {
         button.addEventListener('click', function () {
           const picked = choices.find(function (item) { return String(item.id) === button.getAttribute('data-choice-id'); });
+          if (maxSelect && picked) {
+            if (selectedIds.has(picked.id)) selectedIds.delete(picked.id);
+            else if (selectedIds.size < maxSelect) selectedIds.add(picked.id);
+            ctx.localChoice = { kind: 'server-multi' };
+            button.classList.toggle('is-selected', selectedIds.has(picked.id));
+            button.setAttribute('aria-pressed', String(selectedIds.has(picked.id)));
+            confirm.textContent = '确认调度（' + selectedIds.size + ' / ' + maxSelect + '）';
+            return;
+          }
           ctx.localChoice = null;
           closeOverlay(choiceOverlay);
           if (picked) config.onPick(picked);

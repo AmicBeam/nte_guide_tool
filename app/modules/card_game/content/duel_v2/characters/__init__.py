@@ -3,7 +3,7 @@ from app.modules.card_game.content.duel_v2.registry import KITS, collect_effects
 
 from . import (  # noqa: F401
     nanali, zero, jiuyuan, xun, anhunqu, canhong, zaowu, lingke, zhenhong, hathor, iloy,
-    bohe, baicang, xiaozhi, haiyue,
+    bohe, baicang, xiaozhi, haiyue, edgar,
 )
 
 EFFECTS, TARGET_POLICIES = collect_effects()

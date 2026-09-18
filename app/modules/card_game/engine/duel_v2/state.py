@@ -404,9 +404,15 @@ def add_collapse(state, side, cid, amount=1, *, by=None):
             target=f'{side}:{cid}', after={'collapse': True})
 
 
-def heal(state, side, cid, amount, *, reason=None):
+def heal(state, side, cid, amount, *, reason=None, source=None):
     if finished(state):
         return
+    source_side, source_cid = source_parts(source)
+    if source_side and source_cid and alive(state, source_side, source_cid):
+        from .context import EffectContext
+        from app.modules.card_game.content.duel_v2.registry import decide
+        amount = decide(EffectContext(state, source_side, source_cid, {'side': source_side}),
+                        'outgoing_heal', amount, actor_only=True)
     if is_player(cid):
         team = state['sides'][side]
         if team.get('life_locked'):
@@ -417,8 +423,9 @@ def heal(state, side, cid, amount, *, reason=None):
         before = {'hp': team['hp'], 'shield': team['shield']}
         team['hp'] += actual
         log(state, (f'{reason}：' if reason else '') + f"{name(state, side)}回复 {actual} 点生命。", 'heal', side=side,
-            actor=f'{side}:player', target=f'{side}:player', amount=actual,
+            actor=source or f'{side}:player', target=f'{side}:player', amount=actual,
             before=before, after={'hp': team['hp'], 'shield': team['shield']})
+        _notify_healed(state, side, PLAYER_ID, actual, source)
         return
     h = hero(state, side, cid)
     if h.get('down_turns'):
@@ -429,9 +436,19 @@ def heal(state, side, cid, amount, *, reason=None):
     before = {'hp': h['hp'], 'shield': h['shield']}
     h['hp'] += actual
     if actual:
-        log(state, (f'{reason}：' if reason else '') + f"{h['name']}回复 {actual} 点生命。", 'heal', side=side, source=cid,
-            actor=f'{side}:{cid}', target=f'{side}:{cid}', amount=actual,
+        log(state, (f'{reason}：' if reason else '') + f"{h['name']}回复 {actual} 点生命。", 'heal', side=side, source=source or cid,
+            actor=source or f'{side}:{cid}', target=f'{side}:{cid}', amount=actual,
             before=before, after={'hp': h['hp'], 'shield': h['shield']})
+        _notify_healed(state, side, cid, actual, source)
+
+
+def _notify_healed(state, side, cid, amount, source):
+    from .context import EffectContext
+    from app.modules.card_game.content.duel_v2.registry import fire
+    owner, _ = source_parts(source)
+    owner = owner or side
+    fire(EffectContext(state, owner, team_order(state, owner)[0], {'side': owner}),
+         'on_ally_healed', target_id=f'{side}:{cid}', amount=amount, source=source)
 
 
 def shield(state, side, cid, amount, *, reason=None):
@@ -485,8 +502,10 @@ def draw(state, side, count=1):
             log(state, f"{name(state, side)}抽 1 张牌。", 'draw', side=side,
                 actor=f'{side}:player', private_side=side, private_card=public_card(card))
         else:
-            state.update(phase='finished', winner=other(side), reason='empty_draw')
-            log(state, f"{name(state, side)}牌库已空，无法抽牌。", 'finish', side=side,
+            wins = bool(team.get('empty_draw_wins'))
+            state.update(phase='finished', winner=side if wins else other(side),
+                         reason='empty_draw_win' if wins else 'empty_draw')
+            log(state, f"{name(state, side)}牌库已空，" + ('触发效果并获胜。' if wins else '无法抽牌。'), 'finish', side=side,
                 actor=f'{side}:player', winner=state['winner'], reason=state.get('reason'))
             break
 

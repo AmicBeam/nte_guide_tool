@@ -39,6 +39,9 @@ def team_effect_markers(team):
     markers = [_marker('next_resistance', attribute + '抗性', '玩家下次受到该属性伤害',
                        f'{attribute}属性伤害抗性 {value:+d}', False)
                for attribute, value in (team.get('next_damage_resistance') or {}).items()]
+    if team.get('empty_draw_wins'):
+        markers.append(_marker('empty_draw_wins', '热爱异象的观察员', '无牌可抽时',
+                               '无牌可抽时改为获胜；埃德嘉倒地后仍保留', False))
     if not team.get('extra_genesis_pending'):
         return markers
     actor = (team.get('characters') or {}).get(team.get('extra_genesis_actor')) or {}

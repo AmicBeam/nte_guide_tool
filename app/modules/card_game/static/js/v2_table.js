@@ -267,6 +267,9 @@ async function bootstrapTable() {
     if (reason === 'concede') {
       return ctx.game.winner === ctx.game.viewer_side ? '对方认输。' : '你已认输。';
     }
+    if (reason === 'empty_draw_win') {
+      return (ctx.game.winner === ctx.game.viewer_side ? '你' : '对方') + '在无牌可抽时触发卡牌效果，获得胜利。';
+    }
     if (reason === 'empty_draw') {
       return '牌库已空，无法抽牌。';
     }

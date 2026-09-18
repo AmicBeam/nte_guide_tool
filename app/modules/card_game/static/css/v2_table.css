@@ -369,3 +369,20 @@
   font-size: 64px; color: #eac37b; background: radial-gradient(ellipse, #536079, #142131);
 }
 .v2-rewind-curtain { position: fixed; inset: 0; background: #020407; z-index: 100; pointer-events: none; }
+
+.v2-choice-card.is-selected { outline: 3px solid #64e8d1; box-shadow: 0 0 18px #64e8d166; }
+#v2-choice-confirm { margin-top: 16px; width: 100%; }
+.truth-keys { color: #e5c46a; }
+.v2-choice-dialog.is-multi .v2-choice-grid.has-cards {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px;
+}
+.v2-choice-dialog.is-multi .v2-choice-card { min-width: 0; }
+.v2-choice-dialog.is-multi .v2-hover-card { width: 100%; min-height: 0; height: 100%; box-sizing: border-box; padding: 10px; }
+.v2-choice-dialog.is-multi .v2-hover-art { height: 110px; }
+.v2-choice-dialog.is-multi .v2-hover-card h2 { font-size: 15px; }
+.v2-choice-dialog.is-multi .v2-hover-card p { font-size: 12px; }
+.v2-choice-dialog.is-multi #v2-choice-confirm { position: sticky; bottom: 0; }
+@media (max-width: 900px) {
+  .v2-choice-dialog.is-multi .v2-choice-grid.has-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .v2-choice-dialog.is-multi .v2-hover-art { height: 64px; }
+}

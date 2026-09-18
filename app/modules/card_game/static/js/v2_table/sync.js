@@ -245,7 +245,12 @@
       ctx.openChoice({
         title: pending.prompt || '请选择',
         choices: pending.choices || [],
+        maxSelect: pending.max_select,
         onPick: function (choice) {
+          if (pending.max_select) {
+            ctx.submitEntry(findAction('choose_cards', { card_ids: choice.ids }));
+            return;
+          }
           const entry = findAction('choose', { choice_id: choice.id }) || {
             action: { type: 'choose', choice_id: choice.id },
             label: choice.label,

@@ -99,6 +99,7 @@ def resolve_genesis(c, *, arm_delay=True):
                group_id=next_group_id(s))
         if delayed and alive(s, side, cid):
             s['sides'][side]['surplus'] = True
+            s['sides'][side]['surplus_ever'] = True
             energy(s, side, cid, 1)
             log(s, f"{c.character['name']}触发盈蓄，获得 1 点能量。", 'harmony',
                 side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{cid}')

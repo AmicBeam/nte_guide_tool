@@ -56,13 +56,13 @@ class EffectContext:
                          before={'energy': before}, after={'energy': self.character['energy']})
 
     def heal(self, amount, *, reason=None):
-        heal(self.state, self.side, self.cid, amount, reason=reason)
+        heal(self.state, self.side, self.cid, amount, reason=reason, source=f'{self.side}:{self.cid}')
 
     def shield(self, amount, *, reason=None):
         shield(self.state, self.side, self.cid, amount, reason=reason)
 
     def heal_character(self, cid, amount):
-        heal(self.state, self.side, cid, amount)
+        heal(self.state, self.side, cid, amount, source=f'{self.side}:{self.cid}')
 
     def set_shape(self):
         from .presentation import public_card
@@ -130,7 +130,7 @@ class EffectContext:
 
     def heal_target(self, amount, front_shield=0):
         side, cid = self.operation['target_id'].split(':', 1)
-        heal(self.state, side, cid, amount)
+        heal(self.state, side, cid, amount, source=f'{self.side}:{self.cid}')
         if self.state['sides'][side]['front'] == cid:
             shield(self.state, side, cid, front_shield)
 

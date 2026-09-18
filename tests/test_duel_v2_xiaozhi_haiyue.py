@@ -38,7 +38,7 @@ class NewTestCharacters(unittest.TestCase):
         from pathlib import Path
         full = get_catalog()
         public = get_catalog(include_test_characters=False)
-        self.assertEqual(len([c for c in full['cards'] if not c.get('derived')]), 120)
+        self.assertEqual(len([c for c in full['cards'] if not c.get('derived')]), 128)
         for cid in ('xiaozhi', 'haiyue'):
             c = next(c for c in full['characters'] if c['id'] == cid)
             self.assertEqual(c['access_level'], 'test')

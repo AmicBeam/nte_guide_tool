@@ -4570,6 +4570,11 @@
           damage: Number(detail.resource_damage || 0),
           atk_multiplier: Number(detail.resource_atk_multiplier || 0),
           formula_parts: detail.resource_formula_parts,
+          panel: detail.resource_panel,
+          applied_buffs: detail.resource_applied_buffs,
+          damage_element: detail.damage_element,
+          damage_type: actionForStep({action_id: detail.action_id}).resource_damage?.damage_type || '普攻',
+
           consumed: Number(detail.personal_resources_consumed?.[resource] || 0),
           resource,
           action_name: detail.action_name,
@@ -5154,12 +5159,7 @@
     const selectedDamage = state.timelineDamageMarkers.get(state.selectedDamageMarkerKey);
     if (selectedDamage) {
       badge.textContent = `${ticksToSeconds(selectedDamage.tick)}s`;
-      panel.innerHTML = (selectedDamage.events || [selectedDamage]).map((event) => {
-        const [heading, ...lines] = damageMarkerTooltip(event).split('\n');
-        return `<div class="shaft-detail-hero"><strong>${escapeHtml(heading)}</strong>
-          <span class="shaft-detail-muted">${ticksToSeconds(event.tick)}s</span></div>
-          <div class="shaft-detail-line-list">${lines.map((line) => `<span>${escapeHtml(line)}</span>`).join('')}</div>`;
-      }).join('');
+      panel.innerHTML = (selectedDamage.events || [selectedDamage]).map(renderDamageEventDetail).join('');
       return;
     }
     if (selectionCount > 1) {
@@ -5178,6 +5178,48 @@
       return;
     }
     badge.textContent = visualTickLabel(step.start_tick);
+    panel.innerHTML = renderActionDetail(step, detail, action);
+  }
+
+  function damageEventSummaryRows(event) {
+    const formula = event.formula_parts || {};
+    const rows = [['结算时间', `${ticksToSeconds(event.tick)}s`]];
+    if (event.damage != null) rows.push(['伤害', formatNumber(event.damage)]);
+    if (event.stagger_amount != null) rows.push(['削减倾陷值', formatNumber(event.stagger_amount, 2)]);
+    if (event.reaction === '失谐') {
+      rows.push(['失谐削条', formatNumber(event.dissonance_stagger, 2)], ['等级差', formatNumber(event.level_gap)]);
+      if (event.daphne_extra_stagger) rows.push(['破鞘额外削条', formatNumber(event.daphne_extra_stagger, 2)], ['破鞘层数', formatNumber(event.daphne_stacks)], ['倾陷上限', `${formatNumber(event.stagger_limit_before, 1)} → ${formatNumber(event.stagger_limit_after, 1)}`]);
+    }
+    if (event.heiyu_accumulation) rows.push(['累计伤害', formatNumber(formula.base)], ['伤害上限', formatNumber(formula.damage_cap)]);
+    if (event.action_name) rows.push(['来源动作', event.action_name]);
+    if (event.resource) rows.push([`消耗${event.resource}`, formatNumber(event.consumed, 2)]);
+    Object.entries(formula.scaling_multipliers || {}).forEach(([stat, value]) => {
+      if (Number(value)) rows.push(['伤害倍率', stat === 'flat' ? formatNumber(value) : `${formatNumber(value * 100, 1)}%${({atk:'攻击', hp:'生命', def:'防御'})[stat] || stat}`]);
+    });
+    if (formula.periodic_scale != null) rows.push(['层数', formatNumber(formula.periodic_scale, 1)]);
+    if (formula.harmony_strength != null) rows.push(['基础伤害', formatNumber(formula.base)], ['频率', `×${formatNumber(formula.frequency_multiplier || 1, 2)}`]);
+    for (const [key, label] of [['action_multiplier','动作倍数'], ['non_fuwen_amplification','环合增幅'], ['damage_scale','伤害倍率']]) {
+      if (formula[key] != null && Number(formula[key]) !== 1) rows.push([label, `×${formatNumber(formula[key], 3)}`]);
+    }
+    for (const [key, label] of [['def_down','减防'], ['def_ignore','穿防'], ['res_down','减抗']]) {
+      if (formula[key] != null) rows.push([label, `${formatNumber(formula[key] * 100, 1)}%`]);
+    }
+    return rows.map(([label, value]) => `<div class="shaft-detail-kv"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
+  }
+
+  function renderDamageEventDetail(event) {
+    const formula = event.formula_parts || {};
+    const step = {slot: event.contributor_slot, start_tick: event.tick};
+    const action = {name: event.reaction, damage_element: event.damage_element,
+      damage_type: event.damage_type || event.action_type || '环合', action_type: event.damage_type || event.action_type || '环合',
+      multipliers: formula.scaling_multipliers || {}, is_background_damage: true};
+    const detail = {panel: event.panel, formula_parts: {...formula, dmg_bonus: formula.damage_bonus},
+      applied_buffs: event.applied_buffs || [], triggered_buffs: event.triggered_buffs || [],
+      direct_damage: event.damage, damage_element: event.damage_element};
+    return renderActionDetail(step, detail, action, event);
+  }
+
+  function renderActionDetail(step, detail, action, damageEvent = null) {
     const panelStats = detail?.panel || {};
     const actionElement = String(detail?.damage_element || action?.damage_element || getCharacterMap().get(memberBySlot(step.slot)?.character_id || '')?.element || '');
     const actionElementDamage = elementDamageValue(panelStats, actionElement);
@@ -5191,6 +5233,10 @@
       )
     );
     const panelParticipation = actionPanelParticipation(action, detail, step.slot);
+    if (damageEvent?.formula_parts?.harmony_strength !== undefined) panelParticipation.harmony_strength = true;
+    if (damageEvent && !damageEvent.panel) {
+      Object.keys(panelParticipation).forEach((key) => { panelParticipation[key] = false; });
+    }
     const realtimePanelRows = [];
     if (panelParticipation.atk) {
       realtimePanelRows.push(`<div class="shaft-detail-kv"><span>攻击</span><strong>${formatNumber(panelStats.atk || 0)}</strong></div>`);
@@ -5325,12 +5371,12 @@
     if (sinRecovery !== undefined && sinRecovery !== null) {
       specialStats.push(`<div class="shaft-detail-kv"><span>回复罪状</span><strong>${formatNumber(sinRecovery, 0)}</strong></div>`);
     }
-    panel.innerHTML = `
+    return `
       <div class="shaft-detail-hero">
         <strong>${escapeHtml(action.name)}</strong>
         <span class="shaft-detail-muted">${escapeHtml(memberName(step.slot))} · ${escapeHtml(action.action_type || '动作')} · ${isStepBackground(step, action) ? (isInstantSwitchAction(action) ? '后台切人' : (isBasicBackgroundOverride(step, action) ? '后台普攻' : '后台伤害')) : '前台动作'}</span>
       </div>
-      ${isBackgroundAction(action) && action.lingke_joint_source_slot == null ? `
+      ${!damageEvent && isBackgroundAction(action) && action.lingke_joint_source_slot == null ? `
         <div class="shaft-detail-multiplier">
           <span>动作倍数</span>
           <button class="secondary-btn" data-open-background-multiplier data-step-id="${escapeHtml(step.id)}" type="button" aria-haspopup="dialog">设置</button>
@@ -5338,6 +5384,7 @@
         </div>
       ` : ''}
       <div class="shaft-detail-grid">
+        ${damageEvent ? damageEventSummaryRows(damageEvent) : `
         <div class="shaft-detail-kv"><span>开始时间</span><strong>${ticksToSeconds(detail?.start_tick ?? calculationTickFromVisual(step.start_tick))}s</strong></div>
         <div class="shaft-detail-kv"><span>结束时间</span><strong>${ticksToSeconds(detail?.end_tick ?? calculationTickFromVisual(step.start_tick))}s</strong></div>
         <div class="shaft-detail-kv"><span>直伤</span><strong>${formatNumber(actionBodyDamage(detail))}</strong></div>
@@ -5348,6 +5395,7 @@
         ${showsEnergy ? `<div class="shaft-detail-kv"><span>额外回能</span><strong>${formatNumber(extraEnergyGain, 1)}</strong></div>` : ''}
         <div class="shaft-detail-kv"><span>环合</span><strong>${formatNumber(harmonyGain, 1)}</strong></div>
         ${specialStats.join('')}
+        `}
       </div>
       <div class="shaft-detail-hero">
         <span class="shaft-detail-muted">实时面板</span>

@@ -58,6 +58,9 @@ class LingkeSupportTest(unittest.TestCase):
                 self.assertEqual(original['lingke_joint_source_slot'], 0)
                 self.assertGreater(original['resource_damage'], 0)
                 formula = original['resource_formula_parts']
+                self.assertEqual(original['resource_panel'], formula['scaling_stats'])
+                self.assertIsInstance(original['resource_applied_buffs'], list)
+                self.assertFalse(any('援护暴伤' in buff['name'] for buff in original['resource_applied_buffs']))
                 expected = (formula['scaling_stats']['atk'] * formula['scaling_multipliers']['atk']
                             * (1 + formula['damage_bonus']) * formula['crit'] * formula['defense']
                             * formula['resistance'] * (1 + formula['final_dmg'])

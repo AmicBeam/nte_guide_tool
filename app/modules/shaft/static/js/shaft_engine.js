@@ -2743,7 +2743,7 @@
       return Array.from(sources.values());
     }
 
-    function effectiveReactionPanel(snapshot, tick, damageAction = null) {
+    function effectiveReactionPanel(snapshot, tick, damageAction = null, damageEvent = null) {
       const panelMods = clone(snapshot.mods);
       const syntheticStep = { slot: snapshot.slot };
       const syntheticAction = damageAction || {
@@ -2762,8 +2762,11 @@
         active_periodic_action_ids: activePeriodicActionIds(tick),
         active_damage_sources: activeDamageSources(tick),
       };
-      applicableBuffContributions(activeBuffs, syntheticStep, syntheticAction, snapshot, false, context)
-        .forEach((contribution) => mergeMods(panelMods, contribution.effects));
+      const contributions = applicableBuffContributions(activeBuffs, syntheticStep, syntheticAction, snapshot, false, context);
+      contributions.forEach((contribution) => mergeMods(panelMods, contribution.effects));
+      if (damageEvent) damageEvent.applied_buffs = contributions.map(({buff, effects}) => ({
+        ...buffSummary(buff, context), effects: {...effects},
+      }));
       return panelMods;
     }
 
@@ -3406,7 +3409,7 @@
           extra_tag: 'DOT',
           tags: ['DOT'],
         };
-        const panelMods = effectiveReactionPanel(snapshot, int(event.tick), periodicAction);
+        const panelMods = effectiveReactionPanel(snapshot, int(event.tick), periodicAction, event);
         const baseStats = snapshot.base_stats || {};
         const atk = num(baseStats.atk) * (1 + panelMods.atk_pct) + panelMods.flat_atk;
         const hp = num(baseStats.hp) * (1 + panelMods.hp_pct) + panelMods.flat_hp;
@@ -3440,7 +3443,17 @@
         const resistance = resistanceMultiplier(damageCharacterForAction(snapshot, periodicAction), enemy, panelMods);
         const finalMultiplier = 1 + panelMods.final_dmg;
         const resistanceElement = damageElement || '心灵';
+        event.damage_element = damageElement;
+        event.panel = {
+          atk, hp, def, crit_rate: critRate, crit_dmg: Math.max(0, num(panelMods.crit_dmg)),
+          all_dmg: num(panelMods.all_dmg),
+          [elementDamageKey(damageElement)]: elementDamage(panelMods, damageElement),
+          other_dmg: damageBonus - num(panelMods.all_dmg) - elementDamage(panelMods, damageElement),
+          final_dmg: num(panelMods.final_dmg),
+        };
         event.formula_parts = {
+          settled_defense: settledDefense(enemy, panelMods),
+          settled_resistance: settledResistance(damageCharacterForAction(snapshot, periodicAction), enemy, panelMods),
           base,
           unscaled_base: unscaledBase,
           periodic_scale: periodicScale,
@@ -3478,7 +3491,7 @@
           tags: ['DOT'],
         }
         : null;
-      const panelMods = effectiveReactionPanel(snapshot, int(event.tick), reactionAction);
+      const panelMods = effectiveReactionPanel(snapshot, int(event.tick), reactionAction, event);
       const base = reactionBaseDamage(snapshot.character?.level, sourceReaction);
       const strength = reactionStrengthMultiplier(panelMods.harmony_strength);
       const defense = sourceReaction === '黯星' ? 1 : defenseMultiplier(enemy, panelMods);
@@ -3490,7 +3503,12 @@
       const damageScale = event.damage_scale == null ? 1 : Math.max(0, num(event.damage_scale));
       const frequencyMultiplier = Math.max(1, num(event.frequency_multiplier, 1));
       const damageElement = String(resistanceCharacter?.element || '') || '心灵';
+      event.damage_element = damageElement;
+      event.panel = {harmony_strength: num(panelMods.harmony_strength), crit_rate: critRate,
+        crit_dmg: Math.max(0, num(panelMods.crit_dmg)), final_dmg: num(panelMods.final_dmg)};
       event.formula_parts = {
+        settled_defense: sourceReaction === '黯星' ? null : settledDefense(enemy, panelMods),
+        settled_resistance: settledResistance(resistanceCharacter, enemy, panelMods),
         base,
         harmony_strength: num(panelMods.harmony_strength),
         strength,
@@ -4944,9 +4962,11 @@
           multipliers: {atk: num(consumedResources[resourceDamage.resource]) / actionMultiplier * num(resourceDamage.atk_per_point)},
         });
         const extraModifiers = mods();
+        calc.resource_applied_buffs = [];
         applicableBuffContributions(activeBuffs, step, extraAction, snapshot, isBackground, Object.assign({}, buffContext, {action: extraAction}))
           .forEach(({buff, effects}) => {
             mergeMods(extraModifiers, effects);
+            calc.resource_applied_buffs.push({...buffSummary(buff, Object.assign({}, buffContext, {action: extraAction})), effects: {...effects}});
             if (!appliedBuffs.some((summary) => summary.rule_id === buff.rule?.id)) {
               const summary = buffSummary(buff, Object.assign({}, buffContext, {action: extraAction}));
               summary.name = `${summary.name}（仅${resourceDamage.resource}追加）`;
@@ -5253,6 +5273,8 @@
         direct_damage: multipliedDirectDamage,
         resource_damage: num(calc.resource_damage) * actionMultiplier * nonFuwenAmplification,
         resource_atk_multiplier: num(calc.resource_atk_multiplier) * actionMultiplier,
+        resource_panel: calc.resource_formula_parts?.scaling_stats || null,
+        resource_applied_buffs: calc.resource_applied_buffs || [],
         resource_formula_parts: calc.resource_formula_parts ? Object.assign({}, calc.resource_formula_parts, {
           action_multiplier: actionMultiplier,
           non_fuwen_amplification: nonFuwenAmplification,

@@ -80,6 +80,25 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
                      '动作倍数 ×2', '环合增幅 ×1.3'):
             self.assertIn(part, result['tooltip'])
 
+    def test_periodic_marker_snapshots_panel_and_buffs_at_each_tick(self):
+        catalog = load_shaft_catalog()
+        character = next(c for c in catalog['characters'] if c['name'] == '安魂曲')
+        action = next(a for a in catalog['actions_by_character'][character['id']] if a['name'].startswith('a1'))
+        arc = next(a for a in catalog['arcs'] if '最后一朵玫瑰' in a['name'])
+        result = simulate_shaft_axis({'team': [{'slot': 0, 'character_id': character['id'],
+            'arc_id': arc['id'], 'cartridge_id': ''}], 'steps': [
+            {'id': 'hit', 'slot': 0, 'action_id': action['id'], 'start_tick': 0},
+            {'id': 'tail', 'slot': 0, 'action_id': action['id'], 'start_tick': 50},
+        ]})['result']
+        first, second = result['periodic_damage_events'][:2]
+        for event in (first, second):
+            self.assertEqual(event['panel']['atk'], event['formula_parts']['scaling_stats']['atk'])
+            self.assertEqual(event['panel']['crit_rate'], .5)
+            self.assertEqual(event['panel']['crit_dmg'], event['formula_parts']['crit_dmg'])
+            self.assertIsInstance(event['applied_buffs'], list)
+        self.assertGreater(second['panel']['crit_dmg'], first['panel']['crit_dmg'])
+        self.assertNotEqual(first['applied_buffs'], second['applied_buffs'])
+
     def test_rotation_header_has_no_manual_calculation_button(self) -> None:
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1549,7 +1568,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const MAX_BACKGROUND_ACTION_MULTIPLIER = 999;', source)
         self.assertIn('const MAX_BACKGROUND_ACTION_MULTIPLIER = 999;', engine)
         self.assertIn('function backgroundActionMultiplier(step, action = actionForStep(step)) {', source)
-        self.assertIn('${isBackgroundAction(action) && action.lingke_joint_source_slot == null ? `', source)
+        self.assertIn('${!damageEvent && isBackgroundAction(action) && action.lingke_joint_source_slot == null ? `', source)
         self.assertIn('data-open-background-multiplier', source)
         self.assertIn('aria-haspopup="dialog">设置</button>', source)
         self.assertNotIn('aria-haspopup="dialog">×${actionMultiplier} · 设置</button>', source)

@@ -317,3 +317,8 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 训练入口默认使用 `terminal_tiebreak_v3`：普通PPO每批仅一步，累计3步有效分支才允许1步普通优化；对模拟明显更好但策略仍选错的局面进行有界优先回放，按证据解除错误旧策略约束。相同粒子胜负下以弱排序鼓励更早获胜、更晚失败，并保守认证一步斩杀；终局奖励保持不变。见 [实现与验证](../../../docs/duel-v2-prioritized-branch-learning.md)。本次仅提交代码和单元验证，未重训或替换服务权重。
 
 30 分钟三策略短测使用相同入口 `--seconds 1800`：六个训练阶段各至多 190 秒，预留 600 秒验收及 60 秒启动/收尾；总绝对截止和进程树监督仍生效，不自动发布。小于 600 秒仅允许 `--smoke`。
+
+
+### 独立搜索纠错小实验
+
+`scripts/test_duel_v2_search_pilot.py --starter SOURCE.pt --weave SOURCE.pt --output NEW_DIR --seconds 600` 在本机 CPU 执行最多 10 分钟的小实验，不替换联赛默认入口或服务模型。`rl/league_search.py` 提供全根动作的两步公开信息斩杀证明、8 粒子筛选后独立 32 粒子复核及全合法动作蒸馏；`rl/search_pilot.py` 生成分离的合成训练/选择/确认/留出局面。牌组数量保持合法，但这些局面并不声称由自然对局产生。验证：`python -m unittest tests.test_duel_v2_league_search tests.test_duel_v2_league_learning tests.test_duel_v2_league`。Torch 只在训练和梯度测试时加载。

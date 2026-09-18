@@ -92,6 +92,8 @@ def determinize(s,viewer,seed):
 
 def play(job):
     """Complete ordinary game or one root/candidate/particle rollout."""
+    if job.get('tactical_search') and job.get('collect'):
+        raise ValueError('Searched actions cannot be recorded as on-policy PPO samples')
     deadline=job['deadline'];rng=np.random.default_rng(job['seed']);viewer=job.get('viewer','a')
     models={s:model(*p) for s,p in job['policies'].items() if p is not None}
     if 'root' in job:
@@ -112,6 +114,11 @@ def play(job):
         else:
             from app.modules.card_game.engine.duel_v2 import choose_action
             selected=choose_action(s,side);ix=actions.index(selected);value=0.;prob=np.ones(len(actions))/len(actions)
+        if job.get('tactical_search') and s['phase']=='playing':
+            from .league_search import prove_turn
+            proof=prove_turn(s,side,depth=2,node_budget=96,deadline=deadline)
+            if proof['paths']:
+                ix=min(proof['paths'],key=lambda i:proof['depths'][i])
         if job.get('collect') and side==viewer:
             trajectory.append((x,c,ix,float(np.log(max(1e-20,prob[ix]))),value))
             if s['phase']=='playing' and len(actions)>1:

@@ -20,7 +20,7 @@ HIDDEN_KEYS = (
     'deck', 'rng', 'seed', 'private_card', 'private_side', 'private_hand', '_deferred_card_marks', '_public_board',
     'next_instance', 'mulligan_done', 'current_action_id', 'current_action_version',
     'combat_group', 'removed', 'requests', 'fingerprint', 'legal_actions',
-    'operation',
+    'operation', 'turn_snapshots', 'time_removed', 'visible_deck',
 )
 HAND_EVENT_TYPES = ('play', 'discard', 'remove', 'draw', 'gain')
 

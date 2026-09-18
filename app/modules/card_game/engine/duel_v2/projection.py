@@ -4,7 +4,7 @@ from .entities import clone_state, entity_action, needs_hydration
 
 from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS
-from .flow import acting_side, apply_action, card_plays_instant, card_is_free_instant, legal_actions, normal_attack_payment, ultimate_spec
+from .flow import acting_side, apply_action, card_plays_instant, card_is_free_instant, legal_actions, normal_attack_payment, ultimate_spec, card_cost
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
 from .combat import harmony_marks
@@ -60,7 +60,7 @@ def preview(state, side, action):
     cost = 1 if kind in ('attack', 'cycle') else 0
     card = _card(state, side, action['card_id']) if kind == 'play_card' else None
     if card:
-        cost = 0 if card_is_free_instant(state, side, card) else card['cost']
+        cost = 0 if card_is_free_instant(state, side, card) else card_cost(state, side, card)
     payment = normal_attack_payment(state, side, action['character_id']) if kind == 'attack' else None
     if payment is not None:
         cost = payment['ap']
@@ -135,6 +135,9 @@ def observe(state, side, after_seq=None):
                 'ultimate_available',
                 'front', 'last_front', 'turn_count', 'fatigue', 'records', 'used', 'harmonized',
                 'extra_flower', 'front_debuff') if k in source}
+        team['life_locked'] = bool(source.get('life_locked'))
+        if ps == side and source.get('deck_visible_turn') == state['turn'] and state['active_side'] == ps:
+            team['visible_deck'] = [public_card(c) for c in source['deck']]
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
         team['harmony_available'] = marks['available']
         team['effect_markers'] = team_effect_markers(source)
@@ -143,7 +146,7 @@ def observe(state, side, after_seq=None):
             h = source['characters'][cid]
             flags = h.get('flags') or {}
             c = {k: deepcopy(h[k]) for k in ('entity_id', 'id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
-                 'energy', 'jingu', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
+                 'energy', 'jingu', 'arid', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
                  'avatar', 'portrait', 'passive', 'awakened_passive') if k in h}
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None
@@ -176,6 +179,10 @@ def observe(state, side, after_seq=None):
         for raw in source['hand']:
             if ps == side or raw.get('copy') or raw.get('instance_id') in revealed:
                 card = public_card(raw)
+                from .context import EffectContext
+                from app.modules.card_game.content.duel_v2.registry import decide
+                card['description'] = decide(EffectContext(state, ps, raw['character_id'], {'side': ps}),
+                    'card_description', card.get('description', ''), actor_only=True, include_down=True, card=raw)
                 if ps == side and card_plays_instant(state, ps, raw):
                     card['instant'] = True
                 if raw.get('instance_id') in revealed:
@@ -225,7 +232,9 @@ def observe(state, side, after_seq=None):
 def choose_action(state, side):
     """Small deterministic rule opponent, restricted to its public observation."""
     observation = observe(state, side)
-    entries = observation['legal_actions']
+    held = {c.get('instance_id'): c for c in observation['sides'][side]['hand']}
+    entries = [e for e in observation['legal_actions']
+               if not held.get(e['action'].get('card_id'), {}).get('training_excluded')]
     if not entries:
         raise ValueError('No legal action')
     for kind in ('mulligan', 'choose'):

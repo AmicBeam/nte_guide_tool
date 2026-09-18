@@ -1179,3 +1179,15 @@ test("ordinary zero damage does not float invincibility", async () => {
     before: { hp: 5, shield: 0 }, after: { hp: 5, shield: 0 } }], { instant: true }), harness.clock, player);
   assert.deepEqual(floatersOf(harness), []);
 });
+
+test("rewind patches once under the black curtain and removes it", async () => {
+  const harness = makeRoot();
+  let patches = 0;
+  const player = new Player({ root: harness.root, clock: harness.clock, applyPatch: () => {
+    patches += 1;
+    assert.ok(harness.stage.querySelector('.v2-rewind-curtain'));
+  } });
+  await settle(player.play([{ seq: 920, type: 'rewind', side: 'a', patch: { turn: 1 } }]), harness.clock, player);
+  assert.equal(patches, 1);
+  assert.equal(harness.stage.querySelector('.v2-rewind-curtain'), null);
+});

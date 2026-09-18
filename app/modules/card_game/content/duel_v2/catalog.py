@@ -63,7 +63,7 @@ def _character_public(raw: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f'角色缺少字段: {", ".join(missing)}')
     public = {field: deepcopy(raw[field]) for field in REQUIRED_CHARACTER_FIELDS}
     public['energy_max'] = energy_max_for_attribute(public['attribute'])
-    for extra in ('everness_id', 'ultimate'):
+    for extra in ('everness_id', 'ultimate', 'faction', 'resource_name', 'turn_snapshots'):
         if extra in raw:
             public[extra] = deepcopy(raw[extra])
     return public
@@ -81,8 +81,8 @@ def _card_public(raw: dict[str, Any]) -> dict[str, Any]:
     public['starter_copies'] = int(raw.get('starter_copies') or 0)
     card_id = raw.get('id')
     kind = raw.get('type')
-    if public['cost'] != 1:
-        raise ValueError(f'卡牌 {card_id} 必须是 1 费')
+    if type(public['cost']) is not int or public['cost'] not in (0, 1):
+        raise ValueError(f'卡牌 {card_id} 费用必须为 0 或 1')
     if kind == 'form':
         attack = int(raw.get('attack') or 0)
         hp = int(raw.get('hp') or 0)
@@ -102,7 +102,7 @@ def _card_public(raw: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(f'战斗牌 {card_id} 的攻击与护盾不能为负')
         public['attack'] = attack
         public['shield'] = shield
-    for extra in ('instant', 'response', 'redeem', 'require', 'derived', 'playable_downed', 'attack_mode', 'play_options'):
+    for extra in ('instant', 'response', 'redeem', 'require', 'derived', 'playable_downed', 'attack_mode', 'play_options', 'spend_all_ap', 'training_excluded', 'response_faction'):
         if extra in raw:
             public[extra] = deepcopy(raw[extra])
     if public.get('derived'):

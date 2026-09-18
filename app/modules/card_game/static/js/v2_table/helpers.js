@@ -190,7 +190,7 @@
         next.push(byId[item.id]);
       }
     });
-    return next;
+    return next.filter(function (item) { return !item.removed; });
   }
 
   function hiddenCard() {
@@ -673,8 +673,9 @@
       '生命 ' + (data.hp == null ? '-' : data.hp) + '/' + (data.max_hp == null ? '-' : data.max_hp),
       '护盾 ' + (data.shield == null ? 0 : data.shield),
       '环合 ' + (data.harmony == null ? 0 : data.harmony),
-      '能量 ' + (data.energy == null ? 0 : data.energy) + '/' + (data.energy_max == null ? 5 : data.energy_max),
+      (data.resource_name || '能量') + ' ' + (data.energy == null ? 0 : data.energy) + '/' + (data.energy_max == null ? 5 : data.energy_max),
     ];
+    if (data.arid != null) bits.push('荒时 ' + data.arid);
     if (data.growth != null && data.growth !== '') {
       bits.push('成长 ' + data.growth);
     }

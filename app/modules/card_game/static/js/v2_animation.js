@@ -409,7 +409,7 @@
           return;
         }
         await this._present(others[index], instant);
-        this._patch(others[index]);
+        if (others[index].type !== 'rewind') this._patch(others[index]);
         const silent = this._isSilent(others[index]);
         if (!silent && (index < others.length - 1 || packets.length)) {
           await this._wait(this._duration(instant, BEATS.gap));
@@ -428,6 +428,16 @@
       try {
         this._note(event, kind);
         if (this._isSilent(event)) {
+          return;
+        }
+        if (kind === "rewind") {
+          const curtain = this._el("div", "v2-rewind-curtain");
+          this._ensureOverlay().appendChild(curtain);
+          try {
+            await this._animate(curtain, [{ opacity: 0 }, { opacity: 1 }], this._duration(instant, 220));
+            this._patch(event);
+            await this._animate(curtain, [{ opacity: 1 }, { opacity: 0 }], this._duration(instant, 280));
+          } finally { if (curtain.parentNode) curtain.parentNode.removeChild(curtain); }
           return;
         }
         if (kind === "draw") {

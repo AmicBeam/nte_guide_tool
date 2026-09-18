@@ -23,7 +23,7 @@ def public_policy_state(state):
                       'order': order.index(cid),
                       'harmonized': bool((team.get('harmonized') or {}).get(cid)),
                       'flags': {key: deepcopy((h.get('flags') or {}).get(key)) for key in FLAG_KEYS}}
-                for cid, h in team['characters'].items()
+                for cid, h in team['characters'].items() if cid in order
             },
         }
     return result

@@ -20,7 +20,8 @@ CARD_FIELDS = (
     'entity_id', 'instance_id', 'card_id', 'character_id', 'name', 'type', 'cost', 'terminal',
     'description', 'copy', 'expires_turn', 'original_character_id',
     'stat', 'stat_value', 'shield', 'attack', 'hp', 'instant', 'response', 'require', 'redeem',
-    'derived', 'attack_mode', 'jingu_mark', 'play_options',
+    'derived', 'attack_mode', 'jingu_mark', 'play_options', 'antique_investment',
+    'training_excluded', 'portrait', 'avatar', 'selection_kind',
 )
 ENTITY_CHARS = set(CHARACTERS)
 PRIVATE_EVENT_KEYS = ('private_card', 'private_side', 'private_hand')
@@ -66,6 +67,7 @@ def capture_public_board(state):
         team = {key: deepcopy(source[key]) for key in ('hp', 'shield', 'ap', 'front', 'last_front', 'front_debuff')}
         if 'entity_id' in source:
             team['entity_id'] = source['entity_id']
+        team['life_locked'] = bool(source.get('life_locked'))
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
         marks = harmony_marks(state, ps)
         team['harmony_available'] = marks['available']
@@ -82,6 +84,7 @@ def capture_public_board(state):
             shape_id = hero.get('shape')
             characters.append({
                 'id': cid,
+                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid') if k in hero},
                 'entity_id': hero.get('entity_id'),
                 'effect_markers': character_effect_markers(hero),
                 'hp': hero['hp'],
@@ -143,6 +146,8 @@ def diff_public(before, after):
                      if key == 'id' or old.get(key) != value}
             if set(delta) - {'id'}:
                 changed.append(delta)
+        current_ids = {row['id'] for row in current_side['characters']}
+        changed.extend({'id': cid, 'removed': True} for cid in previous_chars if cid not in current_ids)
         if changed:
             slot['characters'] = changed
         if slot:
@@ -163,6 +168,9 @@ def merge_patch(base, extra):
                     if field == 'characters' and isinstance(field_value, list) and isinstance(slot.get('characters'), list):
                         by_id = {row['id']: row for row in slot['characters'] if 'id' in row}
                         for row in field_value:
+                            if row.get('removed'):
+                                slot['characters'] = [h for h in slot['characters'] if h.get('id') != row['id']]
+                                continue
                             current = by_id.get(row.get('id'))
                             if current is None:
                                 slot['characters'].append(deepcopy(row))

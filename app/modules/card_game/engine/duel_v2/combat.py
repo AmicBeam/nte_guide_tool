@@ -130,6 +130,7 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
     op['harmony'] = kind
     if as_support:
         op['support'] = True
+        fire(c, 'on_support', actor_id=cid)
     log(s, f"{c.character['name']}入场，消耗{payer['name']}的 {harmony_cap(s)} 点环合值，触发{kind}。", 'harmony',
         side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id}',
         before={'harmony': before}, after={'harmony': payer['harmony']})
@@ -242,8 +243,11 @@ def attack(c, spec, index):
     fire(c, 'before_attack', actor_only=True)
     if index == 0 and is_esper(target_id) and not spec.get('target'):
         from .flow import trigger_responses, settle_deferred_card_marks
-        trigger_responses(s, enemy, 'self_attacked', target_id=target_id)
-        trigger_responses(s, enemy, 'ally_attacked', target_id=target_id)
+        trigger_responses(s, enemy, 'faction_front_attacked', target_id=target_id)
+        target_id = s['sides'][enemy]['front'] or 'player'
+        if is_esper(target_id):
+            trigger_responses(s, enemy, 'self_attacked', target_id=target_id)
+            trigger_responses(s, enemy, 'ally_attacked', target_id=target_id)
         if finished(s) or not alive(s, side, cid):
             settle_deferred_card_marks(s)
             return

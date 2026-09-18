@@ -74,7 +74,7 @@ def attack_value(character):
     from app.modules.card_game.content.duel_v2.tutorial import lookup_character
     try:
         catalog_attack = int(lookup_character(character.get('id')).get('attack') or 0)
-    except (KeyError, TypeError):
+    except (KeyError, TypeError, AttributeError):
         catalog_attack = int(CHARACTERS.get(character.get('id'), {}).get('attack') or 0)
     perm_atk = int(character.get('base_attack') or 0) - catalog_attack
     if form and form.get('type') == 'form' and form_attack > 0 and form_hp > 0:
@@ -186,6 +186,10 @@ def move_out(state, side, cid):
     if team['front'] != cid:
         return
     h = hero(state, side, cid)
+    if h.get('summoned'):
+        from .summons import dismiss
+        dismiss(state, side, cid)
+        return
     team['last_front'] = cid if alive(state, side, cid) else None
     team['front'] = None
     before = {'hp': h['hp'], 'shield': h['shield'], 'front': cid}
@@ -197,6 +201,8 @@ def move_out(state, side, cid):
 
 def discard(state, side, card, *, bottom=False):
     from .presentation import public_card
+    if card.get('virtual'):
+        return
     team = state['sides'][side]
     card.pop('jingu_mark', None)
     shown = public_card(card)
@@ -223,6 +229,10 @@ def _knockdown_pass(state):
         for cid in team_order(state, side):
             h = hero(state, side, cid)
             if h['hp'] > 0 or h['down_turns'] > 0:
+                continue
+            if h.get('summoned'):
+                from .summons import dismiss
+                dismiss(state, side, cid)
                 continue
             downed.append((side, cid))
             h['hp'] = 0
@@ -300,6 +310,8 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
             trigger_responses(state, side, 'self_lethal', target_id=cid)
         floor = int(decide(EffectContext(state, side, cid, {'side': side}), 'hp_floor', 0,
                            target_id=cid) or 0)
+    if not esper and target.get('life_locked'):
+        loss = 0
     target['hp'] = max(floor, target['hp'] - loss)
     after = {'hp': target['hp'], 'shield': target['shield']}
     extra = {}
@@ -397,6 +409,8 @@ def heal(state, side, cid, amount, *, reason=None):
         return
     if is_player(cid):
         team = state['sides'][side]
+        if team.get('life_locked'):
+            return
         actual = min(amount, 30 - team['hp'])
         if actual <= 0:
             return
@@ -435,6 +449,8 @@ def energy(state, side, cid, amount=1):
     if finished(state) or not alive(state, side, cid):
         return
     h = hero(state, side, cid)
+    if h.get('resource_name') or h.get('summoned'):
+        return
     from .escalation import energy_cap
     h['energy'] = min(energy_cap(state, h), h['energy'] + amount)
 

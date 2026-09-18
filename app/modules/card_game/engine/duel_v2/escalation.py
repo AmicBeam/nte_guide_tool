@@ -60,7 +60,9 @@ def clamp_resources(state):
 def begin_escalation(state, side):
     if not reached(state, 6):
         return
-    candidates = [cid for cid in team_order(state, side) if alive(state, side, cid)]
+    candidates = [cid for cid in team_order(state, side) if alive(state, side, cid)
+                  and not hero(state, side, cid).get('resource_name')
+                  and not hero(state, side, cid).get('summoned')]
     if not candidates:
         return
     lowest = min(hero(state, side, cid)['energy'] for cid in candidates)

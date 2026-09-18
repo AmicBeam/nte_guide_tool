@@ -94,13 +94,14 @@
         '<span data-resource-full="' + full + ' " data-resource-short="' + short + '">' + full + ' </span>' + V2.escapeHtml(value) + '</span>';
     }
     const resourceHtml = (hideHarmony ? '' : resourceLabel('环合', '环', String(data.harmony || 0) + '/' + (data.harmony_max == null ? 2 : data.harmony_max), 'harmony')) +
-      (hideEnergy ? '' : resourceLabel('能量', '能', energyNow + '/' + energyMax, 'energy'));
+      (hideEnergy ? '' : resourceLabel(data.resource_name || '能量', data.resource_name ? '时' : '能', energyNow + '/' + energyMax, 'energy'));
     const stats = compact ? [
       { html: '<span class="v2-attack-stack">' + jinguHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' },
       { html: combatStat('hp', hp, '生命 ' + hp) },
       { html: combatStat('shield', shield, '护盾 ' + shield) },
     ] : [];
-    if (resourceHtml) stats.push({ html: '<div class="v2-resource-row">' + resourceHtml + '</div>' });
+    if (data.arid != null) stats.push({ cls: 'arid', text: '荒时 ' + data.arid });
+    if (resourceHtml && !data.summoned) stats.push({ html: '<div class="v2-resource-row">' + resourceHtml + '</div>' });
     if (!hideEnergy && data.awakened) stats.push({ cls: 'energy', text: '终结 ' + (data.ultimate_expires === 'turn_end' ? '本回合' : (data.ultimate_turns || 0)) });
     if (Number(data.growth) > 0) {
       stats.push({ cls: '', text: '成长 ' + data.growth });
@@ -136,13 +137,14 @@
     const prevPanel = node.getAttribute('data-pop-sig');
     node.setAttribute('data-pop-sig', panelSig);
     node.innerHTML =
-      '<div class="v2-character-art' + (actions.length && !mobileCard ? ' has-ultimate' : '') + '">' + V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar') +
+      '<div class="v2-character-art' + (actions.length && !mobileCard ? ' has-ultimate' : '') + '">' + (data.summoned ? '<div class="v2-summon-art" aria-label="召唤物">⌛</div>' : V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar')) +
       vitalsHtml + (mobileCard ? '' : actions.join('')) + '</div>' +
       '<div class="v2-character-panel">' +
         '<div class="v2-character-heading">' +
           '<strong title="' + V2.escapeAttr(data.name || '') + '">' + V2.escapeHtml(shortName(data)) + '</strong>' +
           (downTurns ? '<span class="v2-down-badge">倒地 ' + downTurns + '</span>' : '') +
-          V2.attributeMarkup(data.attribute) +
+          (data.attribute ? V2.attributeMarkup(data.attribute) : '') +
+          (data.faction ? '<small class="v2-faction" title="' + V2.escapeAttr(data.faction) + '">' + V2.escapeHtml(data.faction === '伊波恩古董店' ? '伊波恩' : data.faction) + '</small>' : '') +
         '</div>' +
         '<div class="v2-character-stats">' + stats.map(function (item) {
           if (item.html) {
@@ -297,7 +299,7 @@
     const state = TABLE.sideState(ctx.game, side);
     const frontId = state && state.front;
     const isOpponent = side !== ctx.viewer;
-    const chars = V2.sortedCharacters((state && state.characters) || []);
+    const chars = V2.sortedCharacters(((state && state.characters) || []).filter(function (h) { return !h.summoned; }));
     reclaimCharacters(bench, ctx.pool);
     while (bench.firstChild) {
       bench.removeChild(bench.firstChild);
@@ -556,6 +558,8 @@
     setPileLabel(ctx.nodes.opponentAp, '行动力', theirs.ap == null ? '-' : theirs.ap);
     popIfChanged(ctx.nodes.opponentAp, theirs.ap);
     ctx.nodes.playerHp.textContent = mine.hp == null ? '-' : mine.hp;
+    ctx.nodes.playerHp.closest('.v2-player-hud').classList.toggle('is-life-locked', Boolean(mine.life_locked));
+    ctx.nodes.opponentHp.closest('.v2-player-hud').classList.toggle('is-life-locked', Boolean(theirs.life_locked));
     ctx.nodes.playerShield.textContent = '护盾 ' + (mine.shield == null ? '-' : mine.shield);
     ctx.nodes.playerAp.textContent = mine.ap == null ? '-' : mine.ap;
     const playerApReadout = ctx.nodes.playerAp && ctx.nodes.playerAp.closest('.v2-ap-readout');

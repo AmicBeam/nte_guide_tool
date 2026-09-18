@@ -89,7 +89,11 @@ class DuelV2PresentationTest(unittest.TestCase):
     def test_double_hit_uses_separate_groups(self):
         state = self.game()
         state['sides']['b']['front'] = 'zero'
-        after, _ = self.play(state, 'X05')
+        # Generic multi-hit contract, independent of the retired X05 effect.
+        from app.modules.card_game.engine.duel_v2.flow import operation, finish_operation
+        after = deepcopy(state)
+        operation(after, 'a', 'nanali').sortie(hits=2, no_counter=True)
+        finish_operation(after)
         own = observe(after, 'a')
         attacks = self.events(own, 'attack')
         self.assertEqual(len(attacks), 2)

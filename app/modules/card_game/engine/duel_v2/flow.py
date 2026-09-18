@@ -101,8 +101,18 @@ def card_is_free_instant(state, side, card):
     return bool(card_plays_instant(state, side, card) and not team['used'].get('instant'))
 
 
+def card_cost(state, side, card):
+    limit = card.get('spend_all_ap')
+    return min(int(state['sides'][side]['ap']), int(limit)) if limit else int(card.get('cost') or 0)
+
+
 def can_afford_card(state, side, card):
-    cost = int((card or {}).get('cost') or 0)
+    if card.get('spend_all_ap') and state['sides'][side]['ap'] <= 0:
+        return False
+    if not decide(EffectContext(state, side, card['character_id'], {'side': side}),
+                  'can_play', True, actor_only=True, card=card):
+        return False
+    cost = card_cost(state, side, card)
     return card_is_free_instant(state, side, card) or int(state['sides'][side].get('ap') or 0) >= cost
 
 
@@ -134,16 +144,19 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None)
             'effect', side=side, actor=f"{side}:{card['character_id']}", present=False,
             private_side=side, private_hand=[public_card(held) for held in team['hand']])
     form_bonus = kit_makes_form_instant(state, side, card)
+    ap_paid = 0
     if pay:
         if card_is_free_instant(state, side, card):
             team['used']['instant'] = True
         else:
-            team['ap'] -= int(card.get('cost') or 0)
+            ap_paid = card_cost(state, side, card)
+            team['ap'] -= ap_paid
     log(state, f"{hero(state, side, card['character_id'])['name']}使用「{card['name']}」。",
         'play', side=side, source=card['character_id'],
         actor=f"{side}:{card['character_id']}", card=public_card(card))
     c = operation(state, side, card['character_id'], card, target_id)
     c.operation['option_id'] = option.get('id')
+    c.operation['ap_paid'] = ap_paid
     if card.get('type') == 'battle' and alive(state, side, card['character_id']):
         attack = int(card.get('attack') or 0)
         value = int(card.get('shield') or 0)
@@ -181,6 +194,9 @@ def trigger_responses(state, defending_side, kind, target_id=None):
         if not alive(state, defending_side, owner) or collapsed(hero(state, defending_side, owner)):
             continue
         if kind == 'ally_attacked' and (not target_id or target_id == owner):
+            continue
+        if kind == 'faction_front_attacked' and (team['front'] != target_id or
+                hero(state, defending_side, target_id).get('faction') != card.get('response_faction')):
             continue
         if kind == 'self_attacked' and target_id != owner:
             continue
@@ -269,8 +285,11 @@ def normal_attack_payment(state, side, cid):
     """Pure payment offer shared by legality, execution and previews."""
     team = state['sides'][side]
     default = {'ap': 1, 'normal': True} if team['normal_attack_available'] else None
-    return decide(EffectContext(state, side, cid, {'side': side, 'actor': cid}),
-                  'normal_attack_payment', default, actor_only=True)
+    if hero(state, side, cid).get('summoned'):
+        return None
+    offer = decide(EffectContext(state, side, cid, {'side': side, 'actor': cid}),
+                   'normal_attack_payment', default, actor_only=True)
+    return offer if isinstance(offer, dict) else None
 
 
 def legal_actions(state, side=None):
@@ -306,7 +325,9 @@ def legal_actions(state, side=None):
         if payment is not None and team['ap'] >= payment['ap'] and not collapsed(h):
             result.append({'type': 'attack', 'character_id': cid})
         if (ultimate_remaining(state, side) and h['energy'] >= energy_cap(state, h)
-                and h.get('ultimate_used_turn') != state['turn']):
+                and h.get('ultimate_used_turn') != state['turn'] and not h.get('summoned')
+                and decide(EffectContext(state, side, cid, {'side': side}),
+                           'can_ultimate', True, actor_only=True)):
             result.append({'type': 'ultimate', 'character_id': cid})
     for card in team['hand']:
         owner = card['character_id']
@@ -334,7 +355,10 @@ def legal_actions(state, side=None):
 
 def ultimate_spec(cid):
     from app.modules.card_game.content.duel_v2.tutorial import lookup_character
-    spec = (lookup_character(cid) or {}).get('ultimate') or {}
+    try:
+        spec = (lookup_character(cid) or {}).get('ultimate') or {}
+    except KeyError:  # Runtime summons have no catalog ultimate.
+        spec = {}
     kind = spec.get('kind') or 'status'
     if kind not in ('status', 'instant'):
         kind = 'status'
@@ -354,18 +378,19 @@ def start_ultimate(state, side, cid, *, spent_ap=False):
     if spec['kind'] == 'instant':
         h['awakened'] = False
         h['ultimate_turns'] = 0
-        text = f"{h['name']}消耗 {energy_cap(state, h)} 点能量，发动终结。"
+        text = f"{h['name']}消耗 {energy_cap(state, h)} 点{h.get('resource_name', '能量')}，发动终结。"
     else:
         h['awakened'] = True
         h['ultimate_turns'] = spec['turns']
         duration = '持续至本回合结束' if spec['expires'] == 'turn_end' else f"持续 {spec['turns']} 个己方回合"
-        text = f"{h['name']}消耗 {energy_cap(state, h)} 点能量，发动终结（{duration}）。"
+        text = f"{h['name']}消耗 {energy_cap(state, h)} 点{h.get('resource_name', '能量')}，发动终结（{duration}）。"
     log(state, text, 'ultimate', side=side, source=h['id'], actor=f'{side}:{h["id"]}',
         target=f'{side}:{h["id"]}',
         description=(lookup_character(cid) or {}).get('awakened_passive') or '',
         before=before,
         after={'energy': h['energy'], 'awakened': h['awakened'], 'ultimate_turns': h['ultimate_turns'], 'ap': team['ap']})
     fire(EffectContext(state, side, cid, {'side': side}), 'on_ultimate', actor_only=True)
+    fire(EffectContext(state, side, cid, {'side': side}), 'on_ally_ultimate', actor_id=cid)
     if getattr(KITS.get(cid), 'ultimate_sortie', False) and alive(state, side, cid):
         operation(state, side, cid).sortie()
         if state['phase'] != 'choice':
@@ -405,6 +430,7 @@ def begin_turn(state, side):
     state['turn'] += 1
     team = state['sides'][side]
     team['turn_count'] += 1
+    team.pop('life_locked', None)
     team['used'] = {}
     for ps in SIDES:
         state['sides'][ps]['attacked_this_turn'] = []
@@ -436,6 +462,7 @@ def begin_turn(state, side):
                     before={'hp': 0, 'down_turns': 1}, after={'hp': h['hp'], 'down_turns': 0})
     begin_escalation(state, side)
     carrier = team_order(state, side)[0]
+    fire(EffectContext(state, side, carrier, {'side': side}), 'on_turn_clock', include_down=True)
     fire(EffectContext(state, side, carrier, {'side': side}), 'on_turn_begin')
     if finished(state):
         return
@@ -459,7 +486,7 @@ def begin_turn(state, side):
     if finished(state):
         return
     front = team.get('front')
-    if front and not collapsed(hero(state, side, front)):
+    if front and not collapsed(hero(state, side, front)) and not hero(state, side, front).get('summoned'):
         move_out(state, side, front)
     from .tutorial import tutorial_flags
     flags = tutorial_flags(state)
@@ -477,6 +504,8 @@ def begin_turn(state, side):
         team['normal_attack_available'] = True
         team['ultimates_used'] = 0
         team['ultimate_available'] = not flags.get('disable_ultimate')
+        from .temporal import save_turn_start
+        save_turn_start(state, side)
 
 
 def tick_front_debuff(state, side):
@@ -664,7 +693,12 @@ def choose(state, side, choice_id):
             actor=f'{side}:player', card=public_card(selected),
             target=f'{enemy}:player')
         discard(state, enemy, selected, bottom=True)
-    finish_operation(state)
+    state['phase'], state['pending_choice'] = 'playing', None
+    if kind == 'kit':
+        op = state['operation']
+        fire(EffectContext(state, side, op['actor'], op), 'on_choice', actor_only=True, selected=selected)
+    if state['phase'] != 'choice':
+        finish_operation(state)
 
 
 def apply_action(state, side, action):

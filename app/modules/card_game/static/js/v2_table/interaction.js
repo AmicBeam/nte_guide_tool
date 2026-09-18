@@ -57,8 +57,13 @@
     }
 
     function hoverCardMarkup(card) {
+      if (card.selection_kind === 'character') {
+        return '<article class="v2-hover-card is-character"><div class="v2-hover-art">' +
+          V2.imageMarkup(card.portrait || card.avatar, card.name, 'v2-portrait') + '</div><h2>' +
+          V2.escapeHtml(card.name) + '</h2>' + V2.cardDescriptionHtml(card.description) + '</article>';
+      }
       const owner = (V2.characterFallback(card.character_id) || {}).name || '';
-      const portrait = V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'portrait')
+      const portrait = card.portrait || V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'portrait')
         || V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'avatar');
       return (
         '<article class="v2-hover-card"' + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '>' +
@@ -94,6 +99,7 @@
           '<div class="v2-hover-art">' + V2.imageMarkup(portrait, found.name, 'v2-portrait') + '</div>' +
           '<h2>' + V2.escapeHtml(found.name || '角色') + '</h2>' +
           (found.attribute ? V2.attributeMarkup(found.attribute) : '') +
+          (found.faction ? '<span class="v2-faction">' + V2.escapeHtml(found.faction) + '</span>' : '') +
           '<p class="subtle">攻击 ' + V2.escapeHtml(found.attack == null ? '-' : found.attack) +
             ' · 生命 ' + V2.escapeHtml((found.hp == null ? '-' : found.hp) + '/' + (found.max_hp == null ? '-' : found.max_hp)) + '</p>' +
           lines.join('') +
@@ -837,7 +843,11 @@
     nodes.playerDiscard.addEventListener('click', function () { openPile('我方弃牌', TABLE.sideState(ctx.game, ctx.viewer()).discard || []); });
     nodes.opponentDiscard.addEventListener('click', function () { openPile('对手弃牌', TABLE.sideState(ctx.game, ctx.opponent()).discard || []); });
     nodes.playerDeck.addEventListener('click', function () {
-      openPile('我方牌库', [{ name: '牌库 ' + (TABLE.sideState(ctx.game, ctx.viewer()).deck_count || 0) + ' 张', description: '牌序保密。' }]);
+      const mine = TABLE.sideState(ctx.game, ctx.viewer());
+      const cards = Array.isArray(mine.visible_deck) ? mine.visible_deck.map(function (card, index) {
+        return Object.assign({}, card, { name: (index + 1) + '. ' + card.name });
+      }) : [{ name: '牌库 ' + (mine.deck_count || 0) + ' 张', description: '牌序保密。' }];
+      openPile(Array.isArray(mine.visible_deck) ? '我方牌库 · 从顶到底' : '我方牌库', cards);
     });
     nodes.opponentDeck.addEventListener('click', function () {
       openPile('对手牌库', [{ name: '牌库 ' + (TABLE.sideState(ctx.game, ctx.opponent()).deck_count || 0) + ' 张', description: '牌序保密。' }]);

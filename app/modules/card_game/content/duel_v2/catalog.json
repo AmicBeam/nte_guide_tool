@@ -75,24 +75,27 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "伊波恩古董店"
     },
     {
       "id": "xun",
       "name": "浔",
       "attribute": "光",
-      "attack": 2,
-      "max_hp": 5,
+      "attack": 3,
+      "max_hp": 6,
       "avatar": "/static/images/characters/avatar/浔.webp",
       "portrait": "/static/images/characters/portrait/浔.webp",
-      "passive": "在备战区存活时，每个己方回合记录首张其他己方角色结算的战斗/战术原牌，容量 1。浔有记录并打出兑现战斗牌时，消耗记录，本次出击所有攻击伤害 +1，并将记录牌的临时复制加入手牌。",
-      "awakened_passive": "记录容量提升至 2，必须来自不同角色；一次兑现全部记录，本次出击所有攻击伤害 +2。持续 2 个己方回合。",
+      "passive": "其他己方异能者全部倒地时，浔才能普通出击。每名其他己方异能者发动终结或援护技时，为浔积累 1 点荒时；每次浔终结前，同一异能者至多贡献 1 点。",
+      "awakened_passive": "每个己方回合开始时获得 1 点时计，倒地时也可获得。选择 1 名对方异能者，消耗全部荒时：造成 4 点伤害；至少 1 点，伤害 +2；至少 2 点，再对所有对方异能者造成 2 点伤害；至少 3 点，主目标伤害再 +2，终结伤害获得穿透。",
       "everness_id": 1052,
-      "role": "后台记录队友牌，以 2 费战斗牌兑现",
+      "role": "时计与荒时，回溯与家族支援",
       "ultimate": {
-        "kind": "status",
-        "turns": 2
-      }
+        "kind": "instant"
+      },
+      "faction": "伊波恩古董店",
+      "resource_name": "时计",
+      "turn_snapshots": true
     },
     {
       "id": "zhenhong",
@@ -109,7 +112,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "异象管理局收容二组"
     },
     {
       "id": "xiaozhi",
@@ -125,7 +129,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "德沃夏克家族"
     },
     {
       "id": "nanali",
@@ -142,7 +147,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "伊波恩古董店"
     },
     {
       "id": "jiuyuan",
@@ -159,7 +165,8 @@
       "ultimate": {
         "kind": "instant",
         "turns": 0
-      }
+      },
+      "faction": "斯特利速递"
     },
     {
       "id": "lingke",
@@ -176,7 +183,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "E.T.D六队队员"
     },
     {
       "id": "iloy",
@@ -193,7 +201,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "异象管理局收容二组"
     },
     {
       "id": "bohe",
@@ -210,7 +219,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "异象管理局收容二组"
     },
     {
       "id": "hathor",
@@ -227,7 +237,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "斯特利速递"
     },
     {
       "id": "anhunqu",
@@ -244,7 +255,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "异象管理局禁制机动队四队"
     },
     {
       "id": "canhong",
@@ -261,7 +273,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "无"
     },
     {
       "id": "zaowu",
@@ -278,7 +291,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "伊波恩古董店"
     },
     {
       "id": "baicang",
@@ -295,7 +309,8 @@
       "ultimate": {
         "kind": "status",
         "turns": 2
-      }
+      },
+      "faction": "异象管理局禁制机动队四队"
     },
     {
       "id": "haiyue",
@@ -312,7 +327,8 @@
         "kind": "status",
         "turns": 1,
         "expires": "turn_end"
-      }
+      },
+      "faction": "玉饼街居民协会"
     }
   ],
   "cards": [
@@ -324,7 +340,7 @@
       "cost": 1,
       "terminal": false,
       "instant": false,
-      "description": "回复娜娜莉的生命。",
+      "description": "回满娜娜莉的生命。",
       "effect_id": "N01",
       "source": {
         "character_id": 1010,
@@ -755,16 +771,17 @@
       "character_id": "xun",
       "name": "欣欣渐行",
       "type": "tactic",
-      "cost": 1,
+      "cost": 0,
       "terminal": false,
-      "description": "抽 1 张牌。若浔有记录，再抽 1 张牌。",
+      "description": "不消耗行动力。回溯到上个己方回合开始时，然后将本牌移出游戏。",
       "effect_id": "X01",
       "source": {
         "character_id": 1052,
         "type": "awaken",
         "index": 1
       },
-      "starter_copies": 2
+      "starter_copies": 2,
+      "training_excluded": true
     },
     {
       "id": "X02",
@@ -777,9 +794,9 @@
         "index": 2
       },
       "type": "tactic",
-      "cost": 1,
+      "cost": 0,
       "terminal": false,
-      "description": "本回合浔下一次完成出击后，若仍存活且在战斗区：返回备战区，然后抽 1 张牌。",
+      "description": "不消耗行动力。直到下个己方回合开始时，你的生命不会发生变化。",
       "starter_copies": 2
     },
     {
@@ -787,9 +804,9 @@
       "character_id": "xun",
       "name": "垂目须臾",
       "type": "tactic",
-      "cost": 1,
+      "cost": 0,
       "terminal": false,
-      "description": "本回合浔下一次完成出击后，若仍存活且在战斗区：返回备战区，然后抽 1 张牌。",
+      "description": "不消耗行动力。本回合可以查看己方牌库中的卡牌与顺序。",
       "effect_id": "X03",
       "source": {
         "character_id": 1052,
@@ -802,10 +819,10 @@
       "id": "X04",
       "character_id": "xun",
       "name": "旧藏遗散",
-      "type": "battle",
-      "cost": 1,
+      "type": "tactic",
+      "cost": 0,
       "terminal": false,
-      "description": "",
+      "description": "消耗全部行动力，至多 3 点。获得 1 张「随机古董」。",
       "effect_id": "X04",
       "source": {
         "character_id": 1052,
@@ -813,8 +830,7 @@
         "index": 4
       },
       "starter_copies": 0,
-      "attack": 0,
-      "shield": 2
+      "spend_all_ap": 3
     },
     {
       "id": "X05",
@@ -826,33 +842,29 @@
         "type": "awaken",
         "index": 5
       },
-      "type": "battle",
-      "cost": 1,
+      "type": "tactic",
+      "cost": 0,
       "terminal": false,
-      "description": "连续攻击 2 次。两次均不受反击。",
+      "description": "不消耗行动力。将己方前排返回备战区。响应：己方前排的伊波恩古董店异能者被攻击时。",
       "starter_copies": 2,
-      "shield": 0,
-      "redeem": true,
-      "attack": 2
+      "response": "faction_front_attacked",
+      "response_faction": "伊波恩古董店"
     },
     {
       "id": "X06",
       "character_id": "xun",
       "name": "时轮啮雪",
-      "type": "battle",
-      "cost": 1,
+      "type": "tactic",
+      "cost": 0,
       "terminal": false,
-      "description": "本次攻击减少生命上限。",
+      "description": "不消耗行动力。回满浔的生命。获得 1 张「伊波恩大家庭」。",
       "effect_id": "X06",
       "source": {
         "character_id": 1052,
         "type": "awaken",
         "index": 6
       },
-      "starter_copies": 0,
-      "shield": 0,
-      "attack": 2,
-      "redeem": true
+      "starter_copies": 0
     },
     {
       "id": "X07",
@@ -864,13 +876,11 @@
         "type": "pv",
         "index": 1
       },
-      "type": "form",
-      "cost": 1,
+      "type": "tactic",
+      "cost": 0,
       "terminal": false,
-      "description": "本局每使用过一次「欣欣渐行」，浔的战斗牌额外获得攻击 +1、护盾 +1。",
-      "starter_copies": 2,
-      "attack": 0,
-      "hp": 0
+      "description": "不消耗行动力。使浔进入倾陷。获得 2 张「伊波恩大家庭」。",
+      "starter_copies": 2
     },
     {
       "id": "X08",
@@ -885,10 +895,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "浔造成的追击伤害 +1。",
+      "description": "浔的终结伤害 +3。",
       "starter_copies": 0,
-      "attack": 2,
-      "hp": 0
+      "attack": 3,
+      "hp": 8
     },
     {
       "id": "A01",
@@ -2515,6 +2525,40 @@
       "starter_copies": 2,
       "attack": 3,
       "hp": 4
+    },
+    {
+      "id": "XF01",
+      "character_id": "xun",
+      "name": "伊波恩大家庭",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "选择一项：己方娜娜莉存活时，视为打出「要叫大姐头」；己方零存活时，视为打出「探悉天职」；己方有异能者倒地时，在战斗区召唤 2/4 的塔吉多。",
+      "effect_id": "XF01",
+      "derived": true,
+      "starter_copies": 0,
+      "source": {
+        "character_id": "xun",
+        "type": "derived",
+        "index": 0
+      }
+    },
+    {
+      "id": "XA01",
+      "character_id": "xun",
+      "name": "随机古董",
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "不消耗行动力。随机获得 0–3 点行动力。己方零存活时，0 点改为 1 点。",
+      "effect_id": "XA01",
+      "derived": true,
+      "starter_copies": 0,
+      "source": {
+        "character_id": "xun",
+        "type": "derived",
+        "index": 0
+      }
     }
   ],
   "starter_decks": [

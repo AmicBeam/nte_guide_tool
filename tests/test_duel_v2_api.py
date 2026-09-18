@@ -44,6 +44,34 @@ class DuelV2ApiTest(RoomFlowTestCase):
     def _action(view, kind):
         return next(entry['action'] for entry in view['legal_actions'] if entry['action']['type'] == kind)
 
+    def test_xun_rewind_retry_and_reload_preserve_version_and_removal(self):
+        self._pvp()
+        from app.modules.card_game.engine.duel_v2 import new_game, apply_action, legal_actions
+        from app.modules.card_game.engine.duel_v2.state import card_instance
+        deck = dict(id='xun-test', name='浔', character_ids=['xun','nanali','zero','jiuyuan'],
+                    card_ids=[p+str(i).zfill(2) for p in ('X','N','Z','J') for i in range(1,5) for _ in range(2)])
+        game = new_game(seed=1, first_side='a', skip_mulligan=True, decks={'a':deck,'b':deck})
+        game = apply_action(game,'a',{'type':'end_turn'})
+        game = apply_action(game,'b',{'type':'end_turn'})
+        card = card_instance(game,'X01','a'); game['sides']['a']['hand'] = [card]
+        room = self.repository.room_by_code(self.code)
+        self.storage.initialize(room, {'rules_version':'duel_v2','game':game,'requests':[]})
+        from app.modules.card_game.engine.application import v2_replay
+        v2_replay.begin(room,game)
+        body = dict(room_code=self.code, request_id='rewind-once', expected_version=game['version'],
+                    action={'type':'play_card','card_id':card['instance_id']})
+        first = self._post('/api/duel-v2/action',body,token=self.a)
+        retried = self._post('/api/duel-v2/action',body,token=self.a)
+        self.assertEqual(first['game']['version'],game['version']+1)
+        self.assertEqual(retried['game']['version'],first['game']['version'])
+        self.assertEqual(first['game']['turn'],1)
+        self.assertTrue(self.storage.flush(5));self.storage.clear_cache()
+        restored = self.storage.load(room.id)['game']
+        self.assertIn(card['entity_id'],restored['time_removed'])
+        self.assertEqual(restored['version'],first['game']['version'])
+        text=json.dumps(self._get('/api/duel-v2/state',token=self.b))
+        self.assertNotIn('turn_snapshots',text);self.assertNotIn('time_removed',text)
+
     def test_build_text_roundtrip_is_draft_until_saved(self):
         before = self._get('/api/duel-v2/catalog', token=self.a)
         original = dict(self.deck, name="测试 # '组")
@@ -366,7 +394,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertIn('残虹', names)
         self.assertIn('薄荷', names)
         self.assertIn('白藏', names)
-        self.assertEqual(len(catalog['cards']), 121)
+        self.assertEqual(len(catalog['cards']), 123)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
             ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '快攻预组'],

@@ -139,10 +139,10 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
                 seed+=10000
         for a,b in combinations(PRESETS,2):
             evaluate(f'cross-{a}-{b}',a,'final',b,'final',1 if smoke else 16);seed+=10000
-        if not smoke:
-            teams=list(combinations(SEATS,4))
-            for key in PRESETS:
-                evaluate(f'{key}-public-70-teams',key,'final',None,None,len(teams),teams);seed+=10000
+        teams=[tuple(builds['quick-rush']['character_ids'])] if smoke else list(combinations(SEATS,4))
+        for key in PRESETS:
+            label=key+('-public-smoke' if smoke else '-public-70-teams')
+            evaluate(label,key,'final',None,None,len(teams),teams);seed+=10000
         write(out/'evaluation-index.json',evaluations)
         acceptance={'experiment_complete':all(e['complete'] for e in evaluations),'same_frozen_comparisons':comparisons,'training':total,'automatic_serving_approval':False,'win_prediction_calibrated':False}
         write(out/'acceptance.json',acceptance)

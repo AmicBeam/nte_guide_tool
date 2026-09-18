@@ -3078,14 +3078,13 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "effects": {
-      "crit_dmg": 0.25
-    },
+    "effects": {},
     "resource_effects": {
       "block_gain": {
         "恶意": true
       }
-    }
+    },
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。"
   },
   {
     "id": "character_heiyu_form_exit",
@@ -3327,8 +3326,8 @@
     }
   },
   {
-    "id": "arc_heiyu_ember",
-    "name": "罪与罚·烬羽",
+    "id": "arc_heiyu_self_crit",
+    "name": "罪与罚·装备者额外暴伤",
     "providers": [
       {
         "kind": "arc",
@@ -3343,39 +3342,25 @@
         "action_types": [
           "Q"
         ]
-      },
-      "conditions": [
-        {
-          "type": "active_buff_none",
-          "keys": [
-            "arc_heiyu_ember"
-          ]
-        }
-      ]
+      }
     },
     "target": {
-      "scope": "registrar",
-      "action_types": [
-        "Q"
-      ]
+      "scope": "registrar"
     },
     "duration": {
       "type": "time",
-      "ticks": 9990,
+      "ticks": 150,
       "loop_carry": true
     },
     "stacking": {
-      "key": "arc_heiyu_ember",
+      "key": "arc_heiyu_self_crit",
       "mode": "refresh",
       "max_stacks": 1
     },
     "effects": {
-      "crit_dmg": 0.24
+      "crit_dmg": 0.32
     },
-    "consume_on_apply": true,
-    "activation": {
-      "exclude_trigger_action": true
-    }
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。"
   },
   {
     "id": "character_heiyu_a_e",
@@ -3533,9 +3518,9 @@
       "type": "permanent"
     },
     "effects": {
-      "all_dmg": 0.5
+      "base_multiplier_pct": 0.5
     },
-    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。",
     "display": {
       "line": false
     }
@@ -3584,7 +3569,7 @@
   },
   {
     "id": "character_heiyu_e_res_action_hit",
-    "name": "黑羽E觉·魂相咒抗性降低",
+    "name": "黑羽E觉·烂柯人·魂相暗抗性降低",
     "providers": [
       {
         "kind": "character",
@@ -3623,9 +3608,9 @@
     "effects": {
       "res_down_魂": 0.08,
       "res_down_相": 0.08,
-      "res_down_咒": 0.08
+      "res_down_暗": 0.08
     },
-    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。",
     "stacking": {
       "key": "character_heiyu_e_res",
       "mode": "refresh",
@@ -3634,7 +3619,7 @@
   },
   {
     "id": "character_heiyu_e_res_periodic_damage",
-    "name": "黑羽E觉·魂相咒抗性降低",
+    "name": "黑羽E觉·烂柯人·魂相暗抗性降低",
     "providers": [
       {
         "kind": "character",
@@ -3673,9 +3658,9 @@
     "effects": {
       "res_down_魂": 0.08,
       "res_down_相": 0.08,
-      "res_down_咒": 0.08
+      "res_down_暗": 0.08
     },
-    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。",
     "stacking": {
       "key": "character_heiyu_e_res",
       "mode": "refresh",

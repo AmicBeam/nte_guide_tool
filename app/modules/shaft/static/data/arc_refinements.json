@@ -4913,7 +4913,7 @@
         5
       ],
       "source_url": "https://docs.qq.com/aio/DVVRZempSSmZ4THVj",
-      "source_note": "用户2026-09-16腾讯文档提供1精/5精端点；2–4精按用户本次明确口径等差插值，非Nanoka核实数值。",
+      "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。2–4精沿用用户授权的等差插值。",
       "effect_name": "罪与罚（测试资料）",
       "levels": {
         "1": {
@@ -4921,7 +4921,7 @@
             "72",
             "20%",
             "16%",
-            "24%"
+            "32%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,
@@ -4934,8 +4934,8 @@
             "arc_heiyu_team_crit": {
               "crit_dmg": 0.16
             },
-            "arc_heiyu_ember": {
-              "crit_dmg": 0.24
+            "arc_heiyu_self_crit": {
+              "crit_dmg": 0.32
             }
           }
         },
@@ -4944,7 +4944,7 @@
             "90",
             "25%",
             "20%",
-            "30%"
+            "40%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,
@@ -4957,8 +4957,8 @@
             "arc_heiyu_team_crit": {
               "crit_dmg": 0.2
             },
-            "arc_heiyu_ember": {
-              "crit_dmg": 0.3
+            "arc_heiyu_self_crit": {
+              "crit_dmg": 0.4
             }
           }
         },
@@ -4967,7 +4967,7 @@
             "108",
             "30%",
             "24%",
-            "36%"
+            "48%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,
@@ -4980,8 +4980,8 @@
             "arc_heiyu_team_crit": {
               "crit_dmg": 0.24
             },
-            "arc_heiyu_ember": {
-              "crit_dmg": 0.36
+            "arc_heiyu_self_crit": {
+              "crit_dmg": 0.48
             }
           }
         },
@@ -4990,7 +4990,7 @@
             "126",
             "35%",
             "28%",
-            "42%"
+            "56%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,
@@ -5003,8 +5003,8 @@
             "arc_heiyu_team_crit": {
               "crit_dmg": 0.28
             },
-            "arc_heiyu_ember": {
-              "crit_dmg": 0.42
+            "arc_heiyu_self_crit": {
+              "crit_dmg": 0.56
             }
           }
         },
@@ -5013,7 +5013,7 @@
             "144",
             "40%",
             "32%",
-            "48%"
+            "64%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,
@@ -5026,8 +5026,8 @@
             "arc_heiyu_team_crit": {
               "crit_dmg": 0.32
             },
-            "arc_heiyu_ember": {
-              "crit_dmg": 0.48
+            "arc_heiyu_self_crit": {
+              "crit_dmg": 0.64
             }
           }
         }

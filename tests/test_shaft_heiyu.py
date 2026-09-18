@@ -9,9 +9,10 @@ ARC = 'arc_heiyu_crime_punishment'
 DARK = 'char_c78f7a08d5'
 
 class HeiyuTest(unittest.TestCase):
-    def simulate(self, steps, others=(), awakening_nodes=(), **options):
+    def simulate(self, steps, others=(), awakening_nodes=(), team_panel_bonus=None, **options):
         axis = {'team': [{'slot': 0, 'character_id': CID, 'arc_id': '', 'cartridge_id': '', 'awakening_nodes': list(awakening_nodes),
                           'skill_levels': dict(basic=1, skill=1, ultimate=1, support=1)}, *others],
+                'team_panel_bonus': team_panel_bonus or {},
                 'steps': [dict(id=str(i), slot=slot, action_id=action, start_tick=tick)
                           for i, (slot, action, tick) in enumerate(steps)], 'options': options}
         return simulate_shaft_axis(axis)['result']
@@ -21,7 +22,7 @@ class HeiyuTest(unittest.TestCase):
         actions = {a['name']: a for a in catalog['actions_by_character'][CID]}
         self.assertAlmostEqual(actions['a5']['multipliers']['atk'], 1.735)
         self.assertAlmostEqual(actions['a5']['energy_gain'], 5.785)
-        self.assertAlmostEqual(actions['二a5']['harmony'], 14.142)
+        self.assertAlmostEqual(actions['魔a5']['harmony'], 14.142)
         self.assertEqual(actions['e']['harmony'], 100)
         self.assertEqual(actions['q1']['energy_cost'], 100)
         self.assertEqual(actions['q2']['energy_cost'], 0)
@@ -36,12 +37,12 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(actions['a1']['duration_ticks'], 4)
         self.assertEqual(actions['a1']['duration_source'], 'user-authorized-estimate')
         self.assertEqual(sum(actions[f'a{i}']['duration_ticks'] for i in range(1, 6)), 40)
-        self.assertEqual(sum(actions[f'二a{i}']['duration_ticks'] for i in range(1, 6)), 34)
+        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 34)
         self.assertEqual(len([a for a in actions.values() if a.get('source_row') == 19]), 1)
 
     def test_basic_malice_is_proportional_and_chain_totals_are_preserved(self):
         actions = {a['name']: a for a in load_shaft_catalog()['actions_by_character'][CID]}
-        for prefix, amount, field in [('', 20, 'personal_resource_gain'), ('二', 7, 'personal_resource_cost')]:
+        for prefix, amount, field in [('', 20, 'personal_resource_gain'), ('魔', 7, 'personal_resource_cost')]:
             chain = [actions[f'{prefix}a{i}'] for i in range(1, 6)]
             weight = sum(a['multipliers']['atk'] for a in chain)
             self.assertAlmostEqual(sum(a[field]['恶意'] for a in chain), amount)
@@ -190,12 +191,29 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(axis['team'][0]['arc_refinement'], 5)
         levels = load_shaft_catalog()['arc_refinements']['arcs'][ARC]['levels']
         self.assertEqual([levels[str(i)]['panel_modifiers']['harmony_strength'] for i in range(1, 6)], [72, 90, 108, 126, 144])
-        self.assertEqual([levels[str(i)]['buff_effects']['arc_heiyu_ember']['crit_dmg'] for i in range(1, 6)], [.24, .3, .36, .42, .48])
-        r = simulate_shaft_axis({**axis, 'steps': [dict(id=str(i), slot=0,
-            action_id='action_heiyu_'+a, start_tick=t) for i,(a,t) in enumerate([('q1',0),('q2',10),('q1',220)])]})['result']
-        ember = [[b for b in d['applied_buffs'] if b['rule_id'] == 'arc_heiyu_ember'] for d in r['details']]
-        self.assertEqual([bool(x) for x in ember], [False, True, False])
-        self.assertEqual(ember[1][0]['effects']['crit_dmg'], .48)
+        self.assertEqual([levels[str(i)]['buff_effects']['arc_heiyu_self_crit']['crit_dmg'] for i in range(1, 6)], [.32, .4, .48, .56, .64])
+        axis['team'].append({'slot': 1, 'character_id': DARK, 'arc_id': '', 'cartridge_id': ''})
+        # 5精：装备者同时获得32%全队与64%自身暴伤，普攻也享受；重复Q刷新15秒。
+        steps = [(0, 'q1', 0), (0, 'a1', 20), (1, 'other', 40),
+                 (0, 'q2', 100), (0, 'a1', 180), (0, 'a1', 280)]
+        axis['steps'] = [dict(id=str(i), slot=slot, start_tick=t,
+            action_id='action_dodge_c78f7a08d5' if a == 'other' else 'action_heiyu_'+a)
+            for i, (slot, a, t) in enumerate(steps)]
+        details = simulate_shaft_axis(axis)['result']['details']
+        for index in (0, 1, 3, 4):
+            buffs = {b['rule_id']: b for b in details[index]['applied_buffs']}
+            self.assertEqual(buffs['arc_heiyu_self_crit']['effects']['crit_dmg'], .64)
+            self.assertEqual(buffs['arc_heiyu_team_crit']['effects']['crit_dmg'], .32)
+        teammate = {b['rule_id'] for b in details[2]['applied_buffs']}
+        self.assertIn('arc_heiyu_team_crit', teammate)
+        self.assertNotIn('arc_heiyu_self_crit', teammate)
+        self.assertFalse(any(b['rule_id'].startswith('arc_heiyu_') for b in details[-1]['applied_buffs']))
+
+    def test_form_no_longer_grants_crit_damage(self):
+        detail = self.simulate([(0, 'action_heiyu_q1', 0),
+                                (0, 'action_heiyu_form_a1', 10)])['details'][-1]
+        normal = self.simulate([(0, 'action_heiyu_a1', 0)])['details'][0]
+        self.assertAlmostEqual(detail['panel']['crit_dmg'], normal['panel']['crit_dmg'])
 
     def test_a_consumes_all_only_after_unlock_and_e_multiplier_is_separate(self):
         steps = [(0, 'action_heiyu_q1', 0), (0, 'action_heiyu_q2', 20)]
@@ -226,10 +244,11 @@ class HeiyuTest(unittest.TestCase):
 
     def test_c_only_boosts_resource_damage(self):
         steps = [(0, 'action_heiyu_q1', 0), (0, 'action_heiyu_form_z1', 10)]
-        base = self.simulate(steps)['details'][-1]
-        awakened = self.simulate(steps, awakening_nodes=[3])['details'][-1]
-        bonus = base['formula_parts']['dmg_bonus']
-        self.assertAlmostEqual(awakened['resource_damage'], base['resource_damage'] * (1 + bonus + .5) / (1 + bonus))
+        # 已有100%通伤时仍应独立乘1.5，不能退回增伤区加算。
+        base = self.simulate(steps, team_panel_bonus={'all_dmg': 1})['details'][-1]
+        awakened = self.simulate(steps, awakening_nodes=[3], team_panel_bonus={'all_dmg': 1})['details'][-1]
+        self.assertAlmostEqual(awakened['resource_damage'], base['resource_damage'] * 1.5)
+        self.assertAlmostEqual(awakened['resource_atk_multiplier'], base['resource_atk_multiplier'] * 1.5)
         self.assertTrue(any('仅恶意追加' in b['name'] for b in awakened['applied_buffs']))
         self.assertAlmostEqual(awakened['direct_damage'] - awakened['resource_damage'], base['direct_damage'] - base['resource_damage'])
 
@@ -249,7 +268,7 @@ class HeiyuTest(unittest.TestCase):
                            (0, 'action_heiyu_a1', 300)], awakening_nodes=[5])['details']
         self.assertFalse(any(b['rule_id'].startswith('character_heiyu_e_res') for b in r[0]['applied_buffs']))
         effect = next(b for b in r[1]['applied_buffs'] if b['rule_id'].startswith('character_heiyu_e_res'))['effects']
-        self.assertEqual(effect, {'res_down_魂': .08, 'res_down_相': .08, 'res_down_咒': .08})
+        self.assertEqual(effect, {'res_down_魂': .08, 'res_down_相': .08, 'res_down_暗': .08})
         self.assertFalse(any(b['rule_id'].startswith('character_heiyu_e_res') for b in r[2]['applied_buffs']))
 
     def test_three_node_resonance_and_six_node_team_crit(self):

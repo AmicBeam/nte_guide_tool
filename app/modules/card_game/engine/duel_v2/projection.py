@@ -112,7 +112,7 @@ def preview(state, side, action):
     return value
 
 
-def observe(state, side, after_seq=None):
+def observe(state, side, after_seq=None, *, include_previews=True):
     from .escalation import public_progress, energy_cap, harmony_cap, ultimate_remaining
     if side not in SIDES:
         raise ValueError('Unknown viewer')
@@ -124,10 +124,10 @@ def observe(state, side, after_seq=None):
     result.update(escalation=public_progress(state), viewer_side=side, is_my_turn=(side == acting_side(state) or
                   state['phase'] == 'mulligan' and side not in state['mulligan_done']), sides={},
                   legal_actions=[{'action': deepcopy(a), 'entity_action': entity_action(state, side, a), 'label': action_label(state, side, a),
-                                  'preview': preview(state, side, a),
-                                  'interaction': interaction_for_action(state, side, a)} for a in actions],
-                  events=[sanitize_public_event(event, side) for event in deepcopy(state['events'][-200:])],
-                  logs=[], presentation=presentation_bundle(state, side, after_seq=after_seq))
+                                  'preview': preview(state, side, a) if include_previews else {},
+                                  'interaction': interaction_for_action(state, side, a) if include_previews else {}} for a in actions],
+                  events=[sanitize_public_event(event, side) for event in deepcopy(state['events'][-200:])] if include_previews else [],
+                  logs=[], presentation=presentation_bundle(state, side, after_seq=after_seq) if include_previews else {})
     for event in result['events']:
         result['logs'].append(event['text'])
     for ps in SIDES:

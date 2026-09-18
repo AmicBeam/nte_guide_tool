@@ -599,11 +599,11 @@ def _initialize_game(room, scenario=None, ai_deck_id=None, ai_model=None) -> dic
     game = _engine().new_game(seed=randbits(31), decks=decks)
     if room.mode == 'advanced':
         model = ai_model
-        from app.modules.card_game.rl.capability import serving_deck_hash
+        from app.modules.card_game.engine.ai.advanced_model import model_build_hash
         game['ai_profile'] = {
             'deck_id': ai_deck_id,
             'version': model.version,
-            'build_sha256': serving_deck_hash(decks['b']),
+            'build_sha256': model_build_hash(model, decks['b']),
             'capability': dict(getattr(model, 'capability', {}) or {}),
         }
         game['sides']['b']['name'] = '高级人机'

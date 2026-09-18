@@ -17,11 +17,16 @@ def public_policy_state(state):
         order = team_order(state, side)
         result['sides'][side] = {
             **{key: deepcopy(team.get(key)) for key in SIDE_KEYS},
+            'light_resistance': (team.get('next_damage_resistance') or {}).get('光', 0),
             'characters': {
                 cid: {'base_attack': h.get('base_attack', 0),
                       'base_max_hp': h.get('base_max_hp', h['max_hp']),
                       'order': order.index(cid),
                       'harmonized': bool((team.get('harmonized') or {}).get(cid)),
+                      'jingu_loan': bool(h.get('jingu_loan')),
+                      'ultimate_used_turn': h.get('ultimate_used_turn', -1),
+                      'attacked_this_turn': h.get('entity_id') in team.get('attacked_this_turn', []),
+                      'light_resistance': (h.get('next_damage_resistance') or {}).get('光', 0),
                       'flags': {key: deepcopy((h.get('flags') or {}).get(key)) for key in FLAG_KEYS}}
                 for cid, h in team['characters'].items() if cid in order
             },

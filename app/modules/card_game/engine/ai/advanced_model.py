@@ -47,6 +47,9 @@ def serving_deck(model, deck_id):
 def require_human_deck(model, deck, deck_id):
     """Validate serving scope before creating any room or replay."""
     try:
+        from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
+        if getattr(model, 'schema', None) == LEAGUE_SCHEMA:
+            return model.validate_human(deck)
         deck = assert_public_encoder_deck(deck)
         capability = resolve_model_capability(
             {'capability': getattr(model, 'capability', None)}, deck_id)
@@ -231,16 +234,22 @@ class FrozenModel:
 
 def load_model(deck_id):
     preset(deck_id)
-    if deck_id in PENDING_PRESETS:
-        raise RuleValidationError('快攻高级人机尚待训练与验收，请先使用普通人机。')
     root = Path(config.DUEL_AI_MODEL_DIR).resolve()
+    if deck_id in PENDING_PRESETS and not (root / f'{deck_id}.json').is_file():
+        raise RuleValidationError('快攻高级人机尚待训练与验收，请先使用普通人机。')
     key = (str(root), deck_id)
     with _LOCK:
         try:
             signature=tuple((path.stat().st_mtime_ns,path.stat().st_size)
                             for path in (root/f'{deck_id}.json',root/f'{deck_id}.npz'))
             if key not in _CACHE or getattr(_CACHE[key], '_file_signature', None) != signature:
-                candidate = FrozenModel(root, deck_id)
+                manifest = json.loads((root / f'{deck_id}.json').read_text(encoding='utf-8'))
+                from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
+                if manifest.get('schema') == LEAGUE_SCHEMA:
+                    from app.modules.card_game.rl.league_policy import LeagueModel
+                    candidate = LeagueModel(root, deck_id, require_approved=True)
+                else:
+                    candidate = FrozenModel(root, deck_id)
                 candidate._file_signature = signature
                 _CACHE[key] = candidate
         except (ImportError, OSError, ValueError, KeyError, TypeError) as exc:
@@ -255,7 +264,7 @@ def choose_action(state, side='b'):
     if profile.get('version') != model.version:
         raise RuleValidationError('高级人机模型版本已变更，请重新开局。')
     actual_build = serving_deck(model, profile.get('deck_id'))
-    expected_build_hash = serving_deck_hash(actual_build)
+    expected_build_hash = model_build_hash(model, actual_build)
     if (profile.get('build_sha256') is not None and profile['build_sha256'] != expected_build_hash
             or profile.get('build_sha256') is None and not is_exact_preset(actual_build,profile.get('deck_id'))):
         raise RuleValidationError('高级人机构筑版本已变更，请重新开局。')
@@ -263,11 +272,12 @@ def choose_action(state, side='b'):
     if not actions:
         raise RuleValidationError('高级人机没有可执行动作。')
     from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA
-    if state['phase'] == 'mulligan' and getattr(model,'schema',None)!=OPENING_SCHEMA:
+    if state['phase'] == 'mulligan' and getattr(model,'schema',None) not in (OPENING_SCHEMA, 'official_public_v5'):
         # The model was trained with the initial hand retained.
         return next(a for a in actions if not a.get('card_ids'))
     from app.modules.card_game.rl.public_schema import SCHEMA as PUBLIC_SCHEMA
-    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA):
+    from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
+    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA):
         from app.modules.card_game.engine.duel_v2 import observe
         return actions[model.select_public_action(observe(state, side), actions)]
     try:
@@ -275,3 +285,8 @@ def choose_action(state, side='b'):
     except (KeyError, ValueError) as exc:
         raise RuleValidationError('高级人机无法编码当前公开构筑，请更换构筑或选择普通人机。') from exc
     return actions[int(model.scores(values, candidates).argmax())]
+
+
+def model_build_hash(model, build):
+    from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA, build_hash
+    return build_hash(build) if getattr(model, 'schema', None) == LEAGUE_SCHEMA else serving_deck_hash(build)

@@ -76,14 +76,25 @@ def preview(state, side, action):
     if kind != 'attack' and not (card and card['type'] == 'battle'):
         return value
     cid = action.get('character_id') or card['character_id']
-    # Only combat is previewed. Replace all hidden deck cards before simulation;
-    # shield, fatigue and hand-limit behavior still works, without future card data.
+    # Only combat is previewed. Replace private opposing hands and unknown decks;
+    # public counts still drive shield, fatigue and hand-limit behavior.
     sandbox = deepcopy(state)
+    def unknown_card(ps, zone, i):
+        return {'instance_id': f'preview-{ps}-{zone}-{i}', 'card_id': 'unknown',
+                'character_id': 'unknown', 'name': '未公开牌', 'copy': False,
+                'type': 'tactic', 'cost': 999}
     for ps in SIDES:
-        sandbox['sides'][ps]['deck'] = [
-            {'instance_id': f'preview-{ps}-{i}', 'card_id': 'unknown', 'character_id': 'unknown',
-             'name': '未公开牌', 'copy': False}
-            for i in range(len(sandbox['sides'][ps]['deck']))]
+        team = sandbox['sides'][ps]
+        team['deck'] = [unknown_card(ps, 'deck', i) for i in range(len(team['deck']))]
+        if ps != side:
+            revealed = set(team.get('revealed_ids') or [])
+            # Keep public hand counts and known cards, but never simulate a
+            # response based on an unrevealed opposing card or private gold mark.
+            team['hand'] = [card if card.get('copy') or card['instance_id'] in revealed
+                            else unknown_card(ps, 'hand', i)
+                            for i, card in enumerate(team['hand'])]
+            for card in team['hand']:
+                card.pop('jingu_mark', None)
     before = sandbox['event_seq']
     projected = apply_action(sandbox, side, action)
     events = [e for e in projected['events'] if e['seq'] > before]

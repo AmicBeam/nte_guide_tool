@@ -86,7 +86,7 @@ async function bootstrapCodex() {
       '</section>' +
       '<section class="v2-codex-cards">' + owned.map(function (card) {
         return (
-          '<article class="v2-codex-card"' + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '>' +
+          '<article class="v2-codex-card"' + (card.tooltip ? ' title="' + V2.escapeAttr(card.tooltip) + '"' : '') + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '>' +
             '<div class="v2-stat-row">' +
               V2.cardTypeChip(card.type, card.terminal) +
               V2.cardDerivedChip(card) +

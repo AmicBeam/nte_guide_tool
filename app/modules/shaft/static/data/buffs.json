@@ -2833,7 +2833,7 @@
     "name": "灵可·协频判定",
     "providers": [{"kind": "character", "id": "char_0846d632e0"}],
     "priority": 20,
-    "trigger": {"event": "action_end", "source": {"scope": "registrar", "action_ids": ["action_lingke_e"]}},
+    "trigger": {"event": "action_hit", "timing": "end", "source": {"scope": "registrar", "action_ids": ["action_lingke_e"], "placements": ["foreground"]}, "conditions": [{"type": "source_foreground_at_hit"}]},
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 1},
     "stacking": {"key": "character_lingke_frequency_check_window", "mode": "refresh", "max_stacks": 1},

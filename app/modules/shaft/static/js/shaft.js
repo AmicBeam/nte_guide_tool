@@ -1520,13 +1520,13 @@
   function actionForStep(step) {
     const actions = getActionMap();
     const base = actions.get(step?.action_id || '') || {};
-    if (!window.ShaftEngine?.resolveLingkeSupportActions || !step) return base;
+    if (!window.ShaftEngine?.resolveLingkeSupportActions || !step || step.slot == null || step.start_tick == null) return base;
     const steps = state.axis?.steps || [];
     const candidateSteps = steps.includes(step) ? steps : steps.filter((item) => item.id !== step.id).concat(step);
-    const key = JSON.stringify(candidateSteps);
+    const key = JSON.stringify([candidateSteps, state.axis?.options?.switch_gap_ticks, state.axis?.options?.switch_loss_ticks]);
     if (key !== jointActionCacheKey) {
       jointActionCacheKey = key;
-      jointActionCache = new Map(Array.from(window.ShaftEngine.resolveLingkeSupportActions(candidateSteps, actions))
+      jointActionCache = new Map(Array.from(window.ShaftEngine.resolveLingkeSupportActions(candidateSteps, actions, Number(state.axis?.options?.switch_gap_ticks ?? state.axis?.options?.switch_loss_ticks ?? 2), state.catalog?.buffs))
         .map(([item, action]) => [item.id, action]));
     }
     return jointActionCache.get(step.id) || base;

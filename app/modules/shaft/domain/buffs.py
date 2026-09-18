@@ -199,6 +199,10 @@ def _conditions_match(conditions: Any, context: dict[str, Any]) -> bool:
         condition_type = str(condition.get('type') or '')
         if condition_type in {'', 'always'}:
             continue
+        if condition_type == 'source_foreground_at_hit':
+            if context.get('foreground_slot_at_hit') is None or context.get('foreground_slot_at_hit') != context.get('source_slot'):
+                return False
+            continue
         if condition_type == 'unsupported':
             return False
         if condition_type == 'action_tag':
@@ -374,6 +378,8 @@ def event_matches_rule(
     if str(trigger.get('event') or '') != event and not matches_periodic_damage:
         return False
     if event not in SUPPORTED_TRIGGER_EVENTS:
+        return False
+    if event == 'action_hit' and str(trigger.get('timing') or 'start') != str((context or {}).get('action_hit_timing') or 'start'):
         return False
     source = trigger.get('source') if isinstance(trigger.get('source'), dict) else {}
     if not _source_matches(source, rule, step, action, snapshot, is_background):

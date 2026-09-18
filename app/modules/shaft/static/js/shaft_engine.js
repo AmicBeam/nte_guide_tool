@@ -1037,64 +1037,152 @@
     });
   }
 
-  // User 2026-09-18: keep the actual assist/variant, but borrow Lingke's joint calculation.
-  // Resolve in visual order so consecutive time-stop assists share the same real E window.
-  function resolveLingkeSupportActions(steps, actionsById) {
-    const resolved = new Map();
-    const windows = new Map();
-    const intervals = [];
-    const ordered = asList(steps).slice().sort((a, b) => int(a.start_tick) - int(b.start_tick) || int(a.slot) - int(b.slot));
-    ordered.forEach((step) => {
-      let action = actionsById.get(String(step.action_id || '')) || {};
-      const tick = calculationTickFromVisualIntervals(int(step.start_tick), intervals);
-      let frozenEndTick = int(step.start_tick) + ZERO_ACTION_VISUAL_TICKS;
-      if (String(action.character_id || '') === LINGKE_CHARACTER_ID) {
-        const window = windows.get(int(step.slot)) || {};
-        if (action.id === 'action_lingke_e') {
-          window.eStart = tick;
-          window.eEnd = tick + configuredActionDurationTicks(step, action);
-          window.eVisualEnd = int(step.start_tick) + configuredActionDurationTicks(step, action);
-        }
-        // Time-stop selection can finish the preceding E early, just like applyQInstantRelease.
-        // Its visual width consumes no real time; the following assist uses that E-end window.
-        if (action.id === 'action_lingke_time_stop_select' && tick > window.eStart && tick < window.eEnd) {
-          window.eEnd = tick;
-          frozenEndTick = Math.max(frozenEndTick, window.eVisualEnd);
-        }
-        if (action.id === 'action_lingke_q') window.q = true;
-        if (['action_lingke_q_multi', 'action_lingke_q_burst'].includes(action.id)) window.q = false;
-        windows.set(int(step.slot), window);
-      } else if (isSupportAction(action)) {
-        const source = Array.from(windows.entries()).find(([slot, window]) => slot !== int(step.slot)
-          && ((window.eEnd != null && tick >= window.eEnd && tick < window.eEnd + 1) || window.q));
-        if (source) {
-          const [sourceSlot, window] = source;
-          action = Object.assign({}, action, {
-            lingke_joint_source_slot: sourceSlot,
-            lingke_joint_e_window: window.eEnd != null && tick >= window.eEnd && tick < window.eEnd + 1,
-            duration_ticks: 0,
-            duration_implemented: true,
-            is_time_stop_zero: true,
-            disable_reaction: true,
-            skill_level_category: 'support',
-            resonance_skill_level_bonus: true,
-            tags: Array.from(new Set([...asList(action.tags), '同频合击', '追击', '追加攻击'])),
-          });
-        }
+  function foregroundSlotAtActionHit(scheduled, schedule) {
+    const hitVisualTick = int(scheduled.q_instant_release_anchor_tick, int(scheduled.visual_end_tick));
+    let frontSlot = scheduled.slot;
+    for (const candidate of schedule) {
+      const visualStart = int(candidate.visual_start_tick);
+      // An ending hit precedes a new ordinary action at that boundary. The owner's
+      // zero-time selection at the boundary already puts the owner in the foreground.
+      const atOwnerMask = visualStart === hitVisualTick && candidate.slot === scheduled.slot
+        && isTimeStopZeroForegroundStep(candidate.step, candidate.action);
+      if ((visualStart < hitVisualTick || atOwnerMask) && switchesForeground(candidate.step, candidate.action)) {
+        frontSlot = candidate.slot;
       }
-      resolved.set(step, action);
-      if (isTimeStopZeroForegroundStep(step, action)) {
-        const start = int(step.start_tick);
-        const previous = intervals.at(-1);
-        if (previous && start <= previous.end_tick) previous.end_tick = Math.max(previous.end_tick, frozenEndTick);
-        else intervals.push({start_tick: start, end_tick: frozenEndTick});
+    }
+    return frontSlot;
+  }
+
+  function projectLingkeFrequencyBuffs(schedule, definitions = []) {
+    const rule = asList(definitions).find((item) => item.id === 'character_lingke_frequency_check_window');
+    if (!rule) return [];
+    const duration = Math.max(0, int(rule.duration?.ticks));
+    return schedule.filter((scheduled) => scheduled.action.id === 'action_lingke_e'
+      && actionHitCount(scheduled.action) > 0 && !scheduled.is_background
+      && foregroundSlotAtActionHit(scheduled, schedule) === scheduled.slot)
+      .map((scheduled) => ({
+        owner_slot: scheduled.slot,
+        source_step_id: scheduled.step.id,
+        start_tick: int(scheduled.end_tick),
+        end_tick: int(scheduled.end_tick) + duration,
+        visual_hit_tick: int(scheduled.q_instant_release_anchor_tick, int(scheduled.visual_end_tick)),
+      }));
+  }
+
+  // The same compiled hit/Buff window is used for editor projection and runtime.
+  // Recompile after conversion because a zero-time assist changes all later frozen intervals.
+  function resolveLingkeSupportActions(steps, actionsById, switchGapTicks = MIN_FOREGROUND_START_GAP_TICKS, definitions = []) {
+    let resolved = new Map(asList(steps).map((step) => [step, actionsById.get(String(step.action_id || '')) || {}]));
+    if (!Array.from(resolved.values()).some((action) => action.character_id === LINGKE_CHARACTER_ID)) return resolved;
+    for (let pass = 0; pass <= steps.length; pass += 1) {
+      const {scheduledSteps} = compileActionSchedule(steps, actionsById, switchGapTicks, resolved);
+      const buffs = projectLingkeFrequencyBuffs(scheduledSteps, definitions);
+      const next = new Map();
+      const qOwners = new Set();
+      for (const scheduled of scheduledSteps) {
+        const step = scheduled.step;
+        let action = actionsById.get(String(step.action_id || '')) || {};
+        if (action.character_id === LINGKE_CHARACTER_ID) {
+          if (action.id === 'action_lingke_q') qOwners.add(scheduled.slot);
+          if (['action_lingke_q_multi', 'action_lingke_q_burst'].includes(action.id)) qOwners.delete(scheduled.slot);
+        } else if (isSupportAction(action)) {
+          const buff = buffs.find((item) => item.owner_slot !== scheduled.slot
+            && scheduled.start_tick >= item.start_tick && scheduled.start_tick < item.end_tick
+            && scheduled.visual_start_tick >= item.visual_hit_tick);
+          const sourceSlot = buff?.owner_slot ?? Array.from(qOwners).find((slot) => slot !== scheduled.slot);
+          if (sourceSlot != null) {
+            action = Object.assign({}, action, {
+              lingke_joint_source_slot: sourceSlot,
+              lingke_joint_e_window: Boolean(buff),
+              duration_ticks: 0, duration_implemented: true, is_time_stop_zero: true,
+              disable_reaction: true, skill_level_category: 'support', resonance_skill_level_bonus: true,
+              tags: Array.from(new Set([...asList(action.tags), '同频合击', '追击', '追加攻击'])),
+            });
+          }
+        }
+        next.set(step, action);
       }
-    });
+      const stable = steps.every((step) => next.get(step)?.lingke_joint_source_slot === resolved.get(step)?.lingke_joint_source_slot
+        && Boolean(next.get(step)?.lingke_joint_e_window) === Boolean(resolved.get(step)?.lingke_joint_e_window));
+      resolved = next;
+      if (stable) break;
+    }
     return resolved;
   }
 
-  function tickScheduledStepEntries(steps, actionsById, switchGapTicks = MIN_FOREGROUND_START_GAP_TICKS) {
-    const resolved = resolveLingkeSupportActions(steps, actionsById);
+  function compileActionSchedule(steps, actionsById, switchLossTicks, resolvedActions, loopEnabled = false) {
+    const orderedStepEntries = tickScheduledStepEntries(steps, actionsById, switchLossTicks, resolvedActions);
+    const scheduledSteps = [];
+    const loopOpeningFrontSlot = loopEnabled
+      ? orderedStepEntries
+        .filter(({ step }) => switchesForeground(step, actionsById.get(String(step.action_id || '')) || {}))
+        .map(({ step }) => int(step.slot))
+        .at(-1) ?? null
+      : null;
+    let scheduleFrontSlot = loopOpeningFrontSlot;
+    orderedStepEntries.forEach(({
+      step,
+      visualStartTick: scheduledVisualStartTick,
+      switchLossTicks: switchLossDelta,
+      foregroundLockTicks,
+      action: resolvedAction,
+    }) => {
+      const slot = int(step.slot);
+      const action = interruptedAction(step, resolvedAction);
+      const visualStartTick = scheduledVisualStartTick;
+      const isBackground = isStepBackground(step, action);
+      const calculationAtStartOnly = isInstantNativeBackgroundAction(step, action) || isInstantSwitchAction(action);
+      const configuredDurationTicks = actionCalculationDurationTicks(step, action);
+      const visualDurationTicks = actionVisualDurationTicks(step, action);
+      const visualEndTick = visualStartTick + visualDurationTicks;
+      scheduledSteps.push({
+        step,
+        slot,
+        action,
+        previous_front_slot: scheduleFrontSlot,
+        start_tick: visualStartTick,
+        calculation_start_sequence: 0,
+        visual_start_tick: visualStartTick,
+        switch_loss_ticks: switchLossDelta,
+        foreground_lock_ticks: Math.max(0, int(foregroundLockTicks)),
+        is_background: isBackground,
+        is_basic_background: isBasicBackgroundOverride(step, action),
+        can_background_override: canBackgroundOverride(action),
+        calculation_at_start_only: calculationAtStartOnly,
+        duration_ticks: configuredDurationTicks,
+        end_tick: visualEndTick,
+        calculation_end_sequence: 0,
+        visual_end_tick: visualEndTick,
+        original_start_tick: visualStartTick,
+        original_calculation_start_sequence: 0,
+        original_duration_ticks: configuredDurationTicks,
+        original_end_tick: visualStartTick + configuredDurationTicks,
+        original_calculation_end_sequence: 0,
+        original_visual_end_tick: visualEndTick,
+      });
+      if (switchesForeground(step, action)) {
+        scheduleFrontSlot = slot;
+      }
+    });
+    let qVirtualIntervals = applyQInstantRelease(scheduledSteps);
+    for (let pass = 0; pass < scheduledSteps.length; pass += 1) {
+      if (!enforceExpandedForegroundLocks(scheduledSteps, switchLossTicks)) break;
+      clearQInstantReleaseState(scheduledSteps);
+      qVirtualIntervals = applyQInstantRelease(scheduledSteps);
+    }
+    scheduledSteps.sort((left, right) => (
+      int(left.visual_start_tick) - int(right.visual_start_tick) ||
+      int(left.slot) - int(right.slot)
+    ));
+    scheduleFrontSlot = loopOpeningFrontSlot;
+    scheduledSteps.forEach((scheduled) => {
+      scheduled.previous_front_slot = scheduleFrontSlot;
+      if (!scheduled.is_background) scheduleFrontSlot = int(scheduled.slot);
+    });
+    return {scheduledSteps, qVirtualIntervals, loopOpeningFrontSlot};
+  }
+
+  function tickScheduledStepEntries(steps, actionsById, switchGapTicks = MIN_FOREGROUND_START_GAP_TICKS, resolved) {
     const ordered = steps.slice().sort((a, b) => {
       const startDelta = int(a.start_tick) - int(b.start_tick);
       if (startDelta) return startDelta;
@@ -1388,6 +1476,7 @@
       }
       if (type === 'expected_critical_hit') return num(context.expected_critical_hits) > 0;
       if (type === 'hit_count_positive') return num(context.hit_count) > 0;
+      if (type === 'source_foreground_at_hit') return int(context.foreground_slot_at_hit, -1) === int(context.source_slot, -2);
       if (type === 'enemy_debuff_active') {
         const active = Object.entries(context.enemy_debuffs || {}).filter(([, value]) => num(value) > num(context.tick)).map(([key]) => key);
         return Array.from(strSet(condition.debuffs)).some((name) => active.includes(name));
@@ -1524,6 +1613,7 @@
     const trigger = rule.trigger && typeof rule.trigger === 'object' ? rule.trigger : {};
     const matchesPeriodicDamage = event === 'periodic_damage' && trigger.periodic_damage === true;
     if ((String(trigger.event || '') !== event && !matchesPeriodicDamage) || !SUPPORTED_TRIGGER_EVENTS.has(event)) return false;
+    if (event === 'action_hit' && String(trigger.timing || 'start') !== String(context.action_hit_timing || 'start')) return false;
     const source = trigger.source && typeof trigger.source === 'object' ? trigger.source : {};
     if (!sourceMatches(source, rule, step, action, snapshot, isBackground)) return false;
     const eventContext = Object.assign({}, context, {
@@ -2397,76 +2487,10 @@
         else delete resources[resource];
       });
     }
-    const orderedStepEntries = tickScheduledStepEntries(steps, actionsById, switchLossTicks);
-    const scheduledSteps = [];
-    const loopOpeningFrontSlot = options.loop_enabled
-      ? orderedStepEntries
-        .filter(({ step }) => switchesForeground(step, actionsById.get(String(step.action_id || '')) || {}))
-        .map(({ step }) => int(step.slot))
-        .at(-1) ?? null
-      : null;
-    let scheduleFrontSlot = loopOpeningFrontSlot;
-    orderedStepEntries.forEach(({
-      step,
-      visualStartTick: scheduledVisualStartTick,
-      switchLossTicks: switchLossDelta,
-      foregroundLockTicks,
-      action: resolvedAction,
-    }) => {
-      const slot = int(step.slot);
-      const snapshot = snapshots.get(slot);
-      if (!snapshot) return;
-      const action = interruptedAction(step, resolvedAction);
-      const visualStartTick = scheduledVisualStartTick;
-      const isBackground = isStepBackground(step, action);
-      const calculationAtStartOnly = isInstantNativeBackgroundAction(step, action) || isInstantSwitchAction(action);
-      const configuredDurationTicks = actionCalculationDurationTicks(step, action);
-      const visualDurationTicks = actionVisualDurationTicks(step, action);
-      const visualEndTick = visualStartTick + visualDurationTicks;
-      scheduledSteps.push({
-        step,
-        slot,
-        action,
-        previous_front_slot: scheduleFrontSlot,
-        start_tick: visualStartTick,
-        calculation_start_sequence: 0,
-        visual_start_tick: visualStartTick,
-        switch_loss_ticks: switchLossDelta,
-        foreground_lock_ticks: Math.max(0, int(foregroundLockTicks)),
-        is_background: isBackground,
-        is_basic_background: isBasicBackgroundOverride(step, action),
-        can_background_override: canBackgroundOverride(action),
-        calculation_at_start_only: calculationAtStartOnly,
-        duration_ticks: configuredDurationTicks,
-        end_tick: visualEndTick,
-        calculation_end_sequence: 0,
-        visual_end_tick: visualEndTick,
-        original_start_tick: visualStartTick,
-        original_calculation_start_sequence: 0,
-        original_duration_ticks: configuredDurationTicks,
-        original_end_tick: visualStartTick + configuredDurationTicks,
-        original_calculation_end_sequence: 0,
-        original_visual_end_tick: visualEndTick,
-      });
-      if (switchesForeground(step, action)) {
-        scheduleFrontSlot = slot;
-      }
-    });
-    let qVirtualIntervals = applyQInstantRelease(scheduledSteps);
-    for (let pass = 0; pass < scheduledSteps.length; pass += 1) {
-      if (!enforceExpandedForegroundLocks(scheduledSteps, switchLossTicks)) break;
-      clearQInstantReleaseState(scheduledSteps);
-      qVirtualIntervals = applyQInstantRelease(scheduledSteps);
-    }
-    scheduledSteps.sort((left, right) => (
-      int(left.visual_start_tick) - int(right.visual_start_tick) ||
-      int(left.slot) - int(right.slot)
-    ));
-    scheduleFrontSlot = loopOpeningFrontSlot;
-    scheduledSteps.forEach((scheduled) => {
-      scheduled.previous_front_slot = scheduleFrontSlot;
-      if (!scheduled.is_background) scheduleFrontSlot = int(scheduled.slot);
-    });
+    const resolvedActions = resolveLingkeSupportActions(steps, actionsById, switchLossTicks, catalog.buffs);
+    const {scheduledSteps, qVirtualIntervals, loopOpeningFrontSlot} = compileActionSchedule(
+      steps.filter((step) => snapshots.has(int(step.slot))), actionsById, switchLossTicks, resolvedActions, options.loop_enabled,
+    );
     const scheduledLastTick = Math.max(
       0,
       ...scheduledSteps
@@ -4437,6 +4461,13 @@
           );
         }
         for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
+          if (actionHitCount(action) > 0) {
+            triggerBuffsForEvent('action_hit', endTick, step, action, snapshot, scheduled.is_background, {
+              action_hit_timing: 'end', foreground_slot_at_hit: foregroundSlotAtActionHit(scheduled, scheduledSteps),
+              visual_trigger_tick: int(scheduled.q_instant_release_anchor_tick, int(scheduled.visual_end_tick)) - loopDurationTicks,
+              loop_prime_only: true,
+            });
+          }
           triggerBuffsForEvent(
             'action_end',
             endTick,
@@ -5124,6 +5155,12 @@
         warnings.push(reactionTrigger.warning);
       }
       for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
+        if (actionHitCount(action) > 0) {
+          triggeredBuffs.push(...triggerBuffsForEvent('action_hit', endTick, step, action, snapshot, isBackground, {
+            action_hit_timing: 'end', foreground_slot_at_hit: foregroundSlotAtActionHit(scheduled, scheduledSteps),
+            visual_trigger_tick: int(scheduled.q_instant_release_anchor_tick, visualEndTick),
+          }));
+        }
         triggeredBuffs.push(...triggerBuffsForEvent(
           'action_end',
           endTick,

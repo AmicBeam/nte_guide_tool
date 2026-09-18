@@ -92,6 +92,41 @@ class LingkeSupportTest(unittest.TestCase):
                 self.assertNotIn('lingke_joint_source_slot', details['assist'])
                 self.assertEqual(details['assist']['duration_ticks'], 15)
 
+    def test_e_hit_buff_uses_full_mask_covering_another_characters_attack(self):
+        # Reduced regression from the reported shared axis: selection also covers Canhong a5.
+        axis = {'team': [
+            {'slot': 0, 'character_id': 'char_076a1f4e53', 'arc_id': '', 'cartridge_id': ''},
+            {'slot': 2, 'character_id': 'char_0846d632e0', 'arc_id': '', 'cartridge_id': ''},
+        ], 'steps': [
+            {'id': 'e', 'slot': 2, 'action_id': 'action_lingke_e', 'start_tick': 0},
+            {'id': 'a5', 'slot': 0, 'action_id': 'action_canhong_a5', 'start_tick': 7},
+            {'id': 'selection', 'slot': 2, 'action_id': 'action_lingke_time_stop_select', 'start_tick': 10},
+            {'id': 'assist', 'slot': 0, 'action_id': 'action_canhong_support', 'start_tick': 19},
+        ]}
+        _, details = self.run_axis(axis)
+        buff = next(b for b in details['e']['triggered_buffs'] if b['rule_id'] == 'character_lingke_frequency_check_window')
+        self.assertEqual((buff['trigger_event'], buff['start_tick'], buff['end_tick']), ('action_hit', 10, 11))
+        self.assertEqual(details['assist']['start_tick'], 10)
+        self.assertEqual(details['assist']['duration_ticks'], 0)
+        self.assertEqual(details['assist']['lingke_joint_source_slot'], 2)
+        self.assertIn(buff['rule_id'], {b['rule_id'] for b in details['assist']['applied_buffs']})
+        self.assertAlmostEqual(details['assist']['panel']['all_dmg'], 1.5)
+        # Without returning to the foreground at the hit, E must not create the Buff.
+        axis['steps'] = [s for s in axis['steps'] if s['id'] != 'selection']
+        axis['steps'][-1]['start_tick'] = 10
+        _, absent = self.run_axis(axis)
+        self.assertNotIn(buff['rule_id'], {b['rule_id'] for b in absent['e']['triggered_buffs']})
+        self.assertNotIn('lingke_joint_source_slot', absent['assist'])
+        self.assertEqual(absent['assist']['duration_ticks'], 15)
+
+    def test_e_with_no_resolved_hit_does_not_create_frequency_buff(self):
+        axis = self.axis(tick=1)
+        axis['steps'][0].update(interrupted=True, interrupt_duration_ticks=1, interrupt_hit_count=0)
+        _, details = self.run_axis(axis)
+        self.assertNotIn('character_lingke_frequency_check_window',
+                         {b['rule_id'] for b in details['opener']['triggered_buffs']})
+        self.assertNotIn('lingke_joint_source_slot', details['assist'])
+
     def test_e_boundary_and_q_closing_restore_normal_assist(self):
         _, outside = self.run_axis(self.axis(tick=11))
         self.assertEqual(outside['assist']['duration_ticks'], 15)

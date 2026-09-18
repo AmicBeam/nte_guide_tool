@@ -72,3 +72,111 @@ class GradientTest(unittest.TestCase):
         net=CompactScorer(3,3,8);opt=torch.optim.SGD(net.parameters(),lr=.01);c=np.eye(3,dtype=np.float32)
         row=branch_update(net,opt,np.zeros(3,dtype=np.float32),c[:2],[-10,10],anchor_logits=np.array([0.,0.,10.]),all_candidates=c,selected_indices=[0,1])
         self.assertFalse(row['anchor_disabled_for_error']);self.assertGreaterEqual(row['anchor_kl'],0)
+
+
+class WeakPreferenceTest(unittest.TestCase):
+    def pairs(self, left, right, lethal=()):
+        from app.modules.card_game.rl.league_preferences import auxiliary_pairs
+        rows=[dict(complete=True,reward=q,remaining_turns=t,own_decisions=d) for q,t,d in left+right]
+        return auxiliary_pairs(rows,2,len(left),lethal)
+
+    def test_wins_faster_losses_slower(self):
+        self.assertEqual(self.pairs([(10,1,2)],[(10,2,1)]),[(0,1,.05,'winning_speed')])
+        self.assertEqual(self.pairs([(-10,1,2)],[(-10,2,1)]),[(1,0,.02,'losing_delay')])
+        self.assertFalse(self.pairs([(-10,2,8)],[(-10,2,1)]))
+        self.assertFalse(self.pairs([(0,1,1)],[(0,8,9)]))
+
+    def test_win_rate_and_paired_outcomes_take_priority(self):
+        self.assertFalse(self.pairs([(10,9,9)],[(-10,1,1)]))
+        self.assertFalse(self.pairs([(10,1,1),(-10,9,9)],[(-10,8,8),(10,2,2)]))
+        # Faster wins but also faster defeats: no unconditional dominance.
+        self.assertFalse(self.pairs([(10,1,1),(-10,1,1)],[(10,2,2),(-10,2,2)]))
+        self.assertEqual(self.pairs([(10,1,1),(-10,3,2)],[(10,2,2),(-10,2,2)]),[(0,1,.05,'winning_speed')])
+
+    def test_same_turn_fewer_winning_decisions_and_certain_lethal(self):
+        self.assertEqual(self.pairs([(10,0,1)],[(10,0,3)]),[(0,1,.05,'winning_speed')])
+        self.assertEqual(self.pairs([(10,0,1)],[(10,0,3)],{0}),[(0,1,.2,'certain_lethal')])
+        from app.modules.card_game.rl.league_preferences import auxiliary_pairs
+        self.assertFalse(auxiliary_pairs([{'complete':False}],1,1))
+
+    def test_weak_replay_bypasses_gap_and_rechecks_current_choice(self):
+        r=ErrorReplay();c=np.eye(2,dtype=np.float32)
+        self.assertTrue(r.add([0],c,[0,1],[-10,-10],0,[(1,0,.02,'losing_delay')]))
+        row=r.take(lambda x,c:np.array([2.,0.]),0)
+        self.assertEqual(row['auxiliary'],((1,0,.02,'losing_delay'),))
+        self.assertIsNone(r.take(lambda x,c:np.array([0.,2.]),1))
+        with self.assertRaises(ValueError):r.add([0],c,[0,1],[10,-10],0,[(1,0,.02,'losing_delay')])
+
+    def test_certification_is_hidden_information_independent_and_fail_closed(self):
+        from copy import deepcopy
+        from app.modules.card_game.rl.league_preferences import certified_lethals
+        from app.modules.card_game.rl.league_schema import deck
+        from app.modules.card_game.rl.league_rollout import decision
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.engine.duel_v2.state import card_instance
+        s=new_game(seed=99113,first_side='a',skip_mulligan=True,decks={'a':deck('quick-rush'),'b':deck('starter')})
+        s['sides']['b']['hp']=1;s['sides']['b']['shield']=0
+        s['sides']['a']['hand']=[card_instance(s,'U03','a')]
+        actions,_=decision(s,'a')
+        self.assertFalse(certified_lethals(s,'a',actions))
+        changed=deepcopy(s);changed['sides']['b']['hand'][0]['card_id']='N02'
+        changed['rng']=8877
+        self.assertFalse(certified_lethals(changed,'a',actions))
+        s['sides']['b']['hand']=[]
+        before=deepcopy(s);lethal=certified_lethals(s,'a',actions)
+        self.assertTrue(lethal);self.assertEqual(s,before)
+        changed=deepcopy(s);changed['rng']=123;changed['sides']['b']['deck'].reverse();changed['sides']['a']['deck'].reverse()
+        self.assertEqual(lethal,certified_lethals(changed,'a',actions))
+
+    @unittest.skipUnless(importlib.util.find_spec('torch'),'Torch verification runs on Windows')
+    def test_auxiliary_gradient_preserves_value_and_releases_wrong_anchor(self):
+        import torch
+        from app.modules.card_game.rl.league_learning import branch_update
+        class Tiny(torch.nn.Module):
+            def __init__(self):
+                super().__init__();self.w=torch.nn.Parameter(torch.tensor([1.,0.]));self.v=torch.nn.Parameter(torch.tensor(3.))
+            def forward(self,x,c,mask):return (c*self.w).sum(-1),self.v.expand(x.shape[0])
+        for q,reason,weight in [(10,'winning_speed',.05),(-10,'losing_delay',.02),(10,'certain_lethal',.2)]:
+            net=Tiny();opt=torch.optim.SGD(net.parameters(),lr=1)
+            c=np.eye(2,dtype=np.float32);x=np.zeros(1,dtype=np.float32)
+            row=branch_update(net,opt,x,c,[q,q],anchor_logits=np.array([2.,0.]),all_candidates=c,auxiliary=[(1,0,weight,reason)])
+            self.assertTrue(row['anchor_disabled_for_error'])
+            self.assertLess(float(net.w[0].detach()),1);self.assertGreater(float(net.w[1].detach()),0)
+            self.assertEqual(float(net.v.detach()),3)
+            # Absolute .02/.05/.2 remain small even with one pair.
+            self.assertLessEqual(1-float(net.w[0].detach()),weight)
+
+    def test_forced_root_lethal_counts_one_decision_and_zero_remaining_turns(self):
+        import time
+        from copy import deepcopy
+        from unittest.mock import patch
+        from app.modules.card_game.rl.league_rollout import play,decision
+        from app.modules.card_game.rl.league_schema import deck
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.engine.duel_v2.state import card_instance
+        s=new_game(seed=99114,first_side='a',skip_mulligan=True,decks={'a':deck('quick-rush'),'b':deck('starter')})
+        s['sides']['b']['hp']=1;s['sides']['b']['shield']=0;s['sides']['b']['hand']=[]
+        s['sides']['a']['hand']=[card_instance(s,'U03','a')]
+        a=next(a for a in decision(s,'a')[0] if a['type']=='play_card')
+        with patch('app.modules.card_game.rl.league_rollout.determinize',side_effect=lambda s,*args:deepcopy(s)):
+            g=play(dict(root=s,viewer='a',action=a,seed=1,deadline=time.time()+5,policies={},max_actions=0))
+        self.assertTrue(g['complete']);self.assertEqual(g['reward'],10)
+        self.assertEqual(g['remaining_turns'],0);self.assertEqual(g['own_decisions'],1)
+
+    def test_certification_rejects_random_and_hidden_deck_dependent_results(self):
+        from unittest.mock import patch
+        from copy import deepcopy
+        from app.modules.card_game.rl.league_preferences import certified_lethals
+        from app.modules.card_game.rl.league_schema import deck
+        from app.modules.card_game.engine.duel_v2 import new_game
+        s=new_game(seed=99115,first_side='a',skip_mulligan=True,decks={'a':deck('starter'),'b':deck('starter')})
+        s['sides']['b']['hand']=[]
+        for change in ('rng','deck','empty_draw'):
+            def unsafe(state,side,action):
+                t=deepcopy(state);t['phase']='finished';t['winner']=side
+                if change=='rng':t['rng']+=1
+                elif change=='deck':t['sides']['a']['deck'].pop()
+                else:t['events'].append({'type':'finish','reason':'empty_draw_win'})
+                return t
+            with patch('app.modules.card_game.engine.duel_v2.apply_action',side_effect=unsafe):
+                self.assertFalse(certified_lethals(s,'a',[{'type':'attack','character_id':'zero'}]))

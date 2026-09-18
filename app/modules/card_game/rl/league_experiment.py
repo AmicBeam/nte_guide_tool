@@ -12,6 +12,7 @@ from .league_policy import export_model,network_from_old,LeagueModel
 from .league_rollout import play,decision,determinize
 from .league_learning import ordinary_update,branch_update,tensors
 from .league_replay import ErrorReplay,OptimizerBudget
+from .league_preferences import certified_lethals,auxiliary_pairs
 
 def write(path,data):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True);p=path.with_suffix(path.suffix+'.tmp');p.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8');p.replace(path)
@@ -38,7 +39,7 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
         optimizers[key]=torch.optim.Adam(nets[key].parameters(),lr=1e-4)
         export_model(nets[key],out/'baseline',key,builds[key],origin=origins[key])
         current[key]=out/'baseline'
-    write(out/'config.json',{'schema':SCHEMA,'rule_hash':rule_hash(),'deadline_epoch':deadline,'device':device,'rules_backend':'official_python','source_manifest_sha256':hashlib.sha256((Path(__file__).resolve().parents[4]/'source-manifest.json').read_bytes()).hexdigest(),'workers':workers,'presets':PRESETS,'builds':builds,'origins':origins,'reward':'terminal +/-10, draw 0; unfinished excluded','learning_version':'error_replay_v2','minimum_branch_steps_per_ordinary_step':3,'max_ordinary_steps_per_cycle':1,'max_branch_steps_per_cycle':3,'error_replay_capacity':256,'error_replay_ttl_cycles':5,'error_replay_max_uses':3,'minimum_return_gap':2.5,'ordinary_games':4,'candidates':6,'particles':8,'online_search':False,'automatic_serving_approval':False,'smoke':smoke,'selection_seed_segment':830000000,'branch_policy_loss':'pairwise_terminal_ranking','branch_value_target_temperature':4,'disable_anchor_return_gap':2.5,'branch_anchor_kl':.05,'phase_selection':'keep starting/best model unless at least 2/32 extra validation wins'})
+    write(out/'config.json',{'schema':SCHEMA,'rule_hash':rule_hash(),'deadline_epoch':deadline,'device':device,'rules_backend':'official_python','source_manifest_sha256':hashlib.sha256((Path(__file__).resolve().parents[4]/'source-manifest.json').read_bytes()).hexdigest(),'workers':workers,'presets':PRESETS,'builds':builds,'origins':origins,'reward':'terminal +/-10, draw 0; unfinished excluded','learning_version':'terminal_tiebreak_v3','minimum_branch_steps_per_ordinary_step':3,'max_ordinary_steps_per_cycle':1,'max_branch_steps_per_cycle':3,'error_replay_capacity':256,'error_replay_ttl_cycles':5,'error_replay_max_uses':3,'minimum_return_gap':2.5,'ordinary_games':4,'candidates':6,'particles':8,'online_search':False,'automatic_serving_approval':False,'smoke':smoke,'selection_seed_segment':830000000,'branch_policy_loss':'pairwise_terminal_ranking_with_weak_tiebreaks','certain_lethal_weight':.2,'winning_speed_weight':.05,'losing_delay_weight':.02,'branch_value_target_temperature':4,'disable_anchor_return_gap':2.5,'branch_anchor_kl':.05,'phase_selection':'keep starting/best model unless at least 2/32 extra validation wins'})
     total={k:{'ordinary_updates':0,'branch_updates':0,'ordinary_games':0,'branch_games':0,'informative_roots':0,'attempted_roots':0,'ordinary_optimizer_steps':0,'branch_optimizer_steps':0} for k in PRESETS}
     from .league_gate import evaluate as evaluate_gate
     for key in PRESETS:write(out/(key+'-gate-before.json'),evaluate_gate(LeagueModel(out/'baseline',key)))
@@ -92,6 +93,8 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
                         try:determinize(root,'a',seed+40+ri*8)
                         except ValueError as exc:
                             metric(out,{'stage':stage,'cycle':cycle,'kind':'skip_root','reason':str(exc)});continue
+                        lethal=certified_lethals(root,'a',actions)
+                        selected+=sorted(lethal-set(selected))
                         branches=[]
                         for ai in selected:
                             for particle in range(8):
@@ -99,9 +102,10 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
                         results=list(pool.map(play,branches));total[key]['branch_games']+=sum(g['complete'] for g in results)
                         if not all(g['complete'] for g in results):continue
                         q=np.array([g['reward'] for g in results],dtype=np.float32).reshape(len(selected),8).mean(1)
-                        kept=replay.add(x,c,selected,q,cycle)
+                        auxiliary=auxiliary_pairs(results,len(selected),8,{i for i,ai in enumerate(selected) if ai in lethal})
+                        kept=replay.add(x,c,selected,q,cycle,auxiliary)
                         total[key]['informative_roots']+=int(kept)
-                        metric(out,{'stage':stage,'cycle':cycle,'kind':'branch_collect','particles':8,'candidates':len(selected),'terminal_returns':q.tolist(),'replay_admitted':kept})
+                        metric(out,{'stage':stage,'cycle':cycle,'kind':'branch_collect','particles':8,'candidates':len(selected),'terminal_returns':q.tolist(),'replay_admitted':kept,'certified_lethals':len(lethal),'auxiliary_pairs':auxiliary})
                     def current_scores(x,c):
                         with torch.no_grad():
                             xx,cc,mm=tensors([(x,c)],next(nets[key].parameters()).device)
@@ -111,7 +115,7 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
                         error=replay.take(current_scores,cycle)
                         if error is None:break
                         x,c=error['x'],error['c'];selected=list(error['selected'])
-                        result=branch_update(nets[key],optimizers[key],x,c[selected],error['q'],anchor_logits=anchor_model.scores(x,c),all_candidates=c,selected_indices=selected)
+                        result=branch_update(nets[key],optimizers[key],x,c[selected],error['q'],anchor_logits=anchor_model.scores(x,c),all_candidates=c,selected_indices=selected,auxiliary=error['auxiliary'])
                         budget.record_branch(result.get('optimizer_steps',0))
                         total[key]['branch_updates']+=result['updates']
                         total[key]['branch_optimizer_steps']+=result.get('optimizer_steps',0)

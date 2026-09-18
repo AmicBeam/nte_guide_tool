@@ -95,10 +95,11 @@ def play(job):
     deadline=job['deadline'];rng=np.random.default_rng(job['seed']);viewer=job.get('viewer','a')
     models={s:model(*p) for s,p in job['policies'].items() if p is not None}
     if 'root' in job:
-        s=determinize(job['root'],viewer,job['seed']);s=clean(apply_action(s,viewer,job['action']))
+        s=determinize(job['root'],viewer,job['seed']);start_turn=s['turn'];own_decisions=1
+        s=clean(apply_action(s,viewer,job['action']))
     else:
         s=new_game(seed=job['seed'],first_side=job.get('first','a'),decks=job['decks'])
-        clean(s)
+        clean(s);start_turn=s['turn'];own_decisions=0
     trajectory=[];roots=[];sample=job.get('sample',False);steps=0
     for steps in range(job.get('max_actions',400)):
         if s['phase']=='finished':break
@@ -118,6 +119,6 @@ def play(job):
                 priority=float(rng.random())+float(critical)*.5
                 roots.append((priority,deepcopy(s)))
                 roots=sorted(roots,key=lambda p:-p[0])[:2]
-        s=clean(apply_action(s,side,actions[ix]))
+        s=clean(apply_action(s,side,actions[ix]));own_decisions+=int(side==viewer)
     done=s['phase']=='finished';reward=0 if s.get('winner') not in ('a','b') else 10 if s['winner']==viewer else -10
-    return {'complete':done,'winner':s.get('winner'),'reward':reward if done else None,'steps':steps+1,'trajectory':trajectory if done else [],'roots':[r for _,r in roots] if done else []}
+    return {'complete':done,'winner':s.get('winner'),'reward':reward if done else None,'steps':steps+1,'remaining_turns':s['turn']-start_turn,'own_decisions':own_decisions,'trajectory':trajectory if done else [],'roots':[r for _,r in roots] if done else []}

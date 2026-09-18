@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import hashlib
 import numpy as np
+from .league_preferences import validate_pairs
 
 @dataclass
 class OptimizerBudget:
@@ -26,17 +27,18 @@ class ErrorReplay:
         self.capacity=capacity;self.ttl=ttl;self.max_uses=max_uses;self.min_gap=min_gap
         self.entries={}
 
-    def add(self,x,c,selected,q,cycle):
+    def add(self,x,c,selected,q,cycle,auxiliary=()):
         x=np.asarray(x,dtype=np.float32);c=np.asarray(c,dtype=np.float32)
         selected=tuple(int(i) for i in selected);q=np.asarray(q,dtype=np.float32)
         if (x.ndim!=1 or c.ndim!=2 or q.shape!=(len(selected),) or len(selected)<2
                 or len(set(selected))!=len(selected) or min(selected)<0 or max(selected)>=len(c)
                 or not all(np.isfinite(v).all() for v in (x,c,q))):
             raise ValueError('Invalid completed branch sample')
-        if np.ptp(q)<self.min_gap:return False
+        auxiliary=validate_pairs(auxiliary,q)
+        if np.ptp(q)<self.min_gap and not auxiliary:return False
         key=hashlib.sha256(x.tobytes()+c.tobytes()).hexdigest()
         self.entries[key]={'x':x.copy(),'c':c.copy(),'selected':selected,'q':q.copy(),
-                           'cycle':cycle,'uses':0,'last_used':-1}
+                           'auxiliary':auxiliary,'cycle':cycle,'uses':0,'last_used':-1}
         while len(self.entries)>self.capacity:
             self.entries.pop(min(self.entries,key=lambda k:self.entries[k]['cycle']))
         return True
@@ -52,7 +54,9 @@ class ErrorReplay:
             chosen=int(scores.argmax())
             if chosen not in e['selected']:continue # Unassessed moves have unknown value.
             gap=float(e['q'].max()-e['q'][e['selected'].index(chosen)])
-            if gap<self.min_gap:continue
+            weak=max([w for i,j,w,reason in e['auxiliary'] if j==e['selected'].index(chosen)]+[0.])
+            if gap<self.min_gap and not weak:continue
+            gap=gap if gap>=self.min_gap else weak
             p=np.exp(scores-scores.max());p/=p.sum()
             weight=gap*(.5+float(p[chosen]))
             if weight>priority:best=e;priority=weight

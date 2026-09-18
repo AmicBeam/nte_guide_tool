@@ -119,8 +119,8 @@
       "max_hp": 4,
       "avatar": "/static/images/characters/avatar/小吱.webp",
       "portrait": "/static/images/characters/portrait/小吱.webp",
-      "passive": "拥有个人资源「金谷」，初始 0 点。己方回合开始时及小吱对对方玩家造成伤害时，获得 1 点金谷。金谷可以为负，倒地时清零。",
-      "awakened_passive": "获得 3 点金谷。2 个己方回合内，小吱打出战斗牌后，随机获得 -1、0 或 +1 点金谷。终结结束时，扣除 3 点金谷。",
+      "passive": "拥有个人资源「金谷」，初始 0 点。己方回合开始时及小吱对对方玩家造成伤害时，获得 1 点金谷。金谷可以为负，倒地时保留。",
+      "awakened_passive": "获得 3 点金谷。己方所有手牌随机标注 -1、0 或 +1 金谷；发动时及己方回合开始时刷新，新入手牌也会标注。打出的牌完整结算后，按其标注变动小吱的金谷。持续 2 个己方回合；结束时扣除 3 点金谷并清除标注。",
       "everness_id": 1073,
       "ultimate": {
         "kind": "status",
@@ -2139,7 +2139,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "主动打出时，若有 3 点金谷，消耗 3 点并额外获得攻击 +3。",
+      "description": "二选一。① 直接出击；② 消耗 3 点金谷，此次攻击额外 +3。",
       "effect_id": "Q01",
       "source": {
         "character_id": 1073,
@@ -2149,8 +2149,25 @@
         "rules_source": "user_tabletop_2026-09-18"
       },
       "starter_copies": 2,
-      "attack": 3,
-      "shield": 1
+      "attack": 4,
+      "shield": 1,
+      "attack_mode": "set",
+      "play_options": [
+        {
+          "id": "base",
+          "label": "基础效果",
+          "description": "攻击设为 4。"
+        },
+        {
+          "id": "boost",
+          "label": "3 金谷 · 攻击 +3",
+          "description": "攻击设为 4，并额外 +3。",
+          "costs": {
+            "jingu": 3
+          },
+          "cost_label": "3 点金谷"
+        }
+      ]
     },
     {
       "id": "Q02",
@@ -2159,7 +2176,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "命中后，使目标下次受到的光属性伤害抗性 -2；若有 3 点金谷，消耗 3 点并额外释放「太阳太阳请回答」。",
+      "description": "命中后，使目标下次受到的光属性伤害抗性 -2。二选一。① 直接出击；② 消耗 3 点金谷，出击后额外释放「太阳太阳请回答」。",
       "effect_id": "Q02",
       "source": {
         "character_id": 1073,
@@ -2169,8 +2186,25 @@
         "rules_source": "user_tabletop_2026-09-18"
       },
       "starter_copies": 2,
-      "attack": 2,
-      "shield": 1
+      "attack": 3,
+      "shield": 1,
+      "attack_mode": "set",
+      "play_options": [
+        {
+          "id": "base",
+          "label": "基础效果",
+          "description": "攻击设为 3，命中后降低光抗性。"
+        },
+        {
+          "id": "release_a",
+          "label": "3 金谷 · 追加战斗 A",
+          "description": "出击后额外释放「太阳太阳请回答」。",
+          "costs": {
+            "jingu": 3
+          },
+          "cost_label": "3 点金谷"
+        }
+      ]
     },
     {
       "id": "Q03",
@@ -2179,7 +2213,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若有 3 点金谷，消耗 3 点并额外释放「烟花，悄然无声」。",
+      "description": "三选一。① 直接出击；② 消耗 3 点金谷，出击后额外释放「烟花，悄然无声」；③ 消耗 6 点金谷，出击后依次额外释放「烟花，悄然无声」和「太阳太阳请回答」。",
       "effect_id": "Q03",
       "source": {
         "character_id": 1073,
@@ -2189,8 +2223,34 @@
         "rules_source": "user_tabletop_2026-09-18"
       },
       "starter_copies": 0,
-      "attack": 3,
-      "shield": 1
+      "attack": 4,
+      "shield": 1,
+      "attack_mode": "set",
+      "play_options": [
+        {
+          "id": "base",
+          "label": "基础效果",
+          "description": "攻击设为 4。"
+        },
+        {
+          "id": "release_b",
+          "label": "3 金谷 · 追加战斗 B",
+          "description": "出击后额外释放「烟花，悄然无声」。",
+          "costs": {
+            "jingu": 3
+          },
+          "cost_label": "3 点金谷"
+        },
+        {
+          "id": "release_ba",
+          "label": "6 金谷 · 追加 B 和 A",
+          "description": "出击后依次释放「烟花，悄然无声」和「太阳太阳请回答」。",
+          "costs": {
+            "jingu": 6
+          },
+          "cost_label": "6 点金谷"
+        }
+      ]
     },
     {
       "id": "Q04",
@@ -2209,9 +2269,10 @@
         "rules_source": "user_tabletop_2026-09-18"
       },
       "starter_copies": 0,
-      "attack": 4,
+      "attack": 5,
       "shield": 0,
-      "response": "self_attacked"
+      "response": "self_attacked",
+      "attack_mode": "set"
     },
     {
       "id": "Q05",

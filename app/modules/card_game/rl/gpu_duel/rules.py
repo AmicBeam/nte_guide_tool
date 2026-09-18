@@ -969,7 +969,7 @@ def rebuild_legal(s: GpuState) -> None:
         remaining_ok = True
         if hasattr(s, 'ultimates_used'):
             remaining_ok = s.ultimates_used[b, side] < _ultimate_limit(s)
-        can_ult = playing & (s.ultimate_ok[b, side] > 0) & (s.ch_present[b, side, seat] > 0) & (s.ch_hp[b, side, seat] > 0) & energy_ok & remaining_ok
+        can_ult = playing & (s.ultimate_ok[b, side] > 0) & (s.ch_present[b, side, seat] > 0) & (s.ch_hp[b, side, seat] > 0) & energy_ok & remaining_ok & (s.ch_ultimate_used_turn[b, side, seat] != s.turn)
         s.legal_type[:, LEGAL_ULT + seat] = torch.where(can_ult, torch.full_like(s.legal_type[:, 0], ACT_ULTIMATE), -1)
         s.legal_actor[:, LEGAL_ULT + seat] = torch.where(can_ult, torch.full_like(s.legal_actor[:, 0], seat), -1)
     foe = other_side(side)
@@ -1078,6 +1078,7 @@ def step_index(s: GpuState, index: torch.Tensor, *, legal_ready: bool = False) -
                 s.ultimate_ok[:, si] = torch.where(exhausted, torch.zeros_like(s.ultimate_ok[:, si]), s.ultimate_ok[:, si])
             else:
                 s.ultimate_ok[:, si] = torch.where(here, torch.zeros_like(s.ultimate_ok[:, si]), s.ultimate_ok[:, si])
+        s.ch_ultimate_used_turn[b, side, seat] = torch.where(ult, s.turn, s.ch_ultimate_used_turn[b, side, seat])
         start_ultimate(s, side, seat, ult)
     play = valid & (typ == ACT_PLAY)
     play_card(s, side, hand, play, tside, tseat)

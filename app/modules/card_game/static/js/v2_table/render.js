@@ -77,7 +77,7 @@
       return '<span class="v2-combat-stat is-' + kind + '" title="' + V2.escapeAttr(title) + '">' +
         V2.statIconSvg(kind) + '<em>' + V2.escapeHtml(String(shown)) + '</em></span>';
     }
-    const jinguHtml = data.jingu == null ? '' : combatStat('jingu', data.jingu, '金谷 ' + data.jingu + '（可为负，倒地清零）');
+    const jinguHtml = data.jingu == null ? '' : combatStat('jingu', data.jingu, '金谷 ' + data.jingu + '（可为负，倒地保留）');
     const vitalsHtml = options.usePortrait
       ? ('<div class="v2-portrait-vitals">' +
           (shield > 0 ? combatStat('shield', shield, '护盾 ' + shield) : '') +
@@ -343,6 +343,11 @@
       return '<article class="v2-hidden-card" aria-label="隐藏手牌"></article>';
     }
     const classes = ['v2-hand-card'];
+    const mark = card.jingu_mark;
+    const marked = Boolean(mark && [-1, 0, 1].includes(mark.delta));
+    if (marked) classes.push('has-jingu-mark');
+    const markText = marked ? (mark.delta > 0 ? '+' : '') + mark.delta : '';
+    const markHtml = marked ? '<span class="v2-jingu-mark" title="本牌结算后，小吱金谷 ' + markText + '" aria-label="金谷 ' + markText + '">' + V2.statIconSvg('jingu') + '<em>' + markText + '</em></span>' : '';
     const inMulligan = options.phase === 'mulligan';
     const unusable = !inMulligan && !options.legal;
     const reason = unusable ? (card.unavailable_reason || '现在不能使用') : '';
@@ -361,7 +366,7 @@
     const label = (card.name || '卡牌') + (reason ? '，' + reason : '');
     return (
       '<article class="' + classes.join(' ') + '" draggable="false" data-card-id="' + V2.escapeAttr(card.instance_id) + '" data-drag-kind="card" data-card-owner="' + V2.escapeAttr(card.character_id || '') + '" data-card-type="' + V2.escapeAttr(card.type || '') + '"' + instanceAttr + style + title + ' aria-label="' + V2.escapeAttr(label) + '">' +
-        (card.copy ? '<span class="v2-chip copy">复制</span>' : '') +
+        markHtml + (card.copy ? '<span class="v2-chip copy">复制</span>' : '') +
         '<strong>' + V2.escapeHtml(card.name || '卡牌') + '</strong>' +
         V2.cardDescriptionHtml(card.description, '正在读取卡牌效果。', 'subtle') +
         V2.cardFrameStat(card) +

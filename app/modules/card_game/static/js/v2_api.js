@@ -21,6 +21,7 @@
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.
   const characterAssets = Object.create(null);
+  const cardsByName = Object.create(null);
 
   function registerCharacters(characters) {
     (Array.isArray(characters) ? characters : []).forEach(function (character) {
@@ -35,6 +36,9 @@
 
   function registerPayloadCharacters(payload) {
     registerCharacters(payload && payload.characters);
+    ((payload && payload.cards) || []).forEach(function (card) {
+      if (card && card.name) cardsByName[card.name] = Object.assign({}, card);
+    });
     const boards = [payload && payload.game, payload && payload.replay && payload.replay.opening_board];
     boards.forEach(function (board) {
       Object.values((board && board.sides) || {}).forEach(function (side) {
@@ -304,9 +308,25 @@
 
   function cardDescriptionMarkup(text, fallback) {
     const source = text == null ? fallback : text;
-    return escapeHtml(source || '').replace(/瞬发|响应|穿透/g, function (keyword) {
+    return escapeHtml(source || '').replace(/(?:[二三四五六七八九十百X]|[0-9]+)选一|瞬发|响应|穿透/g, function (keyword) {
       return '<strong>' + keyword + '</strong>';
     });
+  }
+
+  function referencedCards(card) {
+    const result = [];
+    const seen = new Set();
+    const regex = /「([^」]+)」/g;
+    const text = (card && card.description) || '';
+    let match;
+    while ((match = regex.exec(text))) {
+      const name = match[1];
+      if (name !== card.name && !seen.has(name) && cardsByName[name]) {
+        result.push(Object.assign({}, cardsByName[name]));
+        seen.add(name);
+      }
+    }
+    return result;
   }
 
   function cardDescriptionHtml(text, fallback, className) {
@@ -413,7 +433,7 @@
     }
     if (card.type === 'battle') {
       if (Number(card.attack) > 0) {
-        parts.push('攻击 +' + card.attack);
+        parts.push((card.attack_mode === 'set' ? '攻击 ' : '攻击 +') + card.attack);
       }
       if (Number(card.shield) > 0) {
         parts.push('护盾 ' + card.shield);
@@ -483,7 +503,7 @@
     }
     if (card.type === 'battle') {
       if (Number(card.attack) > 0) {
-        parts.push(statBadge('atk', '+' + card.attack, '攻击 +' + card.attack));
+        parts.push(statBadge('atk', (card.attack_mode === 'set' ? '' : '+') + card.attack, (card.attack_mode === 'set' ? '设置攻击为 ' : '攻击 +') + card.attack));
       }
       if (Number(card.shield) > 0) {
         parts.push(statBadge('shield', String(card.shield), '护盾 ' + card.shield));
@@ -763,6 +783,7 @@
     escapeHtml: escapeHtml,
     cardDescriptionMarkup: cardDescriptionMarkup,
     cardDescriptionHtml: cardDescriptionHtml,
+    referencedCards: referencedCards,
     escapeAttr: escapeAttr,
     elementIcon: elementIcon,
     characterFallback: characterFallback,

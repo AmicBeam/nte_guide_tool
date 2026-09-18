@@ -189,3 +189,13 @@ events: 投影后的公开演出事件
 - native/CUDA 的扁平存储是加速表示，不在 GPU 中创建 Python 类；异能者身份以阵营与槽位组成的实体键比较，不能单用角色槽位排除对方同名对象。正式网站结算始终使用上述类实例。
 
 验证入口：`python3 -m unittest tests.test_duel_v2_entities tests.test_duel_v2_engine tests.test_duel_v2_public_compiled tests.test_duel_v2_api tests.test_duel_v2_tutorial`。
+
+
+## 2026-09-18 金谷标注与 X选一协议
+
+- 角色内部 `ultimate_used_turn` 记录上次发动终结的全局回合号，实体倒地/复活保留；训练张量和编译行使用 `ch_ultimate_used_turn`。玩家总终结次数仍独立计算。
+- 战斗牌可带 `attack_mode: "set"`，表示 attack 设置本次攻击/反击的基值，不是对角色攻击的加成；未提供时保持原加成语义。
+- 卡牌模板可带有序 `play_options: [{id,label,description,costs?,cost_label?}]`。`costs` 是所属角色个人资源的额外支付量。主动出牌的合法动作带 `option_id`，与 `card_id` / `card_entity_id`、可选目标一起提交；后端枚举可支付项并验证整个动作。非主动调用默认第一项。UI只按合法动作判定能否选择，不自行扣资源。
+- 实体手牌 `jingu_mark: {delta: -1|0|1, source_entity_id}` 锁定金谷变动及来源实体。出牌时复制到操作状态，效果完整完成后兑现；被弃置或返回牌库清除，不带进弃牌堆。响应战斗牌通过操作级延后队列，在实际反击结算后兑现。
+- 内部 `private_hand` 事件携带标注更新后的拥有者手牌；投影时只转换为该拥有者的 `patch.sides[side].hand`，其他视角不返回原始字段或隐藏牌身份。公开回放按同一投影与泄露检查处理。`play_options`、`attack_mode`、可见牌的 `jingu_mark` 进入公开卡牌最小字段。
+- 拖牌分区的几何切分只决定 `option_id`，对应费用、合法性和预览均由后端提供。半尺寸引用详情从当前账号可见 catalog 按卡名查找，排除自身并去重。

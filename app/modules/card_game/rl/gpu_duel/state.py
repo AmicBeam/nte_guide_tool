@@ -80,6 +80,7 @@ class GpuState:
     ch_energy_max: torch.Tensor
     ch_down: torch.Tensor
     ch_awakened: torch.Tensor
+    ch_ultimate_used_turn: torch.Tensor
     ch_ult_turns: torch.Tensor
     ch_shape: torch.Tensor
     ch_atk_buff: torch.Tensor
@@ -168,7 +169,7 @@ def empty_state(n: int, device: str | torch.device = 'cpu') -> GpuState:
         ch_shield=t(SIDES, N_SEATS), ch_base_atk=t(SIDES, N_SEATS), ch_growth=t(SIDES, N_SEATS),
         ch_harmony=t(SIDES, N_SEATS), ch_energy=t(SIDES, N_SEATS), ch_energy_max=t(SIDES, N_SEATS),
         ch_down=t(SIDES, N_SEATS), ch_awakened=t(SIDES, N_SEATS), ch_ult_turns=t(SIDES, N_SEATS),
-        ch_shape=t(SIDES, N_SEATS) - 1, ch_atk_buff=t(SIDES, N_SEATS),
+        ch_ultimate_used_turn=t(SIDES, N_SEATS) - 1, ch_shape=t(SIDES, N_SEATS) - 1, ch_atk_buff=t(SIDES, N_SEATS),
         ch_next_bonus=t(SIDES, N_SEATS), ch_next_shield=t(SIDES, N_SEATS),
         ch_next_followup=t(SIDES, N_SEATS), ch_pact=t(SIDES, N_SEATS),
         ch_energy_next=t(SIDES, N_SEATS), ch_harmonized=t(SIDES, N_SEATS),

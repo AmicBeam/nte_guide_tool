@@ -120,6 +120,7 @@ def reset_native(s: GpuState | None, n: int, device, seeds: torch.Tensor,
             s.ch_down[:, side, seat] = 0
             s.ch_awakened[:, side, seat] = 0
             s.ch_ult_turns[:, side, seat] = 0
+            s.ch_ultimate_used_turn[:, side, seat] = -1
             s.ch_shape[:, side, seat] = -1
             s.ch_atk_buff[:, side, seat] = 0
             s.ch_next_bonus[:, side, seat] = 0

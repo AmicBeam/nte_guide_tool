@@ -270,3 +270,8 @@ V2 玩家、异能者和每张实体卡牌均为独立类实例，使用 `entity
 回归：`python -m unittest tests.test_duel_v2_card_art`，覆盖未预登记的新角色、直接打开牌桌、回放、局部更新、旧资源覆盖与隐藏手牌。
 
 2026-09-18 名称更正：公开薄荷、白藏、零、伊洛伊队统一显示为“覆纹预组”，内部ID仍为 weave-rush；原 sync-curse 残虹测试队显示为“覆纹预组（测试）”以避免重名。仅更改名称，不调整卡牌、个人存档或训练中的冻结构筑；历史报告保留原名称。
+
+
+2026-09-18 金谷标注：小吱倒地保留金谷，战斗牌使用 `attack_mode=set` 设置本次攻/反击；终结将实体手牌标注保存在 `jingu_mark`，牌顶外侧显示，结算后兑现。`private_hand` 事件只投影给手牌拥有者，回放沿用同一隐私边界。所有角色使用 `ultimate_used_turn` 限制同回合重复终结，倒地/复活不重置；训练行同步为 `ch_ultimate_used_turn`。回归入口：`tests.test_duel_v2_jingu_marks`。
+
+X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗大区从左到右选择，资源不足区禁用。大图左侧半尺寸展示「」中引用的可见卡牌，启动牌桌时加载卡池用于解析引用。验证包含 `tests.test_duel_v2_jingu_marks`、`tests.test_duel_v2_card_art`。

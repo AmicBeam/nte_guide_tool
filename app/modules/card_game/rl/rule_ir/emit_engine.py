@@ -1183,7 +1183,8 @@ static void rebuild_legal(int *row){
     if(can_atk){ LT(LEGAL_ATK+k)=ACT_ATTACK; LA(LEGAL_ATK+k)=k; }
     int can_ult = SI(ULTIMATE_OK,s)>0 && present_alive(row,s,k)
       && CH(CH_ENERGY,s,k)>=energy_cap_for(row,k)
-      && SI(ULTIMATES_USED,s)<ultimate_limit_for(row);
+      && SI(ULTIMATES_USED,s)<ultimate_limit_for(row)
+      && CH(CH_ULTIMATE_USED_TURN,s,k)!=row[OFF_TURN];
     if(can_ult){ LT(LEGAL_ULT+k)=ACT_ULTIMATE; LA(LEGAL_ULT+k)=k; }
   }
   for(int hs=0; hs<HAND_SLOTS; hs++){
@@ -1247,6 +1248,7 @@ static void step_one(int *row, int action){
     sortie(row,s,actor,0,0,0,0,0);
     grant_op_resources(row,s,actor);
   } else if(typ==ACT_ULTIMATE){
+    CH(CH_ULTIMATE_USED_TURN,s,actor)=row[OFF_TURN];
     SI(ULTIMATES_USED,s)+=1;
     if(SI(ULTIMATES_USED,s) >= ultimate_limit_for(row)) SI(ULTIMATE_OK,s)=0;
     start_ultimate(row,s,actor);

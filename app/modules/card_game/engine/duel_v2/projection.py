@@ -34,6 +34,9 @@ def action_label(state, side, action):
         return f"终结{hero(state, side, action['character_id'])['name']}"
     if kind == 'play_card':
         text = f"使用「{_card(state, side, action['card_id'])['name']}」"
+        option = next((o for o in (_card(state, side, action['card_id']).get('play_options') or []) if o['id'] == action.get('option_id')), None)
+        if option:
+            text += ' · ' + option['label']
         target = action.get('target_id')
         if target and ':' in target:
             ts, cid = target.split(':', 1)
@@ -62,6 +65,10 @@ def preview(state, side, action):
     if payment is not None:
         cost = payment['ap']
     value = {'ap_cost': cost}
+    selected_option = next((o for o in ((card or {}).get('play_options') or []) if o['id'] == action.get('option_id')), None)
+    if selected_option:
+        value['所选效果'] = selected_option['description']
+        if selected_option.get('cost_label'): value['额外消耗'] = selected_option['cost_label']
     if payment and payment.get('resource'):
         value['额外消耗'] = '3 点金谷' if payment['resource'] == 'jingu' else '本回合瞬发机会'
     if kind != 'attack' and not (card and card['type'] == 'battle'):

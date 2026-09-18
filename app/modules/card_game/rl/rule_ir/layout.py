@@ -12,7 +12,7 @@ from app.modules.card_game.rl.gpu_duel.catalog import (
 )
 
 ENGINE_NAME = 'starter_engine'
-ENGINE_VERSION = 'compiled_public_v1'
+ENGINE_VERSION = 'compiled_public_v2'
 
 SIDE_SCALARS = (
     'hp', 'shield', 'ap', 'front', 'last_front', 'turn_count', 'fatigue',
@@ -29,7 +29,7 @@ CHAR_FIELDS = (
     'ch_next_followup', 'ch_pact', 'ch_energy_next', 'ch_harmonized', 'ch_present',
     'ch_allied_hurt', 'ch_pending_atk', 'ch_share_overflow',
     'ch_collapse_count', 'ch_collapse_by', 'ch_collapse_until',
-    'ch_hp_floor', 'ch_order',
+    'ch_hp_floor', 'ch_order', 'ch_ultimate_used_turn',
 )
 ROW_SCALARS = (
     'phase', 'active', 'first', 'turn', 'winner', 'reason', 'rng', 'next_instance',

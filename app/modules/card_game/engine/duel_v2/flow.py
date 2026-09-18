@@ -106,10 +106,33 @@ def can_afford_card(state, side, card):
     return card_is_free_instant(state, side, card) or int(state['sides'][side].get('ap') or 0) >= cost
 
 
-def resolve_play(state, side, card, target_id=None, *, pay=True):
+def card_play_options(state, side, card):
+    options = card.get('play_options') or []
+    if not options:
+        return [{}]
+    owner = hero(state, side, card['character_id'])
+    return [{'option_id': option['id']} for option in options
+            if all(int(owner.get(resource, 0)) >= int(amount)
+                   for resource, amount in option.get('costs', {}).items())]
+
+
+def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None):
     from app.modules.card_game.content.duel_v2.characters.common import scale_battle_frame
     from .presentation import public_card
     team = state['sides'][side]
+    options = card.get('play_options') or []
+    # Automatic releases/responses always resolve the leftmost option.
+    selected_id = option_id if pay and not state.get('_response_lock') else None
+    option = next((item for item in options if item['id'] == selected_id), options[0] if options else {})
+    if option and options and {'option_id': option['id']} not in card_play_options(state, side, card):
+        raise ValueError('所选效果的资源不足。')
+    if option.get('costs'):
+        owner = hero(state, side, card['character_id'])
+        for resource, amount in option['costs'].items():
+            owner[resource] = int(owner.get(resource, 0)) - int(amount)
+        log(state, f"{owner['name']}选择「{option['label']}」，消耗{option.get('cost_label', '额外资源')}。",
+            'effect', side=side, actor=f"{side}:{card['character_id']}", present=False,
+            private_side=side, private_hand=[public_card(held) for held in team['hand']])
     form_bonus = kit_makes_form_instant(state, side, card)
     if pay:
         if card_is_free_instant(state, side, card):
@@ -120,16 +143,22 @@ def resolve_play(state, side, card, target_id=None, *, pay=True):
         'play', side=side, source=card['character_id'],
         actor=f"{side}:{card['character_id']}", card=public_card(card))
     c = operation(state, side, card['character_id'], card, target_id)
+    c.operation['option_id'] = option.get('id')
     if card.get('type') == 'battle' and alive(state, side, card['character_id']):
         attack = int(card.get('attack') or 0)
         value = int(card.get('shield') or 0)
         attack, value = scale_battle_frame(c, attack, value)
         if value:
             shield(state, side, card['character_id'], value)
-        if attack:
+        if attack or card.get('attack_mode') == 'set':
             if state.get('_response_intercept'):
                 flags = hero(state, side, card['character_id']).setdefault('flags', {})
-                flags['counter_bonus'] = int(flags.get('counter_bonus') or 0) + attack
+                if card.get('attack_mode') == 'set':
+                    flags['counter_set_attack'] = attack
+                else:
+                    flags['counter_bonus'] = int(flags.get('counter_bonus') or 0) + attack
+            elif card.get('attack_mode') == 'set':
+                c.operation['card_set_attack'] = attack
             else:
                 c.operation['card_bonus'] = attack
     from app.modules.card_game.content.duel_v2.effects import EFFECTS
@@ -276,7 +305,8 @@ def legal_actions(state, side=None):
         payment = normal_attack_payment(state, side, cid)
         if payment is not None and team['ap'] >= payment['ap'] and not collapsed(h):
             result.append({'type': 'attack', 'character_id': cid})
-        if ultimate_remaining(state, side) and h['energy'] >= energy_cap(state, h):
+        if (ultimate_remaining(state, side) and h['energy'] >= energy_cap(state, h)
+                and h.get('ultimate_used_turn') != state['turn']):
             result.append({'type': 'ultimate', 'character_id': cid})
     for card in team['hand']:
         owner = card['character_id']
@@ -293,8 +323,9 @@ def legal_actions(state, side=None):
             if burn.get('by') != side:
                 continue
         if can_afford_card(state, side, card):
-            result.extend({'type': 'play_card', 'card_id': card['instance_id'], **target}
-                          for target in targets(state, side, card))
+            result.extend({'type': 'play_card', 'card_id': card['instance_id'], **target, **option}
+                          for target in targets(state, side, card)
+                          for option in card_play_options(state, side, card))
     from .tutorial import filter_legal_actions, is_tutorial
     if is_tutorial(state):
         return filter_legal_actions(state, side, result)
@@ -319,6 +350,7 @@ def start_ultimate(state, side, cid, *, spent_ap=False):
     before = {'energy': h['energy'], 'awakened': h.get('awakened', False),
               'ultimate_turns': h.get('ultimate_turns', 0), 'ap': team['ap'] + (1 if spent_ap else 0)}
     h['energy'] = 0
+    h['ultimate_used_turn'] = state['turn']
     if spec['kind'] == 'instant':
         h['awakened'] = False
         h['ultimate_turns'] = 0
@@ -537,7 +569,7 @@ def end_turn(state, side):
 def operation(state, side, cid, card=None, target_id=None):
     op = {'side': side, 'actor': cid, 'card': card, 'target_id': target_id,
           'participants': [], 'harmony': None, 'first_bonus': 0, 'redeem_bonus': 0,
-          'record_candidate': False}
+          'record_candidate': False, 'card_mark': deepcopy((card or {}).get('jingu_mark'))}
     state['operation'] = op
     context = EffectContext(state, side, cid, op)
     fire(context, 'on_operation_start')
@@ -560,6 +592,11 @@ def finish_operation(state):
             return
         discard(state, side, card)
         fire(c, 'after_card', actor_id=cid, card=card)
+        if op.get('card_mark'):
+            if state.get('_response_intercept') and card.get('type') == 'battle':
+                state.setdefault('_deferred_card_marks', []).append(deepcopy(op))
+            else:
+                fire(c, 'after_marked_card', include_down=True)
     attackers = [(ps, pc) for ps, pc in (op.get('participants') or []) if alive(state, ps, pc)]
     from .tutorial import tutorial_flags
     flags = tutorial_flags(state)
@@ -599,6 +636,13 @@ def finish_operation(state):
                 before=snap, after={'harmony': h['harmony'], 'energy': h['energy']})
     state['phase'] = 'playing'
     state['operation'], state['pending_choice'] = None, None
+
+
+def settle_deferred_card_marks(state):
+    """Counter cards finish only after their simultaneous battle damage."""
+    for op in state.pop('_deferred_card_marks', []):
+        fire(EffectContext(state, op['side'], op['actor'], op),
+             'after_marked_card', include_down=True)
 
 
 def choose(state, side, choice_id):
@@ -687,7 +731,7 @@ def apply_action(state, side, action):
     else:
         card = next(c for c in team['hand'] if c['instance_id'] == candidate['card_id'])
         team['hand'].remove(card)
-        resolve_play(result, side, card, candidate.get('target_id'), pay=True)
+        resolve_play(result, side, card, candidate.get('target_id'), pay=True, option_id=candidate.get('option_id'))
     if is_tutorial(result) and side == 'a' and candidate.get('type') != 'concede':
         after_player_action(result, candidate)
         from .tutorial import run_scripted_opponent

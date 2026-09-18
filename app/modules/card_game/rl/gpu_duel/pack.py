@@ -109,6 +109,7 @@ def pack_python(states: list[dict[str, Any]], *, device='cpu') -> GpuState:
                 cpu.ch_down[row, side_i, seat] = int(hero.get('down_turns') or 0)
                 cpu.ch_awakened[row, side_i, seat] = 1 if hero.get('awakened') else 0
                 cpu.ch_ult_turns[row, side_i, seat] = int(hero.get('ultimate_turns') or 0)
+                cpu.ch_ultimate_used_turn[row, side_i, seat] = int(hero.get('ultimate_used_turn', -1))
                 shape = hero.get('shape')
                 cpu.ch_shape[row, side_i, seat] = CARD_INDEX[shape] if shape in CARD_INDEX else -1
                 flags = hero.get('flags') or {}

@@ -8,8 +8,8 @@ from app.modules.card_game.engine.duel_v2.state import (
 )
 
 
-def change_jingu(c, amount, reason):
-    if finished(c.state) or not alive(c.state, c.side, c.cid):
+def change_jingu(c, amount, reason, *, allow_downed=False):
+    if finished(c.state) or (not allow_downed and not alive(c.state, c.side, c.cid)):
         return
     before = int(c.character.get('jingu', 0))
     c.character['jingu'] = before + amount
@@ -17,24 +17,37 @@ def change_jingu(c, amount, reason):
               before={'jingu': before}, after={'jingu': before + amount})
 
 
-def spend(c):
-    if finished(c.state) or not alive(c.state, c.side, c.cid) or c.character.get('jingu', 0) < 3:
-        return False
-    change_jingu(c, -3, '小吱消耗金谷')
-    return True
+def mark_card(c, card):
+    rng = Random(c.state['rng'])
+    card['jingu_mark'] = {'delta': rng.choice((-1, 0, 1)), 'source_entity_id': c.entity_id}
+    c.state['rng'] = rng.getrandbits(63)
+
+
+def publish_marks(c):
+    from app.modules.card_game.engine.duel_v2.presentation import public_card
+    from app.modules.card_game.engine.duel_v2.state import log
+    log(c.state, '小吱终结更新手牌金谷标注。', 'hand_marks', side=c.side,
+        actor=f'{c.side}:{c.cid}', present=False, private_side=c.side,
+        private_hand=[public_card(card) for card in c.state['sides'][c.side]['hand']])
+
+
+def refresh_marks(c):
+    for card in c.state['sides'][c.side]['hand']:
+        mark_card(c, card)
+    publish_marks(c)
 
 
 def release(c, card_id):
     """A generated battle resolution shares the parent's once-per-operation resources.
 
     It is not a hand play, creates no discard/copy/record, and cannot activate
-    the active-play-only bonus of Q01. The chain is strictly Q03 -> Q02 -> Q01.
+    the paid options. Every release uses the leftmost (base) option.
     """
     from app.modules.card_game.content.duel_v2 import CARDS
     from app.modules.card_game.engine.duel_v2.context import EffectContext
     card = dict(CARDS[card_id], card_id=card_id, character_id=c.cid)
-    child = dict(c.operation, card=card, card_bonus=card['attack'], released=True,
-                 first_bonus=0, redeem_bonus=0, harmony=None, support=False, last_attack_target=None)
+    child = dict(c.operation, card=card, card_bonus=0, card_set_attack=card['attack'], released=True,
+                 first_bonus=0, redeem_bonus=0, harmony=None, support=False, last_attack_target=None, option_id='base')
     ctx = EffectContext(c.state, c.side, c.cid, child)
     ctx.history(f"小吱额外释放「{card['name']}」。")
     ctx.shield(card.get('shield', 0))
@@ -42,10 +55,7 @@ def release(c, card_id):
 
 
 def _q01(c):
-    bonus = 0
-    if not c.operation.get('released') and not c.state.get('_response_intercept') and spend(c):
-        bonus = 3
-    c.sortie(bonus=bonus)
+    c.sortie(bonus=3 if c.operation.get('option_id') == 'boost' else 0)
 
 
 def _q02(c):
@@ -58,14 +68,20 @@ def _q02(c):
     if target['hp'] > 0:
         target.setdefault('next_damage_resistance', {})['光'] = -2
         c.history('命中后，使目标下次受到的光属性伤害抗性 -2。', target_side=enemy, target_id=target_id)
-    if spend(c):
+    if (c.operation.get('option_id') == 'release_a' and alive(c.state, c.side, c.cid)
+            and not finished(c.state)):
         release(c, 'Q01')
 
 
 def _q03(c):
     c.sortie()
-    if spend(c):
+    if finished(c.state) or not alive(c.state, c.side, c.cid):
+        return
+    selected = c.operation.get('option_id')
+    if selected in ('release_b', 'release_ba'):
         release(c, 'Q02')
+    if selected == 'release_ba' and not finished(c.state) and alive(c.state, c.side, c.cid):
+        release(c, 'Q01')
 
 
 def _q04(c):
@@ -106,6 +122,8 @@ class Xiaozhi:
     @staticmethod
     def on_turn_begin(c):
         change_jingu(c, 1, '己方回合开始，小吱触发异能')
+        if c.character.get('awakened'):
+            refresh_marks(c)
 
     @staticmethod
     def on_damage_dealt(c, target_side=None, target_id=None, amount=0, **_):
@@ -119,24 +137,28 @@ class Xiaozhi:
             change_jingu(c, -3, '小吱结清上次终结的金谷')
         c.character['jingu_loan'] = True
         change_jingu(c, 3, '小吱发动终结')
+        refresh_marks(c)
 
     @staticmethod
     def on_ultimate_end(c):
+        for card in c.state['sides'][c.side]['hand']:
+            card.pop('jingu_mark', None)
+        publish_marks(c)
         if c.character.pop('jingu_loan', False):
-            change_jingu(c, -3, '小吱终结结束')
+            change_jingu(c, -3, '小吱终结结束', allow_downed=True)
 
     @staticmethod
-    def on_knockdown(c):
-        c.character['jingu'] = 0
-        c.character.pop('jingu_loan', None)
+    def on_hand_added(c, card):
+        if c.character.get('awakened'):
+            mark_card(c, card)
+            publish_marks(c)
 
     @staticmethod
-    def after_card(c, actor_id=None, card=None):
-        if actor_id == c.cid and card.get('type') == 'battle' and c.character.get('awakened'):
-            rng = Random(c.state['rng'])
-            amount = rng.choice((-1, 0, 1))
-            c.state['rng'] = rng.getrandbits(63)
-            change_jingu(c, amount, '小吱终结：战斗牌结算')
+    def after_marked_card(c):
+        mark = c.operation.get('card_mark') or {}
+        if mark.get('source_entity_id') != c.entity_id:
+            return
+        change_jingu(c, int(mark['delta']), '手牌金谷标注结算', allow_downed=True)
 
     @staticmethod
     def attack_bonus(c, attacker_id=None, **_):

@@ -198,6 +198,7 @@ def move_out(state, side, cid):
 def discard(state, side, card, *, bottom=False):
     from .presentation import public_card
     team = state['sides'][side]
+    card.pop('jingu_mark', None)
     shown = public_card(card)
     if card.get('copy'):
         team['removed'].append(card)
@@ -447,6 +448,10 @@ def add_hand(state, side, card, *, reveal=False, reason=None):
         discard(state, side, card)
     else:
         team['hand'].append(card)
+        from app.modules.card_game.content.duel_v2.registry import fire
+        from .context import EffectContext
+        fire(EffectContext(state, side, team_order(state, side)[0], {'side': side}),
+             'on_hand_added', card=card)
         if reveal or card.get('copy') or card.get('derived'):
             log(state, (f'{reason}：' if reason else '') + f"{name(state, side)}获得{'临时复制' if card.get('copy') else ''}「{card['name']}」。",
                 'gain', side=side, card=public_card(card), actor=f'{side}:player')

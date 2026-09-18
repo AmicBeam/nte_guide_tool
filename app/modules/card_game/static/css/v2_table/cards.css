@@ -1124,3 +1124,39 @@
 /* Personal gold resource, directly above the attack value in both card sizes. */
 .v2-attack-stack { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px; }
 .v2-combat-stat.is-jingu { color: #ffda55; }
+
+/* Reserve a separate floating row: the mark is above the card, never on its art. */
+.v2-hand-card.has-jingu-mark { overflow: visible; }
+.v2-hand-card.has-jingu-mark::before { border-radius: inherit; }
+.v2-hand-card > .v2-jingu-mark {
+  position: absolute;
+  bottom: calc(100% + 5px * var(--table-layout-scale, 1));
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border: 1px solid rgba(255, 219, 102, .32);
+  border-radius: 12px;
+  background: rgba(41, 32, 10, .54);
+  color: rgba(255, 221, 102, .88);
+  font-size: calc(15px * var(--table-font-scale, 1));
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.v2-jingu-mark em { font-style: normal; font-variant-numeric: tabular-nums; }
+.v2-hand-card .v2-jingu-mark .v2-stat-icon { width: 15px; height: 15px; }
+
+.v2-play-option-zones { position: fixed; display: flex; z-index: 89; pointer-events: none; gap: 6px; padding: 8px; }
+.v2-play-option-zone { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px; text-align: center; border: 2px solid rgba(255,210,104,.75); border-radius: 14px; color: #fff2cf; background: rgba(25,28,36,.74); }
+.v2-play-option-zone strong { font-size: clamp(14px, 1.6vw, 22px); }
+.v2-play-option-zone p { margin: 0; max-width: 24em; }
+.v2-play-option-zone.is-active { background: rgba(100,73,24,.87); border-color: #ffe296; box-shadow: inset 0 0 30px rgba(255,209,87,.3); }
+.v2-play-option-zone.is-disabled { border-color: rgba(155,155,155,.45); color: #b0b0b0; background: rgba(25,25,30,.82); }
+.v2-hover-preview.has-references { width: min(calc(320px * var(--table-layout-scale, 1)), calc((100vw - 48px) / 1.5)); }
+.v2-hover-preview.has-references.is-left { left: calc(28px + min(160px * var(--table-layout-scale, 1), (100vw - 48px) / 3)); right: auto; }
+.v2-hover-preview.has-references.is-right { right: 16px; left: auto; }
+.v2-hover-preview.has-references.open { transform: translateY(0) scale(1); }
+.v2-hover-references { position: absolute; right: calc(100% + 12px); top: 0; width: 100%; display: grid; gap: 12px; transform: scale(.5); transform-origin: top right; }

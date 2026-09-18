@@ -20,10 +20,10 @@ CARD_FIELDS = (
     'entity_id', 'instance_id', 'card_id', 'character_id', 'name', 'type', 'cost', 'terminal',
     'description', 'copy', 'expires_turn', 'original_character_id',
     'stat', 'stat_value', 'shield', 'attack', 'hp', 'instant', 'response', 'require', 'redeem',
-    'derived',
+    'derived', 'attack_mode', 'jingu_mark', 'play_options',
 )
 ENTITY_CHARS = set(CHARACTERS)
-PRIVATE_EVENT_KEYS = ('private_card', 'private_side')
+PRIVATE_EVENT_KEYS = ('private_card', 'private_side', 'private_hand')
 INTERACTION_KINDS = ('attack', 'cast', 'target', 'form', 'awaken', 'ultimate', 'choice', 'other')
 SILENT_PRESENT_TYPES = frozenset()
 
@@ -300,7 +300,15 @@ def project_event(event, viewer):
     patch = event.get('patch')
     if isinstance(patch, dict):
         item['patch'] = deepcopy(patch)
+    _patch_private_hand(item, event, viewer)
     return item
+
+
+def _patch_private_hand(item, event, viewer):
+    if event.get('private_side') == viewer and isinstance(event.get('private_hand'), list):
+        team = item.setdefault('patch', {}).setdefault('sides', {}).setdefault(viewer, {})
+        team['hand'] = deepcopy(event['private_hand'])
+        team['hand_count'] = len(team['hand'])
 
 
 def localize_text(event, viewer):
@@ -332,6 +340,7 @@ def sanitize_public_event(event, viewer):
         item.pop('private_card', None)
     if event.get('type') == 'mulligan' and event.get('side') != viewer:
         item.pop('card_ids', None)
+    _patch_private_hand(item, event, viewer)
     item['text'] = localize_text(event, viewer)
     if 'actor' not in item:
         item['actor'] = derive_actor(event)

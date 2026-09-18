@@ -27,6 +27,8 @@ class NewTestCharacters(unittest.TestCase):
     def play(self, s, cid, side='a', **kwargs):
         card = card_instance(s, cid, side)
         s['sides'][side]['hand'].append(card)
+        if card.get('play_options'):
+            kwargs.setdefault('option_id', 'base')
         return apply_action(s, side, {'type': 'play_card', 'card_id': card['instance_id'], **kwargs})
 
     def attack(self, s, cid='xiaozhi', side='a'):
@@ -54,7 +56,7 @@ class NewTestCharacters(unittest.TestCase):
         self.assertEqual(hero(s, 'a', 'xiaozhi')['jingu'], 2)
         h = hero(s, 'a', 'xiaozhi');h.update(jingu=-3, energy=2, harmony=1)
         damage(s, 'a', 'xiaozhi', 99)
-        self.assertEqual((h['jingu'], h['energy'], h['harmony']), (0, 2, 1))
+        self.assertEqual((h['jingu'], h['energy'], h['harmony']), (-3, 2, 1))
 
     def test_shield_absorbed_player_damage_does_not_gain_jingu(self):
         s = self.game();s['sides']['b']['shield'] = 9
@@ -62,32 +64,36 @@ class NewTestCharacters(unittest.TestCase):
         self.assertEqual(hero(s, 'a', 'xiaozhi')['jingu'], 1)
 
     def test_ultimate_negative_and_rng_persist(self):
-        s = self.game();h = hero(s, 'a', 'xiaozhi');h.update(jingu=-2, energy=5)
+        from app.modules.card_game.engine.duel_v2.state import add_hand
+        s = self.game(); hero(s, 'a', 'xiaozhi').update(jingu=-2, energy=5)
+        add_hand(s, 'a', card_instance(s, 'Q04', 'a'))
+        rng = Random(s['rng']); delta = rng.choice((-1, 0, 1))
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'xiaozhi'})
+        card = s['sides']['a']['hand'][0]
+        self.assertEqual(card['jingu_mark']['delta'], delta)
         self.assertEqual(hero(s, 'a', 'xiaozhi')['jingu'], 1)
-        rng = Random(s['rng']);delta = rng.choice((-1, 0, 1))
-        s = self.play(json.loads(json.dumps(s)), 'Q04')
+        s = apply_action(json.loads(json.dumps(s)), 'a', {'type':'play_card', 'card_id':card['instance_id']})
         self.assertEqual(hero(s, 'a', 'xiaozhi')['jingu'], 2 + delta)
         end_ultimate(s, 'a', 'xiaozhi')
         self.assertEqual(hero(s, 'a', 'xiaozhi')['jingu'], -1 + delta)
         end_ultimate(s, 'a', 'xiaozhi')
         self.assertEqual(hero(s, 'a', 'xiaozhi')['jingu'], -1 + delta)
 
-    def test_ultimate_down_clears_debt_and_resource(self):
+    def test_ultimate_down_preserves_resource_and_settles_loan(self):
         s = self.game();h = hero(s, 'a', 'xiaozhi');h.update(awakened=True, ultimate_turns=2, jingu=-7, jingu_loan=True)
         damage(s, 'a', 'xiaozhi', 99)
-        self.assertEqual(h['jingu'], 0)
+        self.assertEqual(h['jingu'], -10)
         self.assertFalse(h.get('jingu_loan'))
 
     def test_a_bonus_only_when_actively_played(self):
         s = self.game();hero(s, 'a', 'xiaozhi')['jingu'] = 3
-        s = self.play(s, 'Q01')
+        s = self.play(s, 'Q01', option_id='boost')
         self.assertEqual(s['sides']['b']['hp'], 23)
         self.assertEqual(hero(s, 'a', 'xiaozhi')['jingu'], 1)
 
     def test_c_b_a_chain_no_extra_ap_cards_or_resources(self):
         s = self.game();hero(s, 'a', 'xiaozhi')['jingu'] = 9
-        start = s['event_seq'];s = self.play(s, 'Q03')
+        start = s['event_seq'];s = self.play(s, 'Q03', option_id='release_ba')
         attacks = [e for e in s['events'] if e['seq'] > start and e['type'] == 'attack']
         self.assertEqual([e['amount'] for e in attacks], [4, 3, 4])
         self.assertEqual(s['sides']['b']['hp'], 17)  # third hit additionally consumes -2 resistance
@@ -99,9 +105,9 @@ class NewTestCharacters(unittest.TestCase):
     def test_chain_stops_when_attacker_dies(self):
         s = self.game();hero(s, 'a', 'xiaozhi')['jingu'] = 9
         s['sides']['b']['front'] = 'zero';hero(s, 'b', 'zero').update(base_attack=20, hp=40)
-        start=s['event_seq'];s=self.play(s,'Q03')
+        start=s['event_seq'];s=self.play(s,'Q03',option_id='release_ba')
         self.assertEqual(len([e for e in s['events'] if e['seq']>start and e['type']=='attack']),1)
-        self.assertEqual(hero(s,'a','xiaozhi')['jingu'],0)
+        self.assertEqual(hero(s,'a','xiaozhi')['jingu'],3)
 
     def test_b_resistance_is_targeted_one_shot_and_attribute_specific(self):
         s=self.game();s['sides']['b']['front']='zero';hero(s,'b','zero').update(hp=30,max_hp=30)

@@ -446,6 +446,8 @@ async function bootstrapTable() {
   });
 
   applyPlayerOptions();
+  // Reference previews need card definitions even when those cards are not in hand.
+  await V2.getCatalog().catch(function () {});
   const replayCode = TABLE.replayQueryCode();
   if (replayCode) {
     await TABLE.startReplay(ctx, replayCode);

@@ -159,6 +159,7 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
             row[OFFSETS['ch_down'] + base] = int(hero.get('down_turns') or 0)
             row[OFFSETS['ch_awakened'] + base] = 1 if hero.get('awakened') else 0
             row[OFFSETS['ch_ult_turns'] + base] = int(hero.get('ultimate_turns') or 0)
+            row[OFFSETS['ch_ultimate_used_turn'] + base] = int(hero.get('ultimate_used_turn', -1))
             shape = hero.get('shape')
             row[OFFSETS['ch_shape'] + base] = CARD_INDEX.get(shape, -1) if shape else -1
             row[OFFSETS['ch_atk_buff'] + base] = int(flags.get('atk_buff') or 0)

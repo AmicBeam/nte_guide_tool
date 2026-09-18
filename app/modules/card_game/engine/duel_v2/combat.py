@@ -241,10 +241,11 @@ def attack(c, spec, index):
         return
     fire(c, 'before_attack', actor_only=True)
     if index == 0 and is_esper(target_id) and not spec.get('target'):
-        from .flow import trigger_responses
+        from .flow import trigger_responses, settle_deferred_card_marks
         trigger_responses(s, enemy, 'self_attacked', target_id=target_id)
         trigger_responses(s, enemy, 'ally_attacked', target_id=target_id)
         if finished(s) or not alive(s, side, cid):
+            settle_deferred_card_marks(s)
             return
         enemy, target_id = front_target(s, side)
     attacked = s['sides'][side].setdefault('attacked_this_turn', [])
@@ -267,18 +268,20 @@ def attack(c, spec, index):
         bonus += spec['harmony_bonus']
     bonus += tally(c, 'attack_bonus', attacker_id=cid, target=target, target_id=target_id,
                    spec=spec, index=index)
-    attack_amount = max(0, attack_value(h) + bonus - _zone_slow(s, side, cid))
+    attack_amount = max(0, op.get('card_set_attack', attack_value(h)) + bonus - _zone_slow(s, side, cid))
     attack_amount = max(0, int(decide(c, 'outgoing_attack', attack_amount, attacker_id=cid, attacker_entity_id=h.entity_id,
                                       target=target, target_id=target_id, spec=spec, index=index) or 0))
     extra_counter = 0
+    counter_base = attack_value(target) if is_esper(target_id) else 0
     if is_esper(target_id):
+        counter_base = (target.get('flags') or {}).pop('counter_set_attack', counter_base)
         extra_counter = int((target.get('flags') or {}).pop('counter_bonus', 0) or 0)
     no_counter = (spec.get('no_counter') or op.get('no_counter') or op.get('support')
                   or (spec.get('no_counter_harmony') and op['harmony'])
                   or (is_esper(target_id) and collapsed(target)))
     if is_esper(target_id) and not no_counter:
         from .context import EffectContext
-        counter = max(0, attack_value(target) + extra_counter - _zone_slow(s, enemy, target_id))
+        counter = max(0, counter_base + extra_counter - _zone_slow(s, enemy, target_id))
         counter = max(0, int(decide(EffectContext(s, enemy, target_id, op), 'outgoing_attack',
                                     counter, attacker_id=target_id, attacker_entity_id=target.entity_id, target=h, target_id=cid,
                                     spec=spec, index=index) or 0))
@@ -347,7 +350,9 @@ def attack(c, spec, index):
          self_loss=self_loss, target_id=target_id, enemy=enemy)
     knockdowns(s)
     victory(s)
+    from .flow import settle_deferred_card_marks
     if finished(s):
+        settle_deferred_card_marks(s)
         return
     for source_side, source_id, target_side, target_cid in weave_targets:
         if not alive(s, source_side, source_id):
@@ -357,11 +362,13 @@ def attack(c, spec, index):
         damage(s, target_side, target_cid, 2, source=f'{source_side}:{source_id}',
                kind='overlay', group_id=next_group_id(s), damage_class='harmony')
         if finished(s):
+            settle_deferred_card_marks(s)
             return
     # Attack-after shape effects occur per hit, after simultaneous death handling.
     for ps, pc, loss in [(side, cid, self_loss), (enemy, target_id, target_loss)]:
         if is_esper(pc) and loss > 0 and alive(s, ps, pc) and not finished(s):
             c.for_character(ps, pc).on_shape(GameEvent.V2_COMBAT_HP_LOST)
+    settle_deferred_card_marks(s)
 
 
 def sortie(c, **spec):

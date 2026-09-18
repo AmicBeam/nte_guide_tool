@@ -17,7 +17,7 @@ from app.modules.card_game.engine.duel_v2.projection import observe
 from app.modules.card_game.engine.duel_v2.state import SIDES
 
 HIDDEN_KEYS = (
-    'deck', 'rng', 'seed', 'private_card', 'private_side', '_public_board',
+    'deck', 'rng', 'seed', 'private_card', 'private_side', 'private_hand', '_deferred_card_marks', '_public_board',
     'next_instance', 'mulligan_done', 'current_action_id', 'current_action_version',
     'combat_group', 'removed', 'requests', 'fingerprint', 'legal_actions',
     'operation',

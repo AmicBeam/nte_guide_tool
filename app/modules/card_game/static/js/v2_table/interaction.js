@@ -13,6 +13,8 @@
     const cardPreview = ctx.cardPreview;
     const targetLine = ctx.targetLine;
     const castZone = ctx.castZone;
+    let optionZones = null;
+    const battleArea = page.querySelector('[data-drop-role="battle-area"]');
 
     function showPreview(entry) {
       if (!entry) {
@@ -145,7 +147,11 @@
       const closeBtn = (ctx.hoverPinned || touchLike)
         ? '<button class="icon-btn preview-close" type="button" data-hover-close="1" aria-label="关闭">×</button>'
         : '';
-      cardPreview.innerHTML = closeBtn + body;
+      const referenceSource = payload.kind === 'card' ? payload.card : {name: payload.character.name, description: [payload.character.passive, payload.character.awakened_passive, payload.character.shape_description].filter(Boolean).join('。')};
+      const references = V2.referencedCards(referenceSource);
+      cardPreview.classList.toggle('has-references', references.length > 0);
+      const referenceHtml = references.length ? '<aside class="v2-hover-references" aria-label="关联卡牌">' + references.map(hoverCardMarkup).join('') + '</aside>' : '';
+      cardPreview.innerHTML = closeBtn + referenceHtml + body;
     }
 
     function openChoice(config) {
@@ -251,7 +257,30 @@
       V2.setHidden(targetLine, false);
     }
 
+    function clearOptionZones() {
+      if (optionZones) optionZones.remove();
+      optionZones = null;
+    }
+
+    function showOptionZones(card, entries) {
+      clearOptionZones();
+      if (!battleArea || !card || !(card.play_options || []).length) return;
+      const rect = battleArea.getBoundingClientRect();
+      optionZones = document.createElement('div');
+      optionZones.className = 'v2-play-option-zones';
+      optionZones.setAttribute('aria-label', '选择卡牌效果');
+      optionZones.style.cssText = 'left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;height:' + rect.height + 'px;';
+      optionZones.innerHTML = card.play_options.map(function (option, index) {
+        const available = entries.some(function (entry) { return entry.action.option_id === option.id; });
+        return '<div class="v2-play-option-zone' + (available ? '' : ' is-disabled') + '" data-play-option="' + V2.escapeAttr(option.id) + '" aria-disabled="' + !available + '">' +
+          '<strong>' + (index + 1) + ' · ' + V2.escapeHtml(option.label) + '</strong>' +
+          V2.cardDescriptionHtml(option.description) + (available ? '' : '<small>资源不足</small>') + '</div>';
+      }).join('');
+      page.appendChild(optionZones);
+    }
+
     function clearCastUi() {
+      clearOptionZones();
       page.classList.remove('v2-playing-card', 'v2-playing-attack-front');
       V2.setHidden(castZone, true);
       V2.setHidden(targetLine, true);
@@ -287,6 +316,10 @@
     function legalDrop(kind, id, zone, point, fromFront) {
       const grouped = kind === 'card' ? groupedPlay(id) : null;
       if (kind === 'card' && grouped) {
+        const card = TABLE.cardByInstance(ctx.game, id);
+        if ((card && card.play_options || []).length) {
+          return TABLE.playOptionAtPoint(card, grouped.entries, battleArea && battleArea.getBoundingClientRect(), point);
+        }
         if (ctx.options.dragTargeting === false) {
           return inBattleArea(zone) ? grouped.entries[0] || null : null;
         }
@@ -403,6 +436,11 @@
           ? '拖到高亮目标松开；松在其他位置回弹' : '拖到战斗大区松开出牌';
         if (ctx.targetCancel) V2.setHidden(ctx.targetCancel, true);
         if (ctx.targetMask) V2.setHidden(ctx.targetMask, false);
+        const card = TABLE.cardByInstance(ctx.game, id);
+        if ((card && card.play_options || []).length) {
+          showOptionZones(card, groupedPlay(id).entries);
+          if (ctx.targetCopy) ctx.targetCopy.textContent = '拖入对应区域，选择要打出的效果';
+        }
       }
     }
 
@@ -422,6 +460,7 @@
       highlightDrop(null, false);
       V2.setHidden(previewBox, true);
       const state = ctx.dragState;
+      clearOptionZones();
       ctx.dragState = null;
       if (page.classList.contains('is-drag-targeting')) endBoardTargetSelect();
       return state;
@@ -439,6 +478,9 @@
       const zone = dropZoneAt(event.clientX, event.clientY);
       const legal = legalDrop(ctx.dragState.kind, ctx.dragState.id, zone, { x: event.clientX, y: event.clientY });
       highlightDrop(zone, Boolean(legal));
+      if (optionZones) optionZones.querySelectorAll('[data-play-option]').forEach(function (node) {
+        node.classList.toggle('is-active', Boolean(legal && legal.action.option_id === node.getAttribute('data-play-option')));
+      });
       if (ctx.dragState.kind === 'character') {
         showPreview(ctx.findAction('attack', { character_id: ctx.dragState.id }));
       } else {
@@ -480,7 +522,12 @@
         ctx.flushPendingEnvelope();
         return;
       }
-      if (state.kind === 'character' || directTarget) {
+      const optionCard = state.kind === 'card' && TABLE.cardByInstance(ctx.game, state.id);
+      if ((optionCard && optionCard.play_options || []).length) {
+        const selected = groupedPlay(state.id).entries.filter(function (entry) { return entry.action.option_id === legal.action.option_id; });
+        if (selected.length > 1) startChoiceSelect(selected, optionCard);
+        else ctx.submitEntry(legal);
+      } else if (state.kind === 'character' || directTarget) {
         ctx.submitEntry(legal);
       } else {
         beginPlayCard(state.id, null);
@@ -620,6 +667,13 @@
       const list = grouped.entries || [];
       if (!list.length) {
         ctx.showToast('没有合法动作。');
+        return;
+      }
+      const card = TABLE.cardByInstance(ctx.game, cardId);
+      if ((card && card.play_options || []).length) {
+        ctx.openChoice({title: '选择「' + card.name + '」的效果', choices: list.map(function (entry, index) {
+          return {id: String(index), label: entry.label, entry: entry};
+        }), onPick: function (choice) { if (choice) ctx.submitEntry(choice.entry); }});
         return;
       }
       const entityNode = zone && zone.closest ? zone.closest('[data-entity-id]') : null;

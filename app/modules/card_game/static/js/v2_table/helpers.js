@@ -606,6 +606,15 @@
     return V2.legalEntries(game);
   }
 
+  function playOptionAtPoint(card, entries, rect, point) {
+    const options = (card && card.play_options) || [];
+    if (!options.length || !rect || !point || rect.width <= 0 || point.x < rect.left
+        || point.x >= rect.right || point.y < rect.top || point.y >= rect.bottom) return null;
+    const index = Math.min(options.length - 1, Math.floor((point.x - rect.left) / rect.width * options.length));
+    const option = options[index];
+    return (entries || []).find(function (entry) { return entry.action.option_id === option.id; }) || null;
+  }
+
   function groupPlayEntries(game, entries) {
     const groups = { cast: [], target: [], form: [], other: [] };
     (entries || []).forEach(function (entry) {
@@ -839,6 +848,7 @@
   TABLE.actionTargetId = actionTargetId;
   TABLE.legalEntries = legalEntries;
   TABLE.groupPlayEntries = groupPlayEntries;
+  TABLE.playOptionAtPoint = playOptionAtPoint;
   TABLE.isPlayAreaRole = isPlayAreaRole;
   TABLE.legalDropFor = legalDropFor;
   TABLE.resourceLine = resourceLine;

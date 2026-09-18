@@ -102,7 +102,7 @@ def _card_public(raw: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(f'战斗牌 {card_id} 的攻击与护盾不能为负')
         public['attack'] = attack
         public['shield'] = shield
-    for extra in ('instant', 'response', 'redeem', 'require', 'derived', 'playable_downed'):
+    for extra in ('instant', 'response', 'redeem', 'require', 'derived', 'playable_downed', 'attack_mode', 'play_options'):
         if extra in raw:
             public[extra] = deepcopy(raw[extra])
     if public.get('derived'):

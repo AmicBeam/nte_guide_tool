@@ -37,7 +37,7 @@
   }
 
   function isMaskingTimeStopZero(step, action) {
-    return !isBackgroundStep(step, action) &&
+    return (!isBackgroundStep(step, action) || action?.lingke_joint_source_slot != null) &&
       hasTimelineMaskAbility(action) &&
       actionDurationTicks(step, action) === 0;
   }
@@ -58,6 +58,9 @@
 
     orderedSteps.forEach(({ step, action, calculationTick }) => {
       if (isBackgroundStep(step, action) && !Boolean(action?.is_instant_switch)) {
+        if (isMaskingTimeStopZero(step, action)) {
+          pendingReturns.forEach((pending) => { pending.masked = true; });
+        }
         return;
       }
       const slot = Number(step?.slot || 0);
@@ -182,7 +185,7 @@
           step,
           order,
           action: Object.assign({}, actions.get(String(step?.action_id || '')) || {},
-            detail.lingke_joint_source_slot != null ? {duration_ticks: 0, duration_implemented: true, is_time_stop_zero: true} : {}),
+            detail.lingke_joint_source_slot != null ? {duration_ticks: 0, duration_implemented: true, is_time_stop_zero: true, is_background_damage: true, lingke_joint_source_slot: detail.lingke_joint_source_slot} : {}),
           calculationTick: Number(detail?.start_tick ?? step?.start_tick ?? 0),
           calculationSequence: Number(detail?.calculation_start_sequence ?? 0),
           visualTick: Number(detail?.visual_start_tick ?? step?.start_tick ?? 0),

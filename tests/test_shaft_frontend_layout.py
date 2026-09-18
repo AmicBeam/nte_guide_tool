@@ -87,11 +87,11 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertNotIn('id="shaft-run-btn"', template)
         self.assertNotIn("$('shaft-run-btn')", source)
 
-    def test_shaft_source_version_is_1_0_4(self) -> None:
+    def test_shaft_source_version_is_1_0_6(self) -> None:
         catalog = get_shaft_catalog_payload()
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
 
-        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.0.5')
+        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.0.6')
         self.assertIn('{% block title %}异环云配队——排轴计算{% endblock %}', template)
         self.assertIn('<h1>异环云配队——排轴计算</h1>', template)
 
@@ -1549,7 +1549,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const MAX_BACKGROUND_ACTION_MULTIPLIER = 999;', source)
         self.assertIn('const MAX_BACKGROUND_ACTION_MULTIPLIER = 999;', engine)
         self.assertIn('function backgroundActionMultiplier(step, action = actionForStep(step)) {', source)
-        self.assertIn('${isBackgroundAction(action) ? `', source)
+        self.assertIn('${isBackgroundAction(action) && action.lingke_joint_source_slot == null ? `', source)
         self.assertIn('data-open-background-multiplier', source)
         self.assertIn('aria-haspopup="dialog">设置</button>', source)
         self.assertNotIn('aria-haspopup="dialog">×${actionMultiplier} · 设置</button>', source)

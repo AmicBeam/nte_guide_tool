@@ -156,6 +156,26 @@ class LingkeSupportTest(unittest.TestCase):
                          {b['rule_id'] for b in details['opener']['triggered_buffs']})
         self.assertNotIn('lingke_joint_source_slot', details['assist'])
 
+    def test_converted_assists_are_background_and_keep_the_foreground_owner(self):
+        for window in ('e', 'q'):
+            for variant in (False, True):
+                with self.subTest(window=window, variant=variant):
+                    axis = self.axis(window=window, variant=variant)
+                    axis['steps'].append({'id': 'stay', 'slot': 0,
+                        'action_id': 'action_dodge_0846d632e0', 'start_tick': 25})
+                    result, details = self.run_axis(axis)
+                    assist = details['assist']
+                    self.assertTrue(assist['is_background_damage'])
+                    self.assertEqual(assist['duration_ticks'], 0)
+                    self.assertEqual(assist['foreground_lock_ticks'], 0)
+                    self.assertEqual(assist['switch_gap_ticks'], 0)
+                    self.assertEqual({w['slot'] for w in result['front_windows']}, {0})
+                    self.assertFalse(any(b.get('trigger_event') in ('foreground_enter', 'foreground_leave')
+                                         for b in assist['triggered_buffs']))
+        _, ordinary = self.run_axis(self.axis(tick=11))
+        self.assertFalse(ordinary['assist']['is_background_damage'])
+        self.assertEqual(ordinary['assist']['duration_ticks'], 15)
+
     def test_e_boundary_and_q_closing_restore_normal_assist(self):
         _, outside = self.run_axis(self.axis(tick=11))
         self.assertEqual(outside['assist']['duration_ticks'], 15)

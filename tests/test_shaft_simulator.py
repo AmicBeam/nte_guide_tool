@@ -5453,7 +5453,9 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertEqual(details['inside']['triggered_reaction']['reaction'], '覆纹')
         self.assertFalse(any('环合值不足' in warning for warning in details['inside']['warnings']))
         self.assertAlmostEqual(details['inside']['resources_after_by_slot'][0]['harmony'], details['e']['harmony_after'])
-        self.assertFalse(details['outside']['triggered_reaction'])
+        self.assertTrue(details['inside']['is_background_damage'])
+        self.assertFalse(details['outside']['is_background_damage'])
+        self.assertFalse(details['outside']['triggered_reaction']['lingke_joint_trigger'])
         self.assertNotIn(
             'character_lingke_awakening_e_joint_damage',
             {buff['rule_id'] for buff in details['outside']['applied_buffs']},

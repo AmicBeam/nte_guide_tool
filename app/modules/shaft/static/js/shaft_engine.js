@@ -868,6 +868,7 @@
   }
 
   function backgroundActionMultiplier(step, action) {
+    if (action?.lingke_joint_source_slot != null) return 1;
     return isBackgroundAction(action)
       ? Math.max(1, Math.min(MAX_BACKGROUND_ACTION_MULTIPLIER, int(step?.repeat, 1)))
       : 1;
@@ -1097,6 +1098,8 @@
             action = Object.assign({}, action, {
               lingke_joint_source_slot: sourceSlot,
               lingke_joint_e_window: Boolean(buff),
+              is_background_damage: true,
+              locks_foreground_switch: false,
               duration_ticks: 0, duration_implemented: true, is_time_stop_zero: true,
               disable_reaction: true, skill_level_category: 'support', resonance_skill_level_bonus: true,
               tags: Array.from(new Set([...asList(action.tags), '同频合击', '追击', '追加攻击'])),
@@ -1118,7 +1121,7 @@
     const scheduledSteps = [];
     const loopOpeningFrontSlot = loopEnabled
       ? orderedStepEntries
-        .filter(({ step }) => switchesForeground(step, actionsById.get(String(step.action_id || '')) || {}))
+        .filter(({ step, action }) => switchesForeground(step, action || {}))
         .map(({ step }) => int(step.slot))
         .at(-1) ?? null
       : null;
@@ -1272,7 +1275,8 @@
   }
 
   function isTimeStopZeroForegroundStep(step, action) {
-    return startsForeground(step, action)
+    // Lingke joints keep their time-stop display span without taking the foreground.
+    return (startsForeground(step, action) || action?.lingke_joint_source_slot != null)
       && Boolean(action?.is_time_stop_zero)
       && configuredActionDurationTicks(step, action) === 0;
   }
@@ -4824,7 +4828,7 @@
       const damageBuffContext = jointSource ? Object.assign({}, buffContext, {
         action: damageBuffAction, personal_resources: personalResources.get(jointSource.slot) || {},
       }) : buffContext;
-      applicableBuffContributions(activeBuffs, damageStep, damageBuffAction, damageSnapshot, isBackground, damageBuffContext)
+      applicableBuffContributions(activeBuffs, damageStep, damageBuffAction, damageSnapshot, jointSource ? runtimeFrontSlot !== jointSource.slot : isBackground, damageBuffContext)
         .forEach(({ buff, effects }) => {
           mergeMods(buffModifiers, effects);
 

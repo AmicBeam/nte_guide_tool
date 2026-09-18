@@ -1187,6 +1187,7 @@
   }
 
   function backgroundActionMultiplier(step, action = actionForStep(step)) {
+    if (action?.lingke_joint_source_slot != null) return 1;
     return isBackgroundAction(action)
       ? Math.max(1, Math.min(MAX_BACKGROUND_ACTION_MULTIPLIER, Math.round(Number(step?.repeat || 1))))
       : 1;
@@ -1360,7 +1361,7 @@
   }
 
   function isTimeStopZeroForegroundStep(step, action = actionForStep(step)) {
-    return startsForeground(step, action)
+    return (startsForeground(step, action) || action?.lingke_joint_source_slot != null)
       && Boolean(action?.is_time_stop_zero)
       && actionDurationTicks(action, step) === 0;
   }
@@ -5329,7 +5330,7 @@
         <strong>${escapeHtml(action.name)}</strong>
         <span class="shaft-detail-muted">${escapeHtml(memberName(step.slot))} · ${escapeHtml(action.action_type || '动作')} · ${isStepBackground(step, action) ? (isInstantSwitchAction(action) ? '后台切人' : (isBasicBackgroundOverride(step, action) ? '后台普攻' : '后台伤害')) : '前台动作'}</span>
       </div>
-      ${isBackgroundAction(action) ? `
+      ${isBackgroundAction(action) && action.lingke_joint_source_slot == null ? `
         <div class="shaft-detail-multiplier">
           <span>动作倍数</span>
           <button class="secondary-btn" data-open-background-multiplier data-step-id="${escapeHtml(step.id)}" type="button" aria-haspopup="dialog">设置</button>
@@ -5350,7 +5351,7 @@
       </div>
       <div class="shaft-detail-hero">
         <span class="shaft-detail-muted">实时面板</span>
-        <strong>${escapeHtml(memberName(step.slot))}</strong>
+        <strong>${escapeHtml(memberName(step.slot))}${action.lingke_joint_source_slot != null ? '（灵可覆盖）' : ''}</strong>
       </div>
       <div class="shaft-detail-grid">
         ${realtimePanelRows.join('') || '<div class="shaft-empty">该动作不读取角色面板属性</div>'}
@@ -6749,7 +6750,7 @@
     const input = $('shaft-background-multiplier-input');
     const step = state.axis.steps.find((item) => item.id === stepId);
     const action = step ? actionForStep(step) : null;
-    if (!dialog || !input || !step || !isBackgroundAction(action) || dialog.open) {
+    if (!dialog || !input || !step || !isBackgroundAction(action) || action.lingke_joint_source_slot != null || dialog.open) {
       return;
     }
     const actionMultiplier = backgroundActionMultiplier(step, action);
@@ -6784,7 +6785,7 @@
     const stepId = String(dialog?.dataset.stepId || '');
     const step = state.axis.steps.find((item) => item.id === stepId);
     const action = step ? actionForStep(step) : null;
-    if (!dialog?.open || !input || !step || !isBackgroundAction(action)) {
+    if (!dialog?.open || !input || !step || !isBackgroundAction(action) || action.lingke_joint_source_slot != null) {
       closeBackgroundActionMultiplier();
       return;
     }

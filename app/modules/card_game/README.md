@@ -327,3 +327,11 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 ### 完整对局搜索增强自博弈短训
 
 `scripts/train_duel_v2_information_search.py --starter SOURCE.pt --weave SOURCE.pt --output NEW_DIR --seconds 600 --cycles 2 --simulations 24 --workers 4` 是独立本机 CPU 短训入口。双方每个实际决策（包括双方开局调度）执行信息集搜索，整局结束后联合拟合搜索访问分布和本方终局胜负，不使用斩杀题或 PPO。`rl/information_search.py` 实现搜索与样本契约，`rl/information_experiment.py` 执行两轮自博弈、回放训练及独立对照。搜索内部对手用其可见信息策略；这是近似信息集搜索，非完整 ReBeL。当前实际根支持公开三预组的调度和普通行动；未来含私有检视的根需先扩展信念抽样，不允许偷看或悄悄降级。模拟中的选择按行动方可见信息处理。验证：`python -m unittest tests.test_duel_v2_information_search tests.test_duel_v2_league tests.test_duel_v2_league_learning tests.test_duel_v2_league_search`。默认联赛入口和线上纯网络策略未替换。
+
+
+### 冻结模型搜索预算对照
+
+`scripts/evaluate_duel_v2_search_budgets.py --learner MODEL_DIR --opponent FROZEN_OPPONENT_DIR --output NEW_DIR --seconds 1200 --seeds-per-pair 2 --repeats 3 --workers 4` 比较纯网络、24、128、256 档。只读取并复制三套数值模型，不加载优化器或更新权重。固定局面来自新种子自然完整对局、既有战术回归及可选 `--user-snapshot`；整局按同一模型、对手、开局种子和先后手配对。记录动作、实际模拟次数、耗时、随机种子稳定性与独立斩杀审计；审计只记分不改选动作。输出前后校验冻结模型文件哈希，截断不得算输/平或稳定通过。时延包含编码和推理/搜索，不含模型加载、规则提交与审计；四进程并发数据不是线上单请求 SLA。验证：`python -m unittest tests.test_duel_v2_search_budgets tests.test_duel_v2_information_search`。
+
+
+预算对照使用牌数一致的战术夹具 v2：仅对人工构造的旧夹具补齐每角色 8 张、同名至多 2 张的牌库记录，保留测试手牌和角色/玩家场面，缺失的已生成家族牌记入弃牌；保留前后数量说明。自然对局和用户录像不做此修复。所有固定局面在排队前必须通过信念抽样预检，历史夹具的失败记录不改写。耗时主要比较同一批自然局面，避免不同夹具或补测负载混淆。

@@ -1047,9 +1047,20 @@
     ordered.forEach((step) => {
       let action = actionsById.get(String(step.action_id || '')) || {};
       const tick = calculationTickFromVisualIntervals(int(step.start_tick), intervals);
+      let frozenEndTick = int(step.start_tick) + ZERO_ACTION_VISUAL_TICKS;
       if (String(action.character_id || '') === LINGKE_CHARACTER_ID) {
         const window = windows.get(int(step.slot)) || {};
-        if (action.id === 'action_lingke_e') window.eEnd = tick + configuredActionDurationTicks(step, action);
+        if (action.id === 'action_lingke_e') {
+          window.eStart = tick;
+          window.eEnd = tick + configuredActionDurationTicks(step, action);
+          window.eVisualEnd = int(step.start_tick) + configuredActionDurationTicks(step, action);
+        }
+        // Time-stop selection can finish the preceding E early, just like applyQInstantRelease.
+        // Its visual width consumes no real time; the following assist uses that E-end window.
+        if (action.id === 'action_lingke_time_stop_select' && tick > window.eStart && tick < window.eEnd) {
+          window.eEnd = tick;
+          frozenEndTick = Math.max(frozenEndTick, window.eVisualEnd);
+        }
         if (action.id === 'action_lingke_q') window.q = true;
         if (['action_lingke_q_multi', 'action_lingke_q_burst'].includes(action.id)) window.q = false;
         windows.set(int(step.slot), window);
@@ -1075,8 +1086,8 @@
       if (isTimeStopZeroForegroundStep(step, action)) {
         const start = int(step.start_tick);
         const previous = intervals.at(-1);
-        if (previous && start <= previous.end_tick) previous.end_tick = Math.max(previous.end_tick, start + ZERO_ACTION_VISUAL_TICKS);
-        else intervals.push({start_tick: start, end_tick: start + ZERO_ACTION_VISUAL_TICKS});
+        if (previous && start <= previous.end_tick) previous.end_tick = Math.max(previous.end_tick, frozenEndTick);
+        else intervals.push({start_tick: start, end_tick: frozenEndTick});
       }
     });
     return resolved;

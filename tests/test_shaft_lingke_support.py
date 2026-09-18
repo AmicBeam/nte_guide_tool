@@ -49,6 +49,49 @@ class LingkeSupportTest(unittest.TestCase):
         increased['team'][0]['substat_counts'] = {'atk_pct': 100}
         self.assertGreater(self.run_axis(increased)[1]['assist']['direct_damage'], d['direct_damage'])
 
+    def test_e_time_stop_selection_preserves_joint_conversion_and_harmonic_bonus(self):
+        for mask_tick, assist_tick in ((2, 7), (2, 10), (8, 13), (10, 15)):
+            for variant in (False, True):
+                with self.subTest(mask_tick=mask_tick, variant=variant):
+                    axis = self.axis(tick=assist_tick, variant=variant)
+                    axis['steps'].insert(1, {'id': 'selection', 'slot': 0,
+                        'action_id': 'action_lingke_time_stop_select', 'start_tick': mask_tick})
+                    _, details = self.run_axis(axis)
+                    assist = details['assist']
+                    self.assertEqual(assist['lingke_joint_source_slot'], 0)
+                    self.assertEqual(assist['duration_ticks'], 0)
+                    self.assertEqual(assist['start_tick'], details['opener']['end_tick'])
+                    self.assertEqual(assist['energy_gain'], 0)
+                    self.assertFalse(assist['triggered_reaction'])
+                    self.assertEqual(assist['formula_parts']['skill_level'], 3)
+                    self.assertIn('character_lingke_harmonic_joint_damage',
+                                  {buff['rule_id'] for buff in assist['applied_buffs']})
+                    self.assertAlmostEqual(assist['panel']['all_dmg'], 1.5)
+
+    def test_time_stop_selection_keeps_e_and_f_awakening_effects(self):
+        axis = self.axis(nodes=[5, 6], tick=10)
+        axis['steps'].insert(1, {'id': 'selection', 'slot': 0,
+            'action_id': 'action_lingke_time_stop_select', 'start_tick': 2})
+        _, details = self.run_axis(axis)
+        assist = details['assist']
+        self.assertEqual(assist['duration_ticks'], 0)
+        self.assertEqual(assist['energy_gain'], 6.3)
+        self.assertAlmostEqual(assist['panel']['all_dmg'], 2.0)
+        self.assertIn('character_lingke_awakening_f_joint_crit',
+                      {buff['rule_id'] for buff in assist['applied_buffs']})
+
+    def test_time_stop_selection_does_not_create_or_reopen_expired_e_window(self):
+        for mask_tick, assist_tick, keep_e in ((11, 16, True), (10, 16, True), (0, 5, False)):
+            with self.subTest(mask_tick=mask_tick, assist_tick=assist_tick, keep_e=keep_e):
+                axis = self.axis(tick=assist_tick)
+                if not keep_e:
+                    axis['steps'].pop(0)
+                axis['steps'].append({'id': 'selection', 'slot': 0,
+                    'action_id': 'action_lingke_time_stop_select', 'start_tick': mask_tick})
+                _, details = self.run_axis(axis)
+                self.assertNotIn('lingke_joint_source_slot', details['assist'])
+                self.assertEqual(details['assist']['duration_ticks'], 15)
+
     def test_e_boundary_and_q_closing_restore_normal_assist(self):
         _, outside = self.run_axis(self.axis(tick=11))
         self.assertEqual(outside['assist']['duration_ticks'], 15)

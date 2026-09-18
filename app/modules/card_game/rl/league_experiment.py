@@ -28,7 +28,7 @@ def sample_deck(seed,heroes):
         cards+=rng.sample(pool,8)
     return validate_deck({'id':f'league-public-{seed}', 'name':'八人公开留出','character_ids':list(heroes),'card_ids':cards})
 
-def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,max_cycles=0,smoke=False):
+def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,evaluation_reserve=900,total_seconds=5400,max_cycles=0,smoke=False):
     import torch
     torch.set_num_threads(1);torch.manual_seed(815000000)
     out=Path(out);out.mkdir(parents=True,exist_ok=True)
@@ -39,7 +39,7 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
         optimizers[key]=torch.optim.Adam(nets[key].parameters(),lr=1e-4)
         export_model(nets[key],out/'baseline',key,builds[key],origin=origins[key])
         current[key]=out/'baseline'
-    write(out/'config.json',{'schema':SCHEMA,'rule_hash':rule_hash(),'deadline_epoch':deadline,'device':device,'rules_backend':'official_python','source_manifest_sha256':hashlib.sha256((Path(__file__).resolve().parents[4]/'source-manifest.json').read_bytes()).hexdigest(),'workers':workers,'presets':PRESETS,'builds':builds,'origins':origins,'reward':'terminal +/-10, draw 0; unfinished excluded','learning_version':'terminal_tiebreak_v3','minimum_branch_steps_per_ordinary_step':3,'max_ordinary_steps_per_cycle':1,'max_branch_steps_per_cycle':3,'error_replay_capacity':256,'error_replay_ttl_cycles':5,'error_replay_max_uses':3,'minimum_return_gap':2.5,'ordinary_games':4,'candidates':6,'particles':8,'online_search':False,'automatic_serving_approval':False,'smoke':smoke,'selection_seed_segment':830000000,'branch_policy_loss':'pairwise_terminal_ranking_with_weak_tiebreaks','certain_lethal_weight':.2,'winning_speed_weight':.05,'losing_delay_weight':.02,'branch_value_target_temperature':4,'disable_anchor_return_gap':2.5,'branch_anchor_kl':.05,'phase_selection':'keep starting/best model unless at least 2/32 extra validation wins'})
+    write(out/'config.json',{'schema':SCHEMA,'rule_hash':rule_hash(),'deadline_epoch':deadline,'total_seconds':total_seconds,'phase_seconds':phase_seconds,'evaluation_reserve_seconds':evaluation_reserve,'device':device,'rules_backend':'official_python','source_manifest_sha256':hashlib.sha256((Path(__file__).resolve().parents[4]/'source-manifest.json').read_bytes()).hexdigest(),'workers':workers,'presets':PRESETS,'builds':builds,'origins':origins,'reward':'terminal +/-10, draw 0; unfinished excluded','learning_version':'terminal_tiebreak_v3','minimum_branch_steps_per_ordinary_step':3,'max_ordinary_steps_per_cycle':1,'max_branch_steps_per_cycle':3,'error_replay_capacity':256,'error_replay_ttl_cycles':5,'error_replay_max_uses':3,'minimum_return_gap':2.5,'ordinary_games':4,'candidates':6,'particles':8,'online_search':False,'automatic_serving_approval':False,'smoke':smoke,'selection_seed_segment':830000000,'branch_policy_loss':'pairwise_terminal_ranking_with_weak_tiebreaks','certain_lethal_weight':.2,'winning_speed_weight':.05,'losing_delay_weight':.02,'branch_value_target_temperature':4,'disable_anchor_return_gap':2.5,'branch_anchor_kl':.05,'phase_selection':'keep starting/best model unless at least 2/32 extra validation wins'})
     total={k:{'ordinary_updates':0,'branch_updates':0,'ordinary_games':0,'branch_games':0,'informative_roots':0,'attempted_roots':0,'ordinary_optimizer_steps':0,'branch_optimizer_steps':0} for k in PRESETS}
     from .league_gate import evaluate as evaluate_gate
     for key in PRESETS:write(out/(key+'-gate-before.json'),evaluate_gate(LeagueModel(out/'baseline',key)))
@@ -50,7 +50,7 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
             for key in PRESETS:
                 stage=f'{key}-round-{round_no}';dest=out/stage;dest.mkdir(exist_ok=True)
                 export_model(nets[key],dest,key,builds[key],origin=origins[key]);current[key]=dest
-                phase_end=min(time.time()+phase_seconds,deadline-(30 if smoke else 900))
+                phase_end=min(time.time()+phase_seconds,deadline-evaluation_reserve)
                 if phase_end<=time.time():raise TimeoutError('No phase budget remains')
                 cycle=0;started=time.time()
                 peers=[p for p in PRESETS if p!=key]
@@ -151,7 +151,7 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
                 for first in ('a','b'):
                     jobs.append({'deadline':deadline-60,'seed':seed+pair,'first':first,'viewer':'a','decks':{'a':builds[key],'b':opponent},'policies':{'a':(str(out/variant),key),'b':(str(out/foe_variant),foe) if foe else None}})
                     info.append({'pair':pair,'position':'first' if first=='a' else 'second','opponent_team':opponent['character_ids']})
-            results=list(pool.map(play,jobs));rows=[{**meta,'complete':g['complete'],'winner':g.get('winner'),'steps':g['steps']} for meta,g in zip(info,results)]
+            results=list(pool.map(play,jobs));rows=[{**meta,'complete':g['complete'],'winner':g.get('winner'),'steps':g['steps'],'remaining_turns':g.get('remaining_turns'),'own_decisions':g.get('own_decisions')} for meta,g in zip(info,results)]
             row={'label':label,'key':key,'variant':variant,'foe':foe,'seed':seed,'games':rows,'complete':all(g['complete'] for g in results),'wins':sum(g.get('winner')=='a' for g in results),'n':sum(g['complete'] for g in results)}
             evaluations.append(row);write(out/'evaluations'/f'{label}.json',row)
             return row
@@ -173,7 +173,7 @@ def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,
         acceptance={'experiment_complete':all(e['complete'] for e in evaluations),'same_frozen_comparisons':comparisons,'training':total,'automatic_serving_approval':False,'win_prediction_calibrated':False}
         write(out/'acceptance.json',acceptance)
         write(out/'status.json',{'phase':'complete' if acceptance['experiment_complete'] else 'incomplete_evaluation','finished_epoch':time.time(),'deadline_epoch':deadline,'totals':total})
-        lines=['# 三套策略共同训练测试','',f'规则：{rule_hash()}','正式 Python 引擎结算；GPU 仅更新网络。三套合计90分钟上限；未自动发布模型。','', '| 配对 | 初始胜局 | 新模型胜局 | 每组局数 |','| --- | ---: | ---: | ---: |']
+        lines=['# 三套策略共同训练测试','',f'规则：{rule_hash()}',f'正式 Python 引擎结算；训练设备 {device}。三套合计 {total_seconds/60:g} 分钟上限；未自动发布模型。','', '| 配对 | 初始胜局 | 新模型胜局 | 每组局数 |','| --- | ---: | ---: | ---: |']
         for k,r in comparisons.items():lines.append(f"| {k} | {r['before']} | {r['after']} | {r['n']} |")
         (out/'report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
     finally:

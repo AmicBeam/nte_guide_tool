@@ -180,3 +180,14 @@ class WeakPreferenceTest(unittest.TestCase):
                 return t
             with patch('app.modules.card_game.engine.duel_v2.apply_action',side_effect=unsafe):
                 self.assertFalse(certified_lethals(s,'a',[{'type':'attack','character_id':'zero'}]))
+
+
+class LeagueBudgetTest(unittest.TestCase):
+    def test_all_six_phases_fit_budget_with_evaluation_reserved(self):
+        from scripts.train_duel_v2_league import phase_budget
+        for seconds in (600,1800,5400):
+            phase,reserve=phase_budget(seconds)
+            self.assertLessEqual(6*phase+reserve+60,seconds)
+        self.assertEqual(phase_budget(1800),(190,600))
+        self.assertEqual(phase_budget(5400),(720,900))
+        with self.assertRaises(ValueError):phase_budget(599)

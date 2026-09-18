@@ -24,7 +24,7 @@ def sample_deck(seed,heroes):
     for cid in heroes:
         pool=[c for c in CARD_IDS if CARDS[c]['character_id']==cid and not CARDS[c].get('derived') for _ in range(2)]
         cards+=rng.sample(pool,8)
-    return validate_deck({'name':'八人公开留出','character_ids':list(heroes),'card_ids':cards})
+    return validate_deck({'id':f'league-public-{seed}', 'name':'八人公开留出','character_ids':list(heroes),'card_ids':cards})
 
 def experiment(out,sources,deadline,*,device='cuda',workers=6,phase_seconds=720,max_cycles=0,smoke=False):
     import torch

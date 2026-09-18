@@ -17,6 +17,17 @@ def zero_policy(root,key):
 
 class LeagueTest(unittest.TestCase):
     def game(self):return new_game(seed=921000000,skip_mulligan=True,first_side='a',decks={'a':deck('quick-rush'),'b':deck('starter')})
+    def test_every_public_holdout_team_has_a_valid_deck(self):
+        from itertools import combinations
+        from app.modules.card_game.rl.league_experiment import sample_deck
+        from app.modules.card_game.content.duel_v2 import validate_deck
+        seen=set()
+        for i,team in enumerate(combinations(SEATS,4)):
+            build=sample_deck(945090000+i,team)
+            self.assertEqual(validate_deck(build),build)
+            self.assertTrue(build['id']);seen.add(tuple(build['character_ids']))
+        self.assertEqual(len(seen),70)
+
     def test_all_presets_and_fast_projection_match(self):
         self.assertEqual(len(feature_names(old=True)),666)
         for k in PRESETS:

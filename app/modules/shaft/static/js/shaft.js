@@ -1509,8 +1509,21 @@
     return secondsToTicks(rawValue);
   }
 
+  let jointActionCacheKey = '';
+  let jointActionCache = new Map();
   function actionForStep(step) {
-    return getActionMap().get(step?.action_id || '') || {};
+    const actions = getActionMap();
+    const base = actions.get(step?.action_id || '') || {};
+    if (!window.ShaftEngine?.resolveLingkeSupportActions || !step) return base;
+    const steps = state.axis?.steps || [];
+    const candidateSteps = steps.includes(step) ? steps : steps.filter((item) => item.id !== step.id).concat(step);
+    const key = JSON.stringify(candidateSteps);
+    if (key !== jointActionCacheKey) {
+      jointActionCacheKey = key;
+      jointActionCache = new Map(Array.from(window.ShaftEngine.resolveLingkeSupportActions(candidateSteps, actions))
+        .map(([item, action]) => [item.id, action]));
+    }
+    return jointActionCache.get(step.id) || base;
   }
 
   function stepStartTick(step, visual = false, qStarts = qVirtualStartTicks()) {
@@ -5782,7 +5795,7 @@
   }
 
   function addActionAt(slot, actionId, startTick) {
-    const action = getActionMap().get(actionId) || {};
+    let action = actionForStep({id: '__insert_preview__', slot, action_id: actionId, start_tick: startTick});
     if (!actionId) {
       setStatus('请选择动作', 'error');
       return;
@@ -5798,6 +5811,7 @@
       repeat: 1,
       tags: [],
     };
+    action = actionForStep(step);
     reserveTimeStopZeroInsertionSpan(insertTick, action, step);
     state.axis.steps.push(step);
     normalizeEditedSteps(new Set([step.id]));

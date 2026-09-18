@@ -181,7 +181,8 @@
         return {
           step,
           order,
-          action: actions.get(String(step?.action_id || '')) || {},
+          action: Object.assign({}, actions.get(String(step?.action_id || '')) || {},
+            detail.lingke_joint_source_slot != null ? {duration_ticks: 0, duration_implemented: true, is_time_stop_zero: true} : {}),
           calculationTick: Number(detail?.start_tick ?? step?.start_tick ?? 0),
           calculationSequence: Number(detail?.calculation_start_sequence ?? 0),
           visualTick: Number(detail?.visual_start_tick ?? step?.start_tick ?? 0),

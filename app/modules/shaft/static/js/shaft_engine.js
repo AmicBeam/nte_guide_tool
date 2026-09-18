@@ -1016,12 +1016,58 @@
     );
   }
 
+  // User 2026-09-18: keep the actual assist/variant, but borrow Lingke's joint calculation.
+  // Resolve in visual order so consecutive time-stop assists share the same real E window.
+  function resolveLingkeSupportActions(steps, actionsById) {
+    const resolved = new Map();
+    const windows = new Map();
+    const intervals = [];
+    const ordered = asList(steps).slice().sort((a, b) => int(a.start_tick) - int(b.start_tick) || int(a.slot) - int(b.slot));
+    ordered.forEach((step) => {
+      let action = actionsById.get(String(step.action_id || '')) || {};
+      const tick = calculationTickFromVisualIntervals(int(step.start_tick), intervals);
+      if (String(action.character_id || '') === LINGKE_CHARACTER_ID) {
+        const window = windows.get(int(step.slot)) || {};
+        if (action.id === 'action_lingke_e') window.eEnd = tick + configuredActionDurationTicks(step, action);
+        if (action.id === 'action_lingke_q') window.q = true;
+        if (['action_lingke_q_multi', 'action_lingke_q_burst'].includes(action.id)) window.q = false;
+        windows.set(int(step.slot), window);
+      } else if (isSupportAction(action)) {
+        const source = Array.from(windows.entries()).find(([slot, window]) => slot !== int(step.slot)
+          && ((window.eEnd != null && tick >= window.eEnd && tick < window.eEnd + 1) || window.q));
+        if (source) {
+          const [sourceSlot, window] = source;
+          action = Object.assign({}, action, {
+            lingke_joint_source_slot: sourceSlot,
+            lingke_joint_e_window: window.eEnd != null && tick >= window.eEnd && tick < window.eEnd + 1,
+            duration_ticks: 0,
+            duration_implemented: true,
+            is_time_stop_zero: true,
+            disable_reaction: true,
+            skill_level_category: 'support',
+            resonance_skill_level_bonus: true,
+            tags: Array.from(new Set([...asList(action.tags), '同频合击', '追击', '追加攻击'])),
+          });
+        }
+      }
+      resolved.set(step, action);
+      if (isTimeStopZeroForegroundStep(step, action)) {
+        const start = int(step.start_tick);
+        const previous = intervals.at(-1);
+        if (previous && start <= previous.end_tick) previous.end_tick = Math.max(previous.end_tick, start + ZERO_ACTION_VISUAL_TICKS);
+        else intervals.push({start_tick: start, end_tick: start + ZERO_ACTION_VISUAL_TICKS});
+      }
+    });
+    return resolved;
+  }
+
   function tickScheduledStepEntries(steps, actionsById, switchGapTicks = MIN_FOREGROUND_START_GAP_TICKS) {
+    const resolved = resolveLingkeSupportActions(steps, actionsById);
     const ordered = steps.slice().sort((a, b) => {
       const startDelta = int(a.start_tick) - int(b.start_tick);
       if (startDelta) return startDelta;
-      const aAction = actionsById.get(String(a.action_id || '')) || {};
-      const bAction = actionsById.get(String(b.action_id || '')) || {};
+      const aAction = resolved.get(a) || {};
+      const bAction = resolved.get(b) || {};
       const instantSwitchDelta = Number(isInstantSwitchAction(bAction)) - Number(isInstantSwitchAction(aAction));
       if (instantSwitchDelta) return instantSwitchDelta;
       const lockDelta = Number(locksForegroundSwitch(b, bAction)) - Number(locksForegroundSwitch(a, aAction));
@@ -1033,7 +1079,7 @@
     const foregroundLocks = [];
     const carriedShiftBySlot = new Map();
     return ordered.map((step) => {
-      const action = actionsById.get(String(step.action_id || '')) || {};
+      const action = resolved.get(step) || {};
       const isBackground = isStepBackground(step, action);
       const slot = int(step.slot);
       let visualStartTick = int(step.start_tick) + Math.max(0, int(carriedShiftBySlot.get(slot)));
@@ -1089,7 +1135,7 @@
       if (addedShiftTicks > 0) {
         carriedShiftBySlot.set(slot, Math.max(0, int(carriedShiftBySlot.get(slot))) + addedShiftTicks);
       }
-      return { step, visualStartTick, switchLossTicks, foregroundLockTicks };
+      return { step, action, visualStartTick, switchLossTicks, foregroundLockTicks };
     });
   }
 
@@ -1249,7 +1295,9 @@
 
   function sourceMatches(source, rule, step, action, snapshot, isBackground) {
     const scope = String(source?.scope || 'registrar');
-    if (scope === 'registrar' && int(step.slot) !== int(rule.owner_slot)) return false;
+    if (scope === 'registrar' && int(step.slot) !== int(rule.owner_slot)
+      && !(action.lingke_joint_source_slot != null && int(action.lingke_joint_source_slot) === int(rule.owner_slot)
+        && (asList(source?.tags).includes('同频合击') || asList(source?.action_types).includes('援护')))) return false;
     if (scope === 'non_registrar' && int(step.slot) === int(rule.owner_slot)) return false;
     const actionTypes = strSet(source?.action_types);
     if (actionTypes.size && !actionTypes.has(String(action.action_type || ''))) return false;
@@ -2331,11 +2379,12 @@
       visualStartTick: scheduledVisualStartTick,
       switchLossTicks: switchLossDelta,
       foregroundLockTicks,
+      action: resolvedAction,
     }) => {
       const slot = int(step.slot);
       const snapshot = snapshots.get(slot);
       if (!snapshot) return;
-      const action = interruptedAction(step, actionsById.get(String(step.action_id || '')));
+      const action = interruptedAction(step, resolvedAction);
       const visualStartTick = scheduledVisualStartTick;
       const isBackground = isStepBackground(step, action);
       const calculationAtStartOnly = isInstantNativeBackgroundAction(step, action) || isInstantSwitchAction(action);
@@ -2420,15 +2469,17 @@
     }
 
     function reactionPreviousSlot(scheduled) {
+      if (scheduled?.action?.lingke_joint_e_window) return int(scheduled.action.lingke_joint_source_slot);
       return int(requiemFreeSupportSource(scheduled)?.previous_front_slot, int(scheduled?.previous_front_slot, -1));
     }
 
     function isLingkeElementJointAction(action) {
-      return String(action?.trigger_character_selector || '') === 'same_element_non_lingke';
+      return action?.lingke_joint_source_slot != null || String(action?.trigger_character_selector || '') === 'same_element_non_lingke';
     }
 
     function lingkeJointTriggerSnapshot(scheduled) {
       if (!isLingkeElementJointAction(scheduled?.action)) return null;
+      if (scheduled?.action?.lingke_joint_source_slot != null) return snapshots.get(int(scheduled.slot));
       const element = String(scheduled?.action?.damage_element || '');
       const candidates = Array.from(snapshots.values())
         .filter((candidate) => (
@@ -2444,6 +2495,7 @@
 
     function lingkeFrequencyCheckWindowActive(scheduled) {
       if (!isLingkeElementJointAction(scheduled?.action)) return false;
+      if (scheduled?.action?.lingke_joint_source_slot != null) return scheduled.action.lingke_joint_e_window;
       const jointTick = int(scheduled?.start_tick);
       return scheduledSteps.some((candidate) => (
         int(candidate?.slot) === int(scheduled?.slot)
@@ -2454,7 +2506,7 @@
     }
 
     function lingkeJointAwakeningEnabled(scheduled, node) {
-      const lingkeSnapshot = snapshots.get(int(scheduled?.slot));
+      const lingkeSnapshot = snapshots.get(int(scheduled?.action?.lingke_joint_source_slot, int(scheduled?.slot)));
       return isLingkeElementJointAction(scheduled?.action)
         && String(lingkeSnapshot?.character?.id || '') === LINGKE_CHARACTER_ID
         && hasAwakeningNode(lingkeSnapshot, node)
@@ -4692,17 +4744,36 @@
         active_dot_layer_count: activeDotLayerCount(buffTick, action),
         personal_resources: personalResources.get(slot) || {},
       };
-      applicableBuffContributions(activeBuffs, step, action, snapshot, isBackground, buffContext)
+      const jointSource = action.lingke_joint_source_slot == null ? null : snapshots.get(int(action.lingke_joint_source_slot));
+      const damageSnapshot = jointSource ? Object.assign({}, jointSource, {
+        awakening_nodes: snapshot.awakening_nodes,
+      }) : snapshot;
+      const damageStep = jointSource ? Object.assign({}, step, {slot: jointSource.slot}) : step;
+      const jointTemplate = jointSource ? Array.from(actionsById.values()).find((candidate) =>
+        candidate.trigger_character_selector === 'same_element_non_lingke'
+        && candidate.damage_element === snapshot.character.element) : null;
+      const damageAction = jointSource ? Object.assign({}, action, {
+        damage_element: action.damage_element || snapshot.character.element,
+      }) : action;
+      const damageBuffAction = jointTemplate ? Object.assign({}, damageAction, {id: jointTemplate.id}) : damageAction;
+      const damageBuffContext = jointSource ? Object.assign({}, buffContext, {
+        action: damageBuffAction, personal_resources: personalResources.get(jointSource.slot) || {},
+      }) : buffContext;
+      applicableBuffContributions(activeBuffs, damageStep, damageBuffAction, damageSnapshot, isBackground, damageBuffContext)
         .forEach(({ buff, effects }) => {
           mergeMods(buffModifiers, effects);
-          Object.entries(effects || {}).forEach(([key, value]) => {
-            const prefix = 'personal_resource_gain_pct_';
-            if (!key.startsWith(prefix)) return;
+
+          appliedBuffs.push(buffSummary(buff, damageBuffContext));
+        });
+      // Personal resources and variant effects still belong to the original assistant.
+      applicableBuffContributions(activeBuffs, step, action, snapshot, isBackground, buffContext)
+        .forEach(({effects}) => Object.entries(effects || {}).forEach(([key, value]) => {
+          const prefix = 'personal_resource_gain_pct_';
+          if (key.startsWith(prefix)) {
             const resourceKey = key.slice(prefix.length);
             personalResourceGainPct[resourceKey] = num(personalResourceGainPct[resourceKey]) + num(value);
-          });
-          appliedBuffs.push(buffSummary(buff, buffContext));
-        });
+          }
+        }));
       const jointReactionContext = isLingkeElementJointAction(action)
         ? lingkeJointReactionContext(scheduled)
         : { triggerSnapshot: null, previousSnapshot: null, reaction: '' };
@@ -4716,7 +4787,7 @@
           'character_lingke_awakening_e_joint_damage',
           '灵可E觉·无法环合增伤',
           { all_dmg: 0.5 },
-          slot,
+          jointSource ? jointSource.slot : slot,
         ));
       }
       if (lingkeJointAwakeningEnabled(scheduled, 6) && jointReactionContext.triggerSnapshot) {
@@ -4725,7 +4796,7 @@
           'character_lingke_awakening_f_joint_crit',
           '灵可F觉·队友同频暴击',
           { crit_rate: 0.25 },
-          slot,
+          jointSource ? jointSource.slot : slot,
         ));
       }
       const slotResources = personalResources.get(slot) || {};
@@ -4785,7 +4856,11 @@
         zhenhongAscendantBySlot.set(slot, false);
         slotEnergy = 0;
       }
-      const calc = calculateActionDamage(snapshot, action, enemy, buffModifiers);
+      const calc = calculateActionDamage(damageSnapshot, damageAction, enemy, buffModifiers);
+      if (jointSource && lingkeFrequencyCheckWindowActive(scheduled)) {
+        const sourceResources = personalResources.get(jointSource.slot) || {};
+        sourceResources['谐频'] = 0;
+      }
       const resourceDamage = action.resource_damage;
       if (resourceDamage && num(consumedResources[resourceDamage.resource]) > 0) {
         const extraAction = Object.assign({}, action, {
@@ -4923,7 +4998,7 @@
       let baseActionEnergyGain = num(action.energy_gain) * actionMultiplier;
       let actorActionEnergyGain = calc.energy_gain * actionMultiplier;
       if (lingkeJointAwakeningEnabled(scheduled, 6) && jointReactionContext.triggerSnapshot) {
-        const triggerSupportAction = supportActionForSnapshot(jointReactionContext.triggerSnapshot);
+        const triggerSupportAction = jointSource ? action : supportActionForSnapshot(jointReactionContext.triggerSnapshot);
         if (triggerSupportAction) {
           energyActorSlot = int(jointReactionContext.triggerSnapshot.slot);
           baseActionEnergyGain = actionValueForAwakeningNodes(
@@ -4941,9 +5016,13 @@
           );
         }
       }
-      let actionEnergyReturnPerAction = num(action.energy_return);
+      if (jointSource && !lingkeJointAwakeningEnabled(scheduled, 6)) {
+        baseActionEnergyGain = 0;
+        actorActionEnergyGain = 0;
+      }
+      let actionEnergyReturnPerAction = jointSource && !lingkeJointAwakeningEnabled(scheduled, 6) ? 0 : num(action.energy_return);
       Object.entries(action.energy_return_by_awakening_node || {}).forEach(([level, value]) => {
-        if (hasAwakeningNode(snapshot, level)) actionEnergyReturnPerAction += num(value);
+        if (!(jointSource && !lingkeJointAwakeningEnabled(scheduled, 6)) && hasAwakeningNode(snapshot, level)) actionEnergyReturnPerAction += num(value);
       });
       const actionEnergyReturn = actionEnergyReturnPerAction * actionMultiplier;
       directDamage += multipliedDirectDamage + fuwenDamage;
@@ -5097,6 +5176,7 @@
         harmony: multipliedHarmony,
         energy_gain: displayedEnergyGain,
         base_energy_gain: actorActionEnergyGain,
+        lingke_joint_source_slot: action.lingke_joint_source_slot,
         energy_source_slot: energyActorSlot,
         energy_return: actionEnergyReturn,
         energy_gain_timing: durationTicks > 0 ? 'uniform' : 'instant',
@@ -5583,6 +5663,7 @@
     ZERO_ACTION_VISUAL_TICKS,
     MIN_FOREGROUND_START_GAP_TICKS,
     calculateAxisDurationTicks,
+    resolveLingkeSupportActions,
     buildSnapshot,
     buildPanelProjection,
     simulateAxis,

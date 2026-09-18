@@ -45,6 +45,33 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertEqual(len(result['groups'][0]['events']), 2)
         self.assertEqual(result['groups'][0]['visual_tick'], 41)
 
+    def test_resource_markers_separate_damage_and_follow_projected_action(self):
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        functions = source[source.index('  function resourceDamageEvents('):source.index('  function renderTimeline(')]
+        script = """
+          const actionForStep = () => ({resource_damage: {resource: '恶意'}});
+          const formatNumber = (n) => String(n);
+          const ticksToSeconds = (n) => n / 10;
+          const memberName = () => '黑羽';
+        """ + functions + """
+          const detail = {slot: 3, start_tick: 12, display_start_tick: 27,
+            action_name: '魔援护', resource_damage: 180, resource_atk_multiplier: 1.4,
+            direct_damage: 500, personal_resources_consumed: {'恶意': 3.5}};
+          const events = resourceDamageEvents([detail, {...detail, resource_atk_multiplier: 0, resource_damage: 0}]);
+          const grouped = groupedTimelineDamageEvents(events);
+          console.log(JSON.stringify({events, grouped, tooltip: damageMarkerTooltip(grouped[0]),
+            body: actionBodyDamage(detail), missing: actionBodyDamage({direct_damage: 42})}));
+        """
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertEqual(len(result['events']), 1)
+        self.assertEqual(result['events'][0]['visual_tick'], 27)
+        self.assertTrue(result['grouped'][0]['resource_damage_marker'])
+        self.assertEqual(result['body'] + result['events'][0]['damage'], 500)
+        self.assertEqual(result['missing'], 42)
+        self.assertIn('恶意追加 · 180 伤害 · 黑羽', result['tooltip'])
+        self.assertIn('来源动作 魔援护 · 1.2s', result['tooltip'])
+        self.assertIn('消耗恶意 3.5', result['tooltip'])
+
     def test_rotation_header_has_no_manual_calculation_button(self) -> None:
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1598,8 +1625,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const groupedDamageEvents = groupedTimelineDamageEvents(timelineDamageEvents);', source)
         self.assertIn('const reactionDamageMarkers = groupedDamageEvents', source)
         self.assertIn("return event.events.map((item) => damageMarkerTooltip(item)).join('\\n');", source)
-        self.assertIn('class="shaft-reaction-damage-marker ${isPeriodicDamage ?', source)
-        self.assertIn('const opensUpward = isPeriodicDamage && Number(member.slot) === 3;', source)
+        self.assertIn('class="shaft-reaction-damage-marker ${isResourceDamage ?', source)
+        self.assertIn('const opensUpward = (isPeriodicDamage || isResourceDamage) && Number(member.slot) === 3;', source)
         self.assertIn("${opensUpward ? 'shaft-damage-tooltip-above' : ''}", source)
         self.assertIn('function damageMarkerTooltip(event) {', source)
         self.assertIn("addScalingStat(scalingParts, 'atk', '攻击力');", source)

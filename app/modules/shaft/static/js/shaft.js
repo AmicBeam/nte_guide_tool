@@ -2701,7 +2701,7 @@
             <span>开始</span>
             <input data-step-id="${escapeHtml(step.id)}" data-step-field="start_tick" type="text" value="${escapeHtml(visualTickLabel(step.start_tick))}" data-visual-tick="${Number(step.start_tick || 0)}" data-calculation-tick="${calculationTickFromVisual(step.start_tick)}" data-synced-value="${escapeHtml(visualTickLabel(step.start_tick))}">
           </label>
-          <output class="shaft-step-damage"><span>直伤${warnings}</span><strong>${formatNumber(detail.direct_damage || 0)}</strong></output>
+          <output class="shaft-step-damage"><span>直伤${warnings}</span><strong>${formatNumber(actionBodyDamage(detail))}</strong></output>
           <button class="secondary-btn shaft-remove-btn" data-remove-step="${escapeHtml(step.id)}" type="button" title="删除">×</button>
         </div>
       `;
@@ -4553,9 +4553,35 @@
     }[reaction] || '#ffffff';
   }
 
+  function resourceDamageEvents(details) {
+    return (details || []).filter((detail) => Number(detail.resource_atk_multiplier || 0) > 0)
+      .map((detail) => {
+        const resource = actionForStep({ action_id: detail.action_id }).resource_damage?.resource || '恶意';
+        return {
+          reaction: `${resource}追加`,
+          resource_damage_marker: true,
+          contributor_slot: Number(detail.slot),
+          tick: Number(detail.start_tick || 0),
+          visual_tick: Number(detail.display_start_tick ?? detail.visual_start_tick ?? detail.start_tick ?? 0),
+          damage: Number(detail.resource_damage || 0),
+          atk_multiplier: Number(detail.resource_atk_multiplier || 0),
+          consumed: Number(detail.personal_resources_consumed?.[resource] || 0),
+          resource,
+          action_name: detail.action_name,
+        };
+      });
+  }
+
+  function actionBodyDamage(detail) {
+    return Math.max(0, Number(detail?.direct_damage || 0) - Number(detail?.resource_damage || 0));
+  }
+
   function damageMarkerTooltip(event) {
     if (Array.isArray(event?.events)) {
       return event.events.map((item) => damageMarkerTooltip(item)).join('\n');
+    }
+    if (event?.resource_damage_marker) {
+      return `${event.reaction} · ${formatNumber(event.damage)} 伤害 · ${memberName(event.contributor_slot)}\n来源动作 ${event.action_name} · ${ticksToSeconds(event.tick)}s\n消耗${event.resource} ${formatNumber(event.consumed, 2)}　倍率 ${formatNumber(event.atk_multiplier * 100, 1)}%攻击`;
     }
     if (event?.reaction === '失谐') {
       const lines = [`失谐 · 削减倾陷值 ${formatNumber(event.stagger_amount, 2)}`];
@@ -4630,6 +4656,7 @@
       return {
         ...group,
         reaction: primary.reaction,
+        resource_damage_marker: Boolean(primary.resource_damage_marker),
         kind: group.events.every((event) => Boolean(event?.kind)) ? 'periodic_group' : '',
       };
     });
@@ -4751,6 +4778,7 @@
         ),
       }));
     state.timelineDisplayDetails = details;
+    groupedDamageEvents.push(...groupedTimelineDamageEvents(resourceDamageEvents(details)));
     const damageTriggeredBuffDetails = [...reactionDamageEvents, ...periodicDamageEvents]
       .filter((event) => Number(event.visual_tick ?? event.tick ?? 0) <= displayCutoffTick)
       .filter((event) => Array.isArray(event?.triggered_buffs) && event.triggered_buffs.length)
@@ -5002,12 +5030,13 @@
         ))
         .map((event) => {
           const isPeriodicDamage = Boolean(event.kind);
-          const opensUpward = isPeriodicDamage && Number(member.slot) === 3;
+          const isResourceDamage = Boolean(event.resource_damage_marker);
+          const opensUpward = (isPeriodicDamage || isResourceDamage) && Number(member.slot) === 3;
           const tooltip = damageMarkerTooltip(event);
           return `
           <span
-            class="shaft-reaction-damage-marker ${isPeriodicDamage ? 'shaft-periodic-damage-marker' : ''} ${opensUpward ? 'shaft-damage-tooltip-above' : ''}"
-            style="left:${leftPx(Number(event.visual_tick ?? event.tick ?? 0))}px; top:${isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9}px; --reaction-color:${reactionLineColor(event.reaction)}"
+            class="shaft-reaction-damage-marker ${isResourceDamage ? 'shaft-resource-damage-marker' : ''} ${isPeriodicDamage ? 'shaft-periodic-damage-marker' : ''} ${opensUpward ? 'shaft-damage-tooltip-above' : ''}"
+            style="left:${leftPx(Number(event.visual_tick ?? event.tick ?? 0))}px; top:${isResourceDamage ? actionTopBase + (maxLaneIndex + 1) * 38 + 8 : (isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9)}px; --reaction-color:${isResourceDamage ? '#ffffff' : reactionLineColor(event.reaction)}"
             data-tooltip="${escapeHtml(tooltip)}"
             tabindex="0"
             aria-label="${escapeHtml(tooltip)}"
@@ -5194,7 +5223,8 @@
     };
     const appliedBuffList = (detail?.applied_buffs || []).filter((buff) => (
       !DETAIL_HIDDEN_APPLIED_BUFF_IDS.has(String(buff?.definition_id || '')) &&
-      !DETAIL_HIDDEN_APPLIED_BUFF_IDS.has(String(buff?.rule_id || ''))
+      !DETAIL_HIDDEN_APPLIED_BUFF_IDS.has(String(buff?.rule_id || '')) &&
+      !String(buff?.name || '').endsWith('（仅恶意追加）')
     ));
     const mergedAppliedBuffs = Array.from(appliedBuffList.reduce((groups, buff) => {
       const key = String(buff?.definition_id || buff?.rule_id || buff?.name || '');
@@ -5239,15 +5269,11 @@
     const actionMultiplier = backgroundActionMultiplier(step, action);
     const realtimeAtk = Number(panelStats.atk || 0);
     const actionBase = Number(detail?.formula_parts?.base || 0) * actionMultiplier;
-    const resourceAtkMultiplier = Number(detail?.resource_atk_multiplier || 0);
     const finalActionAtkMultiplier = realtimeAtk > 0
       ? actionBase / realtimeAtk
       : 0;
     const actionMultiplierText = `${formatNumber(finalActionAtkMultiplier * 100, 1)}%攻击`;
     specialStats.push(`<div class="shaft-detail-kv"><span>动作倍率</span><strong>${escapeHtml(actionMultiplierText)}</strong></div>`);
-    if (action.resource_damage) {
-      specialStats.push(`<div class="shaft-detail-kv"><span>${escapeHtml(action.resource_damage.resource)}追加倍率</span><strong>${formatNumber(resourceAtkMultiplier * 100, 1)}%攻击</strong></div>`);
-    }
     if (hitCount !== undefined && hitCount !== null) {
       specialStats.push(`<div class="shaft-detail-kv"><span>伤害段数</span><strong>${formatNumber(hitCount, 0)}</strong></div>`);
     }
@@ -5279,7 +5305,7 @@
       <div class="shaft-detail-grid">
         <div class="shaft-detail-kv"><span>开始时间</span><strong>${ticksToSeconds(detail?.start_tick ?? calculationTickFromVisual(step.start_tick))}s</strong></div>
         <div class="shaft-detail-kv"><span>结束时间</span><strong>${ticksToSeconds(detail?.end_tick ?? calculationTickFromVisual(step.start_tick))}s</strong></div>
-        <div class="shaft-detail-kv"><span>直伤</span><strong>${formatNumber(detail?.direct_damage || 0)}</strong></div>
+        <div class="shaft-detail-kv"><span>直伤</span><strong>${formatNumber(actionBodyDamage(detail))}</strong></div>
         ${Number(detail?.fuwen_damage || 0) > 0 ? `<div class="shaft-detail-kv"><span>覆纹伤害</span><strong>${formatNumber(detail.fuwen_damage)}</strong></div>` : ''}
         <div class="shaft-detail-kv"><span>倾陷</span><strong>${formatNumber(detail?.stagger_amount || 0, 2)}</strong></div>
         <div class="shaft-detail-kv"><span>耗时</span><strong>${formatNumber(durationSeconds, 1)}s</strong></div>

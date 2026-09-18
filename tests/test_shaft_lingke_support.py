@@ -49,6 +49,27 @@ class LingkeSupportTest(unittest.TestCase):
         increased['team'][0]['substat_counts'] = {'atk_pct': 100}
         self.assertGreater(self.run_axis(increased)[1]['assist']['direct_damage'], d['direct_damage'])
 
+    def test_malice_uses_heiyu_panel_when_assist_borrows_lingke_panel(self):
+        for window in ('e', 'q'):
+            with self.subTest(window=window):
+                axis = self.axis(window=window, variant=True)
+                _, base = self.run_axis(axis)
+                original = base['assist']
+                self.assertEqual(original['lingke_joint_source_slot'], 0)
+                self.assertGreater(original['resource_damage'], 0)
+                for slot in (0, 1):
+                    increased = deepcopy(axis)
+                    increased['team'][slot]['substat_counts'] = {'atk_pct': 100}
+                    changed = self.run_axis(increased)[1]['assist']
+                    original_body = original['direct_damage'] - original['resource_damage']
+                    changed_body = changed['direct_damage'] - changed['resource_damage']
+                    if slot == 0:
+                        self.assertGreater(changed_body, original_body)
+                        self.assertAlmostEqual(changed['resource_damage'], original['resource_damage'])
+                    else:
+                        self.assertAlmostEqual(changed_body, original_body)
+                        self.assertGreater(changed['resource_damage'], original['resource_damage'])
+
     def test_e_time_stop_selection_preserves_joint_conversion_and_harmonic_bonus(self):
         for mask_tick, assist_tick in ((2, 7), (2, 10), (8, 13), (10, 15)):
             for variant in (False, True):

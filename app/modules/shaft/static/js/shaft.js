@@ -4883,15 +4883,9 @@
     };
     const bandWidthPx = (start, end) => Math.max(1, visualOffsetPx(Math.max(Number(end || start), Number(start || 0) + 1)) - visualOffsetPx(start));
     const rulerMarks = [];
-    const timelineQStarts = details
-      .filter((detail) => Number(detail.display_duration_ticks ?? detail.duration_ticks ?? 0) === 0 && !detail.is_background_damage && hasTimelineMaskAbility(actionForStep({ action_id: detail.action_id })))
-      .map((detail) => ({
-        start_tick: Number(detail.display_start_tick ?? detail.start_tick ?? 0),
-        end_tick: Math.max(
-          Number(detail.display_start_tick ?? detail.start_tick ?? 0) + ZERO_ACTION_VISUAL_TICKS,
-          Number(detail.display_visual_end_tick ?? detail.visual_end_tick ?? detail.end_tick ?? detail.start_tick ?? 0),
-        ),
-      }));
+    // Use the same complete frozen intervals as damage, cooldowns and self-checks.
+    // Off-field Lingke joints also freeze time; filtering by foreground drops their spans.
+    const timelineQStarts = qVirtualStartTicks();
     const cursor = (labeled) => `<span class="shaft-cursor-line" style="left:${leftPx(state.cursorTick)}px">${labeled ? `<b>${escapeHtml(visualTickLabel(state.cursorTick, timelineQStarts))}</b>` : ''}</span>`;
     const rulerQStarts = timelineQStarts;
     for (let tick = 0; tick <= durationTicks; tick += 10) {

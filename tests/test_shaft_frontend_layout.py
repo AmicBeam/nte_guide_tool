@@ -99,6 +99,45 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertGreater(second['panel']['crit_dmg'], first['panel']['crit_dmg'])
         self.assertNotEqual(first['applied_buffs'], second['applied_buffs'])
 
+    def test_timeline_ruler_cursor_and_cooldown_share_background_joint_clock(self):
+        # Regression: three off-field Lingke assists added 1.5 fake seconds to the ruler,
+        # so an action at real 4.0s looked like 5.5s while self-check correctly said wait to 5.0s.
+        catalog = load_shaft_catalog()
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        clock_helpers = source[source.index('  function qVirtualStartTick('):source.index('  function syncAddTimeInput(')]
+        ruler_clock = source[source.index('    const timelineQStarts ='):source.index('    const cursor =', source.index('    const timelineQStarts ='))]
+        for loop in (False, True):
+            with self.subTest(loop=loop):
+                axis = {'team': [
+                    {'slot': 0, 'character_id': 'char_0846d632e0', 'arc_id': '', 'cartridge_id': ''},
+                    {'slot': 1, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''},
+                    {'slot': 2, 'character_id': 'char_heiyu', 'arc_id': '', 'cartridge_id': ''},
+                    {'slot': 3, 'character_id': 'char_076a1f4e53', 'arc_id': '', 'cartridge_id': ''},
+                ], 'steps': [
+                    {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 0},
+                    {'id': 'light', 'slot': 1, 'action_id': 'action_33c0ac631e', 'start_tick': 5},
+                    {'id': 'soul', 'slot': 2, 'action_id': 'action_heiyu_support', 'start_tick': 10},
+                    {'id': 'curse', 'slot': 3, 'action_id': 'action_canhong_support', 'start_tick': 15},
+                    {'id': 'first-e', 'slot': 3, 'action_id': 'action_canhong_e1', 'start_tick': 20},
+                    {'id': 'early-e', 'slot': 3, 'action_id': 'action_canhong_e1', 'start_tick': 60},
+                ], 'options': {'loop_enabled': loop}}
+                result = simulate_shaft_axis(axis)['result']
+                details = result['details']
+                early = next(d for d in details if d['step_id'] == 'early-e')
+                self.assertEqual(early['start_tick'], 40)
+                self.assertTrue(any('5.0s' in w for w in early['warnings']))
+                script = 'const details = ' + json.dumps(details) + ';\n'
+                script += 'const actions = new Map(' + json.dumps(catalog['actions']) + '.map(a => [a.id,a]));\n'
+                script += 'const actionForStep = step => actions.get(step.action_id) || {};\n'
+                script += 'const hasTimelineMaskAbility = a => Boolean(a.is_time_stop_zero);\n'
+                script += 'const ZERO_ACTION_VISUAL_TICKS=5; const ticksToSeconds = tick => (tick/10).toFixed(1);\n'
+                script += 'const qVirtualStartTicks = () => ' + json.dumps(result['time_axis']['frozen_intervals']) + ';\n'
+                script += clock_helpers + ruler_clock
+                script += 'console.log(JSON.stringify(details.map(d => visualTickLabel(d.display_start_tick, timelineQStarts))));'
+                labels = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+                self.assertEqual(labels, [f"{d['start_tick']/10:.1f}s" for d in details])
+                self.assertEqual(labels[-1], '4.0s')
+
     def test_rotation_header_has_no_manual_calculation_button(self) -> None:
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
         source = SHAFT_JS.read_text(encoding='utf-8')

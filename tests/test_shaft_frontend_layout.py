@@ -56,7 +56,11 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         """ + functions + """
           const detail = {slot: 3, start_tick: 12, display_start_tick: 27,
             action_name: '魔援护', resource_damage: 180, resource_atk_multiplier: 1.4,
-            direct_damage: 500, personal_resources_consumed: {'恶意': 3.5}};
+            direct_damage: 500, personal_resources_consumed: {'恶意': 3.5},
+            resource_formula_parts: {scaling_stats: {atk: 1200}, scaling_multipliers: {atk: 1.4},
+              damage_bonus: .5, crit_rate: .6, crit_dmg: 1.2, def_down: .1,
+              def_ignore: .2, res_down: .08, final_dmg: .25,
+              action_multiplier: 2, non_fuwen_amplification: 1.3}};
           const events = resourceDamageEvents([detail, {...detail, resource_atk_multiplier: 0, resource_damage: 0}]);
           const grouped = groupedTimelineDamageEvents(events);
           console.log(JSON.stringify({events, grouped, tooltip: damageMarkerTooltip(grouped[0]),
@@ -71,6 +75,10 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertIn('恶意追加 · 180 伤害 · 黑羽', result['tooltip'])
         self.assertIn('来源动作 魔援护 · 1.2s', result['tooltip'])
         self.assertIn('消耗恶意 3.5', result['tooltip'])
+        for part in ('攻击力 1200', '增伤 50%', '暴击 60%', '暴伤 120%',
+                     '减防 10%', '穿防 20%', '减抗 8%', '最终增伤 25%',
+                     '动作倍数 ×2', '环合增幅 ×1.3'):
+            self.assertIn(part, result['tooltip'])
 
     def test_rotation_header_has_no_manual_calculation_button(self) -> None:
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')

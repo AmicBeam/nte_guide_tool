@@ -4745,3 +4745,22 @@ body.shaft-dragging .shaft-action-bar {
 .shaft-page.is-shared-readonly .shaft-action-bar {
   cursor: pointer;
 }
+
+.shaft-reaction-damage-marker[role="button"] {
+    cursor: pointer;
+}
+
+.shaft-reaction-damage-marker.selected {
+    outline: 2px solid rgba(255,255,255,0.9);
+    outline-offset: 3px;
+    z-index: 40;
+}
+
+.shaft-reaction-damage-marker[role="button"]::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: -8px;
+    width: 16px;
+    height: 16px;
+}

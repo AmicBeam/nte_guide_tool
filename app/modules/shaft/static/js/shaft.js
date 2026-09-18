@@ -149,6 +149,8 @@
     simulationInFlight: false,
     resultFingerprint: '',
     isResultStale: false,
+    selectedDamageMarkerKey: '',
+    timelineDamageMarkers: new Map(),
     selectedStepId: '',
     selectedStepIds: [],
     compareSnapshot: null,
@@ -1024,6 +1026,7 @@
   }
 
   function setSelectedStepIds(ids, primaryId = '', render = true) {
+    state.selectedDamageMarkerKey = '';
     const validIds = validStepIdSet();
     state.selectedStepIds = (ids || []).filter((id, index) => validIds.has(id) && (ids || []).indexOf(id) === index);
     state.selectedStepId = validIds.has(primaryId) ? primaryId : state.selectedStepIds[state.selectedStepIds.length - 1] || '';
@@ -4565,6 +4568,7 @@
           visual_tick: Number(detail.display_start_tick ?? detail.visual_start_tick ?? detail.start_tick ?? 0),
           damage: Number(detail.resource_damage || 0),
           atk_multiplier: Number(detail.resource_atk_multiplier || 0),
+          formula_parts: detail.resource_formula_parts,
           consumed: Number(detail.personal_resources_consumed?.[resource] || 0),
           resource,
           action_name: detail.action_name,
@@ -4580,7 +4584,7 @@
     if (Array.isArray(event?.events)) {
       return event.events.map((item) => damageMarkerTooltip(item)).join('\n');
     }
-    if (event?.resource_damage_marker) {
+    if (event?.resource_damage_marker && !event.formula_parts) {
       return `${event.reaction} · ${formatNumber(event.damage)} 伤害 · ${memberName(event.contributor_slot)}\n来源动作 ${event.action_name} · ${ticksToSeconds(event.tick)}s\n消耗${event.resource} ${formatNumber(event.consumed, 2)}　倍率 ${formatNumber(event.atk_multiplier * 100, 1)}%攻击`;
     }
     if (event?.reaction === '失谐') {
@@ -4607,14 +4611,20 @@
       parts.push(`${statLabel} ${formatNumber(stat, 1)}`);
       parts.push(`${statKey === 'atk' ? '倍率' : `${statLabel}倍率`} ${percent(multiplier)}`);
     };
-    if (isPeriodicDamage) {
+    if (event?.resource_damage_marker) {
+      lines.push(`来源动作 ${event.action_name} · ${ticksToSeconds(event.tick)}s`);
+      lines.push(`消耗${event.resource} ${formatNumber(event.consumed, 2)}`);
+    }
+    if (isPeriodicDamage || event?.resource_damage_marker) {
       const scalingParts = [];
       addScalingStat(scalingParts, 'atk', '攻击力');
       addScalingStat(scalingParts, 'hp', '生命');
       addScalingStat(scalingParts, 'def', '防御');
       const flat = Number(formula?.scaling_multipliers?.flat || 0);
       if (flat) scalingParts.push(`固定值 ${formatNumber(flat, 1)}`);
-      scalingParts.push(`层数 ${formatNumber(formula.periodic_scale ?? 1, 1)}`);
+      if (!event?.resource_damage_marker) {
+        scalingParts.push(`层数 ${formatNumber(formula.periodic_scale ?? 1, 1)}`);
+      }
       lines.push(scalingParts.join('　'));
       lines.push(`增伤 ${percent(formula.damage_bonus)}　暴击 ${percent(formula.crit_rate)}　暴伤 ${percent(formula.crit_dmg)}`);
     } else {
@@ -4633,6 +4643,10 @@
     }
     lines.push(`减防 ${percent(formula.def_down)}　穿防 ${percent(formula.def_ignore)}　减抗 ${percent(formula.res_down)}`);
     lines.push(`最终增伤 ${percent(formula.final_dmg)}`);
+    if (event?.resource_damage_marker) {
+      if (Number(formula.action_multiplier || 1) !== 1) lines.push(`动作倍数 ×${formatNumber(formula.action_multiplier, 1)}`);
+      if (Number(formula.non_fuwen_amplification || 1) !== 1) lines.push(`环合增幅 ×${formatNumber(formula.non_fuwen_amplification, 3)}`);
+    }
     const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害 · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;
     return `${heading}\n${lines.join('\n')}`;
   }
@@ -4779,6 +4793,10 @@
       }));
     state.timelineDisplayDetails = details;
     groupedDamageEvents.push(...groupedTimelineDamageEvents(resourceDamageEvents(details)));
+    state.timelineDamageMarkers = new Map(groupedDamageEvents.map((event) => [
+      `${event.contributor_slot}:${event.visual_tick}:${event.resource_damage_marker ? 'resource' : 'damage'}`, event,
+    ]));
+    if (!state.timelineDamageMarkers.has(state.selectedDamageMarkerKey)) state.selectedDamageMarkerKey = '';
     const damageTriggeredBuffDetails = [...reactionDamageEvents, ...periodicDamageEvents]
       .filter((event) => Number(event.visual_tick ?? event.tick ?? 0) <= displayCutoffTick)
       .filter((event) => Array.isArray(event?.triggered_buffs) && event.triggered_buffs.length)
@@ -5032,10 +5050,15 @@
           const isPeriodicDamage = Boolean(event.kind);
           const isResourceDamage = Boolean(event.resource_damage_marker);
           const opensUpward = (isPeriodicDamage || isResourceDamage) && Number(member.slot) === 3;
+          const markerKey = `${event.contributor_slot}:${event.visual_tick}:${isResourceDamage ? 'resource' : 'damage'}`;
+          const markerSelected = state.selectedDamageMarkerKey === markerKey;
           const tooltip = damageMarkerTooltip(event);
           return `
           <span
-            class="shaft-reaction-damage-marker ${isResourceDamage ? 'shaft-resource-damage-marker' : ''} ${isPeriodicDamage ? 'shaft-periodic-damage-marker' : ''} ${opensUpward ? 'shaft-damage-tooltip-above' : ''}"
+            class="shaft-reaction-damage-marker ${isResourceDamage ? 'shaft-resource-damage-marker' : ''} ${isPeriodicDamage ? 'shaft-periodic-damage-marker' : ''} ${opensUpward ? 'shaft-damage-tooltip-above' : ''} ${markerSelected ? 'selected' : ''}"
+            data-damage-marker-key="${escapeHtml(markerKey)}"
+            role="button"
+            aria-pressed="${markerSelected}"
             style="left:${leftPx(Number(event.visual_tick ?? event.tick ?? 0))}px; top:${isResourceDamage ? actionTopBase + (maxLaneIndex + 1) * 38 + 8 : (isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9)}px; --reaction-color:${isResourceDamage ? '#ffffff' : reactionLineColor(event.reaction)}"
             data-tooltip="${escapeHtml(tooltip)}"
             tabindex="0"
@@ -5127,6 +5150,17 @@
     const action = step ? actionForStep(step) : null;
     const badge = $('shaft-selected-badge');
     const panel = $('shaft-step-detail');
+    const selectedDamage = state.timelineDamageMarkers.get(state.selectedDamageMarkerKey);
+    if (selectedDamage) {
+      badge.textContent = `${ticksToSeconds(selectedDamage.tick)}s`;
+      panel.innerHTML = (selectedDamage.events || [selectedDamage]).map((event) => {
+        const [heading, ...lines] = damageMarkerTooltip(event).split('\n');
+        return `<div class="shaft-detail-hero"><strong>${escapeHtml(heading)}</strong>
+          <span class="shaft-detail-muted">${ticksToSeconds(event.tick)}s</span></div>
+          <div class="shaft-detail-line-list">${lines.map((line) => `<span>${escapeHtml(line)}</span>`).join('')}</div>`;
+      }).join('');
+      return;
+    }
     if (selectionCount > 1) {
       badge.textContent = `${selectionCount} 个动作`;
       panel.innerHTML = `
@@ -7231,11 +7265,32 @@
     `;
   }
 
+  function selectDamageMarker(marker) {
+    const key = marker.dataset.damageMarkerKey;
+    const damage = state.timelineDamageMarkers.get(key);
+    if (!damage) return;
+    setSelectedStepIds([], '', false);
+    state.selectedDamageMarkerKey = key;
+    state.cursorTick = Number(damage.visual_tick ?? damage.tick ?? 0);
+    syncAddTimeInput(state.cursorTick);
+    renderTimeline();
+    renderStepDetail();
+    renderEditorActions();
+    const selected = $('shaft-timeline').querySelector('.shaft-reaction-damage-marker.selected');
+    selected?.focus({ preventScroll: true });
+  }
+
   function handleTimelineClick(event) {
     if (Date.now() < state.suppressTimelineClickUntil) {
       return;
     }
     closeContextMenu();
+    const marker = event.target.closest('[data-damage-marker-key]');
+    if (marker) {
+      selectDamageMarker(marker);
+      return;
+    }
+    state.selectedDamageMarkerKey = '';
     const bar = event.target.closest('[data-step-id]');
     if (bar) {
       const now = Date.now();
@@ -7496,6 +7551,11 @@
   }
 
   function handleKeydown(event) {
+    if ((event.key === 'Enter' || event.key === ' ') && event.target.closest('[data-damage-marker-key]')) {
+      event.preventDefault();
+      selectDamageMarker(event.target.closest('[data-damage-marker-key]'));
+      return;
+    }
     if (event.key === 'Escape') {
       if (document.querySelector('[data-build-character-popover]:not([hidden])')) {
         setBuildCharacterPickerOpen();
@@ -7796,6 +7856,7 @@
   }
 
   function handleTimelineMouseDown(event) {
+    if (event.target.closest('[data-damage-marker-key]')) return;
     if (state.sharedReadOnly) {
       return;
     }

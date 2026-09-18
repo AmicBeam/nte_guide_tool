@@ -57,6 +57,12 @@ class LingkeSupportTest(unittest.TestCase):
                 original = base['assist']
                 self.assertEqual(original['lingke_joint_source_slot'], 0)
                 self.assertGreater(original['resource_damage'], 0)
+                formula = original['resource_formula_parts']
+                expected = (formula['scaling_stats']['atk'] * formula['scaling_multipliers']['atk']
+                            * (1 + formula['damage_bonus']) * formula['crit'] * formula['defense']
+                            * formula['resistance'] * (1 + formula['final_dmg'])
+                            * formula['action_multiplier'] * formula['non_fuwen_amplification'])
+                self.assertAlmostEqual(expected, original['resource_damage'])
                 for slot in (0, 1):
                     increased = deepcopy(axis)
                     increased['team'][slot]['substat_counts'] = {'atk_pct': 100}
@@ -66,9 +72,11 @@ class LingkeSupportTest(unittest.TestCase):
                     if slot == 0:
                         self.assertGreater(changed_body, original_body)
                         self.assertAlmostEqual(changed['resource_damage'], original['resource_damage'])
+                        self.assertEqual(changed['resource_formula_parts'], original['resource_formula_parts'])
                     else:
                         self.assertAlmostEqual(changed_body, original_body)
                         self.assertGreater(changed['resource_damage'], original['resource_damage'])
+                        self.assertGreater(changed['resource_formula_parts']['scaling_stats']['atk'], formula['scaling_stats']['atk'])
 
     def test_e_time_stop_selection_preserves_joint_conversion_and_harmonic_bonus(self):
         for mask_tick, assist_tick in ((2, 7), (2, 10), (8, 13), (10, 15)):

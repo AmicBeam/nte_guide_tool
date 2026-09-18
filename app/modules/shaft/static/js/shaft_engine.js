@@ -806,6 +806,9 @@
         skill_level: skillLevel,
         skill_level_multiplier: skillMult,
         dmg_bonus: dmgBonus,
+        def_down: Math.min(1, Math.max(0, num(panelMods.def_down))),
+        def_ignore: Math.min(1, Math.max(0, num(panelMods.def_ignore))),
+        res_down: num(panelMods.res_down) + num(panelMods[`res_down_${damageElement || '心灵'}`]),
         crit,
         settled_resistance: effectiveResistance,
         settled_defense: effectiveDefense,
@@ -4948,6 +4951,15 @@
           });
         const resourceCalc = calculateActionDamage(snapshot, extraAction, enemy, extraModifiers);
         calc.resource_damage = resourceCalc.direct_damage;
+        calc.resource_formula_parts = Object.assign({}, resourceCalc.formula_parts, {
+          scaling_stats: resourceCalc.panel,
+          scaling_multipliers: {atk: resourceCalc.panel.atk > 0
+            ? resourceCalc.formula_parts.base / resourceCalc.panel.atk : 0},
+          damage_bonus: resourceCalc.formula_parts.dmg_bonus,
+          crit_rate: Math.min(1, Math.max(0, resourceCalc.panel.crit_rate)),
+          crit_dmg: Math.max(0, resourceCalc.panel.crit_dmg),
+          final_dmg: resourceCalc.panel.final_dmg,
+        });
         calc.resource_atk_multiplier = resourceCalc.panel.atk > 0
           ? resourceCalc.formula_parts.base / resourceCalc.panel.atk
           : 0;
@@ -5237,6 +5249,10 @@
         direct_damage: multipliedDirectDamage,
         resource_damage: num(calc.resource_damage) * actionMultiplier * nonFuwenAmplification,
         resource_atk_multiplier: num(calc.resource_atk_multiplier) * actionMultiplier,
+        resource_formula_parts: calc.resource_formula_parts ? Object.assign({}, calc.resource_formula_parts, {
+          action_multiplier: actionMultiplier,
+          non_fuwen_amplification: nonFuwenAmplification,
+        }) : null,
         personal_resources_consumed: consumedResources,
         fuwen_damage: fuwenDamage,
         stagger_amount: multipliedStagger,

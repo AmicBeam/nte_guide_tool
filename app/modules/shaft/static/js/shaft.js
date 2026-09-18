@@ -1143,12 +1143,17 @@
     return member?.character_name || getCharacterMap().get(member?.character_id)?.name || `角色 ${Number(slot) + 1}`;
   }
 
-  function actionsForSlot(slot) {
+  function actionsForSlot(slot, existingActionId = '') {
     const member = memberBySlot(slot);
     if (!member) {
       return [];
     }
-    return state.catalog?.actions_by_character?.[member.character_id] || [];
+    const actions = (state.catalog?.actions_by_character?.[member.character_id] || [])
+      .filter((action) => !action.legacy_only);
+    const existing = getActionMap().get(existingActionId);
+    return existing?.legacy_only && existing.character_id === member.character_id
+      ? actions.concat(existing)
+      : actions;
   }
 
   function triggerCharactersForAction(action) {
@@ -2172,6 +2177,7 @@
     if (restrictedSlots.size) {
       state.axis.steps = state.axis.steps.filter((step) => !restrictedSlots.has(Number(step.slot)));
     }
+    state.axis.steps = window.ShaftEngine.migrateLingkeJointSteps(state.axis.steps, state.axis.team, state.catalog);
     state.axis.steps.forEach(sanitizeStepPlacement);
     state.axis.enemy = Object.assign(
       {},
@@ -2674,7 +2680,7 @@
     const selectedIds = new Set(selectedStepIds());
     const rows = (state.axis.steps || []).map((step, index) => {
       const detail = detailByStepId(step.id) || {};
-      const actions = actionsForSlot(step.slot);
+      const actions = actionsForSlot(step.slot, step.action_id);
       const warnings = (detail.warnings || []).length ? ` · ${escapeHtml(detail.warnings.join('；'))}` : '';
       return `
         <div class="shaft-step-row ${selectedIds.has(step.id) ? 'selected' : ''}" data-step-id="${escapeHtml(step.id)}">
@@ -3696,6 +3702,13 @@
     if (!dialog || dialog.open) {
       return;
     }
+    if (payload?.axis) {
+      const migratedSteps = window.ShaftEngine.migrateLingkeJointSteps(payload.axis.steps, payload.axis.team, state.catalog);
+      if (payload.legacy_actions_migrated || JSON.stringify(migratedSteps) !== JSON.stringify(payload.axis.steps)) {
+        payload.axis = Object.assign({}, payload.axis, {steps: migratedSteps});
+        payload.result = window.ShaftEngine.simulateAxis(payload.axis, state.catalog);
+      }
+    }
     state.axisPreviewPayload = payload;
     const marketPreview = Boolean(payload);
     const ownerName = String(payload?.owner?.nickname || payload?.owner?.player_uid || '').trim();
@@ -4684,6 +4697,7 @@
         slot: Number(step.slot || 0),
         action_id: step.action_id,
         action_name: actionDisplayName(step, action),
+        lingke_joint_source_slot: action.lingke_joint_source_slot,
         is_detached: isDetachedStep(step, action),
         is_interrupted: isInterruptedStep(step, action),
         action_type: action.action_type || '',
@@ -5004,7 +5018,7 @@
           ].filter(Boolean).join(' · ');
           const durationLabel = actionMeta ? `<em>${actionMeta}</em>` : '';
           return `
-            <span class="shaft-action-bar ${actionTypeClass(detail.action_type)} ${detail.is_background_damage ? 'background-damage' : ''} ${basicBackground} ${frontStart} ${qInstant} ${detail.is_detached ? 'detached-action' : ''} ${detail.is_interrupted ? 'interrupted-action' : ''} ${selected} ${dragging}" data-step-id="${escapeHtml(detail.step_id)}" style="left:${entry.startPx}px; top:${top}px; width:${entry.cardWidth}px; --slot-color:${color}" title="${escapeHtml(detail.action_name)}${detail.q_instant_release ? ' · Q即时释放' : ''}${detail.is_interrupted ? ' · 已打断' : ''}">
+            <span class="shaft-action-bar ${actionTypeClass(detail.action_type)} ${detail.is_background_damage ? 'background-damage' : ''} ${basicBackground} ${frontStart} ${qInstant} ${detail.lingke_joint_source_slot != null ? 'lingke-joint-action' : ''} ${detail.is_detached ? 'detached-action' : ''} ${detail.is_interrupted ? 'interrupted-action' : ''} ${selected} ${dragging}" data-step-id="${escapeHtml(detail.step_id)}" style="left:${entry.startPx}px; top:${top}px; width:${entry.cardWidth}px; --slot-color:${color}" title="${escapeHtml(detail.action_name)}${detail.lingke_joint_source_slot != null ? ' · 灵可同频' : (detail.q_instant_release ? ' · Q即时释放' : '')}${detail.is_interrupted ? ' · 已打断' : ''}">
               <span class="shaft-action-name">${escapeHtml(detail.action_name)}</span>
               ${durationLabel}
             </span>
@@ -5470,7 +5484,9 @@
   }
 
   function removeInvalidStepsForSlot(slot) {
-    const validActions = new Set(actionsForSlot(slot).map((action) => action.id));
+    const characterId = memberBySlot(slot)?.character_id;
+    const validActions = new Set((state.catalog?.actions || [])
+      .filter((action) => action.character_id === characterId).map((action) => action.id));
     state.axis.steps = state.axis.steps.filter((step) => Number(step.slot) !== Number(slot) || validActions.has(step.action_id));
   }
 
@@ -5796,8 +5812,8 @@
 
   function addActionAt(slot, actionId, startTick) {
     let action = actionForStep({id: '__insert_preview__', slot, action_id: actionId, start_tick: startTick});
-    if (!actionId) {
-      setStatus('请选择动作', 'error');
+    if (!actionId || action.legacy_only) {
+      setStatus(action.legacy_only ? '旧版同频仅用于兼容已有排轴，请使用队友援护。' : '请选择动作', 'error');
       return;
     }
     pushUndoSnapshot();
@@ -6168,6 +6184,7 @@
         tags: clone(source.tags || []),
       });
     });
+    state.axis.steps = window.ShaftEngine.migrateLingkeJointSteps(state.axis.steps, state.axis.team, state.catalog);
     state.axis.steps.forEach(sanitizeStepPlacement);
     normalizeEditedSteps(new Set(newIds));
     setSelectedStepIds(newIds.filter((id) => state.axis.steps.some((step) => step.id === id)), newIds[newIds.length - 1] || '', false);
@@ -6464,7 +6481,7 @@
     pushUndoSnapshot();
     if (target.dataset.stepField === 'slot') {
       step.slot = Number(target.value || 0);
-      const actions = actionsForSlot(step.slot);
+      const actions = actionsForSlot(step.slot, step.action_id);
       if (!actions.some((action) => action.id === step.action_id)) {
         step.action_id = actions[0]?.id || '';
         step.action_name = getActionMap().get(step.action_id)?.name || '';

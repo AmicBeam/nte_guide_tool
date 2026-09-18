@@ -185,6 +185,9 @@ def load_shaft_catalog() -> dict[str, Any]:
     characters = _load_json('characters.json')
     hit_profiles = _load_json('action_hit_profiles.json')
     actions = [_normalize_action(action) for action in _load_json('actions.json')]
+    # Retired IDs identify migration input and supply internal joint templates, never new actions.
+    actions.extend(_normalize_action({**action, 'legacy_only': True})
+                   for action in _load_json('legacy_actions.json'))
     for action in actions:
         profile = hit_profiles.get(str(action.get('id') or ''))
         if profile:
@@ -239,6 +242,8 @@ def load_shaft_catalog() -> dict[str, Any]:
     starter_axis = _load_json('starter_axis.json')
     actions_by_character: dict[str, list[dict[str, Any]]] = {}
     for action in actions:
+        if action.get('legacy_only'):
+            continue
         actions_by_character.setdefault(str(action.get('character_id') or ''), []).append(action)
     for items in actions_by_character.values():
         items.sort(key=lambda item: (

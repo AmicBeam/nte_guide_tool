@@ -2,7 +2,7 @@
 import unittest
 from copy import deepcopy
 
-from app.modules.shaft.service import simulate_shaft_axis
+from app.modules.shaft.service import simulate_shaft_axis, normalize_axis_payload
 from app.modules.shaft.domain.catalog import load_shaft_catalog
 
 
@@ -41,11 +41,7 @@ class LingkeSupportTest(unittest.TestCase):
         self.assertAlmostEqual(d['panel']['atk'], details['opener']['panel']['atk'])
         self.assertEqual(d['personal_resources_after']['恶意'], 40)
         self.assertEqual(d['slot'], 1)
-        reference = deepcopy(axis)
-        reference['steps'][1].update(slot=0, action_id='action_lingke_joint_soul')
-        expected = self.run_axis(reference)[1]['assist']
-        self.assertEqual(d['panel'], expected['panel'])
-        self.assertAlmostEqual(d['direct_damage'], expected['direct_damage'])
+        self.assertAlmostEqual(d['formula_parts']['raw_base'] / d['panel']['atk'], 2.0)
         self.assertIn('character_lingke_precise_tuning_soul', {b['rule_id'] for b in d['triggered_buffs']})
         increased = deepcopy(axis)
         increased['team'][1]['substat_counts'] = {'atk_pct': 100}
@@ -131,3 +127,63 @@ const revealTimelineTick = () => {};
         script += "console.log(JSON.stringify({cursor:state.cursorTick,end:state.axis.steps.find(s=>s.id==='end').start_tick,duration:actionForStep(state.axis.steps.at(-1)).duration_ticks}));"
         value = json.loads(subprocess.check_output(['node', '-e', script], cwd=root, text=True))
         self.assertEqual(value, {'cursor': 10, 'end': 35, 'duration': 0})
+
+    def test_legacy_joint_catalog_is_hidden_and_unmatched_steps_are_removed(self):
+        catalog = load_shaft_catalog()
+        legacy = [a for a in catalog['actions'] if a.get('legacy_only')]
+        self.assertEqual(len(legacy), 6)
+        for action in legacy:
+            with self.subTest(action=action['id']):
+                self.assertNotIn(action['id'], {a['id'] for a in catalog['actions_by_character'][action['character_id']]})
+                axis = {'team': [{'slot': 0, 'character_id': action['character_id'], 'arc_id': '', 'cartridge_id': ''}],
+                        'steps': [{'id': 'old', 'slot': 0, 'action_id': action['id'], 'start_tick': 20}]}
+                normalized = normalize_axis_payload(axis)
+                self.assertEqual(normalized['steps'], [])
+                self.assertEqual(self.run_axis(normalized)[0]['details'], [])
+
+    def test_legacy_joint_converts_to_selected_teammate_and_is_idempotent(self):
+        axis = self.axis()
+        expected = axis['steps'][1]['action_id']
+        axis['steps'][1].update(slot=0, action_id='action_lingke_joint_soul', trigger_character_id='char_heiyu')
+        normalized = normalize_axis_payload(axis)
+        step = normalized['steps'][1]
+        self.assertEqual((step['id'], step['slot'], step['start_tick'], step['action_id']),
+                         ('assist', 1, 10, expected))
+        self.assertNotIn('trigger_character_id', step)
+        self.assertEqual(normalize_axis_payload(normalized)['steps'], normalized['steps'])
+        detail = self.run_axis(normalized)[1]['assist']
+        self.assertEqual(detail['lingke_joint_source_slot'], 0)
+        self.assertEqual(detail['slot'], 1)
+
+    def test_browser_and_server_migration_agree_for_every_old_element(self):
+        import json
+        import subprocess
+        from pathlib import Path
+        from app.modules.shaft.domain.legacy_actions import migrate_lingke_joint_steps
+        catalog = load_shaft_catalog()
+        team = [
+            {'slot': 3, 'character_id': 'char_heiyu'},
+            {'slot': 2, 'character_id': 'char_1895e259be'},
+            {'slot': 0, 'character_id': 'char_0846d632e0'},
+            {'slot': 1, 'character_id': 'char_076a1f4e53'},
+        ]
+        steps = [{'id': str(i), 'slot': 0, 'action_id': a['id'], 'start_tick': 10 + i*5,
+                  'trigger_character_id': 'char_1895e259be'}
+                 for i, a in enumerate(a for a in catalog['actions'] if a.get('legacy_only'))]
+        original = deepcopy(steps)
+        expected = migrate_lingke_joint_steps(steps, team, catalog)
+        self.assertEqual(steps, original)
+        root = Path(__file__).resolve().parents[1]
+        script = """
+const fs = require('fs');
+const engine = require('./app/modules/shaft/static/js/shaft_engine.js');
+const p = JSON.parse(fs.readFileSync(0, 'utf8'));
+const migrated = engine.migrateLingkeJointSteps(p.steps, p.team, p.catalog);
+console.log(JSON.stringify({migrated, twice:engine.migrateLingkeJointSteps(migrated,p.team,p.catalog),original:p.steps}));
+"""
+        actual = json.loads(subprocess.check_output(['node', '-e', script], cwd=root, text=True,
+                             input=json.dumps({'steps': steps, 'team': team, 'catalog': catalog})))
+        self.assertEqual(actual['original'], original)
+        self.assertEqual(actual['migrated'], expected)
+        self.assertEqual(actual['twice'], expected)
+        self.assertEqual([s['slot'] for s in expected], [2, 3])

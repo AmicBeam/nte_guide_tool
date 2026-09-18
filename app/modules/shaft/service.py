@@ -22,6 +22,7 @@ from app.models import (
     ShaftAxisLike,
     ShaftCharacterPublication,
 )
+from app.modules.shaft.domain.legacy_actions import migrate_lingke_joint_steps
 from app.modules.shaft.domain.catalog import (
     LEGACY_ACTION_MIGRATIONS,
     LEGACY_ARC_SELECTIONS,
@@ -559,6 +560,7 @@ def _normalize_steps(
     actions = get_record_map(catalog['actions'])
     characters = get_record_map(catalog['characters'])
     team_members = sorted(team or [], key=lambda member: _int(member.get('slot')))
+    steps = migrate_lingke_joint_steps(steps, team_members, catalog)
     normalized: list[dict[str, Any]] = []
     for index, step in enumerate(steps[:MAX_AXIS_STEPS]):
         if len(normalized) >= MAX_AXIS_STEPS:
@@ -1238,6 +1240,11 @@ def serialize_shaft_axis(
             else ''
         )
     if include_axis:
+        migrated_steps = migrate_lingke_joint_steps(axis_payload.get('steps') or [], axis_payload.get('team') or team, load_shaft_catalog())
+        if migrated_steps != axis_payload.get('steps', []):
+            axis_payload = {**axis_payload, 'steps': migrated_steps}
+            payload['legacy_actions_migrated'] = True
+            result = {}  # The browser recomputes the new actions; no stale per-slot contribution snapshot.
         payload['axis'] = axis_payload
         payload['result'] = result
         payload['local_copy_id'] = None

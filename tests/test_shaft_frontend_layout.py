@@ -681,18 +681,14 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             {
                 '恶灵闪击战', 'a1', 'a2', 'a3', 'a4', 'a5', '援护', 'e',
                 'q展开', 'q范围', 'q多段', 'q爆发', '时停选人',
-                '光同频', '灵同频', '咒同频',
-                '暗同频', '魂同频', '相同频', '消耗标记同频', '小贞同频',
+                '消耗标记同频', '小贞同频',
                 '4觉同频追加', '闪', '无',
             },
         )
         actions_by_name = {action['name']: action for action in actions}
-        action_names = [action['name'] for action in actions]
-        joint_start = action_names.index('光同频')
-        self.assertEqual(
-            action_names[joint_start:joint_start + 6],
-            ['光同频', '灵同频', '咒同频', '暗同频', '魂同频', '相同频'],
-        )
+        legacy = [a for a in catalog['actions'] if a.get('legacy_only')]
+        self.assertEqual({a['name'] for a in legacy}, {'光同频', '灵同频', '咒同频', '暗同频', '魂同频', '相同频'})
+        actions_by_name.update({a['name']: a for a in legacy})
         self.assertEqual(actions_by_name['恶灵闪击战']['multipliers']['atk'], 0.5)
         self.assertEqual(actions_by_name['恶灵闪击战']['cooldown_ticks'], 80)
         self.assertEqual(actions_by_name['恶灵闪击战']['cooldown_ticks_by_awakening_node'], {'1': 60})
@@ -2034,7 +2030,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
     def test_readonly_share_preserves_restricted_character_and_steps(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         filtering = source[source.index('    const disabledCharacterIds = new Set('):
-                           source.index('    state.axis.steps.forEach(sanitizeStepPlacement);')]
+                           source.index('    state.axis.steps = window.ShaftEngine.migrateLingkeJointSteps(')]
         script = """
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const run = (readOnly) => {

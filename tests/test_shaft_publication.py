@@ -1,10 +1,35 @@
 import importlib
+import json
 from copy import deepcopy
 
 from tests.test_solo_room_flow import RoomFlowTestCase
 
 
 class ShaftPublicationTest(RoomFlowTestCase):
+    def test_retired_lingke_joint_migrates_on_save_share_and_public_snapshot(self):
+        token = self._issue_login_and_get_token('legacy-lingke-owner')
+        axis = {'team': [{'slot': 0, 'character_id': 'char_0846d632e0', 'arc_id': '', 'cartridge_id': ''},
+                         {'slot': 1, 'character_id': 'char_701295143d', 'arc_id': '', 'cartridge_id': ''}],
+                'steps': [{'id': 'old-joint', 'slot': 0, 'action_id': 'action_lingke_joint_curse', 'start_tick': 15}]}
+        saved = self._post('/api/shaft/axes', {
+            'title': '旧同频兼容', 'axis': axis, 'result': self._shaft_client_result(axis),
+        }, token=token)
+        # Emulate an existing persisted snapshot created before the migration existed.
+        models = importlib.import_module('app.models')
+        models.ShaftAxis.update(axis_json=json.dumps(axis)).where(models.ShaftAxis.id == saved['id']).execute()
+        shared = self._post(f"/api/shaft/axes/{saved['id']}/share", {}, token=token)
+        published = self._post(f"/api/shaft/axes/{saved['id']}/publish", {}, token=token)
+        for payload in (
+            self._get(f"/api/shaft/axes/{saved['id']}", token=token),
+            self._get(f"/api/shaft/shared/{shared['share_token']}"),
+            self._get(f"/api/shaft/axes/{published['id']}"),
+        ):
+            self.assertTrue(payload['legacy_actions_migrated'])
+            self.assertEqual(payload['result'], {})
+            step = payload['axis']['steps'][0]
+            self.assertEqual((step['id'], step['slot'], step['start_tick'], step['action_id']),
+                             ('old-joint', 1, 15, 'action_222f577087'))
+
     def test_heiyu_is_test_only_across_catalog_save_and_market(self):
         models = importlib.import_module('app.models')
         regular = self._issue_login_and_get_token('heiyu-regular')

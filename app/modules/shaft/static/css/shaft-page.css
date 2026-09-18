@@ -4169,6 +4169,20 @@ body.shaft-dragging .shaft-action-bar {
     border-style: dashed;
 }
 
+/* Converted teammate assists: cyan double border, independent of slot color. */
+.shaft-action-bar.lingke-joint-action {
+    border: 3px double #7cebe6;
+    box-shadow:
+        0 0 0 1px rgba(124, 235, 230, 0.24),
+        0 0 14px rgba(91, 220, 218, 0.2),
+        inset 0 0 8px rgba(124, 235, 230, 0.12);
+}
+
+.shaft-action-bar.lingke-joint-action::after {
+    background: #7cebe6;
+    box-shadow: 0 0 10px rgba(124, 235, 230, 0.4);
+}
+
 .shaft-action-bar.interrupted-action,
 .shaft-action-bar.q-instant-release.interrupted-action,
 .shaft-action-bar.basic-background.interrupted-action {

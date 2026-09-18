@@ -1016,6 +1016,27 @@
     );
   }
 
+  function migrateLingkeJointSteps(steps, team, catalog) {
+    const actions = recordMap(catalog.actions);
+    const characters = recordMap(catalog.characters);
+    const members = asList(team).slice().sort((a, b) => int(a.slot) - int(b.slot));
+    return asList(steps).flatMap((step) => {
+      const old = actions.get(String(step?.action_id || '')) || {};
+      if (!old.legacy_only || old.trigger_character_selector !== 'same_element_non_lingke') return [step];
+      const candidates = members.filter((member) => member.character_id !== old.character_id
+        && characters.get(member.character_id)?.element === old.damage_element);
+      const member = candidates.find((item) => item.character_id === step.trigger_character_id) || candidates[0];
+      // User 2026-09-18: unmatched legacy joints are removed.
+      if (!member) return [];
+      const support = asList(catalog.actions).find((action) => action.character_id === member.character_id
+        && action.action_type === '援护' && !action.legacy_only && !action.required_buff_key);
+      if (!support) return [];
+      const converted = Object.assign({}, step, {slot: int(member.slot), action_id: support.id, action_name: support.name});
+      delete converted.trigger_character_id;
+      return [converted];
+    });
+  }
+
   // User 2026-09-18: keep the actual assist/variant, but borrow Lingke's joint calculation.
   // Resolve in visual order so consecutive time-stop assists share the same real E window.
   function resolveLingkeSupportActions(steps, actionsById) {
@@ -2226,7 +2247,7 @@
     }
     const actionsById = recordMap(catalog.actions);
     const teamPayload = asList(axisPayload?.team).length ? asList(axisPayload.team) : asList(catalog.starter_axis?.team);
-    const steps = asList(axisPayload?.steps).length ? asList(axisPayload.steps) : asList(catalog.starter_axis?.steps);
+    const steps = migrateLingkeJointSteps(Array.isArray(axisPayload?.steps) ? axisPayload.steps : asList(catalog.starter_axis?.steps), teamPayload, catalog);
     validateSteps(steps, actionsById);
 
     const teamPanelBonus = normalizeTeamPanelBonus(axisPayload?.team_panel_bonus, catalog);
@@ -2469,7 +2490,6 @@
     }
 
     function reactionPreviousSlot(scheduled) {
-      if (scheduled?.action?.lingke_joint_e_window) return int(scheduled.action.lingke_joint_source_slot);
       return int(requiemFreeSupportSource(scheduled)?.previous_front_slot, int(scheduled?.previous_front_slot, -1));
     }
 
@@ -5664,6 +5684,7 @@
     MIN_FOREGROUND_START_GAP_TICKS,
     calculateAxisDurationTicks,
     resolveLingkeSupportActions,
+    migrateLingkeJointSteps,
     buildSnapshot,
     buildPanelProjection,
     simulateAxis,

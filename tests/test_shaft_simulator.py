@@ -1014,10 +1014,11 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 'arc_id': '',
                 'cartridge_id': '',
                 'cartridge_main_stat': '属伤',
-            }],
+            }, {'slot': 1, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''}, {'slot': 2, 'character_id': 'char_bdc43f82c6', 'arc_id': '', 'cartridge_id': ''}],
             'steps': [
-                {'id': 'light', 'slot': 0, 'action_id': 'action_lingke_joint_light', 'start_tick': 0},
-                {'id': 'spirit', 'slot': 0, 'action_id': 'action_lingke_team_joint', 'start_tick': 5},
+                {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 0},
+                {'id': 'light', 'slot': 0, 'action_id': 'action_lingke_joint_light', 'start_tick': 5},
+                {'id': 'spirit', 'slot': 0, 'action_id': 'action_lingke_team_joint', 'start_tick': 10},
             ],
             'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
             'initial_energy': 200,
@@ -5297,7 +5298,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                 'arc_id': '',
                 'cartridge_id': '',
                 'awakening_nodes': [1, 2, 3, 4, 5, 6],
-            }],
+            }, {'slot': 1, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''}, {'slot': 2, 'character_id': 'char_701295143d', 'arc_id': '', 'cartridge_id': ''}],
             'steps': [
                 {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 0},
                 {'id': 'light-1', 'slot': 0, 'action_id': 'action_lingke_joint_light', 'start_tick': 1},
@@ -5356,7 +5357,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
         }
         defaulted = normalize_axis_payload(base_payload)
-        self.assertEqual(defaulted['steps'][0]['trigger_character_id'], 'char_076a1f4e53')
+        self.assertEqual(defaulted['steps'][0]['slot'], 1)
 
         explicit_payload = dict(base_payload)
         explicit_payload['steps'] = [dict(
@@ -5364,7 +5365,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             trigger_character_id='char_1895e259be',
         )]
         explicit = normalize_axis_payload(explicit_payload)
-        self.assertEqual(explicit['steps'][0]['trigger_character_id'], 'char_1895e259be')
+        self.assertEqual(explicit['steps'][0]['slot'], 2)
 
     def test_lingke_e_f_awakenings_use_selected_joint_character(self) -> None:
         def simulate(nodes: list[int]) -> dict:
@@ -5451,7 +5452,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
         self.assertEqual(details['inside']['triggered_reaction']['reaction'], '覆纹')
         self.assertFalse(any('环合值不足' in warning for warning in details['inside']['warnings']))
-        self.assertAlmostEqual(details['inside']['harmony_after'], details['e']['harmony_after'])
+        self.assertAlmostEqual(details['inside']['resources_after_by_slot'][0]['harmony'], details['e']['harmony_after'])
         self.assertFalse(details['outside']['triggered_reaction'])
         self.assertNotIn(
             'character_lingke_awakening_e_joint_damage',
@@ -5564,7 +5565,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             1.2,
         )
 
-    def test_lingke_elemental_joint_actions_are_true_zero_time(self) -> None:
+    def test_unmatched_legacy_lingke_elemental_joints_are_removed(self) -> None:
         action_ids = [
             'action_lingke_joint_light',
             'action_lingke_team_joint',
@@ -5593,15 +5594,8 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
         })['result']
 
-        details = result['details']
-        self.assertEqual([detail['visual_start_tick'] for detail in details], [0, 5, 10, 15, 20, 25])
-        self.assertTrue(all(detail['visual_end_tick'] - detail['visual_start_tick'] == 5 for detail in details))
-        self.assertTrue(all(detail['start_tick'] == 0 for detail in details))
-        self.assertTrue(all(detail['end_tick'] == 0 for detail in details))
-        self.assertTrue(all(detail['duration_ticks'] == 0 for detail in details))
-        self.assertTrue(all(detail['tick_duration_ticks'] == 0 for detail in details))
+        self.assertEqual(result['details'], [])
         self.assertEqual(result['summary']['duration_ticks'], 0)
-        self.assertEqual(result['time_axis']['frozen_intervals'], [{'start_tick': 0, 'end_tick': 30}])
 
     def test_lingke_a4_joint_extra_uses_ultimate_skill_level_growth(self) -> None:
         def simulate(ultimate_level: int) -> dict:
@@ -5659,7 +5653,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                     'character_id': 'char_0846d632e0',
                     'arc_id': '',
                     'cartridge_id': '',
-                }],
+                }, {'slot': 1, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''}],
                 'steps': steps,
                 'initial_energy': 200,
                 'team_panel_bonus': ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS,
@@ -5692,10 +5686,10 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             'character_lingke_harmonic_joint_damage',
             {buff['rule_id'] for buff in expired_joint['applied_buffs']},
         )
-        self.assertEqual(expired_joint['personal_resources_after']['谐频'], 0)
+        self.assertEqual(expired['resources_by_slot'][0]['personal_resources']['谐频'], 100)
         self.assertAlmostEqual(full_joint['panel']['all_dmg'] - base_joint['panel']['all_dmg'], 0.4)
         self.assertGreater(full_joint['direct_damage'], base_joint['direct_damage'])
-        self.assertEqual(full_joint['personal_resources_after']['谐频'], 0)
+        self.assertEqual(full['resources_by_slot'][0]['personal_resources']['谐频'], 0)
         self.assertAlmostEqual(full['resources_by_slot'][0]['harmony'], 59.099)
 
         q_result = simulate_shaft_axis({
@@ -5704,7 +5698,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                 'character_id': 'char_0846d632e0',
                 'arc_id': '',
                 'cartridge_id': '',
-            }],
+            }, {'slot': 1, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''}],
             'steps': [
                 {'id': 'q-open', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 0},
                 {'id': 'light', 'slot': 0, 'action_id': 'action_lingke_joint_light', 'start_tick': 2},

@@ -124,7 +124,7 @@
       "avatar": "/static/images/characters/avatar/小吱.webp",
       "portrait": "/static/images/characters/portrait/小吱.webp",
       "passive": "拥有个人资源「金谷」，初始 0 点。己方回合开始时及小吱对对方玩家造成伤害时，获得 1 点金谷。金谷可以为负，倒地时保留。",
-      "awakened_passive": "获得 3 点金谷。己方手牌随机标注金谷 -1/0/+1，出牌结算后生效。己方回合开始时刷新，新入手牌同样标注。持续 2 个己方回合；结束时扣除 3 点金谷并清除标注。",
+      "awakened_passive": "获得 3 点金谷。己方手牌随机标注金谷 -1/0/+1，出牌结算后生效。己方回合开始时刷新。持续 2 个己方回合；结束时扣除 3 点金谷并清除标注。",
       "everness_id": 1073,
       "ultimate": {
         "kind": "status",

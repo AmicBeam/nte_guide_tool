@@ -301,3 +301,5 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 ### 八人三策略训练
 
 公开快攻的正式 Python 训练／NumPy 推理使用独立 `official_public_v5` 契约，旧六人 CUDA 合约保留。三套共用90分钟预算、真实终局分支学习、阶段择优与独立验收，详见 [三策略流程](../../../docs/duel-v2-three-strategy-training-20260918.md)。验证：`python -m unittest tests.test_duel_v2_league`。八人模型未验收前仍拒绝高级人机开局，普通人机可使用快攻。
+
+逐操作对照入口 `scripts/analyze_duel_v2_league_decision.py`：以指定快照和冻结八人模型作有界终局采样，分别展示动作概率与模拟胜率区间；只用于离线复盘，不把校准未知的价值头直接展示为胜率。

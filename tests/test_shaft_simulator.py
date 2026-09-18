@@ -5914,7 +5914,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         rose = simulate('arc_dcd5900afc')
         summary = normal['summary']
         expected_frequency = 1 / (
-            50 / summary['total_stagger']
+            summary['stagger_limit'] / summary['total_stagger']
             + 10 / summary['duration_seconds']
         )
 

@@ -123,7 +123,7 @@
     75: 2984,
     80: 3603,
   };
-  const STAGGER_LIMIT = 50;
+  const STAGGER_DAMAGE_BASE_GAUGE = 50;
   const STAGGER_RECOVERY_SECONDS = 10;
   const LAST_ROSE_ARC_ID = 'arc_dcd5900afc';
   const LAST_ROSE_STAGGER_EXTENSION_SECONDS = 3;
@@ -656,7 +656,7 @@
 
   function staggerBaseDamage(level) {
     const levelKey = Math.max(5, Math.min(80, Math.floor(num(level, 80) / 5) * 5));
-    return STAGGER_LIMIT * num(STAGGER_DAMAGE_BASE[levelKey]) / 3;
+    return STAGGER_DAMAGE_BASE_GAUGE * num(STAGGER_DAMAGE_BASE[levelKey]) / 3;
   }
 
   function staggerProfile(panelMods, character) {
@@ -2103,6 +2103,61 @@
     return Object.fromEntries(Object.entries(raw).filter(([, value]) => num(value) !== 0).map(([key, value]) => [String(key), num(value)]));
   }
 
+  // User 2026-09-18: dissonance removes 20% of the current gauge, with a
+  // higher-level enemy penalty. Daphne separately removes 10% of the original
+  // gauge on every trigger, even at two cap-reduction stacks, without that penalty.
+  function calculateDissonanceStagger(applications, details, snapshots, enemy, durationTicks, intervals) {
+    const baseLimit = enemy.track_outside ? 50 : 70;
+    const daphne = Array.from(snapshots.values()).find((item) => item.character.id === 'char_e8ad982185');
+    const ordered = applications.map((item, order) => ({...item, order}))
+      .sort((a, b) => a.tick - b.tick || a.order - b.order);
+    const triggers = ordered.filter((item) => item.tick <= durationTicks && item.effect.disabled !== true
+      && ordered.some((other) => other.effect.reaction !== item.effect.reaction
+        && other.effect.disabled !== true && other.tick <= item.tick
+        && (other.tick < item.tick || other.order < item.order)
+        && int(other.effect.end_tick) > item.tick));
+    const timeline = [
+      ...triggers.map((item) => ({...item, kind: 'dissonance', priority: 1})),
+      ...details.map((detail) => ({tick: int(detail.start_tick), detail, kind: 'action', priority: 0})),
+    ].sort((a, b) => a.tick - b.tick || a.priority - b.priority);
+    const events = [];
+    let stacks = 0;
+    let expiresAt = -Infinity;
+    let effectiveStagger = 0;
+    let extraStagger = 0;
+    timeline.forEach((item) => {
+      if (item.tick >= expiresAt) stacks = 0;
+      const limit = baseLimit * (1 - stacks * 0.1);
+      if (item.kind === 'action') {
+        effectiveStagger += num(item.detail.stagger_amount) * baseLimit / limit;
+        return;
+      }
+      const contributor = snapshots.get(int(item.effect.contributor_slot));
+      const levelGap = Math.max(0, int(enemy.level) - int(contributor?.character?.level, 80));
+      const dissonance = limit * 0.2 / (levelGap + 1);
+      const daphneExtra = daphne ? baseLimit * 0.1 : 0;
+      if (daphne) {
+        stacks = Math.min(2, stacks + 1);
+        expiresAt = item.tick + 300;
+      }
+      // Negative ticks only warm the 30s cap reduction; never add previous-loop gauge removal.
+      if (item.tick < 0) return;
+      const amount = dissonance + daphneExtra;
+      extraStagger += amount;
+      effectiveStagger += amount * baseLimit / limit;
+      events.push({reaction: '失谐', tick: item.tick,
+        visual_tick: visualTickFromCalculationTick(item.tick, intervals),
+        effect_id: item.effect.id, trigger_reaction: item.effect.reaction,
+        heiyu_recast: Boolean(item.effect.heiyu_extra),
+        contributor_slot: item.effect.contributor_slot, level_gap: levelGap,
+        stagger_limit_before: limit, dissonance_stagger: dissonance,
+        daphne_extra_stagger: daphneExtra, stagger_amount: amount,
+        daphne_stacks: stacks, daphne_expires_at: daphne ? expiresAt : null,
+        stagger_limit_after: baseLimit * (1 - stacks * 0.1)});
+    });
+    return {baseLimit, events, extraStagger, effectiveStagger};
+  }
+
   function simulateAxis(axisPayload, catalog) {
     if (!catalog || typeof catalog !== 'object') {
       throw new Error('缺少排轴数据目录。');
@@ -2135,6 +2190,7 @@
     let directDamage = 0;
     let staggerDamage = 0;
     let totalStagger = 0;
+    const enemyStaggerLimit = enemy.track_outside ? 50 : 70;
     const staggerProfileSamplesBySlot = new Map(Array.from(snapshots.keys()).map((slot) => [slot, []]));
     const specialDamageBySource = new Map(SPECIAL_DAMAGE_SOURCES.map((source) => [source, 0]));
     const requestedInitialEnergy = Math.max(0, num(axisPayload?.initial_energy, 1000));
@@ -2463,6 +2519,12 @@
     let activeBuffs = [];
     const buffTriggerCooldowns = new Map();
     const reactionEffects = [];
+    const staggerReactionApplications = [];
+    function recordStaggerReaction(effect) {
+      if (['黯星', '浊燃'].includes(effect.reaction)) {
+        staggerReactionApplications.push({effect, tick: int(effect.start_tick)});
+      }
+    }
     const reactionDamageEvents = [];
     const sharedPeriodicDamageStates = new Map();
     let nextSharedPeriodicDamageGeneration = 1;
@@ -2989,6 +3051,7 @@
       };
       nextReactionEffectId += 1;
       reactionEffects.push(effect);
+      recordStaggerReaction(effect);
       enemyDebuffs[reaction] = Math.max(int(enemyDebuffs[reaction]), int(effect.end_tick) + 1);
       effect.damage_ticks.forEach((damageTick, index) => {
         const isDot = reaction === '浊燃';
@@ -3111,6 +3174,7 @@
       };
       nextReactionEffectId += 1;
       reactionEffects.push(effect);
+      recordStaggerReaction(effect);
       enemyDebuffs[reaction] = Math.max(int(enemyDebuffs[reaction]), int(effect.end_tick) + 1);
       damageTicks.forEach((damageTick, index) => {
         const isDot = reaction === '浊燃';
@@ -3340,6 +3404,7 @@
             heiyu_parent_id: original.id, source_step_id: '', evicted_by_instance_limit: false,
             evicted_at_tick: null, settled_by_conflict: false};
           reactionEffects.push(extra);
+          recordStaggerReaction(extra);
           enemyDebuffs['黯星'] = Math.max(int(enemyDebuffs['黯星']), extra.end_tick + 1);
           reactionDamageEvents.push({effect_id: extra.id, reaction: '黯星', tick: extra.end_tick,
             sequence: 1, contributor_slot: extra.contributor_slot,
@@ -4826,7 +4891,7 @@
       ) {
         const targetKey = 'single_target';
         if (!forcedStaggerTargets.has(targetKey)) {
-          multipliedStagger = Math.max(multipliedStagger, Math.max(0, STAGGER_LIMIT - totalStagger));
+          multipliedStagger = Math.max(multipliedStagger, Math.max(0, enemyStaggerLimit - totalStagger));
           forcedStaggerTargets.add(targetKey);
           forcedStagger = true;
         }
@@ -5169,8 +5234,12 @@
         ? LAST_ROSE_STAGGER_EXTENSION_SECONDS
         : 0
     );
-    const staggerFrequency = totalStagger > 0 && durationSeconds > 0
-      ? 1 / (STAGGER_LIMIT / totalStagger + staggerRecoverySeconds / durationSeconds)
+    const dissonanceStagger = calculateDissonanceStagger(
+      staggerReactionApplications, details, snapshots, enemy, durationTicks, qVirtualIntervals,
+    );
+    totalStagger += dissonanceStagger.extraStagger;
+    const staggerFrequency = dissonanceStagger.effectiveStagger > 0 && durationSeconds > 0
+      ? 1 / (enemyStaggerLimit / dissonanceStagger.effectiveStagger + staggerRecoverySeconds / durationSeconds)
       : 0;
     const staggerContributionsBySlot = Array.from(snapshots.entries())
       .sort(([left], [right]) => left - right)
@@ -5319,6 +5388,9 @@
         stagger_frequency: staggerFrequency,
         stagger_recovery_seconds: staggerRecoverySeconds,
         total_stagger: totalStagger,
+        stagger_limit: enemyStaggerLimit,
+        dissonance_stagger: dissonanceStagger.extraStagger,
+        effective_stagger: dissonanceStagger.effectiveStagger,
         total_damage: totalDamage,
         dps: totalDamage / Math.max(durationTicks / 10, 0.1),
         team_energy: teamEnergy,
@@ -5386,6 +5458,7 @@
       },
       details,
       reaction_effects: reactionEffects,
+      dissonance_events: dissonanceStagger.events,
       reaction_damage_events: reactionDamageEvents
         .filter((event) => event.damage != null && !event.kind)
         .map((event) => Object.fromEntries(Object.entries(event).filter(([key]) => !key.startsWith('_')))),

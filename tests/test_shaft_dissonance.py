@@ -4,7 +4,7 @@ from app.modules.shaft.service import simulate_shaft_axis
 
 
 class DissonanceTest(unittest.TestCase):
-    def simulate(self, *, level=80, outside=False, daphne=False, repeat=False, late=False, loop=False, reverse=False, no_burn=False):
+    def simulate(self, *, level=80, outside=False, daphne=False, repeat=False, late=False, loop=False, reverse=False, no_burn=False, rose=False):
         characters = ['char_c78f7a08d5', 'char_1895e259be', 'char_heiyu']
         if daphne:
             characters.append('char_e8ad982185')
@@ -23,7 +23,7 @@ class DissonanceTest(unittest.TestCase):
                       (0, 'action_none_c78f7a08d5', 470), (2, 'action_heiyu_support', 472)]
         steps.append((0, 'action_none_c78f7a08d5', 600 if late else 200))
         return simulate_shaft_axis({
-            'team': [dict(slot=i, character_id=c, arc_id='', cartridge_id='') for i, c in enumerate(characters)],
+            'team': [dict(slot=i, character_id=c, arc_id='arc_dcd5900afc' if rose and i == 0 else '', cartridge_id='') for i, c in enumerate(characters)],
             'steps': [dict(id=str(i), slot=slot, action_id=action, start_tick=tick)
                       for i, (slot, action, tick) in enumerate(steps)],
             'enemy': {'level': level, 'track_outside': outside},
@@ -92,6 +92,34 @@ class DissonanceTest(unittest.TestCase):
                                    base['summary']['stagger_damage_per_trigger'])
             self.assertGreater(repeated['summary']['stagger_frequency'], base['summary']['stagger_frequency'])
             self.assertGreater(repeated['summary']['stagger_damage'], base['summary']['stagger_damage'])
+
+    def test_daphne_recovery_time_scales_with_cap_and_real_time_coverage(self):
+        for rose, recovery in [(False, 10), (True, 13)]:
+            with self.subTest(rose=rose):
+                r = self.simulate(daphne=True, rose=rose)
+                events = r['dissonance_events']
+                self.assertEqual([e['recovery_scale_after'] for e in events], [.9, .8])
+                duration = r['summary']['duration_ticks']
+                first, second = [e['tick'] for e in events]
+                expected_scale = (first + (second - first) * .9 + (duration - second) * .8) / duration
+                self.assertAlmostEqual(r['summary']['stagger_recovery_seconds'], 10 * expected_scale + (recovery - 10))
+                self.assertEqual(r['summary']['base_stagger_recovery_seconds'], recovery)
+                self.assertAlmostEqual(r['summary']['stagger_frequency'], 1 / (
+                    r['summary']['stagger_limit'] / r['summary']['effective_stagger']
+                    + (10 * expected_scale + (recovery - 10)) / r['summary']['duration_seconds']))
+                untouched = self.simulate(daphne=True, no_burn=True, rose=rose)
+                self.assertEqual(untouched['summary']['stagger_recovery_seconds'], recovery)
+
+    def test_daphne_recovery_returns_to_base_after_expiry(self):
+        r = self.simulate(daphne=True, late=True)
+        first, second, third, fourth = r['dissonance_events']
+        duration = r['summary']['duration_ticks']
+        # First two layers expire before the late pair; the uncovered gap uses full recovery.
+        expected_ticks = (first['tick'] + (second['tick'] - first['tick']) * .9
+                          + 300 * .8 + third['tick'] - second['daphne_expires_at']
+                          + (fourth['tick'] - third['tick']) * .9
+                          + (duration - fourth['tick']) * .8)
+        self.assertAlmostEqual(r['summary']['stagger_recovery_seconds'], 10 * expected_ticks / duration)
 
     def test_loop_counts_only_current_loop_removal(self):
         r = self.simulate(daphne=True, repeat=True, loop=True)

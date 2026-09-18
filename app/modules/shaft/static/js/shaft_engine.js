@@ -2125,7 +2125,18 @@
     let expiresAt = -Infinity;
     let effectiveStagger = 0;
     let extraStagger = 0;
+    let recoveryScaleTicks = 0;
+    let recoveryCursor = 0;
+    // Average recovery time over real axis time, including expiry and loop carry.
+    function accumulateRecoveryScale(untilTick) {
+      const end = Math.max(0, Math.min(durationTicks, untilTick));
+      if (end <= recoveryCursor) return;
+      const reducedTicks = Math.max(0, Math.min(end, expiresAt) - recoveryCursor);
+      recoveryScaleTicks += reducedTicks * (1 - stacks * 0.1) + (end - recoveryCursor - reducedTicks);
+      recoveryCursor = end;
+    }
     timeline.forEach((item) => {
+      accumulateRecoveryScale(item.tick);
       if (item.tick >= expiresAt) stacks = 0;
       const limit = baseLimit * (1 - stacks * 0.1);
       if (item.kind === 'action') {
@@ -2153,9 +2164,12 @@
         stagger_limit_before: limit, dissonance_stagger: dissonance,
         daphne_extra_stagger: daphneExtra, stagger_amount: amount,
         daphne_stacks: stacks, daphne_expires_at: daphne ? expiresAt : null,
-        stagger_limit_after: baseLimit * (1 - stacks * 0.1)});
+        stagger_limit_after: baseLimit * (1 - stacks * 0.1),
+        recovery_scale_after: 1 - stacks * 0.1});
     });
-    return {baseLimit, events, extraStagger, effectiveStagger};
+    accumulateRecoveryScale(durationTicks);
+    const recoveryScale = durationTicks > 0 ? recoveryScaleTicks / durationTicks : 1;
+    return {baseLimit, events, extraStagger, effectiveStagger, recoveryScale};
   }
 
   function simulateAxis(axisPayload, catalog) {
@@ -5229,7 +5243,7 @@
       0,
     );
     const durationSeconds = durationTicks / 10;
-    const staggerRecoverySeconds = STAGGER_RECOVERY_SECONDS + (
+    const baseStaggerRecoverySeconds = STAGGER_RECOVERY_SECONDS + (
       Array.from(snapshots.values()).some((snapshot) => String(snapshot.arc?.id || '') === LAST_ROSE_ARC_ID)
         ? LAST_ROSE_STAGGER_EXTENSION_SECONDS
         : 0
@@ -5237,6 +5251,8 @@
     const dissonanceStagger = calculateDissonanceStagger(
       staggerReactionApplications, details, snapshots, enemy, durationTicks, qVirtualIntervals,
     );
+    const staggerRecoverySeconds = STAGGER_RECOVERY_SECONDS * dissonanceStagger.recoveryScale
+      + (baseStaggerRecoverySeconds - STAGGER_RECOVERY_SECONDS);
     totalStagger += dissonanceStagger.extraStagger;
     const staggerFrequency = dissonanceStagger.effectiveStagger > 0 && durationSeconds > 0
       ? 1 / (enemyStaggerLimit / dissonanceStagger.effectiveStagger + staggerRecoverySeconds / durationSeconds)
@@ -5387,6 +5403,8 @@
         stagger_damage_per_trigger: staggerDamagePerTrigger,
         stagger_frequency: staggerFrequency,
         stagger_recovery_seconds: staggerRecoverySeconds,
+        base_stagger_recovery_seconds: baseStaggerRecoverySeconds,
+        stagger_recovery_scale: dissonanceStagger.recoveryScale,
         total_stagger: totalStagger,
         stagger_limit: enemyStaggerLimit,
         dissonance_stagger: dissonanceStagger.extraStagger,

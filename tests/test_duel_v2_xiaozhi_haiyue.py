@@ -41,8 +41,8 @@ class NewTestCharacters(unittest.TestCase):
         self.assertEqual(len([c for c in full['cards'] if not c.get('derived')]), 128)
         for cid in ('xiaozhi', 'haiyue'):
             c = next(c for c in full['characters'] if c['id'] == cid)
-            self.assertEqual(c['access_level'], 'test')
-            self.assertNotIn(cid, [c['id'] for c in public['characters']])
+            self.assertEqual(c['access_level'], 'public')
+            self.assertIn(cid, [c['id'] for c in public['characters']])
             for key in ('avatar', 'portrait'):
                 self.assertTrue(Path('app' + c[key]).is_file())
 

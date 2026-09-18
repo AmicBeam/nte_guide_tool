@@ -93,7 +93,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertIn('消灭', CHARACTERS['baicang']['awakened_passive'])
         self.assertIn('荒时', CHARACTERS['xun']['passive'])
         self.assertIn('时计', CHARACTERS['xun']['awakened_passive'])
-        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang')))
+        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue')))
         access = {item['id']: item['access_level'] for item in catalog['characters']}
         self.assertEqual(access['nanali'], 'public')
         self.assertEqual(access['zero'], 'public')
@@ -178,7 +178,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertTrue(all(1 <= rush['card_ids'].count(card_id) <= 2 for card_id in set(rush['card_ids'])))
         self.assertIn('反击方', CARDS['N02']['description'])
         self.assertEqual(CARDS['N03']['description'], '额外造成 1 点追击伤害。')
-        self.assertEqual(CARDS['N04']['description'], '')
+        self.assertEqual(CARDS['N04']['description'], '本回合己方创生伤害 +1。')
         names = '|'.join(re.escape(character['name']) for character in CHARACTERS.values())
         sortie = re.compile(rf'(?:^|(?<=。))(?:{names})出击。')
         for card in CARDS.values():
@@ -271,7 +271,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertGreaterEqual(selected, 16)
         for deck in STARTER_DECKS:
             self.assertEqual(validate_deck(deck)['card_ids'], deck['card_ids'])
-        self.assertEqual(sum(1 for total in counts.values() if total == 1), 2)
+        self.assertEqual(sum(1 for total in counts.values() if total == 1), 8)
         normalized = validate_deck(STARTER_DECK)
         self.assertEqual(normalized, STARTER_DECK)
         self.assertIsNot(normalized, STARTER_DECK)
@@ -308,7 +308,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         public = get_catalog(include_test_characters=False)
         self.assertEqual({item['id'] for item in public['characters']}, set(PUBLIC_CHARACTER_IDS))
         self.assertTrue(all(item['character_id'] in PUBLIC_CHARACTER_IDS for item in public['cards']))
-        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组'])
+        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '快攻预组'])
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
         self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'requiem')))
         full = get_catalog()

@@ -27,12 +27,14 @@ from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
 
 _CACHE = {}
 _LOCK = threading.RLock()
-PRESETS = ('starter', 'weave-rush')
+PRESETS = ('starter', 'weave-rush', 'quick-rush')
+# Registered for the next league; no compatible/evaluated eight-character model yet.
+PENDING_PRESETS = frozenset({'quick-rush'})
 
 
 def preset(deck_id):
     if deck_id not in PRESETS:
-        raise RuleValidationError('高级人机暂支持创生预组和覆纹预组。')
+        raise RuleValidationError('高级人机策略包括创生预组、覆纹预组和快攻预组。')
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
 
 
@@ -229,6 +231,8 @@ class FrozenModel:
 
 def load_model(deck_id):
     preset(deck_id)
+    if deck_id in PENDING_PRESETS:
+        raise RuleValidationError('快攻高级人机尚待训练与验收，请先使用普通人机。')
     root = Path(config.DUEL_AI_MODEL_DIR).resolve()
     key = (str(root), deck_id)
     with _LOCK:

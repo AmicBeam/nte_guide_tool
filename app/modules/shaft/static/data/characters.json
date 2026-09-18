@@ -924,8 +924,14 @@
       "ultimate_dmg": 0.0,
       "all_dmg": 0.0
     },
+    "bond_bonus": {
+      "label": "8暴伤",
+      "modifiers": {
+        "crit_dmg": 0.08
+      }
+    },
     "source_row": 0,
-    "source_note": "用户2026-09-15提供：腾讯文档《黑羽资料汇总》UTYzjRJfxLuc；Everness同日按黑羽检索无匹配，属于用户测试资料，非Nanoka核实数据。",
+    "source_note": "用户2026-09-15提供：腾讯文档《黑羽资料汇总》UTYzjRJfxLuc；Everness同日按黑羽检索无匹配，属于用户测试资料，非Nanoka核实数据。用户2026-09-18补充：羁绊加成提供8%暴击伤害。",
     "initial_personal_resources": {
       "恶意": 20
     }

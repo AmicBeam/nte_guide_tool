@@ -17,6 +17,22 @@ class HeiyuTest(unittest.TestCase):
                           for i, (slot, action, tick) in enumerate(steps)], 'options': options}
         return simulate_shaft_axis(axis)['result']
 
+    def test_user_supplied_bond_bonus_adds_eight_percent_crit_damage(self):
+        # User 2026-09-18; Everness has no matching Heiyu entry.
+        character = next(c for c in load_shaft_catalog()['characters'] if c['id'] == CID)
+        self.assertEqual(character['bond_bonus'], {'label': '8暴伤', 'modifiers': {'crit_dmg': .08}})
+        panels = []
+        for enabled in (False, True):
+            axis = {'team': [{'slot': 0, 'character_id': CID, 'arc_id': '',
+                              'cartridge_id': '', 'bond_full': enabled}],
+                    'steps': [{'id': 'a', 'slot': 0, 'action_id': 'action_heiyu_a1', 'start_tick': 0}]}
+            normalized = normalize_axis_payload(axis)
+            self.assertEqual(normalized['team'][0]['bond_full'], enabled)
+            panels.append(simulate_shaft_axis(axis)['result']['details'][0]['panel'])
+        self.assertAlmostEqual(panels[1]['crit_dmg'] - panels[0]['crit_dmg'], .08)
+        self.assertEqual(panels[1]['crit_rate'], panels[0]['crit_rate'])
+        self.assertEqual(panels[1]['atk'], panels[0]['atk'])
+
     def test_source_rows_and_estimated_durations(self):
         catalog = load_shaft_catalog()
         actions = {a['name']: a for a in catalog['actions_by_character'][CID]}

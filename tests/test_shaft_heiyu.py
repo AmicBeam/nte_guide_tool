@@ -164,6 +164,34 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(len(r['reaction_effects']), 2)
         self.assertTrue(r['reaction_effects'][1]['heiyu_extra'])
 
+    def test_accumulated_damage_is_other_not_harmony_or_character_damage(self):
+        other = {'slot': 1, 'character_id': DARK, 'arc_id': '', 'cartridge_id': ''}
+        r = self.simulate([(1, 'action_none_c78f7a08d5', 0), (0, 'action_heiyu_support', 2),
+                           (0, 'action_heiyu_e', 20), (1, 'action_dodge_c78f7a08d5', 120)], [other])
+        extra = sum(e['damage'] for e in r['reaction_damage_events'] if e.get('heiyu_accumulation'))
+        dark_star = sum(e['damage'] for e in r['reaction_damage_events']
+                        if e['reaction'] == '黯星' and not e.get('heiyu_accumulation')
+                        and e.get('_counted_in_total') is not False)
+        summary = r['summary']
+        self.assertGreater(extra, 0)
+        self.assertAlmostEqual(summary['other_damage'], extra)
+        self.assertAlmostEqual(summary['harmony_damage'], dark_star)
+        self.assertAlmostEqual(summary['total_damage'], sum(summary[k] for k in
+                               ('character_damage', 'harmony_damage', 'stagger_damage', 'other_damage')))
+        self.assertAlmostEqual(sum(c['damage'] for c in r['damage_by_slot']), summary['character_damage'])
+        self.assertAlmostEqual(sum(c['damage'] for c in r['harmony_contributions_by_slot']), dark_star)
+        contribution = next(c for c in r['other_contributions_by_slot'] if c['damage'] > 0)
+        self.assertEqual(contribution['character_id'], CID)
+        self.assertEqual(contribution['percent'], 100)
+        self.assertAlmostEqual(contribution['damage'], extra)
+        self.assertEqual(contribution['sources'][0]['source'], '黑羽黯星额外伤害')
+        sources = {c['source']: c['damage'] for c in r['damage_by_source']}
+        self.assertAlmostEqual(sources['其他'], extra)
+        self.assertAlmostEqual(sources['黯星'], dark_star)
+        ordinary = self.simulate([(0, 'action_heiyu_a1', 0)])
+        self.assertEqual(ordinary['summary']['other_damage'], 0)
+        self.assertNotIn('其他', [c['source'] for c in ordinary['damage_by_source']])
+
     def test_dark_star_recast_starts_a_fresh_damage_window(self):
         other = {'slot': 1, 'character_id': DARK, 'arc_id': '', 'cartridge_id': ''}
         for second_window_hit in (False, True):

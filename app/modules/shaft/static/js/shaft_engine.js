@@ -5298,6 +5298,7 @@
       (sum, interval) => sum + Math.max(0, int(interval.end_tick) - int(interval.start_tick)),
       0,
     );
+    let otherDamage = 0;
     // User 2026-09-16: count only time-located damage; aggregate stagger is excluded.
     // This damage is already a final value and bypasses every modifier/resistance area.
     if (teamHasHeiyu()) {
@@ -5319,7 +5320,7 @@
               .reduce((sum, item) => sum + item.damage, 0);
             const extraDamage = Math.min(accumulated * 0.2, num(owner.base_stats.atk) * 1000);
             if (extraDamage > 0) {
-              const extra = {reaction: '黯星', heiyu_accumulation: true, effect_id: effect.id,
+              const extra = {reaction: '黯星', heiyu_accumulation: true, damage_category: 'other', damage_source: '黑羽黯星额外伤害', effect_id: effect.id,
                 tick: int(event.tick), visual_tick: event.visual_tick, sequence: 2,
                 contributor_slot: owner.slot, contributor_character_id: owner.character.id,
                 contributor_character_name: owner.character.name, damage: extraDamage, _counted_in_total: true,
@@ -5327,8 +5328,7 @@
                   excludes_stagger: true, excludes_dark_star: true, ignores_modifiers: true}};
               reactionDamageEvents.push(extra);
               directDamage += extraDamage;
-              specialDamageBySource.set('黯星', (specialDamageBySource.get('黯星') || 0) + extraDamage);
-              reactionDamageBySlot.set(owner.slot, (reactionDamageBySlot.get(owner.slot) || 0) + extraDamage);
+              otherDamage += extraDamage;
             }
           }
         }
@@ -5384,11 +5384,12 @@
       contribution.percent = staggerDamage > 0 ? contribution.damage / staggerDamage * 100 : 0;
     });
     const totalDamage = directDamage + staggerDamage;
-    const characterDamage = Math.max(0, directDamage - harmonyDamage);
+    const characterDamage = Math.max(0, directDamage - harmonyDamage - otherDamage);
     const teamEnergy = Array.from(energyBySlot.values()).reduce((sum, value) => sum + value, 0);
     const totalHarmony = Array.from(harmonyBySlot.values()).reduce((sum, value) => sum + value, 0);
     const damageBySlot = new Map();
     const damageByActionBySlot = new Map();
+    const otherDamageBySlot = new Map();
     const harmonyDamageBySourceBySlot = new Map(
       Array.from(snapshots.keys()).map((slot) => [slot, new Map()]),
     );
@@ -5427,6 +5428,10 @@
       .filter((event) => num(event.damage) > 0 && event._counted_in_total !== false)
       .forEach((event) => {
       const slot = int(event.contributor_slot);
+      if (event.damage_category === 'other') {
+        otherDamageBySlot.set(slot, (otherDamageBySlot.get(slot) || 0) + num(event.damage));
+        return;
+      }
       const isHarmonyDamage = !event.kind && HARMONY_DAMAGE_SOURCES.includes(String(event.reaction || ''));
       if (isHarmonyDamage) {
         const sources = harmonyDamageBySourceBySlot.get(slot);
@@ -5477,12 +5482,24 @@
         })),
       };
     });
+    const otherContributionsBySlot = sortedSlots.map((slot) => {
+      const damage = otherDamageBySlot.get(slot) || 0;
+      return {
+        slot,
+        character_id: snapshots.get(slot).character.id,
+        character_name: snapshots.get(slot).character.name,
+        damage,
+        percent: otherDamage > 0 ? damage / otherDamage * 100 : 0,
+        sources: damage > 0 ? [{source: '黑羽黯星额外伤害', damage, percent: 100}] : [],
+      };
+    });
     const damageBySource = [
       ...DAMAGE_SHARE_SOURCE_GROUPS.map((group) => ({
         source: group.source,
         damage: group.members.reduce((sum, source) => sum + (specialDamageBySource.get(source) || 0), 0),
       })),
       { source: '倾陷', damage: staggerDamage },
+      { source: '其他', damage: otherDamage },
     ]
       .filter((item) => item.damage > 0)
       .map((item) => ({
@@ -5499,6 +5516,7 @@
         direct_damage: directDamage,
         character_damage: characterDamage,
         harmony_damage: harmonyDamage,
+        other_damage: otherDamage,
         stagger_damage: staggerDamage,
         stagger_damage_per_trigger: staggerDamagePerTrigger,
         stagger_frequency: staggerFrequency,
@@ -5521,6 +5539,7 @@
         damage: damageBySlot.get(slot) || 0,
         direct_damage: damageBySlot.get(slot) || 0,
         stagger_damage: staggerContributionsBySlot.find((item) => item.slot === slot)?.damage || 0,
+        other_damage: otherDamageBySlot.get(slot) || 0,
         harmony_damage: harmonyContributionsBySlot.find((item) => item.slot === slot)?.damage || 0,
         percent: characterDamage > 0 ? (damageBySlot.get(slot) || 0) / characterDamage * 100 : 0,
       })),
@@ -5542,6 +5561,7 @@
       }),
       damage_by_source: damageBySource,
       harmony_contributions_by_slot: harmonyContributionsBySlot,
+      other_contributions_by_slot: otherContributionsBySlot,
       stagger_contributions_by_slot: staggerContributionsBySlot,
       resources_by_slot: sortedSlots.map((slot) => ({
         slot,

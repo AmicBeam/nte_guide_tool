@@ -22,6 +22,7 @@
     '浊燃': '#ff665c',
     '黯星': '#6f8fff',
     '倾陷': '#eef4ff',
+    '其他': '#d7a5ff',
   };
   const BUFF_LINE_COLORS = ['#62b7ff', '#f9ca62', '#95ec87', '#ff7ab8', '#b28cff', '#55dacd'];
   const ACTION_TYPES = ['', '普攻', 'E', 'Q', '援护', '无'];
@@ -2258,6 +2259,7 @@
       damage_by_slot: clone(result.damage_by_slot || []),
       damage_by_action_by_slot: clone(result.damage_by_action_by_slot || []),
       harmony_contributions_by_slot: clone(result.harmony_contributions_by_slot || []),
+      other_contributions_by_slot: clone(result.other_contributions_by_slot || []),
     };
     renderResults();
     if ($('shaft-action-contribution-dialog')?.open) {
@@ -2791,6 +2793,11 @@
         percent: totalDamage > 0 ? Number(summary.stagger_damage || 0) / totalDamage * 100 : 0,
         color: DAMAGE_SOURCE_COLORS['倾陷'],
       },
+      {
+        kind: 'other', label: '其他', damage: Number(summary.other_damage || 0),
+        percent: totalDamage > 0 ? Number(summary.other_damage || 0) / totalDamage * 100 : 0,
+        color: DAMAGE_SOURCE_COLORS['其他'],
+      },
     ];
   }
 
@@ -2814,6 +2821,7 @@
     }
     renderResultCard('shaft-direct-damage', '角色伤害', summary.character_damage || 0, compareSummary?.character_damage, summary.total_damage || 0);
     renderResultCard('shaft-harmony-damage', '环合伤害', summary.harmony_damage || 0, compareSummary?.harmony_damage, summary.total_damage || 0);
+    renderResultCard('shaft-other-damage', '其他', summary.other_damage || 0, compareSummary?.other_damage, summary.total_damage || 0);
     renderResultCard('shaft-stagger-damage', '倾陷伤害', summary.stagger_damage || 0, compareSummary?.stagger_damage, summary.total_damage || 0);
     renderResultCard('shaft-total-damage', '总伤', summary.total_damage || 0, compareSummary?.total_damage, summary.total_damage || 0);
     renderResultCard('shaft-dps', 'DPS', summary.dps || 0, compareSummary?.dps, null);
@@ -2832,7 +2840,7 @@
         <span>${escapeHtml(item.label)}</span>
         <div class="shaft-contribution-bar"><span style="width: ${Math.max(0, Math.min(100, item.percent))}%; --contribution-color:${item.color}"></span></div>
         <span>${formatNumber(item.percent || 0, 1)}%</span>
-        <button class="secondary-btn shaft-action-contribution-btn" ${item.kind === 'harmony' ? 'data-open-harmony-analysis' : 'data-open-stagger-analysis'} type="button" aria-haspopup="dialog" ${item.damage > 0 ? '' : 'disabled'}>分析详情</button>
+        <button class="secondary-btn shaft-action-contribution-btn" ${item.kind === 'harmony' ? 'data-open-harmony-analysis' : item.kind === 'other' ? 'data-open-other-analysis' : 'data-open-stagger-analysis'} type="button" aria-haspopup="dialog" ${item.damage > 0 ? '' : 'disabled'}>分析详情</button>
       </div>
     `).join('');
     $('shaft-contribution-list').innerHTML = (characterRows || independentRows)
@@ -3276,26 +3284,27 @@
     `;
   }
 
-  function renderHarmonyAnalysis() {
+  function renderHarmonyAnalysis(kind = 'harmony') {
+    const label = kind === 'other' ? '其他' : '环合';
     const content = $('shaft-harmony-analysis-content');
     const result = freshResult();
     if (!content || !result) return;
     const summary = result.summary || {};
-    const contributions = (result.harmony_contributions_by_slot || [])
+    const contributions = (result[`${kind}_contributions_by_slot`] || [])
       .filter((item) => Number(item.damage || 0) > 0)
       .slice()
       .sort((left, right) => Number(right.damage || 0) - Number(left.damage || 0));
-    if (!contributions.length || Number(summary.harmony_damage || 0) <= 0) {
-      content.innerHTML = '<div class="shaft-empty">当前轴没有产生环合伤害</div>';
+    if (!contributions.length || Number(summary[`${kind}_damage`] || 0) <= 0) {
+      content.innerHTML = `<div class="shaft-empty">当前轴没有产生${label}伤害</div>`;
       return;
     }
     content.innerHTML = `
-      <div class="shaft-stagger-analysis-note">环合伤害独立计入全队总伤和 DPS，不计入角色自身伤害占比或动作贡献。</div>
+      <div class="shaft-stagger-analysis-note">${label}伤害独立计入全队总伤和 DPS，不计入角色自身伤害占比或动作贡献。</div>
       <div class="shaft-action-analysis-kpis shaft-stagger-analysis-kpis">
-        <div><span>环合总伤</span><strong>${formatNumber(summary.harmony_damage || 0)}</strong></div>
-        <div><span>环合类型</span><strong>${new Set(contributions.flatMap((item) => (item.sources || []).map((source) => source.source))).size}</strong></div>
+        <div><span>${label}总伤</span><strong>${formatNumber(summary[`${kind}_damage`] || 0)}</strong></div>
+        <div><span>伤害来源</span><strong>${new Set(contributions.flatMap((item) => (item.sources || []).map((source) => source.source))).size}</strong></div>
         <div><span>贡献角色</span><strong>${contributions.length}</strong></div>
-        <div><span>占全队总伤</span><strong>${formatNumber(Number(summary.harmony_damage || 0) / Math.max(Number(summary.total_damage || 0), 1) * 100, 1)}%</strong></div>
+        <div><span>占全队总伤</span><strong>${formatNumber(Number(summary[`${kind}_damage`] || 0) / Math.max(Number(summary.total_damage || 0), 1) * 100, 1)}%</strong></div>
       </div>
       <div class="shaft-stagger-contribution-list">
         ${contributions.map((item) => `
@@ -3316,10 +3325,11 @@
     `;
   }
 
-  function openHarmonyAnalysis(trigger = null) {
+  function openHarmonyAnalysis(trigger = null, kind = 'harmony') {
     const dialog = $('shaft-harmony-analysis-dialog');
-    if (!dialog || Number(freshResult()?.summary?.harmony_damage || 0) <= 0) return;
-    renderHarmonyAnalysis();
+    if (!dialog || Number(freshResult()?.summary?.[`${kind}_damage`] || 0) <= 0) return;
+    $('shaft-harmony-analysis-title').textContent = kind === 'other' ? '其他伤害贡献分析' : '环合贡献分析';
+    renderHarmonyAnalysis(kind);
     dialog._returnFocus = trigger;
     dialog.showModal();
   }
@@ -3840,6 +3850,11 @@
       openHarmonyAnalysis(harmonyButton);
       return;
     }
+    const otherButton = event.target.closest('[data-open-other-analysis]');
+    if (otherButton) {
+      openHarmonyAnalysis(otherButton, 'other');
+      return;
+    }
     const staggerButton = event.target.closest('[data-open-stagger-analysis]');
     if (staggerButton) openStaggerAnalysis(staggerButton);
   }
@@ -3991,7 +4006,7 @@
     const summary = result?.summary || {};
     const workbenchDirectDamage = Math.max(
       0,
-      Number(summary.direct_damage || 0) - Number(summary.harmony_damage || 0),
+      Number(summary.direct_damage || 0) - Number(summary.harmony_damage || 0) - Number(summary.other_damage || 0),
     );
     const contribution = result?.damage_by_slot || [];
     const characterBars = contribution.map((item, index) => `
@@ -4016,6 +4031,7 @@
         <div><span>直伤</span><strong>${formatNumber(workbenchDirectDamage)}</strong></div>
         <div><span>环合</span><strong>${formatNumber(summary.harmony_damage || 0)}</strong></div>
         <div><span>倾陷</span><strong>${formatNumber(summary.stagger_damage || 0)}</strong></div>
+        <div><span>其他</span><strong>${formatNumber(summary.other_damage || 0)}</strong></div>
       </div>
       <div class="shaft-mini-contribution-list">${characterBars}${sourceBars}</div>
     `;
@@ -4553,7 +4569,7 @@
     }
     const formula = event?.formula_parts || {};
     if (event?.heiyu_accumulation) {
-      return `黑羽·黯星追加 · ${formatNumber(event.damage)} 伤害\n累计伤害 ${formatNumber(formula.base)} × 20%（不含倾陷）\n上限 ${formatNumber(formula.damage_cap)}；不受其他增益影响`;
+      return `其他 · 黑羽·黯星追加 · ${formatNumber(event.damage)} 伤害\n累计伤害 ${formatNumber(formula.base)} × 20%（不含倾陷）\n上限 ${formatNumber(formula.damage_cap)}；不受其他增益影响`;
     }
     const isPeriodicDamage = Boolean(event?.kind);
     const lines = [];

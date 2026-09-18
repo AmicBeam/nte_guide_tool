@@ -1248,9 +1248,9 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('id="shaft-harmony-analysis-content"', template)
         self.assertIn('data-open-harmony-analysis', source)
         self.assertIn('class="shaft-contribution-row shaft-contribution-source-row"', source)
-        self.assertIn('function renderHarmonyAnalysis()', source)
+        self.assertIn("function renderHarmonyAnalysis(kind = 'harmony')", source)
         self.assertIn('result.harmony_contributions_by_slot', source)
-        self.assertIn('环合伤害独立计入全队总伤和 DPS', source)
+        self.assertIn('${label}伤害独立计入全队总伤和 DPS', source)
         self.assertIn('不计入角色自身伤害占比或动作贡献', source)
         self.assertIn("renderResultCard('shaft-direct-damage', '角色伤害', summary.character_damage", source)
 

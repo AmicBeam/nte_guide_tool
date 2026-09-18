@@ -322,3 +322,8 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 ### 独立搜索纠错小实验
 
 `scripts/test_duel_v2_search_pilot.py --starter SOURCE.pt --weave SOURCE.pt --output NEW_DIR --seconds 600` 在本机 CPU 执行最多 10 分钟的小实验，不替换联赛默认入口或服务模型。`rl/league_search.py` 提供全根动作的两步公开信息斩杀证明、8 粒子筛选后独立 32 粒子复核及全合法动作蒸馏；`rl/search_pilot.py` 生成分离的合成训练/选择/确认/留出局面。牌组数量保持合法，但这些局面并不声称由自然对局产生。验证：`python -m unittest tests.test_duel_v2_league_search tests.test_duel_v2_league_learning tests.test_duel_v2_league`。Torch 只在训练和梯度测试时加载。
+
+
+### 完整对局搜索增强自博弈短训
+
+`scripts/train_duel_v2_information_search.py --starter SOURCE.pt --weave SOURCE.pt --output NEW_DIR --seconds 600 --cycles 2 --simulations 24 --workers 4` 是独立本机 CPU 短训入口。双方每个实际决策（包括双方开局调度）执行信息集搜索，整局结束后联合拟合搜索访问分布和本方终局胜负，不使用斩杀题或 PPO。`rl/information_search.py` 实现搜索与样本契约，`rl/information_experiment.py` 执行两轮自博弈、回放训练及独立对照。搜索内部对手用其可见信息策略；这是近似信息集搜索，非完整 ReBeL。当前实际根支持公开三预组的调度和普通行动；未来含私有检视的根需先扩展信念抽样，不允许偷看或悄悄降级。模拟中的选择按行动方可见信息处理。验证：`python -m unittest tests.test_duel_v2_information_search tests.test_duel_v2_league tests.test_duel_v2_league_learning tests.test_duel_v2_league_search`。默认联赛入口和线上纯网络策略未替换。

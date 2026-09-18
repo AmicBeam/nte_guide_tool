@@ -23,11 +23,16 @@ def family_options(state, side, *, available=True):
 
 
 def family_description(state, side):
-    from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
-    parts = [f"己方{CHARACTERS[cid]['name']}存活时，视为打出「{CARDS[card]['name']}」"
-             for cid, card in family_options(state, side, available=False) if card]
-    parts.append('己方有异能者倒地时，在战斗区召唤 2/4 的塔吉多')
-    return '选择一项：' + '；'.join(parts) + '。'
+    from app.modules.card_game.content.duel_v2 import CARDS
+    parts = [f"视为打出一张「{CARDS[card]['name']}」" if card
+             else '在战斗区召唤一个 2/4 的塔吉多'
+             for _, card in family_options(state, side)]
+    if not parts:
+        return '当前无可用选项。'
+    count = len(parts)
+    prefix = ({2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '七'}.get(count, str(count))
+              + '选一：') if count > 1 else ''
+    return prefix + '；或'.join(parts) + '。'
 
 
 def _rewind(c):

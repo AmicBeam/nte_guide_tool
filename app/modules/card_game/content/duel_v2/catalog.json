@@ -2550,7 +2550,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "选择一项：己方娜娜莉存活时，视为打出「要叫大姐头」；己方零存活时，视为打出「探悉天职」；己方有异能者倒地时，在战斗区召唤 2/4 的塔吉多。",
+      "description": "根据存活的己方伊波恩角色，选择视为打出他们的一张牌，或召唤一个 2/4 的塔吉多。",
       "effect_id": "XF01",
       "derived": true,
       "starter_copies": 0,

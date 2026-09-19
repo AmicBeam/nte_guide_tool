@@ -5214,6 +5214,14 @@
     return renderActionDetail(step, detail, action, event);
   }
 
+  function infiltrationVulnerabilityRow(detail) {
+    // The engine's non-Fuwen amplification is the applied 浸染 multiplier.
+    // Read the settled value, including its strength source and character bonuses.
+    const multiplier = Number(detail?.formula_parts?.non_fuwen_amplification ?? 1);
+    if (!Number.isFinite(multiplier) || multiplier <= 1) return '';
+    return `<div class="shaft-detail-kv"><span>浸染易伤</span><strong>+${formatNumber((multiplier - 1) * 100, 1)}%</strong></div>`;
+  }
+
   function renderActionDetail(step, detail, action, damageEvent = null) {
     const panelStats = detail?.panel || {};
     const actionElement = String(detail?.damage_element || action?.damage_element || getCharacterMap().get(memberBySlot(step.slot)?.character_id || '')?.element || '');
@@ -5260,6 +5268,8 @@
         `<div class="shaft-detail-kv"><span>敌人结算防御</span><strong>${formatNumber(detail?.formula_parts?.settled_defense || 0, 1)}</strong></div>`,
       );
     }
+    const infiltrationRow = infiltrationVulnerabilityRow(detail);
+    if (infiltrationRow) realtimePanelRows.push(infiltrationRow);
     const durationTicks = Number(detail?.duration_ticks ?? action.duration_ticks ?? 0);
     const durationSeconds = durationTicks / 10;
     const character = getCharacterMap().get(memberBySlot(step.slot)?.character_id) || {};

@@ -73,3 +73,8 @@ Mac 可通过已配对 SSH 读取本轮状态；Windows 本地监督器独立执
 控制脚本SHA：`c44c659e4f84ba8c0561061fc361a7fa62b0902a371780348e7b3e06c656d0f8`。新增记录：`operator-transition.json`、`checkpoint-pre-finalization.json`、`finalizer-launch.json`、`finalization-config.json`、`finalization-baseline.json`、最终 `finalization-verification.json`。最终回传须连同原训练guard和新最终guard一起保留。
 
 10点心跳已重设并核验下次执行为2026-09-19北京时间11:00，后续仅验收，不再恢复学习。
+
+
+## 完成状态
+
+10:53只评估监督器正常退出，11点已回传并核验全部产物，确认评估阶段没有新增学习。完整结果见 [中午验收结果](duel-v2-noon-results-20260919.md)。候选未上线，最佳仍为初始模型；本次心跳在归档后暂停。

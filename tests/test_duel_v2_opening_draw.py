@@ -25,6 +25,7 @@ class OpeningDrawTest(unittest.TestCase):
                 self.assertEqual(len(draws), 1)
                 self.assertEqual(draws[0]['side'], first)
                 state = apply_action(state, first, {'type': 'end_turn'})
+                self.assertEqual(state['sides'][second]['shield'], 0)
                 self.assertEqual(len(state['sides'][second]['deck']), 26)
                 self.assertEqual(state['sides'][second]['ap'], 2)
                 state = apply_action(state, second, {'type': 'end_turn'})
@@ -37,3 +38,23 @@ class OpeningDrawTest(unittest.TestCase):
                 state = new_game(seed=12, first_side=first, skip_mulligan=True)
                 self.assertEqual(len(state['sides'][first]['deck']), 26)
                 self.assertEqual(state['sides'][first]['ap'], 1)
+
+    def test_player_shield_expires_only_on_owners_turn_before_start_damage(self):
+        from app.modules.card_game.engine.duel_v2.state import damage
+        for first in ('a', 'b'):
+            with self.subTest(first=first):
+                second = 'b' if first == 'a' else 'a'
+                state = new_game(seed=12, first_side=first, skip_mulligan=True)
+                for team in state['sides'].values():
+                    team['hand'] = []  # No automatic responses in this timing fixture.
+                damage(state, second, 'player', 2)
+                self.assertEqual(state['sides'][second]['hp'], 30)
+                self.assertEqual(state['sides'][second]['shield'], 3)
+                state['sides'][first]['shield'] = 4
+                state['sides'][second]['front_debuff']['burn'] = {'left': 2, 'by': first}
+                state = apply_action(state, first, {'type': 'end_turn'})
+                self.assertEqual(state['sides'][second]['shield'], 0)
+                self.assertEqual(state['sides'][second]['hp'], 29)
+                self.assertEqual(state['sides'][first]['shield'], 4)
+                state = apply_action(state, second, {'type': 'end_turn'})
+                self.assertEqual(state['sides'][first]['shield'], 0)

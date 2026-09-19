@@ -493,7 +493,7 @@ static int form_draw_bonus(int *row, int s, int kind){
 }
 static int card_instant(int *row, int s, int kind){
   if(kind<0) return 0;
-  return CAT_INSTANT[kind] || (kind==CARD_NF01 && SI(TURN_COUNT,s)>=5) || form_draw_bonus(row,s,kind);
+  return CAT_INSTANT[kind] || (kind==CARD_NF01 && row[OFF_TURN]>=5) || form_draw_bonus(row,s,kind);
 }
 static int card_free(int *row, int s, int kind){
   return card_instant(row,s,kind) && SI(USED_INSTANT,s)==0;
@@ -1016,6 +1016,7 @@ static void begin_turn(int *row, int s){
   row[OFF_ACTIVE]=s;
   row[OFF_TURN]+=1;
   SI(TURN_COUNT,s)+=1;
+  SI(SHIELD,s)=0;
   SI(USED_INSTANT,s)=0;
   SI(SURPLUS,s)=0;
   SI(HARMONY_DAMAGE,s)=0;

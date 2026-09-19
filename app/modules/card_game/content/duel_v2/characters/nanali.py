@@ -68,7 +68,7 @@ class Nanali:
     def makes_instant(state, side, card):
         if card.get('card_id') != 'NF01':
             return False
-        return int(state['sides'][side].get('turn_count') or 0) >= 5
+        return int(state.get('turn') or 0) >= 5
 
     @staticmethod
     def after_sortie(c):

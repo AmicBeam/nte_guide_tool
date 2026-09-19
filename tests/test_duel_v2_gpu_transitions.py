@@ -31,6 +31,33 @@ class GpuTransitionTest(unittest.TestCase):
                 self.assertTrue(torch.equal(old[:3], got[:3]), name)
         self.assertFalse(torch.equal(before['turn'][3:], s.turn[3:]))
 
+    def test_player_shield_expiry_is_owner_and_mask_local(self):
+        from app.modules.card_game.rl.gpu_duel.rules import begin_turn
+        s, torch = self.env.state, self.torch
+        s.shield[:] = torch.tensor([4, 3])
+        begin_turn(s, torch.tensor([0, 1, 0, 1]), torch.tensor([True, True, False, False]))
+        self.assertEqual(s.shield.tolist(), [[0, 3], [4, 0], [4, 3], [4, 3]])
+
+    def test_family_instant_uses_global_turn_for_legality_and_payment(self):
+        from app.modules.card_game.rl.gpu_duel.catalog import CARD_INDEX, ACT_PLAY
+        from app.modules.card_game.rl.gpu_duel.rules import rebuild_legal, play_card
+        s, torch = self.env.state, self.torch
+        s.active[:] = 0
+        s.turn[:] = torch.tensor([4, 5, 6, 10])
+        s.turn_count[:, 0] = 3
+        s.ap[:] = 0
+        s.used_instant[:] = 0
+        s.hand_kind[:] = -1
+        s.hand_kind[:, 0, 0] = CARD_INDEX['NF01']
+        s.hand_n[:, 0] = 1
+        rebuild_legal(s)
+        self.assertEqual((s.legal_type == ACT_PLAY).any(1).tolist(), [False, True, True, True])
+        play_card(s, torch.zeros(4, dtype=torch.long), torch.zeros(4, dtype=torch.long),
+                  torch.tensor([False, True, True, True]),
+                  torch.zeros(4, dtype=torch.long), torch.full((4,), -1, dtype=torch.long))
+        self.assertEqual(s.ap[:, 0].tolist(), [0, 0, 0, 0])
+        self.assertEqual(s.used_instant[:, 0].tolist(), [0, 1, 1, 1])
+
     def test_terminal_retained_until_explicit_reset(self):
         from app.modules.card_game.rl.gpu_duel.catalog import ACT_ATTACK
         from app.modules.card_game.rl.gpu_duel.ppo import _terminal_reward

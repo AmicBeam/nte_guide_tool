@@ -1,7 +1,7 @@
 {
   "schema": "official_public_v5",
   "deck": "starter",
-  "rule_hash": "42e8840fe013df1d8b9e2b38a9e538e2fbcab0c674ca13979967c911ece9f085",
+  "rule_hash": "b272e15f644353ed2b806bb05bcbfb797a14b3da0679232e87f21f29d04ac522",
   "sha256": "7207c7de951f1dbbdee0ed68bb1898b0724210d736b3f42373411c77b1f3fc5c",
   "seat_ids": [
     "nanali",
@@ -1298,11 +1298,19 @@
     "date": "2026-09-19",
     "report": "docs/duel-v2-noon-model-update-20260919.md",
     "model_sha256": "7207c7de951f1dbbdee0ed68bb1898b0724210d736b3f42373411c77b1f3fc5c",
-    "rule_hash": "42e8840fe013df1d8b9e2b38a9e538e2fbcab0c674ca13979967c911ece9f085",
+    "rule_hash": "b272e15f644353ed2b806bb05bcbfb797a14b3da0679232e87f21f29d04ac522",
     "build_sha256": "e1743d737870096d947fc00a4e22e7ecb982a9d8f8f9c8f0bb425ddff89d6d3e",
     "training_run": "noon-20260919-r4",
     "checkpoint_cycle": 28,
     "variant": "latest",
-    "inference": "pure_network"
-  }
+    "inference": "pure_network",
+    "previous_rule_hash": "42e8840fe013df1d8b9e2b38a9e538e2fbcab0c674ca13979967c911ece9f085",
+    "runtime_amendment": {
+      "date": "2026-09-19",
+      "request": "玩家护盾己方回合开始清除；家族壮大从整局第5回合瞬发",
+      "report": "docs/duel-v2-turn-boundaries-20260919.md",
+      "scope": "Keep explicitly enabled candidate weights and builds; runtime rule corrections only. Historical quality results unchanged."
+    }
+  },
+  "training_rule_hash": "42e8840fe013df1d8b9e2b38a9e538e2fbcab0c674ca13979967c911ece9f085"
 }

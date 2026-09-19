@@ -249,15 +249,16 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual((hero(s, 'a', 'nanali')['harmony'], hero(s, 'a', 'nanali')['energy']), (1, 2))
         self.assertEqual((hero(s, 'b', 'zero')['harmony'], hero(s, 'b', 'zero')['energy']), (0, 0))
 
-    def test_nanali_family_becomes_instant_from_own_turn_five(self):
+    def test_nanali_family_becomes_instant_from_global_turn_five(self):
         s = self.game()
         family = next(c for c in s['sides']['a']['hand'] if c['card_id'] == 'NF01')
         shown = next(c for c in observe(s, 'a')['sides']['a']['hand'] if c.get('card_id') == 'NF01')
         self.assertFalse(shown.get('instant'))
-        s['sides']['a']['turn_count'] = 4
+        s['turn'] = 4
         shown = next(c for c in observe(s, 'a')['sides']['a']['hand'] if c.get('card_id') == 'NF01')
         self.assertFalse(shown.get('instant'))
-        s['sides']['a']['turn_count'] = 5
+        s['turn'] = 5
+        s['sides']['a']['turn_count'] = 3
         s['sides']['a']['ap'] = 0
         shown = next(c for c in observe(s, 'a')['sides']['a']['hand'] if c.get('card_id') == 'NF01')
         self.assertTrue(shown.get('instant'))

@@ -485,6 +485,7 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
     for si in range(SIDES):
         here = mask & (side == si)
         s.turn_count[:, si] = torch.where(here, s.turn_count[:, si] + 1, s.turn_count[:, si])
+        s.shield[:, si] = torch.where(here, torch.zeros_like(s.shield[:, si]), s.shield[:, si])
         s.used_instant[:, si] = torch.where(here, torch.zeros_like(s.used_instant[:, si]), s.used_instant[:, si])
         s.surplus[:, si] = torch.where(here, torch.zeros_like(s.surplus[:, si]), s.surplus[:, si])
         if hasattr(s, 'harmony_damage'):
@@ -878,7 +879,7 @@ def play_card(s: GpuState, side: torch.Tensor, hand_slot: torch.Tensor, mask: to
     instant = (kind >= 0) & (s.catalog_instant[kind.clamp(min=0)] > 0)
     nf01 = CARD_INDEX.get('NF01', -1)
     if nf01 >= 0:
-        instant = instant | ((kind == nf01) & (s.turn_count[b, side] >= 5))
+        instant = instant | ((kind == nf01) & (s.turn >= 5))
     # zero shaped forms instant
     is_form = (kind >= 0) & (s.catalog_type[kind.clamp(min=0)] == 2)
     zero_shaped = (s.ch_hp[b, side, ZERO] > 0) & (s.ch_shape[b, side, ZERO] >= 0)
@@ -985,7 +986,7 @@ def rebuild_legal(s: GpuState) -> None:
         instant = (kind >= 0) & (s.catalog_instant[kind.clamp(min=0)] > 0)
         nf01 = CARD_INDEX.get('NF01', -1)
         if nf01 >= 0:
-            instant = instant | ((kind == nf01) & (s.turn_count[b, side] >= 5))
+            instant = instant | ((kind == nf01) & (s.turn >= 5))
         is_form = (kind >= 0) & (s.catalog_type[kind.clamp(min=0)] == 2)
         zero_shaped = (s.ch_hp[b, side, ZERO] > 0) & (s.ch_shape[b, side, ZERO] >= 0)
         free = (instant | (is_form & zero_shaped)) & (s.used_instant[b, side] == 0)

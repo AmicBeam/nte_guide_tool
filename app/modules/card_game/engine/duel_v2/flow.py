@@ -447,6 +447,8 @@ def begin_turn(state, side):
     # Announce the turn before any start-of-turn board changes are presented.
     log(state, f"{name(state, side)}的第 {team['turn_count']} 个回合开始。", 'turn', side=side,
         actor=f'{side}:player')
+    # Player shields, including the second player's opening shield, expire here.
+    team['shield'] = 0
     for ps in SIDES:
         for cid in team_order(state, ps):
             h = hero(state, ps, cid)

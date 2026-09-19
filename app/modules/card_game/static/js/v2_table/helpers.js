@@ -675,6 +675,7 @@
       '环合 ' + (data.harmony == null ? 0 : data.harmony),
       (data.resource_name || '能量') + ' ' + (data.energy == null ? 0 : data.energy) + '/' + (data.energy_max == null ? 5 : data.energy_max),
     ];
+    if (data.protagonist_aura != null) bits.push('主角光环 ' + data.protagonist_aura + '/6');
     if (data.truth_keys != null) bits.push('真理之匙 ' + data.truth_keys);
     if (data.arid != null) bits.push('荒时 ' + data.arid);
     if (data.growth != null && data.growth !== '') {

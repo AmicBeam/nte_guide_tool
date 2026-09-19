@@ -23,6 +23,28 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.storage.flush(5)
         super().tearDown()
 
+    def test_haniya_resource_action_is_idempotent_and_reloadable(self):
+        self._pvp()
+        from tests.test_duel_v2_haniya import HaniyaTest
+        from app.modules.card_game.engine.duel_v2.state import hero
+        game = HaniyaTest().game()
+        hero(game, 'a', 'haniya')['protagonist_aura'] = 4
+        room = self.repository.room_by_code(self.code)
+        self.storage.initialize(room, {'rules_version': 'duel_v2', 'game': game, 'requests': []})
+        from app.modules.card_game.engine.application import v2_replay
+        v2_replay.begin(room, game)
+        body = dict(room_code=self.code, request_id='haniya-sortie', expected_version=0,
+                    action={'type': 'attack', 'character_id': 'zero'})
+        first = self._post('/api/duel-v2/action', body, token=self.a)['game']
+        retry = self._post('/api/duel-v2/action', body, token=self.a)['game']
+        self.assertEqual(first['version'], retry['version'])
+        self.assertTrue(self.storage.flush(5))
+        self.storage.clear_cache()
+        loaded = self._get('/api/duel-v2/state', token=self.a)['game']
+        self.assertEqual(loaded['sides']['b']['hp'], 24)
+        h = next(h for h in loaded['sides']['a']['characters'] if h['id'] == 'haniya')
+        self.assertEqual(h['protagonist_aura'], 0)
+
     def _pvp(self):
         result = self._post('/api/duel-v2/start', {'mode': 'pvp'}, token=self.a)
         self.code = result['room']['room_code']
@@ -421,12 +443,12 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self._set_test_whitelist('duel-v2-tester')
         catalog = self._get('/api/duel-v2/catalog', token=token)
         names = {item['name'] for item in catalog['characters']}
-        self.assertEqual(len(catalog['characters']), 16)
+        self.assertEqual(len(catalog['characters']), 17)
         self.assertIn('浔', names)
         self.assertIn('残虹', names)
         self.assertIn('薄荷', names)
         self.assertIn('白藏', names)
-        self.assertEqual(len(catalog['cards']), 131)
+        self.assertEqual(len(catalog['cards']), 139)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
             ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '快攻预组'],

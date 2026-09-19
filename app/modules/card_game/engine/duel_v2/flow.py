@@ -290,6 +290,8 @@ def normal_attack_payment(state, side, cid):
         return None
     offer = decide(EffectContext(state, side, cid, {'side': side, 'actor': cid}),
                    'normal_attack_payment', default, actor_only=True)
+    if isinstance(offer, dict) and hero(state, side, cid).get('flags', {}).get('free_normal_attack_turn') == state['turn']:
+        offer = {**offer, 'ap': 0}
     return offer if isinstance(offer, dict) else None
 
 
@@ -605,6 +607,8 @@ def end_turn(state, side):
             discard(state, side, card)
     team.update(normal_attack_available=False, ultimate_available=False,
                 extra_flower=False, extra_delay=False, genesis_damage_bonus=0)
+    for h in team['characters'].values():
+        h['flags'].pop('free_normal_attack_turn', None)
     expire_turn_zone_states(state, side)
     for cid in team_order(state, side):
         if ultimate_spec(cid)['expires'] == 'turn_end':
@@ -801,6 +805,7 @@ def apply_action(state, side, action):
         if payment.get('normal'):
             team['normal_attack_available'] = False
         c = operation(result, side, cid)
+        c.operation['normal_attack'] = True
         fire(c, 'pay_normal_attack', actor_only=True, payment=payment)
         c.sortie(bonus=payment.get('bonus', 0))
         finish_operation(result)

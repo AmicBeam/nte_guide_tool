@@ -371,3 +371,5 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 新增仅测试账号可见的哈尼娅及 V01–V08。角色包 `content/duel_v2/characters/haniya.py` 管理主角光环、终结、五张战术和三张武备；通用规则增加本局黯星计数、出击结算前团队回调、攻击命中玩家后回调及指定角色本回合普通出击免行动力。蓝色音符在金谷同位置显示，公开回放同步资源；免费出击效果具有本回合标记。规则与来源见完整手册哈尼娅节。
 
 验证：`python3 -m unittest tests.test_duel_v2_haniya tests.test_duel_v2_catalog tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_jingu_marks tests.test_duel_v2_preview_privacy tests.test_duel_v2_zone_status`。正式 Python 引擎接入，不扩展独立训练执行器及公开高级人机角色范围。
+
+哈尼娅本轮自动化、真实页面与交付边界见 [接入验收](../../../docs/duel-v2-haniya-20260920.md)。

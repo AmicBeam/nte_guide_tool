@@ -79,11 +79,12 @@
         V2.statIconSvg(kind) + '<em>' + V2.escapeHtml(String(shown)) + '</em></span>';
     }
     const jinguHtml = data.jingu == null ? '' : combatStat('jingu', data.jingu, '金谷 ' + data.jingu + '（可为负，倒地保留）');
+    const auraHtml = data.protagonist_aura == null ? '' : combatStat('aura', data.protagonist_aura, '主角光环 ' + data.protagonist_aura + '/6（倒地保留）');
     const vitalsHtml = options.usePortrait
       ? ('<div class="v2-portrait-vitals">' +
           (shield > 0 ? combatStat('shield', shield, '护盾 ' + shield) : '') +
           '<div class="v2-portrait-vitals-row">' +
-            '<span class="v2-attack-stack">' + jinguHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' +
+            '<span class="v2-attack-stack">' + jinguHtml + auraHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' +
             combatStat('hp', hp, '生命 ' + hp) +
           '</div></div>')
       : '';
@@ -97,7 +98,7 @@
     const resourceHtml = (hideHarmony ? '' : resourceLabel('环合', '环', String(data.harmony || 0) + '/' + (data.harmony_max == null ? 2 : data.harmony_max), 'harmony')) +
       (hideEnergy ? '' : resourceLabel(data.resource_name || '能量', data.resource_name ? '时' : '能', energyNow + '/' + energyMax, 'energy'));
     const stats = compact ? [
-      { html: '<span class="v2-attack-stack">' + jinguHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' },
+      { html: '<span class="v2-attack-stack">' + jinguHtml + auraHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' },
       { html: combatStat('hp', hp, '生命 ' + hp) },
       { html: combatStat('shield', shield, '护盾 ' + shield) },
     ] : [];
@@ -135,7 +136,7 @@
     if (options.canAwaken) {
       actions.push('<button class="v2-awaken-btn" type="button" data-ultimate-id="' + V2.escapeAttr(data.id) + '">终结</button>');
     }
-    const panelSig = [attack, hp, shield, data.harmony, energyNow, energyMax, data.awakened ? 1 : 0, data.jingu].join('|');
+    const panelSig = [attack, hp, shield, data.harmony, energyNow, energyMax, data.awakened ? 1 : 0, data.jingu, data.protagonist_aura].join('|');
     const prevPanel = node.getAttribute('data-pop-sig');
     node.setAttribute('data-pop-sig', panelSig);
     node.innerHTML =
@@ -160,7 +161,7 @@
     if (prevPanel && prevPanel !== panelSig) {
       const previous = prevPanel.split('|');
       const current = panelSig.split('|');
-      [['.is-atk', 0], ['.is-hp', 1], ['.is-shield', 2], ['.harmony', 3], ['.energy', 4], ['.is-jingu', 7]].forEach(function (stat) {
+      [['.is-atk', 0], ['.is-hp', 1], ['.is-shield', 2], ['.harmony', 3], ['.energy', 4], ['.is-jingu', 7], ['.is-aura', 8]].forEach(function (stat) {
         if (previous[stat[1]] === current[stat[1]]) return;
         node.querySelectorAll(stat[0]).forEach(function (badge) {
           badge.classList.add('v2-stat-pop');

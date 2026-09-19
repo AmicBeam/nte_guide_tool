@@ -448,6 +448,9 @@
   }
 
   function statIconSvg(kind) {
+    if (kind === 'aura') {
+      return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6 3l8-2v10h-2V4L8 5v8H6V3z"/><ellipse cx="4.5" cy="12.5" rx="3" ry="2.5" fill="currentColor"/><ellipse cx="10.5" cy="10.5" rx="3" ry="2.5" fill="currentColor"/></svg>';
+    }
     if (kind === 'jingu') {
       return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="currentColor"/><path d="M6 5h4v6H6z" fill="none" stroke="#79520c" stroke-width="1.5"/><path d="M8 2v2M8 12v2" stroke="#79520c"/></svg>';
     }

@@ -348,6 +348,23 @@
         "expires": "turn_end"
       },
       "faction": "玉饼街居民协会"
+    },
+    {
+      "id": "haniya",
+      "name": "哈尼娅",
+      "attribute": "魂",
+      "attack": 2,
+      "max_hp": 4,
+      "avatar": "/static/images/characters/avatar/哈尼娅.webp",
+      "portrait": "/static/images/characters/portrait/哈尼娅.webp",
+      "everness_id": 1020,
+      "faction": "斯特利速递",
+      "passive": "拥有个人资源「主角光环」，初始 0 点，上限 6 点，倒地时保留。己方回合开始时获得 1 点。己方异能者普通出击时，消耗全部主角光环，每点使本次战斗攻击 +1。",
+      "awakened_passive": "获得的主角光环数量翻倍，持续 2 个己方回合。",
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      }
     }
   ],
   "cards": [
@@ -2717,6 +2734,144 @@
       "starter_copies": 2,
       "attack": 1,
       "hp": 7
+    },
+    {
+      "id": "V01",
+      "character_id": "haniya",
+      "name": "新人！天才转校生报道",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。获得 1 点主角光环。重置你的普通出击次数。",
+      "effect_id": "V01",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2,
+      "instant": true
+    },
+    {
+      "id": "V02",
+      "character_id": "haniya",
+      "name": "传说！后排靠窗的故乡",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "选择 1 名己方异能者，使其本回合普通出击不消耗行动力。获得 2 点主角光环。",
+      "effect_id": "V02",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "V03",
+      "character_id": "haniya",
+      "name": "集结！主角团正式成立",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。使 1 名对方异能者攻击 -2。获得 2 点主角光环。",
+      "effect_id": "V03",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "instant": true
+    },
+    {
+      "id": "V04",
+      "character_id": "haniya",
+      "name": "海边！永恒的七八定律",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "本局己方每触发过 1 次黯星，获得 2 点主角光环。",
+      "effect_id": "V04",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "V05",
+      "character_id": "haniya",
+      "name": "危机！濒临破碎的信任",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "消耗全部主角光环，将其 2 倍数值的伤害随机分配给所有对方角色。",
+      "effect_id": "V05",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "V06",
+      "character_id": "haniya",
+      "name": "决战！终将到来的黎明",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方触发黯星时，本次战斗不消耗主角光环。",
+      "effect_id": "V06",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
+    },
+    {
+      "id": "V07",
+      "character_id": "haniya",
+      "name": "名为哈尼娅的旋律",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方异能者的攻击对对方玩家造成伤害时，抽 1 张牌。",
+      "effect_id": "V07",
+      "source": {
+        "character_id": 1020,
+        "type": "ability",
+        "index": 7,
+        "name_source": "用户指定标题；Everness 同名终结主题"
+      },
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 6
+    },
+    {
+      "id": "V08",
+      "character_id": "haniya",
+      "name": "引爆全场",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方异能者使用战斗牌时，也能触发哈尼娅的异能。",
+      "effect_id": "V08",
+      "source": {
+        "character_id": 1020,
+        "type": "arc",
+        "index": 8,
+        "name_source": "用户指定专属武备名"
+      },
+      "starter_copies": 2,
+      "attack": 3,
+      "hp": 5
     }
   ],
   "starter_decks": [

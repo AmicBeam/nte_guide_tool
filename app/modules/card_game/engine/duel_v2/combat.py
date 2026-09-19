@@ -173,6 +173,7 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
             log(s, f"{c.character['name']}触发失谐。", 'harmony', side=side, source=cid,
                 actor=f'{side}:{cid}', target=f'{enemy}:{target}')
     elif kind == '黯星':
+        team['dark_star_count'] = int(team.get('dark_star_count', 0)) + 1
         zone = front_debuff(s, enemy)
         had_burn = bool(zone.get('burn'))
         zone['star'] = {'left': 2, 'by': side}
@@ -277,7 +278,8 @@ def attack(c, spec, index):
         bonus += spec['harmony_bonus']
     bonus += tally(c, 'attack_bonus', attacker_id=cid, target=target, target_id=target_id,
                    spec=spec, index=index)
-    attack_amount = max(0, op.get('card_set_attack', attack_value(h, s, side)) + bonus - _zone_slow(s, side, cid))
+    frame_attack = attack_value(h, s, side) + int(op.get('sortie_attack_bonus', 0))
+    attack_amount = max(0, op.get('card_set_attack', frame_attack) + bonus - _zone_slow(s, side, cid))
     extra_counter = 0
     counter_base = attack_value(target, s, enemy) if is_esper(target_id) else 0
     if is_esper(target_id):
@@ -343,8 +345,9 @@ def attack(c, spec, index):
     self_loss = damage(s, side, cid, counter, source=f'{enemy}:{target_id}',
                        kind='combat', settle=False, group_id=group_id,
                        counter_immunity='support' if op.get('support') else None) if is_esper(target_id) else 0
+    player_damage = target_loss if is_player(target_id) else 0
     if overflow:
-        damage(s, enemy, PLAYER_ID, overflow, source=f'{side}:{cid}', kind='penetration',
+        player_damage += damage(s, enemy, PLAYER_ID, overflow, source=f'{side}:{cid}', kind='penetration',
                settle=False, group_id=group_id)
     if op.get('support') and is_esper(target_id) and alive(s, enemy, target_id):
         add_collapse(s, enemy, target_id, 1, by=side)
@@ -354,6 +357,10 @@ def attack(c, spec, index):
     knockdowns(s)
     victory(s)
     from .flow import settle_deferred_card_marks
+    if finished(s):
+        settle_deferred_card_marks(s)
+        return
+    fire(c, 'on_ally_attack_resolved', actor_id=cid, player_damage=player_damage)
     if finished(s):
         settle_deferred_card_marks(s)
         return
@@ -378,14 +385,19 @@ def sortie(c, **spec):
     s, side, cid, op = c.state, c.side, c.cid, c.operation
     if finished(s) or not alive(s, side, cid):
         return
+    op['sortie_attack_bonus'] = 0
     if s.get('_response_intercept'):
         intercept_enter(c)
+        if not finished(s) and alive(s, side, cid):
+            fire(c, 'on_sortie_ready', actor_id=cid, response=True)
         return
     stay_bench = bool(decide(c, 'sortie_from_bench', False, actor_only=True))
     if stay_bench:
         spec['no_counter'] = True
     else:
         enter(c)
+    if not finished(s) and alive(s, side, cid):
+        fire(c, 'on_sortie_ready', actor_id=cid, response=False)
     fire(c, 'before_hits', actor_only=True)
     for index in range(spec.get('hits', 1)):
         if finished(s) or not alive(s, side, cid) or (not stay_bench and s['sides'][side]['front'] != cid):

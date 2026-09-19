@@ -84,7 +84,7 @@ def capture_public_board(state):
             shape_id = hero.get('shape')
             characters.append({
                 'id': cid,
-                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys') if k in hero},
+                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'protagonist_aura') if k in hero},
                 'entity_id': hero.get('entity_id'),
                 'effect_markers': character_effect_markers(hero),
                 'hp': hero['hp'],

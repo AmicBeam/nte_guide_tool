@@ -14,6 +14,9 @@ def character_effect_markers(character):
     for attribute, value in (character.get('next_damage_resistance') or {}).items():
         markers.append(_marker('next_resistance', attribute + '抗性', '下次受到该属性伤害',
                                f'{attribute}属性伤害抗性 {value:+d}'))
+    if flags.get('free_normal_attack_turn'):
+        markers.append(_marker('free_normal_attack', '普通出击免费', '本回合',
+                               '普通出击不消耗行动力，仍需普通出击机会'))
     if flags.get('energy_next'):
         markers.append(_marker('energy_next', '终结 · 回能', '下个己方回合开始',
                                '己方存活异能者各获得 1 点能量'))

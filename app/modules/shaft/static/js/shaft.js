@@ -5206,8 +5206,10 @@
   function renderDamageEventDetail(event) {
     const formula = event.formula_parts || {};
     const step = {slot: event.contributor_slot, start_tick: event.tick};
-    const action = {name: event.reaction, damage_element: event.damage_element,
-      damage_type: event.damage_type || event.action_type || '环合', action_type: event.damage_type || event.action_type || '环合',
+    const damageType = event.heiyu_accumulation || event.damage_category === 'other'
+      ? '其他' : (event.damage_type || event.action_type || '环合');
+    const action = {name: event.heiyu_accumulation ? '黯星追加' : event.reaction, damage_element: event.damage_element,
+      damage_type: damageType, action_type: damageType,
       multipliers: formula.scaling_multipliers || {}, is_background_damage: true};
     const detail = {panel: event.panel, formula_parts: {...formula, dmg_bonus: formula.damage_bonus},
       applied_buffs: event.applied_buffs || [], triggered_buffs: event.triggered_buffs || [],

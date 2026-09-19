@@ -1,6 +1,7 @@
 (function (root) {
   const V2 = root.NTE_V2;
   const TABLE = root.NTE_V2_TABLE = root.NTE_V2_TABLE || {};
+  const jinguOverlays = new WeakMap();
 
   function popIfChanged(node, signature) {
     if (!node || signature == null) {
@@ -426,6 +427,53 @@
     if (ctx.nodes.opponentHand) ctx.nodes.opponentHand.setAttribute('data-hand-side', opponent);
   }
 
+  function syncJinguOverlay(ctx) {
+    const rail = ctx.nodes.playerHand;
+    if (!ctx.page || !rail || !rail.querySelectorAll) return;
+    if (!jinguOverlays.has(rail)) {
+      const layer = document.createElement('div');
+      layer.className = 'v2-jingu-overlay';
+      layer.setAttribute('aria-hidden', 'true');
+      ctx.page.appendChild(layer);
+      let pending = false;
+      const update = function () {
+        pending = false;
+        layer.replaceChildren();
+        const bounds = rail.getBoundingClientRect();
+        if (!bounds.width || !bounds.height || getComputedStyle(rail).visibility === 'hidden') return;
+        const origin = layer.getBoundingClientRect();
+        const gap = 5 * (parseFloat(getComputedStyle(ctx.page).getPropertyValue('--table-layout-scale')) || 1);
+        const fragment = document.createDocumentFragment();
+        rail.querySelectorAll('.v2-hand-card > .v2-jingu-mark').forEach(function (mark) {
+          const rect = mark.parentElement.getBoundingClientRect();
+          const center = rect.left + rect.width / 2;
+          // Hide marks for cards scrolled outside the visible hand viewport.
+          if (center < bounds.left || center > bounds.right) return;
+          const clone = mark.cloneNode(true);
+          clone.style.left = (center - origin.left) + 'px';
+          clone.style.top = (rect.top - origin.top - gap) + 'px';
+          fragment.appendChild(clone);
+        });
+        layer.appendChild(fragment);
+      };
+      const schedule = function () {
+        if (pending) return;
+        pending = true;
+        root.requestAnimationFrame(update);
+      };
+      const observer = new MutationObserver(schedule);
+      observer.observe(rail, { childList: true, subtree: true, attributes: true });
+      observer.observe(ctx.page, { attributes: true, attributeFilter: ['class', 'style'] });
+      const resize = new ResizeObserver(schedule);
+      resize.observe(rail);
+      resize.observe(ctx.page);
+      rail.addEventListener('scroll', schedule, { passive: true });
+      root.addEventListener('resize', schedule, { passive: true });
+      jinguOverlays.set(rail, { schedule: schedule, observer: observer, resize: resize });
+    }
+    jinguOverlays.get(rail).schedule();
+  }
+
   function renderHands(ctx) {
     const mine = TABLE.sideState(ctx.game, ctx.viewer);
     const theirs = TABLE.sideState(ctx.game, ctx.opponent);
@@ -465,6 +513,7 @@
     if (ctx.nodes.mulliganStage) {
       V2.setHidden(ctx.nodes.mulliganStage, !inMulligan);
     }
+    syncJinguOverlay(ctx);
     const hiddenCount = Number(theirs.hand_count != null ? theirs.hand_count : (theirs.hand || []).length || 0);
     const opponentCards = Array.isArray(theirs.hand) ? theirs.hand.slice() : [];
     while (opponentCards.length < hiddenCount) opponentCards.push({ hidden: true });

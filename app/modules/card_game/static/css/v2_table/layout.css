@@ -901,11 +901,3 @@ body:has(.v2-table-page) .shell {
 .v2-escalation[hidden] { display: none; }
 
 .v2-front-axis:has(.v2-escalation:not([hidden])) { overflow: visible; }
-
-.v2-table-page:has(.v2-hand-rail .v2-jingu-mark) {
-  grid-template-rows: var(--table-top) minmax(0, 1fr) calc(var(--table-bottom) + 28px * var(--table-layout-scale, 1));
-}
-.v2-hand-rail:has(.v2-jingu-mark) {
-  box-sizing: border-box;
-  padding-top: calc(28px * var(--table-layout-scale, 1));
-}

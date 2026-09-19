@@ -1125,10 +1125,11 @@
 .v2-attack-stack { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px; }
 .v2-combat-stat.is-jingu { color: #ffda55; }
 
-/* Reserve a separate floating row: the mark is above the card, never on its art. */
+/* Marks float outside the hand's scroll container without reserving layout space. */
 .v2-hand-card.has-jingu-mark { overflow: visible; }
 .v2-hand-card.has-jingu-mark::before { border-radius: inherit; }
-.v2-hand-card > .v2-jingu-mark {
+.v2-hand-card > .v2-jingu-mark,
+.v2-jingu-overlay > .v2-jingu-mark {
   position: absolute;
   bottom: calc(100% + 5px * var(--table-layout-scale, 1));
   left: 50%;
@@ -1147,7 +1148,19 @@
   pointer-events: none;
 }
 .v2-jingu-mark em { font-style: normal; font-variant-numeric: tabular-nums; }
-.v2-hand-card .v2-jingu-mark .v2-stat-icon { width: 15px; height: 15px; }
+.v2-jingu-mark .v2-stat-icon { width: 15px; height: 15px; }
+.v2-hand-rail .v2-jingu-mark { opacity: 0; }
+.v2-jingu-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  pointer-events: none;
+}
+.v2-jingu-overlay > .v2-jingu-mark {
+  bottom: auto;
+  transform: translate(-50%, -100%);
+}
 
 .v2-play-option-zones { position: fixed; display: flex; z-index: 89; pointer-events: none; gap: 6px; padding: 8px; }
 .v2-play-option-zone { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px; text-align: center; border: 2px solid rgba(255,210,104,.75); border-radius: 14px; color: #fff2cf; background: rgba(25,28,36,.74); }

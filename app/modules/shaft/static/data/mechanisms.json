@@ -168,7 +168,7 @@
     "character_id": "char_912dbfe17c",
     "talent": 1,
     "name": "延时预警",
-    "description": "攻击处于「延滞」状态的目标时，全队暴击率提升10%。",
+    "description": "「延滞」持续时间延长至12秒；攻击处于「延滞」状态的目标时，全队暴击率提升10%。",
     "replaces_rule_ids": ["character_hathor_delay_crit"]
   },
   {

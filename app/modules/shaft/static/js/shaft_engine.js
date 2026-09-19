@@ -1392,10 +1392,10 @@
     return Object.fromEntries(Object.entries(enemyDebuffs || {}).filter(([, endTick]) => tick < int(endTick)));
   }
 
-  function applyEnemyDebuffs(enemyDebuffs, action, tick) {
+  function applyEnemyDebuffs(enemyDebuffs, action, tick, durationForDebuff) {
     const applied = [];
     Array.from(actionEnemyDebuffs(action)).sort().forEach((name) => {
-      enemyDebuffs[name] = Math.max(int(enemyDebuffs[name]), tick + ENEMY_DEBUFF_DURATIONS[name]);
+      enemyDebuffs[name] = Math.max(int(enemyDebuffs[name]), tick + durationForDebuff(name));
       applied.push(name);
     });
     return applied;
@@ -2803,6 +2803,14 @@
       return Array.from(snapshots.values()).some((snapshot) => String(snapshot?.character?.id || '') === HEIYU_CHARACTER_ID);
     }
 
+    function enemyDebuffDurationTicks(reaction) {
+      // Everness 延时预警 (2026-09-19): team-wide, no awakening/on-field requirement.
+      if (reaction === '延滞' && Array.from(snapshots.values()).some(
+        (snapshot) => snapshot.character?.id === 'char_912dbfe17c',
+      )) return 120;
+      return int(ENEMY_DEBUFF_DURATIONS[reaction]);
+    }
+
     // Convert an on-field duration to wall-clock ticks using the compiled rotation.
     // Repeat the rotation when warming a loop; an off-field tail preserves the state.
     function onFieldDurationTicks(ownerSlot, startTick, remainingTicks) {
@@ -3136,7 +3144,8 @@
         ? supportSnapshot
         : reactionContributor(reaction, previousSnapshot, supportSnapshot, tick);
       if (!contributor) return { effect: null, warning: '' };
-      const durationTicks = reaction === '浸染' && teamHasHeiyu() ? 200 : int(REACTION_DURATIONS[reaction]);
+      const durationTicks = reaction === '浸染' && teamHasHeiyu() ? 200
+        : reaction === '延滞' ? enemyDebuffDurationTicks(reaction) : int(REACTION_DURATIONS[reaction]);
       const frequencyMultiplier = reaction === '创生' && teamHasJiuyuan() ? 2 : 1;
       const activeEffects = activeReactionEffectsAtTick(reaction, tick)
         .sort((left, right) => int(left.start_tick) - int(right.start_tick));
@@ -3269,7 +3278,7 @@
     }
 
     function seedLoopInitialReaction(reaction, snapshot, startTick = 0) {
-      const durationTicks = Math.max(0, int(REACTION_DURATIONS[reaction]));
+      const durationTicks = Math.max(0, reaction === '延滞' ? enemyDebuffDurationTicks(reaction) : int(REACTION_DURATIONS[reaction]));
       if (!durationTicks || !snapshot) return null;
       const instanceLimit = Math.max(1, int(REACTION_INSTANCE_LIMITS[reaction], 1));
       const activeEffects = activeReactionEffectsAtTick(reaction, startTick)
@@ -5023,7 +5032,7 @@
       const criticalHitsPerAction = expectedCriticalHits(action, calc);
       const criticalHits = criticalHitsPerAction * actionMultiplier;
       const hasResolvedHit = action.interrupted_hit_count !== 0;
-      const appliedEnemyDebuffs = hasResolvedHit ? applyEnemyDebuffs(enemyDebuffs, action, buffTick) : [];
+      const appliedEnemyDebuffs = hasResolvedHit ? applyEnemyDebuffs(enemyDebuffs, action, buffTick, enemyDebuffDurationTicks) : [];
       if (!action.periodic_damage && hasResolvedHit) {
         for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
           triggeredBuffs.push(...triggerBuffsForEvent('action_hit', startTick, step, action, snapshot, isBackground, {

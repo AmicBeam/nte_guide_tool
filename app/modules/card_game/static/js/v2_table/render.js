@@ -145,7 +145,6 @@
           '<strong title="' + V2.escapeAttr(data.name || '') + '">' + V2.escapeHtml(shortName(data)) + '</strong>' +
           (downTurns ? '<span class="v2-down-badge">倒地 ' + downTurns + '</span>' : '') +
           (data.attribute ? V2.attributeMarkup(data.attribute) : '') +
-          (data.faction ? '<small class="v2-faction" title="' + V2.escapeAttr(data.faction) + '">' + V2.escapeHtml(data.faction === '伊波恩古董店' ? '伊波恩' : data.faction) + '</small>' : '') +
         '</div>' +
         '<div class="v2-character-stats">' + stats.map(function (item) {
           if (item.html) {

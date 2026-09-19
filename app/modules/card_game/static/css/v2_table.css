@@ -363,7 +363,6 @@
   pointer-events: none;
 }
 .v2-faction { color: #adc7ce; font-size: .62em; white-space: nowrap; }
-.v2-character-heading .v2-faction { max-width: 5em; overflow: hidden; text-overflow: ellipsis; }
 .v2-summon-art {
   height: 100%; min-height: 70px; display: grid; place-items: center;
   font-size: 64px; color: #eac37b; background: radial-gradient(ellipse, #536079, #142131);

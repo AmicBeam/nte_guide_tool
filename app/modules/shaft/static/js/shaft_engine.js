@@ -3226,6 +3226,9 @@
       const durationTicks = reaction === '浸染' && teamHasHeiyu() ? 200
         : reaction === '延滞' ? enemyDebuffDurationTicks(reaction) : int(REACTION_DURATIONS[reaction]);
       const frequencyMultiplier = reaction === '创生' && teamHasJiuyuan() ? 2 : 1;
+      // Settle expirations through the harmony application node, including Heiyu recasts,
+      // before selecting the still-active instance replaced at this same node.
+      if (reaction === '黯星' && !primeLoop) settleReactionDamage(tick);
       const activeEffects = activeReactionEffectsAtTick(reaction, tick)
         .sort((left, right) => int(left.start_tick) - int(right.start_tick));
       const instanceLimit = Math.max(1, int(REACTION_INSTANCE_LIMITS[reaction], 1));
@@ -3363,6 +3366,7 @@
       const durationTicks = Math.max(0, reaction === '延滞' ? enemyDebuffDurationTicks(reaction) : int(REACTION_DURATIONS[reaction]));
       if (!durationTicks || !snapshot) return null;
       const instanceLimit = Math.max(1, int(REACTION_INSTANCE_LIMITS[reaction], 1));
+      if (reaction === '黯星' && startTick >= 0) settleReactionDamage(startTick);
       const activeEffects = activeReactionEffectsAtTick(reaction, startTick)
         .sort((left, right) => int(left.start_tick) - int(right.start_tick));
       while (activeEffects.length >= instanceLimit) {
@@ -5530,6 +5534,7 @@
             const extraDamage = Math.min(accumulated * 0.2, num(owner.base_stats.atk) * 1000);
             if (extraDamage > 0) {
               const extra = {reaction: '黯星', heiyu_accumulation: true, damage_category: 'other', damage_source: '黑羽黯星额外伤害', effect_id: effect.id,
+                conflict_settlement: event.conflict_settlement === true,
                 tick: int(event.tick), visual_tick: event.visual_tick, sequence: 2,
                 contributor_slot: owner.slot, contributor_character_id: owner.character.id,
                 contributor_character_name: owner.character.name, damage: extraDamage, _counted_in_total: true,

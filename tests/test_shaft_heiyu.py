@@ -353,4 +353,47 @@ class HeiyuTest(unittest.TestCase):
         self.assertFalse(any('跨轮' in warning for d in r['details'] for warning in d['warnings']))
         self.assertTrue(all(e['formula_parts']['base'] >= 0 for e in r['reaction_damage_events'] if e.get('heiyu_accumulation')))
 
+    def test_new_dark_star_settles_previous_and_reports_accumulation_at_replacement(self):
+        other = {'slot': 1, 'character_id': DARK, 'arc_id': '', 'cartridge_id': ''}
+        for second_tick in (42, 60):
+            with self.subTest(second_tick=second_tick):
+                steps = [(1, 'action_none_c78f7a08d5', 0),
+                         (0, 'action_heiyu_support', 2),
+                         (0, 'action_heiyu_e', 20),
+                         (1, 'action_none_c78f7a08d5', second_tick - 2),
+                         (0, 'action_heiyu_support', second_tick)]
+                if second_tick == 60:
+                    # 原黯星6.5秒到期，新黯星的环合生效节点为7.3秒。
+                    # 6.8秒后台伤害只属于旧黯星的续生窗口。
+                    steps.append((0, 'action_heiyu_assist', 68))
+                steps.append((1, 'action_dodge_c78f7a08d5', 180))
+                r = self.simulate(steps, [other])
+                effects = [e for e in r['reaction_effects'] if e['reaction'] == '黯星']
+                replacement = next(e for e in effects if e.get('source_step_id') == '4')
+                replaced = next(e for e in effects if e.get('settled_by_conflict')
+                                and e['start_tick'] < replacement['start_tick'])
+                self.assertEqual(replaced['end_tick'], replacement['start_tick'])
+                events = [e for e in r['reaction_damage_events'] if e['effect_id'] == replaced['id']]
+                self.assertEqual(len(events), 2)  # 一次本体、一次累计追加
+                self.assertTrue(all(e['tick'] == replacement['start_tick'] for e in events))
+                extra = next(e for e in events if e.get('heiyu_accumulation'))
+                self.assertTrue(extra['conflict_settlement'])
+                self.assertEqual(extra['damage_category'], 'other')
+                hit = next(d for d in r['details'] if d['action_id'] ==
+                           ('action_heiyu_assist' if second_tick == 60 else 'action_heiyu_e'))
+                expected_base = hit['direct_damage']
+                if second_tick == 42:
+                    # 新援护直伤发生在5.5秒环合节点之前，仍计入旧窗口。
+                    expected_base += next(d['direct_damage'] for d in r['details'] if d['step_id'] == '4')
+                self.assertAlmostEqual(extra['damage'], expected_base * .2)
+                self.assertEqual(extra['contributor_character_id'], CID)
+                for tick in range(181):
+                    self.assertLessEqual(sum(e['start_tick'] <= tick < e['end_tick'] for e in effects), 1)
+                self.assertAlmostEqual(r['summary']['other_damage'], sum(
+                    e['damage'] for e in r['reaction_damage_events'] if e.get('heiyu_accumulation')))
+                if second_tick == 60:
+                    self.assertTrue(replaced['heiyu_extra'])
+                    self.assertFalse(any(e['effect_id'] == replacement['id'] and e.get('heiyu_accumulation')
+                                         for e in r['reaction_damage_events']))
+
 if __name__ == '__main__': unittest.main()

@@ -8453,7 +8453,13 @@
   }
 
   async function loadAxis(axisId, source) {
+    if (state.axisOpenInProgress) return;
+    state.axisOpenInProgress = true;
     try {
+      if (!await confirmWorkspaceReplacement()) {
+        setStatus('未打开排轴');
+        return;
+      }
       setStatus('读取排轴');
       const payload = await shaftRequest(`/api/shaft/axes/${axisId}`);
       state.axis = payload.axis;
@@ -8476,6 +8482,8 @@
       setStatus('已读取');
     } catch (error) {
       setStatus(error.message, 'error');
+    } finally {
+      state.axisOpenInProgress = false;
     }
   }
 
@@ -8520,11 +8528,23 @@
 
   async function resolveSharedAxisWorkspace() {
     const dialog = $('shaft-share-open-dialog');
+    dialog.querySelector('.shaft-panel-kicker').textContent = '打开其他排轴';
+    dialog.querySelector('p').textContent = '打开其他排轴会替换当前工作区。请先选择如何处理这些更改。';
+    dialog.querySelector('[value="cancel"]').textContent = '不打开';
     dialog.returnValue = '';
     dialog.showModal();
     return new Promise((resolve) => {
       dialog.addEventListener('close', () => resolve(dialog.returnValue || 'cancel'), { once: true });
     });
+  }
+
+  async function confirmWorkspaceReplacement() {
+    if (!hasUnsavedAxisChanges()) return true;
+    const action = await resolveSharedAxisWorkspace();
+    if (action === 'discard') return true;
+    if (action === 'save') return Boolean(await saveAxis());
+    if (action === 'save_as') return Boolean(await saveAxisAsCopy());
+    return false;
   }
 
   async function replaceWorkspaceWithSharedAxis(payload) {
@@ -8562,19 +8582,10 @@
     try {
       setStatus('读取分享排轴');
       const payload = await shaftRequest(`/api/shaft/shared/${encodeURIComponent(shareToken)}`);
-      if (hasUnsavedAxisChanges()) {
-        const action = await resolveSharedAxisWorkspace();
-        if (action === 'cancel') {
-          clearSharedAxisUrl();
-          setStatus('未打开分享排轴');
-          return;
-        }
-        if (action === 'save' && !await saveAxis()) {
-          return;
-        }
-        if (action === 'save_as' && !await saveAxisAsCopy()) {
-          return;
-        }
+      if (!await confirmWorkspaceReplacement()) {
+        clearSharedAxisUrl();
+        setStatus('未打开分享排轴');
+        return;
       }
       await replaceWorkspaceWithSharedAxis(payload);
     } catch (error) {

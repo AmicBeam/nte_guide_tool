@@ -2174,8 +2174,8 @@ process.stdout.write(JSON.stringify([run(true), run(false)]));
             self.assertIn(f'value="{value}"', template)
         self.assertIn('async function openSharedAxisFromUrl()', source)
         self.assertIn('if (hasUnsavedAxisChanges()) {', source)
-        self.assertIn("action === 'save' && !await saveAxis()", source)
-        self.assertIn("action === 'save_as' && !await saveAxisAsCopy()", source)
+        self.assertIn("if (action === 'save') return Boolean(await saveAxis());", source)
+        self.assertIn("if (action === 'save_as') return Boolean(await saveAxisAsCopy());", source)
         self.assertIn('state.savedAxisId = null;', source)
         self.assertIn('sharedReadOnly: false,', source)
         self.assertIn('state.sharedReadOnly = Boolean(payload.read_only);', source)
@@ -2186,6 +2186,52 @@ process.stdout.write(JSON.stringify([run(true), run(false)]));
         self.assertIn('not (allow_anonymous_shaft_share | default(false))', base_template)
         self.assertIn("setPage('rotation');", source)
         self.assertIn('await openSharedAxisFromUrl();', source)
+
+    def test_my_axis_load_waits_for_unsaved_resolution_and_successful_save(self):
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        load = source[source.index('  async function loadAxis('):source.index('  async function shareAxis(')]
+        guard = source[source.index('  async function confirmWorkspaceReplacement('):source.index('  async function replaceWorkspaceWithSharedAxis(')]
+        script = """
+          let state, dirty, choice, saved, calls;
+          const fields = {'shaft-title-input': {}, 'shaft-description-input': {}};
+          const $ = id => fields[id];
+          const hasUnsavedAxisChanges = () => dirty;
+          const resolveSharedAxisWorkspace = async () => { calls.push('prompt'); return choice; };
+          const saveAxis = async () => { calls.push('save'); return saved; };
+          const saveAxisAsCopy = async () => { calls.push('copy'); return saved; };
+          const shaftRequest = async () => { calls.push('fetch'); return {id: 2, title: 'Target', axis: {target: true}}; };
+          const setStatus = () => {};
+          const ensureAxisShape = () => {};
+          const markSimulationStale = () => {};
+          const renderAll = () => {};
+          const setPage = () => {};
+          const runSimulation = async () => {};
+          const markAxisDocumentClean = () => {};
+          const persistAxisDraft = () => {};
+        """ + load + guard + """
+          (async () => {
+            const results = [];
+            for (const config of [[false,'cancel',false],[true,'cancel',false],
+              [true,'discard',false],[true,'save',false],[true,'save',true],
+              [true,'save_as',false],[true,'save_as',true]]) {
+              [dirty,choice,saved] = config;
+              calls = []; state = {axis: {draft: true}, savedAxisId: 1};
+              await loadAxis(2, 'mine');
+              results.push({calls: [...calls], axis: state.axis, savedAxisId: state.savedAxisId,
+                locked: state.axisOpenInProgress});
+            }
+            console.log(JSON.stringify(results));
+          })();
+        """
+        results = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertEqual([r['calls'] for r in results], [
+            ['fetch'], ['prompt'], ['prompt', 'fetch'], ['prompt', 'save'],
+            ['prompt', 'save', 'fetch'], ['prompt', 'copy'], ['prompt', 'copy', 'fetch']])
+        for i, result in enumerate(results):
+            loaded = i in (0, 2, 4, 6)
+            self.assertEqual(result['axis'], {'target': True} if loaded else {'draft': True})
+            self.assertEqual(result['savedAxisId'], 2 if loaded else 1)
+            self.assertFalse(result['locked'])
 
     def test_plaza_uses_equal_columns_snapshot_upload_and_my_axis_filters(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')

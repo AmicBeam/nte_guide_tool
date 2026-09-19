@@ -13,3 +13,9 @@ Q01–Q04 原本已实现覆写攻击，本次不改其效果：分别为 4/3/4/
 ```sh
 .venv/bin/python -m unittest tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_jingu_marks tests.test_duel_v2_catalog tests.test_duel_v2_advanced_ai.AdvancedRoomTest.test_real_models_finish_all_presets_and_save_replays
 ```
+
+## 同日追加：两张武备
+
+用户进一步指定 Q07「Afterglow」与 Q08「思考喵」的攻击均改为 3，生命保持 5、费用与效果不变。现行面板均为 3/5；战斗牌仍覆写攻击，不因武备攻击提高而叠加。
+
+武备追加调整验证：47 项角色/金谷/卡表回归通过，三套真实高级人机完整 API 对局及回放保存通过。旧 Q07 额外出击断言按新面板从伤害 3 更新为 5（3 攻 +2）；Q08 战斗牌仍按覆写面板加金谷增伤，未叠加武备攻击。

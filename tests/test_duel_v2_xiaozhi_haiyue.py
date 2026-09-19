@@ -143,13 +143,16 @@ class NewTestCharacters(unittest.TestCase):
         self.assertEqual(hero(s,'a','xiaozhi')['energy'],5)
 
     def test_jingu_weapon_damage_and_free_extra_attack(self):
+        from app.modules.card_game.engine.duel_v2.state import attack_value
         s=self.game();h=hero(s,'a','xiaozhi');h.update(shape='Q08',jingu=6)
+        self.assertEqual((attack_value(h), CARDS['Q08']['hp']), (3, 5))
         s=self.play(s,'Q04');self.assertEqual(s['sides']['b']['hp'],22)
         s=self.game();h=hero(s,'a','xiaozhi');h.update(shape='Q07',jingu=3)
+        self.assertEqual((attack_value(h), CARDS['Q07']['hp']), (3, 5))
         s['sides']['a'].update(ap=0,normal_attack_available=False)
         action={'type':'attack','character_id':'xiaozhi'}
         self.assertEqual(preview(s,'a',action)['ap_cost'],0)
-        s=self.attack(s);self.assertEqual(s['sides']['b']['hp'],27)
+        s=self.attack(s);self.assertEqual(s['sides']['b']['hp'],25)
         self.assertEqual(hero(s,'a','xiaozhi')['jingu'],1)
         self.assertNotIn(action,legal_actions(s,'a'))
 

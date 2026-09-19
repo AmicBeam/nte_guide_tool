@@ -300,7 +300,7 @@ def enter(s: GpuState, side: torch.Tensor, seat: int, mask: torch.Tensor, *, sup
     if hasattr(s, 'burn_left'):
         burn = mask & (kind == 4)
         s.burn_left[b, foe] = torch.where(burn, torch.full_like(s.burn_left[b, foe], 2), s.burn_left[b, foe])
-        s.burn_by[b, foe] = torch.where(burn, side, s.burn_by[b, foe])
+        s.burn_by[b, foe] = torch.where(burn, side.to(s.burn_by.dtype), s.burn_by[b, foe])
         s.burn_infinite[b, foe] = torch.where(burn, torch.zeros_like(s.burn_infinite[b, foe]), s.burn_infinite[b, foe])
         delay = mask & (kind == 2)
         s.delay_end[b, foe] = torch.where(delay, torch.ones_like(s.delay_end[b, foe]), s.delay_end[b, foe])

@@ -26,6 +26,15 @@ def _js_number_constant(name: str) -> int:
 
 
 class ShaftBuffStatusUiTestCase(unittest.TestCase):
+    def test_character_catalog_keeps_elements_grouped_and_canhong_with_curse(self):
+        characters = load_shaft_catalog()['characters']
+        elements = ['光', '灵', '咒', '暗', '魂', '相']
+        ranks = [elements.index(c['element']) for c in characters]
+        self.assertEqual(ranks, sorted(ranks))
+        names = [c['name'] for c in characters]
+        index = names.index('残虹')
+        self.assertEqual(names[index - 1:index + 2], ['薄荷', '残虹', '白藏'])
+
     def test_dissonance_tooltip_and_same_tick_group_preserve_gauge_events(self):
         source = SHAFT_JS.read_text(encoding='utf-8')
         functions = source[source.index('  function damageMarkerTooltip('):source.index('  function renderTimeline(')]

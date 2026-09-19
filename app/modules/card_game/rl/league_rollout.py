@@ -35,11 +35,23 @@ def clean(s):
 def determinize(s,viewer,seed):
     """Constrain enemy draws by public zones, never its real unexposed card IDs."""
     from app.modules.card_game.content.duel_v2 import CARDS
-    if s['phase']!='playing' or s.get('pending_choice') or s.get('operation'):raise ValueError('Unsupported root')
+    pending = s.get('pending_choice')
+    choosing = s['phase'] == 'choice'
+    if choosing:
+        if (not pending or pending.get('side') != viewer
+                or pending.get('kind') not in ('inspect_top', 'discard', 'enemy_hand', 'hand_redraw')):
+            raise ValueError('Unsupported choice root')
+        if s.get('operation') and s['operation']['side'] != viewer:
+            raise ValueError('Choice operation belongs to another observer')
+    elif s['phase'] != 'playing' or pending or s.get('operation'):
+        raise ValueError('Unsupported root')
     out=deepcopy(s);rng=Random(seed);foe='b' if viewer=='a' else 'a';team=out['sides'][foe]
     # Only generated NF01 exists in this scope; its generation count is public.
     known=Counter(c['card_id'] for c in team['discard'] if not c.get('derived'))
     revealed=set(team.get('revealed_ids',[]))
+    # These identities are privately visible to the chooser, not public to the foe.
+    if choosing and pending['kind'] == 'enemy_hand':
+        revealed.update(c['instance_id'] for c in pending['cards'])
     keep=[c for c in team['hand'] if c['instance_id'] in revealed]
     for c in keep:
         if not c.get('derived'):known[c['card_id']]+=1
@@ -70,6 +82,11 @@ def determinize(s,viewer,seed):
     visible=[]
     for side,t in out['sides'].items():
         visible += [t,*t['characters'].values(),*t['discard'],*(t['hand'] if side==viewer else keep)]
+    if choosing:
+        visible += out['pending_choice']['cards']
+        resolving = (out.get('operation') or {}).get('card')
+        if resolving:
+            visible.append(resolving)
     out['next_entity']=max([int(x['entity_id'][1:]) for x in visible if str(x.get('entity_id','')).startswith('e')]+[0])
     out['next_instance']=max([int(x['instance_id'].rsplit('-',1)[1]) for x in visible if x.get('instance_id')]+[0])
     hidden_hand=unknown[:hand_n-hidden_family]+['NF01']*hidden_family

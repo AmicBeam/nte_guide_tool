@@ -29,7 +29,7 @@
 
 ## 模块范围
 
-- 完整卡表 16 名角色、128 种可构筑卡牌。正式账号公开娜娜莉、零、九原、伊洛伊、薄荷、白藏，以及创生预组和覆纹快攻预组；其余角色与含测试角色的官方预组仅测试账号可见。
+- 完整卡表 17 名角色、136 种可构筑卡牌。正式账号公开娜娜莉、零、九原、伊洛伊、薄荷、白藏，以及创生预组和覆纹快攻预组；其余角色与含测试角色的官方预组仅测试账号可见。
 - 每方 4 人、单人战斗区、玩家生命胜负、完整回合轮替。玩家行动力支付费用，手牌按牌面支付行动力，浔包含零费战术；每名角色独立保存环合值与能量。能量满后可发动终结，不消耗行动力，每回合限 1 次，备战区也可使用。
 - 每个回合开始通常抽 1 张，包括先手首回合。起手 5 张；先手首回合 1 点行动力，后手开局 5 点护盾。正式 Python 引擎、张量训练与编译训练后端同步执行该抽牌规则。
 - 2026-09-19 回合边界纠正：玩家护盾在己方回合开始效果前清零（含后手开局护盾）；家族壮大从整局第 5 回合起具有瞬发。正式规则与训练源码同步，专项验证见 [回合边界修正](../../../docs/duel-v2-turn-boundaries-20260919.md)。
@@ -360,3 +360,14 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 ### 小吱加强后快攻适应
 
 `train_duel_v2_quick_adaptation.py`在显式新规则热启动后仅更新快攻，创生与覆纹冻结；采用原绝对截止监督，保留初始/最佳/最后及详细角色贡献事件。规则迁移不继承旧批准，结果不自动上线。预算、配对与归因边界见 [快攻适应计划](../../../docs/duel-v2-quick-adaptation-20260919.md)。验证：`python -m unittest tests.test_duel_v2_quick_adaptation`（需独立Torch环境）。
+
+### 搜索待选择局面
+
+`information_search`支持在检视、弃牌和已查看对方手牌等待选择根局面继续搜索，保留选择方可见候选，未知信息仍按信念采样重建。可用`failure_dir`在搜索失败时记录私有复现局面，仅留离线产物。修复及续训证据见[选择搜索修复](../../../docs/duel-v2-choice-search-fix-20260920.md)。验证：`python -m unittest tests.test_duel_v2_information_search tests.test_duel_v2_information_longrun`；真实变化配牌回归独立于优化训练统计。
+
+
+### 2026-09-20 哈尼娅
+
+新增仅测试账号可见的哈尼娅及 V01–V08。角色包 `content/duel_v2/characters/haniya.py` 管理主角光环、终结、五张战术和三张武备；通用规则增加本局黯星计数、出击结算前团队回调、攻击命中玩家后回调及指定角色本回合普通出击免行动力。蓝色音符在金谷同位置显示，公开回放同步资源；免费出击效果具有本回合标记。规则与来源见完整手册哈尼娅节。
+
+验证：`python3 -m unittest tests.test_duel_v2_haniya tests.test_duel_v2_catalog tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_jingu_marks tests.test_duel_v2_preview_privacy tests.test_duel_v2_zone_status`。正式 Python 引擎接入，不扩展独立训练执行器及公开高级人机角色范围。

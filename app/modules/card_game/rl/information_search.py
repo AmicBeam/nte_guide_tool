@@ -19,10 +19,10 @@ def softmax(scores):
 
 
 def sample_world(state, viewer, seed):
-    if state['phase']=='playing':
+    if state['phase'] in ('playing', 'choice'):
         return determinize(state,viewer,seed)
     if state['phase']!='mulligan':
-        raise ValueError('Root pending-choice belief sampling is not implemented for this pilot')
+        raise ValueError('Unsupported information-search root phase')
     # Mulligan uses the same known-card accounting, but retain its original phase
     # and completion flags after sampling; no actual hidden shuffle is consulted.
     proxy=deepcopy(state);proxy['phase']='playing';proxy['active_side']=viewer
@@ -135,9 +135,20 @@ def search_game(job):
         actor=acting_side(state)
         use_search=actor not in job.get('raw_sides',[])
         if use_search:
-            result=search(state,actor,policies,seed=job['seed']+1000003*(step+1),
-                          simulations=job.get('simulations',32),deadline=job['deadline'],
-                          noise=job.get('training',False))
+            try:
+                result=search(state,actor,policies,seed=job['seed']+1000003*(step+1),
+                              simulations=job.get('simulations',32),deadline=job['deadline'],
+                              noise=job.get('training',False))
+            except Exception as exc:
+                if job.get('failure_dir'):
+                    import json
+                    from pathlib import Path
+                    directory=Path(job['failure_dir']);directory.mkdir(parents=True,exist_ok=True)
+                    label=hashlib.sha256(repr((job['seed'],job.get('first'),job['policies'])).encode()).hexdigest()[:16]
+                    path=directory/(label+'.json');temp=path.with_suffix('.tmp')
+                    temp.write_text(json.dumps(dict(job=job,step=step,actor=actor,error=repr(exc),state=state),ensure_ascii=False),encoding='utf-8')
+                    temp.replace(path)
+                raise
             if not result['complete']:
                 return dict(complete=False,reason='incomplete_search',rows=[],decisions=decisions)
             distribution=result['pi'].astype(float);distribution/=distribution.sum()

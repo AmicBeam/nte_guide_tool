@@ -102,3 +102,71 @@ class InformationSearchTest(unittest.TestCase):
                 self.assertEqual(out['active_side'],s['active_side'])
                 self.assertEqual(decision(out,side)[0],decision(s,side)[0])
                 s=apply_action(s,side,decision(s,side)[0][0])
+
+class ChoiceRootSearchTest(unittest.TestCase):
+    def inspect(self):
+        from app.modules.card_game.engine.duel_v2 import apply_action
+        build=deck('starter');build['card_ids'].remove('J03');build['card_ids'].append('J01')
+        s=new_game(seed=41,first_side='a',skip_mulligan=True,decks={'a':build,'b':deck('quick-rush')})
+        team=s['sides']['a'];team['ap']=2
+        card=next(c for zone in ('hand','deck') for c in team[zone] if c['card_id']=='J01')
+        if card in team['deck']:team['deck'].remove(card);team['hand'].append(card)
+        return apply_action(s,'a',dict(type='play_card',card_id=card['instance_id']))
+
+    def test_real_inspect_choice_preserves_private_candidates_and_resumes(self):
+        from app.modules.card_game.engine.duel_v2 import apply_action
+        s=self.inspect();original=deepcopy(s)
+        self.assertEqual(s['pending_choice']['kind'],'inspect_top')
+        legal,(x,c)=decision(s,'a')
+        for seed in (1,5,99):
+            particle=sample_world(s,'a',seed);actions,(xx,cc)=decision(particle,'a')
+            self.assertEqual(actions,legal);np.testing.assert_array_equal(x,xx);np.testing.assert_array_equal(c,cc)
+            self.assertEqual(particle['pending_choice'],s['pending_choice'])
+            objects=[card for t in particle['sides'].values() for z in ('hand','deck','discard') for card in t[z]]
+            objects+=particle['pending_choice']['cards']+[particle['operation']['card']]
+            ids=[o['entity_id'] for o in objects];self.assertEqual(len(ids),len(set(ids)))
+            for action in actions:
+                after=apply_action(particle,'a',action)
+                self.assertEqual(after['phase'],'playing');self.assertIsNone(after['operation'])
+                self.assertEqual(len(after['sides']['a']['hand'])+len(after['sides']['a']['deck'])+len(after['sides']['a']['discard']),33)
+        self.assertEqual(s,original)
+        result=search(s,'a',{'a':Uniform(),'b':Uniform()},seed=77,simulations=16)
+        self.assertTrue(result['complete']);self.assertEqual(result['roots_covered'],len(legal))
+
+    def test_choice_search_does_not_read_unknown_cards_or_shuffle(self):
+        s=self.inspect();changed=deepcopy(s);changed['rng']=55555
+        changed['sides']['a']['deck'].reverse()
+        for card in changed['sides']['b']['hand']+changed['sides']['b']['deck']:
+            card.update(card_id='N02',instance_id='b-99999',entity_id='e99999')
+        p={'a':Uniform(),'b':Uniform()}
+        a=search(s,'a',p,seed=3,simulations=16);b=search(changed,'a',p,seed=3,simulations=16)
+        np.testing.assert_array_equal(a['visits'],b['visits'])
+        np.testing.assert_array_equal(a['pi'],b['pi'])
+        with self.assertRaises(ValueError):sample_world(s,'b',7)
+
+    def test_visible_enemy_hand_and_discard_choices_remain_resolvable(self):
+        from app.modules.card_game.engine.duel_v2.flow import operation
+        from app.modules.card_game.engine.duel_v2 import apply_action
+        for kind in ('discard','enemy_hand'):
+            s=new_game(seed=42,first_side='a',skip_mulligan=True,decks={'a':deck('starter'),'b':deck('quick-rush')})
+            c=operation(s,'a','jiuyuan')
+            if kind=='discard':c.discard_choice()
+            else:c.inspect_enemy_hand()
+            out=sample_world(s,'a',7)
+            actions=decision(out,'a')[0]
+            for action in actions:self.assertEqual(apply_action(out,'a',action)['phase'],'playing')
+
+    def test_failed_search_saves_reproducible_private_root_before_reraising(self):
+        import tempfile,json
+        from pathlib import Path
+        from unittest.mock import patch
+        from app.modules.card_game.rl.information_search import search_game
+        s=self.inspect()
+        with tempfile.TemporaryDirectory() as tmp:
+            job=dict(seed=41,first='a',deadline=time.time()+30,decks={},policies={'a':('unused','starter'),'b':('unused','quick-rush')},failure_dir=tmp)
+            with patch('app.modules.card_game.rl.information_search.new_game',return_value=s),patch('app.modules.card_game.rl.information_search.model',return_value=Uniform()),patch('app.modules.card_game.rl.information_search.search',side_effect=ValueError('fixture failure')):
+                with self.assertRaisesRegex(ValueError,'fixture failure'):search_game(job)
+            files=list(Path(tmp).glob('*.json'));self.assertEqual(len(files),1)
+            saved=json.loads(files[0].read_text());self.assertEqual(saved['job']['seed'],41)
+            self.assertEqual(saved['state']['pending_choice']['kind'],'inspect_top')
+            self.assertEqual(saved['actor'],'a');self.assertEqual(saved['step'],0)

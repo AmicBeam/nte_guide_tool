@@ -80,9 +80,9 @@ class AdvancedRoomTest(RoomFlowTestCase):
             self.assertEqual(len(raw['card_ids']),3)
 
     @unittest.skipUnless(importlib.util.find_spec('numpy') and (Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models/starter.npz').exists(), 'bundled serving models and NumPy required')
-    def test_real_models_finish_both_presets_and_save_replays(self):
+    def test_real_models_finish_all_presets_and_save_replays(self):
         from app.modules.card_game.engine.duel_v2 import choose_action
-        for deck in ('starter','weave-rush'):
+        for deck in ('starter','weave-rush','quick-rush'):
             result=self._post('/api/duel-v2/start',{'mode':'advanced','ai_deck':deck},token=self.token)
             code=result['room']['room_code']
             for index in range(180):
@@ -235,25 +235,24 @@ class CpuEncoderTest(unittest.TestCase):
         return manifest
 
     def test_bundled_models_are_complete_and_loadable(self):
-        from app.modules.card_game.engine.ai.advanced_model import FrozenModel
+        from app.modules.card_game.engine.ai.advanced_model import load_model
         directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
+        keys=('starter','weave-rush','quick-rush')
         self.assertEqual({p.name for p in directory.iterdir()},
-                         {'starter.npz','starter.json','weave-rush.npz','weave-rush.json'})
-        for deck in ('starter','weave-rush'):
-            self.assertTrue(FrozenModel(directory,deck).version)
+                         {f'{key}.{ext}' for key in keys for ext in ('json','npz')})
+        for key in keys:
+            model=load_model(key)
+            self.assertEqual(model.schema,'official_public_v5')
+            self.assertTrue(model.version)
+            self.assertTrue(model.serving_authorized)
 
     def test_runtime_rule_compatibility_still_rejects_other_rules(self):
-        import json
-        from unittest.mock import patch
-        from app.modules.card_game.engine.ai.advanced_model import FrozenModel
-        directory = Path(__file__).resolve().parents[1] / 'app/modules/card_game/engine/ai/models'
-        for deck in ('starter', 'weave-rush'):
-            manifest = json.loads((directory / f'{deck}.json').read_text())
-            target=('app.modules.card_game.rl.public_schema.rule_identity' if manifest['schema'] in ('resident_public_v2','resident_public_v3')
-                    else 'app.modules.card_game.rl.rule_ir.completeness.compiled_rule_hash')
-            with patch(target, return_value='unrelated'):
-                with self.assertRaisesRegex(ValueError, 'rule version'):
-                    FrozenModel(directory, deck)
+        from app.modules.card_game.rl.league_policy import LeagueModel
+        directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
+        for key in ('starter','weave-rush','quick-rush'):
+            with patch('app.modules.card_game.rl.league_policy.rule_hash',return_value='unrelated'):
+                with self.assertRaisesRegex(ValueError,'rule/schema mismatch'):
+                    LeagueModel(directory,key,require_approved=True)
 
     def test_hidden_cards_do_not_change_encoding(self):
         import numpy as np

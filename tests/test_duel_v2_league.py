@@ -80,6 +80,25 @@ class LeagueTest(unittest.TestCase):
             self.assertEqual(q,[-10,10])
             result=play({**job,'max_actions':0,'action':{'type':'play_card','card_id':s['sides']['a']['hand'][0]['instance_id'],'option_id':'base'}})
             self.assertFalse(result['complete']);self.assertIsNone(result['reward'])
+    def test_explicit_candidate_authorization_keeps_quality_gate_false(self):
+        with tempfile.TemporaryDirectory() as d:
+            zero_policy(d,'quick-rush');p=Path(d)/'quick-rush.json'
+            m=json.loads(p.read_text())
+            authorization={'kind':'explicit_user_candidate','request':'Enable candidate',
+                           'report':'test-report.md','model_sha256':m['sha256'],
+                           'build_sha256':m['build_sha256'],'rule_hash':m['rule_hash']}
+            m['serving_authorization']=authorization
+            p.write_text(json.dumps(m))
+            model=LeagueModel(d,'quick-rush',require_approved=True)
+            self.assertFalse(model.approved)
+            self.assertTrue(model.user_authorized)
+            self.assertTrue(model.validate_human(deck('starter'))['human_public_custom'])
+            for field in ('kind','request','report','model_sha256','build_sha256','rule_hash'):
+                with self.subTest(field=field):
+                    m['serving_authorization']={**authorization,field:''}
+                    p.write_text(json.dumps(m))
+                    with self.assertRaises(ValueError):LeagueModel(d,'quick-rush',require_approved=True)
+
     def test_branch_gradient_and_numeric_export(self):
         try:import torch
         except ImportError:self.skipTest('Torch tested on Windows')

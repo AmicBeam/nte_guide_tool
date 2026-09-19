@@ -126,7 +126,7 @@
 
 ## 高级人机
 
-大厅选择「高级人机」，对手策略登记为「创生预组」「覆纹预组」和「快攻预组」；快攻在新模型验收前显示“待训练”。我方默认使用当前保存的构筑（仅公开角色），大厅不再提供我方构筑来源选项；保存的个人构筑不会被覆盖。仓库保留历史六人 `resident_public_v3` 模型，但其旧验证不适用于当前八人规则；新版 `official_public_v5` 须独立训练并验收，未通过前不用于网页对局。历史部署状态见当时交付报告。高级人机实际配牌由清单中的 `serving_build` 决定；旧客户端显式请求同构筑时仍复制这份实际配牌，不修改普通官方预组或玩家存档。房间模式为 `advanced`。起手策略按模型版本区分：旧 v2 模型保留全部起手牌，当前 v3 模型使用已训练的换牌评分；旧权重不会自动获得新能力。对手名及回放显示「高级人机」。
+大厅选择「高级人机」，对手策略登记为「创生预组」「覆纹预组」和「快攻预组」；三套均已按用户明确要求启用 2026-09-19 中午训练的最新候选模型。我方默认使用当前保存的构筑（仅公开角色），大厅不再提供我方构筑来源选项；保存的个人构筑不会被覆盖。仓库保留历史六人 `resident_public_v3` 模型，但其旧验证不适用于当前八人规则；新版 `official_public_v5` 默认要求验收通过；用户明确启用候选时，另存绑定模型、构筑与规则哈希的 `serving_authorization`，不改写 `validation.approved=false` 的质量结论。历史部署状态见当时交付报告。高级人机实际配牌由清单中的 `serving_build` 决定；旧客户端显式请求同构筑时仍复制这份实际配牌，不修改普通官方预组或玩家存档。房间模式为 `advanced`。起手策略按模型版本区分：旧 v2 模型保留全部起手牌，当前 v3 模型使用已训练的换牌评分；旧权重不会自动获得新能力。对手名及回放显示「高级人机」。
 
 服务端仅依赖可选的 NumPy CPU 推理：`pip install -r requirements-ai.txt`。默认读取 `app/modules/card_game/engine/ai/models/{starter,weave-rush}.{npz,json}`，可用 `NTE_DUEL_AI_MODEL_DIR` 指定目录。数字权重不允许 pickle；加载时校验 SHA-256、卡池/座位顺序、观察 schema、规则哈希和参数形状。缺依赖、缺文件或版本不匹配会在创建房间前明确拒绝，不降级冒充高级人机。
 
@@ -343,3 +343,10 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 
 
 已停止的长期任务可用 `scripts/finalize_duel_v2_until.py --source-root FROZEN_SOURCE --output EXISTING_RUN` 从已校验的完整检查点继续**只评估**。调用前须确认原工作进程树和监督器已退出并保存原guard；该入口拒绝仍运行或重复启动，固定已完成轮次、保留原验收与硬截止，完成后验证训练计数没有改变。它不修改冻结规则源码，不用于重新开始学习。
+
+
+### 2026-09-19 中午训练模型接入
+
+按用户“更新项目的模型吧”明确要求，三套高级人机使用第 28 轮 `latest` 数值权重（含快攻），采用纯网络 CPU 推理与已学习换牌，不在网页执行 256 次搜索。此前“待训练”和“未启用”描述是历史状态。配牌取模型内的 `build`；个人构筑与普通预组不变。质量验收整体未提升，`validation.approved` 仍为 false；仅本次指定权重通过独立 `serving_authorization` 启用，所有身份与数值校验仍强制执行。旧版本高级房间需要重新开局。详情与回退方式见 [模型更新记录](../../../docs/duel-v2-noon-model-update-20260919.md)。
+
+验证：`python -m unittest tests.test_duel_v2_league tests.test_duel_v2_league_service tests.test_duel_v2_advanced_ai.CpuEncoderTest tests.test_duel_v2_advanced_ai.AdvancedRoomTest.test_real_models_finish_all_presets_and_save_replays tests.test_duel_v2_advanced_ai.AdvancedRoomTest.test_published_models_support_public_saved_builds`，覆盖未授权拒绝、授权绑定、质量状态保留、三套实际模型 API 完整对局及回放。

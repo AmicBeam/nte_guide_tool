@@ -27,9 +27,20 @@ class LeagueModel:
         if self.serving_deck['character_ids']!=deck(key)['character_ids'] or m['build_sha256']!=self.serving_build_sha256:raise ValueError('Build identity mismatch')
         v=m.get('validation') or {}
         self.approved=bool(v.get('approved') and v.get('complete') and v.get('model_sha256')==digest and v.get('build_sha256')==self.serving_build_sha256 and v.get('rule_hash')==m['rule_hash'])
-        if require_approved and not self.approved:raise ValueError('League model has not passed serving acceptance')
+        # Manual candidate activation is separate from quality-gate approval.
+        # It is bound to the exact model, build and rules, never a global bypass.
+        authorization=m.get('serving_authorization') or {}
+        self.user_authorized=bool(
+            authorization.get('kind')=='explicit_user_candidate'
+            and authorization.get('request')
+            and authorization.get('report')
+            and authorization.get('model_sha256')==digest
+            and authorization.get('build_sha256')==self.serving_build_sha256
+            and authorization.get('rule_hash')==m['rule_hash'])
+        self.serving_authorized=self.approved or self.user_authorized
+        if require_approved and not self.serving_authorized:raise ValueError('League model lacks serving acceptance or explicit candidate authorization')
         self.schema=SCHEMA;self.deck_id=key;self.version=digest;self.manifest=m
-        self.capability={'kind':'official_public_v5','human_public_custom':self.approved,'bot_preset':key}
+        self.capability={'kind':'official_public_v5','human_public_custom':self.serving_authorized,'bot_preset':key}
     def scores_value(self,state,candidates):
         def linear(x,n):return np.einsum('...j,ij->...i',x,self.weights[n+'.weight'],optimize=False)+self.weights[n+'.bias']
         sh=np.maximum(linear(state,'state_net.0'),0);sh=np.maximum(linear(sh,'state_net.2'),0)
@@ -45,7 +56,7 @@ class LeagueModel:
     def validate_human(self,build):
         from app.modules.card_game.content.duel_v2 import validate_deck
         b=validate_deck(build)
-        if not self.approved or not set(b['character_ids'])<=set(SEATS):raise ValueError('Unvalidated league model or unsupported characters')
+        if not self.serving_authorized or not set(b['character_ids'])<=set(SEATS):raise ValueError('Unvalidated league model or unsupported characters')
         return self.capability
 
 def export_model(net,output,key,build,*,origin=None):

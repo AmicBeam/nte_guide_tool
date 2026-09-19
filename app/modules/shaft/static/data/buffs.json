@@ -3287,7 +3287,10 @@
       "max_stacks": 5,
       "stack_gain": 5
     },
-    "effects": {}
+    "effects": {},
+    "display": {
+      "line": false
+    }
   },
   {
     "id": "arc_heiyu_team_crit",

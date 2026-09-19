@@ -81,6 +81,7 @@
   };
   const TIMELINE_HIDDEN_PERSONAL_RESOURCES = new Set(['噩梦']);
   const DETAIL_HIDDEN_APPLIED_BUFF_IDS = new Set([
+    'character_heiyu_assist_window',
     'character_requiem_nightmare',
     'character_requiem_nightmare_stack',
   ]);

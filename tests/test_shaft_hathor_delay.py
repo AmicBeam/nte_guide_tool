@@ -48,15 +48,14 @@ class HathorDelayTest(unittest.TestCase):
                 self.assertEqual(effect['start_tick'], 0)
                 self.assertEqual(effect['end_tick'], remaining)
 
-    def test_action_applied_delay_uses_extended_window(self):
-        for hathor in (False, True):
-            with self.subTest(hathor=hathor):
-                result = simulate_shaft_axis({
-                    'team': self.team(hathor),
-                    'steps': [
-                        {'id': 'apply', 'slot': 1, 'action_id': 'action_be26cd6a7c', 'start_tick': 0},
-                        {'id': 'probe', 'slot': 0, 'action_id': 'action_982c67944f', 'start_tick': 60},
-                    ],
-                })['result']
-                buffs = {b['rule_id'] for b in result['details'][-1]['applied_buffs']}
-                self.assertEqual('character_hathor_delay_crit' in buffs, hathor)
+    def test_retired_settlement_does_not_reapply_delay(self):
+        result = simulate_shaft_axis({
+            'team': self.team(True),
+            'steps': [
+                {'id': 'old', 'slot': 1, 'action_id': 'action_be26cd6a7c', 'start_tick': 0},
+                {'id': 'probe', 'slot': 0, 'action_id': 'action_982c67944f', 'start_tick': 60},
+            ],
+        })['result']
+        self.assertEqual(len(result['details']), 1)
+        self.assertNotIn('character_hathor_delay_crit',
+                         {b['rule_id'] for b in result['details'][0]['applied_buffs']})

@@ -4628,7 +4628,7 @@
       addScalingStat(scalingParts, 'def', '防御');
       const flat = Number(formula?.scaling_multipliers?.flat || 0);
       if (flat) scalingParts.push(`固定值 ${formatNumber(flat, 1)}`);
-      if (!event?.resource_damage_marker) {
+      if (!event?.resource_damage_marker && event?.kind !== 'passive_settlement') {
         scalingParts.push(`层数 ${formatNumber(formula.periodic_scale ?? 1, 1)}`);
       }
       lines.push(scalingParts.join('　'));
@@ -4653,6 +4653,7 @@
       if (Number(formula.action_multiplier || 1) !== 1) lines.push(`动作倍数 ×${formatNumber(formula.action_multiplier, 1)}`);
       if (Number(formula.non_fuwen_amplification || 1) !== 1) lines.push(`环合增幅 ×${formatNumber(formula.non_fuwen_amplification, 3)}`);
     }
+    if (event?.kind === 'passive_settlement') lines.unshift(`延滞持续 ${ticksToSeconds(event.delay_duration_ticks)}s`);
     const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害 · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;
     return `${heading}\n${lines.join('\n')}`;
   }

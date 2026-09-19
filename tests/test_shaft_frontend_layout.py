@@ -779,7 +779,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             },
         )
         actions_by_name = {action['name']: action for action in actions}
-        legacy = [a for a in catalog['actions'] if a.get('legacy_only')]
+        legacy = [a for a in catalog['actions'] if a.get('legacy_only') and a['character_id'] == 'char_0846d632e0']
         self.assertEqual({a['name'] for a in legacy}, {'光同频', '灵同频', '咒同频', '暗同频', '魂同频', '相同频'})
         actions_by_name.update({a['name']: a for a in legacy})
         self.assertEqual(actions_by_name['恶灵闪击战']['multipliers']['atk'], 0.5)

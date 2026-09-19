@@ -1026,6 +1026,7 @@
     const members = asList(team).slice().sort((a, b) => int(a.slot) - int(b.slot));
     return asList(steps).flatMap((step) => {
       const old = actions.get(String(step?.action_id || '')) || {};
+      if (old.automatic_settlement) return [];
       if (!old.legacy_only || old.trigger_character_selector !== 'same_element_non_lingke') return [step];
       const candidates = members.filter((member) => member.character_id !== old.character_id
         && characters.get(member.character_id)?.element === old.damage_element);
@@ -2743,7 +2744,7 @@
       return Array.from(sources.values());
     }
 
-    function effectiveReactionPanel(snapshot, tick, damageAction = null, damageEvent = null) {
+    function effectiveReactionPanel(snapshot, tick, damageAction = null, damageEvent = null, isBackground = false) {
       const panelMods = clone(snapshot.mods);
       const syntheticStep = { slot: snapshot.slot };
       const syntheticAction = damageAction || {
@@ -2762,7 +2763,7 @@
         active_periodic_action_ids: activePeriodicActionIds(tick),
         active_damage_sources: activeDamageSources(tick),
       };
-      const contributions = applicableBuffContributions(activeBuffs, syntheticStep, syntheticAction, snapshot, false, context);
+      const contributions = applicableBuffContributions(activeBuffs, syntheticStep, syntheticAction, snapshot, isBackground, context);
       contributions.forEach((contribution) => mergeMods(panelMods, contribution.effects));
       if (damageEvent) damageEvent.applied_buffs = contributions.map(({buff, effects}) => ({
         ...buffSummary(buff, context), effects: {...effects},
@@ -3102,6 +3103,24 @@
       return plannedBySlot;
     }
 
+    function scheduleDelaySettlement(effect) {
+      if (effect.reaction !== '延滞') return;
+      const owner = Array.from(snapshots.values()).find((snapshot) => snapshot.character?.id === 'char_d38b672525');
+      if (!owner) return;
+      // Everness 未迟到的正义: reapplication resets the window; eviction cancels its pending event.
+      const duration = int(effect.duration_ticks);
+      const multiplier = 8 * (1 + Math.min(3, Math.max(0, duration / 10 - 5) * 0.45));
+      effect.damage_ticks = [int(effect.end_tick)];
+      reactionDamageEvents.push({
+        effect_id: effect.id, kind: 'passive_settlement', reaction: '延滞结算',
+        action_id: 'action_be26cd6a7c', action_type: '被动', damage_type: '被动',
+        damage_element: '相', tick: int(effect.end_tick), sequence: 1,
+        contributor_slot: owner.slot, contributor_character_id: owner.character.id,
+        contributor_character_name: owner.character.name, atk_multiplier: multiplier,
+        delay_duration_ticks: duration, loop_primed: effect.loop_primed === true, damage: null,
+      });
+    }
+
     function triggerReaction(scheduled, tick, { primeLoop = false } = {}) {
       if (!isSupportAction(scheduled.action)) return { effect: null, warning: '' };
       const isLingkeAwakeningJoint = lingkeJointAwakeningEnabled(scheduled, 5);
@@ -3211,6 +3230,7 @@
           damage: null,
         });
       });
+      scheduleDelaySettlement(effect);
       if (reaction === '创生') {
         const iloy = iloySnapshot();
         if (iloy) {
@@ -3335,6 +3355,7 @@
           damage: null,
         });
       });
+      scheduleDelaySettlement(effect);
       if (reaction === '创生' && iloySnapshot()) {
         const baseFlowerCount = 20;
         const cloneStartTick = startTick + 30;
@@ -3391,6 +3412,22 @@
           || int(event.tick) < int(effect.start_tick)
           || int(event.tick) > int(effect.end_tick)
         ) return 0;
+      }
+      if (event.kind === 'passive_settlement') {
+        const action = {id: event.action_id, name: event.reaction, action_type: '被动',
+          damage_type: '被动', damage_element: '相', tags: ['被动'], multipliers: {atk: event.atk_multiplier}};
+        const clockTick = options.loop_enabled && loopDurationTicks > 0
+          ? ((int(event.tick) % loopDurationTicks) + loopDurationTicks) % loopDurationTicks : int(event.tick);
+        const front = scheduledSteps.filter((entry) => entry.start_tick <= clockTick
+          && switchesForeground(entry.step, entry.action)).at(-1)?.slot;
+        const panel = effectiveReactionPanel(snapshot, int(event.tick), action, event, front !== snapshot.slot);
+        const calc = calculateActionDamage({...snapshot, mods: mods()}, action, enemy, panel);
+        event.panel = calc.panel;
+        event.formula_parts = {...calc.formula_parts, scaling_stats: calc.panel,
+          scaling_multipliers: {atk: event.atk_multiplier * calc.formula_parts.base_multiplier_factor},
+          damage_bonus: calc.formula_parts.dmg_bonus, crit_rate: Math.min(1, Math.max(0, calc.panel.crit_rate)),
+          crit_dmg: calc.panel.crit_dmg, final_dmg: calc.panel.final_dmg};
+        return calc.direct_damage;
       }
       if (event.kind === 'buff_periodic' || event.kind === 'buff_periodic_settlement' || event.kind === 'action_periodic') {
         if (event.kind === 'buff_periodic') {
@@ -3617,7 +3654,7 @@
           }
           const reactionName = String(event.reaction || '');
           triggerNaturalReactionEndBuffs(event);
-          const triggersPeriodicDamageBuffs = Boolean(event.kind)
+          const triggersPeriodicDamageBuffs = (Boolean(event.kind) && event.kind !== 'passive_settlement')
             || ['浊燃', '创生', '创生复制体'].includes(reactionName);
           if (triggersPeriodicDamageBuffs && event.damage > 0) {
             const contributorSlot = int(event.contributor_slot);

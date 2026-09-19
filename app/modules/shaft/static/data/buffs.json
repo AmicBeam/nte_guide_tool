@@ -1212,7 +1212,7 @@
     "name": "街头拳王：相反应暴击翻倍",
     "providers": [{"kind": "cartridge", "id": "cartridge_9229a5376c"}],
     "priority": 100,
-    "trigger": {"event": "action_hit", "source": {"scope": "team"}, "conditions": [{"type": "enemy_debuff_applied", "debuffs": ["延滞", "浸染"]}]},
+    "trigger": {"event": "reaction_trigger", "source": {"scope": "team"}, "conditions": [{"type": "reaction_type", "reactions": ["延滞", "浸染"]}]},
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},

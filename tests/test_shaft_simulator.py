@@ -7681,40 +7681,26 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             0.25,
         )
 
-    def test_enemy_debuff_applied_triggers_team_reaction_buff(self) -> None:
+    def test_street_boxer_triggers_from_real_support_reaction(self) -> None:
         payload = {
             'team': [
-                {
-                    'slot': 0,
-                    'character_id': 'char_912dbfe17c',
-                    'arc_id': '',
-                    'cartridge_id': 'cartridge_9229a5376c',
-                },
-                {
-                    'slot': 1,
-                    'character_id': 'char_d38b672525',
-                    'arc_id': '',
-                    'cartridge_id': '',
-                },
+                {'slot': 0, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''},
+                {'slot': 1, 'character_id': 'char_912dbfe17c', 'arc_id': '', 'cartridge_id': 'cartridge_9229a5376c'},
             ],
             'steps': [
-                {'id': 'delay_apply', 'slot': 1, 'action_id': 'action_be26cd6a7c', 'start_tick': 0},
-                {'id': 'owner_after_delay', 'slot': 0, 'action_id': 'action_61c61302f2', 'start_tick': 1},
+                {'id': 'gain', 'slot': 0, 'action_id': 'action_982c67944f', 'start_tick': 0},
+                {'id': 'support', 'slot': 1, 'action_id': 'action_f229587fd2', 'start_tick': 30},
+                {'id': 'after', 'slot': 1, 'action_id': 'action_61c61302f2', 'start_tick': 60},
             ],
-            'initial_energy': 200,
         }
-
         result = simulate_shaft_axis(payload)['result']
-        details = {detail['step_id']: detail for detail in result['details']}
-        self.assertIn('延滞', details['delay_apply']['applied_enemy_debuffs'])
-        self.assertIn(
-            'cartridge_street_boxer_delay_reaction',
-            {buff['rule_id'] for buff in details['delay_apply']['triggered_buffs']},
-        )
-        self.assertIn(
-            'cartridge_street_boxer_delay_reaction',
-            {buff['rule_id'] for buff in details['owner_after_delay']['applied_buffs']},
-        )
+        details = {d['step_id']: d for d in result['details']}
+        self.assertEqual(details['support']['triggered_reaction']['reaction'], '延滞')
+        buff, = [b for b in details['support']['triggered_buffs']
+                 if b['rule_id'] == 'cartridge_street_boxer_delay_reaction']
+        self.assertTrue(buff['display_as_line'])
+        self.assertEqual(buff['duration_ticks'], 200)
+        self.assertIn(buff['rule_id'], {b['rule_id'] for b in details['after']['applied_buffs']})
 
     def test_diabolos_doubles_dark_resistance_ignore_after_owner_joins_dark_reaction(self) -> None:
         payload = {

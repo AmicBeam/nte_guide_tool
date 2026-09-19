@@ -260,7 +260,7 @@ const revealTimelineTick = () => {};
 
     def test_legacy_joint_catalog_is_hidden_and_unmatched_steps_are_removed(self):
         catalog = load_shaft_catalog()
-        legacy = [a for a in catalog['actions'] if a.get('legacy_only')]
+        legacy = [a for a in catalog['actions'] if a.get('legacy_only') and a['character_id'] == 'char_0846d632e0']
         self.assertEqual(len(legacy), 6)
         for action in legacy:
             with self.subTest(action=action['id']):

@@ -161,7 +161,7 @@
     "character_id": "char_d38b672525",
     "talent": 1,
     "name": "未迟到的正义",
-    "description": "「延滞」强化：延滞解除后可加入“延滞结算”，基础按800%攻击力结算。"
+    "description": "「延滞」解除时自动造成800%攻击力的相属性伤害；超过5秒后每秒伤害提升45%，最多提升300%。重复施加重置计时。"
   },
   {
     "id": "talent_1_hathor_delay_warning",

@@ -1,4 +1,4 @@
-"""Load-time migration of retired Lingke elemental joints into teammate assists."""
+"""Migrate retired joints and remove steps now handled by automatic settlement."""
 from typing import Any
 
 
@@ -13,6 +13,8 @@ def migrate_lingke_joint_steps(steps: list[dict[str, Any]], team: list[dict[str,
             migrated.append(step)
             continue
         old = actions.get(str(step.get('action_id') or ''), {})
+        if old.get('automatic_settlement'):
+            continue
         if not old.get('legacy_only') or old.get('trigger_character_selector') != 'same_element_non_lingke':
             migrated.append(step)
             continue

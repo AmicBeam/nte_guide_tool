@@ -256,5 +256,95 @@
     "source_row": 488,
     "source_note": "同「灵同频」；发起角色属性为相。",
     "legacy_only": true
+  },
+  {
+    "id": "action_be26cd6a7c",
+    "character_id": "char_d38b672525",
+    "character_name": "卡厄斯",
+    "name": "延滞结算",
+    "action_type": "被动",
+    "damage_type": "被动",
+    "extra_tag": "",
+    "is_background_damage": true,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "multipliers": {
+      "atk": 8.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 0,
+    "harmony": 0,
+    "stagger": 0,
+    "energy_return": 0,
+    "self_modifiers": {
+      "crit_rate": 0,
+      "crit_dmg": 0,
+      "all_dmg": 0,
+      "flat_atk": 0,
+      "atk_pct": 0,
+      "hp_pct": 0,
+      "def_pct": 0,
+      "harmony_strength": 0,
+      "def_ignore": 0,
+      "res_down": 0
+    },
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "source_row": 143,
+    "can_background_override": false,
+    "hit_count": 1,
+    "tags": [
+      "被动"
+    ],
+    "automatic_settlement": true
+  },
+  {
+    "id": "action_82c5415d69",
+    "character_id": "char_d38b672525",
+    "character_name": "卡厄斯",
+    "name": "哈索尔延滞",
+    "action_type": "被动",
+    "damage_type": "被动",
+    "extra_tag": "",
+    "is_background_damage": true,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "multipliers": {
+      "atk": 32.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 0,
+    "harmony": 0,
+    "stagger": 0,
+    "energy_return": 0,
+    "self_modifiers": {
+      "crit_rate": 0,
+      "crit_dmg": 0,
+      "all_dmg": 0,
+      "flat_atk": 0,
+      "atk_pct": 0,
+      "hp_pct": 0,
+      "def_pct": 0,
+      "harmony_strength": 0,
+      "def_ignore": 0,
+      "res_down": 0
+    },
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "source_row": 144,
+    "can_background_override": false,
+    "hit_count": 1,
+    "tags": [
+      "被动"
+    ],
+    "automatic_settlement": true
   }
 ]

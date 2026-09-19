@@ -53,7 +53,13 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(actions['a1']['duration_ticks'], 4)
         self.assertEqual(actions['a1']['duration_source'], 'user-authorized-estimate')
         self.assertEqual(sum(actions[f'a{i}']['duration_ticks'] for i in range(1, 6)), 40)
-        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 34)
+        # 用户2026-09-19提供耗时，非Nanoka核实数据。
+        for name, ticks in {'魔a1': 5, '魔a2': 7, '魔a3': 13, '魔a4': 4,
+                            '魔a5': 14, '魔e': 10, '魔z2': 11}.items():
+            self.assertEqual(actions[name]['duration_ticks'], ticks)
+            self.assertEqual(actions[name]['duration_seconds'], ticks / 10)
+            self.assertEqual(actions[name]['duration_source'], 'user-supplied')
+        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 43)
         self.assertEqual(len([a for a in actions.values() if a.get('source_row') == 19]), 1)
 
     def test_basic_malice_is_proportional_and_chain_totals_are_preserved(self):
@@ -68,7 +74,7 @@ class HeiyuTest(unittest.TestCase):
         r = self.simulate([(0, f'action_heiyu_a{i+1}', t) for i,t in enumerate([0,4,10,18,28])])
         self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 40)
         self.assertEqual(r['summary']['duration_ticks'], 40)
-        r = self.simulate([(0, 'action_heiyu_q1', 0)] + [(0, f'action_heiyu_form_a{i+1}', t) for i,t in enumerate([10,14,20,28,34])])
+        r = self.simulate([(0, 'action_heiyu_q1', 0)] + [(0, f'action_heiyu_form_a{i+1}', t) for i,t in enumerate([10,15,22,35,39])])
         self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 13)
         self.assertTrue(all(d['resource_damage'] > 0 for d in r['details'][1:]))
 

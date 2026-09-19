@@ -1,7 +1,7 @@
 {
   "schema": "official_public_v5",
   "deck": "weave-rush",
-  "rule_hash": "0eb905a5ceefac66bbd11547bfdbfbfbe46ade17ad1d819811e9a0a358958526",
+  "rule_hash": "da401ed033c6d8f72bfdcd9acfacce9540bcac9fe7f9a57bc6f217b2a865b005",
   "sha256": "a65fc02c9bc734a9fb23151abfff0499afc6b8defe61aba5e275e46b06c0c8d5",
   "seat_ids": [
     "nanali",
@@ -1298,25 +1298,31 @@
     "date": "2026-09-19",
     "report": "docs/duel-v2-noon-model-update-20260919.md",
     "model_sha256": "a65fc02c9bc734a9fb23151abfff0499afc6b8defe61aba5e275e46b06c0c8d5",
-    "rule_hash": "0eb905a5ceefac66bbd11547bfdbfbfbe46ade17ad1d819811e9a0a358958526",
+    "rule_hash": "da401ed033c6d8f72bfdcd9acfacce9540bcac9fe7f9a57bc6f217b2a865b005",
     "build_sha256": "a3efac8289f74cf9561bc439822eaf81d77beb115cac2353d6dd2798dca96e3d",
     "training_run": "noon-20260919-r4",
     "checkpoint_cycle": 28,
     "variant": "latest",
     "inference": "pure_network",
-    "previous_rule_hash": "b272e15f644353ed2b806bb05bcbfb797a14b3da0679232e87f21f29d04ac522",
+    "previous_rule_hash": "0eb905a5ceefac66bbd11547bfdbfbfbe46ade17ad1d819811e9a0a358958526",
     "runtime_amendments": [
       {
         "date": "2026-09-19",
         "request": "玩家护盾己方回合开始清除；家族壮大从整局第5回合瞬发",
         "report": "docs/duel-v2-turn-boundaries-20260919.md",
         "scope": "Keep explicitly enabled candidate weights and builds; runtime rule corrections only. Historical quality results unchanged."
+      },
+      {
+        "date": "2026-09-19",
+        "request": "薄荷M07改为对方回合面板攻击归零光环，战斗牌加攻仍生效",
+        "report": "docs/duel-v2-m07-aura-20260919.md",
+        "scope": "Keep existing candidate weights/builds; update runtime only. Historical quality results unchanged."
       }
     ],
     "runtime_amendment": {
       "date": "2026-09-19",
-      "request": "薄荷M07改为对方回合面板攻击归零光环，战斗牌加攻仍生效",
-      "report": "docs/duel-v2-m07-aura-20260919.md",
+      "request": "小吱基础攻击改为3，异能补充战斗牌覆写攻击而非叠加",
+      "report": "docs/duel-v2-xiaozhi-attack-20260919.md",
       "scope": "Keep existing candidate weights/builds; update runtime only. Historical quality results unchanged."
     }
   },

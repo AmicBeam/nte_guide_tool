@@ -1778,7 +1778,7 @@
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 150, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {}
+    "effects": {"all_dmg": 0.2}
   },
   {
     "id": "character_chaos_a2_license_def_ignore",

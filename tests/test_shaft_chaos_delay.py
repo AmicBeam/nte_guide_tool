@@ -101,3 +101,22 @@ class ChaosDelayTest(unittest.TestCase):
         self.assertIn('延滞持续 12s', rendered['tooltip'])
         self.assertIn('倍率 3200%', rendered['tooltip'])
         self.assertNotIn('层数', rendered['tooltip'])
+
+    def test_zero_awakening_license_increases_damage_and_expires(self):
+        payload = {'team': [dict(slot=0, character_id='char_d38b672525', arc_id='', cartridge_id='', awakening_nodes=[])],
+                   'steps': [dict(id='e', slot=0, action_id='action_2d3f8642dd', start_tick=0),
+                             dict(id='inside', slot=0, action_id='action_40d0576f80', start_tick=30),
+                             dict(id='expired', slot=0, action_id='action_40d0576f80', start_tick=180)]}
+        result = simulate_shaft_axis(payload)['result']
+        details = {d['step_id']: d for d in result['details']}
+        inside, expired = details['inside'], details['expired']
+        buff, = [b for b in inside['applied_buffs'] if b['rule_id'] == 'character_chaos_pursuit_license']
+        self.assertEqual(buff['effects'], {'all_dmg': .2})
+        self.assertEqual(buff['duration_ticks'], 150)
+        self.assertNotIn('character_chaos_pursuit_license', {b['rule_id'] for b in expired['applied_buffs']})
+        self.assertAlmostEqual(inside['formula_parts']['dmg_bonus'] - expired['formula_parts']['dmg_bonus'], .2)
+        self.assertAlmostEqual(inside['direct_damage'] / expired['direct_damage'],
+                               (1 + inside['formula_parts']['dmg_bonus']) / (1 + expired['formula_parts']['dmg_bonus']))
+        payload['team'][0]['awakening_nodes'] = [5]
+        awakened = simulate_shaft_axis(payload)['result']['details'][1]
+        self.assertAlmostEqual(awakened['formula_parts']['dmg_bonus'] - inside['formula_parts']['dmg_bonus'], .2)

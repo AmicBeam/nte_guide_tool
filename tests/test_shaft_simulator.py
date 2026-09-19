@@ -5152,7 +5152,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         })['result']
         basic = next(detail for detail in chaos['details'] if detail['step_id'] == 'basic')
         license_buff = next(buff for buff in basic['applied_buffs'] if buff['rule_id'] == 'character_chaos_pursuit_license')
-        self.assertEqual(license_buff['effects'], {})
+        self.assertEqual(license_buff['effects'], {'all_dmg': 0.2})
         applied = {buff['rule_id']: buff for buff in basic['applied_buffs']}
         self.assertEqual(applied['character_chaos_a2_license_def_ignore']['effects'], {'def_ignore': 0.2})
         self.assertEqual(applied['character_chaos_a5_license_damage']['effects'], {'all_dmg': 0.2})

@@ -119,7 +119,20 @@ class HeiyuTest(unittest.TestCase):
         r = self.simulate([(0, 'action_heiyu_form_e', 0), (0, 'action_heiyu_form_z1', 10)])
         self.assertTrue(any('激活' in w for w in r['details'][0]['warnings']))
         self.assertEqual(r['details'][1]['resource_damage'], 0)
-        self.assertTrue(any('恶意 不足' in w for w in r['details'][1]['warnings']))
+        self.assertFalse(any('恶意 不足' in w for w in r['details'][1]['warnings']))
+
+    def test_partial_malice_cost_is_optional_and_damage_uses_available_amount(self):
+        # 用户2026-09-19：恶意不足不报自检错误，仍只消耗实际可用量。
+        r = self.simulate([(0, 'action_heiyu_form_z1', 0)], loop_enabled=True,
+                          loop_initial_resources={CID: {'energy': 0, 'harmony': 0,
+                                                        'personal_resources': {'恶意': 2}}})
+        detail = r['details'][0]
+        self.assertNotIn('个人资源 恶意 不足。', detail['warnings'])
+        self.assertAlmostEqual(detail['personal_resources_consumed']['恶意'], 2)
+        self.assertEqual(detail['personal_resources_after']['恶意'], 0)
+        self.assertAlmostEqual(detail['resource_atk_multiplier'], 2 * .4)
+        self.assertGreater(detail['resource_damage'], 0)
+        self.assertTrue(any('二形态' in w for w in detail['warnings']))
 
     def test_resource_multiplier_uses_actual_consumption_and_basic_level(self):
         r = self.simulate([(0, 'action_heiyu_q1', 0),

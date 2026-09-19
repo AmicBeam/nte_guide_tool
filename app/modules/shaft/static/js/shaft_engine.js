@@ -5008,7 +5008,10 @@
         if (activeResourceEffectConfigs(activeBuffs, slot, buffTick, 'ignore_cost', key, step, action, snapshot, isBackground).length) {
           return;
         }
-        if ((slotResources[key] || 0) < totalCost) warnings.push(`个人资源 ${key} 不足。`);
+        if ((slotResources[key] || 0) < totalCost
+          && !asList(snapshot.character?.optional_personal_resource_costs).includes(key)) {
+          warnings.push(`个人资源 ${key} 不足。`);
+        }
         consumedResources[key] = Math.min(slotResources[key] || 0, totalCost);
         slotResources[key] = Math.max(0, (slotResources[key] || 0) - totalCost);
       });

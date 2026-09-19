@@ -891,6 +891,7 @@
   {
     "id": "char_heiyu",
     "name": "黑羽",
+    "optional_personal_resource_costs": ["恶意"],
     "element": "魂",
     "adaptation": "气态",
     "rarity": "",

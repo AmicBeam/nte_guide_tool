@@ -3779,7 +3779,7 @@
     }
   }
 
-  async function saveMarketAxisToLocal() {
+  async function saveMarketAxisToLocal(conflictAction = '') {
     const payload = state.axisPreviewPayload;
     if (!payload || state.axisPreviewSaving) {
       return;
@@ -3789,10 +3789,11 @@
       redirectToLogin();
       return;
     }
-    state.axisPreviewSaving = true;
     const button = $('shaft-axis-preview-save-btn');
     const localCopyId = Number(payload.local_copy_id || 0);
     const updateLocalCopy = localCopyId > 0;
+    if (updateLocalCopy && conflictAction !== 'overwrite' && !window.confirm('更新到本地会覆盖已有副本，包括你已保存的修改。当前工作区的未保存更改会保留。确定覆盖吗？')) return;
+    state.axisPreviewSaving = true;
     button.disabled = true;
     button.textContent = updateLocalCopy ? '更新中' : '保存中';
     try {
@@ -3804,6 +3805,7 @@
           axis: payload.axis,
           result: payload.result,
           source_axis_id: payload.is_owner ? 0 : Number(payload.id || 0),
+          conflict_action: conflictAction,
         }),
       }, { authRequired: true });
       payload.local_copy_id = saved.id;
@@ -3813,6 +3815,9 @@
       showToast(updateLocalCopy ? `已更新「${saved.title}」` : `已保存为「${saved.title}」`);
     } catch (error) {
       state.axisPreviewSaving = false;
+      if (error.payload?.code === 'axis_name_conflict' && window.confirm('已有同名排轴或在线轴副本，继续会覆盖其中已保存的修改。确定覆盖吗？')) {
+        return saveMarketAxisToLocal('overwrite');
+      }
       button.disabled = false;
       button.textContent = updateLocalCopy ? '更新到本地' : '保存到本地';
       setStatus(error.message, 'error');
@@ -8256,6 +8261,7 @@
       setStatus('请等待本地计算完成后再保存', 'error');
       return false;
     }
+    const submittedFingerprint = axisDocumentFingerprint();
     const payload = {
       title: $('shaft-title-input').value || '未命名排轴',
       description: $('shaft-description-input').value || '',
@@ -8270,6 +8276,12 @@
       const url = state.savedAxisId ? `/api/shaft/axes/${state.savedAxisId}` : '/api/shaft/axes';
       const method = state.savedAxisId ? 'PUT' : 'POST';
       const saved = await shaftRequest(url, { method, body: JSON.stringify(payload) }, { authRequired: true });
+      if (axisDocumentFingerprint() !== submittedFingerprint) {
+        persistAxisDraft();
+        setStatus('提交时的版本已保存，后续更改仍未保存', 'warning');
+        showToast('保存期间又有更改，已保留当前编辑，请再次保存', 'warning');
+        return false;
+      }
       state.savedAxisId = saved.id;
       state.savedAxisTitle = String(saved.title || payload.title || '');
       state.axis = saved.axis;
@@ -8894,7 +8906,7 @@
     $('shaft-preview-btn').addEventListener('click', (event) => openAxisPreview(event.currentTarget));
     $('shaft-axis-preview-fit-btn').addEventListener('click', fitAxisPreview);
     $('shaft-axis-preview-cancel-btn').addEventListener('click', closeAxisPreview);
-    $('shaft-axis-preview-save-btn').addEventListener('click', saveMarketAxisToLocal);
+    $('shaft-axis-preview-save-btn').addEventListener('click', () => saveMarketAxisToLocal());
     $('shaft-axis-preview-dialog').addEventListener('click', (event) => {
       if (event.target === event.currentTarget || event.target.closest('[data-close-axis-preview]')) {
         closeAxisPreview();

@@ -1378,6 +1378,8 @@ def save_shaft_axis(player: Player, payload: dict[str, Any], axis_id: int | None
                     (ShaftAxis.visibility == 'private') &
                     (ShaftAxis.title == title)
                 ).order_by(ShaftAxis.updated_at.desc()).first()
+        if axis_id is None and record is not None and conflict_action != 'overwrite':
+            raise ShaftAxisNameConflictError(record.title, record.id)
         duplicate_title_query = ShaftAxis.select().where(
             (ShaftAxis.owner == player) &
             (ShaftAxis.visibility == 'private') &

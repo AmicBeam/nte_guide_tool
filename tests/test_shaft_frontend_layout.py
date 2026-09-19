@@ -491,7 +491,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('await openMarketAxisPreview(Number(card.dataset.axisId), card)', source)
         self.assertIn('function marketAxisLocalTitle(payload)', source)
         self.assertIn('const suffix = ` - ${author}`;', source)
-        self.assertIn('async function saveMarketAxisToLocal()', source)
+        self.assertIn("async function saveMarketAxisToLocal(conflictAction = '')", source)
         self.assertIn('title: marketAxisLocalTitle(payload)', source)
         self.assertIn("? '更新到本地'", source)
         self.assertIn('const localCopyId = Number(payload.local_copy_id || 0);', source)
@@ -2308,6 +2308,44 @@ process.stdout.write(JSON.stringify([run(true), run(false)]));
         self.assertIn('const result = freshResult();', save_body)
         self.assertIn('result,', save_body)
         self.assertLess(save_body.index('await runSimulation();'), save_body.index('const payload = {'))
+
+    def test_online_copy_cancel_does_not_write_or_close_preview(self):
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        code = source[source.index("  async function saveMarketAxisToLocal("):source.index('  function handleAxisPreviewWheel')]
+        script = """
+          const state = {axisPreviewPayload: {local_copy_id: 9}, axisPreviewSaving: false};
+          const getToken = () => 'fixture'; const $ = () => ({});
+          let prompted = false;
+          const window = {confirm: () => { prompted = true; return false; }};
+        """ + code + """
+          saveMarketAxisToLocal().then(() => console.log(JSON.stringify({prompted,state})));
+        """
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertTrue(result['prompted'])
+        self.assertEqual(result['state']['axisPreviewPayload']['local_copy_id'], 9)
+        self.assertFalse(result['state']['axisPreviewSaving'])
+
+    def test_save_response_preserves_edits_made_while_request_is_pending(self):
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        code = source[source.index("  async function saveAxis(conflictAction = '')"):source.index('  function sharedCopyTitle()')]
+        script = """
+          const state = {savedAxisId: 1, axis: {revision: 1}};
+          const fields = {'shaft-title-input': {value:'Original'}, 'shaft-description-input': {value:''}};
+          const $ = id => fields[id];
+          const getToken = () => 'fixture'; const freshResult = () => ({});
+          const axisDocumentFingerprint = () => JSON.stringify({axis:state.axis,title:fields['shaft-title-input'].value});
+          const persistAxisDraft = () => {}; const setStatus = () => {}; const showToast = () => {};
+          const shaftRequest = async () => {
+            state.axis = {revision:2}; fields['shaft-title-input'].value = 'Edited while saving';
+            return {id:1, title:'Original', axis:{revision:1}, result:{}};
+          };
+        """ + code + """
+          saveAxis().then(saved => console.log(JSON.stringify({saved,axis:state.axis,title:fields['shaft-title-input'].value})));
+        """
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertFalse(result['saved'])
+        self.assertEqual(result['axis'], {'revision':2})
+        self.assertEqual(result['title'], 'Edited while saving')
 
     def test_axis_save_as_requires_a_changed_title(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')

@@ -6,6 +6,24 @@ from tests.test_solo_room_flow import RoomFlowTestCase
 
 
 class ShaftPublicationTest(RoomFlowTestCase):
+    def test_online_copy_requires_explicit_overwrite_when_matched_by_source(self):
+        owner = self._issue_login_and_get_token('copy-source-owner')
+        viewer = self._issue_login_and_get_token('copy-viewer')
+        axis = self._get('/api/shaft/catalog', token=owner)['starter_axis']
+        payload = {'title': 'Online original', 'axis': axis, 'result': self._shaft_client_result(axis)}
+        saved = self._post('/api/shaft/axes', payload, token=owner)
+        public = self._post(f"/api/shaft/axes/{saved['id']}/publish", {}, token=owner)
+        copy_payload = {**payload, 'title': 'Local copy', 'source_axis_id': public['id'], 'description': 'custom changes'}
+        local = self._post('/api/shaft/axes', copy_payload, token=viewer)
+        replacement = {**copy_payload, 'description': 'online replacement'}
+        response = self.client.post('/api/shaft/axes', json=replacement, headers={'Authorization': f'Bearer {viewer}'})
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.get_json()['existing_axis_id'], local['id'])
+        self.assertEqual(self._get(f"/api/shaft/axes/{local['id']}", token=viewer)['description'], 'custom changes')
+        updated = self._post('/api/shaft/axes', {**replacement, 'conflict_action': 'overwrite'}, token=viewer)
+        self.assertEqual(updated['id'], local['id'])
+        self.assertEqual(updated['description'], 'online replacement')
+
     def test_retired_lingke_joint_migrates_on_save_share_and_public_snapshot(self):
         token = self._issue_login_and_get_token('legacy-lingke-owner')
         axis = {'team': [{'slot': 0, 'character_id': 'char_0846d632e0', 'arc_id': '', 'cartridge_id': ''},

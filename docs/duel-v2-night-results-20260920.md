@@ -64,3 +64,7 @@
 失败专用包 `failed-delivery.zip`（正常的`delivery.zip`尚未生成）已回传至 `artifacts/rl-evals/night-20260920/completed-v2/`；ZIP SHA256 `252a55df23141508608868bc47d262eaf776a25f32263420fa3b7142325eeb78`，52个manifest成员全部核验，包括guard、config、错误栈、逐局训练摘要、优化标量、完整数值模型及冻结关键源码。原优化器checkpoint保留Windows，没有更改网站模型或玩家数据。
 
 本任务心跳在失败归档后暂停，不会在旧截止前后擅自续训。
+
+## 后续更新
+
+用户随后明确授权修复并继续训练。本文件保留v2失败时的结果与48局统计，不回写为成功；修复后的独立v3a运行与验证见[修复与接续记录](duel-v2-choice-search-fix-20260920.md)，仍受原08:22:03硬截止约束。新运行不得重复计算本文件中的48局。

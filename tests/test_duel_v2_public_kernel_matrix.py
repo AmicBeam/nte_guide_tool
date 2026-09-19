@@ -120,7 +120,7 @@ class PublicKernelMatrixTest(unittest.TestCase):
         self.assertEqual(len(selected),4)
 
     def test_public_form_hooks_and_followup_damage(self):
-        # M07 suppresses the whole outgoing counter, not the displayed base panel.
+        # M07 zeros the attack panel; per-battle bonuses are applied afterward.
         state=new_game(seed=8,first_side='a',skip_mulligan=True,
                        decks={'a':preset_opponent_deck('starter'),'b':preset_opponent_deck('weave-rush')})
         state['sides']['b']['front']='bohe'

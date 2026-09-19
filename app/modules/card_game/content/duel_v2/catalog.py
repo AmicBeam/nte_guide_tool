@@ -95,6 +95,11 @@ def _card_public(raw: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(f'武备 {card_id} 的攻击与生命不能为负')
         public['attack'] = attack
         public['hp'] = hp
+        if 'enemy_turn_attack' in raw:
+            aura = raw['enemy_turn_attack']
+            if type(aura) is not int or aura < 0:
+                raise ValueError(f'武备 {card_id} 的对方回合攻击力必须为非负整数')
+            public['enemy_turn_attack'] = aura
     elif kind == 'battle':
         attack = int(raw.get('attack') or 0)
         shield = int(raw.get('shield') or 0)

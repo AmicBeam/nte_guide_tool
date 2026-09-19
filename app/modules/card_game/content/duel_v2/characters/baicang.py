@@ -63,7 +63,7 @@ class Baicang:
     def on_damage_taken(c, amount=0, source=None, **_data):
         if int(amount or 0) <= 0:
             return
-        before = attack_value(c.character)
+        before = attack_value(c.character, c.state, c.side)
         add_atk_buff(c.character, 1)
         src_side = None
         if isinstance(source, str) and ':' in source:
@@ -71,7 +71,7 @@ class Baicang:
         if src_side == c.side:
             c.character.setdefault('flags', {})['allied_hurt'] = True
         c.history('白藏受到伤害，触发异能：攻击 +1。',
-                  before={'attack': before}, after={'attack': attack_value(c.character)})
+                  before={'attack': before}, after={'attack': attack_value(c.character, c.state, c.side)})
 
     @staticmethod
     def on_damage_dealt(c, target_side=None, target_id=None, amount=0, **_data):

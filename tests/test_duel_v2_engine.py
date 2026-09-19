@@ -1175,7 +1175,7 @@ class DuelV2EngineTest(unittest.TestCase):
         before = s['sides']['a']['hp']
         s = apply_action(s, 'b', {'type': 'attack', 'character_id': 'zero'})
         attack_log = next(event for event in reversed(s['events']) if event['type'] == 'attack')
-        self.assertEqual(attack_log['counter'], 0)
+        self.assertEqual(attack_log['counter'], 2)  # M04 bonus above the zero panel.
         self.assertLess(s['sides']['a']['hp'], before)
         self.assertTrue(any(item['card_id'] == 'M04' for item in s['sides']['a']['discard']))
 

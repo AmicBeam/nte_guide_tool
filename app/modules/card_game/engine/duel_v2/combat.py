@@ -273,11 +273,9 @@ def attack(c, spec, index):
         bonus += spec['harmony_bonus']
     bonus += tally(c, 'attack_bonus', attacker_id=cid, target=target, target_id=target_id,
                    spec=spec, index=index)
-    attack_amount = max(0, op.get('card_set_attack', attack_value(h)) + bonus - _zone_slow(s, side, cid))
-    attack_amount = max(0, int(decide(c, 'outgoing_attack', attack_amount, attacker_id=cid, attacker_entity_id=h.entity_id,
-                                      target=target, target_id=target_id, spec=spec, index=index) or 0))
+    attack_amount = max(0, op.get('card_set_attack', attack_value(h, s, side)) + bonus - _zone_slow(s, side, cid))
     extra_counter = 0
-    counter_base = attack_value(target) if is_esper(target_id) else 0
+    counter_base = attack_value(target, s, enemy) if is_esper(target_id) else 0
     if is_esper(target_id):
         counter_base = (target.get('flags') or {}).pop('counter_set_attack', counter_base)
         extra_counter = int((target.get('flags') or {}).pop('counter_bonus', 0) or 0)
@@ -285,11 +283,7 @@ def attack(c, spec, index):
                   or (spec.get('no_counter_harmony') and op['harmony'])
                   or (is_esper(target_id) and collapsed(target)))
     if is_esper(target_id) and not no_counter:
-        from .context import EffectContext
         counter = max(0, counter_base + extra_counter - _zone_slow(s, enemy, target_id))
-        counter = max(0, int(decide(EffectContext(s, enemy, target_id, op), 'outgoing_attack',
-                                    counter, attacker_id=target_id, attacker_entity_id=target.entity_id, target=h, target_id=cid,
-                                    spec=spec, index=index) or 0))
     else:
         counter = 0
     bypass = bool(spec.get('bypass'))

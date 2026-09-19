@@ -62,14 +62,6 @@ class Bohe:
         return None
 
     @staticmethod
-    def outgoing_attack(c, current=0, attacker_entity_id=None, **_data):
-        if attacker_entity_id != c.entity_id:
-            return None
-        if c.character.get('shape') == 'M07' and c.state.get('active_side') != c.side:
-            return 0
-        return None
-
-    @staticmethod
     def incoming_damage(c, current=0, kind=None, target_id=None, source=None, **_data):
         if target_id != c.cid or not c.character.get('awakened'):
             return None
@@ -94,10 +86,10 @@ class Bohe:
         flags.pop('share_overflow', None)
         pending = int(flags.pop('pending_atk', 0) or 0)
         if pending:
-            before = attack_value(c.character)
+            before = attack_value(c.character, c.state, c.side)
             add_atk_buff(c.character, pending)
             c.history(f'回合开始，「第一直觉」触发：薄荷攻击 +{pending}。',
-                      before={'attack': before}, after={'attack': attack_value(c.character)})
+                      before={'attack': before}, after={'attack': attack_value(c.character, c.state, c.side)})
         if c.character.get('shape') != 'M08':
             return
         if finished(c.state) or not alive(c.state, c.side, c.cid) or collapsed(c.character):

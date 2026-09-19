@@ -1992,7 +1992,8 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "对方回合期间，薄荷的攻击视为 0。",
+      "description": "对方回合期间，薄荷的攻击力变为 0。",
+      "enemy_turn_attack": 0,
       "effect_id": "M07",
       "source": {
         "character_id": 1019,

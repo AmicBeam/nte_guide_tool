@@ -97,13 +97,13 @@ class EffectContext:
         if finished(self.state) or not is_esper(cid) or not alive(self.state, side, cid):
             return
         h = hero(self.state, side, cid)
-        before = attack_value(h)
+        before = attack_value(h, self.state, side)
         flags = h.setdefault('flags', {})
         flags['atk_debuff'] = int(flags.get('atk_debuff') or 0) + amount
         if amount:
             self.history(f"{self.character['name']}的效果：{h['name']}攻击 -{amount}。",
                          target_side=side, target_id=cid,
-                         before={'attack': before}, after={'attack': attack_value(h)})
+                         before={'attack': before}, after={'attack': attack_value(h, self.state, side)})
 
     def sortie(self, **spec):
         combat.sortie(self, **spec)

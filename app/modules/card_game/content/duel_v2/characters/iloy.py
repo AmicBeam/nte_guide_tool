@@ -11,10 +11,10 @@ def _mark_healed(c, side, cid):
     if side != c.side or is_player(cid):
         return
     target = hero(c.state, side, cid)
-    before = attack_value(target)
+    before = attack_value(target, c.state, side)
     add_atk_buff(target, 1)
     c.history(f"{c.character['name']}的治疗效果：{target['name']}攻击 +1。", target_side=side, target_id=cid,
-              before={'attack': before}, after={'attack': attack_value(target)})
+              before={'attack': before}, after={'attack': attack_value(target, c.state, side)})
 
 
 def _y01(c):

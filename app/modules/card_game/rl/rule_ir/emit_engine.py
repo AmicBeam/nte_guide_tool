@@ -159,6 +159,7 @@ static int attack_power(int *row, int s, int k){
   else value = CH(CH_BASE_ATK,s,k) + CH(CH_GROWTH,s,k);
   value += CH(CH_ATK_BUFF,s,k);
   if(value<0) value=0;
+  if(form==CARD_M07 && row[OFF_ACTIVE]!=s) value=0;
   return value;
 }
 
@@ -565,13 +566,11 @@ static void attack_once(int *row, int s, int seat, int bonus, int support, int i
   trigger_response(row,s,seat);
   if(!live(row) || !present_alive(row,s,seat) || SI(FRONT,s)!=seat) return;
   int atk=MAX(0,attack_power(row,s,seat)+bonus);
-  if(seat==SEAT_BOHE && CH(CH_SHAPE,s,seat)==CARD_M07 && row[OFF_ACTIVE]!=s) atk=0;
   int foe=other_side(s), t=SI(FRONT,foe), counter=0, target_loss=0;
   int weave_atk=SI(WEAVE,foe)>0 && (CAT_ATTR[seat]==1 || CAT_ATTR[seat]==5);
   int weave_counter=0;
   if(t>=0){
     counter=(!support && !collapsed(row,foe,t)) ? MAX(0,attack_power(row,foe,t)+row[OFF_ACTION]) : 0;
-    if(t==SEAT_BOHE && CH(CH_SHAPE,foe,t)==CARD_M07 && row[OFF_ACTIVE]!=foe) counter=0;
     weave_counter=!support && !collapsed(row,foe,t) && SI(WEAVE,s)>0 && (CAT_ATTR[t]==1 || CAT_ATTR[t]==5);
     int raw=MAX(0,atk-(ignore_shield?0:CH(CH_SHIELD,foe,t))-CH(CH_HP,foe,t));
     int overflow=(seat==SEAT_BOHE || (t==SEAT_BOHE && CH(CH_SHARE_OVERFLOW,foe,t)))?raw:0;

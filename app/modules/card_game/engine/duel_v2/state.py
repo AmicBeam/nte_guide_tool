@@ -64,7 +64,7 @@ def name(state, side, cid=None):
     return hero(state, side, cid)['name']
 
 
-def attack_value(character):
+def attack_value(character, state=None, side=None):
     flags = character.get('flags') or {}
     shape_id = character.get('shape')
     from app.modules.card_game.content.duel_v2.tutorial import lookup_card
@@ -86,6 +86,12 @@ def attack_value(character):
     value += int(flags.get('form_attack') or 0)
     value += int(flags.get('atk_buff') or 0)
     value -= int(flags.get('atk_debuff') or 0)
+    # A continuous form aura changes the panel, never its stored components.
+    owner = side if side is not None else character.get('side')
+    aura = (form or {}).get('enemy_turn_attack')
+    if (aura is not None and state is not None and owner in SIDES
+            and state.get('active_side') == other(owner)):
+        value = int(aura)
     return max(0, value)
 
 

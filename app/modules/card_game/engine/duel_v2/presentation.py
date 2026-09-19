@@ -90,7 +90,7 @@ def capture_public_board(state):
                 'hp': hero['hp'],
                 'max_hp': hero['max_hp'],
                 'shield': hero['shield'],
-                'attack': duel_state.attack_value(hero),
+                'attack': duel_state.attack_value(hero, state, ps),
                 'harmony': hero['harmony'],
                 'harmony_source': marks['payer'] == cid,
                 'harmony_ready': cid in marks['ready'],

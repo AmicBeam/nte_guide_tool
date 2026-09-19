@@ -340,3 +340,6 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 ### 明确日期截止的长期搜索训练
 
 `scripts/train_duel_v2_until.py` 使用带时区的 `--train-until`、`--evaluate-until`、`--hard-deadline`，分别限制学习、计算验收与整棵进程树。初始与固定参考模型由 `--initial` / `--reference` 指定数值目录；支持 CUDA 更新、CPU 多进程自博弈、每轮恢复点、定期独立检查点选择和限时最终报告。Windows 监督进程脱离 SSH 作业，运行期间阻止自动系统休眠，退出恢复；可恢复故障最多自动重试一次，沿用原截止。详见 [2026-09-19 中午验收计划](../../../docs/duel-v2-noon-plan-20260919.md)。验证：`python -m unittest tests.test_duel_v2_information_longrun`。此入口不会自动上线模型。
+
+
+已停止的长期任务可用 `scripts/finalize_duel_v2_until.py --source-root FROZEN_SOURCE --output EXISTING_RUN` 从已校验的完整检查点继续**只评估**。调用前须确认原工作进程树和监督器已退出并保存原guard；该入口拒绝仍运行或重复启动，固定已完成轮次、保留原验收与硬截止，完成后验证训练计数没有改变。它不修改冻结规则源码，不用于重新开始学习。

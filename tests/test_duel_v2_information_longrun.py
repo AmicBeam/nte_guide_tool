@@ -64,3 +64,15 @@ class LongrunTest(unittest.TestCase):
         self.assertEqual(selection_decision(raw,True,tied,tied,confirm),'promote')
         self.assertEqual(selection_decision(raw,True,tied,tied,None),'keep')
         self.assertEqual(selection_decision(raw,True,tied,dict(tied,candidate=7),confirm),'keep')
+
+    def test_early_finalization_cannot_train_or_extend_deadlines(self):
+        from scripts.finalize_duel_v2_until import finalization_config
+        original=dict(train_until=110,evaluate_until=155,hard_deadline=160,max_cycles=0)
+        effective=finalization_config(original,27,100)
+        self.assertEqual(original['train_until'],110)
+        self.assertEqual(effective['evaluate_until'],155);self.assertEqual(effective['hard_deadline'],160)
+        self.assertEqual(effective['max_cycles'],27)
+        # Even a backwards wall-clock correction cannot open another training cycle.
+        self.assertFalse(99<effective['train_until'] and (not effective['max_cycles'] or 27<effective['max_cycles']))
+        with self.assertRaises(ValueError):finalization_config(original,0,100)
+        with self.assertRaises(ValueError):finalization_config(original,27,160)

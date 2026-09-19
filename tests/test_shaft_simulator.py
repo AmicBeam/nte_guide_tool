@@ -2521,7 +2521,8 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
         })['result']
 
-        self.assertEqual(result['details'][0]['harmony'], 100)
+        self.assertAlmostEqual(result['details'][0]['harmony'], 14.599)
+        self.assertEqual(result['details'][0]['harmony_on_start'], 100)
         self.assertEqual(result['resources_by_slot'][0]['harmony'], 100)
 
     def test_loop_axis_uses_per_character_initial_energy_and_harmony(self) -> None:
@@ -5452,7 +5453,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
         self.assertEqual(details['inside']['triggered_reaction']['reaction'], '覆纹')
         self.assertFalse(any('环合值不足' in warning for warning in details['inside']['warnings']))
-        self.assertAlmostEqual(details['inside']['resources_after_by_slot'][0]['harmony'], details['e']['harmony_after'])
+        self.assertAlmostEqual(details['inside']['resources_after_by_slot'][0]['harmony'], details['e']['harmony'])
         self.assertTrue(details['inside']['is_background_damage'])
         self.assertFalse(details['outside']['is_background_damage'])
         self.assertFalse(details['outside']['triggered_reaction']['lingke_joint_trigger'])

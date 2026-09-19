@@ -2429,6 +2429,44 @@
       return [slot, Math.max(0, Math.min(HARMONY_CAPACITY, harmony))];
     }));
     const harmonyBySlot = new Map(initialHarmonyBySlot);
+    const harmonyEvents = [];
+    let pendingActionHarmony = [];
+    let lastHarmonySettlementTick = 0;
+
+    function applyHarmonyDelta(slot, amount, tick, source = {}) {
+      const before = harmonyBySlot.get(slot) || 0;
+      const bounded = Math.max(0, Math.min(HARMONY_CAPACITY, before + amount));
+      const after = HARMONY_CAPACITY - bounded < 1e-9 ? HARMONY_CAPACITY : bounded;
+      harmonyBySlot.set(slot, after);
+      if (Math.abs(after - before) > 1e-9) harmonyEvents.push({
+        tick: int(tick), slot: int(slot), amount: after - before, harmony_after: after,
+        kind: source.kind || 'action_gain',
+        source_step_id: String(source.step_id || ''),
+        source_action_id: String(source.action_id || ''),
+      });
+    }
+
+    function settleActionHarmony(targetTick) {
+      const through = Math.max(lastHarmonySettlementTick, int(targetTick));
+      for (let tick = lastHarmonySettlementTick + 1; tick <= through; tick += 1) {
+        pendingActionHarmony.forEach((stream) => {
+          if (tick > stream.start_tick && tick <= stream.end_tick) {
+            applyHarmonyDelta(stream.slot, stream.amount / stream.duration_ticks, tick, stream);
+          }
+        });
+      }
+      lastHarmonySettlementTick = through;
+      pendingActionHarmony = pendingActionHarmony.filter((stream) => stream.end_tick > through);
+    }
+
+    function scheduleActionHarmony(slot, amount, startTick, durationTicks, step, action) {
+      const source = {step_id: step.id, action_id: action.id};
+      if (durationTicks <= 0) applyHarmonyDelta(slot, amount, startTick, source);
+      else if (amount > 0) pendingActionHarmony.push({
+        ...source, slot, amount, start_tick: startTick,
+        end_tick: startTick + durationTicks, duration_ticks: durationTicks,
+      });
+    }
     const cooldownUntil = new Map();
     function recordActionCooldown(slot, action, snapshot, startTick, durationTicks) {
       if (snapshot?.character?.uses_cooldowns === false) return;
@@ -2621,15 +2659,37 @@
 
     if (options.loop_enabled) {
       const warmHarmony = new Map(initialHarmonyBySlot);
+      const warmStreams = [];
+      let warmTick = 0;
+      const settleWarmHarmony = (through) => {
+        for (let tick = warmTick + 1; tick <= through; tick += 1) {
+          warmStreams.forEach((stream) => {
+            if (tick > stream.start && tick <= stream.end) {
+              warmHarmony.set(stream.slot, Math.min(HARMONY_CAPACITY,
+                (warmHarmony.get(stream.slot) || 0) + stream.amount / (stream.end - stream.start)));
+            }
+          });
+        }
+        warmTick = Math.max(warmTick, through);
+      };
       scheduledSteps.forEach((scheduled) => {
         const slot = int(scheduled.slot);
+        const start = int(scheduled.start_tick);
+        const duration = Math.max(0, int(scheduled.duration_ticks));
+        const action = scheduled.action;
+        const multiplier = backgroundActionMultiplier(scheduled.step, action);
+        settleWarmHarmony(isZeroForegroundQStep(scheduled.step, action) ? start - 1 : start);
         warmHarmony.set(
           slot,
           Math.min(
             HARMONY_CAPACITY,
-            (warmHarmony.get(slot) || 0) + num(scheduled.action?.harmony) * backgroundActionMultiplier(scheduled.step, scheduled.action),
+            (warmHarmony.get(slot) || 0) + num(action?.harmony_on_start) * multiplier,
           ),
         );
+        settleWarmHarmony(start);
+        const amount = actionValueForAwakeningNodes(action, snapshots.get(slot), 'harmony', 'harmony_by_awakening_node') * multiplier;
+        if (duration > 0) warmStreams.push({slot, amount, start, end: start + duration});
+        else warmHarmony.set(slot, Math.min(HARMONY_CAPACITY, (warmHarmony.get(slot) || 0) + amount));
         if (!isSupportAction(scheduled.action)) return;
         const isLingkeAwakeningJoint = lingkeJointAwakeningEnabled(scheduled, 5);
         if (scheduled.action?.disable_reaction === true && !isLingkeAwakeningJoint) return;
@@ -3176,7 +3236,9 @@
         && !scheduled.step?.preserve_harmony
       ) {
         const currentConsumption = Math.min(previousCurrentHarmony, 100);
-        harmonyBySlot.set(previousSnapshot.slot, Math.max(0, previousCurrentHarmony - currentConsumption));
+        applyHarmonyDelta(previousSnapshot.slot, -currentConsumption, scheduled.start_tick, {
+          kind: 'reaction_cost', step_id: scheduled.step?.id, action_id: scheduled.action?.id,
+        });
       }
       while (activeEffects.length >= instanceLimit) {
         evictReactionEffect(activeEffects.shift(), tick, { settleDamage: reaction === '黯星' });
@@ -4275,13 +4337,9 @@
         }
         const activationHarmonyGain = num(activation.harmony_gain);
         if (activationHarmonyGain !== 0) {
-          harmonyBySlot.set(
-            ownerSlot,
-            Math.max(0, Math.min(
-              HARMONY_CAPACITY,
-              (harmonyBySlot.get(ownerSlot) || 0) + activationHarmonyGain,
-            )),
-          );
+          applyHarmonyDelta(ownerSlot, activationHarmonyGain, triggerTick, {
+            kind: 'buff_activation', step_id: step.id, action_id: action.id,
+          });
         }
         const dotLayerExpansion = activation.increase_all_active_dot_layers === true
           ? increaseAllActiveDotLayers(triggerTick)
@@ -4575,6 +4633,7 @@
       initialEnergyBySlot.forEach((value, slot) => energyBySlot.set(slot, value));
       harmonyBySlot.clear();
       initialHarmonyBySlot.forEach((value, slot) => harmonyBySlot.set(slot, value));
+      harmonyEvents.length = 0;
       personalResources.forEach((resources, slot) => {
         Object.keys(resources).forEach((key) => delete resources[key]);
         Object.assign(resources, initialPersonalResourcesBySlot.get(slot) || {});
@@ -4744,6 +4803,11 @@
       const warnings = [];
       if (action.validation_note) warnings.push(String(action.validation_note));
       settleActionEnergy(isInstantForegroundQ ? startTick - 1 : startTick);
+      settleActionHarmony(isInstantForegroundQ ? startTick - 1 : startTick);
+      const instantHarmony = num(action.harmony_on_start) * actionMultiplier;
+      applyHarmonyDelta(slot, instantHarmony, startTick, {
+        kind: 'action_start_gain', step_id: step.id, action_id: action.id,
+      });
       if (int(action.required_awakening) > 0 && !hasAwakeningNode(snapshot, action.required_awakening)) {
         const awakeningLabel = 'ABCDEF'[int(action.required_awakening) - 1] || String(int(action.required_awakening));
         warnings.push(`动作需要 ${awakeningLabel} 觉醒节点。`);
@@ -5182,7 +5246,6 @@
         weight: actionMultiplier,
         profile: calc.stagger_profile,
       });
-      harmonyBySlot.set(slot, Math.min(HARMONY_CAPACITY, (harmonyBySlot.get(slot) || 0) + multipliedHarmony));
       energyBySlot.set(slot, slotEnergy);
       recordEnergyState(slot, energyBeforeAction, startTick, {
         kind: energyCost > 0 ? 'action_cost' : 'action_state',
@@ -5191,7 +5254,9 @@
       });
       if (isInstantForegroundQ) {
         settleActionEnergy(startTick);
+        settleActionHarmony(startTick);
       }
+      scheduleActionHarmony(slot, multipliedHarmony, startTick, durationTicks, step, action);
       const plannedEnergy = scheduleActionEnergy({
         actorSlot: energyActorSlot,
         baseActionEnergy: baseActionEnergyGain,
@@ -5330,6 +5395,10 @@
         stagger_amount: multipliedStagger,
         forced_stagger: forcedStagger,
         harmony: multipliedHarmony,
+        harmony_on_start: instantHarmony,
+        harmony_gain_timing: durationTicks > 0 ? 'uniform' : 'instant',
+        harmony_gain_start_tick: startTick,
+        harmony_gain_end_tick: startTick + durationTicks,
         energy_gain: displayedEnergyGain,
         base_energy_gain: actorActionEnergyGain,
         lingke_joint_source_slot: action.lingke_joint_source_slot,
@@ -5422,6 +5491,7 @@
       event.visual_tick = visualTickFromCalculationTick(int(event.tick), qVirtualIntervals);
     });
     settleActionEnergy(durationTicks);
+    settleActionHarmony(durationTicks);
     settlePersonalResourceDrains(durationTicks);
     syncBuffLayerResources(durationTicks);
     const timelineTicks = Math.max(
@@ -5723,6 +5793,7 @@
         personal_resources: personalResources.get(slot) || {},
       })),
       energy_events: energyEvents,
+      harmony_events: harmonyEvents,
       build_panels_by_slot: sortedSlots.map((slot) => buildPanelProjection(snapshots.get(slot))),
       time_axis: {
         tick_seconds: 0.1,

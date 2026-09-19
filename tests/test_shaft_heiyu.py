@@ -39,7 +39,8 @@ class HeiyuTest(unittest.TestCase):
         self.assertAlmostEqual(actions['a5']['multipliers']['atk'], 1.735)
         self.assertAlmostEqual(actions['a5']['energy_gain'], 5.785)
         self.assertAlmostEqual(actions['魔a5']['harmony'], 14.142)
-        self.assertEqual(actions['e']['harmony'], 100)
+        self.assertEqual(actions['e']['harmony'], 10.4)
+        self.assertEqual(actions['e']['harmony_on_start'], 100)
         self.assertEqual(actions['q1']['energy_cost'], 100)
         self.assertEqual(actions['q2']['energy_cost'], 0)
         # 用户2026-09-18口径：一个动作对应整套5次协同中的1次。

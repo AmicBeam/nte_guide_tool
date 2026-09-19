@@ -1114,7 +1114,13 @@
       return event;
     }, null);
     const energy = Number(latestEnergyEvent?.energy_after ?? resource.initial_energy ?? snapshot.energy ?? state.axis?.initial_energy ?? 1000);
-    const harmony = Number(snapshot.harmony ?? resource.initial_harmony ?? 0);
+    const latestHarmonyEvent = (result?.harmony_events || []).reduce((latest, event) => {
+      if (Number(event.slot) !== slotNumber || Number(event.tick || 0) > calculationCursorTick) return latest;
+      return event;
+    }, null);
+    const harmony = Array.isArray(result?.harmony_events)
+      ? Number(latestHarmonyEvent?.harmony_after ?? resource.initial_harmony ?? 0)
+      : Number(snapshot.harmony ?? resource.initial_harmony ?? 0);
     const personalResources = snapshot.personal_resources && typeof snapshot.personal_resources === 'object'
       ? snapshot.personal_resources
       : resource.initial_personal_resources && typeof resource.initial_personal_resources === 'object'
@@ -5407,6 +5413,7 @@
         ${showsEnergy ? `<div class="shaft-detail-kv"><span>回能</span><strong>${formatNumber(energyGain, 1)}</strong></div>` : ''}
         ${showsEnergy ? `<div class="shaft-detail-kv"><span>额外回能</span><strong>${formatNumber(extraEnergyGain, 1)}</strong></div>` : ''}
         <div class="shaft-detail-kv"><span>环合</span><strong>${formatNumber(harmonyGain, 1)}</strong></div>
+        ${Number(detail?.harmony_on_start ?? action.harmony_on_start ?? 0) > 0 ? `<div class="shaft-detail-kv"><span>释放时环合</span><strong>${formatNumber(detail?.harmony_on_start ?? action.harmony_on_start, 1)}</strong></div>` : ''}
         ${specialStats.join('')}
         `}
       </div>

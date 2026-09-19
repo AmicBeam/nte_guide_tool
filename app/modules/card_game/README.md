@@ -353,3 +353,8 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 按用户“更新项目的模型吧”明确要求，三套高级人机使用第 28 轮 `latest` 数值权重（含快攻），采用纯网络 CPU 推理与已学习换牌，不在网页执行 256 次搜索。此前“待训练”和“未启用”描述是历史状态。配牌取模型内的 `build`；个人构筑与普通预组不变。质量验收整体未提升，`validation.approved` 仍为 false；仅本次指定权重通过独立 `serving_authorization` 启用，所有身份与数值校验仍强制执行。旧版本高级房间需要重新开局。详情与回退方式见 [模型更新记录](../../../docs/duel-v2-noon-model-update-20260919.md)。
 
 验证：`python -m unittest tests.test_duel_v2_league tests.test_duel_v2_league_service tests.test_duel_v2_advanced_ai.CpuEncoderTest tests.test_duel_v2_advanced_ai.AdvancedRoomTest.test_real_models_finish_all_presets_and_save_replays tests.test_duel_v2_advanced_ai.AdvancedRoomTest.test_published_models_support_public_saved_builds`，覆盖未授权拒绝、授权绑定、质量状态保留、三套实际模型 API 完整对局及回放。
+
+
+### 小吱加强后快攻适应
+
+`train_duel_v2_quick_adaptation.py`在显式新规则热启动后仅更新快攻，创生与覆纹冻结；采用原绝对截止监督，保留初始/最佳/最后及详细角色贡献事件。规则迁移不继承旧批准，结果不自动上线。预算、配对与归因边界见 [快攻适应计划](../../../docs/duel-v2-quick-adaptation-20260919.md)。验证：`python -m unittest tests.test_duel_v2_quick_adaptation`（需独立Torch环境）。

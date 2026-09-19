@@ -562,7 +562,7 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertIsNone(s['sides']['b']['front'])
         s = apply_action(s, 'b', {'type': 'end_turn'})
         self.assertIsNone(s['sides']['a']['front'])
-        self.assertEqual(s['sides']['a']['last_front'], 'nanali')
+        self.assertIsNone(s['sides']['a']['last_front'])
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
         hero(s, 'a', 'zero').setdefault('flags', {})['collapse'] = {'side': 'b', 'until': 99}
         s = apply_action(s, 'a', {'type': 'end_turn'})
@@ -603,7 +603,7 @@ class DuelV2EngineTest(unittest.TestCase):
                 else:
                     s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'nanali'})
                 self.assertEqual(s['sides']['a']['front'], 'nanali')
-                self.assertEqual(s['sides']['a']['last_front'], 'zero')
+                self.assertIsNone(s['sides']['a']['last_front'])
                 self.assertIn('collapse', hero(s, 'a', 'zero')['flags'])
 
     def test_response_can_replace_collapsed_front(self):
@@ -614,7 +614,7 @@ class DuelV2EngineTest(unittest.TestCase):
         card = self.hand(s, 'N02', side='b')
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
         self.assertEqual(s['sides']['b']['front'], 'nanali')
-        self.assertEqual(s['sides']['b']['last_front'], 'zero')
+        self.assertIsNone(s['sides']['b']['last_front'])
         self.assertEqual(s['sides']['b']['ap'], 0)
         self.assertTrue(any(c['instance_id'] == card['instance_id'] for c in s['sides']['b']['discard']))
         self.assertTrue(any(e['type'] == 'enter' and '反击方' in e['text'] for e in s['events']))
@@ -626,7 +626,7 @@ class DuelV2EngineTest(unittest.TestCase):
         hero(s, 'a', 'zero')['flags']['collapse'] = {'side': 'b', 'until': 99}
         move_out(s, 'a', 'zero')
         self.assertIsNone(s['sides']['a']['front'])
-        self.assertEqual(s['sides']['a']['last_front'], 'zero')
+        self.assertIsNone(s['sides']['a']['last_front'])
 
     def test_downed_character_does_not_gain_resources(self):
         from app.modules.card_game.engine.duel_v2.context import EffectContext

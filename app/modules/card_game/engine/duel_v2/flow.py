@@ -11,7 +11,7 @@ from .context import EffectContext
 from app.modules.card_game.engine.events import GameEvent
 from .state import (SIDES, add_hand, alive, card_instance, clear_harmony_source, collapsed, damage, discard,
                     draw, energy, finished, front_debuff, hero, knockdowns, log, move_out, name,
-                    new_character, other, shield, shuffle, team_order)
+                    new_character, other, shield, shuffle, team_order, upgrade_harmony_residue)
 
 from .escalation import begin_escalation, clamp_resources, energy_cap, harmony_cap, ultimate_remaining
 
@@ -36,7 +36,8 @@ def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=
              'turn': 0, 'winner': None, 'reason': None, 'rng': seed, 'next_instance': 0,
              'event_seq': 0, 'events': [], 'pending_choice': None, 'operation': None,
              'mulligan_done': [], 'current_action_id': 'setup', 'current_action_version': 0,
-             'combat_group': 0, 'sides': {}, 'escalation_enabled': bool(escalation)}
+             'combat_group': 0, 'sides': {}, 'escalation_enabled': bool(escalation),
+             'harmony_residue_version': 1}
     for side in SIDES:
         order = list(selected[side]['character_ids'])
         state['sides'][side] = PlayerEntity({
@@ -440,6 +441,7 @@ def begin_turn(state, side):
     team['used'] = {}
     for ps in SIDES:
         state['sides'][ps]['attacked_this_turn'] = []
+    upgrade_harmony_residue(state)
     team['harmony_damage'] = False
     team['genesis_damage_bonus'] = 0
     team['surplus'] = False
@@ -680,6 +682,7 @@ def finish_operation(state):
             log(state, text, 'resource', side=ps, source=pc, actor=f'{ps}:{pc}', target=f'{ps}:{pc}',
                 harmony_delta=dh, energy_delta=de,
                 before=snap, after={'harmony': h['harmony'], 'energy': h['energy']})
+    fire(c, GameEvent.V2_OPERATION_RESOURCES_RESOLVED, actor_only=True)
     state['phase'] = 'playing'
     state['operation'], state['pending_choice'] = None, None
 

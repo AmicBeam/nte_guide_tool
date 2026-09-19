@@ -38,7 +38,12 @@ class Haiyue:
 
     @staticmethod
     def after_sortie(c):
-        move_out(c.state, c.side, c.cid)
+        c.operation['return_after_resources'] = c.character['entity_id']
+
+    @staticmethod
+    def after_operation_resources(c):
+        if c.operation.get('return_after_resources') == c.character['entity_id']:
+            move_out(c.state, c.side, c.cid)
 
     @staticmethod
     def before_attack(c):

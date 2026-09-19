@@ -31,6 +31,25 @@ class GpuTransitionTest(unittest.TestCase):
                 self.assertTrue(torch.equal(old[:3], got[:3]), name)
         self.assertFalse(torch.equal(before['turn'][3:], s.turn[3:]))
 
+    def test_harmony_residue_capture_uses_lowered_cap_and_batch_mask(self):
+        from app.modules.card_game.rl.gpu_duel.rules import begin_turn, enter
+        from app.modules.card_game.rl.gpu_duel.catalog import SEAT_INDEX
+        s, torch = self.env.state, self.torch
+        nana, zero = SEAT_INDEX['nanali'], SEAT_INDEX['zero']
+        s.front[:, 0] = nana
+        s.last_front.fill_(-1)
+        s.ch_harmony[:, 0, nana] = torch.tensor([1, 2, 1, 1])
+        s.turn[:] = torch.tensor([18, 18, 19, 19])
+        s.escalation_enabled.fill_(1)
+        mask = torch.tensor([True, True, True, False])
+        begin_turn(s, torch.zeros(4, dtype=torch.long), mask)
+        self.assertEqual(s.last_front[:, 0].tolist(), [-1, nana, nana, -1])
+        self.assertEqual(s.front[:, 0].tolist(), [-1, -1, -1, nana])
+        s.ch_harmony[:, 0, nana] = torch.tensor([2, 2, 1, 1])
+        enter(s, torch.zeros(4, dtype=torch.long), zero, mask)
+        self.assertEqual(s.ch_harmony[:, 0, nana].tolist(), [2, 0, 0, 1])
+        self.assertEqual(s.last_front[:, 0].tolist(), [-1, -1, -1, -1])
+
     def test_player_shield_expiry_is_owner_and_mask_local(self):
         from app.modules.card_game.rl.gpu_duel.rules import begin_turn
         s, torch = self.env.state, self.torch

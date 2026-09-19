@@ -285,8 +285,8 @@ def enter(s: GpuState, side: torch.Tensor, seat: int, mask: torch.Tensor, *, sup
     # swap out current front
     for old in range(N_SEATS):
         leaving = mask & (s.front[b, side] == old)
-        s.last_front[b, side] = torch.where(leaving, torch.full_like(s.front[b, side], old), s.last_front[b, side])
         s.ch_shield[b, side, old] = torch.where(leaving, torch.zeros_like(s.ch_shield[b, side, old]), s.ch_shield[b, side, old])
+    s.last_front[b, side] = torch.where(mask, torch.full_like(s.last_front[b, side], -1), s.last_front[b, side])
     s.front[b, side] = torch.where(mask, torch.full_like(s.front[b, side], seat), s.front[b, side])
     # pay harmony
     for pseat in range(N_SEATS):
@@ -543,7 +543,11 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
         # return front
         for seat in range(N_SEATS):
             leaving = here & (s.front[:, si] == seat)
-            s.last_front[:, si] = torch.where(leaving, torch.full_like(s.front[:, si], seat), s.last_front[:, si])
+            eligible = ((s.ch_hp[:, si, seat] > 0) & (s.ch_down[:, si, seat] == 0)
+                        & (s.ch_harmony[:, si, seat] >= _harmony_cap(s)))
+            residue = torch.where(eligible, torch.full_like(s.front[:, si], seat),
+                                  torch.full_like(s.front[:, si], -1))
+            s.last_front[:, si] = torch.where(leaving, residue, s.last_front[:, si])
             s.ch_shield[:, si, seat] = torch.where(leaving, torch.zeros_like(s.ch_shield[:, si, seat]), s.ch_shield[:, si, seat])
         s.front[:, si] = torch.where(here, torch.full_like(s.front[:, si], -1), s.front[:, si])
         pending = here & (s.extra_genesis[:, si] > 0)

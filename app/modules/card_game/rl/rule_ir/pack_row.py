@@ -93,7 +93,7 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
         row[OFFSETS['shield'] + side_i] = int(team['shield'])
         row[OFFSETS['ap'] + side_i] = int(team.get('ap') or 0)
         row[OFFSETS['front'] + side_i] = SEAT_INDEX[team['front']] if team.get('front') in SEAT_INDEX else -1
-        row[OFFSETS['last_front'] + side_i] = SEAT_INDEX[team['last_front']] if team.get('last_front') in SEAT_INDEX else -1
+        row[OFFSETS['last_front'] + side_i] = SEAT_INDEX[team['last_front']] if state.get('harmony_residue_version') == 1 and team.get('last_front') in SEAT_INDEX else -1
         row[OFFSETS['turn_count'] + side_i] = int(team.get('turn_count') or 0)
         row[OFFSETS['fatigue'] + side_i] = int(team.get('fatigue') or 0)
         row[OFFSETS['normal_atk'] + side_i] = 1 if team.get('normal_attack_available') else 0

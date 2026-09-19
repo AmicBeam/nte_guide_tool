@@ -312,7 +312,8 @@ static void grant_seed(int *row, int s){
 
 static void move_out(int *row, int s, int seat){
   if(SI(FRONT,s)!=seat) return;
-  SI(LAST_FRONT,s)=(CH(CH_HP,s,seat)>0 && CH(CH_DOWN,s,seat)==0) ? seat : -1;
+  int hcap=(row[OFF_ESCALATION_ENABLED] && row[OFF_TURN]>=20) ? 1 : 2;
+  SI(LAST_FRONT,s)=(CH(CH_HP,s,seat)>0 && CH(CH_DOWN,s,seat)==0 && CH(CH_HARMONY,s,seat)>=hcap) ? seat : -1;
   SI(FRONT,s)=-1;
   CH(CH_SHIELD,s,seat)=0;
 }
@@ -464,6 +465,7 @@ static void enter(int *row, int s, int seat, int as_support){
   int kind=harmony_kind(row,s,seat);
   int payer=harmony_payer(row,s,seat);
   if(SI(FRONT,s)>=0) move_out(row,s,SI(FRONT,s));
+  SI(LAST_FRONT,s)=-1;
   SI(FRONT,s)=seat;
   if(kind && payer>=0){
     CH(CH_HARMONY,s,payer)-=harmony_cap_for(row);

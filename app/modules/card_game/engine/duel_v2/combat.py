@@ -13,9 +13,9 @@ PAIRS = {frozenset(('光', '灵')): '创生', frozenset(('光', '相')): '延滞
 
 
 def harmony_previous(state, side, cid):
-    """上一名出战角色：当前前排，或战斗区已空时的最近离场角色。不要求此刻仍占着战斗区。"""
+    """Current front, or the eligible payer captured when the last front left."""
     team = state['sides'][side]
-    previous = team['front'] or team['last_front']
+    previous = team['front'] or (team['last_front'] if state.get('harmony_residue_version') == 1 else None)
     if not previous or previous == cid:
         return None
     return previous
@@ -125,6 +125,8 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
     payer = hero(s, side, payer_id)
     before = payer['harmony']
     payer['harmony'] -= harmony_cap(s)
+    if team.get('last_front') == payer_id:
+        team['last_front'] = None
     c.character['flags']['has_harmonized'] = True
     # This once-per-game fact must survive death.
     team['harmonized'][cid] = True
@@ -205,6 +207,7 @@ def enter(c):
         move_out(s, side, team['front'])
         if team['front']:
             return
+    team['last_front'] = None
     team['front'] = cid
     log(s, f"{c.character['name']}进入战斗区。", 'enter', side=side, source=cid,
         actor=f'{side}:{cid}', target=f'{side}:{cid}')
@@ -230,6 +233,7 @@ def intercept_enter(c):
         move_out(s, side, team['front'])
         if team['front']:
             return
+    team['last_front'] = None
     team['front'] = cid
     log(s, f"{c.character['name']}进入战斗区，作为反击方。", 'enter',
         side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{cid}')

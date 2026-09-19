@@ -69,7 +69,7 @@ def pack_python(states: list[dict[str, Any]], *, device='cpu') -> GpuState:
             cpu.shield[row, side_i] = int(team['shield'])
             cpu.ap[row, side_i] = int(team.get('ap') or 0)
             cpu.front[row, side_i] = SEAT_INDEX[team['front']] if team.get('front') in SEAT_INDEX else -1
-            cpu.last_front[row, side_i] = SEAT_INDEX[team['last_front']] if team.get('last_front') in SEAT_INDEX else -1
+            cpu.last_front[row, side_i] = SEAT_INDEX[team['last_front']] if state.get('harmony_residue_version') == 1 and team.get('last_front') in SEAT_INDEX else -1
             cpu.turn_count[row, side_i] = int(team.get('turn_count') or 0)
             cpu.fatigue[row, side_i] = int(team.get('fatigue') or 0)
             cpu.normal_atk[row, side_i] = 1 if team.get('normal_attack_available') else 0

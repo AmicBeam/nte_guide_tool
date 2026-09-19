@@ -1,7 +1,7 @@
 {
   "schema": "official_public_v5",
   "deck": "weave-rush",
-  "rule_hash": "7ccb5e5c49fd726c144b674035b6d54e79e6b4f4285e881b11308351cc665655",
+  "rule_hash": "295d37e42b9b1c94405764e3f182f93549a02ac4eacf2228ba0bafcb673f562a",
   "sha256": "a65fc02c9bc734a9fb23151abfff0499afc6b8defe61aba5e275e46b06c0c8d5",
   "seat_ids": [
     "nanali",
@@ -1298,13 +1298,13 @@
     "date": "2026-09-19",
     "report": "docs/duel-v2-noon-model-update-20260919.md",
     "model_sha256": "a65fc02c9bc734a9fb23151abfff0499afc6b8defe61aba5e275e46b06c0c8d5",
-    "rule_hash": "7ccb5e5c49fd726c144b674035b6d54e79e6b4f4285e881b11308351cc665655",
+    "rule_hash": "295d37e42b9b1c94405764e3f182f93549a02ac4eacf2228ba0bafcb673f562a",
     "build_sha256": "a3efac8289f74cf9561bc439822eaf81d77beb115cac2353d6dd2798dca96e3d",
     "training_run": "noon-20260919-r4",
     "checkpoint_cycle": 28,
     "variant": "latest",
     "inference": "pure_network",
-    "previous_rule_hash": "da401ed033c6d8f72bfdcd9acfacce9540bcac9fe7f9a57bc6f217b2a865b005",
+    "previous_rule_hash": "7ccb5e5c49fd726c144b674035b6d54e79e6b4f4285e881b11308351cc665655",
     "runtime_amendments": [
       {
         "date": "2026-09-19",
@@ -1323,13 +1323,19 @@
         "request": "小吱基础攻击改为3，异能补充战斗牌覆写攻击而非叠加",
         "report": "docs/duel-v2-xiaozhi-attack-20260919.md",
         "scope": "Keep existing candidate weights/builds; update runtime only. Historical quality results unchanged."
+      },
+      {
+        "date": "2026-09-19",
+        "request": "小吱两个武备攻击均改为3，生命和效果不变",
+        "report": "docs/duel-v2-xiaozhi-attack-20260919.md",
+        "scope": "Keep existing candidate weights/builds; update runtime only. Historical quality results unchanged."
       }
     ],
     "runtime_amendment": {
-      "date": "2026-09-19",
-      "request": "小吱两个武备攻击均改为3，生命和效果不变",
-      "report": "docs/duel-v2-xiaozhi-attack-20260919.md",
-      "scope": "Keep existing candidate weights/builds; update runtime only. Historical quality results unchanged."
+      "date": "2026-09-20",
+      "request": "环合残留按退下瞬间满槽判定，退下后补满不追补；白热化先降上限；海月先获得战斗资源再退下",
+      "report": "docs/duel-v2-harmony-residue-20260920.md",
+      "scope": "Keep previously enabled numerical weights and builds; runtime rule amendment only, historical quality unchanged."
     }
   },
   "training_rule_hash": "42e8840fe013df1d8b9e2b38a9e538e2fbcab0c674ca13979967c911ece9f085"

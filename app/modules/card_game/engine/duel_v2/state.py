@@ -180,6 +180,14 @@ def victory(state):
         'finish', winner=state['winner'], reason=state.get('reason'))
 
 
+def upgrade_harmony_residue(state):
+    """Legacy snapshots lack evidence that a benched source was full at departure."""
+    if state.get('harmony_residue_version') != 1:
+        for team in state['sides'].values():
+            team['last_front'] = None
+        state['harmony_residue_version'] = 1
+
+
 def clear_harmony_source(state, side, cid):
     """Death expires a character's previous sortie, without consuming personal resources."""
     team = state['sides'][side]
@@ -188,6 +196,7 @@ def clear_harmony_source(state, side, cid):
 
 
 def move_out(state, side, cid):
+    upgrade_harmony_residue(state)
     team = state['sides'][side]
     if team['front'] != cid:
         return
@@ -196,7 +205,10 @@ def move_out(state, side, cid):
         from .summons import dismiss
         dismiss(state, side, cid)
         return
-    team['last_front'] = cid if alive(state, side, cid) else None
+    from .escalation import harmony_cap
+    # Capture eligibility at departure; later bench resource gains cannot create it.
+    team['last_front'] = (cid if alive(state, side, cid)
+                          and h['harmony'] >= harmony_cap(state) else None)
     team['front'] = None
     before = {'hp': h['hp'], 'shield': h['shield'], 'front': cid}
     h['shield'] = 0

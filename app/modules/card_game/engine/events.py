@@ -24,6 +24,7 @@ class GameEvent(str, Enum):
     # V2 content callback timings. Kept separate from public log categories.
     V2_GROWTH_GAINED = 'v2_growth_gained'
     V2_SORTIE_FINISHED = 'v2_sortie_finished'
+    V2_OPERATION_RESOURCES_RESOLVED = 'after_operation_resources'
     V2_COMBAT_HP_LOST = 'v2_combat_hp_lost'
     V2_HARMONY_RESOLVED = 'v2_harmony_resolved'
     V2_FLOWER_RESOLVED = 'v2_flower_resolved'

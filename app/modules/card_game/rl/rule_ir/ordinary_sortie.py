@@ -13,7 +13,7 @@ def ordinary_program(seats):
     fields += tuple(f'{prefix}_{i}' for i in range(seats) for prefix in ('alive', 'energy', 'cap'))
     binds = BINDS + (Bind('moved', Cmp('ne', N('old_front'), N('actor'))),)
     stores = STORES + (
-        Store('last_front', Select(Bin('and', N('moved'), Cmp('ge', N('old_front'), C(0))), N('old_front'), N('last_front'))),
+        Store('last_front', Select(N('moved'), C(-1), N('last_front'))),
         Store('old_front_shield', Select(N('moved'), C(0), N('old_front_shield'))),
         Store('harmony', Select(N('over'), N('harmony'), Bin('min', Bin('add', N('harmony'), C(1)), C(2)))),
     )

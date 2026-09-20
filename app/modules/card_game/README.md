@@ -377,3 +377,5 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 ### 2026-09-20 小吱预组
 
 默认 quick-rush 更名为「小吱预组」，阵容为小吱、零、薄荷、九原；九原采用创生预组现有 8 张配牌。新赠送预组与简单人机随目录更新，已保存的个人构筑及高级人机模型配牌不回写。具体配牌见完整手册。验证：`python3 -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_api`。
+
+2026-09-20：J01「知晓与制衡」新增瞬发，检视效果不变。高级人机仍校验整个卡池规则哈希及模型阵容；默认预组换人虽不回写模型，也会影响模型加载。当前三套旧模型规则版本不匹配，需重新验证后绑定，未绕过校验。回归：`python3 -m unittest tests.test_duel_v2_engine tests.test_duel_v2_catalog tests.test_duel_v2_rule_ir`。

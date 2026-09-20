@@ -676,14 +676,15 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "检视牌库顶 3 张牌。选择 1 张加入手牌，其余置于牌库底。",
+      "description": "瞬发。检视牌库顶 3 张牌。选择 1 张加入手牌，其余置于牌库底。",
       "effect_id": "J01",
       "source": {
         "character_id": 1055,
         "type": "awaken",
         "index": 1
       },
-      "starter_copies": 2
+      "starter_copies": 2,
+      "instant": true
     },
     {
       "id": "J02",

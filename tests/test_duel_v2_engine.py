@@ -897,6 +897,29 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(attack_log['attack'], attack_value(hero(s, 'a', 'hathor')))
         self.assertEqual(hero(s, 'b', 'zero')['hp'], 5 - attack_log['attack'] - 2)
 
+    def test_j01_instant_inspection_shares_free_use_and_pays_once(self):
+        for used, ap in ((False, 0), (True, 1), (True, 0)):
+            with self.subTest(instant_used=used, ap=ap):
+                s = self.game()
+                s['sides']['a']['ap'] = ap
+                s['sides']['a']['used']['instant'] = used
+                card = self.hand(s, 'J01')
+                action = {'type': 'play_card', 'card_id': card['instance_id']}
+                if used and ap == 0:
+                    with self.assertRaises(ValueError):
+                        apply_action(s, 'a', action)
+                    continue
+                top = [c['instance_id'] for c in s['sides']['a']['deck'][:3]]
+                s = apply_action(s, 'a', action)
+                self.assertEqual(s['phase'], 'choice')
+                self.assertEqual(s['sides']['a']['ap'], 0)
+                self.assertTrue(s['sides']['a']['used']['instant'])
+                choice = next(a for a in legal_actions(s, 'a') if a['type'] in ('choose', 'choose_cards'))
+                s = apply_action(s, 'a', choice)
+                self.assertEqual(s['sides']['a']['ap'], 0)
+                self.assertEqual(sum(c['instance_id'] in top for c in s['sides']['a']['hand']), 1)
+                self.assertEqual(sum(c['instance_id'] in top for c in s['sides']['a']['deck'][-2:]), 2)
+
     def test_fatigue_empty_inspect_and_finished_stops_remaining_effects(self):
         s = self.game()
         s['sides']['a']['deck'] = []

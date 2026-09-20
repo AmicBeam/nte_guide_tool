@@ -553,3 +553,7 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 回放重建手牌时显式处理 `mulligan.card_ids`，只移除实际换走的牌，保留其余起手身份。网页按同样方式推进手牌；旧回放起手阶段的隐藏占位仅在全部保留牌身份已知、数量完全匹配时用已知牌恢复，不猜测未知牌，不公开对手暗牌。跳转与连续播放共用相同补丁处理。
 
 验证：`python -m unittest tests.test_duel_v2_mulligan_replay tests.test_duel_v2_replay`，7 项通过，含双方视角更换 0～3 张的逐事件检查；`node --test tests/js/duel_v2_table_state.test.cjs tests/js/duel_v2_animation.test.cjs`，47 项通过。隔离测试服务的旧回放 A59AC8 经真实页面跳到第 1 回合、返回开局再连续播放，均为 5 张明牌、0 张暗牌，无脚本错误。
+
+### 真红被动奖励（2026-09-21）
+
+固定配牌 PPO 对真红学习方新增默认每次实际盈蓄被动触发 +0.2，`--zhenhong-passive-reward` 可调。计数位于角色回调，倒地时队伍盈蓄不计、九原重复段不重复计，逐决策回报只包含未来触发；其他策略、冻结对手和独立胜率口径不变。详见 [奖励说明](../../../docs/duel-v2-zhenhong-passive-reward.md)。68项相关测试通过，本次没有启动新训练。

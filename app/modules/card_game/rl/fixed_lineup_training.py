@@ -17,11 +17,24 @@ def model(directory, key):
     return FixedModel(directory, key)
 
 
+def passive_count(state, side):
+    return int(state['sides'][side]['characters'].get('zhenhong', {}).get('surplus_passive_triggers', 0))
+
+
+def passive_returns(outcome, total, before_decisions, coefficient):
+    if not np.isfinite(coefficient) or coefficient < 0 or any(n > total or n < 0 for n in before_decisions):
+        raise ValueError('Invalid passive reward trajectory')
+    return [outcome + coefficient * (total - before) for before in before_decisions]
+
+
 def play(job):
     from ..engine.duel_v2 import new_game, observe, apply_action, acting_side
     state = new_game(seed=job['seed'], first_side=job['first'], decks=job['decks'])
     policies = {s: model(*spec) for s, spec in job['policies'].items()}
     rng = np.random.default_rng(job['seed']); trajectory = []; action_counts = Counter()
+    passive_at_decision = []
+    bonus = float(job.get('zhenhong_passive_reward', 0.2)) if job.get('train') and job.get('key') == 'zhenhong' else 0.0
+    if not np.isfinite(bonus) or bonus < 0: raise ValueError('Invalid passive reward')
     for step in range(600):
         if state['phase'] == 'finished': break
         if time.time() >= job['deadline']: return dict(complete=False, reason='deadline', trajectory=[])
@@ -32,11 +45,17 @@ def play(job):
         index = int(rng.choice(len(actions), p=prob)) if job.get('train') and side == 'a' else int(scores.argmax())
         if job.get('train') and side == 'a':
             trajectory.append((x, c, index, float(np.log(max(prob[index], 1e-20))), value))
+            passive_at_decision.append(passive_count(state, 'a'))
         if side == 'a': action_counts[actions[index]['type']] += 1
         state = apply_action(state, side, actions[index]); state['events'] = []; state.pop('_public_board', None)
     done = state['phase'] == 'finished'
+    count = passive_count(state, 'a')
+    outcome = 10 if state.get('winner') == 'a' else -10 if state.get('winner') == 'b' else 0
+    reward = outcome + bonus * count
+    returns = passive_returns(outcome, count, passive_at_decision, bonus) if done else []
     return dict(complete=done, reason=None if done else 'action_limit', winner=state.get('winner'),
-                reward=(10 if state.get('winner') == 'a' else -10 if state.get('winner') == 'b' else 0) if done else None,
+                reward=reward if done else None, outcome_reward=outcome if done else None,
+                passive_triggers=count, passive_reward=bonus * count if done else None, trajectory_returns=returns,
                 trajectory=trajectory if done else [], steps=step + 1, turn=state['turn'], action_counts=dict(action_counts))
 
 
@@ -79,7 +98,7 @@ def evaluate(pool, root, directory, seed, deadline, pairs, keys=KEYS):
                 for key in keys for foe in FOES for first in ('a', 'b')]
         for job, result in zip(jobs, pool.map(play, jobs)):
             row = {k: job[k] for k in ('key', 'foe', 'seed', 'first')}
-            row.update({k: v for k, v in result.items() if k != 'trajectory'})
+            row.update({k: v for k, v in result.items() if k not in ('trajectory', 'trajectory_returns')})
             row['variant'] = Path(directory).name; rows.append(row)
             append(root, 'evaluation-games.jsonl', row)
         if not all(r['complete'] for r in rows[-len(jobs):]): break
@@ -115,7 +134,10 @@ def run(root, config):
         policy = FixedModel(root / 'initial', key)
         net = CompactScorer(len(all_features()), CAND_DIM, policy.hidden).to(config['device'])
         net.load_state_dict({k: torch.from_numpy(v.copy()) for k, v in policy.weights.items()})
-        nets[key] = net; opts[key] = torch.optim.Adam(net.parameters(), lr=3e-5); origins[key] = policy.manifest['origin']
+        nets[key] = net; opts[key] = torch.optim.Adam(net.parameters(), lr=3e-5)
+        origins[key] = dict(policy.manifest.get('origin') or {}, training_reward=dict(
+            outcome_win=10, outcome_loss=-10, passive_per_trigger=config.get('zhenhong_passive_reward', 0.2) if key == 'zhenhong' else 0,
+            scope='learner_only', returns='future_triggers_only'))
     totals = {key: dict(games=0, samples=0, optimizer_steps=0) for key in keys}
     current = root / 'initial'; cycle = 0
     with ProcessPoolExecutor(max_workers=config['workers'], mp_context=get_context('spawn')) as pool:
@@ -125,10 +147,11 @@ def run(root, config):
             jobs = [job_for(key, foe, config['seeds']['foundation'] + cycle * 100 + fi, first,
                             current, root, config['train_until'], train=True)
                     for key in keys for fi, foe in enumerate(FOES) for first in ('a', 'b')]
+            for job in jobs: job['zhenhong_passive_reward'] = config.get('zhenhong_passive_reward', 0.2)
             results = list(pool.map(play, jobs)); batches = {key: [] for key in keys}
             for job, result in zip(jobs, results):
                 append(root, 'training-games.jsonl', dict(cycle=cycle, **{k: job[k] for k in ('key', 'foe', 'seed', 'first')},
-                       **{k: v for k, v in result.items() if k != 'trajectory'}))
+                       **{k: v for k, v in result.items() if k not in ('trajectory', 'trajectory_returns')}))
                 if result['complete']: batches[job['key']].append(result)
             # Partial batches are recorded but never update only some teams.
             if not all(r['complete'] for r in results) or time.time() >= config['train_until']: break
@@ -147,7 +170,7 @@ def run(root, config):
         latest.mkdir(exist_ok=True)
         for p in current.iterdir(): shutil.copy2(p, latest / p.name)
         training = dict(cycles=cycle, totals=totals, finished=time.time(), rule_hash=identity(),
-                        algorithm='terminal_outcome_ppo', fixed_builds=True, frozen_opponents=True)
+                        algorithm='outcome_ppo_with_zhenhong_passive', zhenhong_passive_reward=config.get('zhenhong_passive_reward', 0.2), fixed_builds=True, frozen_opponents=True)
         write(root / 'training-summary.json', training)
         if cycle == 0: raise RuntimeError('No complete training cycle')
         write(root / 'status.json', dict(phase='evaluating', training=training, hard_deadline=config['hard_deadline']))

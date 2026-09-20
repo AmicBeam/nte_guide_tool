@@ -57,6 +57,7 @@ class Zhenhong:
 
     @staticmethod
     def on_surplus(c, **_data):
+        c.character['surplus_passive_triggers'] = int(c.character.get('surplus_passive_triggers', 0)) + 1
         add_atk_buff(c.character, 1)
         flags = c.character['flags']
         until = c.state['sides'][c.side]['turn_count'] + 1

@@ -1,4 +1,4 @@
-"""Outcome-only PPO and terminal branch distillation; all Torch imports are lazy."""
+"""PPO with terminal or explicit reward-to-go targets; Torch imports are lazy."""
 import numpy as np
 from .league_preferences import validate_pairs
 
@@ -9,9 +9,23 @@ def tensors(rows,device):
     for i,r in enumerate(rows):cand[i,:len(r[1])]=r[1];mask[i,:len(r[1])]=True
     return tuple(torch.as_tensor(x,device=device) for x in (state,cand,mask))
 
+def ordinary_rows(games):
+    """Use per-decision reward-to-go when supplied, preserving legacy terminal targets."""
+    rows = []
+    for game in games:
+        if not game['complete']: continue
+        trajectory = game['trajectory']
+        returns = game.get('trajectory_returns')
+        if returns is None: returns = [game['reward']] * len(trajectory)
+        if len(returns) != len(trajectory) or not np.isfinite(returns).all():
+            raise ValueError('Invalid trajectory returns')
+        rows.extend((*entry, float(target)) for entry, target in zip(trajectory, returns))
+    return rows
+
+
 def ordinary_update(net,opt,games,seed):
     import torch
-    rows=[(*entry,float(g['reward'])) for g in games if g['complete'] for entry in g['trajectory']]
+    rows = ordinary_rows(games)
     if not rows:return {'updates':0,'samples':0}
     rng=np.random.default_rng(seed)
     if len(rows)>512:rows=[rows[i] for i in rng.choice(len(rows),512,replace=False)]

@@ -49,6 +49,7 @@ def main():
     parser.add_argument('--source', type=Path, default=ROOT / 'app/modules/card_game/engine/ai/models')
     parser.add_argument('--learner-build', type=Path, help='Explicit fixed Zhenhong build JSON')
     parser.add_argument('--learner-source', type=Path, help='Prior fixed_ten_v1 Zhenhong numeric directory')
+    parser.add_argument('--zhenhong-passive-reward', type=float, default=0.2, help='Extra reward per actual Zhenhong passive trigger')
     parser.add_argument('--seconds', type=int, default=5400)
     parser.add_argument('--hard-deadline', type=float, help='Preserve an already authorized absolute cutoff')
     parser.add_argument('--workers', type=int, default=6)
@@ -99,6 +100,9 @@ def main():
         return
     if not 1 <= args.workers <= 8 or not (60 if args.smoke else 600) <= args.seconds <= 21600:
         parser.error('Invalid bounded budget/workers')
+    import math
+    if not math.isfinite(args.zhenhong_passive_reward) or args.zhenhong_passive_reward < 0:
+        parser.error('Passive reward must be finite and nonnegative')
     from app.modules.card_game.rl.build_acceptance import check_source, claim_seeds
     check_source(args.source)
     if bool(args.learner_build) != bool(args.learner_source):
@@ -112,7 +116,7 @@ def main():
         custom['id'] = 'zhenhong'
     config = dict(kind='five_fixed_lineups_v1', rule_hash=identity(), builds=builds(args.source), device=args.device,
                   workers=args.workers, smoke=args.smoke, evaluation_pairs=1 if args.smoke else 32,
-                  algorithm='terminal_outcome_ppo', seconds=args.seconds, automatic_serving_approval=False)
+                  algorithm='outcome_ppo_with_zhenhong_passive', zhenhong_passive_reward=args.zhenhong_passive_reward, seconds=args.seconds, automatic_serving_approval=False)
     if custom:
         config['learner_keys'] = ['zhenhong']
         config['builds']['zhenhong'] = custom

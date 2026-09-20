@@ -274,9 +274,7 @@
 .v2-resource-row > span { flex: none; }
 .v2-effect-short { display: none; }
 @media (pointer: coarse) and (max-width: 1200px) {
-  /* Side-mounted ultimate buttons may extend into the front axis (z-index: 1).
-     Raise their stacking contexts, not just the button inside the bench. */
-  .v2-bench-row:has(.v2-awaken-btn) { z-index: 2; }
+  /* Keep side-mounted ultimate controls above adjacent bench slots. */
   .v2-bench-slot:has(.v2-awaken-btn) { z-index: 4; }
   .v2-character-card:has(.v2-character-extras:not(:empty)) { overflow: visible; }
   .v2-character-extras { display: contents; }
@@ -323,11 +321,15 @@
   .v2-character-extras .v2-character-effects small { display: none; }
   /* Preserve the two-character tutorial layout; only four-person rows use arcs. */
   .v2-table-page .v2-bench-row.player:not([data-count="2"]) .v2-bench-slot[data-arc="0"],
-  .v2-table-page .v2-bench-row.player:not([data-count="2"]) .v2-bench-slot[data-arc="3"] { bottom: 12%; }
+  .v2-table-page .v2-bench-row.player:not([data-count="2"]) .v2-bench-slot[data-arc="3"] {
+    bottom: min(12%, max(0px, calc(50% - var(--bench-card-w) * 4 / 3 - 6px)));
+  }
   .v2-table-page .v2-bench-row.player:not([data-count="2"]) .v2-bench-slot[data-arc="1"],
   .v2-table-page .v2-bench-row.player:not([data-count="2"]) .v2-bench-slot[data-arc="2"] { bottom: 3%; }
   .v2-table-page .v2-bench-row.opponent:not([data-count="2"]) .v2-bench-slot[data-arc="0"],
-  .v2-table-page .v2-bench-row.opponent:not([data-count="2"]) .v2-bench-slot[data-arc="3"] { top: 16%; }
+  .v2-table-page .v2-bench-row.opponent:not([data-count="2"]) .v2-bench-slot[data-arc="3"] {
+    top: min(16%, max(0px, calc(50% - var(--bench-card-w) * 4 / 3 - 6px)));
+  }
   .v2-table-page .v2-bench-row.opponent:not([data-count="2"]) .v2-bench-slot[data-arc="1"],
   .v2-table-page .v2-bench-row.opponent:not([data-count="2"]) .v2-bench-slot[data-arc="2"] { top: 4%; }
   .v2-table-page .v2-front-axis:has(.v2-character-extras) {

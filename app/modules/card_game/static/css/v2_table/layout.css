@@ -331,6 +331,16 @@ body:has(.v2-table-page) .shell {
   column-gap: calc(10px * var(--table-layout-scale, 1));
 }
 
+.v2-arena::before {
+  content: "";
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  height: 1px;
+  background: rgba(185, 220, 232, 0.28);
+  pointer-events: none;
+}
+
 .v2-bench-row.opponent,
 .v2-bench-row.player {
   grid-column: 1;
@@ -440,7 +450,8 @@ body:has(.v2-table-page) .shell {
 
 .v2-bench-row {
   position: relative;
-  z-index: 0;
+  /* Inward cards must stay above the transparent front-axis hit area. */
+  z-index: 2;
   pointer-events: none;
   min-height: 0;
   overflow: visible;
@@ -455,46 +466,46 @@ body:has(.v2-table-page) .shell {
 }
 
 .v2-bench-row.opponent .v2-bench-slot[data-arc="0"] {
-  left: 9%;
+  left: 15%;
   top: 16%;
   z-index: 2;
 }
 .v2-bench-row.opponent .v2-bench-slot[data-arc="1"] {
-  left: 22%;
+  left: 28%;
   top: 4%;
   z-index: 3;
 }
 .v2-bench-row.opponent .v2-bench-slot[data-arc="2"] {
-  right: 22%;
+  right: 28%;
   left: auto;
   top: 4%;
   z-index: 3;
 }
 .v2-bench-row.opponent .v2-bench-slot[data-arc="3"] {
-  right: 9%;
+  right: 15%;
   left: auto;
   top: 16%;
   z-index: 2;
 }
 
 .v2-bench-row.player .v2-bench-slot[data-arc="0"] {
-  left: 9%;
+  left: 15%;
   bottom: 12%;
   z-index: 2;
 }
 .v2-bench-row.player .v2-bench-slot[data-arc="1"] {
-  left: 22%;
+  left: 28%;
   bottom: 3%;
   z-index: 3;
 }
 .v2-bench-row.player .v2-bench-slot[data-arc="2"] {
-  right: 22%;
+  right: 28%;
   left: auto;
   bottom: 3%;
   z-index: 3;
 }
 .v2-bench-row.player .v2-bench-slot[data-arc="3"] {
-  right: 9%;
+  right: 15%;
   left: auto;
   bottom: 12%;
   z-index: 2;

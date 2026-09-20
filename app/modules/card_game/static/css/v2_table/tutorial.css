@@ -23,7 +23,7 @@
 }
 
 .v2-table-page.is-tutorial .tutorial-spotlight {
-  z-index: 32;
+  /* The fixed focus frame supplies the highlight without reordering hit areas. */
   pointer-events: auto;
 }
 
@@ -203,7 +203,7 @@
 }
 
 .v2-bench-row[data-count="2"].opponent .v2-bench-slot[data-arc="0"] {
-  left: 22%;
+  left: 28%;
   top: 4%;
   right: auto;
   z-index: 3;
@@ -211,13 +211,13 @@
 
 .v2-bench-row[data-count="2"].opponent .v2-bench-slot[data-arc="1"] {
   left: auto;
-  right: 22%;
+  right: 28%;
   top: 4%;
   z-index: 3;
 }
 
 .v2-bench-row[data-count="2"].player .v2-bench-slot[data-arc="0"] {
-  left: 22%;
+  left: 28%;
   bottom: 3%;
   right: auto;
   z-index: 3;
@@ -225,7 +225,7 @@
 
 .v2-bench-row[data-count="2"].player .v2-bench-slot[data-arc="1"] {
   left: auto;
-  right: 22%;
+  right: 28%;
   bottom: 3%;
   z-index: 3;
 }

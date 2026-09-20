@@ -446,7 +446,9 @@
       if (kind === 'character' && !ctx.findAction('attack', { character_id: id })) {
         return;
       }
-      event.preventDefault();
+      const mobileHandGesture = kind === 'card' && mobileLayout.matches && event.pointerType === 'touch';
+      // Let the browser own horizontal panning; only an upward gesture starts a cast.
+      if (!mobileHandGesture) event.preventDefault();
       if (typeof sourceNode.setPointerCapture === 'function') sourceNode.setPointerCapture(event.pointerId);
       const fromFront = kind === 'character' && characterFromFront(sourceNode);
       ctx.dragState = {
@@ -457,6 +459,8 @@
         startX: event.clientX,
         startY: event.clientY,
         moved: false,
+        mobileHandGesture: mobileHandGesture,
+        panIntent: false,
         fromFront: fromFront,
       };
       sourceNode.addEventListener('pointermove', onDragMove);
@@ -533,6 +537,16 @@
       const distance = Math.hypot(event.clientX - ctx.dragState.startX, event.clientY - ctx.dragState.startY);
       if (!ctx.dragState.moved) {
         if (distance <= CLICK_DISTANCE) return;
+        if (ctx.dragState.mobileHandGesture) {
+          const dx = event.clientX - ctx.dragState.startX;
+          const dy = event.clientY - ctx.dragState.startY;
+          if (ctx.dragState.panIntent) return;
+          if (Math.abs(dx) >= Math.abs(dy) || dy > 0) {
+            ctx.dragState.panIntent = true;
+            return;
+          }
+          if (-dy < Math.abs(dx) * 1.2) return;
+        }
         ctx.dragState.moved = true;
         showDragUi();
       }
@@ -561,6 +575,13 @@
       if (!ctx.dragState || event.pointerId !== ctx.dragState.pointerId) return;
       const state = cleanupDrag();
       ignoreHandToggleClick = true;
+      if (state.panIntent) {
+        ctx.suppressClick = true;
+        window.setTimeout(function () { ctx.suppressClick = false; }, 0);
+        clearCastUi();
+        ctx.flushPendingEnvelope();
+        return;
+      }
       const distance = Math.hypot(event.clientX - state.startX, event.clientY - state.startY);
       if (!state.moved || distance < CLICK_DISTANCE) {
         ctx.suppressClick = true;

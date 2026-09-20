@@ -200,7 +200,7 @@ async function bootstrapTable() {
     dragToggle.checked = !mobileLayout.matches && ctx.options.dragTargeting !== false;
     dragToggle.disabled = mobileLayout.matches;
     document.getElementById('v2-drag-targeting-help').textContent = mobileLayout.matches
-      ? '手机端固定松手后二次选择：拖到战斗区松开，再选择目标或效果。点击牌桌空白处展开或收起手牌。'
+      ? '手机端左右滑动浏览手牌，向上拖到战斗区松开，再选择目标或效果。点击空白处或手牌数展开、收起手牌。'
       : '开启：有目标牌拖到高亮目标。无目标牌或关闭开关时，拖到战斗大区松开，需要目标时再点选。';
     document.getElementById('v2-mute-toggle').checked = Boolean(ctx.options.muted);
     document.getElementById('v2-motion-toggle').checked = Boolean(ctx.options.reducedMotion);

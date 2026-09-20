@@ -247,10 +247,10 @@
     min-height: 0;
     overflow: hidden;
   }
-  /* Keep touch gestures on playable cards dedicated to dragging. */
+  /* Horizontal swipes scroll; upward touch gestures are handled as card casts. */
   .v2-table-page #v2-player-hand .v2-hand-card.legal,
   .v2-table-page #v2-player-hand .v2-hand-card.legal * {
-    touch-action: none;
+    touch-action: pan-x;
   }
   .v2-table-page #v2-player-hand .v2-hand-card.raised { transform: none; }
 }
@@ -422,7 +422,7 @@
     left: calc(140px * var(--table-layout-scale, 1));
     right: calc(var(--side-actions) + 80px * var(--table-layout-scale, 1));
     bottom: 8px;
-    height: min(44dvh, 200px);
+    height: min(32dvh, 148px);
     padding: 8px;
     border: 1px solid rgba(139, 215, 255, 0.35);
     border-radius: 12px;
@@ -432,6 +432,10 @@
   }
   .v2-table-page.mobile-hand-open:not(.is-mulligan):not(.tutorial-hide-hand) #v2-hand-dock .v2-hand-stack {
     display: grid;
+  }
+  .v2-table-page #v2-player-hand .v2-hand-card {
+    flex-basis: min(calc(116px * var(--table-layout-scale, 1)), 13vw);
+    width: min(calc(116px * var(--table-layout-scale, 1)), 13vw);
   }
   .v2-table-page.is-drag-targeting #v2-hand-dock,
   .v2-table-page.is-drag-targeting #v2-hand-dock .v2-hand-stack {

@@ -31,7 +31,7 @@ PRESETS = ('starter', 'weave-rush', 'quick-rush', 'midrange')
 # Registration only: training and a validated model/build pair are still required.
 UNTRAINED_STRATEGIES = {
     'midrange': {
-        'id': 'midrange', 'name': '中速',
+        'id': 'midrange', 'name': '零伊娜白',
         'character_ids': ['zero', 'iloy', 'nanali', 'baicang'],
     },
 }
@@ -41,9 +41,9 @@ PENDING_PRESETS = frozenset({'quick-rush'})
 
 def preset(deck_id):
     if deck_id not in PRESETS:
-        raise RuleValidationError('高级人机策略包括创生预组、覆纹预组、快攻预组和中速。')
+        raise RuleValidationError('高级人机策略包括娜伊零九、薄白零伊、小零薄海和零伊娜白。')
     if deck_id in UNTRAINED_STRATEGIES:
-        raise RuleValidationError('中速高级人机尚待训练与验收，暂不能开局。')
+        raise RuleValidationError('零伊娜白高级人机尚待训练与验收，暂不能开局。')
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
 
 
@@ -245,7 +245,7 @@ def load_model(deck_id):
     preset(deck_id)
     root = Path(config.DUEL_AI_MODEL_DIR).resolve()
     if deck_id in PENDING_PRESETS and not (root / f'{deck_id}.json').is_file():
-        raise RuleValidationError('快攻高级人机尚待训练与验收，请先使用普通人机。')
+        raise RuleValidationError('小零薄海高级人机尚待训练与验收，请先使用普通人机。')
     key = (str(root), deck_id)
     with _LOCK:
         try:

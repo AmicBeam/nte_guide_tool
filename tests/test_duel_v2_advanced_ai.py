@@ -156,7 +156,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
         before = self._get('/api/duel-v2/catalog', token=self.token)['saved_build']
         result = self._post_error('/api/duel-v2/start',
             {'mode': 'advanced', 'ai_deck': 'midrange'}, token=self.token)
-        self.assertIn('中速高级人机尚待训练与验收', result['error'])
+        self.assertIn('零伊娜白高级人机尚待训练与验收', result['error'])
         player = self.dao_module.get_or_create_player('advanced-ai-test')[0]
         self.assertIsNone(self.repository.current_room(player))
         self.assertEqual(before, self._get('/api/duel-v2/catalog', token=self.token)['saved_build'])

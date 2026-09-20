@@ -405,7 +405,8 @@
   box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) var(--card-type-glow);
 }
 
-.v2-hand-card > .v2-free-card-border {
+/* Drag ghosts copy the SVG too; hide it unless it belongs to a legal hand card. */
+.v2-free-card-border {
   display: none;
   position: absolute;
   inset: 0;

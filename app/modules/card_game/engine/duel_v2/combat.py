@@ -3,7 +3,8 @@ from app.modules.card_game.content.duel_v2.registry import decide, fire, genesis
 from app.modules.card_game.engine.events import GameEvent
 from .state import (PLAYER_ID, add_collapse, alive, attack_value, collapsed, damage, energy,
                     finished, front_debuff, front_target, hero, is_esper, is_player, knockdowns,
-                    log, move_out, name, other, reduce_max_hp, shield, victory, zone_attack_penalty)
+                    log, move_out, name, other, reduce_max_hp, shield, victory, zone_attack_penalty,
+                    damage_immune)
 
 from .escalation import harmony_cap
 
@@ -31,6 +32,8 @@ def harmony_payer(state, side, cid):
 
 
 def harmony_eligible(state, side, cid):
+    if state['active_side'] != side:
+        return False
     team = state['sides'][side]
     if team['front'] == cid:
         return False
@@ -221,8 +224,10 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
         c.on_shape(GameEvent.V2_HARMONY_RESOLVED, operation=op)
 
 
-def enter(c):
+def enter(c, *, as_support=True):
     s, side, cid = c.state, c.side, c.cid
+    if finished(s) or not alive(s, side, cid):
+        return
     team = s['sides'][side]
     if team['front'] == cid:
         return
@@ -235,7 +240,7 @@ def enter(c):
     team['front'] = cid
     log(s, f"{c.character['name']}进入战斗区。", 'enter', side=side, source=cid,
         actor=f'{side}:{cid}', target=f'{side}:{cid}')
-    apply_enter_harmony(c, payer_id, kind, as_support=True)
+    apply_enter_harmony(c, payer_id, kind, as_support=as_support)
 
 
 def _zone_slow(state, side, cid):
@@ -243,7 +248,7 @@ def _zone_slow(state, side, cid):
 
 
 def intercept_enter(c):
-    """Swap in as 反击方. May trigger 环合, but the current attack is not 援护技."""
+    """Swap in as 反击方; only the owner's active turn permits entry harmony."""
     s, side, cid = c.state, c.side, c.cid
     if finished(s) or not alive(s, side, cid):
         return
@@ -322,7 +327,7 @@ def attack(c, spec, index):
         penetrate = True
     overflow = 0
     raw_overflow = 0
-    if is_esper(target_id) and not cut_max:
+    if is_esper(target_id) and not cut_max and not damage_immune(s, enemy, target_id):
         blocked = 0 if spec.get('ignore_shield') else int(target['shield'] or 0)
         raw_overflow = max(0, attack_amount - blocked - target['hp'])
         overflow = raw_overflow if penetrate else 0

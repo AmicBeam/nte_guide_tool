@@ -6,7 +6,7 @@ SIDE_KEYS = ('extra_ap', 'delay_turns', 'delay_counted_turn', 'skip_normal_attac
              'surplus_ever', 'empty_draw_wins', 'genesis_damage_bonus', 'nanali_family', 'nanali_family_played', 'ultimates_used')
 FLAG_KEYS = ('next_bonus', 'next_shield', 'next_followup', 'energy_next',
              'allied_hurt', 'pending_atk', 'share_overflow', 'hp_floor',
-             'collapse', 'collapse_count', 'pact', 'atk_buff', 'timed_attack')
+             'collapse', 'collapse_count', 'pact', 'atk_buff', 'timed_attack', 'damage_immunity_until')
 
 
 def public_policy_state(state):

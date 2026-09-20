@@ -453,6 +453,10 @@ def begin_turn(state, side):
     state['turn'] += 1
     team = state['sides'][side]
     team['turn_count'] += 1
+    for h in team['characters'].values():
+        flags = h.get('flags') or {}
+        if flags.get('damage_immunity_until', 0) <= team['turn_count']:
+            flags.pop('damage_immunity_until', None)
     team.pop('life_locked', None)
     team['used'] = {}
     for ps in SIDES:

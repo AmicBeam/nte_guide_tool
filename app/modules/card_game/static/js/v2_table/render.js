@@ -56,6 +56,8 @@
     node.removeAttribute('data-drop-role');
     node.classList.toggle('legal', Boolean(options.canAttack || options.canAwaken || options.canTarget));
     node.classList.toggle('down', Number(data.down_turns) > 0);
+    const damageImmune = Boolean(data.damage_immune && !options.placeholder && !data.down_turns && data.hp > 0);
+    node.classList.toggle('is-damage-immune', damageImmune);
     node.classList.toggle('is-opponent', Boolean(options.isOpponent));
     ['v2-fx-down', 'v2-fx-lunge', 'v2-fx-enter', 'v2-fx-hurt', 'v2-fx-revive'].forEach(function (name) {
       node.classList.remove(name);
@@ -141,7 +143,7 @@
     const panelSig = [attack, hp, shield, data.harmony, energyNow, energyMax, data.awakened ? 1 : 0, data.jingu, data.protagonist_aura, data.beast_fangs].join('|');
     const prevPanel = node.getAttribute('data-pop-sig');
     node.setAttribute('data-pop-sig', panelSig);
-    node.innerHTML =
+    node.innerHTML = (damageImmune ? '<svg class="v2-immunity-frame" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="免疫伤害"><path d="M8 1 H92 Q99 1 99 8 V98 Q90 102 50 106 Q10 102 1 98 V8 Q1 1 8 1 Z"/></svg>' : '') +
       '<div class="v2-character-art' + (actions.length && !mobileCard ? ' has-ultimate' : '') + '">' + (data.summoned ? '<div class="v2-summon-art" aria-label="召唤物">⌛</div>' : V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar')) +
       vitalsHtml + (mobileCard ? '' : actions.join('')) + '</div>' +
       '<div class="v2-character-panel">' +

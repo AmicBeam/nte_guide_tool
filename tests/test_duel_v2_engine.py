@@ -187,8 +187,8 @@ class DuelV2EngineTest(unittest.TestCase):
         s['sides']['b']['hand'] = [card_instance(s, 'N02', 'b')]
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
         self.assertEqual(s['sides']['b']['front'], 'nanali')
-        self.assertEqual(hero(s, 'b', 'zero')['harmony'], 0)
-        self.assertTrue(any(e['type'] == 'harmony' and '创生' in e['text'] for e in s['events']))
+        self.assertEqual(hero(s, 'b', 'zero')['harmony'], 2)
+        self.assertFalse(any(e['type'] == 'harmony' and '创生' in e['text'] for e in s['events']))
         attacks = [e for e in s['events'] if e['type'] == 'attack']
         self.assertEqual(len(attacks), 1)
         self.assertGreater(attacks[0]['counter'], 0)
@@ -1018,7 +1018,7 @@ class DuelV2EngineTest(unittest.TestCase):
                     s = apply_action(s, 'a', next(a for a in legal_actions(s) if a['type'] in ('choose', 'choose_cards')))
                 self.assertEqual(s['phase'], 'playing')
                 spent = 0 if CARDS[cid].get('instant') else CARDS[cid]['cost']
-                if CARDS[cid].get('free_if_surplus'): spent = 0
+                if CARDS[cid].get('free_if_surplus') or cid in ('R02', 'R03', 'R04'): spent = 0
                 if cid == 'X04': spent = 2
                 if cid == 'XA01': spent = 2 - s['sides']['a']['ap']
                 self.assertEqual(s['sides']['a']['ap'], 2 - spent)

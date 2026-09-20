@@ -319,6 +319,12 @@ def _knockdown_pass(state):
     return bool(downed)
 
 
+def damage_immune(state, side, cid):
+    h = hero(state, side, cid)
+    until = int((h.get('flags') or {}).get('damage_immunity_until', 0))
+    return alive(state, side, cid) and until > state['sides'][side]['turn_count']
+
+
 def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage', settle=True,
            group_id=None, damage_class=None, reason=None, counter_immunity=None):
     if finished(state):
@@ -344,7 +350,10 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     klass = damage_class_for(kind, damage_class)
     attr = source_attribute(state, source)
     zone = front_debuff(state, side)
-    if (kind == 'combat' and attr in ('魂', '相') and zone.get('stain')
+    immune = esper and damage_immune(state, side, cid)
+    if immune:
+        amount = 0
+    if (not immune and kind == 'combat' and attr in ('魂', '相') and zone.get('stain')
             and (state['sides'][side]['front'] == cid or (not esper and not state['sides'][side]['front']))):
         amount += 2
     resistances = target.get('next_damage_resistance') or {}
@@ -567,14 +576,19 @@ def add_hand(state, side, card, *, reveal=False, reason=None):
                 'gain', side=side, card=public_card(card), actor=f'{side}:player')
 
 
-def draw(state, side, count=1):
+def draw(state, side, count=1, *, card_type=None):
     from .presentation import public_card
     team = state['sides'][side]
     for _ in range(count):
         if finished(state):
             break
+        index = 0
+        if card_type is not None:
+            index = next((i for i, card in enumerate(team['deck']) if card.get('type') == card_type), None)
+            if index is None:
+                break
         if team['deck']:
-            card = team['deck'].pop(0)
+            card = team['deck'].pop(index)
             add_hand(state, side, card)
             log(state, f"{name(state, side)}抽 1 张牌。", 'draw', side=side,
                 actor=f'{side}:player', private_side=side, private_card=public_card(effective_card(state, side, card)))

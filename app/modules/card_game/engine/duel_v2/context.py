@@ -44,8 +44,8 @@ class EffectContext:
     def is_enemy_turn(self):
         return self.state['active_side'] != self.side
 
-    def draw(self, count):
-        draw(self.state, self.side, count)
+    def draw(self, count, *, card_type=None):
+        draw(self.state, self.side, count, card_type=card_type)
 
     def energy(self, amount=1, *, reason=None):
         before = self.character['energy']
@@ -107,6 +107,9 @@ class EffectContext:
 
     def sortie(self, **spec):
         combat.sortie(self, **spec)
+
+    def enter_front(self):
+        combat.enter(self, as_support=False)
 
     def hit_front(self, amount, bypass=False):
         from .state import reduce_max_hp

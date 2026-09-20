@@ -108,8 +108,8 @@
       "avatar": "/static/kongmu/images/characters/player_zhenhong_256.webp",
       "portrait": "/static/images/characters/portrait/真红.webp",
       "role": "盈蓄追加攻击与战斗牌成长",
-      "passive": "己方触发盈蓄后，若真红存活，真红攻击 +1，进入战斗区并发起一次额外单方面攻击。真红不在前排时，不能获得能量。",
-      "awakened_passive": "真红不能获得能量，不会在己方回合开始时自动返回备战区。己方全部手牌均视为「真红：升腾之赤」，持续 2 个己方回合。即将结束时，发起一次额外攻击。真红倒地或被换下时结束。",
+      "passive": "己方触发盈蓄后，若真红存活，真红攻击 +1，直到下个己方回合开始时不受伤害，进入战斗区并发起一次额外攻击。真红不在前排时，不能获得能量。",
+      "awakened_passive": "将真红移入战斗区。真红不能获得能量，不会在己方回合开始时自动返回备战区。己方全部手牌均视为「真红：升腾之赤」，持续 2 个己方回合。即将结束时，发起一次额外攻击。真红倒地或被换下时结束。",
       "everness_id": 1076,
       "ultimate": {
         "kind": "status",
@@ -1536,7 +1536,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若本回合触发过盈蓄，额外 +2 攻击。",
+      "description": "若本回合触发过盈蓄，本牌获得瞬发，抽 1 张战术牌。",
       "starter_copies": 2,
       "shield": 2,
       "attack": 0
@@ -1548,7 +1548,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若本回合触发过盈蓄，本次攻击变为单方面攻击。",
+      "description": "若本回合触发过盈蓄，本牌获得瞬发，抽 1 张武备牌。",
       "effect_id": "R03",
       "source": {
         "character_id": 1076,
@@ -1572,11 +1572,10 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若本回合触发过盈蓄，本牌不消耗行动力。",
+      "description": "若本回合触发过盈蓄，本牌获得瞬发，抽 1 张战斗牌。",
       "starter_copies": 0,
       "shield": 0,
-      "attack": 2,
-      "free_if_surplus": true
+      "attack": 2
     },
     {
       "id": "R05",
@@ -2902,7 +2901,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若本回合触发过盈蓄，额外 +2 攻击。",
+      "description": "抽 1 张牌。若本回合触发过盈蓄，额外 +2 攻击。",
       "effect_id": "RF01",
       "source": {
         "character_id": 1076,

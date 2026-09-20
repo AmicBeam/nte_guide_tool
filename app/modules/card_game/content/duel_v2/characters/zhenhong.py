@@ -1,4 +1,4 @@
-"""User-authored surplus carry rework, 2026-09-20 (not original-game numbers)."""
+"""User-authored surplus carry rules, 2026-09-21 (not original-game numbers)."""
 from copy import deepcopy
 from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.content.duel_v2.characters.common import draw_owned_card
@@ -11,8 +11,12 @@ from app.modules.card_game.engine.duel_v2.deferred import enqueue
 def _battle(c):
     surplus = bool(c.state['sides'][c.side].get('surplus'))
     card_id = c.card['card_id']
-    c.sortie(bonus=2 if surplus and card_id in ('R02', 'RF01') else 0,
-             no_counter=surplus and card_id == 'R03')
+    if card_id == 'RF01':
+        c.draw(1)
+    elif surplus and card_id in ('R02', 'R03', 'R04'):
+        c.draw(1, card_type={'R02': 'tactic', 'R03': 'form', 'R04': 'battle'}[card_id])
+    if not finished(c.state):
+        c.sortie(bonus=2 if surplus and card_id == 'RF01' else 0)
 
 
 def _draw_team(c):
@@ -54,7 +58,8 @@ class Zhenhong:
     @staticmethod
     def on_surplus(c, **_data):
         add_atk_buff(c.character, 1)
-        c.history('己方触发盈蓄，真红攻击 +1，将发起额外攻击。')
+        c.character['flags']['damage_immunity_until'] = c.state['sides'][c.side]['turn_count'] + 1
+        c.history('己方触发盈蓄，真红攻击 +1，直到下个己方回合开始时不受伤害，将发起额外攻击。')
         enqueue(c, 'surplus')
         if c.character.get('shape') == 'R07':
             foe = other(c.side)
@@ -71,8 +76,12 @@ class Zhenhong:
         c.operation['support'] = True
         c.operation['support_notified'] = True
         fire(c, 'on_support', actor_id=c.cid)
-        c.history('真红发起额外单方面攻击。')
-        c.sortie(no_counter=True)
+        c.history('真红发起额外攻击。')
+        c.sortie()
+
+    @staticmethod
+    def makes_instant(state, side, card):
+        return card.get('card_id') in ('R02', 'R03', 'R04') and bool(state['sides'][side].get('surplus'))
 
     @staticmethod
     def can_gain_energy(c, current=True, **_data):
@@ -99,6 +108,7 @@ class Zhenhong:
     @staticmethod
     def on_ultimate(c):
         _hand_changed(c)
+        c.enter_front()
 
     @staticmethod
     def on_ultimate_expiring(c):

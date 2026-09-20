@@ -99,6 +99,7 @@ def capture_public_board(state):
                 **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura') if k in hero},
                 'entity_id': hero.get('entity_id'),
                 'effect_markers': character_effect_markers(hero),
+                'damage_immune': duel_state.damage_immune(state, ps, cid),
                 'hp': hero['hp'],
                 'max_hp': hero['max_hp'],
                 'shield': hero['shield'],

@@ -101,14 +101,14 @@ class SurplusReworkTest(unittest.TestCase):
         begin_turn(s,'a');self.assertEqual(hero(s,'a','zhenhong')['energy'],1)
         self.assertIsNone(s['sides']['a']['front'])
 
-    def test_conditional_battles_and_free_card_preserves_instant(self):
-        for key, surplus, amount in [('R02',False,2),('R02',True,4),('R03',True,3),('R04',True,4)]:
+    def test_conditional_battles_use_shared_instant_and_base_attack(self):
+        for key, surplus, amount in [('R02',False,2),('R02',True,2),('R03',True,3),('R04',True,4)]:
             with self.subTest(key=key,surplus=surplus):
                 s=self.game();s['sides']['a']['surplus']=surplus
                 if key=='R04':s['sides']['a']['ap']=0
                 s=self.play(s,key)
                 self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],amount)
-                self.assertFalse(s['sides']['a']['used'].get('instant'))
+                self.assertEqual(bool(s['sides']['a']['used'].get('instant')), surplus)
 
     def test_growth_battle_counts_only_extra_attacks_and_survives_down(self):
         s=self.game();h=hero(s,'a','zhenhong');h['extra_attacks']=3

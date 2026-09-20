@@ -108,7 +108,7 @@ class JinguRulesTest(unittest.TestCase):
         self.assertEqual(hero(s,'b','xiaozhi')['jingu'],1)
         self.assertFalse(s.get('_deferred_card_marks'))
 
-    def test_response_mark_settles_when_entry_harmony_cancels_incoming_attack(self):
+    def test_response_mark_settles_without_enemy_turn_entry_harmony(self):
         s=self.game();begin_turn(s,'b');s['sides']['b']['hand']=[]
         self.hand(s,'N02',side='b');s=self.ult(s,side='b')
         s['sides']['b']['hand'][0]['jingu_mark']['delta']=1
@@ -117,6 +117,8 @@ class JinguRulesTest(unittest.TestCase):
         s['active_side']='a';hero(s,'a','zero')['hp']=1
         s=apply_action(s,'a',{'type':'attack','character_id':'zero'})
         self.assertEqual(hero(s,'a','zero')['down_turns'],3)
+        self.assertEqual(hero(s,'b','zero')['harmony'],2)
+        self.assertFalse(any(e['type']=='harmony' and e['side']=='b' for e in s['events']))
         self.assertEqual(hero(s,'b','xiaozhi')['jingu'],before+1)
         self.assertFalse(s.get('_deferred_card_marks'))
 

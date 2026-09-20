@@ -18,6 +18,38 @@
     hathor: { id: 'hathor', name: '哈索尔', attribute: '相', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/哈索尔.webp', portrait: '/static/images/characters/portrait/哈索尔.webp' },
     iloy: { id: 'iloy', name: '伊洛伊', attribute: '灵', attack: 1, max_hp: 6, avatar: '/static/kongmu/images/characters/player_yiluoyi_256.webp', portrait: '/static/images/characters/portrait/伊洛伊.webp' },
   };
+  // Presentation only: equipment identity comes from the public board (also in replays).
+  // Sources and user selections: docs/character-image-assets-manifest.json.
+  const EQUIPMENT_PORTRAITS = {
+    N07: { characterId: 'nanali', fashion: 'Fashion_1010_3' },
+    N08: { characterId: 'nanali', fashion: 'Fashion_1010_nighty' },
+    Z07: { characterId: 'zero', fashion: 'Fashion_1051_2' },
+    J08: { characterId: 'jiuyuan', fashion: 'Fashion_1055_nighty' },
+    X08: { characterId: 'xun', fashion: 'Fashion_1052_nighty' },
+    A07: { characterId: 'anhunqu', fashion: 'Fashion_1004_1' },
+    A08: { characterId: 'anhunqu', fashion: 'Fashion_1004_nighty' },
+    C07: { characterId: 'canhong', fashion: 'Fashion_1036_1' },
+    C08: { characterId: 'canhong', fashion: 'Fashion_1036_nighty' },
+    S08: { characterId: 'zaowu', fashion: 'Fashion_1003_1' },
+    K07: { characterId: 'lingke', fashion: 'Fashion_1072_school' },
+    K08: { characterId: 'lingke', fashion: 'Fashion_1072_nighty' },
+    R07: { characterId: 'zhenhong', fashion: 'Fashion_1076_1' },
+    R08: { characterId: 'zhenhong', fashion: 'Fashion_1076_nighty' },
+    Y07: { characterId: 'iloy', fashion: 'Fashion_1075_rpg_level3' },
+    Y08: { characterId: 'iloy', fashion: 'Fashion_1075_nighty' },
+    M07: { characterId: 'bohe', fashion: 'Fashion_1019_rpg_level3' },
+    M08: { characterId: 'bohe', fashion: 'Fashion_1019_nighty' },
+    Q07: { characterId: 'xiaozhi', fashion: 'Fashion_1073_1' },
+    Q08: { characterId: 'xiaozhi', fashion: 'Fashion_1073_nighty' },
+  };
+  const CHARACTER_IMAGE_VERSION = 'nte-6887b8ce-r3';
+  const CHARACTER_IMAGE_ALIASES = {
+    '/static/images/characters/avatar/残虹.png': '/static/images/characters/avatar/残虹.webp',
+    '/static/images/characters/avatar/灵可.png': '/static/images/characters/avatar/灵可.webp',
+    '/static/kongmu/images/characters/player_yiluoyi_256.webp': '/static/images/characters/avatar/伊洛伊.webp',
+    '/static/kongmu/images/characters/player_zhenhong_256.webp': '/static/images/characters/avatar/真红.webp',
+  };
+
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.
   const characterAssets = Object.create(null);
@@ -364,10 +396,29 @@
   function characterAsset(character, kind) {
     kind = kind || 'avatar';
     const fallback = characterFallback(character && character.id);
-    return (character && character[kind]) || (fallback && fallback[kind]) || '';
+    return characterImageUrl((character && character[kind]) || (fallback && fallback[kind]) || '');
+  }
+
+  function characterImageUrl(src) {
+    if (!src) return '';
+    src = CHARACTER_IMAGE_ALIASES[src] || src;
+    if (src.startsWith('/static/images/characters/') && !/[?&]nte_art=/.test(src)) {
+      return src + (src.includes('?') ? '&' : '?') + 'nte_art=' + CHARACTER_IMAGE_VERSION;
+    }
+    return src;
+  }
+
+  function battlePortrait(character) {
+    const data = character || {};
+    const costume = EQUIPMENT_PORTRAITS[data.shape_id];
+    if (!data.summoned && !(Number(data.down_turns) > 0) && costume && costume.characterId === data.id) {
+      return characterImageUrl('/static/images/characters/costume/' + costume.fashion + '.webp');
+    }
+    return characterAsset(data, 'portrait') || characterAsset(data, 'avatar');
   }
 
   function imageMarkup(src, alt, className) {
+    src = characterImageUrl(src);
     if (!src) {
       return '<span class="' + escapeAttr(className || '') + ' v2-image-fallback" aria-hidden="true"></span>';
     }
@@ -796,6 +847,7 @@
     elementIcon: elementIcon,
     characterFallback: characterFallback,
     characterAsset: characterAsset,
+    battlePortrait: battlePortrait,
     imageMarkup: imageMarkup,
     attributeMarkup: attributeMarkup,
     cardTypeLabel: cardTypeLabel,

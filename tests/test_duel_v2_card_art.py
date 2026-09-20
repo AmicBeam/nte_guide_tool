@@ -38,7 +38,7 @@ const card = id => ({character_id: id, instance_id: 'test-' + id, name: '测试�
   // A partial update must not erase an already known image.
   payload = {game: {sides: {a: {characters: [{id:'xiaozhi', portrait:'', hp:0}]}}}};
   await api.getState();
-  assert.ok(api.characterAsset({id:'xiaozhi'}, 'portrait').endsWith('小吱.webp'));
+  assert.ok(api.characterAsset({id:'xiaozhi'}, 'portrait').split('?')[0].endsWith('小吱.webp'));
   // Archived replay opening metadata also registers without catalog access.
   payload = {replay: {opening_board: {sides: {b: {characters: [{id:'haiyue', name:'海月',
     portrait:'/static/images/characters/portrait/海月.webp'}]}}}}};

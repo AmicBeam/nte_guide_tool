@@ -130,7 +130,8 @@
     }
     const downTurns = Number(data.down_turns) > 0 ? Number(data.down_turns) : 0;
     const note = (page && page.classList.contains('is-tutorial') && !data.shape) ? '' : (data.shape || '无武备');
-    const portrait = V2.characterAsset(data, options.usePortrait ? 'portrait' : 'avatar') || V2.characterAsset(data, 'avatar');
+    const defaultPortrait = V2.characterAsset(data, 'portrait') || V2.characterAsset(data, 'avatar');
+    const portrait = options.usePortrait ? V2.battlePortrait(data) : V2.characterAsset(data, 'avatar');
     const mobileCard = window.matchMedia('(pointer: coarse) and (max-width: 1200px)').matches;
     const actions = [];
     if (options.canAwaken) {
@@ -158,6 +159,13 @@
         '<div class="v2-character-note"><span title="' + V2.escapeAttr(note) + '">' + V2.escapeHtml(note) + '</span></div>' +
       '</div>' + (mobileCard ? '<div class="v2-character-extras">' + actions.join('') : '') +
       effectMarkersHtml(options.placeholder ? [] : data.effect_markers, 'v2-character-effects') + (mobileCard ? '</div>' : '');
+    const portraitImage = node.querySelector('.v2-character-art > img');
+    if (portraitImage && options.usePortrait && portrait !== defaultPortrait) {
+      portraitImage.onerror = function () {
+        this.onerror = null;
+        this.src = defaultPortrait;
+      };
+    }
     if (prevPanel && prevPanel !== panelSig) {
       const previous = prevPanel.split('|');
       const current = panelSig.split('|');

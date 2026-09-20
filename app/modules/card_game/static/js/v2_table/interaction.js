@@ -82,7 +82,7 @@
 
     function hoverCharacterMarkup(character) {
       const found = character || {};
-      const portrait = V2.characterAsset(found, 'portrait') || V2.characterAsset(found, 'avatar');
+      const portrait = V2.battlePortrait(found);
       const lines = [
         '<p>异能：' + V2.cardDescriptionMarkup(found.passive || '尚未提供') + '</p>',
         '<p>终结：' + V2.cardDescriptionMarkup(found.awakened_passive || '尚未提供') + '</p>',

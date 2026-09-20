@@ -580,6 +580,13 @@
       } else {
         front.appendChild(this._el("div", "v2-fx-card-art is-fallback"));
       }
+      const api = typeof window !== "undefined" ? window.NTE_V2 : null;
+      const statMarkup = hasPublicCard(card) && api && api.cardFrameStat ? api.cardFrameStat(card) : "";
+      if (statMarkup) {
+        const stats = this._el("div", "v2-fx-card-stats");
+        stats.innerHTML = statMarkup;
+        front.firstChild.appendChild(stats);
+      }
       const name = this._el("strong", "v2-fx-card-name");
       name.textContent = hasPublicCard(card) ? String(card.name || card.card_id || "") : "";
       const kind = this._el("span", "v2-fx-card-type");

@@ -130,6 +130,7 @@
 }
 
 .v2-fx-card-art {
+  position: relative;
   margin: calc(-4px * var(--table-layout-scale, 1)) calc(-4px * var(--table-layout-scale, 1)) 0;
   height: calc(156px * var(--table-layout-scale, 1));
   border-radius: calc(10px * var(--table-layout-scale, 1));
@@ -138,6 +139,21 @@
     linear-gradient(180deg, rgba(36, 62, 84, 0.4), rgba(8, 12, 19, 0.8)),
     rgba(16, 25, 38, 0.96);
 }
+
+.v2-fx-card-stats {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+}
+.v2-fx-card-stats .v2-frame-stats {
+  display: flex;
+  justify-content: space-between;
+}
+.v2-fx-card-stats .is-hp,
+.v2-fx-card-stats .is-shield { margin-left: auto; }
+.v2-fx-card-stats .v2-stat-badge { font-size: calc(22px * var(--table-font-scale, 1)); }
+.v2-fx-card-stats .v2-stat-icon { width: 1em; height: 1em; }
 
 .v2-fx-card-art.is-fallback {
   background:
@@ -569,6 +585,7 @@
   }
   .v2-fx-play-card .v2-fx-card-art { height: 64px; }
   .v2-fx-play-card .v2-fx-card-name { font-size: 16px; }
+  .v2-fx-play-card .v2-fx-card-stats .v2-stat-badge { font-size: 16px; }
   .v2-fx-play-card .v2-fx-card-desc { font-size: 12px; line-height: 1.4; margin: 0; overflow-y: auto; min-height: 0; }
   .v2-fx-play-card .v2-fx-card-type,
   .v2-fx-play-card .v2-fx-card-owner,

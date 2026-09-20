@@ -497,3 +497,14 @@
 }
 .v2-hover-art > .v2-frame-stats .is-hp,
 .v2-hover-art > .v2-frame-stats .is-shield { margin-left: auto; }
+
+/* Detail values use the same readable size as the card name. */
+.v2-hover-card h2,
+.v2-hover-card .v2-stat-badge {
+  font-size: calc(22px * var(--table-font-scale, 1));
+}
+.v2-hover-card .v2-stat-icon {
+  width: 1em;
+  height: 1em;
+}
+.v2-choice-dialog.is-multi .v2-hover-card .v2-stat-badge { font-size: 15px; }

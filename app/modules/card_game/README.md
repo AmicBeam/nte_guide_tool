@@ -482,3 +482,7 @@ I01／I02 兽牙改为 4 个己方回合，I03 瞬发且为 6 个己方回合，
 验证：`python -m unittest tests.test_duel_v2_surplus_rework tests.test_duel_v2_zone_status tests.test_duel_v2_harmony_presentation`，覆盖 1／2／3／4 回合、归属、无状态、己方倒计时、兽牙暂停、存档与公开回放。
 
 本轮 46 项相关测试通过。隔离数据库的真实牌桌从大厅进入后，确认翳详情显示“延长 2、至多 3”，拖入翳出击使延滞倒计时从 1 变为 3，历史记录延长结果且浏览器无 error。仅功能验收，不代表平衡结论；未部署。
+
+### 2026-09-21 梦的边缘前排限制移除
+
+R07「梦的边缘」在己方触发盈蓄时造成全体对方异能者 2 点伤害，真红在备战区也能触发；存活、装备与同次盈蓄只触发一次的要求保留。验证：`python -m unittest tests.test_duel_v2_r07 tests.test_duel_v2_surplus_rework.SurplusReworkTest.test_surplus_weapon_triggers_in_front_and_on_bench`，覆盖前排／备战、九原重复、倒地、未装备和公开回放局面。

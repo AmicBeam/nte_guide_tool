@@ -56,7 +56,7 @@ class Zhenhong:
         add_atk_buff(c.character, 1)
         c.history('己方触发盈蓄，真红攻击 +1，将发起额外攻击。')
         enqueue(c, 'surplus')
-        if c.character.get('shape') == 'R07' and c.state['sides'][c.side]['front'] == c.cid:
+        if c.character.get('shape') == 'R07':
             foe = other(c.side)
             for cid in team_order(c.state, foe):
                 if finished(c.state):

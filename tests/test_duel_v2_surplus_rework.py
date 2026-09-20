@@ -163,8 +163,8 @@ class SurplusReworkTest(unittest.TestCase):
         s['sides']['a']['front']='zhenhong';damage(s,'a','zhenhong',99);drain(s)
         self.assertFalse(h.get('extra_attacks'));self.assertFalse(h['awakened'])
 
-    def test_front_weapon_checks_before_passive_entry(self):
-        for in_front, expected in [(False,0),(True,2)]:
+    def test_surplus_weapon_triggers_in_front_and_on_bench(self):
+        for in_front, expected in [(False,2),(True,2)]:
             s=self.game();self.delay(s);h=hero(s,'a','zhenhong');h['shape']='R07'
             s['sides']['a']['front']='zhenhong' if in_front else 'zero'
             s['sides']['b']['front']='yi';hero(s,'b','yi').update(hp=60,max_hp=60)

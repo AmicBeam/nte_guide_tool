@@ -1627,7 +1627,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "己方触发盈蓄时，若真红在前排，对全部对方异能者造成 2 点伤害。",
+      "description": "己方触发盈蓄时，对全部对方异能者造成 2 点伤害。",
       "starter_copies": 0,
       "attack": 3,
       "hp": 5

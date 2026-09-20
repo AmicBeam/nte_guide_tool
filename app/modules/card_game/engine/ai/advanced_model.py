@@ -27,14 +27,23 @@ from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
 
 _CACHE = {}
 _LOCK = threading.RLock()
-PRESETS = ('starter', 'weave-rush', 'quick-rush')
+PRESETS = ('starter', 'weave-rush', 'quick-rush', 'midrange')
+# Registration only: training and a validated model/build pair are still required.
+UNTRAINED_STRATEGIES = {
+    'midrange': {
+        'id': 'midrange', 'name': '中速',
+        'character_ids': ['zero', 'iloy', 'nanali', 'baicang'],
+    },
+}
 # Registered for the next league; no compatible/evaluated eight-character model yet.
 PENDING_PRESETS = frozenset({'quick-rush'})
 
 
 def preset(deck_id):
     if deck_id not in PRESETS:
-        raise RuleValidationError('高级人机策略包括创生预组、覆纹预组和快攻预组。')
+        raise RuleValidationError('高级人机策略包括创生预组、覆纹预组、快攻预组和中速。')
+    if deck_id in UNTRAINED_STRATEGIES:
+        raise RuleValidationError('中速高级人机尚待训练与验收，暂不能开局。')
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
 
 

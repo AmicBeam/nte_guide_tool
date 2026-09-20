@@ -149,6 +149,18 @@ class AdvancedRoomTest(RoomFlowTestCase):
         response=self.client.post('/api/duel-v2/start',json={'mode':'advanced','ai_deck':'other'},headers={'Authorization':'Bearer '+self.token})
         self.assertEqual(response.status_code,400)
 
+    def test_midrange_is_registered_but_cannot_create_untrained_room(self):
+        from app.modules.card_game.engine.ai.advanced_model import UNTRAINED_STRATEGIES
+        self.assertEqual(UNTRAINED_STRATEGIES['midrange']['character_ids'],
+                         ['zero', 'iloy', 'nanali', 'baicang'])
+        before = self._get('/api/duel-v2/catalog', token=self.token)['saved_build']
+        result = self._post_error('/api/duel-v2/start',
+            {'mode': 'advanced', 'ai_deck': 'midrange'}, token=self.token)
+        self.assertIn('中速高级人机尚待训练与验收', result['error'])
+        player = self.dao_module.get_or_create_player('advanced-ai-test')[0]
+        self.assertIsNone(self.repository.current_room(player))
+        self.assertEqual(before, self._get('/api/duel-v2/catalog', token=self.token)['saved_build'])
+
     def test_legacy_rejects_saved_custom_before_room_creation(self):
         from app.modules.card_game.content.duel_v2 import STARTER_DECK
         custom = deepcopy(STARTER_DECK)

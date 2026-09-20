@@ -2,46 +2,30 @@
 
 ## 来源与适用范围
 
-2026-09-20 用户确定：本仓库各模块的角色头像、立绘统一使用私有仓库 [mc-ctrl/NTEData](https://github.com/mc-ctrl/NTEData) 作为图片来源。新增和替换资源遵循本说明。首批实际同步范围、逐文件来源与转码参数见下方记录及资源清单；清单以外的历史图片不声明已核实。
+按 2026-09-20 用户最新口径，角色头像与默认立绘恢复沿用 **Everness / Nanoka 素材流程**，不再要求全仓库统一改用 NTEData。新增角色优先复用已保存的 Everness 素材；更新图片必须保持现有角色缩放、头部对齐和牌面构图。
+
+本次只修订素材规范，不重新替换图片。此前已导入的 NTEData 头像与武备时装保留实际来源记录，不能改标为 Everness 下载；具体导入范围见下方历史记录及资源清单。
 
 角色机制、属性、技能和数值仍按根 `AGENTS.md` 使用 Nanoka / Everness 核实；图片来源约定不改变业务数据真源。道具、弧盘图标等不在本说明范围内。
 
-## 已核实的上游目录
+## Everness 素材获取
 
-以下路径在 2026-09-20 使用用户 GitHub 身份读取 `main` 文件树时确认存在；路径均相对于 NTEData 仓库根目录，注意连续两层 `UI/UI` 不是笔误。
+1. 使用 `everness-info` 技能读取 `everness.info` 角色资料，按角色名核对角色 ID，再查看响应中的图片字段。不要根据编号、拼音或旧缓存猜测角色映射。
+2. 头像检查 `icon`、`icon_small`、`iconBig`；默认立绘检查 `iconGacha` 等实际返回的资源，时装可查看 `portraitImg`。字段名只是定位线索，必须打开图片确认用途、角色和造型，不能把任意大图直接当作牌面立绘。
+3. 已返回完整 URL 时使用该 URL。对于 Nanoka 的相对资产路径，可参考仓库 `scripts/refresh_kongmu_data.py` 的 `asset_url()`：`https://static.nanoka.cc/assets/nte/<资源路径>.webp`。该格式来自现有导入代码；同步前应核实实际响应和下载结果，不对完整 URL 重复拼接路径或扩展名。
+4. 下载到临时目录，核对尺寸、透明通道、人物占比、头部位置和旧版构图后再放入共享目录。默认立绘沿用现有的 `1024×1024` 展示标准，不能用不同构图的全身图直接覆盖；仅尺寸相同也不代表人物已经对齐。
+5. 记录角色 ID、查询日期、图片字段、源 URL、本地路径与处理参数。已有 WebP 优先直接保存，不为统一流程重复有损转码。
 
-| 用途 | 路径 | 示例文件 |
-| --- | --- | --- |
-| 头像 | `UI/UI_Icon/AvatarImage/` | `200/player_haiyue.png`、`200/player_yiluoyi.png`；另有 `100/` 等版本 |
-| 抽卡角色立绘 | `UI/UI/Gacha/` | `YH_lihui_character_nanali.png` |
-| 角色与服装立绘 | `UI/UI/Appearance/Fashion/1024/` | `YH_lihui_character_jiuyuan.png`、`YH_lihui_character_xun.png` |
-| 时装大图 | `UI/UI/Appearance/Fashion/2160/` | `YH_UI_shizhuang_big_nanali.png` 及多套时装变体 |
+## NTEData 补充素材与追溯
 
-目录数字和文件名只用于定位，实际像素尺寸、透明通道、裁切和角色身份必须打开图片核实。不要仅凭 `player_003` 等编号或拼音猜测角色映射；同一角色的默认造型与时装也要区分。
+私有仓库 [mc-ctrl/NTEData](https://github.com/mc-ctrl/NTEData) 仅作为本次已选武备时装等补充素材的来源，不是默认头像、立绘的强制来源。使用用户已登录的 `gh` 身份读取，记录上游提交 SHA、路径和文件校验值；凭证不进入文档或前端。
 
-## 认证读取与版本追溯
-
-- 使用用户本机已登录的 `gh` 身份访问。未认证网页返回 404 不代表仓库被删除；先用 `gh api repos/mc-ctrl/NTEData` 检查访问能力。不要把 token 写入文档、下载链接、前端或提交。
-- 每次同步先确定上游提交 SHA，再按该提交读取目录和图片，避免同步过程中分支变动。
-- 全仓库递归树较大，GitHub 可能返回 `truncated: true`。应从根树找到 `UI` 的 SHA，再读取该子树；仍截断则继续拆分，不能用截断结果断言资源不存在。
-- 下载选定图片到临时目录；若取得的是 Git LFS 指针，须通过已认证的 LFS 下载真实内容，不能把指针当作 PNG。
-- 每次实际导入应在对应变更说明或资源清单中记录：角色名、用途、上游提交 SHA、上游路径、本地路径，以及转码参数、裁切或缩放信息。存量来源未核实的图片不要补写成已验证来源。
-
-读取示例（将占位值替换为本次核实的值）：
-
-```bash
-gh api repos/mc-ctrl/NTEData/commits/main --jq .sha
-gh api 'repos/mc-ctrl/NTEData/git/trees/<commit-sha>'
-gh api 'repos/mc-ctrl/NTEData/git/trees/<ui-tree-sha>?recursive=1'
-gh api -H 'Accept: application/vnd.github.raw+json' \
-  'repos/mc-ctrl/NTEData/contents/<image-path>?ref=<commit-sha>' \
-  > /tmp/nte-character-source.png
-```
+上游 `UI/UI_Icon/AvatarImage/` 为头像目录；时装展示图在 `UI/UI/Appearance/Fashion/1024/`，应通过 `DT_AppearanceData.SmallPortraitImg` 核对。`2160/` 全身大图的画布和人物比例不同，不可直接替换旧版立绘。全仓库递归树可能被截断，需按子树查询；返回 Git LFS 指针时应先获取真实图片。
 
 ## 本地资源与 WebP 交付
 
 - 跨模块头像放在 `app/static/images/characters/avatar/`，立绘放在 `app/static/images/characters/portrait/`。复用现有角色命名与路径，不在各模块重复存放同一图片。
-- 上游 PNG 作为转码输入；服务器使用的静态图片默认交付 WebP。当前共享目录已大量使用 `.webp`，但仍有 PNG 等历史资源，不能假定全部完成转换。
+- Everness 已提供的 WebP 直接复用；只有 PNG 等其他格式需要时才在本地转码，服务器静态图片默认交付 WebP。当前共享目录已大量使用 `.webp`，但仍有 PNG 等历史资源，不能假定全部完成转换。
 - 在本地导入阶段完成转码，并提交最终 WebP；无需服务器运行时下载私有仓库或临时转码。现有发布脚本只打包已提交的 `app/`，所以图片与对应路径引用必须一起提交。
 - 保留透明通道、宽高比与角色完整构图；不要直接把扩展名从 `.png` 改成 `.webp`。需要缩放或裁切时按使用场景明确记录，不能只因源图较大就裁掉人物。
 - 可用 Pillow 或 `cwebp`。质量参数先按实际体积和视觉检查选择；下面的 `quality=90, method=6` 仅为起点，不是经过统一验收的固定标准。小头像边缘或细节不佳时可使用无损 WebP。
@@ -67,9 +51,9 @@ with Image.open('/tmp/nte-character-source.png') as source:
 3. 在受影响的真实页面检查加载成功、无破图、无拉伸，并检查桌面与移动端表现。删除旧文件前确认已无引用。
 4. 按根 `AGENTS.md` 完成适用验证、局域网访问检查和本次改动的 Git 提交；发布另按仓库发布流程执行。
 
-## 2026-09-20 首批同步与桌游武备换装
+## 2026-09-20 NTEData 导入历史与现有武备换装
 
-上游固定提交：`6887b8ced1812db9671d3d4800a0f15d6322a251`。从 `DT_Character`、`DT_DefaultAppearanceData` 和 `DT_AppearanceData` 核对角色 ID、默认装、头像和立绘路径，不靠文件名猜测。最终保留 23 张默认头像，以及 20 张武备时装图；逐文件 SHA、尺寸、上游路径、本地路径和兼容副本见 [资源清单](character-image-assets-manifest.json)。
+本节记录已发生的导入，不覆盖上方恢复后的 Everness 默认素材约定。上游固定提交：`6887b8ced1812db9671d3d4800a0f15d6322a251`。从 `DT_Character`、`DT_DefaultAppearanceData` 和 `DT_AppearanceData` 核对角色 ID、默认装、头像和立绘路径，不靠文件名猜测。最终保留 23 张默认头像，以及 20 张武备时装图；逐文件 SHA、尺寸、上游路径、本地路径和兼容副本见 [资源清单](character-image-assets-manifest.json)。
 
 头像包含桌游全部 17 人，以及共享目录已有的其他角色、男主。`鉴定师` 对应女主 1051，`男主` 对应 1046。`单位.webp` 与黑羽文字占位不冒充角色原图，保持原样。灵可、残虹的旧 PNG 路径，以及伊洛伊、真红的空幕头像路径保留同源兼容副本；桌游展示统一转向共享 WebP。旧缓存路径在桌游追加图片版本参数，避免 immutable 缓存继续显示旧图。
 

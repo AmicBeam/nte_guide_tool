@@ -1,6 +1,6 @@
 # Static Module Guidelines
 
-- Character avatars and portraits must use the private `mc-ctrl/NTEData` repository as their source. Read `docs/character-image-assets.md` before importing or replacing them; reuse shared `images/characters/avatar/` and `images/characters/portrait/` paths and prepare WebP assets before deployment.
+- Character avatars and default portraits follow the existing Everness / Nanoka asset workflow. Preserve character scale, head alignment, and framing. Read `docs/character-image-assets.md` before importing or replacing images; reuse the shared avatar/portrait paths and existing WebP files. NTEData is a supplemental source for selected costumes, not a required replacement for default artwork; retain accurate provenance.
 - `common/css/app.css` is the stylesheet entrypoint only. Keep it as an ordered list of `@import` statements and do not add page rules there.
 - Put shared CSS in `common/css/`:
   - `foundation.css`: tokens, reset, shared cards, buttons, forms, and global shell layout.

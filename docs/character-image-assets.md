@@ -120,3 +120,12 @@ with Image.open('/tmp/nte-character-source.png') as source:
 ### 头像回退验证
 
 已逐文件校验头像及兼容路径与 `0c9ebd3f2` 的 Git 内容一致，默认立绘未变；20 张时装文件保持不变。换装和卡面资源回归使用 `tests.test_duel_v2_costume_art` 与 `tests.test_duel_v2_card_art`。
+
+## 黑羽头像：用户附件例外（2026-09-20）
+
+用户明确要求从其提供的 `UI.7z` 查找黑羽头像并接入排轴、空幕。本次使用压缩包内 `UI/UI_Icon/AvatarImage/256/player_heiyu2_256.png`（256×256），已查看图片确认；另一张 `Fashion_1042_2_Avatar.png` 带圆框，未采用。不把此附件来源写成 Everness 或 NTEData 下载。
+
+- 本地共享文件：`app/static/images/characters/avatar/黑羽.webp`。
+- PNG SHA-256：`b0163085a70a1ce1ec6d2c87a141bcf03dc711b0a2ee87fd1e85e03be388779a`。
+- 转换：Pillow 无损 WebP，method 6；尺寸、RGBA 像素保持不变，不裁切、不缩放。
+- 排轴角色 `char_heiyu` 的 avatar 与原 portrait 占位回退、空幕头像映射使用同一路径。未添加独立立绘，不修改角色机制或测试权限；旧 SVG 保留兼容历史路径。

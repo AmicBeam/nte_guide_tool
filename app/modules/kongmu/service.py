@@ -77,7 +77,7 @@ FIXED_CHARACTER_AVATAR_LOCAL_PATHS = {
     '1051': 'images/characters/avatar/男主.webp',
     'char_076a1f4e53': 'images/characters/avatar/残虹.png',
     '1072': 'images/characters/avatar/灵可.png',
-    'char_heiyu': 'images/characters/avatar/黑羽.svg',
+    'char_heiyu': 'images/characters/avatar/黑羽.webp',
 }
 
 TEST_CHARACTER_IDS = {'1072', 'char_heiyu'}

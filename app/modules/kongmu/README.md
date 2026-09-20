@@ -44,4 +44,4 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 01111
 ```
 
-1表示可用格，合计20格；0表示空洞。头像暂用共享文字占位 `images/characters/avatar/黑羽.svg`，未借用其他角色图。验证见 `tests.test_shaft_heiyu` 和 `tests.test_shaft_publication`。
+1表示可用格，合计20格；0表示空洞。头像于2026-09-20改用用户附件 `UI.7z` 中 `UI/UI_Icon/AvatarImage/256/player_heiyu2_256.png`，无损转为共享 `images/characters/avatar/黑羽.webp`，排轴与空幕共用；测试权限不变。验证见 `tests.test_shaft_heiyu` 和 `tests.test_shaft_publication`。

@@ -18,13 +18,13 @@ from app.modules.card_game.rl.build_acceptance import (
     canonical_build, canonical_candidates, build_identity, paired_result, delivery_decision)
 
 
-def random_build(seed,team):
+def random_build(seed,team,card_ids=CARD_IDS):
     rng=Random(seed);cards=[]
-    for cid in team:cards+=rng.sample([c for c in CARD_IDS if CARDS[c]['character_id']==cid and not CARDS[c].get('derived') for _ in range(2)],8)
+    for cid in team:cards+=rng.sample([c for c in card_ids if CARDS[c]['character_id']==cid and not CARDS[c].get('derived') for _ in range(2)],8)
     return canonical_build(dict(id='variation',name='变化配牌',character_ids=list(team),card_ids=cards))
 
 
-def candidates(parent,seed):
+def candidates(parent,seed,card_ids=CARD_IDS):
     """All legal one-card swaps plus independently sampled two-card combinations."""
     parent=canonical_build(parent)
     rows=[deepcopy(parent)];seen={build_identity(parent)};rng=Random(seed)
@@ -32,7 +32,7 @@ def candidates(parent,seed):
         b=canonical_build({**parent,'card_ids':cards});h=build_identity(b)
         if h not in seen:seen.add(h);rows.append(b)
     for hero in parent['character_ids']:
-        pool=[c for c in CARD_IDS if CARDS[c]['character_id']==hero and not CARDS[c].get('derived')]
+        pool=[c for c in card_ids if CARDS[c]['character_id']==hero and not CARDS[c].get('derived')]
         count=Counter(parent['card_ids'])
         for old in pool:
             if not count[old]:continue
@@ -43,10 +43,10 @@ def candidates(parent,seed):
         cards=list(parent['card_ids'])
         for step in range(2):
             old=rng.choice(cards);hero=CARDS[old]['character_id'];count=Counter(cards)
-            pool=[c for c in CARD_IDS if CARDS[c]['character_id']==hero and not CARDS[c].get('derived') and c!=old and count[c]<2]
+            pool=[c for c in card_ids if CARDS[c]['character_id']==hero and not CARDS[c].get('derived') and c!=old and count[c]<2]
             new=rng.choice(pool);cards.remove(old);cards.append(new)
         add(cards)
-    for i in range(8):add(random_build(seed+i,parent['character_ids'])['card_ids'])
+    for i in range(8):add(random_build(seed+i,parent['character_ids'],card_ids)['card_ids'])
     return rows
 
 

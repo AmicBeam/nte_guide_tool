@@ -55,6 +55,11 @@ def main():
     parser.add_argument('--workers', type=int, default=6)
     parser.add_argument('--device', choices=('cpu', 'cuda'), default='cuda')
     parser.add_argument('--seed-ledger', type=Path, default=ROOT / 'artifacts/rl-seed-ledger.json')
+    parser.add_argument('--full-cycle', action='store_true', help='Five-team build search and paired acceptance workflow')
+    parser.add_argument('--warm-models', type=Path, help='Five same-contract research model pairs')
+    parser.add_argument('--confirmation-seeds', type=int, default=512)
+    parser.add_argument('--adaptation-steps', type=int, default=32)
+    parser.add_argument('--search-candidates', type=int, default=16)
     parser.add_argument('--smoke', action='store_true')
     parser.add_argument('--run', action='store_true')
     parser.add_argument('--supervise', action='store_true', help=argparse.SUPPRESS)
@@ -70,7 +75,10 @@ def main():
                     if not p.is_relative_to(out) or hashlib.sha256(p.read_bytes()).hexdigest() != digest:
                         raise ValueError('Frozen source integrity failure')
                 if identity() != config['rule_hash']: raise ValueError('Rule identity mismatch')
-                from app.modules.card_game.rl.fixed_lineup_training import run
+                if config.get('full_cycle'):
+                    from app.modules.card_game.rl.five_full_cycle import run
+                else:
+                    from app.modules.card_game.rl.fixed_lineup_training import run
                 run(out, config)
             except Exception as exc:
                 write(out / 'status.json', dict(phase='failed', error=repr(exc), finished=time.time()))
@@ -103,6 +111,10 @@ def main():
     import math
     if not math.isfinite(args.zhenhong_passive_reward) or args.zhenhong_passive_reward < 0:
         parser.error('Passive reward must be finite and nonnegative')
+    if not 32 <= args.confirmation_seeds <= 4096 or not 1 <= args.adaptation_steps <= 128 or not 2 <= args.search_candidates <= 32:
+        parser.error('Invalid full-cycle workload')
+    if args.full_cycle and not args.warm_models:
+        parser.error('Full five-team cycle requires explicit warm models')
     from app.modules.card_game.rl.build_acceptance import check_source, claim_seeds
     check_source(args.source)
     if bool(args.learner_build) != bool(args.learner_source):
@@ -117,8 +129,10 @@ def main():
     config = dict(kind='five_fixed_lineups_v1', rule_hash=identity(), builds=builds(args.source), device=args.device,
                   workers=args.workers, smoke=args.smoke, evaluation_pairs=1 if args.smoke else 32,
                   algorithm='outcome_ppo_with_zhenhong_passive', zhenhong_passive_reward=args.zhenhong_passive_reward, seconds=args.seconds, automatic_serving_approval=False)
+    config.update(full_cycle=args.full_cycle, confirmation_seeds=32 if args.smoke else args.confirmation_seeds,
+                  adaptation_steps=args.adaptation_steps, search_candidates=args.search_candidates)
     if custom:
-        config['learner_keys'] = ['zhenhong']
+        if not args.full_cycle: config['learner_keys'] = ['zhenhong']
         config['builds']['zhenhong'] = custom
     if not args.run:
         print(json.dumps(dict(training_started=False, **config), ensure_ascii=False)); return
@@ -134,9 +148,25 @@ def main():
             if p.is_symlink(): raise ValueError('Symlink learner source')
             dest = out / 'learner-source' / p.name; shutil.copy2(p, dest)
             manifest[dest.relative_to(out).as_posix()] = hashlib.sha256(dest.read_bytes()).hexdigest()
+    if args.warm_models:
+        check_source(args.warm_models)
+        (out / 'warm-models').mkdir()
+        for key in ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'midrange'):
+            for ext in ('npz', 'json'):
+                p = args.warm_models / f'{key}.{ext}'
+                if p.is_symlink(): raise ValueError('Symlink warm model')
+                dest = out / 'warm-models' / p.name; shutil.copy2(p, dest)
+                manifest[dest.relative_to(out).as_posix()] = hashlib.sha256(dest.read_bytes()).hexdigest()
     write(out / 'source-manifest.json', manifest)
     from app.modules.card_game.rl.fixed_lineup_training import prepare
     config['builds'] = prepare(out / 'source', out)
+    if args.warm_models:
+        from app.modules.card_game.rl.fixed_lineup_training import migrate_fixed
+        for key in ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'midrange'):
+            metadata = json.loads((out / 'warm-models' / f'{key}.json').read_text(encoding='utf-8'))
+            build = custom if key == 'zhenhong' and custom else metadata['build']
+            migrate_fixed(out / 'warm-models', key, out / 'initial', build)
+            config['builds'][key] = build
     if custom:
         from app.modules.card_game.rl.fixed_lineup_training import migrate_fixed
         migrate_fixed(out / 'learner-source', 'zhenhong', out / 'initial', custom)
@@ -147,6 +177,14 @@ def main():
     if seconds < 60: raise ValueError('Insufficient time before original hard deadline')
     config.update(created=now, seconds=seconds, train_until=now + seconds * 5 / 6,
                   evaluate_until=now + seconds - min(60, seconds / 20), hard_deadline=now + seconds)
+    if args.full_cycle:
+        from app.modules.card_game.rl.build_acceptance import phase_deadlines
+        config['deadlines'] = phase_deadlines(now, seconds)
+        # Five lineups need more search time; paired adaptation remains equal-step.
+        config['deadlines'].update(search=now+seconds*.55,
+            baseline_adaptation=now+seconds*.625, candidate_adaptation=now+seconds*.70)
+        config['kind'] = 'five_full_cycle_v1'
+        config['train_until'] = config['deadlines']['candidate_adaptation']
     write(out / 'config.json', config)
     frozen_script = out / 'frozen/scripts' / Path(__file__).name
     opts = dict(cwd=out / 'frozen', stdin=subprocess.DEVNULL, close_fds=True)

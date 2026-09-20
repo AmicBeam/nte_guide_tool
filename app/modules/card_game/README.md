@@ -557,3 +557,7 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 ### 真红被动奖励（2026-09-21）
 
 固定配牌 PPO 对真红学习方新增默认每次实际盈蓄被动触发 +0.2，`--zhenhong-passive-reward` 可调。计数位于角色回调，倒地时队伍盈蓄不计、九原重复段不重复计，逐决策回报只包含未来触发；其他策略、冻结对手和独立胜率口径不变。详见 [奖励说明](../../../docs/duel-v2-zhenhong-passive-reward.md)。68项相关测试通过，本次没有启动新训练。
+
+### 五套完整配牌训练（2026-09-21）
+
+固定配牌入口新增显式 `--full-cycle --warm-models`，通过 `rl/five_full_cycle.py` 执行五套基础学习、4轮有界配牌搜索、原／新配牌等量适应、独立确认与审计回退。真红保留被动次数奖励；免伤期间仅记录实际队友倒地风险与白送战术用例，不检查空前排、不添加额外惩罚。详见 [09:00截止完整计划](../../../docs/duel-v2-five-full-night-20260921.md)。验证：`python -m unittest tests.test_duel_v2_five_full_cycle tests.test_duel_v2_build_acceptance tests.test_duel_v2_passive_reward tests.test_duel_v2_fixed_lineups`。导入或计划检查不启动训练。

@@ -27,11 +27,33 @@ def passive_returns(outcome, total, before_decisions, coefficient):
     return [outcome + coefficient * (total - before) for before in before_decisions]
 
 
+def track_immune_window(before, after, action, actor, metrics, risks):
+    """Public consequences only; diagnostics never change actions or rewards."""
+    from ..engine.duel_v2.state import damage_immune
+    team = before['sides']['a']; next_team = after['sides']['a']
+    if 'zhenhong' not in team['characters'] or not damage_immune(before, 'a', 'zhenhong'):
+        return
+    metrics['decisions_in_immune_window'] += int(actor == 'a')
+    old_front, front = team.get('front'), next_team.get('front')
+    labels = []
+    down = [cid for cid, h in team['characters'].items() if cid != 'zhenhong' and h['hp'] > 0
+            and next_team['characters'][cid]['hp'] <= 0]
+    if down:
+        metrics['allies_down_while_immune'] += len(down); labels.append('allies_down_while_immune')
+    loss = max(0, team['hp'] - next_team['hp'])
+    if labels and len(risks) < 16:
+        risks.append(dict(turn=before['turn'], actor=actor, action=action, labels=labels,
+                          before_front=old_front, after_front=front, down=down, player_hp_loss=loss))
+
+
 def play(job):
+    if time.time() >= job['deadline']:
+        return dict(complete=False, reason='deadline', trajectory=[])
     from ..engine.duel_v2 import new_game, observe, apply_action, acting_side
     state = new_game(seed=job['seed'], first_side=job['first'], decks=job['decks'])
     policies = {s: model(*spec) for s, spec in job['policies'].items()}
     rng = np.random.default_rng(job['seed']); trajectory = []; action_counts = Counter()
+    immune_metrics = Counter(); immune_risks = []
     passive_at_decision = []
     bonus = float(job.get('zhenhong_passive_reward', 0.2)) if job.get('train') and job.get('key') == 'zhenhong' else 0.0
     if not np.isfinite(bonus) or bonus < 0: raise ValueError('Invalid passive reward')
@@ -47,7 +69,9 @@ def play(job):
             trajectory.append((x, c, index, float(np.log(max(prob[index], 1e-20))), value))
             passive_at_decision.append(passive_count(state, 'a'))
         if side == 'a': action_counts[actions[index]['type']] += 1
-        state = apply_action(state, side, actions[index]); state['events'] = []; state.pop('_public_board', None)
+        after = apply_action(state, side, actions[index])
+        track_immune_window(state, after, actions[index], side, immune_metrics, immune_risks)
+        state = after; state['events'] = []; state.pop('_public_board', None)
     done = state['phase'] == 'finished'
     count = passive_count(state, 'a')
     outcome = 10 if state.get('winner') == 'a' else -10 if state.get('winner') == 'b' else 0
@@ -56,7 +80,8 @@ def play(job):
     return dict(complete=done, reason=None if done else 'action_limit', winner=state.get('winner'),
                 reward=reward if done else None, outcome_reward=outcome if done else None,
                 passive_triggers=count, passive_reward=bonus * count if done else None, trajectory_returns=returns,
-                trajectory=trajectory if done else [], steps=step + 1, turn=state['turn'], action_counts=dict(action_counts))
+                trajectory=trajectory if done else [], steps=step + 1, turn=state['turn'], action_counts=dict(action_counts),
+                immune_window=dict(immune_metrics), immune_risks=immune_risks)
 
 
 def append(root, name, row):

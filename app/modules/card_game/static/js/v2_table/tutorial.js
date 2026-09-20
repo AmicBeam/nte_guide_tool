@@ -58,6 +58,11 @@
     if (raw.indexOf('hand:') === 0) {
       return ctx.page.querySelector('[data-card-id="' + CSS.escape(raw.slice(5)) + '"]');
     }
+    if (raw.indexOf('ultimate:') === 0) {
+      const parts = raw.split(':');
+      const character = resolveNode(ctx, 'character:' + parts[1] + ':' + parts[2]);
+      return character && character.querySelector('[data-ultimate-id]');
+    }
     if (raw.indexOf('character:') === 0) {
       const parts = raw.split(':');
       return document.querySelector('[data-entity-id="' + CSS.escape(parts[1] + ':' + parts[2]) + '"]');

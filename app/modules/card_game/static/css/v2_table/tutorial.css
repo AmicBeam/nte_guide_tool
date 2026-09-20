@@ -23,9 +23,12 @@
 }
 
 .v2-table-page.is-tutorial .tutorial-spotlight {
-  position: relative;
   z-index: 32;
   pointer-events: auto;
+}
+
+.v2-table-page.is-tutorial .tutorial-spotlight:not(.v2-awaken-btn) {
+  position: relative;
 }
 
 .v2-tutorial-focus-frame {

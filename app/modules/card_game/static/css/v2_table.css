@@ -274,6 +274,10 @@
 .v2-resource-row > span { flex: none; }
 .v2-effect-short { display: none; }
 @media (pointer: coarse) and (max-width: 1200px) {
+  /* Side-mounted ultimate buttons may extend into the front axis (z-index: 1).
+     Raise their stacking contexts, not just the button inside the bench. */
+  .v2-bench-row:has(.v2-awaken-btn) { z-index: 2; }
+  .v2-bench-slot:has(.v2-awaken-btn) { z-index: 4; }
   .v2-character-card:has(.v2-character-extras:not(:empty)) { overflow: visible; }
   .v2-character-extras { display: contents; }
   .v2-table-page .v2-character-extras .v2-awaken-btn {

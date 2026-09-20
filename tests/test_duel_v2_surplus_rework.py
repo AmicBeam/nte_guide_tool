@@ -221,6 +221,36 @@ class SurplusReworkTest(unittest.TestCase):
         self.assertEqual(layers(),4);begin_turn(s,'a');self.assertEqual(layers(),4)
         begin_turn(s,'b');self.assertEqual(layers(),4);begin_turn(s,'b');self.assertEqual(layers(),0)
 
+    def test_i08_only_itself_instant_without_existing_weapon(self):
+        from app.modules.card_game.engine.duel_v2.flow import card_plays_instant
+        s=self.game();self.delay(s);s['sides']['a']['ap']=0
+        card=self.hold(s,'I08');action=dict(type='play_card',card_id=card['instance_id'])
+        self.assertIsNone(hero(s,'a','yi')['shape'])
+        self.assertTrue(card_plays_instant(s,'a',card))
+        self.assertIn(action,legal_actions(s,'a'))
+        self.assertTrue(next(c for c in observe(s,'a')['sides']['a']['hand'] if c['card_id']=='I08')['instant'])
+        s=apply_action(s,'a',action)
+        self.assertEqual(hero(s,'a','yi')['shape'],'I08')
+        self.assertEqual(s['sides']['a']['ap'],0)
+        self.assertTrue(s['sides']['a']['used']['instant'])
+        s['sides']['a']['used']['instant']=False
+        for key in ('I01','I02','I04','I05','I06','I07'):
+            self.assertFalse(card_plays_instant(s,'a',self.hold(s,key)),key)
+        self.assertTrue(card_plays_instant(s,'a',self.hold(s,'I03')))
+
+    def test_i08_requires_ap_without_delay_or_after_instant_spent(self):
+        for delayed, spent in ((False,False),(True,True)):
+            s=self.game();s['sides']['a'].update(ap=0)
+            s['sides']['a']['used']['instant']=spent
+            if delayed:self.delay(s)
+            card=self.hold(s,'I08');action=dict(type='play_card',card_id=card['instance_id'])
+            self.assertNotIn(action,legal_actions(s,'a'))
+            s['sides']['a']['ap']=1
+            self.assertIn(action,legal_actions(s,'a'))
+            s=apply_action(s,'a',action)
+            self.assertEqual(s['sides']['a']['ap'],0)
+            self.assertEqual(bool(s['sides']['a']['used'].get('instant')),spent)
+
     def test_yi_weapon_instant_and_resource_replay(self):
         s=self.game();s=self.play(s,'I08');self.delay(s);s['sides']['a']['ap']=0
         before=capture_public_board(s);seq=s['event_seq'];s=self.play(s,'I03')

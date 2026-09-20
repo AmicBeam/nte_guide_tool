@@ -3042,7 +3042,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "延滞存在时，翳的牌获得瞬发。",
+      "description": "延滞存在时，本牌获得瞬发。",
       "effect_id": "I08",
       "source": {
         "character_id": 1008,

@@ -472,3 +472,5 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 I01／I02 兽牙改为 4 个己方回合，I03 瞬发且为 6 个己方回合，I04 改为不消耗行动力且为 4 个己方回合。通用费用结算避免零费用牌因被赋予瞬发而占用瞬发机会。公开牌面新增 `action_point_free`，由后端判断不依赖瞬发机会的零行动力费用；前端可用手牌绘制卡类原色的低密度虚线，并同步回放牌面。无关牌效与训练权重不改。验证：`python -m unittest tests.test_duel_v2_surplus_rework tests.test_duel_v2_xun_rework tests.test_duel_v2_jiuyuan_rework`、`node --test tests/js/duel_v2_instant_border.test.cjs`。
 
 本轮上述 61 项规则测试与 2 项 JS 边框测试通过；独立浏览器验收页使用真实后端手牌投影和现有渲染函数，确认普通瞬发／零行动力两种密度及瞬发耗尽后的区别。16 项旧演出回归有 3 失败、1 错误，用修改前 flow／presentation 重跑复现同项；不将该组声称为全通过。本轮改变全局规则指纹，已有高级模型按严格身份校验暂拒绝加载，未未经确认重绑模型。
+
+2026-09-21 群犬吠形纠正：I08 仅在对方战斗区有延滞时使本牌获得瞬发，无需已装备；不再给翳其他手牌授予瞬发。专项覆盖未装备时零行动力打出、无延滞／瞬发已用时付费、装备后其他牌不获得瞬发。验证：`python -m unittest tests.test_duel_v2_surplus_rework`。

@@ -95,5 +95,5 @@ class Yi:
     @staticmethod
     def makes_instant(state, side, card):
         h = hero(state, side, 'yi')
-        return bool(h['hp'] > 0 and h.get('shape') == 'I08'
+        return bool(h['hp'] > 0 and card.get('card_id') == 'I08'
                     and front_debuff(state, other(side)).get('delay'))

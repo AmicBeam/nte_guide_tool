@@ -22,7 +22,7 @@ HIDDEN_KEYS = (
     'combat_group', 'removed', 'requests', 'fingerprint', 'legal_actions',
     'operation', 'turn_snapshots', 'time_removed', 'visible_deck',
 )
-HAND_EVENT_TYPES = ('play', 'discard', 'remove', 'draw', 'gain')
+HAND_EVENT_TYPES = ('play', 'discard', 'remove', 'draw', 'gain', 'mulligan')
 
 
 def _hidden_card():
@@ -104,7 +104,10 @@ def apply_event_to_hand(board: dict, event: dict) -> dict:
         return board
     hand = list(team.get('hand') or [])
     card = event.get('card') if isinstance(event.get('card'), dict) else None
-    if kind in ('play', 'discard', 'remove'):
+    if kind == 'mulligan' and is_self:
+        outgoing = set(map(str, event.get('card_ids') or []))
+        hand = [row for row in hand if str((row or {}).get('instance_id')) not in outgoing]
+    elif kind in ('play', 'discard', 'remove'):
         removed = False
         if is_self and card and card.get('instance_id'):
             for index, row in enumerate(hand):

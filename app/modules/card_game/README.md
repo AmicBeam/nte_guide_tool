@@ -547,3 +547,9 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 ### 2026-09-21 真红盈蓄临时加攻
 
 盈蓄的攻击 +1 与免伤同在下个己方回合开始、开始效果之前到期；重复盈蓄仍叠加攻击，到期只移除该来源累计值，其他加攻保留。`atk_buff_expiring` 单独保存数值与到期己方回合，随存档与公开策略状态保留；倒地统一清除。角色文案和回放同步，旧存档已混入的历史加攻不追溯扣除。验证：`tests.test_duel_v2_zhenhong_buff`、`tests.test_duel_v2_surplus_rework`，共 52 项通过。
+
+### 2026-09-21 回放保留起手牌面修复
+
+回放重建手牌时显式处理 `mulligan.card_ids`，只移除实际换走的牌，保留其余起手身份。网页按同样方式推进手牌；旧回放起手阶段的隐藏占位仅在全部保留牌身份已知、数量完全匹配时用已知牌恢复，不猜测未知牌，不公开对手暗牌。跳转与连续播放共用相同补丁处理。
+
+验证：`python -m unittest tests.test_duel_v2_mulligan_replay tests.test_duel_v2_replay`，7 项通过，含双方视角更换 0～3 张的逐事件检查；`node --test tests/js/duel_v2_table_state.test.cjs tests/js/duel_v2_animation.test.cjs`，47 项通过。隔离测试服务的旧回放 A59AC8 经真实页面跳到第 1 回合、返回开局再连续播放，均为 5 张明牌、0 张暗牌，无脚本错误。

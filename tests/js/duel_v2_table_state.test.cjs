@@ -333,3 +333,30 @@ test('cancelled opening replacement never inserts a stale card', async () => {
   });
   assert.equal(replacements, 0);
 });
+
+test('replay mulligan removes selected identities and restores known retained cards in legacy patches', () => {
+  const TABLE = loadTable();
+  for (const viewer of ['a', 'b']) {
+    const enemy = viewer === 'a' ? 'b' : 'a';
+    let game = { phase: 'mulligan', viewer_side: viewer, sides: {
+      [viewer]: { hand: ['keep-1', 'swap', 'keep-2'].map(id => ({instance_id:id, name:id})), hand_count:3 },
+      [enemy]: { hand: [{hidden:true},{hidden:true}], hand_count:2 },
+    }};
+    const patch = {sides:{[viewer]:{hand:[{hidden:true},{hidden:true}],hand_count:2}}};
+    game = TABLE.applyPatch(game, patch, {type:'mulligan', side:viewer, card_ids:['swap']});
+    assert.equal(JSON.stringify(game.sides[viewer].hand.map(c=>c.instance_id)), JSON.stringify(['keep-1','keep-2']));
+    assert.ok(patch.sides[viewer].hand.every(c=>c.hidden), 'do not mutate stored replay patches');
+    const drawn = {instance_id:'new',name:'new'};
+    game = TABLE.applyPatch(game, {sides:{[viewer]:{hand:[{hidden:true},{hidden:true},drawn],hand_count:3}}}, {type:'draw',side:viewer,card:drawn});
+    game = TABLE.applyPatch(game, {phase:'playing'}, {type:'turn',side:viewer});
+    assert.equal(JSON.stringify(game.sides[viewer].hand.map(c=>c.instance_id)), JSON.stringify(['keep-1','keep-2','new']));
+    assert.ok(game.sides[enemy].hand.every(c=>c.hidden));
+  }
+});
+
+test('replay does not guess unknown opening card identities', () => {
+  const TABLE = loadTable();
+  const game = {phase:'mulligan', viewer_side:'a', sides:{a:{hand:[{hidden:true},{instance_id:'known',name:'known'}],hand_count:2}}};
+  const next = TABLE.applyPatch(game, {sides:{a:{hand:[{hidden:true}],hand_count:1}}}, {type:'mulligan',side:'a'});
+  assert.ok(next.sides.a.hand[0].hidden);
+});

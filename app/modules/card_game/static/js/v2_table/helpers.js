@@ -295,14 +295,18 @@
       return game;
     }
     const type = String(event.type || '');
-    if (['play', 'discard', 'remove', 'draw', 'gain'].indexOf(type) < 0) {
+    if (['play', 'discard', 'remove', 'draw', 'gain', 'mulligan'].indexOf(type) < 0) {
       return game;
     }
     const next = clone(game);
     const team = Object.assign({}, next.sides[event.side] || {});
     const isSelf = event.side === viewerSide(next);
     let hand = Array.isArray(team.hand) ? team.hand.slice() : [];
-    if (type === 'play' || type === 'discard' || type === 'remove') {
+    if (type === 'mulligan' && isSelf) {
+      const outgoing = (event.card_ids || []).map(String);
+      hand = hand.filter(function (card) { return !outgoing.includes(String(card && card.instance_id)); });
+      team.hand_count = hand.length;
+    } else if (type === 'play' || type === 'discard' || type === 'remove') {
       hand = removePlayedCard(hand, event, isSelf);
       if (team.hand_count != null) {
         team.hand_count = Math.max(0, Number(team.hand_count) - 1);
@@ -352,7 +356,20 @@
     if (patch.sides && typeof patch.sides === 'object') {
       next.sides = next.sides || {};
       Object.keys(patch.sides).forEach(function (side) {
-        const src = patch.sides[side] || {};
+        const src = Object.assign({}, patch.sides[side] || {});
+        // Older replay patches hid retained opening cards despite known outgoing IDs.
+        // Recover only when every placeholder matches an already known survivor.
+        if (game.phase === 'mulligan' && side === viewerSide(next) && Array.isArray(src.hand)) {
+          const known = (next.sides[side].hand || []).filter(function (card) { return !isHiddenCard(card); });
+          const named = new Set(src.hand.filter(function (card) { return !isHiddenCard(card); }).map(function (card) { return String(card.instance_id); }));
+          const survivors = known.filter(function (card) { return !named.has(String(card.instance_id)); });
+          const hiddenCount = src.hand.filter(isHiddenCard).length;
+          if (hiddenCount && survivors.length === hiddenCount && known.length === src.hand.length
+              && known.length === (next.sides[side].hand || []).length) {
+            let index = 0;
+            src.hand = src.hand.map(function (card) { return isHiddenCard(card) ? clone(survivors[index++]) : card; });
+          }
+        }
         let dst = Object.assign({}, next.sides[side] || {});
         Object.keys(src).forEach(function (key) {
           if (key === 'characters') {

@@ -379,3 +379,7 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 默认 quick-rush 更名为「小吱预组」，阵容为小吱、零、薄荷、九原；九原采用创生预组现有 8 张配牌。新赠送预组与简单人机随目录更新，已保存的个人构筑及高级人机模型配牌不回写。具体配牌见完整手册。验证：`python3 -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_api`。
 
 2026-09-20：J01「知晓与制衡」新增瞬发，检视效果不变。按用户后续确认，高级人机阵容与普通赠送预组独立，以模型清单的合法构筑及构筑哈希为准；小吱普通预组换九原不改变高级人机的海月队。三套现有模型允许兼容当前规则，`runtime_compatibility` 记录用户认可的运行规则、原训练规则、权重及构筑绑定；不修改权重、配牌或历史质量验收。结构、编码、数值和构筑完整性仍校验。验证：`python3 -m unittest tests.test_duel_v2_league tests.test_duel_v2_advanced_ai`。
+
+### 三套配牌的确认与交付
+
+后续完整训练使用`python scripts/train_duel_v2_full_cycle.py --output NEW_DIR`检查计划，显式`--run`才执行；默认不启动训练。新流程规范化构筑、保留独立种子账本、等量适应原/新配牌，并在确认、审计与战术门槛失败时返回原配牌和原权重。流程完成与质量批准分别记录。旧双预组入口只用于历史复现，旧夜间脚本不作为新协议交付入口。详见[配牌确认协议](../../../docs/duel-v2-build-acceptance.md)，验证`python -m unittest tests.test_duel_v2_build_acceptance`。2026-09-20配牌已按用户要求全部废弃，数值检查点保留研究但禁止默认复用。

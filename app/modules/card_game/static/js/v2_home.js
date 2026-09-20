@@ -83,7 +83,7 @@ async function bootstrapHome() {
     const saved = catalog && catalog.saved_build;
     const starter = catalog && catalog.starter_deck;
     const previousSolo = soloDeck.value;
-    soloDeck.innerHTML = '<option value="random">随机公开预组</option>' + ((catalog && catalog.starter_decks) || []).map(function (deck) {
+    soloDeck.innerHTML = '<option value="random">随机</option><option value="mirror">镜像对局</option>' + ((catalog && catalog.starter_decks) || []).map(function (deck) {
       return '<option value="' + V2.escapeAttr(deck.id) + '">' + V2.escapeHtml(deck.name) + '</option>';
     }).join('');
     if (Array.from(soloDeck.options).some(function (option) { return option.value === previousSolo; })) soloDeck.value = previousSolo;
@@ -94,6 +94,12 @@ async function bootstrapHome() {
       aiDeckHint.textContent = aiDeck.value === 'midrange'
         ? '零、伊洛伊、娜娜莉、白藏。待训练与验收，暂不能开局。'
         : '使用当前保存的构筑对战，仅支持公开角色。';
+      return;
+    }
+    if (selectedMode === 'solo') {
+      const playerDeck = saved || starter;
+      const opponentName = soloDeck.options[soloDeck.selectedIndex].text;
+      buildSummary.textContent = '我方「' + ((playerDeck && playerDeck.name) || '当前构筑') + '」· 对手「' + opponentName + '」';
       return;
     }
     if (saved && Array.isArray(saved.card_ids)) {
@@ -223,6 +229,7 @@ async function bootstrapHome() {
   ['solo', 'advanced', 'pvp'].forEach(function (mode) {
     document.getElementById('v2-mode-' + mode).addEventListener('click', function () { selectMode(mode); });
   });
+  soloDeck.addEventListener('change', renderBuildSummary);
   aiDeck.addEventListener('change', function () { renderStarter(); renderBuildSummary(); });
   let selectedTutorialId = '';
 

@@ -368,9 +368,9 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     target['hp'] = max(floor, target['hp'] - loss)
     after = {'hp': target['hp'], 'shield': target['shield']}
     # Public, team-wide history: count each positive genesis hit on the opposing
-    # player, including shield absorption. Flowers and equipment hits are distinct.
+    # player that reduces life. Flowers and equipment hits are distinct.
     if (kind == 'genesis' and not esper and src_side in SIDES and src_side != side
-            and (absorbed > 0 or before['hp'] > after['hp'])):
+            and before['hp'] > after['hp']):
         team = state['sides'][src_side]
         team['genesis_player_hits'] = int(team.get('genesis_player_hits', 0)) + 1
     extra = {}
@@ -515,7 +515,7 @@ def shield(state, side, cid, amount, *, reason=None):
         return
     h = hero(state, side, cid)
     before = {'hp': h['hp'], 'shield': h['shield']}
-    h['shield'] = max(h['shield'], amount)
+    h['shield'] += max(0, amount)
     log(state, (f'{reason}：' if reason else '') + f"{h['name']}获得 {amount} 点护盾。", 'shield', side=side, source=cid,
         actor=f'{side}:{cid}', target=f'{side}:{cid}', amount=amount,
         before=before, after={'hp': h['hp'], 'shield': h['shield']})

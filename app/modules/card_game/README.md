@@ -486,3 +486,12 @@ I01／I02 兽牙改为 4 个己方回合，I03 瞬发且为 6 个己方回合，
 ### 2026-09-21 梦的边缘前排限制移除
 
 R07「梦的边缘」在己方触发盈蓄时造成全体对方异能者 2 点伤害，真红在备战区也能触发；存活、装备与同次盈蓄只触发一次的要求保留。验证：`python -m unittest tests.test_duel_v2_r07 tests.test_duel_v2_surplus_rework.SurplusReworkTest.test_surplus_weapon_triggers_in_front_and_on_bench`，覆盖前排／备战、九原重复、倒地、未装备和公开回放局面。
+
+
+### 2026-09-21 护盾与创生计数修复
+
+正式 Python 引擎改为累加新获得的护盾；九原 J06 只累计实际扣除对方玩家生命的创生段数。图鉴机制词表与规则手册同步，既有到期、返回和倒地清盾规则不变。旧存档已有计数不追溯重算。独立旧训练执行器与模型权重不在本次修改范围，不作为新规则验收依据。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_shield_stacking tests.test_duel_v2_jiuyuan_rework tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_turn_boundaries`。
+
+本次相关回归 76 项通过，浏览器已验证图鉴词表展示与搜索。扩大回归共 158 项，另发现既有倒地连锁用例失败（在内存恢复本次两项旧规则后仍复现），以及 hooks 角色注册表包含教学角色的断言失败；未将其计为本次通过。

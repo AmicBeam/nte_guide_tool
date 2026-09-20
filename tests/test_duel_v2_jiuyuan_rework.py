@@ -76,15 +76,32 @@ class JiuyuanReworkTest(unittest.TestCase):
         self.genesis(s, 'b')
         self.assertEqual(s['sides']['b']['genesis_player_hits'], 2)
 
-    def test_shield_hits_count_but_fully_prevented_damage_does_not(self):
-        s = self.game(); s['sides']['b']['shield'] = 10
+    def test_only_genesis_segments_that_reduce_player_life_count(self):
+        # Two one-point genesis segments: shield may absorb both, one, or neither.
+        for shield_value, expected in ((10, 0), (2, 0), (1, 1), (0, 2)):
+            with self.subTest(shield=shield_value):
+                s = self.game(); s['sides']['b']['shield'] = shield_value
+                self.genesis(s)
+                self.assertEqual(s['sides']['b']['hp'], 100 - expected)
+                self.assertEqual(s['sides']['a'].get('genesis_player_hits', 0), expected)
+                s = self.play(s, 'J06')
+                self.assertEqual(s['sides']['b']['hp'], 100 - 2 * expected)
+
+    def test_partial_absorption_counts_once_per_segment_not_damage_amount(self):
+        s = self.game(); s['sides']['b']['shield'] = 2
+        s['sides']['a']['genesis_damage_bonus'] = 3
         self.genesis(s)
-        self.assertEqual(s['sides']['b']['hp'], 100)
+        self.assertEqual(s['sides']['b']['hp'], 94)
         self.assertEqual(s['sides']['a']['genesis_player_hits'], 2)
-        s['sides']['b'].update(shield=0, life_locked=True)
-        self.genesis(s)
-        damage(s, 'b', 'player', 0, source='a:zero', kind='genesis')
-        self.assertEqual(s['sides']['a']['genesis_player_hits'], 2)
+
+    def test_life_lock_and_zero_damage_do_not_count_even_with_shield_loss(self):
+        for shield_value in (0, 1, 10):
+            with self.subTest(shield=shield_value):
+                s = self.game(); s['sides']['b'].update(shield=shield_value, life_locked=True)
+                self.genesis(s)
+                damage(s, 'b', 'player', 0, source='a:zero', kind='genesis')
+                self.assertEqual(s['sides']['b']['hp'], 100)
+                self.assertEqual(s['sides']['a'].get('genesis_player_hits', 0), 0)
 
     def test_j05_targets_player_and_uses_shared_instant(self):
         s = self.game(); s['sides']['b']['front'] = 'zero'

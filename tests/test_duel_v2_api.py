@@ -451,11 +451,11 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertEqual(len(catalog['cards']), 148)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '小吱预组', '真红预组'],
+            ['创生预组', '浊燃预组', '覆纹预组（测试）', '覆纹预组', '小吱预组', '真红预组'],
         )
         self.assertEqual(
             [item['name'] for item in catalog['saved_builds']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '小吱预组', '真红预组'],
+            ['创生预组', '浊燃预组', '覆纹预组（测试）', '覆纹预组', '小吱预组', '真红预组'],
         )
 
     def test_zhenhong_rule_opponent_uses_named_deck_and_resumes(self):
@@ -471,6 +471,27 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertEqual(same['room']['room_code'], view['room']['room_code'])
         error = self._post_error('/api/duel-v2/start', {'mode': 'solo', 'ai_deck': 'starter'}, token=token, expected_status=409)
         self.assertIn('更换人机预组', error['error'])
+
+    def test_old_crimson_gift_migrates_when_catalog_is_loaded(self):
+        from tests.test_duel_v2_preset_migrations import PresetMigrationTest
+        token = self._issue_login_and_get_token('crimson-gift-migration')
+        self._set_test_whitelist('crimson-gift-migration')
+        player = self.dao_module.get_or_create_player('crimson-gift-migration')[0]
+        store = PresetMigrationTest().store()
+        store['starter_granted'] = True
+        self.repository.save_build(player, store)
+        catalog = self._get('/api/duel-v2/catalog', token=token)
+        self.assertEqual(catalog['saved_build']['id'], 'gift')
+        self.assertEqual(catalog['saved_build']['name'], '真红预组')
+        self.assertNotIn('盈蓄预组', [b['name'] for b in catalog['saved_builds']])
+        again = self._get('/api/duel-v2/catalog', token=token)
+        self.assertEqual(catalog['saved_builds'], again['saved_builds'])
+
+    def test_retired_crimson_cannot_be_selected_by_test_account(self):
+        token = self._issue_login_and_get_token('retired-crimson-tester')
+        self._set_test_whitelist('retired-crimson-tester')
+        error = self._post_error('/api/duel-v2/start', {'mode': 'solo', 'ai_deck': 'crimson'}, token=token)
+        self.assertIn('不存在', error['error'])
 
     def test_zhenhong_rule_opponent_rejects_non_test_account(self):
         error = self._post_error('/api/duel-v2/start', {'mode': 'solo', 'ai_deck': 'zhenhong'}, token=self.a)
@@ -510,7 +531,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         upgraded = self._get('/api/duel-v2/catalog', token=token)
         self.assertEqual(
             [item['name'] for item in upgraded['saved_builds']],
-            ['创生预组', '覆纹预组', '小吱预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '真红预组'],
+            ['创生预组', '覆纹预组', '小吱预组', '浊燃预组', '覆纹预组（测试）', '真红预组'],
         )
 
     def test_regular_account_does_not_see_existing_test_character_builds(self):

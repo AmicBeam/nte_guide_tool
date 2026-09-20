@@ -173,8 +173,10 @@ def _grant_starter_decks(store: dict, player=None) -> bool:
     content = _content()
     all_presets = list(getattr(content, 'STARTER_DECKS', None) or [content.STARTER_DECK])
     allowed = _allowed_presets(player)
+    from .v2_preset_migrations import retire_crimson
+    migrated = retire_crimson(store, allowed)
     granted_ids = {str(item) for item in store.get('granted_preset_ids') or [] if item}
-    changed = False
+    changed = migrated
     if store.get('starter_granted') and not granted_ids:
         granted_ids = {str(preset.get('id') or '') for preset in all_presets}
         granted_ids.discard('')

@@ -106,6 +106,36 @@ class FixedLineupsTest(unittest.TestCase):
             self.assertEqual(result['trajectory'], [])
         self.assertEqual(before, {p.name: p.read_bytes() for p in (self.root / 'reference').iterdir()})
 
+    def test_legacy_fixed_migration_preserves_numeric_columns(self):
+        from app.modules.card_game.rl.fixed_lineup_training import migrate_fixed
+        source = self.root / 'legacy-fixed'; source.mkdir(exist_ok=True)
+        current = f.FixedModel(self.root / 'initial', 'zhenhong')
+        names = [n for n in f.all_features() if not n.startswith('fixed:damage_immune:')]
+        weights = {n: v.copy() for n,v in current.weights.items()}
+        indices = [f.all_features().index(n) for n in names]
+        weights['state_net.0.weight'] = weights['state_net.0.weight'][:,indices]
+        p=source/'zhenhong.npz';np.savez_compressed(p,**weights)
+        import hashlib
+        metadata = dict(current.manifest, features=names, rule_hash='previous-rule', sha256=hashlib.sha256(p.read_bytes()).hexdigest())
+        (source/'zhenhong.json').write_text(json.dumps(metadata))
+        output=self.root/'migrated'
+        migrate_fixed(source,'zhenhong',output,self.builds['zhenhong'])
+        migrated=f.FixedModel(output,'zhenhong')
+        np.testing.assert_array_equal(migrated.weights['state_net.0.weight'][:,indices],weights['state_net.0.weight'])
+        extra=[i for i,n in enumerate(f.all_features()) if n.startswith('fixed:damage_immune:')]
+        self.assertFalse(migrated.weights['state_net.0.weight'][:,extra].any())
+        self.assertFalse(migrated.manifest['validation']['approved'])
+        self.assertEqual(migrated.manifest['origin']['source_rule_hash'],'previous-rule')
+
+    def test_immunity_is_visible_in_fixed_observation(self):
+        state=new_game(seed=17,decks={'a':self.builds['zhenhong'],'b':self.builds['starter']})
+        hero=state['sides']['a']['characters']['zhenhong']
+        hero['flags']['damage_immunity_until']=state['sides']['a']['turn_count']+1
+        view=observe(state,'a',include_previews=False)
+        actions=[e['action'] for e in view['legal_actions'] if e['action']['type']!='concede']
+        x,_=f.encode(view,actions)
+        self.assertAlmostEqual(x[f.all_features().index('fixed:damage_immune:0:zhenhong')],.1)
+
     def test_missing_eval_never_complete(self):
         self.assertTrue(all(not row['complete'] for row in summary([], 32).values()))
 

@@ -534,6 +534,10 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 
 验证：`node --test tests/js/duel_v2_table_state.test.cjs tests/js/duel_v2_animation.test.cjs`，45 项通过。隔离数据库的真实大厅／牌桌在 1280×800 桌面与 944×427 触屏横屏确认三张不相邻起手牌：每次只播放一张，五个槽位始终固定，最后统一移入手牌。未修改规则与服务端抽取结果。
 
+### 真红单队快速训练（2026-09-21）
+
+固定配牌训练入口新增 `--learner-build`、`--learner-source`，仅更新真红策略，支持已验证旧十人权重向新增公开免伤观察列迁移。新增 `--hard-deadline` 保留已有总截止；评估仍用冻结对手和隔离种子。具体用户固定牌表、迁移及预算边界见 [真红快速训练](../../../docs/duel-v2-zhenhong-quick-20260921.md)。验证：`python -m unittest tests.test_duel_v2_fixed_lineups tests.test_duel_v2_surplus_rework`。
+
 
 ### 2026-09-21 真红异能额外攻击环合
 

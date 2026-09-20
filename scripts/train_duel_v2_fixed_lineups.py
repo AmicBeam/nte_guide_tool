@@ -47,7 +47,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--source', type=Path, default=ROOT / 'app/modules/card_game/engine/ai/models')
+    parser.add_argument('--learner-build', type=Path, help='Explicit fixed Zhenhong build JSON')
+    parser.add_argument('--learner-source', type=Path, help='Prior fixed_ten_v1 Zhenhong numeric directory')
     parser.add_argument('--seconds', type=int, default=5400)
+    parser.add_argument('--hard-deadline', type=float, help='Preserve an already authorized absolute cutoff')
     parser.add_argument('--workers', type=int, default=6)
     parser.add_argument('--device', choices=('cpu', 'cuda'), default='cuda')
     parser.add_argument('--seed-ledger', type=Path, default=ROOT / 'artifacts/rl-seed-ledger.json')
@@ -98,19 +101,48 @@ def main():
         parser.error('Invalid bounded budget/workers')
     from app.modules.card_game.rl.build_acceptance import check_source, claim_seeds
     check_source(args.source)
+    if bool(args.learner_build) != bool(args.learner_source):
+        parser.error('Provide both learner build and learner source')
+    custom = None
+    if args.learner_build:
+        from app.modules.card_game.content.duel_v2 import validate_deck
+        custom = validate_deck(json.loads(args.learner_build.read_text(encoding='utf-8')))
+        if custom['character_ids'] != ['zhenhong', 'zero', 'iloy', 'yi']:
+            raise ValueError('Expected the explicit four-person Zhenhong lineup')
+        custom['id'] = 'zhenhong'
     config = dict(kind='five_fixed_lineups_v1', rule_hash=identity(), builds=builds(args.source), device=args.device,
                   workers=args.workers, smoke=args.smoke, evaluation_pairs=1 if args.smoke else 32,
                   algorithm='terminal_outcome_ppo', seconds=args.seconds, automatic_serving_approval=False)
+    if custom:
+        config['learner_keys'] = ['zhenhong']
+        config['builds']['zhenhong'] = custom
     if not args.run:
         print(json.dumps(dict(training_started=False, **config), ensure_ascii=False)); return
     if out.exists(): raise ValueError('Output must be new; no duplicate launch')
     out.mkdir(parents=True)
-    manifest = freeze(out, args.source.resolve()); write(out / 'source-manifest.json', manifest)
+    manifest = freeze(out, args.source.resolve())
+    if custom:
+        from app.modules.card_game.rl.build_acceptance import check_source
+        check_source(args.learner_source)
+        (out / 'learner-source').mkdir()
+        for ext in ('npz', 'json'):
+            p = args.learner_source / f'zhenhong.{ext}'
+            if p.is_symlink(): raise ValueError('Symlink learner source')
+            dest = out / 'learner-source' / p.name; shutil.copy2(p, dest)
+            manifest[dest.relative_to(out).as_posix()] = hashlib.sha256(dest.read_bytes()).hexdigest()
+    write(out / 'source-manifest.json', manifest)
     from app.modules.card_game.rl.fixed_lineup_training import prepare
     config['builds'] = prepare(out / 'source', out)
+    if custom:
+        from app.modules.card_game.rl.fixed_lineup_training import migrate_fixed
+        migrate_fixed(out / 'learner-source', 'zhenhong', out / 'initial', custom)
+        config['builds']['zhenhong'] = custom
     config['seeds'] = claim_seeds(args.seed_ledger, str(out))
-    now = time.time(); config.update(created=now, train_until=now + args.seconds * 5 / 6,
-                                    evaluate_until=now + args.seconds - min(60, args.seconds / 20), hard_deadline=now + args.seconds)
+    now = time.time()
+    seconds = min(args.seconds, args.hard_deadline - now) if args.hard_deadline else args.seconds
+    if seconds < 60: raise ValueError('Insufficient time before original hard deadline')
+    config.update(created=now, seconds=seconds, train_until=now + seconds * 5 / 6,
+                  evaluate_until=now + seconds - min(60, seconds / 20), hard_deadline=now + seconds)
     write(out / 'config.json', config)
     frozen_script = out / 'frozen/scripts' / Path(__file__).name
     opts = dict(cwd=out / 'frozen', stdin=subprocess.DEVNULL, close_fds=True)

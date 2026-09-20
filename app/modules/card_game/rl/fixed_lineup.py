@@ -19,7 +19,7 @@ KEYS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'midrange')
 FOES = old.PRESETS
 EXTRA_SIDE = ('delay_left', 'delay_by', 'delay_slow', 'delay_turns', 'skip_normal_attack',
               'genesis_this_turn', 'genesis_player_hits')
-EXTRA_CHAR = ('beast_fangs', 'intimidation', 'extra_attacks', 'attack', 'timed_attack_1', 'timed_attack_2')
+EXTRA_CHAR = ('beast_fangs', 'intimidation', 'extra_attacks', 'attack', 'timed_attack_1', 'timed_attack_2', 'damage_immune')
 
 
 def feature_names():

@@ -70,13 +70,13 @@ def job_for(key, foe, seed, first, directory, root, deadline, *, train=False):
                 policies={'a': (str(directory), key), 'b': (str(root / 'reference'), foe)})
 
 
-def evaluate(pool, root, directory, seed, deadline, pairs):
+def evaluate(pool, root, directory, seed, deadline, pairs, keys=KEYS):
     # Complete every team/opponent/seat cell for a seed before the next seed.
     rows = []
     for i in range(pairs):
         if time.time() >= deadline: break
         jobs = [job_for(key, foe, seed + i, first, directory, root, deadline)
-                for key in KEYS for foe in FOES for first in ('a', 'b')]
+                for key in keys for foe in FOES for first in ('a', 'b')]
         for job, result in zip(jobs, pool.map(play, jobs)):
             row = {k: job[k] for k in ('key', 'foe', 'seed', 'first')}
             row.update({k: v for k, v in result.items() if k != 'trajectory'})
@@ -86,9 +86,9 @@ def evaluate(pool, root, directory, seed, deadline, pairs):
     return rows
 
 
-def summary(rows, pairs):
+def summary(rows, pairs, keys=KEYS):
     groups = {}
-    for key in KEYS:
+    for key in keys:
         cells = {}
         for foe in FOES:
             for first in ('a', 'b'):
@@ -105,15 +105,18 @@ def run(root, config):
     import torch
     from .gpu_duel.ppo import CompactScorer
     from .league_learning import ordinary_update
+    keys = tuple(config.get('learner_keys', KEYS))
+    if not keys or not set(keys) <= set(KEYS) or len(keys) != len(set(keys)):
+        raise ValueError('Invalid learner keys')
     torch.set_num_threads(1); torch.manual_seed(config['seeds']['foundation'])
     root = Path(root); nets = {}; opts = {}; origins = {}; target_builds = config['builds']
     frozen = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (root / 'reference').iterdir()}
-    for key in KEYS:
+    for key in keys:
         policy = FixedModel(root / 'initial', key)
         net = CompactScorer(len(all_features()), CAND_DIM, policy.hidden).to(config['device'])
         net.load_state_dict({k: torch.from_numpy(v.copy()) for k, v in policy.weights.items()})
         nets[key] = net; opts[key] = torch.optim.Adam(net.parameters(), lr=3e-5); origins[key] = policy.manifest['origin']
-    totals = {key: dict(games=0, samples=0, optimizer_steps=0) for key in KEYS}
+    totals = {key: dict(games=0, samples=0, optimizer_steps=0) for key in keys}
     current = root / 'initial'; cycle = 0
     with ProcessPoolExecutor(max_workers=config['workers'], mp_context=get_context('spawn')) as pool:
         while time.time() < config['train_until'] and not (config.get('smoke') and cycle >= 1):
@@ -121,21 +124,21 @@ def run(root, config):
             # The five learners receive exactly the same six opponent/seat cells.
             jobs = [job_for(key, foe, config['seeds']['foundation'] + cycle * 100 + fi, first,
                             current, root, config['train_until'], train=True)
-                    for key in KEYS for fi, foe in enumerate(FOES) for first in ('a', 'b')]
-            results = list(pool.map(play, jobs)); batches = {key: [] for key in KEYS}
+                    for key in keys for fi, foe in enumerate(FOES) for first in ('a', 'b')]
+            results = list(pool.map(play, jobs)); batches = {key: [] for key in keys}
             for job, result in zip(jobs, results):
                 append(root, 'training-games.jsonl', dict(cycle=cycle, **{k: job[k] for k in ('key', 'foe', 'seed', 'first')},
                        **{k: v for k, v in result.items() if k != 'trajectory'}))
                 if result['complete']: batches[job['key']].append(result)
             # Partial batches are recorded but never update only some teams.
             if not all(r['complete'] for r in results) or time.time() >= config['train_until']: break
-            for key in KEYS:
+            for key in keys:
                 update = ordinary_update(nets[key], opts[key], batches[key], config['seeds']['foundation'] + cycle)
                 if update.get('updates') != 1: raise ValueError('Missing terminal trajectory update')
                 totals[key]['games'] += len(batches[key]); totals[key]['samples'] += update['samples']; totals[key]['optimizer_steps'] += 1
                 append(root, 'losses.jsonl', dict(cycle=cycle, key=key, **update))
             cycle += 1; current = root / 'generations' / f'cycle-{cycle:05}'
-            for key in KEYS:
+            for key in keys:
                 save_weights({k: v.detach().cpu().numpy() for k, v in nets[key].state_dict().items()},
                              current, key, target_builds[key], origins[key])
             write(root / 'checkpoint.json', dict(cycle=cycle, current=str(current), totals=totals))
@@ -153,13 +156,48 @@ def run(root, config):
         for i in range(pairs):
             if time.time() >= config['evaluate_until']: break
             for variant in ('initial', 'latest'):
-                rows = evaluate(pool, root, root / variant, config['seeds']['audit'] + i, config['evaluate_until'], 1)
+                rows = evaluate(pool, root, root / variant, config['seeds']['audit'] + i, config['evaluate_until'], 1, keys)
                 all_rows.setdefault(variant, []).extend(rows)
         if frozen != {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (root / 'reference').iterdir()}:
             raise ValueError('Frozen opponent identity changed')
-        reports = {v: summary(all_rows.get(v, []), pairs) for v in ('initial', 'latest')}
+        reports = {v: summary(all_rows.get(v, []), pairs, keys) for v in ('initial', 'latest')}
         complete = all(g['complete'] for groups in reports.values() for g in groups.values())
         write(root / 'summary.json', dict(training=training, evaluation=reports, complete=complete,
               evaluation_pairs=pairs, automatic_serving_approval=False, quality_approved=False,
               note='Fixed endpoint descriptive short-run evaluation; no automatic promotion or balance claim.'))
         write(root / 'status.json', dict(phase='finished', complete=complete, finished=time.time(), totals=totals))
+
+
+def migrate_fixed(source, key, destination, build=None):
+    """Explicit research migration across rule changes; retain provenance, not approval."""
+    from .fixed_lineup import SCHEMA, candidate_names, tensor_shapes
+    from .build_acceptance import check_source
+    from .league_schema import build_hash
+    check_source(source)
+    source = Path(source)
+    metadata = json.loads((source / f'{key}.json').read_text(encoding='utf-8'))
+    path = source / f'{key}.npz'
+    if metadata['schema'] != SCHEMA or metadata['deck'] != key:
+        raise ValueError('Unsupported warm-start schema')
+    if metadata['sha256'] != hashlib.sha256(path.read_bytes()).hexdigest():
+        raise ValueError('Source checksum mismatch')
+    if metadata['build_sha256'] != build_hash(metadata['build']):
+        raise ValueError('Source build mismatch')
+    features = metadata['features']; target_features = all_features()
+    prior = [n for n in target_features if not n.startswith('fixed:damage_immune:')]
+    if features not in (prior, target_features) or metadata['candidates'] != candidate_names():
+        raise ValueError('Unknown feature migration')
+    hidden = metadata['hidden']
+    if type(hidden) != int or not 1 <= hidden <= 256: raise ValueError('Invalid width')
+    expected = tensor_shapes(hidden); expected['state_net.0.weight'] = (hidden, len(features))
+    with np.load(path, allow_pickle=False) as data: weights = {n: data[n].copy() for n in expected}
+    for name, shape in expected.items():
+        if weights[name].shape != shape or not np.isfinite(weights[name]).all(): raise ValueError('Invalid tensor')
+    before = weights['state_net.0.weight']; after = np.zeros((hidden, len(target_features)), np.float32)
+    index = {n: i for i, n in enumerate(target_features)}
+    for i, name in enumerate(features): after[:, index[name]] = before[:, i]
+    weights['state_net.0.weight'] = after
+    save_weights(weights, destination, key, build or metadata['build'], dict(
+        kind='explicit_fixed_research_migration', source_sha256=metadata['sha256'],
+        source_rule_hash=metadata['rule_hash'], source_build_sha256=metadata['build_sha256'],
+        approval_inherited=False, new_features_zero=True))

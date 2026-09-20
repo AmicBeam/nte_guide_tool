@@ -121,11 +121,10 @@ with Image.open('/tmp/nte-character-source.png') as source:
 
 已逐文件校验头像及兼容路径与 `0c9ebd3f2` 的 Git 内容一致，默认立绘未变；20 张时装文件保持不变。换装和卡面资源回归使用 `tests.test_duel_v2_costume_art` 与 `tests.test_duel_v2_card_art`。
 
-## 黑羽头像：用户附件例外（2026-09-20）
+## 黑羽附件核对与误用撤回（2026-09-20）
 
-用户明确要求从其提供的 `UI.7z` 查找黑羽头像并接入排轴、空幕。本次使用压缩包内 `UI/UI_Icon/AvatarImage/256/player_heiyu2_256.png`（256×256），已查看图片确认；另一张 `Fashion_1042_2_Avatar.png` 带圆框，未采用。不把此附件来源写成 Everness 或 NTEData 下载。
+用户提供 `UI.7z`，要求为排轴与空幕补默认头像。初次误用了 `UI/UI_Icon/AvatarImage/256/player_heiyu2_256.png`；经用户指出、再与 `Fashion_1042_2_Avatar.png` 和 `YH_lihui_1024_Heiyu3.png` 对照，确认是同一时装造型，不能当作默认头像。
 
-- 本地共享文件：`app/static/images/characters/avatar/黑羽.webp`。
-- PNG SHA-256：`b0163085a70a1ce1ec6d2c87a141bcf03dc711b0a2ee87fd1e85e03be388779a`。
-- 转换：Pillow 无损 WebP，method 6、exact=true；尺寸、RGBA 像素保持不变，不裁切、不缩放。
-- 排轴角色 `char_heiyu` 的 avatar 与原 portrait 占位回退、空幕头像映射使用同一路径。未添加独立立绘，不修改角色机制或测试权限；旧 SVG 保留兼容历史路径。
+该包的独立黑羽头像候选只有上述时装版本（200/256 及带框版本）；默认造型见于活动宣传图、细长培养页图及 `YH_lihui_1042_01`–`04` 道具图，后者带圆框和爱心徽标，不直接作为角色头像。此次未找到干净的独立默认头像。
+
+已撤回排轴与空幕的时装头像引用，恢复 `app/static/images/characters/avatar/黑羽.svg` 文字占位，移除误导入的 `黑羽.webp`。角色数值、权限及桌游已确认的武备时装均不变。后续须获取并核实默认造型资源，不能仅凭文件名包含角色名判定为默认头像。

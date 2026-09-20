@@ -171,7 +171,7 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
             'by': side,
         }
         log(s, f"对方战斗区获得延滞（{duration} 回合）。", 'harmony',
-            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
+            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
         from .state import record_delay_turn
         record_delay_turn(s, side)
         hits = tally(c, 'delay_hits') + int(team.get('extra_delay'))
@@ -189,7 +189,7 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
         had_star = bool(zone.get('star'))
         zone['burn'] = {'left': 2, 'by': side}
         log(s, '对方战斗区获得浊燃。', 'harmony',
-            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
+            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
         fire(c, 'on_burn_applied', enemy=enemy, target_id=target)
         if had_star:
             add_collapse(s, enemy, target, 1, by=side)
@@ -201,7 +201,7 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
         had_burn = bool(zone.get('burn'))
         zone['star'] = {'left': 2, 'by': side}
         log(s, '对方战斗区获得黯星。', 'harmony',
-            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
+            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
         if had_burn:
             add_collapse(s, enemy, target, 1, by=side)
             log(s, f"{c.character['name']}触发失谐。", 'harmony', side=side, source=cid,
@@ -209,11 +209,11 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
     elif kind == '覆纹':
         front_debuff(s, enemy)['weave'] = {'by': side, 'expires_side': s['active_side']}
         log(s, '对方战斗区获得覆纹。', 'harmony',
-            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
+            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
     elif kind == '浸染':
         front_debuff(s, enemy)['stain'] = {'by': side, 'expires_side': s['active_side']}
         log(s, '对方战斗区获得浸染。', 'harmony',
-            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
+            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
     elif kind == '同频':
         team['used']['sync'] = True
         fire(c, 'on_sync', entering=cid)

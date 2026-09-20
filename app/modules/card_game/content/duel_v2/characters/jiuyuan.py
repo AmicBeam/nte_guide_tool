@@ -79,7 +79,8 @@ class Jiuyuan:
             amount = 1
             flags = hero(c.state, foe, cid).setdefault('flags', {})
             if flags.get('pact'):
-                amount += 2
+                from app.modules.card_game.content.duel_v2.registry import tally
+                amount += 2 + tally(c, 'attachment_damage_bonus')
                 flags.pop('pact', None)
                 c.history(f"九原的终结清算{hero(c.state, foe, cid)['name']}的枚约，本次伤害 +2。",
                           target_side=foe, target_id=cid)

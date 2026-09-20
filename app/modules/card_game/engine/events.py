@@ -32,6 +32,12 @@ class GameEvent(str, Enum):
     V2_RECORD_REDEEMED = 'v2_record_redeemed'
     V2_GAME_START = 'v2_game_start'
     V2_ROUT = 'v2_rout'
+    V2_SURPLUS = 'on_surplus'
+    V2_DEFERRED_ACTION = 'on_deferred_action'
+    V2_ULTIMATE_EXPIRING = 'on_ultimate_expiring'
+    V2_LEAVE_FRONT = 'on_leave_front'
+    V2_TURN_COUNTDOWN = 'on_turn_countdown'
+
 
 
 REPLACEABLE_EVENTS = frozenset({

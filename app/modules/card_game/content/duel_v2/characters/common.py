@@ -92,6 +92,9 @@ def deal_combat_followup(c, extra=0):
 def scale_battle_frame(c, attack, shield):
     from app.modules.card_game.content.duel_v2.registry import KITS
     kit = KITS.get(c.cid)
+    scale = getattr(kit, 'battle_frame', None)
+    if scale:
+        attack, shield = scale(c, attack, shield)
     if not kit or c.character.get('shape') != getattr(kit, 'scale_shape', None):
         return attack, shield
     played = int(c.state['sides'][c.side].get(getattr(kit, 'seed_play_key', ''), 0) or 0)

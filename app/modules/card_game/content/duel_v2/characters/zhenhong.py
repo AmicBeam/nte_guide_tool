@@ -1,81 +1,142 @@
-from app.modules.card_game.content.duel_v2.characters.common import set_shape
+"""User-authored surplus carry rework, 2026-09-20 (not original-game numbers)."""
+from copy import deepcopy
 from app.modules.card_game.content.duel_v2.registry import register
-from app.modules.card_game.engine.events import GameEvent
+from app.modules.card_game.content.duel_v2.characters.common import draw_owned_card
+from app.modules.card_game.engine.duel_v2.state import (
+    add_atk_buff, alive, damage, discard, finished, hero, other, team_order,
+)
+from app.modules.card_game.engine.duel_v2.deferred import enqueue
 
 
-def _r01(c):
-    c.shield(1)
-    c.energy()
+def _battle(c):
+    surplus = bool(c.state['sides'][c.side].get('surplus'))
+    card_id = c.card['card_id']
+    c.sortie(bonus=2 if surplus and card_id in ('R02', 'RF01') else 0,
+             no_counter=surplus and card_id == 'R03')
 
 
-def _r03(c):
-    c.sortie(bonus=1)
+def _draw_team(c):
+    for cid in team_order(c.state, c.side):
+        if cid != c.cid and hero(c.state, c.side, cid)['attribute'] in ('光', '灵', '相'):
+            draw_owned_card(c, cid)
 
 
-def _r05(c):
-    c.heal(2)
-    if c.state['sides'][c.side]['front'] == c.cid:
-        c.shield(2)
+def _redraw(c):
+    team = c.state['sides'][c.side]
+    cards = [card for card in team['hand'] if card['character_id'] == c.cid]
+    for card in cards:
+        team['hand'].remove(card)
+        discard(c.state, c.side, card)
+    c.draw(len(cards))
 
 
-def _r06(c):
-    bonus = 2 if c.character.get('gaze', 0) >= 2 else 0
-    c.sortie(bonus=bonus)
+def _shape(c):
+    c.character['intimidation'] = 0
+    c.set_shape()
 
 
-def _r07(c):
-    c.sortie(bonus=2)
-    if c.character['awakened']:
-        c.add_gaze(1)
-
-
-def _r08(c):
-    c.sortie(bonus=1, bypass=True, awake_player_bonus=3)
-
-
-def _r02_bypass(c, current=False, attacker_id=None, target=None, target_id=None, **_data):
-    if current or attacker_id != c.cid or c.character.get('shape') != 'R08' or not target_id:
-        return None
-    if target.get('shield'):
-        return True
-    return None
-
-
-def _r04_shape(c, **_data):
-    if c.once('R07'):
-        c.shield(1, reason='获得凝视，「梦的边缘」触发')
+def _hand_changed(c):
+    from app.modules.card_game.engine.duel_v2.state import effective_card, log
+    from app.modules.card_game.engine.duel_v2.presentation import public_card
+    log(c.state, '手牌视为效果更新。', 'effect', side=c.side, present=False,
+        private_side=c.side, private_hand=[public_card(effective_card(c.state, c.side, card))
+                                         for card in c.state['sides'][c.side]['hand']])
 
 
 @register
 class Zhenhong:
     id = 'zhenhong'
     text_name = '真红'
-    effects = {
-        'R01': _r01, 'R02': _r07, 'R03': _r03, 'R04': _r08,
-        'R05': _r05, 'R06': _r06, 'R07': set_shape, 'R08': set_shape,
-    }
-    shape_events = {('R07', GameEvent.V2_GROWTH_GAINED): _r04_shape}
+    effects = {'R01': _draw_team, 'R02': _battle, 'R03': _battle, 'R04': _battle,
+               'R05': _redraw, 'R06': _battle, 'R07': _shape, 'R08': _shape,
+               'RF01': _battle}
 
     @staticmethod
-    def attack_bypass(c, current=False, attacker_id=None, target=None, target_id=None, **data):
-        return _r02_bypass(c, current, attacker_id, target, target_id, **data)
+    def on_surplus(c, **_data):
+        add_atk_buff(c.character, 1)
+        c.history('己方触发盈蓄，真红攻击 +1，将发起额外攻击。')
+        enqueue(c, 'surplus')
+        if c.character.get('shape') == 'R07' and c.state['sides'][c.side]['front'] == c.cid:
+            foe = other(c.side)
+            for cid in team_order(c.state, foe):
+                if finished(c.state):
+                    break
+                if alive(c.state, foe, cid) and not hero(c.state, foe, cid).get('summoned'):
+                    damage(c.state, foe, cid, 2, source=f'{c.side}:{c.cid}', reason='「梦的边缘」触发')
 
     @staticmethod
-    def after_sortie(c):
-        from app.modules.card_game.engine.duel_v2.state import consume_once
-        if not consume_once(c.state, c.side, 'gaze'):
-            return
-        gained = c.add_gaze(1)
-        if gained:
-            from app.modules.card_game.engine.events import GameEvent
-            c.on_shape(GameEvent.V2_GROWTH_GAINED)
+    def on_deferred_action(c, action):
+        from app.modules.card_game.content.duel_v2.registry import fire
+        c.character['extra_attacks'] = int(c.character.get('extra_attacks', 0)) + 1
+        c.operation['support'] = True
+        c.operation['support_notified'] = True
+        fire(c, 'on_support', actor_id=c.cid)
+        c.history('真红发起额外单方面攻击。')
+        c.sortie(no_counter=True)
 
     @staticmethod
-    def on_turn_begin(c):
-        team = c.state['sides'][c.side]
-        if c.character['awakened'] and c.character['hp'] > 0 and team['front'] != c.cid:
-            c.add_gaze(1)
+    def can_gain_energy(c, current=True, **_data):
+        return bool(current and not c.character['awakened']
+                    and c.state['sides'][c.side]['front'] == c.cid)
+
+    @staticmethod
+    def natural_return(c, current=True, **_data):
+        return False if c.character['awakened'] else current
+
+    @staticmethod
+    def hand_card(c, current, card, **_data):
+        if not c.character['awakened'] or card.get('card_id') == 'unknown':
+            return None
+        from app.modules.card_game.content.duel_v2 import CARDS
+        result = deepcopy(CARDS['RF01'])
+        for key in ('entity_id', 'instance_id', 'side', 'copy', 'jingu_mark', 'expires_turn', 'original_character_id'):
+            if key in card:
+                result[key] = deepcopy(card[key])
+        result.update(card_id='RF01', _physical_card=card)
+        from app.modules.card_game.engine.duel_v2.entities import CardEntity
+        return CardEntity(result)
+
+    @staticmethod
+    def on_ultimate(c):
+        _hand_changed(c)
+
+    @staticmethod
+    def on_ultimate_expiring(c):
+        enqueue(c, 'ultimate_end')
 
     @staticmethod
     def on_ultimate_end(c):
-        c.character['gaze'] = min(int(c.character.get('gaze') or 0), 2)
+        _hand_changed(c)
+
+    @staticmethod
+    def on_leave_front(c):
+        from app.modules.card_game.engine.duel_v2.flow import end_ultimate
+        end_ultimate(c.state, c.side, c.cid)
+
+    @staticmethod
+    def on_knockdown(c):
+        c.character['intimidation'] = 0
+
+    @staticmethod
+    def battle_frame(c, attack, shield):
+        if c.card and c.card['card_id'] == 'R06':
+            count = int(c.character.get('extra_attacks', 0))
+            return attack + count, shield + count
+        return attack, shield
+
+    @staticmethod
+    def on_turn_end(c):
+        team = c.state['sides'][c.side]
+        if c.character.get('shape') == 'R08' and c.entity_id not in team.get('attacked_this_turn', []):
+            c.character['intimidation'] = min(2, int(c.character.get('intimidation', 0)) + 1)
+            c.history(f"「穿过胭红蜃景」触发：威慑凝视 {c.character['intimidation']} 点。")
+
+    @staticmethod
+    def on_sortie_ready(c, actor_id, **_data):
+        if actor_id != c.cid or c.character.get('shape') != 'R08':
+            return
+        count = int(c.character.get('intimidation', 0))
+        c.character['intimidation'] = 0
+        c.operation['sortie_attack_bonus'] += count
+        if count:
+            c.grant_harmony(c.cid, count, reason='消耗威慑凝视')

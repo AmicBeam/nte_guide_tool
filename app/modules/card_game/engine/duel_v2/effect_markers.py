@@ -14,6 +14,9 @@ def character_effect_markers(character):
     for attribute, value in (character.get('next_damage_resistance') or {}).items():
         markers.append(_marker('next_resistance', attribute + '抗性', '下次受到该属性伤害',
                                f'{attribute}属性伤害抗性 {value:+d}'))
+    for modifier in flags.get('timed_attack', []):
+        markers.append(_marker('timed_attack', '攻击降低', f"剩余 {modifier['left']} 个己方回合",
+                               f"攻击 {modifier['amount']:+d}"))
     if flags.get('free_normal_attack_turn'):
         markers.append(_marker('free_normal_attack', '普通出击免费', '本回合',
                                '普通出击不消耗行动力，仍需普通出击机会'))
@@ -45,6 +48,8 @@ def team_effect_markers(team):
     if team.get('empty_draw_wins'):
         markers.append(_marker('empty_draw_wins', '热爱异象的观察员', '无牌可抽时',
                                '无牌可抽时改为获胜；埃德嘉倒地后仍保留', False))
+    if team.get('skip_normal_attack'):
+        markers.append(_marker('skip_normal_attack', '普通出击减少', '下个己方回合', '普通出击机会 -1', False))
     if not team.get('extra_genesis_pending'):
         return markers
     actor = (team.get('characters') or {}).get(team.get('extra_genesis_actor')) or {}

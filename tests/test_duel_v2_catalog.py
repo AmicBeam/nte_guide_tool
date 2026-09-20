@@ -106,7 +106,7 @@ class DuelV2CatalogTest(unittest.TestCase):
 
     def test_cards_keep_thirty_two_official_names_and_four_by_eight_groups(self) -> None:
         named = {card_id: card for card_id, card in CARDS.items() if not card.get('derived')}
-        self.assertEqual(len(named), 136)
+        self.assertEqual(len(named), 144)
         self.assertTrue(CARDS['NF01']['derived'])
         self.assertEqual(CARDS['NF01']['name'], '家族壮大')
         self.assertIn('第 5 回合及以后具有瞬发', CARDS['NF01']['description'])
@@ -190,7 +190,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['Z08']['description'], '回合结束时，己方前排攻击 +1。')
         self.assertEqual(CARDS['Z02']['description'], '从牌库将 2 张武备牌加入手牌。')
         self.assertEqual(CHARACTERS['zero']['passive'], '零使用战斗牌后，立刻充满自己的环合值。零已装备武备时，零的武备牌获得瞬发，使用时抽 1 张牌。')
-        self.assertEqual(CHARACTERS['zero']['awakened_passive'], '2 个己方回合内，己方武备牌变为瞬发，使用时抽 1 张牌。')
+        self.assertEqual(CHARACTERS['zero']['awakened_passive'], '己方武备牌变为瞬发，使用时抽 1 张牌，持续 2 个己方回合。')
         self.assertEqual(CARDS['Z07']['name'], '休息日')
         self.assertEqual(CARDS['Z06']['type'], 'form')
         self.assertEqual(CARDS['Z03']['shield'], 2)
@@ -223,10 +223,10 @@ class DuelV2CatalogTest(unittest.TestCase):
         for character_id in CATALOG_ORDER:
             owned = [card_id for card_id, card in named.items() if card['character_id'] == character_id]
             card_07, card_08 = CARDS[owned[6]], CARDS[owned[7]]
-            self.assertEqual(card_08['source']['type'], 'arc', character_id)
+            self.assertEqual(card_08['source']['type'], 'ability' if character_id == 'yi' else 'arc', character_id)
             if character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc', character_id)
-            elif character_id in ('zaowu', 'hathor', 'jiuyuan', 'baicang', 'xiaozhi', 'haiyue', 'edgar', 'haniya'):
+            elif character_id in ('zaowu', 'hathor', 'jiuyuan', 'baicang', 'xiaozhi', 'haiyue', 'edgar', 'haniya', 'yi'):
                 self.assertEqual(card_07['source']['type'], 'ability', character_id)
             else:
                 self.assertEqual(card_07['source']['type'], 'pv', character_id)
@@ -313,7 +313,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
         self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'requiem')))
         full = get_catalog()
-        self.assertEqual(len(full['characters']), 17)
+        self.assertEqual(len(full['characters']), 18)
         self.assertEqual(len(full['starter_decks']), 6)
         self.assertEqual(
             [item['name'] for item in full['starter_decks']],

@@ -64,7 +64,7 @@ def name(state, side, cid=None):
     return hero(state, side, cid)['name']
 
 
-def attack_value(character, state=None, side=None):
+def attack_value(character, state=None, side=None, *, include_zone=True):
     flags = character.get('flags') or {}
     shape_id = character.get('shape')
     from app.modules.card_game.content.duel_v2.tutorial import lookup_card
@@ -86,13 +86,23 @@ def attack_value(character, state=None, side=None):
     value += int(flags.get('form_attack') or 0)
     value += int(flags.get('atk_buff') or 0)
     value -= int(flags.get('atk_debuff') or 0)
+    value += sum(int(m['amount']) for m in flags.get('timed_attack', []) if m['left'] > 0)
     # A continuous form aura changes the panel, never its stored components.
     owner = side if side is not None else character.get('side')
     aura = (form or {}).get('enemy_turn_attack')
     if (aura is not None and state is not None and owner in SIDES
             and state.get('active_side') == other(owner)):
         value = int(aura)
+    if include_zone and state is not None and owner in SIDES:
+        value -= zone_attack_penalty(state, owner, character.get('id'))
     return max(0, value)
+
+
+def zone_attack_penalty(state, side, cid):
+    if state['sides'][side].get('front') != cid:
+        return 0
+    status = front_debuff(state, side).get('delay') or {}
+    return int(status.get('slow') or 0) if status.get('slow_turn', state['turn']) == state['turn'] else 0
 
 
 def add_atk_buff(character, amount=1):
@@ -114,6 +124,13 @@ def round_half_up(value):
 
 def collapsed(character):
     return bool((character.get('flags') or {}).get('collapse'))
+
+
+def record_delay_turn(state, side):
+    team = state['sides'][side]
+    if front_debuff(state, other(side)).get('delay') and team.get('delay_counted_turn') != state['turn']:
+        team['delay_counted_turn'] = state['turn']
+        team['delay_turns'] = int(team.get('delay_turns', 0)) + 1
 
 
 def front_debuff(state, side):
@@ -170,6 +187,8 @@ def finished(state):
 
 
 def victory(state):
+    if finished(state):
+        return
     dead = [s for s in SIDES if state['sides'][s]['hp'] <= 0]
     if not dead:
         return
@@ -212,6 +231,11 @@ def move_out(state, side, cid):
     team['front'] = None
     before = {'hp': h['hp'], 'shield': h['shield'], 'front': cid}
     h['shield'] = 0
+    from app.modules.card_game.content.duel_v2.registry import fire
+    from app.modules.card_game.engine.events import GameEvent
+    from .context import EffectContext
+    fire(EffectContext(state, side, cid, {'side': side}), GameEvent.V2_LEAVE_FRONT,
+         actor_only=True, include_down=True)
     log(state, f"{h['name']}返回备战区。", 'move', side=side, source=cid,
         actor=f'{side}:{cid}', target=f'{side}:{cid}',
         before=before, after={'hp': h['hp'], 'shield': h['shield'], 'front': None})
@@ -221,6 +245,7 @@ def discard(state, side, card, *, bottom=False):
     from .presentation import public_card
     if card.get('virtual'):
         return
+    card = card.get('_physical_card', card)
     team = state['sides'][side]
     card.pop('jingu_mark', None)
     shown = public_card(card)
@@ -283,10 +308,14 @@ def _knockdown_pass(state):
                 before=before, after={'hp': 0, 'shield': 0, 'harmony': kept_harmony,
                                       'energy': kept_energy, 'growth': 0,
                                       'shape_id': None, 'down_turns': 3})
+    # Player defeat takes precedence over post-knockdown draws and effects.
+    victory(state)
     # Finish every simultaneous knockdown before effects choose a new front.
     for side, cid in downed:
         ctx = EffectContext(state, side, cid, {'side': side, 'downed': cid})
         fire(ctx, 'on_ally_down', downed=cid)
+        from .flow import trigger_responses
+        trigger_responses(state, side, 'self_downed', target_id=cid)
     return bool(downed)
 
 
@@ -300,6 +329,12 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     if esper and target['hp'] <= 0:
         return 0
     amount = max(0, int(amount))
+    src_side, _ = source_parts(source)
+    if damage_class == 'attachment' and src_side:
+        from .context import EffectContext
+        from app.modules.card_game.content.duel_v2.registry import tally
+        amount += tally(EffectContext(state, src_side, team_order(state, src_side)[0],
+                                      {'side': src_side}), 'attachment_damage_bonus')
     if esper:
         from app.modules.card_game.content.duel_v2.registry import decide
         from .context import EffectContext
@@ -480,12 +515,30 @@ def shield(state, side, cid, amount, *, reason=None):
         before=before, after={'hp': h['hp'], 'shield': h['shield']})
 
 
-def energy(state, side, cid, amount=1):
-    if finished(state) or not alive(state, side, cid):
-        return
+def can_gain_energy(state, side, cid):
+    if not alive(state, side, cid):
+        return False
     h = hero(state, side, cid)
     if h.get('resource_name') or h.get('summoned'):
+        return False
+    from .context import EffectContext
+    from app.modules.card_game.content.duel_v2.registry import decide
+    return bool(decide(EffectContext(state, side, cid, {'side': side}),
+                       'can_gain_energy', True, actor_only=True))
+
+
+def effective_card(state, side, card):
+    # Resolve hand substitutions without changing the physical card's identity.
+    from .context import EffectContext
+    from app.modules.card_game.content.duel_v2.registry import decide
+    return decide(EffectContext(state, side, team_order(state, side)[0], {'side': side}),
+                  'hand_card', card, card=card)
+
+
+def energy(state, side, cid, amount=1):
+    if finished(state) or not can_gain_energy(state, side, cid):
         return
+    h = hero(state, side, cid)
     from .escalation import energy_cap
     h['energy'] = min(energy_cap(state, h), h['energy'] + amount)
 
@@ -518,7 +571,7 @@ def draw(state, side, count=1):
             card = team['deck'].pop(0)
             add_hand(state, side, card)
             log(state, f"{name(state, side)}抽 1 张牌。", 'draw', side=side,
-                actor=f'{side}:player', private_side=side, private_card=public_card(card))
+                actor=f'{side}:player', private_side=side, private_card=public_card(effective_card(state, side, card)))
         else:
             wins = bool(team.get('empty_draw_wins'))
             state.update(phase='finished', winner=side if wins else other(side),

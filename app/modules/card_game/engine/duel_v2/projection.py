@@ -8,11 +8,11 @@ from .flow import acting_side, apply_action, card_plays_instant, card_is_free_in
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
 from .combat import harmony_marks
-from .state import SIDES, attack_value, collapsed, hero, name, other, team_order
+from .state import SIDES, attack_value, collapsed, effective_card, hero, name, other, team_order
 
 
 def _card(state, side, instance_id):
-    return next(c for c in state['sides'][side]['hand'] if c['instance_id'] == instance_id)
+    return effective_card(state, side, next(c for c in state['sides'][side]['hand'] if c['instance_id'] == instance_id))
 
 
 TYPE_ORDER = {'tactic': 0, 'battle': 1, 'form': 2}
@@ -159,7 +159,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
             h = source['characters'][cid]
             flags = h.get('flags') or {}
             c = {k: deepcopy(h[k]) for k in ('entity_id', 'id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
-                 'energy', 'protagonist_aura', 'jingu', 'arid', 'truth_keys', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
+                 'energy', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura', 'jingu', 'arid', 'truth_keys', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
                  'avatar', 'portrait', 'passive', 'awakened_passive') if k in h}
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None
@@ -189,7 +189,8 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         team['hand_count'] = len(source['hand'])
         revealed = set(source.get('revealed_ids') or [])
         built = []
-        for raw in source['hand']:
+        for physical in source['hand']:
+            raw = effective_card(state, ps, physical)
             if ps == side or raw.get('copy') or raw.get('instance_id') in revealed:
                 card = public_card(raw)
                 from .context import EffectContext

@@ -71,7 +71,7 @@
       "avatar": "/static/images/characters/avatar/鉴定师.webp",
       "portrait": "/static/images/characters/portrait/鉴定师.webp",
       "passive": "零使用战斗牌后，立刻充满自己的环合值。零已装备武备时，零的武备牌获得瞬发，使用时抽 1 张牌。",
-      "awakened_passive": "2 个己方回合内，己方武备牌变为瞬发，使用时抽 1 张牌。",
+      "awakened_passive": "己方武备牌变为瞬发，使用时抽 1 张牌，持续 2 个己方回合。",
       "everness_id": 1051,
       "role": "战斗牌回满环合，弧盘过牌",
       "ultimate": {
@@ -103,13 +103,13 @@
       "id": "zhenhong",
       "name": "真红",
       "attribute": "光",
-      "attack": 3,
-      "max_hp": 4,
+      "attack": 2,
+      "max_hp": 5,
       "avatar": "/static/kongmu/images/characters/player_zhenhong_256.webp",
       "portrait": "/static/images/characters/portrait/真红.webp",
-      "role": "前排凝视主攻，终结期间后台也能叠层",
-      "passive": "每个己方回合首次完成主动出击后，若真红仍存活，获得 1 层凝视（上限 2）。每层凝视使真红攻击 +1。普通离场保留，倒地清空。",
-      "awakened_passive": "凝视上限 4；每个己方回合开始时，若真红在备战区且存活，也获得 1 层。持续 2 个己方回合。",
+      "role": "盈蓄追加攻击与战斗牌成长",
+      "passive": "己方触发盈蓄后，若真红存活，真红攻击 +1，进入战斗区并发起一次额外单方面攻击。真红不在前排时，不能获得能量。",
+      "awakened_passive": "真红不能获得能量，不会在己方回合开始时自动返回备战区。己方全部手牌均视为「真红：升腾之赤」，持续 2 个己方回合。即将结束时，发起一次额外攻击。真红倒地或被换下时结束。",
       "everness_id": 1076,
       "ultimate": {
         "kind": "status",
@@ -250,14 +250,31 @@
       "avatar": "/static/images/characters/avatar/哈索尔.webp",
       "portrait": "/static/images/characters/portrait/哈索尔.webp",
       "role": "延滞强化，对应九原之于创生",
-      "passive": "哈索尔存活时，己方触发的延滞改为持续 3 个该前台所属方回合，不保留延滞的原有效果。",
-      "awakened_passive": "延滞持续回合改为 4。持续 2 个己方回合。",
+      "passive": "哈索尔存活时，己方施加的延滞改为持续 3 个己方回合，不保留延滞的减攻效果。",
+      "awakened_passive": "己方触发延滞时，其持续时间改为 4 个己方回合。本效果持续 2 个己方回合。",
       "everness_id": 1025,
       "ultimate": {
         "kind": "status",
         "turns": 2
       },
       "faction": "斯特利速递"
+    },
+    {
+      "id": "yi",
+      "name": "翳",
+      "attribute": "相",
+      "attack": 2,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/翳.webp",
+      "portrait": "/static/images/characters/portrait/翳.webp",
+      "everness_id": 1008,
+      "faction": "异象管理局禁制机动队四队",
+      "passive": "翳的攻击使延滞延长 1 个己方回合，至多 2 个己方回合。「兽牙影刺」存在时，延滞的持续时间不会减少。翳倒地不会中断「兽牙影刺」。",
+      "awakened_passive": "生成持续 1 个己方回合的「兽牙影刺」。己方附着物伤害 +1，持续 2 个己方回合。",
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      }
     },
     {
       "id": "anhunqu",
@@ -323,7 +340,7 @@
       "portrait": "/static/images/characters/portrait/白藏.webp",
       "role": "自伤叠攻与斩杀",
       "passive": "每当白藏受到伤害时，白藏攻击 +1。",
-      "awakened_passive": "2 个己方回合内，白藏对对方异能者造成伤害后，若其生命 ≤2，将其消灭。",
+      "awakened_passive": "白藏对对方异能者造成伤害后，若其生命 ≤2，将其消灭，持续 2 个己方回合。",
       "everness_id": 1023,
       "ultimate": {
         "kind": "status",
@@ -1496,7 +1513,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "真红获得 1 点护盾和 1 点能量。",
+      "description": "各抽 1 张其他光、灵、相属性己方异能者的牌。",
       "effect_id": "R01",
       "source": {
         "character_id": 1076,
@@ -1518,10 +1535,10 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2。若真红处于终结，再获得 1 层凝视。",
+      "description": "若本回合触发过盈蓄，额外 +2 攻击。",
       "starter_copies": 2,
-      "shield": 1,
-      "attack": 2
+      "shield": 2,
+      "attack": 0
     },
     {
       "id": "R03",
@@ -1530,7 +1547,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1。",
+      "description": "若本回合触发过盈蓄，本次攻击变为单方面攻击。",
       "effect_id": "R03",
       "source": {
         "character_id": 1076,
@@ -1538,7 +1555,7 @@
         "index": 3
       },
       "starter_copies": 2,
-      "shield": 0,
+      "shield": 1,
       "attack": 1
     },
     {
@@ -1554,10 +1571,11 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1。减少生命上限。若真红处于终结且攻击玩家，改为 +3。",
+      "description": "若本回合触发过盈蓄，本牌不消耗行动力。",
       "starter_copies": 0,
-      "shield": 1,
-      "attack": 1
+      "shield": 0,
+      "attack": 2,
+      "free_if_surplus": true
     },
     {
       "id": "R05",
@@ -1566,14 +1584,16 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "真红回复 2 点生命。若在战斗区，再获得 2 点护盾。",
+      "description": "瞬发。弃掉手中全部真红牌，抽取等量的牌。响应：真红倒地后。",
       "effect_id": "R05",
       "source": {
         "character_id": 1076,
         "type": "awaken",
         "index": 5
       },
-      "starter_copies": 0
+      "starter_copies": 0,
+      "instant": true,
+      "response": "self_downed"
     },
     {
       "id": "R06",
@@ -1582,7 +1602,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若真红凝视不少于 2 层，本次攻击伤害 +2。",
+      "description": "本局真红每发动过 1 次额外攻击，本牌额外获得 +1 攻击、+1 护盾。",
       "effect_id": "R06",
       "source": {
         "character_id": 1076,
@@ -1606,10 +1626,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "每个己方回合首次获得凝视后：获得 1 点护盾。",
+      "description": "己方触发盈蓄时，若真红在前排，对全部对方异能者造成 2 点伤害。",
       "starter_copies": 0,
-      "attack": 0,
-      "hp": 1
+      "attack": 3,
+      "hp": 5
     },
     {
       "id": "R08",
@@ -1624,10 +1644,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "真红攻击有护盾的目标时，本次攻击减少生命上限。",
+      "description": "己方回合结束时，若本回合真红没有出击，获得 1 点威慑凝视，上限 2 点。真红出击时，消耗全部威慑凝视，等量增加本次攻击和环合值。",
       "starter_copies": 2,
-      "hp": 0,
-      "attack": 1
+      "hp": 7,
+      "attack": 2
     },
     {
       "id": "H01",
@@ -2873,6 +2893,164 @@
       "starter_copies": 2,
       "attack": 3,
       "hp": 5
+    },
+    {
+      "id": "RF01",
+      "character_id": "zhenhong",
+      "name": "真红：升腾之赤",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "若本回合触发过盈蓄，额外 +2 攻击。",
+      "effect_id": "RF01",
+      "source": {
+        "character_id": 1076,
+        "type": "derived",
+        "index": 1
+      },
+      "derived": true,
+      "attack": 2,
+      "shield": 0,
+      "starter_copies": 0
+    },
+    {
+      "id": "I01",
+      "name": "排斥变节的规程",
+      "character_id": "yi",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "生成持续 2 个己方回合的「兽牙影刺」。",
+      "effect_id": "I01",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 0,
+      "attack": 1,
+      "shield": 1
+    },
+    {
+      "id": "I02",
+      "name": "秩序井然的待办",
+      "character_id": "yi",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "生成持续 2 个己方回合的「兽牙影刺」。",
+      "effect_id": "I02",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 0,
+      "attack": 0,
+      "shield": 2
+    },
+    {
+      "id": "I03",
+      "name": "异类处理的草案",
+      "character_id": "yi",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "生成持续 4 个己方回合的「兽牙影刺」。",
+      "effect_id": "I03",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "I04",
+      "name": "划定常规的决议",
+      "character_id": "yi",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。生成持续 2 个己方回合的「兽牙影刺」。",
+      "effect_id": "I04",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "I05",
+      "name": "社会适应的重任",
+      "character_id": "yi",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "存在延滞才能打出。对方下个回合的普通出击机会 -1。",
+      "effect_id": "I05",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "I06",
+      "name": "无谓形貌的立身",
+      "character_id": "yi",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "本局延滞每存在 1 回合，随机使 1 名对方异能者攻击 -1，持续 2 个对方回合。",
+      "effect_id": "I06",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "I07",
+      "name": "潜影追击",
+      "character_id": "yi",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "「兽牙影刺」存在时，每个回合开始时，对对方前排异能者造成 1 点伤害。",
+      "effect_id": "I07",
+      "source": {
+        "character_id": 1008,
+        "type": "ability",
+        "index": 1,
+        "naming": "user"
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
+    },
+    {
+      "id": "I08",
+      "name": "群犬吠形",
+      "character_id": "yi",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "延滞存在时，翳的牌获得瞬发。",
+      "effect_id": "I08",
+      "source": {
+        "character_id": 1008,
+        "type": "ability",
+        "index": 2,
+        "naming": "user"
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
     }
   ],
   "starter_decks": [

@@ -443,12 +443,12 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self._set_test_whitelist('duel-v2-tester')
         catalog = self._get('/api/duel-v2/catalog', token=token)
         names = {item['name'] for item in catalog['characters']}
-        self.assertEqual(len(catalog['characters']), 17)
+        self.assertEqual(len(catalog['characters']), 18)
         self.assertIn('浔', names)
         self.assertIn('残虹', names)
         self.assertIn('薄荷', names)
         self.assertIn('白藏', names)
-        self.assertEqual(len(catalog['cards']), 139)
+        self.assertEqual(len(catalog['cards']), 148)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
             ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '小吱预组'],

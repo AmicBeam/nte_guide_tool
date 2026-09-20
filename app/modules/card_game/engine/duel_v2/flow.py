@@ -10,7 +10,7 @@ from app.modules.card_game.content.duel_v2.registry import KITS, fire, decide, t
 from .context import EffectContext
 from app.modules.card_game.engine.events import GameEvent
 from .state import (SIDES, add_hand, alive, card_instance, clear_harmony_source, collapsed, damage, discard,
-                    draw, energy, finished, front_debuff, hero, knockdowns, log, move_out, name,
+                    draw, effective_card, energy, finished, front_debuff, hero, knockdowns, log, move_out, name,
                     new_character, other, shield, shuffle, team_order, upgrade_harmony_residue)
 
 from .escalation import begin_escalation, clamp_resources, energy_cap, harmony_cap, ultimate_remaining
@@ -103,6 +103,8 @@ def card_is_free_instant(state, side, card):
 
 
 def card_cost(state, side, card):
+    if card.get('free_if_surplus') and state['sides'][side].get('surplus'):
+        return 0
     limit = card.get('spend_all_ap')
     return min(int(state['sides'][side]['ap']), int(limit)) if limit else int(card.get('cost') or 0)
 
@@ -186,13 +188,17 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None)
 def trigger_responses(state, defending_side, kind, target_id=None):
     """Auto-play the first affordable response matching this timing. Kinds come from the card."""
     if state.get('_response_lock') or finished(state):
+        if state.get('_response_lock') and kind == 'self_downed' and not finished(state):
+            state.setdefault('_pending_down_responses', []).append((defending_side, target_id))
         return
     team = state['sides'][defending_side]
-    for card in list(team['hand']):
+    for physical in list(team['hand']):
+        card = effective_card(state, defending_side, physical)
         if card.get('response') != kind:
             continue
         owner = card['character_id']
-        if not alive(state, defending_side, owner) or collapsed(hero(state, defending_side, owner)):
+        down_response = kind == 'self_downed' and target_id == owner
+        if (not alive(state, defending_side, owner) and not down_response) or collapsed(hero(state, defending_side, owner)):
             continue
         if kind == 'ally_attacked' and (not target_id or target_id == owner):
             continue
@@ -201,13 +207,13 @@ def trigger_responses(state, defending_side, kind, target_id=None):
             continue
         if kind == 'self_attacked' and target_id != owner:
             continue
-        if kind == 'self_lethal' and target_id != owner:
+        if kind in ('self_lethal', 'self_downed') and target_id != owner:
             continue
         if kind == 'enemy_turn_end_empty' and state['sides'][other(defending_side)]['front']:
             continue
         if not can_afford_card(state, defending_side, card):
             continue
-        team['hand'].remove(card)
+        team['hand'].remove(physical)
         parent_op = state.get('operation')
         state['_response_lock'] = True
         state['_response_intercept'] = kind in ('self_attacked', 'ally_attacked', 'self_lethal')
@@ -217,6 +223,8 @@ def trigger_responses(state, defending_side, kind, target_id=None):
             state['_response_lock'] = False
             state.pop('_response_intercept', None)
             state['operation'] = parent_op
+        for down_side, down_id in state.pop('_pending_down_responses', []):
+            trigger_responses(state, down_side, 'self_downed', target_id=down_id)
         return
 
 
@@ -336,7 +344,8 @@ def legal_actions(state, side=None):
                 and decide(EffectContext(state, side, cid, {'side': side}),
                            'can_ultimate', True, actor_only=True)):
             result.append({'type': 'ultimate', 'character_id': cid})
-    for card in team['hand']:
+    for physical in team['hand']:
+        card = effective_card(state, side, physical)
         owner = card['character_id']
         if not alive(state, side, owner) and not card.get('playable_downed'):
             continue
@@ -429,6 +438,9 @@ def tick_ultimates(state, side):
             continue
         h['ultimate_turns'] -= 1
         if h['ultimate_turns'] <= 0:
+            fire(EffectContext(state, side, cid, {'side': side}), GameEvent.V2_ULTIMATE_EXPIRING, actor_only=True)
+            from .deferred import drain
+            drain(state)
             end_ultimate(state, side, cid)
         if finished(state):
             return
@@ -491,14 +503,22 @@ def begin_turn(state, side):
     fire(EffectContext(state, other_side, other_carrier, {'side': other_side}), 'on_enemy_turn_begin')
     if finished(state):
         return
+    from .deferred import drain
+    drain(state)
     tick_front_debuff(state, side)
     if finished(state):
         return
+    from .state import record_delay_turn
+    for ps in SIDES:
+        record_delay_turn(state, ps)
+    # Zone clocks see attachments before their own countdown is reduced.
+    fire(EffectContext(state, side, carrier, {'side': side}), GameEvent.V2_TURN_COUNTDOWN, include_down=True)
     tick_ultimates(state, side)
     if finished(state):
         return
     front = team.get('front')
-    if front and not collapsed(hero(state, side, front)) and not hero(state, side, front).get('summoned'):
+    if (front and not collapsed(hero(state, side, front)) and not hero(state, side, front).get('summoned')
+            and decide(EffectContext(state, side, front, {'side': side}), 'natural_return', True, actor_only=True)):
         move_out(state, side, front)
     from .tutorial import tutorial_flags
     flags = tutorial_flags(state)
@@ -522,7 +542,7 @@ def begin_turn(state, side):
         if extra:
             log(state, f'回合开始，结算延后效果：额外获得 {extra} 点行动力。',
                 'effect', side=side, actor=f'{side}:player', target=f'{side}:player', present=False)
-        team['normal_attack_available'] = True
+        team['normal_attack_available'] = not bool(team.pop('skip_normal_attack', False))
         team['ultimates_used'] = 0
         team['ultimate_available'] = not flags.get('disable_ultimate')
         from .temporal import save_turn_start
@@ -534,7 +554,7 @@ def tick_front_debuff(state, side):
     zone = front_debuff(state, side)
     for kind in ('burn', 'star', 'delay'):
         status = zone.get(kind)
-        if not status or status.get('expires_side'):
+        if not status or status.get('expires_side') or (kind == 'delay' and status.get('tick_side')):
             continue
         # Older snapshots stored an absolute end-turn index.
         left = int(status.get('left', max(1, int(status.get('end', 0)) - state['sides'][side]['turn_count'] + 1)))
@@ -557,6 +577,27 @@ def tick_front_debuff(state, side):
                 zone.pop(kind, None)
         log(state, '战斗区状态倒计时更新。', 'countdown', side=side,
             actor=f'{side}:front', target=f'{side}:front')
+
+    for target_side in SIDES:
+        zone = front_debuff(state, target_side)
+        status = zone.get('delay')
+        if not status or status.get('tick_side') != side:
+            continue
+        ctx = EffectContext(state, side, team_order(state, side)[0], {'side': side})
+        paused = decide(ctx, 'pause_delay', False, include_down=True)
+        if not paused:
+            status['left'] = max(0, int(status['left']) - 1)
+            if not status['left']:
+                zone.pop('delay', None)
+        log(state, '延滞倒计时保持。' if paused else '延滞倒计时更新。', 'countdown',
+            side=target_side, actor=f'{target_side}:front', target=f'{target_side}:front')
+    # Timed character modifiers are owned by the affected character's turns.
+    for h in state['sides'][side]['characters'].values():
+        modifiers = h.get('flags', {}).get('timed_attack', [])
+        for modifier in modifiers:
+            modifier['left'] -= 1
+        if modifiers:
+            h['flags']['timed_attack'] = [m for m in modifiers if m['left'] > 0]
 
 
 def expire_turn_zone_states(state, side):
@@ -689,6 +730,8 @@ def finish_operation(state):
     fire(c, GameEvent.V2_OPERATION_RESOURCES_RESOLVED, actor_only=True)
     state['phase'] = 'playing'
     state['operation'], state['pending_choice'] = None, None
+    from .deferred import drain
+    drain(state)
 
 
 def settle_deferred_card_marks(state):
@@ -812,7 +855,9 @@ def apply_action(state, side, action):
     else:
         card = next(c for c in team['hand'] if c['instance_id'] == candidate['card_id'])
         team['hand'].remove(card)
-        resolve_play(result, side, card, candidate.get('target_id'), pay=True, option_id=candidate.get('option_id'))
+        resolve_play(result, side, effective_card(result, side, card), candidate.get('target_id'), pay=True, option_id=candidate.get('option_id'))
+    from .deferred import drain
+    drain(result)
     if is_tutorial(result) and side == 'a' and candidate.get('type') != 'concede':
         after_player_action(result, candidate)
         from .tutorial import run_scripted_opponent

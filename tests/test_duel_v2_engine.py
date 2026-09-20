@@ -992,6 +992,8 @@ class DuelV2EngineTest(unittest.TestCase):
                 s['sides']['a']['harmony_damage'] = True
                 s['sides']['a']['surplus'] = True
                 s['sides']['a']['surplus_ever'] = True
+                if cid == 'I05':
+                    s['sides']['b']['front_debuff']['delay'] = {'left': 1, 'by': 'a', 'tick_side': 'a'}
                 if cid == 'E03':
                     s['sides']['a']['hand'].append(card_instance(s, 'Z03', 'a'))
                 from app.modules.card_game.engine.duel_v2.state import front_debuff
@@ -1016,6 +1018,7 @@ class DuelV2EngineTest(unittest.TestCase):
                     s = apply_action(s, 'a', next(a for a in legal_actions(s) if a['type'] in ('choose', 'choose_cards')))
                 self.assertEqual(s['phase'], 'playing')
                 spent = 0 if CARDS[cid].get('instant') else CARDS[cid]['cost']
+                if CARDS[cid].get('free_if_surplus'): spent = 0
                 if cid == 'X04': spent = 2
                 if cid == 'XA01': spent = 2 - s['sides']['a']['ap']
                 self.assertEqual(s['sides']['a']['ap'], 2 - spent)

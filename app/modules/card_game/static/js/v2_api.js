@@ -492,6 +492,9 @@
   }
 
   function statIconSvg(kind) {
+    if (kind === 'fang') {
+      return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 2h5c1 5-1 9-4 12L2 2zm7 0h5l-1 12c-3-3-5-7-4-12z"/></svg>';
+    }
     if (kind === 'aura') {
       return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6 3l8-2v10h-2V4L8 5v8H6V3z"/><ellipse cx="4.5" cy="12.5" rx="3" ry="2.5" fill="currentColor"/><ellipse cx="10.5" cy="10.5" rx="3" ry="2.5" fill="currentColor"/></svg>';
     }

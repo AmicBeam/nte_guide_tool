@@ -3,7 +3,7 @@ from app.modules.card_game.content.duel_v2.registry import decide, fire, genesis
 from app.modules.card_game.engine.events import GameEvent
 from .state import (PLAYER_ID, add_collapse, alive, attack_value, collapsed, damage, energy,
                     finished, front_debuff, front_target, hero, is_esper, is_player, knockdowns,
-                    log, move_out, name, other, reduce_max_hp, shield, victory)
+                    log, move_out, name, other, reduce_max_hp, shield, victory, zone_attack_penalty)
 
 from .escalation import harmony_cap
 
@@ -90,20 +90,32 @@ def resolve_genesis(c, *, arm_delay=True):
     team = s['sides'][side]
     from .presentation import next_group_id
     repeats = 1 + tally(c, 'genesis_extra')
+    surplus_triggered = False
     for _ in range(repeats):
         if finished(s) or not alive(s, side, cid):
             break
         genesis_target = front_target(s, side)
-        delayed = bool(is_esper(genesis_target[1]) and front_debuff(s, genesis_target[0]).get('delay'))
+        delayed = bool(front_debuff(s, genesis_target[0]).get('delay'))
         damage(s, *genesis_target, 1 + int(team.get('genesis_damage_bonus') or 0), source=f'{side}:{cid}', kind='genesis',
                group_id=next_group_id(s))
-        if delayed and alive(s, side, cid):
+        if delayed and alive(s, side, cid) and not finished(s):
+            surplus_triggered = True
             s['sides'][side]['surplus'] = True
             s['sides'][side]['surplus_ever'] = True
-            energy(s, side, cid, 1)
-            log(s, f"{c.character['name']}触发盈蓄，获得 1 点能量。", 'harmony',
-                side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{cid}')
+            recipient = team.get('front')
+            gained = 0
+            if recipient and alive(s, side, recipient):
+                before_energy = hero(s, side, recipient)['energy']
+                energy(s, side, recipient, 1)
+                gained = hero(s, side, recipient)['energy'] - before_energy
+            text = f"{c.character['name']}触发盈蓄。"
+            if gained:
+                text += f"{hero(s, side, recipient)['name']}获得 {gained} 点能量。"
+            log(s, text, 'harmony', side=side, source=cid, actor=f'{side}:{cid}',
+                target=f'{side}:{recipient or cid}')
         fire(c, 'on_genesis_damage', target=genesis_target)
+    if surplus_triggered:
+        fire(c, GameEvent.V2_SURPLUS, entering=cid)
     flowers = genesis_flowers(c) + int(team['extra_flower'])
     team['extra_flower'] = False
     for _ in range(flowers):
@@ -133,7 +145,8 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
     op['harmony'] = kind
     if as_support:
         op['support'] = True
-        fire(c, 'on_support', actor_id=cid)
+        if not op.pop('support_notified', False):
+            fire(c, 'on_support', actor_id=cid)
     log(s, f"{c.character['name']}入场，消耗{payer['name']}的 {harmony_cap(s)} 点环合值，触发{kind}。", 'harmony',
         side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id}',
         before={'harmony': before}, after={'harmony': payer['harmony']})
@@ -143,14 +156,17 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
     elif kind == '延滞':
         duration = int(decide(c, 'delay_duration', 1) or 1)
         slow = int(decide(c, 'delay_slow', 1) or 0)
+        old = front_debuff(s, enemy).get('delay') or {}
         front_debuff(s, enemy)['delay'] = {
-            'left': duration,
-            'expires_side': s['active_side'] if duration == 1 else None,
-            'slow': slow,
+            'left': max(int(old.get('left', 0)), duration),
+            'tick_side': side, 'slow': slow,
+            'slow_turn': old.get('slow_turn', s['turn']) if old else s['turn'],
             'by': side,
         }
         log(s, f"对方战斗区获得延滞（{duration} 回合）。", 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front')
+        from .state import record_delay_turn
+        record_delay_turn(s, side)
         hits = tally(c, 'delay_hits') + int(team.get('extra_delay'))
         team['extra_delay'] = False
         for _ in range(hits):
@@ -216,9 +232,7 @@ def enter(c):
 
 
 def _zone_slow(state, side, cid):
-    if state['sides'][side].get('front') != cid:
-        return 0
-    return int((front_debuff(state, side).get('delay') or {}).get('slow') or 0)
+    return zone_attack_penalty(state, side, cid)
 
 
 def intercept_enter(c):
@@ -278,10 +292,10 @@ def attack(c, spec, index):
         bonus += spec['harmony_bonus']
     bonus += tally(c, 'attack_bonus', attacker_id=cid, target=target, target_id=target_id,
                    spec=spec, index=index)
-    frame_attack = attack_value(h, s, side) + int(op.get('sortie_attack_bonus', 0))
+    frame_attack = attack_value(h, s, side, include_zone=False) + int(op.get('sortie_attack_bonus', 0))
     attack_amount = max(0, op.get('card_set_attack', frame_attack) + bonus - _zone_slow(s, side, cid))
     extra_counter = 0
-    counter_base = attack_value(target, s, enemy) if is_esper(target_id) else 0
+    counter_base = attack_value(target, s, enemy, include_zone=False) if is_esper(target_id) else 0
     if is_esper(target_id):
         counter_base = (target.get('flags') or {}).pop('counter_set_attack', counter_base)
         extra_counter = int((target.get('flags') or {}).pop('counter_bonus', 0) or 0)

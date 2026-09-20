@@ -84,7 +84,7 @@ def capture_public_board(state):
             shape_id = hero.get('shape')
             characters.append({
                 'id': cid,
-                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'protagonist_aura') if k in hero},
+                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura') if k in hero},
                 'entity_id': hero.get('entity_id'),
                 'effect_markers': character_effect_markers(hero),
                 'hp': hero['hp'],
@@ -397,6 +397,8 @@ def interaction_for_action(state, side, action):
         return {'kind': 'ultimate', 'actor_id': actor, 'target_ids': [actor] if actor else []}
     if kind == 'play_card':
         card = next(c for c in state['sides'][side]['hand'] if c['instance_id'] == action['card_id'])
+        from .state import effective_card
+        card = effective_card(state, side, card)
         actor = entity_id(side, card['character_id'])
         hint = interaction_kind(card)
         if hint == 'form':

@@ -1,5 +1,5 @@
 """User-defined playtest pacing (2026-09-15), counted in global player turns."""
-from .state import alive, energy, energy_max, hero, log, shuffle, team_order
+from .state import alive, can_gain_energy, energy, energy_max, hero, log, shuffle, team_order
 
 STAGES = (
     (6, '每回合可用 2 次终结；回合开始时，能量最低的存活角色能量 +1（同值随机）'),
@@ -60,9 +60,7 @@ def clamp_resources(state):
 def begin_escalation(state, side):
     if not reached(state, 6):
         return
-    candidates = [cid for cid in team_order(state, side) if alive(state, side, cid)
-                  and not hero(state, side, cid).get('resource_name')
-                  and not hero(state, side, cid).get('summoned')]
+    candidates = [cid for cid in team_order(state, side) if can_gain_energy(state, side, cid)]
     if not candidates:
         return
     lowest = min(hero(state, side, cid)['energy'] for cid in candidates)

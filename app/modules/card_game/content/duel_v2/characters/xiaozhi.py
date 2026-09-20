@@ -25,10 +25,11 @@ def mark_card(c, card):
 
 def publish_marks(c):
     from app.modules.card_game.engine.duel_v2.presentation import public_card
+    from app.modules.card_game.engine.duel_v2.state import effective_card
     from app.modules.card_game.engine.duel_v2.state import log
     log(c.state, '小吱终结更新手牌金谷标注。', 'hand_marks', side=c.side,
         actor=f'{c.side}:{c.cid}', present=False, private_side=c.side,
-        private_hand=[public_card(card) for card in c.state['sides'][c.side]['hand']])
+        private_hand=[public_card(effective_card(c.state, c.side, card)) for card in c.state['sides'][c.side]['hand']])
 
 
 def refresh_marks(c):

@@ -1174,3 +1174,5 @@
 .v2-hover-preview.has-references.is-right { right: 16px; left: auto; }
 .v2-hover-preview.has-references.open { transform: translateY(0) scale(1); }
 .v2-hover-references { position: absolute; right: calc(100% + 12px); top: 0; width: 100%; display: grid; gap: 12px; transform: scale(.5); transform-origin: top right; }
+
+.v2-combat-stat.is-fang { color: #ffda55; }

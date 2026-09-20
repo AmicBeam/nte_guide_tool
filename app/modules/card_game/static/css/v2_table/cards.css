@@ -370,18 +370,14 @@
 
 .v2-hand-card.legal.is-instant,
 .v2-hand-card.legal.is-instant-response {
-  border: calc(2px * var(--table-layout-scale, 1)) dashed #e0b84a;
-  box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) rgba(255, 211, 106, 0.22);
+  border-width: calc(2px * var(--table-layout-scale, 1));
+  border-style: dashed;
+  box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) var(--card-type-glow, rgba(88, 216, 210, 0.28));
 }
 
 .v2-hand-card.selected {
   background-color: rgba(70, 56, 20, 0.8);
   box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) var(--card-type-glow, rgba(255, 191, 87, 0.28)), 0 0 0 calc(2px * var(--table-layout-scale, 1)) var(--amber);
-}
-
-.v2-hand-card.legal.is-instant.selected,
-.v2-hand-card.legal.is-instant-response.selected {
-  border: calc(2px * var(--table-layout-scale, 1)) dashed var(--amber);
 }
 
 .v2-hand-card.raised {

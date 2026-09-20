@@ -3733,7 +3733,8 @@
                 action_type: String(event.action_type || '周期伤害'),
                 damage_type: String(event.damage_type || event.action_type || '周期伤害'),
                 extra_tag: isDotDamage ? 'DOT' : '',
-                tags: isDotDamage ? ['DOT'] : [],
+                tags: [...(isDotDamage ? ['DOT'] : []), ...asList(event.tags)],
+                tags_by_awakening_node: event.tags_by_awakening_node,
                 hit_count: 1,
               };
               event.triggered_buffs = asList(event.triggered_buffs).concat(triggerBuffsForEvent(
@@ -3800,6 +3801,8 @@
             atk_multiplier: periodicAtkMultiplier(periodic, rule),
             action_type: String(periodic.action_type || '周期伤害'),
             damage_type: String(periodic.damage_type || periodic.action_type || '周期伤害'),
+            tags: periodic.tags,
+            tags_by_awakening_node: periodic.tags_by_awakening_node,
             _shared_buff_definition_id: definitionId,
             _shared_owner_slot: ownerSlot,
             _shared_generation: int(state.generation),
@@ -3828,6 +3831,8 @@
           atk_multiplier: periodicAtkMultiplier(periodic, rule),
           action_type: String(periodic.action_type || '周期伤害'),
           damage_type: String(periodic.damage_type || periodic.action_type || '周期伤害'),
+          tags: periodic.tags,
+          tags_by_awakening_node: periodic.tags_by_awakening_node,
           _buff_instance: instance,
           damage: null,
         });
@@ -4285,6 +4290,8 @@
               atk_multiplier: periodicAtkMultiplier(periodic, firstLayer.rule),
               action_type: String(periodic.action_type || '周期伤害'),
               damage_type: String(periodic.damage_type || periodic.action_type || '周期伤害'),
+              tags: periodic.tags,
+              tags_by_awakening_node: periodic.tags_by_awakening_node,
               stack_count: settlementLayers.length,
               remaining_seconds: remainingSeconds,
               periodic_scale: remainingSeconds,

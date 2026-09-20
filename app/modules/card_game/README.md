@@ -542,3 +542,8 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 ### 2026-09-21 真红异能额外攻击环合
 
 盈蓄异能的额外攻击通过操作级标记跳过基础战斗环合值，保留个人能量和全队分享；终结自然到期、普通出击与战斗牌不受影响。入场环合及明确效果给予的环合照常。数值口径来自用户桌游调整，沿用已核实角色主题，不是原作数值。验证：`python -m unittest tests.test_duel_v2_zhenhong_harmony tests.test_duel_v2_surplus_rework tests.test_duel_v2_zhenhong_buff`。
+
+
+### 2026-09-21 真红盈蓄临时加攻
+
+盈蓄的攻击 +1 与免伤同在下个己方回合开始、开始效果之前到期；重复盈蓄仍叠加攻击，到期只移除该来源累计值，其他加攻保留。`atk_buff_expiring` 单独保存数值与到期己方回合，随存档与公开策略状态保留；倒地统一清除。角色文案和回放同步，旧存档已混入的历史加攻不追溯扣除。验证：`tests.test_duel_v2_zhenhong_buff`、`tests.test_duel_v2_surplus_rework`，共 52 项通过。

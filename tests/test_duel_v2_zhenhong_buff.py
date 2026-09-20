@@ -24,6 +24,39 @@ class ZhenhongBuffTest(unittest.TestCase):
     def protect(self, state, side='a'):
         fire(EffectContext(state, side, 'zhenhong', {'side': side}), 'on_surplus', actor_only=True)
 
+    def test_surplus_attack_stacks_and_expires_with_immunity_preserving_other_buffs(self):
+        from app.modules.card_game.engine.duel_v2.state import add_atk_buff, attack_value
+        s = self.game()
+        h = hero(s, 'a', 'zhenhong')
+        add_atk_buff(h, 3)
+        base = attack_value(h, s, 'a')
+        self.protect(s)
+        self.protect(s)
+        s['deferred_actions'] = []
+        move_out(s, 'a', 'zhenhong')
+        self.assertEqual(attack_value(h, s, 'a'), base + 2)
+        s = clone_state(json.loads(json.dumps(s)))
+        h = hero(s, 'a', 'zhenhong')
+        begin_turn(s, 'b')
+        self.assertEqual(attack_value(h, s, 'a'), base + 2)
+        self.protect(s)  # Opponent-turn trigger has the same next-own-turn expiry.
+        s['deferred_actions'] = []
+        self.assertEqual(attack_value(h, s, 'a'), base + 3)
+        opening, seq = capture_public_board(s), s['event_seq']
+        s['_public_board'] = deepcopy(opening)
+        begin_turn(s, 'a')
+        self.assertEqual(attack_value(h, s, 'a'), base)
+        self.assertFalse(damage_immune(s, 'a', 'zhenhong'))
+        self.assertNotIn('atk_buff_expiring', h['flags'])
+        for viewer in ('a', 'b'):
+            board = observe(s, viewer, include_previews=False)
+            shown = next(h for h in board['sides']['a']['characters'] if h['id'] == 'zhenhong')
+            self.assertEqual(shown['attack'], base)
+        events = [e for e in observe(s, 'a')['presentation']['events'] if e['seq'] > seq]
+        replay = replay_public_board(opening, events)
+        shown = next(h for h in replay['sides']['a']['characters'] if h['id'] == 'zhenhong')
+        self.assertEqual(shown['attack'], base)
+
     def test_conditional_draws_keep_type_order_and_share_instant(self):
         for key, wanted in [('R02', 'I03'), ('R03', 'Z08'), ('R04', 'Z03')]:
             for surplus in (False, True):
@@ -139,6 +172,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         hero(s, 'b', 'zhenhong')['hp'] = 0
         knockdowns(s)
         self.assertNotIn('damage_immunity_until', hero(s, 'b', 'zhenhong')['flags'])
+        self.assertNotIn('atk_buff_expiring', hero(s, 'b', 'zhenhong')['flags'])
 
     def test_immunity_snapshot_live_and_replay_no_external_duration_marker(self):
         s = self.game()

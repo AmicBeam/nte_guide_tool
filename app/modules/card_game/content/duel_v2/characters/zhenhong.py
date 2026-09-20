@@ -58,8 +58,12 @@ class Zhenhong:
     @staticmethod
     def on_surplus(c, **_data):
         add_atk_buff(c.character, 1)
-        c.character['flags']['damage_immunity_until'] = c.state['sides'][c.side]['turn_count'] + 1
-        c.history('己方触发盈蓄，真红攻击 +1，直到下个己方回合开始时不受伤害，将发起额外攻击。')
+        flags = c.character['flags']
+        until = c.state['sides'][c.side]['turn_count'] + 1
+        pending = flags.get('atk_buff_expiring') or {}
+        flags['atk_buff_expiring'] = {'amount': int(pending.get('amount', 0)) + 1, 'until': until}
+        flags['damage_immunity_until'] = until
+        c.history('己方触发盈蓄，真红直到下个己方回合开始时攻击 +1 且不受伤害，将发起额外攻击。')
         enqueue(c, 'surplus')
         if c.character.get('shape') == 'R07':
             foe = other(c.side)

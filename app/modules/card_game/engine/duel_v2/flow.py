@@ -455,6 +455,10 @@ def begin_turn(state, side):
     team['turn_count'] += 1
     for h in team['characters'].values():
         flags = h.get('flags') or {}
+        expiring_attack = flags.get('atk_buff_expiring')
+        if expiring_attack and expiring_attack['until'] <= team['turn_count']:
+            flags['atk_buff'] = int(flags.get('atk_buff', 0)) - int(expiring_attack['amount'])
+            flags.pop('atk_buff_expiring')
         if flags.get('damage_immunity_until', 0) <= team['turn_count']:
             flags.pop('damage_immunity_until', None)
     team.pop('life_locked', None)

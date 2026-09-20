@@ -12,16 +12,16 @@ def _fangs(c, turns):
 
 
 def _battle(c):
-    _fangs(c, 2)
+    _fangs(c, 4)
     c.sortie()
 
 
 def _long(c):
+    _fangs(c, 6)
+
+
+def _free(c):
     _fangs(c, 4)
-
-
-def _instant(c):
-    _fangs(c, 2)
 
 
 def _skip(c):
@@ -55,7 +55,7 @@ def _weapon_damage(c):
 class Yi:
     id = 'yi'
     text_name = '翳'
-    effects = {'I01': _battle, 'I02': _battle, 'I03': _long, 'I04': _instant,
+    effects = {'I01': _battle, 'I02': _battle, 'I03': _long, 'I04': _free,
                'I05': _skip, 'I06': _weaken, 'I07': set_shape, 'I08': set_shape}
 
     @staticmethod

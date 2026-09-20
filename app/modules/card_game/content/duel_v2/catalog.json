@@ -2921,7 +2921,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "生成持续 2 个己方回合的「兽牙影刺」。",
+      "description": "生成持续 4 个己方回合的「兽牙影刺」。",
       "effect_id": "I01",
       "source": {
         "character_id": 1008,
@@ -2939,7 +2939,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "生成持续 2 个己方回合的「兽牙影刺」。",
+      "description": "生成持续 4 个己方回合的「兽牙影刺」。",
       "effect_id": "I02",
       "source": {
         "character_id": 1008,
@@ -2957,23 +2957,24 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "生成持续 4 个己方回合的「兽牙影刺」。",
+      "description": "瞬发。生成持续 6 个己方回合的「兽牙影刺」。",
       "effect_id": "I03",
       "source": {
         "character_id": 1008,
         "type": "awaken",
         "index": 3
       },
-      "starter_copies": 0
+      "starter_copies": 0,
+      "instant": true
     },
     {
       "id": "I04",
       "name": "划定常规的决议",
       "character_id": "yi",
       "type": "tactic",
-      "cost": 1,
+      "cost": 0,
       "terminal": false,
-      "description": "瞬发。生成持续 2 个己方回合的「兽牙影刺」。",
+      "description": "不消耗行动力。生成持续 4 个己方回合的「兽牙影刺」。",
       "effect_id": "I04",
       "source": {
         "character_id": 1008,
@@ -2981,7 +2982,7 @@
         "index": 4
       },
       "starter_copies": 0,
-      "instant": true
+      "instant": false
     },
     {
       "id": "I05",

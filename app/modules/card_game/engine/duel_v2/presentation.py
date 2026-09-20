@@ -36,6 +36,11 @@ def public_card(card, state=None, side=None):
         from app.modules.card_game.content.duel_v2.registry import decide
         result['description'] = decide(EffectContext(state, side, card['character_id'], {'side': side}),
             'card_description', result.get('description', ''), actor_only=True, include_down=True, card=card)
+    # Independent of the once-per-turn instant discount. Hidden cards never pass here.
+    result['action_point_free'] = int(card.get('cost') or 0) == 0
+    if state is not None and side in SIDES:
+        from .flow import card_cost
+        result['action_point_free'] = card_cost(state, side, card) == 0
     if card.get('copy'):
         original = text_name(card.get('original_character_id'))
         if original:

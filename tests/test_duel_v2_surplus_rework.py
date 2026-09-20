@@ -187,10 +187,9 @@ class SurplusReworkTest(unittest.TestCase):
         s=self.game();self.delay(s);s=self.play(s,'I01')
         self.assertEqual(front_debuff(s,'b')['delay']['left'],2)
         damage(s,'a','yi',99)
-        begin_turn(s,'a');self.assertEqual(hero(s,'a','yi')['beast_fangs'],1)
-        self.assertEqual(front_debuff(s,'b')['delay']['left'],2)
-        begin_turn(s,'a');self.assertEqual(hero(s,'a','yi')['beast_fangs'],0)
-        self.assertEqual(front_debuff(s,'b')['delay']['left'],2)
+        for remaining in (3, 2, 1, 0):
+            begin_turn(s,'a');self.assertEqual(hero(s,'a','yi')['beast_fangs'],remaining)
+            self.assertEqual(front_debuff(s,'b')['delay']['left'],2)
         begin_turn(s,'a');self.assertEqual(front_debuff(s,'b')['delay']['left'],1)
 
     def test_fangs_no_innate_damage_weapon_each_turn_front_only(self):
@@ -225,10 +224,41 @@ class SurplusReworkTest(unittest.TestCase):
     def test_yi_weapon_instant_and_resource_replay(self):
         s=self.game();s=self.play(s,'I08');self.delay(s);s['sides']['a']['ap']=0
         before=capture_public_board(s);seq=s['event_seq'];s=self.play(s,'I03')
-        self.assertTrue(s['sides']['a']['used']['instant']);self.assertEqual(hero(s,'a','yi')['beast_fangs'],4)
+        self.assertTrue(s['sides']['a']['used']['instant']);self.assertEqual(hero(s,'a','yi')['beast_fangs'],6)
         events=[e for e in observe(s,'a')['presentation']['events'] if e['seq']>seq]
         board=replay_public_board(before,events)
-        self.assertEqual(next(c for c in board['sides']['a']['characters'] if c['id']=='yi')['beast_fangs'],4)
+        self.assertEqual(next(c for c in board['sides']['a']['characters'] if c['id']=='yi')['beast_fangs'],6)
+
+    def test_yi_buff_free_tactic_does_not_spend_instant_even_with_weapon(self):
+        from app.modules.card_game.engine.duel_v2.flow import card_is_free_instant
+        for spent in (False, True):
+            s=self.game();self.delay(s);hero(s,'a','yi')['shape']='I08'
+            s['sides']['a']['ap']=0;s['sides']['a']['used']['instant']=spent
+            card=self.hold(s,'I04')
+            self.assertFalse(card_is_free_instant(s,'a',card))
+            view=observe(s,'a');held=next(c for c in view['sides']['a']['hand'] if c['card_id']=='I04')
+            self.assertTrue(held['action_point_free'])
+            action=dict(type='play_card',card_id=card['instance_id'])
+            self.assertIn(action,legal_actions(s,'a'))
+            s=apply_action(s,'a',action)
+            self.assertEqual(s['sides']['a']['ap'],0)
+            self.assertEqual(s['sides']['a']['used']['instant'],spent)
+            self.assertEqual(hero(s,'a','yi')['beast_fangs'],4)
+            if not spent:
+                s=self.play(s,'I03')
+                self.assertTrue(s['sides']['a']['used']['instant'])
+                self.assertEqual(hero(s,'a','yi')['beast_fangs'],6)
+
+    def test_yi_two_battle_cards_four_turns_and_tactic_six(self):
+        for key in ('I01','I02'):
+            s=self.play(self.game(),key)
+            self.assertEqual(hero(s,'a','yi')['beast_fangs'],4)
+        s=self.game();s['sides']['a']['ap']=0
+        s=self.play(s,'I03')
+        self.assertEqual(hero(s,'a','yi')['beast_fangs'],6)
+        self.assertEqual(s['sides']['a']['ap'],0)
+        card=self.hold(s,'I03')
+        self.assertNotIn(dict(type='play_card',card_id=card['instance_id']),legal_actions(s,'a'))
 
     def test_catalog_sources_access_and_images(self):
         self.assertEqual((CHARACTERS['yi']['attribute'],CHARACTERS['yi']['attack'],CHARACTERS['yi']['max_hp']),('相',2,5))
@@ -282,7 +312,7 @@ class SurplusReworkTest(unittest.TestCase):
 
     def test_fangs_max_refresh_and_delay_turn_count_once_per_global_turn(self):
         s=self.game();s=self.play(s,'I03');s=self.play(s,'I04')
-        self.assertEqual(hero(s,'a','yi')['beast_fangs'],4)
+        self.assertEqual(hero(s,'a','yi')['beast_fangs'],6)
         from app.modules.card_game.engine.duel_v2.state import record_delay_turn
         self.delay(s);record_delay_turn(s,'a');record_delay_turn(s,'a')
         self.assertEqual(s['sides']['a']['delay_turns'],1)

@@ -99,7 +99,9 @@ def card_plays_instant(state, side, card):
 
 def card_is_free_instant(state, side, card):
     team = state['sides'][side]
-    return bool(card_plays_instant(state, side, card) and not team['used'].get('instant'))
+    # A zero-AP card never spends the shared instant opportunity, even when granted instant.
+    return bool(card_cost(state, side, card) > 0
+                and card_plays_instant(state, side, card) and not team['used'].get('instant'))
 
 
 def card_cost(state, side, card):

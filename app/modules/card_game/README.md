@@ -466,3 +466,9 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 按用户“除了真红队，先更新进仓库模型吧”，更新 starter、weave-rush、quick-rush 并新增 midrange。四套使用 `fixed_ten_v1` 数值权重，`engine/ai/fixed_model.py` 单独校验启用授权与规则／构筑／权重哈希；训练模块和观察编码未改，不需要重写原训练身份。保留 `validation.approved=false`，启用来自用户明确授权，不等于全量质量门槛通过。网页仍只允许公开八人的个人构筑。
 
 小吱高级人机为小吱／零／薄荷／九原；中速为娜娜莉／白藏／零／伊洛伊，显示「娜白零伊」且参与随机对手选择。使用已学习起手换牌，NumPy CPU 推理不加载 Torch。旧高级对局应重新开局；已保存个人构筑与普通预组不改。权重和评估来源见 [训练与接入记录](../../../docs/duel-v2-five-fixed-training-20260920.md)。验证：`python -m unittest tests.test_duel_v2_fixed_serving tests.test_duel_v2_fixed_lineups tests.test_duel_v2_opponent_selection`。
+
+### 2026-09-21 翳加强与零行动力边框
+
+I01／I02 兽牙改为 4 个己方回合，I03 瞬发且为 6 个己方回合，I04 改为不消耗行动力且为 4 个己方回合。通用费用结算避免零费用牌因被赋予瞬发而占用瞬发机会。公开牌面新增 `action_point_free`，由后端判断不依赖瞬发机会的零行动力费用；前端可用手牌绘制卡类原色的低密度虚线，并同步回放牌面。无关牌效与训练权重不改。验证：`python -m unittest tests.test_duel_v2_surplus_rework tests.test_duel_v2_xun_rework tests.test_duel_v2_jiuyuan_rework`、`node --test tests/js/duel_v2_instant_border.test.cjs`。
+
+本轮上述 61 项规则测试与 2 项 JS 边框测试通过；独立浏览器验收页使用真实后端手牌投影和现有渲染函数，确认普通瞬发／零行动力两种密度及瞬发耗尽后的区别。16 项旧演出回归有 3 失败、1 错误，用修改前 flow／presentation 重跑复现同项；不将该组声称为全通过。本轮改变全局规则指纹，已有高级模型按严格身份校验暂拒绝加载，未未经确认重绑模型。

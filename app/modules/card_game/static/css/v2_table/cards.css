@@ -375,6 +375,36 @@
   box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) var(--card-type-glow, rgba(88, 216, 210, 0.28));
 }
 
+/* Zero action-point cost stays distinct from the shared instant opportunity. */
+.v2-hand-card.legal.is-ap-free {
+  border-color: transparent;
+  border-style: solid;
+  border-width: calc(2px * var(--table-layout-scale, 1));
+  box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) var(--card-type-glow);
+}
+
+.v2-hand-card > .v2-free-card-border {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  fill: none;
+  stroke: var(--card-type-border);
+  stroke-width: calc(2px * var(--table-layout-scale, 1));
+  stroke-dasharray: calc(10px * var(--table-layout-scale, 1)) calc(12px * var(--table-layout-scale, 1));
+}
+
+.v2-hand-card.legal > .v2-free-card-border { display: block; }
+.v2-free-card-border rect {
+  x: 1px;
+  y: 1px;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  rx: calc(8px * var(--table-layout-scale, 1));
+}
+
 .v2-hand-card.selected {
   background-color: rgba(70, 56, 20, 0.8);
   box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) var(--card-type-glow, rgba(255, 191, 87, 0.28)), 0 0 0 calc(2px * var(--table-layout-scale, 1)) var(--amber);

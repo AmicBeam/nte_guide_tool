@@ -369,6 +369,8 @@
     if (options.raised) classes.push('raised');
     if (unusable) classes.push('is-unusable');
     if (options.groupStart) classes.push('v2-hand-group-start');
+    if (card.action_point_free) classes.push('is-ap-free');
+    const freeBorder = card.action_point_free ? '<svg class="v2-free-card-border" aria-hidden="true"><rect /></svg>' : '';
     const timing = V2.cardTimingClass(options.instantSpent
       ? Object.assign({}, card, { instant: false }) : card);
     if (timing) classes.push(timing);
@@ -379,7 +381,7 @@
     const label = (card.name || '卡牌') + (reason ? '，' + reason : '');
     return (
       '<article class="' + classes.join(' ') + '" draggable="false" data-card-id="' + V2.escapeAttr(card.instance_id) + '" data-drag-kind="card" data-card-owner="' + V2.escapeAttr(card.character_id || '') + '" data-card-type="' + V2.escapeAttr(card.type || '') + '"' + instanceAttr + style + title + ' aria-label="' + V2.escapeAttr(label) + '">' +
-        markHtml + (card.copy ? '<span class="v2-chip copy">复制</span>' : '') +
+        freeBorder + markHtml + (card.copy ? '<span class="v2-chip copy">复制</span>' : '') +
         '<strong>' + V2.escapeHtml(card.name || '卡牌') + '</strong>' +
         V2.cardDescriptionHtml(card.description, '正在读取卡牌效果。', 'subtle') +
         V2.cardFrameStat(card) +

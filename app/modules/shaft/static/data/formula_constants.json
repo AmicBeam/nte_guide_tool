@@ -20,6 +20,9 @@
     "char_0846d632e0": {"谐频": 100},
     "char_heiyu": {
       "恶意": 60
+    },
+    "char_akane": {
+      "弦能": 30
     }
   },
   "hidden_personal_resources": ["噩梦"],
@@ -365,6 +368,14 @@
       "curtain_bonus": {
         "value": 8,
         "stat": "暴击",
+        "passive_type": "type3"
+      }
+    },
+    "char_akane": {
+      "cartridge_main_stat": "属伤",
+      "curtain_bonus": {
+        "value": 0,
+        "stat": "攻击",
         "passive_type": "type3"
       }
     }

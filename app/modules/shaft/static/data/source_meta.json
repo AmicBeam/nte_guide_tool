@@ -102,5 +102,47 @@
     "awakening_note": "A–F与三/六觉共鸣由更新腾讯文档提供；用户明确A觉Q2消耗全部恶意、专武2–4精等差插值。",
     "duration_note": "用户2026-09-16授权经验耗时；非实测数据，普通5A合计4秒，二形态5A合计3.4秒。",
     "basic_malice_note": "用户2026-09-16指定按各段1级聚合倍率占整套比例分配普通+20/二形态-7恶意；打断时按保留倍率比例缩减。"
+  },
+  "akane_source": {
+    "document_url": "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y",
+    "workbook": "SkillDamageData_BlackBird_Akane_Exe.xlsx",
+    "sha256": "be2d88b79e9dbca40839755225962e5bf75c0e97fb6bd241bbc2ddde3d305a93",
+    "rows": [
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45
+    ],
+    "excluded_rows": {
+      "31": "通用Reaction GE，不是角色普通动作",
+      "38": "占位分支0.1%且文档无对应技能，不导入"
+    },
+    "checked_at": "2026-09-21",
+    "everness": "按明音凛检索无匹配",
+    "estimates": {
+      "base_stats": {
+        "atk": 660,
+        "hp": 15000,
+        "def": 900
+      },
+      "string_per_hit": 1,
+      "cadenza_seconds": 8,
+      "delay_interval_seconds": 3,
+      "delay_base_multiplier": 2,
+      "delay_remaining_second_bonus": 0.2,
+      "delay_bonus_cap": 2,
+      "delay_proc_seconds": 1
+    },
+    "interpretation": "单敌传导按本次普攻结算一次，不复制双份；长E为400%+160%；强化E沿用500%，暂不猜测形态独有额外倍率。"
   }
 }

@@ -2499,6 +2499,11 @@
       const snapshot = snapshots.get(slot);
       const characterId = String(snapshot?.character?.id || '');
       if (!options.loop_enabled) Object.assign(resources, snapshot.character?.initial_personal_resources || {});
+      if (!options.loop_enabled) {
+        Object.entries(snapshot.character?.initial_personal_resources_by_awakening_count || {}).forEach(([count, values]) => {
+          if (awakeningNodes(snapshot).size >= int(count)) Object.assign(resources, resourceMap(values));
+        });
+      }
       const loopResources = loopInitialResources[characterId];
       const configuredPersonal = loopResources?.personal_resources && typeof loopResources.personal_resources === 'object'
         ? resourceMap(loopResources.personal_resources)
@@ -3163,6 +3168,38 @@
       return plannedBySlot;
     }
 
+    const reactionUnlocks = new Map();
+    const reapplicationCooldowns = new Map();
+
+    function enqueueTriggeredDamage(snapshot, action, tick, extra = {}) {
+      reactionDamageEvents.push({
+        kind: 'triggered_damage', reaction: action.name, action_id: action.id,
+        action_type: action.action_type, damage_type: action.damage_type,
+        damage_element: action.damage_element || snapshot.character.element,
+        atk_multiplier: num(action.multipliers?.atk), tick, sequence: 1,
+        contributor_slot: snapshot.slot, contributor_character_id: snapshot.character.id,
+        contributor_character_name: snapshot.character.name, _action: clone(action), damage: null,
+        ...extra,
+      });
+    }
+
+    function onReactionReapplication(reaction, tick, previousEffects) {
+      const previousEnd = Math.max(tick, ...previousEffects.map((effect) => int(effect.end_tick)));
+      snapshots.forEach((owner) => {
+        const config = owner.character?.reaction_reapplication;
+        if (config?.reaction !== reaction) return;
+        const key = `${owner.slot}:${reaction}`;
+        if (!reactionUnlocks.has(key)) reactionUnlocks.set(key, tick);
+        if (previousEnd <= tick || tick < (reapplicationCooldowns.get(key) ?? -Infinity)) return;
+        const remaining = (previousEnd - tick) / 10;
+        const multiplier = num(config.atk_multiplier) * (1 + Math.min(num(config.max_bonus), remaining * num(config.bonus_per_remaining_second)));
+        enqueueTriggeredDamage(owner, {id: `reaction-reapply:${owner.character.id}`, name: config.source,
+          action_type: '被动', damage_type: '被动', multipliers: {atk: multiplier}, hit_count: 1}, tick,
+        {remaining_seconds: remaining});
+        reapplicationCooldowns.set(key, tick + Math.max(1, int(config.cooldown_ticks)));
+      });
+    }
+
     function scheduleDelaySettlement(effect) {
       if (effect.reaction !== '延滞') return;
       const owner = Array.from(snapshots.values()).find((snapshot) => snapshot.character?.id === 'char_d38b672525');
@@ -3231,6 +3268,7 @@
       if (reaction === '黯星' && !primeLoop) settleReactionDamage(tick);
       const activeEffects = activeReactionEffectsAtTick(reaction, tick)
         .sort((left, right) => int(left.start_tick) - int(right.start_tick));
+      onReactionReapplication(reaction, tick, activeEffects);
       const instanceLimit = Math.max(1, int(REACTION_INSTANCE_LIMITS[reaction], 1));
       if (
         !primeLoop
@@ -3369,6 +3407,7 @@
       if (reaction === '黯星' && startTick >= 0) settleReactionDamage(startTick);
       const activeEffects = activeReactionEffectsAtTick(reaction, startTick)
         .sort((left, right) => int(left.start_tick) - int(right.start_tick));
+      onReactionReapplication(reaction, startTick, activeEffects);
       while (activeEffects.length >= instanceLimit) {
         evictReactionEffect(activeEffects.shift(), startTick, { settleDamage: reaction === '黯星' });
       }
@@ -3479,8 +3518,23 @@
           || int(event.tick) > int(effect.end_tick)
         ) return 0;
       }
-      if (event.kind === 'passive_settlement') {
-        const action = {id: event.action_id, name: event.reaction, action_type: '被动',
+      if (event.kind === 'reaction_pulse') {
+        const instance = event._buff_instance;
+        if (!activeBuffs.includes(instance) || int(event.tick) >= int(instance.end_tick)
+          || event._pulse_generation !== instance._pulse_generation) return 0;
+        const pulse = instance.rule.reaction_pulse;
+        const unlocked = reactionUnlocks.get(`${snapshot.slot}:${pulse.reaction}`);
+        if (pulse.requires_reaction_unlock && (unlocked == null || int(event.tick) < unlocked)) return 0;
+        const effect = seedLoopInitialReaction(pulse.reaction, snapshot, int(event.tick));
+        if (effect) {
+          effect.loop_initial = false;
+          triggerBuffsForEvent('reaction_trigger', int(event.tick), {id: 'reaction-pulse', slot: snapshot.slot},
+            {id: 'reaction-pulse', action_type: '被动', damage_type: '被动', hit_count: 0}, snapshot, true, {reaction: effect});
+        }
+        return 0;
+      }
+      if (event.kind === 'passive_settlement' || event.kind === 'triggered_damage') {
+        const action = event._action || {id: event.action_id, name: event.reaction, action_type: '被动',
           damage_type: '被动', damage_element: '相', tags: ['被动'], multipliers: {atk: event.atk_multiplier}};
         const clockTick = options.loop_enabled && loopDurationTicks > 0
           ? ((int(event.tick) % loopDurationTicks) + loopDurationTicks) % loopDurationTicks : int(event.tick);
@@ -3490,7 +3544,7 @@
         const calc = calculateActionDamage({...snapshot, mods: mods()}, action, enemy, panel);
         event.panel = calc.panel;
         event.formula_parts = {...calc.formula_parts, scaling_stats: calc.panel,
-          scaling_multipliers: {atk: event.atk_multiplier * calc.formula_parts.base_multiplier_factor},
+          scaling_multipliers: {atk: event.atk_multiplier * calc.formula_parts.base_multiplier_factor * calc.formula_parts.skill_level_multiplier},
           damage_bonus: calc.formula_parts.dmg_bonus, crit_rate: Math.min(1, Math.max(0, calc.panel.crit_rate)),
           crit_dmg: calc.panel.crit_dmg, final_dmg: calc.panel.final_dmg};
         return calc.direct_damage;
@@ -3707,10 +3761,12 @@
       reactionDamageEvents
         .filter((event) => event.damage == null && int(event.tick) >= 0 && int(event.tick) <= untilTick)
         .sort((a, b) => int(a.tick) - int(b.tick) || int(a.sequence) - int(b.sequence))
+        .slice(0, 1)
         .forEach((event) => {
           event.damage = reactionDamageAtTick(event);
           event._counted_in_total = int(event.tick) <= countedUntilTick;
           if (event._counted_in_total) {
+            if (event.kind === 'triggered_damage') totalStagger += num(event._action?.stagger);
             directDamage += event.damage;
             specialDamageBySource.set(event.reaction, (specialDamageBySource.get(event.reaction) || 0) + event.damage);
             reactionDamageBySlot.set(
@@ -3720,7 +3776,12 @@
           }
           const reactionName = String(event.reaction || '');
           triggerNaturalReactionEndBuffs(event);
-          const triggersPeriodicDamageBuffs = (Boolean(event.kind) && event.kind !== 'passive_settlement')
+          if (event.kind === 'triggered_damage' && event.damage > 0 && event._counted_in_total) {
+            const snapshot = snapshots.get(int(event.contributor_slot));
+            event.triggered_buffs = triggerBuffsForEvent('action_hit', int(event.tick),
+              {id: event.action_id, slot: snapshot.slot}, event._action, snapshot, true);
+          }
+          const triggersPeriodicDamageBuffs = (Boolean(event.kind) && !['passive_settlement', 'triggered_damage', 'reaction_pulse'].includes(event.kind))
             || ['浊燃', '创生', '创生复制体'].includes(reactionName);
           if (triggersPeriodicDamageBuffs && event.damage > 0) {
             const contributorSlot = int(event.contributor_slot);
@@ -4315,6 +4376,16 @@
           sharedPeriodicDamageStates.delete(`${ownerSlot}:${key}`);
         });
         const activationResources = personalResources.get(ownerSlot) || {};
+        Object.entries(resourceMap(activation.personal_resource_gain_per_hit)).forEach(([key, gain]) => {
+          const cap = num(personalResourceCaps[String(rule.owner_character_id || '')]?.[key], Infinity);
+          activationResources[key] = Math.min(cap, num(activationResources[key]) + gain * Math.max(0, num(context.hit_count)));
+        });
+        if (num(activation.heal_base_atk_ratio) > 0 && triggerTick >= 0) {
+          const owner = snapshots.get(ownerSlot);
+          healingEvents.push({kind: 'triggered_heal', source: rule.name, tick: triggerTick, slot: ownerSlot,
+            character_id: owner.character.id, character_name: owner.character.name,
+            healing: num(owner.base_stats.atk) * num(activation.heal_base_atk_ratio)});
+        }
         Object.entries(resourceMap(activation.personal_resource_gain)).forEach(([key, gain]) => {
           const cap = num(
             personalResourceCaps[String(rule.owner_character_id || '')]?.[key],
@@ -4396,6 +4467,19 @@
           .reduce((sum, candidate) => sum + Math.max(0, num(candidate.stack_count, 1)), 0);
         const instance = activateBuff(activeBuffs, runtimeRule, triggerTick, stackGain, context);
         if (!instance) return;
+        if (runtimeRule.triggered_damage?.action) {
+          enqueueTriggeredDamage(snapshots.get(ownerSlot), runtimeRule.triggered_damage.action,
+            triggerTick + Math.max(0, int(runtimeRule.triggered_damage.delay_ticks)));
+        }
+        if (runtimeRule.reaction_pulse) {
+          instance._pulse_generation = num(instance._pulse_generation) + 1;
+          const interval = Math.max(1, int(runtimeRule.reaction_pulse.interval_ticks));
+          for (let tick = int(instance.start_tick) + interval; tick < int(instance.end_tick); tick += interval) {
+            reactionDamageEvents.push({kind: 'reaction_pulse', reaction: runtimeRule.reaction_pulse.reaction,
+              tick, sequence: 0, contributor_slot: ownerSlot, _buff_instance: instance,
+              _pulse_generation: instance._pulse_generation, damage: null});
+          }
+        }
         const addedPeriodicBuffs = activeBuffs
           .filter((candidate) => !previousInstances.has(candidate) && candidate.rule?.periodic_damage);
         addedPeriodicBuffs.forEach((candidate) => {
@@ -5015,6 +5099,7 @@
         }
       });
       Object.entries(resourceMap(action.personal_resource_cost)).forEach(([key, cost]) => {
+        if (action.personal_resource_cost_on_hit === true && action.interrupted_hit_count === 0) return;
         const totalCost = cost * actionMultiplier;
         if (activeResourceEffectConfigs(activeBuffs, slot, buffTick, 'ignore_cost', key, step, action, snapshot, isBackground).length) {
           return;
@@ -5570,7 +5655,10 @@
         : 0
     );
     const dissonanceStagger = calculateDissonanceStagger(
-      staggerReactionApplications, details, snapshots, enemy, durationTicks, qVirtualIntervals,
+      staggerReactionApplications, details.concat(reactionDamageEvents
+        .filter((event) => event.kind === 'triggered_damage' && event._counted_in_total && num(event._action?.stagger) > 0)
+        .map((event) => ({start_tick: event.tick, stagger_amount: event._action.stagger}))),
+      snapshots, enemy, durationTicks, qVirtualIntervals,
     );
     const staggerRecoverySeconds = STAGGER_RECOVERY_SECONDS * dissonanceStagger.recoveryScale
       + (baseStaggerRecoverySeconds - STAGGER_RECOVERY_SECONDS);

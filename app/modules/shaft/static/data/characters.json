@@ -938,6 +938,64 @@
     }
   },
   {
+    "id": "char_akane",
+    "name": "明音凛",
+    "element": "相",
+    "adaptation": "液态",
+    "rarity": "",
+    "level": 80,
+    "avatar": "/static/images/characters/avatar/明音凛.svg",
+    "portrait": "/static/images/characters/avatar/明音凛.svg",
+    "base_stats": {
+      "atk": 660,
+      "hp": 15000,
+      "def": 900
+    },
+    "modifiers": {
+      "crit_rate": 0.05,
+      "crit_dmg": 0.5,
+      "atk_pct": 0.0,
+      "flat_atk": 0.0,
+      "hp_pct": 0.0,
+      "flat_hp": 0.0,
+      "def_pct": 0.0,
+      "flat_def": 0.0,
+      "def_ignore": 0.0,
+      "res_down": 0.0,
+      "energy_recharge": 0.0,
+      "harmony_strength": 0.0,
+      "stagger_strength": 0.0,
+      "basic_dmg": 0.0,
+      "follow_dmg": 0.0,
+      "mind_dmg": 0.0,
+      "attach_dmg": 0.0,
+      "skill_dmg": 0.0,
+      "ultimate_dmg": 0.0,
+      "all_dmg": 0.0
+    },
+    "bond_bonus": {},
+    "source_row": 0,
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 缺失80级面板暂估660/15000/900；羁绊未实装，空幕暂不添加未知被动。",
+    "energy_capacity": 120,
+    "initial_personal_resources": {
+      "弦能": 0
+    },
+    "initial_personal_resources_by_awakening_count": {
+      "6": {
+        "弦能": 30
+      }
+    },
+    "reaction_reapplication": {
+      "reaction": "延滞",
+      "source": "绝对音准",
+      "atk_multiplier": 2,
+      "bonus_per_remaining_second": 0.2,
+      "max_bonus": 2,
+      "cooldown_ticks": 10,
+      "source_note": "文档X参数暂估：基础200%、每剩余秒20%、上限200%、触发间隔1秒。"
+    }
+  },
+  {
     "id": "char_d38b672525",
     "name": "卡厄斯",
     "element": "相",

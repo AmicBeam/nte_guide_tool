@@ -544,6 +544,21 @@
     "source_row": 15
   },
   {
+    "id": "arc_akane_moon_antipode",
+    "name": "月的对跖点",
+    "level": 80,
+    "rarity": "",
+    "adaptation": "液态",
+    "detail": "暴击率提升16%～32%。普攻命中后变轨伤害每层提升7%～14%，持续5秒，最多4层，0.3秒触发间隔；释放变轨后普攻伤害提升28%～56%，持续15秒。同时拥有两种效果时，相伤提升16%～32%。",
+    "base_atk": 570,
+    "modifiers": {
+      "crit_dmg": 0.48,
+      "crit_rate": 0.16
+    },
+    "element_dmg": {},
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 精炼2–4等差插值。"
+  },
+  {
     "id": "arc_bab179ec33",
     "name": "错误的门",
     "level": 80,

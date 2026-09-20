@@ -4732,5 +4732,241 @@
         "stagger": 0.8
       }
     ]
+  },
+  "action_akane_a1": {
+    "source": "user-xlsx",
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 32；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "damage": 0.26,
+        "energy": 0.984,
+        "harmony": 1.645,
+        "stagger": 0.2,
+        "hit_count": 1
+      }
+    ]
+  },
+  "action_akane_a2": {
+    "source": "user-xlsx",
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 33；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "damage": 0.382,
+        "energy": 1.447,
+        "harmony": 2.418,
+        "stagger": 0.293,
+        "hit_count": 1
+      },
+      {
+        "damage": 0.764,
+        "energy": 2.894,
+        "harmony": 4.836,
+        "stagger": 0.586,
+        "hit_count": 2
+      }
+    ]
+  },
+  "action_akane_a3": {
+    "source": "user-xlsx",
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 34,35；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "damage": 0.182,
+        "energy": 0.687,
+        "harmony": 1.148,
+        "stagger": 0.139,
+        "hit_count": 1
+      },
+      {
+        "damage": 0.364,
+        "energy": 1.374,
+        "harmony": 2.296,
+        "stagger": 0.278,
+        "hit_count": 2
+      },
+      {
+        "damage": 0.546,
+        "energy": 2.061,
+        "harmony": 3.444,
+        "stagger": 0.417,
+        "hit_count": 3
+      },
+      {
+        "damage": 0.782,
+        "energy": 2.952,
+        "harmony": 4.934,
+        "stagger": 0.598,
+        "hit_count": 4
+      },
+      {
+        "damage": 1.018,
+        "energy": 3.843,
+        "harmony": 6.424,
+        "stagger": 0.779,
+        "hit_count": 5
+      },
+      {
+        "damage": 1.254,
+        "energy": 4.734,
+        "harmony": 7.914,
+        "stagger": 0.96,
+        "hit_count": 6
+      },
+      {
+        "damage": 1.49,
+        "energy": 5.625,
+        "harmony": 9.404,
+        "stagger": 1.141,
+        "hit_count": 7
+      }
+    ]
+  },
+  "action_akane_a4": {
+    "source": "user-xlsx",
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 36；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "damage": 1.007,
+        "energy": 3.812,
+        "harmony": 6.371,
+        "stagger": 0.773,
+        "hit_count": 1
+      }
+    ]
+  },
+  "action_akane_plunge": {
+    "source": "user-xlsx",
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 37；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "damage": 0.625,
+        "energy": 3.1,
+        "harmony": 5.2,
+        "stagger": 0.6,
+        "hit_count": 1
+      }
+    ]
+  },
+  "action_akane_counter": {
+    "source": "user-xlsx",
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 row45；倍率/资源保留，表内极轨终结分类按PerfectEvade与腾讯文档修正为闪反。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "damage": 1.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5,
+        "hit_count": 1
+      }
+    ]
+  },
+  "action_akane_e": {
+    "source": "user-xlsx",
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 39；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "damage": 4.0,
+        "energy": 4.6,
+        "harmony": 7.7,
+        "stagger": 0.9,
+        "hit_count": 1
+      }
+    ]
+  },
+  "action_akane_hold_e": {
+    "source": "user-xlsx",
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows39+40；暂按长按400%本体加160%音域追加，待实测确认。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "damage": 4.0,
+        "energy": 4.6,
+        "harmony": 7.7,
+        "stagger": 0.9,
+        "hit_count": 1
+      },
+      {
+        "damage": 5.6,
+        "energy": 6.9,
+        "harmony": 11.55,
+        "stagger": 1.35,
+        "hit_count": 2
+      }
+    ]
+  },
+  "action_akane_enhanced_e": {
+    "source": "user-xlsx",
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 41；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "damage": 5.0,
+        "energy": 4.6,
+        "harmony": 7.7,
+        "stagger": 0.9,
+        "hit_count": 1
+      }
+    ]
   }
 }

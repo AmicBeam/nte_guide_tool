@@ -842,5 +842,47 @@
       "description": "全队暴击伤害提升30%。",
       "implemented": true
     }
+  ],
+  "明音凛": [
+    {
+      "title": "A觉·教室后的吉他谱",
+      "description": "暴击率+12%；同调共振命中后回复100%基础攻击力生命。",
+      "implemented": true
+    },
+    {
+      "title": "B觉·琴行中的变调夹",
+      "description": "泛音列目标全抗-7.5%；音域内前台角色伤害+12.5%。",
+      "implemented": true
+    },
+    {
+      "title": "C觉·树荫下的胶囊罐",
+      "description": "点按E倍率提高150%；范围扩大与聚怪不参与单敌伤害计算。",
+      "implemented": true
+    },
+    {
+      "title": "D觉·耳机里的底噪声",
+      "description": "同调共振后攻击+16%，持续10秒。",
+      "implemented": true
+    },
+    {
+      "title": "E觉·乐队间的节拍器",
+      "description": "泛音列传导倍率提升至50%；音域传导增伤提升至60%。",
+      "implemented": true
+    },
+    {
+      "title": "F觉·舞台前的超新星",
+      "description": "烁星激昂额外使全队伤害+10%。",
+      "implemented": true
+    },
+    {
+      "title": "三觉共鸣·全音阶",
+      "description": "普攻、变轨、终结技能等级+1，攻击+20%。",
+      "implemented": true
+    },
+    {
+      "title": "六觉共鸣·复调式",
+      "description": "非循环入战30弦能；同调共振后返还10弦能并获得50%暴伤25秒。",
+      "implemented": true
+    }
   ]
 }

@@ -855,3 +855,12 @@ Everness当天核实「未迟到的正义」：基础800%攻击力相属性伤�
 
 
 2026-09-20周期Buff标签：`periodic_damage.tags`及`tags_by_awakening_node`透传至普通周期伤害和提前结算事件，派发时复用来源角色觉醒节点解析。治疗弧盘显式订阅带治疗标签的周期伤害，仍在本次伤害后触发。安魂曲E觉每跳视作治疗为用户指定简化；不新增回血计时或治疗量模型。
+
+
+### 配置化延时伤害与环合重施（2026-09-21）
+
+明音凛使用通用配置扩展，未在主流程分支写角色ID：`initial_personal_resources_by_awakening_count` 只在非循环入场按觉醒数量授予资源；`activation.personal_resource_gain_per_hit` 根据实际保留命中段数获取资源；`personal_resource_cost_on_hit` 使0段打断不支付指定动作的资源成本。`activation.heal_base_atk_ratio` 输出基于角色和弧盘基础攻击的回复事件。
+
+`triggered_damage` 给Buff触发器配置延迟tick与独立动作定义，加入真实时间事件队列，以出伤时的面板、技能等级和普通暴击计算，记录独立伤害/倾陷及增益快照；结果沿用可点击伤害标记。派生伤害只派发命中事件，不派发动作开始，避免重复Q耗能、冷却或释放增益。轴外投影不计总伤。循环预热保留跨边界的待结算事件。
+
+`reaction_reapplication` 在旧环合被替换前读取剩余时间，按配置结算重施伤害与单目标CD并解锁周期强化。Buff的`reaction_pulse` 在有效窗口按固定间隔施加环合；显式清除、到期及重施的代次校验会取消旧节拍。队列每次只结算最早事件，保证其派生事件先于后续事件处理。具体未知参数与来源边界见排轴README及Buff验收清单的明音凛章节。

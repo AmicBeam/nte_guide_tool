@@ -4640,7 +4640,7 @@
       addScalingStat(scalingParts, 'def', '防御');
       const flat = Number(formula?.scaling_multipliers?.flat || 0);
       if (flat) scalingParts.push(`固定值 ${formatNumber(flat, 1)}`);
-      if (!event?.resource_damage_marker && event?.kind !== 'passive_settlement') {
+      if (!event?.resource_damage_marker && !['passive_settlement', 'triggered_damage'].includes(event?.kind)) {
         scalingParts.push(`层数 ${formatNumber(formula.periodic_scale ?? 1, 1)}`);
       }
       lines.push(scalingParts.join('　'));

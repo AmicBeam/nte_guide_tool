@@ -7,7 +7,12 @@
 {% endblock %}
 {% block body %}
 <main class="v2-page v2-table-page" id="v2-table-page">
-    <div class="v2-rotate-hint"><strong>请横屏游玩</strong><span>旋转手机后即可继续对战。</span><a class="secondary-btn" href="/card-game">返回大厅</a></div>
+    <div class="v2-rotate-hint">
+        <strong>请横屏游玩</strong>
+        <span id="v2-rotate-copy">旋转手机后即可继续对战。</span>
+        <button class="primary-btn" id="v2-landscape-btn" type="button" hidden>尝试自动横屏</button>
+        <a class="secondary-btn" href="/card-game">返回大厅</a>
+    </div>
     <header class="v2-hud v2-hud-top" aria-label="对手信息">
         <article class="v2-player-hud opponent" id="v2-opponent-life" data-player-side="b">
             <div class="v2-hud-identity">
@@ -255,5 +260,6 @@
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/tutorial.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/sync.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/replay.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_table/mobile_orientation.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table.js') }}"></script>
 {% endblock %}

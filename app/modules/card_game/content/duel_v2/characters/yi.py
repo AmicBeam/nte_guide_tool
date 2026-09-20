@@ -60,7 +60,8 @@ class Yi:
 
     @staticmethod
     def on_ultimate(c):
-        _fangs(c, 1)
+        c.character['beast_fangs'] = int(c.character.get('beast_fangs', 0)) + 1
+        c.history(f"「兽牙影刺」持续时间 +1 个己方回合（剩余 {c.character['beast_fangs']} 个己方回合）。")
 
     @staticmethod
     def attachment_damage_bonus(c):

@@ -502,6 +502,10 @@ R07「梦的边缘」在己方触发盈蓄时造成全体对方异能者 2 点�
 
 验证：`python -m unittest tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_surplus_rework`；前端：`node --test tests/js/duel_v2_immunity_frame.test.cjs tests/js/duel_v2_instant_border.test.cjs`。本轮不训练、不调整模型权重或启用授权；独立旧编译执行器未同步此轮规则。验收见 [真红加强记录](../../../docs/duel-v2-zhenhong-buff-20260921.md)。新牌效请重新开局。
 
+### 2026-09-21 翳终结兽牙累加
+
+终结直接将兽牙剩余时间 +1，没有时从 0 变为 1；后半段附着物增伤与两回合期限不变。专项验证：`python -m unittest tests.test_duel_v2_yi_ultimate`。规则来源为用户桌游口径，不更新模型权重或授权。
+
 ### 2026-09-21 娜娜莉追击目标修复
 
 战斗追击使用该次攻击已锁定的目标，原异能者倒地或离开战斗区后跳过，不再重新按前排优先转打玩家。N03、终结和 N08 强化的战斗追击共用此规则；N05 按牌面指定目标不变。图鉴追击词条和规则文档同步。

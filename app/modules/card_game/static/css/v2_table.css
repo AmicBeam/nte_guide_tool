@@ -445,64 +445,36 @@
 
 @media (pointer: coarse) and (max-width: 1200px) {
   .v2-table-page #v2-card-preview.open {
-    inset: 0;
-    width: 100vw;
-    height: 100dvh;
-    max-width: none;
-    box-sizing: border-box;
-    display: flex;
-    gap: 12px;
-    padding: 12px;
+    top: 8px;
+    bottom: 8px;
+    height: calc(100dvh - 16px);
     transform: none;
-    overflow: hidden;
-    background: #08121b;
-    z-index: 100;
     transition: none;
   }
+  .v2-table-page #v2-card-preview.open.is-right { left: auto; right: 12px; }
+  .v2-table-page #v2-card-preview.open.is-left { left: 12px; right: auto; }
+  .v2-table-page #v2-card-preview.open.has-references.is-left {
+    left: calc(24px + min(160px * var(--table-layout-scale, 1), (100vw - 48px) / 3));
+  }
   .v2-table-page #v2-card-preview > .v2-hover-card {
-    flex: 1;
-    min-width: 0;
     height: 100%;
     box-sizing: border-box;
-    display: block;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
-    padding: 20px 76px 20px 20px;
   }
   .v2-table-page #v2-card-preview > .v2-hover-card > .v2-hover-art {
-    float: left;
-    width: 40%;
-    height: calc(100dvh - 66px);
-    margin-right: 20px;
+    flex: 1 0 min(120px, 32dvh);
   }
-  .v2-table-page #v2-card-preview > .v2-hover-card > .v2-hover-art img { object-fit: contain; }
-  .v2-table-page #v2-card-preview > .v2-hover-card > .v2-frame-stats {
-    left: 26px;
-    right: auto;
-    top: 26px;
-  }
-  .v2-table-page #v2-card-preview > .v2-hover-card h2 {
-    margin: 12px 0;
-    font-size: clamp(22px, 3vw, 30px);
-  }
-  .v2-table-page #v2-card-preview > .v2-hover-card p {
-    margin: 12px 0;
-    font-size: clamp(16px, 2.1vw, 21px);
-  }
+  .v2-table-page #v2-card-preview > .v2-hover-card > .v2-frame-stats { right: 76px; }
   .v2-table-page #v2-card-preview .v2-hover-references {
-    position: static;
-    flex: 0 0 clamp(150px, 24vw, 240px);
-    width: auto;
-    transform: none;
+    max-height: calc((100dvh - 16px) * 2);
     overflow-y: auto;
-    align-content: start;
   }
-  .v2-table-page #v2-card-preview .v2-hover-references .v2-hover-art { height: 110px; }
-  .v2-table-page #v2-card-preview .v2-hover-references h2 { font-size: 18px; }
-  .v2-table-page #v2-card-preview .v2-hover-references p { font-size: 14px; }
   .v2-table-page #v2-card-preview .preview-close {
-    position: fixed;
-    top: max(12px, env(safe-area-inset-top));
-    right: max(12px, env(safe-area-inset-right));
+    position: absolute;
+    top: 8px;
+    right: 8px;
     width: 56px;
     height: 56px;
     min-width: 56px;

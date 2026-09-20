@@ -4,7 +4,7 @@
 
 按 2026-09-20 用户最新口径，角色头像与默认立绘恢复沿用 **Everness / Nanoka 素材流程**，不再要求全仓库统一改用 NTEData。新增角色优先复用已保存的 Everness 素材；更新图片必须保持现有角色缩放、头部对齐和牌面构图。
 
-本次只修订素材规范，不重新替换图片。此前已导入的 NTEData 头像与武备时装保留实际来源记录，不能改标为 Everness 下载；具体导入范围见下方历史记录及资源清单。
+按用户最新要求，头像已全部恢复到导入前文件，默认立绘也已恢复；仅保留已选武备时装及换装功能。头像与默认立绘沿用旧版 Everness / Nanoka 素材流程，时装仍如实记录 NTEData 来源。资源清单现在只登记保留的 20 张时装。
 
 角色机制、属性、技能和数值仍按根 `AGENTS.md` 使用 Nanoka / Everness 核实；图片来源约定不改变业务数据真源。道具、弧盘图标等不在本说明范围内。
 
@@ -51,13 +51,41 @@ with Image.open('/tmp/nte-character-source.png') as source:
 3. 在受影响的真实页面检查加载成功、无破图、无拉伸，并检查桌面与移动端表现。删除旧文件前确认已无引用。
 4. 按根 `AGENTS.md` 完成适用验证、局域网访问检查和本次改动的 Git 提交；发布另按仓库发布流程执行。
 
-## 2026-09-20 NTEData 导入历史与现有武备换装
+## 旧版头像与立绘恢复记录
 
-本节记录已发生的导入，不覆盖上方恢复后的 Everness 默认素材约定。上游固定提交：`6887b8ced1812db9671d3d4800a0f15d6322a251`。从 `DT_Character`、`DT_DefaultAppearanceData` 和 `DT_AppearanceData` 核对角色 ID、默认装、头像和立绘路径，不靠文件名猜测。最终保留 23 张默认头像，以及 20 张武备时装图；逐文件 SHA、尺寸、上游路径、本地路径和兼容副本见 [资源清单](character-image-assets-manifest.json)。
+头像恢复基准为 `a40b55ac4` 的父提交 `0c9ebd3f2`，按 Git 原始字节恢复，包括残虹、灵可的方形 PNG，以及伊洛伊、真红的空幕头像。撤销本次新增的四个头像 WebP 别名，前端恢复原路径；图片缓存版本同步更新。默认立绘保持原有 `1024×1024` 构图、人物缩放和头部对齐。
 
-头像包含桌游全部 17 人，以及共享目录已有的其他角色、男主。`鉴定师` 对应女主 1051，`男主` 对应 1046。`单位.webp` 与黑羽文字占位不冒充角色原图，保持原样。灵可、残虹的旧 PNG 路径，以及伊洛伊、真红的空幕头像路径保留同源兼容副本；桌游展示统一转向共享 WebP。旧缓存路径在桌游追加图片版本参数，避免 immutable 缓存继续显示旧图。
+旧版素材来源沿用 Everness / Nanoka，获取入口与 CDN 路径规则见上文。下面记录恢复后的实际本地来源路径；历史文件未逐张保存原始下载 URL，不将推测 URL 写成已核实来源。表内路径相对仓库根目录；`单位.webp`、黑羽文字占位不属于此次角色原图替换。
 
-默认立绘批量替换已按用户反馈完全回退：原来统一的人物缩放与头部对齐必须保留。不能以 `2160` 全身图直接替换既有 `1024×1024` 展示图。武备时装改用上游 `SmallPortraitImg` 指向的 `1024×1024` 展示图，经逐图与牌桌核对后接入。WebP 保留原图尺寸与透明通道，不额外缩放或裁切；质量 90、method 6。上游 PNG 与未采用时装仅留在任务临时目录，不随网站发布。其他模块已缓存旧同名图片的客户端可能需要强制刷新；这次没有批量修改各模块的业务数据或历史存档。
+| 角色 | 旧版头像路径 | 旧版立绘路径 |
+| --- | --- | --- |
+| 早雾 | `app/static/images/characters/avatar/早雾.webp` | `app/static/images/characters/portrait/早雾.webp` |
+| 安魂曲 | `app/static/images/characters/avatar/安魂曲.webp` | `app/static/images/characters/portrait/安魂曲.webp` |
+| 翳 | `app/static/images/characters/avatar/翳.webp` | `app/static/images/characters/portrait/翳.webp` |
+| 娜娜莉 | `app/static/images/characters/avatar/娜娜莉.webp` | `app/static/images/characters/portrait/娜娜莉.webp` |
+| 薄荷 | `app/static/images/characters/avatar/薄荷.webp` | `app/static/images/characters/portrait/薄荷.webp` |
+| 哈尼娅 | `app/static/images/characters/avatar/哈尼娅.webp` | `app/static/images/characters/portrait/哈尼娅.webp` |
+| 埃德嘉 | `app/static/images/characters/avatar/埃德嘉.webp` | `app/static/images/characters/portrait/埃德嘉.webp` |
+| 白藏 | `app/static/images/characters/avatar/白藏.webp` | `app/static/images/characters/portrait/白藏.webp` |
+| 哈索尔 | `app/static/images/characters/avatar/哈索尔.webp` | `app/static/images/characters/portrait/哈索尔.webp` |
+| 阿德勒 | `app/static/images/characters/avatar/阿德勒.webp` | `app/static/images/characters/portrait/阿德勒.webp` |
+| 残虹 | `app/static/images/characters/avatar/残虹.png` | `app/static/images/characters/portrait/残虹.webp` |
+| 法帝娅 | `app/static/images/characters/avatar/法帝娅.webp` | `app/static/images/characters/portrait/法帝娅.webp` |
+| 男主 | `app/static/images/characters/avatar/男主.webp` | 无独立文件（保留原有引用） |
+| 鉴定师 | `app/static/images/characters/avatar/鉴定师.webp` | `app/static/images/characters/portrait/鉴定师.webp` |
+| 浔 | `app/static/images/characters/avatar/浔.webp` | `app/static/images/characters/portrait/浔.webp` |
+| 达芙蒂尔 | `app/static/images/characters/avatar/达芙蒂尔.webp` | `app/static/images/characters/portrait/达芙蒂尔.webp` |
+| 九原 | `app/static/images/characters/avatar/九原.webp` | `app/static/images/characters/portrait/九原.webp` |
+| 海月 | `app/static/images/characters/avatar/海月.webp` | `app/static/images/characters/portrait/海月.webp` |
+| 灵可 | `app/static/images/characters/avatar/灵可.png` | `app/static/images/characters/portrait/灵可.webp` |
+| 小吱 | `app/static/images/characters/avatar/小吱.webp` | `app/static/images/characters/portrait/小吱.webp` |
+| 伊洛伊 | `app/modules/kongmu/static/images/characters/player_yiluoyi_256.webp` | `app/static/images/characters/portrait/伊洛伊.webp` |
+| 卡厄斯 | `app/static/images/characters/avatar/卡厄斯.webp` | `app/static/images/characters/portrait/卡厄斯.webp` |
+| 真红 | `app/modules/kongmu/static/images/characters/player_zhenhong_256.webp` | `app/static/images/characters/portrait/真红.webp` |
+
+## 保留的武备时装
+
+保留已确认的 20 张 NTEData 时装，固定上游提交 `6887b8ced1812db9671d3d4800a0f15d6322a251`。图片使用 `DT_AppearanceData.SmallPortraitImg` 对应的 `1024×1024` 展示图，转换为 WebP，质量 90、method 6，保留尺寸与透明通道，不额外缩放或裁切。逐图来源、校验值和武备映射见 [时装资源清单](character-image-assets-manifest.json)。不再从 NTEData 批量替换头像或默认立绘。
 
 ### 桌游映射
 
@@ -83,8 +111,12 @@ with Image.open('/tmp/nte-character-source.png') as source:
 
 验证：`python3 -m unittest tests.test_duel_v2_costume_art tests.test_duel_v2_card_art tests.test_duel_v2_table_contract tests.test_duel_v2_presentation tests.test_duel_v2_replay`。资源完整性检查不依赖 Pillow；真实解码、透明度及页面视觉检查在导入时执行。
 
-### 本次验证边界
+### 首次换装接入的历史验证（头像随后已回退）
 
 - 新增换装/资源完整性、已有角色牌面、公开回放、catalog 与空幕页面资源测试：19 项通过。43 张 WebP 全部解码通过，尺寸与透明通道和最终选定源图一致；默认立绘与任务前 Git 文件逐字节一致。
 - 真实大厅进入人机房间 `0B0D1E`，实际打出 N07、将娜娜莉出击到前排并刷新，确认校园装保留；第 5 回合娜娜莉倒地后恢复默认图。结束测试局并在真实回放跳转第 4 回合，确认校园装正确加载。浏览器无 console error；桌面及 844×390 窄横屏检查无图片拉伸。窄横屏检查仅为视口布局，不代表触屏输入验收。
 - 扩展的旧 table-contract 有 3 项既有字符串断言失败，已用 HEAD 原文件对照复现；presentation 有 3 项失败、1 项错误，涉及旧 N06 目标、growth、交互提示和伤害阶段预期。相关引擎、卡池与这些测试文件均未改动，不把这些旧失败记为本次通过。
+
+### 头像回退验证
+
+已逐文件校验头像及兼容路径与 `0c9ebd3f2` 的 Git 内容一致，默认立绘未变；20 张时装文件保持不变。换装和卡面资源回归使用 `tests.test_duel_v2_costume_art` 与 `tests.test_duel_v2_card_art`。

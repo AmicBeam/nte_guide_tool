@@ -37,8 +37,8 @@ assert.equal(api.battlePortrait(JSON.parse(JSON.stringify(equipped))),api.battle
 assert.equal(api.battlePortrait({...original,shape:'预备备'}),'/default.webp'); // No guessed ID in old replays.
 assert.match(api.battlePortrait({id:'anhunqu',shape_id:'A07'}),/Fashion_1004_1.webp/);
 assert.match(api.battlePortrait({id:'lingke',shape_id:'K07'}),/Fashion_1072_school.webp/);
-assert.match(api.characterAsset({avatar:'/static/images/characters/avatar/灵可.png'}), /灵可.webp\?nte_art=/);
-assert.match(api.characterAsset({avatar:'/static/kongmu/images/characters/player_yiluoyi_256.webp'}), /avatar\/伊洛伊.webp\?nte_art=/);
+assert.match(api.characterAsset({avatar:'/static/images/characters/avatar/灵可.png'}), /灵可.png\?nte_art=/);
+assert.equal(api.characterAsset({avatar:'/static/kongmu/images/characters/player_yiluoyi_256.webp'}), '/static/kongmu/images/characters/player_yiluoyi_256.webp');
 // Real renderer: updates the same node on equip/change/down, preserving fallback on asset failure.
 const attrs={};let image;
 const node={style:{},classList:{toggle(){},remove(){}},setAttribute(k,v){attrs[k]=v},

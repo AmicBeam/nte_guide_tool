@@ -42,13 +42,7 @@
     Q07: { characterId: 'xiaozhi', fashion: 'Fashion_1073_1' },
     Q08: { characterId: 'xiaozhi', fashion: 'Fashion_1073_nighty' },
   };
-  const CHARACTER_IMAGE_VERSION = 'nte-6887b8ce-r3';
-  const CHARACTER_IMAGE_ALIASES = {
-    '/static/images/characters/avatar/残虹.png': '/static/images/characters/avatar/残虹.webp',
-    '/static/images/characters/avatar/灵可.png': '/static/images/characters/avatar/灵可.webp',
-    '/static/kongmu/images/characters/player_yiluoyi_256.webp': '/static/images/characters/avatar/伊洛伊.webp',
-    '/static/kongmu/images/characters/player_zhenhong_256.webp': '/static/images/characters/avatar/真红.webp',
-  };
+  const CHARACTER_IMAGE_VERSION = 'everness-restored-costumes-v4';
 
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.
@@ -401,7 +395,6 @@
 
   function characterImageUrl(src) {
     if (!src) return '';
-    src = CHARACTER_IMAGE_ALIASES[src] || src;
     if (src.startsWith('/static/images/characters/') && !/[?&]nte_art=/.test(src)) {
       return src + (src.includes('?') ? '&' : '?') + 'nte_art=' + CHARACTER_IMAGE_VERSION;
     }

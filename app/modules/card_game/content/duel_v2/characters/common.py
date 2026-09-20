@@ -67,7 +67,6 @@ def revive_character(c, side, cid, *, temporary=False):
 def deal_combat_followup(c, extra=0):
     from app.modules.card_game.content.duel_v2 import CARDS
     from app.modules.card_game.content.duel_v2.registry import KITS
-    from app.modules.card_game.engine.duel_v2.state import front_target
     kit = KITS.get(c.cid)
     amount = extra
     reasons = []
@@ -86,7 +85,9 @@ def deal_combat_followup(c, extra=0):
         reasons.append(f"「{CARDS[c.character['shape']]['name']}」")
     if amount > 0:
         reason = f"{c.character['name']}的{'、'.join(reasons)}触发追击" if reasons else None
-        c.followup(front_target(c.state, c.side), amount, reason=reason)
+        target = c.operation.get('last_attack_target')
+        if target:
+            c.followup(target, amount, reason=reason)
 
 
 def scale_battle_frame(c, attack, shield):

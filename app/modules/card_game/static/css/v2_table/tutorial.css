@@ -167,6 +167,18 @@
   bottom: calc(28px * var(--table-layout-scale, 1));
 }
 
+/* Keep the center battlefield visible while explaining either front zone. */
+.v2-tutorial-modal.placement-right {
+  left: auto;
+  right: 8px;
+  top: 50%;
+  bottom: auto;
+  width: min(calc(360px * var(--table-layout-scale, 1)), 42vw);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  transform: translateY(-50%);
+}
+
 .v2-tutorial-modal[hidden] {
   display: none;
 }

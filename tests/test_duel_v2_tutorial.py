@@ -66,9 +66,14 @@ class DuelV2TutorialTest(unittest.TestCase):
         self.assertNotIn('passive', view['sides']['a']['characters'][0])
         self.assertEqual(view['sides']['a']['hand'], [])
 
-        for expected in ('l01_bench', 'l01_front', 'l01_life', 'l01_ap', 'l01_turn'):
+        for expected in ('l01_bench', 'l01_opponent_front', 'l01_player_front', 'l01_life', 'l01_ap', 'l01_turn'):
             state = apply_action(state, 'a', {'type': 'tutorial_ack'})
-            self.assertEqual(observe(state, 'a')['tutorial']['step_id'], expected)
+            tutorial = observe(state, 'a')['tutorial']
+            self.assertEqual(tutorial['step_id'], expected)
+            if expected in ('l01_opponent_front', 'l01_player_front'):
+                side = 'b' if expected == 'l01_opponent_front' else 'a'
+                self.assertEqual(tutorial['spotlights'], [f'zone:{side}:front'])
+                self.assertTrue(tutorial['ack_required'])
         self.assertEqual(observe(state, 'a')['tutorial']['placement'], 'bottom-right')
         state = apply_action(state, 'a', {'type': 'tutorial_ack'})
         self.assertEqual(observe(state, 'a')['tutorial']['step_id'], 'l01_p1_attack')

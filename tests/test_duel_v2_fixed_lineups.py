@@ -8,7 +8,7 @@ import numpy as np
 from app.modules.card_game.rl import fixed_lineup as f
 from app.modules.card_game.rl import league_schema as old
 from app.modules.card_game.rl.league_observation import encode_league
-from app.modules.card_game.rl.league_policy import LeagueModel
+from app.modules.card_game.rl.league_policy import LeagueModel, shapes
 from app.modules.card_game.rl.fixed_lineup_training import prepare, play, summary
 from app.modules.card_game.engine.duel_v2 import new_game, observe
 
@@ -19,7 +19,20 @@ class FixedLineupsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory(); cls.root = Path(cls.tmp.name)
-        cls.builds = prepare(SOURCE, cls.root)
+        cls.source = cls.root / 'source'; cls.source.mkdir()
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+        for i, key in enumerate(old.PRESETS):
+            build = next(d for d in STARTER_DECKS if d['id'] == key)
+            rng = np.random.default_rng(i)
+            weights = {n: rng.normal(0, .05, shape).astype(np.float32) for n, shape in shapes(4).items()}
+            path = cls.source / f'{key}.npz'; np.savez_compressed(path, **weights)
+            import hashlib
+            metadata = dict(schema=old.SCHEMA, deck=key, features=old.feature_names(),
+                seat_ids=list(old.SEATS), card_ids=list(old.CARD_IDS), cand_dim=old.CAND_DIM,
+                sha256=hashlib.sha256(path.read_bytes()).hexdigest(), build=build,
+                build_sha256=old.build_hash(build), hidden=4, rule_hash=old.rule_hash())
+            (cls.source / f'{key}.json').write_text(json.dumps(metadata))
+        cls.builds = prepare(cls.source, cls.root)
 
     @classmethod
     def tearDownClass(cls): cls.tmp.cleanup()
@@ -29,16 +42,16 @@ class FixedLineupsTest(unittest.TestCase):
         self.assertEqual(self.builds['quick-rush']['character_ids'], ['xiaozhi', 'zero', 'bohe', 'jiuyuan'])
         self.assertEqual(self.builds['midrange']['character_ids'], ['nanali', 'baicang', 'zero', 'iloy'])
         for key in ('starter', 'weave-rush'):
-            source = json.loads((SOURCE / f'{key}.json').read_text())
+            source = json.loads((self.source / f'{key}.json').read_text())
             self.assertEqual(self.builds[key]['card_ids'], source['build']['card_ids'])
 
     def test_old_logits_preserved_in_old_supported_observation(self):
-        weights, metadata = f.expand_source(SOURCE, 'starter')
+        weights, metadata = f.expand_source(self.source, 'starter')
         state = new_game(seed=52, decks={'a': self.builds['starter'], 'b': self.builds['weave-rush']})
         view = observe(state, 'a', include_previews=False)
         actions = [e['action'] for e in view['legal_actions'] if e['action']['type'] != 'concede']
         x, c = encode_league(view, actions); xx, cc = f.encode(view, actions)
-        with np.load(SOURCE / 'starter.npz', allow_pickle=False) as data:
+        with np.load(self.source / 'starter.npz', allow_pickle=False) as data:
             source = LeagueModel.__new__(LeagueModel); source.weights = {k: data[k].copy() for k in data.files}; source.hidden = metadata['hidden']
         expanded = f.FixedModel(self.root / 'reference', 'starter')
         np.testing.assert_allclose(source.scores(x, c), expanded.scores(xx, cc), rtol=1e-5, atol=1e-5)
@@ -47,7 +60,7 @@ class FixedLineupsTest(unittest.TestCase):
         self.assertEqual(len(set(f.candidate_names())), f.CAND_DIM)
         # Existing weights and shifted candidate option/mark columns map by name.
         names = f.candidate_names()
-        with np.load(SOURCE / 'starter.npz', allow_pickle=False) as data:
+        with np.load(self.source / 'starter.npz', allow_pickle=False) as data:
             for i, name in enumerate(f.candidate_names(old.CARD_IDS)):
                 np.testing.assert_array_equal(weights['cand_net.0.weight'][:, names.index(name)], data['cand_net.0.weight'][:, i])
 

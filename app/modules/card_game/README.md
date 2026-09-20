@@ -148,7 +148,7 @@
 
 ## 高级人机
 
-大厅选择「高级人机」，对手策略按实际高级人机阵容顺序取角色首字，当前显示「娜伊零九」「薄白零伊」「吱零薄海」；「零伊娜白（待训练）」排序第一但暂时隐藏且不可选择。三套可见策略均已按用户明确要求启用 2026-09-19 中午训练的最新候选模型。我方默认使用当前保存的构筑（仅公开角色），大厅不再提供我方构筑来源选项；保存的个人构筑不会被覆盖。仓库保留历史六人 `resident_public_v3` 模型，但其旧验证不适用于当前八人规则；新版 `official_public_v5` 默认要求验收通过；用户明确启用候选时，另存绑定模型、构筑与规则哈希的 `serving_authorization`，不改写 `validation.approved=false` 的质量结论。历史部署状态见当时交付报告。高级人机实际配牌由清单中的 `serving_build` 决定；旧客户端显式请求同构筑时仍复制这份实际配牌，不修改普通官方预组或玩家存档。房间模式为 `advanced`。起手策略按模型版本区分：旧 v2 模型保留全部起手牌，当前 v3 模型使用已训练的换牌评分；旧权重不会自动获得新能力。对手名及回放显示「高级人机」。
+大厅选择「高级人机」，对手策略按实际高级人机阵容顺序取角色首字，当前显示「娜白零伊」「娜伊零九」「薄白零伊」「吱零薄九」。四套策略均已按用户明确要求启用 2026-09-21 五套固定配牌训练中的最新候选；真红队未接入。我方默认使用当前保存的构筑（仅公开角色），大厅不再提供我方构筑来源选项；保存的个人构筑不会被覆盖。仓库保留历史六人 `resident_public_v3` 模型，但其旧验证不适用于当前八人规则；新版 `official_public_v5` 默认要求验收通过；用户明确启用候选时，另存绑定模型、构筑与规则哈希的 `serving_authorization`，不改写 `validation.approved=false` 的质量结论。历史部署状态见当时交付报告。高级人机实际配牌由清单中的 `serving_build` 决定；旧客户端显式请求同构筑时仍复制这份实际配牌，不修改普通官方预组或玩家存档。房间模式为 `advanced`。起手策略按模型版本区分：旧 v2 模型保留全部起手牌，当前 v3 模型使用已训练的换牌评分；旧权重不会自动获得新能力。对手名及回放显示「高级人机」。
 
 服务端仅依赖可选的 NumPy CPU 推理：`pip install -r requirements-ai.txt`。默认读取 `app/modules/card_game/engine/ai/models/{starter,weave-rush}.{npz,json}`，可用 `NTE_DUEL_AI_MODEL_DIR` 指定目录。数字权重不允许 pickle；加载时校验 SHA-256、卡池/座位顺序、观察 schema、规则哈希和参数形状。缺依赖、缺文件或版本不匹配会在创建房间前明确拒绝，不降级冒充高级人机。
 
@@ -460,3 +460,9 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 ### 五套固定配牌策略训练（2026-09-20）
 
 `scripts/train_duel_v2_fixed_lineups.py` 默认检查计划，显式 `--run` 启动 90 分钟有界离线训练。训练创生、覆纹、小吱／零／薄荷／九原、真红／零／伊洛伊／翳、娜娜莉／白藏／零／伊洛伊；旧三套高级模型冻结陪练。`rl/fixed_lineup.py` 为真红、翳和九原新计数提供独立十人观察契约；`fixed_lineup_training.py` 在正式规则引擎执行完整终局 PPO 与独立评估。固定 32 张配牌，不搜索换牌，不自动启用模型。来源、时间预算、验证及局限见 [五套训练说明](../../../docs/duel-v2-five-fixed-training-20260920.md)。专项：`python -m unittest tests.test_duel_v2_fixed_lineups`。
+
+### 2026-09-21 四套模型更新
+
+按用户“除了真红队，先更新进仓库模型吧”，更新 starter、weave-rush、quick-rush 并新增 midrange。四套使用 `fixed_ten_v1` 数值权重，`engine/ai/fixed_model.py` 单独校验启用授权与规则／构筑／权重哈希；训练模块和观察编码未改，不需要重写原训练身份。保留 `validation.approved=false`，启用来自用户明确授权，不等于全量质量门槛通过。网页仍只允许公开八人的个人构筑。
+
+小吱高级人机为小吱／零／薄荷／九原；中速为娜娜莉／白藏／零／伊洛伊，显示「娜白零伊」且参与随机对手选择。使用已学习起手换牌，NumPy CPU 推理不加载 Torch。旧高级对局应重新开局；已保存个人构筑与普通预组不改。权重和评估来源见 [训练与接入记录](../../../docs/duel-v2-five-fixed-training-20260920.md)。验证：`python -m unittest tests.test_duel_v2_fixed_serving tests.test_duel_v2_fixed_lineups tests.test_duel_v2_opponent_selection`。

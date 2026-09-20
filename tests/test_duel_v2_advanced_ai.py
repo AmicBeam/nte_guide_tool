@@ -149,16 +149,12 @@ class AdvancedRoomTest(RoomFlowTestCase):
         response=self.client.post('/api/duel-v2/start',json={'mode':'advanced','ai_deck':'other'},headers={'Authorization':'Bearer '+self.token})
         self.assertEqual(response.status_code,400)
 
-    def test_midrange_is_registered_but_cannot_create_untrained_room(self):
-        from app.modules.card_game.engine.ai.advanced_model import UNTRAINED_STRATEGIES
-        self.assertEqual(UNTRAINED_STRATEGIES['midrange']['character_ids'],
-                         ['zero', 'iloy', 'nanali', 'baicang'])
+    def test_midrange_uses_authorized_model_without_changing_saved_build(self):
         before = self._get('/api/duel-v2/catalog', token=self.token)['saved_build']
-        result = self._post_error('/api/duel-v2/start',
+        result = self._post('/api/duel-v2/start',
             {'mode': 'advanced', 'ai_deck': 'midrange'}, token=self.token)
-        self.assertIn('零伊娜白高级人机尚待训练与验收', result['error'])
-        player = self.dao_module.get_or_create_player('advanced-ai-test')[0]
-        self.assertIsNone(self.repository.current_room(player))
+        self.assertEqual([h['id'] for h in result['game']['sides']['b']['characters']],
+                         ['nanali', 'baicang', 'zero', 'iloy'])
         self.assertEqual(before, self._get('/api/duel-v2/catalog', token=self.token)['saved_build'])
 
     def test_legacy_rejects_saved_custom_before_room_creation(self):
@@ -249,22 +245,22 @@ class CpuEncoderTest(unittest.TestCase):
     def test_bundled_models_are_complete_and_loadable(self):
         from app.modules.card_game.engine.ai.advanced_model import load_model
         directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
-        keys=('starter','weave-rush','quick-rush')
+        keys=('starter','weave-rush','quick-rush','midrange')
         self.assertEqual({p.name for p in directory.iterdir()},
                          {f'{key}.{ext}' for key in keys for ext in ('json','npz')})
         for key in keys:
             model=load_model(key)
-            self.assertEqual(model.schema,'official_public_v5')
+            self.assertEqual(model.schema,'fixed_ten_v1')
             self.assertTrue(model.version)
             self.assertTrue(model.serving_authorized)
 
     def test_runtime_rule_compatibility_still_rejects_other_rules(self):
-        from app.modules.card_game.rl.league_policy import LeagueModel
+        from app.modules.card_game.engine.ai.fixed_model import FixedServingModel
         directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
-        for key in ('starter','weave-rush','quick-rush'):
-            with patch('app.modules.card_game.rl.league_policy.rule_hash',return_value='unrelated'):
-                with self.assertRaisesRegex(ValueError,'rule/schema mismatch'):
-                    LeagueModel(directory,key,require_approved=True)
+        for key in ('starter','weave-rush','quick-rush','midrange'):
+            with patch('app.modules.card_game.rl.fixed_lineup.identity', return_value='unrelated'):
+                with self.assertRaisesRegex(ValueError, 'identity mismatch'):
+                    FixedServingModel(directory,key)
 
     def test_hidden_cards_do_not_change_encoding(self):
         import numpy as np

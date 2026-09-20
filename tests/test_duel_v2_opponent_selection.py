@@ -102,7 +102,8 @@ class OpponentSelectionTest(RoomFlowTestCase):
 
     def fake_model(self, key):
         from app.modules.card_game.rl.league_schema import SCHEMA
-        deck = deepcopy(next(d for d in self.content.STARTER_DECKS if d['id'] == key))
+        from app.modules.card_game.engine.ai.advanced_model import preset
+        deck = deepcopy(preset(key))
         return SimpleNamespace(version='selection-test', serving_deck=deck,
                                schema=SCHEMA, validate_human=lambda deck: None)
 
@@ -120,8 +121,8 @@ class OpponentSelectionTest(RoomFlowTestCase):
                     patch('secrets.choice', side_effect=lambda choices: choices[-1]) as choose:
                 first = self.start(mode='advanced', **options)
                 pool = choose.call_args.args[0]
-                self.assertEqual([key for key, model in pool], ['starter', 'quick-rush'])
-                self.assertNotIn('midrange', [call.args[0] for call in loader.call_args_list])
+                self.assertEqual([key for key, model in pool], ['midrange', 'starter', 'quick-rush'])
+                self.assertIn('midrange', [call.args[0] for call in loader.call_args_list])
                 self.assertEqual(self.raw(first)['ai_profile']['deck_id'], 'quick-rush')
                 loader.reset_mock()
                 choose.reset_mock()

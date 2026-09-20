@@ -71,3 +71,18 @@
 评估采用32个共同种子簇，先后手和对手间存在配对关系；192局不能视作192个完全独立样本。此处报告描述性胜率，不新增显著性或晋级结论。网站权重保持不变。
 
 本机原始产物：`artifacts/rl-evals/five-fixed-20260920/`，包含 config、launch、source-manifest、training-summary、evaluation-games、summary、guard 与 status。
+
+## 2026-09-21 按用户授权接入四套模型
+
+用户明确要求“除了真红队，先更新进仓库模型吧”。将四套 latest 权重及其绑定配牌接入仓库，不推送或部署生产服务；真红未安装。旧版本由 Git 历史保留，原始训练清单保存在本机 artifacts，不回写历史训练文件。
+
+| 策略 | SHA-256 |
+| --- | --- |
+| starter | `497ec14d369373f10c63e3a257201c77e584c03ad2d9db40f94f324bc90f390d` |
+| weave-rush | `ee998358bf9e29f0d38559d84968bfb5bb5bb5c348466c982938d7fd8e146f32` |
+| quick-rush | `c01062b3b7e1c87d4b974e136e4aa14fc384c6ffe0e602acd8dcce48ad1c9a7e` |
+| midrange | `bb19708372ad9db89bbc58f89e504d1a8f50ddb92f1cc070d6a7df0d3dc07a53` |
+
+只新增 `serving_authorization`，绑定本次用户请求、报告、模型、构筑及原训练规则身份；不伪造 `validation.approved=true`。独立 FixedServingModel 适配器保持原固定十人编码与权重不变，仍限制网页人类构筑为公开八人。原训练文件、identity() 与编码未为上线改写。中速解禁并参与随机选择，小吱界面改为吱零薄九，起手使用学习换牌。
+
+27 项针对性检查通过，包含四套 CPU 完整对局、授权缺失／错配、权重篡改拒绝、真红排除、构筑权限、随机对手、模型身份、起手和真实 API 中速开局／个人构筑不变。JavaScript 语法检查通过。原高级 AI 全套回归另有四项旧 capability_ready_manifest 测试夹具报错（encoder is not ready for public asymmetric serving），属于旧独立编码能力检查，不作为新四套验收通过项。真实大厅确认四套可选名称，未使用用户当前账号新建验收对局。

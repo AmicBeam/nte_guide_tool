@@ -28,36 +28,30 @@ from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
 _CACHE = {}
 _LOCK = threading.RLock()
 PRESETS = ('midrange', 'starter', 'weave-rush', 'quick-rush')
-# Registration only: training and a validated model/build pair are still required.
-UNTRAINED_STRATEGIES = {
-    'midrange': {
-        'id': 'midrange', 'name': '零伊娜白',
-        'character_ids': ['zero', 'iloy', 'nanali', 'baicang'],
-    },
-}
-# Registered for the next league; no compatible/evaluated eight-character model yet.
-PENDING_PRESETS = frozenset({'quick-rush'})
+UNTRAINED_STRATEGIES = {}
+PENDING_PRESETS = frozenset()
 
 
 def preset(deck_id):
     if deck_id not in PRESETS:
-        raise RuleValidationError('高级人机策略包括娜伊零九、薄白零伊、吱零薄海和零伊娜白。')
-    if deck_id in UNTRAINED_STRATEGIES:
-        raise RuleValidationError('零伊娜白高级人机尚待训练与验收，暂不能开局。')
+        raise RuleValidationError('高级人机策略包括娜伊零九、薄白零伊、吱零薄九和娜白零伊。')
+    if deck_id == 'midrange':
+        from app.modules.card_game.rl.fixed_lineup import builds
+        return builds(Path(config.DUEL_AI_MODEL_DIR))[deck_id]
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
 
 
 def serving_deck(model, deck_id):
     """Return a copy of the validated model/build pair, with legacy preset fallback."""
     from copy import deepcopy
-    return deepcopy(getattr(model, 'serving_deck', preset(deck_id)))
+    return deepcopy(model.serving_deck if hasattr(model, 'serving_deck') else preset(deck_id))
 
 
 def require_human_deck(model, deck, deck_id):
     """Validate serving scope before creating any room or replay."""
     try:
         from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
-        if getattr(model, 'schema', None) == LEAGUE_SCHEMA:
+        if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1'):
             return model.validate_human(deck)
         deck = assert_public_encoder_deck(deck)
         capability = resolve_model_capability(
@@ -254,7 +248,10 @@ def load_model(deck_id):
             if key not in _CACHE or getattr(_CACHE[key], '_file_signature', None) != signature:
                 manifest = json.loads((root / f'{deck_id}.json').read_text(encoding='utf-8'))
                 from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
-                if manifest.get('schema') == LEAGUE_SCHEMA:
+                if manifest.get('schema') == 'fixed_ten_v1':
+                    from .fixed_model import FixedServingModel
+                    candidate = FixedServingModel(root, deck_id)
+                elif manifest.get('schema') == LEAGUE_SCHEMA:
                     from app.modules.card_game.rl.league_policy import LeagueModel
                     candidate = LeagueModel(root, deck_id, require_approved=True)
                 else:
@@ -281,14 +278,14 @@ def choose_action(state, side='b'):
     if not actions:
         raise RuleValidationError('高级人机没有可执行动作。')
     from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA
-    if state['phase'] == 'mulligan' and getattr(model,'schema',None) not in (OPENING_SCHEMA, 'official_public_v5'):
+    if state['phase'] == 'mulligan' and getattr(model,'schema',None) not in (OPENING_SCHEMA, 'official_public_v5', 'fixed_ten_v1'):
         # The model was trained with the initial hand retained.
         return next(a for a in actions if not a.get('card_ids'))
     from app.modules.card_game.rl.public_schema import SCHEMA as PUBLIC_SCHEMA
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
-    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA):
+    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA,'fixed_ten_v1'):
         from app.modules.card_game.engine.duel_v2 import observe
-        return actions[model.select_public_action(observe(state, side), actions)]
+        return actions[model.select_public_action(observe(state, side, include_previews=False), actions)]
     try:
         values, candidates = encode(state, side, actions)
     except (KeyError, ValueError) as exc:
@@ -298,4 +295,4 @@ def choose_action(state, side='b'):
 
 def model_build_hash(model, build):
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA, build_hash
-    return build_hash(build) if getattr(model, 'schema', None) == LEAGUE_SCHEMA else serving_deck_hash(build)
+    return build_hash(build) if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1') else serving_deck_hash(build)

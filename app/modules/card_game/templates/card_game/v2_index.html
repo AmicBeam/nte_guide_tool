@@ -90,12 +90,10 @@
                 <label for="v2-ai-deck">高级人机 · 对手预组</label>
                 <select id="v2-ai-deck">
                     <option value="random" selected>随机</option>
-                    {% if show_midrange_ai | default(false) %}
-                    <option value="midrange" disabled>零伊娜白（待训练）</option>
-                    {% endif %}
+                    <option value="midrange">娜白零伊</option>
                     <option value="starter">娜伊零九</option>
                     <option value="weave-rush">薄白零伊</option>
-                    <option value="quick-rush">吱零薄海</option>
+                    <option value="quick-rush">吱零薄九</option>
                 </select>
                 <small class="subtle" id="v2-ai-deck-hint">使用当前保存的构筑对战，仅支持公开角色。</small>
             </div>

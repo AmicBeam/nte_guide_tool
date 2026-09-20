@@ -391,3 +391,44 @@
   .v2-choice-dialog.is-multi .v2-choice-grid.has-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .v2-choice-dialog.is-multi .v2-hover-art { height: 64px; }
 }
+
+/* Phone hands float over the battlefield instead of reserving a bottom row. */
+@media (pointer: coarse) and (max-width: 1200px) and (orientation: landscape) {
+  .v2-table-page { grid-template-rows: var(--table-top) minmax(0, 1fr); }
+  .v2-table-page #v2-opponent-hand { display: none; }
+  .v2-table-page #v2-hand-dock {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--table-top);
+    z-index: 10;
+    overflow: visible;
+    pointer-events: none;
+    border: 0;
+    background: none;
+    backdrop-filter: none;
+  }
+  .v2-table-page #v2-player-life { pointer-events: auto; }
+  .v2-table-page #v2-hand-dock .v2-hand-stack {
+    display: none;
+    position: absolute;
+    left: calc(140px * var(--table-layout-scale, 1));
+    right: 8px;
+    bottom: 8px;
+    height: min(44dvh, 200px);
+    padding: 8px;
+    border: 1px solid rgba(139, 215, 255, 0.35);
+    border-radius: 12px;
+    background: rgba(8, 16, 26, 0.94);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.4);
+    pointer-events: auto;
+  }
+  .v2-table-page.mobile-hand-open:not(.is-mulligan):not(.tutorial-hide-hand) #v2-hand-dock .v2-hand-stack {
+    display: grid;
+  }
+  .v2-table-page.is-drag-targeting #v2-hand-dock,
+  .v2-table-page.is-drag-targeting #v2-hand-dock .v2-hand-stack {
+    filter: none;
+  }
+}

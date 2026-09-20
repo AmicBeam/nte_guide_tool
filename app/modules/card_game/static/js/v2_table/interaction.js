@@ -15,6 +15,34 @@
     const castZone = ctx.castZone;
     let optionZones = null;
     const battleArea = page.querySelector('[data-drop-role="battle-area"]');
+    const mobileLayout = window.matchMedia('(pointer: coarse) and (max-width: 1200px)');
+    let ignoreHandToggleClick = false;
+    page.addEventListener('pointerdown', function () { ignoreHandToggleClick = false; }, true);
+
+    function dragTargetingEnabled() {
+      return !mobileLayout.matches && ctx.options.dragTargeting !== false;
+    }
+
+    function setMobileHandOpen(open) {
+      if (ctx.dragState) return;
+      page.classList.toggle('mobile-hand-open', Boolean(open));
+      if (ctx.game && ctx.game.tutorial && TABLE.renderTutorial) TABLE.renderTutorial(ctx);
+    }
+
+    mobileLayout.addEventListener('change', function () {
+      setMobileHandOpen(false);
+    });
+
+    page.addEventListener('click', function (event) {
+      if (!mobileLayout.matches || event.defaultPrevented || ctx.dragState || ctx.suppressClick
+          || ignoreHandToggleClick || ctx.localChoice
+          || page.classList.contains('is-mulligan') || page.classList.contains('tutorial-hide-hand')
+          || choiceOverlay.classList.contains('open')) return;
+      if (!event.target.closest('[data-drop-role="battle-area"], .v2-hud-top, #v2-hand-dock')) return;
+      if (event.target.closest('button, a, input, select, label, .v2-character-card, .v2-hand-stack, .v2-player-hud, .v2-piles, .v2-side-actions, .v2-combat-core, .v2-zone-effects, .v2-mulligan-stage, .v2-history-drawer, .v2-hover-preview')) return;
+      hideHoverPreview({ force: true });
+      setMobileHandOpen(!page.classList.contains('mobile-hand-open'));
+    });
 
     function showPreview(entry) {
       if (!entry) {
@@ -341,10 +369,10 @@
       const grouped = kind === 'card' ? groupedPlay(id) : null;
       if (kind === 'card' && grouped) {
         const card = TABLE.cardByInstance(ctx.game, id);
-        if ((card && card.play_options || []).length) {
+        if (!mobileLayout.matches && (card && card.play_options || []).length) {
           return TABLE.playOptionAtPoint(card, grouped.entries, battleArea && battleArea.getBoundingClientRect(), point);
         }
-        if (ctx.options.dragTargeting === false) {
+        if (!dragTargetingEnabled()) {
           return inBattleArea(zone) ? grouped.entries[0] || null : null;
         }
         const byId = boardTargetEntries(grouped.entries);
@@ -449,7 +477,7 @@
         page.classList.add('v2-playing-attack-front');
       }
       if (kind === 'card') {
-        const byId = ctx.options.dragTargeting === false ? {} : boardTargetEntries(groupedPlay(id).entries);
+        const byId = !dragTargetingEnabled() ? {} : boardTargetEntries(groupedPlay(id).entries);
         const hasTargets = Object.keys(byId).length > 0;
         page.classList.remove('v2-playing-card');
         page.classList.add('is-targeting');
@@ -461,7 +489,7 @@
         if (ctx.targetCancel) V2.setHidden(ctx.targetCancel, true);
         if (ctx.targetMask) V2.setHidden(ctx.targetMask, false);
         const card = TABLE.cardByInstance(ctx.game, id);
-        if ((card && card.play_options || []).length) {
+        if (!mobileLayout.matches && (card && card.play_options || []).length) {
           showOptionZones(card, groupedPlay(id).entries);
           if (ctx.targetCopy) ctx.targetCopy.textContent = '拖入对应区域，选择要打出的效果';
         }
@@ -522,6 +550,7 @@
     function onDragEnd(event) {
       if (!ctx.dragState || event.pointerId !== ctx.dragState.pointerId) return;
       const state = cleanupDrag();
+      ignoreHandToggleClick = true;
       const distance = Math.hypot(event.clientX - state.startX, event.clientY - state.startY);
       if (!state.moved || distance < CLICK_DISTANCE) {
         ctx.suppressClick = true;
@@ -536,7 +565,7 @@
       const zone = dropZoneAt(event.clientX, event.clientY);
       const legal = legalDrop(state.kind, state.id, zone, { x: event.clientX, y: event.clientY }, state.fromFront);
       clearCastUi();
-      const directTarget = state.kind === 'card' && ctx.options.dragTargeting !== false
+      const directTarget = state.kind === 'card' && dragTargetingEnabled()
         && Object.keys(boardTargetEntries(groupedPlay(state.id).entries)).length > 0;
       if (!legal) {
         const message = directTarget ? '未放到合法目标，已回弹。'
@@ -546,8 +575,9 @@
         ctx.flushPendingEnvelope();
         return;
       }
+      if (mobileLayout.matches && state.kind === 'card') setMobileHandOpen(false);
       const optionCard = state.kind === 'card' && TABLE.cardByInstance(ctx.game, state.id);
-      if ((optionCard && optionCard.play_options || []).length) {
+      if (!mobileLayout.matches && (optionCard && optionCard.play_options || []).length) {
         const selected = groupedPlay(state.id).entries.filter(function (entry) { return entry.action.option_id === legal.action.option_id; });
         if (selected.length > 1) startChoiceSelect(selected, optionCard);
         else ctx.submitEntry(legal);

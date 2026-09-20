@@ -218,6 +218,16 @@
       return;
     }
     applyHide(ctx, info.hide || []);
+    // Hand lessons must remain reachable behind the blocking tutorial mask.
+    if (window.matchMedia('(pointer: coarse) and (max-width: 1200px)').matches
+        && ctx.page.dataset.mobileHandTutorialStep !== info.step_id && !ctx.dragState) {
+      ctx.page.dataset.mobileHandTutorialStep = info.step_id;
+      if ((info.spotlights || []).some(function (token) { return String(token).indexOf('hand:') === 0; })) {
+        ctx.page.classList.add('mobile-hand-open');
+      } else {
+        ctx.page.classList.remove('mobile-hand-open');
+      }
+    }
     ctx.page.querySelectorAll('.tutorial-spotlight').forEach(function (node) {
       node.classList.remove('tutorial-spotlight');
     });
@@ -252,7 +262,9 @@
       mask.setAttribute('aria-hidden', showMask ? 'false' : 'true');
     }
     if (info.drag_arrow) {
-      addDragCue(resolveNode(ctx, info.drag_arrow.from), resolveNode(ctx, info.drag_arrow.to));
+      const mobileHand = window.matchMedia('(pointer: coarse) and (max-width: 1200px)').matches
+        && String(info.drag_arrow.from).indexOf('hand:') === 0;
+      addDragCue(resolveNode(ctx, info.drag_arrow.from), resolveNode(ctx, mobileHand ? 'play_area' : info.drag_arrow.to));
     }
     if (info.click_cue) {
       addClickCue(resolveNode(ctx, info.click_cue));

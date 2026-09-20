@@ -481,13 +481,13 @@ _L02_STEPS = [
 
 _L04_STEPS = [
     _ack('l04_intro', '战术牌',
-         '战术牌同样花费 1 点行动力，但不会让角色出击。需要选择目标时，把牌拖到目标身上。',
+         '战术牌同样花费 1 点行动力，但不会让角色出击。手机上先拖到对战区，松手后再点击目标；电脑开启拖动选择目标时，可以直接拖到目标身上。',
          ['hand:a-1']),
     _act('l04_play', '治疗薄荷',
-         '把这张战术牌拖到薄荷身上。她会回复 2 点生命。',
+         '用这张战术牌为薄荷回复 2 点生命。手机上先拖到对战区，松手后点击薄荷；电脑开启拖动选择目标时，可以直接拖给薄荷。',
          ['hand:a-1', 'character:a:tutorial_bohe'],
          [{'type': 'play_card'}],
-         cue='把战术牌拖到薄荷身上', primary='拖动卡牌',
+         cue='打出战术牌，选择薄荷', primary='拖动卡牌',
          arrow={'from': 'hand:a-1', 'to': 'character:a:tutorial_bohe'}, finish=True),
 ]
 
@@ -517,10 +517,10 @@ _L06_STEPS = [
          cue='按住主角，并拖动到对战区', primary='拖动主角',
          arrow={'from': 'character:a:tutorial_protagonist', 'to': 'play_area'}),
     _act('l06_play', '装备武备',
-         '还剩 1 点行动力。把这一张武备牌拖到主角身上。攻击和生命会刷新成武备上的数值，掉的血也会被拉满。',
+         '还剩 1 点行动力。把这一张武备牌拖到对战区，主角就会装备它。攻击和生命会刷新成武备上的数值，掉的血也会被拉满。',
          ['hand:a-1', 'character:a:tutorial_protagonist'],
          [{'type': 'play_card'}],
-         cue='把这一张武备牌拖到主角身上', primary='拖动卡牌',
+         cue='把这一张武备牌拖到对战区', primary='拖动卡牌',
          arrow={'from': 'hand:a-1', 'to': 'character:a:tutorial_protagonist'}),
     _act('l06_end', '结束回合',
          '结束回合。对方会打你的前排；生命降到 0 时，武备会卸下。',

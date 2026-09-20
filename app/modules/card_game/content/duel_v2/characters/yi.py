@@ -84,8 +84,8 @@ class Yi:
     def after_hits(c, **_data):
         status = front_debuff(c.state, other(c.side)).get('delay')
         # User tabletop tuning (2026-09-21), not Everness combat values.
-        if status and status.get('by') == c.side and int(status.get('left', 0)) < 3:
-            status['left'] = min(3, int(status.get('left', 0)) + 2)
+        if status and status.get('by') == c.side and int(status.get('left', 0)) < 2:
+            status['left'] = min(2, int(status.get('left', 0)) + 1)
             c.history(f"翳的攻击延长延滞至 {status['left']} 个己方回合。")
 
     @staticmethod

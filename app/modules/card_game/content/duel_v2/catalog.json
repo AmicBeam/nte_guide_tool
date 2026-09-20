@@ -269,7 +269,7 @@
       "portrait": "/static/images/characters/portrait/翳.webp",
       "everness_id": 1008,
       "faction": "异象管理局禁制机动队四队",
-      "passive": "翳的攻击使延滞延长 2 个己方回合，至多 3 个己方回合。「兽牙影刺」存在时，延滞的持续时间不会减少。翳倒地不会中断「兽牙影刺」。",
+      "passive": "翳的攻击使延滞延长 1 个己方回合，至多 2 个己方回合。「兽牙影刺」存在时，延滞的持续时间不会减少。翳倒地不会中断「兽牙影刺」。",
       "awakened_passive": "「兽牙影刺」持续时间 +1 个己方回合。己方附着物伤害 +1，持续 2 个己方回合。",
       "ultimate": {
         "kind": "status",

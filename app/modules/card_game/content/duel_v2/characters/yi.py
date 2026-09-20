@@ -82,9 +82,10 @@ class Yi:
     @staticmethod
     def after_hits(c, **_data):
         status = front_debuff(c.state, other(c.side)).get('delay')
-        if status and status.get('by') == c.side and int(status.get('left', 0)) < 2:
-            status['left'] = min(2, int(status.get('left', 0)) + 1)
-            c.history('翳的攻击延长延滞，至多 2 个己方回合。')
+        # User tabletop tuning (2026-09-21), not Everness combat values.
+        if status and status.get('by') == c.side and int(status.get('left', 0)) < 3:
+            status['left'] = min(3, int(status.get('left', 0)) + 2)
+            c.history(f"翳的攻击延长延滞至 {status['left']} 个己方回合。")
 
     @staticmethod
     def can_play(c, current=True, card=None, **_data):

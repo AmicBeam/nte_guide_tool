@@ -185,12 +185,46 @@ class SurplusReworkTest(unittest.TestCase):
 
     def test_fangs_pause_before_decrement_and_survive_death(self):
         s=self.game();self.delay(s);s=self.play(s,'I01')
-        self.assertEqual(front_debuff(s,'b')['delay']['left'],2)
+        self.assertEqual(front_debuff(s,'b')['delay']['left'],3)
         damage(s,'a','yi',99)
         for remaining in (3, 2, 1, 0):
             begin_turn(s,'a');self.assertEqual(hero(s,'a','yi')['beast_fangs'],remaining)
-            self.assertEqual(front_debuff(s,'b')['delay']['left'],2)
-        begin_turn(s,'a');self.assertEqual(front_debuff(s,'b')['delay']['left'],1)
+            self.assertEqual(front_debuff(s,'b')['delay']['left'],3)
+        begin_turn(s,'a');self.assertEqual(front_debuff(s,'b')['delay']['left'],2)
+
+    def test_yi_attack_extends_delay_two_turns_capped_at_three(self):
+        # User tabletop parameters, 2026-09-21; not original-game values.
+        for left, expected in ((1, 3), (2, 3), (3, 3), (4, 4)):
+            with self.subTest(left=left):
+                s=self.game();self.delay(s,left)
+                original=deepcopy(front_debuff(s,'b')['delay'])
+                before=capture_public_board(s);s['_public_board']=deepcopy(before)
+                seq=s['event_seq']
+                s=apply_action(s,'a',dict(type='attack',character_id='yi'))
+                self.assertEqual(front_debuff(s,'b')['delay'],dict(original,left=expected))
+                events=[e for e in observe(s,'a')['presentation']['events'] if e['seq']>seq]
+                history=[e for e in events if '翳的攻击延长延滞' in e.get('text','')]
+                self.assertEqual(len(history),int(left<3))
+                if history:
+                    self.assertIn('至 3 个己方回合',history[0]['text'])
+                    self.assertFalse(history[0]['present'])
+                board=replay_public_board(before,events)
+                self.assertEqual(board['sides']['b']['front_debuff'],front_debuff(s,'b'))
+                s=json.loads(json.dumps(s))
+                begin_turn(s,'b')
+                self.assertEqual(front_debuff(s,'b')['delay']['left'],expected)
+                begin_turn(s,'a')
+                self.assertEqual(front_debuff(s,'b')['delay']['left'],expected-1)
+
+    def test_yi_attack_does_not_create_or_extend_opponent_delay(self):
+        for enemy_owned in (False,True):
+            with self.subTest(enemy_owned=enemy_owned):
+                s=self.game()
+                if enemy_owned:
+                    self.delay(s);front_debuff(s,'b')['delay']['by']='b'
+                original=deepcopy(front_debuff(s,'b'))
+                s=apply_action(s,'a',dict(type='attack',character_id='yi'))
+                self.assertEqual(front_debuff(s,'b'),original)
 
     def test_fangs_no_innate_damage_weapon_each_turn_front_only(self):
         s=self.game();s=self.play(s,'I03');s['sides']['b']['front']='zero';hp=hero(s,'b','zero')['hp']

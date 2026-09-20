@@ -299,3 +299,37 @@ test('public play history ignores private draws and clears across rooms conceptu
   history = [];
   assert.equal(history.length, 0);
 });
+
+test('opening replacements finish each slot before the next leaves', async () => {
+  const TABLE = loadTable();
+  const timeline = [];
+  const nodes = {};
+  const make = (id) => nodes[id] = {classList: {
+    add(name) { timeline.push(id + ':' + name); },
+    remove(name) { timeline.push(id + ':clear-' + name); },
+  }};
+  ['a', 'b', 'keep'].forEach(make);
+  const rail = {querySelector(selector) { return nodes[selector.match(/="([^"]+)"/)[1]]; }};
+  await TABLE.animateMulliganSwap({
+    rail, outgoingIds: ['a', 'b'], incomingIds: ['x', 'y'],
+    wait: async () => { timeline.push('wait'); },
+    replaceOne(old, next) { timeline.push(old + '->' + next); make(next); },
+  });
+  assert.deepEqual(timeline, [
+    'a:selected', 'a:is-leaving', 'wait', 'a->x', 'x:is-entering', 'wait', 'x:clear-is-entering',
+    'b:selected', 'b:is-leaving', 'wait', 'b->y', 'y:is-entering', 'wait', 'y:clear-is-entering',
+  ]);
+});
+
+test('cancelled opening replacement never inserts a stale card', async () => {
+  const TABLE = loadTable();
+  let stopped = false;
+  let replacements = 0;
+  await TABLE.animateMulliganSwap({
+    rail: { querySelector() { return null; } }, outgoingIds: ['a'], incomingIds: ['b'],
+    cancelled: () => stopped,
+    wait: async () => { stopped = true; },
+    replaceOne() { replacements += 1; },
+  });
+  assert.equal(replacements, 0);
+});

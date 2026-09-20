@@ -796,6 +796,25 @@
       });
     }
 
+    if (typeof config.replaceOne === 'function') {
+      return (async function () {
+        for (let index = 0; index < outgoingIds.length; index += 1) {
+          if (cancelled()) return;
+          const outgoing = outgoingIds[index];
+          mark([outgoing], 'selected');
+          mark([outgoing], 'is-leaving');
+          await wait(moveMs);
+          if (cancelled()) return;
+          config.replaceOne(outgoing, incomingIds[index], index);
+          mark([incomingIds[index]], 'is-entering');
+          await wait(moveMs);
+          if (cancelled()) return;
+          const node = mulliganCardNode(rail, incomingIds[index]);
+          if (node && node.classList) node.classList.remove('is-entering');
+        }
+      })();
+    }
+
     return Promise.resolve().then(function () {
       if (cancelled()) return;
       mark(outgoingIds, 'selected');

@@ -83,7 +83,7 @@
         tutorialCue: ctx.tutorialCue,
         tutorialModalDismissed: ctx.tutorialModalDismissed,
         sendAction: ctx.sendAction,
-        showMulligan: ctx.forceMulliganStage ? true : undefined,
+        showMulligan: ctx.forceMulliganStage ? true : (ctx.mulliganFinished ? false : undefined),
         findAction: locked ? function () { return null; } : findAction,
         playEntries: locked ? function () { return []; } : ctx.playEntries,
       };
@@ -137,6 +137,7 @@
       ctx.pendingEnvelope = null;
       ctx.mulliganIds = [];
       ctx.mulliganHold = null;
+      ctx.mulliganFinished = false;
       ctx.forceMulliganStage = false;
       ctx.raisedCardId = null;
       ctx.playingEvents = false;
@@ -214,7 +215,7 @@
     }
 
     function renderMulliganChrome() {
-      const inMulligan = Boolean(ctx.game && ctx.game.phase === 'mulligan');
+      const inMulligan = Boolean(ctx.forceMulliganStage || (ctx.game && ctx.game.phase === 'mulligan' && !ctx.mulliganFinished));
       const canMulligan = inMulligan && actionsOf('mulligan').length > 0;
       ctx.page.classList.toggle('is-mulligan', inMulligan);
       V2.setHidden(ctx.nodes.mulliganToggle, !inMulligan);
@@ -333,12 +334,17 @@
     }
 
     function applyDisplayPatch(patch, event) {
+      const wasMulligan = !ctx.mulliganFinished && ctx.displayGame && ctx.displayGame.phase === 'mulligan';
+      const firsts = wasMulligan && patch && patch.phase && patch.phase !== 'mulligan' ? captureMulliganRects() : null;
       ctx.displayGame = TABLE.applyPatch(ctx.displayGame || ctx.game, patch || {}, event);
       ctx.displayGame = TABLE.appendPresentedEvent(ctx.displayGame, event);
       if (!ctx.replayMode && !ctx.playingEvents) {
         ctx.displayGame = TABLE.copyViewerHand(ctx.displayGame, ctx.game, currentViewer());
       }
       TABLE.renderGame(renderCtx());
+      if (firsts) {
+        dealMulliganToHand(firsts);
+      }
       if (ctx.reapplyBoardTargetSelect) ctx.reapplyBoardTargetSelect();
     }
 
@@ -403,7 +409,7 @@
       ctx.playingEvents = true;
       ctx.page.classList.add('presentation-busy');
       setConnection('busy', '演出中');
-      return ctx.player.play(fresh, { instant: Boolean(options.instant) }).then(function () {
+      return playOpeningMulligan(fresh, options).then(function () {
         if (generation !== ctx.playerGeneration) return;
         ctx.seenCursor = Number.isFinite(nextCursor) ? nextCursor : ctx.seenCursor;
       }).catch(function () {
@@ -411,6 +417,7 @@
         ctx.seenCursor = Number.isFinite(nextCursor) ? nextCursor : ctx.seenCursor;
       }).finally(function () {
         if (generation !== ctx.playerGeneration) return;
+        ctx.forceMulliganStage = false;
         ctx.playingEvents = false;
         ctx.page.classList.remove('presentation-busy');
         setConnection('live', '已同步');
@@ -418,50 +425,70 @@
       });
     }
 
-    function handInstanceIds(game, side) {
-      return (TABLE.sideState(game, side).hand || []).map(function (card) {
-        return card && card.instance_id != null ? String(card.instance_id) : '';
-      }).filter(Boolean);
-    }
-
-    function incomingMulliganIds(before, after, side) {
-      const beforeIds = {};
-      handInstanceIds(before, side).forEach(function (id) { beforeIds[id] = true; });
-      return handInstanceIds(after, side).filter(function (id) { return !beforeIds[id]; });
-    }
-
-    function playMulliganSwapThen(nextGame, afterSwap) {
+    async function playOpeningMulligan(events, options) {
+      const playOptions = { instant: Boolean(options.instant) };
       const hold = ctx.mulliganHold;
       ctx.mulliganHold = null;
-      if (!hold || !ctx.nodes.mulliganRail) {
-        return Promise.resolve().then(afterSwap);
-      }
       const viewer = currentViewer();
-      const incomingIds = incomingMulliganIds(hold.snapshot, nextGame, viewer);
-      const outgoingIds = (hold.outgoingIds || []).slice();
-      if (!outgoingIds.length && !incomingIds.length) {
-        return Promise.resolve().then(afterSwap);
-      }
+      const start = hold && events.findIndex(function (event) { return event.type === 'mulligan' && event.side === viewer; });
+      if (!hold || start < 0 || !ctx.nodes.mulliganRail) return ctx.player.play(events, playOptions);
       ctx.forceMulliganStage = true;
-      ctx.displayGame = hold.snapshot;
+      ctx.displayGame = TABLE.clone(hold.snapshot);
       TABLE.renderGame(renderCtx());
+      const generation = ctx.playerGeneration;
+      if (start) await ctx.player.play(events.slice(0, start), playOptions);
+      if (generation !== ctx.playerGeneration) return;
+      const event = events[start];
+      const count = Number(event.amount) || 0;
+      const draws = events.slice(start + 1, start + 1 + count);
+      if (draws.length !== count || draws.some(function (draw) { return draw.type !== 'draw' || draw.side !== viewer || !draw.card; })) {
+        ctx.forceMulliganStage = false;
+        return ctx.player.play(events.slice(start), playOptions);
+      }
+      const rail = ctx.nodes.mulliganRail;
+      const slots = Array.from(rail.querySelectorAll('[data-card-id]'));
+      const selected = (event.card_ids || []).map(String);
+      const outgoing = slots.map(function (node) { return node.getAttribute('data-card-id'); }).filter(function (id) { return selected.includes(id); });
+      ctx.forceMulliganStage = true;
       ctx.playingEvents = true;
       ctx.page.classList.add('presentation-busy');
-      return TABLE.animateMulliganSwap({
-        rail: ctx.nodes.mulliganRail,
-        outgoingIds: outgoingIds,
-        incomingIds: incomingIds,
-        reducedMotion: ctx.options && ctx.options.reducedMotion,
-        replace: function () {
-          ctx.displayGame = TABLE.clone(nextGame);
-          TABLE.renderGame(renderCtx());
+      // Keep the original nodes and their geometry until each replacement arrives.
+      await TABLE.animateMulliganSwap({
+        rail: rail,
+        outgoingIds: outgoing,
+        incomingIds: draws.map(function (draw) { return String(draw.card.instance_id); }),
+        reducedMotion: playOptions.instant || (ctx.options && ctx.options.reducedMotion),
+        cancelled: function () { return generation !== ctx.playerGeneration; },
+        replaceOne: function (oldId, newId, index) {
+          const old = slots.find(function (node) { return node.getAttribute('data-card-id') === oldId; });
+          if (!old) return;
+          const style = window.getComputedStyle(old);
+          const bounds = { width: parseFloat(style.width), height: parseFloat(style.height) };
+          const holder = document.createElement('div');
+          holder.innerHTML = TABLE.handCardHtml(draws[index].card, { phase: 'mulligan' });
+          const next = holder.firstElementChild;
+          next.classList.toggle('v2-hand-group-start', old.classList.contains('v2-hand-group-start'));
+          next.style.width = bounds.width + 'px';
+          next.style.height = bounds.height + 'px';
+          next.style.flex = '0 0 ' + bounds.width + 'px';
+          old.replaceWith(next);
         },
-      }).then(function () {
-        ctx.forceMulliganStage = false;
-        ctx.playingEvents = false;
-        ctx.page.classList.remove('presentation-busy');
-        return afterSwap();
       });
+      if (generation !== ctx.playerGeneration) return;
+      // Apply the corresponding private patches only after the last slot has settled.
+      const team = TABLE.sideState(ctx.displayGame, viewer);
+      team.hand = (team.hand || []).filter(function (card) { return !selected.includes(String(card.instance_id)); });
+      [event].concat(draws).forEach(function (item) {
+        ctx.displayGame = TABLE.applyPatch(ctx.displayGame, item.patch || {}, item);
+        ctx.displayGame = TABLE.appendPresentedEvent(ctx.displayGame, item);
+      });
+      const firsts = captureMulliganRects();
+      ctx.forceMulliganStage = false;
+      ctx.mulliganFinished = true;
+      TABLE.renderGame(renderCtx());
+      await waitMulliganHandDeal(firsts);
+      if (generation !== ctx.playerGeneration) return;
+      await ctx.player.play(events.slice(start + 1 + count), playOptions);
     }
 
     function captureMulliganRects() {

@@ -66,7 +66,7 @@ class SurplusReworkTest(unittest.TestCase):
         h=hero(s,'a','zhenhong')
         self.assertEqual(h['flags']['atk_buff'],1)
         self.assertEqual(h['extra_attacks'],1)
-        self.assertEqual((h['harmony'],h['energy']),(1,2))
+        self.assertEqual((h['harmony'],h['energy']),(0,2))
         events=[e for e in s['events'] if e['seq']>seq]
         attacks=[e['actor'] for e in events if e['type']=='attack']
         self.assertEqual(attacks,['a:jiuyuan','a:zhenhong'])
@@ -81,7 +81,7 @@ class SurplusReworkTest(unittest.TestCase):
         c=operation(s,'a','jiuyuan');resolve_genesis(c);finish_operation(s)
         h=hero(s,'a','zhenhong')
         self.assertEqual((h['extra_attacks'],h['flags']['atk_buff']), (2,2))
-        self.assertEqual(h['harmony'],2)
+        self.assertEqual(h['harmony'],0)
         self.assertEqual(h['energy'],5)
         self.assertFalse(s.get('deferred_actions'))
 

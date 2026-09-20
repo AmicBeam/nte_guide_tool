@@ -73,6 +73,7 @@ class Zhenhong:
     def on_deferred_action(c, action):
         from app.modules.card_game.content.duel_v2.registry import fire
         c.character['extra_attacks'] = int(c.character.get('extra_attacks', 0)) + 1
+        c.operation['skip_combat_harmony'] = action.get('kind') == 'surplus'
         c.operation['support'] = True
         c.operation['support_notified'] = True
         fire(c, 'on_support', actor_id=c.cid)

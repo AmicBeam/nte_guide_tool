@@ -700,7 +700,7 @@ def finish_operation(state):
     from .tutorial import tutorial_flags
     flags = tutorial_flags(state)
     gain_energy = not flags.get('disable_energy_gain')
-    gain_harmony = not flags.get('disable_harmony_gain')
+    gain_harmony = not flags.get('disable_harmony_gain') and not op.get('skip_combat_harmony')
     if attackers and (gain_energy or gain_harmony):
         share_side = attackers[0][0]
         before = {}

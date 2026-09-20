@@ -149,6 +149,8 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                 'front', 'last_front', 'turn_count', 'fatigue', 'records', 'used', 'harmonized',
                 'extra_flower', 'front_debuff') if k in source}
         team['life_locked'] = bool(source.get('life_locked'))
+        team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
+        team['genesis_turn'] = source.get('genesis_turn')
         if ps == side and source.get('deck_visible_turn') == state['turn'] and state['active_side'] == ps:
             team['visible_deck'] = [public_card(c) for c in source['deck']]
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
@@ -192,11 +194,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         for physical in source['hand']:
             raw = effective_card(state, ps, physical)
             if ps == side or raw.get('copy') or raw.get('instance_id') in revealed:
-                card = public_card(raw)
-                from .context import EffectContext
-                from app.modules.card_game.content.duel_v2.registry import decide
-                card['description'] = decide(EffectContext(state, ps, raw['character_id'], {'side': ps}),
-                    'card_description', card.get('description', ''), actor_only=True, include_down=True, card=raw)
+                card = public_card(raw, state, ps)
                 if ps == side and card_plays_instant(state, ps, raw):
                     card['instant'] = True
                 if raw.get('instance_id') in revealed:
@@ -221,7 +219,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         if ps == side:
             built = _sort_hand(built, team_order(state, ps))
         team['hand'] = built
-        team['discard'] = [public_card(c) for c in source['discard']]
+        team['discard'] = [public_card(c, state, ps) for c in source['discard']]
         result['sides'][ps] = team
     pending = state['pending_choice']
     result['pending_choice'] = None
@@ -229,10 +227,10 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         result['pending_choice'] = {'side': pending['side'], 'kind': pending['kind'],
             'prompt': pending['prompt'] if pending['side'] == side else '对手正在选择',
             'max_select': pending.get('max_select') if pending['side'] == side else None,
-            'choices': [{'id': c['instance_id'], 'label': c['name'], 'card': public_card(c)}
+            'choices': [{'id': c['instance_id'], 'label': c['name'], 'card': public_card(c, state, pending['side'])}
                         for c in pending['cards']] if pending['side'] == side else []}
     op = state['operation']
-    result['resolving_card'] = public_card(op['card']) if op and op['card'] else None
+    result['resolving_card'] = public_card(op['card'], state, op['side']) if op and op['card'] else None
     from .tutorial import is_tutorial, project_tutorial, strip_hidden_fields
     if is_tutorial(state):
         tutorial = project_tutorial(state, side)

@@ -87,7 +87,10 @@ def _pending_harmony(c):
 
 def resolve_genesis(c, *, arm_delay=True):
     s, side, cid = c.state, c.side, c.cid
+    if finished(s) or not alive(s, side, cid):
+        return
     team = s['sides'][side]
+    team['genesis_turn'] = s['turn']
     from .presentation import next_group_id
     repeats = 1 + tally(c, 'genesis_extra')
     surplus_triggered = False
@@ -96,8 +99,12 @@ def resolve_genesis(c, *, arm_delay=True):
             break
         genesis_target = front_target(s, side)
         delayed = bool(front_debuff(s, genesis_target[0]).get('delay'))
-        damage(s, *genesis_target, 1 + int(team.get('genesis_damage_bonus') or 0), source=f'{side}:{cid}', kind='genesis',
-               group_id=next_group_id(s))
+        target_side, target_id = genesis_target
+        target = hero(s, target_side, target_id) if is_esper(target_id) else s['sides'][target_side]
+        shield_before = target['shield']
+        loss = damage(s, *genesis_target, 1 + int(team.get('genesis_damage_bonus') or 0), source=f'{side}:{cid}', kind='genesis',
+                      group_id=next_group_id(s))
+        damage_dealt = loss > 0 or target['shield'] < shield_before
         if delayed and alive(s, side, cid) and not finished(s):
             surplus_triggered = True
             s['sides'][side]['surplus'] = True
@@ -113,7 +120,7 @@ def resolve_genesis(c, *, arm_delay=True):
                 text += f"{hero(s, side, recipient)['name']}获得 {gained} 点能量。"
             log(s, text, 'harmony', side=side, source=cid, actor=f'{side}:{cid}',
                 target=f'{side}:{recipient or cid}')
-        fire(c, 'on_genesis_damage', target=genesis_target)
+        fire(c, 'on_genesis_damage', target=genesis_target, damage_dealt=damage_dealt)
     if surplus_triggered:
         fire(c, GameEvent.V2_SURPLUS, entering=cid)
     flowers = genesis_flowers(c) + int(team['extra_flower'])

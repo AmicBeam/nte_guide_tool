@@ -1,6 +1,6 @@
 from app.modules.card_game.content.duel_v2.characters.common import set_shape
 from app.modules.card_game.content.duel_v2.registry import register
-from app.modules.card_game.engine.duel_v2.state import alive, damage, front_target, hero, is_esper, other
+from app.modules.card_game.engine.duel_v2.state import PLAYER_ID, alive, damage, finished, front_target, hero, is_esper, other
 
 
 def _j01(c):
@@ -34,23 +34,17 @@ def _j04(c):
 
 
 def _j05(c):
-    foe = other(c.side)
-    revealed = set(c.state['sides'][foe].get('revealed_ids') or [])
-    count = sum(1 for card in c.state['sides'][foe]['hand'] if card.get('instance_id') in revealed)
-    if count:
-        side, cid = front_target(c.state, c.side)
-        damage(c.state, side, cid, count, source=f'{c.side}:{c.cid}')
+    triggered = c.state['sides'][c.side].get('genesis_turn') == c.state['turn']
+    damage(c.state, other(c.side), PLAYER_ID, 3 if triggered else 2, source=f'{c.side}:{c.cid}')
 
 
 def _j06(c):
-    foe = other(c.side)
-    front = c.state['sides'][foe].get('front')
-    if not front:
-        return
-    revealed = c.state['sides'][foe].setdefault('revealed_ids', [])
-    for card in c.state['sides'][foe]['hand']:
-        if card.get('character_id') == front and card['instance_id'] not in revealed:
-            revealed.append(card['instance_id'])
+    # Lock the number of hits when played; these are tactic damage, not genesis.
+    count = int(c.state['sides'][c.side].get('genesis_player_hits', 0))
+    for _ in range(count):
+        if finished(c.state):
+            break
+        damage(c.state, *front_target(c.state, c.side), 1, source=f'{c.side}:{c.cid}')
 
 
 @register
@@ -71,6 +65,13 @@ class Jiuyuan:
         return 1 if c.character['hp'] > 0 else 0
 
     @staticmethod
+    def card_description(c, current, card):
+        if card['card_id'] == 'J06':
+            count = int(c.state['sides'][c.side].get('genesis_player_hits', 0))
+            return f'{current}（X为{count}）'
+        return current
+
+    @staticmethod
     def on_ultimate(c):
         foe = other(c.side)
         for cid in list(c.state['sides'][foe]['characters']):
@@ -89,11 +90,13 @@ class Jiuyuan:
             damage(c.state, foe, cid, amount, source=f'{c.side}:{c.cid}')
 
     @staticmethod
-    def on_genesis_damage(c, target=None, **_data):
-        if c.character.get('shape') != 'J08' or not target:
+    def on_genesis_damage(c, target=None, damage_dealt=False, **_data):
+        if not target:
             return
         side, cid = target
         if is_esper(cid) and not alive(c.state, side, cid):
             return
-        damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}', reason='创生造成伤害，「现实避难所」触发')
-        c.attach_pact(side, cid)
+        if damage_dealt and is_esper(cid):
+            c.attach_pact(side, cid)
+        if c.character.get('shape') == 'J08':
+            damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}', reason='创生造成伤害，「现实避难所」触发')

@@ -156,7 +156,7 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None)
             team['ap'] -= ap_paid
     log(state, f"{hero(state, side, card['character_id'])['name']}使用「{card['name']}」。",
         'play', side=side, source=card['character_id'],
-        actor=f"{side}:{card['character_id']}", card=public_card(card))
+        actor=f"{side}:{card['character_id']}", card=public_card(card, state, side))
     c = operation(state, side, card['character_id'], card, target_id)
     c.operation['option_id'] = option.get('id')
     c.operation['ap_paid'] = ap_paid

@@ -177,7 +177,7 @@
       "max_hp": 4,
       "avatar": "/static/images/characters/avatar/九原.webp",
       "portrait": "/static/images/characters/portrait/九原.webp",
-      "passive": "【创生强化】九原存活时，创生效果额外结算一次。",
+      "passive": "【创生强化】九原存活时，创生效果额外结算一次。创生对异能者造成伤害时，附着枚约。",
       "awakened_passive": "对所有对方异能者造成 1 点伤害。对所有枚约目标额外造成 2 点伤害，并消耗枚约。",
       "everness_id": 1055,
       "role": "创生强化与枚约",
@@ -765,7 +765,8 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "造成等同于对方公开手牌数的伤害。前排优先。",
+      "description": "瞬发。对对方玩家造成 2 点伤害。若本回合己方已触发过创生，改为 3 点。",
+      "instant": true,
       "starter_copies": 0
     },
     {
@@ -775,7 +776,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "公开对方前排当前手牌中属于该异能者的牌。",
+      "description": "造成 1 点伤害。前排优先。重复 X 次。X 为本局己方对对方玩家造成的创生伤害次数。",
       "effect_id": "J06",
       "source": {
         "character_id": 1055,
@@ -815,7 +816,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "创生造成伤害时，对该目标额外造成 1 点伤害，并附着枚约。",
+      "description": "创生造成伤害时，对该目标额外造成 1 点伤害。",
       "starter_copies": 2,
       "attack": 3,
       "hp": 5

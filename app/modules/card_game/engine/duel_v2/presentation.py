@@ -29,8 +29,13 @@ INTERACTION_KINDS = ('attack', 'cast', 'target', 'form', 'awaken', 'ultimate', '
 SILENT_PRESENT_TYPES = frozenset()
 
 
-def public_card(card):
+def public_card(card, state=None, side=None):
     result = {key: deepcopy(card[key]) for key in CARD_FIELDS if key in card}
+    if state is not None and side in SIDES and card.get('character_id') in state['sides'][side]['characters']:
+        from .context import EffectContext
+        from app.modules.card_game.content.duel_v2.registry import decide
+        result['description'] = decide(EffectContext(state, side, card['character_id'], {'side': side}),
+            'card_description', result.get('description', ''), actor_only=True, include_down=True, card=card)
     if card.get('copy'):
         original = text_name(card.get('original_character_id'))
         if original:
@@ -68,6 +73,8 @@ def capture_public_board(state):
         if 'entity_id' in source:
             team['entity_id'] = source['entity_id']
         team['life_locked'] = bool(source.get('life_locked'))
+        team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
+        team['genesis_turn'] = source.get('genesis_turn')
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
         marks = harmony_marks(state, ps)
         team['harmony_available'] = marks['available']

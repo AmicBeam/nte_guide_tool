@@ -2,7 +2,7 @@
 
 Explicit allowlists only: no hands, deck identities, RNG or private choices.
 """
-SIDE_KEYS = ('extra_ap', 'delay_turns', 'delay_counted_turn', 'skip_normal_attack', 'extra_genesis_pending', 'extra_genesis_actor', 'surplus', 'harmony_damage',
+SIDE_KEYS = ('extra_ap', 'delay_turns', 'delay_counted_turn', 'skip_normal_attack', 'extra_genesis_pending', 'extra_genesis_actor', 'genesis_turn', 'genesis_player_hits', 'surplus', 'harmony_damage',
              'surplus_ever', 'empty_draw_wins', 'genesis_damage_bonus', 'nanali_family', 'nanali_family_played', 'ultimates_used')
 FLAG_KEYS = ('next_bonus', 'next_shield', 'next_followup', 'energy_next',
              'allied_hurt', 'pending_atk', 'share_overflow', 'hp_floor',

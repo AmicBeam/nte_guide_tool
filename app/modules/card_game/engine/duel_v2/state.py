@@ -367,6 +367,12 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         loss = 0
     target['hp'] = max(floor, target['hp'] - loss)
     after = {'hp': target['hp'], 'shield': target['shield']}
+    # Public, team-wide history: count each positive genesis hit on the opposing
+    # player, including shield absorption. Flowers and equipment hits are distinct.
+    if (kind == 'genesis' and not esper and src_side in SIDES and src_side != side
+            and (absorbed > 0 or before['hp'] > after['hp'])):
+        team = state['sides'][src_side]
+        team['genesis_player_hits'] = int(team.get('genesis_player_hits', 0)) + 1
     extra = {}
     if group_id:
         extra['group_id'] = group_id

@@ -1338,5 +1338,13 @@
       "scope": "Keep previously enabled numerical weights and builds; runtime rule amendment only, historical quality unchanged."
     }
   },
-  "training_rule_hash": "42e8840fe013df1d8b9e2b38a9e538e2fbcab0c674ca13979967c911ece9f085"
+  "training_rule_hash": "42e8840fe013df1d8b9e2b38a9e538e2fbcab0c674ca13979967c911ece9f085",
+  "runtime_compatibility": {
+    "kind": "explicit_user_compatibility",
+    "request": "2026-09-20 用户确认 J01 瞬发对玩家携带影响很小，允许现有高级人机继续使用；普通小吱预组换人不修改高级人机套牌。",
+    "runtime_rule_hash": "f319d24039875bfcbc7a0561b29e65cb08f3860f4a74c005173c2a2d77d99033",
+    "model_sha256": "7207c7de951f1dbbdee0ed68bb1898b0724210d736b3f42373411c77b1f3fc5c",
+    "build_sha256": "e1743d737870096d947fc00a4e22e7ecb982a9d8f8f9c8f0bb425ddff89d6d3e",
+    "source_rule_hash": "295d37e42b9b1c94405764e3f182f93549a02ac4eacf2228ba0bafcb673f562a"
+  }
 }

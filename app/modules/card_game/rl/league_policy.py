@@ -14,7 +14,18 @@ class LeagueModel:
     def __init__(self,directory,key,*,require_approved=False):
         directory=Path(directory);m=json.loads((directory/(key+'.json')).read_text(encoding='utf-8'))
         p=directory/(key+'.npz');digest=hashlib.sha256(p.read_bytes()).hexdigest()
-        if key not in PRESETS or m.get('schema')!=SCHEMA or m.get('deck')!=key or m.get('rule_hash')!=rule_hash():raise ValueError('League model rule/schema mismatch')
+        if key not in PRESETS or m.get('schema')!=SCHEMA or m.get('deck')!=key:raise ValueError('League model schema mismatch')
+        runtime = rule_hash()
+        compatibility = m.get('runtime_compatibility') or {}
+        self.runtime_compatible = bool(
+            compatibility.get('kind') == 'explicit_user_compatibility'
+            and compatibility.get('request')
+            and compatibility.get('source_rule_hash') == m.get('rule_hash')
+            and compatibility.get('runtime_rule_hash') == runtime
+            and compatibility.get('model_sha256') == digest
+            and compatibility.get('build_sha256') == m.get('build_sha256'))
+        if m.get('rule_hash') != runtime and not self.runtime_compatible:
+            raise ValueError('League model rule/schema mismatch')
         if m.get('sha256')!=digest or m.get('seat_ids')!=list(SEATS) or m.get('card_ids')!=list(CARD_IDS):raise ValueError('League model identity mismatch')
         if m.get('features')!=feature_names() or m.get('cand_dim')!=CAND_DIM:raise ValueError('League feature contract mismatch')
         self.hidden=int(m['hidden'])
@@ -24,7 +35,8 @@ class LeagueModel:
             if self.weights[n].shape!=s or not np.isfinite(self.weights[n]).all():raise ValueError('Invalid tensor '+n)
             self.weights[n].flags.writeable=False
         self.serving_deck=m['build'];self.serving_build_sha256=build_hash(self.serving_deck)
-        if self.serving_deck['character_ids']!=deck(key)['character_ids'] or m['build_sha256']!=self.serving_build_sha256:raise ValueError('Build identity mismatch')
+        # Serving lineups belong to the model, independently of gift presets.
+        if not set(self.serving_deck['character_ids']) <= set(SEATS) or m['build_sha256']!=self.serving_build_sha256:raise ValueError('Build identity mismatch')
         v=m.get('validation') or {}
         self.approved=bool(v.get('approved') and v.get('complete') and v.get('model_sha256')==digest and v.get('build_sha256')==self.serving_build_sha256 and v.get('rule_hash')==m['rule_hash'])
         # Manual candidate activation is separate from quality-gate approval.

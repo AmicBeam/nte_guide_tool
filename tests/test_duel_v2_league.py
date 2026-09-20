@@ -99,6 +99,55 @@ class LeagueTest(unittest.TestCase):
                     p.write_text(json.dumps(m))
                     with self.assertRaises(ValueError):LeagueModel(d,'quick-rush',require_approved=True)
 
+    def test_serving_lineup_is_independent_of_current_gift_preset(self):
+        with tempfile.TemporaryDirectory() as d:
+            zero_policy(d, 'quick-rush')
+            p = Path(d) / 'quick-rush.json'
+            m = json.loads(p.read_text())
+            m['build']['character_ids'][-1] = 'haiyue'
+            m['build']['card_ids'] = [c for c in m['build']['card_ids'] if not c.startswith('J')] + ['U01', 'U02', 'U03', 'U03', 'U04', 'U06', 'U06', 'U08']
+            m['build_sha256'] = build_hash(m['build'])
+            p.write_text(json.dumps(m))
+            model = LeagueModel(d, 'quick-rush')
+            self.assertEqual(model.serving_deck, m['build'])
+            self.assertIn('haiyue', model.serving_deck['character_ids'])
+            self.assertIn('jiuyuan', deck('quick-rush')['character_ids'])
+            m['build']['card_ids'][0] = 'Z01'
+            p.write_text(json.dumps(m))
+            with self.assertRaisesRegex(ValueError, 'Build identity mismatch'):
+                LeagueModel(d, 'quick-rush')
+
+    def test_explicit_runtime_compatibility_preserves_training_identity(self):
+        with tempfile.TemporaryDirectory() as d:
+            zero_policy(d, 'starter')
+            p = Path(d) / 'starter.json'
+            m = json.loads(p.read_text())
+            runtime = m['rule_hash']
+            m['rule_hash'] = 'historical-training-rules'
+            m['serving_authorization'] = {
+                'kind': 'explicit_user_candidate', 'request': 'Enable candidate',
+                'report': 'test-report.md', 'model_sha256': m['sha256'],
+                'build_sha256': m['build_sha256'], 'rule_hash': m['rule_hash']}
+            p.write_text(json.dumps(m))
+            with self.assertRaisesRegex(ValueError, 'rule/schema mismatch'):
+                LeagueModel(d, 'starter', require_approved=True)
+            compatibility = {
+                'kind': 'explicit_user_compatibility', 'request': 'Accept minor rule changes',
+                'source_rule_hash': m['rule_hash'], 'runtime_rule_hash': runtime,
+                'model_sha256': m['sha256'], 'build_sha256': m['build_sha256']}
+            m['runtime_compatibility'] = compatibility
+            p.write_text(json.dumps(m))
+            model = LeagueModel(d, 'starter', require_approved=True)
+            self.assertTrue(model.runtime_compatible)
+            self.assertFalse(model.approved)
+            self.assertEqual(model.manifest['rule_hash'], 'historical-training-rules')
+            for field in compatibility:
+                with self.subTest(field=field):
+                    m['runtime_compatibility'] = {**compatibility, field: ''}
+                    p.write_text(json.dumps(m))
+                    with self.assertRaises(ValueError):
+                        LeagueModel(d, 'starter', require_approved=True)
+
     def test_branch_gradient_and_numeric_export(self):
         try:import torch
         except ImportError:self.skipTest('Torch tested on Windows')

@@ -1157,6 +1157,14 @@
           img.setAttribute("alt", "");
           art.appendChild(img);
           show.appendChild(art);
+        } else {
+          show.appendChild(this._el("div", "v2-fx-card-art is-fallback"));
+        }
+        const statMarkup = api && api.cardFrameStat ? api.cardFrameStat(card) : "";
+        if (statMarkup) {
+          const stats = this._el("div", "v2-fx-card-stats");
+          stats.innerHTML = statMarkup;
+          show.firstChild.appendChild(stats);
         }
         const name = this._el("strong", "v2-fx-card-name");
         name.textContent = String(card.name || card.card_id || "");
@@ -1205,6 +1213,12 @@
             handDesc.textContent = String(card.description);
           }
           handFace.appendChild(handDesc);
+        }
+        const statMarkup = api && api.cardFrameStat ? api.cardFrameStat(card) : "";
+        if (statMarkup) {
+          const stats = this._el("span");
+          stats.innerHTML = statMarkup;
+          handFace.appendChild(stats);
         }
       }
       node.appendChild(show);

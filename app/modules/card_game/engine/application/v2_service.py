@@ -38,7 +38,14 @@ def _content():
     return duel_v2
 
 
-def _solo_ai_deck() -> dict:
+def _solo_ai_deck(player=None, preset_id=None) -> dict:
+    if preset_id not in (None, 'random'):
+        if not isinstance(preset_id, str):
+            raise RuleValidationError('请选择普通人机的对战预组。')
+        selected = next((item for item in _allowed_presets(player) if item['id'] == preset_id), None)
+        if selected is None:
+            raise RuleValidationError('该人机预组不存在或尚未公开。')
+        return _validate_deck(deepcopy(selected))
     from secrets import choice
     content = _content()
     presets = [preset for preset in getattr(content, 'STARTER_DECKS', None) or [content.STARTER_DECK]
@@ -516,7 +523,8 @@ def _response(room, player, envelope: dict | None = None, after_seq=None) -> dic
         if game and entry.side in game['sides']:
             game['sides'][entry.side]['name'] = name
     if game and room.mode in {'solo', 'advanced'} and 'b' in game['sides']:
-        game['sides']['b']['name'] = '高级人机' if room.mode == 'advanced' else '练习对手'
+        game['sides']['b']['name'] = ('高级人机' if room.mode == 'advanced' else
+                                    ((envelope['game'].get('ai_profile') or {}).get('name', '练习对手')))
     if game and room.mode == 'tutorial' and 'b' in game['sides']:
         game['sides']['b']['name'] = '对手'
     if game and room.mode == 'tutorial' and game.get('tutorial'):
@@ -578,7 +586,7 @@ def _advance_ai(game: dict, mode: str) -> dict:
     raise PersistenceError('练习对手动作超出单回合限制，请刷新后重试。')
 
 
-def _initialize_game(room, scenario=None, ai_deck_id=None, ai_model=None) -> dict:
+def _initialize_game(room, scenario=None, ai_deck_id=None, ai_model=None, solo_deck=None) -> dict:
     if room.mode == 'tutorial':
         game = _engine().new_game(seed=0, scenario=scenario or 'tutorial_l01_board')
         game = _advance_ai(game, room.mode)
@@ -589,7 +597,7 @@ def _initialize_game(room, scenario=None, ai_deck_id=None, ai_model=None) -> dic
     people = repository.members(room)
     decks = {entry.side: _validate_deck(repository.member_deck(entry)) for entry in people}
     if room.mode == 'solo':
-        decks['b'] = _solo_ai_deck()
+        decks['b'] = deepcopy(solo_deck) if solo_deck is not None else _solo_ai_deck()
     if room.mode == 'advanced':
         from app.modules.card_game.engine.ai.advanced_model import load_model, serving_deck, require_human_deck
         ai_model = ai_model if ai_model is not None else load_model(ai_deck_id)
@@ -597,6 +605,9 @@ def _initialize_game(room, scenario=None, ai_deck_id=None, ai_model=None) -> dic
         decks['b'] = _validate_deck(serving_deck(ai_model, ai_deck_id))
         require_human_deck(ai_model, decks['a'], ai_deck_id)
     game = _engine().new_game(seed=randbits(31), decks=decks)
+    if room.mode == 'solo' and solo_deck is not None:
+        game['ai_profile'] = {'kind': 'rule', 'deck_id': solo_deck['id'], 'name': solo_deck['name']}
+        game['sides']['b']['name'] = solo_deck['name']
     if room.mode == 'advanced':
         model = ai_model
         from app.modules.card_game.engine.ai.advanced_model import model_build_hash
@@ -622,6 +633,8 @@ def start(player, payload: dict) -> dict:
         raise RuleValidationError('请选择人机或双人模式。')
     ai_deck_id = None
     ai_model = None
+    solo_deck = (_solo_ai_deck(player, payload['ai_deck'])
+                 if mode == 'solo' and payload.get('ai_deck') not in (None, 'random') else None)
     if mode == 'advanced':
         from app.modules.card_game.engine.ai.advanced_model import load_model, serving_deck
         ai_deck_id = payload.get('ai_deck', 'starter')
@@ -666,6 +679,11 @@ def start(player, payload: dict) -> dict:
                     profile = ((active or {}).get('game') or {}).get('ai_profile') or {}
                     if profile.get('deck_id') != ai_deck_id:
                         raise DuelV2Conflict('请先离开当前对局，再更换高级人机预组。')
+                if mode == 'solo' and 'ai_deck' in payload:
+                    active = storage.load(existing.id)
+                    profile = ((active or {}).get('game') or {}).get('ai_profile') or {}
+                    if profile.get('deck_id', 'random') != payload['ai_deck']:
+                        raise DuelV2Conflict('请先离开当前对局，再更换人机预组。')
                 return get_state(player)
             if existing is not None and existing.status == 'finished' and existing.mode == 'tutorial':
                 _close_tutorial_room(existing)
@@ -675,7 +693,7 @@ def start(player, payload: dict) -> dict:
         with atomic_transaction():
             room = repository.create_room(player, mode)
             repository.add_member(room, player, 'a', deck, ready=(mode in {'solo', 'advanced', 'tutorial'}))
-            envelope = _initialize_game(room, scenario=scenario, ai_deck_id=ai_deck_id, ai_model=ai_model) if mode in {'solo', 'advanced', 'tutorial'} else None
+            envelope = _initialize_game(room, scenario=scenario, ai_deck_id=ai_deck_id, ai_model=ai_model, solo_deck=solo_deck) if mode in {'solo', 'advanced', 'tutorial'} else None
         return _response(room, player, envelope)
 
 

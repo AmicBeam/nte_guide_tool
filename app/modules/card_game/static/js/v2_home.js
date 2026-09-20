@@ -25,6 +25,8 @@ async function bootstrapHome() {
   const roomInput = document.getElementById('v2-room-code-input');
   const nameNode = document.getElementById('v2-home-name');
   const uidNode = document.getElementById('v2-home-uid');
+  const soloDeck = document.getElementById('v2-solo-deck');
+  const soloPicker = document.getElementById('v2-solo-picker');
   const aiDeck = document.getElementById('v2-ai-deck');
   const aiPicker = document.getElementById('v2-advanced-picker');
   const aiDeckHint = document.getElementById('v2-ai-deck-hint');
@@ -45,6 +47,7 @@ async function bootstrapHome() {
       document.getElementById('v2-mode-' + mode).disabled = busy;
     });
     aiDeck.disabled = busy;
+    soloDeck.disabled = busy;
     if (tutorialStart) tutorialStart.disabled = busy;
     if (leaveBtn) leaveBtn.disabled = busy;
     if (resumeBtn) resumeBtn.classList.toggle('is-disabled', busy);
@@ -79,6 +82,11 @@ async function bootstrapHome() {
   function renderBuildSummary() {
     const saved = catalog && catalog.saved_build;
     const starter = catalog && catalog.starter_deck;
+    const previousSolo = soloDeck.value;
+    soloDeck.innerHTML = '<option value="random">随机公开预组</option>' + ((catalog && catalog.starter_decks) || []).map(function (deck) {
+      return '<option value="' + V2.escapeAttr(deck.id) + '">' + V2.escapeHtml(deck.name) + '</option>';
+    }).join('');
+    if (Array.from(soloDeck.options).some(function (option) { return option.value === previousSolo; })) soloDeck.value = previousSolo;
     if (selectedMode === 'advanced') {
       const opponentName = aiDeck.options[aiDeck.selectedIndex].text;
       const playerDeck = saved || starter;
@@ -165,6 +173,8 @@ async function bootstrapHome() {
       const payload = { mode: selectedMode };
       if (selectedMode === 'advanced') {
         payload.ai_deck = aiDeck.value;
+      } else if (selectedMode === 'solo') {
+        payload.ai_deck = soloDeck.value;
       }
       await V2.startGame(payload);
       goTable();
@@ -205,6 +215,7 @@ async function bootstrapHome() {
       button.setAttribute('aria-pressed', String(value === mode));
     });
     V2.setHidden(aiPicker, mode !== 'advanced');
+    V2.setHidden(soloPicker, mode !== 'solo');
     startBtn.textContent = mode === 'advanced' ? '挑战高级人机' : (mode === 'pvp' ? '创建 1v1 房间' : '开始人机对局');
     renderStarter();
     renderBuildSummary();

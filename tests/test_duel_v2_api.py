@@ -451,12 +451,38 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertEqual(len(catalog['cards']), 148)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '小吱预组'],
+            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '小吱预组', '真红预组'],
         )
         self.assertEqual(
             [item['name'] for item in catalog['saved_builds']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '小吱预组'],
+            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '小吱预组', '真红预组'],
         )
+
+    def test_zhenhong_rule_opponent_uses_named_deck_and_resumes(self):
+        token = self._issue_login_and_get_token('zhenhong-opponent-tester')
+        self._set_test_whitelist('zhenhong-opponent-tester')
+        view = self._post('/api/duel-v2/start', {'mode': 'solo', 'ai_deck': 'zhenhong'}, token=token)
+        self.assertEqual([h['id'] for h in view['game']['sides']['b']['characters']],
+                         ['zhenhong', 'zero', 'iloy', 'yi'])
+        self.assertEqual(view['game']['sides']['b']['name'], '真红预组')
+        replay = self._get('/api/duel-v2/replay/' + view['room']['room_code'], token=token)['replay']
+        self.assertEqual(replay['opening_board']['sides']['b']['name'], '真红预组')
+        same = self._post('/api/duel-v2/start', {'mode': 'solo', 'ai_deck': 'zhenhong'}, token=token)
+        self.assertEqual(same['room']['room_code'], view['room']['room_code'])
+        error = self._post_error('/api/duel-v2/start', {'mode': 'solo', 'ai_deck': 'starter'}, token=token, expected_status=409)
+        self.assertIn('更换人机预组', error['error'])
+
+    def test_zhenhong_rule_opponent_rejects_non_test_account(self):
+        error = self._post_error('/api/duel-v2/start', {'mode': 'solo', 'ai_deck': 'zhenhong'}, token=self.a)
+        self.assertIn('尚未公开', error['error'])
+        self._get('/api/duel-v2/state', token=self.a, expected_status=404)
+
+    def test_solo_explicit_public_opponent_and_unknown_rejection(self):
+        error = self._post_error('/api/duel-v2/start', {'mode': 'solo', 'ai_deck': 'missing'}, token=self.a)
+        self.assertIn('不存在', error['error'])
+        view = self._post('/api/duel-v2/start', {'mode': 'solo', 'ai_deck': 'starter'}, token=self.a)
+        self.assertEqual([h['id'] for h in view['game']['sides']['b']['characters']],
+                         ['nanali', 'iloy', 'zero', 'jiuyuan'])
 
     def test_regular_account_cannot_save_or_start_with_test_characters(self):
         content = importlib.import_module('app.modules.card_game.content.duel_v2')
@@ -484,7 +510,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         upgraded = self._get('/api/duel-v2/catalog', token=token)
         self.assertEqual(
             [item['name'] for item in upgraded['saved_builds']],
-            ['创生预组', '覆纹预组', '小吱预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）'],
+            ['创生预组', '覆纹预组', '小吱预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '真红预组'],
         )
 
     def test_regular_account_does_not_see_existing_test_character_builds(self):

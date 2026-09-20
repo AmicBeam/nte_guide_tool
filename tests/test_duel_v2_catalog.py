@@ -279,6 +279,18 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertIsNot(normalized['card_ids'], STARTER_DECK['card_ids'])
         self.assertIsNot(normalized['character_ids'], STARTER_DECK['character_ids'])
 
+    def test_zhenhong_preset_is_separate_legal_test_deck(self):
+        from collections import Counter
+        deck = next(d for d in STARTER_DECKS if d['id'] == 'zhenhong')
+        self.assertEqual(deck['name'], '真红预组')
+        self.assertEqual(deck['character_ids'], ['zhenhong', 'zero', 'iloy', 'yi'])
+        self.assertEqual(len(deck['card_ids']), 32)
+        self.assertEqual(Counter(CARDS[c]['character_id'] for c in deck['card_ids']),
+                         Counter(dict.fromkeys(deck['character_ids'], 8)))
+        self.assertLessEqual(max(Counter(deck['card_ids']).values()), 2)
+        self.assertFalse(any(CARDS[c].get('derived') for c in deck['card_ids']))
+        self.assertEqual(next(d for d in STARTER_DECKS if d['id'] == 'crimson')['name'], '盈蓄预组')
+
     def test_catalog_returns_independent_copies(self) -> None:
         first = get_catalog()
         second = get_catalog()
@@ -314,10 +326,10 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'requiem')))
         full = get_catalog()
         self.assertEqual(len(full['characters']), 18)
-        self.assertEqual(len(full['starter_decks']), 6)
+        self.assertEqual(len(full['starter_decks']), 7)
         self.assertEqual(
             [item['name'] for item in full['starter_decks']],
-            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '小吱预组'],
+            ['创生预组', '浊燃预组', '盈蓄预组', '覆纹预组（测试）', '覆纹预组', '小吱预组', '真红预组'],
         )
         self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')))
 

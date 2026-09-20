@@ -30,11 +30,12 @@ def _member_name(member) -> str:
     return player.nickname or player.player_uid
 
 
-def _names_for(room, members) -> tuple[str, str]:
+def _names_for(room, members, game=None) -> tuple[str, str]:
     by_side = {entry.side: entry for entry in members}
     name_a = _member_name(by_side['a']) if 'a' in by_side else '我方'
     if room.mode in {'solo', 'advanced'}:
-        name_b = '高级人机' if room.mode == 'advanced' else '练习对手'
+        name_b = ('高级人机' if room.mode == 'advanced' else
+                  ((game or {}).get('ai_profile') or {}).get('name', '练习对手'))
     else:
         name_b = _member_name(by_side['b']) if 'b' in by_side else '对手'
     return name_a, name_b
@@ -50,7 +51,7 @@ def _label_sides(view: dict, name_a: str, name_b: str) -> dict:
 
 
 def _new_payload(room, game: dict, members) -> dict:
-    name_a, name_b = _names_for(room, members)
+    name_a, name_b = _names_for(room, members, game)
     player_a_id, player_b_id = _player_ids(members)
     views = {}
     for member in members:
@@ -84,7 +85,7 @@ def _append_view(view: dict, game: dict, viewer: str, raw_events: list, name_a: 
 
 
 def _append_payload(payload: dict, room, game: dict, members) -> dict:
-    name_a, name_b = _names_for(room, members)
+    name_a, name_b = _names_for(room, members, game)
     player_a_id, player_b_id = _player_ids(members)
     payload['name_a'] = name_a
     payload['name_b'] = name_b

@@ -272,7 +272,6 @@
 .v2-resource-row { width: 100%; max-width: 100%; flex-wrap: wrap; }
 
 .v2-resource-row > span { flex: none; }
-.v2-effect-short { display: none; }
 @media (pointer: coarse) and (max-width: 1200px) {
   /* Keep side-mounted ultimate controls above adjacent bench slots. */
   .v2-bench-slot:has(.v2-awaken-btn) { z-index: 4; }
@@ -295,30 +294,6 @@
     letter-spacing: 3px;
     z-index: 4;
   }
-  .v2-table-page .v2-character-extras .v2-character-effects {
-    position: absolute;
-    right: calc(100% + 1px);
-    left: auto;
-    top: 50%;
-    bottom: auto;
-    transform: translateY(-50%);
-    width: max-content;
-    flex-wrap: nowrap;
-    gap: 3px;
-  }
-  .v2-character-extras .v2-character-effects .v2-chip {
-    writing-mode: vertical-rl;
-    text-orientation: upright;
-    width: 18px;
-    font-size: 11px;
-    min-height: 40px;
-    box-sizing: border-box;
-    padding: 5px 3px;
-    letter-spacing: 2px;
-  }
-  .v2-character-extras .v2-effect-short { display: inline; }
-  .v2-character-extras .v2-effect-name,
-  .v2-character-extras .v2-character-effects small { display: none; }
   /* Preserve the two-character tutorial layout; only four-person rows use arcs. */
   .v2-table-page .v2-bench-row.player:not([data-count="2"]) .v2-bench-slot[data-arc="0"],
   .v2-table-page .v2-bench-row.player:not([data-count="2"]) .v2-bench-slot[data-arc="3"] {

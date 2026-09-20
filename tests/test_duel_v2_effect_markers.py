@@ -22,6 +22,17 @@ class EffectMarkersTest(unittest.TestCase):
         c = next(c for c in capture_public_board(state)['sides']['a']['characters'] if c['id'] == 'iloy')
         self.assertEqual(c['effect_markers'], [])
 
+    def test_effect_kind_is_public_for_both_views_and_replay(self):
+        state = new_game(seed=9, first_side='a', skip_mulligan=True)
+        h = hero(state, 'a', 'iloy')
+        h['flags'].update(energy_next=True, timed_attack=[dict(amount=-2, left=2)])
+        h['next_damage_resistance'] = {'光': -2, '灵': 1}
+        for board in (observe(state, 'a'), observe(state, 'b'), capture_public_board(state)):
+            c = next(c for c in board['sides']['a']['characters'] if c['id'] == 'iloy')
+            kinds = {m['name']: m['kind'] for m in c['effect_markers']}
+            self.assertEqual(kinds, {'光抗性': 'debuff', '灵抗性': 'buff',
+                                     '攻击降低': 'debuff', '终结 · 回能': 'buff'})
+
     def test_door_is_team_effect_and_disappears_after_resolution(self):
         state = new_game(seed=9, first_side='a', skip_mulligan=True)
         team = state['sides']['a']

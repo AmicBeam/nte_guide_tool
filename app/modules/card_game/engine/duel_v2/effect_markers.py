@@ -1,9 +1,9 @@
 """Public pending-effect labels shared by live observations and replay patches."""
 
 
-def _marker(key, name, timing, description, clears_on_down=True):
+def _marker(key, name, timing, description, clears_on_down=True, kind="buff"):
     return dict(id=key, name=name, timing=timing, description=description,
-                clears_on_down=clears_on_down)
+                clears_on_down=clears_on_down, kind=kind)
 
 
 def character_effect_markers(character):
@@ -13,10 +13,10 @@ def character_effect_markers(character):
     markers = []
     for attribute, value in (character.get('next_damage_resistance') or {}).items():
         markers.append(_marker('next_resistance', attribute + '抗性', '下次受到该属性伤害',
-                               f'{attribute}属性伤害抗性 {value:+d}'))
+                               f'{attribute}属性伤害抗性 {value:+d}', kind='debuff' if value < 0 else 'buff'))
     for modifier in flags.get('timed_attack', []):
         markers.append(_marker('timed_attack', '攻击降低', f"剩余 {modifier['left']} 个己方回合",
-                               f"攻击 {modifier['amount']:+d}"))
+                               f"攻击 {modifier['amount']:+d}", kind='debuff' if modifier['amount'] < 0 else 'buff'))
     if flags.get('free_normal_attack_turn'):
         markers.append(_marker('free_normal_attack', '普通出击免费', '本回合',
                                '普通出击不消耗行动力，仍需普通出击机会'))

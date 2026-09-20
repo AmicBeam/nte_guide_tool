@@ -1077,19 +1077,24 @@
   top: auto;
   bottom: calc(100% + calc(5px * var(--table-layout-scale, 1)));
 }
-.v2-character-effects .v2-chip {
-  display: flex;
-  flex-direction: column;
+.v2-character-effects .v2-effect-icon {
+  display: inline-flex;
   align-items: center;
-  max-width: 100%;
-  padding: calc(3px * var(--table-layout-scale, 1)) calc(6px * var(--table-layout-scale, 1));
-  border-color: rgba(232, 201, 136, .65);
+  justify-content: center;
+  width: calc(22px * var(--table-layout-scale, 1));
+  height: calc(22px * var(--table-layout-scale, 1));
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  border: 1px solid currentColor;
+  border-radius: 50%;
   background: rgba(22, 25, 31, .96);
-  color: #ffe6a8;
-  font-size: calc(11px * var(--table-font-scale, 1));
-  line-height: 1.25;
+  color: #8de2c1;
 }
-.v2-character-effects small { font-size: calc(9px * var(--table-font-scale, 1)); color: #c6cbd4; }
+.v2-character-effects .v2-effect-icon.is-debuff { color: #ff9b9b; }
+.v2-effect-icon svg { width: 70%; height: 70%; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.v2-effect-details { border-top: 1px solid rgba(255, 255, 255, .18); margin-top: 12px; }
+.v2-effect-details h3 { font-size: inherit; margin: 12px 0 6px; }
+
 
 .v2-font-settings { display: grid; gap: calc(8px * var(--table-layout-scale, 1)); }
 .v2-font-presets { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: calc(6px * var(--table-layout-scale, 1)); }

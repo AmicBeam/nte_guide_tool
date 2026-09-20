@@ -215,10 +215,17 @@
   function effectMarkersHtml(markers, className) {
     if (!Array.isArray(markers) || !markers.length) return '';
     return '<div class="' + className + '">' + markers.map(function (marker) {
-      const short = ({ energy_next: '回能', pending_atk: '加攻', next_battle: '攻盾', next_followup: '追击', next_attack: '强化', return_after: '回返' })[marker.id] || '待发';
-      const detail = [marker.description, marker.timing, marker.clears_on_down ? '倒地时失去' : '倒地后保留'].filter(Boolean).join(' · ');
-      return '<span class="v2-chip" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(marker.name + '：' + detail) + '">' +
-        '<span class="v2-effect-short" aria-hidden="true">' + V2.escapeHtml(short) + '</span><span class="v2-effect-name">' + V2.escapeHtml(marker.name) + '</span><small>' + V2.escapeHtml(marker.timing || '') + '</small></span>';
+      const detail = [marker.name, marker.description, marker.timing, marker.clears_on_down ? '倒地时失去' : '倒地后保留'].filter(Boolean).join(' · ');
+      if (className === 'v2-character-effects') {
+        // Older replay markers predate the explicit presentation kind.
+        const debuff = marker.kind ? marker.kind === 'debuff' : ['timed_attack', 'next_resistance'].includes(marker.id);
+        const label = debuff ? '减益' : '增益';
+        const path = debuff ? 'M12 4v16m-6-6 6 6 6-6' : 'M12 20V4m-6 6 6-6 6 6';
+        return '<span class="v2-effect-icon is-' + (debuff ? 'debuff' : 'buff') + '" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(label + '：' + detail) + '">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg></span>';
+      }
+      return '<span class="v2-chip" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(detail) + '">' +
+        '<span class="v2-effect-name">' + V2.escapeHtml(marker.name) + '</span><small>' + V2.escapeHtml(marker.timing || '') + '</small></span>';
     }).join('') + '</div>';
   }
 

@@ -128,6 +128,12 @@
       if (found.shape_description) {
         lines.push('<p>弧盘：' + V2.escapeHtml(found.shape_description) + '</p>');
       }
+      if (Array.isArray(found.effect_markers) && found.effect_markers.length) {
+        lines.push('<section class="v2-effect-details"><h3>额外效果</h3>' + found.effect_markers.map(function (marker) {
+          const detail = [marker.description, marker.timing, marker.clears_on_down ? '倒地时失去' : '倒地后保留'].filter(Boolean).join(' · ');
+          return '<p><strong>' + V2.escapeHtml(marker.name) + '</strong><br>' + V2.escapeHtml(detail) + '</p>';
+        }).join('') + '</section>');
+      }
       const resources = TABLE.resourceLine(found);
       if (resources) {
         lines.push('<p class="subtle">' + V2.escapeHtml(resources) + '</p>');

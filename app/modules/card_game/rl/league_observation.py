@@ -2,8 +2,14 @@
 from .league_schema import *
 
 
-def encode_base(view, actions, *, schema=SCHEMA):
+def encode_base(view, actions, *, schema=None, contract=None):
     import numpy as np
+    from . import league_schema
+    contract = contract or league_schema
+    SCHEMA, SEATS = contract.SCHEMA, contract.SEATS
+    CARD_IDS, CARD_INDEX = contract.CARD_IDS, contract.CARD_INDEX
+    SEAT_INDEX = contract.SEAT_INDEX
+    schema = SCHEMA if schema is None else schema
     from app.modules.card_game.content.duel_v2 import CARDS
     from .league_schema import ACT_END, ACT_ATTACK, ACT_PLAY, ACT_CHOOSE, ACT_ULTIMATE
     if schema != SCHEMA:
@@ -136,13 +142,17 @@ def encode_base(view, actions, *, schema=SCHEMA):
 
 
 
-def encode_league(view, actions):
+def encode_league(view, actions, *, contract=None):
     """Only sanitized observation and legal actions; no raw snapshot accepted."""
     import numpy as np
+    from . import league_schema
+    contract = contract or league_schema
+    CARD_IDS, CARD_INDEX = contract.CARD_IDS, contract.CARD_INDEX
+    CAND_DIM = contract.CAND_DIM
     own=view['sides'][view['viewer_side']]['hand']
     hand={c['instance_id']:c for c in own}
     playing=[{'type':'end_turn'} if a['type']=='mulligan' else a for a in actions]
-    state,base=encode_base(view,playing)
+    state,base=encode_base(view,playing,contract=contract)
     extra=np.zeros((len(actions),CAND_DIM-11),dtype=np.float32)
     marks=np.zeros((3,len(CARD_IDS)),dtype=np.float32)
     for card in own:
@@ -160,5 +170,5 @@ def encode_league(view, actions):
         mark=item.get('jingu_mark')
         extra[i,k:k+4]=[float(mark is not None),0 if mark is None else mark['delta'],float(item.get('attack_mode')=='set'),float(item.get('instant',False))]
     state=np.concatenate((state,marks.reshape(-1)))
-    assert state.shape==(len(feature_names()),)
+    assert state.shape==(len(contract.feature_names()),)
     return state,np.concatenate((base,extra),axis=1)

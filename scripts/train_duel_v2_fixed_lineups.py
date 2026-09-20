@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""Freeze and launch five fixed-build policies with a hard wall-clock deadline."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import signal
+import subprocess
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+for name in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS'):
+    os.environ[name] = '1'
+
+
+def freeze(out, source):
+    """Copy only code, the catalog, referenced artwork and the three numeric sources."""
+    files = list((ROOT / 'app').rglob('*.py'))
+    files += [ROOT / 'app/modules/card_game/content/duel_v2/catalog.json', Path(__file__),
+              ROOT / 'app/modules/card_game/rl/experiment_dispositions.json']
+    catalog = json.loads(files[-3].read_text(encoding='utf-8'))
+    for character in catalog['characters']:
+        for key in ('avatar', 'portrait'):
+            value = character.get(key, '')
+            if value.startswith('/static/'):
+                p = ROOT / 'app' / value.lstrip('/')
+                if p.is_file(): files.append(p)
+    manifest = {}
+    for p in sorted(set(files)):
+        if p.is_symlink() or not p.resolve().is_relative_to(ROOT): raise ValueError('Out-of-scope source')
+        target = out / 'frozen' / p.relative_to(ROOT); target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(p, target); manifest[target.relative_to(out).as_posix()] = hashlib.sha256(target.read_bytes()).hexdigest()
+    for key in ('starter', 'weave-rush', 'quick-rush'):
+        for ext in ('npz', 'json'):
+            p = source / f'{key}.{ext}'
+            if p.is_symlink(): raise ValueError('Symlink model')
+            target = out / 'source' / p.name; target.parent.mkdir(exist_ok=True)
+            shutil.copy2(p, target); manifest[target.relative_to(out).as_posix()] = hashlib.sha256(target.read_bytes()).hexdigest()
+    return manifest
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--source', type=Path, default=ROOT / 'app/modules/card_game/engine/ai/models')
+    parser.add_argument('--seconds', type=int, default=5400)
+    parser.add_argument('--workers', type=int, default=6)
+    parser.add_argument('--device', choices=('cpu', 'cuda'), default='cuda')
+    parser.add_argument('--seed-ledger', type=Path, default=ROOT / 'artifacts/rl-seed-ledger.json')
+    parser.add_argument('--smoke', action='store_true')
+    parser.add_argument('--run', action='store_true')
+    parser.add_argument('--supervise', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
+    args = parser.parse_args(); out = args.output.resolve()
+    from app.modules.card_game.rl.fixed_lineup import write, builds, identity
+    if args.supervise or args.worker:
+        config = json.loads((out / 'config.json').read_text(encoding='utf-8'))
+        if args.worker:
+            try:
+                for rel, digest in json.loads((out / 'source-manifest.json').read_text()).items():
+                    p = (out / rel).resolve()
+                    if not p.is_relative_to(out) or hashlib.sha256(p.read_bytes()).hexdigest() != digest:
+                        raise ValueError('Frozen source integrity failure')
+                if identity() != config['rule_hash']: raise ValueError('Rule identity mismatch')
+                from app.modules.card_game.rl.fixed_lineup_training import run
+                run(out, config)
+            except Exception as exc:
+                write(out / 'status.json', dict(phase='failed', error=repr(exc), finished=time.time()))
+                raise
+            return
+        if os.name == 'nt':
+            import ctypes
+            ctypes.windll.kernel32.SetThreadExecutionState(0x80000001)
+        proc = subprocess.Popen([sys.executable, '-X', 'utf8', __file__, '--output', str(out), '--worker'],
+                                cwd=ROOT, start_new_session=os.name != 'nt')
+        guard = dict(phase='running', worker_pid=proc.pid, hard_deadline=config['hard_deadline'])
+        write(out / 'guard.json', guard)
+        end = time.monotonic() + max(0, config['hard_deadline'] - time.time())
+        try:
+            while proc.poll() is None:
+                remaining = min(end - time.monotonic(), config['hard_deadline'] - time.time())
+                if remaining <= 0:
+                    if os.name == 'nt': subprocess.run(['taskkill', '/PID', str(proc.pid), '/T', '/F'], check=False)
+                    else: os.killpg(proc.pid, signal.SIGKILL)
+                    proc.wait(timeout=15); guard['phase'] = 'hard_deadline'; break
+                try: proc.wait(timeout=min(30, remaining))
+                except subprocess.TimeoutExpired: pass
+            if guard['phase'] == 'running': guard['phase'] = 'finished' if proc.returncode == 0 else 'failed'
+            guard.update(exit_code=proc.returncode, finished=time.time()); write(out / 'guard.json', guard)
+        finally:
+            if os.name == 'nt': ctypes.windll.kernel32.SetThreadExecutionState(0x80000000)
+        return
+    if not 1 <= args.workers <= 8 or not (60 if args.smoke else 600) <= args.seconds <= 21600:
+        parser.error('Invalid bounded budget/workers')
+    from app.modules.card_game.rl.build_acceptance import check_source, claim_seeds
+    check_source(args.source)
+    config = dict(kind='five_fixed_lineups_v1', rule_hash=identity(), builds=builds(args.source), device=args.device,
+                  workers=args.workers, smoke=args.smoke, evaluation_pairs=1 if args.smoke else 32,
+                  algorithm='terminal_outcome_ppo', seconds=args.seconds, automatic_serving_approval=False)
+    if not args.run:
+        print(json.dumps(dict(training_started=False, **config), ensure_ascii=False)); return
+    if out.exists(): raise ValueError('Output must be new; no duplicate launch')
+    out.mkdir(parents=True)
+    manifest = freeze(out, args.source.resolve()); write(out / 'source-manifest.json', manifest)
+    from app.modules.card_game.rl.fixed_lineup_training import prepare
+    config['builds'] = prepare(out / 'source', out)
+    config['seeds'] = claim_seeds(args.seed_ledger, str(out))
+    now = time.time(); config.update(created=now, train_until=now + args.seconds * 5 / 6,
+                                    evaluate_until=now + args.seconds - min(60, args.seconds / 20), hard_deadline=now + args.seconds)
+    write(out / 'config.json', config)
+    frozen_script = out / 'frozen/scripts' / Path(__file__).name
+    opts = dict(cwd=out / 'frozen', stdin=subprocess.DEVNULL, close_fds=True)
+    if os.name == 'nt': opts['creationflags'] = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | 0x01000000
+    else: opts['start_new_session'] = True
+    with (out / 'console.log').open('xb') as log:
+        proc = subprocess.Popen([sys.executable, '-X', 'utf8', str(frozen_script), '--output', str(out), '--supervise'],
+                                stdout=log, stderr=subprocess.STDOUT, **opts)
+    for _ in range(100):
+        if (out / 'guard.json').exists(): break
+        if proc.poll() is not None: raise RuntimeError('Supervisor exited before acknowledgement')
+        time.sleep(.1)
+    if not (out / 'guard.json').exists(): raise RuntimeError('Supervisor did not acknowledge startup')
+    receipt = dict(supervisor_pid=proc.pid, output=str(out), started=now, train_until=config['train_until'], hard_deadline=config['hard_deadline'])
+    write(out / 'launch.json', receipt); print(json.dumps(receipt))
+
+
+if __name__ == '__main__':
+    main()

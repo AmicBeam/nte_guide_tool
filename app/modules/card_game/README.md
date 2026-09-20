@@ -373,3 +373,7 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 验证：`python3 -m unittest tests.test_duel_v2_haniya tests.test_duel_v2_catalog tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_jingu_marks tests.test_duel_v2_preview_privacy tests.test_duel_v2_zone_status`。正式 Python 引擎接入，不扩展独立训练执行器及公开高级人机角色范围。
 
 哈尼娅本轮自动化、真实页面与交付边界见 [接入验收](../../../docs/duel-v2-haniya-20260920.md)。
+
+### 2026-09-20 小吱预组
+
+默认 quick-rush 更名为「小吱预组」，阵容为小吱、零、薄荷、九原；九原采用创生预组现有 8 张配牌。新赠送预组与简单人机随目录更新，已保存的个人构筑及高级人机模型配牌不回写。具体配牌见完整手册。验证：`python3 -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_api`。

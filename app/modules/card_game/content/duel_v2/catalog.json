@@ -3102,13 +3102,13 @@
     },
     {
       "id": "quick-rush",
-      "name": "快攻预组",
+      "name": "小吱预组",
       "official": true,
       "character_ids": [
         "xiaozhi",
         "zero",
         "bohe",
-        "haiyue"
+        "jiuyuan"
       ],
       "card_ids": [
         "Z03",
@@ -3135,14 +3135,14 @@
         "Q05",
         "Q08",
         "Q08",
-        "U01",
-        "U02",
-        "U03",
-        "U03",
-        "U04",
-        "U06",
-        "U06",
-        "U08"
+        "J02",
+        "J02",
+        "J03",
+        "J04",
+        "J04",
+        "J07",
+        "J08",
+        "J08"
       ]
     }
   ]

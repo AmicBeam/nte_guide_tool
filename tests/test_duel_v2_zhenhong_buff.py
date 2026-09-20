@@ -82,7 +82,8 @@ class ZhenhongBuffTest(unittest.TestCase):
             s = self.play(s, 'RF01')
             self.assertEqual(s['sides']['a']['hand'][0]['card_id'], 'I03')
             attacks = [e for e in s['events'] if e['type'] == 'attack']
-            self.assertEqual(attacks[-1]['amount'], 6 if surplus else 4)
+            self.assertEqual(attacks[-1]['amount'], 6)
+            self.assertEqual(hero(s, 'a', 'zhenhong')['shield'], 4)
         s = self.game()
         s['sides']['a']['deck'] = []
         s = self.play(s, 'RF01')

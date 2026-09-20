@@ -27,7 +27,7 @@ def _y01(c):
 
 def _y02(c):
     _side, cid = c.operation['target_id'].split(':', 1)
-    draw_owned_card(c, cid)
+    draw_owned_card(c, cid, reveal=False)
 
 
 def _y03(c):

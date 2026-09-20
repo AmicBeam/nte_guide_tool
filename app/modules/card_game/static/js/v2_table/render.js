@@ -357,6 +357,7 @@
     if (!card || card.hidden) {
       return '<article class="v2-hidden-card" aria-label="隐藏手牌"></article>';
     }
+    card = V2.handCardFace(card);
     const classes = ['v2-hand-card'];
     const mark = card.jingu_mark;
     const marked = Boolean(mark && [-1, 0, 1].includes(mark.delta));
@@ -382,7 +383,7 @@
     const title = reason ? ' title="' + V2.escapeAttr(reason) + '"' : '';
     const label = (card.name || '卡牌') + (reason ? '，' + reason : '');
     return (
-      '<article class="' + classes.join(' ') + '" draggable="false" data-card-id="' + V2.escapeAttr(card.instance_id) + '" data-drag-kind="card" data-card-owner="' + V2.escapeAttr(card.character_id || '') + '" data-card-type="' + V2.escapeAttr(card.type || '') + '"' + instanceAttr + style + title + ' aria-label="' + V2.escapeAttr(label) + '">' +
+      '<article class="' + classes.join(' ') + '" draggable="false" data-card-id="' + V2.escapeAttr(card.instance_id) + '" data-drag-kind="card" data-card-owner="' + V2.escapeAttr((card.hand_face || card).character_id || '') + '" data-card-type="' + V2.escapeAttr(card.type || '') + '"' + instanceAttr + style + title + ' aria-label="' + V2.escapeAttr(label) + '">' +
         freeBorder + markHtml + (card.copy ? '<span class="v2-chip copy">复制</span>' : '') +
         '<strong>' + V2.escapeHtml(card.name || '卡牌') + '</strong>' +
         V2.cardDescriptionHtml(card.description, '正在读取卡牌效果。', 'subtle') +
@@ -510,7 +511,7 @@
             selected: Boolean(selected[card.instance_id]),
             raised: ctx.raisedCardId && String(ctx.raisedCardId) === String(card.instance_id),
             phase: ctx.game && ctx.game.phase,
-            groupStart: Boolean(index && previous && previous.character_id !== card.character_id),
+            groupStart: Boolean(index && previous && (previous.hand_face || previous).character_id !== (card.hand_face || card).character_id),
           });
         }).join('')
       : '<div class="subtle">手牌空</div>';
@@ -538,6 +539,7 @@
             return '<button class="v2-public-copy" data-public-copy="' + V2.escapeAttr(card.instance_id) + '"' + instanceAttr + '>复制 · ' + V2.escapeHtml(card.name) + '</button>';
           }
           if (card && card.revealed) {
+            card = V2.handCardFace(card);
             const portrait = V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'portrait');
             const style = portrait ? ' style="--card-art:url(\'' + String(portrait).replace(/'/g, '%27') + '\')"' : '';
             return '<button class="v2-revealed-card" data-public-copy="' + V2.escapeAttr(card.instance_id || '') + '" data-card-type="' + V2.escapeAttr(card.type || '') + '"' + style + ' aria-label="' + V2.escapeAttr(card.name || '公开卡牌') + '"></button>';

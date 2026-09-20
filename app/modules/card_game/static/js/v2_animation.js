@@ -1045,7 +1045,7 @@
           const cards = Array.from(hand.querySelectorAll(".v2-hand-card") || []);
           const backs = Array.from(hand.querySelectorAll(".v2-hidden-card") || []);
           const nodes = cards.concat(backs);
-          const owner = card && card.character_id;
+          const owner = card && (card.hand_face || card).character_id;
           const owned = owner ? cards.filter((node) => node.getAttribute("data-card-owner") === owner) : [];
           slot = owned.length ? owned[owned.length - 1] : null;
           if (!slot && owner) {
@@ -1133,7 +1133,9 @@
         return;
       }
       const overlay = this._ensureOverlay();
-      const card = event && event.card;
+      const rawCard = event && event.card;
+      const api = typeof window !== "undefined" ? window.NTE_V2 : null;
+      const card = api && api.handCardFace ? api.handCardFace(rawCard) : rawCard;
       const publicCard = hasPublicCard(card);
       const opponent = this._isOpponentPlay(event);
       const portraitSrc = this._safePortrait(event && (event.actor || event.source))

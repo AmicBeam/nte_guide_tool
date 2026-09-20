@@ -21,8 +21,8 @@ TYPE_ORDER = {'tactic': 0, 'battle': 1, 'form': 2}
 def _sort_hand(cards, character_ids):
     index = {cid: i for i, cid in enumerate(character_ids)}
     return sorted(cards, key=lambda card: (
-        index.get(card.get('character_id'), len(index)),
-        TYPE_ORDER.get(card.get('type'), 9),
+        index.get(card.get('hand_face', card).get('character_id'), len(index)),
+        TYPE_ORDER.get(card.get('hand_face', card).get('type'), 9),
     ))
 
 

@@ -95,6 +95,7 @@
     }
 
     function hoverCardMarkup(card) {
+      card = V2.handCardFace(card);
       if (card.selection_kind === 'character') {
         return '<article class="v2-hover-card is-character"><div class="v2-hover-art">' +
           V2.imageMarkup(card.portrait || card.avatar, card.name, 'v2-portrait') + '</div><h2>' +

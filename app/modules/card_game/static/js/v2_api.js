@@ -344,6 +344,17 @@
     }).join('');
   }
 
+  function handCardFace(card) {
+    if (!card || card.hidden || !card.hand_face) return card;
+    const face = Object.assign({}, card);
+    // Clear absent physical stats rather than inheriting the effective battle frame.
+    ['name', 'type', 'description', 'stat', 'stat_value', 'shield', 'attack', 'hp', 'attack_mode', 'derived'].forEach(function (key) {
+      delete face[key];
+      if (Object.prototype.hasOwnProperty.call(card.hand_face, key)) face[key] = card.hand_face[key];
+    });
+    return face;
+  }
+
   function referencedCards(card) {
     const result = [];
     const seen = new Set();
@@ -839,6 +850,7 @@
     cardDescriptionMarkup: cardDescriptionMarkup,
     cardDescriptionHtml: cardDescriptionHtml,
     referencedCards: referencedCards,
+    handCardFace: handCardFace,
     escapeAttr: escapeAttr,
     elementIcon: elementIcon,
     characterFallback: characterFallback,

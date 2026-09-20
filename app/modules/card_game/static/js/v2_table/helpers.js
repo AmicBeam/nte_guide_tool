@@ -78,6 +78,8 @@
     const typeOrder = { tactic: 0, battle: 1, form: 2 };
     const list = Array.isArray(cards) ? cards.slice() : [];
     return list.sort(function (left, right) {
+      left = left && (left.hand_face || left);
+      right = right && (right.hand_face || right);
       const byOwner = characterOrderIndex(side, left && left.character_id) - characterOrderIndex(side, right && right.character_id);
       if (byOwner) {
         return byOwner;

@@ -21,7 +21,7 @@ CARD_FIELDS = (
     'description', 'copy', 'expires_turn', 'original_character_id',
     'stat', 'stat_value', 'shield', 'attack', 'hp', 'instant', 'response', 'require', 'redeem',
     'derived', 'attack_mode', 'jingu_mark', 'play_options', 'antique_investment',
-    'training_excluded', 'portrait', 'avatar', 'selection_kind',
+    'training_excluded', 'portrait', 'avatar', 'selection_kind', 'hand_face',
 )
 ENTITY_CHARS = set(CHARACTERS)
 PRIVATE_EVENT_KEYS = ('private_card', 'private_side', 'private_hand')
@@ -45,6 +45,13 @@ def public_card(card, state=None, side=None):
         original = text_name(card.get('original_character_id'))
         if original:
             result['description'] = result.get('description', '').replace(original, copy_owner_text())
+    physical = card.get('_physical_card')
+    if physical is not None:
+        # Presentation only: retain the physical face without exposing internal state.
+        result['hand_face'] = {key: deepcopy(physical[key]) for key in (
+            'card_id', 'character_id', 'name', 'type', 'description', 'stat', 'stat_value',
+            'shield', 'attack', 'hp', 'attack_mode', 'derived',
+        ) if key in physical}
     return result
 
 

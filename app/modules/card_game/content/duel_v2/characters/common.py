@@ -2,8 +2,9 @@ def set_shape(c):
     c.set_shape()
 
 
-def draw_owned_card(c, character_id=None):
-    from app.modules.card_game.engine.duel_v2.state import add_hand, finished
+def draw_owned_card(c, character_id=None, *, reveal=True):
+    from app.modules.card_game.engine.duel_v2.state import add_hand, effective_card, finished, hero, log, name
+    from app.modules.card_game.engine.duel_v2.presentation import public_card
     if finished(c.state):
         return
     owner = character_id or c.cid
@@ -11,7 +12,12 @@ def draw_owned_card(c, character_id=None):
     for index, card in enumerate(team['deck']):
         if card.get('character_id') == owner and not card.get('copy') and not card.get('derived'):
             team['deck'].pop(index)
-            add_hand(c.state, c.side, card, reveal=True)
+            add_hand(c.state, c.side, card, reveal=reveal)
+            if not reveal:
+                owner_name = hero(c.state, c.side, owner)['name']
+                log(c.state, f'{name(c.state, c.side)}抽取了{owner_name}的 1 张牌。', 'draw',
+                    side=c.side, actor=f'{c.side}:player', private_side=c.side,
+                    private_card=public_card(effective_card(c.state, c.side, card)))
             return
 
 

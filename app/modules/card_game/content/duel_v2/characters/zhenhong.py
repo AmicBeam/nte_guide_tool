@@ -16,7 +16,7 @@ def _battle(c):
     elif surplus and card_id in ('R02', 'R03', 'R04'):
         c.draw(1, card_type={'R02': 'tactic', 'R03': 'form', 'R04': 'battle'}[card_id])
     if not finished(c.state):
-        c.sortie(bonus=2 if surplus and card_id == 'RF01' else 0)
+        c.sortie()
 
 
 def _draw_team(c):

@@ -137,7 +137,9 @@ class SurplusReworkTest(unittest.TestCase):
         s=apply_action(s,'a',dict(type='ultimate',character_id='zhenhong'))
         view=observe(s,'a');hand=view['sides']['a']['hand']
         self.assertEqual({c['card_id'] for c in hand},{'RF01'})
-        self.assertEqual(hand[0]['entity_id'],physical['entity_id'])
+        shown = next(c for c in hand if c['instance_id'] == physical['instance_id'])
+        self.assertEqual(shown['entity_id'],physical['entity_id'])
+        self.assertEqual(shown['hand_face']['card_id'], 'I03')
         self.assertNotIn('_physical_card',str(hand))
         self.assertTrue(all(c.get('hidden') for c in observe(s,'b')['sides']['a']['hand']))
         s=apply_action(s,'a',dict(type='play_card',card_id=physical['instance_id']))
@@ -349,7 +351,7 @@ class SurplusReworkTest(unittest.TestCase):
         before=deepcopy(s);v=observe(s,'a')
         action=next(a for a in v['legal_actions'] if a['action'].get('card_id')==c['instance_id'])
         self.assertEqual(action['interaction']['actor_id'],'a:zhenhong')
-        self.assertEqual(action['preview']['attack'],4)
+        self.assertEqual(action['preview']['attack'],6)
         self.assertEqual(s,before)
 
     def test_down_response_waits_for_nested_response_to_finish(self):

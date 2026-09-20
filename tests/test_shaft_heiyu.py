@@ -141,6 +141,35 @@ class HeiyuTest(unittest.TestCase):
         self.assertAlmostEqual(r['details'][1]['resource_atk_multiplier'], 20 * .4)
         self.assertEqual(r['details'][2]['resource_atk_multiplier'], 0)
 
+    def test_malice_contribution_is_separate_basic_damage_and_preserves_totals(self):
+        for nodes in ((), (1,)):
+            with self.subTest(awakening_nodes=nodes):
+                result = self.simulate([
+                    (0, 'action_heiyu_e', 0), (0, 'action_heiyu_q1', 20),
+                    (0, 'action_heiyu_form_a1', 30),
+                    (0, 'action_heiyu_form_e', 40),
+                    (0, 'action_heiyu_form_support', 60),
+                    (0, 'action_heiyu_q2', 80),
+                ], awakening_nodes=nodes)
+                contribution = result['damage_by_action_by_slot'][0]
+                entries = {a['action_id']: a for a in contribution['actions']}
+                extra = next(a for a in entries.values() if a['action_name'] == '恶意追加')
+                self.assertEqual(extra['action_type'], '普攻')
+                self.assertEqual(extra['damage_type'], '普攻')
+                self.assertEqual(extra['damage_element'], '魂')
+                self.assertAlmostEqual(extra['damage'], sum(d['resource_damage'] for d in result['details']))
+                self.assertEqual(result['details'][-1]['resource_damage'] > 0, bool(nodes))
+                for detail in result['details']:
+                    self.assertAlmostEqual(entries[detail['action_id']]['damage'],
+                                           detail['direct_damage'] - detail['resource_damage'])
+                self.assertAlmostEqual(sum(a['damage'] for a in entries.values()), contribution['total_damage'])
+                self.assertAlmostEqual(contribution['total_damage'], result['damage_by_slot'][0]['damage'])
+                self.assertAlmostEqual(contribution['total_damage'], result['summary']['character_damage'])
+
+        empty = self.simulate([(0, 'action_heiyu_form_z1', 0)], loop_enabled=True)
+        self.assertFalse(any(a['action_name'] == '恶意追加'
+                             for a in empty['damage_by_action_by_slot'][0]['actions']))
+
     def test_q1_checks_form_before_start_and_q2_allows_reentry(self):
         warning = '当前形态不能使用该动作。'
         r = self.simulate([(0, 'action_heiyu_q1', 0),

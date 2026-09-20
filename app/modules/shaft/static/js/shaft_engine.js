@@ -5635,8 +5635,23 @@
         damage_element: detail.damage_element,
         damage: 0,
       };
-      current.damage += detail.direct_damage;
+      const resource = actionsById.get(detail.action_id)?.resource_damage;
+      const resourceDamage = resource ? Math.max(0, num(detail.resource_damage)) : 0;
+      current.damage += detail.direct_damage - resourceDamage;
       actionDamage.set(actionKey, current);
+      if (resourceDamage > 0) {
+        const resourceKey = `resource:${resource.resource}:${resource.damage_type}`;
+        const resourceEntry = actionDamage.get(resourceKey) || {
+          action_id: resourceKey,
+          action_name: `${resource.resource}追加`,
+          action_type: resource.damage_type,
+          damage_type: resource.damage_type,
+          damage_element: snapshots.get(detail.slot).character.element || '',
+          damage: 0,
+        };
+        resourceEntry.damage += resourceDamage;
+        actionDamage.set(resourceKey, resourceEntry);
+      }
     });
     reactionDamageEvents
       .filter((event) => num(event.damage) > 0 && event._counted_in_total !== false)

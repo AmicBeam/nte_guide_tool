@@ -160,6 +160,18 @@ class SurplusReworkTest(unittest.TestCase):
         self.assertEqual((h['extra_attacks'],h['energy'],h['harmony']),(1,0,1))
         self.assertFalse(h['awakened']);self.assertIsNone(s['sides']['a']['front'])
 
+    def test_voluntary_switch_ends_ultimate_without_final_attack(self):
+        s = self.game()
+        hero(s, 'a', 'zhenhong')['energy'] = 5
+        s = apply_action(s, 'a', dict(type='ultimate', character_id='zhenhong'))
+        seq = s['event_seq']
+        s = apply_action(s, 'a', dict(type='attack', character_id='zero'))
+        h = hero(s, 'a', 'zhenhong')
+        self.assertFalse(h['awakened'])
+        self.assertFalse(h.get('extra_attacks'))
+        attacks = [e['actor'] for e in s['events'] if e['seq'] > seq and e['type'] == 'attack']
+        self.assertEqual(attacks, ['a:zero'])
+
     def test_death_ends_ultimate_without_final_attack(self):
         s=self.game();h=hero(s,'a','zhenhong');h.update(awakened=True,ultimate_turns=2)
         s['sides']['a']['front']='zhenhong';damage(s,'a','zhenhong',99);drain(s)

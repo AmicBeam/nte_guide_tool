@@ -105,9 +105,8 @@
         || V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'avatar');
       return (
         '<article class="v2-hover-card"' + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '>' +
-          '<div class="v2-hover-art">' + V2.imageMarkup(portrait, card.name, 'v2-portrait') + '</div>' +
+          '<div class="v2-hover-art">' + V2.imageMarkup(portrait, card.name, 'v2-portrait') + V2.cardFrameStat(card) + '</div>' +
           V2.cardCostBadge(card) +
-          V2.cardFrameStat(card) +
           '<div class="v2-stat-row">' + V2.cardTypeChip(card.type, card.terminal) +
             V2.cardDerivedChip(card) +
             (card.copy ? '<span class="v2-chip copy">复制</span>' : '') + '</div>' +

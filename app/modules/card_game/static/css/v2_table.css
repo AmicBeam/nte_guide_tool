@@ -466,7 +466,6 @@
   .v2-table-page #v2-card-preview > .v2-hover-card > .v2-hover-art {
     flex: 1 0 min(120px, 32dvh);
   }
-  .v2-table-page #v2-card-preview > .v2-hover-card > .v2-frame-stats { right: 76px; }
   .v2-table-page #v2-card-preview .v2-hover-references {
     max-height: calc((100dvh - 16px) * 2);
     overflow-y: auto;
@@ -486,3 +485,15 @@
     touch-action: manipulation;
   }
 }
+
+/* Card values belong to the artwork, not the preview's close-button corner. */
+.v2-hover-art { position: relative; }
+.v2-hover-card .v2-hover-art > .v2-frame-stats {
+  top: auto;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  justify-content: space-between;
+}
+.v2-hover-art > .v2-frame-stats .is-hp,
+.v2-hover-art > .v2-frame-stats .is-shield { margin-left: auto; }

@@ -1041,9 +1041,10 @@ class DuelV2EngineTest(unittest.TestCase):
         atk = attack_value(hero(s, 'a', 'baicang'))
         s = self.play(s, 'B08')
         self.assertEqual(hero(s, 'a', 'baicang')['shape'], 'B08')
-        self.assertEqual(hero(s, 'a', 'baicang')['max_hp'], 8)
-        self.assertEqual(hero(s, 'a', 'baicang')['hp'], 4)
-        self.assertGreaterEqual(attack_value(hero(s, 'a', 'baicang')), atk + 1)
+        # 用户指定 B08 为 2/9；装备自伤仍为 4，并触发一次受伤加攻。
+        self.assertEqual(hero(s, 'a', 'baicang')['max_hp'], 9)
+        self.assertEqual(hero(s, 'a', 'baicang')['hp'], 5)
+        self.assertEqual(attack_value(hero(s, 'a', 'baicang')), atk + 1)
 
     def test_baicang_damage_hooks_are_personal(self):
         s = self.rush_game()

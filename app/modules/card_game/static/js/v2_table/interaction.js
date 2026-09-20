@@ -31,7 +31,16 @@
 
     mobileLayout.addEventListener('change', function () {
       setMobileHandOpen(false);
+      syncHandButton();
     });
+
+    function syncHandButton() {
+      if (nodes.playerHandCount) nodes.playerHandCount.setAttribute('aria-expanded', String(
+        !mobileLayout.matches || page.classList.contains('mobile-hand-open')
+      ));
+    }
+    new MutationObserver(syncHandButton).observe(page, { attributes: true, attributeFilter: ['class'] });
+    syncHandButton();
 
     page.addEventListener('click', function (event) {
       if (!mobileLayout.matches || event.defaultPrevented || ctx.dragState || ctx.suppressClick
@@ -39,7 +48,8 @@
           || page.classList.contains('is-mulligan') || page.classList.contains('tutorial-hide-hand')
           || choiceOverlay.classList.contains('open')) return;
       if (!event.target.closest('[data-drop-role="battle-area"], .v2-hud-top, #v2-hand-dock')) return;
-      if (event.target.closest('button, a, input, select, label, .v2-character-card, .v2-hand-stack, .v2-player-hud, .v2-piles, .v2-side-actions, .v2-combat-core, .v2-zone-effects, .v2-mulligan-stage, .v2-history-drawer, .v2-hover-preview')) return;
+      const handButton = event.target.closest('#v2-player-hand-count');
+      if (!handButton && event.target.closest('button, a, input, select, label, .v2-character-card, .v2-hand-stack, .v2-player-hud, .v2-piles, .v2-side-actions, .v2-combat-core, .v2-zone-effects, .v2-mulligan-stage, .v2-history-drawer, .v2-hover-preview')) return;
       hideHoverPreview({ force: true });
       setMobileHandOpen(!page.classList.contains('mobile-hand-open'));
     });

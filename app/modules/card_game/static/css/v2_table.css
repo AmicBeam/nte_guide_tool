@@ -394,8 +394,9 @@
 
 /* Phone hands float over the battlefield instead of reserving a bottom row. */
 @media (pointer: coarse) and (max-width: 1200px) and (orientation: landscape) {
-  .v2-table-page { grid-template-rows: var(--table-top) minmax(0, 1fr); }
+  .v2-table-page { grid-template-rows: minmax(0, 1fr); }
   .v2-table-page #v2-opponent-hand { display: none; }
+  .v2-table-page .v2-hud-top,
   .v2-table-page #v2-hand-dock {
     position: absolute;
     left: 0;
@@ -409,12 +410,17 @@
     background: none;
     backdrop-filter: none;
   }
+  .v2-table-page .v2-hud-top { top: 0; bottom: auto; }
+  .v2-table-page #v2-opponent-life,
+  .v2-table-page .v2-hud-meta,
+  .v2-table-page .v2-replay-bar { pointer-events: auto; }
+  .v2-table-page .v2-piles.opponent-piles { top: calc(var(--table-top) + 8px); }
   .v2-table-page #v2-player-life { pointer-events: auto; }
   .v2-table-page #v2-hand-dock .v2-hand-stack {
     display: none;
     position: absolute;
     left: calc(140px * var(--table-layout-scale, 1));
-    right: 8px;
+    right: calc(var(--side-actions) + 80px * var(--table-layout-scale, 1));
     bottom: 8px;
     height: min(44dvh, 200px);
     padding: 8px;

@@ -32,9 +32,12 @@ def clean(s):
     s.pop('_public_board',None)
     return s
 
-def determinize(s,viewer,seed):
+def determinize(s,viewer,seed, *, encoder=None, seats=None, cards=None):
     """Constrain enemy draws by public zones, never its real unexposed card IDs."""
     from app.modules.card_game.content.duel_v2 import CARDS
+    encoder = encoder or encode_league
+    seats = SEATS if seats is None else seats
+    cards = CARD_IDS if cards is None else cards
     pending = s.get('pending_choice')
     choosing = s['phase'] == 'choice'
     if choosing:
@@ -63,8 +66,8 @@ def determinize(s,viewer,seed):
     if extras<0 or extras and 'xiaozhi' not in team['characters']:raise ValueError('Unsupported generated-card accounting')
     unknown=[]
     for cid in team['characters']:
-        if cid not in SEATS:raise ValueError('Unencoded hero')
-        kit=[c for c in CARD_IDS if CARDS[c]['character_id']==cid and not CARDS[c].get('derived')]
+        if cid not in seats:raise ValueError('Unencoded hero')
+        kit=[c for c in cards if CARDS[c]['character_id']==cid and not CARDS[c].get('derived')]
         counts={c:known[c] for c in kit};caps={c:2+(extras if c=='Q05' else 0) for c in kit}
         n=8+(extras if cid=='xiaozhi' else 0)-sum(counts.values())
         if n<0 or any(counts[c]>caps[c] for c in kit):raise ValueError('Illegal public original-deck counts')
@@ -102,8 +105,10 @@ def determinize(s,viewer,seed):
     out['rng']=rng.randrange(1,2**30)
     clean(out)
     # Verify the learner sees precisely the same encoded decision in every particle.
-    actions,(x,c)=decision(s,viewer);after=observe(out,viewer,include_previews=False)
-    xx,cc=encode_league(after,actions)
+    before=observe(s,viewer,include_previews=False)
+    actions=[e['action'] for e in before['legal_actions'] if e['action']['type']!='concede']
+    x,c=encoder(before,actions);after=observe(out,viewer,include_previews=False)
+    xx,cc=encoder(after,actions)
     if not np.array_equal(x,xx) or not np.array_equal(c,cc):raise ValueError('Particle changed learner information')
     return out
 

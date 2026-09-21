@@ -18,16 +18,18 @@ def softmax(scores):
     return p/p.sum()
 
 
-def sample_world(state, viewer, seed):
+def sample_world(state, viewer, seed, *, runtime=None):
+    decide = runtime.decision if runtime else decision
+    sample = runtime.determinize if runtime else determinize
     if state['phase'] in ('playing', 'choice'):
-        return determinize(state,viewer,seed)
+        return sample(state,viewer,seed)
     if state['phase']!='mulligan':
         raise ValueError('Unsupported information-search root phase')
     # Mulligan uses the same known-card accounting, but retain its original phase
     # and completion flags after sampling; no actual hidden shuffle is consulted.
     proxy=deepcopy(state);proxy['phase']='playing';proxy['active_side']=viewer
-    out=determinize(proxy,viewer,seed);out['phase']='mulligan';out['active_side']=state['active_side']
-    a,(x,c)=decision(state,viewer);_,(xx,cc)=decision(out,viewer)
+    out=sample(proxy,viewer,seed);out['phase']='mulligan';out['active_side']=state['active_side']
+    a,(x,c)=decide(state,viewer);_,(xx,cc)=decide(out,viewer)
     if not np.array_equal(x,xx) or not np.array_equal(c,cc):
         raise ValueError('Mulligan sample changed visible information')
     return out
@@ -61,19 +63,24 @@ def terminal_value(state,viewer):
     return 0. if winner not in ('a','b') else 1. if winner==viewer else -1.
 
 
-def leaf_value(state, viewer, policies):
+def leaf_value(state, viewer, policies, *, runtime=None):
+    decide = runtime.decision if runtime else decision
     if state['phase']=='finished':return terminal_value(state,viewer)
-    actor=acting_side(state);_,(x,c)=decision(state,actor)
+    actor=acting_side(state);_,(x,c)=decide(state,actor)
     _,raw=policies[actor].scores_value(x,c)
     value=float(np.tanh(raw/10))
     # Card actions can leave the SAME player acting: never negate by ply count.
     return value if actor==viewer else -value
 
 
-def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False):
+def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0):
+    decide = runtime.decision if runtime else decision
     if simulations<1 or max_depth<1:raise ValueError('Positive search limits required')
     if acting_side(state)!=viewer:raise ValueError('Search must use the decision owner')
-    actions,(x,c)=decision(state,viewer)
+    if not np.isfinite(passive_reward) or passive_reward < 0:
+        raise ValueError('Invalid passive reward')
+    initial_passive = runtime.passive_count(state,viewer) if runtime and passive_reward else 0
+    actions,(x,c)=decide(state,viewer)
     logits,raw=policies[viewer].scores_value(x,c);prior=softmax(logits)
     rng=np.random.default_rng(seed)
     if noise and len(actions)>1:
@@ -83,14 +90,14 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
     depths=[];worlds=0
     for simulation in range(requested):
         if deadline is not None and time.time()>=deadline:break
-        world=sample_world(state,viewer,seed+simulation*104729)
+        world=sample_world(state,viewer,seed+simulation*104729,runtime=runtime)
         worlds+=1;path=[];value=0.;finished_sim=True
         for depth in range(max_depth):
             if deadline is not None and time.time()>=deadline:
                 finished_sim=False;break
             if world['phase']=='finished':
                 value=terminal_value(world,viewer);break
-            actor=acting_side(world);legal,(xx,cc)=decision(world,actor)
+            actor=acting_side(world);legal,(xx,cc)=decide(world,actor)
             if actor!=viewer:
                 # Never use a search Q conditioned on the root player's hand to
                 # choose for the opponent. Its visible-policy is the response model.
@@ -104,8 +111,10 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                 node=tree[key];chosen=node.choose();path.append((node,chosen))
             world=clean(apply_action(world,actor,legal[chosen]))
         else:
-            value=leaf_value(world,viewer,policies)
+            value=leaf_value(world,viewer,policies,runtime=runtime)
         if not finished_sim:break
+        if runtime and passive_reward:
+            value += passive_reward/10 * (runtime.passive_count(world,viewer)-initial_passive)
         for node,chosen in path:
             node.visits[chosen]+=1;node.total[chosen]+=value
         depths.append(depth+1)
@@ -125,9 +134,18 @@ def search_game(job):
     Only completed games emit training rows. Every row has its own acting-side
     outcome and visit target. No heuristic or timing rewards are used.
     """
+    runtime = None
+    if job.get('runtime') == 'ten':
+        from . import ten_search_runtime as runtime
+    elif job.get('runtime') is not None:
+        raise ValueError('Unknown search runtime')
+    loader = runtime.model if runtime else model
+    decide = runtime.decision if runtime else decision
     state=new_game(seed=job['seed'],first_side=job.get('first','a'),decks=job['decks'])
-    policies={side:model(*spec) for side,spec in job['policies'].items()}
+    policies={side:loader(*spec) for side,spec in job['policies'].items()}
     rng=np.random.default_rng(job['seed']);rows=[];stats=[];decisions=0
+    coefficient=float(job.get('zhenhong_passive_reward',0.0)) if job.get('training') else 0.0
+    if not np.isfinite(coefficient) or coefficient < 0: raise ValueError('Invalid reward coefficient')
     for step in range(job.get('max_actions',400)):
         if state['phase']=='finished':break
         if time.time()>=job['deadline']:
@@ -138,7 +156,7 @@ def search_game(job):
             try:
                 result=search(state,actor,policies,seed=job['seed']+1000003*(step+1),
                               simulations=job.get('simulations',32),deadline=job['deadline'],
-                              noise=job.get('training',False))
+                              noise=job.get('training',False),**({'runtime':runtime,'passive_reward':coefficient if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.0} if runtime else {}))
             except Exception as exc:
                 if job.get('failure_dir'):
                     import json
@@ -157,19 +175,25 @@ def search_game(job):
             if job.get('collect'):
                 rows.append(dict(x=result['x'],c=result['c'],pi=result['pi'],side=actor,
                                  key=job['policies'][actor][1],phase=state['phase']))
+                if runtime and coefficient and job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']):
+                    rows[-1]['passive_before']=runtime.passive_count(state,actor)
             stats.append(dict(side=actor,phase=state['phase'],simulations=result['simulations'],
                               legal=len(actions),covered=result['roots_covered'],nodes=result['nodes'],
                               changed=result['raw_choice']!=result['search_choice'],
                               value_estimate=result['value']))
         else:
-            actions,(x,c)=decision(state,actor);chosen=int(policies[actor].scores(x,c).argmax())
+            actions,(x,c)=decide(state,actor);chosen=int(policies[actor].scores(x,c).argmax())
         state=clean(apply_action(state,actor,actions[chosen]));decisions+=1
     complete=state['phase']=='finished'
     if complete:
-        for row in rows:row['z']=terminal_value(state,row['side'])
+        for row in rows:
+            row['z']=terminal_value(state,row['side'])
+            if 'passive_before' in row:
+                row['reward_to_go']=10*row['z']+coefficient*(runtime.passive_count(state,row['side'])-row.pop('passive_before'))
     return dict(complete=complete,winner=state.get('winner'),rows=rows if complete else [],
                 decisions=decisions,searched=len(stats),search_stats=stats,turn=state['turn'],
-                reason=None if complete else 'action_limit')
+                reason=None if complete else 'action_limit',
+                passive_triggers={s:runtime.passive_count(state,s) for s in ('a','b')} if runtime else {})
 
 
 def policy_value_update(net,opt,rows):
@@ -187,7 +211,11 @@ def policy_value_update(net,opt,rows):
     if not torch.all((z==-1)|(z==0)|(z==1)):raise ValueError('Non-terminal value target')
     logits,value=net(x,c,m);logp=logits.log_softmax(-1)
     policy_loss=-(pi*logp.masked_fill(~m,0)).sum(-1).mean()
-    value_loss=(torch.tanh(value/10)-z).square().mean()
+    target=torch.tensor([r.get('reward_to_go',10*r['z'])/10 for r in rows],dtype=torch.float32,device=x.device)
+    shaped=torch.tensor(['reward_to_go' in r for r in rows],dtype=torch.bool,device=x.device)
+    if not torch.isfinite(target).all(): raise ValueError('Invalid reward-to-go')
+    prediction=torch.where(shaped,value/10,torch.tanh(value/10))
+    value_loss=(prediction-target).square().mean()
     loss=policy_loss+value_loss
     if not torch.isfinite(loss):raise ValueError('Non-finite policy/value loss')
     opt.zero_grad();loss.backward()

@@ -29,8 +29,10 @@ class PassiveRewardTest(unittest.TestCase):
         context=operation(state,'a','jiuyuan');resolve_genesis(context);finish_operation(state)
         self.assertEqual(passive_count(state,'a'),1)
         damage(state,'a','zhenhong',999)  # immunity from the callback: explicitly end it before knockdown
-        state['sides']['a']['characters']['zhenhong']['flags'].pop('damage_immunity_until',None)
+        from app.modules.card_game.engine.duel_v2.modifiers import clear
+        clear(state['sides']['a']['characters']['zhenhong'],'down')
         damage(state,'a','zhenhong',999)
+        self.assertEqual(state['sides']['a']['characters']['zhenhong']['hp'],0)
         self.assertEqual(passive_count(state,'a'),1)
         context=operation(state,'a','jiuyuan');resolve_genesis(context);finish_operation(state)
         self.assertTrue(state['sides']['a']['surplus'])

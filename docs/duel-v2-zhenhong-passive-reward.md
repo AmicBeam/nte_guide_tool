@@ -19,3 +19,7 @@
 ## 验证
 
 `python -m unittest tests.test_duel_v2_passive_reward tests.test_duel_v2_fixed_lineups tests.test_duel_v2_surplus_rework tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_yi_ultimate`：68项通过，覆盖真实被动去重、多次累加、倒地不追加计数、JSON保存、无延滞、奖励随次数单调增加、逐决策只计未来触发、截断排除及旧纯终局轨迹兼容。本次未运行优化训练。
+
+## 搜索学习接入
+
+十人搜索运行时复用信息集搜索与策略／价值联合更新。训练树内按真红实际被动计数增量加入 `系数/10` 的收益；只作用于当前学习方的真红策略。真实完整对局保留原终局标签 `z∈{-1,0,1}`，另存 `reward_to_go=10*z+系数×未来实际触发次数`，真红价值回归使用该回报，策略仍拟合搜索访问分布。冻结历史方不获得奖励学习样本，独立评估不加激励。恢复点必须同时保存过程回报与纯终局标签；这类价值分数不是校准胜率。

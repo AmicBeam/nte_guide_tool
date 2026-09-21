@@ -18,6 +18,16 @@ from app.modules.card_game.rl.build_acceptance import (
     canonical_build, canonical_candidates, build_identity, paired_result, delivery_decision)
 
 
+
+def cycle_ops(config):
+    if not config.get('runtime'):
+        return PRESETS, SEATS, CARD_IDS, LeagueModel, load_numeric, export_model, probe_results, deck
+    if config['runtime'] != 'ten':raise ValueError('Unknown cycle runtime')
+    from .fixed_lineup import KEYS, SEATS as seats, CARD_IDS as cards, FixedModel
+    from .ten_search_runtime import load_numeric as load, export_model as export, probe_results as results
+    return KEYS, seats, cards, FixedModel, load, export, results, lambda key: config['baseline_builds'][key]
+
+
 def random_build(seed,team,card_ids=CARD_IDS):
     rng=Random(seed);cards=[]
     for cid in team:cards+=rng.sample([c for c in card_ids if CARDS[c]['character_id']==cid and not CARDS[c].get('derived') for _ in range(2)],8)
@@ -50,13 +60,17 @@ def candidates(parent,seed,card_ids=CARD_IDS):
     return rows
 
 
-def copy_models(source,target):
+def copy_models(source,target,keys=PRESETS):
     target=Path(target);target.mkdir(parents=True,exist_ok=True)
-    for key in PRESETS:
+    for key in keys:
         for ext in ('npz','json'):shutil.copy2(Path(source)/f'{key}.{ext}',target/f'{key}.{ext}')
 
 
-def probes(out,deadline,seed_base):
+def probes(out,deadline,seed_base,config=None):
+    if config and config.get("runtime")=="ten":
+        from .ten_search_runtime import probes as ten_probes
+        result=ten_probes(config["baseline_builds"],seed_base)
+        write(out/"selection-probes.json",result);return result
     from app.modules.card_game.rl.search_pilot import position
     from app.modules.card_game.rl.league_search import prove_turn
     from app.modules.card_game.rl.league_rollout import decision
@@ -74,13 +88,15 @@ def probes(out,deadline,seed_base):
     write(out/'selection-probes.json',result);return result
 
 
-def compare(pool,out,key,dirs,builds,reference,reference_builds,seed,deadline,pairs):
+def compare(pool,out,key,dirs,builds,reference,reference_builds,seed,deadline,pairs,config=None,searching=False):
+    config=config or {}
+    PRESETS,_,_,_,_,_,_,_=cycle_ops(config)
     jobs=[];labels=[]
     for label,folder in dirs.items():
         for fi,foe in enumerate(k for k in PRESETS if k!=key):
             for i in range(pairs):
                 for first in ('a','b'):
-                    jobs.append(dict(seed=seed+fi*100+i,first=first,deadline=deadline,decks={'a':canonical_build(builds[label]),'b':canonical_build(reference_builds[foe])},policies={'a':(str(folder),key),'b':(str(reference),foe)},raw_sides=['a','b']))
+                    jobs.append(dict(seed=seed+fi*100+i,first=first,deadline=deadline,decks={'a':canonical_build(builds[label]),'b':canonical_build(reference_builds[foe])},policies={'a':(str(folder),key),'b':(str(reference),foe)},raw_sides=['b'] if searching else ['a','b'],runtime=config.get('runtime'),simulations=config.get('simulations',256)))
                     labels.append(label)
     rs=list(pool.map(search_game,jobs));summary={}
     for label in dirs:
@@ -91,6 +107,7 @@ def compare(pool,out,key,dirs,builds,reference,reference_builds,seed,deadline,pa
 
 
 def train(pool,out,source,reference,builds,reference_builds,deadline,config,stage,probe,update_target=None):
+    PRESETS,SEATS,CARD_IDS,LeagueModel,load_numeric,export_model,probe_results,deck=cycle_ops(config)
     import torch,numpy as np
     folder=out/stage;folder.mkdir();nets={};opts={};origins={};replay={k:[] for k in PRESETS}
     for key in PRESETS:
@@ -106,20 +123,27 @@ def train(pool,out,source,reference,builds,reference_builds,deadline,config,stag
         cycle+=1;jobs=[]
         write(out/'status.json',dict(phase=stage,cycle=cycle,totals=totals,games=games_n,stage_deadline=deadline,hard_deadline=config['deadlines']['shutdown']))
         for ki,key in enumerate(PRESETS):
-            for fi,foe in enumerate(k for k in PRESETS if k!=key):
+            opponents=[k for k in PRESETS if k!=key]
+            if config['smoke']:opponents=[opponents[ki%len(opponents)]]
+            for fi,foe in enumerate(opponents):
                 for first in ('a','b'):
                     historical=cycle%4==0 or update_target is not None
                     enemy=reference if historical else current
                     enemy_build=reference_builds[foe] if historical else builds[foe]
-                    if cycle%5==0 or config['smoke']:enemy_build=random_build(stage_seed+cycle*100+fi,enemy_build['character_ids'])
-                    jobs.append(dict(seed=stage_seed+cycle*10000+ki*1000+fi*100,first=first,deadline=deadline,decks={'a':builds[key],'b':enemy_build},policies={'a':(str(current),key),'b':(str(enemy),foe)},simulations=config['simulations'],training=True,collect=True,failure_dir=str(out/'failure-roots'),train_sides=['a'] if historical else ['a','b']))
-        results=list(pool.map(search_game,jobs));fresh={k:[] for k in PRESETS}
-        for job,g in zip(jobs,results):
-            append(folder,'games.jsonl',dict(cycle=cycle,seed=job['seed'],first=job['first'],builds=job['decks'],**compact(g)))
+                    if update_target is None and cycle%8==0:
+                        enemy=best[foe];enemy_build=builds[foe]
+                    if cycle%5==0 or config['smoke']:enemy_build=random_build(stage_seed+cycle*100+fi,enemy_build['character_ids'],CARD_IDS)
+                    jobs.append(dict(seed=stage_seed+cycle*10000+ki*1000+fi*100,first=first,deadline=deadline,decks={'a':builds[key],'b':enemy_build},policies={'a':(str(current),key),'b':(str(enemy),foe)},runtime=config.get('runtime'),zhenhong_passive_reward=config.get('zhenhong_passive_reward',0),simulations=config['simulations'],training=True,collect=True,failure_dir=str(out/'failure-roots'),train_sides=['a'] if historical else ['a','b']))
+        results=[];fresh={k:[] for k in PRESETS}
+        for job,g in zip(jobs,pool.map(search_game,jobs)):
+            results.append(g)
+            append(folder,'games.jsonl',dict(cycle=cycle,seed=job['seed'],first=job['first'],builds=job['decks'],policies=job['policies'],train_sides=job['train_sides'],**compact(g)))
             if g['complete']:
+                if g['decisions']!=g['searched'] or len(g['rows'])!=g['decisions']:raise ValueError('Unsearched training decision')
                 games_n+=1
                 for row in g['rows']:
                     if row['side'] in job['train_sides']:fresh[row['key']].append(row)
+            write(out/'status.json',dict(phase=stage,cycle=cycle,completed_batch_jobs=len(results),scheduled_batch_jobs=len(jobs),totals=totals,games=games_n,stage_deadline=deadline,hard_deadline=config['deadlines']['shutdown']))
         for key in PRESETS:
             replay[key]=(replay[key]+fresh[key])[-16384:];totals[key]['samples']+=len(fresh[key])
         if not all(g['complete'] for g in results) or time.time()>=deadline:break
@@ -134,34 +158,51 @@ def train(pool,out,source,reference,builds,reference_builds,deadline,config,stag
         current=folder/'generations'/f'cycle-{cycle:04}'
         for key in PRESETS:export_model(nets[key],current,key,builds[key],origin=origins[key])
         # Numeric generations survive a failed later stage; optimizer checkpoint is atomic.
-        temp=folder/'checkpoint.tmp';torch.save(dict(cycle=cycle,totals=totals,nets={k:n.state_dict() for k,n in nets.items()},opts={k:o.state_dict() for k,o in opts.items()},rule_hash=config['rule_hash']),temp);temp.replace(folder/'checkpoint.pt')
+        temp=folder/'checkpoint.tmp';torch.save(dict(cycle=cycle,totals=totals,current=str(current),best={k:str(v) for k,v in best.items()},next_check=next_check,nets={k:n.state_dict() for k,n in nets.items()},opts={k:o.state_dict() for k,o in opts.items()},rule_hash=config['rule_hash'],replay={k:[dict(x=torch.from_numpy(r['x']),c=torch.from_numpy(r['c']),pi=torch.from_numpy(r['pi']),z=r['z'],reward_to_go=r.get('reward_to_go')) for r in rows] for k,rows in replay.items()}),temp)
+        if (folder/'checkpoint.pt').exists():shutil.copy2(folder/'checkpoint.pt',folder/'checkpoint-previous.pt')
+        temp.replace(folder/'checkpoint.pt')
+        write(folder/'checkpoint-manifest.json',{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in folder.glob('checkpoint*.pt')})
         if update_target is None and (time.time()>=next_check or config['smoke']):
             for ki,key in enumerate(PRESETS):
                 if time.time()>=deadline-10:break
-                end=min(deadline,time.time()+90);dirs={'candidate':current,'best':best[key]};bs={l:builds[key] for l in dirs}
-                rs=compare(pool,folder,key,dirs,bs,reference,reference_builds,selection_seed+cycle*1000+ki*100,end,1 if config['smoke'] else 4)
+                end=min(deadline,time.time()+(90 if config['smoke'] else 600));dirs={'candidate':current,'best':best[key]};bs={l:builds[key] for l in dirs}
+                rs=compare(pool,folder,key,dirs,bs,reference,reference_builds,selection_seed+cycle*1000+ki*100,end,1 if config['smoke'] else 4,config)
                 retained=all(not a or b for a,b in zip(baseline[key],probe_results(current,key,probe)))
                 promote=retained and all(r['complete'] for r in rs.values()) and rs['candidate']['wins']>=rs['best']['wins']+2
                 if promote:
-                    confirm=compare(pool,folder,key,dirs,bs,reference,reference_builds,selection_seed+1000000+cycle*1000+ki*100,end,1 if config['smoke'] else 4)
+                    confirm=compare(pool,folder,key,dirs,bs,reference,reference_builds,selection_seed+1000000+cycle*1000+ki*100,end,1 if config['smoke'] else 4,config)
                     promote=all(r['complete'] for r in confirm.values()) and confirm['candidate']['wins']>confirm['best']['wins']
+                if promote:
+                    screen=compare(pool,folder,key,dirs,bs,reference,reference_builds,selection_seed+3000000+cycle*1000+ki*100,end,1 if config['smoke'] else 2,config,searching=True)
+                    confirm=compare(pool,folder,key,dirs,bs,reference,reference_builds,selection_seed+4000000+cycle*1000+ki*100,end,1 if config['smoke'] else 2,config,searching=True)
+                    promote=all(x['complete'] for group in (screen,confirm) for x in group.values()) and all(group['candidate']['wins']>=group['best']['wins'] for group in (screen,confirm))
+                rollback=False
+                if all(r['complete'] for r in rs.values()) and rs['candidate']['wins']<=rs['best']['wins']-4:
+                    confirm_bad=compare(pool,folder,key,dirs,bs,reference,reference_builds,selection_seed+5000000+cycle*1000+ki*100,end,1 if config['smoke'] else 4,config)
+                    rollback=all(r['complete'] for r in confirm_bad.values()) and confirm_bad['candidate']['wins']<=confirm_bad['best']['wins']-4
                 if promote:best[key]=current
-                append(folder,'selection.jsonl',dict(cycle=cycle,key=key,retained=retained,promote=promote))
+                if rollback:
+                    restored,_=load_numeric(best[key],key,config['device']);nets[key].load_state_dict(restored.state_dict())
+                    opts[key]=torch.optim.Adam(nets[key].parameters(),lr=max(1e-5,opts[key].param_groups[0]['lr']/2));replay[key]=[]
+                append(folder,'selection.jsonl',dict(cycle=cycle,key=key,retained=retained,promote=promote,rollback=rollback))
+            current=folder/'generations'/f'selected-{cycle:04}'
+            for key in PRESETS:export_model(nets[key],current,key,builds[key],origin=origins[key])
             next_check=time.time()+1800
     selected=folder/'selected';selected.mkdir()
     for key in PRESETS:
         for ext in ('json','npz'):shutil.copy2(best[key]/f'{key}.{ext}',selected/f'{key}.{ext}')
-    copy_models(current,folder/'latest')
+    copy_models(current,folder/'latest',PRESETS)
     write(folder/'summary.json',dict(cycles=cycle,games=games_n,totals=totals,best={k:str(v) for k,v in best.items()},latest=str(current),finished=time.time()))
     return folder/'latest' if update_target is not None else selected
 
 
 def tune(pool,out,models,builds,deadline,config):
+    PRESETS,SEATS,CARD_IDS,LeagueModel,load_numeric,export_model,probe_results,deck=cycle_ops(config)
     selected=deepcopy(builds);reference=deepcopy(builds);folder=out/'cards';folder.mkdir();rounds=1 if config['smoke'] else 4
     for round_id in range(rounds):
         for ki,key in enumerate(PRESETS):
-            left=(rounds-round_id)*3-ki
-            end=min(deadline,time.time()+max(0,(deadline-time.time())/left));parent=deepcopy(selected[key]);rows=candidates(parent,config['seeds']['search']+round_id*10000+ki*100)
+            left=(rounds-round_id)*len(PRESETS)-ki
+            end=min(deadline,time.time()+max(0,(deadline-time.time())/left));parent=deepcopy(selected[key]);rows=candidates(parent,config['seeds']['search']+round_id*10000+ki*100,CARD_IDS)
             if config['smoke']:rows=rows[:2]
             original=deepcopy(builds[key]);official=deck(key)
             for b in (original,official):
@@ -173,7 +214,7 @@ def tune(pool,out,models,builds,deadline,config):
             for level,pairs in enumerate((1,) if config['smoke'] else (8,32,128)):
                 if time.time()>=end:break
                 dirs={str(i):models for i in active};bs={str(i):rows[i] for i in active}
-                rs=compare(pool,folder,key,dirs,bs,models,reference,config['seeds']['search']+1_000_000+round_id*100000+ki*10000+level*1000,end,pairs)
+                rs=compare(pool,folder,key,dirs,bs,models,reference,config['seeds']['search']+1_000_000+round_id*100000+ki*10000+level*1000,end,pairs,**({'config':config} if config.get('runtime') else {}))
                 if not all(r['complete'] for r in rs.values()):
                     append(folder,'decisions.jsonl',dict(round=round_id,key=key,level=level,decision='incomplete_keep_parent'));break
                 ranked=sorted(active,key=lambda i:(-rs[str(i)]['wins'],i!=baseline_index,i));winner=ranked[0]
@@ -194,8 +235,14 @@ def evaluate_job(j):
     from app.modules.card_game.rl.report_telemetry import GameTelemetry
     from app.modules.card_game.rl.policies import VisibleEngineRulePolicy
     from app.modules.card_game.engine.duel_v2 import new_game,apply_action,acting_side,observe
+    if j.get('runtime')=='ten':
+        from .ten_search_runtime import model,decision
     j={**j,'decks':{k:canonical_build(v) for k,v in j['decks'].items()}}
+    if j.get('details') is False:
+        g=search_game(dict(j,raw_sides=['a','b']))
+        return dict(j,**{k:v for k,v in g.items() if k not in ('rows','search_stats')})
     s=new_game(seed=j['seed'],first_side=j['first'],decks=j['decks']);opening=deepcopy(s);tele=GameTelemetry(s);actions_log=[];events=[];error=None
+    immune_metrics={side:Counter() for side in ('a','b')};immune_risks={side:[] for side in ('a','b')}
     try:
         for _ in range(800):
             if s['phase']=='finished' or time.time()>=j['deadline']:break
@@ -206,38 +253,56 @@ def evaluate_job(j):
                 actions,(x,c)=decision(s,side);idx=int(model(*spec).scores(x,c).argmax())
             if side=='a' and j.get('keep_all') and s['phase']=='mulligan':idx=next(i for i,a in enumerate(actions) if a['type']=='mulligan' and not a.get('card_ids'))
             tele.before(s,side,actions);action=actions[idx];after=apply_action(s,side,action);tele.after(s,after,action,side)
+            from .fixed_lineup_training import track_immune_window
+            track_immune_window(s,after,action,side,immune_metrics['a'],immune_risks['a'])
+            swapped_before={**s,'sides':{'a':s['sides']['b'],'b':s['sides']['a']}}
+            swapped_after={**after,'sides':{'a':after['sides']['b'],'b':after['sides']['a']}}
+            track_immune_window(swapped_before,swapped_after,action,'b' if side=='a' else 'a',immune_metrics['b'],immune_risks['b'])
             actions_log.append(dict(side=side,action=action,turn=s['turn']));events.extend(deepcopy(after.get('events',[])));s=clean(after)
+            if j.get('replay'):
+                actions_log[-1]['state_sha256']=hashlib.sha256(json.dumps(s,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     except Exception as exc:error=repr(exc)
-    result=dict(**j,complete=s['phase']=='finished' and error is None,winner=s.get('winner'),turn=s['turn'],error=error,telemetry=tele.finish(s),actions=actions_log,events=events)
+    replay_verified=False
+    if j.get('replay') and s['phase']=='finished' and error is None:
+        try:
+            replayed=deepcopy(opening)
+            for record in actions_log:
+                replayed=clean(apply_action(replayed,record['side'],record['action']))
+                if hashlib.sha256(json.dumps(replayed,sort_keys=True,ensure_ascii=False).encode()).hexdigest()!=record['state_sha256']:
+                    raise ValueError('Replay action/state mismatch')
+            replay_verified=True
+        except Exception as exc:error=repr(exc)
+    result=dict(**j,replay_verified=replay_verified,complete=s['phase']=='finished' and error is None,winner=s.get('winner'),turn=s['turn'],error=error,telemetry=tele.finish(s),actions=actions_log,events=events,immune_window={k:dict(v) for k,v in immune_metrics.items()},immune_risks=immune_risks,opening_state=opening)
     out=Path(j['output'])
     with gzip.open(out/'raw'/f"{j['id']}.json.gz",'wt',encoding='utf-8') as f:json.dump(result,f,ensure_ascii=False)
     if j.get('replay') and result['complete']:
         from app.modules.card_game.rl.offline_analysis import _public_payload
         s['events']=events;payload=_public_payload(opening,s,game_id=j['id'])
         with gzip.open(out/'replays'/f"{j['id']}.json.gz",'wt',encoding='utf-8') as f:json.dump(payload,f,ensure_ascii=False)
-    return {k:v for k,v in result.items() if k not in ('telemetry','actions','events','output')}
+    return {k:v for k,v in result.items() if k not in ('telemetry','actions','events','output','opening_state')}
 
 
 def evaluate(pool,out,initial,final,old_builds,builds,deadline,config):
+    PRESETS,SEATS,CARD_IDS,LeagueModel,load_numeric,export_model,probe_results,deck=cycle_ops(config)
     folder=out/'evaluation';folder.mkdir();(folder/'raw').mkdir();(folder/'replays').mkdir();jobs=[];pairs=1 if config['smoke'] else 16
     def add(cell,a,b,source,bs,seed,n=pairs,enemy=None,enemy_build=None,keep=False,replay=False):
         for i in range(n):
             for first in ('a','b'):
-                jobs.append(dict(id=f'g{len(jobs):05}',cell=cell,seed=seed+i,first=first,deadline=deadline,decks={'a':bs,'b':enemy_build or old_builds[b]},policies={'a':(str(source),a),'b':(str(enemy or initial),b)},keep_all=keep,replay=replay and i<4,output=str(folder)))
+                jobs.append(dict(id=f'g{len(jobs):05}',cell=cell,seed=seed+i,first=first,deadline=deadline,decks={'a':bs,'b':enemy_build or old_builds[b]},policies={'a':(str(source),a),'b':(str(enemy or initial),b)},keep_all=keep,replay=replay and i<4,output=str(folder),runtime=config.get('runtime')))
     for ki,key in enumerate(PRESETS):
         for fi,foe in enumerate(k for k in PRESETS if k!=key):
             seed=(config['seeds']['audit']+0)+ki*10000+fi*1000
             for label,src,bs in [('initial',initial,old_builds[key]),('recommended',final,builds[key])]:add(f'{label}/{key}/{foe}',key,foe,src,bs,seed)
-        add(f'mirror/{key}',key,key,final,builds[key],(config['seeds']['audit']+1000000)+ki*10000,enemy=final,enemy_build=builds[key],replay=True)
-    for ki,(key,foe) in enumerate(combinations(PRESETS,2)):add(f'cross/{key}/{foe}',key,foe,final,builds[key],(config['seeds']['audit']+2000000)+ki*10000,enemy=final,enemy_build=builds[foe],replay=True)
+        add(f'mirror/{key}',key,key,final,builds[key],(config['seeds']['audit']+1000000)+ki*10000,enemy=final,enemy_build=builds[key],replay=True,n=1 if config['smoke'] else config.get('matrix_games',128)//2)
+    for ki,(key,foe) in enumerate(combinations(PRESETS,2)):add(f'cross/{key}/{foe}',key,foe,final,builds[key],(config['seeds']['audit']+2000000)+ki*10000,enemy=final,enemy_build=builds[foe],replay=True,n=1 if config['smoke'] else config.get('matrix_games',128))
     for ki,key in enumerate(PRESETS):
         for fi,foe in enumerate(PRESETS):
             for keep in (False,True):add(f'opening/{key}/{foe}/{keep}',key,foe,final,builds[key],(config['seeds']['audit']+3000000)+ki*10000+fi*1000,n=1 if config['smoke'] else 8,enemy=final,enemy_build=builds[foe],keep=keep)
             add(f'rule/{key}/{foe}',key,foe,final,builds[key],(config['seeds']['audit']+4000000)+ki*10000+fi*1000,n=1 if config['smoke'] else 8,enemy='rule',enemy_build=builds[foe])
         teams=list(combinations(SEATS,4))[:1] if config['smoke'] else list(combinations(SEATS,4))
         for ti,team in enumerate(teams):
-            var=random_build((config['seeds']['audit']+5000000)+ti,team)
-            for enemy in (initial,'rule'):add(f'variation/{key}/{"model" if enemy==initial else "rule"}',key,PRESETS[ti%3],final,builds[key],(config['seeds']['audit']+6000000)+ki*10000+ti,n=1,enemy=enemy,enemy_build=var)
+            var=random_build((config['seeds']['audit']+5000000)+ti,team,CARD_IDS)
+            for enemy in (initial,'rule'):add(f'variation/{key}/{"model" if enemy==initial else "rule"}',key,PRESETS[ti%len(PRESETS)],final,builds[key],(config['seeds']['audit']+6000000)+ki*10000+ti,n=1,enemy=enemy,enemy_build=var)
     write(folder/'jobs.json',jobs);results=[]
     for r in pool.map(evaluate_job,jobs):
         results.append(r);append(folder,'index.jsonl',r)
@@ -245,11 +310,14 @@ def evaluate(pool,out,initial,final,old_builds,builds,deadline,config):
     from app.modules.card_game.rl.league_gate import cases
     from app.modules.card_game.rl.search_budget_eval import consistent_tactical_fixture,expected_actions,case_job
     tactical=[]
-    for key,name,s,side,goal in cases():
+    for key,name,s,side,goal in ([] if config.get('runtime')=='ten' else cases()):
         if time.time()>=deadline:break
         s,_=consistent_tactical_fixture(s);foe='b' if side=='a' else 'a'
         row=case_job(dict(state=s,side=side,budget=0,seed=(config['seeds']['audit']+7000000),deadline=deadline,expected=expected_actions(s,side,goal),policies={side:(str(final),key),foe:(str(initial),'weave-rush')}))
         tactical.append(dict(key=key,name=name,**row))
+    if config.get('runtime')=='ten':
+        from .five_full_cycle import tactical_gate
+        tactical=[dict(key=key,**tactical_gate(final,key,builds[key])) for key in PRESETS]
     write(folder/'tactical.json',tactical)
     cells={}
     for r in results:
@@ -261,10 +329,13 @@ def evaluate(pool,out,initial,final,old_builds,builds,deadline,config):
     lines=['# 三阵容完整训练冻结验收','', '训练、配牌搜索、适应与冻结评估分别归档。未自动发布模型；下表胜率只对应本轮冻结条件。','','| 测试单元 | 完成 | 胜 | 负 | 平 | 未完成 |','| --- | ---: | ---: | ---: | ---: | ---: |']
     for name,c in cells.items():lines.append(f"| {name} | {c['n']} | {c['wins']} | {c['losses']} | {c['draws']} | {c['incomplete']} |")
     (out/'report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
-    return all(r['complete'] for r in results) and len(tactical)==len(cases())
+    from .new_model_report import write_matrix
+    matrix_complete=write_matrix(out,results,PRESETS,final,config)
+    return matrix_complete and all(r['complete'] for r in results) and (len(tactical)==len(cases()) if not config.get('runtime') else len(tactical)==len(PRESETS) and all(r['complete'] for r in tactical))
 
 
 def gate_comparison(pool,out,key,baseline,candidate,base_build,candidate_build,reference,reference_builds,config,phase,deadline):
+    PRESETS,SEATS,CARD_IDS,LeagueModel,load_numeric,export_model,probe_results,deck=cycle_ops(config)
     """Freeze one proposal before touching confirmation/audit; no repeated peeking."""
     folder=out/phase;folder.mkdir(exist_ok=True);(folder/'raw').mkdir(exist_ok=True);(folder/'replays').mkdir(exist_ok=True)
     offset=8_000_000 if phase=='audit-gate' else 0
@@ -280,7 +351,7 @@ def gate_comparison(pool,out,key,baseline,candidate,base_build,candidate_build,r
                     jobs.append(dict(id=f'{key}-{label}-{foe}-{seed}-{first}',cell=f'{phase}/{key}',
                         variant=label,foe=foe,seed=seed,first=first,deadline=deadline,
                         decks={'a':canonical_build(build),'b':canonical_build(reference_builds[foe])},
-                        policies={'a':(str(src),key),'b':(str(reference),foe)},output=str(folder)))
+                        policies={'a':(str(src),key),'b':(str(reference),foe)},output=str(folder),runtime=config.get('runtime'),details=False))
     write(folder/f'{key}-plan.json',dict(seeds=seeds,opponents=foes,identities=identities,
                                        builds={'baseline':base_build,'candidate':candidate_build}))
     results=[]
@@ -293,7 +364,11 @@ def gate_comparison(pool,out,key,baseline,candidate,base_build,candidate_build,r
     return result
 
 
-def proposal_tactics(directory,reference,key,deadline):
+def proposal_tactics(directory,reference,key,deadline,config=None):
+    if config and config.get("runtime")=="ten":
+        from .five_full_cycle import tactical_gate
+        from .fixed_lineup import FixedModel
+        return tactical_gate(directory,key,FixedModel(directory,key).serving_deck)
     from .league_gate import cases
     from .search_budget_eval import consistent_tactical_fixture,expected_actions,case_job
     results=[]
@@ -309,14 +384,22 @@ def proposal_tactics(directory,reference,key,deadline):
 
 
 def run(out,config):
+    PRESETS,SEATS,CARD_IDS,LeagueModel,load_numeric,export_model,probe_results,deck=cycle_ops(config)
+    if config.get("runtime")=="ten":
+        from .fixed_lineup import identity as active_rule_hash
+    else:
+        active_rule_hash=rule_hash
     import torch
     torch.set_num_threads(1);torch.manual_seed(20260920)
     out=Path(out);initial=out/'initial';deadlines=config['deadlines']
-    if rule_hash()!=config['rule_hash']:raise ValueError('Rules changed after planning')
+    if active_rule_hash()!=config['rule_hash']:raise ValueError('Rules changed after planning')
     if config['device']=='cuda' and not torch.cuda.is_available():raise RuntimeError('CUDA unavailable')
     from .build_acceptance import check_source
     check_source(config['initial'],research_warm_start=config['research_warm_start'],baseline_builds=config.get('baseline_builds'))
-    migrate_numeric(config['initial'],initial)
+    if config.get('runtime')=='ten':
+        copy_models(config['initial'],initial,PRESETS)
+    else:
+        migrate_numeric(config['initial'],initial)
     builds={k:canonical_build((config.get('baseline_builds') or {}).get(k) or LeagueModel(initial,k).serving_deck) for k in PRESETS}
     # Bind a canonical deck copy to the unchanged initial numerical weights.
     for key in PRESETS:
@@ -327,8 +410,8 @@ def run(out,config):
     initial_identity={k:LeagueModel(initial,k).version for k in PRESETS}
     write(out/'protocol.json',dict(schema='paired_full_cycle_v1',scoring='equal_opponent_and_seat',
         plan=config,initial_models=initial_identity,baseline_builds=builds,
-        fixed_endpoint=True,confirmation_family_size=3,automatic_serving_approval=False))
-    probe=probes(out,min(deadlines['foundation'],time.time()+180),config['seeds']['probes'])
+        fixed_endpoint=True,confirmation_family_size=len(PRESETS),automatic_serving_approval=False))
+    probe=probes(out,min(deadlines['foundation'],time.time()+180),config['seeds']['probes'],config)
     with ProcessPoolExecutor(max_workers=config['workers'],mp_context=get_context('spawn')) as pool:
         foundation=train(pool,out,initial,initial,builds,builds,deadlines['foundation'],config,'foundation',probe)
         proposals=tune(pool,out,foundation,builds,deadlines['search'],config)
@@ -358,7 +441,7 @@ def run(out,config):
             if confirmations[key].get('decision')=='accepted':
                 audit=gate_comparison(pool,out,key,initial,candidate_adapt,builds[key],proposals[key],
                     initial,builds,config,'audit-gate',deadlines['audit'])
-                tactical=proposal_tactics(candidate_adapt,initial,key,deadlines['audit'])
+                tactical=proposal_tactics(candidate_adapt,initial,key,deadlines['audit'],config)
             decisions[key]=delivery_decision(builds[key],proposals[key],confirmations[key],audit,
                 fair_adaptation=fairness[key],tactical_passed=tactical['passed'],smoke=config['smoke'],audit_margin=config['audit_margin'])
             decisions[key]['tactical']=tactical
@@ -371,13 +454,20 @@ def run(out,config):
             d['model_sha256']=LeagueModel(recommended,key).version
             assert build_identity(LeagueModel(recommended,key).serving_deck)==build_identity(delivered_builds[key])
         write(out/'audit-decisions.json',decisions)
-        report_complete=evaluate(pool,out,initial,recommended,builds,delivered_builds,deadlines['audit'],config)
+        report_models=recommended;report_builds=delivered_builds
+        if config.get('runtime'):
+            report_models=out/'report-models';report_models.mkdir();report_builds={}
+            for key,d in decisions.items():
+                src=candidate_adapt if d['build_quality_approved'] else baseline_adapt
+                for ext in ('json','npz'):shutil.copy2(src/f'{key}.{ext}',report_models/f'{key}.{ext}')
+                report_builds[key]=LeagueModel(report_models,key).serving_deck
+        report_complete=evaluate(pool,out,initial,report_models,builds,report_builds,deadlines.get('evaluation',deadlines['audit']),config)
         search_complete=json.loads((out/'cards/status.json').read_text())['workflow_complete']
         evidence_complete=all(build_identity(builds[k])==build_identity(proposals[k]) or
             (fairness[k] and confirmations[k].get('complete') and
              (confirmations[k].get('decision')!='accepted' or
               (decisions[k]['audit'].get('complete') and decisions[k]['tactical'].get('complete')))) for k in PRESETS)
-        complete=report_complete and search_complete and evidence_complete
+        complete=report_complete and search_complete and evidence_complete and all(fairness.values())
     delivery=out/'recommended';delivery.mkdir()
     for key,d in decisions.items():
         d['audited_model_sha256']=d['model_sha256']
@@ -397,7 +487,7 @@ def run(out,config):
         f.write('\n候选、确认通过、审计通过和保留原配牌分别记录；流程完成不代表质量通过，不自动发布。\n')
     members=[p for p in out.rglob('*') if p.is_file() and
              not any(part in ('frozen','generations','sources') for part in p.relative_to(out).parts) and
-             p.suffix in ('.json','.jsonl','.npz','.gz','.md') and p.name!='delivery.json']
+             p.suffix in ('.json','.jsonl','.npz','.pt','.gz','.md') and p.name!='delivery.json']
     manifest={}
     with zipfile.ZipFile(out/'delivery.zip','w',zipfile.ZIP_DEFLATED) as archive:
         for p in sorted(members):

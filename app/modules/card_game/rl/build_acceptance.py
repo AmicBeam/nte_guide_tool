@@ -147,7 +147,7 @@ def source_disposition(directory):
     registry=Path(__file__).with_name('experiment_dispositions.json')
     if registry.is_file():
         hashes=set()
-        for name in ('starter','weave-rush','quick-rush'):
+        for name in ('starter','weave-rush','quick-rush','zhenhong','midrange'):
             p=directory/(name+'.json')
             if p.is_file():hashes.add(json.loads(p.read_text()).get('sha256'))
         for record in json.loads(registry.read_text()).get('records',[]):
@@ -158,6 +158,8 @@ def source_disposition(directory):
 
 def check_source(directory, *, research_warm_start=False, baseline_builds=None):
     disposition = source_disposition(directory)
+    if disposition and disposition.get('reuse_revoked'):
+        raise ValueError('User revoked reuse of this experiment')
     if disposition and disposition.get('default_reuse_allowed') is False:
         if not research_warm_start or baseline_builds is None:
             raise ValueError('Discarded experiment: explicit research warm start and baseline builds required')

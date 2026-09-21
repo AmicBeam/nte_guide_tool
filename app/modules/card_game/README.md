@@ -608,3 +608,9 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 验证：`python -m unittest tests.test_duel_v2_tutorial tests.test_duel_v2_xiaozhi_haiyue`，API 的旧毕业继续新关用例，以及 `node --test tests/js/duel_v2_ranged.test.cjs`。
 
 本次 66 项规则／教学回归、4 项教学 API 用例及 1 项前端渲染测试通过。隔离测试数据库的真实页面从大厅进入第十三关，完成战斗牌、终结、远程拖拽与通关；确认海月保留 1 生命、薄荷仍在前排，图鉴可搜索远程且终结关键字加粗，浏览器无 error。
+
+### 五套搜索训练
+
+完整十人／五套训练由 `scripts/train_duel_v2_full_cycle.py --ten` 编排，通过 `rl/ten_search_runtime.py` 适配共享信息集搜索。默认北京时间09:00硬截止，启动与预算、配牌协议和完整交付见 `docs/duel-v2-public-training.md`。`rl/new_model_report.py` 从冻结新模型直接互搏生成先手×后手矩阵及逐卡、角色和机制资料；报告与原始记录仅写入 `artifacts/rl-evals/`，不自动更新网站模型。
+
+验证：`python -m unittest tests.test_duel_v2_ten_search tests.test_duel_v2_information_search tests.test_duel_v2_build_acceptance`。正式运行前另完成Windows CUDA有界链路预检，不能把本机单元测试当作完整训练质量证据。

@@ -234,7 +234,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         result['pending_choice'] = {'side': pending['side'], 'kind': pending['kind'],
             'prompt': pending['prompt'] if pending['side'] == side else '对手正在选择',
             'max_select': pending.get('max_select') if pending['side'] == side else None,
-            'choices': [{'id': c['instance_id'], 'label': c['name'], 'card': public_card(c, state, pending['side'])}
+            'choices': [{'id': c['instance_id'], 'label': c['name'], 'card': public_card(c, state, ('b' if pending['side']=='a' else 'a') if pending['kind']=='enemy_hand' else pending['side'])}
                         for c in pending['cards']] if pending['side'] == side else []}
     op = state['operation']
     result['resolving_card'] = public_card(op['card'], state, op['side']) if op and op['card'] else None

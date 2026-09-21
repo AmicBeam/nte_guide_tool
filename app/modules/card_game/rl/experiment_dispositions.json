@@ -366,6 +366,59 @@
       "optimizer_default_reuse_allowed": false,
       "artifact_bytes_preserved": true,
       "service_changed": false
+    },
+    {
+      "run_id": "five-full-night-20260921",
+      "default_reuse_allowed": false,
+      "reuse_revoked": true,
+      "weights": {
+        "a032a98fb88b41a38ea1c24ed196c6d1d53a123358fd467dde28028168c500b2": {
+          "default_reuse_allowed": false
+        },
+        "bd14ab32a092061a98d53f569c8c38b2e42272ffe0841ded1484fe4b2c29e9dd": {
+          "default_reuse_allowed": false
+        },
+        "88a6af2479c497e69256265b0ea9656687e3f389bf62e2c3a2e16fb106029155": {
+          "default_reuse_allowed": false
+        },
+        "12cefb70b7124a23d528bc33f0b9f9d59e8183c5131c12c6911d274ddb405d0d": {
+          "default_reuse_allowed": false
+        },
+        "69c92c5a0f20586238a8d6b673294cdea6dd64a212e66a7e6c93c8bf17cc9a5b": {
+          "default_reuse_allowed": false
+        },
+        "0c8ae0d8fe9ef615b3153fbafd9ce5cec2f62c821a786a2d7ca40232d0af04f1": {
+          "default_reuse_allowed": false
+        },
+        "16f51ce5cfd3f036e743a13c8acce3daeb2fece052932467ecb99c49879c9e57": {
+          "default_reuse_allowed": false
+        },
+        "952296076446ef099766e4825ada28347014dbccadf564230a493ce9690b15c2": {
+          "default_reuse_allowed": false
+        },
+        "a5911dfdbdc93ff119e9b4762d8108b24b0cfc7fc54df8aa03a1052f12d60733": {
+          "default_reuse_allowed": false
+        },
+        "9c4837d8587d0f26d06b2fe7673ed0bf15ccac70407f099eeb60c68cc7bf5e01": {
+          "default_reuse_allowed": false
+        },
+        "2ab1e212c3edd7a6cb6e8cf09cf1327d11070b77ba18cf6977ef46a82a053797": {
+          "default_reuse_allowed": false
+        },
+        "ad6e98af8f5cfd81b90f9f03f84675e53aa712b5d4724e2fabe0b36df946b77c": {
+          "default_reuse_allowed": false
+        },
+        "f43e7e6ef26e124706f48a294a6e1f31d820ba82893330b85d90c90e331269f3": {
+          "default_reuse_allowed": false
+        },
+        "eaa9df9ae8ff2e32f5c29466da589dd9748d7208a88c8e7e6d8e7e78406b41fa": {
+          "default_reuse_allowed": false
+        },
+        "48e16298c6c8ec8979586630d584e9956ade4871c84d2fcd151a0e8cfe8db9e3": {
+          "default_reuse_allowed": false
+        }
+      },
+      "reason": "User discarded entire run on 2026-09-22"
     }
   ]
 }

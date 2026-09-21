@@ -35,3 +35,6 @@ logs/
 # IDE settings
 .idea/
 .vscode/
+
+# Local training/evaluation data, private records, archives and checkpoints
+/artifacts/

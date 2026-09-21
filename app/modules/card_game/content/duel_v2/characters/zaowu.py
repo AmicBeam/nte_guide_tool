@@ -39,7 +39,7 @@ def _s07(c):
     c.energy()
     for h in c.state['sides'][c.side]['characters'].values():
         if h['hp'] > 0:
-            h['flags']['next_attack'] = max(h['flags'].get('next_attack', 0), 1)
+            c.grant_next_attack(h, 1)
 
 
 def _s08(c):
@@ -80,9 +80,19 @@ class Zaowu:
     }
 
     @staticmethod
-    def attack_bonus(c, target=None, target_id=None, **_data):
+    def _attack_bonus(c, target=None, target_id=None, **_data):
         from app.modules.card_game.engine.duel_v2.state import is_esper, other
         if not is_esper(target_id):
             return 0
         cap = 3 if c.character['awakened'] else 2
         return min(cap, len(negative_kinds(target, c.state, other(c.side))))
+
+    @staticmethod
+    def aura_effects(c, property, query):
+        if property != 'attack.hit':
+            return
+        from app.modules.card_game.engine.duel_v2.modifiers import contribution
+        amount = Zaowu._attack_bonus(c, **{k: v for k, v in query.items() if k != 'operation'})
+        if amount:
+            yield contribution('zaowu.attack_bonus', property, amount, kind='aura', scope='allies',
+                               source_entity_id=c.entity_id, source_key='ability', label=c.character['name'])

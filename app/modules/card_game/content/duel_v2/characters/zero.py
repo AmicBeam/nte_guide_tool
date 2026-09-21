@@ -69,7 +69,7 @@ class Zero:
         front = team.get('front')
         if shape == 'Z08' and front:
             target = hero(c.state, c.side, front)
-            add_atk_buff(target, 1)
+            add_atk_buff(target, 1, source_entity_id=c.entity_id, source_key=shape)
             log(c.state, f"「倾世之雨」使{target['name']}攻击 +1。", 'effect',
                 side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}',
                 target=f'{c.side}:{front}', amount=1)

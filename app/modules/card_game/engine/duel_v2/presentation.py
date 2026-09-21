@@ -97,20 +97,24 @@ def capture_public_board(state):
         if pending and pending.get('side') == ps and pending.get('kind') == 'inspect_top':
             team['deck_count'] += len(pending.get('cards') or ())
         from . import state as duel_state
+        from .modifiers import public_effects
         characters = []
         for cid in duel_state.team_order(state, ps):
             hero = source['characters'][cid]
             shape_id = hero.get('shape')
+            attack_breakdown = duel_state.attack_value(hero, state, ps, explain=True)
             characters.append({
                 'id': cid,
                 **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura') if k in hero},
                 'entity_id': hero.get('entity_id'),
-                'effect_markers': character_effect_markers(hero),
+                'effects': public_effects(hero),
+                'effect_markers': character_effect_markers(hero, state, ps),
                 'damage_immune': duel_state.damage_immune(state, ps, cid),
                 'hp': hero['hp'],
                 'max_hp': hero['max_hp'],
                 'shield': hero['shield'],
-                'attack': duel_state.attack_value(hero, state, ps),
+                'attack': attack_breakdown['value'],
+                'attack_breakdown': attack_breakdown,
                 'harmony': hero['harmony'],
                 'harmony_source': marks['payer'] == cid,
                 'harmony_ready': cid in marks['ready'],

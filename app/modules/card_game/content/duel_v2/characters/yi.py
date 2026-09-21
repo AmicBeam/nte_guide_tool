@@ -37,7 +37,10 @@ def _weaken(c):
             break
         shuffle(c.state, candidates)
         target = hero(c.state, foe, candidates[0])
-        target['flags'].setdefault('timed_attack', []).append({'amount': -1, 'left': 2})
+        from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
+        add_effect(target, 'yi.attack_debuff', 'attack.panel', -1, source_entity_id=c.entity_id,
+                   source_key='I06', label='无谓形貌的立身',
+                   expiry=deadline(c.state, foe, 2, 'turn_start'))
         c.history(f"{target['name']}攻击 -1，持续 2 个对方回合。", target_side=foe, target_id=candidates[0])
 
 

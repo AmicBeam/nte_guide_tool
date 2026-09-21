@@ -105,10 +105,13 @@ def card_is_free_instant(state, side, card):
 
 
 def card_cost(state, side, card):
-    if card.get('free_if_surplus') and state['sides'][side].get('surplus'):
-        return 0
     limit = card.get('spend_all_ap')
-    return min(int(state['sides'][side]['ap']), int(limit)) if limit else int(card.get('cost') or 0)
+    base = min(int(state['sides'][side]['ap']), int(limit)) if limit else int(card.get('cost') or 0)
+    if card.get('free_if_surplus') and state['sides'][side].get('surplus'):
+        base = 0
+    from .modifiers import evaluate
+    return max(0, int(evaluate(state, side, hero(state, side, card['character_id']),
+                              'card.cost', base, query={'card': card})['value']))
 
 
 def can_afford_card(state, side, card):
@@ -402,6 +405,8 @@ def start_ultimate(state, side, cid, *, spent_ap=False):
         spec['turns'] = int(decide(EffectContext(state, side, cid, {'side': side}),
                                    'ultimate_duration', spec['turns'], actor_only=True))
         h['ultimate_turns'] = spec['turns']
+        from .effect_lifecycle import schedule_ultimate
+        schedule_ultimate(state, side, h, spec['turns'], spec['expires'])
         duration = '持续至本回合结束' if spec['expires'] == 'turn_end' else f"持续 {spec['turns']} 个己方回合"
         text = f"{h['name']}消耗 {energy_cap(state, h)} 点{h.get('resource_name', '能量')}，发动终结（{duration}）。"
     log(state, text, 'ultimate', side=side, source=h['id'], actor=f'{side}:{h["id"]}',
@@ -423,6 +428,8 @@ def end_ultimate(state, side, cid):
         return
     h['awakened'] = False
     h['ultimate_turns'] = 0
+    from .modifiers import clear
+    clear(h, 'ultimate_end')
     fire(EffectContext(state, side, cid, {'side': side}), 'on_ultimate_end',
          actor_only=True, include_down=True)
     if finished(state):
@@ -433,34 +440,21 @@ def end_ultimate(state, side, cid):
         after={'awakened': False, 'ultimate_turns': 0})
 
 
-def tick_ultimates(state, side):
-    for cid in team_order(state, side):
-        h = hero(state, side, cid)
-        if h.get('ultimate_turns', 0) <= 0:
-            continue
-        h['ultimate_turns'] -= 1
-        if h['ultimate_turns'] <= 0:
-            fire(EffectContext(state, side, cid, {'side': side}), GameEvent.V2_ULTIMATE_EXPIRING, actor_only=True)
-            from .deferred import drain
-            drain(state)
-            end_ultimate(state, side, cid)
-        if finished(state):
-            return
 
 
 def begin_turn(state, side):
+    from .effect_lifecycle import prepare_effects, expire_effects
+    prepare_effects(state)
     state['phase'], state['active_side'] = 'playing', side
     state['turn'] += 1
     team = state['sides'][side]
     team['turn_count'] += 1
-    for h in team['characters'].values():
-        flags = h.get('flags') or {}
-        expiring_attack = flags.get('atk_buff_expiring')
-        if expiring_attack and expiring_attack['until'] <= team['turn_count']:
-            flags['atk_buff'] = int(flags.get('atk_buff', 0)) - int(expiring_attack['amount'])
-            flags.pop('atk_buff_expiring')
-        if flags.get('damage_immunity_until', 0) <= team['turn_count']:
-            flags.pop('damage_immunity_until', None)
+    # Announce the turn before any start-of-turn board changes are presented.
+    log(state, f"{name(state, side)}的第 {team['turn_count']} 个回合开始。", 'turn', side=side,
+        actor=f'{side}:player')
+    expire_effects(state, side, 'turn_start')
+    if finished(state):
+        return
     team.pop('life_locked', None)
     team['used'] = {}
     for ps in SIDES:
@@ -470,9 +464,6 @@ def begin_turn(state, side):
     team['genesis_damage_bonus'] = 0
     team['surplus'] = False
     clamp_resources(state)
-    # Announce the turn before any start-of-turn board changes are presented.
-    log(state, f"{name(state, side)}的第 {team['turn_count']} 个回合开始。", 'turn', side=side,
-        actor=f'{side}:player')
     # Player shields, including the second player's opening shield, expire here.
     team['shield'] = 0
     for ps in SIDES:
@@ -523,7 +514,6 @@ def begin_turn(state, side):
         record_delay_turn(state, ps)
     # Zone clocks see attachments before their own countdown is reduced.
     fire(EffectContext(state, side, carrier, {'side': side}), GameEvent.V2_TURN_COUNTDOWN, include_down=True)
-    tick_ultimates(state, side)
     if finished(state):
         return
     front = team.get('front')
@@ -601,13 +591,6 @@ def tick_front_debuff(state, side):
                 zone.pop('delay', None)
         log(state, '延滞倒计时保持。' if paused else '延滞倒计时更新。', 'countdown',
             side=target_side, actor=f'{target_side}:front', target=f'{target_side}:front')
-    # Timed character modifiers are owned by the affected character's turns.
-    for h in state['sides'][side]['characters'].values():
-        modifiers = h.get('flags', {}).get('timed_attack', [])
-        for modifier in modifiers:
-            modifier['left'] -= 1
-        if modifiers:
-            h['flags']['timed_attack'] = [m for m in modifiers if m['left'] > 0]
 
 
 def expire_turn_zone_states(state, side):
@@ -661,9 +644,9 @@ def end_turn(state, side):
     for h in team['characters'].values():
         h['flags'].pop('free_normal_attack_turn', None)
     expire_turn_zone_states(state, side)
-    for cid in team_order(state, side):
-        if ultimate_spec(cid)['expires'] == 'turn_end':
-            end_ultimate(state, side, cid)
+    from .effect_lifecycle import prepare_effects, expire_effects
+    prepare_effects(state)
+    expire_effects(state, side, 'turn_end')
     if finished(state):
         return
     begin_turn(state, other(side))
@@ -738,6 +721,9 @@ def finish_operation(state):
                 harmony_delta=dh, energy_delta=de,
                 before=snap, after={'harmony': h['harmony'], 'energy': h['energy']})
     fire(c, GameEvent.V2_OPERATION_RESOURCES_RESOLVED, actor_only=True)
+    from .modifiers import clear, entities
+    for _, holder in entities(state):
+        clear(holder, 'operation_end')
     state['phase'] = 'playing'
     state['operation'], state['pending_choice'] = None, None
     from .deferred import drain

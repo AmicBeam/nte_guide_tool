@@ -58,12 +58,13 @@ class Zhenhong:
     @staticmethod
     def on_surplus(c, **_data):
         c.character['surplus_passive_triggers'] = int(c.character.get('surplus_passive_triggers', 0)) + 1
-        add_atk_buff(c.character, 1)
-        flags = c.character['flags']
-        until = c.state['sides'][c.side]['turn_count'] + 1
-        pending = flags.get('atk_buff_expiring') or {}
-        flags['atk_buff_expiring'] = {'amount': int(pending.get('amount', 0)) + 1, 'until': until}
-        flags['damage_immunity_until'] = until
+        from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
+        add_effect(c.character, 'zhenhong.surplus_attack', 'attack.panel', 1,
+                   source_entity_id=c.entity_id, source_key='passive', label='真红异能', show_marker=False,
+                   expiry=deadline(c.state, c.side, 1, 'turn_start'))
+        add_effect(c.character, 'zhenhong.surplus_immunity', 'rule.damage_immune', True, op='allow',
+                   source_entity_id=c.entity_id, source_key='passive', label='真红免伤', show_marker=False,
+                   stacking='refresh', expiry=deadline(c.state, c.side, 1, 'turn_start'))
         c.history('己方触发盈蓄，真红直到下个己方回合开始时攻击 +1 且不受伤害，将发起额外攻击。')
         enqueue(c, 'surplus')
         if c.character.get('shape') == 'R07':
@@ -79,6 +80,9 @@ class Zhenhong:
         from app.modules.card_game.content.duel_v2.registry import fire
         c.character['extra_attacks'] = int(c.character.get('extra_attacks', 0)) + 1
         c.operation['skip_combat_harmony'] = action.get('kind') == 'surplus'
+        if action.get('kind') == 'ultimate_end':
+            c.apply_effect('zhenhong.expiry_energy', 'rule.gain_energy', True, op='forbid',
+                           clear_on=('operation_end', 'down'), label='终结末次攻击能量限制', show_marker=False)
         c.operation['support'] = True
         c.operation['support_notified'] = True
         fire(c, 'on_support', actor_id=c.cid)
@@ -90,9 +94,11 @@ class Zhenhong:
         return card.get('card_id') in ('R02', 'R03', 'R04') and bool(state['sides'][side].get('surplus'))
 
     @staticmethod
-    def can_gain_energy(c, current=True, **_data):
-        return bool(current and not c.character['awakened']
-                    and c.state['sides'][c.side]['front'] == c.cid)
+    def aura_effects(c, property, query):
+        from app.modules.card_game.engine.duel_v2.modifiers import contribution
+        if property == 'rule.gain_energy' and (c.character['awakened'] or c.state['sides'][c.side]['front'] != c.cid):
+            yield contribution('zhenhong.energy_gate', property, True, op='forbid', kind='aura',
+                               source_entity_id=c.entity_id, source_key='ability', label='真红能量限制')
 
     @staticmethod
     def natural_return(c, current=True, **_data):
@@ -117,8 +123,10 @@ class Zhenhong:
         c.enter_front()
 
     @staticmethod
-    def on_ultimate_expiring(c):
-        enqueue(c, 'ultimate_end')
+    def on_effect_expired(c, effect, **_data):
+        if (effect['definition_id'] == 'status.ultimate'
+                and effect.get('source_entity_id') == c.entity_id):
+            enqueue(c, 'ultimate_end')
 
     @staticmethod
     def on_ultimate_end(c):

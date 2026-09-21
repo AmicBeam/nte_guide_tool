@@ -576,3 +576,10 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 官方预组目录移除 requiem「浊燃预组」与 sync-curse「覆纹预组（测试）」。普通人机指定对手和新赠送构筑统一只有创生、覆纹、小吱、真红四套，包括测试账号；已经保存的个人构筑、已有对局、回放和测试角色权限保留。角色机制与权限测试改用显式测试构筑，不依赖已移除的官方入口。
 
 目录、普通人机选择、API 与受影响角色机制／权限验证共 59 项，58 通过；高级人机待训练提示旧断言失败，内存恢复原六套目录后仍复现同项。新增覆盖测试账号目录、新赠送仅四套，以及两个旧人机 ID 均拒绝且不建房。真实浏览器使用隔离测试账号确认大厅只有随机、镜像与四套公开预组。
+
+
+### 2026-09-21 统一效果与光环
+
+`engine/duel_v2/modifiers.py` 管理可序列化效果、条件光环、叠加、来源清理与纯属性查询；`attack_modifiers.py` 固定本次攻击的计算层；`effect_lifecycle.py` 统一绝对回合到期与自然到期扳机，真红终结已接入。持续攻击增减益、下次攻击、攻击条件光环、真红限时免伤和能量许可已迁移，费用与伤害数值也可使用统一效果查询。旧字段只通过兼容入口读取和派生，不再作为新效果的第二份可变真源。详见 [统一效果与属性计算](../../../docs/duel-v2-modifier-system.md)。
+
+验证：`python -m unittest tests.test_duel_v2_modifiers tests.test_duel_v2_surplus_rework tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_haniya tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_m07_aura tests.test_duel_v2_effect_markers`。本次不训练、不更新模型或重新授权旧编译执行器。

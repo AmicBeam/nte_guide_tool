@@ -1,4 +1,5 @@
 """User-authored tabletop rules (2026-09-18), not official combat values."""
+from app.modules.card_game.engine.duel_v2.modifiers import compatibility_flags
 import json
 import unittest
 from random import Random
@@ -239,8 +240,8 @@ class NewTestCharacters(unittest.TestCase):
         s['sides']['b']['front_debuff']['star']={'by':'a','left':1}
         tick_front_debuff(s,'b');self.assertEqual(s['sides']['b']['hp'],27)
         s=self.game();hero(s,'a','haiyue')['shape']='U08';s=self.play(s,'U02')
-        self.assertEqual(hero(s,'a','haiyue')['flags']['atk_buff'],1)
-        s=self.play(s,'U02');self.assertEqual(hero(s,'a','haiyue')['flags']['atk_buff'],2)
+        self.assertEqual(compatibility_flags(hero(s,'a','haiyue'))['atk_buff'],1)
+        s=self.play(s,'U02');self.assertEqual(compatibility_flags(hero(s,'a','haiyue'))['atk_buff'],2)
 
     def test_response_requires_available_instant_or_ap(self):
         s = self.game()

@@ -34,7 +34,8 @@ class GameEvent(str, Enum):
     V2_ROUT = 'v2_rout'
     V2_SURPLUS = 'on_surplus'
     V2_DEFERRED_ACTION = 'on_deferred_action'
-    V2_ULTIMATE_EXPIRING = 'on_ultimate_expiring'
+    V2_ULTIMATE_EXPIRING = 'on_ultimate_expiring'  # Legacy name; no longer dispatched.
+    V2_EFFECT_EXPIRED = 'on_effect_expired'
     V2_LEAVE_FRONT = 'on_leave_front'
     V2_TURN_COUNTDOWN = 'on_turn_countdown'
 

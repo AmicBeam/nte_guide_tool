@@ -289,23 +289,14 @@ def attack(c, spec, index):
         attacked.append(c.entity_id)
     h = c.character
     target = hero(s, enemy, target_id) if is_esper(target_id) else s['sides'][enemy]
-    bonus = spec.get('bonus', 0)
-    if is_player(target_id) and h['awakened'] and 'awake_player_bonus' in spec:
-        bonus = spec['awake_player_bonus']
-    low = bool(is_esper(target_id) and target['hp'] <= spec.get('low_hp_max', 3))
-    if low:
-        bonus += spec.get('low_hp_bonus', 0)
-    bonus += op.get('redeem_bonus', 0)
-    bonus += int(op.get('card_bonus') or 0)
-    if index == 0:
-        bonus += op['first_bonus']
-    bonus += h['flags'].pop('next_attack', 0)
-    if spec.get('harmony_bonus') and op.get('harmony'):
-        bonus += spec['harmony_bonus']
-    bonus += tally(c, 'attack_bonus', attacker_id=cid, target=target, target_id=target_id,
-                   spec=spec, index=index)
-    frame_attack = attack_value(h, s, side, include_zone=False) + int(op.get('sortie_attack_bonus', 0))
-    attack_amount = max(0, op.get('card_set_attack', frame_attack) + bonus - _zone_slow(s, side, cid))
+    from .attack_modifiers import attack_result
+    from .modifiers import consume_applied, migrate_legacy, entities
+    for owner_side, owner in entities(s):
+        migrate_legacy(owner, s, owner_side)
+    attack_effects = attack_result(c, spec, index, target, enemy, target_id)
+    attack_amount = attack_effects['value']
+    low = attack_effects['low_target']
+    consume_applied(s, 'attack', [e['effect_id'] for e in attack_effects['contributions']])
     extra_counter = 0
     counter_base = attack_value(target, s, enemy, include_zone=False) if is_esper(target_id) else 0
     if is_esper(target_id):
@@ -359,7 +350,8 @@ def attack(c, spec, index):
     log(s, f"{h['name']}攻击{name(s, enemy, target_id)}：攻击 {attack_amount}，反击 {counter}。",
         'attack', side=side, source=cid, actor=f'{side}:{cid}',
         target=f'{enemy}:{target_id}', amount=attack_amount, attack=attack_amount,
-        counter=counter, group_id=group_id, hit_index=hit_index)
+        counter=counter, group_id=group_id, hit_index=hit_index,
+        attack_modifiers=[e for e in attack_effects['contributions'] if e['visibility'] == 'public'])
     if cut_max:
         reduce_max_hp(s, enemy, target_id, attack_amount, source=f'{side}:{cid}',
                       settle=False, group_id=group_id)

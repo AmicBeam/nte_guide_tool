@@ -6,17 +6,27 @@ def _marker(key, name, timing, description, clears_on_down=True, kind="buff"):
                 clears_on_down=clears_on_down, kind=kind)
 
 
-def character_effect_markers(character):
+def character_effect_markers(character, state=None, side=None):
     if character.get('down_turns') or character.get('hp', 0) <= 0:
         return []
-    flags = character.get('flags') or {}
+    from .modifiers import compatibility_flags
+    flags = compatibility_flags(character, state, side)
     markers = []
     for attribute, value in (character.get('next_damage_resistance') or {}).items():
         markers.append(_marker('next_resistance', attribute + '抗性', '下次受到该属性伤害',
                                f'{attribute}属性伤害抗性 {value:+d}', kind='debuff' if value < 0 else 'buff'))
-    for modifier in flags.get('timed_attack', []):
-        markers.append(_marker('timed_attack', '攻击降低', f"剩余 {modifier['left']} 个己方回合",
-                               f"攻击 {modifier['amount']:+d}", kind='debuff' if modifier['amount'] < 0 else 'buff'))
+    from .modifiers import all_effects, remaining
+    for effect in all_effects(character):
+        if not effect.get('show_marker') or effect.get('visibility') != 'public':
+            continue
+        left = remaining(effect, state, side)
+        timing = ('下次主动攻击' if effect.get('consume_on') == 'attack' else
+                  f'剩余 {left} 个己方回合' if left is not None else '指定时点到期')
+        amount = effect['value']
+        markers.append(_marker(effect['effect_id'], effect['label'], timing,
+                               f"攻击 {amount:+d}" if effect['property'].startswith('attack.') and isinstance(amount, int)
+                               else effect['label'], 'down' in effect['clear_on'],
+                               kind='debuff' if amount < 0 else 'buff'))
     if flags.get('free_normal_attack_turn'):
         markers.append(_marker('free_normal_attack', '普通出击免费', '本回合',
                                '普通出击不消耗行动力，仍需普通出击机会'))
@@ -32,9 +42,7 @@ def character_effect_markers(character):
     if flags.get('next_followup'):
         markers.append(_marker('next_followup', '小弟遍天下', '本回合下次战斗',
                                f"额外造成 {flags['next_followup']} 点追击伤害"))
-    if flags.get('next_attack'):
-        markers.append(_marker('next_attack', '攻击强化', '下次主动攻击',
-                               f"攻击 +{flags['next_attack']}"))
+
     if flags.get('return_after'):
         markers.append(_marker('return_after', '忆昔告远', '本回合下次出击后',
                                '仍存活且在战斗区时返回备战区，然后抽 1 张牌'))

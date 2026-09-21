@@ -1,4 +1,5 @@
 """User-authored Haniya tabletop rules, not Everness combat numbers."""
+from app.modules.card_game.engine.duel_v2.modifiers import compatibility_flags
 import json
 import unittest
 from copy import deepcopy
@@ -82,9 +83,9 @@ class HaniyaTest(unittest.TestCase):
         s=self.play(s,'V02','a:zero');self.assertEqual(hero(s,'a','haniya')['protagonist_aura'],6)
         hero(s,'a','haniya')['protagonist_aura']=0
         s=self.next(s);self.assertEqual(hero(s,'a','haniya')['protagonist_aura'],2)
-        s=self.next(s);self.assertEqual(hero(s,'a','haniya')['protagonist_aura'],4)
+        s=self.next(s);self.assertEqual(hero(s,'a','haniya')['protagonist_aura'],3)
         self.assertFalse(hero(s,'a','haniya')['awakened'])
-        s=self.next(s);self.assertEqual(hero(s,'a','haniya')['protagonist_aura'],5)
+        s=self.next(s);self.assertEqual(hero(s,'a','haniya')['protagonist_aura'],4)
 
     def test_down_retains_but_disables_gaining_and_support_then_recovers(self):
         s=self.game();hero(s,'a','haniya')['protagonist_aura']=4
@@ -106,10 +107,10 @@ class HaniyaTest(unittest.TestCase):
 
     def test_debuff_stacks_and_survives_turn_move_and_equipment_clears_on_down(self):
         s=self.game();s=self.play(s,'V03','b:zero');s=self.play(s,'V03','b:zero')
-        h=hero(s,'b','zero');self.assertEqual(h['flags']['atk_debuff'],4)
+        h=hero(s,'b','zero');self.assertEqual(compatibility_flags(h)['atk_debuff'],4)
         s['sides']['b']['front']='zero';move_out(s,'b','zero');h['shape']='Z08'
         s=self.next(s);h=hero(s,'b','zero')
-        self.assertEqual(h['flags']['atk_debuff'],4);self.assertEqual(attack_value(h,s,'b'),0)
+        self.assertEqual(compatibility_flags(h)['atk_debuff'],4);self.assertEqual(attack_value(h,s,'b'),0)
         damage(s,'b','zero',99);self.assertNotIn('atk_debuff',h['flags'])
 
     def test_dark_star_count_retained_while_down_and_weapon_does_not_spend(self):

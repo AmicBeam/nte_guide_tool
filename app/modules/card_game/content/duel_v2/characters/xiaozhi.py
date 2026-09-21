@@ -162,7 +162,7 @@ class Xiaozhi:
         change_jingu(c, int(mark['delta']), '手牌金谷标注结算', allow_downed=True)
 
     @staticmethod
-    def attack_bonus(c, attacker_id=None, **_):
+    def _attack_bonus(c, attacker_id=None, **_):
         if attacker_id == c.cid and c.character.get('shape') == 'Q08' and c.card and c.card['type'] == 'battle':
             return max(0, int(c.character.get('jingu', 0))) // 2
         return 0
@@ -177,3 +177,13 @@ class Xiaozhi:
     def pay_normal_attack(c, payment):
         if payment.get('resource') == 'jingu':
             change_jingu(c, -3, '小吱武备额外出击')
+
+    @staticmethod
+    def aura_effects(c, property, query):
+        if property != 'attack.hit':
+            return
+        from app.modules.card_game.engine.duel_v2.modifiers import contribution
+        amount = Xiaozhi._attack_bonus(c, **{k: v for k, v in query.items() if k != 'operation'})
+        if amount:
+            yield contribution('xiaozhi.attack_bonus', property, amount, kind='aura', scope='allies',
+                               source_entity_id=c.entity_id, source_key='ability', label=c.character['name'])

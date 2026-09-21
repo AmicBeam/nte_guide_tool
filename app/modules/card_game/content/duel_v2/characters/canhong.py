@@ -74,7 +74,7 @@ class Canhong:
     }
 
     @staticmethod
-    def attack_bonus(c, attacker_id=None, target=None, target_id=None, **_data):
+    def _attack_bonus(c, attacker_id=None, target=None, target_id=None, **_data):
         if attacker_id != c.cid or not target_id:
             return 0
         return int((target.get('flags') or {}).get('brand') or 0)
@@ -98,3 +98,13 @@ class Canhong:
             if gained:
                 c.history(f"出击结束，残虹的异能触发：{target['name']}焚印 +{gained}（现有 {target['flags']['brand']} 层）。",
                           target_side=enemy, target_id=target_id)
+
+    @staticmethod
+    def aura_effects(c, property, query):
+        if property != 'attack.hit':
+            return
+        from app.modules.card_game.engine.duel_v2.modifiers import contribution
+        amount = Canhong._attack_bonus(c, **{k: v for k, v in query.items() if k != 'operation'})
+        if amount:
+            yield contribution('canhong.attack_bonus', property, amount, kind='aura', scope='allies',
+                               source_entity_id=c.entity_id, source_key='ability', label=c.character['name'])

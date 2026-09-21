@@ -48,7 +48,7 @@ class Haiyue:
     @staticmethod
     def before_attack(c):
         if c.character.get('shape') == 'U08':
-            add_atk_buff(c.character, 1)
+            add_atk_buff(c.character, 1, source_entity_id=c.entity_id, source_key='U08')
             c.history('海月攻击前，武备触发：攻击 +1。')
 
     @staticmethod

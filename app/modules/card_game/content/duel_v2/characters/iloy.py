@@ -12,7 +12,7 @@ def _mark_healed(c, side, cid):
         return
     target = hero(c.state, side, cid)
     before = attack_value(target, c.state, side)
-    add_atk_buff(target, 1)
+    add_atk_buff(target, 1, source_entity_id=c.entity_id, source_key=(c.card or {}).get('card_id', c.cid))
     c.history(f"{c.character['name']}的治疗效果：{target['name']}攻击 +1。", target_side=side, target_id=cid,
               before={'attack': before}, after={'attack': attack_value(target, c.state, side)})
 

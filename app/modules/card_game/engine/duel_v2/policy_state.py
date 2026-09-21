@@ -12,6 +12,7 @@ FLAG_KEYS = ('next_bonus', 'next_shield', 'next_followup', 'energy_next',
 def public_policy_state(state):
     from copy import deepcopy
     from .state import team_order
+    from .modifiers import compatibility_flags, public_effects
     result = {'escalation_enabled': bool(state.get('escalation_enabled')), 'sides': {}}
     for side, team in state['sides'].items():
         order = team_order(state, side)
@@ -27,8 +28,10 @@ def public_policy_state(state):
                       'ultimate_used_turn': h.get('ultimate_used_turn', -1),
                       'attacked_this_turn': h.get('entity_id') in team.get('attacked_this_turn', []),
                       'light_resistance': (h.get('next_damage_resistance') or {}).get('光', 0),
-                      'flags': {key: deepcopy((h.get('flags') or {}).get(key)) for key in FLAG_KEYS}}
+                      'effects': public_effects(h),
+                      'flags': {key: deepcopy(derived_flags.get(key)) for key in FLAG_KEYS}}
                 for cid, h in team['characters'].items() if cid in order
+                for derived_flags in [compatibility_flags(h, state, side)]
             },
         }
     return result

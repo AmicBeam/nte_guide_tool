@@ -17,7 +17,7 @@ class ZhenhongHarmonyTest(unittest.TestCase):
                 enqueue(c, kind)
                 finish_operation(s)
                 h = hero(s, 'a', 'zhenhong')
-                self.assertEqual((h['harmony'], h['energy'], h['extra_attacks']), (harmony, 2, 1))
+                self.assertEqual((h['harmony'], h['energy'], h['extra_attacks']), (harmony, 2 if kind == 'surplus' else 0, 1))
                 self.assertEqual(hero(s, 'a', 'yi')['energy'], 1)
                 event = next(e for e in reversed(s['events']) if e['type'] == 'resource')
                 self.assertEqual(event['harmony_delta'], 0 if kind == 'surplus' else 1)

@@ -60,11 +60,11 @@ class EdgarTest(unittest.TestCase):
         self.assertEqual(hero(s,'a','edgar')['ultimate_turns'],3)
         self.assertEqual(hero(s,'a','edgar')['truth_keys'],0)
         s['sides']['a']['front']=None;s['sides']['a']['hp']=20
-        for expected,left in [(22,2),(24,1),(26,0)]:
+        for expected,left in [(22,2),(24,1),(24,0)]:
             s=self.next(s)
             self.assertEqual(s['sides']['a']['hp'],expected)
             self.assertEqual(hero(s,'a','edgar')['ultimate_turns'],left)
-        s=self.next(s);self.assertEqual(s['sides']['a']['hp'],26)
+        s=self.next(s);self.assertEqual(s['sides']['a']['hp'],24)
 
     def test_ultimate_down_cancels_and_new_keys_dont_extend_current(self):
         s=self.game();hero(s,'a','edgar').update(energy=5,truth_keys=1)

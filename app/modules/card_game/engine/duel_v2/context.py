@@ -68,6 +68,8 @@ class EffectContext:
         from .presentation import public_card
         previous = self.character['shape']
         before = {'shape_id': previous, 'hp': self.character['hp'], 'max_hp': self.character['max_hp']}
+        from .modifiers import remove_source
+        remove_source(self.state, self.entity_id, previous)
         self.character['shape'] = self.card['card_id']
         panel_hp = int(self.card.get('hp') or 0)
         if panel_hp:
@@ -98,8 +100,9 @@ class EffectContext:
             return
         h = hero(self.state, side, cid)
         before = attack_value(h, self.state, side)
-        flags = h.setdefault('flags', {})
-        flags['atk_debuff'] = int(flags.get('atk_debuff') or 0) + amount
+        from .modifiers import add_effect
+        add_effect(h, 'attack.debuff', 'attack.panel', -amount,
+                   source_entity_id=self.entity_id, source_key=(self.card or {}).get('card_id', 'ability'), label='攻击降低')
         if amount:
             self.history(f"{self.character['name']}的效果：{h['name']}攻击 -{amount}。",
                          target_side=side, target_id=cid,
@@ -186,11 +189,24 @@ class EffectContext:
             team['deck'].append(card)
             self.energy()
 
+    def apply_effect(self, definition_id, property, value, *, target=None, **options):
+        from .modifiers import add_effect
+        options.setdefault('source_entity_id', self.entity_id)
+        options.setdefault('source_key', (self.card or {}).get('card_id', 'ability'))
+        return add_effect(self.character if target is None else target, definition_id, property, value, **options)
+
+    def grant_next_attack(self, target, amount):
+        from .modifiers import add_effect
+        # Existing next-attack effects share a single maximum, not additive stacks.
+        add_effect(target, 'attack.next', 'attack.hit', amount, stacking='max',
+                   source_entity_id=self.entity_id, source_key=(self.card or {}).get('card_id', self.cid),
+                   stack_key='next_attack', label='攻击强化', consume_on='attack')
+
     def team_next_attack(self):
         amount = 2 if self.state['sides'][self.side]['harmonized'].get(self.cid) else 1
         for h in self.state['sides'][self.side]['characters'].values():
             if h['hp'] > 0:
-                h['flags']['next_attack'] = max(h['flags'].get('next_attack', 0), amount)
+                self.grant_next_attack(h, amount)
 
     def extra_flower(self):
         if not finished(self.state):

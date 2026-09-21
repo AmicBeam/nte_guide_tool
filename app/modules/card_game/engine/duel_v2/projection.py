@@ -1,4 +1,5 @@
 """Viewer-specific projection. Never expose decks, RNG, or private choices."""
+from .modifiers import compatibility_flags, public_effects
 from copy import deepcopy
 from .entities import clone_state, entity_action, needs_hydration
 
@@ -159,13 +160,15 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         chars = []
         for cid in team_order(state, ps):
             h = source['characters'][cid]
-            flags = h.get('flags') or {}
+            flags = compatibility_flags(h, state, ps)
             c = {k: deepcopy(h[k]) for k in ('entity_id', 'id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
                  'energy', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura', 'jingu', 'arid', 'truth_keys', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
                  'avatar', 'portrait', 'passive', 'awakened_passive') if k in h}
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None
-            c.update(ultimate_expires=ultimate_spec(cid)['expires'], attack=attack_value(h, state, ps), shape=(form or {}).get('name') if form else None,
+            c['effects'] = public_effects(h)
+            c['attack_breakdown'] = attack_value(h, state, ps, explain=True)
+            c.update(ultimate_expires=ultimate_spec(cid)['expires'], attack=c['attack_breakdown']['value'], shape=(form or {}).get('name') if form else None,
                      shape_id=h['shape'], shape_description=(form or {}).get('description') if form else None,
                      harmony_max=harmony_cap(state), energy_max=energy_cap(state, h), gaze=h.get('gaze', 0), dream=h.get('dream', 0),
                      next_attack_bonus=flags.get('next_attack', 0),
@@ -180,7 +183,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                      form_attack=int(flags.get('form_attack') or 0),
                      harmony_source=marks['payer'] == cid,
                      harmony_ready=cid in marks['ready'])
-            c['effect_markers'] = character_effect_markers(h)
+            c['effect_markers'] = character_effect_markers(h, state, ps)
             c['damage_immune'] = damage_immune(state, ps, cid)
             chars.append(c)
         team['characters'] = chars

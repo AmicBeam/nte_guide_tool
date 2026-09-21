@@ -64,7 +64,7 @@ class Baicang:
         if int(amount or 0) <= 0:
             return
         before = attack_value(c.character, c.state, c.side)
-        add_atk_buff(c.character, 1)
+        add_atk_buff(c.character, 1, source_entity_id=c.entity_id, source_key='ability')
         src_side = None
         if isinstance(source, str) and ':' in source:
             src_side = source.split(':', 1)[0]

@@ -1,4 +1,5 @@
 """M07 zeros the panel on enemy turns, preserving battle bonuses and stored stats."""
+from app.modules.card_game.engine.duel_v2.modifiers import compatibility_flags
 from copy import deepcopy
 import tempfile
 import unittest
@@ -59,7 +60,7 @@ class M07AuraTest(unittest.TestCase):
             self.assertEqual(battle['counter'], 2)
             self.assertEqual(attack_value(hero(after, owner, 'bohe'), after, owner), 0)
             self.assertEqual(hero(after, owner, 'bohe')['base_attack'], 5)
-            self.assertEqual(hero(after, owner, 'bohe')['flags']['atk_buff'], 2)
+            self.assertEqual(compatibility_flags(hero(after, owner, 'bohe'))['atk_buff'], 2)
 
     def test_turn_switch_restores_panel_without_overwriting_growth(self):
         s = fixture('b')

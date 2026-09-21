@@ -1,4 +1,5 @@
 """September 20 user rules: delay episodes, surplus actions, Yi attachments."""
+from app.modules.card_game.engine.duel_v2.modifiers import compatibility_flags
 import json
 import unittest
 from copy import deepcopy
@@ -64,7 +65,7 @@ class SurplusReworkTest(unittest.TestCase):
         s['sides']['b']['front']='yi';hero(s,'b','yi').update(hp=60,max_hp=60)
         seq=s['event_seq'];s=apply_action(s,'a',dict(type='attack',character_id='jiuyuan'))
         h=hero(s,'a','zhenhong')
-        self.assertEqual(h['flags']['atk_buff'],1)
+        self.assertEqual(compatibility_flags(h)['atk_buff'],1)
         self.assertEqual(h['extra_attacks'],1)
         self.assertEqual((h['harmony'],h['energy']),(0,2))
         events=[e for e in s['events'] if e['seq']>seq]
@@ -80,7 +81,7 @@ class SurplusReworkTest(unittest.TestCase):
         s['sides']['b']['front']='yi';hero(s,'b','yi').update(hp=70,max_hp=70)
         c=operation(s,'a','jiuyuan');resolve_genesis(c);finish_operation(s)
         h=hero(s,'a','zhenhong')
-        self.assertEqual((h['extra_attacks'],h['flags']['atk_buff']), (2,2))
+        self.assertEqual((h['extra_attacks'],compatibility_flags(h)['atk_buff']), (2,2))
         self.assertEqual(h['harmony'],0)
         self.assertEqual(h['energy'],5)
         self.assertFalse(s.get('deferred_actions'))
@@ -265,7 +266,7 @@ class SurplusReworkTest(unittest.TestCase):
 
     def test_weaken_two_enemy_starts_and_no_permanent_debuff(self):
         s=self.game();s['sides']['a']['delay_turns']=4;s=self.play(s,'I06')
-        def layers():return sum(len(h['flags'].get('timed_attack',[])) for h in s['sides']['b']['characters'].values())
+        def layers():return sum(len(compatibility_flags(h, s, 'b').get('timed_attack',[])) for h in s['sides']['b']['characters'].values())
         self.assertEqual(layers(),4);begin_turn(s,'a');self.assertEqual(layers(),4)
         begin_turn(s,'b');self.assertEqual(layers(),4);begin_turn(s,'b');self.assertEqual(layers(),0)
 

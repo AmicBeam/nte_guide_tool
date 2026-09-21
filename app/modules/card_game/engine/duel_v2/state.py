@@ -64,7 +64,7 @@ def name(state, side, cid=None):
     return hero(state, side, cid)['name']
 
 
-def attack_value(character, state=None, side=None, *, include_zone=True):
+def attack_value(character, state=None, side=None, *, include_zone=True, explain=False):
     flags = character.get('flags') or {}
     shape_id = character.get('shape')
     from app.modules.card_game.content.duel_v2.tutorial import lookup_card
@@ -83,19 +83,19 @@ def attack_value(character, state=None, side=None, *, include_zone=True):
         value = (character['base_attack'] + character.get('growth', 0)
                  + character.get('gaze', 0)
                  + shape_attack_bonus(character['shape']))
-    value += int(flags.get('form_attack') or 0)
-    value += int(flags.get('atk_buff') or 0)
-    value -= int(flags.get('atk_debuff') or 0)
-    value += sum(int(m['amount']) for m in flags.get('timed_attack', []) if m['left'] > 0)
-    # A continuous form aura changes the panel, never its stored components.
+    from .modifiers import evaluate
+    base = value
+    panel = evaluate(state, side or character.get('side'), character, 'attack.panel', value)
+    override = evaluate(state, side or character.get('side'), character, 'attack.override', panel['value'])
+    value = override['value']
     owner = side if side is not None else character.get('side')
-    aura = (form or {}).get('enemy_turn_attack')
-    if (aura is not None and state is not None and owner in SIDES
-            and state.get('active_side') == other(owner)):
-        value = int(aura)
     if include_zone and state is not None and owner in SIDES:
         value -= zone_attack_penalty(state, owner, character.get('id'))
-    return max(0, value)
+    value = max(0, int(value))
+    if explain:
+        return dict(base=base, value=value, contributions=[e for e in panel['contributions'] + override['contributions']
+                                                         if e['visibility'] == 'public'])
+    return value
 
 
 def zone_attack_penalty(state, side, cid):
@@ -105,12 +105,13 @@ def zone_attack_penalty(state, side, cid):
     return int(status.get('slow') or 0) if status.get('slow_turn', state['turn']) == state['turn'] else 0
 
 
-def add_atk_buff(character, amount=1):
-    flags = character.setdefault('flags', {})
+def add_atk_buff(character, amount=1, *, source_entity_id=None, source_key='attack_buff', label=None):
+    from .modifiers import add_effect
     gained = int(amount or 0)
-    if gained == 0:
-        return 0
-    flags['atk_buff'] = int(flags.get('atk_buff') or 0) + gained
+    if gained:
+        add_effect(character, 'attack.buff', 'attack.panel', gained,
+                   source_entity_id=source_entity_id or character.get('entity_id'),
+                   source_key=source_key, label=label or (CARDS.get(source_key) or {}).get('name') or '攻击增益')
     return gained
 
 
@@ -231,6 +232,8 @@ def move_out(state, side, cid):
     team['front'] = None
     before = {'hp': h['hp'], 'shield': h['shield'], 'front': cid}
     h['shield'] = 0
+    from .modifiers import clear
+    clear(h, 'leave')
     from app.modules.card_game.content.duel_v2.registry import fire
     from app.modules.card_game.engine.events import GameEvent
     from .context import EffectContext
@@ -299,6 +302,10 @@ def _knockdown_pass(state):
                 end_ultimate(state, side, cid)
             from app.modules.card_game.content.duel_v2.tutorial import lookup_character
             base_max = int(h.get('base_max_hp') or lookup_character(cid)['max_hp'])
+            from .modifiers import clear, remove_source
+            if h.get('shape'):
+                remove_source(state, h.get('entity_id'), h['shape'])
+            clear(h, 'down')
             h.pop('next_damage_resistance', None)
             h.update(down_turns=3, harmony=kept_harmony, energy=kept_energy, shield=0, growth=0,
                      gaze=0, dream=0, shape=None, awakened=False, ultimate_turns=0,
@@ -321,8 +328,8 @@ def _knockdown_pass(state):
 
 def damage_immune(state, side, cid):
     h = hero(state, side, cid)
-    until = int((h.get('flags') or {}).get('damage_immunity_until', 0))
-    return alive(state, side, cid) and until > state['sides'][side]['turn_count']
+    from .modifiers import evaluate
+    return alive(state, side, cid) and bool(evaluate(state, side, h, 'rule.damage_immune', False)['value'])
 
 
 def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage', settle=True,
@@ -334,7 +341,9 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     target = hero(state, side, cid) if esper else state['sides'][side]
     if esper and target['hp'] <= 0:
         return 0
-    amount = max(0, int(amount))
+    from .modifiers import evaluate
+    amount = max(0, int(evaluate(state, side, target, 'damage.amount', amount,
+                               query={'kind': kind, 'source': source})['value']))
     src_side, _ = source_parts(source)
     if damage_class == 'attachment' and src_side:
         from .context import EffectContext
@@ -538,8 +547,10 @@ def can_gain_energy(state, side, cid):
         return False
     from .context import EffectContext
     from app.modules.card_game.content.duel_v2.registry import decide
-    return bool(decide(EffectContext(state, side, cid, {'side': side}),
+    from .modifiers import evaluate
+    base = bool(decide(EffectContext(state, side, cid, {'side': side}),
                        'can_gain_energy', True, actor_only=True))
+    return bool(evaluate(state, side, h, 'rule.gain_energy', base)['value'])
 
 
 def effective_card(state, side, card):

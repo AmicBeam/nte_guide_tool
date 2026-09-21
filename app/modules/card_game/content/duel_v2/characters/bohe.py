@@ -15,7 +15,7 @@ def _m02(c):
     from app.modules.card_game.engine.duel_v2.state import team_order
     for cid in team_order(c.state, c.side):
         if alive(c.state, c.side, cid):
-            add_atk_buff(c.state['sides'][c.side]['characters'][cid], 1)
+            add_atk_buff(c.state['sides'][c.side]['characters'][cid], 1, source_entity_id=c.entity_id, source_key=(c.card or {}).get('card_id', c.cid))
 
 
 def _m03(c):
@@ -87,7 +87,7 @@ class Bohe:
         pending = int(flags.pop('pending_atk', 0) or 0)
         if pending:
             before = attack_value(c.character, c.state, c.side)
-            add_atk_buff(c.character, pending)
+            add_atk_buff(c.character, pending, source_entity_id=c.entity_id, source_key='M05')
             c.history(f'回合开始，「第一直觉」触发：薄荷攻击 +{pending}。',
                       before={'attack': before}, after={'attack': attack_value(c.character, c.state, c.side)})
         if c.character.get('shape') != 'M08':
@@ -106,3 +106,15 @@ class Bohe:
     @staticmethod
     def on_enemy_turn_begin(c):
         (c.character.get('flags') or {}).pop('share_overflow', None)
+
+    @staticmethod
+    def aura_effects(c, property, query):
+        if property != 'attack.override':
+            return
+        from app.modules.card_game.content.duel_v2 import CARDS
+        from app.modules.card_game.engine.duel_v2.modifiers import contribution
+        shape = CARDS.get(c.character.get('shape'), {})
+        if 'enemy_turn_attack' in shape:
+            yield contribution('bohe.enemy_turn_attack', property, shape['enemy_turn_attack'], op='set', kind='aura',
+                               source_entity_id=c.entity_id, source_key=c.character['shape'], label=shape['name'],
+                               conditions=[{'id': 'enemy_turn'}])

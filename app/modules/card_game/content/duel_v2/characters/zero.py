@@ -39,6 +39,29 @@ def _z05(c):
     c.sortie()
 
 
+def _weapon_attack(c):
+    from app.modules.card_game.engine.duel_v2.state import add_atk_buff, hero, log
+    front = c.state['sides'][c.side]['front']
+    if front:
+        target = hero(c.state, c.side, front)
+        add_atk_buff(target, 1, source_entity_id=c.entity_id, source_key=c.effect_source_key, label='倾世之雨')
+        log(c.state, f"「倾世之雨」使{target['name']}攻击 +1。", 'effect',
+            side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}', target=f'{c.side}:{front}', amount=1)
+
+
+def _weapon_heal(c):
+    from app.modules.card_game.engine.duel_v2.state import heal
+    front = c.state['sides'][c.side]['front']
+    if front:
+        heal(c.state, c.side, front, 2, reason='回合结束，「休息日」触发')
+
+
+def _weapon_ap(c):
+    team = c.state['sides'][c.side]
+    team['ap'] = int(team.get('ap') or 0) + 1
+    c.history('回合结束，「诓定解放」触发：获得 1 点行动力。')
+
+
 @register
 class Zero:
     id = 'zero'
@@ -59,22 +82,8 @@ class Zero:
             return
         c.grant_harmony(c.cid, 2, reason='零打出战斗牌，触发异能')
 
-    @staticmethod
-    def on_turn_end(c):
-        from app.modules.card_game.engine.duel_v2.state import add_atk_buff, heal, hero, log
-        if c.character['hp'] <= 0:
-            return
-        shape = c.character.get('shape')
-        team = c.state['sides'][c.side]
-        front = team.get('front')
-        if shape == 'Z08' and front:
-            target = hero(c.state, c.side, front)
-            add_atk_buff(target, 1, source_entity_id=c.entity_id, source_key=shape)
-            log(c.state, f"「倾世之雨」使{target['name']}攻击 +1。", 'effect',
-                side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}',
-                target=f'{c.side}:{front}', amount=1)
-        elif shape == 'Z07' and front:
-            heal(c.state, c.side, front, 2, reason='回合结束，「休息日」触发')
-        elif shape == 'Z06':
-            team['ap'] = int(team.get('ap') or 0) + 1
-            c.history('回合结束，「诓定解放」触发：获得 1 点行动力。')
+    weapon_hooks = {
+        'Z08': {'on_turn_end': _weapon_attack},
+        'Z07': {'on_turn_end': _weapon_heal},
+        'Z06': {'on_turn_end': _weapon_ap},
+    }

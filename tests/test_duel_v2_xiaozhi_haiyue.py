@@ -49,7 +49,7 @@ class NewTestCharacters(unittest.TestCase):
 
     def test_jingu_start_player_damage_and_knockdown(self):
         s = self.game()
-        self.assertEqual(hero(s, 'a', 'xiaozhi')['base_attack'], 3)
+        self.assertEqual(hero(s, 'a', 'xiaozhi')['base_stats']['attack'], 3)
         self.assertEqual(hero(s, 'a', 'xiaozhi')['jingu'], 1)
         self.assertEqual(hero(s, 'b', 'xiaozhi')['jingu'], 0)
         s = self.attack(s)

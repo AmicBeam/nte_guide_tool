@@ -1,5 +1,6 @@
 """Pack Python engine JSON into GPU tensors for oracle diffs."""
 from __future__ import annotations
+from app.modules.card_game.engine.duel_v2.equipment import permanent_attack, unarmed_max_hp
 
 from typing import Any
 
@@ -99,9 +100,9 @@ def pack_python(states: list[dict[str, Any]], *, device='cpu') -> GpuState:
                 hero = team['characters'][cid]
                 cpu.ch_hp[row, side_i, seat] = int(hero['hp'])
                 cpu.ch_max_hp[row, side_i, seat] = int(hero['max_hp'])
-                cpu.ch_base_max[row, side_i, seat] = int(hero.get('base_max_hp') or hero['max_hp'])
+                cpu.ch_base_max[row, side_i, seat] = unarmed_max_hp(hero)
                 cpu.ch_shield[row, side_i, seat] = int(hero.get('shield') or 0)
-                cpu.ch_base_atk[row, side_i, seat] = int(hero.get('base_attack') or 0)
+                cpu.ch_base_atk[row, side_i, seat] = permanent_attack(hero)
                 cpu.ch_growth[row, side_i, seat] = int(hero.get('growth') or 0)
                 cpu.ch_harmony[row, side_i, seat] = int(hero.get('harmony') or 0)
                 cpu.ch_energy[row, side_i, seat] = int(hero.get('energy') or 0)

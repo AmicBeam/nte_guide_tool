@@ -1,4 +1,5 @@
 """September 18 user-authored clock/arid rules and hidden-state boundaries."""
+from app.modules.card_game.engine.duel_v2.equipment import permanent_attack
 import json
 import unittest
 from copy import deepcopy
@@ -33,7 +34,7 @@ class XunReworkTest(unittest.TestCase):
 
     def test_clock_not_energy_and_downed_tick(self):
         s=self.game();h=hero(s,'a','xun')
-        self.assertEqual((h['base_attack'],h['max_hp'],h['energy']),(3,6,1))
+        self.assertEqual((permanent_attack(h),h['max_hp'],h['energy']),(3,6,1))
         energy(s,'a','xun',4);self.assertEqual(h['energy'],1)
         damage(s,'a','xun',99);s=self.next(s)
         self.assertEqual(hero(s,'a','xun')['energy'],2)
@@ -181,7 +182,7 @@ class XunReworkTest(unittest.TestCase):
     def test_summon_persists_then_disappears(self):
         s=self.game();damage(s,'a','jiuyuan',99);s=self.play(s,'XF01')
         s=self.choose(s,'family_option','summon');cid=s['sides']['a']['front']
-        self.assertEqual((hero(s,'a',cid)['hp'],hero(s,'a',cid)['base_attack']),(4,2))
+        self.assertEqual((hero(s,'a',cid)['hp'],permanent_attack(hero(s,'a',cid))),(4,2))
         s=self.next(s);self.assertEqual(s['sides']['a']['front'],cid)
         observe(s,'a');s=apply_action(s,'a',{'type':'attack','character_id':'zero'})
         self.assertNotIn(cid,s['sides']['a']['order']);observe(s,'a')

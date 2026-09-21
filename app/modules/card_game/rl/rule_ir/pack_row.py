@@ -1,5 +1,6 @@
 """Pack Python engine JSON or a GpuState row into the compiled engine layout."""
 from __future__ import annotations
+from app.modules.card_game.engine.duel_v2.equipment import permanent_attack, unarmed_max_hp
 
 from typing import Any
 
@@ -148,9 +149,9 @@ def pack_python_row(state: dict[str, Any]) -> list[int]:
             flags = hero.get('flags') or {}
             row[OFFSETS['ch_hp'] + base] = int(hero.get('hp') or 0)
             row[OFFSETS['ch_max_hp'] + base] = int(hero.get('max_hp') or 0)
-            row[OFFSETS['ch_base_max'] + base] = int(hero.get('base_max_hp') or hero.get('max_hp') or 0)
+            row[OFFSETS['ch_base_max'] + base] = unarmed_max_hp(hero)
             row[OFFSETS['ch_shield'] + base] = int(hero.get('shield') or 0)
-            row[OFFSETS['ch_base_atk'] + base] = int(hero.get('base_attack') or 0)
+            row[OFFSETS['ch_base_atk'] + base] = permanent_attack(hero)
             row[OFFSETS['ch_growth'] + base] = int(hero.get('growth') or 0)
             row[OFFSETS['ch_harmony'] + base] = int(hero.get('harmony') or 0)
             row[OFFSETS['ch_energy'] + base] = int(hero.get('energy') or 0)

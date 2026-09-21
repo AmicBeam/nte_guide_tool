@@ -590,3 +590,10 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 伊洛伊与哈尼娅的战斗准备加成统一在战斗牌覆写之前。小吱 Q02 改用 `damage.resistance`、属性条件、伤害消费与本回合结束期限；玩家与异能者目标、预览、公开策略字段和标记共用该实例。旧减抗表在当前回合结束清除。
 
 验证：`python -m unittest tests.test_duel_v2_resistance tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_jingu_marks tests.test_duel_v2_haniya tests.test_duel_v2_modifiers tests.test_duel_v2_effect_markers`。
+
+
+### 2026-09-21 武备与永久成长分层
+
+`engine/duel_v2/equipment.py` 管理基础面板、永久成长、装备来源和明确的装备回满操作。武备／角色条件仍由内容定义；`shape_events` 自动绑定装备来源，`weapon_hooks` 提供按当前装备派发的事件入口，零的三张回合结束武备已迁移。JSON 旧基础字段兼容读取，公开状态与回放包含分层来源，原数值字段仍提供派生值。详见 [实现说明](../../../docs/duel-v2-equipment-layers.md)。
+
+验证：`python -m unittest tests.test_duel_v2_equipment tests.test_duel_v2_modifiers tests.test_duel_v2_surplus_rework tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_haniya tests.test_duel_v2_m07_aura`。

@@ -39,10 +39,8 @@ def grant_seed(c, limit=3, *, reason=None):
 
 def perm_plus(c, atk=1, hp=1):
     h = c.character
-    h['base_attack'] = int(h.get('base_attack') or 0) + atk
-    h['max_hp'] = int(h['max_hp']) + hp
-    h['base_max_hp'] = int(h.get('base_max_hp') or h['max_hp']) + hp
-    h['hp'] = int(h['hp']) + hp
+    from app.modules.card_game.engine.duel_v2.equipment import grow_permanently
+    grow_permanently(h, atk, hp)
     changes = []
     if atk:
         changes.append(f'永久攻击 +{atk}')

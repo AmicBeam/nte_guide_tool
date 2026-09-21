@@ -22,6 +22,18 @@ class EffectContext:
     def for_character(self, side, cid):
         return EffectContext(self.state, side, cid, self.operation)
 
+    def for_weapon(self, card_id):
+        from .equipment import weapon_id, weapon_source
+        if weapon_id(self.character) != card_id:
+            raise ValueError('Weapon is not equipped')
+        result = EffectContext(self.state, self.side, self.cid, self.operation)
+        result.effect_source_key = weapon_source(self.character)
+        return result
+
+    def weapon_source(self, card_id):
+        from .equipment import weapon_id, weapon_source
+        return weapon_source(self.character) if weapon_id(self.character) == card_id else card_id
+
     def on_shape(self, event, **data):
         if not finished(self.state) and alive(self.state, self.side, self.cid):
             shape_event(self, event, **data)
@@ -36,6 +48,8 @@ class EffectContext:
         checks. Do not attach the operation card: it may belong to someone else
         (or be a hidden response card).
         """
+        if getattr(self, 'effect_source_key', None):
+            fields.setdefault('effect_source_key', self.effect_source_key)
         log(self.state, text, 'effect', side=self.side, source=self.cid,
             actor=f'{self.side}:{self.cid}',
             target=f'{target_side or self.side}:{target_id or self.cid}',
@@ -68,16 +82,10 @@ class EffectContext:
         from .presentation import public_card
         previous = self.character['shape']
         before = {'shape_id': previous, 'hp': self.character['hp'], 'max_hp': self.character['max_hp']}
-        from .modifiers import remove_source
-        remove_source(self.state, self.entity_id, previous)
-        self.character['shape'] = self.card['card_id']
-        panel_hp = int(self.card.get('hp') or 0)
-        if panel_hp:
-            from app.modules.card_game.content.duel_v2.tutorial import lookup_character
-            catalog_hp = int((lookup_character(self.cid) or {}).get('max_hp') or 0)
-            perm_hp = int(self.character.get('base_max_hp') or catalog_hp) - catalog_hp
-            self.character['max_hp'] = panel_hp + max(0, perm_hp)
-            self.character['hp'] = self.character['max_hp']
+        from .equipment import equip_weapon, refill_after_equipping
+        has_life_panel = equip_weapon(self.state, self.character, self.card)
+        if has_life_panel:
+            refill_after_equipping(self.character)
         log(self.state, f"{self.character['name']}装备武备：{self.card['name']}。",
             'shape', side=self.side, source=self.cid, actor=f'{self.side}:{self.cid}',
             target=f'{self.side}:{self.cid}', card=public_card(self.card),
@@ -192,7 +200,7 @@ class EffectContext:
     def apply_effect(self, definition_id, property, value, *, target=None, **options):
         from .modifiers import add_effect
         options.setdefault('source_entity_id', self.entity_id)
-        options.setdefault('source_key', (self.card or {}).get('card_id', 'ability'))
+        options.setdefault('source_key', getattr(self, 'effect_source_key', None) or (self.card or {}).get('card_id', 'ability'))
         return add_effect(self.character if target is None else target, definition_id, property, value, **options)
 
     def grant_next_attack(self, target, amount):

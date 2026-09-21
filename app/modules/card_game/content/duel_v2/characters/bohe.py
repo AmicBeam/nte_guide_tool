@@ -34,7 +34,8 @@ def _m05(c):
 
 def _m06(c):
     printed = int(CHARACTERS[c.cid]['attack'])
-    extra = max(0, int(c.character.get('base_attack') or printed) - printed)
+    from app.modules.card_game.engine.duel_v2.equipment import permanent_attack
+    extra = max(0, permanent_attack(c.character) - printed)
     c.hit_front(2 + extra)
 
 
@@ -116,5 +117,5 @@ class Bohe:
         shape = CARDS.get(c.character.get('shape'), {})
         if 'enemy_turn_attack' in shape:
             yield contribution('bohe.enemy_turn_attack', property, shape['enemy_turn_attack'], op='set', kind='aura',
-                               source_entity_id=c.entity_id, source_key=c.character['shape'], label=shape['name'],
+                               source_entity_id=c.entity_id, source_key=c.weapon_source(c.character['shape']), label=shape['name'],
                                conditions=[{'id': 'enemy_turn'}])

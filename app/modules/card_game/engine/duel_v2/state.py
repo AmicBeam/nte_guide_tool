@@ -65,24 +65,9 @@ def name(state, side, cid=None):
 
 
 def attack_value(character, state=None, side=None, *, include_zone=True, explain=False):
-    flags = character.get('flags') or {}
-    shape_id = character.get('shape')
-    from app.modules.card_game.content.duel_v2.tutorial import lookup_card
-    form = lookup_card(shape_id) if shape_id else None
-    form_attack = int((form or {}).get('attack') or 0)
-    form_hp = int((form or {}).get('hp') or 0)
-    from app.modules.card_game.content.duel_v2.tutorial import lookup_character
-    try:
-        catalog_attack = int(lookup_character(character.get('id')).get('attack') or 0)
-    except (KeyError, TypeError, AttributeError):
-        catalog_attack = int(CHARACTERS.get(character.get('id'), {}).get('attack') or 0)
-    perm_atk = int(character.get('base_attack') or 0) - catalog_attack
-    if form and form.get('type') == 'form' and form_attack > 0 and form_hp > 0:
-        value = form_attack + max(0, perm_atk)
-    else:
-        value = (character['base_attack'] + character.get('growth', 0)
-                 + character.get('gaze', 0)
-                 + shape_attack_bonus(character['shape']))
+    from .equipment import attack_base
+    layers = attack_base(character)
+    value = layers['value']
     from .modifiers import evaluate
     base = value
     panel = evaluate(state, side or character.get('side'), character, 'attack.panel', value)
@@ -93,7 +78,7 @@ def attack_value(character, state=None, side=None, *, include_zone=True, explain
         value -= zone_attack_penalty(state, owner, character.get('id'))
     value = max(0, int(value))
     if explain:
-        return dict(base=base, value=value, contributions=[e for e in panel['contributions'] + override['contributions']
+        return dict(base=base, layers=layers, value=value, contributions=[e for e in panel['contributions'] + override['contributions']
                                                          if e['visibility'] == 'public'])
     return value
 
@@ -158,10 +143,13 @@ def damage_class_for(kind, damage_class=None):
 def new_character(cid, *, entity_id=None, side=None):
     from app.modules.card_game.content.duel_v2.tutorial import lookup_character
     c = lookup_character(cid)
-    return CharacterEntity({**deepcopy(c), 'base_attack': c['attack'], 'hp': c['max_hp'],
+    result = CharacterEntity({**deepcopy(c), 'base_attack': c['attack'], 'hp': c['max_hp'],
             'base_max_hp': c['max_hp'], 'shield': 0,
             'harmony': 0, 'energy': 0, 'awakened': False, 'ultimate_turns': 0,
             'growth': 0, 'family': 0, 'gaze': 0, 'dream': 0, 'shape': None, 'down_turns': 0, 'flags': {}}, entity_id=entity_id, side=side)
+    from .equipment import import_stats
+    import_stats(result)
+    return result
 
 
 def card_instance(state, card_id, side, *, copy=False):
@@ -301,7 +289,9 @@ def _knockdown_pass(state):
                 from .flow import end_ultimate
                 end_ultimate(state, side, cid)
             from app.modules.card_game.content.duel_v2.tutorial import lookup_character
-            base_max = int(h.get('base_max_hp') or lookup_character(cid)['max_hp'])
+            from .equipment import unarmed_max_hp, remove_weapon
+            base_max = unarmed_max_hp(h)
+            remove_weapon(state, h)
             from .modifiers import clear, remove_source
             if h.get('shape'):
                 remove_source(state, h.get('entity_id'), h['shape'])

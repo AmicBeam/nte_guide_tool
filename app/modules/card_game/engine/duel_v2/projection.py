@@ -166,6 +166,9 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                  'avatar', 'portrait', 'passive', 'awakened_passive') if k in h}
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None
+            from .equipment import stat_layers, public_equipment
+            c['stat_layers'] = stat_layers(h)
+            c['equipment'] = public_equipment(h)
             c['effects'] = public_effects(h)
             c['attack_breakdown'] = attack_value(h, state, ps, explain=True)
             c.update(ultimate_expires=ultimate_spec(cid)['expires'], attack=c['attack_breakdown']['value'], shape=(form or {}).get('name') if form else None,

@@ -191,4 +191,4 @@ class Xiaozhi:
         amount = Xiaozhi._attack_bonus(c, **{k: v for k, v in query.items() if k != 'operation'})
         if amount:
             yield contribution('xiaozhi.attack_bonus', property, amount, kind='aura', scope='allies',
-                               source_entity_id=c.entity_id, source_key='ability', label=c.character['name'])
+                               source_entity_id=c.entity_id, source_key=c.weapon_source('Q08'), label='思考喵')

@@ -98,6 +98,7 @@ def capture_public_board(state):
             team['deck_count'] += len(pending.get('cards') or ())
         from . import state as duel_state
         from .modifiers import public_effects
+        from .equipment import stat_layers, public_equipment
         characters = []
         for cid in duel_state.team_order(state, ps):
             hero = source['characters'][cid]
@@ -108,6 +109,7 @@ def capture_public_board(state):
                 **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura') if k in hero},
                 'entity_id': hero.get('entity_id'),
                 'effects': public_effects(hero),
+                'stat_layers': stat_layers(hero), 'equipment': public_equipment(hero),
                 'effect_markers': character_effect_markers(hero, state, ps),
                 'damage_immune': duel_state.damage_immune(state, ps, cid),
                 'hp': hero['hp'],

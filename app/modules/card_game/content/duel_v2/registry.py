@@ -75,7 +75,7 @@ def shape_event(c, event, **data) -> None:
     kit = KITS.get(c.cid)
     handler = getattr(kit, 'shape_events', {}).get((shape_id, event)) if kit else None
     if handler:
-        handler(c, **data)
+        handler(c.for_weapon(shape_id), **data)
 
 
 def _ordered_ids(characters: dict) -> list[str]:
@@ -94,12 +94,20 @@ def _kit_handlers(c, hook: str, *, actor_only: bool = False, include_down: bool 
         kit = KITS.get(cid)
         if kit is None or cid not in characters:
             continue
-        handler = getattr(kit, hook, None)
-        if handler is None:
-            continue
         if not include_down and characters[cid]['hp'] <= 0:
             continue
-        yield cid, handler
+        handler = getattr(kit, hook, None)
+        if handler is not None:
+            yield cid, handler
+        from app.modules.card_game.engine.duel_v2.equipment import weapon_id, weapon_source
+        equipped = weapon_id(characters[cid])
+        weapon_handler = getattr(kit, 'weapon_hooks', {}).get(equipped, {}).get(hook)
+        if weapon_handler is not None:
+            def dispatch(ctx, _handler=weapon_handler, _weapon=equipped, _source=weapon_source(characters[cid]), **data):
+                if weapon_id(ctx.character) == _weapon and weapon_source(ctx.character) == _source:
+                    return _handler(ctx.for_weapon(_weapon), **data)
+                return None
+            yield cid, dispatch
 
 
 def fire(c, hook: str, *, actor_only: bool = False, include_down: bool = False, **data) -> None:

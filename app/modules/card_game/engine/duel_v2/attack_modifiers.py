@@ -28,7 +28,7 @@ def attack_result(c, spec, index, target, enemy, target_id):
     add('兑现', op.get('redeem_bonus', 0))
     add('战斗牌加攻', int(op.get('card_bonus') or 0))
     if index == 0:
-        add('首次攻击', op['first_bonus'])
+        add('战斗准备加成', op['first_bonus'], -90)
     if spec.get('harmony_bonus') and op.get('harmony'):
         add('入场环合加攻', spec['harmony_bonus'])
     add('战斗区减攻', -zone_attack_penalty(c.state, c.side, c.cid), 1000)

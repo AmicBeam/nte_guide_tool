@@ -67,8 +67,13 @@ def _q02(c):
     enemy, target_id = target_ref
     target = c.state['sides'][enemy] if is_player(target_id) else hero(c.state, enemy, target_id)
     if target['hp'] > 0:
-        target.setdefault('next_damage_resistance', {})['光'] = -2
-        c.history('命中后，使目标下次受到的光属性伤害抗性 -2。', target_side=enemy, target_id=target_id)
+        from app.modules.card_game.engine.duel_v2.modifiers import deadline
+        target.get('next_damage_resistance', {}).pop('光', None)
+        c.apply_effect('xiaozhi.light_resistance', 'damage.resistance', -2, target=target,
+                       stacking='replace', stack_key='resistance:光', label='光抗性 -2',
+                       conditions=[{'id': 'damage_attribute', 'args': {'attribute': '光'}}],
+                       consume_on='damage', expiry=deadline(c.state, c.state['active_side'], 0, 'turn_end'))
+        c.history('命中后，使目标本回合下次受到的光属性伤害抗性 -2。', target_side=enemy, target_id=target_id)
     if (c.operation.get('option_id') == 'release_a' and alive(c.state, c.side, c.cid)
             and not finished(c.state)):
         release(c, 'Q01')

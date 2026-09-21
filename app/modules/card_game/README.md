@@ -583,3 +583,10 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 `engine/duel_v2/modifiers.py` 管理可序列化效果、条件光环、叠加、来源清理与纯属性查询；`attack_modifiers.py` 固定本次攻击的计算层；`effect_lifecycle.py` 统一绝对回合到期与自然到期扳机，真红终结已接入。持续攻击增减益、下次攻击、攻击条件光环、真红限时免伤和能量许可已迁移，费用与伤害数值也可使用统一效果查询。旧字段只通过兼容入口读取和派生，不再作为新效果的第二份可变真源。详见 [统一效果与属性计算](../../../docs/duel-v2-modifier-system.md)。
 
 验证：`python -m unittest tests.test_duel_v2_modifiers tests.test_duel_v2_surplus_rework tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_haniya tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_m07_aura tests.test_duel_v2_effect_markers`。本次不训练、不更新模型或重新授权旧编译执行器。
+
+
+### 2026-09-21 战斗准备层与本回合减抗
+
+伊洛伊与哈尼娅的战斗准备加成统一在战斗牌覆写之前。小吱 Q02 改用 `damage.resistance`、属性条件、伤害消费与本回合结束期限；玩家与异能者目标、预览、公开策略字段和标记共用该实例。旧减抗表在当前回合结束清除。
+
+验证：`python -m unittest tests.test_duel_v2_resistance tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_jingu_marks tests.test_duel_v2_haniya tests.test_duel_v2_modifiers tests.test_duel_v2_effect_markers`。

@@ -20,7 +20,8 @@ def character_effect_markers(character, state=None, side=None):
         if not effect.get('show_marker') or effect.get('visibility') != 'public':
             continue
         left = remaining(effect, state, side)
-        timing = ('下次主动攻击' if effect.get('consume_on') == 'attack' else
+        timing = (('本回合下次受到对应属性伤害' if (effect.get('expiry') or {}).get('phase') == 'turn_end' else '下次受到对应属性伤害') if effect.get('consume_on') == 'damage' else
+                  '下次主动攻击' if effect.get('consume_on') == 'attack' else
                   f'剩余 {left} 个己方回合' if left is not None else '指定时点到期')
         amount = effect['value']
         markers.append(_marker(effect['effect_id'], effect['label'], timing,
@@ -50,9 +51,15 @@ def character_effect_markers(character, state=None, side=None):
 
 
 def team_effect_markers(team):
+    from .modifiers import all_effects
     markers = [_marker('next_resistance', attribute + '抗性', '玩家下次受到该属性伤害',
                        f'{attribute}属性伤害抗性 {value:+d}', False)
                for attribute, value in (team.get('next_damage_resistance') or {}).items()]
+    for e in all_effects(team):
+        if e['property'] == 'damage.resistance' and e.get('visibility') == 'public':
+            markers.append(_marker(e['effect_id'], e['label'],
+                                   '本回合下次受到对应属性伤害' if (e.get('expiry') or {}).get('phase') == 'turn_end' else '下次受到对应属性伤害',
+                                   e['label'], False, kind='debuff' if e['value'] < 0 else 'buff'))
     if team.get('empty_draw_wins'):
         markers.append(_marker('empty_draw_wins', '热爱异象的观察员', '无牌可抽时',
                                '无牌可抽时改为获胜；埃德嘉倒地后仍保留', False))

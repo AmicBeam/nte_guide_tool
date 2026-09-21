@@ -402,3 +402,21 @@ def consume_applied(state, event, effect_ids):
     for _, holder in entities(state):
         holder['effects'] = [e for e in holder.get('effects', [])
                              if not (e['effect_id'] in ids and e.get('consume_on') == event)]
+
+
+@condition('damage_attribute')
+def _damage_attribute(c, args):
+    return c['query'].get('attribute') == args.get('attribute')
+
+
+def resistance_values(holder):
+    """Compatibility observation only; gameplay resolves damage.resistance."""
+    values = dict(holder.get('next_damage_resistance') or {})
+    for e in all_effects(holder):
+        if e['property'] != 'damage.resistance' or e.get('visibility') != 'public':
+            continue
+        attribute = next((x.get('args', {}).get('attribute') for x in e.get('conditions', [])
+                          if x['id'] == 'damage_attribute'), None)
+        if attribute:
+            values[attribute] = values.get(attribute, 0) + e['value']
+    return values

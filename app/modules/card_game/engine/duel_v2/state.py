@@ -366,8 +366,12 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
             and (state['sides'][side]['front'] == cid or (not esper and not state['sides'][side]['front']))):
         amount += 2
     resistances = target.get('next_damage_resistance') or {}
-    if amount > 0 and attr in resistances:
-        amount = max(0, amount - int(resistances.pop(attr)))
+    if amount > 0:
+        from .modifiers import evaluate, consume_applied
+        resistance = evaluate(state, side, target, 'damage.resistance', 0,
+                              query={'attribute': attr, 'amount': amount, 'kind': kind, 'source': source})
+        amount = max(0, amount - int(resistance['value']) - int(resistances.pop(attr, 0)))
+        consume_applied(state, 'damage', [e['effect_id'] for e in resistance['contributions']])
     before = {'hp': target['hp'], 'shield': target['shield']}
     absorbed = 0 if bypass else min(target['shield'], amount)
     target['shield'] -= absorbed

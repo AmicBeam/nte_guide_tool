@@ -647,6 +647,10 @@ def end_turn(state, side):
     from .effect_lifecycle import prepare_effects, expire_effects
     prepare_effects(state)
     expire_effects(state, side, 'turn_end')
+    # Old snapshots did not record an expiry for the one-shot resistance table.
+    from .modifiers import entities
+    for _, holder in entities(state):
+        holder.pop('next_damage_resistance', None)
     if finished(state):
         return
     begin_turn(state, other(side))

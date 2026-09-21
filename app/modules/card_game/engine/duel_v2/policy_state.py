@@ -12,13 +12,13 @@ FLAG_KEYS = ('next_bonus', 'next_shield', 'next_followup', 'energy_next',
 def public_policy_state(state):
     from copy import deepcopy
     from .state import team_order
-    from .modifiers import compatibility_flags, public_effects
+    from .modifiers import compatibility_flags, public_effects, resistance_values
     result = {'escalation_enabled': bool(state.get('escalation_enabled')), 'sides': {}}
     for side, team in state['sides'].items():
         order = team_order(state, side)
         result['sides'][side] = {
             **{key: deepcopy(team.get(key)) for key in SIDE_KEYS},
-            'light_resistance': (team.get('next_damage_resistance') or {}).get('光', 0),
+            'light_resistance': resistance_values(team).get('光', 0),
             'characters': {
                 cid: {'base_attack': h.get('base_attack', 0),
                       'base_max_hp': h.get('base_max_hp', h['max_hp']),
@@ -27,7 +27,7 @@ def public_policy_state(state):
                       'jingu_loan': bool(h.get('jingu_loan')),
                       'ultimate_used_turn': h.get('ultimate_used_turn', -1),
                       'attacked_this_turn': h.get('entity_id') in team.get('attacked_this_turn', []),
-                      'light_resistance': (h.get('next_damage_resistance') or {}).get('光', 0),
+                      'light_resistance': resistance_values(h).get('光', 0),
                       'effects': public_effects(h),
                       'flags': {key: deepcopy(derived_flags.get(key)) for key in FLAG_KEYS}}
                 for cid, h in team['characters'].items() if cid in order

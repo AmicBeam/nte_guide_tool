@@ -75,7 +75,7 @@ class OpponentSelectionTest(RoomFlowTestCase):
         with patch('secrets.choice', side_effect=lambda choices: choices[-1]) as choose:
             first = self.start(mode='solo')
             selected = choose.call_args.args[0]
-            self.assertEqual({d['id'] for d in selected}, {'starter', 'weave-rush', 'quick-rush'})
+            self.assertEqual({d['id'] for d in selected}, {'starter', 'weave-rush', 'quick-rush', 'zhenhong'})
             calls = choose.call_count
             again = self.start(mode='solo', ai_deck='random')
             self.assertEqual(choose.call_count, calls)

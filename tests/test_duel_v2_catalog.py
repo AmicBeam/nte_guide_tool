@@ -93,7 +93,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertIn('消灭', CHARACTERS['baicang']['awakened_passive'])
         self.assertIn('荒时', CHARACTERS['xun']['passive'])
         self.assertIn('时计', CHARACTERS['xun']['awakened_passive'])
-        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue')))
+        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue', 'zhenhong', 'yi')))
         access = {item['id']: item['access_level'] for item in catalog['characters']}
         self.assertEqual(access['nanali'], 'public')
         self.assertEqual(access['zero'], 'public')
@@ -127,7 +127,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertGreater(type_counts['tactic'], 0)
         self.assertGreater(type_counts['form'], 0)
         for card in CARDS.values():
-            self.assertEqual(card['cost'], 0 if card['character_id'] == 'xun' and card['id'] not in ('X08', 'XF01') else 1)
+            self.assertEqual(card['cost'], 0 if card['id'] == 'I04' or (card['character_id'] == 'xun' and card['id'] not in ('X08', 'XF01')) else 1)
             if card['type'] == 'form':
                 self.assertIsInstance(card.get('attack'), int)
                 self.assertIsInstance(card.get('hp'), int)
@@ -321,7 +321,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         public = get_catalog(include_test_characters=False)
         self.assertEqual({item['id'] for item in public['characters']}, set(PUBLIC_CHARACTER_IDS))
         self.assertTrue(all(item['character_id'] in PUBLIC_CHARACTER_IDS for item in public['cards']))
-        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '小吱预组'])
+        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
         self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'requiem')))
         full = get_catalog()

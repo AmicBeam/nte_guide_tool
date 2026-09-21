@@ -340,7 +340,7 @@ class SurplusReworkTest(unittest.TestCase):
 
     def test_catalog_sources_access_and_images(self):
         self.assertEqual((CHARACTERS['yi']['attribute'],CHARACTERS['yi']['attack'],CHARACTERS['yi']['max_hp']),('相',2,5))
-        self.assertNotIn('yi',{h['id'] for h in get_catalog(include_test_characters=False)['characters']})
+        self.assertIn('yi',{h['id'] for h in get_catalog(include_test_characters=False)['characters']})
         self.assertEqual([CARDS[k]['name'] for k in ('I07','I08')],['潜影追击','群犬吠形'])
         self.assertTrue(CARDS['RF01']['derived'])
         for field in ('avatar','portrait'):self.assertTrue(Path('app'+CHARACTERS['yi'][field]).is_file())

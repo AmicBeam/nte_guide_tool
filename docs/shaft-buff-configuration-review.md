@@ -1,5 +1,14 @@
 # Shaft Buff Nanoka 校对验收清单
 
+### 觉醒共鸣手动开关（2026-09-22）
+
+按用户要求，配装中三觉、六觉共鸣可分别手动点亮或熄灭，不反向修改A–F。每次修改任一A–F节点后，两个共鸣重新按当前激活数量自动更新：至少3个点亮三觉，6个点亮六觉。其他配装修改、切换角色、刷新和保存加载保留手动状态。
+
+`team`与`character_builds`中的可选 `awakening_resonances` 数组只保存3、6，空数组表示全部关闭；缺失时沿用旧轴按节点数量推导。技能等级、共鸣Buff、入场资源与机制展示均读取该状态，A–F节点和觉醒数量仍独立。既有 `awakening_count_min` 的3/6门槛及 `awakening_count_max` 的2/5反向门槛用于共鸣，优先读取手动状态，其他数量门槛不变。共鸣属于练度，不加入广场去重hash。本文其他按数量触发共鸣的表述均为默认自动联动口径，手动配置按本节覆盖。
+
+验证：`python3 -m unittest tests.test_shaft_resonance`、完整排轴回归，以及配装页手动开关、A–F联动和刷新检查。
+
+
 本文以网页角色数据与 Nanoka 1.2 数据为 Buff 配置验收口径。具体数值、持续时间、层数和触发条件以网页文本复核结果为准；实现状态以当前浏览器计算引擎 `app/modules/shaft/static/js/shaft_engine.js`、配置 `app/modules/shaft/static/data/buffs.json`、动作数据 `app/modules/shaft/static/data/actions.json` 为真值。仅出现在说明文档或 `awakenings.json` 中不算已实现。
 
 校对来源：

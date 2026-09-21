@@ -573,7 +573,7 @@ body:has(.shaft-page) .shell {
 }
 
 .shaft-awakening-info {
-    cursor: help;
+    cursor: pointer;
     user-select: none;
 }
 
@@ -584,7 +584,7 @@ body:has(.shaft-page) .shell {
     box-shadow: none;
 }
 
-.shaft-awakening-info.is-active span {
+.shaft-awakening-info input:checked + span {
     border-color: rgba(255, 218, 91, 0.7);
     color: #071016;
     background: linear-gradient(135deg, #ffda5b, var(--slot-color, var(--primary)));

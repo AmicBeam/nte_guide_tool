@@ -167,6 +167,13 @@
     return new Set(Array.from({ length: Math.max(0, Math.min(6, int(source?.awakening))) }, (_, index) => index + 1));
   }
 
+  function hasAwakeningResonance(source, level) {
+    if ([3, 6].includes(level) && Array.isArray(source?.awakening_resonances)) {
+      return source.awakening_resonances.map(int).includes(level);
+    }
+    return awakeningNodes(source).size >= level;
+  }
+
   function hasAwakeningNode(source, level) {
     return awakeningNodes(source).has(int(level));
   }
@@ -422,7 +429,7 @@
   }
 
   function skillLevelBonus(member) {
-    return awakeningNodes(member).size >= 3 ? 1 : 0;
+    return hasAwakeningResonance(member, 3) ? 1 : 0;
   }
 
   function skillLevelCategory(action) {
@@ -541,6 +548,7 @@
       slot: int(member?.slot),
       awakening: awakeningNodes(member).size,
       awakening_nodes: Array.from(awakeningNodes(member)).sort((left, right) => left - right),
+      awakening_resonances: [3, 6].filter((level) => hasAwakeningResonance(member, level)),
       character,
       arc,
       arc_refinement: arcRefinementLevel,
@@ -1473,14 +1481,18 @@
         const activeCount = Array.isArray(context.owner_awakening_nodes)
           ? new Set(context.owner_awakening_nodes.map(int).filter((value) => value >= 1 && value <= 6)).size
           : int(context.owner_awakening);
-        return activeCount >= requiredCount;
+        return [3, 6].includes(requiredCount) && Array.isArray(context.owner_awakening_resonances)
+          ? context.owner_awakening_resonances.includes(requiredCount)
+          : activeCount >= requiredCount;
       }
       if (type === 'awakening_count_max') {
         const maxCount = int(condition.max, int(condition.value));
         const activeCount = Array.isArray(context.owner_awakening_nodes)
           ? new Set(context.owner_awakening_nodes.map(int).filter((value) => value >= 1 && value <= 6)).size
           : int(context.owner_awakening);
-        return activeCount <= maxCount;
+        return [2, 5].includes(maxCount) && Array.isArray(context.owner_awakening_resonances)
+          ? !context.owner_awakening_resonances.includes(maxCount + 1)
+          : activeCount <= maxCount;
       }
       if (type === 'expected_critical_hit') return num(context.expected_critical_hits) > 0;
       if (type === 'hit_count_positive') return num(context.hit_count) > 0;
@@ -1553,6 +1565,7 @@
           rule.owner_character_name = String(member.character_name || '');
           rule.owner_awakening = awakeningNodes(member).size;
           rule.owner_awakening_nodes = Array.from(awakeningNodes(member)).sort((left, right) => left - right);
+          rule.owner_awakening_resonances = [3, 6].filter((level) => hasAwakeningResonance(member, level));
           const arcRefinementRecord = catalog?.arc_refinements?.arcs?.[providerId] || {};
           const requestedArcRefinement = int(member.arc_refinement);
           rule.owner_arc_refinement = requestedArcRefinement >= 1 && requestedArcRefinement <= 5
@@ -1628,6 +1641,7 @@
       snapshot,
       owner_awakening: rule.owner_awakening,
       owner_awakening_nodes: rule.owner_awakening_nodes,
+      owner_awakening_resonances: rule.owner_awakening_resonances,
     });
     return conditionsMatch(trigger.conditions, eventContext);
   }
@@ -2501,7 +2515,7 @@
       if (!options.loop_enabled) Object.assign(resources, snapshot.character?.initial_personal_resources || {});
       if (!options.loop_enabled) {
         Object.entries(snapshot.character?.initial_personal_resources_by_awakening_count || {}).forEach(([count, values]) => {
-          if (awakeningNodes(snapshot).size >= int(count)) Object.assign(resources, resourceMap(values));
+          if (hasAwakeningResonance(snapshot, int(count))) Object.assign(resources, resourceMap(values));
         });
       }
       const loopResources = loopInitialResources[characterId];
@@ -4204,6 +4218,7 @@
         tick: 0,
         owner_awakening: rule.owner_awakening,
         owner_awakening_nodes: rule.owner_awakening_nodes,
+        owner_awakening_resonances: rule.owner_awakening_resonances,
         enemy_debuffs: activeEnemyDebuffs(enemyDebuffs, 0),
         fons_full: fonsFull,
       };
@@ -5039,6 +5054,7 @@
       const jointSource = action.lingke_joint_source_slot == null ? null : snapshots.get(int(action.lingke_joint_source_slot));
       const damageSnapshot = jointSource ? Object.assign({}, jointSource, {
         awakening_nodes: snapshot.awakening_nodes,
+        awakening_resonances: snapshot.awakening_resonances,
       }) : snapshot;
       const damageStep = jointSource ? Object.assign({}, step, {slot: jointSource.slot}) : step;
       const jointTemplate = jointSource ? Array.from(actionsById.values()).find((candidate) =>

@@ -464,11 +464,15 @@
     }
     if (type === 'awakening_count_min') {
       const requiredCount = Math.round(numberValue(condition.min, condition.value));
-      return awakeningNodes.size >= requiredCount;
+      return [3, 6].includes(requiredCount)
+        ? normalizeAwakeningResonances(member).includes(requiredCount)
+        : awakeningNodes.size >= requiredCount;
     }
     if (type === 'awakening_count_max') {
       const maxCount = Math.round(numberValue(condition.max, condition.value));
-      return awakeningNodes.size <= maxCount;
+      return [2, 5].includes(maxCount)
+        ? !normalizeAwakeningResonances(member).includes(maxCount + 1)
+        : awakeningNodes.size <= maxCount;
     }
     if (type === 'owner_character_id') {
       return (condition.ids || []).map(String).includes(String(member?.character_id || ''));
@@ -2019,6 +2023,13 @@
     return Array.from({ length: legacyLevel }, (_, index) => index + 1);
   }
 
+  function normalizeAwakeningResonances(member) {
+    if (Array.isArray(member?.awakening_resonances)) {
+      return [3, 6].filter((level) => member.awakening_resonances.map(Number).includes(level));
+    }
+    return [3, 6].filter((level) => activeAwakeningCount(member) >= level);
+  }
+
   function activeAwakeningCount(member) {
     return normalizeAwakeningNodes(member?.awakening_nodes, member?.awakening).length;
   }
@@ -2042,6 +2053,7 @@
       cartridge_name: member.cartridge_name || '',
       awakening: awakeningNodes.length,
       awakening_nodes: awakeningNodes,
+      awakening_resonances: normalizeAwakeningResonances(member),
       bond_level: hasBondBonus ? Math.max(0, Math.min(1, Number(member.bond_level || (member.bond_full ? 1 : 0)))) : 0,
       bond_full: hasBondBonus ? Boolean(member.bond_full) || Number(member.bond_level || 0) > 0 : false,
       skill_levels: normalizeSkillLevels(member.skill_levels),
@@ -2060,6 +2072,7 @@
     member.cartridge_id = build.cartridge_id || member.cartridge_id || '';
     member.awakening_nodes = normalizeAwakeningNodes(build.awakening_nodes, build.awakening);
     member.awakening = member.awakening_nodes.length;
+    member.awakening_resonances = normalizeAwakeningResonances(build);
     const hasBondBonus = characterHasBondBonus(member.character_id);
     member.bond_level = hasBondBonus ? Math.max(0, Math.min(1, Number(build.bond_level || (build.bond_full ? 1 : 0)))) : 0;
     member.bond_full = hasBondBonus ? Boolean(build.bond_full) || member.bond_level > 0 : false;
@@ -2084,6 +2097,7 @@
       cartridge_name: build.cartridge_name || '',
       awakening: awakeningNodes.length,
       awakening_nodes: awakeningNodes,
+      awakening_resonances: normalizeAwakeningResonances(build),
       bond_level: hasBondBonus ? Math.max(0, Math.min(1, Number(build.bond_level || (build.bond_full ? 1 : 0)))) : 0,
       bond_full: hasBondBonus ? Boolean(build.bond_full) || Number(build.bond_level || 0) > 0 : false,
       skill_levels: normalizeSkillLevels(build.skill_levels),
@@ -2393,7 +2407,7 @@
       const hasBondBonus = characterHasBondBonus(member.character_id);
       const bondLabel = hasBondBonus ? character.bond_bonus.label : '无羁绊加成';
       const activeAwakeningNodes = new Set(normalizeAwakeningNodes(member.awakening_nodes, member.awakening));
-      const activeAwakeningCount = activeAwakeningNodes.size;
+      const activeResonances = new Set(normalizeAwakeningResonances(member));
       const slotColor = SLOT_COLORS[Number(member.slot) % SLOT_COLORS.length];
       const characterAwakenings = awakeningsForCharacter(character, member);
       const awakeningToggles = Array.from({ length: 6 }, (_, index) => {
@@ -2410,11 +2424,13 @@
       }).join('');
       const awakeningInfos = [6, 7].map((index, infoIndex) => {
         const tooltip = awakeningTooltipText(characterAwakenings[index]);
-        const active = infoIndex === 0 ? activeAwakeningCount >= 3 : activeAwakeningCount >= 6;
+        const level = infoIndex === 0 ? 3 : 6;
+        const active = activeResonances.has(level);
         return `
-          <span class="shaft-awakening-dot shaft-awakening-info ${active ? 'is-active' : ''}" data-tooltip="${escapeHtml(tooltip)}" aria-label="${escapeHtml(tooltip)}">
+          <label class="shaft-awakening-dot shaft-awakening-info" data-tooltip="${escapeHtml(tooltip)}">
+            <input data-slot="${member.slot}" data-field="awakening_resonance" data-resonance-level="${level}" type="checkbox" aria-label="${level}觉共鸣：${escapeHtml(tooltip)}" ${active ? 'checked' : ''}>
             <span>!</span>
-          </span>
+          </label>
         `;
       }).join('');
       const skillLevels = normalizeSkillLevels(member.skill_levels);
@@ -6396,6 +6412,14 @@
       }
       member.awakening_nodes = Array.from(awakeningNodes).sort((left, right) => left - right);
       member.awakening = member.awakening_nodes.length;
+      member.awakening_resonances = [3, 6].filter((count) => member.awakening >= count);
+      rememberMemberBuild(member);
+    } else if (control.dataset.field === 'awakening_resonance') {
+      const level = Number(control.dataset.resonanceLevel);
+      const resonances = new Set(normalizeAwakeningResonances(member));
+      if (control.checked) resonances.add(level);
+      else resonances.delete(level);
+      member.awakening_resonances = [3, 6].filter((count) => resonances.has(count));
       rememberMemberBuild(member);
     } else if (control.dataset.field === 'bond_full') {
       const hasBondBonus = characterHasBondBonus(member.character_id);

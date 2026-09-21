@@ -413,6 +413,13 @@ def _normalize_awakening_nodes(raw_nodes: Any, legacy_awakening: Any = 0) -> lis
     return list(range(1, legacy_level + 1))
 
 
+def _normalize_awakening_resonances(source: dict[str, Any]) -> dict[str, list[int]]:
+    raw = source.get('awakening_resonances')
+    if not isinstance(raw, list):
+        return {}  # Legacy builds continue deriving resonance from their nodes.
+    return {'awakening_resonances': sorted({_int(value) for value in raw if _int(value) in (3, 6)})}
+
+
 def _normalize_team(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
     team = raw if isinstance(raw, list) and raw else catalog['starter_axis']['team']
     characters = get_record_map(catalog['characters'])
@@ -457,6 +464,7 @@ def _normalize_team(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
             'cartridge_name': (cartridge or {}).get('name') or '',
             'awakening': len(awakening_nodes),
             'awakening_nodes': awakening_nodes,
+            **_normalize_awakening_resonances(member),
             'bond_level': max(0, min(1, _int(member.get('bond_level'), 1 if member.get('bond_full') else 0))) if has_bond_bonus else 0,
             'bond_full': (bool(member.get('bond_full')) or _int(member.get('bond_level')) > 0) if has_bond_bonus else False,
             'skill_levels': _normalize_skill_levels(member.get('skill_levels')),
@@ -504,6 +512,7 @@ def _normalize_character_builds(raw: Any, team: list[dict[str, Any]], catalog: d
             'cartridge_name': (cartridges.get(cartridge_id) or {}).get('name') or '',
             'awakening': len(awakening_nodes),
             'awakening_nodes': awakening_nodes,
+            **_normalize_awakening_resonances(build),
             'bond_level': max(0, min(1, _int(build.get('bond_level'), 1 if build.get('bond_full') else 0))) if has_bond_bonus else 0,
             'bond_full': (bool(build.get('bond_full')) or _int(build.get('bond_level')) > 0) if has_bond_bonus else False,
             'skill_levels': _normalize_skill_levels(build.get('skill_levels')),
@@ -530,6 +539,8 @@ def _apply_character_builds_to_team(team: list[dict[str, Any]], character_builds
             merged_team.append(member)
             continue
         merged = dict(member)
+        if 'awakening_resonances' not in build:
+            merged.pop('awakening_resonances', None)
         for key in (
             'arc_id',
             'arc_name',
@@ -538,6 +549,7 @@ def _apply_character_builds_to_team(team: list[dict[str, Any]], character_builds
             'cartridge_name',
             'awakening',
             'awakening_nodes',
+            'awakening_resonances',
             'bond_level',
             'bond_full',
             'skill_levels',

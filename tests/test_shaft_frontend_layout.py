@@ -1450,7 +1450,6 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("if (type === 'awakening_min')", source)
         self.assertIn("if (type === 'awakening_max')", source)
         self.assertIn("if (type === 'awakening_count_min')", source)
-        self.assertIn("return awakeningNodes.size >= requiredCount;", source)
         self.assertIn("if (type === 'owner_character_id')", source)
         self.assertNotIn('panel_modifiers || arc.modifiers', source[source.index('function activeMechanismGroups(member)'):source.index('function activeMechanismTooltipHtml(member, character)')])
         self.assertIn('function mechanismRuleSummary(rule)', source)

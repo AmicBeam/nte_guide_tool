@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.duel_v2_test_decks import test_character_deck
 
 import importlib
 import json
@@ -154,7 +155,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
                text.replace('异能对决构筑 1', '异能对决构筑 2'),
                text.replace('卡牌 ' + self.deck['card_ids'][0] + ' 2', '卡牌 ' + self.deck['card_ids'][0] + ' -2'),
                text + '\n未知字段 abc', 'x' * 16385]
-        hidden = next(deck for deck in duel_v2.STARTER_DECKS if duel_v2.deck_uses_test_characters(deck))
+        hidden = test_character_deck('requiem')
         bad.append(format_build(hidden))
         for value in bad:
             with self.subTest(text=value[:60]):
@@ -451,11 +452,11 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertEqual(len(catalog['cards']), 148)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
-            ['创生预组', '浊燃预组', '覆纹预组（测试）', '覆纹预组', '小吱预组', '真红预组'],
+            ['创生预组', '覆纹预组', '小吱预组', '真红预组'],
         )
         self.assertEqual(
             [item['name'] for item in catalog['saved_builds']],
-            ['创生预组', '浊燃预组', '覆纹预组（测试）', '覆纹预组', '小吱预组', '真红预组'],
+            ['创生预组', '覆纹预组', '小吱预组', '真红预组'],
         )
 
     def test_zhenhong_rule_opponent_uses_named_deck_and_resumes(self):
@@ -510,7 +511,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
 
     def test_regular_account_cannot_save_or_start_with_test_characters(self):
         content = importlib.import_module('app.modules.card_game.content.duel_v2')
-        requiem = deepcopy(next(item for item in content.STARTER_DECKS if item['id'] == 'requiem'))
+        requiem = test_character_deck('requiem')
         error = self._post_error('/api/duel-v2/build', requiem, token=self.a)
         self.assertIn('尚未公开', error['error'])
         start_error = self._post_error('/api/duel-v2/start', {'mode': 'solo', 'deck': requiem}, token=self.a)
@@ -519,6 +520,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
     def test_regular_account_cannot_join_room_using_test_characters(self):
         tester = self._issue_login_and_get_token('duel-v2-host-tester')
         self._set_test_whitelist('duel-v2-host-tester')
+        self._post('/api/duel-v2/build', test_character_deck('requiem'), token=tester)
         catalog = self._get('/api/duel-v2/catalog', token=tester)
         requiem = next(item for item in catalog['saved_builds'] if item['name'] == '浊燃预组')
         self._post('/api/duel-v2/build-select', {'id': requiem['id']}, token=tester)
@@ -526,7 +528,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         error = self._post_error('/api/duel-v2/join', {'room_code': room['room']['room_code']}, token=self.b)
         self.assertIn('尚未公开', error['error'])
 
-    def test_whitelisted_account_receives_remaining_test_presets(self):
+    def test_whitelisted_account_receives_only_public_presets(self):
         token = self._issue_login_and_get_token('duel-v2-upgrade')
         first = self._get('/api/duel-v2/catalog', token=token)
         self.assertEqual([item['name'] for item in first['saved_builds']], ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
@@ -534,7 +536,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         upgraded = self._get('/api/duel-v2/catalog', token=token)
         self.assertEqual(
             [item['name'] for item in upgraded['saved_builds']],
-            ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组', '覆纹预组（测试）'],
+            ['创生预组', '覆纹预组', '小吱预组', '真红预组'],
         )
 
     def test_regular_account_does_not_see_existing_test_character_builds(self):
@@ -543,7 +545,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         content = importlib.import_module('app.modules.card_game.content.duel_v2')
         public = deepcopy(content.STARTER_DECK)
         public['id'] = 'deck-public'
-        requiem = deepcopy(next(item for item in content.STARTER_DECKS if item['id'] == 'requiem'))
+        requiem = test_character_deck('requiem')
         requiem['id'] = 'deck-hidden'
         with self.db_module.atomic_transaction():
             self.repository.save_build(player, {

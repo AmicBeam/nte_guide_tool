@@ -1,3 +1,4 @@
+from tests.duel_v2_test_decks import test_character_deck
 """Advanced AI room lifecycle and CPU-only inference boundaries."""
 from copy import deepcopy
 from pathlib import Path
@@ -203,7 +204,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
             models.Player.player_uid == 'advanced-privileged'
         ).execute()
         content = importlib.import_module('app.modules.card_game.content.duel_v2')
-        requiem = deepcopy(next(item for item in content.STARTER_DECKS if item['id'] == 'requiem'))
+        requiem = test_character_deck('requiem')
         self._post('/api/duel-v2/build', requiem, token=token)
         module = 'app.modules.card_game.engine.ai.advanced_model.'
         with patch(module+'load_model', return_value=SimpleNamespace(version='test-version', capability={'kind':'legacy_exact_mirror'})):

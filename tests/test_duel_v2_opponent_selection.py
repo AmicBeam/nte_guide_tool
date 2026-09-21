@@ -140,3 +140,16 @@ class OpponentSelectionTest(RoomFlowTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('暂无可用', response.get_json()['error'])
         self.assertIsNone(self.repository.current_room(self.player))
+
+    def test_retired_test_presets_are_unavailable_even_for_test_accounts(self):
+        self.player.shaft_test_whitelisted = True
+        self.player.save()
+        catalog = self._get('/api/duel-v2/catalog', token=self.token)
+        self.assertEqual({d['id'] for d in catalog['starter_decks']},
+                         {'starter', 'weave-rush', 'quick-rush', 'zhenhong'})
+        self.assertEqual(len(catalog['saved_builds']), 4)
+        for retired in ('requiem', 'sync-curse'):
+            response = self.client.post('/api/duel-v2/start', json={'mode': 'solo', 'ai_deck': retired},
+                                        headers={'Authorization': 'Bearer ' + self.token})
+            self.assertEqual(response.status_code, 400)
+            self.assertIsNone(self.repository.current_room(self.player))

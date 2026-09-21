@@ -323,13 +323,13 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertTrue(all(item['character_id'] in PUBLIC_CHARACTER_IDS for item in public['cards']))
         self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
-        self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'requiem')))
+        self.assertFalse(any(deck_uses_test_characters(item) for item in STARTER_DECKS))
         full = get_catalog()
         self.assertEqual(len(full['characters']), 18)
-        self.assertEqual(len(full['starter_decks']), 6)
+        self.assertEqual(len(full['starter_decks']), 4)
         self.assertEqual(
             [item['name'] for item in full['starter_decks']],
-            ['创生预组', '浊燃预组', '覆纹预组（测试）', '覆纹预组', '小吱预组', '真红预组'],
+            ['创生预组', '覆纹预组', '小吱预组', '真红预组'],
         )
         self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')))
 

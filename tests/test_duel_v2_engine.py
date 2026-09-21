@@ -1,3 +1,5 @@
+from app.modules.card_game.engine.duel_v2.modifiers import compatibility_flags
+from tests.duel_v2_test_decks import test_character_deck
 import json
 import unittest
 from copy import deepcopy
@@ -96,7 +98,7 @@ class DuelV2EngineTest(unittest.TestCase):
 
     def test_lingke_turns_unpaired_switch_into_sync(self) -> None:
         from app.modules.card_game.content.duel_v2 import STARTER_DECKS
-        deck = next(item for item in STARTER_DECKS if item['id'] == 'sync-curse')
+        deck = test_character_deck('sync-curse')
         s = new_game(seed=3, first_side='a', skip_mulligan=True, decks={'a': deck, 'b': deck})
         s['sides']['a']['ap'] = 2
         s['sides']['a']['front'] = 'lingke'
@@ -305,7 +307,7 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(attack_value(n), 3)
         s = apply_action(s, 'a', {'type': 'end_turn'})
         n = hero(s, 'a', 'nanali')
-        self.assertEqual(n['flags'].get('atk_buff'), 1)
+        self.assertEqual(compatibility_flags(n).get('atk_buff'), 1)
         self.assertEqual(attack_value(n), 4)
         shown = {item['id']: item for item in observe(s, 'a')['sides']['a']['characters']}
         self.assertEqual(shown['nanali']['attack'], 4)
@@ -316,7 +318,7 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(attack_log['counter'], 4)
         s = apply_action(s, 'b', {'type': 'end_turn'})
         n = hero(s, 'a', 'nanali')
-        self.assertEqual(n['flags'].get('atk_buff'), 1)
+        self.assertEqual(compatibility_flags(n).get('atk_buff'), 1)
         self.assertEqual(attack_value(n), 4)
         self.assertIsNone(s['sides']['a']['front'])
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'nanali'})
@@ -791,7 +793,7 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(hero(s, 'a', 'nanali')['energy'], 2)
 
     def test_dark_attribute_energy_cap_is_six(self):
-        deck = next(item for item in STARTER_DECKS if item['id'] == 'requiem')
+        deck = test_character_deck('requiem')
         s = new_game(seed=3, first_side='a', skip_mulligan=True, decks={'a': deck, 'b': deck})
         s['sides']['a']['ap'] = 2
         s['sides']['b']['shield'] = 0

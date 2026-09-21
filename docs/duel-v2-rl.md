@@ -1,6 +1,6 @@
 # 四人轮替 V2 强化学习框架
 
-> **现行公开卡池完整入口：**见 [公开卡池训练、按需分析与录像](duel-v2-public-training.md)。新入口为 `train_duel_v2_public.py`，使用 `resident_public_v2`；本页较早的镜像、SB3 和第一阶段接口说明保留各自范围，不作为新流程验收证据。
+> **训练前先读：**[训练手册的当前链路与报告落点](duel-v2-public-training.md#当前训练链路与报告落点)及[完整训练、测试与报告要求](duel-v2-full-training-report-spec.md)。本页镜像、SB3、六人编译和早期PPO说明是历史技术背景，不覆盖已确认的信息集搜索学习链路；单轮报告和原始产物统一放在 `artifacts/rl-evals/`，不提交Git。
 
 > 当前网站已接入两套冻结模型，见文末 2026-09-15 章节。下方 2026-09-12 的单预组训练说明保留其适用范围；不能把旧镜像训练成绩当作公开角色自由构筑的验证结果。
 
@@ -103,7 +103,7 @@ python3 -m unittest tests.test_duel_v2_rl tests.test_duel_v2_rl_train
 - 优化结束后各自加载最佳有效模型，另跑有限日志评估：默认 128 对/256 局、每套最多 600 秒，不更新参数。此额外评估可在训练截止后完成。`final-play-log.jsonl` 保存元数据、game_start、successful_play、game_end，按 game_id 连接卡牌、出牌方、先后手、种子、模型版本及结果；同方同局同卡可去重，未出现的卡无样本。只存原始数据，不自动输出每卡胜率分析。
 - `run_status.json` 的 phase、stop_reason、exit_code 与 `final-eval.json` 用于确认退出结果；训练完成与胜率达标分别记录。日志文件完整性在短训验收。
 
-验证：`python scripts/verify_duel_v2_compiled.py --backend cuda --deck starter --trajectories 48`、对应 `--deck weave-rush --trajectories 96`，以及 `python -m unittest tests.test_duel_v2_compiled tests.test_duel_v2_resident tests.test_duel_v2_gpu_transitions`。完整结果与性能见 [常驻编译引擎验收](duel-v2-compiled-migration.md)。
+验证：`python scripts/verify_duel_v2_compiled.py --backend cuda --deck starter --trajectories 48`、对应 `--deck weave-rush --trajectories 96`，以及 `python -m unittest tests.test_duel_v2_compiled tests.test_duel_v2_resident tests.test_duel_v2_gpu_transitions`。完整结果与性能见 [常驻编译引擎验收](../artifacts/rl-evals/reports/duel-v2-compiled-migration.md)。
 
 
 ## 2026-09-15：冻结模型接入高级人机

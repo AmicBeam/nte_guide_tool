@@ -1,6 +1,6 @@
 # 错误优先分支学习 v2
 
-本次按用户“先更新进去提交一版”实现下一轮配置，不启动正式训练、不改现有权重、不修改此前实验数据。入口仍为 `scripts/train_duel_v2_league.py`，运行配置标记 `learning_version=error_replay_v2`。上一轮失败结果见 [三套测试报告](duel-v2-three-strategy-results-20260918.md)。
+本次按用户“先更新进去提交一版”实现下一轮配置，不启动正式训练、不改现有权重、不修改此前实验数据。入口仍为 `scripts/train_duel_v2_league.py`，运行配置标记 `learning_version=error_replay_v2`。上一轮失败结果见 [三套测试报告](../artifacts/rl-evals/reports/duel-v2-three-strategy-results-20260918.md)。
 
 ## 真实优化步预算
 

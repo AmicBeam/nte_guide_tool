@@ -1,8 +1,26 @@
 # 公开卡池训练、按需分析与录像
+## 当前训练链路与报告落点
+
+完整训练先读本手册与 [完整训练、测试及报告要求](duel-v2-full-training-report-spec.md)，涉及配牌搜索还须读 [配牌确认与交付协议](duel-v2-build-acceptance.md)。沿用已经确认的链路，不因为新增角色或入口不兼容而另起简化PPO流程冒充完整训练。
+
+参考任务「新版卡效双策略训练与九点评估」采用的链路是：
+
+`train_duel_v2_until.py → information_longrun.run → information_search.search_game → 每次真实决策的信息集搜索 → policy_value_update → 阶段选择 → 冻结独立评估与完整报告`
+
+- 正式Python引擎结算、可见信息与暗牌采样边界不变；参考配置为每步256档搜索，包含起手换牌，联合学习搜索访问分布与终局价值。自博弈、冻结历史对手及样本归属按预声明配置执行。
+- 保存初始、阶段最佳、最后权重，以及可校验的优化器／回放／计数恢复点。纯网络和带搜索评估分开，网页仍按其实际推理模式验收。
+- 完整评估须覆盖新旧模型对照、同模型同构筑镜像、最新模型直接交叉互搏、学习换牌与全留对照、变化对手，以及逐卡、角色贡献、终结／环合和可核验录像。固定旧对手胜率不能替代完整矩阵。
+- 配牌搜索、等量适应、独立确认和审计沿用既有配牌协议；角色扩展和用户指定奖励需显式接入并验证。现有十人固定配牌PPO与 `five_full_cycle` 是独立实验路径，未完成上述搜索链路与完整评估的十人迁移，不能仅凭名字或 `workflow_complete` 标记宣称已覆盖。
+
+每次运行的 `report.md`、统计、原始记录、录像、checkpoint、交付包全部保存在 `artifacts/rl-evals/<run-id>/`，不提交Git。已迁出的历史报告集中在 `artifacts/rl-evals/reports/`，同名文件可据旧报告名查找；其中链接是本地资料，不随仓库克隆提供。`docs/` 只维护规则、手册、执行契约和目录约定，不继续累积单轮报告。
+
+交付必须把报告、原始评估资料及选定数值权重实际传回Mac并逐项验SHA；只有报告、模型清单或远端哈希核验不能称为完整模型已回传。角色数、矩阵、奖励、算力和截止时间必须在本轮明确配置，不照搬旧任务日期、PID或已过时卡池。
+
+以下六人编译、SB3、PPO与早期实验章节保留技术背景和历史适用范围，不覆盖上述已确认链路。
 
 后续完整双预组训练的目标、测试矩阵和报告必交付项见 [完整训练与报告要求](duel-v2-full-training-report-spec.md)。该规范区分已实现能力与待补齐项，不表示当前脚本已覆盖全部报告指标。
 
-> 2026-09-16 当前交付：两套公开卡池模型与已评估高级人机配牌已成套写入项目，等待用户部署验收。具体见 [综合训练交付报告](duel-v2-comprehensive-release-20260916.md)。下文早期“镜像能力/未正式训练”记录保留当时边界。
+> 2026-09-16 当前交付：两套公开卡池模型与已评估高级人机配牌已成套写入项目，等待用户部署验收。具体见 [综合训练交付报告](../artifacts/rl-evals/reports/duel-v2-comprehensive-release-20260916.md)。下文早期“镜像能力/未正式训练”记录保留当时边界。
 
 ## 范围与状态
 
@@ -156,7 +174,7 @@ python -m unittest tests.test_duel_v2_card_tuning tests.test_duel_v2_card_tuning
 
 ## Windows 短训练实测补充（2026-09-15）
 
-已在 RTX 5060 Ti 上通过 16 局面 CUDA 预检，并完成出牌 3 次更新及固定角色配牌 1 次更新；详见 [Windows 短训练记录](duel-v2-windows-short-training-20260915.md)。早先“本机尚未执行 Windows”的记录保留原时点边界。
+已在 RTX 5060 Ti 上通过 16 局面 CUDA 预检，并完成出牌 3 次更新及固定角色配牌 1 次更新；详见 [Windows 短训练记录](../artifacts/rl-evals/reports/duel-v2-windows-short-training-20260915.md)。早先“本机尚未执行 Windows”的记录保留原时点边界。
 
 SSH 启动预检前须加载已安装 Visual Studio 的 x64 编译环境，确保 `cl` 能找到系统头文件。默认驱动 JIT 在本次设备上出现较长内核装载等待；可在**短测进程**中显式启用以下编译档：
 
@@ -190,9 +208,9 @@ python scripts/train_duel_v2_public.py --train --deck starter --resume artifacts
 
 报告产物包括 `report.md`、`summary.json`、`card-metrics.csv`、`generated-card-metrics.csv`、`mechanism-metrics.csv`、`turn-states.csv`、`training-win-rates.csv`、`candidate-decisions.json` 和公开示例录像。逐卡来源与机制事件仅由额外正式引擎评估采集，不进入训练热路径。环合类型目前解析既有主事件的文本并保留来源，提供者/受益者由结构字段读取；同动作效果列表只说明关联，不声称隔离的因果贡献。没有经校准的概率预测时，曲线资料仅提供局势统计。
 
-打包入口生成选定模型与配牌的 `final/` 目录，包含报告、轻量指标、候选、checkpoint/数字模型和一局公开录像；原始逐局私有记录及其余公开录像留在 Windows 运行目录。包内 `delivery-manifest.json` 提供逐文件 SHA-256。最终须把包传回 Mac 并校验，或将适合入库的 Markdown 汇总提交 Git；只有 Windows 上生成文件不算交付完成。权重和原始数据不提交 Git。
+打包入口生成选定模型与配牌的 `final/` 目录，包含报告、轻量指标、候选、checkpoint/数字模型和一局公开录像；原始逐局私有记录及其余公开录像留在 Windows 运行目录。包内 `delivery-manifest.json` 提供逐文件 SHA-256。最终须把报告、选定数值权重和原始评估资料传回 Mac 的 `artifacts/rl-evals/<run-id>/` 并校验；只有 Windows 上生成文件不算交付完成。单轮报告与所有训练产物不提交 Git。
 
-2026-09-16 实机短测已完成 6 个训练阶段、34 个评估单元和 412 场评估，59 项相关自动化检查通过。最终报告包已传回 Mac 并完成 155 个文件校验；结果与限制见 [全链路短测验收记录](duel-v2-full-chain-smoke-20260916.md)。
+2026-09-16 实机短测已完成 6 个训练阶段、34 个评估单元和 412 场评估，59 项相关自动化检查通过。最终报告包已传回 Mac 并完成 155 个文件校验；结果与限制见 [全链路短测验收记录](../artifacts/rl-evals/reports/duel-v2-full-chain-smoke-20260916.md)。
 
 ## 8. 综合训练与定时评估（2026-09-16）
 

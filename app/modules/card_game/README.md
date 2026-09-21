@@ -2,7 +2,7 @@
 
 异能对决是仓库内的网页卡牌桌游，页面入口为 `/card-game`。登录后可构筑、查阅图鉴、进入单战场牌桌，并查看公开回放。默认主页、构筑、图鉴和牌桌使用四人轮替 V2；旧盖卡页面通过 `?legacy=1` 访问。
 
-本文件只说明模块范围、页面入口、代码边界和验证命令。规则、数值和角色职责以完整手册为准，不在这里另写一份。
+本文件只说明模块范围、页面入口、代码边界和验证命令。训练先读[当前执行链路](../../../docs/duel-v2-public-training.md#当前训练链路与报告落点)和[完整评估规范](../../../docs/duel-v2-full-training-report-spec.md)；单轮报告存放在被Git忽略的 `artifacts/rl-evals/`，下文历史报告链接仅指向本机资料。规则、数值和角色职责以完整手册为准，不在这里另写一份。
 
 2026-09-15 起模块名称改为「异能对决」。Logo 使用青金色字标与 `ESPER DUEL` 副标，移除异象道具卡片及徽章；旧名称的构筑文本仍可导入。
 
@@ -21,8 +21,8 @@
 | [训练结束标准与首轮结果](../../../docs/duel-v2-training-stop-criteria.md) | 互搏训练停止口径及 2026-09-15 历史双预组结果 |
 | [公开卡池训练](../../../docs/duel-v2-public-training.md) | 现行完整公开卡池训练、分析与录像入口 |
 | [完整训练与报告要求](../../../docs/duel-v2-full-training-report-spec.md) | 双预组测试矩阵、配牌调整、先后手胜率、逐卡与机制分析的交付规范 |
-| [全链路短测验收](../../../docs/duel-v2-full-chain-smoke-20260916.md) | 双预组训练/配牌/互搏/报告生成及 Mac 交付的实测记录 |
-| [纯胜负奖励与 N01 链路验证](../../../docs/duel-v2-outcome-chain-20260916.md) | 旧策略热启动、CUDA 换牌、纯胜负奖励、新卡效与 Mac 报告交付实测 |
+| [全链路短测验收](../../../artifacts/rl-evals/reports/duel-v2-full-chain-smoke-20260916.md) | 双预组训练/配牌/互搏/报告生成及 Mac 交付的实测记录 |
+| [纯胜负奖励与 N01 链路验证](../../../artifacts/rl-evals/reports/duel-v2-outcome-chain-20260916.md) | 旧策略热启动、CUDA 换牌、纯胜负奖励、新卡效与 Mac 报告交付实测 |
 | [盖卡版归档](../../../docs/archive/duel-simultaneous-deployment-2026-09-08.md) | 仅用于维护尚未迁移的旧对局 |
 
 分层与依赖方向见仓库根目录 [AGENTS.md](../../../AGENTS.md)。
@@ -160,7 +160,7 @@
 
 新训练默认学习起手换牌，并重点面对预组固定角色下的变化配牌；开局对照入口为 `scripts/analyze_duel_v2_opening.py`。综合新模型报告必须比较学习换牌与全留，具体运行与兼容边界见公开卡池训练文档第 10 节。
 
-完整公开卡池训练入口见 [公开卡池训练](../../../docs/duel-v2-public-training.md)。导出模型须匹配完整评估后才允许网页使用；本轮模型、优选配牌及验收结果见 [综合训练交付报告](../../../docs/duel-v2-comprehensive-release-20260916.md)。模型或构筑版本变化后，旧高级对局需要重新开局。
+完整公开卡池训练入口见 [公开卡池训练](../../../docs/duel-v2-public-training.md)。导出模型须匹配完整评估后才允许网页使用；本轮模型、优选配牌及验收结果见 [综合训练交付报告](../../../artifacts/rl-evals/reports/duel-v2-comprehensive-release-20260916.md)。模型或构筑版本变化后，旧高级对局需要重新开局。
 
 ## 对局白热化
 
@@ -195,7 +195,7 @@
 
 完整链路短测：`scripts/smoke_duel_v2_full.py`；报告打包：`scripts/package_duel_v2_report.py`。两套预组均支持固定角色候选配牌继续训练，并输出训练内先后手计数及冻结评估报告；运行和 Mac 交付约定见 [公开卡池训练](../../../docs/duel-v2-public-training.md#7-双预组全链路短测与报告交付)。
 
-Windows 已完成一次有界 CUDA 出牌/配牌短训练，启动所需 MSVC 环境与可选快速编译档见 [短训练记录](../../../docs/duel-v2-windows-short-training-20260915.md)。默认编译配置保持不变。
+Windows 已完成一次有界 CUDA 出牌/配牌短训练，启动所需 MSVC 环境与可选快速编译档见 [短训练记录](../../../artifacts/rl-evals/reports/duel-v2-windows-short-training-20260915.md)。默认编译配置保持不变。
 
 对局策略训练在原奖励基础上增加每局累计回报上限 10；失败仍扣 10，过程分保留，计数跨 rollout 并逐局重置。奖励口径和验证命令见 [公开卡池训练](../../../docs/duel-v2-public-training.md#对局奖励累计上限2026-09-15)。
 
@@ -260,9 +260,9 @@ V2 玩家、异能者和每张实体卡牌均为独立类实例，使用 `entity
 
 综合训练在整套配牌学习之外追加 4 轮单张／双张替换搜索；单独入口为 `scripts/refine_duel_v2_cards.py`。冻结出牌模型、固定四名角色，按四场景平均胜率筛选，输出替换过程而不自动部署。验证：`python -m unittest tests.test_duel_v2_local_card_search tests.test_duel_v2_candidate_selection`（后者部分用例需要 PyTorch）。详见公开卡池训练说明第 11 节。
 
-本轮追加训练、4 轮局部搜索与独立复核结果见 [2026-09-17 局部配牌报告](../../../docs/duel-v2-local-cards-20260917.md)。
+本轮追加训练、4 轮局部搜索与独立复核结果见 [2026-09-17 局部配牌报告](../../../artifacts/rl-evals/reports/duel-v2-local-cards-20260917.md)。
 
-2026-09-17 深度训练的两套 v3 模型与最终配牌已写入项目高级人机，包含学习换牌和纯胜负奖励训练；详见 [最终交付报告](../../../docs/duel-v2-deep-release-20260917.md)。生产部署等待用户验收。
+2026-09-17 深度训练的两套 v3 模型与最终配牌已写入项目高级人机，包含学习换牌和纯胜负奖励训练；详见 [最终交付报告](../../../artifacts/rl-evals/reports/duel-v2-deep-release-20260917.md)。生产部署等待用户验收。
 
 固定覆纹/N06 枚举训练：`scripts/train_duel_v2_fixed_n06.py`；入口参数和候选比较范围见 `docs/duel-v2-public-training.md`。固定对手重置与枚举契约可用带 PyTorch 的隔离环境运行 `python -m unittest tests.test_duel_v2_fixed_opponent`，网站环境不新增训练依赖。
 
@@ -322,7 +322,7 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 
 ### 八人三策略训练
 
-公开快攻的正式 Python 训练／NumPy 推理使用独立 `official_public_v5` 契约，旧六人 CUDA 合约保留。三套共用90分钟预算、真实终局分支学习、阶段择优与独立验收，详见 [三策略流程](../../../docs/duel-v2-three-strategy-training-20260918.md)。验证：`python -m unittest tests.test_duel_v2_league`。八人模型未验收前仍拒绝高级人机开局，普通人机可使用快攻。
+公开快攻的正式 Python 训练／NumPy 推理使用独立 `official_public_v5` 契约，旧六人 CUDA 合约保留。三套共用90分钟预算、真实终局分支学习、阶段择优与独立验收，详见 [三策略流程](../../../artifacts/rl-evals/reports/duel-v2-three-strategy-training-20260918.md)。验证：`python -m unittest tests.test_duel_v2_league`。八人模型未验收前仍拒绝高级人机开局，普通人机可使用快攻。
 
 逐操作对照入口 `scripts/analyze_duel_v2_league_decision.py`：以指定快照和冻结八人模型作有界终局采样，分别展示动作概率与模拟胜率区间；只用于离线复盘，不把校准未知的价值头直接展示为胜率。
 
@@ -361,7 +361,7 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 
 ### 明确日期截止的长期搜索训练
 
-`scripts/train_duel_v2_until.py` 使用带时区的 `--train-until`、`--evaluate-until`、`--hard-deadline`，分别限制学习、计算验收与整棵进程树。初始与固定参考模型由 `--initial` / `--reference` 指定数值目录；支持 CUDA 更新、CPU 多进程自博弈、每轮恢复点、定期独立检查点选择和限时最终报告。Windows 监督进程脱离 SSH 作业，运行期间阻止自动系统休眠，退出恢复；可恢复故障最多自动重试一次，沿用原截止。详见 [2026-09-19 中午验收计划](../../../docs/duel-v2-noon-plan-20260919.md)。验证：`python -m unittest tests.test_duel_v2_information_longrun`。此入口不会自动上线模型。
+`scripts/train_duel_v2_until.py` 使用带时区的 `--train-until`、`--evaluate-until`、`--hard-deadline`，分别限制学习、计算验收与整棵进程树。初始与固定参考模型由 `--initial` / `--reference` 指定数值目录；支持 CUDA 更新、CPU 多进程自博弈、每轮恢复点、定期独立检查点选择和限时最终报告。Windows 监督进程脱离 SSH 作业，运行期间阻止自动系统休眠，退出恢复；可恢复故障最多自动重试一次，沿用原截止。详见 [2026-09-19 中午验收计划](../../../artifacts/rl-evals/reports/duel-v2-noon-plan-20260919.md)。验证：`python -m unittest tests.test_duel_v2_information_longrun`。此入口不会自动上线模型。
 
 
 已停止的长期任务可用 `scripts/finalize_duel_v2_until.py --source-root FROZEN_SOURCE --output EXISTING_RUN` 从已校验的完整检查点继续**只评估**。调用前须确认原工作进程树和监督器已退出并保存原guard；该入口拒绝仍运行或重复启动，固定已完成轮次、保留原验收与硬截止，完成后验证训练计数没有改变。它不修改冻结规则源码，不用于重新开始学习。
@@ -369,14 +369,14 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 
 ### 2026-09-19 中午训练模型接入
 
-按用户“更新项目的模型吧”明确要求，三套高级人机使用第 28 轮 `latest` 数值权重（含快攻），采用纯网络 CPU 推理与已学习换牌，不在网页执行 256 次搜索。此前“待训练”和“未启用”描述是历史状态。配牌取模型内的 `build`；个人构筑与普通预组不变。质量验收整体未提升，`validation.approved` 仍为 false；仅本次指定权重通过独立 `serving_authorization` 启用，所有身份与数值校验仍强制执行。旧版本高级房间需要重新开局。详情与回退方式见 [模型更新记录](../../../docs/duel-v2-noon-model-update-20260919.md)。
+按用户“更新项目的模型吧”明确要求，三套高级人机使用第 28 轮 `latest` 数值权重（含快攻），采用纯网络 CPU 推理与已学习换牌，不在网页执行 256 次搜索。此前“待训练”和“未启用”描述是历史状态。配牌取模型内的 `build`；个人构筑与普通预组不变。质量验收整体未提升，`validation.approved` 仍为 false；仅本次指定权重通过独立 `serving_authorization` 启用，所有身份与数值校验仍强制执行。旧版本高级房间需要重新开局。详情与回退方式见 [模型更新记录](../../../artifacts/rl-evals/reports/duel-v2-noon-model-update-20260919.md)。
 
 验证：`python -m unittest tests.test_duel_v2_league tests.test_duel_v2_league_service tests.test_duel_v2_advanced_ai.CpuEncoderTest tests.test_duel_v2_advanced_ai.AdvancedRoomTest.test_real_models_finish_all_presets_and_save_replays tests.test_duel_v2_advanced_ai.AdvancedRoomTest.test_published_models_support_public_saved_builds`，覆盖未授权拒绝、授权绑定、质量状态保留、三套实际模型 API 完整对局及回放。
 
 
 ### 小吱加强后快攻适应
 
-`train_duel_v2_quick_adaptation.py`在显式新规则热启动后仅更新快攻，创生与覆纹冻结；采用原绝对截止监督，保留初始/最佳/最后及详细角色贡献事件。规则迁移不继承旧批准，结果不自动上线。预算、配对与归因边界见 [快攻适应计划](../../../docs/duel-v2-quick-adaptation-20260919.md)。验证：`python -m unittest tests.test_duel_v2_quick_adaptation`（需独立Torch环境）。
+`train_duel_v2_quick_adaptation.py`在显式新规则热启动后仅更新快攻，创生与覆纹冻结；采用原绝对截止监督，保留初始/最佳/最后及详细角色贡献事件。规则迁移不继承旧批准，结果不自动上线。预算、配对与归因边界见 [快攻适应计划](../../../artifacts/rl-evals/reports/duel-v2-quick-adaptation-20260919.md)。验证：`python -m unittest tests.test_duel_v2_quick_adaptation`（需独立Torch环境）。
 
 ### 搜索待选择局面
 
@@ -459,13 +459,13 @@ X选一通过卡牌 `play_options` 和动作 `option_id` 传递；拖拽战斗�
 
 ### 五套固定配牌策略训练（2026-09-20）
 
-`scripts/train_duel_v2_fixed_lineups.py` 默认检查计划，显式 `--run` 启动 90 分钟有界离线训练。训练创生、覆纹、小吱／零／薄荷／九原、真红／零／伊洛伊／翳、娜娜莉／白藏／零／伊洛伊；旧三套高级模型冻结陪练。`rl/fixed_lineup.py` 为真红、翳和九原新计数提供独立十人观察契约；`fixed_lineup_training.py` 在正式规则引擎执行完整终局 PPO 与独立评估。固定 32 张配牌，不搜索换牌，不自动启用模型。来源、时间预算、验证及局限见 [五套训练说明](../../../docs/duel-v2-five-fixed-training-20260920.md)。专项：`python -m unittest tests.test_duel_v2_fixed_lineups`。
+`scripts/train_duel_v2_fixed_lineups.py` 默认检查计划，显式 `--run` 启动 90 分钟有界离线训练。训练创生、覆纹、小吱／零／薄荷／九原、真红／零／伊洛伊／翳、娜娜莉／白藏／零／伊洛伊；旧三套高级模型冻结陪练。`rl/fixed_lineup.py` 为真红、翳和九原新计数提供独立十人观察契约；`fixed_lineup_training.py` 在正式规则引擎执行完整终局 PPO 与独立评估。固定 32 张配牌，不搜索换牌，不自动启用模型。来源、时间预算、验证及局限见 [五套训练说明](../../../artifacts/rl-evals/reports/duel-v2-five-fixed-training-20260920.md)。专项：`python -m unittest tests.test_duel_v2_fixed_lineups`。
 
 ### 2026-09-21 四套模型更新
 
 按用户“除了真红队，先更新进仓库模型吧”，更新 starter、weave-rush、quick-rush 并新增 midrange。四套使用 `fixed_ten_v1` 数值权重，`engine/ai/fixed_model.py` 单独校验启用授权与规则／构筑／权重哈希；训练模块和观察编码未改，不需要重写原训练身份。保留 `validation.approved=false`，启用来自用户明确授权，不等于全量质量门槛通过。网页仍只允许公开八人的个人构筑。
 
-小吱高级人机为小吱／零／薄荷／九原；中速为娜娜莉／白藏／零／伊洛伊，显示「娜白零伊」且参与随机对手选择。使用已学习起手换牌，NumPy CPU 推理不加载 Torch。旧高级对局应重新开局；已保存个人构筑与普通预组不改。权重和评估来源见 [训练与接入记录](../../../docs/duel-v2-five-fixed-training-20260920.md)。验证：`python -m unittest tests.test_duel_v2_fixed_serving tests.test_duel_v2_fixed_lineups tests.test_duel_v2_opponent_selection`。
+小吱高级人机为小吱／零／薄荷／九原；中速为娜娜莉／白藏／零／伊洛伊，显示「娜白零伊」且参与随机对手选择。使用已学习起手换牌，NumPy CPU 推理不加载 Torch。旧高级对局应重新开局；已保存个人构筑与普通预组不改。权重和评估来源见 [训练与接入记录](../../../artifacts/rl-evals/reports/duel-v2-five-fixed-training-20260920.md)。验证：`python -m unittest tests.test_duel_v2_fixed_serving tests.test_duel_v2_fixed_lineups tests.test_duel_v2_opponent_selection`。
 
 ### 2026-09-21 翳加强与零行动力边框
 
@@ -536,7 +536,7 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 
 ### 真红单队快速训练（2026-09-21）
 
-固定配牌训练入口新增 `--learner-build`、`--learner-source`，仅更新真红策略，支持已验证旧十人权重向新增公开免伤观察列迁移。新增 `--hard-deadline` 保留已有总截止；评估仍用冻结对手和隔离种子。具体用户固定牌表、迁移及预算边界见 [真红快速训练](../../../docs/duel-v2-zhenhong-quick-20260921.md)。验证：`python -m unittest tests.test_duel_v2_fixed_lineups tests.test_duel_v2_surplus_rework`。
+固定配牌训练入口新增 `--learner-build`、`--learner-source`，仅更新真红策略，支持已验证旧十人权重向新增公开免伤观察列迁移。新增 `--hard-deadline` 保留已有总截止；评估仍用冻结对手和隔离种子。具体用户固定牌表、迁移及预算边界见 [真红快速训练](../../../artifacts/rl-evals/reports/duel-v2-zhenhong-quick-20260921.md)。验证：`python -m unittest tests.test_duel_v2_fixed_lineups tests.test_duel_v2_surplus_rework`。
 
 
 ### 2026-09-21 真红异能额外攻击环合
@@ -560,7 +560,7 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 
 ### 五套完整配牌训练（2026-09-21）
 
-固定配牌入口新增显式 `--full-cycle --warm-models`，通过 `rl/five_full_cycle.py` 执行五套基础学习、4轮有界配牌搜索、原／新配牌等量适应、独立确认与审计回退。真红保留被动次数奖励；免伤期间仅记录实际队友倒地风险与白送战术用例，不检查空前排、不添加额外惩罚。详见 [09:00截止完整计划](../../../docs/duel-v2-five-full-night-20260921.md)。验证：`python -m unittest tests.test_duel_v2_five_full_cycle tests.test_duel_v2_build_acceptance tests.test_duel_v2_passive_reward tests.test_duel_v2_fixed_lineups`。导入或计划检查不启动训练。
+固定配牌入口新增显式 `--full-cycle --warm-models`，通过 `rl/five_full_cycle.py` 执行五套基础学习、4轮有界配牌搜索、原／新配牌等量适应、独立确认与审计回退。真红保留被动次数奖励；免伤期间仅记录实际队友倒地风险与白送战术用例，不检查空前排、不添加额外惩罚。详见 [09:00截止完整计划](../../../artifacts/rl-evals/reports/duel-v2-five-full-night-20260921.md)。验证：`python -m unittest tests.test_duel_v2_five_full_cycle tests.test_duel_v2_build_acceptance tests.test_duel_v2_passive_reward tests.test_duel_v2_fixed_lineups`。导入或计划检查不启动训练。
 
 ### 2026-09-21 真红与翳公开
 

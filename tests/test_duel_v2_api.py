@@ -643,14 +643,14 @@ class DuelV2ApiTest(RoomFlowTestCase):
         from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS
         self._get('/api/duel-v2/catalog', token=self.a)
         row = DuelV2TutorialProgress.get()
-        row.completed_levels = json.dumps(list(CAMPAIGN_LEVELS[:-1]))
-        row.current_level = CAMPAIGN_LEVELS[-2]
+        row.completed_levels = json.dumps(list(CAMPAIGN_LEVELS[:11]))
+        row.current_level = CAMPAIGN_LEVELS[10]
         row.completed = True
         row.save()
         tutorial = self._get('/api/duel-v2/catalog', token=self.a)['tutorial']
         self.assertFalse(tutorial['completed'])
         self.assertEqual(tutorial['current_level'], 'tutorial_l13_escalation')
-        self.assertTrue(tutorial['levels'][-1]['available'])
+        self.assertTrue(tutorial['levels'][11]['available'])
         started = self._post('/api/duel-v2/start', {'mode': 'tutorial'}, token=self.a)
         self.assertEqual(started['game']['turn'], 4)
         self.assertEqual(started['game']['first_side'], 'b')
@@ -667,4 +667,40 @@ class DuelV2ApiTest(RoomFlowTestCase):
             }, token=self.a)['game']
         self.assertEqual(game['reason'], 'tutorial_complete')
         self.assertEqual(game['turn'], 6)
-        self.assertTrue(self._get('/api/duel-v2/catalog', token=self.a)['tutorial']['completed'])
+        progress = self._get('/api/duel-v2/catalog', token=self.a)['tutorial']
+        self.assertFalse(progress['completed'])
+        self.assertEqual(progress['current_level'], 'tutorial_l14_ranged')
+
+
+    def test_old_twelve_lesson_graduate_completes_ranged_and_keeps_progress(self):
+        from app.models import DuelV2TutorialProgress
+        from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS
+        self._get('/api/duel-v2/catalog', token=self.a)
+        row = DuelV2TutorialProgress.get()
+        row.completed_levels = json.dumps(list(CAMPAIGN_LEVELS[:-1]))
+        row.current_level = 'tutorial_l13_escalation'
+        row.completed = True
+        row.save()
+        progress = self._get('/api/duel-v2/catalog', token=self.a)['tutorial']
+        self.assertFalse(progress['completed'])
+        self.assertEqual(progress['current_level'], 'tutorial_l14_ranged')
+        self.assertTrue(progress['levels'][-1]['available'])
+        started = self._post('/api/duel-v2/start', {'mode': 'tutorial'}, token=self.a)
+        game = started['game']
+        self.assertEqual(game['tutorial']['level_index'], 13)
+        for index in range(10):
+            if game['phase'] == 'finished':
+                break
+            body = dict(room_code=started['room']['room_code'], request_id=f'ranged-{index}',
+                        expected_version=game['version'], action=game['legal_actions'][0]['action'])
+            game = self._post('/api/duel-v2/action', body, token=self.a)['game']
+            retry = self._post('/api/duel-v2/action', body, token=self.a)['game']
+            self.assertEqual(retry['version'], game['version'])
+            self.assertTrue(self.storage.flush(5))
+            self.storage.clear_cache()
+            game = self._get('/api/duel-v2/state', token=self.a)['game']
+        self.assertEqual(game['reason'], 'tutorial_complete')
+        self.assertEqual(game['sides']['a']['front'], 'tutorial_bohe')
+        progress = self._get('/api/duel-v2/catalog', token=self.a)['tutorial']
+        self.assertTrue(progress['completed'])
+        self.assertTrue(all(level['completed'] for level in progress['levels']))

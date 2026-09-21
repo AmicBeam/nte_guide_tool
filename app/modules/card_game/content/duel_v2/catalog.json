@@ -359,7 +359,7 @@
       "avatar": "/static/images/characters/avatar/海月.webp",
       "portrait": "/static/images/characters/portrait/海月.webp",
       "passive": "海月攻击后返回备战区。",
-      "awakened_passive": "海月从备战区出击时，不进入己方战斗区，也不受反击，持续至本回合结束。",
+      "awakened_passive": "本回合，海月可以在备战区远程出击。",
       "everness_id": 1070,
       "ultimate": {
         "kind": "status",

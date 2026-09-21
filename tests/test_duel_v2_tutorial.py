@@ -19,7 +19,7 @@ class DuelV2TutorialTest(unittest.TestCase):
 
     def test_campaign_titles_use_current_terminology(self) -> None:
         from app.modules.card_game.content.duel_v2.tutorial.pack import CAMPAIGN_LEVELS, LEVEL_META, SCENARIOS
-        self.assertEqual(len(CAMPAIGN_LEVELS), 12)
+        self.assertEqual(len(CAMPAIGN_LEVELS), 13)
         self.assertEqual([level['id'] for level in LEVEL_META], list(CAMPAIGN_LEVELS))
         for level in LEVEL_META:
             self.assertEqual(level['title'], SCENARIOS[level['id']]['title'])
@@ -169,3 +169,38 @@ class DuelV2TutorialTest(unittest.TestCase):
         from app.modules.card_game.content.duel_v2.tutorial import CAMPAIGN_LEVELS
         for scenario in CAMPAIGN_LEVELS:
             self.assertEqual(new_game(scenario=scenario)['escalation_enabled'], scenario == 'tutorial_l13_escalation')
+
+
+    def test_ranged_lesson_preserves_front_and_one_hp_after_json_restore(self):
+        import json
+        from app.modules.card_game.content.duel_v2.catalog import CHARACTERS
+        from app.modules.card_game.engine.duel_v2.projection import preview
+        for _ in range(5):
+            state = new_game(scenario='tutorial_l14_ranged')
+            self.assertNotIn('tutorial_haiyue', CHARACTERS)
+            state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+            state = apply_action(state, 'a', {'type': 'play_card', 'card_id': 'a-1'})
+            self.assertEqual(state['sides']['a']['front'], 'tutorial_bohe')
+            self.assertEqual(state['sides']['a']['ap'], 1)
+            state = apply_action(state, 'a', {'type': 'ultimate', 'character_id': 'tutorial_haiyue'})
+            state = json.loads(json.dumps(state))
+            action = {'type': 'attack', 'character_id': 'tutorial_haiyue'}
+            self.assertEqual(legal_actions(state, 'a'), [action])
+            predicted = preview(state, 'a', action)
+            self.assertFalse(predicted['will_switch'])
+            self.assertEqual(predicted['counter'], 0)
+            seq = state['event_seq']
+            state = apply_action(state, 'a', action)
+            own = state['sides']['a']
+            self.assertEqual(own['front'], 'tutorial_bohe')
+            self.assertEqual(own['characters']['tutorial_haiyue']['hp'], 1)
+            self.assertEqual(own['ap'], 0)
+            self.assertFalse(own['normal_attack_available'])
+            events = [e for e in state['events'] if e['seq'] > seq]
+            attack = next(e for e in events if e['type'] == 'attack')
+            self.assertEqual(attack['target'], 'b:tutorial_nanali')
+            self.assertEqual(attack['counter'], 0)
+            self.assertFalse(any(e['type'] in ('enter', 'move', 'harmony')
+                                 and e.get('actor', '').startswith('a:') for e in events))
+            state = apply_action(state, 'a', {'type': 'tutorial_ack'})
+            self.assertEqual(state['reason'], 'tutorial_complete')

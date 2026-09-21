@@ -8,6 +8,10 @@ _ART = {
         'avatar': '/static/images/characters/avatar/鉴定师.webp',
         'portrait': '/static/images/characters/portrait/鉴定师.webp',
     },
+    'haiyue': {
+        'avatar': '/static/images/characters/avatar/海月.webp',
+        'portrait': '/static/images/characters/portrait/海月.webp',
+    },
     'bohe': {
         'avatar': '/static/images/characters/avatar/薄荷.webp',
         'portrait': '/static/images/characters/portrait/薄荷.webp',
@@ -66,6 +70,11 @@ TUTORIAL_CHARACTERS = {
         passive=CHARACTERS['bohe']['passive'],
         awakened_passive=CHARACTERS['bohe']['awakened_passive'],
     ),
+    'tutorial_haiyue': {
+        **_esper('tutorial_haiyue', '海月', '魂', 3, 4, 'haiyue',
+                 awakened_passive=CHARACTERS['haiyue']['awakened_passive']),
+        'ultimate': {'kind': 'status', 'turns': 1, 'expires': 'turn_end'},
+    },
     'tutorial_nanali': _esper('tutorial_nanali', '娜娜莉', '灵', 2, 5, 'nanali'),
     'tutorial_zaowu': _esper('tutorial_zaowu', '早雾', '咒', 3, 4, 'zaowu'),
     'tutorial_iloy': _esper('tutorial_iloy', '伊洛伊', '灵', 1, 6, 'iloy'),
@@ -152,6 +161,7 @@ CAMPAIGN_LEVELS = (
     'tutorial_l11_pierce',
     'tutorial_l12_roster4',
     'tutorial_l13_escalation',
+    'tutorial_l14_ranged',
 )
 
 LEVEL_META = (
@@ -167,6 +177,7 @@ LEVEL_META = (
     {'id': 'tutorial_l11_pierce', 'title': '第十关 穿透', 'short': '穿透'},
     {'id': 'tutorial_l12_roster4', 'title': '第十一关 四人编队', 'short': '四人编队'},
     {'id': 'tutorial_l13_escalation', 'title': '第十二关 白热化', 'short': '白热化'},
+    {'id': 'tutorial_l14_ranged', 'title': '第十三关 远程', 'short': '远程'},
 )
 
 _L01_HIDE = [
@@ -663,11 +674,45 @@ _L13_STEPS = [
          click='ultimate:a:tutorial_bohe'),
     _ack('l13_done', '后续阶段',
          '两次终结已用完，行动力仍为 2。白热化效果会叠加：第 13 回合起能量上限降低 1 点，第 20 回合起环合上限降为 1 点；已有资源超过新上限时也会降到新上限。记得留意左侧预告。本关到这里结束。',
-         ['ultimate_count', 'ap:a', 'escalation'], primary='完成教学', finish=True),
+         ['ultimate_count', 'ap:a', 'escalation'], primary='完成本关', finish=True),
+]
+
+
+_L14_STEPS = [
+    _ack('l14_intro', '远程',
+         '远程让异能者在备战区出击，不进入战斗区，也不受反击。海月现在只剩 1 点生命，先让薄荷站到前排，再试试海月的终结。',
+         ['character:a:tutorial_haiyue', 'character:b:tutorial_nanali', 'hand:a-1']),
+    _act('l14_front', '保留前排防守',
+         '打出「特遣行动」，让薄荷进入战斗区。战斗牌不消耗普通出击机会，剩下的 1 点行动力可以留给海月。',
+         ['hand:a-1', 'play_area'], [{'type': 'play_card', 'card_id': 'a-1'}],
+         cue='把「特遣行动」拖到对战区',
+         arrow={'from': 'hand:a-1', 'to': 'play_area'}),
+    _act('l14_ultimate', '发动海月终结',
+         '本回合，海月可以在备战区远程出击。点击海月的终结按钮；终结不消耗行动力。',
+         ['ultimate:a:tutorial_haiyue'], [{'type': 'ultimate', 'character_id': 'tutorial_haiyue'}],
+         cue='点击海月的终结按钮', click='ultimate:a:tutorial_haiyue'),
+    _act('l14_attack', '从备战区远程出击',
+         '把海月拖到对战区发出出击指令。她会留在备战区攻击娜娜莉，不换下薄荷，也不会受到娜娜莉的反击。远程仍需支付普通出击的行动力和次数。',
+         ['character:a:tutorial_haiyue', 'character:a:tutorial_bohe', 'play_area', 'ap:a'],
+         [{'type': 'attack', 'character_id': 'tutorial_haiyue'}],
+         cue='按住海月，并拖动到对战区',
+         arrow={'from': 'character:a:tutorial_haiyue', 'to': 'play_area'}),
+    _ack('l14_done', '出击后仍在备战区',
+         '海月仍有 1 点生命，薄荷也仍在前排。远程不触发入场环合，仍优先攻击对方前排；没有对方前排才攻击玩家。它不免疫其他效果伤害；己方战斗区为空时，也不能替玩家挡住攻击。',
+         ['character:a:tutorial_haiyue', 'character:a:tutorial_bohe', 'zone:a:front'],
+         primary='完成教学', finish=True),
 ]
 
 
 SCENARIOS = {
+    'tutorial_l14_ranged': _scene(
+        'tutorial_l14_ranged', '第十三关 远程', 13, _L14_STEPS,
+        flags=_flags(hide=['harmony', 'deck', 'mulligan', 'form'],
+                     disable_hand=False, disable_ultimate=False, disable_passives=False),
+        order_a=['tutorial_haiyue', 'tutorial_bohe'], first_side='b',
+        opening_b=[{'type': 'attack', 'character_id': 'tutorial_nanali'}, {'type': 'end_turn'}],
+        hand_a=['tutorial_m_strike'],
+        stats={'tutorial_haiyue': {'hp': 1, 'energy': 6}}),
     'tutorial_l13_escalation': _scene(
         'tutorial_l13_escalation', '第十二关 白热化', 12, _L13_STEPS,
         flags=_flags(hide=['passive', 'harmony', 'hand', 'deck', 'mulligan', 'form'],

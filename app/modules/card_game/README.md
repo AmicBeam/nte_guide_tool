@@ -45,7 +45,7 @@
 
 ## 页面入口
 
-- `/card-game`：模块大厅。可进入 V2 新手教学第一关（2v2 面板出击）。
+- `/card-game`：模块大厅。可进入 V2 新手教学（共 13 关，第一关为 2v2 面板出击，末关为远程）。
 - `/login`：登录页。
 - `/profile`：账号设置。
 - `/build`：构筑页。首次进入获赠当前可见的官方预组，之后与普通构筑相同，最多 8 套。手机端按 CSS 视口适配，编队置于卡表之前；横屏四列、窄屏两列。测试角色与含测试角色的预组仅测试账号可见。
@@ -597,3 +597,14 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 `engine/duel_v2/equipment.py` 管理基础面板、永久成长、装备来源和明确的装备回满操作。武备／角色条件仍由内容定义；`shape_events` 自动绑定装备来源，`weapon_hooks` 提供按当前装备派发的事件入口，零的三张回合结束武备已迁移。JSON 旧基础字段兼容读取，公开状态与回放包含分层来源，原数值字段仍提供派生值。详见 [实现说明](../../../docs/duel-v2-equipment-layers.md)。
 
 验证：`python -m unittest tests.test_duel_v2_equipment tests.test_duel_v2_modifiers tests.test_duel_v2_surplus_rework tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_haniya tests.test_duel_v2_m07_aura`。
+
+
+### 2026-09-21 远程与教学
+
+新增「远程」关键字加粗与图鉴机制词条。海月终结改为「本回合，海月可以在备战区远程出击。」；沿用既有通用备战出击能力：不入场、不换下前排、不受反击。普通费用、次数、前排优先和战斗资源不变。
+
+教学追加第十三关 `tutorial_l14_ranged`，使用独立教学海月演示 1 生命远程出击与保留薄荷前排。旧十二关毕业账号可继续进入新关，原进度保留。关卡与教学角色定义在 `content/duel_v2/tutorial/`，无需新增路由或改动进度表。
+
+验证：`python -m unittest tests.test_duel_v2_tutorial tests.test_duel_v2_xiaozhi_haiyue`，API 的旧毕业继续新关用例，以及 `node --test tests/js/duel_v2_ranged.test.cjs`。
+
+本次 66 项规则／教学回归、4 项教学 API 用例及 1 项前端渲染测试通过。隔离测试数据库的真实页面从大厅进入第十三关，完成战斗牌、终结、远程拖拽与通关；确认海月保留 1 生命、薄荷仍在前排，图鉴可搜索远程且终结关键字加粗，浏览器无 error。

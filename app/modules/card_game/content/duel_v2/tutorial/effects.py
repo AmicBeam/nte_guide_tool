@@ -1,4 +1,4 @@
-"""Register tutorial-only card effects and the 薄荷穿透 kit."""
+"""Register tutorial-only card effects and isolated teaching kits."""
 from app.modules.card_game.content.duel_v2.characters.common import set_shape
 from app.modules.card_game.content.duel_v2.effects import EFFECTS, TARGET_POLICIES
 from app.modules.card_game.content.duel_v2.registry import register
@@ -61,3 +61,14 @@ class TutorialBohe:
         if attacker_id == c.cid:
             return int(raw_overflow or 0)
         return None
+
+
+@register
+class TutorialHaiyue:
+    """Only the ranged ultimate; independent of the production character kit."""
+    id = 'tutorial_haiyue'
+    text_name = '海月'
+
+    @staticmethod
+    def sortie_from_bench(c, current=False):
+        return bool(c.character.get('awakened') and c.state['sides'][c.side]['front'] != c.cid)

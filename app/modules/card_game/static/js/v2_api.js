@@ -336,7 +336,7 @@
     const source = text == null ? fallback : text;
     return String(source || '').split(/(「[^」]+」)/g).map(function (part) {
       const referenced = part.startsWith('「') && cardsByName[part.slice(1, -1)];
-      const html = escapeHtml(part).replace(/(?:[二三四五六七八九十百X]|[0-9]+)选一|瞬发|响应|穿透/g, function (keyword) {
+      const html = escapeHtml(part).replace(/(?:[二三四五六七八九十百X]|[0-9]+)选一|瞬发|响应|穿透|远程/g, function (keyword) {
         return '<strong>' + keyword + '</strong>';
       });
       return referenced && referenced.tooltip

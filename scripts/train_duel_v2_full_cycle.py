@@ -69,6 +69,11 @@ def main():
     p.add_argument('--adaptation-steps',type=int)
     p.add_argument('--research-warm-start',action='store_true')
     p.add_argument('--baseline-builds',type=Path)
+    p.add_argument('--build-search-keys',default='',help='Comma-separated presets allowed to change cards; default every preset')
+    p.add_argument('--build-search-rounds',type=int)
+    p.add_argument('--build-search-limit',type=int,help='Keep the parent plus this many generated candidates')
+    p.add_argument('--build-search-pairs',default='',help='Comma-separated screen sizes, such as 8,32,128')
+    p.add_argument('--stage-fractions',type=Path,help='Cumulative stage fractions measured for this run')
     p.add_argument('--zhenhong-setup-reward',type=float,default=.1)
     p.add_argument('--zhenhong-setup-decay-steps',type=int,default=64)
     p.add_argument('--zhenhong-passive-reward',type=float,default=.2)
@@ -131,6 +136,14 @@ def main():
     if a.ten:
         if not 600<=seconds<=86400:raise ValueError('Budget must be 10 minutes to 24 hours')
         fractions={'foundation':.25,'search':.50,'baseline_adaptation':.62,'candidate_adaptation':.74,'confirmation':.81,'audit':.85,'evaluation':.985,'shutdown':1.0}
+        if a.stage_fractions:
+            fractions=json.loads(a.stage_fractions.read_text())
+            ordered=('foundation','search','baseline_adaptation','candidate_adaptation','confirmation','audit','evaluation','shutdown')
+            if set(fractions)!=set(ordered):p.error('Stage fractions do not match the ten-cycle phases')
+            previous=0.
+            for name in ordered:
+                if not previous < float(fractions[name]) <= 1:p.error('Stage fractions must increase to 1')
+                previous=float(fractions[name])
         deadlines={k:now+seconds*v for k,v in fractions.items()}
     else:
         deadlines=phase_deadlines(now,seconds)
@@ -156,6 +169,21 @@ def main():
         confirmation_seeds=32 if a.smoke else a.confirmation_seeds,adaptation_steps=4 if a.smoke else a.adaptation_steps,
         alpha=.05,minimum_gain=.02,audit_margin=.05,research_warm_start=a.research_warm_start,
         baseline_builds=baselines,automatic_serving_approval=False)
+    if a.build_search_keys:
+        search_keys=tuple(part for part in a.build_search_keys.split(',') if part)
+        if any(key not in PRESETS for key in search_keys) or len(set(search_keys))!=len(search_keys):
+            p.error('Invalid build search keys')
+        config['build_search_keys']=search_keys
+    if a.build_search_rounds is not None:
+        if a.build_search_rounds<1:p.error('Invalid build search rounds')
+        config['build_search_rounds']=a.build_search_rounds
+    if a.build_search_limit is not None:
+        if a.build_search_limit<1:p.error('Invalid build search limit')
+        config['build_search_limit']=a.build_search_limit
+    if a.build_search_pairs:
+        pairs=tuple(int(part) for part in a.build_search_pairs.split(',') if part)
+        if not pairs or any(part<1 for part in pairs):p.error('Invalid build search pairs')
+        config['build_search_pairs']=pairs
     if not a.run:
         print(json.dumps(dict(config=config,training_started=False,seed_reservation_pending=True,source_validation_pending=True),ensure_ascii=False));return
     if a.ten and not a.smoke:

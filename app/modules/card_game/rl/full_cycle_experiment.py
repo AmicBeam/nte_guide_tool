@@ -243,12 +243,21 @@ def interleave_training(iterators):
 
 def tune(pool,out,models,builds,deadline,config):
     PRESETS,SEATS,CARD_IDS,LeagueModel,load_numeric,export_model,probe_results,deck=cycle_ops(config)
-    selected=deepcopy(builds);reference=deepcopy(builds);folder=out/'cards';folder.mkdir();rounds=1 if config['smoke'] else 4
+    selected=deepcopy(builds);reference=deepcopy(builds);folder=out/'cards';folder.mkdir()
+    search_keys=list(config.get('build_search_keys') or PRESETS)
+    if any(key not in PRESETS for key in search_keys) or len(set(search_keys))!=len(search_keys) or not search_keys:
+        raise ValueError('Invalid build search keys')
+    rounds=1 if config['smoke'] else int(config.get('build_search_rounds') or 4)
+    if rounds<1:raise ValueError('Invalid build search rounds')
+    screen=tuple(config.get('build_search_pairs') or ((1,) if config['smoke'] else (8,32,128)))
+    if config['smoke']:screen=(1,)
+    limit=config.get('build_search_limit')
     for round_id in range(rounds):
-        for ki,key in enumerate(PRESETS):
-            left=(rounds-round_id)*len(PRESETS)-ki
+        for ki,key in enumerate(search_keys):
+            left=(rounds-round_id)*len(search_keys)-ki
             end=min(deadline,time.time()+max(0,(deadline-time.time())/left));parent=deepcopy(selected[key]);rows=candidates(parent,config['seeds']['search']+round_id*10000+ki*100,CARD_IDS)
             if config['smoke']:rows=rows[:2]
+            elif limit:rows=rows[:int(limit)]
             original=deepcopy(builds[key]);official=deck(key)
             for b in (original,official):
                 if build_identity(b) not in {build_identity(r) for r in rows}:rows.append(canonical_build(b))
@@ -256,7 +265,7 @@ def tune(pool,out,models,builds,deadline,config):
             write(folder/f'{round_id}-{key}-candidates.json',dict(parent=parent,candidates=rows))
             baseline_index=next(i for i,b in enumerate(rows) if build_identity(b)==build_identity(original))
             active=list(range(len(rows)));winner=0
-            for level,pairs in enumerate((1,) if config['smoke'] else (8,32,128)):
+            for level,pairs in enumerate(screen):
                 if time.time()>=end:break
                 dirs={str(i):models for i in active};bs={str(i):rows[i] for i in active}
                 rs=compare(pool,folder,key,dirs,bs,models,reference,config['seeds']['search']+1_000_000+round_id*100000+ki*10000+level*1000,end,pairs,**({'config':config} if config.get('runtime') else {}))
@@ -265,12 +274,12 @@ def tune(pool,out,models,builds,deadline,config):
                 ranked=sorted(active,key=lambda i:(-rs[str(i)]['wins'],i!=baseline_index,i));winner=ranked[0]
                 # Original baseline and incumbent survive every screen; ties prefer original.
                 active=list(dict.fromkeys([0,baseline_index,*ranked[:4 if level==0 else 2]]))
-                if level==(0 if config['smoke'] else 2):
+                if level==len(screen)-1:
                     if rs[str(winner)]['wins']>rs['0']['wins'] or winner==baseline_index:
                         selected[key]=rows[winner]
                     append(folder,'decisions.jsonl',dict(round=round_id,key=key,level=level,parent=parent,selected=selected[key],winner=winner,results=rs))
     records=[json.loads(line) for line in (folder/'decisions.jsonl').read_text().splitlines()] if (folder/'decisions.jsonl').exists() else []
-    complete=sum('results' in r and all(x['complete'] for x in r['results'].values()) for r in records)==rounds*len(PRESETS)
+    complete=sum('results' in r and all(x['complete'] for x in r['results'].values()) for r in records)==rounds*len(search_keys)
     write(folder/'status.json',dict(workflow_complete=complete,candidate_quality_approved=False))
     write(folder/'selected-builds.json',selected);return selected
 

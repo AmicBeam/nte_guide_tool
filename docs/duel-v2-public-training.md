@@ -33,7 +33,7 @@
 
 ### 五套与十人卡池的完整执行入口
 
-五套任务使用 `scripts/train_duel_v2_full_cycle.py --ten --baseline-builds BUILD_JSON --initial PREPARED_MODELS --research-warm-start --run`，默认截止按本手册09:00规则解析；明确日期时传 `--hard-deadline EPOCH`。`--ten`通过显式适配器复用 `information_search.search_game` 和 `policy_value_update`，基础学习及两组公平适应都逐决策搜索；不调用 `five_full_cycle.py` 的PPO训练。
+五套任务使用 `scripts/train_duel_v2_full_cycle.py --ten --baseline-builds BUILD_JSON --initial PREPARED_MODELS --throughput-report MEASURED_JSON --research-warm-start --run`，默认截止按本手册09:00规则解析；明确日期时传 `--hard-deadline EPOCH`。`--ten`通过显式适配器复用 `information_search.search_game` 和 `policy_value_update`，基础学习及两组公平适应都逐决策搜索；不调用 `five_full_cycle.py` 的PPO训练。
 
 先以 `ten_search_runtime.migrate_source`核验未废弃数值来源、按具名观察列迁移并绑定当前合法构筑；新增列置零，优化器重置，旧服务批准不继承。五套角色与顺序在构筑JSON固定。完整模式搜索预算256，配牌搜索4轮；两组适应默认各8步且同起点、同种子、同冻结对手，实际步数不足则不批准候选。预算分配为基础25%、配牌25%、两组适应各12%、确认7%、审计4%、完整评测13.5%、收尾1.5%，以本轮配置为准。
 

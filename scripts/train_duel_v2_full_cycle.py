@@ -140,7 +140,7 @@ def main():
         else:
             from app.modules.card_game.rl.league_policy import LeagueModel
             for key in PRESETS:LeagueModel(initial,key,require_approved=True)
-    config=dict(runtime='ten' if a.ten else None,matrix_games=128,zhenhong_passive_reward=.2 if a.ten else 0,schema='paired_full_cycle_v1',rule_hash=rule_hash(),created=now,deadlines=deadlines,
+    config=dict(opponents_per_cycle=1 if a.ten else 2,optimizer_reserve_seconds=60,runtime='ten' if a.ten else None,matrix_games=128,zhenhong_passive_reward=.2 if a.ten else 0,schema='paired_full_cycle_v1',rule_hash=rule_hash(),created=now,deadlines=deadlines,
         initial=str(initial),device=a.device,workers=a.workers,smoke=a.smoke,simulations=8 if a.smoke else 256,
         confirmation_seeds=32 if a.smoke else a.confirmation_seeds,adaptation_steps=4 if a.smoke else a.adaptation_steps,
         alpha=.05,minimum_gain=.02,audit_margin=.05,research_warm_start=a.research_warm_start,

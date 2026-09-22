@@ -288,6 +288,8 @@ def evaluate_job(j):
         return dict(j,**{k:v for k,v in g.items() if k not in ('rows','search_stats')})
     s=new_game(seed=j['seed'],first_side=j['first'],decks=j['decks']);opening=deepcopy(s);tele=GameTelemetry(s);actions_log=[];events=[];error=None
     immune_metrics={side:Counter() for side in ('a','b')};immune_risks={side:[] for side in ('a','b')}
+    from .setup_reward import ready as setup_ready
+    setup_seen={side:setup_ready(s,side) for side in ('a','b')}
     try:
         for _ in range(800):
             if s['phase']=='finished' or time.time()>=j['deadline']:break
@@ -304,6 +306,7 @@ def evaluate_job(j):
             swapped_after={**after,'sides':{'a':after['sides']['b'],'b':after['sides']['a']}}
             track_immune_window(swapped_before,swapped_after,action,'b' if side=='a' else 'a',immune_metrics['b'],immune_risks['b'])
             actions_log.append(dict(side=side,action=action,turn=s['turn']));events.extend(deepcopy(after.get('events',[])));s=clean(after)
+            for owner in ('a','b'):setup_seen[owner]=setup_seen[owner] or setup_ready(s,owner)
             if j.get('replay'):
                 actions_log[-1]['state_sha256']=hashlib.sha256(json.dumps(s,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     except Exception as exc:error=repr(exc)
@@ -317,7 +320,7 @@ def evaluate_job(j):
                     raise ValueError('Replay action/state mismatch')
             replay_verified=True
         except Exception as exc:error=repr(exc)
-    result=dict(**j,replay_verified=replay_verified,complete=s['phase']=='finished' and error is None,winner=s.get('winner'),turn=s['turn'],error=error,telemetry=tele.finish(s),actions=actions_log,events=events,immune_window={k:dict(v) for k,v in immune_metrics.items()},immune_risks=immune_risks,opening_state=opening)
+    result=dict(**j,setup_achieved=setup_seen,passive_triggers={side:int(s['sides'][side]['characters'].get('zhenhong',{}).get('surplus_passive_triggers',0)) for side in ('a','b')},replay_verified=replay_verified,complete=s['phase']=='finished' and error is None,winner=s.get('winner'),turn=s['turn'],error=error,telemetry=tele.finish(s),actions=actions_log,events=events,immune_window={k:dict(v) for k,v in immune_metrics.items()},immune_risks=immune_risks,opening_state=opening)
     out=Path(j['output'])
     with gzip.open(out/'raw'/f"{j['id']}.json.gz",'wt',encoding='utf-8') as f:json.dump(result,f,ensure_ascii=False)
     if j.get('replay') and result['complete']:

@@ -622,3 +622,5 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 按用户要求移除 midrange「娜白零伊」的大厅选项、随机高级人机池及项目服务模型文件。显式请求该策略在建房前拒绝；个人构筑、普通预组、历史对局与离线研究资料保留。
 
 真红搜索训练可使用临时“延滞＋兽牙”首次达成奖励，默认0.1并随累计64步优化退场；实际被动触发奖励仍独立计数。相关纯训练逻辑位于 `rl/setup_reward.py`，参数与长期撤除验收见 `docs/duel-v2-zhenhong-passive-reward.md`，不改变网站卡效或胜负。
+
+真红前置奖励的小时级开关对照使用 `scripts/train_duel_v2_setup_trial.py`，复用共享搜索学习并按完整配对对局同步更新两组，独立比较初始／control／setup的胜率与机制触发。验证：`python -m unittest tests.test_duel_v2_setup_trial tests.test_duel_v2_setup_reward`；数值产物仅进入artifacts。

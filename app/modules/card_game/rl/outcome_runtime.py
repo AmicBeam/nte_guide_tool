@@ -40,6 +40,17 @@ class OutcomeModel(LeagueModel):
         self.manifest = m
         self.version = digest
 
+    def scores_only(self, x, candidates):
+        # Preserve the existing policy arithmetic exactly; WDL historically uses
+        # matmul, so do not silently replace its reduction order with einsum.
+        def linear(v,n):
+            return np.einsum('...j,ij->...i',v,self.weights[n+'.weight'],optimize=False)+self.weights[n+'.bias']
+        h=np.maximum(linear(x,'state_net.0'),0);h=np.maximum(linear(h,'state_net.2'),0)
+        c=np.maximum(linear(candidates,'cand_net.0'),0);c=np.maximum(linear(c,'cand_net.2'),0)
+        scores=np.sum(c*h,-1)/np.sqrt(np.float32(self.hidden))+linear(c,'score').reshape(-1)
+        if not np.isfinite(scores).all():raise ValueError('Non-finite policy scores')
+        return scores
+
     def wdl(self, x, is_actor):
         w = self.weights
         h = np.maximum(w['state_net.0.weight'] @ x + w['state_net.0.bias'], 0)
@@ -68,6 +79,19 @@ def value_for(state, viewer, policies):
     x, _ = encode(observe(state, viewer, include_previews=False), [])
     p = policy.wdl(x, acting_side(state) == viewer)
     return float(p[2] - p[0])
+
+
+def predict_encoded(policy,x,c):
+    """Reuse the caller's viewer encoding; avoid the unused legacy value head."""
+    if isinstance(policy,OutcomeModel):
+        scores=policy.scores_only(x,c);p=policy.wdl(x,True)
+        return scores,float(p[2]-p[0])
+    scores,raw=policy.scores_value(x,c)
+    return scores,float(np.tanh(raw/10))
+
+
+def action_scores(policy,x,c):
+    return policy.scores_only(x,c) if isinstance(policy,OutcomeModel) else policy.scores_value(x,c)[0]
 
 
 def create_network(source, key, device):

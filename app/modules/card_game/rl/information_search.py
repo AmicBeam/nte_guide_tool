@@ -85,7 +85,7 @@ def leaf_value(state, viewer, policies, *, runtime=None):
     return value if actor==viewer else -value
 
 
-def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False):
+def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False,reuse_inference=True):
     decide = runtime.decision if runtime else decision
     if simulations<1 or max_depth<1:raise ValueError('Positive search limits required')
     if acting_side(state)!=viewer:raise ValueError('Search must use the decision owner')
@@ -98,7 +98,12 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
     setup_initial=bool(setup_already_achieved or (setup_reward and setup_ready(state,viewer)))
     initial_passive = runtime.passive_count(state,viewer) if runtime and passive_reward else 0
     actions,(x,c)=decide(state,viewer)
-    logits,raw=policies[viewer].scores_value(x,c);prior=search_prior(logits,prior_mode,prior_temperature,uniform_mix)
+    optimized=reuse_inference and runtime and hasattr(runtime,'predict_encoded')
+    if optimized:logits,root_value=runtime.predict_encoded(policies[viewer],x,c)
+    else:
+        logits,raw=policies[viewer].scores_value(x,c)
+        root_value=leaf_value(state,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(raw/10))
+    prior=search_prior(logits,prior_mode,prior_temperature,uniform_mix)
     rng=np.random.default_rng(seed)
     if noise and len(actions)>1:
         prior=.75*prior+.25*rng.dirichlet(np.full(len(actions),.3))
@@ -120,13 +125,16 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
             if actor!=viewer:
                 # Never use a search Q conditioned on the root player's hand to
                 # choose for the opponent. Its visible-policy is the response model.
-                scores,_=policies[actor].scores_value(xx,cc)
+                scores=runtime.action_scores(policies[actor],xx,cc) if optimized else policies[actor].scores_value(xx,cc)[0]
                 chosen=int(rng.choice(len(legal),p=softmax(scores)))
             else:
                 key=info_key(xx,cc)+(bytes([setup_seen]) if setup_reward else b'')
                 if key not in tree:
-                    scores,v=policies[actor].scores_value(xx,cc)
-                    tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix));value=leaf_value(world,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(v/10));break
+                    if optimized:scores,value=runtime.predict_encoded(policies[actor],xx,cc)
+                    else:
+                        scores,v=policies[actor].scores_value(xx,cc)
+                        value=leaf_value(world,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(v/10))
+                    tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix));break
                 node=tree[key];chosen=node.choose(root_min_visits if node is root else node_min_visits);path.append((node,chosen))
             world=clean(apply_action(world,actor,legal[chosen]))
             if setup_reward:setup_seen=setup_seen or setup_ready(world,viewer)
@@ -146,7 +154,7 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                 complete=complete,simulations=len(depths),requested=requested,
                 roots_covered=int((visits>0).sum()),root_min_visits=int(visits.min()),prior_mode=prior_mode,nodes=len(tree),worlds=worlds,
                 max_depth=max(depths,default=0),raw_choice=int(np.argmax(logits)),
-                search_choice=int(np.argmax(visits)),value=leaf_value(state,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(raw/10)))
+                search_choice=int(np.argmax(visits)),value=root_value)
 
 
 def decision_budget(job, rng):
@@ -186,11 +194,39 @@ def search_game(job):
     setup_initial_seen=dict(setup_seen)
     setup_coefficients=job.get('setup_rewards',{}) if job.get('training') else {}
     if any(not np.isfinite(v) or v<0 for v in setup_coefficients.values()):raise ValueError('Invalid setup reward')
-    for step in range(job.get('max_actions',400)):
+    from pathlib import Path
+    from . import trajectory_checkpoint as checkpoint
+    from .league_schema import rule_hash
+    versions={side:getattr(policy,'version',None) for side,policy in policies.items()}
+    resume_path=job.get('resume_path')
+    if (job.get('slice_actions') or job.get('slice_seconds')) and not resume_path:raise ValueError('Slices require a checkpoint path')
+    if resume_path and not job.get('record_episode'):raise ValueError('Resume requires full private action recording')
+    if job.get('slice_actions') is not None and (type(job['slice_actions'])!=int or job['slice_actions']<1):raise ValueError('Invalid action slice')
+    if job.get('slice_seconds') is not None and (not np.isfinite(job['slice_seconds']) or job['slice_seconds']<=0):raise ValueError('Invalid time slice')
+    if resume_path and Path(resume_path).exists():
+        progress=checkpoint.load(resume_path,job,versions,rule_hash())
+        state=progress['state'];rows=progress['rows'];stats=progress['stats'];trace=progress['trace'];value_rows=progress['value_rows']
+        decisions=progress['decisions'];setup_seen=progress['setup_seen'];setup_initial_seen=progress['setup_initial_seen']
+        rng.bit_generator.state=progress['rng'];budget_rng.bit_generator.state=progress['budget_rng']
+    slice_started=time.time();slice_start_decision=decisions
+    def suspend(reason):
+        if resume_path:
+            checkpoint.save(resume_path,job,versions,rule_hash(),dict(state=state,rows=rows,stats=stats,trace=trace,value_rows=value_rows,
+                decisions=decisions,setup_seen=setup_seen,setup_initial_seen=setup_initial_seen,
+                rng=rng.bit_generator.state,budget_rng=budget_rng.bit_generator.state))
+        return dict(complete=False,reason=reason,rows=[],value_rows=[],decisions=decisions,searched=len(stats),
+                    resumable=bool(resume_path and time.time()<job['deadline'] and decisions<job.get('max_actions',400)),
+                    resume_path=resume_path)
+    for step in range(decisions,job.get('max_actions',400)):
         if state['phase']=='finished':break
         if time.time()>=job['deadline']:
-            return dict(complete=False,reason='deadline',rows=[],decisions=decisions)
+            return suspend('deadline')
+        if decisions>slice_start_decision and (
+            (job.get('slice_actions') and decisions-slice_start_decision>=job['slice_actions']) or
+            (job.get('slice_seconds') and time.time()-slice_started>=job['slice_seconds'])):
+            return suspend('slice_limit')
         actor=acting_side(state)
+        budget_before=deepcopy(budget_rng.bit_generator.state);value_count_before=len(value_rows)
         budget,save_labels=decision_budget(job,budget_rng)
         if job.get('record_episode') and save_labels:
             from ..engine.duel_v2 import observe
@@ -203,7 +239,7 @@ def search_game(job):
         if use_search:
             try:
                 result=search(state,actor,policies,seed=job['seed']+1000003*(step+1),
-                              simulations=budget,deadline=job['deadline'],
+                              simulations=budget,deadline=job['deadline'],reuse_inference=job.get('reuse_inference',True),
                               noise=job.get('training',False) and save_labels,**({'runtime':runtime,'passive_reward':coefficient if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.0,'setup_reward':setup_coefficients.get(actor,0.) if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.,'setup_already_achieved':setup_seen[actor]} if runtime else {}))
             except Exception as exc:
                 if job.get('failure_dir'):
@@ -216,7 +252,8 @@ def search_game(job):
                     temp.replace(path)
                 raise
             if not result['complete']:
-                return dict(complete=False,reason='incomplete_search',rows=[],decisions=decisions)
+                budget_rng.bit_generator.state=budget_before;del value_rows[value_count_before:]
+                return suspend('incomplete_search')
             distribution=result['pi'].astype(float);distribution/=distribution.sum()
             chosen=int(rng.choice(len(result['actions']),p=distribution)) if job.get('training') and save_labels else result['search_choice']
             actions=result['actions']
@@ -238,7 +275,9 @@ def search_game(job):
         if runtime:
             for side in ('a','b'):setup_seen[side]=setup_seen[side] or setup_ready(state,side)
     complete=state['phase']=='finished'
+    if not complete and resume_path:return suspend('action_limit')
     if complete:
+        if resume_path:suspend('complete_pending_delivery')
         for row in rows+value_rows:
             row['z']=terminal_value(state,row['side'])
             if 'passive_before' in row:

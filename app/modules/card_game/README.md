@@ -630,3 +630,5 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 `rl/outcome_runtime.py`维护独立WDL数值模型，`rl/episode_replay.py`维护按局经验与信息集重分析，`rl/outcome_trial.py`编排有界对照。入口为`scripts/train_duel_v2_outcome_trial.py`；范围及预算见[训练手册](../../../docs/duel-v2-public-training.md#纯胜负经验学习的有界试验)。验证：`python -m unittest tests.test_duel_v2_outcome_learning tests.test_duel_v2_information_search tests.test_duel_v2_ten_search`。不改变网站模型或已有冻结任务。
 
 `--profile selfplay_budget`及`rl/selfplay_trial.py`提供固定陪练／镜像双方学习／混合搜索预算三组对照，每组独立采样槽和统一截止。专项验证：`python -m unittest tests.test_duel_v2_selfplay_trial tests.test_duel_v2_information_search tests.test_duel_v2_outcome_learning`。
+
+`rl/trajectory_checkpoint.py`保存私有搜索轨迹；selfplay采样按决策边界分段续接，保持原数值模型、RNG与截止。`scripts/check_duel_v2_learning_pipeline.py`提供搜索等价／性能、连续恢复、根动作对照及隔离拟合诊断；不自动启动长训。回归：`python -m unittest tests.test_duel_v2_trajectory_resume`。

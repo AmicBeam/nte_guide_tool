@@ -55,7 +55,7 @@ def main():
         arms=['uniform','reanalyse'],passive_reward=0.,setup_reward=0.,source=str(source),automatic_serving_approval=False)
     if a.profile=='selfplay_budget':
         if a.workers!=(3 if a.smoke else 6):p.error('Selfplay trial requires one/ two slots per each of three arms (3 smoke, 6 formal)')
-        c.update(profile=a.profile,kind='zhenhong_selfplay_budget_v1',arms=['fixed256','self256','selfmixed'],search_mix={'low':32,'high':256,'deep_probability':.25},actor_slots_per_arm=1 if a.smoke else 2)
+        c.update(profile=a.profile,kind='zhenhong_selfplay_budget_v1',arms=['fixed256','self256','selfmixed'],search_mix={'low':32,'high':256,'deep_probability':.25},actor_slots_per_arm=1 if a.smoke else 2,slice_seconds=60,finish_reserve_seconds=300)
     if not a.run:print(json.dumps(c));return
     if out.exists():raise ValueError('Output exists')
     out.mkdir(parents=True)

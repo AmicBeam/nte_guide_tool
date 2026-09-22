@@ -82,7 +82,7 @@ def leaf_value(state, viewer, policies, *, runtime=None):
     return value if actor==viewer else -value
 
 
-def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1):
+def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False):
     decide = runtime.decision if runtime else decision
     if simulations<1 or max_depth<1:raise ValueError('Positive search limits required')
     if acting_side(state)!=viewer:raise ValueError('Search must use the decision owner')
@@ -90,13 +90,16 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
         raise ValueError('Invalid passive reward')
     if type(root_min_visits)!=int or type(node_min_visits)!=int or min(root_min_visits,node_min_visits)<1:
         raise ValueError('Positive integer minimum visits required')
+    from .setup_reward import ready as setup_ready
+    if not np.isfinite(setup_reward) or setup_reward<0:raise ValueError('Invalid setup reward')
+    setup_initial=bool(setup_already_achieved or (setup_reward and setup_ready(state,viewer)))
     initial_passive = runtime.passive_count(state,viewer) if runtime and passive_reward else 0
     actions,(x,c)=decide(state,viewer)
     logits,raw=policies[viewer].scores_value(x,c);prior=search_prior(logits,prior_mode,prior_temperature,uniform_mix)
     rng=np.random.default_rng(seed)
     if noise and len(actions)>1:
         prior=.75*prior+.25*rng.dirichlet(np.full(len(actions),.3))
-    root=Node.create(prior);tree={info_key(x,c):root}
+    root=Node.create(prior);root_key=info_key(x,c)+(bytes([setup_initial]) if setup_reward else b'');tree={root_key:root}
     requested=1 if len(actions)==1 else max(simulations,len(actions)+8)
     if len(actions)>1 and root_min_visits*len(actions)>requested:
         raise ValueError("Search budget cannot cover requested root exploration floor")
@@ -104,7 +107,7 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
     for simulation in range(requested):
         if deadline is not None and time.time()>=deadline:break
         world=sample_world(state,viewer,seed+simulation*104729,runtime=runtime)
-        worlds+=1;path=[];value=0.;finished_sim=True
+        worlds+=1;path=[];value=0.;finished_sim=True;setup_seen=setup_initial
         for depth in range(max_depth):
             if deadline is not None and time.time()>=deadline:
                 finished_sim=False;break
@@ -117,17 +120,19 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                 scores,_=policies[actor].scores_value(xx,cc)
                 chosen=int(rng.choice(len(legal),p=softmax(scores)))
             else:
-                key=info_key(xx,cc)
+                key=info_key(xx,cc)+(bytes([setup_seen]) if setup_reward else b'')
                 if key not in tree:
                     scores,v=policies[actor].scores_value(xx,cc)
                     tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix));value=float(np.tanh(v/10));break
                 node=tree[key];chosen=node.choose(root_min_visits if node is root else node_min_visits);path.append((node,chosen))
             world=clean(apply_action(world,actor,legal[chosen]))
+            if setup_reward:setup_seen=setup_seen or setup_ready(world,viewer)
         else:
             value=leaf_value(world,viewer,policies,runtime=runtime)
         if not finished_sim:break
         if runtime and passive_reward:
             value += passive_reward/10 * (runtime.passive_count(world,viewer)-initial_passive)
+        value+=setup_reward/10*int(setup_seen and not setup_initial)
         for node,chosen in path:
             node.visits[chosen]+=1;node.total[chosen]+=value
         depths.append(depth+1)
@@ -145,7 +150,7 @@ def search_game(job):
     """Full real trajectory; BOTH sides search, including opening mulligans.
 
     Only completed games emit training rows. Every row has its own acting-side
-    outcome and visit target. No heuristic or timing rewards are used.
+    outcome and visit target. Optional training rewards remain separate from wins.
     """
     runtime = None
     if job.get('runtime') == 'ten':
@@ -159,6 +164,11 @@ def search_game(job):
     rng=np.random.default_rng(job['seed']);rows=[];stats=[];decisions=0
     coefficient=float(job.get('zhenhong_passive_reward',0.0)) if job.get('training') else 0.0
     if not np.isfinite(coefficient) or coefficient < 0: raise ValueError('Invalid reward coefficient')
+    from .setup_reward import ready as setup_ready
+    setup_seen={side:setup_ready(state,side) for side in ('a','b')} if runtime else {'a':False,'b':False}
+    setup_initial_seen=dict(setup_seen)
+    setup_coefficients=job.get('setup_rewards',{}) if job.get('training') else {}
+    if any(not np.isfinite(v) or v<0 for v in setup_coefficients.values()):raise ValueError('Invalid setup reward')
     for step in range(job.get('max_actions',400)):
         if state['phase']=='finished':break
         if time.time()>=job['deadline']:
@@ -169,7 +179,7 @@ def search_game(job):
             try:
                 result=search(state,actor,policies,seed=job['seed']+1000003*(step+1),
                               simulations=job.get('simulations',32),deadline=job['deadline'],
-                              noise=job.get('training',False),**({'runtime':runtime,'passive_reward':coefficient if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.0} if runtime else {}))
+                              noise=job.get('training',False),**({'runtime':runtime,'passive_reward':coefficient if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.0,'setup_reward':setup_coefficients.get(actor,0.) if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.,'setup_already_achieved':setup_seen[actor]} if runtime else {}))
             except Exception as exc:
                 if job.get('failure_dir'):
                     import json
@@ -190,6 +200,8 @@ def search_game(job):
                                  key=job['policies'][actor][1],phase=state['phase']))
                 if runtime and coefficient and job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']):
                     rows[-1]['passive_before']=runtime.passive_count(state,actor)
+                if runtime and job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) and setup_coefficients.get(actor,0)>0:
+                    rows[-1].update(setup_before=int(setup_seen[actor]),setup_reward=setup_coefficients[actor])
             stats.append(dict(side=actor,phase=state['phase'],simulations=result['simulations'],
                               legal=len(actions),covered=result['roots_covered'],nodes=result['nodes'],
                               changed=result['raw_choice']!=result['search_choice'],
@@ -197,19 +209,24 @@ def search_game(job):
         else:
             actions,(x,c)=decide(state,actor);chosen=int(policies[actor].scores(x,c).argmax())
         state=clean(apply_action(state,actor,actions[chosen]));decisions+=1
+        if runtime:
+            for side in ('a','b'):setup_seen[side]=setup_seen[side] or setup_ready(state,side)
     complete=state['phase']=='finished'
     if complete:
         for row in rows:
             row['z']=terminal_value(state,row['side'])
             if 'passive_before' in row:
                 row['reward_to_go']=10*row['z']+coefficient*(runtime.passive_count(state,row['side'])-row.pop('passive_before'))
+            if 'setup_before' in row:
+                row['setup_future']=int(setup_seen[row['side']])-row.pop('setup_before')
     return dict(complete=complete,winner=state.get('winner'),rows=rows if complete else [],
                 decisions=decisions,searched=len(stats),search_stats=stats,turn=state['turn'],
                 reason=None if complete else 'action_limit',
-                passive_triggers={s:runtime.passive_count(state,s) for s in ('a','b')} if runtime else {})
+                passive_triggers={s:runtime.passive_count(state,s) for s in ('a','b')} if runtime else {},
+                setup_achieved=setup_seen,setup_rewards={s:setup_coefficients.get(s,0)*int(setup_seen[s] and not setup_initial_seen[s]) if job['policies'][s][1]=='zhenhong' and s in job.get('train_sides',['a','b']) else 0. for s in ('a','b')})
 
 
-def policy_value_update(net,opt,rows):
+def policy_value_update(net,opt,rows,*,setup_coefficient=None):
     import torch
     from .league_learning import tensors
     if not rows:raise ValueError('No completed trajectory samples')
@@ -224,8 +241,9 @@ def policy_value_update(net,opt,rows):
     if not torch.all((z==-1)|(z==0)|(z==1)):raise ValueError('Non-terminal value target')
     logits,value=net(x,c,m);logp=logits.log_softmax(-1)
     policy_loss=-(pi*logp.masked_fill(~m,0)).sum(-1).mean()
-    target=torch.tensor([r.get('reward_to_go',10*r['z'])/10 for r in rows],dtype=torch.float32,device=x.device)
-    shaped=torch.tensor(['reward_to_go' in r for r in rows],dtype=torch.bool,device=x.device)
+    from .setup_reward import learning_return
+    target=torch.tensor([learning_return(r,setup_coefficient)/10 for r in rows],dtype=torch.float32,device=x.device)
+    shaped=torch.tensor([r.get('reward_to_go') is not None or (r.get('setup_reward',0) if setup_coefficient is None else setup_coefficient)>0 for r in rows],dtype=torch.bool,device=x.device)
     if not torch.isfinite(target).all(): raise ValueError('Invalid reward-to-go')
     prediction=torch.where(shaped,value/10,torch.tanh(value/10))
     value_loss=(prediction-target).square().mean()

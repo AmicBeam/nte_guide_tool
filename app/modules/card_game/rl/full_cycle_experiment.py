@@ -112,6 +112,11 @@ def _train_iter(pool,out,source,reference,builds,reference_builds,deadline,confi
     folder=out/stage;folder.mkdir();nets={};opts={};origins={};replay={k:[] for k in PRESETS}
     for key in PRESETS:
         nets[key],origins[key]=load_numeric(source,key,config['device']);opts[key]=torch.optim.Adam(nets[key].parameters(),lr=3e-5)
+    from .setup_reward import coefficient as setup_coefficient
+    def bonus(key):
+        return setup_coefficient(config.get('zhenhong_setup_reward',0.),origins[key].get('setup_reward_updates',0)+totals[key]['steps'],config.get('zhenhong_setup_decay_steps',64)) if key=='zhenhong' else 0.
+    def export_origin(key):
+        return dict(origins[key],setup_reward_updates=origins[key].get('setup_reward_updates',0)+totals[key]['steps'] if key=='zhenhong' else 0)
     current=folder/'initial'
     for key in PRESETS:export_model(nets[key],current,key,builds[key],origin=origins[key])
     best={k:current for k in PRESETS};baseline={k:probe_results(current,k,probe) for k in PRESETS}
@@ -138,7 +143,7 @@ def _train_iter(pool,out,source,reference,builds,reference_builds,deadline,confi
                     if update_target is None and cycle%8==0:
                         enemy=best[foe];enemy_build=builds[foe]
                     if cycle%5==0 or config['smoke']:enemy_build=random_build(stage_seed+cycle*100+fi,enemy_build['character_ids'],CARD_IDS)
-                    jobs.append(dict(seed=stage_seed+cycle*10000+ki*1000+fi*100,first=first,deadline=rollout_deadline,decks={'a':builds[key],'b':enemy_build},policies={'a':(str(current),key),'b':(str(enemy),foe)},runtime=config.get('runtime'),zhenhong_passive_reward=config.get('zhenhong_passive_reward',0),simulations=config['simulations'],training=True,collect=True,failure_dir=str(out/'failure-roots'),train_sides=['a'] if historical else ['a','b']))
+                    jobs.append(dict(seed=stage_seed+cycle*10000+ki*1000+fi*100,first=first,deadline=rollout_deadline,decks={'a':builds[key],'b':enemy_build},policies={'a':(str(current),key),'b':(str(enemy),foe)},setup_rewards={'a':bonus(key),'b':0. if historical else bonus(foe)},runtime=config.get('runtime'),zhenhong_passive_reward=config.get('zhenhong_passive_reward',0),simulations=config['simulations'],training=True,collect=True,failure_dir=str(out/'failure-roots'),train_sides=['a'] if historical else ['a','b']))
         results=[];fresh={k:[] for k in PRESETS}
         for job,g in zip(jobs,pool.map(search_game,jobs)):
             results.append(g)
@@ -151,6 +156,7 @@ def _train_iter(pool,out,source,reference,builds,reference_builds,deadline,confi
             write(out/'status.json',dict(phase=stage,cycle=cycle,completed_batch_jobs=len(results),scheduled_batch_jobs=len(jobs),totals=totals,games=games_n,stage_deadline=deadline,hard_deadline=config['deadlines']['shutdown']))
         for key in PRESETS:
             replay[key]=(replay[key]+fresh[key])[-16384:];totals[key]['samples']+=len(fresh[key])
+            if bonus(key)==0:replay[key]=[r for r in replay[key] if not r.get('setup_reward',0)]
         if not can_update_completed(fresh,time.time(),deadline):break
         rng=np.random.default_rng(stage_seed+cycle)
         for key in PRESETS:
@@ -158,13 +164,16 @@ def _train_iter(pool,out,source,reference,builds,reference_builds,deadline,confi
             steps=min(4,update_target-totals[key]['steps']) if update_target is not None else min(48,2*math.ceil(len(fresh[key])/128))
             for step in range(steps):
                 if time.time()>=deadline:break
+                current_bonus=bonus(key)
+                if current_bonus==0 and any(r.get('setup_reward',0)>0 for r in fresh[key]):
+                    replay[key]=[];break  # Collect new zero-bonus search labels before further updates.
                 ids=rng.choice(len(fresh[key]),min(64,len(fresh[key])),replace=False);old=rng.choice(len(replay[key]),min(64,len(replay[key])),replace=False)
-                stats=policy_value_update(nets[key],opts[key],[fresh[key][i] for i in ids]+[replay[key][i] for i in old]);totals[key]['steps']+=1
-                append(folder,'losses.jsonl',dict(cycle=cycle,key=key,**stats))
+                stats=policy_value_update(nets[key],opts[key],[fresh[key][i] for i in ids]+[replay[key][i] for i in old],setup_coefficient=current_bonus);totals[key]['steps']+=1
+                append(folder,'losses.jsonl',dict(cycle=cycle,key=key,setup_coefficient=current_bonus,**stats))
         current=folder/'generations'/f'cycle-{cycle:04}'
-        for key in PRESETS:export_model(nets[key],current,key,builds[key],origin=origins[key])
+        for key in PRESETS:export_model(nets[key],current,key,builds[key],origin=export_origin(key))
         # Numeric generations survive a failed later stage; optimizer checkpoint is atomic.
-        temp=folder/'checkpoint.tmp';torch.save(dict(cycle=cycle,totals=totals,current=str(current),best={k:str(v) for k,v in best.items()},next_check=next_check,nets={k:n.state_dict() for k,n in nets.items()},opts={k:o.state_dict() for k,o in opts.items()},rule_hash=config['rule_hash'],replay={k:[dict(x=torch.from_numpy(r['x']),c=torch.from_numpy(r['c']),pi=torch.from_numpy(r['pi']),z=r['z'],reward_to_go=r.get('reward_to_go')) for r in rows] for k,rows in replay.items()}),temp)
+        temp=folder/'checkpoint.tmp';torch.save(dict(cycle=cycle,totals=totals,origins=origins,current=str(current),best={k:str(v) for k,v in best.items()},next_check=next_check,nets={k:n.state_dict() for k,n in nets.items()},opts={k:o.state_dict() for k,o in opts.items()},rule_hash=config['rule_hash'],replay={k:[dict(x=torch.from_numpy(r['x']),c=torch.from_numpy(r['c']),pi=torch.from_numpy(r['pi']),z=r['z'],**{field:r[field] for field in ('reward_to_go','setup_reward','setup_future') if field in r}) for r in rows] for k,rows in replay.items()}),temp)
         if (folder/'checkpoint.pt').exists():shutil.copy2(folder/'checkpoint.pt',folder/'checkpoint-previous.pt')
         temp.replace(folder/'checkpoint.pt')
         write(folder/'checkpoint-manifest.json',{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in folder.glob('checkpoint*.pt')})
@@ -192,12 +201,17 @@ def _train_iter(pool,out,source,reference,builds,reference_builds,deadline,confi
                     opts[key]=torch.optim.Adam(nets[key].parameters(),lr=max(1e-5,opts[key].param_groups[0]['lr']/2));replay[key]=[]
                 append(folder,'selection.jsonl',dict(cycle=cycle,key=key,retained=retained,promote=promote,rollback=rollback))
             current=folder/'generations'/f'selected-{cycle:04}'
-            for key in PRESETS:export_model(nets[key],current,key,builds[key],origin=origins[key])
+            for key in PRESETS:export_model(nets[key],current,key,builds[key],origin=export_origin(key))
             next_check=time.time()+1800
         yield dict(cycle=cycle,totals=deepcopy(totals))
     selected=folder/'selected';selected.mkdir()
     for key in PRESETS:
         for ext in ('json','npz'):shutil.copy2(best[key]/f'{key}.{ext}',selected/f'{key}.{ext}')
+    if 'zhenhong' in PRESETS:
+        manifest=json.loads((selected/'zhenhong.json').read_text())
+        origin=manifest.get('origin') or {}
+        manifest['origin']=dict(origin,setup_reward_updates=max(origin.get('setup_reward_updates',0),export_origin('zhenhong')['setup_reward_updates']))
+        write(selected/'zhenhong.json',manifest)
     copy_models(current,folder/'latest',PRESETS)
     write(folder/'summary.json',dict(cycles=cycle,games=games_n,totals=totals,best={k:str(v) for k,v in best.items()},latest=str(current),finished=time.time()))
     return folder/'latest' if update_target is not None else selected
@@ -513,6 +527,11 @@ def run(out,config):
                      recommended_build=builds[key],reason='report_incomplete')
         source=candidate_adapt if d['build_quality_approved'] else initial
         for ext in ('npz','json'):shutil.copy2(source/f'{key}.{ext}',delivery/f'{key}.{ext}')
+        if key=='zhenhong':
+            manifest=json.loads((delivery/(key+'.json')).read_text());origin=manifest.get('origin') or {}
+            progress=max((LeagueModel(src,key).manifest.get('origin') or {}).get('setup_reward_updates',0) for src in (foundation,baseline_adapt,candidate_adapt))
+            manifest['origin']=dict(origin,setup_reward_updates=max(progress,origin.get('setup_reward_updates',0)))
+            write(delivery/(key+'.json'),manifest)
         d['model_sha256']=LeagueModel(delivery,key).version
     write(out/'delivery-decision.json',decisions)
     write(out/'status.json',dict(workflow_complete=complete,quality_approved=complete and all(d['build_quality_approved'] for d in decisions.values()),

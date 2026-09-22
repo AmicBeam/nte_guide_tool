@@ -34,7 +34,7 @@ def load_numeric(directory, key, device):
     policy = FixedModel(directory,key)
     net=CompactScorer(len(all_features()),CAND_DIM,policy.hidden)
     net.load_state_dict({k:torch.from_numpy(v.copy()) for k,v in policy.weights.items()})
-    return net.to(device),dict(source_sha256=policy.version,source_deck=key,source_kind='validated_ten_numeric')
+    return net.to(device),dict(source_sha256=policy.version,source_deck=key,source_kind='validated_ten_numeric',setup_reward_updates=(policy.manifest.get('origin') or {}).get('setup_reward_updates',0))
 
 
 def export_model(net, output, key, build, *, origin=None):
@@ -90,5 +90,5 @@ def migrate_source(source, output, builds):
         old=w['state_net.0.weight'];w['state_net.0.weight']=np.zeros((m['hidden'],len(after)),np.float32)
         columns={name:i for i,name in enumerate(after)}
         for i,name in enumerate(before):w['state_net.0.weight'][:,columns[name]]=old[:,i]
-        save_weights(w,output,key,build,dict(kind='current_rule_research_warm_start',source_sha256=m['sha256'],source_rule_hash=m['rule_hash'],source_key=source_key,optimizer_reset=True,new_features_zero_initialized=sorted(set(after)-set(before))))
+        save_weights(w,output,key,build,dict(kind='current_rule_research_warm_start',source_sha256=m['sha256'],source_rule_hash=m['rule_hash'],source_key=source_key,optimizer_reset=True,setup_reward_updates=(m.get('origin') or {}).get('setup_reward_updates',0) if key==source_key=='zhenhong' else 0,new_features_zero_initialized=sorted(set(after)-set(before))))
         FixedModel(output,key)

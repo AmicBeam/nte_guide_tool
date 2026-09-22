@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -65,6 +66,9 @@ def main():
     p.add_argument('--adaptation-steps',type=int)
     p.add_argument('--research-warm-start',action='store_true')
     p.add_argument('--baseline-builds',type=Path)
+    p.add_argument('--zhenhong-setup-reward',type=float,default=.1)
+    p.add_argument('--zhenhong-setup-decay-steps',type=int,default=64)
+    p.add_argument('--zhenhong-passive-reward',type=float,default=.2)
     p.add_argument('--smoke',action='store_true')
     p.add_argument('--run',action='store_true',help='Explicitly authorize this bounded execution')
     p.add_argument('--supervise',action='store_true',help=argparse.SUPPRESS)
@@ -107,6 +111,7 @@ def main():
         finally:
             if os.name=='nt':ctypes.windll.kernel32.SetThreadExecutionState(0x80000000)
         return
+    if any(not math.isfinite(x) or x<0 for x in (a.zhenhong_setup_reward,a.zhenhong_passive_reward)) or a.zhenhong_setup_decay_steps<=0:p.error('Invalid Zhenhong reward settings')
     if a.adaptation_steps is None:a.adaptation_steps=8 if a.ten else 32
     if not 1<=a.workers<=8 or not 32<=a.confirmation_seeds<=4096 or not 4<=a.adaptation_steps<=128 or a.adaptation_steps%4:
         p.error('Invalid bounded workload')
@@ -140,7 +145,7 @@ def main():
         else:
             from app.modules.card_game.rl.league_policy import LeagueModel
             for key in PRESETS:LeagueModel(initial,key,require_approved=True)
-    config=dict(opponents_per_cycle=1 if a.ten else 2,optimizer_reserve_seconds=60,runtime='ten' if a.ten else None,matrix_games=128,zhenhong_passive_reward=.2 if a.ten else 0,schema='paired_full_cycle_v1',rule_hash=rule_hash(),created=now,deadlines=deadlines,
+    config=dict(opponents_per_cycle=1 if a.ten else 2,optimizer_reserve_seconds=60,runtime='ten' if a.ten else None,matrix_games=128,zhenhong_setup_reward=a.zhenhong_setup_reward if a.ten else 0,zhenhong_setup_decay_steps=a.zhenhong_setup_decay_steps,zhenhong_passive_reward=a.zhenhong_passive_reward if a.ten else 0,schema='paired_full_cycle_v1',rule_hash=rule_hash(),created=now,deadlines=deadlines,
         initial=str(initial),device=a.device,workers=a.workers,smoke=a.smoke,simulations=8 if a.smoke else 256,
         confirmation_seeds=32 if a.smoke else a.confirmation_seeds,adaptation_steps=4 if a.smoke else a.adaptation_steps,
         alpha=.05,minimum_gain=.02,audit_margin=.05,research_warm_start=a.research_warm_start,

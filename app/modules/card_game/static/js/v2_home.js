@@ -91,9 +91,7 @@ async function bootstrapHome() {
       const opponentName = aiDeck.options[aiDeck.selectedIndex].text;
       const playerDeck = saved || starter;
       buildSummary.textContent = '我方「' + ((playerDeck && playerDeck.name) || '当前构筑') + '」· 对手「' + opponentName + '」';
-      aiDeckHint.textContent = aiDeck.value === 'midrange'
-        ? '娜娜莉、白藏、零、伊洛伊。使用当前保存的构筑对战。'
-        : '使用当前保存的构筑对战，仅支持公开角色。';
+      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。';
       return;
     }
     if (selectedMode === 'solo') {

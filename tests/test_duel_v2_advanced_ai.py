@@ -150,13 +150,13 @@ class AdvancedRoomTest(RoomFlowTestCase):
         response=self.client.post('/api/duel-v2/start',json={'mode':'advanced','ai_deck':'other'},headers={'Authorization':'Bearer '+self.token})
         self.assertEqual(response.status_code,400)
 
-    def test_midrange_uses_authorized_model_without_changing_saved_build(self):
+    def test_removed_midrange_rejected_without_room_or_saved_build_change(self):
         before = self._get('/api/duel-v2/catalog', token=self.token)['saved_build']
-        result = self._post('/api/duel-v2/start',
-            {'mode': 'advanced', 'ai_deck': 'midrange'}, token=self.token)
-        self.assertEqual([h['id'] for h in result['game']['sides']['b']['characters']],
-                         ['nanali', 'baicang', 'zero', 'iloy'])
-        self.assertEqual(before, self._get('/api/duel-v2/catalog', token=self.token)['saved_build'])
+        response=self.client.post('/api/duel-v2/start',json={'mode':'advanced','ai_deck':'midrange'},headers={'Authorization':'Bearer '+self.token})
+        self.assertEqual(response.status_code,400)
+        player=self.dao_module.get_or_create_player('advanced-ai-test')[0]
+        self.assertIsNone(self.repository.current_room(player))
+        self.assertEqual(before,self._get('/api/duel-v2/catalog',token=self.token)['saved_build'])
 
     def test_legacy_rejects_saved_custom_before_room_creation(self):
         from app.modules.card_game.content.duel_v2 import STARTER_DECK
@@ -246,7 +246,7 @@ class CpuEncoderTest(unittest.TestCase):
     def test_bundled_models_are_complete_and_loadable(self):
         from app.modules.card_game.engine.ai.advanced_model import load_model
         directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
-        keys=('starter','weave-rush','quick-rush','midrange')
+        keys=('starter','weave-rush','quick-rush')
         self.assertEqual({p.name for p in directory.iterdir()},
                          {f'{key}.{ext}' for key in keys for ext in ('json','npz')})
         for key in keys:
@@ -258,7 +258,7 @@ class CpuEncoderTest(unittest.TestCase):
     def test_runtime_rule_compatibility_still_rejects_other_rules(self):
         from app.modules.card_game.engine.ai.fixed_model import FixedServingModel
         directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
-        for key in ('starter','weave-rush','quick-rush','midrange'):
+        for key in ('starter','weave-rush','quick-rush'):
             with patch('app.modules.card_game.rl.fixed_lineup.identity', return_value='unrelated'):
                 with self.assertRaisesRegex(ValueError, 'identity mismatch'):
                     FixedServingModel(directory,key)

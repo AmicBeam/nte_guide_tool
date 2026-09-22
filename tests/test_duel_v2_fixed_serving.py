@@ -1,4 +1,4 @@
-"""Authorization binding and real CPU policy dispatch for the four bundled models."""
+"""Authorization binding and real CPU policy dispatch for the three bundled models."""
 from pathlib import Path
 import json
 import shutil
@@ -9,11 +9,11 @@ from app.modules.card_game.engine.ai import advanced_model as ai
 from app.modules.card_game.engine.duel_v2 import new_game, apply_action, acting_side
 
 ROOT = Path(__file__).resolve().parents[1] / 'app/modules/card_game/engine/ai/models'
-KEYS = ('starter', 'weave-rush', 'quick-rush', 'midrange')
+KEYS = ('starter', 'weave-rush', 'quick-rush')
 
 
 class FixedServingTest(unittest.TestCase):
-    def test_four_complete_cpu_games_with_learned_opening(self):
+    def test_three_complete_cpu_games_with_learned_opening(self):
         for i, key in enumerate(KEYS):
             model = ai.load_model(key)
             self.assertTrue(model.serving_authorized)
@@ -47,6 +47,9 @@ class FixedServingTest(unittest.TestCase):
 
     def test_excluded_team_not_registered_or_installed(self):
         self.assertNotIn('zhenhong', ai.PRESETS)
+        self.assertNotIn('midrange', ai.PRESETS)
+        self.assertFalse((ROOT / 'midrange.json').exists())
+        self.assertFalse((ROOT / 'midrange.npz').exists())
         self.assertFalse((ROOT / 'zhenhong.json').exists())
         self.assertEqual(ai.load_model('quick-rush').serving_deck['character_ids'], ['xiaozhi','zero','bohe','jiuyuan'])
 

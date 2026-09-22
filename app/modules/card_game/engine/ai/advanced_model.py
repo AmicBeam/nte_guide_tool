@@ -27,17 +27,14 @@ from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
 
 _CACHE = {}
 _LOCK = threading.RLock()
-PRESETS = ('midrange', 'starter', 'weave-rush', 'quick-rush')
+PRESETS = ('starter', 'weave-rush', 'quick-rush')
 UNTRAINED_STRATEGIES = {}
 PENDING_PRESETS = frozenset()
 
 
 def preset(deck_id):
     if deck_id not in PRESETS:
-        raise RuleValidationError('高级人机策略包括娜伊零九、薄白零伊、吱零薄九和娜白零伊。')
-    if deck_id == 'midrange':
-        from app.modules.card_game.rl.fixed_lineup import builds
-        return builds(Path(config.DUEL_AI_MODEL_DIR))[deck_id]
+        raise RuleValidationError('高级人机策略包括娜伊零九、薄白零伊和吱零薄九。')
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
 
 

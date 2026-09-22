@@ -11,7 +11,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--source',type=Path)
     p.add_argument('--seed-reservation',type=Path);p.add_argument('--seconds',type=int,default=3600)
-    p.add_argument('--profile',choices=('replay','selfplay_budget','gumbel_low_budget'),default='replay')
+    p.add_argument('--profile',choices=('replay','selfplay_budget','gumbel_low_budget','grounded_actions'),default='replay')
     p.add_argument('--workers',type=int,default=8);p.add_argument('--smoke',action='store_true')
     p.add_argument('--supervise',action='store_true');p.add_argument('--worker',action='store_true');p.add_argument('--run',action='store_true')
     a=p.parse_args();out=a.output.resolve()
@@ -60,6 +60,11 @@ def main():
         if a.workers!=(2 if a.smoke else 4):p.error('Gumbel profile requires 2 smoke or 4 formal workers')
         c.update(profile=a.profile,kind='zhenhong_gumbel_low_budget_v1',simulations=8 if a.smoke else 32,arms=['gumbel16','gumbel32'],search_algorithm='gumbel',gumbel_candidates=16,
             search_budgets={'gumbel16':4 if a.smoke else 16,'gumbel32':8 if a.smoke else 32},actor_slots_per_arm=1 if a.smoke else 2,slice_seconds=60,finish_reserve_seconds=300)
+    if a.profile=='grounded_actions':
+        if a.workers!=(3 if a.smoke else 6):p.error('Grounded profile requires 3 smoke or 6 formal workers')
+        c.update(profile=a.profile,kind='zhenhong_grounded_actions_v1',simulations=4 if a.smoke else 16,
+            arms=['inherited','reset','grounded'],search_algorithm='gumbel',gumbel_candidates=8,
+            actor_slots_per_arm=1 if a.smoke else 2,slice_seconds=60,finish_reserve_seconds=300)
     if not a.run:print(json.dumps(c));return
     if out.exists():raise ValueError('Output exists')
     out.mkdir(parents=True)

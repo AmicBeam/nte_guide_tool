@@ -18,7 +18,7 @@ def algorithm_hash():
     root=Path(__file__).parent
     digest=hashlib.sha256()
     for name in ('information_search.py','trajectory_checkpoint.py','outcome_runtime.py','league_rollout.py',
-                 'league_policy.py','fixed_lineup.py','ten_search_runtime.py','setup_reward.py','search_policy.py'):
+                 'league_policy.py','fixed_lineup.py','ten_search_runtime.py','setup_reward.py','search_policy.py','grounded_candidates.py'):
         digest.update(name.encode());digest.update((root/name).read_bytes())
     return digest.hexdigest()
 

@@ -35,7 +35,7 @@ def learn(executor,out,config,base,source,initial,nets,opts,pools,steps,totals,s
     import torch
     from .outcome_trial import game_summary
     ARMS=tuple(config.get('arms',('fixed256','self256','selfmixed')))
-    current={a:initial for a in ARMS};numbers={a:0 for a in ARMS};slots={a:0 for a in ARMS}
+    current={a:config.get('arm_initial_models',{}).get(a,initial) for a in ARMS};numbers={a:0 for a in ARMS};slots={a:0 for a in ARMS}
     rngs={a:np.random.default_rng(config['seeds']['foundation']+i*1000000) for i,a in enumerate(ARMS)}
     pending={};costs={};started=time.time();slots_per_arm=1 if config['smoke'] else 2
     def submit(arm):

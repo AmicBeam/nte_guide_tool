@@ -10,6 +10,7 @@ from .league_schema import build_hash
 from .ten_search_runtime import decision, determinize, passive_count
 
 SCHEMA = 'fixed_ten_wdl_v1'
+from . import grounded_candidates as grounded
 
 
 class OutcomeModel(LeagueModel):
@@ -18,14 +19,18 @@ class OutcomeModel(LeagueModel):
         m = json.loads((root / f'{key}.json').read_text(encoding='utf-8'))
         p = root / f'{key}.npz'
         digest = hashlib.sha256(p.read_bytes()).hexdigest()
-        if (m['schema'] != SCHEMA or m['rule_hash'] != identity() or m['sha256'] != digest
+        self.grounded = m['schema'] == grounded.SCHEMA
+        if (m['schema'] not in (SCHEMA,grounded.SCHEMA) or m['rule_hash'] != identity() or m['sha256'] != digest
                 or m['deck'] != key or m['features'] != all_features() or m['candidates'] != candidate_names()
                 or m['wdl_order'] != ['loss', 'draw', 'win'] or m['value_context'] != ['viewer_is_actor']):
             raise ValueError('Outcome model identity mismatch')
+        if self.grounded and m.get('candidate_transform_sha256') != grounded.fingerprint():
+            raise ValueError('Grounded candidate transform mismatch')
         self.hidden = m['hidden']
         if type(self.hidden) != int or not 1 <= self.hidden <= 256:
             raise ValueError('Invalid width')
         expected = {**tensor_shapes(self.hidden), 'wdl.weight': (3, self.hidden + 1), 'wdl.bias': (3,)}
+        if self.grounded:expected['cand_net.0.weight']=(self.hidden,grounded.DIM)
         with np.load(p, allow_pickle=False) as z:
             if set(z.files) != set(expected):
                 raise ValueError('Outcome tensor set mismatch')
@@ -45,11 +50,17 @@ class OutcomeModel(LeagueModel):
         # matmul, so do not silently replace its reduction order with einsum.
         def linear(v,n):
             return np.einsum('...j,ij->...i',v,self.weights[n+'.weight'],optimize=False)+self.weights[n+'.bias']
+        if getattr(self,'grounded',False):candidates=grounded.transform(x,candidates)
         h=np.maximum(linear(x,'state_net.0'),0);h=np.maximum(linear(h,'state_net.2'),0)
         c=np.maximum(linear(candidates,'cand_net.0'),0);c=np.maximum(linear(c,'cand_net.2'),0)
         scores=np.sum(c*h,-1)/np.sqrt(np.float32(self.hidden))+linear(c,'score').reshape(-1)
         if not np.isfinite(scores).all():raise ValueError('Non-finite policy scores')
         return scores
+
+    def scores_value(self,x,candidates):
+        if not getattr(self,'grounded',False):return super().scores_value(x,candidates)
+        p=self.wdl(x,True)
+        return self.scores_only(x,candidates),float(p[2]-p[0])
 
     def wdl(self, x, is_actor):
         w = self.weights
@@ -63,7 +74,7 @@ class OutcomeModel(LeagueModel):
 @lru_cache(maxsize=24)
 def _load(directory, key, modified):
     manifest = json.loads((Path(directory) / f'{key}.json').read_text(encoding='utf-8'))
-    return OutcomeModel(directory, key) if manifest['schema'] == SCHEMA else FixedModel(directory, key)
+    return OutcomeModel(directory, key) if manifest['schema'] in (SCHEMA,grounded.SCHEMA) else FixedModel(directory, key)
 
 
 def model(directory, key):
@@ -98,8 +109,8 @@ def create_network(source, key, device):
     import torch
     from .gpu_duel.ppo import CompactScorer
     policy = model(source, key)
-    net = CompactScorer(len(all_features()), CAND_DIM, policy.hidden)
-    net.wdl = torch.nn.Linear(policy.hidden + 1, 3)
+    net = grounded.network(policy.hidden) if getattr(policy,'grounded',False) else CompactScorer(len(all_features()), CAND_DIM, policy.hidden)
+    if not getattr(policy,'grounded',False):net.wdl = torch.nn.Linear(policy.hidden + 1, 3)
     with torch.no_grad():
         net.wdl.weight.zero_()
         net.wdl.bias.zero_()
@@ -110,6 +121,28 @@ def create_network(source, key, device):
     return net.to(device)
 
 
+def create_grounded_network(source,key,device,*,categorical=True):
+    """Retain the learned state/value representation; reset ordinal action head."""
+    import torch
+    policy=model(source,key)
+    if not isinstance(policy,OutcomeModel):raise ValueError('WDL source required')
+    if categorical:net=grounded.network(policy.hidden)
+    else:
+        from .gpu_duel.ppo import CompactScorer
+        net=CompactScorer(len(all_features()),CAND_DIM,policy.hidden)
+        net.wdl=torch.nn.Linear(policy.hidden+1,3)
+    weights=net.state_dict()
+    for name,value in policy.weights.items():
+        if name.startswith(('state_net.','wdl.','value.')):weights[name]=torch.from_numpy(value.copy())
+    net.load_state_dict(weights)
+    # Small, finite initial action variation without copying identity extrapolation.
+    with torch.no_grad():
+        net.cand_net[2].weight.mul_(.01);net.cand_net[2].bias.mul_(.01)
+        net.score.weight.zero_();net.score.bias.zero_()
+    for p in net.value.parameters():p.requires_grad_(False)
+    return net.to(device)
+
+
 def export(net, directory, key, build, origin):
     root = Path(directory)
     root.mkdir(parents=True, exist_ok=True)
@@ -117,7 +150,8 @@ def export(net, directory, key, build, origin):
     temp = root / f'{key}.tmp.npz'
     np.savez_compressed(temp, **{k: v.detach().cpu().numpy() for k, v in net.state_dict().items()})
     temp.replace(p)
-    write(root / f'{key}.json', dict(schema=SCHEMA, rule_hash=identity(), deck=key,
+    write(root / f'{key}.json', dict(schema=grounded.SCHEMA if getattr(net,'grounded',False) else SCHEMA,
+        candidate_transform_sha256=grounded.fingerprint() if getattr(net,'grounded',False) else None,rule_hash=identity(), deck=key,
         features=all_features(), candidates=candidate_names(), hidden=net.score.in_features,
         wdl_order=['loss', 'draw', 'win'], value_context=['viewer_is_actor'],
         sha256=hashlib.sha256(p.read_bytes()).hexdigest(), build=build, build_sha256=build_hash(build),

@@ -41,7 +41,7 @@ def calibration(net, rows):
 def run(out,config):
     import torch
     ARMS=tuple(config.get('arms',('uniform','reanalyse')))
-    selfplay=config.get('profile') in ('selfplay_budget','gumbel_low_budget')
+    selfplay=config.get('profile') in ('selfplay_budget','gumbel_low_budget','grounded_actions')
     torch.set_num_threads(1);torch.manual_seed(config['seeds']['foundation'])
     if config['device']=='cuda' and not torch.cuda.is_available():raise RuntimeError('CUDA unavailable')
     out=Path(out);source=out/'sources'
@@ -87,7 +87,18 @@ def run(out,config):
         if not all(np.array_equal(v,net.state_dict()[k].detach().cpu().numpy()) for k,v in base[KEY].weights.items()):raise ValueError('Warmup changed source policy')
         write(out/'warmup.json',dict(before=before,after=after,source_policy_unchanged=True,
                                    holdout_used_for_gradient=False,calibrated_probability_claim=False))
-        nets={a:copy.deepcopy(net) for a in ARMS};opts={a:torch.optim.Adam([p for p in nets[a].parameters() if p.requires_grad],lr=3e-5) for a in ARMS}
+        nets={a:copy.deepcopy(net) for a in ARMS}
+        if config.get('profile')=='grounded_actions':
+            config['arm_initial_models']={}
+            for arm in ARMS:
+                if arm!='inherited':
+                    torch.manual_seed(config['seeds']['foundation']+1)
+                    nets[arm]=rt.create_grounded_network(initial,KEY,config['device'],categorical=arm=='grounded')
+                folder=out/arm/'initial'
+                rt.export(nets[arm],folder,KEY,base[KEY].serving_deck,{**origin,'action_initialization':arm})
+                config['arm_initial_models'][arm]=str(folder)
+            write(out/'arm-initial-models.json',config['arm_initial_models'])
+        opts={a:torch.optim.Adam([p for p in nets[a].parameters() if p.requires_grad],lr=3e-5) for a in ARMS}
         current={a:initial for a in ARMS};groups=0;reanalysis_seconds=0.;generation_seconds=0.
         if selfplay:
             from .selfplay_trial import learn
@@ -188,8 +199,9 @@ def run(out,config):
     changed={}
     for a in ARMS:
         final=rt.OutcomeModel(out/a/'final',KEY)
-        changed[a]=dict(policy=any(not np.array_equal(numeric.weights[k],v) for k,v in final.weights.items() if not k.startswith(('value.','wdl.'))),
-                        wdl=any(not np.array_equal(numeric.weights[k],v) for k,v in final.weights.items() if k.startswith('wdl.')))
+        starting=rt.OutcomeModel(config.get('arm_initial_models',{}).get(a,initial),KEY)
+        changed[a]=dict(policy=any(not np.array_equal(starting.weights[k],v) for k,v in final.weights.items() if not k.startswith(('value.','wdl.'))),
+                        wdl=any(not np.array_equal(starting.weights[k],v) for k,v in final.weights.items() if k.startswith('wdl.')))
     import csv
     with (out/'first-second-winrates.csv').open('w',newline='',encoding='utf-8') as f:
         writer=csv.DictWriter(f,fieldnames=['row','col','planned','complete','wins','row_model_sha','col_model_sha']);writer.writeheader()
@@ -203,6 +215,7 @@ def run(out,config):
     write(out/'summary.json',summary)
     description='三组共享WDL起点、关闭人工奖励；fixed256固定陪练，self256自博弈混合固定256，selfmixed相同自博弈分布混合32/256。各组相同并发槽与截止；比较同墙钟效果，不要求优化次数相同。' if selfplay else '两组共享WDL预热起点、关闭前置奖及被动奖。仅比较均匀按局回放与优先回放＋重分析；单次随机种子试验，不代表完整算法验收。'
     if config.get('profile')=='gumbel_low_budget':description='同起点、同墙钟、纯胜负的Gumbel16与Gumbel32自博弈对照；策略标签由先验和完成Q生成，训练动作采用Gumbel搜索的最终选择。'
+    if config.get('profile')=='grounded_actions':description='同状态与WDL起点、同16次Gumbel预算：继承旧动作头、重置序数动作头、类别及公开角色特征动作头三组对照；纯胜负自博弈，不复用评估数据学习。'
     lines=['# 真红纯胜负经验学习试验','',description,'',
            '| 对照 | 胜/正常完成 | 计划局数 | 实际被动次数 |','| --- | --- | --- | --- |']
     for key,m in metrics.items():lines.append(f"| {key} | {m['wins']}/{m['complete']} | {m['planned']} | {m['passive']} |")

@@ -3396,9 +3396,9 @@
       "type": "permanent"
     },
     "effects": {
-      "base_multiplier_pct": 2
+      "base_multiplier_pct": 1.5
     },
-    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。用户2026-09-23将二形态E基础倍率提升由200%改为150%，非Nanoka核实数据。",
     "display": {
       "line": false
     }

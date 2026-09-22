@@ -416,8 +416,10 @@ class HeiyuTest(unittest.TestCase):
         base = self.simulate(steps)['details'][-1]
         awakened = self.simulate(steps, awakening_nodes=[1])['details'][-1]
         self.assertAlmostEqual(awakened['resource_damage'], base['resource_damage'])
+        self.assertEqual(next(b['effects']['base_multiplier_pct'] for b in awakened['applied_buffs']
+                              if b['rule_id'] == 'character_heiyu_a_e'), 1.5)
         self.assertAlmostEqual(awakened['direct_damage'] - awakened['resource_damage'],
-                               3 * (base['direct_damage'] - base['resource_damage']))
+                               2.5 * (base['direct_damage'] - base['resource_damage']))
 
     def test_b_multiplier_and_assist_resource_only_in_normal_form(self):
         steps = [(0, 'action_heiyu_e', 0)]

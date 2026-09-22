@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from copy import deepcopy
+from unittest.mock import patch
 from app.modules.card_game.content.duel_v2 import STARTER_DECKS
 from app.modules.card_game.engine.duel_v2 import new_game,apply_action,acting_side,legal_actions
 from app.modules.card_game.rl.league_rollout import clean
@@ -10,6 +12,24 @@ from app.modules.card_game.rl.zhenhong_tactical_audit import audit_file
 
 
 class TacticalAuditTest(unittest.TestCase):
+    def test_immunity_started_inside_action_is_not_missed(self):
+        b=next(b for b in STARTER_DECKS if b['id']=='zhenhong')
+        data=dict(id='event-audit-test',seed=82,first='a',decks={'a':b,'b':b},complete=True,winner='a',
+                  actions=[dict(side='a',action={'type':'mulligan','card_ids':[]})],passive_triggers={'a':0,'b':0})
+        def event_fixture(state,side,action):
+            after=deepcopy(state);after.update(phase='finished',winner='a')
+            after['sides']['a']['characters']['zero']['hp']=0
+            after['events']=[dict(seq=1,type='effect',patch={'sides':{'a':{'characters':[{'id':'zhenhong','damage_immune':True}]}}}),
+                             dict(seq=2,type='down',target='a:zero',patch={})]
+            return after
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'event.json.gz'
+            with gzip.open(path,'wt') as f:json.dump(data,f)
+            with patch('app.modules.card_game.rl.zhenhong_tactical_audit.apply_action',side_effect=event_fixture):
+                result=audit_file(path)
+        self.assertEqual(result['counts']['a']['immune_allied_down_events'],1)
+        self.assertEqual(result['cases'][0]['kind'],'ally_down_while_immune')
+
     def test_replay_verifies_actual_outcome_without_inventing_startup(self):
         b=next(b for b in STARTER_DECKS if b['id']=='zhenhong');decks={'a':b,'b':b}
         state=new_game(seed=8291,first_side='a',decks=decks);actions=[]

@@ -28,6 +28,22 @@ def audit_file(path,*,counterfactuals=False):
     for step,record in enumerate(data['actions']):
         actor=record['side'];action=record['action'];before={s:flags(state,s) for s in owners}
         after=apply_action(state,actor,action)
+        from ..engine.duel_v2.state import damage_immune
+        # Immunity may begin inside the action that also contains a down event.
+        # Follow public patches instead of testing only the pre-action snapshot.
+        immunity={s:damage_immune(state,s,'zhenhong') for s in owners}
+        for event in after.get('events',[]):
+            for side in owners:
+                for character in event.get('patch',{}).get('sides',{}).get(side,{}).get('characters',[]):
+                    if character.get('id')=='zhenhong' and 'damage_immune' in character:
+                        immunity[side]=bool(character['damage_immune'])
+                target=event.get('target','')
+                if (immunity[side] and event.get('type')=='down' and str(target).startswith(side+':')
+                        and target!=side+':zhenhong'):
+                    counts[side]['immune_allied_down_events']+=1
+                    cases.append(dict(step=step,turn=state['turn'],side=side,actual=action,event_seq=event['seq'],
+                        kind='ally_down_while_immune',target=target,immediate_wins=[],possible_activations=[],
+                        judgment='Requires benefit analysis; a sacrifice is not automatically wasteful.'))
         for side in owners:
             b=before[side];a=flags(after,side);c=counts[side]
             c['ever_delay']|=int(a['delay']);c['ever_fangs']|=int(a['fangs'])

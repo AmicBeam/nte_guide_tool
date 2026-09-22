@@ -280,15 +280,23 @@ def evaluate_job(j):
     from app.modules.card_game.rl.report_telemetry import GameTelemetry
     from app.modules.card_game.rl.policies import VisibleEngineRulePolicy
     from app.modules.card_game.engine.duel_v2 import new_game,apply_action,acting_side,observe
+    runtime=None
     if j.get('runtime')=='ten':
+        from . import ten_search_runtime as runtime
         from .ten_search_runtime import model,decision
     if j.get('runtime')=='outcome':
+        from . import outcome_runtime as runtime
         from .outcome_runtime import model,decision
     j={**j,'decks':{k:canonical_build(v) for k,v in j['decks'].items()}}
+    search_sides=j.get('search_sides',[])
+    if not set(search_sides)<= {'a','b'}:raise ValueError('Invalid search evaluation sides')
+    if search_sides and (j.get('details') is False or any(p[0]=='rule' for p in j['policies'].values())):
+        raise ValueError('Search evaluation requires numeric opponents and full recording')
+    search_policies={s:model(*p) for s,p in j['policies'].items()} if search_sides else {}
     if j.get('details') is False:
         g=search_game(dict(j,raw_sides=['a','b']))
         return dict(j,**{k:v for k,v in g.items() if k not in ('rows','search_stats')})
-    s=new_game(seed=j['seed'],first_side=j['first'],decks=j['decks']);opening=deepcopy(s);tele=GameTelemetry(s);actions_log=[];events=[];error=None
+    s=new_game(seed=j['seed'],first_side=j['first'],decks=j['decks']);opening=deepcopy(s);tele=GameTelemetry(s);actions_log=[];events=[];error=None;search_stats=[]
     immune_metrics={side:Counter() for side in ('a','b')};immune_risks={side:[] for side in ('a','b')}
     from .setup_reward import ready as setup_ready
     setup_seen={side:setup_ready(s,side) for side in ('a','b')}
@@ -298,6 +306,21 @@ def evaluate_job(j):
             side=acting_side(s);spec=j['policies'][side]
             if spec[0]=='rule':
                 v=observe(s,side);actions=[e['action'] for e in v['legal_actions'] if e['action']['type']!='concede'];idx=VisibleEngineRulePolicy()(v,tuple(actions))
+            elif side in search_sides:
+                from .information_search import search
+                # A separate, explicit high-bit namespace keeps evaluation
+                # search worlds out of the legacy training/game seed ranges.
+                digest=hashlib.sha256(f'evaluation-search-v1:{j["seed"]}:{len(actions_log)}:{side}'.encode()).hexdigest()
+                root_seed=(1<<256)|int(digest,16)
+                result=search(s,side,search_policies,seed=root_seed,simulations=j.get('simulations',16),
+                    algorithm=j.get('search_algorithm','gumbel'),gumbel_candidates=j.get('gumbel_candidates',8),
+                    noise=False,runtime=runtime,deadline=j['deadline'])
+                if not result['complete']:
+                    error='Incomplete evaluation search';break
+                actions=result['actions'];idx=result['search_choice']
+                search_stats.append(dict(step=len(actions_log),side=side,simulations=result['simulations'],
+                    requested=result['requested'],covered=result['roots_covered'],legal=len(actions),
+                    root_seed_sha256=digest,policy_source=result['policy_source'],noise=False))
             else:
                 actions,(x,c)=decision(s,side);idx=int(model(*spec).scores(x,c).argmax())
             if side=='a' and j.get('keep_all') and s['phase']=='mulligan':idx=next(i for i,a in enumerate(actions) if a['type']=='mulligan' and not a.get('card_ids'))
@@ -322,14 +345,15 @@ def evaluate_job(j):
                     raise ValueError('Replay action/state mismatch')
             replay_verified=True
         except Exception as exc:error=repr(exc)
-    result=dict(**j,setup_achieved=setup_seen,passive_triggers={side:int(s['sides'][side]['characters'].get('zhenhong',{}).get('surplus_passive_triggers',0)) for side in ('a','b')},replay_verified=replay_verified,complete=s['phase']=='finished' and error is None,winner=s.get('winner'),turn=s['turn'],error=error,telemetry=tele.finish(s),actions=actions_log,events=events,immune_window={k:dict(v) for k,v in immune_metrics.items()},immune_risks=immune_risks,opening_state=opening)
+    result=dict(**j,setup_achieved=setup_seen,passive_triggers={side:int(s['sides'][side]['characters'].get('zhenhong',{}).get('surplus_passive_triggers',0)) for side in ('a','b')},replay_verified=replay_verified,complete=s['phase']=='finished' and error is None,winner=s.get('winner'),turn=s['turn'],error=error,telemetry=tele.finish(s),actions=actions_log,events=events,immune_window={k:dict(v) for k,v in immune_metrics.items()},immune_risks=immune_risks,opening_state=opening,
+        search_stats=search_stats,search_decisions=len(search_stats),search_simulations=sum(r['simulations'] for r in search_stats))
     out=Path(j['output'])
     with gzip.open(out/'raw'/f"{j['id']}.json.gz",'wt',encoding='utf-8') as f:json.dump(result,f,ensure_ascii=False)
     if j.get('replay') and result['complete']:
         from app.modules.card_game.rl.offline_analysis import _public_payload
         s['events']=events;payload=_public_payload(opening,s,game_id=j['id'])
         with gzip.open(out/'replays'/f"{j['id']}.json.gz",'wt',encoding='utf-8') as f:json.dump(payload,f,ensure_ascii=False)
-    return {k:v for k,v in result.items() if k not in ('telemetry','actions','events','output','opening_state')}
+    return {k:v for k,v in result.items() if k not in ('telemetry','actions','events','output','opening_state','search_stats')}
 
 
 def evaluate(pool,out,initial,final,old_builds,builds,deadline,config):

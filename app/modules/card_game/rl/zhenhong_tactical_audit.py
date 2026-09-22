@@ -41,7 +41,7 @@ def audit_file(path,*,counterfactuals=False):
                 if (immunity[side] and event.get('type')=='down' and str(target).startswith(side+':')
                         and target!=side+':zhenhong'):
                     counts[side]['immune_allied_down_events']+=1
-                    cases.append(dict(step=step,turn=state['turn'],side=side,actual=action,event_seq=event['seq'],
+                    cases.append(dict(step=step,turn=state['turn'],side=side,actor=actor,actual=action,event_seq=event['seq'],
                         kind='ally_down_while_immune',target=target,immediate_wins=[],possible_activations=[],
                         judgment='Requires benefit analysis; a sacrifice is not automatically wasteful.'))
         for side in owners:

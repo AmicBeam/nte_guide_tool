@@ -33,6 +33,8 @@ class RecoveryTest(unittest.TestCase):
         c={'created':1000,'rule_hash':'rule','simulations':256,'workers':8,'deadlines':{'foundation':2000,'search':3000,'candidate_adaptation':4000,'confirmation':5000,'audit':6000,'evaluation':7000}}
         r={'rule_hash':'rule','simulations':256,'workers':8,'complete':True,'measured_at':900,'estimated_stage_seconds':{k:500 for k in ['foundation','search','adaptation','confirmation','audit','evaluation']}}
         self.assertTrue(validate_capacity(r,c,1000))
+        with self.assertRaises(ValueError):validate_capacity(r,dict(c,search_algorithm='gumbel'),1000)
+        self.assertTrue(validate_capacity(dict(r,search_algorithm='gumbel',gumbel_candidates=16),dict(c,search_algorithm='gumbel',gumbel_candidates=16),1000))
         with self.assertRaises(ValueError):validate_capacity(dict(r,simulations=8),c,1000)
         r['estimated_stage_seconds']['adaptation']=900
         with self.assertRaises(ValueError):validate_capacity(r,c,1000)

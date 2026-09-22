@@ -37,13 +37,13 @@
 
 五套任务使用 `scripts/train_duel_v2_full_cycle.py --ten --baseline-builds BUILD_JSON --initial PREPARED_MODELS --throughput-report MEASURED_JSON --research-warm-start --run`，默认截止按本手册09:00规则解析；明确日期时传 `--hard-deadline EPOCH`。`--ten`通过显式适配器复用 `information_search.search_game` 和 `policy_value_update`，基础学习及两组公平适应都逐决策搜索；不调用 `five_full_cycle.py` 的PPO训练。
 
-先以 `ten_search_runtime.migrate_source`核验未废弃数值来源、按具名观察列迁移并绑定当前合法构筑；新增列置零，优化器重置，旧服务批准不继承。五套角色与顺序在构筑JSON固定。完整模式搜索预算256，配牌搜索4轮；两组适应默认各8步且同起点、同种子、同冻结对手，实际步数不足则不批准候选。预算分配为基础25%、配牌25%、两组适应各12%、确认7%、审计4%、完整评测13.5%、收尾1.5%，以本轮配置为准。
+先以 `ten_search_runtime.migrate_source`核验未废弃数值来源、按具名观察列迁移并绑定当前合法构筑；新增列置零，优化器重置，旧服务批准不继承。五套角色与顺序在构筑JSON固定。十人完整模式新任务默认Gumbel搜索预算32、根候选上限16，配牌搜索4轮；两组适应默认各8步且同起点、同种子、同冻结对手，实际步数不足则不批准候选。预算分配为基础25%、配牌25%、两组适应各12%、确认7%、审计4%、完整评测13.5%、收尾1.5%，以本轮配置为准。
 
 冻结报告使用 `report-models/` 中的本轮原配牌适应策略或已接受候选策略；它与可能回退到初始策略的 `recommended/` 分开，不让交付回退把新版互搏主表换成旧模型。主矩阵每格默认128局，包括同模型内战；逐卡、角色实际伤害／治疗／护盾变化、换牌对照、终结／环合及免伤队友倒地记录一起归档。选中录像按保存动作逐步重放，校验私有状态摘要，再生成隐藏信息已过滤的公开录像。缺局、重放不一致或原始证据缺失均不能标记完整。
 
 ### 长训容量与批次约束
 
-十人完整长训启动前必须提供 `--throughput-report`，以当前规则、正式搜索预算256、相同工作进程数完成实测；8次搜索的smoke不能作为256次搜索容量依据。报告记录 `rule_hash`、`simulations`、`workers`、`complete`、`measured_at` 和 `estimated_stage_seconds`（foundation/search/adaptation/confirmation/audit/evaluation）。估算必须按本轮实际候选数、先后手、轮数、优化步数及矩阵局数展开，连同测量原始记录保存在本轮artifacts；不能凭空填写。启动器要求24小时内的同配置测量，并为每阶段保留25%容量余量，不够则在启动前重新规划，不能带着不可完成的计划长跑。
+十人完整长训启动前必须提供 `--throughput-report`，以当前规则、本轮搜索算法、候选上限、正式搜索预算和相同工作进程数完成实测；8次搜索的smoke不能作为正式预算容量依据。报告记录 `rule_hash`、`search_algorithm`、`gumbel_candidates`（Gumbel时）、`simulations`、`workers`、`complete`、`measured_at` 和 `estimated_stage_seconds`（foundation/search/adaptation/confirmation/audit/evaluation）。估算必须按本轮实际候选数、先后手、轮数、优化步数及矩阵局数展开，连同测量原始记录保存在本轮artifacts；不能凭空填写。启动器要求24小时内的同配置测量，并为每阶段保留25%容量余量，不够则在启动前重新规划，不能带着不可完成的计划长跑。
 
 搜索学习默认每套每批一个对手、先后手各一局，共10局；按批次轮换，四批覆盖每套的其余四个对手。只使用正常终局且搜索完整的轨迹。一个对局截断不使其他已完成轨迹失效；采样提前让出最多60秒更新时间，参数优化仍不得超过阶段截止。没有完整样本的策略跳过更新，不能用截断回报凑数。
 
@@ -163,6 +163,22 @@ WDL搜索复用当前行动方已生成的可见观察与编码，并避免计�
 完整采样计时另用`scripts/check_duel_v2_simulation_game.py --models RESEARCH_WDL_DIR --output NEW_DIR --seed-reservation RESERVED_JSON --seconds 600`，对同种子、同权重的两个完整镜像对局使用固定32搜索预算，比较正常／轻量模拟的墙钟、动作序列与训练标签；仅采样，不创建优化器。单个成对样本不能当作稳定的整轮训练加速比，也不能外推为256预算的整局结果。
 
 专项检查：`python -m unittest tests.test_duel_v2_simulation tests.test_duel_v2_information_search tests.test_duel_v2_trajectory_resume`。全角色构筑的随机合法轨迹不等于穷举所有卡效分支；遇到已有广泛回归失败时，对照修改前版本记录相同失败，不将它们隐瞒成全套通过。
+
+### 低预算Gumbel搜索与学习目标
+
+依据Danihelka等人的[Policy improvement by planning with Gumbel](https://openreview.net/forum?id=bERaNdoegnO)及[DeepMind Mctx官方实现](https://github.com/google-deepmind/mctx)，`search_policy.py`以NumPy实现根的sequential halving、内部节点的改进策略分配及mixed-value completed-Q。它仍运行在本项目近似信息集采样上，不是完整MuZero或不完全信息均衡求解器，不继承论文在准确Q等前提下的保证。
+
+- 根以模型logits＋Gumbel噪声抽取有限候选，逐轮分配访问和淘汰；评估时噪声为0。最终在决选访问层中按logits＋Gumbel＋变换Q选择，不直接取总访问最多，也不简单取单次最高Q。
+- 内部节点按`softmax(logits + completed_Q) - visits/(1 + total_visits)`选择，使访问趋近改进策略。未访问Q按先验加权的已访问Q与原始价值混合填充；使用参考默认变换`0.1 × (50 + max_visit) × rescaled_Q`。
+- 策略目标为`softmax(logits + completed_Q)`；实际训练动作使用Gumbel搜索的最终选择。不能把旧访问比例当新目标，也不能把最大目标概率当作带噪声的最终选择。原访问分布另存`visit_pi`，每条学习样本记录选择与算法。
+- `algorithm='gumbel'`严格使用请求预算，单合法动作仍只模拟1次；候选数为合法数、配置上限与预算的最小值。16次不会因26种换牌组合悄悄扩成34次。候选未访问不表示非法，完整合法动作列表始终保留，覆盖数如实报告。
+- `algorithm='puct'`保留历史方法及原覆盖下限作对照。曾诊断过的即时终局优先实验未进入默认实现；没有真红专用动作规则，也没有额外人工奖励。当前改动解决分配／选择／标签的一致性，不保证每个低预算局面都找到最优动作。
+
+`train_duel_v2_full_cycle.py --ten`的新任务默认`--search-algorithm gumbel --simulations 32 --gumbel-candidates 16`；可显式选16/32/64，或选PUCT复现历史对照。学习、适应、带搜索选择检查传递相同算法与预算。长训容量测量必须包含算法和候选上限，不能复用同数字预算但不同算法的吞吐报告。奖励／网络schema仍按本轮运行时显式配置，Gumbel本身不把旧价值网络升级成WDL。
+
+固定真红的低预算自博弈入口为`train_duel_v2_outcome_trial.py --profile gumbel_low_budget --workers 4 --seconds 3600 --source VERIFIED_MODELS --seed-reservation RESERVED_JSON --output NEW_DIR --run`，两组分别16和32，各两个槽、同一截止，纯WDL、双方镜像学习和历史／跨队轮换沿用前节；smoke使用2进程和4/8预算。此入口提供有界对照，不自动批准网站模型。
+
+`scripts/check_duel_v2_gumbel_learning.py`提供有界工程验证：只重分析已归档TRAINING镜像对局，按整局分出拟合和留出；生成16/32目标后各做最多128次隔离更新。已知漏斩杀录像只用于排查复测，绝不参与梯度，也不是未见过的泛化样本。新增自然开局评估使用独立种子。实际选中动作若在原训练状态一步终局，则将该新分支的实际胜负单独作为value标签；否则保留历史继续打法的终局标签并标明来源。它不把搜索Q或过程奖励伪装成实际胜负。单次拟合检查不能替代正式RL及完整模型验收。
 
 ### 4. 自博弈、冻结对手与样本归属
 

@@ -55,6 +55,9 @@ def main():
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--initial',type=Path,default=ROOT/'app/modules/card_game/engine/ai/models')
     p.add_argument('--seconds',type=float)
+    p.add_argument('--search-algorithm',choices=('puct','gumbel'),default=None)
+    p.add_argument('--simulations',type=int,choices=(8,16,32,64,128,256),default=None)
+    p.add_argument('--gumbel-candidates',type=int,default=16)
     p.add_argument('--throughput-report',type=Path,help='Measured formal-budget stage estimates; required for a ten-character long run')
     p.add_argument('--ten',action='store_true',help='Five-team ten-character information search cycle')
     p.add_argument('--hard-deadline',type=float)
@@ -145,15 +148,18 @@ def main():
         else:
             from app.modules.card_game.rl.league_policy import LeagueModel
             for key in PRESETS:LeagueModel(initial,key,require_approved=True)
+    algorithm=a.search_algorithm or ('gumbel' if a.ten else 'puct')
+    simulations=a.simulations or (32 if algorithm=='gumbel' else 256)
+    if a.gumbel_candidates<1:raise ValueError('Positive candidate limit required')
     config=dict(opponents_per_cycle=1 if a.ten else 2,optimizer_reserve_seconds=60,runtime='ten' if a.ten else None,matrix_games=128,zhenhong_setup_reward=a.zhenhong_setup_reward if a.ten else 0,zhenhong_setup_decay_steps=a.zhenhong_setup_decay_steps,zhenhong_passive_reward=a.zhenhong_passive_reward if a.ten else 0,schema='paired_full_cycle_v1',rule_hash=rule_hash(),created=now,deadlines=deadlines,
-        initial=str(initial),device=a.device,workers=a.workers,smoke=a.smoke,simulations=8 if a.smoke else 256,
+        initial=str(initial),device=a.device,workers=a.workers,smoke=a.smoke,simulations=min(8,simulations) if a.smoke else simulations,search_algorithm=algorithm,gumbel_candidates=a.gumbel_candidates,
         confirmation_seeds=32 if a.smoke else a.confirmation_seeds,adaptation_steps=4 if a.smoke else a.adaptation_steps,
         alpha=.05,minimum_gain=.02,audit_margin=.05,research_warm_start=a.research_warm_start,
         baseline_builds=baselines,automatic_serving_approval=False)
     if not a.run:
         print(json.dumps(dict(config=config,training_started=False,seed_reservation_pending=True,source_validation_pending=True),ensure_ascii=False));return
     if a.ten and not a.smoke:
-        if a.throughput_report is None:raise ValueError('Measure the formal 256-search workload and provide --throughput-report before a long run')
+        if a.throughput_report is None:raise ValueError('Measure the configured algorithm and formal search budget and provide --throughput-report before a long run')
         from app.modules.card_game.rl.training_capacity import validate_capacity
         capacity=json.loads(a.throughput_report.read_text())
         validate_capacity(capacity,config);config['capacity_measurement']=capacity

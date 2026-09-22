@@ -20,7 +20,8 @@ def make_job(arm, number, out, config, base, current, source, initial):
     other=current if mirror else initial if history else source
     j=dict(id=f'{arm}-{number}',arm=arm,group=number,matchup=kind,
         seed=config['seeds']['foundation']+number,first=('a','b')[(number//4 if arm!='fixed256' else number)%2],
-        runtime='outcome',simulations=config['simulations'],fast_simulation=config.get('fast_simulation',True),training=True,collect=True,record_episode=True,
+        runtime='outcome',simulations=config.get('search_budgets',{}).get(arm,config['simulations']),
+        search_algorithm=config.get('search_algorithm','puct'),gumbel_candidates=config.get('gumbel_candidates',16),fast_simulation=config.get('fast_simulation',True),training=True,collect=True,record_episode=True,
         train_sides=['a','b'] if mirror else ['a'],deadline=config['train_until']-45,slice_seconds=config.get('slice_seconds',60),
         resume_path=str(out/'private-progress'/f'{arm}-{number}.json.gz'),
         decks={'a':base[key].serving_deck,'b':base[foe].serving_deck},
@@ -33,6 +34,7 @@ def make_job(arm, number, out, config, base, current, source, initial):
 def learn(executor,out,config,base,source,initial,nets,opts,pools,steps,totals,status,origin):
     import torch
     from .outcome_trial import game_summary
+    ARMS=tuple(config.get('arms',('fixed256','self256','selfmixed')))
     current={a:initial for a in ARMS};numbers={a:0 for a in ARMS};slots={a:0 for a in ARMS}
     rngs={a:np.random.default_rng(config['seeds']['foundation']+i*1000000) for i,a in enumerate(ARMS)}
     pending={};costs={};started=time.time();slots_per_arm=1 if config['smoke'] else 2
@@ -72,7 +74,7 @@ def learn(executor,out,config,base,source,initial,nets,opts,pools,steps,totals,s
                 from pathlib import Path
                 Path(j['resume_path']).unlink(missing_ok=True)
                 policy_rows=[r for r in data['rows'] if 'pi' in r]
-                if any(r['search_budget']!=config['simulations'] for r in policy_rows):raise ValueError('Shallow policy label')
+                if any(r['search_budget']!=j['simulations'] for r in policy_rows):raise ValueError('Shallow policy label')
                 if j['matchup']=='mirror' and g['winner'] in ('a','b') and policy_rows:
                     # Both sides are learning; count sides, never invent an extra game.
                     if len({r['side'] for r in policy_rows})==2 and {r['z'] for r in policy_rows}!={-1.,1.}:

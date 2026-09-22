@@ -13,6 +13,11 @@ class Policy:
 
 class ResumeTest(unittest.TestCase):
     def test_real_game_resume_preserves_actions_labels_and_rng(self):
+        for algorithm in ('puct','gumbel'):
+            with self.subTest(algorithm=algorithm):
+                self.check_resume(algorithm)
+
+    def check_resume(self,algorithm):
         # Deterministic cheap search selects a distribution over actual legal moves.
         # Rule progression, state serialization, budget and action RNG are real.
         def cheap(s,side,policies,**kw):
@@ -20,7 +25,7 @@ class ResumeTest(unittest.TestCase):
             return dict(complete=True,actions=actions,x=x,c=c,pi=p,search_choice=0,raw_choice=0,
                         roots_covered=len(actions),nodes=1,simulations=kw['simulations'],value=0.)
         b=next(d for d in STARTER_DECKS if d['id']=='zhenhong')
-        job=dict(runtime='ten',seed=18191,first='b',decks={'a':b,'b':b},policies={'a':('same','zhenhong'),'b':('same','zhenhong')},
+        job=dict(search_algorithm=algorithm,runtime='ten',seed=18191,first='b',decks={'a':b,'b':b},policies={'a':('same','zhenhong'),'b':('same','zhenhong')},
                  deadline=time.time()+60,training=True,collect=True,record_episode=True,train_sides=['a','b'],
                  search_mix=dict(low=2,high=8,deep_probability=.25),max_actions=400)
         with tempfile.TemporaryDirectory() as folder,patch.object(runtime,'model',return_value=Policy()),patch('app.modules.card_game.rl.information_search.search',side_effect=cheap):
@@ -43,6 +48,7 @@ class ResumeTest(unittest.TestCase):
                     else:self.assertEqual(left[k],right[k])
             with self.assertRaises(ValueError):search_game({**sliced,'deadline':job['deadline']+1})
             with self.assertRaises(ValueError):search_game({**sliced,'seed':job['seed']+1})
+            with self.assertRaises(ValueError):search_game({**sliced,'search_algorithm':'gumbel' if algorithm=='puct' else 'puct'})
             with patch.object(Policy,'version','different-model'):
                 with self.assertRaises(ValueError):search_game(sliced)
 

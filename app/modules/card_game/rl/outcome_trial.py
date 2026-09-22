@@ -41,7 +41,7 @@ def calibration(net, rows):
 def run(out,config):
     import torch
     ARMS=tuple(config.get('arms',('uniform','reanalyse')))
-    selfplay=config.get('profile')=='selfplay_budget'
+    selfplay=config.get('profile') in ('selfplay_budget','gumbel_low_budget')
     torch.set_num_threads(1);torch.manual_seed(config['seeds']['foundation'])
     if config['device']=='cuda' and not torch.cuda.is_available():raise RuntimeError('CUDA unavailable')
     out=Path(out);source=out/'sources'
@@ -199,9 +199,10 @@ def run(out,config):
                     row_model_sha=rt.OutcomeModel(out/a/'final',KEY).version,col_model_sha=rt.OutcomeModel(out/b/'final',KEY).version))
     summary=dict(complete=len(results)==len(jobs) and all(r['complete'] for r in results),training_updated=min(steps.values())>0 and all(v['policy'] and v['wdl'] for v in changed.values()),
         weights_changed=changed,steps=steps,reanalysed=totals.get('reanalyse',{}).get('reanalysed',0),metrics=metrics,source_unchanged=True,automatic_serving_approval=False,
-        single_training_seed=True,scope='fixed_zhenhong_selfplay_budget' if selfplay else 'fixed_zhenhong_WDL_uniform_vs_replay_reanalysis')
+        single_training_seed=True,scope='fixed_zhenhong_gumbel_low_budget' if config.get('profile')=='gumbel_low_budget' else 'fixed_zhenhong_selfplay_budget' if selfplay else 'fixed_zhenhong_WDL_uniform_vs_replay_reanalysis')
     write(out/'summary.json',summary)
     description='三组共享WDL起点、关闭人工奖励；fixed256固定陪练，self256自博弈混合固定256，selfmixed相同自博弈分布混合32/256。各组相同并发槽与截止；比较同墙钟效果，不要求优化次数相同。' if selfplay else '两组共享WDL预热起点、关闭前置奖及被动奖。仅比较均匀按局回放与优先回放＋重分析；单次随机种子试验，不代表完整算法验收。'
+    if config.get('profile')=='gumbel_low_budget':description='同起点、同墙钟、纯胜负的Gumbel16与Gumbel32自博弈对照；策略标签由先验和完成Q生成，训练动作采用Gumbel搜索的最终选择。'
     lines=['# 真红纯胜负经验学习试验','',description,'',
            '| 对照 | 胜/正常完成 | 计划局数 | 实际被动次数 |','| --- | --- | --- | --- |']
     for key,m in metrics.items():lines.append(f"| {key} | {m['wins']}/{m['complete']} | {m['planned']} | {m['passive']} |")

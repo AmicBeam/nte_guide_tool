@@ -7,7 +7,7 @@ import numpy as np
 
 CONTRACT_FIELDS=('seed','first','decks','policies','runtime','simulations','max_actions','training','collect',
                  'record_episode','collect_value_only','train_sides','raw_sides','search_mix',
-                 'zhenhong_passive_reward','setup_rewards','reuse_inference','fast_simulation')
+                 'zhenhong_passive_reward','setup_rewards','reuse_inference','fast_simulation','search_algorithm','gumbel_candidates')
 
 
 def contract(job):
@@ -18,7 +18,7 @@ def algorithm_hash():
     root=Path(__file__).parent
     digest=hashlib.sha256()
     for name in ('information_search.py','trajectory_checkpoint.py','outcome_runtime.py','league_rollout.py',
-                 'league_policy.py','fixed_lineup.py','ten_search_runtime.py','setup_reward.py'):
+                 'league_policy.py','fixed_lineup.py','ten_search_runtime.py','setup_reward.py','search_policy.py'):
         digest.update(name.encode());digest.update((root/name).read_bytes())
     return digest.hexdigest()
 

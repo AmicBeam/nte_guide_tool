@@ -636,3 +636,5 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 离线搜索树使用`engine/duel_v2/simulation.py`省去演出patch生成，真实对局与回放仍走普通动作入口。对拍与计时入口`scripts/check_duel_v2_simulation.py`；专项回归`python -m unittest tests.test_duel_v2_simulation`。旧数值模型仅可显式迁移到未批准研究副本，不能据性能对拍继承网站批准。
 
 `scripts/check_duel_v2_simulation_game.py`对同种子完整搜索采样计时，预算固定32，分别记录普通／轻量路径；只采样、不更新参数，不把保存动作的执行速度当作训练吞吐。
+
+低预算搜索由`rl/search_policy.py`维护Gumbel访问计划和改进策略目标；完整十人新任务默认32次，固定真红可用`--profile gumbel_low_budget`对比16/32。`scripts/check_duel_v2_gumbel_learning.py`只做有界重分析、隔离拟合与新种子评估；原排查录像不进入梯度。验证：`python -m unittest tests.test_duel_v2_gumbel_search tests.test_duel_v2_information_search tests.test_duel_v2_training_recovery`。

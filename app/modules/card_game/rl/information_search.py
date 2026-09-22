@@ -45,10 +45,11 @@ class Node:
     prior: np.ndarray
     visits: np.ndarray
     total: np.ndarray
+    raw_value: float = 0.
 
     @classmethod
-    def create(cls,prior):
-        return cls(prior,np.zeros(len(prior),dtype=np.int32),np.zeros(len(prior)))
+    def create(cls,prior,raw_value=0.):
+        return cls(prior,np.zeros(len(prior),dtype=np.int32),np.zeros(len(prior)),raw_value)
 
     def choose(self, minimum_visits=1):
         unseen=np.flatnonzero(self.visits<minimum_visits)
@@ -86,8 +87,11 @@ def leaf_value(state, viewer, policies, *, runtime=None):
     return value if actor==viewer else -value
 
 
-def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False,reuse_inference=True,fast_simulation=True):
+def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False,reuse_inference=True,fast_simulation=True,algorithm="puct",gumbel_candidates=16):
     decide = runtime.decision if runtime else decision
+    if type(gumbel_candidates)!=int or gumbel_candidates<1:raise ValueError('Invalid Gumbel candidate limit')
+    if algorithm not in ('puct','gumbel'):raise ValueError('Unknown search algorithm')
+    if algorithm=='gumbel' and (root_min_visits!=1 or node_min_visits!=1):raise ValueError('PUCT visit floors do not apply to Gumbel')
     if simulations<1 or max_depth<1:raise ValueError('Positive search limits required')
     if acting_side(state)!=viewer:raise ValueError('Search must use the decision owner')
     if not np.isfinite(passive_reward) or passive_reward < 0:
@@ -106,17 +110,21 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
         root_value=leaf_value(state,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(raw/10))
     prior=search_prior(logits,prior_mode,prior_temperature,uniform_mix)
     rng=np.random.default_rng(seed)
-    if noise and len(actions)>1:
+    if algorithm=='puct' and noise and len(actions)>1:
         prior=.75*prior+.25*rng.dirichlet(np.full(len(actions),.3))
-    root=Node.create(prior);root_key=info_key(x,c)+(bytes([setup_initial]) if setup_reward else b'');tree={root_key:root}
-    requested=1 if len(actions)==1 else max(simulations,len(actions)+8)
-    if len(actions)>1 and root_min_visits*len(actions)>requested:
+    root=Node.create(prior,root_value);root_key=info_key(x,c)+(bytes([setup_initial]) if setup_reward else b'');tree={root_key:root}
+    requested=1 if len(actions)==1 else simulations if algorithm=='gumbel' else max(simulations,len(actions)+8)
+    if algorithm=='puct' and len(actions)>1 and root_min_visits*len(actions)>requested:
         raise ValueError("Search budget cannot cover requested root exploration floor")
+    from . import search_policy as planning
+    schedule=planning.visit_schedule(min(len(actions),gumbel_candidates,requested),requested) if algorithm=='gumbel' else None
+    gumbel=rng.gumbel(size=len(actions)) if algorithm=='gumbel' and noise else np.zeros(len(actions))
     depths=[];worlds=0
+    terminal_checks=np.zeros(len(actions),dtype=np.int32);terminal_wins=np.zeros(len(actions),dtype=np.int32)
     for simulation in range(requested):
         if deadline is not None and time.time()>=deadline:break
         world=sample_world(state,viewer,seed+simulation*104729,runtime=runtime)
-        worlds+=1;path=[];value=0.;finished_sim=True;setup_seen=setup_initial
+        worlds+=1;path=[];value=0.;finished_sim=True;setup_seen=setup_initial;root_action=None;root_terminal_win=False
         for depth in range(max_depth):
             if deadline is not None and time.time()>=deadline:
                 finished_sim=False;break
@@ -135,13 +143,21 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                     else:
                         scores,v=policies[actor].scores_value(xx,cc)
                         value=leaf_value(world,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(v/10))
-                    tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix));break
-                node=tree[key];chosen=node.choose(root_min_visits if node is root else node_min_visits);path.append((node,chosen))
+                    tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix),value);break
+                node=tree[key]
+                if algorithm=='gumbel':
+                    chosen=planning.choose_root(node,gumbel,schedule[simulation]) if depth==0 else planning.choose_interior(node)
+                else:chosen=node.choose(root_min_visits if node is root else node_min_visits)
+                path.append((node,chosen))
             world=clean((simulate_action if fast_simulation else apply_action)(world,actor,legal[chosen]))
+            if depth==0:
+                root_action=chosen;root_terminal_win=world['phase']=='finished' and world.get('winner')==viewer
             if setup_reward:setup_seen=setup_seen or setup_ready(world,viewer)
         else:
             value=leaf_value(world,viewer,policies,runtime=runtime)
         if not finished_sim:break
+        if root_action is not None:
+            terminal_checks[root_action]+=1;terminal_wins[root_action]+=int(root_terminal_win)
         if runtime and passive_reward:
             value += passive_reward/10 * (runtime.passive_count(world,viewer)-initial_passive)
         value+=setup_reward/10*int(setup_seen and not setup_initial)
@@ -149,13 +165,17 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
             node.visits[chosen]+=1;node.total[chosen]+=value
         depths.append(depth+1)
     visits=root.visits.copy();complete=len(depths)==requested
-    pi=visits/visits.sum() if visits.sum() else prior.copy()
+    visit_pi=visits/visits.sum() if visits.sum() else prior.copy()
+    pi=planning.improved_policy(root) if algorithm=='gumbel' else visit_pi.copy()
+    policy_source='gumbel_q' if algorithm=='gumbel' else 'visits'
+    selected=planning.choose_root(root,gumbel,int(visits.max())) if algorithm=='gumbel' else int(np.argmax(visits))
     return dict(actions=actions,x=x,c=c,pi=pi.astype(np.float32),visits=visits,
                 mean_values=np.divide(root.total,visits,out=np.zeros(len(visits)),where=visits>0),
+                visit_pi=visit_pi,root_prior=prior,root_gumbel=gumbel,terminal_checks=terminal_checks,terminal_wins=terminal_wins,policy_source=policy_source,
                 complete=complete,simulations=len(depths),requested=requested,
                 roots_covered=int((visits>0).sum()),root_min_visits=int(visits.min()),prior_mode=prior_mode,nodes=len(tree),worlds=worlds,
                 max_depth=max(depths,default=0),raw_choice=int(np.argmax(logits)),
-                search_choice=int(np.argmax(visits)),value=root_value)
+                search_choice=selected,value=root_value,algorithm=algorithm,considered_actions=min(len(actions),gumbel_candidates,requested) if algorithm=='gumbel' else len(actions))
 
 
 def decision_budget(job, rng):
@@ -173,7 +193,7 @@ def search_game(job):
     """Full real trajectory; BOTH sides search, including opening mulligans.
 
     Only completed games emit training rows. Every row has its own acting-side
-    outcome and visit target. Optional training rewards remain separate from wins.
+    outcome and algorithm-specific policy target. Optional training rewards remain separate from wins.
     """
     runtime = None
     if job.get('runtime') == 'ten':
@@ -240,7 +260,7 @@ def search_game(job):
         if use_search:
             try:
                 result=search(state,actor,policies,seed=job['seed']+1000003*(step+1),
-                              simulations=budget,deadline=job['deadline'],reuse_inference=job.get('reuse_inference',True),fast_simulation=job.get('fast_simulation',True),
+                              simulations=budget,deadline=job['deadline'],reuse_inference=job.get('reuse_inference',True),fast_simulation=job.get('fast_simulation',True),algorithm=job.get('search_algorithm','puct'),gumbel_candidates=job.get('gumbel_candidates',16),
                               noise=job.get('training',False) and save_labels,**({'runtime':runtime,'passive_reward':coefficient if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.0,'setup_reward':setup_coefficients.get(actor,0.) if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.,'setup_already_achieved':setup_seen[actor]} if runtime else {}))
             except Exception as exc:
                 if job.get('failure_dir'):
@@ -256,11 +276,12 @@ def search_game(job):
                 budget_rng.bit_generator.state=budget_before;del value_rows[value_count_before:]
                 return suspend('incomplete_search')
             distribution=result['pi'].astype(float);distribution/=distribution.sum()
-            chosen=int(rng.choice(len(result['actions']),p=distribution)) if job.get('training') and save_labels else result['search_choice']
+            chosen=int(rng.choice(len(result['actions']),p=distribution)) if job.get('training') and save_labels and job.get('search_algorithm','puct')=='puct' else result['search_choice']
             actions=result['actions']
             if job.get('collect') and save_labels:
                 rows.append(dict(x=result['x'],c=result['c'],pi=result['pi'],side=actor,
-                                 key=job['policies'][actor][1],phase=state['phase'],step=step,value_actor=1,search_budget=budget))
+                                 key=job['policies'][actor][1],phase=state['phase'],step=step,value_actor=1,search_budget=budget,policy_source=result.get('policy_source','visits'),
+                                 visit_pi=result.get('visit_pi',result['pi']),selected=chosen,search_algorithm=job.get('search_algorithm','puct')))
                 if runtime and coefficient and job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']):
                     rows[-1]['passive_before']=runtime.passive_count(state,actor)
                 if runtime and job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) and setup_coefficients.get(actor,0)>0:

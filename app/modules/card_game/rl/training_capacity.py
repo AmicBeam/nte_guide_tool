@@ -6,6 +6,10 @@ def validate_capacity(report,config,now=None):
     now=time.time() if now is None else now
     if report.get('rule_hash')!=config['rule_hash'] or report.get('simulations')!=config['simulations']:
         raise ValueError('Capacity measurement must use the current rules and formal search budget')
+    if report.get('search_algorithm','puct')!=config.get('search_algorithm','puct'):
+        raise ValueError('Capacity measurement must use the planned search algorithm')
+    if config.get('search_algorithm')=='gumbel' and report.get('gumbel_candidates')!=config.get('gumbel_candidates',16):
+        raise ValueError('Capacity measurement must use the planned candidate limit')
     if report.get('workers')!=config['workers'] or not report.get('complete'):
         raise ValueError('Capacity measurement must be complete and use the planned worker count')
     if not 0<=now-report.get('measured_at',0)<=86400:

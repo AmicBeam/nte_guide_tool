@@ -96,7 +96,7 @@ def compare(pool,out,key,dirs,builds,reference,reference_builds,seed,deadline,pa
         for fi,foe in enumerate(k for k in PRESETS if k!=key):
             for i in range(pairs):
                 for first in ('a','b'):
-                    jobs.append(dict(seed=seed+fi*100+i,first=first,deadline=deadline,decks={'a':canonical_build(builds[label]),'b':canonical_build(reference_builds[foe])},policies={'a':(str(folder),key),'b':(str(reference),foe)},raw_sides=['b'] if searching else ['a','b'],runtime=config.get('runtime'),simulations=config.get('simulations',256)))
+                    jobs.append(dict(seed=seed+fi*100+i,first=first,deadline=deadline,decks={'a':canonical_build(builds[label]),'b':canonical_build(reference_builds[foe])},policies={'a':(str(folder),key),'b':(str(reference),foe)},raw_sides=['b'] if searching else ['a','b'],runtime=config.get('runtime'),search_algorithm=config.get('search_algorithm','puct'),gumbel_candidates=config.get('gumbel_candidates',16),simulations=config.get('simulations',256)))
                     labels.append(label)
     rs=list(pool.map(search_game,jobs));summary={}
     for label in dirs:
@@ -143,7 +143,7 @@ def _train_iter(pool,out,source,reference,builds,reference_builds,deadline,confi
                     if update_target is None and cycle%8==0:
                         enemy=best[foe];enemy_build=builds[foe]
                     if cycle%5==0 or config['smoke']:enemy_build=random_build(stage_seed+cycle*100+fi,enemy_build['character_ids'],CARD_IDS)
-                    jobs.append(dict(seed=stage_seed+cycle*10000+ki*1000+fi*100,first=first,deadline=rollout_deadline,decks={'a':builds[key],'b':enemy_build},policies={'a':(str(current),key),'b':(str(enemy),foe)},setup_rewards={'a':bonus(key),'b':0. if historical else bonus(foe)},runtime=config.get('runtime'),zhenhong_passive_reward=config.get('zhenhong_passive_reward',0),simulations=config['simulations'],training=True,collect=True,failure_dir=str(out/'failure-roots'),train_sides=['a'] if historical else ['a','b']))
+                    jobs.append(dict(seed=stage_seed+cycle*10000+ki*1000+fi*100,first=first,deadline=rollout_deadline,decks={'a':builds[key],'b':enemy_build},policies={'a':(str(current),key),'b':(str(enemy),foe)},setup_rewards={'a':bonus(key),'b':0. if historical else bonus(foe)},runtime=config.get('runtime'),zhenhong_passive_reward=config.get('zhenhong_passive_reward',0),simulations=config['simulations'],search_algorithm=config.get('search_algorithm','puct'),gumbel_candidates=config.get('gumbel_candidates',16),training=True,collect=True,failure_dir=str(out/'failure-roots'),train_sides=['a'] if historical else ['a','b']))
         results=[];fresh={k:[] for k in PRESETS}
         for job,g in zip(jobs,pool.map(search_game,jobs)):
             results.append(g)

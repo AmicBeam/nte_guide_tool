@@ -75,6 +75,9 @@ def terminal_value(state,viewer):
 def leaf_value(state, viewer, policies, *, runtime=None):
     decide = runtime.decision if runtime else decision
     if state['phase']=='finished':return terminal_value(state,viewer)
+    if runtime and hasattr(runtime, 'value_for'):
+        value=runtime.value_for(state,viewer,policies)
+        if value is not None:return value
     actor=acting_side(state);_,(x,c)=decide(state,actor)
     _,raw=policies[actor].scores_value(x,c)
     value=float(np.tanh(raw/10))
@@ -123,7 +126,7 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                 key=info_key(xx,cc)+(bytes([setup_seen]) if setup_reward else b'')
                 if key not in tree:
                     scores,v=policies[actor].scores_value(xx,cc)
-                    tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix));value=float(np.tanh(v/10));break
+                    tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix));value=leaf_value(world,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(v/10));break
                 node=tree[key];chosen=node.choose(root_min_visits if node is root else node_min_visits);path.append((node,chosen))
             world=clean(apply_action(world,actor,legal[chosen]))
             if setup_reward:setup_seen=setup_seen or setup_ready(world,viewer)
@@ -143,7 +146,7 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                 complete=complete,simulations=len(depths),requested=requested,
                 roots_covered=int((visits>0).sum()),root_min_visits=int(visits.min()),prior_mode=prior_mode,nodes=len(tree),worlds=worlds,
                 max_depth=max(depths,default=0),raw_choice=int(np.argmax(logits)),
-                search_choice=int(np.argmax(visits)),value=float(np.tanh(raw/10)))
+                search_choice=int(np.argmax(visits)),value=leaf_value(state,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(raw/10)))
 
 
 def search_game(job):
@@ -155,13 +158,15 @@ def search_game(job):
     runtime = None
     if job.get('runtime') == 'ten':
         from . import ten_search_runtime as runtime
+    elif job.get('runtime') == 'outcome':
+        from . import outcome_runtime as runtime
     elif job.get('runtime') is not None:
         raise ValueError('Unknown search runtime')
     loader = runtime.model if runtime else model
     decide = runtime.decision if runtime else decision
     state=new_game(seed=job['seed'],first_side=job.get('first','a'),decks=job['decks'])
     policies={side:loader(*spec) for side,spec in job['policies'].items()}
-    rng=np.random.default_rng(job['seed']);rows=[];stats=[];decisions=0
+    rng=np.random.default_rng(job['seed']);rows=[];stats=[];decisions=0;trace=[];value_rows=[]
     coefficient=float(job.get('zhenhong_passive_reward',0.0)) if job.get('training') else 0.0
     if not np.isfinite(coefficient) or coefficient < 0: raise ValueError('Invalid reward coefficient')
     from .setup_reward import ready as setup_ready
@@ -174,6 +179,13 @@ def search_game(job):
         if time.time()>=job['deadline']:
             return dict(complete=False,reason='deadline',rows=[],decisions=decisions)
         actor=acting_side(state)
+        if job.get('record_episode'):
+            from ..engine.duel_v2 import observe
+            for owner in job.get('train_sides',['a']):
+                if owner!=actor or job.get('collect_value_only'):
+                    from .fixed_lineup import encode
+                    vx,_=encode(observe(state,owner,include_previews=False),[])
+                    value_rows.append(dict(x=vx,side=owner,key=job['policies'][owner][1],step=step,value_actor=int(owner==actor)))
         use_search=actor not in job.get('raw_sides',[])
         if use_search:
             try:
@@ -197,7 +209,7 @@ def search_game(job):
             actions=result['actions']
             if job.get('collect'):
                 rows.append(dict(x=result['x'],c=result['c'],pi=result['pi'],side=actor,
-                                 key=job['policies'][actor][1],phase=state['phase']))
+                                 key=job['policies'][actor][1],phase=state['phase'],step=step,value_actor=1))
                 if runtime and coefficient and job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']):
                     rows[-1]['passive_before']=runtime.passive_count(state,actor)
                 if runtime and job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) and setup_coefficients.get(actor,0)>0:
@@ -208,18 +220,21 @@ def search_game(job):
                               value_estimate=result['value']))
         else:
             actions,(x,c)=decide(state,actor);chosen=int(policies[actor].scores(x,c).argmax())
+        if job.get('record_episode'):trace.append(dict(side=actor,action=deepcopy(actions[chosen])))
         state=clean(apply_action(state,actor,actions[chosen]));decisions+=1
         if runtime:
             for side in ('a','b'):setup_seen[side]=setup_seen[side] or setup_ready(state,side)
     complete=state['phase']=='finished'
     if complete:
-        for row in rows:
+        for row in rows+value_rows:
             row['z']=terminal_value(state,row['side'])
             if 'passive_before' in row:
                 row['reward_to_go']=10*row['z']+coefficient*(runtime.passive_count(state,row['side'])-row.pop('passive_before'))
             if 'setup_before' in row:
                 row['setup_future']=int(setup_seen[row['side']])-row.pop('setup_before')
     return dict(complete=complete,winner=state.get('winner'),rows=rows if complete else [],
+                value_rows=value_rows if complete else [],episode_actions=trace if complete else [],
+                model_versions={s:getattr(p,'version',None) for s,p in policies.items()},
                 decisions=decisions,searched=len(stats),search_stats=stats,turn=state['turn'],
                 reason=None if complete else 'action_limit',
                 passive_triggers={s:runtime.passive_count(state,s) for s in ('a','b')} if runtime else {},

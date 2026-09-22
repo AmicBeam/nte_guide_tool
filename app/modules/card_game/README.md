@@ -624,3 +624,7 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 真红搜索训练可使用临时“延滞＋兽牙”首次达成奖励，默认0.1并随累计64步优化退场；实际被动触发奖励仍独立计数。相关纯训练逻辑位于 `rl/setup_reward.py`，参数与长期撤除验收见 `docs/duel-v2-zhenhong-passive-reward.md`，不改变网站卡效或胜负。
 
 真红前置奖励的小时级开关对照使用 `scripts/train_duel_v2_setup_trial.py`，复用共享搜索学习并按完整配对对局同步更新两组，独立比较初始／control／setup的胜率与机制触发。验证：`python -m unittest tests.test_duel_v2_setup_trial tests.test_duel_v2_setup_reward`；数值产物仅进入artifacts。
+
+### 纯胜负经验学习试验
+
+`rl/outcome_runtime.py`维护独立WDL数值模型，`rl/episode_replay.py`维护按局经验与信息集重分析，`rl/outcome_trial.py`编排有界对照。入口为`scripts/train_duel_v2_outcome_trial.py`；范围及预算见[训练手册](../../../docs/duel-v2-public-training.md#纯胜负经验学习的有界试验)。验证：`python -m unittest tests.test_duel_v2_outcome_learning tests.test_duel_v2_information_search tests.test_duel_v2_ten_search`。不改变网站模型或已有冻结任务。

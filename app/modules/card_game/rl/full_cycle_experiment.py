@@ -282,6 +282,8 @@ def evaluate_job(j):
     from app.modules.card_game.engine.duel_v2 import new_game,apply_action,acting_side,observe
     if j.get('runtime')=='ten':
         from .ten_search_runtime import model,decision
+    if j.get('runtime')=='outcome':
+        from .outcome_runtime import model,decision
     j={**j,'decks':{k:canonical_build(v) for k,v in j['decks'].items()}}
     if j.get('details') is False:
         g=search_game(dict(j,raw_sides=['a','b']))

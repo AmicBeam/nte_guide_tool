@@ -11,6 +11,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--source',type=Path)
     p.add_argument('--seed-reservation',type=Path);p.add_argument('--seconds',type=int,default=3600)
+    p.add_argument('--profile',choices=('replay','selfplay_budget'),default='replay')
     p.add_argument('--workers',type=int,default=8);p.add_argument('--smoke',action='store_true')
     p.add_argument('--supervise',action='store_true');p.add_argument('--worker',action='store_true');p.add_argument('--run',action='store_true')
     a=p.parse_args();out=a.output.resolve()
@@ -52,6 +53,9 @@ def main():
     now=time.time();c=dict(kind='zhenhong_outcome_replay_v1',created=now,rule_hash=identity(),device='cuda',workers=a.workers,simulations=8 if a.smoke else 256,smoke=a.smoke,
         train_until=now+a.seconds*.76,evaluate_until=now+a.seconds*.94,hard_deadline=now+a.seconds,
         arms=['uniform','reanalyse'],passive_reward=0.,setup_reward=0.,source=str(source),automatic_serving_approval=False)
+    if a.profile=='selfplay_budget':
+        if a.workers!=(3 if a.smoke else 6):p.error('Selfplay trial requires one/ two slots per each of three arms (3 smoke, 6 formal)')
+        c.update(profile=a.profile,kind='zhenhong_selfplay_budget_v1',arms=['fixed256','self256','selfmixed'],search_mix={'low':32,'high':256,'deep_probability':.25},actor_slots_per_arm=1 if a.smoke else 2)
     if not a.run:print(json.dumps(c));return
     if out.exists():raise ValueError('Output exists')
     out.mkdir(parents=True)

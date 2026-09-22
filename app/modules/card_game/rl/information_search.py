@@ -149,6 +149,17 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                 search_choice=int(np.argmax(visits)),value=leaf_value(state,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(raw/10)))
 
 
+def decision_budget(job, rng):
+    """Independent budget RNG; shallow positions never become training labels."""
+    mix=job.get('search_mix')
+    if mix is None:return job.get('simulations',32),True
+    low,high,probability=mix['low'],mix['high'],mix['deep_probability']
+    if type(low)!=int or type(high)!=int or not 1<=low<=high or not 0<probability<=1:
+        raise ValueError('Invalid search budget mixture')
+    deep=bool(rng.random()<probability)
+    return high if deep else low,deep
+
+
 def search_game(job):
     """Full real trajectory; BOTH sides search, including opening mulligans.
 
@@ -167,6 +178,7 @@ def search_game(job):
     state=new_game(seed=job['seed'],first_side=job.get('first','a'),decks=job['decks'])
     policies={side:loader(*spec) for side,spec in job['policies'].items()}
     rng=np.random.default_rng(job['seed']);rows=[];stats=[];decisions=0;trace=[];value_rows=[]
+    budget_rng=np.random.default_rng(job['seed'] ^ 0x5A17)
     coefficient=float(job.get('zhenhong_passive_reward',0.0)) if job.get('training') else 0.0
     if not np.isfinite(coefficient) or coefficient < 0: raise ValueError('Invalid reward coefficient')
     from .setup_reward import ready as setup_ready
@@ -179,7 +191,8 @@ def search_game(job):
         if time.time()>=job['deadline']:
             return dict(complete=False,reason='deadline',rows=[],decisions=decisions)
         actor=acting_side(state)
-        if job.get('record_episode'):
+        budget,save_labels=decision_budget(job,budget_rng)
+        if job.get('record_episode') and save_labels:
             from ..engine.duel_v2 import observe
             for owner in job.get('train_sides',['a']):
                 if owner!=actor or job.get('collect_value_only'):
@@ -190,8 +203,8 @@ def search_game(job):
         if use_search:
             try:
                 result=search(state,actor,policies,seed=job['seed']+1000003*(step+1),
-                              simulations=job.get('simulations',32),deadline=job['deadline'],
-                              noise=job.get('training',False),**({'runtime':runtime,'passive_reward':coefficient if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.0,'setup_reward':setup_coefficients.get(actor,0.) if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.,'setup_already_achieved':setup_seen[actor]} if runtime else {}))
+                              simulations=budget,deadline=job['deadline'],
+                              noise=job.get('training',False) and save_labels,**({'runtime':runtime,'passive_reward':coefficient if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.0,'setup_reward':setup_coefficients.get(actor,0.) if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.,'setup_already_achieved':setup_seen[actor]} if runtime else {}))
             except Exception as exc:
                 if job.get('failure_dir'):
                     import json
@@ -205,17 +218,17 @@ def search_game(job):
             if not result['complete']:
                 return dict(complete=False,reason='incomplete_search',rows=[],decisions=decisions)
             distribution=result['pi'].astype(float);distribution/=distribution.sum()
-            chosen=int(rng.choice(len(result['actions']),p=distribution)) if job.get('training') else result['search_choice']
+            chosen=int(rng.choice(len(result['actions']),p=distribution)) if job.get('training') and save_labels else result['search_choice']
             actions=result['actions']
-            if job.get('collect'):
+            if job.get('collect') and save_labels:
                 rows.append(dict(x=result['x'],c=result['c'],pi=result['pi'],side=actor,
-                                 key=job['policies'][actor][1],phase=state['phase'],step=step,value_actor=1))
+                                 key=job['policies'][actor][1],phase=state['phase'],step=step,value_actor=1,search_budget=budget))
                 if runtime and coefficient and job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']):
                     rows[-1]['passive_before']=runtime.passive_count(state,actor)
                 if runtime and job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) and setup_coefficients.get(actor,0)>0:
                     rows[-1].update(setup_before=int(setup_seen[actor]),setup_reward=setup_coefficients[actor])
             stats.append(dict(side=actor,phase=state['phase'],simulations=result['simulations'],
-                              legal=len(actions),covered=result['roots_covered'],nodes=result['nodes'],
+                              requested_budget=budget,policy_label=save_labels,legal=len(actions),covered=result['roots_covered'],nodes=result['nodes'],
                               changed=result['raw_choice']!=result['search_choice'],
                               value_estimate=result['value']))
         else:

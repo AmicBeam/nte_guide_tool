@@ -40,6 +40,8 @@ def calibration(net, rows):
 
 def run(out,config):
     import torch
+    ARMS=tuple(config.get('arms',('uniform','reanalyse')))
+    selfplay=config.get('profile')=='selfplay_budget'
     torch.set_num_threads(1);torch.manual_seed(config['seeds']['foundation'])
     if config['device']=='cuda' and not torch.cuda.is_available():raise RuntimeError('CUDA unavailable')
     out=Path(out);source=out/'sources'
@@ -87,7 +89,12 @@ def run(out,config):
                                    holdout_used_for_gradient=False,calibrated_probability_claim=False))
         nets={a:copy.deepcopy(net) for a in ARMS};opts={a:torch.optim.Adam([p for p in nets[a].parameters() if p.requires_grad],lr=3e-5) for a in ARMS}
         current={a:initial for a in ARMS};groups=0;reanalysis_seconds=0.;generation_seconds=0.
-        while time.time()<config['train_until']-90 and not (config['smoke'] and groups):
+        if selfplay:
+            from .selfplay_trial import learn
+            selfplay_started=time.time()
+            current,groups=learn(executor,out,config,base,source,initial,nets,opts,pools,steps,totals,status,origin)
+            generation_seconds=time.time()-selfplay_started
+        while not selfplay and time.time()<config['train_until']-90 and not (config['smoke'] and groups):
             started=time.time();jobs=[]
             for group in range(groups,groups+(1 if config['smoke'] else 4)):
                 foe=FOES[(group//2)%3];first=('a','b')[group%2]
@@ -147,7 +154,7 @@ def run(out,config):
             torch.save(dict(steps=steps,nets={a:n.state_dict() for a,n in nets.items()},opts={a:o.state_dict() for a,o in opts.items()},
                 replay={a:p.episodes for a,p in pools.items()},rng=rng.bit_generator.state,groups=groups),out/'checkpoint.tmp')
             (out/'checkpoint.tmp').replace(out/'checkpoint.pt');status('updating',scheduled_groups=groups)
-        if steps['uniform']!=steps['reanalyse']:raise ValueError('Unequal updates')
+        if not selfplay and steps['uniform']!=steps['reanalyse']:raise ValueError('Unequal updates')
         for a in ARMS:rt.export(nets[a],out/a/'final',KEY,base[KEY].serving_deck,{**origin,'steps':steps[a],'arm':a})
         write(out/'training-summary.json',dict(steps=steps,training=totals,generation_seconds=generation_seconds,reanalysis_seconds=reanalysis_seconds))
         folder=out/'evaluation';(folder/'raw').mkdir(parents=True);(folder/'replays').mkdir();jobs=[]
@@ -191,19 +198,20 @@ def run(out,config):
                 m=metrics[f'matrix/{a}/{b}'];writer.writerow(dict(row=a,col=b,**{k:m[k] for k in ('planned','complete','wins')},
                     row_model_sha=rt.OutcomeModel(out/a/'final',KEY).version,col_model_sha=rt.OutcomeModel(out/b/'final',KEY).version))
     summary=dict(complete=len(results)==len(jobs) and all(r['complete'] for r in results),training_updated=min(steps.values())>0 and all(v['policy'] and v['wdl'] for v in changed.values()),
-        weights_changed=changed,steps=steps,reanalysed=totals['reanalyse']['reanalysed'],metrics=metrics,source_unchanged=True,automatic_serving_approval=False,
-        single_training_seed=True,scope='fixed_zhenhong_WDL_uniform_vs_replay_reanalysis')
+        weights_changed=changed,steps=steps,reanalysed=totals.get('reanalyse',{}).get('reanalysed',0),metrics=metrics,source_unchanged=True,automatic_serving_approval=False,
+        single_training_seed=True,scope='fixed_zhenhong_selfplay_budget' if selfplay else 'fixed_zhenhong_WDL_uniform_vs_replay_reanalysis')
     write(out/'summary.json',summary)
-    lines=['# 真红纯胜负经验学习试验','','两组共享WDL预热起点、关闭前置奖及被动奖。仅比较均匀按局回放与优先回放＋重分析；单次随机种子试验，不代表完整算法验收。','',
+    description='三组共享WDL起点、关闭人工奖励；fixed256固定陪练，self256自博弈混合固定256，selfmixed相同自博弈分布混合32/256。各组相同并发槽与截止；比较同墙钟效果，不要求优化次数相同。' if selfplay else '两组共享WDL预热起点、关闭前置奖及被动奖。仅比较均匀按局回放与优先回放＋重分析；单次随机种子试验，不代表完整算法验收。'
+    lines=['# 真红纯胜负经验学习试验','',description,'',
            '| 对照 | 胜/正常完成 | 计划局数 | 实际被动次数 |','| --- | --- | --- | --- |']
     for key,m in metrics.items():lines.append(f"| {key} | {m['wins']}/{m['complete']} | {m['planned']} | {m['passive']} |")
-    lines+=['','## 新模型变体互搏：行先手、列后手','','| 先手＼后手 | uniform | reanalyse |','| --- | --- | --- |']
+    lines+=['','## 新模型变体互搏：行先手、列后手','','| 先手＼后手 | '+' | '.join(ARMS)+' |','| --- | '+' | '.join('---' for _ in ARMS)+' |']
     for a in ARMS:
         cells=[]
         for b in ARMS:
             m=metrics[f'matrix/{a}/{b}'];cells.append(f"{100*m['wins']/m['complete']:.1f}%（{m['wins']}/{m['complete']}）" if m['complete']==m['planned'] else f"未完成（{m['wins']}/{m['complete']}）")
         lines.append('| '+a+' | '+' | '.join(cells)+' |')
-    lines+=['','这是同一真红构筑的两个训练变体，不是四套或五套新模型矩阵。',f'真实更新：{steps}；重分析决策数：{totals["reanalyse"]["reanalysed"]}。']
+    lines+=['','这是同一真红构筑的训练变体，不是四套或五套新模型矩阵。',f'真实更新：{steps}；重分析决策数：{totals.get("reanalyse",{}).get("reanalysed",0)}。']
     (out/'report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
     members=[p for p in out.rglob('*') if p.is_file() and not any(x in p.relative_to(out).parts for x in ('frozen','generations')) and p.name not in ('delivery.zip','delivery.json','console.log')]
     with zipfile.ZipFile(out/'delivery.zip','w',zipfile.ZIP_DEFLATED) as z:

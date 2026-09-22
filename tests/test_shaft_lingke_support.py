@@ -107,7 +107,7 @@ class LingkeSupportTest(unittest.TestCase):
         _, details = self.run_axis(axis)
         assist = details['assist']
         self.assertEqual(assist['duration_ticks'], 0)
-        self.assertEqual(assist['energy_gain'], 6.3)
+        self.assertEqual(assist['energy_gain'], 7.56)
         self.assertAlmostEqual(assist['panel']['all_dmg'], 2.0)
         self.assertIn('character_lingke_awakening_f_joint_crit',
                       {buff['rule_id'] for buff in assist['applied_buffs']})
@@ -192,7 +192,8 @@ class LingkeSupportTest(unittest.TestCase):
                     self.assertEqual(details['assist']['energy_gain'], 0)
 
     def test_f_awakening_preserves_variant_energy_and_extra_damage(self):
-        for variant, energy in ((False, 6.3), (True, 5)):
+        # 用户2026-09-22：黑羽所有模组回能提升20%，同频沿用对应援护值。
+        for variant, energy in ((False, 7.56), (True, 6)):
             with self.subTest(variant=variant):
                 _, base = self.run_axis(self.axis(window='q', variant=variant))
                 _, awakened = self.run_axis(self.axis(nodes=[6], window='q', variant=variant))

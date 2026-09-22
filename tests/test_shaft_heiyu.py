@@ -37,7 +37,7 @@ class HeiyuTest(unittest.TestCase):
         catalog = load_shaft_catalog()
         actions = {a['name']: a for a in catalog['actions_by_character'][CID]}
         self.assertAlmostEqual(actions['a5']['multipliers']['atk'], 1.735)
-        self.assertAlmostEqual(actions['a5']['energy_gain'], 5.785)
+        self.assertAlmostEqual(actions['a5']['energy_gain'], 6.942)
         self.assertAlmostEqual(actions['魔a5']['harmony'], 14.142)
         self.assertEqual(actions['e']['harmony'], 10.4)
         self.assertEqual(actions['e']['harmony_on_start'], 100)
@@ -48,7 +48,7 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(assist['hit_count'], 1)
         self.assertEqual(assist['multipliers']['atk'], 2)
         self.assertEqual(assist['source_formula'], '{0}%')
-        self.assertEqual(assist['energy_gain'], 2)
+        self.assertEqual(assist['energy_gain'], 2.4)
         self.assertAlmostEqual(assist['harmony'], 3.34)
         self.assertAlmostEqual(assist['stagger'], .4)
         self.assertEqual(actions['a1']['duration_ticks'], 4)
@@ -62,6 +62,31 @@ class HeiyuTest(unittest.TestCase):
             self.assertEqual(actions[name]['duration_source'], 'user-supplied')
         self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 42)
         self.assertEqual(len([a for a in actions.values() if a.get('source_row') == 19]), 1)
+
+    def test_user_energy_increase_covers_both_forms_and_interruptions(self):
+        # User 2026-09-22: all modules gain 20% more energy, not more malice.
+        import json
+        from pathlib import Path
+        profiles = json.loads((Path(__file__).resolve().parents[1] /
+            'app/modules/shaft/static/data/action_hit_profiles.json').read_text())
+        original = dict(a1=.695, a2=2.8, a3=3.468, a4=3.25, a5=5.785,
+                        z=3.4, plunge=1.4, counter=2.5, form_a1=1.624,
+                        form_a2=2.965, form_a3=3.438, form_a4=3.566, form_a5=8.508,
+                        form_z1=5.385, form_z2=5.415, form_plunge=1.4,
+                        form_counter=2.1, e=6.3, assist=2, form_e=4.2,
+                        q1=0, q2=0, support=6.3, form_support=5, parry=0)
+        actions = [a for a in load_shaft_catalog()['actions_by_character'][CID]
+                   if a['id'].startswith('action_heiyu_')]
+        self.assertEqual(len(actions), len(original))
+        for action in actions:
+            energy = original[action['id'].removeprefix('action_heiyu_')]
+            with self.subTest(action=action['id']):
+                self.assertAlmostEqual(action['energy_gain'], energy * 1.2)
+                if action['id'] in profiles:
+                    self.assertAlmostEqual(profiles[action['id']]['cumulative'][-1]['energy'],
+                                           action['energy_gain'])
+        # Check the stored partial-hit energy curve independently of the full total.
+        self.assertAlmostEqual(profiles['action_heiyu_form_a2']['cumulative'][2]['energy'], 1.4232)
 
     def test_basic_malice_is_proportional_and_chain_totals_are_preserved(self):
         actions = {a['name']: a for a in load_shaft_catalog()['actions_by_character'][CID]}
@@ -345,12 +370,13 @@ class HeiyuTest(unittest.TestCase):
         self.assertTrue(any('仅恶意追加' in b['name'] for b in awakened['applied_buffs']))
         self.assertAlmostEqual(awakened['direct_damage'] - awakened['resource_damage'], base['direct_damage'] - base['resource_damage'])
 
-    def test_d_replaces_attack_and_f_expires(self):
+    def test_d_keeps_base_attack_adds_damage_and_f_expires(self):
+        # User 2026-09-22: replace only the extra 10% attack with 12% all damage.
         steps = [(0, 'action_heiyu_q1', 0), (0, 'action_heiyu_a1', 200), (0, 'action_heiyu_a1', 300)]
         r = self.simulate(steps, awakening_nodes=[4])['details']
         buffs = r[1]['applied_buffs']
         self.assertFalse(any(b['rule_id'] == 'character_heiyu_q_attack' for b in buffs))
-        self.assertEqual(next(b for b in buffs if b['rule_id'] == 'character_heiyu_d_attack')['effects']['atk_pct'], .3)
+        self.assertEqual(next(b for b in buffs if b['rule_id'] == 'character_heiyu_d_attack')['effects'], {'atk_pct': .2, 'all_dmg': .12})
         self.assertFalse(any(b['rule_id'] == 'character_heiyu_d_attack' for b in r[2]['applied_buffs']))
         r = self.simulate(steps, awakening_nodes=[6])['details']
         self.assertEqual(next(b for b in r[1]['applied_buffs'] if b['rule_id'] == 'character_heiyu_f_soul')['effects']['element_dmg_魂'], .25)

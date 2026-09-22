@@ -3532,7 +3532,7 @@
   },
   {
     "id": "character_heiyu_d_attack",
-    "name": "黑羽D觉·全队攻击提升",
+    "name": "黑羽D觉·全队攻击与通伤提升",
     "providers": [
       {
         "kind": "character",
@@ -3569,8 +3569,10 @@
       "max_stacks": 1
     },
     "effects": {
-      "atk_pct": 0.3
-    }
+      "atk_pct": 0.2,
+      "all_dmg": 0.12
+    },
+    "source_note": "用户2026-09-22指定：保留基础20%攻击，将D觉额外10%攻击改为12%通伤，持续25秒；非Nanoka核实数据。"
   },
   {
     "id": "character_heiyu_e_res_action_hit",

@@ -819,7 +819,7 @@
     },
     {
       "title": "D觉",
-      "description": "Q1全队攻击增益替换为30%，持续25秒。",
+      "description": "Q1使全队攻击提升20%、通用伤害提升12%，持续25秒。",
       "implemented": true
     },
     {

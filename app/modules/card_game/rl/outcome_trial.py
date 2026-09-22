@@ -41,12 +41,12 @@ def calibration(net, rows):
 def run(out,config):
     import torch
     ARMS=tuple(config.get('arms',('uniform','reanalyse')))
-    selfplay=config.get('profile') in ('selfplay_budget','gumbel_low_budget','grounded_actions')
+    selfplay=config.get('profile') in ('selfplay_budget','gumbel_low_budget','grounded_actions','continue_outcome','self_imitation')
     torch.set_num_threads(1);torch.manual_seed(config['seeds']['foundation'])
     if config['device']=='cuda' and not torch.cuda.is_available():raise RuntimeError('CUDA unavailable')
     out=Path(out);source=out/'sources'
     if identity()!=config['rule_hash']:raise ValueError('Rule identity changed')
-    base={k:FixedModel(source,k) for k in (KEY,*FOES)}
+    base={k:rt.model(source,k) for k in (KEY,*FOES)}
     source_hash={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in source.iterdir()}
     steps={a:0 for a in ARMS};totals={a:dict(games=0,samples=0,wins=0,reanalysed=0) for a in ARMS}
     def status(phase,**kw):write(out/'status.json',dict(phase=phase,steps=steps,training=totals,hard_deadline=config['hard_deadline'],**kw))
@@ -68,15 +68,17 @@ def run(out,config):
             (hold if j['held'] else warm).extend(data['rows'])
         net=rt.create_network(source,KEY,config['device']);before=calibration(net,hold)
         opt=torch.optim.Adam(net.wdl.parameters(),lr=1e-3)
-        for i in range(4 if config['smoke'] else 64):
+        warmup_steps=0 if isinstance(base[KEY],rt.OutcomeModel) else 4 if config['smoke'] else 64
+        for i in range(warmup_steps):
             if time.time()>=config['train_until']-90:raise RuntimeError('Warmup exhausted training budget')
             rows=[warm[j] for j in rng.choice(len(warm),min(128,len(warm)),replace=False)]
             result=rt.update(net,opt,rows,warmup=True)
             append(out,'warmup-losses.jsonl',{k:v for k,v in result.items() if k!='priority'})
         after=calibration(net,hold)
-        if not math.isfinite(after['log_loss']) or after['log_loss']>math.log(3)+.15:
+        if not math.isfinite(after['log_loss']) or (warmup_steps and after['log_loss']>math.log(3)+.15):
             raise RuntimeError('WDL warmup holdout gate failed')
-        origin=dict(source_sha256=base[KEY].version,warmup_games=n,auxiliary_rewards=0)
+        origin=dict(source_sha256=base[KEY].version,warmup_games=n,warmup_steps=warmup_steps,auxiliary_rewards=0,
+                    optimizer_reset=True,source_outcome_model=isinstance(base[KEY],rt.OutcomeModel))
         initial=out/'common-initial';rt.export(net,initial,KEY,base[KEY].serving_deck,origin)
         numeric=rt.OutcomeModel(initial,KEY)
         for row in hold[:16]:
@@ -86,7 +88,7 @@ def run(out,config):
             if not np.allclose(p,numeric.wdl(row['x'],row['value_actor']),atol=2e-5):raise ValueError('WDL numeric export mismatch')
         if not all(np.array_equal(v,net.state_dict()[k].detach().cpu().numpy()) for k,v in base[KEY].weights.items()):raise ValueError('Warmup changed source policy')
         write(out/'warmup.json',dict(before=before,after=after,source_policy_unchanged=True,
-                                   holdout_used_for_gradient=False,calibrated_probability_claim=False))
+                                   warmup_steps=warmup_steps,holdout_used_for_gradient=False,calibrated_probability_claim=False))
         nets={a:copy.deepcopy(net) for a in ARMS}
         if config.get('profile')=='grounded_actions':
             config['arm_initial_models']={}
@@ -211,11 +213,13 @@ def run(out,config):
                     row_model_sha=rt.OutcomeModel(out/a/'final',KEY).version,col_model_sha=rt.OutcomeModel(out/b/'final',KEY).version))
     summary=dict(complete=len(results)==len(jobs) and all(r['complete'] for r in results),training_updated=min(steps.values())>0 and all(v['policy'] and v['wdl'] for v in changed.values()),
         weights_changed=changed,steps=steps,reanalysed=totals.get('reanalyse',{}).get('reanalysed',0),metrics=metrics,source_unchanged=True,automatic_serving_approval=False,
-        single_training_seed=True,scope='fixed_zhenhong_gumbel_low_budget' if config.get('profile')=='gumbel_low_budget' else 'fixed_zhenhong_selfplay_budget' if selfplay else 'fixed_zhenhong_WDL_uniform_vs_replay_reanalysis')
+        single_training_seed=True,scope='fixed_zhenhong_'+config['profile'] if selfplay else 'fixed_zhenhong_WDL_uniform_vs_replay_reanalysis')
     write(out/'summary.json',summary)
     description='三组共享WDL起点、关闭人工奖励；fixed256固定陪练，self256自博弈混合固定256，selfmixed相同自博弈分布混合32/256。各组相同并发槽与截止；比较同墙钟效果，不要求优化次数相同。' if selfplay else '两组共享WDL预热起点、关闭前置奖及被动奖。仅比较均匀按局回放与优先回放＋重分析；单次随机种子试验，不代表完整算法验收。'
     if config.get('profile')=='gumbel_low_budget':description='同起点、同墙钟、纯胜负的Gumbel16与Gumbel32自博弈对照；策略标签由先验和完成Q生成，训练动作采用Gumbel搜索的最终选择。'
     if config.get('profile')=='grounded_actions':description='同状态与WDL起点、同16次Gumbel预算：继承旧动作头、重置序数动作头、类别及公开角色特征动作头三组对照；纯胜负自博弈，不复用评估数据学习。'
+    if config.get('profile')=='continue_outcome':description='从已核验WDL数值权重开始新阶段，保留动作头、状态与价值；优化器和经验池显式重置。使用新的独立训练及评估种子，不复用评估数据。'
+    if config.get('profile')=='self_imitation':description='同一已核验WDL起点、相同16次Gumbel与对手分布，对比原目标和附加正优势自模仿；只使用实际完整终局与实际动作，不奖励准备或被动计数。'
     lines=['# 真红纯胜负经验学习试验','',description,'',
            '| 对照 | 胜/正常完成 | 计划局数 | 实际被动次数 |','| --- | --- | --- | --- |']
     for key,m in metrics.items():lines.append(f"| {key} | {m['wins']}/{m['complete']} | {m['planned']} | {m['passive']} |")

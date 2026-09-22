@@ -11,7 +11,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--source',type=Path)
     p.add_argument('--seed-reservation',type=Path);p.add_argument('--seconds',type=int,default=3600)
-    p.add_argument('--profile',choices=('replay','selfplay_budget','gumbel_low_budget','grounded_actions'),default='replay')
+    p.add_argument('--profile',choices=('replay','selfplay_budget','gumbel_low_budget','grounded_actions','continue_outcome','self_imitation'),default='replay')
     p.add_argument('--workers',type=int,default=8);p.add_argument('--smoke',action='store_true')
     p.add_argument('--supervise',action='store_true');p.add_argument('--worker',action='store_true');p.add_argument('--run',action='store_true')
     a=p.parse_args();out=a.output.resolve()
@@ -49,7 +49,10 @@ def main():
     if a.source is None or a.seed_reservation is None:p.error('Source and independent seed reservation required')
     if not 1<=a.workers<=8 or not (120 if a.smoke else 600)<=a.seconds<=3600:p.error('Invalid bounded workload')
     keys=('starter','weave-rush','quick-rush','zhenhong');source=a.source.resolve();check_source(source)
-    for k in keys:FixedModel(source,k)
+    from app.modules.card_game.rl import outcome_runtime as rt
+    for k in keys:rt.model(source,k)
+    if a.profile in ('continue_outcome','self_imitation') and not isinstance(rt.model(source,'zhenhong'),rt.OutcomeModel):
+        p.error('Continuation requires a verified numerical WDL model')
     now=time.time();c=dict(kind='zhenhong_outcome_replay_v1',created=now,rule_hash=identity(),device='cuda',workers=a.workers,fast_simulation=True,simulations=8 if a.smoke else 256,smoke=a.smoke,
         train_until=now+a.seconds*.76,evaluate_until=now+a.seconds*.94,hard_deadline=now+a.seconds,
         arms=['uniform','reanalyse'],passive_reward=0.,setup_reward=0.,source=str(source),automatic_serving_approval=False)
@@ -65,6 +68,16 @@ def main():
         c.update(profile=a.profile,kind='zhenhong_grounded_actions_v1',simulations=4 if a.smoke else 16,
             arms=['inherited','reset','grounded'],search_algorithm='gumbel',gumbel_candidates=8,
             actor_slots_per_arm=1 if a.smoke else 2,slice_seconds=60,finish_reserve_seconds=300)
+    if a.profile=='continue_outcome':
+        if a.workers!=(1 if a.smoke else 2):p.error('Continuation requires 1 smoke or 2 formal workers')
+        c.update(profile=a.profile,kind='zhenhong_outcome_continuation_v1',simulations=4 if a.smoke else 16,
+            arms=['continued'],search_algorithm='gumbel',gumbel_candidates=8,
+            actor_slots_per_arm=1 if a.smoke else 2,slice_seconds=60,finish_reserve_seconds=300)
+    if a.profile=='self_imitation':
+        if a.workers not in ((2,) if a.smoke else (2,4)):p.error('Self-imitation requires 2 smoke or 2/4 formal workers')
+        c.update(profile=a.profile,kind='zhenhong_self_imitation_v1',simulations=4 if a.smoke else 16,
+            arms=['control','sil'],search_algorithm='gumbel',gumbel_candidates=8,self_imitation={'control':0.,'sil':.1},
+            actor_slots_per_arm=a.workers//2,slice_seconds=60,finish_reserve_seconds=300)
     if not a.run:print(json.dumps(c));return
     if out.exists():raise ValueError('Output exists')
     out.mkdir(parents=True)

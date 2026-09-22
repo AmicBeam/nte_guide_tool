@@ -31,6 +31,16 @@ class EpisodeTest(unittest.TestCase):
         for i in range(7):pool.add(str(i),self.data(1 if i==0 else -1))
         self.assertEqual(len(pool.episodes),4);self.assertIn('0',[e['id'] for e in pool.episodes])
 
+    def test_mirror_retention_is_independent_of_first_label(self):
+        retained=[]
+        for signs in ((-1,1),(1,-1)):
+            pool=EpisodePool(limit=4)
+            pool.add('mirror',dict(rows=[dict(z=z,side=side) for side,z in zip(('a','b'),signs)]))
+            for i in range(6):pool.add(str(i),self.data(-1))
+            ids=[e['id'] for e in pool.episodes]
+            self.assertIn('mirror',ids);retained.append(ids)
+        self.assertEqual(*retained)
+
     def test_value_hook_keeps_observer_and_terminal_sign(self):
         class Runtime:
             decision = None
@@ -44,6 +54,25 @@ class EpisodeTest(unittest.TestCase):
 
 
 class WDLTest(unittest.TestCase):
+    def test_self_imitation_reinforces_actual_winner_action_only(self):
+        try:import torch
+        except ImportError:self.skipTest('Torch required')
+        class Net(torch.nn.Module):
+            def __init__(self):
+                super().__init__();self.state_net=torch.nn.Linear(2,2);self.wdl=torch.nn.Linear(3,3)
+                self.action_logits=torch.nn.Parameter(torch.zeros(2))
+                with torch.no_grad():self.wdl.weight.zero_();self.wdl.bias.zero_()
+            def forward(self,x,c,mask):return self.action_logits[None].expand(len(x),-1),x[:,0]*0
+        for outcome in (-1,1):
+            net=Net();opt=torch.optim.SGD(net.parameters(),lr=.1)
+            row=dict(x=np.zeros(2,np.float32),c=np.zeros((2,2),np.float32),pi=np.array([.5,.5],np.float32),z=outcome,selected=1)
+            result=rt.update(net,opt,[row],self_imitation=.1)
+            self.assertEqual(result['self_imitation_samples'],int(outcome==1))
+            if outcome==1:self.assertGreater(float(net.action_logits[1].detach()),float(net.action_logits[0].detach()))
+            else:torch.testing.assert_close(net.action_logits,torch.zeros(2))
+        row.pop('selected')
+        with self.assertRaises(ValueError):rt.update(net,opt,[row],self_imitation=.1)
+
     def test_export_gradient_and_no_auxiliary_labels(self):
         try:import torch
         except ImportError:self.skipTest('Torch required')

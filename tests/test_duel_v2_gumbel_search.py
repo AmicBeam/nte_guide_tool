@@ -41,6 +41,24 @@ class GumbelSearchTest(unittest.TestCase):
         self.assertEqual(node.visits.sum(),8);self.assertEqual((node.visits>0).sum(),4)
         self.assertAlmostEqual(improved_policy(node).sum(),1.)
 
+    def test_first_round_is_gumbel_top_k_despite_live_q_completion(self):
+        prior=np.array([.40,.20,.15,.10,.08,.07]);noise=np.array([-.2,.3,-.7,.6,.1,1.])
+        expected=set(np.argsort(np.log(prior)+noise)[-3:]);node=Node.create(prior,.1)
+        selected=[]
+        for visit in visit_schedule(3,12):
+            a=choose_root(node,noise,visit);selected.append(a)
+            node.visits[a]+=1;node.total[a]+=(-1 if a%2 else 1)
+        self.assertEqual(set(selected[:3]),expected)
+        self.assertEqual(set(selected),expected)
+
+    def test_terminal_on_last_depth_is_backed_up_as_actual_win(self):
+        def act(s,side,a):
+            return {**s,'phase':'finished','winner':'a' if a['type']=='finish' else 'b'}
+        with patch('app.modules.card_game.rl.information_search.apply_action',side_effect=act):
+            r=search(dict(phase='playing',active_side='a',turn=1),'a',{'a':Prior(),'b':Prior()},runtime=Toy,seed=4,
+                     simulations=8,max_depth=1,fast_simulation=False,algorithm='gumbel')
+        np.testing.assert_array_equal(r['mean_values'],[-1,1])
+
     def test_low_budget_selfplay_jobs_keep_algorithm_and_bilateral_labels(self):
         from pathlib import Path
         from types import SimpleNamespace

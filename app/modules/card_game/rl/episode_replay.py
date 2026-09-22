@@ -49,7 +49,9 @@ class EpisodePool:
         self.episodes.append(dict(id=identity, rows=rows, used=0, priority=np.ones(len(rows)).tolist()))
         if len(self.episodes) > self.limit:
             # Preserve up to one quarter rare winning episodes; never synthesize wins.
-            protected = {e['id'] for e in self.episodes if e['rows'][0]['z'] == 1}
+            # A mirror episode contains both seats. Retention must not depend on
+            # which seat produced the first row (usually the first player).
+            protected = {e['id'] for e in self.episodes if any(r['z'] == 1 for r in e['rows'])}
             protected = set(list(e['id'] for e in self.episodes if e['id'] in protected)[-max(1, self.limit//4):])
             i = next(i for i, e in enumerate(self.episodes) if e['id'] not in protected)
             self.episodes.pop(i)

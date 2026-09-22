@@ -62,6 +62,10 @@ class OutcomeModel(LeagueModel):
         p=self.wdl(x,True)
         return self.scores_only(x,candidates),float(p[2]-p[0])
 
+    def scores(self,x,candidates):
+        # Raw-policy evaluation does not need a value head or actor context.
+        return self.scores_only(x,candidates)
+
     def wdl(self, x, is_actor):
         w = self.weights
         h = np.maximum(w['state_net.0.weight'] @ x + w['state_net.0.bias'], 0)
@@ -158,11 +162,13 @@ def export(net, directory, key, build, origin):
         origin=origin, reward_mode='terminal_wdl_only', validation={'approved': False}, automatic_serving_approval=False))
 
 
-def update(net, opt, rows, *, warmup=False):
+def update(net, opt, rows, *, warmup=False, self_imitation=0.):
     import torch
     from .league_learning import tensors
     if not rows:
         raise ValueError('Empty WDL batch')
+    if not np.isfinite(self_imitation) or not 0<=self_imitation<=1:
+        raise ValueError('Invalid self-imitation coefficient')
     if any(r['z'] not in (-1, 0, 1) or r.get('reward_to_go') is not None or r.get('setup_reward', 0) for r in rows):
         raise ValueError('Only pure terminal labels permitted')
     device = next(net.parameters()).device
@@ -180,6 +186,7 @@ def update(net, opt, rows, *, warmup=False):
     value_loss = (weights * value_losses).mean()
     selected = [i for i, r in enumerate(rows) if 'pi' in r] if not warmup else []
     policy_loss = logits.sum() * 0
+    imitation_loss = logits.sum() * 0;imitation_value_loss=logits.sum()*0;imitation_samples=0
     if selected:
         xx, c, mask = tensors([(rows[i]['x'], rows[i]['c']) for i in selected], device)
         policy, _ = net(xx, c, mask)
@@ -191,7 +198,26 @@ def update(net, opt, rows, *, warmup=False):
             target[j, :len(p)] = torch.as_tensor(p, device=device)
         losses = -(target * policy.log_softmax(-1).masked_fill(~mask, 0)).sum(-1)
         policy_loss = (weights[selected] * losses).mean()
-    loss = policy_loss + value_loss
+        if self_imitation:
+            chosen=[]
+            for i in selected:
+                a=rows[i].get('selected')
+                if not isinstance(a,(int,np.integer)) or not 0<=a<len(rows[i]['c']):
+                    raise ValueError('Self-imitation requires the actual recorded action index')
+                if rows[i].get('value_actor',1)!=1:raise ValueError('Policy row must belong to actor')
+                chosen.append(int(a))
+            probability=logits[selected].softmax(-1)
+            value=probability[:,2]-probability[:,0]
+            returns=torch.tensor([rows[i]['z'] for i in selected],dtype=value.dtype,device=device)
+            advantage=(returns-value).clamp_min(0)
+            chosen=torch.tensor(chosen,device=device)
+            logp=policy.log_softmax(-1)[torch.arange(len(selected),device=device),chosen]
+            imitation_loss=-(weights[selected]*advantage.detach()*logp).mean()
+            imitation_value_loss=(weights[selected]*advantage.square()*.5).mean()
+            imitation_samples=int((advantage>0).sum().detach())
+    # Oh et al. (ICML 2018), equations 2–3, added to the existing Gumbel/WDL
+    # objective. Returns are real terminal outcomes, never mechanism bonuses.
+    loss = policy_loss + value_loss + self_imitation*(imitation_loss+.01*imitation_value_loss)
     if not torch.isfinite(loss):
         raise ValueError('Non-finite WDL loss')
     opt.zero_grad()
@@ -199,4 +225,6 @@ def update(net, opt, rows, *, warmup=False):
     torch.nn.utils.clip_grad_norm_(net.parameters(), 1., error_if_nonfinite=True)
     opt.step()
     return dict(policy_loss=float(policy_loss.detach()), value_loss=float(value_loss.detach()),
+                self_imitation_loss=float(imitation_loss.detach()),self_imitation_value_loss=float(imitation_value_loss.detach()),
+                self_imitation_coefficient=self_imitation,self_imitation_samples=imitation_samples,
                 samples=len(rows), policy_samples=len(selected), priority=value_losses.detach().cpu().numpy().tolist())

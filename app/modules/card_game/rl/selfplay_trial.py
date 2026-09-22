@@ -37,7 +37,8 @@ def learn(executor,out,config,base,source,initial,nets,opts,pools,steps,totals,s
     ARMS=tuple(config.get('arms',('fixed256','self256','selfmixed')))
     current={a:config.get('arm_initial_models',{}).get(a,initial) for a in ARMS};numbers={a:0 for a in ARMS};slots={a:0 for a in ARMS}
     rngs={a:np.random.default_rng(config['seeds']['foundation']+i*1000000) for i,a in enumerate(ARMS)}
-    pending={};costs={};started=time.time();slots_per_arm=1 if config['smoke'] else 2
+    pending={};costs={};started=time.time();slots_per_arm=config.get('actor_slots_per_arm',1 if config['smoke'] else 2)
+    if type(slots_per_arm)!=int or not 1<=slots_per_arm<=4:raise ValueError('Invalid actor slots')
     def submit(arm):
         n=numbers[arm]
         if time.time()>=config['train_until']-(90 if config['smoke'] else config.get('finish_reserve_seconds',300)) or (config['smoke'] and n>=1):return
@@ -92,7 +93,7 @@ def learn(executor,out,config,base,source,initial,nets,opts,pools,steps,totals,s
                         if time.time()>=config['train_until']-5:break
                         batch,refs,diag=pools[a].sample(rngs[a],64,False)
                         if not batch:break
-                        result=rt.update(nets[a],opts[a],batch);pools[a].priorities(refs,result.pop('priority'));steps[a]+=1
+                        result=rt.update(nets[a],opts[a],batch,self_imitation=config.get('self_imitation',{}).get(a,0.));pools[a].priorities(refs,result.pop('priority'));steps[a]+=1
                         append(out,'losses.jsonl',dict(arm=a,step=steps[a],episode=j['id'],sample_refs=refs,
                             positive_policy_samples=sum('pi' in r and r['z']==1 for r in batch),
                             negative_policy_samples=sum('pi' in r and r['z']==-1 for r in batch),**diag,**result))

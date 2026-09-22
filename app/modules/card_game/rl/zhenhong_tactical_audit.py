@@ -45,6 +45,16 @@ def audit_file(path,*,counterfactuals=False):
                 if branch.get('winner')==actor:winning.append(alternative)
                 if b['delay'] and b['fangs'] and b['alive'] and flags(branch,actor)['passive']>b['passive']:
                     activating.append(alternative)
+            # Do not flag a decision solely because the actual hidden draw/order
+            # made a counterfactual fortunate. This remains sampled evidence,
+            # not a proof covering every consistent hidden world.
+            if winning or activating:
+                from .information_search import sample_world
+                from . import outcome_runtime
+                for world_id in range(2):
+                    world=sample_world(state,actor,data['seed']+104729*(step+1)+world_id,runtime=outcome_runtime)
+                    winning=[a for a in winning if simulate_action(world,actor,a).get('winner')==actor]
+                    activating=[a for a in activating if flags(simulate_action(world,actor,a),actor)['passive']>b['passive']]
             if winning:
                 c['immediate_win_opportunities']+=1
                 c['immediate_wins_taken']+=int(after.get('winner')==actor)
@@ -54,6 +64,7 @@ def audit_file(path,*,counterfactuals=False):
             if (winning and after.get('winner')!=actor) or (activating and flags(after,actor)['passive']==b['passive']):
                 cases.append(dict(step=step,turn=state['turn'],side=actor,actual=action,
                                   immediate_wins=winning,possible_activations=activating,
+                                  additional_information_worlds=2,
                                   judgment='Activation alternatives are opportunities, not automatically superior sacrifices.'))
         state=clean(after)
         if record.get('state_sha256'):
@@ -64,4 +75,5 @@ def audit_file(path,*,counterfactuals=False):
         if counts[side]['passive_triggers']!=data['passive_triggers'][side]:raise ValueError('Passive counter mismatch')
     return dict(id=data['id'],variant=data.get('variant'),kind=data.get('kind'),row=data.get('row'),col=data.get('col'),
                 winner=data['winner'],first=data['first'],counts={s:dict(c) for s,c in counts.items()},cases=cases,
-                source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),replayed=True,counterfactuals=counterfactuals)
+                source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),replayed=True,counterfactuals=counterfactuals,
+                counterfactual_information_worlds=2 if counterfactuals else 0)

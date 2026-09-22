@@ -36,7 +36,7 @@ class HeiyuTest(unittest.TestCase):
     def test_source_rows_and_estimated_durations(self):
         catalog = load_shaft_catalog()
         actions = {a['name']: a for a in catalog['actions_by_character'][CID]}
-        self.assertAlmostEqual(actions['a5']['multipliers']['atk'], 1.735)
+        self.assertAlmostEqual(actions['a5']['multipliers']['atk'], 1.82)
         self.assertAlmostEqual(actions['a5']['energy_gain'], 6.942)
         self.assertAlmostEqual(actions['魔a5']['harmony'], 14.142)
         self.assertEqual(actions['e']['harmony'], 10.4)
@@ -88,14 +88,48 @@ class HeiyuTest(unittest.TestCase):
         # Check the stored partial-hit energy curve independently of the full total.
         self.assertAlmostEqual(profiles['action_heiyu_form_a2']['cumulative'][2]['energy'], 1.4232)
 
+    def test_normal_form_document_multipliers_and_partial_hits(self):
+        # Tencent user document, new multiplier column read on 2026-09-22.
+        expected = dict(a1=.237, a2=.974, a3=1.204, a4=1.425, a5=1.82,
+                        z=1.139, plunge=.476, counter=1.275)
+        for suffix, multiplier in expected.items():
+            action_id = 'action_heiyu_' + suffix
+            with self.subTest(action=action_id):
+                detail = self.simulate([(0, action_id, 0)])['details'][0]
+                self.assertAlmostEqual(detail['formula_parts']['raw_base'] / detail['panel']['atk'], multiplier)
+        axis = {'team': [{'slot': 0, 'character_id': CID, 'arc_id': '', 'cartridge_id': '',
+                          'skill_levels': dict(basic=1, skill=1, ultimate=1, support=1)}],
+                'steps': [{'id': 'a', 'slot': 0, 'action_id': 'action_heiyu_a4',
+                           'start_tick': 0, 'interrupted': True, 'interrupt_duration_ticks': 4,
+                           'interrupt_hit_count': 2}]}
+        detail = simulate_shaft_axis(axis)['result']['details'][0]
+        self.assertAlmostEqual(detail['formula_parts']['raw_base'] / detail['panel']['atk'], .57)
+
+    def test_form_a5_optional_seven_tick_detach_preserves_damage_and_resources(self):
+        results = []
+        for detached in (False, True):
+            axis = {'team': [{'slot': 0, 'character_id': CID, 'arc_id': '', 'cartridge_id': ''}],
+                    'steps': [{'id': 'q', 'slot': 0, 'action_id': 'action_heiyu_q1', 'start_tick': 0},
+                              {'id': 'a', 'slot': 0, 'action_id': 'action_heiyu_form_a5',
+                               'start_tick': 10, 'detached': detached}]}
+            normalized = normalize_axis_payload(axis)
+            detail = simulate_shaft_axis(normalized)['result']['details'][-1]
+            self.assertEqual(detail['duration_ticks'], 7 if detached else 14)
+            self.assertEqual(detail['is_detached'], detached)
+            results.append(detail)
+        for key in ('direct_damage', 'energy_gain', 'harmony', 'personal_resources_consumed'):
+            self.assertEqual(results[0][key], results[1][key])
+
     def test_basic_malice_is_proportional_and_chain_totals_are_preserved(self):
         actions = {a['name']: a for a in load_shaft_catalog()['actions_by_character'][CID]}
         for prefix, amount, field in [('', 20, 'personal_resource_gain'), ('魔', 7, 'personal_resource_cost')]:
             chain = [actions[f'{prefix}a{i}'] for i in range(1, 6)]
-            weight = sum(a['multipliers']['atk'] for a in chain)
+            # Preserve the user-approved original workbook malice distribution.
+            weights = [.209, .84, 1.04, .975, 1.735] if not prefix else [a['multipliers']['atk'] for a in chain]
+            weight = sum(weights)
             self.assertAlmostEqual(sum(a[field]['恶意'] for a in chain), amount)
-            for a in chain:
-                self.assertAlmostEqual(a[field]['恶意'], amount * a['multipliers']['atk'] / weight, places=7)
+            for a, damage in zip(chain, weights):
+                self.assertAlmostEqual(a[field]['恶意'], amount * damage / weight, places=7)
                 self.assertNotIn('validation_note', a)
         r = self.simulate([(0, f'action_heiyu_a{i+1}', t) for i,t in enumerate([0,4,10,18,28])])
         self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 40)

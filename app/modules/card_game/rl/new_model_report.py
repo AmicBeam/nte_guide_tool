@@ -37,6 +37,18 @@ def write_matrix(out,results,keys,models,config):
             c=cells[a,b]
             values.append(f"{c['first_winrate']:.1%}（{c['first_wins']}/{c['completed']}）" if c['completed']==c['planned'] else f"未完成（{c['completed']}/{c['planned']}）")
         lines.append('| '+names.get(a,a)+' | '+' | '.join(values)+' |')
+    changed={}
+    initial=Path(config.get('initial_models',out/'initial'))
+    import numpy as np
+    for k in keys:
+        before=initial/(k+'.npz');after=Path(models)/(k+'.npz')
+        if not before.exists():changed[k]=None;continue
+        with np.load(before,allow_pickle=False) as a,np.load(after,allow_pickle=False) as b:
+            changed[k]=set(a.files)!=set(b.files) or any(not np.array_equal(a[n],b[n]) for n in a.files)
+    verified_new=all(v is True for v in changed.values())
+    if not verified_new:
+        lines[0]='# 冻结模型互搏报告（不满足全套训练后新模型要求）'
+        lines.insert(2,'权重核验：'+json.dumps(changed,ensure_ascii=False)+'；false为数值未变，null为缺少初始权重无法核验。不得把此表标作全套新模型互搏。')
     counts=defaultdict(Counter);denom=Counter();mechanisms=[];turns=[];immune=[];opening=[];contributions=[]
     from .quick_adaptation import contribution_events
     for r in results:
@@ -77,5 +89,5 @@ def write_matrix(out,results,keys,models,config):
     lines+=['','逐卡表仅来自内战，先后手分开；角色贡献按事件实际生命与护盾变化统计。免伤期间仅记录队友倒地，不检查空前排，也不把所有牺牲自动判错。','', '未提供经独立校准的预测胜率；过程奖励不计入胜率。详细动作、事件、开局与回放位于 evaluation/raw 和 evaluation/replays。','', '## 旧陪练及其他对照附录','','见 evaluation/index.jsonl 与 evaluation/summary.json，按 cell 区分旧模型、规则对手、变化构筑和换牌对照。']
     (out/'report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
     complete=all(c['completed']==c['planned'] and not c['errors'] and not c['truncated'] for c in cells.values())
-    (out/'matrix-validation.json').write_text(json.dumps(dict(complete=complete,cells=len(cells),unique_games=len(seen),identities=identities),ensure_ascii=False,indent=2),encoding='utf-8')
-    return complete
+    (out/'matrix-validation.json').write_text(json.dumps(dict(complete=complete,new_model_complete=complete and verified_new,model_changed=changed,cells=len(cells),unique_games=len(seen),identities=identities),ensure_ascii=False,indent=2),encoding='utf-8')
+    return complete and verified_new

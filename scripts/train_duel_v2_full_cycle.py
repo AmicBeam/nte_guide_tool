@@ -54,6 +54,7 @@ def main():
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--initial',type=Path,default=ROOT/'app/modules/card_game/engine/ai/models')
     p.add_argument('--seconds',type=float)
+    p.add_argument('--throughput-report',type=Path,help='Measured formal-budget stage estimates; required for a ten-character long run')
     p.add_argument('--ten',action='store_true',help='Five-team ten-character information search cycle')
     p.add_argument('--hard-deadline',type=float)
     p.add_argument('--seed-reservation',type=Path,help='Existing run-specific reservation exported from the shared ledger')
@@ -146,6 +147,11 @@ def main():
         baseline_builds=baselines,automatic_serving_approval=False)
     if not a.run:
         print(json.dumps(dict(config=config,training_started=False,seed_reservation_pending=True,source_validation_pending=True),ensure_ascii=False));return
+    if a.ten and not a.smoke:
+        if a.throughput_report is None:raise ValueError('Measure the formal 256-search workload and provide --throughput-report before a long run')
+        from app.modules.card_game.rl.training_capacity import validate_capacity
+        capacity=json.loads(a.throughput_report.read_text())
+        validate_capacity(capacity,config);config['capacity_measurement']=capacity
     if out.exists():raise ValueError('New output required; audit evidence cannot be reused')
     out.mkdir(parents=True)
     if a.seed_reservation:

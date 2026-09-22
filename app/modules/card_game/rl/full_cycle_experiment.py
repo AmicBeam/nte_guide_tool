@@ -106,7 +106,7 @@ def compare(pool,out,key,dirs,builds,reference,reference_builds,seed,deadline,pa
     return summary
 
 
-def train(pool,out,source,reference,builds,reference_builds,deadline,config,stage,probe,update_target=None):
+def _train_iter(pool,out,source,reference,builds,reference_builds,deadline,config,stage,probe,update_target=None):
     PRESETS,SEATS,CARD_IDS,LeagueModel,load_numeric,export_model,probe_results,deck=cycle_ops(config)
     import torch,numpy as np
     folder=out/stage;folder.mkdir();nets={};opts={};origins={};replay={k:[] for k in PRESETS}
@@ -121,10 +121,15 @@ def train(pool,out,source,reference,builds,reference_builds,deadline,config,stag
     while time.time()<deadline and not (config['smoke'] and cycle>=1) and not (update_target is not None and all(t['steps']>=update_target for t in totals.values())):
         if cycle>=800:break  # keep training seeds inside the reserved 10M block
         cycle+=1;jobs=[]
+        rollout_deadline=deadline-min(float(config.get('optimizer_reserve_seconds',60)),max(0,(deadline-time.time())/4))
         write(out/'status.json',dict(phase=stage,cycle=cycle,totals=totals,games=games_n,stage_deadline=deadline,hard_deadline=config['deadlines']['shutdown']))
         for ki,key in enumerate(PRESETS):
             opponents=[k for k in PRESETS if k!=key]
-            if config['smoke']:opponents=[opponents[ki%len(opponents)]]
+            width=config.get('opponents_per_cycle',1 if config.get('runtime')=='ten' else len(opponents))
+            if config['smoke']:width=1
+            if not 1<=width<=len(opponents):raise ValueError('Invalid opponent batch width')
+            start=(cycle-1)*width+ki
+            opponents=[opponents[(start+i)%len(opponents)] for i in range(width)]
             for fi,foe in enumerate(opponents):
                 for first in ('a','b'):
                     historical=cycle%4==0 or update_target is not None
@@ -133,7 +138,7 @@ def train(pool,out,source,reference,builds,reference_builds,deadline,config,stag
                     if update_target is None and cycle%8==0:
                         enemy=best[foe];enemy_build=builds[foe]
                     if cycle%5==0 or config['smoke']:enemy_build=random_build(stage_seed+cycle*100+fi,enemy_build['character_ids'],CARD_IDS)
-                    jobs.append(dict(seed=stage_seed+cycle*10000+ki*1000+fi*100,first=first,deadline=deadline,decks={'a':builds[key],'b':enemy_build},policies={'a':(str(current),key),'b':(str(enemy),foe)},runtime=config.get('runtime'),zhenhong_passive_reward=config.get('zhenhong_passive_reward',0),simulations=config['simulations'],training=True,collect=True,failure_dir=str(out/'failure-roots'),train_sides=['a'] if historical else ['a','b']))
+                    jobs.append(dict(seed=stage_seed+cycle*10000+ki*1000+fi*100,first=first,deadline=rollout_deadline,decks={'a':builds[key],'b':enemy_build},policies={'a':(str(current),key),'b':(str(enemy),foe)},runtime=config.get('runtime'),zhenhong_passive_reward=config.get('zhenhong_passive_reward',0),simulations=config['simulations'],training=True,collect=True,failure_dir=str(out/'failure-roots'),train_sides=['a'] if historical else ['a','b']))
         results=[];fresh={k:[] for k in PRESETS}
         for job,g in zip(jobs,pool.map(search_game,jobs)):
             results.append(g)
@@ -146,9 +151,10 @@ def train(pool,out,source,reference,builds,reference_builds,deadline,config,stag
             write(out/'status.json',dict(phase=stage,cycle=cycle,completed_batch_jobs=len(results),scheduled_batch_jobs=len(jobs),totals=totals,games=games_n,stage_deadline=deadline,hard_deadline=config['deadlines']['shutdown']))
         for key in PRESETS:
             replay[key]=(replay[key]+fresh[key])[-16384:];totals[key]['samples']+=len(fresh[key])
-        if not all(g['complete'] for g in results) or time.time()>=deadline:break
+        if not can_update_completed(fresh,time.time(),deadline):break
         rng=np.random.default_rng(stage_seed+cycle)
         for key in PRESETS:
+            if not fresh[key]:continue
             steps=min(4,update_target-totals[key]['steps']) if update_target is not None else min(48,2*math.ceil(len(fresh[key])/128))
             for step in range(steps):
                 if time.time()>=deadline:break
@@ -188,12 +194,37 @@ def train(pool,out,source,reference,builds,reference_builds,deadline,config,stag
             current=folder/'generations'/f'selected-{cycle:04}'
             for key in PRESETS:export_model(nets[key],current,key,builds[key],origin=origins[key])
             next_check=time.time()+1800
+        yield dict(cycle=cycle,totals=deepcopy(totals))
     selected=folder/'selected';selected.mkdir()
     for key in PRESETS:
         for ext in ('json','npz'):shutil.copy2(best[key]/f'{key}.{ext}',selected/f'{key}.{ext}')
     copy_models(current,folder/'latest',PRESETS)
     write(folder/'summary.json',dict(cycles=cycle,games=games_n,totals=totals,best={k:str(v) for k,v in best.items()},latest=str(current),finished=time.time()))
     return folder/'latest' if update_target is not None else selected
+
+
+
+def can_update_completed(fresh, now, deadline):
+    """A truncated sibling game does not invalidate finished trajectories."""
+    return now < deadline and any(fresh.values())
+
+
+def train(*args, **kwargs):
+    iterator=_train_iter(*args,**kwargs)
+    while True:
+        try:next(iterator)
+        except StopIteration as done:return done.value
+
+
+def interleave_training(iterators):
+    """Advance equally budgeted branches one cycle at a time; never resume a finished branch."""
+    active=dict(iterators);results={}
+    while active:
+        for key,iterator in list(active.items()):
+            try:next(iterator)
+            except StopIteration as done:
+                results[key]=done.value;del active[key]
+    return results
 
 
 def tune(pool,out,models,builds,deadline,config):
@@ -418,8 +449,14 @@ def run(out,config):
         write(out/'locked-proposals.json',dict(proposals=proposals,locked_at=time.time(),confirmation_not_read=True))
         # Both variants start from identical policy weights, with freshly reset Adam.
         target=config['adaptation_steps']
-        baseline_adapt=train(pool,out,foundation,foundation,builds,builds,deadlines['baseline_adaptation'],config,'baseline-adaptation',probe,update_target=target)
-        candidate_adapt=train(pool,out,foundation,foundation,proposals,builds,deadlines['candidate_adaptation'],config,'candidate-adaptation',probe,update_target=target)
+        if config.get('runtime')=='ten':
+            branches=interleave_training({
+                'baseline':_train_iter(pool,out,foundation,foundation,builds,builds,deadlines['candidate_adaptation'],config,'baseline-adaptation',probe,update_target=target),
+                'candidate':_train_iter(pool,out,foundation,foundation,proposals,builds,deadlines['candidate_adaptation'],config,'candidate-adaptation',probe,update_target=target)})
+            baseline_adapt=branches['baseline'];candidate_adapt=branches['candidate']
+        else:
+            baseline_adapt=train(pool,out,foundation,foundation,builds,builds,deadlines['baseline_adaptation'],config,'baseline-adaptation',probe,update_target=target)
+            candidate_adapt=train(pool,out,foundation,foundation,proposals,builds,deadlines['candidate_adaptation'],config,'candidate-adaptation',probe,update_target=target)
         bstats=json.loads((out/'baseline-adaptation/summary.json').read_text())['totals']
         cstats=json.loads((out/'candidate-adaptation/summary.json').read_text())['totals']
         fairness={k:bstats[k]['steps']==cstats[k]['steps']==target and
@@ -487,7 +524,7 @@ def run(out,config):
         f.write('\n候选、确认通过、审计通过和保留原配牌分别记录；流程完成不代表质量通过，不自动发布。\n')
     members=[p for p in out.rglob('*') if p.is_file() and
              not any(part in ('frozen','generations','sources') for part in p.relative_to(out).parts) and
-             p.suffix in ('.json','.jsonl','.npz','.pt','.gz','.md') and p.name!='delivery.json']
+             p.suffix in ('.json','.jsonl','.npz','.pt','.gz','.md','.csv') and p.name!='delivery.json']
     manifest={}
     with zipfile.ZipFile(out/'delivery.zip','w',zipfile.ZIP_DEFLATED) as archive:
         for p in sorted(members):

@@ -9413,7 +9413,7 @@
     "duration_seconds": 0.5,
     "duration_ticks": 5,
     "multipliers": {
-      "atk": 0.324,
+      "atk": 0.648,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9426,7 +9426,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 10,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 10，GEName=GE_Player_BlackBird_Evolve_Melee1_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.5秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 10，GEName=GE_Player_BlackBird_Evolve_Melee1_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.5秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9436,7 +9436,7 @@
     "personal_resource_scale_with_damage_ratio": true,
     "resource_damage": {
       "resource": "恶意",
-      "atk_per_point": 0.4,
+      "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
     }
@@ -9455,7 +9455,7 @@
     "duration_seconds": 0.7,
     "duration_ticks": 7,
     "multipliers": {
-      "atk": 0.59,
+      "atk": 1.18,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9468,7 +9468,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 11,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 11，GEName=GE_Player_BlackBird_Evolve_Melee2_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.7秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 11，GEName=GE_Player_BlackBird_Evolve_Melee2_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.7秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9478,7 +9478,7 @@
     "personal_resource_scale_with_damage_ratio": true,
     "resource_damage": {
       "resource": "恶意",
-      "atk_per_point": 0.4,
+      "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
     }
@@ -9497,7 +9497,7 @@
     "duration_seconds": 1.2,
     "duration_ticks": 12,
     "multipliers": {
-      "atk": 0.684,
+      "atk": 1.368,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9510,7 +9510,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 12,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 12，GEName=GE_Player_BlackBird_Evolve_Melee3_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.2秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 12，GEName=GE_Player_BlackBird_Evolve_Melee3_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.2秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9520,7 +9520,7 @@
     "personal_resource_scale_with_damage_ratio": true,
     "resource_damage": {
       "resource": "恶意",
-      "atk_per_point": 0.4,
+      "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
     }
@@ -9539,7 +9539,7 @@
     "duration_seconds": 0.4,
     "duration_ticks": 4,
     "multipliers": {
-      "atk": 0.712,
+      "atk": 1.424,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9552,7 +9552,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 13,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 13，GEName=GE_Player_BlackBird_Evolve_Melee4_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.4秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 13，GEName=GE_Player_BlackBird_Evolve_Melee4_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.4秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9562,7 +9562,7 @@
     "personal_resource_scale_with_damage_ratio": true,
     "resource_damage": {
       "resource": "恶意",
-      "atk_per_point": 0.4,
+      "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
     }
@@ -9581,7 +9581,7 @@
     "duration_seconds": 1.4,
     "duration_ticks": 14,
     "multipliers": {
-      "atk": 1.698,
+      "atk": 3.396,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9594,7 +9594,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 14,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 14，GEName=GE_Player_BlackBird_Evolve_Melee5_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.4秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22指定魔a5可选0.7秒脱手，普通耗时1.4秒不变。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 14，GEName=GE_Player_BlackBird_Evolve_Melee5_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.4秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22指定魔a5可选0.7秒脱手，普通耗时1.4秒不变。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9604,7 +9604,7 @@
     "personal_resource_scale_with_damage_ratio": true,
     "resource_damage": {
       "resource": "恶意",
-      "atk_per_point": 0.4,
+      "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
     },
@@ -9626,7 +9626,7 @@
     "duration_seconds": 1.0,
     "duration_ticks": 10,
     "multipliers": {
-      "atk": 1.08,
+      "atk": 2.16,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9639,7 +9639,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 15,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 15，GEName=GE_Player_BlackBird_Evolve_Branch1_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1秒，非实测帧数。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 15，GEName=GE_Player_BlackBird_Evolve_Branch1_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1秒，非实测帧数。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "personal_resource_cost": {
       "恶意": 3.8
     },
@@ -9647,7 +9647,7 @@
     "required_buff_name": "二形态",
     "resource_damage": {
       "resource": "恶意",
-      "atk_per_point": 0.4,
+      "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
     },
@@ -9667,7 +9667,7 @@
     "duration_seconds": 1.1,
     "duration_ticks": 11,
     "multipliers": {
-      "atk": 1.085,
+      "atk": 2.17,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9680,7 +9680,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 16,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 16，GEName=GE_Player_BlackBird_Evolve_Branch2_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.1秒，非Nanoka核实数据。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 16，GEName=GE_Player_BlackBird_Evolve_Branch2_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.1秒，非Nanoka核实数据。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "personal_resource_cost": {
       "恶意": 3.8
     },
@@ -9688,7 +9688,7 @@
     "required_buff_name": "二形态",
     "resource_damage": {
       "resource": "恶意",
-      "atk_per_point": 0.4,
+      "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
     },
@@ -9708,7 +9708,7 @@
     "duration_seconds": 0.7,
     "duration_ticks": 7,
     "multipliers": {
-      "atk": 0.28,
+      "atk": 0.56,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9721,7 +9721,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 17,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 17，GEName=GE_Player_BlackBird_Evolve_AirAttack_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.7秒，非实测帧数。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 17，GEName=GE_Player_BlackBird_Evolve_AirAttack_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估0.7秒，非实测帧数。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-authorized-estimate"
@@ -9740,7 +9740,7 @@
     "duration_seconds": 1.0,
     "duration_ticks": 10,
     "multipliers": {
-      "atk": 0.63,
+      "atk": 1.26,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9753,7 +9753,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 18,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 18，GEName=GE_Player_BlackBird_Evolve_PerfectEvade_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1秒，非实测帧数。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 18，GEName=GE_Player_BlackBird_Evolve_PerfectEvade_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1秒，非实测帧数。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-authorized-estimate"
@@ -9858,7 +9858,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 21,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 21，GEName=GE_Player_BlackBird_Evolve_Skill_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.0秒，非Nanoka核实数据。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 21，GEName=GE_Player_BlackBird_Evolve_Skill_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.0秒，非Nanoka核实数据。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。",
     "personal_resource_cost": {
       "恶意": 20
     },
@@ -9869,7 +9869,7 @@
     ],
     "resource_damage": {
       "resource": "恶意",
-      "atk_per_point": 0.4,
+      "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
     },
@@ -9889,7 +9889,7 @@
     "duration_seconds": 0,
     "duration_ticks": 0,
     "multipliers": {
-      "atk": 6.003,
+      "atk": 4.2021,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9902,7 +9902,7 @@
     "cooldown_ticks": 200,
     "energy_cost": 100,
     "source_row": 25,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 25，GEName=GE_Player_BlackBird_UltraSkill_Damage；1级倍率与资源按公式聚合。 沿用排轴终结0秒时停口径。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 25，GEName=GE_Player_BlackBird_UltraSkill_Damage；1级倍率与资源按公式聚合。 沿用排轴终结0秒时停口径。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。",
     "is_time_stop_zero": true,
     "forbidden_buff_key": "character_heiyu_form",
     "duration_source": "existing-time-stop"
@@ -9921,7 +9921,7 @@
     "duration_seconds": 0,
     "duration_ticks": 0,
     "multipliers": {
-      "atk": 9.002,
+      "atk": 6.3014,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -9934,7 +9934,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 26,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 26，GEName=GE_Player_BlackBird_Evolve_UltraSkill_Damage；1级倍率与资源按公式聚合。 用户2026-09-16确认A觉二段大消耗全部剩余恶意。 沿用排轴终结0秒时停口径。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 26，GEName=GE_Player_BlackBird_Evolve_UltraSkill_Damage；1级倍率与资源按公式聚合。 用户2026-09-16确认A觉二段大消耗全部剩余恶意。 沿用排轴终结0秒时停口径。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。",
     "is_time_stop_zero": true,
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
@@ -9945,7 +9945,7 @@
     },
     "resource_damage": {
       "resource": "恶意",
-      "atk_per_point": 0.4,
+      "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
     },
@@ -10013,7 +10013,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 30,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 30，GEName=GE_Player_BlackBird_Evolve_QTE_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1.5秒，非实测帧数。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 30，GEName=GE_Player_BlackBird_Evolve_QTE_Damage；1级倍率与资源按公式聚合。 用户2026-09-16授权使用经验耗时；当前暂估1.5秒，非实测帧数。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。",
     "resonance_skill_level_bonus": false,
     "personal_resource_cost": {
       "恶意": 3.5
@@ -10022,7 +10022,7 @@
     "required_buff_name": "二形态",
     "resource_damage": {
       "resource": "恶意",
-      "atk_per_point": 0.4,
+      "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
     },

@@ -88,6 +88,35 @@ class HeiyuTest(unittest.TestCase):
         # Check the stored partial-hit energy curve independently of the full total.
         self.assertAlmostEqual(profiles['action_heiyu_form_a2']['cumulative'][2]['energy'], 1.4232)
 
+    def test_user_form_q_and_malice_rebalance(self):
+        # User 2026-09-22 includes branches, plunge and counter in the doubling.
+        import json
+        from pathlib import Path
+        expected = dict(form_a1=.648, form_a2=1.18, form_a3=1.368,
+                        form_a4=1.424, form_a5=3.396, form_z1=2.16,
+                        form_z2=2.17, form_plunge=.56, form_counter=1.26,
+                        q1=4.2021, q2=6.3014)
+        catalog = load_shaft_catalog()
+        actions = {a['id']: a for a in catalog['actions_by_character'][CID]}
+        profiles = json.loads((Path(__file__).resolve().parents[1] /
+            'app/modules/shaft/static/data/action_hit_profiles.json').read_text())
+        for suffix, multiplier in expected.items():
+            aid = 'action_heiyu_' + suffix
+            with self.subTest(action=aid):
+                self.assertAlmostEqual(actions[aid]['multipliers']['atk'], multiplier)
+                if aid in profiles:
+                    curve = profiles[aid]['cumulative']
+                    for hit in curve:
+                        self.assertAlmostEqual(hit['damage'],
+                            multiplier * hit['hit_count'] / curve[-1]['hit_count'])
+        for action in actions.values():
+            if action.get('resource_damage'):
+                self.assertEqual(action['resource_damage']['atk_per_point'], .28)
+        for suffix in ('q1', 'q2'):
+            detail = self.simulate([(0, 'action_heiyu_' + suffix, 0)])['details'][0]
+            self.assertAlmostEqual(detail['formula_parts']['raw_base'] / detail['panel']['atk'],
+                                   expected[suffix])
+
     def test_normal_form_document_multipliers_and_partial_hits(self):
         # Tencent user document, new multiplier column read on 2026-09-22.
         expected = dict(a1=.237, a2=.974, a3=1.204, a4=1.425, a5=1.82,
@@ -189,7 +218,7 @@ class HeiyuTest(unittest.TestCase):
         self.assertNotIn('个人资源 恶意 不足。', detail['warnings'])
         self.assertAlmostEqual(detail['personal_resources_consumed']['恶意'], 2)
         self.assertEqual(detail['personal_resources_after']['恶意'], 0)
-        self.assertAlmostEqual(detail['resource_atk_multiplier'], 2 * .4)
+        self.assertAlmostEqual(detail['resource_atk_multiplier'], 2 * .28)
         self.assertGreater(detail['resource_damage'], 0)
         self.assertTrue(any('二形态' in w for w in detail['warnings']))
 
@@ -197,7 +226,7 @@ class HeiyuTest(unittest.TestCase):
         r = self.simulate([(0, 'action_heiyu_q1', 0),
                            (0, 'action_heiyu_form_e', 10),
                            (0, 'action_heiyu_form_z1', 30)])
-        self.assertAlmostEqual(r['details'][1]['resource_atk_multiplier'], 20 * .4)
+        self.assertAlmostEqual(r['details'][1]['resource_atk_multiplier'], 20 * .28)
         self.assertEqual(r['details'][2]['resource_atk_multiplier'], 0)
 
     def test_malice_contribution_is_separate_basic_damage_and_preserves_totals(self):

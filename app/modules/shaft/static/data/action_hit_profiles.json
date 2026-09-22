@@ -4312,7 +4312,7 @@
   },
   "action_heiyu_form_a1": {
     "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 10，{0}%*2；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 10，{0}%*2；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4323,14 +4323,14 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.162,
+        "damage": 0.324,
         "energy": 0.9744,
         "harmony": 1.349,
         "stagger": 0.162
       },
       {
         "hit_count": 2,
-        "damage": 0.324,
+        "damage": 0.648,
         "energy": 1.9488,
         "harmony": 2.698,
         "stagger": 0.324
@@ -4339,7 +4339,7 @@
   },
   "action_heiyu_form_a2": {
     "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 11，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 11，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4350,35 +4350,35 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.118,
+        "damage": 0.236,
         "energy": 0.7116,
         "harmony": 0.985,
         "stagger": 0.118
       },
       {
         "hit_count": 2,
-        "damage": 0.236,
+        "damage": 0.472,
         "energy": 1.4232,
         "harmony": 1.97,
         "stagger": 0.236
       },
       {
         "hit_count": 3,
-        "damage": 0.354,
+        "damage": 0.708,
         "energy": 2.1348,
         "harmony": 2.955,
         "stagger": 0.354
       },
       {
         "hit_count": 4,
-        "damage": 0.472,
+        "damage": 0.944,
         "energy": 2.8464,
         "harmony": 3.94,
         "stagger": 0.472
       },
       {
         "hit_count": 5,
-        "damage": 0.59,
+        "damage": 1.18,
         "energy": 3.558,
         "harmony": 4.925,
         "stagger": 0.59
@@ -4387,7 +4387,7 @@
   },
   "action_heiyu_form_a3": {
     "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 12，{0}%*6；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 12，{0}%*6；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4398,42 +4398,42 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.114,
+        "damage": 0.228,
         "energy": 0.6876,
         "harmony": 0.952,
         "stagger": 0.114
       },
       {
         "hit_count": 2,
-        "damage": 0.228,
+        "damage": 0.456,
         "energy": 1.3752,
         "harmony": 1.904,
         "stagger": 0.228
       },
       {
         "hit_count": 3,
-        "damage": 0.342,
+        "damage": 0.684,
         "energy": 2.0628,
         "harmony": 2.856,
         "stagger": 0.342
       },
       {
         "hit_count": 4,
-        "damage": 0.456,
+        "damage": 0.912,
         "energy": 2.7504,
         "harmony": 3.808,
         "stagger": 0.456
       },
       {
         "hit_count": 5,
-        "damage": 0.57,
+        "damage": 1.14,
         "energy": 3.438,
         "harmony": 4.76,
         "stagger": 0.57
       },
       {
         "hit_count": 6,
-        "damage": 0.684,
+        "damage": 1.368,
         "energy": 4.1256,
         "harmony": 5.712,
         "stagger": 0.684
@@ -4442,7 +4442,7 @@
   },
   "action_heiyu_form_a4": {
     "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 13，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 13，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4453,7 +4453,7 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.712,
+        "damage": 1.424,
         "energy": 4.2792,
         "harmony": 5.925,
         "stagger": 0.71
@@ -4462,7 +4462,7 @@
   },
   "action_heiyu_form_a5": {
     "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 14，{0}%*6；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 14，{0}%*6；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4473,42 +4473,42 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.283,
+        "damage": 0.566,
         "energy": 1.7016,
         "harmony": 2.357,
         "stagger": 0.282
       },
       {
         "hit_count": 2,
-        "damage": 0.566,
+        "damage": 1.132,
         "energy": 3.4032,
         "harmony": 4.714,
         "stagger": 0.564
       },
       {
         "hit_count": 3,
-        "damage": 0.849,
+        "damage": 1.698,
         "energy": 5.1048,
         "harmony": 7.071,
         "stagger": 0.846
       },
       {
         "hit_count": 4,
-        "damage": 1.132,
+        "damage": 2.264,
         "energy": 6.8064,
         "harmony": 9.428,
         "stagger": 1.128
       },
       {
         "hit_count": 5,
-        "damage": 1.415,
+        "damage": 2.83,
         "energy": 8.508,
         "harmony": 11.785,
         "stagger": 1.41
       },
       {
         "hit_count": 6,
-        "damage": 1.698,
+        "damage": 3.396,
         "energy": 10.2096,
         "harmony": 14.142,
         "stagger": 1.692
@@ -4517,7 +4517,7 @@
   },
   "action_heiyu_form_z1": {
     "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 15，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 15，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4528,35 +4528,35 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.216,
+        "damage": 0.432,
         "energy": 1.2924,
         "harmony": 1.804,
         "stagger": 0.219
       },
       {
         "hit_count": 2,
-        "damage": 0.432,
+        "damage": 0.864,
         "energy": 2.5848,
         "harmony": 3.608,
         "stagger": 0.438
       },
       {
         "hit_count": 3,
-        "damage": 0.648,
+        "damage": 1.296,
         "energy": 3.8772,
         "harmony": 5.412,
         "stagger": 0.657
       },
       {
         "hit_count": 4,
-        "damage": 0.864,
+        "damage": 1.728,
         "energy": 5.1696,
         "harmony": 7.216,
         "stagger": 0.876
       },
       {
         "hit_count": 5,
-        "damage": 1.08,
+        "damage": 2.16,
         "energy": 6.462,
         "harmony": 9.02,
         "stagger": 1.095
@@ -4565,7 +4565,7 @@
   },
   "action_heiyu_form_z2": {
     "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 16，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 16，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4576,35 +4576,35 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.217,
+        "damage": 0.434,
         "energy": 1.2996,
         "harmony": 1.816,
         "stagger": 0.221
       },
       {
         "hit_count": 2,
-        "damage": 0.434,
+        "damage": 0.868,
         "energy": 2.5992,
         "harmony": 3.632,
         "stagger": 0.442
       },
       {
         "hit_count": 3,
-        "damage": 0.651,
+        "damage": 1.302,
         "energy": 3.8988,
         "harmony": 5.448,
         "stagger": 0.663
       },
       {
         "hit_count": 4,
-        "damage": 0.868,
+        "damage": 1.736,
         "energy": 5.1984,
         "harmony": 7.264,
         "stagger": 0.884
       },
       {
         "hit_count": 5,
-        "damage": 1.085,
+        "damage": 2.17,
         "energy": 6.498,
         "harmony": 9.08,
         "stagger": 1.105
@@ -4613,7 +4613,7 @@
   },
   "action_heiyu_form_plunge": {
     "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 17，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 17，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4624,7 +4624,7 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.28,
+        "damage": 0.56,
         "energy": 1.68,
         "harmony": 2.3,
         "stagger": 0.3
@@ -4633,7 +4633,7 @@
   },
   "action_heiyu_form_counter": {
     "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 18，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 18，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4644,7 +4644,7 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.63,
+        "damage": 1.26,
         "energy": 2.52,
         "harmony": 3.5,
         "stagger": 2.5

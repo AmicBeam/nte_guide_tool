@@ -150,8 +150,9 @@ class HeiyuTest(unittest.TestCase):
             self.assertEqual(results[0][key], results[1][key])
 
     def test_basic_malice_is_proportional_and_chain_totals_are_preserved(self):
+        # User 2026-09-22: form chain cost increases proportionally from 7 to 12.
         actions = {a['name']: a for a in load_shaft_catalog()['actions_by_character'][CID]}
-        for prefix, amount, field in [('', 20, 'personal_resource_gain'), ('魔', 7, 'personal_resource_cost')]:
+        for prefix, amount, field in [('', 20, 'personal_resource_gain'), ('魔', 12, 'personal_resource_cost')]:
             chain = [actions[f'{prefix}a{i}'] for i in range(1, 6)]
             # Preserve the user-approved original workbook malice distribution.
             weights = [.209, .84, 1.04, .975, 1.735] if not prefix else [a['multipliers']['atk'] for a in chain]
@@ -164,7 +165,7 @@ class HeiyuTest(unittest.TestCase):
         self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 40)
         self.assertEqual(r['summary']['duration_ticks'], 40)
         r = self.simulate([(0, 'action_heiyu_q1', 0)] + [(0, f'action_heiyu_form_a{i+1}', t) for i,t in enumerate([10,15,22,34,38])])
-        self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 13)
+        self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 8)
         self.assertTrue(all(d['resource_damage'] > 0 for d in r['details'][1:]))
 
     def test_interrupted_basic_scales_malice_by_retained_hits(self):
@@ -206,7 +207,10 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(d[3]['resource_damage'], 0)
         r = self.simulate([(0, 'action_heiyu_form_e', 0), (0, 'action_heiyu_form_z1', 10)])
         self.assertTrue(any('激活' in w for w in r['details'][0]['warnings']))
-        self.assertEqual(r['details'][1]['resource_damage'], 0)
+        # 魔E按用户最新口径只消耗13，初始20点足够继续支付魔z1的3.8。
+        self.assertAlmostEqual(r['details'][0]['personal_resources_after']['恶意'], 7)
+        self.assertAlmostEqual(r['details'][1]['personal_resources_after']['恶意'], 3.2)
+        self.assertGreater(r['details'][1]['resource_damage'], 0)
         self.assertFalse(any('恶意 不足' in w for w in r['details'][1]['warnings']))
 
     def test_partial_malice_cost_is_optional_and_damage_uses_available_amount(self):
@@ -226,8 +230,11 @@ class HeiyuTest(unittest.TestCase):
         r = self.simulate([(0, 'action_heiyu_q1', 0),
                            (0, 'action_heiyu_form_e', 10),
                            (0, 'action_heiyu_form_z1', 30)])
-        self.assertAlmostEqual(r['details'][1]['resource_atk_multiplier'], 20 * .28)
-        self.assertEqual(r['details'][2]['resource_atk_multiplier'], 0)
+        self.assertAlmostEqual(r['details'][1]['resource_atk_multiplier'], 13 * .28)
+        self.assertAlmostEqual(r['details'][1]['personal_resources_consumed']['恶意'], 13)
+        self.assertAlmostEqual(r['details'][1]['personal_resources_after']['恶意'], 7)
+        self.assertAlmostEqual(r['details'][2]['resource_atk_multiplier'], 3.8 * .28)
+        self.assertAlmostEqual(r['details'][2]['personal_resources_after']['恶意'], 3.2)
 
     def test_malice_contribution_is_separate_basic_damage_and_preserves_totals(self):
         for nodes in ((), (1,)):

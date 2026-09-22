@@ -9426,12 +9426,12 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 10,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 10，GEName=GE_Player_BlackBird_Evolve_Melee1_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.5秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 10，GEName=GE_Player_BlackBird_Evolve_Melee1_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.5秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。 用户2026-09-22最新调整：魔a1–a5恶意消耗按原比例由合计7提高到12，保留8位小数并由末段吸收舍入差；魔E消耗由20降为13。非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
     "personal_resource_cost": {
-      "恶意": 0.56586826
+      "恶意": 0.97005987
     },
     "personal_resource_scale_with_damage_ratio": true,
     "resource_damage": {
@@ -9468,12 +9468,12 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 11,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 11，GEName=GE_Player_BlackBird_Evolve_Melee2_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.7秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 11，GEName=GE_Player_BlackBird_Evolve_Melee2_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.7秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。 用户2026-09-22最新调整：魔a1–a5恶意消耗按原比例由合计7提高到12，保留8位小数并由末段吸收舍入差；魔E消耗由20降为13。非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
     "personal_resource_cost": {
-      "恶意": 1.03043912
+      "恶意": 1.76646706
     },
     "personal_resource_scale_with_damage_ratio": true,
     "resource_damage": {
@@ -9510,12 +9510,12 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 12,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 12，GEName=GE_Player_BlackBird_Evolve_Melee3_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.2秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 12，GEName=GE_Player_BlackBird_Evolve_Melee3_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.2秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。 用户2026-09-22最新调整：魔a1–a5恶意消耗按原比例由合计7提高到12，保留8位小数并由末段吸收舍入差；魔E消耗由20降为13。非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
     "personal_resource_cost": {
-      "恶意": 1.19461078
+      "恶意": 2.04790419
     },
     "personal_resource_scale_with_damage_ratio": true,
     "resource_damage": {
@@ -9552,12 +9552,12 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 13,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 13，GEName=GE_Player_BlackBird_Evolve_Melee4_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.4秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 13，GEName=GE_Player_BlackBird_Evolve_Melee4_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时0.4秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。 用户2026-09-22最新调整：魔a1–a5恶意消耗按原比例由合计7提高到12，保留8位小数并由末段吸收舍入差；魔E消耗由20降为13。非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
     "personal_resource_cost": {
-      "恶意": 1.24351297
+      "恶意": 2.13173652
     },
     "personal_resource_scale_with_damage_ratio": true,
     "resource_damage": {
@@ -9594,12 +9594,12 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 14,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 14，GEName=GE_Player_BlackBird_Evolve_Melee5_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.4秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22指定魔a5可选0.7秒脱手，普通耗时1.4秒不变。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 14，GEName=GE_Player_BlackBird_Evolve_Melee5_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.4秒，非Nanoka核实数据。 恶意按用户本次口径，以本段1级聚合倍率/整套倍率×7等比分配；尾段吸收小数舍入差额。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22指定魔a5可选0.7秒脱手，普通耗时1.4秒不变。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。 用户2026-09-22最新调整：魔a1–a5恶意消耗按原比例由合计7提高到12，保留8位小数并由末段吸收舍入差；魔E消耗由20降为13。非Nanoka核实数据。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
     "personal_resource_cost": {
-      "恶意": 2.96556887
+      "恶意": 5.08383236
     },
     "personal_resource_scale_with_damage_ratio": true,
     "resource_damage": {
@@ -9858,9 +9858,9 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 21,
-    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 21，GEName=GE_Player_BlackBird_Evolve_Skill_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.0秒，非Nanoka核实数据。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。",
+    "source_note": "用户工作簿 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 21，GEName=GE_Player_BlackBird_Evolve_Skill_Damage；1级倍率与资源按公式聚合。 用户2026-09-19提供动作耗时1.0秒，非Nanoka核实数据。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新调整：Q1/Q2基础倍率乘0.7，恶意追加每点由40%改为28%；资源量与觉醒倍率增益不变，非Nanoka核实数据。 用户2026-09-22最新调整：魔a1–a5恶意消耗按原比例由合计7提高到12，保留8位小数并由末段吸收舍入差；魔E消耗由20降为13。非Nanoka核实数据。",
     "personal_resource_cost": {
-      "恶意": 20
+      "恶意": 13
     },
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",

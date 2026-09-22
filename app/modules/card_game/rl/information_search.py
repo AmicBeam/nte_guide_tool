@@ -49,14 +49,23 @@ class Node:
     def create(cls,prior):
         return cls(prior,np.zeros(len(prior),dtype=np.int32),np.zeros(len(prior)))
 
-    def choose(self):
-        unseen=np.flatnonzero(self.visits==0)
+    def choose(self, minimum_visits=1):
+        unseen=np.flatnonzero(self.visits<minimum_visits)
         if len(unseen):
-            return int(unseen[np.argmax(self.prior[unseen])])
+            least=unseen[self.visits[unseen]==self.visits[unseen].min()]
+            return int(least[np.argmax(self.prior[least])])
         q=self.total/self.visits
         u=1.5*self.prior*np.sqrt(self.visits.sum())/(1+self.visits)
         return int(np.argmax(q+u))
 
+
+
+def search_prior(logits, mode='model', temperature=1.0, uniform_mix=0.0):
+    if mode not in ('model','uniform','tempered') or not np.isfinite(temperature) or temperature<=0 or not 0<=uniform_mix<=1:
+        raise ValueError('Invalid search prior settings')
+    if mode=='uniform':return np.full(len(logits),1/len(logits),dtype=np.float64)
+    prior=softmax(np.asarray(logits)/temperature if mode=='tempered' else logits)
+    return (1-uniform_mix)*prior+uniform_mix/len(prior)
 
 def terminal_value(state,viewer):
     winner=state.get('winner')
@@ -73,20 +82,24 @@ def leaf_value(state, viewer, policies, *, runtime=None):
     return value if actor==viewer else -value
 
 
-def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0):
+def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1):
     decide = runtime.decision if runtime else decision
     if simulations<1 or max_depth<1:raise ValueError('Positive search limits required')
     if acting_side(state)!=viewer:raise ValueError('Search must use the decision owner')
     if not np.isfinite(passive_reward) or passive_reward < 0:
         raise ValueError('Invalid passive reward')
+    if type(root_min_visits)!=int or type(node_min_visits)!=int or min(root_min_visits,node_min_visits)<1:
+        raise ValueError('Positive integer minimum visits required')
     initial_passive = runtime.passive_count(state,viewer) if runtime and passive_reward else 0
     actions,(x,c)=decide(state,viewer)
-    logits,raw=policies[viewer].scores_value(x,c);prior=softmax(logits)
+    logits,raw=policies[viewer].scores_value(x,c);prior=search_prior(logits,prior_mode,prior_temperature,uniform_mix)
     rng=np.random.default_rng(seed)
     if noise and len(actions)>1:
         prior=.75*prior+.25*rng.dirichlet(np.full(len(actions),.3))
     root=Node.create(prior);tree={info_key(x,c):root}
     requested=1 if len(actions)==1 else max(simulations,len(actions)+8)
+    if len(actions)>1 and root_min_visits*len(actions)>requested:
+        raise ValueError("Search budget cannot cover requested root exploration floor")
     depths=[];worlds=0
     for simulation in range(requested):
         if deadline is not None and time.time()>=deadline:break
@@ -107,8 +120,8 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                 key=info_key(xx,cc)
                 if key not in tree:
                     scores,v=policies[actor].scores_value(xx,cc)
-                    tree[key]=Node.create(softmax(scores));value=float(np.tanh(v/10));break
-                node=tree[key];chosen=node.choose();path.append((node,chosen))
+                    tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix));value=float(np.tanh(v/10));break
+                node=tree[key];chosen=node.choose(root_min_visits if node is root else node_min_visits);path.append((node,chosen))
             world=clean(apply_action(world,actor,legal[chosen]))
         else:
             value=leaf_value(world,viewer,policies,runtime=runtime)
@@ -123,7 +136,7 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
     return dict(actions=actions,x=x,c=c,pi=pi.astype(np.float32),visits=visits,
                 mean_values=np.divide(root.total,visits,out=np.zeros(len(visits)),where=visits>0),
                 complete=complete,simulations=len(depths),requested=requested,
-                roots_covered=int((visits>0).sum()),nodes=len(tree),worlds=worlds,
+                roots_covered=int((visits>0).sum()),root_min_visits=int(visits.min()),prior_mode=prior_mode,nodes=len(tree),worlds=worlds,
                 max_depth=max(depths,default=0),raw_choice=int(np.argmax(logits)),
                 search_choice=int(np.argmax(visits)),value=float(np.tanh(raw/10)))
 

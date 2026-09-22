@@ -150,6 +150,20 @@ WDL搜索复用当前行动方已生成的可见观察与编码，并避免计�
 
 诊断分别回答：执行是否完全等价；局部搜索动作是否优于原策略；网络能否拟合搜索标签并保持跨对局表现。小样本根干预不是整局搜索策略胜率，拟合loss改善不是打法改善，合成/自然局面分开说明。检查不自动启动长训、不覆盖源数值模型、不发布。恢复和数值检查：`python -m unittest tests.test_duel_v2_trajectory_resume tests.test_duel_v2_information_search tests.test_duel_v2_outcome_learning`。
 
+### 搜索内部的轻量演出模式
+
+搜索树内的假想动作默认通过`engine/duel_v2/simulation.py:simulate_action`调用同一正式`apply_action`，保留合法性检查、状态复制、完整卡效、随机数、事件序号和胜负结算。仅在该调用的上下文内停用公开棋盘缓存和演出patch生成；上下文在成功／异常后均恢复，其他线程及普通网页调用不受影响。`fast_simulation=False`保留原路径用于对拍。真实采样动作、冻结评估、遥测与公开录像仍用普通`apply_action`，不将缺少patch的假想事件交付给网站。
+
+验收按两层进行：清理瞬时events／公开棋盘缓存后，完整规则状态、合法动作与双方学习观察逐步相同；同种子同预算搜索的访问计数、Q值和选中动作相同。不得仅比较最后赢家。默认网页路径还应匹配历史原始录像的每步状态SHA。规则与卡效不得以演出patch或`_public_board`作为结算依据。
+
+该引擎源代码变更会产生新执行指纹；旧模型保持原身份，不原地修改元数据或继承服务批准。诊断脚本`scripts/check_duel_v2_simulation.py`要求显式旧规则哈希，校验权重SHA、schema、特征和构筑后，仅在新输出目录复制为未批准研究模型。正常训练仍走既有明确的研究迁移和完整验收；网站模型需按发布流程另外处理。
+
+有界诊断命令：`python scripts/check_duel_v2_simulation.py --source-run VERIFIED_SELFPLAY_RUN --source-rule-hash OLD_HASH --seed-reservation RESERVED_JSON --output NEW_DIR --seconds 600`。它重放已有33场选定真实对局，对拍完整状态和历史SHA，再对部分完整动作轨迹计时，并以新诊断种子比较256模拟搜索。这里的整局计时是保存动作的规则执行耗时，不是包含决策搜索的完整自博弈吞吐；根搜索计时另报。诊断不优化参数、不延长旧任务、不发布。
+
+完整采样计时另用`scripts/check_duel_v2_simulation_game.py --models RESEARCH_WDL_DIR --output NEW_DIR --seed-reservation RESERVED_JSON --seconds 600`，对同种子、同权重的两个完整镜像对局使用固定32搜索预算，比较正常／轻量模拟的墙钟、动作序列与训练标签；仅采样，不创建优化器。单个成对样本不能当作稳定的整轮训练加速比，也不能外推为256预算的整局结果。
+
+专项检查：`python -m unittest tests.test_duel_v2_simulation tests.test_duel_v2_information_search tests.test_duel_v2_trajectory_resume`。全角色构筑的随机合法轨迹不等于穷举所有卡效分支；遇到已有广泛回归失败时，对照修改前版本记录相同失败，不将它们隐瞒成全套通过。
+
 ### 4. 自博弈、冻结对手与样本归属
 
 参考三策略配置每轮包含所有有向异策略配对，并交换先后手，共12局。前三轮使用当前模型；每第四轮引入冻结历史模型，第八轮等检查点可使用阶段最佳。一个采样批次内，所有引用权重保持冻结；更新在批次结束后进行。

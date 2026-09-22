@@ -11,6 +11,7 @@ import time
 import numpy as np
 from .league_rollout import decision, determinize, clean, model
 from app.modules.card_game.engine.duel_v2 import new_game, apply_action, acting_side
+from app.modules.card_game.engine.duel_v2.simulation import simulate_action
 
 
 def softmax(scores):
@@ -85,7 +86,7 @@ def leaf_value(state, viewer, policies, *, runtime=None):
     return value if actor==viewer else -value
 
 
-def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False,reuse_inference=True):
+def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False,reuse_inference=True,fast_simulation=True):
     decide = runtime.decision if runtime else decision
     if simulations<1 or max_depth<1:raise ValueError('Positive search limits required')
     if acting_side(state)!=viewer:raise ValueError('Search must use the decision owner')
@@ -136,7 +137,7 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                         value=leaf_value(world,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(v/10))
                     tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix));break
                 node=tree[key];chosen=node.choose(root_min_visits if node is root else node_min_visits);path.append((node,chosen))
-            world=clean(apply_action(world,actor,legal[chosen]))
+            world=clean((simulate_action if fast_simulation else apply_action)(world,actor,legal[chosen]))
             if setup_reward:setup_seen=setup_seen or setup_ready(world,viewer)
         else:
             value=leaf_value(world,viewer,policies,runtime=runtime)
@@ -239,7 +240,7 @@ def search_game(job):
         if use_search:
             try:
                 result=search(state,actor,policies,seed=job['seed']+1000003*(step+1),
-                              simulations=budget,deadline=job['deadline'],reuse_inference=job.get('reuse_inference',True),
+                              simulations=budget,deadline=job['deadline'],reuse_inference=job.get('reuse_inference',True),fast_simulation=job.get('fast_simulation',True),
                               noise=job.get('training',False) and save_labels,**({'runtime':runtime,'passive_reward':coefficient if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.0,'setup_reward':setup_coefficients.get(actor,0.) if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.,'setup_already_achieved':setup_seen[actor]} if runtime else {}))
             except Exception as exc:
                 if job.get('failure_dir'):

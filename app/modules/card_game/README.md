@@ -632,3 +632,7 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 `--profile selfplay_budget`及`rl/selfplay_trial.py`提供固定陪练／镜像双方学习／混合搜索预算三组对照，每组独立采样槽和统一截止。专项验证：`python -m unittest tests.test_duel_v2_selfplay_trial tests.test_duel_v2_information_search tests.test_duel_v2_outcome_learning`。
 
 `rl/trajectory_checkpoint.py`保存私有搜索轨迹；selfplay采样按决策边界分段续接，保持原数值模型、RNG与截止。`scripts/check_duel_v2_learning_pipeline.py`提供搜索等价／性能、连续恢复、根动作对照及隔离拟合诊断；不自动启动长训。回归：`python -m unittest tests.test_duel_v2_trajectory_resume`。
+
+离线搜索树使用`engine/duel_v2/simulation.py`省去演出patch生成，真实对局与回放仍走普通动作入口。对拍与计时入口`scripts/check_duel_v2_simulation.py`；专项回归`python -m unittest tests.test_duel_v2_simulation`。旧数值模型仅可显式迁移到未批准研究副本，不能据性能对拍继承网站批准。
+
+`scripts/check_duel_v2_simulation_game.py`对同种子完整搜索采样计时，预算固定32，分别记录普通／轻量路径；只采样、不更新参数，不把保存动作的执行速度当作训练吞吐。

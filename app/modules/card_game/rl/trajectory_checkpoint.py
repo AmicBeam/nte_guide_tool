@@ -7,7 +7,7 @@ import numpy as np
 
 CONTRACT_FIELDS=('seed','first','decks','policies','runtime','simulations','max_actions','training','collect',
                  'record_episode','collect_value_only','train_sides','raw_sides','search_mix',
-                 'zhenhong_passive_reward','setup_rewards','reuse_inference')
+                 'zhenhong_passive_reward','setup_rewards','reuse_inference','fast_simulation')
 
 
 def contract(job):

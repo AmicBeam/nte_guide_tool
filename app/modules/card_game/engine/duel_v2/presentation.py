@@ -1,5 +1,6 @@
 """Structured public presentation for V2 observe(); never infers cards from log text."""
 from copy import deepcopy
+from .simulation import collecting_patches
 
 from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
@@ -65,6 +66,8 @@ def entity_id(side, cid):
 
 
 def capture_public_board(state):
+    if not collecting_patches():
+        return {}
     from .escalation import public_progress, energy_cap, harmony_cap, ultimate_remaining
     from .combat import harmony_marks
     from .flow import ultimate_spec
@@ -220,6 +223,8 @@ def replay_public_board(before, events):
 
 
 def bump_public_patch(state):
+    if not collecting_patches():
+        return {}
     current = capture_public_board(state)
     extra = diff_public(state.get('_public_board'), current)
     events = state.get('events') or []
@@ -290,6 +295,8 @@ def enrich_log(state, event):
         event['private_card'] = public_card(event['private_card'])
     if 'present' not in event:
         event['present'] = event.get('type') not in SILENT_PRESENT_TYPES
+    if not collecting_patches():
+        return event
     previous = state.get('_public_board')
     current = capture_public_board(state)
     event['patch'] = diff_public(previous, current)

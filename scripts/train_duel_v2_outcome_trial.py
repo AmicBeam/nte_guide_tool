@@ -50,7 +50,7 @@ def main():
     if not 1<=a.workers<=8 or not (120 if a.smoke else 600)<=a.seconds<=3600:p.error('Invalid bounded workload')
     keys=('starter','weave-rush','quick-rush','zhenhong');source=a.source.resolve();check_source(source)
     for k in keys:FixedModel(source,k)
-    now=time.time();c=dict(kind='zhenhong_outcome_replay_v1',created=now,rule_hash=identity(),device='cuda',workers=a.workers,simulations=8 if a.smoke else 256,smoke=a.smoke,
+    now=time.time();c=dict(kind='zhenhong_outcome_replay_v1',created=now,rule_hash=identity(),device='cuda',workers=a.workers,fast_simulation=True,simulations=8 if a.smoke else 256,smoke=a.smoke,
         train_until=now+a.seconds*.76,evaluate_until=now+a.seconds*.94,hard_deadline=now+a.seconds,
         arms=['uniform','reanalyse'],passive_reward=0.,setup_reward=0.,source=str(source),automatic_serving_approval=False)
     if a.profile=='selfplay_budget':

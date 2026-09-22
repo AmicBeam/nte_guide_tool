@@ -100,7 +100,7 @@ def run(out,config):
                 foe=FOES[(group//2)%3];first=('a','b')[group%2]
                 for a in ARMS:
                     jobs.append(dict(id=f'{a}-{group}',arm=a,group=group,seed=config['seeds']['foundation']+group,first=first,
-                        deadline=min(config['train_until']-75,time.time()+1200),runtime='outcome',simulations=config['simulations'],
+                        deadline=min(config['train_until']-75,time.time()+1200),runtime='outcome',simulations=config['simulations'],fast_simulation=config.get('fast_simulation',True),
                         training=True,collect=True,record_episode=True,train_sides=['a'],failure_dir=str(out/'failure-roots'),
                         decks={'a':base[KEY].serving_deck,'b':base[foe].serving_deck},policies={'a':(str(current[a]),KEY),'b':(str(source),foe)}))
             groups+=1 if config['smoke'] else 4;pending={};completed=[]

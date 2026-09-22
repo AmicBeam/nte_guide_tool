@@ -20,7 +20,7 @@ def make_job(arm, number, out, config, base, current, source, initial):
     other=current if mirror else initial if history else source
     j=dict(id=f'{arm}-{number}',arm=arm,group=number,matchup=kind,
         seed=config['seeds']['foundation']+number,first=('a','b')[(number//4 if arm!='fixed256' else number)%2],
-        runtime='outcome',simulations=config['simulations'],training=True,collect=True,record_episode=True,
+        runtime='outcome',simulations=config['simulations'],fast_simulation=config.get('fast_simulation',True),training=True,collect=True,record_episode=True,
         train_sides=['a','b'] if mirror else ['a'],deadline=config['train_until']-45,slice_seconds=config.get('slice_seconds',60),
         resume_path=str(out/'private-progress'/f'{arm}-{number}.json.gz'),
         decks={'a':base[key].serving_deck,'b':base[foe].serving_deck},

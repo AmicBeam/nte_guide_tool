@@ -310,7 +310,9 @@ def learn(out, config):
             break
     write(out / 'eval.json', dict(planned=len(matrix), games=eval_games, weights=str(current),
                                   approval=False, full_matrix=False, deck_search=False))
-    write(out / 'status.json', dict(phase='complete', counts=counts, latest=str(current), murk=murk_note,
+    write(out / 'status.json', dict(phase='complete', counts=counts, latest=str(current),
+                                    murk=dict(games=counts['murk']['games'], latest=str(current_murk),
+                                              initialization=murk_origin),
                                     evaluated=len(eval_games), full_matrix=False))
 
 

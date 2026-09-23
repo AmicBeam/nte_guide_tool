@@ -51,10 +51,10 @@ class OpeningDrawTest(unittest.TestCase):
                 self.assertEqual(state['sides'][second]['hp'], 30)
                 self.assertEqual(state['sides'][second]['shield'], 3)
                 state['sides'][first]['shield'] = 4
-                state['sides'][second]['front_debuff']['burn'] = {'left': 2, 'by': first}
+                state['sides'][second]['front_debuff']['burn'] = {'left': 2, 'by': first, 'stacks': 1}
                 state = apply_action(state, first, {'type': 'end_turn'})
                 self.assertEqual(state['sides'][second]['shield'], 0)
-                self.assertEqual(state['sides'][second]['hp'], 29)
+                self.assertEqual(state['sides'][second]['hp'], 30)
                 self.assertEqual(state['sides'][first]['shield'], 4)
                 state = apply_action(state, second, {'type': 'end_turn'})
                 self.assertEqual(state['sides'][first]['shield'], 0)

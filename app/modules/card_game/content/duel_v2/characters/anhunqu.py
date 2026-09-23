@@ -1,69 +1,101 @@
-from app.modules.card_game.content.duel_v2.characters.common import grant_nightmare, set_shape, settle_nightmare_on
-from app.modules.card_game.content.duel_v2.registry import register
-from app.modules.card_game.engine.events import GameEvent
+"""安魂曲：噩梦与失谐强化。数值是桌游试玩参数。"""
+from app.modules.card_game.content.duel_v2.characters.common import set_shape
+from app.modules.card_game.content.duel_v2.registry import KITS, register
+from app.modules.card_game.engine.duel_v2.continuous import apply_dot
+from app.modules.card_game.engine.duel_v2.state import (
+    add_hand, alive, card_instance, damage, front_debuff, hero, other,
+)
 
 
-def _front_hero(c):
-    from app.modules.card_game.engine.duel_v2.state import front_target, hero, is_esper
-    enemy, target_id = front_target(c.state, c.side)
-    if not is_esper(target_id):
-        return None, None, None
-    return enemy, target_id, hero(c.state, enemy, target_id)
+def _stacks(c):
+    foe = other(c.side)
+    dot = (front_debuff(c.state, foe).get('dots') or {}).get('nightmare') or {}
+    return int(dot.get('stacks') or 0) if dot.get('by') == c.side else 0
 
 
 def _a01(c):
-    enemy, target_id, target = _front_hero(c)
-    if target is None:
+    side, cid = c.operation['target_id'].split(':', 1)
+    c.character.setdefault('flags', {})['mimic'] = {'id': cid}
+    name = hero(c.state, side, cid)['name']
+    c.history(f'「不加班之宽赦」：本回合安魂曲的异能视为与{name}相同。')
+    kit = KITS.get(cid)
+    hook = getattr(kit, 'on_turn_begin', None)
+    if hook is None:
         return
-    grant_nightmare(target, 1)
-    c.energy()
+    awakened = c.character.get('awakened')
+    c.character['awakened'] = False
+    try:
+        hook(c)
+    finally:
+        c.character['awakened'] = awakened
+
+
+def _a02(c):
+    stacks = _stacks(c)
+    side, cid = c.operation['target_id'].split(':', 1)
+    if stacks:
+        damage(c.state, side, cid, stacks, source=f'{c.side}:{c.cid}',
+               reason='「闹钟响彻四方」')
+    if stacks >= 5:
+        damage(c.state, other(c.side), 'player', 3, source=f'{c.side}:{c.cid}',
+               reason='「噩梦」不少于 5 层')
 
 
 def _a03(c):
-    _, _, target = _front_hero(c)
-    bonus = 1 if target and (target.get('flags') or {}).get('nightmare') else 0
-    c.sortie(bonus=bonus)
-    _, _, after = _front_hero(c)
-    if after:
-        take = settle_nightmare_on(after, 1)
-        if take:
-            from app.modules.card_game.engine.duel_v2.state import front_target
-            c.followup(front_target(c.state, c.side), take)
+    from app.modules.card_game.engine.duel_v2.continuous import distribute
+    foe = other(c.side)
+    dots = front_debuff(c.state, foe).get('dots') or {}
+    dot = dots.get('nightmare')
+    if dot and dot.get('by') == c.side and int(dot.get('stacks') or 0):
+        distribute(c.state, foe, int(dot['stacks']), source=dot.get('source') or f'{c.side}:{c.cid}',
+                   by=c.side, reason='「冰淇淋在烈阳中融化」')
+        dots.pop('nightmare', None)
+        c.history('触发并移除全部「噩梦」。')
+    c.draw(1)
+
+
+def _a04(c):
+    foe = other(c.side)
+    apply_dot(c.state, foe, 'nightmare', by=c.side, source_cid=c.cid, stacks=5)
+    if _stacks(c) >= 10:
+        add_hand(c.state, c.side, card_instance(c.state, 'AF01', c.side))
+        c.history('「噩梦」达到 10 层，获得「茄汁金属乐」。')
 
 
 def _a05(c):
-    c.hit_front(1)
-    _, _, target = _front_hero(c)
-    if target and (target.get('flags') or {}).get('nightmare'):
-        c.heal(1)
+    target = tuple(c.operation['target_id'].split(':', 1))
+    on_bench = c.state['sides'][c.side]['front'] != c.cid
+    c.sortie(target=target, no_counter=on_bench, stay_bench=on_bench)
 
 
 def _a06(c):
-    c.grant_harmony(c.cid, 1)
-    if c.state['sides'][c.side]['front'] != c.cid:
-        c.energy()
+    from app.modules.card_game.engine.duel_v2.combat import apply_enter_harmony, enter
+    from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
+    team = c.state['sides'][c.side]
+    front = team.get('front')
+    payer = hero(c.state, c.side, front) if front and front != c.cid else None
+    if payer and payer.get('attribute') in ('魂', '咒') and int(payer.get('harmony') or 0) < harmony_cap(c.state):
+        c.operation['skip_nightmare'] = True
+        kind = '浊燃' if payer['attribute'] == '咒' else '黯星'
+        enter(c, resolve_harmony=False)
+        apply_enter_harmony(c, front, kind, pay=False)
+        c.sortie()
+        return
+    c.sortie()
+
+
+def _af01(c):
+    card = card_instance(c.state, 'A03', c.side)
+    card['ephemeral_turn'] = c.state['turn']
+    add_hand(c.state, c.side, card)
+    c.history('获得「冰淇淋在烈阳中融化」，回合结束时弃置。')
+    c.sortie()
 
 
 def _a07(c):
-    _, _, target = _front_hero(c)
-    bypass = bool(target and (target.get('flags') or {}).get('nightmare'))
-    c.sortie(bonus=2, bypass=bypass)
-
-
-def _a08(c):
-    c.sortie(bonus=1)
-    _, _, target = _front_hero(c)
-    if target:
-        take = settle_nightmare_on(target, None)
-        if take:
-            from app.modules.card_game.engine.duel_v2.state import front_target
-            c.followup(front_target(c.state, c.side), take)
-
-
-def _a02_shape(c, **data):
-    if data.get('operation', {}).get('harmony'):
-        data['operation']['first_bonus'] += 1
-        c.history('触发环合，「最后一朵玫瑰」触发：安魂曲本次第一次攻击伤害 +1。')
+    set_shape(c)
+    if alive(c.state, c.side, c.cid):
+        apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=2)
 
 
 @register
@@ -71,45 +103,34 @@ class Anhunqu:
     id = 'anhunqu'
     text_name = '安魂曲'
     effects = {
-        'A01': _a01, 'A02': _a07, 'A03': _a03, 'A04': _a08,
-        'A05': _a05, 'A06': _a06, 'A07': set_shape, 'A08': set_shape,
+        'A01': _a01, 'A02': _a02, 'A03': _a03, 'A04': _a04,
+        'A05': _a05, 'A06': _a06, 'A07': _a07, 'A08': set_shape, 'AF01': _af01,
     }
-    target_policies = {'A01': 'enemy_front', 'A05': 'enemy_front'}
-    shape_events = {('A08', GameEvent.V2_HARMONY_RESOLVED): _a02_shape}
+    target_policies = {
+        'A01': 'enemy_not_in_lineup', 'A02': 'living_enemy', 'A05': 'living_enemy',
+    }
 
     @staticmethod
-    def on_burn_applied(c, enemy=None, target_id=None, **_data):
-        from app.modules.card_game.engine.duel_v2.state import hero, is_esper
-        if not is_esper(target_id):
+    def on_ultimate(c):
+        apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=5)
+        c.history('发动终结：施加 5 层「噩梦」。')
+
+    @staticmethod
+    def on_turn_begin(c):
+        if c.character.get('shape') == 'A07' and alive(c.state, c.side, c.cid):
+            apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=2)
+            c.history('己方回合开始，「广告拍摄中！」施加 2 层「噩梦」。')
+
+    @staticmethod
+    def after_hits(c, **_data):
+        if c.operation.get('skip_nightmare') or not alive(c.state, c.side, c.cid):
             return
-        target = hero(c.state, enemy, target_id)
-        layers = 3 if c.character['awakened'] else 2
-        gained = grant_nightmare(target, layers)
-        if gained:
-            c.history(f"施加浊燃，安魂曲的异能触发：{target['name']}噩梦 +{gained}（现有 {target['flags']['nightmare']} 层）。",
-                      target_side=enemy, target_id=target_id)
+        apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=1)
 
     @staticmethod
-    def after_sortie(c):
-        if not c.character['awakened']:
+    def on_dissonance(c, enemy=None, target_id=None, **_data):
+        if not enemy:
             return
-        _, _, target = _front_hero(c)
-        if target and (target.get('flags') or {}).get('nightmare'):
-            take = settle_nightmare_on(target, 1)
-            if take:
-                from app.modules.card_game.engine.duel_v2.state import front_target
-                c.followup(front_target(c.state, c.side), take,
-                           reason=f'安魂曲的终结触发，消耗 {take} 层噩梦')
-
-    @staticmethod
-    def on_dot(c, target_id=None, kind=None, **_data):
-        if c.character.get('shape') != 'A07' or kind not in ('burn', 'nightmare'):
-            return
-        from app.modules.card_game.engine.duel_v2.state import front_target
-        _, front = front_target(c.state, c.side)
-        if target_id == front and c.once('A07'):
-            c.heal(1, reason='浊燃或噩梦造成伤害，「广告拍摄中！」触发')
-
-    @staticmethod
-    def on_enemy_turn_begin(c):
-        c.state['sides'][c.side]['used'].pop('A07', None)
+        front = c.state['sides'][enemy].get('front')
+        if front and alive(c.state, enemy, front):
+            damage(c.state, enemy, front, 1, source=f'{c.side}:{c.cid}', reason='【失谐】强化')

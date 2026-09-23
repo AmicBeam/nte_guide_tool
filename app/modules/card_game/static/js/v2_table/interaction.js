@@ -122,6 +122,7 @@
       const found = character || {};
       const portrait = V2.battlePortrait(found);
       const lines = [
+        found.flavor ? '<p><em>' + V2.escapeHtml(found.flavor) + '</em></p>' : '',
         '<p>异能：' + V2.cardDescriptionMarkup(found.passive || '尚未提供') + '</p>',
         '<p>终结：' + V2.cardDescriptionMarkup(found.awakened_passive || '尚未提供') + '</p>',
       ];
@@ -401,8 +402,20 @@
       }
       const attackEntry = kind === 'character' ? ctx.findAction('attack', { character_id: id }) : null;
       const front = fromFront != null ? fromFront : Boolean(ctx.dragState && ctx.dragState.fromFront);
-      if (kind === 'character' && front && attackEntry && inPlayArea(zone)) {
-        return inPlayAreaTopHalf(point) ? attackEntry : null;
+      if (kind === 'character' && front && inPlayArea(zone)) {
+        const aimed = ctx.actionsOf('attack', function (action) {
+          return String(action.character_id) === String(id) && action.target_id;
+        });
+        if (aimed.length) {
+          const entity = zone && zone.closest && zone.closest('[data-entity-id]');
+          const eid = entity && TABLE.canonicalEntityId(entity.getAttribute('data-entity-id'));
+          return aimed.filter(function (entry) {
+            return TABLE.canonicalEntityId(entry.action.target_id) === eid;
+          })[0] || null;
+        }
+        if (attackEntry) {
+          return inPlayAreaTopHalf(point) ? attackEntry : null;
+        }
       }
       return TABLE.legalDropFor(kind, grouped, zone, attackEntry, { fromFront: front });
     }

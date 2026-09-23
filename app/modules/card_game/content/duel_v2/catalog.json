@@ -286,13 +286,12 @@
       "max_hp": 5,
       "avatar": "/static/images/characters/avatar/安魂曲.webp",
       "portrait": "/static/images/characters/portrait/安魂曲.webp",
-      "role": "给敌方挂噩梦，浊燃时刷新并结算持续伤害",
-      "passive": "安魂曲存活时，己方每次成功给敌方角色施加浊燃，将其噩梦刷新为 2 层。目标操作者每个回合结束时，若其仍有噩梦，受到 1 点伤害并失去 1 层。",
-      "awakened_passive": "施加浊燃时改为刷新为 3 层。安魂曲完成主动出击后，若目标仍有噩梦，立刻结算 1 层。持续 2 个己方回合。",
+      "role": "噩梦与失谐强化",
+      "passive": "安魂曲的攻击施加 1 层持续伤害「噩梦」。【失谐】强化：触发时，对对方前排造成 1 点伤害。",
+      "awakened_passive": "施加 5 层「噩梦」。",
       "everness_id": 1004,
       "ultimate": {
-        "kind": "status",
-        "turns": 2
+        "kind": "instant"
       },
       "faction": "异象管理局禁制机动队四队"
     },
@@ -301,16 +300,15 @@
       "name": "残虹",
       "attribute": "咒",
       "attack": 2,
-      "max_hp": 5,
+      "max_hp": 6,
       "avatar": "/static/images/characters/avatar/残虹.png",
       "portrait": "/static/images/characters/portrait/残虹.webp",
-      "role": "咒属主攻，叠焚印后爆发",
-      "passive": "完成主动出击且仍存活后，若目标是角色，给予 1 层焚印（每目标上限 3）。残虹攻击带焚印的目标时，本次攻击伤害 +焚印层数。",
-      "awakened_passive": "攻击带焚印的目标时减少生命上限。持续 2 个己方回合。",
+      "role": "浊燃叠层、幻境与持续伤害",
+      "passive": "【浊燃】强化：重复触发时可叠层，上限 3 层，每回合 1 次。己方施加持续伤害时，残虹攻击 +1。残虹使用战斗牌后，进入 2 个己方回合的幻境：攻击施加 1 层「蚀心」；造成伤害时，全部已施加的持续伤害各 +1 层。",
+      "awakened_passive": "施加 5 层「鸩火」。",
       "everness_id": 1036,
       "ultimate": {
-        "kind": "status",
-        "turns": 2
+        "kind": "instant"
       },
       "faction": "无"
     },
@@ -322,9 +320,9 @@
       "max_hp": 4,
       "avatar": "/static/images/characters/avatar/早雾.webp",
       "portrait": "/static/images/characters/portrait/早雾.webp",
-      "role": "按敌方负面种类提高全队攻击伤害",
-      "passive": "早雾存活时，敌方前排每有 1 种负面（浊燃、黯星、噩梦、延滞、焚印），己方角色对其主动攻击伤害 +1，最多 +2。",
-      "awakened_passive": "负面增伤上限提升至 +3。持续 2 个己方回合。",
+      "role": "持续伤害增幅与鬼郎丸",
+      "passive": "已施加浊燃时，己方持续伤害分配的伤害每有 1 种持续伤害便 +25%（向下取整）。鬼郎丸被召唤时，每有 1 种持续伤害，其攻击 +1。",
+      "awakened_passive": "其他己方异能者攻击 +2，持续 2 个己方回合。不可叠加。",
       "everness_id": 1003,
       "ultimate": {
         "kind": "status",
@@ -349,6 +347,23 @@
         "turns": 2
       },
       "faction": "异象管理局禁制机动队四队"
+    },
+    {
+      "id": "adler",
+      "name": "阿德勒",
+      "attribute": "咒",
+      "attack": 0,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/阿德勒.webp",
+      "portrait": "/static/images/characters/portrait/阿德勒.webp",
+      "role": "护盾即攻击，诛恶护持",
+      "passive": "己方回合开始时，阿德勒获得 2 点护盾；若已有浊燃，改为 3 点。阿德勒的攻击力等同于其护盾值。",
+      "awakened_passive": "造成 5 点伤害，随机分配给对方异能者。若已有浊燃，阿德勒回复 1 点能量。",
+      "everness_id": 1033,
+      "ultimate": {
+        "kind": "instant"
+      },
+      "faction": "伊波恩古董店"
     },
     {
       "id": "haiyue",
@@ -964,14 +979,15 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对手前排获得 1 层噩梦。安魂曲获得 1 点能量。",
+      "description": "选择一名不在己方阵容中的对方异能者。本回合安魂曲的异能视为与其相同，并触发其回合开始时的效果。",
       "effect_id": "A01",
       "source": {
         "character_id": 1004,
         "type": "awaken",
         "index": 1
       },
-      "starter_copies": 2
+      "starter_copies": 2,
+      "instant": false
     },
     {
       "id": "A02",
@@ -983,22 +999,21 @@
         "type": "awaken",
         "index": 2
       },
-      "type": "battle",
+      "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2。若目标有噩梦，本次攻击减少生命上限。",
+      "description": "对一名对方异能者造成等同于「噩梦」层数的伤害。若「噩梦」不少于 5 层，对对方玩家造成 3 点伤害。",
       "starter_copies": 2,
-      "shield": 1,
-      "attack": 2
+      "instant": true
     },
     {
       "id": "A03",
       "character_id": "anhunqu",
       "name": "冰淇淋在烈阳中融化",
-      "type": "battle",
-      "cost": 1,
+      "type": "tactic",
+      "cost": 0,
       "terminal": false,
-      "description": "若目标有噩梦，本次攻击伤害 +1，并立刻结算 1 层噩梦。",
+      "description": "触发并移除全部「噩梦」。抽 1 张牌。",
       "effect_id": "A03",
       "source": {
         "character_id": 1004,
@@ -1006,8 +1021,7 @@
         "index": 3
       },
       "starter_copies": 2,
-      "shield": 0,
-      "attack": 0
+      "instant": false
     },
     {
       "id": "A04",
@@ -1019,45 +1033,50 @@
         "type": "awaken",
         "index": 4
       },
-      "type": "battle",
+      "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1。然后立刻结算目标全部噩梦。",
+      "description": "施加 5 层「噩梦」。若「噩梦」达到 10 层，获得 1 张「茄汁金属乐」。",
       "starter_copies": 0,
-      "shield": 1,
-      "attack": 1
+      "instant": true
     },
     {
       "id": "A05",
       "character_id": "anhunqu",
       "name": "强化玻璃径受审判",
-      "type": "tactic",
+      "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "对手前排受到 1 点伤害。若其有噩梦，安魂曲回复 1 点生命。",
+      "description": "指定一名对方异能者。安魂曲可以在备战区远程出击。",
       "effect_id": "A05",
       "source": {
         "character_id": 1004,
         "type": "awaken",
         "index": 5
       },
-      "starter_copies": 0
+      "starter_copies": 0,
+      "instant": false,
+      "attack": 1,
+      "shield": 0
     },
     {
       "id": "A06",
       "character_id": "anhunqu",
       "name": "早起出勤之咏",
-      "type": "tactic",
+      "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "安魂曲获得 1 点自己的环合值。若她在备战区，再获得 1 点能量。",
+      "description": "若己方前排为魂或咒属性且环合值未满，安魂曲以援护技登场并触发环合，不消耗环合值。以此形式出场不施加「噩梦」。",
       "effect_id": "A06",
       "source": {
         "character_id": 1004,
         "type": "awaken",
         "index": 6
       },
-      "starter_copies": 0
+      "starter_copies": 0,
+      "instant": false,
+      "attack": -2,
+      "shield": 0
     },
     {
       "id": "A07",
@@ -1072,10 +1091,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "每个对手回合，对手前排首次受到浊燃或噩梦伤害后：安魂曲回复 1 点生命。",
+      "description": "装备时和己方回合开始时，施加 2 层「噩梦」。若「噩梦」消灭对方异能者，对对方玩家造成 2 点伤害。",
       "starter_copies": 0,
-      "attack": 0,
-      "hp": 1
+      "attack": 2,
+      "hp": 7
     },
     {
       "id": "A08",
@@ -1090,26 +1109,28 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "安魂曲入场触发环合后：本次出击第一次攻击伤害 +1。",
+      "description": "「噩梦」的伤害还会减少其等量生命上限，并为安魂曲回复等量生命。",
       "starter_copies": 2,
-      "hp": 0,
-      "attack": 1
+      "hp": 6,
+      "attack": 3
     },
     {
       "id": "C01",
       "character_id": "canhong",
       "name": "瞳中深渊",
-      "type": "tactic",
+      "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "抽 1 张牌。残虹获得 1 点能量。",
+      "description": "若已有不少于 5 层持续伤害，残虹不会低于 1 点生命，并在战斗后回复全部生命。",
       "effect_id": "C01",
       "source": {
         "character_id": 1036,
         "type": "awaken",
         "index": 1
       },
-      "starter_copies": 2
+      "starter_copies": 2,
+      "attack": 0,
+      "shield": 0
     },
     {
       "id": "C02",
@@ -1124,10 +1145,10 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2。若目标焚印不少于 2 层，本次攻击获得穿透。",
+      "description": "若已有不少于 10 层持续伤害，抽 1 张牌。若击倒对方异能者，获得 1 张「渊底之吻」。",
       "starter_copies": 2,
       "shield": 1,
-      "attack": 2
+      "attack": 1
     },
     {
       "id": "C03",
@@ -1136,7 +1157,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1。若残虹拥有弧盘，完成出击后仍存活：回复 1 点生命。",
+      "description": "每局对战 1 次，攻击的目标进入倾陷。",
       "effect_id": "C03",
       "source": {
         "character_id": 1036,
@@ -1144,8 +1165,8 @@
         "index": 3
       },
       "starter_copies": 2,
-      "shield": 0,
-      "attack": 1
+      "shield": 2,
+      "attack": 0
     },
     {
       "id": "C04",
@@ -1154,7 +1175,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若目标有焚印、浊燃、噩梦、延滞或黯星，本次战斗不受反击。",
+      "description": "每有 5 层持续伤害，本次攻击伤害 +1，并获得 1 点护盾。至多攻击 +4、护盾 4。",
       "effect_id": "C04",
       "source": {
         "character_id": 1036,
@@ -1178,26 +1199,28 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2。若目标有浊燃，改为 +4。",
+      "description": "若残虹处于幻境，本次攻击不受反击，残虹获得 1 点能量。",
       "starter_copies": 0,
-      "shield": 1,
+      "shield": 0,
       "attack": 2
     },
     {
       "id": "C06",
       "character_id": "canhong",
       "name": "血染双瞳",
-      "type": "tactic",
+      "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "对手前排受到 1 点伤害。其每有 1 层焚印，再受到 1 点伤害，最多再 3 点。",
+      "description": "残虹因其他己方角色而离开前排时，造成 1 点伤害。前排优先。",
       "effect_id": "C06",
       "source": {
         "character_id": 1036,
         "type": "awaken",
         "index": 6
       },
-      "starter_copies": 0
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
     },
     {
       "id": "C07",
@@ -1212,10 +1235,11 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "每个己方回合首次完成主动出击后，若目标有焚印：再对其造成 1 点追击伤害。",
+      "description": "复活残虹。若已有不少于 20 层持续伤害，残虹倒地时从牌库或手牌自动使用这张卡。",
       "starter_copies": 0,
-      "attack": 1,
-      "hp": 0
+      "attack": 2,
+      "hp": 6,
+      "playable_downed": true
     },
     {
       "id": "C08",
@@ -1230,10 +1254,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "残虹入场触发浊燃后：本次出击第一次攻击伤害 +1。",
+      "description": "若已有不少于 5 层持续伤害，残虹可以选择攻击任意对方异能者，溢出伤害穿透至对方玩家。",
       "starter_copies": 2,
-      "attack": 1,
-      "hp": 0
+      "attack": 2,
+      "hp": 7
     },
     {
       "id": "S01",
@@ -1242,7 +1266,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "抽 1 张牌。若对手前排有负面，早雾获得 1 点能量。",
+      "description": "召唤鬼郎丸。其吞噬了黑胶唱片。鬼郎丸受到伤害时，随机弃置对方 1 张手牌。",
       "effect_id": "S01",
       "source": {
         "character_id": 1003,
@@ -1264,26 +1288,24 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "早雾获得 1 点能量。本回合己方下一次主动攻击伤害 +1。",
+      "description": "召唤鬼郎丸。其吞噬了好狗狗的项圈。鬼郎丸受到伤害时，随机使一名对方异能者进入倾陷。",
       "starter_copies": 0
     },
     {
       "id": "S03",
       "character_id": "zaowu",
       "name": "黏附性的啮合",
-      "type": "battle",
+      "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "若目标有负面，本次攻击伤害 +1。",
+      "description": "召唤鬼郎丸。其吞噬了气味奇怪的液体。鬼郎丸受到伤害时，随机对一名对方异能者造成等量伤害。",
       "effect_id": "S03",
       "source": {
         "character_id": 1003,
         "type": "awaken",
         "index": 3
       },
-      "starter_copies": 2,
-      "shield": 0,
-      "attack": 0
+      "starter_copies": 2
     },
     {
       "id": "S04",
@@ -1292,14 +1314,16 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "所有己方存活角色下次主动攻击伤害 +1。",
+      "description": "对一个召唤物造成 3 点伤害。",
       "effect_id": "S04",
       "source": {
         "character_id": 1003,
         "type": "awaken",
         "index": 4
       },
-      "starter_copies": 0
+      "starter_copies": 0,
+      "instant": true,
+      "retain": true
     },
     {
       "id": "S05",
@@ -1311,13 +1335,11 @@
         "type": "awaken",
         "index": 5
       },
-      "type": "battle",
+      "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1。目标每有 1 种负面，再 +1。",
-      "starter_copies": 2,
-      "shield": 1,
-      "attack": 1
+      "description": "鬼郎丸在场时，对鬼郎丸和全部对方异能者造成 2 点伤害。",
+      "starter_copies": 2
     },
     {
       "id": "S06",
@@ -1326,14 +1348,15 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对手前排受到 2 点伤害。若其有负面，早雾抽 1 张牌。",
+      "description": "鬼郎丸在场时，对方不能普通出击。",
       "effect_id": "S06",
       "source": {
         "character_id": 1003,
         "type": "awaken",
         "index": 6
       },
-      "starter_copies": 0
+      "starter_copies": 0,
+      "instant": true
     },
     {
       "id": "S07",
@@ -1348,10 +1371,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "每个己方回合，早雾首次完成主动出击后，若目标有负面：再对其造成 1 点追击伤害。",
+      "description": "若已有 4 种持续伤害：装备时和己方回合开始时，召唤一只吞噬了随机物品的鬼郎丸，并对其造成 3 点伤害。",
       "starter_copies": 2,
-      "hp": 0,
-      "attack": 1
+      "hp": 4,
+      "attack": 2
     },
     {
       "id": "S08",
@@ -1366,10 +1389,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "每个己方回合，首次对有负面的敌方前排完成主动出击后：早雾回复 1 点生命。",
+      "description": "早雾终结给予的攻击额外 +1。鬼郎丸消灭对方异能者时，早雾回满能量。",
       "starter_copies": 0,
-      "attack": 0,
-      "hp": 1
+      "attack": 3,
+      "hp": 6
     },
     {
       "id": "K01",
@@ -3054,6 +3077,165 @@
       "starter_copies": 0,
       "attack": 3,
       "hp": 6
+    },
+    {
+      "id": "AF01",
+      "character_id": "anhunqu",
+      "name": "茄汁金属乐",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "instant": false,
+      "derived": true,
+      "starter_copies": 0,
+      "attack": 1,
+      "shield": 2,
+      "effect_id": "AF01",
+      "description": "获得 1 张「冰淇淋在烈阳中融化」。该牌在回合结束时弃置。",
+      "source": {
+        "character_id": 1004,
+        "type": "derived",
+        "index": 1
+      }
+    },
+    {
+      "id": "D01",
+      "character_id": "adler",
+      "name": "无色",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "对一名对方异能者造成 3 点伤害。阿德勒获得 3 点护盾。若已有浊燃，再对另一名对方异能者重复 1 次。",
+      "effect_id": "D01",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 1
+      }
+    },
+    {
+      "id": "D02",
+      "character_id": "adler",
+      "name": "无受",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "全体己方异能者获得 3 点护盾。施加持续 3 个己方回合的「诛恶护持」。",
+      "effect_id": "D02",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 2
+      }
+    },
+    {
+      "id": "D03",
+      "character_id": "adler",
+      "name": "无想",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "response": "ally_attacked",
+      "description": "选择另一名己方异能者，使其获得 4 点护盾。响应：其他己方异能者被攻击时。",
+      "effect_id": "D03",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 3
+      }
+    },
+    {
+      "id": "D04",
+      "character_id": "adler",
+      "name": "无行",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "attack": 0,
+      "shield": 2,
+      "description": "若已有浊燃，为你回复本次造成伤害等量的生命。",
+      "effect_id": "D04",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 4
+      }
+    },
+    {
+      "id": "D05",
+      "character_id": "adler",
+      "name": "无识",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "attack": 0,
+      "shield": 1,
+      "description": "施加「诛恶护持」，持续 2 个己方回合。若已有浊燃，改为 3 个己方回合。",
+      "effect_id": "D05",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 5
+      }
+    },
+    {
+      "id": "D06",
+      "character_id": "adler",
+      "name": "诸法空相",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "attack": 0,
+      "hp": 7,
+      "description": "其他己方异能者的护盾破碎时，溢出伤害转移至阿德勒。装备时，阿德勒获得 2 点护盾。",
+      "effect_id": "D06",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 6
+      }
+    },
+    {
+      "id": "D07",
+      "character_id": "adler",
+      "name": "克己",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "attack": 0,
+      "hp": 5,
+      "description": "其他咒属性己方异能者攻击 +1。",
+      "effect_id": "D07",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "ability",
+        "index": 1
+      }
+    },
+    {
+      "id": "D08",
+      "character_id": "adler",
+      "name": "正心",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "attack": 0,
+      "hp": 7,
+      "description": "【浊燃】强化：浊燃获得层数时，随机对一名对方存活异能者施加以下之一，同种类不可叠加：全属性抗性 -1、倾陷值上限 -1 或攻击 -1。",
+      "effect_id": "D08",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "ability",
+        "index": 2
+      }
     }
   ],
   "starter_decks": [

@@ -96,9 +96,25 @@ def _kit_handlers(c, hook: str, *, actor_only: bool = False, include_down: bool 
             continue
         if not include_down and characters[cid]['hp'] <= 0:
             continue
-        handler = getattr(kit, hook, None)
+        mimic = (characters[cid].get('flags') or {}).get('mimic') or {}
+        passive_kit = kit
+        wrapped = False
+        if mimic.get('id') and hook not in ('on_ultimate', 'on_ultimate_end'):
+            passive_kit = KITS.get(mimic['id'])
+            wrapped = passive_kit is not None
+        handler = getattr(passive_kit, hook, None) if passive_kit is not None else None
         if handler is not None:
-            yield cid, handler
+            if wrapped:
+                def _mimicked(ctx, _handler=handler, **data):
+                    awakened = ctx.character.get('awakened')
+                    ctx.character['awakened'] = False
+                    try:
+                        return _handler(ctx, **data)
+                    finally:
+                        ctx.character['awakened'] = awakened
+                yield cid, _mimicked
+            else:
+                yield cid, handler
         from app.modules.card_game.engine.duel_v2.equipment import weapon_id, weapon_source
         equipped = weapon_id(characters[cid])
         weapon_handler = getattr(kit, 'weapon_hooks', {}).get(equipped, {}).get(hook)

@@ -235,14 +235,24 @@
     }
     const zone = (state && state.front_debuff) || {};
     const labels = { delay: '延滞', burn: '浊燃', star: '黯星', weave: '覆纹', stain: '浸染' };
-    const chips = Object.keys(labels).filter(function (key) { return Boolean(zone[key]); });
-    node.innerHTML = chips.map(function (key) {
+    const chips = Object.keys(labels).filter(function (key) { return Boolean(zone[key]); }).map(function (key) {
       const status = zone[key];
-      const duration = status.infinite ? '无限' : (status.expires_side || key === 'weave' || key === 'stain'
+      let duration = status.infinite ? '无限' : (status.expires_side || key === 'weave' || key === 'stain'
         ? '本回合' : ('倒计时 ' + (status.left == null ? '—' : status.left)));
+      if (key === 'burn' && status.stacks > 1) {
+        duration = status.stacks + '层 · ' + duration;
+      }
       return '<span class="v2-chip">' + V2.escapeHtml(labels[key]) +
         '<small>' + V2.escapeHtml(duration) + '</small></span>';
-    }).join('');
+    });
+    Object.keys(zone.dots || {}).forEach(function (key) {
+      const status = zone.dots[key];
+      if (!status) return;
+      const timing = status.left == null ? (status.stacks + '层') : (status.stacks + '层 · 倒计时 ' + status.left);
+      chips.push('<span class="v2-chip">' + V2.escapeHtml(status.name || key) +
+        '<small>' + V2.escapeHtml(timing) + '</small></span>');
+    });
+    node.innerHTML = chips.join('');
     node.hidden = chips.length === 0;
   }
 

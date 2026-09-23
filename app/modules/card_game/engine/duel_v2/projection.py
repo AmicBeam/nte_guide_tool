@@ -163,7 +163,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
             flags = compatibility_flags(h, state, ps)
             c = {k: deepcopy(h[k]) for k in ('entity_id', 'id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
                  'energy', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura', 'jingu', 'arid', 'truth_keys', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
-                 'avatar', 'portrait', 'passive', 'awakened_passive') if k in h}
+                 'avatar', 'portrait', 'passive', 'awakened_passive', 'flavor') if k in h}
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None
             from .equipment import stat_layers, public_equipment
@@ -178,7 +178,8 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                      return_after_sortie=flags.get('return_after', False),
                      brand=flags.get('brand', 0),
                      nightmare=flags.get('nightmare', 0),
-                     collapse_count=flags.get('collapse_count', 0), collapse_max=5,
+                     collapse_count=flags.get('collapse_count', 0),
+                     collapse_max=int(flags.get('collapse_max') or 5),
                      collapse=bool(flags.get('collapse')),
                      pact=bool(flags.get('pact')),
                      atk_debuff=int(flags.get('atk_debuff') or 0),

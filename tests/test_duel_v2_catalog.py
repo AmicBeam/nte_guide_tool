@@ -67,7 +67,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual((CHARACTERS['nanali']['attack'], CHARACTERS['nanali']['max_hp']), (2, 5))
         self.assertEqual((CHARACTERS['zero']['attack'], CHARACTERS['zero']['max_hp']), (2, 5))
         self.assertEqual((CHARACTERS['jiuyuan']['attack'], CHARACTERS['jiuyuan']['max_hp']), (3, 4))
-        self.assertEqual((CHARACTERS['canhong']['attack'], CHARACTERS['canhong']['max_hp']), (2, 5))
+        self.assertEqual((CHARACTERS['canhong']['attack'], CHARACTERS['canhong']['max_hp']), (2, 6))
         self.assertEqual((CHARACTERS['zaowu']['attack'], CHARACTERS['zaowu']['max_hp']), (3, 4))
         self.assertEqual((CHARACTERS['lingke']['attack'], CHARACTERS['lingke']['max_hp']), (3, 4))
         self.assertEqual((CHARACTERS['xun']['attack'], CHARACTERS['xun']['max_hp']), (3, 6))
@@ -106,7 +106,7 @@ class DuelV2CatalogTest(unittest.TestCase):
 
     def test_cards_keep_thirty_two_official_names_and_four_by_eight_groups(self) -> None:
         named = {card_id: card for card_id, card in CARDS.items() if not card.get('derived')}
-        self.assertEqual(len(named), 144)
+        self.assertEqual(len(named), 152)
         self.assertTrue(CARDS['NF01']['derived'])
         self.assertEqual(CARDS['NF01']['name'], '家族壮大')
         self.assertIn('第 5 回合及以后具有瞬发', CARDS['NF01']['description'])
@@ -127,7 +127,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertGreater(type_counts['tactic'], 0)
         self.assertGreater(type_counts['form'], 0)
         for card in CARDS.values():
-            self.assertEqual(card['cost'], 0 if card['id'] == 'I04' or (card['character_id'] == 'xun' and card['id'] not in ('X08', 'XF01')) else 1)
+            self.assertEqual(card['cost'], 0 if card['id'] in ('I04', 'A03') or (card['character_id'] == 'xun' and card['id'] not in ('X08', 'XF01')) else 1)
             if card['type'] == 'form':
                 self.assertIsInstance(card.get('attack'), int)
                 self.assertIsInstance(card.get('hp'), int)
@@ -136,7 +136,7 @@ class DuelV2CatalogTest(unittest.TestCase):
             elif card['type'] == 'battle':
                 self.assertIsInstance(card.get('attack'), int)
                 self.assertIsInstance(card.get('shield'), int)
-                self.assertGreaterEqual(card['attack'], 0)
+                self.assertGreaterEqual(card['attack'], -2 if card['id'] == 'A06' else 0)
                 self.assertGreaterEqual(card['shield'], 0)
         self.assertEqual(CARDS['N08']['attack'], 2)
         self.assertEqual(CARDS['N08']['hp'], 6)
@@ -223,10 +223,10 @@ class DuelV2CatalogTest(unittest.TestCase):
         for character_id in CATALOG_ORDER:
             owned = [card_id for card_id, card in named.items() if card['character_id'] == character_id]
             card_07, card_08 = CARDS[owned[6]], CARDS[owned[7]]
-            self.assertEqual(card_08['source']['type'], 'ability' if character_id == 'yi' else 'arc', character_id)
+            self.assertEqual(card_08['source']['type'], 'ability' if character_id in ('yi', 'adler') else 'arc', character_id)
             if character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc', character_id)
-            elif character_id in ('zaowu', 'hathor', 'jiuyuan', 'baicang', 'xiaozhi', 'haiyue', 'edgar', 'haniya', 'yi'):
+            elif character_id in ('zaowu', 'hathor', 'jiuyuan', 'baicang', 'xiaozhi', 'haiyue', 'edgar', 'haniya', 'yi', 'adler'):
                 self.assertEqual(card_07['source']['type'], 'ability', character_id)
             else:
                 self.assertEqual(card_07['source']['type'], 'pv', character_id)
@@ -325,7 +325,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
         self.assertFalse(any(deck_uses_test_characters(item) for item in STARTER_DECKS))
         full = get_catalog()
-        self.assertEqual(len(full['characters']), 18)
+        self.assertEqual(len(full['characters']), 19)
         self.assertEqual(len(full['starter_decks']), 4)
         self.assertEqual(
             [item['name'] for item in full['starter_decks']],

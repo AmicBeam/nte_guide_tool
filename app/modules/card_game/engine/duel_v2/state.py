@@ -74,6 +74,17 @@ def attack_value(character, state=None, side=None, *, include_zone=True, explain
     override = evaluate(state, side or character.get('side'), character, 'attack.override', panel['value'])
     value = override['value']
     owner = side if side is not None else character.get('side')
+    if state is not None and owner in SIDES and character.get('id') in state['sides'][owner]['characters']:
+        from app.modules.card_game.content.duel_v2.registry import decide
+        from .context import EffectContext
+        replaced = decide(EffectContext(state, owner, character['id'], {'side': owner}),
+                          'panel_attack', None, actor_only=True)
+        if replaced is not None:
+            value = max(0, int(replaced))
+            if explain:
+                return dict(base=base, layers=layers, value=value, contributions=[
+                    e for e in panel['contributions'] + override['contributions'] if e['visibility'] == 'public'])
+            return value
     if include_zone and state is not None and owner in SIDES:
         value -= zone_attack_penalty(state, owner, character.get('id'))
     value = max(0, int(value))
@@ -203,7 +214,7 @@ def clear_harmony_source(state, side, cid):
         team['last_front'] = None
 
 
-def move_out(state, side, cid):
+def move_out(state, side, cid, *, reason=None):
     upgrade_harmony_residue(state)
     team = state['sides'][side]
     if team['front'] != cid:
@@ -217,6 +228,10 @@ def move_out(state, side, cid):
     # Capture eligibility at departure; later bench resource gains cannot create it.
     team['last_front'] = (cid if alive(state, side, cid)
                           and h['harmony'] >= harmony_cap(state) else None)
+    if reason == 'replace' and alive(state, side, cid) and not h.get('summoned'):
+        from app.modules.card_game.content.duel_v2.registry import fire
+        from .context import EffectContext
+        fire(EffectContext(state, side, cid, {'side': side}), 'on_replaced', actor_only=True)
     team['front'] = None
     before = {'hp': h['hp'], 'shield': h['shield'], 'front': cid}
     h['shield'] = 0
@@ -285,6 +300,12 @@ def _knockdown_pass(state):
             if killer_side and killer_cid and killer_side != side and alive(state, killer_side, killer_cid):
                 fire(EffectContext(state, killer_side, killer_cid, {'side': killer_side}),
                      'on_rout', actor_only=True, downed=cid)
+            if (killer_side and killer_cid and killer_cid in state['sides'].get(killer_side, {}).get('characters', {})
+                    and hero(state, killer_side, killer_cid).get('summoned')):
+                carrier = next((item for item in team_order(state, killer_side)
+                                if not hero(state, killer_side, item).get('summoned')), killer_cid)
+                fire(EffectContext(state, killer_side, carrier, {'side': killer_side}),
+                     'on_summon_kill', summon_id=killer_cid, downed=cid)
             if h.get('awakened') or h.get('ultimate_turns'):
                 from .flow import end_ultimate
                 end_ultimate(state, side, cid)
@@ -310,7 +331,7 @@ def _knockdown_pass(state):
     # Finish every simultaneous knockdown before effects choose a new front.
     for side, cid in downed:
         ctx = EffectContext(state, side, cid, {'side': side, 'downed': cid})
-        fire(ctx, 'on_ally_down', downed=cid)
+        fire(ctx, 'on_ally_down', downed=cid, include_down=True)
         from .flow import trigger_responses
         trigger_responses(state, side, 'self_downed', target_id=cid)
     return bool(downed)
@@ -366,6 +387,19 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     absorbed = 0 if bypass else min(target['shield'], amount)
     target['shield'] -= absorbed
     loss = amount - absorbed
+    redirect = None
+    redirect_loss = 0
+    if esper and loss > 0 and absorbed > 0:
+        from app.modules.card_game.content.duel_v2.registry import decide
+        from .context import EffectContext
+        redirect = decide(EffectContext(state, side, cid, {'side': side}), 'redirect_overflow', None,
+                          loss=loss, absorbed=absorbed, target_id=cid)
+        if redirect == cid or not is_esper(redirect) or not alive(state, side, redirect):
+            redirect = None
+        else:
+            redirect_loss = loss
+            amount = absorbed
+            loss = 0
     floor = 0
     if esper:
         from app.modules.card_game.content.duel_v2.registry import decide
@@ -410,11 +444,18 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         if esper:
             fire(EffectContext(state, side, cid, {'side': side}), 'on_damage_taken',
                  actor_only=True, amount=loss, source=source)
+            if target.get('summoned'):
+                fire(EffectContext(state, side, team_order(state, side)[0], {'side': side}),
+                     'on_ally_summon_hurt', summon_id=cid, amount=loss, source=source)
         if isinstance(source, str) and ':' in source:
             src_side, src_cid = source.split(':', 1)
             if src_side in SIDES and src_cid in state['sides'][src_side]['characters']:
                 fire(EffectContext(state, src_side, src_cid, {'side': src_side}),
                      'on_damage_dealt', actor_only=True, target_side=side, target_id=cid, amount=loss)
+    if redirect_loss and redirect and not finished(state):
+        damage(state, side, redirect, redirect_loss, source=source, kind=kind, settle=settle,
+               group_id=group_id, damage_class=damage_class, reason='护盾破碎，溢出伤害转移')
+        return loss
     if settle:
         knockdowns(state)
         victory(state)
@@ -454,6 +495,21 @@ def reduce_max_hp(state, side, cid, amount, *, source=None, settle=True, group_i
     return cut
 
 
+def force_collapse(state, side, cid, *, by=None):
+    """Put a living esper straight into 倾陷. Duration matches a full collapse."""
+    if finished(state) or not is_esper(cid) or not alive(state, side, cid):
+        return
+    h = hero(state, side, cid)
+    flags = h.setdefault('flags', {})
+    if flags.get('collapse'):
+        return
+    flags['collapse_count'] = 0
+    applier = by or other(side)
+    flags['collapse'] = {'side': applier, 'until': state['sides'][applier]['turn_count'] + 1}
+    log(state, f"{h['name']}进入倾陷。", 'collapse', side=side, source=cid,
+        target=f'{side}:{cid}', after={'collapse': True})
+
+
 def add_collapse(state, side, cid, amount=1, *, by=None):
     if finished(state) or not is_esper(cid) or not alive(state, side, cid):
         return
@@ -467,7 +523,8 @@ def add_collapse(state, side, cid, amount=1, *, by=None):
     log(state, f"{h['name']}倾陷值 +{amount}（{flags['collapse_count']}/5）。", 'collapse',
         side=side, source=cid, actor=actor, target=f'{side}:{cid}', amount=amount,
         before={'collapse_count': before}, after={'collapse_count': flags['collapse_count']})
-    if flags['collapse_count'] >= 5 and not flags.get('collapse'):
+    limit = int(flags.get('collapse_max') or 5)
+    if flags['collapse_count'] >= limit and not flags.get('collapse'):
         flags['collapse_count'] = 0
         applier = by or other(side)
         flags['collapse'] = {'side': applier, 'until': state['sides'][applier]['turn_count'] + 1}

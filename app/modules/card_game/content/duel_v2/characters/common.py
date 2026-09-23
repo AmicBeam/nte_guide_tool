@@ -24,7 +24,8 @@ def draw_owned_card(c, character_id=None, *, reveal=True):
 def grant_seed(c, limit=3, *, reason=None):
     from app.modules.card_game.content.duel_v2.registry import KITS
     from app.modules.card_game.engine.duel_v2.state import add_hand, card_instance
-    kit = KITS.get(c.cid)
+    mimic = (c.character.get('flags') or {}).get('mimic') or {}
+    kit = KITS.get(mimic.get('id') or c.cid)
     card_id = getattr(kit, 'seed_card', None) if kit else None
     if not card_id:
         return
@@ -34,7 +35,11 @@ def grant_seed(c, limit=3, *, reason=None):
     if gained >= limit:
         return
     team[key] = gained + 1
-    add_hand(c.state, c.side, card_instance(c.state, card_id, c.side), reason=reason)
+    card = card_instance(c.state, card_id, c.side)
+    if mimic.get('id'):
+        card['original_character_id'] = card['character_id']
+        card['character_id'] = c.cid
+    add_hand(c.state, c.side, card, reason=reason)
 
 
 def perm_plus(c, atk=1, hp=1):

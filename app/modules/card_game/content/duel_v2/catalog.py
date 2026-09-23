@@ -103,11 +103,11 @@ def _card_public(raw: dict[str, Any]) -> dict[str, Any]:
     elif kind == 'battle':
         attack = int(raw.get('attack') or 0)
         shield = int(raw.get('shield') or 0)
-        if attack < 0 or shield < 0:
-            raise ValueError(f'战斗牌 {card_id} 的攻击与护盾不能为负')
+        if shield < 0:
+            raise ValueError(f'战斗牌 {card_id} 的护盾不能为负')
         public['attack'] = attack
         public['shield'] = shield
-    for extra in ('tooltip', 'instant', 'response', 'redeem', 'require', 'derived', 'playable_downed', 'attack_mode', 'play_options', 'spend_all_ap', 'training_excluded', 'response_faction', 'free_if_surplus'):
+    for extra in ('tooltip', 'instant', 'response', 'redeem', 'require', 'derived', 'playable_downed', 'attack_mode', 'play_options', 'spend_all_ap', 'training_excluded', 'response_faction', 'free_if_surplus', 'retain'):
         if extra in raw:
             public[extra] = deepcopy(raw[extra])
     if public.get('derived'):

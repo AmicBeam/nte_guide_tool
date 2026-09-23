@@ -1014,6 +1014,15 @@ class DuelV2EngineTest(unittest.TestCase):
                     save_turn_start(s, 'a')
                 if cid == 'XA01':
                     card['antique_investment'] = 1
+                if cid == 'A01' and 'hathor' not in s['sides']['b']['order']:
+                    s['sides']['b']['characters']['hathor'] = new_character('hathor')
+                    s['sides']['b']['order'].append('hathor')
+                if cid == 'S04':
+                    from app.modules.card_game.engine.duel_v2.summons import summon_front
+                    summon_front(s, 'b', name='靶子', attack=0, hp=4)
+                if cid in ('S05', 'S06'):
+                    from app.modules.card_game.engine.duel_v2.summons import summon_front
+                    summon_front(s, 'a', name='鬼郎丸', attack=0, hp=4)
                 a = next(a for a in legal_actions(s) if a['type'] == 'play_card' and a['card_id'] == card['instance_id'])
                 s = apply_action(s, 'a', a)
                 if s['phase'] == 'choice':
@@ -1024,7 +1033,8 @@ class DuelV2EngineTest(unittest.TestCase):
                 if cid == 'X04': spent = 2
                 if cid == 'XA01': spent = 2 - s['sides']['a']['ap']
                 self.assertEqual(s['sides']['a']['ap'], 2 - spent)
-                self.assertTrue(any(c['instance_id'] == card['instance_id'] for c in s['sides']['a']['removed' if cid == 'X01' else 'discard']))
+                pile = 'hand' if CARDS[cid].get('retain') else ('removed' if cid == 'X01' else 'discard')
+                self.assertTrue(any(c['instance_id'] == card['instance_id'] for c in s['sides']['a'][pile]))
                 json.dumps(observe(s, 'a'))
 
     def test_baicang_b06_allied_hurt_adds_one_attack(self):

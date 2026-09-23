@@ -139,16 +139,17 @@ def resolve_genesis(c, *, arm_delay=True):
         fire(c, 'after_genesis', entering=cid)
 
 
-def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
-    if not kind or not payer_id:
+def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
+    if not kind or (pay and not payer_id):
         return
     s, side, cid, op = c.state, c.side, c.cid, c.operation
     team = s['sides'][side]
-    payer = hero(s, side, payer_id)
-    before = payer['harmony']
-    payer['harmony'] -= harmony_cap(s)
-    if team.get('last_front') == payer_id:
-        team['last_front'] = None
+    payer = hero(s, side, payer_id) if payer_id else None
+    before = payer['harmony'] if payer else 0
+    if pay:
+        payer['harmony'] -= harmony_cap(s)
+        if team.get('last_front') == payer_id:
+            team['last_front'] = None
     c.character['flags']['has_harmonized'] = True
     # This once-per-game fact must survive death.
     team['harmonized'][cid] = True
@@ -157,9 +158,13 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
         op['support'] = True
         if not op.pop('support_notified', False):
             fire(c, 'on_support', actor_id=cid)
-    log(s, f"{c.character['name']}入场，消耗{payer['name']}的 {harmony_cap(s)} 点环合值，触发{kind}。", 'harmony',
-        side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id}',
-        before={'harmony': before}, after={'harmony': payer['harmony']})
+    if pay:
+        log(s, f"{c.character['name']}入场，消耗{payer['name']}的 {harmony_cap(s)} 点环合值，触发{kind}。", 'harmony',
+            side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id}',
+            before={'harmony': before}, after={'harmony': payer['harmony']})
+    else:
+        log(s, f"{c.character['name']}入场，不消耗环合值，触发{kind}。", 'harmony',
+            side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id or cid}')
     enemy, target = front_target(s, side)
     if kind == '创生':
         resolve_genesis(c)
@@ -188,16 +193,8 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
                    group_id=next_group_id(s))
             fire(c, 'on_delay_hit', target=delay_target)
     elif kind == '浊燃':
-        zone = front_debuff(s, enemy)
-        had_star = bool(zone.get('star'))
-        zone['burn'] = {'left': 2, 'by': side}
-        log(s, '对方战斗区获得浊燃。', 'harmony',
-            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
-        fire(c, 'on_burn_applied', enemy=enemy, target_id=target)
-        if had_star:
-            add_collapse(s, enemy, target, 1, by=side)
-            log(s, f"{c.character['name']}触发失谐。", 'harmony', side=side, source=cid,
-                actor=f'{side}:{cid}', target=f'{enemy}:{target}')
+        from .continuous import apply_burn
+        apply_burn(s, enemy, by=side, source_cid=cid)
     elif kind == '黯星':
         team['dark_star_count'] = int(team.get('dark_star_count', 0)) + 1
         zone = front_debuff(s, enemy)
@@ -224,7 +221,7 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True):
         c.on_shape(GameEvent.V2_HARMONY_RESOLVED, operation=op)
 
 
-def enter(c, *, as_support=True):
+def enter(c, *, as_support=True, resolve_harmony=True):
     s, side, cid = c.state, c.side, c.cid
     if finished(s) or not alive(s, side, cid):
         return
@@ -233,14 +230,15 @@ def enter(c, *, as_support=True):
         return
     payer_id, kind = _pending_harmony(c)
     if team['front']:
-        move_out(s, side, team['front'])
+        move_out(s, side, team['front'], reason='replace')
         if team['front']:
             return
     team['last_front'] = None
     team['front'] = cid
     log(s, f"{c.character['name']}进入战斗区。", 'enter', side=side, source=cid,
         actor=f'{side}:{cid}', target=f'{side}:{cid}')
-    apply_enter_harmony(c, payer_id, kind, as_support=as_support)
+    if resolve_harmony:
+        apply_enter_harmony(c, payer_id, kind, as_support=as_support)
 
 
 def _zone_slow(state, side, cid):
@@ -273,17 +271,19 @@ def attack(c, spec, index):
     if is_esper(target_id) and not alive(s, enemy, target_id):
         return
     fire(c, 'before_attack', actor_only=True)
-    if index == 0 and is_esper(target_id) and not spec.get('target'):
+    if index == 0 and is_esper(target_id):
         from .flow import trigger_responses, settle_deferred_card_marks
-        trigger_responses(s, enemy, 'faction_front_attacked', target_id=target_id)
-        target_id = s['sides'][enemy]['front'] or 'player'
+        if not spec.get('target'):
+            trigger_responses(s, enemy, 'faction_front_attacked', target_id=target_id)
+            target_id = s['sides'][enemy]['front'] or 'player'
         if is_esper(target_id):
             trigger_responses(s, enemy, 'self_attacked', target_id=target_id)
             trigger_responses(s, enemy, 'ally_attacked', target_id=target_id)
         if finished(s) or not alive(s, side, cid):
             settle_deferred_card_marks(s)
             return
-        enemy, target_id = front_target(s, side)
+        if not spec.get('target'):
+            enemy, target_id = front_target(s, side)
     attacked = s['sides'][side].setdefault('attacked_this_turn', [])
     if c.entity_id not in attacked:
         attacked.append(c.entity_id)
@@ -295,6 +295,7 @@ def attack(c, spec, index):
         migrate_legacy(owner, s, owner_side)
     attack_effects = attack_result(c, spec, index, target, enemy, target_id)
     attack_amount = attack_effects['value']
+    op['last_attack_amount'] = attack_amount
     low = attack_effects['low_target']
     consume_applied(s, 'attack', [e['effect_id'] for e in attack_effects['contributions']])
     extra_counter = 0
@@ -399,6 +400,16 @@ def attack(c, spec, index):
     settle_deferred_card_marks(s)
 
 
+def _operation_target(c):
+    raw = (c.operation or {}).get('target_id')
+    if not isinstance(raw, str) or raw.count(':') != 1:
+        return None
+    side, cid = raw.split(':', 1)
+    if side in ('a', 'b') and is_esper(cid):
+        return side, cid
+    return None
+
+
 def sortie(c, **spec):
     s, side, cid, op = c.state, c.side, c.cid, c.operation
     if finished(s) or not alive(s, side, cid):
@@ -409,7 +420,10 @@ def sortie(c, **spec):
         if not finished(s) and alive(s, side, cid):
             fire(c, 'on_sortie_ready', actor_id=cid, response=True)
         return
-    stay_bench = bool(decide(c, 'sortie_from_bench', False, actor_only=True))
+    chosen = spec.get('target') or _operation_target(c)
+    if chosen:
+        spec['target'] = chosen
+    stay_bench = bool(spec.get('stay_bench') or decide(c, 'sortie_from_bench', False, actor_only=True))
     if stay_bench:
         spec['no_counter'] = True
     else:

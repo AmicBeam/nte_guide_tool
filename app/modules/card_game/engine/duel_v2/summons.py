@@ -30,5 +30,8 @@ def dismiss(state, side, cid):
         team['front'] = None
     team['last_front'] = None
     team['order'] = [c for c in team['order'] if c != cid]
+    foe = 'b' if side == 'a' else 'a'
+    if state['sides'][foe].get('seal_normal_attack') == cid:
+        state['sides'][foe].pop('seal_normal_attack', None)
     # Keep the identity until the current simultaneous damage operation finishes.
     log(state, f"{h['name']}消失。", 'move', side=side, actor=f'{side}:{cid}', target=f'{side}:{cid}')

@@ -15,48 +15,42 @@ class BattleZoneStatusTest(unittest.TestCase):
             s['sides'][side]['shield'] = 0
         return s
 
-    def test_burn_before_return_then_draw_and_countdown(self):
+    def test_burn_ticks_on_applier_turn_end_not_enemy_turn_start(self):
         s = self.game()
         s['sides']['b']['front'] = 'zero'
-        front_debuff(s, 'b')['burn'] = {'left': 2, 'by': 'a'}
-        seq = s['event_seq']
-        s['_public_board'] = capture_public_board(s)
-        before = capture_public_board(s)
-        hp = hero(s, 'b', 'zero')['hp']
+        front_debuff(s, 'b')['burn'] = {'left': 2, 'by': 'a', 'stacks': 1, 'source': 'a:nanali'}
+        hp = {cid: hero(s, 'b', cid)['hp'] for cid in s['sides']['b']['characters']}
         begin_turn(s, 'b')
-        events = [e for e in observe(s, 'b')['presentation']['events'] if e['seq'] > seq]
-        kinds = [e['type'] for e in events]
-        self.assertLess(kinds.index('turn'), kinds.index('burn'))
-        self.assertLess(kinds.index('burn'), kinds.index('countdown'))
-        self.assertLess(kinds.index('countdown'), kinds.index('move'))
-        self.assertLess(kinds.index('move'), kinds.index('draw'))
-        self.assertEqual(hero(s, 'b', 'zero')['hp'], hp - 1)
+        self.assertEqual({cid: hero(s, 'b', cid)['hp'] for cid in hp}, hp)
+        self.assertEqual(front_debuff(s, 'b')['burn']['left'], 2)
+        from app.modules.card_game.engine.duel_v2.flow import end_turn
+        end_turn(s, 'a')
+        lost = sum(hp[cid] - hero(s, 'b', cid)['hp'] for cid in hp)
+        self.assertEqual(lost, 1)
         self.assertEqual(front_debuff(s, 'b')['burn']['left'], 1)
-        replayed = replay_public_board(before, events)
-        self.assertEqual(replayed['sides']['b']['front_debuff'], front_debuff(s, 'b'))
-        self.assertIsNone(replayed['sides']['b']['front'])
 
     def test_empty_zone_damage_and_star_zero(self):
         s = self.game()
         zone = front_debuff(s, 'b')
-        zone.update(burn={'left': 2, 'by': 'a'}, star={'left': 2, 'by': 'a'})
+        zone.update(burn={'left': 2, 'by': 'a', 'stacks': 1}, star={'left': 2, 'by': 'a'})
         begin_turn(s, 'b')
-        self.assertEqual(s['sides']['b']['hp'], 29)
+        self.assertEqual(s['sides']['b']['hp'], 30)
         self.assertEqual(zone['star']['left'], 1)
+        self.assertIn('burn', zone)
         begin_turn(s, 'b')
-        self.assertEqual(s['sides']['b']['hp'], 26)
-        self.assertNotIn('burn', zone)
+        self.assertEqual(s['sides']['b']['hp'], 28)
+        self.assertIn('burn', zone)
         self.assertNotIn('star', zone)
 
     def test_returned_character_is_not_burn_target(self):
         s = self.game()
         s['sides']['b']['front'] = 'zero'
-        front_debuff(s, 'b')['burn'] = {'left': 1, 'by': 'a'}
+        front_debuff(s, 'b')['burn'] = {'left': 1, 'by': 'a', 'stacks': 1, 'source': 'a:nanali'}
         move_out(s, 'b', 'zero')
-        hp = hero(s, 'b', 'zero')['hp']
-        begin_turn(s, 'b')
-        self.assertEqual(hero(s, 'b', 'zero')['hp'], hp)
-        self.assertEqual(s['sides']['b']['hp'], 29)
+        from app.modules.card_game.engine.duel_v2.flow import end_turn
+        end_turn(s, 'a')
+        self.assertEqual(s['sides']['b']['hp'], 30)
+        self.assertNotIn('burn', front_debuff(s, 'b'))
 
     def test_current_turn_status_expiration_and_weave_player_target(self):
         s = self.game()
@@ -91,7 +85,7 @@ class BattleZoneStatusTest(unittest.TestCase):
     def test_lethal_zone_effect_stops_return_and_draw(self):
         s = self.game()
         s['sides']['b']['hp'] = 1
-        front_debuff(s, 'b')['burn'] = {'left': 2, 'by': 'a'}
+        front_debuff(s, 'b')['star'] = {'left': 1, 'by': 'a'}
         deck = len(s['sides']['b']['deck'])
         begin_turn(s, 'b')
         self.assertEqual(s['phase'], 'finished')

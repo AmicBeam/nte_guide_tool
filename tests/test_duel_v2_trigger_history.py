@@ -115,21 +115,6 @@ class TriggerHistoryTest(unittest.TestCase):
         self.assertEqual(buffs[0]['after'], {'attack': 3})
 
     def test_marks_and_gaze_only_log_actual_increase(self):
-        for cid, hook, kwargs, marker in (
-            ('canhong', 'after_sortie', {}, '焚印'),
-            ('anhunqu', 'on_burn_applied', {'enemy': 'b', 'target_id': 'baicang'}, '噩梦'),
-        ):
-            with self.subTest(cid=cid):
-                s = self.game()
-                c = self.context(s, cid)
-                fire(c, hook, actor_only=True, **kwargs)
-                self.assertIn(marker, s['events'][-1]['text'])
-                self.assertEqual(s['events'][-1]['target'], 'b:baicang')
-                for _ in range(3):
-                    fire(c, hook, actor_only=True, **kwargs)
-                seq = s['event_seq']
-                fire(c, hook, actor_only=True, **kwargs)
-                self.assertEqual(s['event_seq'], seq)
         s = self.game()
         c = self.context(s, 'zhenhong')
         c.add_gaze(2)

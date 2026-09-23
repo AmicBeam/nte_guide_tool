@@ -48,6 +48,11 @@ def write(path, payload):
     temporary.replace(path)
 
 
+def play_job(job):
+    from app.modules.card_game.rl.information_search import search_game as run_game
+    return run_game(job)
+
+
 def learn(out, config):
     import numpy as np
     import torch
@@ -139,14 +144,10 @@ def learn(out, config):
         from concurrent.futures import ProcessPoolExecutor
         from multiprocessing import get_context
 
-        def play(job):
-            from app.modules.card_game.rl.information_search import search_game as run_game
-            return run_game(job)
-
         with ProcessPoolExecutor(max_workers=config['workers'], mp_context=get_context('spawn')) as pool:
             while time.time() < config['train_until']:
                 jobs = [one_job() for _ in range(config['workers'])]
-                for job, result in zip(jobs, pool.map(play, jobs)):
+                for job, result in zip(jobs, pool.map(play_job, jobs)):
                     absorb(job, result)
                     if time.time() >= config['train_until']:
                         break

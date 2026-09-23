@@ -609,19 +609,17 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 
 本次 66 项规则／教学回归、4 项教学 API 用例及 1 项前端渲染测试通过。隔离测试数据库的真实页面从大厅进入第十三关，完成战斗牌、终结、远程拖拽与通关；确认海月保留 1 生命、薄荷仍在前排，图鉴可搜索远程且终结关键字加粗，浏览器无 error。
 
-### 五套搜索训练
+### 现行学习与旧五套入口
 
-完整十人／五套训练由 `scripts/train_duel_v2_full_cycle.py --ten` 编排，通过 `rl/ten_search_runtime.py` 适配共享信息集搜索。默认北京时间09:00硬截止，启动与预算、配牌协议和完整交付见 `docs/duel-v2-public-training.md`。`rl/new_model_report.py` 从冻结新模型直接互搏生成先手×后手矩阵及逐卡、角色和机制资料；报告与原始记录仅写入 `artifacts/rl-evals/`，不自动更新网站模型。
+现行学习使用类别动作头、胜／平／负价值和 Gumbel 搜索，名单是创生、覆纹、快攻、真红，入口和奖励默认见 `docs/duel-v2-public-training.md` 的「现行学习方法」。`scripts/train_duel_v2_full_cycle.py --ten` 仍编排旧的 `fixed_ten_v1` 标量五套，默认含已移除的娜白；它只复现旧实验，不能当作现行训练启动。`rl/new_model_report.py` 从冻结权重的直接互搏生成先手×后手矩阵及逐卡、角色和机制资料；报告与原始记录仅写入 `artifacts/rl-evals/`，不自动更新网站模型。
 
-验证：`python -m unittest tests.test_duel_v2_ten_search tests.test_duel_v2_information_search tests.test_duel_v2_build_acceptance`。正式运行前另完成Windows CUDA有界链路预检，不能把本机单元测试当作完整训练质量证据。
-
-五套长训采用轮换对手的小批次和原／候选交替适应；正式启动前以 `--throughput-report` 核验同规则、同搜索预算的容量。报告逐张量确认权重是否更新，CSV随交付包回传。回归入口：`python -m unittest tests.test_duel_v2_training_recovery tests.test_duel_v2_build_acceptance`。
+验证：`python -m unittest tests.test_duel_v2_ten_search tests.test_duel_v2_information_search tests.test_duel_v2_build_acceptance tests.test_duel_v2_outcome_learning tests.test_duel_v2_grounded_candidates`。正式运行前另完成 Windows CUDA 有界链路预检，不能把本机单元测试当作完整训练质量证据。旧五套长训若被明确要求复现，仍在启动前用 `--throughput-report` 核验同规则、同搜索预算的容量，并逐张量确认权重是否更新。
 
 ### 2026-09-22 移除娜白高级人机
 
 按用户要求移除 midrange「娜白零伊」的大厅选项、随机高级人机池及项目服务模型文件。显式请求该策略在建房前拒绝；个人构筑、普通预组、历史对局与离线研究资料保留。
 
-真红搜索训练可使用临时“延滞＋兽牙”首次达成奖励，默认0.1并随累计64步优化退场；实际被动触发奖励仍独立计数。相关纯训练逻辑位于 `rl/setup_reward.py`，参数与长期撤除验收见 `docs/duel-v2-zhenhong-passive-reward.md`，不改变网站卡效或胜负。
+现行训练默认关闭真红前置奖和被动次数奖。`rl/setup_reward.py` 仍保留首次“延滞＋兽牙”0.1、64 步退场，以及独立的实际被动计数；只在训练手册允许的显式非零配置下使用。参数见 `docs/duel-v2-zhenhong-passive-reward.md`，不改变网站卡效或胜负。
 
 真红前置奖励的小时级开关对照使用 `scripts/train_duel_v2_setup_trial.py`，复用共享搜索学习并按完整配对对局同步更新两组，独立比较初始／control／setup的胜率与机制触发。验证：`python -m unittest tests.test_duel_v2_setup_trial tests.test_duel_v2_setup_reward`；数值产物仅进入artifacts。
 
@@ -637,6 +635,6 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 
 `scripts/check_duel_v2_simulation_game.py`对同种子完整搜索采样计时，预算固定32，分别记录普通／轻量路径；只采样、不更新参数，不把保存动作的执行速度当作训练吞吐。
 
-低预算搜索由`rl/search_policy.py`维护Gumbel访问计划和改进策略目标；完整十人新任务默认32次，固定真红可用`--profile gumbel_low_budget`对比16/32。`scripts/check_duel_v2_gumbel_learning.py`只做有界重分析、隔离拟合与新种子评估；原排查录像不进入梯度。验证：`python -m unittest tests.test_duel_v2_gumbel_search tests.test_duel_v2_information_search tests.test_duel_v2_training_recovery`。
+低预算搜索由`rl/search_policy.py`维护Gumbel访问计划和改进策略目标。现行新任务默认 32 次、根候选上限 16；这组搜索默认值不把旧 `--ten` 标量入口变成现行训练。固定真红可用`--profile gumbel_low_budget`对比16/32。`scripts/check_duel_v2_gumbel_learning.py`只做有界重分析、隔离拟合与新种子评估；原排查录像不进入梯度。验证：`python -m unittest tests.test_duel_v2_gumbel_search tests.test_duel_v2_information_search tests.test_duel_v2_training_recovery`。
 
 动作表示与真红专项验收：`train_duel_v2_outcome_trial.py --profile grounded_actions`比较继承／重置旧动作头与类别角色状态动作头；`audit_duel_v2_zhenhong.py`只读核验原始评估中的准备、启动、收割与实际胜者。流程见训练手册。验证：`python -m unittest tests.test_duel_v2_grounded_candidates tests.test_duel_v2_tactical_audit tests.test_duel_v2_outcome_learning`。

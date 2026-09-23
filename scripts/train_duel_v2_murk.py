@@ -11,7 +11,7 @@ import signal
 import subprocess
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -21,8 +21,15 @@ sys.path.insert(0, str(ROOT))
 KEY = 'murk'
 
 
+def shanghai_zone():
+    try:
+        return ZoneInfo('Asia/Shanghai')
+    except Exception:
+        return timezone(timedelta(hours=8))
+
+
 def shanghai_nine(now=None):
-    zone = ZoneInfo('Asia/Shanghai')
+    zone = shanghai_zone()
     current = now or datetime.now(zone)
     if current.tzinfo is None:
         raise ValueError('Deadline clock must carry a timezone')
@@ -196,7 +203,7 @@ def main():
             raise
         return
     from app.modules.card_game.rl.murk_lineup import identity
-    zone = ZoneInfo('Asia/Shanghai')
+    zone = shanghai_zone()
     if args.hard_deadline:
         hard = datetime.fromisoformat(args.hard_deadline)
         if hard.tzinfo is None:

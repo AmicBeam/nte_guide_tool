@@ -24,7 +24,7 @@ class GumbelSearchTest(unittest.TestCase):
     def test_exact_budget_and_low_prior_winning_action(self):
         def act(s,side,a):
             s=deepcopy(s)
-            if a['type']=='finish':s.update(phase='finished',winner='a')
+            if a['type']=='finish' and s.get('step',0)==0:s.update(phase='finished',winner='a')
             else:s['step']=s.get('step',0)+1
             return s
         with patch('app.modules.card_game.rl.information_search.apply_action',side_effect=act):
@@ -50,6 +50,43 @@ class GumbelSearchTest(unittest.TestCase):
             node.visits[a]+=1;node.total[a]+=(-1 if a%2 else 1)
         self.assertEqual(set(selected[:3]),expected)
         self.assertEqual(set(selected),expected)
+
+    def test_short_terminal_overrides_a_wrong_value_head(self):
+        class Later(Toy):
+            @staticmethod
+            def decision(s, side):
+                step = s.get('step', 0)
+                if step == 0:
+                    return [{'type': 'stall'}, {'type': 'advance'}], (np.array([0.], np.float32), np.eye(2, dtype=np.float32))
+                if step == 1:
+                    return [{'type': 'finish'}], (np.array([1.], np.float32), np.ones((1, 2), np.float32))
+                return [{'type': 'stall'}], (np.array([2.], np.float32), np.ones((1, 2), np.float32))
+
+        class Biased:
+            def scores_value(self, x, c):
+                scores = np.zeros(len(c))
+                if len(scores) > 1:
+                    scores[0] = 1.
+                return scores, 0.
+
+        def act(s, side, a):
+            s = deepcopy(s)
+            if a['type'] == 'finish':
+                s.update(phase='finished', winner='a')
+            elif a['type'] == 'advance':
+                s['step'] = 1
+            else:
+                s['step'] = 9
+            return s
+
+        with patch('app.modules.card_game.rl.information_search.apply_action', side_effect=act):
+            blinded = search(dict(phase='playing', active_side='a', turn=1), 'a', {'a': Biased(), 'b': Biased()}, runtime=Later, seed=3,
+                             simulations=2, fast_simulation=False, algorithm='gumbel', terminal_horizon=0)
+            proved = search(dict(phase='playing', active_side='a', turn=1), 'a', {'a': Biased(), 'b': Biased()}, runtime=Later, seed=3,
+                            simulations=2, fast_simulation=False, algorithm='gumbel', terminal_horizon=3)
+        self.assertNotEqual(blinded['search_choice'], 1)
+        self.assertEqual(proved['search_choice'], 1)
+        self.assertGreater(proved['mean_values'][1], 0.5)
 
     def test_terminal_on_last_depth_is_backed_up_as_actual_win(self):
         def act(s,side,a):

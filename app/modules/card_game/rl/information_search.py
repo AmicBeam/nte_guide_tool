@@ -87,9 +87,70 @@ def leaf_value(state, viewer, policies, *, runtime=None):
     return value if actor==viewer else -value
 
 
-def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False,reuse_inference=True,fast_simulation=True,algorithm="puct",gumbel_candidates=16):
+def _follow_terminal(world, viewer, policies, rng, steps, runtime, optimized, fast_simulation, deadline):
+    """Play `steps` more decisions. Return the terminal value, or None if none occurs."""
+    decide = runtime.decision if runtime else decision
+    step = simulate_action if fast_simulation else apply_action
+    for _ in range(steps + 1):
+        if deadline is not None and time.time() >= deadline:
+            return None
+        if world['phase'] == 'finished':
+            return terminal_value(world, viewer)
+        if _ == steps:
+            return None
+        actor = acting_side(world)
+        legal, (encoded, encoded_actions) = decide(world, actor)
+        if actor != viewer:
+            scores = runtime.action_scores(policies[actor], encoded, encoded_actions) if optimized else policies[actor].scores_value(encoded, encoded_actions)[0]
+            chosen = int(rng.choice(len(legal), p=softmax(scores)))
+        else:
+            scores, _ = (runtime.predict_encoded(policies[actor], encoded, encoded_actions) if optimized else policies[actor].scores_value(encoded, encoded_actions))
+            chosen = int(np.argmax(scores))
+        world = clean(step(world, actor, legal[chosen]))
+    return None
+
+
+def short_terminal_value(world, viewer, policies, rng, *, scores, legal, horizon, runtime, optimized, fast_simulation, deadline):
+    """Replace a leaf value only when a short real line proves the result.
+
+    Attacks are always checked, plus the highest-scoring actions, at most eight
+    unless there are more attacks. A win on any checked line is decisive for the
+    side to move. A loss overrides the value head only after every legal action
+    has been played to a terminal. Anything unfinished keeps the value head.
+    """
+    if horizon < 1 or world['phase'] == 'finished':
+        return terminal_value(world, viewer) if world['phase'] == 'finished' else None
+    step = simulate_action if fast_simulation else apply_action
+    attacks = [i for i, action in enumerate(legal) if action.get('type') == 'attack']
+    ranked = [int(i) for i in np.argsort(-np.asarray(scores, dtype=np.float64))]
+    chosen = []
+    for index in attacks + ranked:
+        if index not in chosen:
+            chosen.append(index)
+        if len(chosen) >= max(8, len(attacks)) and index not in attacks:
+            break
+    outcomes = []
+    complete = True
+    for index in chosen:
+        if deadline is not None and time.time() >= deadline:
+            return None
+        nxt = clean(step(world, viewer, legal[index]))
+        outcome = _follow_terminal(nxt, viewer, policies, rng, horizon - 1, runtime, optimized, fast_simulation, deadline)
+        if outcome is None:
+            complete = False
+            continue
+        outcomes.append(outcome)
+        if outcome > 0:
+            return 1.
+    if complete and len(chosen) == len(legal) and outcomes and all(item < 0 for item in outcomes):
+        return -1.
+    return None
+
+
+def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False,reuse_inference=True,fast_simulation=True,algorithm="puct",gumbel_candidates=16,terminal_horizon=3):
     decide = runtime.decision if runtime else decision
     if type(gumbel_candidates)!=int or gumbel_candidates<1:raise ValueError('Invalid Gumbel candidate limit')
+    if type(terminal_horizon)!=int or terminal_horizon<0:raise ValueError('Invalid terminal horizon')
     if algorithm not in ('puct','gumbel'):raise ValueError('Unknown search algorithm')
     if algorithm=='gumbel' and (root_min_visits!=1 or node_min_visits!=1):raise ValueError('PUCT visit floors do not apply to Gumbel')
     if simulations<1 or max_depth<1:raise ValueError('Positive search limits required')
@@ -143,7 +204,14 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                     else:
                         scores,v=policies[actor].scores_value(xx,cc)
                         value=leaf_value(world,viewer,policies,runtime=runtime) if runtime and hasattr(runtime,'value_for') else float(np.tanh(v/10))
-                    tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix),value);break
+                    tree[key]=Node.create(search_prior(scores,prior_mode,prior_temperature,uniform_mix),value)
+                    remaining=max_depth-depth
+                    if terminal_horizon and remaining>0 and actor==viewer:
+                        proved=short_terminal_value(world,viewer,policies,rng,scores=scores,legal=legal,horizon=min(terminal_horizon,remaining),runtime=runtime,optimized=optimized,fast_simulation=fast_simulation,deadline=deadline)
+                        if proved is not None:
+                            value=proved
+                            tree[key].raw_value=proved
+                    break
                 node=tree[key]
                 if algorithm=='gumbel':
                     chosen=planning.choose_root(node,gumbel,schedule[simulation]) if depth==0 else planning.choose_interior(node)

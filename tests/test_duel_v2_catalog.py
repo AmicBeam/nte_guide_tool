@@ -291,6 +291,19 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertFalse(any(CARDS[c].get('derived') for c in deck['card_ids']))
         self.assertNotIn('crimson', {d['id'] for d in STARTER_DECKS})
 
+    def test_murk_preset_is_the_four_test_characters(self):
+        from collections import Counter
+        deck = next(d for d in STARTER_DECKS if d['id'] == 'murk')
+        self.assertEqual(deck['name'], '浊燃预组')
+        self.assertEqual(deck['character_ids'], ['anhunqu', 'canhong', 'zaowu', 'adler'])
+        self.assertEqual(len(deck['card_ids']), 32)
+        self.assertEqual(Counter(CARDS[c]['character_id'] for c in deck['card_ids']),
+                         Counter(dict.fromkeys(deck['character_ids'], 8)))
+        self.assertTrue(all(count == 2 for count in Counter(deck['card_ids']).values()))
+        self.assertEqual(len(Counter(deck['card_ids'])), 16)
+        self.assertFalse(any(CARDS[c].get('derived') for c in deck['card_ids']))
+        self.assertTrue(deck_uses_test_characters(deck))
+
     def test_catalog_returns_independent_copies(self) -> None:
         first = get_catalog()
         second = get_catalog()
@@ -323,14 +336,15 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertTrue(all(item['character_id'] in PUBLIC_CHARACTER_IDS for item in public['cards']))
         self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
-        self.assertFalse(any(deck_uses_test_characters(item) for item in STARTER_DECKS))
+        self.assertFalse(any(deck_uses_test_characters(item) for item in public['starter_decks']))
         full = get_catalog()
         self.assertEqual(len(full['characters']), 19)
-        self.assertEqual(len(full['starter_decks']), 4)
+        self.assertEqual(len(full['starter_decks']), 5)
         self.assertEqual(
             [item['name'] for item in full['starter_decks']],
-            ['创生预组', '覆纹预组', '小吱预组', '真红预组'],
+            ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'],
         )
+        self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'murk')))
         self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')))
 
     def test_existing_character_images_are_present(self) -> None:

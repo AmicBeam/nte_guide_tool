@@ -444,19 +444,20 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self._set_test_whitelist('duel-v2-tester')
         catalog = self._get('/api/duel-v2/catalog', token=token)
         names = {item['name'] for item in catalog['characters']}
-        self.assertEqual(len(catalog['characters']), 18)
+        self.assertEqual(len(catalog['characters']), 19)
         self.assertIn('浔', names)
         self.assertIn('残虹', names)
+        self.assertIn('阿德勒', names)
         self.assertIn('薄荷', names)
         self.assertIn('白藏', names)
-        self.assertEqual(len(catalog['cards']), 148)
+        self.assertEqual(len(catalog['cards']), 157)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
-            ['创生预组', '覆纹预组', '小吱预组', '真红预组'],
+            ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'],
         )
         self.assertEqual(
             [item['name'] for item in catalog['saved_builds']],
-            ['创生预组', '覆纹预组', '小吱预组', '真红预组'],
+            ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'],
         )
 
     def test_zhenhong_rule_opponent_uses_named_deck_and_resumes(self):
@@ -528,7 +529,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         error = self._post_error('/api/duel-v2/join', {'room_code': room['room']['room_code']}, token=self.b)
         self.assertIn('尚未公开', error['error'])
 
-    def test_whitelisted_account_receives_only_public_presets(self):
+    def test_whitelisted_account_gains_the_murk_preset(self):
         token = self._issue_login_and_get_token('duel-v2-upgrade')
         first = self._get('/api/duel-v2/catalog', token=token)
         self.assertEqual([item['name'] for item in first['saved_builds']], ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
@@ -536,7 +537,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         upgraded = self._get('/api/duel-v2/catalog', token=token)
         self.assertEqual(
             [item['name'] for item in upgraded['saved_builds']],
-            ['创生预组', '覆纹预组', '小吱预组', '真红预组'],
+            ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'],
         )
 
     def test_regular_account_does_not_see_existing_test_character_builds(self):

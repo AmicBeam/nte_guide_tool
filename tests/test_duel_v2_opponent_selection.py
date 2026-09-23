@@ -146,10 +146,18 @@ class OpponentSelectionTest(RoomFlowTestCase):
         self.player.save()
         catalog = self._get('/api/duel-v2/catalog', token=self.token)
         self.assertEqual({d['id'] for d in catalog['starter_decks']},
-                         {'starter', 'weave-rush', 'quick-rush', 'zhenhong'})
-        self.assertEqual(len(catalog['saved_builds']), 4)
+                         {'starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk'})
+        self.assertEqual(len(catalog['saved_builds']), 5)
         for retired in ('requiem', 'sync-curse'):
             response = self.client.post('/api/duel-v2/start', json={'mode': 'solo', 'ai_deck': retired},
                                         headers={'Authorization': 'Bearer ' + self.token})
             self.assertEqual(response.status_code, 400)
             self.assertIsNone(self.repository.current_room(self.player))
+
+    def test_test_account_can_face_murk_simple_ai(self):
+        self.player.shaft_test_whitelisted = True
+        self.player.save()
+        result = self.start(mode='solo', ai_deck='murk')
+        game = self.raw(result)
+        self.assertEqual(list(game['sides']['b']['characters']), ['anhunqu', 'canhong', 'zaowu', 'adler'])
+        self.assertEqual(game['sides']['b']['name'], '浊燃预组')

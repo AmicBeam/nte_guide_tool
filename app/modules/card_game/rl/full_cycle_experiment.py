@@ -296,6 +296,9 @@ def evaluate_job(j):
     if j.get('runtime')=='outcome':
         from . import outcome_runtime as runtime
         from .outcome_runtime import model,decision
+    if j.get('runtime')=='cross':
+        from . import cross_runtime as runtime
+        from .cross_runtime import model,decision
     j={**j,'decks':{k:canonical_build(v) for k,v in j['decks'].items()}}
     search_sides=j.get('search_sides',[])
     if not set(search_sides)<= {'a','b'}:raise ValueError('Invalid search evaluation sides')
@@ -323,7 +326,7 @@ def evaluate_job(j):
                 root_seed=(1<<256)|int(digest,16)
                 result=search(s,side,search_policies,seed=root_seed,simulations=j.get('simulations',16),
                     algorithm=j.get('search_algorithm','gumbel'),gumbel_candidates=j.get('gumbel_candidates',8),
-                    noise=False,runtime=runtime,deadline=j['deadline'])
+                    noise=False,runtime=runtime,deadline=j['deadline'],terminal_horizon=j.get('terminal_horizon',3))
                 if not result['complete']:
                     error='Incomplete evaluation search';break
                 actions=result['actions'];idx=result['search_choice']

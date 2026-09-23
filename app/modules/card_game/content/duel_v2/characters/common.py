@@ -89,7 +89,8 @@ def deal_combat_followup(c, extra=0):
     if kit and c.card and c.card.get('card_id') == getattr(kit, 'payoff_card', None):
         amount += 1
         reasons.append(f"「{c.card['name']}」")
-    if kit and c.character.get('shape') == getattr(kit, 'followup_shape', None):
+    followup_shape = getattr(kit, 'followup_shape', None) if kit else None
+    if followup_shape and c.character.get('shape') == followup_shape:
         amount += 2
         reasons.append(f"「{CARDS[c.character['shape']]['name']}」")
     if amount > 0:

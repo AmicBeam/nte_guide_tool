@@ -4,6 +4,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any
+import re
 
 from app.modules.card_game.engine.duel_v2.presentation import (
     PRIVATE_EVENT_KEYS,
@@ -35,11 +36,20 @@ def _is_hidden_card(card):
     )
 
 
-def strip_hidden(value):
+def _public_removal(value, path):
+    return (isinstance(value, dict) and set(value) == {'id', 'removed'}
+            and isinstance(value['id'], str) and value['removed'] is True
+            and re.search(r'(?:^|\.)patch\.sides\.[ab]\.characters\[\d+\]$', path) is not None)
+
+
+def strip_hidden(value, path=''):
     if isinstance(value, dict):
-        return {key: strip_hidden(item) for key, item in value.items() if key not in HIDDEN_KEYS}
+        if _public_removal(value, path):
+            return deepcopy(value)
+        return {key: strip_hidden(item, f'{path}.{key}' if path else key)
+                for key, item in value.items() if key not in HIDDEN_KEYS}
     if isinstance(value, list):
-        return [strip_hidden(item) for item in value]
+        return [strip_hidden(item, f'{path}[{index}]') for index, item in enumerate(value)]
     return deepcopy(value)
 
 
@@ -189,6 +199,8 @@ def leak_markers(payload) -> list[str]:
 
     def walk(value, path):
         if isinstance(value, dict):
+            if _public_removal(value, path):
+                return
             for key, item in value.items():
                 here = f'{path}.{key}' if path else key
                 if key in HIDDEN_KEYS:

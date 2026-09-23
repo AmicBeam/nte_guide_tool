@@ -13,11 +13,11 @@ def table(path,rows):
 
 def write_matrix(out,results,keys,models,config):
     out=Path(out);cells={};seen=set();identities={}
-    names=dict(starter='娜伊零九',**{'weave-rush':'薄白零伊','quick-rush':'吱零薄九'},zhenhong='真红零伊翳',midrange='娜白零伊')
+    names=dict(starter='娜伊零九',**{'weave-rush':'薄白零伊','quick-rush':'吱零薄九'},zhenhong='真红零伊翳',murk='浊燃',midrange='娜白零伊')
     for k in keys:identities[k]=json.loads((Path(models)/(k+'.json')).read_text(encoding='utf-8'))
     for a in keys:
         for b in keys:
-            cells[a,b]=dict(row=a,column=b,planned=(2 if a==b else 1) if config['smoke'] else config.get('matrix_games',128),attempts=0,completed=0,first_wins=0,second_wins=0,draws=0,errors=0,truncated=0,row_model_sha256=identities[a]['sha256'],column_model_sha256=identities[b]['sha256'],row_build_sha256=identities[a]['build_sha256'],column_build_sha256=identities[b]['build_sha256'],rule_hash=config['rule_hash'],inference='argmax')
+            cells[a,b]=dict(row=a,column=b,planned=(2 if a==b else 1) if config['smoke'] else config.get('matrix_games',128),attempts=0,completed=0,first_wins=0,second_wins=0,draws=0,errors=0,truncated=0,row_model_sha256=identities[a]['sha256'],column_model_sha256=identities[b]['sha256'],row_build_sha256=identities[a]['build_sha256'],column_build_sha256=identities[b]['build_sha256'],rule_hash=config['rule_hash'],inference=config.get('inference','argmax'))
     mirrors=[]
     for r in results:
         if not r['cell'].startswith(('mirror/','cross/')):continue

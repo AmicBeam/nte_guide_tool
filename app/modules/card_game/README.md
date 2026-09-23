@@ -611,7 +611,7 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 
 ### 现行学习与旧五套入口
 
-现行学习使用类别动作头、胜／平／负价值和 Gumbel 搜索，名单是创生、覆纹、快攻、真红，入口和奖励默认见 `docs/duel-v2-public-training.md` 的「现行学习方法」。一小时五套试跑是 `scripts/train_duel_v2_current_round.py`（含浊燃，浊燃对局仍在自己的契约里），不代替完整 N×N 交付。`scripts/train_duel_v2_full_cycle.py --ten` 仍编排旧的 `fixed_ten_v1` 标量五套，默认含已移除的娜白；它只复现旧实验，不能当作现行训练启动。`rl/new_model_report.py` 从冻结权重的直接互搏生成先手×后手矩阵及逐卡、角色和机制资料；报告与原始记录仅写入 `artifacts/rl-evals/`，不自动更新网站模型。
+现行学习使用类别动作头、胜／平／负价值和 Gumbel 搜索，名单是创生、覆纹、快攻、真红，入口和奖励默认见 `docs/duel-v2-public-training.md` 的「现行学习方法」。五套交叉博弈入口是 `scripts/train_duel_v2_current_round.py`，统一 `cross_five_grounded_wdl_v1`，含浊燃与其他四套的真实对打；每个配对显式双先手，纯网络／搜索分别按25格评估。该入口固定配牌，不代替配牌搜索、择优和完整报告全项验收。`scripts/train_duel_v2_full_cycle.py --ten` 仍编排旧的 `fixed_ten_v1` 标量五套，默认含已移除的娜白；它只复现旧实验，不能当作现行训练启动。`rl/new_model_report.py` 从冻结权重的直接互搏生成先手×后手矩阵及逐卡、角色和机制资料；报告与原始记录仅写入 `artifacts/rl-evals/`，不自动更新网站模型。
 
 验证：`python -m unittest tests.test_duel_v2_ten_search tests.test_duel_v2_information_search tests.test_duel_v2_build_acceptance tests.test_duel_v2_outcome_learning tests.test_duel_v2_grounded_candidates`。正式运行前另完成 Windows CUDA 有界链路预检，不能把本机单元测试当作完整训练质量证据。旧五套长训若被明确要求复现，仍在启动前用 `--throughput-report` 核验同规则、同搜索预算的容量，并逐张量确认权重是否更新。
 
@@ -638,3 +638,14 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 低预算搜索由`rl/search_policy.py`维护Gumbel访问计划和改进策略目标。现行新任务默认 32 次、根候选上限 16；这组搜索默认值不把旧 `--ten` 标量入口变成现行训练。固定真红可用`--profile gumbel_low_budget`对比16/32。`scripts/check_duel_v2_gumbel_learning.py`只做有界重分析、隔离拟合与新种子评估；原排查录像不进入梯度。验证：`python -m unittest tests.test_duel_v2_gumbel_search tests.test_duel_v2_information_search tests.test_duel_v2_training_recovery`。
 
 动作表示与真红专项验收：`train_duel_v2_outcome_trial.py --profile grounded_actions`比较继承／重置旧动作头与类别角色状态动作头；`audit_duel_v2_zhenhong.py`只读核验原始评估中的准备、启动、收割与实际胜者。流程见训练手册。验证：`python -m unittest tests.test_duel_v2_grounded_candidates tests.test_duel_v2_tactical_audit tests.test_duel_v2_outcome_learning`。
+
+
+### 五套先后手日程与统一研究编码
+
+`rl/cross_schedule.py` 独立定义配对先手和矩阵格子，不从种子奇偶推断。`cross_lineup.py`、`cross_grounded.py`、`cross_runtime.py`承载统一观察、类别动作及WDL迁移，旧十人与浊燃schema保持独立。构筑沿用源模型32张，网站模型不自动更新。运行预算、迁移重置列和报告边界见训练手册。
+
+验证：`python -m unittest tests.test_duel_v2_current_round tests.test_duel_v2_gumbel_search tests.test_duel_v2_murk_encoding`；正式启动前在CUDA运行完整短测并用正式32搜索档测容量。
+
+正式32次搜索预检触发过仿效娜娜莉出击时的追击判定：仿效者没有追击武备也没有装备武备，旧逻辑把两个缺省值 `None` 误判相等并以 `None` 查牌表。当前仅在追击武备ID确实存在且已装备时追加武备追击，普通娜娜莉追击不变。回归：`tests.test_duel_v2_followup_target`。
+
+Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 CUDA 短测及正式搜索吞吐测量通过后调用。它将带绝对09:00截止的训练守护进程脱离 SSH Job Object，保存 PID、源码 SHA 和独立 stdout/stderr；训练器自身负责全进程树硬截止。启动后仍须核对真实对局与参数更新，单有 PID 不算开始成功。

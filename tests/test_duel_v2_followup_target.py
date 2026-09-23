@@ -73,3 +73,10 @@ class FollowupTargetTest(unittest.TestCase):
         deal_combat_followup(EffectContext(s, 'a', 'nanali', {'side': 'a'}))
         self.assertEqual(s['sides']['b']['hp'], 30)
         self.assertFalse(any(e['type'] == 'followup' for e in s['events']))
+
+    def test_mimicked_nanali_hook_without_weapon_does_not_lookup_none_card(self):
+        s = self.game()
+        hero(s, 'a', 'zero')['shape'] = None
+        operation = {'side': 'a', 'last_attack_target': ['b', 'player']}
+        deal_combat_followup(EffectContext(s, 'a', 'zero', operation))
+        self.assertFalse(any(e['type'] == 'followup' for e in s['events']))

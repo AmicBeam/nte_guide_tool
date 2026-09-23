@@ -270,6 +270,8 @@ def search_game(job):
         from . import outcome_runtime as runtime
     elif job.get('runtime') == 'murk':
         from . import murk_runtime as runtime
+    elif job.get('runtime') == 'cross':
+        from . import cross_runtime as runtime
     elif job.get('runtime') is not None:
         raise ValueError('Unknown search runtime')
     loader = runtime.model if runtime else model
@@ -332,7 +334,7 @@ def search_game(job):
         if use_search:
             try:
                 result=search(state,actor,policies,seed=job['seed']+1000003*(step+1),
-                              simulations=budget,deadline=job['deadline'],reuse_inference=job.get('reuse_inference',True),fast_simulation=job.get('fast_simulation',True),algorithm=job.get('search_algorithm','puct'),gumbel_candidates=job.get('gumbel_candidates',16),
+                              simulations=budget,deadline=job['deadline'],reuse_inference=job.get('reuse_inference',True),fast_simulation=job.get('fast_simulation',True),algorithm=job.get('search_algorithm','puct'),gumbel_candidates=job.get('gumbel_candidates',16),terminal_horizon=job.get('terminal_horizon',3),
                               noise=job.get('training',False) and save_labels,**({'runtime':runtime,'passive_reward':coefficient if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.0,'setup_reward':setup_coefficients.get(actor,0.) if job['policies'][actor][1]=='zhenhong' and actor in job.get('train_sides',['a','b']) else 0.,'setup_already_achieved':setup_seen[actor]} if runtime else {}))
             except Exception as exc:
                 if job.get('failure_dir'):

@@ -159,6 +159,59 @@ class LingkeSupportTest(unittest.TestCase):
                          {b['rule_id'] for b in details['opener']['triggered_buffs']})
         self.assertNotIn('lingke_joint_source_slot', details['assist'])
 
+    def test_joint_panel_damage_counts_toward_lingke_share(self):
+        for window in ('e', 'q'):
+            for variant in (False, True):
+                with self.subTest(window=window, variant=variant):
+                    result, details = self.run_axis(self.axis(window=window, variant=variant))
+                    assist = details['assist']
+                    body = assist['direct_damage'] - assist.get('resource_damage', 0)
+                    resource = assist.get('resource_damage', 0)
+                    self.assertGreater(body, 0)
+                    by_slot = {item['slot']: item for item in result['damage_by_slot']}
+                    lingke_actions = {item['action_id']: item
+                                      for item in result['damage_by_action_by_slot'][0]['actions']}
+                    heiyu_actions = {item['action_id']: item
+                                     for item in result['damage_by_action_by_slot'][1]['actions']}
+                    joint = lingke_actions[assist['action_id']]
+                    self.assertEqual(joint['action_name'], f"黑羽·{assist['action_name']}")
+                    self.assertEqual(joint['action_type'], assist['action_type'])
+                    self.assertAlmostEqual(joint['damage'], body)
+                    self.assertNotIn(assist['action_id'], heiyu_actions)
+                    lingke_own = sum(item['direct_damage'] for item in result['details'] if item['slot'] == 0)
+                    self.assertAlmostEqual(by_slot[0]['damage'], lingke_own + body)
+                    self.assertAlmostEqual(by_slot[1]['damage'], resource)
+                    if variant:
+                        extra = next(item for item in heiyu_actions.values() if item['action_name'] == '恶意追加')
+                        self.assertAlmostEqual(extra['damage'], resource)
+                        self.assertEqual(extra['action_type'], '普攻')
+                    else:
+                        self.assertEqual(heiyu_actions, {})
+                    self.assertAlmostEqual(
+                        sum(item['damage'] for item in result['damage_by_slot']),
+                        result['summary']['character_damage'],
+                    )
+                    for contribution in result['damage_by_action_by_slot']:
+                        self.assertAlmostEqual(
+                            sum(item['damage'] for item in contribution['actions']),
+                            contribution['total_damage'],
+                        )
+                        self.assertAlmostEqual(
+                            contribution['total_damage'],
+                            by_slot[contribution['slot']]['damage'],
+                        )
+
+        outside_result, outside_details = self.run_axis(self.axis(tick=11))
+        outside = outside_details['assist']
+        self.assertNotIn('lingke_joint_source_slot', outside)
+        outside_heiyu = {item['action_id']: item
+                         for item in outside_result['damage_by_action_by_slot'][1]['actions']}
+        self.assertAlmostEqual(outside_heiyu[outside['action_id']]['damage'],
+                               outside['direct_damage'] - outside.get('resource_damage', 0))
+        self.assertEqual(outside_heiyu[outside['action_id']]['action_name'], outside['action_name'])
+        outside_by_slot = {item['slot']: item for item in outside_result['damage_by_slot']}
+        self.assertAlmostEqual(outside_by_slot[1]['damage'], outside['direct_damage'])
+
     def test_converted_assists_are_background_and_keep_the_foreground_owner(self):
         for window in ('e', 'q'):
             for variant in (False, True):

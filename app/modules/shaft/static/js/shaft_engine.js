@@ -5732,36 +5732,42 @@
         );
         return;
       }
-      damageBySlot.set(detail.slot, (damageBySlot.get(detail.slot) || 0) + detail.direct_damage);
-      if (!damageByActionBySlot.has(detail.slot)) {
-        damageByActionBySlot.set(detail.slot, new Map());
-      }
-      const actionDamage = damageByActionBySlot.get(detail.slot);
-      const actionKey = detail.action_id || detail.action_name;
-      const current = actionDamage.get(actionKey) || {
+      const resource = actionsById.get(detail.action_id)?.resource_damage;
+      const resourceDamage = resource ? Math.max(0, num(detail.resource_damage)) : 0;
+      const bodyDamage = num(detail.direct_damage) - resourceDamage;
+      // User 2026-09-23: joint damage calculated on Lingke's panel counts as Lingke.
+      const jointSlot = detail.lingke_joint_source_slot == null ? null : int(detail.lingke_joint_source_slot);
+      const bodySlot = jointSlot != null && jointSlot !== int(detail.slot) && snapshots.has(jointSlot)
+        ? jointSlot
+        : int(detail.slot);
+      const attributeCharacterDamage = (slot, actionKey, template, amount) => {
+        const damage = num(amount);
+        if (!(damage > 0)) return;
+        damageBySlot.set(slot, (damageBySlot.get(slot) || 0) + damage);
+        if (!damageByActionBySlot.has(slot)) damageByActionBySlot.set(slot, new Map());
+        const actions = damageByActionBySlot.get(slot);
+        const current = actions.get(actionKey) || Object.assign({ damage: 0 }, template);
+        current.damage += damage;
+        actions.set(actionKey, current);
+      };
+      attributeCharacterDamage(bodySlot, detail.action_id || detail.action_name, {
         action_id: detail.action_id,
-        action_name: detail.action_name,
+        action_name: bodySlot === int(detail.slot)
+          ? detail.action_name
+          : `${detail.character_name}·${detail.action_name}`,
         action_type: detail.action_type,
         damage_type: detail.damage_type,
         damage_element: detail.damage_element,
-        damage: 0,
-      };
-      const resource = actionsById.get(detail.action_id)?.resource_damage;
-      const resourceDamage = resource ? Math.max(0, num(detail.resource_damage)) : 0;
-      current.damage += detail.direct_damage - resourceDamage;
-      actionDamage.set(actionKey, current);
+      }, bodyDamage);
       if (resourceDamage > 0) {
         const resourceKey = `resource:${resource.resource}:${resource.damage_type}`;
-        const resourceEntry = actionDamage.get(resourceKey) || {
+        attributeCharacterDamage(int(detail.slot), resourceKey, {
           action_id: resourceKey,
           action_name: `${resource.resource}追加`,
           action_type: resource.damage_type,
           damage_type: resource.damage_type,
-          damage_element: snapshots.get(detail.slot).character.element || '',
-          damage: 0,
-        };
-        resourceEntry.damage += resourceDamage;
-        actionDamage.set(resourceKey, resourceEntry);
+          damage_element: snapshots.get(int(detail.slot)).character.element || '',
+        }, resourceDamage);
       }
     });
     reactionDamageEvents

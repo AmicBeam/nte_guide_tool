@@ -4,7 +4,7 @@ import unittest
 from app.modules.card_game.engine.duel_v2 import new_game
 from app.modules.card_game.engine.duel_v2.continuous import apply_dot, distribute
 from app.modules.card_game.engine.duel_v2.flow import begin_turn, end_turn
-from app.modules.card_game.engine.duel_v2.state import card_instance, force_collapse, front_debuff, hero
+from app.modules.card_game.engine.duel_v2.state import card_instance, force_collapse, front_debuff, hero, knockdowns
 
 
 def _deck(characters, prefixes):
@@ -31,6 +31,17 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertEqual(sum(e['amount'] for e in events), 5)
         self.assertTrue(all(e.get('group_id') == events[0]['group_id'] for e in events))
         self.assertEqual(killed, [])
+
+    def test_canhong_auto_weapon_resolves_after_she_is_downed(self):
+        s = self.game()
+        front_debuff(s, 'b')['burn'] = {'left': 2, 'by': 'a', 'stacks': 20}
+        s['sides']['a']['hand'].append(card_instance(s, 'C07', 'a'))
+        hero(s, 'a', 'canhong')['hp'] = 0
+        knockdowns(s)
+        revived = hero(s, 'a', 'canhong')
+        self.assertEqual(revived['shape'], 'C07')
+        self.assertGreater(revived['hp'], 0)
+        self.assertEqual(revived['down_turns'], 0)
 
     def test_burn_lasts_two_applier_turn_ends(self):
         s = self.game()

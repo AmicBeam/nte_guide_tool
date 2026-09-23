@@ -96,7 +96,8 @@ def _play_c07(c):
     if card is None:
         return
     c.operation['card'] = card
-    _c07(c)
+    # The downed-ally context was built before this card existed on the operation.
+    _c07(c.for_character(c.side, c.cid))
     discard(c.state, c.side, card)
     c.history('持续伤害不少于 20 层，自动使用「惑心谲影」。')
 

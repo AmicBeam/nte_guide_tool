@@ -5750,14 +5750,13 @@
         current.damage += damage;
         actions.set(actionKey, current);
       };
-      attributeCharacterDamage(bodySlot, detail.action_id || detail.action_name, {
-        action_id: detail.action_id,
-        action_name: bodySlot === int(detail.slot)
-          ? detail.action_name
-          : `${detail.character_name}·${detail.action_name}`,
+      const jointShare = bodySlot !== int(detail.slot);
+      attributeCharacterDamage(bodySlot, jointShare ? 'lingke-joint' : (detail.action_id || detail.action_name), {
+        action_id: jointShare ? 'lingke-joint' : detail.action_id,
+        action_name: jointShare ? '同频合击' : detail.action_name,
         action_type: detail.action_type,
         damage_type: detail.damage_type,
-        damage_element: detail.damage_element,
+        damage_element: jointShare ? '' : detail.damage_element,
       }, bodyDamage);
       if (resourceDamage > 0) {
         const resourceKey = `resource:${resource.resource}:${resource.damage_type}`;

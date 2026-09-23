@@ -173,10 +173,12 @@ class LingkeSupportTest(unittest.TestCase):
                                       for item in result['damage_by_action_by_slot'][0]['actions']}
                     heiyu_actions = {item['action_id']: item
                                      for item in result['damage_by_action_by_slot'][1]['actions']}
-                    joint = lingke_actions[assist['action_id']]
-                    self.assertEqual(joint['action_name'], f"黑羽·{assist['action_name']}")
-                    self.assertEqual(joint['action_type'], assist['action_type'])
+                    joint = lingke_actions['lingke-joint']
+                    self.assertEqual(joint['action_name'], '同频合击')
+                    self.assertEqual(joint['action_type'], '援护')
+                    self.assertEqual(joint['damage_type'], '援护')
                     self.assertAlmostEqual(joint['damage'], body)
+                    self.assertNotIn(assist['action_id'], lingke_actions)
                     self.assertNotIn(assist['action_id'], heiyu_actions)
                     lingke_own = sum(item['direct_damage'] for item in result['details'] if item['slot'] == 0)
                     self.assertAlmostEqual(by_slot[0]['damage'], lingke_own + body)

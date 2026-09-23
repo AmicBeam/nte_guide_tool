@@ -220,7 +220,7 @@ def main():
         candidates = 4
         horizon = 1
         game_seconds = 180
-        max_actions = 80
+        max_actions = 400
         eval_games = 1
         device = args.device
     else:

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""One-hour trial of the current method across the four public presets plus murk.
+"""One-hour trial of the current method for five presets.
 
-This is not the full N×N delivery and it does not search decks or approve a
-website model. The four ten-seat teams learn by Gumbel self-play on fresh
-categorical WDL networks. Murk, when a loadable checkpoint is given, continues
-in its own contract during the same hour.
+创生、覆纹、快攻 and 真红 share the ten-seat contract and play each other.
+浊燃 is the fifth preset and learns in the same hour, but its games stay in
+the murk contract. This is not a full N×N delivery, does not search decks,
+and does not approve a website model.
 """
 import argparse
 import json
@@ -44,6 +44,17 @@ def cross_pairs():
     return [(left, right) for left in ROSTER for right in ROSTER if left != right]
 
 
+def learning_schedule():
+    """Equal appearances: each of the five presets is in six games per cycle."""
+    pairs = cross_pairs()
+    plan = []
+    for index in range(6):
+        plan.append(pairs[index])
+        plan.append(pairs[index + 6])
+        plan.append(('murk', 'murk'))
+    return plan
+
+
 def preset_decks():
     from copy import deepcopy
     from app.modules.card_game.content.duel_v2 import STARTER_DECKS, validate_deck
@@ -70,6 +81,22 @@ def fresh_net(hidden, device):
     for parameter in net.value.parameters():
         parameter.requires_grad_(False)
     return net.to(device)
+
+
+def load_roster(directory, device):
+    import torch
+    from app.modules.card_game.rl.outcome_runtime import model
+    nets, decks = {}, {}
+    for key in ROSTER:
+        policy = model(directory, key)
+        net = fresh_net(policy.hidden, device)
+        state = net.state_dict()
+        for name, value in policy.weights.items():
+            state[name] = torch.from_numpy(value.copy())
+        net.load_state_dict(state)
+        nets[key] = net
+        decks[key] = policy.serving_deck
+    return nets, decks
 
 
 def load_murk(source, device):
@@ -101,10 +128,14 @@ def learn(out, config):
     torch.set_num_threads(1)
     torch.manual_seed(config['seeds']['foundation'])
     out = Path(out)
-    decks = preset_decks()
-    nets = {key: fresh_net(config['hidden'], config['device']) for key in ROSTER}
     origin = dict(initialization='fresh_grounded_wdl', auxiliary_rewards=0, optimizer_reset=True,
                   automatic_serving_approval=False, deck_search=False)
+    if config.get('roster_source'):
+        nets, decks = load_roster(config['roster_source'], config['device'])
+        origin['initialization'] = 'continued_grounded_wdl'
+    else:
+        decks = preset_decks()
+        nets = {key: fresh_net(config['hidden'], config['device']) for key in ROSTER}
     current = out / 'initial'
     for key in ROSTER:
         export(nets[key], current, key, decks[key], origin)
@@ -119,10 +150,24 @@ def learn(out, config):
         raise ValueError('Grounded numeric export mismatch')
     opts = {key: torch.optim.Adam([p for p in nets[key].parameters() if p.requires_grad], lr=3e-5)
             for key in ROSTER}
-    counts = {key: dict(games=0, updates=0, wins=0) for key in ROSTER}
+    if config.get('murk_source'):
+        murk_net, murk_build = load_murk(config['murk_source'], config['device'])
+        frozen_murk = config['murk_source']
+        murk_origin = 'continued_murk_wdl'
+    else:
+        from app.modules.card_game.rl.murk_runtime import create_network as fresh_murk
+        murk_net = fresh_murk(config['hidden'], config['device'])
+        murk_build = murk_deck()
+        frozen_murk = out / 'murk-initial'
+        export_murk(murk_net, frozen_murk, 'murk', murk_build,
+                    dict(initialization='fresh_murk_wdl', automatic_serving_approval=False))
+        murk_origin = 'fresh_murk_wdl'
+    current_murk = frozen_murk
+    murk_opt = torch.optim.Adam([p for p in murk_net.parameters() if p.requires_grad], lr=3e-5)
+    counts = {key: dict(games=0, updates=0, wins=0) for key in (*ROSTER, 'murk')}
     scheduled = 0
-    pairs = cross_pairs()
-    write(out / 'status.json', dict(phase='searching', roster=list(ROSTER), counts=counts, scheduled=0))
+    plan = learning_schedule()
+    write(out / 'status.json', dict(phase='searching', roster=[*ROSTER, 'murk'], counts=counts, scheduled=0))
 
     def one_job(kind, left, right, seed, mirror=False):
         folder = str(current)
@@ -175,58 +220,74 @@ def learn(out, config):
         with ProcessPoolExecutor(max_workers=config['workers'], mp_context=get_context('spawn')) as pool:
             return list(zip(jobs, pool.map(play_job, jobs)))
 
-    while time.time() < config['train_until'] and not (config['smoke'] and scheduled):
+    def murk_job(seed):
+        mirror = seed % 2 == 1
+        foe = current_murk if mirror else frozen_murk
+        return dict(
+            id=f'train-{seed}', runtime='murk', seed=seed, first=('a', 'b')[seed % 2],
+            decks={'a': murk_build, 'b': murk_build},
+            policies={'a': (str(current_murk), 'murk'), 'b': (str(foe), 'murk')},
+            simulations=config['simulations'], search_algorithm='gumbel',
+            gumbel_candidates=config['gumbel_candidates'], fast_simulation=True,
+            training=True, collect=True, record_episode=False,
+            train_sides=['a', 'b'] if mirror else ['a'],
+            deadline=min(config['hard_deadline'] - 20, time.time() + config['game_seconds']),
+            max_actions=config['max_actions'], failure_dir=str(out / 'failure-roots'),
+            left='murk', right='murk')
+
+    def absorb_murk(job, result):
+        nonlocal current_murk
+        record = dict(id=job['id'], complete=result['complete'], winner=result.get('winner'),
+                      left='murk', right='murk', decisions=result['decisions'], reason=result.get('reason'))
+        with (out / 'training-games.jsonl').open('a', encoding='utf-8') as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + '\n')
+        if not result['complete']:
+            if config['smoke']:
+                raise RuntimeError('Smoke game did not finish: ' + str(result.get('reason')))
+            return False
+        rows = [row for row in result['rows'] + result['value_rows'] if row.get('z') in (-1, 0, 1)]
+        if not rows:
+            raise ValueError('Completed murk game produced no labels')
+        stats = update_murk(murk_net, murk_opt, rows)
+        for value in stats.values():
+            if isinstance(value, (int, float, np.floating)) and not np.isfinite(value):
+                raise ValueError('Non-finite murk update')
+        counts['murk']['updates'] += 1
+        counts['murk']['games'] += 1
+        counts['murk']['wins'] += int(result.get('winner') == 'a')
+        current_murk = out / 'murk' / f"update-{counts['murk']['updates']:04d}"
+        export_murk(murk_net, current_murk, 'murk', murk_build,
+                    dict(initialization=murk_origin, games=counts['murk']['games'],
+                         automatic_serving_approval=False))
+        write(out / 'status.json', dict(phase='searching', roster=[*ROSTER, 'murk'], counts=counts,
+                                        latest=str(current), murk=str(current_murk), scheduled=scheduled))
+        return True
+
+    def trained_enough():
+        return counts['murk']['updates'] and any(counts[key]['updates'] for key in ROSTER)
+
+    while time.time() < config['train_until'] and not (config['smoke'] and trained_enough()):
         jobs = []
         for _ in range(config['workers']):
             if time.time() >= config['train_until']:
                 break
-            left, right = pairs[scheduled % len(pairs)]
-            jobs.append(one_job('train', left, right, config['seeds']['foundation'] + scheduled))
+            left, right = plan[scheduled % len(plan)]
+            seed = config['seeds']['foundation'] + scheduled
+            jobs.append(murk_job(seed) if left == 'murk' else one_job('train', left, right, seed))
             scheduled += 1
         if not jobs:
             break
         for job, result in run_batch(jobs):
-            absorb_train(job, result)
-            if config['smoke']:
+            if job['runtime'] == 'murk':
+                absorb_murk(job, result)
+            else:
+                absorb_train(job, result)
+            if config['smoke'] and trained_enough():
                 break
-    if scheduled == 0 or not any(item['updates'] for item in counts.values()):
-        raise RuntimeError('No completed roster game')
-
-    murk_note = dict(ran=False)
-    if config.get('murk_source') and time.time() < config['murk_until']:
-        try:
-            murk_net, murk_build = load_murk(config['murk_source'], config['device'])
-        except Exception as exc:
-            murk_note = dict(ran=False, error=repr(exc))
-        else:
-            murk_opt = torch.optim.Adam([p for p in murk_net.parameters() if p.requires_grad], lr=3e-5)
-            murk_games = 0
-            murk_build = murk_build or murk_deck()
-            current_murk = config['murk_source']
-            while time.time() < config['murk_until']:
-                mirror = murk_games % 2 == 1
-                foe = current_murk if mirror else config['murk_source']
-                job = dict(
-                    id=f'murk-{murk_games}', runtime='murk', seed=config['seeds']['search'] + murk_games,
-                    first=('a', 'b')[murk_games % 2], decks={'a': murk_build, 'b': murk_build},
-                    policies={'a': (str(current_murk), 'murk'), 'b': (str(foe), 'murk')},
-                    simulations=config['simulations'], search_algorithm='gumbel',
-                    gumbel_candidates=config['gumbel_candidates'], fast_simulation=True,
-                    training=True, collect=True, record_episode=False, train_sides=['a', 'b'] if mirror else ['a'],
-                    deadline=min(config['murk_until'] - 10, time.time() + config['game_seconds']),
-                    max_actions=config['max_actions'], failure_dir=str(out / 'failure-roots'))
-                result = play_job(job)
-                if not result['complete']:
-                    break
-                rows = [row for row in result['rows'] + result['value_rows'] if row.get('z') in (-1, 0, 1)]
-                update_murk(murk_net, murk_opt, rows)
-                murk_games += 1
-                current_murk = out / 'murk' / f'update-{murk_games:04d}'
-                export_murk(murk_net, current_murk, 'murk', murk_build,
-                            dict(initialization='continued_murk_wdl', games=murk_games,
-                                 automatic_serving_approval=False))
-            murk_note = dict(ran=True, games=murk_games, latest=str(current_murk))
-    write(out / 'murk.json', murk_note)
+    if not trained_enough():
+        raise RuntimeError('Five-team round finished no roster game and no murk game')
+    write(out / 'murk.json', dict(ran=True, initialization=murk_origin, games=counts['murk']['games'],
+                                  latest=str(current_murk)))
 
     eval_games = []
     matrix = [(left, right) for left in ROSTER for right in ROSTER]
@@ -259,6 +320,7 @@ def main():
     parser.add_argument('--seconds', type=int, default=3600)
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--hidden', type=int, default=128)
+    parser.add_argument('--roster-source', type=Path)
     parser.add_argument('--murk-source', type=Path)
     parser.add_argument('--seed-reservation', type=Path)
     parser.add_argument('--device', default='cuda')
@@ -281,10 +343,9 @@ def main():
     zone = shanghai_zone()
     now = datetime.now(zone)
     if args.smoke:
-        train_until = now + timedelta(seconds=240)
-        murk_until = train_until
-        evaluate_until = now + timedelta(seconds=300)
-        hard = now + timedelta(seconds=360)
+        train_until = now + timedelta(seconds=420)
+        evaluate_until = now + timedelta(seconds=480)
+        hard = now + timedelta(seconds=540)
         simulations, candidates, game_seconds, max_actions = 2, 4, 180, 400
         workers, device = 1, args.device
     else:
@@ -293,21 +354,21 @@ def main():
         if not 3600 <= args.seconds <= 3600:
             raise SystemExit('This trial entry is one hour')
         hard = now + timedelta(seconds=args.seconds)
-        train_until = hard - timedelta(minutes=20)
-        murk_until = hard - timedelta(minutes=12)
+        train_until = hard - timedelta(minutes=10)
         evaluate_until = hard - timedelta(minutes=2)
-        if not (now < train_until < murk_until < evaluate_until < hard):
-            raise SystemExit('Deadlines must satisfy now < roster < murk < evaluation < hard stop')
+        if not (now < train_until < evaluate_until < hard):
+            raise SystemExit('Deadlines must satisfy now < training < evaluation < hard stop')
         simulations, candidates, game_seconds, max_actions = 32, 16, 900, 400
         workers, device = args.workers, 'cuda'
     plan = dict(
-        kind='current_grounded_round_v1', roster=list(ROSTER), murk='separate-contract',
-        rewards=0, deck_search=False, midrange=False, search='gumbel',
+        kind='current_grounded_round_v1', roster=[*ROSTER, 'murk'],
+        murk_games='same-contract-only', rewards=0, deck_search=False, midrange=False, search='gumbel',
         simulations=simulations, gumbel_candidates=candidates, terminal_horizon=3,
         hidden=args.hidden, device=device, workers=workers, now=now.isoformat(),
-        train_until=train_until.isoformat(), murk_until=murk_until.isoformat(),
-        evaluate_until=evaluate_until.isoformat(), hard_deadline=hard.isoformat(),
-        rule_hash=identity(), website_approval=False, full_matrix=False, smoke=args.smoke,
+        train_until=train_until.isoformat(), evaluate_until=evaluate_until.isoformat(),
+        hard_deadline=hard.isoformat(), rule_hash=identity(), website_approval=False,
+        full_matrix=False, smoke=args.smoke,
+        roster_source=str(args.roster_source) if args.roster_source else '',
         murk_source=str(args.murk_source) if args.murk_source else '')
     print(json.dumps(plan, ensure_ascii=False, indent=2))
     if not args.run:
@@ -324,8 +385,8 @@ def main():
         seeds = claim_seeds(ROOT / 'artifacts' / 'rl-seed-ledger.json', str(out))
     config = dict(plan)
     config.update(seeds=seeds, game_seconds=game_seconds, max_actions=max_actions,
-                  train_until=train_until.timestamp(), murk_until=murk_until.timestamp(),
-                  evaluate_until=evaluate_until.timestamp(), hard_deadline=hard.timestamp())
+                  train_until=train_until.timestamp(), evaluate_until=evaluate_until.timestamp(),
+                  hard_deadline=hard.timestamp())
     write(out / 'config.json', config)
     if args.smoke:
         learn(out, config)

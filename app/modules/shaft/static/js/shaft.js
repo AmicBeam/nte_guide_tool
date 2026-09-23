@@ -4069,22 +4069,27 @@
     `;
   }
 
-  function renderedAxisEndTick(details = []) {
-    const foregroundDetails = details.filter((detail) => (
-      !detail.is_background_damage || isInstantSwitchAction(actionForStep({ action_id: detail.action_id }))
-    ));
+  function detailDisplayEndTick(detail) {
     return Math.max(
-      0,
-      ...foregroundDetails.map((detail) => Math.max(
-        Number(detail.display_visual_end_tick ?? detail.visual_end_tick ?? detail.end_tick ?? detail.start_tick ?? 0),
-        Number(detail.display_start_tick ?? detail.start_tick ?? 0) + 1,
-      )),
+      Number(detail.display_visual_end_tick ?? detail.visual_end_tick ?? detail.end_tick ?? detail.start_tick ?? 0),
+      Number(detail.display_start_tick ?? detail.start_tick ?? 0) + 1,
     );
+  }
+
+  function renderedAxisEndTick(details = [], { includeBackground = false } = {}) {
+    const visibleDetails = includeBackground
+      ? details
+      : details.filter((detail) => (
+        !detail.is_background_damage || isInstantSwitchAction(actionForStep({ action_id: detail.action_id }))
+      ));
+    return Math.max(0, ...visibleDetails.map(detailDisplayEndTick));
   }
 
   function timelineMaxTick(renderDetails = null) {
     const details = renderDetails || timelineResult()?.details || [];
-    const axisEnd = details.length ? renderedAxisEndTick(details) : axisEndTick(true);
+    const axisEnd = details.length
+      ? renderedAxisEndTick(details, { includeBackground: true })
+      : axisEndTick(true);
     return Math.max(1, axisEnd + TIMELINE_END_PADDING_TICKS);
   }
 
@@ -4812,7 +4817,8 @@
       });
     });
     const foregroundAxisEndTick = renderedAxisEndTick(projectedDetails);
-    const displayCutoffTick = foregroundAxisEndTick + TIMELINE_END_PADDING_TICKS;
+    const visibleAxisEndTick = renderedAxisEndTick(projectedDetails, { includeBackground: true });
+    const displayCutoffTick = visibleAxisEndTick + TIMELINE_END_PADDING_TICKS;
     const details = projectedDetails
       .filter((detail) => Number(detail.display_start_tick ?? detail.start_tick ?? 0) < displayCutoffTick)
       .map((detail) => ({

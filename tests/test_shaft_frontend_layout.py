@@ -516,7 +516,10 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             source,
         )
         self.assertIn("!detail.is_background_damage || isInstantSwitchAction(actionForStep({ action_id: detail.action_id }))", source)
-        self.assertIn('const displayCutoffTick = foregroundAxisEndTick + TIMELINE_END_PADDING_TICKS;', source)
+        self.assertIn('const visibleAxisEndTick = renderedAxisEndTick(projectedDetails, { includeBackground: true });', source)
+        self.assertIn('const displayCutoffTick = visibleAxisEndTick + TIMELINE_END_PADDING_TICKS;', source)
+        self.assertIn('const actionAxisEndTick = foregroundAxisEndTick;', source)
+        self.assertIn('state.axis.duration_ticks = Math.max(0, axisEndTick(false));', source)
         self.assertIn(
             '.filter((detail) => Number(detail.display_start_tick ?? detail.start_tick ?? 0) < displayCutoffTick)',
             source,

@@ -134,7 +134,11 @@ class HeiyuTest(unittest.TestCase):
         detail = simulate_shaft_axis(axis)['result']['details'][0]
         self.assertAlmostEqual(detail['formula_parts']['raw_base'] / detail['panel']['atk'], .57)
 
-    def test_form_a5_optional_seven_tick_detach_preserves_damage_and_resources(self):
+    def test_form_a5_optional_six_tick_detach_preserves_damage_and_resources(self):
+        # User 2026-09-23: optional detach occupies 0.6s; full cast stays 1.4s.
+        action = next(a for a in load_shaft_catalog()['actions_by_character'][CID] if a['name'] == '魔a5')
+        self.assertEqual(action['detached_duration_seconds'], 0.6)
+        self.assertEqual(action['detached_duration_ticks'], 6)
         results = []
         for detached in (False, True):
             axis = {'team': [{'slot': 0, 'character_id': CID, 'arc_id': '', 'cartridge_id': ''}],
@@ -143,7 +147,7 @@ class HeiyuTest(unittest.TestCase):
                                'start_tick': 10, 'detached': detached}]}
             normalized = normalize_axis_payload(axis)
             detail = simulate_shaft_axis(normalized)['result']['details'][-1]
-            self.assertEqual(detail['duration_ticks'], 7 if detached else 14)
+            self.assertEqual(detail['duration_ticks'], 6 if detached else 14)
             self.assertEqual(detail['is_detached'], detached)
             results.append(detail)
         for key in ('direct_damage', 'energy_gain', 'harmony', 'personal_resources_consumed'):

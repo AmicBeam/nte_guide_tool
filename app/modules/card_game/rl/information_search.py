@@ -268,6 +268,8 @@ def search_game(job):
         from . import ten_search_runtime as runtime
     elif job.get('runtime') == 'outcome':
         from . import outcome_runtime as runtime
+    elif job.get('runtime') == 'murk':
+        from . import murk_runtime as runtime
     elif job.get('runtime') is not None:
         raise ValueError('Unknown search runtime')
     loader = runtime.model if runtime else model
@@ -321,7 +323,9 @@ def search_game(job):
             from ..engine.duel_v2 import observe
             for owner in job.get('train_sides',['a']):
                 if owner!=actor or job.get('collect_value_only'):
-                    from .fixed_lineup import encode
+                    encode = getattr(runtime, 'encode', None) if runtime else None
+                    if encode is None:
+                        from .fixed_lineup import encode
                     vx,_=encode(observe(state,owner,include_previews=False),[])
                     value_rows.append(dict(x=vx,side=owner,key=job['policies'][owner][1],step=step,value_actor=int(owner==actor)))
         use_search=actor not in job.get('raw_sides',[])

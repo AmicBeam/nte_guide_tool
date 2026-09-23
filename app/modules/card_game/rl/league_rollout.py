@@ -32,7 +32,7 @@ def clean(s):
     s.pop('_public_board',None)
     return s
 
-def determinize(s,viewer,seed, *, encoder=None, seats=None, cards=None):
+def determinize(s,viewer,seed, *, encoder=None, seats=None, cards=None, ignore_summons=False, generated_ids=()):
     """Constrain enemy draws by public zones, never its real unexposed card IDs."""
     from app.modules.card_game.content.duel_v2 import CARDS
     encoder = encoder or encode_league
@@ -50,24 +50,32 @@ def determinize(s,viewer,seed, *, encoder=None, seats=None, cards=None):
         raise ValueError('Unsupported root')
     out=deepcopy(s);rng=Random(seed);foe='b' if viewer=='a' else 'a';team=out['sides'][foe]
     # Only generated NF01 exists in this scope; its generation count is public.
-    known=Counter(c['card_id'] for c in team['discard'] if not c.get('derived'))
+    known=Counter(c['card_id'] for c in team['discard'] if not c.get('derived') and c['card_id'] not in generated_ids)
     revealed=set(team.get('revealed_ids',[]))
     # These identities are privately visible to the chooser, not public to the foe.
     if choosing and pending['kind'] == 'enemy_hand':
         revealed.update(c['instance_id'] for c in pending['cards'])
     keep=[c for c in team['hand'] if c['instance_id'] in revealed]
     for c in keep:
-        if not c.get('derived'):known[c['card_id']]+=1
+        if not c.get('derived') and c['card_id'] not in generated_ids:known[c['card_id']]+=1
     hand_n=len(team['hand'])-len(keep);deck_n=len(team['deck'])
     family=int(team.get('nanali_family',0))
     hidden_family=family-sum(c['card_id']=='NF01' for c in team['discard']+keep)
     if not 0<=hidden_family<=hand_n:raise ValueError('Inconsistent public generated-family count')
     extras=len(team['discard'])+len(team['hand'])+deck_n-family-32
+    hidden_gen=0
+    if generated_ids:
+        public_gen=sum(1 for c in list(team['discard'])+keep if c.get('derived') or c['card_id'] in generated_ids)
+        hidden_gen=extras-public_gen
+        if hidden_gen<0:raise ValueError('Generated cards exceed the public surplus')
+        extras=0
     if extras<0 or extras and 'xiaozhi' not in team['characters']:raise ValueError('Unsupported generated-card accounting')
     unknown=[]
     for cid in team['characters']:
+        if ignore_summons and team['characters'][cid].get('summoned'):
+            continue
         if cid not in seats:raise ValueError('Unencoded hero')
-        kit=[c for c in cards if CARDS[c]['character_id']==cid and not CARDS[c].get('derived')]
+        kit=[c for c in cards if CARDS[c]['character_id']==cid and not CARDS[c].get('derived') and c not in generated_ids]
         counts={c:known[c] for c in kit};caps={c:2+(extras if c=='Q05' else 0) for c in kit}
         n=8+(extras if cid=='xiaozhi' else 0)-sum(counts.values())
         if n<0 or any(counts[c]>caps[c] for c in kit):raise ValueError('Illegal public original-deck counts')
@@ -78,7 +86,7 @@ def determinize(s,viewer,seed, *, encoder=None, seats=None, cards=None):
         options=[c for c in kit for _ in range(caps[c]-counts[c])];rng.shuffle(options)
         if n<0 or n>len(options):raise ValueError('Impossible public allocation')
         unknown+=options[:n]
-    if len(unknown)!=hand_n+deck_n-hidden_family:raise ValueError('Unknown-pool size mismatch')
+    if len(unknown)!=hand_n+deck_n-hidden_family-hidden_gen:raise ValueError('Unknown-pool size mismatch')
     rng.shuffle(unknown)
     own=sorted(c['card_id'] for c in out['sides'][viewer]['deck']);rng.shuffle(own)
     # Opaque hidden IDs and next serials must not carry original shuffle information.
@@ -92,10 +100,17 @@ def determinize(s,viewer,seed, *, encoder=None, seats=None, cards=None):
             visible.append(resolving)
     out['next_entity']=max([int(x['entity_id'][1:]) for x in visible if str(x.get('entity_id','')).startswith('e')]+[0])
     out['next_instance']=max([int(x['instance_id'].rsplit('-',1)[1]) for x in visible if x.get('instance_id')]+[0])
-    hidden_hand=unknown[:hand_n-hidden_family]+['NF01']*hidden_family
-    rng.shuffle(hidden_hand)
+    if hidden_gen:
+        pool=unknown+[generated_ids[i % len(generated_ids)] for i in range(hidden_gen)]+['NF01']*hidden_family
+        rng.shuffle(pool)
+        hidden_hand=pool[:hand_n]
+        deck_cards=pool[hand_n:]
+    else:
+        hidden_hand=unknown[:hand_n-hidden_family]+['NF01']*hidden_family
+        rng.shuffle(hidden_hand)
+        deck_cards=unknown[hand_n-hidden_family:]
     team['hand']=keep+[card_instance(out,c,foe) for c in hidden_hand]
-    team['deck']=[card_instance(out,c,foe) for c in unknown[hand_n-hidden_family:]]
+    team['deck']=[card_instance(out,c,foe) for c in deck_cards]
     out['sides'][viewer]['deck']=[card_instance(out,c,viewer) for c in own]
     h=team['characters'].get('xiaozhi')
     for c in team['hand']:

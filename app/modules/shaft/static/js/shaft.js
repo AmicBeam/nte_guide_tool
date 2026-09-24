@@ -5387,7 +5387,7 @@
         const bonusText = `${followBonus >= 0 ? '+' : ''}${formatNumber(followBonus * 100, 1)}%`;
         const descriptions = [];
         if (isFollowDirectDamage) descriptions.push(`${buff.name}：追击直伤增伤 ${bonusText}${stackSuffix}`);
-        if (Number(detail?.fuwen_damage || 0) > 0) descriptions.push(`${buff.name}：覆纹伤害系数中的追击增幅 ${bonusText}${stackSuffix}`);
+        if (Number(detail?.fuwen_damage || 0) > 0) descriptions.push(`${buff.name}：覆纹追击增幅 ${bonusText}${stackSuffix}`);
         return descriptions;
       }
       return [`${describeBuff(buff)}${stackSuffix}`];

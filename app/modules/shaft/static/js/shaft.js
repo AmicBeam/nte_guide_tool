@@ -5373,10 +5373,24 @@
         return leftGroup - rightGroup || left.originalIndex - right.originalIndex;
       })
       .map(({ buff }) => buff);
-    const appliedBuffExplanations = mergedAppliedBuffs.map((buff) => {
+    const resolvedActionTags = new Set(detail?.action_tags || action?.tags || []);
+    const isFollowDirectDamage = Number(detail?.direct_damage || 0) > 0 && (
+      String(action?.damage_type || '') === '追击'
+      || resolvedActionTags.has('追击')
+      || resolvedActionTags.has('追加攻击')
+    );
+    const appliedBuffExplanations = mergedAppliedBuffs.flatMap((buff) => {
       const stackCount = Number(buff?.stack_count || 0);
       const stackSuffix = stackCount > 1 ? ` · ${formatNumber(stackCount, 0)}层` : '';
-      return `${describeBuff(buff)}${stackSuffix}`;
+      if (String(buff?.rule_id || '') === 'character_lingke_fuwen_follow_damage') {
+        const followBonus = Number(buff?.effects?.follow_dmg || 0);
+        const bonusText = `${followBonus >= 0 ? '+' : ''}${formatNumber(followBonus * 100, 1)}%`;
+        const descriptions = [];
+        if (isFollowDirectDamage) descriptions.push(`${buff.name}：追击直伤增伤 ${bonusText}${stackSuffix}`);
+        if (Number(detail?.fuwen_damage || 0) > 0) descriptions.push(`${buff.name}：覆纹伤害系数中的追击增幅 ${bonusText}${stackSuffix}`);
+        return descriptions;
+      }
+      return [`${describeBuff(buff)}${stackSuffix}`];
     });
     const triggeredBuffs = Array.from(new Set(
       (detail?.triggered_buffs || [])

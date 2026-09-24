@@ -109,6 +109,69 @@ def action_scores(policy,x,c):
     return policy.scores_only(x,c) if isinstance(policy,OutcomeModel) else policy.scores_value(x,c)[0]
 
 
+DEFAULT_RANKING_CONFIDENCE = 0.45
+MAX_RANKING_COEFFICIENT = 1.0
+
+
+def ranking_auxiliary_loss(policy_logits, mask, rows, selected, *, coefficient=0.,
+                           confidence=DEFAULT_RANKING_CONFIDENCE, weights=None):
+    """Pairwise ranking of a confident Gumbel top action versus every other legal action.
+
+    Coefficient 0 is a true no-op: no extra graph, no extra optimizer term.
+    The comparison is identity-based, so a target attack or end_turn is not
+    pulled toward play, and two different cards remain competitors.
+    """
+    import torch
+    if coefficient == 0:
+        return policy_logits.new_zeros(()), dict(
+            ranking_coefficient=0., ranking_confidence=float(confidence),
+            ranking_samples=0, ranking_excluded=0)
+    if not np.isfinite(coefficient) or not 0 < coefficient <= MAX_RANKING_COEFFICIENT:
+        raise ValueError('Invalid ranking coefficient')
+    if not np.isfinite(confidence) or not 0 < confidence <= 1:
+        raise ValueError('Invalid ranking confidence')
+    if not selected:
+        return policy_logits.new_zeros(()), dict(
+            ranking_coefficient=float(coefficient), ranking_confidence=float(confidence),
+            ranking_samples=0, ranking_excluded=0)
+    device = policy_logits.device
+    included = []
+    excluded = 0
+    for local, index in enumerate(selected):
+        row = rows[index]
+        if row.get('truncated') or row.get('complete') is False:
+            excluded += 1
+            continue
+        target = np.asarray(row['pi'], dtype=np.float64)
+        top = int(np.argmax(target))
+        legal_count = int(mask[local, :len(target)].sum().item()) if len(target) else 0
+        if not bool(mask[local, top]) or float(target[top]) < confidence or legal_count < 2:
+            excluded += 1
+            continue
+        included.append((local, top))
+    if not included:
+        return policy_logits.new_zeros(()), dict(
+            ranking_coefficient=float(coefficient), ranking_confidence=float(confidence),
+            ranking_samples=0, ranking_excluded=excluded)
+    rows_i = torch.tensor([item[0] for item in included], device=device)
+    tops = torch.tensor([item[1] for item in included], device=device)
+    chosen = policy_logits[rows_i, tops]
+    rival = policy_logits.masked_fill(~mask, torch.finfo(policy_logits.dtype).min)
+    chosen_mask = mask.clone()
+    chosen_mask[rows_i, tops] = False
+    strongest = rival.masked_fill(~chosen_mask, torch.finfo(policy_logits.dtype).min)[rows_i].max(-1).values
+    sample_weights = torch.ones(len(included), dtype=policy_logits.dtype, device=device)
+    if weights is not None:
+        sample_weights = torch.stack([weights[item[0]] for item in included])
+    loss = (sample_weights * torch.nn.functional.softplus(strongest - chosen)).sum() / sample_weights.sum()
+    if not torch.isfinite(loss):
+        raise ValueError('Non-finite ranking loss')
+    return coefficient * loss, dict(
+        ranking_coefficient=float(coefficient), ranking_confidence=float(confidence),
+        ranking_samples=len(included), ranking_excluded=excluded,
+        ranking_loss=float(loss.detach()))
+
+
 def create_network(source, key, device):
     import torch
     from .gpu_duel.ppo import CompactScorer
@@ -162,7 +225,8 @@ def export(net, directory, key, build, origin):
         origin=origin, reward_mode='terminal_wdl_only', validation={'approved': False}, automatic_serving_approval=False))
 
 
-def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.):
+def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.,
+           ranking_coefficient=0., ranking_confidence=DEFAULT_RANKING_CONFIDENCE):
     import torch
     from .league_learning import tensors
     if not rows:
@@ -187,6 +251,9 @@ def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.)
     selected = [i for i, r in enumerate(rows) if 'pi' in r] if not (warmup or value_only) else []
     policy_loss = logits.sum() * 0
     imitation_loss = logits.sum() * 0;imitation_value_loss=logits.sum()*0;imitation_samples=0
+    ranking_loss = logits.new_zeros(())
+    ranking_stats = dict(ranking_coefficient=0., ranking_confidence=float(ranking_confidence),
+                         ranking_samples=0, ranking_excluded=0)
     if selected:
         xx, c, mask = tensors([(rows[i]['x'], rows[i]['c']) for i in selected], device)
         policy, _ = net(xx, c, mask)
@@ -198,6 +265,10 @@ def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.)
             target[j, :len(p)] = torch.as_tensor(p, device=device)
         losses = -(target * policy.log_softmax(-1).masked_fill(~mask, 0)).sum(-1)
         policy_loss = (weights[selected] * losses).mean()
+        if ranking_coefficient:
+            ranking_loss, ranking_stats = ranking_auxiliary_loss(
+                policy, mask, rows, selected, coefficient=ranking_coefficient,
+                confidence=ranking_confidence, weights=weights[selected])
         if self_imitation:
             chosen=[]
             for i in selected:
@@ -217,7 +288,7 @@ def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.)
             imitation_samples=int((advantage>0).sum().detach())
     # Oh et al. (ICML 2018), equations 2–3, added to the existing Gumbel/WDL
     # objective. Returns are real terminal outcomes, never mechanism bonuses.
-    loss = policy_loss + value_loss + self_imitation*(imitation_loss+.01*imitation_value_loss)
+    loss = policy_loss + value_loss + ranking_loss + self_imitation*(imitation_loss+.01*imitation_value_loss)
     if not torch.isfinite(loss):
         raise ValueError('Non-finite WDL loss')
     policy_gradient_norms = {}
@@ -251,4 +322,10 @@ def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.)
                 samples=len(rows), policy_samples=len(selected), value_only=bool(value_only),
                 policy_gradient_norms=policy_gradient_norms,
                 unique_row_ids=[r.get('row_id') for r in rows if r.get('row_id') and 'pi' in r],
+                ranking_loss=float(ranking_loss.detach()),
+                ranking_unscaled_loss=ranking_stats.get('ranking_loss', 0.),
+                ranking_coefficient=ranking_stats.get('ranking_coefficient', 0.),
+                ranking_confidence=ranking_stats.get('ranking_confidence', float(ranking_confidence)),
+                ranking_samples=ranking_stats.get('ranking_samples', 0),
+                ranking_excluded=ranking_stats.get('ranking_excluded', 0),
                 priority=value_losses.detach().cpu().numpy().tolist())

@@ -34,7 +34,7 @@ class ShaftResonanceTest(unittest.TestCase):
         for nodes in ([], list(range(1, 7))):
             off = simulate_shaft_axis(self.payload(nodes, []))['result']['details'][0]
             on = simulate_shaft_axis(self.payload(nodes, [6]))['result']['details'][0]
-            self.assertEqual(off['personal_resources_after']['弦能'], 1)
+            self.assertEqual(off['personal_resources_after']['弦能'], 6)
             self.assertEqual(on['personal_resources_after']['弦能'], 30)
             self.assertEqual(on['formula_parts']['skill_level_multiplier'], 1)
 

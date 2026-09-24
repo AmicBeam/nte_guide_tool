@@ -3441,7 +3441,7 @@
   },
   {
     "id": "character_heiyu_b_malice",
-    "name": "黑羽B觉·协同获得恶意",
+    "name": "黑羽F觉·失乐鸟恶意",
     "providers": [
       {
         "kind": "character",
@@ -3454,7 +3454,7 @@
       "conditions": [
         {
           "type": "awakening_min",
-          "min": 2
+          "min": 6
         },
         {
           "type": "active_buff_none",
@@ -3479,7 +3479,7 @@
       "loop_carry": true
     },
     "effects": {},
-    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 技能描述将协同后4点恶意写在6觉「死与生」，且仅非魔女状态生效。",
     "activation": {
       "personal_resource_gain": {
         "恶意": 4
@@ -3493,6 +3493,92 @@
     "display": {
       "line": false
     }
+  },
+  {
+    "id": "character_heiyu_b_def",
+    "name": "黑羽B觉·魔女防御",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_heiyu_form"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "def_pct": 0.2
+    },
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 「漫游记」：救世的魔女状态下防御提升20%。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_b_heal",
+    "name": "黑羽B觉·渡世死焰回复",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_hit",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_form_e"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "effects": {},
+    "activation": {
+      "heal_base_atk_ratio": 4
+    },
+    "stacking": {
+      "key": "character_heiyu_b_heal",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "display": {
+      "line": false
+    },
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 「漫游记」：渡世死焰命中后回复基础攻击力的400%。"
   },
   {
     "id": "character_heiyu_c_malice",
@@ -4546,7 +4632,7 @@
     },
     "duration": {
       "type": "time",
-      "ticks": 80,
+      "ticks": 200,
       "loop_carry": true
     },
     "effects": {},
@@ -4555,26 +4641,11 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "triggered_damage": {
-      "delay_ticks": 80,
-      "action": {
-        "id": "action_akane_q2",
-        "name": "q2",
-        "action_type": "Q",
-        "damage_type": "Q",
-        "multipliers": {
-          "atk": 7.5
-        },
-        "hit_count": 1,
-        "stagger": 1.5
-      }
-    },
-    "source_estimate": "华彩持续8秒为经验值；q2倍率750%与倾陷1.5来自Sheet1 row43。",
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 华彩连段持续20秒；第二段不自动结算。"
   },
   {
-    "id": "character_akane_string_gain",
-    "name": "明音凛·弦能",
+    "id": "character_akane_cadenza_front",
+    "name": "明音凛·华彩前半",
     "providers": [
       {
         "kind": "character",
@@ -4583,23 +4654,11 @@
     ],
     "priority": 50,
     "trigger": {
-      "event": "action_hit",
+      "event": "action_start",
       "source": {
         "scope": "registrar",
         "action_ids": [
-          "action_akane_a1",
-          "action_akane_a2",
-          "action_akane_a3",
-          "action_akane_a4",
-          "action_akane_plunge",
-          "action_akane_counter",
-          "action_akane_support",
-          "action_akane_e",
-          "action_akane_hold_e",
-          "action_akane_q1",
-          "action_akane_enhanced_e",
-          "action_akane_q2",
-          "reaction-reapply:char_akane"
+          "action_akane_q1"
         ]
       }
     },
@@ -4608,25 +4667,55 @@
     },
     "duration": {
       "type": "time",
-      "ticks": 1,
+      "ticks": 100,
       "loop_carry": true
     },
     "effects": {},
     "stacking": {
-      "key": "character_akane_string_gain",
+      "key": "character_akane_cadenza_front",
       "mode": "refresh",
       "max_stacks": 1
-    },
-    "activation": {
-      "personal_resource_gain_per_hit": {
-        "弦能": 1
-      }
     },
     "display": {
       "line": false
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。",
-    "source_estimate": "每命中1段获得1弦能为经验值；强化E命中支付30后也获得1点，六觉另返还10点。"
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 第二段只在华彩后半可释放；前10秒放置会提示。"
+  },
+  {
+    "id": "character_akane_enhanced_single",
+    "name": "明音凛·泛音列同调共振",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive"
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_akane_enhanced_e"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_akane_single"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 0.25
+    },
+    "display": {
+      "line": false
+    },
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 同调共振基础800%；泛音列额外+200%，合计1000%。音域保持800%。"
   },
   {
     "id": "character_akane_heal",

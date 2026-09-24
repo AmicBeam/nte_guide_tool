@@ -24,24 +24,30 @@ class AkaneTest(unittest.TestCase):
         actions = {a['name']: a for a in c['actions_by_character'][CID]}
         self.assertEqual(DEFAULT_UNPUBLISHED_CHARACTERS[CID], '明音凛')
         self.assertEqual(next(a['id'] for a in c['arcs'] if a['adaptation'] == '液态'), ARC)
+        self.assertEqual(actions['a1']['hit_count'], 2)
+        self.assertAlmostEqual(actions['a1']['multipliers']['atk'], .788)
         self.assertEqual(actions['a2']['hit_count'], 2)
-        self.assertAlmostEqual(actions['a2']['multipliers']['atk'], .764)
+        self.assertAlmostEqual(actions['a2']['multipliers']['atk'], 1.158)
         self.assertEqual(actions['a3']['hit_count'], 7)
-        self.assertAlmostEqual(actions['a3']['multipliers']['atk'], 1.49)
+        self.assertAlmostEqual(actions['a3']['multipliers']['atk'], 2.253)
         self.assertAlmostEqual(actions['a3']['energy_gain'], 5.625)
-        self.assertEqual(actions['a3']['hit_profile']['cumulative'][3]['damage'], .546)
+        self.assertEqual(actions['a3']['hit_profile']['cumulative'][3]['damage'], .825)
         self.assertEqual(actions['援护']['damage_type'], '援护')
         self.assertEqual(actions['闪反']['damage_type'], '闪反')
-        self.assertEqual(actions['援护']['multipliers']['atk'], 1)
-        self.assertNotIn('q2', actions)  # Automatic, cannot double-count a hand-placed copy.
+        self.assertAlmostEqual(actions['援护']['multipliers']['atk'], 1.29)
+        self.assertAlmostEqual(actions['闪反']['multipliers']['atk'], .25)
+        self.assertAlmostEqual(actions['q1']['multipliers']['atk'], 1.2)
+        self.assertAlmostEqual(actions['q1']['stagger'], .15)
+        self.assertAlmostEqual(actions['q2']['multipliers']['atk'], 10)
+        self.assertAlmostEqual(actions['同调共振']['multipliers']['atk'], 8)
         self.assertFalse(any(a.get('source_row') in (31, 38) for a in actions.values()))
 
     def test_resource_cap_and_awakening_refund(self):
         r = self.sim([('e', 0), ('enhanced_e', 12), ('a3', 24)], nodes=range(1, 7))
         self.assertEqual(r['details'][0]['personal_resources_after']['弦能'], 30)
         self.assertEqual(r['details'][1]['personal_resources_consumed']['弦能'], 30)
-        self.assertEqual(r['details'][1]['personal_resources_after']['弦能'], 11)
-        self.assertEqual(r['details'][2]['personal_resources_after']['弦能'], 18)
+        self.assertEqual(r['details'][1]['personal_resources_after']['弦能'], 10)
+        self.assertEqual(r['details'][2]['personal_resources_after']['弦能'], 14)
         self.assertTrue(r['healing_events'])
         self.assertEqual(r['healing_events'][0]['healing'], 660)
         poor = self.sim([('enhanced_e', 0)])['details'][0]
@@ -49,14 +55,22 @@ class AkaneTest(unittest.TestCase):
         self.assertTrue(any('泛音列或音域' in w for w in poor['warnings']))
 
     def test_zero_hit_and_partial_interruption(self):
-        for key, hits, expected in [('a3', 3, 3), ('a3', 0, 0), ('enhanced_e', 0, 30)]:
-            p = self.payload([('e', 0), (key, 20)], nodes=range(1, 7) if key == 'enhanced_e' else [])
-            p['steps'][1].update(interrupted=True, interrupt_duration_ticks=2, interrupt_hit_count=hits)
-            r = simulate_shaft_axis(p)['result']
-            before = r['details'][0]['personal_resources_after']['弦能']
-            self.assertEqual(r['details'][1]['personal_resources_after']['弦能'],
-                             expected if key == 'enhanced_e' else before + expected)
-            if key == 'enhanced_e': self.assertFalse(r['healing_events'])
+        partial = self.payload([('e', 0), ('a3', 20)])
+        partial['steps'][1].update(interrupted=True, interrupt_duration_ticks=2, interrupt_hit_count=3)
+        partial_result = simulate_shaft_axis(partial)['result']
+        before = partial_result['details'][0]['personal_resources_after']['弦能']
+        self.assertAlmostEqual(partial_result['details'][1]['personal_resources_after']['弦能'],
+                               before + 4 * .825 / 2.253)
+        empty = self.payload([('e', 0), ('a3', 20)])
+        empty['steps'][1].update(interrupted=True, interrupt_duration_ticks=2, interrupt_hit_count=0)
+        empty_result = simulate_shaft_axis(empty)['result']
+        self.assertEqual(empty_result['details'][1]['personal_resources_after']['弦能'],
+                         empty_result['details'][0]['personal_resources_after']['弦能'])
+        enhanced = self.payload([('e', 0), ('enhanced_e', 20)], nodes=range(1, 7))
+        enhanced['steps'][1].update(interrupted=True, interrupt_duration_ticks=2, interrupt_hit_count=0)
+        enhanced_result = simulate_shaft_axis(enhanced)['result']
+        self.assertEqual(enhanced_result['details'][1]['personal_resources_after']['弦能'], 30)
+        self.assertFalse(enhanced_result['healing_events'])
 
     def test_modes_exclude_each_other_and_expire(self):
         r = self.sim([('e', 0), ('a1', 12), ('hold_e', 170), ('a1', 184), ('a1', 440)], nodes=[2,5])
@@ -73,18 +87,18 @@ class AkaneTest(unittest.TestCase):
         self.assertFalse(any('CD' in w for w in r['details'][2]['warnings']))
         self.assertTrue(any('泛音列或音域' in w for w in r['details'][3]['warnings']))
 
-    def test_q2_delayed_dynamic_panel_and_outside_axis(self):
-        short = self.sim([('q1',0)])
-        long = self.sim([('q1',0),('a1',100)])
-        q2, = [e for e in long['periodic_damage_events'] if e['reaction']=='q2']
-        self.assertEqual(q2['tick'],80)
-        self.assertEqual(q2['damage_type'],'Q')
-        self.assertAlmostEqual(q2['formula_parts']['crit_rate'],.05)
-        self.assertAlmostEqual(q2['formula_parts']['skill_level_multiplier'],1)
-        self.assertAlmostEqual(short['summary']['character_damage'],sum(d['direct_damage'] for d in short['details']))
-        self.assertAlmostEqual(long['summary']['character_damage'],sum(d['direct_damage'] for d in long['details'])+q2['damage'])
-        self.assertAlmostEqual(long['summary']['total_stagger'],3.2)
-        self.assertAlmostEqual(long['summary']['effective_stagger'],3.2)
+    def test_q2_is_manual_during_the_second_half(self):
+        early = self.sim([('q1', 0), ('q2', 50)])
+        self.assertTrue(any('不能使用' in warning for warning in early['details'][1]['warnings']))
+        late = self.sim([('q1', 0), ('q2', 110)])
+        q2 = late['details'][1]
+        self.assertFalse(any('不能使用' in warning or '华彩连段' in warning for warning in q2['warnings']))
+        self.assertAlmostEqual(q2['formula_parts']['raw_base'] / q2['panel']['atk'], 10)
+        self.assertAlmostEqual(q2['stagger_amount'], 1.5)
+        self.assertAlmostEqual(late['details'][0]['stagger_amount'], .15)
+        self.assertAlmostEqual(late['summary']['character_damage'], sum(d['direct_damage'] for d in late['details']))
+        missing = self.sim([('q2', 0)])['details'][0]
+        self.assertTrue(any('华彩连段' in warning for warning in missing['warnings']))
 
     def test_arc_stacks_expiry_and_refinements(self):
         for level in [1,5]:
@@ -114,9 +128,8 @@ class AkaneTest(unittest.TestCase):
         no_unlock=self.sim([('e',0),('a1',200)])
         self.assertFalse(no_unlock['reaction_effects'])
 
-    def test_loop_q2_inherits_remaining_delay(self):
-        r=self.sim([('q1',10),('a1',55)],loop_enabled=True)
-        hits=[e for e in r['periodic_damage_events'] if e['reaction']=='q2']
-        self.assertEqual(len(hits),1)
-        self.assertEqual(hits[0]['tick'],10+80-r['summary']['duration_ticks'])
-        self.assertGreater(hits[0]['damage'],0)
+    def test_single_mode_enhanced_attack_is_higher_than_area_mode(self):
+        single = self.sim([('e', 0), ('enhanced_e', 20)])['details'][1]
+        area = self.sim([('hold_e', 0), ('enhanced_e', 20)])['details'][1]
+        self.assertAlmostEqual(single['formula_parts']['base'] / single['panel']['atk'], 10)
+        self.assertAlmostEqual(area['formula_parts']['base'] / area['panel']['atk'], 8)

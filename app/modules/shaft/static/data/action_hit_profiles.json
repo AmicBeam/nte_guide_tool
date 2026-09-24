@@ -4067,8 +4067,8 @@
     ]
   },
   "action_heiyu_a1": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 2，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户腾讯文档《黑羽资料汇总》2026-09-22新倍率列；仅更新一形态伤害倍率，资源沿用已确认值，非Nanoka核实。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4080,15 +4080,15 @@
       {
         "hit_count": 1,
         "damage": 0.237,
-        "energy": 0.834,
-        "harmony": 1.16,
-        "stagger": 0.139
+        "energy": 0.838,
+        "harmony": 1.161,
+        "stagger": 0.141
       }
     ]
   },
   "action_heiyu_a2": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 3，{0}%*2；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户腾讯文档《黑羽资料汇总》2026-09-22新倍率列；仅更新一形态伤害倍率，资源沿用已确认值，非Nanoka核实。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4100,22 +4100,22 @@
       {
         "hit_count": 1,
         "damage": 0.487,
-        "energy": 1.68,
-        "harmony": 2.337,
-        "stagger": 0.28
+        "energy": 1.726,
+        "harmony": 2.391,
+        "stagger": 0.291
       },
       {
         "hit_count": 2,
         "damage": 0.974,
-        "energy": 3.36,
-        "harmony": 4.674,
-        "stagger": 0.56
+        "energy": 3.452,
+        "harmony": 4.782,
+        "stagger": 0.582
       }
     ]
   },
   "action_heiyu_a3": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 4，{0}%*4；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户腾讯文档《黑羽资料汇总》2026-09-22新倍率列；仅更新一形态伤害倍率，资源沿用已确认值，非Nanoka核实。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4127,36 +4127,36 @@
       {
         "hit_count": 1,
         "damage": 0.301,
-        "energy": 1.0404,
-        "harmony": 1.446,
-        "stagger": 0.173
+        "energy": 1.066,
+        "harmony": 1.476,
+        "stagger": 0.18
       },
       {
         "hit_count": 2,
         "damage": 0.602,
-        "energy": 2.0808,
-        "harmony": 2.892,
-        "stagger": 0.346
+        "energy": 2.132,
+        "harmony": 2.952,
+        "stagger": 0.36
       },
       {
         "hit_count": 3,
         "damage": 0.903,
-        "energy": 3.1212,
-        "harmony": 4.338,
-        "stagger": 0.519
+        "energy": 3.198,
+        "harmony": 4.428,
+        "stagger": 0.54
       },
       {
         "hit_count": 4,
         "damage": 1.204,
-        "energy": 4.1616,
-        "harmony": 5.784,
-        "stagger": 0.692
+        "energy": 4.264,
+        "harmony": 5.904,
+        "stagger": 0.72
       }
     ]
   },
   "action_heiyu_a4": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 5，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户腾讯文档《黑羽资料汇总》2026-09-22新倍率列；仅更新一形态伤害倍率，资源沿用已确认值，非Nanoka核实。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4167,44 +4167,44 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.285,
-        "energy": 0.78,
-        "harmony": 1.085,
-        "stagger": 0.13
+        "damage": 0.258,
+        "energy": 0.913,
+        "harmony": 1.265,
+        "stagger": 0.154
       },
       {
         "hit_count": 2,
-        "damage": 0.57,
-        "energy": 1.56,
-        "harmony": 2.17,
-        "stagger": 0.26
+        "damage": 0.516,
+        "energy": 1.826,
+        "harmony": 2.53,
+        "stagger": 0.308
       },
       {
         "hit_count": 3,
-        "damage": 0.855,
-        "energy": 2.34,
-        "harmony": 3.255,
-        "stagger": 0.39
+        "damage": 0.774,
+        "energy": 2.739,
+        "harmony": 3.795,
+        "stagger": 0.462
       },
       {
         "hit_count": 4,
-        "damage": 1.14,
-        "energy": 3.12,
-        "harmony": 4.34,
-        "stagger": 0.52
+        "damage": 1.032,
+        "energy": 3.652,
+        "harmony": 5.06,
+        "stagger": 0.616
       },
       {
         "hit_count": 5,
-        "damage": 1.425,
-        "energy": 3.9,
-        "harmony": 5.425,
-        "stagger": 0.65
+        "damage": 1.29,
+        "energy": 4.565,
+        "harmony": 6.325,
+        "stagger": 0.77
       }
     ]
   },
   "action_heiyu_a5": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 6，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户腾讯文档《黑羽资料汇总》2026-09-22新倍率列；仅更新一形态伤害倍率，资源沿用已确认值，非Nanoka核实。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4216,43 +4216,43 @@
       {
         "hit_count": 1,
         "damage": 0.364,
-        "energy": 1.3884,
-        "harmony": 1.931,
-        "stagger": 0.231
+        "energy": 1.289,
+        "harmony": 1.785,
+        "stagger": 0.217
       },
       {
         "hit_count": 2,
         "damage": 0.728,
-        "energy": 2.7768,
-        "harmony": 3.862,
-        "stagger": 0.462
+        "energy": 2.578,
+        "harmony": 3.57,
+        "stagger": 0.434
       },
       {
         "hit_count": 3,
         "damage": 1.092,
-        "energy": 4.1652,
-        "harmony": 5.793,
-        "stagger": 0.693
+        "energy": 3.867,
+        "harmony": 5.355,
+        "stagger": 0.651
       },
       {
         "hit_count": 4,
         "damage": 1.456,
-        "energy": 5.5536,
-        "harmony": 7.724,
-        "stagger": 0.924
+        "energy": 5.156,
+        "harmony": 7.14,
+        "stagger": 0.868
       },
       {
         "hit_count": 5,
         "damage": 1.82,
-        "energy": 6.942,
-        "harmony": 9.655,
-        "stagger": 1.155
+        "energy": 6.445,
+        "harmony": 8.925,
+        "stagger": 1.085
       }
     ]
   },
   "action_heiyu_z": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 7，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户腾讯文档《黑羽资料汇总》2026-09-22新倍率列；仅更新一形态伤害倍率，资源沿用已确认值，非Nanoka核实。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4271,8 +4271,8 @@
     ]
   },
   "action_heiyu_plunge": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 8，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户腾讯文档《黑羽资料汇总》2026-09-22新倍率列；仅更新一形态伤害倍率，资源沿用已确认值，非Nanoka核实。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4291,8 +4291,8 @@
     ]
   },
   "action_heiyu_counter": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 9，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户腾讯文档《黑羽资料汇总》2026-09-22新倍率列；仅更新一形态伤害倍率，资源沿用已确认值，非Nanoka核实。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4311,8 +4311,8 @@
     ]
   },
   "action_heiyu_form_a1": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 10，{0}%*2；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4323,23 +4323,23 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.324,
-        "energy": 0.9744,
-        "harmony": 1.349,
+        "damage": 0.325,
+        "energy": 0.974,
+        "harmony": 1.353,
         "stagger": 0.162
       },
       {
         "hit_count": 2,
-        "damage": 0.648,
-        "energy": 1.9488,
-        "harmony": 2.698,
+        "damage": 0.65,
+        "energy": 1.948,
+        "harmony": 2.706,
         "stagger": 0.324
       }
     ]
   },
   "action_heiyu_form_a2": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 11，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4350,44 +4350,44 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.236,
-        "energy": 0.7116,
-        "harmony": 0.985,
-        "stagger": 0.118
+        "damage": 0.222,
+        "energy": 0.665,
+        "harmony": 0.924,
+        "stagger": 0.111
       },
       {
         "hit_count": 2,
-        "damage": 0.472,
-        "energy": 1.4232,
-        "harmony": 1.97,
-        "stagger": 0.236
+        "damage": 0.444,
+        "energy": 1.33,
+        "harmony": 1.848,
+        "stagger": 0.222
       },
       {
         "hit_count": 3,
-        "damage": 0.708,
-        "energy": 2.1348,
-        "harmony": 2.955,
-        "stagger": 0.354
+        "damage": 0.666,
+        "energy": 1.995,
+        "harmony": 2.772,
+        "stagger": 0.333
       },
       {
         "hit_count": 4,
-        "damage": 0.944,
-        "energy": 2.8464,
-        "harmony": 3.94,
-        "stagger": 0.472
+        "damage": 0.888,
+        "energy": 2.66,
+        "harmony": 3.696,
+        "stagger": 0.444
       },
       {
         "hit_count": 5,
-        "damage": 1.18,
-        "energy": 3.558,
-        "harmony": 4.925,
-        "stagger": 0.59
+        "damage": 1.11,
+        "energy": 3.325,
+        "harmony": 4.62,
+        "stagger": 0.555
       }
     ]
   },
   "action_heiyu_form_a3": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 12，{0}%*6；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4398,51 +4398,51 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.228,
-        "energy": 0.6876,
-        "harmony": 0.952,
-        "stagger": 0.114
+        "damage": 0.21,
+        "energy": 0.63,
+        "harmony": 0.874,
+        "stagger": 0.105
       },
       {
         "hit_count": 2,
-        "damage": 0.456,
-        "energy": 1.3752,
-        "harmony": 1.904,
-        "stagger": 0.228
+        "damage": 0.42,
+        "energy": 1.26,
+        "harmony": 1.748,
+        "stagger": 0.21
       },
       {
         "hit_count": 3,
-        "damage": 0.684,
-        "energy": 2.0628,
-        "harmony": 2.856,
-        "stagger": 0.342
+        "damage": 0.63,
+        "energy": 1.89,
+        "harmony": 2.622,
+        "stagger": 0.315
       },
       {
         "hit_count": 4,
-        "damage": 0.912,
-        "energy": 2.7504,
-        "harmony": 3.808,
-        "stagger": 0.456
+        "damage": 0.84,
+        "energy": 2.52,
+        "harmony": 3.496,
+        "stagger": 0.42
       },
       {
         "hit_count": 5,
-        "damage": 1.14,
-        "energy": 3.438,
-        "harmony": 4.76,
-        "stagger": 0.57
+        "damage": 1.05,
+        "energy": 3.15,
+        "harmony": 4.37,
+        "stagger": 0.525
       },
       {
         "hit_count": 6,
-        "damage": 1.368,
-        "energy": 4.1256,
-        "harmony": 5.712,
-        "stagger": 0.684
+        "damage": 1.26,
+        "energy": 3.78,
+        "harmony": 5.244,
+        "stagger": 0.63
       }
     ]
   },
   "action_heiyu_form_a4": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 13，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4453,16 +4453,16 @@
       },
       {
         "hit_count": 1,
-        "damage": 1.424,
-        "energy": 4.2792,
-        "harmony": 5.925,
-        "stagger": 0.71
+        "damage": 1.355,
+        "energy": 4.066,
+        "harmony": 5.648,
+        "stagger": 0.678
       }
     ]
   },
   "action_heiyu_form_a5": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 14，{0}%*6；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4473,51 +4473,51 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.566,
-        "energy": 1.7016,
-        "harmony": 2.357,
-        "stagger": 0.282
+        "damage": 0.471,
+        "energy": 1.414,
+        "harmony": 1.963,
+        "stagger": 0.236
       },
       {
         "hit_count": 2,
-        "damage": 1.132,
-        "energy": 3.4032,
-        "harmony": 4.714,
-        "stagger": 0.564
+        "damage": 0.942,
+        "energy": 2.828,
+        "harmony": 3.926,
+        "stagger": 0.472
       },
       {
         "hit_count": 3,
-        "damage": 1.698,
-        "energy": 5.1048,
-        "harmony": 7.071,
-        "stagger": 0.846
+        "damage": 1.413,
+        "energy": 4.242,
+        "harmony": 5.889,
+        "stagger": 0.708
       },
       {
         "hit_count": 4,
-        "damage": 2.264,
-        "energy": 6.8064,
-        "harmony": 9.428,
-        "stagger": 1.128
+        "damage": 1.884,
+        "energy": 5.656,
+        "harmony": 7.852,
+        "stagger": 0.944
       },
       {
         "hit_count": 5,
-        "damage": 2.83,
-        "energy": 8.508,
-        "harmony": 11.785,
-        "stagger": 1.41
+        "damage": 2.355,
+        "energy": 7.07,
+        "harmony": 9.815,
+        "stagger": 1.18
       },
       {
         "hit_count": 6,
-        "damage": 3.396,
-        "energy": 10.2096,
-        "harmony": 14.142,
-        "stagger": 1.692
+        "damage": 2.826,
+        "energy": 8.484,
+        "harmony": 11.778,
+        "stagger": 1.416
       }
     ]
   },
   "action_heiyu_form_z1": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 15，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4529,43 +4529,43 @@
       {
         "hit_count": 1,
         "damage": 0.432,
-        "energy": 1.2924,
-        "harmony": 1.804,
-        "stagger": 0.219
+        "energy": 1.302,
+        "harmony": 1.798,
+        "stagger": 0.217
       },
       {
         "hit_count": 2,
         "damage": 0.864,
-        "energy": 2.5848,
-        "harmony": 3.608,
-        "stagger": 0.438
+        "energy": 2.604,
+        "harmony": 3.596,
+        "stagger": 0.434
       },
       {
         "hit_count": 3,
         "damage": 1.296,
-        "energy": 3.8772,
-        "harmony": 5.412,
-        "stagger": 0.657
+        "energy": 3.906,
+        "harmony": 5.394,
+        "stagger": 0.651
       },
       {
         "hit_count": 4,
         "damage": 1.728,
-        "energy": 5.1696,
-        "harmony": 7.216,
-        "stagger": 0.876
+        "energy": 5.208,
+        "harmony": 7.192,
+        "stagger": 0.868
       },
       {
         "hit_count": 5,
         "damage": 2.16,
-        "energy": 6.462,
-        "harmony": 9.02,
-        "stagger": 1.095
+        "energy": 6.51,
+        "harmony": 8.99,
+        "stagger": 1.085
       }
     ]
   },
   "action_heiyu_form_z2": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 16，{0}%*5；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4576,44 +4576,44 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.434,
-        "energy": 1.2996,
-        "harmony": 1.816,
-        "stagger": 0.221
+        "damage": 0.404,
+        "energy": 1.218,
+        "harmony": 1.682,
+        "stagger": 0.203
       },
       {
         "hit_count": 2,
-        "damage": 0.868,
-        "energy": 2.5992,
-        "harmony": 3.632,
-        "stagger": 0.442
+        "damage": 0.808,
+        "energy": 2.436,
+        "harmony": 3.364,
+        "stagger": 0.406
       },
       {
         "hit_count": 3,
-        "damage": 1.302,
-        "energy": 3.8988,
-        "harmony": 5.448,
-        "stagger": 0.663
+        "damage": 1.212,
+        "energy": 3.654,
+        "harmony": 5.046,
+        "stagger": 0.609
       },
       {
         "hit_count": 4,
-        "damage": 1.736,
-        "energy": 5.1984,
-        "harmony": 7.264,
-        "stagger": 0.884
+        "damage": 1.616,
+        "energy": 4.872,
+        "harmony": 6.728,
+        "stagger": 0.812
       },
       {
         "hit_count": 5,
-        "damage": 2.17,
-        "energy": 6.498,
-        "harmony": 9.08,
-        "stagger": 1.105
+        "damage": 2.02,
+        "energy": 6.09,
+        "harmony": 8.41,
+        "stagger": 1.015
       }
     ]
   },
   "action_heiyu_form_plunge": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 17，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4632,8 +4632,8 @@
     ]
   },
   "action_heiyu_form_counter": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 18，{0}%；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。 用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4652,14 +4652,14 @@
     ]
   },
   "action_heiyu_e": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 19，{0}%*4；每次重复命中等倍率。普通E本体环合按用户2026-09-19补充每段2.6，释放时额外100不计入逐段曲线。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
         "damage": 0.0,
         "energy": 0.0,
-        "harmony": 0,
+        "harmony": 0.0,
         "stagger": 0.0
       },
       {
@@ -4693,8 +4693,8 @@
     ]
   },
   "action_heiyu_form_e": {
-    "source": "user-xlsx",
-    "source_note": "用户附件 SkillDamageData_BlackBird_Akane_Exe.xlsx / Sheet1 row 21，{0}%*4；每次重复命中等倍率。普通E环合100采用用户腾讯文档总值等分，非工作簿原始环合。动作时间另为授权经验值。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4734,238 +4734,245 @@
     ]
   },
   "action_akane_a1": {
-    "source": "user-xlsx",
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 32；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
       },
       {
-        "damage": 0.26,
+        "hit_count": 1,
+        "damage": 0.394,
         "energy": 0.984,
         "harmony": 1.645,
-        "stagger": 0.2,
-        "hit_count": 1
+        "stagger": 0.2
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.788,
+        "energy": 1.968,
+        "harmony": 3.29,
+        "stagger": 0.4
       }
     ]
   },
   "action_akane_a2": {
-    "source": "user-xlsx",
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 33；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
       },
       {
-        "damage": 0.382,
+        "hit_count": 1,
+        "damage": 0.579,
         "energy": 1.447,
         "harmony": 2.418,
-        "stagger": 0.293,
-        "hit_count": 1
+        "stagger": 0.293
       },
       {
-        "damage": 0.764,
+        "hit_count": 2,
+        "damage": 1.158,
         "energy": 2.894,
         "harmony": 4.836,
-        "stagger": 0.586,
-        "hit_count": 2
+        "stagger": 0.586
       }
     ]
   },
   "action_akane_a3": {
-    "source": "user-xlsx",
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 34,35；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
       },
       {
-        "damage": 0.182,
+        "hit_count": 1,
+        "damage": 0.275,
         "energy": 0.687,
         "harmony": 1.148,
-        "stagger": 0.139,
-        "hit_count": 1
+        "stagger": 0.139
       },
       {
-        "damage": 0.364,
+        "hit_count": 2,
+        "damage": 0.55,
         "energy": 1.374,
         "harmony": 2.296,
-        "stagger": 0.278,
-        "hit_count": 2
+        "stagger": 0.278
       },
       {
-        "damage": 0.546,
+        "hit_count": 3,
+        "damage": 0.825,
         "energy": 2.061,
         "harmony": 3.444,
-        "stagger": 0.417,
-        "hit_count": 3
+        "stagger": 0.417
       },
       {
-        "damage": 0.782,
+        "hit_count": 4,
+        "damage": 1.182,
         "energy": 2.952,
         "harmony": 4.934,
-        "stagger": 0.598,
-        "hit_count": 4
+        "stagger": 0.598
       },
       {
-        "damage": 1.018,
+        "hit_count": 5,
+        "damage": 1.539,
         "energy": 3.843,
         "harmony": 6.424,
-        "stagger": 0.779,
-        "hit_count": 5
+        "stagger": 0.779
       },
       {
-        "damage": 1.254,
+        "hit_count": 6,
+        "damage": 1.896,
         "energy": 4.734,
         "harmony": 7.914,
-        "stagger": 0.96,
-        "hit_count": 6
+        "stagger": 0.96
       },
       {
-        "damage": 1.49,
+        "hit_count": 7,
+        "damage": 2.253,
         "energy": 5.625,
         "harmony": 9.404,
-        "stagger": 1.141,
-        "hit_count": 7
+        "stagger": 1.141
       }
     ]
   },
   "action_akane_a4": {
-    "source": "user-xlsx",
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 36；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
       },
       {
-        "damage": 1.007,
+        "hit_count": 1,
+        "damage": 1.526,
         "energy": 3.812,
         "harmony": 6.371,
-        "stagger": 0.773,
-        "hit_count": 1
+        "stagger": 0.773
       }
     ]
   },
   "action_akane_plunge": {
-    "source": "user-xlsx",
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 37；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
       },
       {
+        "hit_count": 1,
         "damage": 0.625,
         "energy": 3.1,
         "harmony": 5.2,
-        "stagger": 0.6,
-        "hit_count": 1
+        "stagger": 0.6
       }
     ]
   },
   "action_akane_counter": {
-    "source": "user-xlsx",
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 row45；倍率/资源保留，表内极轨终结分类按PerfectEvade与腾讯文档修正为闪反。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "damage": 1.0,
+        "damage": 0.0,
         "energy": 0.0,
         "harmony": 0.0,
-        "stagger": 1.5,
-        "hit_count": 1
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.25,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 1.5
       }
     ]
   },
   "action_akane_e": {
-    "source": "user-xlsx",
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 39；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
       },
       {
-        "damage": 4.0,
-        "energy": 4.6,
-        "harmony": 7.7,
-        "stagger": 0.9,
-        "hit_count": 1
+        "hit_count": 1,
+        "damage": 5.0,
+        "energy": 1.7,
+        "harmony": 2.8,
+        "stagger": 0.3
       }
     ]
   },
   "action_akane_hold_e": {
-    "source": "user-xlsx",
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows39+40；暂按长按400%本体加160%音域追加，待实测确认。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
       },
       {
+        "hit_count": 1,
+        "damage": 2.0,
+        "energy": 2.45,
+        "harmony": 4.1,
+        "stagger": 0.5
+      },
+      {
+        "hit_count": 2,
         "damage": 4.0,
-        "energy": 4.6,
-        "harmony": 7.7,
-        "stagger": 0.9,
-        "hit_count": 1
-      },
-      {
-        "damage": 5.6,
-        "energy": 6.9,
-        "harmony": 11.55,
-        "stagger": 1.35,
-        "hit_count": 2
+        "energy": 4.9,
+        "harmony": 8.2,
+        "stagger": 1.0
       }
     ]
   },
   "action_akane_enhanced_e": {
-    "source": "user-xlsx",
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 Sheet1 rows 41；重复次数按腾讯文档展开；非零耗时为授权经验估值。",
+    "source": "ntedata",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
       },
       {
-        "damage": 5.0,
-        "energy": 4.6,
-        "harmony": 7.7,
-        "stagger": 0.9,
-        "hit_count": 1
+        "hit_count": 1,
+        "damage": 8.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
       }
     ]
   }

@@ -28,9 +28,9 @@ class HarmonyTimingTest(unittest.TestCase):
         self.assertEqual([e['tick'] for e in events], list(range(1, 7)))
         self.assertTrue(all(e['slot'] == 0 for e in events))
         for e in events:
-            self.assertAlmostEqual(e['amount'], 4.674 / 6)
-        self.assertAlmostEqual(events[2]['harmony_after'], 4.674 / 2)
-        self.assertAlmostEqual(r['resources_by_slot'][0]['harmony'], 4.674)
+            self.assertAlmostEqual(e['amount'], 4.782 / 6)
+        self.assertAlmostEqual(events[2]['harmony_after'], 4.782 / 2)
+        self.assertAlmostEqual(r['resources_by_slot'][0]['harmony'], 4.782)
         self.assertEqual(r['resources_by_slot'][1]['harmony'], 0)
 
     def test_cast_bonus_and_capped_gain_resume_after_mid_action_consumption(self):
@@ -67,8 +67,8 @@ class HarmonyTimingTest(unittest.TestCase):
         r = self.simulate('char_heiyu', [dict(id='a', slot=0, action_id='action_heiyu_a2', start_tick=0),
                                        self.support('char_c78f7a08d5', 2)], 'char_c78f7a08d5')
         cost = next(e for e in r['harmony_events'] if e['kind'] == 'reaction_cost')
-        self.assertAlmostEqual(cost['amount'], -4.674 * 2 / 6)
-        self.assertAlmostEqual(r['resources_by_slot'][0]['harmony'], 4.674 * 4 / 6)
+        self.assertAlmostEqual(cost['amount'], -4.782 * 2 / 6)
+        self.assertAlmostEqual(r['resources_by_slot'][0]['harmony'], 4.782 * 4 / 6)
         self.assertTrue(any('当前 1.6' in w for d in r['details'] for w in d['warnings']))
 
     def test_zero_duration_background_gain_is_instant_and_multiplied(self):
@@ -84,7 +84,7 @@ class HarmonyTimingTest(unittest.TestCase):
         r = self.simulate('char_heiyu', [dict(id='a', slot=0, action_id='action_heiyu_a2', start_tick=0, placement='background'),
                                        dict(id='b', slot=0, action_id='action_heiyu_a2', start_tick=2, placement='background'),
                                        dict(id='tail', slot=0, action_id='action_none_heiyu', start_tick=8)])
-        self.assertAlmostEqual(r['resources_by_slot'][0]['harmony'], 4.674 * 2)
+        self.assertAlmostEqual(r['resources_by_slot'][0]['harmony'], 4.782 * 2)
         self.assertEqual(max(e['tick'] for e in r['harmony_events']), 8)
 
     def test_full_cap_drops_overflow(self):

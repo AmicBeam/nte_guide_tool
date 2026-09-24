@@ -37,8 +37,8 @@ class HeiyuTest(unittest.TestCase):
         catalog = load_shaft_catalog()
         actions = {a['name']: a for a in catalog['actions_by_character'][CID]}
         self.assertAlmostEqual(actions['a5']['multipliers']['atk'], 1.82)
-        self.assertAlmostEqual(actions['a5']['energy_gain'], 6.942)
-        self.assertAlmostEqual(actions['魔a5']['harmony'], 14.142)
+        self.assertAlmostEqual(actions['a5']['energy_gain'], 6.445)
+        self.assertAlmostEqual(actions['魔a5']['harmony'], 11.778)
         self.assertEqual(actions['e']['harmony'], 10.4)
         self.assertEqual(actions['e']['harmony_on_start'], 100)
         self.assertEqual(actions['q1']['energy_cost'], 100)
@@ -48,7 +48,7 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(assist['hit_count'], 1)
         self.assertEqual(assist['multipliers']['atk'], 2)
         self.assertEqual(assist['source_formula'], '{0}%')
-        self.assertEqual(assist['energy_gain'], 2.4)
+        self.assertEqual(assist['energy_gain'], 2)
         self.assertAlmostEqual(assist['harmony'], 3.34)
         self.assertAlmostEqual(assist['stagger'], .4)
         self.assertEqual(actions['a1']['duration_ticks'], 4)
@@ -63,39 +63,37 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 42)
         self.assertEqual(len([a for a in actions.values() if a.get('source_row') == 19]), 1)
 
-    def test_user_energy_increase_covers_both_forms_and_interruptions(self):
-        # User 2026-09-22: all modules gain 20% more energy, not more malice.
+    def test_ntedata_energy_matches_damage_rows_and_interruptions(self):
         import json
         from pathlib import Path
         profiles = json.loads((Path(__file__).resolve().parents[1] /
             'app/modules/shaft/static/data/action_hit_profiles.json').read_text())
-        original = dict(a1=.695, a2=2.8, a3=3.468, a4=3.25, a5=5.785,
-                        z=3.4, plunge=1.4, counter=2.5, form_a1=1.624,
-                        form_a2=2.965, form_a3=3.438, form_a4=3.566, form_a5=8.508,
-                        form_z1=5.385, form_z2=5.415, form_plunge=1.4,
-                        form_counter=2.1, e=6.3, assist=2, form_e=4.2,
-                        q1=0, q2=0, support=6.3, form_support=5, parry=0)
+        expected = dict(a1=.838, a2=3.452, a3=4.264, a4=4.565, a5=6.445,
+                        z=4.08, plunge=1.68, counter=3, form_a1=1.948,
+                        form_a2=3.325, form_a3=3.78, form_a4=4.066, form_a5=8.484,
+                        form_z1=6.51, form_z2=6.09, form_plunge=1.68,
+                        form_counter=2.52, e=7.56, assist=2, form_e=5.04,
+                        q1=0, q2=0, support=7.56, form_support=6, parry=0)
         actions = [a for a in load_shaft_catalog()['actions_by_character'][CID]
                    if a['id'].startswith('action_heiyu_')]
-        self.assertEqual(len(actions), len(original))
+        self.assertEqual(len(actions), len(expected))
         for action in actions:
-            energy = original[action['id'].removeprefix('action_heiyu_')]
+            energy = expected[action['id'].removeprefix('action_heiyu_')]
             with self.subTest(action=action['id']):
-                self.assertAlmostEqual(action['energy_gain'], energy * 1.2)
+                self.assertAlmostEqual(action['energy_gain'], energy)
                 if action['id'] in profiles:
                     self.assertAlmostEqual(profiles[action['id']]['cumulative'][-1]['energy'],
                                            action['energy_gain'])
-        # Check the stored partial-hit energy curve independently of the full total.
-        self.assertAlmostEqual(profiles['action_heiyu_form_a2']['cumulative'][2]['energy'], 1.4232)
+        self.assertAlmostEqual(profiles['action_heiyu_form_a2']['cumulative'][2]['energy'], 1.33)
 
     def test_user_form_q_and_malice_rebalance(self):
         # User 2026-09-22 includes branches, plunge and counter in the doubling.
         import json
         from pathlib import Path
-        expected = dict(form_a1=.648, form_a2=1.18, form_a3=1.368,
-                        form_a4=1.424, form_a5=3.396, form_z1=2.16,
-                        form_z2=2.17, form_plunge=.56, form_counter=1.26,
-                        q1=4.2021, q2=6.3014)
+        expected = dict(form_a1=.65, form_a2=1.11, form_a3=1.26,
+                        form_a4=1.355, form_a5=2.826, form_z1=2.16,
+                        form_z2=2.02, form_plunge=.56, form_counter=1.26,
+                        q1=4.203, q2=6.3)
         catalog = load_shaft_catalog()
         actions = {a['id']: a for a in catalog['actions_by_character'][CID]}
         profiles = json.loads((Path(__file__).resolve().parents[1] /
@@ -119,7 +117,7 @@ class HeiyuTest(unittest.TestCase):
 
     def test_normal_form_document_multipliers_and_partial_hits(self):
         # Tencent user document, new multiplier column read on 2026-09-22.
-        expected = dict(a1=.237, a2=.974, a3=1.204, a4=1.425, a5=1.82,
+        expected = dict(a1=.237, a2=.974, a3=1.204, a4=1.29, a5=1.82,
                         z=1.139, plunge=.476, counter=1.275)
         for suffix, multiplier in expected.items():
             action_id = 'action_heiyu_' + suffix
@@ -132,7 +130,7 @@ class HeiyuTest(unittest.TestCase):
                            'start_tick': 0, 'interrupted': True, 'interrupt_duration_ticks': 4,
                            'interrupt_hit_count': 2}]}
         detail = simulate_shaft_axis(axis)['result']['details'][0]
-        self.assertAlmostEqual(detail['formula_parts']['raw_base'] / detail['panel']['atk'], .57)
+        self.assertAlmostEqual(detail['formula_parts']['raw_base'] / detail['panel']['atk'], .516)
 
     def test_form_a5_optional_six_tick_detach_preserves_damage_and_resources(self):
         # User 2026-09-23: optional detach occupies 0.6s; full cast stays 1.4s.
@@ -154,17 +152,17 @@ class HeiyuTest(unittest.TestCase):
             self.assertEqual(results[0][key], results[1][key])
 
     def test_basic_malice_is_proportional_and_chain_totals_are_preserved(self):
-        # User 2026-09-22: form chain cost increases proportionally from 7 to 12.
         actions = {a['name']: a for a in load_shaft_catalog()['actions_by_character'][CID]}
-        for prefix, amount, field in [('', 20, 'personal_resource_gain'), ('魔', 12, 'personal_resource_cost')]:
+        gains = [0.857919, 3.525792, 4.358372, 4.669685, 6.588232]
+        costs = [1.083182, 1.849745, 2.099706, 2.25802, 4.709347]
+        for prefix, amount, field, expected in [
+                ('', 20, 'personal_resource_gain', gains),
+                ('魔', 12, 'personal_resource_cost', costs)]:
             chain = [actions[f'{prefix}a{i}'] for i in range(1, 6)]
-            # Preserve the user-approved original workbook malice distribution.
-            weights = [.209, .84, 1.04, .975, 1.735] if not prefix else [a['multipliers']['atk'] for a in chain]
-            weight = sum(weights)
             self.assertAlmostEqual(sum(a[field]['恶意'] for a in chain), amount)
-            for a, damage in zip(chain, weights):
-                self.assertAlmostEqual(a[field]['恶意'], amount * damage / weight, places=7)
-                self.assertNotIn('validation_note', a)
+            for action, value in zip(chain, expected):
+                self.assertAlmostEqual(action[field]['恶意'], value)
+                self.assertNotIn('validation_note', action)
         r = self.simulate([(0, f'action_heiyu_a{i+1}', t) for i,t in enumerate([0,4,10,18,28])])
         self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 40)
         self.assertEqual(r['summary']['duration_ticks'], 40)
@@ -205,15 +203,15 @@ class HeiyuTest(unittest.TestCase):
                            (0, 'action_heiyu_form_z1', 20), (0, 'action_heiyu_q2', 30)])
         d = r['details']
         self.assertEqual(d[0]['personal_resources_after']['恶意'], 60)
-        self.assertAlmostEqual(d[2]['personal_resources_after']['恶意'], 56.2)
+        self.assertAlmostEqual(d[2]['personal_resources_after']['恶意'], 56.4005)
         self.assertGreater(d[2]['resource_damage'], 0)
         self.assertEqual(d[3]['personal_resources_after'], d[2]['personal_resources_after'])
         self.assertEqual(d[3]['resource_damage'], 0)
         r = self.simulate([(0, 'action_heiyu_form_e', 0), (0, 'action_heiyu_form_z1', 10)])
         self.assertTrue(any('激活' in w for w in r['details'][0]['warnings']))
-        # 魔E按用户最新口径只消耗13，初始20点足够继续支付魔z1的3.8。
+        # 魔E消耗13，魔z1消耗3.5995；初始20点足够连续支付。
         self.assertAlmostEqual(r['details'][0]['personal_resources_after']['恶意'], 7)
-        self.assertAlmostEqual(r['details'][1]['personal_resources_after']['恶意'], 3.2)
+        self.assertAlmostEqual(r['details'][1]['personal_resources_after']['恶意'], 3.4005)
         self.assertGreater(r['details'][1]['resource_damage'], 0)
         self.assertFalse(any('恶意 不足' in w for w in r['details'][1]['warnings']))
 
@@ -237,8 +235,8 @@ class HeiyuTest(unittest.TestCase):
         self.assertAlmostEqual(r['details'][1]['resource_atk_multiplier'], 13 * .28)
         self.assertAlmostEqual(r['details'][1]['personal_resources_consumed']['恶意'], 13)
         self.assertAlmostEqual(r['details'][1]['personal_resources_after']['恶意'], 7)
-        self.assertAlmostEqual(r['details'][2]['resource_atk_multiplier'], 3.8 * .28)
-        self.assertAlmostEqual(r['details'][2]['personal_resources_after']['恶意'], 3.2)
+        self.assertAlmostEqual(r['details'][2]['resource_atk_multiplier'], 3.5995 * .28)
+        self.assertAlmostEqual(r['details'][2]['personal_resources_after']['恶意'], 3.4005)
 
     def test_malice_contribution_is_separate_basic_damage_and_preserves_totals(self):
         for nodes in ((), (1,)):
@@ -431,10 +429,18 @@ class HeiyuTest(unittest.TestCase):
                                2 * self.simulate(steps)['details'][0]['direct_damage'])
         normal = self.simulate([(0, 'action_heiyu_e', 0), (0, 'action_heiyu_q1', 10),
                                (0, 'action_heiyu_q2', 20), (0, 'action_heiyu_assist', 40)], awakening_nodes=[1,2])['details'][-1]
-        self.assertEqual(normal['personal_resources_after']['恶意'], 4)
+        self.assertEqual(normal['personal_resources_after']['恶意'], 0)
+        granted = self.simulate([(0, 'action_heiyu_e', 0), (0, 'action_heiyu_q1', 10),
+                                 (0, 'action_heiyu_q2', 20), (0, 'action_heiyu_assist', 40)], awakening_nodes=[1,6])['details'][-1]
+        self.assertEqual(granted['personal_resources_after']['恶意'], 4)
         form = self.simulate([(0, 'action_heiyu_e', 0), (0, 'action_heiyu_q1', 10),
                              (0, 'action_heiyu_form_z1', 20), (0, 'action_heiyu_assist', 40)], awakening_nodes=[2])['details'][-1]
-        self.assertAlmostEqual(form['personal_resources_after']['恶意'], 56.2)
+        self.assertAlmostEqual(form['personal_resources_after']['恶意'], 56.4005)
+        healed = self.simulate([(0, 'action_heiyu_q1', 0), (0, 'action_heiyu_form_a5', 10),
+                                (0, 'action_heiyu_form_e', 30)], awakening_nodes=[2])
+        self.assertEqual(healed['healing_events'][0]['healing'], 668 * 4)
+        self.assertEqual(next(b['effects']['def_pct'] for b in healed['details'][-1]['applied_buffs']
+                              if b['rule_id'] == 'character_heiyu_b_def'), .2)
 
     def test_c_only_boosts_resource_damage(self):
         steps = [(0, 'action_heiyu_q1', 0), (0, 'action_heiyu_form_z1', 10)]

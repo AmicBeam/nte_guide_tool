@@ -257,7 +257,7 @@ class LingkeSupportTest(unittest.TestCase):
                 self.assertAlmostEqual(d['energy_gain'], energy)
                 self.assertAlmostEqual(d['panel']['crit_rate']-base['assist']['panel']['crit_rate'], .25)
                 if variant:
-                    self.assertAlmostEqual(d['personal_resources_after']['恶意'], 16.5)
+                    self.assertAlmostEqual(d['personal_resources_after']['恶意'], 18.333565)
                     self.assertGreater(d['resource_damage'], 0)
 
     def test_e_awakening_keeps_exception_but_q_does_not_trigger_reaction(self):

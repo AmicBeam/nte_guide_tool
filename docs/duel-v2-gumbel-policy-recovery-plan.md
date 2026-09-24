@@ -1,6 +1,8 @@
 # 五套 Gumbel 搜索学习的策略恢复方案
 
-状态：2026-09-24 方案，**尚未实施、未续训、未替换网站模型**。现行规则与实际运行顺序仍以[训练手册](duel-v2-public-training.md)和[完整报告规范](duel-v2-full-training-report-spec.md)为准。本方案针对五套 `cross_five_grounded_wdl_v1` 的 P0 退化；数值来自已归档的 [`five-cross-20260924`](../artifacts/rl-evals/five-cross-20260924/formal/report.md)，不是通用训练阈值。用户已指定的硬截止仅约束原运行，不自动授权新任务延长或重启。
+状态：2026-09-24 阶段一已在本机归档对局上跑完，**未续训、未替换网站模型**。现行规则与实际运行顺序仍以[训练手册](duel-v2-public-training.md)和[完整报告规范](duel-v2-full-training-report-spec.md)为准。本方案针对五套 `cross_five_grounded_wdl_v1` 的 P0 退化；数值来自已归档的 [`five-cross-20260924`](../artifacts/rl-evals/five-cross-20260924/formal/report.md)，不是通用训练阈值。用户已指定的硬截止仅约束原运行，不自动授权新任务延长或重启。
+
+阶段一记录在 `artifacts/rl-evals/policy-recovery-20260924/`。366 局训练 episode 按根种子整对划分，163 个种子都含双方先手，标签错位 0。真红策略梯度进入 `cand_net`、`score` 和 `state_net`，范数有限且非零。同一迁入起点上：A（`3e-5`、67 次混合更新）留出出牌 top-1 仍是 0；B 把策略行遍历提到 8 次后 top-1 到 6.9%，交叉熵下降 0.05，未过预检；C 在 4 次遍历下 `1e-4` 为 11.0%，`3e-4` 和 `1e-3` 跳到约 62%，超过目标 37.3% 的 ±10 个百分点。D 在同样 `3e-5`、4 次遍历下，无论把候选网络恢复正常幅度还是加原始类别／卡牌残差，都未过预检。结论是保留原表示，先校准优化量和策略行覆盖，不改正式网络，也不开始新的自博弈。Windows 上的短时复核和阶段二仍待机器恢复。
 
 ## 决策：保留 Gumbel，也保留可学习的基础策略
 

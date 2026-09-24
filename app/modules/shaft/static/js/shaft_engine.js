@@ -642,7 +642,13 @@
   }
 
   function resistanceMultiplier(character, enemy, panelMods) {
-    const value = 1 - settledResistance(character, enemy, panelMods);
+    // User 2026-09-24: above 60% settled resistance, the zone softens to
+    // 1 / (6.25 * resistance - 1.25). At exactly 60% this equals 1 - 0.6.
+    const resistance = settledResistance(character, enemy, panelMods);
+    if (resistance > 0.6) {
+      return Math.max(0.05, 1 / (6.25 * resistance - 1.25));
+    }
+    const value = 1 - resistance;
     if (value < 1) {
       return Math.max(0.05, value);
     }
@@ -2295,9 +2301,11 @@
     return Object.fromEntries(Object.entries(raw).filter(([, value]) => num(value) !== 0).map(([key, value]) => [String(key), num(value)]));
   }
 
-  // User 2026-09-18: dissonance removes 20% of the current gauge, with a
-  // higher-level enemy penalty. Daphne separately removes 10% of the original
-  // gauge on every trigger, even at two cap-reduction stacks, without that penalty.
+  // User 2026-09-24: dissonance removes 15% of the current gauge. If the enemy
+  // is at most 5 levels higher, that shred is halved; above 5 levels it is 20%
+  // of the base shred. Equal or lower enemy levels keep the full 15%.
+  // Daphne separately removes 10% of the original gauge on every trigger, even
+  // at two cap-reduction stacks, without the level penalty.
   function calculateDissonanceStagger(applications, details, snapshots, enemy, durationTicks, intervals) {
     const baseLimit = enemy.track_outside ? 50 : 70;
     const daphne = Array.from(snapshots.values()).find((item) => item.character.id === 'char_e8ad982185');
@@ -2337,7 +2345,8 @@
       }
       const contributor = snapshots.get(int(item.effect.contributor_slot));
       const levelGap = Math.max(0, int(enemy.level) - int(contributor?.character?.level, 80));
-      const dissonance = limit * 0.2 / (levelGap + 1);
+      const levelScale = levelGap > 5 ? 0.2 : (levelGap > 0 ? 0.5 : 1);
+      const dissonance = limit * 0.15 * levelScale;
       const daphneExtra = daphne ? baseLimit * 0.1 : 0;
       if (daphne) {
         stacks = Math.min(2, stacks + 1);

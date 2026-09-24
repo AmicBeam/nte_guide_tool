@@ -5142,6 +5142,25 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             {buff['rule_id'] for buff in inactive_zhenhong['applied_buffs']},
         )
 
+    def test_resistance_zone_softens_above_sixty_percent(self) -> None:
+        # 用户2026-09-24：结算抗性>0.6时，抗性区=1/(6.25*抗性-1.25)；60%与原公式同为0.4。
+        def zone(resistance):
+            result = simulate_shaft_axis({
+                'team': [{'slot': 0, 'character_id': 'char_4f917797cb', 'arc_id': '', 'cartridge_id': ''}],
+                'enemy': {'weakness_elements': [], 'resistances': {'光': resistance}},
+                'steps': [{'id': 'hit', 'slot': 0, 'action_id': 'action_605c800d26', 'start_tick': 0}],
+                'initial_energy': 200,
+            })['result']
+            detail = result['details'][0]
+            self.assertAlmostEqual(detail['formula_parts']['settled_resistance'], resistance)
+            return detail['formula_parts']['resistance']
+
+        self.assertAlmostEqual(zone(0.5), 0.5)
+        self.assertAlmostEqual(zone(0.6), 0.4)
+        self.assertAlmostEqual(zone(0.8), 1 / (6.25 * 0.8 - 1.25))
+        self.assertAlmostEqual(zone(1.0), 0.2)
+        self.assertAlmostEqual(zone(-0.2), 2 - 1 / 1.2)
+
     def test_chaos_license_and_state_action_buffs_follow_notes(self) -> None:
         chaos = simulate_shaft_axis({
             'team': [{'slot': 0, 'character_id': 'char_d38b672525', 'arc_id': '', 'cartridge_id': '', 'awakening_nodes': [2, 5]}],

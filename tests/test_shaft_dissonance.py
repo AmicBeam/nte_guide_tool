@@ -30,19 +30,20 @@ class DissonanceTest(unittest.TestCase):
             'options': {'loop_enabled': loop},
         })['result']
 
-    def test_twenty_percent_and_level_gap_use_enemy_gauge_limit(self):
-        # 用户2026-09-18：同级20%，高等级除以等级差+1；普通70、轨外50。
+    def test_fifteen_percent_level_gap_uses_enemy_gauge_limit(self):
+        # 用户2026-09-24：基础为当时韧性上限的15%。敌人更高且等级差≤5时减半；
+        # 等级差>5时只有基础效果的20%。敌人不更高时保持15%。普通70、轨外50。
         for outside, limit in [(False, 70), (True, 50)]:
-            for level, divisor in [(70, 1), (80, 1), (81, 2), (90, 11)]:
+            for level, ratio in [(70, .15), (80, .15), (85, .075), (86, .03), (90, .03)]:
                 with self.subTest(outside=outside, level=level):
                     r = self.simulate(level=level, outside=outside)
                     self.assertEqual(r['summary']['stagger_limit'], limit)
                     self.assertEqual(len(r['dissonance_events']), 2)
                     for event in r['dissonance_events']:
-                        self.assertAlmostEqual(event['stagger_amount'], limit * .2 / divisor)
+                        self.assertAlmostEqual(event['stagger_amount'], limit * ratio)
                         self.assertEqual(event['daphne_extra_stagger'], 0)
                     self.assertAlmostEqual(r['summary']['total_stagger'],
-                        sum(d['stagger_amount'] for d in r['details']) + limit * .4 / divisor)
+                        sum(d['stagger_amount'] for d in r['details']) + limit * ratio * 2)
                     self.assertAlmostEqual(r['summary']['stagger_frequency'], 1 / (
                         limit / r['summary']['effective_stagger'] + 10 / r['summary']['duration_seconds']))
 
@@ -71,7 +72,7 @@ class DissonanceTest(unittest.TestCase):
             self.assertEqual([e['daphne_stacks'] for e in events], [1, 2, 2, 2])
             for event in events:
                 self.assertAlmostEqual(event['daphne_extra_stagger'], limit * .1)
-                self.assertAlmostEqual(event['dissonance_stagger'], event['stagger_limit_before'] * .2 / 11)
+                self.assertAlmostEqual(event['dissonance_stagger'], event['stagger_limit_before'] * .15 * .2)
             self.assertAlmostEqual(events[-1]['stagger_limit_after'], limit * .8)
             self.assertGreater(r['summary']['effective_stagger'], r['summary']['total_stagger'])
 

@@ -10,6 +10,13 @@ from .build_acceptance import SEED_PHASES, SEED_WIDTH
 
 ROSTER = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk')
 INITIATIVES = ('a', 'b')
+PAIR_ORDER = (
+    ('starter', 'weave-rush'), ('quick-rush', 'zhenhong'),
+    ('starter', 'murk'), ('weave-rush', 'quick-rush'),
+    ('zhenhong', 'murk'), ('starter', 'quick-rush'),
+    ('weave-rush', 'zhenhong'), ('quick-rush', 'murk'),
+    ('starter', 'zhenhong'), ('weave-rush', 'murk'),
+)
 SEARCH = dict(algorithm='gumbel', simulations=32, gumbel_candidates=16, terminal_horizon=3, noise=False)
 ARCHIVED_SEED_PHASES = SEED_PHASES
 DEFAULT_LEDGER = Path(__file__).resolve().parents[4] / 'artifacts' / 'rl-seed-ledger.json'
@@ -29,7 +36,9 @@ def planned_roots(seeds):
     """All ten cross-pairs with both actual initiative directions."""
     base = _require_int(seeds.get('foundation'), 'foundation')
     planned = []
-    for index, (left, right) in enumerate(combinations(ROSTER, 2)):
+    if set(PAIR_ORDER) != set(combinations(ROSTER, 2)):
+        raise ValueError('Cross-pair order does not cover ten unique pairs')
+    for index, (left, right) in enumerate(PAIR_ORDER):
         for first in INITIATIVES:
             planned.append(dict(left=left, right=right, first=first,
                                 seed=base + index, matchup='cross'))
@@ -585,7 +594,9 @@ def _continue_branch(state, policies, *, actor, hooks, deadline, steps, seed, cl
 def _report(prepared, totals, records, output_path, started, finished, failed=False):
     roots_path = output_path / 'roots.jsonl'
     return dict(
-        complete=not failed and not totals['wall_limited'],
+        complete=not failed and not totals['wall_limited']
+                 and totals['games_started'] == len(prepared['planned']),
+        bounded_run_exited=not failed and not totals['wall_limited'],
         dry_run=False,
         runtime_enabled=True,
         runtime_gap=PAIRED_ROOT_GAP,

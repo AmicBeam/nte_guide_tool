@@ -224,6 +224,7 @@ class SearchLabelCounterfactualTest(unittest.TestCase):
         self.assertEqual(len(plan), 20)
         pairs = [(row['left'], row['right']) for row in plan]
         self.assertEqual(len(set(pairs)), 10)
+        self.assertEqual({team for row in plan[:8] for team in (row['left'], row['right'])}, set(ROSTER))
         self.assertEqual({row['first'] for row in plan}, set(INITIATIVES))
         self.assertEqual([row['first'] for row in plan], ['a', 'b'] * 10)
         for index in range(0, 20, 2):

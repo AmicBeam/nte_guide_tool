@@ -336,15 +336,7 @@ def api_balance_analytics():
 @main_bp.get('/api/kongmu/catalog')
 def api_kongmu_catalog():
     try:
-        player = _optional_current_player()
-        response = jsonify(get_kongmu_catalog_payload(
-            include_test_characters=shaft_player_access_level(player) == 'test'
-        ))
-        # This URL returns a different catalog for test-whitelisted accounts.
-        # Never let an anonymous response mask the authenticated variant.
-        response.headers['Cache-Control'] = 'private, no-store'
-        response.headers.add('Vary', 'Authorization')
-        return response
+        return jsonify(get_kongmu_catalog_payload())
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400
     except Exception:
@@ -360,11 +352,9 @@ def api_kongmu_plan():
     if source_lock is None:
         return jsonify({'error': '同一来源已有空幕计算正在进行，请稍后再试。'}), 429
     try:
-        player = _optional_current_player()
         return jsonify(plan_kongmu_layout(
             str(payload.get('character_id', '')),
             str(payload.get('cartridge_id', '')),
-            include_test_characters=shaft_player_access_level(player) == 'test',
         ))
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400

@@ -2,7 +2,6 @@ import unittest
 from app.modules.shaft.domain.catalog import load_shaft_catalog
 from app.modules.shaft.service import normalize_axis_payload, simulate_shaft_axis
 from app.modules.kongmu.service import get_kongmu_catalog_payload, plan_kongmu_layout
-from app.errors import AppError
 
 CID = 'char_heiyu'
 ARC = 'arc_heiyu_crime_punishment'
@@ -188,12 +187,10 @@ class HeiyuTest(unittest.TestCase):
                 self.assertEqual(d['resource_damage'] > 0, hits > 0)
 
     def test_kongmu_access_and_topology(self):
-        self.assertNotIn(CID, [c['id'] for c in get_kongmu_catalog_payload()['characters']])
-        c = next(c for c in get_kongmu_catalog_payload(include_test_characters=True)['characters'] if c['id'] == CID)
+        c = next(c for c in get_kongmu_catalog_payload()['characters'] if c['id'] == CID)
         self.assertEqual(c['element'], '魂')
         self.assertIn('暴击率增加8%', c['kongmu_passive']['text'])
-        with self.assertRaises(AppError): plan_kongmu_layout(CID, 'attack')
-        result = plan_kongmu_layout(CID, 'attack', include_test_characters=True)
+        result = plan_kongmu_layout(CID, 'attack')
         slots = result['character']['equip_slots']['slots']
         self.assertEqual(sum(v != -1 for row in slots for v in row), 20)
         self.assertEqual(slots[2], [0, 0, -1, 0, 0])

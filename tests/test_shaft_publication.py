@@ -61,9 +61,9 @@ class ShaftPublicationTest(RoomFlowTestCase):
             character = next(c for c in catalog['characters'] if c['id'] == 'char_heiyu')
             self.assertEqual(character['selection_disabled'], token != tester)
             kongmu = self.client.get('/api/kongmu/catalog', headers=headers).get_json()
-            self.assertEqual('char_heiyu' in [c['id'] for c in kongmu['characters']], token == tester)
+            self.assertIn('char_heiyu', [c['id'] for c in kongmu['characters']])
             plan = self.client.post('/api/kongmu/plan', json={'character_id': 'char_heiyu', 'cartridge_id': 'attack'}, headers=headers)
-            self.assertEqual(plan.status_code, 200 if token == tester else 400)
+            self.assertEqual(plan.status_code, 200)
         axis = {'team': [{'slot': 0, 'character_id': 'char_heiyu', 'arc_id': '', 'cartridge_id': ''}], 'steps': []}
         payload = {'title': '黑羽测试权限', 'axis': axis, 'result': self._shaft_client_result(axis)}
         for token in (regular, invited):
@@ -75,7 +75,7 @@ class ShaftPublicationTest(RoomFlowTestCase):
             market = self._get('/api/shaft/market', token=token)
             self.assertNotIn(published['id'], [a['id'] for a in market['items']])
 
-    def test_akane_kongmu_is_test_only_with_source_backed_grid(self):
+    def test_akane_kongmu_is_public_with_source_backed_grid(self):
         models = importlib.import_module('app.models')
         regular = self._issue_login_and_get_token('akane-kongmu-regular')
         tester = self._issue_login_and_get_token('akane-kongmu-tester')
@@ -83,24 +83,28 @@ class ShaftPublicationTest(RoomFlowTestCase):
             models.Player.player_uid == 'akane-kongmu-tester'
         ).execute()
         regular_catalog = self._get('/api/kongmu/catalog', token=regular)
-        self.assertNotIn('char_akane', [c['id'] for c in regular_catalog['characters']])
-        catalog = self._get('/api/kongmu/catalog', token=tester)
+        self.assertIn('char_akane', [c['id'] for c in regular_catalog['characters']])
+        catalog = self.client.get('/api/kongmu/catalog').get_json()
         akane = next(c for c in catalog['characters'] if c['id'] == 'char_akane')
         self.assertEqual(akane['avatar'], '/static/images/characters/avatar/明音凛.webp')
         self.assertIn('攻击力百分比', akane['kongmu_passive']['text'])
         self.assertIn('10%', akane['kongmu_passive']['text'])
         self.assertEqual(akane['owner_grid_count'], 3)
-        plan = self._post('/api/kongmu/plan', {
+        plan = self.client.post('/api/kongmu/plan', json={
             'character_id': 'char_akane', 'cartridge_id': 'attack'
-        }, token=tester)
+        }).get_json()
         self.assertEqual(plan['character']['id'], 'char_akane')
         slots = plan['character']['equip_slots']['slots']
         self.assertEqual(sum(cell >= 0 for row in slots for cell in row), 20)
         self.assertGreater(plan['result']['total_solution_count'], 0)
-        denied = self.client.post('/api/kongmu/plan', json={
+        regular_plan = self.client.post('/api/kongmu/plan', json={
             'character_id': 'char_akane', 'cartridge_id': 'attack'
         }, headers={'Authorization': f'Bearer {regular}'})
-        self.assertEqual(denied.status_code, 400)
+        self.assertEqual(regular_plan.status_code, 200)
+        tester_plan = self.client.post('/api/kongmu/plan', json={
+            'character_id': 'char_akane', 'cartridge_id': 'attack'
+        }, headers={'Authorization': f'Bearer {tester}'})
+        self.assertEqual(tester_plan.status_code, 200)
 
     def test_lingke_release_migrates_and_allows_regular_account_workflows(self):
         models = importlib.import_module('app.models')

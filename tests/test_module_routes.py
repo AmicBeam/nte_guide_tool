@@ -43,8 +43,7 @@ class ModuleRoutesTest(RoomFlowTestCase):
             self.assertIn('immutable', avatar.headers.get('Cache-Control', ''))
         finally:
             avatar.close()
-        self.assertEqual(catalog.headers.get('Cache-Control'), 'private, no-store')
-        self.assertIn('Authorization', catalog.headers.get('Vary', ''))
+        self.assertNotIn('Authorization', catalog.headers.get('Vary', ''))
         frontend = (
             ROOT / 'app' / 'modules' / 'kongmu' / 'static' / 'js' / 'kongmu.js'
         ).read_text(encoding='utf-8')

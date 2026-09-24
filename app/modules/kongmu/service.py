@@ -81,10 +81,6 @@ FIXED_CHARACTER_AVATAR_LOCAL_PATHS = {
     'char_akane': 'images/characters/avatar/明音凛.webp',
 }
 
-TEST_CHARACTER_IDS = {'1072', 'char_heiyu', 'char_akane'}
-PUBLIC_KONGMU_CHARACTER_IDS = {'char_076a1f4e53'}
-
-
 @dataclass(frozen=True)
 class Placement:
     geometry: str
@@ -702,20 +698,11 @@ def get_drives_by_geometry() -> dict[str, dict[str, Any]]:
     return {drive['geometry']: compact_drive(drive) for drive in raw['drives']}
 
 
-def is_test_character(record: dict[str, Any]) -> bool:
-    character_id = str(record.get('id') or '')
-    if character_id in PUBLIC_KONGMU_CHARACTER_IDS:
-        return False
-    return bool(record.get('test_character')) or character_id in TEST_CHARACTER_IDS
-
-
-@lru_cache(maxsize=2)
-def get_kongmu_catalog_payload(include_test_characters: bool = False) -> dict[str, Any]:
+@lru_cache(maxsize=1)
+def get_kongmu_catalog_payload() -> dict[str, Any]:
     raw = get_kongmu_raw_data()
     characters = []
     for item in dedupe_characters(sorted(raw['characters'], key=character_sort_key)):
-        if is_test_character(item['record']) and not include_test_characters:
-            continue
         compacted = compact_character(item['record'], item['detail'])
         merged_ids = [item_id for item_id in item.get('merged_ids', []) if item_id]
         avatar_items = [item, *(item.get('avatar_choice_items') or [])]
@@ -742,15 +729,13 @@ def get_kongmu_catalog_payload(include_test_characters: bool = False) -> dict[st
     }
 
 
-def get_character_detail(character_id: str, *, include_test_characters: bool = False) -> tuple[dict[str, Any], dict[str, Any]]:
+def get_character_detail(character_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
     raw = get_kongmu_raw_data()
     record = resolve_record(
         [item['record'] for item in raw['characters']],
         character_id,
         ['name', 'names'],
     )
-    if is_test_character(record) and not include_test_characters:
-        raise AppError('未找到该空幕角色。')
     detail = load_json(KONGMU_CHARACTER_DIR / f'{record["id"]}.json')
     return record, detail
 
@@ -760,12 +745,9 @@ def get_cartridge_detail(cartridge_id: str) -> dict[str, Any]:
     return resolve_record(dedupe_cartridges(raw['cartridges']), cartridge_id, ['name', 'aliases'])
 
 
-def plan_kongmu_layout(character_id: str, cartridge_id: str, *, include_test_characters: bool = False) -> dict[str, Any]:
+def plan_kongmu_layout(character_id: str, cartridge_id: str) -> dict[str, Any]:
     raw = get_kongmu_raw_data()
-    character_record, character = get_character_detail(
-        character_id,
-        include_test_characters=include_test_characters,
-    )
+    character_record, character = get_character_detail(character_id)
     cartridge = get_cartridge_detail(cartridge_id)
     equip_slots = character.get('equip_slots') or {}
     slots = equip_slots.get('slots') or []

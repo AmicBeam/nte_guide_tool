@@ -4,7 +4,7 @@ from copy import deepcopy
 import importlib.util
 import tempfile
 import numpy as np
-from scripts.train_duel_v2_current_round import preset_decks, make_job, policy_update_record
+from scripts.train_duel_v2_current_round import preset_decks, make_job, policy_update_record, write_training_coverage
 from app.modules.card_game.rl.cross_schedule import ROSTER, learning_schedule, matrix_schedule, actual_cell, coverage
 from app.modules.card_game.rl import cross_runtime as rt, cross_lineup as contract
 from app.modules.card_game.engine.duel_v2 import new_game, observe, apply_action, acting_side
@@ -21,6 +21,19 @@ class CurrentRoundTest(unittest.TestCase):
         self.assertEqual(record['unique_row_ids'], metrics['unique_row_ids'])
         self.assertEqual(record['sampling'], sampling)
         self.assertEqual(record['policy_samples'], 2)
+
+    def test_training_coverage_file_writes_after_update_stage(self):
+        games = [dict(left='starter', right='murk', first='a', id='one', complete=True,
+                      winner='a')]
+        with tempfile.TemporaryDirectory() as folder:
+            write_training_coverage(folder, games)
+            import json
+            from pathlib import Path
+            rows = json.loads((Path(folder) / 'training-coverage.json').read_text())
+            self.assertEqual(len(rows), 25)
+            selected = next(row for row in rows if (row['row'], row['column']) == ('starter', 'murk'))
+            self.assertTrue(selected['complete'])
+            self.assertEqual(selected['completed'], 1)
 
     def test_pairs_cover_both_initiatives_without_seed_parity(self):
         plan = learning_schedule()

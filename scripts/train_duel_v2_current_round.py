@@ -44,6 +44,12 @@ def policy_update_record(key, cycle, refs, sampling, metrics):
     return {**metrics, 'key': key, 'cycle': cycle, 'refs': refs, 'sampling': sampling}
 
 
+def write_training_coverage(out, training_games):
+    planned = [dict(left=row['left'], right=row['right'], first=row['first'])
+               for row in training_games]
+    write(Path(out) / 'training-coverage.json', coverage(training_games, planned))
+
+
 def cross_pairs():
     return [(a, b) for a in ROSTER for b in ROSTER if a != b]
 
@@ -363,11 +369,11 @@ def learn(out, config):
                     counts[key]['value_updates'] = counts[key].get('value_updates', 0) + 1
                     append(out / 'updates.jsonl', dict(key=key, cycle=cycle,
                         sampling=dict(source='fresh_value_only', rows=len(rows)), **metrics))
-                coverage = pools[key].coverage_report()
-                counts[key].update(fresh_policy_rows=coverage['fresh_policy_rows'],
-                                   unique_covered=coverage['unique_covered'],
-                                   first_use_coverage=coverage['first_use_coverage'])
-                write(out / 'policy-coverage' / f'{key}-cycle-{cycle:04}.json', dict(key=key, cycle=cycle, **coverage))
+                policy_coverage = pools[key].coverage_report()
+                counts[key].update(fresh_policy_rows=policy_coverage['fresh_policy_rows'],
+                                   unique_covered=policy_coverage['unique_covered'],
+                                   first_use_coverage=policy_coverage['first_use_coverage'])
+                write(out / 'policy-coverage' / f'{key}-cycle-{cycle:04}.json', dict(key=key, cycle=cycle, **policy_coverage))
             previous = current
             cycle += 1
             current = out / 'generations' / f'cycle-{cycle:04}'
@@ -384,8 +390,7 @@ def learn(out, config):
             tmp.replace(checkpoint)
             write(out / 'recovery' / 'pointer.json', dict(path=str(checkpoint), cycle=cycle,
                 sha256=hashlib.sha256(checkpoint.read_bytes()).hexdigest()))
-            write(out / 'training-coverage.json', coverage(training_games,
-                [dict(left=r['left'], right=r['right'], first=r['first']) for r in training_games]))
+            write_training_coverage(out, training_games)
             gate_name = {config['gates'][name]: name for name in ('first', 'mid', 'late') if config['gates'].get(name) == cycle}
             if gate_name:
                 decision = _run_gate(gate_name[cycle], out, config, cycle, nets, pools, initial, best_dir,

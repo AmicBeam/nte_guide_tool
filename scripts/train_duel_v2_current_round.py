@@ -40,6 +40,10 @@ def append(path, data):
         f.write(json.dumps(data, ensure_ascii=False) + '\n')
 
 
+def policy_update_record(key, cycle, refs, sampling, metrics):
+    return {**metrics, 'key': key, 'cycle': cycle, 'refs': refs, 'sampling': sampling}
+
+
 def cross_pairs():
     return [(a, b) for a in ROSTER for b in ROSTER if a != b]
 
@@ -346,8 +350,7 @@ def learn(out, config):
                     counts[key]['policy_first_use'] = pools[key].batch_first_use
                     counts[key]['policy_repeated_use'] = pools[key].batch_repeated_use
                     last_policy[key].append(dict(metrics, sampling=sampling))
-                    append(out / 'updates.jsonl', dict(key=key, cycle=cycle, refs=refs, sampling=sampling,
-                        unique_row_ids=sampling.get('row_ids', metrics.get('unique_row_ids')), **metrics))
+                    append(out / 'updates.jsonl', policy_update_record(key, cycle, refs, sampling, metrics))
                 # Preserve the terminal-WDL observations that have no policy
                 # target. They update the value trunk and WDL head only.
                 value_rows = fresh_value_rows[key]

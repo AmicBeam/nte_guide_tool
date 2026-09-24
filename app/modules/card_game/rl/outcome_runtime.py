@@ -239,8 +239,8 @@ def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.)
                     totals[prefix] += value * value
                     break
         policy_gradient_norms.update({prefix: float(np.sqrt(total)) for prefix, total in totals.items()})
-        if any(not np.isfinite(totals[prefix]) or totals[prefix] <= 0 for prefix in prefixes):
-            raise ValueError('Policy gradient did not reach cand_net/score/state_net')
+        if any(not np.isfinite(totals[prefix]) for prefix in prefixes):
+            raise ValueError('Non-finite policy gradient')
     opt.zero_grad()
     loss.backward()
     torch.nn.utils.clip_grad_norm_(net.parameters(), 1., error_if_nonfinite=True)

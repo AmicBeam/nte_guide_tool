@@ -114,7 +114,6 @@ def _legal_rows(pools, key):
 
 def _pure_report(nets, pools, initial, last_policy, device):
     import math
-    from app.modules.card_game.rl.cross_runtime import policy_gradient_ok
     report = {}
     for key in ROSTER:
         rows = _legal_rows(pools, key)
@@ -122,8 +121,14 @@ def _pure_report(nets, pools, initial, last_policy, device):
         updates = last_policy.get(key) or []
         finite = bool(updates) and all(math.isfinite(item['policy_loss']) and math.isfinite(item['value_loss']) for item in updates)
         coverage = pools[key].coverage_report()
+        prefixes = ('cand_net', 'score', 'state_net')
+        policy_gradient = all(any(
+            item.get('policy_samples', 0) > 0
+            and math.isfinite((item.get('policy_gradient_norms') or {}).get(prefix, 0))
+            and (item.get('policy_gradient_norms') or {}).get(prefix, 0) > 0
+            for item in updates) for prefix in prefixes)
         report[key] = dict(finite=finite,
-                           policy_gradient=any(policy_gradient_ok(item) for item in updates),
+                           policy_gradient=policy_gradient,
                            play_legal=count, play_top1=top,
                            reference_play_top1=_reference_fraction(initial, key, rows),
                            first_use_coverage=coverage['first_use_coverage'],

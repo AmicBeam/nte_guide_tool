@@ -78,9 +78,10 @@ FIXED_CHARACTER_AVATAR_LOCAL_PATHS = {
     'char_076a1f4e53': 'images/characters/avatar/残虹.png',
     '1072': 'images/characters/avatar/灵可.png',
     'char_heiyu': 'images/characters/avatar/黑羽.webp',
+    'char_akane': 'images/characters/avatar/明音凛.webp',
 }
 
-TEST_CHARACTER_IDS = {'1072', 'char_heiyu'}
+TEST_CHARACTER_IDS = {'1072', 'char_heiyu', 'char_akane'}
 PUBLIC_KONGMU_CHARACTER_IDS = {'char_076a1f4e53'}
 
 

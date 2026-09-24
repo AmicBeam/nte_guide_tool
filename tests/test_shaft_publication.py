@@ -75,6 +75,33 @@ class ShaftPublicationTest(RoomFlowTestCase):
             market = self._get('/api/shaft/market', token=token)
             self.assertNotIn(published['id'], [a['id'] for a in market['items']])
 
+    def test_akane_kongmu_is_test_only_with_source_backed_grid(self):
+        models = importlib.import_module('app.models')
+        regular = self._issue_login_and_get_token('akane-kongmu-regular')
+        tester = self._issue_login_and_get_token('akane-kongmu-tester')
+        models.Player.update(shaft_test_whitelisted=True).where(
+            models.Player.player_uid == 'akane-kongmu-tester'
+        ).execute()
+        regular_catalog = self._get('/api/kongmu/catalog', token=regular)
+        self.assertNotIn('char_akane', [c['id'] for c in regular_catalog['characters']])
+        catalog = self._get('/api/kongmu/catalog', token=tester)
+        akane = next(c for c in catalog['characters'] if c['id'] == 'char_akane')
+        self.assertEqual(akane['avatar'], '/static/images/characters/avatar/明音凛.webp')
+        self.assertIn('攻击力百分比', akane['kongmu_passive']['text'])
+        self.assertIn('10%', akane['kongmu_passive']['text'])
+        self.assertEqual(akane['owner_grid_count'], 3)
+        plan = self._post('/api/kongmu/plan', {
+            'character_id': 'char_akane', 'cartridge_id': 'attack'
+        }, token=tester)
+        self.assertEqual(plan['character']['id'], 'char_akane')
+        slots = plan['character']['equip_slots']['slots']
+        self.assertEqual(sum(cell >= 0 for row in slots for cell in row), 20)
+        self.assertGreater(plan['result']['total_solution_count'], 0)
+        denied = self.client.post('/api/kongmu/plan', json={
+            'character_id': 'char_akane', 'cartridge_id': 'attack'
+        }, headers={'Authorization': f'Bearer {regular}'})
+        self.assertEqual(denied.status_code, 400)
+
     def test_lingke_release_migrates_and_allows_regular_account_workflows(self):
         models = importlib.import_module('app.models')
         service = importlib.import_module('app.modules.shaft.service')

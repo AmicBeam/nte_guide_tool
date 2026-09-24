@@ -131,3 +131,14 @@ with Image.open('/tmp/nte-character-source.png') as source:
 | 方形头像 | 与立绘同源；另核对 `UI/UI_Icon/AvatarImage/256/player_heiyu_256.png` 的造型 | 立绘原图同上；圆形蒙版头像 SHA256 为 `b04067b046c84d65efeea69d7e58101d19ed1dc441a3cbc6d541d33a048ea394` | `app/static/images/characters/avatar/黑羽.webp` | 立绘裁切 `crop=340:340:365:190`，Lanczos 缩至256×256，`cwebp -lossless -m 6` |
 
 输出 WebP SHA256 分别为 `744e8a7831ce71c1dac19218930a86ada96cca31d354f6d96181defa0cd0707d`、`9a19b51d97c3364abff03f86a31547fc84124ecf9c666c52732c48376a6e477c`。裁切保留人物面部和肩部，使用方形画布，无圆形蒙版；排轴使用立绘和头像，空幕使用共享头像，权限保持测试账号限定。
+
+## 明音凛默认造型补图（2026-09-24）
+
+核对 NTEData 同一提交 `43dd106003160cbb7566f120d6579288091b9609` 与 Nanoka NTE `1.4.6` 角色 `1057`：`icon_gacha` 对应 `YH_lihui_fashionshop_mingyin`，默认服装为 `Fashion_1057_0`「律动节拍」。`player_mingyin_256` 虽为 256×256 画布，但人物受圆形蒙版裁掉四角；共享方形头像从默认立绘原图裁切。
+
+| 用途 | NTEData 原始路径 | 原图 SHA256 | 本地 WebP 路径 | 转换 |
+| --- | --- | --- | --- | --- |
+| 默认立绘 | `UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_mingyin.png` | `4cd11b1eabb42f1aa5c7c359fc54be15e4143767e1e1b3ae0dfcacd012063a3b` | `app/static/images/characters/portrait/明音凛.webp` | `cwebp -q 90 -m 6`，1024×1024 |
+| 方形头像 | 与立绘同源；另核对 `UI/UI_Icon/AvatarImage/256/player_mingyin_256.png` 的造型 | 立绘原图同上；圆形蒙版头像 SHA256 为 `295d886dbebc847cb86ffdfeaffd5bbcceaef8fd14849a080f5b77da4db324d2` | `app/static/images/characters/avatar/明音凛.webp` | 立绘裁切 `crop=400:400:290:105`，Lanczos 缩至256×256，`cwebp -lossless -m 6` |
+
+输出 WebP SHA256 分别为 `0f6923e70c1001190fc860a8058b0d545bdd940cc0bd151a8c66b27a5eebf776`、`a5bcd73ab2be180213c2cea6273210a7dfdd764ae7636fd2137bc73593a4cc72`。排轴展示头像与立绘，空幕规划器仅使用共享头像；两个模块继续按测试账号权限展示明音凛。

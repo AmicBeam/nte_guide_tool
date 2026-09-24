@@ -7,7 +7,7 @@
 - 页面展示角色、卡带和计算结果。
 - 浏览器只提交选择并渲染结果，方案计算由后端应用服务完成。
 - 该模块不依赖异象对决的房间、对局快照或规则结算。
-- 空幕规划器公开展示并允许计算残虹；灵可作为测试角色，仅对排轴测试白名单账号展示和开放计算。
+- 空幕规划器公开展示并允许计算残虹；灵可、黑羽和明音凛作为测试角色，仅对排轴测试白名单账号展示和开放计算。
 - 角色目录会随登录账号权限变化，因此目录接口使用私有不缓存响应，并按 `Authorization` 区分变体，避免匿名目录覆盖测试账号目录。
 - 主角目录头像使用共享本地角色资源，通过长效 immutable 静态缓存加载，不依赖 Nanoka 远程回退。
 - 残虹头像使用共享资源 `app/static/images/characters/avatar/残虹.png`，空幕与排轴统一引用该文件。
@@ -45,3 +45,7 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 ```
 
 1表示可用格，合计20格；0表示空洞。头像 `images/characters/avatar/黑羽.webp` 由最新 NTEData 默认立绘裁成方形；同仓库的独立256图只有圆形人物蒙版。旧附件 `UI.7z` 的 `player_heiyu2_256.png` 属于时装，仍不使用；新图的上游提交、路径与裁切参数见[角色图片资源说明](../../../docs/character-image-assets.md#黑羽默认造型补图2026-09-24)。测试权限不变。验证见 `tests.test_shaft_heiyu` 和 `tests.test_shaft_publication`。
+
+## 明音凛（测试角色，2026-09-24）
+
+明音凛沿用排轴稳定 ID `char_akane`，仅排轴测试白名单账号可见和计算。空幕拓扑与被动来自 Nanoka NTE `1.4.6` 角色 `1057`：7×7 画布中间四行各五格，共20格；Ⅲ型特化，每个Ⅲ型驱动使攻击力增加10%。本次只为独立空幕规划器接入该配置，不改排轴既有的用户估算面板和机制。头像使用最新 NTEData 默认立绘裁成的共享方形图，来源和裁切参数见[角色图片资源说明](../../../docs/character-image-assets.md#明音凛默认造型补图2026-09-24)。验证：`tests.test_shaft_publication.ShaftPublicationTest.test_akane_kongmu_is_test_only_with_source_backed_grid`。

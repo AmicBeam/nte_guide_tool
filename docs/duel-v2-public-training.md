@@ -194,6 +194,8 @@ WDL搜索复用当前行动方已生成的可见观察与编码，并避免计�
 
 诊断分别回答：执行是否完全等价；局部搜索动作是否优于原策略；网络能否拟合搜索标签并保持跨对局表现。小样本根干预不是整局搜索策略胜率，拟合loss改善不是打法改善，合成/自然局面分开说明。检查不自动启动长训、不覆盖源数值模型、不发布。恢复和数值检查：`python -m unittest tests.test_duel_v2_trajectory_resume tests.test_duel_v2_information_search tests.test_duel_v2_outcome_learning`。
 
+本轮五套策略蒸馏 P0 的分阶段修复提案见[五套 Gumbel 搜索学习的策略恢复方案](duel-v2-gumbel-policy-recovery-plan.md)。它是待验证设计，未改变当前训练默认、已冻结实验或模型服务授权。
+
 ### 搜索内部的轻量演出模式
 
 搜索树内的假想动作默认通过`engine/duel_v2/simulation.py:simulate_action`调用同一正式`apply_action`，保留合法性检查、状态复制、完整卡效、随机数、事件序号和胜负结算。仅在该调用的上下文内停用公开棋盘缓存和演出patch生成；上下文在成功／异常后均恢复，其他线程及普通网页调用不受影响。`fast_simulation=False`保留原路径用于对拍。真实采样动作、冻结评估、遥测与公开录像仍用普通`apply_action`，不将缺少patch的假想事件交付给网站。

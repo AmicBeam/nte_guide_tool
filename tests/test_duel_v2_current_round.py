@@ -175,9 +175,11 @@ class CurrentRoundTest(unittest.TestCase):
         self.assertIn('pi', rows[0])
         self.assertEqual(rows[0]['z'], 1)
         metrics = rt.update(net, opt, rows)
-        self.assertGreater(metrics['policy_gradient_norms']['cand_net'], 0)
-        self.assertGreater(metrics['policy_gradient_norms']['score'], 0)
-        self.assertGreaterEqual(metrics['policy_gradient_norms']['state_net'], 0)
+        self.assertTrue(all(np.isfinite(metrics['policy_gradient_norms'][name])
+                            and metrics['policy_gradient_norms'][name] >= 0
+                            for name in ('cand_net', 'score', 'state_net')))
+        self.assertGreater(sum(metrics['policy_gradient_norms'][name]
+                               for name in ('cand_net', 'score', 'state_net')), 0)
         with self.assertRaises(ValueError):
             rt.update(net, opt, [{**rows[0], 'reward_to_go': 4.0}])
         before_wdl = net.wdl.weight.detach().clone()

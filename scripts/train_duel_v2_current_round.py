@@ -20,6 +20,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from app.modules.card_game.rl.cross_schedule import ROSTER, learning_schedule, matrix_schedule, coverage
+from app.modules.card_game.rl.five_cross_gates import first_gate, late_gate, mid_gate, schedule_gates
 
 
 def shanghai_zone():
@@ -73,6 +74,113 @@ def make_job(item, *, seed, models, decks, config, deadline, identity, training)
                 deadline=deadline, max_actions=800)
 
 
+def _play_fraction(net, rows, device):
+    import torch
+    from app.modules.card_game.rl.league_learning import tensors
+    from app.modules.card_game.rl.league_schema import ACT_PLAY
+    if not rows:
+        return 0, 0
+    played = 0
+    xx, c, mask = tensors([(row['x'], row['c']) for row in rows], device)
+    scores, _ = net(xx, c, mask)
+    chosen = scores.argmax(-1).tolist()
+    for index, row in enumerate(rows):
+        played += int(int(row['c'][chosen[index]][0]) == ACT_PLAY)
+    return played / len(rows), len(rows)
+
+
+def _reference_fraction(directory, key, rows):
+    from app.modules.card_game.rl.cross_runtime import model
+    from app.modules.card_game.rl.league_schema import ACT_PLAY
+    if not rows:
+        return 0
+    policy = model(directory, key)
+    played = 0
+    for row in rows:
+        scores = policy.scores(row['x'], row['c'])
+        played += int(int(row['c'][int(scores.argmax())][0]) == ACT_PLAY)
+    return played / len(rows)
+
+
+def _legal_rows(pools, key):
+    from app.modules.card_game.rl.league_schema import ACT_PLAY
+    rows = []
+    for episode in pools[key].episodes:
+        for row in episode['rows']:
+            if 'c' in row and any(int(candidate[0]) == ACT_PLAY for candidate in row['c']):
+                rows.append(row)
+    return rows[:64]
+
+
+def _pure_report(nets, pools, initial, last_policy, device):
+    import math
+    report = {}
+    for key in ROSTER:
+        rows = _legal_rows(pools, key)
+        top, count = _play_fraction(nets[key], rows, device)
+        updates = last_policy.get(key) or []
+        finite = bool(updates) and all(math.isfinite(item['policy_loss']) and math.isfinite(item['value_loss']) for item in updates)
+        report[key] = dict(finite=finite, policy_gradient=any(item['policy_samples'] > 0 for item in updates),
+                           play_legal=count, play_top1=top, reference_play_top1=_reference_fraction(initial, key, rows))
+    return report
+
+
+def _search_tally(directory, foe, seed, decks, config):
+    wins = 0
+    complete = True
+    for first in ('a', 'b'):
+        job = make_job(dict(left='zhenhong', right=foe, first=first), seed=seed, models=directory,
+                       decks=decks, config=config, deadline=config['train_until'] - 30,
+                       identity=f'gate-{seed}-{first}', training=False)
+        job['search_sides'] = ['a', 'b']
+        result = play_job(job)
+        complete = complete and bool(result.get('complete'))
+        wins += int(result.get('winner') == 'a')
+    return dict(complete=complete, wins=wins)
+
+
+def _run_gate(name, out, config, cycle, nets, pools, initial, best_dir, prior_no_gain, last_policy, decks):
+    pure = first_gate(_pure_report(nets, pools, initial, last_policy, config['device']))
+    if name == 'first' or pure['decision'] == 'p0':
+        return dict(gate=name, decision=pure['decision'], reasons=pure['reasons'])
+    foe = config['screen_foes'][0]
+    seed = config['seeds']['selection'] + cycle * 1000
+    def tally(directory, probe):
+        screen = _search_tally(directory, foe, probe, decks, config)
+        return screen
+    candidate = tally(out / 'generations' / f'cycle-{cycle:04}', seed)
+    retained = tally(best_dir, seed)
+    confirmed = tally(out / 'generations' / f'cycle-{cycle:04}', seed + 50000)
+    retained_confirm = tally(best_dir, seed + 50000)
+    screen = dict(complete=candidate['complete'] and retained['complete'], candidate=candidate['wins'], best=retained['wins'])
+    confirm = dict(complete=confirmed['complete'] and retained_confirm['complete'], candidate=confirmed['wins'], best=retained_confirm['wins'])
+    if name == 'mid':
+        return dict(gate='mid', decision=mid_gate(pure['decision'], screen, confirm), reasons=pure['reasons'])
+    improved = pure['decision'] == 'pass' and screen['candidate'] > screen['best']
+    search_confirms = confirm['complete'] and confirm['candidate'] > confirm['best']
+    rollback = pure['decision'] == 'pass' and screen['candidate'] + 2 <= screen['best'] and confirm['candidate'] <= confirm['best']
+    decision = late_gate('improved' if improved else pure['decision'], search_confirms, prior_no_gain, rollback)
+    return dict(gate='late', decision=decision, reasons=pure['reasons'])
+
+
+def _rollback(out, config, nets, best_state, best_dir, decks, origins, learning_rate, cycle):
+    import torch
+    from app.modules.card_game.rl import cross_runtime as rt
+    learning_rate = max(float(config['min_learning_rate']), learning_rate * 0.1)
+    for key, net in nets.items():
+        net.load_state_dict(best_state[key])
+    folder = out / 'generations' / f'cycle-{cycle:04}-rollback'
+    for key in ROSTER:
+        rt.export(nets[key], folder, key, decks[key], dict(origins[key], rollback_of=str(best_dir), learning_rate=learning_rate))
+        import numpy as np
+        exported = rt.model(folder, key)
+        retained = rt.model(best_dir, key)
+        for name, value in retained.weights.items():
+            if not np.array_equal(value, exported.weights[name]):
+                raise ValueError('Rollback export did not preserve the best weights')
+    return learning_rate, folder
+
+
 def learn(out, config):
     import numpy as np
     import torch
@@ -102,9 +210,15 @@ def learn(out, config):
     write(out / 'builds.json', decks)
     initial = current
     counts = {key: dict(games=0, updates=0, samples=0) for key in ROSTER}
-    opts = {k: torch.optim.Adam([p for p in n.parameters() if p.requires_grad], lr=3e-5)
+    learning_rate = float(config.get('learning_rate', 3e-5))
+    opts = {k: torch.optim.Adam([p for p in n.parameters() if p.requires_grad], lr=learning_rate)
             for k, n in nets.items()}
     pools = {k: EpisodePool(limit=64) for k in ROSTER}
+    best_dir = initial
+    best_state = {k: {name: tensor.detach().cpu().clone() for name, tensor in net.state_dict().items()}
+                  for k, net in nets.items()}
+    prior_no_gain = False
+    stop_learning = None
     cycle = 0
     previous = initial
     training_games = []
@@ -185,6 +299,7 @@ def learn(out, config):
                 gumbel_candidates=config['gumbel_candidates'], terminal_horizon=config['terminal_horizon'],
                 workers=config['workers'], rule_hash=identity()))
             status('updating')
+            last_policy = {key: [] for key in ROSTER}
             for key in ROSTER:
                 for step in range(min(8, max(1, fresh[key] // 128)) if fresh[key] else 0):
                     if time.time() >= config['train_until']:
@@ -194,6 +309,7 @@ def learn(out, config):
                         break
                     metrics = rt.update(nets[key], opts[key], rows)
                     counts[key]['updates'] += 1
+                    last_policy[key].append(metrics)
                     append(out / 'updates.jsonl', dict(key=key, cycle=cycle, refs=refs, sampling=sampling, **metrics))
             previous = current
             cycle += 1
@@ -212,8 +328,32 @@ def learn(out, config):
                 sha256=hashlib.sha256(checkpoint.read_bytes()).hexdigest()))
             write(out / 'training-coverage.json', coverage(training_games,
                 [dict(left=r['left'], right=r['right'], first=r['first']) for r in training_games]))
-            status('searching')
-            if config['smoke']:
+            gate_name = {config['gates'][name]: name for name in ('first', 'mid', 'late') if config['gates'].get(name) == cycle}
+            if gate_name:
+                decision = _run_gate(gate_name[cycle], out, config, cycle, nets, pools, initial, best_dir,
+                                      prior_no_gain, last_policy, decks)
+                append(out / 'gates.jsonl', dict(cycle=cycle, **decision))
+                if decision['decision'] == 'promote':
+                    best_dir = current
+                    best_state = {k: {name: tensor.detach().cpu().clone() for name, tensor in net.state_dict().items()}
+                                  for k, net in nets.items()}
+                    prior_no_gain = False
+                elif decision['decision'] == 'rollback':
+                    learning_rate, current = _rollback(out, config, nets, best_state, best_dir, decks, origins, learning_rate, cycle)
+                    opts = {k: torch.optim.Adam([p for p in n.parameters() if p.requires_grad], lr=learning_rate)
+                            for k, n in nets.items()}
+                    pools = {k: EpisodePool(limit=64) for k in ROSTER}
+                    prior_no_gain = False
+                elif decision['decision'] == 'plateau':
+                    stop_learning = 'plateau'
+                    current = best_dir
+                elif decision['decision'] == 'p0' or (decision['decision'] == 'insufficient' and not config['smoke']):
+                    stop_learning = decision['decision']
+                    current = best_dir
+                else:
+                    prior_no_gain = decision['decision'] == 'keep' and gate_name[cycle] != 'first'
+            status('searching', best=str(best_dir), learning_rate=learning_rate, stop_learning=stop_learning)
+            if config['smoke'] or stop_learning:
                 break
         if not all(c['updates'] > 0 for c in counts.values()):
             raise RuntimeError('Not all five policies updated')
@@ -317,12 +457,17 @@ def main():
         simulations=2 if a.smoke else 32, gumbel_candidates=4 if a.smoke else 16,
         terminal_horizon=3, rewards=0, deck_search=False, self_imitation=0,
         matrix_games=2 if a.smoke else a.matrix_games, smoke=a.smoke,
+        gates=dict(first=1, mid=None, late=None) if a.smoke else schedule_gates(6),
+        learning_rate=3e-5, min_learning_rate=1e-5, screen_foes=['starter'],
+        planned_batches=1 if a.smoke else 6,
         website_approval=False, roster_source=str(a.roster_source) if a.roster_source else '',
         murk_source=str(a.murk_source) if a.murk_source else '')
     config['source_rule_hashes'] = json.loads(a.source_rule_hashes.read_text()) if a.source_rule_hashes else {}
     print(json.dumps(config, ensure_ascii=False, indent=2), flush=True)
     if not a.run:
         return
+    if not a.smoke:
+        p.error('Formal long training is refused until a measured throughput report schedules the first, mid, and late gates inside the deadline')
     if not a.smoke and a.device != 'cuda':
         p.error('Formal learning requires CUDA')
     if out.exists() and any(out.iterdir()):

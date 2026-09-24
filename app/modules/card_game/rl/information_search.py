@@ -147,7 +147,7 @@ def short_terminal_value(world, viewer, policies, rng, *, scores, legal, horizon
     return None
 
 
-def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False,reuse_inference=True,fast_simulation=True,algorithm="puct",gumbel_candidates=16,terminal_horizon=3):
+def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=None,noise=False,runtime=None,passive_reward=0.0,prior_mode="model",prior_temperature=1.0,uniform_mix=0.0,root_min_visits=1,node_min_visits=1,setup_reward=0.0,setup_already_achieved=False,reuse_inference=True,fast_simulation=True,algorithm="puct",gumbel_candidates=16,terminal_horizon=3,diagnostics=False):
     decide = runtime.decision if runtime else decision
     if type(gumbel_candidates)!=int or gumbel_candidates<1:raise ValueError('Invalid Gumbel candidate limit')
     if type(terminal_horizon)!=int or terminal_horizon<0:raise ValueError('Invalid terminal horizon')
@@ -243,7 +243,39 @@ def search(state,viewer,policies,*,seed,simulations=32,max_depth=10,deadline=Non
                 complete=complete,simulations=len(depths),requested=requested,
                 roots_covered=int((visits>0).sum()),root_min_visits=int(visits.min()),prior_mode=prior_mode,nodes=len(tree),worlds=worlds,
                 max_depth=max(depths,default=0),raw_choice=int(np.argmax(logits)),
-                search_choice=selected,value=root_value,algorithm=algorithm,considered_actions=min(len(actions),gumbel_candidates,requested) if algorithm=='gumbel' else len(actions))
+                search_choice=selected,value=root_value,algorithm=algorithm,considered_actions=min(len(actions),gumbel_candidates,requested) if algorithm=='gumbel' else len(actions),
+                **(_root_diagnostics(actions,prior,visits,root,selected,requested,len(depths),gumbel_candidates,algorithm) if diagnostics else {}))
+
+
+def action_identity(action):
+    """Stable legal-action identity. Search still indexes by legal-list order."""
+    import json
+    return json.dumps(action, sort_keys=True, ensure_ascii=False, default=str)
+
+
+def _root_diagnostics(actions, prior, visits, root, selected, requested, completed, gumbel_candidates, algorithm):
+    from . import search_policy as planning
+    q = planning.completed_q(root.prior, root.visits, root.total, root.raw_value) if algorithm == 'gumbel' else np.divide(root.total, visits, out=np.full(len(visits), np.nan), where=visits > 0)
+    cap = min(len(actions), gumbel_candidates, requested) if algorithm == 'gumbel' else len(actions)
+    admitted = np.flatnonzero(visits > 0).tolist() if algorithm == 'gumbel' else list(range(len(actions)))
+    admitted_set = set(admitted)
+    return dict(
+        root_diagnostics=dict(
+            action_identities=[action_identity(action) for action in actions],
+            prior=np.asarray(prior, dtype=np.float64),
+            admitted_to_max16=[index in admitted_set for index in range(len(actions))] if algorithm == 'gumbel' else [True] * len(actions),
+            admitted_indexes=admitted,
+            visits=np.asarray(visits, dtype=np.int32),
+            completed_q=np.asarray(q, dtype=np.float64),
+            completed_q_definition='search_policy.completed_q: mixed and scaled search score',
+            visited_mean_value=[float(root.total[index] / count) if count else None for index, count in enumerate(visits)],
+            selected_index=int(selected),
+            selected_identity=action_identity(actions[selected]) if actions else None,
+            requested_simulations=int(requested),
+            completed_simulations=int(completed),
+            candidate_cap=int(cap),
+        )
+    )
 
 
 def decision_budget(job, rng):

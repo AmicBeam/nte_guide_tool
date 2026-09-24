@@ -78,7 +78,7 @@ scripts/deploy_windows_app.sh --deploy
 
 ## 共享约定
 
-- 角色头像和默认立绘沿用 Everness / Nanoka 素材，保持原有缩放与头部对齐；补充时装来源与 WebP 交付流程见 [角色图片资源说明](docs/character-image-assets.md)。
+- 新增或更新角色头像、默认立绘时优先从最新 NTEData 获取，缺图时使用 Nanoka；保持原有缩放与头部对齐。具体来源核对与 WebP 交付流程见 [角色图片资源说明](docs/character-image-assets.md)。
 - 路由只做参数校验、鉴权和调用服务；业务计算留在对应模块。
 - 模块可共享账号、数据库和页面基础设施，不能把一个模块的领域规则写入另一个模块。
 - 账号、构筑、房间等关键资料同步入库；异能对决对局快照使用进程内最新态加异步入库。

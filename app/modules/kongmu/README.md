@@ -34,7 +34,7 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 
 ## 黑羽（测试角色，2026-09-16）
 
-黑羽使用稳定ID `char_heiyu`，魂属性；仅 `shaft_test_whitelisted` 测试账号可见和计算，受邀用户不能访问。来源为用户提供的[腾讯文档《黑羽资料汇总》](https://docs.qq.com/aio/DVVRZempSSmZ4THVj?p=MluEyftYtfADwlqnzgRzww)，Everness暂无匹配记录。Ⅲ型特化，每个Ⅲ型驱动提供8%暴击率。5×5拓扑按文档原始方向录入：
+黑羽使用稳定ID `char_heiyu`，魂属性；仅 `shaft_test_whitelisted` 测试账号可见和计算，受邀用户不能访问。现有数值来源为用户提供的[腾讯文档《黑羽资料汇总》](https://docs.qq.com/aio/DVVRZempSSmZ4THVj?p=MluEyftYtfADwlqnzgRzww)；Nanoka NTE `1.4.6` 已有角色 `1042` 的资源记录，本次只用来核对图片，不改写数值来源。Ⅲ型特化，每个Ⅲ型驱动提供8%暴击率。5×5拓扑按文档原始方向录入：
 
 ```text
 11110
@@ -44,4 +44,4 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 01111
 ```
 
-1表示可用格，合计20格；0表示空洞。头像使用共享文字占位 `images/characters/avatar/黑羽.svg`。用户附件 `UI.7z` 的 `player_heiyu2_256.png` 是时装头像，已撤销误接入；默认头像待补，测试权限不变。验证见 `tests.test_shaft_heiyu` 和 `tests.test_shaft_publication`。
+1表示可用格，合计20格；0表示空洞。头像 `images/characters/avatar/黑羽.webp` 由最新 NTEData 默认立绘裁成方形；同仓库的独立256图只有圆形人物蒙版。旧附件 `UI.7z` 的 `player_heiyu2_256.png` 属于时装，仍不使用；新图的上游提交、路径与裁切参数见[角色图片资源说明](../../../docs/character-image-assets.md#黑羽默认造型补图2026-09-24)。测试权限不变。验证见 `tests.test_shaft_heiyu` 和 `tests.test_shaft_publication`。

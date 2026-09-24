@@ -2,30 +2,22 @@
 
 ## 来源与适用范围
 
-按 2026-09-20 用户最新口径，角色头像与默认立绘恢复沿用 **Everness / Nanoka 素材流程**，不再要求全仓库统一改用 NTEData。新增角色优先复用已保存的 Everness 素材；更新图片必须保持现有角色缩放、头部对齐和牌面构图。
+自 2026-09-24 起，新增或更新角色头像、默认立绘时**优先查看最新 [NTEData](https://github.com/mc-ctrl/NTEData) 原始资源，再以 Nanoka 当前角色数据核对角色 ID、图片字段和资源路径**；NTEData 缺图时使用 Nanoka 资产 CDN。Everness 不再作为新素材的取图源。已有默认图不因来源调整批量替换，更新时仍须保持角色缩放、头部对齐和牌面构图。
 
-按用户最新要求，头像已全部恢复到导入前文件，默认立绘也已恢复；仅保留已选武备时装及换装功能。头像与默认立绘沿用旧版 Everness / Nanoka 素材流程，时装仍如实记录 NTEData 来源。资源清单现在只登记保留的 20 张时装。
+2026-09-20 的头像及默认立绘回退、20 张武备时装导入属于历史操作，记录保留在下文。角色机制、属性、技能和数值的核实按根 `AGENTS.md` 执行；本文件只约定图片资源。道具、弧盘图标不在本说明范围内。
 
-角色机制、属性、技能和数值仍按根 `AGENTS.md` 使用 Nanoka / Everness 核实；图片来源约定不改变业务数据真源。道具、弧盘图标等不在本说明范围内。
+## NTEData / Nanoka 素材获取
 
-## Everness 素材获取
-
-1. 使用 `everness-info` 技能读取 `everness.info` 角色资料，按角色名核对角色 ID，再查看响应中的图片字段。不要根据编号、拼音或旧缓存猜测角色映射。
-2. 头像检查 `icon`、`icon_small`、`iconBig`；默认立绘检查 `iconGacha` 等实际返回的资源，时装可查看 `portraitImg`。字段名只是定位线索，必须打开图片确认用途、角色和造型，不能把任意大图直接当作牌面立绘。
-3. 已返回完整 URL 时使用该 URL。对于 Nanoka 的相对资产路径，可参考仓库 `scripts/refresh_kongmu_data.py` 的 `asset_url()`：`https://static.nanoka.cc/assets/nte/<资源路径>.webp`。该格式来自现有导入代码；同步前应核实实际响应和下载结果，不对完整 URL 重复拼接路径或扩展名。
-4. 下载到临时目录，核对尺寸、透明通道、人物占比、头部位置和旧版构图后再放入共享目录。默认立绘沿用现有的 `1024×1024` 展示标准，不能用不同构图的全身图直接覆盖；仅尺寸相同也不代表人物已经对齐。
-5. 记录角色 ID、查询日期、图片字段、源 URL、本地路径与处理参数。已有 WebP 优先直接保存，不为统一流程重复有损转码。
-
-## NTEData 补充素材与追溯
-
-私有仓库 [mc-ctrl/NTEData](https://github.com/mc-ctrl/NTEData) 仅作为本次已选武备时装等补充素材的来源，不是默认头像、立绘的强制来源。使用用户已登录的 `gh` 身份读取，记录上游提交 SHA、路径和文件校验值；凭证不进入文档或前端。
-
-上游 `UI/UI_Icon/AvatarImage/` 为头像目录；时装展示图在 `UI/UI/Appearance/Fashion/1024/`，应通过 `DT_AppearanceData.SmallPortraitImg` 核对。`2160/` 全身大图的画布和人物比例不同，不可直接替换旧版立绘。全仓库递归树可能被截断，需按子树查询；返回 Git LFS 指针时应先获取真实图片。
+1. 用 Nanoka 当前角色索引按角色名确认 ID，再查看角色记录中的 `icon_gacha`、`icon` 和默认服装（如编号 `_0`）字段。`icon_gacha` 是数据字段，不是 NTEData 文件名；必须按返回的资源路径到 NTEData 当前文件树核对，不能由角色名猜路径。
+2. 默认立绘优先使用与 `icon_gacha` 对应的 `UI/UI/Gacha/` 或 `UI/UI/Appearance/Fashion/1024/` 原图。头像先检查 `UI/UI_Icon/AvatarImage/256/` 的默认造型图及其透明蒙版；256×256 画布也可能只含圆形头像。没有合适的方形图时，从已核实的默认立绘确定性裁切。不要把时装造型或带徽标道具图当作默认头像。逐张打开确认角色、服装和构图。
+3. 使用已授权的只读 GitHub 访问取得 NTEData 最新提交及对应文件，记录提交 SHA、原始路径和 SHA256。若原图不可用，再按 Nanoka 返回的路径下载 `https://static.nanoka.cc/assets/nte/<资源路径>.webp`；完整 URL 不重复拼接路径或扩展名。
+4. 下载到临时目录，核对尺寸、透明通道、人物占比、头部位置和现有卡面构图后再放入共享目录。默认立绘沿用现有的 `1024×1024` 展示标准；`2160/` 全身图的画布与人物比例不同，不能直接覆盖。仅尺寸相同也不代表视平线对齐。
+5. PNG 等原图在本地转换为 WebP，记录参数与输出校验值。头像若已有独立方形图，直接使用该图；若只有圆形蒙版，从立绘裁切，记录裁切坐标和缩放方法，不放大圆形蒙版填补缺失像素。
 
 ## 本地资源与 WebP 交付
 
 - 跨模块头像放在 `app/static/images/characters/avatar/`，立绘放在 `app/static/images/characters/portrait/`。复用现有角色命名与路径，不在各模块重复存放同一图片。
-- Everness 已提供的 WebP 直接复用；只有 PNG 等其他格式需要时才在本地转码，服务器静态图片默认交付 WebP。当前共享目录已大量使用 `.webp`，但仍有 PNG 等历史资源，不能假定全部完成转换。
+- 已有合适的 WebP 可直接复用；PNG 等其他格式在本地转码，服务器静态图片默认交付 WebP。当前共享目录已大量使用 `.webp`，但仍有 PNG 等历史资源，不能假定全部完成转换。
 - 在本地导入阶段完成转码，并提交最终 WebP；无需服务器运行时下载私有仓库或临时转码。现有发布脚本只打包已提交的 `app/`，所以图片与对应路径引用必须一起提交。
 - 保留透明通道、宽高比与角色完整构图；不要直接把扩展名从 `.png` 改成 `.webp`。需要缩放或裁切时按使用场景明确记录，不能只因源图较大就裁掉人物。
 - 可用 Pillow 或 `cwebp`。质量参数先按实际体积和视觉检查选择；下面的 `quality=90, method=6` 仅为起点，不是经过统一验收的固定标准。小头像边缘或细节不佳时可使用无损 WebP。
@@ -55,7 +47,7 @@ with Image.open('/tmp/nte-character-source.png') as source:
 
 头像恢复基准为 `a40b55ac4` 的父提交 `0c9ebd3f2`，按 Git 原始字节恢复，包括残虹、灵可的方形 PNG，以及伊洛伊、真红的空幕头像。撤销本次新增的四个头像 WebP 别名，前端恢复原路径；图片缓存版本同步更新。默认立绘保持原有 `1024×1024` 构图、人物缩放和头部对齐。
 
-旧版素材来源沿用 Everness / Nanoka，获取入口与 CDN 路径规则见上文。下面记录恢复后的实际本地来源路径；历史文件未逐张保存原始下载 URL，不将推测 URL 写成已核实来源。表内路径相对仓库根目录；`单位.webp`、黑羽文字占位不属于此次角色原图替换。
+下面仅记录 2026-09-20 恢复后的实际本地路径；历史文件未逐张保存原始下载 URL，不将推测 URL 写成已核实来源。表内路径相对仓库根目录；`单位.webp`、当时的黑羽文字占位不属于该轮角色原图替换。新图片按本文开头的 NTEData / Nanoka 流程获取。
 
 | 角色 | 旧版头像路径 | 旧版立绘路径 |
 | --- | --- | --- |
@@ -85,7 +77,7 @@ with Image.open('/tmp/nte-character-source.png') as source:
 
 ## 保留的武备时装
 
-保留已确认的 20 张 NTEData 时装，固定上游提交 `6887b8ced1812db9671d3d4800a0f15d6322a251`。图片使用 `DT_AppearanceData.SmallPortraitImg` 对应的 `1024×1024` 展示图，转换为 WebP，质量 90、method 6，保留尺寸与透明通道，不额外缩放或裁切。逐图来源、校验值和武备映射见 [时装资源清单](character-image-assets-manifest.json)。不再从 NTEData 批量替换头像或默认立绘。
+该轮保留已确认的 20 张 NTEData 时装，固定上游提交 `6887b8ced1812db9671d3d4800a0f15d6322a251`。图片使用 `DT_AppearanceData.SmallPortraitImg` 对应的 `1024×1024` 展示图，转换为 WebP，质量 90、method 6，保留尺寸与透明通道，不额外缩放或裁切。逐图来源、校验值和武备映射见 [时装资源清单](character-image-assets-manifest.json)。该轮未批量替换头像或默认立绘。
 
 ### 桌游映射
 
@@ -127,4 +119,15 @@ with Image.open('/tmp/nte-character-source.png') as source:
 
 该包的独立黑羽头像候选只有上述时装版本（200/256 及带框版本）；默认造型见于活动宣传图、细长培养页图及 `YH_lihui_1042_01`–`04` 道具图，后者带圆框和爱心徽标，不直接作为角色头像。此次未找到干净的独立默认头像。
 
-已撤回排轴与空幕的时装头像引用，恢复 `app/static/images/characters/avatar/黑羽.svg` 文字占位，移除误导入的 `黑羽.webp`。角色数值、权限及桌游已确认的武备时装均不变。后续须获取并核实默认造型资源，不能仅凭文件名包含角色名判定为默认头像。
+当时撤回了排轴与空幕的时装头像引用，改用 `app/static/images/characters/avatar/黑羽.svg` 文字占位。该附件未包含干净的默认造型头像；不能仅凭文件名包含角色名判定造型。2026-09-24 在最新 NTEData 中取得正确图片后，该占位已被下述资源替换。
+
+## 黑羽默认造型补图（2026-09-24）
+
+核对 [NTEData](https://github.com/mc-ctrl/NTEData) 提交 `43dd106003160cbb7566f120d6579288091b9609` 与 Nanoka NTE `1.4.6` 角色 `1042`：Nanoka 的 `icon_gacha` 指向 `YH_lihui_fashionshop_heiyu`，`icon` 指向 `player_heiyu_256`；NTEData 当前文件树均有对应原图。角色默认服装为 `Fashion_1042_0`「黑之「魔女」」，不同于旧附件中误取的 `player_heiyu2_256` 时装。实际打开 `player_heiyu_256` 后发现其 256×256 画布只有圆形人物蒙版，因此方形头像由默认立绘裁切。
+
+| 用途 | NTEData 原始路径 | 原图 SHA256 | 本地 WebP 路径 | 转换 |
+| --- | --- | --- | --- | --- |
+| 默认立绘 | `UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_heiyu.png` | `58f9a601b1b7eeed4793719c6746cde76bca3576e4cb121a356a255f7fa9a5bc` | `app/static/images/characters/portrait/黑羽.webp` | `cwebp -q 90 -m 6`，1024×1024 |
+| 方形头像 | 与立绘同源；另核对 `UI/UI_Icon/AvatarImage/256/player_heiyu_256.png` 的造型 | 立绘原图同上；圆形蒙版头像 SHA256 为 `b04067b046c84d65efeea69d7e58101d19ed1dc441a3cbc6d541d33a048ea394` | `app/static/images/characters/avatar/黑羽.webp` | 立绘裁切 `crop=340:340:365:190`，Lanczos 缩至256×256，`cwebp -lossless -m 6` |
+
+输出 WebP SHA256 分别为 `744e8a7831ce71c1dac19218930a86ada96cca31d354f6d96181defa0cd0707d`、`9a19b51d97c3364abff03f86a31547fc84124ecf9c666c52732c48376a6e477c`。裁切保留人物面部和肩部，使用方形画布，无圆形蒙版；排轴使用立绘和头像，空幕使用共享头像，权限保持测试账号限定。

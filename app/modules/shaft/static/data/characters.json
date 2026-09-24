@@ -896,8 +896,8 @@
     "adaptation": "气态",
     "rarity": "",
     "level": 80,
-    "avatar": "/static/images/characters/avatar/黑羽.svg",
-    "portrait": "/static/images/characters/avatar/黑羽.svg",
+    "avatar": "/static/images/characters/avatar/黑羽.webp",
+    "portrait": "/static/images/characters/portrait/黑羽.webp",
     "base_stats": {
       "atk": 668,
       "hp": 15514,

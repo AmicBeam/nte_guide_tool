@@ -433,5 +433,5 @@
     }
   ],
   "default_portraits": "Restored to pre-task files per user request: keep existing character scale and head alignment. Not migrated in this batch.",
-  "default_avatars": "Restored to pre-import files from a40b55ac4 parent per user request. Follow existing Everness / Nanoka sources; no NTEData avatars retained."
+  "default_avatars": "As of this 2026-09-20 costume batch, restored to pre-import files from a40b55ac4 parent; no NTEData default avatars were retained in this batch. The 2026-09-24 Black Feather addition is documented separately in character-image-assets.md."
 }

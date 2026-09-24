@@ -24,7 +24,7 @@
 | `README.md` | 仓库入口、模块索引、公共运行方式；不承载具体业务规则。 | 修改仓库主页、共享设施、模块索引、启动方式或新增/删除模块时。 |
 | `app/modules/<module>/README.md` | 对应模块的产品范围、页面入口、代码边界和验证命令；是进入模块工作的第一份说明。 | 修改 `card_game`、`kongmu`、`preteam` 或 `shaft` 中任一模块前，必须读取对应 README。 |
 | `app/static/AGENTS.md` | 共享静态资源的目录归属、CSS 入口、导入顺序和性能约束；在其目录范围内与根 `AGENTS.md` 同时生效。 | 修改 `app/static/` 下的 CSS、JavaScript 或共享图片组织时。 |
-| `docs/character-image-assets.md` | 角色头像、立绘的 Everness 默认来源、构图对齐、补充时装来源与 WebP 交付约定。 | 新增、替换、同步或转码任何模块的角色头像、立绘时。 |
+| `docs/character-image-assets.md` | 角色头像、立绘的 NTEData / Nanoka 来源、构图对齐与 WebP 交付约定。 | 新增、替换、同步或转码任何模块的角色头像、立绘时。 |
 | `docs/everness-item-chain-card-design.md` | 新版四人轮替完整手册、置顶基础队与卡表的唯一设计真源；包含实现状态与试玩参数来源边界。 | 修改异能对决规则、卡牌、异能者、构筑、AI、牌桌交互、规则文案或相关测试前。 |
 | `docs/duel-v2-card-text.md` | 新版牌面、被动展示和图鉴效果的用语与句式；不新增规则，也不另造专有名词。 | 修改卡牌 description、被动文案、图鉴或牌面规则措辞前。 |
 | `docs/duel-v2-public-training.md` | 模型训练的操作手册：规则与模型冻结、逐决策信息集搜索、联合学习、自博弈与历史对手、择优回退、只评估切换、完整评测及回传。 | 开始任何模型训练、续训、适应训练、完整评估或训练流程修改前，必须完整读取；按其“当前训练链路与报告落点”执行。 |
@@ -236,8 +236,8 @@
 
 ## 内容扩展规范
 
-- 角色头像与默认立绘沿用 Everness / Nanoka 素材流程，保留现有角色缩放、头部对齐与构图；不再要求统一替换为 NTEData 原图。头像与默认立绘使用原有素材；仅已选武备时装保留 NTEData 来源与换装功能。获取、共享落点与 WebP 交付按 `docs/character-image-assets.md` 执行。该约定不替代下述角色机制与数值核实要求。
-- 角色名称、属性、技能、被动、觉醒、数值和机制描述在写入文档或实现前，必须通过 Nanoka（项目中使用 `everness-info` 技能访问 `everness.info` 实时 GraphQL 数据源）按角色名核实；不得只凭记忆、旧文档或口述补全官方描述。
+- 新增或更新角色头像与默认立绘时，优先核对最新 NTEData 原图，缺失时使用 Nanoka 资源；保持现有角色缩放、头部对齐与构图，不因切换来源批量替换已有图片。获取、共享落点与 WebP 交付按 `docs/character-image-assets.md` 执行。该约定不替代下述角色机制与数值核实要求。
+- 角色名称、属性、技能、被动、觉醒、数值和机制描述在写入文档或实现前，优先通过 Nanoka 当前角色数据按角色名核实；不得只凭记忆、旧文档或口述补全官方描述。NTEData 可用于核对游戏原始资源与表字段，来源版本须记录清楚。
 - Nanoka 只提供机制描述而未提供精确数值时，应明确区分“Nanoka 已核实的描述”和“用户补充的数值口径”，不得把用户补充值表述成 Nanoka 已验证数据。实现、测试和项目文档需同时记录两者的来源边界。
 - 角色机制的触发时机、归属者、延迟、持续时间和是否可递归等语义必须逐项对照 Nanoka 原文；若本地实现与 Nanoka 冲突，以核实后的描述和用户最新明确口径修正，并同步更新对应模块文档。
 - 旧运行版异能对决卡牌按类型维护在 `app/modules/card_game/content/items/` 和 `app/modules/card_game/content/characters/` 中，通用工具、衍生牌与构筑分别维护在 `app/modules/card_game/content/common/`、`app/modules/card_game/content/effects/` 和 `app/modules/card_game/content/duel_decks.py`；`app/modules/card_game/content/duel_common.py` 只作为薄聚合入口保留。

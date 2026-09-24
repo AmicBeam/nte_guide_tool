@@ -178,6 +178,23 @@ def export(net, directory, key, build, origin):
         automatic_serving_approval=False))
 
 
+POLICY_PASSES = (1, 4, 8)
+
+
+def validate_policy_passes(value):
+    if value not in POLICY_PASSES:
+        raise ValueError('policy_passes must be 1, 4 or 8')
+    return int(value)
+
+
+def policy_gradient_ok(metrics):
+    prefixes = ('cand_net', 'score', 'state_net')
+    norms = metrics.get('policy_gradient_norms') or {}
+    if metrics.get('policy_samples', 0) <= 0:
+        return False
+    return all(np.isfinite(norms.get(prefix, 0)) and norms.get(prefix, 0) > 0 for prefix in prefixes)
+
+
 def update(net, opt, rows, **kwargs):
     from .outcome_runtime import update as update_rows
     return update_rows(net, opt, rows, **kwargs)

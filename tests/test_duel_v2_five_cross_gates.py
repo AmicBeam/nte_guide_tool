@@ -74,5 +74,15 @@ class FiveCrossGateTest(unittest.TestCase):
         self.assertEqual(late_gate('p0', True, False, False), 'p0')
 
 
+
+    def test_missing_policy_gradient_or_nonfinite_is_still_p0(self):
+        dead = _ok()
+        dead['finite'] = False
+        dead['policy_gradient'] = False
+        decision = first_gate(dict(zhenhong=dead))
+        self.assertEqual(decision['decision'], 'p0')
+        self.assertEqual({row['reason'] for row in decision['reasons']}, {'nonfinite', 'no_policy_gradient'})
+
+
 if __name__ == '__main__':
     unittest.main()

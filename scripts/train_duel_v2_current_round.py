@@ -114,14 +114,25 @@ def _legal_rows(pools, key):
 
 def _pure_report(nets, pools, initial, last_policy, device):
     import math
+    from app.modules.card_game.rl.cross_runtime import policy_gradient_ok
     report = {}
     for key in ROSTER:
         rows = _legal_rows(pools, key)
         top, count = _play_fraction(nets[key], rows, device)
         updates = last_policy.get(key) or []
         finite = bool(updates) and all(math.isfinite(item['policy_loss']) and math.isfinite(item['value_loss']) for item in updates)
-        report[key] = dict(finite=finite, policy_gradient=any(item['policy_samples'] > 0 for item in updates),
-                           play_legal=count, play_top1=top, reference_play_top1=_reference_fraction(initial, key, rows))
+        coverage = pools[key].coverage_report()
+        report[key] = dict(finite=finite,
+                           policy_gradient=any(policy_gradient_ok(item) for item in updates),
+                           play_legal=count, play_top1=top,
+                           reference_play_top1=_reference_fraction(initial, key, rows),
+                           first_use_coverage=coverage['first_use_coverage'],
+                           unique_covered=coverage['unique_covered'],
+                           fresh_policy_rows=coverage['fresh_policy_rows'],
+                           first_use=coverage['first_use'],
+                           repeated_use=coverage['repeated_use'],
+                           diagnostic_replay_rows=True,
+                           independent_selection=False)
     return report
 
 
@@ -140,9 +151,23 @@ def _search_tally(directory, foe, seed, decks, config):
 
 
 def _run_gate(name, out, config, cycle, nets, pools, initial, best_dir, prior_no_gain, last_policy, decks):
-    pure = first_gate(_pure_report(nets, pools, initial, last_policy, config['device']))
+    metrics = _pure_report(nets, pools, initial, last_policy, config['device'])
+    for key, item in metrics.items():
+        if item['fresh_policy_rows'] and item['unique_covered'] < item['fresh_policy_rows']:
+            item['coverage_gap'] = True
+    extra = [dict(key=key, reason='no_coverage') for key, item in metrics.items() if item.get('coverage_gap')]
+    pure = first_gate(metrics)
+    reasons = list(pure['reasons'])
+    for row in extra:
+        if row not in reasons:
+            reasons.append(row)
+    if extra or pure['decision'] == 'p0':
+        pure = dict(decision='p0', reasons=reasons)
+    else:
+        pure = dict(decision=pure['decision'], reasons=reasons)
     if name == 'first' or pure['decision'] == 'p0':
-        return dict(gate=name, decision=pure['decision'], reasons=pure['reasons'])
+        return dict(gate=name, decision=pure['decision'], reasons=pure['reasons'],
+                    diagnostic_replay_rows=True, independent_selection=False)
     foe = config['screen_foes'][0]
     seed = config['seeds']['selection'] + cycle * 1000
     def tally(directory, probe):
@@ -155,12 +180,12 @@ def _run_gate(name, out, config, cycle, nets, pools, initial, best_dir, prior_no
     screen = dict(complete=candidate['complete'] and retained['complete'], candidate=candidate['wins'], best=retained['wins'])
     confirm = dict(complete=confirmed['complete'] and retained_confirm['complete'], candidate=confirmed['wins'], best=retained_confirm['wins'])
     if name == 'mid':
-        return dict(gate='mid', decision=mid_gate(pure['decision'], screen, confirm), reasons=pure['reasons'])
+        return dict(gate='mid', decision=mid_gate(pure['decision'], screen, confirm), reasons=pure['reasons'], diagnostic_replay_rows=True, independent_selection=False)
     improved = pure['decision'] == 'pass' and screen['candidate'] > screen['best']
     search_confirms = confirm['complete'] and confirm['candidate'] > confirm['best']
     rollback = pure['decision'] == 'pass' and screen['candidate'] + 2 <= screen['best'] and confirm['candidate'] <= confirm['best']
     decision = late_gate('improved' if improved else pure['decision'], search_confirms, prior_no_gain, rollback)
-    return dict(gate='late', decision=decision, reasons=pure['reasons'])
+    return dict(gate='late', decision=decision, reasons=pure['reasons'], diagnostic_replay_rows=True, independent_selection=False)
 
 
 def _rollback(out, config, nets, best_state, best_dir, decks, origins, learning_rate, cycle):
@@ -213,7 +238,9 @@ def learn(out, config):
     learning_rate = float(config.get('learning_rate', 3e-5))
     opts = {k: torch.optim.Adam([p for p in n.parameters() if p.requires_grad], lr=learning_rate)
             for k, n in nets.items()}
-    pools = {k: EpisodePool(limit=64) for k in ROSTER}
+    max_row_reuse = int(config.get('max_row_reuse', 8))
+    policy_passes = rt.validate_policy_passes(config.get('policy_passes', 4))
+    pools = {k: EpisodePool(limit=64, max_row_reuse=max_row_reuse) for k in ROSTER}
     best_dir = initial
     best_state = {k: {name: tensor.detach().cpu().clone() for name, tensor in net.state_dict().items()}
                   for k, net in nets.items()}
@@ -278,6 +305,9 @@ def learn(out, config):
             started = time.time()
             results = list(pool.map(play_job, jobs))
             fresh = {k: 0 for k in ROSTER}
+            fresh_value_rows = {k: [] for k in ROSTER}
+            for key in ROSTER:
+                pools[key].begin_fresh_batch()
             for job, result in zip(jobs, results):
                 row = {k: job[k] for k in ('id', 'seed', 'first', 'left', 'right', 'policies', 'train_sides')}
                 row.update({k: result.get(k) for k in ('complete', 'winner', 'reason', 'decisions', 'searched', 'turn', 'passive_triggers', 'setup_achieved')})
@@ -291,6 +321,7 @@ def learn(out, config):
                 for key in set(job['policies'][s][1] for s in job['train_sides']):
                     rows = [r for r in data['rows'] if r['key'] == key]
                     pools[key].add(job['id'], dict(rows=rows))
+                    fresh_value_rows[key].extend(r for r in rows if 'pi' not in r)
                     counts[key]['games'] += 1
                     counts[key]['samples'] += len(rows)
                     fresh[key] += len(rows)
@@ -301,16 +332,34 @@ def learn(out, config):
             status('updating')
             last_policy = {key: [] for key in ROSTER}
             for key in ROSTER:
-                for step in range(min(8, max(1, fresh[key] // 128)) if fresh[key] else 0):
-                    if time.time() >= config['train_until']:
-                        break
-                    rows, refs, sampling = pools[key].sample(rng, 128, prioritized=False)
-                    if not rows:
-                        break
+                if not fresh[key]:
+                    continue
+                for rows, refs, sampling in pools[key].policy_pass_batches(
+                        rng, passes=policy_passes, batch_size=128, deadline=config['train_until']):
                     metrics = rt.update(nets[key], opts[key], rows)
                     counts[key]['updates'] += 1
-                    last_policy[key].append(metrics)
-                    append(out / 'updates.jsonl', dict(key=key, cycle=cycle, refs=refs, sampling=sampling, **metrics))
+                    counts[key]['policy_first_use'] = pools[key].batch_first_use
+                    counts[key]['policy_repeated_use'] = pools[key].batch_repeated_use
+                    last_policy[key].append(dict(metrics, sampling=sampling))
+                    append(out / 'updates.jsonl', dict(key=key, cycle=cycle, refs=refs, sampling=sampling,
+                        unique_row_ids=sampling.get('row_ids', metrics.get('unique_row_ids')), **metrics))
+                # Preserve the terminal-WDL observations that have no policy
+                # target. They update the value trunk and WDL head only.
+                value_rows = fresh_value_rows[key]
+                for start in range(0, len(value_rows), 128):
+                    if time.time() >= config['train_until']:
+                        break
+                    rows = value_rows[start:start + 128]
+                    metrics = rt.update(nets[key], opts[key], rows, value_only=True)
+                    counts[key]['updates'] += 1
+                    counts[key]['value_updates'] = counts[key].get('value_updates', 0) + 1
+                    append(out / 'updates.jsonl', dict(key=key, cycle=cycle,
+                        sampling=dict(source='fresh_value_only', rows=len(rows)), **metrics))
+                coverage = pools[key].coverage_report()
+                counts[key].update(fresh_policy_rows=coverage['fresh_policy_rows'],
+                                   unique_covered=coverage['unique_covered'],
+                                   first_use_coverage=coverage['first_use_coverage'])
+                write(out / 'policy-coverage' / f'{key}-cycle-{cycle:04}.json', dict(key=key, cycle=cycle, **coverage))
             previous = current
             cycle += 1
             current = out / 'generations' / f'cycle-{cycle:04}'
@@ -321,7 +370,8 @@ def learn(out, config):
             tmp = checkpoint.with_suffix('.tmp')
             torch.save(dict(cycle=cycle, networks={k:n.state_dict() for k,n in nets.items()},
                 optimizers={k:o.state_dict() for k,o in opts.items()},
-                pools={k:p.episodes for k,p in pools.items()}, counts=counts,
+                pools={k:p.export_state() for k,p in pools.items()}, counts=counts,
+                policy_passes=policy_passes, max_row_reuse=max_row_reuse,
                 rng=rng.bit_generator.state, torch_rng=torch.get_rng_state(), config=config), tmp)
             tmp.replace(checkpoint)
             write(out / 'recovery' / 'pointer.json', dict(path=str(checkpoint), cycle=cycle,
@@ -342,7 +392,7 @@ def learn(out, config):
                     learning_rate, current = _rollback(out, config, nets, best_state, best_dir, decks, origins, learning_rate, cycle)
                     opts = {k: torch.optim.Adam([p for p in n.parameters() if p.requires_grad], lr=learning_rate)
                             for k, n in nets.items()}
-                    pools = {k: EpisodePool(limit=64) for k in ROSTER}
+                    pools = {k: EpisodePool(limit=64, max_row_reuse=max_row_reuse) for k in ROSTER}
                     prior_no_gain = False
                 elif decision['decision'] == 'plateau':
                     stop_learning = 'plateau'
@@ -419,6 +469,9 @@ def main():
     p.add_argument('--matrix-games', type=int, default=16)
     p.add_argument('--device', default='cuda')
     p.add_argument('--smoke', action='store_true')
+    p.add_argument('--policy-passes', type=int, choices=(1, 4, 8), default=4,
+                   help='Fresh policy-row passes after each frozen batch; 4 is the bounded research default')
+    p.add_argument('--max-row-reuse', type=int, default=8)
     p.add_argument('--run', action='store_true')
     p.add_argument('--worker', action='store_true')
     a = p.parse_args()
@@ -460,6 +513,7 @@ def main():
         gates=dict(first=1, mid=None, late=None) if a.smoke else schedule_gates(6),
         learning_rate=3e-5, min_learning_rate=1e-5, screen_foes=['starter'],
         planned_batches=1 if a.smoke else 6,
+        policy_passes=a.policy_passes, max_row_reuse=a.max_row_reuse,
         website_approval=False, roster_source=str(a.roster_source) if a.roster_source else '',
         murk_source=str(a.murk_source) if a.murk_source else '')
     config['source_rule_hashes'] = json.loads(a.source_rule_hashes.read_text()) if a.source_rule_hashes else {}

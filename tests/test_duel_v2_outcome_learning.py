@@ -106,3 +106,51 @@ class WDLTest(unittest.TestCase):
             # Changing the opponent's hidden hand order leaves value unchanged.
             other='b' if viewer=='a' else 'a';state['sides'][other]['hand'][-1],state['sides'][other]['deck'][-1]=state['sides'][other]['deck'][-1],state['sides'][other]['hand'][-1]
             self.assertAlmostEqual(value,rt.value_for(state,viewer,{'a':model,'b':model}))
+
+    def _policy_data(self, n=4, z=1, prefix='new'):
+        rows = []
+        for i in range(n):
+            rows.append(dict(x=np.zeros(2, np.float32), c=np.eye(2, dtype=np.float32),
+                             pi=np.array([.25, .75], np.float32), side='a', step=i, z=z))
+        return dict(rows=rows)
+
+    def test_fresh_policy_rows_are_used_once_before_repeats(self):
+        pool = EpisodePool(max_row_reuse=3)
+        pool.add('old', self._policy_data(2, z=-1))
+        pool.begin_fresh_batch()
+        pool.add('new', self._policy_data(4, z=1))
+        rng = np.random.default_rng(7)
+        first = list(pool.policy_pass_batches(rng, passes=1, batch_size=8, include_old_replay=False))
+        self.assertEqual(len(first), 1)
+        rows, refs, stats = first[0]
+        self.assertEqual(len(rows), 4)
+        self.assertEqual(stats['first_use'], 4)
+        self.assertEqual(stats['repeated_use'], 0)
+        self.assertEqual(len(set(stats['row_ids'])), 4)
+        coverage = pool.coverage_report()
+        self.assertEqual(coverage['fresh_policy_rows'], 4)
+        self.assertEqual(coverage['unique_covered'], 4)
+        self.assertEqual(coverage['first_use_coverage'], 1.0)
+        second = list(pool.policy_pass_batches(rng, passes=4, batch_size=8, include_old_replay=False))
+        # Fresh ids are already covered, so later passes only repeat those four rows.
+        repeated_ids = [row_id for _, _, item in second for row_id in item['row_ids']]
+        self.assertTrue(repeated_ids)
+        self.assertEqual(set(repeated_ids), set(stats['row_ids']))
+        self.assertEqual(pool.coverage_report()['repeated_use'], len(repeated_ids))
+        self.assertEqual(pool.coverage_report()['unique_covered'], 4)
+
+    def test_repeats_do_not_count_as_new_experience(self):
+        pool = EpisodePool(max_row_reuse=2)
+        pool.begin_fresh_batch()
+        pool.add('new', self._policy_data(3))
+        rng = np.random.default_rng(3)
+        list(pool.policy_pass_batches(rng, passes=1, batch_size=8, include_old_replay=False))
+        before = pool.coverage_report()
+        list(pool.policy_pass_batches(rng, passes=4, batch_size=8, include_old_replay=False))
+        after = pool.coverage_report()
+        self.assertEqual(after['unique_covered'], before['unique_covered'])
+        self.assertEqual(after['first_use'], before['first_use'])
+        self.assertGreater(after['repeated_use'], 0)
+        restored = EpisodePool.from_state(pool.export_state())
+        self.assertEqual(restored.coverage_report()['repeated_use'], after['repeated_use'])
+        self.assertEqual(restored.coverage_report()['unique_row_ids'], after['unique_row_ids'])

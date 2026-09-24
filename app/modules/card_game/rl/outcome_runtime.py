@@ -162,7 +162,7 @@ def export(net, directory, key, build, origin):
         origin=origin, reward_mode='terminal_wdl_only', validation={'approved': False}, automatic_serving_approval=False))
 
 
-def update(net, opt, rows, *, warmup=False, self_imitation=0.):
+def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.):
     import torch
     from .league_learning import tensors
     if not rows:
@@ -184,7 +184,7 @@ def update(net, opt, rows, *, warmup=False, self_imitation=0.):
         raise ValueError('Invalid sampling weights')
     value_losses = torch.nn.functional.cross_entropy(logits, z, reduction='none')
     value_loss = (weights * value_losses).mean()
-    selected = [i for i, r in enumerate(rows) if 'pi' in r] if not warmup else []
+    selected = [i for i, r in enumerate(rows) if 'pi' in r] if not (warmup or value_only) else []
     policy_loss = logits.sum() * 0
     imitation_loss = logits.sum() * 0;imitation_value_loss=logits.sum()*0;imitation_samples=0
     if selected:
@@ -220,6 +220,27 @@ def update(net, opt, rows, *, warmup=False, self_imitation=0.):
     loss = policy_loss + value_loss + self_imitation*(imitation_loss+.01*imitation_value_loss)
     if not torch.isfinite(loss):
         raise ValueError('Non-finite WDL loss')
+    policy_gradient_norms = {}
+    prefixes = ('cand_net', 'score', 'state_net')
+    owned = [(name, parameter) for name, parameter in net.named_parameters()
+             if parameter.requires_grad and name.startswith(prefixes)]
+    joint = all(any(name.startswith(prefix) for name, _ in owned) for prefix in prefixes)
+    if selected and joint:
+        # Measure the policy objective alone. A joint backward would let WDL
+        # gradients in state_net mask a disconnected policy path.
+        grads = torch.autograd.grad(policy_loss, [parameter for _, parameter in owned],
+                                    retain_graph=True, allow_unused=True)
+        totals = {prefix: 0.0 for prefix in prefixes}
+        for (name, _), gradient in zip(owned, grads):
+            value = 0.0 if gradient is None else float(gradient.detach().norm())
+            policy_gradient_norms[name] = value
+            for prefix in prefixes:
+                if name.startswith(prefix):
+                    totals[prefix] += value * value
+                    break
+        policy_gradient_norms.update({prefix: float(np.sqrt(total)) for prefix, total in totals.items()})
+        if any(not np.isfinite(totals[prefix]) or totals[prefix] <= 0 for prefix in prefixes):
+            raise ValueError('Policy gradient did not reach cand_net/score/state_net')
     opt.zero_grad()
     loss.backward()
     torch.nn.utils.clip_grad_norm_(net.parameters(), 1., error_if_nonfinite=True)
@@ -227,4 +248,7 @@ def update(net, opt, rows, *, warmup=False, self_imitation=0.):
     return dict(policy_loss=float(policy_loss.detach()), value_loss=float(value_loss.detach()),
                 self_imitation_loss=float(imitation_loss.detach()),self_imitation_value_loss=float(imitation_value_loss.detach()),
                 self_imitation_coefficient=self_imitation,self_imitation_samples=imitation_samples,
-                samples=len(rows), policy_samples=len(selected), priority=value_losses.detach().cpu().numpy().tolist())
+                samples=len(rows), policy_samples=len(selected), value_only=bool(value_only),
+                policy_gradient_norms=policy_gradient_norms,
+                unique_row_ids=[r.get('row_id') for r in rows if r.get('row_id') and 'pi' in r],
+                priority=value_losses.detach().cpu().numpy().tolist())

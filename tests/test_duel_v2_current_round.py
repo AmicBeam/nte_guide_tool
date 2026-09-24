@@ -131,3 +131,80 @@ class CurrentRoundTest(unittest.TestCase):
                 self.assertFalse(torch.equal(before,expanded.wdl.weight))
                 if key=='murk': self.assertTrue(origin['changed_ordinal_columns_reset'])
                 else: self.assertFalse(origin['changed_ordinal_columns_reset'])
+
+    @unittest.skipUnless(importlib.util.find_spec('torch'), 'Torch optional locally')
+    def test_policy_pass_reaches_joint_heads_and_keeps_terminal_value(self):
+        import torch
+        from app.modules.card_game.rl.episode_replay import EpisodePool
+        from app.modules.card_game.rl.cross_runtime import policy_gradient_ok
+        torch.set_num_threads(1)
+        net = rt.create_network(8, 'cpu')
+        opt = torch.optim.Adam([p for p in net.parameters() if p.requires_grad], lr=1e-3)
+        decks = preset_decks()
+        state = new_game(seed=11, decks={'a': decks['starter'], 'b': decks['murk']})
+        actions, (x, c) = rt.decision(state, 'a')
+        pi = np.zeros(len(c), np.float32); pi[0] = 1
+        pool = EpisodePool(max_row_reuse=2)
+        pool.begin_fresh_batch()
+        pool.add('fresh', dict(rows=[
+            dict(x=x, c=c, pi=pi, selected=0, z=1, side='a', step=0, key='starter'),
+            dict(x=x, z=-1, side='a', step=1, key='starter'),
+        ]))
+        rows, refs, stats = next(pool.policy_pass_batches(np.random.default_rng(2), passes=1, batch_size=8, include_old_replay=False))
+        self.assertEqual(len(rows), 1)
+        self.assertIn('pi', rows[0])
+        self.assertEqual(rows[0]['z'], 1)
+        metrics = rt.update(net, opt, rows)
+        self.assertTrue(policy_gradient_ok(metrics))
+        self.assertGreater(metrics['policy_gradient_norms']['cand_net'], 0)
+        self.assertGreater(metrics['policy_gradient_norms']['score'], 0)
+        self.assertGreater(metrics['policy_gradient_norms']['state_net'], 0)
+        with self.assertRaises(ValueError):
+            rt.update(net, opt, [{**rows[0], 'reward_to_go': 4.0}])
+        before_wdl = net.wdl.weight.detach().clone()
+        value_metrics = rt.update(net, opt, [dict(x=x, z=-1)], value_only=True)
+        self.assertEqual(value_metrics['policy_samples'], 0)
+        self.assertTrue(value_metrics['value_only'])
+        self.assertFalse(torch.equal(before_wdl, net.wdl.weight))
+
+    @unittest.skipUnless(importlib.util.find_spec('torch'), 'Torch optional locally')
+    def test_p0_still_stops_and_rollback_keeps_best_arrays(self):
+        import torch
+        from unittest.mock import patch
+        from pathlib import Path
+        import scripts.train_duel_v2_current_round as train
+        metrics = {
+            key: dict(finite=True, policy_gradient=True, play_legal=30, play_top1=0.4,
+                      reference_play_top1=0.4, first_use_coverage=1.0, unique_covered=4,
+                      fresh_policy_rows=4, first_use=4, repeated_use=0)
+            for key in ROSTER
+        }
+        metrics['starter']['play_top1'] = 0
+        metrics['starter']['first_use_coverage'] = 0
+        metrics['starter']['unique_covered'] = 0
+        with patch.object(train, '_pure_report', return_value=metrics):
+            decision = train._run_gate('first', Path('.'), dict(device='cpu'), 1, None, None, None, None, False, None, None)
+        self.assertEqual(decision['decision'], 'p0')
+        self.assertTrue(decision['diagnostic_replay_rows'])
+        self.assertFalse(decision['independent_selection'])
+        self.assertIn('no_play', {row['reason'] for row in decision['reasons']})
+        self.assertIn('no_coverage', {row['reason'] for row in decision['reasons']})
+        torch.set_num_threads(1)
+        decks = preset_decks()
+        nets = {key: rt.create_network(8, 'cpu') for key in ROSTER}
+        best_state = {key: {name: tensor.detach().cpu().clone() for name, tensor in net.state_dict().items()} for key, net in nets.items()}
+        with tempfile.TemporaryDirectory() as folder:
+            best_dir = Path(folder) / 'best'
+            origins = {}
+            for key, net in nets.items():
+                origins[key] = dict(initialization='test')
+                rt.export(net, best_dir, key, decks[key], origins[key])
+                with torch.no_grad():
+                    net.score.weight.add_(1)
+            learning_rate, exported = train._rollback(Path(folder), dict(min_learning_rate=1e-5), nets, best_state, best_dir, decks, origins, 3e-5, 1)
+            self.assertEqual(learning_rate, 1e-5)
+            for key in ROSTER:
+                retained = rt.model(best_dir, key)
+                rolled = rt.model(exported, key)
+                for name, value in retained.weights.items():
+                    np.testing.assert_array_equal(value, rolled.weights[name])

@@ -19,6 +19,7 @@ TEAMS = ('starter', 'weave-rush', 'quick-rush')
 NO_OLD_TEACHER = ('zhenhong', 'murk')
 KL_GRID = (0.0, 0.05, 0.1, 0.2)
 MAX_KL = 1.0
+MAX_TEACHER_TOP_WEIGHT = 5.0
 DAMAGE_IMMUNE_GAP = 20
 REPO_TEACHERS = Path(__file__).resolve().parents[1] / 'engine' / 'ai' / 'models'
 ARCHIVED_EPISODES = (
@@ -389,7 +390,8 @@ def report_without_old_teacher(key):
     )
 
 
-def update_student(net, opt, rows, teachers, *, kl_coefficient=0.0, value_only=False):
+def update_student(net, opt, rows, teachers, *, kl_coefficient=0.0,
+                   teacher_top_weight=0.0, value_only=False):
     """Fit Gumbel policy and terminal WDL, with optional old-teacher anchoring."""
     import numpy as np
     import torch
@@ -399,6 +401,9 @@ def update_student(net, opt, rows, teachers, *, kl_coefficient=0.0, value_only=F
     coefficient = float(kl_coefficient)
     if not np.isfinite(coefficient) or not 0 <= coefficient <= MAX_KL:
         raise ValueError('KL coefficient is outside the predeclared bound')
+    top_weight = float(teacher_top_weight)
+    if not np.isfinite(top_weight) or not 0 <= top_weight <= MAX_TEACHER_TOP_WEIGHT:
+        raise ValueError('Teacher top-action weight is outside the research bound')
     device = next(net.parameters()).device
     x = torch.as_tensor(np.stack([row['x'] for row in rows]), device=device)
     hidden = net.state_net(x)
@@ -411,6 +416,7 @@ def update_student(net, opt, rows, teachers, *, kl_coefficient=0.0, value_only=F
     value_loss = (weights * torch.nn.functional.cross_entropy(logits, z, reduction='none')).mean()
     policy_loss = logits.sum() * 0
     kl_loss = logits.new_zeros(())
+    teacher_top_loss = logits.new_zeros(())
     stats = dict(kl_coefficient=coefficient, kl_samples=0)
     policy_indices = [index for index, row in enumerate(rows) if 'pi' in row] if not value_only else []
     if policy_indices:
@@ -425,9 +431,10 @@ def update_student(net, opt, rows, teachers, *, kl_coefficient=0.0, value_only=F
             target[local, :len(pi)] = torch.as_tensor(pi, device=device)
         ce = -(target * policy.log_softmax(-1).masked_fill(~mask, 0)).sum(-1)
         policy_loss = (weights[policy_indices] * ce).mean()
-        if coefficient:
+        if coefficient or top_weight:
             teacher_locals = []
             teacher_score_rows = []
+            teacher_top_indexes = []
             for local, index in enumerate(policy_indices):
                 row = rows[index]
                 if row.get('key') in NO_OLD_TEACHER or row.get('key') not in teachers:
@@ -440,10 +447,11 @@ def update_student(net, opt, rows, teachers, *, kl_coefficient=0.0, value_only=F
                 if not mapped['overlapping']:
                     continue
                 teacher_locals.append(local)
+                teacher_top_indexes.append(mapped['teacher_top'])
                 scores = np.full(len(row['c']), np.finfo(np.float32).min, dtype=np.float32)
                 scores[mapped['keep']] = mapped['scores'].astype(np.float32)
                 teacher_score_rows.append(scores)
-            if teacher_locals:
+            if teacher_locals and coefficient:
                 width = policy.shape[1]
                 fill = torch.finfo(policy.dtype).min
                 teacher_batch = torch.full((len(teacher_locals), width), fill, device=device)
@@ -455,7 +463,12 @@ def update_student(net, opt, rows, teachers, *, kl_coefficient=0.0, value_only=F
                         np.isfinite(scores) & (scores > threshold), device=device)
                 overlap &= mask[teacher_locals]
                 kl_loss, stats = teacher_kl_loss(policy[teacher_locals], overlap, teacher_batch, coefficient)
-    loss = value_loss + policy_loss + kl_loss
+            if teacher_locals and top_weight:
+                selected_logits = policy[teacher_locals].masked_fill(
+                    ~mask[teacher_locals], torch.finfo(policy.dtype).min)
+                targets = torch.tensor(teacher_top_indexes, dtype=torch.long, device=device)
+                teacher_top_loss = top_weight * torch.nn.functional.cross_entropy(selected_logits, targets)
+    loss = value_loss + policy_loss + kl_loss + teacher_top_loss
     if not torch.isfinite(loss):
         raise ValueError('Non-finite teacher distillation loss')
     prefixes = ('cand_net', 'score', 'state_net')
@@ -464,7 +477,7 @@ def update_student(net, opt, rows, teachers, *, kl_coefficient=0.0, value_only=F
     norms = {}
     if policy_indices and owned:
         grads = torch.autograd.grad(
-            policy_loss + kl_loss, [parameter for _, parameter in owned],
+            policy_loss + kl_loss + teacher_top_loss, [parameter for _, parameter in owned],
             retain_graph=True, allow_unused=True)
         for (name, _), gradient in zip(owned, grads):
             norms[name] = 0.0 if gradient is None else float(gradient.detach().norm())
@@ -474,7 +487,9 @@ def update_student(net, opt, rows, teachers, *, kl_coefficient=0.0, value_only=F
     opt.step()
     return dict(
         value_loss=float(value_loss.detach()), policy_loss=float(policy_loss.detach()),
-        kl_loss=float(kl_loss.detach()), samples=len(rows), policy_samples=len(policy_indices),
+        kl_loss=float(kl_loss.detach()), teacher_top_loss=float(teacher_top_loss.detach()),
+        teacher_top_weight=top_weight,
+        samples=len(rows), policy_samples=len(policy_indices),
         kl_coefficient=stats['kl_coefficient'], kl_samples=stats.get('kl_samples', 0),
         policy_gradient_norms=norms, serving_export=False,
     )

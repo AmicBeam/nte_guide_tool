@@ -238,6 +238,10 @@ class CrossTeacherDistillationTest(unittest.TestCase):
                             if name.startswith(('cand_net', 'score'))))
         self.assertFalse(torch.equal(before_score, net.score.weight.detach())
                          and torch.equal(before_cand, net.cand_net[0].weight.detach()))
+        top = update_student(net, opt, [row], {'starter': self.starter},
+                             teacher_top_weight=1.0)
+        self.assertGreater(top['teacher_top_loss'], 0)
+        self.assertEqual(top['teacher_top_weight'], 1.0)
         logits = torch.tensor([[1.0, 0.0], [0.0, 1.0]], requires_grad=True)
         mask = torch.tensor([[True, True], [True, False]])
         teacher = torch.tensor([[0.2, 0.1], [0.3, 0.0]])

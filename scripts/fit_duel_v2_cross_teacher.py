@@ -83,6 +83,7 @@ def main(argv=None):
     parser.add_argument('--confirmation-plan', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--coefficients', type=float, nargs='+', default=[0.0, 0.2, 1.0])
+    parser.add_argument('--anchor-mode', choices=('kl', 'top1'), default='kl')
     parser.add_argument('--learning-rate', type=float, default=1.5e-4)
     parser.add_argument('--passes', type=int, default=4)
     parser.add_argument('--batch', type=int, default=128)
@@ -93,7 +94,13 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.output.exists():
         parser.error('Output must be new and empty')
-    coefficients = validate_kl_grid(args.coefficients)
+    if args.anchor_mode == 'kl':
+        coefficients = validate_kl_grid(args.coefficients)
+    else:
+        coefficients = tuple(args.coefficients)
+        if (not coefficients or 0.0 not in coefficients or len(set(coefficients)) != len(coefficients)
+                or any(not np.isfinite(value) or not 0 <= value <= 5 for value in coefficients)):
+            parser.error('Invalid predeclared teacher top-action grid')
     if (args.passes not in (1, 4, 8) or args.batch < 32 or not 1 <= args.seconds <= 3600
             or not np.isfinite(args.learning_rate) or not 0 < args.learning_rate <= 1e-3):
         parser.error('Invalid bounded optimizer budget')
@@ -108,6 +115,7 @@ def main(argv=None):
     confirmation = json.loads(args.confirmation_plan.read_text(encoding='utf-8'))['confirmation_seeds']
     split = split_paired_roots(games, confirmation)
     config = dict(kind='cross_teacher_offline_research', coefficients=coefficients,
+                  anchor_mode=args.anchor_mode,
                   learning_rate=args.learning_rate, passes=args.passes, batch=args.batch,
                   device=args.device, hard_deadline=args.hard_deadline,
                   stop_at=datetime.fromtimestamp(deadline, timezone.utc).isoformat(),
@@ -163,8 +171,9 @@ def main(argv=None):
                     if time.time() >= deadline:
                         complete = False
                         break
-                    update_student(net, optimizer, [fit[index] for index in indexes],
-                                   teachers, kl_coefficient=coefficient)
+                    update_student(net, optimizer, [fit[index] for index in indexes], teachers,
+                                   kl_coefficient=coefficient if args.anchor_mode == 'kl' else 0.0,
+                                   teacher_top_weight=coefficient if args.anchor_mode == 'top1' else 0.0)
                     steps += 1
                 if not complete:
                     break
@@ -174,7 +183,8 @@ def main(argv=None):
             folder = args.output / 'models' / str(coefficient)
             runtime.export(net, folder, key, source.serving_deck,
                            dict(initialization='research_teacher_anchor', source_sha256=source.version,
-                                teacher_sha256=teachers[key]['sha256'], kl_coefficient=coefficient,
+                                teacher_sha256=teachers[key]['sha256'],
+                                anchor_mode=args.anchor_mode, anchor_weight=coefficient,
                                 automatic_serving_approval=False))
             policy = runtime.model(folder, key)
             variants[str(coefficient)] = dict(status='complete', steps=steps,
@@ -190,6 +200,8 @@ def main(argv=None):
                              variants=variants)
         write(args.output / 'result.json', dict(config=config, measured=measured,
                                                 full_game_win_rate=False, formal_training=False))
+    write(args.output / 'result.json', dict(config=config, measured=measured,
+                                            full_game_win_rate=False, formal_training=False))
     print(json.dumps({'output':str(args.output),'measured':{key:value['status'] for key,value in measured.items()}},
                      ensure_ascii=False))
 

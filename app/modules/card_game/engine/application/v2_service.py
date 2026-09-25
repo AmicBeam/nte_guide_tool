@@ -525,7 +525,7 @@ def _response(room, player, envelope: dict | None = None, after_seq=None) -> dic
         if game and entry.side in game['sides']:
             game['sides'][entry.side]['name'] = name
     if game and room.mode in {'solo', 'advanced'} and 'b' in game['sides']:
-        game['sides']['b']['name'] = ('高级人机' if room.mode == 'advanced' else
+        game['sides']['b']['name'] = (('实验性高级人机' if (envelope['game'].get('ai_profile') or {}).get('experimental') else '高级人机') if room.mode == 'advanced' else
                                     ((envelope['game'].get('ai_profile') or {}).get('name', '练习对手')))
     if game and room.mode == 'tutorial' and 'b' in game['sides']:
         game['sides']['b']['name'] = '对手'
@@ -617,9 +617,10 @@ def _initialize_game(room, scenario=None, ai_deck_id=None, ai_model=None, solo_d
             'deck_id': ai_deck_id,
             'version': model.version,
             'build_sha256': model_build_hash(model, decks['b']),
+            'experimental': bool(getattr(model, 'experimental', False)),
             'capability': dict(getattr(model, 'capability', {}) or {}),
         }
-        game['sides']['b']['name'] = '高级人机'
+        game['sides']['b']['name'] = '实验性高级人机' if getattr(model, 'experimental', False) else '高级人机'
     replay.begin(room, game)
     game = _advance_ai(game, room.mode)
     envelope = {'rules_version': 'duel_v2', 'game': game, 'requests': []}
@@ -662,9 +663,9 @@ def _start_locked(player, payload: dict) -> dict:
         ai_deck_id = requested_ai
         if ai_deck_id == 'random':
             from secrets import choice
-            from app.modules.card_game.engine.ai.advanced_model import PRESETS, UNTRAINED_STRATEGIES
+            from app.modules.card_game.engine.ai.advanced_model import RANDOM_PRESETS, UNTRAINED_STRATEGIES
             available = []
-            for candidate in PRESETS:
+            for candidate in RANDOM_PRESETS:
                 if candidate in UNTRAINED_STRATEGIES:
                     continue
                 try:

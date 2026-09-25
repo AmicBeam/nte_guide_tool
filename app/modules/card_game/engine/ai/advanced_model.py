@@ -27,14 +27,15 @@ from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
 
 _CACHE = {}
 _LOCK = threading.RLock()
-PRESETS = ('starter', 'weave-rush', 'quick-rush')
+PRESETS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk')
+RANDOM_PRESETS = PRESETS
 UNTRAINED_STRATEGIES = {}
 PENDING_PRESETS = frozenset()
 
 
 def preset(deck_id):
     if deck_id not in PRESETS:
-        raise RuleValidationError('高级人机策略包括娜伊零九、薄白零伊和吱零薄九。')
+        raise RuleValidationError('高级人机策略不存在。')
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
 
 
@@ -48,6 +49,8 @@ def require_human_deck(model, deck, deck_id):
     """Validate serving scope before creating any room or replay."""
     try:
         from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
+        if getattr(model, 'experimental', False):
+            return model.validate_human(deck)
         if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1'):
             return model.validate_human(deck)
         deck = assert_public_encoder_deck(deck)
@@ -234,7 +237,8 @@ class FrozenModel:
 
 def load_model(deck_id):
     preset(deck_id)
-    root = Path(config.DUEL_AI_MODEL_DIR).resolve()
+    from .experimental_cross_model import ARCHIVE, EXPERIMENTAL, ExperimentalCrossModel
+    root = ARCHIVE if deck_id in EXPERIMENTAL else Path(config.DUEL_AI_MODEL_DIR).resolve()
     if deck_id in PENDING_PRESETS and not (root / f'{deck_id}.json').is_file():
         raise RuleValidationError('吱零薄海高级人机尚待训练与验收，请先使用普通人机。')
     key = (str(root), deck_id)
@@ -245,7 +249,9 @@ def load_model(deck_id):
             if key not in _CACHE or getattr(_CACHE[key], '_file_signature', None) != signature:
                 manifest = json.loads((root / f'{deck_id}.json').read_text(encoding='utf-8'))
                 from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
-                if manifest.get('schema') == 'fixed_ten_v1':
+                if deck_id in EXPERIMENTAL:
+                    candidate = ExperimentalCrossModel(deck_id)
+                elif manifest.get('schema') == 'fixed_ten_v1':
                     from .fixed_model import FixedServingModel
                     candidate = FixedServingModel(root, deck_id)
                 elif manifest.get('schema') == LEAGUE_SCHEMA:
@@ -280,7 +286,7 @@ def choose_action(state, side='b'):
         return next(a for a in actions if not a.get('card_ids'))
     from app.modules.card_game.rl.public_schema import SCHEMA as PUBLIC_SCHEMA
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
-    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA,'fixed_ten_v1'):
+    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA,'fixed_ten_v1', 'cross_five_grounded_wdl_v1'):
         from app.modules.card_game.engine.duel_v2 import observe
         return actions[model.select_public_action(observe(state, side, include_previews=False), actions)]
     try:
@@ -292,4 +298,4 @@ def choose_action(state, side='b'):
 
 def model_build_hash(model, build):
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA, build_hash
-    return build_hash(build) if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1') else serving_deck_hash(build)
+    return build_hash(build) if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1', 'cross_five_grounded_wdl_v1') else serving_deck_hash(build)

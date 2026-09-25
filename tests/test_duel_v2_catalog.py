@@ -93,14 +93,14 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertIn('消灭', CHARACTERS['baicang']['awakened_passive'])
         self.assertIn('荒时', CHARACTERS['xun']['passive'])
         self.assertIn('时计', CHARACTERS['xun']['awakened_passive'])
-        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue', 'zhenhong', 'yi')))
+        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue', 'zhenhong', 'yi', 'anhunqu', 'canhong', 'zaowu', 'adler')))
         access = {item['id']: item['access_level'] for item in catalog['characters']}
         self.assertEqual(access['nanali'], 'public')
         self.assertEqual(access['zero'], 'public')
         self.assertEqual(access['jiuyuan'], 'public')
         self.assertEqual(access['iloy'], 'public')
         self.assertEqual(access['xun'], 'test')
-        self.assertEqual(access['canhong'], 'test')
+        self.assertEqual(access['canhong'], 'public')
         self.assertEqual(access['bohe'], 'public')
         self.assertEqual(access['baicang'], 'public')
 
@@ -291,7 +291,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertFalse(any(CARDS[c].get('derived') for c in deck['card_ids']))
         self.assertNotIn('crimson', {d['id'] for d in STARTER_DECKS})
 
-    def test_murk_preset_is_the_four_test_characters(self):
+    def test_murk_preset_is_public(self):
         from collections import Counter
         deck = next(d for d in STARTER_DECKS if d['id'] == 'murk')
         self.assertEqual(deck['name'], '浊燃预组')
@@ -302,7 +302,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertTrue(all(count == 2 for count in Counter(deck['card_ids']).values()))
         self.assertEqual(len(Counter(deck['card_ids'])), 16)
         self.assertFalse(any(CARDS[c].get('derived') for c in deck['card_ids']))
-        self.assertTrue(deck_uses_test_characters(deck))
+        self.assertFalse(deck_uses_test_characters(deck))
 
     def test_catalog_returns_independent_copies(self) -> None:
         first = get_catalog()
@@ -334,7 +334,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         public = get_catalog(include_test_characters=False)
         self.assertEqual({item['id'] for item in public['characters']}, set(PUBLIC_CHARACTER_IDS))
         self.assertTrue(all(item['character_id'] in PUBLIC_CHARACTER_IDS for item in public['cards']))
-        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
+        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'])
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
         self.assertFalse(any(deck_uses_test_characters(item) for item in public['starter_decks']))
         full = get_catalog()
@@ -344,7 +344,7 @@ class DuelV2CatalogTest(unittest.TestCase):
             [item['name'] for item in full['starter_decks']],
             ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'],
         )
-        self.assertTrue(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'murk')))
+        self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'murk')))
         self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')))
 
     def test_existing_character_images_are_present(self) -> None:

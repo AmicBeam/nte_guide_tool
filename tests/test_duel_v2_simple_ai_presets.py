@@ -9,7 +9,7 @@ from app.modules.card_game.engine.application import v2_service
 class SimpleAiPresetsTest(unittest.TestCase):
     def test_random_pool_stays_public_even_for_a_test_account(self):
         expected=[p for p in STARTER_DECKS if not deck_uses_test_characters(p)]
-        self.assertEqual({p['id'] for p in expected},{'starter','weave-rush','quick-rush','zhenhong'})
+        self.assertEqual({p['id'] for p in expected},{'starter','weave-rush','quick-rush','zhenhong','murk'})
         tester=SimpleNamespace(shaft_test_whitelisted=True)
         for player in (None, tester):
             for selected in expected:
@@ -22,12 +22,10 @@ class SimpleAiPresetsTest(unittest.TestCase):
                 self.assertEqual(got['card_ids'],selected['card_ids'])
                 self.assertIsNot(got['card_ids'],selected['card_ids'])
 
-    def test_test_account_can_select_murk_and_a_public_account_cannot(self):
+    def test_public_account_can_select_murk(self):
         tester=SimpleNamespace(shaft_test_whitelisted=True)
         got=v2_service._solo_ai_deck(tester,'murk')
         self.assertEqual(got['character_ids'],['anhunqu','canhong','zaowu','adler'])
         public=SimpleNamespace(shaft_test_whitelisted=False)
-        with self.assertRaises(RuleValidationError):
-            v2_service._solo_ai_deck(public,'murk')
-        with self.assertRaises(RuleValidationError):
-            v2_service._solo_ai_deck(None,'murk')
+        self.assertEqual(v2_service._solo_ai_deck(public,'murk')['character_ids'], got['character_ids'])
+        self.assertEqual(v2_service._solo_ai_deck(None,'murk')['character_ids'], got['character_ids'])

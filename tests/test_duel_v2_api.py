@@ -171,7 +171,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         official = [item['name'] for item in catalog['starter_decks']]
         names = [item['name'] for item in catalog['saved_builds']]
         self.assertEqual(names, official)
-        self.assertEqual(official, ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
+        self.assertEqual(official, ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'])
         first_ids = [item['id'] for item in catalog['saved_builds']]
         self.assertTrue(all(item_id not in ('starter', 'requiem', 'crimson') for item_id in first_ids))
         again = self._get('/api/duel-v2/catalog', token=self.b)
@@ -195,7 +195,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertEqual(names, expected)
         self.assertEqual(catalog['saved_builds'][0]['id'], 'old-starter')
         self.assertEqual(catalog['active_build_id'], 'old-starter')
-        self.assertEqual(expected, ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
+        self.assertEqual(expected, ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'])
 
     def test_complete_starter_presets_fills_already_granted_single_build(self):
         token = self._issue_login_and_get_token('duel-v2-seed-presets')
@@ -217,12 +217,12 @@ class DuelV2ApiTest(RoomFlowTestCase):
     def test_catalog_and_build_are_versioned_and_strict(self):
         catalog = self._get('/api/duel-v2/catalog', token=self.a)
         self.assertEqual(catalog['rules_version'], 'duel_v2')
-        self.assertEqual({item['id'] for item in catalog['characters']}, {'nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue', 'zhenhong', 'yi'})
-        self.assertEqual(len(catalog['characters']), 10)
-        self.assertEqual(len(catalog['cards']), 82)
-        self.assertTrue(all(item['character_id'] in {'nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue', 'zhenhong', 'yi'} for item in catalog['cards']))
+        self.assertEqual({item['id'] for item in catalog['characters']}, {'nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue', 'zhenhong', 'yi', 'anhunqu', 'canhong', 'zaowu', 'adler'})
+        self.assertEqual(len(catalog['characters']), 14)
+        self.assertEqual(len(catalog['cards']), 115)
+        self.assertTrue(all(item['character_id'] in {'nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue', 'zhenhong', 'yi', 'anhunqu', 'canhong', 'zaowu', 'adler'} for item in catalog['cards']))
         self.assertEqual(catalog['starter_deck']['character_ids'], ['nanali', 'iloy', 'zero', 'jiuyuan'])
-        self.assertEqual([item['name'] for item in catalog['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
+        self.assertEqual([item['name'] for item in catalog['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'])
         player = self.dao_module.get_or_create_player('duel-v2-a')[0]
         with self.db_module.atomic_transaction():
             self.dao_module.upsert_build(player, 'legacy', ['legacy-card'])
@@ -434,10 +434,10 @@ class DuelV2ApiTest(RoomFlowTestCase):
         for token in (self.a, invited):
             catalog = self._get('/api/duel-v2/catalog', token=token)
             names = {item['name'] for item in catalog['characters']}
-            self.assertEqual(names, {'娜娜莉', '零', '九原', '伊洛伊', '薄荷', '白藏', '小吱', '海月', '真红', '翳'})
+            self.assertEqual(names, {'娜娜莉', '零', '九原', '伊洛伊', '薄荷', '白藏', '小吱', '海月', '真红', '翳', '安魂曲', '残虹', '早雾', '阿德勒'})
             self.assertNotIn('浔', names)
-            self.assertEqual([item['name'] for item in catalog['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
-            self.assertEqual([item['name'] for item in catalog['saved_builds']], ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
+            self.assertEqual([item['name'] for item in catalog['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'])
+            self.assertEqual([item['name'] for item in catalog['saved_builds']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'])
 
     def test_catalog_shows_test_characters_and_presets_to_whitelisted_accounts(self):
         token = self._issue_login_and_get_token('duel-v2-tester')
@@ -523,16 +523,16 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self._set_test_whitelist('duel-v2-host-tester')
         self._post('/api/duel-v2/build', test_character_deck('requiem'), token=tester)
         catalog = self._get('/api/duel-v2/catalog', token=tester)
-        requiem = next(item for item in catalog['saved_builds'] if item['name'] == '浊燃预组')
+        requiem = next(item for item in catalog['saved_builds'] if 'lingke' in item['character_ids'])
         self._post('/api/duel-v2/build-select', {'id': requiem['id']}, token=tester)
         room = self._post('/api/duel-v2/start', {'mode': 'pvp'}, token=tester)
         error = self._post_error('/api/duel-v2/join', {'room_code': room['room']['room_code']}, token=self.b)
         self.assertIn('尚未公开', error['error'])
 
-    def test_whitelisted_account_gains_the_murk_preset(self):
+    def test_public_account_already_has_the_murk_preset(self):
         token = self._issue_login_and_get_token('duel-v2-upgrade')
         first = self._get('/api/duel-v2/catalog', token=token)
-        self.assertEqual([item['name'] for item in first['saved_builds']], ['创生预组', '覆纹预组', '小吱预组', '真红预组'])
+        self.assertEqual([item['name'] for item in first['saved_builds']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'])
         self._set_test_whitelist('duel-v2-upgrade')
         upgraded = self._get('/api/duel-v2/catalog', token=token)
         self.assertEqual(
@@ -575,9 +575,9 @@ class DuelV2ApiTest(RoomFlowTestCase):
         room = self._post('/api/duel-v2/start', {'mode': 'solo', 'deck': deck}, token=self.a)
         self.assertEqual([h['id'] for h in room['game']['sides']['a']['characters']], deck['character_ids'])
 
-    def test_quick_rush_advanced_pending_does_not_create_room(self):
+    def test_quick_rush_advanced_unavailable_does_not_create_room(self):
         result = self._post_error('/api/duel-v2/start', {'mode': 'advanced', 'ai_deck': 'quick-rush'}, token=self.a)
-        self.assertIn('尚待训练与验收', result['error'])
+        self.assertIn('高级人机模型暂不可用', result['error'])
 
     def test_tutorial_start_returns_guided_level_one(self):
         catalog = self._get('/api/duel-v2/catalog', token=self.a)

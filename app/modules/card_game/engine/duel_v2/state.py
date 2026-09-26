@@ -451,7 +451,8 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
             src_side, src_cid = source.split(':', 1)
             if src_side in SIDES and src_cid in state['sides'][src_side]['characters']:
                 fire(EffectContext(state, src_side, src_cid, {'side': src_side}),
-                     'on_damage_dealt', actor_only=True, target_side=side, target_id=cid, amount=loss)
+                     'on_damage_dealt', actor_only=True, target_side=side, target_id=cid, amount=loss,
+                     damage_kind=kind)
     if redirect_loss and redirect and not finished(state):
         damage(state, side, redirect, redirect_loss, source=source, kind=kind, settle=settle,
                group_id=group_id, damage_class=damage_class, reason='护盾破碎，溢出伤害转移')
@@ -580,12 +581,12 @@ def _notify_healed(state, side, cid, amount, source):
 
 
 def shield(state, side, cid, amount, *, reason=None):
-    if finished(state) or not alive(state, side, cid):
+    if finished(state) or (not is_player(cid) and not alive(state, side, cid)):
         return
-    h = hero(state, side, cid)
+    h = state['sides'][side] if is_player(cid) else hero(state, side, cid)
     before = {'hp': h['hp'], 'shield': h['shield']}
     h['shield'] += max(0, amount)
-    log(state, (f'{reason}：' if reason else '') + f"{h['name']}获得 {amount} 点护盾。", 'shield', side=side, source=cid,
+    log(state, (f'{reason}：' if reason else '') + f"{name(state, side, cid)}获得 {amount} 点护盾。", 'shield', side=side, source=cid,
         actor=f'{side}:{cid}', target=f'{side}:{cid}', amount=amount,
         before=before, after={'hp': h['hp'], 'shield': h['shield']})
 

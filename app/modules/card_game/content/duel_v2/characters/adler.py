@@ -42,6 +42,7 @@ def _d01(c):
 
 
 def _d02(c):
+    shield(c.state, c.side, 'player', 3)
     for cid in team_order(c.state, c.side):
         h = hero(c.state, c.side, cid)
         if h.get('summoned') or h.get('hp', 0) <= 0:
@@ -98,7 +99,8 @@ class Adler:
     @staticmethod
     def on_ultimate(c):
         from app.modules.card_game.engine.duel_v2.continuous import distribute
-        distribute(c.state, other(c.side), 5, source=f'{c.side}:{c.cid}', by=c.side, reason='阿德勒的终结')
+        distribute(c.state, other(c.side), 5, source=f'{c.side}:{c.cid}', by=c.side,
+                   reason='阿德勒的终结', continuous=False)
         if burn_present(c.state) and alive(c.state, c.side, c.cid):
             c.energy(1, reason='浊燃，阿德勒的终结')
 

@@ -141,13 +141,20 @@ class Canhong:
             _enter_mirage(c)
 
     @staticmethod
-    def after_hits(c, **_data):
+    def after_hits(c, target_loss=0, **_data):
         if not _mirage(c) or not alive(c.state, c.side, c.cid):
             return
         foe = other(c.side)
         apply_dot(c.state, foe, 'etch', by=c.side, source_cid=c.cid, stacks=1)
-        if int((c.operation or {}).get('last_attack_amount') or 0) > 0:
+        if target_loss > 0:
             add_stack_all(c.state, foe, c.side, 1)
+
+    @staticmethod
+    def on_damage_dealt(c, target_side=None, amount=0, damage_kind=None, **_data):
+        # Combat grows the just-applied 蚀心 in after_hits; other damage uses this timing.
+        if (damage_kind != 'combat' and amount > 0 and target_side == other(c.side)
+                and _mirage(c) and alive(c.state, c.side, c.cid)):
+            add_stack_all(c.state, target_side, c.side, 1)
 
     @staticmethod
     def on_replaced(c):

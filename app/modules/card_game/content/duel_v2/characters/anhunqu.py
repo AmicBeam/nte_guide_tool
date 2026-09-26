@@ -42,13 +42,12 @@ def _a02(c):
 
 
 def _a03(c):
-    from app.modules.card_game.engine.duel_v2.continuous import distribute
+    from app.modules.card_game.engine.duel_v2.continuous import trigger_dot
     foe = other(c.side)
     dots = front_debuff(c.state, foe).get('dots') or {}
     dot = dots.get('nightmare')
     if dot and dot.get('by') == c.side and int(dot.get('stacks') or 0):
-        distribute(c.state, foe, int(dot['stacks']), source=dot.get('source') or f'{c.side}:{c.cid}',
-                   by=c.side, reason='「冰淇淋在烈阳中融化」')
+        trigger_dot(c.state, foe, 'nightmare', dot, reason='「冰淇淋在烈阳中融化」')
         dots.pop('nightmare', None)
         c.history('触发并移除全部「噩梦」。')
     c.draw(1)
@@ -98,6 +97,11 @@ def _a07(c):
         apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=2)
 
 
+def _a07_turn_begin(c):
+    apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=2)
+    c.history('己方回合开始，「广告拍摄中！」施加 2 层「噩梦」。')
+
+
 @register
 class Anhunqu:
     id = 'anhunqu'
@@ -107,19 +111,14 @@ class Anhunqu:
         'A05': _a05, 'A06': _a06, 'A07': _a07, 'A08': set_shape, 'AF01': _af01,
     }
     target_policies = {
-        'A01': 'enemy_not_in_lineup', 'A02': 'living_enemy', 'A05': 'living_enemy',
+        'A01': 'enemy_not_in_lineup', 'A02': 'any_living_esper', 'A05': 'living_enemy_role',
     }
+    weapon_hooks = {'A07': {'on_turn_begin': _a07_turn_begin}}
 
     @staticmethod
     def on_ultimate(c):
         apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=5)
         c.history('发动终结：施加 5 层「噩梦」。')
-
-    @staticmethod
-    def on_turn_begin(c):
-        if c.character.get('shape') == 'A07' and alive(c.state, c.side, c.cid):
-            apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=2)
-            c.history('己方回合开始，「广告拍摄中！」施加 2 层「噩梦」。')
 
     @staticmethod
     def after_hits(c, **_data):

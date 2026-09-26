@@ -1006,7 +1006,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对一名对方异能者造成等同于「噩梦」层数的伤害。若「噩梦」不少于 5 层，对对方玩家造成 3 点伤害。",
+      "description": "瞬发。对一名异能者造成等同于「噩梦」层数的伤害。若「噩梦」不少于 5 层，对对方玩家造成 3 点伤害。",
       "starter_copies": 2,
       "instant": true
     },
@@ -1017,7 +1017,7 @@
       "type": "tactic",
       "cost": 0,
       "terminal": false,
-      "description": "触发并移除全部「噩梦」。抽 1 张牌。",
+      "description": "不消耗行动力。触发并移除全部「噩梦」。抽 1 张牌。",
       "effect_id": "A03",
       "source": {
         "character_id": 1004,
@@ -1040,7 +1040,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "施加 5 层「噩梦」。若「噩梦」达到 10 层，获得 1 张「茄汁金属乐」。",
+      "description": "瞬发。施加 5 层「噩梦」。若「噩梦」达到 10 层，获得 1 张「茄汁金属乐」。",
       "starter_copies": 0,
       "instant": true
     },
@@ -1051,7 +1051,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "指定一名对方异能者。安魂曲可以在备战区远程出击。",
+      "description": "指定一名对方角色。安魂曲可以在备战区远程出击。",
       "effect_id": "A05",
       "source": {
         "character_id": 1004,
@@ -1239,7 +1239,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "复活残虹。若已有不少于 20 层持续伤害，残虹倒地时从牌库或手牌自动使用这张卡。",
+      "description": "复活残虹。若已有不少于 20 层持续伤害，残虹倒地时从牌库或手牌自动使用这张卡。（残虹倒地时也能打出）",
       "starter_copies": 0,
       "attack": 2,
       "hp": 6,
@@ -1318,7 +1318,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对一个召唤物造成 3 点伤害。",
+      "description": "瞬发。可重复使用。对一个召唤物造成 3 点伤害。",
       "effect_id": "S04",
       "source": {
         "character_id": 1003,
@@ -1352,7 +1352,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "鬼郎丸在场时，对方不能普通出击。",
+      "description": "瞬发。鬼郎丸在场时，对方不能普通出击。",
       "effect_id": "S06",
       "source": {
         "character_id": 1003,
@@ -3109,7 +3109,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对一名对方异能者造成 3 点伤害。阿德勒获得 3 点护盾。若已有浊燃，再对另一名对方异能者重复 1 次。",
+      "description": "对一名对方异能者造成 3 点伤害。阿德勒获得 3 点护盾。若已有浊燃，再随机对另一名对方异能者重复 1 次。",
       "effect_id": "D01",
       "starter_copies": 0,
       "source": {
@@ -3125,7 +3125,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "全体己方异能者获得 3 点护盾。施加持续 3 个己方回合的「诛恶护持」。",
+      "description": "全体己方角色获得 3 点护盾。施加持续 3 个己方回合的「诛恶护持」。",
       "effect_id": "D02",
       "starter_copies": 0,
       "source": {

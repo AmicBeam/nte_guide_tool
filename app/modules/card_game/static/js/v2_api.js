@@ -336,7 +336,7 @@
     const source = text == null ? fallback : text;
     return String(source || '').split(/(「[^」]+」)/g).map(function (part) {
       const referenced = part.startsWith('「') && cardsByName[part.slice(1, -1)];
-      const html = escapeHtml(part).replace(/(?:[二三四五六七八九十百X]|[0-9]+)选一|瞬发|响应|穿透|远程/g, function (keyword) {
+      const html = escapeHtml(part).replace(/(?:[二三四五六七八九十百X]|[0-9]+)选一|瞬发|响应|穿透|远程|可重复使用|不消耗行动力/g, function (keyword) {
         return '<strong>' + keyword + '</strong>';
       });
       return referenced && referenced.tooltip
@@ -492,8 +492,8 @@
       }
     }
     if (card.type === 'battle') {
-      if (Number(card.attack) > 0) {
-        parts.push((card.attack_mode === 'set' ? '攻击 ' : '攻击 +') + card.attack);
+      if (Number(card.attack) !== 0 && Number.isFinite(Number(card.attack))) {
+        parts.push('攻击 ' + (card.attack_mode !== 'set' && Number(card.attack) > 0 ? '+' : '') + card.attack);
       }
       if (Number(card.shield) > 0) {
         parts.push('护盾 ' + card.shield);
@@ -568,8 +568,9 @@
       }
     }
     if (card.type === 'battle') {
-      if (Number(card.attack) > 0) {
-        parts.push(statBadge('atk', (card.attack_mode === 'set' ? '' : '+') + card.attack, (card.attack_mode === 'set' ? '设置攻击为 ' : '攻击 +') + card.attack));
+      if (Number(card.attack) !== 0 && Number.isFinite(Number(card.attack))) {
+        const value = (card.attack_mode !== 'set' && Number(card.attack) > 0 ? '+' : '') + card.attack;
+        parts.push(statBadge('atk', value, (card.attack_mode === 'set' ? '设置攻击为 ' : '攻击 ') + value));
       }
       if (Number(card.shield) > 0) {
         parts.push(statBadge('shield', String(card.shield), '护盾 ' + card.shield));

@@ -651,3 +651,11 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 CUDA 短测及正式搜索吞吐测量通过后调用。它将带绝对09:00截止的训练守护进程脱离 SSH Job Object，保存 PID、源码 SHA 和独立 stdout/stderr；训练器自身负责全进程树硬截止。启动后仍须核对真实对局与参数更新，单有 PID 不算开始成功。
 
 2026-09-25：浊燃队四名角色（安魂曲、残虹、早雾、阿德勒）及 `murk` 预组改为普通账号可见，普通人机随机池随公开预组扩为五套；旧段落的“测试账号限定”是历史状态。原五套交叉训练里仓库缺少的真红、浊燃权重留存在 `engine/ai/models/research/five-cross-20260924/`。用户另行授权它们作为**实验性高级人机**显式选择：服务只加载绑定 SHA 与兼容指纹的这两份研究权重，界面与对局标明实验性，随机高级人机也会提示可能抽到实验策略；未获强度验收，不代表正式推荐。原三套服务模型不变。
+
+### 2026-09-26 浊燃队规则与牌面核对
+
+现行四人卡表与持续伤害时点见规则手册「浊燃队现行卡表」。牌面补齐瞬发、可重复使用、不消耗行动力和倒地可用，负攻击修正在卡框显示。主动触发噩梦与回合结束使用同一结算入口；幻境的实际伤害叠层和同次分配演出共组。指定异能者／角色的合法目标与公开交互提示同步；阿德勒的全体角色护盾包含玩家。A04 达到 10 层仍将茄汁金属乐加入手牌，按用户追加确认不自动释放。
+
+验证：`python -m unittest tests.test_duel_v2_continuous_cast tests.test_duel_v2_catalog tests.test_duel_v2_zone_status tests.test_duel_v2_followup_target`；`node --test tests/js/duel_v2_ranged.test.cjs tests/js/duel_v2_animation.test.cjs`。不以规则单测作为平衡或模型质量证据。
+
+复制生成的家族壮大按实际拥有者展示；安魂曲 A07 的回合开始效果使用独立武备钩子，复制异能不遮掉自己的武备效果。相关覆盖也在 `tests.test_duel_v2_continuous_cast`。模拟对拍单独运行 `python -m unittest tests.test_duel_v2_simulation`；既有实体测试与模拟测试混跑的补丁隔离断言在修改前同样失败，不作为本次新增问题。

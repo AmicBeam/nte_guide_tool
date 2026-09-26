@@ -42,10 +42,11 @@ def public_card(card, state=None, side=None):
     if state is not None and side in SIDES:
         from .flow import card_cost
         result['action_point_free'] = card_cost(state, side, card) == 0
-    if card.get('copy'):
+    if card.get('original_character_id'):
         original = text_name(card.get('original_character_id'))
         if original:
-            result['description'] = result.get('description', '').replace(original, copy_owner_text())
+            owner = text_name(card.get('character_id')) or copy_owner_text()
+            result['description'] = result.get('description', '').replace(original, owner)
     physical = card.get('_physical_card')
     if physical is not None:
         # Presentation only: retain the physical face without exposing internal state.
@@ -442,6 +443,10 @@ def interaction_for_action(state, side, action):
             return {'kind': 'target', 'actor_id': actor, 'target_ids': [target] if target else []}
         if policy == 'enemy_front':
             return {'kind': 'target', 'actor_id': actor, 'target_ids': _enemy_front_targets(state, side)}
+        if hint == 'target' and action.get('target_id'):
+            target = action['target_id']
+            # Targets were already validated and expanded by the rules engine.
+            return {'kind': 'target', 'actor_id': actor, 'target_ids': [target]}
         if policy in ('enemy_hand', 'own_tactic_discard'):
             return {'kind': 'choice', 'actor_id': actor, 'target_ids': []}
         return {'kind': 'cast', 'actor_id': actor, 'target_ids': []}

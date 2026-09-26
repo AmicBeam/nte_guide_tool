@@ -90,10 +90,12 @@ def _source_context(state, source):
 
 
 def distribute(state, target_side, amount, *, source, by, ignore_shield=False, reason=None,
-               damage_class='esper', after_hit=None):
+               damage_class='esper', after_hit=None, continuous=True):
     if finished(state):
         return []
-    amount = _boost(state, target_side, by, max(0, int(amount)))
+    amount = max(0, int(amount))
+    if continuous:
+        amount = _boost(state, target_side, by, amount)
     targets = living_espers(state, target_side)
     if amount <= 0 or not targets:
         return []
@@ -104,6 +106,7 @@ def distribute(state, target_side, amount, *, source, by, ignore_shield=False, r
     state['rng'] = rng.getrandbits(63)
     from .presentation import next_group_id
     group = next_group_id(state)
+    first_seq = state['event_seq']
     before = set(living_espers(state, target_side))
     for cid, dealt in buckets.items():
         if not dealt:
@@ -114,6 +117,11 @@ def distribute(state, target_side, amount, *, source, by, ignore_shield=False, r
             after_hit(cid, dealt)
         if finished(state):
             return []
+    # Trigger histories (for example 残虹 +1 attack) must not split the simultaneous
+    # distribution into separate animation batches. Preserve explicit nested groups.
+    for event in state['events']:
+        if event['seq'] > first_seq:
+            event.setdefault('group_id', group)
     knockdowns(state)
     victory(state)
     if finished(state):
@@ -277,9 +285,8 @@ def _rose_followup(state, dot, cid, dealt):
     if target_side is None:
         return
     h = hero(state, target_side, cid)
-    if h.get('hp', 0) <= 0:
-        return
-    reduce_max_hp(state, target_side, cid, dealt, source=source, settle=False)
+    if h.get('hp', 0) > 0:
+        reduce_max_hp(state, target_side, cid, dealt, source=source, settle=False)
     if not finished(state) and alive(state, ctx.side, ctx.cid):
         heal(state, ctx.side, ctx.cid, dealt, source=source, reason='「最后一朵玫瑰」')
 
@@ -296,6 +303,22 @@ def _kill_player(state, dot, killed):
             return
         damage(state, foe, 'player', 2, source=dot.get('source'), kind='damage',
                reason='「噩梦」消灭了对方异能者')
+
+
+def trigger_dot(state, target_side, kind, dot, *, reason=None):
+    """Resolve a zone effect identically for its clock and an explicit card trigger."""
+    source = dot.get('source') or f"{dot['by']}:{kind}"
+    stacks = int(dot.get('stacks') or 0)
+    kwargs = dict(source=source, by=dot['by'], reason=reason or dot.get('name'))
+    if dot.get('mode') == 'single':
+        return deal_one(state, target_side, 1, ignore_shield=bool(dot.get('ignore_shield')), **kwargs)
+    if dot.get('mode') == 'every5':
+        return distribute(state, target_side, stacks // 5, **kwargs)
+    after = (lambda cid, dealt: _rose_followup(state, dot, cid, dealt)) if kind == 'nightmare' else None
+    killed = distribute(state, target_side, stacks, after_hit=after, **kwargs)
+    if kind == 'nightmare' and not finished(state):
+        _kill_player(state, dot, killed)
+    return killed
 
 
 def tick_owner_end(state, side):
@@ -320,24 +343,7 @@ def tick_owner_end(state, side):
         for kind, dot in list((zone.get('dots') or {}).items()):
             if dot.get('by') != side or finished(state):
                 continue
-            source = dot.get('source') or f'{side}:{kind}'
-            mode = dot.get('mode')
-            stacks = int(dot.get('stacks') or 0)
-            if mode == 'single':
-                deal_one(state, target_side, 1, source=source, by=side,
-                         ignore_shield=bool(dot.get('ignore_shield')), reason=dot.get('name'))
-            elif mode == 'every5':
-                amount = stacks // 5
-                if amount:
-                    distribute(state, target_side, amount, source=source, by=side, reason=dot.get('name'))
-            else:
-                def _after(cid, dealt, _dot=dot):
-                    if kind == 'nightmare':
-                        _rose_followup(state, _dot, cid, dealt)
-                killed = distribute(state, target_side, stacks, source=source, by=side,
-                                    reason=dot.get('name'), after_hit=_after if kind == 'nightmare' else None)
-                if kind == 'nightmare':
-                    _kill_player(state, dot, killed)
+            trigger_dot(state, target_side, kind, dot)
             if finished(state):
                 return
             if dot.get('left') is not None:

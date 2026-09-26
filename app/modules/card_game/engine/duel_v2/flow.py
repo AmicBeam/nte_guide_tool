@@ -278,6 +278,15 @@ def targets(state, side, card):
         foe = other(side)
         return [{'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
                 if alive(state, foe, cid)]
+    if policy == 'living_enemy_role':
+        foe = other(side)
+        return [{'target_id': f'{foe}:player'}] + [
+            {'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
+            if alive(state, foe, cid)]
+    if policy == 'any_living_esper':
+        return [{'target_id': f'{ps}:{cid}'} for ps in SIDES
+                for cid in team_order(state, ps)
+                if alive(state, ps, cid) and not hero(state, ps, cid).get('summoned')]
     if policy == 'living_role':
         result = [{'target_id': f'{side}:player'}]
         result.extend({'target_id': f'{side}:{cid}'} for cid in team_order(state, side)

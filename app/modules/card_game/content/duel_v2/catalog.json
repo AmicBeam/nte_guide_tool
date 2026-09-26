@@ -1161,7 +1161,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "每局对战 1 次，攻击的目标进入倾陷。",
+      "description": "每局对战 1 次，若攻击的目标为异能者，使其进入倾陷。",
       "effect_id": "C03",
       "source": {
         "character_id": 1036,

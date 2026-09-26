@@ -32,6 +32,7 @@ def main():
     plan = dict(kind='offline_source_and_cuda_preflight_only', windows_contacted=False,
                 deployment=False, formal_training_allowed=False, website_approval=False,
                 tests=['tests.test_duel_v2_learning_audits', 'tests.test_duel_v2_residual_learning',
+                       'tests.test_duel_v2_current_round',
                        'tests.test_duel_v2_outcome_learning', 'tests.test_duel_v2_gumbel_search',
                        'tests.test_duel_v2_cross_teacher', 'tests.test_duel_v2_information_search',
                        'tests.test_duel_v2_training_recovery'],

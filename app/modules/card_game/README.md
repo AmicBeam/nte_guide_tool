@@ -611,6 +611,8 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 
 ### 现行学习与旧五套入口
 
+启动状态复核：离线恢复组件未接入`train_duel_v2_current_round.py`的旧五套runtime，不能将“三套本机短测完成”当作“五套正式训练准备完成”。CLI、`--worker`和直接`learn()`均拒绝非smoke执行；smoke仍为旧链路诊断。剩余五套接入与独立行为／胜率闸门见`docs/duel-v2-policy-recovery.md`。验证入口防绕过：`.venv/bin/python -m unittest tests.test_duel_v2_current_round`。
+
 完整本机预检还提供训练数据表示审计、三方数值对拍、WDL按局校准、同根搜索标签稳定性／自然尺度对照，以及仅搜索方手牌明牌的离线敏感性检查。`check_duel_v2_recovery_value.py` 用独立训练／温度选择／确认种子预热WDL；`check_duel_v2_recovery_chain.py` 要求报告绑定实际起点SHA，采集完整Gumbel32局、更新全部策略行及非行动方价值行，并核验导出与Adam／RNG恢复。`--device cuda`在无CUDA时明确拒绝；`prepare_duel_v2_offline_readiness.py --prepare`只生成源码与预检计划，不连接Windows、不部署、不自动长训。测试：`.venv/bin/python -m unittest tests.test_duel_v2_learning_audits tests.test_duel_v2_residual_learning tests.test_duel_v2_outcome_learning tests.test_duel_v2_gumbel_search tests.test_duel_v2_cross_teacher tests.test_duel_v2_information_search tests.test_duel_v2_training_recovery`。规则与正式默认算法不随研究检查改变。
 
 Windows 离线时的策略恢复研究见 `docs/duel-v2-policy-recovery.md`：`rl/residual_policy.py`／`residual_runtime.py` 提供独立版本的正常幅度残差策略；`rl/preserved_policy.py` 将创生、覆纹、快攻旧策略冻结并学习零初始化修正，真红和浊燃没有对应旧教师。`rl/recovery_runtime.py` 只作显式有界研究采集，继续调用共享信息集搜索。`check_duel_v2_residual_learning.py` 默认输出计划，`--run` 才做CPU拟合，`--memorize` 只作真实小批容量检查；`check_duel_v2_policy_preservation.py` 以新种子完整对局检查初始化全部动作分数精确保留。不能把小批记忆或旧能力保持称为正式五套已修复；网站和正式训练默认入口不切换。验证：`.venv/bin/python -m unittest tests.test_duel_v2_residual_learning tests.test_duel_v2_outcome_learning tests.test_duel_v2_gumbel_search tests.test_duel_v2_cross_teacher`。

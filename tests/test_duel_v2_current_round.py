@@ -5,6 +5,7 @@ import importlib.util
 import tempfile
 import numpy as np
 from scripts.train_duel_v2_current_round import preset_decks, make_job, policy_update_record, write_training_coverage
+from scripts.train_duel_v2_current_round import validate_round_launch, learn
 from app.modules.card_game.rl.cross_schedule import ROSTER, learning_schedule, matrix_schedule, actual_cell, coverage
 from app.modules.card_game.rl import cross_runtime as rt, cross_lineup as contract
 from app.modules.card_game.engine.duel_v2 import new_game, observe, apply_action, acting_side
@@ -14,6 +15,17 @@ from app.modules.card_game.rl.information_search import sample_world, search
 
 
 class CurrentRoundTest(unittest.TestCase):
+    def test_formal_worker_cannot_bypass_disabled_launch(self):
+        for config in ({}, {'smoke': False}, {'smoke': 'true'},
+                       {'smoke': False, 'formal_launch_approved': True, 'throughput_passed': True}):
+            with self.assertRaisesRegex(ValueError, 'worker entry cannot bypass'):
+                validate_round_launch(config)
+            # Refuse before any imports/model initialization, even when a
+            # caller skips main() and invokes the worker function directly.
+            with self.assertRaisesRegex(ValueError, 'worker entry cannot bypass'):
+                learn('unused', config)
+        validate_round_launch({'smoke': True})
+
     def test_policy_update_record_keeps_unique_ids_without_duplicate_keywords(self):
         metrics = dict(policy_samples=2, unique_row_ids=['game:a:0:pi:0'])
         sampling = dict(source='fresh', row_ids=['game:a:0:pi:0'])

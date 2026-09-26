@@ -54,6 +54,19 @@ def cross_pairs():
     return [(a, b) for a in ROSTER for b in ROSTER if a != b]
 
 
+def validate_round_launch(config):
+    """The worker may not bypass the CLI's disabled formal-training gate.
+
+    Recovery components are currently an isolated, three-team experiment.
+    This old five-team stack cannot be approved by merely editing a config
+    or adding a throughput number. Keep formal execution closed here too.
+    """
+    if not isinstance(config, dict) or config.get('smoke') is not True:
+        raise ValueError('Formal five-preset training is disabled: recovery stack integration, '
+                         'all-five readiness and CUDA/throughput validation are pending; '
+                         'worker entry cannot bypass this gate')
+
+
 def preset_decks():
     from copy import deepcopy
     from app.modules.card_game.content.duel_v2 import STARTER_DECKS, validate_deck
@@ -222,6 +235,7 @@ def _rollback(out, config, nets, best_state, best_dir, decks, origins, learning_
 
 
 def learn(out, config):
+    validate_round_launch(config)
     import numpy as np
     import torch
     from app.modules.card_game.rl import cross_runtime as rt
@@ -491,6 +505,7 @@ def main():
     out = a.output.resolve()
     if a.worker:
         config = json.loads((out / 'config.json').read_text(encoding='utf-8'))
+        validate_round_launch(config)
         try:
             learn(out, config)
         except Exception as exc:
@@ -534,7 +549,7 @@ def main():
     if not a.run:
         return
     if not a.smoke:
-        p.error('Formal long training is refused until a measured throughput report schedules the first, mid, and late gates inside the deadline')
+        p.error('Formal five-preset training is disabled: recovery stack integration, all-five readiness and CUDA/throughput validation are pending')
     if not a.smoke and a.device != 'cuda':
         p.error('Formal learning requires CUDA')
     if out.exists() and any(out.iterdir()):

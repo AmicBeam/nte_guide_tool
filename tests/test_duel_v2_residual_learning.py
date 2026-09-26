@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import subprocess
+import sys
 import numpy as np
 
 try:
@@ -96,6 +98,45 @@ class ResidualLearningTest(unittest.TestCase):
             path.write_text(json.dumps(m))
             with self.assertRaisesRegex(ValueError, 'identity'):
                 rt.ResidualModel(temp, 'starter')
+
+    def test_checkpoint_restores_adam_next_update_and_rejects_identity_change(self):
+        from app.modules.card_game.rl import residual_runtime as rt
+        from app.modules.card_game.rl import recovery_checkpoint as cp
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+        from copy import deepcopy
+        build = next(d for d in STARTER_DECKS if d['id'] == 'starter')
+        row = dict(x=self.x, c=self.c, pi=np.array([.1, .1, .7, .1]), z=1, value_actor=1)
+        opt = torch.optim.Adam(self.net.parameters(), lr=.001)
+        for _ in range(3): rt.update(self.net, opt, [row])
+        with tempfile.TemporaryDirectory() as temp:
+            rt.export(self.net, temp, 'starter', build, dict(test_only=True))
+            path = Path(temp) / 'restore.pt'
+            rng = np.random.default_rng(27)
+            cp.save(path, self.net, opt, directory=temp, key='starter',
+                    rng_state=rng.bit_generator.state, metadata=dict(hard_deadline='test_only'))
+            restored, restored_opt, data = cp.restore(path, directory=temp, key='starter')
+            control = deepcopy(self.net)
+            control_opt = torch.optim.Adam(control.parameters()); control_opt.load_state_dict(deepcopy(opt.state_dict()))
+            rt.update(control, control_opt, [row]); rt.update(restored, restored_opt, [row])
+            self.assertTrue(all(torch.equal(value, restored.state_dict()[name]) for name, value in control.state_dict().items()))
+            self.assertEqual(data['rng_state'], rng.bit_generator.state)
+            data['algorithm_sha256'] = 'wrong'
+            torch.save(data, path)
+            with self.assertRaisesRegex(ValueError, 'identity'):
+                cp.restore(path, directory=temp, key='starter')
+
+    def test_cuda_request_never_falls_back_to_cpu_or_creates_output(self):
+        if torch.cuda.is_available():
+            self.skipTest('This negative check requires CUDA to be absent')
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / 'must-not-exist'
+            result = subprocess.run([sys.executable, str(root / 'scripts/check_duel_v2_recovery_chain.py'),
+                '--run', '--device', 'cuda', '--models', 'missing', '--value-precheck', 'missing',
+                '--output', str(output), '--seconds', '300'], cwd=root, capture_output=True, text=True, timeout=60)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('CUDA requested but unavailable', result.stderr)
+            self.assertFalse(output.exists())
 
     def test_preservation_is_exact_and_value_learning_cannot_erase_policy(self):
         from app.modules.card_game.rl import preserved_policy as preserved

@@ -8,6 +8,8 @@
 
 ## 文件与边界
 
+独立恢复研究组件：`residual_policy`／`residual_runtime` 管理正常幅度残差网络与数值版本；`preserved_policy` 保留三套旧策略，`recovery_runtime` 管理显式研究采集，`recovery_search` 管理自然WDL尺度对照，`recovery_checkpoint` 检查网络／Adam／RNG恢复；`policy_equivalence`、`search_stability`、`archive_diagnostics` 只做表示／目标／数值审计，`full_hand_diagnostic` 只对合成离线状态提供具名手牌权限，`offline_sources` 生成排除敏感文件的源码快照。它们不自动接入网站或正式长训；具体入口及CPU／CUDA验收见[策略学习恢复](duel-v2-policy-recovery.md)。
+
 - `app/modules/card_game/rl/backend.py`：仅对接 `engine.duel_v2` 六接口中的开局、行动方、投影、动作和结果；不依赖旧盖卡模型、HTTP 或数据库服务。
 - `contracts.py`、`adapter.py`：可注入的纯内存接口与决策适配。策略仅收到观察投影和合法动作，不收到原始 state。
 - `encoding.py`：固定尺寸公开局势和候选动作编码。观察与单候选维度随 catalog 变化，当前约 3416 / 279（创生+覆纹快攻座位），动作容量 256；容量溢出显式报错，不删除候选。

@@ -24,6 +24,20 @@ def model(directory, key):
     return _load(str(directory), key, (Path(directory) / f'{key}.json').stat().st_mtime_ns)
 
 
+def restore(directory, key, device='cpu'):
+    """Restore a versioned numerical model without changing the frozen source."""
+    import torch
+    from . import preserved_policy, residual_policy
+    policy = model(directory, key)
+    if policy.manifest['schema'] == preserved_policy.SCHEMA:
+        net, _ = preserved_policy.create_network(key, hidden=policy.hidden, device=device)
+    else:
+        net = residual_policy.network(policy.hidden, device)
+    net.load_state_dict({name: torch.as_tensor(value.copy(), device=device)
+                         for name, value in policy.weights.items()})
+    return net, policy.serving_deck, policy.manifest['origin']
+
+
 def value_precheck_ok(report, policies):
     """Bind the precheck to actual arrays; a launch boolean is not evidence."""
     import math
@@ -98,10 +112,19 @@ def search_game(job):
             roots.append(dict(step=step, side=actor, chosen=actions[chosen], legal=len(actions)))
         else:
             seed = (1 << 256) | int(hashlib.sha256(f"recovery:{job['seed']}:{step}:{actor}".encode()).hexdigest(), 16)
-            result = search(state, actor, policies, seed=seed, simulations=job.get('simulations', 32),
-                            algorithm='gumbel', gumbel_candidates=16, terminal_horizon=3,
-                            runtime=runtime, deadline=job['deadline'], noise=job.get('training', False),
-                            diagnostics=True)
+            q_scale = job.get('q_scale', 'legacy')
+            if q_scale == 'natural_wdl':
+                from .recovery_search import search as recovery_search
+                result = recovery_search(state, actor, policies, seed=seed, runtime=runtime,
+                                         simulations=job.get('simulations', 32), deadline=job['deadline'],
+                                         noise=job.get('training', False), q_scale=q_scale)
+            elif q_scale == 'legacy':
+                result = search(state, actor, policies, seed=seed, simulations=job.get('simulations', 32),
+                                algorithm='gumbel', gumbel_candidates=16, terminal_horizon=3,
+                                runtime=runtime, deadline=job['deadline'], noise=job.get('training', False),
+                                diagnostics=True)
+            else:
+                raise ValueError('Unknown recovery Q scale')
             if not result['complete']:
                 return dict(complete=False, reason='incomplete_search', rows=[], value_rows=[], episode_actions=[], roots=roots)
             actions = result['actions']; chosen = result['search_choice']

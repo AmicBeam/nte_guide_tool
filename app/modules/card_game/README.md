@@ -611,6 +611,8 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 
 ### 现行学习与旧五套入口
 
+Windows 离线时的策略恢复研究见 `docs/duel-v2-policy-recovery.md`：`rl/residual_policy.py`／`residual_runtime.py` 提供独立版本的正常幅度残差策略；`rl/preserved_policy.py` 将创生、覆纹、快攻旧策略冻结并学习零初始化修正，真红和浊燃没有对应旧教师。`rl/recovery_runtime.py` 只作显式有界研究采集，继续调用共享信息集搜索。`check_duel_v2_residual_learning.py` 默认输出计划，`--run` 才做CPU拟合，`--memorize` 只作真实小批容量检查；`check_duel_v2_policy_preservation.py` 以新种子完整对局检查初始化全部动作分数精确保留。不能把小批记忆或旧能力保持称为正式五套已修复；网站和正式训练默认入口不切换。验证：`.venv/bin/python -m unittest tests.test_duel_v2_residual_learning tests.test_duel_v2_outcome_learning tests.test_duel_v2_gumbel_search tests.test_duel_v2_cross_teacher`。
+
 现行学习使用类别动作头、胜／平／负价值和 Gumbel 搜索，名单是创生、覆纹、快攻、真红，入口和奖励默认见 `docs/duel-v2-public-training.md` 的「现行学习方法」。五套交叉博弈入口是 `scripts/train_duel_v2_current_round.py`，统一 `cross_five_grounded_wdl_v1`，含浊燃与其他四套的真实对打；每个配对显式双先手，纯网络／搜索分别按25格评估。该入口固定配牌，不代替配牌搜索、择优和完整报告全项验收。新权重若比仓库已有同契约策略大幅变差，或纯网络不再出牌，按训练手册的 P0 停止并排查训练方式，不能加长同一配置。`scripts/train_duel_v2_full_cycle.py --ten` 仍编排旧的 `fixed_ten_v1` 标量五套，默认含已移除的娜白；它只复现旧实验，不能当作现行训练启动。`rl/new_model_report.py` 从冻结权重的直接互搏生成先手×后手矩阵及逐卡、角色和机制资料；报告与原始记录仅写入 `artifacts/rl-evals/`，不自动更新网站模型。
 
 验证：`python -m unittest tests.test_duel_v2_ten_search tests.test_duel_v2_information_search tests.test_duel_v2_build_acceptance tests.test_duel_v2_outcome_learning tests.test_duel_v2_grounded_candidates`。正式运行前另完成 Windows CUDA 有界链路预检，不能把本机单元测试当作完整训练质量证据。旧五套长训若被明确要求复现，仍在启动前用 `--throughput-report` 核验同规则、同搜索预算的容量，并逐张量确认权重是否更新。

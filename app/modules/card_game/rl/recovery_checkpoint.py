@@ -8,7 +8,7 @@ SCHEMA = 'recovery_restore_check_v1'
 
 def algorithm_identity():
     root = Path(__file__).parent
-    files = ('recovery_search.py', 'recovery_runtime.py', 'outcome_runtime.py',
+    files = ('recovery_search.py', 'covered_rollout.py', 'covered_value.py', 'recovery_sampler.py', 'policies.py', 'recovery_runtime.py', 'outcome_runtime.py',
              'residual_policy.py', 'preserved_policy.py', 'information_search.py', 'search_policy.py',
              'recovery_capacity.py', 'recovery_policy.py', 'residual_runtime.py', 'cross_teacher_distillation.py', 'league_learning.py')
     digest = sha256()

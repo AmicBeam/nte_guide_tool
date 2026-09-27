@@ -3,8 +3,9 @@ from functools import lru_cache
 from pathlib import Path
 import json
 from .residual_runtime import (
-    decision, determinize, passive_count, value_for, predict_encoded, action_scores, update,
+    decision, passive_count, value_for, predict_encoded, action_scores, update,
 )
+from .recovery_sampler import determinize
 from .cross_lineup import encode
 
 
@@ -87,6 +88,11 @@ def search_game(job):
     runtime = sys.modules[__name__]
     state = new_game(seed=job['seed'], first_side=job['first'], decks=job['decks'])
     policies = {side: model(*spec) for side, spec in job['policies'].items()}
+    value_policies=None
+    if not job.get('pure',False) and job.get('teacher_mode')=='covered_value':
+        from .covered_value import load_scope
+        auxiliary,_=load_scope(job['covered_value_source'])
+        value_policies={side:auxiliary[spec[1]] for side,spec in job['policies'].items()}
     if not job.get('pure', False):
         # A new value head is not a calibrated search teacher. Explicitly
         # marked diagnosis may inspect it, but cannot become training data.
@@ -149,7 +155,8 @@ def search_game(job):
                                          simulations=job.get('simulations', 32),
                                          gumbel_candidates=job.get('gumbel_candidates',16),
                                          terminal_horizon=job.get('terminal_horizon',3), deadline=job['deadline'],
-                                         noise=job.get('exploration',job.get('training', False)), q_scale=q_scale)
+                                         noise=job.get('exploration',job.get('training', False)), q_scale=q_scale,
+                                         teacher_mode=job.get('teacher_mode','network'),value_policies=value_policies)
             elif q_scale == 'legacy':
                 result = search(state, actor, policies, seed=seed, simulations=job.get('simulations', 32),
                                 algorithm='gumbel', gumbel_candidates=16, terminal_horizon=3,
@@ -163,7 +170,8 @@ def search_game(job):
             rows.append(dict(x=result['x'], c=result['c'], pi=result['pi'], visit_pi=result['visit_pi'],
                              selected=chosen, side=actor, key=job['policies'][actor][1], step=step,
                              phase=state['phase'], value_actor=1, search_budget=result['simulations'],
-                             policy_source=result['policy_source'], search_algorithm='gumbel'))
+                             policy_source=result['policy_source'], search_algorithm='gumbel',
+                             teacher_mode=result.get('teacher_mode','network')))
             roots.append(dict(step=step, side=actor, chosen=actions[chosen], legal=len(actions),
                               diagnostics=result['root_diagnostics']))
         trace.append(dict(side=actor, action=actions[chosen]))

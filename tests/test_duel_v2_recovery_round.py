@@ -80,6 +80,39 @@ class RecoveryRoundTest(unittest.TestCase):
             learner=job['train_sides'][0]
             self.assertEqual(job['policies'][learner][0],'now')
             self.assertEqual(job['policies']['b' if learner=='a' else 'a'][0],'old')
+        covered=round.jobs_for('now',decks,100,time.time()+60,pure=False,teacher_mode='covered_expert')
+        self.assertTrue(all(j['teacher_mode']=='covered_expert' for j in covered))
+        comparisons=round.compare_jobs('new','old',decks,100,time.time()+60,1,search=True,teacher_mode='covered_expert')
+        self.assertTrue(all(j['teacher_mode']=='covered_expert' for j in comparisons))
+
+    def test_selective_promotion_keeps_unchanged_teams_and_requires_each_search_block(self):
+        health={k:dict(finite=True,gradient=True,coverage=1.,policy_rows=64) for k in ROSTER}
+        baseline={k:dict(candidate=4.,reference=4.,games=8,changed=0,plays=10,legal_play=40) for k in ROSTER}
+        better=deepcopy(baseline)
+        for k in ('zhenhong','murk'):better[k].update(candidate=6.,changed=3)
+        decision=round.gate_decision(better,better,health,no_gain=True,search=better,search_confirm=better)
+        self.assertEqual(decision['decision'],'promote')
+        self.assertEqual(decision['promoted_keys'],['zhenhong','murk'])
+        self.assertEqual(set(decision['retained_keys']),set(ROSTER[:3]))
+        failed=deepcopy(better);failed['murk']['candidate']=3
+        decision=round.gate_decision(better,better,health,no_gain=True,search=better,search_confirm=failed)
+        self.assertEqual(decision['promoted_keys'],['zhenhong'])
+
+    def test_selective_copy_preserves_other_numeric_models_exactly(self):
+        import torch
+        with tempfile.TemporaryDirectory() as root:
+            ref=Path(root)/'reference';candidate=Path(root)/'candidate'
+            nets,decks,origins=round.initialize(ref,16,'cpu',5)
+            for key,net in nets.items():
+                with torch.no_grad():net.wdl.bias.add_(.1)
+                rt.export(net,candidate,key,decks[key],origins[key])
+            selected=round.select_models(candidate,ref,['zhenhong','murk'],Path(root)/'selected'/'models')
+            for key in ROSTER:
+                source=candidate if key in ('zhenhong','murk') else ref
+                self.assertEqual(rt.model(selected,key).version,rt.model(source,key).version)
+                for name,array in rt.model(source,key).weights.items():
+                    np.testing.assert_array_equal(rt.model(selected,key).weights[name],array)
+            with self.assertRaises(ValueError):round.select_models(candidate,ref,[],Path(root)/'bad')
 
     def test_gate_stops_no_learning_and_never_promotes_unchanged_actions(self):
         health={k:dict(finite=True,gradient=True,coverage=1.,policy_rows=64) for k in ROSTER}

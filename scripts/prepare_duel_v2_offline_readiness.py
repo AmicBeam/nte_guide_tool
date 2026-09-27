@@ -11,6 +11,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 EXTRA = (
+    'app/modules/card_game/rl/recovery_sampler.py','tests/test_duel_v2_recovery_sampler.py',
+    'app/modules/card_game/rl/covered_value.py','tests/test_duel_v2_covered_value.py',
+    'scripts/prepare_duel_v2_covered_value.py','scripts/verify_duel_v2_covered_value.py',
+    'scripts/check_duel_v2_rollout_coverage.py',
+    'app/modules/card_game/rl/covered_rollout.py', 'tests/test_duel_v2_covered_rollout.py',
+    'app/modules/card_game/rl/teacher_validation.py', 'tests/test_duel_v2_teacher_validation.py',
+    'scripts/check_duel_v2_search_teacher.py', 'scripts/verify_duel_v2_teacher_run.py',
     'scripts/check_duel_v2_recovery_full_fit.py',
     'scripts/check_duel_v2_recovery_capacity.py',
     'app/modules/card_game/rl/recovery_capacity.py',
@@ -37,7 +44,9 @@ def main():
     args = parser.parse_args()
     plan = dict(kind='offline_source_and_cuda_preflight_only', windows_contacted=False,
                 deployment=False, formal_training_allowed=False, website_approval=False,
-                tests=['tests.test_duel_v2_learning_audits', 'tests.test_duel_v2_residual_learning',
+                tests=['tests.test_duel_v2_covered_value','tests.test_duel_v2_recovery_sampler',
+                       'tests.test_duel_v2_covered_rollout', 'tests.test_duel_v2_teacher_validation',
+                       'tests.test_duel_v2_learning_audits', 'tests.test_duel_v2_residual_learning',
                        'tests.test_duel_v2_current_round', 'tests.test_duel_v2_recovery_round',
                        'tests.test_duel_v2_outcome_learning', 'tests.test_duel_v2_gumbel_search',
                        'tests.test_duel_v2_cross_teacher', 'tests.test_duel_v2_information_search',
@@ -46,6 +55,8 @@ def main():
                                'Repeat Torch/NumPy and restore checks on CPU, then CUDA.',
                                'Measure real Gumbel32 full-game throughput with the new Q-scale identity.',
                                'Complete all five value/policy gates; three preserved teachers do not cover zhenhong/murk.',
+                               'Use a qualified covered teacher receipt; fixed-build network rollouts are not domain-qualified.',
+                               'Price terminal rollouts and selective-best value/search rechecks within the original deadline.',
                                'Reserve fresh seeds and a new dated 09:00 schedule, including independent final evaluation.',
                                'Do not launch formal training or replace service models on the strength of this bundle.'])
     if not args.prepare:

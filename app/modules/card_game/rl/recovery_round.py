@@ -69,7 +69,7 @@ def versions(folder):
 
 
 def jobs_for(models, decks, base, deadline, *, pure=True, cycle=0, mirrors=True, report=None,
-             simulations=32, historical=None):
+             simulations=32, historical=None,teacher_mode='network',covered_value_source=None):
     plan = learning_schedule()
     if mirrors:
         plan += [dict(left=k, right=k, first=f) for k in ROSTER for f in ('a', 'b')]
@@ -79,8 +79,9 @@ def jobs_for(models, decks, base, deadline, *, pure=True, cycle=0, mirrors=True,
                  policies={'a': (str(models), item['left']), 'b': (str(models), item['right'])},
                  decks={'a': decks[item['left']], 'b': decks[item['right']]},
                  deadline=deadline, training=not pure, train_sides=['a', 'b'],
-                 q_scale='natural_wdl', value_precheck=report, simulations=simulations,
-                 gumbel_candidates=16, terminal_horizon=3, max_actions=800)
+                 q_scale='natural_wdl', value_precheck=report, simulations=simulations,teacher_mode=teacher_mode,
+                 covered_value_source=covered_value_source,
+                 gumbel_candidates=16, terminal_horizon=0 if teacher_mode in ('covered_terminal','covered_expert') else 3, max_actions=800)
         if historical:
             for learner in ('a', 'b'):
                 clone = deepcopy(j); enemy = 'b' if learner == 'a' else 'a'
@@ -127,17 +128,18 @@ def value_metrics(games, policies):
     return result
 
 
-def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadline):
+def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadline,*,seed_offset=0):
     """Head only, separate training/temperature selection/heldout games every batch."""
     import numpy as np
     import torch
     from . import recovery_runtime as rt
+    if seed_offset not in (0,6000):raise ValueError('Declared disjoint value seed slot required')
     folder = Path(folder); before = {k: {n: t.detach().clone() for n, t in net.state_dict().items()
                                        if not n.startswith('wdl.')} for k, net in nets.items()}
     # Disjoint per-cycle 10k blocks; each phase uses fewer than 1k roots.
     train_jobs = []
     for replica in range(config['value_replicas']):
-        train_jobs += jobs_for(models, decks, config['seeds']['adaptation']+cycle*10000+replica*100,
+        train_jobs += jobs_for(models, decks, config['seeds']['adaptation']+cycle*10000+replica*100+seed_offset,
                               deadline, cycle=replica)
     games = collect(pool, train_jobs, folder / 'train')
     for key, net in nets.items():
@@ -153,7 +155,7 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
             raise ValueError('Head-only calibration changed policy')
         rt.export(net, folder / 'uncalibrated', key, decks[key], origins[key])
     selection = collect(pool, jobs_for(folder / 'uncalibrated', decks,
-                        config['seeds']['selection']+cycle*10000, deadline), folder / 'selection')
+                        config['seeds']['selection']+cycle*10000+seed_offset, deadline), folder / 'selection')
     # Temperature selection is confined to selection, never the heldout check.
     chosen = {}
     for key, net in nets.items():
@@ -170,7 +172,7 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
             net.wdl.weight.copy_(original_w/chosen[key]); net.wdl.bias.copy_(original_b/chosen[key])
         rt.export(net, folder / 'models', key, decks[key], dict(origins[key], value_temperature=chosen[key]))
     held = collect(pool, jobs_for(folder / 'models', decks,
-                   config['seeds']['selection']+cycle*10000+1000, deadline), folder / 'heldout')
+                   config['seeds']['selection']+cycle*10000+1000+seed_offset, deadline), folder / 'heldout')
     policies = {k: rt.model(folder / 'models', k) for k in ROSTER}
     report = dict(schema='recovery_value_precheck_v1', complete=True, heldout=True,
                   passed=True, rule_hash=config['rule_hash'], models=versions(folder / 'models'),
@@ -182,7 +184,7 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
 
 
 def compare_jobs(candidate, reference, decks, seed, deadline, roots, *, search=False, reports=None,
-                 simulations=32):
+                 simulations=32,teacher_mode='network',covered_value_source=None):
     """Compare both versions against identical frozen opponents in both seats/initiatives."""
     jobs = []
     for k, key in enumerate(ROSTER):
@@ -199,7 +201,9 @@ def compare_jobs(candidate, reference, decks, seed, deadline, roots, *, search=F
                             policies={learner:(str(folder),key), enemy:(str(reference),foe)},
                             references={learner:(str(reference),key)}, train_sides=['a','b'],
                             decks={learner:decks[key],enemy:decks[foe]}, deadline=deadline,
-                            value_precheck=reports, q_scale='natural_wdl', simulations=simulations))
+                            value_precheck=reports, q_scale='natural_wdl', simulations=simulations,teacher_mode=teacher_mode,
+                            covered_value_source=covered_value_source))
+    for job in jobs:job['terminal_horizon']=0 if teacher_mode in ('covered_terminal','covered_expert') else 3
     return jobs
 
 
@@ -246,18 +250,39 @@ def gate_decision(pure, confirmed, health, *, no_gain, search=None, search_confi
                 c['candidate']+c['games']*.25 < c['reference']):
             reasons.append(dict(key=key, reason='confirmed_regression'))
     if reasons: return dict(decision='p0', reasons=reasons)
-    # Each team must have an actual independent behavior change and a gain
-    # confirmed on another block. This is conservative empirical selection,
-    # not a statistical strength approval or a fixed overall-win threshold.
-    improved = all(pure[k]['changed'] > 0 and confirmed[k]['changed'] > 0 and
+    # Each promoted team needs its own confirmed gain; another unchanged team
+    # must not discard that gain. Unqualified teams retain their reference.
+    improved = [k for k in ROSTER if pure[k]['changed'] > 0 and confirmed[k]['changed'] > 0 and
                    pure[k]['candidate']-pure[k]['reference'] >= minimum_gain*pure[k]['games'] and
-                   confirmed[k]['candidate']-confirmed[k]['reference'] >= minimum_gain*confirmed[k]['games']
-                   for k in ROSTER)
-    searches_ok = search is not None and search_confirm is not None and all(
-        search[k]['candidate'] >= search[k]['reference'] and
-        search_confirm[k]['candidate'] >= search_confirm[k]['reference'] for k in ROSTER)
-    if improved and searches_ok: return dict(decision='promote', reasons=[])
+                   confirmed[k]['candidate']-confirmed[k]['reference'] >= minimum_gain*confirmed[k]['games']]
+    qualified = [k for k in improved if search is not None and search_confirm is not None
+                 and search[k]['candidate']>=search[k]['reference']
+                 and search_confirm[k]['candidate']>=search_confirm[k]['reference']]
+    if qualified:return dict(decision='promote',reasons=[],promoted_keys=qualified,
+                              retained_keys=[k for k in ROSTER if k not in qualified])
     return dict(decision='plateau' if no_gain else 'keep', reasons=['no_confirmed_improvement'])
+
+
+def select_models(candidate,reference,keys,folder):
+    """Copy approved team arrays; do not average models or alter other teams."""
+    from . import recovery_runtime as rt
+    import shutil
+    if not keys or not set(keys)<=set(ROSTER) or len(set(keys))!=len(keys):
+        raise ValueError('Distinct qualified team keys required')
+    folder=Path(folder)
+    if folder.exists():raise ValueError('New selective-best output required')
+    folder.mkdir(parents=True)
+    chosen={}
+    for key in ROSTER:
+        source=Path(candidate if key in keys else reference)
+        policy=rt.model(source,key)
+        if policy.serving_deck!=rt.model(reference,key).serving_deck:
+            raise ValueError('Selective candidate changed frozen build')
+        for extension in ('.json','.npz'):shutil.copyfile(source/(key+extension),folder/(key+extension))
+        chosen[key]=dict(source=str(source),sha256=policy.version,promoted=key in keys)
+        if rt.model(folder,key).version!=policy.version:raise ValueError('Selective arrays changed')
+    write(folder.parent/'selection.json',chosen)
+    return folder
 
 
 def numeric_check(nets, folder, rows, device):
@@ -349,6 +374,14 @@ def validate_launch(config, *, resume=False):
     from .cross_lineup import identity
     if config.get('runtime') != 'recovery' or config.get('rule_hash') != identity():
         raise ValueError('Recovery rule/runtime mismatch')
+    if config.get('teacher_mode','network') not in ('network','covered_terminal','covered_expert','covered_value'):
+        raise ValueError('Unknown frozen teacher mode')
+    scope_sha=None
+    if config.get('teacher_mode')=='covered_value':
+        from .covered_value import load_scope
+        if not config.get('covered_value_source'):raise ValueError('Qualified covered-value-source required')
+        load_scope(config['covered_value_source'])
+        scope_sha=sha256((Path(config['covered_value_source'])/'scope.json').read_bytes()).hexdigest()
     if config.get('smoke') is True:
         if (config.get('planned_batches',0) not in (1,2,3) or config.get('workers',0) not in range(1,17)
                 or config.get('simulations') not in (2,32)
@@ -360,7 +393,7 @@ def validate_launch(config, *, resume=False):
     if not config.get('recovery_source'):
         raise ValueError('CUDA recovery preflight receipt required with matching recovery-source')
     if (config.get('simulations')!=32 or config.get('gumbel_candidates')!=16
-            or config.get('terminal_horizon')!=3 or config.get('rewards')!=0
+            or config.get('terminal_horizon')!=(0 if config.get('teacher_mode') in ('covered_terminal','covered_expert') else 3) or config.get('rewards')!=0
             or config.get('planned_batches') not in (4,5,6)
             or not 5<=config.get('gate_roots',0)<=64):
         raise ValueError('Formal recovery protocol mismatch')
@@ -373,10 +406,14 @@ def validate_launch(config, *, resume=False):
     if (receipt.get('schema') != 'five_recovery_readiness_v1' or receipt.get('device') != 'cuda'
             or receipt.get('algorithm_sha256') != fingerprint() or receipt.get('rule_hash') != identity()
             or receipt.get('simulations') != 32 or receipt.get('workers') != config['workers']
+            or receipt.get('teacher_mode','network') != config.get('teacher_mode','network')
+            or receipt.get('covered_value_sha')!=scope_sha
             or not 0 <= time.time()-receipt.get('measured_at',0) < 86400
             or receipt.get('ready') is not True or set(receipt.get('health',{})) != set(ROSTER)
             or receipt.get('initial_models') != versions(config['recovery_source'])):
         raise ValueError('Recovery CUDA readiness identity/age/config mismatch')
+    if config.get('teacher_mode','network')=='network':
+        raise ValueError('Fixed-build network teacher lacks sampled-build rollout coverage qualification')
     required=('initial-value/value-precheck.json','cycles/1/numeric.json','cycles/1/restore-check.json',
               'cycles/1/gate.json','cycles/1/sampling/games.json','cycles/1/capacity.json')
     if not all(name in receipt.get('files',{}) for name in required):
@@ -419,7 +456,8 @@ def validate_launch(config, *, resume=False):
         batches=0  # restore_round enforces original remaining cycles/deadline
     per_cycle=(receipt['cycle_seconds']
         +max(0,config['gate_roots']/receipt['gate_roots']-1)*receipt['pure_gate_seconds']
-        +config['search_gate_roots']*80*receipt['search_seconds_per_game'])
+        +receipt['selected_value_seconds']
+        +config['search_gate_roots']*160*receipt['search_seconds_per_game'])
     needed = (per_cycle*batches+30*receipt['search_seconds_per_game']*(batches//4))*1.25
     if needed > config['train_until']-time.time(): raise ValueError('Insufficient staged learning capacity')
     needed_eval = receipt['search_seconds_per_game']*25*config['matrix_games']*2*1.25
@@ -456,7 +494,8 @@ def restore_round(out, device, config):
             or terminal.get('phase') in ('complete','evaluation_incomplete','preflight_complete','preflight_failed')):
         raise ValueError('Learning already stopped; refuse to reuse confirmation seeds or restart optimization')
     if (terminal.get('cycle',pointer['cycle'])>pointer['cycle']
-            and terminal.get('phase') in ('candidate_value_check','independent_gate')):
+            and terminal.get('phase') in ('candidate_value_check','independent_gate',
+                                          'selected_value_check','selected_independent_gate')):
         raise ValueError('Independent seeds consumed in an uncommitted cycle; optimization resume is forbidden')
     folder=Path(pointer['folder'])
     if not folder.resolve().is_relative_to(out.resolve()):
@@ -497,7 +536,9 @@ def evaluate_frozen(pool, out, selected, initial, decks, report, config):
                 policies={'a':(str(selected),item['left']),'b':(str(selected),item['right'])},
                 output=str(folder/'evaluation'),replay=item['replica']==0,
                 search_sides=['a','b'] if mode=='search' else [],simulations=config['simulations'],
-                value_precheck=report,q_scale='natural_wdl',gumbel_candidates=16,terminal_horizon=3))
+                value_precheck=report,q_scale='natural_wdl',gumbel_candidates=16,
+                terminal_horizon=0 if config.get('teacher_mode') in ('covered_terminal','covered_expert') else 3,
+                teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source')))
         write(folder/'planned-jobs.json',jobs)
         results=[]
         for offset in range(0,len(jobs),config['workers']):
@@ -525,7 +566,7 @@ def run(out, config, *, resume=False):
     from scripts.prepare_duel_v2_offline_readiness import EXTRA
     out=Path(out);started=time.time();torch.set_num_threads(1)
     if config['device']=='cuda' and not torch.cuda.is_available(): raise ValueError('CUDA unavailable; no fallback')
-    cycle=0;no_gain=False;stop_reason=None;health={};search_wall=0.;search_games=0;pure_gate_wall=0.
+    cycle=0;no_gain=False;stop_reason=None;health={};search_wall=0.;search_games=0;pure_gate_wall=0.;value_wall=0.
     frozen_algorithm=fingerprint()
     if resume:
         nets,opts,pools,rng,pointer,no_gain=restore_round(out,config['device'],config)
@@ -551,7 +592,9 @@ def run(out, config, *, resume=False):
     with ProcessPoolExecutor(max_workers=config['workers'],mp_context=get_context('spawn')) as pool:
         if not resume:
             status('value_preflight')
+            value_started=time.time()
             current,report=warm_value(pool,nets,decks,origins,current,out/'initial-value',config,0,config['train_until'])
+            value_wall=max(value_wall,time.time()-value_started)
             if not report['passed']:
                 status('blocked_value_precheck',metrics=report['metrics']);return
             best=current;initial=current;best_report=report
@@ -563,7 +606,8 @@ def run(out, config, *, resume=False):
             combined=merged_reports(report,best_report) if historical else report
             jobs=jobs_for(current,decks,config['seeds']['foundation']+cycle*10000,
                           config['train_until']-20,pure=False,cycle=cycle,report=combined,
-                          simulations=config['simulations'],historical=best if historical else None)
+                          simulations=config['simulations'],historical=best if historical else None,
+                          teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'))
             start=time.time();games=collect(pool,jobs,folder/'sampling',learning=True)
             search_wall+=time.time()-start;search_games+=len(games)
             if config.get('preflight'):
@@ -572,7 +616,8 @@ def run(out, config, *, resume=False):
                 # Same opponents and initiatives with genuinely new paired
                 # seeds. Capacity heldout never enters update_batch/pools.
                 held_jobs=jobs_for(current,decks,config['seeds']['probes']+10000,config['train_until']-20,
-                                   pure=False,cycle=100,report=report,simulations=config['simulations'])
+                                   pure=False,cycle=100,report=report,simulations=config['simulations'],
+                                   teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'))
                 for job in held_jobs:
                     job.update(training=False,exploration=True,data_partition='capacity_heldout')
                 held_games=collect(pool,held_jobs,folder/'capacity-heldout',learning=False,require_search=True)
@@ -611,8 +656,10 @@ def run(out, config, *, resume=False):
                 break
             # No candidate can search again with its starting-value receipt.
             status('candidate_value_check')
+            value_started=time.time()
             candidate,new_report=warm_value(pool,nets,decks,origins,folder/'updated',folder/'value',
                                             config,cycle,config['train_until'])
+            value_wall=max(value_wall,time.time()-value_started)
             current=candidate
             for key in ROSTER:
                 for parameter in nets[key].wdl.parameters(): opts[key].state.pop(parameter,None)
@@ -639,15 +686,40 @@ def run(out, config, *, resume=False):
                 combined=merged_reports(report,best_report)
                 search_screen=comparison(pool,compare_jobs(candidate,best,decks,
                     config['seeds']['selection']+cycle*10000+4000,deadline,config['search_gate_roots'],search=True,
-                    reports=combined,simulations=32),folder/'search-screen')
+                    reports=combined,simulations=32,teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source')),folder/'search-screen')
                 search_confirm=comparison(pool,compare_jobs(candidate,best,decks,
                     config['seeds']['selection']+cycle*10000+5000,deadline,config['search_gate_roots'],search=True,
-                    reports=combined,simulations=32),folder/'search-confirm')
+                    reports=combined,simulations=32,teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source')),folder/'search-confirm')
                 decision=gate_decision(pure,confirmed,health,no_gain=no_gain and designated,search=search_screen,search_confirm=search_confirm)
-            write(folder/'gate.json',dict(**decision,pure=pure,confirmed=confirmed,health=health,
+            proposal=dict(decision)
+            if proposal['decision']=='promote':proposal['decision']='pending_mixed_validation'
+            write(folder/'gate.json',dict(**proposal,pure=pure,confirmed=confirmed,health=health,
                   independent_selection=True,strength_approved=False))
             if decision['decision']=='promote':
-                best=current;best_report=report;no_gain=False
+                status('selected_value_check')
+                selected=select_models(candidate,best,decision['promoted_keys'],folder/'selected-uncalibrated'/'models')
+                selected_nets={k:rt.restore(selected,k,config['device'])[0] for k in ROSTER}
+                selected_origins={k:rt.model(selected,k).manifest['origin'] for k in ROSTER}
+                selected,selected_report=warm_value(pool,selected_nets,decks,selected_origins,selected,
+                    folder/'selected',config,cycle,config['train_until'],seed_offset=6000)
+                if selected_report['passed']:
+                    status('selected_independent_gate')
+                    selected_reports=merged_reports(selected_report,best_report)
+                    selected_checks=[]
+                    for offset,label in ((8000,'screen'),(9000,'confirm')):
+                        selected_checks.append(comparison(pool,compare_jobs(selected,best,decks,
+                            config['seeds']['selection']+cycle*10000+offset,config['train_until'],
+                            config['search_gate_roots'],search=True,reports=selected_reports,
+                            simulations=config['simulations'],teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source')),
+                            folder/('selected-search-'+label)))
+                    safe=all(check[k]['candidate']>=check[k]['reference'] for check in selected_checks for k in ROSTER)
+                    if safe:best=selected;best_report=selected_report;no_gain=False
+                    else:decision.update(decision='keep',reasons=['selected_search_regression'],promoted_keys=[],retained_keys=list(ROSTER))
+                else:
+                    decision.update(decision='keep',reasons=['selected_value_failed'],promoted_keys=[],retained_keys=list(ROSTER))
+                if decision['decision']!='promote' and designated:no_gain=True
+                write(folder/'gate.json',dict(**decision,pure=pure,confirmed=confirmed,health=health,
+                    independent_selection=True,strength_approved=False))
             elif decision['decision'] in ('p0','plateau'):
                 stop_reason=decision['decision']
                 # Actual in-memory rollback as well as exported pointer rollback.
@@ -665,9 +737,12 @@ def run(out, config, *, resume=False):
         # records can create readiness for a separate newly seeded trial.
         if fingerprint()!=frozen_algorithm: raise ValueError('Frozen training source changed')
         if config.get('preflight'):
-            ready=stop_reason=='planned_batches' and bool(health) and all(h['finite'] and h['gradient'] and h['coverage']==1 for h in health.values())
+            ready=stop_reason=='planned_batches' and config.get('teacher_mode','network')!='network' and bool(health) and all(h['finite'] and h['gradient'] and h['coverage']==1 for h in health.values())
             receipt=dict(schema='five_recovery_readiness_v1',device=config['device'],ready=ready,
                 rule_hash=config['rule_hash'],algorithm_sha256=fingerprint(),simulations=config['simulations'],
+                teacher_mode=config.get('teacher_mode','network'),
+                covered_value_sha=sha256((Path(config['covered_value_source'])/'scope.json').read_bytes()).hexdigest() if config.get('covered_value_source') else None,
+                selected_value_seconds=value_wall,
                 workers=config['workers'],health=health,measured_at=time.time(),initial_models=versions(initial),
                 initial_folder=str(initial),cycle_seconds=time.time()-started,
                 search_seconds_per_game=search_wall/max(1,search_games),

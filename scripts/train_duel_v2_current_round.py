@@ -506,7 +506,10 @@ def main():
     p.add_argument('--resume',action='store_true',help='Resume existing recovery config within its original deadline')
     p.add_argument('--smoke-batches',type=int,choices=(1,2,3),default=1)
     p.add_argument('--runtime',choices=('recovery','cross'),default='recovery')
+    p.add_argument('--teacher-mode',choices=('network','covered_terminal','covered_expert','covered_value'),default='network',
+                   help='Explicit recovery teacher; covered modes use visible rules and real-terminal leaves')
     p.add_argument('--recovery-source',type=Path)
+    p.add_argument('--covered-value-source',type=Path)
     p.add_argument('--readiness-report',type=Path)
     p.add_argument('--preflight',action='store_true',help='One all-five Gumbel32 batch, no strength approval')
     a = p.parse_args()
@@ -570,7 +573,10 @@ def main():
         if a.roster_source or a.murk_source:
             p.error('Old sources cannot initialize recovery; use explicit recovery-source')
         config.update(started_at=now.timestamp(),kind='five_recovery_v1',runtime='recovery',smoke=a.smoke or a.preflight,
-            preflight=a.preflight,simulations=32 if a.preflight or not a.smoke else 2,
+            preflight=a.preflight,teacher_mode=a.teacher_mode,
+            covered_value_source=str(a.covered_value_source.resolve()) if a.covered_value_source else None,
+            terminal_horizon=0 if a.teacher_mode in ('covered_terminal','covered_expert') else 3,
+            simulations=32 if a.preflight or not a.smoke else 2,
             learning_rate=.0003,value_replicas=2,value_passes=16,
             gate_roots=5 if a.preflight else 2 if a.smoke else 32,search_gate_roots=1 if a.smoke or a.preflight else 2,
             gate_seconds=600 if a.smoke or a.preflight else 1800,

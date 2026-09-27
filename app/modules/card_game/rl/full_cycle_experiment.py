@@ -308,6 +308,11 @@ def evaluate_job(j):
     if search_sides and (j.get('details') is False or any(p[0]=='rule' for p in j['policies'].values())):
         raise ValueError('Search evaluation requires numeric opponents and full recording')
     search_policies={s:model(*p) for s,p in j['policies'].items()} if search_sides else {}
+    value_policies=None
+    if search_sides and j.get('teacher_mode')=='covered_value':
+        from .covered_value import load_scope
+        values,_=load_scope(j['covered_value_source'])
+        value_policies={side:values[spec[1]] for side,spec in j['policies'].items()}
     if runtime is not None and j.get('runtime')=='recovery' and search_sides:
         if not runtime.value_precheck_ok(j.get('value_precheck'),search_policies):
             raise ValueError('Matching WDL checks required for recovery evaluation search')
@@ -336,7 +341,8 @@ def evaluate_job(j):
                     from .recovery_search import search as recovery_search
                     result=recovery_search(s,side,search_policies,seed=root_seed,
                         simulations=j.get('simulations',32),gumbel_candidates=16,
-                        noise=False,runtime=runtime,deadline=j['deadline'],terminal_horizon=3)
+                        noise=False,runtime=runtime,deadline=j['deadline'],terminal_horizon=j.get('terminal_horizon',3),
+                        teacher_mode=j.get('teacher_mode','network'),value_policies=value_policies)
                 else:
                     result=search(s,side,search_policies,seed=root_seed,simulations=j.get('simulations',16),
                         algorithm=j.get('search_algorithm','gumbel'),gumbel_candidates=j.get('gumbel_candidates',8),

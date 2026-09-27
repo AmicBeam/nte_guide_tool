@@ -25,13 +25,17 @@ def main():
     p.add_argument('--roots-per-key',type=int,default=1)
     p.add_argument('--budgets',nargs='+',type=int,default=[16,32,64])
     p.add_argument('--repeats',type=int,default=2)
+    p.add_argument('--teacher-modes',nargs='+',default=['network'])
+    p.add_argument('--covered-value-source',type=Path)
     p.add_argument('--worlds',type=int,default=8)
     p.add_argument('--seconds',type=int,default=600)
     p.add_argument('--run',action='store_true')
     a=p.parse_args()
     if (not 1<=a.roots_per_key<=4 or not 2<=a.repeats<=8 or not 4<=a.worlds<=64
             or not 60<=a.seconds<=1800 or len(a.budgets)<2 or len(set(a.budgets))!=len(a.budgets)
-            or any(b not in (8,16,32,64,128) for b in a.budgets) or len(set(a.keys))!=len(a.keys)):
+            or any(b not in (8,16,32,64,128) for b in a.budgets) or len(set(a.keys))!=len(a.keys)
+            or len(set(a.teacher_modes))!=len(a.teacher_modes)
+            or any(m not in ('network','covered_terminal','covered_expert','covered_value') for m in a.teacher_modes)):
         p.error('Bounded distinct budgets, keys and fixed repeat/world endpoints required')
     if not a.run:print(json.dumps(dict(dry_run=True,seconds=a.seconds)));return
     if a.output.exists():raise ValueError('New output required; consumed diagnostic seeds cannot be reused')
@@ -45,6 +49,11 @@ def main():
     from app.modules.card_game.rl.league_rollout import clean
     from app.modules.card_game.engine.duel_v2 import new_game,apply_action,acting_side
     from scripts.check_duel_v2_recovery_capacity import diagnostic_deadline
+    values=None
+    if 'covered_value' in a.teacher_modes:
+        from app.modules.card_game.rl.covered_value import load_scope
+        if not a.covered_value_source:raise ValueError('Qualified covered-value-source required')
+        values,_=load_scope(a.covered_value_source)
     source=a.source_run.resolve();by_key=[]
     for key in a.keys:
         found=[]
@@ -70,10 +79,12 @@ def main():
     write('config.json',dict(source_run=str(source),deadline=end,seeds=seeds,
           keys=a.keys,roots_per_key=a.roots_per_key,budgets=a.budgets,repeats=a.repeats,
           worlds=a.worlds,continuation='frozen_visible_policy_softmax',max_actions=512,
+          teacher_modes=a.teacher_modes,
+          covered_value_source=str(a.covered_value_source) if a.covered_value_source else None,
           value_probe='viewer_one_ply_network_vs_conditional_terminal',
           real_policy_updates=0,training_roots_only=True,quality_approved=False))
     snapshot(ROOT,a.output/'source',('scripts/check_duel_v2_search_teacher.py',
-        'app/modules/card_game/rl/teacher_validation.py'))
+        'app/modules/card_game/rl/teacher_validation.py','app/modules/card_game/rl/covered_rollout.py'))
     reports=[]
     for ordinal,(path,data,row) in enumerate(selected):
         if time.time()>=end:break
@@ -97,27 +108,26 @@ def main():
             first=job['first'],left=job['left'],right=job['right'],viewer=actor,
             episode_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),prior=prior,searches=[])
         branches={prior};full=True
-        for noise in (False,True):
-            for budget in sorted(a.budgets):
-                runs=[]
-                for repeat in range(a.repeats):
-                    result=search(state,actor,policies,runtime=rt,simulations=budget,noise=noise,
-                        seed=(1<<256)+seeds['search']+ordinal*10000+repeat,deadline=end)
-                    if not result['complete']:full=False;break
-                    runs.append(result)
-                if not full:break
-                mean=np.mean([r['pi'] for r in runs],axis=0);top=int(mean.argmax())
-                visits=np.sum([r['visits'] for r in runs],axis=0)
-                total=np.sum([r['mean_values']*r['visits'] for r in runs],axis=0)
-                branches.add(top)
-                branches.update(int(r['search_choice']) for r in runs if not noise)
-                record['searches'].append(dict(noise=noise,budget=budget,
-                    target_js=jensen_shannon([r['pi'] for r in runs]),mean_target=mean.tolist(),
-                    mean_top=top,top=[int(r['pi'].argmax()) for r in runs],
-                    root_value=float(runs[0]['value']),visits=visits.tolist(),
-                    visited_mean_q=[float(total[i]/visits[i]) if visits[i] else None for i in range(len(visits))],
-                    chosen=[int(r['search_choice']) for r in runs]))
+        for mode,noise,budget in [(m,n,b) for m in a.teacher_modes for n in (False,True) for b in sorted(a.budgets)]:
+            runs=[]
+            for repeat in range(a.repeats):
+                result=search(state,actor,policies,runtime=rt,simulations=budget,noise=noise,
+                    seed=(1<<256)+seeds['search']+ordinal*10000+repeat,deadline=end,teacher_mode=mode,
+                    value_policies={s:values[spec[1]] for s,spec in job['policies'].items()} if values else None)
+                if not result['complete']:full=False;break
+                runs.append(result)
             if not full:break
+            mean=np.mean([r['pi'] for r in runs],axis=0);top=int(mean.argmax())
+            visits=np.sum([r['visits'] for r in runs],axis=0)
+            total=np.sum([r['mean_values']*r['visits'] for r in runs],axis=0)
+            branches.add(top)
+            branches.update(int(r['search_choice']) for r in runs if not noise)
+            record['searches'].append(dict(noise=noise,budget=budget,teacher_mode=mode,
+                target_js=jensen_shannon([r['pi'] for r in runs]),mean_target=mean.tolist(),
+                mean_top=top,top=[int(r['pi'].argmax()) for r in runs],
+                root_value=float(runs[0]['value']),visits=visits.tolist(),
+                visited_mean_q=[float(total[i]/visits[i]) if visits[i] else None for i in range(len(visits))],
+                chosen=[int(r['search_choice']) for r in runs]))
         record['search_complete']=full;record['root_actions']=legal
         if full:
             records=counterfactuals(state,actor,sorted(branches),policies,rt,

@@ -37,7 +37,7 @@ def choose_root(node, noise, visit, mode):
 
 def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_candidates=16,
            terminal_horizon=3, max_depth=10, deadline=None, noise=False, q_scale='natural_wdl',
-           fast_simulation=True):
+           fast_simulation=True,teacher_mode='network',value_policies=None):
     """Bounded version of the existing Gumbel traversal with an explicit planner.
 
     Keep root worlds, opponent private observations, fixed observer values,
@@ -46,6 +46,13 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
     """
     if q_scale not in ('legacy', 'natural_wdl'):
         raise ValueError('Unknown recovery Q scale')
+    if teacher_mode not in ('network','covered_terminal','covered_expert','covered_value') or (teacher_mode!='network' and q_scale=='legacy'):
+        raise ValueError('Unknown or incompatible recovery teacher mode')
+    if teacher_mode!='network':
+        from .covered_rollout import rule_decision,terminal_leaf
+    if teacher_mode=='covered_value':
+        from .covered_value import expert_leaf
+        if not value_policies or viewer not in value_policies:raise ValueError('Qualified covered value policies required')
     if (type(simulations) is not int or simulations < 1 or type(gumbel_candidates) is not int
             or gumbel_candidates < 1 or type(max_depth) is not int or max_depth < 1
             or type(terminal_horizon) is not int or terminal_horizon < 0):
@@ -54,6 +61,7 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
         raise ValueError('Search must use decision owner')
     actions, (x, c) = runtime.decision(state, viewer)
     logits, root_value = runtime.predict_encoded(policies[viewer], x, c)
+    if teacher_mode=='covered_value':root_value=runtime.value_for(state,viewer,value_policies)
     prior = core.search_prior(logits)
     rng = np.random.default_rng(seed)
     root = core.Node.create(prior, root_value); tree = {core.info_key(x, c): root}
@@ -74,17 +82,27 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
                 finished_sim = False; break
             if world['phase'] == 'finished':
                 value = core.terminal_value(world, viewer); break
-            actor = core.acting_side(world); legal, (xx, cc) = runtime.decision(world, actor)
+            actor = core.acting_side(world)
+            if actor!=viewer and teacher_mode!='network':legal,chosen=rule_decision(world,actor)
+            else:legal, (xx, cc) = runtime.decision(world, actor)
             if actor != viewer:
-                scores = runtime.action_scores(policies[actor], xx, cc)
-                chosen = int(rng.choice(len(legal), p=core.softmax(scores)))
+                if teacher_mode=='network':
+                    scores = runtime.action_scores(policies[actor], xx, cc)
+                    chosen = int(rng.choice(len(legal), p=core.softmax(scores)))
             else:
                 key = core.info_key(xx, cc)
                 if key not in tree:
                     scores, value = runtime.predict_encoded(policies[actor], xx, cc)
+                    if teacher_mode=='covered_value':value=runtime.value_for(world,viewer,value_policies)
                     tree[key] = core.Node.create(core.search_prior(scores), value)
                     remaining = max_depth - depth
-                    if terminal_horizon and remaining > 0:
+                    if teacher_mode=='covered_value':
+                        value,finished_sim=expert_leaf(world,viewer,value_policies,runtime,
+                            deadline if deadline is not None else float('inf'),horizon=terminal_horizon)
+                    elif teacher_mode!='network':
+                        value,finished_sim=terminal_leaf(world,viewer,policies,runtime,rng,
+                            deadline if deadline is not None else float('inf'),own_rule=teacher_mode=='covered_expert')
+                    elif terminal_horizon and remaining > 0:
                         proved = core.short_terminal_value(
                             world, viewer, policies, rng, scores=scores, legal=legal,
                             horizon=min(terminal_horizon, remaining), runtime=runtime, optimized=True,
@@ -107,7 +125,13 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
                 root_action = chosen
                 root_terminal_win = world['phase'] == 'finished' and world.get('winner') == viewer
         else:
-            value = core.leaf_value(world, viewer, policies, runtime=runtime)
+            if teacher_mode=='covered_value':
+                value,finished_sim=expert_leaf(world,viewer,value_policies,runtime,
+                    deadline if deadline is not None else float('inf'),horizon=terminal_horizon)
+            elif teacher_mode!='network':
+                value,finished_sim=terminal_leaf(world,viewer,policies,runtime,rng,
+                    deadline if deadline is not None else float('inf'),own_rule=teacher_mode=='covered_expert')
+            else:value = core.leaf_value(world, viewer, policies, runtime=runtime)
         if not finished_sim:
             break
         if not np.isfinite(value):
@@ -131,5 +155,8 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
                 complete=len(depths) == requested, simulations=len(depths), requested=requested,
                 roots_covered=int((visits > 0).sum()), search_choice=selected,
                 raw_choice=int(np.argmax(logits)), nodes=len(tree), worlds=worlds,
-                max_depth=max(depths, default=0), policy_source='gumbel_q_' + q_scale,
-                root_diagnostics=diagnostics, q_scale=q_scale)
+                max_depth=max(depths, default=0), policy_source='gumbel_q_' + q_scale +
+                    (':'+teacher_mode if teacher_mode!='network' else ''),
+                root_diagnostics=diagnostics, q_scale=q_scale,teacher_mode=teacher_mode,
+                leaf_source='covered_expert_value_or_terminal' if teacher_mode=='covered_value' else
+                    'real_terminal' if teacher_mode!='network' else 'network_or_short_proof')

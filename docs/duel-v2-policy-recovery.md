@@ -121,10 +121,16 @@ WDL 仍只预测实际完整终局的胜／平／负，价值带观察者是否�
 
 ### 每批真实执行
 
+恢复栈显式区分四种教师。`network` 保留历史网络／3步证明，但固定预组网络未获采样配牌覆盖资格，不能生成正式启动许可。`covered_terminal` 的对手用可见规则策略，叶节点由学习方冻结网络对规则对手续局至真实终局；`covered_expert` 叶节点双方按可见规则策略续局至真实终局，两者均最多512动作、不使用短证明或预测补终局。`covered_value` 是独立的冷启动专家价值代理：规则对手、3步可见规则续局，未结束时查询覆盖替代配牌的冻结专家价值模型。它估计规则续局，不能称为当前学习策略的精确价值；主模型仍联合学习策略和真实终局WDL，代理不覆盖主模型数组，也不自动批准强度。
+
+`prepare_duel_v2_covered_value.py` 在90个真实完整规则局上只训练独立价值主干和WDL头，前6次开局操作不取价值监督，行动阶段随机探索，此后双方使用可见规则策略；原策略分支逐张量保持。30局选择1／2／4／8轮候选，另30局留出，按局等权的Brier<0.7、对数损失<1.2及每队至少8个完整局是工程校准条件。规则、教师、实际数组与原始记录SHA共同绑定scope，不接受仅手写passed。`verify_duel_v2_covered_value.py` 可重放已消费全部150局，核对每步动作、观察、真实终局和数值校准；不更新权重或重新选择轮次。重验是现有证据核验，不是新的独立确认。
+
+恢复采样器单独位于 `recovery_sampler.py`，旧league采样器保留复现。A03原牌仍参与合法八种卡的构筑分配；同名生成牌、C02／Q05复制和NF01家族分别计数。敌方A03的时效字段不在公开投影中，不能读其真实标记判定来源；仅从公开牌数与生成能力的公开弃牌约束推断潜在分配。临时A03在非所属方回合不重新生成，支持阵容的生成牌不凭空回到牌库。未知原牌、生成类型和牌序仍采用有界近似先验，不冒充完整历史后验。每个采样根仍核验观察与候选不变。
+
 1. 初始及每批更新后，先冻结策略，采集五套完整纯网络局，只预热WDL头。预热训练、温度选择和留出使用互不重叠的种子；选择温度1／2／4后另做一次留出。按完整局等权计算Brier／对数损失，报告绑定实际数组SHA。失败不再搜索学习，保留已验证 `best`。
 2. 正常批次为20个跨队局与10个镜像局，显式交换先手。每第四批引用冻结 `best` 历史对手，两个座位分别作为当前学习方，共60局；仅收当前方样本。搜索逐决策使用自然WDL尺度Gumbel32。截断和搜索不完整不给终局标签、不进入学习。
 3. 全部新策略行先完整通行，再按预声明1／4／8次数有界重复；非行动方真实终局观察另做价值更新。记录逐行使用、三个策略分支的有限非零梯度及数值/最高动作对拍，不以参数变化代替学习。
-4. 每批都做独立纯网络初筛与第二块种子复核，对相同冻结对手交换座位和先手，并逐决策对比同局面新旧动作。正式阶段再做同预算搜索初筛和另一块复核。未确认实际收益不晋级，连续两批有效检查无实质改善则停学；不出牌、梯度／覆盖失败或两块均显著退化按P0停止并真实回退到 `best`。
+4. 每批都做独立纯网络初筛与第二块种子复核，对相同冻结对手交换座位和先手，并逐决策对比同局面新旧动作。正式阶段再做同预算搜索初筛和另一块复核。按队确认收益，不能因其他队不变就丢弃已确认收益；未合格队直接复制原数组。组合候选在每轮额外6000／7000种子槽只校准WDL，不动策略，再用8000／9000槽检查全部队伍搜索不退化，全部完成才移动best。组合失败保留原best，期间只记录pending，不提前写晋级。额外阶段均计入实际预算。未确认实际收益不晋级，连续两批有效检查无实质改善则停学；不出牌、梯度／覆盖失败或两块均显著退化按P0停止并真实回退到 `best`。
 5. 网络、Adam、经验池使用计数、NumPy／Torch／CUDA RNG、轮次、best/latest指针及原截止进入两代恢复点。下一次Adam更新在副本上逐张量核验，不改候选。恢复只能在原学习截止内、同配置同源码下继续；不重新分种子、不延长截止。
 6. 停学后冻结所选 `best` 的实际数值，分别执行纯网络与搜索5×5主矩阵。复用正式遥测与动作重放导出公开录像。保留初始权重时明确 `retained_baseline`，不能把旧数组写作全套新模型；主表通过也不代替完整报告规范的变化构筑、换牌及其他专项。
 
@@ -134,10 +140,10 @@ WDL 仍只预测实际完整终局的胜／平／负，价值带观察者是否�
 
 ```bash
 # 本机五套小预算链路，Gumbel2；不是正式搜索预算验收
-.venv/bin/python scripts/train_duel_v2_current_round.py --smoke --device cpu --workers 2 --hidden 32 --seconds 1800 --output artifacts/rl-evals/NEW/smoke --run
+.venv/bin/python scripts/train_duel_v2_current_round.py --smoke --device cpu --teacher-mode covered_expert --workers 2 --hidden 32 --seconds 1800 --output artifacts/rl-evals/NEW/smoke --run
 
 # Windows上线后在冻结工作副本执行：五套Gumbel32、实际CUDA梯度/数值/Adam恢复及阶段成本
-python scripts/train_duel_v2_current_round.py --preflight --device cuda --workers 6 --output artifacts/rl-evals/NEW/preflight --run
+python scripts/train_duel_v2_current_round.py --preflight --device cuda --teacher-mode covered_value --covered-value-source QUALIFIED_AUX_DIR --workers 6 --output artifacts/rl-evals/NEW/preflight --run
 
 # 中断后仅在原学习截止内、原配置与进程已退出时恢复
 python scripts/train_duel_v2_current_round.py --output artifacts/rl-evals/EXISTING --resume --run

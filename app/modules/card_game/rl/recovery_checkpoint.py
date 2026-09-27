@@ -9,7 +9,8 @@ SCHEMA = 'recovery_restore_check_v1'
 def algorithm_identity():
     root = Path(__file__).parent
     files = ('recovery_search.py', 'recovery_runtime.py', 'outcome_runtime.py',
-             'residual_policy.py', 'preserved_policy.py', 'information_search.py', 'search_policy.py')
+             'residual_policy.py', 'preserved_policy.py', 'information_search.py', 'search_policy.py',
+             'recovery_capacity.py', 'recovery_policy.py', 'residual_runtime.py', 'cross_teacher_distillation.py', 'league_learning.py')
     digest = sha256()
     for name in files:
         digest.update(name.encode()); digest.update((root / name).read_bytes())
@@ -28,7 +29,8 @@ def save(path, net, optimizer, *, directory, key, rng_state, metadata):
                    model_sha256=policy.version, rule_hash=policy.manifest['rule_hash'],
                    network=weights, optimizer=optimizer.state_dict(),
                    rng_state=json.loads(json.dumps(rng_state)), torch_rng=torch.get_rng_state(),
-                   metadata=json.loads(json.dumps(metadata)), diagnostic_restore_only=True,
+                   metadata=json.loads(json.dumps(metadata)), cuda_rng=torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+                   diagnostic_restore_only=True,
                    quality_approved=False, automatic_serving_approval=False)
     path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix('.tmp')

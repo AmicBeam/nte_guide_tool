@@ -237,7 +237,9 @@ def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.,
         raise ValueError('Only pure terminal labels permitted')
     device = next(net.parameters()).device
     x = torch.as_tensor(np.stack([r['x'] for r in rows]), device=device)
-    h = net.state_net(x)
+    # Recovery schemas have an independent terminal-value tower. Legacy
+    # schemas retain the original shared trunk for historical reproduction.
+    h = getattr(net, 'value_net', net.state_net)(x)
     if warmup:
         h = h.detach()
     context = torch.tensor([[r.get('value_actor', 1)] for r in rows], dtype=h.dtype, device=device)

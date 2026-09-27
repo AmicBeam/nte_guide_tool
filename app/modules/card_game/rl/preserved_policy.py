@@ -10,6 +10,7 @@ import json
 import types
 import numpy as np
 from . import residual_policy as architecture
+from . import recovery_policy as separated
 from . import cross_grounded as grounded
 from .cross_lineup import all_features, candidate_names, identity
 from .cross_teacher_distillation import (
@@ -19,13 +20,14 @@ from .cross_teacher_distillation import (
 from .league_schema import build_hash
 
 SCHEMA = 'cross_five_preserved_residual_wdl_v1'
+PARTIAL_SCHEMA = 'cross_five_partial_preserved_residual_wdl_v1'
 
 
 def encoded_name(name):
     return name.replace('.', '__')
 
 
-def create_network(key, source=REPO_TEACHERS, hidden=64, device='cpu'):
+def create_network(key, source=REPO_TEACHERS, hidden=64, device='cpu', *, partial=False):
     import torch
     from torch import nn
     teacher = verify_old_teacher(source, key)
@@ -50,15 +52,24 @@ def create_network(key, source=REPO_TEACHERS, hidden=64, device='cpu'):
             unknown = ((c[..., 1] >= len(SEATS)) | (c[..., 2] >= len(CARD_IDS))
                        | (c[..., 4] >= len(SEATS))
                        | (c[..., self.extra_index].abs() > 1e-8).any(-1))
-            if bool((unknown & mask).any()):
+            unsupported = (unknown & mask).any(-1)
+            if bool(unsupported.any()) and not partial:
                 raise ValueError('Unsupported frozen policy action')
-            x = x[:, self.observation_index]; c = c[..., self.candidate_index]
+            # A whole unsupported root gets only the new residual. Never
+            # fabricate legacy identity columns or mix incomparable scores.
+            result = x.new_zeros(mask.shape)
+            supported = ~unsupported
+            if not bool(supported.any()):
+                return result
+            x = x[supported][:, self.observation_index]
+            c = c[supported][..., self.candidate_index]
             state = self.linear(x, 'state_net.0').relu()
             state = self.linear(state, 'state_net.2').relu()
             cand = self.linear(c, 'cand_net.0').relu()
             cand = self.linear(cand, 'cand_net.2').relu()
-            return ((cand * state.unsqueeze(1)).sum(-1) / np.sqrt(np.float32(teacher['hidden']))
-                    + self.linear(cand, 'score').squeeze(-1))
+            result[supported] = ((cand * state.unsqueeze(1)).sum(-1) / np.sqrt(np.float32(teacher['hidden']))
+                                 + self.linear(cand, 'score').squeeze(-1))
+            return result
 
     net.add_module('legacy', FrozenPolicy().to(device))
     net.source_identity = {name: teacher[name] for name in (
@@ -74,20 +85,20 @@ def create_network(key, source=REPO_TEACHERS, hidden=64, device='cpu'):
         return result.masked_fill(~mask, torch.finfo(result.dtype).min), value
 
     net.forward = types.MethodType(forward, net)
-    net.policy_schema = SCHEMA
+    net.policy_schema = PARTIAL_SCHEMA if partial else SCHEMA
     return net, teacher['build']
 
 
 def export(net, directory, key, build, origin):
     from .cross_runtime import _write
-    if net.policy_schema != SCHEMA or net.source_identity['key'] != key:
+    if net.policy_schema not in (SCHEMA, PARTIAL_SCHEMA, separated.PRESERVED_SCHEMA) or net.source_identity['key'] != key:
         raise ValueError('Preserved model identity mismatch')
     root = Path(directory); root.mkdir(parents=True, exist_ok=True)
     path = root / f'{key}.npz'; tmp = root / f'{key}.tmp.npz'
     np.savez_compressed(tmp, **{name: value.detach().cpu().numpy() for name, value in net.state_dict().items()})
     tmp.replace(path)
     _write(root / f'{key}.json', dict(
-        schema=SCHEMA, architecture_sha256=architecture.fingerprint(),
+        schema=net.policy_schema, value_architecture_sha256=separated.fingerprint() if hasattr(net,'value_net') else None, unsupported_root='residual_only' if net.policy_schema in (PARTIAL_SCHEMA, separated.PRESERVED_SCHEMA) else 'reject', architecture_sha256=architecture.fingerprint(),
         preservation_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
         candidate_transform_sha256=grounded.fingerprint(), rule_hash=identity(), deck=key,
         hidden=net.hidden, source_identity=net.source_identity, features=all_features(), candidates=candidate_names(),
@@ -103,7 +114,7 @@ class PreservedModel:
         root = Path(directory); path = root / f'{key}.npz'
         self.manifest = m = json.loads((root / f'{key}.json').read_text())
         self.version = sha256(path.read_bytes()).hexdigest()
-        if (m.get('schema') != SCHEMA or m.get('deck') != key or m.get('sha256') != self.version
+        if (m.get('schema') not in (SCHEMA, PARTIAL_SCHEMA, separated.PRESERVED_SCHEMA) or m.get('deck') != key or m.get('sha256') != self.version
                 or m.get('rule_hash') != identity() or m.get('architecture_sha256') != architecture.fingerprint()
                 or m.get('preservation_sha256') != sha256(Path(__file__).read_bytes()).hexdigest()
                 or m.get('candidate_transform_sha256') != grounded.fingerprint()
@@ -113,6 +124,12 @@ class PreservedModel:
                 or m.get('value_context') != ['viewer_is_actor']
                 or m.get('reward_mode') != 'terminal_wdl_only'):
             raise ValueError('Preserved numeric identity mismatch')
+        self.separated = m['schema'] == separated.PRESERVED_SCHEMA
+        if self.separated and m.get('value_architecture_sha256') != separated.fingerprint():
+            raise ValueError('Value architecture identity mismatch')
+        self.partial = m['schema'] in (PARTIAL_SCHEMA, separated.PRESERVED_SCHEMA)
+        if self.partial and m.get('unsupported_root') != 'residual_only':
+            raise ValueError('Partial preservation must declare unsupported roots')
         self.hidden = m['hidden']; source = m['source_identity']
         teacher = verify_old_teacher(REPO_TEACHERS, key)
         if any(source.get(name) != teacher[name] for name in source):
@@ -121,6 +138,7 @@ class PreservedModel:
         old['state_net.0.weight'] = (source['hidden'], len(source['features']))
         old['cand_net.0.weight'] = (source['hidden'], CAND_DIM)
         expected = dict(architecture.tensor_shapes(self.hidden))
+        if self.separated: expected.update(separated.extra_shapes(self.hidden))
         expected.update({'legacy.' + encoded_name(name): shape for name, shape in old.items()})
         with np.load(path, allow_pickle=False) as arrays:
             if set(arrays.files) != set(expected):
@@ -147,14 +165,16 @@ class PreservedModel:
             return np.zeros(0, dtype=np.float32)
         mapped, unknown = project_candidates(c, self.teacher)
         if unknown.any():
-            raise ValueError('Unsupported frozen policy action')
+            if not self.partial:
+                raise ValueError('Unsupported frozen policy action')
+            return architecture.scores_numpy(x, c, self.weights)
         old = teacher_scores(self.teacher, project_observation(x, self.teacher), mapped)
         return old + architecture.scores_numpy(x, c, self.weights)
 
     scores_only = scores
 
     def wdl(self, x, is_actor):
-        return architecture.wdl_numpy(x, is_actor, self.weights)
+        return architecture.wdl_numpy(x, is_actor, separated.value_weights(self.weights) if self.separated else self.weights)
 
     def scores_value(self, x, c):
         p = self.wdl(x, True)

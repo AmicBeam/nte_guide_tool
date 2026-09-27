@@ -11,6 +11,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 EXTRA = (
+    'scripts/check_duel_v2_recovery_full_fit.py',
+    'scripts/check_duel_v2_recovery_capacity.py',
+    'app/modules/card_game/rl/recovery_capacity.py',
+    'app/modules/card_game/rl/recovery_policy.py',
+    'app/modules/card_game/rl/recovery_round.py',
+    'tests/test_duel_v2_recovery_round.py',
     'app/modules/card_game/rl/archive_diagnostics.py', 'app/modules/card_game/rl/full_hand_diagnostic.py',
     'app/modules/card_game/rl/policy_equivalence.py', 'app/modules/card_game/rl/recovery_search.py',
     'app/modules/card_game/rl/search_stability.py', 'app/modules/card_game/rl/offline_sources.py',
@@ -32,7 +38,7 @@ def main():
     plan = dict(kind='offline_source_and_cuda_preflight_only', windows_contacted=False,
                 deployment=False, formal_training_allowed=False, website_approval=False,
                 tests=['tests.test_duel_v2_learning_audits', 'tests.test_duel_v2_residual_learning',
-                       'tests.test_duel_v2_current_round',
+                       'tests.test_duel_v2_current_round', 'tests.test_duel_v2_recovery_round',
                        'tests.test_duel_v2_outcome_learning', 'tests.test_duel_v2_gumbel_search',
                        'tests.test_duel_v2_cross_teacher', 'tests.test_duel_v2_information_search',
                        'tests.test_duel_v2_training_recovery'],

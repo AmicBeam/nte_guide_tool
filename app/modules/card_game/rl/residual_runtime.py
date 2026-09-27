@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 import numpy as np
 from . import residual_policy as architecture
+from . import recovery_policy as separated
 from . import cross_grounded as grounded
 from .cross_lineup import all_features, candidate_names, identity
 from .cross_runtime import decision, determinize, passive_count, validate_policy_passes, policy_gradient_ok
@@ -17,7 +18,7 @@ class ResidualModel:
         self.manifest = m = json.loads((root / f'{key}.json').read_text(encoding='utf-8'))
         path = root / f'{key}.npz'
         self.version = sha256(path.read_bytes()).hexdigest()
-        if (m.get('schema') != architecture.SCHEMA or m.get('rule_hash') != identity()
+        if (m.get('schema') not in (architecture.SCHEMA, separated.RESIDUAL_SCHEMA) or m.get('rule_hash') != identity()
                 or m.get('architecture_sha256') != architecture.fingerprint()
                 or m.get('candidate_transform_sha256') != grounded.fingerprint()
                 or m.get('sha256') != self.version or m.get('deck') != key
@@ -28,7 +29,11 @@ class ResidualModel:
                 or m.get('reward_mode') != 'terminal_wdl_only'):
             raise ValueError('Residual model identity mismatch')
         self.hidden = m['hidden']
+        self.separated = m['schema'] == separated.RESIDUAL_SCHEMA
+        if self.separated and m.get('value_architecture_sha256') != separated.fingerprint():
+            raise ValueError('Value architecture identity mismatch')
         expected = architecture.tensor_shapes(self.hidden)
+        if self.separated: expected.update(separated.extra_shapes(self.hidden))
         with np.load(path, allow_pickle=False) as arrays:
             if set(arrays.files) != set(expected):
                 raise ValueError('Residual tensor set mismatch')
@@ -47,7 +52,7 @@ class ResidualModel:
     scores = scores_only
 
     def wdl(self, x, is_actor):
-        return architecture.wdl_numpy(x, is_actor, self.weights)
+        return architecture.wdl_numpy(x, is_actor, separated.value_weights(self.weights) if self.separated else self.weights)
 
     def scores_value(self, x, c):
         p = self.wdl(x, True)
@@ -88,7 +93,7 @@ create_network = architecture.network
 
 def export(net, directory, key, build, origin):
     from .cross_runtime import _write
-    if getattr(net, 'policy_schema', None) != architecture.SCHEMA:
+    if getattr(net, 'policy_schema', None) not in (architecture.SCHEMA, separated.RESIDUAL_SCHEMA):
         raise ValueError('Not a residual network')
     root = Path(directory)
     root.mkdir(parents=True, exist_ok=True)
@@ -97,7 +102,7 @@ def export(net, directory, key, build, origin):
     np.savez_compressed(tmp, **{name: tensor.detach().cpu().numpy() for name, tensor in net.state_dict().items()})
     tmp.replace(path)
     _write(root / f'{key}.json', dict(
-        schema=architecture.SCHEMA, architecture_sha256=architecture.fingerprint(),
+        schema=net.policy_schema, value_architecture_sha256=separated.fingerprint() if hasattr(net,'value_net') else None, architecture_sha256=architecture.fingerprint(),
         candidate_transform_sha256=grounded.fingerprint(), rule_hash=identity(), deck=key,
         hidden=net.hidden, features=all_features(), candidates=candidate_names(),
         sha256=sha256(path.read_bytes()).hexdigest(), build=build, build_sha256=build_hash(build),
@@ -110,6 +115,7 @@ def restore(directory, key, device='cpu'):
     import torch
     policy = model(directory, key)
     net = create_network(policy.hidden, device)
+    if policy.separated: net = separated.attach(net)
     net.load_state_dict({name: torch.as_tensor(array.copy(), device=device)
                          for name, array in policy.weights.items()})
     return net, policy.serving_deck, policy.manifest['origin']

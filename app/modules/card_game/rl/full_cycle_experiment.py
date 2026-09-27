@@ -299,12 +299,20 @@ def evaluate_job(j):
     if j.get('runtime')=='cross':
         from . import cross_runtime as runtime
         from .cross_runtime import model,decision
+    if j.get('runtime')=='recovery':
+        from . import recovery_runtime as runtime
+        from .recovery_runtime import model,decision
     j={**j,'decks':{k:canonical_build(v) for k,v in j['decks'].items()}}
     search_sides=j.get('search_sides',[])
     if not set(search_sides)<= {'a','b'}:raise ValueError('Invalid search evaluation sides')
     if search_sides and (j.get('details') is False or any(p[0]=='rule' for p in j['policies'].values())):
         raise ValueError('Search evaluation requires numeric opponents and full recording')
     search_policies={s:model(*p) for s,p in j['policies'].items()} if search_sides else {}
+    if runtime is not None and j.get('runtime')=='recovery' and search_sides:
+        if not runtime.value_precheck_ok(j.get('value_precheck'),search_policies):
+            raise ValueError('Matching WDL checks required for recovery evaluation search')
+    if j.get('details') is False and j.get('runtime')=='recovery':
+        raise ValueError('Recovery evaluation requires complete telemetry')
     if j.get('details') is False:
         g=search_game(dict(j,raw_sides=['a','b']))
         return dict(j,**{k:v for k,v in g.items() if k not in ('rows','search_stats')})
@@ -324,9 +332,15 @@ def evaluate_job(j):
                 # search worlds out of the legacy training/game seed ranges.
                 digest=hashlib.sha256(f'evaluation-search-v1:{j["seed"]}:{len(actions_log)}:{side}'.encode()).hexdigest()
                 root_seed=(1<<256)|int(digest,16)
-                result=search(s,side,search_policies,seed=root_seed,simulations=j.get('simulations',16),
-                    algorithm=j.get('search_algorithm','gumbel'),gumbel_candidates=j.get('gumbel_candidates',8),
-                    noise=False,runtime=runtime,deadline=j['deadline'],terminal_horizon=j.get('terminal_horizon',3))
+                if j.get('runtime')=='recovery':
+                    from .recovery_search import search as recovery_search
+                    result=recovery_search(s,side,search_policies,seed=root_seed,
+                        simulations=j.get('simulations',32),gumbel_candidates=16,
+                        noise=False,runtime=runtime,deadline=j['deadline'],terminal_horizon=3)
+                else:
+                    result=search(s,side,search_policies,seed=root_seed,simulations=j.get('simulations',16),
+                        algorithm=j.get('search_algorithm','gumbel'),gumbel_candidates=j.get('gumbel_candidates',8),
+                        noise=False,runtime=runtime,deadline=j['deadline'],terminal_horizon=j.get('terminal_horizon',3))
                 if not result['complete']:
                     error='Incomplete evaluation search';break
                 actions=result['actions'];idx=result['search_choice']

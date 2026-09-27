@@ -10,12 +10,12 @@ from .cross_lineup import encode
 
 @lru_cache(maxsize=16)
 def _load(directory, key, modified):
-    from . import residual_policy, preserved_policy
+    from . import residual_policy, preserved_policy, recovery_policy
     from .residual_runtime import ResidualModel
     schema = json.loads((Path(directory) / f'{key}.json').read_text())['schema']
-    if schema == residual_policy.SCHEMA:
+    if schema in (residual_policy.SCHEMA, recovery_policy.RESIDUAL_SCHEMA):
         return ResidualModel(directory, key)
-    if schema == preserved_policy.SCHEMA:
+    if schema in (preserved_policy.SCHEMA, preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA):
         return preserved_policy.PreservedModel(directory, key)
     raise ValueError('Unknown recovery schema')
 
@@ -27,15 +27,24 @@ def model(directory, key):
 def restore(directory, key, device='cpu'):
     """Restore a versioned numerical model without changing the frozen source."""
     import torch
-    from . import preserved_policy, residual_policy
+    from . import preserved_policy, residual_policy, recovery_policy
     policy = model(directory, key)
-    if policy.manifest['schema'] == preserved_policy.SCHEMA:
-        net, _ = preserved_policy.create_network(key, hidden=policy.hidden, device=device)
+    if policy.manifest['schema'] in (preserved_policy.SCHEMA, preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA):
+        net, _ = preserved_policy.create_network(key, hidden=policy.hidden, device=device,
+                                                  partial=policy.manifest['schema'] in (preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA))
     else:
         net = residual_policy.network(policy.hidden, device)
+    if policy.manifest['schema'] in recovery_policy.SCHEMAS:
+        net = recovery_policy.attach(net)
     net.load_state_dict({name: torch.as_tensor(value.copy(), device=device)
                          for name, value in policy.weights.items()})
     return net, policy.serving_deck, policy.manifest['origin']
+
+
+def export(net, directory, key, build, origin):
+    from . import preserved_policy, residual_runtime, recovery_policy
+    writer = preserved_policy if net.policy_schema in (preserved_policy.SCHEMA, preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA) else residual_runtime
+    writer.export(net, directory, key, build, origin)
 
 
 def value_precheck_ok(report, policies):
@@ -48,8 +57,10 @@ def value_precheck_ok(report, policies):
         return False
     for policy in policies.values():
         key = policy.manifest['deck']
-        metrics = (report.get('metrics') or {}).get(key, {})
-        if (report.get('models', {}).get(key) != policy.version
+        entry = (report.get('by_version') or {}).get(policy.version)
+        metrics = entry['metrics'] if entry else (report.get('metrics') or {}).get(key, {})
+        version = entry.get('version') if entry else report.get('models', {}).get(key)
+        if (version != policy.version
                 or metrics.get('normal_games', 0) < 8):
             return False
         brier = metrics.get('brier'); logloss = metrics.get('log_loss')
@@ -84,6 +95,8 @@ def search_game(job):
                 raise ValueError('WDL precheck required before recovery search learning')
     rows = []; values = []; trace = []; roots = []
     preserved_roots = 0
+    behavior = {}
+    references = {side: model(*spec) for side, spec in job.get('references', {}).items()}
     for step in range(job.get('max_actions', 800)):
         if state['phase'] == 'finished':
             break
@@ -109,19 +122,38 @@ def search_game(job):
                     raise ValueError('Frozen behavior was not preserved')
                 preserved_roots += 1
             chosen = int(scores.argmax())
-            roots.append(dict(step=step, side=actor, chosen=actions[chosen], legal=len(actions)))
+            from .league_schema import ACT_PLAY
+            import numpy as np
+            b = behavior.setdefault(actor, dict(decisions=0, changed=0, legal_play=0, plays=0,
+                                                reference_plays=0, entropy_sum=0., unsupported_legacy=0))
+            b['decisions'] += 1
+            probabilities = np.exp(scores.astype(np.float64) - np.logaddexp.reduce(scores.astype(np.float64)))
+            b['entropy_sum'] += float(-(probabilities * np.log(np.maximum(probabilities, 1e-300))).sum())
+            if any(int(candidate[0]) == ACT_PLAY for candidate in c):
+                b['legal_play'] += 1
+                b['plays'] += int(int(c[chosen][0]) == ACT_PLAY)
+            reference_choice = int(references[actor].scores(x, c).argmax()) if actor in references else chosen
+            b['changed'] += int(chosen != reference_choice)
+            b['reference_plays'] += int(int(c[reference_choice][0]) == ACT_PLAY)
+            if hasattr(policies[actor], 'teacher'):
+                from .cross_teacher_distillation import project_candidates
+                b['unsupported_legacy'] += int(project_candidates(c, policies[actor].teacher)[1].any())
+            roots.append(dict(step=step, side=actor, chosen=actions[chosen], legal=len(actions),
+                              reference_chosen=actions[reference_choice]))
         else:
             seed = (1 << 256) | int(hashlib.sha256(f"recovery:{job['seed']}:{step}:{actor}".encode()).hexdigest(), 16)
             q_scale = job.get('q_scale', 'legacy')
             if q_scale == 'natural_wdl':
                 from .recovery_search import search as recovery_search
                 result = recovery_search(state, actor, policies, seed=seed, runtime=runtime,
-                                         simulations=job.get('simulations', 32), deadline=job['deadline'],
-                                         noise=job.get('training', False), q_scale=q_scale)
+                                         simulations=job.get('simulations', 32),
+                                         gumbel_candidates=job.get('gumbel_candidates',16),
+                                         terminal_horizon=job.get('terminal_horizon',3), deadline=job['deadline'],
+                                         noise=job.get('exploration',job.get('training', False)), q_scale=q_scale)
             elif q_scale == 'legacy':
                 result = search(state, actor, policies, seed=seed, simulations=job.get('simulations', 32),
                                 algorithm='gumbel', gumbel_candidates=16, terminal_horizon=3,
-                                runtime=runtime, deadline=job['deadline'], noise=job.get('training', False),
+                                runtime=runtime, deadline=job['deadline'], noise=job.get('exploration',job.get('training', False)),
                                 diagnostics=True)
             else:
                 raise ValueError('Unknown recovery Q scale')
@@ -144,7 +176,7 @@ def search_game(job):
                 rows=rows if complete else [], value_rows=values if complete else [],
                 episode_actions=trace if complete else [], roots=roots, decisions=len(trace),
                 searched=0 if job.get('pure') else len(rows), turn=state['turn'],
-                preserved_roots=preserved_roots,
+                preserved_roots=preserved_roots, behavior=behavior,
                 learning_eligible=bool(job.get('training') and not job.get('pure')
                                        and value_precheck_ok(job.get('value_precheck'), policies)),
                 model_versions={side: p.version for side, p in policies.items()})

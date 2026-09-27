@@ -158,3 +158,12 @@ python scripts/train_duel_v2.py --train --sample-public --deck starter \
 ## 研究用类别动作头与终局价值
 
 `outcome_runtime.py`研究入口支持`fixed_ten_wdl_v1`和`fixed_ten_grounded_wdl_v1`。后者由`grounded_candidates.py`把固定十人原始候选中的身份列转为类别，并拼接行动角色与目标的公开状态；原始观察接口、旧模型数值推理不变。模型清单绑定变换SHA，导出后需核验NumPy／Torch一致以及恢复后预测一致。它不自动获得服务资格。三组动作表示消融、镜像样本归属及真红验收以[训练操作手册](duel-v2-public-training.md#动作表示对照与真红行为验收)为准。
+
+
+## 五套恢复编排与独立价值主干
+
+现行五套入口 `scripts/train_duel_v2_current_round.py --runtime recovery` 使用正式Python规则、信息集Gumbel32和终局WDL。`recovery_policy.py` 为策略与价值提供独立可训练主干，`recovery_runtime.py` 对版本化数值加载、导出和价值预检做严格绑定；旧共享主干schema不被静默改写。
+
+`recovery_round.py` 负责五套起点、每批全量策略行通行、非行动方价值行、三段独立闸门、能力保持／确认对照、两代恢复与原截止监督。`recovery_capacity.py` 仅在隔离副本检验真实训练教材容量和按成对种子留出，不把拟合成绩写作强度。`--resume --run` 仅恢复原输出与配置的有效轮次边界，原进程须退出、原学习截止未过；不重新授权时长。
+
+纯网络与带搜索的冻结评估通过 `full_cycle_experiment.evaluate_job` 的显式recovery分支复用遥测、状态摘要重放和公开隐私过滤；恢复数值没有服务批准。启动、阶段、CPU／CUDA和完整报告边界以[训练手册](duel-v2-public-training.md)及[恢复协议](duel-v2-policy-recovery.md)为准。验证：`tests.test_duel_v2_recovery_round`，其中价值-only在已有Adam动量时也不得改变策略数组或动作分数。

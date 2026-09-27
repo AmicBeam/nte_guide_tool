@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Five-preset grounded-WDL cross play with explicit paired initiative.
+"""Five-preset residual recovery with independent WDL and paired initiative.
 
 Default hard stop: next 09:00 Asia/Shanghai. Fixed builds; no deck search or
 website approval. --smoke validates the chain, never model quality.
@@ -54,13 +54,12 @@ def cross_pairs():
     return [(a, b) for a in ROSTER for b in ROSTER if a != b]
 
 
-def validate_round_launch(config):
-    """The worker may not bypass the CLI's disabled formal-training gate.
-
-    Recovery components are currently an isolated, three-team experiment.
-    This old five-team stack cannot be approved by merely editing a config
-    or adding a throughput number. Keep formal execution closed here too.
-    """
+def validate_round_launch(config, *, resume=False):
+    """Check recovery evidence at every entry; keep historical formal cross closed."""
+    if isinstance(config,dict) and config.get('runtime')=='recovery':
+        from app.modules.card_game.rl.recovery_round import validate_launch
+        validate_launch(config,resume=resume)
+        return
     if not isinstance(config, dict) or config.get('smoke') is not True:
         raise ValueError('Formal five-preset training is disabled: recovery stack integration, '
                          'all-five readiness and CUDA/throughput validation are pending; '
@@ -234,8 +233,11 @@ def _rollback(out, config, nets, best_state, best_dir, decks, origins, learning_
     return learning_rate, folder
 
 
-def learn(out, config):
-    validate_round_launch(config)
+def learn(out, config, *, resume=False):
+    validate_round_launch(config,resume=resume)
+    if config.get('runtime')=='recovery':
+        from app.modules.card_game.rl.recovery_round import run
+        return run(out,config,resume=resume)
     import numpy as np
     import torch
     from app.modules.card_game.rl import cross_runtime as rt
@@ -494,23 +496,43 @@ def main():
     p.add_argument('--hard-deadline', help='ISO time with explicit timezone; default next Shanghai 09:00')
     p.add_argument('--seconds', type=int, help='Optional shorter total window')
     p.add_argument('--matrix-games', type=int, default=16)
-    p.add_argument('--device', default='cuda')
+    p.add_argument('--device',choices=('cpu','cuda'), default='cuda')
     p.add_argument('--smoke', action='store_true')
     p.add_argument('--policy-passes', type=int, choices=(1, 4, 8), default=4,
                    help='Fresh policy-row passes after each frozen batch; 4 is the bounded research default')
     p.add_argument('--max-row-reuse', type=int, default=8)
     p.add_argument('--run', action='store_true')
     p.add_argument('--worker', action='store_true')
+    p.add_argument('--resume',action='store_true',help='Resume existing recovery config within its original deadline')
+    p.add_argument('--smoke-batches',type=int,choices=(1,2,3),default=1)
+    p.add_argument('--runtime',choices=('recovery','cross'),default='recovery')
+    p.add_argument('--recovery-source',type=Path)
+    p.add_argument('--readiness-report',type=Path)
+    p.add_argument('--preflight',action='store_true',help='One all-five Gumbel32 batch, no strength approval')
     a = p.parse_args()
     out = a.output.resolve()
     if a.worker:
         config = json.loads((out / 'config.json').read_text(encoding='utf-8'))
-        validate_round_launch(config)
+        validate_round_launch(config,resume=a.resume)
         try:
-            learn(out, config)
+            learn(out, config,resume=a.resume)
         except Exception as exc:
             write(out / 'failure.json', dict(error=repr(exc), time=time.time()))
             raise
+        return
+    if a.resume:
+        if not a.run: p.error('Resume requires --run and an existing recovery output')
+        config=json.loads((out/'config.json').read_text())
+        if config.get('runtime')!='recovery': p.error('Only recovery runtime supports this resume')
+        guard=json.loads((out/'guard.json').read_text())
+        pid=guard.get('worker_pid')
+        if type(pid) is int and pid>0:
+            try: os.kill(pid,0)
+            except ProcessLookupError: pass
+            else: p.error('Previous worker is still live; refuse concurrent resume')
+        validate_round_launch(config,resume=True)
+        if time.time()>=config['train_until']: p.error('Original learning deadline expired')
+        supervise(out,config,resume=True)
         return
     if a.workers < 1 or a.workers > 16:
         p.error('workers must be 1..16')
@@ -525,8 +547,8 @@ def main():
             p.error('hard deadline needs timezone')
     if a.seconds:
         hard = min(hard, now + timedelta(seconds=a.seconds))
-    if a.smoke:
-        hard = min(hard, now + timedelta(minutes=20))
+    if a.smoke or a.preflight:
+        hard = min(hard, now + timedelta(minutes=30))
     seconds = (hard-now).total_seconds()
     if seconds < 300:
         p.error('Insufficient time before hard stop')
@@ -544,13 +566,34 @@ def main():
         policy_passes=a.policy_passes, max_row_reuse=a.max_row_reuse,
         website_approval=False, roster_source=str(a.roster_source) if a.roster_source else '',
         murk_source=str(a.murk_source) if a.murk_source else '')
+    if a.runtime=='recovery':
+        if a.roster_source or a.murk_source:
+            p.error('Old sources cannot initialize recovery; use explicit recovery-source')
+        config.update(started_at=now.timestamp(),kind='five_recovery_v1',runtime='recovery',smoke=a.smoke or a.preflight,
+            preflight=a.preflight,simulations=32 if a.preflight or not a.smoke else 2,
+            learning_rate=.0003,value_replicas=2,value_passes=16,
+            gate_roots=5 if a.preflight else 2 if a.smoke else 32,search_gate_roots=1 if a.smoke or a.preflight else 2,
+            gate_seconds=600 if a.smoke or a.preflight else 1800,
+            planned_batches=1 if a.preflight else a.smoke_batches if a.smoke else 6,
+            readiness_report=str(a.readiness_report.resolve()) if a.readiness_report else None,
+            recovery_source=str(a.recovery_source.resolve()) if a.recovery_source else None)
+        if a.preflight:
+            config['train_until']=hard.timestamp()-60
+        elif not a.smoke:
+            config['evaluate_until']=hard.timestamp()-900
     config['source_rule_hashes'] = json.loads(a.source_rule_hashes.read_text()) if a.source_rule_hashes else {}
     print(json.dumps(config, ensure_ascii=False, indent=2), flush=True)
     if not a.run:
         return
-    if not a.smoke:
-        p.error('Formal five-preset training is disabled: recovery stack integration, all-five readiness and CUDA/throughput validation are pending')
-    if not a.smoke and a.device != 'cuda':
+    try:
+        validate_round_launch(config)
+    except (ValueError,OSError,KeyError) as exc:
+        p.error(str(exc))
+    if a.runtime=='recovery':
+        import torch
+        if a.device=='cuda' and not torch.cuda.is_available():
+            p.error('CUDA unavailable; no fallback, output or seeds created')
+    if not (a.smoke or a.preflight) and a.device != 'cuda':
         p.error('Formal learning requires CUDA')
     if out.exists() and any(out.iterdir()):
         p.error('Output must be new and empty')
@@ -559,8 +602,12 @@ def main():
     config['seeds'] = (json.loads(a.seed_reservation.read_text()) if a.seed_reservation else
                        claim_seeds(ROOT / 'artifacts/rl-seed-ledger.json', str(out)))
     write(out / 'config.json', config)
+    supervise(out,config)
+
+def supervise(out,config,*,resume=False):
+    hard=datetime.fromisoformat(config['hard_deadline_iso'])
     env = dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', MKL_NUM_THREADS='1')
-    worker = subprocess.Popen([sys.executable, '-X', 'utf8', __file__, '--output', str(out), '--worker'],
+    worker = subprocess.Popen([sys.executable, '-X', 'utf8', __file__, '--output', str(out), '--worker']+(['--resume'] if resume else []),
         cwd=ROOT, env=env, start_new_session=os.name != 'nt')
     write(out / 'guard.json', dict(phase='running', worker_pid=worker.pid, hard_deadline=hard.isoformat()))
     monotonic_end = time.monotonic() + max(0, hard.timestamp()-time.time())

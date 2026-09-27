@@ -615,6 +615,10 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 
 搜索教师收益诊断：`scripts/check_duel_v2_search_teacher.py --source-run TRAINING_RUN --output NEW_OUTPUT --run` 在已消费训练根上比较16/32/64预算和重复搜索，并用另行预约的隐藏世界、配对冻结可见策略续局检验首选动作。默认每套1根、每档2次、8个续局世界、600秒；结果与私有分支轨迹写入output，不更新模型。未结束的配对不得计分，条件诊断不代替完整强度确认。验证：`.venv/bin/python -m unittest tests.test_duel_v2_teacher_validation`，协议见恢复文档。
 
+扩大局面覆盖可用 `--roots-per-key 3 --seconds 1200`，按队交错运行。结果同时保存访问Q与一步固定观察者价值／条件真实终局误差，直接终局值和未完成配对不进入网络误差。冻结续局与搜索自博弈有分布差异，诊断不能代替匹配分布的价值校准或直接更新模型。
+
+`scripts/verify_duel_v2_teacher_run.py --run-dir RUN --output NEW_JSON` 可在已有私有诊断上核验输入轨迹、分支合法性、固定观察者价值与终局，并审计采样牌池是否超出冻结策略的来源配牌。它不分配新种子或修改模型；未公开牌表仍不进入采样条件，来源牌池匹配不代表模型已具备能力。
+
 完整本机预检还提供训练数据表示审计、三方数值对拍、WDL按局校准、同根搜索标签稳定性／自然尺度对照，以及仅搜索方手牌明牌的离线敏感性检查。`check_duel_v2_recovery_value.py` 用独立训练／温度选择／确认种子预热WDL；`check_duel_v2_recovery_chain.py` 要求报告绑定实际起点SHA，采集完整Gumbel32局、更新全部策略行及非行动方价值行，并核验导出与Adam／RNG恢复。`--device cuda`在无CUDA时明确拒绝；`prepare_duel_v2_offline_readiness.py --prepare`只生成源码与预检计划，不连接Windows、不部署、不自动长训。测试：`.venv/bin/python -m unittest tests.test_duel_v2_learning_audits tests.test_duel_v2_residual_learning tests.test_duel_v2_outcome_learning tests.test_duel_v2_gumbel_search tests.test_duel_v2_cross_teacher tests.test_duel_v2_information_search tests.test_duel_v2_training_recovery`。规则与网站模型不随独立研究检查改变；五套恢复入口的明确版本另按上文协议。
 
 Windows 离线时的策略恢复研究见 `docs/duel-v2-policy-recovery.md`：`rl/residual_policy.py`／`residual_runtime.py` 提供独立版本的正常幅度残差策略；`rl/preserved_policy.py` 将创生、覆纹、快攻旧策略冻结并学习零初始化修正，真红和浊燃没有对应旧教师。`rl/recovery_runtime.py` 是五套恢复编排与独立研究共用的显式采集器，继续使用信息集搜索；单独调用不提供训练批准。`check_duel_v2_residual_learning.py` 默认输出计划，`--run` 才做CPU拟合，`--memorize` 只作真实小批容量检查；`check_duel_v2_policy_preservation.py` 以新种子完整对局检查初始化全部动作分数精确保留。不能把小批记忆或旧能力保持称为正式五套已修复；研究入口不自动批准网站；五套恢复默认入口与正式启动闸门见上文。验证：`.venv/bin/python -m unittest tests.test_duel_v2_residual_learning tests.test_duel_v2_outcome_learning tests.test_duel_v2_gumbel_search tests.test_duel_v2_cross_teacher`。

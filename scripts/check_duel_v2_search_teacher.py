@@ -38,14 +38,14 @@ def main():
     from app.modules.card_game.rl import recovery_runtime as rt
     from app.modules.card_game.rl.recovery_search import search
     from app.modules.card_game.rl.search_stability import jensen_shannon
-    from app.modules.card_game.rl.teacher_validation import counterfactuals,paired_summary
+    from app.modules.card_game.rl.teacher_validation import counterfactuals,paired_summary,value_diagnostics,verify_counterfactuals
     from app.modules.card_game.rl.episode_replay import load_episode
     from app.modules.card_game.rl.build_acceptance import claim_seeds
     from app.modules.card_game.rl.offline_sources import snapshot
     from app.modules.card_game.rl.league_rollout import clean
     from app.modules.card_game.engine.duel_v2 import new_game,apply_action,acting_side
     from scripts.check_duel_v2_recovery_capacity import diagnostic_deadline
-    source=a.source_run.resolve();selected=[]
+    source=a.source_run.resolve();by_key=[]
     for key in a.keys:
         found=[]
         for path in sorted((source/'cycles/1/sampling/episodes').glob('*.json.gz')):
@@ -58,7 +58,9 @@ def main():
             if rows:found.append((path,data,rows[0]))
             if len(found)==a.roots_per_key:break
         if len(found)!=a.roots_per_key:raise ValueError('Insufficient declared confident roots for '+key)
-        selected.extend(found)
+        by_key.append(found)
+    # Interleave teams so an absolute deadline cannot silently favor the first team.
+    selected=[group[index] for index in range(a.roots_per_key) for group in by_key]
     start=time.time();end=diagnostic_deadline(start,a.seconds)
     if end-start<60:raise ValueError('Insufficient time before dated 09:00 hard stop')
     seeds=claim_seeds(ROOT/'artifacts/rl-seed-ledger.json',str(a.output.resolve()))
@@ -68,6 +70,7 @@ def main():
     write('config.json',dict(source_run=str(source),deadline=end,seeds=seeds,
           keys=a.keys,roots_per_key=a.roots_per_key,budgets=a.budgets,repeats=a.repeats,
           worlds=a.worlds,continuation='frozen_visible_policy_softmax',max_actions=512,
+          value_probe='viewer_one_ply_network_vs_conditional_terminal',
           real_policy_updates=0,training_roots_only=True,quality_approved=False))
     snapshot(ROOT,a.output/'source',('scripts/check_duel_v2_search_teacher.py',
         'app/modules/card_game/rl/teacher_validation.py'))
@@ -91,6 +94,7 @@ def main():
             raise ValueError('Training root reconstruction mismatch')
         scores=rt.action_scores(policies[actor],x,c);prior=int(np.argmax(scores))
         record=dict(key=row['key'],game=job['id'],step=row['step'],models=versions,
+            first=job['first'],left=job['left'],right=job['right'],viewer=actor,
             episode_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),prior=prior,searches=[])
         branches={prior};full=True
         for noise in (False,True):
@@ -103,23 +107,30 @@ def main():
                     runs.append(result)
                 if not full:break
                 mean=np.mean([r['pi'] for r in runs],axis=0);top=int(mean.argmax())
+                visits=np.sum([r['visits'] for r in runs],axis=0)
+                total=np.sum([r['mean_values']*r['visits'] for r in runs],axis=0)
                 branches.add(top)
                 branches.update(int(r['search_choice']) for r in runs if not noise)
                 record['searches'].append(dict(noise=noise,budget=budget,
                     target_js=jensen_shannon([r['pi'] for r in runs]),mean_target=mean.tolist(),
                     mean_top=top,top=[int(r['pi'].argmax()) for r in runs],
+                    root_value=float(runs[0]['value']),visits=visits.tolist(),
+                    visited_mean_q=[float(total[i]/visits[i]) if visits[i] else None for i in range(len(visits))],
                     chosen=[int(r['search_choice']) for r in runs]))
             if not full:break
         record['search_complete']=full;record['root_actions']=legal
         if full:
             records=counterfactuals(state,actor,sorted(branches),policies,rt,
                 world_seed=seeds['audit']+ordinal*10000,continuation_seed=seeds['confirmation']+ordinal*10000,
-                worlds=a.worlds,deadline=end)
+                worlds=a.worlds,deadline=end,capture_value=True)
             with gzip.open(a.output/f'root-{ordinal}-private-continuations.json.gz','wt') as f:json.dump(records,f)
             record['counterfactual']=paired_summary(records,sorted(branches),prior,expected_worlds=a.worlds)
+            record['value_diagnostics']=value_diagnostics(records,sorted(branches))
+            record['replay_verification']=verify_counterfactuals(state,actor,records,rt,deadline=end)
         reports.append(record)
         write('result.json',dict(complete=len(reports)==len(selected) and all(
-            r['search_complete'] and r.get('counterfactual',{}).get('complete') for r in reports),
+            r['search_complete'] and r.get('counterfactual',{}).get('complete')
+            and r.get('replay_verification',{}).get('complete') for r in reports),
             roots=reports,quality_approved=False,independent_strength_confirmation=False))
         print(json.dumps(dict(key=row['key'],game=job['id'],step=row['step'],
             search_complete=full,counterfactual=record.get('counterfactual')),ensure_ascii=False),flush=True)

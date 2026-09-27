@@ -90,7 +90,13 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
                             horizon=min(terminal_horizon, remaining), runtime=runtime, optimized=True,
                             fast_simulation=fast_simulation, deadline=deadline)
                         if proved is not None:
-                            value = proved; tree[key].raw_value = proved
+                            value = proved
+                            # The proof is for this sampled hidden world. It
+                            # is one rollout result, not a reusable belief-
+                            # state estimate for every world sharing (x, c).
+                            # Keep legacy behavior only for exact reproduction.
+                            if q_scale == 'legacy':
+                                tree[key].raw_value = proved
                     break
                 node = tree[key]
                 chosen = (choose_root(node, gumbel, schedule[simulation], q_scale) if depth == 0 else

@@ -241,6 +241,33 @@ class RecoveryRoundTest(unittest.TestCase):
                 self.assertEqual(row['train_seed_groups'],[10,11,12])
                 self.assertEqual(row['heldout_seed_groups'],[110,111,112])
 
+    def test_sampled_world_proof_does_not_poison_shared_information_value(self):
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.rl import recovery_search
+        from app.modules.card_game.rl import cross_runtime
+        from app.modules.card_game.rl.information_search import Node
+        decks=preset_decks()
+        state=new_game(seed=3,first_side='a',skip_mulligan=True,
+                       decks={'a':decks['starter'],'b':decks['starter']})
+        class Uniform:
+            def scores_only(self,x,c):return np.zeros(len(c),dtype=np.float32)
+            def scores_value(self,x,c):return self.scores_only(x,c),0.
+            def wdl(self,x,actor):return np.array([.3,.4,.3],dtype=np.float32)
+        original=Node.create
+        for mode in ('natural_wdl','legacy'):
+            nodes=[]
+            def remember(*args,**kwargs):
+                node=original(*args,**kwargs);nodes.append(node);return node
+            with patch.object(Node,'create',side_effect=remember), patch.object(
+                    recovery_search.core,'short_terminal_value',return_value=1.) as proof:
+                result=recovery_search.search(state,'a',{'a':Uniform(),'b':Uniform()},
+                    seed=17,runtime=cross_runtime,simulations=4,max_depth=10,q_scale=mode)
+            self.assertTrue(result['complete']);self.assertGreater(proof.call_count,0)
+            if mode=='natural_wdl':self.assertTrue(all(node.raw_value==0. for node in nodes))
+            else:self.assertTrue(any(node.raw_value==1. for node in nodes))
+            # A proven +1 may still be backed up as a sampled outcome.
+            self.assertGreater(sum(node.total.sum() for node in nodes),0)
+
     def test_all_five_private_worlds_natural_search_and_numeric_export(self):
         import torch
         from app.modules.card_game.engine.duel_v2 import new_game

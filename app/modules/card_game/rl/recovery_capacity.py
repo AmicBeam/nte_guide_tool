@@ -9,6 +9,32 @@ import numpy as np
 from .cross_schedule import ROSTER
 
 
+def candidate_alias_metrics(rows):
+    """Report label loss impossible for a scorer of (observation, candidate).
+
+    Equal encoded candidates necessarily receive equal scores. This reports
+    representational aliases, not rule equivalence; do not merge real actions
+    or use these numbers to relax acceptance.
+    """
+    floors=[]; alias_rows=0; aliases=0; conflicting_rows=0
+    for row in rows:
+        c=np.asarray(row['c']);p=np.asarray(row['pi'],dtype=np.float64)
+        if (c.ndim!=2 or p.ndim!=1 or len(p)!=len(c) or not len(p)
+                or not np.isfinite(c).all() or not np.isfinite(p).all()
+                or np.any(p<0) or not np.isclose(p.sum(),1)):
+            raise ValueError('Invalid candidate alias audit row')
+        _,groups,counts=np.unique(c,axis=0,return_inverse=True,return_counts=True)
+        aliases+=int((counts-1).sum());alias_rows+=int(np.any(counts>1))
+        projected=np.bincount(groups,weights=p)[groups]/counts[groups]
+        positive=p>0
+        floor=float(np.sum(p[positive]*np.log(p[positive]/projected[positive])))
+        floors.append(max(0.,floor));conflicting_rows+=int(floor>1e-8)
+    if not floors:raise ValueError('Empty candidate alias audit')
+    return dict(rows=len(rows),alias_rows=alias_rows,duplicate_candidates=aliases,
+                conflicting_label_rows=conflicting_rows,minimum_kl=float(np.mean(floors)),
+                maximum_row_minimum_kl=float(max(floors)),rule_equivalence_verified=False)
+
+
 def label_metrics(net, rows, device):
     import torch
     from .league_learning import tensors
@@ -28,7 +54,8 @@ def label_metrics(net, rows, device):
                     confident+=1
                     correct+=int(logp[index,:len(target)].argmax()==target.argmax())
     return dict(kl=max(0.,float(np.mean(values))),confident_rows=confident,
-                confident_accuracy=correct/confident if confident else None,rows=len(rows))
+                confident_accuracy=correct/confident if confident else None,rows=len(rows),
+                candidate_aliases=candidate_alias_metrics(rows))
 
 
 def fit(models,jobs,games,config,deadline,*,steps=200,held_jobs=None,held_games=None):
@@ -36,6 +63,10 @@ def fit(models,jobs,games,config,deadline,*,steps=200,held_jobs=None,held_games=
     from . import recovery_runtime as rt
     from .recovery_round import versions
     if type(steps) is not int or not 2<=steps<=400: raise ValueError('Bounded isolation steps required')
+    if not jobs or len(jobs)!=len(games):raise ValueError('Training job/result counts differ')
+    if (held_jobs is None)!=(held_games is None):raise ValueError('Both heldout jobs and results required')
+    if held_jobs is not None and (not held_jobs or len(held_jobs)!=len(held_games)):
+        raise ValueError('Heldout job/result counts differ')
     signature=versions(models);result={}
     for key in ROSTER:
         groups={}

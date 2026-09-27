@@ -14,6 +14,30 @@ from scripts.train_duel_v2_current_round import preset_decks, validate_round_lau
 
 
 class RecoveryRoundTest(unittest.TestCase):
+    def test_candidate_alias_loss_floor_reports_unlearnable_labels(self):
+        from app.modules.card_game.rl.recovery_capacity import candidate_alias_metrics
+        row=dict(c=np.array([[1.,2.],[1.,2.],[3.,4.]]),pi=np.array([.8,0.,.2]))
+        result=candidate_alias_metrics([row])
+        self.assertAlmostEqual(result['minimum_kl'],.8*np.log(2))
+        self.assertEqual(result['conflicting_label_rows'],1)
+        self.assertEqual(result['duplicate_candidates'],1)
+        self.assertFalse(result['rule_equivalence_verified'])
+        balanced={**row,'pi':np.array([.4,.4,.2])}
+        self.assertEqual(candidate_alias_metrics([balanced])['minimum_kl'],0.)
+        distinct={**row,'c':np.array([[1.,2.],[1.,3.],[3.,4.]])}
+        self.assertEqual(candidate_alias_metrics([distinct])['minimum_kl'],0.)
+        with self.assertRaises(ValueError):
+            candidate_alias_metrics([{**row,'pi':np.array([1.,-1.,1.])}])
+
+    def test_capacity_rejects_missing_results_before_loading_source(self):
+        from app.modules.card_game.rl.recovery_capacity import fit
+        with self.assertRaisesRegex(ValueError,'Training job/result'):
+            fit('unused',[{}],[],{},float('inf'))
+        with self.assertRaisesRegex(ValueError,'Both heldout'):
+            fit('unused',[{}],[{}],{},float('inf'),held_jobs=[{}])
+        with self.assertRaisesRegex(ValueError,'Heldout job/result'):
+            fit('unused',[{}],[{}],{},float('inf'),held_jobs=[{}],held_games=[])
+
     def setUp(self):
         import torch
         torch.set_num_threads(1)

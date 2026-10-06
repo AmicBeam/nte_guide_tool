@@ -615,6 +615,8 @@ Y02 采用私有抽牌事件，使用者看具体牌面，对手与公开回放�
 
 恢复采样由 `recovery_sampler.py` 区分原版A03、临时A03、C02／Q05复制和NF01，不读取对手未公开时效标记，不把已过期牌放回隐藏手牌。`check_duel_v2_rollout_coverage.py` 在替代配牌完整局中核验采样信息集、规则掩码与快速模拟对拍。教师模式通过 `--teacher-mode` 明确选择；固定预组 `network` 教师不获正式覆盖许可。`covered_terminal/covered_expert` 真实终局续局；`covered_value --covered-value-source DIR` 使用经90训练／30选择／30留出校准的独立专家价值代理，准备和复核分别用 `prepare_duel_v2_covered_value.py`、`verify_duel_v2_covered_value.py`。规则策略只接收观察，优化选择预览而不改变动作；这些入口不更改奖励或网站模型。
 
+搜索规则教师的战斗预览只省去演出patch与公开棋盘缓存生成，继续使用同一隐私过滤和规则计算。`tests.test_duel_v2_covered_rollout` 对拍五套真实轨迹的预览与规则动作，并检查异常后的上下文恢复；辅助价值须按新算法SHA完整重验，不能沿用失效scope。单根加速不代替Windows完整局吞吐。
+
 择优按队确认并复制候选／原模型数组，组合后再用新种子校准价值和复核搜索，全部完成才更新best。测试：`.venv/bin/python -m unittest tests.test_duel_v2_recovery_sampler tests.test_duel_v2_covered_rollout tests.test_duel_v2_covered_value tests.test_duel_v2_recovery_round`。教师身份、辅助值SHA及额外阶段成本进入预检／恢复协议。
 
 搜索教师收益诊断：`scripts/check_duel_v2_search_teacher.py --source-run TRAINING_RUN --output NEW_OUTPUT --run` 在已消费训练根上比较16/32/64预算和重复搜索，并用另行预约的隐藏世界、配对冻结可见策略续局检验首选动作。默认每套1根、每档2次、8个续局世界、600秒；结果与私有分支轨迹写入output，不更新模型。未结束的配对不得计分，条件诊断不代替完整强度确认。验证：`.venv/bin/python -m unittest tests.test_duel_v2_teacher_validation`，协议见恢复文档。

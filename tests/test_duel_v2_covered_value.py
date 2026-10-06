@@ -9,6 +9,17 @@ from app.modules.card_game.rl import covered_value as cv
 
 
 class CoveredValueTest(unittest.TestCase):
+    def test_expanded_scope_requires_bounded_complete_phase_counts(self):
+        self.assertEqual(cv.phase_counts(dict(schema='covered_expert_value_v1')),
+                         dict(training=90,selection=30,heldout=30))
+        report=dict(schema='covered_expert_value_v2',phase_counts=dict(training=360,selection=90,heldout=90))
+        self.assertEqual(cv.phase_counts(report),report['phase_counts'])
+        for bad in (dict(training=60,selection=90,heldout=90),
+                    dict(training=360,selection=90,heldout=30),
+                    dict(training=361,selection=90,heldout=90),
+                    dict(training=True,selection=30,heldout=30),{}):
+            with self.assertRaises(ValueError):cv.phase_counts(dict(report,phase_counts=bad))
+
     def test_manual_pass_flag_cannot_replace_raw_phase_endpoints(self):
         from app.modules.card_game.rl.cross_schedule import ROSTER
         from app.modules.card_game.rl.cross_lineup import identity

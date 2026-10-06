@@ -13,12 +13,26 @@ def identity():
     return digest.hexdigest()
 
 
+def phase_counts(report):
+    if report.get('schema')=='covered_expert_value_v1':
+        return dict(training=90,selection=30,heldout=30)
+    counts=report.get('phase_counts',{})
+    if (report.get('schema')!='covered_expert_value_v2'
+            or set(counts)!={'training','selection','heldout'}
+            or any(type(v) is not int or v%30 for v in counts.values())
+            or not 90<=counts['training']<=360
+            or not 30<=counts['selection']<=90
+            or counts['heldout']!=counts['selection']):
+        raise ValueError('Bounded covered value phase counts required')
+    return counts
+
+
 def load_scope(folder):
     from . import recovery_runtime as rt
     from .cross_schedule import ROSTER
     from .cross_lineup import identity as rules
     folder=Path(folder);report=json.loads((folder/'scope.json').read_text())
-    if (report.get('schema')!='covered_expert_value_v1' or report.get('passed') is not True
+    if (report.get('schema') not in ('covered_expert_value_v1','covered_expert_value_v2') or report.get('passed') is not True
             or report.get('rule_hash')!=rules() or report.get('algorithm_sha256')!=identity()
             or report.get('objective')!='visible_rule_after_six_exploration_actions'
             or set(report.get('models',{}))!=set(ROSTER)):
@@ -30,7 +44,7 @@ def load_scope(folder):
     if not all(name in report.get('files',{}) for name in ('heldout.json','selection.json','training.json')):
         raise ValueError('Covered value raw evidence missing')
     phases={p:json.loads((folder/(p+'.json')).read_text()) for p in ('training','selection','heldout')}
-    for phase,count in (('training',90),('selection',30),('heldout',30)):
+    for phase,count in phase_counts(report).items():
         entry=phases[phase]
         if entry.get('complete') is not True or entry.get('games')!=count or len(entry.get('seeds',[]))!=count:
             raise ValueError('Covered value phase endpoints incomplete')

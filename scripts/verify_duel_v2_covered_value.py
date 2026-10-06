@@ -42,7 +42,10 @@ def main():
             raise ValueError('Original evidence changed')
     decks=preset_decks();plan=learning_schedule()+[dict(left=k,right=k,first=f) for k in ROSTER for f in ('a','b')]
     counts={};held=[];total_actions=0
-    for phase,n,base in (('training',90,config['seeds']['foundation']),('selection',30,config['seeds']['selection']),('heldout',30,config['seeds']['confirmation'])):
+    endpoints=cv.phase_counts(old)
+    for phase,n,base in (('training',endpoints['training'],config['seeds']['foundation']),
+                         ('selection',endpoints['selection'],config['seeds']['selection']),
+                         ('heldout',endpoints['heldout'],config['seeds']['confirmation'])):
         for ordinal in range(n):
             if time.time()>=end:raise TimeoutError('Auxiliary verification deadline')
             replica=ordinal//30;i=ordinal%30;item=plan[i];seed=base+replica*100+i//2

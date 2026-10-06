@@ -66,7 +66,8 @@
   box-shadow: 0 0 0 calc(2px * var(--table-layout-scale, 1)) rgba(255, 191, 87, 0.9), 0 0 calc(18px * var(--table-layout-scale, 1)) rgba(255, 191, 87, 0.24);
 }
 
-.v2-character-card.is-damage-immune {
+.v2-character-card.is-damage-immune,
+.v2-character-card.is-damage-limited {
   overflow: visible;
 }
 
@@ -86,6 +87,15 @@
   stroke: #ffda75;
   stroke-width: 2.5;
   vector-effect: non-scaling-stroke;
+}
+
+.v2-damage-limit-frame {
+  filter: drop-shadow(0 0 4px rgba(82, 166, 255, 0.75));
+}
+
+.v2-damage-limit-frame path {
+  fill: rgba(82, 166, 255, 0.045);
+  stroke: #75beff;
 }
 
 .v2-character-art {

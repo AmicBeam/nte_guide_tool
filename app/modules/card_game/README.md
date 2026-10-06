@@ -677,3 +677,10 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 验证：`python -m unittest tests.test_duel_v2_continuous_cast tests.test_duel_v2_catalog tests.test_duel_v2_zone_status tests.test_duel_v2_followup_target`；`node --test tests/js/duel_v2_ranged.test.cjs tests/js/duel_v2_animation.test.cjs`。不以规则单测作为平衡或模型质量证据。
 
 复制生成的家族壮大按实际拥有者展示；安魂曲 A07 的回合开始效果使用独立武备钩子，复制异能不遮掉自己的武备效果。相关覆盖也在 `tests.test_duel_v2_continuous_cast`。模拟对拍单独运行 `python -m unittest tests.test_duel_v2_simulation`；既有实体测试与模拟测试混跑的补丁隔离断言在修改前同样失败，不作为本次新增问题。
+
+
+### 2026-10-07 真红伤害上限与翳抽牌
+
+真红盈蓄保护改为每个伤害段至多 1 点、护盾前封顶，沿用下个己方回合开始到期；公开 `damage_limit` 与实时／回放蓝色盾形外框同步。I03 生成 4 个己方回合兽牙并抽 1 张，I04 生成 2 个并抽 1 张，分别保留瞬发／真正零费。数据来自用户桌游调整，细则见完整手册。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_surplus_rework tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_immunity_frame.test.cjs`。覆盖伤害段、增伤／抗性／护盾／穿透、零伤害、援护免反击、到期与倒地、JSON与回放、抽牌隐私／空库及费用。新规则请重新开局，旧训练身份和回放记录不回写。

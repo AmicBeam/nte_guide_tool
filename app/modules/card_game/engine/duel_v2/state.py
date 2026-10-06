@@ -343,6 +343,15 @@ def damage_immune(state, side, cid):
     return alive(state, side, cid) and bool(evaluate(state, side, h, 'rule.damage_immune', False)['value'])
 
 
+def damage_limit(state, side, cid):
+    """Public per-event damage cap; None means there is no active limit."""
+    if not alive(state, side, cid):
+        return None
+    from .modifiers import evaluate
+    value = evaluate(state, side, hero(state, side, cid), 'damage.limit', None)['value']
+    return None if value is None else max(0, int(value))
+
+
 def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage', settle=True,
            group_id=None, damage_class=None, reason=None, counter_immunity=None):
     if finished(state):
@@ -370,7 +379,8 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     klass = damage_class_for(kind, damage_class)
     attr = source_attribute(state, source)
     zone = front_debuff(state, side)
-    immune = esper and damage_immune(state, side, cid)
+    immune = ((esper and damage_immune(state, side, cid))
+              or (counter_immunity == 'support' and kind == 'combat'))
     if immune:
         amount = 0
     if (not immune and kind == 'combat' and attr in ('魂', '相') and zone.get('stain')
@@ -383,6 +393,10 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
                               query={'attribute': attr, 'amount': amount, 'kind': kind, 'source': source})
         amount = max(0, amount - int(resistance['value']) - int(resistances.pop(attr, 0)))
         consume_applied(state, 'damage', [e['effect_id'] for e in resistance['contributions']])
+    if esper:
+        limit = damage_limit(state, side, cid)
+        if limit is not None:
+            amount = min(amount, limit)
     before = {'hp': target['hp'], 'shield': target['shield']}
     absorbed = 0 if bypass else min(target['shield'], amount)
     target['shield'] -= absorbed

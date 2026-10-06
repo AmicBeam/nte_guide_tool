@@ -10,7 +10,7 @@ from app.modules.card_game.content.duel_v2.registry import fire
 from app.modules.card_game.engine.duel_v2.flow import begin_turn
 from app.modules.card_game.engine.duel_v2.entities import clone_state
 from app.modules.card_game.engine.duel_v2.state import (
-    hero, card_instance, damage, damage_immune, front_debuff, move_out,
+    hero, card_instance, damage, damage_immune, damage_limit, front_debuff, move_out,
 )
 from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
 from app.modules.card_game.engine.duel_v2.combat import harmony_marks
@@ -24,7 +24,7 @@ class ZhenhongBuffTest(unittest.TestCase):
     def protect(self, state, side='a'):
         fire(EffectContext(state, side, 'zhenhong', {'side': side}), 'on_surplus', actor_only=True)
 
-    def test_surplus_attack_stacks_and_expires_with_immunity_preserving_other_buffs(self):
+    def test_surplus_attack_stacks_and_expires_with_damage_limit_preserving_other_buffs(self):
         from app.modules.card_game.engine.duel_v2.state import add_atk_buff, attack_value
         s = self.game()
         h = hero(s, 'a', 'zhenhong')
@@ -46,7 +46,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         s['_public_board'] = deepcopy(opening)
         begin_turn(s, 'a')
         self.assertEqual(attack_value(h, s, 'a'), base)
-        self.assertFalse(damage_immune(s, 'a', 'zhenhong'))
+        self.assertIsNone(damage_limit(s, 'a', 'zhenhong'))
         self.assertNotIn('atk_buff_expiring', h['flags'])
         for viewer in ('a', 'b'):
             board = observe(s, viewer, include_previews=False)
@@ -123,43 +123,66 @@ class ZhenhongBuffTest(unittest.TestCase):
         self.assertEqual(s['winner'], 'b')
         self.assertFalse(any(e['type'] == 'attack' for e in s['events']))
 
-    def test_immunity_blocks_all_damage_including_stain_and_preserves_shield(self):
+    def test_limit_caps_each_damage_after_stain_and_resistance_before_shields(self):
+        for kind in ('combat', 'damage', 'genesis', 'followup', 'burn', 'star', 'nightmare'):
+            with self.subTest(kind=kind):
+                s = self.game(team=('zhenhong', 'haiyue', 'zero', 'jiuyuan'))
+                self.protect(s)
+                h = hero(s, 'a', 'zhenhong')
+                h['shield'] = 3
+                s['sides']['a']['front'] = 'zhenhong'
+                front_debuff(s, 'a')['stain'] = {'by': 'b', 'expires_side': 'a'}
+                h['next_damage_resistance'] = {'魂': -2}
+                self.assertEqual(damage(s, 'a', 'zhenhong', 50, kind=kind, source='b:haiyue'), 0)
+                self.assertEqual((h['hp'], h['shield']), (5, 2))
+                self.assertEqual(s['events'][-1]['amount'], 1)
+                self.assertEqual(h['next_damage_resistance'], {})
+                h['shield'] = 0
+                self.assertEqual(damage(s, 'a', 'zhenhong', 50, kind=kind, source='b:haiyue'), 1)
+                self.assertEqual(h['hp'], 4)
+                self.assertEqual(damage(s, 'a', 'zhenhong', 50, source='a:zero', bypass=True), 1)
+                self.assertEqual(h['hp'], 3)
+                move_out(s, 'a', 'zhenhong')
+                self.assertEqual(damage_limit(s, 'a', 'zhenhong'), 1)
+                self.assertFalse(damage_immune(s, 'a', 'zhenhong'))
+                self.assertEqual(damage(s, 'a', 'zero', 2), 2)
+
+    def test_limit_keeps_zero_damage_zero_and_support_counter_immune(self):
         s = self.game(team=('zhenhong', 'haiyue', 'zero', 'jiuyuan'))
         self.protect(s)
         h = hero(s, 'a', 'zhenhong')
-        h['shield'] = 3
+        h['next_damage_resistance'] = {'魂': -2}
+        self.assertEqual(damage(s, 'a', 'zhenhong', 0, source='b:haiyue'), 0)
+        self.assertEqual(h['next_damage_resistance'], {'魂': -2})
         s['sides']['a']['front'] = 'zhenhong'
         front_debuff(s, 'a')['stain'] = {'by': 'b', 'expires_side': 'a'}
-        h['next_damage_resistance'] = {'魂': -2}
-        for kind in ('combat', 'damage', 'genesis', 'followup', 'burn', 'star', 'nightmare'):
-            self.assertEqual(damage(s, 'a', 'zhenhong', 50, kind=kind, source='b:haiyue'), 0)
-            self.assertEqual((h['hp'], h['shield']), (5, 3))
+        self.assertEqual(damage(s, 'a', 'zhenhong', 0, kind='combat',
+                                source='b:haiyue', counter_immunity='support'), 0)
+        self.assertEqual(h['hp'], 5)
         self.assertEqual(h['next_damage_resistance'], {'魂': -2})
-        self.assertEqual(damage(s, 'a', 'zhenhong', 50, source='a:zero', bypass=True), 0)
-        move_out(s, 'a', 'zhenhong')
-        self.assertTrue(damage_immune(s, 'a', 'zhenhong'))
-        self.assertEqual(damage(s, 'a', 'zero', 1), 1)
+        self.assertEqual(s['events'][-1]['counter_immunity'], 'support')
 
-    def test_immunity_expires_before_own_start_damage_but_not_enemy_start(self):
+    def test_limit_expires_before_own_start_damage_but_not_enemy_start(self):
         s = self.game()
         self.protect(s)
         s['deferred_actions'] = []
         s['sides']['a']['front'] = 'zhenhong'
-        front_debuff(s, 'a')['burn'] = {'left': 2, 'by': 'b'}
+        hero(s, 'b', 'yi').update(shape='I07', beast_fangs=6, awakened=True, ultimate_turns=2)
         begin_turn(s, 'b')
-        self.assertTrue(damage_immune(s, 'a', 'zhenhong'))
-        begin_turn(s, 'a')
-        self.assertFalse(damage_immune(s, 'a', 'zhenhong'))
+        self.assertEqual(damage_limit(s, 'a', 'zhenhong'), 1)
         self.assertEqual(hero(s, 'a', 'zhenhong')['hp'], 4)
+        begin_turn(s, 'a')
+        self.assertIsNone(damage_limit(s, 'a', 'zhenhong'))
+        self.assertEqual(hero(s, 'a', 'zhenhong')['hp'], 2)
         # An opponent-turn trigger expires at the immediately following own start.
         s = self.game()
         begin_turn(s, 'b')
         self.protect(s)
         s['deferred_actions'] = []
         begin_turn(s, 'a')
-        self.assertFalse(damage_immune(s, 'a', 'zhenhong'))
+        self.assertIsNone(damage_limit(s, 'a', 'zhenhong'))
 
-    def test_immune_front_does_not_leak_penetration_and_death_clears_flag(self):
+    def test_limited_front_does_not_leak_penetration_and_death_clears_effect(self):
         from app.modules.card_game.engine.duel_v2.state import knockdowns
         s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
         self.protect(s, 'b')
@@ -168,25 +191,38 @@ class ZhenhongBuffTest(unittest.TestCase):
         hero(s, 'a', 'bohe')['base_attack'] = 20
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'bohe'})
         self.assertEqual(s['sides']['b']['hp'], 100)
-        self.assertEqual(hero(s, 'b', 'zhenhong')['hp'], 5)
+        self.assertEqual(hero(s, 'b', 'zhenhong')['hp'], 4)
+        # A lethal capped hit also has no overkill damage to penetrate.
+        s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
+        self.protect(s, 'b')
+        s['deferred_actions'] = []
+        s['sides']['b']['front'] = 'zhenhong'
+        hero(s, 'a', 'bohe')['base_attack'] = 20
+        hero(s, 'b', 'zhenhong')['hp'] = 1
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'bohe'})
+        self.assertEqual(s['sides']['b']['hp'], 100)
+        self.assertEqual(hero(s, 'b', 'zhenhong')['down_turns'], 3)
+        self.assertIsNone(damage_limit(s, 'b', 'zhenhong'))
         hero(s, 'b', 'zhenhong')['hp'] = 0
         knockdowns(s)
         self.assertNotIn('damage_immunity_until', hero(s, 'b', 'zhenhong')['flags'])
         self.assertNotIn('atk_buff_expiring', hero(s, 'b', 'zhenhong')['flags'])
 
-    def test_immunity_snapshot_live_and_replay_no_external_duration_marker(self):
+    def test_limit_snapshot_live_and_replay_no_external_duration_marker(self):
         s = self.game()
         opening, seq = capture_public_board(s), s['event_seq']
         self.protect(s)
         s = clone_state(json.loads(json.dumps(s)))
-        self.assertTrue(damage_immune(s, 'a', 'zhenhong'))
+        self.assertEqual(damage_limit(s, 'a', 'zhenhong'), 1)
         for side in ('a', 'b'):
             h = next(h for h in observe(s, side, include_previews=False)['sides']['a']['characters'] if h['id'] == 'zhenhong')
-            self.assertTrue(h['damage_immune'])
+            self.assertFalse(h['damage_immune'])
+            self.assertEqual(h['damage_limit'], 1)
             self.assertFalse(any('免' in m['name'] for m in h['effect_markers']))
         events = [e for e in observe(s, 'a')['presentation']['events'] if e['seq'] > seq]
         h = next(h for h in replay_public_board(opening, events)['sides']['a']['characters'] if h['id'] == 'zhenhong')
-        self.assertTrue(h['damage_immune'])
+        self.assertFalse(h['damage_immune'])
+        self.assertEqual(h['damage_limit'], 1)
 
     def test_ultimate_moves_and_harmonizes_without_attack_or_combat_resources(self):
         s = self.game()
@@ -218,7 +254,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zhenhong'})
         self.assertEqual(hero(s, 'a', 'zhenhong')['extra_attacks'], 1)
         self.assertEqual(hero(s, 'a', 'zhenhong')['energy'], 0)
-        self.assertTrue(damage_immune(s, 'a', 'zhenhong'))
+        self.assertEqual(damage_limit(s, 'a', 'zhenhong'), 1)
         self.assertFalse(s.get('deferred_actions'))
 
     def test_movement_checks_owner_turn_and_never_attacks(self):

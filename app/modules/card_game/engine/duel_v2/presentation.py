@@ -116,6 +116,7 @@ def capture_public_board(state):
                 'stat_layers': stat_layers(hero), 'equipment': public_equipment(hero),
                 'effect_markers': character_effect_markers(hero, state, ps),
                 'damage_immune': duel_state.damage_immune(state, ps, cid),
+                'damage_limit': duel_state.damage_limit(state, ps, cid),
                 'hp': hero['hp'],
                 'max_hp': hero['max_hp'],
                 'shield': hero['shield'],

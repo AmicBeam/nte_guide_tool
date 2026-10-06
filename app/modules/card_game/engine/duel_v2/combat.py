@@ -4,7 +4,7 @@ from app.modules.card_game.engine.events import GameEvent
 from .state import (PLAYER_ID, add_collapse, alive, attack_value, collapsed, damage, energy,
                     finished, front_debuff, front_target, hero, is_esper, is_player, knockdowns,
                     log, move_out, name, other, reduce_max_hp, shield, victory, zone_attack_penalty,
-                    damage_immune)
+                    damage_immune, damage_limit)
 
 from .escalation import harmony_cap
 
@@ -321,7 +321,9 @@ def attack(c, spec, index):
     raw_overflow = 0
     if is_esper(target_id) and not cut_max and not damage_immune(s, enemy, target_id):
         blocked = 0 if spec.get('ignore_shield') else int(target['shield'] or 0)
-        raw_overflow = max(0, attack_amount - blocked - target['hp'])
+        limit = damage_limit(s, enemy, target_id)
+        incoming = attack_amount if limit is None else min(attack_amount, limit)
+        raw_overflow = max(0, incoming - blocked - target['hp'])
         overflow = raw_overflow if penetrate else 0
         overflow = int(decide(c, 'combat_overflow', overflow, attacker_id=cid,
                               defender_id=target_id, defender_side=enemy,

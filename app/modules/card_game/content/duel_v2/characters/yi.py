@@ -17,11 +17,13 @@ def _battle(c):
 
 
 def _long(c):
-    _fangs(c, 6)
+    _fangs(c, 4)
+    c.draw(1)
 
 
 def _free(c):
-    _fangs(c, 4)
+    _fangs(c, 2)
+    c.draw(1)
 
 
 def _skip(c):

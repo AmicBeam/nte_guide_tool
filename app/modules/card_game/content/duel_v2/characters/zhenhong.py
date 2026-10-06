@@ -62,10 +62,11 @@ class Zhenhong:
         add_effect(c.character, 'zhenhong.surplus_attack', 'attack.panel', 1,
                    source_entity_id=c.entity_id, source_key='passive', label='真红异能', show_marker=False,
                    expiry=deadline(c.state, c.side, 1, 'turn_start'))
-        add_effect(c.character, 'zhenhong.surplus_immunity', 'rule.damage_immune', True, op='allow',
-                   source_entity_id=c.entity_id, source_key='passive', label='真红免伤', show_marker=False,
+        # User tabletop change, 2026-10-07: cap each damage event before shields.
+        add_effect(c.character, 'zhenhong.surplus_damage_limit', 'damage.limit', 1, op='set',
+                   source_entity_id=c.entity_id, source_key='passive', label='真红伤害限制', show_marker=False,
                    stacking='refresh', expiry=deadline(c.state, c.side, 1, 'turn_start'))
-        c.history('己方触发盈蓄，真红直到下个己方回合开始时攻击 +1 且不受伤害，将发起额外攻击。')
+        c.history('己方触发盈蓄，真红直到下个己方回合开始时攻击 +1，单次至多受到 1 点伤害，将发起额外攻击。')
         enqueue(c, 'surplus')
         if c.character.get('shape') == 'R07':
             foe = other(c.side)

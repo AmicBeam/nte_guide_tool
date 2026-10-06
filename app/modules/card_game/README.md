@@ -4,6 +4,8 @@
 
 本文件只说明模块范围、页面入口、代码边界和验证命令。训练先读[当前执行链路](../../../docs/duel-v2-public-training.md#当前训练链路与报告落点)和[完整评估规范](../../../docs/duel-v2-full-training-report-spec.md)；单轮报告存放在被Git忽略的 `artifacts/rl-evals/`，下文历史报告链接仅指向本机资料。规则、数值和角色职责以完整手册为准，不在这里另写一份。
 
+恢复训练可显式使用 `--value-full-tower --value-replicas 12 --value-check-replicas 3` 扩大独立价值分支校准；轮数／温度只在选择集决定，不改变策略或放松留出条件。不同协议需新CUDA预检，见[价值校准协议](../../../docs/duel-v2-policy-recovery.md#独立价值分支的扩大校准)。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_recovery_round tests.test_duel_v2_current_round`。
+
 2026-09-15 起模块名称改为「异能对决」。Logo 使用青金色字标与 `ESPER DUEL` 副标，移除异象道具卡片及徽章；旧名称的构筑文本仍可导入。
 
 ## 文档入口

@@ -128,37 +128,92 @@ def value_metrics(games, policies):
     return result
 
 
+def value_calibration_protocol(config):
+    """A readiness receipt binds the exact calibration method and sample budget."""
+    full = config.get('value_full_tower', False)
+    return dict(full_tower=full, train_replicas=config.get('value_replicas', 2),
+                check_replicas=config.get('value_check_replicas', 1),
+                epoch_candidates=[1, 2, 4, 8] if full else [config.get('value_passes', 16)],
+                temperature_candidates=[1., 2., 4.])
+
+
 def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadline,*,seed_offset=0):
-    """Head only, separate training/temperature selection/heldout games every batch."""
+    """Separate value training, selection, and heldout; policy arrays are frozen."""
     import numpy as np
     import torch
     from . import recovery_runtime as rt
     if seed_offset not in (0,6000):raise ValueError('Declared disjoint value seed slot required')
+    protocol = value_calibration_protocol(config)
+    full = protocol['full_tower']
     folder = Path(folder); before = {k: {n: t.detach().clone() for n, t in net.state_dict().items()
-                                       if not n.startswith('wdl.')} for k, net in nets.items()}
+                                       if not n.startswith(('wdl.', 'value_net.'))} for k, net in nets.items()}
+    if full and any(not hasattr(n, 'value_net') for n in nets.values()):
+        raise ValueError('Full calibration requires a separate value tower')
     # Disjoint per-cycle 10k blocks; each phase uses fewer than 1k roots.
     train_jobs = []
     for replica in range(config['value_replicas']):
         train_jobs += jobs_for(models, decks, config['seeds']['adaptation']+cycle*10000+replica*100+seed_offset,
                               deadline, cycle=replica)
     games = collect(pool, train_jobs, folder / 'train')
+    def check_jobs(source, base):
+        return [j for replica in range(protocol['check_replicas'])
+                for j in jobs_for(source, decks, base+replica*100, deadline, cycle=replica)]
+    # Argmax trajectories depend only on unchanged policy arrays. Collect once;
+    # neither the epoch grid nor temperature grid can change these opponents.
+    selection = collect(pool, check_jobs(models,
+        config['seeds']['selection']+cycle*10000+seed_offset), folder / 'selection') if full else None
+    chosen = {}; chosen_epochs = {}; update_counts = {}
     for key, net in nets.items():
-        opt = torch.optim.Adam(net.wdl.parameters(), lr=.003)
+        parameters = list(net.wdl.parameters()) + (list(net.value_net.parameters()) if full else [])
+        opt = torch.optim.Adam(parameters, lr=.0003 if full else .003)
         rows = [r for g in games for r in g['value_rows'] if r['key'] == key]
+        if not rows: raise ValueError('Missing complete calibration training rows')
+        if full:
+            # Give complete games equal total weight, as in heldout metrics.
+            represented = [g for g in games if any(r['key'] == key for r in g['value_rows'])]
+            rows = [dict(r, sample_weight=len(rows)/len(represented)/len(own))
+                    for g in represented for own in [[r for r in g['value_rows'] if r['key']==key]] for r in own]
         rng = np.random.default_rng(config['seeds']['adaptation']+cycle*10000)
-        for _ in range(config['value_passes']):
+        best = None; updates = 0
+        for epoch in range(1, max(protocol['epoch_candidates'])+1):
             indexes = rng.permutation(len(rows))
             for start in range(0, len(rows), 128):
                 if time.time() >= deadline: raise TimeoutError('Value warmup deadline')
-                rt.update(net, opt, [rows[int(i)] for i in indexes[start:start+128]], warmup=True)
+                # The dedicated optimizer does not own policy tensors. Clear
+                # their previous joint-step gradients before global clipping.
+                net.zero_grad(set_to_none=True)
+                rt.update(net, opt, [rows[int(i)] for i in indexes[start:start+128]],
+                          warmup=not full, value_only=full)
+                updates += 1
+            if full and epoch in protocol['epoch_candidates']:
+                original_w = net.wdl.weight.detach().clone(); original_b = net.wdl.bias.detach().clone()
+                for temperature in protocol['temperature_candidates']:
+                    with torch.no_grad():
+                        net.wdl.weight.copy_(original_w/temperature); net.wdl.bias.copy_(original_b/temperature)
+                    target=folder/'candidates'/f'epoch-{epoch}-temperature-{temperature}'
+                    rt.export(net,target,key,decks[key],origins[key])
+                    metric=value_metrics(selection,{key:rt.model(target,key)})[key]
+                    score=(metric['log_loss'],epoch,temperature)
+                    if best is None or score < best[0]:
+                        best=(score,{n:t.detach().clone() for n,t in net.state_dict().items()
+                                     if n.startswith(('wdl.','value_net.'))},updates)
+                with torch.no_grad():
+                    net.wdl.weight.copy_(original_w); net.wdl.bias.copy_(original_b)
+        update_counts[key]=dict(total_attempted=updates,selected=updates)
+        if full:
+            for n,t in best[1].items():net.state_dict()[n].copy_(t)
+            chosen_epochs[key]=best[0][1];chosen[key]=best[0][2]
+            update_counts[key]['selected']=best[2]
+            rt.export(net,folder/'models',key,decks[key],dict(origins[key],value_temperature=chosen[key],
+                      value_epoch=chosen_epochs[key],value_calibration=protocol))
         if any(not torch.equal(t, net.state_dict()[n]) for n, t in before[key].items()):
-            raise ValueError('Head-only calibration changed policy')
-        rt.export(net, folder / 'uncalibrated', key, decks[key], origins[key])
-    selection = collect(pool, jobs_for(folder / 'uncalibrated', decks,
-                        config['seeds']['selection']+cycle*10000+seed_offset, deadline), folder / 'selection')
+            raise ValueError('Value calibration changed policy')
+        if not full: rt.export(net, folder / 'uncalibrated', key, decks[key], origins[key])
+    if not full:
+        selection = collect(pool, check_jobs(folder / 'uncalibrated',
+            config['seeds']['selection']+cycle*10000+seed_offset), folder / 'selection')
     # Temperature selection is confined to selection, never the heldout check.
-    chosen = {}
-    for key, net in nets.items():
+    for key, net in ([] if full else nets.items()):
         scores = []
         original_w = net.wdl.weight.detach().clone(); original_b = net.wdl.bias.detach().clone()
         for temperature in (1., 2., 4.):
@@ -171,13 +226,15 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
         with torch.no_grad():
             net.wdl.weight.copy_(original_w/chosen[key]); net.wdl.bias.copy_(original_b/chosen[key])
         rt.export(net, folder / 'models', key, decks[key], dict(origins[key], value_temperature=chosen[key]))
-    held = collect(pool, jobs_for(folder / 'models', decks,
-                   config['seeds']['selection']+cycle*10000+1000+seed_offset, deadline), folder / 'heldout')
+    held = collect(pool, check_jobs(folder / 'models',
+                   config['seeds']['selection']+cycle*10000+1000+seed_offset), folder / 'heldout')
     policies = {k: rt.model(folder / 'models', k) for k in ROSTER}
     report = dict(schema='recovery_value_precheck_v1', complete=True, heldout=True,
                   passed=True, rule_hash=config['rule_hash'], models=versions(folder / 'models'),
                   metrics=value_metrics(held, policies), temperatures=chosen,
-                  independent_current_rule_seeds=True, policy_preserved=True)
+                  independent_current_rule_seeds=True, policy_preserved=True,
+                  calibration=protocol, selected_epochs=chosen_epochs, updates=update_counts,
+                  phase_games=dict(training=len(games),selection=len(selection),heldout=len(held)))
     report['passed'] = rt.value_precheck_ok(report, policies)
     write(folder / 'value-precheck.json', report)
     return folder / 'models', report
@@ -376,6 +433,10 @@ def validate_launch(config, *, resume=False):
         raise ValueError('Recovery rule/runtime mismatch')
     if config.get('teacher_mode','network') not in ('network','covered_terminal','covered_expert','covered_value'):
         raise ValueError('Unknown frozen teacher mode')
+    if (type(config.get('value_full_tower',False)) is not bool
+            or type(config.get('value_replicas',2)) is not int or config.get('value_replicas',2) not in (2,6,12)
+            or type(config.get('value_check_replicas',1)) is not int or config.get('value_check_replicas',1) not in (1,2,3)):
+        raise ValueError('Bounded value calibration protocol required')
     scope_sha=None
     if config.get('teacher_mode')=='covered_value':
         from .covered_value import load_scope
@@ -435,7 +496,8 @@ def validate_launch(config, *, resume=False):
     if not value_precheck_ok(initial_check,{k:model(config['recovery_source'],k) for k in ROSTER}):
         raise ValueError('Readiness initial value arrays mismatch')
     if (receipt.get('policy_passes')!=config['policy_passes']
-            or receipt.get('learning_rate')!=config['learning_rate']):
+            or receipt.get('learning_rate')!=config['learning_rate']
+            or receipt.get('value_calibration',value_calibration_protocol({}))!=value_calibration_protocol(config)):
         raise ValueError('Readiness optimizer protocol mismatch')
     capacity=json.loads((path.parent/'cycles/1/capacity.json').read_text())
     if (capacity.get('schema')!='five_recovery_isolation_fit_v1' or capacity.get('passed') is not True
@@ -685,7 +747,9 @@ def run(out, config, *, resume=False):
             value_wall=max(value_wall,time.time()-value_started)
             current=candidate
             for key in ROSTER:
-                for parameter in nets[key].wdl.parameters(): opts[key].state.pop(parameter,None)
+                for name,parameter in nets[key].named_parameters():
+                    if name.startswith('wdl.') or (config.get('value_full_tower') and name.startswith('value_net.')):
+                        opts[key].state.pop(parameter,None)
             if not new_report['passed']:
                 stop_reason='candidate_value_failed';current=best;report=best_report
                 nets={k:rt.restore(best,k,config['device'])[0] for k in ROSTER}
@@ -773,6 +837,7 @@ def run(out, config, *, resume=False):
                 search_seconds_per_game=search_wall/max(1,search_games),
                 gate_roots=config['gate_roots'],pure_gate_seconds=pure_gate_wall,
                 policy_passes=config['policy_passes'],learning_rate=config['learning_rate'],quality_approved=False,
+                value_calibration=value_calibration_protocol(config),
                 files=immutable_receipt_files(out))
             write(out/'readiness.json',receipt)
             status('preflight_complete' if ready else 'preflight_failed',stop_reason=stop_reason)

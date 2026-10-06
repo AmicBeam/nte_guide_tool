@@ -14,6 +14,57 @@ from scripts.train_duel_v2_current_round import preset_decks, validate_round_lau
 
 
 class RecoveryRoundTest(unittest.TestCase):
+    def test_full_value_calibration_preserves_policy_and_never_selects_on_heldout(self):
+        import torch
+        from app.modules.card_game.engine.duel_v2 import new_game
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root);nets,decks,origins=round.initialize(root/'initial',16,'cpu',29)
+            before={k:{n:t.clone() for n,t in net.state_dict().items()} for k,net in nets.items()}
+            for net in nets.values():
+                for name,parameter in net.named_parameters():
+                    if name.startswith(('state_net.','cand_net.','score.')):
+                        parameter.grad=torch.ones_like(parameter)*100
+            phases=[]
+            for phase in ('train','selection','heldout'):
+                games=[]
+                for ki,key in enumerate(ROSTER):
+                    state=new_game(seed=90+ki,first_side='a',decks={'a':decks[key],'b':decks[key]})
+                    _,(x,c)=rt.decision(state,'a')
+                    games.append(dict(complete=True,value_rows=[dict(x=x,key=key,z=1,value_actor=1),
+                        dict(x=x,key=key,z=-1,value_actor=0)]))
+                phases.append(games)
+            calls=[];original=round.value_metrics
+            def metrics(games,policies):
+                calls.append(id(games));return original(games,policies)
+            config=dict(value_full_tower=True,value_replicas=2,value_check_replicas=3,
+                seeds=dict(adaptation=100000,selection=200000),rule_hash=identity())
+            with patch.object(round,'collect',side_effect=phases) as collect,patch.object(round,'value_metrics',side_effect=metrics):
+                models,report=round.warm_value(None,nets,decks,origins,root/'initial',root/'value',config,1,float('inf'))
+            self.assertEqual([len(call.args[1]) for call in collect.call_args_list],[60,90,90])
+            self.assertEqual(calls.count(id(phases[2])),1)
+            self.assertEqual(calls[-1],id(phases[2]))
+            train_seeds={j['seed'] for j in collect.call_args_list[0].args[1]}
+            selected_seeds={j['seed'] for j in collect.call_args_list[1].args[1]}
+            held_seeds={j['seed'] for j in collect.call_args_list[2].args[1]}
+            self.assertFalse(train_seeds & selected_seeds or train_seeds & held_seeds or selected_seeds & held_seeds)
+            for key,net in nets.items():
+                self.assertIn(report['selected_epochs'][key],(1,2,4,8))
+                self.assertEqual(report['updates'][key]['total_attempted'],8)
+                self.assertEqual(report['updates'][key]['selected'],report['selected_epochs'][key])
+                self.assertTrue(any(not torch.equal(t,net.state_dict()[n]) for n,t in before[key].items() if n.startswith('value_net.')))
+                for n,t in before[key].items():
+                    if not n.startswith(('value_net.','wdl.')):self.assertTrue(torch.equal(t,net.state_dict()[n]),n)
+                self.assertTrue(all(p.grad is None for n,p in net.named_parameters()
+                                    if n.startswith(('state_net.','cand_net.','score.'))))
+            self.assertTrue(report['policy_preserved'])
+
+    def test_value_calibration_protocol_is_explicit_and_bounded(self):
+        self.assertEqual(round.value_calibration_protocol({})['epoch_candidates'],[16])
+        full=round.value_calibration_protocol(dict(value_full_tower=True,value_replicas=12,value_check_replicas=3))
+        self.assertEqual(full['epoch_candidates'],[1,2,4,8])
+        self.assertEqual(full['train_replicas'],12)
+        self.assertEqual(full['check_replicas'],3)
+
     def test_expanded_preflight_still_has_a_bound_and_smoke_cannot_inherit_it(self):
         config=dict(runtime='recovery',rule_hash=identity(),smoke=True,preflight=True,
             preflight_replicas=3,planned_batches=1,workers=12,simulations=32,

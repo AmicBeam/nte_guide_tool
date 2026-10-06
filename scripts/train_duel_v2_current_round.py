@@ -518,6 +518,10 @@ def main():
     p.add_argument('--gate-roots',type=int,default=32)
     p.add_argument('--search-gate-roots',type=int,default=2)
     p.add_argument('--train-fraction',type=float,default=.55)
+    p.add_argument('--value-full-tower',action='store_true',
+                   help='Fit the independent value tower; choose epoch and temperature only on selection games')
+    p.add_argument('--value-replicas',type=int,choices=(2,6,12),default=2)
+    p.add_argument('--value-check-replicas',type=int,choices=(1,2,3),default=1)
     a = p.parse_args()
     out = a.output.resolve()
     if a.worker:
@@ -586,7 +590,8 @@ def main():
             covered_value_source=str(a.covered_value_source.resolve()) if a.covered_value_source else None,
             terminal_horizon=0 if a.teacher_mode in ('covered_terminal','covered_expert') else 3,
             simulations=32 if a.preflight or not a.smoke else 2,
-            learning_rate=.0003,value_replicas=2,value_passes=16,
+            learning_rate=.0003,value_replicas=a.value_replicas,value_passes=16,
+            value_full_tower=a.value_full_tower,value_check_replicas=a.value_check_replicas,
             gate_roots=5 if a.preflight else 2 if a.smoke else a.gate_roots,
             search_gate_roots=1 if a.smoke or a.preflight else a.search_gate_roots,
             gate_seconds=600 if a.smoke or a.preflight else 1800,

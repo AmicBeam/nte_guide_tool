@@ -65,15 +65,18 @@ def main():
                 rt.export(net,folder,key,build,dict(origin,supervised_initialization=True))
                 metric=rf.imitation_metrics(net,valid,a.device);candidates.append((metric['kl'],epoch,metric))
         selected=min(candidates,key=lambda x:x[0])
+        selected_updates=((len(train)+127)//128)*selected[1]
         net,_,_=rt.restore(a.output/f'epoch-{selected[1]}'/'models',key,a.device)
         rt.export(net,a.output/'models',key,build,dict(origin,
             initialization='learned_public_rule_policy_foundation',source=str(a.source),
-            teacher='existing_public_rule_ranking',epochs=selected[1],supervised_updates=updates,
+            teacher='existing_public_rule_ranking',epochs=selected[1],supervised_updates=selected_updates,
+            total_optimizer_steps=updates,selected_optimizer_steps=selected_updates,
             initialization_code_sha256=initialization_code,
             internal_validation_only=True,formal_gumbel_updates=0,optimizer_reset=True))
         metrics[key]=dict(before=before,after=selected[2],selected_epoch=selected[1],
                          train=rf.imitation_metrics(net,train,a.device))
-        counts[key]=dict(training_rows=len(train),validation_rows=len(valid),updates=updates)
+        counts[key]=dict(training_rows=len(train),validation_rows=len(valid),updates=updates,
+                        total_optimizer_steps=updates,selected_optimizer_steps=selected_updates)
         print(key,json.dumps(metrics[key]),flush=True)
     if rr.versions(a.source)!=signature:raise ValueError('Initialization altered source arrays')
     for key in ROSTER[:3]:

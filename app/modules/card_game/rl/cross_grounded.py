@@ -7,13 +7,38 @@ import hashlib
 from pathlib import Path
 import numpy as np
 from .cross_lineup import all_features, SEATS, CARD_IDS, CAND_DIM, EXTRA_CHAR
-from .league_schema import CHAR_FIELDS
+from .league_schema import CHAR_FIELDS, ACT_ATTACK, ACT_PLAY
+from ..content.duel_v2 import CARDS
 
 SCHEMA = 'cross_five_grounded_wdl_v1'
 FIELDS = tuple(k for k in CHAR_FIELDS if k not in ('ch_shape','ch_order')) + tuple('fixed:'+k for k in EXTRA_CHAR)
 INDEX = np.asarray([[[all_features().index(f'{k}:{s}:{c}') for k in FIELDS] for c in SEATS] for s in (0,1)])
 CATEGORIES = ((0,6),(1,len(SEATS)+1),(2,len(CARD_IDS)+1),(3,3),(4,len(SEATS)+1))
 DIM = sum(n for _,n in CATEGORIES) + CAND_DIM-5 + 2*len(FIELDS)
+FRONT_INDEX = all_features().index('front:1')
+BATTLE_CARDS = np.asarray([False]+[CARDS[cid]['type']=='battle' for cid in CARD_IDS])
+
+
+def context_targets_numpy(x,c):
+    """Explicit target, otherwise current visible front for automatic combat.
+
+    This is pre-action context, not a prediction of the final resolved target.
+    """
+    targets=c[:,4].astype(np.int64).copy();sides=c[:,3].astype(np.int64).copy()
+    combat=(c[:,0]==ACT_ATTACK)|((c[:,0]==ACT_PLAY)&BATTLE_CARDS[c[:,2].astype(np.int64)+1])
+    implicit=combat&(targets<0)&(sides<0)
+    targets[implicit]=int(np.rint(x[FRONT_INDEX]*10));sides[implicit]=1
+    return sides,targets
+
+
+def context_targets_tensor(x,c):
+    import torch
+    targets=c[...,4].long();sides=c[...,3].long()
+    battle=torch.as_tensor(BATTLE_CARDS,device=c.device)[c[...,2].long()+1]
+    combat=(c[...,0]==ACT_ATTACK)|((c[...,0]==ACT_PLAY)&battle)
+    implicit=combat&(targets<0)&(sides<0)
+    front=torch.round(x[:,FRONT_INDEX]*10).long()[:,None].expand_as(targets)
+    return torch.where(implicit,torch.ones_like(sides),sides),torch.where(implicit,front,targets)
 
 
 def fingerprint():
@@ -31,7 +56,7 @@ def transform(x,c):
         blocks.append(np.eye(n,dtype=np.float32)[ids])
     numeric=c[:,5:].copy();numeric[:,:4]/=10
     blocks.append(numeric)
-    actors=c[:,1].astype(np.int64);targets=c[:,4].astype(np.int64);sides=c[:,3].astype(np.int64)
+    actors=c[:,1].astype(np.int64);sides,targets=context_targets_numpy(x,c)
     heroes=x[INDEX]
     blocks.append(heroes[0,np.maximum(actors,0)]*(actors>=0)[:,None])
     blocks.append(heroes[np.maximum(sides,0),np.maximum(targets,0)]*((targets>=0)&(sides>=0))[:,None])
@@ -60,7 +85,7 @@ def network(hidden):
             blocks.append(numeric)
             heroes=x[:,self.actor_indices]
             batch=torch.arange(len(x),device=x.device)[:,None]
-            actors=c[...,1].long();targets=c[...,4].long();sides=c[...,3].long()
+            actors=c[...,1].long();sides,targets=context_targets_tensor(x,c)
             blocks.append(heroes[batch,0,actors.clamp_min(0)]*(actors>=0).unsqueeze(-1))
             blocks.append(heroes[batch,sides.clamp_min(0),targets.clamp_min(0)]*((targets>=0)&(sides>=0)).unsqueeze(-1))
             return torch.cat(blocks,-1)

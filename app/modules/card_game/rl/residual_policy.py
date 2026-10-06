@@ -64,7 +64,7 @@ def network(hidden=64, device='cpu'):
             blocks.append(numeric)
             heroes = x[:, self.actor_indices]
             batch = torch.arange(len(x), device=x.device)[:, None]
-            actors = c[..., 1].long(); targets = c[..., 4].long(); sides = c[..., 3].long()
+            actors = c[..., 1].long(); sides, targets = grounded.context_targets_tensor(x, c)
             blocks.append(heroes[batch, 0, actors.clamp_min(0)] * (actors >= 0).unsqueeze(-1))
             blocks.append(heroes[batch, sides.clamp_min(0), targets.clamp_min(0)]
                           * ((targets >= 0) & (sides >= 0)).unsqueeze(-1))

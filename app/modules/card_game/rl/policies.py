@@ -58,16 +58,23 @@ class VisibleEngineRulePolicy:
         if not isinstance(observation, dict):
             raise ValueError('Frozen policy only accepts an observation object')
         actions = _require_actions(legal_actions)
-        entries = observation.get('legal_actions') or []
-        by_key = {}
-        for entry in entries:
-            action = (entry or {}).get('action')
-            if isinstance(action, dict):
-                by_key[_action_key(action)] = entry
         for kind in ('mulligan', 'choose'):
             for index, action in enumerate(actions):
                 if action.get('type') == kind:
                     return index
+        scores = self.ranking_scores(observation, actions)
+        return max(range(len(actions)), key=lambda index: (scores[index], -index))
+
+    def ranking_scores(self, observation: Json, legal_actions: tuple[Json, ...]) -> list[float]:
+        """Expose the existing public ranking for offline initialization only.
+
+        This is neither an environment reward nor a learned model score. Equal
+        ranks may receive an equal imitation target instead of encoding the
+        incidental order of physical cards.
+        """
+        actions = _require_actions(legal_actions)
+        by_key = {_action_key(entry['action']):entry for entry in observation.get('legal_actions') or []
+                  if isinstance(entry,dict) and isinstance(entry.get('action'),dict)}
         viewer = observation.get('viewer_side')
         cards = {}
         for card in ((observation.get('sides') or {}).get(viewer) or {}).get('hand') or []:
@@ -95,7 +102,7 @@ class VisibleEngineRulePolicy:
                         - float(preview.get('counter') or 0) * 0.4 + 3.0)
             return 2.0
 
-        return max(range(len(actions)), key=lambda index: (score(index), -index))
+        return [score(index) for index in range(len(actions))]
 
 
 def _action_key(action: Json) -> str:

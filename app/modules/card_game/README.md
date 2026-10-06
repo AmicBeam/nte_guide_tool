@@ -690,3 +690,5 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 专家价值代理可用`prepare_duel_v2_covered_value.py --train-replicas 12 --eval-replicas 3`扩大到360／90／90局；仅在选择集确定轮数与温度1／2／4，新的scope端点和留出原始SHA必须匹配，留出失败不会授予搜索训练许可。
 
 恢复观察还读取真红终结期间自己已可见的`hand_face`原牌库存，候选保留替代牌的原牌模板身份，以区分兽牙结算后不同的弃牌结果；对应原牌语义和对方隐藏信息隔离见`tests.test_duel_v2_recovery_observation`。
+
+冷启动的真红／浊燃可使用`scripts/prepare_duel_v2_rule_foundation.py`进行可见规则AI的神经初始化，仅消费核验的当前规则专家TRAINING轨迹，内部成对种子验证选择4／8／16轮；三套旧模型数值不变，输出没有正式搜索或服务批准。随后仍须新Gumbel32预检。统一候选变换在自动战斗中提供公开对方前排上下文，显式目标不变；验证增加`tests.test_duel_v2_rule_foundation`。

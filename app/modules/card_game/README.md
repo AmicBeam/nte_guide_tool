@@ -688,3 +688,5 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 恢复训练扩大预检：`scripts/train_duel_v2_current_round.py --preflight --preflight-replicas 3`在当前规则下生成训练／留出各90个完整Gumbel32对局，容量拟合完整遍历策略行；复制寿命与真红伤害上限使用合法可见输入。正式入口的批次数、闸门根数和停学时间比例可在启动前显式声明，仍须通过同源码CUDA预检、实测容量及原有退化闸门。详见`docs/duel-v2-policy-recovery.md`。验证增加`tests.test_duel_v2_recovery_observation`，覆盖上限／无上限、复制寿命、实体改名不改变编码及对方暗牌不能进入候选上下文。
 
 专家价值代理可用`prepare_duel_v2_covered_value.py --train-replicas 12 --eval-replicas 3`扩大到360／90／90局；仅在选择集确定轮数与温度1／2／4，新的scope端点和留出原始SHA必须匹配，留出失败不会授予搜索训练许可。
+
+恢复观察还读取真红终结期间自己已可见的`hand_face`原牌库存，候选保留替代牌的原牌模板身份，以区分兽牙结算后不同的弃牌结果；对应原牌语义和对方隐藏信息隔离见`tests.test_duel_v2_recovery_observation`。

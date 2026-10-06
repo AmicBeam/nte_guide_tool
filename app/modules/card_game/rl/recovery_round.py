@@ -383,9 +383,13 @@ def validate_launch(config, *, resume=False):
         load_scope(config['covered_value_source'])
         scope_sha=sha256((Path(config['covered_value_source'])/'scope.json').read_bytes()).hexdigest()
     if config.get('smoke') is True:
+        replicas=config.get('preflight_replicas',1)
+        if type(replicas) is not int or replicas not in (1,2,3):
+            raise ValueError('Bounded preflight replica count required')
+        max_seconds=7200.1 if config.get('preflight') and replicas>1 else 1800.1
         if (config.get('planned_batches',0) not in (1,2,3) or config.get('workers',0) not in range(1,17)
                 or config.get('simulations') not in (2,32)
-                or config.get('hard_deadline',0)-config.get('started_at',0)>1800.1
+                or config.get('hard_deadline',0)-config.get('started_at',0)>max_seconds
                 or config.get('train_until',0)>config.get('hard_deadline',0)
                 or config.get('max_row_reuse',0)<config.get('policy_passes',1)):
             raise ValueError('Bounded recovery configuration required')
@@ -395,7 +399,8 @@ def validate_launch(config, *, resume=False):
     if (config.get('simulations')!=32 or config.get('gumbel_candidates')!=16
             or config.get('terminal_horizon')!=(0 if config.get('teacher_mode') in ('covered_terminal','covered_expert') else 3) or config.get('rewards')!=0
             or config.get('planned_batches') not in (4,5,6)
-            or not 5<=config.get('gate_roots',0)<=64):
+            or not 5<=config.get('gate_roots',0)<=64
+            or not 1<=config.get('search_gate_roots',0)<=8):
         raise ValueError('Formal recovery protocol mismatch')
     from .five_cross_gates import schedule_gates
     if config.get('gates')!=schedule_gates(config['planned_batches']):
@@ -441,7 +446,7 @@ def validate_launch(config, *, resume=False):
     restored=json.loads((path.parent/'cycles/1/restore-check.json').read_text())
     gate=json.loads((path.parent/'cycles/1/gate.json').read_text())
     records=json.loads((path.parent/'cycles/1/sampling/games.json').read_text())
-    if (len(records)!=30 or not all(r['complete'] for r in records)
+    if (len(records)!=30*receipt.get('preflight_replicas',1) or not all(r['complete'] for r in records)
             or set(numeric)!=set(ROSTER) or set(restored)!=set(ROSTER)
             or not all(numeric[k]['actions_equal'] and numeric[k]['policy_wdl_equal']
                        and restored[k]['adam_next_step_equal'] and restored[k]['rng_equal'] for k in ROSTER)
@@ -454,11 +459,16 @@ def validate_launch(config, *, resume=False):
     batches=config['planned_batches']
     if resume:
         batches=0  # restore_round enforces original remaining cycles/deadline
-    per_cycle=(receipt['cycle_seconds']
-        +max(0,config['gate_roots']/receipt['gate_roots']-1)*receipt['pure_gate_seconds']
-        +receipt['selected_value_seconds']
+    # Isolation fitting and its separate heldout corpus are performed once.
+    # Their cost is not silently charged as a recurring learning batch.
+    # Include both candidate and possible mixed-slate value/gate checks.
+    per_cycle=(30*receipt['search_seconds_per_game']
+        +receipt['update_and_numeric_seconds']
+        +config['gate_roots']/receipt['gate_roots']*receipt['pure_gate_seconds']
+        +2*receipt['selected_value_seconds']
         +config['search_gate_roots']*160*receipt['search_seconds_per_game'])
-    needed = (per_cycle*batches+30*receipt['search_seconds_per_game']*(batches//4))*1.25
+    needed = (receipt['selected_value_seconds']+per_cycle*batches
+              +30*receipt['search_seconds_per_game']*(batches//4))*1.25
     if needed > config['train_until']-time.time(): raise ValueError('Insufficient staged learning capacity')
     needed_eval = receipt['search_seconds_per_game']*25*config['matrix_games']*2*1.25
     if needed_eval > config['evaluate_until']-config['train_until']:
@@ -566,7 +576,7 @@ def run(out, config, *, resume=False):
     from scripts.prepare_duel_v2_offline_readiness import EXTRA
     out=Path(out);started=time.time();torch.set_num_threads(1)
     if config['device']=='cuda' and not torch.cuda.is_available(): raise ValueError('CUDA unavailable; no fallback')
-    cycle=0;no_gain=False;stop_reason=None;health={};search_wall=0.;search_games=0;pure_gate_wall=0.;value_wall=0.
+    cycle=0;no_gain=False;stop_reason=None;health={};search_wall=0.;search_games=0;pure_gate_wall=0.;value_wall=0.;update_wall=0.
     frozen_algorithm=fingerprint()
     if resume:
         nets,opts,pools,rng,pointer,no_gain=restore_round(out,config['device'],config)
@@ -608,6 +618,12 @@ def run(out, config, *, resume=False):
                           config['train_until']-20,pure=False,cycle=cycle,report=combined,
                           simulations=config['simulations'],historical=best if historical else None,
                           teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'))
+            if config.get('preflight'):
+                for replica in range(1,config.get('preflight_replicas',1)):
+                    jobs+=jobs_for(current,decks,config['seeds']['foundation']+cycle*10000+replica*100,
+                        config['train_until']-20,pure=False,cycle=replica+1000,report=report,
+                        simulations=config['simulations'],teacher_mode=config.get('teacher_mode','network'),
+                        covered_value_source=config.get('covered_value_source'))
             start=time.time();games=collect(pool,jobs,folder/'sampling',learning=True)
             search_wall+=time.time()-start;search_games+=len(games)
             if config.get('preflight'):
@@ -618,10 +634,15 @@ def run(out, config, *, resume=False):
                 held_jobs=jobs_for(current,decks,config['seeds']['probes']+10000,config['train_until']-20,
                                    pure=False,cycle=100,report=report,simulations=config['simulations'],
                                    teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'))
+                for replica in range(1,config.get('preflight_replicas',1)):
+                    held_jobs+=jobs_for(current,decks,config['seeds']['probes']+10000+replica*100,
+                        config['train_until']-20,pure=False,cycle=replica+2000,report=report,
+                        simulations=config['simulations'],teacher_mode=config.get('teacher_mode','network'),
+                        covered_value_source=config.get('covered_value_source'))
                 for job in held_jobs:
                     job.update(training=False,exploration=True,data_partition='capacity_heldout')
                 held_games=collect(pool,held_jobs,folder/'capacity-heldout',learning=False,require_search=True)
-                capacity=fit(current,jobs,games,config,min(config['train_until'],time.time()+300),
+                capacity=fit(current,jobs,games,config,min(config['train_until'],time.time()+1200),
                              held_jobs=held_jobs,held_games=held_games)
                 write(folder/'capacity.json',capacity)
                 if not capacity['passed']:
@@ -629,6 +650,7 @@ def run(out, config, *, resume=False):
                     save_round(out,nets,opts,pools,current,rng,config,cycle,best,no_gain)
                     break
             status('updating')
+            update_started=time.time()
             health,rows=update_batch(nets,opts,pools,jobs,games,rng,config,config['train_until'],folder)
             for key in ROSTER: rt.export(nets[key],folder/'updated',key,decks[key],dict(origins[key],cycle=cycle))
             numeric=numeric_check(nets,folder/'updated',rows,config['device']);write(folder/'numeric.json',numeric)
@@ -646,6 +668,7 @@ def run(out, config, *, resume=False):
                     raise ValueError('Next Adam step did not restore')
                 checks[key]=dict(adam_next_step_equal=True,rng_equal=data['rng_state']==rng.bit_generator.state)
             write(folder/'restore-check.json',checks)
+            update_wall=max(update_wall,time.time()-update_started)
             if any(not h['finite'] or not h['gradient'] or h['coverage']!=1 or not h['policy_rows'] for h in health.values()):
                 write(folder/'gate.json',dict(decision='p0',health=health,reason='learning_health'))
                 stop_reason='p0';current=best;report=best_report
@@ -743,6 +766,8 @@ def run(out, config, *, resume=False):
                 teacher_mode=config.get('teacher_mode','network'),
                 covered_value_sha=sha256((Path(config['covered_value_source'])/'scope.json').read_bytes()).hexdigest() if config.get('covered_value_source') else None,
                 selected_value_seconds=value_wall,
+                preflight_replicas=config.get('preflight_replicas',1),
+                update_and_numeric_seconds=update_wall,
                 workers=config['workers'],health=health,measured_at=time.time(),initial_models=versions(initial),
                 initial_folder=str(initial),cycle_seconds=time.time()-started,
                 search_seconds_per_game=search_wall/max(1,search_games),

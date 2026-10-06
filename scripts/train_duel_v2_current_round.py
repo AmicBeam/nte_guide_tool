@@ -512,6 +512,12 @@ def main():
     p.add_argument('--covered-value-source',type=Path)
     p.add_argument('--readiness-report',type=Path)
     p.add_argument('--preflight',action='store_true',help='One all-five Gumbel32 batch, no strength approval')
+    p.add_argument('--preflight-replicas',type=int,choices=(1,2,3),default=1,
+                   help='New paired training and heldout games per matchup; never reuse old-rule data')
+    p.add_argument('--planned-batches',type=int,choices=(4,5,6),default=6)
+    p.add_argument('--gate-roots',type=int,default=32)
+    p.add_argument('--search-gate-roots',type=int,default=2)
+    p.add_argument('--train-fraction',type=float,default=.55)
     a = p.parse_args()
     out = a.output.resolve()
     if a.worker:
@@ -539,6 +545,8 @@ def main():
         return
     if a.workers < 1 or a.workers > 16:
         p.error('workers must be 1..16')
+    if not 5<=a.gate_roots<=64 or not 1<=a.search_gate_roots<=8 or not .5<=a.train_fraction<=.8:
+        p.error('Bounded formal gate roots and training fraction required')
     matrix_schedule(a.matrix_games)
     now = datetime.now(shanghai_zone())
     hard = now.replace(hour=9, minute=0, second=0, microsecond=0)
@@ -551,21 +559,21 @@ def main():
     if a.seconds:
         hard = min(hard, now + timedelta(seconds=a.seconds))
     if a.smoke or a.preflight:
-        hard = min(hard, now + timedelta(minutes=30))
+        hard = min(hard, now + timedelta(minutes=120 if a.preflight and a.preflight_replicas>1 else 30))
     seconds = (hard-now).total_seconds()
     if seconds < 300:
         p.error('Insufficient time before hard stop')
     from app.modules.card_game.rl.cross_lineup import identity
     config = dict(kind='five_cross_grounded_v2', runtime='cross', roster=list(ROSTER),
         rule_hash=identity(), hidden=a.hidden, device=a.device, workers=a.workers,
-        train_until=now.timestamp()+seconds*.55, evaluate_until=hard.timestamp()-60,
+        train_until=now.timestamp()+seconds*a.train_fraction, evaluate_until=hard.timestamp()-60,
         hard_deadline=hard.timestamp(), hard_deadline_iso=hard.isoformat(),
         simulations=2 if a.smoke else 32, gumbel_candidates=4 if a.smoke else 16,
         terminal_horizon=3, rewards=0, deck_search=False, self_imitation=0,
         matrix_games=2 if a.smoke else a.matrix_games, smoke=a.smoke,
-        gates=dict(first=1, mid=None, late=None) if a.smoke else schedule_gates(6),
+        gates=dict(first=1, mid=None, late=None) if a.smoke else schedule_gates(a.planned_batches),
         learning_rate=3e-5, min_learning_rate=1e-5, screen_foes=['starter'],
-        planned_batches=1 if a.smoke else 6,
+        planned_batches=1 if a.smoke else a.planned_batches,
         policy_passes=a.policy_passes, max_row_reuse=a.max_row_reuse,
         website_approval=False, roster_source=str(a.roster_source) if a.roster_source else '',
         murk_source=str(a.murk_source) if a.murk_source else '')
@@ -574,13 +582,15 @@ def main():
             p.error('Old sources cannot initialize recovery; use explicit recovery-source')
         config.update(started_at=now.timestamp(),kind='five_recovery_v1',runtime='recovery',smoke=a.smoke or a.preflight,
             preflight=a.preflight,teacher_mode=a.teacher_mode,
+            preflight_replicas=a.preflight_replicas if a.preflight else 1,
             covered_value_source=str(a.covered_value_source.resolve()) if a.covered_value_source else None,
             terminal_horizon=0 if a.teacher_mode in ('covered_terminal','covered_expert') else 3,
             simulations=32 if a.preflight or not a.smoke else 2,
             learning_rate=.0003,value_replicas=2,value_passes=16,
-            gate_roots=5 if a.preflight else 2 if a.smoke else 32,search_gate_roots=1 if a.smoke or a.preflight else 2,
+            gate_roots=5 if a.preflight else 2 if a.smoke else a.gate_roots,
+            search_gate_roots=1 if a.smoke or a.preflight else a.search_gate_roots,
             gate_seconds=600 if a.smoke or a.preflight else 1800,
-            planned_batches=1 if a.preflight else a.smoke_batches if a.smoke else 6,
+            planned_batches=1 if a.preflight else a.smoke_batches if a.smoke else a.planned_batches,
             readiness_report=str(a.readiness_report.resolve()) if a.readiness_report else None,
             recovery_source=str(a.recovery_source.resolve()) if a.recovery_source else None)
         if a.preflight:

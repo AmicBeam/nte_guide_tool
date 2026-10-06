@@ -17,6 +17,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--source',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--seconds',type=int,default=900);p.add_argument('--workers',type=int,default=4)
+    p.add_argument('--seed-reservation',type=Path,help='Shared ledger reservation made by the current task')
     p.add_argument('--run',action='store_true');a=p.parse_args()
     if not 300<=a.seconds<=1800 or not 1<=a.workers<=16:p.error('Bounded CPU preparation required')
     if not a.run:print(json.dumps(dict(dry_run=True,training_games=90,selection_games=30,heldout_games=30)));return
@@ -36,7 +37,11 @@ def main():
     torch.set_num_threads(1);signature=rr.versions(a.source)
     start=time.time();end=diagnostic_deadline(start,a.seconds)
     if end-start<300:raise ValueError('Insufficient preparation window')
-    seeds=claim_seeds(ROOT/'artifacts/rl-seed-ledger.json',str(a.output.resolve()))
+    seeds=(json.loads(a.seed_reservation.read_text()) if a.seed_reservation else
+           claim_seeds(ROOT/'artifacts/rl-seed-ledger.json',str(a.output.resolve())))
+    from app.modules.card_game.rl.build_acceptance import SEED_PHASES
+    if set(seeds)!=set(SEED_PHASES) or any(type(v) is not int or v<0 for v in seeds.values()):
+        raise ValueError('Complete numeric shared-ledger seed reservation required')
     rr.write(a.output/'config.json',dict(seeds=seeds,deadline=end,source_models=signature,
         learning_rate=.0003,epochs=[1,2,4,8],value_only=True,learner_updates=0,objective='visible_rule_after_six_exploration_actions'))
     snapshot(ROOT,a.output/'source',EXTRA+('app/modules/card_game/rl/covered_value.py','app/modules/card_game/rl/recovery_sampler.py','scripts/prepare_duel_v2_covered_value.py'))

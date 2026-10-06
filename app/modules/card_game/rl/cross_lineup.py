@@ -15,12 +15,13 @@ SEATS = (*old.SEATS, 'zhenhong', 'yi', *murk.SEATS)
 SEAT_INDEX = {v: i for i, v in enumerate(SEATS)}
 CARD_IDS = (*old.CARD_IDS, *(f'{p}{i:02}' for p in ('R', 'I') for i in range(1, 9)), 'RF01', *murk.CARD_IDS)
 CARD_INDEX = {v: i for i, v in enumerate(CARD_IDS)}
-CAND_DIM = 11 + len(CARD_IDS) + len(old.OPTION_IDS) + 4
+CANDIDATE_CONTEXT = ('copy', 'expires_in', 'derived_override', 'antique_investment')
+CAND_DIM = 11 + len(CARD_IDS) + len(old.OPTION_IDS) + 4 + len(CANDIDATE_CONTEXT)
 KEYS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk')
 FOES = old.PRESETS
 EXTRA_SIDE = ('delay_left', 'delay_by', 'delay_slow', 'delay_turns', 'skip_normal_attack',
               'genesis_this_turn', 'genesis_player_hits')
-EXTRA_CHAR = ('beast_fangs', 'intimidation', 'extra_attacks', 'attack', 'timed_attack_1', 'timed_attack_2', 'damage_immune')
+EXTRA_CHAR = ('beast_fangs', 'intimidation', 'extra_attacks', 'attack', 'timed_attack_1', 'timed_attack_2', 'damage_immune', 'damage_limit')
 
 
 def feature_names():
@@ -39,7 +40,7 @@ def all_features():
 
 def candidate_names(cards=CARD_IDS):
     return [f'base:{i}' for i in range(11)] + [f'mulligan:{c}' for c in cards] + [
-        f'option:{o}' for o in old.OPTION_IDS] + ['marked', 'delta', 'set_attack', 'instant']
+        f'option:{o}' for o in old.OPTION_IDS] + ['marked', 'delta', 'set_attack', 'instant'] + list(CANDIDATE_CONTEXT)
 
 
 @lru_cache(maxsize=1)
@@ -53,6 +54,19 @@ def identity():
 def encode(view, actions):
     view, actions = murk._adapt(view, actions)
     x, c = encode_league(view, actions, contract=sys.modules[__name__])
+    own = view['sides'][view['viewer_side']]
+    hand = {card['instance_id']: card for card in own['hand']}
+    choices = {item['id']: item['card'] for item in (view.get('pending_choice') or {}).get('choices', [])}
+    from app.modules.card_game.content.duel_v2 import CARDS
+    for index, action in enumerate(actions):
+        item = hand.get(action.get('card_id'), {}) if action['type'] == 'play_card' else choices.get(action.get('choice_id'), {})
+        if item:
+            # Only the acting player's visible card semantics. Never add an
+            # entity/position ID to let the network memorize Gumbel noise.
+            c[index, -len(CANDIDATE_CONTEXT):] = [bool(item.get('copy')),
+                max(0, int(item.get('expires_turn') or 0) - own['turn_count']) / 10,
+                bool(item.get('derived')) != bool(CARDS[item['card_id']].get('derived')),
+                float(item.get('antique_investment') or 0)]
     side = view['viewer_side']; order = (side, 'b' if side == 'a' else 'a')
     sides = []; heroes = []
     for s in order:
@@ -66,7 +80,7 @@ def encode(view, actions):
         indexed = {h['id']: h for h in team['characters']}; rows = []
         for cid in SEATS:
             h = indexed.get(cid, {}); flags = (meta['characters'].get(cid) or {}).get('flags') or {}
-            row = {k: h.get(k, 0) for k in EXTRA_CHAR}
+            row = {k: h.get(k) or 0 for k in EXTRA_CHAR}
             for left in (1, 2):
                 row[f'timed_attack_{left}'] = sum(e['amount'] for e in flags.get('timed_attack') or [] if e['left'] == left)
             rows.append(row)
@@ -79,4 +93,3 @@ def encode(view, actions):
     if result.shape != (len(all_features()),) or not np.isfinite(result).all():
         raise ValueError('Invalid fixed observation')
     return result, c
-

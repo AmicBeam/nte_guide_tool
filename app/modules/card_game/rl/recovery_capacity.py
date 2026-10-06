@@ -95,21 +95,26 @@ def fit(models,jobs,games,config,deadline,*,steps=200,held_jobs=None,held_games=
         rng=np.random.default_rng(config['seeds']['probes'])
         train=[r for seed in train_seeds for r in groups[seed]]
         held=[r for seed in held_seeds for r in (held_groups if held_jobs is not None else groups)[seed]]
-        if len(train)>128:train=[train[int(i)] for i in rng.choice(len(train),128,replace=False)]
-        if len(held)>256:held=[held[int(i)] for i in rng.choice(len(held),256,replace=False)]
         net,_,_=rt.restore(models,key,config['device']);before=label_metrics(net,train,config['device'])
         opt=torch.optim.Adam(net.parameters(),lr=.003);gradients={k:0. for k in ('state_net','cand_net','score')}
-        completed=0
+        completed=0;updates=0;row_uses=0
         for _ in range(steps):
             if time.time()>=deadline:break
-            stats=rt.update(net,opt,train)
+            indexes=rng.permutation(len(train));epoch_complete=True
+            for start in range(0,len(train),128):
+                if time.time()>=deadline:
+                    epoch_complete=False;break
+                batch=[train[int(i)] for i in indexes[start:start+128]]
+                stats=rt.update(net,opt,batch);updates+=1;row_uses+=len(batch)
+                for prefix in gradients:gradients[prefix]+=stats['policy_gradient_norms'].get(prefix,0.)
+            if not epoch_complete:break
             completed+=1
-            for prefix in gradients:gradients[prefix]+=stats['policy_gradient_norms'].get(prefix,0.)
         after=label_metrics(net,train,config['device']);validation=label_metrics(net,held,config['device'])
         train_passed=after['kl']<.025 and (after['confident_rows']>=8 and after['confident_accuracy']>=.95)
         held_passed=validation['kl']<.15 and (validation['confident_rows']>=8 and validation['confident_accuracy']>=.75)
         result[key]=dict(train_before=before,train_after=after,heldout=validation,
             train_seed_groups=train_seeds,heldout_seed_groups=held_seeds,steps=completed,
+            updates=updates,row_uses=row_uses,train_rows=len(train),heldout_rows=len(held),
             gradient_sums=gradients,train_passed=train_passed,heldout_passed=held_passed,
             passed=train_passed and held_passed and completed==steps and all(np.isfinite(v) and v>0 for v in gradients.values()))
     if versions(models)!=signature:raise ValueError('Isolation fit changed frozen source')
@@ -117,5 +122,7 @@ def fit(models,jobs,games,config,deadline,*,steps=200,held_jobs=None,held_games=
                 complete=all(r['steps']==steps for r in result.values()),
                 passed=all(r['passed'] for r in result.values()),metrics=result,
                 strength_approved=False,disposable_networks=True,training_heldout_not_independent_strength=True,
-                learning_rate=.003,planned_steps=steps,
+                learning_rate=.003,planned_steps=steps,batch_size=128,
+                data_usage='all_training_rows_each_epoch_and_all_heldout_rows',
+                raw_instance_top1=True,alias_groups_not_merged=True,
                 partition='balanced_new_paired_seeds' if held_jobs is not None else 'unseen_opponent_seed_groups')

@@ -713,3 +713,5 @@ python scripts/train_duel_v2_fixed_n06.py --check --learner STARTER.pt --opponen
 免伤队友倒地的报告核验还须按公开事件patch跟踪免伤状态，覆盖“同一操作中先启动免伤、后发生倒地”的情况；不能只检查操作前快照。记录的是实际倒地事件，是否属于无收益牺牲需再看具体得失，不自动判错，也不引入空前排要求。
 
 五套正式预算容量预检：`scripts/check_duel_v2_cross_capacity.py --models VERIFIED_CROSS_MODELS --seed-reservation NEW_SEEDS --output NEW_JSON --workers 6`。六个并发真实跨队对局分别测纯网络及Gumbel32／16候选／3步终局检查，不做参数更新；以同配置实际正常终局耗时、预定矩阵数和至少25%余量校核阶段预算，不用smoke两次模拟代替。回放删除标记修复造成的源码身份变化，只能在核验旧SHA／schema／列名后用显式 `--source-rule-hashes` 做研究迁移，旧清单保持原身份。
+
+扩大当前规则的恢复预检使用完整教材和新种子：`--preflight-replicas 3`生成训练／独立容量留出各90局，隔离副本完整遍历策略行；正式批次、闸门根数与训练时间比例在新任务启动前固定。真红单次伤害上限及行动方复制寿命进入可见编码。原始实体首选、候选别名误差下界和留出结果分别报告，不能因扩大样本而降低门槛；详细边界见[完整教材协议](duel-v2-policy-recovery.md#扩大当前规则的完整教材)。

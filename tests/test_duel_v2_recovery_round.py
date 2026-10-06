@@ -14,6 +14,15 @@ from scripts.train_duel_v2_current_round import preset_decks, validate_round_lau
 
 
 class RecoveryRoundTest(unittest.TestCase):
+    def test_expanded_preflight_still_has_a_bound_and_smoke_cannot_inherit_it(self):
+        config=dict(runtime='recovery',rule_hash=identity(),smoke=True,preflight=True,
+            preflight_replicas=3,planned_batches=1,workers=12,simulations=32,
+            started_at=0,hard_deadline=7200,train_until=7100,max_row_reuse=8,policy_passes=8)
+        round.validate_launch(config)
+        for changes in ({'hard_deadline':7201}, {'preflight':False}, {'preflight_replicas':1},
+                        {'preflight_replicas':4}, {'preflight_replicas':True}):
+            with self.assertRaises(ValueError):round.validate_launch(dict(config,**changes))
+
     def test_candidate_alias_loss_floor_reports_unlearnable_labels(self):
         from app.modules.card_game.rl.recovery_capacity import candidate_alias_metrics
         row=dict(c=np.array([[1.,2.],[1.,2.],[3.,4.]]),pi=np.array([.8,0.,.2]))
@@ -146,7 +155,7 @@ class RecoveryRoundTest(unittest.TestCase):
     def test_formal_flags_cannot_replace_receipt(self):
         config=dict(runtime='recovery',rule_hash=identity(),smoke=False,device='cuda',
                     formal_launch_approved=True,throughput_passed=True,recovery_source='unused',
-                    simulations=32,gumbel_candidates=16,terminal_horizon=3,rewards=0,planned_batches=6,gate_roots=32,gates=dict(first=1,mid=2,late=4))
+                    simulations=32,gumbel_candidates=16,terminal_horizon=3,rewards=0,planned_batches=6,gate_roots=32,search_gate_roots=2,gates=dict(first=1,mid=2,late=4))
         with self.assertRaisesRegex(ValueError,'receipt required'):validate_round_launch(config)
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/'ready.json';path.write_text(json.dumps({'schema':'five_recovery_readiness_v1','device':'cpu'}))
@@ -220,7 +229,7 @@ class RecoveryRoundTest(unittest.TestCase):
                     scores=rt.model(root,key).scores(x,c).astype(float)
                     pi=np.exp(scores-np.logaddexp.reduce(scores))
                     jobs.append(dict(seed=seed,training=True,train_sides=['a']))
-                    games.append(dict(complete=True,rows=[dict(x=x,c=c,pi=pi,z=1,side='a',key=key,value_actor=1)]))
+                    games.append(dict(complete=True,rows=[dict(x=x,c=c,pi=pi,z=1,side='a',key=key,value_actor=1) for _ in range(131)]))
             result=fit(root,jobs,games,dict(device='cpu',seeds={'probes':31}),time.time()+30,steps=2)
             self.assertEqual(signature,round.versions(root))
             self.assertTrue(result['complete']);self.assertFalse(result['strength_approved'])
@@ -228,6 +237,10 @@ class RecoveryRoundTest(unittest.TestCase):
                 self.assertFalse(set(row['train_seed_groups'])&set(row['heldout_seed_groups']))
                 self.assertEqual(row['train_seed_groups'],[10])
                 self.assertEqual(row['heldout_seed_groups'],[11,12])
+                self.assertEqual(row['train_rows'],131)
+                self.assertEqual(row['heldout_rows'],262)
+                self.assertEqual(row['row_uses'],262)
+                self.assertEqual(row['updates'],4)
 
     def test_cuda_preflight_refuses_before_creating_output(self):
         import torch

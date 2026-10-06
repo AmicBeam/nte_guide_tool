@@ -684,3 +684,5 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 真红盈蓄保护改为每个伤害段至多 1 点、护盾前封顶，沿用下个己方回合开始到期；公开 `damage_limit` 与实时／回放蓝色盾形外框同步。I03 生成 4 个己方回合兽牙并抽 1 张，I04 生成 2 个并抽 1 张，分别保留瞬发／真正零费。数据来自用户桌游调整，细则见完整手册。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_surplus_rework tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_immunity_frame.test.cjs`。覆盖伤害段、增伤／抗性／护盾／穿透、零伤害、援护免反击、到期与倒地、JSON与回放、抽牌隐私／空库及费用。新规则请重新开局，旧训练身份和回放记录不回写。
+
+恢复训练扩大预检：`scripts/train_duel_v2_current_round.py --preflight --preflight-replicas 3`在当前规则下生成训练／留出各90个完整Gumbel32对局，容量拟合完整遍历策略行；复制寿命与真红伤害上限使用合法可见输入。正式入口的批次数、闸门根数和停学时间比例可在启动前显式声明，仍须通过同源码CUDA预检、实测容量及原有退化闸门。详见`docs/duel-v2-policy-recovery.md`。验证增加`tests.test_duel_v2_recovery_observation`，覆盖上限／无上限、复制寿命、实体改名不改变编码及对方暗牌不能进入候选上下文。

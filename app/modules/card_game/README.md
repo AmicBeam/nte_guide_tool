@@ -835,3 +835,8 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施加累计减攻；响应牌明确自动使用，N02 不再复述通用反击规则。C07 自动使用仍为零行动力、手动使用仍为 1 费。S07 条件句、噩梦与诛恶护持机制说明按手册整理。枚约接入统一 debuff 标记；关联机制小卡去掉立绘并保持正常字号。鬼郎丸使用本地透明主体 WebP，来源与提示词见[图片说明](../../../docs/character-image-assets.md)。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_card_polish tests.test_duel_v2_effect_markers tests.test_duel_v2_catalog tests.test_duel_v2_surplus_rework tests.test_duel_v2_continuous_cast tests.test_duel_v2_september18 tests.test_duel_v2_engine tests.test_duel_v2_hooks`；模拟对拍单独运行 `tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_mechanisms.test.cjs tests/js/duel_v2_hand_face.test.cjs`。
+
+
+### 固定构筑在线训练与批量价值统计
+
+`fixed_build_online_guided_v1`用于用户明确指定截止的完整固定构筑在线任务，保留起手留牌与真红指导，构筑换卡可按用户要求跳过；不把短测ready或旧容量失败冒作默认完整训练批准。`rl/batched_search/value_metrics.py`复用已验证批量推理计算完整局等权WDL统计，`recovery_round.warm_value`可显式选择`value_metric_backend=cuda_batched`，默认NumPy不变。此组件不执行GPU规则，未知后端和CUDA隐式回退拒绝。验证：`.venv/bin/python -m unittest tests.test_duel_v2_batched_value_metrics tests.test_duel_v2_batch_inference tests.test_duel_v2_recovery_round`。

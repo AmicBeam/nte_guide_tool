@@ -124,7 +124,14 @@ def collect(pool, jobs, folder, *, learning=False, require_search=False):
     return games
 
 
-def value_metrics(games, policies):
+def value_metrics(games, policies, *, backend='numpy', device=None):
+    if backend == 'cuda_batched':
+        if device != 'cuda':
+            raise ValueError('CUDA metrics cannot silently use a CPU device')
+        from .batched_search.value_metrics import compute
+        return compute(games, policies, device=device)
+    if backend != 'numpy':
+        raise ValueError('Unknown WDL metric backend')
     from scripts.check_duel_v2_value_calibration import probability_metrics
     result = {}
     for key, policy in policies.items():
@@ -156,6 +163,10 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
     from . import recovery_runtime as rt
     if seed_offset not in (0,6000):raise ValueError('Declared disjoint value seed slot required')
     protocol = value_calibration_protocol(config)
+    metric_fn = value_metrics
+    if config.get('value_metric_backend', 'numpy') != 'numpy':
+        from functools import partial
+        metric_fn = partial(value_metrics, backend=config['value_metric_backend'], device=config['device'])
     full = protocol['full_tower']
     folder = Path(folder); before = {k: {n: t.detach().clone() for n, t in net.state_dict().items()
                                        if not n.startswith(('wdl.', 'value_net.'))} for k, net in nets.items()}
@@ -204,7 +215,7 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
                         net.wdl.weight.copy_(original_w/temperature); net.wdl.bias.copy_(original_b/temperature)
                     target=folder/'candidates'/f'epoch-{epoch}-temperature-{temperature}'
                     rt.export(net,target,key,decks[key],origins[key])
-                    metric=value_metrics(selection,{key:rt.model(target,key)})[key]
+                    metric=metric_fn(selection,{key:rt.model(target,key)})[key]
                     score=(metric['log_loss'],epoch,temperature)
                     if best is None or score < best[0]:
                         best=(score,{n:t.detach().clone() for n,t in net.state_dict().items()
@@ -232,7 +243,7 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
             with torch.no_grad():
                 net.wdl.weight.copy_(original_w/temperature); net.wdl.bias.copy_(original_b/temperature)
             rt.export(net, folder / f'temperature-{temperature}', key, decks[key], origins[key])
-            metric = value_metrics(selection, {key: rt.model(folder / f'temperature-{temperature}', key)})[key]
+            metric = metric_fn(selection, {key: rt.model(folder / f'temperature-{temperature}', key)})[key]
             scores.append((metric['log_loss'], temperature))
         chosen[key] = min(scores)[1]
         with torch.no_grad():
@@ -243,7 +254,7 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
     policies = {k: rt.model(folder / 'models', k) for k in ROSTER}
     report = dict(schema='recovery_value_precheck_v1', complete=True, heldout=True,
                   passed=True, rule_hash=config['rule_hash'], models=versions(folder / 'models'),
-                  metrics=value_metrics(held, policies), temperatures=chosen,
+                  metrics=metric_fn(held, policies), temperatures=chosen,
                   independent_current_rule_seeds=True, policy_preserved=True,
                   calibration=protocol, selected_epochs=chosen_epochs, updates=update_counts,
                   phase_games=dict(training=len(games),selection=len(selection),heldout=len(held)))

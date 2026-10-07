@@ -128,3 +128,8 @@
 ```
 
 没有 CUDA 的主机必须明确记录设备用例跳过。`scripts/validate_duel_v2_batch_gpu.py` 默认只输出配置，只有显式 `--run` 才执行合成节点统计验证；其 `game_executions=0`，不能作为真实对局容量或强度证据。上述用例和原语对拍也不能替代五队完整规则、真实端到端 GPU 性能或策略强度验收。
+
+
+### 校准统计的独立接入
+
+`value_metrics.py`只对已经采集的合法观察进行`value_only`批量推理；保留观察者行动标志、WDL顺序与每局等权，拒绝身份错位／过期／未知设备，不执行规则或改模型。`recovery_round.warm_value`可显式使用CUDA后端，默认NumPy不变；需本轮数值对拍和TF32关闭。GPU批量校准统计不代表完整GPU对局后端已经完成。

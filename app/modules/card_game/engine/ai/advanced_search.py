@@ -8,7 +8,11 @@ SEARCH_SIMULATIONS = 32
 
 
 def _runtime(model):
+    from .recovery_model import SCHEMAS
     schema = getattr(model, 'schema', None)
+    if schema in SCHEMAS:
+        from app.modules.card_game.rl import recovery_runtime
+        return recovery_runtime
     if schema == 'fixed_ten_v1':
         from app.modules.card_game.rl import ten_search_runtime
         return ten_search_runtime
@@ -80,8 +84,13 @@ def choose(state, side, model, fallback):
                     return deepcopy(action)
         if remaining <= 0 or time.monotonic() >= end:
             return fallback
+        from .recovery_model import SCHEMAS
+        options = dict(algorithm='gumbel')
+        if getattr(model, 'schema', None) in SCHEMAS:
+            from app.modules.card_game.rl.recovery_search import search
+            options = dict(q_scale='natural_wdl', teacher_mode='network')
         result = search(state, side, {side: model, 'a' if side == 'b' else 'b': model},
-                        seed=seed, simulations=remaining, algorithm='gumbel',
+                        seed=seed, simulations=remaining, **options,
                         gumbel_candidates=16, terminal_horizon=3, noise=False,
                         runtime=runtime, deadline=time.time() + max(0., end - time.monotonic()))
         # An interrupted search still has useful completed simulations. Never

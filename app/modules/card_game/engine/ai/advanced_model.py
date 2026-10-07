@@ -238,18 +238,24 @@ class FrozenModel:
 def load_model(deck_id):
     preset(deck_id)
     from .experimental_cross_model import ARCHIVE, EXPERIMENTAL, ExperimentalCrossModel
-    root = ARCHIVE if deck_id in EXPERIMENTAL else Path(config.DUEL_AI_MODEL_DIR).resolve()
+    from .recovery_model import RELEASE, RecoveryServingModel
+    configured = Path(config.DUEL_AI_MODEL_DIR).resolve()
+    recovery = configured / RELEASE
+    root = recovery if recovery.is_dir() else (ARCHIVE if deck_id in EXPERIMENTAL else configured)
     if deck_id in PENDING_PRESETS and not (root / f'{deck_id}.json').is_file():
         raise RuleValidationError('吱零薄海高级人机尚待训练与验收，请先使用普通人机。')
     key = (str(root), deck_id)
     with _LOCK:
         try:
             signature=tuple((path.stat().st_mtime_ns,path.stat().st_size)
-                            for path in (root/f'{deck_id}.json',root/f'{deck_id}.npz'))
+                            for path in ([root/f'{deck_id}.json',root/f'{deck_id}.npz']
+                                         + ([root/'serving.json'] if root == recovery else [])))
             if key not in _CACHE or getattr(_CACHE[key], '_file_signature', None) != signature:
                 manifest = json.loads((root / f'{deck_id}.json').read_text(encoding='utf-8'))
                 from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
-                if deck_id in EXPERIMENTAL:
+                if root == recovery:
+                    candidate = RecoveryServingModel(root, deck_id)
+                elif deck_id in EXPERIMENTAL:
                     candidate = ExperimentalCrossModel(deck_id)
                 elif manifest.get('schema') == 'fixed_ten_v1':
                     from .fixed_model import FixedServingModel
@@ -281,12 +287,13 @@ def choose_action(state, side='b'):
     if not actions:
         raise RuleValidationError('高级人机没有可执行动作。')
     from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA
-    if state['phase'] == 'mulligan' and getattr(model,'schema',None) not in (OPENING_SCHEMA, 'official_public_v5', 'fixed_ten_v1'):
+    from .recovery_model import SCHEMAS as RECOVERY_SCHEMAS
+    if state['phase'] == 'mulligan' and getattr(model,'schema',None) not in (OPENING_SCHEMA, 'official_public_v5', 'fixed_ten_v1', *RECOVERY_SCHEMAS):
         # The model was trained with the initial hand retained.
         return next(a for a in actions if not a.get('card_ids'))
     from app.modules.card_game.rl.public_schema import SCHEMA as PUBLIC_SCHEMA
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
-    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA,'fixed_ten_v1', 'cross_five_grounded_wdl_v1'):
+    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA,'fixed_ten_v1', 'cross_five_grounded_wdl_v1', *RECOVERY_SCHEMAS):
         from app.modules.card_game.engine.duel_v2 import observe
         fallback = actions[model.select_public_action(observe(state, side, include_previews=False), actions)]
         from .advanced_search import choose
@@ -300,4 +307,5 @@ def choose_action(state, side='b'):
 
 def model_build_hash(model, build):
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA, build_hash
-    return build_hash(build) if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1', 'cross_five_grounded_wdl_v1') else serving_deck_hash(build)
+    from .recovery_model import SCHEMAS as RECOVERY_SCHEMAS
+    return build_hash(build) if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1', 'cross_five_grounded_wdl_v1', *RECOVERY_SCHEMAS) else serving_deck_hash(build)

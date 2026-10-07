@@ -91,7 +91,7 @@ async function bootstrapHome() {
       const opponentName = aiDeck.options[aiDeck.selectedIndex].text;
       const playerDeck = saved || starter;
       buildSummary.textContent = '我方「' + ((playerDeck && playerDeck.name) || '当前构筑') + '」· 对手「' + opponentName + '」';
-      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。';
+      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。五套高级人机均已启用新模型与搜索，属于尚未通过新规则完整强度验收的实验性策略。';
       return;
     }
     if (selectedMode === 'solo') {

@@ -108,7 +108,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
                     'request_id':f'{deck}-{index}','action':action},token=self.token)
             self.assertEqual(result['game']['phase'],'finished')
             self.assertTrue(result['room']['has_replay'])
-            self.assertEqual(result['game']['sides']['b']['name'],'高级人机')
+            self.assertEqual(result['game']['sides']['b']['name'],'实验性高级人机')
             self._post('/api/duel-v2/leave',token=self.token)
 
     def test_evaluated_bot_allocation_and_mirror_match_without_changing_saved_build(self):
@@ -257,13 +257,14 @@ class CpuEncoderTest(unittest.TestCase):
 
     def test_bundled_models_are_complete_and_loadable(self):
         from app.modules.card_game.engine.ai.advanced_model import load_model
-        directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'
-        keys=('starter','weave-rush','quick-rush')
+        from app.modules.card_game.engine.ai.recovery_model import SCHEMAS, RELEASE
+        directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'/RELEASE
+        keys=('starter','weave-rush','quick-rush','zhenhong','murk')
         self.assertEqual({p.name for p in directory.iterdir()},
-                         {f'{key}.{ext}' for key in keys for ext in ('json','npz')})
+                         {f'{key}.{ext}' for key in keys for ext in ('json','npz')} | {'serving.json', '.gitattributes'})
         for key in keys:
             model=load_model(key)
-            self.assertEqual(model.schema,'fixed_ten_v1')
+            self.assertIn(model.schema,SCHEMAS)
             self.assertTrue(model.version)
             self.assertTrue(model.serving_authorized)
 

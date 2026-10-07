@@ -1,0 +1,37 @@
+{
+  "kind": "explicit_user_candidate",
+  "request": "把高级人机做一下替换吧，让目前的高级人机用上新的模型，并且包含搜索链路",
+  "runtime_rule_hash": "5a8f06f5936a4d98fd49dad07861fc8b83ae2ccc182f12b45f69f271e7a4e4bf",
+  "source_rule_hash": "7c928f692ad643ba32bb6d2e70808a137744fde82e58e5ee451e4744d3d5de9e",
+  "report": "artifacts/rl-evals/murk-hour-corrected-20261007/delivery-report.md",
+  "selection": "selected-models; murk best batch 1; other four frozen",
+  "quality_approved": false,
+  "compatibility_note": "Current Adler ultimate differs from training; explicit serving authorization does not imply new-rule strength acceptance.",
+  "models": {
+    "starter": {
+      "manifest_sha256": "c7b978ecc202432d559b6ece8e96d65f2e609579f9c6b969e88d41de16575216",
+      "model_sha256": "03991c8d20c1878dd0c64ff685fb4929ac491a7bc46c2f5203677a8340ed0c00",
+      "build_sha256": "e1743d737870096d947fc00a4e22e7ecb982a9d8f8f9c8f0bb425ddff89d6d3e"
+    },
+    "weave-rush": {
+      "manifest_sha256": "498e53274b050e5af22b80994e80dd8f5c2f8f8ad71bf771d21250be5ac79db6",
+      "model_sha256": "29a25b318f0319bd96bb3eaa27e21df669cacbb43c1bf0f9e07e1e7e783833d1",
+      "build_sha256": "a3efac8289f74cf9561bc439822eaf81d77beb115cac2353d6dd2798dca96e3d"
+    },
+    "quick-rush": {
+      "manifest_sha256": "82f8c7a043bc527b2c2e89cf99037a865623315877caaea3fbb100f789e2728e",
+      "model_sha256": "0a51fc7e08a8cf8b31f35d37222156a983ddd6af18e82a627006e80df874dfdb",
+      "build_sha256": "bc6e5df6e5365c167deec54ed81f21fb59ba267714adb5bc19c97c545b05aca3"
+    },
+    "zhenhong": {
+      "manifest_sha256": "a0d9edb665ffff01b6ddf50b3e07addf169fdf9b163145c822bd9ef52241e952",
+      "model_sha256": "3f2be48f5ac5a751ae4b84c725007953aaef01cef2c834b822982fb4b33ef9d4",
+      "build_sha256": "8cabdfa32f1a16dffa82c118e21dd9b12f2e81b8a08800ed08d318c6dff8fb24"
+    },
+    "murk": {
+      "manifest_sha256": "5c6c0ea499303beda35ce0d85969ae0b7d391d9a3b7f93a8ebc80a90dc6ed9c2",
+      "model_sha256": "235b19b3fc37ee1100aa67266ef0d1c452823486263fbdf73da5b830610d0694",
+      "build_sha256": "196df3bd6b0d5724f0dd6989a889d92df560327c0464c33552a5bde3ee10df15"
+    }
+  }
+}

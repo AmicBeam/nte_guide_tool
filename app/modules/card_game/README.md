@@ -721,3 +721,11 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_continuous_cast tests.test_duel_v2_catalog tests.test_duel_v2_zone_status`；`.venv/bin/python -m unittest tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_mechanisms.test.cjs tests/js/duel_v2_ranged.test.cjs tests/js/duel_v2_hand_face.test.cjs`。规则修改不覆盖此前冻结评估或自动重绑模型。
 
 本轮验收：48 项 Python 与 7 项 JavaScript 测试通过；真实图鉴末尾说明、私有词条移出和牌桌关联小卡（蚀心／鸩火去重）均验证，前端 error 日志为空。开发服务仍监听 `0.0.0.0:5001`，本机和当前局域网 `192.168.10.3:5001` 均返回 200。
+
+### 高级人机模型与搜索（2026-10-07）
+
+五套策略统一使用 `engine/ai/models/recovery-20261007/` 中的冻结 NumPy 模型与原始训练清单；浊燃使用训练择优的 best，其余四队使用同批冻结模型。旧根目录的三套模型保留为嵌入旧策略的校验来源，不再作为默认对手。`recovery_model.py` 校验源清单、权重、配牌 SHA、具名特征、张量与当前规则授权；单独的 `serving.json` 保存用户明确启用的绑定。原始质量结论、训练规则身份及未批准标记保持原样；当前阿德勒终结晚于训练修改，启用不代表通过新规则强度验收。
+
+每个 `/api/duel-v2/ai-step` 使用当前正式引擎与公开信息采样，执行 Gumbel 信息集搜索（最多 32 次模拟、16 个根候选、3 步短终局检查、3 秒搜索预算），采用新模型独立终局价值塔及 natural-WDL Q 尺度。立即获胜检查共享预算；有已完成模拟时采用搜索结果，预算耗尽且无完整模拟或不支持的私有选择根才回退合法网络动作。起手换牌也由新网络选择。对手模拟使用同一冻结策略作为代理，不读取真实隐藏手牌。网站只运行 NumPy 推理，不加载 PT、Torch 或训练任务。旧对局的权重／构筑版本不匹配时要求重新开局。
+
+回归：`.venv/bin/python -m unittest tests.test_duel_v2_recovery_serving tests.test_duel_v2_serving_search tests.test_duel_v2_ai_step tests.test_duel_v2_experimental_advanced`。

@@ -694,3 +694,12 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 恢复观察还读取真红终结期间自己已可见的`hand_face`原牌库存，候选保留替代牌的原牌模板身份，以区分兽牙结算后不同的弃牌结果；对应原牌语义和对方隐藏信息隔离见`tests.test_duel_v2_recovery_observation`。
 
 冷启动的真红／浊燃可使用`scripts/prepare_duel_v2_rule_foundation.py`进行可见规则AI的神经初始化，仅消费核验的当前规则专家TRAINING轨迹，内部成对种子验证选择4／8／16轮；三套旧模型数值不变，输出没有正式搜索或服务批准。随后仍须新Gumbel32预检。统一候选变换在自动战斗中提供公开对方前排上下文，显式目标不变；验证增加`tests.test_duel_v2_rule_foundation`。
+
+
+### 2026-10-07 残虹异能限次纠正
+
+残虹异能的「每回合 1 次」限制持续伤害施加带来的攻击 +1；浊燃重复触发可在同回合叠至 3 层。规则真源、角色异能与图鉴词条同步。正式引擎与复用它的模拟路径共用角色实体计次，换武备、倒地复活及 JSON 恢复不重置。旧冻结诊断及模型仍保留原身份，不能作为新规则的平衡证据。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_continuous_cast tests.test_duel_v2_catalog tests.test_duel_v2_zone_status`；模拟路径单独运行 `.venv/bin/python -m unittest tests.test_duel_v2_simulation`。
+
+本轮上述规则 42 项与模拟 3 项通过，真实图鉴确认异能限次与浊燃词条；`tests.test_duel_v2_hooks` 的角色包清单断言仍因额外教学角色失败，修改前同样复现。开发服务监听 `0.0.0.0:5001`，本机与当前局域网 `192.168.10.3:5001` 均返回 200。

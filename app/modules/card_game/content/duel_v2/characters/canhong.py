@@ -113,18 +113,20 @@ class Canhong:
 
     @staticmethod
     def burn_extra_stack(c, current=0, **_data):
-        team = c.state['sides'][c.side]
-        if team.get('used', {}).get('burn_stack_turn') == c.state.get('turn'):
-            return 0
         if not alive(c.state, c.side, c.cid):
             return 0
-        team.setdefault('used', {})['burn_stack_turn'] = c.state.get('turn')
         return 1
 
     @staticmethod
     def on_continuous_applied(c, **_data):
         if not alive(c.state, c.side, c.cid):
             return
+        used = c.state['sides'][c.side].setdefault('used', {})
+        key = f'canhong_dot_attack_turn:{c.entity_id}'
+        turn = c.state['turn']
+        if used.get(key) == turn:
+            return
+        used[key] = turn
         add_atk_buff(c.character, 1, source_entity_id=c.entity_id, source_key='canhong-dot', label='持续伤害')
         c.history('己方施加持续伤害，残虹的异能触发：攻击 +1。')
 

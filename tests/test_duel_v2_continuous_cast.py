@@ -1,10 +1,12 @@
 """持续伤害、浊燃、噩梦、倾陷时长，以及四名测试角色的关键结算。"""
+import json
 import unittest
 
 from app.modules.card_game.engine.duel_v2 import new_game, apply_action, legal_actions, observe
-from app.modules.card_game.engine.duel_v2.continuous import apply_dot, distribute
+from app.modules.card_game.engine.duel_v2.continuous import apply_burn, apply_dot, distribute
+from app.modules.card_game.engine.duel_v2.entities import clone_state
 from app.modules.card_game.engine.duel_v2.flow import begin_turn, end_turn
-from app.modules.card_game.engine.duel_v2.state import card_instance, force_collapse, front_debuff, hero, knockdowns
+from app.modules.card_game.engine.duel_v2.state import attack_value, card_instance, force_collapse, front_debuff, hero, knockdowns
 
 
 def _deck(characters, prefixes):
@@ -154,6 +156,7 @@ class ContinuousCastTest(unittest.TestCase):
         for h in s['sides']['b']['characters'].values():
             h.update(hp=20, max_hp=20)
         start = s['event_seq']
+        attack = attack_value(hero(s, 'a', 'canhong'), s, 'a')
         distribute(s, 'b', 8, source='a:canhong', by='a', reason='幻境持续伤害')
         events = [e for e in s['events'] if e['seq'] > start]
         hits = [e for e in events if e['type'] == 'damage']
@@ -163,6 +166,52 @@ class ContinuousCastTest(unittest.TestCase):
         dots = front_debuff(s, 'b')['dots']
         self.assertEqual(dots['etch']['stacks'], min(10, 5 + len(hits)))
         self.assertEqual(dots['venom']['stacks'], min(10, 5 + len(hits)))
+        self.assertEqual(attack_value(hero(s, 'a', 'canhong'), s, 'a'), attack)
+
+    def test_canhong_burn_can_stack_three_times_in_one_turn_but_attack_grows_once(self):
+        s = self.game()
+        h = hero(s, 'a', 'canhong')
+        base = attack_value(h, s, 'a')
+        for expected in (1, 2, 3, 3):
+            apply_burn(s, 'b', by='a', source_cid='anhunqu')
+            self.assertEqual(front_debuff(s, 'b')['burn']['stacks'], expected)
+            self.assertEqual(attack_value(h, s, 'a'), base + 1)
+
+    def test_canhong_dot_attack_limit_renews_on_each_players_turn(self):
+        s = self.game()
+        h = hero(s, 'a', 'canhong')
+        base = attack_value(h, s, 'a')
+        for side, gained in (('a', 1), ('b', 2), ('a', 3)):
+            self.assertEqual(s['active_side'], side)
+            apply_dot(s, 'b', 'etch', by='a', source_cid='canhong', stacks=1)
+            apply_dot(s, 'b', 'venom', by='a', source_cid='canhong', stacks=1)
+            self.assertEqual(attack_value(h, s, 'a'), base + gained)
+            end_turn(s, side)
+
+    def test_canhong_dot_attack_limit_survives_json_weapon_and_revival(self):
+        s = self.game()
+        apply_dot(s, 'b', 'nightmare', by='a', source_cid='anhunqu', stacks=1)
+        s = clone_state(json.loads(json.dumps(s)))
+        s = self.play(s, 'C08')
+        h = hero(s, 'a', 'canhong')
+        attack = attack_value(h, s, 'a')
+        apply_dot(s, 'b', 'etch', by='a', source_cid='canhong', stacks=1)
+        self.assertEqual(attack_value(h, s, 'a'), attack)
+        h['hp'] = 0
+        knockdowns(s)
+        s = self.play(s, 'C07')
+        h = hero(s, 'a', 'canhong')
+        attack = attack_value(h, s, 'a')
+        apply_dot(s, 'b', 'venom', by='a', source_cid='canhong', stacks=1)
+        self.assertEqual(attack_value(h, s, 'a'), attack)
+
+    def test_copied_canhong_dot_attack_limit_is_independent_per_entity(self):
+        s = self.game()
+        hero(s, 'a', 'anhunqu')['flags']['mimic'] = {'id': 'canhong'}
+        for kind in ('etch', 'venom'):
+            apply_dot(s, 'b', kind, by='a', source_cid='canhong', stacks=1)
+            for cid in ('anhunqu', 'canhong'):
+                self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), 3)
 
     def test_mimic_family_is_owned_and_permanently_grows_anhunqu(self):
         ours = _deck(('anhunqu', 'canhong', 'zaowu', 'adler'), ('A', 'C', 'S', 'D'))

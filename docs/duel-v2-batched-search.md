@@ -48,6 +48,8 @@
 
 `gpu_candidates.py` 在显式 CUDA 上从紧凑公开 token 构造 254 列候选，包括有效牌与可见原牌身份。显式 CPU 模式只用于数值对拍。主机 token 提取仍是过渡输入适配，不能声称规则和观察已全部在 GPU 生成，也未接入完整 GPU 搜索后端。缺失 CUDA、未知身份、错位批次、非有限数值和容量超限均拒绝，不截断候选凑成功。
 
+`gpu_observation.py` 从紧凑公开 token 在显式 GPU 构造 2,420 列观察，完成角色散射、缺席默认值、资源归一化、牌库存量、金谷、限时增益与可见原牌统计。直接设备 token 入口严格校验类型、形状、身份域、重复角色座位、掩码和有限数值。主机公开 token 提取仍未替换为完整 GPU 投影；不能把这个过渡适配称为 GPU 规则／观察全链路。`tests.test_duel_v2_gpu_observation` 包含五套规则状态和 1,600 行真实 CUDA 编码对拍，行样本不是完整对局。
+
 上述组件的真实 CUDA 子集对拍、1,600 行标量／编码或实体复制测试都不代表 1,600 个完整 GPU 对局。完整五队合法动作、物理推进、公开一致性采样、观察、搜索预算、录像和行为审计仍须逐项接通并验证。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_vm_image tests.test_duel_v2_vm_heap tests.test_duel_v2_vm_collections tests.test_duel_v2_cuda_vm tests.test_duel_v2_gpu_candidates`。没有 CUDA 时必须记录跳过；Windows 3.13 用显式冻结程序目录 `NTE_VM_TEST_PROGRAM_DIR`，不得以跳过或 source emission 成功替代设备执行。

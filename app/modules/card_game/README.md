@@ -814,3 +814,5 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 ### CUDA 规则执行组件的边界
 
 `rl/batched_duel` 新增冻结程序数字图、CUDA 图堆／解释器、容器、模块／方法查询和候选编码组件。设备对拍覆盖的是已实现子集；完整规则、随机采样、GPU 观察和搜索尚未全部接通，`supports_full_duel_rules=False`。旧 CPU 进程池的 1,600 局在途容量不能当成真正 GPU 规则并发已完成。接口、验证与剩余门槛见[离线批量搜索](../../../docs/duel-v2-batched-search.md)。
+
+`rl/batched_duel/gpu_observation.py` 提供 2,420 列观察的真实 CUDA 编码及直接设备 token 接口，与 254 列候选分别逐列对拍。公开 token 的主机提取仍是过渡适配，完整 GPU 投影和规则搜索未完成。验证：`.venv/bin/python -m unittest tests.test_duel_v2_gpu_observation`；1,600 行编码样本不计为 1,600 个完整对局。

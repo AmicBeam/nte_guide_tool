@@ -1,7 +1,7 @@
 {
   "kind": "explicit_user_candidate",
   "request": "把高级人机做一下替换吧，让目前的高级人机用上新的模型，并且包含搜索链路",
-  "runtime_rule_hash": "c36db72ac98a83f581e5814458f3451e30a16ca046f82a22f4d89ca559b5e081",
+  "runtime_rule_hash": "198a2af71ee044a0d3005251d1b2aed0cba4382e1f1bd3c69682e687e7e645d8",
   "source_rule_hash": "7c928f692ad643ba32bb6d2e70808a137744fde82e58e5ee451e4744d3d5de9e",
   "report": "artifacts/rl-evals/murk-hour-corrected-20261007/delivery-report.md",
   "selection": "selected-models; murk best batch 1; other four frozen",
@@ -52,6 +52,12 @@
       "previous_runtime_rule_hash": "d60942ffe323a88cb80e85779415fceb113db7536415da736c7b5f699d06c678",
       "runtime_rule_hash": "c36db72ac98a83f581e5814458f3451e30a16ca046f82a22f4d89ca559b5e081",
       "scope": "Zhenhong receives one opening harmony through on_game_start; existing public numeric feature, candidate and architecture contracts unchanged; preserve original training identity and model bytes"
+    },
+    {
+      "request": "真红的面板和武备加1攻击吧",
+      "previous_runtime_rule_hash": "c36db72ac98a83f581e5814458f3451e30a16ca046f82a22f4d89ca559b5e081",
+      "runtime_rule_hash": "198a2af71ee044a0d3005251d1b2aed0cba4382e1f1bd3c69682e687e7e645d8",
+      "scope": "Zhenhong 1/6 -> 2/6; R07 2/6 -> 3/6; R08 1/8 -> 2/8; opening harmony and named feature/candidate/architecture contracts unchanged; preserve original training manifests, weights and quality status"
     }
   ]
 }

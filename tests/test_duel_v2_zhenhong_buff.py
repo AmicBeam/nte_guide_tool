@@ -79,7 +79,7 @@ class ZhenhongBuffTest(unittest.TestCase):
                     self.assertEqual([c['card_id'] for c in team['hand']], [wanted] if surplus else [])
                     self.assertEqual(team['deck'], [c for c in before if not surplus or c['card_id'] != wanted])
                     attacks = [e for e in s['events'] if e['type'] == 'attack']
-                    self.assertEqual(attacks[-1]['amount'], {'R02': 1, 'R03': 2, 'R04': 3}[key])
+                    self.assertEqual(attacks[-1]['amount'], {'R02': 2, 'R03': 3, 'R04': 4}[key])
                     if surplus:
                         held = self.hold(s, key)
                         s['sides']['a']['ap'] = 0
@@ -115,7 +115,7 @@ class ZhenhongBuffTest(unittest.TestCase):
             s = self.play(s, 'RF01')
             self.assertEqual(s['sides']['a']['hand'][0]['card_id'], 'I03')
             attacks = [e for e in s['events'] if e['type'] == 'attack']
-            self.assertEqual(attacks[-1]['amount'], 5)
+            self.assertEqual(attacks[-1]['amount'], 6)
             self.assertEqual(hero(s, 'a', 'zhenhong')['shield'], 4)
         s = self.game()
         s['sides']['a']['deck'] = []

@@ -41,8 +41,8 @@ class EffectContext:
     def once(self, key):
         return consume_once(self.state, self.side, key)
 
-    def history(self, text, *, target_id=None, target_side=None, **fields):
-        """Record a resolved public effect without adding an animation pause.
+    def history(self, text, *, target_id=None, target_side=None, present=False, **fields):
+        """Record a resolved public effect, silent unless presentation is requested.
 
         Call at the actual trigger, after its mutation; never from eligibility
         checks. Do not attach the operation card: it may belong to someone else
@@ -53,7 +53,7 @@ class EffectContext:
         log(self.state, text, 'effect', side=self.side, source=self.cid,
             actor=f'{self.side}:{self.cid}',
             target=f'{target_side or self.side}:{target_id or self.cid}',
-            present=False, **fields)
+            present=present, **fields)
 
     def is_enemy_turn(self):
         return self.state['active_side'] != self.side

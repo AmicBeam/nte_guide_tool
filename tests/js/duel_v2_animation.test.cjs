@@ -1133,6 +1133,23 @@ test("discard events update state without notices", async () => {
   assert.deepEqual(notices, []);
 });
 
+test("gulang forced discard announces the revealed card once after the silent discard", async () => {
+  const harness = makeRoot();
+  const patches = [], notices = [];
+  const player = new Player({root:harness.root, clock:harness.clock,
+    applyPatch:(_patch,event)=>patches.push(event.seq)});
+  player._notice=(...args)=>notices.push(args);
+  player._wait=async()=>{};
+  const text='鬼郎丸受到伤害：对方玩家随机弃置手牌「测试牌」。';
+  await player.play([
+    {seq:602,type:'discard',side:'b',card:publicCard(),patch:{hand_count:0,discard_count:1}},
+    {seq:603,type:'effect',side:'a',actor:'a:zaowu',target:'b:player',present:true,text,patch:{}},
+    {seq:604,type:'effect',side:'a',present:false,text:'普通历史效果',patch:{}},
+  ]);
+  assert.deepEqual(patches,[602,603,604]);
+  assert.deepEqual(notices,[[text,'','top']]);
+});
+
 test("hidden opponent draw uses only the card back during close-up", async () => {
   const harness = makeRoot();
   const player = new Player({ root: harness.root, clock: harness.clock });

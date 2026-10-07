@@ -32,6 +32,40 @@ class ContinuousCastTest(unittest.TestCase):
             action['target_id'] = target
         return apply_action(state, side, action)
 
+    def test_vinyl_discard_presents_only_the_actual_discarded_card_for_both_views_and_replay(self):
+        from app.modules.card_game.engine.duel_v2.state import damage
+        from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
+        s = self.play(self.game(), 'S01')
+        summon = s['sides']['a']['front']
+        cards = [card_instance(s, key, 'b') for key in ('Z03', 'Y04')]
+        s['sides']['b']['hand'] = cards
+        opening, seq = capture_public_board(s), s['event_seq']
+        s['_public_board'] = opening
+        damage(s, 'a', summon, 1, source='a:zaowu')
+        discarded = s['sides']['b']['discard'][-1]
+        retained = s['sides']['b']['hand'][0]
+        for viewer in ('a', 'b'):
+            events = [e for e in observe(s, viewer)['presentation']['events'] if e['seq'] > seq]
+            notice, = [e for e in events if e['type'] == 'effect' and e.get('present')]
+            self.assertIn(discarded['name'], notice['text'])
+            self.assertNotIn(retained['name'], notice['text'])
+            self.assertEqual(notice['target'], 'b:player')
+            self.assertEqual(len([e for e in events if e['type'] == 'discard']), 1)
+            replay = replay_public_board(opening, events)
+            self.assertEqual(replay['sides']['b']['hand_count'], 1)
+            self.assertEqual(len(s['sides']['b']['discard']), 1)
+
+    def test_vinyl_empty_hand_or_zero_damage_has_no_discard_notice(self):
+        from app.modules.card_game.engine.duel_v2.state import damage
+        for empty, amount in ((True, 1), (False, 0)):
+            s = self.play(self.game(), 'S01')
+            summon = s['sides']['a']['front']
+            s['sides']['b']['hand'] = [] if empty else [card_instance(s, 'Z03', 'b')]
+            seq = s['event_seq']
+            damage(s, 'a', summon, amount, source='a:zaowu')
+            self.assertFalse(any(e['type'] == 'effect' and e.get('present')
+                                 for e in s['events'] if e['seq'] > seq))
+
     def test_keyword_text_reaches_catalog_and_public_hand(self):
         from app.modules.card_game.content.duel_v2 import CARDS
         for card in CARDS.values():

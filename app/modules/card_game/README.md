@@ -840,3 +840,8 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 ### 固定构筑在线训练与批量价值统计
 
 `fixed_build_online_guided_v1`用于用户明确指定截止的完整固定构筑在线任务，保留起手留牌与真红指导，构筑换卡可按用户要求跳过；不把短测ready或旧容量失败冒作默认完整训练批准。`rl/batched_search/value_metrics.py`复用已验证批量推理计算完整局等权WDL统计，`recovery_round.warm_value`可显式选择`value_metric_backend=cuda_batched`，默认NumPy不变。此组件不执行GPU规则，未知后端和CUDA隐式回退拒绝。验证：`.venv/bin/python -m unittest tests.test_duel_v2_batched_value_metrics tests.test_duel_v2_batch_inference tests.test_duel_v2_recovery_round`。
+
+
+### 2026-10-08 黑胶鬼郎丸弃牌反馈
+
+弥散性的朦白所召唤鬼郎丸的黑胶效果实际弃牌后，播放包含被弃牌名称的效果提示，双方与公开回放一致；普通进入弃牌堆仍静默。公共效果历史可显式设置 `present=True`，默认行为保持静默。验证：`.venv/bin/python -m unittest tests.test_duel_v2_continuous_cast tests.test_duel_v2_trigger_history tests.test_duel_v2_presentation`；`node --test tests/js/duel_v2_animation.test.cjs tests/js/duel_v2_table_state.test.cjs`。真实牌桌以祈愿性的依归使黑胶鬼郎丸受伤，确认弃牌提示及数量同步。

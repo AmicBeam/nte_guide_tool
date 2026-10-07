@@ -6,7 +6,7 @@ from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.engine.duel_v2.continuous import kind_count
 from app.modules.card_game.engine.duel_v2.modifiers import add_effect, contribution, deadline
 from app.modules.card_game.engine.duel_v2.state import (
-    alive, damage, discard, energy, energy_max, force_collapse, front_debuff, hero, other, team_order,
+    alive, damage, discard, energy, energy_max, force_collapse, front_debuff, hero, name, other, team_order,
 )
 from app.modules.card_game.engine.duel_v2.summons import summon_front
 
@@ -144,7 +144,8 @@ class Zaowu:
             if hand:
                 card = hand.pop(_rng(c.state).randrange(len(hand)))
                 discard(c.state, foe, card)
-                c.history('鬼郎丸受到伤害：随机弃置对方 1 张手牌。')
+                c.history(f"鬼郎丸受到伤害：{name(c.state, foe)}随机弃置手牌「{card['name']}」。",
+                          target_side=foe, target_id='player', present=True)
         elif item == 'collar' and enemies:
             cid = _rng(c.state).choice(enemies)
             force_collapse(c.state, foe, cid, by=c.side)

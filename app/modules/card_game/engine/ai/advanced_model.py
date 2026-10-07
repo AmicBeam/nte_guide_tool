@@ -288,7 +288,9 @@ def choose_action(state, side='b'):
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
     if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA,'fixed_ten_v1', 'cross_five_grounded_wdl_v1'):
         from app.modules.card_game.engine.duel_v2 import observe
-        return actions[model.select_public_action(observe(state, side, include_previews=False), actions)]
+        fallback = actions[model.select_public_action(observe(state, side, include_previews=False), actions)]
+        from .advanced_search import choose
+        return choose(state, side, model, fallback)
     try:
         values, candidates = encode(state, side, actions)
     except (KeyError, ValueError) as exc:

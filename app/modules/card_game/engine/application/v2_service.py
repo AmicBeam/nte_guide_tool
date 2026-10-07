@@ -553,6 +553,9 @@ def _response(room, player, envelope: dict | None = None, after_seq=None) -> dic
                      'has_replay': has_replay,
                      'replay_code': room.room_code if has_replay else None,
                      'favorited': favorited,
+                     'ai_pending': bool(envelope and room.mode == 'advanced'
+                                        and envelope['game']['phase'] != 'finished'
+                                        and _engine().acting_side(envelope['game']) == 'b'),
                      'members': people}, 'game': game}
 
 
@@ -567,19 +570,19 @@ def get_state(player, after_seq=None) -> dict:
 
 def _advance_ai(game: dict, mode: str) -> dict:
     engine = _engine()
+    if mode == 'advanced':
+        # Advanced actions are individually committed by submit_ai_step so
+        # the client can present each result before requesting the next one.
+        return game
     if mode == 'tutorial':
         from app.modules.card_game.engine.duel_v2.tutorial import run_scripted_opponent
         return run_scripted_opponent(game, engine.apply_action)
-    if mode not in {'solo', 'advanced'}:
+    if mode != 'solo':
         return game
     for _ in range(32):
         if game.get('phase') == 'finished' or engine.acting_side(game) != 'b':
             return game
-        if mode == 'advanced':
-            from app.modules.card_game.engine.ai.advanced_model import choose_action
-            action = choose_action(game, 'b')
-        else:
-            action = engine.choose_action(game, 'b')
+        action = engine.choose_action(game, 'b')
         version = game['version']
         updated = engine.apply_action(game, 'b', action)
         if updated['version'] <= version:
@@ -787,6 +790,14 @@ def start_room(player) -> dict:
 
 
 def submit_action(player, payload: dict) -> dict:
+    return _submit_action(player, payload)
+
+
+def submit_ai_step(player, payload: dict) -> dict:
+    return _submit_action(player, {**payload, 'action': {'type': '_ai_step'}}, ai_step=True)
+
+
+def _submit_action(player, payload: dict, *, ai_step=False) -> dict:
     request_id = payload.get('request_id')
     expected = payload.get('expected_version')
     action = payload.get('action')
@@ -826,9 +837,19 @@ def submit_action(player, payload: dict) -> dict:
             raise DuelV2NotFound('房间已经关闭。')
         if envelope['game']['version'] != expected:
             raise DuelV2Conflict('对局已更新，请刷新后再操作。')
+        if ai_step:
+            if room.mode != 'advanced' or member.side != 'a':
+                raise RuleValidationError('当前房间不能请求高级人机操作。')
+            if envelope['game']['phase'] == 'finished' or _engine().acting_side(envelope['game']) != 'b':
+                return _response(room, player, envelope)
         try:
-            game = _engine().apply_action(envelope['game'], member.side, action)
-            game = _advance_ai(game, room.mode)
+            if ai_step:
+                from app.modules.card_game.engine.ai.advanced_model import choose_action
+                action = choose_action(envelope['game'], 'b')
+                game = _engine().apply_action(envelope['game'], 'b', action)
+            else:
+                game = _engine().apply_action(envelope['game'], member.side, action)
+                game = _advance_ai(game, room.mode)
         except (ValueError, KeyError, TypeError) as exc:
             raise RuleValidationError(str(exc)) from exc
         receipts = [*envelope.get('requests', []),

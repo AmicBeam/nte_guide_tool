@@ -39,12 +39,19 @@ class AdvancedRoomTest(RoomFlowTestCase):
             code = result['room']['room_code']
             action = next(e['action'] for e in game['legal_actions'] if e['action']['type']=='mulligan' and not e['action']['card_ids'])
             result = self._post('/api/duel-v2/action', {'room_code':code,'expected_version':game['version'],'request_id':'ai-mulligan','action':action}, token=self.token)
+            for step in range(40):
+                if not result['room']['ai_pending']:break
+                result=self._post('/api/duel-v2/ai-step',{'room_code':code,'expected_version':result['game']['version'],'request_id':f'opening-step-{step}'},token=self.token)
             game = result['game']
             payload = {'room_code':code,'expected_version':game['version'],'request_id':'ai-turn','action':{'type':'end_turn'}}
             result = self._post('/api/duel-v2/action', payload, token=self.token)
             self.assertTrue(model.called)
             again = self._post('/api/duel-v2/action', payload, token=self.token)
             self.assertEqual(result['game']['version'],again['game']['version'])
+            if result['room']['ai_pending']:
+                previous=result['game']['version']
+                result=self._post('/api/duel-v2/ai-step',{'room_code':code,'expected_version':previous,'request_id':'explicit-ai-step'},token=self.token)
+                self.assertEqual(result['game']['version'],previous+1)
             state = self._get('/api/duel-v2/state',token=self.token)
             self.assertEqual(state['room']['mode'],'advanced')
             room = self.repository.room_by_code(code)
@@ -70,6 +77,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
             code=result['room']['room_code'];game=result['game']
             result=self._post('/api/duel-v2/action',{'room_code':code,'expected_version':game['version'],
                 'request_id':'joint-opening','action':{'type':'mulligan','card_ids':[]}},token=self.token)
+            result=self._post('/api/duel-v2/ai-step',{'room_code':code,'expected_version':result['game']['version'],'request_id':'joint-ai-opening'},token=self.token)
             game=result['game']
             events=[e for e in game['presentation']['events'] if e.get('type')=='mulligan' and e.get('side')=='b']
             self.assertEqual(len(events),1)
@@ -81,14 +89,18 @@ class AdvancedRoomTest(RoomFlowTestCase):
             self.assertEqual(len(raw['card_ids']),3)
 
     @unittest.skipUnless(importlib.util.find_spec('numpy') and (Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models/starter.npz').exists(), 'bundled serving models and NumPy required')
-    def test_real_models_finish_all_presets_and_save_replays(self):
+    @patch('app.modules.card_game.engine.ai.advanced_search.choose',side_effect=lambda state,side,model,fallback:fallback)
+    def test_real_models_finish_all_presets_and_save_replays(self, _planner):
         from app.modules.card_game.engine.duel_v2 import choose_action
         for deck in ('starter','weave-rush','quick-rush'):
             result=self._post('/api/duel-v2/start',{'mode':'advanced','ai_deck':deck},token=self.token)
             code=result['room']['room_code']
-            for index in range(180):
+            for index in range(800):
                 game=result['game']
                 if game['phase']=='finished':break
+                if result['room']['ai_pending']:
+                    result=self._post('/api/duel-v2/ai-step',{'room_code':code,'expected_version':game['version'],'request_id':f'{deck}-ai-{index}'},token=self.token)
+                    continue
                 room=self.repository.room_by_code(code)
                 state=self.storage.load(room.id)['game']
                 action=choose_action(state,'a')

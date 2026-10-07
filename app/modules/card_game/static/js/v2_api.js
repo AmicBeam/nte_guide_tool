@@ -305,6 +305,17 @@
     return request('/leave', { method: 'POST', body: {} });
   }
 
+  function advanceAi(params) {
+    return request('/ai-step', {
+      method: 'POST',
+      body: {
+        room_code: params.roomCode,
+        request_id: params.requestId,
+        expected_version: params.expectedVersion,
+      },
+    });
+  }
+
   function formatReplayTime(value) {
     if (!value) {
       return '';
@@ -845,6 +856,7 @@
     selectBuild: selectBuild,
     reorderBuilds: reorderBuilds,
     sendAction: sendAction,
+    advanceAi: advanceAi,
     leaveRoom: leaveRoom,
     formatReplayTime: formatReplayTime,
     escapeHtml: escapeHtml,

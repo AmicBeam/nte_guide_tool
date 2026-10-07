@@ -33,6 +33,58 @@
     ctx.opponent = function () { return ctx.viewer() === 'b' ? 'a' : 'b'; };
     ctx.playHistory = ctx.playHistory || [];
     ctx.playerGeneration = ctx.playerGeneration || 0;
+    ctx.aiStepTimer = 0;
+    ctx.aiStepFailed = false;
+
+    function scheduleAiStep() {
+      if (ctx.replayMode || document.hidden || ctx.aiStepTimer || ctx.aiStepFailed || interactionLocked() ||
+          !ctx.room || !ctx.room.ai_pending || !ctx.game) return;
+      ctx.aiStepTimer = window.setTimeout(runAiStep, 0);
+    }
+
+    async function runAiStep() {
+      ctx.aiStepTimer = 0;
+      if (ctx.replayMode || document.hidden || interactionLocked() || !ctx.room || !ctx.room.ai_pending || !ctx.game) return;
+      const roomCode = ctx.room.room_code;
+      const request = ctx.pendingAiRequest || {
+        roomCode: roomCode,
+        expectedVersion: Number(ctx.game.version),
+        requestId: V2.makeRequestId(),
+      };
+      ctx.pendingAiRequest = request;
+      ctx.busy = true;
+      setConnection('busy', '对手思考中');
+      if (ctx.nodes.waitChip) ctx.nodes.waitChip.textContent = '对手思考中';
+      try {
+        const payload = await V2.advanceAi(request);
+        if (!ctx.room || ctx.room.room_code !== roomCode) return;
+        ctx.pendingAiRequest = null;
+        await applyEnvelope(payload, { force: true });
+      } catch (error) {
+        if (error && error.status === 409) {
+          ctx.pendingAiRequest = null;
+          await refreshState({ force: true });
+        } else {
+          ctx.aiStepFailed = true;
+          V2.showBanner(ctx.banner, (error && error.message || '人机操作未完成。') + ' 请刷新重试。', 'error');
+          const retry = document.createElement('button');
+          retry.type = 'button';
+          retry.textContent = '重试这一步';
+          retry.addEventListener('click', function () {
+            ctx.aiStepFailed = false;
+            V2.showBanner(ctx.banner, '', '');
+            scheduleAiStep();
+          });
+          ctx.banner.appendChild(retry);
+          setConnection('error', '人机操作未完成');
+        }
+      } finally {
+        ctx.busy = false;
+        if (ctx.pendingEnvelope && !interactionLocked()) flushPendingEnvelope();
+        else if (ctx.game) alignAuthoritative();
+        scheduleAiStep();
+      }
+    }
 
     function setConnection(state, label) {
       const chip = ctx.nodes.connectionChip;
@@ -131,6 +183,10 @@
     if (!ctx.player) bindPlayer();
 
     function resetRoomPresentation() {
+      if (ctx.aiStepTimer) window.clearTimeout(ctx.aiStepTimer);
+      ctx.aiStepTimer = 0;
+      ctx.pendingAiRequest = null;
+      ctx.aiStepFailed = false;
       ctx.seenCursor = null;
       ctx.displayGame = null;
       ctx.playHistory = [];
@@ -592,6 +648,7 @@
       return consumePresentation(payload, { initial: firstGame || options.initial, instant: options.instant }).then(function () {
         if (!ctx.playingEvents) alignAuthoritative();
         if (ctx.pendingEnvelope && !interactionLocked()) flushPendingEnvelope();
+        scheduleAiStep();
       });
     }
 
@@ -694,6 +751,7 @@
         if (ctx.pendingEnvelope && !interactionLocked()) flushPendingEnvelope();
         else if (ctx.game) alignAuthoritative();
         else renderRoomChrome();
+        scheduleAiStep();
       }
       if (retryMulligan) return submitEntry(retryMulligan, { retryingMulligan: true });
     }
@@ -732,8 +790,10 @@
         if (!payload.room && !payload.game) {
           renderEmpty('没有进行中的房间', '可以从主页开始人机、创建房间或输入房间码加入。');
         }
-        V2.showBanner(ctx.banner, ctx.banner.dataset.kind === 'error' && interactionLocked() ? ctx.banner.textContent : '', ctx.banner.dataset.kind === 'error' ? 'error' : '');
-        setConnection('live', '已同步');
+        if (!ctx.aiStepFailed) {
+          V2.showBanner(ctx.banner, ctx.banner.dataset.kind === 'error' && interactionLocked() ? ctx.banner.textContent : '', ctx.banner.dataset.kind === 'error' ? 'error' : '');
+          setConnection('live', '已同步');
+        }
       } catch (error) {
         if (error && error.status === 404) {
           ctx.room = null;

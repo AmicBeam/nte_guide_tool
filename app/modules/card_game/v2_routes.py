@@ -128,6 +128,12 @@ def action():
     return service.submit_action(g.current_player, _body())
 
 
+@blueprint.post('/ai-step')
+@_api
+def ai_step():
+    return service.submit_ai_step(g.current_player, _body())
+
+
 @blueprint.get('/replays')
 @_api
 def list_replays():

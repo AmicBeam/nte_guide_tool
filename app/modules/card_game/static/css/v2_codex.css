@@ -151,6 +151,11 @@ body:has(.v2-codex-page) .shell {
   color: #d7cbb3;
 }
 
+.v2-codex-card.is-mechanism {
+  grid-column: 1 / -1;
+  border-color: rgba(232, 201, 136, 0.45);
+}
+
 .v2-codex-card .v2-frame-stats {
   margin-left: auto;
 }

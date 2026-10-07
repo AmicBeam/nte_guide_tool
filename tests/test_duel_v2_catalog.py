@@ -38,6 +38,25 @@ STATIC_FILES = {
 
 
 class DuelV2CatalogTest(unittest.TestCase):
+    def test_character_mechanisms_are_reference_cards_outside_the_build_pool(self):
+        catalog = get_catalog(include_test_characters=False)
+        characters = {c['id']: c for c in catalog['characters']}
+        expected = {'anhunqu': '噩梦', 'canhong': '蚀心与鸩火', 'adler': '诛恶护持'}
+        for owner, name in expected.items():
+            card, = characters[owner]['mechanisms']
+            self.assertEqual((card['name'], card['type'], card['character_id']), (name, 'mechanism', owner))
+            self.assertNotIn(card['id'], CARDS)
+            self.assertNotIn(card['id'], {c['id'] for c in catalog['cards']})
+            bad = copy.deepcopy(STARTER_DECKS[-1])
+            bad['card_ids'][0] = card['id']
+            with self.assertRaises(ValueError):
+                validate_deck(bad)
+        self.assertEqual(characters['canhong']['mechanisms'][0]['reference_names'], ['蚀心', '鸩火'])
+        self.assertEqual(characters['adler']['awakened_passive'],
+                         '施加「诛恶护持」，持续 2 个己方回合。移除所有对方角色的护盾。')
+        catalog['characters'][0]['passive'] = 'mutated'
+        self.assertNotEqual(get_catalog()['characters'][0]['passive'], 'mutated')
+
     def test_exports_four_characters_in_fixed_order(self) -> None:
         self.assertEqual(list(CHARACTERS), list(CATALOG_ORDER))
         self.assertGreaterEqual(len(CATALOG_ORDER), 11)

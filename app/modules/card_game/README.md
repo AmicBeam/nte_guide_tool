@@ -712,3 +712,12 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 
 
 单队适应复用恢复栈辅助函数的显式`keys`／`learning_keys`，只收学习侧完整局经验并更新指定队伍；其余队在准备阶段价值校准后冻结。单队有界编排仍须同源码CUDA、价值和全网络留出预检，辅助函数不提供网站批准。残虹本回合加攻是否已用进入浊燃与统一恢复观察，避免新限次机制在观察中缺失。验证：`tests.test_duel_v2_murk_encoding`及`tests.test_duel_v2_recovery_round`的单队调度、拒绝冻结侧样本和独立闸门用例。
+
+
+### 2026-10-07 阿德勒终结与机制说明卡
+
+阿德勒终结改为施加2个己方回合诛恶护持，并即时移除全部对方角色现有护盾。规则和边界见完整手册，旧即时伤害与返能被替换。三名角色的私有持续伤害说明通过角色目录的`mechanisms`字段展示，末尾说明卡不进入`CARDS`或构筑；图鉴与对局关联小卡共用同一数据，蚀心／鸩火别名去重。机制词典只保留通用持续伤害定义。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_continuous_cast tests.test_duel_v2_catalog tests.test_duel_v2_zone_status`；`.venv/bin/python -m unittest tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_mechanisms.test.cjs tests/js/duel_v2_ranged.test.cjs tests/js/duel_v2_hand_face.test.cjs`。规则修改不覆盖此前冻结评估或自动重绑模型。
+
+本轮验收：48 项 Python 与 7 项 JavaScript 测试通过；真实图鉴末尾说明、私有词条移出和牌桌关联小卡（蚀心／鸩火去重）均验证，前端 error 日志为空。开发服务仍监听 `0.0.0.0:5001`，本机和当前局域网 `192.168.10.3:5001` 均返回 200。

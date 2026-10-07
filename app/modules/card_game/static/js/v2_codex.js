@@ -72,6 +72,7 @@ async function bootstrapCodex() {
     }
     const portrait = V2.characterAsset(character, 'portrait') || V2.characterAsset(character, 'avatar');
     const owned = V2.cardsForCharacter((catalog && catalog.cards) || [], character.id);
+    const displayed = owned.concat(character.mechanisms || []);
     body.innerHTML = (
       '<section class="v2-codex-hero">' +
         '<div class="v2-codex-hero-art">' + V2.imageMarkup(portrait, character.name, 'v2-portrait') + '</div>' +
@@ -84,9 +85,9 @@ async function bootstrapCodex() {
           '<p>' + V2.escapeHtml(V2.characterUltimateLabel(character)) + '：' + V2.cardDescriptionMarkup(character.awakened_passive || '尚未提供') + '</p>' +
         '</div>' +
       '</section>' +
-      '<section class="v2-codex-cards">' + owned.map(function (card) {
+      '<section class="v2-codex-cards">' + displayed.map(function (card) {
         return (
-          '<article class="v2-codex-card"' + (card.tooltip ? ' title="' + V2.escapeAttr(card.tooltip) + '"' : '') + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '>' +
+          '<article class="v2-codex-card' + (card.type === 'mechanism' ? ' is-mechanism' : '') + '"' + (card.tooltip ? ' title="' + V2.escapeAttr(card.tooltip) + '"' : '') + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '>' +
             '<div class="v2-stat-row">' +
               V2.cardTypeChip(card.type, card.terminal) +
               V2.cardDerivedChip(card) +

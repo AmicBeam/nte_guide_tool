@@ -66,6 +66,18 @@ def _character_public(raw: dict[str, Any]) -> dict[str, Any]:
     for extra in ('everness_id', 'ultimate', 'faction', 'resource_name', 'turn_snapshots'):
         if extra in raw:
             public[extra] = deepcopy(raw[extra])
+    mechanisms = []
+    for item in _require_list(raw.get('mechanisms', []), '角色机制说明'):
+        item = _require_mapping(item, '机制说明卡片')
+        if any(not isinstance(item.get(key), str) or not item[key] for key in ('id', 'name', 'description')):
+            raise ValueError('机制说明卡片必须有 id、name 和 description')
+        names = _require_list(item.get('reference_names', [item['name']]), '机制引用名')
+        if not names or any(not isinstance(name, str) or not name for name in names):
+            raise ValueError('机制引用名必须为非空文本')
+        mechanisms.append({**deepcopy(item), 'character_id': raw['id'], 'type': 'mechanism',
+                           'reference_names': deepcopy(names)})
+    if mechanisms:
+        public['mechanisms'] = mechanisms
     return public
 
 

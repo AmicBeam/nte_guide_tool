@@ -1,0 +1,50 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const clone = value => JSON.parse(JSON.stringify(value));
+const apiSource = fs.readFileSync('app/modules/card_game/static/js/v2_api.js', 'utf8');
+function fixture() {
+  return {characters: [
+    {id:'anhunqu',name:'安魂曲',mechanisms:[{id:'mechanism-nightmare',character_id:'anhunqu',type:'mechanism',name:'噩梦',description:'上限 10 层。'}]},
+    {id:'canhong',name:'残虹',mechanisms:[{id:'mechanism-etch-venom',character_id:'canhong',type:'mechanism',name:'蚀心与鸩火',reference_names:['蚀心','鸩火'],description:'各自上限 10 层。'}]},
+    {id:'adler',name:'阿德勒',mechanisms:[{id:'mechanism-guard',character_id:'adler',type:'mechanism',name:'诛恶护持',description:'无视护盾。'}]},
+  ],cards:[{id:'C02',name:'渊底之吻',type:'battle',character_id:'canhong'}]};
+}
+async function load(catalog=fixture()) {
+  const context = vm.createContext({window:{localStorage:{getItem:()=>''}},
+    fetch:async()=>({ok:true,status:200,headers:{get:()=>null},json:async()=>catalog})});
+  vm.runInContext(apiSource, context);
+  const api=context.window.NTE_V2;
+  await api.getCatalog();
+  return api;
+}
+test('character and card descriptions resolve private mechanisms alongside real cards', async()=>{
+  const api=await load();
+  assert.deepEqual(clone(api.referencedCards({name:'残虹',description:'施加「蚀心」。终结施加「鸩火」。获得「渊底之吻」。'})).map(c=>c.id), ['mechanism-etch-venom','C02']);
+  assert.equal(api.referencedCards({name:'A04',description:'施加「噩梦」。'})[0].type,'mechanism');
+  assert.equal(api.referencedCards({name:'阿德勒',description:'施加「诛恶护持」。'})[0].name,'诛恶护持');
+  assert.equal(api.cardTypeLabel('mechanism'),'机制说明');
+  assert.equal(api.cardFrameStat({type:'mechanism'}),'');
+});
+test('reference cards do not recursively reference themselves and escape explanation text', async()=>{
+  const api=await load();
+  assert.equal(api.referencedCards({id:'mechanism-etch-venom',name:'蚀心与鸩火',description:'「蚀心」与「鸩火」。'}).length,0);
+  assert.equal(api.cardDescriptionMarkup('<img onerror="bad">'), '&lt;img onerror=&quot;bad&quot;&gt;');
+});
+test('codex appends the character explanation after the owned skill cards', async()=>{
+  const catalog=fixture();
+  catalog.characters[2].passive='护盾即攻击';catalog.characters[2].awakened_passive='施加「诛恶护持」。';
+  catalog.cards.push({id:'D08',name:'正心',type:'form',character_id:'adler',description:'浊燃强化。'});
+  const api=await load(catalog);
+  const nodes={};
+  const node=id=>nodes[id]||(nodes[id]={innerHTML:'',listeners:{},addEventListener(kind,fn){this.listeners[kind]=fn;},querySelectorAll:()=>[],focus(){},getBoundingClientRect:()=>({})});
+  const context=vm.createContext({window:{NTE_V2:{...api,ensureLogin:()=>true,getCatalog:async()=>catalog}},
+    document:{getElementById:node}});
+  vm.runInContext(fs.readFileSync('app/modules/card_game/static/js/v2_codex.js','utf8'),context);
+  await new Promise(resolve=>setImmediate(resolve));
+  nodes['v2-codex-nav'].listeners.click({target:{closest:()=>({getAttribute:()=> 'adler'})}});
+  const html=nodes['v2-codex-body'].innerHTML;
+  assert.ok(html.indexOf('正心') < html.indexOf('is-mechanism'));
+  assert.match(html,/is-mechanism[\s\S]*机制说明[\s\S]*诛恶护持/);
+});

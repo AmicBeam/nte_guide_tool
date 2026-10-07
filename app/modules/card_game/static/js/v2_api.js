@@ -57,6 +57,11 @@
         if (typeof character[key] === 'string' && character[key]) entry[key] = character[key];
       });
       characterAssets[character.id] = entry;
+      (character.mechanisms || []).forEach(function (mechanism) {
+        [mechanism.name].concat(mechanism.reference_names || []).forEach(function (name) {
+          if (name) cardsByName[name] = Object.assign({}, mechanism);
+        });
+      });
     });
   }
 
@@ -78,6 +83,7 @@
     battle: '战斗',
     tactic: '战术',
     form: '武备',
+    mechanism: '机制说明',
   };
 
   function getToken() {
@@ -374,9 +380,11 @@
     let match;
     while ((match = regex.exec(text))) {
       const name = match[1];
-      if (name !== card.name && !seen.has(name) && cardsByName[name]) {
-        result.push(Object.assign({}, cardsByName[name]));
-        seen.add(name);
+      const referenced = cardsByName[name];
+      const identity = referenced && (referenced.id || referenced.card_id || name);
+      if (referenced && name !== card.name && (!card.id || referenced.id !== card.id) && !seen.has(identity)) {
+        result.push(Object.assign({}, referenced));
+        seen.add(identity);
       }
     }
     return result;

@@ -6,7 +6,7 @@ from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.engine.duel_v2.continuous import apply_dot, burn_present, deal_one, living_espers
 from app.modules.card_game.engine.duel_v2.modifiers import add_effect, condition, contribution
 from app.modules.card_game.engine.duel_v2.state import (
-    alive, damage, front_debuff, hero, other, shield, team_order,
+    alive, damage, front_debuff, hero, name, other, shield, team_order,
 )
 
 
@@ -98,11 +98,19 @@ class Adler:
 
     @staticmethod
     def on_ultimate(c):
-        from app.modules.card_game.engine.duel_v2.continuous import distribute
-        distribute(c.state, other(c.side), 5, source=f'{c.side}:{c.cid}', by=c.side,
-                   reason='阿德勒的终结', continuous=False)
-        if burn_present(c.state) and alive(c.state, c.side, c.cid):
-            c.energy(1, reason='浊燃，阿德勒的终结')
+        _guard(c, 2)
+        foe = other(c.side)
+        for cid in ['player', *team_order(c.state, foe)]:
+            target = c.state['sides'][foe] if cid == 'player' else hero(c.state, foe, cid)
+            removed = int(target.get('shield') or 0)
+            if not removed:
+                continue
+            before = {'hp': target['hp'], 'shield': removed}
+            target['shield'] = 0
+            c.history(f"阿德勒的终结：移除{name(c.state, foe, cid)}的 {removed} 点护盾。",
+                      target_side=foe, target_id=cid, before=before,
+                      after={'hp': target['hp'], 'shield': 0}, shield_removed=removed)
+        c.history('发动终结：施加「诛恶护持」，持续 2 个己方回合，并移除所有对方角色的护盾。')
 
     @staticmethod
     def redirect_overflow(c, current=None, loss=0, absorbed=0, target_id=None, **_data):

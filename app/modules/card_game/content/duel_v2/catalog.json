@@ -297,7 +297,14 @@
       "ultimate": {
         "kind": "instant"
       },
-      "faction": "异象管理局禁制机动队四队"
+      "faction": "异象管理局禁制机动队四队",
+      "mechanisms": [
+        {
+          "id": "mechanism-nightmare",
+          "name": "噩梦",
+          "description": "上限 10 层。施加方回合结束时，随机分配等同于层数的伤害给对方存活异能者。施加方下个回合开始时层数减半，向下取整；归零后消失。减半是倒计时衰减，不触发回合开始效果。"
+        }
+      ]
     },
     {
       "id": "canhong",
@@ -314,7 +321,18 @@
       "ultimate": {
         "kind": "instant"
       },
-      "faction": "无"
+      "faction": "无",
+      "mechanisms": [
+        {
+          "id": "mechanism-etch-venom",
+          "name": "蚀心与鸩火",
+          "reference_names": [
+            "蚀心",
+            "鸩火"
+          ],
+          "description": "两种不同的持续伤害，各自上限 10 层，无持续时间限制。施加方回合结束时，每有 5 层造成 1 点伤害，随机分配给对方存活异能者。"
+        }
+      ]
     },
     {
       "id": "zaowu",
@@ -362,12 +380,19 @@
       "portrait": "/static/images/characters/portrait/阿德勒.webp",
       "role": "护盾即攻击，诛恶护持",
       "passive": "己方回合开始时，阿德勒获得 2 点护盾；若已有浊燃，改为 3 点。阿德勒的攻击力等同于其护盾值。",
-      "awakened_passive": "造成 5 点伤害，随机分配给对方异能者。若已有浊燃，阿德勒回复 1 点能量。",
+      "awakened_passive": "施加「诛恶护持」，持续 2 个己方回合。移除所有对方角色的护盾。",
       "everness_id": 1033,
       "ultimate": {
         "kind": "instant"
       },
-      "faction": "伊波恩古董店"
+      "faction": "伊波恩古董店",
+      "mechanisms": [
+        {
+          "id": "mechanism-guard",
+          "name": "诛恶护持",
+          "description": "不可叠加。施加方回合结束时，随机对一名对方存活异能者造成 1 点无视护盾的伤害。持续时间由施加效果决定，按施加方回合结束次数递减。"
+        }
+      ]
     },
     {
       "id": "haiyue",

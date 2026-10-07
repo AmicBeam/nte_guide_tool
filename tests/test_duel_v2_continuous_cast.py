@@ -303,6 +303,68 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertEqual(attack_value(adler, s, 'b'), adler['shield'])
         self.assertEqual(adler['shield'], 2)
 
+    def test_adler_ultimate_strips_all_enemy_shields_and_guard_ticks_twice(self):
+        from copy import deepcopy
+        from app.modules.card_game.engine.duel_v2.summons import summon_front
+        from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
+        from app.modules.card_game.engine.duel_v2.state import energy_max
+        for burn in (False, True):
+            with self.subTest(burn=burn):
+                s = self.game()
+                end_turn(s, 'a')
+                summon = summon_front(s, 'a', name='护盾召唤物', attack=0, hp=4)
+                s['sides']['a']['shield'] = 4
+                for h in s['sides']['a']['characters'].values():
+                    h['shield'] = 3
+                ally_shields = {cid: h['shield'] for cid, h in s['sides']['b']['characters'].items()}
+                if burn:
+                    front_debuff(s, 'a')['burn'] = {'left': 2, 'by': 'b', 'stacks': 1}
+                hero(s, 'b', 'adler')['energy'] = energy_max(hero(s, 'b', 'adler'))
+                s['sides']['b']['ap'] = 0
+                hp = sum(h['hp'] for h in s['sides']['a']['characters'].values())
+                opening, seq = capture_public_board(s), s['event_seq']
+                s['_public_board'] = deepcopy(opening)
+                s = apply_action(s, 'b', {'type': 'ultimate', 'character_id': 'adler'})
+                self.assertEqual((s['sides']['b']['ap'], hero(s, 'b', 'adler')['energy']), (0, 0))
+                self.assertEqual(sum(h['hp'] for h in s['sides']['a']['characters'].values()), hp)
+                self.assertEqual(s['sides']['a']['shield'], 0)
+                self.assertTrue(all(h['shield'] == 0 for h in s['sides']['a']['characters'].values()))
+                self.assertEqual({cid: h['shield'] for cid, h in s['sides']['b']['characters'].items()}, ally_shields)
+                self.assertEqual(front_debuff(s, 'a')['dots']['guard']['left'], 2)
+                events = [e for e in observe(s, 'b')['presentation']['events'] if e['seq'] > seq]
+                replay = replay_public_board(opening, events)
+                self.assertEqual(replay['sides']['a']['shield'], 0)
+                self.assertTrue(all(h['shield'] == 0 for h in replay['sides']['a']['characters']))
+                self.assertFalse(any(e['type'] == 'damage' for e in events))
+                # Isolate the periodic effect and prove later shields do not absorb it.
+                front_debuff(s, 'a').pop('burn', None)
+                for h in s['sides']['a']['characters'].values():
+                    h['shield'] = 3
+                s = clone_state(json.loads(json.dumps(s)))
+                start = s['event_seq']
+                end_turn(s, 'b')
+                hits = [e for e in s['events'] if e['seq'] > start and e['type'] == 'damage'
+                        and e.get('source') == 'b:adler']
+                self.assertEqual(len(hits), 1)
+                self.assertNotEqual(hits[0]['target'], f'a:{summon}')
+                self.assertEqual(hits[0]['before']['shield'], hits[0]['after']['shield'])
+                self.assertEqual(sum(h['hp'] for h in s['sides']['a']['characters'].values()), hp - 1)
+                self.assertEqual(front_debuff(s, 'a')['dots']['guard']['left'], 1)
+                end_turn(s, 'a')
+                end_turn(s, 'b')
+                self.assertEqual(sum(h['hp'] for h in s['sides']['a']['characters'].values()), hp - 2)
+                self.assertNotIn('guard', front_debuff(s, 'a')['dots'])
+
+    def test_adler_ultimate_refreshes_existing_guard_without_stacking(self):
+        from app.modules.card_game.engine.duel_v2.state import energy_max
+        s = self.game()
+        end_turn(s, 'a')
+        apply_dot(s, 'a', 'guard', by='b', source_cid='adler', stacks=1, duration=3)
+        hero(s, 'b', 'adler')['energy'] = energy_max(hero(s, 'b', 'adler'))
+        s = apply_action(s, 'b', {'type': 'ultimate', 'character_id': 'adler'})
+        guard = front_debuff(s, 'a')['dots']['guard']
+        self.assertEqual((guard['stacks'], guard['left'], guard['source']), (1, 2, 'b:adler'))
+
     def test_zaowu_bonus_floors_per_kind(self):
         s = self.game()
         front_debuff(s, 'b')['burn'] = {'left': 2, 'by': 'a', 'stacks': 1}

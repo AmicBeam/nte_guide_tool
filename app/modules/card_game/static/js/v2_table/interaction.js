@@ -96,11 +96,6 @@
 
     function hoverCardMarkup(card) {
       card = V2.handCardFace(card);
-      if (card.type === 'mechanism') {
-        return '<article class="v2-hover-card is-mechanism"><div class="v2-stat-row">' +
-          V2.cardTypeChip(card.type) + '</div><h2>' + V2.escapeHtml(card.name) + '</h2>' +
-          V2.cardDescriptionHtml(card.description) + '</article>';
-      }
       if (card.selection_kind === 'character') {
         return '<article class="v2-hover-card is-character"><div class="v2-hover-art">' +
           V2.imageMarkup(card.portrait || card.avatar, card.name, 'v2-portrait') + '</div><h2>' +
@@ -110,7 +105,7 @@
       const portrait = card.portrait || V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'portrait')
         || V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'avatar');
       return (
-        '<article class="v2-hover-card"' + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '>' +
+        '<article class="v2-hover-card' + (card.type === 'mechanism' ? ' is-mechanism' : '') + '"' + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '>' +
           '<div class="v2-hover-art">' + V2.imageMarkup(portrait, card.name, 'v2-portrait') + V2.cardFrameStat(card) + '</div>' +
           V2.cardCostBadge(card) +
           '<div class="v2-stat-row">' + V2.cardTypeChip(card.type, card.terminal) +

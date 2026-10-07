@@ -152,7 +152,6 @@ body:has(.v2-codex-page) .shell {
 }
 
 .v2-codex-card.is-mechanism {
-  grid-column: 1 / -1;
   border-color: rgba(232, 201, 136, 0.45);
 }
 

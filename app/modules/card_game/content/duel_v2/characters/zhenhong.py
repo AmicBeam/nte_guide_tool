@@ -3,7 +3,7 @@ from copy import deepcopy
 from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.content.duel_v2.characters.common import draw_owned_card
 from app.modules.card_game.engine.duel_v2.state import (
-    add_atk_buff, alive, damage, discard, finished, hero, other, team_order,
+    alive, damage, discard, finished, hero, other, team_order,
 )
 from app.modules.card_game.engine.duel_v2.deferred import enqueue
 
@@ -60,6 +60,10 @@ class Zhenhong:
 
     @staticmethod
     def on_surplus(c, **_data):
+        if finished(c.state) or not alive(c.state, c.side, c.cid):
+            return
+        # User tabletop mechanism 「独行」, 2026-10-07. Count the trigger,
+        # even if the queued attack later becomes invalid.
         c.character['surplus_passive_triggers'] = int(c.character.get('surplus_passive_triggers', 0)) + 1
         from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
         add_effect(c.character, 'zhenhong.surplus_attack', 'attack.panel', 1,
@@ -69,7 +73,10 @@ class Zhenhong:
         add_effect(c.character, 'zhenhong.surplus_damage_limit', 'damage.limit', 1, op='set',
                    source_entity_id=c.entity_id, source_key='passive', label='真红伤害限制', show_marker=False,
                    stacking='refresh', expiry=deadline(c.state, c.side, 1, 'turn_start'))
-        c.history('己方触发盈蓄，真红直到下个己方回合开始时攻击 +1，单次至多受到 1 点伤害，将发起额外攻击。')
+        c.history('己方触发盈蓄，真红触发「独行」：直到下个己方回合开始时攻击 +1，单次至多受到 1 点伤害，将发起额外攻击。')
+        c.heal(c.character['max_hp'], reason='「独行」触发')
+        if finished(c.state):
+            return
         enqueue(c, 'surplus')
         if c.character.get('shape') == 'R07':
             foe = other(c.side)
@@ -81,16 +88,15 @@ class Zhenhong:
 
     @staticmethod
     def on_deferred_action(c, action):
+        if action.get('kind') != 'surplus':
+            return
         from app.modules.card_game.content.duel_v2.registry import fire
         c.character['extra_attacks'] = int(c.character.get('extra_attacks', 0)) + 1
-        c.operation['skip_combat_harmony'] = action.get('kind') == 'surplus'
-        if action.get('kind') == 'ultimate_end':
-            c.apply_effect('zhenhong.expiry_energy', 'rule.gain_energy', True, op='forbid',
-                           clear_on=('operation_end', 'down'), label='终结末次攻击能量限制', show_marker=False)
+        c.operation['skip_combat_harmony'] = True
         c.operation['support'] = True
         c.operation['support_notified'] = True
         fire(c, 'on_support', actor_id=c.cid)
-        c.history('真红发起额外攻击。')
+        c.history('「独行」：真红发起额外攻击。')
         c.sortie()
 
     @staticmethod
@@ -126,7 +132,16 @@ class Zhenhong:
     def on_effect_expired(c, effect, **_data):
         if (effect['definition_id'] == 'status.ultimate'
                 and effect.get('source_entity_id') == c.entity_id):
-            enqueue(c, 'ultimate_end')
+            # Natural expiry only; leaving the front or going down never fires
+            # this hook. 「角色」 includes the player and front summons.
+            foe = other(c.side)
+            targets = [cid for cid in c.state['sides'][foe]['characters']
+                       if alive(c.state, foe, cid)] + ['player']
+            for cid in targets:
+                if finished(c.state):
+                    break
+                damage(c.state, foe, cid, 3, source=f'{c.side}:{c.cid}',
+                       reason='真红终结自然结束')
 
     @staticmethod
     def on_ultimate_end(c):
@@ -144,7 +159,7 @@ class Zhenhong:
     @staticmethod
     def battle_frame(c, attack, shield):
         if c.card and c.card['card_id'] == 'R06':
-            count = int(c.character.get('extra_attacks', 0))
+            count = int(c.character.get('surplus_passive_triggers', 0))
             return attack + count, shield + count
         return attack, shield
 

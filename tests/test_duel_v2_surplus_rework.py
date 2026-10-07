@@ -112,14 +112,14 @@ class SurplusReworkTest(unittest.TestCase):
                 self.assertFalse(s['sides']['a']['used'].get('instant'))
                 self.assertEqual(s['sides']['a']['ap'],0)
 
-    def test_growth_battle_counts_only_extra_attacks_and_survives_down(self):
-        s=self.game();h=hero(s,'a','zhenhong');h['extra_attacks']=3
-        damage(s,'a','zhenhong',99);self.assertEqual(h['extra_attacks'],3)
+    def test_growth_battle_counts_solitary_triggers_and_survives_down(self):
+        s=self.game();h=hero(s,'a','zhenhong');h['surplus_passive_triggers']=3;h['extra_attacks']=8
+        damage(s,'a','zhenhong',99);self.assertEqual(h['surplus_passive_triggers'],3)
         h.update(hp=5,down_turns=0)
         s=self.play(s,'R06');h=hero(s,'a','zhenhong')
         self.assertEqual(h['shield'],3)
         self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],5)
-        self.assertEqual(h['extra_attacks'],3)
+        self.assertEqual(h['surplus_passive_triggers'],3)
 
     def test_downed_response_discards_only_owned_cards_and_retains_other_cards(self):
         s=self.game();self.hold(s,'R05');self.hold(s,'R02');other=self.hold(s,'I01')
@@ -153,13 +153,16 @@ class SurplusReworkTest(unittest.TestCase):
         move_out(s,'a','zhenhong')
         self.assertEqual(observe(s,'a',include_previews=False)['sides']['a']['hand'][0]['card_id'],'R05')
 
-    def test_ultimate_stays_then_finishes_before_natural_expiry_without_energy(self):
+    def test_ultimate_stays_then_natural_expiry_deals_all_character_damage(self):
         s=self.game();h=hero(s,'a','zhenhong');h['energy']=5;s['sides']['a']['front']='zhenhong'
         s=apply_action(s,'a',dict(type='ultimate',character_id='zhenhong'))
         begin_turn(s,'a');self.assertEqual(s['sides']['a']['front'],'zhenhong')
         self.assertEqual(hero(s,'a','zhenhong')['ultimate_turns'],1)
+        before=s['sides']['b']['hp'];seq=s['event_seq']
         begin_turn(s,'a');h=hero(s,'a','zhenhong')
-        self.assertEqual((h['extra_attacks'],h['energy'],h['harmony']),(1,0,2))
+        self.assertEqual((h.get('extra_attacks',0),h['energy'],h['harmony']),(0,0,1))
+        self.assertEqual(s['sides']['b']['hp'],before-3)
+        self.assertFalse(any(e['type']=='attack' for e in s['events'] if e['seq']>seq))
         self.assertFalse(h['awakened']);self.assertIsNone(s['sides']['a']['front'])
 
     def test_voluntary_switch_ends_ultimate_without_final_attack(self):

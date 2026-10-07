@@ -9,18 +9,16 @@ from app.modules.card_game.engine.duel_v2.state import hero, card_instance
 
 class ZhenhongHarmonyTest(unittest.TestCase):
     def test_passive_only_skips_harmony_and_keeps_energy_share(self):
-        for kind, harmony in (('surplus', 1), ('ultimate_end', 2)):
-            with self.subTest(kind=kind):
-                s = fixtures.SurplusReworkTest().game()
-                hero(s, 'a', 'zhenhong')['harmony'] = 1
-                c = operation(s, 'a', 'zhenhong')
-                enqueue(c, kind)
-                finish_operation(s)
-                h = hero(s, 'a', 'zhenhong')
-                self.assertEqual((h['harmony'], h['energy'], h['extra_attacks']), (harmony, 2 if kind == 'surplus' else 0, 1))
-                self.assertEqual(hero(s, 'a', 'yi')['energy'], 1)
-                event = next(e for e in reversed(s['events']) if e['type'] == 'resource')
-                self.assertEqual(event['harmony_delta'], 0 if kind == 'surplus' else 1)
+        s = fixtures.SurplusReworkTest().game()
+        hero(s, 'a', 'zhenhong')['harmony'] = 1
+        c = operation(s, 'a', 'zhenhong')
+        enqueue(c, 'surplus')
+        finish_operation(s)
+        h = hero(s, 'a', 'zhenhong')
+        self.assertEqual((h['harmony'], h['energy'], h['extra_attacks']), (1, 2, 1))
+        self.assertEqual(hero(s, 'a', 'yi')['energy'], 1)
+        event = next(e for e in reversed(s['events']) if e['type'] == 'resource')
+        self.assertEqual(event['harmony_delta'], 0)
 
     def test_next_normal_or_battle_attack_still_gains_harmony(self):
         for battle in (False, True):

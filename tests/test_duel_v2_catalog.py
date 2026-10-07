@@ -41,7 +41,7 @@ class DuelV2CatalogTest(unittest.TestCase):
     def test_character_mechanisms_are_reference_cards_outside_the_build_pool(self):
         catalog = get_catalog(include_test_characters=False)
         characters = {c['id']: c for c in catalog['characters']}
-        expected = {'anhunqu': '噩梦', 'canhong': '蚀心与鸩火', 'adler': '诛恶护持'}
+        expected = {'zhenhong': '独行', 'anhunqu': '噩梦', 'canhong': '蚀心与鸩火', 'adler': '诛恶护持'}
         for owner, name in expected.items():
             card, = characters[owner]['mechanisms']
             self.assertEqual((card['name'], card['type'], card['character_id']), (name, 'mechanism', owner))

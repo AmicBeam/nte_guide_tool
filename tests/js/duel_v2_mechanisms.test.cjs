@@ -48,3 +48,25 @@ test('codex appends the character explanation after the owned skill cards', asyn
   assert.ok(html.indexOf('正心') < html.indexOf('is-mechanism'));
   assert.match(html,/is-mechanism[\s\S]*机制说明[\s\S]*诛恶护持/);
 });
+
+test('solitary resolves from the passive and R06 and renders with ordinary card art', async()=>{
+  const catalog=JSON.parse(fs.readFileSync('app/modules/card_game/content/duel_v2/catalog.json','utf8'));
+  catalog.characters.forEach(c=>(c.mechanisms||[]).forEach(m=>Object.assign(m,{type:'mechanism',character_id:c.id})));
+  const api=await load(catalog);
+  const hero=catalog.characters.find(c=>c.id==='zhenhong');
+  const r06=catalog.cards.find(c=>c.id==='R06');
+  assert.equal(api.referencedCards({name:hero.name,description:hero.passive})[0].id,'mechanism-solitary');
+  const mechanism=api.referencedCards(r06)[0];
+  assert.equal(mechanism.name,'独行');
+  assert.match(mechanism.description,/回复真红的全部生命/);
+  const source=fs.readFileSync('app/modules/card_game/static/js/v2_table/interaction.js','utf8');
+  const renderer=source.slice(source.indexOf('    function hoverCardMarkup('),source.indexOf('    function hoverCharacterMarkup('));
+  const context=vm.createContext({V2:api,render:null});
+  vm.runInContext(renderer+'\nrender = hoverCardMarkup;',context);
+  const markup=context.render(mechanism);
+  assert.match(markup,/v2-hover-card is-mechanism/);
+  assert.match(markup,/v2-hover-art[\s\S]*真红.webp/);
+  assert.match(markup,/v2-card-owner[^>]*>真红/);
+  assert.match(markup,/机制说明/);
+  assert.doesNotMatch(markup,/v2-frame-stats|v2-cost-badge/);
+});

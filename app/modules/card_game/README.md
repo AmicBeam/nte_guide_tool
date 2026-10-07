@@ -786,3 +786,10 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 ### 2026-10-07 用户指定真红队翳配牌
 
 普通真红预组与高级人机服务配牌统一为 I01／I03／I04／I08 各 2 张。`recovery_model` 支持在独立 `serving.json` 的对应模型项中指定 `serving_build`、`serving_build_sha256` 与非空 `serving_build_request`；原来源清单与配牌哈希仍严格核验，服务配牌须合法且保持原四人顺序。原数值权重与训练清单不改写，旧局的构筑身份校验仍要求重新开局。回归见 `tests.test_duel_v2_recovery_serving` 与 `tests.test_duel_v2_experimental_advanced`。
+
+
+### 2026-10-07 真红独行与机制卡展示
+
+盈蓄异能触发「独行」并回复至当前生命上限；R06 从现有独行触发计数（`surplus_passive_triggers`）读取加成，终结自然到期改为对所有对方角色造成 3 点伤害。提前结束不触发，完整规则见手册。图鉴机制卡接在普通卡后共用网格，牌桌关联小卡共用普通卡立绘区和缩放；仅展示资料，不进卡池。新规则请重新开局，旧模型与冻结记录保留原身份。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_solitary tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_zhenhong_initial tests.test_duel_v2_zhenhong_harmony tests.test_duel_v2_surplus_rework tests.test_duel_v2_catalog`；模拟对拍单独运行 `tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_mechanisms.test.cjs tests/js/duel_v2_hand_face.test.cjs`。

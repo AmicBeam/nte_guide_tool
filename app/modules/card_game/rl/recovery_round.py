@@ -14,6 +14,13 @@ import time
 from .cross_schedule import ROSTER, learning_schedule, matrix_schedule, coverage
 
 
+def learning_keys(config):
+    keys = tuple(config.get('learning_keys', ROSTER))
+    if not keys or len(set(keys)) != len(keys) or not set(keys) <= set(ROSTER):
+        raise ValueError('Distinct known learning keys required')
+    return keys
+
+
 def write(path, data):
     path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + '.tmp')
@@ -69,21 +76,26 @@ def versions(folder):
 
 
 def jobs_for(models, decks, base, deadline, *, pure=True, cycle=0, mirrors=True, report=None,
-             simulations=32, historical=None,teacher_mode='network',covered_value_source=None):
+             simulations=32, historical=None,teacher_mode='network',covered_value_source=None,
+             keys=None):
+    selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
     plan = learning_schedule()
     if mirrors:
         plan += [dict(left=k, right=k, first=f) for k in ROSTER for f in ('a', 'b')]
     jobs = []
     for i, item in enumerate(plan):
+        sides = [s for s, key in (('a', item['left']), ('b', item['right'])) if key in selected]
+        if not sides:
+            continue
         j = dict(item, id=f'cycle-{cycle}-{i}', seed=base+i//2, pure=pure,
                  policies={'a': (str(models), item['left']), 'b': (str(models), item['right'])},
                  decks={'a': decks[item['left']], 'b': decks[item['right']]},
-                 deadline=deadline, training=not pure, train_sides=['a', 'b'],
+                 deadline=deadline, training=not pure, train_sides=sides,
                  q_scale='natural_wdl', value_precheck=report, simulations=simulations,teacher_mode=teacher_mode,
                  covered_value_source=covered_value_source,
                  gumbel_candidates=16, terminal_horizon=0 if teacher_mode in ('covered_terminal','covered_expert') else 3, max_actions=800)
         if historical:
-            for learner in ('a', 'b'):
+            for learner in sides:
                 clone = deepcopy(j); enemy = 'b' if learner == 'a' else 'a'
                 clone['id'] += learner; clone['train_sides'] = [learner]
                 clone['policies'][enemy] = (str(historical), clone['policies'][enemy][1])
@@ -241,10 +253,13 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
 
 
 def compare_jobs(candidate, reference, decks, seed, deadline, roots, *, search=False, reports=None,
-                 simulations=32,teacher_mode='network',covered_value_source=None):
+                 simulations=32,teacher_mode='network',covered_value_source=None,keys=None):
     """Compare both versions against identical frozen opponents in both seats/initiatives."""
     jobs = []
+    selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
     for k, key in enumerate(ROSTER):
+        if key not in selected:
+            continue
         for replica in range(roots):
             foe = ROSTER[(k+replica) % len(ROSTER)]
             for learner in ('a', 'b'):
@@ -293,10 +308,11 @@ def comparison(pool, jobs, folder):
 
 
 def gate_decision(pure, confirmed, health, *, no_gain, search=None, search_confirm=None,
-                  minimum_gain=.02):
+                  minimum_gain=.02,keys=None):
     """Fail before promotion; unchanged policies never become new best."""
     reasons = []
-    for key in ROSTER:
+    selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
+    for key in selected:
         h = health[key]; p = pure[key]; c = confirmed[key]
         if not h['finite'] or not h['gradient'] or h['coverage'] != 1 or not h['policy_rows']:
             reasons.append(dict(key=key, reason='learning_health'))
@@ -309,7 +325,7 @@ def gate_decision(pure, confirmed, health, *, no_gain, search=None, search_confi
     if reasons: return dict(decision='p0', reasons=reasons)
     # Each promoted team needs its own confirmed gain; another unchanged team
     # must not discard that gain. Unqualified teams retain their reference.
-    improved = [k for k in ROSTER if pure[k]['changed'] > 0 and confirmed[k]['changed'] > 0 and
+    improved = [k for k in selected if pure[k]['changed'] > 0 and confirmed[k]['changed'] > 0 and
                    pure[k]['candidate']-pure[k]['reference'] >= minimum_gain*pure[k]['games'] and
                    confirmed[k]['candidate']-confirmed[k]['reference'] >= minimum_gain*confirmed[k]['games']]
     qualified = [k for k in improved if search is not None and search_confirm is not None
@@ -371,13 +387,16 @@ def update_batch(nets, opts, pools, jobs, games, rng, config, deadline, out):
     from . import recovery_runtime as rt
     from .episode_replay import dump_episode
     health = {}; rows_by_key = {}
+    selected = learning_keys(config)
+    if any(job['policies'][s][1] not in selected for job in jobs for s in job['train_sides']):
+        raise ValueError('Frozen opponent cannot contribute learning rows')
     for pool in pools.values(): pool.begin_fresh_batch()
     for job, game in zip(jobs,games):
         data = dump_episode(Path(out) / 'episodes' / f"{job['id']}.json.gz",job,game)
         for key in set(job['policies'][s][1] for s in job['train_sides']):
             rows = [r for r in data['rows'] if r['key'] == key]
             pools[key].add(job['id'],dict(rows=rows))
-    for key in ROSTER:
+    for key in selected:
         stats = []; pool = pools[key]
         rows_by_key[key] = [r for g in games for r in g['rows'] if r['key']==key]
         for rows,refs,sampling in pool.policy_pass_batches(rng,passes=config['policy_passes'],deadline=deadline):

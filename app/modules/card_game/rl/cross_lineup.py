@@ -96,6 +96,7 @@ def encode(view, actions):
     extras += [row[k] / 10 for k in EXTRA_CHAR for group in heroes for row in group]
     extras += [v for side in order for v in murk._zone_extra(view['sides'][side])]
     extras += [murk._mirage(view['sides'][side]) for side in order]
+    extras += [murk._dot_attack_used(view['sides'][side], view['turn']) for side in order]
     physical_counts=np.zeros(len(CARD_IDS),dtype=np.float32)
     for card in own['hand']:
         face=card.get('hand_face') or {}

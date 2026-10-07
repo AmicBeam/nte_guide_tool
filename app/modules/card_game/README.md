@@ -703,3 +703,6 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_continuous_cast tests.test_duel_v2_catalog tests.test_duel_v2_zone_status`；模拟路径单独运行 `.venv/bin/python -m unittest tests.test_duel_v2_simulation`。
 
 本轮上述规则 42 项与模拟 3 项通过，真实图鉴确认异能限次与浊燃词条；`tests.test_duel_v2_hooks` 的角色包清单断言仍因额外教学角色失败，修改前同样复现。开发服务监听 `0.0.0.0:5001`，本机与当前局域网 `192.168.10.3:5001` 均返回 200。
+
+
+单队适应复用恢复栈辅助函数的显式`keys`／`learning_keys`，只收学习侧完整局经验并更新指定队伍；其余队在准备阶段价值校准后冻结。单队有界编排仍须同源码CUDA、价值和全网络留出预检，辅助函数不提供网站批准。残虹本回合加攻是否已用进入浊燃与统一恢复观察，避免新限次机制在观察中缺失。验证：`tests.test_duel_v2_murk_encoding`及`tests.test_duel_v2_recovery_round`的单队调度、拒绝冻结侧样本和独立闸门用例。

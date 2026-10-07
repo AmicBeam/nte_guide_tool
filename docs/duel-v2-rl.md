@@ -167,3 +167,8 @@ python scripts/train_duel_v2.py --train --sample-public --deck starter \
 `recovery_round.py` 负责五套起点、每批全量策略行通行、非行动方价值行、三段独立闸门、能力保持／确认对照、两代恢复与原截止监督。`recovery_capacity.py` 仅在隔离副本检验真实训练教材容量和按成对种子留出，不把拟合成绩写作强度。`--resume --run` 仅恢复原输出与配置的有效轮次边界，原进程须退出、原学习截止未过；不重新授权时长。
 
 纯网络与带搜索的冻结评估通过 `full_cycle_experiment.evaluate_job` 的显式recovery分支复用遥测、状态摘要重放和公开隐私过滤；恢复数值没有服务批准。启动、阶段、CPU／CUDA和完整报告边界以[训练手册](duel-v2-public-training.md)及[恢复协议](duel-v2-policy-recovery.md)为准。验证：`tests.test_duel_v2_recovery_round`，其中价值-only在已有Adam动量时也不得改变策略数组或动作分数。
+
+
+### 单队恢复辅助与残虹限次观察
+
+`recovery_round`的调度、批次更新和独立选择支持显式学习队子集，`recovery_capacity.fit(keys=...)`按同一子集检验完整搜索教材和独立留出。默认仍是五队；单队编排必须完成训练手册规定的同源码预检，不借此绕过正式启动保护。`murk_lineup`和`cross_lineup`新增双方残虹本回合持续伤害加攻已用状态；它来自公开信息，实体重新编号不改变编码。数值迁移需按具名列映射首层并将新增列置零。

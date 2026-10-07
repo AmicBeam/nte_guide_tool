@@ -21,6 +21,30 @@ class Zero:
 
 
 class MurkEncodingTest(unittest.TestCase):
+    def test_dot_attack_limit_is_visible_in_both_contracts_without_entity_id_features(self):
+        from copy import deepcopy
+        from app.modules.card_game.engine.duel_v2.continuous import apply_dot
+        from app.modules.card_game.rl import cross_lineup
+        state = self.game()
+        apply_dot(state, 'b', 'etch', by='a', source_cid='canhong', stacks=1)
+        for viewer in ('a', 'b'):
+            view = observe(state, viewer, include_previews=False)
+            renamed = deepcopy(view)
+            for team in renamed['sides'].values():
+                for h in team['characters']:
+                    old = h['entity_id']; h['entity_id'] = old + '-renamed'
+                    key = f'canhong_dot_attack_turn:{old}'
+                    if key in team.get('used', {}):
+                        team['used'][key + '-renamed'] = team['used'].pop(key)
+            for contract in (runtime, cross_lineup):
+                encoded, _ = contract.encode(view, [])
+                again, _ = contract.encode(renamed, [])
+                np.testing.assert_array_equal(encoded, again)
+                names = all_features() if contract is runtime else cross_lineup.all_features()
+                own = 0 if viewer == 'a' else 1
+                self.assertEqual(encoded[names.index(f'murk:dot_attack_used:{own}')], 1)
+                self.assertEqual(encoded[names.index(f'murk:dot_attack_used:{1-own}')], 0)
+
     def game(self):
         build = deck()
         return new_game(seed=7, first_side='a', skip_mulligan=True, decks={'a': build, 'b': build})

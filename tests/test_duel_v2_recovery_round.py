@@ -14,6 +14,35 @@ from scripts.train_duel_v2_current_round import preset_decks, validate_round_lau
 
 
 class RecoveryRoundTest(unittest.TestCase):
+    def test_single_learner_schedule_keeps_opponents_out_of_training_rows(self):
+        decks = preset_decks()
+        jobs = round.jobs_for('models', decks, 100, float('inf'), pure=False, keys=['murk'])
+        self.assertEqual(len(jobs), 10)
+        self.assertEqual({j['first'] for j in jobs}, {'a', 'b'})
+        for job in jobs:
+            self.assertTrue(job['train_sides'])
+            self.assertTrue(all(job['policies'][s][1] == 'murk' for s in job['train_sides']))
+        compared = round.compare_jobs('new', 'old', decks, 200, float('inf'), 5, keys=['murk'])
+        self.assertEqual(len(compared), 40)
+        self.assertEqual({j['key'] for j in compared}, {'murk'})
+        self.assertEqual({j['policies']['b' if j['learner']=='a' else 'a'][1] for j in compared}, set(ROSTER))
+        for invalid in ([], ['murk', 'murk'], ['unknown']):
+            with self.assertRaises(ValueError):
+                round.jobs_for('models', decks, 100, float('inf'), keys=invalid)
+
+    def test_single_learner_rejects_frozen_opponent_rows_before_update(self):
+        jobs = round.jobs_for('models', preset_decks(), 100, float('inf'), pure=False)
+        with self.assertRaisesRegex(ValueError, 'Frozen opponent'):
+            round.update_batch({}, {}, {}, jobs, [], None, {'learning_keys':['murk']}, float('inf'), 'unused')
+
+    def test_single_learner_gate_does_not_require_learning_health_from_frozen_teams(self):
+        health = {'murk':dict(finite=True, gradient=True, coverage=1, policy_rows=8)}
+        row = dict(legal_play=10, plays=5, candidate=6, reference=4, games=8, changed=2)
+        result = round.gate_decision({'murk':row}, {'murk':row}, health, no_gain=False,
+            search={'murk':row}, search_confirm={'murk':row}, keys=['murk'])
+        self.assertEqual(result['promoted_keys'], ['murk'])
+        self.assertEqual(set(result['retained_keys']), set(ROSTER)-{'murk'})
+
     def test_full_value_calibration_preserves_policy_and_never_selects_on_heldout(self):
         import torch
         from app.modules.card_game.engine.duel_v2 import new_game

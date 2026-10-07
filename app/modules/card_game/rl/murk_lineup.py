@@ -31,6 +31,7 @@ def feature_names():
 def extra_names():
     names = [f'murk:{k}:{s}' for s in (0, 1) for k in ('burn_stacks', *DOT_KINDS)]
     names += [f'murk:mirage:{s}' for s in (0, 1)]
+    names += [f'murk:dot_attack_used:{s}' for s in (0, 1)]
     return names
 
 
@@ -105,6 +106,14 @@ def _mirage(team):
     return 0.0
 
 
+def _dot_attack_used(team, turn):
+    for hero in team.get('characters') or []:
+        if hero.get('id') == 'canhong':
+            return float((team.get('used') or {}).get(
+                f"canhong_dot_attack_turn:{hero['entity_id']}") == turn)
+    return 0.0
+
+
 def encode(view, actions):
     view, actions = _adapt(view, actions)
     state, candidates = encode_league(view, actions, contract=sys.modules[__name__])
@@ -112,6 +121,7 @@ def encode(view, actions):
     order = (viewer, 'b' if viewer == 'a' else 'a')
     extra = [value for side in order for value in _zone_extra(view['sides'][side])]
     extra += [_mirage(view['sides'][side]) for side in order]
+    extra += [_dot_attack_used(view['sides'][side], view['turn']) for side in order]
     result = np.concatenate((state, np.asarray(extra, dtype=np.float32)))
     if result.shape != (len(all_features()),) or not np.isfinite(result).all():
         raise ValueError('Invalid murk observation')

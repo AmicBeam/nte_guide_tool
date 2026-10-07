@@ -58,17 +58,17 @@ def label_metrics(net, rows, device):
                 candidate_aliases=candidate_alias_metrics(rows))
 
 
-def fit(models,jobs,games,config,deadline,*,steps=200,held_jobs=None,held_games=None):
+def fit(models,jobs,games,config,deadline,*,steps=200,held_jobs=None,held_games=None,keys=None):
     import torch
     from . import recovery_runtime as rt
-    from .recovery_round import versions
+    from .recovery_round import versions, learning_keys
     if type(steps) is not int or not 2<=steps<=400: raise ValueError('Bounded isolation steps required')
     if not jobs or len(jobs)!=len(games):raise ValueError('Training job/result counts differ')
     if (held_jobs is None)!=(held_games is None):raise ValueError('Both heldout jobs and results required')
     if held_jobs is not None and (not held_jobs or len(held_jobs)!=len(held_games)):
         raise ValueError('Heldout job/result counts differ')
     signature=versions(models);result={}
-    for key in ROSTER:
+    for key in learning_keys({'learning_keys': keys} if keys is not None else {}):
         groups={}
         for job,game in zip(jobs,games):
             if not game['complete'] or not job['training']:raise ValueError('Training complete games required')

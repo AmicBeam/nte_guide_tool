@@ -2,7 +2,7 @@
 from copy import deepcopy
 import unittest
 from app.modules.card_game.content.duel_v2 import STARTER_DECKS
-from app.modules.card_game.engine.duel_v2 import new_game, apply_action, observe
+from app.modules.card_game.engine.duel_v2 import new_game, apply_action, observe, acting_side, legal_actions
 from app.modules.card_game.engine.duel_v2.state import hero, front_debuff
 from app.modules.card_game.engine.ai.zhenhong_guide import recommend
 
@@ -66,3 +66,42 @@ class ZhenhongGuideTest(unittest.TestCase):
             if mode=='ultimate':hero(s,'a','zhenhong')['awakened']=True
             r=recommend(s,'a',a,seconds=0 if mode=='budget' else 5)
             self.assertEqual(r['selected'],a);self.assertFalse(r['changed'])
+
+
+class ZhenhongOpeningGuideTest(unittest.TestCase):
+    def game(self, cards, side='a'):
+        deck=next(d for d in STARTER_DECKS if d['id']=='zhenhong')
+        s=new_game(seed=725,first_side=side,skip_mulligan=False,decks={'a':deck,'b':deck})
+        while acting_side(s)!=side:s=apply_action(s,acting_side(s),dict(type='mulligan',card_ids=[]))
+        team=s['sides'][side];team['deck']+=team['hand'];team['hand']=[]
+        for key in cards:
+            c=next(c for c in team['deck'] if c['card_id']==key);team['deck'].remove(c);team['hand'].append(c)
+        self.assertEqual(len(team['hand']),5)
+        return s
+    def repair(self,s,side,keys):
+        ids=[c['instance_id'] for c in s['sides'][side]['hand'] if c['card_id'] in keys][:3]
+        baseline=dict(type='mulligan',card_ids=ids);self.assertIn(baseline,legal_actions(s,side))
+        before=deepcopy(s);r=recommend(s,side,baseline)
+        self.assertEqual(s,before);self.assertIn(r['selected'],legal_actions(s,side));self.assertEqual(r['worlds'],0)
+        return r
+    def test_fangs_and_zero_battle_are_both_retained_in_both_seats(self):
+        for side in ('a','b'):
+            s=self.game(['I01','Z04','R02','Y03','Y06'],side)
+            r=self.repair(s,side,('I01','Z04','Y06'))
+            self.assertEqual(r['selected']['card_ids'],[c['instance_id'] for c in s['sides'][side]['hand'] if c['card_id']=='Y06'])
+            after=apply_action(s,side,r['selected']);held={c['instance_id'] for c in after['sides'][side]['hand']}
+            self.assertTrue(all(c['instance_id'] in held for c in s['sides'][side]['hand'] if c['card_id'] in ('I01','Z04')))
+    def test_prefer_free_fangs_but_allow_redundant_fangs_to_be_swapped(self):
+        s=self.game(['I04','I03','I01','Z03','R02']);r=self.repair(s,'a',('I04','I03','I01'))
+        self.assertEqual({c['card_id'] for c in r['protected']},{'I04','Z03'})
+        outgoing={c['card_id'] for c in s['sides']['a']['hand'] if c['instance_id'] in r['selected']['card_ids']}
+        self.assertEqual(outgoing,{'I03','I01'})
+    def test_draw_backup_is_kept_when_core_is_missing(self):
+        for keys,backup in [(['I01','R01','R02','Y03','Y06'],'R01'),(['Z04','Y02','R02','Y03','Y06'],'Y02')]:
+            s=self.game(keys);r=self.repair(s,'a',tuple(keys[:3]));self.assertIn(backup,{c['card_id'] for c in r['protected']})
+    def test_backup_is_optional_when_both_primary_pieces_are_present(self):
+        s=self.game(['I01','Z04','R01','Y03','Y06']);r=self.repair(s,'a',('R01','Y03','Y06'))
+        self.assertFalse(r['changed'])
+    def test_no_candidate_does_not_invent_a_keep_or_read_opponent(self):
+        s=self.game(['R02','R04','R06','Y03','Y06']);r=self.repair(s,'a',('R02','R04','R06'))
+        self.assertFalse(r['changed']);self.assertEqual(r['protected'],[])

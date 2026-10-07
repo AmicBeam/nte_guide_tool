@@ -7,9 +7,29 @@ from copy import deepcopy
 from hashlib import sha256
 import time
 
-VERSION = 'zhenhong_setup_v1'
+VERSION = 'zhenhong_setup_v2'
 MAX_PLANS = 24
 SECONDS = .75
+
+
+def _opening_keep(hand, baseline):
+    """Protect the setup core; repair only the model's outgoing selection."""
+    outgoing = set(baseline['card_ids'])
+    fang_order = {'I04': 0, 'I03': 1, 'I01': 2, 'I02': 3}
+    fangs = [c for c in hand if c.get('character_id') == 'yi' and c['card_id'] in fang_order]
+    battles = [c for c in hand if c.get('character_id') == 'zero' and c['type'] == 'battle']
+    backups = [c for c in hand if c['card_id'] in ('R01', 'Y02')]
+    protected = []
+    if fangs:
+        protected.append(min(fangs, key=lambda c: (fang_order[c['card_id']], c['instance_id'] in outgoing)))
+    if battles:
+        protected.append(min(battles, key=lambda c: c['instance_id'] in outgoing))
+    # Draw/search is a backup when one of the two primary pieces is absent.
+    if backups and (not fangs or not battles):
+        protected.append(min(backups, key=lambda c: (c['instance_id'] in outgoing, c['card_id'] != 'Y02')))
+    keep_ids = {c['instance_id'] for c in protected}
+    action = dict(type='mulligan', card_ids=[cid for cid in baseline['card_ids'] if cid not in keep_ids])
+    return action, [dict(instance_id=c['instance_id'], card_id=c['card_id']) for c in protected]
 
 
 def _features(state, side):
@@ -65,13 +85,20 @@ def recommend(state, side, baseline, *, seed=None, seconds=SECONDS, max_plans=MA
     result = dict(version=VERSION, selected=deepcopy(baseline), changed=False, plans=0,
                   worlds=0, reason='not_applicable', seconds=0.)
     own = state['sides'][side]; red = own['characters'].get('zhenhong')
-    if (state['phase'] != 'playing' or acting_side(state) != side or not red
+    if (state['phase'] not in ('playing', 'mulligan') or acting_side(state) != side or not red
             or red['hp'] <= 0 or red['awakened'] or 'yi' not in own['characters']):
         return result
     start = time.monotonic(); end = start + max(0., seconds)
     legal = [a for a in legal_actions(state, side) if a['type'] != 'concede']
     if baseline not in legal:
         raise ValueError('Guide baseline must be legal')
+    if state['phase'] == 'mulligan':
+        selected, protected = _opening_keep(own['hand'], baseline)
+        if selected not in legal:
+            raise ValueError('Guide mulligan repair must be legal')
+        result.update(selected=selected, changed=selected != baseline, reason='mulligan_keep_setup',
+                      protected=protected, seconds=time.monotonic()-start)
+        return result
     if seconds <= 0 or max_plans < 1:
         result['reason'] = 'budget'; return result
     if seed is None:

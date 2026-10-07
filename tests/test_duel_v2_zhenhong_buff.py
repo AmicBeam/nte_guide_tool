@@ -184,7 +184,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         begin_turn(s, 'a')
         self.assertIsNone(damage_limit(s, 'a', 'zhenhong'))
 
-    def test_limited_front_does_not_leak_penetration_and_death_clears_effect(self):
+    def test_limited_front_preserves_uncapped_penetration_and_death_clears_effect(self):
         from app.modules.card_game.engine.duel_v2.state import knockdowns
         s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
         self.protect(s, 'b')
@@ -192,9 +192,9 @@ class ZhenhongBuffTest(unittest.TestCase):
         s['sides']['b']['front'] = 'zhenhong'
         hero(s, 'a', 'bohe')['base_attack'] = 20
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'bohe'})
-        self.assertEqual(s['sides']['b']['hp'], 100)
+        self.assertEqual(s['sides']['b']['hp'], 86)
         self.assertEqual(hero(s, 'b', 'zhenhong')['hp'], 5)
-        # A lethal capped hit also has no overkill damage to penetrate.
+        # A lethal capped hit still uses the pre-hit life for overkill.
         s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
         self.protect(s, 'b')
         s['deferred_actions'] = []
@@ -202,13 +202,54 @@ class ZhenhongBuffTest(unittest.TestCase):
         hero(s, 'a', 'bohe')['base_attack'] = 20
         hero(s, 'b', 'zhenhong')['hp'] = 1
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'bohe'})
-        self.assertEqual(s['sides']['b']['hp'], 100)
+        self.assertEqual(s['sides']['b']['hp'], 81)
         self.assertEqual(hero(s, 'b', 'zhenhong')['down_turns'], 3)
         self.assertIsNone(damage_limit(s, 'b', 'zhenhong'))
         hero(s, 'b', 'zhenhong')['hp'] = 0
         knockdowns(s)
         self.assertNotIn('damage_immunity_until', hero(s, 'b', 'zhenhong')['flags'])
         self.assertNotIn('atk_buff_expiring', hero(s, 'b', 'zhenhong')['flags'])
+
+    def test_eight_attack_vs_five_life_limit_preview_and_replay(self):
+        for shield, player_shield, expected_overflow in [(0, 0, 3), (2, 0, 1), (4, 0, 0), (0, 2, 3)]:
+            with self.subTest(shield=shield, player_shield=player_shield):
+                s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
+                self.protect(s, 'b')
+                s['deferred_actions'] = []
+                s['sides']['b'].update(front='zhenhong', hp=30, shield=player_shield)
+                h = hero(s, 'b', 'zhenhong')
+                h.update(hp=5, shield=shield)
+                hero(s, 'a', 'bohe')['base_attack'] = 8
+                opening, seq = capture_public_board(s), s['event_seq']
+                s['_public_board'] = deepcopy(opening)
+                action = {'type': 'attack', 'character_id': 'bohe'}
+                expected_loss = max(0, expected_overflow-player_shield)
+                preview = next(e['preview'] for e in observe(s, 'a')['legal_actions'] if e['action'] == action)
+                self.assertEqual(preview['对手玩家生命变化'], -expected_loss)
+                s = apply_action(s, 'a', action)
+                h = hero(s, 'b', 'zhenhong')
+                self.assertEqual(h['hp'], 5 if shield else 4)
+                self.assertEqual(h['shield'], max(0, shield-1))
+                self.assertEqual(s['sides']['b']['hp'], 30-expected_loss)
+                hits = [e for e in s['events'] if e['seq'] > seq and e['type'] == 'penetration']
+                self.assertEqual([e['amount'] for e in hits], [expected_overflow] if expected_overflow else [])
+                events = [e for e in observe(s, 'a')['presentation']['events'] if e['seq'] > seq]
+                replay = replay_public_board(opening, events)
+                shown = next(h for h in replay['sides']['b']['characters'] if h['id'] == 'zhenhong')
+                self.assertEqual(shown['hp'], h['hp'])
+                self.assertEqual(replay['sides']['b']['hp'], 30-expected_loss)
+
+    def test_ignore_shield_penetrates_before_front_limit(self):
+        s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
+        self.protect(s, 'b')
+        s['deferred_actions'] = []
+        s['sides']['b']['front'] = 'zhenhong'
+        hero(s, 'b', 'zhenhong').update(hp=5, shield=4)
+        hero(s, 'a', 'bohe')['base_attack'] = 6  # M03 adds 2.
+        s = self.play(s, 'M03')
+        self.assertEqual(hero(s, 'b', 'zhenhong')['hp'], 4)
+        self.assertEqual(hero(s, 'b', 'zhenhong')['shield'], 4)
+        self.assertEqual(s['sides']['b']['hp'], 97)
 
     def test_limit_snapshot_live_and_replay_no_external_duration_marker(self):
         s = self.game()

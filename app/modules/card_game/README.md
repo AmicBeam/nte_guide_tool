@@ -823,3 +823,8 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 显式 `guided_online_short_v1` 仅用于用户授权的最长600秒真红在线短测；复用恢复栈完整搜索／终局联合更新，每批新教材通行1遍，并做CUDA／价值／恢复／独立P0检查。原容量失败保持失败，短测不能替代默认完整训练回执。协议、冻结及回传见训练手册；单轮编排和结果放在 `artifacts/rl-evals/<run-id>/`。
 
 `rl/batched_duel/gpu_observation.py` 提供 2,420 列观察的真实 CUDA 编码及直接设备 token 接口，与 254 列候选分别逐列对拍。公开 token 的主机提取仍是过渡适配，完整 GPU 投影和规则搜索未完成。验证：`.venv/bin/python -m unittest tests.test_duel_v2_gpu_observation`；1,600 行编码样本不计为 1,600 个完整对局。
+
+
+### 2026-10-08 限伤与穿透
+
+穿透按前排限伤前的攻击伤害、适用护盾和伤害前生命计算溢出；真红自身仍按单段限伤结算。无护盾时 8 攻薄荷对 5 血真红造成 1 点生命伤害、3 点玩家穿透伤害。预览与回放共用正式引擎，图鉴词条同步。验证：`.venv/bin/python -m unittest tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_solitary tests.test_duel_v2_engine tests.test_duel_v2_shield_stacking`，模拟对拍单独运行 `tests.test_duel_v2_simulation`。

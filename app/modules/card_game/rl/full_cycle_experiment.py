@@ -355,6 +355,11 @@ def evaluate_job(j):
                     root_seed_sha256=digest,policy_source=result['policy_source'],noise=False))
             else:
                 actions,(x,c)=decision(s,side);idx=int(model(*spec).scores(x,c).argmax())
+            guide_audit=None
+            if j.get('guided_policy'):
+                if j.get('runtime')!='recovery':raise ValueError('Guide evaluation requires recovery runtime')
+                from .guided_recovery import apply_guide
+                idx,_,guide_audit=apply_guide(s,side,actions,idx,j,runtime)
             if side=='a' and j.get('keep_all') and s['phase']=='mulligan':idx=next(i for i,a in enumerate(actions) if a['type']=='mulligan' and not a.get('card_ids'))
             tele.before(s,side,actions);action=actions[idx];after=apply_action(s,side,action);tele.after(s,after,action,side)
             from .fixed_lineup_training import track_immune_window
@@ -363,6 +368,7 @@ def evaluate_job(j):
             swapped_after={**after,'sides':{'a':after['sides']['b'],'b':after['sides']['a']}}
             track_immune_window(swapped_before,swapped_after,action,'b' if side=='a' else 'a',immune_metrics['b'],immune_risks['b'])
             actions_log.append(dict(side=side,action=action,turn=s['turn']));events.extend(deepcopy(after.get('events',[])));s=clean(after)
+            if guide_audit is not None:actions_log[-1]['guide']=guide_audit
             for owner in ('a','b'):setup_seen[owner]=setup_seen[owner] or setup_ready(s,owner)
             if j.get('replay'):
                 actions_log[-1]['state_sha256']=hashlib.sha256(json.dumps(s,sort_keys=True,ensure_ascii=False).encode()).hexdigest()

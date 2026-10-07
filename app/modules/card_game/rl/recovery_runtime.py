@@ -167,13 +167,22 @@ def search_game(job):
             if not result['complete']:
                 return dict(complete=False, reason='incomplete_search', rows=[], value_rows=[], episode_actions=[], roots=roots)
             actions = result['actions']; chosen = result['search_choice']
-            rows.append(dict(x=result['x'], c=result['c'], pi=result['pi'], visit_pi=result['visit_pi'],
+            from .guided_recovery import apply_guide
+            chosen, guided, guide_audit = apply_guide(state, actor, actions, chosen, job, runtime, pi=result['pi'])
+            row = dict(x=result['x'], c=result['c'], pi=result['pi'], visit_pi=result['visit_pi'],
                              selected=chosen, side=actor, key=job['policies'][actor][1], step=step,
                              phase=state['phase'], value_actor=1, search_budget=result['simulations'],
                              policy_source=result['policy_source'], search_algorithm='gumbel',
-                             teacher_mode=result.get('teacher_mode','network')))
+                             teacher_mode=result.get('teacher_mode','network'))
+            row.update(guided)
+            if guide_audit is not None: row['guide'] = guide_audit
+            rows.append(row)
             roots.append(dict(step=step, side=actor, chosen=actions[chosen], legal=len(actions),
                               diagnostics=result['root_diagnostics']))
+        if job.get('pure', False) and job.get('guided_policy'):
+            from .guided_recovery import apply_guide
+            chosen, _, audit = apply_guide(state, actor, actions, chosen, job, runtime)
+            roots[-1].update(chosen=actions[chosen], guide=audit)
         trace.append(dict(side=actor, action=actions[chosen]))
         state = clean(apply_action(state, actor, actions[chosen]))
     complete = state['phase'] == 'finished'

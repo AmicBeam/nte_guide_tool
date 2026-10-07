@@ -805,3 +805,8 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 ### 真红辅助完整准备组合（v3，离线）
 
 优先完整检查零战斗牌→翳战斗牌：零蓄满环合，翳入场同时获得兽牙并施加延滞。为该两步与已就绪后半段预留检查预算；条件不足才退回单铺兽牙。留牌相应优先保留零／翳战斗牌组合；没有零战斗牌时仍优先免费兽牙来源。三世界合法性、行动力、付款人和两人存活由正式引擎验证，当前默认网站不开启。
+
+
+### 离线真红指导训练
+
+`rl/guided_recovery.py` 为显式的真红v3辅助教师：保留原Gumbel标签，改变实走时生成声明的混合策略标签，价值仍取真实终局WDL；默认和网站不启用。接入恢复采样及冻结评估，指导版本进入算法指纹。单次配置／产物均放 `artifacts/rl-evals/<run-id>/`，操作和验收见训练手册。验证：`.venv/bin/python -m unittest tests.test_duel_v2_guided_recovery tests.test_duel_v2_zhenhong_guide tests.test_duel_v2_recovery_round`。

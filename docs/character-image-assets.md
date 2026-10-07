@@ -142,3 +142,14 @@ with Image.open('/tmp/nte-character-source.png') as source:
 | 方形头像 | 与立绘同源；另核对 `UI/UI_Icon/AvatarImage/256/player_mingyin_256.png` 的造型 | 立绘原图同上；圆形蒙版头像 SHA256 为 `295d886dbebc847cb86ffdfeaffd5bbcceaef8fd14849a080f5b77da4db324d2` | `app/static/images/characters/avatar/明音凛.webp` | 立绘裁切 `crop=400:400:290:105`，Lanczos 缩至256×256，`cwebp -lossless -m 6` |
 
 输出 WebP SHA256 分别为 `0f6923e70c1001190fc860a8058b0d545bdd940cc0bd151a8c66b27a5eebf776`、`a5bcd73ab2be180213c2cea6273210a7dfdd764ae7636fd2137bc73593a4cc72`。排轴展示头像与立绘，空幕规划器仅使用共享头像。空幕对所有用户开放，排轴权限独立。
+
+
+## 鬼郎丸透明主体（2026-10-08）
+
+用户明确指定 [NTEData 档案图](https://github.com/mc-ctrl/NTEData/blob/d7fe705451f189cec8447d876e6c31db7ed3d9df/UI/UI/VisionExplore/BigArchive/UI_YH_Archive_FileImages_50.png)。上游提交为 `d7fe705451f189cec8447d876e6c31db7ed3d9df`，原图 411×412 RGBA，SHA256 `40d0ac4c9ed28e12909399b38a4ec8e890625aa74683a9b65ea34e0a791e375b`。这是召唤物指定档案图，不是早雾或其他异能者的默认服装；不推断 Nanoka 角色字段。
+
+通过内置 image_gen 执行 `background-extraction`，保留黑色犬形主体、红耳、红色长舌、缠绕部分与相连杆部，移除纸张、印刷条带、文字、白框及外框，输出真实透明 alpha。交付 `app/static/images/characters/portrait/鬼郎丸.webp`，由生成的 1254×1254 RGBA 结果等比缩至 1024×1024，Lanczos，无损 WebP／method=6；不在服务器运行时抠图。输出 SHA256 `d0e3b8a65c9c9f61f77ff011de7dfedf18b267c151d52e24d9aa8616319a2ad1`。鬼郎丸的召唤投影及回放使用该本地路径；其他角色图片不受影响。
+
+使用的内置工具提示词：
+
+> Use case: background-extraction. Edit target: supplied NTEData UI_YH_Archive_FileImages_50.png. Asset: transparent character cutout for the 鬼郎丸 card portrait in a game. Extract ONLY the existing black dog-like creature with red ears, red long tongue, red curled wrapping/tail and the long attached dark staff/pole extending to bottom left. Preserve the original creature identity, pose, proportions, facial features, colors, flat illustrated rendering and all visible subject details exactly. Remove the cream paper, cyan and gray printed bands, all text, white card border and black outside frame completely. Preserve clean anti-aliased original subject edges with actual transparent alpha everywhere else. Keep the entire visible subject and attached staff within the canvas, centered with modest transparent margins, without adding or inventing missing details. Do not redraw or restyle, no text, no shadow, no new backdrop.

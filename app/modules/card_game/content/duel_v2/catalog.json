@@ -309,7 +309,7 @@
         {
           "id": "mechanism-nightmare",
           "name": "噩梦",
-          "description": "上限 10 层。施加方回合结束时，随机分配等同于层数的伤害给对方存活异能者。施加方下个回合开始时层数减半，向下取整；归零后消失。减半是倒计时衰减，不触发回合开始效果。"
+          "description": "上限 10 层。施加方回合结束时，随机分配等同于层数的伤害给对方存活异能者。施加方下个回合开始时层数减半，向下取整；归零后消失。"
         }
       ]
     },
@@ -397,7 +397,7 @@
         {
           "id": "mechanism-guard",
           "name": "诛恶护持",
-          "description": "不可叠加。施加方回合结束时，随机对一名对方存活异能者造成 1 点无视护盾的伤害。持续时间由施加效果决定，按施加方回合结束次数递减。"
+          "description": "不可叠加。施加方回合结束时，随机对一名对方存活异能者造成 1 点无视护盾的伤害。持续时间由施加效果决定。"
         }
       ]
     },
@@ -468,7 +468,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "娜娜莉进入战斗区，作为反击方。响应：己方其他异能者被攻击时。",
+      "description": "响应：己方其他异能者被攻击时，自动使用。",
       "starter_copies": 2,
       "shield": 2,
       "attack": 0,
@@ -523,9 +523,10 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "本回合造成过环合伤害才能打出。对 1 名对方异能者造成 4 点追击伤害。",
+      "description": "瞬发。本回合造成过环合伤害才能打出。对 1 名对方异能者造成 4 点追击伤害。",
       "starter_copies": 0,
-      "require": "harmony_damage"
+      "require": "harmony_damage",
+      "instant": true
     },
     {
       "id": "N06",
@@ -953,7 +954,7 @@
       "type": "tactic",
       "cost": 0,
       "terminal": false,
-      "description": "不消耗行动力。将己方前排返回备战区。响应：己方前排的伊波恩古董店异能者被攻击时。",
+      "description": "不消耗行动力。将己方前排返回备战区。响应：己方前排的伊波恩古董店异能者被攻击时，自动使用。",
       "starter_copies": 2,
       "response": "faction_front_attacked",
       "response_faction": "伊波恩古董店"
@@ -1271,7 +1272,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "复活残虹。若已有不少于 20 层持续伤害，残虹倒地时从牌库或手牌自动使用这张卡。（残虹倒地时也能打出）",
+      "description": "复活残虹。若已有不少于 20 层持续伤害，残虹倒地时从牌库或手牌自动使用这张卡，不消耗行动力。（残虹倒地时也能打出）",
       "starter_copies": 0,
       "attack": 2,
       "hp": 6,
@@ -1407,7 +1408,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "若已有 4 种持续伤害：装备时和己方回合开始时，召唤一只吞噬了随机物品的鬼郎丸，并对其造成 3 点伤害。",
+      "description": "装备时和己方回合开始时，若已施加 4 种持续伤害，召唤一只吞噬了随机物品的鬼郎丸，并对其造成 3 点伤害。",
       "starter_copies": 2,
       "hp": 4,
       "attack": 2
@@ -1645,7 +1646,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。弃掉手中全部真红牌，抽取等量的牌。响应：真红倒地后。",
+      "description": "瞬发。弃掉手中全部真红牌，抽取等量的牌。响应：真红倒地后，自动使用。",
       "effect_id": "R05",
       "source": {
         "character_id": 1076,
@@ -2040,7 +2041,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "交战时，对方异能者攻击造成的溢出伤害也会转移至玩家。响应：薄荷被攻击时。",
+      "description": "交战时，对方异能者攻击造成的溢出伤害也会转移至玩家。响应：薄荷被攻击时，自动使用。",
       "effect_id": "M04",
       "source": {
         "character_id": 1019,
@@ -2197,7 +2198,7 @@
       "cost": 1,
       "terminal": false,
       "response": "self_lethal",
-      "description": "本回合白藏生命不会降到 1 以下。响应：白藏受到致命伤害时。",
+      "description": "本回合白藏生命不会降到 1 以下。响应：白藏受到致命伤害时，自动使用。",
       "effect_id": "B05",
       "source": {
         "character_id": 1023,
@@ -2388,7 +2389,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "响应：小吱被攻击时自动打出。",
+      "description": "响应：小吱被攻击时，自动使用。",
       "effect_id": "Q04",
       "source": {
         "character_id": 1073,
@@ -2490,7 +2491,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "在对方回合获得瞬发。响应：对方回合结束时，若对方前排为空，自动打出。",
+      "description": "在对方回合获得瞬发。响应：对方回合结束时，若对方前排为空，自动使用。",
       "effect_id": "U01",
       "source": {
         "character_id": 1070,
@@ -3067,7 +3068,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "本局延滞每存在 1 回合，随机使 1 名对方异能者攻击 -1，持续 2 个对方回合。",
+      "description": "选择 1 名对方异能者。本局延滞每存在 1 回合，使其攻击 -1，持续 2 个对方回合。",
       "effect_id": "I06",
       "source": {
         "character_id": 1008,
@@ -3174,7 +3175,7 @@
       "cost": 1,
       "terminal": false,
       "response": "ally_attacked",
-      "description": "选择另一名己方异能者，使其获得 4 点护盾。响应：其他己方异能者被攻击时。",
+      "description": "选择另一名己方异能者，使其获得 4 点护盾。响应：其他己方异能者被攻击时，自动使用。",
       "effect_id": "D03",
       "starter_copies": 0,
       "source": {

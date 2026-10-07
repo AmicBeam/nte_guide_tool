@@ -7,6 +7,25 @@ from app.modules.card_game.engine.duel_v2.presentation import capture_public_boa
 
 
 class EffectMarkersTest(unittest.TestCase):
+    def test_pact_is_a_debuff_in_both_views_and_replay_and_clears(self):
+        from app.modules.card_game.engine.duel_v2.context import EffectContext
+        state = new_game(seed=9, first_side='a', skip_mulligan=True)
+        c = EffectContext(state, 'a', 'jiuyuan', {'side': 'a'})
+        c.attach_pact('b', 'zero')
+        for board in (observe(state, 'a'), observe(state, 'b'), capture_public_board(state)):
+            h = next(h for h in board['sides']['b']['characters'] if h['id'] == 'zero')
+            marker = next(m for m in h['effect_markers'] if m['id'] == 'pact')
+            self.assertEqual((marker['name'], marker['kind']), ('枚约', 'debuff'))
+            self.assertTrue(marker['clears_on_down'])
+        hero(state, 'b', 'zero')['flags'].pop('pact')
+        h = next(h for h in capture_public_board(state)['sides']['b']['characters'] if h['id'] == 'zero')
+        self.assertFalse(any(m['id'] == 'pact' for m in h['effect_markers']))
+        c.attach_pact('b', 'zero')
+        hero(state, 'b', 'zero')['hp'] = 0
+        knockdowns(state)
+        h = next(h for h in capture_public_board(state)['sides']['b']['characters'] if h['id'] == 'zero')
+        self.assertFalse(any(m['id'] == 'pact' for m in h['effect_markers']))
+
     def test_character_pending_effect_survives_return_but_clears_on_down(self):
         state = new_game(seed=9, first_side='a', skip_mulligan=True)
         h = hero(state, 'a', 'iloy')

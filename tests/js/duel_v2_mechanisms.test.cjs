@@ -49,7 +49,7 @@ test('codex appends the character explanation after the owned skill cards', asyn
   assert.match(html,/is-mechanism[\s\S]*机制说明[\s\S]*诛恶护持/);
 });
 
-test('solitary resolves from the passive and R06 and renders with ordinary card art', async()=>{
+test('solitary resolves from passive and R06 without portrait or owner in its reference card', async()=>{
   const catalog=JSON.parse(fs.readFileSync('app/modules/card_game/content/duel_v2/catalog.json','utf8'));
   catalog.characters.forEach(c=>(c.mechanisms||[]).forEach(m=>Object.assign(m,{type:'mechanism',character_id:c.id})));
   const api=await load(catalog);
@@ -65,8 +65,28 @@ test('solitary resolves from the passive and R06 and renders with ordinary card 
   vm.runInContext(renderer+'\nrender = hoverCardMarkup;',context);
   const markup=context.render(mechanism);
   assert.match(markup,/v2-hover-card is-mechanism/);
-  assert.match(markup,/v2-hover-art[\s\S]*真红.webp/);
-  assert.match(markup,/v2-card-owner[^>]*>真红/);
+  assert.doesNotMatch(markup,/v2-hover-art|真红.webp|v2-card-owner|<img/);
   assert.match(markup,/机制说明/);
   assert.doesNotMatch(markup,/v2-frame-stats|v2-cost-badge/);
+});
+
+test('summons use their own portrait and pact uses the debuff icon', ()=>{
+  const context=vm.createContext({window:{matchMedia:()=>({matches:false})},
+    document:{getElementById:()=>null},requestAnimationFrame(){}});
+  for (const file of ['v2_api.js','v2_table/helpers.js','v2_table/render.js'])
+    vm.runInContext(fs.readFileSync('app/modules/card_game/static/js/'+file,'utf8'),context);
+  const node={style:{},classList:{toggle(){},remove(){}},setAttribute(){},getAttribute(){},removeAttribute(){},
+    querySelector:()=>null,querySelectorAll:()=>[]};
+  const render=context.window.NTE_V2_TABLE.fillCharacterCard;
+  render(node,{id:'summon_1',summoned:true,name:'鬼郎丸',hp:4,max_hp:4,
+    portrait:'/static/images/characters/portrait/鬼郎丸.webp'},{side:'a',usePortrait:true});
+  assert.match(node.innerHTML,/鬼郎丸.webp/);
+  assert.doesNotMatch(node.innerHTML,/⌛/);
+  render(node,{id:'summon_2',summoned:true,name:'塔吉多',hp:4,max_hp:4},{side:'a',usePortrait:true});
+  assert.match(node.innerHTML,/⌛/);
+  render(node,{id:'zero',name:'零',hp:5,max_hp:5,pact:true,
+    effect_markers:[{id:'pact',name:'枚约',kind:'debuff',description:'清算',clears_on_down:true}]},
+    {side:'b',usePortrait:true});
+  assert.match(node.innerHTML,/v2-effect-icon is-debuff/);
+  assert.doesNotMatch(node.innerHTML,/<span class="">枚约<\/span>/);
 });

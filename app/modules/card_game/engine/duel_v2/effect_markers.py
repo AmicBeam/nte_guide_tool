@@ -12,6 +12,9 @@ def character_effect_markers(character, state=None, side=None):
     from .modifiers import compatibility_flags
     flags = compatibility_flags(character, state, side)
     markers = []
+    if flags.get('pact'):
+        markers.append(_marker('pact', '枚约', '九原终结清算时',
+                               '九原终结对该目标额外造成 2 点伤害，并消耗枚约', kind='debuff'))
     for attribute, value in (character.get('next_damage_resistance') or {}).items():
         markers.append(_marker('next_resistance', attribute + '抗性', '下次受到该属性伤害',
                                f'{attribute}属性伤害抗性 {value:+d}', kind='debuff' if value < 0 else 'buff'))

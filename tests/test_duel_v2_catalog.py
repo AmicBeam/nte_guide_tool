@@ -204,7 +204,7 @@ class DuelV2CatalogTest(unittest.TestCase):
             ['B01', 'B02', 'B06', 'B07', 'B08', 'M01', 'M03', 'M04', 'M07', 'Y02', 'Y03', 'Y04', 'Y06', 'Y07', 'Z03', 'Z04', 'Z05', 'Z08'],
         )
         self.assertTrue(all(1 <= rush['card_ids'].count(card_id) <= 2 for card_id in set(rush['card_ids'])))
-        self.assertIn('反击方', CARDS['N02']['description'])
+        self.assertEqual(CARDS['N02']['description'], '响应：己方其他异能者被攻击时，自动使用。')
         self.assertEqual(CARDS['N03']['description'], '额外造成 1 点追击伤害。')
         self.assertEqual(CARDS['N04']['description'], '本回合己方创生伤害 +1。')
         names = '|'.join(re.escape(character['name']) for character in CHARACTERS.values())

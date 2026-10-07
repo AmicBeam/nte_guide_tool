@@ -2,7 +2,7 @@
 from app.modules.card_game.content.duel_v2.characters.common import set_shape
 from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.engine.duel_v2.state import (
-    alive, damage, finished, front_debuff, hero, other, shuffle, team_order,
+    alive, damage, finished, front_debuff, hero, other, team_order,
 )
 
 
@@ -32,18 +32,16 @@ def _skip(c):
 
 
 def _weaken(c):
-    foe = other(c.side)
-    for _ in range(int(c.state['sides'][c.side].get('delay_turns', 0))):
-        candidates = [cid for cid in team_order(c.state, foe) if alive(c.state, foe, cid) and not hero(c.state, foe, cid).get('summoned')]
-        if not candidates or finished(c.state):
-            break
-        shuffle(c.state, candidates)
-        target = hero(c.state, foe, candidates[0])
-        from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
-        add_effect(target, 'yi.attack_debuff', 'attack.panel', -1, source_entity_id=c.entity_id,
-                   source_key='I06', label='无谓形貌的立身',
-                   expiry=deadline(c.state, foe, 2, 'turn_start'))
-        c.history(f"{target['name']}攻击 -1，持续 2 个对方回合。", target_side=foe, target_id=candidates[0])
+    foe, cid = c.operation['target_id'].split(':', 1)
+    count = int(c.state['sides'][c.side].get('delay_turns', 0))
+    if not count or finished(c.state) or not alive(c.state, foe, cid):
+        return
+    target = hero(c.state, foe, cid)
+    from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
+    add_effect(target, 'yi.attack_debuff', 'attack.panel', -count, source_entity_id=c.entity_id,
+               source_key='I06', label='无谓形貌的立身',
+               expiry=deadline(c.state, foe, 2, 'turn_start'))
+    c.history(f"{target['name']}攻击 -{count}，持续 2 个对方回合。", target_side=foe, target_id=cid)
 
 
 def _weapon_damage(c):
@@ -62,6 +60,7 @@ class Yi:
     text_name = '翳'
     effects = {'I01': _battle, 'I02': _battle, 'I03': _long, 'I04': _free,
                'I05': _skip, 'I06': _weaken, 'I07': set_shape, 'I08': set_shape}
+    target_policies = {'I06': 'living_enemy_esper'}
 
     @staticmethod
     def on_ultimate(c):

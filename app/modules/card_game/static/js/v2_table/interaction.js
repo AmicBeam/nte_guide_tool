@@ -96,6 +96,11 @@
 
     function hoverCardMarkup(card) {
       card = V2.handCardFace(card);
+      if (card.type === 'mechanism') {
+        return '<article class="v2-hover-card is-mechanism"><div class="v2-stat-row">' +
+          V2.cardTypeChip(card.type) + '</div><h2>' + V2.escapeHtml(card.name) + '</h2>' +
+          V2.cardDescriptionHtml(card.description) + '</article>';
+      }
       if (card.selection_kind === 'character') {
         return '<article class="v2-hover-card is-character"><div class="v2-hover-art">' +
           V2.imageMarkup(card.portrait || card.avatar, card.name, 'v2-portrait') + '</div><h2>' +

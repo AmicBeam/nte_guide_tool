@@ -33,8 +33,8 @@ def _rng(state):
 def summon_gulang(c, item):
     kinds = kind_count(c.state, c.side)
     cid = summon_front(c.state, c.side, name='鬼郎丸', attack=kinds, hp=4,
-                       portrait='/static/images/characters/portrait/早雾.webp',
-                       avatar='/static/images/characters/avatar/早雾.webp')
+                       portrait='/static/images/characters/portrait/鬼郎丸.webp',
+                       avatar='/static/images/characters/portrait/鬼郎丸.webp')
     h = hero(c.state, c.side, cid)
     h['flags']['gulang_item'] = item
     h['flavor'] = FLAVOR

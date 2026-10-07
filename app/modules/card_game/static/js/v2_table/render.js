@@ -121,7 +121,7 @@
     if (Number(data.brand) > 0) {
       stats.push({ cls: '', text: '焚印 ' + data.brand });
     }
-    if (data.pact) {
+    if (data.pact && !(data.effect_markers || []).some(function (marker) { return marker.id === 'pact'; })) {
       stats.push({ cls: '', text: '枚约' });
     }
     const attackBonus = (Number(data.atk_buff) || 0) + (Number(data.form_attack) || 0);
@@ -149,7 +149,7 @@
     const protectionLabel = damageLimited ? '单次至多受到 ' + data.damage_limit + ' 点伤害' : '免疫伤害';
     node.innerHTML = (damageImmune || damageLimited ? '<svg class="v2-immunity-frame' +
       (damageLimited ? ' v2-damage-limit-frame' : '') + '" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="' + protectionLabel + '"><path d="M8 1 H92 Q99 1 99 8 V98 Q90 102 50 106 Q10 102 1 98 V8 Q1 1 8 1 Z"/></svg>' : '') +
-      '<div class="v2-character-art' + (actions.length && !mobileCard ? ' has-ultimate' : '') + '">' + (data.summoned ? '<div class="v2-summon-art" aria-label="召唤物">⌛</div>' : V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar')) +
+      '<div class="v2-character-art' + (actions.length && !mobileCard ? ' has-ultimate' : '') + '">' + (data.summoned && !portrait ? '<div class="v2-summon-art" aria-label="召唤物">⌛</div>' : V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar')) +
       vitalsHtml + (mobileCard ? '' : actions.join('')) + '</div>' +
       '<div class="v2-character-panel">' +
         '<div class="v2-character-heading">' +

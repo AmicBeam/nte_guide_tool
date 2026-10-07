@@ -270,8 +270,11 @@ class SurplusReworkTest(unittest.TestCase):
         begin_turn(s,'b');self.assertTrue(s['sides']['b']['normal_attack_available'])
 
     def test_weaken_two_enemy_starts_and_no_permanent_debuff(self):
-        s=self.game();s['sides']['a']['delay_turns']=4;s=self.play(s,'I06')
-        def layers():return sum(len(compatibility_flags(h, s, 'b').get('timed_attack',[])) for h in s['sides']['b']['characters'].values())
+        s=self.game();s['sides']['a']['delay_turns']=4
+        card=self.hold(s,'I06')
+        s=apply_action(s,'a',dict(type='play_card',card_id=card['instance_id'],target_id='b:zero'))
+        def layers():return sum(abs(e['amount']) for h in s['sides']['b']['characters'].values()
+                                for e in compatibility_flags(h, s, 'b').get('timed_attack',[]))
         self.assertEqual(layers(),4);begin_turn(s,'a');self.assertEqual(layers(),4)
         begin_turn(s,'b');self.assertEqual(layers(),4);begin_turn(s,'b');self.assertEqual(layers(),0)
 

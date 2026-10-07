@@ -75,6 +75,35 @@ body:has(.v2-codex-page) .shell {
   background: rgba(232, 201, 136, 0.12);
 }
 
+.v2-codex-unpublished {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 191, 87, 0.5);
+  border-radius: 999px;
+  color: #ffd28e;
+  background: rgba(255, 191, 87, 0.1);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.v2-codex-nav .v2-codex-unpublished {
+  margin-left: auto;
+}
+
+.v2-codex-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.v2-codex-title h2 {
+  margin: 0;
+}
+
 .v2-codex-nav img,
 .v2-codex-nav .v2-image-fallback {
   width: 40px;

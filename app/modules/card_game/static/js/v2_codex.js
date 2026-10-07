@@ -54,6 +54,10 @@ async function bootstrapCodex() {
     return V2.sortedCharacters(catalog && catalog.characters);
   }
 
+  function unpublishedBadge(character) {
+    return character.access_level === 'test' ? '<span class="v2-codex-unpublished">未公开</span>' : '';
+  }
+
   function render() {
     const list = characters();
     if (!list.some(function (item) { return item.id === selectedId; })) {
@@ -63,7 +67,7 @@ async function bootstrapCodex() {
       const avatar = V2.characterAsset(character, 'avatar') || V2.characterAsset(character, 'portrait');
       return '<button class="' + (character.id === selectedId ? ' selected' : '') + '" type="button" data-character-id="' + V2.escapeAttr(character.id) + '">' +
         V2.imageMarkup(avatar, character.name, 'v2-avatar') +
-        '<span>' + V2.escapeHtml(character.name) + '</span></button>';
+        '<span>' + V2.escapeHtml(character.name) + '</span>' + unpublishedBadge(character) + '</button>';
     }).join('');
     const character = list.find(function (item) { return item.id === selectedId; }) || list[0];
     if (!character) {
@@ -78,7 +82,7 @@ async function bootstrapCodex() {
         '<div class="v2-codex-hero-art">' + V2.imageMarkup(portrait, character.name, 'v2-portrait') + '</div>' +
         '<div>' +
           '<p class="eyebrow">角色</p>' +
-          '<h2>' + V2.escapeHtml(character.name) + '</h2>' +
+          '<div class="v2-codex-title"><h2>' + V2.escapeHtml(character.name) + '</h2>' + unpublishedBadge(character) + '</div>' +
           V2.attributeMarkup(character.attribute) +
           '<p class="v2-character-meta">' + V2.characterStatMarkup(character) + '</p>' +
           '<p>异能：' + V2.cardDescriptionMarkup(character.passive || '尚未提供') + '</p>' +

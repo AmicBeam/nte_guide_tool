@@ -845,3 +845,8 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 ### 2026-10-08 黑胶鬼郎丸弃牌反馈
 
 弥散性的朦白所召唤鬼郎丸的黑胶效果实际弃牌后，播放包含被弃牌名称的效果提示，双方与公开回放一致；普通进入弃牌堆仍静默。公共效果历史可显式设置 `present=True`，默认行为保持静默。验证：`.venv/bin/python -m unittest tests.test_duel_v2_continuous_cast tests.test_duel_v2_trigger_history tests.test_duel_v2_presentation`；`node --test tests/js/duel_v2_animation.test.cjs tests/js/duel_v2_table_state.test.cjs`。真实牌桌以祈愿性的依归使黑胶鬼郎丸受伤，确认弃牌提示及数量同步。
+
+
+### 2026-10-08 图鉴未公开标记
+
+图鉴角色导航及角色详情标题旁，对目录 `access_level=test` 的角色显示「未公开」标记。公开角色不显示，缺少字段的旧目录不误标；角色可见范围仍由后端目录过滤决定。

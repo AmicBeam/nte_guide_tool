@@ -4,6 +4,7 @@ import unittest
 
 from tests import test_duel_v2_surplus_rework as fixtures
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
+from app.modules.card_game.content.duel_v2.registry import fire
 from app.modules.card_game.engine.duel_v2 import apply_action, observe
 from app.modules.card_game.engine.duel_v2.combat import resolve_genesis
 from app.modules.card_game.engine.duel_v2.flow import operation, finish_operation, begin_turn
@@ -12,6 +13,32 @@ from app.modules.card_game.engine.duel_v2.summons import summon_front
 
 
 class SolitaryTest(unittest.TestCase):
+    def test_solitary_support_only_comes_from_actual_owner_turn_entry_harmony(self):
+        cases = [(None, 0, 'a', False), ('zhenhong', 2, 'a', False),
+                 ('jiuyuan', 0, 'a', False), ('jiuyuan', 2, 'a', True),
+                 ('jiuyuan', 2, 'b', False)]
+        for front, harmony, active, support in cases:
+            with self.subTest(front=front, harmony=harmony, active=active):
+                s = fixtures.SurplusReworkTest().game(team=('zhenhong', 'xun', 'zero', 'jiuyuan'))
+                s['active_side'] = active
+                s['sides']['a']['front'] = front
+                hero(s, 'a', 'jiuyuan')['harmony'] = harmony
+                s['sides']['b']['front'] = 'zero'
+                hero(s, 'b', 'zero').update(hp=50, max_hp=50)
+                seq = s['event_seq']
+                c = operation(s, 'a', 'zhenhong')
+                fire(c, 'on_surplus', actor_only=True)
+                finish_operation(s)
+                events = [e for e in s['events'] if e['seq'] > seq]
+                attack = next(e for e in events if e['type'] == 'attack')
+                self.assertEqual(attack['counter'], 0 if support else 2)
+                self.assertEqual(any(e.get('counter_immunity') == 'support' for e in events), support)
+                self.assertEqual(hero(s, 'a', 'xun').get('arid', 0), int(support))
+                self.assertEqual(hero(s, 'b', 'zero')['flags'].get('collapse_count', 0), int(support))
+                self.assertEqual(hero(s, 'a', 'zhenhong')['hp'], 6 if support else 5)
+                self.assertEqual(hero(s, 'a', 'jiuyuan')['harmony'], 0 if support else harmony)
+                self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 1)
+
     def trigger(self, s):
         fixtures.SurplusReworkTest().delay(s)
         c = operation(s, 'a', 'zero')
@@ -107,6 +134,7 @@ class SolitaryTest(unittest.TestCase):
         self.assertIn('则触发「独行」', CHARACTERS['zhenhong']['passive'])
         self.assertIn('对所有对方角色造成 3 点伤害', CHARACTERS['zhenhong']['awakened_passive'])
         self.assertIn('「独行」', CARDS['R06']['description'])
+        self.assertNotIn('视为援护技', CHARACTERS['zhenhong']['mechanisms'][0]['description'])
         s = fixtures.SurplusReworkTest().game()
         h = hero(s, 'a', 'zhenhong')
         h['surplus_passive_triggers'] = 2

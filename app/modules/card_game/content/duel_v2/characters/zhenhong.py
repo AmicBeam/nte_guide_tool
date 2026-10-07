@@ -90,12 +90,8 @@ class Zhenhong:
     def on_deferred_action(c, action):
         if action.get('kind') != 'surplus':
             return
-        from app.modules.card_game.content.duel_v2.registry import fire
         c.character['extra_attacks'] = int(c.character.get('extra_attacks', 0)) + 1
         c.operation['skip_combat_harmony'] = True
-        c.operation['support'] = True
-        c.operation['support_notified'] = True
-        fire(c, 'on_support', actor_id=c.cid)
         c.history('「独行」：真红发起额外攻击。')
         c.sortie()
 

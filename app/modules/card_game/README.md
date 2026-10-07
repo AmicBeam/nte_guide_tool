@@ -790,7 +790,7 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 
 ### 2026-10-07 真红独行与机制卡展示
 
-盈蓄异能触发「独行」并回复至当前生命上限；R06 从现有独行触发计数（`surplus_passive_triggers`）读取加成，终结自然到期改为对所有对方角色造成 3 点伤害。提前结束不触发，完整规则见手册。图鉴机制卡接在普通卡后共用网格，牌桌关联小卡共用普通卡立绘区和缩放；仅展示资料，不进卡池。新规则请重新开局，旧模型与冻结记录保留原身份。
+盈蓄异能触发「独行」并回复至当前生命上限；独行不强制视为援护技，正常移入战斗区并按实际入场环合判定；R06 从现有独行触发计数（`surplus_passive_triggers`）读取加成，终结自然到期改为对所有对方角色造成 3 点伤害。提前结束不触发，完整规则见手册。图鉴机制卡接在普通卡后共用网格，牌桌关联小卡共用普通卡立绘区和缩放；仅展示资料，不进卡池。新规则请重新开局，旧模型与冻结记录保留原身份。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_solitary tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_zhenhong_initial tests.test_duel_v2_zhenhong_harmony tests.test_duel_v2_surplus_rework tests.test_duel_v2_catalog`；模拟对拍单独运行 `tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_mechanisms.test.cjs tests/js/duel_v2_hand_face.test.cjs`。
 

@@ -810,3 +810,7 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 ### 离线真红指导训练
 
 `rl/guided_recovery.py` 为显式的真红v3辅助教师：保留原Gumbel标签，改变实走时生成声明的混合策略标签，价值仍取真实终局WDL；默认和网站不启用。接入恢复采样及冻结评估，指导版本进入算法指纹。单次配置／产物均放 `artifacts/rl-evals/<run-id>/`，操作和验收见训练手册。验证：`.venv/bin/python -m unittest tests.test_duel_v2_guided_recovery tests.test_duel_v2_zhenhong_guide tests.test_duel_v2_recovery_round`。
+
+### CUDA 规则执行组件的边界
+
+`rl/batched_duel` 新增冻结程序数字图、CUDA 图堆／解释器、容器、模块／方法查询和候选编码组件。设备对拍覆盖的是已实现子集；完整规则、随机采样、GPU 观察和搜索尚未全部接通，`supports_full_duel_rules=False`。旧 CPU 进程池的 1,600 局在途容量不能当成真正 GPU 规则并发已完成。接口、验证与剩余门槛见[离线批量搜索](../../../docs/duel-v2-batched-search.md)。

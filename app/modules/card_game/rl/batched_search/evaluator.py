@@ -563,6 +563,8 @@ def evaluate_jobs(
             'in_progress_games': len(active_games),
             'peak_outstanding_roots': peak_outstanding_roots,
             'persisted_games': len(persisted_game_ids),
+            'physical_actions':sum(action_counts.values()),
+            'max_actions_taken':max(action_counts.values(),default=0),
             'elapsed_seconds': clock() - start_monotonic,
             'deadline': deadline,
             'last_updated': clock(),
@@ -787,7 +789,13 @@ def evaluate_jobs(
         # Wrap up any remaining active games (due to deadline cutoff or max_actions)
         if active_games:
             uncompleted_refs = [ref for _, ref in active_games.values()]
-            uncompleted_jobs = [job for job, _ in active_games.values()]
+            uncompleted_jobs = []
+            for job,ref in active_games.values():
+                reason=('terminal' if ref.phase=='finished' else 'method_error' if method_error is not None
+                        else 'max_actions' if action_counts[job['id']]>=max_actions
+                        else 'global_search_deadline' if search_deadline is not None and clock()>=search_deadline
+                        else 'evaluation_stopped')
+                uncompleted_jobs.append(dict(job,completion_reason=reason))
             try:
                 # Attempt to finalize partial records via backend if still healthy
                 uncompleted_summaries = backend.finish_games(uncompleted_refs, uncompleted_jobs)
@@ -804,6 +812,7 @@ def evaluate_jobs(
                         'complete': False,
                         'replay_verified': False,
                         'error': f'Unrecovered backend state: {exc!r}',
+                        'completion_reason':'backend_unrecoverable',
                         'winner': None,
                         'turn': getattr(ref, 'turn', None),
                     }

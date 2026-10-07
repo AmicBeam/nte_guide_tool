@@ -6,7 +6,7 @@ import numpy as np
 from app.modules.card_game.rl.batched_search.statistics import BatchedStatistics
 from app.modules.card_game.rl.batched_search.nodes import BatchedNodePool
 from app.modules.card_game.rl.batched_search.cooperative import cooperative_search,CooperativeScheduler,RootJob
-from app.modules.card_game.rl.batched_search.traversal import search_traversal
+from app.modules.card_game.rl.batched_search.traversal import search_traversal,RootEvaluation,InferenceQuery,InferenceResponse
 from tests.test_duel_v2_batch_traversal import FakeBackend,drive_traversal
 from tests.test_duel_v2_batch_cooperative import BulkFake,FakeInference
 
@@ -19,7 +19,11 @@ class StatisticsTraversalTest(unittest.TestCase):
                 args=(state,'a',{'a':('m','sha'),'b':('m','sha')})
                 options=dict(backend=backend,seed=145,simulations=32,terminal_horizon=2,q_scale=mode,noise=True)
                 expected=drive_traversal(search_traversal(*args,**options))
-                jobs=[RootJob('r'+str(i),'g'+str(i),1,cooperative_search(*args,**options,statistics=statistics)) for i in range(2)]
+                actions,(x,c)=backend.decision(state,'a')
+                query=InferenceQuery('cached','m','sha',x,c,True,'a')
+                cache=RootEvaluation(state,'a',actions,query,InferenceResponse('cached',np.zeros(len(c)),np.array([.2,.1,.7]),'sha'))
+                jobs=[RootJob('r'+str(i),'g'+str(i),1,cooperative_search(*args,**options,
+                    statistics=statistics,root_evaluation=cache if i else None)) for i in range(2)]
                 run=CooperativeScheduler(FakeInference()).run(jobs)
                 for actual in run['results'].values():
                     np.testing.assert_array_equal(actual['visits'],expected['visits'])

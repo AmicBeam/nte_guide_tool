@@ -556,6 +556,8 @@ class ResidentRuleBackend:
         self._worker_execution_ns = 0
         self._worker_methods_ns: collections.Counter[str] = collections.Counter()
         self._parent_rpc_wall_ns = 0
+        self._known_clean: set[tuple[int,int,int]] = set()
+        self._inline_counts: collections.Counter[str] = collections.Counter()
         self._parent_queue_ns = 0
         self._released_count = 0
         self._peak_states = 0
@@ -684,6 +686,7 @@ class ResidentRuleBackend:
                 break
             if (worker, slot, gen) in self._live_slots:
                 self._live_slots.discard((worker, slot, gen))
+                self._known_clean.discard((worker, slot, gen))
                 self._ref_cache.pop((worker, slot, gen), None)
                 self._released_count += 1
                 releases_by_worker.setdefault(worker, []).append((slot, gen))
@@ -761,6 +764,7 @@ class ResidentRuleBackend:
             "peak_states": self._peak_states,
             "released_states": self._released_count,
             "methods": dict(self._method_counts),
+            "inline_operations":dict(self._inline_counts),
             "worker_execution_ns": self._worker_execution_ns,
             "worker_methods_ns": dict(self._worker_methods_ns),
             "parent_rpc_wall_ns": self._parent_rpc_wall_ns,
@@ -855,6 +859,7 @@ class ResidentRuleBackend:
         for ref in refs:
             key = (ref.worker, ref.slot, ref.generation)
             self._live_slots.discard(key)
+            self._known_clean.discard(key)
             self._ref_cache.pop(key, None)
             self._released_count += 1
             releases_by_worker.setdefault(ref.worker, []).append((ref.slot, ref.generation))
@@ -935,6 +940,7 @@ class ResidentRuleBackend:
             if q.backend is not self:raise ValueError('Operation belongs to another backend')
             query_ids.add(q.id)
 
+        methods_by_id={q.id:q.method for q in queries}
         arities={'acting_side':1,'finished':1,'terminal_value':2,'decision':2,
                  'sample_world':3,'step':3,'clean':1,'value_observation':2,
                  'serving_root_metadata':2,'public_terminal_probe':3}
@@ -1013,11 +1019,34 @@ class ResidentRuleBackend:
                 for op_id, res_val in batch_res.results:
                     if isinstance(res_val, WireStateMeta):
                         out_ref = self._register_wire_meta(res_val)
+                        method=methods_by_id[op_id]
+                        if method in ('step','clean'):
+                            self._known_clean.add((out_ref.worker,out_ref.slot,out_ref.generation))
                         responses[op_id] = OperationResponse(op_id, out_ref)
                     else:
                         responses[op_id] = OperationResponse(op_id, res_val)
 
         return [responses[q.id] for q in queries]
+
+    def inline_operation(self,method,args):
+        """Resolve only immutable metadata and proven clean handles, with no RPC.
+
+        No rule execution, encoding, sampling or neural work can use this path.
+        Canonical reference validation remains identical to bulk dispatch.
+        """
+        if method not in ('acting_side','finished','terminal_value','clean'):return False,None
+        self._check_healthy()
+        expected=2 if method=='terminal_value' else 1
+        if len(args)!=expected:raise ValueError('Inline metadata arity mismatch')
+        ref=args[0];self._validate_ref(ref)
+        if method=='terminal_value' and args[1] not in ('a','b'):raise ValueError('Invalid inline observer')
+        if method=='clean' and (ref.worker,ref.slot,ref.generation) not in self._known_clean:return False,None
+        if method=='acting_side':value=ref.actor
+        elif method=='finished':value=ref.phase=='finished'
+        elif method=='terminal_value':value=0. if ref.winner not in ('a','b') else (1. if ref.winner==args[1] else -1.)
+        else:value=ref
+        self._method_counts[method]+=1;self._inline_counts[method]+=1
+        return True,value
 
     # --- Convenience single-operation methods matching SearchBackend / CPUOracleBackend ---
 

@@ -54,6 +54,10 @@ _CACHE={}
 
 def _operation(backend,method,*args,_finalization=False,**kwargs):
     if type(_finalization) is not bool:raise TypeError('Boolean finalization marker required')
+    inline=getattr(backend,'inline_operation',None)
+    if inline is not None and not kwargs and not _finalization:
+        handled,value=inline(method,args)
+        if handled:return value
     query=OperationQuery(f'{_PREFIX}:{next(_COUNTER)}',backend,method,args,tuple(kwargs.items()),_finalization)
     response=yield query
     if not isinstance(response,OperationResponse) or response.id!=query.id:

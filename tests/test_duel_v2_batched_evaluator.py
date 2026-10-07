@@ -279,6 +279,7 @@ class TestDuelV2BatchedEvaluator(unittest.TestCase):
                 self.assertFalse(payload1["complete"])
                 self.assertTrue(payload1["replay_verified"])
                 self.assertEqual(len(payload1["actions"]), 2)
+                self.assertEqual(payload1["completion_reason"], "max_actions")
 
             # Verify progress.json exists
             prog_file = out_path / "progress.json"

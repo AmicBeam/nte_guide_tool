@@ -106,6 +106,27 @@ def drive_traversal(generator, response_provider=None, limit_steps=500):
         return stop.value
 
 
+class CachedRootTest(unittest.TestCase):
+    def test_cached_root_preserves_fixed_budget_and_rejects_foreign_identity(self):
+        from dataclasses import replace
+        from app.modules.card_game.rl.batched_search.traversal import RootEvaluation
+        backend=FakeBackend();state=dict(phase='playing',actor='a',depth=0)
+        policies={'a':('m','sha'),'b':('m','sha')}
+        actions,(x,c)=backend.decision(state,'a')
+        query=InferenceQuery('cached','m','sha',x,c,True,'a')
+        cache=RootEvaluation(state,'a',actions,query,InferenceResponse(query.id,
+            np.zeros(len(c),dtype=np.float64),np.array([.2,.1,.7]),'sha'))
+        for mode in ('legacy','natural_wdl'):
+            options=dict(backend=backend,seed=1972,simulations=32,terminal_horizon=2,q_scale=mode,noise=True)
+            baseline=drive_traversal(search_traversal(state,'a',policies,**options))
+            actual=drive_traversal(search_traversal(state,'a',policies,root_evaluation=cache,**options))
+            for key in ('visits','mean_values','pi','root_prior'):np.testing.assert_array_equal(actual[key],baseline[key])
+            for key in ('search_choice','value','simulations','worlds'):self.assertEqual(actual[key],baseline[key])
+        for bad in (replace(cache,state=dict(state)),replace(cache,viewer='b'),
+                    replace(cache,query=replace(query,model_version='foreign'))):
+            with self.assertRaises(ValueError):next(search_traversal(state,'a',policies,backend=backend,seed=1,root_evaluation=bad))
+
+
 class TestBatchedTraversal(unittest.TestCase):
     def setUp(self):
         self.backend = FakeBackend(branching=2, terminal_depth=2, winner='a')

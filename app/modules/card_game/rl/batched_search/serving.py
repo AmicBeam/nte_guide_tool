@@ -10,7 +10,7 @@ import time
 from uuid import uuid4
 import numpy as np
 from .cooperative import _operation,cooperative_search
-from .traversal import InferenceQuery,_unpack_response,_get_policy_identity,TraversalCancelled,_DeadlineReached
+from .traversal import InferenceQuery,_unpack_response,_get_policy_identity,TraversalCancelled,_DeadlineReached,RootEvaluation
 
 
 def serving_search(state,side,model,*,backend,budget_mode='simulations',seconds=3.,
@@ -50,6 +50,7 @@ def serving_search(state,side,model,*,backend,budget_mode='simulations',seconds=
             surrogate_model_key=key,surrogate_model_version=version)
         return out
     try:
+        if expired():return result('deadline')
         actor=yield from _operation(backend,'acting_side',state)
         if actor!=side:raise ValueError('Serving root is not owned by the observer')
         actions,(x,c)=yield from _operation(backend,'decision',state,side)
@@ -78,7 +79,8 @@ def serving_search(state,side,model,*,backend,budget_mode='simulations',seconds=
         if expired():return result('deadline')
         tree=yield from cooperative_search(state,side,{'a':model,'b':model},backend=backend,
             seed=seed,simulations=remaining,gumbel_candidates=16,terminal_horizon=3,max_depth=10,
-            q_scale='natural_wdl',noise=False,deadline=end,clock=clock,root_id=token,statistics=statistics,collect_diagnostics=False)
+            q_scale='natural_wdl',noise=False,deadline=end,clock=clock,root_id=token,statistics=statistics,collect_diagnostics=False,
+            root_evaluation=RootEvaluation(state,side,actions,query,response))
         if tree.get('simulations',0)>0:
             action=tree['actions'][tree['search_choice']]
             if action not in actions:raise ValueError('Search selected an action outside its physical root')

@@ -58,6 +58,16 @@ class InferenceResponse:
 
 
 @dataclass(frozen=True)
+class RootEvaluation:
+    """One already completed inference on this exact, unchanged physical root."""
+    state: Any
+    viewer: str
+    actions: Any
+    query: InferenceQuery
+    response: InferenceResponse
+
+
+@dataclass(frozen=True)
 class PolicyIdentity:
     """Policy name and frozen model hash identity."""
     policy_key: str
@@ -409,6 +419,7 @@ def search_traversal(
     root_id: Optional[str] = None,
     statistics: Optional[Any] = None,
     collect_diagnostics: bool = True,
+    root_evaluation: Optional[RootEvaluation] = None,
 ) -> Generator[InferenceQuery, Any, dict]:
     """Collaborative Gumbel search traversal yielding InferenceQuery instances.
 
@@ -471,9 +482,21 @@ def search_traversal(
             value_only=value_only,
         )
 
-    actions, (x, c) = backend.decision(root_state, viewer)
-    root_query = make_query(viewer, x, c)
-    response = yield root_query
+    if root_evaluation is None:
+        actions, (x, c) = backend.decision(root_state, viewer)
+        root_query = make_query(viewer, x, c)
+        response = yield root_query
+    else:
+        cached=root_evaluation
+        key,version=_get_policy_identity(policy_identities_by_side,viewer)
+        if (not isinstance(cached,RootEvaluation) or cached.state is not root_state or cached.viewer!=viewer
+                or not isinstance(cached.query,InferenceQuery) or cached.query.policy_key!=key
+                or cached.query.model_version!=version or cached.query.observer_side!=viewer
+                or not cached.query.value_actor or cached.query.value_only):
+            raise ValueError('Cached evaluation is not bound to this physical root/model/observer')
+        actions=cached.actions;root_query=cached.query;response=cached.response
+        x,c=root_query.x,root_query.c
+        if len(actions)!=len(c) or not actions:raise ValueError('Cached root action count mismatch')
     logits, root_value = _unpack_response(response, root_query, q_scale=q_scale)
 
     prior = search_prior(logits)

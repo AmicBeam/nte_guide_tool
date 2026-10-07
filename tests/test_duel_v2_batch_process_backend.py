@@ -80,6 +80,36 @@ class FakeInference:
 class TestResidentRuleBackend(unittest.TestCase):
     """Unit tests for resident process CPU bulk resolver."""
 
+    def test_inline_metadata_and_clean_keep_canonical_lifetimes(self):
+        game=new_game(seed=970,first_side='a',skip_mulligan=True)
+        with ResidentRuleBackend(workers=1,max_games=1,max_states_per_worker=30) as backend:
+            [ref]=backend.import_states([game],['one'],[1])
+            self.assertEqual(backend.inline_operation('acting_side',(ref,)),(True,'a'))
+            self.assertEqual(backend.inline_operation('clean',(ref,)),(False,None))
+            actions,_=backend.decision(ref,'a')
+            after=backend.step(ref,'a',actions[0])
+            self.assertIs(backend.inline_operation('clean',(after,))[1],after)
+            with self.assertRaises(ValueError):backend.inline_operation('finished',(replace(after,phase='finished'),))
+            with self.assertRaises(ValueError):backend.inline_operation('terminal_value',(after,'wrong'))
+            backend.release([after])
+            with self.assertRaises(ValueError):backend.inline_operation('clean',(after,))
+
+    def test_full_32_simulations_inline_rule_path_matches_oracle(self):
+        from tests.test_duel_v2_batch_real_rules import PublicTestPolicy,NumpyOracleInference,direct
+        from app.modules.card_game.rl.batched_search.traversal import search_traversal
+        game=new_game(seed=971,decks={'a':STARTER_DECKS[3],'b':STARTER_DECKS[4]},first_side='a',skip_mulligan=True)
+        models={'zhenhong':PublicTestPolicy('zhenhong')};policies={'a':models['zhenhong'],'b':models['zhenhong']}
+        for mode in ('legacy','natural_wdl'):
+            options=dict(seed=972,simulations=32,terminal_horizon=3,q_scale=mode,noise=True)
+            expected=direct(search_traversal(game,'a',policies,backend=CPUOracleBackend(runtime=recovery_runtime),**options),models)
+            with ResidentRuleBackend(workers=1,max_games=1,max_states_per_worker=300) as backend:
+                [ref]=backend.import_states([game],['one'],[1])
+                job=RootJob('root','one',1,cooperative_search(ref,'a',policies,backend=backend,**options))
+                actual=CooperativeScheduler(NumpyOracleInference(models)).run([job])['results']['root']
+                for key in ('search_choice','simulations','value','worlds','nodes'):self.assertEqual(actual[key],expected[key])
+                for key in ('visits','mean_values','pi'):np.testing.assert_array_equal(actual[key],expected[key])
+                self.assertGreater(backend.stats()['inline_operations'].get('clean',0),0)
+
     def test_expired_worker_request_does_not_allocate_a_world(self):
         from app.modules.card_game.rl.batched_search.cooperative import RequestExpired
         game=new_game(seed=961,first_side='a',skip_mulligan=True)

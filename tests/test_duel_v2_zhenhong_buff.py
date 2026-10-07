@@ -57,42 +57,44 @@ class ZhenhongBuffTest(unittest.TestCase):
         shown = next(h for h in replay['sides']['a']['characters'] if h['id'] == 'zhenhong')
         self.assertEqual(shown['attack'], base)
 
-    def test_conditional_draws_keep_type_order_and_share_instant(self):
+    def test_typed_draws_are_unconditional_and_do_not_use_instant(self):
         for key, wanted in [('R02', 'I03'), ('R03', 'Z08'), ('R04', 'Z03')]:
             for surplus in (False, True):
                 with self.subTest(key=key, surplus=surplus):
                     s = self.game()
                     team = s['sides']['a']
                     team.update(surplus=surplus, ap=1)
+                    team['used']['instant'] = surplus  # An already used instant does not block these paid cards.
                     ids = ['I03', 'Z08', 'Z03']
                     team['deck'] = [card_instance(s, k, 'a') for k in ids]
                     before = deepcopy(team['deck'])
                     held = self.hold(s, key)
                     view = observe(s, 'a', include_previews=False)
                     shown = next(c for c in view['sides']['a']['hand'] if c['card_id'] == key)
-                    self.assertEqual(bool(shown.get('instant')), surplus)
+                    self.assertFalse(shown.get('instant'))
                     self.assertFalse(shown['action_point_free'])
                     s = apply_action(s, 'a', {'type': 'play_card', 'card_id': held['instance_id']})
                     team = s['sides']['a']
-                    self.assertEqual(team['ap'], 1 if surplus else 0)
+                    self.assertEqual(team['ap'], 0)
                     self.assertEqual(bool(team['used'].get('instant')), surplus)
-                    self.assertEqual([c['card_id'] for c in team['hand']], [wanted] if surplus else [])
-                    self.assertEqual(team['deck'], [c for c in before if not surplus or c['card_id'] != wanted])
+                    self.assertEqual([c['card_id'] for c in team['hand']], [wanted])
+                    self.assertEqual(team['deck'], [c for c in before if c['card_id'] != wanted])
                     attacks = [e for e in s['events'] if e['type'] == 'attack']
-                    self.assertEqual(attacks[-1]['amount'], {'R02': 2, 'R03': 3, 'R04': 4}[key])
+                    self.assertEqual(attacks[-1]['amount'], {'R02': 1, 'R03': 2, 'R04': 3}[key])
                     if surplus:
                         held = self.hold(s, key)
                         s['sides']['a']['ap'] = 0
                         self.assertNotIn({'type': 'play_card', 'card_id': held['instance_id']}, legal_actions(s, 'a'))
 
     def test_typed_draw_missing_type_does_not_draw_wrong_card_or_lose(self):
-        for ids in ([], ['Z03']):
-            s = self.game()
-            s['sides']['a'].update(surplus=True, deck=[card_instance(s, k, 'a') for k in ids])
-            s = self.play(s, 'R02')
-            self.assertEqual(s['phase'], 'playing')
-            self.assertEqual(s['sides']['a']['hand'], [])
-            self.assertEqual([c['card_id'] for c in s['sides']['a']['deck']], ids)
+        for surplus in (False, True):
+            for ids in ([], ['Z03']):
+                s = self.game()
+                s['sides']['a'].update(surplus=surplus, deck=[card_instance(s, k, 'a') for k in ids])
+                s = self.play(s, 'R02')
+                self.assertEqual(s['phase'], 'playing')
+                self.assertEqual(s['sides']['a']['hand'], [])
+                self.assertEqual([c['card_id'] for c in s['sides']['a']['deck']], ids)
 
     def test_typed_draw_is_private_and_full_hand_discards(self):
         s = self.game()
@@ -291,7 +293,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         self.assertFalse(any(e['type'] == 'harmony' and e['side'] == 'b' for e in s['events']))
         self.assertTrue(any(e['type'] == 'attack' and e['side'] == 'b' for e in s['events']))
 
-    def test_condition_is_not_retroactive_when_card_entry_first_triggers_surplus(self):
+    def test_typed_draw_precedes_entry_that_first_triggers_surplus(self):
         s = self.game()
         s['sides']['a']['front'] = 'jiuyuan'
         hero(s, 'a', 'jiuyuan')['harmony'] = 2
@@ -300,7 +302,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         s = self.play(s, 'R02')
         self.assertEqual(s['sides']['a']['ap'], 0)
         self.assertFalse(s['sides']['a']['used'].get('instant'))
-        self.assertEqual(s['sides']['a']['hand'], [])
+        self.assertEqual([c['card_id'] for c in s['sides']['a']['hand']], ['I03'])
         self.assertTrue(s['sides']['a']['surplus'])
 
 

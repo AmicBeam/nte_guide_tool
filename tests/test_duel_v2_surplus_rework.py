@@ -102,14 +102,15 @@ class SurplusReworkTest(unittest.TestCase):
         begin_turn(s,'a');self.assertEqual(hero(s,'a','zhenhong')['energy'],1)
         self.assertIsNone(s['sides']['a']['front'])
 
-    def test_conditional_battles_use_shared_instant_and_base_attack(self):
-        for key, surplus, amount in [('R02',False,2),('R02',True,2),('R03',True,3),('R04',True,4)]:
+    def test_typed_battles_pay_ap_and_use_reduced_attack(self):
+        for key, surplus, amount in [('R02',False,1),('R02',True,1),('R03',True,2),('R04',True,3)]:
             with self.subTest(key=key,surplus=surplus):
                 s=self.game();s['sides']['a']['surplus']=surplus
-                if key=='R04':s['sides']['a']['ap']=0
+                s['sides']['a']['ap']=1
                 s=self.play(s,key)
                 self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],amount)
-                self.assertEqual(bool(s['sides']['a']['used'].get('instant')), surplus)
+                self.assertFalse(s['sides']['a']['used'].get('instant'))
+                self.assertEqual(s['sides']['a']['ap'],0)
 
     def test_growth_battle_counts_only_extra_attacks_and_survives_down(self):
         s=self.game();h=hero(s,'a','zhenhong');h['extra_attacks']=3

@@ -763,3 +763,7 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 真红内容钩子 `on_game_start` 在初始化时通过通用资源接口授予 1 点个人环合，并记录公开开局效果；牌面同步说明。JSON 恢复、倒地复活、换人及终结不重发该钩子；最近出战者、存活与环合支付规则保持现行约束，R02 额外环合候选未实施。实验性高级模型沿用原数值，核验编码兼容后单独记录当前运行身份。
 
 回归：`.venv/bin/python -m unittest tests.test_duel_v2_zhenhong_initial tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_surplus_rework tests.test_duel_v2_zhenhong_harmony`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。
+
+### 2026-10-07 真红三张战斗牌分类抽牌
+
+R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型牌；攻击修正 -1／0／+1、护盾 2／1／0，费用均为 1。分类抽牌与牌面／预览同步，终结视为 RF01 的路径仍独立。用户桌游数值不代表强度验收。回归沿用 `tests.test_duel_v2_zhenhong_buff`、`tests.test_duel_v2_surplus_rework`、`tests.test_duel_v2_zhenhong_initial`，模拟对拍单独运行 `tests.test_duel_v2_simulation`。

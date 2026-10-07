@@ -163,7 +163,7 @@ class DuelV2CatalogTest(unittest.TestCase):
             elif card['type'] == 'battle':
                 self.assertIsInstance(card.get('attack'), int)
                 self.assertIsInstance(card.get('shield'), int)
-                self.assertGreaterEqual(card['attack'], -2 if card['id'] == 'A06' else 0)
+                self.assertGreaterEqual(card['attack'], {'A06': -2, 'R02': -1}.get(card['id'], 0))
                 self.assertGreaterEqual(card['shield'], 0)
         self.assertEqual(CARDS['N08']['attack'], 2)
         self.assertEqual(CARDS['N08']['hp'], 6)

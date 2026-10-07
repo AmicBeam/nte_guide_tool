@@ -1590,10 +1590,10 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若本回合触发过盈蓄，本牌获得瞬发，抽 1 张战术牌。",
+      "description": "抽 1 张战术牌。",
       "starter_copies": 2,
       "shield": 2,
-      "attack": 0
+      "attack": -1
     },
     {
       "id": "R03",
@@ -1602,7 +1602,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若本回合触发过盈蓄，本牌获得瞬发，抽 1 张武备牌。",
+      "description": "抽 1 张武备牌。",
       "effect_id": "R03",
       "source": {
         "character_id": 1076,
@@ -1611,7 +1611,7 @@
       },
       "starter_copies": 2,
       "shield": 1,
-      "attack": 1
+      "attack": 0
     },
     {
       "id": "R04",
@@ -1626,10 +1626,10 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若本回合触发过盈蓄，本牌获得瞬发，抽 1 张战斗牌。",
+      "description": "抽 1 张战斗牌。",
       "starter_copies": 0,
       "shield": 0,
-      "attack": 2
+      "attack": 1
     },
     {
       "id": "R05",

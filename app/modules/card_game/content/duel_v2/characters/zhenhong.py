@@ -9,11 +9,10 @@ from app.modules.card_game.engine.duel_v2.deferred import enqueue
 
 
 def _battle(c):
-    surplus = bool(c.state['sides'][c.side].get('surplus'))
     card_id = c.card['card_id']
     if card_id == 'RF01':
         c.draw(1)
-    elif surplus and card_id in ('R02', 'R03', 'R04'):
+    elif card_id in ('R02', 'R03', 'R04'):
         c.draw(1, card_type={'R02': 'tactic', 'R03': 'form', 'R04': 'battle'}[card_id])
     if not finished(c.state):
         c.sortie()
@@ -93,10 +92,6 @@ class Zhenhong:
         fire(c, 'on_support', actor_id=c.cid)
         c.history('真红发起额外攻击。')
         c.sortie()
-
-    @staticmethod
-    def makes_instant(state, side, card):
-        return card.get('card_id') in ('R02', 'R03', 'R04') and bool(state['sides'][side].get('surplus'))
 
     @staticmethod
     def aura_effects(c, property, query):

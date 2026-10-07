@@ -45,6 +45,7 @@ class InferenceQuery:
     value_actor: bool
     observer_side: str
     value_only: bool = False
+    deadline: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -406,12 +407,15 @@ def search_traversal(
     time_limit: Optional[float] = None,
     deadline: Optional[float] = None,
     root_id: Optional[str] = None,
+    statistics: Optional[Any] = None,
+    collect_diagnostics: bool = True,
 ) -> Generator[InferenceQuery, Any, dict]:
     """Collaborative Gumbel search traversal yielding InferenceQuery instances.
 
     Each simulation advances step-by-step with sequential visit-count dependencies.
     Terminates with a result dict matching recovery_search.search upon StopIteration.
     """
+    if type(collect_diagnostics) is not bool:raise TypeError('Boolean diagnostics option required')
     if q_scale not in ('legacy', 'natural_wdl'):
         raise ValueError('Unknown recovery Q scale')
     if (type(simulations) is not int or simulations < 1 or type(gumbel_candidates) is not int
@@ -427,6 +431,9 @@ def search_traversal(
         clock_fn = clock
     else:
         raise TypeError('Clock must be callable')
+    if statistics is not None:
+        if statistics.q_scale!=q_scale or statistics.clock is not clock_fn:
+            raise ValueError('Statistics scale and monotonic clock must match the traversal')
 
     calc_deadline: Optional[float] = None
     if time_limit is not None:
@@ -471,8 +478,10 @@ def search_traversal(
 
     prior = search_prior(logits)
     rng = np.random.default_rng(seed)
-    root = Node.create(prior, root_value)
-    tree: dict[bytes, Node] = {info_key(x, c): root}
+    owner=statistics.new_owner() if statistics is not None else None
+    root=(yield from statistics.create(prior,root_value,owner)) if statistics is not None else Node.create(prior,root_value)
+    root_ref=root
+    tree: dict[bytes, Any] = {info_key(x, c): root}
     requested = 1 if len(actions) == 1 else simulations
     schedule = visit_schedule(min(len(actions), gumbel_candidates, requested), requested)
     gumbel = rng.gumbel(size=len(actions)) if noise else np.zeros(len(actions))
@@ -518,7 +527,8 @@ def search_traversal(
                         if calc_deadline is not None and clock_fn() >= calc_deadline:
                             raise _DeadlineReached('Inference completed after decision deadline')
                         scores, value = _unpack_response(response, query, q_scale=q_scale)
-                        tree[key] = Node.create(search_prior(scores), value)
+                        tree[key] = ((yield from statistics.create(search_prior(scores),value,owner))
+                                     if statistics is not None else Node.create(search_prior(scores), value))
                         remaining = max_depth - depth
                         if terminal_horizon and remaining > 0:
                             proved = yield from _short_terminal_value_generator(
@@ -531,11 +541,18 @@ def search_traversal(
                             if proved is not None:
                                 value = proved
                                 if q_scale == 'legacy':
-                                    tree[key].raw_value = proved
+                                    if statistics is None:tree[key].raw_value = proved
+                                    else:yield from statistics.set_value(tree[key],proved)
                         break
                     node = tree[key]
-                    chosen = (choose_root(node, gumbel, schedule[simulation], q_scale) if depth == 0 else
-                              int(np.argmax(improved_policy(node, q_scale) - node.visits / (1 + node.visits.sum()))))
+                    if statistics is None:
+                        chosen = (choose_root(node, gumbel, schedule[simulation], q_scale) if depth == 0 else
+                                  int(np.argmax(improved_policy(node, q_scale) - node.visits / (1 + node.visits.sum()))))
+                    else:
+                        chosen=((yield from statistics.root_choice(node,gumbel,int(schedule[simulation]))) if depth==0
+                                else (yield from statistics.interior_choice(node)))
+                        if calc_deadline is not None and clock_fn()>=calc_deadline:
+                            raise _DeadlineReached('Device selection completed after decision deadline')
                     path.append((node, chosen))
                 world = backend.clean(backend.step(world, actor, legal[chosen]))
                 if depth == 0:
@@ -566,14 +583,34 @@ def search_traversal(
             if root_action is not None:
                 terminal_checks[root_action] += 1
                 terminal_wins[root_action] += int(root_terminal_win)
-            for node, chosen in path:
-                node.visits[chosen] += 1
-                node.total[chosen] += value
+            if statistics is None:
+                for node, chosen in path:
+                    node.visits[chosen] += 1
+                    node.total[chosen] += value
+            else:
+                accepted=yield from statistics.backup(path,value,calc_deadline)
+                if not accepted:raise _DeadlineReached('Device backup completed after decision deadline')
             depths.append(depth + 1)
 
     except TraversalCancelled as exc:
         stop_reason = 'deadline' if isinstance(exc, _DeadlineReached) else 'cancelled'
 
+    if not collect_diagnostics:
+        if statistics is not None:
+            compact=yield from statistics.final_summary(root_ref,gumbel)
+            selected=compact['search_choice'];covered=compact['roots_covered']
+        else:
+            selected=choose_root(root,gumbel,int(root.visits.max(initial=0)),q_scale)
+            covered=int((root.visits>0).sum())
+        return dict(actions=actions,search_choice=selected,raw_choice=int(np.argmax(logits)),
+            simulations=len(depths),requested=requested,complete=len(depths)==requested,
+            roots_covered=covered,nodes=len(tree),worlds=worlds,max_depth=max(depths,default=0),
+            stop_reason=stop_reason or ('complete' if len(depths)==requested else 'deadline'),
+            q_scale=q_scale,policy_source='gumbel_q_'+q_scale)
+    if statistics is not None:
+        saved=yield from statistics.snapshot(root_ref)
+        root=Node.create(saved['prior'],saved['raw_value'])
+        root.visits=saved['visits'];root.total=saved['total']
     visits = root.visits.copy()
     pi = improved_policy(root, q_scale)
     selected = choose_root(root, gumbel, int(visits.max(initial=0)), q_scale)

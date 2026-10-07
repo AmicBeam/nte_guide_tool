@@ -4,7 +4,7 @@ Only calls to the explicit backend protocol are rewritten. Rule code, search
 formulas, RNG streams and model inputs are not rewritten. CPU oracle dispatch
 requires an explicit opt-in; a GPU backend must provide a bulk resolver.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass,replace
 from hashlib import sha256
 import ast
 import inspect
@@ -20,6 +20,14 @@ class OperationQuery:
     method: str
     args: tuple
     kwargs: tuple
+    finalization: bool = False
+    deadline: float | None = None
+
+
+@dataclass(frozen=True)
+class RequestExpired:
+    id: str
+    started: bool = False
 
 
 @dataclass(frozen=True)
@@ -34,17 +42,19 @@ class RootJob:
     game_id: str
     generation: int
     generator: object
+    deadline: float | None = None
 
 
 _PROTOCOL_METHODS=frozenset(('acting_side','finished','terminal_value','decision',
-    'sample_world','step','clean','value_observation'))
+    'sample_world','step','clean','value_observation','serving_root_metadata','public_terminal_probe'))
 _PREFIX=uuid4().hex
 _COUNTER=itertools.count()
 _CACHE={}
 
 
-def _operation(backend,method,*args,**kwargs):
-    query=OperationQuery(f'{_PREFIX}:{next(_COUNTER)}',backend,method,args,tuple(kwargs.items()))
+def _operation(backend,method,*args,_finalization=False,**kwargs):
+    if type(_finalization) is not bool:raise TypeError('Boolean finalization marker required')
+    query=OperationQuery(f'{_PREFIX}:{next(_COUNTER)}',backend,method,args,tuple(kwargs.items()),_finalization)
     response=yield query
     if not isinstance(response,OperationResponse) or response.id!=query.id:
         raise ValueError('Rule operation response belongs to a different request')
@@ -98,10 +108,20 @@ class CooperativeScheduler:
         if len({q.id for q in queries})!=len(queries):raise ValueError('Duplicate outstanding query identity')
         responses={};groups={};neural=[]
         for query in queries:
+            deadline=getattr(query,'deadline',None)
+            if not getattr(query,'finalization',False) and deadline is not None and time.monotonic()>=deadline:
+                responses[query.id]=RequestExpired(query.id);continue
             if isinstance(query,OperationQuery):groups.setdefault((id(query.backend),query.method),[]).append(query)
             elif isinstance(query,InferenceQuery):neural.append(query)
             else:raise TypeError('Unknown cooperative request type')
         for (_,method),group in groups.items():
+            fresh=[]
+            for query in group:
+                if (not query.finalization and query.deadline is not None and time.monotonic()>=query.deadline):
+                    responses[query.id]=RequestExpired(query.id)
+                else:fresh.append(query)
+            group=fresh
+            if not group:continue
             backend=group[0].backend
             if callable(getattr(backend,'resolve_operations',None)):
                 result=backend.resolve_operations(group)
@@ -110,7 +130,7 @@ class CooperativeScheduler:
                 for row in result:
                     if not isinstance(row,OperationResponse) or row.id not in expected or row.id in responses:
                         raise ValueError('Bulk operation response identity mismatch')
-                    responses[row.id]=row
+                    responses[row.id]=row.value if isinstance(row.value,RequestExpired) else row
                 if expected!={row.id for row in result}:raise ValueError('Bulk operation response set mismatch')
             else:
                 if not self.allow_cpu_oracle or getattr(backend,'supports_gpu',False):
@@ -119,7 +139,14 @@ class CooperativeScheduler:
                 for q in group:
                     responses[q.id]=OperationResponse(q.id,getattr(backend,method)(*q.args,**dict(q.kwargs)))
         if neural:
-            requests=[InferenceRequest(q.id,q.policy_key,q.model_version,q.x,q.c,q.value_actor,q.value_only) for q in neural]
+            fresh=[]
+            for query in neural:
+                if query.deadline is not None and time.monotonic()>=query.deadline:
+                    responses[query.id]=RequestExpired(query.id)
+                else:fresh.append(query)
+            neural=fresh
+        if neural:
+            requests=[InferenceRequest(q.id,q.policy_key,q.model_version,q.x,q.c,q.value_actor,q.value_only,q.deadline) for q in neural]
             result=self.inference.predict(requests)
             if len(result)!=len(requests):raise ValueError('Inference dropped or added requests')
             expected={q.id:q for q in neural}
@@ -128,7 +155,8 @@ class CooperativeScheduler:
                 query=expected[row.request_id]
                 if row.model_key!=query.policy_key or row.model_version!=query.model_version:
                     raise ValueError('Neural result model identity mismatch')
-                responses[row.request_id]=InferenceResponse(query.id,row.logits,row.wdl,row.model_version)
+                responses[row.request_id]=(RequestExpired(query.id,True) if getattr(row,'expired',False) or query.deadline is not None and time.monotonic()>=query.deadline
+                    else InferenceResponse(query.id,row.logits,row.wdl,row.model_version))
         if set(responses)!={q.id for q in queries}:raise ValueError('Incomplete batch response set')
         return responses
 
@@ -145,6 +173,10 @@ class CooperativeScheduler:
                 or not inspect.isgenerator(job.generator)):
                 raise ValueError('Versioned root jobs with generator traversal required')
             if job.root_id in roots or job.game_id in games:raise ValueError('A game may own only one active root')
+            if job.deadline is not None:
+                import math
+                if isinstance(job.deadline,bool) or not isinstance(job.deadline,(int,float)) or not math.isfinite(job.deadline):
+                    raise ValueError('Finite monotonic root deadline required')
             roots.add(job.root_id);games.add(job.game_id)
         self._running=True;pending={};results={};start=time.monotonic();waves=0
         try:
@@ -156,17 +188,33 @@ class CooperativeScheduler:
                 if waves>=max_waves:raise TimeoutError('Cooperative wave allowance exhausted')
                 if cancelled is not None and cancelled():
                     from .traversal import TraversalCancelled
+                    finishing=[]
                     for key,(job,_) in list(pending.items()):
-                        try:job.generator.throw(TraversalCancelled())
+                        try:query=job.generator.throw(TraversalCancelled())
                         except StopIteration as stop:results[key]=stop.value
                         except TraversalCancelled:results[key]=dict(stop_reason='cancelled_before_policy',complete=False,simulations=0)
-                        else:raise RuntimeError('Traversal ignored root cancellation')
+                        else:
+                            if (not isinstance(query,OperationQuery) or not query.finalization or
+                                query.method not in ('snapshot','final_summary') or not getattr(query.backend,'read_only_finalization',False)):
+                                raise RuntimeError('Traversal ignored root cancellation')
+                            finishing.append((key,job,query))
+                    if finishing:
+                        final=self._resolve([query for _,_,query in finishing])
+                        for key,job,query in finishing:
+                            try:job.generator.send(final[query.id])
+                            except StopIteration as stop:results[key]=stop.value
+                            else:raise RuntimeError('Traversal continued after final statistics snapshot')
                     pending.clear();break
-                queries=[q for _,q in pending.values()]
+                queries=[replace(q,deadline=job.deadline) for job,q in pending.values()]
                 responses=self._resolve(queries);waves+=1
                 next_pending={}
                 for key,(job,query) in pending.items():
-                    try:next_pending[key]=(job,job.generator.send(responses[query.id]))
+                    try:
+                        if isinstance(responses[query.id],RequestExpired):
+                            from .traversal import _DeadlineReached
+                            value=job.generator.throw(_DeadlineReached('Queued operation exceeded its root deadline'))
+                        else:value=job.generator.send(responses[query.id])
+                        next_pending[key]=(job,value)
                     except StopIteration as stop:results[key]=stop.value
                 pending=next_pending
             if set(results)!=roots:raise ValueError('A root disappeared from scheduler accounting')

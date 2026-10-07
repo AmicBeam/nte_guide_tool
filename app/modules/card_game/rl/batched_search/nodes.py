@@ -108,12 +108,13 @@ class BatchedNodePool:
             self._owner[ref.slot]=None;self._host_count[ref.slot]=0;self._generation[ref.slot]+=1;heapq.heappush(self._free,ref.slot)
         self._active-=len(refs)
 
-    def _rows(self,refs):
+    def _rows(self,refs,*,compact=False):
         idx=self._slots(refs);t=self._torch
-        prior=self._prior.index_select(0,idx);visits=self._visits.index_select(0,idx)
-        total=self._total.index_select(0,idx);value=self._value.index_select(0,idx)
+        width=max(self._host_count[ref.slot] for ref in refs) if compact else self.max_actions
+        prior=self._prior[:,:width].index_select(0,idx);visits=self._visits[:,:width].index_select(0,idx)
+        total=self._total[:,:width].index_select(0,idx);value=self._value.index_select(0,idx)
         count=self._count.index_select(0,idx)
-        valid=t.arange(self.max_actions,device=self.device)[None,:]<count[:,None]
+        valid=t.arange(width,device=self.device)[None,:]<count[:,None]
         return idx,prior,visits,total,value,valid
 
     def completed_q(self,refs):
@@ -143,25 +144,38 @@ class BatchedNodePool:
         return (prior.clamp_min(1e-300).log()+self._completed_q(prior,visits,total,value,valid)).masked_fill(~valid,-float('inf')).softmax(-1)
 
     def select_root(self,refs,noise,visit_targets):
-        refs=tuple(refs);t=self._torch;_,prior,visits,total,value,valid=self._rows(refs)
+        refs=tuple(refs);t=self._torch;_,prior,visits,total,value,valid=self._rows(refs,compact=True)
         noise=t.as_tensor(noise,dtype=t.float64,device=self.device)
         targets=t.as_tensor(visit_targets,device=self.device)
-        if noise.shape!=prior.shape or targets.shape!=(len(refs),) or targets.dtype not in (t.int32,t.int64):
+        if noise.shape not in ((len(refs),self.max_actions),tuple(prior.shape)) or targets.shape!=(len(refs),) or targets.dtype not in (t.int32,t.int64):
             raise ValueError('Root noise and integer visit targets must match batch')
         if not bool(t.isfinite(noise).all()) or bool((targets<0).any()):raise ValueError('Invalid root selection inputs')
         eligible=(visits==targets[:,None])&valid
         if not bool(eligible.any(-1).all()):raise ValueError('Invalid sequential-halving visit schedule')
-        score=prior.clamp_min(1e-300).log()+noise+self._completed_q(prior,visits,total,value,valid)
+        score=prior.clamp_min(1e-300).log()+noise[:,:prior.shape[1]]+self._completed_q(prior,visits,total,value,valid)
         return score.masked_fill(~eligible,-float('inf')).argmax(-1)
 
     def select_interior(self,refs):
         refs=tuple(refs)
-        _,prior,visits,total,value,valid=self._rows(refs)
+        _,prior,visits,total,value,valid=self._rows(refs,compact=True)
         policy=(prior.clamp_min(1e-300).log()+self._completed_q(prior,visits,total,value,valid)).masked_fill(~valid,-float('inf')).softmax(-1)
         scores=policy-visits.to(self._torch.float64)/(1+visits.sum(-1)[:,None])
         return scores.masked_fill(~valid,-float('inf')).argmax(-1)
 
+    def final_summary(self,refs,noise):
+        refs=tuple(refs);t=self._torch
+        _,prior,visits,total,value,valid=self._rows(refs,compact=True)
+        noise=t.as_tensor(noise,dtype=t.float64,device=self.device)
+        if noise.shape!=prior.shape or not bool(t.isfinite(noise).all()):raise ValueError('Compact final noise shape mismatch')
+        eligible=(visits==visits.max(-1).values[:,None])&valid
+        score=prior.clamp_min(1e-300).log()+noise+self._completed_q(prior,visits,total,value,valid)
+        selected=score.masked_fill(~eligible,-float('inf')).argmax(-1)
+        return t.stack((selected,((visits>0)&valid).sum(-1)),dim=1)
+
     def backup(self,paths,values):
+        self._apply_backup(self._backup_rows(paths,values))
+
+    def _backup_rows(self,paths,values):
         paths=[list(path) for path in paths];values=list(values)
         if len(paths)!=len(values):raise ValueError('One terminal/leaf value per completed path required')
         flat=[];owners=set()
@@ -179,6 +193,9 @@ class BatchedNodePool:
                 if type(action) is not int or not 0<=action<self._host_count[ref.slot]:raise ValueError('Integer full legal action index required')
                 # This scalar check is batched below; it is host metadata only.
                 flat.append((ref,action,float(value)))
+        return flat
+
+    def _apply_backup(self,flat):
         if not flat:return
         t=self._torch;idx=self._slots([ref for ref,_,_ in flat])
         actions=t.tensor([a for _,a,_ in flat],device=self.device)
@@ -186,6 +203,48 @@ class BatchedNodePool:
         self._visits.view(-1).index_add_(0,keys,t.ones(len(flat),dtype=t.int32,device=self.device))
         self._total.view(-1).index_add_(0,keys,t.tensor([v for _,_,v in flat],dtype=t.float64,device=self.device))
 
+    def backup_admitted(self,paths,values,deadlines,clock):
+        """Back up completed work; roll back rows whose device completion is late."""
+        paths=list(paths);values=list(values);deadlines=list(deadlines)
+        if len(paths)!=len(deadlines) or len(values)!=len(paths):raise ValueError('Backup deadline count mismatch')
+        if any(d is not None and (isinstance(d,bool) or not isinstance(d,(int,float)) or not math.isfinite(d)) for d in deadlines):
+            raise ValueError('Finite absolute backup deadlines required')
+        # Validate the entire request before any device mutation.
+        self._backup_rows(paths,values)
+        now=clock();accepted=[d is None or now<d for d in deadlines]
+        indices=[i for i,ok in enumerate(accepted) if ok]
+        admitted=[paths[i] for i in indices]
+        flat=self._backup_rows(admitted,[values[i] for i in indices])
+        owners={paths[i][0][0].owner:i for i in indices if paths[i]}
+        unique={ref.slot*self.max_actions+action:owners[ref.owner] for ref,action,_ in flat}
+        if not unique:return accepted
+        t=self._torch;keys=t.tensor(list(unique),device=self.device,dtype=t.int64)
+        old_visits=self._visits.view(-1).index_select(0,keys)
+        old_total=self._total.view(-1).index_select(0,keys)
+        self._apply_backup(flat)
+        if self.device.type=='cuda':
+            event=t.cuda.Event();event.record(self._stream);event.synchronize()
+        finished=clock()
+        late=[i for i in indices if deadlines[i] is not None and finished>=deadlines[i]]
+        if late:
+            late_set=set(late);mask=t.tensor([owner in late_set for owner in unique.values()],device=self.device,dtype=t.bool)
+            restore=keys[mask]
+            self._visits.view(-1)[restore]=old_visits[mask]
+            self._total.view(-1)[restore]=old_total[mask]
+            for i in late:accepted[i]=False
+        return accepted
+
     def snapshot(self,refs):
         _,prior,visits,total,value,valid=self._rows(refs)
         return dict(prior=prior,visits=visits,total=total,value=value,valid=valid)
+
+    def set_raw_value(self,refs,values):
+        refs=list(refs);values=list(values)
+        if len(refs)!=len(values):raise ValueError('Matching node/value updates required')
+        if any(isinstance(v,bool) or not isinstance(v,(int,float,np.floating)) or not math.isfinite(v) for v in values):
+            raise ValueError('Finite node values required')
+        if self.q_scale=='natural_wdl' and any(abs(v)>1+1e-6 for v in values):
+            raise ValueError('Natural WDL estimate outside [-1,1]')
+        if len({ref.slot for ref in refs})!=len(refs):raise ValueError('Duplicate raw-value update')
+        indices=self._slots(refs)
+        self._value[indices]=self._torch.tensor(values,dtype=self._torch.float64,device=self.device)

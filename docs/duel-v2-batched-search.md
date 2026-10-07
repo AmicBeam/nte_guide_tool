@@ -6,6 +6,8 @@
 
 后端位于离线 RL 层。正式 Python 引擎继续作为规则对拍 oracle；网站不导入数组 arena、Torch、CUDA 或新的批量调度器。数组存储能够分配 1,600 个槽位，不表示已经实现 1,600 局规则结算、搜索或 GPU 并发。
 
+当前执行路线是混合后端：完整正式规则和状态常驻少量 CPU 工作进程，网络与搜索统计按跨根请求批量送到指定设备。`gpu_rule_execution=false`；设备图存储原语和源码导出器都不是完整 GPU 规则解释器。是否能承载 1,600 个完整对局、实际吞吐与延迟，必须由完整游戏压测确定。
+
 ## 当前基础组件
 
 ### CPU 数组 arena
@@ -36,6 +38,32 @@
 
 `random_source.py` 提供 CPython 整数种子展开、MT19937、高位 getrandbits、拒绝采样 randbelow、洗牌及两种既有 RNG 提交顺序的可移植 C/CUDA 原语。随机原语数值对拍不能替代完整 determinization、合法动作或规则对拍。
 
+### 驻留式正式规则与真实记录
+
+`process_backend.py` 使用固定数量的独立工作进程保存完整 Python 状态，每个状态只在导入/明确导出时跨进程传输；后续规则请求携带绑定后端、工作进程、槽位、代次和游戏根的引用。发放时的不可变元数据也参与校验，不能伪造 actor/phase。每个后端承载一轮实验，`max_games` 限制该轮累计唯一游戏准入，不作为可无限补充的流式游戏池。
+
+搜索分支使用正式 `simulate_action` 和公开一致性采样；物理推进使用正式 `apply_action`。假想状态不写公开录像。工作区引用通过弱引用释放队列回收；物理提交按工作进程批量执行，旧版本只能读取，不能再次推进。工作进程禁止导入 Torch/CUDA。超时或规则异常停止整个方法，取消和退出只终止本后端拥有的 Process 对象；不按裸 PID 清理无关任务。
+
+`recording.py` 复用 `GameTelemetry`、既有角色/环合/终结采集和公开回放投影。每个物理动作保存状态 SHA，并逐步重放核验。私有 opening 与逐动作 journal 在运行中持久化，供异常后的证据恢复；截断行和未落盘结果不能当完整对局。完整私有原始与公开旁观录像分别输出。公开手牌只保留隐藏占位及已公开的复制/衍生/揭示牌，不导出隐藏牌库、RNG 或种子。
+
+### 同款 serving 规划与设备统计
+
+`serving.py` 保留当前 recovery serving 的公开一步获胜检查、最多 8 次证明、总计最多 32 次证明/树模拟、16 个根候选、3 步短终局探查和 natural-WDL。每次内部搜索双方使用行动方自己的冻结模型作为代理；真实对手在其物理决策时使用自己的模型。种子按当前网站的 version/side/model SHA 推导，禁止用真实暗牌或实体序号选策略。
+
+预算模式必须明确：`simulations` 固定搜索量并受整轮截止约束；`wall_clock` 要求调用方在入队前提供单调时钟时间戳，共享 3 秒窗口，记录实际完成量。墙钟模式拒绝迟到证明/推理/统计结果；这比旧网站函数在迟到时仍接受已成立证明的行为更严格，不宣称高并发排队下与单人网站逐动作分支完全相同。GPU 运行不可抢占，因此预算不是硬实时延迟保证。
+
+`statistics.py` 把真实遍历的节点创建、选择、备份和最终快照送到 `BatchedNodePool`。每根仍按访问依赖逐次推进，跨根批量计算。设备备份完成后若超过该根截止，恢复该根原来的访问/价值累计，不把半个或迟到模拟计为完成。取消只允许额外读取最终统计快照，不能启动新模拟。节点随根生命周期批量释放，不跨根串用。
+
+### 完整对局驱动与冻结输入
+
+`evaluator.py` 同时准入指定数量的真实对局，逐轮协作搜索、物理提交、记录和结束。`scripts/evaluate_duel_v2_batched.py` 默认只检查配置；`--run` 才启动，并要求新输出目录、明确预算模式和由共享账本分配的种子基数。1,600 局按 5×5 每格 64 局安排，行是先手模型、列是后手模型，轮换引擎 a/b 座位。同整数种子的两座位局属于一个配对根，不能宣称手牌完全相同。
+
+`offline_sources.snapshot_revision` 从指定 Git 提交的白名单 blob 创建隔离源码，保留工作区并行修改；仅允许额外加入新源码，不能用 extra 静默替换已冻结规则。权重单独按模型清单校验。完整评测 CLI 在运行前核对 `source-manifest.json` 与 `source-revision.json`，不改 serving 绑定让不匹配输入强行通过。
+
+只有全部实际终局、记录和重放核验完成才标记游戏执行完整；只有实际 1,600 局满足这些条件才标记容量完整。质量、训练全流程和完整训练报告批准独立保留为 false。二维表仅使用正常完整局作分母，未执行/失败/截断单列；Wilson 区间是未作成对聚类修正的参考，不用作模型接受门槛。矩阵不代替新旧、换牌、变化构筑等完整训练报告项目。
+
+`rule_ir/portable_program.py` 是 CPython 3.10 的可审计源程序导出器，保留实际函数/闭包/类/常量/跳转及源码 SHA，显式列出所需原语，未知依赖失败。它不执行设备规则，Windows 的评测链路也不需要导出主机字节码。不要把导出完整或 `unresolved=[]` 当成 CUDA 规则可执行。
+
 ### 每根预算账本
 
 `rl/batched_search/budget.py` 的 `SearchLimits` 分别记录决策墙钟、总模拟量、公开证明上限、Gumbel 根候选上限、短终局探查和树深；默认分别为 3 秒、32、8、16、3、10。短终局探查的 3 步不能解释为整个搜索树深度。
@@ -54,9 +82,9 @@
 
 ## 后续接入顺序
 
-1. 在现有无损图 codec 基础上补齐五队共享规则执行、合法动作和兼容现有权重的具名编码，先 CPU native 对拍，再 CUDA 对拍。
-2. 将真实设备规则 resolver 与协作调度、节点池、工作区、批量模型推理和每根访问更新接通；GPU 结果须绑定根代次并拒绝迟到结果。
-3. 完整检验模型数值身份、固定观察者叶子价值、采样种子与原搜索一致性，拒绝把仅有源码导出/统计 kernel 的原型标为规则后端。
+1. 核验驻留规则、物理记录、协作规划及设备统计的组合，包括真实五队、私有选择、取消/迟到和完整重放。
+2. 在 Windows 核验冻结数值模型与 CUDA/NumPy 选择、WDL、根访问更新一致性；明确 CPU 规则和 GPU 数值各自的实际成本。
+3. 完整检验模型数值身份、固定观察者叶子价值、采样种子与原搜索一致性，拒绝把仅有源码导出/统计 kernel 的原型标为完整 GPU 规则后端。
 4. 验证真实取消、异常和记录队列容量；完整回放从真实动作重放核验，假想分支不进入公开录像。
 5. 以独立新种子依次测 64、256、512、1,600 个对局，报告完成局/小时、每根实际模拟量、部分结果、回退、p50/p95/p99/max 延迟及 CPU/GPU 峰值。仅分配槽位或启动 kernel 不算对局容量通过。
 
@@ -68,6 +96,9 @@
 .venv/bin/python -m unittest tests.test_duel_v2_batch_arena tests.test_duel_v2_batch_budget -v
 .venv/bin/python -m unittest tests.test_duel_v2_batch_codec tests.test_duel_v2_batch_device_state tests.test_duel_v2_batch_cuda_runtime tests.test_duel_v2_batch_random -v
 .venv/bin/python -m unittest tests.test_duel_v2_batch_inference tests.test_duel_v2_batch_nodes tests.test_duel_v2_batch_traversal tests.test_duel_v2_batch_cooperative -v
+.venv/bin/python -m unittest tests.test_duel_v2_batch_process_backend tests.test_duel_v2_batch_recording tests.test_duel_v2_batch_serving tests.test_duel_v2_batch_statistics tests.test_duel_v2_batched_evaluator -v
+.venv/bin/python scripts/check_duel_v2_batch_inference.py
+.venv/bin/python scripts/evaluate_duel_v2_batched.py
 ```
 
 没有 CUDA 的主机必须明确记录设备用例跳过。`scripts/validate_duel_v2_batch_gpu.py` 默认只输出配置，只有显式 `--run` 才执行合成节点统计验证；其 `game_executions=0`，不能作为真实对局容量或强度证据。上述用例和原语对拍也不能替代五队完整规则、真实端到端 GPU 性能或策略强度验收。

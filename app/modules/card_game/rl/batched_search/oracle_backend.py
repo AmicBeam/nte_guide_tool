@@ -19,6 +19,14 @@ class CPUOracleBackend:
     backend_kind = 'python_oracle'
     supports_gpu = False
 
+    def serving_root_metadata(self,state,side):
+        from ..batched_duel.serving_protocol import root_metadata
+        return root_metadata(state,side)
+
+    def public_terminal_probe(self,state,side,action):
+        from ..batched_duel.serving_protocol import public_terminal_probe
+        return public_terminal_probe(state,side,action)
+
     def value_observation(self, state, viewer):
         from app.modules.card_game.engine.duel_v2 import observe
         view = observe(state, viewer, include_previews=False)

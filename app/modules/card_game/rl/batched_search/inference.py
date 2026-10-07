@@ -5,6 +5,8 @@ only constructed and loaded onto the specified device when BatchedInference
 is explicitly instantiated.
 """
 from dataclasses import dataclass
+import math
+import time
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 import numpy as np
 
@@ -23,6 +25,7 @@ class InferenceRequest:
     candidates: np.ndarray
     value_actor: Union[bool, int]
     value_only: bool = False
+    deadline: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -32,6 +35,7 @@ class InferenceResult:
     model_version: str
     logits: np.ndarray
     wdl: np.ndarray
+    expired: bool = False
 
 
 class BatchedInference:
@@ -311,6 +315,9 @@ class BatchedInference:
                 )
 
             validated_requests.append((idx, req))
+            if req.deadline is not None and (isinstance(req.deadline,bool) or
+                    not isinstance(req.deadline,(int,float)) or not math.isfinite(req.deadline)):
+                raise ValueError('Finite monotonic inference deadline required')
 
         # Step 2: Group by actual model version: (model_key, model_version)
         groups: Dict[Tuple[str, str, bool], List[Tuple[int, InferenceRequest]]] = {}
@@ -340,6 +347,14 @@ class BatchedInference:
                     microbatch.append(item)
                     M = next_m
                 start_idx += len(microbatch)
+                fresh=[]
+                for index,req in microbatch:
+                    if req.deadline is not None and time.monotonic()>=req.deadline:
+                        results[index]=InferenceResult(req.request_id,req.model_key,req.model_version,
+                            np.empty(0,dtype=np.float32),np.empty(0,dtype=np.float32),True)
+                    else:fresh.append((index,req))
+                microbatch=fresh
+                if not microbatch:continue
                 B = len(microbatch)
 
                 # Prepare padded batch arrays
@@ -402,6 +417,7 @@ class BatchedInference:
                         model_version=req.model_version,
                         logits=logits,
                         wdl=wdl,
+                        expired=req.deadline is not None and time.monotonic()>=req.deadline,
                     )
 
                 self._total_batches += 1

@@ -82,6 +82,16 @@ def make_legal_candidates(count: int, seed: int = 0) -> np.ndarray:
 
 class TestDuelV2BatchInference(unittest.TestCase):
 
+    def test_expired_request_skips_forward_and_has_explicit_status(self):
+        from unittest.mock import patch
+        model=SyntheticNumericModel('expired',hidden=16)
+        runner=BatchedInference({'expired':model},device='cpu')
+        request=InferenceRequest('late','expired',model.version,make_legal_observation(),
+            make_legal_candidates(2),True,deadline=0.)
+        with patch.object(runner._networks['expired'].state_net,'forward',side_effect=AssertionError('Late forward')):
+            [result]=runner.predict([request])
+        self.assertTrue(result.expired);self.assertEqual(runner.stats()['rows'],0)
+
     def test_value_only_uses_independent_value_tower_and_no_policy_rows(self):
         model=SyntheticNumericModel('leaf',hidden=16)
         before={key:value.copy() for key,value in model.weights.items()}

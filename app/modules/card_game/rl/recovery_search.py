@@ -37,7 +37,7 @@ def choose_root(node, noise, visit, mode):
 
 def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_candidates=16,
            terminal_horizon=3, max_depth=10, deadline=None, noise=False, q_scale='natural_wdl',
-           fast_simulation=True,teacher_mode='network',value_policies=None):
+           fast_simulation=True,teacher_mode='network',value_policies=None,root_trace=False):
     """Bounded version of the existing Gumbel traversal with an explicit planner.
 
     Keep root worlds, opponent private observations, fixed observer values,
@@ -68,7 +68,7 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
     requested = 1 if len(actions) == 1 else simulations
     schedule = legacy.visit_schedule(min(len(actions), gumbel_candidates, requested), requested)
     gumbel = rng.gumbel(size=len(actions)) if noise else np.zeros(len(actions))
-    depths = []; worlds = 0
+    depths = []; worlds = 0; trace = []
     terminal_checks = np.zeros(len(actions), dtype=np.int32)
     terminal_wins = np.zeros(len(actions), dtype=np.int32)
     for simulation in range(requested):
@@ -140,6 +140,13 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
             terminal_checks[root_action] += 1; terminal_wins[root_action] += int(root_terminal_win)
         for node, chosen in path:
             node.visits[chosen] += 1; node.total[chosen] += value
+        if root_trace and root_action is not None:
+            trace.append(dict(simulation=simulation, considered_visit=schedule[simulation],
+                              chosen=int(root_action), value=float(value),
+                              visits=root.visits.copy().tolist(),
+                              mean_q=np.divide(root.total, root.visits, out=np.zeros(len(actions)),
+                                               where=root.visits > 0).tolist(),
+                              completed_q=completed_q(root, q_scale).tolist()))
         depths.append(depth + 1)
     visits = root.visits.copy(); pi = improved_policy(root, q_scale)
     selected = choose_root(root, gumbel, int(visits.max()), q_scale)
@@ -158,5 +165,6 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
                 max_depth=max(depths, default=0), policy_source='gumbel_q_' + q_scale +
                     (':'+teacher_mode if teacher_mode!='network' else ''),
                 root_diagnostics=diagnostics, q_scale=q_scale,teacher_mode=teacher_mode,
+                **({'root_trace': trace} if root_trace else {}),
                 leaf_source='covered_expert_value_or_terminal' if teacher_mode=='covered_value' else
                     'real_terminal' if teacher_mode!='network' else 'network_or_short_proof')

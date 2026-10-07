@@ -285,7 +285,7 @@ __device__ inline int device_list_remove(Context* c, int list_ref, int item_ref)
     int target_idx = -1;
     for (int i = 0; i < count; i++) {{
         int elem = c->h.edges[(offset + i) * 2 + 0];
-        if (key_equal(&c->h, elem, item_ref)) {{
+        if (vm_equal(c, elem, item_ref)) {{
             target_idx = i;
             break;
         }}
@@ -941,7 +941,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                 int found = -1;
                 for (int i = start_idx; i < end_idx; i++) {{
                     int elem = edge(c, owner, i, 0);
-                    if (key_equal(&c->h, elem, args[0])) {{
+                    if (vm_equal(c, elem, args[0])) {{
                         found = i;
                         break;
                     }}
@@ -960,7 +960,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                 long long cnt = 0;
                 for (int i = 0; i < len; i++) {{
                     int elem = edge(c, owner, i, 0);
-                    if (key_equal(&c->h, elem, args[0])) {{
+                    if (vm_equal(c, elem, args[0])) {{
                         cnt++;
                     }}
                     if (c->h.error != ERROR_OK) return 1;

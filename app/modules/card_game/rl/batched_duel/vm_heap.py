@@ -646,6 +646,31 @@ __device__ inline int truth(Heap* heap, int ref) {
 // 12. key_equal: Dict key equality with Python semantics across None/bool/int/float/str/tuple
 __device__ inline int key_equal(Heap* heap, int ref_a, int ref_b);
 
+// Compare arbitrary-precision signed bytes against an exact finite binary64 integer.
+// No cast at the int64 boundary, and no precision-losing integer-to-double coercion.
+__device__ inline int integer_equals_double(Heap* heap,int ref,double floating){
+ NodeView n;if(!get_node(heap,ref,&n)||n.tag!=TAG_INT||n.count<1){heap->error=ERROR_INVALID_REF;return 0;}
+ const unsigned char* bytes=get_payload_ptr(heap,&n);if(!bytes){heap->error=ERROR_INVALID_REF;return 0;}
+ union Bits{double d;unsigned long long u;} bits;bits.d=floating;
+ unsigned long long absolute=bits.u&0x7FFFFFFFFFFFFFFFULL;
+ if(!absolute){for(int i=0;i<n.count;i++)if(bytes[i])return 0;return 1;}
+ int exponent=(int)(absolute>>52)-1023;if(exponent<0||exponent>1023)return 0;
+ unsigned long long mantissa=(absolute&0xFFFFFFFFFFFFFULL)|0x10000000000000ULL;
+ int shift=exponent-52;
+ if(shift<0){int right=-shift;unsigned long long mask=(1ULL<<right)-1;if(mantissa&mask)return 0;mantissa>>=right;shift=0;}
+ int negative=(int)(bits.u>>63),extension=bytes[n.count-1]&0x80?255:0;
+ int width=exponent/8+2;if(width<n.count)width=n.count;unsigned int carry=negative?1:0;
+ for(int i=0;i<width;i++){
+  long long offset=(long long)i*8-shift;unsigned int magnitude=0;
+  if(offset>=0&&offset<64)magnitude=(unsigned int)((mantissa>>offset)&255ULL);
+  else if(offset<0&&offset> -8)magnitude=(unsigned int)((mantissa<<(-offset))&255ULL);
+  unsigned int expected=magnitude;
+  if(negative){expected=(255U-magnitude)+carry;carry=expected>>8;expected&=255U;}
+  unsigned int actual=i<n.count?bytes[i]:(unsigned int)extension;
+  if(actual!=expected)return 0;
+ }return 1;
+}
+
 __device__ inline int key_equal_internal(Heap* heap, int ref_a, int ref_b, int depth) {
     if (heap->error != ERROR_OK) return 0;
     if (depth > 32) {
@@ -721,38 +746,17 @@ __device__ inline int key_equal_internal(Heap* heap, int ref_a, int ref_b, int d
         return (fa == fb) ? 1 : 0;
     }
 
-    // Both int
-    if (na.tag == TAG_INT && nb.tag == TAG_INT) {
-        if (na.count == nb.count) {
-            const unsigned char* pa = get_payload_ptr(heap, &na);
-            const unsigned char* pb = get_payload_ptr(heap, &nb);
-            if (vm_memcmp(pa, pb, na.count) == 0) return 1;
-        }
-        if (na.count <= 8 && nb.count <= 8) {
-            long long ia = 0, ib = 0;
-            if (read_int64(heap, ref_a, &ia) != 0 || read_int64(heap, ref_b, &ib) != 0) return 0;
-            return (ia == ib) ? 1 : 0;
-        }
-        return 0;
+    // Both integers: compare normalized signed bytes, including arbitrary precision.
+    if(na.tag==TAG_INT&&nb.tag==TAG_INT){
+        const unsigned char* a=get_payload_ptr(heap,&na),*b=get_payload_ptr(heap,&nb);
+        if(!a||!b||na.count<1||nb.count<1){heap->error=ERROR_INVALID_REF;return 0;}
+        int ac=na.count,bc=nb.count;
+        while(ac>1&&((a[ac-1]==0&&!(a[ac-2]&128))||(a[ac-1]==255&&(a[ac-2]&128))))ac--;
+        while(bc>1&&((b[bc-1]==0&&!(b[bc-2]&128))||(b[bc-1]==255&&(b[bc-2]&128))))bc--;
+        return ac==bc&&vm_memcmp(a,b,ac)==0;
     }
-
-    // Mixed: bool and int
-    if (na.tag == TAG_BOOL && nb.tag == TAG_INT) {
-        long long ib = 0;
-        if (read_int64(heap, ref_b, &ib) != 0) {
-            if (heap->error == ERROR_INT_OVERFLOW) { heap->error = ERROR_OK; return 0; }
-            return 0;
-        }
-        return ((long long)na.extra == ib) ? 1 : 0;
-    }
-    if (na.tag == TAG_INT && nb.tag == TAG_BOOL) {
-        long long ia = 0;
-        if (read_int64(heap, ref_a, &ia) != 0) {
-            if (heap->error == ERROR_INT_OVERFLOW) { heap->error = ERROR_OK; return 0; }
-            return 0;
-        }
-        return (ia == (long long)nb.extra) ? 1 : 0;
-    }
+    if(na.tag==TAG_BOOL&&nb.tag==TAG_INT)return integer_equals_double(heap,ref_b,(double)na.extra);
+    if(na.tag==TAG_INT&&nb.tag==TAG_BOOL)return integer_equals_double(heap,ref_a,(double)nb.extra);
 
     // Mixed: bool and float
     if (na.tag == TAG_BOOL && nb.tag == TAG_FLOAT) {
@@ -766,34 +770,8 @@ __device__ inline int key_equal_internal(Heap* heap, int ref_a, int ref_b, int d
         return (fa == (double)nb.extra) ? 1 : 0;
     }
 
-    // Mixed: int and float
-    if (na.tag == TAG_INT && nb.tag == TAG_FLOAT) {
-        double fb = 0.0;
-        if (read_float64(heap, ref_b, &fb) != 0) return 0;
-        if (vm_isnan(fb)) return 0;
-        long long ia = 0;
-        if (read_int64(heap, ref_a, &ia) != 0) {
-            if (heap->error == ERROR_INT_OVERFLOW) { heap->error = ERROR_OK; return 0; }
-            return 0;
-        }
-        // Exact integer check for double
-        long long fb_int = (long long)fb;
-        if ((double)fb_int != fb) return 0;
-        return (ia == fb_int) ? 1 : 0;
-    }
-    if (na.tag == TAG_FLOAT && nb.tag == TAG_INT) {
-        double fa = 0.0;
-        if (read_float64(heap, ref_a, &fa) != 0) return 0;
-        if (vm_isnan(fa)) return 0;
-        long long ib = 0;
-        if (read_int64(heap, ref_b, &ib) != 0) {
-            if (heap->error == ERROR_INT_OVERFLOW) { heap->error = ERROR_OK; return 0; }
-            return 0;
-        }
-        long long fa_int = (long long)fa;
-        if ((double)fa_int != fa) return 0;
-        return (fa_int == ib) ? 1 : 0;
-    }
+    if(na.tag==TAG_INT&&nb.tag==TAG_FLOAT){double f=0;if(read_float64(heap,ref_b,&f)!=0)return 0;return integer_equals_double(heap,ref_a,f);}
+    if(na.tag==TAG_FLOAT&&nb.tag==TAG_INT){double f=0;if(read_float64(heap,ref_a,&f)!=0)return 0;return integer_equals_double(heap,ref_b,f);}
 
     return 0;
 }

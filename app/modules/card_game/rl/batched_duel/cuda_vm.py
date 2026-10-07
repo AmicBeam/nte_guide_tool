@@ -13,14 +13,19 @@ from .vm_heap import emit_vm_heap_source
 from .vm_collections import emit_collection_source, SUPPORTED_COLLECTION_OPS
 from .vm_objects import emit_object_source, OBJECT_OPS
 from .vm_builtins import emit_builtin_source,SUPPORTED_BUILTIN_NAMES
+from .vm_numeric import emit_numeric_source,NUMERIC_OPS
+from .vm_reducers import emit_reducer_source,SUPPORTED_REDUCER_NAMES
+from .vm_frame_gc import emit_frame_gc_source
+from .vm_random import emit_random_vm_source,SUPPORTED_RANDOM_NAMES
+from .random_source import emit_random_source
 
 SUPPORTED_OPS=frozenset(('NOP','EXTENDED_ARG','LOAD_CONST','LOAD_FAST','STORE_FAST','LOAD_GLOBAL',
-    'LOAD_DEREF','STORE_DEREF','LOAD_CLOSURE','BINARY_SUBSCR','COMPARE_OP','CONTAINS_OP','IS_OP',
+    'DELETE_FAST','LOAD_DEREF','STORE_DEREF','LOAD_CLOSURE','BINARY_SUBSCR','COMPARE_OP','CONTAINS_OP','IS_OP',
     'UNARY_NOT','UNARY_NEGATIVE','BINARY_ADD','BINARY_SUBTRACT','BINARY_MULTIPLY',
     'BUILD_TUPLE','BUILD_LIST','MAKE_FUNCTION','GET_ITER','FOR_ITER','GEN_START','YIELD_VALUE',
     'CALL_FUNCTION','CALL_FUNCTION_KW','CALL_FUNCTION_EX','POP_TOP','DUP_TOP','ROT_TWO','JUMP_ABSOLUTE','JUMP_FORWARD',
-    'POP_JUMP_IF_FALSE','POP_JUMP_IF_TRUE','JUMP_IF_FALSE_OR_POP','JUMP_IF_TRUE_OR_POP','RETURN_VALUE')) | SUPPORTED_COLLECTION_OPS | OBJECT_OPS
-SUPPORTED_INTRINSICS=frozenset(('next','object',*SUPPORTED_BUILTIN_NAMES))
+    'POP_JUMP_IF_FALSE','POP_JUMP_IF_TRUE','JUMP_IF_FALSE_OR_POP','JUMP_IF_TRUE_OR_POP','RETURN_VALUE')) | SUPPORTED_COLLECTION_OPS | OBJECT_OPS | NUMERIC_OPS
+SUPPORTED_INTRINSICS=frozenset(('next','object',*SUPPORTED_BUILTIN_NAMES,*SUPPORTED_REDUCER_NAMES,*SUPPORTED_RANDOM_NAMES))
 
 
 class VmCapabilityError(RuntimeError):pass
@@ -59,14 +64,14 @@ const int NATIVE_OBJECT={image.intrinsic_names.index('object') if 'object' in im
 enum VmError {{ BAD_PROGRAM=100,STACK_OVERFLOW=101,FRAME_OVERFLOW=102,UNBOUND_LOCAL=103,
  BAD_CALL=104,UNSUPPORTED_OP=105,UNSUPPORTED_TYPE=106,STEP_LIMIT=107,DEADLINE=108,STOP_ITERATION=109 }};
 '''
-    return emit_vm_heap_source()+prefix+_VM_SOURCE.replace('// COLLECTION_HANDLERS',emit_collection_source()).replace('// OBJECT_HANDLERS',emit_object_source(image)).replace('// BUILTIN_HANDLERS',emit_builtin_source(image.intrinsic_names))
+    return '#define BMT_DEVICE __device__\n'+emit_random_source()+emit_vm_heap_source()+prefix+_VM_SOURCE.replace('// COLLECTION_HANDLERS',emit_collection_source()).replace('// OBJECT_HANDLERS',emit_object_source(image)).replace('// BUILTIN_HANDLERS',emit_builtin_source(image.intrinsic_names)).replace('// NUMERIC_HANDLERS',emit_numeric_source()).replace('// REDUCER_HANDLERS',emit_reducer_source(image.intrinsic_names)).replace('// FRAME_GC_HANDLERS',emit_frame_gc_source()).replace('// RANDOM_HANDLERS',emit_random_vm_source(image.intrinsic_names))
 
 
 _VM_SOURCE=r'''
 // Frame: function,pc,sp,caller,status,return_kind,return_target,default,globals,closure,generator,cells_count.
 struct Context {
  Heap h; const int* classes;int class_count;const int* modules;int module_count; const int* instructions; const int* functions; int function_count; int* frames;
- int current; int output; int error; int steps; int step_limit; long long deadline;
+ int* gc_marks;int* gc_queue;int current; int output; int error; int steps; int step_limit; long long deadline;
 };
 __device__ inline unsigned long long clock_ns(){unsigned long long value;asm volatile("mov.u64 %0, %%globaltimer;" : "=l"(value));return value;}
 __device__ inline int* frame(Context* c,int id){return c->frames+id*STRIDE;}
@@ -109,13 +114,19 @@ __device__ inline int peek(Context* c,int* f){if(f[2]<=0){c->error=BAD_PROGRAM;r
 __device__ inline int truth_value(Context* c,int value){
  int tag=kind(c,value);if(tag==26)return range_size(c,value)!=0;if(tag==21||tag==22)return length(c,value)!=0;if(tag>=11)return 1;return duel_vm_heap::truth(&c->h,value);
 }
+// FRAME_GC_HANDLERS
 __device__ inline int new_frame(Context* c,int fid,const int* args,int nargs,int caller,int return_kind,
  int globals_override=MISSING,int closure_override=MISSING,int defaults_override=MISSING,
  int kw_names=MISSING,const int* kw_values=0,int nkw=0,int kwdefaults_override=MISSING){
  const int* fn=function(c,fid);if(!fn)return -1;
  if(fn[5]>VM_LOCALS || fn[6]>VM_STACK){c->error=BAD_CALL;return -1;}
  int id=-1;for(int i=0;i<VM_FRAMES;i++)if(frame(c,i)[4]==0){id=i;break;}
- if(id<0){c->error=FRAME_OVERFLOW;return -1;}
+ if(id<0){
+  collect_suspended(c,args,nargs,globals_override,closure_override,defaults_override,kw_names,kw_values,nkw,kwdefaults_override);
+  if(c->error||c->h.error)return -1;
+  for(int i=0;i<VM_FRAMES;i++)if(frame(c,i)[4]==0){id=i;break;}
+  if(id<0){c->error=FRAME_OVERFLOW;return -1;}
+ }
  int* f=frame(c,id);for(int i=0;i<STRIDE;i++)f[i]=MISSING;
  f[0]=fid;f[1]=fn[0];f[2]=0;f[3]=caller;f[4]=1;f[5]=return_kind;f[6]=-1;f[7]=MISSING;
  f[8]=globals_override==MISSING?fn[8]:globals_override;f[9]=closure_override==MISSING?fn[15]:closure_override;f[10]=-1;
@@ -193,8 +204,11 @@ __device__ inline long long range_size(Context* c,int ref){
  else{if(start<=stop)return 0;span=(unsigned long long)start-(unsigned long long)stop;increment=0ULL-(unsigned long long)step;}
  unsigned long long count=(span-1)/increment+1;if(count>9223372036854775807ULL){c->h.error=ERROR_INT_OVERFLOW;return 0;}return (long long)count;
 }
+// NUMERIC_HANDLERS
 // OBJECT_HANDLERS
 // BUILTIN_HANDLERS
+// REDUCER_HANDLERS
+// RANDOM_HANDLERS
 __device__ inline void call(Context* c,int callable,const int* args,int nargs,int caller,int kw_names=MISSING,const int* kw_values=0,int nkw=0){
  const int* n=node(c,callable);if(!n)return;
  int bound_args[VM_STACK];
@@ -214,9 +228,10 @@ __device__ inline void call(Context* c,int callable,const int* args,int nargs,in
   int id=new_frame(c,node(c,init)[3],args_with_self,nargs+1,caller,4,MISSING,MISSING,MISSING,kw_names,kw_values,nkw);
   if(id>=0){frame(c,id)[6]=instance;c->current=id;}return;
  }
+ if(reducer_call(c,callable,args,nargs,caller,kw_names,kw_values,nkw))return;
  int native_result=MISSING;
- if(nkw && (n[0]==T_NATIVE||n[0]==34)){c->error=BAD_CALL;return;}
- if(native_builtin_call(c,callable,args,nargs,&native_result)){
+ if(nkw && (n[0]==T_NATIVE||n[0]==34||n[0]==41)){c->error=BAD_CALL;return;}
+ if(random_call(c,callable,args,nargs,&native_result)||native_builtin_call(c,callable,args,nargs,&native_result)){
   if(!c->error&&!c->h.error)push(c,frame(c,caller),native_result);return;
  }
  if(n[0]==T_NATIVE){
@@ -240,12 +255,13 @@ __device__ inline void call(Context* c,int callable,const int* args,int nargs,in
 __device__ inline void return_value(Context* c,int value,int yielded){
  int id=c->current;int* f=frame(c,id);int caller=f[3],mode=f[5],target=f[6],fallback=f[7];
  if(yielded){
-  if(f[10]<0 || caller<0){c->error=BAD_CALL;return;}f[4]=2;push(c,frame(c,caller),value);c->current=caller;return;
+  if(f[10]<0 || caller<0){c->error=BAD_CALL;return;}f[4]=2;if(mode==5){reducer_resume(c,f[10],caller,target,value,0);return;}push(c,frame(c,caller),value);c->current=caller;return;
  }
  if(f[10]>=0){
   int* gen=mutable_node(c,f[10]);if(gen)gen[3]=-1;
   f[4]=0;c->current=caller;
   if(caller<0){c->error=BAD_CALL;return;}
+  if(mode==5){reducer_resume(c,f[10],caller,target,MISSING,1);return;}
   if(mode==2){pop(c,frame(c,caller));frame(c,caller)[1]=target;}
   else if(fallback!=MISSING)push(c,frame(c,caller),fallback);else c->error=STOP_ITERATION;
  }else{
@@ -266,16 +282,30 @@ __device__ inline int subscript(Context* c,int owner,int key){
 }
 __device__ inline int contains(Context* c,int needle,int owner){
  int tag=kind(c,owner);if(tag==TAG_DICT || (tag>=8&&tag<=10))return dict_find(&c->h,owner,needle)>=0;
- if(tag==21)return set_contains(c,needle,owner);
+ if(tag==21||tag==22)return set_contains(c,needle,owner);
+ if(tag==TAG_STR){
+  if(kind(c,needle)!=TAG_STR){c->error=UNSUPPORTED_TYPE;return 0;}
+  NodeView a,b;get_node(&c->h,owner,&a);get_node(&c->h,needle,&b);
+  const unsigned char* ap=get_payload_ptr(&c->h,&a),*bp=get_payload_ptr(&c->h,&b);
+  for(int i=0;i<=a.count-b.count;i++){int equal=1;for(int j=0;j<b.count;j++)if(ap[i+j]!=bp[j]){equal=0;break;}if(equal)return 1;}return 0;
+ }
  if(tag!=TAG_LIST && tag!=TAG_TUPLE){c->error=UNSUPPORTED_TYPE;return 0;}
- int n=length(c,owner);for(int i=0;i<n;i++)if(key_equal(&c->h,needle,edge(c,owner,i)))return 1;return 0;
+ int n=length(c,owner);for(int i=0;i<n;i++)if(vm_equal(c,needle,edge(c,owner,i)))return 1;return 0;
 }
 __device__ inline int compare(Context* c,int a,int b,int mode){
- if(mode==2 || mode==3){int eq=key_equal(&c->h,a,b);return mode==2?eq:!eq;}
+ if(mode==2 || mode==3){int eq=vm_equal(c,a,b);return mode==2?eq:!eq;}
  int ta=kind(c,a),tb=kind(c,b),cmp=0;
  if(ta==TAG_STR&&tb==TAG_STR)cmp=str_compare(&c->h,a,b);
  else if((ta==TAG_INT||ta==TAG_BOOL)&&(tb==TAG_INT||tb==TAG_BOOL)){
-  long long aa=0,bb=0;read_int64(&c->h,a,&aa);read_int64(&c->h,b,&bb);cmp=aa<bb?-1:aa>bb?1:0;
+  long long aa=0,bb=0;numeric_int(c,a,&aa);numeric_int(c,b,&bb);cmp=aa<bb?-1:aa>bb?1:0;
+ }else if(ta==TAG_FLOAT||tb==TAG_FLOAT){
+  if((ta!=TAG_FLOAT&&ta!=TAG_INT&&ta!=TAG_BOOL)||(tb!=TAG_FLOAT&&tb!=TAG_INT&&tb!=TAG_BOOL)){c->error=UNSUPPORTED_TYPE;return 0;}
+  if(ta==TAG_FLOAT&&tb==TAG_FLOAT){double aa=0,bb=0;numeric_double(c,a,&aa);numeric_double(c,b,&bb);cmp=aa<bb?-1:aa>bb?1:0;}
+  else{int integer_ref=ta==TAG_FLOAT?b:a,float_ref=ta==TAG_FLOAT?a:b;long long integer=0;double floating=0;numeric_int(c,integer_ref,&integer);numeric_double(c,float_ref,&floating);
+   if(floating>=9223372036854775808.0)cmp=-1;else if(floating< -9223372036854775808.0)cmp=1;
+   else{long long truncated=(long long)floating;cmp=integer<truncated?-1:integer>truncated?1:((double)truncated<floating?-1:(double)truncated>floating?1:0);}
+   if(ta==TAG_FLOAT)cmp=-cmp;
+  }
  }else{c->error=UNSUPPORTED_TYPE;return 0;}
  if(mode==0)return cmp<0;if(mode==1)return cmp<=0;if(mode==4)return cmp>0;if(mode==5)return cmp>=0;
  c->error=UNSUPPORTED_OP;return 0;
@@ -293,6 +323,7 @@ __device__ inline void execute(Context* c){
    case OP_LOAD_CONST:push(c,f,value);break;
    case OP_LOAD_FAST:if(arg<0||arg>=fn[5])c->error=BAD_PROGRAM;else if(f[LBASE+arg]==MISSING)c->error=UNBOUND_LOCAL;else push(c,f,f[LBASE+arg]);break;
    case OP_STORE_FAST:if(arg<0||arg>=fn[5])c->error=BAD_PROGRAM;else f[LBASE+arg]=pop(c,f);break;
+   case OP_DELETE_FAST:if(arg<0||arg>=fn[5])c->error=BAD_PROGRAM;else f[LBASE+arg]=MISSING;break;
    case OP_LOAD_GLOBAL:{int v=dict_get(&c->h,f[8],value,MISSING);if(v==MISSING)c->error=UNBOUND_LOCAL;else push(c,f,v);break;}
    case OP_LOAD_DEREF:case OP_LOAD_CLOSURE:case OP_STORE_DEREF:{
     if(arg<0||arg>=f[11]){c->error=BAD_PROGRAM;break;}int ref=f[CBASE+arg];int* cell=mutable_node(c,ref);
@@ -336,6 +367,7 @@ __device__ inline void execute(Context* c){
     int owner=op==OP_IMPORT_FROM?peek(c,f):pop(c,f),getter=0;
     int attr=object_attribute(c,owner,value,&getter);
     if(attr==MISSING&&!c->error&&!c->h.error)attr=builtin_attribute(c,owner,value);
+    if(attr==MISSING&&!c->error&&!c->h.error)attr=random_attribute(c,owner,value);
     if(attr==MISSING){c->error=UNSUPPORTED_TYPE;break;}
     if(getter){if(op==OP_LOAD_METHOD){c->error=UNSUPPORTED_TYPE;break;}call(c,attr,0,0,c->current);}
     else{if(op==OP_LOAD_METHOD)push(c,f,NIL);push(c,f,attr);}break;
@@ -359,15 +391,11 @@ __device__ inline void execute(Context* c){
     if(ta==TAG_NONE&&tb==TAG_NONE)yes=1;else if(ta==TAG_BOOL&&tb==TAG_BOOL)yes=node(c,a)[3]==node(c,b)[3];
     push(c,f,(arg?!yes:yes)?TRUE_REF:FALSE_REF);break;}
    case OP_UNARY_NOT:{int yes=truth_value(c,pop(c,f));push(c,f,yes?FALSE_REF:TRUE_REF);break;}
-   case OP_UNARY_NEGATIVE:{long long a=0;read_int64(&c->h,pop(c,f),&a);if(a==(-9223372036854775807LL-1))c->error=UNSUPPORTED_TYPE;else push(c,f,make_int64(&c->h,-a));break;}
-   case OP_BINARY_ADD:case OP_BINARY_SUBTRACT:case OP_BINARY_MULTIPLY:{
-    long long b=0,a=0;read_int64(&c->h,pop(c,f),&b);read_int64(&c->h,pop(c,f),&a);long long result=0;
-    // Wider integer arithmetic is not silently narrowed.
-    if(op==OP_BINARY_ADD){result=(long long)((unsigned long long)a+(unsigned long long)b);if((b>0&&result<a)||(b<0&&result>a))c->error=UNSUPPORTED_TYPE;}
-    else if(op==OP_BINARY_SUBTRACT){result=(long long)((unsigned long long)a-(unsigned long long)b);if((b<0&&result<a)||(b>0&&result>a))c->error=UNSUPPORTED_TYPE;}
-    else{if((a==(-9223372036854775807LL-1)&&b==-1)||(b==(-9223372036854775807LL-1)&&a==-1))c->error=UNSUPPORTED_TYPE;
-     else{result=(long long)((unsigned long long)a*(unsigned long long)b);if(b && result/b!=a)c->error=UNSUPPORTED_TYPE;}}
-    if(!c->error&&!c->h.error)push(c,f,make_int64(&c->h,result));break;
+   case OP_UNARY_NEGATIVE:{int ref=pop(c,f);if(kind(c,ref)==TAG_FLOAT){double a=0;read_float64(&c->h,ref,&a);push(c,f,make_float64(&c->h,-a));}
+    else{long long a=0;numeric_int(c,ref,&a);if(a==(-9223372036854775807LL-1))c->h.error=ERROR_INT_OVERFLOW;else push(c,f,make_int64(&c->h,-a));}break;}
+   case OP_BINARY_ADD:case OP_BINARY_SUBTRACT:case OP_BINARY_MULTIPLY:case OP_INPLACE_ADD:case OP_INPLACE_SUBTRACT:case OP_INPLACE_MULTIPLY:
+   case OP_BINARY_TRUE_DIVIDE:case OP_BINARY_FLOOR_DIVIDE:case OP_BINARY_AND:{
+    int b=pop(c,f),a=pop(c,f);push(c,f,numeric_binary(c,a,b,op));break;
    }
    case OP_JUMP_ABSOLUTE:case OP_JUMP_FORWARD:f[1]=target;break;
    case OP_POP_JUMP_IF_FALSE:case OP_POP_JUMP_IF_TRUE:{int yes=truth_value(c,pop(c,f));if(yes==(op==OP_POP_JUMP_IF_TRUE))f[1]=target;break;}
@@ -397,9 +425,9 @@ extern "C" __global__ void vm_execute(
  const int* instructions,const int* functions,int function_count,
  int constant_node_count,int constant_edge_count,int constant_payload_count,
  int* frames,int* outputs,int* statuses,const long long* deadlines,
- int rows,int max_nodes,int max_edges,int max_payload,int entry,int step_limit,const int* classes,int class_count,const int* modules,int module_count){
+ int rows,int max_nodes,int max_edges,int max_payload,int entry,int step_limit,const int* classes,int class_count,const int* modules,int module_count,int* gc_marks,int* gc_queue){
  using namespace duel_rule_vm;int tid=(int)(blockIdx.x*blockDim.x+threadIdx.x);if(tid>=rows)return;
- Context c;c.classes=classes;c.class_count=class_count;c.modules=modules;c.module_count=module_count;c.h.nodes=nodes+(long long)tid*max_nodes*4;c.h.edges=edges+(long long)tid*max_edges*2;
+ Context c;c.gc_marks=gc_marks+(long long)tid*max_nodes;c.gc_queue=gc_queue+(long long)tid*max_nodes;c.classes=classes;c.class_count=class_count;c.modules=modules;c.module_count=module_count;c.h.nodes=nodes+(long long)tid*max_nodes*4;c.h.edges=edges+(long long)tid*max_edges*2;
  c.h.payload=payload+(long long)tid*max_payload;c.h.counts=counts+tid*3;
  c.h.max_nodes=max_nodes;c.h.max_edges=max_edges;c.h.max_payload=max_payload;
  c.h.constant_nodes=constants_nodes;c.h.constant_edges=constants_edges;c.h.constant_payload=constants_payload;
@@ -426,8 +454,8 @@ class DeviceGraph:
 
 
 class DeviceCall:
-    def __init__(self,executor,arena,outputs,statuses,frames,event):
-        self.executor=executor;self.arena=arena;self.outputs=outputs;self.statuses=statuses;self.frames=frames;self.event=event
+    def __init__(self,executor,arena,outputs,statuses,frames,event,scratch_buffers=()):
+        self.executor=executor;self.arena=arena;self.outputs=outputs;self.statuses=statuses;self.frames=frames;self.event=event;self.scratch_buffers=scratch_buffers
     def check(self):
         self.event.synchronize();statuses=self.statuses.cpu().numpy()
         bad=np.flatnonzero(statuses[:,0])
@@ -513,7 +541,7 @@ class CudaVm:
             ('instructions','functions','nodes','edges','payload','classes','modules')}
         signature=['int32*','int32*','uint8*','int32*','int32*','int32',
             'int32*','int32*','uint8*','int32*','int32*','int32','int32','int32','int32',
-            'int32*','int32*','int32*','int64*','int32','int32','int32','int32','int32','int32','int32*','int32','int32*','int32']
+            'int32*','int32*','int32*','int64*','int32','int32','int32','int32','int32','int32','int32*','int32','int32*','int32','int32*','int32*']
         compact_signature=['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
             'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*','int32*','int32*','int32*',
             'int32','int32','int32','int32','int32']
@@ -550,11 +578,12 @@ class CudaVm:
         frames=torch.empty((rows,self.limits.frames,stride),dtype=torch.int32,device=self.device)
         outputs=torch.empty(rows,dtype=torch.int32,device=self.device);statuses=torch.zeros((rows,4),dtype=torch.int32,device=self.device)
         b=self._buffers;l=arena.layout
+        gc_marks=torch.empty((rows,l.max_nodes),dtype=torch.int32,device=self.device);gc_queue=torch.empty_like(gc_marks)
         event=self.module.launch('vm_execute',[scratch.nodes,scratch.edges,scratch.payload,scratch.counts,argument_refs,argument_refs.shape[1],
             b['nodes'],b['edges'],b['payload'],b['instructions'],b['functions'],len(self.image.functions),
             len(self.image.nodes),len(self.image.edges),len(self.image.payload),frames,outputs,statuses,gpu_deadlines,
-            rows,l.max_nodes,l.max_edges,l.max_payload_bytes,self.image.entries[entry],self.limits.steps,b['classes'],len(self.image.classes),b['modules'],len(self.image.modules)],grid=(rows+127)//128,block=128)
-        return DeviceCall(self,scratch,outputs,statuses,frames,event)
+            rows,l.max_nodes,l.max_edges,l.max_payload_bytes,self.image.entries[entry],self.limits.steps,b['classes'],len(self.image.classes),b['modules'],len(self.image.modules),gc_marks,gc_queue],grid=(rows+127)//128,block=128)
+        return DeviceCall(self,scratch,outputs,statuses,frames,event,(gc_marks,gc_queue))
     def close(self):
         if self.closed:return
         self.module.close();self._buffers.clear();self.closed=True

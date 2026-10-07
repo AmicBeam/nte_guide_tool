@@ -50,6 +50,12 @@
 
 `gpu_observation.py` 从紧凑公开 token 在显式 GPU 构造 2,420 列观察，完成角色散射、缺席默认值、资源归一化、牌库存量、金谷、限时增益与可见原牌统计。直接设备 token 入口严格校验类型、形状、身份域、重复角色座位、掩码和有限数值。主机公开 token 提取仍未替换为完整 GPU 投影；不能把这个过渡适配称为 GPU 规则／观察全链路。`tests.test_duel_v2_gpu_observation` 包含五套规则状态和 1,600 行真实 CUDA 编码对拍，行样本不是完整对局。
 
+`vm_numeric.py` 提供有界整数／浮点运算、符号取整、序列原地相加及迭代容器比较。整数与 binary64 的数学相等直接比较精确表示，避免 `int64` 边界的强制类型转换和大整数舍入误判；超出已支持运算域仍明确拒绝。
+
+`vm_reducers.py` 通过 VM 挂起／恢复生成器计算 `all/any/sum/min/max`，保留短路后仍被引用的生成器；`min/max` 的 `key` 回调暂未支持，不会忽略后继续。`vm_frame_gc.py` 从活跃执行帧和待调用输入在设备遍历引用，仅回收已无引用的悬挂生成器执行槽；可达生成器继续保留。受保护生成器的终结逻辑未实现时明确失败，不静默丢弃。
+
+`vm_random.py` 将整数种子的 Random 对象绑定到已对拍的 MT19937 原语，在 GPU 保留每个对象的状态，支持洗牌、选择、取位、整数范围及 53 位浮点抽样。载荷按实际设备地址对齐，奇数行跨度也不产生未对齐访问。无参／非整数种子和完整 `getstate/setstate` 暂不支持，不能宣称任意 Python 随机对象兼容。它仍不能替代完整公开一致性采样流程。以上由 `tests.test_duel_v2_cuda_vm` 的设备执行用例验证，完整 GPU 对局仍单独验收。
+
 上述组件的真实 CUDA 子集对拍、1,600 行标量／编码或实体复制测试都不代表 1,600 个完整 GPU 对局。完整五队合法动作、物理推进、公开一致性采样、观察、搜索预算、录像和行为审计仍须逐项接通并验证。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_vm_image tests.test_duel_v2_vm_heap tests.test_duel_v2_vm_collections tests.test_duel_v2_cuda_vm tests.test_duel_v2_gpu_candidates`。没有 CUDA 时必须记录跳过；Windows 3.13 用显式冻结程序目录 `NTE_VM_TEST_PROGRAM_DIR`，不得以跳过或 source emission 成功替代设备执行。

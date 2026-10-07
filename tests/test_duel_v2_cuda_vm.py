@@ -79,6 +79,66 @@ def constructor_probe(value):
     return box.run(3),box.scaled,box.tagvalue()
 
 
+def numeric_probe(value):
+    a,b=value
+    changed=a
+    changed+=b
+    changed-=b
+    changed*=b
+    return a+b,a-b,a*b,a//b,a/b,a<b,a>=b,-a,changed,int(a)&7,True+2,True<2.0
+
+
+def precision_compare(value):
+    a,b=value
+    return a<b,a>b,a==b,a<=b,a>=b
+
+
+def exact_equality(value):return value[0]==value[1]
+
+
+def reducer_probe(value):
+    generator=(item for item in value)
+    found=any(generator)
+    after=next(generator,None)
+    return (all(item>0 for item in value),found,after,
+        sum((item*.5 for item in value),start=1.25),min((item for item in value),default=-3),
+        max((item for item in value),default=7),min(3,7,-1),max(3,7,-1),sum(range(4)),all([]),any([]))
+
+
+def generator_collection_probe(count):
+    kept=(item for item in (0,5,9))
+    first=any(kept)
+    total=0
+    for i in range(count):
+        if any(item for item in (1,2,3)):total+=1
+        total+=sum(item for item in (1,2))
+    return total,first,next(kept,None),next(kept,None)
+
+
+def random_probe(seed):
+    from random import Random
+    rng=Random(seed)
+    items=[{'id':'a'},{'id':'b'},{'id':'c'},{'id':'d'}]
+    rng.shuffle(items)
+    chosen=rng.choice(items)
+    bits=rng.getrandbits(64)
+    zero=rng.getrandbits(0)
+    numbers=(rng.randrange(5),rng.randrange(-11,15,3),rng.randrange(8,-12,-3),rng.randint(-100,100),rng.random(),rng.getrandbits(63))
+    rng.seed(seed)
+    repeated=rng.getrandbits(64)
+    return items,chosen,bits,zero,numbers,repeated
+
+
+def equality_probe(value):
+    first={'k':[value,1.0]};second={'k':[value,1]}
+    items=[value];alias=items;items+=[3]
+    nested=[first,second];nested.remove({'k':[value,1]})
+    text='真';text+='红'
+    pair=('a',);pair+=('b',)
+    return (first==second,first['k'] in [second['k']],items is alias,items,nested,text,pair,
+        '红' in '真红队','' in '', '异' not in '真红队','a' in {'a','b'})
+
+
 def native_probe(value):
     mapping=dict(value)
     mapping.setdefault('added',7)
@@ -125,7 +185,7 @@ def test_program(stem,entry,function,*,own=False):
     return program
 
 
-ALL_VM_ENTRIES=('add','u','actor','collections','echo','signature','attributes','import','native','construct')
+ALL_VM_ENTRIES=('add','u','actor','collections','echo','signature','attributes','import','native','construct','numeric','precision','equality','hero','alive','order','exact','reducers','frame_gc','random')
 
 
 class SourceTest(unittest.TestCase):
@@ -257,6 +317,88 @@ class CudaExecutionTest(unittest.TestCase):
             self.assertTrue(vm.capability('native')['ready'])
             actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(2,8192,8192,65536))),'native').decode()
         self.assertEqual(actual,[native_probe(v) for v in values])
+
+    def test_numeric_types_floor_sign_and_precise_mixed_comparisons(self):
+        import struct
+        values=[[-11,3],[11,-3],[-11,-3],[1.0,.1],[-1.0,.1],[3.3,.1],[0.0,-3.0],[-0.0,3.0],[3.25,.5]]
+        p=test_program('numeric','numeric',numeric_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),2048,2048,16384))),'numeric').decode()
+        expected=[numeric_probe(v) for v in values]
+        self.assertEqual(actual,expected)
+        for row,oracle in zip(actual,expected):
+            if isinstance(oracle[3],float):self.assertEqual(struct.pack('<d',row[3]),struct.pack('<d',oracle[3]))
+        values=[[2**53+1,float(2**53)],[2**63-1,float(2**63)],[-2**63,float(-2**63)],[-2**63,-float(2**63)-2048.]]
+        p=test_program('precision','precision',precision_compare,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(4,2048,2048,16384))),'precision').decode()
+        self.assertEqual(actual,[precision_compare(v) for v in values])
+
+    def test_recursive_equality_contains_and_inplace_alias_semantics(self):
+        p=test_program('equality','equality',equality_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states([2,5.0],GraphLayout(2,4096,4096,32768))),'equality').decode()
+        self.assertEqual(actual,[equality_probe(2),equality_probe(5.0)])
+
+    def test_exact_integer_float_equality_beyond_int64(self):
+        values=[[2**80,float(2**80)],[2**80+1,float(2**80)],[-2**80,-float(2**80)],[-2**80+1,-float(2**80)],
+            [float(2**63),2**63-1],[float(-2**63),-2**63],[True,1],[False,0]]
+        p=test_program('exact','exact',exact_equality,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),2048,2048,16384))),'exact').decode()
+        self.assertEqual(actual,[exact_equality(v) for v in values])
+
+    def test_reducers_suspend_resume_shortcircuit_and_empty_defaults(self):
+        p=test_program('reducers','reducers',reducer_probe,own=True)
+        values=[[],[0,1,2],[-3,0,5],[1,2,3]]
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(4,8192,16384,65536))),'reducers').decode()
+        self.assertEqual(actual,[reducer_probe(v) for v in values])
+
+    def test_abandoned_generators_reclaimed_without_losing_live_generator(self):
+        p=test_program('frame_gc','frame_gc',generator_collection_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states([100],GraphLayout(1,16384,32768,131072))),'frame_gc').decode()
+        self.assertEqual(actual,[generator_collection_probe(100)])
+
+    def test_random_seed_mutation_shuffle_bits_and_odd_row_alignment(self):
+        import random
+        from unittest.mock import patch
+        seeds=[-2**63,-1,0,1,2**63-1]
+        expected=[random_probe(seed) for seed in seeds]
+        p=test_program('random','random',random_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            arena=vm.ingest(pack_states(seeds,GraphLayout(5,4096,8192,32769)))
+            with patch.object(random,'Random',side_effect=AssertionError('CPU Random fallback')):
+                actual=vm.launch(arena,'random').decode()
+        self.assertEqual(actual,expected)
+        for result in actual:self.assertTrue(any(result[1] is item for item in result[0]))
+
+    def test_formal_state_helpers_run_from_device_arguments(self):
+        from app.modules.card_game.engine.duel_v2 import state,new_game
+        from unittest.mock import patch
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS,validate_deck
+        from copy import deepcopy
+        rows=[]
+        for deck in STARTER_DECKS:
+            if deck['id'] not in ('starter','weave-rush','quick-rush','zhenhong','murk'):continue
+            game=new_game(seed=7200+len(rows),skip_mulligan=True,decks={'a':validate_deck(deepcopy(deck)),'b':validate_deck(deepcopy(deck))})
+            for side in ('a','b'):
+                cid=next(iter(game['sides'][side]['characters']));game['sides'][side]['characters'][cid]['hp']=3.25
+                if side=='b':game['sides'][side].pop('order',None)
+                rows.append([game,side,cid])
+        packed=pack_states(rows,GraphLayout(len(rows),8192,16384,131072))
+        for entry,fn,width in (('hero',state.hero,3),('alive',state.alive,3),('order',state.team_order,2)):
+            expected=[fn(*row[:width]) for row in rows]
+            p=test_program(entry,entry,fn)
+            with self.executor(lower_program(p)) as vm:
+                arena=vm.ingest(packed);torch=vm.torch
+                positions=arena.nodes[torch.arange(len(rows),device=vm.device),arena.roots.long(),1].long()
+                indices=positions[:,None]+torch.arange(width,device=vm.device)[None,:]
+                args=arena.edges[torch.arange(len(rows),device=vm.device)[:,None],indices,0].contiguous()
+                with patch.object(state,fn.__name__,side_effect=AssertionError('CPU rule fallback')):
+                    actual=vm.launch(arena,entry,argument_refs=args).decode()
+            self.assertEqual(actual,expected)
 
 
 if __name__=='__main__':unittest.main()

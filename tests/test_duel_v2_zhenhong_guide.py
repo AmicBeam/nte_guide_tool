@@ -31,6 +31,33 @@ class ZhenhongGuideTest(unittest.TestCase):
         r=self.guide(s,dict(type='attack',character_id='zhenhong'))
         after=apply_action(s,'a',r['selected'])
         self.assertTrue(front_debuff(after,'b').get('delay'))
+    def test_zero_battle_then_yi_battle_sets_up_fangs_and_delay_together(self):
+        s=self.game(['I04','Z04','I01'])
+        held={c['card_id']:c['instance_id'] for c in s['sides']['a']['hand']}
+        baseline=dict(type='play_card',card_id=held['I04'])
+        r=self.guide(s,baseline);self.assertEqual(r['selected'],dict(type='play_card',card_id=held['Z04']))
+        self.assertIn([dict(type='play_card',card_id=held['Z04']),dict(type='play_card',card_id=held['I01'])],r['priority_routes'])
+        s=apply_action(s,'a',r['selected']);self.assertEqual(hero(s,'a','zero')['harmony'],2)
+        self.assertFalse(hero(s,'a','yi').get('beast_fangs'))
+        r=self.guide(s,baseline);self.assertEqual(r['selected'],dict(type='play_card',card_id=held['I01']))
+        s=apply_action(s,'a',r['selected'])
+        self.assertEqual(hero(s,'a','yi')['beast_fangs'],4)
+        self.assertEqual(front_debuff(s,'b')['delay']['by'],'a')
+        self.assertEqual(hero(s,'a','zero')['harmony'],0)
+        self.assertEqual(s['sides']['a']['ap'],0)
+    def test_macro_does_not_bypass_ap_or_dead_harmony_payer(self):
+        for mode in ('one_ap','fatal_zero'):
+            s=self.game(['I04','Z04','I01'])
+            if mode=='one_ap':s['sides']['a']['ap']=1
+            else:
+                s['sides']['b']['front']='zero';foe=hero(s,'b','zero')
+                foe['base_stats']['attack']=20;foe.update(hp=50,max_hp=50)
+            baseline=dict(type='play_card',card_id=s['sides']['a']['hand'][0]['instance_id'])
+            r=self.guide(s,baseline);self.assertEqual(r['priority_routes'],[])
+    def test_free_fangs_remains_a_fallback_without_yi_battle(self):
+        s=self.game(['I04','Z04']);baseline=dict(type='attack',character_id='zero')
+        r=self.guide(s,baseline);self.assertEqual(r['priority_routes'],[])
+        self.assertEqual(r['selected'],dict(type='play_card',card_id=s['sides']['a']['hand'][0]['instance_id']))
     def test_existing_delay_cashout_beats_paid_fangs(self):
         s=self.game(['I01']);s['sides']['a']['ap']=1;s['sides']['a']['last_front']='zero';hero(s,'a','zero')['harmony']=2
         front_debuff(s,'b')['delay']=dict(left=2,by='a',tick_side='a')
@@ -91,11 +118,14 @@ class ZhenhongOpeningGuideTest(unittest.TestCase):
             self.assertEqual(r['selected']['card_ids'],[c['instance_id'] for c in s['sides'][side]['hand'] if c['card_id']=='Y06'])
             after=apply_action(s,side,r['selected']);held={c['instance_id'] for c in after['sides'][side]['hand']}
             self.assertTrue(all(c['instance_id'] in held for c in s['sides'][side]['hand'] if c['card_id'] in ('I01','Z04')))
-    def test_prefer_free_fangs_but_allow_redundant_fangs_to_be_swapped(self):
+    def test_keep_yi_battle_to_pair_with_zero_battle(self):
         s=self.game(['I04','I03','I01','Z03','R02']);r=self.repair(s,'a',('I04','I03','I01'))
-        self.assertEqual({c['card_id'] for c in r['protected']},{'I04','Z03'})
+        self.assertEqual({c['card_id'] for c in r['protected']},{'I01','Z03'})
         outgoing={c['card_id'] for c in s['sides']['a']['hand'] if c['instance_id'] in r['selected']['card_ids']}
-        self.assertEqual(outgoing,{'I03','I01'})
+        self.assertEqual(outgoing,{'I04','I03'})
+    def test_free_fangs_preference_without_zero_battle(self):
+        s=self.game(['I04','I03','I01','R02','Y03']);r=self.repair(s,'a',('I04','I03','I01'))
+        self.assertEqual({c['card_id'] for c in r['protected']},{'I04'})
     def test_draw_backup_is_kept_when_core_is_missing(self):
         for keys,backup in [(['I01','R01','R02','Y03','Y06'],'R01'),(['Z04','Y02','R02','Y03','Y06'],'Y02')]:
             s=self.game(keys);r=self.repair(s,'a',tuple(keys[:3]));self.assertIn(backup,{c['card_id'] for c in r['protected']})

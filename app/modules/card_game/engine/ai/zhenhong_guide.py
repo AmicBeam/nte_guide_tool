@@ -7,7 +7,7 @@ from copy import deepcopy
 from hashlib import sha256
 import time
 
-VERSION = 'zhenhong_setup_v2'
+VERSION = 'zhenhong_setup_v3'
 MAX_PLANS = 24
 SECONDS = .75
 
@@ -18,6 +18,9 @@ def _opening_keep(hand, baseline):
     fang_order = {'I04': 0, 'I03': 1, 'I01': 2, 'I02': 3}
     fangs = [c for c in hand if c.get('character_id') == 'yi' and c['card_id'] in fang_order]
     battles = [c for c in hand if c.get('character_id') == 'zero' and c['type'] == 'battle']
+    if battles:
+        # Zero battle -> Yi battle arms fangs and delay together.
+        fang_order = {'I01': 0, 'I02': 1, 'I04': 2, 'I03': 3}
     backups = [c for c in hand if c['card_id'] in ('R01', 'Y02')]
     protected = []
     if fangs:
@@ -134,6 +137,40 @@ def recommend(state, side, baseline, *, seed=None, seconds=SECONDS, max_plans=MA
         result.update(reason='preserve_winning_action', seconds=time.monotonic()-start); return result
     hand = {c['instance_id']: c for c in own['hand']}
     features = result['stage_before']
+    result['priority_routes'] = []
+
+    # Check the complete user-specified macro before spending the small beam
+    # budget on individually attractive fangs-first prefixes.
+    if not features['delay']:
+        zero_cards = []
+        yi_cards = []
+        for action in legal:
+            if action['type'] != 'play_card': continue
+            face = effective_card(state, side, hand[action['card_id']])
+            if face['character_id'] == 'zero' and face['type'] == 'battle': zero_cards.append(action)
+            if face['card_id'] in ('I01', 'I02') and face['character_id'] == 'yi': yi_cards.append(action)
+
+        def completes_setup(entry):
+            return entry is not None and all(
+                _features(w, side)['fangs'] and _features(w, side)['delay']
+                and w['sides'][side]['characters']['zero']['hp'] > 0
+                and w['sides'][side]['characters']['yi']['hp'] > 0 for w in entry[2])
+
+        # Also reserve coverage for the second half when Zero is already ready.
+        if all(resolved_harmony_kind(w, side, 'yi') == '延滞' for w in worlds):
+            for second in yi_cards:
+                entry = evaluate([second], worlds)
+                if completes_setup(entry): result['priority_routes'].append(deepcopy(entry[1]))
+        for first in zero_cards[:3]:
+            entry = evaluate([first], worlds)
+            if entry is None: continue
+            starts = entry[2]
+            if any(w['phase'] != 'playing' or acting_side(w) != side
+                   or w['sides'][side]['characters']['zero']['hp'] <= 0
+                   or resolved_harmony_kind(w, side, 'yi') != '延滞' for w in starts): continue
+            for second in yi_cards:
+                route = evaluate([first, second], starts)
+                if completes_setup(route): result['priority_routes'].append(deepcopy(route[1]))
 
     def order(action):
         cid = action.get('character_id'); face = None
@@ -159,11 +196,12 @@ def recommend(state, side, baseline, *, seed=None, seconds=SECONDS, max_plans=MA
         for action in legal_actions(starts[0], side):
             if action['type'] not in ('attack', 'play_card', 'ultimate'): continue
             evaluate(route+[action], starts)
-    best = max(options, key=lambda row: (row[0], row[1][0] == baseline, -len(row[1])))
+    best = max(options, key=lambda row: (row[0], -len(row[1]), row[1][0] == baseline))
     result.update(reason='keep_model', baseline_rank=list(original[0]), best_rank=list(best[0]),
                   route=deepcopy(best[1]), seconds=time.monotonic()-start)
     if best[0] > original[0] and best[1][0] != baseline:
-        result.update(selected=deepcopy(best[1][0]), changed=True, reason='setup_progress_or_safety',
+        reason = ('zero_battle_yi_battle' if len(best[1]) == 2 else 'yi_battle_finish_setup') if best[1] in result['priority_routes'] else 'setup_progress_or_safety'
+        result.update(selected=deepcopy(best[1][0]), changed=True, reason=reason,
                       sampled_checks=[dict(features=_features(w, side), rank=list(_rank(base, w, side)))
                                       for base, w in zip(worlds, best[2])])
     return result

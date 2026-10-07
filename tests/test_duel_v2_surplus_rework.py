@@ -103,7 +103,7 @@ class SurplusReworkTest(unittest.TestCase):
         self.assertIsNone(s['sides']['a']['front'])
 
     def test_conditional_battles_use_shared_instant_and_base_attack(self):
-        for key, surplus, amount in [('R02',False,2),('R02',True,2),('R03',True,3),('R04',True,4)]:
+        for key, surplus, amount in [('R02',False,1),('R02',True,1),('R03',True,2),('R04',True,3)]:
             with self.subTest(key=key,surplus=surplus):
                 s=self.game();s['sides']['a']['surplus']=surplus
                 if key=='R04':s['sides']['a']['ap']=0
@@ -117,7 +117,7 @@ class SurplusReworkTest(unittest.TestCase):
         h.update(hp=5,down_turns=0)
         s=self.play(s,'R06');h=hero(s,'a','zhenhong')
         self.assertEqual(h['shield'],3)
-        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],5)
+        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],4)
         self.assertEqual(h['extra_attacks'],3)
 
     def test_downed_response_discards_only_owned_cards_and_retains_other_cards(self):
@@ -256,7 +256,7 @@ class SurplusReworkTest(unittest.TestCase):
         h=hero(s,'a','jiuyuan');h['energy']=5;hero(s,'b','yi')['flags']['pact']=True
         s=apply_action(s,'a',dict(type='ultimate',character_id='jiuyuan'))
         self.assertEqual(hero(s,'b','yi')['hp'],1) # 1 base + (2+1) pact
-        self.assertEqual(hero(s,'b','zhenhong')['hp'],4) # only base 1
+        self.assertEqual(hero(s,'b','zhenhong')['hp'],5) # only base 1
 
     def test_skip_normal_attack_expires_next_opponent_turn_only(self):
         s=self.game();c=self.hold(s,'I05');self.assertNotIn(c['instance_id'],[a.get('card_id') for a in legal_actions(s,'a')])
@@ -358,6 +358,7 @@ class SurplusReworkTest(unittest.TestCase):
             self.assertEqual(hero(s,'a','yi')['beast_fangs'],turns)
 
     def test_catalog_sources_access_and_images(self):
+        self.assertEqual((CHARACTERS['zhenhong']['attack'], CHARACTERS['zhenhong']['max_hp']), (1, 6))
         self.assertEqual((CHARACTERS['yi']['attribute'],CHARACTERS['yi']['attack'],CHARACTERS['yi']['max_hp']),('相',2,5))
         self.assertIn('yi',{h['id'] for h in get_catalog(include_test_characters=False)['characters']})
         self.assertEqual([CARDS[k]['name'] for k in ('I07','I08')],['潜影追击','群犬吠形'])
@@ -382,7 +383,7 @@ class SurplusReworkTest(unittest.TestCase):
         before=deepcopy(s);v=observe(s,'a')
         action=next(a for a in v['legal_actions'] if a['action'].get('card_id')==c['instance_id'])
         self.assertEqual(action['interaction']['actor_id'],'a:zhenhong')
-        self.assertEqual(action['preview']['attack'],6)
+        self.assertEqual(action['preview']['attack'],5)
         self.assertEqual(s,before)
 
     def test_down_response_waits_for_nested_response_to_finish(self):
@@ -419,7 +420,7 @@ class SurplusReworkTest(unittest.TestCase):
     def test_explicit_growth_and_surplus_state_survive_but_attack_buff_clears_on_down(self):
         s=self.game();h=hero(s,'a','zhenhong');h['flags']['atk_buff']=3
         s['sides']['a']['front']='zhenhong';move_out(s,'a','zhenhong')
-        self.assertEqual(attack_value(h,s,'a'),5)
+        self.assertEqual(attack_value(h,s,'a'),4)
         s=self.play(s,'R08');h=hero(s,'a','zhenhong');self.assertEqual(attack_value(h,s,'a'),5)
         damage(s,'a','zhenhong',99);self.assertNotIn('atk_buff',h['flags'])
 

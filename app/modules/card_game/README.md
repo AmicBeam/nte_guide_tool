@@ -725,7 +725,7 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 
 ### 高级人机模型与搜索（2026-10-07）
 
-五套策略统一使用 `engine/ai/models/recovery-20261007/` 中的冻结 NumPy 模型与原始训练清单；浊燃使用训练择优的 best，其余四队使用同批冻结模型。旧根目录的三套模型保留为嵌入旧策略的校验来源，不再作为默认对手。`recovery_model.py` 校验源清单、权重、配牌 SHA、具名特征、张量与当前规则授权；单独的 `serving.json` 保存用户明确启用的绑定。原始质量结论、训练规则身份及未批准标记保持原样；当前阿德勒终结晚于训练修改，启用不代表通过新规则强度验收。
+五套策略统一使用 `engine/ai/models/recovery-20261007/` 中的冻结 NumPy 模型与原始训练清单；浊燃使用训练择优的 best，其余四队使用同批冻结模型。旧根目录的三套模型保留为嵌入旧策略的校验来源，不再作为默认对手。`recovery_model.py` 校验源清单、权重、配牌 SHA、具名特征、张量与当前规则授权；单独的 `serving.json` 保存用户明确启用的绑定。原始质量结论、训练规则身份及未批准标记保持原样；当前阿德勒终结与真红基础 1/6 晚于训练修改，启用不代表通过新规则强度验收。
 
 每个 `/api/duel-v2/ai-step` 使用当前正式引擎与公开信息采样，执行 Gumbel 信息集搜索（最多 32 次模拟、16 个根候选、3 步短终局检查、3 秒搜索预算），采用新模型独立终局价值塔及 natural-WDL Q 尺度。立即获胜检查共享预算；有已完成模拟时采用搜索结果，预算耗尽且无完整模拟或不支持的私有选择根才回退合法网络动作。起手换牌也由新网络选择。对手模拟使用同一冻结策略作为代理，不读取真实隐藏手牌。网站只运行 NumPy 推理，不加载 PT、Torch 或训练任务。旧对局的权重／构筑版本不匹配时要求重新开局。
 
@@ -736,3 +736,9 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 `rl/batched_duel` 提供显式容量的连续 int32 CPU arena、带代次的真实槽位／工作区引用、隔离复制、释放依赖和实际数组字节统计；`rl/batched_search` 提供每个决策根的预约／开始／完成账本，公开证明与树搜索共用预算，排队计入截止，取消或到期后拒绝迟到结果。两者都在显式构造时工作，导入不启动对局、推理或 CUDA。
 
 这仍是存储和调度基础，尚无完整五队 codec、数组规则推进、批量规划或 CUDA 后端；1,600 槽位测试不代表 1,600 局 GPU 对战通过。当前服务和训练入口仍使用各自既有引擎。后续实现及对拍要求见[离线批量搜索](../../../docs/duel-v2-batched-search.md)。验证：`.venv/bin/python -m unittest tests.test_duel_v2_batch_arena tests.test_duel_v2_batch_budget -v`。
+
+### 2026-10-07 真红基础面板 1/6
+
+按用户桌游试玩参数，真红基础攻击／生命上限改为 1/6。新开局、目录和公开投影从同一内容定义读取；武备继续使用各自独立面板，历史对局与冻结评估不回写。现有实验性高级人机仅核验具名观察／候选、数值结构和合法动作后更新独立运行兼容绑定，原始训练清单、权重 SHA 与质量标记保留；不启动训练或强度评估。
+
+回归：`.venv/bin/python -m unittest tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_surplus_rework tests.test_duel_v2_zhenhong_harmony tests.test_duel_v2_catalog`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。

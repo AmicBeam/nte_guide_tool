@@ -79,7 +79,7 @@ class ZhenhongBuffTest(unittest.TestCase):
                     self.assertEqual([c['card_id'] for c in team['hand']], [wanted] if surplus else [])
                     self.assertEqual(team['deck'], [c for c in before if not surplus or c['card_id'] != wanted])
                     attacks = [e for e in s['events'] if e['type'] == 'attack']
-                    self.assertEqual(attacks[-1]['amount'], {'R02': 2, 'R03': 3, 'R04': 4}[key])
+                    self.assertEqual(attacks[-1]['amount'], {'R02': 1, 'R03': 2, 'R04': 3}[key])
                     if surplus:
                         held = self.hold(s, key)
                         s['sides']['a']['ap'] = 0
@@ -115,7 +115,7 @@ class ZhenhongBuffTest(unittest.TestCase):
             s = self.play(s, 'RF01')
             self.assertEqual(s['sides']['a']['hand'][0]['card_id'], 'I03')
             attacks = [e for e in s['events'] if e['type'] == 'attack']
-            self.assertEqual(attacks[-1]['amount'], 6)
+            self.assertEqual(attacks[-1]['amount'], 5)
             self.assertEqual(hero(s, 'a', 'zhenhong')['shield'], 4)
         s = self.game()
         s['sides']['a']['deck'] = []
@@ -134,14 +134,14 @@ class ZhenhongBuffTest(unittest.TestCase):
                 front_debuff(s, 'a')['stain'] = {'by': 'b', 'expires_side': 'a'}
                 h['next_damage_resistance'] = {'魂': -2}
                 self.assertEqual(damage(s, 'a', 'zhenhong', 50, kind=kind, source='b:haiyue'), 0)
-                self.assertEqual((h['hp'], h['shield']), (5, 2))
+                self.assertEqual((h['hp'], h['shield']), (6, 2))
                 self.assertEqual(s['events'][-1]['amount'], 1)
                 self.assertEqual(h['next_damage_resistance'], {})
                 h['shield'] = 0
                 self.assertEqual(damage(s, 'a', 'zhenhong', 50, kind=kind, source='b:haiyue'), 1)
-                self.assertEqual(h['hp'], 4)
+                self.assertEqual(h['hp'], 5)
                 self.assertEqual(damage(s, 'a', 'zhenhong', 50, source='a:zero', bypass=True), 1)
-                self.assertEqual(h['hp'], 3)
+                self.assertEqual(h['hp'], 4)
                 move_out(s, 'a', 'zhenhong')
                 self.assertEqual(damage_limit(s, 'a', 'zhenhong'), 1)
                 self.assertFalse(damage_immune(s, 'a', 'zhenhong'))
@@ -158,7 +158,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         front_debuff(s, 'a')['stain'] = {'by': 'b', 'expires_side': 'a'}
         self.assertEqual(damage(s, 'a', 'zhenhong', 0, kind='combat',
                                 source='b:haiyue', counter_immunity='support'), 0)
-        self.assertEqual(h['hp'], 5)
+        self.assertEqual(h['hp'], 6)
         self.assertEqual(h['next_damage_resistance'], {'魂': -2})
         self.assertEqual(s['events'][-1]['counter_immunity'], 'support')
 
@@ -170,10 +170,10 @@ class ZhenhongBuffTest(unittest.TestCase):
         hero(s, 'b', 'yi').update(shape='I07', beast_fangs=6, awakened=True, ultimate_turns=2)
         begin_turn(s, 'b')
         self.assertEqual(damage_limit(s, 'a', 'zhenhong'), 1)
-        self.assertEqual(hero(s, 'a', 'zhenhong')['hp'], 4)
+        self.assertEqual(hero(s, 'a', 'zhenhong')['hp'], 5)
         begin_turn(s, 'a')
         self.assertIsNone(damage_limit(s, 'a', 'zhenhong'))
-        self.assertEqual(hero(s, 'a', 'zhenhong')['hp'], 2)
+        self.assertEqual(hero(s, 'a', 'zhenhong')['hp'], 3)
         # An opponent-turn trigger expires at the immediately following own start.
         s = self.game()
         begin_turn(s, 'b')
@@ -191,7 +191,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         hero(s, 'a', 'bohe')['base_attack'] = 20
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'bohe'})
         self.assertEqual(s['sides']['b']['hp'], 100)
-        self.assertEqual(hero(s, 'b', 'zhenhong')['hp'], 4)
+        self.assertEqual(hero(s, 'b', 'zhenhong')['hp'], 5)
         # A lethal capped hit also has no overkill damage to penetrate.
         s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
         self.protect(s, 'b')

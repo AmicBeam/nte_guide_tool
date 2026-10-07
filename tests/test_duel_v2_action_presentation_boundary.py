@@ -47,7 +47,7 @@ class DuelV2ActionPresentationBoundaryTest(unittest.TestCase):
     def test_pending_choice_trailing_state_is_patched(self):
         state = self.fresh()
         state['sides']['a']['ap'] = 2
-        card = card_instance(state, 'J03', 'a')
+        card = card_instance(state, 'J01', 'a')
         state['sides']['a']['hand'] = [card]
         after = apply_action(state, 'a', {'type': 'play_card', 'card_id': card['instance_id']})
         self.assertEqual(after['phase'], 'choice')

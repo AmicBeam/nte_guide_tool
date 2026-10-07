@@ -10,10 +10,13 @@ from app.modules.card_game.engine.duel_v2.flow import new_game
 
 class DuelV2HooksTest(unittest.TestCase):
     def test_kits_cover_catalog_characters_and_cards(self):
-        self.assertEqual(set(KITS), set(CHARACTER_ORDER))
+        from app.modules.card_game.content.duel_v2.tutorial import TUTORIAL_CHARACTERS, TUTORIAL_CARDS
+        self.assertEqual(set(KITS) & set(CHARACTER_ORDER), set(CHARACTER_ORDER))
+        self.assertTrue((set(KITS) - set(CHARACTER_ORDER)) <= set(TUTORIAL_CHARACTERS))
         self.assertEqual(copy_owner_id(), 'xun')
         self.assertEqual(text_name('zero'), '零')
-        self.assertEqual(set(EFFECTS), set(CARD_ID_ORDER))
+        self.assertEqual(set(EFFECTS) & set(CARD_ID_ORDER), set(CARD_ID_ORDER))
+        self.assertTrue((set(EFFECTS) - set(CARD_ID_ORDER)) <= set(TUTORIAL_CARDS))
         for card_id, card in CARDS.items():
             self.assertIn(card_id, EFFECTS)
             self.assertEqual(card['effect_id'], card_id)

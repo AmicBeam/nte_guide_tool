@@ -199,7 +199,10 @@ class XunReworkTest(unittest.TestCase):
         s=apply_action(s,'b',{'type':'end_turn'});s=self.play(s,'X07')
         self.assertTrue(hero(s,'a','xun')['flags'].get('collapse'))
         self.assertEqual(sum(c['card_id']=='XF01' for c in s['sides']['a']['hand']),2)
-        s=self.next(s);self.assertFalse(hero(s,'a','xun')['flags'].get('collapse'))
+        # Collapse lasts through the next own turn, until that turn ends.
+        s=self.next(s);self.assertTrue(hero(s,'a','xun')['flags'].get('collapse'))
+        s=apply_action(s,'a',{'type':'end_turn'})
+        self.assertFalse(hero(s,'a','xun')['flags'].get('collapse'))
 
 
 class XunBoundaryTest(unittest.TestCase):

@@ -576,8 +576,14 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertEqual([h['id'] for h in room['game']['sides']['a']['characters']], deck['character_ids'])
 
     def test_quick_rush_advanced_unavailable_does_not_create_room(self):
-        result = self._post_error('/api/duel-v2/start', {'mode': 'advanced', 'ai_deck': 'quick-rush'}, token=self.a)
+        from app.errors import RuleValidationError
+        with patch('app.modules.card_game.engine.ai.advanced_model.load_model',
+                   side_effect=RuleValidationError('高级人机模型暂不可用：测试缺失模型')):
+            result = self._post_error('/api/duel-v2/start',
+                                      {'mode': 'advanced', 'ai_deck': 'quick-rush'}, token=self.a)
         self.assertIn('高级人机模型暂不可用', result['error'])
+        player = self.dao_module.get_or_create_player('duel-v2-a')[0]
+        self.assertIsNone(self.repository.current_room(player))
 
     def test_tutorial_start_returns_guided_level_one(self):
         catalog = self._get('/api/duel-v2/catalog', token=self.a)

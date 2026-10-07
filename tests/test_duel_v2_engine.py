@@ -36,10 +36,6 @@ class DuelV2EngineTest(unittest.TestCase):
             action['target_id'] = target
         return apply_action(s, side, action)
 
-    def record(self, cid):
-        card = CARDS[cid]
-        return {'card_id': cid, **{k: card[k] for k in ('name', 'type', 'character_id')}}
-
     def next_own_turn(self, s):
         s = apply_action(s, 'a', {'type': 'end_turn'})
         return apply_action(s, 'b', {'type': 'end_turn'})
@@ -295,7 +291,9 @@ class DuelV2EngineTest(unittest.TestCase):
         s = self.play(s, 'N03')
         self.assertTrue(any(c['card_id'] == 'NF01' for c in s['sides']['a']['hand']))
         self.assertEqual(s['sides']['a']['nanali_family'], 2)
-        self.assertTrue(any(e['type'] == 'followup' for e in s['events']))
+        # N03 keeps its original attack target; a defeated target is not chased.
+        self.assertFalse(any(e['type'] == 'followup' for e in s['events']))
+        self.assertEqual(s['sides']['b']['hp'], 30)
 
     def test_z08_turn_end_adds_attack_on_front_even_with_form_panel(self):
         s = self.game()
@@ -329,7 +327,7 @@ class DuelV2EngineTest(unittest.TestCase):
         knockdowns(s)
         self.assertFalse((hero(s, 'a', 'nanali').get('flags') or {}).get('atk_buff'))
 
-    def test_growth_cap_shape_and_awaken_does_not_refresh(self):
+    def test_nanali_ultimate_from_bench_does_not_enter_front(self):
         s = self.game()
         hero(s, 'a', 'nanali').update(energy=LIGHT_ENERGY_MAX)
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'nanali'})
@@ -363,7 +361,7 @@ class DuelV2EngineTest(unittest.TestCase):
 
     def test_ultimate_from_bench_lasts_two_own_turns(self):
         s = self.game()
-        hero(s, 'a', 'nanali').update(energy=LIGHT_ENERGY_MAX, growth=3)
+        hero(s, 'a', 'nanali').update(energy=LIGHT_ENERGY_MAX)
         self.assertIsNone(s['sides']['a']['front'])
         self.assertIn('ultimate', {a['type'] for a in legal_actions(s, 'a') if a.get('character_id') == 'nanali'})
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'nanali'})
@@ -428,7 +426,7 @@ class DuelV2EngineTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             apply_action(s, 'a', {'type':'play_card','card_id':card['instance_id']})
 
-    def test_n01_copy_heals_its_current_owner(self):
+    def test_legacy_n01_copy_heals_its_saved_owner(self):
         s = self.game()
         hero(s, 'a', 'xun')['hp'] = 1
         hero(s, 'a', 'nanali')['hp'] = 2
@@ -680,7 +678,7 @@ class DuelV2EngineTest(unittest.TestCase):
         })
         self.assertEqual(s['sides']['a']['hp'], 29)
 
-    def test_iloy_door_shape_does_not_recurse_on_knockdown_damage(self):
+    def test_y07_does_not_trigger_on_ally_knockdown(self):
         from app.modules.card_game.engine.duel_v2.state import knockdowns
         s = self.game()
         hero(s, 'a', 'iloy').update(shape='Y07')
@@ -689,10 +687,12 @@ class DuelV2EngineTest(unittest.TestCase):
         hero(s, 'a', 'nanali')['hp'] = 0
         knockdowns(s)
         self.assertEqual(hero(s, 'a', 'nanali')['down_turns'], 3)
-        self.assertEqual(hero(s, 'b', 'iloy')['hp'], 0)
-        self.assertEqual(hero(s, 'b', 'iloy')['down_turns'], 3)
+        self.assertEqual(hero(s, 'b', 'iloy')['hp'], 2)
+        self.assertEqual(hero(s, 'b', 'iloy')['down_turns'], 0)
+        self.assertFalse(any(e.get('source') == 'a:iloy' and e['type'] == 'damage'
+                             for e in s['events']))
 
-    def test_knockdown_damage_settles_both_seat_orders_before_next_action(self):
+    def test_simultaneous_knockdowns_settle_both_seat_orders_before_next_action(self):
         for attacker, defender in (('a', 'b'), ('b', 'a')):
             with self.subTest(attacker=attacker):
                 s = self.rush_game()
@@ -702,7 +702,7 @@ class DuelV2EngineTest(unittest.TestCase):
                     s['sides'][side]['ap'] = 2
                     s['sides'][side]['normal_attack_available'] = True
                     hero(s, side, 'iloy')['shape'] = 'Y07'
-                hero(s, attacker, 'bohe').update(hp=4, shape='M08', harmony=1, energy=2)
+                hero(s, attacker, 'bohe').update(hp=2, shape='M08', harmony=1, energy=2)
                 hero(s, defender, 'baicang').update(hp=3, base_attack=2)
                 s['sides'][defender]['front'] = 'baicang'
                 start = s['event_seq']
@@ -714,18 +714,18 @@ class DuelV2EngineTest(unittest.TestCase):
                 events = [e for e in s['events'] if e['seq'] > start]
                 downs = [e['target'] for e in events if e['type'] == 'down']
                 self.assertCountEqual(downs, [attacker + ':bohe', defender + ':baicang'])
-                self.assertEqual(len([e for e in events if '想做什么梦？' in e.get('text', '')]), 2)
+                self.assertFalse(any('想做什么梦？' in e.get('text', '') for e in events))
                 from app.modules.card_game.engine.duel_v2.state import knockdowns
                 seq = s['event_seq']
                 knockdowns(s)
                 self.assertEqual(s['event_seq'], seq)
 
-    def test_m08_start_turn_chain_finishes_before_draw_and_new_equipment(self):
+    def test_m08_knockdowns_finish_before_draw_and_new_equipment(self):
         s = self.rush_game()
         s['active_side'] = 'b'
         for side in ('a', 'b'):
             s['sides'][side]['hand'] = []
-        hero(s, 'a', 'bohe').update(hp=4, shape='M08')
+        hero(s, 'a', 'bohe').update(hp=2, shape='M08')
         hero(s, 'b', 'baicang').update(hp=3, base_attack=2)
         hero(s, 'b', 'iloy')['shape'] = 'Y07'
         s['sides']['b']['front'] = 'baicang'
@@ -743,7 +743,7 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(s['sides']['b']['hp'], hp - 2)
         self.assertFalse(any(e['type'] == 'down' for e in s['events'] if e['seq'] > start))
 
-    def test_b02_heal_precedes_knockdown_chain(self):
+    def test_b02_heal_precedes_enemy_knockdown_without_y07_retaliation(self):
         s = self.rush_game()
         hero(s, 'a', 'baicang').update(hp=1)
         hero(s, 'b', 'zero').update(hp=3, base_attack=3)
@@ -757,10 +757,9 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(heal['before']['hp'], 0)
         self.assertEqual(heal['after']['hp'], 2)
         zero_down = next(e for e in events if e['type'] == 'down' and e['target'] == 'b:zero')
-        baicang_down = next(e for e in events if e['type'] == 'down' and e['target'] == 'a:baicang')
         self.assertLess(heal['seq'], zero_down['seq'])
-        self.assertLess(zero_down['seq'], baicang_down['seq'])
-        self.assertEqual(hero(s, 'a', 'baicang')['down_turns'], 3)
+        self.assertFalse(any(e['type'] == 'down' and e['target'] == 'a:baicang' for e in events))
+        self.assertEqual((hero(s, 'a', 'baicang')['hp'], hero(s, 'a', 'baicang')['down_turns']), (2, 0))
 
 
 
@@ -1029,7 +1028,7 @@ class DuelV2EngineTest(unittest.TestCase):
                     s = apply_action(s, 'a', next(a for a in legal_actions(s) if a['type'] in ('choose', 'choose_cards')))
                 self.assertEqual(s['phase'], 'playing')
                 spent = 0 if CARDS[cid].get('instant') else CARDS[cid]['cost']
-                if CARDS[cid].get('free_if_surplus') or cid in ('R02', 'R03', 'R04'): spent = 0
+                if CARDS[cid].get('free_if_surplus'): spent = 0
                 if cid == 'X04': spent = 2
                 if cid == 'XA01': spent = 2 - s['sides']['a']['ap']
                 self.assertEqual(s['sides']['a']['ap'], 2 - spent)

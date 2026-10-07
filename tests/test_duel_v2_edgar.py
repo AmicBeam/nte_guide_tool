@@ -46,7 +46,8 @@ class EdgarTest(unittest.TestCase):
         s=self.game();s['sides']['a']['front']='zero';hero(s,'a','zero')['harmony']=2
         s=apply_action(s,'a',{'type':'attack','character_id':'jiuyuan'})
         self.assertEqual(hero(s,'a','edgar')['truth_keys'],1)
-        s=self.next(s);hero(s,'a','jiuyuan')['harmony']=2
+        # Full harmony must exist when Jiuyuan leaves the front, before turn return.
+        hero(s,'a','jiuyuan')['harmony']=2;s=self.next(s)
         s=apply_action(s,'a',{'type':'attack','character_id':'edgar'})
         self.assertEqual(hero(s,'a','edgar')['truth_keys'],2)
         damage(s,'a','edgar',99)

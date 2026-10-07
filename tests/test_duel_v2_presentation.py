@@ -8,7 +8,7 @@ from app.modules.card_game.engine.duel_v2 import apply_action, choose_action, le
 from app.modules.card_game.engine.duel_v2.flow import new_game
 from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
 from app.modules.card_game.engine.duel_v2.projection import preview
-from app.modules.card_game.engine.duel_v2.state import card_instance, hero, new_character
+from app.modules.card_game.engine.duel_v2.state import card_instance, damage, hero, new_character
 
 
 class DuelV2PresentationTest(unittest.TestCase):
@@ -178,77 +178,59 @@ class DuelV2PresentationTest(unittest.TestCase):
             self.assertEqual(characters['zero']['shield'], 2)
             self.assertEqual(characters['jiuyuan']['hp'], 0)
 
-    def test_interaction_hints_cover_card_policies(self):
+    def test_interaction_hints_cover_current_card_policies(self):
         state = self.game()
-        mapping = {
-            'N03': 'cast',
-            'N07': 'form',
-            'N06': 'target',
-            'Z01': 'target',
-            'J06': 'choice',
-            'X04': 'choice',
-        }
+        mapping = {'N03': 'cast', 'N07': 'form', 'N06': 'cast',
+                   'Z01': 'cast', 'Y06': 'target', 'J06': 'cast', 'X04': 'cast'}
         for card_id, kind in mapping.items():
-            current = deepcopy(state)
-            current['sides']['a']['ap'] = 2
-            if card_id == 'X04':
-                current['sides']['a']['discard'].append(card_instance(current, 'X01', 'a'))
-            if card_id in ('Z01', 'J06'):
-                current['sides']['b']['front'] = 'zero'
-            if card_id == 'J06':
-                current['sides']['b']['hand'] = [card_instance(current, 'N01', 'b')]
-            card = self.hand(current, card_id)
-            entry = next(item for item in observe(current, 'a')['legal_actions']
-                         if item['action']['type'] == 'play_card' and item['action']['card_id'] == card['instance_id'])
-            self.assertEqual(entry['interaction']['kind'], kind)
-            self.assertEqual(entry['interaction']['actor_id'], f"a:{CARDS[card_id]['character_id']}")
-            if kind == 'target' and card_id == 'N06':
-                self.assertEqual(entry['interaction']['target_ids'], [entry['action']['target_id']])
-                self.assertNotIn('a:nanali', entry['interaction']['target_ids'])
-            if kind == 'form':
-                self.assertEqual(entry['interaction']['target_ids'], ['a:nanali'])
+            with self.subTest(card=card_id):
+                current = deepcopy(state)
+                current['sides']['a'].update(ap=2, front='zero', surplus=True)
+                if card_id == 'Y06':
+                    hero(current, 'a', 'jiuyuan').update(hp=0, down_turns=3)
+                card = self.hand(current, card_id)
+                entry = next(item for item in observe(current, 'a')['legal_actions']
+                             if item['action']['type'] == 'play_card'
+                             and item['action']['card_id'] == card['instance_id'])
+                self.assertEqual(entry['interaction']['kind'], kind)
+                self.assertEqual(entry['interaction']['actor_id'], f"a:{CARDS[card_id]['character_id']}")
+                if kind == 'form':
+                    self.assertEqual(entry['interaction']['target_ids'], ['a:nanali'])
         attack = next(item for item in observe(state, 'a')['legal_actions'] if item['action']['type'] == 'attack')
         self.assertEqual(attack['interaction']['kind'], 'attack')
         self.assertTrue(attack['interaction']['actor_id'].startswith('a:'))
 
-    def n06_entries(self, state, side='a'):
-        return [item for item in observe(state, side)['legal_actions']
-                if item['action'].get('type') == 'play_card'
-                and next((card for card in state['sides'][side]['hand']
-                          if card['instance_id'] == item['action']['card_id']), {}).get('card_id') == 'N06']
-
-    def test_n06_target_ids_match_each_canonical_action(self):
+    def test_y06_target_hints_match_each_canonical_revival_action(self):
         state = self.game()
-        hero(state, 'a', 'zero')['hp'] = 0
-        card = self.hand(state, 'N06')
-        actions = legal_actions(state, 'a')
-        n06_actions = [action for action in actions
-                       if action.get('type') == 'play_card' and action.get('card_id') == card['instance_id']]
-        self.assertEqual({action['target_id'] for action in n06_actions}, {'a:jiuyuan', 'a:xun'})
-        entries = self.n06_entries(state)
-        self.assertEqual(len(entries), len(n06_actions))
-        seen = []
+        for cid in ('zero', 'jiuyuan'):
+            hero(state, 'a', cid).update(hp=0, down_turns=3)
+        hero(state, 'b', 'zero').update(hp=0, down_turns=3)
+        card = self.hand(state, 'Y06')
+        actions = [action for action in legal_actions(state, 'a')
+                   if action.get('type') == 'play_card' and action.get('card_id') == card['instance_id']]
+        self.assertEqual({action['target_id'] for action in actions}, {'a:zero', 'a:jiuyuan'})
+        entries = [item for item in observe(state, 'a')['legal_actions'] if item['action'] in actions]
+        self.assertEqual(len(entries), len(actions))
         for entry in entries:
-            target = entry['action']['target_id']
             self.assertEqual(entry['interaction']['kind'], 'target')
-            self.assertEqual(entry['interaction']['actor_id'], 'a:nanali')
-            self.assertEqual(entry['interaction']['target_ids'], [target])
-            self.assertNotIn('a:nanali', entry['interaction']['target_ids'])
-            self.assertNotIn('a:zero', entry['interaction']['target_ids'])
-            seen.append(target)
-        self.assertEqual(set(seen), {'a:jiuyuan', 'a:xun'})
-        copied = deepcopy(state)
-        copy_card = card_instance(copied, 'N06', 'a', copy=True)
-        copied['sides']['a']['hand'] = [copy_card]
-        copied['sides']['a']['ap'] = 2
-        copy_entries = self.n06_entries(copied)
-        self.assertTrue(copy_entries)
-        for entry in copy_entries:
-            self.assertEqual(entry['interaction']['actor_id'], 'a:xun')
+            self.assertEqual(entry['interaction']['actor_id'], 'a:iloy')
             self.assertEqual(entry['interaction']['target_ids'], [entry['action']['target_id']])
-            self.assertNotIn('a:xun', entry['interaction']['target_ids'])
-            self.assertTrue(entry['action']['target_id'].startswith('a:'))
-            self.assertNotEqual(entry['action']['target_id'], 'b:zero')
+
+    def test_n06_is_targetless_self_revival_even_while_downed(self):
+        state = self.game()
+        hero(state, 'a', 'nanali').update(hp=0, down_turns=3)
+        hero(state, 'a', 'zero').update(hp=0, down_turns=3)
+        card = self.hand(state, 'N06')
+        entries = [item for item in observe(state, 'a')['legal_actions']
+                   if item['action'].get('type') == 'play_card'
+                   and item['action'].get('card_id') == card['instance_id']]
+        self.assertEqual(len(entries), 1)
+        self.assertNotIn('target_id', entries[0]['action'])
+        self.assertEqual(entries[0]['interaction']['kind'], 'cast')
+        self.assertEqual(entries[0]['interaction']['actor_id'], 'a:nanali')
+        result = apply_action(state, 'a', entries[0]['action'])
+        self.assertEqual(hero(result, 'a', 'nanali')['hp'], hero(result, 'a', 'nanali')['max_hp'])
+        self.assertEqual(hero(result, 'a', 'zero')['hp'], 0)
 
     def sync_public_board(self, state):
         if '_public_board' in state:
@@ -271,7 +253,7 @@ class DuelV2PresentationTest(unittest.TestCase):
         state['sides']['a']['front'] = 'nanali'
         state['sides']['b']['front'] = 'zero'
         state['sides']['b']['shield'] = 4
-        hero(state, 'b', 'zero').update(hp=4, shield=2)
+        hero(state, 'b', 'zero').update(hp=4, shield=1)
         self.sync_public_board(state)
         attack_action = next(action for action in legal_actions(state, 'a') if action['type'] == 'attack')
         after_attack = apply_action(state, 'a', attack_action)
@@ -290,28 +272,27 @@ class DuelV2PresentationTest(unittest.TestCase):
 
         n06_state = deepcopy(form_after)
         n06_state['sides']['a']['ap'] = 2
-        hero(n06_state, 'a', 'jiuyuan')['hp'] = 3
+        damage(n06_state, 'a', 'nanali', 99, source='b:zero')
         self.sync_public_board(n06_state)
         n06_before = deepcopy(n06_state)
-        n06_after, _ = self.play(n06_state, 'N06', target='a:jiuyuan')
+        n06_after, _ = self.play(n06_state, 'N06')
         n06_events = self.replay_action_board(n06_before, n06_after)
-        self.assertTrue(any(event['type'] == 'heal' and event['target'] == 'a:jiuyuan' for event in n06_events))
+        self.assertTrue(any(event['type'] == 'revive' and event['target'] == 'a:nanali' for event in n06_events))
 
-        x08_state = deepcopy(n06_after)
-        x08_state['sides']['a']['ap'] = 2
-        x08_state['sides']['a']['front'] = 'xun'
-        x08_state['sides']['a']['records'] = [
-            {'card_id': 'N01', 'name': CARDS['N01']['name'], 'type': 'tactic', 'character_id': 'nanali'}]
-        self.sync_public_board(x08_state)
-        x08_before = deepcopy(x08_state)
-        x08_after, _ = self.play(x08_state, 'X05')
-        x08_events = self.replay_action_board(x08_before, x08_after)
-        attacks = [event for event in x08_events if event['type'] == 'attack']
-        self.assertEqual(len(attacks), 2)
-        self.assertNotEqual(attacks[0]['group_id'], attacks[1]['group_id'])
-        self.assertTrue(any(event.get('card', {}).get('copy') for event in x08_events if event['type'] == 'gain'))
+        x05_state = deepcopy(n06_after)
+        x05_state['sides']['a']['ap'] = 2
+        x05_state['sides']['a']['front'] = 'xun'
+        self.sync_public_board(x05_state)
+        x05_before = deepcopy(x05_state)
+        x05_after, _ = self.play(x05_state, 'X05')
+        x05_events = self.replay_action_board(x05_before, x05_after)
+        attacks = [event for event in x05_events if event['type'] == 'attack']
+        self.assertEqual(attacks, [])
+        self.assertTrue(any(event['type'] == 'move' and event['target'] == 'a:xun' for event in x05_events))
+        self.assertIsNone(x05_after['sides']['a']['front'])
+        self.assertFalse(any(event.get('card', {}).get('copy') for event in x05_events))
 
-        stale = deepcopy(x08_after)
+        stale = deepcopy(x05_after)
         for event in stale['events']:
             for key in ('action_id', 'action_version', 'actor', 'patch', 'card', 'before', 'after', 'group_id'):
                 event.pop(key, None)
@@ -393,7 +374,7 @@ class DuelV2PresentationTest(unittest.TestCase):
         dumped_preview = json.dumps(preview(state, 'a', action), ensure_ascii=False)
         self.assertNotIn(secret, dumped_preview)
 
-    def test_awaken_shape_growth_record_copy_down_revive(self):
+    def test_ultimate_weapon_family_growth_knockdown_and_revival_events(self):
         state = self.game()
         nanali = hero(state, 'a', 'nanali')
         nanali.update(energy=LIGHT_ENERGY_MAX, shape='N07')
@@ -413,12 +394,15 @@ class DuelV2PresentationTest(unittest.TestCase):
         hero(after, 'b', 'zero')['hp'] = 1
         after, _ = self.play(after, 'N03')
         view = observe(after, 'a')
-        self.assertTrue(self.events(view, 'growth'))
-        self.assertTrue(self.events(view, 'record'))
+        self.assertTrue(any(e.get('card', {}).get('card_id') == 'NF01' for e in self.events(view, 'gain')))
+        self.assertFalse(self.events(view, 'record'))
         self.assertTrue(self.events(view, 'down'))
         self.assertTrue(self.events(view, 'enter'))
-        copies = [event for event in view['presentation']['events'] if event['type'] == 'gain' and event.get('card', {}).get('copy')]
-        self.assertTrue(self.events(view, 'record')[-1]['card']['name'])
+        self.assertFalse(any(event.get('card', {}).get('copy') for event in self.events(view, 'gain')))
+        after['sides']['a']['ap'] = 2
+        after, _ = self.play(after, 'NF01')
+        self.assertEqual(hero(after, 'a', 'nanali')['permanent_growth'], {'attack': 1, 'max_hp': 1})
+        self.assertTrue(any('永久攻击 +1' in event['text'] for event in self.events(observe(after, 'a'))))
         revived = deepcopy(after)
         hero(revived, 'a', 'zero').update(hp=0, down_turns=1)
         revived['sides']['a']['ap'] = 0

@@ -767,3 +767,12 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 ### 2026-10-07 真红三张战斗牌分类抽牌
 
 R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型牌；攻击修正 -1／0／+1、护盾 2／1／0，费用均为 1。分类抽牌与牌面／预览同步，终结视为 RF01 的路径仍独立。用户桌游数值不代表强度验收。回归沿用 `tests.test_duel_v2_zhenhong_buff`、`tests.test_duel_v2_surplus_rework`、`tests.test_duel_v2_zhenhong_initial`，模拟对拍单独运行 `tests.test_duel_v2_simulation`。
+
+
+### 卡效测试维护
+
+规则测试以完整手册的现行卡效为准。Y07 仅在装备及伊洛伊终结延后回能时治疗，不因倒地追加伤害；倒地顺序使用真实攻守伤害和 B02 倒地前治疗构造。N03 的原目标被攻击击倒后跳过追击；N06 是无目标自复活，Y06 才选择己方倒地异能者。J01 承载检视选择，J03 不再用于旧检视夹具；X05 返回前排，不再记录、兑现或生成复制。新卡效没有产生旧记录事件的断言须随规则删除或改为验证不产生该事件。
+
+目录检查按每角色八种可构筑牌验收，注册表区分正式卡池与独立教学包，不能用历史角色总数约束现行目录。环合夹具须在退下前充满，浔的倾陷在下个己方回合结束时清除。高级人机缺模型测试显式模拟加载失败，不依赖某套策略长期未训练。残虹持续伤害不再产生加攻计次，现行观察的旧计次列应为 0；历史计次列的实体改名兼容测试用明确的旧快照字段构造。旧快照和冻结编码的兼容性测试仍独立保留；旧 native 编译执行器的完整性校验失败不作为现行卡效已验收，也不能通过删断言或忽略异常掩盖。
+
+专项入口：`.venv/bin/python -m unittest tests.test_duel_v2_engine tests.test_duel_v2_iloy_knockdown tests.test_duel_v2_september18 tests.test_duel_v2_followup_target tests.test_duel_v2_presentation tests.test_duel_v2_action_presentation_boundary tests.test_duel_v2_edgar tests.test_duel_v2_hooks tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_xun_rework tests.test_duel_v2_murk_encoding tests.test_duel_v2_api`。

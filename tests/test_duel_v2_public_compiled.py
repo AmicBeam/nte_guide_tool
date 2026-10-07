@@ -152,15 +152,14 @@ class PublicCompiledNativeTest(unittest.TestCase):
                     self.assertEqual(revived['hp'], revived['max_hp'])
                     self.assertEqual(revived['down_turns'], 0)
 
-    def test_iloy_other_ally_down_after_both_fronts_leave(self):
+    def test_y07_never_retaliates_on_ally_or_self_knockdown(self):
         from tests.test_duel_v2_iloy_knockdown import scenario
         for side in ('a', 'b'):
             for mutual, self_down in ((False, False), (True, False), (True, True)):
                 with self.subTest(side=side, mutual=mutual, self_down=self_down):
                     state, action, defender = scenario(side, mutual, self_down)
                     result, _ = self._check_play(state, action)
-                    self.assertEqual(result['sides'][defender]['hp'],
-                                     28 if mutual and not self_down else 30)
+                    self.assertEqual(result['sides'][defender]['hp'], 30)
 
     def test_b04_identity_and_enemy_only_execution(self):
         from app.modules.card_game.engine.duel_v2.state import hero
@@ -180,7 +179,7 @@ class PublicCompiledNativeTest(unittest.TestCase):
                     self.assertEqual(hero(nxt,side,'zero')['hp'],1)
                     self.assertEqual(hero(nxt,foe,'baicang')['hp'],0 if awakened else 1)
 
-    def test_knockdown_chain_and_b02_heal_match_python(self):
+    def test_b02_heal_and_combat_without_y07_retaliation_match_python(self):
         from app.modules.card_game.engine.duel_v2.state import hero
         deck = next(d for d in STARTER_DECKS if d['id'] == 'weave-rush')
         for side in ('a', 'b'):
@@ -203,8 +202,11 @@ class PublicCompiledNativeTest(unittest.TestCase):
                     else:
                         action = {'type': 'attack', 'character_id': actor}
                     nxt, _ = self._check_play(state, action)
-                    self.assertEqual(hero(nxt, side, actor)['down_turns'], 3)
-                    self.assertIsNone(nxt['sides'][side]['front'])
+                    # Y07 no longer damages allies' killers. Both actors survive
+                    # on 2 HP: B02 heals after combat, Bohe takes only the counter.
+                    self.assertEqual((hero(nxt, side, actor)['hp'], hero(nxt, side, actor)['down_turns']), (2, 0))
+                    self.assertEqual(nxt['sides'][side]['front'], actor)
+                    self.assertEqual(hero(nxt, foe, target)['down_turns'], 3)
 
     def test_z06_refund_is_available_to_response_and_not_next_turn(self):
         from app.modules.card_game.engine.duel_v2.state import hero, card_instance

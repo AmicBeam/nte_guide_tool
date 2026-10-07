@@ -21,12 +21,14 @@ class Zero:
 
 
 class MurkEncodingTest(unittest.TestCase):
-    def test_dot_attack_limit_is_visible_in_both_contracts_without_entity_id_features(self):
+    def test_legacy_dot_counter_encoding_is_invariant_to_entity_id_renaming(self):
         from copy import deepcopy
-        from app.modules.card_game.engine.duel_v2.continuous import apply_dot
         from app.modules.card_game.rl import cross_lineup
         state = self.game()
-        apply_dot(state, 'b', 'etch', by='a', source_cid='canhong', stacks=1)
+        # Frozen encoders still accept counters from old snapshots; current
+        # Canhong no longer creates this field or gains attack from DoTs.
+        cid = state['sides']['a']['characters']['canhong']['entity_id']
+        state['sides']['a']['used'][f'canhong_dot_attack_turn:{cid}'] = state['turn']
         for viewer in ('a', 'b'):
             view = observe(state, viewer, include_previews=False)
             renamed = deepcopy(view)
@@ -44,6 +46,20 @@ class MurkEncodingTest(unittest.TestCase):
                 own = 0 if viewer == 'a' else 1
                 self.assertEqual(encoded[names.index(f'murk:dot_attack_used:{own}')], 1)
                 self.assertEqual(encoded[names.index(f'murk:dot_attack_used:{1-own}')], 0)
+
+    def test_current_dots_leave_retired_attack_counter_zero_in_both_contracts(self):
+        from app.modules.card_game.engine.duel_v2.continuous import apply_dot
+        from app.modules.card_game.rl import cross_lineup
+        state = self.game()
+        for kind in ('etch', 'venom'):
+            apply_dot(state, 'b', kind, by='a', source_cid='canhong', stacks=1)
+        for viewer in ('a', 'b'):
+            view = observe(state, viewer, include_previews=False)
+            for contract in (runtime, cross_lineup):
+                encoded, _ = contract.encode(view, [])
+                names = all_features() if contract is runtime else cross_lineup.all_features()
+                for side in (0, 1):
+                    self.assertEqual(encoded[names.index(f'murk:dot_attack_used:{side}')], 0)
 
     def game(self):
         build = deck()

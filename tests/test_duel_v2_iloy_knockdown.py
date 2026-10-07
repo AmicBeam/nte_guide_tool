@@ -1,3 +1,4 @@
+"""Current Y07 heals on equip/delayed ultimate; knockdowns never trigger it."""
 import unittest
 
 from app.modules.card_game.engine.duel_v2 import new_game, apply_action
@@ -21,33 +22,29 @@ def scenario(attacker, mutual=False, self_down=False, weapon_side=None):
 
 
 class IloyKnockdownTest(unittest.TestCase):
-    def test_both_seats_and_self_exclusion(self):
+    def test_ally_enemy_and_self_knockdowns_never_trigger_y07(self):
         for attacker in ('a', 'b'):
             for mutual, self_down in ((False, False), (True, False), (True, True)):
-                with self.subTest(attacker=attacker, mutual=mutual, self_down=self_down):
-                    state, action, defender = scenario(attacker, mutual, self_down)
-                    start = state['event_seq']
-                    result = apply_action(state, attacker, action)
-                    triggers = [e for e in result['events'] if e['seq'] > start
-                                and '想做什么梦？' in e.get('text', '')]
-                    fires = mutual and not self_down
-                    self.assertEqual(len(triggers), int(fires))
-                    self.assertEqual(result['sides'][defender]['hp'], 28 if fires else 30)
-                    if fires:
-                        downs = [e for e in result['events'] if e['seq'] > start and e['type'] == 'down']
-                        self.assertEqual(len(downs), 2)
-                        self.assertLess(max(e['seq'] for e in downs), triggers[0]['seq'])
-                        self.assertEqual(triggers[0]['target'], defender + ':player')
-                        for side in ('a', 'b'):
-                            self.assertIsNone(result['sides'][side]['front'])
-
-    def test_ally_down_still_hits_living_opposing_front(self):
-        for attacker in ('a', 'b'):
-            defender = 'b' if attacker == 'a' else 'a'
-            state, action, _ = scenario(attacker, weapon_side=defender)
-            result = apply_action(state, attacker, action)
-            self.assertEqual(hero(result, attacker, 'zero')['hp'], 2)
-            self.assertEqual(result['sides'][attacker]['hp'], 30)
+                for weapon_side in ('a', 'b'):
+                    with self.subTest(attacker=attacker, mutual=mutual, self_down=self_down,
+                                      weapon_side=weapon_side):
+                        state, action, defender = scenario(attacker, mutual, self_down, weapon_side)
+                        start = state['event_seq']
+                        result = apply_action(state, attacker, action)
+                        events = [e for e in result['events'] if e['seq'] > start]
+                        self.assertFalse(any('想做什么梦？' in e.get('text', '') for e in events))
+                        self.assertEqual(result['sides'][defender]['hp'], 30)
+                        self.assertEqual(result['sides'][attacker]['hp'], 30)
+                        downs = [e['target'] for e in events if e['type'] == 'down']
+                        expected = [defender + ':zero']
+                        cid = 'iloy' if self_down else 'zero'
+                        if mutual:
+                            expected.append(attacker + ':' + cid)
+                            self.assertIsNone(result['sides'][attacker]['front'])
+                        else:
+                            self.assertEqual(hero(result, attacker, cid)['hp'], 4)
+                        self.assertCountEqual(downs, expected)
+                        self.assertIsNone(result['sides'][defender]['front'])
 
     def test_iloy_downed_with_teammate_has_no_weapon_trigger(self):
         from app.modules.card_game.engine.duel_v2.state import knockdowns

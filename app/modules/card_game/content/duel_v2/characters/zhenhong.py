@@ -93,7 +93,7 @@ class Zhenhong:
         c.character['extra_attacks'] = int(c.character.get('extra_attacks', 0)) + 1
         c.operation['skip_combat_harmony'] = True
         c.history('「独行」：真红发起额外攻击。')
-        c.sortie()
+        c.sortie(support_allows_counter=True)
 
     @staticmethod
     def aura_effects(c, property, query):

@@ -31,13 +31,38 @@ class SolitaryTest(unittest.TestCase):
                 finish_operation(s)
                 events = [e for e in s['events'] if e['seq'] > seq]
                 attack = next(e for e in events if e['type'] == 'attack')
-                self.assertEqual(attack['counter'], 0 if support else 2)
-                self.assertEqual(any(e.get('counter_immunity') == 'support' for e in events), support)
+                self.assertEqual(attack['counter'], 2)
+                self.assertFalse(any(e.get('counter_immunity') == 'support' for e in events))
                 self.assertEqual(hero(s, 'a', 'xun').get('arid', 0), int(support))
                 self.assertEqual(hero(s, 'b', 'zero')['flags'].get('collapse_count', 0), int(support))
-                self.assertEqual(hero(s, 'a', 'zhenhong')['hp'], 6 if support else 5)
+                self.assertEqual(hero(s, 'a', 'zhenhong')['hp'], 5)
                 self.assertEqual(hero(s, 'a', 'jiuyuan')['harmony'], 0 if support else harmony)
                 self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 1)
+
+    def test_normal_entry_harmony_still_blocks_counter(self):
+        s = fixtures.SurplusReworkTest().game()
+        s['sides']['a']['front'] = 'jiuyuan'
+        hero(s, 'a', 'jiuyuan')['harmony'] = 2
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'b', 'zero').update(hp=50, max_hp=50)
+        s = apply_action(s, 'a', dict(type='attack', character_id='zhenhong'))
+        attack = next(e for e in reversed(s['events']) if e['type'] == 'attack')
+        self.assertEqual(attack['counter'], 0)
+        self.assertTrue(any(e.get('counter_immunity') == 'support' for e in s['events']))
+        self.assertEqual(hero(s, 'a', 'zhenhong')['hp'], 6)
+
+    def test_solitary_does_not_restore_counter_for_collapsed_defender(self):
+        from app.modules.card_game.engine.duel_v2.state import add_collapse
+        s = fixtures.SurplusReworkTest().game()
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'b', 'zero').update(hp=50, max_hp=50)
+        add_collapse(s, 'b', 'zero', 5, by='a')
+        c = operation(s, 'a', 'zhenhong')
+        fire(c, 'on_surplus', actor_only=True)
+        finish_operation(s)
+        attack = next(e for e in reversed(s['events']) if e['type'] == 'attack')
+        self.assertEqual(attack['counter'], 0)
+        self.assertFalse(any(e.get('counter_immunity') == 'support' for e in s['events']))
 
     def trigger(self, s):
         fixtures.SurplusReworkTest().delay(s)

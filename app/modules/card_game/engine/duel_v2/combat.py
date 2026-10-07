@@ -303,7 +303,8 @@ def attack(c, spec, index):
     if is_esper(target_id):
         counter_base = (target.get('flags') or {}).pop('counter_set_attack', counter_base)
         extra_counter = int((target.get('flags') or {}).pop('counter_bonus', 0) or 0)
-    no_counter = (spec.get('no_counter') or op.get('no_counter') or op.get('support')
+    support_immunity = op.get('support') and not spec.get('support_allows_counter')
+    no_counter = (spec.get('no_counter') or op.get('no_counter') or support_immunity
                   or (spec.get('no_counter_harmony') and op['harmony'])
                   or (is_esper(target_id) and collapsed(target)))
     if is_esper(target_id) and not no_counter:
@@ -365,7 +366,7 @@ def attack(c, spec, index):
                              kind='combat', settle=False, group_id=group_id)
     self_loss = damage(s, side, cid, counter, source=f'{enemy}:{target_id}',
                        kind='combat', settle=False, group_id=group_id,
-                       counter_immunity='support' if op.get('support') else None) if is_esper(target_id) else 0
+                       counter_immunity='support' if support_immunity else None) if is_esper(target_id) else 0
     player_damage = target_loss if is_player(target_id) else 0
     if overflow:
         player_damage += damage(s, enemy, PLAYER_ID, overflow, source=f'{side}:{cid}', kind='penetration',

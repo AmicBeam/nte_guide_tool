@@ -15,6 +15,44 @@ KEYS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk')
 
 
 class RecoveryServingTest(unittest.TestCase):
+    def test_user_selected_yi_build_preserves_training_manifest_and_other_roles(self):
+        from collections import Counter
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS, validate_deck
+        from app.modules.card_game.engine.ai.advanced_model import load_model
+        model = load_model('zhenhong')
+        preset = next(d for d in STARTER_DECKS if d['id'] == 'zhenhong')
+        self.assertEqual(model.serving_deck, validate_deck(preset))
+        self.assertEqual(Counter(c for c in model.serving_deck['card_ids'] if c.startswith('I')),
+                         Counter({'I01': 2, 'I03': 2, 'I04': 2, 'I08': 2}))
+        original = model.manifest['build']
+        self.assertEqual(Counter(c for c in original['card_ids'] if c.startswith('I')),
+                         Counter({'I01': 2, 'I03': 1, 'I04': 2, 'I05': 1, 'I07': 1, 'I08': 1}))
+        self.assertEqual([c for c in original['card_ids'] if not c.startswith('I')],
+                         [c for c in model.serving_deck['card_ids'] if not c.startswith('I')])
+        self.assertNotEqual(model.serving_build_sha256, model.manifest['build_sha256'])
+
+    def test_serving_build_override_requires_authorization_hash_and_original_roster(self):
+        from app.modules.card_game.engine.ai.recovery_model import RecoveryServingModel
+        for mutation in ('missing_request', 'missing_hash', 'missing_build', 'wrong_hash', 'reordered_roster'):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for name in ('serving.json', 'zhenhong.json', 'zhenhong.npz'):
+                    shutil.copyfile(ROOT / name, root / name)
+                binding = json.loads((root / 'serving.json').read_text())
+                pin = binding['models']['zhenhong']
+                if mutation.startswith('missing_'):
+                    pin.pop({'missing_request': 'serving_build_request', 'missing_hash': 'serving_build_sha256',
+                             'missing_build': 'serving_build'}[mutation])
+                elif mutation == 'wrong_hash':
+                    pin['serving_build_sha256'] = 'changed'
+                else:
+                    from app.modules.card_game.rl.league_schema import build_hash
+                    pin['serving_build']['character_ids'].reverse()
+                    pin['serving_build_sha256'] = build_hash(pin['serving_build'])
+                (root / 'serving.json').write_text(json.dumps(binding))
+                with self.assertRaises(ValueError):
+                    RecoveryServingModel(root, 'zhenhong')
+
     def test_release_identity_and_real_search_for_every_team(self):
         from app.modules.card_game.engine.ai import advanced_model as ai
         from app.modules.card_game.engine.duel_v2 import new_game, legal_actions

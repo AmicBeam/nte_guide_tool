@@ -316,6 +316,8 @@ class DuelV2CatalogTest(unittest.TestCase):
                          Counter(dict.fromkeys(deck['character_ids'], 8)))
         self.assertLessEqual(max(Counter(deck['card_ids']).values()), 2)
         self.assertFalse(any(CARDS[c].get('derived') for c in deck['card_ids']))
+        self.assertEqual(Counter(c for c in deck['card_ids'] if CARDS[c]['character_id'] == 'yi'),
+                         Counter({'I01': 2, 'I03': 2, 'I04': 2, 'I08': 2}))
         self.assertNotIn('crimson', {d['id'] for d in STARTER_DECKS})
 
     def test_murk_preset_is_public(self):

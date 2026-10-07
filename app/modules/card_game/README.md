@@ -778,3 +778,7 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 专项入口：`.venv/bin/python -m unittest tests.test_duel_v2_engine tests.test_duel_v2_iloy_knockdown tests.test_duel_v2_september18 tests.test_duel_v2_followup_target tests.test_duel_v2_presentation tests.test_duel_v2_action_presentation_boundary tests.test_duel_v2_edgar tests.test_duel_v2_hooks tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_xun_rework tests.test_duel_v2_murk_encoding tests.test_duel_v2_api`。
 
 补充检查：`.venv/bin/python -m unittest tests.test_duel_v2_table_contract tests.test_duel_v2_rl tests.test_duel_v2_rl_eval tests.test_duel_v2_fixed_lineups tests.test_duel_v2_tactical_audit`。旧编码／旧免伤报告夹具显式标记历史兼容。覆盖评估构筑仅携带每人八种可构筑牌，衍生牌只进入全目录使用与效果统计，不进入开局牌组；细则见[卡效覆盖评估](../../../docs/duel-v2-card-eval.md)。
+
+### 2026-10-07 用户指定真红队翳配牌
+
+普通真红预组与高级人机服务配牌统一为 I01／I03／I04／I08 各 2 张。`recovery_model` 支持在独立 `serving.json` 的对应模型项中指定 `serving_build`、`serving_build_sha256` 与非空 `serving_build_request`；原来源清单与配牌哈希仍严格核验，服务配牌须合法且保持原四人顺序。原数值权重与训练清单不改写，旧局的构筑身份校验仍要求重新开局。回归见 `tests.test_duel_v2_recovery_serving` 与 `tests.test_duel_v2_experimental_advanced`。

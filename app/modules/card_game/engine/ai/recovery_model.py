@@ -94,9 +94,20 @@ class RecoveryServingModel(ResidualModel):
                 if not np.array_equal(self.weights['legacy.' + preserved_policy.encoded_name(name)], value):
                     raise ValueError('Recovery embedded teacher changed')
         from app.modules.card_game.content.duel_v2 import validate_deck
-        self.serving_deck = validate_deck(m['build'])
+        has_override = any(field in pin for field in ('serving_build', 'serving_build_sha256', 'serving_build_request'))
+        if has_override:
+            request = pin.get('serving_build_request')
+            if not isinstance(request, str) or not request.strip():
+                raise ValueError('Recovery serving build override authorization missing')
+            self.serving_deck = validate_deck(pin.get('serving_build'))
+            expected_build_hash = pin.get('serving_build_sha256')
+            if self.serving_deck['character_ids'] != m['build']['character_ids']:
+                raise ValueError('Recovery serving build override roster mismatch')
+        else:
+            self.serving_deck = validate_deck(m['build'])
+            expected_build_hash = m.get('build_sha256')
         self.serving_build_sha256 = build_hash(self.serving_deck)
-        if self.serving_build_sha256 != m.get('build_sha256'):
+        if self.serving_build_sha256 != expected_build_hash:
             raise ValueError('Recovery build mismatch')
         self.serving_authorized = True
         self.deck_id = key

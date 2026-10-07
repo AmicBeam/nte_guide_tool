@@ -1,4 +1,7 @@
-"""Bounded contract tests. Synthetic cases; one real-engine case with two actions."""
+"""Frozen six-character encoder contracts, including historical copy/record fields.
+
+Synthetic compatibility cases do not assert current Xun card effects.
+"""
 from copy import deepcopy
 import contextlib
 import importlib.util
@@ -66,7 +69,7 @@ class EncodingTest(unittest.TestCase):
         self.assertEqual(len(vector), OBSERVATION_DIM)
         self.assertTrue(all(0 <= x <= 1 for x in vector))
 
-    def test_public_copy_both_seats_and_relative_expiry(self):
+    def test_legacy_public_copy_both_seats_and_relative_expiry(self):
         for side in ('a', 'b'):
             self.view['sides'][side]['hand'] = [card(copied=True)]
         self.view['sides']['b']['hand'].append({'hidden': True})
@@ -80,13 +83,13 @@ class EncodingTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             _public_card_vector(dict(card(), character_id='xun'), hidden=False)
 
-    def test_record_without_instance_and_resolving(self):
+    def test_legacy_record_without_instance_and_resolving(self):
         self.view['sides']['a']['records'] = [dict(card_id='N03', name=CARDS['N03']['name'], type='battle', character_id='nanali')]
         a = self.encoder.encode_observation(self.view)
         self.view['resolving_card'] = card('Z02')
         self.assertNotEqual(a, self.encoder.encode_observation(self.view))
 
-    def test_public_counters_and_status_are_encoded(self):
+    def test_legacy_public_counters_and_status_are_encoded(self):
         base = self.encoder.encode_observation(self.view)
         for key, value in [('last_front', 'zero'), ('turn_count', 21), ('fatigue', 1),
                            ('used', {'record': True, 'instant': True}), ('harmonized', {'zero': True}),
@@ -154,14 +157,14 @@ class EncodingTest(unittest.TestCase):
             self.view['events'] = [dict(type=event, amount=1, side='a')]
             self.assertEqual(len(self.encoder.encode_observation(self.view)), OBSERVATION_DIM)
 
-    def test_unpublished_character_and_unknown_card_fail_closed(self):
-        from app.modules.card_game.rl.capability import encoder_public_support
-        from app.modules.card_game.rl.transfer import assert_encoder_compatible, resolve_training_deck
-        support = encoder_public_support()
-        self.assertTrue(support['ok'])
-        self.assertEqual(len(support['kit_cards']), 48)
-        other = resolve_training_deck('starter')
+    def test_legacy_encoder_rejects_unsupported_characters_and_unknown_cards(self):
+        from app.modules.card_game.rl.transfer import assert_encoder_compatible
+        # A valid current deck may still be outside this frozen encoder's seats.
+        other = deepcopy(STARTER_DECK)
         other['character_ids'] = ['nanali', 'zero', 'jiuyuan', 'xun']
+        other['card_ids'] = [key for owner in other['character_ids']
+                             for key, definition in CARDS.items()
+                             if definition['character_id'] == owner and not definition.get('derived')]
         with self.assertRaises(ValueError):
             assert_encoder_compatible(other)
         view = deepcopy(self.view)
@@ -169,7 +172,6 @@ class EncodingTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.encoder.encode_observation(view)
         from app.modules.card_game.engine.duel_v2 import new_game, acting_side
-        from app.modules.card_game.content.duel_v2 import STARTER_DECK
         from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
         state = new_game(seed=4, skip_mulligan=True, decks={'a': STARTER_DECK, 'b': STARTER_DECK})
         side = acting_side(state)

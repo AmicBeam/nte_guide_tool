@@ -110,11 +110,20 @@ class PolicyTest(unittest.TestCase):
         picked = select_weighted_action([{'type': 'concede'}], __import__('random').Random(1))
         self.assertEqual(picked['type'], 'concede')
 
+    def test_coverage_deck_has_only_eight_buildable_cards_per_character(self):
+        from app.modules.card_game.content.duel_v2 import CARDS, validate_deck
+        deck = validate_deck(coverage_deck())
+        self.assertEqual(len(deck['card_ids']), 32)
+        self.assertEqual(len(set(deck['card_ids'])), 32)
+        self.assertTrue(all(not CARDS[cid].get('derived') for cid in deck['card_ids']))
+        for owner in deck['character_ids']:
+            self.assertEqual(sum(CARDS[cid]['character_id'] == owner for cid in deck['card_ids']), 8)
+
     def test_check_payload_no_engine(self):
         payload = check_payload()
         self.assertEqual(payload['model'], 0)
         self.assertEqual(payload['training_updates'], 0)
-        self.assertEqual(len(payload['card_ids']), 32)
+        self.assertEqual(payload['card_ids'], list(CARD_ID_ORDER))
         self.assertIn('NOT RL-trained', payload['label'])
 
 
@@ -141,7 +150,7 @@ class FakeEvalTest(unittest.TestCase):
             self.assertEqual(status.get('last_action_type'), 'end_turn')
             self.assertEqual(result['model'], 0)
             self.assertEqual(result['training_updates'], 0)
-            self.assertEqual(len(summary['card_uses']), 32)
+            self.assertEqual(set(summary['card_uses']), set(CARD_ID_ORDER))
             self.assertTrue(all(v == 0 or k == 'ignored' for k, v in summary['card_uses'].items()))
             self.assertEqual(summary['card_uses']['N01'], 0)
             self.assertEqual(summary['coverage']['N01'], 'NOT_COVERED')
@@ -189,7 +198,8 @@ class FakeEvalTest(unittest.TestCase):
             self.assertEqual(result['event_counts']['damage'], 1)
             self.assertEqual(sum(1 for cid in CARD_ID_ORDER if result['coverage'][cid] == 'NOT_COVERED'), len(CARD_ID_ORDER) - 1)
 
-    def test_copy_use_separate_and_half_decks(self):
+    def test_legacy_snapshot_copy_use_separate_and_half_decks(self):
+        # Historical saved copy: this is use accounting, not current X07 generation.
         copy_card = {'instance_id': 'a-9', 'card_id': 'X07', 'copy': True}
         scripts = []
         for i in range(2):

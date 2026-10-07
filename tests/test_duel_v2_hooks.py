@@ -13,7 +13,6 @@ class DuelV2HooksTest(unittest.TestCase):
         from app.modules.card_game.content.duel_v2.tutorial import TUTORIAL_CHARACTERS, TUTORIAL_CARDS
         self.assertEqual(set(KITS) & set(CHARACTER_ORDER), set(CHARACTER_ORDER))
         self.assertTrue((set(KITS) - set(CHARACTER_ORDER)) <= set(TUTORIAL_CHARACTERS))
-        self.assertEqual(copy_owner_id(), 'xun')
         self.assertEqual(text_name('zero'), '零')
         self.assertEqual(set(EFFECTS) & set(CARD_ID_ORDER), set(CARD_ID_ORDER))
         self.assertTrue((set(EFFECTS) - set(CARD_ID_ORDER)) <= set(TUTORIAL_CARDS))
@@ -25,6 +24,10 @@ class DuelV2HooksTest(unittest.TestCase):
         self.assertEqual(shape_attack_bonus('N07'), 2)
         self.assertEqual(shape_hp_bonus('N07'), 5)
         self.assertEqual(TARGET_POLICIES['Z01'], 'ally_front')
+
+    def test_legacy_copy_snapshots_keep_their_saved_owner_identity(self):
+        # Xun no longer generates copies; this helper hydrates pre-rework snapshots.
+        self.assertEqual(copy_owner_id(), 'xun')
 
     def test_engine_does_not_import_legacy_event_bus(self):
         import app.modules.card_game.engine.duel_v2.combat as combat

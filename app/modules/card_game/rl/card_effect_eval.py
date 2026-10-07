@@ -45,7 +45,7 @@ def coverage_deck() -> dict[str, Any]:
         'id': 'coverage_all8', 'name': 'coverage_all8',
         'character_ids': character_ids,
         'card_ids': [card_id for card_id in CARD_ID_ORDER
-                     if CARDS[card_id]['character_id'] in allowed],
+                     if CARDS[card_id]['character_id'] in allowed and not CARDS[card_id].get('derived')],
     })
 
 

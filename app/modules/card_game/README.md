@@ -776,3 +776,5 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 目录检查按每角色八种可构筑牌验收，注册表区分正式卡池与独立教学包，不能用历史角色总数约束现行目录。环合夹具须在退下前充满，浔的倾陷在下个己方回合结束时清除。高级人机缺模型测试显式模拟加载失败，不依赖某套策略长期未训练。残虹持续伤害不再产生加攻计次，现行观察的旧计次列应为 0；历史计次列的实体改名兼容测试用明确的旧快照字段构造。旧快照和冻结编码的兼容性测试仍独立保留；旧 native 编译执行器的完整性校验失败不作为现行卡效已验收，也不能通过删断言或忽略异常掩盖。
 
 专项入口：`.venv/bin/python -m unittest tests.test_duel_v2_engine tests.test_duel_v2_iloy_knockdown tests.test_duel_v2_september18 tests.test_duel_v2_followup_target tests.test_duel_v2_presentation tests.test_duel_v2_action_presentation_boundary tests.test_duel_v2_edgar tests.test_duel_v2_hooks tests.test_duel_v2_xiaozhi_haiyue tests.test_duel_v2_xun_rework tests.test_duel_v2_murk_encoding tests.test_duel_v2_api`。
+
+补充检查：`.venv/bin/python -m unittest tests.test_duel_v2_table_contract tests.test_duel_v2_rl tests.test_duel_v2_rl_eval tests.test_duel_v2_fixed_lineups tests.test_duel_v2_tactical_audit`。旧编码／旧免伤报告夹具显式标记历史兼容。覆盖评估构筑仅携带每人八种可构筑牌，衍生牌只进入全目录使用与效果统计，不进入开局牌组；细则见[卡效覆盖评估](../../../docs/duel-v2-card-eval.md)。

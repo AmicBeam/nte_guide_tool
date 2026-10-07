@@ -12,10 +12,11 @@ from app.modules.card_game.rl.zhenhong_tactical_audit import audit_file
 
 
 class TacticalAuditTest(unittest.TestCase):
-    def test_immunity_started_inside_action_is_not_missed(self):
+    def test_legacy_full_immunity_started_inside_action_is_not_missed(self):
         b=next(b for b in STARTER_DECKS if b['id']=='zhenhong')
         data=dict(id='event-audit-test',seed=82,first='a',decks={'a':b,'b':b},complete=True,winner='a',
                   actions=[dict(side='a',action={'type':'mulligan','card_ids':[]})],passive_triggers={'a':0,'b':0})
+        # Old full-immunity report fixture; current surplus caps each hit at 1.
         def event_fixture(state,side,action):
             after=deepcopy(state);after.update(phase='finished',winner='a')
             after['sides']['a']['characters']['zero']['hp']=0

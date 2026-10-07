@@ -127,9 +127,11 @@ class FixedLineupsTest(unittest.TestCase):
         self.assertFalse(migrated.manifest['validation']['approved'])
         self.assertEqual(migrated.manifest['origin']['source_rule_hash'],'previous-rule')
 
-    def test_immunity_is_visible_in_fixed_observation(self):
+    def test_legacy_full_immunity_column_remains_visible_in_fixed_observation(self):
         state=new_game(seed=17,decks={'a':self.builds['zhenhong'],'b':self.builds['starter']})
         hero=state['sides']['a']['characters']['zhenhong']
+        # Preserve the old fixed-model column; live Zhenhong uses damage_limit=1,
+        # covered by test_duel_v2_recovery_observation, not this historical field.
         hero['flags']['damage_immunity_until']=state['sides']['a']['turn_count']+1
         view=observe(state,'a',include_previews=False)
         actions=[e['action'] for e in view['legal_actions'] if e['action']['type']!='concede']

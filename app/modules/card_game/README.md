@@ -793,3 +793,7 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 盈蓄异能触发「独行」并回复至当前生命上限；R06 从现有独行触发计数（`surplus_passive_triggers`）读取加成，终结自然到期改为对所有对方角色造成 3 点伤害。提前结束不触发，完整规则见手册。图鉴机制卡接在普通卡后共用网格，牌桌关联小卡共用普通卡立绘区和缩放；仅展示资料，不进卡池。新规则请重新开局，旧模型与冻结记录保留原身份。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_solitary tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_zhenhong_initial tests.test_duel_v2_zhenhong_harmony tests.test_duel_v2_surplus_rework tests.test_duel_v2_catalog`；模拟对拍单独运行 `tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_mechanisms.test.cjs tests/js/duel_v2_hand_face.test.cjs`。
+
+### 真红展开辅助规则策略（离线实验）
+
+`engine/ai/zhenhong_guide.py` 提供用户指定的兽牙→延滞→光系环合→创生盈蓄指导，使用3个信息集采样世界与至多24个两动作计划，保留直接取胜及保命例外，不更新模型或训练奖励。当前默认网站不开启；接口、人工排序、耗时与采用边界见 [辅助策略协议](../../../docs/duel-v2-zhenhong-guide.md)。验证：`.venv/bin/python -m unittest tests.test_duel_v2_zhenhong_guide`。

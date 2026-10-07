@@ -193,10 +193,11 @@ class SurplusReworkTest(unittest.TestCase):
         from app.modules.card_game.engine.duel_v2.context import EffectContext
         c=EffectContext(s,'a','zhenhong',{'side':'a'})
         fire(c,'on_turn_end',actor_only=True);fire(c,'on_turn_end',actor_only=True)
-        self.assertEqual(h['intimidation'],2);self.assertEqual(attack_value(h,s,'a'),2)
+        self.assertEqual(h['intimidation'],2);self.assertEqual(attack_value(h,s,'a'),1)
+        self.assertEqual((h['hp'],h['max_hp']),(8,8))
         s=apply_action(s,'a',dict(type='attack',character_id='zhenhong'));h=hero(s,'a','zhenhong')
         self.assertEqual((h['intimidation'],h['harmony']),(0,2))
-        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],4)
+        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],3)
 
     def test_fangs_pause_before_decrement_and_survive_death(self):
         s=self.game();self.delay(s);s=self.play(s,'I01')
@@ -359,6 +360,8 @@ class SurplusReworkTest(unittest.TestCase):
 
     def test_catalog_sources_access_and_images(self):
         self.assertEqual((CHARACTERS['zhenhong']['attack'], CHARACTERS['zhenhong']['max_hp']), (1, 6))
+        self.assertEqual((CARDS['R07']['attack'], CARDS['R07']['hp']), (2, 6))
+        self.assertEqual((CARDS['R08']['attack'], CARDS['R08']['hp']), (1, 8))
         self.assertEqual((CHARACTERS['yi']['attribute'],CHARACTERS['yi']['attack'],CHARACTERS['yi']['max_hp']),('相',2,5))
         self.assertIn('yi',{h['id'] for h in get_catalog(include_test_characters=False)['characters']})
         self.assertEqual([CARDS[k]['name'] for k in ('I07','I08')],['潜影追击','群犬吠形'])
@@ -421,7 +424,7 @@ class SurplusReworkTest(unittest.TestCase):
         s=self.game();h=hero(s,'a','zhenhong');h['flags']['atk_buff']=3
         s['sides']['a']['front']='zhenhong';move_out(s,'a','zhenhong')
         self.assertEqual(attack_value(h,s,'a'),4)
-        s=self.play(s,'R08');h=hero(s,'a','zhenhong');self.assertEqual(attack_value(h,s,'a'),5)
+        s=self.play(s,'R08');h=hero(s,'a','zhenhong');self.assertEqual(attack_value(h,s,'a'),4)
         damage(s,'a','zhenhong',99);self.assertNotIn('atk_buff',h['flags'])
 
 

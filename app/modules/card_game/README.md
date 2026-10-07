@@ -20,7 +20,7 @@
 | [实现验收](../../../docs/duel-v2-acceptance.md) | 功能验收记录，不是平衡证据 |
 | [平衡迭代](../../../docs/duel-balance-iteration.md) | 测试流程与报告索引 |
 | [强化学习](../../../docs/duel-v2-rl.md) | 训练框架、旧镜像入口与观察边界 |
-| [离线批量搜索](../../../docs/duel-v2-batched-search.md) | CPU 数组槽位、每根预算及五队 GPU 后端的后续接入边界 |
+| [离线批量搜索](../../../docs/duel-v2-batched-search.md) | 无损图编码、设备存储、批量推理、协作搜索及五队 GPU 规则接入边界 |
 | [训练结束标准与首轮结果](../../../docs/duel-v2-training-stop-criteria.md) | 互搏训练停止口径及 2026-09-15 历史双预组结果 |
 | [公开卡池训练](../../../docs/duel-v2-public-training.md) | 现行完整公开卡池训练、分析与录像入口 |
 | [完整训练与报告要求](../../../docs/duel-v2-full-training-report-spec.md) | 双预组测试矩阵、配牌调整、先后手胜率、逐卡与机制分析的交付规范 |
@@ -733,9 +733,9 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 
 ### 离线批量搜索基础
 
-`rl/batched_duel` 提供显式容量的连续 int32 CPU arena、带代次的真实槽位／工作区引用、隔离复制、释放依赖和实际数组字节统计；`rl/batched_search` 提供每个决策根的预约／开始／完成账本，公开证明与树搜索共用预算，排队计入截止，取消或到期后拒绝迟到结果。两者都在显式构造时工作，导入不启动对局、推理或 CUDA。
+`rl/batched_duel` 提供显式容量的 CPU arena、无损实体图 codec、设备数组分叉、真实 NVRTC/Driver kernel 加载器和兼容 CPython 的随机原语；`rl/batched_search` 提供根预算账本、模型身份绑定的 FP32 批量推理、可挂起的 Gumbel 遍历、跨根协作调度和设备搜索统计池。公开证明与树搜索共用预算，排队计入截止，取消或到期后拒绝迟到结果。组件显式构造才工作，导入不启动对局、推理或 CUDA。
 
-这仍是存储和调度基础，尚无完整五队 codec、数组规则推进、批量规划或 CUDA 后端；1,600 槽位测试不代表 1,600 局 GPU 对战通过。当前服务和训练入口仍使用各自既有引擎。后续实现及对拍要求见[离线批量搜索](../../../docs/duel-v2-batched-search.md)。验证：`.venv/bin/python -m unittest tests.test_duel_v2_batch_arena tests.test_duel_v2_batch_budget -v`。
+完整五队规则、合法动作、观察编码与采样的设备执行尚未接通；存储、合成根和 kernel 原语测试不代表 1,600 局 GPU 对战通过。当前服务和训练入口仍使用各自既有引擎。各组件验证命令、剩余接入及对拍要求见[离线批量搜索](../../../docs/duel-v2-batched-search.md)。基础验证：`.venv/bin/python -m unittest tests.test_duel_v2_batch_arena tests.test_duel_v2_batch_budget -v`。
 
 ### 2026-10-07 真红基础面板 1/6
 

@@ -56,6 +56,10 @@ class Zhenhong:
                'RF01': _battle}
 
     @staticmethod
+    def on_game_start(c):
+        c.grant_harmony(c.cid, 1, reason='开局异能')
+
+    @staticmethod
     def on_surplus(c, **_data):
         c.character['surplus_passive_triggers'] = int(c.character.get('surplus_passive_triggers', 0)) + 1
         from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline

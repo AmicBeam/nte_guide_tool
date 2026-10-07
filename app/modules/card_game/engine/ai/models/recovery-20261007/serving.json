@@ -1,12 +1,12 @@
 {
   "kind": "explicit_user_candidate",
   "request": "把高级人机做一下替换吧，让目前的高级人机用上新的模型，并且包含搜索链路",
-  "runtime_rule_hash": "d60942ffe323a88cb80e85779415fceb113db7536415da736c7b5f699d06c678",
+  "runtime_rule_hash": "c36db72ac98a83f581e5814458f3451e30a16ca046f82a22f4d89ca559b5e081",
   "source_rule_hash": "7c928f692ad643ba32bb6d2e70808a137744fde82e58e5ee451e4744d3d5de9e",
   "report": "artifacts/rl-evals/murk-hour-corrected-20261007/delivery-report.md",
   "selection": "selected-models; murk best batch 1; other four frozen",
   "quality_approved": false,
-  "compatibility_note": "Current Adler ultimate, Zhenhong base 1/6, and R07 2/6 / R08 1/8 differ from training; experimental serving compatibility is not new-rule strength acceptance.",
+  "compatibility_note": "Current Adler ultimate, Zhenhong base/weapon panels and one opening harmony differ from training; experimental serving compatibility is not new-rule strength acceptance.",
   "models": {
     "starter": {
       "manifest_sha256": "c7b978ecc202432d559b6ece8e96d65f2e609579f9c6b969e88d41de16575216",
@@ -46,6 +46,12 @@
       "previous_runtime_rule_hash": "eb93612ed99ad130fb0d622f49f71a33a90319aec8a4e26378c2ce5a8915d4e0",
       "runtime_rule_hash": "d60942ffe323a88cb80e85779415fceb113db7536415da736c7b5f699d06c678",
       "scope": "R07 3/5 -> 2/6; R08 2/7 -> 1/8; same named features/candidates/architecture; original source model bytes and quality status preserved"
+    },
+    {
+      "request": "初始1点吧，然后让模型测试一下对创生的胜率如何",
+      "previous_runtime_rule_hash": "d60942ffe323a88cb80e85779415fceb113db7536415da736c7b5f699d06c678",
+      "runtime_rule_hash": "c36db72ac98a83f581e5814458f3451e30a16ca046f82a22f4d89ca559b5e081",
+      "scope": "Zhenhong receives one opening harmony through on_game_start; existing public numeric feature, candidate and architecture contracts unchanged; preserve original training identity and model bytes"
     }
   ]
 }

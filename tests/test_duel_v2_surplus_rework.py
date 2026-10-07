@@ -67,7 +67,7 @@ class SurplusReworkTest(unittest.TestCase):
         h=hero(s,'a','zhenhong')
         self.assertEqual(compatibility_flags(h)['atk_buff'],1)
         self.assertEqual(h['extra_attacks'],1)
-        self.assertEqual((h['harmony'],h['energy']),(0,2))
+        self.assertEqual((h['harmony'],h['energy']),(1,2))
         events=[e for e in s['events'] if e['seq']>seq]
         attacks=[e['actor'] for e in events if e['type']=='attack']
         self.assertEqual(attacks,['a:jiuyuan','a:zhenhong'])
@@ -82,7 +82,7 @@ class SurplusReworkTest(unittest.TestCase):
         c=operation(s,'a','jiuyuan');resolve_genesis(c);finish_operation(s)
         h=hero(s,'a','zhenhong')
         self.assertEqual((h['extra_attacks'],compatibility_flags(h)['atk_buff']), (2,2))
-        self.assertEqual(h['harmony'],0)
+        self.assertEqual(h['harmony'],1)
         self.assertEqual(h['energy'],5)
         self.assertFalse(s.get('deferred_actions'))
 
@@ -146,7 +146,7 @@ class SurplusReworkTest(unittest.TestCase):
         s=apply_action(s,'a',dict(type='play_card',card_id=physical['instance_id']))
         self.assertEqual(s['sides']['a']['discard'][-1]['card_id'],'I03')
         self.assertEqual(hero(s,'a','zhenhong')['energy'],0)
-        self.assertEqual(hero(s,'a','zhenhong')['harmony'],1)
+        self.assertEqual(hero(s,'a','zhenhong')['harmony'],2)
         self.assertEqual(hero(s,'a','yi')['energy'],1)
         self.assertFalse(hero(s,'a','yi').get('beast_fangs'))
         move_out(s,'a','zhenhong')
@@ -158,7 +158,7 @@ class SurplusReworkTest(unittest.TestCase):
         begin_turn(s,'a');self.assertEqual(s['sides']['a']['front'],'zhenhong')
         self.assertEqual(hero(s,'a','zhenhong')['ultimate_turns'],1)
         begin_turn(s,'a');h=hero(s,'a','zhenhong')
-        self.assertEqual((h['extra_attacks'],h['energy'],h['harmony']),(1,0,1))
+        self.assertEqual((h['extra_attacks'],h['energy'],h['harmony']),(1,0,2))
         self.assertFalse(h['awakened']);self.assertIsNone(s['sides']['a']['front'])
 
     def test_voluntary_switch_ends_ultimate_without_final_attack(self):

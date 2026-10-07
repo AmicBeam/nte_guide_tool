@@ -233,7 +233,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zhenhong'})
         self.assertEqual(s['sides']['a']['front'], 'zhenhong')
         self.assertEqual(hero(s, 'a', 'jiuyuan')['harmony'], 0)
-        self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 0)
+        self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 1)
         self.assertTrue(s['sides']['a']['normal_attack_available'])
         self.assertEqual(s['sides']['a']['ap'], before)
         self.assertEqual(s['sides']['b']['hp'], 98)

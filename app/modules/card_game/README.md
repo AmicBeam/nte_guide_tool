@@ -757,3 +757,9 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_continuous_cast tests.test_duel_v2_catalog tests.test_duel_v2_zone_status tests.test_duel_v2_engine tests.test_duel_v2_replay`；模拟路径单独运行 `.venv/bin/python -m unittest tests.test_duel_v2_simulation`。
 
 本轮目录、持续伤害、区域状态与回放 54 项通过，模拟对拍 3 项通过；扩大引擎回归的 6 项失败在恢复旧残虹实现后同样复现。真实大厅进入浊燃普通人机牌桌，确认换牌前残虹为环合 2/2，确认换牌并刷新后保留，历史只记录一次开局获得。图鉴异能已显示新文案；开发服务继续监听 `0.0.0.0:5001`，本机与当前局域网 `192.168.10.3:5001` 均返回 200。
+
+### 2026-10-07 真红开局 1 点环合
+
+真红内容钩子 `on_game_start` 在初始化时通过通用资源接口授予 1 点个人环合，并记录公开开局效果；牌面同步说明。JSON 恢复、倒地复活、换人及终结不重发该钩子；最近出战者、存活与环合支付规则保持现行约束，R02 额外环合候选未实施。实验性高级模型沿用原数值，核验编码兼容后单独记录当前运行身份。
+
+回归：`.venv/bin/python -m unittest tests.test_duel_v2_zhenhong_initial tests.test_duel_v2_zhenhong_buff tests.test_duel_v2_surplus_rework tests.test_duel_v2_zhenhong_harmony`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。

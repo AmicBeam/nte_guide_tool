@@ -37,6 +37,8 @@ class PhysicalGameRecord:
         self.immune_risks={side:[] for side in ('a','b')}
         self._last_digest=state_digest(state)
         self._finished=False
+        self._behavior={side:Counter() for side in ('a','b')}
+        self._legal_play_turns={side:set() for side in ('a','b')}
         self._journal=Path(journal_directory) if journal_directory is not None else None
         if self._journal is not None:
             _save_gzip_new(self._journal/'opening.json.gz',self.opening)
@@ -51,6 +53,13 @@ class PhysicalGameRecord:
             raise ValueError('Physical action is not a supplied legal decision')
         if state_digest(before)!=self._last_digest:
             raise ValueError('Physical trace skipped or replaced a state')
+        counters=self._behavior[side]
+        if any(a.get('type')=='play_card' for a in legal_actions):
+            counters['legal_play_decisions']+=1;self._legal_play_turns[side].add(before['turn'])
+        kind=action['type']
+        if kind=='play_card':counters['manual_play_card_actions']+=1
+        elif kind=='attack':counters['ordinary_attack_actions']+=1
+        elif kind=='ultimate':counters['ultimate_actions']+=1
         self.telemetry.before(before,side,legal_actions)
         self.telemetry.after(before,after,action,side)
         track_immune_window(before,after,action,side,self.immune_metrics['a'],self.immune_risks['a'])
@@ -91,7 +100,10 @@ class PhysicalGameRecord:
             verified=True
         except Exception as exc:error=repr(exc)
         complete=state['phase']=='finished' and error is None and verified
-        payload=dict(job,complete=complete,winner=state.get('winner'),turn=state['turn'],
+        behavior={side:{**{key:int(self._behavior[side][key]) for key in
+            ('legal_play_decisions','manual_play_card_actions','ordinary_attack_actions','ultimate_actions')},
+            'legal_play_turns':len(self._legal_play_turns[side])} for side in ('a','b')}
+        payload=dict(job,behavior=behavior,complete=complete,winner=state.get('winner'),turn=state['turn'],
             error=error,replay_verified=verified,telemetry=self.telemetry.finish(state),
             actions=self.actions,events=self.events,opening_state=self.opening,
             search_stats=self.search,search_decisions=len(self.search),

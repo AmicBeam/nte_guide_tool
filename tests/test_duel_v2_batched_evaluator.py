@@ -288,6 +288,8 @@ class TestDuelV2BatchedEvaluator(unittest.TestCase):
             self.assertEqual(prog_data["phase"], "finished")
             self.assertEqual(prog_data["total_games"], 2)
             self.assertEqual(prog_data["uncompleted_games"], 2)
+            self.assertFalse(res["evaluation_accepted"])
+            self.assertTrue(res["behavior"]["behavior_approved"])
 
     def test_matrix_summary_and_wilson_ci(self) -> None:
         """Wilson score interval and summary aggregation must correctly compute intervals."""

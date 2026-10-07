@@ -239,7 +239,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"Evaluation completed: {eval_result['completed_games']}/{eval_result['total_games']} games.")
     print(f"Results written to: {output_dir}")
-    return 0 if eval_result['game_execution_complete'] else 1
+    return 0 if eval_result['evaluation_accepted'] else 1
 
 
 if __name__ == "__main__":

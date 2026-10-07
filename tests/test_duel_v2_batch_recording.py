@@ -47,6 +47,23 @@ class PhysicalRecordTest(unittest.TestCase):
             with self.assertRaises(RuntimeError):record.finish(state,{'id':'fixture'},directory)
         self.assertEqual(opening['version'],0)
 
+    def test_real_legal_play_opportunities_survive_recording_and_trigger_idle_gate(self):
+        from app.modules.card_game.rl.batched_search.behavior import BehaviorGate,InactivePolicyError
+        state=new_game(seed=8135,skip_mulligan=True);record=PhysicalGameRecord(state)
+        for _ in range(6):
+            side=acting_side(state);actions,_=recovery_runtime.decision(state,side)
+            action=next(a for a in actions if a['type']=='end_turn')
+            after=apply_action(state,side,action);record.append(state,after,side,action,actions);state=clean(after)
+        side=acting_side(state);action={'type':'concede'};after=apply_action(state,side,action)
+        record.append(state,after,side,action,[action]);state=clean(after)
+        with tempfile.TemporaryDirectory() as directory:
+            result=record.finish(state,{'id':'idle-fixture','policies':{'a':'test','b':'test'}},directory)
+            self.assertTrue(result['complete'])
+            self.assertGreaterEqual(result['behavior']['a']['legal_play_decisions'],2)
+            self.assertGreaterEqual(result['behavior']['a']['legal_play_turns'],2)
+            self.assertEqual(result['behavior']['a']['manual_play_card_actions'],0)
+            with self.assertRaises(InactivePolicyError):BehaviorGate(stop_games=1).observe([result])
+
     def test_trace_mismatch_and_path_escape_are_rejected(self):
         state=new_game(seed=8134,skip_mulligan=True);record=PhysicalGameRecord(state)
         side=acting_side(state);actions,_=recovery_runtime.decision(state,side)

@@ -226,6 +226,8 @@ def generate_report_markdown(
         "",
         f"- `game_execution_complete`: **{str(eval_result.get('game_execution_complete', False)).lower()}**",
         f"- `concurrency_1600_full_games_complete`: **{str(eval_result.get('concurrency_1600_full_games_complete', False)).lower()}**",
+        f"- `evaluation_accepted`: **{str(eval_result.get('evaluation_accepted', False)).lower()}**",
+        f"- `behavior_approved`: **{str((eval_result.get('behavior') or {}).get('behavior_approved', False)).lower()}**",
         "- `quality_approved`: **false**",
         "- `training_updates`: **0**",
         "- `gpu_rule_execution`: **false**",
@@ -331,6 +333,7 @@ def write_result_json(
         'game_execution_complete': eval_result.get('game_execution_complete', False),
         'concurrency_1600_full_games_complete': eval_result.get('concurrency_1600_full_games_complete', False),
         'quality_approved': False,
+        'evaluation_accepted':eval_result.get('evaluation_accepted',False),
         'training_updates': 0,
         'gpu_rule_execution': False,
         'training_workflow_complete': False,
@@ -354,6 +357,7 @@ def write_result_json(
         'device_statistics':eval_result.get('device_statistics'),
         'device_memory':eval_result.get('device_memory'),
         'method_error':eval_result.get('method_error'),
+        'behavior':eval_result.get('behavior'),
         'device_stats': {
             'cpu_peak_memory_bytes': None,
             'gpu_peak_memory_bytes': None,
@@ -369,14 +373,14 @@ def make_source_snapshot(models: Mapping[str, Any], budget_mode: str, models_dir
     """Capture runtime source SHA snapshot and verify source manifest if present."""
     from app.modules.card_game.rl import cross_lineup
     from app.modules.card_game.rl.batched_duel import process_backend, recording, serving_protocol
-    from app.modules.card_game.rl.batched_search import serving, cooperative, traversal, inference, statistics, nodes
+    from app.modules.card_game.rl.batched_search import serving, cooperative, traversal, inference, statistics, nodes, behavior
 
     search_files = [
         serving.__file__,
         cooperative.__file__,
         traversal.__file__,
         inference.__file__,
-        statistics.__file__, nodes.__file__,
+        statistics.__file__, nodes.__file__, behavior.__file__,
         process_backend.__file__, recording.__file__, serving_protocol.__file__,
         __file__,
     ]
@@ -545,7 +549,9 @@ def evaluate_jobs(
 
     def _flush_records(batch_results: Sequence[Dict[str, Any]]) -> None:
         if out_path is None:
+            behavior_gate.observe(batch_results)
             return
+        fresh=[]
         index_file = out_path / 'index.jsonl'
         with index_file.open('a', encoding='utf-8') as f:
             for res in batch_results:
@@ -553,6 +559,9 @@ def evaluate_jobs(
                 if gid not in persisted_game_ids:
                     f.write(json.dumps(res, ensure_ascii=False) + '\n')
                     persisted_game_ids.add(gid)
+                    fresh.append(res)
+
+        behavior_gate.observe(fresh)
 
     def _update_progress(phase: str = 'evaluating') -> None:
         prog = {
@@ -568,6 +577,8 @@ def evaluate_jobs(
             'elapsed_seconds': clock() - start_monotonic,
             'deadline': deadline,
             'last_updated': clock(),
+            'behavior_approved':behavior_gate.report()['behavior_approved'],
+            'inactive_games':behavior_gate.report()['inactive_games'],
         }
         if out_path is not None:
             prog_file = out_path / 'progress.json'
@@ -577,6 +588,8 @@ def evaluate_jobs(
         if progress_callback is not None:
             progress_callback(prog)
 
+    from .behavior import BehaviorGate
+    behavior_gate=BehaviorGate()
     method_error=None
     try:
         while active_games:
@@ -821,7 +834,8 @@ def evaluate_jobs(
                 _flush_records(fallback_batch)
             active_games.clear()
 
-        _update_progress(phase='failed' if method_error is not None else 'finished')
+        _update_progress(phase='failed' if method_error is not None else
+                         'finished' if behavior_gate.report()['behavior_approved'] else 'rejected')
 
     all_results = []
     for j in jobs:
@@ -893,4 +907,6 @@ def evaluate_jobs(
         'backend_stats': backend_stats,
         'device_statistics':device_stats,
         'method_error':method_error,
+        'behavior':behavior_gate.report(),
+        'evaluation_accepted':game_execution_complete and behavior_gate.report()['behavior_approved'],
     }

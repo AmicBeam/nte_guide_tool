@@ -735,6 +735,8 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 
 ### 离线批量搜索基础
 
+批量评测分别记录物理容量和行为验收；有合法牌可出却整局既不出牌、不普通出击也不终结的空转会拒绝验收，8 个不同正常局达到 P0 停止门槛。闸门只审计真实动作，不强迫出牌或修改模型／奖励。验证：`.venv/bin/python -m unittest tests.test_duel_v2_batch_behavior tests.test_duel_v2_batch_recording tests.test_duel_v2_batched_evaluator`。
+
 `rl/batched_duel` 提供显式容量的 CPU arena、无损实体图 codec、设备数组分叉、真实 NVRTC/Driver kernel 加载器和兼容 CPython 的随机原语；`rl/batched_search` 提供根预算账本、模型身份绑定的 FP32 批量推理、可挂起的 Gumbel 遍历、跨根协作调度和设备搜索统计池。公开证明与树搜索共用预算，排队计入截止，取消或到期后拒绝迟到结果。组件显式构造才工作，导入不启动对局、推理或 CUDA。
 
 离线入口 `scripts/evaluate_duel_v2_batched.py` 将完整正式规则驻留在有界 CPU 进程池，跨对局合并网络推理与 GPU 搜索统计；不是 1,600 个系统线程，也不是 GPU 规则解释器。运行要求冻结源码、模型、独立种子和显式预算模式；`wall_clock` 每决策从入队起计 3 秒，公开证明和树搜索共用最多 32 次预算，迟到结果不计完成模拟。实际动作、私有原始记录和公开回放分别保存，异常及未完成局不得算正常终局。设备规则执行尚未接通；存储、合成根和单次推理测试不代表 1,600 真实局容量验收。服务和训练入口不自动切换。验证、产物及容量门槛见[离线批量搜索](../../../docs/duel-v2-batched-search.md)。

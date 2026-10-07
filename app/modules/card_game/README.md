@@ -20,6 +20,7 @@
 | [实现验收](../../../docs/duel-v2-acceptance.md) | 功能验收记录，不是平衡证据 |
 | [平衡迭代](../../../docs/duel-balance-iteration.md) | 测试流程与报告索引 |
 | [强化学习](../../../docs/duel-v2-rl.md) | 训练框架、旧镜像入口与观察边界 |
+| [离线批量搜索](../../../docs/duel-v2-batched-search.md) | CPU 数组槽位、每根预算及五队 GPU 后端的后续接入边界 |
 | [训练结束标准与首轮结果](../../../docs/duel-v2-training-stop-criteria.md) | 互搏训练停止口径及 2026-09-15 历史双预组结果 |
 | [公开卡池训练](../../../docs/duel-v2-public-training.md) | 现行完整公开卡池训练、分析与录像入口 |
 | [完整训练与报告要求](../../../docs/duel-v2-full-training-report-spec.md) | 双预组测试矩阵、配牌调整、先后手胜率、逐卡与机制分析的交付规范 |
@@ -729,3 +730,9 @@ Windows 后台启动使用 `scripts/launch_duel_v2_cross_detached.py`，只在 C
 每个 `/api/duel-v2/ai-step` 使用当前正式引擎与公开信息采样，执行 Gumbel 信息集搜索（最多 32 次模拟、16 个根候选、3 步短终局检查、3 秒搜索预算），采用新模型独立终局价值塔及 natural-WDL Q 尺度。立即获胜检查共享预算；有已完成模拟时采用搜索结果，预算耗尽且无完整模拟或不支持的私有选择根才回退合法网络动作。起手换牌也由新网络选择。对手模拟使用同一冻结策略作为代理，不读取真实隐藏手牌。网站只运行 NumPy 推理，不加载 PT、Torch 或训练任务。旧对局的权重／构筑版本不匹配时要求重新开局。
 
 回归：`.venv/bin/python -m unittest tests.test_duel_v2_recovery_serving tests.test_duel_v2_serving_search tests.test_duel_v2_ai_step tests.test_duel_v2_experimental_advanced`。
+
+### 离线批量搜索基础
+
+`rl/batched_duel` 提供显式容量的连续 int32 CPU arena、带代次的真实槽位／工作区引用、隔离复制、释放依赖和实际数组字节统计；`rl/batched_search` 提供每个决策根的预约／开始／完成账本，公开证明与树搜索共用预算，排队计入截止，取消或到期后拒绝迟到结果。两者都在显式构造时工作，导入不启动对局、推理或 CUDA。
+
+这仍是存储和调度基础，尚无完整五队 codec、数组规则推进、批量规划或 CUDA 后端；1,600 槽位测试不代表 1,600 局 GPU 对战通过。当前服务和训练入口仍使用各自既有引擎。后续实现及对拍要求见[离线批量搜索](../../../docs/duel-v2-batched-search.md)。验证：`.venv/bin/python -m unittest tests.test_duel_v2_batch_arena tests.test_duel_v2_batch_budget -v`。

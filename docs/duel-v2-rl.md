@@ -8,6 +8,8 @@
 
 ## 文件与边界
 
+离线批量搜索基础位于 `rl/batched_duel` 和 `rl/batched_search`，提供 CPU 数组 arena 与每根预算账本，范围及后续五队 native/CUDA 对拍见[批量搜索后端](duel-v2-batched-search.md)。这些基础组件不提供游戏规则 codec、批量 Gumbel 或 GPU 对局执行，不自动接入服务或训练。
+
 独立恢复研究组件：`residual_policy`／`residual_runtime` 管理正常幅度残差网络与数值版本；`preserved_policy` 保留三套旧策略，`recovery_runtime` 管理显式研究采集，`recovery_search` 管理自然WDL尺度对照，`recovery_checkpoint` 检查网络／Adam／RNG恢复；`policy_equivalence`、`search_stability`、`archive_diagnostics` 只做表示／目标／数值审计，`full_hand_diagnostic` 只对合成离线状态提供具名手牌权限，`offline_sources` 生成排除敏感文件的源码快照。它们不自动接入网站或正式长训；具体入口及CPU／CUDA验收见[策略学习恢复](duel-v2-policy-recovery.md)。
 
 - `app/modules/card_game/rl/backend.py`：仅对接 `engine.duel_v2` 六接口中的开局、行动方、投影、动作和结果；不依赖旧盖卡模型、HTTP 或数据库服务。

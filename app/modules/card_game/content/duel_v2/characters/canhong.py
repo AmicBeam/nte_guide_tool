@@ -6,7 +6,7 @@ from app.modules.card_game.engine.duel_v2.continuous import (
 )
 from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
 from app.modules.card_game.engine.duel_v2.state import (
-    add_atk_buff, add_hand, alive, card_instance, damage, discard, force_collapse,
+    add_hand, alive, card_instance, damage, discard, force_collapse,
     front_target, hero, is_esper, other,
 )
 
@@ -118,17 +118,9 @@ class Canhong:
         return 1
 
     @staticmethod
-    def on_continuous_applied(c, **_data):
-        if not alive(c.state, c.side, c.cid):
-            return
-        used = c.state['sides'][c.side].setdefault('used', {})
-        key = f'canhong_dot_attack_turn:{c.entity_id}'
-        turn = c.state['turn']
-        if used.get(key) == turn:
-            return
-        used[key] = turn
-        add_atk_buff(c.character, 1, source_entity_id=c.entity_id, source_key='canhong-dot', label='持续伤害')
-        c.history('己方施加持续伤害，残虹的异能触发：攻击 +1。')
+    def on_game_start(c):
+        # User-authored tabletop rule (2026-10-07), granted only during setup.
+        c.grant_harmony(c.cid, 2, reason='对局开始，残虹的异能')
 
     @staticmethod
     def on_ultimate(c):

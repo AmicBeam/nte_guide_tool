@@ -168,50 +168,90 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertEqual(dots['venom']['stacks'], min(10, 5 + len(hits)))
         self.assertEqual(attack_value(hero(s, 'a', 'canhong'), s, 'a'), attack)
 
-    def test_canhong_burn_can_stack_three_times_in_one_turn_but_attack_grows_once(self):
+    def test_canhong_initial_harmony_is_visible_for_both_sides_before_mulligan(self):
+        # The initial 2 harmony is a user-authored tabletop rule (2026-10-07).
+        deck = _deck(('anhunqu', 'canhong', 'zaowu', 'adler'), ('A', 'C', 'S', 'D'))
+        for first in ('a', 'b'):
+            with self.subTest(first=first):
+                s = new_game(seed=3, first_side=first, decks={'a': deck, 'b': deck})
+                self.assertEqual(s['phase'], 'mulligan')
+                for side in ('a', 'b'):
+                    for cid in deck['character_ids']:
+                        h = hero(s, side, cid)
+                        self.assertEqual(h['harmony'], 2 if cid == 'canhong' else 0)
+                        self.assertEqual(h['energy'], 0)
+                    public = observe(s, side)['sides'][side]['characters']
+                    self.assertEqual(next(h for h in public if h['id'] == 'canhong')['harmony'], 2)
+                    opening = s['_public_board']['sides'][side]['characters']
+                    self.assertEqual(next(h for h in opening if h['id'] == 'canhong')['harmony'], 2)
+
+    def test_canhong_burn_can_stack_three_times_in_one_turn_without_attack_growth(self):
         s = self.game()
         h = hero(s, 'a', 'canhong')
         base = attack_value(h, s, 'a')
         for expected in (1, 2, 3, 3):
             apply_burn(s, 'b', by='a', source_cid='anhunqu')
             self.assertEqual(front_debuff(s, 'b')['burn']['stacks'], expected)
-            self.assertEqual(attack_value(h, s, 'a'), base + 1)
+            self.assertEqual(attack_value(h, s, 'a'), base)
 
-    def test_canhong_dot_attack_limit_renews_on_each_players_turn(self):
+    def test_canhong_dots_do_not_increase_attack_on_either_players_turn(self):
         s = self.game()
         h = hero(s, 'a', 'canhong')
         base = attack_value(h, s, 'a')
-        for side, gained in (('a', 1), ('b', 2), ('a', 3)):
+        for side in ('a', 'b', 'a'):
             self.assertEqual(s['active_side'], side)
             apply_dot(s, 'b', 'etch', by='a', source_cid='canhong', stacks=1)
             apply_dot(s, 'b', 'venom', by='a', source_cid='canhong', stacks=1)
-            self.assertEqual(attack_value(h, s, 'a'), base + gained)
+            self.assertEqual(attack_value(h, s, 'a'), base)
             end_turn(s, side)
+        self.assertFalse(any('持续伤害，残虹的异能触发：攻击 +1' in e.get('text', '')
+                             for e in s['events']))
 
-    def test_canhong_dot_attack_limit_survives_json_weapon_and_revival(self):
+    def test_canhong_initial_harmony_pays_for_first_replacement_and_does_not_refill(self):
         s = self.game()
-        apply_dot(s, 'b', 'nightmare', by='a', source_cid='anhunqu', stacks=1)
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'canhong'})
+        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 2)
+        self.assertNotIn('burn', front_debuff(s, 'b'))  # No partner on first entry.
+        s = self.play(s, 'A06')
+        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 0)
+        self.assertEqual(front_debuff(s, 'b')['burn']['stacks'], 1)
+        self.assertEqual(attack_value(hero(s, 'a', 'canhong'), s, 'a'), 2)
+        end_turn(s, 'a')
+        end_turn(s, 'b')
+        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 0)
         s = clone_state(json.loads(json.dumps(s)))
         s = self.play(s, 'C08')
         h = hero(s, 'a', 'canhong')
-        attack = attack_value(h, s, 'a')
-        apply_dot(s, 'b', 'etch', by='a', source_cid='canhong', stacks=1)
-        self.assertEqual(attack_value(h, s, 'a'), attack)
+        self.assertEqual(h['harmony'], 0)
         h['hp'] = 0
         knockdowns(s)
         s = self.play(s, 'C07')
         h = hero(s, 'a', 'canhong')
+        self.assertEqual(h['harmony'], 0)
         attack = attack_value(h, s, 'a')
         apply_dot(s, 'b', 'venom', by='a', source_cid='canhong', stacks=1)
         self.assertEqual(attack_value(h, s, 'a'), attack)
 
-    def test_copied_canhong_dot_attack_limit_is_independent_per_entity(self):
-        s = self.game()
-        hero(s, 'a', 'anhunqu')['flags']['mimic'] = {'id': 'canhong'}
+    def test_canhong_existing_harmony_survives_json_and_revival(self):
+        s = clone_state(json.loads(json.dumps(self.game())))
+        h = hero(s, 'a', 'canhong')
+        self.assertEqual(h['harmony'], 2)
+        h['hp'] = 0
+        knockdowns(s)
+        self.assertEqual(h['harmony'], 2)
+        s = self.play(s, 'C07')
+        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 2)
+
+    def test_copied_canhong_neither_grants_initial_harmony_nor_dot_attack(self):
+        ours = _deck(('anhunqu', 'zero', 'zaowu', 'adler'), ('A', 'Z', 'S', 'D'))
+        theirs = _deck(('nanali', 'canhong', 'iloy', 'jiuyuan'), ('N', 'C', 'Y', 'J'))
+        s = new_game(seed=3, first_side='a', skip_mulligan=True, decks={'a': ours, 'b': theirs})
+        s = self.play(s, 'A01', target='b:canhong')
+        self.assertEqual(hero(s, 'a', 'anhunqu')['harmony'], 0)
         for kind in ('etch', 'venom'):
-            apply_dot(s, 'b', kind, by='a', source_cid='canhong', stacks=1)
-            for cid in ('anhunqu', 'canhong'):
-                self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), 3)
+            apply_dot(s, 'b', kind, by='a', source_cid='anhunqu', stacks=1)
+            for side, cid in (('a', 'anhunqu'), ('b', 'canhong')):
+                self.assertEqual(attack_value(hero(s, side, cid), s, side), 2)
 
     def test_mimic_family_is_owned_and_permanently_grows_anhunqu(self):
         ours = _deck(('anhunqu', 'canhong', 'zaowu', 'adler'), ('A', 'C', 'S', 'D'))

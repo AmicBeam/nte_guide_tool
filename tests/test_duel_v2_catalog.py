@@ -57,6 +57,14 @@ class DuelV2CatalogTest(unittest.TestCase):
         catalog['characters'][0]['passive'] = 'mutated'
         self.assertNotEqual(get_catalog()['characters'][0]['passive'], 'mutated')
 
+    def test_canhong_passive_describes_initial_harmony_without_dot_attack(self):
+        passive = next(c for c in get_catalog()['characters'] if c['id'] == 'canhong')['passive']
+        self.assertTrue(passive.startswith('初始具有 2 点环合值。'))
+        self.assertIn('重复触发时可叠层，上限 3 层。', passive)
+        self.assertIn('幻境', passive)
+        self.assertNotIn('每回合 1 次', passive)
+        self.assertNotIn('攻击 +1', passive)
+
     def test_exports_four_characters_in_fixed_order(self) -> None:
         self.assertEqual(list(CHARACTERS), list(CATALOG_ORDER))
         self.assertGreaterEqual(len(CATALOG_ORDER), 11)

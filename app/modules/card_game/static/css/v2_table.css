@@ -443,7 +443,7 @@
     flex: 1 0 min(120px, 32dvh);
   }
   .v2-table-page #v2-card-preview .v2-hover-references {
-    max-height: calc((100dvh - 16px) * 2);
+    max-height: calc(100dvh - 16px);
     overflow-y: auto;
   }
   .v2-table-page #v2-card-preview .preview-close {

@@ -1574,7 +1574,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "鬼郎丸在场时，对鬼郎丸和全部对方异能者造成 2 点伤害。",
+      "description": "对己方前排和所有对方异能者造成 2 点伤害。",
       "starter_copies": 2
     },
     {

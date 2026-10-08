@@ -66,6 +66,58 @@ class ContinuousCastTest(unittest.TestCase):
             self.assertFalse(any(e['type'] == 'effect' and e.get('present')
                                  for e in s['events'] if e['seq'] > seq))
 
+    def test_s05_hits_allied_front_and_opposing_espers_without_requiring_gulang(self):
+        from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
+        from app.modules.card_game.engine.duel_v2.summons import summon_front
+        for front in (None, 'nanali', 'zaowu', 'gulang', 'other_summon'):
+            with self.subTest(front=front):
+                s = self.game()
+                if front == 'gulang':
+                    s = self.play(s, 'S01')
+                elif front == 'other_summon':
+                    summon_front(s, 'a', name='塔吉多', attack=2, hp=4)
+                else:
+                    s['sides']['a']['front'] = front
+                own_front = s['sides']['a']['front']
+                foe_summon = summon_front(s, 'b', name='对方召唤物', attack=2, hp=4)
+                hero(s, 'b', 'jiuyuan').update(hp=0, down_turns=3)
+                before = {(side, cid): h['hp'] for side in ('a', 'b')
+                          for cid, h in s['sides'][side]['characters'].items()}
+                s['sides']['a']['ap'] = 10
+                held = card_instance(s, 'S05', 'a')
+                s['sides']['a']['hand'] = [held]
+                action = {'type': 'play_card', 'card_id': held['instance_id']}
+                self.assertIn(action, legal_actions(s, 'a'))
+                opening, seq = capture_public_board(s), s['event_seq']
+                s = apply_action(s, 'a', action)
+                replay = replay_public_board(opening, [e for e in s['events'] if e['seq'] > seq])
+                for (side, cid), hp in before.items():
+                    hit = (side == 'a' and cid == own_front or
+                           side == 'b' and cid != foe_summon and hp > 0)
+                    expected = hp - 2 if hit else hp
+                    self.assertEqual(hero(s, side, cid)['hp'], expected)
+                    shown = next(h for h in replay['sides'][side]['characters'] if h['id'] == cid)
+                    self.assertEqual(shown['hp'], expected)
+                self.assertEqual(s['sides']['a']['hp'], 30)
+                self.assertEqual(s['sides']['b']['hp'], 30)
+                if front == 'gulang':
+                    self.assertEqual(len(s['sides']['b']['hand']), 4)
+                if front != 'gulang':
+                    s['sides']['a']['hand'] = [card_instance(s, 'S06', 'a')]
+                    self.assertFalse(any(a['type'] == 'play_card' for a in legal_actions(s, 'a')))
+
+    def test_s05_finishes_enemy_damage_after_its_own_front_falls(self):
+        s = self.game()
+        s['sides']['a']['front'] = 'zaowu'
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'a', 'zaowu')['hp'] = 1
+        before = {cid: h['hp'] for cid, h in s['sides']['b']['characters'].items()}
+        s = self.play(s, 'S05')
+        self.assertEqual(hero(s, 'a', 'zaowu')['hp'], 0)
+        self.assertIsNone(s['sides']['a']['front'])
+        for cid, hp in before.items():
+            self.assertEqual(hero(s, 'b', cid)['hp'], hp - 2)
+
     def test_gulang_details_describe_each_item_in_live_legacy_snapshot_and_replay(self):
         from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
         cases = (

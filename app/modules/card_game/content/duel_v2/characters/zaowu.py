@@ -70,10 +70,9 @@ def _s04(c):
 
 
 def _s05(c):
-    cid = _gulang(c)
-    if not cid:
-        return
-    damage(c.state, c.side, cid, 2, source=f'{c.side}:{c.cid}', reason='「失觉性的崩落」')
+    cid = c.state['sides'][c.side]['front']
+    if cid:
+        damage(c.state, c.side, cid, 2, source=f'{c.side}:{c.cid}', reason='「失觉性的崩落」')
     foe = other(c.side)
     for enemy_id in list(team_order(c.state, foe)):
         h = hero(c.state, foe, enemy_id)
@@ -124,7 +123,7 @@ class Zaowu:
 
     @staticmethod
     def can_play(c, current=True, card=None, **_data):
-        if card and card.get('card_id') in ('S05', 'S06') and not _gulang(c):
+        if card and card.get('card_id') == 'S06' and not _gulang(c):
             return False
         return None
 

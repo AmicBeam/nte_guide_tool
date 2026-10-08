@@ -293,20 +293,6 @@ def _rose_followup(state, dot, cid, dealt):
         heal(state, ctx.side, ctx.cid, dealt, source=source, reason='「新月摇篮曲」')
 
 
-def _kill_player(state, dot, killed):
-    if not killed:
-        return
-    ctx = _source_context(state, dot.get('source'))
-    if not ctx or ctx.character.get('shape') != 'A07' or not alive(state, ctx.side, ctx.cid):
-        return
-    foe = other(ctx.side)
-    for _ in killed:
-        if finished(state):
-            return
-        damage(state, foe, 'player', 2, source=dot.get('source'), kind='damage',
-               reason='「噩梦」消灭了对方异能者')
-
-
 def trigger_dot(state, target_side, kind, dot, *, reason=None):
     """Resolve a zone effect identically for its clock and an explicit card trigger."""
     # Current definitions also cover old snapshots carrying mode='every5'.
@@ -320,10 +306,7 @@ def trigger_dot(state, target_side, kind, dot, *, reason=None):
     if dot.get('mode') == 'every5':
         return distribute(state, target_side, stacks // 5, **kwargs)
     after = (lambda cid, dealt: _rose_followup(state, dot, cid, dealt)) if kind == 'nightmare' else None
-    killed = distribute(state, target_side, stacks, after_hit=after, include_roles=kind == 'nightmare', **kwargs)
-    if kind == 'nightmare' and not finished(state):
-        _kill_player(state, dot, killed)
-    return killed
+    return distribute(state, target_side, stacks, after_hit=after, include_roles=kind == 'nightmare', **kwargs)
 
 
 def tick_owner_end(state, side):

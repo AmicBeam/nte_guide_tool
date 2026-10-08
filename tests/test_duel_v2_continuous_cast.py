@@ -130,15 +130,18 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertNotIn('nightmare', front_debuff(s, 'b')['dots'])
         self.assertFalse(s['sides']['a']['used'].get('instant'))
 
-    def test_icecream_triggers_nightmare_kill_weapon(self):
+    def test_nightmare_kill_no_longer_adds_player_damage_with_gilded_symphony(self):
         s = self.play(self.game(), 'A07')
         for cid in ('zero', 'jiuyuan', 'adler'):
             hero(s, 'b', cid)['hp'] = 0
         hero(s, 'b', 'iloy').update(hp=1, shield=0)
         s['sides']['b']['shield'] = 0
+        s['rng'] = 0  # Both nightmare points hit the sole living esper.
         before = s['sides']['b']['hp']
         s = self.play(s, 'A03')
-        self.assertEqual(s['sides']['b']['hp'], before - 2)
+        self.assertEqual(hero(s, 'b', 'iloy')['hp'], 0)
+        self.assertEqual(s['sides']['b']['hp'], before)
+        self.assertFalse(any('「噩梦」消灭了对方异能者' in e['text'] for e in s['events']))
 
     def test_rose_still_heals_when_nightmare_kills_target(self):
         s = self.play(self.game(), 'A08')
@@ -361,9 +364,9 @@ class ContinuousCastTest(unittest.TestCase):
         from app.modules.card_game.engine.duel_v2.context import EffectContext
         fire(EffectContext(s, 'a', 'anhunqu', {'side':'a'}), 'on_turn_begin', actor_only=True)
         self.assertEqual(h['shield'], 2)
-        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 2)
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 4)
         fire(EffectContext(s, 'a', 'anhunqu', {'side':'a'}), 'on_ultimate', actor_only=True)
-        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 5)
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 7)
 
     def test_early_shift_has_no_attack_penalty_and_ignores_harmony_fullness(self):
         for attribute in ('魂', '咒'):
@@ -386,16 +389,16 @@ class ContinuousCastTest(unittest.TestCase):
                     self.assertIn('star' if attribute == '魂' else 'burn', zone)
                     self.assertNotIn('nightmare', zone.get('dots') or {})
 
-    def test_gilded_symphony_adds_one_nightmare_on_equip_and_turn_start(self):
+    def test_gilded_symphony_adds_two_nightmare_on_equip_and_turn_start(self):
         s = self.play(self.game(), 'A07')
-        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 1)
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 2)
         apply_dot(s, 'b', 'nightmare', by='a', source_cid='anhunqu', stacks=3)
         begin_turn(s, 'b')
-        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 4)
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 5)
         begin_turn(s, 'a')
-        # The shared nightmare clock halves four before the weapon adds one.
-        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 3)
-        self.assertIn('己方回合开始，「鎏金交响诗」施加 1 层「噩梦」。', [e['text'] for e in s['events']])
+        # The shared nightmare clock halves five before the weapon adds two.
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 4)
+        self.assertIn('己方回合开始，「鎏金交响诗」施加 2 层「噩梦」。', [e['text'] for e in s['events']])
 
     def test_distribution_merges_one_number_per_character(self):
         s = self.game()

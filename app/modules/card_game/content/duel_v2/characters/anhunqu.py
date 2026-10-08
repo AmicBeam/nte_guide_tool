@@ -93,12 +93,12 @@ def _af01(c):
 def _a07(c):
     set_shape(c)
     if alive(c.state, c.side, c.cid):
-        apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=1)
+        apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=2)
 
 
 def _a07_turn_begin(c):
-    apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=1)
-    c.history('己方回合开始，「鎏金交响诗」施加 1 层「噩梦」。')
+    apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=2)
+    c.history('己方回合开始，「鎏金交响诗」施加 2 层「噩梦」。')
 
 
 @register

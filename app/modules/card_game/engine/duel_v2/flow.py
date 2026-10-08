@@ -140,7 +140,7 @@ def card_play_options(state, side, card):
                    for resource, amount in option.get('costs', {}).items())]
 
 
-def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None):
+def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None, response=False):
     from app.modules.card_game.content.duel_v2.characters.common import scale_battle_frame
     from .presentation import public_card
     team = state['sides'][side]
@@ -173,7 +173,7 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None)
     consume_applied(state, 'card_use', [e['effect_id'] for e in instant_grants['contributions']])
     log(state, f"{hero(state, side, card['character_id'])['name']}使用「{card['name']}」。",
         'play', side=side, source=card['character_id'],
-        actor=f"{side}:{card['character_id']}", card=public_card(card, state, side))
+        actor=f"{side}:{card['character_id']}", card=public_card(card, state, side), response=response)
     c = operation(state, side, card['character_id'], card, target_id)
     c.operation['option_id'] = option.get('id')
     c.operation['ap_paid'] = ap_paid
@@ -243,7 +243,7 @@ def trigger_responses(state, defending_side, kind, target_id=None, attacker_id=N
             response_target = f'{defending_side}:{target_id}' if kind == 'ally_attacked' and target_id else None
             if kind == 'front_attacked':
                 response_target = f'{other(defending_side)}:{attacker_id}'
-            resolve_play(state, defending_side, card, response_target, pay=True)
+            resolve_play(state, defending_side, card, response_target, pay=True, response=True)
         finally:
             state['_response_lock'] = False
             state.pop('_response_intercept', None)

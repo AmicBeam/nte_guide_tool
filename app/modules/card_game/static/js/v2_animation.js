@@ -465,7 +465,11 @@
           return;
         }
         if (kind === "play") {
-          if (this._isOpponentPlay(event) || this.options.presentOwnPlays) {
+          if (event.response === true) {
+            await this._presentHarmony(event, instant, "响应");
+            if (this._cancelled) return;
+          }
+          if (event.response === true || this._isOpponentPlay(event) || this.options.presentOwnPlays) {
             await this._presentPlay(event, instant);
           }
           return;
@@ -844,15 +848,16 @@
       }
     }
 
-    async _presentHarmony(event, instant) {
+    async _presentHarmony(event, instant, keyword) {
       const overlay = this._ensureOverlay();
       const stageRect = readRect(overlay) || { cx: 400, cy: 225, left: 0, top: 0 };
       const names = { "创生": "01", "覆纹": "02", "黯星": "03", "浊燃": "04", "浸染": "05", "延滞": "06", "盈蓄": "07", "失谐": "08" };
       const text = String(event && event.text || "");
-      const name = Object.keys(names).find((value) => text.includes(value)) || "环合";
+      const name = keyword || Object.keys(names).find((value) => text.includes(value)) || "环合";
       const area = this.root && this.root.querySelector ? this.root.querySelector('#v2-play-area') : null;
       const point = centerOf(readRect(area), { x: stageRect.cx, y: stageRect.cy });
       const art = this._el("div", "v2-fx-harmony-art");
+      if (keyword === "响应") art.classList.add("is-response");
       art.setAttribute("aria-label", name);
       art.style.left = (point.x - stageRect.left) + "px";
       art.style.top = (point.y - stageRect.top) + "px";
@@ -874,7 +879,7 @@
         { transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.78 },
         { transform: "translate(-50%, -56%) scale(1.04)", opacity: 0 },
       ], this._duration(instant, 1100));
-      art.remove();
+      if (art.parentNode) art.parentNode.removeChild(art);
     }
 
     async _presentDot(event, instant, kind) {

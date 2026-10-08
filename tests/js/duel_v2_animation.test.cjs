@@ -1208,3 +1208,66 @@ test("rewind patches once under the black curtain and removes it", async () => {
   assert.equal(patches, 1);
   assert.equal(harness.stage.querySelector('.v2-rewind-curtain'), null);
 });
+
+test("actual responses announce large text then reveal from either hand before patching once", async () => {
+  for (const side of ["a", "b"]) {
+    const harness = makeRoot();
+    const card = publicCard();
+    const source = makeHandCard(harness.documentRef, card);
+    source.classList.add("v2-hand-card");
+    (side === "a" ? harness.handA : harness.handB).appendChild(source);
+    const order = [];
+    const player = new Player({ root: harness.root, clock: harness.clock,
+      applyPatch() { order.push("patch"); source.parentNode.removeChild(source); } });
+    const harmony = player._presentHarmony.bind(player);
+    player._presentHarmony = async (...args) => {
+      order.push(args[2]);
+      const done = harmony(...args);
+      const art = harness.stage.querySelector(".v2-fx-harmony-art");
+      assert.equal(art.textContent, "响应");
+      assert.equal(art.getAttribute("aria-label"), "响应");
+      assert.ok(art.classList.contains("is-response"));
+      await done;
+    };
+    const reveal = player._presentPlay.bind(player);
+    player._presentPlay = async (...args) => {
+      order.push("reveal");
+      const done = reveal(...args);
+      assert.ok(source.classList.contains("v2-fx-source"));
+      assert.equal(harness.stage.querySelector(".v2-fx-play-card").getAttribute("data-instance-id"), card.instance_id);
+      assert.deepEqual(order, ["响应", "reveal"]);
+      await done;
+    };
+    const event = { seq: 930, type: "play", side, actor: side + ":nanali", response: true, card, patch: {} };
+    await settle(player.play([event, event]), harness.clock, player);
+    assert.deepEqual(order, ["响应", "reveal", "patch"]);
+    assert.equal(source.parentNode, null);
+  }
+});
+
+test("a response-capable card manually played gets no response announcement or own reveal", async () => {
+  const harness = makeRoot();
+  const player = new Player({ root: harness.root, clock: harness.clock });
+  let reveals = 0;
+  player._presentHarmony = async () => assert.fail("manual play must not announce response");
+  player._presentPlay = async () => { reveals += 1; };
+  await settle(player.play([{ seq: 931, type: "play", side: "a", response: false,
+    card: { ...publicCard(), response: "ally_attacked" }, patch: {} }]), harness.clock, player);
+  assert.equal(reveals, 0);
+});
+
+test("cancelling a response title applies state once without starting a later reveal", async () => {
+  const harness = makeRoot();
+  const patched = [];
+  const player = new Player({ root: harness.root, clock: harness.clock, applyPatch: (_p, event) => patched.push(event.seq) });
+  let reveals = 0;
+  player._presentPlay = async () => { reveals += 1; };
+  const done = player.play([{ seq: 932, type: "play", side: "a", response: true, card: publicCard(), patch: {} }]);
+  await Promise.resolve();
+  await Promise.resolve();
+  player.cancel();
+  await settle(done, harness.clock, player);
+  assert.deepEqual(patched, [932]);
+  assert.equal(reveals, 0);
+  assert.equal(harness.stage.querySelector(".v2-fx-harmony-art"), null);
+});

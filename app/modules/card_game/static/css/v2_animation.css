@@ -33,6 +33,16 @@
   height: auto;
 }
 
+.v2-fx-harmony-art.is-response {
+  justify-content: center;
+  font-family: "STKaiti", "Kaiti SC", "KaiTi", "Noto Serif CJK SC", serif;
+  font-size: clamp(64px, 9vw, calc(112px * var(--table-font-scale, 1)));
+  font-style: italic;
+  letter-spacing: 0.14em;
+  color: #f1d5ff;
+  text-shadow: 0 2px 0 #51266e, 0 0 24px rgba(193, 115, 255, 0.9);
+}
+
 .v2-fx-harmony-glyph + .v2-fx-harmony-glyph {
   margin-left: -20%;
 }

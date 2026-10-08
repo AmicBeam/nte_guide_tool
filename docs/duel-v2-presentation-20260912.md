@@ -23,6 +23,7 @@
 - `resource` 是环合/能量等数值变化，仍按 seq 排队，用小飘字演出，不插队。回合开始抽牌的 seq 在 `turn` 之后。
 - `action_id` 至少由对应动作 version 组成；pending 的 `choose` 是下一次 `apply_action`，使用新 version，不和出牌合成一个 ID。
 - 已公开卡牌进入 play/gain/record/shape；对手普通抽牌、私有检视候选不会进入对方 presentation。
+- 自动响应实际使用的 `play` 事件携带 `response=true`；主动使用为 `false`。该字段与卡牌定义的 `card.response` 触发条件独立，双方观察与新公开回放均保留。前端先播放「响应」大字，再复用手牌实体飞出揭示演出（包含实时我方），最后应用本事件 patch；支付不起不生成 play。缺少标记的历史事件不根据卡面能力推测响应。
 - `patch` 按角色 id 合并公开变化。从动作前公开 board 按 seq 应用本动作 patch 后，应等于动作后公开 board。
 - 同时攻守同 `group_id`，连击不同组。
 - 旧快照缺少演出元数据时不补卡名；首次新动作仍生成可回放 patch。起始观察不回放全部历史。

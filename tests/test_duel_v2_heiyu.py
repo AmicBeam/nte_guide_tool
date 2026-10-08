@@ -63,7 +63,7 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(CARDS['PF01']['description'], '瞬发。占卜，然后抽 1 张牌。')
         self.assertTrue(CARDS['PF01']['derived'])
         self.assertFalse(any('【魔女效果】' in CARDS[f'P{i:02d}']['description'] for i in range(1, 9)))
-        self.assertNotIn('heiyu', {c['id'] for c in get_catalog(include_test_characters=False)['characters']})
+        self.assertIn('heiyu', {c['id'] for c in get_catalog(include_test_characters=False)['characters']})
 
     def test_basic_sortie_inserts_omen_and_battle_refills_harmony(self):
         s = game()

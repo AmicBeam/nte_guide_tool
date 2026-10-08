@@ -275,6 +275,9 @@ def catalog(player) -> dict:
     payload = _content().get_catalog(include_test_characters=_player_can_use_test_content(player))
     payload.update(_public_store(_visible_store(_load_store(player), player)))
     payload['tutorial'] = tutorial_progress(player)
+    from app.modules.card_game.engine.ai.advanced_model import pending_strategy_options
+    allowed = {deck['id'] for deck in payload.get('starter_decks', [])}
+    payload['advanced_pending_presets'] = [item for item in pending_strategy_options() if item['id'] in allowed]
     return payload
 
 

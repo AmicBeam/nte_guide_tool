@@ -82,6 +82,13 @@ async function bootstrapHome() {
   function renderBuildSummary() {
     const saved = catalog && catalog.saved_build;
     const starter = catalog && catalog.starter_deck;
+    ((catalog && catalog.advanced_pending_presets) || []).forEach(function (item) {
+      const option = Array.from(aiDeck.options).find(function (node) { return node.value === item.id; });
+      if (option) {
+        option.disabled = Boolean(item.pending);
+        option.textContent = item.pending ? item.name + '（待训练）' : '实验性 · ' + item.name;
+      }
+    });
     const previousSolo = soloDeck.value;
     soloDeck.innerHTML = '<option value="random">随机</option><option value="mirror">镜像对局</option>' + ((catalog && catalog.starter_decks) || []).map(function (deck) {
       return '<option value="' + V2.escapeAttr(deck.id) + '">' + V2.escapeHtml(deck.name) + '</option>';
@@ -91,7 +98,7 @@ async function bootstrapHome() {
       const opponentName = aiDeck.options[aiDeck.selectedIndex].text;
       const playerDeck = saved || starter;
       buildSummary.textContent = '我方「' + ((playerDeck && playerDeck.name) || '当前构筑') + '」· 对手「' + opponentName + '」';
-      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。五套高级人机均已启用新模型与搜索，属于尚未通过新规则完整强度验收的实验性策略。';
+      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。已有高级人机采用实验性模型与搜索；倾陷预组已加入下一轮六队训练，模型完成接入后开放。';
       return;
     }
     if (selectedMode === 'solo') {

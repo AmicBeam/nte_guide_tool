@@ -126,7 +126,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertIn('消灭', CHARACTERS['baicang']['awakened_passive'])
         self.assertIn('荒时', CHARACTERS['xun']['passive'])
         self.assertIn('时计', CHARACTERS['xun']['awakened_passive'])
-        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue', 'zhenhong', 'yi', 'anhunqu', 'canhong', 'zaowu', 'adler')))
+        self.assertEqual(PUBLIC_CHARACTER_IDS, frozenset(('nanali', 'zero', 'jiuyuan', 'iloy', 'bohe', 'baicang', 'xiaozhi', 'haiyue', 'zhenhong', 'yi', 'anhunqu', 'canhong', 'zaowu', 'adler', 'heiyu', 'dafutier', 'lingke')))
         access = {item['id']: item['access_level'] for item in catalog['characters']}
         self.assertEqual(access['nanali'], 'public')
         self.assertEqual(access['zero'], 'public')
@@ -380,15 +380,15 @@ class DuelV2CatalogTest(unittest.TestCase):
         public = get_catalog(include_test_characters=False)
         self.assertEqual({item['id'] for item in public['characters']}, set(PUBLIC_CHARACTER_IDS))
         self.assertTrue(all(item['character_id'] in PUBLIC_CHARACTER_IDS for item in public['cards']))
-        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'])
+        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组', '倾陷预组'])
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
         self.assertFalse(any(deck_uses_test_characters(item) for item in public['starter_decks']))
         full = get_catalog()
         self.assertEqual(len(full['characters']), len(CHARACTERS))
-        self.assertEqual(len(full['starter_decks']), 5)
+        self.assertEqual(len(full['starter_decks']), 6)
         self.assertEqual(
             [item['name'] for item in full['starter_decks']],
-            ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'],
+            ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组', '倾陷预组'],
         )
         self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'murk')))
         self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')))

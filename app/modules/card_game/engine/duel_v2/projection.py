@@ -298,6 +298,8 @@ def choose_action(state, side):
             return -1000
         if kind == 'end_turn':
             return -100
+        if kind == 'exit_ultimate':
+            return -110
         if kind == 'ultimate':
             return 6
         if kind == 'cycle':

@@ -65,7 +65,10 @@
     "anhunqu",
     "canhong",
     "zaowu",
-    "adler"
+    "adler",
+    "heiyu",
+    "dafutier",
+    "lingke"
   ],
   "characters": [
     {
@@ -4199,6 +4202,51 @@
         "D04",
         "D06",
         "D06"
+      ]
+    },
+    {
+      "id": "collapse",
+      "name": "倾陷预组",
+      "official": true,
+      "character_ids": [
+        "heiyu",
+        "dafutier",
+        "canhong",
+        "lingke"
+      ],
+      "card_ids": [
+        "P01",
+        "P01",
+        "P03",
+        "P03",
+        "P05",
+        "P05",
+        "P08",
+        "P08",
+        "F01",
+        "F01",
+        "F03",
+        "F03",
+        "F06",
+        "F06",
+        "F08",
+        "F08",
+        "C01",
+        "C01",
+        "C03",
+        "C03",
+        "C04",
+        "C04",
+        "C08",
+        "C08",
+        "K01",
+        "K01",
+        "K02",
+        "K02",
+        "K04",
+        "K04",
+        "K08",
+        "K08"
       ]
     }
   ]

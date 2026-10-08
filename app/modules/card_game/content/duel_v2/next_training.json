@@ -1,0 +1,122 @@
+{
+  "schema": "duel_v2_next_training_roster_v1",
+  "roster": [
+    "starter",
+    "weave-rush",
+    "quick-rush",
+    "zhenhong",
+    "murk",
+    "collapse"
+  ],
+  "character_orders": {
+    "starter": [
+      "nanali",
+      "iloy",
+      "zero",
+      "jiuyuan"
+    ],
+    "weave-rush": [
+      "bohe",
+      "baicang",
+      "zero",
+      "iloy"
+    ],
+    "quick-rush": [
+      "xiaozhi",
+      "zero",
+      "bohe",
+      "jiuyuan"
+    ],
+    "zhenhong": [
+      "zhenhong",
+      "zero",
+      "iloy",
+      "yi"
+    ],
+    "murk": [
+      "anhunqu",
+      "canhong",
+      "zaowu",
+      "adler"
+    ],
+    "collapse": [
+      "heiyu",
+      "dafutier",
+      "canhong",
+      "lingke"
+    ]
+  },
+  "learning_keys": [
+    "starter",
+    "weave-rush",
+    "quick-rush",
+    "zhenhong",
+    "murk",
+    "collapse"
+  ],
+  "collapse_build": {
+    "id": "collapse",
+    "name": "倾陷预组",
+    "official": true,
+    "character_ids": [
+      "heiyu",
+      "dafutier",
+      "canhong",
+      "lingke"
+    ],
+    "card_ids": [
+      "P01",
+      "P01",
+      "P03",
+      "P03",
+      "P05",
+      "P05",
+      "P08",
+      "P08",
+      "F01",
+      "F01",
+      "F03",
+      "F03",
+      "F06",
+      "F06",
+      "F08",
+      "F08",
+      "C01",
+      "C01",
+      "C03",
+      "C03",
+      "C04",
+      "C04",
+      "C08",
+      "C08",
+      "K01",
+      "K01",
+      "K02",
+      "K02",
+      "K04",
+      "K04",
+      "K08",
+      "K08"
+    ]
+  },
+  "search_algorithm": "gumbel",
+  "simulations": 32,
+  "gumbel_candidates": 16,
+  "terminal_horizon": 3,
+  "reward_mode": "terminal_wdl_only",
+  "process_rewards": 0,
+  "default_hard_stop": "next_09:00_Asia/Shanghai",
+  "requires_new_source_freeze": true,
+  "requires_new_six_team_encoding": true,
+  "requires_fresh_same_source_preflight": true,
+  "evaluation_modes": [
+    "pure_network",
+    "search"
+  ],
+  "evaluation_shape": [
+    6,
+    6
+  ],
+  "automatically_start_training": false,
+  "automatically_approve_models": false
+}

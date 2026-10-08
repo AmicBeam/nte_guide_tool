@@ -895,4 +895,11 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 
 补查上游完整服装表，新增零06城市漫游者／08学园随想、灵可03星间漫游、残虹06夜幕裁梦、哈尼娅07青春注脚的卡名与换装绑定；五张本地WebP与源SHA记录在图片清单。保留原卡牌ID、面板、费用和卡效。
 
-灵可同频合击机制说明按用户文本精简，同属性减抗改为不可叠加、重复刷新；不同属性独立，同类不同来源也不叠加。持续截止仍为灵可下个己方回合开始，其他援护规则与借用回调保持。验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_dafutier tests.test_duel_v2_costume_art tests.test_duel_v2_card_art tests.test_duel_v2_catalog tests.test_duel_v2_haniya tests.test_duel_v2_engine tests.test_duel_v2_effect_markers tests.test_duel_v2_presentation tests.test_duel_v2_replay`。
+灵可同频合击机制说明按用户文本精简，同属性减抗改为不可叠加、重复刷新；不同属性独立，同类不同来源也不叠加。持续截止统一为灵可下个己方回合开始时按通用机制衰减，其他援护规则与借用回调保持。验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_dafutier tests.test_duel_v2_costume_art tests.test_duel_v2_card_art tests.test_duel_v2_catalog tests.test_duel_v2_haniya tests.test_duel_v2_engine tests.test_duel_v2_effect_markers tests.test_duel_v2_presentation tests.test_duel_v2_replay`。
+
+
+### 2026-10-08 灵可通用衰减
+
+按用户最终选择，同频合击及领域援护减抗统一在灵可下个己方回合开始时通过现有生命周期清除，同属性仍不可叠加。机制小卡、终结、效果历史与双方减益标记同步“回合开始时衰减”文案；领域自身的2个己方回合不变。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_modifiers tests.test_duel_v2_effect_markers tests.test_duel_v2_presentation tests.test_duel_v2_replay`。

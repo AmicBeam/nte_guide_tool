@@ -122,7 +122,7 @@ class Lingke:
                    source_entity_id=c.entity_id, source_key='sync',
                    expiry=deadline(c.state, c.side, 1), label=f'{attribute}抗性 -1',
                    conditions=[{'id': 'damage_attribute', 'args': {'attribute': attribute}}])
-        c.history(f'「同频合击」：{attribute}抗性 -1，持续至下个己方回合开始。',
+        c.history(f'「同频合击」：{attribute}抗性 -1，下个己方回合开始时衰减。',
                   target_side=target_side, target_id=target_id)
 
     @staticmethod

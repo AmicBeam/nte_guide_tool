@@ -194,6 +194,24 @@ class LingkeTest(unittest.TestCase):
         s = play(s, 'K05', 'a:zero')
         self.assertEqual(resistance_values(s['sides']['b']), {'光': -1, '灵': -1})
 
+    def test_opponent_turn_sync_uses_shared_decay_at_next_lingke_turn_start(self):
+        s = game('b'); s['sides']['a']['front'] = 'baicang'
+        actor = hero(s, 'a', 'baicang'); actor['hp'] = 1
+        hero(s, 'a', 'lingke')['lingke_chain'] = dict(entity_id=actor.entity_id,
+                                                    character_id='baicang', count=2)
+        give(s, 'a', 'B05')
+        s = apply_action(s, 'b', dict(type='attack', character_id='zero'))
+        target = hero(s, 'b', 'zero')
+        self.assertEqual(resistance_values(target), {'咒': -1})
+        effect = next(e for e in target['effects'] if e['definition_id'] == 'lingke.resistance')
+        self.assertEqual(effect['expiry'], dict(side='a', turn=s['sides']['a']['turn_count'] + 1, phase='turn_start'))
+        for view in (observe(s, 'a', include_previews=False), observe(s, 'b', include_previews=False), capture_public_board(s)):
+            shown = next(h for h in view['sides']['b']['characters'] if h['id'] == 'zero')
+            self.assertTrue(any(m['timing'] == '灵可下个己方回合开始时衰减' for m in shown['effect_markers']))
+        s = apply_action(json.loads(json.dumps(s)), 'b', dict(type='end_turn'))
+        self.assertEqual(s['active_side'], 'a')
+        self.assertEqual(resistance_values(hero(s, 'b', 'zero')), {})
+
     def test_weave_follows_attack_attribute_and_extra_damage_weapon(self):
         for weapon, expected in ((None, [4, 4]), ('K08', [5, 5])):
             s = game(); hero(s, 'a', 'lingke')['shape'] = weapon
@@ -306,6 +324,10 @@ class LingkeTest(unittest.TestCase):
         hit=next(e for e in s['events'] if e['seq']>seq and e['type']=='combat' and e.get('source')=='a:zero')
         self.assertTrue(hit['additional_attack'])
         self.assertEqual(hero(s,'a','lingke')['energy'],1)
+        s = apply_action(s, 'a', dict(type='end_turn'))
+        s = apply_action(s, 'b', dict(type='end_turn'))
+        self.assertEqual(resistance_values(hero(s, 'b', 'iloy')), {})
+        self.assertTrue(hero(s, 'a', 'lingke')['awakened'], '减抗衰减不结束仍在持续的共鸣领域')
 
     def test_simulation_same_rules_and_input_unchanged(self):
         s=game();action=give(s,'a','K06');before=deepcopy(s)

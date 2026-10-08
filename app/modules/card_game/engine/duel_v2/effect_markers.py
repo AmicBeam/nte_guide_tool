@@ -29,7 +29,7 @@ def character_effect_markers(character, state=None, side=None):
             continue
         left = remaining(effect, state, side)
         if effect['definition_id'] == 'lingke.resistance':
-            timing = '至灵可下个己方回合开始'
+            timing = '灵可下个己方回合开始时衰减'
         elif effect['definition_id'] == 'lingke.taunt':
             timing = '下一次己方使用战斗牌'
         elif effect.get('consume_on') == 'damage':
@@ -75,7 +75,7 @@ def team_effect_markers(team):
     for e in all_effects(team):
         if e['property'] == 'damage.resistance' and e.get('visibility') == 'public':
             markers.append(_marker(e['effect_id'], e['label'],
-                                   '至灵可下个己方回合开始' if e['definition_id'] == 'lingke.resistance' else
+                                   '灵可下个己方回合开始时衰减' if e['definition_id'] == 'lingke.resistance' else
                                    '本回合下次受到对应属性伤害' if (e.get('expiry') or {}).get('phase') == 'turn_end' else '下次受到对应属性伤害',
                                    e['label'], False, kind='debuff' if e['value'] < 0 else 'buff'))
     if team.get('empty_draw_wins'):

@@ -60,7 +60,7 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual([CARDS[c]['name'] for c in ('P07', 'P08')], ['牧星者', '不凋羽'])
         for cid in ('P07', 'P08'):
             self.assertEqual((CARDS[cid]['attack'], CARDS[cid]['hp']), (3, 6))
-        self.assertEqual(CARDS['PF01']['description'], '瞬发。占卜（至少置底 1 张），然后抽 1 张牌。')
+        self.assertEqual(CARDS['PF01']['description'], '瞬发。「占卜」（至少置底 1 张），然后抽 1 张牌。')
         self.assertTrue(CARDS['PF01']['derived'])
         self.assertFalse(any('【魔女效果】' in CARDS[f'P{i:02d}']['description'] for i in range(1, 9)))
         self.assertIn('heiyu', {c['id'] for c in get_catalog(include_test_characters=False)['characters']})

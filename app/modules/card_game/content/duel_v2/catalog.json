@@ -3784,7 +3784,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "免疫战斗伤害。【占卜效果】释放本牌。若为救世魔女形态下，叠加至原攻击。",
+      "description": "免疫战斗伤害。【占卜效果】释放本牌。若为「救世魔女」形态下，叠加至原攻击。",
       "effect_id": "P01",
       "source": {
         "character_id": 1042,
@@ -3818,7 +3818,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "将一张手牌置于牌库顶。然后占卜。",
+      "description": "将一张手牌置于牌库顶。然后「占卜」。",
       "effect_id": "P03",
       "source": {
         "character_id": 1042,
@@ -3836,7 +3836,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "【占卜效果】释放本牌。若为救世魔女形态下，在原攻击结束后释放。",
+      "description": "【占卜效果】释放本牌。若为「救世魔女」形态下，在原攻击结束后释放。",
       "effect_id": "P04",
       "source": {
         "character_id": 1042,
@@ -3854,7 +3854,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "随机对X名对方异能者造成2点伤害，X为本局你占卜次数（当前为0）。然后占卜。【占卜效果】将本牌置入手牌。",
+      "description": "随机对X名对方异能者造成2点伤害，X为本局你「占卜」次数（当前为0）。然后「占卜」。【占卜效果】将本牌置入手牌。",
       "effect_id": "P05",
       "source": {
         "character_id": 1042,
@@ -3870,7 +3870,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "复活一个己方异能者，然后占卜。【占卜效果】随机使一个己方倒地异能者倒计时-1。",
+      "description": "复活一个己方异能者，然后「占卜」。【占卜效果】随机使一个己方倒地异能者倒计时-1。",
       "effect_id": "P06",
       "source": {
         "character_id": 1042,
@@ -3917,7 +3917,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "当你占卜时，随机将一张黑羽的牌提前置入牌库顶。",
+      "description": "当你「占卜」时，随机将一张黑羽的牌提前置入牌库顶。",
       "effect_id": "P08",
       "source": {
         "character_id": 1042,
@@ -3948,7 +3948,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。占卜（至少置底 1 张），然后抽 1 张牌。",
+      "description": "瞬发。「占卜」（至少置底 1 张），然后抽 1 张牌。",
       "effect_id": "PF01",
       "source": {
         "character_id": 1042,

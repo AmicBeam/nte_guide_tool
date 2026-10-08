@@ -396,16 +396,6 @@
         seen.add(identity);
       }
     }
-    // Mechanism terms can appear naturally without corner quotes, e.g. 谕石.
-    Object.keys(cardsByName).sort(function (a, b) { return b.length - a.length; }).forEach(function (name) {
-      const referenced = cardsByName[name];
-      if (!referenced || referenced.type !== 'mechanism' || !text.includes(name)) return;
-      const identity = referenced.id || referenced.card_id || name;
-      if (name !== card.name && (!card.id || referenced.id !== card.id) && !seen.has(identity)) {
-        result.push(Object.assign({}, referenced));
-        seen.add(identity);
-      }
-    });
     return result;
   }
 

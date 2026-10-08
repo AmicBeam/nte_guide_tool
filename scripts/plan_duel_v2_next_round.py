@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Materialize the next six-team request without starting training or reserving seeds."""
+"""Materialize the declared next-round request without training or reserving seeds."""
 import argparse
 import json
 from pathlib import Path

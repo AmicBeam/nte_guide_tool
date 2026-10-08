@@ -382,15 +382,15 @@ class DuelV2CatalogTest(unittest.TestCase):
         public = get_catalog(include_test_characters=False)
         self.assertEqual({item['id'] for item in public['characters']}, set(PUBLIC_CHARACTER_IDS))
         self.assertTrue(all(item['character_id'] in PUBLIC_CHARACTER_IDS for item in public['cards']))
-        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组', '倾陷预组'])
+        self.assertEqual([item['name'] for item in public['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组', '倾陷预组', '灵可预组'])
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
         self.assertFalse(any(deck_uses_test_characters(item) for item in public['starter_decks']))
         full = get_catalog()
         self.assertEqual(len(full['characters']), len(CHARACTERS))
-        self.assertEqual(len(full['starter_decks']), 6)
+        self.assertEqual(len(full['starter_decks']), 7)
         self.assertEqual(
             [item['name'] for item in full['starter_decks']],
-            ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组', '倾陷预组'],
+            ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组', '倾陷预组', '灵可预组'],
         )
         self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'murk')))
         self.assertFalse(deck_uses_test_characters(next(item for item in STARTER_DECKS if item['id'] == 'weave-rush')))

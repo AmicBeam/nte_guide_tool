@@ -27,10 +27,10 @@ from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
 
 _CACHE = {}
 _LOCK = threading.RLock()
-PRESETS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse')
+PRESETS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke')
 RANDOM_PRESETS = PRESETS
 UNTRAINED_STRATEGIES = {}
-PENDING_PRESETS = frozenset(('collapse',))
+PENDING_PRESETS = frozenset(('collapse', 'lingke'))
 
 
 def preset(deck_id):
@@ -253,7 +253,7 @@ def load_model(deck_id):
     recovery = configured / RELEASE
     root = recovery if recovery.is_dir() else (ARCHIVE if deck_id in EXPERIMENTAL else configured)
     if deck_id in PENDING_PRESETS and not all((root / f'{deck_id}{suffix}').is_file() for suffix in ('.json', '.npz')):
-        raise RuleValidationError(f'{preset(deck_id)["name"]}高级人机尚待六队训练与模型验收，请先使用普通人机。')
+        raise RuleValidationError(f'{preset(deck_id)["name"]}高级人机尚待训练与模型验收，请先使用普通人机。')
     key = (str(root), deck_id)
     with _LOCK:
         try:

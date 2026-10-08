@@ -98,7 +98,7 @@ async function bootstrapHome() {
       const opponentName = aiDeck.options[aiDeck.selectedIndex].text;
       const playerDeck = saved || starter;
       buildSummary.textContent = '我方「' + ((playerDeck && playerDeck.name) || '当前构筑') + '」· 对手「' + opponentName + '」';
-      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。已有高级人机采用实验性模型与搜索；倾陷预组已加入下一轮六队训练，模型完成接入后开放。';
+      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。已有高级人机采用实验性模型与搜索；倾陷、灵可预组已设为下一轮训练起点，待模型接入后开放。';
       return;
     }
     if (selectedMode === 'solo') {

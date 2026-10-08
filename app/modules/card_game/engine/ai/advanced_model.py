@@ -250,6 +250,9 @@ def load_model(deck_id):
             signature=tuple((path.stat().st_mtime_ns,path.stat().st_size)
                             for path in ([root/f'{deck_id}.json',root/f'{deck_id}.npz']
                                          + ([root/'serving.json'] if root == recovery else [])))
+            if root == recovery:
+                from app.modules.card_game.rl.cross_lineup import identity
+                signature += (identity(),)
             if key not in _CACHE or getattr(_CACHE[key], '_file_signature', None) != signature:
                 manifest = json.loads((root / f'{deck_id}.json').read_text(encoding='utf-8'))
                 from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA

@@ -1,7 +1,7 @@
 {
   "kind": "explicit_user_candidate",
   "request": "把高级人机做一下替换吧，让目前的高级人机用上新的模型，并且包含搜索链路",
-  "runtime_rule_hash": "760c10436a3c2d98ab60730edc8e57c174a5f9189e7d1823fa004b1e9f21999e",
+  "runtime_rule_hash": "ba8946fedaef946c0920fceef61a078a62dfd69e3b53904152450d7924c742b3",
   "source_rule_hash": "7c928f692ad643ba32bb6d2e70808a137744fde82e58e5ee451e4744d3d5de9e",
   "report": "artifacts/rl-evals/murk-hour-corrected-20261007/delivery-report.md",
   "selection": "selected-models; murk best batch 1; other four frozen",
@@ -118,6 +118,15 @@
       "source_build_sha256": "8cabdfa32f1a16dffa82c118e21dd9b12f2e81b8a08800ed08d318c6dff8fb24",
       "serving_build_sha256": "69ecad0bbc5373b7052ca472b5c7ec9a189595c25d239796b5ed1fc605bbfb59",
       "scope": "User-selected Yi cards only: remove I05x1/I07x1, add I03x1/I08x1; same roster/order, other three characters and cards; source manifests and NPZ byte-identical; no training or quality approval"
+    },
+    {
+      "request": "恢复五套高级人机对战",
+      "previous_runtime_rule_hash": "760c10436a3c2d98ab60730edc8e57c174a5f9189e7d1823fa004b1e9f21999e",
+      "runtime_rule_hash": "ba8946fedaef946c0920fceef61a078a62dfd69e3b53904152450d7924c742b3",
+      "scope": "Explicit user restoration after current rule changes: same named observation/candidate and numeric contracts; source manifests, NPZ, trained builds and user-selected Yi serving build preserved; real HTTP opening and bounded search checks required; no training or strength approval.",
+      "checked_features": 2420,
+      "checked_candidates": 254,
+      "checked_at": "2026-10-08T11:14:00+08:00"
     }
   ]
 }

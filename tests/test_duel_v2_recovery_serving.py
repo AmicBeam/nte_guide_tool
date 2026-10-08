@@ -131,6 +131,18 @@ class RecoveryServingTest(unittest.TestCase):
         script = "from app.modules.card_game.engine.ai.advanced_model import load_model; import sys; [load_model(k) for k in " + repr(KEYS) + "]; assert 'torch' not in sys.modules"
         subprocess.run([sys.executable, '-c', script], check=True, capture_output=True)
 
+    def test_cached_release_rejects_live_rule_drift(self):
+        from app.modules.card_game.engine.ai import advanced_model as ai
+        from app.modules.card_game.rl import cross_lineup
+        from app.errors import RuleValidationError
+        original = ai.load_model('murk')
+        self.assertIs(ai.load_model('murk'), original)
+        with patch.object(cross_lineup, 'identity', return_value='different-runtime'):
+            with self.assertRaises(RuleValidationError) as failed:
+                ai.load_model('murk')
+            self.assertIn('authorization', str(failed.exception.__cause__))
+        self.assertIs(ai.load_model('murk'), original)
+
     def test_stale_room_version_and_build_rejected(self):
         from app.modules.card_game.engine.ai import advanced_model as ai
         from app.modules.card_game.engine.duel_v2 import new_game
@@ -145,6 +157,29 @@ class RecoveryServingTest(unittest.TestCase):
 
 
 class RecoveryServingRoomTest(RoomFlowTestCase):
+    def test_public_player_can_start_all_five_recovery_opponents(self):
+        import importlib
+        ai = importlib.import_module('app.modules.card_game.engine.ai.advanced_model')
+        repository = importlib.import_module('app.modules.card_game.engine.application.v2_repository')
+        storage = importlib.import_module('app.modules.card_game.engine.application.v2_persistence')
+        uid = 'five-public-recovery'
+        token = self._issue_login_and_get_token(uid)
+        self.assertFalse(self.dao_module.get_player_by_uid(uid).shaft_test_whitelisted)
+        for key in KEYS:
+            with self.subTest(key=key):
+                model = ai.load_model(key)
+                result = self._post('/api/duel-v2/start',
+                                    {'mode': 'advanced', 'ai_deck': key}, token=token)
+                self.assertEqual(result['room']['mode'], 'advanced')
+                game = storage.load(repository.room_by_code(result['room']['room_code']).id)['game']
+                self.assertTrue(game['ai_profile']['experimental'])
+                self.assertEqual(game['ai_profile']['deck_id'], key)
+                self.assertEqual(game['ai_profile']['version'], model.version)
+                self.assertEqual(game['ai_profile']['build_sha256'], model.serving_build_sha256)
+                self.assertEqual([hero['id'] for hero in result['game']['sides']['b']['characters']],
+                                 model.serving_deck['character_ids'])
+                self._post('/api/duel-v2/leave', token=token)
+
     def test_real_room_binds_new_weights_and_searches_one_operation(self):
         import importlib
         ai = importlib.import_module('app.modules.card_game.engine.ai.advanced_model')

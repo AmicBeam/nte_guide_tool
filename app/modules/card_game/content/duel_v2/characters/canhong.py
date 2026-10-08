@@ -155,7 +155,7 @@ class Canhong:
         if c.character.get('shape') != 'C06':
             return
         side, cid = front_target(c.state, c.side)
-        damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}', reason='「血染双瞳」')
+        damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}', reason='「夜幕裁梦」')
 
     @staticmethod
     def on_ally_down(c, downed=None, **_data):

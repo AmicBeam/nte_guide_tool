@@ -159,7 +159,7 @@ class LingkeTest(unittest.TestCase):
         for _ in range(4): s = play(s, 'K05', 'a:zero')
         self.assertTrue(hero(s, 'b', 'iloy')['flags'].get('collapse'))
 
-    def test_selected_attribute_player_resistance_stacks_and_expires_both_views(self):
+    def test_selected_attribute_player_resistance_refreshes_without_stacking_and_expires(self):
         s = game(); before = deepcopy(s)
         s = play(s, 'K05', 'a:zero')
         self.assertEqual(s['sides']['b']['hp'], 196)
@@ -171,16 +171,28 @@ class LingkeTest(unittest.TestCase):
         hits = [e for e in s['events'] if e['type'] == 'combat' and e.get('source') == 'a:lingke']
         self.assertEqual((hits[-1]['attribute'], hits[-1]['additional_attack']), ('光', True))
         s = play(s, 'K05', 'a:zero')
-        self.assertEqual(s['sides']['b']['hp'], 191)
-        self.assertEqual(resistance_values(s['sides']['b']), {'光': -2})
+        self.assertEqual(s['sides']['b']['hp'], 192)
+        self.assertEqual(resistance_values(s['sides']['b']), {'光': -1})
         for board in (observe(s, 'a', include_previews=False), observe(s, 'b', include_previews=False), capture_public_board(s)):
             marks = board['sides']['b']['effect_markers']
-            self.assertEqual(len(marks), 2)
+            self.assertEqual(len(marks), 1)
             self.assertTrue(all(m['kind'] == 'debuff' and '下次受到' not in m['timing'] for m in marks))
         s = json.loads(json.dumps(s)); begin_turn(s, 'b')
-        self.assertEqual(resistance_values(s['sides']['b']), {'光': -2})
+        self.assertEqual(resistance_values(s['sides']['b']), {'光': -1})
         begin_turn(s, 'a')
         self.assertEqual(resistance_values(s['sides']['b']), {})
+
+    def test_different_attribute_resistance_is_independent_but_copied_sources_do_not_stack(self):
+        s = game()
+        s = play(s, 'K05', 'a:zero')
+        s = play(s, 'K05', 'a:iloy')
+        s = play(s, 'K05', 'a:zero')
+        self.assertEqual(resistance_values(s['sides']['b']), {'光': -1, '灵': -1})
+        s['sides']['a']['characters']['anhunqu'] = new_character('anhunqu')
+        s['sides']['a']['order'].append('anhunqu')
+        hero(s, 'a', 'anhunqu')['flags']['mimic'] = {'id': 'lingke'}
+        s = play(s, 'K05', 'a:zero')
+        self.assertEqual(resistance_values(s['sides']['b']), {'光': -1, '灵': -1})
 
     def test_weave_follows_attack_attribute_and_extra_damage_weapon(self):
         for weapon, expected in ((None, [4, 4]), ('K08', [5, 5])):

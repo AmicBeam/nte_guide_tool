@@ -461,6 +461,161 @@
         "alpha": "preserved",
         "encoder": "cwebp"
       }
+    },
+    {
+      "character": "零",
+      "character_id": "1051",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1051_3",
+      "fashion_name": "城市漫游者",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_nvzhu2.png",
+      "blob_sha": "e048e0e812ca751808029dfb83cfed910591b9fc",
+      "output": "app/static/images/characters/costume/Fashion_1051_3.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "1f03e068490593b9f99f349b942331378d40711e24c35485eb8682fd44966ff8",
+      "output_sha256": "b4a26889a44d624dac48bc9c3033499e7753b03511c74ccb9f50f8b91a109d80",
+      "bytes": 105244,
+      "card_ids": [
+        "Z06"
+      ],
+      "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+      "conversion": {
+        "format": "WebP",
+        "quality": 90,
+        "method": 6,
+        "resize": false,
+        "crop": false,
+        "alpha": "preserved",
+        "encoder": "cwebp"
+      }
+    },
+    {
+      "character": "零",
+      "character_id": "1051",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1051_5",
+      "fashion_name": "学园随想",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_nvzhu3.png",
+      "blob_sha": "d92b37c5bf3b427d1a4182d8bfbd5a108910bcda",
+      "output": "app/static/images/characters/costume/Fashion_1051_5.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "627bed85a1c52a65807f652b6d5e403981aac87c06596cebe93d35150b627699",
+      "output_sha256": "660a8c874e9c0c475b4d76959f45710c851ee9cd1866156ee0033361116f83ac",
+      "bytes": 115026,
+      "card_ids": [
+        "Z08"
+      ],
+      "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+      "conversion": {
+        "format": "WebP",
+        "quality": 90,
+        "method": 6,
+        "resize": false,
+        "crop": false,
+        "alpha": "preserved",
+        "encoder": "cwebp"
+      }
+    },
+    {
+      "character": "灵可",
+      "character_id": "1072",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1072_space",
+      "fashion_name": "星间漫游",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_lingke2.png",
+      "blob_sha": "5074fda25a611e080b6445db6854e1808b91a83a",
+      "output": "app/static/images/characters/costume/Fashion_1072_space.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "9cbe40d03997925fc99b8065195b75c49309a3b4fe2ef403dec4247ea1379bc1",
+      "output_sha256": "d8b945bb21191620dd00f9419dcd63eab974c9cfdf686117df97ecd105b34b6c",
+      "bytes": 157684,
+      "card_ids": [
+        "K03"
+      ],
+      "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+      "conversion": {
+        "format": "WebP",
+        "quality": 90,
+        "method": 6,
+        "resize": false,
+        "crop": false,
+        "alpha": "preserved",
+        "encoder": "cwebp"
+      }
+    },
+    {
+      "character": "残虹",
+      "character_id": "1036",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1036_2",
+      "fashion_name": "夜幕裁梦",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_canhong1.png",
+      "blob_sha": "61089c31db2c8865005d81de2404ff6fc2bd296e",
+      "output": "app/static/images/characters/costume/Fashion_1036_2.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "c826e3f1bdfdbd43665ab76fa441a757faa8b1ffa0c31356a97250c89cf3aa20",
+      "output_sha256": "4f373efbddad8d3aa3c778ee410f9a31fe87e4126ff2f25e34a637972aa0cc41",
+      "bytes": 149750,
+      "card_ids": [
+        "C06"
+      ],
+      "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+      "conversion": {
+        "format": "WebP",
+        "quality": 90,
+        "method": 6,
+        "resize": false,
+        "crop": false,
+        "alpha": "preserved",
+        "encoder": "cwebp"
+      }
+    },
+    {
+      "character": "哈尼娅",
+      "character_id": "1020",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1020_1",
+      "fashion_name": "青春注脚",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_haniya1.png",
+      "blob_sha": "2affd8ffd73fd86f2f465a2831e7fcb5656fa036",
+      "output": "app/static/images/characters/costume/Fashion_1020_1.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "826e002374f521dbd75f3d0eb61f6a1b9cdea74c44b4123d9e4224ef087bebdd",
+      "output_sha256": "6ecb892c9591e67d74c1ec28ff7d9660e1e37efdbafcb559c7e83824b7823441",
+      "bytes": 132818,
+      "card_ids": [
+        "V07"
+      ],
+      "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+      "conversion": {
+        "format": "WebP",
+        "quality": 90,
+        "method": 6,
+        "resize": false,
+        "crop": false,
+        "alpha": "preserved",
+        "encoder": "cwebp"
+      }
     }
   ],
   "default_portraits": "Restored to pre-task files per user request: keep existing character scale and head alignment. Not migrated in this batch.",

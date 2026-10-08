@@ -96,5 +96,5 @@ class Haniya:
     def on_ally_attack_resolved(c, actor_id, player_damage):
         if (c.character.get('shape') == 'V07' and player_damage > 0
                 and not hero(c.state, c.side, actor_id).get('summoned')):
-            c.history('「名为哈尼娅的旋律」触发：己方异能者的攻击对对方玩家造成伤害，抽 1 张牌。')
+            c.history('「青春注脚」触发：己方异能者的攻击对对方玩家造成伤害，抽 1 张牌。')
             c.draw(1)

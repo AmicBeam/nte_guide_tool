@@ -44,8 +44,8 @@ def _weapon_attack(c):
     front = c.state['sides'][c.side]['front']
     if front:
         target = hero(c.state, c.side, front)
-        add_atk_buff(target, 1, source_entity_id=c.entity_id, source_key=c.effect_source_key, label='倾世之雨')
-        log(c.state, f"「倾世之雨」使{target['name']}攻击 +1。", 'effect',
+        add_atk_buff(target, 1, source_entity_id=c.entity_id, source_key=c.effect_source_key, label='学园随想')
+        log(c.state, f"「学园随想」使{target['name']}攻击 +1。", 'effect',
             side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}', target=f'{c.side}:{front}', amount=1)
 
 
@@ -59,7 +59,7 @@ def _weapon_heal(c):
 def _weapon_ap(c):
     team = c.state['sides'][c.side]
     team['ap'] = int(team.get('ap') or 0) + 1
-    c.history('回合结束，「诓定解放」触发：获得 1 点行动力。')
+    c.history('回合结束，「城市漫游者」触发：获得 1 点行动力。')
 
 
 @register

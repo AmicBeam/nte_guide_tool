@@ -309,7 +309,7 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(attack_value(n), 4)
         shown = {item['id']: item for item in observe(s, 'a')['sides']['a']['characters']}
         self.assertEqual(shown['nanali']['attack'], 4)
-        self.assertTrue(any(e['type'] == 'effect' and '倾世之雨' in e['text'] and '娜娜莉' in e['text']
+        self.assertTrue(any(e['type'] == 'effect' and '学园随想' in e['text'] and '娜娜莉' in e['text']
                             for e in s['events']))
         s = apply_action(s, 'b', {'type': 'attack', 'character_id': 'zero'})
         attack_log = next(event for event in reversed(s['events']) if event['type'] == 'attack')

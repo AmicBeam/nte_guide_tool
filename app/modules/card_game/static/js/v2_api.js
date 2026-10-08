@@ -4,6 +4,7 @@
   const LOGIN_REDIRECT_KEY = 'nte_login_redirect';
   const CHARACTER_ORDER = ['zero', 'xun', 'zhenhong', 'nanali', 'jiuyuan', 'lingke', 'iloy', 'hathor', 'anhunqu', 'canhong', 'zaowu'];
   const CHARACTER_FALLBACK = {
+    heiyu: { id: 'heiyu', name: '黑羽', attribute: '魂', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/黑羽.webp', portrait: '/static/images/characters/portrait/黑羽.webp' },
     baicang: { id: 'baicang', portrait: '/static/images/characters/portrait/白藏.webp', avatar: '/static/images/characters/avatar/白藏.webp' },
     bohe: { id: 'bohe', portrait: '/static/images/characters/portrait/薄荷.webp', avatar: '/static/images/characters/avatar/薄荷.webp' },
     nanali: { id: 'nanali', name: '娜娜莉', attribute: '灵', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/娜娜莉.webp', portrait: '/static/images/characters/portrait/娜娜莉.webp' },
@@ -42,8 +43,13 @@
     M08: { characterId: 'bohe', fashion: 'Fashion_1019_nighty' },
     Q07: { characterId: 'xiaozhi', fashion: 'Fashion_1073_1' },
     Q08: { characterId: 'xiaozhi', fashion: 'Fashion_1073_nighty' },
+    Z06: { characterId: 'zero', fashion: 'Fashion_1051_3' },
+    Z08: { characterId: 'zero', fashion: 'Fashion_1051_5' },
+    K03: { characterId: 'lingke', fashion: 'Fashion_1072_space' },
+    C06: { characterId: 'canhong', fashion: 'Fashion_1036_2' },
+    V07: { characterId: 'haniya', fashion: 'Fashion_1020_1' },
   };
-  const CHARACTER_IMAGE_VERSION = 'ntedata-zaowu-20261008-v6';
+  const CHARACTER_IMAGE_VERSION = 'ntedata-weapons-20261008-v7';
 
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.

@@ -118,6 +118,7 @@ class Lingke:
             return
         target = hero(c.state, target_side, target_id) if target_id != 'player' else c.state['sides'][target_side]
         add_effect(target, 'lingke.resistance', 'damage.resistance', -1,
+                   stacking='replace', stack_key=f'lingke.resistance:{attribute}',
                    source_entity_id=c.entity_id, source_key='sync',
                    expiry=deadline(c.state, c.side, 1), label=f'{attribute}抗性 -1',
                    conditions=[{'id': 'damage_attribute', 'args': {'attribute': attribute}}])

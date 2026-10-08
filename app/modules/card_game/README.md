@@ -889,3 +889,10 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 按用户要求将已有皮肤绑定的 21 张 07／08 改为对应皮肤名，未绑定者保留原名。目录记录皮肤 ID 与上游来源，并保留旧命名来源；角色包、效果提示和牌面卡名引用同步更名。稳定卡牌 ID、卡效、面板、费用、构筑及换装资源不变，历史回放与冻结资料不批量回写。对应表见规则手册本日专节。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_costume_art tests.test_duel_v2_card_art tests.test_duel_v2_engine tests.test_duel_v2_continuous_cast tests.test_duel_v2_lingke tests.test_duel_v2_dafutier tests.test_duel_v2_presentation tests.test_duel_v2_replay`。
+
+
+### 2026-10-08 额外武备皮肤与灵可减抗修订
+
+补查上游完整服装表，新增零06城市漫游者／08学园随想、灵可03星间漫游、残虹06夜幕裁梦、哈尼娅07青春注脚的卡名与换装绑定；五张本地WebP与源SHA记录在图片清单。保留原卡牌ID、面板、费用和卡效。
+
+灵可同频合击机制说明按用户文本精简，同属性减抗改为不可叠加、重复刷新；不同属性独立，同类不同来源也不叠加。持续截止仍为灵可下个己方回合开始，其他援护规则与借用回调保持。验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_dafutier tests.test_duel_v2_costume_art tests.test_duel_v2_card_art tests.test_duel_v2_catalog tests.test_duel_v2_haniya tests.test_duel_v2_engine tests.test_duel_v2_effect_markers tests.test_duel_v2_presentation tests.test_duel_v2_replay`。

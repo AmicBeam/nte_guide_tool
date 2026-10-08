@@ -45,7 +45,7 @@ class HaniyaTest(unittest.TestCase):
         self.assertNotIn('haniya', {h['id'] for h in get_catalog(include_test_characters=False)['characters']})
         cards = [c for c in CARDS.values() if c['character_id']=='haniya']
         self.assertEqual(len(cards),8)
-        self.assertEqual([c['name'] for c in cards][-2:], ['名为哈尼娅的旋律','引爆全场'])
+        self.assertEqual([c['name'] for c in cards][-2:], ['青春注脚','引爆全场'])
         for field in ('avatar','portrait'):
             self.assertTrue(Path('app'+CHARACTERS['haniya'][field]).is_file())
         self.assertEqual(hero(self.game(),'a','haniya')['protagonist_aura'],1)

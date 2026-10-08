@@ -221,7 +221,7 @@
         {
           "id": "lingke-sync",
           "name": "同频合击",
-          "description": "灵可存活时，由卡牌或异能效果发起指定属性的单方面追加攻击，视为援护技，命中对方前排时倾陷值 +1。借用其他异能者的属性时，合击后也触发其自身的援护技效果。保持原站位，不受反击，不消耗普通出击机会，不产生基础环合值和能量。命中前使目标对应属性抗性 -1，持续至下个己方回合开始；玩家也可被减抗，同属性减抗可叠加。连续使用计数可跨回合累计，灵可牌不打断，换另一名非灵可异能者时从 1 重新计数；响应牌也计数，每满 3 张重新累计。"
+          "description": "灵可存活时，由效果发起指定属性的单方面追加攻击，视为援护技，不产生基础环合值和能量。借用其他异能者的属性时，也触发其自身的援护技效果。命中前使目标对应属性抗性 -1，持续 2 个回合，同属性减抗不可叠加。"
         }
       ]
     },
@@ -736,7 +736,7 @@
     {
       "id": "Z06",
       "character_id": "zero",
-      "name": "诓定解放",
+      "name": "城市漫游者",
       "type": "form",
       "cost": 1,
       "terminal": false,
@@ -744,8 +744,19 @@
       "effect_id": "Z06",
       "source": {
         "character_id": 1051,
-        "type": "awaken",
-        "index": 6
+        "type": "fashion",
+        "index": 6,
+        "fashion_id": "Fashion_1051_3",
+        "fashion_name": "城市漫游者",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_nvzhu2.png",
+        "previous_name": "诓定解放",
+        "previous_source": {
+          "character_id": 1051,
+          "type": "awaken",
+          "index": 6
+        }
       },
       "starter_copies": 0,
       "attack": 2,
@@ -783,12 +794,23 @@
     {
       "id": "Z08",
       "character_id": "zero",
-      "name": "倾世之雨",
+      "name": "学园随想",
       "effect_id": "Z08",
       "source": {
         "character_id": 1051,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1051_5",
+        "fashion_name": "学园随想",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_nvzhu3.png",
+        "previous_name": "倾世之雨",
+        "previous_source": {
+          "character_id": 1051,
+          "type": "arc",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1346,7 +1368,7 @@
     {
       "id": "C06",
       "character_id": "canhong",
-      "name": "血染双瞳",
+      "name": "夜幕裁梦",
       "type": "form",
       "cost": 1,
       "terminal": false,
@@ -1354,8 +1376,19 @@
       "effect_id": "C06",
       "source": {
         "character_id": 1036,
-        "type": "awaken",
-        "index": 6
+        "type": "fashion",
+        "index": 6,
+        "fashion_id": "Fashion_1036_2",
+        "fashion_name": "夜幕裁梦",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_canhong1.png",
+        "previous_name": "血染双瞳",
+        "previous_source": {
+          "character_id": 1036,
+          "type": "awaken",
+          "index": 6
+        }
       },
       "starter_copies": 0,
       "attack": 3,
@@ -1612,7 +1645,7 @@
     {
       "id": "K03",
       "character_id": "lingke",
-      "name": "将孤岛彼此相连！",
+      "name": "星间漫游",
       "type": "form",
       "cost": 1,
       "terminal": false,
@@ -1620,8 +1653,19 @@
       "effect_id": "K03",
       "source": {
         "character_id": 1072,
-        "type": "awaken",
-        "index": 3
+        "type": "fashion",
+        "index": 3,
+        "fashion_id": "Fashion_1072_space",
+        "fashion_name": "星间漫游",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_lingke2.png",
+        "previous_name": "将孤岛彼此相连！",
+        "previous_source": {
+          "character_id": 1072,
+          "type": "awaken",
+          "index": 3
+        }
       },
       "starter_copies": 2,
       "attack": 3,
@@ -3173,7 +3217,7 @@
     {
       "id": "V07",
       "character_id": "haniya",
-      "name": "名为哈尼娅的旋律",
+      "name": "青春注脚",
       "type": "form",
       "cost": 1,
       "terminal": false,
@@ -3181,9 +3225,20 @@
       "effect_id": "V07",
       "source": {
         "character_id": 1020,
-        "type": "ability",
+        "type": "fashion",
         "index": 7,
-        "name_source": "用户指定标题；Everness 同名终结主题"
+        "fashion_id": "Fashion_1020_1",
+        "fashion_name": "青春注脚",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_haniya1.png",
+        "previous_name": "名为哈尼娅的旋律",
+        "previous_source": {
+          "character_id": 1020,
+          "type": "ability",
+          "index": 7,
+          "name_source": "用户指定标题；Everness 同名终结主题"
+        }
       },
       "starter_copies": 0,
       "attack": 2,

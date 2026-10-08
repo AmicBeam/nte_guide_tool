@@ -165,7 +165,7 @@ class Dafutier:
         if cid == 'F01':
             return f'{current}（当前为 {_support_count(c)}）'
         if cid == 'FF01':
-            return f'瞬发。对 1 名处于倾陷的对方异能者造成 {_insight_damage(c)} 点伤害。'
+            return f'不消耗行动力。对 1 名处于倾陷的对方异能者造成 {_insight_damage(c)} 点伤害。'
         if cid == 'F05':
             count = int(c.state['sides'][c.side].get('insight_played', 0))
             return f'{current}（当前伤害为 {_insight_damage(c)}，共 {1 + count} 次）'

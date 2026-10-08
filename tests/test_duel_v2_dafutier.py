@@ -164,15 +164,26 @@ class DafutierTest(unittest.TestCase):
                 self.assertTrue(collapsed(hero(s, side, 'zero')))
                 self.assertEqual(len(tokens(s)), 1 if side == 'b' else 0)
 
-    def test_insight_legal_targets_and_instant_payment(self):
-        s = game(); force_collapse(s, 'b', 'zero', by='a')
-        insight = tokens(s)[0]
-        actions = [a for a in legal_actions(s, 'a') if a.get('card_id') == insight['instance_id']]
-        self.assertEqual([a['target_id'] for a in actions], ['b:zero'])
-        s['sides']['a']['ap'] = 0
-        s = apply_action(s, 'a', actions[0])
-        self.assertEqual(hero(s, 'b', 'zero')['hp'], 38)
-        self.assertEqual(s['sides']['a']['insight_played'], 1)
+    def test_insight_is_repeatably_free_without_spending_instant_opportunity(self):
+        for instant_spent in (False, True):
+            with self.subTest(instant_spent=instant_spent):
+                s = game(); force_collapse(s, 'b', 'zero', by='a')
+                give(s, 'FF01')
+                s['sides']['a']['ap'] = 0
+                s['sides']['a']['used']['instant'] = instant_spent
+                for _ in range(2):
+                    insight = tokens(s)[0]
+                    actions = [a for a in legal_actions(s, 'a') if a.get('card_id') == insight['instance_id']]
+                    self.assertEqual([a['target_id'] for a in actions], ['b:zero'])
+                    shown = next(c for c in observe(s, 'a', include_previews=False)['sides']['a']['hand']
+                                 if c['instance_id'] == insight['instance_id'])
+                    self.assertTrue(shown['action_point_free'])
+                    self.assertTrue(shown['description'].startswith('不消耗行动力。'))
+                    s = apply_action(s, 'a', actions[0])
+                    self.assertEqual(s['sides']['a']['ap'], 0)
+                    self.assertEqual(s['sides']['a']['used']['instant'], instant_spent)
+                self.assertEqual(hero(s, 'b', 'zero')['hp'], 36)
+                self.assertEqual(s['sides']['a']['insight_played'], 2)
 
     def test_lake_manual_and_auto_response_targets_attacker_including_own_front(self):
         s = play(game(), 'F06', 'b:haiyue')

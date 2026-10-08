@@ -3764,9 +3764,9 @@
       "character_id": "dafutier",
       "name": "洞察",
       "type": "tactic",
-      "cost": 1,
+      "cost": 0,
       "terminal": false,
-      "description": "瞬发。对 1 名处于倾陷的对方异能者造成 2 点伤害。",
+      "description": "不消耗行动力。对 1 名处于倾陷的对方异能者造成 2 点伤害。",
       "effect_id": "FF01",
       "source": {
         "character_id": "1054",
@@ -3774,7 +3774,7 @@
         "index": 0
       },
       "starter_copies": 0,
-      "instant": true,
+      "instant": false,
       "derived": true
     },
     {

@@ -160,7 +160,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertGreater(type_counts['tactic'], 0)
         self.assertGreater(type_counts['form'], 0)
         for card in CARDS.values():
-            self.assertEqual(card['cost'], 3 if card['id'] == 'K06' else 0 if card['id'] in ('I04', 'A03') or (card['character_id'] == 'xun' and card['id'] not in ('X08', 'XF01')) else 1)
+            self.assertEqual(card['cost'], 3 if card['id'] == 'K06' else 0 if card['id'] in ('I04', 'A03', 'FF01') or (card['character_id'] == 'xun' and card['id'] not in ('X08', 'XF01')) else 1)
             if card['type'] == 'form':
                 self.assertIsInstance(card.get('attack'), int)
                 self.assertIsInstance(card.get('hp'), int)

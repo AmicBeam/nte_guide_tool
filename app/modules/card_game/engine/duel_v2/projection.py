@@ -177,6 +177,9 @@ def observe(state, side, after_seq=None, *, include_previews=True):
             c = {k: deepcopy(h[k]) for k in ('entity_id', 'id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
                  'energy', 'lingke_chain', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura', 'jingu', 'arid', 'truth_keys', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
                  'avatar', 'portrait', 'passive', 'awakened_passive', 'flavor') if k in h}
+            if h.get('summoned'):
+                from app.modules.card_game.content.duel_v2.registry import summon_passive
+                c['passive'] = summon_passive(h)
             # Live rules run the current kits, so their text must not stay frozen
             # in a saved room. Tutorial, summons and copied abilities own their text.
             from .tutorial import is_tutorial

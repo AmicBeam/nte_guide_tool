@@ -31,6 +31,18 @@ def copy_owner_id() -> str | None:
     return None
 
 
+def summon_passive(character) -> str:
+    """Public summon text belongs to content, independently of its owner's life."""
+    _ensure_kits()
+    for kit in KITS.values():
+        describe = getattr(kit, 'summon_passive', None)
+        if describe is not None:
+            text = describe(character)
+            if text is not None:
+                return text
+    return character.get('passive') or ''
+
+
 def text_name(character_id: str | None) -> str | None:
     kit = KITS.get(character_id or '')
     if kit is None:

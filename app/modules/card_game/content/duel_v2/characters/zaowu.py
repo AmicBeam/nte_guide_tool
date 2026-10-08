@@ -14,6 +14,15 @@ from app.modules.card_game.engine.duel_v2.summons import summon_front
 FLAVOR = '鬼郎丸似乎吃了什么不太妙的东西，需要拍打一下！'
 ITEMS = ('vinyl', 'collar', 'liquid')
 LABELS = {'vinyl': '黑胶唱片', 'collar': '好狗狗的项圈', 'liquid': '气味奇怪的液体'}
+ITEM_EFFECTS = {
+    'vinyl': '受到伤害时，随机弃置对方 1 张手牌。',
+    'collar': '受到伤害时，随机使 1 名对方异能者进入倾陷。',
+    'liquid': '受到伤害时，随机对 1 名对方异能者造成等同于本次所受伤害的伤害。',
+}
+
+
+def _gulang_passive(item):
+    return f'吞噬了{LABELS[item]}。{ITEM_EFFECTS[item]}倒地或离开战斗区时消失。'
 
 
 def _gulang(c):
@@ -38,7 +47,7 @@ def summon_gulang(c, item):
     h = hero(c.state, c.side, cid)
     h['flags']['gulang_item'] = item
     h['flavor'] = FLAVOR
-    h['passive'] = f'吞噬了{LABELS[item]}。受到伤害时触发。倒地或离开战斗区时消失。'
+    h['passive'] = _gulang_passive(item)
     c.history(f'召唤鬼郎丸，其吞噬了{LABELS[item]}。')
     return cid
 
@@ -105,6 +114,13 @@ class Zaowu:
         'S05': _s05, 'S06': _s06, 'S07': _s07, 'S08': set_shape,
     }
     target_policies = {'S04': 'any_summon'}
+
+    @staticmethod
+    def summon_passive(character):
+        item = (character.get('flags') or {}).get('gulang_item')
+        if item in ITEM_EFFECTS:
+            return _gulang_passive(item)
+        return None
 
     @staticmethod
     def can_play(c, current=True, card=None, **_data):

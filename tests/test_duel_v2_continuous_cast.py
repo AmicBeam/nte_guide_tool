@@ -66,6 +66,33 @@ class ContinuousCastTest(unittest.TestCase):
             self.assertFalse(any(e['type'] == 'effect' and e.get('present')
                                  for e in s['events'] if e['seq'] > seq))
 
+    def test_gulang_details_describe_each_item_in_live_legacy_snapshot_and_replay(self):
+        from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
+        cases = (
+            ('S01', '黑胶唱片', '随机弃置对方 1 张手牌'),
+            ('S02', '好狗狗的项圈', '随机使 1 名对方异能者进入倾陷'),
+            ('S03', '气味奇怪的液体', '随机对 1 名对方异能者造成等同于本次所受伤害的伤害'),
+        )
+        for card_id, item, effect in cases:
+            with self.subTest(card_id=card_id):
+                s = self.game()
+                opening, seq = capture_public_board(s), s['event_seq']
+                s = self.play(s, card_id)
+                cid = s['sides']['a']['front']
+                replay = replay_public_board(opening, [e for e in s['events'] if e['seq'] > seq])
+                h = hero(s, 'a', cid)
+                self.assertIn(effect, h['passive'])
+                # Existing rooms stored only an opaque trigger sentence.
+                h['passive'] = f'吞噬了{item}。受到伤害时触发。倒地或离开战斗区时消失。'
+                s = json.loads(json.dumps(s))
+                views = [observe(s, side, include_previews=False) for side in ('a', 'b')]
+                views += [capture_public_board(s), replay]
+                for view in views:
+                    shown = next(h for h in view['sides']['a']['characters'] if h['id'] == cid)
+                    self.assertIn(item, shown['passive'])
+                    self.assertIn(effect, shown['passive'])
+                    self.assertNotIn('受到伤害时触发', shown['passive'])
+
     def test_keyword_text_reaches_catalog_and_public_hand(self):
         from app.modules.card_game.content.duel_v2 import CARDS
         for card in CARDS.values():

@@ -106,6 +106,7 @@ def capture_public_board(state):
         from . import state as duel_state
         from .modifiers import public_effects
         from .equipment import stat_layers, public_equipment
+        from app.modules.card_game.content.duel_v2.registry import summon_passive
         characters = []
         for cid in duel_state.team_order(state, ps):
             hero = source['characters'][cid]
@@ -114,6 +115,8 @@ def capture_public_board(state):
             characters.append({
                 'id': cid,
                 **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'lingke_chain', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura') if k in hero},
+                **({'passive': summon_passive(hero), 'awakened_passive': hero.get('awakened_passive', ''),
+                    'flavor': hero.get('flavor', '')} if hero.get('summoned') else {}),
                 'entity_id': hero.get('entity_id'),
                 'effects': public_effects(hero),
                 'stat_layers': stat_layers(hero), 'equipment': public_equipment(hero),

@@ -223,7 +223,10 @@ class DafutierTest(unittest.TestCase):
         s = apply_action(s, 'a', dict(type='end_turn'))
         s = apply_action(s, 'b', dict(type='attack', character_id='zero'))
         self.assertTrue(collapsed(hero(s, 'b', 'zero')))
-        self.assertEqual(hero(s, 'a', 'zero')['hp'], 38)
+        self.assertEqual(hero(s, 'a', 'zero')['hp'], 40)
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], 40)
+        self.assertFalse(any(e['type'] == 'attack' and e.get('actor') == 'b:zero'
+                             for e in s['events']))
         self.assertEqual(len(tokens(s)), 1)
 
     def test_eye_counts_current_entry_support_and_caps_bonus_at_two(self):

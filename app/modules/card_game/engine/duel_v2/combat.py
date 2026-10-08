@@ -299,33 +299,55 @@ def _clear_battle_effects(state):
         clear(holder, 'battle')
 
 
+def _attack_stopped(c):
+    """Recheck the attacker after pre-damage effects, before locking combat."""
+    s = c.state
+    stopped = finished(s) or not alive(s, c.side, c.cid)
+    if not stopped and collapsed(c.character):
+        log(s, f"{c.character['name']}进入倾陷，攻击被打断。", 'effect',
+            side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}', target=f'{c.side}:{c.cid}')
+        stopped = True
+    if stopped:
+        from .flow import settle_deferred_card_marks
+        settle_deferred_card_marks(s)
+        _clear_battle_effects(s)
+    return stopped
+
+
 def attack(c, spec, index):
     s, side, cid, op = c.state, c.side, c.cid, c.operation
+    if _attack_stopped(c):
+        return False
     enemy, target_id = spec.get('target') or front_target(s, side)
     if is_esper(target_id) and not alive(s, enemy, target_id):
-        return
+        return False
     fire(c, 'before_attack', actor_only=True)
+    if _attack_stopped(c):
+        return False
     if index == 0 and is_esper(target_id):
         from .flow import trigger_responses, settle_deferred_card_marks
         if s['sides'][enemy].get('front') == target_id:
             trigger_responses(s, enemy, 'front_attacked', target_id=target_id, attacker_id=cid)
+            if _attack_stopped(c):
+                return False
         if not spec.get('target'):
             trigger_responses(s, enemy, 'faction_front_attacked', target_id=target_id)
+            if _attack_stopped(c):
+                return False
             target_id = s['sides'][enemy]['front'] or 'player'
         if is_esper(target_id):
             trigger_responses(s, enemy, 'self_attacked', target_id=target_id)
+            if _attack_stopped(c):
+                return False
             trigger_responses(s, enemy, 'ally_attacked', target_id=target_id)
-        if finished(s) or not alive(s, side, cid):
-            settle_deferred_card_marks(s)
-            _clear_battle_effects(s)
-            return
+        if _attack_stopped(c):
+            return False
         if not spec.get('target'):
             enemy, target_id = front_target(s, side)
-    attacked = s['sides'][side].setdefault('attacked_this_turn', [])
-    if c.entity_id not in attacked:
-        attacked.append(c.entity_id)
     fire(c.for_character(enemy, target_id if is_esper(target_id) else next(iter(s['sides'][enemy]['characters']))),
          GameEvent.V2_OPPONENT_ATTACK, attacker_side=side, attacker_id=cid, target_id=target_id)
+    if _attack_stopped(c):
+        return False
     h = c.character
     target = hero(s, enemy, target_id) if is_esper(target_id) else s['sides'][enemy]
     attribute = spec.get('attribute') or h['attribute']
@@ -334,6 +356,11 @@ def attack(c, spec, index):
     fire(c, GameEvent.V2_BEFORE_ATTACK_DAMAGE, attacker_id=cid, target_side=enemy,
          target_id=target_id, attribute=attribute, additional_attack=additional,
          support=bool(op.get('support')), sync_attack=bool(spec.get('sync_attack')))
+    if _attack_stopped(c):
+        return False
+    attacked = s['sides'][side].setdefault('attacked_this_turn', [])
+    if c.entity_id not in attacked:
+        attacked.append(c.entity_id)
     from .attack_modifiers import attack_result
     from .modifiers import consume_applied, migrate_legacy, entities
     for owner_side, owner in entities(s):
@@ -432,12 +459,12 @@ def attack(c, spec, index):
     if finished(s):
         settle_deferred_card_marks(s)
         _clear_battle_effects(s)
-        return
+        return True
     fire(c, 'on_ally_attack_resolved', actor_id=cid, player_damage=player_damage)
     if finished(s):
         settle_deferred_card_marks(s)
         _clear_battle_effects(s)
-        return
+        return True
     for source_side, source_id, target_side, target_cid, attack_attribute in weave_targets:
         if not alive(s, source_side, source_id):
             continue
@@ -452,7 +479,7 @@ def attack(c, spec, index):
         if finished(s):
             settle_deferred_card_marks(s)
             _clear_battle_effects(s)
-            return
+            return True
     # Attack-after shape effects occur per hit, after simultaneous death handling.
     for ps, pc, loss in [(side, cid, self_loss), (enemy, target_id, target_loss)]:
         if is_esper(pc) and loss > 0 and alive(s, ps, pc) and not finished(s):
@@ -462,6 +489,7 @@ def attack(c, spec, index):
         fire(c, GameEvent.V2_SUPPORT_RESOLVED, actor_only=True, actor_id=cid)
     settle_deferred_card_marks(s)
     _clear_battle_effects(s)
+    return True
 
 
 def _operation_target(c):
@@ -476,7 +504,7 @@ def _operation_target(c):
 
 def sortie(c, **spec):
     s, side, cid, op = c.state, c.side, c.cid, c.operation
-    if finished(s) or not alive(s, side, cid):
+    if _attack_stopped(c):
         return
     op['sortie_attack_bonus'] = 0
     if s.get('_response_intercept'):
@@ -492,14 +520,21 @@ def sortie(c, **spec):
         spec['no_counter'] = True
     else:
         enter(c)
+    if _attack_stopped(c):
+        return
     if not finished(s) and alive(s, side, cid):
         fire(c, 'on_sortie_ready', actor_id=cid, response=False)
+    if _attack_stopped(c):
+        return
     fire(c, 'before_hits', actor_only=True)
+    attacked = False
     for index in range(spec.get('hits', 1)):
         if finished(s) or not alive(s, side, cid) or (not stay_bench and s['sides'][side]['front'] != cid):
             break
-        attack(c, spec, index)
-    if finished(s) or not alive(s, side, cid):
+        if not attack(c, spec, index):
+            break
+        attacked = True
+    if not attacked or finished(s) or not alive(s, side, cid):
         return
     if spec.get('shield_after_shape') and c.character['shape']:
         c.shield(spec['shield_after_shape'])
@@ -515,7 +550,7 @@ def sortie(c, **spec):
 def additional_attack(c, attribute, *, target=None, sync_attack=False, support_actor=None):
     """A one-sided extra hit; preserve the enclosing card/response operation."""
     from .context import EffectContext
-    if finished(c.state) or not alive(c.state, c.side, c.cid):
+    if _attack_stopped(c):
         return
     # Borrowed identity affects only that character's own support callbacks.
     # Other observers still see the actual attacker, exactly once.
@@ -537,10 +572,10 @@ def additional_attack(c, attribute, *, target=None, sync_attack=False, support_a
         context = EffectContext(c.state, c.side, c.cid, op)
         if sync_attack:
             notify_support(context, exclude_entity_ids=(borrowed.entity_id,) if borrowed else ())
-        attack(context,
+        attacked = attack(context,
                dict(attribute=attribute, target=target, no_counter=True,
                     no_combat_resources=True, additional_attack=True, sync_attack=sync_attack), 0)
-        if (borrowed and alive(c.state, c.side, borrowed['id'])
+        if (attacked and borrowed and alive(c.state, c.side, borrowed['id'])
                 and hero(c.state, c.side, borrowed['id']).entity_id == borrowed.entity_id):
             fire(context.for_character(c.side, borrowed['id']), 'on_support',
                  actor_only=True, actor_id=borrowed['id'])

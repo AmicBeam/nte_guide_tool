@@ -954,3 +954,10 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 `static/js/v2_table/selection_view.js`统一管理起手换牌、占卜及普通选择面板的收起／恢复。按钮位于面板之外，收起后整个面板不遮挡战场且不可聚焦；牌序草稿、已选起手牌和待选择状态保留，恢复后继续原选择。新选择和换房重置为展开；收起不提交动作，也不解除后端合法动作限制。战场角色和公开卡牌仍可悬浮查看详情。
 
 占卜卡的「详情」按钮支持鼠标悬浮和键盘聚焦显示大图，点击仍可固定查看。验证：`node --test tests/js/duel_v2_selection_view.test.cjs tests/js/duel_v2_divination.test.cjs tests/js/duel_v2_table_state.test.cjs tests/js/duel_v2_ai_steps.test.cjs tests/js/duel_v2_animation.test.cjs`；真实页面从大厅开局，核对换牌选择／占卜牌序保留、收起后战场大图和恢复。
+
+
+### 2026-10-09 倾陷打断攻击
+
+通用战斗结算在攻击前效果、响应和伤害前时机之后复查攻击者倾陷，立即打断尚未结算伤害的一击；不结算该击的反击、攻击后效果或基础资源，已支付费用与已结算入场／环合保留。远程、追加攻击及借用援护回调共用判定；新历史／公开回放显示打断原因，旧记录不追改。完整口径见规则手册同日专节。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_collapse_interrupt tests.test_duel_v2_dafutier tests.test_duel_v2_lingke tests.test_duel_v2_followup_target tests.test_duel_v2_engine tests.test_duel_v2_presentation tests.test_duel_v2_replay`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。

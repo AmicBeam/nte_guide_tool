@@ -139,6 +139,15 @@ def resolve_genesis(c, *, arm_delay=True):
         fire(c, 'after_genesis', entering=cid)
 
 
+def notify_support(c, *, exclude_entity_ids=()):
+    """Count the actual support once, separately from borrowed callbacks."""
+    team = c.state['sides'][c.side]
+    if team.get('support_turn') != c.state['turn']:
+        team['support_turn'], team['support_count'] = c.state['turn'], 0
+    team['support_count'] += 1
+    fire(c, 'on_support', actor_id=c.cid, exclude_entity_ids=exclude_entity_ids)
+
+
 def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
     if not kind or (pay and not payer_id):
         return
@@ -157,7 +166,7 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
     if as_support:
         op['support'] = True
         if not op.pop('support_notified', False):
-            fire(c, 'on_support', actor_id=cid)
+            notify_support(c)
     if pay:
         log(s, f"{c.character['name']}入场，消耗{payer['name']}的 {harmony_cap(s)} 点环合值，触发{kind}。", 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id}',
@@ -215,6 +224,7 @@ def resolve_harmony_effect(c, kind):
             add_collapse(s, enemy, target, 1, by=side)
             log(s, f"{c.character['name']}触发失谐。", 'harmony', side=side, source=cid,
                 actor=f'{side}:{cid}', target=f'{enemy}:{target}')
+            fire(c, GameEvent.V2_DISSONANCE, enemy=enemy, target_id=target)
     elif kind == '覆纹':
         front_debuff(s, enemy)['weave'] = {'by': side, 'expires_side': s['active_side']}
         log(s, '对方战斗区获得覆纹。', 'harmony',
@@ -279,6 +289,8 @@ def attack(c, spec, index):
     fire(c, 'before_attack', actor_only=True)
     if index == 0 and is_esper(target_id):
         from .flow import trigger_responses, settle_deferred_card_marks
+        if s['sides'][enemy].get('front') == target_id:
+            trigger_responses(s, enemy, 'front_attacked', target_id=target_id, attacker_id=cid)
         if not spec.get('target'):
             trigger_responses(s, enemy, 'faction_front_attacked', target_id=target_id)
             target_id = s['sides'][enemy]['front'] or 'player'
@@ -293,6 +305,8 @@ def attack(c, spec, index):
     attacked = s['sides'][side].setdefault('attacked_this_turn', [])
     if c.entity_id not in attacked:
         attacked.append(c.entity_id)
+    fire(c.for_character(enemy, target_id if is_esper(target_id) else next(iter(s['sides'][enemy]['characters']))),
+         GameEvent.V2_OPPONENT_ATTACK, attacker_side=side, attacker_id=cid)
     h = c.character
     target = hero(s, enemy, target_id) if is_esper(target_id) else s['sides'][enemy]
     attribute = spec.get('attribute') or h['attribute']
@@ -421,6 +435,9 @@ def attack(c, spec, index):
     for ps, pc, loss in [(side, cid, self_loss), (enemy, target_id, target_loss)]:
         if is_esper(pc) and loss > 0 and alive(s, ps, pc) and not finished(s):
             c.for_character(ps, pc).on_shape(GameEvent.V2_COMBAT_HP_LOST)
+    if op.get('support') and not op.get('support_resolved'):
+        op['support_resolved'] = True
+        fire(c, GameEvent.V2_SUPPORT_RESOLVED, actor_only=True, actor_id=cid)
     settle_deferred_card_marks(s)
 
 
@@ -496,14 +513,15 @@ def additional_attack(c, attribute, *, target=None, sync_attack=False, support_a
     try:
         context = EffectContext(c.state, c.side, c.cid, op)
         if sync_attack:
-            fire(context, 'on_support', actor_id=c.cid,
-                 exclude_entity_ids=(borrowed.entity_id,) if borrowed else ())
+            notify_support(context, exclude_entity_ids=(borrowed.entity_id,) if borrowed else ())
         attack(context,
                dict(attribute=attribute, target=target, no_counter=True,
                     no_combat_resources=True, additional_attack=True, sync_attack=sync_attack), 0)
         if (borrowed and alive(c.state, c.side, borrowed['id'])
                 and hero(c.state, c.side, borrowed['id']).entity_id == borrowed.entity_id):
             fire(context.for_character(c.side, borrowed['id']), 'on_support',
+                 actor_only=True, actor_id=borrowed['id'])
+            fire(context.for_character(c.side, borrowed['id']), GameEvent.V2_SUPPORT_RESOLVED,
                  actor_only=True, actor_id=borrowed['id'])
     finally:
         c.state['operation'] = parent

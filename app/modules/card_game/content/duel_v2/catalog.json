@@ -321,6 +321,24 @@
       ]
     },
     {
+      "id": "dafutier",
+      "name": "达芙蒂尔",
+      "attribute": "暗",
+      "attack": 2,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/达芙蒂尔.webp",
+      "portrait": "/static/images/characters/portrait/达芙蒂尔.webp",
+      "passive": "每回合 1 次，当你使对方异能者进入倾陷时，获得 1 张「洞察」。【失谐】强化：对方所有异能者的倾陷值上限永久 -1，至多叠加 2 层。",
+      "awakened_passive": "达芙蒂尔发动援护技后，额外造成 2 点伤害。前排优先。持续 2 个己方回合。",
+      "everness_id": "1054",
+      "faction": "伊波恩古董店",
+      "ultimate": {
+        "kind": "status",
+        "turns": 2,
+        "expires": "turn_start"
+      }
+    },
+    {
       "id": "canhong",
       "name": "残虹",
       "attribute": "咒",
@@ -3294,6 +3312,160 @@
         "type": "derived",
         "index": 1
       }
+    },
+    {
+      "id": "F01",
+      "character_id": "dafutier",
+      "name": "目",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "本回合己方每发动 1 次援护技，本牌额外获得攻击 +1，命中异能者时额外使其倾陷值 +1，至多计算 2 次。",
+      "effect_id": "F01",
+      "source": {
+        "character_id": "1054",
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 0,
+      "attack": 1,
+      "shield": 1
+    },
+    {
+      "id": "F02",
+      "character_id": "dafutier",
+      "name": "机械游行",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "达芙蒂尔触发终结的援护追加伤害后，回满能量。",
+      "effect_id": "F02",
+      "source": {
+        "character_id": "1054",
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
+    },
+    {
+      "id": "F03",
+      "character_id": "dafutier",
+      "name": "造物之众",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。使 1 名异能者的倾陷值 +1。每当你使异能者进入倾陷，将 1 张本牌从牌库或弃牌堆加入手牌。",
+      "effect_id": "F03",
+      "source": {
+        "character_id": "1054",
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "F04",
+      "character_id": "dafutier",
+      "name": "于隐匿中",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "所有对方异能者的倾陷值 +1。本局「洞察」的伤害 +1。",
+      "effect_id": "F04",
+      "source": {
+        "character_id": "1054",
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "F05",
+      "character_id": "dafutier",
+      "name": "完美真相",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "随机对 1 名对方角色造成等同于你的「洞察」伤害的伤害。本局你每打出过 1 张「洞察」，额外重复 1 次。",
+      "effect_id": "F05",
+      "source": {
+        "character_id": "1054",
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "F06",
+      "character_id": "dafutier",
+      "name": "湖心花",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "使 1 名对方异能者的倾陷值 +3。响应：己方前排被攻击时，自动对攻击方使用。",
+      "effect_id": "F06",
+      "source": {
+        "character_id": "1054",
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0,
+      "response": "front_attacked"
+    },
+    {
+      "id": "F07",
+      "character_id": "dafutier",
+      "name": "见此终幕",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "消灭双方所有处于倾陷的异能者。",
+      "effect_id": "F07",
+      "source": {
+        "character_id": "1054",
+        "type": "ability",
+        "index": 0
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "F08",
+      "character_id": "dafutier",
+      "name": "漆黑青春妄想",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "每当对方异能者攻击时，使其倾陷值 +2。",
+      "effect_id": "F08",
+      "source": {
+        "character_id": "1054",
+        "type": "arc",
+        "index": 0
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 5
+    },
+    {
+      "id": "FF01",
+      "character_id": "dafutier",
+      "name": "洞察",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。对 1 名处于倾陷的对方异能者造成 2 点伤害。",
+      "effect_id": "FF01",
+      "source": {
+        "character_id": "1054",
+        "type": "derived",
+        "index": 0
+      },
+      "starter_copies": 0,
+      "instant": true,
+      "derived": true
     }
   ],
   "starter_decks": [

@@ -7,11 +7,16 @@ def _marker(key, name, timing, description, clears_on_down=True, kind="buff"):
 
 
 def character_effect_markers(character, state=None, side=None):
+    permanent = []
+    reduction = sum(int(n) for n in (character.get('collapse_reductions') or {}).values())
+    if reduction:
+        permanent.append(_marker('collapse_reduction', '失谐强化', '本局永久',
+                                 f'倾陷值上限 -{reduction}', clears_on_down=False, kind='debuff'))
     if character.get('down_turns') or character.get('hp', 0) <= 0:
-        return []
+        return permanent
     from .modifiers import compatibility_flags
     flags = compatibility_flags(character, state, side)
-    markers = []
+    markers = permanent
     if flags.get('pact'):
         markers.append(_marker('pact', '枚约', '九原终结清算时',
                                '九原终结对该目标额外造成 2 点伤害，并消耗枚约', kind='debuff'))

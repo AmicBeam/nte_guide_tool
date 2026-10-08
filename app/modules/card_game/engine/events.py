@@ -40,6 +40,10 @@ class GameEvent(str, Enum):
     V2_TURN_COUNTDOWN = 'on_turn_countdown'
     V2_CARD_USED = 'on_card_used'
     V2_BEFORE_ATTACK_DAMAGE = 'before_attack_damage'
+    V2_COLLAPSE_ENTERED = 'on_collapse_entered'
+    V2_DISSONANCE = 'on_dissonance'
+    V2_OPPONENT_ATTACK = 'on_opponent_attack'
+    V2_SUPPORT_RESOLVED = 'on_support_resolved'
 
 
 

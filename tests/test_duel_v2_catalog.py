@@ -133,7 +133,7 @@ class DuelV2CatalogTest(unittest.TestCase):
 
     def test_cards_keep_thirty_two_official_names_and_four_by_eight_groups(self) -> None:
         named = {card_id: card for card_id, card in CARDS.items() if not card.get('derived')}
-        self.assertEqual(len(named), 152)
+        self.assertEqual(len(named), len(CHARACTERS) * 8)
         self.assertTrue(CARDS['NF01']['derived'])
         self.assertEqual(CARDS['NF01']['name'], '家族壮大')
         self.assertIn('第 5 回合及以后具有瞬发', CARDS['NF01']['description'])
@@ -253,7 +253,7 @@ class DuelV2CatalogTest(unittest.TestCase):
             self.assertEqual(card_08['source']['type'], 'ability' if character_id in ('yi', 'adler') else 'arc', character_id)
             if character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc', character_id)
-            elif character_id in ('zaowu', 'hathor', 'jiuyuan', 'baicang', 'xiaozhi', 'haiyue', 'edgar', 'haniya', 'yi', 'adler'):
+            elif character_id in ('zaowu', 'hathor', 'jiuyuan', 'baicang', 'xiaozhi', 'haiyue', 'edgar', 'haniya', 'yi', 'adler', 'dafutier'):
                 self.assertEqual(card_07['source']['type'], 'ability', character_id)
             else:
                 self.assertEqual(card_07['source']['type'], 'pv', character_id)
@@ -367,7 +367,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertFalse(deck_uses_test_characters(public['starter_deck']))
         self.assertFalse(any(deck_uses_test_characters(item) for item in public['starter_decks']))
         full = get_catalog()
-        self.assertEqual(len(full['characters']), 19)
+        self.assertEqual(len(full['characters']), len(CHARACTERS))
         self.assertEqual(len(full['starter_decks']), 5)
         self.assertEqual(
             [item['name'] for item in full['starter_decks']],

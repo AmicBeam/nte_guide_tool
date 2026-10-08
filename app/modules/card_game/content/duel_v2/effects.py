@@ -5,7 +5,8 @@ from app.modules.card_game.content.duel_v2.registry import shape_attack_bonus, s
 BOARD_TARGET_POLICIES = {
     'living_ally', 'ally_esper', 'other_living_ally', 'enemy_front', 'ally_front',
     'enemy_bench', 'downed_ally', 'downed_enemy', 'living_enemy', 'living_role', 'injured_role',
-    'living_enemy_role', 'any_living_esper', 'enemy_not_in_lineup', 'any_summon',
+    'living_enemy_role', 'living_enemy_esper', 'collapsed_enemy_esper',
+    'any_living_esper', 'enemy_not_in_lineup', 'any_summon',
 }
 CHOICE_TARGET_POLICIES = {'enemy_hand', 'own_tactic_discard'}
 

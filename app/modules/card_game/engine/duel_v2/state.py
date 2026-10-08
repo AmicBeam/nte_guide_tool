@@ -519,6 +519,12 @@ def reduce_max_hp(state, side, cid, amount, *, source=None, settle=True, group_i
     return cut
 
 
+def collapse_max(character):
+    """Temporary limits and permanent, entity-scoped reductions compose."""
+    base = int((character.get('flags') or {}).get('collapse_max') or 5)
+    return max(1, base - sum(int(n) for n in (character.get('collapse_reductions') or {}).values()))
+
+
 def force_collapse(state, side, cid, *, by=None):
     """Put a living esper straight into 倾陷. Duration matches a full collapse."""
     if finished(state) or not is_esper(cid) or not alive(state, side, cid):
@@ -532,6 +538,14 @@ def force_collapse(state, side, cid, *, by=None):
     flags['collapse'] = {'side': applier, 'until': state['sides'][applier]['turn_count'] + 1}
     log(state, f"{h['name']}进入倾陷。", 'collapse', side=side, source=cid,
         target=f'{side}:{cid}', after={'collapse': True})
+    from app.modules.card_game.content.duel_v2.registry import fire
+    from app.modules.card_game.engine.events import GameEvent
+    from .context import EffectContext
+    carrier = next((key for key in team_order(state, applier)
+                    if not hero(state, applier, key).get('summoned')), None)
+    if carrier:
+        fire(EffectContext(state, applier, carrier, {'side': applier}),
+             GameEvent.V2_COLLAPSE_ENTERED, target_side=side, target_id=cid)
 
 
 def add_collapse(state, side, cid, amount=1, *, by=None):
@@ -540,20 +554,18 @@ def add_collapse(state, side, cid, amount=1, *, by=None):
     h = hero(state, side, cid)
     flags = h.setdefault('flags', {})
     before = int(flags.get('collapse_count') or 0)
-    flags['collapse_count'] = before + max(0, int(amount))
+    amount = max(0, int(amount))
+    flags['collapse_count'] = before + amount
     actor = None
     if by and state['sides'][by].get('front'):
         actor = f"{by}:{state['sides'][by]['front']}"
-    log(state, f"{h['name']}倾陷值 +{amount}（{flags['collapse_count']}/5）。", 'collapse',
-        side=side, source=cid, actor=actor, target=f'{side}:{cid}', amount=amount,
-        before={'collapse_count': before}, after={'collapse_count': flags['collapse_count']})
-    limit = int(flags.get('collapse_max') or 5)
+    limit = collapse_max(h)
+    if amount:
+        log(state, f"{h['name']}倾陷值 +{amount}（{flags['collapse_count']}/{limit}）。", 'collapse',
+            side=side, source=cid, actor=actor, target=f'{side}:{cid}', amount=amount,
+            before={'collapse_count': before}, after={'collapse_count': flags['collapse_count']})
     if flags['collapse_count'] >= limit and not flags.get('collapse'):
-        flags['collapse_count'] = 0
-        applier = by or other(side)
-        flags['collapse'] = {'side': applier, 'until': state['sides'][applier]['turn_count'] + 1}
-        log(state, f"{h['name']}进入倾陷。", 'collapse', side=side, source=cid,
-            target=f'{side}:{cid}', after={'collapse': True})
+        force_collapse(state, side, cid, by=by)
 
 
 def heal(state, side, cid, amount, *, reason=None, source=None):

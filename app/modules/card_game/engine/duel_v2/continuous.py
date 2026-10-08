@@ -227,10 +227,11 @@ def apply_burn(state, target_side, *, by, source_cid):
         target = state['sides'][target_side].get('front')
         if is_esper(target) and alive(state, target_side, target):
             add_collapse(state, target_side, target, 1, by=by)
-            log(state, f"{hero(state, by, source_cid)['name']}触发失谐。", 'harmony',
-                side=by, source=source_cid, actor=f'{by}:{source_cid}',
-                target=f'{target_side}:{target}')
-            fire(ctx, 'on_dissonance', enemy=target_side, target_id=target)
+        log(state, f"{hero(state, by, source_cid)['name']}触发失谐。", 'harmony',
+            side=by, source=source_cid, actor=f'{by}:{source_cid}',
+            target=f'{target_side}:{target or "player"}')
+        from app.modules.card_game.engine.events import GameEvent
+        fire(ctx, GameEvent.V2_DISSONANCE, enemy=target_side, target_id=target)
     return gained
 
 

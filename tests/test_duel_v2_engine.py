@@ -1024,6 +1024,9 @@ class DuelV2EngineTest(unittest.TestCase):
                 if cid in ('S05', 'S06'):
                     from app.modules.card_game.engine.duel_v2.summons import summon_front
                     summon_front(s, 'a', name='鬼郎丸', attack=0, hp=4)
+                if cid == 'FF01':
+                    from app.modules.card_game.engine.duel_v2.state import force_collapse
+                    force_collapse(s, 'b', 'zero', by='a')
                 a = next(a for a in legal_actions(s) if a['type'] == 'play_card' and a['card_id'] == card['instance_id'])
                 s = apply_action(s, 'a', a)
                 while s['phase'] == 'choice':

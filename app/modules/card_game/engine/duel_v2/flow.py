@@ -205,7 +205,7 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None)
         finish_operation(state)
 
 
-def trigger_responses(state, defending_side, kind, target_id=None):
+def trigger_responses(state, defending_side, kind, target_id=None, attacker_id=None):
     """Auto-play the first affordable response matching this timing. Kinds come from the card."""
     if state.get('_response_lock') or finished(state):
         if state.get('_response_lock') and kind == 'self_downed' and not finished(state):
@@ -221,6 +221,8 @@ def trigger_responses(state, defending_side, kind, target_id=None):
         if (not alive(state, defending_side, owner) and not down_response) or collapsed(hero(state, defending_side, owner)):
             continue
         if kind == 'ally_attacked' and (not target_id or target_id == owner):
+            continue
+        if kind == 'front_attacked' and (team['front'] != target_id or not attacker_id):
             continue
         if kind == 'faction_front_attacked' and (team['front'] != target_id or
                 hero(state, defending_side, target_id).get('faction') != card.get('response_faction')):
@@ -239,6 +241,8 @@ def trigger_responses(state, defending_side, kind, target_id=None):
         state['_response_intercept'] = kind in ('self_attacked', 'ally_attacked', 'self_lethal')
         try:
             response_target = f'{defending_side}:{target_id}' if kind == 'ally_attacked' and target_id else None
+            if kind == 'front_attacked':
+                response_target = f'{other(defending_side)}:{attacker_id}'
             resolve_play(state, defending_side, card, response_target, pay=True)
         finally:
             state['_response_lock'] = False
@@ -289,11 +293,12 @@ def targets(state, side, card):
         foe = other(side)
         return [{'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
                 if alive(state, foe, cid) and enemy['front'] != cid]
-    if policy in ('living_enemy', 'living_enemy_esper'):
+    if policy in ('living_enemy', 'living_enemy_esper', 'collapsed_enemy_esper'):
         foe = other(side)
         return [{'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
                 if alive(state, foe, cid)
-                and (policy != 'living_enemy_esper' or not hero(state, foe, cid).get('summoned'))]
+                and (policy == 'living_enemy' or not hero(state, foe, cid).get('summoned'))
+                and (policy != 'collapsed_enemy_esper' or collapsed(hero(state, foe, cid)))]
     if policy == 'living_enemy_role':
         foe = other(side)
         return [{'target_id': f'{foe}:player'}] + [

@@ -9,7 +9,7 @@ from .flow import acting_side, apply_action, card_plays_instant, card_is_free_in
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
 from .combat import harmony_marks
-from .state import SIDES, attack_value, collapsed, damage_immune, damage_limit, effective_card, hero, name, other, team_order
+from .state import SIDES, attack_value, collapsed, collapse_max, damage_immune, damage_limit, effective_card, hero, name, other, team_order
 
 
 def _card(state, side, instance_id):
@@ -154,6 +154,9 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         team['life_locked'] = bool(source.get('life_locked'))
         team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
         team['genesis_turn'] = source.get('genesis_turn')
+        team['insight_damage'] = 2 + int(source.get('insight_bonus', 0))
+        team['insight_played'] = int(source.get('insight_played', 0))
+        team['support_count'] = int(source.get('support_count', 0)) if source.get('support_turn') == state['turn'] else 0
         if ps == side and source.get('deck_visible_turn') == state['turn'] and state['active_side'] == ps:
             team['visible_deck'] = [public_card(c) for c in source['deck']]
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
@@ -181,7 +184,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                      brand=flags.get('brand', 0),
                      nightmare=flags.get('nightmare', 0),
                      collapse_count=flags.get('collapse_count', 0),
-                     collapse_max=int(flags.get('collapse_max') or 5),
+                     collapse_max=collapse_max(h),
                      collapse=bool(flags.get('collapse')),
                      pact=bool(flags.get('pact')),
                      atk_debuff=int(flags.get('atk_debuff') or 0),

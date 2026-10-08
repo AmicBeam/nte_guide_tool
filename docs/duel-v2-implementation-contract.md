@@ -227,3 +227,10 @@ events: 投影后的公开演出事件
 角色公开 `lingke_chain` 包含公开的使用者实体／角色 ID 与 0–2 计数，实时与回放 patch 同步，不包含隐藏牌身份。`pending_choice.kind=kit_multi` 支持 `min_select/max_select` 与既有 `choose_cards` 动作；引擎完整列出固定数量的合法组合，候选仅选择者可见。后续单选仍用 `kind=kit`，从牌库暂取出的候选计入牌库数量。
 
 下一张瞬发用可消费 `card.instant` 效果表示，天然零费使用也消费该效果，但不消费共享瞬发机会。手牌视为沿用实体身份及 `hand_face`，离手恢复物理原牌。玩家限时属性减抗沿用公开 `effect_markers`，清除及到期由后端统一处理。同频合击可携带借用角色与实体 ID，合击后仅向该实体分派其自身援护技回调；其他监听器仍只收到一次实际攻击者灵可的援护技通知。
+
+
+### 2026-10-08 倾陷与援护扩展契约
+
+通用时机新增 `V2_COLLAPSE_ENTERED`、`V2_DISSONANCE`、`V2_OPPONENT_ATTACK`、`V2_SUPPORT_RESOLVED`，由正式引擎派发；达芙蒂尔效果留在其角色包。`collapse_max(character)` 组合临时上限与按来源实体保存的永久减量，永久减量不放入倒地会清空的 flags。援护计数按全局回合与实际释放累计，借用角色回调不重复累计。`front_attacked` 响应将实际攻击者传给牌效，`collapsed_enemy_esper` 提供限定倾陷目标的合法动作。
+
+双方公开阵营补 `insight_damage`、`insight_played`、`support_count`，异能者实时与回放棋盘统一输出 `collapse_count`、`collapse_max`、`collapse` 及永久减益标记。卡牌动态文案仍通过既有 `card_description` 查询，不改变手牌实体或隐藏信息协议。

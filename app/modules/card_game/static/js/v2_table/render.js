@@ -73,6 +73,8 @@
     node.classList.toggle('target-legal', Boolean(options.canTarget));
     node.classList.toggle('harmony-source', Boolean(data.harmony_source));
     node.classList.toggle('harmony-ready', Boolean(data.harmony_ready));
+    const showCollapse = Boolean(options.inFront && data.collapse && Number(data.hp) > 0 && !Number(data.down_turns) && !options.placeholder);
+    node.classList.toggle('is-collapsed-front', showCollapse);
     const compact = !options.usePortrait;
     const energyMax = data.energy_max == null ? 5 : data.energy_max;
     const energyNow = data.energy == null ? 0 : data.energy;
@@ -154,7 +156,12 @@
     const prevPanel = node.getAttribute('data-pop-sig');
     node.setAttribute('data-pop-sig', panelSig);
     const protectionLabel = damageLimited ? '单次至多受到 ' + data.damage_limit + ' 点伤害' : '免疫伤害';
-    node.innerHTML = (damageImmune || damageLimited ? '<svg class="v2-immunity-frame' +
+    const collapseHalo = showCollapse ? '<svg class="v2-collapse-halo" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="倾陷">' +
+      '<circle class="v2-collapse-ring" cx="50" cy="50" r="37"/>' +
+      '<g class="v2-collapse-orbit"><path d="M50 5l3 7 7 1-6 5 2 8-6-4-6 4 2-8-6-5 7-1z"/>' +
+      '<path d="M82 63l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>' +
+      '<path d="M18 63l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></g></svg>' : '';
+    node.innerHTML = collapseHalo + (damageImmune || damageLimited ? '<svg class="v2-immunity-frame' +
       (damageLimited ? ' v2-damage-limit-frame' : '') + '" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="' + protectionLabel + '"><path d="M8 1 H92 Q99 1 99 8 V98 Q90 102 50 106 Q10 102 1 98 V8 Q1 1 8 1 Z"/></svg>' : '') +
       '<div class="v2-character-art' + (actions.length && !mobileCard ? ' has-ultimate' : '') + '">' + (data.summoned && !portrait ? '<div class="v2-summon-art" aria-label="召唤物">⌛</div>' : V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar')) +
       vitalsHtml + (mobileCard ? '' : actions.join('')) + '</div>' +
@@ -331,6 +338,7 @@
       side: side,
       characters: state.characters,
       isOpponent: isOpponent,
+      inFront: true,
       usePortrait: true,
       canAttack: canAct && !isOpponent && Boolean(ctx.findAction('attack', { character_id: frontId })),
       canAwaken: Boolean(ultimate),

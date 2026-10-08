@@ -116,8 +116,8 @@ class Anhunqu:
 
     @staticmethod
     def on_ultimate(c):
-        apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=5)
-        c.history('发动终结：施加 5 层「噩梦」。')
+        apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=3)
+        c.history('发动终结：施加 3 层「噩梦」。')
 
     @staticmethod
     def after_hits(c, **_data):

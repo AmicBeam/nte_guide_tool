@@ -363,7 +363,7 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertEqual(h['shield'], 2)
         self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 2)
         fire(EffectContext(s, 'a', 'anhunqu', {'side':'a'}), 'on_ultimate', actor_only=True)
-        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 7)
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 5)
 
     def test_early_shift_has_no_attack_penalty_and_ignores_harmony_fullness(self):
         for attribute in ('魂', '咒'):

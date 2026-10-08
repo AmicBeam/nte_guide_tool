@@ -309,7 +309,7 @@
       "portrait": "/static/images/characters/portrait/安魂曲.webp",
       "role": "噩梦与失谐强化",
       "passive": "安魂曲的攻击施加 1 层持续伤害「噩梦」。【失谐】强化：触发时，对对方前排造成 1 点伤害。",
-      "awakened_passive": "施加 5 层「噩梦」。",
+      "awakened_passive": "施加 3 层「噩梦」。",
       "everness_id": 1004,
       "ultimate": {
         "kind": "instant"

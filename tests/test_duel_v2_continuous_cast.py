@@ -439,6 +439,43 @@ class ContinuousCastTest(unittest.TestCase):
         end_turn(s, 'b')
         self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 5)
 
+    def test_etch_and_venom_keep_stacks_without_damage_even_in_old_snapshots(self):
+        from app.modules.card_game.engine.duel_v2.continuous import kind_count, total_stacks, trigger_dot, tick_owner_end
+        for legacy in (False, True):
+            with self.subTest(legacy=legacy):
+                s = self.game()
+                for kind in ('etch', 'venom'):
+                    apply_dot(s, 'b', kind, by='a', source_cid='canhong', stacks=10)
+                    if legacy:
+                        front_debuff(s, 'b')['dots'][kind]['mode'] = 'every5'
+                s = json.loads(json.dumps(s))
+                before = [(side, cid, h['hp'], h['shield']) for side in ('a', 'b')
+                          for cid, h in s['sides'][side]['characters'].items()]
+                rng, seq = s['rng'], s['event_seq']
+                for kind in ('etch', 'venom'):
+                    self.assertEqual(trigger_dot(s, 'b', kind, front_debuff(s, 'b')['dots'][kind]), [])
+                tick_owner_end(s, 'a')
+                for side, cid, hp, shield in before:
+                    self.assertEqual((hero(s, side, cid)['hp'], hero(s, side, cid)['shield']), (hp, shield))
+                self.assertEqual(s['rng'], rng)
+                self.assertFalse(any(e['type'] == 'damage' for e in s['events'] if e['seq'] > seq))
+                self.assertEqual(kind_count(s, 'a'), 2)
+                self.assertEqual(total_stacks(s, 'a'), 20)
+                end_turn(s, 'a')
+                self.assertEqual(total_stacks(s, 'a'), 20)
+                self.assertTrue(all(hero(s, side, cid)['hp'] == hp for side, cid, hp, _ in before))
+
+    def test_non_damaging_dots_still_enable_canhong_card_scaling(self):
+        from app.modules.card_game.engine.duel_v2.continuous import kind_count, total_stacks
+        s = self.game()
+        for kind in ('etch', 'venom'):
+            apply_dot(s, 'b', kind, by='a', source_cid='canhong', stacks=5)
+        self.assertEqual((kind_count(s, 'a'), total_stacks(s, 'a')), (2, 10))
+        s = self.play(s, 'C04')
+        hit = next(e for e in reversed(s['events']) if e['type'] == 'attack')
+        self.assertEqual(hit['attack'], 4)
+        self.assertEqual(hero(s, 'a', 'canhong')['shield'], 2)
+
     def test_collapse_lasts_until_applier_next_turn_end(self):
         s = self.game()
         force_collapse(s, 'b', 'zero', by='a')

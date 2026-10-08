@@ -1,8 +1,8 @@
 """Continuous damage attached to a battle zone.
 
-浊燃、噩梦、蚀心、鸩火 and 诛恶护持 share this clock. Damage is dealt on the
-applier's turn end and split across living opponent espers. The same character
-receives one merged hit. Stack halving is a countdown, not a turn-start trigger.
+浊燃、噩梦 and 诛恶护持 deal damage on the applier's turn end. 蚀心 and 鸩火
+keep their stacks and count toward continuous-effect synergies without damage.
+Each damaged character receives one merged hit. Stack halving is a countdown.
 """
 from random import Random
 
@@ -14,8 +14,8 @@ from .state import (SIDES, alive, damage, finished, front_debuff, hero, knockdow
 
 DOTS = {
     'nightmare': {'name': '噩梦', 'max_stacks': 10, 'mode': 'stacks', 'halve': True},
-    'etch': {'name': '蚀心', 'max_stacks': 10, 'mode': 'every5'},
-    'venom': {'name': '鸩火', 'max_stacks': 10, 'mode': 'every5'},
+    'etch': {'name': '蚀心', 'max_stacks': 10, 'mode': 'counter'},
+    'venom': {'name': '鸩火', 'max_stacks': 10, 'mode': 'counter'},
     'guard': {'name': '诛恶护持', 'max_stacks': 1, 'mode': 'single', 'unique': True,
               'ignore_shield': True},
 }
@@ -308,6 +308,9 @@ def _kill_player(state, dot, killed):
 
 def trigger_dot(state, target_side, kind, dot, *, reason=None):
     """Resolve a zone effect identically for its clock and an explicit card trigger."""
+    # Current definitions also cover old snapshots carrying mode='every5'.
+    if (DOTS.get(kind) or {}).get('mode') == 'counter':
+        return []
     source = dot.get('source') or f"{dot['by']}:{kind}"
     stacks = int(dot.get('stacks') or 0)
     kwargs = dict(source=source, by=dot['by'], reason=reason or dot.get('name'))

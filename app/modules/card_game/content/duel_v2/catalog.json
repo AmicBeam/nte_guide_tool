@@ -1217,9 +1217,9 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。施加 5 层「噩梦」。若「噩梦」达到 10 层，获得 1 张「茄汁金属乐」。",
+      "description": "施加 5 层「噩梦」。若「噩梦」达到 10 层，获得 1 张「茄汁金属乐」。",
       "starter_copies": 0,
-      "instant": true
+      "instant": false
     },
     {
       "id": "A05",

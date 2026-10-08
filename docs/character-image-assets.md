@@ -153,3 +153,12 @@ with Image.open('/tmp/nte-character-source.png') as source:
 使用的内置工具提示词：
 
 > Use case: background-extraction. Edit target: supplied NTEData UI_YH_Archive_FileImages_50.png. Asset: transparent character cutout for the 鬼郎丸 card portrait in a game. Extract ONLY the existing black dog-like creature with red ears, red long tongue, red curled wrapping/tail and the long attached dark staff/pole extending to bottom left. Preserve the original creature identity, pose, proportions, facial features, colors, flat illustrated rendering and all visible subject details exactly. Remove the cream paper, cyan and gray printed bands, all text, white card border and black outside frame completely. Preserve clean anti-aliased original subject edges with actual transparent alpha everywhere else. Keep the entire visible subject and attached staff within the canvas, centered with modest transparent margins, without adding or inventing missing details. Do not redraw or restyle, no text, no shadow, no new backdrop.
+
+
+## 灵可默认立绘更新（2026-10-08）
+
+用户指定将保留的旧默认立绘更新为 NTEData 当前修订图，继续使用 WebP。核对 NTEData 最新提交 `d7fe705451f189cec8447d876e6c31db7ed3d9df` 与 Nanoka NTE `1.4.6` 角色 `1072`：`icon_gacha` 对应 `YH_lihui_fashionshop_lingke`，默认服装为 `Fashion_1072_0`「电波未达」。本次采用 [NTEData 默认造型原图](https://github.com/mc-ctrl/NTEData/blob/d7fe705451f189cec8447d876e6c31db7ed3d9df/UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_lingke.png)，不是编号 `lingke1`–`lingke3` 的额外时装。
+
+原图路径 `UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_lingke.png`，1024×1024 RGBA、905212 字节，SHA256 `3abce6cd5da5393a5a9e63dc4aeeeebdee86e70df9bcefa317019596339cabc5`。使用 `cwebp -q 90 -m 6` 转换，不额外缩放或裁切，保留透明通道与上游构图；输出覆盖 `app/static/images/characters/portrait/灵可.webp`，1024×1024、192990 字节，SHA256 `a42c25c5d56d240c81576c78d1f5e2efe29f47f629d6fb8627530f8b328697b3`。
+
+与旧图对照，姿势、角色占比和头部位置接近，采用上游修订后的脸部、发丝及服装细节。头像、武备时装和角色可见权限保持原设置；V2 图片缓存版本同步更新。上文旧版恢复记录保留当时状态，灵可默认立绘的当前来源以本节为准。

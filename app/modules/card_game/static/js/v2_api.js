@@ -42,7 +42,7 @@
     Q07: { characterId: 'xiaozhi', fashion: 'Fashion_1073_1' },
     Q08: { characterId: 'xiaozhi', fashion: 'Fashion_1073_nighty' },
   };
-  const CHARACTER_IMAGE_VERSION = 'everness-restored-costumes-v4';
+  const CHARACTER_IMAGE_VERSION = 'ntedata-lingke-20261008-v5';
 
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.

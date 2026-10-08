@@ -140,7 +140,7 @@ def card_play_options(state, side, card):
                    for resource, amount in option.get('costs', {}).items())]
 
 
-def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None, response=False):
+def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None, response=False, present=True):
     from app.modules.card_game.content.duel_v2.characters.common import scale_battle_frame
     from .presentation import public_card
     team = state['sides'][side]
@@ -173,7 +173,7 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None,
     consume_applied(state, 'card_use', [e['effect_id'] for e in instant_grants['contributions']])
     log(state, f"{hero(state, side, card['character_id'])['name']}使用「{card['name']}」。",
         'play', side=side, source=card['character_id'],
-        actor=f"{side}:{card['character_id']}", card=public_card(card, state, side), response=response)
+        actor=f"{side}:{card['character_id']}", card=public_card(card, state, side), response=response, present=present)
     c = operation(state, side, card['character_id'], card, target_id)
     c.operation['option_id'] = option.get('id')
     c.operation['ap_paid'] = ap_paid

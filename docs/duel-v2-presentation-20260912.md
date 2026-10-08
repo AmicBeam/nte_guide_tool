@@ -13,6 +13,7 @@
 
 ## presentation
 
+- 黑羽公开占卜牌使用 `reveal.card_source=deck`，双方和回放均播放牌库揭牌；魔女实际触发的这条事件另带 `response=true`，先播放「响应」大字。基础占卜揭牌为 `response=false`；随后释放同一实体的 `play` 仅更新局面与历史（`present=false`），不再重复揭牌。不根据隐藏牌库推测触发。
 `{schema_version:1, cursor, oldest_seq, events}`。
 
 - `cursor` 是最新公开事件 seq；`oldest_seq` 是当前窗口最早 seq。

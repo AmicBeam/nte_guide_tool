@@ -339,7 +339,8 @@ def project_event(event, viewer):
     }
     for key in ('amount', 'attack', 'counter', 'group_id', 'harmony_delta', 'energy_delta',
                 'hit_index', 'before', 'after', 'source_side', 'card_ids', 'description', 'present',
-                'first_side', 'winner', 'reason', 'counter_immunity', 'actor_entity_id', 'target_entity_id', 'response'):
+                'first_side', 'winner', 'reason', 'counter_immunity', 'actor_entity_id', 'target_entity_id', 'response',
+                'card_source'):
         if key in event:
             item[key] = deepcopy(event[key])
     if event.get('type') == 'mulligan' and event.get('side') != viewer:

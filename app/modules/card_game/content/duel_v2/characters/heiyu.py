@@ -45,10 +45,11 @@ def _detach(c, card):
         team[zone] = [item for item in team[zone] if item['entity_id'] != card['entity_id']]
 
 
-def _reveal(c, card):
+def _reveal(c, card, *, response=False):
     from app.modules.card_game.engine.duel_v2.presentation import public_card
     log(c.state, f"黑羽公开「{card['name']}」并发动占卜效果。", 'reveal',
-        side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}', card=public_card(card))
+        side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}', card=public_card(card),
+        response=response, card_source='deck')
 
 
 def _release(c, card, target=None):
@@ -59,7 +60,8 @@ def _release(c, card, target=None):
     _detach(c, card)
     c.state['_draining_actions'] = True
     try:
-        resolve_play(c.state, c.side, Heiyu.hand_card(c, card, card), target, pay=False)
+        # The preceding reveal already presents this card to both players.
+        resolve_play(c.state, c.side, Heiyu.hand_card(c, card, card), target, pay=False, present=False)
     finally:
         c.state['operation'] = parent
         if draining is None:
@@ -262,7 +264,7 @@ class Heiyu:
         if deck and deck[0].get('card_id') in DIVINATION_CARDS:
             card = deck.pop(0)
             # Reveal and discard before resolving; P05 can then move this entity to hand.
-            _reveal(c, card)
+            _reveal(c, card, response=True)
             discard(c.state, c.side, card)
             apply_divination_benefit(c, card, witch=True, revealed=True)
 

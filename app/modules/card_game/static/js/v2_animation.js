@@ -108,7 +108,9 @@
     if (characterId === "player") {
       return "玩家";
     }
-    return CHARACTER_NAMES[characterId] || (card && card.name) || characterId || "";
+    const api = typeof window !== "undefined" ? window.NTE_V2 : null;
+    const character = api && api.characterFallback ? api.characterFallback(characterId) : null;
+    return (character && character.name) || CHARACTER_NAMES[characterId] || (card && card.name) || characterId || "";
   }
 
   function typeLabel(card) {
@@ -464,12 +466,12 @@
           } catch (_error) {}
           return;
         }
-        if (kind === "play") {
+        if (kind === "play" || (kind === "reveal" && event.card_source === "deck" && hasPublicCard(event.card))) {
           if (event.response === true) {
             await this._presentHarmony(event, instant, "响应");
             if (this._cancelled) return;
           }
-          if (event.response === true || this._isOpponentPlay(event) || this.options.presentOwnPlays) {
+          if (kind === "reveal" || event.response === true || this._isOpponentPlay(event) || this.options.presentOwnPlays) {
             await this._presentPlay(event, instant);
           }
           return;
@@ -550,8 +552,12 @@
       const side = sideOf(event);
       const hand = this._hand(side);
       const stageRect = readRect(overlay) || { left: 0, top: 0, width: 800, height: 450, cx: 400, cy: 225, right: 800, bottom: 450 };
-      const sourceCard = this._sourceCard(hand, card, side);
-      const fromRect = readRect(sourceCard) || readRect(hand) || readRect(this._entity(event && (event.actor || event.source))) || stageRect;
+      const fromDeck = event.card_source === "deck";
+      const sourceCard = fromDeck ? null : this._sourceCard(hand, card, side);
+      const deck = fromDeck && this.root && this.root.querySelector
+        ? this.root.querySelector(this._isOpponentPlay(event) ? "#v2-opponent-deck" : "#v2-player-deck") : null;
+      const fromRect = readRect(deck) || readRect(sourceCard) || (!fromDeck && readRect(hand))
+        || readRect(this._entity(event && (event.actor || event.source))) || stageRect;
       const node = this._el("div", "v2-fx-play-card");
       node.setAttribute("data-v2-fx-kind", "play");
       if (card && card.card_id) {

@@ -1297,3 +1297,46 @@ test("derived and copied deck draws use one draw animation and one hand patch", 
     assert.deepEqual(patches, [1001]);
   }
 });
+
+test("witch reveals use the deck and show public cards to either viewer without touching hand cards", async () => {
+  for (const side of ["a", "b"]) {
+    const harness = makeRoot();
+    const card = publicCard();
+    const handCard = makeHandCard(harness.documentRef, card);
+    (side === "a" ? harness.handA : harness.handB).appendChild(handCard);
+    const deck = harness.documentRef.createElement("button");
+    deck.setAttribute("id", side === "a" ? "v2-player-deck" : "v2-opponent-deck");
+    place(deck, 700, side === "a" ? 350 : 50, 60, 40);
+    harness.root.appendChild(deck);
+    const order = [];
+    const player = new Player({root: harness.root, clock: harness.clock, applyPatch() {order.push("patch");}});
+    player._presentHarmony = async (_event, _instant, keyword) => { order.push(keyword); };
+    const reveal = player._presentPlay.bind(player);
+    player._presentPlay = async (...args) => {
+      order.push("reveal");
+      const done = reveal(...args);
+      const flyer = harness.stage.querySelector(".v2-fx-play-card");
+      assert.equal(flyer.style.left, "580px", "flyer starts at the deck, not the hand");
+      assert.equal(handCard.classList.contains("v2-fx-source"), false);
+      assert.equal(flyer.getAttribute("data-instance-id"), card.instance_id);
+      assert.equal(flyer.querySelector(".v2-fx-card-name").textContent, card.name);
+      await done;
+    };
+    await settle(player.play([
+      {seq: 940, type: "reveal", side, actor: side + ":nanali", response: true, card_source: "deck", card, patch: {}},
+      {seq: 941, type: "play", side, actor: side + ":nanali", present: false, card, patch: {}},
+    ]), harness.clock, player);
+    assert.deepEqual(order, ["响应", "reveal", "patch", "patch"]);
+  }
+});
+
+test("public basic divination reveals own card without a response title", async () => {
+  const harness = makeRoot();
+  const player = new Player({root: harness.root, clock: harness.clock});
+  let reveals = 0;
+  player._presentHarmony = async () => assert.fail("basic divination is not a witch response");
+  player._presentPlay = async () => { reveals += 1; };
+  await settle(player.play([{seq: 942, type: "reveal", side: "a", response: false,
+    card_source: "deck", card: publicCard(), patch: {}}]), harness.clock, player);
+  assert.equal(reveals, 1);
+});

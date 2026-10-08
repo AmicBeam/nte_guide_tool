@@ -23,6 +23,7 @@ function makeEl(id) {
     setAttribute(key, value) { el.attrs[key] = String(value); },
     getAttribute(key) { return Object.prototype.hasOwnProperty.call(el.attrs, key) ? el.attrs[key] : null; },
     addEventListener(type, fn) { el.listeners.push([type, fn]); },
+    querySelectorAll() { return []; },
     click() {
       el.listeners.filter((item) => item[0] === 'click').forEach((item) => {
         item[1]({ target: el, preventDefault() {}, stopPropagation() {} });
@@ -58,6 +59,10 @@ function loadBuildPage() {
     'v2-build-roster', 'v2-build-total', 'v2-build-source',
     'v2-build-name', 'v2-save-build-btn', 'v2-build-new-btn',
     'v2-build-delete-btn', 'v2-build-detail',
+    'v2-build-transfer', 'v2-build-text', 'v2-build-transfer-error',
+    'v2-build-import-apply', 'v2-build-import-btn', 'v2-build-export-btn',
+    'v2-build-transfer-close', 'v2-build-copy', 'v2-build-download',
+    'v2-build-transfer-title',
   ].forEach((id) => { nodes[id] = makeEl(id); });
   const context = {
     window: {
@@ -114,8 +119,8 @@ test('new build starts with no characters selected', async () => {
   await waitUntil(() => nodes['v2-build-groups'].innerHTML.indexOf('v2-character-stats') >= 0);
   assert.match(nodes['v2-build-groups'].innerHTML, /v2-stat-badge is-atk/);
   assert.match(nodes['v2-build-groups'].innerHTML, /v2-stat-badge is-hp/);
-  assert.match(nodes['v2-build-groups'].innerHTML, /<em>2<\/em>/);
-  assert.match(nodes['v2-build-groups'].innerHTML, /<em>9<\/em>/);
+  assert.match(nodes['v2-build-groups'].innerHTML, /<em>3<\/em>/);
+  assert.match(nodes['v2-build-groups'].innerHTML, /<em>7<\/em>/);
   assert.match(nodes['v2-build-groups'].innerHTML, /终结（5）：/);
   assert.equal(nodes['v2-build-groups'].innerHTML.includes('subtle">攻击'), false);
   assert.match(nodes['v2-build-library'].innerHTML, /基础预组/);
@@ -182,7 +187,8 @@ test('character info uses attack/hp icons and energy-cap ultimate label', () => 
 
 function loadCodexPage() {
   const nodes = {};
-  ['v2-codex-banner', 'v2-codex-nav', 'v2-codex-body', 'v2-codex-summary'].forEach((id) => {
+  ['v2-codex-banner', 'v2-codex-nav', 'v2-codex-body', 'v2-codex-summary',
+    'v2-codex-glossary', 'v2-codex-help', 'v2-glossary-search', 'v2-glossary-close', 'v2-glossary-empty'].forEach((id) => {
     nodes[id] = makeEl(id);
   });
   const context = {

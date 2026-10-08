@@ -168,15 +168,15 @@ class RoomFlowTestCase(unittest.TestCase):
 
 
 class SoloRoomFlowTest(RoomFlowTestCase):
-    def test_canhong_selection_requires_invited_or_test_account(self) -> None:
+    def test_canhong_selection_is_public_for_all_account_levels(self) -> None:
         public_catalog = self._get('/api/shaft/catalog')
         public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残虹')
-        self.assertTrue(public_canhong['selection_disabled'])
+        self.assertFalse(public_canhong['selection_disabled'])
 
         regular_token = self._issue_login_and_get_token('regular-shaft-player')
         regular_catalog = self._get('/api/shaft/catalog', token=regular_token)
         regular_canhong = next(character for character in regular_catalog['characters'] if character['name'] == '残虹')
-        self.assertTrue(regular_canhong['selection_disabled'])
+        self.assertFalse(regular_canhong['selection_disabled'])
 
         invited_token = self._issue_login_and_get_token('shaft-invited-player')
         models_module = importlib.import_module('app.models')
@@ -204,12 +204,12 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         }]
         restricted_axis['character_builds'] = {}
         restricted_axis['steps'] = []
-        denied = self._post('/api/shaft/axes', {
+        regular_allowed = self._post('/api/shaft/axes', {
             'title': '普通账号残虹',
             'axis': restricted_axis,
             'result': self._shaft_client_result(restricted_axis),
-        }, token=regular_token, expected_status=400)
-        self.assertIn('当前账号无权使用', denied['error'])
+        }, token=regular_token)
+        self.assertEqual(regular_allowed['team'][0]['character_id'], public_canhong['id'])
 
         invited_allowed = self._post('/api/shaft/axes', {
             'title': '受邀账号残虹',
@@ -236,28 +236,27 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         regular_market = self._get('/api/shaft/market', token=regular_token)
         invited_market = self._get('/api/shaft/market', token=invited_token)
         test_market = self._get('/api/shaft/market', token=test_token)
-        self.assertNotIn('测试账号残虹', [axis['title'] for axis in anonymous_market['items']])
-        self.assertNotIn('测试账号残虹', [axis['title'] for axis in regular_market['items']])
+        self.assertIn('测试账号残虹', [axis['title'] for axis in anonymous_market['items']])
+        self.assertIn('测试账号残虹', [axis['title'] for axis in regular_market['items']])
         self.assertIn('测试账号残虹', [axis['title'] for axis in invited_market['items']])
         self.assertIn('测试账号残虹', [axis['title'] for axis in test_market['items']])
 
         for token in (None, regular_token):
-            hidden_detail = self.client.get(
+            public_detail = self.client.get(
                 f"/api/shaft/axes/{published['id']}",
                 headers=self._auth_headers(token),
             )
-            self.assertEqual(hidden_detail.status_code, 400)
-            self.assertIn('排轴不存在', hidden_detail.get_json()['error'])
+            self.assertEqual(public_detail.status_code, 200)
+            self.assertEqual(public_detail.get_json()['title'], '测试账号残虹')
         visible_detail = self._get(f"/api/shaft/axes/{published['id']}", token=test_token)
         self.assertEqual(visible_detail['id'], published['id'])
 
-        denied_favorite = self._post(
+        regular_favorite = self._post(
             f"/api/shaft/axes/{published['id']}/favorite",
             {},
             token=regular_token,
-            expected_status=400,
         )
-        self.assertIn('排轴不存在', denied_favorite['error'])
+        self.assertTrue(regular_favorite['favorited'])
         models_module.Player.update(shaft_test_whitelisted=True).where(
             models_module.Player.player_uid == 'regular-shaft-player'
         ).execute()
@@ -272,18 +271,17 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         models_module.Player.update(shaft_test_whitelisted=False).where(
             models_module.Player.player_uid == 'regular-shaft-player'
         ).execute()
-        hidden_favorites = self._get('/api/shaft/me/favorites', token=regular_token)
-        self.assertNotIn('测试账号残虹', [axis['title'] for axis in hidden_favorites['items']])
+        still_public_favorites = self._get('/api/shaft/me/favorites', token=regular_token)
+        self.assertIn('测试账号残虹', [axis['title'] for axis in still_public_favorites['items']])
         models_module.Player.update(shaft_test_whitelisted=False).where(
             models_module.Player.player_uid == 'shaft-whitelisted-player'
         ).execute()
-        denied_publish = self._post(
+        regular_publish = self._post(
             f"/api/shaft/axes/{allowed['id']}/publish",
             {},
             token=test_token,
-            expected_status=400,
         )
-        self.assertIn('当前账号无权使用', denied_publish['error'])
+        self.assertEqual(regular_publish['visibility'], 'public')
 
     def test_invited_permission_is_below_test_permission(self) -> None:
         shaft_service = importlib.import_module('app.modules.shaft.service')
@@ -329,7 +327,7 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         portal_html = portal.get_data(as_text=True)
         self.assertIn('卡牌桌游', portal_html)
         self.assertIn('空幕', portal_html)
-        self.assertIn('预配队', portal_html)
+        self.assertNotIn('href="/preteam"', portal_html)
         self.assertIn('排轴计算', portal_html)
         self.assertIn('/card-game', portal_html)
         self.assertIn('/shaft/rotation', portal_html)
@@ -357,7 +355,7 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         card_game = self.client.get('/card-game')
         self.assertEqual(card_game.status_code, 200)
         self.assertNotIn('id="logout-btn"', card_game.get_data(as_text=True))
-        self.assertIn('异象对决', card_game.get_data(as_text=True))
+        self.assertIn('异能对决', card_game.get_data(as_text=True))
         self.assertEqual(self.client.get('/home').status_code, 404)
 
         legacy_plaza = self.client.get('/shaft/market')
@@ -872,7 +870,7 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         self.assertEqual(resave_response.status_code, 200, resave_response.get_data(as_text=True))
         resaved_mine = self._get('/api/shaft/me/axes', token=token)
         unchanged_market = self._get('/api/shaft/market')
-        self.assertEqual(resaved_mine['items'][0]['source_version'], '异环云配队 1.0.5')
+        self.assertEqual(resaved_mine['items'][0]['source_version'], '异环云配队 1.0.6')
         self.assertEqual(unchanged_market['items'][0]['source_version'], '异环云配队 V0.2.7')
 
     def test_balance_analytics_requires_login(self) -> None:

@@ -56,4 +56,3 @@ class HarmonyPresentationTest(unittest.TestCase):
         titles = [e for e in events if e['type'] == 'harmony' and e['present']]
         self.assertEqual(len(titles), 1)
         self.assertIn('触发创生', titles[0]['text'])
-

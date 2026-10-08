@@ -98,7 +98,7 @@ with Image.open('/tmp/nte-character-source.png') as source:
 | 薄荷 | 幽火照影 | 悠闲假日 |
 | 小吱 | 青竹猗猗 | 绒绒春日 |
 | 哈尼娅 | 青春注脚 | 默认（无第二套独立皮肤绑定） |
-| 黑羽 | 默认 | 不凋羽（2026-10-09补齐） |
+| 黑羽 | 牧星者（2026-10-09补齐） | 不凋羽（2026-10-09补齐） |
 | 白藏、哈索尔、海月、埃德嘉 | 默认（本次上游无额外时装图） | 默认（本次上游无额外时装图） |
 
 08 优先使用上游 `nighty` 居家服；早雾 08 沿用节日睡衣「南瓜魔法」，07 于 2026-10-08 按用户要求绑定新增的「小熊曲奇」。07 按用户选择配置；其他武备编号仍默认。测试角色适用同一逻辑，不改变账号可见权限。维护入口为 `app/modules/card_game/static/js/v2_api.js` 的 `EQUIPMENT_PORTRAITS`，图片位于共享 `images/characters/costume/`，切勿为了换图修改 `catalog.json` 或规则引擎。
@@ -208,3 +208,12 @@ with Image.open('/tmp/nte-character-source.png') as source:
 原图1024×1024 RGBA，SHA256 `493b86e93e5614b319646c215d2bcacadc46dc3487a95b11891f94b1b86eb5bb`。使用Pillow 12.3.0转换为WebP，quality=90、method=6，不裁切或缩放，保留透明度。输出`app/static/images/characters/costume/Fashion_1042_nighty.webp`，82870字节，SHA256 `7b3d391d2a40d16aaf7bcdb330f17dc39a933d4f7d3908eea94449aae2f95bfb`；条目已写入资源清单。默认头像／立绘文件不替换。
 
 角色实体的shape_id=P08现在用于双方前排、备战区、角色详情与公开回放的换装；卸装／倒地或加载失败沿用默认图回退。图片缓存版本已更新。本次按用户此前快速收尾要求未运行回归或页面验收，不将资源导入和代码修改声称为实机验证。
+
+
+## 黑羽两套武备完整核对（2026-10-09）
+
+用户要求确认两张武备时发现P07仍漏配，现补齐P07「牧星者」对应Fashion_1042_1，P08「不凋羽」继续对应Fashion_1042_nighty。牧星者名称与SmallPortraitImg来自最新NTEData提交`d7fe705451f189cec8447d876e6c31db7ed3d9df`，原图`UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_heiyu1.png`，blob SHA `e6734e9dc31a433445dff63cedfc062d10d65752`。
+
+牧星者原图SHA256 `f1ab842f8587a940a3530367a121d4163a1de7f6b85e30e8759a2aa62d2faad3`，本地输出`app/static/images/characters/costume/Fashion_1042_1.webp`，183894字节，SHA256 `df6322fa5438a2e4f15b6a7f240396c4c3d5e8482bdf59d46b22e908a869de4d`。转换使用Pillow 12.3.0，quality=90／method=6，不裁切、不缩放。两套源图与本地WebP均为1024×1024，alpha逐像素一致；不是用默认图或其他皮肤替代。两张按实体shape_id分别映射，缓存版本更新为v9。
+
+换装资源及真实渲染函数回归tests.test_duel_v2_costume_art共2项通过，覆盖双方、同一节点换装、JSON重建、倒地与图片加载失败回退。浏览器使用独立本地组件页面加载现行v2_api／helpers／render及卡片CSS，确认07／08图片均真实解码1024×1024、互换与倒地回退正常、JSON重建保持映射、无console error。此为真实组件核对，不冒称已操作真实账号对局或完成移动端全流程。默认头像与默认立绘未修改。

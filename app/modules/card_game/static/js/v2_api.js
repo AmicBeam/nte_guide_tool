@@ -48,9 +48,10 @@
     K03: { characterId: 'lingke', fashion: 'Fashion_1072_space' },
     C06: { characterId: 'canhong', fashion: 'Fashion_1036_2' },
     V07: { characterId: 'haniya', fashion: 'Fashion_1020_1' },
+    P07: { characterId: 'heiyu', fashion: 'Fashion_1042_1' },
     P08: { characterId: 'heiyu', fashion: 'Fashion_1042_nighty' },
   };
-  const CHARACTER_IMAGE_VERSION = 'ntedata-heiyu-nighty-20261009-v8';
+  const CHARACTER_IMAGE_VERSION = 'ntedata-heiyu-weapons-20261009-v9';
 
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.

@@ -961,3 +961,8 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 通用战斗结算在攻击前效果、响应和伤害前时机之后复查攻击者倾陷，立即打断尚未结算伤害的一击；不结算该击的反击、攻击后效果或基础资源，已支付费用与已结算入场／环合保留。远程、追加攻击及借用援护回调共用判定；新历史／公开回放显示打断原因，旧记录不追改。完整口径见规则手册同日专节。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_collapse_interrupt tests.test_duel_v2_dafutier tests.test_duel_v2_lingke tests.test_duel_v2_followup_target tests.test_duel_v2_engine tests.test_duel_v2_presentation tests.test_duel_v2_replay`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。
+
+
+### 2026-10-09 黑羽两套武备确认
+
+补齐P07牧星者官方换装图，P07／P08分别映射Fashion_1042_1／Fashion_1042_nighty，资源来源及校验值记录在图片规范。两套资源尺寸和透明通道核对通过；tests.test_duel_v2_costume_art两项通过，独立浏览器真实组件核对双方显示、换装、倒地回退及JSON重建，无加载或控制台错误，不代表真实对局或移动端全流程验收。

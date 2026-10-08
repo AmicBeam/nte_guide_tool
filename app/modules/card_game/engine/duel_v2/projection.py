@@ -160,6 +160,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                 'front', 'last_front', 'turn_count', 'fatigue', 'records', 'used', 'harmonized',
                 'extra_flower', 'front_debuff') if k in source}
         team['life_locked'] = bool(source.get('life_locked'))
+        team['max_hp'] = source.get('max_hp', 30)
         team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
         team['genesis_turn'] = source.get('genesis_turn')
         team['insight_damage'] = 2 + int(source.get('insight_bonus', 0))

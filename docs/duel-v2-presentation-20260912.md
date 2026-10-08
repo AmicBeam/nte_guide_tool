@@ -103,3 +103,8 @@
 add_hand的emit_gain默认为true，直接生成／复制／公开获得仍输出原gain并保留获得动画；draw调用时仅关闭额外gain，手牌加入、on_hand_added、手牌上限弃置与通常抽牌规则保持。动画无需按实体ID全局去重，以免误删同一牌稍后真实回收／再次抽取的合法事件。
 
 回归入口：tests.test_duel_v2_draw_presentation、tests.test_duel_v2_replay_hand_counts、tests.test_duel_v2_action_presentation_boundary及tests/js/duel_v2_animation.test.cjs，覆盖双方视角、普通／衍生／复制、直接生成保留、满手牌与动画结束后只更新一次手牌。
+
+
+### 2026-10-09 玩家生命上限公开
+
+公开side增加max_hp，随玩家上限削减的max_hp事件及patch同步，缺失时默认30。max_hp事件继续携带before／after中的hp、max_hp和shield，玩家目标沿用a:player／b:player实体寻址。实时牌桌与新回放在上限低于初始值时显示「上限 N」，生命数字的title显示当前生命／上限；上限变化也刷新数值跳动签名。噩梦命中玩家与异能者的合并分配仍使用相同group_id。

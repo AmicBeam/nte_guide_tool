@@ -44,6 +44,10 @@ def hero(state, side, cid):
     return state['sides'][side]['characters'][cid]
 
 
+def player_max_hp(state, side):
+    return int(state['sides'][side].get('max_hp', 30))
+
+
 def alive(state, side, cid):
     characters = state['sides'][side]['characters']
     return cid in characters and characters[cid]['hp'] > 0
@@ -389,6 +393,7 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     attr = attribute or source_attribute(state, source)
     zone = front_debuff(state, side)
     immune = ((esper and damage_immune(state, side, cid))
+              or (kind == 'combat' and evaluate(state, side, target, 'rule.combat_immune', False)['value'])
               or (counter_immunity == 'support' and kind == 'combat'))
     if immune:
         amount = 0
@@ -490,9 +495,15 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
 
 
 def reduce_max_hp(state, side, cid, amount, *, source=None, settle=True, group_id=None):
-    if finished(state) or not is_esper(cid):
+    if finished(state):
         return 0
-    h = hero(state, side, cid)
+    esper = is_esper(cid)
+    cid = cid if esper else PLAYER_ID
+    h = hero(state, side, cid) if esper else state['sides'][side]
+    if not esper:
+        if h.get('life_locked'):
+            return 0
+        h.setdefault('max_hp', 30)
     if h['hp'] <= 0:
         return 0
     amount = max(0, int(amount))
@@ -584,7 +595,7 @@ def heal(state, side, cid, amount, *, reason=None, source=None):
         team = state['sides'][side]
         if team.get('life_locked'):
             return
-        actual = min(amount, 30 - team['hp'])
+        actual = min(amount, player_max_hp(state, side) - team['hp'])
         if actual <= 0:
             return
         before = {'hp': team['hp'], 'shield': team['shield']}

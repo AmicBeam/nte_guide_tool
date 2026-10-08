@@ -90,13 +90,14 @@ def _source_context(state, source):
 
 
 def distribute(state, target_side, amount, *, source, by, ignore_shield=False, reason=None,
-               damage_class='esper', after_hit=None, continuous=True):
+               damage_class='esper', after_hit=None, continuous=True, include_roles=False):
     if finished(state):
         return []
     amount = max(0, int(amount))
     if continuous:
         amount = _boost(state, target_side, by, amount)
-    targets = living_espers(state, target_side)
+    targets = (['player'] + [cid for cid in team_order(state, target_side) if alive(state, target_side, cid)]
+               if include_roles else living_espers(state, target_side))
     if amount <= 0 or not targets:
         return []
     rng = Random(state['rng'])
@@ -285,7 +286,7 @@ def _rose_followup(state, dot, cid, dealt):
     target_side = other(ctx.side) if ctx.side in SIDES else None
     if target_side is None:
         return
-    h = hero(state, target_side, cid)
+    h = state['sides'][target_side] if cid == 'player' else hero(state, target_side, cid)
     if h.get('hp', 0) > 0:
         reduce_max_hp(state, target_side, cid, dealt, source=source, settle=False)
     if not finished(state) and alive(state, ctx.side, ctx.cid):
@@ -319,7 +320,7 @@ def trigger_dot(state, target_side, kind, dot, *, reason=None):
     if dot.get('mode') == 'every5':
         return distribute(state, target_side, stacks // 5, **kwargs)
     after = (lambda cid, dealt: _rose_followup(state, dot, cid, dealt)) if kind == 'nightmare' else None
-    killed = distribute(state, target_side, stacks, after_hit=after, **kwargs)
+    killed = distribute(state, target_side, stacks, after_hit=after, include_roles=kind == 'nightmare', **kwargs)
     if kind == 'nightmare' and not finished(state):
         _kill_player(state, dot, killed)
     return killed

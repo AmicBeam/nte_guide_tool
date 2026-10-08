@@ -86,6 +86,7 @@ def capture_public_board(state):
         if not source:
             continue
         team = {key: deepcopy(source[key]) for key in ('hp', 'shield', 'ap', 'front', 'last_front', 'front_debuff')}
+        team['max_hp'] = source.get('max_hp', 30)
         if 'entity_id' in source:
             team['entity_id'] = source['entity_id']
         team['life_locked'] = bool(source.get('life_locked'))

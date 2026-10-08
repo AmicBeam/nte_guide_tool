@@ -22,6 +22,18 @@
     return data.name || data.id || '角色';
   }
 
+  function fillPlayerLife(node, team) {
+    const cap = team.max_hp == null ? 30 : team.max_hp;
+    node.textContent = team.hp == null ? '-' : team.hp;
+    node.title = '生命 ' + node.textContent + '/' + cap;
+    const hud = node.closest('.v2-player-hud');
+    const label = hud && hud.querySelector('[data-player-max-hp]');
+    if (label) {
+      label.textContent = '上限 ' + cap;
+      label.hidden = cap === 30;
+    }
+  }
+
   function fitResources(node) {
     const row = node.matches('.v2-resource-row') ? node : node.querySelector('.v2-resource-row');
     if (!row || !row.clientWidth) return;
@@ -676,11 +688,11 @@
     if (ctx.nodes.opponentFrontZone) ctx.nodes.opponentFrontZone.setAttribute('data-zone-side', ctx.opponent);
     if (ctx.nodes.playerAp) ctx.nodes.playerAp.setAttribute('data-ap-side', ctx.viewer);
     ctx.nodes.roundLabel.textContent = game && game.turn ? ('第 ' + game.turn + ' 回合') : '第 - 回合';
-    ctx.nodes.opponentHp.textContent = theirs.hp == null ? '-' : theirs.hp;
+    fillPlayerLife(ctx.nodes.opponentHp, theirs);
     ctx.nodes.opponentShield.textContent = '护盾 ' + (theirs.shield == null ? '-' : theirs.shield);
     setPileLabel(ctx.nodes.opponentAp, '行动力', theirs.ap == null ? '-' : theirs.ap);
     popIfChanged(ctx.nodes.opponentAp, theirs.ap);
-    ctx.nodes.playerHp.textContent = mine.hp == null ? '-' : mine.hp;
+    fillPlayerLife(ctx.nodes.playerHp, mine);
     ctx.nodes.playerHp.closest('.v2-player-hud').classList.toggle('is-life-locked', Boolean(mine.life_locked));
     ctx.nodes.opponentHp.closest('.v2-player-hud').classList.toggle('is-life-locked', Boolean(theirs.life_locked));
     ctx.nodes.playerShield.textContent = '护盾 ' + (mine.shield == null ? '-' : mine.shield);
@@ -693,8 +705,8 @@
       playerApReadout.classList.toggle('is-instant-spent', instantSpent);
       playerApReadout.title = instantSpent ? '本回合第一张瞬发已用' : '本回合第一张瞬发不耗行动力';
     }
-    popIfChanged(ctx.nodes.opponentHp && ctx.nodes.opponentHp.closest('.v2-player-hud'), [theirs.hp, theirs.shield].join('|'));
-    popIfChanged(ctx.nodes.playerHp && ctx.nodes.playerHp.closest('.v2-player-hud'), [mine.hp, mine.shield].join('|'));
+    popIfChanged(ctx.nodes.opponentHp && ctx.nodes.opponentHp.closest('.v2-player-hud'), [theirs.hp, theirs.max_hp, theirs.shield].join('|'));
+    popIfChanged(ctx.nodes.playerHp && ctx.nodes.playerHp.closest('.v2-player-hud'), [mine.hp, mine.max_hp, mine.shield].join('|'));
     popIfChanged(playerApReadout, [mine.ap, instantSpent ? 1 : 0].join('|'));
     popIfChanged(ctx.nodes.normalAttack, mine.normal_attack_available ? '1' : '0');
     popIfChanged(ctx.nodes.ultimate, mine.ultimate_remaining == null ? (mine.ultimate_available ? '1' : '0') : String(mine.ultimate_remaining));
@@ -733,6 +745,7 @@
   }
 
   TABLE.fillCharacterCard = fillCharacterCard;
+  TABLE.fillPlayerLife = fillPlayerLife;
   TABLE.ensureCharacterNode = ensureCharacterNode;
   TABLE.handCardHtml = handCardHtml;
   TABLE.recordHtml = recordHtml;

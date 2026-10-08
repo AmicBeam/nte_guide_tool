@@ -77,7 +77,7 @@ observe 的稳定 JSON：
 rules_version, version, phase, active_side, first_side, viewer_side, is_my_turn,
 turn, winner,
 sides: {
-  a/b: {name, hp, shield, ap, normal_attack_available,
+  a/b: {name, hp, max_hp, shield, ap, normal_attack_available,
         front: 角色ID或null,
         characters: [{id,name,attribute,attack,hp,max_hp,shield,
                       harmony,energy,awakened,ultimate_turns,growth,shape,down_turns,
@@ -276,3 +276,8 @@ collapse为第六套官方预组，四人顺序固定heiyu/dafutier/canhong/ling
 新占卜选择携带multi_bottom=true、min_bottom与max_bottom：一般为0..实际检视张数，谕石为1..实际张数。choose_deck_order提交有序card_ids和bottom_card_ids；实体接口对应card_entity_ids和bottom_card_entity_ids。两份列表必须恰好且不重复地分割候选，顺序均有意义；逐张移回牌库后按bottoms顺序派发一次on_deck_reorder，内容层逐张结算并最后恢复抽牌／出击。多张收益不额外增加占卜次数。
 
 兼容旧单张bottom_card_id／bottom_card_entity_id：新选择中可转换为长度0或1的列表，但不得与显式列表冲突；已有黑羽旧待选择通过角色deck_order_spec钩子只读解析为现行多张限制，谕石按原操作卡识别至少一张；其他旧单张选择维持自身限制。私有投影仅向选择者提供人数限制与候选。全置底合法，空库不创建无合法动作的选择。新选择最多4张时一般有120种有序分割、谕石96种；合法动作精确列举，不把任一行当作无序集合。
+
+
+### 2026-10-09 玩家生命上限与噩梦目标
+
+PlayerEntity及双方公开side新增max_hp，初始30；旧快照、旧回放缺失时按30兼容。reduce_max_hp支持玩家，沿用逐点比例与四舍五入、护盾不消耗和终局检查；治疗及受伤目标枚举使用当前上限。公开棋盘和max_hp事件patch同步玩家上限，不添加隐藏信息。噩梦通过分配器的include_roles参数扩展至玩家、存活编队异能者及前排召唤物，其余分配调用维持原范围。残虹幻境改用既有V2_CARD_USED时机，C05沿用rule.combat_immune与battle／operation_end清理；不修改动作格式。

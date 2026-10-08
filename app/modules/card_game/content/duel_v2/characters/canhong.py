@@ -68,10 +68,10 @@ def _c04(c):
 
 
 def _c05(c):
-    mirage = _mirage(c)
-    c.sortie(no_counter=mirage)
-    if mirage and alive(c.state, c.side, c.cid):
-        c.energy(1, reason='幻境，「花开见血」')
+    add_effect(c.character, 'canhong.combat_immune', 'rule.combat_immune', True, op='allow',
+               source_entity_id=c.entity_id, source_key='C05', stacking='replace',
+               clear_on=('battle', 'operation_end', 'down'), show_marker=False, label='战斗免伤')
+    c.sortie()
 
 
 def _c06(c):
@@ -128,7 +128,7 @@ class Canhong:
         c.history('发动终结：施加 5 层「鸩火」。')
 
     @staticmethod
-    def after_card(c, card=None, actor_id=None, **_data):
+    def on_card_used(c, card=None, actor_id=None, **_data):
         if actor_id != c.cid or not card or card.get('type') != 'battle':
             return
         if alive(c.state, c.side, c.cid):

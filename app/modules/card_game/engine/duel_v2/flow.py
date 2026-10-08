@@ -41,7 +41,7 @@ def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=
     for side in SIDES:
         order = list(selected[side]['character_ids'])
         state['sides'][side] = PlayerEntity({
-            'name': name(state, side), 'hp': 30, 'shield': 0 if side == first_side else 5,
+            'name': name(state, side), 'hp': 30, 'max_hp': 30, 'shield': 0 if side == first_side else 5,
             'ap': 0, 'normal_attack_available': False, 'ultimate_available': False,
             'front': None, 'last_front': None,
             'order': order,
@@ -319,7 +319,7 @@ def targets(state, side, card):
         return result
     if policy == 'injured_role':
         result = []
-        if team['hp'] < 30:
+        if team['hp'] < team.get('max_hp', 30):
             result.append({'target_id': f'{side}:player'})
         for cid in team_order(state, side):
             h = hero(state, side, cid)

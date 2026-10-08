@@ -985,3 +985,8 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 ### 2026-10-09 回合内抽牌重复演出修复
 
 从牌库抽取衍生牌或临时复制时，不再同时生成gain与draw两个入手事件，统一由draw承担动画与手牌更新；直接生成牌保留gain演出。on_hand_added及满手牌处理保持，抽牌身份只向抽牌方公开。后端／回放／边界回归10项与动画回归36项通过；验证入口见演出协议本日专节。
+
+
+### 2026-10-09 即时幻境与玩家生命上限
+
+残虹幻境接入使用战斗牌时机，C05提供本次战斗免伤；噩梦随机分配扩展到对方角色，新月摇篮曲可削减玩家生命上限。纯规则层保存和结算玩家max_hp，观察／演出公开同一字段，前端仅显示上限变化；缺字段的旧数据默认30。具体规则见完整手册，字段契约见实现契约。验证：`.venv/bin/python -m unittest tests.test_duel_v2_mirage_nightmare tests.test_duel_v2_continuous_cast tests.test_duel_v2_engine tests.test_duel_v2_modifiers tests.test_duel_v2_catalog`；`node --test tests/js/duel_v2_player_max_hp.test.cjs tests/js/duel_v2_table_state.test.cjs tests/js/duel_v2_immunity_frame.test.cjs`。

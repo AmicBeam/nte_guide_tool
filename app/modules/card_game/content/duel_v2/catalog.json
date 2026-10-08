@@ -319,7 +319,7 @@
         {
           "id": "mechanism-nightmare",
           "name": "噩梦",
-          "description": "上限 10 层。施加方回合结束时，随机分配等同于层数的伤害给对方存活异能者。施加方下个回合开始时层数减半，向下取整；归零后消失。"
+          "description": "上限 10 层。施加方回合结束时，随机分配等同于层数的伤害给对方存活角色，包括玩家和前排召唤物。施加方下个回合开始时层数减半，向下取整；归零后消失。"
         }
       ]
     },
@@ -350,7 +350,7 @@
       "avatar": "/static/images/characters/avatar/残虹.png",
       "portrait": "/static/images/characters/portrait/残虹.webp",
       "role": "浊燃叠层、幻境与持续伤害",
-      "passive": "初始具有 2 点环合值。【浊燃】强化：重复触发时可叠层，上限 3 层。残虹使用战斗牌后，进入 3 个己方回合的幻境：攻击施加 1 层「蚀心」；造成伤害时，全部已施加的持续伤害各 +1 层。",
+      "passive": "初始具有 2 点环合值。【浊燃】强化：重复触发时可叠层，上限 3 层。残虹使用战斗牌时，进入 3 个己方回合的幻境：攻击施加 1 层「蚀心」；造成伤害时，全部已施加的持续伤害各 +1 层。",
       "awakened_passive": "施加 5 层「鸩火」。",
       "everness_id": 1036,
       "ultimate": {
@@ -1312,7 +1312,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "「噩梦」的伤害还会减少其等量生命上限，并为安魂曲回复等量生命。",
+      "description": "「噩梦」的伤害还会减少目标等量生命上限（包括玩家），并为安魂曲回复等量生命。",
       "starter_copies": 2,
       "hp": 6,
       "attack": 3
@@ -1402,10 +1402,10 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若残虹处于幻境，本次攻击不受反击，残虹获得 1 点能量。",
+      "description": "免疫战斗伤害。",
       "starter_copies": 0,
       "shield": 0,
-      "attack": 2
+      "attack": 1
     },
     {
       "id": "C06",

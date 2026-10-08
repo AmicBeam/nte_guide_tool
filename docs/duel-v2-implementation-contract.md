@@ -307,3 +307,7 @@ K01 先随机抽取至多三种不同的所属牌，直接进入 pending_choice.
 `GameEvent.V2_CARD_RELEASED=on_card_released` 在实际卡框和效果结算前广播。正常使用经过付款、`V2_CARD_USED` 及使用时效果后进入释放；`resolve_release` 直接建立释放操作，只广播释放并结算效果，不广播使用，不支付使用费用，不消费 `card_use` 瞬发授予，也不触发使用后／手牌标注结算。两条路径共用卡框与卡效结算，实体卡结算后的区域行为保留。
 
 C07 条件触发取出一张真实卡牌后调用 `resolve_release`，结束后恢复父操作；手动 C07 沿用普通 `resolve_play`。公开 `play` 事件可带 `release_only=true`，正文使用「自动释放」，`response=false`；使用／响应事件保持原来的时机含义。
+
+### 2026-10-09 对方出击完成时机
+
+纯规则引擎新增 `V2_OPPONENT_SORTIE_FINISHED` 内容回调（`on_opponent_sortie_finished`），携带 `attacker_side` 与 `attacker_id`，在普通／战斗牌／远程的整次出击结算后或独立追加攻击完成后，通知对方角色包。多段出击一次通知，未实际攻击、中途倒地或已结束对局不通知；反击不派发。武备触发仍按回调当刻的存活与装备检查，卡效留在所属角色内容文件。公开事件、动作协议与快照格式不变。

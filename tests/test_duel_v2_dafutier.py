@@ -61,7 +61,7 @@ class DafutierTest(unittest.TestCase):
         self.assertIn('dafutier', [c['id'] for c in get_catalog(include_test_characters=False)['characters']])
         self.assertTrue(CARDS['FF01']['derived'])
         self.assertEqual(CARDS['F02']['hp'], 6)
-        self.assertEqual(CARDS['F08']['hp'], 5)
+        self.assertEqual((CARDS['F08']['attack'], CARDS['F08']['hp']), (3, 6))
 
     def test_insight_once_each_global_turn_and_only_friendly_enemy_collapse(self):
         s = game()
@@ -208,7 +208,7 @@ class DafutierTest(unittest.TestCase):
         s = apply_action(s, 'a', dict(type='end_turn'))
         s = apply_action(s, 'b', dict(type='attack', character_id='zero'))
         self.assertEqual(hero(s, 'b', 'zero')['flags']['collapse_count'], 3)
-        self.assertEqual(hero(s, 'a', 'dafutier')['hp'], 5)
+        self.assertEqual(hero(s, 'a', 'dafutier')['hp'], 6)
 
     def test_black_weapon_triggers_on_ranged_sortie_but_not_counter(self):
         s = play(game(), 'F08')
@@ -227,18 +227,77 @@ class DafutierTest(unittest.TestCase):
         self.assertEqual(hero(s, 'b', 'zero')['flags'].get('collapse_count', 0), 0)
         self.assertEqual(hero(s, 'a', 'canhong')['hp'], 38)
 
-    def test_black_weapon_and_lake_stack_before_declared_sortie_damage(self):
+    def test_black_weapon_and_lake_stack_after_completed_sortie_damage(self):
         s = play(game(), 'F08')
         s['sides']['a']['front'] = 'zero'
         give(s, 'F06')
         s = apply_action(s, 'a', dict(type='end_turn'))
         s = apply_action(s, 'b', dict(type='attack', character_id='zero'))
         self.assertTrue(collapsed(hero(s, 'b', 'zero')))
-        self.assertEqual(hero(s, 'a', 'zero')['hp'], 40)
-        self.assertEqual(hero(s, 'b', 'zero')['hp'], 40)
-        self.assertFalse(any(e['type'] == 'attack' and e.get('actor') == 'b:zero'
+        self.assertEqual(hero(s, 'a', 'zero')['hp'], 38)
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], 38)
+        self.assertTrue(any(e['type'] == 'attack' and e.get('actor') == 'b:zero'
                              for e in s['events']))
         self.assertEqual(len(tokens(s)), 1)
+        self.assertEqual(hero(s, 'b', 'zero')['harmony'], 1)
+        self.assertEqual(hero(s, 'b', 'zero')['energy'], 2)
+        events = s['events']
+        attack_index = next(i for i, e in enumerate(events) if e['type'] == 'attack' and e.get('actor') == 'b:zero')
+        collapse_index = next(i for i, e in enumerate(events) if e['text'] == '零进入倾陷。')
+        self.assertLess(attack_index, collapse_index)
+
+    def test_black_weapon_waits_for_all_hits_and_triggers_once_per_sortie(self):
+        from app.modules.card_game.engine.duel_v2.flow import operation, finish_operation
+        s = play(game(), 'F08')
+        s['sides']['a']['front'] = 'zero'
+        s = apply_action(s, 'a', dict(type='end_turn'))
+        cursor = s['event_seq']
+        c = operation(s, 'b', 'zero')
+        c.sortie(hits=2)
+        finish_operation(s)
+        events = [e for e in s['events'] if e['seq'] > cursor]
+        attacks = [e for e in events if e['type'] == 'attack' and e.get('actor') == 'b:zero']
+        self.assertEqual(len(attacks), 2)
+        self.assertEqual(hero(s, 'a', 'zero')['hp'], 36)
+        self.assertEqual(hero(s, 'b', 'zero')['flags']['collapse_count'], 3)
+        collapse = next(e for e in events if e['type'] == 'collapse')
+        self.assertGreater(collapse['seq'], attacks[-1]['seq'])
+
+    def test_black_weapon_triggers_after_additional_attack_damage(self):
+        from app.modules.card_game.engine.duel_v2.combat import additional_attack
+        s = play(game(), 'F08')
+        s['sides']['a']['front'] = 'zero'
+        hero(s, 'b', 'zero')['flags']['collapse_count'] = 3
+        cursor = s['event_seq']
+        additional_attack(context(s, 'b', 'zero'), '光')
+        events = [e for e in s['events'] if e['seq'] > cursor]
+        self.assertEqual(hero(s, 'a', 'zero')['hp'], 38)
+        self.assertTrue(collapsed(hero(s, 'b', 'zero')))
+        self.assertLess(next(e['seq'] for e in events if e['type'] == 'combat'),
+                        next(e['seq'] for e in events if e['text'] == '零进入倾陷。'))
+
+    def test_black_weapon_does_not_trigger_for_sortie_interrupted_before_damage(self):
+        s = play(game(), 'F08')
+        s['sides']['a']['front'] = 'zero'
+        give(s, 'F06')
+        hero(s, 'b', 'zero')['flags']['collapse_count'] = 1
+        s = apply_action(s, 'a', dict(type='end_turn'))
+        cursor = s['event_seq']
+        s = apply_action(s, 'b', dict(type='attack', character_id='zero'))
+        events = [e for e in s['events'] if e['seq'] > cursor]
+        self.assertEqual(hero(s, 'a', 'zero')['hp'], 40)
+        self.assertTrue(collapsed(hero(s, 'b', 'zero')))
+        self.assertFalse(any(e['type'] == 'attack' for e in events))
+        self.assertEqual([e['amount'] for e in events if e['type'] == 'collapse' and 'amount' in e], [4])
+
+    def test_black_weapon_cannot_trigger_if_holder_dies_during_sortie(self):
+        s = play(game(), 'F08')
+        s['sides']['a']['front'] = 'dafutier'
+        s = apply_action(s, 'a', dict(type='end_turn'))
+        hero(s, 'b', 'zero')['base_attack'] = 10
+        s = apply_action(s, 'b', dict(type='attack', character_id='zero'))
+        self.assertEqual(hero(s, 'a', 'dafutier')['hp'], 0)
+        self.assertEqual(hero(s, 'b', 'zero')['flags'].get('collapse_count', 0), 0)
 
     def test_eye_counts_current_entry_support_and_caps_bonus_at_two(self):
         for previous, attack, meter in ((0, 4, 2), (2, 5, 3)):

@@ -3754,7 +3754,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "每当对方异能者出击时，使其倾陷值 +3。",
+      "description": "每当对方异能者出击后，使其倾陷值 +3。",
       "effect_id": "F08",
       "source": {
         "character_id": "1054",
@@ -3763,7 +3763,7 @@
       },
       "starter_copies": 0,
       "attack": 3,
-      "hp": 5
+      "hp": 6
     },
     {
       "id": "FF01",

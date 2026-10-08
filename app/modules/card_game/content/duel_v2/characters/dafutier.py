@@ -3,6 +3,7 @@ from random import Random
 
 from app.modules.card_game.content.duel_v2.characters.common import set_shape
 from app.modules.card_game.content.duel_v2.registry import register
+from app.modules.card_game.engine.events import GameEvent
 from app.modules.card_game.engine.duel_v2.state import (
     SIDES, add_collapse, add_hand, alive, card_instance, collapsed, damage,
     energy_max, finished, force_collapse, front_target, hero, other, team_order,
@@ -98,7 +99,7 @@ class Dafutier:
                'FF01': _insight}
     target_policies = {'F03': 'any_living_esper', 'F06': 'living_enemy_esper',
                        'FF01': 'collapsed_enemy_esper'}
-    weapon_hooks = {'F08': {'on_opponent_attack': _black_weapon}}
+    weapon_hooks = {'F08': {GameEvent.V2_OPPONENT_SORTIE_FINISHED: _black_weapon}}
 
     @staticmethod
     def on_collapse_entered(c, target_side, target_id, **_data):

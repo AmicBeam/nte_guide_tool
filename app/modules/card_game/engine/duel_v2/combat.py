@@ -513,6 +513,15 @@ def _operation_target(c):
     return None
 
 
+def _notify_opponent_sortie_finished(c):
+    if finished(c.state) or not alive(c.state, c.side, c.cid):
+        return
+    enemy = other(c.side)
+    carrier = next(iter(c.state['sides'][enemy]['characters']))
+    fire(c.for_character(enemy, carrier), GameEvent.V2_OPPONENT_SORTIE_FINISHED,
+         attacker_side=c.side, attacker_id=c.cid)
+
+
 def sortie(c, **spec):
     s, side, cid, op = c.state, c.side, c.cid, c.operation
     if _attack_stopped(c):
@@ -556,6 +565,7 @@ def sortie(c, **spec):
         if not finished(s) and alive(s, side, cid) and c.character['flags'].pop('return_after', False):
             move_out(s, side, cid)
             c.draw(1)
+    _notify_opponent_sortie_finished(c)
 
 
 def additional_attack(c, attribute, *, target=None, sync_attack=False, support_actor=None):
@@ -592,5 +602,7 @@ def additional_attack(c, attribute, *, target=None, sync_attack=False, support_a
                  actor_only=True, actor_id=borrowed['id'])
             fire(context.for_character(c.side, borrowed['id']), GameEvent.V2_SUPPORT_RESOLVED,
                  actor_only=True, actor_id=borrowed['id'])
+        if attacked:
+            _notify_opponent_sortie_finished(context)
     finally:
         c.state['operation'] = parent

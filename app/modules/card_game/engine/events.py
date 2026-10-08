@@ -44,6 +44,7 @@ class GameEvent(str, Enum):
     V2_COLLAPSE_ENTERED = 'on_collapse_entered'
     V2_DISSONANCE = 'on_dissonance'
     V2_OPPONENT_ATTACK = 'on_opponent_attack'
+    V2_OPPONENT_SORTIE_FINISHED = 'on_opponent_sortie_finished'
     V2_SUPPORT_RESOLVED = 'on_support_resolved'
 
 

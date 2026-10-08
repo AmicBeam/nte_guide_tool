@@ -69,12 +69,10 @@ def _a05(c):
 
 def _a06(c):
     from app.modules.card_game.engine.duel_v2.combat import apply_enter_harmony, enter
-    from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
     team = c.state['sides'][c.side]
     front = team.get('front')
     payer = hero(c.state, c.side, front) if front and front != c.cid else None
-    if (payer and not collapsed(payer) and payer.get('attribute') in ('魂', '咒')
-            and int(payer.get('harmony') or 0) < harmony_cap(c.state)):
+    if payer and not collapsed(payer) and payer.get('attribute') in ('魂', '咒'):
         c.operation['skip_nightmare'] = True
         kind = '浊燃' if payer['attribute'] == '咒' else '黯星'
         enter(c, resolve_harmony=False)
@@ -95,12 +93,12 @@ def _af01(c):
 def _a07(c):
     set_shape(c)
     if alive(c.state, c.side, c.cid):
-        apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=2)
+        apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=1)
 
 
 def _a07_turn_begin(c):
-    apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=2)
-    c.history('己方回合开始，「鎏金交响诗」施加 2 层「噩梦」。')
+    apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=1)
+    c.history('己方回合开始，「鎏金交响诗」施加 1 层「噩梦」。')
 
 
 @register

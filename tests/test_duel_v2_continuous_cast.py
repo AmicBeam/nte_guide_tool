@@ -294,7 +294,7 @@ class ContinuousCastTest(unittest.TestCase):
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'canhong'})
         self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 2)
         self.assertNotIn('burn', front_debuff(s, 'b'))  # No partner on first entry.
-        s = self.play(s, 'A06')
+        s = self.play(s, 'AF01')
         self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 0)
         self.assertEqual(front_debuff(s, 'b')['burn']['stacks'], 1)
         self.assertEqual(attack_value(hero(s, 'a', 'canhong'), s, 'a'), 2)
@@ -361,9 +361,41 @@ class ContinuousCastTest(unittest.TestCase):
         from app.modules.card_game.engine.duel_v2.context import EffectContext
         fire(EffectContext(s, 'a', 'anhunqu', {'side':'a'}), 'on_turn_begin', actor_only=True)
         self.assertEqual(h['shield'], 2)
-        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 4)
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 2)
         fire(EffectContext(s, 'a', 'anhunqu', {'side':'a'}), 'on_ultimate', actor_only=True)
-        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 9)
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 7)
+
+    def test_early_shift_has_no_attack_penalty_and_ignores_harmony_fullness(self):
+        for attribute in ('魂', '咒'):
+            for harmony in (0, 1, 2):
+                with self.subTest(attribute=attribute, harmony=harmony):
+                    s = self.game()
+                    s['sides']['a']['front'] = 'canhong'
+                    payer = hero(s, 'a', 'canhong')
+                    payer.update(attribute=attribute, harmony=harmony)
+                    s['sides']['b']['front'] = 'zero'
+                    hero(s, 'b', 'zero').update(hp=20, max_hp=20, shield=0)
+                    s = self.play(s, 'A06')
+                    hit = next(e for e in reversed(s['events']) if e['type'] == 'attack')
+                    self.assertEqual(hit['attack'], 2)
+                    self.assertEqual(hit['counter'], 0)
+                    self.assertEqual(hero(s, 'a', 'anhunqu')['hp'], 5)
+                    self.assertEqual(hero(s, 'a', 'canhong')['harmony'], harmony)
+                    self.assertEqual(s['sides']['a']['support_count'], 1)
+                    zone = front_debuff(s, 'b')
+                    self.assertIn('star' if attribute == '魂' else 'burn', zone)
+                    self.assertNotIn('nightmare', zone.get('dots') or {})
+
+    def test_gilded_symphony_adds_one_nightmare_on_equip_and_turn_start(self):
+        s = self.play(self.game(), 'A07')
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 1)
+        apply_dot(s, 'b', 'nightmare', by='a', source_cid='anhunqu', stacks=3)
+        begin_turn(s, 'b')
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 4)
+        begin_turn(s, 'a')
+        # The shared nightmare clock halves four before the weapon adds one.
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 3)
+        self.assertIn('己方回合开始，「鎏金交响诗」施加 1 层「噩梦」。', [e['text'] for e in s['events']])
 
     def test_distribution_merges_one_number_per_character(self):
         s = self.game()

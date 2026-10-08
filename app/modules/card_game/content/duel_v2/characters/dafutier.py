@@ -5,7 +5,7 @@ from app.modules.card_game.content.duel_v2.characters.common import set_shape
 from app.modules.card_game.content.duel_v2.registry import register
 from app.modules.card_game.engine.duel_v2.state import (
     SIDES, add_collapse, add_hand, alive, card_instance, collapsed, damage,
-    energy_max, finished, front_target, hero, knockdowns, other, team_order,
+    energy_max, finished, force_collapse, front_target, hero, other, team_order,
 )
 
 
@@ -66,14 +66,16 @@ def _truth(c):
 
 
 def _finale(c):
-    targets = [(side, cid) for side in SIDES for cid in list(team_order(c.state, side))
-               if alive(c.state, side, cid) and not hero(c.state, side, cid).get('summoned')
-               and collapsed(hero(c.state, side, cid))]
+    from app.modules.card_game.engine.duel_v2.continuous import living_espers
+    rng = Random(c.state['rng'])
+    targets = []
+    for side in SIDES:
+        candidates = living_espers(c.state, side)
+        if candidates:
+            targets.append((side, rng.choice(candidates)))
+    c.state['rng'] = rng.getrandbits(63)
     for side, cid in targets:
-        h = hero(c.state, side, cid)
-        h['hp'], h['last_hit_source'] = 0, f'{c.side}:{c.cid}'
-        c.history(f"「见此终幕」消灭了{h['name']}。", target_side=side, target_id=cid)
-    knockdowns(c.state)
+        force_collapse(c.state, side, cid, by=c.side)
 
 
 def _insight(c):

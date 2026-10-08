@@ -1247,7 +1247,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若己方前排为魂或咒属性且环合值未满，安魂曲以援护技登场并触发环合，不消耗环合值。以此形式出场不施加「噩梦」。",
+      "description": "若己方前排为魂或咒属性，安魂曲以援护技登场并触发环合，不消耗环合值。以此形式出场不施加「噩梦」。",
       "effect_id": "A06",
       "source": {
         "character_id": 1004,
@@ -1256,7 +1256,7 @@
       },
       "starter_copies": 0,
       "instant": false,
-      "attack": -2,
+      "attack": 0,
       "shield": 0
     },
     {
@@ -1283,7 +1283,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "装备时和己方回合开始时，施加 2 层「噩梦」。若「噩梦」消灭对方异能者，对对方玩家造成 2 点伤害。",
+      "description": "装备时和己方回合开始时，施加 1 层「噩梦」。若「噩梦」消灭对方异能者，对对方玩家造成 2 点伤害。",
       "starter_copies": 0,
       "attack": 2,
       "hp": 7
@@ -3732,7 +3732,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "消灭双方所有处于倾陷的异能者。",
+      "description": "随机使双方各 1 名异能者进入倾陷。",
       "effect_id": "F07",
       "source": {
         "character_id": "1054",

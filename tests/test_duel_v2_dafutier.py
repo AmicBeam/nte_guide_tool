@@ -345,15 +345,43 @@ class DafutierTest(unittest.TestCase):
                          [(e['target'], e['amount']) for e in again['events']
                           if e['type'] == 'damage' and e['text'].startswith('「完美真相」：')])
 
-    def test_finale_destroys_both_teams_collapsed_targets_without_hitting_others(self):
+    def test_finale_randomly_collapses_one_living_esper_per_side_without_damage(self):
+        from app.modules.card_game.engine.duel_v2.summons import summon_front
         s = game()
-        for side, cid in (('a', 'zero'), ('b', 'zero'), ('b', 'haiyue')):
-            force_collapse(s, side, cid)
-            hero(s, side, cid)['shield'] = 100
+        for side in ('a', 'b'):
+            hero(s, side, 'zero')['hp'] = 0
+            knockdowns(s)
+            summon_front(s, side, name='靶子', attack=0, hp=4)
+            for h in s['sides'][side]['characters'].values():
+                h['shield'] = 100
+        action = give(s, 'F07')
+        before = deepcopy(s)
+        opening, seq = capture_public_board(s), s['event_seq']
+        after = apply_action(s, 'a', action)
+        again = apply_action(json.loads(json.dumps(s)), 'a', action)
+        self.assertEqual(s, before)
+        self.assertNotEqual(after['rng'], before['rng'])
+        for side in ('a', 'b'):
+            targets = [cid for cid, h in after['sides'][side]['characters'].items() if collapsed(h)]
+            self.assertEqual(len(targets), 1)
+            self.assertNotEqual(targets[0], 'zero')
+            self.assertFalse(hero(after, side, targets[0]).get('summoned'))
+            self.assertEqual(targets, [cid for cid, h in again['sides'][side]['characters'].items() if collapsed(h)])
+            for cid, h in after['sides'][side]['characters'].items():
+                self.assertEqual((h['hp'], h['shield']), (hero(before, side, cid)['hp'], 100))
+        self.assertEqual(len(tokens(after)), 1)
+        self.assertEqual(replay_public_board(opening, [e for e in after['events'] if e['seq'] > seq]),
+                         capture_public_board(after))
+        self.assertEqual(capture_public_board(simulate_action(s, 'a', action)), capture_public_board(after))
+
+    def test_finale_still_collapses_friendly_side_when_no_enemy_is_alive(self):
+        s = game()
+        for cid in s['sides']['b']['order']:
+            hero(s, 'b', cid)['hp'] = 0
+        knockdowns(s)
         s = play(s, 'F07')
-        self.assertTrue(all(hero(s, side, cid)['down_turns'] == 3
-                            for side, cid in (('a', 'zero'), ('b', 'zero'), ('b', 'haiyue'))))
-        self.assertEqual(hero(s, 'a', 'haiyue')['hp'], 40)
+        self.assertEqual(sum(collapsed(h) for h in s['sides']['a']['characters'].values()), 1)
+        self.assertFalse(any(collapsed(h) for h in s['sides']['b']['characters'].values()))
 
     def test_projection_dynamic_text_counters_permanent_markers_and_replay(self):
         s = game(); give(s, 'F01'); give(s, 'FF01'); give(s, 'F05')

@@ -880,7 +880,7 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 
 新增暗属性 2/5 测试角色达芙蒂尔、F01–F08 八种可构筑牌和 FF01 洞察衍生牌；复用已有共享头像／立绘，不新增预组。卡牌与规则以完整手册达芙蒂尔专节为准，数值来自用户桌游方案。普通账号目录继续过滤测试角色。
 
-角色包负责失谐永久降倾陷上限、洞察生成／增伤／使用计数、造物之众回收、湖心花响应、两种武备及清场。通用引擎统一派发进入倾陷、两种失谐顺序、对方攻击和援护结算后时机；永久上限修正独立于倒地清理。实时牌面、计数、倾陷与公开回放同步；旧模型不自动重绑，本次不训练或部署。
+角色包负责失谐永久降倾陷上限、洞察生成／增伤／使用计数、造物之众回收、湖心花响应、两种武备及双方随机倾陷。通用引擎统一派发进入倾陷、两种失谐顺序、对方攻击和援护结算后时机；永久上限修正独立于倒地清理。实时牌面、计数、倾陷与公开回放同步；旧模型不自动重绑，本次不训练或部署。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_dafutier tests.test_duel_v2_catalog tests.test_duel_v2_lingke tests.test_duel_v2_engine tests.test_duel_v2_continuous_cast tests.test_duel_v2_presentation tests.test_duel_v2_replay`；模拟对拍单独运行 `.venv/bin/python -m unittest tests.test_duel_v2_simulation`。
 

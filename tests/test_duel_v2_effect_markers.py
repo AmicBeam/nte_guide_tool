@@ -49,6 +49,8 @@ class EffectMarkersTest(unittest.TestCase):
         for board in (observe(state, 'a'), observe(state, 'b'), capture_public_board(state)):
             c = next(c for c in board['sides']['a']['characters'] if c['id'] == 'iloy')
             kinds = {m['name']: m['kind'] for m in c['effect_markers']}
+            attributes = {m['name']: m.get('attribute') for m in c['effect_markers']}
+            self.assertEqual((attributes['光抗性'], attributes['灵抗性']), ('光', '灵'))
             self.assertEqual(kinds, {'光抗性': 'debuff', '灵抗性': 'buff',
                                      '攻击降低': 'debuff', '终结 · 回能': 'buff'})
 

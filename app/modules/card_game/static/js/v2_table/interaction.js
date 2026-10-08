@@ -227,9 +227,9 @@
             const card = choice.card;
             if (card && !card.hidden) {
               return (
-                '<button class="v2-choice-card" type="button" data-choice-id="' + V2.escapeAttr(choice.id) + '">' +
+                '<div class="v2-choice-card-wrap"><button class="v2-choice-card" type="button" data-choice-id="' + V2.escapeAttr(choice.id) + '">' +
                   TABLE.handCardHtml(card, { selection: true }) +
-                '</button>'
+                '</button><button class="v2-choice-detail" type="button" data-choice-detail="' + V2.escapeAttr(choice.id) + '" aria-label="查看' + V2.escapeAttr(card.name) + '详情">详情</button></div>'
               );
             }
             return (
@@ -241,6 +241,7 @@
           }).join('') : '<p class="subtle">没有候选。</p>') + '</div>' +
           (maxSelect ? '<button class="primary-btn" id="v2-choice-confirm" type="button"' + (minSelect ? ' disabled' : '') + '>' + confirmLabel + '（0 / ' + maxSelect + '）</button>' : '') +
         '</div>';
+      choiceOverlay.classList.remove('is-divination');
       choiceOverlay.classList.add('open');
       choiceOverlay.setAttribute('aria-hidden', 'false');
       if (ctx.setSelectionView) ctx.setSelectionView({
@@ -277,6 +278,19 @@
           closeOverlay(choiceOverlay);
           if (picked) config.onPick(picked);
         });
+      });
+      choiceOverlay.querySelectorAll('[data-choice-detail]').forEach(function (button) {
+        const choice = choices.find(function (item) { return String(item.id) === button.getAttribute('data-choice-detail'); });
+        function preview(event) {
+          if (event.pointerType === 'touch') return;
+          showHoverPreview({ kind: 'card', card: choice.card }, button,
+            { pointerType: event.type === 'focus' ? 'keyboard' : 'mouse' });
+        }
+        button.addEventListener('pointerenter', preview);
+        button.addEventListener('focus', preview);
+        button.addEventListener('pointerleave', function () { hideHoverPreview(); });
+        button.addEventListener('blur', function () { hideHoverPreview(); });
+        button.addEventListener('click', function () { showCardDetail(choice.card, null, button); });
       });
     }
 

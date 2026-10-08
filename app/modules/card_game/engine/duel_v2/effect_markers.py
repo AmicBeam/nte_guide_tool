@@ -1,9 +1,18 @@
 """Public pending-effect labels shared by live observations and replay patches."""
 
 
-def _marker(key, name, timing, description, clears_on_down=True, kind="buff"):
-    return dict(id=key, name=name, timing=timing, description=description,
-                clears_on_down=clears_on_down, kind=kind)
+def _marker(key, name, timing, description, clears_on_down=True, kind="buff", attribute=None):
+    marker = dict(id=key, name=name, timing=timing, description=description,
+                  clears_on_down=clears_on_down, kind=kind)
+    if attribute:
+        marker['attribute'] = attribute
+    return marker
+
+
+def _resistance_attribute(effect):
+    if effect['property'] == 'damage.resistance':
+        return next((c.get('args', {}).get('attribute') for c in effect.get('conditions', [])
+                     if c['id'] == 'damage_attribute'), None)
 
 
 def character_effect_markers(character, state=None, side=None):
@@ -22,14 +31,15 @@ def character_effect_markers(character, state=None, side=None):
                                '九原终结对该目标额外造成 2 点伤害，并消耗枚约', kind='debuff'))
     for attribute, value in (character.get('next_damage_resistance') or {}).items():
         markers.append(_marker('next_resistance', attribute + '抗性', '下次受到该属性伤害',
-                               f'{attribute}属性伤害抗性 {value:+d}', kind='debuff' if value < 0 else 'buff'))
+                               f'{attribute}属性伤害抗性 {value:+d}', kind='debuff' if value < 0 else 'buff',
+                               attribute=attribute))
     from .modifiers import all_effects, remaining
     for effect in all_effects(character):
         if not effect.get('show_marker') or effect.get('visibility') != 'public':
             continue
         left = remaining(effect, state, side)
         if effect['definition_id'] == 'lingke.resistance':
-            timing = '灵可下个己方回合开始时衰减'
+            timing = '持续到灵可下个己方回合开始时'
         elif effect['definition_id'] == 'lingke.taunt':
             timing = '下一次己方使用战斗牌'
         elif effect.get('consume_on') == 'damage':
@@ -44,7 +54,8 @@ def character_effect_markers(character, state=None, side=None):
         markers.append(_marker(effect['effect_id'], effect['label'], timing,
                                f"攻击 {amount:+d}" if effect['property'].startswith('attack.') and isinstance(amount, int)
                                else effect['label'], 'down' in effect['clear_on'],
-                               kind='debuff' if amount < 0 or effect['definition_id'] == 'lingke.taunt' else 'buff'))
+                               kind='debuff' if amount < 0 or effect['definition_id'] == 'lingke.taunt' else 'buff',
+                               attribute=_resistance_attribute(effect)))
     if flags.get('free_normal_attack_turn'):
         markers.append(_marker('free_normal_attack', '普通出击免费', '本回合',
                                '普通出击不消耗行动力，仍需普通出击机会'))
@@ -70,14 +81,16 @@ def character_effect_markers(character, state=None, side=None):
 def team_effect_markers(team):
     from .modifiers import all_effects
     markers = [_marker('next_resistance', attribute + '抗性', '玩家下次受到该属性伤害',
-                       f'{attribute}属性伤害抗性 {value:+d}', False, kind='debuff' if value < 0 else 'buff')
+                       f'{attribute}属性伤害抗性 {value:+d}', False, kind='debuff' if value < 0 else 'buff',
+                       attribute=attribute)
                for attribute, value in (team.get('next_damage_resistance') or {}).items()]
     for e in all_effects(team):
         if e['property'] == 'damage.resistance' and e.get('visibility') == 'public':
             markers.append(_marker(e['effect_id'], e['label'],
-                                   '灵可下个己方回合开始时衰减' if e['definition_id'] == 'lingke.resistance' else
+                                   '持续到灵可下个己方回合开始时' if e['definition_id'] == 'lingke.resistance' else
                                    '本回合下次受到对应属性伤害' if (e.get('expiry') or {}).get('phase') == 'turn_end' else '下次受到对应属性伤害',
-                                   e['label'], False, kind='debuff' if e['value'] < 0 else 'buff'))
+                                   e['label'], False, kind='debuff' if e['value'] < 0 else 'buff',
+                                   attribute=_resistance_attribute(e)))
     if team.get('empty_draw_wins'):
         markers.append(_marker('empty_draw_wins', '热爱异象的观察员', '无牌可抽时',
                                '无牌可抽时改为获胜；埃德嘉倒地后仍保留', False))

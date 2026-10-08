@@ -252,12 +252,20 @@
         const debuff = marker.kind ? marker.kind === 'debuff' : ['timed_attack', 'next_resistance'].includes(marker.id);
         const label = debuff ? '减益' : '增益';
         const path = debuff ? 'M12 4v16m-6-6 6 6 6-6' : 'M12 20V4m-6 6 6-6 6 6';
-        return '<span class="v2-effect-icon is-' + (debuff ? 'debuff' : 'buff') + '" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(label + '：' + detail) + '">' +
+        const attribute = resistanceAttribute(marker);
+        const icon = attribute ? V2.imageMarkup(V2.elementIcon(attribute), attribute, 'v2-effect-attribute') : '';
+        return '<span class="v2-effect-icon is-' + (debuff ? 'debuff' : 'buff') + (attribute ? ' is-resistance' : '') + '" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(label + '：' + detail) + '">' + icon +
           '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg></span>';
       }
       return '<span class="v2-chip is-' + (marker.kind === 'debuff' ? 'debuff' : 'buff') + '" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(detail) + '">' +
         '<span class="v2-effect-name">' + V2.escapeHtml(marker.name) + '</span><small>' + V2.escapeHtml(marker.timing || '') + '</small></span>';
     }).join('') + '</div>';
+  }
+
+  function resistanceAttribute(marker) {
+    // Old replay markers only carried the resistance label.
+    const legacy = String(marker.name || '').match(/^([光灵相咒暗魂])(?:属性)?(?:伤害)?抗性/);
+    return marker.attribute || (legacy && legacy[1]) || '';
   }
 
   function fillFrontDebuff(node, state) {
@@ -334,7 +342,11 @@
         effects.className = 'v2-zone-effects';
         zone.appendChild(effects);
       }
-      effects.innerHTML = effectMarkersHtml(state && state.effect_markers, 'v2-zone-effect-list');
+      // Player resistance is already displayed beside player life.
+      const zoneMarkers = ((state && state.effect_markers) || []).filter(function (marker) {
+        return !resistanceAttribute(marker);
+      });
+      effects.innerHTML = effectMarkersHtml(zoneMarkers, 'v2-zone-effect-list');
       effects.hidden = !effects.innerHTML;
     }
     fillHarmonySourceCaption(zone, state, !frontId);

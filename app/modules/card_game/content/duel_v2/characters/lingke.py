@@ -29,9 +29,9 @@ def _k01(c):
             unique.setdefault(card['card_id'], card)
     if not unique:
         return
-    c.choose('kit_multi', list(unique.values()), '选择 3 张不同的牌，再从中选择 1 张加入手牌')
-    count = min(3, len(unique))
-    c.state['pending_choice'].update(min_select=count, max_select=count)
+    candidates = list(unique.values())
+    shuffle(c.state, candidates)
+    Lingke.on_choice_cards(c, candidates[:3])
 
 
 def _k02(c):
@@ -125,7 +125,7 @@ class Lingke:
                    source_entity_id=c.entity_id, source_key='sync',
                    expiry=deadline(c.state, c.side, 1), label=f'{attribute}抗性 -1',
                    conditions=[{'id': 'damage_attribute', 'args': {'attribute': attribute}}])
-        c.history(f'「同频合击」：{attribute}抗性 -1，下个己方回合开始时衰减。',
+        c.history(f'「同频合击」：{attribute}抗性 -1，持续到下个己方回合开始时。',
                   target_side=target_side, target_id=target_id)
 
     @staticmethod

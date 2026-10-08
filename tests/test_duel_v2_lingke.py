@@ -207,7 +207,7 @@ class LingkeTest(unittest.TestCase):
         self.assertEqual(effect['expiry'], dict(side='a', turn=s['sides']['a']['turn_count'] + 1, phase='turn_start'))
         for view in (observe(s, 'a', include_previews=False), observe(s, 'b', include_previews=False), capture_public_board(s)):
             shown = next(h for h in view['sides']['b']['characters'] if h['id'] == 'zero')
-            self.assertTrue(any(m['timing'] == '灵可下个己方回合开始时衰减' for m in shown['effect_markers']))
+            self.assertTrue(any(m['timing'] == '持续到灵可下个己方回合开始时' for m in shown['effect_markers']))
         s = apply_action(json.loads(json.dumps(s)), 'b', dict(type='end_turn'))
         self.assertEqual(s['active_side'], 'a')
         self.assertEqual(resistance_values(hero(s, 'b', 'zero')), {})
@@ -282,15 +282,15 @@ class LingkeTest(unittest.TestCase):
                 s['sides']['a']['ap'] = 0
                 self.assertEqual(effective_card(s, 'a', card_instance(s, 'K01', 'a'))['card_id'], 'K01')
 
-    def test_k01_three_distinct_then_one_private_and_json_restorable(self):
+    def test_k01_random_three_distinct_then_one_private_and_json_restorable(self):
         s = game(); ids = [c['entity_id'] for c in s['sides']['a']['deck']]
         s = play(s, 'K01', 'a:zero')
-        pending = s['pending_choice']; self.assertEqual(pending['kind'], 'kit_multi')
-        self.assertEqual(pending['min_select'], 3)
+        pending = s['pending_choice']; self.assertEqual(pending['kind'], 'kit')
+        self.assertEqual(len(pending['cards']), 3)
+        self.assertNotIn('max_select', pending)
+        self.assertFalse(any(a['type'] == 'choose_cards' for a in legal_actions(s, 'a')))
         self.assertEqual(observe(s, 'b', include_previews=False)['pending_choice']['choices'], [])
         self.assertEqual(len({c['card_id'] for c in pending['cards']}), len(pending['cards']))
-        action = next(a for a in legal_actions(s, 'a') if a['type'] == 'choose_cards')
-        s = apply_action(json.loads(json.dumps(s)), 'a', action)
         count = observe(s, 'a', include_previews=False)['sides']['a']['deck_count']
         self.assertEqual(count, len(ids))
         chosen = s['pending_choice']['cards'][0]['instance_id']
@@ -300,6 +300,43 @@ class LingkeTest(unittest.TestCase):
         self.assertEqual(len(s['sides']['a']['deck']), len(ids)-1)
         all_ids = [c['entity_id'] for c in s['sides']['a']['deck'] + s['sides']['a']['hand']]
         self.assertEqual(set(all_ids), set(ids)); self.assertEqual(len(all_ids), len(set(all_ids)))
+
+    def test_k01_random_candidates_are_saved_and_not_fixed_by_deck_order(self):
+        base = game()
+        results = []
+        for seed in range(6):
+            s = deepcopy(base)
+            s['rng'] = seed
+            s = play(s, 'K01', 'a:zero')
+            cards = s['pending_choice']['cards']
+            self.assertEqual(len(cards), 3)
+            self.assertEqual(len({c['card_id'] for c in cards}), 3)
+            self.assertTrue(all(c['character_id'] == 'zero' for c in cards))
+            results.append(tuple(c['card_id'] for c in cards))
+            restored = json.loads(json.dumps(s))
+            self.assertEqual(observe(s, 'a', include_previews=False)['pending_choice'],
+                             observe(restored, 'a', include_previews=False)['pending_choice'])
+        self.assertGreater(len(set(results)), 1)
+        same = deepcopy(base)
+        same['rng'] = 0
+        self.assertEqual(tuple(c['card_id'] for c in play(same, 'K01', 'a:zero')['pending_choice']['cards']),
+                         results[0])
+
+    def test_k01_short_or_empty_owned_pool(self):
+        for count in (0, 1, 2):
+            with self.subTest(count=count):
+                s = game()
+                team = s['sides']['a']
+                team['deck'] = [card_instance(s, cid, 'a') for cid in ('Z01', 'Z01', 'Z02')[:count + 1]] if count else []
+                before = len(team['deck'])
+                s = play(s, 'K01', 'a:zero')
+                if count == 0:
+                    self.assertEqual(s['phase'], 'playing')
+                    continue
+                self.assertEqual(len(s['pending_choice']['cards']), count)
+                chosen = s['pending_choice']['cards'][0]['instance_id']
+                s = apply_action(s, 'a', dict(type='choose', choice_id=chosen))
+                self.assertEqual(len(s['sides']['a']['deck']), before - 1)
 
     def test_mark_attacks_selected_bench_before_battle_and_grants_energy(self):
         s = game(); s = play(s, 'K04', 'b:iloy'); energy = hero(s, 'a', 'lingke')['energy']

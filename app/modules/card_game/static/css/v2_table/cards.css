@@ -1308,3 +1308,13 @@
 }
 .v2-player-effects .v2-effect-icon.is-debuff,
 .v2-zone-effect-list .v2-chip.is-debuff { color: #ff9b9b; }
+
+.v2-effect-icon.is-resistance {
+  position: relative;
+  width: calc(30px * var(--table-layout-scale, 1));
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.v2-effect-icon .v2-effect-attribute { width: 70%; height: 100%; object-fit: contain; margin-right: auto; }
+.v2-effect-icon.is-resistance svg { position: absolute; right: -2px; bottom: -2px; width: 55%; height: 75%; filter: drop-shadow(0 1px 1px #000); }

@@ -285,3 +285,8 @@ PlayerEntity及双方公开side新增max_hp，初始30；旧快照、旧回放�
 ### 2026-10-09 单张手牌置顶／置底
 
 `pending_choice` 的 `hand_placement=true` 配合 `deck_order=true` 表示从当前手牌选择恰好 1 张放至牌库顶或底，候选仍在手牌，不计入待归还牌库张数。复用 `choose_deck_order`：`card_ids=[id], bottom_card_ids=[]` 为置顶，反之为置底；两组总共必须恰好 1 个合法实体。其余手牌不动，采用正常实体 ID 转换与 JSON 恢复。公开投影仅向操作者提供候选与布局标志，对手看不到候选。内容回调恢复原操作；不再次支付行动力，也不默认发动占卜效果。
+
+
+### 2026-10-09 灵可随机检索与属性标记
+
+K01 先随机抽取至多三种不同的所属牌，直接进入 pending_choice.kind=kit；只提供单张 choose，不再为新使用产生 kit_multi／choose_cards。候选、随机状态及 deck_cards 计数沿用现有快照契约；旧 kit_multi 待选择兼容仍保留。玩家与异能者的属性抗性 effect_markers 可携带 attribute，取值为六种属性之一；该字段只用于图标展示，规则计算仍从正式效果读取。

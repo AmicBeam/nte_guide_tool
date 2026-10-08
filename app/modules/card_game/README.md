@@ -994,3 +994,10 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 ### 2026-10-09 失明症与选择整理界面
 
 黑羽 P03 先抽 1 张，再从手牌选择恰好 1 张置于牌库顶或底并完成出击，不再占卜。`hand_placement` 复用后端牌库整理动作与前端 `divination.js`，候选仍保留在手牌；界面支持拖放、按钮放置、详情悬浮与收起查看战场。通用卡牌选择和占卜使用 `handCardHtml` 的选择样式，完整描述不截断，小屏滚动浏览。验证：`python -m unittest tests.test_duel_v2_heiyu tests.test_duel_v2_heiyu_presentation tests.test_duel_v2_entities`，以及 `node --test tests/js/duel_v2_*.test.cjs`。
+
+
+### 2026-10-09 灵可减抗与检索选择
+
+灵可减抗文案统一为「持续到下个己方回合开始时」。玩家减抗仅在生命面板旁、异能者减抗在角色旁，以属性图标和下箭头展示；战斗区不重复显示减抗气泡。K01 从指定异能者的牌库随机抽取至多三种不同牌，再经通用完整牌面弹窗选一张；九原 J01 也共用该弹窗、详情与收起查看战场。随机状态与候选由后端保存。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_effect_markers tests.test_duel_v2_engine tests.test_duel_v2_presentation tests.test_duel_v2_replay`；`node --test tests/js/duel_v2_effect_markers.test.cjs tests/js/duel_v2_card_choice.test.cjs tests/js/duel_v2_selection_view.test.cjs`。

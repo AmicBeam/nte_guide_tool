@@ -24,6 +24,16 @@
 .v2-choice-grid.has-cards .v2-choice-card { width: min(230px, 75vw); }
 .v2-choice-dialog.is-multi .v2-choice-grid.has-cards .v2-choice-card { width: 100%; }
 .v2-choice-card .v2-selection-card { padding-top: 12px; height: 100%; }
+.v2-choice-card-wrap { position: relative; display: flex; min-width: 0; }
+.v2-choice-card-wrap .v2-choice-card { display: flex; }
+.v2-choice-detail {
+  position: absolute; right: 5px; top: 5px; z-index: 2;
+  border: 1px solid #7098ab; border-radius: 5px; background: #102433ed;
+  color: #efffff; font-size: 11px; padding: 3px 5px; cursor: pointer;
+}
+.v2-choice-grid.has-cards .v2-choice-card-wrap .v2-selection-card { padding-top: 34px; }
+.v2-choice-dialog.is-multi .v2-choice-card-wrap { flex: 1 1 180px; max-width: 230px; }
+.v2-choice-card:hover .v2-selection-card, .v2-choice-card:focus-visible .v2-selection-card { outline: 2px solid #64e8d1; }
 .v2-divination-card .v2-selection-card { height: auto; }
 .v2-placement-actions { position: relative; display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .v2-placement-actions button { border: 1px solid #7098ab; border-radius: 5px; background: #102433; color: #efffff; padding: 5px 8px; cursor: pointer; }

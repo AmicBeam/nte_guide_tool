@@ -101,7 +101,7 @@ def capture_public_board(state):
         team['hand_count'] = len(source['hand'])
         team['deck_count'] = len(source['deck'])
         pending = state.get('pending_choice')
-        if pending and pending.get('side') == ps and (pending.get('kind') == 'inspect_top' or pending.get('deck_cards')):
+        if pending and pending.get('side') == ps and (pending.get('kind') in ('inspect_top', 'heiyu_divination') or pending.get('deck_cards')):
             team['deck_count'] += len(pending.get('cards') or ())
         from . import state as duel_state
         from .modifiers import public_effects
@@ -436,6 +436,9 @@ def interaction_for_action(state, side, action):
     if kind == 'ultimate':
         actor = entity_id(side, action.get('character_id'))
         return {'kind': 'ultimate', 'actor_id': actor, 'target_ids': [actor] if actor else []}
+    if kind == 'exit_ultimate':
+        actor = entity_id(side, action.get('character_id'))
+        return {'kind': 'ultimate', 'actor_id': actor, 'target_ids': [actor] if actor else []}
     if kind == 'play_card':
         card = next(c for c in state['sides'][side]['hand'] if c['instance_id'] == action['card_id'])
         from .state import effective_card
@@ -457,7 +460,7 @@ def interaction_for_action(state, side, action):
         if policy in ('enemy_hand', 'own_tactic_discard'):
             return {'kind': 'choice', 'actor_id': actor, 'target_ids': []}
         return {'kind': 'cast', 'actor_id': actor, 'target_ids': []}
-    if kind in ('choose', 'choose_cards', 'mulligan', 'cycle'):
+    if kind in ('choose', 'choose_cards', 'choose_deck_order', 'mulligan', 'cycle'):
         actor = None
         operation = state.get('operation')
         if operation:

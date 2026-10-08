@@ -72,7 +72,7 @@ def scrub_opponent_hand(view: dict, viewer: str) -> dict:
                 cleaned.append(_hidden_card())
         team['hand'] = cleaned
     pending = view.get('pending_choice')
-    if pending and (pending.get('side') != viewer or pending.get('kind') in ('inspect_top', 'hand_redraw')):
+    if pending and (pending.get('side') != viewer or pending.get('kind') in ('inspect_top', 'hand_redraw', 'heiyu_divination') or pending.get('deck_cards')):
         pending['choices'] = []
         pending['prompt'] = '对手正在选择' if pending.get('side') != viewer else '正在进行私有选择'
     return view

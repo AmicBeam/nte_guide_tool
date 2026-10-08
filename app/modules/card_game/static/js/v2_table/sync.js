@@ -9,7 +9,8 @@
       return V2.findLegalEntry(ctx.game, function (action) {
         if (action.type !== type) return false;
         return Object.keys(extra).every(function (key) {
-          if (key === 'card_ids') return V2.sameIdSet(action.card_ids, extra.card_ids);
+          if (key === 'card_ids') return type === 'choose_deck_order'
+            ? TABLE.sameDeckOrder(action.card_ids, extra.card_ids) : V2.sameIdSet(action.card_ids, extra.card_ids);
           return String(action[key] || '') === String(extra[key] || '');
         });
       });
@@ -23,6 +24,9 @@
     }
 
     ctx.findAction = findAction;
+    ctx.findUltimateAction = function (cid) {
+      return findAction('exit_ultimate', { character_id: cid }) || findAction('ultimate', { character_id: cid });
+    };
     ctx.actionsOf = actionsOf;
     ctx.playEntries = function (cardId) {
       return actionsOf('play_card', function (action) {
@@ -137,6 +141,7 @@
         sendAction: ctx.sendAction,
         showMulligan: ctx.forceMulliganStage ? true : (ctx.mulliganFinished ? false : undefined),
         findAction: locked ? function () { return null; } : findAction,
+        findUltimateAction: locked ? function () { return null; } : ctx.findUltimateAction,
         playEntries: locked ? function () { return []; } : ctx.playEntries,
       };
     }
@@ -294,9 +299,21 @@
     function renderChoiceFromServer() {
       if (ctx.replayMode) return;
       const pending = ctx.game && ctx.game.pending_choice;
+      if (ctx.localChoice && ctx.localChoice.kind === 'server-divination' &&
+          (!pending || pending.side !== ctx.viewer() || pending.kind !== 'heiyu_divination' ||
+          TABLE.divinationChoiceKey(pending) !== ctx.localChoice.key)) {
+        ctx.localChoice = null;
+        ctx.divinationDraft = null;
+        ctx.closeOverlay(ctx.choiceOverlay);
+      }
       if (ctx.localChoice || ctx.dragState) return;
       if (!pending || pending.side !== ctx.viewer()) {
         if (!ctx.localChoice) ctx.closeOverlay(ctx.choiceOverlay);
+        return;
+      }
+      if (ctx.busy || ctx.playingEvents) return;
+      if (pending.kind === 'heiyu_divination' && ctx.openDivinationChoice) {
+        ctx.openDivinationChoice(pending);
         return;
       }
       ctx.openChoice({

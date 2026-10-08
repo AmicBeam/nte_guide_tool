@@ -193,6 +193,21 @@ def normalize_entity_action(state, side, action):
         if 'card_ids' in result and result['card_ids'] != values:
             raise ValueError('Conflicting mulligan entity IDs')
         result['card_ids'] = values
+    if 'bottom_card_entity_id' in result:
+        eid = result.pop('bottom_card_entity_id')
+        if eid in (None, ''):
+            result['bottom_card_id'] = None
+        else:
+            try:
+                card = resolve_entity(state, eid)
+            except KeyError as exc:
+                raise ValueError('Unknown card entity ID') from exc
+            if not isinstance(card, CardEntity):
+                raise ValueError('Expected a card entity')
+            value = card['instance_id']
+            if result.get('bottom_card_id') not in (None, value):
+                raise ValueError('Conflicting legacy and entity target')
+            result['bottom_card_id'] = value
     return result
 
 
@@ -222,6 +237,10 @@ def entity_action(state, side, action):
                 result.pop('target_id')
     if 'card_ids' in result:
         result['card_entity_ids'] = [cards[cid]['entity_id'] for cid in result.pop('card_ids')]
+    bottom = result.get('bottom_card_id')
+    if bottom in cards:
+        result['bottom_card_entity_id'] = cards[bottom]['entity_id']
+        result.pop('bottom_card_id')
     return result
 
 

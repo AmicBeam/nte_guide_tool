@@ -64,7 +64,7 @@
     }
 
     function closeOverlay(node) {
-      node.classList.remove('open');
+      node.classList.remove('open', 'is-divination');
       node.setAttribute('aria-hidden', 'true');
       node.innerHTML = '';
     }
@@ -862,9 +862,8 @@
         const awakenBtn = event.target.closest('[data-ultimate-id], [data-awaken-id]');
         if (awakenBtn) {
           event.preventDefault();
-          ctx.submitEntry(ctx.findAction('ultimate', {
-            character_id: awakenBtn.getAttribute('data-ultimate-id') || awakenBtn.getAttribute('data-awaken-id'),
-          }));
+          const cid = awakenBtn.getAttribute('data-ultimate-id') || awakenBtn.getAttribute('data-awaken-id');
+          ctx.submitEntry(ctx.findUltimateAction(cid));
           return;
         }
         const inspect = event.target.closest('[data-inspect-character]');
@@ -961,6 +960,7 @@
     });
     choiceOverlay.addEventListener('click', function (event) {
       if (event.target === choiceOverlay) {
+        if (ctx.localChoice && ctx.localChoice.kind === 'server-divination') return;
         markRaisedCard(ctx.localChoice && ctx.localChoice.cardId, false);
         ctx.localChoice = null;
         closeOverlay(choiceOverlay);
@@ -1038,6 +1038,7 @@
     ctx.handleActivate = handleActivate;
     ctx.legalDrop = legalDrop;
     ctx.groupedPlay = groupedPlay;
+    if (TABLE.bindDivination) TABLE.bindDivination(ctx, hoverCardMarkup);
   }
 
   TABLE.bindInteraction = bindInteraction;

@@ -562,7 +562,7 @@
     if (action.type === 'attack') {
       return { kind: 'attack', actor_id: entityId(side, action.character_id), target_ids: [] };
     }
-    if (action.type === 'ultimate') {
+    if (action.type === 'ultimate' || action.type === 'exit_ultimate') {
       return { kind: 'ultimate', actor_id: entityId(side, action.character_id), target_ids: [] };
     }
     if (action.type === 'play_card') {
@@ -584,7 +584,7 @@
       }
       return { kind: 'cast', actor_id: card ? entityId(side, card.character_id) : null, target_ids: [] };
     }
-    if (action.type === 'choose' || action.type === 'cycle' || action.type === 'mulligan') {
+    if (action.type === 'choose' || action.type === 'choose_deck_order' || action.type === 'cycle' || action.type === 'mulligan') {
       return { kind: 'choice', actor_id: null, target_ids: [] };
     }
     return { kind: 'other', actor_id: null, target_ids: [] };

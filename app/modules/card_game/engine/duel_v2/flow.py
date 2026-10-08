@@ -1,7 +1,7 @@
 """Pure immutable public commands and sequential turn/choice orchestration."""
 from copy import deepcopy
 from .entities import PlayerEntity, allocate_entity_id, clone_state, hydrate_entities, normalize_entity_action
-from itertools import combinations
+from itertools import combinations, permutations
 from random import Random
 
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, validate_deck
@@ -285,6 +285,10 @@ def targets(state, side, card):
     if policy == 'downed_ally':
         return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
                 if hero(state, side, cid)['down_turns'] > 0]
+    if policy == 'other_downed_ally':
+        return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
+                if cid != card['character_id'] and hero(state, side, cid)['down_turns'] > 0
+                and not hero(state, side, cid).get('summoned')]
     if policy == 'downed_enemy':
         foe = other(side)
         return [{'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
@@ -363,6 +367,26 @@ def normal_attack_payment(state, side, cid):
     return offer if isinstance(offer, dict) else None
 
 
+def _is_deck_order_choice(pending):
+    return bool(pending and (pending.get('kind') == 'heiyu_divination' or pending.get('deck_order')))
+
+
+def deck_order_actions(pending):
+    ids = [card['instance_id'] for card in pending['cards']]
+    max_bottom = int(pending.get('max_bottom') if pending.get('max_bottom') is not None else 1)
+    actions = [{'type': 'choose_deck_order', 'card_ids': list(order), 'bottom_card_id': None}
+               for order in permutations(ids)]
+    if max_bottom >= 1:
+        for bottom in ids:
+            rest = [item for item in ids if item != bottom]
+            if rest:
+                actions.extend({'type': 'choose_deck_order', 'card_ids': list(order), 'bottom_card_id': bottom}
+                               for order in permutations(rest))
+            else:
+                actions.append({'type': 'choose_deck_order', 'card_ids': [], 'bottom_card_id': bottom})
+    return actions
+
+
 def legal_actions(state, side=None):
     side = side or acting_side(state)
     if side not in SIDES or finished(state):
@@ -389,6 +413,8 @@ def legal_actions(state, side=None):
                              for group in combinations(ids, count)]
         return result + [{'type': 'choose_cards', 'card_ids': list(group)}
                          for size in range(min(3, len(ids)) + 1) for group in combinations(ids, size)]
+    if phase == 'choice' and _is_deck_order_choice(state['pending_choice']):
+        return result + deck_order_actions(state['pending_choice'])
     if phase == 'choice':
         return result + [{'type': 'choose', 'choice_id': c['instance_id']}
                          for c in state['pending_choice']['cards']]
@@ -409,10 +435,12 @@ def legal_actions(state, side=None):
                               for target in aimed)
             else:
                 result.append({'type': 'attack', 'character_id': cid})
-        if (ultimate_remaining(state, side) and h['energy'] >= energy_cap(state, h)
+        ctx = EffectContext(state, side, cid, {'side': side})
+        if not h.get('summoned') and decide(ctx, 'can_exit_ultimate', False, actor_only=True):
+            result.append({'type': 'exit_ultimate', 'character_id': cid})
+        elif (ultimate_remaining(state, side) and h['energy'] >= energy_cap(state, h)
                 and h.get('ultimate_used_turn') != state['turn'] and not h.get('summoned')
-                and decide(EffectContext(state, side, cid, {'side': side}),
-                           'can_ultimate', True, actor_only=True)):
+                and decide(ctx, 'can_ultimate', True, actor_only=True)):
             result.append({'type': 'ultimate', 'character_id': cid})
     for physical in team['hand']:
         card = effective_card(state, side, physical)
@@ -592,6 +620,12 @@ def begin_turn(state, side):
                 state['turn_start_pending'] = side
         else:
             draw(state, side)
+            fire(EffectContext(state, side, carrier, {'side': side}), 'after_turn_draw')
+            if state['phase'] == 'choice':
+                pending = state.get('pending_choice') or {}
+                if not state.get('operation'):
+                    operation(state, side, pending.get('actor') or carrier)
+                state['turn_start_pending'] = side
     if not finished(state):
         extra = int(team.pop('extra_ap', 0) or 0)
         if flags.get('ap_per_turn') is not None:
@@ -634,6 +668,12 @@ def tick_front_debuff(state, side):
             status['left'] = max(0, left - 1)
             if status['left'] == 0:
                 zone.pop(kind, None)
+                if kind == 'star' and int(status.get('renewals') or 0) > 0 and not finished(state):
+                    from .combat import apply_dark_star
+                    by = status.get('by') or other(side)
+                    source = status.get('source_cid') or team_order(state, by)[0]
+                    apply_dark_star(EffectContext(state, by, source, {'side': by, 'actor': source}),
+                                    renewals=int(status['renewals']) - 1)
         log(state, '战斗区状态倒计时更新。', 'countdown', side=side,
             actor=f'{side}:front', target=f'{side}:front')
 
@@ -657,6 +697,10 @@ def expire_turn_zone_states(state, side):
         zone = front_debuff(state, owner)
         for kind in ('delay', 'weave', 'stain'):
             status = zone.get(kind)
+            if status and kind == 'stain' and int(status.get('ends_left') or 0) > 1:
+                status['ends_left'] -= 1
+                status['expires_side'] = other(side)
+                continue
             if status and status.get('expires_side', status.get('by') if kind != 'delay' else None) == side:
                 zone.pop(kind, None)
                 log(state, '本回合战斗区状态结束。', 'countdown', side=owner,
@@ -849,6 +893,36 @@ def choose(state, side, choice_id):
             save_turn_start(state, state.pop('turn_start_pending'))
 
 
+def resolve_deck_order(state, side, action):
+    pending = state['pending_choice']
+    cards = list(pending['cards'])
+    by_id = {card['instance_id']: card for card in cards}
+    top_ids = list(action.get('card_ids') or [])
+    bottom_id = action.get('bottom_card_id')
+    inspected = [card['instance_id'] for card in cards]
+    chosen = list(top_ids) + ([bottom_id] if bottom_id else [])
+    if (len(set(chosen)) != len(chosen) or set(chosen) != set(inspected)
+            or (bottom_id and bottom_id in top_ids)
+            or any(item not in by_id for item in chosen)):
+        raise ValueError('当前不能执行此操作：请检查回合、行动力、角色状态和目标。')
+    team = state['sides'][side]
+    team['deck'][0:0] = [by_id[item] for item in top_ids]
+    bottom = by_id[bottom_id] if bottom_id else None
+    if bottom is not None:
+        team['deck'].append(bottom)
+    actor = pending.get('actor') or (state.get('operation') or {}).get('actor')
+    execute = pending.get('execute_divination')
+    state['phase'], state['pending_choice'] = 'playing', None
+    if actor:
+        fire(EffectContext(state, side, actor, state.get('operation') or {'side': side, 'actor': actor}),
+             'on_deck_reorder', actor_only=True, bottom=bottom, execute_divination=execute)
+    if state['phase'] != 'choice':
+        finish_operation(state)
+        if state.get('turn_start_pending'):
+            from .temporal import save_turn_start
+            save_turn_start(state, state.pop('turn_start_pending'))
+
+
 def redraw_hand(state, side, card_ids):
     from .presentation import public_card
     team = state['sides'][side]
@@ -923,12 +997,16 @@ def apply_action(state, side, action):
             redraw_hand(result, side, candidate['card_ids'])
     elif kind == 'choose':
         choose(result, side, candidate['choice_id'])
+    elif kind == 'choose_deck_order':
+        resolve_deck_order(result, side, candidate)
     elif kind == 'end_turn':
         end_turn(result, side)
     elif kind == 'ultimate':
         team['ultimates_used'] = int(team.get('ultimates_used', 0)) + 1
         team['ultimate_available'] = bool(ultimate_remaining(result, side))
         start_ultimate(result, side, candidate['character_id'], spent_ap=False)
+    elif kind == 'exit_ultimate':
+        end_ultimate(result, side, candidate['character_id'])
     elif kind == 'attack':
         cid = candidate['character_id']
         payment = normal_attack_payment(result, side, cid)
@@ -941,7 +1019,8 @@ def apply_action(state, side, action):
         c.operation['normal_attack'] = True
         fire(c, 'pay_normal_attack', actor_only=True, payment=payment)
         c.sortie(bonus=payment.get('bonus', 0))
-        finish_operation(result)
+        if result['phase'] != 'choice':
+            finish_operation(result)
     else:
         card = next(c for c in team['hand'] if c['instance_id'] == candidate['card_id'])
         team['hand'].remove(card)

@@ -156,12 +156,13 @@ class EffectContext:
         damage(self.state, side, cid, amount, source=f'{self.side}:{self.cid}',
                kind='followup', group_id=next_group_id(self.state), reason=reason)
 
-    def choose(self, kind, cards, prompt):
+    def choose(self, kind, cards, prompt, **extra):
         if finished(self.state) or not cards:
             return
         self.state['phase'] = 'choice'
-        self.state['pending_choice'] = {'side': self.side, 'kind': kind, 'prompt': prompt,
-                                        'cards': cards}
+        pending = {'side': self.side, 'kind': kind, 'prompt': prompt, 'cards': cards}
+        pending.update(extra)
+        self.state['pending_choice'] = pending
 
     def discard_choice(self):
         self.choose('discard', list(self.state['sides'][self.side]['hand']), '选择 1 张手牌弃置')

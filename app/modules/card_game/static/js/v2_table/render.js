@@ -142,7 +142,7 @@
     const mobileCard = window.matchMedia('(pointer: coarse) and (max-width: 1200px)').matches;
     const actions = [];
     if (options.canAwaken) {
-      actions.push('<button class="v2-awaken-btn" type="button" data-ultimate-id="' + V2.escapeAttr(data.id) + '">终结</button>');
+      actions.push('<button class="v2-awaken-btn" type="button" data-ultimate-id="' + V2.escapeAttr(data.id) + '">' + V2.escapeHtml(options.ultimateLabel || '终结') + '</button>');
     }
     const panelSig = [attack, hp, shield, data.harmony, energyNow, energyMax, data.awakened ? 1 : 0, data.jingu, data.protagonist_aura, data.beast_fangs].join('|');
     const prevPanel = node.getAttribute('data-pop-sig');
@@ -319,12 +319,15 @@
     }
     const character = TABLE.characterMap(state)[frontId] || V2.characterFallback(frontId);
     const node = ensureCharacterNode(ctx.pool, side, frontId);
+    const ultimate = canAct && !isOpponent && (ctx.findUltimateAction
+      ? ctx.findUltimateAction(frontId) : ctx.findAction('ultimate', { character_id: frontId }));
     fillCharacterCard(node, character, {
       side: side,
       isOpponent: isOpponent,
       usePortrait: true,
       canAttack: canAct && !isOpponent && Boolean(ctx.findAction('attack', { character_id: frontId })),
-      canAwaken: canAct && !isOpponent && Boolean(ctx.findAction('ultimate', { character_id: frontId })),
+      canAwaken: Boolean(ultimate),
+      ultimateLabel: ultimate && ultimate.action.type === 'exit_ultimate' ? (ultimate.label || '退出救世魔女') : '终结',
       records: frontId === 'xun' ? ((state && state.records) || []) : null,
     });
     slot.appendChild(node);
@@ -361,12 +364,15 @@
         return;
       }
       const node = ensureCharacterNode(ctx.pool, side, character.id);
+      const ultimate = canAct && !isOpponent && (ctx.findUltimateAction
+        ? ctx.findUltimateAction(character.id) : ctx.findAction('ultimate', { character_id: character.id }));
       fillCharacterCard(node, character, {
         side: side,
         isOpponent: isOpponent,
         usePortrait: true,
         canAttack: canAct && !isOpponent && Boolean(ctx.findAction('attack', { character_id: character.id })),
-        canAwaken: canAct && !isOpponent && Boolean(ctx.findAction('ultimate', { character_id: character.id })),
+        canAwaken: Boolean(ultimate),
+        ultimateLabel: ultimate && ultimate.action.type === 'exit_ultimate' ? (ultimate.label || '退出救世魔女') : '终结',
         placeholder: false,
         records: character.id === 'xun' ? ((state && state.records) || []) : null,
       });

@@ -29,7 +29,7 @@ COSTUME_SOURCES = {cid: asset for asset in json.loads(
 
 STARTER_CHARACTERS = ('nanali', 'iloy', 'zero', 'jiuyuan')
 ATTRIBUTE_ORDER = ('光', '灵', '相', '暗', '咒', '魂')
-CARD_PREFIXES = {'nanali': 'N', 'zero': 'Z', 'jiuyuan': 'J', 'xun': 'X'}
+CARD_PREFIXES = {'nanali': 'N', 'zero': 'Z', 'jiuyuan': 'J', 'xun': 'X', 'heiyu': 'P'}
 EXPECTED_STARTER_COPIES = 2
 STATIC_FILES = {
     'nanali': ('images/characters/avatar/娜娜莉.webp', 'images/characters/portrait/娜娜莉.webp'),
@@ -38,6 +38,7 @@ STATIC_FILES = {
     'xun': ('images/characters/avatar/浔.webp', 'images/characters/portrait/浔.webp'),
     'bohe': ('images/characters/avatar/薄荷.webp', 'images/characters/portrait/薄荷.webp'),
     'baicang': ('images/characters/avatar/白藏.webp', 'images/characters/portrait/白藏.webp'),
+    'heiyu': ('images/characters/avatar/黑羽.webp', 'images/characters/portrait/黑羽.webp'),
 }
 
 
@@ -254,7 +255,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         for character_id in CATALOG_ORDER:
             owned = [card_id for card_id, card in named.items() if card['character_id'] == character_id]
             card_07, card_08 = CARDS[owned[6]], CARDS[owned[7]]
-            self.assertEqual(card_08['source']['type'], 'fashion' if card_08['id'] in COSTUME_SOURCES
+            self.assertEqual(card_08['source']['type'], 'fashion' if card_08['id'] in COSTUME_SOURCES or character_id == 'heiyu'
                              else 'ability' if character_id in ('yi', 'adler') else 'arc', character_id)
             for card in (card_07, card_08):
                 if card['id'] in COSTUME_SOURCES:
@@ -262,7 +263,7 @@ class DuelV2CatalogTest(unittest.TestCase):
                     self.assertEqual(card['name'], source['fashion_name'].removeprefix('「').removesuffix('」'))
                     self.assertEqual(card['source']['fashion_id'], source['fashion_id'])
                     self.assertEqual(card['source']['index'], int(card['id'][-2:]))
-            if card_07['id'] in COSTUME_SOURCES:
+            if card_07['id'] in COSTUME_SOURCES or character_id == 'heiyu':
                 self.assertEqual(card_07['source']['type'], 'fashion', character_id)
             elif character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc', character_id)
@@ -274,7 +275,7 @@ class DuelV2CatalogTest(unittest.TestCase):
     def test_source_metadata_keeps_character_ids_and_naming_slots(self) -> None:
         # Offline metadata contract; official-name verification belongs to the
         # source review documented in docs/everness-item-chain-card-design.md.
-        expected_ids = {'nanali': 1010, 'zero': 1051, 'jiuyuan': 1055, 'xun': 1052}
+        expected_ids = {'nanali': 1010, 'zero': 1051, 'jiuyuan': 1055, 'xun': 1052, 'heiyu': 1042}
         for character_id, prefix in CARD_PREFIXES.items():
             for index in range(1, 7):
                 card = CARDS[f'{prefix}{index:02d}']
@@ -285,8 +286,8 @@ class DuelV2CatalogTest(unittest.TestCase):
             card_08 = CARDS[f'{prefix}08']
             self.assertEqual(card_07['source']['character_id'], expected_ids[character_id])
             self.assertEqual(card_08['source']['character_id'], expected_ids[character_id])
-            self.assertEqual(card_08['source']['type'], 'fashion' if card_08['id'] in COSTUME_SOURCES else 'arc')
-            if card_07['id'] in COSTUME_SOURCES:
+            self.assertEqual(card_08['source']['type'], 'fashion' if card_08['id'] in COSTUME_SOURCES or character_id == 'heiyu' else 'arc')
+            if card_07['id'] in COSTUME_SOURCES or character_id == 'heiyu':
                 self.assertEqual(card_07['source']['type'], 'fashion')
             elif character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc')

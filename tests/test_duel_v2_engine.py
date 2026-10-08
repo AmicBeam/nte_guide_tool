@@ -1030,7 +1030,7 @@ class DuelV2EngineTest(unittest.TestCase):
                 a = next(a for a in legal_actions(s) if a['type'] == 'play_card' and a['card_id'] == card['instance_id'])
                 s = apply_action(s, 'a', a)
                 while s['phase'] == 'choice':
-                    s = apply_action(s, 'a', next(a for a in legal_actions(s) if a['type'] in ('choose', 'choose_cards')))
+                    s = apply_action(s, 'a', next(a for a in legal_actions(s) if a['type'] in ('choose', 'choose_cards', 'choose_deck_order')))
                 self.assertEqual(s['phase'], 'playing')
                 spent = 0 if CARDS[cid].get('instant') else CARDS[cid]['cost']
                 if CARDS[cid].get('free_if_surplus'): spent = 0

@@ -179,6 +179,24 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
         c.on_shape(GameEvent.V2_HARMONY_RESOLVED, operation=op)
 
 
+def apply_dark_star(c, *, renewals=None):
+    s, side, cid = c.state, c.side, c.cid
+    team = s['sides'][side]
+    enemy, target = front_target(s, side)
+    team['dark_star_count'] = int(team.get('dark_star_count', 0)) + 1
+    zone = front_debuff(s, enemy)
+    had_burn = bool(zone.get('burn'))
+    zone['star'] = {'left': 2, 'by': side, 'source_cid': cid,
+                    'renewals': int(decide(c, 'dark_star_renewals', 0) or 0) if renewals is None else int(renewals)}
+    log(s, '对方战斗区获得黯星。', 'harmony',
+        side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
+    if had_burn:
+        add_collapse(s, enemy, target, 1, by=side)
+        log(s, f"{c.character['name']}触发失谐。", 'harmony', side=side, source=cid,
+        actor=f'{side}:{cid}', target=f'{enemy}:{target}')
+        fire(c, GameEvent.V2_DISSONANCE, enemy=enemy, target_id=target)
+
+
 def resolve_harmony_effect(c, kind):
     """Apply an effect without fabricating entry, payment or support events."""
     s, side, cid, op = c.state, c.side, c.cid, c.operation
@@ -214,23 +232,14 @@ def resolve_harmony_effect(c, kind):
         from .continuous import apply_burn
         apply_burn(s, enemy, by=side, source_cid=cid)
     elif kind == '黯星':
-        team['dark_star_count'] = int(team.get('dark_star_count', 0)) + 1
-        zone = front_debuff(s, enemy)
-        had_burn = bool(zone.get('burn'))
-        zone['star'] = {'left': 2, 'by': side}
-        log(s, '对方战斗区获得黯星。', 'harmony',
-            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
-        if had_burn:
-            add_collapse(s, enemy, target, 1, by=side)
-            log(s, f"{c.character['name']}触发失谐。", 'harmony', side=side, source=cid,
-                actor=f'{side}:{cid}', target=f'{enemy}:{target}')
-            fire(c, GameEvent.V2_DISSONANCE, enemy=enemy, target_id=target)
+        apply_dark_star(c)
     elif kind == '覆纹':
         front_debuff(s, enemy)['weave'] = {'by': side, 'expires_side': s['active_side']}
         log(s, '对方战斗区获得覆纹。', 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
     elif kind == '浸染':
-        front_debuff(s, enemy)['stain'] = {'by': side, 'expires_side': s['active_side']}
+        front_debuff(s, enemy)['stain'] = {'by': side, 'expires_side': s['active_side'],
+                                              'ends_left': max(1, int(decide(c, 'stain_duration', 1) or 1))}
         log(s, '对方战斗区获得浸染。', 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
     elif kind == '同频':
@@ -281,6 +290,12 @@ def intercept_enter(c):
     apply_enter_harmony(c, payer_id, kind, as_support=False)
 
 
+def _clear_battle_effects(state):
+    from .modifiers import clear, entities
+    for _, holder in entities(state):
+        clear(holder, 'battle')
+
+
 def attack(c, spec, index):
     s, side, cid, op = c.state, c.side, c.cid, c.operation
     enemy, target_id = spec.get('target') or front_target(s, side)
@@ -299,6 +314,7 @@ def attack(c, spec, index):
             trigger_responses(s, enemy, 'ally_attacked', target_id=target_id)
         if finished(s) or not alive(s, side, cid):
             settle_deferred_card_marks(s)
+            _clear_battle_effects(s)
             return
         if not spec.get('target'):
             enemy, target_id = front_target(s, side)
@@ -306,7 +322,7 @@ def attack(c, spec, index):
     if c.entity_id not in attacked:
         attacked.append(c.entity_id)
     fire(c.for_character(enemy, target_id if is_esper(target_id) else next(iter(s['sides'][enemy]['characters']))),
-         GameEvent.V2_OPPONENT_ATTACK, attacker_side=side, attacker_id=cid)
+         GameEvent.V2_OPPONENT_ATTACK, attacker_side=side, attacker_id=cid, target_id=target_id)
     h = c.character
     target = hero(s, enemy, target_id) if is_esper(target_id) else s['sides'][enemy]
     attribute = spec.get('attribute') or h['attribute']
@@ -412,10 +428,12 @@ def attack(c, spec, index):
     from .flow import settle_deferred_card_marks
     if finished(s):
         settle_deferred_card_marks(s)
+        _clear_battle_effects(s)
         return
     fire(c, 'on_ally_attack_resolved', actor_id=cid, player_damage=player_damage)
     if finished(s):
         settle_deferred_card_marks(s)
+        _clear_battle_effects(s)
         return
     for source_side, source_id, target_side, target_cid, attack_attribute in weave_targets:
         if not alive(s, source_side, source_id):
@@ -430,6 +448,7 @@ def attack(c, spec, index):
                attribute=attack_attribute, additional_attack=True)
         if finished(s):
             settle_deferred_card_marks(s)
+            _clear_battle_effects(s)
             return
     # Attack-after shape effects occur per hit, after simultaneous death handling.
     for ps, pc, loss in [(side, cid, self_loss), (enemy, target_id, target_loss)]:
@@ -439,6 +458,7 @@ def attack(c, spec, index):
         op['support_resolved'] = True
         fire(c, GameEvent.V2_SUPPORT_RESOLVED, actor_only=True, actor_id=cid)
     settle_deferred_card_marks(s)
+    _clear_battle_effects(s)
 
 
 def _operation_target(c):

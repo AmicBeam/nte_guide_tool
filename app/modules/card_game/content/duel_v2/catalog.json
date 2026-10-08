@@ -460,6 +460,44 @@
         "kind": "status",
         "turns": 2
       }
+    },
+    {
+      "id": "heiyu",
+      "name": "黑羽",
+      "attribute": "魂",
+      "attack": 2,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/黑羽.webp",
+      "portrait": "/static/images/characters/portrait/黑羽.webp",
+      "role": "占卜与救世魔女",
+      "everness_id": 1042,
+      "faction": "尤克阿什庭",
+      "passive": "每个己方回合开始时或黑羽主动出击时，将 1 张「谕石」随机插入己方牌库，其余牌的相对顺序不变。【浸染】强化：己方施加的浸染持续时间翻倍。【黯星】强化：己方施加的黯星结束时，额外施加 1 次黯星；额外施加的黯星不会再次触发此效果。",
+      "awakened_passive": "全体己方异能者攻击 +1，持续 2 个己方回合，不可叠加。黑羽进入「救世魔女」状态，持续 2 个己方回合。期间停止插入「谕石」，浸染与黯星强化保留，正常积累能量。牌库顶的黑羽牌满足自身魔女效果的触发条件时，公开并置入弃牌堆，自动结算其魔女效果。可以再次点击终结按钮，免费退出该状态；全队攻击加成不会提前结束。",
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "mechanisms": [
+        {
+          "id": "mechanism-divination",
+          "name": "占卜",
+          "reference_names": [
+            "占卜",
+            "占卜效果"
+          ],
+          "description": "检视牌库顶等同于当前存活己方编队异能者数量的牌（含黑羽，不含召唤物），开始时锁定该数量。可将其中至多 1 张置于牌库底，其余以任意顺序放回牌库顶。基础形态下，若置于牌库底的是黑羽的牌，公开该牌并结算其占卜效果；其余被检视牌的身份与顺序保密。「救世魔女」期间的检视只整理牌库，不结算牌库底收益。牌库不足时检视实际张数，不因此判负。仅 1 张时也可选择置底或留在牌库顶。「谕石」与「漫游记」的检视都算本回合已进行占卜；仅把牌放到牌库顶不算。"
+        },
+        {
+          "id": "mechanism-witch",
+          "name": "救世魔女",
+          "reference_names": [
+            "救世魔女",
+            "魔女效果"
+          ],
+          "description": "终结时与全队攻击 +1 独立存在，持续 2 个己方回合。期间仅停止插入「谕石」，浸染与黯星强化保留，能量仍照常获取。牌库顶若是黑羽的牌且满足该牌魔女效果的触发条件，先公开并置入弃牌堆，再只结算其魔女效果，不是打出通常效果。可继续处理随后的牌库顶与新的战斗事件，没有全局次数上限。同一事件不会重复结算已被消耗或回收回来的同一张实体牌。对方回合的保护效果自动结算，不打开选择。可再次点击终结按钮手动退出该状态，不消耗行动力或能量，不计入终结次数，也不结束全队攻击加成。"
+        }
+      ]
     }
   ],
   "cards": [
@@ -3746,6 +3784,189 @@
       "effect_id": "FF01",
       "source": {
         "character_id": "1054",
+        "type": "derived",
+        "index": 0
+      },
+      "starter_copies": 0,
+      "instant": true,
+      "derived": true
+    },
+    {
+      "id": "P01",
+      "character_id": "heiyu",
+      "name": "叛逃者",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "【占卜效果】本回合，下一名其他己方编队异能者主动攻击时，该次攻击 +1。\n【魔女效果】黑羽主动攻击结算后，若仍存活，额外主动攻击 1 次。该次攻击可被反击，不消耗行动力和普通出击机会，不获得基础环合与任何基础能量。",
+      "effect_id": "P01",
+      "source": {
+        "character_id": 1042,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2,
+      "attack": 1,
+      "shield": 1
+    },
+    {
+      "id": "P02",
+      "character_id": "heiyu",
+      "name": "漫游记",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "instant": true,
+      "description": "【通常】瞬发。检视牌库顶等同于当前存活己方编队异能者数量的牌（含黑羽，不含召唤物）。可将其中至多 1 张置于牌库底，其余以任意顺序放回牌库顶。基础形态下，若置于牌库底的是黑羽的牌，公开该牌并结算其占卜效果；「救世魔女」期间只整理牌库。牌库不足时检视实际张数，不因此判负。\n【占卜效果】抽 1 张牌。\n【魔女效果】黑羽主动攻击结算后，选择手牌中 1 张黑羽的牌置于牌库顶。若没有这样的牌，不触发也不消耗本牌。",
+      "effect_id": "P02",
+      "source": {
+        "character_id": 1042,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "P03",
+      "character_id": "heiyu",
+      "name": "失明症",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "【通常】本次战斗中，黑羽不会受到战斗伤害。\n【占卜效果】本回合，下一名其他己方编队异能者主动攻击前，获得 2 点护盾。\n【魔女效果】黑羽攻击或被攻击前，本次战斗中黑羽不会受到战斗伤害。",
+      "effect_id": "P03",
+      "source": {
+        "character_id": 1042,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "attack": 0,
+      "shield": 0
+    },
+    {
+      "id": "P04",
+      "character_id": "heiyu",
+      "name": "坏骨头",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "【通常】若黑羽本回合已进行占卜，本牌获得瞬发。\n【占卜效果】己方玩家回复 2 点生命。\n【魔女效果】黑羽主动攻击前，本次攻击 +1，并获得 1 点护盾。",
+      "effect_id": "P04",
+      "source": {
+        "character_id": 1042,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0,
+      "attack": 1,
+      "shield": 1
+    },
+    {
+      "id": "P05",
+      "character_id": "heiyu",
+      "name": "烂柯人",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "【通常】选择 1 名对方存活编队异能者，造成 3 点伤害。\n【占卜效果】随机对 1 名对方存活编队异能者造成 2 点伤害。\n【魔女效果】黑羽主动攻击前，本次攻击 +2，并加上本方同名魔女效果的攻击加成。该次攻击结算后，将本牌洗入牌库，且本方该同名魔女效果的攻击加成 +1，至多 +4。",
+      "effect_id": "P05",
+      "source": {
+        "character_id": 1042,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "P06",
+      "character_id": "heiyu",
+      "name": "死与生",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "【通常】复活 1 名其他己方编队异能者。\n【占卜效果】其他己方倒地编队异能者中，倒地倒计时最少者的倒地倒计时 -1；减至 0 时按通常自然恢复。没有倒地队友则跳过。\n【魔女效果】黑羽击倒对方异能者后，若黑羽仍存活，回复全部生命。",
+      "effect_id": "P06",
+      "source": {
+        "character_id": 1042,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "P07",
+      "character_id": "heiyu",
+      "name": "牧星者",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "【通常】基础形态下，每个己方回合首次实际结算的占卜效果额外抽 1 张牌。\n【占卜效果】随机从牌库将 1 张其他己方编队异能者的牌加入手牌。没有则跳过；其余牌库顺序不变。\n【魔女效果】黑羽主动攻击前，在其他攻击修正之后、护盾与减伤之前，使本次攻击力翻倍。",
+      "effect_id": "P07",
+      "source": {
+        "character_id": 1042,
+        "type": "fashion",
+        "index": 7,
+        "fashion_name": "牧星者",
+        "name_source": "异环官方1.4版本更新公告 https://www.bilibili.com/opus/1251145718800842753",
+        "previous_name": "「魔女」的工作",
+        "previous_source": {
+          "character_id": 1042,
+          "type": "pv",
+          "index": 1,
+          "name_source": "异环官方角色宣传PV https://www.bilibili.com/video/BV1iWej6hEe6/"
+        },
+        "fashion_id": "Fashion_1042_1",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+        "path": "DataTable/Character/Appearance/DT_AppearanceData.json"
+      },
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 7
+    },
+    {
+      "id": "P08",
+      "character_id": "heiyu",
+      "name": "不凋羽",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "【通常】救世魔女期间，黑羽的主动攻击获得穿透。\n【占卜效果】将最近进入弃牌堆的黑羽战斗牌置于牌库顶，不洗牌。没有则跳过。\n【魔女效果】黑羽主动攻击前，在牌库顶生成 1 张永久的黑羽「叛逃者」。该生成本身不攻击。",
+      "effect_id": "P08",
+      "source": {
+        "character_id": 1042,
+        "type": "fashion",
+        "index": 8,
+        "fashion_name": "不凋羽",
+        "name_source": "异环官方1.4版本更新公告 https://www.bilibili.com/opus/1251145718800842753",
+        "previous_name": "罪与罚",
+        "previous_source": {
+          "character_id": 1042,
+          "type": "arc",
+          "index": 0,
+          "name_source": "专属弧盘「罪与罚」"
+        },
+        "fashion_id": "Fashion_1042_nighty",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+        "path": "DataTable/Character/Appearance/DT_AppearanceData.json"
+      },
+      "starter_copies": 2,
+      "attack": 3,
+      "hp": 5
+    },
+    {
+      "id": "PF01",
+      "character_id": "heiyu",
+      "name": "谕石",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。检视牌库顶等同于当前存活己方编队异能者数量的牌（含黑羽，不含召唤物）。可将其中至多 1 张置于牌库底，其余以任意顺序放回牌库顶。基础形态下，若置于牌库底的是黑羽的牌，公开该牌并结算其占卜效果；「救世魔女」期间只整理牌库。牌库不足时检视实际张数，不因此判负。完成后抽 1 张牌。",
+      "effect_id": "PF01",
+      "source": {
+        "character_id": 1042,
         "type": "derived",
         "index": 0
       },

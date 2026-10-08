@@ -33,6 +33,11 @@ def action_label(state, side, action):
         return f"{hero(state, side, action['character_id'])['name']}出击"
     if kind == 'ultimate':
         return f"终结{hero(state, side, action['character_id'])['name']}"
+    if kind == 'exit_ultimate':
+        from app.modules.card_game.content.duel_v2.registry import decide
+        from .context import EffectContext
+        return decide(EffectContext(state, side, action['character_id'], {'side': side}),
+                      'exit_ultimate_label', '退出终结', actor_only=True) or '退出终结'
     if kind == 'play_card':
         text = f"使用「{_card(state, side, action['card_id'])['name']}」"
         option = next((o for o in (_card(state, side, action['card_id']).get('play_options') or []) if o['id'] == action.get('option_id')), None)
@@ -57,6 +62,8 @@ def action_label(state, side, action):
     if kind == 'choose':
         card = next(c for c in state['pending_choice']['cards'] if c['instance_id'] == action['choice_id'])
         return f"选择「{card['name']}」"
+    if kind == 'choose_deck_order':
+        return '整理牌库并置底 1 张' if action.get('bottom_card_id') else '整理牌库顶'
     return {'end_turn': '结束回合', 'concede': '认输'}.get(kind, kind)
 
 
@@ -200,7 +207,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         team['deck_count'] = len(source['deck'])
         # Cards being inspected remain counted as deck cards until disposition.
         pending = state['pending_choice']
-        if pending and pending['side'] == ps and (pending['kind'] == 'inspect_top' or pending.get('deck_cards')):
+        if pending and pending['side'] == ps and (pending['kind'] in ('inspect_top', 'heiyu_divination') or pending.get('deck_cards')):
             team['deck_count'] += len(pending['cards'])
         team['hand_count'] = len(source['hand'])
         revealed = set(source.get('revealed_ids') or [])
@@ -242,6 +249,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
             'prompt': pending['prompt'] if pending['side'] == side else '对手正在选择',
             'max_select': pending.get('max_select') if pending['side'] == side else None,
             'min_select': pending.get('min_select') if pending['side'] == side else None,
+            'max_bottom': pending.get('max_bottom') if pending['side'] == side else None,
             'choices': [{'id': c['instance_id'], 'label': c['name'], 'card': public_card(c, state, ('b' if pending['side']=='a' else 'a') if pending['kind']=='enemy_hand' else pending['side'])}
                         for c in pending['cards']] if pending['side'] == side else []}
     op = state['operation']
@@ -269,6 +277,12 @@ def choose_action(state, side):
         choice = next((e for e in entries if e['action']['type'] == kind), None)
         if choice:
             return choice['action']
+    orders = [e for e in entries if e['action']['type'] == 'choose_deck_order']
+    if orders:
+        pending = state.get('pending_choice') or {}
+        original = [card['instance_id'] for card in pending.get('cards') or []]
+        keep = next((e for e in orders if e['action'].get('card_ids') == original and e['action'].get('bottom_card_id') is None), None)
+        return (keep or orders[0])['action']
     cards = {c['instance_id']: c for c in observation['sides'][side]['hand']}
     def score(entry):
         a, p = entry['action'], entry['preview']

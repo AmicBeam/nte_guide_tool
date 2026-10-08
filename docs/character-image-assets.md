@@ -194,3 +194,7 @@ with Image.open('/tmp/nte-character-source.png') as source:
 逐张打开核对角色与服装后，使用cwebp质量90、method6转换，不裁切、不缩放，保留透明alpha；原图SHA、输出SHA与字节数及条目级commit／conversion写入资源清单。武备外观按shape_id绑定，普通离场保留，换武备切换，倒地回到默认，换装资源失败仍回退默认。零共有多套非默认皮肤，本次保留Z07猎人不上班，另选上述两套用于06／08；并非零没有其他服装。
 
 这5张均使用本地 `app/static/images/characters/costume/<fashion_id>.webp`；原有21张绑定不变，当前共26个已核实换装绑定。非武备牌、默认头像、默认立绘和图鉴／构筑／手牌图片不改。
+
+### 2026-10-08 黑羽武备皮肤命名核对
+
+用户约定 08 优先使用睡衣／居家服。黑羽 P07 为「牧星者」（`Fashion_1042_1`），P08 为「不凋羽」（`Fashion_1042_nighty`）；NTEData 提交 `d7fe705451f189cec8447d876e6c31db7ed3d9df` 的 `DataTable/Character/Appearance/DT_AppearanceData.json` 将后者描述为黑羽的居家服装。「红与黑」（`Fashion_1042_2`）为复古套装。本轮仅修改卡名和来源记录，仍复用默认头像／立绘，尚未导入这两张换装图片。

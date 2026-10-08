@@ -63,6 +63,76 @@ class DuelV2ApiTest(RoomFlowTestCase):
         token = self.a if view['active_side'] == 'a' else self.b
         return token, self._get('/api/duel-v2/state', token=token)['game']
 
+    def test_heiyu_order_and_free_exit_are_private_idempotent_and_reloadable(self):
+        from app.modules.card_game.content.duel_v2 import CARDS, validate_deck
+        from app.modules.card_game.engine.duel_v2 import new_game, apply_action
+        from app.modules.card_game.engine.duel_v2.state import card_instance, hero
+        from app.modules.card_game.engine.application import v2_replay
+
+        self._pvp()
+        owners = ['heiyu', 'zero', 'nanali', 'jiuyuan']
+        deck = validate_deck(dict(id='heiyu-api', name='黑羽接口验收', character_ids=owners,
+            card_ids=[key for owner in owners for key, card in CARDS.items()
+                      if card['character_id'] == owner and not card.get('derived')]))
+        game = new_game(seed=318, first_side='a', skip_mulligan=True,
+                        decks={'a': deck, 'b': deck}, escalation=False)
+        game['sides']['a']['hand'].append(card_instance(game, 'PF01', 'a'))
+        card = game['sides']['a']['hand'][-1]
+        game = apply_action(game, 'a', dict(type='play_card', card_id=card['instance_id']))
+        self.assertEqual(game['pending_choice']['kind'], 'heiyu_divination')
+        game['pending_choice']['cards'] = [card_instance(game, key, 'a') for key in ('P01', 'P02', 'P03', 'P04')]
+        game['sides']['a']['hp'] = 20
+        hero(game, 'a', 'heiyu')['energy'] = 6
+        room = self.repository.room_by_code(self.code)
+        self.storage.initialize(room, {'rules_version': 'duel_v2', 'game': game, 'requests': []})
+        v2_replay.begin(room, game)
+        self.assertTrue(self.storage.flush(5))
+        self.storage.clear_cache()
+        owner_view = self._get('/api/duel-v2/state', token=self.a)['game']
+        foe_view = self._get('/api/duel-v2/state', token=self.b)['game']
+        choices = owner_view['pending_choice']['choices']
+        self.assertEqual(len(choices), 4)
+        self.assertEqual(foe_view['pending_choice']['choices'], [])
+        self.assertEqual(owner_view['sides']['a']['deck_count'], foe_view['sides']['a']['deck_count'])
+        hand_count = len(owner_view['sides']['a']['hand'])
+        order = [choice['id'] for choice in reversed(choices[:3])]
+        request = dict(room_code=self.code, request_id='heiyu-order', expected_version=owner_view['version'],
+                       action=dict(type='choose_deck_order', card_ids=order, bottom_card_id=choices[3]['id']))
+        first = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        retried = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        self.assertEqual(first['version'], retried['version'])
+        self.assertEqual(first['phase'], 'playing')
+        self.assertEqual(len(retried['sides']['a']['hand']), hand_count + 1)
+        self.assertEqual(retried['sides']['a']['hand'][-1]['instance_id'], order[0])
+        self.assertEqual(retried['sides']['a']['hp'], 22)
+        self.assertTrue(self.storage.flush(5))
+        self.storage.clear_cache()
+        raw = self.storage.load(room.id)['game']
+        self.assertEqual([card['instance_id'] for card in raw['sides']['a']['deck'][:2]], order[1:])
+        foe_text = json.dumps(self._get('/api/duel-v2/state', token=self.b)['game'])
+        for private_id in order:
+            self.assertNotIn(private_id, foe_text)
+
+        request = dict(room_code=self.code, request_id='heiyu-ultimate', expected_version=first['version'],
+                       action=dict(type='ultimate', character_id='heiyu'))
+        transformed = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        self.assertEqual(self._post('/api/duel-v2/action', request, token=self.a)['game']['version'], transformed['version'])
+        before = {h['id']: h['attack'] for h in transformed['sides']['a']['characters']}
+        ap = transformed['sides']['a']['ap']
+        request = dict(room_code=self.code, request_id='heiyu-exit', expected_version=transformed['version'],
+                       action=dict(type='exit_ultimate', character_id='heiyu'))
+        exited = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        repeated = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        self.assertEqual(exited['version'], repeated['version'])
+        self.assertTrue(self.storage.flush(5))
+        self.storage.clear_cache()
+        restored = self._get('/api/duel-v2/state', token=self.a)['game']
+        self.assertEqual(restored['sides']['a']['ap'], ap)
+        self.assertEqual({h['id']: h['attack'] for h in restored['sides']['a']['characters']}, before)
+        heiyu = next(h for h in restored['sides']['a']['characters'] if h['id'] == 'heiyu')
+        self.assertFalse(heiyu['awakened'])
+        self.assertEqual(heiyu['energy'], 0)
+
     @staticmethod
     def _action(view, kind):
         return next(entry['action'] for entry in view['legal_actions'] if entry['action']['type'] == kind)
@@ -444,13 +514,14 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self._set_test_whitelist('duel-v2-tester')
         catalog = self._get('/api/duel-v2/catalog', token=token)
         names = {item['name'] for item in catalog['characters']}
-        self.assertEqual(len(catalog['characters']), 19)
+        self.assertEqual(len(catalog['characters']), 21)
         self.assertIn('浔', names)
         self.assertIn('残虹', names)
         self.assertIn('阿德勒', names)
         self.assertIn('薄荷', names)
         self.assertIn('白藏', names)
-        self.assertEqual(len(catalog['cards']), 158)
+        self.assertIn('黑羽', names)
+        self.assertEqual(len(catalog['cards']), 175)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
             ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'],

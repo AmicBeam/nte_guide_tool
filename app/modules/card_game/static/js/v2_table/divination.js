@@ -74,10 +74,8 @@
           '<button type="button" class="v2-divination-detail" data-divination-detail="' + V2.escapeAttr(id) +
           '" aria-label="查看' + V2.escapeAttr(choice.card.name) + '详情">详情</button>' +
           cardMarkup(choice.card).replace('</article>',
-            '<p class="v2-divination-benefit is-divination' + (state.witch ? '' : ' is-current') + '"><strong>占卜：</strong>' +
-            V2.escapeHtml(effectText(choice.card, '占卜效果') || '无沉底收益') + '</p>' +
-            '<p class="v2-divination-benefit is-witch' + (state.witch ? ' is-current' : '') + '"><strong>魔女：</strong>' +
-            V2.escapeHtml(effectText(choice.card, '魔女效果') || '无魔女效果') + '</p></article>') + '</div>';
+            '<p class="v2-divination-benefit is-divination is-current"><strong>占卜效果：</strong>' +
+            V2.escapeHtml(effectText(choice.card, '占卜效果') || '无占卜效果') + '</p></article>') + '</div>';
       }
       overlay.innerHTML = '<div class="v2-choice-dialog v2-divination-dialog" role="dialog" aria-modal="true" aria-labelledby="v2-divination-title">' +
         '<header><h2 id="v2-divination-title">占卜</h2><p class="subtle">拖动排列牌库顶；第二行至多放一张牌，拖入新牌会替换原牌。</p></header>' +

@@ -90,6 +90,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CHARACTERS['xun']['attribute'], '光')
         self.assertEqual(LIGHT_ENERGY_MAX, 5)
         self.assertEqual(DARK_ENERGY_MAX, 6)
+        self.assertEqual(CHARACTERS['heiyu']['energy_max'], 5)
         self.assertEqual(CHARACTERS['nanali']['energy_max'], LIGHT_ENERGY_MAX)
         self.assertEqual(CHARACTERS['zero']['energy_max'], LIGHT_ENERGY_MAX)
         self.assertEqual(CHARACTERS['hathor']['energy_max'], LIGHT_ENERGY_MAX)

@@ -112,7 +112,9 @@ def add_atk_buff(character, amount=1, *, source_entity_id=None, source_key='atta
 
 
 def energy_max(character):
-    return energy_max_for_attribute(character.get('attribute'))
+    template = CHARACTERS.get(character.get('id')) or {}
+    override = template.get('energy_max_override', character.get('energy_max_override'))
+    return int(override) if override is not None else energy_max_for_attribute(character.get('attribute'))
 
 
 def round_half_up(value):

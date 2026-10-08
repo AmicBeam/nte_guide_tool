@@ -80,7 +80,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         card = game['sides']['a']['hand'][-1]
         game = apply_action(game, 'a', dict(type='play_card', card_id=card['instance_id']))
         self.assertEqual(game['pending_choice']['kind'], 'heiyu_divination')
-        game['pending_choice']['cards'] = [card_instance(game, key, 'a') for key in ('P01', 'P02', 'P03', 'P04')]
+        game['pending_choice']['cards'] = [card_instance(game, key, 'a') for key in ('P01', 'P02', 'P03', 'P05')]
         game['sides']['a']['hp'] = 20
         hero(game, 'a', 'heiyu')['energy'] = 6
         room = self.repository.room_by_code(self.code)
@@ -102,9 +102,9 @@ class DuelV2ApiTest(RoomFlowTestCase):
         retried = self._post('/api/duel-v2/action', request, token=self.a)['game']
         self.assertEqual(first['version'], retried['version'])
         self.assertEqual(first['phase'], 'playing')
-        self.assertEqual(len(retried['sides']['a']['hand']), hand_count + 1)
-        self.assertEqual(retried['sides']['a']['hand'][-1]['instance_id'], order[0])
-        self.assertEqual(retried['sides']['a']['hp'], 22)
+        self.assertEqual(len(retried['sides']['a']['hand']), hand_count + 2)
+        self.assertIn(order[0], [card['instance_id'] for card in retried['sides']['a']['hand']])
+        self.assertEqual(retried['sides']['a']['hp'], 20)
         self.assertTrue(self.storage.flush(5))
         self.storage.clear_cache()
         raw = self.storage.load(room.id)['game']

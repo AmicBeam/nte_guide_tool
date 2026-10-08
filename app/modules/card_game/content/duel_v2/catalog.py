@@ -62,7 +62,9 @@ def _character_public(raw: dict[str, Any]) -> dict[str, Any]:
     if missing:
         raise ValueError(f'角色缺少字段: {", ".join(missing)}')
     public = {field: deepcopy(raw[field]) for field in REQUIRED_CHARACTER_FIELDS}
-    public['energy_max'] = energy_max_for_attribute(public['attribute'])
+    public['energy_max'] = int(raw.get('energy_max', energy_max_for_attribute(public['attribute'])))
+    if 'energy_max' in raw:
+        public['energy_max_override'] = public['energy_max']
     for extra in ('everness_id', 'ultimate', 'faction', 'resource_name', 'turn_snapshots'):
         if extra in raw:
             public[extra] = deepcopy(raw[extra])

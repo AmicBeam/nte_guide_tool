@@ -1225,6 +1225,9 @@
   max-width: calc(100vw - 32px);
   pointer-events: auto;
 }
+.v2-selection-toggle:hover {
+  transform: translate(-50%, -2px);
+}
 .v2-selection-toggle[hidden] { display: none !important; }
 .v2-choice-overlay.open.is-selection-collapsed { display: none; }
 .v2-mulligan-stage.is-selection-collapsed {

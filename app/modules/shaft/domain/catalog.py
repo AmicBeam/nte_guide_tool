@@ -22,6 +22,15 @@ LEGACY_ARC_SELECTIONS: dict[str, tuple[str, int]] = {
     'arc_92353a7626': ('arc_1ddecc32f3', 5),
     'arc_a01731d2ff': ('arc_6e7753edf5', 1),
 }
+LEGACY_ACTION_MIGRATIONS: dict[str, tuple[str, bool, bool]] = {
+    # 旧 a4脱手 -> a4远脱手；旧 a4闪 -> a4远脱手后接通用“闪”。
+    'action_97ef5c83d2': ('action_6d2645f71e', True, False),
+    'action_182423b934': ('action_6d2645f71e', True, True),
+}
+REMOVED_ACTION_IDS = frozenset({
+    'action_4c5142a40f',  # 早雾 5a
+    'action_441d3aa300',  # 法帝娅 q后5a
+})
 
 
 def _load_json(filename: str) -> Any:
@@ -133,17 +142,57 @@ def _noop_action(character: dict[str, Any]) -> dict[str, Any]:
         'personal_resource_cost': {},
         'personal_resource_gain': {},
         'source_row': 0,
-        'can_background_override': False,
+        'can_background_override': True,
         'hit_count': 0,
         'is_instant_switch': True,
+        'switch_gap_after_ticks': 1,
         'tags': ['切人'],
+    }
+
+
+def _dodge_action(character: dict[str, Any]) -> dict[str, Any]:
+    character_id = str(character.get('id') or '')
+    return {
+        'id': f'action_dodge_{character_id.removeprefix("char_")}',
+        'character_id': character_id,
+        'character_name': str(character.get('name') or ''),
+        'name': '闪',
+        'action_type': '无',
+        'damage_type': '无',
+        'extra_tag': '闪避',
+        'is_background_damage': False,
+        'duration_seconds': 0.5,
+        'duration_ticks': 5,
+        'multipliers': {'atk': 0, 'hp': 0, 'def': 0, 'flat': 0},
+        'energy_gain': 0,
+        'harmony': 0,
+        'stagger': 0,
+        'energy_return': 0,
+        'self_modifiers': {},
+        'cooldown_ticks': 0,
+        'energy_cost': 0,
+        'personal_resource_cost': {},
+        'personal_resource_gain': {},
+        'source_row': 0,
+        'can_background_override': False,
+        'hit_count': 0,
+        'tags': ['闪避'],
     }
 
 
 @lru_cache(maxsize=1)
 def load_shaft_catalog() -> dict[str, Any]:
     characters = _load_json('characters.json')
+    hit_profiles = _load_json('action_hit_profiles.json')
     actions = [_normalize_action(action) for action in _load_json('actions.json')]
+    # Retired IDs identify migration input and supply internal joint templates, never new actions.
+    actions.extend(_normalize_action({**action, 'legacy_only': True})
+                   for action in _load_json('legacy_actions.json'))
+    for action in actions:
+        profile = hit_profiles.get(str(action.get('id') or ''))
+        if profile:
+            action['hit_profile'] = profile
+    actions.extend(_dodge_action(character) for character in characters)
     actions.extend(_noop_action(character) for character in characters)
     energy_capacity_by_character: dict[str, float] = {}
     for action in actions:
@@ -193,11 +242,16 @@ def load_shaft_catalog() -> dict[str, Any]:
     starter_axis = _load_json('starter_axis.json')
     actions_by_character: dict[str, list[dict[str, Any]]] = {}
     for action in actions:
+        if action.get('legacy_only'):
+            continue
         actions_by_character.setdefault(str(action.get('character_id') or ''), []).append(action)
     for items in actions_by_character.values():
         items.sort(key=lambda item: (
-            str(item.get('action_type') or '') == '无',
+            str(item.get('name') or '') == '无',
+            str(item.get('name') or '') == '闪',
             str(item.get('action_type') or ''),
+            item.get('display_order') is None,
+            _num(item.get('display_order'), 0),
             str(item.get('name') or ''),
         ))
     return {
@@ -213,6 +267,15 @@ def load_shaft_catalog() -> dict[str, Any]:
         'formula_constants': formula_constants,
         'source_meta': source_meta,
         'starter_axis': starter_axis,
+        'legacy_action_migrations': {
+            action_id: {
+                'action_id': migration[0],
+                'detached': migration[1],
+                'append_dodge': migration[2],
+            }
+            for action_id, migration in LEGACY_ACTION_MIGRATIONS.items()
+        },
+        'removed_action_ids': sorted(REMOVED_ACTION_IDS),
     }
 
 

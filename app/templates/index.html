@@ -11,7 +11,7 @@
         <div class="portal-heading">
             <p class="eyebrow">NTE Tools</p>
             <h1>异环工具主页</h1>
-            <p class="subtle">从这里进入卡牌桌游、空幕计算、预配队和排轴计算。</p>
+            <p class="subtle">从这里进入卡牌桌游、空幕计算和排轴计算。</p>
         </div>
         <div class="header-actions">
             <a class="secondary-btn" href="{{ url_for('main.login_page') }}" data-login-link>登录</a>
@@ -22,7 +22,7 @@
         <a class="glass-card portal-module-card" href="{{ url_for('main.card_game_home') }}">
             <span class="portal-module-kicker">Card Table</span>
             <strong>卡牌桌游</strong>
-            <p>进入异象对决牌桌、构筑、空间档案和对局数据。</p>
+            <p>进入异能对决牌桌、构筑、空间档案和对局数据。</p>
             <span class="portal-module-action">进入桌游</span>
         </a>
         <a class="glass-card portal-module-card" href="{{ url_for('main.kongmu_page') }}">
@@ -30,12 +30,6 @@
             <strong>空幕</strong>
             <p>计算角色空幕与卡带搭配，快速查看可用方案。</p>
             <span class="portal-module-action">打开空幕</span>
-        </a>
-        <a class="glass-card portal-module-card" href="{{ url_for('main.preteam_page') }}">
-            <span class="portal-module-kicker">Preteam</span>
-            <strong>预配队</strong>
-            <p>即将下线，并由排轴模块取代；当前仍可浏览主 C、队友和属性搭配。</p>
-            <span class="portal-module-action">进入配队</span>
         </a>
         <a class="glass-card portal-module-card" href="{{ url_for('main.shaft_page', page='rotation') }}">
             <span class="portal-module-kicker">Shaft Lab</span>

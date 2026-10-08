@@ -1,0 +1,424 @@
+{
+  "schema": "experiment_disposition_registry_v1",
+  "records": [
+    {
+      "schema": "experiment_disposition_v1",
+      "run_id": "night-20260920-v3a",
+      "date": "2026-09-20",
+      "reason": "用户明确废弃今天的训练配牌；新策略未通过择优与质量门槛",
+      "default_reuse_allowed": false,
+      "all_proposed_builds_discarded": true,
+      "builds": {
+        "starter": {
+          "baseline": {
+            "id": "starter",
+            "name": "创生预组",
+            "character_ids": [
+              "nanali",
+              "iloy",
+              "zero",
+              "jiuyuan"
+            ],
+            "card_ids": [
+              "J02",
+              "J02",
+              "J03",
+              "J04",
+              "J04",
+              "J07",
+              "J08",
+              "J08",
+              "N02",
+              "N02",
+              "N03",
+              "N03",
+              "N04",
+              "N04",
+              "N07",
+              "N08",
+              "Y02",
+              "Y02",
+              "Y03",
+              "Y04",
+              "Y06",
+              "Y06",
+              "Y08",
+              "Y08",
+              "Z03",
+              "Z04",
+              "Z04",
+              "Z05",
+              "Z05",
+              "Z07",
+              "Z07",
+              "Z08"
+            ]
+          },
+          "discarded_candidate": {
+            "id": "starter",
+            "name": "创生预组",
+            "character_ids": [
+              "nanali",
+              "iloy",
+              "zero",
+              "jiuyuan"
+            ],
+            "card_ids": [
+              "J01",
+              "J02",
+              "J02",
+              "J04",
+              "J04",
+              "J07",
+              "J08",
+              "J08",
+              "N02",
+              "N02",
+              "N03",
+              "N03",
+              "N04",
+              "N04",
+              "N07",
+              "N08",
+              "Y02",
+              "Y02",
+              "Y03",
+              "Y04",
+              "Y06",
+              "Y06",
+              "Y08",
+              "Y08",
+              "Z03",
+              "Z04",
+              "Z04",
+              "Z05",
+              "Z05",
+              "Z07",
+              "Z07",
+              "Z08"
+            ]
+          },
+          "baseline_identity": "6eb9c115f7a156c950dfad907f7c4af4f0c74a6f4754ae26b3f36c4dd857d4cc",
+          "discarded_identity": "fb2d0d188bae9f8745de696bb64bfdbb72234e084cef73624ecc15ce84f6c79e"
+        },
+        "weave-rush": {
+          "baseline": {
+            "id": "weave-rush",
+            "name": "覆纹预组",
+            "character_ids": [
+              "bohe",
+              "baicang",
+              "zero",
+              "iloy"
+            ],
+            "card_ids": [
+              "B01",
+              "B01",
+              "B02",
+              "B02",
+              "B06",
+              "B06",
+              "B07",
+              "B08",
+              "M01",
+              "M01",
+              "M03",
+              "M03",
+              "M04",
+              "M04",
+              "M07",
+              "M07",
+              "Y02",
+              "Y02",
+              "Y03",
+              "Y04",
+              "Y06",
+              "Y06",
+              "Y07",
+              "Y07",
+              "Z03",
+              "Z03",
+              "Z04",
+              "Z04",
+              "Z05",
+              "Z05",
+              "Z08",
+              "Z08"
+            ]
+          },
+          "discarded_candidate": {
+            "id": "weave-rush",
+            "name": "覆纹预组",
+            "character_ids": [
+              "bohe",
+              "baicang",
+              "zero",
+              "iloy"
+            ],
+            "card_ids": [
+              "B01",
+              "B02",
+              "B02",
+              "B03",
+              "B04",
+              "B06",
+              "B06",
+              "B08",
+              "M01",
+              "M01",
+              "M03",
+              "M03",
+              "M04",
+              "M04",
+              "M07",
+              "M07",
+              "Y02",
+              "Y02",
+              "Y03",
+              "Y04",
+              "Y06",
+              "Y06",
+              "Y07",
+              "Y07",
+              "Z03",
+              "Z04",
+              "Z04",
+              "Z05",
+              "Z05",
+              "Z07",
+              "Z08",
+              "Z08"
+            ]
+          },
+          "baseline_identity": "fc1cd31b9084e7f4912d5ce56bb337fa3c7aa267a01ee73dcc451ecdc50bff57",
+          "discarded_identity": "b38863f05fb62dd9bfdf727fe01efd936426303d13efa9359d9a7c14165a5294"
+        },
+        "quick-rush": {
+          "baseline": {
+            "id": "quick-rush",
+            "name": "快攻预组",
+            "character_ids": [
+              "xiaozhi",
+              "zero",
+              "bohe",
+              "haiyue"
+            ],
+            "card_ids": [
+              "M01",
+              "M01",
+              "M03",
+              "M03",
+              "M04",
+              "M04",
+              "M07",
+              "M07",
+              "Q01",
+              "Q01",
+              "Q02",
+              "Q02",
+              "Q05",
+              "Q05",
+              "Q08",
+              "Q08",
+              "U01",
+              "U02",
+              "U03",
+              "U03",
+              "U04",
+              "U06",
+              "U06",
+              "U08",
+              "Z03",
+              "Z03",
+              "Z04",
+              "Z04",
+              "Z05",
+              "Z05",
+              "Z08",
+              "Z08"
+            ]
+          },
+          "discarded_candidate": {
+            "id": "quick-rush",
+            "name": "快攻预组",
+            "character_ids": [
+              "xiaozhi",
+              "zero",
+              "bohe",
+              "haiyue"
+            ],
+            "card_ids": [
+              "M01",
+              "M01",
+              "M02",
+              "M03",
+              "M04",
+              "M04",
+              "M07",
+              "M07",
+              "Q01",
+              "Q02",
+              "Q02",
+              "Q03",
+              "Q05",
+              "Q05",
+              "Q08",
+              "Q08",
+              "U01",
+              "U02",
+              "U03",
+              "U03",
+              "U04",
+              "U06",
+              "U06",
+              "U08",
+              "Z03",
+              "Z03",
+              "Z04",
+              "Z04",
+              "Z05",
+              "Z05",
+              "Z08",
+              "Z08"
+            ]
+          },
+          "baseline_identity": "010c7fd8c39e85d9dd49bf682290a7971b0e198c94838e3ac4620d06272f24b3",
+          "discarded_identity": "4227b18b7cbe433360edf61734dac648a9d8d45ea19452704ec2d1596ca0394c"
+        }
+      },
+      "weights": {
+        "d49011f0811e308c36e17770556c351f8a4f51befd433883ff49f9084ed71ee8": {
+          "status": "research_only",
+          "default_reuse_allowed": false,
+          "artifacts": [
+            "initial/starter",
+            "foundation/initial/starter",
+            "foundation/selected/starter",
+            "adaptation/initial/starter",
+            "adaptation/selected/starter"
+          ]
+        },
+        "73078959ca56a3ae979aa9e1e97180bb7833114c5585ff7308705f6c6fcc112e": {
+          "status": "research_only",
+          "default_reuse_allowed": false,
+          "artifacts": [
+            "foundation/latest/starter"
+          ]
+        },
+        "7c52be5ee92cf61e79245d5cfffdf1d91cdb9033c45e17895b7872c85849894a": {
+          "status": "research_only",
+          "default_reuse_allowed": false,
+          "artifacts": [
+            "adaptation/latest/starter"
+          ]
+        },
+        "70327a69b2520ca706e70186893a1c720114a99ff8721493b166f5ab115fc773": {
+          "status": "research_only",
+          "default_reuse_allowed": false,
+          "artifacts": [
+            "initial/weave-rush",
+            "foundation/initial/weave-rush",
+            "foundation/selected/weave-rush",
+            "adaptation/initial/weave-rush",
+            "adaptation/selected/weave-rush"
+          ]
+        },
+        "4e174a6d56c1e2dcf63e1416ebb7ecde4084cc823c6042c9fd3c16961829d8f4": {
+          "status": "research_only",
+          "default_reuse_allowed": false,
+          "artifacts": [
+            "foundation/latest/weave-rush"
+          ]
+        },
+        "abafffa71095ab6e38a7d06abde790cf17608f869e73007f7a01d32601c9a473": {
+          "status": "research_only",
+          "default_reuse_allowed": false,
+          "artifacts": [
+            "adaptation/latest/weave-rush"
+          ]
+        },
+        "a238b54f4f93310b19a77959c349c3c68c58a9ab01a55e55ec7b573c700db948": {
+          "status": "research_only",
+          "default_reuse_allowed": false,
+          "artifacts": [
+            "initial/quick-rush",
+            "foundation/initial/quick-rush",
+            "foundation/selected/quick-rush",
+            "adaptation/initial/quick-rush",
+            "adaptation/selected/quick-rush"
+          ]
+        },
+        "d783748538576d52c5f7821035420808b2ef2adf7b7399c06366b5e66234769a": {
+          "status": "research_only",
+          "default_reuse_allowed": false,
+          "artifacts": [
+            "foundation/latest/quick-rush"
+          ]
+        },
+        "f1e18ece1454fc9849db0bdc244ddd40ae8d5aa0ab70505fd671aa25e049fa00": {
+          "status": "research_only",
+          "default_reuse_allowed": false,
+          "artifacts": [
+            "adaptation/latest/quick-rush"
+          ]
+        }
+      },
+      "optimizer_default_reuse_allowed": false,
+      "artifact_bytes_preserved": true,
+      "service_changed": false
+    },
+    {
+      "run_id": "five-full-night-20260921",
+      "default_reuse_allowed": false,
+      "reuse_revoked": true,
+      "weights": {
+        "a032a98fb88b41a38ea1c24ed196c6d1d53a123358fd467dde28028168c500b2": {
+          "default_reuse_allowed": false
+        },
+        "bd14ab32a092061a98d53f569c8c38b2e42272ffe0841ded1484fe4b2c29e9dd": {
+          "default_reuse_allowed": false
+        },
+        "88a6af2479c497e69256265b0ea9656687e3f389bf62e2c3a2e16fb106029155": {
+          "default_reuse_allowed": false
+        },
+        "12cefb70b7124a23d528bc33f0b9f9d59e8183c5131c12c6911d274ddb405d0d": {
+          "default_reuse_allowed": false
+        },
+        "69c92c5a0f20586238a8d6b673294cdea6dd64a212e66a7e6c93c8bf17cc9a5b": {
+          "default_reuse_allowed": false
+        },
+        "0c8ae0d8fe9ef615b3153fbafd9ce5cec2f62c821a786a2d7ca40232d0af04f1": {
+          "default_reuse_allowed": false
+        },
+        "16f51ce5cfd3f036e743a13c8acce3daeb2fece052932467ecb99c49879c9e57": {
+          "default_reuse_allowed": false
+        },
+        "952296076446ef099766e4825ada28347014dbccadf564230a493ce9690b15c2": {
+          "default_reuse_allowed": false
+        },
+        "a5911dfdbdc93ff119e9b4762d8108b24b0cfc7fc54df8aa03a1052f12d60733": {
+          "default_reuse_allowed": false
+        },
+        "9c4837d8587d0f26d06b2fe7673ed0bf15ccac70407f099eeb60c68cc7bf5e01": {
+          "default_reuse_allowed": false
+        },
+        "2ab1e212c3edd7a6cb6e8cf09cf1327d11070b77ba18cf6977ef46a82a053797": {
+          "default_reuse_allowed": false
+        },
+        "ad6e98af8f5cfd81b90f9f03f84675e53aa712b5d4724e2fabe0b36df946b77c": {
+          "default_reuse_allowed": false
+        },
+        "f43e7e6ef26e124706f48a294a6e1f31d820ba82893330b85d90c90e331269f3": {
+          "default_reuse_allowed": false
+        },
+        "eaa9df9ae8ff2e32f5c29466da589dd9748d7208a88c8e7e6d8e7e78406b41fa": {
+          "default_reuse_allowed": false
+        },
+        "48e16298c6c8ec8979586630d584e9956ade4871c84d2fcd151a0e8cfe8db9e3": {
+          "default_reuse_allowed": false
+        }
+      },
+      "reason": "User discarded entire run on 2026-09-22"
+    }
+  ]
+}

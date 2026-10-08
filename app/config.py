@@ -14,3 +14,4 @@ LOG_DIR = Path(os.getenv('NTE_LOG_DIR', str(BASE_DIR / 'logs')))
 DUEL_SUPPORT_GROUP = os.getenv('NTE_DUEL_SUPPORT_GROUP', '575377480')
 SHAFT_SUPPORT_GROUP = os.getenv('NTE_SHAFT_SUPPORT_GROUP', '1005485948')
 SHAFT_LOGIN_REQUIRED = os.getenv('NTE_SHAFT_LOGIN_REQUIRED', '1').strip().lower() not in {'0', 'false', 'no', 'off'}
+DUEL_AI_MODEL_DIR = Path(os.getenv('NTE_DUEL_AI_MODEL_DIR', str(BASE_DIR / 'app' / 'modules' / 'card_game' / 'engine' / 'ai' / 'models')))

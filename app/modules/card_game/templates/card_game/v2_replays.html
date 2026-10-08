@@ -1,0 +1,42 @@
+{% extends 'common/base.html' %}
+{% block title %}对局回放{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_common.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_home.css') }}">
+{% endblock %}
+{% block body %}
+<main class="v2-replays-page" id="v2-replays-page">
+    <header class="v2-home-nav">
+        <a class="v2-home-logo" href="{{ url_for('main.card_game_home') }}">
+            <img src="{{ url_for('static', filename='images/brand/esper-duel-logo.webp') }}" alt="异能对决" width="1086" height="362">
+        </a>
+        <nav class="v2-home-links" aria-label="大厅导航">
+            <a href="{{ url_for('main.card_game_home') }}">大厅</a>
+            <a href="{{ url_for('main.build_page') }}">构筑</a>
+            <a href="{{ url_for('main.codex_page') }}">图鉴</a>
+            <a class="is-current" href="{{ url_for('main.replays_page') }}">回放</a>
+        </nav>
+        <div class="v2-home-account">
+            <a class="secondary-btn" href="{{ url_for('main.card_game_home') }}">返回大厅</a>
+        </div>
+    </header>
+    <section class="v2-banner" id="v2-replay-banner" hidden></section>
+    <section class="v2-replay-stage">
+        <div class="v2-replay-heading">
+            <p class="eyebrow">公开局面</p>
+            <h1>对局回放</h1>
+            <p class="subtle" id="v2-replay-copy">人机和 1v1 的公开局面都会记录，可按演出事件逐步回看。</p>
+            <label class="v2-replay-import">
+                <input id="v2-replay-import" type="file" accept="application/json,.json">
+                <span class="secondary-btn" role="button">导入训练录像</span>
+            </label>
+        </div>
+        <div class="v2-replay-list" id="v2-replay-list">
+            <p class="subtle">正在读取最近回放。</p>
+        </div>
+    </section>
+</main>
+<script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_replays.js') }}"></script>
+{% endblock %}

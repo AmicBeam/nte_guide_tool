@@ -1,0 +1,54 @@
+{
+  "id": "char_heiyu",
+  "equip_slots": {
+    "description_template": "每装配一个Ⅲ型驱动，使{0}增加{1}%",
+    "special_desc": "Ⅲ型特化",
+    "owner_grid_count": 3,
+    "stats": [
+      {
+        "id_stats": "CritBase",
+        "name": "暴击率",
+        "value": 8,
+        "b_show_percent": true
+      }
+    ],
+    "slots": [
+      [
+        0,
+        0,
+        0,
+        0,
+        -1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        -1
+      ],
+      [
+        0,
+        0,
+        -1,
+        0,
+        0
+      ],
+      [
+        -1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        -1,
+        0,
+        0,
+        0,
+        0
+      ]
+    ]
+  },
+  "source_note": "用户2026-09-15提供的腾讯文档《黑羽资料汇总》UTYzjRJfxLuc定义本配置；2026-09-24 Nanoka已收录角色1042，本轮只核对图片，不回写空幕数值。"
+}

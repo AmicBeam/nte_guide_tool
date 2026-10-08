@@ -1,5 +1,6 @@
 # Static Module Guidelines
 
+- Character avatars and default portraits should be sourced from the latest NTEData assets first, then Nanoka when needed. Preserve character scale, head alignment, and framing. Read `docs/character-image-assets.md` before importing or replacing images; reuse the shared avatar/portrait paths and existing WebP files. Record the actual source path and version for each new asset.
 - `common/css/app.css` is the stylesheet entrypoint only. Keep it as an ordered list of `@import` statements and do not add page rules there.
 - Put shared CSS in `common/css/`:
   - `foundation.css`: tokens, reset, shared cards, buttons, forms, and global shell layout.

@@ -22,7 +22,14 @@ from app.models import (
     ShaftAxisLike,
     ShaftCharacterPublication,
 )
-from app.modules.shaft.domain.catalog import LEGACY_ARC_SELECTIONS, get_record_map, load_shaft_catalog
+from app.modules.shaft.domain.legacy_actions import migrate_lingke_joint_steps
+from app.modules.shaft.domain.catalog import (
+    LEGACY_ACTION_MIGRATIONS,
+    LEGACY_ARC_SELECTIONS,
+    REMOVED_ACTION_IDS,
+    get_record_map,
+    load_shaft_catalog,
+)
 from app.utils.logger import get_logger
 
 
@@ -35,11 +42,13 @@ MAX_BUFF_RULES = 48
 MAX_BACKGROUND_ACTION_MULTIPLIER = 999
 VISIBILITIES = frozenset({'private', 'public'})
 MARKET_SORTS = frozenset({'dps', 'likes', 'favorites', 'new'})
-DEFAULT_UNPUBLISHED_CHARACTERS = {
-    'char_076a1f4e53': '残红',
-}
+DEFAULT_UNPUBLISHED_CHARACTERS = {'char_akane': '明音凛'}
+HALF_OPEN_CHARACTERS = {}
 RELEASED_CHARACTERS = {
+    'char_0846d632e0': '灵可',
     'char_a01c39f576': '伊洛伊',
+    'char_076a1f4e53': '残虹',
+    'char_heiyu': '黑羽',
 }
 ELEMENTS = ('光', '灵', '咒', '暗', '魂', '相')
 ZERO_ACTION_VISUAL_TICKS = 5
@@ -59,6 +68,7 @@ SUBSTAT_KEYS = (
 )
 MODIFIER_KEYS = (
     'all_dmg',
+    'other_dmg',
     'crit_rate',
     'crit_dmg',
     'atk_pct',
@@ -75,7 +85,12 @@ MODIFIER_KEYS = (
     'stagger_strength',
     'basic_dmg',
     'dodge_counter_dmg',
-    'element_dmg',
+    'element_dmg_光',
+    'element_dmg_灵',
+    'element_dmg_咒',
+    'element_dmg_暗',
+    'element_dmg_魂',
+    'element_dmg_相',
     'follow_dmg',
     'mind_dmg',
     'attach_dmg',
@@ -99,9 +114,11 @@ SKILL_LEVEL_DEFAULTS = {
     'support': 10,
 }
 CURTAIN_PASSIVE_TYPES = ('type2', 'type3', 'type4')
+CANHONG_CHARACTER_ID = 'char_076a1f4e53'
+LINGKE_CHARACTER_ID = 'char_0846d632e0'
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SHAFT_COMPUTE_SCRIPT = PROJECT_ROOT / 'scripts' / 'shaft_compute.js'
-SHAFT_SOURCE_VERSION = '异环云配队 1.0.2'
+SHAFT_SOURCE_VERSION = '异环云配队 1.0.6'
 
 
 class ShaftAxisNameConflictError(RuleValidationError):
@@ -124,54 +141,102 @@ def initialize_shaft_character_publications() -> None:
     now = datetime.utcnow()
     with atomic_transaction():
         for character_id, character_name in DEFAULT_UNPUBLISHED_CHARACTERS.items():
-            ShaftCharacterPublication.get_or_create(
+            publication, created = ShaftCharacterPublication.get_or_create(
                 character_id=character_id,
                 defaults={
                     'character_name': character_name,
+                    'access_level': 'invited' if character_id in HALF_OPEN_CHARACTERS else 'test',
                     'is_published': False,
                     'updated_at': now,
                 },
             )
+            expected_level = 'invited' if character_id in HALF_OPEN_CHARACTERS else 'test'
+            fields_to_update = []
+            if publication.character_name != character_name:
+                publication.character_name = character_name
+                fields_to_update.append(ShaftCharacterPublication.character_name)
+            if not publication.is_published and publication.access_level != expected_level:
+                publication.access_level = expected_level
+                fields_to_update.append(ShaftCharacterPublication.access_level)
+            if fields_to_update:
+                publication.updated_at = now
+                publication.save(only=[
+                    *fields_to_update,
+                    ShaftCharacterPublication.updated_at,
+                ])
         for character_id, character_name in RELEASED_CHARACTERS.items():
             publication, _ = ShaftCharacterPublication.get_or_create(
                 character_id=character_id,
                 defaults={
                     'character_name': character_name,
+                    'access_level': 'public',
                     'is_published': True,
                     'updated_at': now,
                 },
             )
+            fields_to_update = []
+            if publication.character_name != character_name:
+                publication.character_name = character_name
+                fields_to_update.append(ShaftCharacterPublication.character_name)
             if not publication.is_published:
                 publication.is_published = True
+                fields_to_update.append(ShaftCharacterPublication.is_published)
+            if publication.access_level != 'public':
+                publication.access_level = 'public'
+                fields_to_update.append(ShaftCharacterPublication.access_level)
+            if fields_to_update:
                 publication.updated_at = now
                 publication.save(only=[
-                    ShaftCharacterPublication.is_published,
+                    *fields_to_update,
                     ShaftCharacterPublication.updated_at,
                 ])
 
 
-def _unpublished_character_ids() -> frozenset[str]:
+def _character_access_levels() -> dict[str, str]:
     if not ShaftCharacterPublication.table_exists():
-        return frozenset(DEFAULT_UNPUBLISHED_CHARACTERS)
-    publication_states = {
-        publication.character_id: bool(publication.is_published)
-        for publication in ShaftCharacterPublication.select(
-            ShaftCharacterPublication.character_id,
-            ShaftCharacterPublication.is_published,
+        return {
+            character_id: ('invited' if character_id in HALF_OPEN_CHARACTERS else 'test')
+            for character_id in DEFAULT_UNPUBLISHED_CHARACTERS
+        }
+    existing_columns = {
+        column.name for column in ShaftCharacterPublication._meta.database.get_columns(
+            ShaftCharacterPublication._meta.table_name
         )
     }
-    unpublished = {
+    has_access_level = 'access_level' in existing_columns
+    selected_fields = [
+        ShaftCharacterPublication.character_id,
+        ShaftCharacterPublication.is_published,
+    ]
+    if has_access_level:
+        selected_fields.append(ShaftCharacterPublication.access_level)
+    publication_states = {}
+    for publication in ShaftCharacterPublication.select(*selected_fields):
+        if publication.is_published:
+            access_level = 'public'
+        elif has_access_level:
+            access_level = str(publication.access_level or 'test')
+        else:
+            access_level = (
+                'invited' if publication.character_id in HALF_OPEN_CHARACTERS else 'test'
+            )
+        publication_states[publication.character_id] = access_level
+    for character_id in DEFAULT_UNPUBLISHED_CHARACTERS:
+        publication_states.setdefault(
+            character_id,
+            'invited' if character_id in HALF_OPEN_CHARACTERS else 'test',
+        )
+    for character_id in RELEASED_CHARACTERS:
+        publication_states[character_id] = 'public'
+    return publication_states
+
+
+def _unpublished_character_ids() -> frozenset[str]:
+    return frozenset(
         character_id
-        for character_id in DEFAULT_UNPUBLISHED_CHARACTERS
-        if not publication_states.get(character_id, False)
-    }
-    unpublished.update(
-        character_id
-        for character_id, is_published in publication_states.items()
-        if not is_published
+        for character_id, access_level in _character_access_levels().items()
+        if access_level != 'public'
     )
-    unpublished.difference_update(RELEASED_CHARACTERS)
-    return frozenset(unpublished)
 
 
 def _json_dumps(payload: Any) -> str:
@@ -276,6 +341,9 @@ def _default_arc_refinement(arc_id: str, catalog: dict[str, Any]) -> int:
 
 def _normalize_arc_refinement(raw: Any, arc_id: str, catalog: dict[str, Any]) -> int:
     level = _int(raw)
+    available = (((catalog.get('arc_refinements') or {}).get('arcs') or {}).get(arc_id) or {}).get('available_levels')
+    if available and level not in available:
+        return _default_arc_refinement(arc_id, catalog)
     if 1 <= level <= 5:
         return level
     return _default_arc_refinement(arc_id, catalog)
@@ -316,8 +384,16 @@ def _normalize_curtain_bonus(raw: Any, character_id: str, catalog: dict[str, Any
     default_bonus = defaults if isinstance(defaults, dict) else {}
     source = raw if isinstance(raw, dict) else {}
     default_stat = _normalize_stat_name(default_bonus.get('stat')) or next(iter(stat_options), '')
-    stat = _normalize_stat_name(source.get('stat')) or default_stat
-    passive_type = str(source.get('passive_type') or default_bonus.get('passive_type') or 'type3')
+    stat = (
+        default_stat
+        if character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, 'char_heiyu'}
+        else (_normalize_stat_name(source.get('stat')) or default_stat)
+    )
+    passive_type = str(
+        default_bonus.get('passive_type')
+        if character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, 'char_heiyu'}
+        else (source.get('passive_type') or default_bonus.get('passive_type') or 'type3')
+    )
     if passive_type not in CURTAIN_PASSIVE_TYPES:
         passive_type = 'type3'
     return {
@@ -336,6 +412,13 @@ def _normalize_awakening_nodes(raw_nodes: Any, legacy_awakening: Any = 0) -> lis
         })
     legacy_level = max(0, min(6, _int(legacy_awakening)))
     return list(range(1, legacy_level + 1))
+
+
+def _normalize_awakening_resonances(source: dict[str, Any]) -> dict[str, list[int]]:
+    raw = source.get('awakening_resonances')
+    if not isinstance(raw, list):
+        return {}  # Legacy builds continue deriving resonance from their nodes.
+    return {'awakening_resonances': sorted({_int(value) for value in raw if _int(value) in (3, 6)})}
 
 
 def _normalize_team(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
@@ -382,6 +465,7 @@ def _normalize_team(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
             'cartridge_name': (cartridge or {}).get('name') or '',
             'awakening': len(awakening_nodes),
             'awakening_nodes': awakening_nodes,
+            **_normalize_awakening_resonances(member),
             'bond_level': max(0, min(1, _int(member.get('bond_level'), 1 if member.get('bond_full') else 0))) if has_bond_bonus else 0,
             'bond_full': (bool(member.get('bond_full')) or _int(member.get('bond_level')) > 0) if has_bond_bonus else False,
             'skill_levels': _normalize_skill_levels(member.get('skill_levels')),
@@ -429,6 +513,7 @@ def _normalize_character_builds(raw: Any, team: list[dict[str, Any]], catalog: d
             'cartridge_name': (cartridges.get(cartridge_id) or {}).get('name') or '',
             'awakening': len(awakening_nodes),
             'awakening_nodes': awakening_nodes,
+            **_normalize_awakening_resonances(build),
             'bond_level': max(0, min(1, _int(build.get('bond_level'), 1 if build.get('bond_full') else 0))) if has_bond_bonus else 0,
             'bond_full': (bool(build.get('bond_full')) or _int(build.get('bond_level')) > 0) if has_bond_bonus else False,
             'skill_levels': _normalize_skill_levels(build.get('skill_levels')),
@@ -455,6 +540,8 @@ def _apply_character_builds_to_team(team: list[dict[str, Any]], character_builds
             merged_team.append(member)
             continue
         merged = dict(member)
+        if 'awakening_resonances' not in build:
+            merged.pop('awakening_resonances', None)
         for key in (
             'arc_id',
             'arc_name',
@@ -463,6 +550,7 @@ def _apply_character_builds_to_team(team: list[dict[str, Any]], character_builds
             'cartridge_name',
             'awakening',
             'awakening_nodes',
+            'awakening_resonances',
             'bond_level',
             'bond_full',
             'skill_levels',
@@ -476,14 +564,27 @@ def _apply_character_builds_to_team(team: list[dict[str, Any]], character_builds
     return merged_team
 
 
-def _normalize_steps(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
+def _normalize_steps(
+    raw: Any,
+    catalog: dict[str, Any],
+    team: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     steps = raw if isinstance(raw, list) else catalog['starter_axis']['steps']
     actions = get_record_map(catalog['actions'])
+    characters = get_record_map(catalog['characters'])
+    team_members = sorted(team or [], key=lambda member: _int(member.get('slot')))
+    steps = migrate_lingke_joint_steps(steps, team_members, catalog)
     normalized: list[dict[str, Any]] = []
     for index, step in enumerate(steps[:MAX_AXIS_STEPS]):
+        if len(normalized) >= MAX_AXIS_STEPS:
+            break
         if not isinstance(step, dict):
             continue
-        action_id = str(step.get('action_id') or '')
+        original_action_id = str(step.get('action_id') or '')
+        if original_action_id in REMOVED_ACTION_IDS:
+            continue
+        migration = LEGACY_ACTION_MIGRATIONS.get(original_action_id)
+        action_id = migration[0] if migration else original_action_id
         action = actions.get(action_id)
         if not action:
             raise RuleValidationError('轴中存在未知动作。')
@@ -503,9 +604,59 @@ def _normalize_steps(raw: Any, catalog: dict[str, Any]) -> list[dict[str, Any]]:
             'repeat': repeat,
             'tags': step.get('tags') if isinstance(step.get('tags'), list) else [],
         }
-        if placement == 'background' and not _is_background_action(action):
+        if str(action.get('trigger_character_selector') or '') == 'same_element_non_lingke':
+            action_element = str(action.get('damage_element') or '')
+            candidates = [
+                member
+                for member in team_members
+                if str(member.get('character_id') or '') != 'char_0846d632e0'
+                and str(characters.get(str(member.get('character_id') or ''), {}).get('element') or '') == action_element
+            ]
+            requested_character_id = str(step.get('trigger_character_id') or '')
+            selected = next(
+                (member for member in candidates if str(member.get('character_id') or '') == requested_character_id),
+                candidates[0] if candidates else None,
+            )
+            if selected:
+                normalized_step['trigger_character_id'] = str(selected.get('character_id') or '')
+        detached = bool(migration[1]) if migration else bool(step.get('detached'))
+        if detached and bool(action.get('can_detach')):
+            normalized_step['detached'] = True
+        base_duration_ticks = max(0, _int(
+            action.get('detached_duration_ticks') if normalized_step.get('detached') else action.get('duration_ticks'),
+        ))
+        if (
+            bool(step.get('interrupted'))
+            and base_duration_ticks > 0
+            and not _is_support_action(action)
+            and not _is_instant_native_background_action(action)
+            and action.get('can_interrupt') is not False
+        ):
+            normalized_step['interrupted'] = True
+            normalized_step['interrupt_duration_ticks'] = max(
+                1,
+                min(base_duration_ticks, _int(step.get('interrupt_duration_ticks'), base_duration_ticks)),
+            )
+            normalized_step['interrupt_hit_count'] = max(
+                0,
+                min(max(0, _int(action.get('hit_count'))), _int(step.get('interrupt_hit_count'), _int(action.get('hit_count')))),
+            )
+        if placement == 'background' and not detached and not _is_background_action(action):
             normalized_step['placement'] = 'background'
         normalized.append(normalized_step)
+        if migration and migration[2] and len(normalized) < MAX_AXIS_STEPS:
+            dodge_action_id = f'action_dodge_{str(action.get("character_id") or "").removeprefix("char_")}'
+            dodge_action = actions.get(dodge_action_id)
+            if dodge_action:
+                normalized.append({
+                    'id': f'{normalized_step["id"][:32]}_dodge',
+                    'slot': normalized_step['slot'],
+                    'action_id': dodge_action_id,
+                    'action_name': '闪',
+                    'start_tick': start_tick + max(0, _int(action.get('detached_duration_ticks'), 5)),
+                    'repeat': 1,
+                    'tags': [],
+                })
     normalized.sort(key=lambda item: (item['start_tick'], item['slot'], item['action_id']))
     return normalized
 
@@ -564,6 +715,8 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
         energy_capacity = max(0, _num((characters.get(character_id) or {}).get('energy_capacity'), 100))
         configured_personal = configured.get('personal_resources')
         configured_personal = configured_personal if isinstance(configured_personal, dict) else {}
+        configured_dot_layers = configured.get('dot_layers')
+        configured_dot_layers = configured_dot_layers if isinstance(configured_dot_layers, dict) else {}
         character_caps = personal_resource_caps.get(character_id)
         character_caps = character_caps if isinstance(character_caps, dict) else {}
         normalized_personal = {}
@@ -579,6 +732,11 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
             if str(configured.get('reaction') or '') in sustained_reactions else '',
             'personal_resources': normalized_personal,
         }
+        if character_id == 'char_076a1f4e53':
+            loop_initial_resources[character_id]['dot_layers'] = {
+                name: max(0, min(10, _int(configured_dot_layers.get(name))))
+                for name in ('蚀心', '鸩火')
+            }
     return {
         'switch_gap_ticks': switch_gap_ticks,
         'switch_loss_ticks': switch_gap_ticks,
@@ -642,12 +800,16 @@ def _is_support_action(action: dict[str, Any]) -> bool:
     return str(action.get('action_type') or '') == '援护'
 
 
+def _is_instant_switch_action(action: dict[str, Any]) -> bool:
+    return bool(action.get('is_instant_switch'))
+
+
 def _is_instant_native_background_action(action: dict[str, Any]) -> bool:
     return _is_background_action(action) and not _is_support_action(action) and not bool(action.get('pre_input_node'))
 
 
 def _can_background_override(action: dict[str, Any]) -> bool:
-    return bool(action.get('can_background_override')) and _is_basic_action(action)
+    return bool(action.get('can_background_override'))
 
 
 def _normalize_step_placement(step: dict[str, Any], action: dict[str, Any]) -> str:
@@ -660,23 +822,42 @@ def _is_q_action(action: dict[str, Any]) -> bool:
     return str(action.get('action_type') or '') == 'Q' or str(action.get('damage_type') or '') == 'Q'
 
 
-def _is_zero_foreground_q_step(step: dict[str, Any], action: dict[str, Any]) -> bool:
+def _is_time_stop_zero_step(step: dict[str, Any], action: dict[str, Any]) -> bool:
     return (
         _normalize_step_placement(step, action) != 'background' and
-        _is_q_action(action) and
+        bool(action.get('is_time_stop_zero')) and
         max(0, _int(action.get('duration_ticks'))) == 0
     )
+
+
+def _action_duration_ticks(step: dict[str, Any], action: dict[str, Any]) -> int:
+    if bool(step.get('detached')) and bool(action.get('can_detach')):
+        base_duration_ticks = max(0, _int(action.get('detached_duration_ticks')))
+    else:
+        base_duration_ticks = max(0, _int(action.get('duration_ticks')))
+    if (
+        bool(step.get('interrupted'))
+        and base_duration_ticks > 0
+        and not _is_support_action(action)
+        and not _is_instant_native_background_action(action)
+        and action.get('can_interrupt') is not False
+    ):
+        return max(1, min(base_duration_ticks, _int(step.get('interrupt_duration_ticks'), base_duration_ticks)))
+    return base_duration_ticks
 
 
 def calculate_axis_duration_ticks(steps: list[dict[str, Any]], actions_by_id: dict[str, dict[str, Any]]) -> int:
     last_tick = 0
     for step in steps:
         action = actions_by_id.get(str(step.get('action_id') or '')) or {}
-        if _normalize_step_placement(step, action) == 'background':
+        if (
+            _normalize_step_placement(step, action) == 'background' and
+            not _is_instant_switch_action(action)
+        ):
             continue
         start_tick = max(0, _int(step.get('start_tick')))
-        duration_ticks = max(0, _int(action.get('duration_ticks')))
-        if _is_zero_foreground_q_step(step, action):
+        duration_ticks = _action_duration_ticks(step, action)
+        if _is_time_stop_zero_step(step, action):
             visual_duration_ticks = ZERO_ACTION_VISUAL_TICKS
         else:
             visual_duration_ticks = duration_ticks
@@ -755,7 +936,7 @@ def normalize_axis_payload(payload: dict[str, Any]) -> dict[str, Any]:
     team = _normalize_team(body.get('team'), catalog)
     character_builds = _normalize_character_builds(body.get('character_builds'), team, catalog)
     team = _apply_character_builds_to_team(team, character_builds)
-    steps = _normalize_steps(body.get('steps'), catalog)
+    steps = _normalize_steps(body.get('steps'), catalog, team)
     _validate_step_team_actions(team, steps, catalog)
     axis_payload = {
         'team': team,
@@ -775,42 +956,63 @@ def _is_shaft_test_player(player: Player | None) -> bool:
     return bool(player and getattr(player, 'shaft_test_whitelisted', False))
 
 
-def _team_contains_disabled_character(team: Any) -> bool:
-    unpublished_character_ids = _unpublished_character_ids()
+def shaft_player_access_level(player: Player | None) -> str:
+    if _is_shaft_test_player(player):
+        return 'test'
+    if player and getattr(player, 'shaft_invited', False):
+        return 'invited'
+    return 'public'
+
+
+def _character_is_accessible(
+    character_id: str,
+    player: Player | None,
+    access_levels: dict[str, str] | None = None,
+) -> bool:
+    required_level = (access_levels or _character_access_levels()).get(character_id, 'public')
+    player_level = shaft_player_access_level(player)
+    access_rank = {'public': 0, 'invited': 1, 'test': 2}
+    return access_rank.get(player_level, 0) >= access_rank.get(required_level, 2)
+
+
+def _team_contains_disabled_character(team: Any, player: Player | None = None) -> bool:
     return isinstance(team, list) and any(
         isinstance(member, dict)
-        and str(member.get('character_id') or '') in unpublished_character_ids
+        and not _character_is_accessible(str(member.get('character_id') or ''), player)
         for member in team
     )
 
 
-def _axis_contains_disabled_character(axis: ShaftAxis) -> bool:
-    return _team_contains_disabled_character(_safe_json_loads(axis.team_json, []))
+def _axis_contains_disabled_character(axis: ShaftAxis, player: Player | None = None) -> bool:
+    return _team_contains_disabled_character(_safe_json_loads(axis.team_json, []), player)
 
 
 def _filter_visible_character_axes(query, player: Player | None):
-    if _is_shaft_test_player(player):
-        return query
-    unpublished_character_ids = _unpublished_character_ids()
-    if not unpublished_character_ids:
+    access_levels = _character_access_levels()
+    inaccessible_character_ids = {
+        character_id
+        for character_id in access_levels
+        if not _character_is_accessible(character_id, player, access_levels)
+    }
+    if not inaccessible_character_ids:
         return query
     restricted_axis_ids = ShaftAxisCharacter.select(ShaftAxisCharacter.axis).where(
-        ShaftAxisCharacter.character_id.in_(unpublished_character_ids)
+        ShaftAxisCharacter.character_id.in_(inaccessible_character_ids)
     )
     return query.where(ShaftAxis.id.not_in(restricted_axis_ids))
 
 
 def get_shaft_catalog_payload(player: Player | None = None) -> dict[str, Any]:
     catalog = load_shaft_catalog()
-    can_select_test_characters = _is_shaft_test_player(player)
-    unpublished_character_ids = _unpublished_character_ids()
+    access_levels = _character_access_levels()
     return {
         'characters': [
             {
                 **character,
                 'selection_disabled': (
-                    str(character.get('id') or '') in unpublished_character_ids
-                    and not can_select_test_characters
+                    not _character_is_accessible(
+                        str(character.get('id') or ''), player, access_levels
+                    )
                 ),
             }
             for character in catalog['characters']
@@ -826,6 +1028,7 @@ def get_shaft_catalog_payload(player: Player | None = None) -> dict[str, Any]:
         'formula_constants': catalog['formula_constants'],
         'source_meta': catalog['source_meta'],
         'starter_axis': catalog['starter_axis'],
+        'legacy_action_migrations': catalog['legacy_action_migrations'],
     }
 
 
@@ -908,8 +1111,7 @@ def _visible_axis(axis_id: int, player: Player | None = None) -> ShaftAxis:
         raise RuleValidationError('没有查看这个排轴的权限。')
     if (
         axis.visibility == 'public'
-        and not _is_shaft_test_player(player)
-        and _axis_contains_disabled_character(axis)
+        and _axis_contains_disabled_character(axis, player)
     ):
         raise RuleValidationError('排轴不存在。')
     return axis
@@ -1051,8 +1253,31 @@ def serialize_shaft_axis(
             else ''
         )
     if include_axis:
+        migrated_steps = migrate_lingke_joint_steps(axis_payload.get('steps') or [], axis_payload.get('team') or team, load_shaft_catalog())
+        if migrated_steps != axis_payload.get('steps', []):
+            axis_payload = {**axis_payload, 'steps': migrated_steps}
+            payload['legacy_actions_migrated'] = True
+            result = {}  # The browser recomputes the new actions; no stale per-slot contribution snapshot.
         payload['axis'] = axis_payload
         payload['result'] = result
+        payload['local_copy_id'] = None
+        if player is not None and axis.visibility == 'public' and axis.owner_id != player.id:
+            local_copy = ShaftAxis.select().where(
+                (ShaftAxis.owner == player) &
+                (ShaftAxis.visibility == 'private') &
+                (ShaftAxis.forked_from == axis)
+            ).order_by(ShaftAxis.updated_at.desc()).first()
+            if local_copy is None:
+                author = (axis.owner.nickname or axis.owner.player_uid or '作者').strip() or '作者'
+                suffix = f' - {author}'
+                base_title = (axis.title or '未命名排轴').strip() or '未命名排轴'
+                legacy_title = f'{base_title[:max(1, MAX_AXIS_TITLE_LENGTH - len(suffix))]}{suffix}'
+                local_copy = ShaftAxis.select().where(
+                    (ShaftAxis.owner == player) &
+                    (ShaftAxis.visibility == 'private') &
+                    (ShaftAxis.title == legacy_title)
+                ).order_by(ShaftAxis.updated_at.desc()).first()
+            payload['local_copy_id'] = local_copy.id if local_copy is not None else None
     return payload
 
 
@@ -1075,6 +1300,14 @@ def normalize_axis_for_hash(axis_payload: dict[str, Any]) -> dict[str, Any]:
         }
         if str(step.get('placement') or '') == 'background':
             item['placement'] = 'background'
+        if bool(step.get('detached')):
+            item['detached'] = True
+        if bool(step.get('interrupted')):
+            item['interrupted'] = True
+            item['interrupt_duration_ticks'] = max(1, _int(step.get('interrupt_duration_ticks'), 1))
+            item['interrupt_hit_count'] = max(0, _int(step.get('interrupt_hit_count')))
+        if str(step.get('trigger_character_id') or ''):
+            item['trigger_character_id'] = str(step.get('trigger_character_id') or '')
         steps.append(item)
     return {
         'team': sorted(team, key=lambda item: item['slot']),
@@ -1121,8 +1354,8 @@ def save_shaft_axis(player: Player, payload: dict[str, Any], axis_id: int | None
     if conflict_action not in {'', 'overwrite'}:
         raise RuleValidationError('未知的同名排轴处理方式。')
     axis_payload = normalize_axis_payload(payload)
-    if not _is_shaft_test_player(player) and _team_contains_disabled_character(axis_payload.get('team')):
-        raise RuleValidationError('队伍中存在当前仅对测试账号开放的角色。')
+    if _team_contains_disabled_character(axis_payload.get('team'), player):
+        raise RuleValidationError('队伍中存在当前账号无权使用的角色。')
     result = _submitted_axis_result(payload, axis_payload)
     axis_payload['duration_ticks'] = _int(result['summary'].get('duration_ticks'), axis_payload['duration_ticks'])
     dedupe_hash = calculate_axis_hash(axis_payload)
@@ -1130,13 +1363,36 @@ def save_shaft_axis(player: Player, payload: dict[str, Any], axis_id: int | None
     summary = result['summary']
     title = _clean_text(payload.get('title') or '未命名排轴', MAX_AXIS_TITLE_LENGTH) or '未命名排轴'
     description = _clean_text(payload.get('description'), MAX_AXIS_DESCRIPTION_LENGTH)
+    source_axis_id = _int(payload.get('source_axis_id'))
 
     with atomic_transaction():
+        source_axis: ShaftAxis | None = None
+        if source_axis_id > 0:
+            source_axis = ShaftAxis.select().where(
+                (ShaftAxis.id == source_axis_id) &
+                (ShaftAxis.visibility == 'public')
+            ).first()
+            if source_axis is None or source_axis.owner_id == player.id:
+                raise RuleValidationError('在线排轴来源无效。')
         record: ShaftAxis | None = None
         if axis_id is not None:
             record = _private_axis_query_for_player(axis_id, player)
             if record is None:
                 raise RuleValidationError('没有保存这个排轴的权限。')
+        elif source_axis is not None:
+            record = ShaftAxis.select().where(
+                (ShaftAxis.owner == player) &
+                (ShaftAxis.visibility == 'private') &
+                (ShaftAxis.forked_from == source_axis)
+            ).order_by(ShaftAxis.updated_at.desc()).first()
+            if record is None:
+                record = ShaftAxis.select().where(
+                    (ShaftAxis.owner == player) &
+                    (ShaftAxis.visibility == 'private') &
+                    (ShaftAxis.title == title)
+                ).order_by(ShaftAxis.updated_at.desc()).first()
+        if axis_id is None and record is not None and conflict_action != 'overwrite':
+            raise ShaftAxisNameConflictError(record.title, record.id)
         duplicate_title_query = ShaftAxis.select().where(
             (ShaftAxis.owner == player) &
             (ShaftAxis.visibility == 'private') &
@@ -1169,6 +1425,8 @@ def save_shaft_axis(player: Player, payload: dict[str, Any], axis_id: int | None
         record.total_damage = _int(summary.get('total_damage'))
         record.dps_x100 = _int(_num(summary.get('dps')) * 100)
         record.dedupe_hash = dedupe_hash
+        if source_axis is not None:
+            record.forked_from = source_axis
         record.updated_at = now
         record.published_at = None
         record.save()
@@ -1283,8 +1541,8 @@ def publish_shaft_axis_snapshot(player: Player, axis_id: int) -> dict[str, Any]:
         source = _private_axis_query_for_player(axis_id, player)
         if source is None:
             raise RuleValidationError('没有上传这个排轴的权限。')
-        if not _is_shaft_test_player(player) and _axis_contains_disabled_character(source):
-            raise RuleValidationError('队伍中存在当前仅对测试账号开放的角色。')
+        if _axis_contains_disabled_character(source, player):
+            raise RuleValidationError('队伍中存在当前账号无权使用的角色。')
         snapshot = ShaftAxis.select().where(
             (ShaftAxis.owner == player) &
             (ShaftAxis.visibility == 'public') &

@@ -116,6 +116,10 @@
                             <strong id="shaft-stagger-damage">0</strong>
                         </div>
                         <div class="shaft-stat-card">
+                            <span>其他</span>
+                            <strong id="shaft-other-damage">0</strong>
+                        </div>
+                        <div class="shaft-stat-card">
                             <span>总伤</span>
                             <strong id="shaft-total-damage">0</strong>
                         </div>
@@ -125,6 +129,7 @@
                         </div>
                     </div>
                     <div class="shaft-contribution-list" id="shaft-contribution-list"></div>
+                    <button class="primary-btn shaft-substat-contribution-open" id="shaft-substat-contribution-btn" type="button" aria-haspopup="dialog">副词条贡献度</button>
                 </section>
             </aside>
         </section>
@@ -160,6 +165,7 @@
                     <div class="shaft-editor-actions">
                         <span id="shaft-unlined-buff-indicator" class="shaft-unlined-buff-warning" hidden aria-label=""></span>
                         <button class="secondary-btn shaft-loop-settings-btn" id="shaft-loop-settings-btn" type="button" aria-haspopup="dialog">循环轴</button>
+                        <button class="secondary-btn" id="shaft-move-earlier-btn" type="button" title="将当前及后续动作前移到满足占位与切人间隔的最早位置（Ctrl / ⌘ + Backspace）">前移</button>
                         <button class="secondary-btn" id="shaft-undo-btn" type="button">撤销</button>
                         <button class="secondary-btn" id="shaft-redo-btn" type="button">重做</button>
                         <button class="secondary-btn" id="shaft-copy-step-btn" type="button">复制</button>
@@ -278,12 +284,12 @@
     <dialog class="shaft-shortcut-dialog shaft-name-conflict-dialog" id="shaft-share-open-dialog" aria-labelledby="shaft-share-open-title">
         <form class="shaft-shortcut-modal shaft-name-conflict-modal" method="dialog">
             <div>
-                <span class="shaft-panel-kicker">打开分享排轴</span>
+                <span class="shaft-panel-kicker">打开其他排轴</span>
                 <h2 id="shaft-share-open-title">当前工作区有未保存的更改</h2>
-                <p>打开分享链接会替换当前工作区。请先选择如何处理这些更改。</p>
+                <p>打开其他排轴会替换当前工作区。请先选择如何处理这些更改。</p>
             </div>
             <div class="shaft-name-conflict-actions shaft-share-open-actions">
-                <button class="secondary-btn" value="cancel">不打开分享</button>
+                <button class="secondary-btn" value="cancel">不打开</button>
                 <button class="secondary-btn danger-btn" value="discard">放弃更改</button>
                 <button class="secondary-btn" value="save_as">另存</button>
                 <button class="primary-btn" value="save">保存</button>
@@ -326,6 +332,18 @@
             <div id="shaft-harmony-analysis-content"></div>
         </div>
     </dialog>
+    <dialog class="shaft-action-contribution-dialog" id="shaft-substat-contribution-dialog" aria-labelledby="shaft-substat-contribution-title">
+        <div class="shaft-action-contribution-modal shaft-substat-contribution-modal">
+            <div class="section-title-row">
+                <div>
+                    <span class="shaft-panel-kicker">全队收益对比</span>
+                    <h2 id="shaft-substat-contribution-title">副词条贡献度</h2>
+                </div>
+                <button class="secondary-btn shaft-dialog-close" data-close-substat-contribution type="button" aria-label="关闭">×</button>
+            </div>
+            <div id="shaft-substat-contribution-content"></div>
+        </div>
+    </dialog>
     <dialog class="shaft-shortcut-dialog" id="shaft-shortcut-dialog" aria-labelledby="shaft-shortcut-dialog-title">
         <div class="shaft-shortcut-modal">
             <div class="section-title-row">
@@ -342,6 +360,7 @@
                         <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>A</kbd></dt><dd>全选动作</dd></div>
                         <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>C</kbd></dt><dd>复制所选动作</dd></div>
                         <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>V</kbd></dt><dd>粘贴到时间光标</dd></div>
+                        <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>Backspace</kbd></dt><dd>将当前及后续动作前移到满足占位与切人间隔的最早位置</dd></div>
                         <div><dt><kbd>Delete</kbd><span>/</span><kbd>Backspace</kbd></dt><dd>删除所选动作</dd></div>
                         <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>Z</kbd></dt><dd>撤销</dd></div>
                         <div><dt><kbd>Ctrl / ⌘</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>Z</kbd></dt><dd>重做（也支持 Ctrl / ⌘ + Y）</dd></div>
@@ -427,6 +446,60 @@
             </div>
         </div>
     </dialog>
+    <dialog class="shaft-action-edit-dialog" id="shaft-action-edit-dialog" aria-labelledby="shaft-action-edit-title">
+        <div class="shaft-action-edit-modal">
+            <div class="section-title-row">
+                <div>
+                    <span class="shaft-panel-kicker">动作设置</span>
+                    <h2 id="shaft-action-edit-title">编辑动作</h2>
+                </div>
+                <button class="secondary-btn shaft-dialog-close" data-close-action-edit type="button" aria-label="关闭">×</button>
+            </div>
+            <p class="shaft-action-edit-summary" id="shaft-action-edit-summary"></p>
+            <label class="shaft-action-edit-trigger-character" id="shaft-action-edit-trigger-character-row" hidden>
+                <span>
+                    <strong>触发对象</strong>
+                    <small id="shaft-action-edit-trigger-character-hint"></small>
+                </span>
+                <select id="shaft-action-edit-trigger-character"></select>
+            </label>
+            <label class="shaft-action-edit-toggle" id="shaft-action-edit-detached-row">
+                <input id="shaft-action-edit-detached" type="checkbox">
+                <span>
+                    <strong>脱手</strong>
+                    <small id="shaft-action-edit-detached-hint"></small>
+                </span>
+            </label>
+            <label class="shaft-action-edit-toggle" id="shaft-action-edit-interrupt-row">
+                <input id="shaft-action-edit-interrupted" type="checkbox">
+                <span>
+                    <strong>打断动作</strong>
+                    <small>缩短动作占用时间，并只结算指定伤害段数。</small>
+                </span>
+            </label>
+            <div class="shaft-action-edit-interrupt-settings" id="shaft-action-edit-interrupt-settings" hidden>
+                <label>
+                    <span>动作时长 <output id="shaft-action-edit-duration-output"></output></span>
+                    <input id="shaft-action-edit-duration" type="range" min="1" step="1">
+                </label>
+                <label>
+                    <span>伤害段数 <output id="shaft-action-edit-hit-output"></output></span>
+                    <input id="shaft-action-edit-hits" type="range" min="0" step="1">
+                </label>
+                <div class="shaft-action-edit-preview" aria-live="polite">
+                    <div><span>倍率</span><strong id="shaft-action-edit-preview-multiplier"></strong></div>
+                    <div><span>回能</span><strong id="shaft-action-edit-preview-energy"></strong></div>
+                    <div><span>环合</span><strong id="shaft-action-edit-preview-harmony"></strong></div>
+                    <div><span>倾陷</span><strong id="shaft-action-edit-preview-stagger"></strong></div>
+                </div>
+            </div>
+            <p class="shaft-action-edit-empty" id="shaft-action-edit-empty" hidden>该动作暂无可编辑选项。</p>
+            <div class="shaft-action-edit-actions">
+                <button class="secondary-btn" data-close-action-edit type="button">取消</button>
+                <button class="primary-btn" id="shaft-action-edit-confirm" type="button">确认</button>
+            </div>
+        </div>
+    </dialog>
     <dialog class="shaft-background-multiplier-dialog" id="shaft-background-multiplier-dialog" aria-labelledby="shaft-background-multiplier-title">
         <div class="shaft-background-multiplier-modal">
             <div class="section-title-row">
@@ -460,7 +533,7 @@
                 <input id="shaft-loop-enabled" type="checkbox">
                 <span>
                     <strong>开启循环轴</strong>
-                    <small>轴尾仍在持续的增益会衔接到下一轮轴开头，也可为每名角色选择一个起始持续环合。</small>
+                    <small>轴尾仍在持续的增益会衔接到下一轮轴开头；还可配置起始持续环合，残虹可额外携带蚀心与鸩火。</small>
                 </span>
             </label>
             <div class="shaft-loop-resource-list" id="shaft-loop-resource-list"></div>

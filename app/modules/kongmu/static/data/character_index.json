@@ -253,6 +253,19 @@
       "icon": "/Game/UI/UI_Icon/AvatarImage/256/player_kaesi1_256"
     },
     {
+      "id": "1072",
+      "name": "灵可",
+      "names": {
+        "zh": "灵可"
+      },
+      "element": "Nature",
+      "element_id": "NATURE",
+      "rarity": 5,
+      "icon": "",
+      "test_character": true,
+      "source_note": "Nanoka 2026-08-24 实时核实：角色ID 1072、灵属性、5星；本地头像用于测试角色展示。"
+    },
+    {
       "id": "1073",
       "name": "小吱",
       "names": {
@@ -296,16 +309,37 @@
     },
     {
       "id": "char_076a1f4e53",
-      "name": "残红",
+      "name": "残虹",
       "names": {
-        "zh": "残红"
+        "zh": "残虹"
       },
       "element": "Incantation",
       "element_id": "INCANTATION",
       "rarity": 5,
       "icon": "",
-      "test_character": true,
-      "source_note": "2026-08-04 用户提供的腾讯文档；Nanoka 当前未收录该角色。"
+      "source_note": "Nanoka NTE 1.3.4 已收录正式角色 ID 1036；本记录保留排轴稳定角色 ID，并于2026-08-24按用户口径转为公开角色。"
+    },
+    {
+      "id": "char_heiyu",
+      "name": "黑羽",
+      "names": {
+        "zh": "黑羽"
+      },
+      "element": "Psyche",
+      "element_id": "PSYCHE",
+      "source_note": "角色数值来自用户2026-09-15提供的腾讯文档《黑羽资料汇总》UTYzjRJfxLuc，非Nanoka核实数据；2026-09-24以Nanoka NTE 1.4.6角色1042和最新NTEData核对默认造型图片，未改数值来源。"
+    },
+    {
+      "id": "char_akane",
+      "name": "明音凛",
+      "names": {
+        "zh": "明音凛"
+      },
+      "element": "Lakshana",
+      "element_id": "LAKSHANA",
+      "rarity": 5,
+      "icon": "/Game/UI/UI_Icon/AvatarImage/256/player_mingyin_256",
+      "source_note": "空幕拓扑与每个Ⅲ型驱动攻击力+10%来自Nanoka NTE 1.4.6角色1057；默认造型图片核对NTEData提交43dd106003160cbb7566f120d6579288091b9609。排轴其他数值仍以用户资料为准。"
     }
   ]
 }

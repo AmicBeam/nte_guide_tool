@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="icon" href="{{ url_for('static', filename='images/brand/duel-icon.webp') }}" type="image/webp">
+    <link rel="icon" href="{{ url_for('static', filename='images/brand/esper-duel-icon.webp') }}" type="image/webp">
     <link rel="stylesheet" href="{{ url_for('static', filename='common/css/app.css') }}">
     {% set login_guard_exempt_endpoints = ['main.default_page', 'main.login_page', 'main.kongmu_page'] %}
     {% if request.endpoint not in login_guard_exempt_endpoints and not (allow_anonymous_shaft_share | default(false)) and (request.endpoint != 'main.shaft_page' or config['SHAFT_LOGIN_REQUIRED']) %}

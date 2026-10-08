@@ -1,0 +1,201 @@
+{
+  "kind": "explicit_user_candidate",
+  "request": "把高级人机做一下替换吧，让目前的高级人机用上新的模型，并且包含搜索链路",
+  "runtime_rule_hash": "ba8946fedaef946c0920fceef61a078a62dfd69e3b53904152450d7924c742b3",
+  "source_rule_hash": "7c928f692ad643ba32bb6d2e70808a137744fde82e58e5ee451e4744d3d5de9e",
+  "report": "artifacts/rl-evals/murk-hour-corrected-20261007/delivery-report.md",
+  "selection": "zhenhong: guided-online-short-20261008 latest, explicitly user-selected; other four: previous selected-models",
+  "quality_approved": false,
+  "compatibility_note": "Current rules and user-selected Zhenhong serving build differ from training; original model/source identities retained; experimental serving compatibility is not new-build strength acceptance.",
+  "models": {
+    "starter": {
+      "manifest_sha256": "c7b978ecc202432d559b6ece8e96d65f2e609579f9c6b969e88d41de16575216",
+      "model_sha256": "03991c8d20c1878dd0c64ff685fb4929ac491a7bc46c2f5203677a8340ed0c00",
+      "build_sha256": "e1743d737870096d947fc00a4e22e7ecb982a9d8f8f9c8f0bb425ddff89d6d3e"
+    },
+    "weave-rush": {
+      "manifest_sha256": "498e53274b050e5af22b80994e80dd8f5c2f8f8ad71bf771d21250be5ac79db6",
+      "model_sha256": "29a25b318f0319bd96bb3eaa27e21df669cacbb43c1bf0f9e07e1e7e783833d1",
+      "build_sha256": "a3efac8289f74cf9561bc439822eaf81d77beb115cac2353d6dd2798dca96e3d"
+    },
+    "quick-rush": {
+      "manifest_sha256": "82f8c7a043bc527b2c2e89cf99037a865623315877caaea3fbb100f789e2728e",
+      "model_sha256": "0a51fc7e08a8cf8b31f35d37222156a983ddd6af18e82a627006e80df874dfdb",
+      "build_sha256": "bc6e5df6e5365c167deec54ed81f21fb59ba267714adb5bc19c97c545b05aca3"
+    },
+    "zhenhong": {
+      "manifest_sha256": "467732ad673514cfe77487fcba4c179bcdd7f7d495b8c9c8c8a0e2e5d8a76b71",
+      "model_sha256": "a3209030a44ed5d270f6974a12bf1ec681837e67cad0ce66440a70401bd5f07a",
+      "build_sha256": "69ecad0bbc5373b7052ca472b5c7ec9a189595c25d239796b5ed1fc605bbfb59",
+      "serving_build": {
+        "id": "zhenhong",
+        "name": "真红预组",
+        "character_ids": [
+          "zhenhong",
+          "zero",
+          "iloy",
+          "yi"
+        ],
+        "card_ids": [
+          "R01",
+          "R02",
+          "R04",
+          "R04",
+          "R06",
+          "R06",
+          "R07",
+          "R08",
+          "Z03",
+          "Z03",
+          "Z04",
+          "Z04",
+          "Z05",
+          "Z05",
+          "Z08",
+          "Z08",
+          "Y02",
+          "Y02",
+          "Y03",
+          "Y03",
+          "Y06",
+          "Y06",
+          "Y08",
+          "Y08",
+          "I01",
+          "I01",
+          "I03",
+          "I03",
+          "I04",
+          "I04",
+          "I08",
+          "I08"
+        ]
+      },
+      "serving_build_sha256": "69ecad0bbc5373b7052ca472b5c7ec9a189595c25d239796b5ed1fc605bbfb59",
+      "serving_build_request": "把翳的牌换成截图所选：I01、I03、I04、I08各2张，预组和高级人机都是",
+      "source_rule_hash": "962a490120b05f40c768930946a7ee3e5f4837d1ab127a6bbb26f0c6f942492e",
+      "source_request": "替换这个新的模型吧：仅真红使用已回传短训练latest候选，保留搜索、不启用指导",
+      "source_report": "artifacts/rl-evals/zhenhong-guided-online-short-20261008/report.md",
+      "source_selection": "latest_unapproved",
+      "source_learning_seconds": 242.196755,
+      "source_formal_policy_updates": 4
+    },
+    "murk": {
+      "manifest_sha256": "5c6c0ea499303beda35ce0d85969ae0b7d391d9a3b7f93a8ebc80a90dc6ed9c2",
+      "model_sha256": "235b19b3fc37ee1100aa67266ef0d1c452823486263fbdf73da5b830610d0694",
+      "build_sha256": "196df3bd6b0d5724f0dd6989a889d92df560327c0464c33552a5bde3ee10df15"
+    }
+  },
+  "compatibility_history": [
+    {
+      "request": "真红的基础面板改为1/6",
+      "previous_runtime_rule_hash": "5a8f06f5936a4d98fd49dad07861fc8b83ae2ccc182f12b45f69f271e7a4e4bf",
+      "runtime_rule_hash": "eb93612ed99ad130fb0d622f49f71a33a90319aec8a4e26378c2ce5a8915d4e0",
+      "scope": "Zhenhong bare base attack/max_hp 2/5 -> 1/6; same named features, candidates and numeric architecture; preserve source manifests, weights and quality status"
+    },
+    {
+      "request": "真红面板调整后，其武备也都加1血减少1攻击",
+      "previous_runtime_rule_hash": "eb93612ed99ad130fb0d622f49f71a33a90319aec8a4e26378c2ce5a8915d4e0",
+      "runtime_rule_hash": "d60942ffe323a88cb80e85779415fceb113db7536415da736c7b5f699d06c678",
+      "scope": "R07 3/5 -> 2/6; R08 2/7 -> 1/8; same named features/candidates/architecture; original source model bytes and quality status preserved"
+    },
+    {
+      "request": "初始1点吧，然后让模型测试一下对创生的胜率如何",
+      "previous_runtime_rule_hash": "d60942ffe323a88cb80e85779415fceb113db7536415da736c7b5f699d06c678",
+      "runtime_rule_hash": "c36db72ac98a83f581e5814458f3451e30a16ca046f82a22f4d89ca559b5e081",
+      "scope": "Zhenhong receives one opening harmony through on_game_start; existing public numeric feature, candidate and architecture contracts unchanged; preserve original training identity and model bytes"
+    },
+    {
+      "request": "真红的面板和武备加1攻击吧",
+      "previous_runtime_rule_hash": "c36db72ac98a83f581e5814458f3451e30a16ca046f82a22f4d89ca559b5e081",
+      "runtime_rule_hash": "198a2af71ee044a0d3005251d1b2aed0cba4382e1f1bd3c69682e687e7e645d8",
+      "scope": "Zhenhong 1/6 -> 2/6; R07 2/6 -> 3/6; R08 1/8 -> 2/8; opening harmony and named feature/candidate/architecture contracts unchanged; preserve original training manifests, weights and quality status"
+    },
+    {
+      "request": "真红的凌晨的训练场、夕阳下的海滩、雪飘落的坡道去掉盈蓄瞬发部分，保留抽牌，攻击各减1",
+      "previous_runtime_rule_hash": "198a2af71ee044a0d3005251d1b2aed0cba4382e1f1bd3c69682e687e7e645d8",
+      "runtime_rule_hash": "596a73fe489e9ac95b974f78920e5e898bf15ff4755146a299189c9d744f3fc7",
+      "scope": "R02/R03/R04 always draw one tactic/form/battle before sortie; remove surplus instant hook; attack modifiers -1/0/+1; named feature/candidate/architecture contracts unchanged; source training manifests and weights preserved"
+    },
+    {
+      "request": "把翳的牌换成截图所选：I01、I03、I04、I08各2张，预组和高级人机都是",
+      "previous_runtime_rule_hash": "596a73fe489e9ac95b974f78920e5e898bf15ff4755146a299189c9d744f3fc7",
+      "runtime_rule_hash": "760c10436a3c2d98ab60730edc8e57c174a5f9189e7d1823fa004b1e9f21999e",
+      "source_build_sha256": "8cabdfa32f1a16dffa82c118e21dd9b12f2e81b8a08800ed08d318c6dff8fb24",
+      "serving_build_sha256": "69ecad0bbc5373b7052ca472b5c7ec9a189595c25d239796b5ed1fc605bbfb59",
+      "scope": "User-selected Yi cards only: remove I05x1/I07x1, add I03x1/I08x1; same roster/order, other three characters and cards; source manifests and NPZ byte-identical; no training or quality approval"
+    },
+    {
+      "request": "恢复五套高级人机对战",
+      "previous_runtime_rule_hash": "760c10436a3c2d98ab60730edc8e57c174a5f9189e7d1823fa004b1e9f21999e",
+      "runtime_rule_hash": "ba8946fedaef946c0920fceef61a078a62dfd69e3b53904152450d7924c742b3",
+      "scope": "Explicit user restoration after current rule changes: same named observation/candidate and numeric contracts; source manifests, NPZ, trained builds and user-selected Yi serving build preserved; real HTTP opening and bounded search checks required; no training or strength approval.",
+      "checked_features": 2420,
+      "checked_candidates": 254,
+      "checked_at": "2026-10-08T11:14:00+08:00"
+    }
+  ],
+  "model_replacement_history": [
+    {
+      "key": "zhenhong",
+      "request": "替换这个新的模型吧",
+      "previous": {
+        "manifest_sha256": "a0d9edb665ffff01b6ddf50b3e07addf169fdf9b163145c822bd9ef52241e952",
+        "model_sha256": "3f2be48f5ac5a751ae4b84c725007953aaef01cef2c834b822982fb4b33ef9d4",
+        "build_sha256": "8cabdfa32f1a16dffa82c118e21dd9b12f2e81b8a08800ed08d318c6dff8fb24",
+        "serving_build": {
+          "id": "zhenhong",
+          "name": "真红预组",
+          "character_ids": [
+            "zhenhong",
+            "zero",
+            "iloy",
+            "yi"
+          ],
+          "card_ids": [
+            "R01",
+            "R02",
+            "R04",
+            "R04",
+            "R06",
+            "R06",
+            "R07",
+            "R08",
+            "Z03",
+            "Z03",
+            "Z04",
+            "Z04",
+            "Z05",
+            "Z05",
+            "Z08",
+            "Z08",
+            "Y02",
+            "Y02",
+            "Y03",
+            "Y03",
+            "Y06",
+            "Y06",
+            "Y08",
+            "Y08",
+            "I01",
+            "I01",
+            "I03",
+            "I03",
+            "I04",
+            "I04",
+            "I08",
+            "I08"
+          ]
+        },
+        "serving_build_sha256": "69ecad0bbc5373b7052ca472b5c7ec9a189595c25d239796b5ed1fc605bbfb59",
+        "serving_build_request": "把翳的牌换成截图所选：I01、I03、I04、I08各2张，预组和高级人机都是"
+      },
+      "replacement_model_sha256": "a3209030a44ed5d270f6974a12bf1ec681837e67cad0ce66440a70401bd5f07a",
+      "source_rule_hash": "962a490120b05f40c768930946a7ee3e5f4837d1ab127a6bbb26f0c6f942492e",
+      "runtime_rule_hash": "ba8946fedaef946c0920fceef61a078a62dfd69e3b53904152450d7924c742b3",
+      "quality_approved": false,
+      "website_guidance": false,
+      "search_unchanged": true
+    }
+  ]
+}

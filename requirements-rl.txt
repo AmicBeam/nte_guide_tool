@@ -1,0 +1,6 @@
+# Optional standalone environment; website uses requirements.txt only.
+# No installation or training is performed by the framework CLI.
+numpy>=1.26,<3
+gymnasium>=1.0,<1.3
+stable-baselines3>=2.6,<3
+sb3-contrib>=2.6,<3

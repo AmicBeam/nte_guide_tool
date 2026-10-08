@@ -430,10 +430,10 @@
     "providers": [{"kind": "character", "id": "char_6f46705fd1"}],
     "priority": 95,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["E"]}, "conditions": [{"type": "awakening_count_min", "min": 6}]},
-    "target": {"scope": "team", "elements": ["咒"]},
+    "target": {"scope": "team"},
     "duration": {"type": "time", "ticks": 80, "ticks_by_awakening_node": {"6": 120}, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.1}
+    "effects": {"element_dmg_咒": 0.1}
   },
   {
     "id": "character_requiem_a2_support_damage", "name": "安魂曲2觉·援护入场增伤",
@@ -787,18 +787,18 @@
     "name": "错误的门：治疗后灵伤",
     "providers": [{"kind": "arc", "id": "arc_bab179ec33"}],
     "priority": 100,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar"}, "conditions": [{"type": "heal"}]},
-    "target": {"scope": "registrar", "elements": ["灵"]},
+    "trigger": {"event": "action_hit", "periodic_damage": true, "source": {"scope": "registrar"}, "conditions": [{"type": "heal"}]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.3}
+    "effects": {"element_dmg_灵": 0.3}
   },
   {
     "id": "arc_wrong_door_heal_team_damage",
     "name": "错误的门：治疗后其他队友通用增伤",
     "providers": [{"kind": "arc", "id": "arc_bab179ec33"}],
     "priority": 101,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar"}, "conditions": [{"type": "heal"}]},
+    "trigger": {"event": "action_hit", "periodic_damage": true, "source": {"scope": "registrar"}, "conditions": [{"type": "heal"}]},
     "target": {"scope": "other_team"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
@@ -860,10 +860,10 @@
     "providers": [{"kind": "arc", "id": "arc_112b3492d8"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar"}, "conditions": [{"type": "fons_full"}]},
-    "target": {"scope": "registrar", "elements": ["光"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 9999, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.25}
+    "effects": {"element_dmg_光": 0.25}
   },
   {
     "id": "arc_thinking_cat_full_fons_light",
@@ -871,10 +871,10 @@
     "providers": [{"kind": "arc", "id": "arc_5fb06c9645"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar"}, "conditions": [{"type": "fons_full"}]},
-    "target": {"scope": "registrar", "elements": ["光"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 9999, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.45}
+    "effects": {"element_dmg_光": 0.45}
   },
   {
     "id": "arc_bit_game_background_front_atk",
@@ -912,11 +912,11 @@
     "providers": [{"kind": "arc", "id": "arc_a5b483cca6"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "placements": ["foreground"]}},
-    "target": {"scope": "front_registrar", "elements": ["魂"]},
+    "target": {"scope": "front_registrar"},
     "duration": {"type": "time", "ticks": 9990, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "calculation": {"team_unique_key": "arc_bit_game_foreground_psyche_dmg"},
-    "effects": {"element_dmg": 0.12}
+    "effects": {"element_dmg_魂": 0.12}
   },
   {
     "id": "arc_bit_game_basic_psyche_stack",
@@ -929,12 +929,12 @@
       "conditions": [{"type": "hit_count_positive"}],
       "cooldown_ticks": 3
     },
-    "target": {"scope": "front_registrar", "elements": ["魂"]},
+    "target": {"scope": "front_registrar"},
     "duration": {"type": "time", "ticks": 9990, "loop_carry": true},
     "stacking": {"mode": "add_stack", "max_stacks": 10},
     "reset": {"owner_leaves_foreground": true},
     "calculation": {"team_unique_key": "arc_bit_game_basic_psyche_stack"},
-    "effects": {"element_dmg": 0.02}
+    "effects": {"element_dmg_魂": 0.02}
   },
   {
     "id": "arc_good_dog_q_team_atk",
@@ -992,10 +992,10 @@
     "providers": [{"kind": "arc", "id": "arc_320435ce51"}],
     "priority": 110,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["E"]}},
-    "target": {"scope": "registrar", "elements": ["相"], "conditions": [{"type": "enemy_debuff_active", "debuffs": ["延滞", "浸染"]}]},
+    "target": {"scope": "registrar", "conditions": [{"type": "enemy_debuff_active", "debuffs": ["延滞", "浸染"]}]},
     "duration": {"type": "time", "ticks": 150, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.18}
+    "effects": {"element_dmg_相": 0.18}
   },
   {
     "id": "arc_ready_eq_basic_dodge",
@@ -1048,10 +1048,10 @@
     "providers": [{"kind": "arc", "id": "arc_27dc4a7281"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}},
-    "target": {"scope": "registrar", "elements": ["光"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.32, "def_ignore": 0.12}
+    "effects": {"element_dmg_光": 0.32, "def_ignore": 0.12}
   },
   {
     "id": "arc_crimson_mirage_full_q_light_def",
@@ -1059,10 +1059,10 @@
     "providers": [{"kind": "arc", "id": "arc_2b6d5881ef"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}},
-    "target": {"scope": "registrar", "elements": ["光"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.512, "def_ignore": 0.192}
+    "effects": {"element_dmg_光": 0.512, "def_ignore": 0.192}
   },
   {
     "id": "arc_searched_eq_crit",
@@ -1118,28 +1118,6 @@
     "duration": {"type": "time", "ticks": 100, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "effects": {"mind_dmg": 0.1}
-  },
-  {
-    "id": "arc_unyielding_low_hp_bonus",
-    "name": "不屈之绵：半血下增伤提升",
-    "providers": [{"kind": "arc", "id": "arc_b22de80f07"}],
-    "priority": 100,
-    "trigger": {"event": "action_start", "source": {"scope": "registrar"}, "conditions": [{"type": "enemy_hp_below", "threshold": 0.5}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "time", "ticks": 9999, "loop_carry": true},
-    "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"all_dmg": 0.06}
-  },
-  {
-    "id": "arc_unyielding_full_low_hp_bonus",
-    "name": "不屈之绵·满精：半血下增伤提升",
-    "providers": [{"kind": "arc", "id": "arc_0a681d8e81"}],
-    "priority": 100,
-    "trigger": {"event": "action_start", "source": {"scope": "registrar"}, "conditions": [{"type": "enemy_hp_below", "threshold": 0.5}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "time", "ticks": 9999, "loop_carry": true},
-    "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"all_dmg": 0.14}
   },
   {
     "id": "arc_spring_shield_atk",
@@ -1234,7 +1212,7 @@
     "name": "街头拳王：相反应暴击翻倍",
     "providers": [{"kind": "cartridge", "id": "cartridge_9229a5376c"}],
     "priority": 100,
-    "trigger": {"event": "action_hit", "source": {"scope": "team"}, "conditions": [{"type": "enemy_debuff_applied", "debuffs": ["延滞", "浸染"]}]},
+    "trigger": {"event": "reaction_trigger", "source": {"scope": "team"}, "conditions": [{"type": "reaction_type", "reactions": ["延滞", "浸染"]}]},
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 200, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
@@ -1248,7 +1226,7 @@
     "trigger": {"event": "action_hit", "source": {"scope": "team", "elements": ["灵"]}},
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 100, "loop_carry": true},
-    "stacking": {"mode": "independent", "max_stacks": 7},
+    "stacking": {"mode": "independent", "max_stacks": 7, "stack_gain_from": "hit_count"},
     "effects": {"crit_dmg": 0.08}
   },
   {
@@ -1259,7 +1237,7 @@
     "trigger": {"event": "action_hit", "source": {"scope": "team", "elements": ["咒"]}},
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 100, "loop_carry": true},
-    "stacking": {"mode": "independent", "max_stacks": 6},
+    "stacking": {"mode": "independent", "max_stacks": 6, "stack_gain_from": "hit_count"},
     "effects": {"atk_pct": 0.06}
   },
   {
@@ -1492,17 +1470,6 @@
     "effects": {"atk_pct": 0.15}
   },
   {
-    "id": "character_fadia_enemy_slayer_crit",
-    "name": "法帝娅5觉·敌神者追击暴击",
-    "providers": [{"kind": "character", "id": "char_caa6c2e5a8"}],
-    "priority": 100,
-    "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 5}]},
-    "target": {"scope": "registrar", "action_ids": ["action_441d3aa300"]},
-    "duration": {"type": "permanent"},
-    "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"crit_rate": 0.5}
-  },
-  {
     "id": "character_haiyue_huacai",
     "name": "海月：华彩",
     "providers": [{"kind": "character", "id": "char_699966e2e7"}],
@@ -1566,10 +1533,27 @@
     "providers": [{"kind": "character", "id": "char_699966e2e7"}],
     "priority": 110,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}, "conditions": [{"type": "awakening_count_min", "min": 6}]},
-    "target": {"scope": "team", "elements": ["魂"]},
+    "target": {"scope": "team"},
     "duration": {"type": "time", "ticks": 150, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.08}
+    "effects": {"element_dmg_魂": 0.08}
+  },
+  {
+    "id": "character_haniya_dark_star_end_team_flat_atk",
+    "name": "哈尼娅·是友情啊",
+    "description": "黯星状态结束时，全队获得哈尼娅8%基础攻击的数值攻击，最多2层（累计16%）。",
+    "providers": [{"kind": "character", "id": "char_e0a4292b4e"}],
+    "priority": 90,
+    "trigger": {
+      "event": "reaction_end",
+      "source": {"scope": "team"},
+      "conditions": [{"type": "reaction_type", "reactions": ["黯星"]}]
+    },
+    "target": {"scope": "team"},
+    "duration": {"type": "permanent", "loop_carry": true},
+    "stacking": {"mode": "add_stack", "max_stacks": 2},
+    "activation": {"effects_from_owner_base": {"stat": "atk", "factor": 0.08, "effect_key": "flat_atk"}},
+    "effects": {}
   },
   {
     "id": "character_haniya_e_team_flat_atk",
@@ -1630,10 +1614,10 @@
     "providers": [{"kind": "character", "id": "char_e0a4292b4e"}],
     "priority": 20,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}, "conditions": [{"type": "awakening_min", "min": 5}]},
-    "target": {"scope": "registrar", "elements": ["魂"]},
+    "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 100, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"element_dmg": 0.3},
+    "effects": {"element_dmg_魂": 0.3},
     "display": {"line": false}
   },
   {
@@ -1794,7 +1778,7 @@
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 150, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {}
+    "effects": {"all_dmg": 0.2}
   },
   {
     "id": "character_chaos_a2_license_def_ignore",
@@ -2006,7 +1990,7 @@
         "action_ids": [
           "action_00edea34a8", "action_9029121faa", "action_9dd4a360d0",
           "action_82b936e67b", "action_a7443f657f", "action_39502832da", "action_de60da4553",
-          "action_ae46a26f6e", "action_6d2645f71e", "action_182423b934", "action_97ef5c83d2",
+          "action_ae46a26f6e", "action_6d2645f71e",
           "action_24c60040ec", "action_907f25722f", "action_5e20c982d6", "action_4d428c72e8",
           "action_2745f804a5", "action_1104de864b"
         ]
@@ -2017,6 +2001,8 @@
     "stacking": {"key": "character_requiem_nightmare", "mode": "independent", "max_stacks": 10, "stack_gain_from": "hit_count"},
     "periodic_damage": {
       "source": "噩梦",
+      "tags_by_awakening_node": {"5": ["heal", "治疗"]},
+      "source_note": "2026-09-20用户简化口径：E觉后每次噩梦伤害带治疗标签，不模拟每3秒回复量。",
       "action_type": "普攻",
       "damage_type": "普攻",
       "extra_tag": "DOT",
@@ -2390,7 +2376,7 @@
   },
   {
     "id": "character_canhong_harmony_strength",
-    "name": "残红·余焰未熄",
+    "name": "残虹·余焰未熄",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive"},
@@ -2401,7 +2387,7 @@
   },
   {
     "id": "character_canhong_three_node_resonance_ultimate_multiplier",
-    "name": "残红·三觉共鸣终结倍率强化",
+    "name": "残虹·三觉共鸣终结倍率强化",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_count_min", "min": 3}]},
@@ -2412,7 +2398,7 @@
   },
   {
     "id": "character_canhong_six_node_resonance_attack",
-    "name": "残红·六觉共鸣攻击强化",
+    "name": "残虹·六觉共鸣攻击强化",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 110,
     "trigger": {
@@ -2429,7 +2415,7 @@
   },
   {
     "id": "character_canhong_illusion_state",
-    "name": "残红·幻境状态",
+    "name": "残虹·幻境状态",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 10,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}},
@@ -2440,21 +2426,8 @@
     "display": {"line": true}
   },
   {
-    "id": "character_canhong_hunt_foreground_leave_restore",
-    "name": "残红·离开前台恢复现实",
-    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
-    "priority": 11,
-    "trigger": {"event": "foreground_leave", "conditions": [{"type": "active_buff_key", "key": "character_canhong_illusion_state"}, {"type": "awakening_max", "max": 0}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "permanent"},
-    "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
-    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.25},
-    "display": {"line": false}
-  },
-  {
     "id": "character_canhong_delusion_foreground_leave_delay",
-    "name": "残红·离开前台后惑延迟清除",
+    "name": "残虹·离开前台后惑延迟清除",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 12,
     "trigger": {"event": "foreground_leave", "conditions": [{"type": "active_buff_key", "key": "character_canhong_illusion_state"}, {"type": "awakening_max", "max": 0}]},
@@ -2466,7 +2439,7 @@
   },
   {
     "id": "character_canhong_c_delusion_regeneration_foreground_leave_delay",
-    "name": "残红C觉·离开前台后惑生命回复",
+    "name": "残虹C觉·离开前台后惑生命回复",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 13,
     "trigger": {"event": "foreground_leave", "conditions": [{"type": "active_buff_key", "key": "character_canhong_illusion_state"}, {"type": "awakening_min", "min": 3}, {"type": "awakening_max", "max": 0}]},
@@ -2479,33 +2452,33 @@
   },
   {
     "id": "character_canhong_illusion_state_foreground_leave_clear",
-    "name": "残红·离开前台清除幻境",
+    "name": "残虹·离开前台清除幻境",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 19,
     "trigger": {"event": "foreground_leave", "conditions": [{"type": "active_buff_key", "key": "character_canhong_illusion_state"}]},
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 1},
-    "activation": {"clear_keys": ["character_canhong_illusion_state", "character_canhong_hunt_natural_restore"]},
+    "activation": {"clear_keys": ["character_canhong_illusion_state"]},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "effects": {},
     "display": {"line": false}
   },
   {
     "id": "character_canhong_illusion_state_action_exit_clear",
-    "name": "残红·主动解除幻境",
+    "name": "残虹·主动解除幻境",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 30,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2", "action_canhong_q_blood_banquet"]}},
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 1},
-    "activation": {"clear_keys": ["character_canhong_illusion_state", "character_canhong_hunt_natural_restore"]},
+    "activation": {"clear_keys": ["character_canhong_illusion_state"]},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "effects": {},
     "display": {"line": false}
   },
   {
     "id": "character_canhong_hunt",
-    "name": "残红·狩",
+    "name": "残虹·狩",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_max", "max": 0}]},
@@ -2513,64 +2486,24 @@
     "duration": {"type": "permanent"},
     "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
     "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.25},
-    "display": {"line": false}
-  },
-  {
-    "id": "character_canhong_hunt_illusion_delay",
-    "name": "残红·狩（进入幻境延迟清除）",
-    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
-    "priority": 21,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "time", "ticks": 80, "loop_carry": true},
-    "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
-    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.25},
-    "display": {"line": true}
-  },
-  {
-    "id": "character_canhong_hunt_reality_restore",
-    "name": "残红·狩（返回现实）",
-    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
-    "priority": 22,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2", "action_canhong_q_blood_banquet"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "permanent"},
-    "stacking": {"key": "character_canhong_hunt", "mode": "refresh", "max_stacks": 1},
-    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.25},
-    "display": {"line": false}
-  },
-  {
-    "id": "character_canhong_hunt_natural_restore",
-    "name": "残红·狩（幻境自然结束）",
-    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
-    "priority": 23,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
-    "target": {"scope": "registrar"},
-    "duration": {"type": "permanent", "delay_ticks": 80},
-    "stacking": {"key": "character_canhong_hunt_natural_restore", "mode": "refresh", "max_stacks": 1},
-    "reset": {"action_ids": ["action_canhong_e1", "action_canhong_E1"]},
-    "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.25},
+    "effects": {"other_dmg": 0.25},
     "display": {"line": false}
   },
   {
     "id": "character_canhong_a1_hunt",
-    "name": "残红1觉·永久狩",
+    "name": "残虹1觉·永久狩",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 1}]},
     "target": {"scope": "registrar"},
     "duration": {"type": "permanent"},
     "calculation": {"team_unique_key": "character_canhong_hunt_effect"},
-    "effects": {"all_dmg": 0.6},
+    "effects": {"other_dmg": 0.4},
     "display": {"line": false}
   },
   {
     "id": "character_canhong_delusion",
-    "name": "残红·惑（全队DOT暴伤）",
+    "name": "残虹·惑（全队DOT暴伤）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_e1", "action_canhong_E1"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
@@ -2582,7 +2515,7 @@
   },
   {
     "id": "character_canhong_delusion_exit_delay",
-    "name": "残红·惑（全队DOT暴伤，离开幻境延迟清除）",
+    "name": "残虹·惑（全队DOT暴伤，离开幻境延迟清除）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 21,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2", "action_canhong_q_blood_banquet"]}, "conditions": [{"type": "awakening_max", "max": 0}]},
@@ -2594,7 +2527,7 @@
   },
   {
     "id": "character_canhong_a1_delusion",
-    "name": "残红1觉·永久惑（全队DOT暴伤）",
+    "name": "残虹1觉·永久惑（全队DOT暴伤）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 1}]},
@@ -2605,13 +2538,13 @@
   },
   {
     "id": "character_canhong_c_hunt_interrupt_resistance",
-    "name": "残红C觉·狩抗打断强化",
+    "name": "残虹C觉·狩抗打断强化",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 21,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 3}]},
     "target": {
       "scope": "registrar",
-      "conditions": [{"type": "active_buff_any", "keys": ["character_canhong_hunt", "character_canhong_hunt_natural_restore", "character_canhong_a1_hunt"]}]
+      "conditions": [{"type": "active_buff_any", "keys": ["character_canhong_hunt", "character_canhong_a1_hunt"]}]
     },
     "duration": {"type": "permanent"},
     "effects": {"interrupt_resistance": 0.5},
@@ -2619,7 +2552,7 @@
   },
   {
     "id": "character_canhong_c_delusion_regeneration",
-    "name": "残红C觉·惑生命回复",
+    "name": "残虹C觉·惑生命回复",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 22,
     "trigger": {
@@ -2636,7 +2569,7 @@
   },
   {
     "id": "character_canhong_c_delusion_regeneration_exit_delay",
-    "name": "残红C觉·惑生命回复（离开幻境延迟清除）",
+    "name": "残虹C觉·惑生命回复（离开幻境延迟清除）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 23,
     "trigger": {
@@ -2653,7 +2586,7 @@
   },
   {
     "id": "character_canhong_ac_delusion_regeneration_permanent",
-    "name": "残红A+C觉·永久惑生命回复",
+    "name": "残虹A+C觉·永久惑生命回复",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 1}, {"type": "awakening_min", "min": 3}]},
@@ -2665,7 +2598,7 @@
   },
   {
     "id": "character_canhong_corrosion_heart",
-    "name": "残红·蚀心",
+    "name": "残虹·蚀心",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 100,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_illusion_a1", "action_canhong_illusion_a2", "action_canhong_illusion_a3", "action_canhong_illusion_a4"]}},
@@ -2676,8 +2609,25 @@
     "effects": {}
   },
   {
+    "id": "character_canhong_tianyi_turbid_burn_layer",
+    "name": "残虹·天翼",
+    "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
+    "priority": 99,
+    "trigger": {
+      "event": "dot_layer_applied",
+      "source": {"scope": "team"},
+      "conditions": [{"type": "enemy_debuff_active", "debuffs": ["浊燃"]}]
+    },
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"mode": "independent", "max_stacks": 1},
+    "activation": {"increase_active_turbid_burn_layer": true},
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
     "id": "character_canhong_illusion_dot_spread",
-    "name": "残红·魔舞（全部持续伤害加层）",
+    "name": "残虹·魔舞（全部持续伤害加层）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 101,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_illusion_a1", "action_canhong_illusion_a2", "action_canhong_illusion_a3", "action_canhong_illusion_a4", "action_canhong_illusion_z1"]}},
@@ -2690,7 +2640,7 @@
   },
   {
     "id": "character_canhong_a_dot_spread",
-    "name": "残红A觉·持续伤害扩散",
+    "name": "残虹A觉·持续伤害扩散",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 103,
     "trigger": {
@@ -2713,7 +2663,7 @@
   },
   {
     "id": "character_canhong_corrosion_heart_five",
-    "name": "残红·蚀心（5层）",
+    "name": "残虹·蚀心（5层）",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 101,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E1", "action_canhong_E2"]}},
@@ -2725,7 +2675,7 @@
   },
   {
     "id": "character_canhong_poison_fire_five",
-    "name": "残红·鸩火",
+    "name": "残虹·鸩火",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 102,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]}},
@@ -2737,7 +2687,7 @@
   },
   {
     "id": "character_canhong_a5_team_stagger_damage",
-    "name": "残红5觉·倾陷伤害强化",
+    "name": "残虹5觉·倾陷伤害强化",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 5}]},
@@ -2748,7 +2698,7 @@
   },
   {
     "id": "character_canhong_b_blaze_stack",
-    "name": "残红B觉·蓄焰",
+    "name": "残虹B觉·蓄焰",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 110,
     "trigger": {
@@ -2762,13 +2712,13 @@
     },
     "target": {"scope": "registrar"},
     "duration": {"type": "time", "ticks": 9990, "loop_carry": true},
-    "stacking": {"key": "character_canhong_b_blaze_stack", "mode": "add_stack", "max_stacks": 2},
+    "stacking": {"key": "character_canhong_b_blaze_stack", "mode": "add_stack", "max_stacks": 1},
     "effects": {},
     "display": {"line": true}
   },
   {
     "id": "character_canhong_b_blaze_fentian_damage",
-    "name": "残红B觉·蓄焰强化焚天",
+    "name": "残虹B觉·蓄焰强化焚天",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 120,
     "trigger": {
@@ -2786,12 +2736,12 @@
         "per_stack_from_effect": {"final_dmg": {"source": "blaze_final_dmg", "factor": 1}}
       }
     },
-    "effects": {"blaze_final_dmg": 1},
+    "effects": {"blaze_final_dmg": 1.5},
     "display": {"line": false}
   },
   {
     "id": "character_canhong_d_blaze_blood_banquet_damage",
-    "name": "残红D觉·蓄焰强化血宴",
+    "name": "残虹D觉·蓄焰强化血宴",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 120,
     "trigger": {
@@ -2808,12 +2758,12 @@
         "per_stack_from_effect": {"final_dmg": {"source": "blaze_final_dmg", "factor": 1}}
       }
     },
-    "effects": {"blaze_final_dmg": 1},
+    "effects": {"blaze_final_dmg": 1.5},
     "display": {"line": false}
   },
   {
     "id": "character_canhong_blood_banquet_active",
-    "name": "残红·血宴已激活",
+    "name": "残虹·血宴已激活",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 115,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_E2"]}},
@@ -2825,7 +2775,7 @@
   },
   {
     "id": "character_canhong_blood_banquet_consume_activation",
-    "name": "残红·释放血宴",
+    "name": "残虹·释放血宴",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 130,
     "trigger": {"event": "action_end", "source": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]}},
@@ -2838,7 +2788,7 @@
   },
   {
     "id": "character_canhong_enhanced_fentian_window",
-    "name": "残红·强化焚天可释放",
+    "name": "残虹·强化焚天可释放",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 125,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_ids": ["action_canhong_q_blood_banquet"]}},
@@ -2851,7 +2801,7 @@
   },
   {
     "id": "character_canhong_f_annihilation_dot_layers",
-    "name": "残红F觉·灭层蚀强化",
+    "name": "残虹F觉·灭层蚀强化",
     "providers": [{"kind": "character", "id": "char_076a1f4e53"}],
     "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 6}]},
@@ -2859,7 +2809,7 @@
     "duration": {"type": "permanent"},
     "dynamic_effects": {
       "active_dot_layer_count": {
-        "effect_key": "base_multiplier_pct",
+        "effect_key": "all_dmg",
         "per_count": 0.12,
         "max_count": 20,
         "action_last_hit_ratio": true
@@ -2867,6 +2817,224 @@
     },
     "effects": {},
     "display": {"line": false}
+  },
+  {
+    "id": "character_lingke_fuwen_follow_damage",
+    "name": "灵可·覆纹弱点感应",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 90,
+    "trigger": {"event": "reaction_trigger", "source": {"scope": "team"}, "conditions": [{"type": "reaction_type", "reactions": ["覆纹"]}]},
+    "target": {"scope": "team"},
+    "duration": {"type": "time", "ticks": 120, "loop_carry": true},
+    "stacking": {"key": "character_lingke_fuwen_follow_damage", "mode": "refresh", "max_stacks": 1},
+    "effects": {"follow_dmg": 0.1},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_lingke_frequency_check_window",
+    "name": "灵可·协频判定",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 20,
+    "trigger": {"event": "action_hit", "timing": "end", "source": {"scope": "registrar", "action_ids": ["action_lingke_e"], "placements": ["foreground"]}, "conditions": [{"type": "source_foreground_at_hit"}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "stacking": {"key": "character_lingke_frequency_check_window", "mode": "refresh", "max_stacks": 1},
+    "effects": {},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_lingke_harmonic_joint_damage",
+    "name": "灵可·谐频同频强化",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 20,
+    "trigger": {"event": "passive"},
+    "target": {
+      "scope": "registrar",
+      "action_ids": ["action_lingke_joint_light", "action_lingke_team_joint", "action_lingke_joint_curse", "action_lingke_joint_dark", "action_lingke_joint_soul", "action_lingke_joint_phase"],
+      "conditions": [{"type": "active_buff_key", "key": "character_lingke_frequency_check_window"}]
+    },
+    "duration": {"type": "permanent"},
+    "dynamic_effects": {
+      "personal_resource_value": {
+        "resource": "谐频",
+        "effect_key": "all_dmg",
+        "base_value": 1.5,
+        "per_point": 0.004,
+        "max_amount": 100,
+        "max_extra": 0.4
+      }
+    },
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_lingke_q_burst_negative_damage",
+    "name": "灵可·超负荷共鸣负面增伤",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 20,
+    "trigger": {"event": "passive"},
+    "target": {"scope": "registrar", "action_ids": ["action_lingke_q_burst"]},
+    "duration": {"type": "permanent"},
+    "dynamic_effects": {
+      "negative_effect_count": {
+        "include_all_enemy_debuffs": true,
+        "count_def_down": true,
+        "count_res_down": true,
+        "damage_tags": ["DOT"],
+        "effect_key": "all_dmg",
+        "per_count": 0.04,
+        "max_count": 5
+      }
+    },
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_lingke_precise_tuning_light",
+    "name": "灵可·精确调频·光抗降低",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 100,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "tags": ["同频合击"], "elements": ["光"]}},
+    "target": {"scope": "team"},
+    "duration": {"type": "time", "ticks": 120, "loop_carry": true},
+    "stacking": {"key": "character_lingke_precise_tuning_light", "mode": "refresh", "max_stacks": 1},
+    "effects": {"res_down_光": 0.08}
+  },
+  {
+    "id": "character_lingke_precise_tuning_anima",
+    "name": "灵可·精确调频·灵抗降低",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 100,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "tags": ["同频合击"], "elements": ["灵"]}},
+    "target": {"scope": "team"},
+    "duration": {"type": "time", "ticks": 120, "loop_carry": true},
+    "stacking": {"key": "character_lingke_precise_tuning_anima", "mode": "refresh", "max_stacks": 1},
+    "effects": {"res_down_灵": 0.08}
+  },
+  {
+    "id": "character_lingke_precise_tuning_curse",
+    "name": "灵可·精确调频·咒抗降低",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 100,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "tags": ["同频合击"], "elements": ["咒"]}},
+    "target": {"scope": "team"},
+    "duration": {"type": "time", "ticks": 120, "loop_carry": true},
+    "stacking": {"key": "character_lingke_precise_tuning_curse", "mode": "refresh", "max_stacks": 1},
+    "effects": {"res_down_咒": 0.08}
+  },
+  {
+    "id": "character_lingke_precise_tuning_dark",
+    "name": "灵可·精确调频·暗抗降低",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 100,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "tags": ["同频合击"], "elements": ["暗"]}},
+    "target": {"scope": "team"},
+    "duration": {"type": "time", "ticks": 120, "loop_carry": true},
+    "stacking": {"key": "character_lingke_precise_tuning_dark", "mode": "refresh", "max_stacks": 1},
+    "effects": {"res_down_暗": 0.08}
+  },
+  {
+    "id": "character_lingke_precise_tuning_soul",
+    "name": "灵可·精确调频·魂抗降低",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 100,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "tags": ["同频合击"], "elements": ["魂"]}},
+    "target": {"scope": "team"},
+    "duration": {"type": "time", "ticks": 120, "loop_carry": true},
+    "stacking": {"key": "character_lingke_precise_tuning_soul", "mode": "refresh", "max_stacks": 1},
+    "effects": {"res_down_魂": 0.08}
+  },
+  {
+    "id": "character_lingke_precise_tuning_phase",
+    "name": "灵可·精确调频·相抗降低",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 100,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "tags": ["同频合击"], "elements": ["相"]}},
+    "target": {"scope": "team"},
+    "duration": {"type": "time", "ticks": 120, "loop_carry": true},
+    "stacking": {"key": "character_lingke_precise_tuning_phase", "mode": "refresh", "max_stacks": 1},
+    "effects": {"res_down_相": 0.08}
+  },
+  {
+    "id": "character_lingke_q_reset_e",
+    "name": "灵可3觉·刷新变轨技能",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 80,
+    "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_ids": ["action_lingke_q"]}, "conditions": [{"type": "awakening_min", "min": 3}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "time", "ticks": 1},
+    "activation": {"reset_action_cooldowns": ["action_lingke_e"]},
+    "effects": {},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_lingke_resonance_field_base",
+    "name": "灵可·共鸣领域",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 85,
+    "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_ids": ["action_lingke_q"]}, "conditions": [{"type": "awakening_count_max", "max": 5}]},
+    "target": {"scope": "team"},
+    "duration": {"type": "time", "ticks": 80, "loop_carry": true},
+    "stacking": {"key": "character_lingke_resonance_field", "mode": "refresh", "max_stacks": 1},
+    "effects": {},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_lingke_resonance_field_full",
+    "name": "灵可·共鸣领域",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 85,
+    "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_ids": ["action_lingke_q"]}, "conditions": [{"type": "awakening_count_min", "min": 6}]},
+    "target": {"scope": "team"},
+    "duration": {"type": "time", "ticks": 130, "loop_carry": true},
+    "stacking": {"key": "character_lingke_resonance_field", "mode": "refresh", "max_stacks": 1},
+    "effects": {},
+    "display": {"line": true}
+  },
+  {
+    "id": "character_lingke_three_node_resonance_attack",
+    "name": "灵可·三觉共鸣攻击强化",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 20,
+    "trigger": {"event": "passive", "conditions": [{"type": "awakening_count_min", "min": 3}]},
+    "target": {"scope": "registrar"},
+    "duration": {"type": "permanent"},
+    "effects": {"atk_pct": 0.2},
+    "display": {"line": false}
+  },
+  {
+    "id": "character_lingke_six_node_resonance_element_damage",
+    "name": "灵可·万籁同频",
+    "providers": [{"kind": "character", "id": "char_0846d632e0"}],
+    "priority": 90,
+    "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_ids": ["action_lingke_q"]}, "conditions": [{"type": "awakening_count_min", "min": 6}]},
+    "target": {"scope": "team"},
+    "duration": {"type": "time", "ticks": 130, "loop_carry": true},
+    "stacking": {"key": "character_lingke_six_node_resonance_element_damage", "mode": "refresh", "max_stacks": 1},
+    "effects": {"element_dmg_灵": 0.3, "element_dmg_咒": 0.3},
+    "display": {"line": true}
+  },
+  {
+    "id": "arc_gold_record_support_crit_damage",
+    "name": "远行者之声·援护暴伤",
+    "providers": [{"kind": "arc", "id": "arc_614aec6ed1"}],
+    "priority": 100,
+    "trigger": {"event": "passive"},
+    "target": {"scope": "registrar", "action_types": ["援护"]},
+    "duration": {"type": "permanent"},
+    "effects": {"crit_dmg": 0.66},
+    "display": {"line": false}
+  },
+  {
+    "id": "arc_gold_record_q_crit_damage",
+    "name": "远行者之声·援护后终结暴伤",
+    "providers": [{"kind": "arc", "id": "arc_614aec6ed1"}],
+    "priority": 101,
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_types": ["援护"]}},
+    "target": {"scope": "registrar", "action_types": ["Q"]},
+    "duration": {"type": "time", "ticks": 30, "loop_carry": true},
+    "stacking": {"key": "arc_gold_record_q_crit_damage", "mode": "add_stack", "max_stacks": 3},
+    "effects": {"crit_dmg": 0.22}
   },
   {
     "id": "arc_canhong_devouring_heart_crit_damage",
@@ -2878,5 +3046,1834 @@
     "duration": {"type": "time", "ticks": 150, "loop_carry": true},
     "stacking": {"key": "arc_canhong_devouring_heart_crit_damage", "mode": "add_stack", "max_stacks": 7},
     "effects": {"crit_dmg": 0.09}
+  },
+  {
+    "id": "character_heiyu_form",
+    "name": "黑羽·二形态",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 160,
+      "loop_carry": true,
+      "pause_off_field": true
+    },
+    "stacking": {
+      "key": "character_heiyu_form",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "resource_effects": {
+      "block_gain": {
+        "恶意": true
+      }
+    },
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_heiyu_form_exit",
+    "name": "黑羽·退出二形态",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q2"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_form_exit",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_heiyu_form",
+        "character_heiyu_e_ready"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_q_attack",
+    "name": "黑羽·全队攻击提升",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_max",
+          "max": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_q_attack",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "atk_pct": 0.2
+    }
+  },
+  {
+    "id": "character_heiyu_e_ready",
+    "name": "黑羽·二形态变轨激活",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_form_a5",
+          "action_heiyu_parry"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_heiyu_form"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_e_ready",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_heiyu_e_ready_clear",
+    "name": "黑羽·消耗二形态变轨激活",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_form_e"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_e_ready_clear",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_heiyu_e_ready"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_assist_window",
+    "name": "黑羽·失乐鸟",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_e"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_assist_window",
+      "mode": "refresh",
+      "max_stacks": 5,
+      "stack_gain": 5
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "arc_heiyu_team_crit",
+    "name": "罪与罚·全队暴伤",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_heiyu_crime_punishment"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_types": [
+          "Q"
+        ]
+      }
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_heiyu_team_crit",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "crit_dmg": 0.16
+    }
+  },
+  {
+    "id": "arc_heiyu_self_crit",
+    "name": "罪与罚·装备者额外暴伤",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_heiyu_crime_punishment"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_types": [
+          "Q"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_heiyu_self_crit",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "crit_dmg": 0.32
+    },
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_heiyu_a_e",
+    "name": "黑羽A觉·二形态变轨倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_heiyu_form_e"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 1.5
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。用户2026-09-23将二形态E基础倍率提升由200%改为150%，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_b_e",
+    "name": "黑羽B觉·变轨倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_heiyu_e"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 1
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_b_malice",
+    "name": "黑羽F觉·失乐鸟恶意",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_end",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 6
+        },
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_heiyu_form"
+          ]
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_assist"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "effects": {},
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 技能描述将协同后4点恶意写在6觉「死与生」，且仅非魔女状态生效。",
+    "activation": {
+      "personal_resource_gain": {
+        "恶意": 4
+      }
+    },
+    "stacking": {
+      "key": "character_heiyu_b_malice",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_b_def",
+    "name": "黑羽B觉·魔女防御",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_heiyu_form"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "def_pct": 0.2
+    },
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 「漫游记」：救世的魔女状态下防御提升20%。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_b_heal",
+    "name": "黑羽B觉·渡世死焰回复",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_hit",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_form_e"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "effects": {},
+    "activation": {
+      "heal_base_atk_ratio": 4
+    },
+    "stacking": {
+      "key": "character_heiyu_b_heal",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "display": {
+      "line": false
+    },
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 「漫游记」：渡世死焰命中后回复基础攻击力的400%。"
+  },
+  {
+    "id": "character_heiyu_c_malice",
+    "name": "黑羽C觉·恶意伤害",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "tags": [
+        "恶意伤害"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 0.5
+    },
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_d_attack",
+    "name": "黑羽D觉·全队攻击与通伤提升",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 4
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_heiyu_q_attack",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "atk_pct": 0.2,
+      "all_dmg": 0.12
+    },
+    "source_note": "用户2026-09-22指定：保留基础20%攻击，将D觉额外10%攻击改为12%通伤，持续25秒；非Nanoka核实数据。"
+  },
+  {
+    "id": "character_heiyu_e_res_action_hit",
+    "name": "黑羽E觉·烂柯人·魂相暗抗性降低",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_hit",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 5
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "damage_types": [
+          "普攻",
+          "下落",
+          "闪反",
+          "E",
+          "Q",
+          "援护"
+        ]
+      }
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {
+      "res_down_魂": 0.08,
+      "res_down_相": 0.08,
+      "res_down_暗": 0.08
+    },
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。",
+    "stacking": {
+      "key": "character_heiyu_e_res",
+      "mode": "refresh",
+      "max_stacks": 1
+    }
+  },
+  {
+    "id": "character_heiyu_e_res_periodic_damage",
+    "name": "黑羽E觉·烂柯人·魂相暗抗性降低",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "periodic_damage",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 5
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "damage_types": [
+          "普攻",
+          "下落",
+          "闪反",
+          "E",
+          "Q",
+          "援护"
+        ]
+      }
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {
+      "res_down_魂": 0.08,
+      "res_down_相": 0.08,
+      "res_down_暗": 0.08
+    },
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。",
+    "stacking": {
+      "key": "character_heiyu_e_res",
+      "mode": "refresh",
+      "max_stacks": 1
+    }
+  },
+  {
+    "id": "character_heiyu_f_soul",
+    "name": "黑羽F觉·魂伤提升",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_start",
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 6
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {
+      "element_dmg_魂": 0.25
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "stacking": {
+      "key": "character_heiyu_f_soul",
+      "mode": "refresh",
+      "max_stacks": 1
+    }
+  },
+  {
+    "id": "character_heiyu_three_q1",
+    "name": "黑羽三觉共鸣·一段终结倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_heiyu_q1"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 1
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_three_q2",
+    "name": "黑羽三觉共鸣·二段终结倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_heiyu_q2"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 0.5
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_three_malice",
+    "name": "黑羽三觉共鸣·终结获得恶意",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 10,
+    "trigger": {
+      "event": "action_start",
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ],
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_heiyu_q1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "effects": {},
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "activation": {
+      "personal_resource_gain": {
+        "恶意": 20
+      }
+    },
+    "stacking": {
+      "key": "character_heiyu_three_malice",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_heiyu_six_crit",
+    "name": "黑羽六觉共鸣·全队暴伤",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_heiyu"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "passive",
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "crit_dmg": 0.3
+    },
+    "source_note": "用户2026-09-16更新的腾讯文档《黑羽资料汇总》，非Nanoka核实数据。",
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_akane_single",
+    "name": "明音凛·泛音列",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_e"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {},
+    "stacking": {
+      "key": "character_akane_single",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "activation": {
+      "clear_keys": [
+        "character_akane_area"
+      ]
+    },
+    "reaction_pulse": {
+      "reaction": "延滞",
+      "interval_ticks": 30,
+      "requires_reaction_unlock": true
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_area",
+    "name": "明音凛·音域",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_hold_e"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {},
+    "stacking": {
+      "key": "character_akane_area",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "activation": {
+      "clear_keys": [
+        "character_akane_single"
+      ]
+    },
+    "reaction_pulse": {
+      "reaction": "延滞",
+      "interval_ticks": 30,
+      "requires_reaction_unlock": true
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_mode",
+    "name": "明音凛·音浪形态",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_e",
+          "action_akane_hold_e"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {},
+    "stacking": {
+      "key": "character_akane_mode",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_transmit_single",
+    "name": "明音凛·传导普攻",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      }
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_akane_a1",
+        "action_akane_a2",
+        "action_akane_a3",
+        "action_akane_a4"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_akane_single"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 0.325
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_e_single",
+    "name": "明音凛E觉·传导强化",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 5
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_akane_a1",
+        "action_akane_a2",
+        "action_akane_a3",
+        "action_akane_a4"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_akane_single"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 0.175
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_transmit_area",
+    "name": "明音凛·传导普攻",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      }
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_akane_a1",
+        "action_akane_a2",
+        "action_akane_a3",
+        "action_akane_a4"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_akane_area"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "all_dmg": 0.36
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_e_area",
+    "name": "明音凛E觉·传导强化",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 5
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_akane_a1",
+        "action_akane_a2",
+        "action_akane_a3",
+        "action_akane_a4"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_akane_area"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "all_dmg": 0.24
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_c",
+    "name": "明音凛C觉·泛音列倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_akane_e"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 1.5
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_b_single",
+    "name": "明音凛B觉·全抗降低",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "team",
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_akane_single"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "res_down_光": 0.075,
+      "res_down_灵": 0.075,
+      "res_down_咒": 0.075,
+      "res_down_暗": 0.075,
+      "res_down_魂": 0.075,
+      "res_down_相": 0.075,
+      "res_down_心灵": 0.075
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_b_area",
+    "name": "明音凛B觉·前台增伤",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "front",
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_akane_area"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "all_dmg": 0.125
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_a",
+    "name": "明音凛A觉·暴击",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "crit_rate": 0.12
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_d",
+    "name": "明音凛D觉·攻击",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_enhanced_e"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 4
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 100,
+      "loop_carry": true
+    },
+    "effects": {
+      "atk_pct": 0.16
+    },
+    "stacking": {
+      "key": "character_akane_d",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_three",
+    "name": "明音凛三觉共鸣·攻击",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "atk_pct": 0.2
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_six",
+    "name": "明音凛六觉共鸣·暴伤",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_enhanced_e"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {
+      "crit_dmg": 0.5
+    },
+    "stacking": {
+      "key": "character_akane_six",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "activation": {
+      "personal_resource_gain": {
+        "弦能": 10
+      }
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_talent2",
+    "name": "明音凛·烁星激昂",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_q1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {
+      "all_dmg": 0.2
+    },
+    "stacking": {
+      "key": "character_akane_talent2",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_f",
+    "name": "明音凛F觉·全队增伤",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_q1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 250,
+      "loop_carry": true
+    },
+    "effects": {
+      "all_dmg": 0.1
+    },
+    "stacking": {
+      "key": "character_akane_f",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "character_akane_cadenza",
+    "name": "明音凛·华彩连段",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_q1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "effects": {},
+    "stacking": {
+      "key": "character_akane_cadenza",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 华彩连段持续20秒；第二段不自动结算。"
+  },
+  {
+    "id": "character_akane_cadenza_front",
+    "name": "明音凛·华彩前半",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_q1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 100,
+      "loop_carry": true
+    },
+    "effects": {},
+    "stacking": {
+      "key": "character_akane_cadenza_front",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "display": {
+      "line": false
+    },
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 第二段只在华彩后半可释放；前10秒放置会提示。"
+  },
+  {
+    "id": "character_akane_enhanced_single",
+    "name": "明音凛·泛音列同调共振",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive"
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_akane_enhanced_e"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_akane_single"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "base_multiplier_pct": 0.25
+    },
+    "display": {
+      "line": false
+    },
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 同调共振基础800%；泛音列额外+200%，合计1000%。音域保持800%。"
+  },
+  {
+    "id": "character_akane_heal",
+    "name": "明音凛A觉·恢复",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_enhanced_e"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "effects": {},
+    "stacking": {
+      "key": "character_akane_heal",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "activation": {
+      "heal_base_atk_ratio": 1
+    },
+    "display": {
+      "line": false
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "arc_akane_skill",
+    "name": "月的对跖点·变轨增伤",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_akane_moon_antipode"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_types": [
+          "普攻"
+        ]
+      },
+      "cooldown_ticks": 3
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 50,
+      "loop_carry": true
+    },
+    "effects": {
+      "skill_dmg": 0.07
+    },
+    "stacking": {
+      "key": "arc_akane_skill",
+      "mode": "add_stack",
+      "max_stacks": 4
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "arc_akane_basic",
+    "name": "月的对跖点·普攻增伤",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_akane_moon_antipode"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_types": [
+          "E"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "effects": {
+      "basic_dmg": 0.28
+    },
+    "stacking": {
+      "key": "arc_akane_basic",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+  },
+  {
+    "id": "arc_akane_element",
+    "name": "月的对跖点·相伤",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_akane_moon_antipode"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      }
+    },
+    "target": {
+      "scope": "registrar",
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "arc_akane_skill"
+        },
+        {
+          "type": "active_buff_key",
+          "key": "arc_akane_basic"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "element_dmg_相": 0.16
+    },
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
   }
 ]

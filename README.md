@@ -1,38 +1,41 @@
 # NTE Tools
 
-本仓库是异环主题网页工具集合，而不是单一桌游项目。仓库使用同一个 Flask 应用承载多个相互独立的功能模块，并共享账号、数据库、基础页面框架和通用静态资源。
+本仓库是异环主题网页工具站，不是单一桌游项目。同一个 Flask 应用承载多个独立模块，并共享账号、数据库、基础页面和通用静态资源。
 
-访问 `/` 可进入仓库级工具主页，再选择具体模块。各模块的产品目标、入口、代码边界和验证方式由各自的 README 维护；根 README 只说明仓库整体结构和公共约定。
+访问 `/` 进入工具主页，再选择模块。各模块的产品范围、页面入口、代码边界和验证命令由各自 README 维护；本文件只说明仓库入口、模块索引和公共运行方式。
 
-工具主页同时提供项目 GitHub、静默之光和异环攻略组的外部入口，并展示网站备案号。
+主页同时提供 [GitHub](https://github.com/AmicBeam/nte_board_game)、静默之光和异环攻略组入口，并展示备案号。
 
 ## 模块
 
-| 模块 | 页面入口 | 说明文档 | 用途 |
+| 模块 | 入口 | 说明 | 用途 |
 | --- | --- | --- | --- |
-| 异象对决 | `/card-game` | [模块 README](app/modules/card_game/README.md) | 网页卡牌牌桌、构筑、图鉴与对局数据 |
+| 异能对决 | `/card-game` | [模块 README](app/modules/card_game/README.md) | 现行四人轮替牌桌、构筑、图鉴、回放、教学与人机 |
 | 空幕计算 | `/kongmu` | [模块 README](app/modules/kongmu/README.md) | 角色空幕与卡带搭配计算 |
-| 预配队 | `/preteam` | [模块 README](app/modules/preteam/README.md) | 即将下线；由排轴模块取代，当前保留主 C、队友和属性搭配预览 |
 | 排轴计算 | `/shaft` | [模块 README](app/modules/shaft/README.md) | 配装、动作轴、伤害计算与方案广场 |
+| 预配队 | `/preteam`（主页入口已移除） | [模块 README](app/modules/preteam/README.md) | 即将下线，由排轴取代；旧链接仍可访问 |
 
-新增或修改模块时，应优先更新对应模块 README；只有模块索引、共享设施或全仓库约定发生变化时才更新本文件。
+异能对决的现行规则见 [完整手册](docs/everness-item-chain-card-design.md)。默认页面已是四人轮替；旧盖卡入口与数据看板尚未迁移，见模块 README。
+
+新增或修改模块时，先更新对应模块 README；只有模块索引、共享设施或全仓库运行方式变化时才改本文件。
 
 ## 仓库结构
 
-- `app/`：Flask 应用与共享账号、数据库、路由适配等基础设施。
-- `app/modules/`：桌游、空幕、预配队和排轴四个业务模块；每个模块自行维护 README、模板和静态资源。
-- `app/templates/`：仓库入口与共享基础模板。
-- `app/static/`：通用样式、脚本和跨模块图片资源。
-- `app/modules/card_game/content/`、`app/modules/card_game/engine/`：异象对决的内容、规则与对局服务。
-- `app/modules/shaft/domain/`：排轴模块的领域计算代码。
-- `plugins/`：机器人账号桥接参考实现，与网站仅通过共享数据库交互。
-- `docs/`：跨模块设计资料和专项报告。
-- `scripts/`：数据导入、本地联调和维护脚本。
+- `app/`：Flask 应用与共享账号、数据库、鉴权和路由适配。
+- `app/modules/`：四个业务模块；各自维护 README、模板和静态资源。
+- `app/modules/card_game/content/duel_v2/`、`engine/duel_v2/`：现行异能对决卡池与纯规则引擎。
+- `app/modules/card_game/rl/`：训练框架；导入或启动网站时不会自动训练。
+- `app/modules/shaft/domain/`：排轴领域计算。
+- `app/templates/`、`app/static/`：仓库入口、共享基础模板和跨模块静态资源。
+- `plugins/`：机器人账号桥接；与网站只通过共享数据库交互，不能引用 `app/`。
+- `artifacts/rl-evals/`：本地训练／评估报告、原始数据和权重，已被Git忽略；不随仓库推送。
+- `docs/`：跨模块长期设计资料与训练手册，不存放单次训练报告。异能对决规则以完整手册为准，排轴机制以对应验收文档为准。
+- `scripts/`：本地联调、数据导入、训练入口和 Windows 发布脚本。
 - `tests/`：后端、页面与前端静态检查。
 
-详细分层、依赖方向、持久化策略和前端约束见 [AGENTS.md](AGENTS.md)。
+分层、依赖方向和持久化策略见 [AGENTS.md](AGENTS.md)。共享 SQLite 写事务使用 `BEGIN IMMEDIATE`，避免异步对局存档与登录等读后写竞争。
 
-## 公共运行方式
+## 本地运行
 
 ```bash
 python3 -m venv .venv
@@ -41,9 +44,9 @@ pip install -r requirements.txt
 python run.py
 ```
 
-默认打开 `http://127.0.0.1:5001/`。
+开发服务监听 `0.0.0.0:5001`，本机打开 `http://127.0.0.1:5001/`，局域网用当前机器 IP 的同一端口。Windows 可双击 `start.bat`。
 
-当前环境不运行机器人时，可执行下面的命令创建本地联调账号：
+不跑机器人时，创建本地联调账号：
 
 ```bash
 python3 scripts/seed_mock_account.py
@@ -51,69 +54,40 @@ python3 scripts/seed_mock_account.py
 
 - 玩家号：`10001`
 - 密码：`654321`
+- 该账号带测试白名单，并写入当前可见的官方预组。
 
-## Windows Server 应用目录发布
+可选依赖不进入默认网站环境：
 
-仓库提供仅更新服务器 `app/` 目录的推送式发布脚本。发布源固定为当前 Git `HEAD`
-中已提交的 `app/`；如果 `app/` 存在已暂存、未暂存或未跟踪改动，检查、打包和发布
-都会拒绝执行，避免把本地半成品同步到服务器。脚本不要求提交已经推送或合入
-`main`，发布版本由当前分支的 `HEAD` 决定。脚本不会上传或覆盖项目根目录的
-`.env`、数据库、日志、虚拟环境和其他目录。
+- 异能对决「高级人机」：`pip install -r requirements-ai.txt`，仅 CPU 推理。两套镜像模型随 `app/` 发布，路径见 [模块说明](app/modules/card_game/README.md#高级人机)。
+- 训练与评估：`pip install -r requirements-rl.txt`。网站启动不会加载训练权重或开始训练；命令见 [公开卡池训练](docs/duel-v2-public-training.md)。
 
-首次使用时复制本机配置模板并填写真实 SSH 地址和 Windows 项目路径；本机配置已被
-Git 忽略，不会把服务器信息提交到仓库：
+## Windows 发布
+
+`scripts/deploy_windows_app.sh` 只把当前 Git `HEAD` 里的 `app/` 推到服务器，不上传 `.env`、数据库、日志或虚拟环境。`app/` 有未提交改动时默认拒绝；确认只发 `HEAD` 时可加 `--allow-dirty-app`。不要求该提交已推送或合入 `main`。
 
 ```bash
 cp scripts/deploy_windows_app.env.example scripts/deploy_windows_app.local.env
-```
-
-只检查本机准备情况，不连接服务器：
-
-```bash
 scripts/deploy_windows_app.sh --check
-```
-
-只在 `dist/deploy/` 生成当前 `HEAD` 的 `app/` 发布包，不连接服务器：
-
-```bash
 scripts/deploy_windows_app.sh --prepare
-```
-
-确认发布时必须显式执行：
-
-```bash
 scripts/deploy_windows_app.sh --deploy
 ```
 
-远端替换前会把旧 `app/` 移到 Windows 临时目录中作为备份。当前服务器通过
-`start_waitress.bat` 启动 Waitress，因此脚本默认停止监听 `8000` 端口的旧进程，
-替换 `app/` 后通过 Windows WMI 创建脱离 SSH 会话的独立进程来运行该批处理，并等待
-端口连续稳定监听。批处理的标准输入会重定向到 `NUL`，避免其末尾的 `pause` 在进程
-退出后遗留隐藏窗口；后台输出追加写入 `logs/waitress-deploy.log`。Caddy 配置不在
-`app/` 中，发布时无需重启 Caddy。
+`--prepare` 只在 `dist/deploy/` 打 ZIP。`--deploy` 先备份远端 `app/`，再用 `robocopy` 替换；失败则回滚。默认停止 8000 端口上的 Waitress，再以后台方式运行 `start_waitress.bat`（本机回环 `127.0.0.1:8000`，由 Caddy 反代）。Caddy 配置不在 `app/` 中，发布时不重启。
 
-如果以后改成 Windows 服务，可设置 `NTE_DEPLOY_SERVICE`，让发布成功后改为重启服务：
+可用环境变量覆盖：`NTE_DEPLOY_HOST`、`NTE_DEPLOY_PROJECT`、`NTE_DEPLOY_RESTART_BATCH`、`NTE_DEPLOY_LISTEN_PORT`。若改成 Windows 服务，设置 `NTE_DEPLOY_SERVICE` 后改为重启服务。
 
-```bash
-NTE_DEPLOY_SERVICE=NteBoardGame scripts/deploy_windows_app.sh --deploy
-```
+## 共享约定
 
-服务器地址、项目路径可分别通过 `NTE_DEPLOY_HOST` 和
-`NTE_DEPLOY_PROJECT` 覆盖。Waitress 批处理和监听端口可分别通过
-`NTE_DEPLOY_RESTART_BATCH` 和 `NTE_DEPLOY_LISTEN_PORT` 覆盖；把
-`NTE_DEPLOY_RESTART_BATCH` 设置为空字符串可禁用进程重启。
-
-## 共享工程约定
-
-- 路由只负责参数校验、鉴权和调用服务，业务计算留在对应模块的服务或领域层。
-- 各模块可以共享账号、数据库和页面基础设施，但不能把某个模块的领域规则写入另一个模块。
-- `plugins/` 不能直接引用 `app/`，机器人和网站只通过共享数据库表交互。
-- 账号、构筑、房间等关键资料同步入库；异象对决的对局快照使用进程内最新态缓存与异步入库。
-- 模块入口应使用能表达模块含义的路由，不使用 `/home` 这类仓库范围不明确的地址。
+- 新增或更新角色头像、默认立绘时优先从最新 NTEData 获取，缺图时使用 Nanoka；保持原有缩放与头部对齐。具体来源核对与 WebP 交付流程见 [角色图片资源说明](docs/character-image-assets.md)。
+- 数值模型清单按原始字节校验；Git 属性禁止模型 JSON 自动换行转换，保留 Windows 导出文件及其 SHA。Markdown 的双空格换行按文档语法保留。
+- 路由只做参数校验、鉴权和调用服务；业务计算留在对应模块。
+- 模块可共享账号、数据库和页面基础设施，不能把一个模块的领域规则写入另一个模块。
+- 账号、构筑、房间等关键资料同步入库；异能对决对局快照使用进程内最新态加异步入库。
+- 模块入口使用能表达模块含义的路径。
 
 ## 验证
 
-先运行与改动模块对应 README 中列出的检查。公共冒烟检查可运行：
+先跑对应模块 README 中的检查。仓库级冒烟：
 
 ```bash
 python3 -m unittest discover -s tests -p 'test_*.py'

@@ -3,9 +3,8 @@
     "id": "cartridge_f4282fad3f",
     "name": "失落光芒",
     "detail": "10光伤；Q后20秒穿防25",
-    "required_element": "光",
     "modifiers": {
-      "element_dmg": 0.1,
+      "element_dmg_光": 0.1,
       "atk_pct": 0,
       "hp_pct": 0,
       "def_pct": 0,
@@ -38,9 +37,8 @@
     "id": "cartridge_2f40014b04",
     "name": "迪亚波罗斯",
     "detail": "10暗伤；无视12抗性，触发暗反应后翻倍，20秒",
-    "required_element": "暗",
     "modifiers": {
-      "element_dmg": 0.1,
+      "element_dmg_暗": 0.1,
       "atk_pct": 0,
       "hp_pct": 0,
       "def_pct": 0,
@@ -74,9 +72,8 @@
     "id": "cartridge_bb71141f17",
     "name": "恶魔之血：诅咒",
     "detail": "10魂伤；18增伤，处于魂反应翻倍",
-    "required_element": "魂",
     "modifiers": {
-      "element_dmg": 0.1,
+      "element_dmg_魂": 0.1,
       "atk_pct": 0,
       "hp_pct": 0,
       "def_pct": 0,
@@ -109,9 +106,8 @@
     "id": "cartridge_9229a5376c",
     "name": "街头拳王",
     "detail": "10相伤；14暴击，相反应翻倍，20秒",
-    "required_element": "相",
     "modifiers": {
-      "element_dmg": 0.1,
+      "element_dmg_相": 0.1,
       "atk_pct": 0,
       "hp_pct": 0,
       "def_pct": 0,
@@ -144,9 +140,8 @@
     "id": "cartridge_29793225a0",
     "name": "森林萤火之心",
     "detail": "10灵伤；8暴伤*7，10秒",
-    "required_element": "灵",
     "modifiers": {
-      "element_dmg": 0.1,
+      "element_dmg_灵": 0.1,
       "atk_pct": 0,
       "hp_pct": 0,
       "def_pct": 0,
@@ -179,9 +174,8 @@
     "id": "cartridge_505ea4a58f",
     "name": "真红：双生蝶",
     "detail": "10咒伤；6攻击*6，10秒",
-    "required_element": "咒",
     "modifiers": {
-      "element_dmg": 0.1,
+      "element_dmg_咒": 0.1,
       "atk_pct": 0,
       "hp_pct": 0,
       "def_pct": 0,
@@ -215,7 +209,6 @@
     "name": "缇娅的夜间酒馆",
     "detail": "10生命；20%治疗效率",
     "modifiers": {
-      "element_dmg": 0,
       "atk_pct": 0,
       "hp_pct": 0.1,
       "def_pct": 0,
@@ -249,7 +242,6 @@
     "name": "守卫王国",
     "detail": "15防御；20%护盾强效",
     "modifiers": {
-      "element_dmg": 0,
       "atk_pct": 0,
       "hp_pct": 0,
       "def_pct": 0.15,
@@ -283,7 +275,6 @@
     "name": "音速蓝刺猬",
     "detail": "12充能；Q后全队15%攻击，20秒",
     "modifiers": {
-      "element_dmg": 0,
       "atk_pct": 0,
       "hp_pct": 0,
       "def_pct": 0,
@@ -317,7 +308,6 @@
     "name": "静谧山庄",
     "detail": "10心灵；普攻叠心灵伤12*3，6秒",
     "modifiers": {
-      "element_dmg": 0,
       "atk_pct": 0,
       "hp_pct": 0,
       "def_pct": 0,
@@ -351,7 +341,6 @@
     "name": "影之信条",
     "detail": "10攻击；E后25攻击，20秒",
     "modifiers": {
-      "element_dmg": 0,
       "atk_pct": 0.1,
       "hp_pct": 0,
       "def_pct": 0,
@@ -385,7 +374,6 @@
     "name": "二型散件",
     "detail": "10攻击",
     "modifiers": {
-      "element_dmg": 0,
       "atk_pct": 0.1,
       "hp_pct": 0,
       "def_pct": 0,
@@ -417,9 +405,14 @@
   {
     "id": "cartridge_7983d1fbd7",
     "name": "三型散件",
-    "detail": "10属伤",
+    "detail": "10全属性伤害",
     "modifiers": {
-      "element_dmg": 0.1,
+      "element_dmg_光": 0.1,
+      "element_dmg_灵": 0.1,
+      "element_dmg_咒": 0.1,
+      "element_dmg_暗": 0.1,
+      "element_dmg_魂": 0.1,
+      "element_dmg_相": 0.1,
       "atk_pct": 0,
       "hp_pct": 0,
       "def_pct": 0,
@@ -453,7 +446,6 @@
     "name": "生命散件",
     "detail": "10生命",
     "modifiers": {
-      "element_dmg": 0,
       "atk_pct": 0,
       "hp_pct": 0.1,
       "def_pct": 0,
@@ -487,7 +479,6 @@
     "name": "小小大冒险",
     "detail": "10生命；降低生命时4*10%生命上限，每层10秒",
     "modifiers": {
-      "element_dmg": 0,
       "atk_pct": 0,
       "hp_pct": 0.1,
       "def_pct": 0,

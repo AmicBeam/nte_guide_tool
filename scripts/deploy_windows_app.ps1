@@ -143,6 +143,30 @@ function Wait-ForPort {
     return $false
 }
 
+function Copy-AppDirectory {
+    param(
+        [string]$Source,
+        [string]$Destination
+    )
+
+    if (-not (Test-Path -LiteralPath $Source -PathType Container)) {
+        throw "Incoming app directory disappeared before activation: $Source"
+    }
+    if (Test-Path -LiteralPath $Destination) {
+        throw "Target app directory still exists before activation: $Destination"
+    }
+
+    New-Item -ItemType Directory -Path $Destination | Out-Null
+    & robocopy.exe $Source $Destination /E /COPY:DAT /DCOPY:DAT /R:2 /W:1 /NFL /NDL /NJH /NJS /NP
+    $RobocopyExitCode = $LASTEXITCODE
+    if ($RobocopyExitCode -ge 8) {
+        throw "Robocopy failed while activating the new app. ExitCode=$RobocopyExitCode"
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $Destination '__init__.py') -PathType Leaf)) {
+        throw 'Activated app package is incomplete.'
+    }
+}
+
 if (-not (Test-Path -LiteralPath $ProjectRoot -PathType Container)) {
     throw "Project root does not exist: $ProjectRoot"
 }
@@ -194,7 +218,6 @@ if (-not (Test-Path -LiteralPath (Join-Path $IncomingApp '__init__.py') -PathTyp
 }
 
 $OldAppMoved = $false
-$NewAppActivated = $false
 $StoppedProcessCount = 0
 
 try {
@@ -205,8 +228,7 @@ try {
     Move-Item -LiteralPath $TargetApp -Destination $BackupApp
     $OldAppMoved = $true
 
-    Move-Item -LiteralPath $IncomingApp -Destination $TargetApp
-    $NewAppActivated = $true
+    Copy-AppDirectory -Source $IncomingApp -Destination $TargetApp
 
     if ($ServiceName) {
         Restart-Service -Name $ServiceName -ErrorAction Stop
@@ -226,7 +248,7 @@ try {
 catch {
     $DeploymentError = $_
 
-    if ($NewAppActivated -and (Test-Path -LiteralPath $TargetApp)) {
+    if ($OldAppMoved -and (Test-Path -LiteralPath $TargetApp)) {
         Move-Item -LiteralPath $TargetApp -Destination $FailedApp
     }
     if ($OldAppMoved -and (Test-Path -LiteralPath $BackupApp)) {

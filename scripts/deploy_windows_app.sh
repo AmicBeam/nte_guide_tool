@@ -22,18 +22,24 @@ DEPLOY_LISTEN_PORT="${NTE_DEPLOY_LISTEN_PORT:-8000}"
 REMOTE_TEMP="C:/Windows/Temp"
 
 MODE="check"
+ALLOW_DIRTY_APP="false"
 
 usage() {
     cat <<'EOF'
 Usage:
-  scripts/deploy_windows_app.sh --check
-  scripts/deploy_windows_app.sh --prepare
-  scripts/deploy_windows_app.sh --deploy
+  scripts/deploy_windows_app.sh --check [--allow-dirty-app]
+  scripts/deploy_windows_app.sh --prepare [--allow-dirty-app]
+  scripts/deploy_windows_app.sh --deploy [--allow-dirty-app]
 
 Modes:
   --check    Validate the committed app source and print the deployment target.
   --prepare  Build an app-only ZIP from Git HEAD. Does not contact the server.
   --deploy   Build from Git HEAD, upload, and replace the server app directory.
+
+Options:
+  --allow-dirty-app
+              Continue when app/ has local changes. The package still contains
+              only the committed app/ tree from Git HEAD.
 
 Environment overrides:
   NTE_DEPLOY_HOST       SSH target (required)
@@ -45,8 +51,9 @@ Environment overrides:
   NTE_DEPLOY_LISTEN_PORT
                         Port used to stop and verify Waitress (default: 8000)
 
-The script refuses to prepare or deploy while app/ has staged, unstaged, or
-untracked changes. It never uploads files outside the committed app/ tree.
+By default, the script refuses to check, prepare, or deploy while app/ has
+staged, unstaged, or untracked changes. It never uploads files outside the
+committed app/ tree.
 EOF
 }
 
@@ -69,6 +76,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         --deploy)
             MODE="deploy"
+            ;;
+        --allow-dirty-app)
+            ALLOW_DIRTY_APP="true"
             ;;
         -h|--help)
             usage
@@ -120,11 +130,18 @@ fi
 if [[ -n "$APP_CHANGES" ]]; then
     printf 'Uncommitted app changes detected:\n' >&2
     printf '%s\n' "$APP_CHANGES" >&2
-    fail "commit or discard all app/ changes before preparing or deploying"
+    if [[ "$ALLOW_DIRTY_APP" != "true" ]]; then
+        fail "commit or discard all app/ changes, or pass --allow-dirty-app to package Git HEAD only"
+    fi
+    printf 'WARNING: continuing with --allow-dirty-app; local app/ changes are excluded from the package.\n' >&2
 fi
 
 if [[ "$MODE" == "check" ]]; then
-    printf 'Check complete. app/ matches Git HEAD; no network connection was made.\n'
+    if [[ -n "$APP_CHANGES" ]]; then
+        printf 'Check complete. Package source is Git HEAD; local app/ changes will be excluded. No network connection was made.\n'
+    else
+        printf 'Check complete. app/ matches Git HEAD; no network connection was made.\n'
+    fi
     exit 0
 fi
 

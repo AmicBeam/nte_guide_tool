@@ -235,6 +235,13 @@ body:has(.shaft-page) .shell {
     top: 14px;
 }
 
+.shaft-build-overview {
+    max-height: calc(100vh - 28px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
 .shaft-build-overview-title {
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -566,7 +573,7 @@ body:has(.shaft-page) .shell {
 }
 
 .shaft-awakening-info {
-    cursor: help;
+    cursor: pointer;
     user-select: none;
 }
 
@@ -577,7 +584,7 @@ body:has(.shaft-page) .shell {
     box-shadow: none;
 }
 
-.shaft-awakening-info.is-active span {
+.shaft-awakening-info input:checked + span {
     border-color: rgba(255, 218, 91, 0.7);
     color: #071016;
     background: linear-gradient(135deg, #ffda5b, var(--slot-color, var(--primary)));
@@ -1134,6 +1141,11 @@ body:has(.shaft-page) .shell {
     gap: 8px;
 }
 
+.shaft-substat-contribution-open {
+    width: 100%;
+    margin-top: 2px;
+}
+
 .shaft-contribution-row {
     display: grid;
     grid-template-columns: 72px minmax(0, 1fr) 48px auto;
@@ -1364,8 +1376,14 @@ body:has(.shaft-page) .shell {
 .shaft-axis-preview-grid {
     position: absolute;
     inset: 0 0 0 var(--preview-label-width);
-    background-image: linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px);
     pointer-events: none;
+}
+
+.shaft-axis-preview-grid-mark {
+    position: absolute;
+    inset-block: 0;
+    width: 1px;
+    background: rgba(255,255,255,0.07);
 }
 
 .shaft-axis-preview-bubble {
@@ -1428,7 +1446,7 @@ body:has(.shaft-page) .shell {
 }
 
 .shaft-axis-preview-stat,
-.shaft-axis-preview-damage-types {
+.shaft-axis-preview-contributions {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1439,7 +1457,7 @@ body:has(.shaft-page) .shell {
 }
 
 .shaft-axis-preview-stat > span,
-.shaft-axis-preview-damage-types > span {
+.shaft-axis-preview-contributions > span {
     color: var(--muted);
     font-size: 11px;
     font-weight: 850;
@@ -1452,17 +1470,17 @@ body:has(.shaft-page) .shell {
     font-weight: 950;
 }
 
-.shaft-axis-preview-damage-types {
+.shaft-axis-preview-contributions {
     flex: 1 1 360px;
 }
 
-.shaft-axis-preview-damage-types > div {
+.shaft-axis-preview-contributions > div {
     display: flex;
     flex-wrap: wrap;
     gap: 6px 12px;
 }
 
-.shaft-axis-preview-damage-types b {
+.shaft-axis-preview-contributions b {
     color: rgba(243, 247, 255, 0.94);
     font-size: 11px;
     font-weight: 900;
@@ -1590,6 +1608,100 @@ body:has(.shaft-page) .shell {
     border-radius: inherit;
     background: linear-gradient(145deg, rgba(18, 30, 44, 0.98), rgba(6, 11, 18, 0.99));
     box-shadow: 0 24px 80px rgba(0,0,0,0.54);
+}
+
+.shaft-substat-contribution-note {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.5;
+}
+
+.shaft-substat-contribution-table-wrap {
+    margin-top: 14px;
+    overflow: auto;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-sm);
+}
+
+.shaft-substat-contribution-table {
+    width: 100%;
+    min-width: 660px;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.shaft-substat-contribution-table th,
+.shaft-substat-contribution-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.shaft-substat-contribution-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    color: var(--muted);
+    background: rgba(13, 22, 34, 0.98);
+    font-size: 11px;
+}
+
+.shaft-substat-contribution-table th:first-child,
+.shaft-substat-contribution-table td:first-child,
+.shaft-substat-contribution-table tbody th {
+    text-align: left;
+}
+
+.shaft-substat-contribution-table tbody th {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.025);
+    white-space: nowrap;
+}
+
+.shaft-substat-contribution-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.shaft-substat-contribution-table td.has-contribution {
+    color: rgba(218, 230, 244, 0.72);
+    font-weight: 800;
+}
+
+.shaft-substat-contribution-table td.has-no-contribution {
+    color: rgba(255,255,255,0.28);
+}
+
+.shaft-substat-contribution-table td[class*="contribution-rank-"] {
+    font-weight: 950;
+    box-shadow: inset 0 0 0 1px var(--rank-border);
+    background: var(--rank-bg);
+}
+
+.shaft-substat-contribution-table td.contribution-rank-1 {
+    --rank-border: rgba(255, 207, 90, 0.48);
+    --rank-bg: rgba(255, 207, 90, 0.14);
+    color: #ffd86f;
+}
+
+.shaft-substat-contribution-table td.contribution-rank-2 {
+    --rank-border: rgba(88, 216, 210, 0.42);
+    --rank-bg: rgba(88, 216, 210, 0.12);
+    color: #69e2dc;
+}
+
+.shaft-substat-contribution-table td.contribution-rank-3 {
+    --rank-border: rgba(98, 183, 255, 0.42);
+    --rank-bg: rgba(98, 183, 255, 0.12);
+    color: #84c7ff;
+}
+
+.shaft-substat-contribution-table td.contribution-rank-4 {
+    --rank-border: rgba(178, 140, 255, 0.42);
+    --rank-bg: rgba(178, 140, 255, 0.12);
+    color: #c09fff;
 }
 
 .shaft-stagger-analysis-note {
@@ -3206,6 +3318,16 @@ body.shaft-dragging .shaft-action-bar {
     min-width: 82px;
 }
 
+.shaft-action-edit-dialog {
+    width: min(560px, calc(100vw - 32px));
+    max-width: none;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--text);
+}
+
 .shaft-background-multiplier-dialog {
     width: min(380px, calc(100vw - 32px));
     max-width: none;
@@ -3216,11 +3338,13 @@ body.shaft-dragging .shaft-action-bar {
     color: var(--text);
 }
 
+.shaft-action-edit-dialog::backdrop,
 .shaft-background-multiplier-dialog::backdrop {
     background: rgba(2, 6, 12, 0.72);
     backdrop-filter: blur(4px);
 }
 
+.shaft-action-edit-modal,
 .shaft-background-multiplier-modal {
     display: grid;
     gap: 16px;
@@ -3255,6 +3379,129 @@ body.shaft-dragging .shaft-action-bar {
 }
 
 .shaft-background-multiplier-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.shaft-action-edit-summary,
+.shaft-action-edit-empty {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.shaft-action-edit-trigger-character {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.8fr);
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+    border: 1px solid rgba(88, 216, 210, 0.26);
+    border-radius: 12px;
+    background: rgba(88, 216, 210, 0.07);
+}
+
+.shaft-action-edit-trigger-character[hidden] {
+    display: none;
+}
+
+.shaft-action-edit-trigger-character span {
+    display: grid;
+    gap: 4px;
+}
+
+.shaft-action-edit-trigger-character small {
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.shaft-action-edit-trigger-character select {
+    width: 100%;
+    min-height: 42px;
+}
+
+.shaft-action-edit-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+}
+
+.shaft-action-edit-toggle[hidden] {
+    display: none;
+}
+
+.shaft-action-edit-toggle span {
+    display: grid;
+    gap: 4px;
+}
+
+.shaft-action-edit-toggle small {
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.shaft-action-edit-interrupt-settings {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 111, 111, 0.28);
+    border-radius: 12px;
+    background: rgba(117, 24, 34, 0.12);
+}
+
+.shaft-action-edit-interrupt-settings[hidden] {
+    display: none;
+}
+
+.shaft-action-edit-interrupt-settings > label {
+    display: grid;
+    gap: 6px;
+}
+
+.shaft-action-edit-interrupt-settings label span {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.shaft-action-edit-interrupt-settings output {
+    color: #ff9c9c;
+    font-weight: 900;
+}
+
+.shaft-action-edit-preview {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.shaft-action-edit-preview div {
+    display: grid;
+    gap: 3px;
+    padding: 8px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.05);
+}
+
+.shaft-action-edit-preview span {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.shaft-action-edit-preview strong {
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shaft-action-edit-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -3840,6 +4087,10 @@ body.shaft-dragging .shaft-action-bar {
     white-space: nowrap;
 }
 
+.shaft-action-bar.detached-action .shaft-action-name {
+    color: #ffd36f;
+}
+
 .shaft-action-bar em {
     flex: 0 1 auto;
     min-width: 0;
@@ -3916,6 +4167,30 @@ body.shaft-dragging .shaft-action-bar {
 
 .shaft-action-bar.basic-background {
     border-style: dashed;
+}
+
+/* Converted teammate assists: cyan double border, independent of slot color. */
+.shaft-action-bar.lingke-joint-action {
+    border: 3px double #7cebe6;
+    box-shadow:
+        0 0 0 1px rgba(124, 235, 230, 0.24),
+        0 0 14px rgba(91, 220, 218, 0.2),
+        inset 0 0 8px rgba(124, 235, 230, 0.12);
+}
+
+.shaft-action-bar.lingke-joint-action::after {
+    background: #7cebe6;
+    box-shadow: 0 0 10px rgba(124, 235, 230, 0.4);
+}
+
+.shaft-action-bar.interrupted-action,
+.shaft-action-bar.q-instant-release.interrupted-action,
+.shaft-action-bar.basic-background.interrupted-action {
+    border: 2px solid #ff4f5e;
+    box-shadow:
+        0 0 0 1px rgba(255, 79, 94, 0.32),
+        0 12px 24px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.18);
 }
 
 .shaft-hit-marker {
@@ -4224,6 +4499,12 @@ body.shaft-dragging .shaft-action-bar {
     .shaft-build-overview {
         position: static;
     }
+
+    .shaft-build-overview {
+        max-height: none;
+        overflow-y: visible;
+        scrollbar-gutter: auto;
+    }
 }
 
 @media (max-width: 1180px) {
@@ -4463,4 +4744,23 @@ body.shaft-dragging .shaft-action-bar {
 
 .shaft-page.is-shared-readonly .shaft-action-bar {
   cursor: pointer;
+}
+
+.shaft-reaction-damage-marker[role="button"] {
+    cursor: pointer;
+}
+
+.shaft-reaction-damage-marker.selected {
+    outline: 2px solid rgba(255,255,255,0.9);
+    outline-offset: 3px;
+    z-index: 40;
+}
+
+.shaft-reaction-damage-marker[role="button"]::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: -8px;
+    width: 16px;
+    height: 16px;
 }

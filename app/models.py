@@ -14,6 +14,7 @@ class Player(BaseModel):
     id = AutoField()
     player_uid = CharField(unique=True, max_length=64)
     nickname = CharField(default='')
+    shaft_invited = BooleanField(default=False)
     shaft_test_whitelisted = BooleanField(default=False)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
@@ -23,6 +24,7 @@ class ShaftCharacterPublication(BaseModel):
     id = AutoField()
     character_id = CharField(unique=True, max_length=64)
     character_name = CharField(unique=True, max_length=64)
+    access_level = CharField(default='test', max_length=16)
     is_published = BooleanField(default=False)
     updated_at = DateTimeField(default=datetime.utcnow)
 
@@ -100,6 +102,98 @@ class GameRun(BaseModel):
     status = CharField(default='idle')
     snapshot = TextField(default='{}')
     updated_at = DateTimeField(default=datetime.utcnow)
+
+
+class DuelV2Build(BaseModel):
+    id = AutoField()
+    player = ForeignKeyField(Player, backref='duel_v2_builds', on_delete='CASCADE', unique=True)
+    payload = TextField(default='{}')
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_build'
+
+
+class DuelV2Room(BaseModel):
+    id = AutoField()
+    room_code = CharField(unique=True, max_length=12)
+    mode = CharField(default='solo', max_length=12)
+    status = CharField(default='waiting', max_length=16)
+    host = ForeignKeyField(Player, backref='duel_v2_hosted_rooms', on_delete='CASCADE')
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_room'
+
+
+class DuelV2Member(BaseModel):
+    id = AutoField()
+    room = ForeignKeyField(DuelV2Room, backref='members', on_delete='CASCADE')
+    player = ForeignKeyField(Player, backref='duel_v2_memberships', on_delete='CASCADE')
+    side = CharField(max_length=1)
+    is_ready = BooleanField(default=False)
+    deck = TextField(default='{}')
+    joined_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_member'
+        indexes = ((('room', 'player'), True), (('room', 'side'), True))
+
+
+class DuelV2Run(BaseModel):
+    id = AutoField()
+    room = ForeignKeyField(DuelV2Room, backref='runs', on_delete='CASCADE', unique=True)
+    generation = CharField(max_length=32)
+    revision = IntegerField(default=0)
+    snapshot = TextField(default='{}')
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_run'
+
+
+class DuelV2Replay(BaseModel):
+    id = AutoField()
+    room = ForeignKeyField(DuelV2Room, backref='replay', on_delete='CASCADE', unique=True)
+    room_code = CharField(max_length=12, index=True)
+    mode = CharField(default='solo', max_length=12)
+    status = CharField(default='playing', max_length=16)
+    winner = CharField(null=True, max_length=8)
+    player_a_id = IntegerField(null=True, index=True)
+    player_b_id = IntegerField(null=True, index=True)
+    name_a = CharField(default='', max_length=32)
+    name_b = CharField(default='', max_length=32)
+    payload = TextField(default='{}')
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_replay'
+
+
+class DuelV2TutorialProgress(BaseModel):
+    id = AutoField()
+    player = ForeignKeyField(Player, backref='duel_v2_tutorial', on_delete='CASCADE', unique=True)
+    current_level = CharField(default='tutorial_l01_board', max_length=32)
+    completed_levels = TextField(default='[]')
+    skipped = BooleanField(default=False)
+    skipped_prompt = BooleanField(default=False)
+    completed = BooleanField(default=False)
+    updated_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_tutorial_progress'
+
+
+class DuelV2ReplayStar(BaseModel):
+    id = AutoField()
+    player = ForeignKeyField(Player, backref='duel_v2_replay_stars', on_delete='CASCADE')
+    replay = ForeignKeyField(DuelV2Replay, backref='stars', on_delete='CASCADE')
+    created_at = DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'duel_v2_replay_star'
+        indexes = ((('player', 'replay'), True),)
 
 
 class ShaftAxis(BaseModel):

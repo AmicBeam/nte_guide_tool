@@ -4,7 +4,7 @@ from copy import deepcopy
 from .entities import clone_state, entity_action, needs_hydration
 
 from .effect_markers import character_effect_markers, team_effect_markers
-from app.modules.card_game.content.duel_v2 import CARDS
+from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
 from .flow import acting_side, apply_action, card_plays_instant, card_is_free_instant, legal_actions, normal_attack_payment, ultimate_spec, card_cost
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
@@ -176,6 +176,13 @@ def observe(state, side, after_seq=None, *, include_previews=True):
             c = {k: deepcopy(h[k]) for k in ('entity_id', 'id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
                  'energy', 'lingke_chain', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura', 'jingu', 'arid', 'truth_keys', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
                  'avatar', 'portrait', 'passive', 'awakened_passive', 'flavor') if k in h}
+            # Live rules run the current kits, so their text must not stay frozen
+            # in a saved room. Tutorial, summons and copied abilities own their text.
+            from .tutorial import is_tutorial
+            template = CHARACTERS.get(cid)
+            if template and not is_tutorial(state) and not h.get('summoned') and not (h.get('flags') or {}).get('mimic'):
+                for field in ('passive', 'awakened_passive'):
+                    c[field] = template[field]
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None
             from .equipment import stat_layers, public_equipment

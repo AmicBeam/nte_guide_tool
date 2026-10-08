@@ -300,7 +300,7 @@
       if (ctx.replayMode) return;
       const pending = ctx.game && ctx.game.pending_choice;
       if (ctx.localChoice && ctx.localChoice.kind === 'server-divination' &&
-          (!pending || pending.side !== ctx.viewer() || pending.kind !== 'heiyu_divination' ||
+          (!pending || pending.side !== ctx.viewer() || (pending.kind !== 'heiyu_divination' && !pending.hand_placement) ||
           TABLE.divinationChoiceKey(pending) !== ctx.localChoice.key)) {
         ctx.localChoice = null;
         ctx.divinationDraft = null;
@@ -312,7 +312,7 @@
         return;
       }
       if (ctx.busy || ctx.playingEvents) return;
-      if (pending.kind === 'heiyu_divination' && ctx.openDivinationChoice) {
+      if ((pending.kind === 'heiyu_divination' || pending.hand_placement) && ctx.openDivinationChoice) {
         ctx.openDivinationChoice(pending);
         return;
       }

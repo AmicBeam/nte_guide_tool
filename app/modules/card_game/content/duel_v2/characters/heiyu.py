@@ -173,12 +173,15 @@ def _p02(c):
 
 
 def _p03(c):
+    c.draw(1)
     cards = list(c.state['sides'][c.side]['hand'])
-    if cards:
-        c.operation['heiyu_hand_to_top'] = True
-        c.choose('kit', cards, '选择 1 张手牌置于牌库顶')
+    if cards and not finished(c.state):
+        c.operation['heiyu_after_placement'] = True
+        c.choose('hand_deck_placement', cards, '将 1 张手牌置于牌库顶或底',
+                 deck_order=True, hand_placement=True, multi_bottom=True,
+                 min_bottom=0, max_bottom=1, actor=c.cid, execute_divination=False)
     else:
-        start_inspection(c, after='sortie')
+        c.sortie()
 
 
 def _p04(c):
@@ -275,6 +278,7 @@ class Heiyu:
 
     @staticmethod
     def on_choice(c, selected):
+        # Finish a choice already saved under the previous P03 rules.
         if selected and c.operation.pop('heiyu_hand_to_top', False):
             _detach(c, selected)
             c.state['sides'][c.side]['deck'].insert(0, selected)
@@ -290,6 +294,9 @@ class Heiyu:
 
     @staticmethod
     def on_deck_reorder(c, bottom=None, bottoms=None, execute_divination=None, **_data):
+        if c.operation.pop('heiyu_after_placement', False):
+            c.sortie()
+            return
         if not in_witch(c) and execute_divination is not False:
             for card in (bottoms if bottoms is not None else ([bottom] if bottom else [])):
                 if finished(c.state) or not alive(c.state, c.side, c.cid):

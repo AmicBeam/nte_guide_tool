@@ -23,7 +23,8 @@ test('murk cards show instant, repeatable and zero-action-point keywords in bold
   const markup = id => context.window.NTE_V2.cardDescriptionMarkup(catalog.cards.find(c => c.id === id).description);
   assert.match(markup('S04'), /^<strong>瞬发<\/strong>。<strong>可重复使用<\/strong>。/);
   assert.match(markup('A03'), /^<strong>不消耗行动力<\/strong>。/);
-  for (const id of ['A02', 'A04', 'S06']) assert.match(markup(id), /^<strong>瞬发<\/strong>。/);
+  assert.doesNotMatch(markup('A04'), /瞬发/);
+  for (const id of ['A02', 'S06']) assert.match(markup(id), /^<strong>瞬发<\/strong>。/);
 });
 
 test('negative battle attack is visible while zero placeholders remain hidden', () => {

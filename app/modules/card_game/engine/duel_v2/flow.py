@@ -385,6 +385,10 @@ def deck_order_choice(state):
 
 def deck_order_actions(pending):
     ids = [card['instance_id'] for card in pending['cards']]
+    if pending.get('hand_placement'):
+        return [dict(type='choose_deck_order', card_ids=[] if bottom else [cid],
+                     bottom_card_ids=[cid] if bottom else [])
+                for cid in ids for bottom in (False, True)]
     minimum = max(0, int(pending.get('min_bottom') or 0))
     maximum = min(len(ids), int(pending.get('max_bottom', len(ids) if pending.get('multi_bottom') else 1)))
     actions = []
@@ -914,12 +918,21 @@ def resolve_deck_order(state, side, action):
     bottom_ids = list(action.get('bottom_card_ids') or ([action['bottom_card_id']] if action.get('bottom_card_id') else []))
     inspected = [card['instance_id'] for card in cards]
     chosen = list(top_ids) + bottom_ids
-    if (len(set(chosen)) != len(chosen) or set(chosen) != set(inspected)
+    hand_placement = bool(pending.get('hand_placement'))
+    valid_selection = ((len(chosen) == 1 and chosen[0] in inspected) if hand_placement
+                       else set(chosen) == set(inspected))
+    if (len(set(chosen)) != len(chosen) or not valid_selection
             or len(bottom_ids) < int(pending.get('min_bottom') or 0)
             or len(bottom_ids) > int(pending.get('max_bottom', len(cards)))
             or any(item not in by_id for item in chosen)):
         raise ValueError('当前不能执行此操作：请检查回合、行动力、角色状态和目标。')
     team = state['sides'][side]
+    if hand_placement:
+        selected = next((card for card in team['hand'] if card['instance_id'] == chosen[0]), None)
+        if selected is None:
+            raise ValueError('所选手牌已失效。')
+        by_id[chosen[0]] = selected
+        team['hand'] = [card for card in team['hand'] if card['instance_id'] != chosen[0]]
     team['deck'][0:0] = [by_id[item] for item in top_ids]
     bottoms = [by_id[item] for item in bottom_ids]
     team['deck'].extend(bottoms)

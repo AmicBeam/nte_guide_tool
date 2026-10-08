@@ -990,3 +990,7 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 ### 2026-10-09 即时幻境与玩家生命上限
 
 残虹幻境接入使用战斗牌时机，C05提供本次战斗免伤；噩梦随机分配扩展到对方角色，新月摇篮曲可削减玩家生命上限。纯规则层保存和结算玩家max_hp，观察／演出公开同一字段，前端仅显示上限变化；缺字段的旧数据默认30。具体规则见完整手册，字段契约见实现契约。验证：`.venv/bin/python -m unittest tests.test_duel_v2_mirage_nightmare tests.test_duel_v2_continuous_cast tests.test_duel_v2_engine tests.test_duel_v2_modifiers tests.test_duel_v2_catalog`；`node --test tests/js/duel_v2_player_max_hp.test.cjs tests/js/duel_v2_table_state.test.cjs tests/js/duel_v2_immunity_frame.test.cjs`。
+
+### 2026-10-09 失明症与选择整理界面
+
+黑羽 P03 先抽 1 张，再从手牌选择恰好 1 张置于牌库顶或底并完成出击，不再占卜。`hand_placement` 复用后端牌库整理动作与前端 `divination.js`，候选仍保留在手牌；界面支持拖放、按钮放置、详情悬浮与收起查看战场。通用卡牌选择和占卜使用 `handCardHtml` 的选择样式，完整描述不截断，小屏滚动浏览。验证：`python -m unittest tests.test_duel_v2_heiyu tests.test_duel_v2_heiyu_presentation tests.test_duel_v2_entities`，以及 `node --test tests/js/duel_v2_*.test.cjs`。

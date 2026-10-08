@@ -48,3 +48,16 @@ test('same-named cards retain distinct identities in the bottom row', () => {
   assert.deepEqual(plain(table.moveDivinationCard(draft, 'P05-1', 'bottom')),
     {topIds: [], bottomIds: ['P05-2', 'P05-1']});
 });
+
+test('hand placement stages exactly one card and returns displaced selection to hand', () => {
+  const table = load();
+  const initial = {handPlacement: true, sourceIds: ['a', 'b'], topIds: [], bottomIds: []};
+  const top = table.moveDivinationCard(initial, 'a', 'top');
+  assert.deepEqual(plain(top), {handPlacement: true, sourceIds: ['b'], topIds: ['a'], bottomIds: []});
+  const bottom = table.moveDivinationCard(top, 'b', 'bottom');
+  assert.deepEqual(plain(bottom), {handPlacement: true, sourceIds: ['a'], topIds: [], bottomIds: ['b']});
+  const returned = table.moveDivinationCard(bottom, 'b', 'source');
+  assert.deepEqual(plain(returned), initial);
+  assert.deepEqual(plain(initial), {handPlacement: true, sourceIds: ['a', 'b'], topIds: [], bottomIds: []});
+  assert.equal(table.findDivinationEntry({legal_actions: []}, initial), null);
+});

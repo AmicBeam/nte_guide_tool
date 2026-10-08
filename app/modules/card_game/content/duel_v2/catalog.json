@@ -3818,7 +3818,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "将一张手牌置于牌库顶。然后「占卜」。",
+      "description": "抽 1 张牌，将 1 张手牌置于牌库顶或底。",
       "effect_id": "P03",
       "source": {
         "character_id": 1042,

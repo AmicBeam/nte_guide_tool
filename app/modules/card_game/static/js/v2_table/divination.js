@@ -9,6 +9,20 @@
 
   function moveCard(draft, id, row, index) {
     const next = Object.assign({}, draft, {topIds: draft.topIds.slice(), bottomIds: (draft.bottomIds || []).slice()});
+    if (draft.handPlacement) {
+      next.sourceIds = (draft.sourceIds || []).slice();
+      if (!['source', 'top', 'bottom'].includes(row) ||
+          !next.sourceIds.concat(next.topIds, next.bottomIds).includes(id)) return next;
+      next.sourceIds = next.sourceIds.filter(function (item) { return item !== id; });
+      next.topIds = next.topIds.filter(function (item) { return item !== id; });
+      next.bottomIds = next.bottomIds.filter(function (item) { return item !== id; });
+      if (row !== 'source') {
+        next.sourceIds.push.apply(next.sourceIds, next.topIds.concat(next.bottomIds));
+        next.topIds = []; next.bottomIds = [];
+      }
+      next[row === 'source' ? 'sourceIds' : row === 'top' ? 'topIds' : 'bottomIds'].push(id);
+      return next;
+    }
     const fromTop = next.topIds.indexOf(id);
     const fromBottom = next.bottomIds.indexOf(id);
     if ((fromTop < 0 && fromBottom < 0) || (row !== 'top' && row !== 'bottom')) return next;
@@ -27,7 +41,7 @@
   }
 
   function choiceKey(pending) {
-    return pending ? [pending.side, pending.kind, pending.min_bottom || 0, pending.max_bottom,
+    return pending ? [pending.side, pending.kind, Boolean(pending.hand_placement), pending.min_bottom || 0, pending.max_bottom,
       (pending.choices || []).map(function (c) { return c.id; }).join('|')].join(':') : '';
   }
 
@@ -38,14 +52,6 @@
       return action.type === 'choose_deck_order' && sameOrder(action.card_ids, draft.topIds) &&
         sameOrder(bottoms, draft.bottomIds || []);
     });
-  }
-
-  function effectText(card, name) {
-    const text = String(card && card.description || '');
-    const marker = '【' + name + '】';
-    const start = text.indexOf(marker);
-    if (start < 0) return '';
-    return text.slice(start + marker.length).split(/\n|【/)[0].trim();
   }
 
   function bindDivination(ctx, cardMarkup) {
@@ -71,30 +77,36 @@
         const choice = byId[id];
         if (!choice || !choice.card) return '';
         return '<div class="v2-divination-card" tabindex="0" role="button" data-divination-id="' + V2.escapeAttr(id) +
-          '" aria-label="' + V2.escapeAttr(choice.card.name + '，可拖动排序或移至另一行') + '">' +
+          '" aria-label="' + V2.escapeAttr(choice.card.name + '，可拖动至牌库顶或底') + '">' +
           '<span class="v2-divination-position">' + position + '</span>' +
           '<button type="button" class="v2-divination-detail" data-divination-detail="' + V2.escapeAttr(id) +
           '" aria-label="查看' + V2.escapeAttr(choice.card.name) + '详情">详情</button>' +
-          cardMarkup(choice.card).replace('</article>',
-            '<p class="v2-divination-benefit is-divination is-current"><strong>占卜效果：</strong>' +
-            V2.escapeHtml(effectText(choice.card, '占卜效果') || '无占卜效果') + '</p></article>') + '</div>';
+          cardMarkup(choice.card) + (state.handPlacement ?
+            '<div class="v2-placement-actions"><button type="button" data-placement-row="top" data-placement-id="' + V2.escapeAttr(id) + '">置顶</button>' +
+            '<button type="button" data-placement-row="bottom" data-placement-id="' + V2.escapeAttr(id) + '">置底</button>' +
+            (state.sourceIds.includes(id) ? '' : '<button type="button" data-placement-row="source" data-placement-id="' + V2.escapeAttr(id) + '">放回手牌</button>') + '</div>' : '') + '</div>';
       }
+      function zone(row, title, hint, ids, empty) {
+        return '<section class="v2-divination-zone" data-divination-row="' + row + '" aria-label="' + title + '">' +
+          '<div class="v2-divination-zone-label"><strong>' + title + '</strong><span>' + hint + '</span></div>' +
+          '<div class="v2-divination-row">' + (ids.length ? ids.map(function (id, index) { return card(id, index + 1); }).join('') :
+            '<span class="v2-divination-placeholder">' + empty + '</span>') + '</div></section>';
+      }
+      const title = state.handPlacement ? '选择手牌' : '占卜';
       overlay.innerHTML = '<div class="v2-choice-dialog v2-divination-dialog" role="dialog" aria-modal="true" aria-labelledby="v2-divination-title">' +
-        '<header><h2 id="v2-divination-title">占卜</h2><p class="subtle">两行均可拖动排序；第二行可放多张牌。' + (state.minBottom ? '谕石至少置底 1 张。' : '可以不置底。') + '</p></header>' +
-        '<section class="v2-divination-zone" data-divination-row="top" aria-label="牌库顶">' +
-        '<div class="v2-divination-zone-label"><strong>牌库顶</strong><span>从左到右依次抽取</span></div>' +
-        '<div class="v2-divination-row">' + state.topIds.map(function (id, index) { return card(id, index + 1); }).join('') +
-        (state.topIds.length ? '' : '<span class="v2-divination-placeholder">拖到这里放回牌库顶</span>') + '</div></section>' +
-        '<section class="v2-divination-zone" data-divination-row="bottom" aria-label="牌库底">' +
-        '<div class="v2-divination-zone-label"><strong>牌库底</strong><span>基础形态按从左到右结算占卜效果</span></div>' +
-        '<div class="v2-divination-row">' + (state.bottomIds.length ? state.bottomIds.map(function (id, index) { return card(id, '底' + (index + 1)); }).join('') :
-          '<span class="v2-divination-placeholder">' + (state.minBottom ? '至少拖入 1 张牌' : '可拖入多张牌，也可以留空') + '</span>') + '</div></section>' +
-        '<footer><span class="v2-divination-status" role="status" aria-live="polite">' + V2.escapeHtml(message || '') +
+        '<header><h2 id="v2-divination-title">' + title + '</h2><p class="subtle">' + (state.handPlacement ?
+          '将 1 张手牌拖至牌库顶或底，也可点击置顶／置底；确认前可更改。' :
+          '两行均可拖动排序；第二行可放多张牌。' + (state.minBottom ? '谕石至少置底 1 张。' : '可以不置底。')) + '</p></header>' +
+        (state.handPlacement ? zone('source', '手牌', '其余手牌保留', state.sourceIds, '手牌已选入下方区域') : '') +
+        zone('top', '牌库顶', '从左到右依次抽取', state.topIds, '拖到这里放回牌库顶') +
+        zone('bottom', '牌库底', state.handPlacement ? '所选牌放在牌库最后' : '基础形态按从左到右结算占卜效果', state.bottomIds,
+          state.handPlacement ? '拖到这里放回牌库底' : (state.minBottom ? '至少拖入 1 张牌' : '可拖入多张牌，也可以留空')) +
+        '<footer><span class="v2-divination-status" role="status" aria-live="polite">' + V2.escapeHtml(message || (state.handPlacement ? '请选择 1 张手牌及放置位置。' : '')) +
         '</span><button class="primary-btn" id="v2-divination-confirm" type="button">确定</button></footer></div>';
       overlay.classList.add('open');
       overlay.classList.add('is-divination');
       overlay.setAttribute('aria-hidden', 'false');
-      if (ctx.setSelectionView) ctx.setSelectionView({ key: 'divination:' + state.key, label: '占卜', region: overlay });
+      if (ctx.setSelectionView) ctx.setSelectionView({ key: 'divination:' + state.key, label: title, region: overlay });
       const confirm = overlay.querySelector('#v2-divination-confirm');
       confirm.disabled = Boolean(ctx.busy || !findEntry(ctx.game, state));
       if (focusId) {
@@ -111,8 +123,9 @@
       const next = moveCard(state, id, row, index);
       state.topIds = next.topIds;
       state.bottomIds = next.bottomIds;
+      state.sourceIds = next.sourceIds;
       const name = state.byId[id].card.name;
-      const message = '已调整「' + name + '」在' + (row === 'bottom' ? '牌库底' : '牌库顶') + '的顺序。';
+      const message = '已将「' + name + '」移至' + (row === 'source' ? '手牌' : row === 'bottom' ? '牌库底' : '牌库顶') + '。';
       render(message, id);
     }
 
@@ -122,9 +135,13 @@
       const choices = (pending.choices || []).filter(function (choice) { return choice.card && !choice.card.hidden; });
       const byId = {};
       choices.forEach(function (choice) { byId[String(choice.id)] = choice; });
-      const team = ((ctx.game || {}).sides || {})[pending.side] || {};
-      const heiyu = (team.characters || []).find(function (character) { return character.id === 'heiyu'; });
-      ctx.divinationDraft = { key: choiceKey(pending), topIds: choices.map(function (c) { return String(c.id); }), bottomIds: [], minBottom: Number(pending.min_bottom || 0), maxBottom: pending.max_bottom == null ? choices.length : Number(pending.max_bottom), byId: byId, witch: Boolean(heiyu && heiyu.awakened) };
+      const ids = choices.map(function (choice) { return String(choice.id); });
+      ctx.divinationDraft = {
+        key: choiceKey(pending), handPlacement: Boolean(pending.hand_placement),
+        sourceIds: pending.hand_placement ? ids : [], topIds: pending.hand_placement ? [] : ids,
+        bottomIds: [], minBottom: Number(pending.min_bottom || 0),
+        maxBottom: pending.max_bottom == null ? choices.length : Number(pending.max_bottom), byId: byId,
+      };
       ctx.localChoice = { kind: 'server-divination', key: choiceKey(pending) };
       render();
     };
@@ -209,6 +226,12 @@
       if (!node) return;
       const id = node.getAttribute('data-divination-id');
       const state = ctx.divinationDraft;
+      if (state.handPlacement) {
+        if (event.key === 'ArrowUp') { event.preventDefault(); move(id, 'top'); }
+        else if (event.key === 'ArrowDown') { event.preventDefault(); move(id, 'bottom'); }
+        else if (event.key === 'Escape') { event.preventDefault(); move(id, 'source'); }
+        return;
+      }
       const bottom = state.bottomIds.indexOf(id) >= 0;
       const row = bottom ? 'bottom' : 'top';
       const ids = bottom ? state.bottomIds : state.topIds;
@@ -221,6 +244,8 @@
 
     overlay.addEventListener('click', function (event) {
       if (!ctx.localChoice || ctx.localChoice.kind !== 'server-divination') return;
+      const placement = event.target.closest('[data-placement-row]');
+      if (placement && !ctx.busy) { move(placement.getAttribute('data-placement-id'), placement.getAttribute('data-placement-row')); return; }
       const detail = event.target.closest('[data-divination-detail]');
       if (detail) {
         const choice = ctx.divinationDraft.byId[detail.getAttribute('data-divination-detail')];

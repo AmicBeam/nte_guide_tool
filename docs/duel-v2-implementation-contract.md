@@ -281,3 +281,7 @@ collapse为第六套官方预组，四人顺序固定heiyu/dafutier/canhong/ling
 ### 2026-10-09 玩家生命上限与噩梦目标
 
 PlayerEntity及双方公开side新增max_hp，初始30；旧快照、旧回放缺失时按30兼容。reduce_max_hp支持玩家，沿用逐点比例与四舍五入、护盾不消耗和终局检查；治疗及受伤目标枚举使用当前上限。公开棋盘和max_hp事件patch同步玩家上限，不添加隐藏信息。噩梦通过分配器的include_roles参数扩展至玩家、存活编队异能者及前排召唤物，其余分配调用维持原范围。残虹幻境改用既有V2_CARD_USED时机，C05沿用rule.combat_immune与battle／operation_end清理；不修改动作格式。
+
+### 2026-10-09 单张手牌置顶／置底
+
+`pending_choice` 的 `hand_placement=true` 配合 `deck_order=true` 表示从当前手牌选择恰好 1 张放至牌库顶或底，候选仍在手牌，不计入待归还牌库张数。复用 `choose_deck_order`：`card_ids=[id], bottom_card_ids=[]` 为置顶，反之为置底；两组总共必须恰好 1 个合法实体。其余手牌不动，采用正常实体 ID 转换与 JSON 恢复。公开投影仅向操作者提供候选与布局标志，对手看不到候选。内容回调恢复原操作；不再次支付行动力，也不默认发动占卜效果。

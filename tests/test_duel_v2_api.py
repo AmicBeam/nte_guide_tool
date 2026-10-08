@@ -63,6 +63,41 @@ class DuelV2ApiTest(RoomFlowTestCase):
         token = self.a if view['active_side'] == 'a' else self.b
         return token, self._get('/api/duel-v2/state', token=token)['game']
 
+    def test_hand_placement_is_private_reloadable_and_idempotent(self):
+        from app.modules.card_game.engine.duel_v2 import apply_action, observe
+        from app.modules.card_game.engine.application import v2_replay
+        from tests.test_duel_v2_heiyu import game, give, top, play
+
+        self._pvp()
+        state = game()
+        kept = give(state, 'Z03')
+        selected = top(state, ['P05', 'Z02'])[0]
+        state = play(state, 'P03')
+        room = self.repository.room_by_code(self.code)
+        self.storage.initialize(room, {'rules_version': 'duel_v2', 'game': state, 'requests': []})
+        v2_replay.begin(room, state)
+        self.assertTrue(self.storage.flush(5))
+        self.storage.clear_cache()
+        view = self._get('/api/duel-v2/state', token=self.a)['game']
+        foe = self._get('/api/duel-v2/state', token=self.b)['game']
+        self.assertEqual(foe['pending_choice']['choices'], [])
+        self.assertIsNone(foe['pending_choice']['hand_placement'])
+        entry = next(e for e in view['legal_actions'] if e['action']['type'] == 'choose_deck_order'
+                     and e['action'].get('bottom_card_ids') == [selected['instance_id']])
+        request = dict(room_code=self.code, request_id='hand-placement', expected_version=view['version'],
+                       action=entry['entity_action'])
+        first = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        repeated = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        self.assertEqual(first['version'], repeated['version'])
+        self.assertEqual(first['phase'], 'playing')
+        self.assertEqual([c['entity_id'] for c in first['sides']['a']['hand']], [kept['entity_id']])
+        self.assertTrue(self.storage.flush(5))
+        self.storage.clear_cache()
+        saved = self.storage.load(room.id)['game']
+        self.assertEqual(saved['sides']['a']['front'], 'heiyu')
+        self.assertEqual(sum(c['entity_id'] == selected['entity_id'] for c in saved['sides']['a']['deck']), 1)
+        self.assertNotIn(selected['entity_id'], json.dumps(observe(saved, 'b')))
+
     def test_heiyu_order_and_free_exit_are_private_idempotent_and_reloadable(self):
         from app.modules.card_game.content.duel_v2 import CARDS, validate_deck
         from app.modules.card_game.engine.duel_v2 import new_game, apply_action

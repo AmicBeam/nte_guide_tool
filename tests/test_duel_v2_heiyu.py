@@ -1,4 +1,4 @@
-"""User-authored compact Heiyu rules; this revision was not run at user request."""
+"""User-authored Heiyu card rules and private choice boundaries."""
 import json
 import unittest
 
@@ -107,17 +107,83 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(s['sides']['a']['deck'], [])
         self.assertEqual(len([e for e in s['events'] if e['type'] == 'attack' and e.get('actor') == 'a:heiyu']), 2)
 
-    def test_p03_hand_top_then_divination_then_sortie(self):
+    def test_p03_draw_then_place_one_hand_card_at_either_end(self):
+        from app.modules.card_game.engine.duel_v2.entities import entity_action
+        for bottom in (False, True):
+            for select_drawn in (False, True):
+                with self.subTest(bottom=bottom, select_drawn=select_drawn):
+                    s = game()
+                    held = give(s, 'Z03')
+                    drawn, rest = top(s, ['P05', 'Z02'])
+                    s = play(s, 'P03')
+                    self.assertEqual(s['pending_choice']['kind'], 'hand_deck_placement')
+                    self.assertEqual(s['sides']['a']['ap'], 9)
+                    self.assertEqual(s['sides']['a']['front'], None)
+                    self.assertEqual({c['entity_id'] for c in s['pending_choice']['cards']},
+                                     {held['entity_id'], drawn['entity_id']})
+                    view = observe(s, 'a')
+                    self.assertTrue(view['pending_choice']['hand_placement'])
+                    self.assertEqual(view['sides']['a']['deck_count'], 1)
+                    self.assertEqual(len([e for e in view['legal_actions'] if e['action']['type'] == 'choose_deck_order']), 4)
+                    self.assertEqual(observe(s, 'b')['pending_choice']['choices'], [])
+                    chosen = drawn if select_drawn else held
+                    action = dict(type='choose_deck_order',
+                                  card_ids=[] if bottom else [chosen['instance_id']],
+                                  bottom_card_ids=[chosen['instance_id']] if bottom else [])
+                    restored = clone_state(json.loads(json.dumps(s)))
+                    cursor = restored['event_seq']
+                    s = apply_action(restored, 'a', entity_action(restored, 'a', action))
+                    self.assertEqual(s['phase'], 'playing')
+                    self.assertIsNone(s['pending_choice'])
+                    self.assertEqual(s['sides']['a']['front'], 'heiyu')
+                    self.assertEqual(s['sides']['a']['ap'], 9)
+                    self.assertEqual(hero(s, 'a', 'heiyu')['harmony'], 2)
+                    self.assertEqual(s['sides']['a'].get('heiyu_divinations', 0), 0)
+                    # Sortie inserts one omen; the existing two-card relative order is retained.
+                    deck = [c['entity_id'] for c in s['sides']['a']['deck'] if c['card_id'] != 'PF01']
+                    self.assertEqual(deck, [rest['entity_id'], chosen['entity_id']] if bottom else
+                                     [chosen['entity_id'], rest['entity_id']])
+                    kept = held if select_drawn else drawn
+                    self.assertEqual([c['entity_id'] for c in s['sides']['a']['hand']], [kept['entity_id']])
+                    self.assertFalse(any(e['type'] == 'reveal' for e in s['events'] if e['seq'] > cursor))
+
+    def test_p03_requires_exactly_one_valid_hand_instance(self):
         s = game()
         held = give(s, 'Z03')
+        drawn = top(s, ['Z03'])[0]
         s = play(s, 'P03')
-        self.assertEqual(s['pending_choice']['kind'], 'kit')
-        s = apply_action(s, 'a', dict(type='choose', choice_id=held['instance_id']))
-        self.assertEqual(s['pending_choice']['kind'], 'heiyu_divination')
-        self.assertEqual(s['pending_choice']['cards'][0]['entity_id'], held['entity_id'])
-        s = confirm(s)
+        for top_ids, bottom_ids in (([], []), ([held['instance_id']], [drawn['instance_id']]),
+                                    (['foreign'], []), ([held['instance_id']], [held['instance_id']])):
+            with self.subTest(top=top_ids, bottom=bottom_ids), self.assertRaises(ValueError):
+                apply_action(s, 'a', dict(type='choose_deck_order', card_ids=top_ids, bottom_card_ids=bottom_ids))
+
+    def test_p03_does_not_trigger_bottomed_cards_divination_benefit(self):
+        s = game()
+        drawn = top(s, ['P05'])[0]
+        s = play(s, 'P03')
+        s = apply_action(s, 'a', dict(type='choose_deck_order', card_ids=[], bottom_card_ids=[drawn['instance_id']]))
+        self.assertEqual(s['sides']['a']['hand'], [])
+        self.assertTrue(any(c['entity_id'] == drawn['entity_id'] for c in s['sides']['a']['deck']))
+
+    def test_p03_witch_sortie_still_checks_placed_top_card(self):
+        s = witch(game())
+        drawn = top(s, ['P05', 'Z02'])[0]
+        s = play(s, 'P03')
+        s = apply_action(s, 'a', dict(type='choose_deck_order', card_ids=[drawn['instance_id']], bottom_card_ids=[]))
         self.assertEqual(s['sides']['a']['front'], 'heiyu')
-        self.assertEqual(hero(s, 'a', 'heiyu')['harmony'], 2)
+        self.assertEqual([c['entity_id'] for c in s['sides']['a']['hand']], [drawn['entity_id']])
+        self.assertEqual(s['sides']['a'].get('heiyu_divinations', 0), 0)
+        self.assertTrue(any(e['type'] == 'reveal' and e['card']['entity_id'] == drawn['entity_id'] for e in s['events']))
+
+    def test_p03_empty_draw_ends_game_before_choice_or_sortie(self):
+        s = game()
+        give(s, 'Z03')
+        top(s, [])
+        s = play(s, 'P03')
+        self.assertEqual(s['phase'], 'finished')
+        self.assertEqual(s['winner'], 'b')
+        self.assertIsNone(s['pending_choice'])
+        self.assertIsNone(s['sides']['a']['front'])
 
     def test_p05_uses_previous_count_then_divines_and_p08_advances_owned_card(self):
         s = game()

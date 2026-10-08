@@ -64,6 +64,8 @@ def action_label(state, side, action):
         return f"选择「{card['name']}」"
     if kind == 'choose_deck_order':
         count = len(action.get('bottom_card_ids') or ([action['bottom_card_id']] if action.get('bottom_card_id') else []))
+        if (state.get('pending_choice') or {}).get('hand_placement'):
+            return '将 1 张手牌置于牌库' + ('底' if count else '顶')
         return f'整理牌库并置底 {count} 张' if count else '整理牌库顶'
     return {'end_turn': '结束回合', 'concede': '认输'}.get(kind, kind)
 
@@ -266,6 +268,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
             'max_bottom': pending.get('max_bottom') if pending['side'] == side else None,
             'min_bottom': pending.get('min_bottom', 0) if pending['side'] == side else None,
             'multi_bottom': bool(pending.get('multi_bottom')) if pending['side'] == side else None,
+            'hand_placement': bool(pending.get('hand_placement')) if pending['side'] == side else None,
             'choices': [{'id': c['instance_id'], 'label': c['name'], 'card': public_card(c, state, ('b' if pending['side']=='a' else 'a') if pending['kind']=='enemy_hand' else pending['side'])}
                         for c in pending['cards']] if pending['side'] == side else []}
     op = state['operation']

@@ -228,7 +228,7 @@
             if (card && !card.hidden) {
               return (
                 '<button class="v2-choice-card" type="button" data-choice-id="' + V2.escapeAttr(choice.id) + '">' +
-                  hoverCardMarkup(card) +
+                  TABLE.handCardHtml(card, { selection: true }) +
                 '</button>'
               );
             }
@@ -1037,7 +1037,7 @@
     ctx.handleActivate = handleActivate;
     ctx.legalDrop = legalDrop;
     ctx.groupedPlay = groupedPlay;
-    if (TABLE.bindDivination) TABLE.bindDivination(ctx, hoverCardMarkup);
+    if (TABLE.bindDivination) TABLE.bindDivination(ctx, function (card) { return TABLE.handCardHtml(card, { selection: true }); });
   }
 
   TABLE.bindInteraction = bindInteraction;

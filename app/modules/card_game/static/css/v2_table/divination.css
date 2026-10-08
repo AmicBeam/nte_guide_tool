@@ -1,32 +1,41 @@
-.v2-choice-overlay.is-divination { padding: 10px; }
+.v2-choice-overlay.is-divination { padding: 64px 10px 10px; }
 .v2-choice-dialog.v2-divination-dialog {
-  width: min(900px, 96vw); max-height: 94vh; padding: 20px;
+  width: min(900px, 96vw); max-height: calc(100dvh - 84px); padding: 20px;
   display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
 }
 .v2-divination-dialog header h2 { margin: 0; }
 .v2-divination-dialog header p { margin: 6px 0 0; font-size: 13px; }
-.v2-divination-zone { padding: 10px; border: 1px solid #8ab4c344; border-radius: 12px; background: #0b1926b3; }
+.v2-divination-zone { flex: 0 0 auto; padding: 10px; border: 1px solid #8ab4c344; border-radius: 12px; background: #0b1926b3; }
 .v2-divination-zone-label { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
 .v2-divination-zone-label span { color: #adc7ce; font-size: 12px; }
-.v2-divination-row { display: flex; align-items: stretch; gap: 12px; min-height: 206px; }
-.v2-divination-card { position: relative; flex: 0 1 180px; min-width: 0; width: 22%; cursor: grab; touch-action: none; user-select: none; }
+.v2-divination-row { display: flex; align-items: stretch; gap: 12px; min-height: 64px; overflow-x: auto; padding-bottom: 4px; }
+.v2-divination-card { position: relative; flex: 0 0 190px; min-width: 0; width: 190px; display: flex; flex-direction: column; cursor: grab; touch-action: none; user-select: none; }
 .v2-divination-card:focus-visible { outline: 3px solid #64e8d1; outline-offset: 3px; border-radius: 9px; }
-.v2-divination-card .v2-hover-card { width: 100%; min-height: 0; height: 100%; box-sizing: border-box; padding: 9px; }
-.v2-divination-card .v2-hover-card .v2-hover-art { height: 78px; }
-.v2-divination-card .v2-hover-card h2 { font-size: 16px; margin-block: 5px; }
-.v2-divination-card .v2-hover-card p { font-size: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin: 5px 0 0; }
-.v2-divination-card .v2-hover-card > p:not(.v2-divination-benefit) { display: none; }
-.v2-divination-card .v2-hover-card .v2-divination-benefit { -webkit-line-clamp: 3; }
-.v2-divination-card .v2-card-owner { display: none; }
-.v2-divination-card .v2-hover-card .v2-stat-badge { font-size: 15px; }
-.v2-divination-card .v2-hover-card .v2-frame-stats { top: auto; bottom: 2px; left: 32px; right: auto; gap: 3px; }
+.v2-choice-overlay .v2-selection-card {
+  width: 100%; height: auto; min-height: 180px; box-sizing: border-box;
+  padding: 34px 10px 32px; flex: 1 1 auto; gap: 8px; cursor: inherit;
+  font-size: 14px; touch-action: inherit; text-align: left;
+}
+.v2-choice-overlay .v2-selection-card > strong { font-size: 17px; line-height: 1.25; }
+.v2-choice-overlay .v2-selection-card p {
+  display: block; -webkit-line-clamp: unset; overflow: visible;
+  font-size: 13px; line-height: 1.5; margin: 0; white-space: normal;
+}
+.v2-choice-grid.has-cards .v2-choice-card { width: min(230px, 75vw); }
+.v2-choice-dialog.is-multi .v2-choice-grid.has-cards .v2-choice-card { width: 100%; }
+.v2-choice-card .v2-selection-card { padding-top: 12px; height: 100%; }
+.v2-divination-card .v2-selection-card { height: auto; }
+.v2-placement-actions { position: relative; display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.v2-placement-actions button { border: 1px solid #7098ab; border-radius: 5px; background: #102433; color: #efffff; padding: 5px 8px; cursor: pointer; }
+.v2-divination-zone[data-divination-row="source"] .v2-divination-row { overflow-x: auto; padding-bottom: 6px; }
+.v2-divination-zone[data-divination-row="source"] .v2-divination-card { flex: 0 0 190px; }
 .v2-divination-position { position: absolute; z-index: 2; left: 5px; top: 5px; border-radius: 50%; min-width: 23px; height: 23px; display: grid; place-items: center; background: #102e3f; border: 1px solid #77d8ce; color: #dcfff8; font-size: 12px; }
 .v2-divination-detail { position: absolute; z-index: 2; right: 5px; top: 5px; border: 1px solid #7098ab; border-radius: 5px; background: #102433ed; color: #efffff; font-size: 11px; padding: 3px 5px; cursor: pointer; }
-.v2-divination-placeholder { min-height: 120px; min-width: 0; width: 100%; display: grid; place-items: center; border: 1px dashed #83b2c45e; border-radius: 9px; color: #92acb9; text-align: center; font-size: 13px; }
+.v2-divination-placeholder { min-height: 64px; min-width: 0; width: 100%; display: grid; place-items: center; border: 1px dashed #83b2c45e; border-radius: 9px; color: #92acb9; text-align: center; font-size: 13px; }
 .v2-divination-zone.is-divination-over { border-color: #64e8d1; background: #133b42b3; }
 .v2-divination-card.is-divination-dragging { opacity: .35; }
 .v2-divination-ghost { position: fixed; z-index: 200; transform: translate(-50%, -50%) rotate(3deg); pointer-events: none; opacity: .9; }
-.v2-divination-dialog footer { position: sticky; bottom: -20px; background: #101c2bf5; padding: 9px 0 0; display: flex; gap: 12px; align-items: center; margin-top: auto; z-index: 3; }
+.v2-divination-dialog footer { flex: 0 0 auto; position: sticky; bottom: -20px; background: #101c2bf5; padding: 9px 0 0; display: flex; gap: 12px; align-items: center; margin-top: auto; z-index: 3; }
 .v2-divination-dialog footer .primary-btn { min-width: 120px; margin-left: auto; }
 .v2-divination-status { color: #adc7ce; font-size: 12px; }
 @media (max-height: 600px) {
@@ -34,20 +43,13 @@
   .v2-divination-dialog header { display: flex; align-items: baseline; gap: 14px; }
   .v2-divination-dialog header h2 { font-size: 19px; flex-shrink: 0; }
   .v2-divination-dialog header p { font-size: 11px; margin: 0; }
-  .v2-divination-zone { padding: 6px; }
+  .v2-divination-zone { flex: 0 0 auto; padding: 6px; }
   .v2-divination-zone-label { margin-bottom: 4px; line-height: 1.2; }
   .v2-divination-zone-label strong { font-size: 13px; }
-  .v2-divination-row { min-height: 112px; gap: 9px; }
-  .v2-divination-card { height: 112px; }
-  .v2-divination-card .v2-hover-card { padding: 6px; overflow: hidden; }
-  .v2-divination-card .v2-hover-card .v2-hover-art { height: 35px; }
-  .v2-divination-card .v2-hover-card h2 { font-size: 14px; margin-block: 3px; }
-  .v2-divination-card .v2-hover-card p { font-size: 11px; -webkit-line-clamp: 2; line-height: 1.3; margin-top: 2px; }
-  .v2-divination-card .v2-stat-row { display: none; }
-  .v2-divination-card .v2-hover-card .v2-divination-benefit { display: none; }
-  .v2-divination-card .v2-hover-card .v2-divination-benefit.is-current { display: -webkit-box; -webkit-line-clamp: 2; }
-  .v2-divination-card .v2-hover-card .v2-stat-badge { font-size: 12px; padding: 1px 3px; }
-  .v2-divination-card .v2-hover-card .v2-stat-icon { width: 12px; height: 12px; }
-  .v2-divination-placeholder { min-height: 112px; }
+  .v2-divination-row { min-height: 52px; gap: 9px; }
+  .v2-divination-card, .v2-divination-zone[data-divination-row="source"] .v2-divination-card { flex-basis: 175px; width: 175px; }
+  .v2-choice-overlay .v2-selection-card { min-height: 150px; padding-inline: 8px; }
+  .v2-choice-overlay .v2-selection-card p { display: block; font-size: 12px; line-height: 1.4; }
+  .v2-divination-placeholder { min-height: 52px; }
   .v2-divination-dialog footer { bottom: -12px; padding-top: 6px; }
 }

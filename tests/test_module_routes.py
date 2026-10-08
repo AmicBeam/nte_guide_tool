@@ -18,8 +18,10 @@ class ModuleRoutesTest(RoomFlowTestCase):
     def test_card_game_module_page_and_asset(self) -> None:
         page = self.client.get('/card-game')
         self.assertEqual(page.status_code, 200)
-        self.assertIn('异象对决', page.get_data(as_text=True))
+        self.assertIn('异能对决', page.get_data(as_text=True))
         self._assert_asset('/static/card_game/js/home.js')
+        self._assert_asset('/static/images/brand/esper-duel-logo.webp')
+        self._assert_asset('/static/images/brand/esper-duel-icon.webp')
 
     def test_kongmu_module_page_catalog_and_asset(self) -> None:
         page = self.client.get('/kongmu')
@@ -41,39 +43,47 @@ class ModuleRoutesTest(RoomFlowTestCase):
             self.assertIn('immutable', avatar.headers.get('Cache-Control', ''))
         finally:
             avatar.close()
-        self.assertEqual(catalog.headers.get('Cache-Control'), 'private, no-store')
-        self.assertIn('Authorization', catalog.headers.get('Vary', ''))
+        self.assertNotIn('Authorization', catalog.headers.get('Vary', ''))
         frontend = (
             ROOT / 'app' / 'modules' / 'kongmu' / 'static' / 'js' / 'kongmu.js'
         ).read_text(encoding='utf-8')
         self.assertNotIn('pickCharacterAvatar', frontend)
         self.assertNotIn('avatarChoiceIndexes', frontend)
         self.assertIn("{cache: 'no-store'}", frontend)
-        self.assertNotIn('残红', [character['name'] for character in catalog.get_json()['characters']])
+        canhong = next(character for character in catalog.get_json()['characters'] if character['name'] == '残虹')
+        self.assertEqual(canhong['avatar'], '/static/images/characters/avatar/残虹.png')
+        self._assert_asset(canhong['avatar'])
         self.assertIn('headers.Authorization = `Bearer ${token}`', frontend)
         self._assert_asset('/static/kongmu/js/kongmu.js')
 
-    def test_kongmu_test_character_requires_test_permission(self) -> None:
+    def test_kongmu_half_open_character_is_public(self) -> None:
         anonymous_catalog = self.client.get('/api/kongmu/catalog').get_json()
-        self.assertNotIn('残红', [character['name'] for character in anonymous_catalog['characters']])
+        anonymous_canhong = next(character for character in anonymous_catalog['characters'] if character['name'] == '残虹')
+        self.assertEqual(anonymous_canhong['avatar'], '/static/images/characters/avatar/残虹.png')
+
+        anonymous_plan = self.client.post('/api/kongmu/plan', json={
+            'character_id': anonymous_canhong['id'],
+            'cartridge_id': 'attack',
+        })
+        self.assertEqual(anonymous_plan.status_code, 200)
 
         token = self._issue_login_and_get_token('kongmu-tester')
         regular_headers = {'Authorization': f'Bearer {token}'}
         regular_catalog = self.client.get('/api/kongmu/catalog', headers=regular_headers).get_json()
-        self.assertNotIn('残红', [character['name'] for character in regular_catalog['characters']])
+        regular_canhong = next(character for character in regular_catalog['characters'] if character['name'] == '残虹')
 
-        denied = self.client.post('/api/kongmu/plan', json={
-            'character_id': 'char_076a1f4e53',
+        allowed_without_permission = self.client.post('/api/kongmu/plan', json={
+            'character_id': regular_canhong['id'],
             'cartridge_id': 'attack',
         }, headers=regular_headers)
-        self.assertEqual(denied.status_code, 400)
+        self.assertEqual(allowed_without_permission.status_code, 200)
 
         models_module = importlib.import_module('app.models')
         models_module.Player.update(shaft_test_whitelisted=True).where(
             models_module.Player.player_uid == 'kongmu-tester'
         ).execute()
         allowed_catalog = self.client.get('/api/kongmu/catalog', headers=regular_headers).get_json()
-        canhong = next(character for character in allowed_catalog['characters'] if character['name'] == '残红')
+        canhong = next(character for character in allowed_catalog['characters'] if character['name'] == '残虹')
         self.assertEqual(canhong['owner_grid_count'], 3)
         self.assertIn('16%', canhong['kongmu_passive']['text'])
 
@@ -82,6 +92,26 @@ class ModuleRoutesTest(RoomFlowTestCase):
             'cartridge_id': 'attack',
         }, headers=regular_headers)
         self.assertEqual(allowed.status_code, 200)
+        self.assertEqual(
+            allowed.get_json()['character']['equip_slots']['slots'],
+            [
+                [-1, -1, -1, -1, -1, -1, -1],
+                [-1, -1, 0, 0, 0, 0, -1],
+                [-1, 0, 0, 0, 0, 0, -1],
+                [-1, 0, 0, 0, -1, 0, -1],
+                [-1, 0, 0, -1, -1, 0, -1],
+                [-1, 0, 0, 0, 0, -1, -1],
+                [-1, -1, -1, -1, -1, -1, -1],
+            ],
+        )
+
+        invited_token = self._issue_login_and_get_token('kongmu-invited')
+        models_module.Player.update(shaft_invited=True).where(
+            models_module.Player.player_uid == 'kongmu-invited'
+        ).execute()
+        invited_headers = {'Authorization': f'Bearer {invited_token}'}
+        invited_catalog = self.client.get('/api/kongmu/catalog', headers=invited_headers).get_json()
+        self.assertIn('残虹', [character['name'] for character in invited_catalog['characters']])
 
     def test_preteam_module_page_and_asset(self) -> None:
         page = self.client.get('/preteam')
@@ -92,7 +122,7 @@ class ModuleRoutesTest(RoomFlowTestCase):
         self.assertIn('排轴模块', page_text)
         self._assert_asset('/static/preteam/单位.jpg')
 
-    def test_portal_shows_community_links_record_and_preteam_sunset(self) -> None:
+    def test_portal_shows_community_links_record_without_preteam_entry(self) -> None:
         page = self.client.get('/')
         self.assertEqual(page.status_code, 200)
         page_text = page.get_data(as_text=True)
@@ -101,7 +131,8 @@ class ModuleRoutesTest(RoomFlowTestCase):
         self.assertIn('https://space.bilibili.com/9412490', page_text)
         self.assertIn('https://space.bilibili.com/3546651192986524', page_text)
         self.assertIn('津ICP备2026003916号', page_text)
-        self.assertIn('即将下线，并由排轴模块取代', page_text)
+        self.assertNotIn('预配队', page_text)
+        self.assertNotIn('href="/preteam"', page_text)
 
     def test_shaft_module_page_catalog_and_asset(self) -> None:
         self.assertEqual(self.client.get('/shaft/rotation').status_code, 200)

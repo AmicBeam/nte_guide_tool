@@ -108,6 +108,12 @@ def registered_buff_rules(team: list[dict[str, Any]], catalog: dict[str, Any]) -
                 rule['owner_character_name'] = str(member.get('character_name') or '')
                 rule['owner_awakening'] = len(_awakening_nodes(member))
                 rule['owner_awakening_nodes'] = sorted(_awakening_nodes(member))
+                raw_resonances = member.get('awakening_resonances')
+                rule['owner_awakening_resonances'] = (
+                    sorted({_int(value) for value in raw_resonances if _int(value) in (3, 6)})
+                    if isinstance(raw_resonances, list)
+                    else [level for level in (3, 6) if len(_awakening_nodes(member)) >= level]
+                )
                 arc_refinement_record = (
                     (((catalog.get('arc_refinements') or {}).get('arcs') or {}).get(provider_id) or {})
                     if kind == 'arc'
@@ -199,6 +205,10 @@ def _conditions_match(conditions: Any, context: dict[str, Any]) -> bool:
         condition_type = str(condition.get('type') or '')
         if condition_type in {'', 'always'}:
             continue
+        if condition_type == 'source_foreground_at_hit':
+            if context.get('foreground_slot_at_hit') is None or context.get('foreground_slot_at_hit') != context.get('source_slot'):
+                return False
+            continue
         if condition_type == 'unsupported':
             return False
         if condition_type == 'action_tag':
@@ -249,7 +259,11 @@ def _conditions_match(conditions: Any, context: dict[str, Any]) -> bool:
                 if isinstance(raw_nodes, list)
                 else _int(context.get('owner_awakening'))
             )
-            if active_count < required_count:
+            resonances = context.get('owner_awakening_resonances')
+            active = (required_count in resonances
+                      if required_count in (3, 6) and isinstance(resonances, list)
+                      else active_count >= required_count)
+            if not active:
                 return False
             continue
         if condition_type == 'awakening_count_max':
@@ -260,7 +274,11 @@ def _conditions_match(conditions: Any, context: dict[str, Any]) -> bool:
                 if isinstance(raw_nodes, list)
                 else _int(context.get('owner_awakening'))
             )
-            if active_count > max_count:
+            resonances = context.get('owner_awakening_resonances')
+            active = (max_count + 1 in resonances
+                      if max_count in (2, 5) and isinstance(resonances, list)
+                      else active_count > max_count)
+            if active:
                 return False
             continue
         if condition_type == 'expected_critical_hit':
@@ -375,6 +393,8 @@ def event_matches_rule(
         return False
     if event not in SUPPORTED_TRIGGER_EVENTS:
         return False
+    if event == 'action_hit' and str(trigger.get('timing') or 'start') != str((context or {}).get('action_hit_timing') or 'start'):
+        return False
     source = trigger.get('source') if isinstance(trigger.get('source'), dict) else {}
     if not _source_matches(source, rule, step, action, snapshot, is_background):
         return False
@@ -382,6 +402,7 @@ def event_matches_rule(
     event_context.setdefault('snapshot', snapshot)
     event_context.setdefault('owner_awakening', rule.get('owner_awakening'))
     event_context.setdefault('owner_awakening_nodes', rule.get('owner_awakening_nodes'))
+    event_context.setdefault('owner_awakening_resonances', rule.get('owner_awakening_resonances'))
     return _conditions_match(trigger.get('conditions'), event_context)
 
 

@@ -1,0 +1,3 @@
+# Keep checksum-pinned Windows export manifests byte-identical on checkout.
+*.json -text whitespace=cr-at-eol
+*.npz -text

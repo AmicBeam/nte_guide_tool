@@ -1,0 +1,36 @@
+{% extends 'common/base.html' %}
+{% block title %}图鉴{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_common.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_home.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_codex.css') }}">
+{% endblock %}
+{% block body %}
+<main class="v2-codex-page" id="v2-codex-page">
+    <header class="v2-home-nav">
+        <a class="v2-home-logo" href="{{ url_for('main.card_game_home') }}">
+            <img src="{{ url_for('static', filename='images/brand/esper-duel-logo.webp') }}" alt="异能对决" width="1086" height="362">
+        </a>
+        <nav class="v2-home-links" aria-label="大厅导航">
+            <a href="{{ url_for('main.card_game_home') }}">大厅</a>
+            <a href="{{ url_for('main.build_page') }}">构筑</a>
+            <a class="is-current" href="{{ url_for('main.codex_page') }}">图鉴</a>
+            <a href="{{ url_for('main.replays_page') }}">回放</a>
+        </nav>
+        <div class="v2-home-account">
+            <button class="v2-codex-help" id="v2-codex-help" type="button" aria-label="查看机制词表" aria-haspopup="dialog" aria-controls="v2-codex-glossary" title="机制词表">?</button>
+        </div>
+    </header>
+    <section class="v2-banner" id="v2-codex-banner" hidden></section>
+    <section class="v2-codex-stage">
+        <aside class="v2-codex-nav" id="v2-codex-nav" aria-label="角色列表"></aside>
+        <div class="v2-codex-body" id="v2-codex-body">
+            <div class="v2-skel v2-skel-block"></div>
+        </div>
+    </section>
+</main>
+{% include 'card_game/v2_codex_glossary.html' %}
+<script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_codex.js') }}"></script>
+{% endblock %}

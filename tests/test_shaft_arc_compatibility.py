@@ -15,7 +15,10 @@ EXPECTED_CHARACTER_ADAPTATIONS = {
     '浔': '固态',
     '小吱': '气态',
     '埃德嘉': '液态',
-    '残红': '气态',
+    '残虹': '气态',
+    '灵可': '等离子',
+    '黑羽': '气态',
+    '明音凛': '液态',
     '伊洛伊': '液态',
     '娜娜莉': '等离子',
     '九原': '固态',
@@ -50,7 +53,7 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
         self.assertEqual(refinements['source'], 'nanoka.cc')
         self.assertEqual(set(refinements['arcs']), {arc['id'] for arc in catalog['arcs']})
         self.assertTrue(all(
-            set(record['levels']) == {'1', '2', '3', '4', '5'}
+            set(record['levels']) == {str(level) for level in record.get('available_levels', [1, 2, 3, 4, 5])}
             for record in refinements['arcs'].values()
         ))
 
@@ -65,10 +68,8 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
             if arc:
                 self.assertEqual(characters[character_id]['adaptation'], arc['adaptation'])
 
-    def test_cartridge_element_restrictions_and_starter_builds_match(self) -> None:
+    def test_cartridge_two_piece_damage_uses_explicit_element_fields(self) -> None:
         catalog = load_shaft_catalog()
-        characters = get_record_map(catalog['characters'])
-        cartridges = get_record_map(catalog['cartridges'])
         expected_elements = {
             '失落光芒': '光',
             '森林萤火之心': '灵',
@@ -79,23 +80,15 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
         }
 
         self.assertFalse(any(cartridge['name'].startswith('【借】') for cartridge in catalog['cartridges']))
-        self.assertEqual(
-            {
-                cartridge['name']: cartridge.get('required_element')
-                for cartridge in catalog['cartridges']
-                if cartridge.get('required_element')
-            },
-            expected_elements,
-        )
-        for character_id, raw_build in catalog['starter_axis']['character_builds'].items():
-            build = raw_build[0] if isinstance(raw_build, list) else raw_build
-            cartridge = cartridges.get(str(build.get('cartridge_id') or ''))
-            if cartridge and cartridge.get('required_element'):
-                self.assertEqual(
-                    characters[character_id]['element'],
-                    cartridge['required_element'],
-                    msg=f"{characters[character_id]['name']} 默认卡带属性不匹配",
-                )
+        cartridges = {cartridge['name']: cartridge for cartridge in catalog['cartridges']}
+        self.assertFalse(any('required_element' in cartridge for cartridge in catalog['cartridges']))
+        for name, element in expected_elements.items():
+            modifiers = cartridges[name]['modifiers']
+            self.assertEqual(modifiers.get(f'element_dmg_{element}'), 0.1, name)
+            self.assertFalse(any(
+                key.startswith('element_dmg_') and key != f'element_dmg_{element}' and value
+                for key, value in modifiers.items()
+            ), name)
 
     def test_backend_keeps_active_cross_element_cartridge(self) -> None:
         normalized = normalize_axis_payload({
@@ -196,6 +189,38 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
             arc['name'].endswith(('满', '满精', '白板'))
             for arc in catalog['arcs']
         ))
+
+    def test_expected_value_arc_damage_is_stored_as_permanent_panel_modifier(self) -> None:
+        catalog = load_shaft_catalog()
+        refinements = catalog['arc_refinements']['arcs']
+        buffs = {buff['id'] for buff in catalog['buffs']}
+
+        self.assertEqual(
+            [refinements['arc_b22de80f07']['levels'][str(level)]['panel_modifiers']['all_dmg'] for level in range(1, 6)],
+            [0.25, 0.3, 0.35, 0.4, 0.45],
+        )
+        self.assertEqual(
+            [refinements['arc_d75aa15b91']['levels'][str(level)]['panel_modifiers']['all_dmg'] for level in range(1, 6)],
+            [0.04, 0.0466666667, 0.0533333333, 0.06, 0.0666666667],
+        )
+        self.assertEqual(
+            refinements['arc_b22de80f07']['active_mechanisms'],
+            [{
+                'id': 'arc_unyielding_expected_damage',
+                'name': '拳击糖·半血期望增伤',
+                'effect_key': 'all_dmg',
+            }],
+        )
+        self.assertEqual(
+            refinements['arc_d75aa15b91']['active_mechanisms'],
+            [{
+                'id': 'arc_whale_expected_damage',
+                'name': '深蓝之恸·倾陷期望增伤',
+                'effect_key': 'all_dmg',
+            }],
+        )
+        self.assertNotIn('arc_unyielding_low_hp_bonus', buffs)
+        self.assertNotIn('arc_unyielding_full_low_hp_bonus', buffs)
 
     def test_legacy_arc_options_migrate_to_refinement_selection(self) -> None:
         catalog = load_shaft_catalog()

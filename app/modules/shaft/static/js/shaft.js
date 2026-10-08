@@ -1,5 +1,6 @@
 (function () {
   const ELEMENTS = ['光', '灵', '咒', '暗', '魂', '相'];
+  const ELEMENT_DAMAGE_KEYS = Object.fromEntries(ELEMENTS.map((element) => [element, `element_dmg_${element}`]));
   const RESISTANCE_ELEMENTS = [...ELEMENTS, '心灵'];
   const SLOT_COLORS = ['#58d8d2', '#ffbf57', '#ff5aa5', '#77e36f'];
   const ACTION_CONTRIBUTION_COLORS = ['#58d8d2', '#ffbf57', '#ff5aa5', '#77e36f', '#b28cff', '#62b7ff', '#ff7a63', '#d8e26a'];
@@ -21,6 +22,7 @@
     '浊燃': '#ff665c',
     '黯星': '#6f8fff',
     '倾陷': '#eef4ff',
+    '其他': '#d7a5ff',
   };
   const BUFF_LINE_COLORS = ['#62b7ff', '#f9ca62', '#95ec87', '#ff7ab8', '#b28cff', '#55dacd'];
   const ACTION_TYPES = ['', '普攻', 'E', 'Q', '援护', '无'];
@@ -69,13 +71,17 @@
   const SIMULATION_DEBOUNCE_MS = 320;
   const MARKET_SEARCH_INTERVAL_MS = 3000;
   const MARKET_SEARCH_EDIT_DELAY_MS = 600;
+  const CANHONG_CHARACTER_ID = 'char_076a1f4e53';
+  const LINGKE_CHARACTER_ID = 'char_0846d632e0';
   const DRAFT_STORAGE_KEY = 'shaft_axis_draft_v1';
   const TIMELINE_FIXED_PERSONAL_RESOURCES = {
     char_31c5130304: ['真理之匙'],
     char_a01c39f576: ['臆想'],
+    char_heiyu: ['恶意'],
   };
   const TIMELINE_HIDDEN_PERSONAL_RESOURCES = new Set(['噩梦']);
   const DETAIL_HIDDEN_APPLIED_BUFF_IDS = new Set([
+    'character_heiyu_assist_window',
     'character_requiem_nightmare',
     'character_requiem_nightmare_stack',
   ]);
@@ -144,6 +150,8 @@
     simulationInFlight: false,
     resultFingerprint: '',
     isResultStale: false,
+    selectedDamageMarkerKey: '',
+    timelineDamageMarkers: new Map(),
     selectedStepId: '',
     selectedStepIds: [],
     compareSnapshot: null,
@@ -164,6 +172,7 @@
     undoStack: [],
     redoStack: [],
     suppressTimelineClickUntil: 0,
+    lastTimelineActionClick: { stepId: '', at: 0 },
     buffDraft: {
       triggerSlot: 0,
       modifierKey: 'all_dmg',
@@ -171,6 +180,7 @@
     previewTickPx: 0,
     axisPreviewPayload: null,
     axisPreviewSaving: false,
+    substatAnalysisInFlight: false,
   };
 
   function $(id) {
@@ -454,11 +464,15 @@
     }
     if (type === 'awakening_count_min') {
       const requiredCount = Math.round(numberValue(condition.min, condition.value));
-      return awakeningNodes.size >= requiredCount;
+      return [3, 6].includes(requiredCount)
+        ? normalizeAwakeningResonances(member).includes(requiredCount)
+        : awakeningNodes.size >= requiredCount;
     }
     if (type === 'awakening_count_max') {
       const maxCount = Math.round(numberValue(condition.max, condition.value));
-      return awakeningNodes.size <= maxCount;
+      return [2, 5].includes(maxCount)
+        ? !normalizeAwakeningResonances(member).includes(maxCount + 1)
+        : awakeningNodes.size <= maxCount;
     }
     if (type === 'owner_character_id') {
       return (condition.ids || []).map(String).includes(String(member?.character_id || ''));
@@ -489,11 +503,11 @@
       follow_dmg: '追击伤害',
       mind_dmg: '心灵伤害',
       attach_dmg: '附着伤害',
-      element_dmg: '属性伤害',
       all_dmg: '伤害',
       final_dmg: '最终伤害',
       base_multiplier_pct: '基础倍率',
     };
+    if (String(key).startsWith('element_dmg_')) return `${String(key).slice('element_dmg_'.length)}属性伤害`;
     return labels[key] || (String(key).startsWith('res_down_') ? `${String(key).slice('res_down_'.length)}属性抗性降低` : '');
   }
 
@@ -627,6 +641,25 @@
       }
       rulesByKind[String(provider.kind)].push(activeRule);
     });
+    const arcRefinementDefinition = state.catalog?.arc_refinements?.arcs?.[selectedProviders.arc] || {};
+    const activeArcRefinement = arcRefinementRecord(member);
+    (arcRefinementDefinition.active_mechanisms || []).forEach((mechanism) => {
+      const effectKey = String(mechanism?.effect_key || '');
+      const effectValue = numberValue(activeArcRefinement?.panel_modifiers?.[effectKey]);
+      if (!mechanismEffectLabel(effectKey) || !effectValue) {
+        return;
+      }
+      rulesByKind.arc.push({
+        id: String(mechanism?.id || `${selectedProviders.arc}:${effectKey}`),
+        name: String(mechanism?.name || '常驻机制'),
+        trigger: { event: 'passive' },
+        target: { scope: 'registrar' },
+        duration: { type: 'permanent' },
+        stacking: { mode: 'refresh', max_stacks: 1 },
+        effects: { [effectKey]: effectValue },
+        display: { line: false },
+      });
+    });
 
     const sourceNames = {
       character: getCharacterMap().get(member?.character_id)?.name || member?.character_name || '角色',
@@ -706,7 +739,12 @@
       harmony_strength: 0,
       stagger_strength: 0,
       basic_dmg: 0,
-      element_dmg: 0,
+      element_dmg_光: 0,
+      element_dmg_灵: 0,
+      element_dmg_咒: 0,
+      element_dmg_暗: 0,
+      element_dmg_魂: 0,
+      element_dmg_相: 0,
       follow_dmg: 0,
       mind_dmg: 0,
       attach_dmg: 0,
@@ -789,6 +827,26 @@
     return state.catalog?.formula_constants?.cartridge_main_stat_options || {};
   }
 
+  function elementDamageKey(element) {
+    return ELEMENT_DAMAGE_KEYS[String(element || '')] || '';
+  }
+
+  function elementDamageValue(panel, element) {
+    const key = elementDamageKey(element);
+    return key ? numberValue(panel?.[key]) : 0;
+  }
+
+  function mergeElementDamageMap(mods, values) {
+    ELEMENTS.forEach((element) => {
+      mods[elementDamageKey(element)] += numberValue(values?.[element]);
+    });
+    return mods;
+  }
+
+  function buildStatLabel(stat, character) {
+    return stat === '属伤' ? `${character?.element || ''}属性伤害` : stat;
+  }
+
   function curtainStatOptions() {
     return state.catalog?.formula_constants?.curtain_bonus_stat_options || {};
   }
@@ -805,10 +863,14 @@
     const source = raw && typeof raw === 'object' ? raw : {};
     const options = curtainStatOptions();
     const defaultStat = normalizeStatName(defaults.stat) || Object.keys(options)[0] || '';
-    const stat = normalizeStatName(source.stat) || defaultStat;
-    const passiveType = CURTAIN_PASSIVE_TYPES.some((item) => item.key === source.passive_type)
-      ? source.passive_type
-      : (CURTAIN_PASSIVE_TYPES.some((item) => item.key === defaults.passive_type) ? defaults.passive_type : 'type3');
+    const stat = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+      ? defaultStat
+      : (normalizeStatName(source.stat) || defaultStat);
+    const passiveType = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+      ? (CURTAIN_PASSIVE_TYPES.some((item) => item.key === defaults.passive_type) ? defaults.passive_type : 'type3')
+      : (CURTAIN_PASSIVE_TYPES.some((item) => item.key === source.passive_type)
+        ? source.passive_type
+        : (CURTAIN_PASSIVE_TYPES.some((item) => item.key === defaults.passive_type) ? defaults.passive_type : 'type3'));
     return {
       value: Math.max(0, Math.min(100, numberValue(defaults.value))),
       stat: Object.prototype.hasOwnProperty.call(options, stat) ? stat : defaultStat,
@@ -822,21 +884,21 @@
     return Math.max(0, Math.round(numberValue(cartridge?.passive_counts?.[bonus.passive_type])));
   }
 
-  function mainStatPanelMods(mainStat) {
+  function mainStatPanelMods(mainStat, element) {
     const mods = emptyPanelMods();
     const option = mainStatOptions()[mainStat] || {};
-    const key = option.modifier_key || '';
+    const key = option.modifier_key === 'character_element_dmg' ? elementDamageKey(element) : (option.modifier_key || '');
     if (Object.prototype.hasOwnProperty.call(mods, key)) {
       mods[key] += numberValue(option.unit_value);
     }
     return mods;
   }
 
-  function curtainBonusPanelMods(member) {
+  function curtainBonusPanelMods(member, element) {
     const mods = emptyPanelMods();
     const bonus = normalizeCurtainBonus(member?.curtain_bonus, member?.character_id || '');
     const option = curtainStatOptions()[bonus.stat] || {};
-    const key = option.modifier_key || '';
+    const key = option.modifier_key === 'character_element_dmg' ? elementDamageKey(element) : (option.modifier_key || '');
     if (Object.prototype.hasOwnProperty.call(mods, key)) {
       mods[key] += numberValue(bonus.value) / 100 * curtainPassiveLayers(member);
     }
@@ -851,7 +913,7 @@
     const key = String(option.modifier_key || '');
     const isPercent = option.kind === 'percent' || key.endsWith('_pct') || key.includes('dmg') || key.includes('crit');
     return {
-      stat: option.label || bonus.stat || '空幕',
+      stat: bonus.stat === '属伤' ? `${getCharacterMap().get(member?.character_id || '')?.element || ''}属性伤害` : (option.label || bonus.stat || '空幕'),
       passive: CURTAIN_PASSIVE_TYPES.find((item) => item.key === bonus.passive_type)?.label || bonus.passive_type,
       layers,
       display: isPercent ? `+${formatNumber(value * 100, 1)}%` : `+${formatNumber(value, 0)}`,
@@ -880,20 +942,12 @@
     if (arc) {
       mergePanelMods(mods, arcRefinement?.panel_modifiers || arc.modifiers);
     }
-    if (cartridge) {
-      const cartridgeModifiers = { ...(cartridge.modifiers || {}) };
-      const requiredElement = String(cartridge.required_element || '');
-      if (requiredElement && requiredElement !== String(character.element || '')) {
-        cartridgeModifiers.element_dmg = 0;
-      }
-      mergePanelMods(mods, cartridgeModifiers);
-    }
-    mergePanelMods(mods, mainStatPanelMods(normalizeCartridgeMainStat(member.cartridge_main_stat, member.character_id)));
-    mergePanelMods(mods, curtainBonusPanelMods(member));
+    if (cartridge) mergePanelMods(mods, cartridge.modifiers);
+    mergePanelMods(mods, mainStatPanelMods(normalizeCartridgeMainStat(member.cartridge_main_stat, member.character_id), character.element));
+    mergePanelMods(mods, curtainBonusPanelMods(member, character.element));
     mergePanelMods(mods, substatPanelMods(member.substat_counts));
     mergePanelMods(mods, teamPanelBonusMods());
-    const element = character.element || '';
-    mods.element_dmg += numberValue((arcRefinement?.element_dmg || arc?.element_dmg)?.[element]);
+    mergeElementDamageMap(mods, arcRefinement?.element_dmg || arc?.element_dmg);
 
     const baseStats = character.base_stats || {};
     const baseAtk = numberValue(baseStats.atk) + numberValue(arc?.base_atk);
@@ -905,7 +959,7 @@
       def: baseDef * (1 + mods.def_pct) + mods.flat_def,
       crit_rate: mods.crit_rate,
       crit_dmg: mods.crit_dmg,
-      element_dmg: mods.element_dmg,
+      ...Object.fromEntries(ELEMENTS.map((element) => [elementDamageKey(element), elementDamageValue(mods, element)])),
       energy_recharge: mods.energy_recharge,
       harmony_strength: mods.harmony_strength,
       stagger_strength: mods.stagger_strength,
@@ -977,6 +1031,7 @@
   }
 
   function setSelectedStepIds(ids, primaryId = '', render = true) {
+    state.selectedDamageMarkerKey = '';
     const validIds = validStepIdSet();
     state.selectedStepIds = (ids || []).filter((id, index) => validIds.has(id) && (ids || []).indexOf(id) === index);
     state.selectedStepId = validIds.has(primaryId) ? primaryId : state.selectedStepIds[state.selectedStepIds.length - 1] || '';
@@ -1004,8 +1059,20 @@
   }
 
   function timelineDisplayTickForStep(step) {
-    const detail = (state.timelineDisplayDetails || []).find((item) => item.step_id === step?.id) ||
-      (timelineResult()?.details || []).find((item) => item.step_id === step?.id);
+    const detail = (state.timelineDisplayDetails || []).find((item) => item.step_id === step?.id);
+    if (detail) {
+      return Math.max(0, Number(
+        detail.display_start_tick ??
+        detail.visual_start_tick ??
+        step?.start_tick ??
+        0
+      ));
+    }
+    return timelineDisplayTickForResultStep(step);
+  }
+
+  function timelineDisplayTickForResultStep(step, result = timelineResult()) {
+    const detail = (result?.details || []).find((item) => item.step_id === step?.id);
     return Math.max(0, Number(
       detail?.display_start_tick ??
       detail?.visual_start_tick ??
@@ -1051,7 +1118,13 @@
       return event;
     }, null);
     const energy = Number(latestEnergyEvent?.energy_after ?? resource.initial_energy ?? snapshot.energy ?? state.axis?.initial_energy ?? 1000);
-    const harmony = Number(snapshot.harmony ?? resource.initial_harmony ?? 0);
+    const latestHarmonyEvent = (result?.harmony_events || []).reduce((latest, event) => {
+      if (Number(event.slot) !== slotNumber || Number(event.tick || 0) > calculationCursorTick) return latest;
+      return event;
+    }, null);
+    const harmony = Array.isArray(result?.harmony_events)
+      ? Number(latestHarmonyEvent?.harmony_after ?? resource.initial_harmony ?? 0)
+      : Number(snapshot.harmony ?? resource.initial_harmony ?? 0);
     const personalResources = snapshot.personal_resources && typeof snapshot.personal_resources === 'object'
       ? snapshot.personal_resources
       : resource.initial_personal_resources && typeof resource.initial_personal_resources === 'object'
@@ -1085,12 +1158,38 @@
     return member?.character_name || getCharacterMap().get(member?.character_id)?.name || `角色 ${Number(slot) + 1}`;
   }
 
-  function actionsForSlot(slot) {
+  function actionsForSlot(slot, existingActionId = '') {
     const member = memberBySlot(slot);
     if (!member) {
       return [];
     }
-    return state.catalog?.actions_by_character?.[member.character_id] || [];
+    const actions = (state.catalog?.actions_by_character?.[member.character_id] || [])
+      .filter((action) => !action.legacy_only);
+    const existing = getActionMap().get(existingActionId);
+    return existing?.legacy_only && existing.character_id === member.character_id
+      ? actions.concat(existing)
+      : actions;
+  }
+
+  function triggerCharactersForAction(action) {
+    if (String(action?.trigger_character_selector || '') !== 'same_element_non_lingke') {
+      return [];
+    }
+    const element = String(action?.damage_element || '');
+    return (state.axis?.team || [])
+      .filter((member) => {
+        const character = getCharacterMap().get(String(member?.character_id || ''));
+        return String(member?.character_id || '') !== LINGKE_CHARACTER_ID
+          && String(character?.element || '') === element;
+      })
+      .sort((left, right) => Number(left.slot || 0) - Number(right.slot || 0));
+  }
+
+  function triggerCharacterForStep(step, action = actionForStep(step)) {
+    const candidates = triggerCharactersForAction(action);
+    return candidates.find((member) => String(member.character_id || '') === String(step?.trigger_character_id || ''))
+      || candidates[0]
+      || null;
   }
 
   function isBackgroundAction(action) {
@@ -1099,6 +1198,7 @@
   }
 
   function backgroundActionMultiplier(step, action = actionForStep(step)) {
+    if (action?.lingke_joint_source_slot != null) return 1;
     return isBackgroundAction(action)
       ? Math.max(1, Math.min(MAX_BACKGROUND_ACTION_MULTIPLIER, Math.round(Number(step?.repeat || 1))))
       : 1;
@@ -1109,15 +1209,19 @@
   }
 
   function canBackgroundOverride(action) {
-    return Boolean(action?.can_background_override) && isBasicAction(action);
+    return Boolean(action?.can_background_override);
   }
 
-  function isBasicBackgroundOverride(step, action = actionForStep(step)) {
+  function isManualBackgroundOverride(step, action = actionForStep(step)) {
     return !isBackgroundAction(action) && canBackgroundOverride(action) && step?.placement === 'background';
   }
 
+  function isBasicBackgroundOverride(step, action = actionForStep(step)) {
+    return isManualBackgroundOverride(step, action) && isBasicAction(action);
+  }
+
   function isStepBackground(step, action = actionForStep(step)) {
-    return isBackgroundAction(action) || isBasicBackgroundOverride(step, action);
+    return isBackgroundAction(action) || isManualBackgroundOverride(step, action);
   }
 
   function startsForeground(step, action = actionForStep(step)) {
@@ -1133,8 +1237,35 @@
       return;
     }
     const action = actionForStep(step);
-    if (!isBasicBackgroundOverride(step, action)) {
+    const triggerCharacter = triggerCharacterForStep(step, action);
+    if (String(action?.trigger_character_selector || '') === 'same_element_non_lingke' && triggerCharacter) {
+      step.trigger_character_id = triggerCharacter.character_id;
+    } else {
+      delete step.trigger_character_id;
+    }
+    if (!Boolean(action?.can_detach)) {
+      delete step.detached;
+    }
+    if (step.detached) {
       delete step.placement;
+    }
+    if (!isManualBackgroundOverride(step, action)) {
+      delete step.placement;
+    }
+    const baseDurationTicks = baseActionDurationTicks(action, step);
+    if (
+      !step.interrupted
+      || baseDurationTicks <= 0
+      || isSupportAction(action)
+      || isInstantNativeBackgroundAction(step, action)
+      || action?.can_interrupt === false
+    ) {
+      delete step.interrupted;
+      delete step.interrupt_duration_ticks;
+      delete step.interrupt_hit_count;
+    } else {
+      step.interrupt_duration_ticks = Math.max(1, Math.min(baseDurationTicks, Number(step.interrupt_duration_ticks || baseDurationTicks)));
+      step.interrupt_hit_count = Math.max(0, Math.min(Number(action?.hit_count || 0), Number(step.interrupt_hit_count ?? action?.hit_count ?? 0)));
     }
     step.repeat = backgroundActionMultiplier(step, action);
   }
@@ -1151,8 +1282,16 @@
     return String(action?.action_type || '') === 'Q' || String(action?.damage_type || '') === 'Q';
   }
 
+  function hasTimelineMaskAbility(action) {
+    return isQAction(action) || Boolean(action?.is_timeline_mask) || Boolean(action?.is_time_stop_zero);
+  }
+
   function isInstantSwitchAction(action) {
     return Boolean(action?.is_instant_switch);
+  }
+
+  function switchesForeground(step, action = actionForStep(step)) {
+    return startsForeground(step, action) || isInstantSwitchAction(action);
   }
 
   function tickHasInstantSwitchAction(tick, ignoreStepId = '') {
@@ -1175,19 +1314,45 @@
     });
   }
 
-  function actionDurationTicks(action) {
+  function isDetachedStep(step, action = actionForStep(step)) {
+    return Boolean(step?.detached) && Boolean(action?.can_detach);
+  }
+
+  function baseActionDurationTicks(action, step = null) {
+    if (isDetachedStep(step, action)) {
+      return Math.max(0, Number(action?.detached_duration_ticks || 0));
+    }
     return Math.max(0, Number(action?.duration_ticks || 0));
   }
 
+  function isInterruptedStep(step, action = actionForStep(step)) {
+    return Boolean(step?.interrupted)
+      && !isSupportAction(action)
+      && !isInstantNativeBackgroundAction(step, action)
+      && action?.can_interrupt !== false
+      && baseActionDurationTicks(action, step) > 0;
+  }
+
+  function actionDurationTicks(action, step = null) {
+    const baseDurationTicks = baseActionDurationTicks(action, step);
+    return isInterruptedStep(step, action)
+      ? Math.max(1, Math.min(baseDurationTicks, Number(step?.interrupt_duration_ticks || baseDurationTicks)))
+      : baseDurationTicks;
+  }
+
+  function actionDisplayName(step, action = actionForStep(step)) {
+    return action?.name || step?.action_name || '';
+  }
+
   function actionCalculationDurationTicks(action, step = null) {
-    return isInstantNativeBackgroundAction(step, action) ? 0 : actionDurationTicks(action);
+    return isInstantNativeBackgroundAction(step, action) ? 0 : actionDurationTicks(action, step);
   }
 
   function actionEditorDurationTicks(action, step = null) {
     if (isInstantNativeBackgroundAction(step, action)) {
       return ZERO_ACTION_VISUAL_TICKS;
     }
-    return Math.max(1, actionDurationTicks(action));
+    return Math.max(1, actionDurationTicks(action, step));
   }
 
   function qVisualDurationTicks(action) {
@@ -1196,29 +1361,38 @@
   }
 
   function actionVisualDurationTicks(action, step = null) {
-    if (step && isZeroForegroundQStep(step, action)) {
+    if (step && isTimeStopZeroForegroundStep(step, action)) {
       return qVisualDurationTicks(action);
     }
     return actionEditorDurationTicks(action, step);
   }
 
   function isZeroForegroundQStep(step, action = actionForStep(step)) {
-    return startsForeground(step, action) && isQAction(action) && actionDurationTicks(action) === 0;
+    return isTimeStopZeroForegroundStep(step, action) && hasTimelineMaskAbility(action);
+  }
+
+  function isTimeStopZeroForegroundStep(step, action = actionForStep(step)) {
+    return (startsForeground(step, action) || action?.lingke_joint_source_slot != null)
+      && Boolean(action?.is_time_stop_zero)
+      && actionDurationTicks(action, step) === 0;
   }
 
   function locksForegroundSwitch(step, action = actionForStep(step)) {
-    return startsForeground(step, action) && (
-      isSupportAction(action) ||
+    if (!startsForeground(step, action)) {
+      return false;
+    }
+    if (typeof action?.locks_foreground_switch === 'boolean') {
+      return action.locks_foreground_switch;
+    }
+    return (
+      (isSupportAction(action) && !isTimeStopZeroForegroundStep(step, action)) ||
       isZeroForegroundQStep(step, action)
     );
   }
 
   function foregroundLockEndTick(step, action, startTick) {
-    if (isSupportAction(action)) {
-      return startTick + actionVisualDurationTicks(action, step);
-    }
     if (!isZeroForegroundQStep(step, action)) {
-      return startTick;
+      return startTick + actionVisualDurationTicks(action, step);
     }
     const detail = (timelineResult()?.details || []).find((item) => item.step_id === step?.id);
     const qSpanTicks = resultDetailMatchesStep(detail, step)
@@ -1243,7 +1417,7 @@
     const resultDetailByStepId = new Map(resultDetails.map((detail) => [detail.step_id, detail]));
     return (steps || [])
       .map((step, order) => ({ step, order, action: actionForStep(step) }))
-      .filter((item) => isZeroForegroundQStep(item.step, item.action))
+      .filter((item) => isTimeStopZeroForegroundStep(item.step, item.action))
       .sort((a, b) => Number(a.step.start_tick || 0) - Number(b.step.start_tick || 0) || a.order - b.order)
       .map((item) => {
         const detail = resultDetailByStepId.get(item.step.id);
@@ -1281,6 +1455,22 @@
         return sum + Math.min(Math.max(0, endTick - startTick), safeTick - startTick);
       }, 0);
     return Math.max(0, safeTick - offset);
+  }
+
+  function visualTickFromCalculation(calculationTick, qStarts = qVirtualStartTicks()) {
+    const safeCalculationTick = Math.max(0, Number(calculationTick || 0));
+    let visualTick = safeCalculationTick;
+    qStarts
+      .slice()
+      .sort((left, right) => qVirtualStartTick(left) - qVirtualStartTick(right))
+      .forEach((qInterval) => {
+        const startTick = qVirtualStartTick(qInterval);
+        const endTick = qVirtualEndTick(qInterval);
+        if (calculationTickFromVisual(startTick, qStarts) < safeCalculationTick) {
+          visualTick += Math.max(0, endTick - startTick);
+        }
+      });
+    return visualTick;
   }
 
   function visualTickParts(visualTick, qStarts = qVirtualStartTicks()) {
@@ -1340,8 +1530,21 @@
     return secondsToTicks(rawValue);
   }
 
+  let jointActionCacheKey = '';
+  let jointActionCache = new Map();
   function actionForStep(step) {
-    return getActionMap().get(step?.action_id || '') || {};
+    const actions = getActionMap();
+    const base = actions.get(step?.action_id || '') || {};
+    if (!window.ShaftEngine?.resolveLingkeSupportActions || !step || step.slot == null || step.start_tick == null) return base;
+    const steps = state.axis?.steps || [];
+    const candidateSteps = steps.includes(step) ? steps : steps.filter((item) => item.id !== step.id).concat(step);
+    const key = JSON.stringify([candidateSteps, state.axis?.options?.switch_gap_ticks, state.axis?.options?.switch_loss_ticks]);
+    if (key !== jointActionCacheKey) {
+      jointActionCacheKey = key;
+      jointActionCache = new Map(Array.from(window.ShaftEngine.resolveLingkeSupportActions(candidateSteps, actions, Number(state.axis?.options?.switch_gap_ticks ?? state.axis?.options?.switch_loss_ticks ?? 2), state.catalog?.buffs))
+        .map(([item, action]) => [item.id, action]));
+    }
+    return jointActionCache.get(step.id) || base;
   }
 
   function stepStartTick(step, visual = false, qStarts = qVirtualStartTicks()) {
@@ -1351,7 +1554,7 @@
 
   function stepEndTick(step, visual = false, qStarts = qVirtualStartTicks()) {
     const action = actionForStep(step);
-    const duration = actionDurationTicks(action);
+    const duration = actionDurationTicks(action, step);
     if (visual) {
       return Number(step?.start_tick || 0) + actionVisualDurationTicks(action, step);
     }
@@ -1360,7 +1563,7 @@
 
   function axisEndTick(visual = false) {
     const qStarts = qVirtualStartTicks();
-    const foregroundSteps = (state.axis?.steps || []).filter((step) => startsForeground(step, actionForStep(step)));
+    const foregroundSteps = (state.axis?.steps || []).filter((step) => switchesForeground(step, actionForStep(step)));
     return Math.max(
       0,
       ...foregroundSteps.map((step) => stepEndTick(step, visual, qStarts)),
@@ -1431,6 +1634,7 @@
 
   function renderEditorActions() {
     const undoButton = $('shaft-undo-btn');
+    const moveEarlierButton = $('shaft-move-earlier-btn');
     const redoButton = $('shaft-redo-btn');
     const deleteButton = $('shaft-delete-step-btn');
     const copyButton = $('shaft-copy-step-btn');
@@ -1440,6 +1644,9 @@
     const selectionCount = selectedStepIds().length;
     if (undoButton) {
       undoButton.disabled = state.undoStack.length === 0;
+    }
+    if (moveEarlierButton) {
+      moveEarlierButton.disabled = selectionCount === 0;
     }
     if (redoButton) {
       redoButton.disabled = state.redoStack.length === 0;
@@ -1477,6 +1684,9 @@
     const configuredPersonal = configured?.personal_resources && typeof configured.personal_resources === 'object'
       ? configured.personal_resources
       : {};
+    const configuredDotLayers = configured?.dot_layers && typeof configured.dot_layers === 'object'
+      ? configured.dot_layers
+      : {};
     return {
       energy: !usesEnergy ? 0 : configured && typeof configured === 'object'
         ? Math.max(0, Number(configured.energy || 0))
@@ -1490,6 +1700,12 @@
       energyCapacity,
       usesEnergy,
       personalResources: configuredPersonal,
+      dotLayers: String(member?.character_id || '') === CANHONG_CHARACTER_ID
+        ? {
+          '蚀心': Math.max(0, Math.min(10, Number(configuredDotLayers['蚀心'] || 0))),
+          '鸩火': Math.max(0, Math.min(10, Number(configuredDotLayers['鸩火'] || 0))),
+        }
+        : {},
     };
   }
 
@@ -1542,6 +1758,12 @@
           <input data-loop-initial-personal-resource="${escapeHtml(definition.name)}" type="number" min="0"${maximum} step="1" value="${value}">
         </label>`;
       }).join('');
+      const dotLayerFields = String(member.character_id || '') === CANHONG_CHARACTER_ID
+        ? ['蚀心', '鸩火'].map((name) => `<label>
+          <span>自带${name}</span>
+          <input data-loop-initial-dot-layer="${name}" type="number" min="0" max="10" step="1" inputmode="numeric" value="${resources.dotLayers[name] || 0}">
+        </label>`).join('')
+        : '';
       return `
         <div class="shaft-loop-resource-row" data-loop-resource-character="${escapeHtml(member.character_id)}">
           <span class="shaft-loop-resource-character">
@@ -1562,6 +1784,7 @@
               <select data-loop-initial-reaction>${reactionFields}</select>
             </label>
             ${personalResourceFields}
+            ${dotLayerFields}
           </div>
         </div>
       `;
@@ -1618,11 +1841,19 @@
           personalResources[name] = Math.max(0, Math.min(maximum, Number(input.value || 0)));
         }
       });
+      const dotLayers = {};
+      row.querySelectorAll('[data-loop-initial-dot-layer]').forEach((input) => {
+        const name = String(input.dataset.loopInitialDotLayer || '');
+        if (name) {
+          dotLayers[name] = Math.max(0, Math.min(10, Math.round(Number(input.value || 0))));
+        }
+      });
       resources[characterId] = {
         energy: energyCapacity > 0 ? Math.min(energyCapacity, energy) : energy,
         harmony,
         reaction,
         personal_resources: personalResources,
+        dot_layers: dotLayers,
       };
     });
     pushUndoSnapshot();
@@ -1750,6 +1981,8 @@
 
   function clampArcRefinement(value, arcId = '') {
     const level = Math.round(Number(value));
+    const available = state.catalog?.arc_refinements?.arcs?.[arcId]?.available_levels;
+    if (available && !available.includes(level)) return defaultArcRefinement(arcId);
     return level >= 1 && level <= 5 ? level : defaultArcRefinement(arcId);
   }
 
@@ -1790,6 +2023,13 @@
     return Array.from({ length: legacyLevel }, (_, index) => index + 1);
   }
 
+  function normalizeAwakeningResonances(member) {
+    if (Array.isArray(member?.awakening_resonances)) {
+      return [3, 6].filter((level) => member.awakening_resonances.map(Number).includes(level));
+    }
+    return [3, 6].filter((level) => activeAwakeningCount(member) >= level);
+  }
+
   function activeAwakeningCount(member) {
     return normalizeAwakeningNodes(member?.awakening_nodes, member?.awakening).length;
   }
@@ -1813,6 +2053,7 @@
       cartridge_name: member.cartridge_name || '',
       awakening: awakeningNodes.length,
       awakening_nodes: awakeningNodes,
+      awakening_resonances: normalizeAwakeningResonances(member),
       bond_level: hasBondBonus ? Math.max(0, Math.min(1, Number(member.bond_level || (member.bond_full ? 1 : 0)))) : 0,
       bond_full: hasBondBonus ? Boolean(member.bond_full) || Number(member.bond_level || 0) > 0 : false,
       skill_levels: normalizeSkillLevels(member.skill_levels),
@@ -1831,6 +2072,7 @@
     member.cartridge_id = build.cartridge_id || member.cartridge_id || '';
     member.awakening_nodes = normalizeAwakeningNodes(build.awakening_nodes, build.awakening);
     member.awakening = member.awakening_nodes.length;
+    member.awakening_resonances = normalizeAwakeningResonances(build);
     const hasBondBonus = characterHasBondBonus(member.character_id);
     member.bond_level = hasBondBonus ? Math.max(0, Math.min(1, Number(build.bond_level || (build.bond_full ? 1 : 0)))) : 0;
     member.bond_full = hasBondBonus ? Boolean(build.bond_full) || member.bond_level > 0 : false;
@@ -1855,6 +2097,7 @@
       cartridge_name: build.cartridge_name || '',
       awakening: awakeningNodes.length,
       awakening_nodes: awakeningNodes,
+      awakening_resonances: normalizeAwakeningResonances(build),
       bond_level: hasBondBonus ? Math.max(0, Math.min(1, Number(build.bond_level || (build.bond_full ? 1 : 0)))) : 0,
       bond_full: hasBondBonus ? Boolean(build.bond_full) || Number(build.bond_level || 0) > 0 : false,
       skill_levels: normalizeSkillLevels(build.skill_levels),
@@ -1904,6 +2147,40 @@
       ? state.axis.team.slice(0, 4)
       : clone(state.catalog.starter_axis.team);
     state.axis.steps = Array.isArray(state.axis.steps) ? state.axis.steps : [];
+    const removedActionIds = new Set(state.catalog?.removed_action_ids || []);
+    state.axis.steps = state.axis.steps.filter((step) => !removedActionIds.has(step?.action_id));
+    const legacyActionMigrations = state.catalog?.legacy_action_migrations || {};
+    state.axis.steps = state.axis.steps.flatMap((step, index) => {
+      const migration = legacyActionMigrations[step?.action_id];
+      if (!migration) {
+        return [step];
+      }
+      const migrated = Object.assign({}, step, {
+        action_id: migration.action_id,
+        action_name: getActionMap().get(migration.action_id)?.name || step.action_name || '',
+      });
+      if (migration.detached) {
+        migrated.detached = true;
+      }
+      if (!migration.append_dodge) {
+        return [migrated];
+      }
+      const action = getActionMap().get(migration.action_id) || {};
+      const dodgeActionId = `action_dodge_${String(action.character_id || '').replace(/^char_/, '')}`;
+      const dodgeAction = getActionMap().get(dodgeActionId);
+      if (!dodgeAction) {
+        return [migrated];
+      }
+      return [migrated, {
+        id: `${String(step.id || `step_${index + 1}`).slice(0, 32)}_dodge`,
+        slot: Number(step.slot || 0),
+        action_id: dodgeActionId,
+        action_name: dodgeAction.name || '闪',
+        start_tick: Number(step.start_tick || 0) + Number(action.detached_duration_ticks || 5),
+        repeat: 1,
+        tags: [],
+      }];
+    });
     const disabledCharacterIds = new Set(
       (state.catalog?.characters || [])
         .filter((character) => character.selection_disabled)
@@ -1911,7 +2188,8 @@
     );
     const restrictedSlots = new Set();
     state.axis.team = state.axis.team.map((member, index) => {
-      if (!disabledCharacterIds.has(member?.character_id)) {
+      // A read-only share may display restricted characters without granting selection access.
+      if (state.sharedReadOnly || !disabledCharacterIds.has(member?.character_id)) {
         return member;
       }
       const slot = Number(member?.slot ?? index);
@@ -1925,6 +2203,7 @@
     if (restrictedSlots.size) {
       state.axis.steps = state.axis.steps.filter((step) => !restrictedSlots.has(Number(step.slot)));
     }
+    state.axis.steps = window.ShaftEngine.migrateLingkeJointSteps(state.axis.steps, state.axis.team, state.catalog);
     state.axis.steps.forEach(sanitizeStepPlacement);
     state.axis.enemy = Object.assign(
       {},
@@ -2005,6 +2284,7 @@
       damage_by_slot: clone(result.damage_by_slot || []),
       damage_by_action_by_slot: clone(result.damage_by_action_by_slot || []),
       harmony_contributions_by_slot: clone(result.harmony_contributions_by_slot || []),
+      other_contributions_by_slot: clone(result.other_contributions_by_slot || []),
     };
     renderResults();
     if ($('shaft-action-contribution-dialog')?.open) {
@@ -2127,7 +2407,7 @@
       const hasBondBonus = characterHasBondBonus(member.character_id);
       const bondLabel = hasBondBonus ? character.bond_bonus.label : '无羁绊加成';
       const activeAwakeningNodes = new Set(normalizeAwakeningNodes(member.awakening_nodes, member.awakening));
-      const activeAwakeningCount = activeAwakeningNodes.size;
+      const activeResonances = new Set(normalizeAwakeningResonances(member));
       const slotColor = SLOT_COLORS[Number(member.slot) % SLOT_COLORS.length];
       const characterAwakenings = awakeningsForCharacter(character, member);
       const awakeningToggles = Array.from({ length: 6 }, (_, index) => {
@@ -2144,11 +2424,13 @@
       }).join('');
       const awakeningInfos = [6, 7].map((index, infoIndex) => {
         const tooltip = awakeningTooltipText(characterAwakenings[index]);
-        const active = infoIndex === 0 ? activeAwakeningCount >= 3 : activeAwakeningCount >= 6;
+        const level = infoIndex === 0 ? 3 : 6;
+        const active = activeResonances.has(level);
         return `
-          <span class="shaft-awakening-dot shaft-awakening-info ${active ? 'is-active' : ''}" data-tooltip="${escapeHtml(tooltip)}" aria-label="${escapeHtml(tooltip)}">
+          <label class="shaft-awakening-dot shaft-awakening-info" data-tooltip="${escapeHtml(tooltip)}">
+            <input data-slot="${member.slot}" data-field="awakening_resonance" data-resonance-level="${level}" type="checkbox" aria-label="${level}觉共鸣：${escapeHtml(tooltip)}" ${active ? 'checked' : ''}>
             <span>!</span>
-          </span>
+          </label>
         `;
       }).join('');
       const skillLevels = normalizeSkillLevels(member.skill_levels);
@@ -2176,7 +2458,7 @@
         </button>
       `).join('');
       const mainStatSelect = Object.entries(mainStatOptions()).map(([key, meta]) => `
-        <option value="${escapeHtml(key)}" ${key === mainStat ? 'selected' : ''}>${escapeHtml(meta.label || key)}</option>
+        <option value="${escapeHtml(key)}" ${key === mainStat ? 'selected' : ''}>${escapeHtml(key === '属伤' ? buildStatLabel(key, character) : (meta.label || key))}</option>
       `).join('');
       const substatUsed = substatTotal(member.substat_counts);
       const substats = SUBSTAT_ORDER.map((key) => {
@@ -2243,7 +2525,8 @@
                 <select data-slot="${member.slot}" data-field="arc_refinement" aria-label="弧盘精炼等级">
                   ${Array.from({ length: 5 }, (_, index) => {
                     const level = index + 1;
-                    return `<option value="${level}" ${arcRefinement === level ? 'selected' : ''}>精炼 ${level}</option>`;
+                    const available = state.catalog?.arc_refinements?.arcs?.[member.arc_id]?.available_levels;
+                    return `<option value="${level}" ${arcRefinement === level ? 'selected' : ''} ${available && !available.includes(level) ? 'disabled' : ''}>精炼 ${level}${available && !available.includes(level) ? '（待资料）' : ''}</option>`;
                   }).join('')}
                 </select>
               </label>
@@ -2426,7 +2709,7 @@
     const selectedIds = new Set(selectedStepIds());
     const rows = (state.axis.steps || []).map((step, index) => {
       const detail = detailByStepId(step.id) || {};
-      const actions = actionsForSlot(step.slot);
+      const actions = actionsForSlot(step.slot, step.action_id);
       const warnings = (detail.warnings || []).length ? ` · ${escapeHtml(detail.warnings.join('；'))}` : '';
       return `
         <div class="shaft-step-row ${selectedIds.has(step.id) ? 'selected' : ''}" data-step-id="${escapeHtml(step.id)}">
@@ -2445,7 +2728,7 @@
             <span>开始</span>
             <input data-step-id="${escapeHtml(step.id)}" data-step-field="start_tick" type="text" value="${escapeHtml(visualTickLabel(step.start_tick))}" data-visual-tick="${Number(step.start_tick || 0)}" data-calculation-tick="${calculationTickFromVisual(step.start_tick)}" data-synced-value="${escapeHtml(visualTickLabel(step.start_tick))}">
           </label>
-          <output class="shaft-step-damage"><span>直伤${warnings}</span><strong>${formatNumber(detail.direct_damage || 0)}</strong></output>
+          <output class="shaft-step-damage"><span>直伤${warnings}</span><strong>${formatNumber(actionBodyDamage(detail))}</strong></output>
           <button class="secondary-btn shaft-remove-btn" data-remove-step="${escapeHtml(step.id)}" type="button" title="删除">×</button>
         </div>
       `;
@@ -2510,6 +2793,41 @@
     buffList.innerHTML = items || '<div class="shaft-empty">暂无触发增益</div>';
   }
 
+  function damageContributionShares(result) {
+    const summary = result?.summary || {};
+    const totalDamage = Number(summary.total_damage || 0);
+    const characterShares = (result?.damage_by_slot || []).map((item) => ({
+      kind: 'character',
+      slot: Number(item.slot || 0),
+      label: item.character_name || memberName(item.slot),
+      damage: Number(item.damage || 0),
+      percent: Number(item.percent || 0),
+      color: SLOT_COLORS[Number(item.slot || 0) % SLOT_COLORS.length],
+    }));
+    return [
+      ...characterShares,
+      {
+        kind: 'harmony',
+        label: '环合伤害',
+        damage: Number(summary.harmony_damage || 0),
+        percent: totalDamage > 0 ? Number(summary.harmony_damage || 0) / totalDamage * 100 : 0,
+        color: DAMAGE_SOURCE_COLORS['创生'],
+      },
+      {
+        kind: 'stagger',
+        label: '倾陷伤害',
+        damage: Number(summary.stagger_damage || 0),
+        percent: totalDamage > 0 ? Number(summary.stagger_damage || 0) / totalDamage * 100 : 0,
+        color: DAMAGE_SOURCE_COLORS['倾陷'],
+      },
+      {
+        kind: 'other', label: '其他', damage: Number(summary.other_damage || 0),
+        percent: totalDamage > 0 ? Number(summary.other_damage || 0) / totalDamage * 100 : 0,
+        color: DAMAGE_SOURCE_COLORS['其他'],
+      },
+    ];
+  }
+
   function renderResults() {
     renderSelfCheck();
     const result = freshResult();
@@ -2530,43 +2848,26 @@
     }
     renderResultCard('shaft-direct-damage', '角色伤害', summary.character_damage || 0, compareSummary?.character_damage, summary.total_damage || 0);
     renderResultCard('shaft-harmony-damage', '环合伤害', summary.harmony_damage || 0, compareSummary?.harmony_damage, summary.total_damage || 0);
+    renderResultCard('shaft-other-damage', '其他', summary.other_damage || 0, compareSummary?.other_damage, summary.total_damage || 0);
     renderResultCard('shaft-stagger-damage', '倾陷伤害', summary.stagger_damage || 0, compareSummary?.stagger_damage, summary.total_damage || 0);
     renderResultCard('shaft-total-damage', '总伤', summary.total_damage || 0, compareSummary?.total_damage, summary.total_damage || 0);
     renderResultCard('shaft-dps', 'DPS', summary.dps || 0, compareSummary?.dps, null);
-    const contribution = result?.damage_by_slot || [];
+    const contributionShares = damageContributionShares(result);
+    const contribution = contributionShares.filter((item) => item.kind === 'character');
     const characterRows = contribution.map((item) => `
       <div class="shaft-contribution-row">
-        <span>${escapeHtml(item.character_name)}</span>
+        <span>${escapeHtml(item.label)}</span>
         <div class="shaft-contribution-bar"><span style="width: ${Math.max(0, Math.min(100, Number(item.percent || 0)))}%; --contribution-color:${SLOT_COLORS[Number(item.slot) % SLOT_COLORS.length]}"></span></div>
         <span>${formatNumber(item.percent || 0, 1)}%</span>
         <button class="secondary-btn shaft-action-contribution-btn" data-action-contribution-slot="${Number(item.slot)}" type="button" ${Number(item.damage || 0) > 0 ? '' : 'disabled'}>分析详情</button>
       </div>
     `).join('');
-    const independentRows = [
-      {
-        label: '环合伤害',
-        damage: Number(summary.harmony_damage || 0),
-        percent: Number(summary.total_damage || 0) > 0
-          ? Number(summary.harmony_damage || 0) / Number(summary.total_damage) * 100
-          : 0,
-        color: DAMAGE_SOURCE_COLORS['创生'],
-        trigger: 'data-open-harmony-analysis',
-      },
-      {
-        label: '倾陷伤害',
-        damage: Number(summary.stagger_damage || 0),
-        percent: Number(summary.total_damage || 0) > 0
-          ? Number(summary.stagger_damage || 0) / Number(summary.total_damage) * 100
-          : 0,
-        color: DAMAGE_SOURCE_COLORS['倾陷'],
-        trigger: 'data-open-stagger-analysis',
-      },
-    ].map((item) => `
+    const independentRows = contributionShares.filter((item) => item.kind !== 'character').map((item) => `
       <div class="shaft-contribution-row shaft-contribution-source-row">
         <span>${escapeHtml(item.label)}</span>
         <div class="shaft-contribution-bar"><span style="width: ${Math.max(0, Math.min(100, item.percent))}%; --contribution-color:${item.color}"></span></div>
         <span>${formatNumber(item.percent || 0, 1)}%</span>
-        <button class="secondary-btn shaft-action-contribution-btn" ${item.trigger} type="button" aria-haspopup="dialog" ${item.damage > 0 ? '' : 'disabled'}>分析详情</button>
+        <button class="secondary-btn shaft-action-contribution-btn" ${item.kind === 'harmony' ? 'data-open-harmony-analysis' : item.kind === 'other' ? 'data-open-other-analysis' : 'data-open-stagger-analysis'} type="button" aria-haspopup="dialog" ${item.damage > 0 ? '' : 'disabled'}>分析详情</button>
       </div>
     `).join('');
     $('shaft-contribution-list').innerHTML = (characterRows || independentRows)
@@ -3010,26 +3311,27 @@
     `;
   }
 
-  function renderHarmonyAnalysis() {
+  function renderHarmonyAnalysis(kind = 'harmony') {
+    const label = kind === 'other' ? '其他' : '环合';
     const content = $('shaft-harmony-analysis-content');
     const result = freshResult();
     if (!content || !result) return;
     const summary = result.summary || {};
-    const contributions = (result.harmony_contributions_by_slot || [])
+    const contributions = (result[`${kind}_contributions_by_slot`] || [])
       .filter((item) => Number(item.damage || 0) > 0)
       .slice()
       .sort((left, right) => Number(right.damage || 0) - Number(left.damage || 0));
-    if (!contributions.length || Number(summary.harmony_damage || 0) <= 0) {
-      content.innerHTML = '<div class="shaft-empty">当前轴没有产生环合伤害</div>';
+    if (!contributions.length || Number(summary[`${kind}_damage`] || 0) <= 0) {
+      content.innerHTML = `<div class="shaft-empty">当前轴没有产生${label}伤害</div>`;
       return;
     }
     content.innerHTML = `
-      <div class="shaft-stagger-analysis-note">环合伤害独立计入全队总伤和 DPS，不计入角色自身伤害占比或动作贡献。</div>
+      <div class="shaft-stagger-analysis-note">${label}伤害独立计入全队总伤和 DPS，不计入角色自身伤害占比或动作贡献。</div>
       <div class="shaft-action-analysis-kpis shaft-stagger-analysis-kpis">
-        <div><span>环合总伤</span><strong>${formatNumber(summary.harmony_damage || 0)}</strong></div>
-        <div><span>环合类型</span><strong>${new Set(contributions.flatMap((item) => (item.sources || []).map((source) => source.source))).size}</strong></div>
+        <div><span>${label}总伤</span><strong>${formatNumber(summary[`${kind}_damage`] || 0)}</strong></div>
+        <div><span>伤害来源</span><strong>${new Set(contributions.flatMap((item) => (item.sources || []).map((source) => source.source))).size}</strong></div>
         <div><span>贡献角色</span><strong>${contributions.length}</strong></div>
-        <div><span>占全队总伤</span><strong>${formatNumber(Number(summary.harmony_damage || 0) / Math.max(Number(summary.total_damage || 0), 1) * 100, 1)}%</strong></div>
+        <div><span>占全队总伤</span><strong>${formatNumber(Number(summary[`${kind}_damage`] || 0) / Math.max(Number(summary.total_damage || 0), 1) * 100, 1)}%</strong></div>
       </div>
       <div class="shaft-stagger-contribution-list">
         ${contributions.map((item) => `
@@ -3050,10 +3352,11 @@
     `;
   }
 
-  function openHarmonyAnalysis(trigger = null) {
+  function openHarmonyAnalysis(trigger = null, kind = 'harmony') {
     const dialog = $('shaft-harmony-analysis-dialog');
-    if (!dialog || Number(freshResult()?.summary?.harmony_damage || 0) <= 0) return;
-    renderHarmonyAnalysis();
+    if (!dialog || Number(freshResult()?.summary?.[`${kind}_damage`] || 0) <= 0) return;
+    $('shaft-harmony-analysis-title').textContent = kind === 'other' ? '其他伤害贡献分析' : '环合贡献分析';
+    renderHarmonyAnalysis(kind);
     dialog._returnFocus = trigger;
     dialog.showModal();
   }
@@ -3086,6 +3389,105 @@
     if (returnFocus?.isConnected) {
       returnFocus.focus();
     }
+  }
+
+  function renderSubstatContributionAnalysis(analysis) {
+    const content = $('shaft-substat-contribution-content');
+    if (!content) return;
+    const rows = analysis?.rows || [];
+    const fields = (analysis?.fields || []).filter((field) => (
+      rows.some((row) => row.stat_key === field.key && Number(row.contribution_percent || 0) > 0)
+    ));
+    const characters = Array.from(new Map(rows.map((row) => [Number(row.slot), {
+      slot: Number(row.slot),
+      name: row.character_name || memberName(row.slot),
+    }])).values()).sort((left, right) => left.slot - right.slot);
+    const contributionByCell = new Map(rows.map((row) => [
+      `${Number(row.slot)}:${row.stat_key}`,
+      Number(row.contribution_percent || 0),
+    ]));
+    const topContributionRanksBySlot = new Map(characters.map((character) => {
+      const rankedFields = fields
+        .map((field, fieldIndex) => ({
+          key: field.key,
+          fieldIndex,
+          contribution: contributionByCell.get(`${character.slot}:${field.key}`) || 0,
+        }))
+        .filter((entry) => entry.contribution > 0)
+        .sort((left, right) => right.contribution - left.contribution || left.fieldIndex - right.fieldIndex)
+        .slice(0, 4);
+      return [character.slot, new Map(rankedFields.map((entry, index) => [entry.key, index + 1]))];
+    }));
+    content.innerHTML = `
+      <div class="shaft-substat-contribution-note">
+        以8类主要副词条各 ${formatNumber(analysis.base_count || 0)} 条、小攻击/生命/防御为 0 作基准，逐角色测试11类副词条各 +${formatNumber(analysis.increment_count || 0)}。最高收益为100%，—表示无提升；纯前端计算，不改配装或对比快照。
+      </div>
+      ${characters.length && fields.length ? `
+        <div class="shaft-substat-contribution-table-wrap">
+          <table class="shaft-substat-contribution-table">
+            <thead><tr><th>角色</th>${fields.map((field) => `<th>${escapeHtml(field.label)}</th>`).join('')}</tr></thead>
+            <tbody>${characters.map((character) => `
+              <tr>
+                <th scope="row">${escapeHtml(character.name)}</th>
+                ${fields.map((field) => {
+                  const contribution = contributionByCell.get(`${character.slot}:${field.key}`) || 0;
+                  const rank = topContributionRanksBySlot.get(character.slot)?.get(field.key) || 0;
+                  const rankClass = rank ? ` contribution-rank-${rank}` : '';
+                  const rankTitle = rank ? ` title="${escapeHtml(character.name)}收益第 ${rank} 名"` : '';
+                  return `<td class="${contribution > 0 ? `has-contribution${rankClass}` : 'has-no-contribution'}"${rankTitle}>${contribution > 0 ? `${formatNumber(contribution, 1)}%` : '—'}</td>`;
+                }).join('')}
+              </tr>
+            `).join('')}</tbody>
+          </table>
+        </div>
+      ` : '<div class="shaft-empty">当前轴中没有可产生正向总伤提升的词条组合。</div>'}
+    `;
+  }
+
+  async function openSubstatContributionAnalysis(trigger = null) {
+    if (state.substatAnalysisInFlight) return;
+    if (!Array.isArray(state.axis?.steps) || !state.axis.steps.length) {
+      showToast('请先在动作轴中添加动作', 'warning');
+      return;
+    }
+    if (!window.ShaftEngine || typeof window.ShaftEngine.analyzeSubstatContributions !== 'function') {
+      showToast('副词条贡献度计算引擎未加载', 'warning');
+      return;
+    }
+    const button = $('shaft-substat-contribution-btn');
+    const originalText = button?.textContent || '副词条贡献度';
+    state.substatAnalysisInFlight = true;
+    if (button) {
+      button.disabled = true;
+      button.textContent = `正在计算 ${Math.max(0, (state.axis.team || []).length * 11)} 组方案…`;
+    }
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+      const analysis = window.ShaftEngine.analyzeSubstatContributions(state.axis, state.catalog, {
+        base_count: 15,
+        increment_count: 5,
+      });
+      renderSubstatContributionAnalysis(analysis);
+      const dialog = $('shaft-substat-contribution-dialog');
+      dialog._returnFocus = trigger || button;
+      dialog.showModal();
+    } catch (error) {
+      showToast(error.message || '副词条贡献度计算失败', 'warning');
+    } finally {
+      state.substatAnalysisInFlight = false;
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+  }
+
+  function closeSubstatContributionAnalysis() {
+    const dialog = $('shaft-substat-contribution-dialog');
+    if (!dialog?.open) return;
+    const returnFocus = dialog._returnFocus;
+    dialog.close();
+    if (returnFocus?.isConnected) returnFocus.focus();
   }
 
   function openShortcutHelp() {
@@ -3130,9 +3532,11 @@
       .filter((detail) => {
         const step = stepById.get(detail.step_id) || { action_id: detail.action_id };
         const action = actionForStep(step);
-        return startsForeground(step, action);
+        return switchesForeground(step, action);
       })
       .map((detail) => {
+        const step = stepById.get(detail.step_id) || { action_id: detail.action_id };
+        const action = actionForStep(step);
         const startTick = Math.max(0, Number(detail.display_start_tick ?? detail.start_tick ?? 0));
         const durationTicks = Math.max(0, Number(detail.display_duration_ticks ?? detail.duration_ticks ?? 0));
         const visualEndTick = Math.max(
@@ -3146,6 +3550,7 @@
           endTick: Math.max(startTick, startTick + durationTicks),
           visualEndTick,
           durationTicks,
+          isZeroForegroundQ: isZeroForegroundQStep(step, action),
         };
       });
   }
@@ -3182,40 +3587,31 @@
     );
   }
 
+  function previewQVirtualIntervals(details = previewDetails()) {
+    const frozenIntervals = previewResult()?.time_axis?.frozen_intervals;
+    if (Array.isArray(frozenIntervals)) {
+      return frozenIntervals.map((interval) => ({
+        start_tick: Math.max(0, Number(interval?.start_tick || 0)),
+        end_tick: Math.max(0, Number(interval?.end_tick || 0)),
+      }));
+    }
+    return details
+      .filter((detail) => detail.isZeroForegroundQ)
+      .map((detail) => ({
+        start_tick: detail.startTick,
+        end_tick: detail.visualEndTick,
+      }));
+  }
+
   function previewResult() {
     return state.axisPreviewPayload?.result || freshResult() || state.result || null;
   }
 
-  function previewDamageTypeShares(result = previewResult()) {
-    const damageByType = new Map();
-    const additionalTags = new Set(['追击', '附着']);
-    (result?.damage_by_action_by_slot || []).forEach((contribution) => {
-      (contribution.actions || []).forEach((action) => {
-        const damageType = String(action.damage_type || '');
-        const actionType = String(action.action_type || '');
-        const label = additionalTags.has(damageType)
-          ? (actionType || '其他')
-          : (damageType || actionType || '其他');
-        damageByType.set(label, (damageByType.get(label) || 0) + Math.max(0, Number(action.damage || 0)));
-      });
-    });
-    const summary = result?.summary || {};
-    const harmonyDamage = Math.max(0, Number(summary.harmony_damage || 0));
-    const staggerDamage = Math.max(0, Number(summary.stagger_damage || 0));
-    if (harmonyDamage > 0) damageByType.set('环合', (damageByType.get('环合') || 0) + harmonyDamage);
-    if (staggerDamage > 0) damageByType.set('倾陷', (damageByType.get('倾陷') || 0) + staggerDamage);
-    const totalDamage = Math.max(
-      0,
-      Number(summary.total_damage || 0),
-      Array.from(damageByType.values()).reduce((sum, damage) => sum + damage, 0),
-    );
-    return Array.from(damageByType.entries())
-      .filter(([, damage]) => damage > 0)
-      .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], 'zh-CN'))
-      .map(([label, damage]) => ({
-        label,
-        percent: totalDamage > 0 ? Math.round(damage / totalDamage * 100) : 0,
-      }));
+  function previewContributionShares(result = previewResult()) {
+    return damageContributionShares(result).map((item) => ({
+      label: item.label,
+      percent: Math.round(Number(item.percent || 0)),
+    }));
   }
 
   function renderAxisPreviewSummary() {
@@ -3223,14 +3619,14 @@
     if (!node) return;
     const result = previewResult();
     const summary = result?.summary || {};
-    const damageTypes = previewDamageTypeShares(result);
+    const contributionShares = previewContributionShares(result);
     node.innerHTML = `
       <div class="shaft-axis-preview-stat"><span>DPS</span><strong>${formatNumber(summary.dps || 0)}</strong></div>
       <div class="shaft-axis-preview-stat"><span>轴长</span><strong>${formatNumber(summary.duration_seconds || 0, 1)}s</strong></div>
-      <div class="shaft-axis-preview-damage-types">
-        <span>伤害类型</span>
-        <div>${damageTypes.length
-          ? damageTypes.map((item) => `<b>${escapeHtml(item.label)} ${item.percent}%</b>`).join('')
+      <div class="shaft-axis-preview-contributions">
+        <span>伤害占比</span>
+        <div>${contributionShares.length
+          ? contributionShares.map((item) => `<b>${escapeHtml(item.label)} ${item.percent}%</b>`).join('')
           : '<b>暂无伤害</b>'}</div>
       </div>
     `;
@@ -3272,14 +3668,22 @@
     const totalWidth = PREVIEW_LABEL_PX + bodyWidth;
     const leftPx = (tick) => PREVIEW_LABEL_PX + Math.max(0, Number(tick || 0)) * tickPx;
     const widthPx = (start, end) => Math.max(4, (Math.max(Number(end || start), Number(start || 0) + 0.1) - Number(start || 0)) * tickPx);
+    const previewQStarts = previewQVirtualIntervals(details);
+    const calculationEndTick = calculationTickFromVisual(endTick, previewQStarts);
     const rulerStepTicks = tickPx >= 8 ? 10 : (tickPx >= 3 ? 20 : 50);
     const rulerMarks = [];
-    for (let tick = 0; tick <= endTick; tick += rulerStepTicks) {
+    for (let tick = 0; tick <= calculationEndTick; tick += rulerStepTicks) {
+      const visualTick = visualTickFromCalculation(tick, previewQStarts);
       rulerMarks.push(`
-        <span class="shaft-axis-preview-mark" style="left:${leftPx(tick)}px">
+        <span class="shaft-axis-preview-mark" style="left:${leftPx(visualTick)}px">
           <span>${escapeHtml(ticksToSeconds(tick))}s</span>
         </span>
       `);
+    }
+    const gridMarks = [];
+    for (let tick = 0; tick <= calculationEndTick; tick += 10) {
+      const visualTick = visualTickFromCalculation(tick, previewQStarts);
+      gridMarks.push(`<span class="shaft-axis-preview-grid-mark" style="left:${visualTick * tickPx}px"></span>`);
     }
     const previewAxis = state.axisPreviewPayload?.axis || state.axis;
     const previewTeam = state.axisPreviewPayload?.team || previewAxis?.team || [];
@@ -3306,7 +3710,7 @@
             <img src="${escapeHtml(member.character_avatar || '')}" alt="">
             <span>${escapeHtml(member.character_name || '')}</span>
           </span>
-          <span class="shaft-axis-preview-grid" style="background-size:${Math.max(1, tickPx * 10)}px 100%"></span>
+          <span class="shaft-axis-preview-grid">${gridMarks.join('')}</span>
           ${bubbles}
         </div>
       `;
@@ -3335,6 +3739,13 @@
     if (!dialog || dialog.open) {
       return;
     }
+    if (payload?.axis) {
+      const migratedSteps = window.ShaftEngine.migrateLingkeJointSteps(payload.axis.steps, payload.axis.team, state.catalog);
+      if (payload.legacy_actions_migrated || JSON.stringify(migratedSteps) !== JSON.stringify(payload.axis.steps)) {
+        payload.axis = Object.assign({}, payload.axis, {steps: migratedSteps});
+        payload.result = window.ShaftEngine.simulateAxis(payload.axis, state.catalog);
+      }
+    }
     state.axisPreviewPayload = payload;
     const marketPreview = Boolean(payload);
     const ownerName = String(payload?.owner?.nickname || payload?.owner?.player_uid || '').trim();
@@ -3344,6 +3755,9 @@
       ? `${ownerName || '未知作者'} · ${String(payload.description || '').trim() || '暂无备注'}`
       : '';
     $('shaft-axis-preview-footer').hidden = !marketPreview;
+    $('shaft-axis-preview-save-btn').textContent = Number(payload?.local_copy_id || 0)
+      ? '更新到本地'
+      : '保存到本地';
     dialog._returnFocus = trigger;
     dialog.showModal();
     state.previewTickPx = 0;
@@ -3387,7 +3801,7 @@
     }
   }
 
-  async function saveMarketAxisToLocal() {
+  async function saveMarketAxisToLocal(conflictAction = '') {
     const payload = state.axisPreviewPayload;
     if (!payload || state.axisPreviewSaving) {
       return;
@@ -3397,28 +3811,37 @@
       redirectToLogin();
       return;
     }
-    state.axisPreviewSaving = true;
     const button = $('shaft-axis-preview-save-btn');
+    const localCopyId = Number(payload.local_copy_id || 0);
+    const updateLocalCopy = localCopyId > 0;
+    if (updateLocalCopy && conflictAction !== 'overwrite' && !window.confirm('更新到本地会覆盖已有副本，包括你已保存的修改。当前工作区的未保存更改会保留。确定覆盖吗？')) return;
+    state.axisPreviewSaving = true;
     button.disabled = true;
-    button.textContent = '保存中';
+    button.textContent = updateLocalCopy ? '更新中' : '保存中';
     try {
-      const saved = await shaftRequest('/api/shaft/axes', {
-        method: 'POST',
+      const saved = await shaftRequest(updateLocalCopy ? `/api/shaft/axes/${localCopyId}` : '/api/shaft/axes', {
+        method: updateLocalCopy ? 'PUT' : 'POST',
         body: JSON.stringify({
           title: marketAxisLocalTitle(payload),
           description: String(payload.description || ''),
           axis: payload.axis,
           result: payload.result,
+          source_axis_id: payload.is_owner ? 0 : Number(payload.id || 0),
+          conflict_action: conflictAction,
         }),
       }, { authRequired: true });
+      payload.local_copy_id = saved.id;
       await loadMyAxes();
       closeAxisPreview();
-      setStatus('已保存到本地');
-      showToast(`已保存为「${saved.title}」`);
+      setStatus(updateLocalCopy ? '已更新到本地' : '已保存到本地');
+      showToast(updateLocalCopy ? `已更新「${saved.title}」` : `已保存为「${saved.title}」`);
     } catch (error) {
       state.axisPreviewSaving = false;
+      if (error.payload?.code === 'axis_name_conflict' && window.confirm('已有同名排轴或在线轴副本，继续会覆盖其中已保存的修改。确定覆盖吗？')) {
+        return saveMarketAxisToLocal('overwrite');
+      }
       button.disabled = false;
-      button.textContent = '保存到本地';
+      button.textContent = updateLocalCopy ? '更新到本地' : '保存到本地';
       setStatus(error.message, 'error');
     }
   }
@@ -3459,6 +3882,11 @@
       openHarmonyAnalysis(harmonyButton);
       return;
     }
+    const otherButton = event.target.closest('[data-open-other-analysis]');
+    if (otherButton) {
+      openHarmonyAnalysis(otherButton, 'other');
+      return;
+    }
     const staggerButton = event.target.closest('[data-open-stagger-analysis]');
     if (staggerButton) openStaggerAnalysis(staggerButton);
   }
@@ -3468,8 +3896,10 @@
     if (!node) {
       return;
     }
-    const axisWarnings = window.ShaftSelfCheck?.inspectAxis(state.axis, state.catalog) || [];
-    const simulationWarnings = (freshResult()?.details || []).flatMap((detail) =>
+    const simulationResult = freshResult() || {};
+    const resultDetails = simulationResult.details || [];
+    const axisWarnings = window.ShaftSelfCheck?.inspectAxis(state.axis, state.catalog, simulationResult) || [];
+    const simulationWarnings = resultDetails.flatMap((detail) =>
       (detail.warnings || []).map((warning) =>
         `${detail.character_name || memberName(detail.slot)}「${detail.action_name || '动作'}」：${warning}`
       )
@@ -3577,7 +4007,7 @@
       ['环合强度', formatNumber(panelStats.harmony_strength || 0)],
       ['倾陷强度', formatNumber(panelStats.stagger_strength || 0)],
       ['通伤', formatPercent(panelStats.all_dmg || 0)],
-      ['属伤', formatPercent(panelStats.element_dmg || 0)],
+      [`${member.element || getCharacterMap().get(member.character_id || '')?.element || ''}属性伤害`, formatPercent(elementDamageValue(panelStats, member.element || getCharacterMap().get(member.character_id || '')?.element))],
       ['充能', formatPercent(panelStats.energy_recharge || 0)],
     ].map(([label, value]) => `
       <div class="shaft-panel-minor">
@@ -3592,7 +4022,7 @@
           <span>当前查看</span>
           <strong>${escapeHtml(member.character_name || panel.character_name || '角色')}</strong>
         </div>
-        <small>${escapeHtml(member.arc_name || '')} · ${escapeHtml(member.cartridge_name || '')} · 主词条 ${escapeHtml(buildOptions.cartridge_main_stat || '')} · 空幕 ${escapeHtml(curtain.value || 0)}${escapeHtml(curtain.stat || '')} x ${formatNumber(curtain.layers || 0, 0)}</small>
+        <small>${escapeHtml(member.arc_name || '')} · ${escapeHtml(member.cartridge_name || '')} · 主词条 ${escapeHtml(buildStatLabel(buildOptions.cartridge_main_stat || '', getCharacterMap().get(member.character_id || '')))} · 空幕 ${escapeHtml(curtain.value || 0)}${escapeHtml(buildStatLabel(curtain.stat || '', getCharacterMap().get(member.character_id || '')))} x ${formatNumber(curtain.layers || 0, 0)}</small>
       </div>
       <div class="shaft-panel-major-grid">${mainStats}</div>
       <div class="shaft-panel-minor-grid">${minorStats}</div>
@@ -3608,7 +4038,7 @@
     const summary = result?.summary || {};
     const workbenchDirectDamage = Math.max(
       0,
-      Number(summary.direct_damage || 0) - Number(summary.harmony_damage || 0),
+      Number(summary.direct_damage || 0) - Number(summary.harmony_damage || 0) - Number(summary.other_damage || 0),
     );
     const contribution = result?.damage_by_slot || [];
     const characterBars = contribution.map((item, index) => `
@@ -3633,25 +4063,33 @@
         <div><span>直伤</span><strong>${formatNumber(workbenchDirectDamage)}</strong></div>
         <div><span>环合</span><strong>${formatNumber(summary.harmony_damage || 0)}</strong></div>
         <div><span>倾陷</span><strong>${formatNumber(summary.stagger_damage || 0)}</strong></div>
+        <div><span>其他</span><strong>${formatNumber(summary.other_damage || 0)}</strong></div>
       </div>
       <div class="shaft-mini-contribution-list">${characterBars}${sourceBars}</div>
     `;
   }
 
-  function renderedAxisEndTick(details = []) {
-    const foregroundDetails = details.filter((detail) => !detail.is_background_damage);
+  function detailDisplayEndTick(detail) {
     return Math.max(
-      0,
-      ...foregroundDetails.map((detail) => Math.max(
-        Number(detail.display_visual_end_tick ?? detail.visual_end_tick ?? detail.end_tick ?? detail.start_tick ?? 0),
-        Number(detail.display_start_tick ?? detail.start_tick ?? 0) + 1,
-      )),
+      Number(detail.display_visual_end_tick ?? detail.visual_end_tick ?? detail.end_tick ?? detail.start_tick ?? 0),
+      Number(detail.display_start_tick ?? detail.start_tick ?? 0) + 1,
     );
+  }
+
+  function renderedAxisEndTick(details = [], { includeBackground = false } = {}) {
+    const visibleDetails = includeBackground
+      ? details
+      : details.filter((detail) => (
+        !detail.is_background_damage || isInstantSwitchAction(actionForStep({ action_id: detail.action_id }))
+      ));
+    return Math.max(0, ...visibleDetails.map(detailDisplayEndTick));
   }
 
   function timelineMaxTick(renderDetails = null) {
     const details = renderDetails || timelineResult()?.details || [];
-    const axisEnd = details.length ? renderedAxisEndTick(details) : axisEndTick(true);
+    const axisEnd = details.length
+      ? renderedAxisEndTick(details, { includeBackground: true })
+      : axisEndTick(true);
     return Math.max(1, axisEnd + TIMELINE_END_PADDING_TICKS);
   }
 
@@ -4148,43 +4586,109 @@
       '浊燃': DAMAGE_SOURCE_COLORS['浊燃'],
       '黯星': DAMAGE_SOURCE_COLORS['黯星'],
       '浸染': '#65c8ff',
+      '失谐': '#d7a5ff',
     }[reaction] || '#ffffff';
+  }
+
+  function resourceDamageEvents(details) {
+    return (details || []).filter((detail) => Number(detail.resource_atk_multiplier || 0) > 0)
+      .map((detail) => {
+        const resource = actionForStep({ action_id: detail.action_id }).resource_damage?.resource || '恶意';
+        return {
+          reaction: `${resource}追加`,
+          resource_damage_marker: true,
+          contributor_slot: Number(detail.slot),
+          tick: Number(detail.start_tick || 0),
+          visual_tick: Number(detail.display_start_tick ?? detail.visual_start_tick ?? detail.start_tick ?? 0),
+          damage: Number(detail.resource_damage || 0),
+          atk_multiplier: Number(detail.resource_atk_multiplier || 0),
+          formula_parts: detail.resource_formula_parts,
+          panel: detail.resource_panel,
+          applied_buffs: detail.resource_applied_buffs,
+          damage_element: detail.damage_element,
+          damage_type: actionForStep({action_id: detail.action_id}).resource_damage?.damage_type || '普攻',
+
+          consumed: Number(detail.personal_resources_consumed?.[resource] || 0),
+          resource,
+          action_name: detail.action_name,
+        };
+      });
+  }
+
+  function actionBodyDamage(detail) {
+    return Math.max(0, Number(detail?.direct_damage || 0) - Number(detail?.resource_damage || 0));
   }
 
   function damageMarkerTooltip(event) {
     if (Array.isArray(event?.events)) {
       return event.events.map((item) => damageMarkerTooltip(item)).join('\n');
     }
-    const formula = event?.formula_parts || {};
-    const isPeriodicDamage = Boolean(event?.kind);
-    const zones = [];
-    const addZone = (label, value) => {
-      const multiplier = Number(value);
-      if (Number.isFinite(multiplier)) {
-        zones.push(`${label} ×${formatNumber(multiplier, 3)}`);
-      }
-    };
-    addZone('基础区', isPeriodicDamage ? formula.unscaled_base : formula.base);
-    if (isPeriodicDamage) {
-      addZone('周期系数', formula.periodic_scale);
-      addZone('增伤', 1 + Number(formula.damage_bonus || 0));
-      addZone('双暴区', formula.critical);
-      addZone('防御', formula.defense);
-      addZone('抗性', formula.resistance);
-      addZone('最终倍率区', formula.final_multiplier);
-    } else {
-      addZone('环合强度', formula.strength);
-      if (Number(formula.damage_scale) !== 1) addZone('复制倍率', formula.damage_scale);
-      if (Number(formula.frequency_multiplier || 1) > 1) {
-        addZone('频率乘区', formula.frequency_multiplier);
-      }
-      if (String(event?.reaction || '') !== '黯星') addZone('防御', formula.defense);
-      if (String(event?.reaction || '') === '浊燃') addZone('双暴区', formula.critical);
-      addZone('抗性', formula.resistance);
-      addZone('最终倍率区', formula.final_multiplier);
+    if (event?.resource_damage_marker && !event.formula_parts) {
+      return `${event.reaction} · ${formatNumber(event.damage)} 伤害 · ${memberName(event.contributor_slot)}\n来源动作 ${event.action_name} · ${ticksToSeconds(event.tick)}s\n消耗${event.resource} ${formatNumber(event.consumed, 2)}　倍率 ${formatNumber(event.atk_multiplier * 100, 1)}%攻击`;
     }
-    const heading = `${event?.reaction || '伤害'} · ${event?.contributor_character_name || memberName(event?.contributor_slot)} · ${formatNumber(event?.damage || 0)} 伤害`;
-    return zones.length ? `${heading}\n乘区　${zones.join('　')}` : heading;
+    if (event?.reaction === '失谐') {
+      const lines = [`失谐 · 削减倾陷值 ${formatNumber(event.stagger_amount, 2)}`];
+      lines.push(`${event.heiyu_recast ? '黑羽重新施加黯星' : `施加${event.trigger_reaction || '环合'}`}触发`);
+      lines.push(`失谐削条 ${formatNumber(event.dissonance_stagger, 2)}　等级差 ${formatNumber(event.level_gap)}`);
+      if (Number(event.daphne_extra_stagger || 0) > 0) {
+        lines.push(`达芙·破鞘额外削条 ${formatNumber(event.daphne_extra_stagger, 2)}（不受等级差影响）`);
+        lines.push(`破鞘 ${formatNumber(event.daphne_stacks)}层　倾陷上限 ${formatNumber(event.stagger_limit_before, 1)} → ${formatNumber(event.stagger_limit_after, 1)}`);
+      }
+      return lines.join('\n');
+    }
+    const formula = event?.formula_parts || {};
+    if (event?.heiyu_accumulation) {
+      return `其他 · 黑羽·黯星追加 · ${formatNumber(event.damage)} 伤害\n累计伤害 ${formatNumber(formula.base)} × 20%（不含倾陷）\n上限 ${formatNumber(formula.damage_cap)}；不受其他增益影响`;
+    }
+    const isPeriodicDamage = Boolean(event?.kind);
+    const lines = [];
+    const percent = (value) => `${formatNumber(Number(value || 0) * 100, 1)}%`;
+    const addScalingStat = (parts, statKey, statLabel) => {
+      const multiplier = Number(formula?.scaling_multipliers?.[statKey] || 0);
+      if (!multiplier) return;
+      const stat = Number(formula?.scaling_stats?.[statKey] || 0);
+      parts.push(`${statLabel} ${formatNumber(stat, 1)}`);
+      parts.push(`${statKey === 'atk' ? '倍率' : `${statLabel}倍率`} ${percent(multiplier)}`);
+    };
+    if (event?.resource_damage_marker) {
+      lines.push(`来源动作 ${event.action_name} · ${ticksToSeconds(event.tick)}s`);
+      lines.push(`消耗${event.resource} ${formatNumber(event.consumed, 2)}`);
+    }
+    if (isPeriodicDamage || event?.resource_damage_marker) {
+      const scalingParts = [];
+      addScalingStat(scalingParts, 'atk', '攻击力');
+      addScalingStat(scalingParts, 'hp', '生命');
+      addScalingStat(scalingParts, 'def', '防御');
+      const flat = Number(formula?.scaling_multipliers?.flat || 0);
+      if (flat) scalingParts.push(`固定值 ${formatNumber(flat, 1)}`);
+      if (!event?.resource_damage_marker && !['passive_settlement', 'triggered_damage'].includes(event?.kind)) {
+        scalingParts.push(`层数 ${formatNumber(formula.periodic_scale ?? 1, 1)}`);
+      }
+      lines.push(scalingParts.join('　'));
+      lines.push(`增伤 ${percent(formula.damage_bonus)}　暴击 ${percent(formula.crit_rate)}　暴伤 ${percent(formula.crit_dmg)}`);
+    } else {
+      const reactionParts = [
+        `基础值 ${formatNumber(formula.base || 0, 1)}`,
+        `环合强度 ${formatNumber(formula.harmony_strength || 0, 1)}`,
+        `频率 ×${formatNumber(formula.frequency_multiplier ?? 1, 2)}`,
+      ];
+      if (Number(formula.damage_scale ?? 1) !== 1) {
+        reactionParts.push(`伤害倍率 ×${formatNumber(formula.damage_scale, 2)}`);
+      }
+      lines.push(reactionParts.join('　'));
+      if (Number(formula.crit_rate || 0) > 0) {
+        lines.push(`暴击 ${percent(formula.crit_rate)}　暴伤 ${percent(formula.crit_dmg)}`);
+      }
+    }
+    lines.push(`减防 ${percent(formula.def_down)}　穿防 ${percent(formula.def_ignore)}　减抗 ${percent(formula.res_down)}`);
+    lines.push(`最终增伤 ${percent(formula.final_dmg)}`);
+    if (event?.resource_damage_marker) {
+      if (Number(formula.action_multiplier || 1) !== 1) lines.push(`动作倍数 ×${formatNumber(formula.action_multiplier, 1)}`);
+      if (Number(formula.non_fuwen_amplification || 1) !== 1) lines.push(`环合增幅 ×${formatNumber(formula.non_fuwen_amplification, 3)}`);
+    }
+    if (event?.kind === 'passive_settlement') lines.unshift(`延滞持续 ${ticksToSeconds(event.delay_duration_ticks)}s`);
+    const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害 · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;
+    return `${heading}\n${lines.join('\n')}`;
   }
 
   function groupedTimelineDamageEvents(events) {
@@ -4206,6 +4710,7 @@
       return {
         ...group,
         reaction: primary.reaction,
+        resource_damage_marker: Boolean(primary.resource_damage_marker),
         kind: group.events.every((event) => Boolean(event?.kind)) ? 'periodic_group' : '',
       };
     });
@@ -4217,7 +4722,8 @@
     const reactionEffects = result?.reaction_effects || [];
     const periodicDamageEvents = result?.periodic_damage_events || [];
     const reactionDamageEvents = result?.reaction_damage_events || [];
-    const timelineDamageEvents = [...reactionDamageEvents, ...periodicDamageEvents];
+    const dissonanceEvents = result?.dissonance_events || [];
+    const timelineDamageEvents = [...reactionDamageEvents, ...periodicDamageEvents, ...dissonanceEvents];
     const groupedDamageEvents = groupedTimelineDamageEvents(timelineDamageEvents);
     const usesDragPreviewResult = Boolean(drag?.previewResult && result === drag.previewResult);
     const usesStaleResult = Boolean(state.isResultStale && state.result && result === state.result);
@@ -4240,7 +4746,7 @@
     };
     const projectedDetails = (state.axis.steps || []).map((step) => {
       const action = actionForStep(step);
-      const durationTicks = actionDurationTicks(action);
+      const durationTicks = actionDurationTicks(action, step);
       const startTick = Number(step.start_tick || 0);
       const matchedResultDetail = resultDetailByStepId.get(step.id) || null;
       const canUseResultTiming = resultDetailMatchesTimelineStep(step, matchedResultDetail);
@@ -4287,7 +4793,10 @@
         step_id: step.id,
         slot: Number(step.slot || 0),
         action_id: step.action_id,
-        action_name: action.name || step.action_name || '',
+        action_name: actionDisplayName(step, action),
+        lingke_joint_source_slot: action.lingke_joint_source_slot,
+        is_detached: isDetachedStep(step, action),
+        is_interrupted: isInterruptedStep(step, action),
         action_type: action.action_type || '',
         raw_start_tick: startTick,
         start_tick: renderStartTick,
@@ -4303,11 +4812,13 @@
         nominal_display_visual_end_tick: nominalDisplayVisualEndTick,
         is_background_damage: isStepBackground(step, action),
         is_basic_background: isBasicBackgroundOverride(step, action),
+        switches_foreground: switchesForeground(step, action),
         placement: step.placement || 'foreground',
       });
     });
     const foregroundAxisEndTick = renderedAxisEndTick(projectedDetails);
-    const displayCutoffTick = foregroundAxisEndTick + TIMELINE_END_PADDING_TICKS;
+    const visibleAxisEndTick = renderedAxisEndTick(projectedDetails, { includeBackground: true });
+    const displayCutoffTick = visibleAxisEndTick + TIMELINE_END_PADDING_TICKS;
     const details = projectedDetails
       .filter((detail) => Number(detail.display_start_tick ?? detail.start_tick ?? 0) < displayCutoffTick)
       .map((detail) => ({
@@ -4322,6 +4833,11 @@
         ),
       }));
     state.timelineDisplayDetails = details;
+    groupedDamageEvents.push(...groupedTimelineDamageEvents(resourceDamageEvents(details)));
+    state.timelineDamageMarkers = new Map(groupedDamageEvents.map((event) => [
+      `${event.contributor_slot}:${event.visual_tick}:${event.resource_damage_marker ? 'resource' : 'damage'}`, event,
+    ]));
+    if (!state.timelineDamageMarkers.has(state.selectedDamageMarkerKey)) state.selectedDamageMarkerKey = '';
     const damageTriggeredBuffDetails = [...reactionDamageEvents, ...periodicDamageEvents]
       .filter((event) => Number(event.visual_tick ?? event.tick ?? 0) <= displayCutoffTick)
       .filter((event) => Array.isArray(event?.triggered_buffs) && event.triggered_buffs.length)
@@ -4352,7 +4868,7 @@
       const blocksTrack = !detail.is_background_damage || detail.is_basic_background;
       const isZeroForegroundQ = displayDurationTicks === 0 &&
         !detail.is_background_damage &&
-        isQAction(actionForStep({ action_id: detail.action_id }));
+        hasTimelineMaskAbility(actionForStep({ action_id: detail.action_id }));
       if (!blocksTrack && !isZeroForegroundQ) {
         return;
       }
@@ -4402,15 +4918,9 @@
     };
     const bandWidthPx = (start, end) => Math.max(1, visualOffsetPx(Math.max(Number(end || start), Number(start || 0) + 1)) - visualOffsetPx(start));
     const rulerMarks = [];
-    const timelineQStarts = details
-      .filter((detail) => Number(detail.display_duration_ticks ?? detail.duration_ticks ?? 0) === 0 && !detail.is_background_damage && isQAction(actionForStep({ action_id: detail.action_id })))
-      .map((detail) => ({
-        start_tick: Number(detail.display_start_tick ?? detail.start_tick ?? 0),
-        end_tick: Math.max(
-          Number(detail.display_start_tick ?? detail.start_tick ?? 0) + ZERO_ACTION_VISUAL_TICKS,
-          Number(detail.display_visual_end_tick ?? detail.visual_end_tick ?? detail.end_tick ?? detail.start_tick ?? 0),
-        ),
-      }));
+    // Use the same complete frozen intervals as damage, cooldowns and self-checks.
+    // Off-field Lingke joints also freeze time; filtering by foreground drops their spans.
+    const timelineQStarts = qVirtualStartTicks();
     const cursor = (labeled) => `<span class="shaft-cursor-line" style="left:${leftPx(state.cursorTick)}px">${labeled ? `<b>${escapeHtml(visualTickLabel(state.cursorTick, timelineQStarts))}</b>` : ''}</span>`;
     const rulerQStarts = timelineQStarts;
     for (let tick = 0; tick <= durationTicks; tick += 10) {
@@ -4472,7 +4982,7 @@
         if (
           Number(detail.display_duration_ticks ?? detail.duration_ticks ?? 0) === 0 &&
           !detail.is_background_damage &&
-          isQAction(actionForStep({ action_id: detail.action_id }))
+          hasTimelineMaskAbility(actionForStep({ action_id: detail.action_id }))
         ) {
           cardWidth = MIN_ACTION_CARD_PX;
           if (displayVisualEndTick > displayStartTick + ZERO_ACTION_VISUAL_TICKS) {
@@ -4573,12 +5083,18 @@
         ))
         .map((event) => {
           const isPeriodicDamage = Boolean(event.kind);
-          const opensUpward = isPeriodicDamage && Number(member.slot) === 3;
+          const isResourceDamage = Boolean(event.resource_damage_marker);
+          const opensUpward = (isPeriodicDamage || isResourceDamage) && Number(member.slot) === 3;
+          const markerKey = `${event.contributor_slot}:${event.visual_tick}:${isResourceDamage ? 'resource' : 'damage'}`;
+          const markerSelected = state.selectedDamageMarkerKey === markerKey;
           const tooltip = damageMarkerTooltip(event);
           return `
           <span
-            class="shaft-reaction-damage-marker ${isPeriodicDamage ? 'shaft-periodic-damage-marker' : ''} ${opensUpward ? 'shaft-damage-tooltip-above' : ''}"
-            style="left:${leftPx(Number(event.visual_tick ?? event.tick ?? 0))}px; top:${isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9}px; --reaction-color:${reactionLineColor(event.reaction)}"
+            class="shaft-reaction-damage-marker ${isResourceDamage ? 'shaft-resource-damage-marker' : ''} ${isPeriodicDamage ? 'shaft-periodic-damage-marker' : ''} ${opensUpward ? 'shaft-damage-tooltip-above' : ''} ${markerSelected ? 'selected' : ''}"
+            data-damage-marker-key="${escapeHtml(markerKey)}"
+            role="button"
+            aria-pressed="${markerSelected}"
+            style="left:${leftPx(Number(event.visual_tick ?? event.tick ?? 0))}px; top:${isResourceDamage ? actionTopBase + (maxLaneIndex + 1) * 38 + 8 : (isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9)}px; --reaction-color:${isResourceDamage ? '#ffffff' : reactionLineColor(event.reaction)}"
             data-tooltip="${escapeHtml(tooltip)}"
             tabindex="0"
             aria-label="${escapeHtml(tooltip)}"
@@ -4605,8 +5121,8 @@
           ].filter(Boolean).join(' · ');
           const durationLabel = actionMeta ? `<em>${actionMeta}</em>` : '';
           return `
-            <span class="shaft-action-bar ${actionTypeClass(detail.action_type)} ${detail.is_background_damage ? 'background-damage' : ''} ${basicBackground} ${frontStart} ${qInstant} ${selected} ${dragging}" data-step-id="${escapeHtml(detail.step_id)}" style="left:${entry.startPx}px; top:${top}px; width:${entry.cardWidth}px; --slot-color:${color}" title="${escapeHtml(detail.action_name)}${detail.q_instant_release ? ' · Q即时释放' : ''}">
-              <span>${escapeHtml(detail.action_name)}</span>
+            <span class="shaft-action-bar ${actionTypeClass(detail.action_type)} ${detail.is_background_damage ? 'background-damage' : ''} ${basicBackground} ${frontStart} ${qInstant} ${detail.lingke_joint_source_slot != null ? 'lingke-joint-action' : ''} ${detail.is_detached ? 'detached-action' : ''} ${detail.is_interrupted ? 'interrupted-action' : ''} ${selected} ${dragging}" data-step-id="${escapeHtml(detail.step_id)}" style="left:${entry.startPx}px; top:${top}px; width:${entry.cardWidth}px; --slot-color:${color}" title="${escapeHtml(detail.action_name)}${detail.lingke_joint_source_slot != null ? ' · 灵可同频' : (detail.q_instant_release ? ' · Q即时释放' : '')}${detail.is_interrupted ? ' · 已打断' : ''}">
+              <span class="shaft-action-name">${escapeHtml(detail.action_name)}</span>
               ${durationLabel}
             </span>
           `;
@@ -4669,6 +5185,12 @@
     const action = step ? actionForStep(step) : null;
     const badge = $('shaft-selected-badge');
     const panel = $('shaft-step-detail');
+    const selectedDamage = state.timelineDamageMarkers.get(state.selectedDamageMarkerKey);
+    if (selectedDamage) {
+      badge.textContent = `${ticksToSeconds(selectedDamage.tick)}s`;
+      panel.innerHTML = (selectedDamage.events || [selectedDamage]).map(renderDamageEventDetail).join('');
+      return;
+    }
     if (selectionCount > 1) {
       badge.textContent = `${selectionCount} 个动作`;
       panel.innerHTML = `
@@ -4685,17 +5207,75 @@
       return;
     }
     badge.textContent = visualTickLabel(step.start_tick);
+    panel.innerHTML = renderActionDetail(step, detail, action);
+  }
+
+  function damageEventSummaryRows(event) {
+    const formula = event.formula_parts || {};
+    const rows = [['结算时间', `${ticksToSeconds(event.tick)}s`]];
+    if (event.damage != null) rows.push(['伤害', formatNumber(event.damage)]);
+    if (event.stagger_amount != null) rows.push(['削减倾陷值', formatNumber(event.stagger_amount, 2)]);
+    if (event.reaction === '失谐') {
+      rows.push(['失谐削条', formatNumber(event.dissonance_stagger, 2)], ['等级差', formatNumber(event.level_gap)]);
+      if (event.daphne_extra_stagger) rows.push(['破鞘额外削条', formatNumber(event.daphne_extra_stagger, 2)], ['破鞘层数', formatNumber(event.daphne_stacks)], ['倾陷上限', `${formatNumber(event.stagger_limit_before, 1)} → ${formatNumber(event.stagger_limit_after, 1)}`]);
+    }
+    if (event.heiyu_accumulation) rows.push(['累计伤害', formatNumber(formula.base)], ['伤害上限', formatNumber(formula.damage_cap)]);
+    if (event.action_name) rows.push(['来源动作', event.action_name]);
+    if (event.resource) rows.push([`消耗${event.resource}`, formatNumber(event.consumed, 2)]);
+    Object.entries(formula.scaling_multipliers || {}).forEach(([stat, value]) => {
+      if (Number(value)) rows.push(['伤害倍率', stat === 'flat' ? formatNumber(value) : `${formatNumber(value * 100, 1)}%${({atk:'攻击', hp:'生命', def:'防御'})[stat] || stat}`]);
+    });
+    if (formula.periodic_scale != null) rows.push(['层数', formatNumber(formula.periodic_scale, 1)]);
+    if (formula.harmony_strength != null) rows.push(['基础伤害', formatNumber(formula.base)], ['频率', `×${formatNumber(formula.frequency_multiplier || 1, 2)}`]);
+    for (const [key, label] of [['action_multiplier','动作倍数'], ['non_fuwen_amplification','环合增幅'], ['damage_scale','伤害倍率']]) {
+      if (formula[key] != null && Number(formula[key]) !== 1) rows.push([label, `×${formatNumber(formula[key], 3)}`]);
+    }
+    for (const [key, label] of [['def_down','减防'], ['def_ignore','穿防'], ['res_down','减抗']]) {
+      if (formula[key] != null) rows.push([label, `${formatNumber(formula[key] * 100, 1)}%`]);
+    }
+    return rows.map(([label, value]) => `<div class="shaft-detail-kv"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
+  }
+
+  function renderDamageEventDetail(event) {
+    const formula = event.formula_parts || {};
+    const step = {slot: event.contributor_slot, start_tick: event.tick};
+    const damageType = event.heiyu_accumulation || event.damage_category === 'other'
+      ? '其他' : (event.damage_type || event.action_type || '环合');
+    const action = {name: event.heiyu_accumulation ? '黯星追加' : event.reaction, damage_element: event.damage_element,
+      damage_type: damageType, action_type: damageType,
+      multipliers: formula.scaling_multipliers || {}, is_background_damage: true};
+    const detail = {panel: event.panel, formula_parts: {...formula, dmg_bonus: formula.damage_bonus},
+      applied_buffs: event.applied_buffs || [], triggered_buffs: event.triggered_buffs || [],
+      direct_damage: event.damage, damage_element: event.damage_element};
+    return renderActionDetail(step, detail, action, event);
+  }
+
+  function infiltrationVulnerabilityRow(detail) {
+    // The engine's non-Fuwen amplification is the applied 浸染 multiplier.
+    // Read the settled value, including its strength source and character bonuses.
+    const multiplier = Number(detail?.formula_parts?.non_fuwen_amplification ?? 1);
+    if (!Number.isFinite(multiplier) || multiplier <= 1) return '';
+    return `<div class="shaft-detail-kv"><span>浸染易伤</span><strong>+${formatNumber((multiplier - 1) * 100, 1)}%</strong></div>`;
+  }
+
+  function renderActionDetail(step, detail, action, damageEvent = null) {
     const panelStats = detail?.panel || {};
+    const actionElement = String(detail?.damage_element || action?.damage_element || getCharacterMap().get(memberBySlot(step.slot)?.character_id || '')?.element || '');
+    const actionElementDamage = elementDamageValue(panelStats, actionElement);
     const finalDamageBonus = Number(panelStats.final_dmg || 0);
     const otherDamageBonus = Number(
       panelStats.other_dmg
       ?? (
         Number(detail?.formula_parts?.dmg_bonus || 0)
         - Number(panelStats.all_dmg || 0)
-        - Number(panelStats.element_dmg || 0)
+        - actionElementDamage
       )
     );
     const panelParticipation = actionPanelParticipation(action, detail, step.slot);
+    if (damageEvent?.formula_parts?.harmony_strength !== undefined) panelParticipation.harmony_strength = true;
+    if (damageEvent && !damageEvent.panel) {
+      Object.keys(panelParticipation).forEach((key) => { panelParticipation[key] = false; });
+    }
     const realtimePanelRows = [];
     if (panelParticipation.atk) {
       realtimePanelRows.push(`<div class="shaft-detail-kv"><span>攻击</span><strong>${formatNumber(panelStats.atk || 0)}</strong></div>`);
@@ -4717,13 +5297,15 @@
         `<div class="shaft-detail-kv"><span>暴击</span><strong>${formatNumber((panelStats.crit_rate || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>暴伤</span><strong>${formatNumber((panelStats.crit_dmg || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>通伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>`,
-        `<div class="shaft-detail-kv"><span>属伤</span><strong>${formatNumber((panelStats.element_dmg || 0) * 100, 1)}%</strong></div>`,
+        `<div class="shaft-detail-kv"><span>${escapeHtml(actionElement)}属性伤害</span><strong>${formatNumber(actionElementDamage * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>其他增伤</span><strong>${formatNumber(otherDamageBonus * 100, 1)}%</strong></div>`,
         ...(finalDamageBonus ? [`<div class="shaft-detail-kv"><span>最终伤害</span><strong>${formatNumber(finalDamageBonus * 100, 1)}%</strong></div>`] : []),
         `<div class="shaft-detail-kv"><span>敌人结算属抗</span><strong>${formatNumber(Number(detail?.formula_parts?.settled_resistance || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>敌人结算防御</span><strong>${formatNumber(detail?.formula_parts?.settled_defense || 0, 1)}</strong></div>`,
       );
     }
+    const infiltrationRow = infiltrationVulnerabilityRow(detail);
+    if (infiltrationRow) realtimePanelRows.push(infiltrationRow);
     const durationTicks = Number(detail?.duration_ticks ?? action.duration_ticks ?? 0);
     const durationSeconds = durationTicks / 10;
     const character = getCharacterMap().get(memberBySlot(step.slot)?.character_id) || {};
@@ -4740,14 +5322,16 @@
       stagger_damage_bonus: '倾陷伤害增伤',
       dodge_counter_dmg: '闪反增伤',
       skill_dmg: '变轨增伤', ultimate_dmg: '终结增伤', follow_dmg: '追击增伤',
-      mind_dmg: '心灵增伤', attach_dmg: '附着增伤', element_dmg: '属性增伤',
-      all_dmg: '全伤增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升',
+      mind_dmg: '心灵增伤', attach_dmg: '附着增伤',
+      all_dmg: '全伤增伤', other_dmg: '其他增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升',
     };
     const flatBuffEffects = new Set(['flat_atk', 'flat_hp', 'flat_def', 'harmony_strength', 'stagger_strength']);
     const describeBuff = (buff) => {
       const effects = Object.entries(buff?.effects || {}).filter(([, value]) => Number(value));
       const effectText = effects.map(([key, value]) => {
-        const label = buffEffectLabels[key] || (key.startsWith('res_down_') ? `${key.slice('res_down_'.length)}抗降低` : key);
+        const label = buffEffectLabels[key]
+          || (key.startsWith('element_dmg_') ? `${key.slice('element_dmg_'.length)}属性增伤` : '')
+          || (key.startsWith('res_down_') ? `${key.slice('res_down_'.length)}抗降低` : key);
         return `${label} ${Number(value) >= 0 ? '+' : ''}${flatBuffEffects.has(key) ? formatNumber(value, 1) : `${formatNumber(Number(value) * 100, 1)}%`}`;
       }).join('、');
       return `${buff?.name || '未命名增益'}${effectText ? `：${effectText}` : ''}`;
@@ -4761,7 +5345,8 @@
     };
     const appliedBuffList = (detail?.applied_buffs || []).filter((buff) => (
       !DETAIL_HIDDEN_APPLIED_BUFF_IDS.has(String(buff?.definition_id || '')) &&
-      !DETAIL_HIDDEN_APPLIED_BUFF_IDS.has(String(buff?.rule_id || ''))
+      !DETAIL_HIDDEN_APPLIED_BUFF_IDS.has(String(buff?.rule_id || '')) &&
+      !String(buff?.name || '').endsWith('（仅恶意追加）')
     ));
     const mergedAppliedBuffs = Array.from(appliedBuffList.reduce((groups, buff) => {
       const key = String(buff?.definition_id || buff?.rule_id || buff?.name || '');
@@ -4778,11 +5363,34 @@
         current.effects[effectKey] = Number(current.effects[effectKey] || 0) + Number(value || 0);
       });
       return groups;
-    }, new Map()).values());
-    const appliedBuffExplanations = mergedAppliedBuffs.map((buff) => {
+    }, new Map()).values())
+      .map((buff, originalIndex) => ({ buff, originalIndex }))
+      .sort((left, right) => {
+        const leftOwnerSlot = Number(left.buff?.owner_slot);
+        const rightOwnerSlot = Number(right.buff?.owner_slot);
+        const leftGroup = Number.isInteger(leftOwnerSlot) && leftOwnerSlot >= 0 ? leftOwnerSlot : Number.MAX_SAFE_INTEGER;
+        const rightGroup = Number.isInteger(rightOwnerSlot) && rightOwnerSlot >= 0 ? rightOwnerSlot : Number.MAX_SAFE_INTEGER;
+        return leftGroup - rightGroup || left.originalIndex - right.originalIndex;
+      })
+      .map(({ buff }) => buff);
+    const resolvedActionTags = new Set(detail?.action_tags || action?.tags || []);
+    const isFollowDirectDamage = Number(detail?.direct_damage || 0) > 0 && (
+      String(action?.damage_type || '') === '追击'
+      || resolvedActionTags.has('追击')
+      || resolvedActionTags.has('追加攻击')
+    );
+    const appliedBuffExplanations = mergedAppliedBuffs.flatMap((buff) => {
       const stackCount = Number(buff?.stack_count || 0);
       const stackSuffix = stackCount > 1 ? ` · ${formatNumber(stackCount, 0)}层` : '';
-      return `${describeBuff(buff)}${stackSuffix}`;
+      if (String(buff?.rule_id || '') === 'character_lingke_fuwen_follow_damage') {
+        const followBonus = Number(buff?.effects?.follow_dmg || 0);
+        const bonusText = `${followBonus >= 0 ? '+' : ''}${formatNumber(followBonus * 100, 1)}%`;
+        const descriptions = [];
+        if (isFollowDirectDamage) descriptions.push(`${buff.name}：追击直伤增伤 ${bonusText}${stackSuffix}`);
+        if (Number(detail?.fuwen_damage || 0) > 0) descriptions.push(`${buff.name}：覆纹追击增幅 ${bonusText}${stackSuffix}`);
+        return descriptions;
+      }
+      return [`${describeBuff(buff)}${stackSuffix}`];
     });
     const triggeredBuffs = Array.from(new Set(
       (detail?.triggered_buffs || [])
@@ -4818,12 +5426,12 @@
     if (sinRecovery !== undefined && sinRecovery !== null) {
       specialStats.push(`<div class="shaft-detail-kv"><span>回复罪状</span><strong>${formatNumber(sinRecovery, 0)}</strong></div>`);
     }
-    panel.innerHTML = `
+    return `
       <div class="shaft-detail-hero">
         <strong>${escapeHtml(action.name)}</strong>
-        <span class="shaft-detail-muted">${escapeHtml(memberName(step.slot))} · ${escapeHtml(action.action_type || '动作')} · ${isStepBackground(step, action) ? (isBasicBackgroundOverride(step, action) ? '后台普攻' : '后台伤害') : '前台动作'}</span>
+        <span class="shaft-detail-muted">${escapeHtml(memberName(step.slot))} · ${escapeHtml(action.action_type || '动作')} · ${isStepBackground(step, action) ? (isInstantSwitchAction(action) ? '后台切人' : (isBasicBackgroundOverride(step, action) ? '后台普攻' : '后台伤害')) : '前台动作'}</span>
       </div>
-      ${isBackgroundAction(action) ? `
+      ${!damageEvent && isBackgroundAction(action) && action.lingke_joint_source_slot == null ? `
         <div class="shaft-detail-multiplier">
           <span>动作倍数</span>
           <button class="secondary-btn" data-open-background-multiplier data-step-id="${escapeHtml(step.id)}" type="button" aria-haspopup="dialog">设置</button>
@@ -4831,20 +5439,23 @@
         </div>
       ` : ''}
       <div class="shaft-detail-grid">
+        ${damageEvent ? damageEventSummaryRows(damageEvent) : `
         <div class="shaft-detail-kv"><span>开始时间</span><strong>${ticksToSeconds(detail?.start_tick ?? calculationTickFromVisual(step.start_tick))}s</strong></div>
         <div class="shaft-detail-kv"><span>结束时间</span><strong>${ticksToSeconds(detail?.end_tick ?? calculationTickFromVisual(step.start_tick))}s</strong></div>
-        <div class="shaft-detail-kv"><span>直伤</span><strong>${formatNumber(detail?.direct_damage || 0)}</strong></div>
+        <div class="shaft-detail-kv"><span>直伤</span><strong>${formatNumber(actionBodyDamage(detail))}</strong></div>
         ${Number(detail?.fuwen_damage || 0) > 0 ? `<div class="shaft-detail-kv"><span>覆纹伤害</span><strong>${formatNumber(detail.fuwen_damage)}</strong></div>` : ''}
         <div class="shaft-detail-kv"><span>倾陷</span><strong>${formatNumber(detail?.stagger_amount || 0, 2)}</strong></div>
         <div class="shaft-detail-kv"><span>耗时</span><strong>${formatNumber(durationSeconds, 1)}s</strong></div>
         ${showsEnergy ? `<div class="shaft-detail-kv"><span>回能</span><strong>${formatNumber(energyGain, 1)}</strong></div>` : ''}
         ${showsEnergy ? `<div class="shaft-detail-kv"><span>额外回能</span><strong>${formatNumber(extraEnergyGain, 1)}</strong></div>` : ''}
         <div class="shaft-detail-kv"><span>环合</span><strong>${formatNumber(harmonyGain, 1)}</strong></div>
+        ${Number(detail?.harmony_on_start ?? action.harmony_on_start ?? 0) > 0 ? `<div class="shaft-detail-kv"><span>释放时环合</span><strong>${formatNumber(detail?.harmony_on_start ?? action.harmony_on_start, 1)}</strong></div>` : ''}
         ${specialStats.join('')}
+        `}
       </div>
       <div class="shaft-detail-hero">
         <span class="shaft-detail-muted">实时面板</span>
-        <strong>${escapeHtml(memberName(step.slot))}</strong>
+        <strong>${escapeHtml(memberName(step.slot))}${action.lingke_joint_source_slot != null ? '（灵可覆盖）' : ''}</strong>
       </div>
       <div class="shaft-detail-grid">
         ${realtimePanelRows.join('') || '<div class="shaft-empty">该动作不读取角色面板属性</div>'}
@@ -5054,7 +5665,9 @@
   }
 
   function removeInvalidStepsForSlot(slot) {
-    const validActions = new Set(actionsForSlot(slot).map((action) => action.id));
+    const characterId = memberBySlot(slot)?.character_id;
+    const validActions = new Set((state.catalog?.actions || [])
+      .filter((action) => action.character_id === characterId).map((action) => action.id));
     state.axis.steps = state.axis.steps.filter((step) => Number(step.slot) !== Number(slot) || validActions.has(step.action_id));
   }
 
@@ -5066,12 +5679,13 @@
     const slotBlockingEnd = new Map();
     let previousForegroundSlot = null;
     let previousForegroundStartTick = null;
+    let previousForegroundAction = null;
     const foregroundLocks = [];
     for (const step of orderedSteps) {
       const action = actionForStep(step);
       const foregroundStart = startsForeground(step, action);
       const slotBlocking = blocksSlotOverlap(step, action) && !isInstantSwitchAction(action);
-      if (!foregroundStart && !slotBlocking) {
+      if (!foregroundStart && !slotBlocking && !isInstantSwitchAction(action)) {
         continue;
       }
       let startTick = Math.max(0, Number(step.start_tick || 0));
@@ -5102,13 +5716,17 @@
         previousForegroundStartTick !== null &&
         !isInstantSwitchAction(action)
       ) {
-        startTick = Math.max(startTick, previousForegroundStartTick + MIN_FOREGROUND_START_GAP_TICKS);
+        startTick = Math.max(startTick, previousForegroundStartTick + Math.min(
+          MIN_FOREGROUND_START_GAP_TICKS,
+          Math.max(0, Number(previousForegroundAction?.switch_gap_after_ticks ?? MIN_FOREGROUND_START_GAP_TICKS)),
+        ));
       }
       step.start_tick = startTick;
       const endTick = startTick + actionVisualDurationTicks(action, step);
-      if (foregroundStart) {
+      if (switchesForeground(step, action)) {
         previousForegroundSlot = Number(step.slot);
         previousForegroundStartTick = startTick;
+        previousForegroundAction = action;
       }
       if (slotBlocking) {
         slotBlockingEnd.set(Number(step.slot), endTick);
@@ -5150,7 +5768,7 @@
     sortSteps();
     const prioritySteps = state.axis.steps
       .filter((step) => priorityIds.has(step.id) && (
-        startsForeground(step, actionForStep(step)) || blocksSlotOverlap(step, actionForStep(step))
+        switchesForeground(step, actionForStep(step)) || blocksSlotOverlap(step, actionForStep(step))
       ))
       .sort(foregroundConflictStepOrder);
     if (!prioritySteps.length) {
@@ -5162,7 +5780,7 @@
     const postSteps = [];
     state.axis.steps.forEach((step) => {
       const action = actionForStep(step);
-      if (priorityIds.has(step.id) || (!startsForeground(step, action) && !blocksSlotOverlap(step, action))) {
+      if (priorityIds.has(step.id) || (!switchesForeground(step, action) && !blocksSlotOverlap(step, action))) {
         return;
       }
       const startTick = Number(step.start_tick || 0);
@@ -5266,6 +5884,7 @@
     const candidateStep = { action_id: action?.id || '' };
     if (
       isZeroForegroundQStep(candidateStep, action || {}) ||
+      isTimeStopZeroForegroundStep(candidateStep, action || {}) ||
       isInstantSwitchAction(action || {}) ||
       tickHasForegroundQ(target) ||
       tickHasInstantSwitchAction(target)
@@ -5281,8 +5900,30 @@
     ) {
       return target;
     }
-    const interval = actionIntervalAtTick(tick);
+    const interval = actionIntervalAtTick(tick, slot);
     return interval ? interval.end : target;
+  }
+
+  function preparePasteInsertionTick(tick) {
+    let baseTick = Math.max(0, Number(tick || 0));
+    const maxPasses = Math.max(2, state.clipboardSteps.length + 1);
+    for (let pass = 0; pass < maxPasses; pass += 1) {
+      const previousBaseTick = baseTick;
+      state.clipboardSteps.forEach((source) => {
+        const relativeTick = Number(source.relative_start_tick || 0);
+        const action = getActionMap().get(source.action_id) || {};
+        const preparedTick = prepareInsertionTick(
+          baseTick + relativeTick,
+          action,
+          Number(source.slot || 0),
+        );
+        baseTick = Math.max(baseTick, preparedTick - relativeTick);
+      });
+      if (baseTick === previousBaseTick) {
+        break;
+      }
+    }
+    return baseTick;
   }
 
   function duplicateStartTick(tick, ignoreStepId = '', actionId = '') {
@@ -5293,6 +5934,7 @@
     }
     if (
       isZeroForegroundQStep(candidateStep, candidateAction) ||
+      isTimeStopZeroForegroundStep(candidateStep, candidateAction) ||
       isInstantSwitchAction(candidateAction) ||
       tickHasForegroundQ(tick, ignoreStepId) ||
       tickHasInstantSwitchAction(tick, ignoreStepId)
@@ -5336,10 +5978,23 @@
     return state.cursorTick;
   }
 
+  function reserveTimeStopZeroInsertionSpan(insertTick, action, candidateStep) {
+    if (!isTimeStopZeroForegroundStep(candidateStep, action)) {
+      return 0;
+    }
+    const spanTicks = actionVisualDurationTicks(action, candidateStep);
+    state.axis.steps.forEach((step) => {
+      if (Number(step.start_tick || 0) >= insertTick) {
+        step.start_tick = Number(step.start_tick || 0) + spanTicks;
+      }
+    });
+    return spanTicks;
+  }
+
   function addActionAt(slot, actionId, startTick) {
-    const action = getActionMap().get(actionId) || {};
-    if (!actionId) {
-      setStatus('请选择动作', 'error');
+    let action = actionForStep({id: '__insert_preview__', slot, action_id: actionId, start_tick: startTick});
+    if (!actionId || action.legacy_only) {
+      setStatus(action.legacy_only ? '旧版同频仅用于兼容已有排轴，请使用队友援护。' : '请选择动作', 'error');
       return;
     }
     pushUndoSnapshot();
@@ -5353,6 +6008,8 @@
       repeat: 1,
       tags: [],
     };
+    action = actionForStep(step);
+    reserveTimeStopZeroInsertionSpan(insertTick, action, step);
     state.axis.steps.push(step);
     normalizeEditedSteps(new Set([step.id]));
     selectStep(step.id, false);
@@ -5458,6 +6115,39 @@
       }, []);
   }
 
+  function compactReleasedTimelineIntervals(intervals, preserveRelativeAfterTick = null) {
+    const mergedIntervals = mergeReleasedTimelineIntervals(intervals);
+    if (!mergedIntervals.length) {
+      return false;
+    }
+    const originalTicks = new Map((state.axis.steps || []).map((step) => [
+      step.id,
+      Math.max(0, Number(step.start_tick || 0)),
+    ]));
+    const relativeTailSteps = preserveRelativeAfterTick === null
+      ? []
+      : (state.axis.steps || []).filter((step) => (
+        originalTicks.get(step.id) > Number(preserveRelativeAfterTick)
+      ));
+    const releasedBeforeTick = (tick) => mergedIntervals.reduce((sum, interval) => (
+      sum + Math.max(0, Math.min(tick, interval.end) - interval.start)
+    ), 0);
+    const relativeTailShift = relativeTailSteps.length
+      ? Math.min(...relativeTailSteps.map((step) => releasedBeforeTick(originalTicks.get(step.id))))
+      : 0;
+    state.axis.steps.forEach((step) => {
+      const originalTick = originalTicks.get(step.id);
+      const preserveTailPosition = preserveRelativeAfterTick !== null && (
+        originalTick > Number(preserveRelativeAfterTick)
+      );
+      const releasedBeforeStep = preserveTailPosition
+        ? relativeTailShift
+        : releasedBeforeTick(originalTick);
+      step.start_tick = Math.max(0, originalTick - releasedBeforeStep);
+    });
+    return true;
+  }
+
   function compactSpaceReleasedByDeletion(removedSteps, beforeDetails, beforeFrozenIntervals) {
     if (!state.axis || !removedSteps?.length) {
       return;
@@ -5472,15 +6162,21 @@
     }
     const detailById = new Map((beforeDetails || []).map((detail) => [detail.step_id, detail]));
     const releasedIntervals = [];
+    let latestRemovedStart = 0;
     removedSteps.forEach((step) => {
       const action = actionForStep(step);
-      if (!blocksSlotOverlap(step, action) || isZeroForegroundQStep(step, action)) {
-        return;
-      }
       const detail = detailById.get(step.id);
       const start = Math.max(0, Number(
         detail?.display_start_tick ?? detail?.visual_start_tick ?? step.start_tick ?? 0,
       ));
+      latestRemovedStart = Math.max(latestRemovedStart, start);
+      if (
+        !blocksSlotOverlap(step, action)
+        || isZeroForegroundQStep(step, action)
+        || isTimeStopZeroForegroundStep(step, action)
+      ) {
+        return;
+      }
       const end = Math.max(start, Number(
         detail?.display_visual_end_tick ??
         detail?.visual_end_tick ??
@@ -5502,17 +6198,136 @@
         releasedIntervals.push({ start: newEnd, end: oldEnd });
       }
     });
-    const mergedIntervals = mergeReleasedTimelineIntervals(releasedIntervals);
-    if (!mergedIntervals.length) {
+    compactReleasedTimelineIntervals(releasedIntervals, latestRemovedStart);
+  }
+
+  function earliestStartTickPreservingActionOrder(currentStep) {
+    if (!currentStep) {
+      return 0;
+    }
+    const orderedSteps = (state.axis?.steps || [])
+      .filter((step) => {
+        const action = actionForStep(step);
+        return switchesForeground(step, action) || blocksSlotOverlap(step, action);
+      })
+      .slice()
+      .sort(foregroundConflictStepOrder);
+    const currentIndex = orderedSteps.findIndex((step) => step.id === currentStep.id);
+    if (currentIndex < 0) {
+      return 0;
+    }
+    const simulatedSteps = orderedSteps.slice(0, currentIndex).map((step) => clone(step));
+    const simulatedCurrentStep = clone(currentStep);
+    simulatedCurrentStep.start_tick = 0;
+    simulatedSteps.push(simulatedCurrentStep);
+    applyForegroundConflictOrder(simulatedSteps);
+    return earliestVisualTickRespectingForegroundReturn(
+      currentStep,
+      Math.max(0, Number(simulatedCurrentStep.start_tick || 0)),
+    );
+  }
+
+  function earliestVisualTickRespectingForegroundReturn(currentStep, proposedVisualTick) {
+    const currentAction = actionForStep(currentStep);
+    if (!startsForeground(currentStep, currentAction)) {
+      return proposedVisualTick;
+    }
+    const result = freshResult();
+    const details = new Map((result?.details || []).map((detail) => [String(detail?.step_id || ''), detail]));
+    const orderedSteps = (state.axis?.steps || [])
+      .map((step, order) => {
+        const detail = details.get(String(step.id || '')) || {};
+        return {
+          step,
+          order,
+          action: actionForStep(step),
+          calculationTick: Number(detail.start_tick ?? step.start_tick ?? 0),
+          calculationSequence: Number(detail.calculation_start_sequence ?? 0),
+          visualTick: Number(detail.visual_start_tick ?? step.start_tick ?? 0),
+        };
+      })
+      .sort((left, right) => (
+        left.calculationTick - right.calculationTick ||
+        left.calculationSequence - right.calculationSequence ||
+        left.visualTick - right.visualTick ||
+        left.order - right.order
+      ));
+    const currentIndex = orderedSteps.findIndex((item) => item.step.id === currentStep.id);
+    if (currentIndex < 0) {
+      return proposedVisualTick;
+    }
+    const pendingReturns = new Map();
+    let foregroundSlot = null;
+    orderedSteps.slice(0, currentIndex).forEach(({ step, action, calculationTick }) => {
+      if (!startsForeground(step, action)) {
+        return;
+      }
+      const slot = Number(step.slot || 0);
+      const maskingTimeStopZero = Boolean(window.ShaftSelfCheck?.isMaskingTimeStopZero(step, action));
+      if (foregroundSlot === slot) {
+        if (maskingTimeStopZero) {
+          pendingReturns.forEach((pending) => { pending.masked = true; });
+        }
+        return;
+      }
+      if (maskingTimeStopZero) {
+        pendingReturns.forEach((pending, pendingSlot) => {
+          if (pendingSlot !== slot) {
+            pending.masked = true;
+          }
+        });
+      }
+      pendingReturns.delete(slot);
+      if (foregroundSlot !== null) {
+        pendingReturns.set(foregroundSlot, {
+          departureTick: Math.max(0, Number(calculationTick || 0)),
+          masked: maskingTimeStopZero,
+        });
+      }
+      foregroundSlot = slot;
+    });
+    const returning = pendingReturns.get(Number(currentStep.slot || 0));
+    if (foregroundSlot === Number(currentStep.slot || 0) || !returning || returning.masked) {
+      return proposedVisualTick;
+    }
+    const minReturnTicks = Math.max(0, Number(window.ShaftSelfCheck?.MIN_FOREGROUND_RETURN_TICKS || 12));
+    const requiredCalculationTick = returning.departureTick + minReturnTicks;
+    let visualTick = Math.max(0, Number(proposedVisualTick || 0));
+    while (calculationTickFromVisual(visualTick) < requiredCalculationTick) {
+      visualTick += 1;
+    }
+    return visualTick;
+  }
+
+  function moveCurrentStepEarlier() {
+    const currentStep = state.axis?.steps?.find((step) => step.id === state.selectedStepId);
+    if (!currentStep) {
+      setStatus('请先选择一个动作', 'error');
       return;
     }
+    const currentStart = Math.max(0, Number(currentStep.start_tick || 0));
+    const earliestStart = earliestStartTickPreservingActionOrder(currentStep);
+    if (earliestStart >= currentStart) {
+      setStatus('当前动作已经位于允许的最早位置');
+      return;
+    }
+    pushUndoSnapshot();
+    const shiftTicks = currentStart - earliestStart;
     state.axis.steps.forEach((step) => {
-      const originalTick = Math.max(0, Number(step.start_tick || 0));
-      const releasedBeforeStep = mergedIntervals.reduce((sum, interval) => (
-        sum + Math.max(0, Math.min(originalTick, interval.end) - interval.start)
-      ), 0);
-      step.start_tick = Math.max(0, originalTick - releasedBeforeStep);
+      if (Number(step.start_tick || 0) >= currentStart) {
+        step.start_tick = Math.max(0, Number(step.start_tick || 0) - shiftTicks);
+      }
     });
+    normalizeEditedSteps(new Set([currentStep.id]));
+    const shiftedStep = state.axis.steps.find((step) => step.id === currentStep.id);
+    state.cursorTick = Number(shiftedStep?.start_tick || 0);
+    syncAddTimeInput(state.cursorTick);
+    syncSelection(true);
+    closeContextMenu();
+    renderAll();
+    scheduleSimulation();
+    revealTimelineTick(state.cursorTick);
+    setStatus(`已将当前及后续动作前移 ${shiftTicks / 10}s`);
   }
 
   function pasteStepsAtCursor() {
@@ -5520,7 +6335,7 @@
       return;
     }
     pushUndoSnapshot();
-    const baseTick = prepareInsertionTick(state.cursorTick);
+    const baseTick = preparePasteInsertionTick(state.cursorTick);
     const newIds = [];
     const clipboardSpanTicks = Math.max(1, ...state.clipboardSteps.map((source) => {
       const action = getActionMap().get(source.action_id) || {};
@@ -5543,9 +6358,14 @@
         start_tick: baseTick + Number(source.relative_start_tick || 0),
         repeat: Math.max(1, Number(source.repeat || 1)),
         placement: source.placement === 'background' ? 'background' : undefined,
+        detached: Boolean(source.detached) || undefined,
+        interrupted: Boolean(source.interrupted) || undefined,
+        interrupt_duration_ticks: source.interrupt_duration_ticks,
+        interrupt_hit_count: source.interrupt_hit_count,
         tags: clone(source.tags || []),
       });
     });
+    state.axis.steps = window.ShaftEngine.migrateLingkeJointSteps(state.axis.steps, state.axis.team, state.catalog);
     state.axis.steps.forEach(sanitizeStepPlacement);
     normalizeEditedSteps(new Set(newIds));
     setSelectedStepIds(newIds.filter((id) => state.axis.steps.some((step) => step.id === id)), newIds[newIds.length - 1] || '', false);
@@ -5612,6 +6432,14 @@
       }
       member.awakening_nodes = Array.from(awakeningNodes).sort((left, right) => left - right);
       member.awakening = member.awakening_nodes.length;
+      member.awakening_resonances = [3, 6].filter((count) => member.awakening >= count);
+      rememberMemberBuild(member);
+    } else if (control.dataset.field === 'awakening_resonance') {
+      const level = Number(control.dataset.resonanceLevel);
+      const resonances = new Set(normalizeAwakeningResonances(member));
+      if (control.checked) resonances.add(level);
+      else resonances.delete(level);
+      member.awakening_resonances = [3, 6].filter((count) => resonances.has(count));
       rememberMemberBuild(member);
     } else if (control.dataset.field === 'bond_full') {
       const hasBondBonus = characterHasBondBonus(member.character_id);
@@ -5842,7 +6670,7 @@
     pushUndoSnapshot();
     if (target.dataset.stepField === 'slot') {
       step.slot = Number(target.value || 0);
-      const actions = actionsForSlot(step.slot);
+      const actions = actionsForSlot(step.slot, step.action_id);
       if (!actions.some((action) => action.id === step.action_id)) {
         step.action_id = actions[0]?.id || '';
         step.action_name = getActionMap().get(step.action_id)?.name || '';
@@ -5864,12 +6692,177 @@
     scheduleSimulation();
   }
 
+  function openActionEditor(stepId, trigger = null) {
+    const dialog = $('shaft-action-edit-dialog');
+    const step = state.axis.steps.find((item) => item.id === stepId);
+    const action = step ? actionForStep(step) : null;
+    if (!dialog || !step || !action?.id || dialog.open || state.sharedReadOnly) {
+      return;
+    }
+    const canDetach = Boolean(action.can_detach);
+    const canInterrupt = baseActionDurationTicks(action, step) > 0
+      && !isSupportAction(action)
+      && !isInstantNativeBackgroundAction(step, action)
+      && action.can_interrupt !== false;
+    const canSelectTriggerCharacter = String(action.trigger_character_selector || '') === 'same_element_non_lingke';
+    const triggerCandidates = triggerCharactersForAction(action);
+    const selectedTriggerCharacter = triggerCharacterForStep(step, action);
+    dialog.dataset.stepId = step.id;
+    dialog._returnFocus = trigger;
+    $('shaft-action-edit-summary').textContent = `${memberName(step.slot)} · ${action.name || '动作'} · ${visualTickLabel(step.start_tick)}`;
+    $('shaft-action-edit-detached-row').hidden = !canDetach;
+    $('shaft-action-edit-interrupt-row').hidden = !canInterrupt;
+    $('shaft-action-edit-trigger-character-row').hidden = !canSelectTriggerCharacter;
+    $('shaft-action-edit-empty').hidden = canDetach || canInterrupt || canSelectTriggerCharacter;
+    const triggerSelect = $('shaft-action-edit-trigger-character');
+    triggerSelect.replaceChildren(...triggerCandidates.map((member) => {
+      const option = document.createElement('option');
+      option.value = String(member.character_id || '');
+      option.textContent = `${Number(member.slot || 0) + 1}号位 · ${memberName(member.slot)}`;
+      return option;
+    }));
+    triggerSelect.disabled = triggerCandidates.length === 0;
+    if (selectedTriggerCharacter) triggerSelect.value = String(selectedTriggerCharacter.character_id || '');
+    $('shaft-action-edit-trigger-character-hint').textContent = triggerCandidates.length
+      ? `默认选择队伍顺位最靠前的${action.damage_element || ''}属性非灵可角色；E/F觉醒、环合强度与回能均读取该角色。`
+      : `当前队伍没有可选的${action.damage_element || ''}属性非灵可角色。`;
+    $('shaft-action-edit-detached').checked = isDetachedStep(step, action);
+    $('shaft-action-edit-detached-hint').textContent = canDetach
+      ? `勾选后动作占用 ${ticksToSeconds(action.detached_duration_ticks || 0)} 秒；时间轴名称不变，以黄色字体标识。`
+      : '';
+    $('shaft-action-edit-interrupted').checked = isInterruptedStep(step, action);
+    $('shaft-action-edit-duration').value = String(step.interrupt_duration_ticks || baseActionDurationTicks(action, step));
+    $('shaft-action-edit-hits').value = String(step.interrupt_hit_count ?? action.hit_count ?? 0);
+    updateActionEditorInterruptPreview();
+    dialog.showModal();
+    window.requestAnimationFrame(() => {
+      (canSelectTriggerCharacter && !triggerSelect.disabled
+        ? triggerSelect
+        : (canDetach ? $('shaft-action-edit-detached') : (canInterrupt ? $('shaft-action-edit-interrupted') : $('shaft-action-edit-confirm')))).focus();
+    });
+  }
+
+  function actionEditProfileEntry(action, hitCount) {
+    return (action?.hit_profile?.cumulative || []).find((item) => Number(item.hit_count) === Number(hitCount)) || null;
+  }
+
+  function actionEditMultiplierText(action, profile) {
+    const full = actionEditProfileEntry(action, Number(action?.hit_count || 0));
+    const damageRatio = Number(full?.damage || 0) > 0
+      ? Number(profile?.damage || 0) / Number(full.damage)
+      : (Number(action?.hit_count || 0) > 0 ? Number(profile?.hit_count || 0) / Number(action.hit_count) : 0);
+    const labels = { atk: '攻击', hp: '生命', def: '防御', flat: '固定' };
+    const values = Object.entries(action?.multipliers || {})
+      .filter(([, value]) => Number(value || 0) !== 0)
+      .map(([key, value]) => key === 'flat'
+        ? `${formatNumber(Number(value) * damageRatio, 1)}${labels[key]}`
+        : `${formatNumber(Number(value) * damageRatio * 100, 1)}%${labels[key] || key}`);
+    return values.join(' + ') || '0%';
+  }
+
+  function updateActionEditorInterruptPreview() {
+    const dialog = $('shaft-action-edit-dialog');
+    const step = state.axis?.steps?.find((item) => item.id === String(dialog?.dataset.stepId || ''));
+    const action = step ? actionForStep(step) : null;
+    if (!action) return;
+    const enabled = $('shaft-action-edit-interrupted').checked;
+    const detached = Boolean(action.can_detach) && $('shaft-action-edit-detached').checked;
+    const maxDuration = Math.max(1, Number(detached ? action.detached_duration_ticks : action.duration_ticks) || 1);
+    const durationInput = $('shaft-action-edit-duration');
+    const hitInput = $('shaft-action-edit-hits');
+    durationInput.max = String(maxDuration);
+    durationInput.value = String(Math.max(1, Math.min(maxDuration, Number(durationInput.value || maxDuration))));
+    hitInput.max = String(Math.max(0, Number(action.hit_count || 0)));
+    hitInput.value = String(Math.max(0, Math.min(Number(hitInput.max), Number(hitInput.value || 0))));
+    $('shaft-action-edit-interrupt-settings').hidden = !enabled;
+    $('shaft-action-edit-duration-output').textContent = `${ticksToSeconds(durationInput.value)}s`;
+    $('shaft-action-edit-hit-output').textContent = `${hitInput.value} / ${hitInput.max}`;
+    const profile = actionEditProfileEntry(action, Number(hitInput.value)) || {
+      hit_count: Number(hitInput.value), damage: 0, energy: 0, harmony: 0, stagger: 0,
+    };
+    $('shaft-action-edit-preview-multiplier').textContent = actionEditMultiplierText(action, profile);
+    $('shaft-action-edit-preview-energy').textContent = formatNumber(profile.energy || 0, 1);
+    $('shaft-action-edit-preview-harmony').textContent = formatNumber(profile.harmony || 0, 1);
+    $('shaft-action-edit-preview-stagger').textContent = formatNumber(profile.stagger || 0, 2);
+  }
+
+  function closeActionEditor({ restoreFocus = true } = {}) {
+    const dialog = $('shaft-action-edit-dialog');
+    if (!dialog?.open) {
+      return;
+    }
+    const returnFocus = dialog._returnFocus;
+    dialog.close();
+    dialog.removeAttribute('data-step-id');
+    dialog._returnFocus = null;
+    if (restoreFocus && returnFocus?.isConnected) {
+      returnFocus.focus();
+    }
+  }
+
+  function confirmActionEditor() {
+    const dialog = $('shaft-action-edit-dialog');
+    const step = state.axis.steps.find((item) => item.id === String(dialog?.dataset.stepId || ''));
+    const action = step ? actionForStep(step) : null;
+    if (!dialog?.open || !step || !action?.id) {
+      closeActionEditor();
+      return;
+    }
+    const nextDetached = Boolean(action.can_detach) && $('shaft-action-edit-detached').checked;
+    const nextInterrupted = !isSupportAction(action)
+      && !isInstantNativeBackgroundAction(step, action)
+      && action.can_interrupt !== false
+      && baseActionDurationTicks(action, Object.assign({}, step, { detached: nextDetached })) > 0
+      && $('shaft-action-edit-interrupted').checked;
+    const nextDurationTicks = Number($('shaft-action-edit-duration').value || 1);
+    const nextHitCount = Number($('shaft-action-edit-hits').value || 0);
+    const nextTriggerCharacterId = String($('shaft-action-edit-trigger-character')?.value || '');
+    const canSelectTriggerCharacter = String(action.trigger_character_selector || '') === 'same_element_non_lingke';
+    const changed = isDetachedStep(step, action) !== nextDetached
+      || isInterruptedStep(step, action) !== nextInterrupted
+      || (canSelectTriggerCharacter && String(step.trigger_character_id || '') !== nextTriggerCharacterId)
+      || (nextInterrupted && (
+        Number(step.interrupt_duration_ticks) !== nextDurationTicks
+        || Number(step.interrupt_hit_count) !== nextHitCount
+      ));
+    if (changed) {
+      pushUndoSnapshot();
+      if (nextDetached) {
+        step.detached = true;
+        delete step.placement;
+      } else {
+        delete step.detached;
+      }
+      if (nextInterrupted) {
+        step.interrupted = true;
+        step.interrupt_duration_ticks = nextDurationTicks;
+        step.interrupt_hit_count = nextHitCount;
+      } else {
+        delete step.interrupted;
+        delete step.interrupt_duration_ticks;
+        delete step.interrupt_hit_count;
+      }
+      if (canSelectTriggerCharacter && nextTriggerCharacterId) {
+        step.trigger_character_id = nextTriggerCharacterId;
+      } else {
+        delete step.trigger_character_id;
+      }
+      sanitizeStepPlacement(step);
+      normalizeEditedSteps(new Set([step.id]));
+      renderSteps();
+      renderTimeline();
+      renderStepDetail();
+      scheduleSimulation();
+    }
+    closeActionEditor();
+  }
+
   function openBackgroundActionMultiplier(stepId, trigger = null) {
     const dialog = $('shaft-background-multiplier-dialog');
     const input = $('shaft-background-multiplier-input');
     const step = state.axis.steps.find((item) => item.id === stepId);
     const action = step ? actionForStep(step) : null;
-    if (!dialog || !input || !step || !isBackgroundAction(action) || dialog.open) {
+    if (!dialog || !input || !step || !isBackgroundAction(action) || action.lingke_joint_source_slot != null || dialog.open) {
       return;
     }
     const actionMultiplier = backgroundActionMultiplier(step, action);
@@ -5904,7 +6897,7 @@
     const stepId = String(dialog?.dataset.stepId || '');
     const step = state.axis.steps.find((item) => item.id === stepId);
     const action = step ? actionForStep(step) : null;
-    if (!dialog?.open || !input || !step || !isBackgroundAction(action)) {
+    if (!dialog?.open || !input || !step || !isBackgroundAction(action) || action.lingke_joint_source_slot != null) {
       closeBackgroundActionMultiplier();
       return;
     }
@@ -6385,21 +7378,67 @@
     `;
   }
 
+  function selectDamageMarker(marker) {
+    const key = marker.dataset.damageMarkerKey;
+    const damage = state.timelineDamageMarkers.get(key);
+    if (!damage) return;
+    setSelectedStepIds([], '', false);
+    state.selectedDamageMarkerKey = key;
+    state.cursorTick = Number(damage.visual_tick ?? damage.tick ?? 0);
+    syncAddTimeInput(state.cursorTick);
+    renderTimeline();
+    renderStepDetail();
+    renderEditorActions();
+    const selected = $('shaft-timeline').querySelector('.shaft-reaction-damage-marker.selected');
+    selected?.focus({ preventScroll: true });
+  }
+
   function handleTimelineClick(event) {
     if (Date.now() < state.suppressTimelineClickUntil) {
       return;
     }
     closeContextMenu();
+    const marker = event.target.closest('[data-damage-marker-key]');
+    if (marker) {
+      selectDamageMarker(marker);
+      return;
+    }
+    state.selectedDamageMarkerKey = '';
     const bar = event.target.closest('[data-step-id]');
     if (bar) {
+      const now = Date.now();
+      const previousClick = state.lastTimelineActionClick || {};
+      state.lastTimelineActionClick = { stepId: bar.dataset.stepId, at: now };
+      if (
+        previousClick.stepId === bar.dataset.stepId &&
+        now - Number(previousClick.at || 0) <= 420 &&
+        !state.sharedReadOnly
+      ) {
+        state.lastTimelineActionClick = { stepId: '', at: 0 };
+        selectStep(bar.dataset.stepId);
+        openActionEditor(bar.dataset.stepId, bar);
+        return;
+      }
       selectStep(bar.dataset.stepId, true, event.ctrlKey || event.metaKey);
       return;
     }
+    state.lastTimelineActionClick = { stepId: '', at: 0 };
     state.cursorTick = timelineTickFromEvent(event);
     syncAddTimeInput(state.cursorTick);
     renderTimeline();
     renderStepDetail();
     renderEditorActions();
+  }
+
+  function handleTimelineDoubleClick(event) {
+    const bar = event.target.closest('.shaft-action-bar[data-step-id]');
+    if (!bar || state.sharedReadOnly) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    selectStep(bar.dataset.stepId);
+    openActionEditor(bar.dataset.stepId, bar);
   }
 
   function handleTimelineContextMenu(event) {
@@ -6625,6 +7664,11 @@
   }
 
   function handleKeydown(event) {
+    if ((event.key === 'Enter' || event.key === ' ') && event.target.closest('[data-damage-marker-key]')) {
+      event.preventDefault();
+      selectDamageMarker(event.target.closest('[data-damage-marker-key]'));
+      return;
+    }
     if (event.key === 'Escape') {
       if (document.querySelector('[data-build-character-popover]:not([hidden])')) {
         setBuildCharacterPickerOpen();
@@ -6632,6 +7676,10 @@
       }
       if ($('shaft-background-multiplier-dialog')?.open) {
         closeBackgroundActionMultiplier();
+        return;
+      }
+      if ($('shaft-action-edit-dialog')?.open) {
+        closeActionEditor();
         return;
       }
       if ($('shaft-loop-settings-dialog')?.open) {
@@ -6655,6 +7703,9 @@
         return;
       }
       closeContextMenu();
+      return;
+    }
+    if (state.page !== 'rotation') {
       return;
     }
     if (state.sharedReadOnly) {
@@ -6697,6 +7748,11 @@
       pasteStepsAtCursor();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'Backspace') {
+      event.preventDefault();
+      moveCurrentStepEarlier();
+      return;
+    }
     if ((event.key === 'Delete' || event.key === 'Backspace') && selectedStepIds().length) {
       event.preventDefault();
       removeSelectedSteps();
@@ -6729,7 +7785,7 @@
   }
 
   function handleClipboardCopy(event) {
-    if (state.sharedReadOnly) {
+    if (state.page !== 'rotation' || state.sharedReadOnly) {
       return;
     }
     if (isEditableTarget(event.target) || !selectedStepIds().length) {
@@ -6745,7 +7801,7 @@
   }
 
   function handleClipboardPaste(event) {
-    if (state.sharedReadOnly) {
+    if (state.page !== 'rotation' || state.sharedReadOnly) {
       return;
     }
     if (isEditableTarget(event.target) || !state.clipboardSteps.length) {
@@ -6855,7 +7911,7 @@
     }
     syncSelection(false);
     const normalizedStep = state.axis.steps.find((item) => item.id === drag.stepId);
-    state.cursorTick = Number(normalizedStep?.start_tick ?? nextTick);
+    state.cursorTick = timelineDisplayTickForResultStep(normalizedStep, drag.previewResult);
     syncAddTimeInput(state.cursorTick);
     renderSteps();
     renderTimeline();
@@ -6913,6 +7969,7 @@
   }
 
   function handleTimelineMouseDown(event) {
+    if (event.target.closest('[data-damage-marker-key]')) return;
     if (state.sharedReadOnly) {
       return;
     }
@@ -7064,7 +8121,7 @@
       normalizeEditedSteps(new Set(stepIds));
       syncSelection(false);
       const primary = state.axis.steps.find((item) => item.id === drag.stepId) || movedSteps[0];
-      state.cursorTick = Number(primary?.start_tick || 0);
+      state.cursorTick = timelineDisplayTickForResultStep(primary, drag.previewResult);
       state.suppressTimelineClickUntil = Date.now() + 250;
       renderSteps();
       renderStepDetail();
@@ -7117,6 +8174,7 @@
       details: [],
       reaction_effects: [],
       reaction_damage_events: [],
+      dissonance_events: [],
       front_windows: [],
       time_axis: {
         tick_seconds: 0.1,
@@ -7254,6 +8312,7 @@
       setStatus('请等待本地计算完成后再保存', 'error');
       return false;
     }
+    const submittedFingerprint = axisDocumentFingerprint();
     const payload = {
       title: $('shaft-title-input').value || '未命名排轴',
       description: $('shaft-description-input').value || '',
@@ -7268,6 +8327,12 @@
       const url = state.savedAxisId ? `/api/shaft/axes/${state.savedAxisId}` : '/api/shaft/axes';
       const method = state.savedAxisId ? 'PUT' : 'POST';
       const saved = await shaftRequest(url, { method, body: JSON.stringify(payload) }, { authRequired: true });
+      if (axisDocumentFingerprint() !== submittedFingerprint) {
+        persistAxisDraft();
+        setStatus('提交时的版本已保存，后续更改仍未保存', 'warning');
+        showToast('保存期间又有更改，已保留当前编辑，请再次保存', 'warning');
+        return false;
+      }
       state.savedAxisId = saved.id;
       state.savedAxisTitle = String(saved.title || payload.title || '');
       state.axis = saved.axis;
@@ -7453,7 +8518,13 @@
   }
 
   async function loadAxis(axisId, source) {
+    if (state.axisOpenInProgress) return;
+    state.axisOpenInProgress = true;
     try {
+      if (!await confirmWorkspaceReplacement()) {
+        setStatus('未打开排轴');
+        return;
+      }
       setStatus('读取排轴');
       const payload = await shaftRequest(`/api/shaft/axes/${axisId}`);
       state.axis = payload.axis;
@@ -7476,6 +8547,8 @@
       setStatus('已读取');
     } catch (error) {
       setStatus(error.message, 'error');
+    } finally {
+      state.axisOpenInProgress = false;
     }
   }
 
@@ -7520,11 +8593,23 @@
 
   async function resolveSharedAxisWorkspace() {
     const dialog = $('shaft-share-open-dialog');
+    dialog.querySelector('.shaft-panel-kicker').textContent = '打开其他排轴';
+    dialog.querySelector('p').textContent = '打开其他排轴会替换当前工作区。请先选择如何处理这些更改。';
+    dialog.querySelector('[value="cancel"]').textContent = '不打开';
     dialog.returnValue = '';
     dialog.showModal();
     return new Promise((resolve) => {
       dialog.addEventListener('close', () => resolve(dialog.returnValue || 'cancel'), { once: true });
     });
+  }
+
+  async function confirmWorkspaceReplacement() {
+    if (!hasUnsavedAxisChanges()) return true;
+    const action = await resolveSharedAxisWorkspace();
+    if (action === 'discard') return true;
+    if (action === 'save') return Boolean(await saveAxis());
+    if (action === 'save_as') return Boolean(await saveAxisAsCopy());
+    return false;
   }
 
   async function replaceWorkspaceWithSharedAxis(payload) {
@@ -7562,19 +8647,10 @@
     try {
       setStatus('读取分享排轴');
       const payload = await shaftRequest(`/api/shaft/shared/${encodeURIComponent(shareToken)}`);
-      if (hasUnsavedAxisChanges()) {
-        const action = await resolveSharedAxisWorkspace();
-        if (action === 'cancel') {
-          clearSharedAxisUrl();
-          setStatus('未打开分享排轴');
-          return;
-        }
-        if (action === 'save' && !await saveAxis()) {
-          return;
-        }
-        if (action === 'save_as' && !await saveAxisAsCopy()) {
-          return;
-        }
+      if (!await confirmWorkspaceReplacement()) {
+        clearSharedAxisUrl();
+        setStatus('未打开分享排轴');
+        return;
       }
       await replaceWorkspaceWithSharedAxis(payload);
     } catch (error) {
@@ -7873,6 +8949,7 @@
     });
     $('shaft-description-input').addEventListener('input', persistAxisDraft);
     $('shaft-undo-btn').addEventListener('click', undoLastEdit);
+    $('shaft-move-earlier-btn').addEventListener('click', moveCurrentStepEarlier);
     $('shaft-redo-btn').addEventListener('click', redoLastEdit);
     $('shaft-copy-step-btn').addEventListener('click', copySelectedSteps);
     $('shaft-paste-step-btn').addEventListener('click', pasteStepsAtCursor);
@@ -7880,7 +8957,7 @@
     $('shaft-preview-btn').addEventListener('click', (event) => openAxisPreview(event.currentTarget));
     $('shaft-axis-preview-fit-btn').addEventListener('click', fitAxisPreview);
     $('shaft-axis-preview-cancel-btn').addEventListener('click', closeAxisPreview);
-    $('shaft-axis-preview-save-btn').addEventListener('click', saveMarketAxisToLocal);
+    $('shaft-axis-preview-save-btn').addEventListener('click', () => saveMarketAxisToLocal());
     $('shaft-axis-preview-dialog').addEventListener('click', (event) => {
       if (event.target === event.currentTarget || event.target.closest('[data-close-axis-preview]')) {
         closeAxisPreview();
@@ -7891,6 +8968,16 @@
         closeBackgroundActionMultiplier();
       }
     });
+    $('shaft-action-edit-dialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget || event.target.closest('[data-close-action-edit]')) {
+        closeActionEditor();
+      }
+    });
+    $('shaft-action-edit-confirm').addEventListener('click', confirmActionEditor);
+    $('shaft-action-edit-detached').addEventListener('change', updateActionEditorInterruptPreview);
+    $('shaft-action-edit-interrupted').addEventListener('change', updateActionEditorInterruptPreview);
+    $('shaft-action-edit-duration').addEventListener('input', updateActionEditorInterruptPreview);
+    $('shaft-action-edit-hits').addEventListener('input', updateActionEditorInterruptPreview);
     $('shaft-background-multiplier-confirm').addEventListener('click', confirmBackgroundActionMultiplier);
     $('shaft-background-multiplier-input').addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
@@ -8028,6 +9115,14 @@
     $('shaft-compare-controls').addEventListener('click', handleCompareControls);
     $('shaft-compare-controls').addEventListener('change', handleCompareControlChange);
     $('shaft-contribution-list').addEventListener('click', handleContributionClick);
+    $('shaft-substat-contribution-btn').addEventListener('click', (event) => {
+      openSubstatContributionAnalysis(event.currentTarget);
+    });
+    $('shaft-substat-contribution-dialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget || event.target.closest('[data-close-substat-contribution]')) {
+        closeSubstatContributionAnalysis();
+      }
+    });
     $('shaft-stagger-analysis-dialog').addEventListener('click', (event) => {
       if (event.target === event.currentTarget || event.target.closest('[data-close-stagger-analysis]')) {
         closeStaggerAnalysis();
@@ -8096,6 +9191,7 @@
     }
     $('shaft-step-detail').addEventListener('click', handleStepDetailClick);
     $('shaft-timeline').addEventListener('click', handleTimelineClick);
+    $('shaft-timeline').addEventListener('dblclick', handleTimelineDoubleClick);
     $('shaft-timeline').addEventListener('contextmenu', handleTimelineContextMenu);
     $('shaft-timeline').addEventListener('mousedown', handleTimelineMouseDown);
     $('shaft-timeline').addEventListener('pointermove', positionBuffLineTooltip);

@@ -1,0 +1,118 @@
+{% extends 'common/base.html' %}
+{% block title %}异能对决{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_common.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_home.css') }}">
+{% endblock %}
+{% block body %}
+<main class="v2-home-page" id="v2-home-page">
+    <header class="v2-home-nav">
+        <a class="v2-home-logo" href="{{ url_for('main.card_game_home') }}">
+            <img src="{{ url_for('static', filename='images/brand/esper-duel-logo.webp') }}" alt="异能对决" width="1086" height="362">
+        </a>
+        <nav class="v2-home-links" aria-label="大厅导航">
+            <a class="is-current" href="{{ url_for('main.card_game_home') }}">大厅</a>
+            <a href="{{ url_for('main.build_page') }}">构筑</a>
+            <a href="{{ url_for('main.codex_page') }}">图鉴</a>
+            <a href="{{ url_for('main.replays_page') }}">回放</a>
+        </nav>
+        <div class="v2-home-account">
+            <div>
+                <strong id="v2-home-name">-</strong>
+                <p id="v2-home-uid">账号：-</p>
+            </div>
+            <a class="secondary-btn" href="{{ url_for('main.profile_page') }}">账号</a>
+            <a class="secondary-btn" href="{{ url_for('main.default_page') }}">工具</a>
+        </div>
+    </header>
+
+    <section class="v2-banner" id="v2-home-banner" hidden></section>
+
+    <section class="v2-home-stage">
+        <section class="v2-home-hero" aria-label="当前编队">
+            <p class="eyebrow">四人轮替</p>
+            <h1>异能对决</h1>
+            <p class="subtle" id="v2-starter-copy">每方 4 名角色、单人战斗区、玩家生命胜负。</p>
+            <div class="v2-home-roster" id="v2-starter-grid" aria-label="当前出战四人">
+                <article class="v2-home-esper"><div class="v2-skel"></div></article>
+                <article class="v2-home-esper"><div class="v2-skel"></div></article>
+                <article class="v2-home-esper"><div class="v2-skel"></div></article>
+                <article class="v2-home-esper"><div class="v2-skel"></div></article>
+            </div>
+            <p class="v2-home-deckline" id="v2-build-summary">尚未读取牌组。</p>
+        </section>
+
+        <aside class="v2-home-play" aria-label="开始对局">
+            <section class="v2-home-tutorial" id="v2-home-tutorial">
+                <p class="eyebrow">新手教学</p>
+                <div class="v2-tutorial-picker">
+                    <button class="secondary-btn v2-tutorial-flip" id="v2-tutorial-prev" type="button" aria-label="上一关">‹</button>
+                    <strong id="v2-tutorial-level-title">第一关 牌桌与回合</strong>
+                    <button class="primary-btn" id="v2-tutorial-start" type="button">进入</button>
+                    <button class="secondary-btn v2-tutorial-flip" id="v2-tutorial-next" type="button" aria-label="下一关">›</button>
+                </div>
+            </section>
+            <section class="v2-resume-card" id="v2-resume-card" hidden>
+                <div>
+                    <p class="eyebrow" id="v2-resume-eyebrow">进行中</p>
+                    <h2 id="v2-resume-title">已有房间</h2>
+                    <p class="subtle" id="v2-resume-copy">检测到未结束的房间，可直接返回牌桌。</p>
+                </div>
+                <div class="hero-actions">
+                    <a class="primary-btn" id="v2-resume-btn" href="{{ url_for('main.table_page') }}">返回牌桌</a>
+                    <a class="secondary-btn" id="v2-resume-replay" href="/table" hidden>观看回放</a>
+                    <button class="secondary-btn" id="v2-leave-btn" type="button">离开房间</button>
+                </div>
+            </section>
+
+            <div class="v2-play-modes" role="group" aria-label="对局模式">
+                <button class="v2-play-mode selected" id="v2-mode-solo" type="button" aria-pressed="true">
+                    <strong>普通人机</strong>
+                    <span>使用已保存构筑立即开局</span>
+                </button>
+                <button class="v2-play-mode" id="v2-mode-advanced" type="button" aria-pressed="false">
+                    <strong>高级人机</strong>
+                    <span>挑战训练后的对手</span>
+                </button>
+                <button class="v2-play-mode" id="v2-mode-pvp" type="button" aria-pressed="false">
+                    <strong>创建 1v1</strong>
+                    <span>生成房间码等待对手</span>
+                </button>
+            </div>
+
+            <div class="field-label v2-advanced-picker" id="v2-solo-picker">
+                <label for="v2-solo-deck">普通人机 · 对手预组</label>
+                <select id="v2-solo-deck"><option value="random">随机</option><option value="mirror">镜像对局</option></select>
+                <small class="subtle">随机挑战公开预组；镜像对局采用你的构筑，不能携带人机不支持的牌。</small>
+            </div>
+
+            <div class="field-label v2-advanced-picker" id="v2-advanced-picker" hidden>
+                <label for="v2-ai-deck">高级人机 · 对手预组</label>
+                <select id="v2-ai-deck">
+                    <option value="random" selected>随机（实验性策略）</option>
+                    <option value="starter">实验性 · 创生预组</option>
+                    <option value="weave-rush">实验性 · 覆纹预组</option>
+                    <option value="quick-rush">实验性 · 小吱预组</option>
+                    <option value="zhenhong">实验性 · 真红预组</option>
+                    <option value="murk">实验性 · 浊燃预组</option>
+                </select>
+                <small class="subtle" id="v2-ai-deck-hint">使用当前保存的构筑对战，仅支持公开角色。五套高级人机均已启用新模型与搜索，属于尚未通过新规则完整强度验收的实验性策略。</small>
+            </div>
+
+            <div class="v2-join-row">
+                <label class="field-label">
+                    <span>输入房间码加入</span>
+                    <input id="v2-room-code-input" type="text" maxlength="6" spellcheck="false" autocomplete="off" placeholder="6 位房间码">
+                </label>
+                <button class="secondary-btn" id="v2-join-btn" type="button">加入</button>
+            </div>
+
+            <button class="primary-btn v2-home-start" id="v2-start-btn" type="button">开始人机对局</button>
+            <a class="v2-home-build-link" href="{{ url_for('main.build_page') }}">调整构筑</a>
+        </aside>
+    </section>
+</main>
+<script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_home.js') }}"></script>
+{% endblock %}

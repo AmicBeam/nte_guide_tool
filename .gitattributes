@@ -1,1 +1,7 @@
 *.bat text eol=crlf
+
+# Model manifests are checksum-pinned and must keep their exported bytes.
+app/modules/card_game/engine/ai/models/**/*.json -text whitespace=cr-at-eol
+
+# Markdown uses two trailing spaces for explicit line breaks.
+*.md whitespace=-blank-at-eol

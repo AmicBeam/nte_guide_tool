@@ -30,16 +30,22 @@ class ShaftAwakeningDataTestCase(unittest.TestCase):
             if entry.get('implementation_status') == 'out_of_scope'
         ]
 
-        self.assertEqual(len(entries), 168)
+        self.assertEqual(len(entries), 192)
         self.assertEqual(len(pending), 0)
+        self.assertTrue(all(entry.get('implemented') is True for entry in awakenings['黑羽']))
         self.assertEqual(len(out_of_scope), 23)
+        self.assertTrue(all(entry.get('implemented') is True for entry in awakenings['灵可']))
         self.assertNotIn(
             'implemented',
-            next(entry for entry in awakenings['残红'] if entry['title'] == '三觉共鸣'),
+            next(entry for entry in awakenings['残虹'] if entry['title'] == '猩红盛宴'),
         )
         self.assertNotIn(
             'implemented',
-            next(entry for entry in awakenings['残红'] if entry['title'] == '六觉共鸣'),
+            next(entry for entry in awakenings['残虹'] if entry['title'] == '鸩火灼心'),
+        )
+        self.assertEqual(
+            [entry['title'] for entry in awakenings['残虹']],
+            ['瞳中深渊', '渊底之吻', '吻痕窥梦', '梦魇生花', '花开见血', '血染双瞳', '猩红盛宴', '鸩火灼心'],
         )
         self.assertNotIn(
             'implemented',

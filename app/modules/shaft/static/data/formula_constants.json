@@ -1,18 +1,29 @@
 {
   "loop_initial_reaction_options": [
-    {"id": "创生", "duration_ticks": 100},
-    {"id": "延滞", "duration_ticks": 50},
-    {"id": "覆纹", "duration_ticks": 120},
-    {"id": "浊燃", "duration_ticks": 150},
-    {"id": "黯星", "duration_ticks": 50},
-    {"id": "浸染", "duration_ticks": 120}
+    {"id": "创生", "duration_ticks": 100, "instance_mode": "independent", "max_instances": 3},
+    {"id": "延滞", "duration_ticks": 50, "instance_mode": "non_overlap", "max_instances": 1},
+    {"id": "覆纹", "duration_ticks": 120, "instance_mode": "non_overlap", "max_instances": 1},
+    {"id": "浊燃", "duration_ticks": 150, "instance_mode": "non_overlap", "max_instances": 1},
+    {"id": "黯星", "duration_ticks": 50, "instance_mode": "replace_and_settle", "max_instances": 1},
+    {"id": "浸染", "duration_ticks": 120, "instance_mode": "non_overlap", "max_instances": 1}
   ],
+  "loop_initial_reaction_conflict_policy": {
+    "source": "用户 2026-08-11 补充口径",
+    "note": "循环自带环合按原始机制校验实例数量上限；创生最多3个独立实例，其他环合最多1个，角色提供的刷新或额外加层能力不放宽。"
+  },
   "personal_resource_caps": {
     "char_31c5130304": {"真理之匙": 3},
     "char_701295143d": {"言灵字": 4},
     "char_912dbfe17c": {"闪送之力": 6},
     "char_d38b672525": {"罪状": 1000},
-    "char_a01c39f576": {"臆想": 100}
+    "char_a01c39f576": {"臆想": 100},
+    "char_0846d632e0": {"谐频": 100},
+    "char_heiyu": {
+      "恶意": 60
+    },
+    "char_akane": {
+      "弦能": 30
+    }
   },
   "hidden_personal_resources": ["噩梦"],
   "substat_units": {
@@ -75,7 +86,7 @@
   "cartridge_main_stat_options": {
     "属伤": {
       "label": "属伤",
-      "modifier_key": "element_dmg",
+      "modifier_key": "character_element_dmg",
       "unit_value": 0.375,
       "kind": "percent"
     },
@@ -131,7 +142,7 @@
   "curtain_bonus_stat_options": {
     "属伤": {
       "label": "属伤",
-      "modifier_key": "element_dmg",
+      "modifier_key": "character_element_dmg",
       "kind": "percent"
     },
     "暴击": {
@@ -227,7 +238,7 @@
     "char_bdc43f82c6": {
       "cartridge_main_stat": "暴击",
       "curtain_bonus": {
-        "value": 5,
+        "value": 6,
         "stat": "暴击",
         "passive_type": "type2"
       }
@@ -235,7 +246,7 @@
     "char_b2e3b2bf7a": {
       "cartridge_main_stat": "属伤",
       "curtain_bonus": {
-        "value": 5,
+        "value": 6,
         "stat": "暴击",
         "passive_type": "type2"
       }
@@ -328,6 +339,14 @@
         "passive_type": "type3"
       }
     },
+    "char_0846d632e0": {
+      "cartridge_main_stat": "属伤",
+      "curtain_bonus": {
+        "value": 8,
+        "stat": "暴击",
+        "passive_type": "type3"
+      }
+    },
     "char_912dbfe17c": {
       "cartridge_main_stat": "属伤",
       "curtain_bonus": {
@@ -340,6 +359,22 @@
       "cartridge_main_stat": "倾陷",
       "curtain_bonus": {
         "value": 10,
+        "stat": "攻击",
+        "passive_type": "type3"
+      }
+    },
+    "char_heiyu": {
+      "cartridge_main_stat": "属伤",
+      "curtain_bonus": {
+        "value": 8,
+        "stat": "暴击",
+        "passive_type": "type3"
+      }
+    },
+    "char_akane": {
+      "cartridge_main_stat": "属伤",
+      "curtain_bonus": {
+        "value": 0,
         "stat": "攻击",
         "passive_type": "type3"
       }

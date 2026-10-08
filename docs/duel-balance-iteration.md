@@ -1,5 +1,13 @@
 # 异象对决平衡迭代管理文档
 
+## 2026-09-09 版本边界
+
+新版四人轮替规则和置顶基础预组已写入 [完整手册](everness-item-chain-card-design.md)，并已接入默认网页与 V2 引擎；规则、接口及浏览器功能验收见 [实现验收](duel-v2-acceptance.md)。新版第一批平衡验证按手册末节进行同一基础队的先后手互换镜像试玩，记录玩家行动力、个人资源、首次环合、主动支付 1 费觉醒的时机、被动/弧盘贡献、角色参与度和生命胜负；特别检查被动追击是否递归、弧盘是否重置次数、2 行动力牌是否过早形成斩杀。
+
+**下文三角看板、命令、指标及 B 系列报告均属于旧盖卡实现。** 其素材、首个异能者登场回合和总战力指标不适用于新版；旧版 passed 不能作为新版通过证据。旧规则见 [盖卡版归档](archive/duel-simultaneous-deployment-2026-09-08.md)。暂不改动旧脚本和历史报告结果。
+
+2026-09-09 的新版规则测试已覆盖以下边界，后续试玩仍需观察体验与强度：娜娜莉成长不回溯伤害、零的额外环合不连带回能、九原花伤不产生基础资源、浔在 0 环合且留场时可通过原始 2 费战斗牌兑现；复制仍付费、归属浔、不可再记录/复制/回收，过期和倒地时正确移出。
+
 ## 目的
 
 本文件用于固定创生、延滞、浊燃三套核心预组的三角看板评测方式，记录每轮迭代的数据口径、验收指标和报告索引。
@@ -10,7 +18,7 @@
 
 ## 设计真源
 
-当前规则、术语、流派职责、卡牌效果、异能者编队和构筑口径统一以 `docs/everness-item-chain-card-design.md` 为准。
+新版规则、术语、卡牌和构筑口径统一以 `docs/everness-item-chain-card-design.md` 为准。下文旧盖卡流程对应 `docs/archive/duel-simultaneous-deployment-2026-09-08.md`，仅用于维护仍保留的旧盖卡运行版本；默认网页已接入 V2，其功能测试不能代替新版试玩数据。
 
 本文件只保留测试管理信息：观察点、浏览器验收原则、固定三角配对、看板验收指标、迭代流程和报告索引。若本文与设计文档冲突，以设计文档为准，并优先更新设计文档。
 
@@ -158,31 +166,33 @@ python3 scripts/duel_balance_eval.py --samples 4 --output /private/tmp/nte_triad
 2. 更新设计文档、卡牌定义、构筑或 AI 策略。
 3. 运行标准三角看板评测并写入看板数据。
 4. 打开 `/analytics`，查看验收状态、失败项和各视图明细。
-5. 写本轮报告，保存到 `docs/duel-balance-reports/iteration-XX.md`。
+5. 写本轮报告，保存到 `artifacts/rl-evals/<run-id>/report.md`。
 6. 如果看板为 `attention`，按失败项优先级继续调整并重跑。
 7. 如果看板为 `passed`，再通过浏览器牌桌验证关键交互、动画、日志和 UI 解释能力。
 
-## 迭代报告索引
+## 本地历史报告索引
+
+单轮报告已迁至 `artifacts/rl-evals/reports/duel-balance-reports/`，不提交Git；下列链接仅用于已有本地产物的工作区。
 
 B12 及以前报告保留历史评分表和旧命令作为归档证据；后续报告不再新增卡组评分字段。
 
 | 迭代 | 日期 | 主要改动 | 主要问题 | 是否满意 | 报告 |
 | --- | --- | --- | --- | --- | --- |
 | 00 | 2026-06-06 | 建立评分和流程文档 | 待定 | 否 | 本文件 |
-| 01 | 2026-06-06 | 脚本基线：识别浊燃无法稳定开异能者 | 浊燃 | 否 | [iteration-01.md](duel-balance-reports/iteration-01.md) |
-| 02 | 2026-06-06 | 修复专属效果绑定、浊燃曲线、黯星抗压与失谐锁控 | 延滞/盈蓄极端局 | 否 | [iteration-02.md](duel-balance-reports/iteration-02.md) |
-| 03 | 2026-06-06 | 收敛盈蓄极端爆点，潮汐改为追赶型战场特性 | 待浏览器验证 | 脚本满意 | [iteration-03.md](duel-balance-reports/iteration-03.md) |
-| 04 | 2026-06-06 | 浏览器完整验收：补齐 UI 选择层与异能者再共鸣交互 | 失谐 | 是 | [iteration-04-browser-final.md](duel-balance-reports/iteration-04-browser-final.md) |
-| B05 | 2026-06-06 | 新规则基础四套：自动抽牌、结算先手、侧栏牌库、揭示箭头；延滞压制小幅增强 | 创生 vs 延滞体验分 | 基础通过 | [iteration-B05-basic-rules.md](duel-balance-reports/iteration-B05-basic-rules.md) |
-| B06 | 2026-06-07 | 真实道具 20 张预组后脚本迭代：修正浊燃起手、阿德勒抗爆与浊燃滚雪球评分口径 | 浊燃 | 脚本满意，待浏览器完整轮 | [iteration-B06-murk-tempo.md](duel-balance-reports/iteration-B06-murk-tempo.md) |
-| B07 | 2026-06-15 | 解场博弈观察轮：延滞可将部分卡组首个异能者拖后 0.3 到 1 回合，但自身仍是最低分；浏览器受工具 URL policy 限制未完成 | 延滞 | 否 | [iteration-B07-clearance-duel.md](duel-balance-reports/iteration-B07-clearance-duel.md) |
-| B08 | 2026-06-15 | 环合底层调整脚本轮：基础环合改为纯层数记录、融合标记由层数增长生成、异能者制造层数普遍降为 1；不改王牌按层数增强 | 延滞 | 否 | [iteration-B08-harmony-layer-change.md](duel-balance-reports/iteration-B08-harmony-layer-change.md) |
-| B09 | 2026-06-15 | 创生/浊燃/延滞三角对局埋点：统计卡牌影响、拖延成功、异能者登场难度，并新增可排序筛选的数据看板 UI | 延滞 | 否 | [iteration-B09-triad-analytics-dashboard.md](duel-balance-reports/iteration-B09-triad-analytics-dashboard.md) |
-| B10 | 2026-06-15 | 浊燃补入安魂曲番茄桥并增加 AI 素材保留倾向，九原和娜娜莉同步新版设计；安魂曲登场率拉至接近娜娜莉 | 延滞 | 否 | [iteration-B10-murk-requiem-bridge.md](duel-balance-reports/iteration-B10-murk-requiem-bridge.md) |
-| B11 | 2026-06-15 | AI 在 5/6 费优先王牌并优先编队入场后三套重跑；卡厄斯登场率提升，浊燃仍是最低胜率 | 浊燃 | 否 | [iteration-B11-ai-priority-triad.md](duel-balance-reports/iteration-B11-ai-priority-triad.md) |
-| B12 | 2026-06-15 | 安魂曲 AI 改为番茄轴与安魂曲优先，多轮评测确认第 5 回合登场率约 25%；浊燃胜率升高后延滞成为最低胜率 | 延滞 | 否 | [iteration-B12-requiem-ai-turn5.md](duel-balance-reports/iteration-B12-requiem-ai-turn5.md) |
-| B13 | 2026-06-16 | 创生回收轴、延滞干扰轴和悬想幻妄等新版卡牌效果同步实现；三角胜率差回到 18.7 点 | 浔低登场 | 否 | [iteration-B13-card-effect-refresh.md](duel-balance-reports/iteration-B13-card-effect-refresh.md) |
-| B14 | 2026-06-16 | 翳登场评分识别当前战场延滞和同回合鉴定师前置延滞来源，空发从 29 次降为 0 次 | 延滞全员登场率 | 否 | [iteration-B14-yi-delay-ai-score.md](duel-balance-reports/iteration-B14-yi-delay-ai-score.md) |
+| 01 | 2026-06-06 | 脚本基线：识别浊燃无法稳定开异能者 | 浊燃 | 否 | [iteration-01.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-01.md) |
+| 02 | 2026-06-06 | 修复专属效果绑定、浊燃曲线、黯星抗压与失谐锁控 | 延滞/盈蓄极端局 | 否 | [iteration-02.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-02.md) |
+| 03 | 2026-06-06 | 收敛盈蓄极端爆点，潮汐改为追赶型战场特性 | 待浏览器验证 | 脚本满意 | [iteration-03.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-03.md) |
+| 04 | 2026-06-06 | 浏览器完整验收：补齐 UI 选择层与异能者再共鸣交互 | 失谐 | 是 | [iteration-04-browser-final.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-04-browser-final.md) |
+| B05 | 2026-06-06 | 新规则基础四套：自动抽牌、结算先手、侧栏牌库、揭示箭头；延滞压制小幅增强 | 创生 vs 延滞体验分 | 基础通过 | [iteration-B05-basic-rules.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-B05-basic-rules.md) |
+| B06 | 2026-06-07 | 真实道具 20 张预组后脚本迭代：修正浊燃起手、阿德勒抗爆与浊燃滚雪球评分口径 | 浊燃 | 脚本满意，待浏览器完整轮 | [iteration-B06-murk-tempo.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-B06-murk-tempo.md) |
+| B07 | 2026-06-15 | 解场博弈观察轮：延滞可将部分卡组首个异能者拖后 0.3 到 1 回合，但自身仍是最低分；浏览器受工具 URL policy 限制未完成 | 延滞 | 否 | [iteration-B07-clearance-duel.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-B07-clearance-duel.md) |
+| B08 | 2026-06-15 | 环合底层调整脚本轮：基础环合改为纯层数记录、融合标记由层数增长生成、异能者制造层数普遍降为 1；不改王牌按层数增强 | 延滞 | 否 | [iteration-B08-harmony-layer-change.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-B08-harmony-layer-change.md) |
+| B09 | 2026-06-15 | 创生/浊燃/延滞三角对局埋点：统计卡牌影响、拖延成功、异能者登场难度，并新增可排序筛选的数据看板 UI | 延滞 | 否 | [iteration-B09-triad-analytics-dashboard.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-B09-triad-analytics-dashboard.md) |
+| B10 | 2026-06-15 | 浊燃补入安魂曲番茄桥并增加 AI 素材保留倾向，九原和娜娜莉同步新版设计；安魂曲登场率拉至接近娜娜莉 | 延滞 | 否 | [iteration-B10-murk-requiem-bridge.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-B10-murk-requiem-bridge.md) |
+| B11 | 2026-06-15 | AI 在 5/6 费优先王牌并优先编队入场后三套重跑；卡厄斯登场率提升，浊燃仍是最低胜率 | 浊燃 | 否 | [iteration-B11-ai-priority-triad.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-B11-ai-priority-triad.md) |
+| B12 | 2026-06-15 | 安魂曲 AI 改为番茄轴与安魂曲优先，多轮评测确认第 5 回合登场率约 25%；浊燃胜率升高后延滞成为最低胜率 | 延滞 | 否 | [iteration-B12-requiem-ai-turn5.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-B12-requiem-ai-turn5.md) |
+| B13 | 2026-06-16 | 创生回收轴、延滞干扰轴和悬想幻妄等新版卡牌效果同步实现；三角胜率差回到 18.7 点 | 浔低登场 | 否 | [iteration-B13-card-effect-refresh.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-B13-card-effect-refresh.md) |
+| B14 | 2026-06-16 | 翳登场评分识别当前战场延滞和同回合鉴定师前置延滞来源，空发从 29 次降为 0 次 | 延滞全员登场率 | 否 | [iteration-B14-yi-delay-ai-score.md](../artifacts/rl-evals/reports/duel-balance-reports/iteration-B14-yi-delay-ai-score.md) |
 
 ## 已验证结论
 
@@ -190,3 +200,53 @@ B12 及以前报告保留历史评分表和旧命令作为归档证据；后续�
 - 提高异能者素材要求后，干扰的主要价值已经从单纯削战力转向阻止或延迟共鸣。
 - 属性展开链替代直接环合生成后，跨套路污染可控。
 - 5 到 6 费终端足够大胆：黯星能爆发返场，盈蓄能多卡连打，创生能形成保护型大场面。
+
+## V2 白热化对照流程（2026-09-15）
+
+使用 `scripts/evaluate_duel_v2_escalation.py`，双方固定覆纹快攻与现有可见信息规则 AI。每个 seed 分别以 a/b 先手运行原规则和白热化规则；报告平均/中位/P90 终局回合、终结和环合次数、到达阶段比例、先手胜率、终局原因及截断数。同 seed 起手洗牌保持一致，开启随机补能后的随机流和决策允许自然分歧。规则口径见完整手册，报告见 [白热化镜像对照](../artifacts/rl-evals/reports/duel-balance-reports/iteration-v2-escalation-20260915.md)。这不是旧三角看板验收，也不证明对人类或其他构筑已经平衡。
+
+## V2 完整双预组训练报告规范（2026-09-16）
+
+创生与覆纹快攻的完整训练、变化对手测试、同模型同构筑镜像和交叉互搏、固定角色配牌调整，以及先后手胜率、逐卡、终结/环合分析，统一按 [完整训练与报告要求](duel-v2-full-training-report-spec.md) 执行。该规范不新增卡牌规则，不把训练内胜率、旧版看板或历史实验作为当前平衡结论。
+
+
+## 2026-09-18 V2三套公开预组的训练验收
+
+创生、覆纹、快攻按 [八人三策略流程](../artifacts/rl-evals/reports/duel-v2-three-strategy-training-20260918.md) 执行：固定对手的前后配对比较与最终三方交叉分别报告；70种公开四人组合单独覆盖。训练、检查点选择、战术夹具和最终种子隔离，记录无效同分根与有效分支更新，未通过的模型不发布。这是V2流程，不使用上文旧盖卡三角看板作为证据。
+
+
+### 错误优先分支学习的验证口径
+
+后续训练按 [错误优先分支学习 v2](duel-v2-prioritized-branch-learning.md) 记录实际普通/分支优化步数，而非只比较批次数；分别报告新分支观测与重复回放。训练样本、检查点选择与最终战术/对局验收隔离。本次仅验证代码，不新增实战或平衡结论。
+
+2026-09-19 起 `terminal_tiebreak_v3` 加入同等胜负下的胜局加速、败局延缓与保守一步斩杀排序，详见上述实现文档。验收仍以胜率和独立战术用例为主，同时报告截断比例；辅助时间偏好不构成新的胜负或平衡结论。
+
+半小时预算短测见 [弱激励三策略结果（2026-09-19）](../artifacts/rl-evals/reports/duel-v2-weak-preferences-test-20260919.md)：流程与 708 局独立评估完成，但战术验收未通过，不发布模型。
+
+独立 [搜索纠错小实验（2026-09-19）](../artifacts/rl-evals/reports/duel-v2-search-pilot-20260919.md) 提高了合成留出题的首步选择正确数，但整体对局和完整战术门槛未通过；保留为实验路径，未替换默认训练或发布权重。
+
+[完整对局搜索增强自博弈短测（2026-09-19）](../artifacts/rl-evals/reports/duel-v2-information-selfplay-20260919.md)：12 局完整自博弈、704 次逐决策搜索/标签、48 局独立对照完成。联合学习链路通过功能验证，整体质量未通过，不发布模型。
+
+
+### 固定搜索预算的对照口径
+
+训练与搜索强度必须分开验证。使用 `scripts/evaluate_duel_v2_search_budgets.py` 冻结同一学习方模型及同一纯网络对手，比较纯网络、24、128、256 档；目标预算仍受“唯一动作一次、根动作多时至少候选数+8”的现有搜索规则约束，须同时保留实际模拟次数。各档使用相同开局 seed、对手与先后手；固定局面复测使用相同的多个搜索 seed。自然局面来自新的完整对局并按早/中/后期分层，战术回归与用户个案另列，不混称独立对局胜率。
+
+报告配对改善/退化/持平、各策略胜局、固定局面的随机种子不稳定数、回归题通过数、可证明即时斩杀的机会与漏选数，以及每步时延 P50/P95。未知局面不贴“失误”标签；审计不得改变实际选择。截断和缺失配对明确排除，全部重复未完成的局面不得称稳定。时延说明机器/并发及计时边界，不直接等同网页响应时间。运行前后模型哈希必须一致，不因该实验自动推荐预算或发布模型。
+
+
+若历史人工夹具通过替换/清空手牌造成牌组数量不合法，不能放松信念抽样的隐私/数量校验。预算评测须先物化合法夹具版本，记录调整，并对所有预算（含纯网络）重新评估；不得只重跑失败档。自然对局和原始玩家快照禁止通过此方式改写。修复版本与原失败结果分开保存，归档中说明不可直接与旧版本夹具通过数比较。
+
+[冻结模型预算对照结果（2026-09-19）](../artifacts/rl-evals/reports/duel-v2-search-budget-results-20260919.md)：96 局配对、348 次有效局面评估完成。256 档本批 18/24 胜，纯网络 12/24，成本约 4.33 秒/决策中位数；模型未更新，仍不自动上线。
+
+[2026-09-19 中午验收训练计划](../artifacts/rl-evals/reports/duel-v2-noon-plan-20260919.md)：用户授权训练至北京时间12点，04:19正式启动；11点停学，11:55结束计算验收，12点硬截止。最终结果另行归档，不预先声称通过。
+
+[中午验收结果（2026-09-19）](../artifacts/rl-evals/reports/duel-v2-noon-results-20260919.md)：28轮336局学习后，192局实际独立配置评估及66次局面检查全部完成；原第3回合纯网络已改选N02，但整体未提升，阶段最佳仍为初始模型，未上线。
+
+[2026-09-19 训练与直接互搏完整结构报告](../artifacts/rl-evals/reports/duel-v2-full-report-20260919.md)：补充1080局冻结评估（含既有200局逐局复现）、镜像逐卡、起手对照、70组合变化构筑、终结/环合与24局公开录像索引；整轮规范缺项逐项标明，不称全项验收通过。
+
+[小吱加强后快攻适应结果与四人贡献（2026-09-19）](../artifacts/rl-evals/reports/duel-v2-quick-adaptation-results-20260919.md)：一小时40局26优化步；对创生有小样本改善，对覆纹未改善。提供分先后手对照、实际事件贡献及局限，未启用新候选。
+
+### 2026-09-20 配牌接受与回退
+
+三套后续完整训练采用[配牌确认与交付协议](duel-v2-build-acceptance.md)：规范化配牌与开局、等量适应、独立确认、冻结审计和明确回退。统计单位为共同种子的配对簇，保留对手×先后手等权口径；流程完成不等于模型/配牌质量通过。今日夜间配牌已按用户要求全部废弃，原始数据保留；新策略仅研究使用，不自动续用或部署。

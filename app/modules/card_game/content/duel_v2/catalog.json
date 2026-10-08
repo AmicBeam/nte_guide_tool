@@ -1,0 +1,3505 @@
+{
+  "schema_version": 1,
+  "rules_version": "duel_v2",
+  "deck_rules": {
+    "size": 32,
+    "per_character": 8,
+    "max_copies": 2,
+    "character_count": 4
+  },
+  "starter_deck": {
+    "id": "starter",
+    "name": "创生预组",
+    "character_ids": [
+      "nanali",
+      "iloy",
+      "zero",
+      "jiuyuan"
+    ],
+    "card_ids": [
+      "N02",
+      "N02",
+      "N03",
+      "N03",
+      "N04",
+      "N04",
+      "N07",
+      "N08",
+      "Z03",
+      "Z04",
+      "Z04",
+      "Z05",
+      "Z05",
+      "Z07",
+      "Z07",
+      "Z08",
+      "J02",
+      "J02",
+      "J03",
+      "J04",
+      "J04",
+      "J07",
+      "J08",
+      "J08",
+      "Y02",
+      "Y02",
+      "Y03",
+      "Y04",
+      "Y06",
+      "Y06",
+      "Y08",
+      "Y08"
+    ]
+  },
+  "public_character_ids": [
+    "nanali",
+    "zero",
+    "jiuyuan",
+    "iloy",
+    "bohe",
+    "baicang",
+    "xiaozhi",
+    "haiyue",
+    "zhenhong",
+    "yi",
+    "anhunqu",
+    "canhong",
+    "zaowu",
+    "adler"
+  ],
+  "characters": [
+    {
+      "id": "zero",
+      "name": "零",
+      "attribute": "光",
+      "attack": 2,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/鉴定师.webp",
+      "portrait": "/static/images/characters/portrait/鉴定师.webp",
+      "passive": "零使用战斗牌后，立刻充满自己的环合值。零已装备武备时，零的武备牌获得瞬发，使用时抽 1 张牌。",
+      "awakened_passive": "己方武备牌变为瞬发，使用时抽 1 张牌，持续 2 个己方回合。",
+      "everness_id": 1051,
+      "role": "战斗牌回满环合，弧盘过牌",
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "faction": "伊波恩古董店"
+    },
+    {
+      "id": "xun",
+      "name": "浔",
+      "attribute": "光",
+      "attack": 3,
+      "max_hp": 6,
+      "avatar": "/static/images/characters/avatar/浔.webp",
+      "portrait": "/static/images/characters/portrait/浔.webp",
+      "passive": "其他己方异能者全部倒地时，浔才能普通出击。每名其他己方异能者发动终结或援护技时，为浔积累 1 点荒时；每次浔终结前，同一异能者至多贡献 1 点。",
+      "awakened_passive": "每个己方回合开始时获得 1 点时计，倒地时也可获得。选择 1 名对方异能者，消耗全部荒时：造成 4 点伤害；至少 1 点，伤害 +2；至少 2 点，再对所有对方异能者造成 2 点伤害；至少 3 点，主目标伤害再 +2，终结伤害获得穿透。",
+      "everness_id": 1052,
+      "role": "时计与荒时，回溯与家族支援",
+      "ultimate": {
+        "kind": "instant"
+      },
+      "faction": "伊波恩古董店",
+      "resource_name": "时计",
+      "turn_snapshots": true
+    },
+    {
+      "id": "zhenhong",
+      "name": "真红",
+      "attribute": "光",
+      "attack": 2,
+      "max_hp": 6,
+      "avatar": "/static/kongmu/images/characters/player_zhenhong_256.webp",
+      "portrait": "/static/images/characters/portrait/真红.webp",
+      "role": "盈蓄追加攻击与战斗牌成长",
+      "passive": "开局时，真红获得 1 点环合值。己方触发盈蓄后，若真红存活，则触发「独行」。真红不在前排时，不能获得能量。",
+      "awakened_passive": "将真红移入战斗区。真红不能获得能量，不会在己方回合开始时自动返回备战区。己方全部手牌均视为真红•「升腾之赤」，持续 2 个己方回合。持续时间自然结束时，对所有对方角色造成 3 点伤害。真红倒地或被换下时提前结束，不触发这次伤害。",
+      "everness_id": 1076,
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "faction": "异象管理局收容二组",
+      "mechanisms": [
+        {
+          "id": "mechanism-solitary",
+          "name": "独行",
+          "description": "回复真红的全部生命。直到下个己方回合开始时，真红攻击 +1，单次至多受到 1 点伤害。当前操作完成后，真红进入战斗区并发起一次额外攻击，对方可以正常反击；此次攻击不获得基础环合值。"
+        }
+      ]
+    },
+    {
+      "id": "xiaozhi",
+      "name": "小吱",
+      "attribute": "光",
+      "attack": 3,
+      "max_hp": 4,
+      "avatar": "/static/images/characters/avatar/小吱.webp",
+      "portrait": "/static/images/characters/portrait/小吱.webp",
+      "passive": "拥有个人资源「金谷」，初始 0 点。己方回合开始时及小吱对对方玩家造成伤害时，获得 1 点金谷。金谷可以为负，倒地时保留。小吱的战斗牌为覆写攻击而非叠加。",
+      "awakened_passive": "获得 3 点金谷。己方手牌随机标注金谷 -1/0/+1，出牌结算后生效。己方回合开始时刷新。持续 2 个己方回合；结束时扣除 3 点金谷并清除标注。",
+      "everness_id": 1073,
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "faction": "德沃夏克家族"
+    },
+    {
+      "id": "edgar",
+      "name": "埃德嘉",
+      "attribute": "光",
+      "attack": 1,
+      "max_hp": 6,
+      "avatar": "/static/images/characters/avatar/埃德嘉.webp",
+      "portrait": "/static/images/characters/portrait/埃德嘉.webp",
+      "everness_id": 1021,
+      "faction": "伊波恩古董店",
+      "passive": "起手手牌数 +1。拥有个人资源「真理之匙」，初始 0 点，倒地时失去。己方异能者发动援护技时，获得 1 点真理之匙。",
+      "awakened_passive": "发动时及己方回合开始时，回复 2 点生命，己方前排优先。持续 1 个己方回合；消耗全部真理之匙，每点使持续时间延长 1 个己方回合。",
+      "ultimate": {
+        "kind": "status",
+        "turns": 1
+      }
+    },
+    {
+      "id": "nanali",
+      "name": "娜娜莉",
+      "attribute": "灵",
+      "attack": 2,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/娜娜莉.webp",
+      "portrait": "/static/images/characters/portrait/娜娜莉.webp",
+      "passive": "首个己方回合开始时获得 1 张「家族壮大」。娜娜莉击退对方异能者时，若仍存活且在战斗区，再获得 1 张「家族壮大」。至多获得 3 次。",
+      "awakened_passive": "娜娜莉每次战斗附加 1 点追击伤害，持续 2 个己方回合。",
+      "everness_id": 1010,
+      "role": "击退换取「家族壮大」，永久强化自身",
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "faction": "伊波恩古董店"
+    },
+    {
+      "id": "jiuyuan",
+      "name": "九原",
+      "attribute": "灵",
+      "attack": 3,
+      "max_hp": 4,
+      "avatar": "/static/images/characters/avatar/九原.webp",
+      "portrait": "/static/images/characters/portrait/九原.webp",
+      "passive": "【创生强化】九原存活时，创生效果额外结算一次。创生对异能者造成伤害时，附着枚约。",
+      "awakened_passive": "对所有对方异能者造成 1 点伤害。对所有枚约目标额外造成 2 点伤害，并消耗枚约。",
+      "everness_id": 1055,
+      "role": "创生强化与枚约",
+      "ultimate": {
+        "kind": "instant",
+        "turns": 0
+      },
+      "faction": "斯特利速递"
+    },
+    {
+      "id": "lingke",
+      "name": "灵可",
+      "attribute": "灵",
+      "attack": 3,
+      "max_hp": 4,
+      "avatar": "/static/images/characters/avatar/灵可.png",
+      "portrait": "/static/images/characters/portrait/灵可.webp",
+      "role": "把非法环合改成同频，让咒灵队也能换人收益",
+      "passive": "灵可存活时，己方入场已满足环合资格但没有基础属性对时，改为触发「同频」：入场者获得 1 点护盾，造成 1 点伤害。前排优先。每个己方回合最多 1 次。",
+      "awakened_passive": "同频改为 2 点护盾与 2 点伤害。持续 2 个己方回合。",
+      "everness_id": 1072,
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "faction": "E.T.D六队队员"
+    },
+    {
+      "id": "iloy",
+      "name": "伊洛伊",
+      "attribute": "灵",
+      "attack": 1,
+      "max_hp": 6,
+      "avatar": "/static/kongmu/images/characters/player_yiluoyi_256.webp",
+      "portrait": "/static/images/characters/portrait/伊洛伊.webp",
+      "role": "治疗加攻与复活",
+      "passive": "受到伊洛伊治疗或复活的己方异能者攻击 +1。",
+      "awakened_passive": "下个己方回合开始时，所有己方异能者获得 1 点能量。",
+      "everness_id": 1075,
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "faction": "异象管理局收容二组"
+    },
+    {
+      "id": "bohe",
+      "name": "薄荷",
+      "attribute": "灵",
+      "attack": 3,
+      "max_hp": 4,
+      "avatar": "/static/images/characters/avatar/薄荷.webp",
+      "portrait": "/static/images/characters/portrait/薄荷.webp",
+      "role": "溢出伤害转打玩家的快攻",
+      "passive": "薄荷战斗造成的溢出伤害穿透至玩家。",
+      "awakened_passive": "薄荷免疫对方的非战斗伤害，持续 2 个己方回合。",
+      "everness_id": 1019,
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "faction": "异象管理局收容二组"
+    },
+    {
+      "id": "hathor",
+      "name": "哈索尔",
+      "attribute": "相",
+      "attack": 2,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/哈索尔.webp",
+      "portrait": "/static/images/characters/portrait/哈索尔.webp",
+      "role": "延滞强化，对应九原之于创生",
+      "passive": "哈索尔存活时，己方施加的延滞改为持续 3 个己方回合，不保留延滞的减攻效果。",
+      "awakened_passive": "己方触发延滞时，其持续时间改为 4 个己方回合。本效果持续 2 个己方回合。",
+      "everness_id": 1025,
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "faction": "斯特利速递"
+    },
+    {
+      "id": "yi",
+      "name": "翳",
+      "attribute": "相",
+      "attack": 2,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/翳.webp",
+      "portrait": "/static/images/characters/portrait/翳.webp",
+      "everness_id": 1008,
+      "faction": "异象管理局禁制机动队四队",
+      "passive": "翳的攻击使延滞延长 1 个己方回合，至多 2 个己方回合。「兽牙影刺」存在时，延滞的持续时间不会减少。翳倒地不会中断「兽牙影刺」。",
+      "awakened_passive": "「兽牙影刺」持续时间 +1 个己方回合。己方附着物伤害 +1，持续 2 个己方回合。",
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      }
+    },
+    {
+      "id": "anhunqu",
+      "name": "安魂曲",
+      "attribute": "暗",
+      "attack": 2,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/安魂曲.webp",
+      "portrait": "/static/images/characters/portrait/安魂曲.webp",
+      "role": "噩梦与失谐强化",
+      "passive": "安魂曲的攻击施加 1 层持续伤害「噩梦」。【失谐】强化：触发时，对对方前排造成 1 点伤害。",
+      "awakened_passive": "施加 5 层「噩梦」。",
+      "everness_id": 1004,
+      "ultimate": {
+        "kind": "instant"
+      },
+      "faction": "异象管理局禁制机动队四队",
+      "mechanisms": [
+        {
+          "id": "mechanism-nightmare",
+          "name": "噩梦",
+          "description": "上限 10 层。施加方回合结束时，随机分配等同于层数的伤害给对方存活异能者。施加方下个回合开始时层数减半，向下取整；归零后消失。"
+        }
+      ]
+    },
+    {
+      "id": "canhong",
+      "name": "残虹",
+      "attribute": "咒",
+      "attack": 2,
+      "max_hp": 6,
+      "avatar": "/static/images/characters/avatar/残虹.png",
+      "portrait": "/static/images/characters/portrait/残虹.webp",
+      "role": "浊燃叠层、幻境与持续伤害",
+      "passive": "初始具有 2 点环合值。【浊燃】强化：重复触发时可叠层，上限 3 层。残虹使用战斗牌后，进入 2 个己方回合的幻境：攻击施加 1 层「蚀心」；造成伤害时，全部已施加的持续伤害各 +1 层。",
+      "awakened_passive": "施加 5 层「鸩火」。",
+      "everness_id": 1036,
+      "ultimate": {
+        "kind": "instant"
+      },
+      "faction": "无",
+      "mechanisms": [
+        {
+          "id": "mechanism-etch-venom",
+          "name": "蚀心与鸩火",
+          "reference_names": [
+            "蚀心",
+            "鸩火"
+          ],
+          "description": "两种不同的持续伤害，各自上限 10 层，无持续时间限制。施加方回合结束时，每有 5 层造成 1 点伤害，随机分配给对方存活异能者。"
+        }
+      ]
+    },
+    {
+      "id": "zaowu",
+      "name": "早雾",
+      "attribute": "咒",
+      "attack": 3,
+      "max_hp": 4,
+      "avatar": "/static/images/characters/avatar/早雾.webp",
+      "portrait": "/static/images/characters/portrait/早雾.webp",
+      "role": "持续伤害增幅与鬼郎丸",
+      "passive": "已施加浊燃时，己方持续伤害分配的伤害每有 1 种持续伤害便 +25%（向下取整）。鬼郎丸被召唤时，每有 1 种持续伤害，其攻击 +1。",
+      "awakened_passive": "其他己方异能者攻击 +2，持续 2 个己方回合。不可叠加。",
+      "everness_id": 1003,
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "faction": "伊波恩古董店"
+    },
+    {
+      "id": "baicang",
+      "name": "白藏",
+      "attribute": "咒",
+      "attack": 2,
+      "max_hp": 6,
+      "avatar": "/static/images/characters/avatar/白藏.webp",
+      "portrait": "/static/images/characters/portrait/白藏.webp",
+      "role": "自伤叠攻与斩杀",
+      "passive": "每当白藏受到伤害时，白藏攻击 +1。",
+      "awakened_passive": "白藏对对方异能者造成伤害后，若其生命 ≤2，将其消灭，持续 2 个己方回合。",
+      "everness_id": 1023,
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      },
+      "faction": "异象管理局禁制机动队四队"
+    },
+    {
+      "id": "adler",
+      "name": "阿德勒",
+      "attribute": "咒",
+      "attack": 0,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/阿德勒.webp",
+      "portrait": "/static/images/characters/portrait/阿德勒.webp",
+      "role": "护盾即攻击，诛恶护持",
+      "passive": "己方回合开始时，阿德勒获得 2 点护盾；若已有浊燃，改为 3 点。阿德勒的攻击力等同于其护盾值。",
+      "awakened_passive": "施加「诛恶护持」，持续 2 个己方回合。移除所有对方角色的护盾。",
+      "everness_id": 1033,
+      "ultimate": {
+        "kind": "instant"
+      },
+      "faction": "伊波恩古董店",
+      "mechanisms": [
+        {
+          "id": "mechanism-guard",
+          "name": "诛恶护持",
+          "description": "不可叠加。施加方回合结束时，随机对一名对方存活异能者造成 1 点无视护盾的伤害。持续时间由施加效果决定。"
+        }
+      ]
+    },
+    {
+      "id": "haiyue",
+      "name": "海月",
+      "attribute": "魂",
+      "attack": 3,
+      "max_hp": 4,
+      "avatar": "/static/images/characters/avatar/海月.webp",
+      "portrait": "/static/images/characters/portrait/海月.webp",
+      "passive": "海月攻击后返回备战区。",
+      "awakened_passive": "本回合，海月可以在备战区远程出击。",
+      "everness_id": 1070,
+      "ultimate": {
+        "kind": "status",
+        "turns": 1,
+        "expires": "turn_end"
+      },
+      "faction": "玉饼街居民协会"
+    },
+    {
+      "id": "haniya",
+      "name": "哈尼娅",
+      "attribute": "魂",
+      "attack": 2,
+      "max_hp": 4,
+      "avatar": "/static/images/characters/avatar/哈尼娅.webp",
+      "portrait": "/static/images/characters/portrait/哈尼娅.webp",
+      "everness_id": 1020,
+      "faction": "斯特利速递",
+      "passive": "拥有个人资源「主角光环」，初始 0 点，上限 6 点，倒地时保留。己方回合开始时获得 1 点。己方异能者普通出击时，消耗全部主角光环，每点使本次战斗攻击 +1。",
+      "awakened_passive": "获得的主角光环数量翻倍，持续 2 个己方回合。",
+      "ultimate": {
+        "kind": "status",
+        "turns": 2
+      }
+    }
+  ],
+  "cards": [
+    {
+      "id": "N01",
+      "character_id": "nanali",
+      "name": "帮派初建成",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "instant": false,
+      "description": "回满娜娜莉的生命。",
+      "effect_id": "N01",
+      "source": {
+        "character_id": 1010,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "N02",
+      "character_id": "nanali",
+      "name": "第二位成员",
+      "effect_id": "N02",
+      "source": {
+        "character_id": 1010,
+        "type": "awaken",
+        "index": 2
+      },
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "响应：己方其他异能者被攻击时，自动使用。",
+      "starter_copies": 2,
+      "shield": 2,
+      "attack": 0,
+      "response": "ally_attacked"
+    },
+    {
+      "id": "N03",
+      "character_id": "nanali",
+      "name": "要叫大姐头",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "额外造成 1 点追击伤害。",
+      "effect_id": "N03",
+      "source": {
+        "character_id": 1010,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "shield": 0,
+      "attack": 1
+    },
+    {
+      "id": "N04",
+      "character_id": "nanali",
+      "name": "不是闯祸精",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "本回合己方创生伤害 +1。",
+      "effect_id": "N04",
+      "source": {
+        "character_id": 1010,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 2,
+      "shield": 2,
+      "attack": 0
+    },
+    {
+      "id": "N05",
+      "character_id": "nanali",
+      "name": "小弟遍天下",
+      "effect_id": "N05",
+      "source": {
+        "character_id": 1010,
+        "type": "awaken",
+        "index": 5
+      },
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。本回合造成过环合伤害才能打出。对 1 名对方异能者造成 4 点追击伤害。",
+      "starter_copies": 0,
+      "require": "harmony_damage",
+      "instant": true
+    },
+    {
+      "id": "N06",
+      "character_id": "nanali",
+      "name": "因为是家人",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。复活娜娜莉。（娜娜莉倒地时也能打出）",
+      "instant": true,
+      "playable_downed": true,
+      "effect_id": "N06",
+      "source": {
+        "character_id": 1010,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "N07",
+      "character_id": "nanali",
+      "name": "心有猛虎",
+      "effect_id": "N07",
+      "source": {
+        "character_id": 1010,
+        "type": "pv",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。",
+      "starter_copies": 2,
+      "attack": 2,
+      "hp": 5
+    },
+    {
+      "id": "N08",
+      "character_id": "nanali",
+      "name": "预备备",
+      "effect_id": "N08",
+      "source": {
+        "character_id": 1010,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "娜娜莉造成的追击伤害 +2。",
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 6
+    },
+    {
+      "id": "NF01",
+      "character_id": "nanali",
+      "name": "家族壮大",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "derived": true,
+      "description": "第 5 回合及以后具有瞬发。娜娜莉永久获得攻击 +1、生命 +1，并获得 1 点环合值。",
+      "effect_id": "NF01",
+      "source": {
+        "character_id": 1010,
+        "type": "derived",
+        "index": 1
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "Z01",
+      "character_id": "zero",
+      "name": "初明凝视",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "本回合触发盈蓄才能打出。回复己方前排全部生命。",
+      "effect_id": "Z01",
+      "source": {
+        "character_id": 1051,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 0,
+      "require": "surplus"
+    },
+    {
+      "id": "Z02",
+      "character_id": "zero",
+      "name": "探悉天职",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "从牌库将 2 张武备牌加入手牌。",
+      "effect_id": "Z02",
+      "source": {
+        "character_id": 1051,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 1
+    },
+    {
+      "id": "Z03",
+      "character_id": "zero",
+      "name": "奇异记叙",
+      "effect_id": "Z03",
+      "source": {
+        "character_id": 1051,
+        "type": "awaken",
+        "index": 3
+      },
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "starter_copies": 0,
+      "attack": 0,
+      "shield": 2
+    },
+    {
+      "id": "Z04",
+      "character_id": "zero",
+      "name": "未决迷数",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "effect_id": "Z04",
+      "source": {
+        "character_id": 1051,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "shield": 0
+    },
+    {
+      "id": "Z05",
+      "character_id": "zero",
+      "name": "默示赋命",
+      "effect_id": "Z05",
+      "source": {
+        "character_id": 1051,
+        "type": "awaken",
+        "index": 5
+      },
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "starter_copies": 2,
+      "attack": 1,
+      "shield": 1
+    },
+    {
+      "id": "Z06",
+      "character_id": "zero",
+      "name": "诓定解放",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "回合结束时，获得 1 点行动力。",
+      "effect_id": "Z06",
+      "source": {
+        "character_id": 1051,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 6
+    },
+    {
+      "id": "Z07",
+      "character_id": "zero",
+      "name": "休息日",
+      "effect_id": "Z07",
+      "source": {
+        "character_id": 1051,
+        "type": "arc",
+        "index": 2
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "回合结束时，己方前排回复 2 点生命。",
+      "starter_copies": 2,
+      "attack": 2,
+      "hp": 6
+    },
+    {
+      "id": "Z08",
+      "character_id": "zero",
+      "name": "倾世之雨",
+      "effect_id": "Z08",
+      "source": {
+        "character_id": 1051,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "回合结束时，己方前排攻击 +1。",
+      "starter_copies": 1,
+      "attack": 3,
+      "hp": 5
+    },
+    {
+      "id": "J01",
+      "character_id": "jiuyuan",
+      "name": "知晓与制衡",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。检视牌库顶 3 张牌。选择 1 张加入手牌，其余置于牌库底。",
+      "effect_id": "J01",
+      "source": {
+        "character_id": 1055,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2,
+      "instant": true
+    },
+    {
+      "id": "J02",
+      "character_id": "jiuyuan",
+      "name": "过往消息皆为利刃",
+      "effect_id": "J02",
+      "source": {
+        "character_id": 1055,
+        "type": "awaken",
+        "index": 2
+      },
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。造成 1 点伤害。前排优先。若目标为异能者，附着枚约。若目标原本已有枚约，或目标是玩家，抽 1 张牌。",
+      "instant": true,
+      "starter_copies": 2
+    },
+    {
+      "id": "J03",
+      "character_id": "jiuyuan",
+      "name": "优势初成",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "选择 1 名倒地的对方异能者。将其倒地倒计时重置为 3。",
+      "effect_id": "J03",
+      "source": {
+        "character_id": 1055,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "J04",
+      "character_id": "jiuyuan",
+      "name": "出手即致命",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "对 1 名对方异能者造成 2 点伤害，并附着枚约。",
+      "effect_id": "J04",
+      "source": {
+        "character_id": 1055,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "J05",
+      "character_id": "jiuyuan",
+      "name": "掌握底细的优越",
+      "effect_id": "J05",
+      "source": {
+        "character_id": 1055,
+        "type": "awaken",
+        "index": 5
+      },
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。对对方玩家造成 2 点伤害。若本回合己方已触发过创生，改为 3 点。",
+      "instant": true,
+      "starter_copies": 0
+    },
+    {
+      "id": "J06",
+      "character_id": "jiuyuan",
+      "name": "知晓每一条秘密",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "造成 1 点伤害。前排优先。重复 X 次。X 为本局己方对对方玩家造成的创生伤害次数。",
+      "effect_id": "J06",
+      "source": {
+        "character_id": 1055,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "J07",
+      "character_id": "jiuyuan",
+      "name": "使命必达",
+      "effect_id": "J07",
+      "source": {
+        "character_id": 1055,
+        "type": "ability",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "九原的终结成功清算枚约时，每个目标使九原获得 1 点能量。",
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 5
+    },
+    {
+      "id": "J08",
+      "character_id": "jiuyuan",
+      "name": "现实避难所",
+      "effect_id": "J08",
+      "source": {
+        "character_id": 1055,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "创生造成伤害时，对该目标额外造成 1 点伤害。",
+      "starter_copies": 2,
+      "attack": 3,
+      "hp": 5
+    },
+    {
+      "id": "X01",
+      "character_id": "xun",
+      "name": "欣欣渐行",
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "不消耗行动力。回溯到上个己方回合开始时，然后将本牌移出游戏。",
+      "effect_id": "X01",
+      "source": {
+        "character_id": 1052,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2,
+      "training_excluded": true
+    },
+    {
+      "id": "X02",
+      "character_id": "xun",
+      "name": "忆昔告远",
+      "effect_id": "X02",
+      "source": {
+        "character_id": 1052,
+        "type": "awaken",
+        "index": 2
+      },
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "不消耗行动力。直到下个己方回合开始时，你的生命不会发生变化。",
+      "starter_copies": 2
+    },
+    {
+      "id": "X03",
+      "character_id": "xun",
+      "name": "垂目须臾",
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "不消耗行动力。本回合可以查看己方牌库中的卡牌与顺序。",
+      "effect_id": "X03",
+      "source": {
+        "character_id": 1052,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "X04",
+      "character_id": "xun",
+      "name": "旧藏遗散",
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "消耗全部行动力，至多 3 点。获得 1 张「随机古董」。",
+      "effect_id": "X04",
+      "source": {
+        "character_id": 1052,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0,
+      "spend_all_ap": 3
+    },
+    {
+      "id": "X05",
+      "character_id": "xun",
+      "name": "独窥全相",
+      "effect_id": "X05",
+      "source": {
+        "character_id": 1052,
+        "type": "awaken",
+        "index": 5
+      },
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "不消耗行动力。将己方前排返回备战区。响应：己方前排的伊波恩古董店异能者被攻击时，自动使用。",
+      "starter_copies": 2,
+      "response": "faction_front_attacked",
+      "response_faction": "伊波恩古董店"
+    },
+    {
+      "id": "X06",
+      "character_id": "xun",
+      "name": "时轮啮雪",
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "不消耗行动力。回满浔的生命。获得 1 张「伊波恩大家庭」。",
+      "effect_id": "X06",
+      "source": {
+        "character_id": 1052,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "X07",
+      "character_id": "xun",
+      "name": "壶中往昔",
+      "effect_id": "X07",
+      "source": {
+        "character_id": 1052,
+        "type": "pv",
+        "index": 1
+      },
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "不消耗行动力。使浔进入倾陷。获得 2 张「伊波恩大家庭」。",
+      "starter_copies": 2
+    },
+    {
+      "id": "X08",
+      "character_id": "xun",
+      "name": "行进于时间之外",
+      "effect_id": "X08",
+      "source": {
+        "character_id": 1052,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "浔的终结伤害 +3。",
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 8
+    },
+    {
+      "id": "A01",
+      "character_id": "anhunqu",
+      "name": "不加班之宽赦",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "选择一名不在己方阵容中的对方异能者。本回合安魂曲的异能视为与其相同，并触发其回合开始时的效果。",
+      "effect_id": "A01",
+      "source": {
+        "character_id": 1004,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2,
+      "instant": false
+    },
+    {
+      "id": "A02",
+      "character_id": "anhunqu",
+      "name": "闹钟响彻四方",
+      "effect_id": "A02",
+      "source": {
+        "character_id": 1004,
+        "type": "awaken",
+        "index": 2
+      },
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。对一名异能者造成等同于「噩梦」层数的伤害。若「噩梦」不少于 5 层，对对方玩家造成 3 点伤害。",
+      "starter_copies": 2,
+      "instant": true
+    },
+    {
+      "id": "A03",
+      "character_id": "anhunqu",
+      "name": "冰淇淋在烈阳中融化",
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "不消耗行动力。触发并移除全部「噩梦」。抽 1 张牌。",
+      "effect_id": "A03",
+      "source": {
+        "character_id": 1004,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "instant": false
+    },
+    {
+      "id": "A04",
+      "character_id": "anhunqu",
+      "name": "威严赫赫番茄酱大王",
+      "effect_id": "A04",
+      "source": {
+        "character_id": 1004,
+        "type": "awaken",
+        "index": 4
+      },
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。施加 5 层「噩梦」。若「噩梦」达到 10 层，获得 1 张「茄汁金属乐」。",
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "A05",
+      "character_id": "anhunqu",
+      "name": "强化玻璃径受审判",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "指定一名对方角色。安魂曲可以在备战区远程出击。",
+      "effect_id": "A05",
+      "source": {
+        "character_id": 1004,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0,
+      "instant": false,
+      "attack": 1,
+      "shield": 0
+    },
+    {
+      "id": "A06",
+      "character_id": "anhunqu",
+      "name": "早起出勤之咏",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "若己方前排为魂或咒属性且环合值未满，安魂曲以援护技登场并触发环合，不消耗环合值。以此形式出场不施加「噩梦」。",
+      "effect_id": "A06",
+      "source": {
+        "character_id": 1004,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0,
+      "instant": false,
+      "attack": -2,
+      "shield": 0
+    },
+    {
+      "id": "A07",
+      "character_id": "anhunqu",
+      "name": "广告拍摄中！",
+      "effect_id": "A07",
+      "source": {
+        "character_id": 1004,
+        "type": "pv",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "装备时和己方回合开始时，施加 2 层「噩梦」。若「噩梦」消灭对方异能者，对对方玩家造成 2 点伤害。",
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 7
+    },
+    {
+      "id": "A08",
+      "character_id": "anhunqu",
+      "name": "最后一朵玫瑰",
+      "effect_id": "A08",
+      "source": {
+        "character_id": 1004,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "「噩梦」的伤害还会减少其等量生命上限，并为安魂曲回复等量生命。",
+      "starter_copies": 2,
+      "hp": 6,
+      "attack": 3
+    },
+    {
+      "id": "C01",
+      "character_id": "canhong",
+      "name": "瞳中深渊",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "若已有不少于 5 层持续伤害，残虹不会低于 1 点生命，并在战斗后回复全部生命。",
+      "effect_id": "C01",
+      "source": {
+        "character_id": 1036,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2,
+      "attack": 0,
+      "shield": 0
+    },
+    {
+      "id": "C02",
+      "character_id": "canhong",
+      "name": "渊底之吻",
+      "effect_id": "C02",
+      "source": {
+        "character_id": 1036,
+        "type": "awaken",
+        "index": 2
+      },
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "若已有不少于 10 层持续伤害，抽 1 张牌。若击倒对方异能者，获得 1 张「渊底之吻」。",
+      "starter_copies": 2,
+      "shield": 1,
+      "attack": 1
+    },
+    {
+      "id": "C03",
+      "character_id": "canhong",
+      "name": "吻痕窥梦",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "每局对战 1 次，若攻击的目标为异能者，使其进入倾陷。",
+      "effect_id": "C03",
+      "source": {
+        "character_id": 1036,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "shield": 2,
+      "attack": 0
+    },
+    {
+      "id": "C04",
+      "character_id": "canhong",
+      "name": "梦魇生花",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "每有 5 层持续伤害，本次攻击伤害 +1，并获得 1 点护盾。至多攻击 +4、护盾 4。",
+      "effect_id": "C04",
+      "source": {
+        "character_id": 1036,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0,
+      "shield": 0,
+      "attack": 0
+    },
+    {
+      "id": "C05",
+      "character_id": "canhong",
+      "name": "花开见血",
+      "effect_id": "C05",
+      "source": {
+        "character_id": 1036,
+        "type": "awaken",
+        "index": 5
+      },
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "若残虹处于幻境，本次攻击不受反击，残虹获得 1 点能量。",
+      "starter_copies": 0,
+      "shield": 0,
+      "attack": 2
+    },
+    {
+      "id": "C06",
+      "character_id": "canhong",
+      "name": "血染双瞳",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "残虹因其他己方角色而离开前排时，造成 1 点伤害。前排优先。",
+      "effect_id": "C06",
+      "source": {
+        "character_id": 1036,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
+    },
+    {
+      "id": "C07",
+      "character_id": "canhong",
+      "name": "惑心谲影",
+      "effect_id": "C07",
+      "source": {
+        "character_id": 1036,
+        "type": "pv",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "复活残虹。若已有不少于 20 层持续伤害，残虹倒地时从牌库或手牌自动使用这张卡，不消耗行动力。（残虹倒地时也能打出）",
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 6,
+      "playable_downed": true
+    },
+    {
+      "id": "C08",
+      "character_id": "canhong",
+      "name": "噬心诡刃",
+      "effect_id": "C08",
+      "source": {
+        "character_id": 1036,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "若已有不少于 5 层持续伤害，残虹可以选择攻击任意对方异能者，溢出伤害穿透至对方玩家。",
+      "starter_copies": 2,
+      "attack": 2,
+      "hp": 7
+    },
+    {
+      "id": "S01",
+      "character_id": "zaowu",
+      "name": "弥散性的朦白",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "召唤鬼郎丸。其吞噬了黑胶唱片。鬼郎丸受到伤害时，随机弃置对方 1 张手牌。",
+      "effect_id": "S01",
+      "source": {
+        "character_id": 1003,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "S02",
+      "character_id": "zaowu",
+      "name": "暌离性的轻巧",
+      "effect_id": "S02",
+      "source": {
+        "character_id": 1003,
+        "type": "awaken",
+        "index": 2
+      },
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "召唤鬼郎丸。其吞噬了好狗狗的项圈。鬼郎丸受到伤害时，随机使一名对方异能者进入倾陷。",
+      "starter_copies": 0
+    },
+    {
+      "id": "S03",
+      "character_id": "zaowu",
+      "name": "黏附性的啮合",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "召唤鬼郎丸。其吞噬了气味奇怪的液体。鬼郎丸受到伤害时，随机对一名对方异能者造成等量伤害。",
+      "effect_id": "S03",
+      "source": {
+        "character_id": 1003,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "S04",
+      "character_id": "zaowu",
+      "name": "祈愿性的依归",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。可重复使用。对一个召唤物造成 3 点伤害。",
+      "effect_id": "S04",
+      "source": {
+        "character_id": 1003,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0,
+      "instant": true,
+      "retain": true
+    },
+    {
+      "id": "S05",
+      "character_id": "zaowu",
+      "name": "失觉性的崩落",
+      "effect_id": "S05",
+      "source": {
+        "character_id": 1003,
+        "type": "awaken",
+        "index": 5
+      },
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "鬼郎丸在场时，对鬼郎丸和全部对方异能者造成 2 点伤害。",
+      "starter_copies": 2
+    },
+    {
+      "id": "S06",
+      "character_id": "zaowu",
+      "name": "溶解性的暴食",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。鬼郎丸在场时，对方不能普通出击。",
+      "effect_id": "S06",
+      "source": {
+        "character_id": 1003,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "S07",
+      "character_id": "zaowu",
+      "name": "小鬼头大胃口",
+      "effect_id": "S07",
+      "source": {
+        "character_id": 1003,
+        "type": "ability",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "装备时和己方回合开始时，若已施加 4 种持续伤害，召唤一只吞噬了随机物品的鬼郎丸，并对其造成 3 点伤害。",
+      "starter_copies": 2,
+      "hp": 4,
+      "attack": 2
+    },
+    {
+      "id": "S08",
+      "character_id": "zaowu",
+      "name": "好狗狗走四方",
+      "effect_id": "S08",
+      "source": {
+        "character_id": 1003,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "早雾终结给予的攻击额外 +1。鬼郎丸消灭对方异能者时，早雾回满能量。",
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
+    },
+    {
+      "id": "K01",
+      "character_id": "lingke",
+      "name": "万物电台已接通！",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "抽 1 张牌。灵可获得 1 点能量。",
+      "effect_id": "K01",
+      "source": {
+        "character_id": 1072,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "K02",
+      "character_id": "lingke",
+      "name": "幽灵其实很可爱！",
+      "effect_id": "K02",
+      "source": {
+        "character_id": 1072,
+        "type": "awaken",
+        "index": 2
+      },
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "本次攻击伤害 +1。若本次从备战区入场，抽 1 张牌。",
+      "starter_copies": 0,
+      "shield": 0,
+      "attack": 1
+    },
+    {
+      "id": "K03",
+      "character_id": "lingke",
+      "name": "将孤岛彼此相连！",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "若本次入场触发了环合或同频，本次攻击伤害 +1。",
+      "effect_id": "K03",
+      "source": {
+        "character_id": 1072,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "shield": 0,
+      "attack": 0
+    },
+    {
+      "id": "K04",
+      "character_id": "lingke",
+      "name": "星星也说悄悄话！",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "对对手前排造成 1 点伤害。若本局已触发过同频，改为 2 点。",
+      "effect_id": "K04",
+      "source": {
+        "character_id": 1072,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "K05",
+      "character_id": "lingke",
+      "name": "向全频段呼唤爱！",
+      "effect_id": "K05",
+      "source": {
+        "character_id": 1072,
+        "type": "awaken",
+        "index": 5
+      },
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "连续攻击 2 次。若本次触发了环合或同频，两次均不受反击。",
+      "starter_copies": 2,
+      "shield": 1,
+      "attack": 0
+    },
+    {
+      "id": "K06",
+      "character_id": "lingke",
+      "name": "世界将予你回声！",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "选择另一名己方存活角色。其获得 1 点自己的环合值。",
+      "effect_id": "K06",
+      "source": {
+        "character_id": 1072,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "K07",
+      "character_id": "lingke",
+      "name": "宇宙的频段",
+      "effect_id": "K07",
+      "source": {
+        "character_id": 1072,
+        "type": "pv",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "灵可入场触发同频后：本次出击第一次攻击伤害 +1。",
+      "starter_copies": 0,
+      "hp": 0,
+      "attack": 1
+    },
+    {
+      "id": "K08",
+      "character_id": "lingke",
+      "name": "远行者之声",
+      "effect_id": "K08",
+      "source": {
+        "character_id": 1072,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "每个对手回合，灵可第一次受到战斗伤害且仍存活后：获得 1 点护盾。",
+      "starter_copies": 2,
+      "attack": 0,
+      "hp": 1
+    },
+    {
+      "id": "R01",
+      "character_id": "zhenhong",
+      "name": "暴雨滂沱的小巷",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "各抽 1 张其他光、灵、相属性己方异能者的牌。",
+      "effect_id": "R01",
+      "source": {
+        "character_id": 1076,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "R02",
+      "character_id": "zhenhong",
+      "name": "凌晨的训练场",
+      "effect_id": "R02",
+      "source": {
+        "character_id": 1076,
+        "type": "awaken",
+        "index": 2
+      },
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "抽 1 张战术牌。",
+      "starter_copies": 2,
+      "shield": 2,
+      "attack": -1
+    },
+    {
+      "id": "R03",
+      "character_id": "zhenhong",
+      "name": "夕阳下的海滩",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "抽 1 张武备牌。",
+      "effect_id": "R03",
+      "source": {
+        "character_id": 1076,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "shield": 1,
+      "attack": 0
+    },
+    {
+      "id": "R04",
+      "character_id": "zhenhong",
+      "name": "雪飘落的坡道",
+      "effect_id": "R04",
+      "source": {
+        "character_id": 1076,
+        "type": "awaken",
+        "index": 4
+      },
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "抽 1 张战斗牌。",
+      "starter_copies": 0,
+      "shield": 0,
+      "attack": 1
+    },
+    {
+      "id": "R05",
+      "character_id": "zhenhong",
+      "name": "欢声笑语的客厅",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。弃掉手中全部真红牌，抽取等量的牌。响应：真红倒地后，自动使用。",
+      "effect_id": "R05",
+      "source": {
+        "character_id": 1076,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0,
+      "instant": true,
+      "response": "self_downed"
+    },
+    {
+      "id": "R06",
+      "character_id": "zhenhong",
+      "name": "赤龙的藏宝地",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "本局每触发 1 次「独行」，本牌额外获得 +1 攻击、+1 护盾。",
+      "effect_id": "R06",
+      "source": {
+        "character_id": 1076,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0,
+      "shield": 0,
+      "attack": 0
+    },
+    {
+      "id": "R07",
+      "character_id": "zhenhong",
+      "name": "梦的边缘",
+      "effect_id": "R07",
+      "source": {
+        "character_id": 1076,
+        "type": "pv",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方触发盈蓄时，对全部对方异能者造成 2 点伤害。",
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
+    },
+    {
+      "id": "R08",
+      "character_id": "zhenhong",
+      "name": "穿过胭红蜃景",
+      "effect_id": "R08",
+      "source": {
+        "character_id": 1076,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方回合结束时，若本回合真红没有出击，获得 1 点威慑凝视，上限 2 点。真红出击时，消耗全部威慑凝视，等量增加本次攻击和环合值。",
+      "starter_copies": 2,
+      "hp": 8,
+      "attack": 2
+    },
+    {
+      "id": "H01",
+      "character_id": "hathor",
+      "name": "精英快递员",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "哈索尔获得 1 点能量。本回合己方下一次延滞额外造成 1 点伤害。",
+      "effect_id": "H01",
+      "source": {
+        "character_id": 1025,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "H02",
+      "character_id": "hathor",
+      "name": "荆棘支配",
+      "effect_id": "H02",
+      "source": {
+        "character_id": 1025,
+        "type": "awaken",
+        "index": 2
+      },
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "哈索尔获得 1 点能量。选择另一名己方存活角色。其获得 1 点自己的环合值。",
+      "starter_copies": 0
+    },
+    {
+      "id": "H03",
+      "character_id": "hathor",
+      "name": "一翼失衡",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "若目标剩余生命不高于 4，本次攻击伤害 +2。",
+      "effect_id": "H03",
+      "source": {
+        "character_id": 1025,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "shield": 0,
+      "attack": 0
+    },
+    {
+      "id": "H04",
+      "character_id": "hathor",
+      "name": "引擎共鸣",
+      "effect_id": "H04",
+      "source": {
+        "character_id": 1025,
+        "type": "awaken",
+        "index": 4
+      },
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "本次攻击伤害 +2。减少生命上限。",
+      "starter_copies": 2,
+      "shield": 1,
+      "attack": 2
+    },
+    {
+      "id": "H05",
+      "character_id": "hathor",
+      "name": "例行三明治",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "抽 1 张牌。哈索尔回复 1 点生命。",
+      "effect_id": "H05",
+      "source": {
+        "character_id": 1025,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "H06",
+      "character_id": "hathor",
+      "name": "日常生活攻略中",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "检视牌库顶 2 张牌。选择 1 张加入手牌，另 1 张置于牌库底。",
+      "effect_id": "H06",
+      "source": {
+        "character_id": 1025,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "H07",
+      "character_id": "hathor",
+      "name": "铁骑速递",
+      "effect_id": "H07",
+      "source": {
+        "character_id": 1025,
+        "type": "ability",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "本弧盘期间，哈索尔入场触发延滞后：本次出击不受反击。",
+      "starter_copies": 0,
+      "attack": 1,
+      "hp": 0
+    },
+    {
+      "id": "H08",
+      "character_id": "hathor",
+      "name": "焰魂狂飙",
+      "effect_id": "H08",
+      "source": {
+        "character_id": 1025,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "每个己方回合，己方首次结算延滞额外伤害后：哈索尔对该目标造成 1 点追击伤害。",
+      "starter_copies": 2,
+      "attack": 1,
+      "hp": 0
+    },
+    {
+      "id": "Y01",
+      "character_id": "iloy",
+      "name": "重复囚徒困境",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "每有 1 名己方倒地的异能者，造成 3 点伤害。前排优先。",
+      "effect_id": "Y01",
+      "source": {
+        "character_id": 1075,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "Y02",
+      "character_id": "iloy",
+      "name": "策略：「一报还一报」",
+      "effect_id": "Y02",
+      "source": {
+        "character_id": 1075,
+        "type": "awaken",
+        "index": 2
+      },
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。选择 1 名己方异能者。抽 1 张该异能者的牌。",
+      "instant": true,
+      "starter_copies": 2
+    },
+    {
+      "id": "Y03",
+      "character_id": "iloy",
+      "name": "策略特性：善良",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "使 1 名受伤的角色回复 5 点生命。",
+      "effect_id": "Y03",
+      "source": {
+        "character_id": 1075,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "Y04",
+      "character_id": "iloy",
+      "name": "策略特性：可激怒",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。下次主动出击获得攻击 +1、护盾 2。",
+      "effect_id": "Y04",
+      "source": {
+        "character_id": 1075,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "Y05",
+      "character_id": "iloy",
+      "name": "策略特性：清晰",
+      "effect_id": "Y05",
+      "source": {
+        "character_id": 1075,
+        "type": "awaken",
+        "index": 5
+      },
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。将其他己方存活的异能者变为 2 回合倒计时的倒地状态。抽 2 张牌。伊洛伊永久获得攻击 +1、生命 +1。",
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "Y06",
+      "character_id": "iloy",
+      "name": "策略特性：宽容",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "复活 1 名己方异能者。",
+      "effect_id": "Y06",
+      "source": {
+        "character_id": 1075,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "Y07",
+      "character_id": "iloy",
+      "name": "想做什么梦？",
+      "effect_id": "Y07",
+      "source": {
+        "character_id": 1075,
+        "type": "pv",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "装备时或伊洛伊的终结于回合开始生效时，随机使 1 名受伤的己方异能者回复 2 点生命。",
+      "starter_copies": 0,
+      "attack": 1,
+      "hp": 7
+    },
+    {
+      "id": "Y08",
+      "character_id": "iloy",
+      "name": "错误的门",
+      "effect_id": "Y08",
+      "source": {
+        "character_id": 1075,
+        "type": "arc",
+        "index": 1
+      },
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "【创生强化】触发创生后，下个己方回合开始时额外触发一次创生。不可叠加。",
+      "starter_copies": 2,
+      "attack": 2,
+      "hp": 6
+    },
+    {
+      "id": "M01",
+      "character_id": "bohe",
+      "name": "特遣行动",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "薄荷永久获得 +1 攻击。",
+      "effect_id": "M01",
+      "source": {
+        "character_id": 1019,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2,
+      "attack": 0,
+      "shield": 0
+    },
+    {
+      "id": "M02",
+      "character_id": "bohe",
+      "name": "二次补考",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方所有异能者获得 +1 攻击。",
+      "effect_id": "M02",
+      "source": {
+        "character_id": 1019,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "M03",
+      "character_id": "bohe",
+      "name": "全勤奖金",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "本次战斗无视护盾。",
+      "effect_id": "M03",
+      "source": {
+        "character_id": 1019,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "shield": 0
+    },
+    {
+      "id": "M04",
+      "character_id": "bohe",
+      "name": "午休时间",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "交战时，对方异能者攻击造成的溢出伤害也会转移至玩家。响应：薄荷被攻击时，自动使用。",
+      "effect_id": "M04",
+      "source": {
+        "character_id": 1019,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "shield": 1,
+      "response": "self_attacked"
+    },
+    {
+      "id": "M05",
+      "character_id": "bohe",
+      "name": "第一直觉",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "下个己方回合开始时，薄荷攻击 +2。",
+      "effect_id": "M05",
+      "source": {
+        "character_id": 1019,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "M06",
+      "character_id": "bohe",
+      "name": "精英队员",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "对对方前排造成 2 点伤害。薄荷的永久攻击每比 3 高 1 点，此伤害 +1。",
+      "effect_id": "M06",
+      "source": {
+        "character_id": 1019,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "M07",
+      "character_id": "bohe",
+      "name": "美好的一天从睡醒开始",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "对方回合期间，薄荷的攻击力变为 0。",
+      "enemy_turn_attack": 0,
+      "effect_id": "M07",
+      "source": {
+        "character_id": 1019,
+        "type": "pv",
+        "index": 1
+      },
+      "starter_copies": 0,
+      "attack": 5,
+      "hp": 8
+    },
+    {
+      "id": "M08",
+      "character_id": "bohe",
+      "name": "开始净空",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方回合开始时，薄荷自动出击。此次攻击不会获得环合值和能量。",
+      "effect_id": "M08",
+      "source": {
+        "character_id": 1019,
+        "type": "arc",
+        "index": 1
+      },
+      "starter_copies": 2,
+      "attack": 3,
+      "hp": 4
+    },
+    {
+      "id": "B01",
+      "character_id": "baicang",
+      "name": "唷 队长！",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "instant": true,
+      "description": "瞬发。对白藏造成 1 点伤害。抽 1 张牌。",
+      "effect_id": "B01",
+      "source": {
+        "character_id": 1023,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "B02",
+      "character_id": "baicang",
+      "name": "招魂幡",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "造成伤害后，白藏回复 2 点生命。在判定倒地前结算。",
+      "effect_id": "B02",
+      "source": {
+        "character_id": 1023,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 2,
+      "attack": 1,
+      "shield": 0
+    },
+    {
+      "id": "B03",
+      "character_id": "baicang",
+      "name": "恶诅不过一开口",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "require": "own_burn",
+      "description": "存在己方施加的浊燃时才能打出。使该浊燃剩余时间变为无限。",
+      "effect_id": "B03",
+      "source": {
+        "character_id": 1023,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "B04",
+      "character_id": "baicang",
+      "name": "亦或是祝祷",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "对其他所有异能者造成等同于白藏已损生命的伤害。",
+      "effect_id": "B04",
+      "source": {
+        "character_id": 1023,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "B05",
+      "character_id": "baicang",
+      "name": "敬此月色",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "response": "self_lethal",
+      "description": "本回合白藏生命不会降到 1 以下。响应：白藏受到致命伤害时，自动使用。",
+      "effect_id": "B05",
+      "source": {
+        "character_id": 1023,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "B06",
+      "character_id": "baicang",
+      "name": "于五色为白",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "若本回合白藏受到过己方伤害，额外 +1 攻击。",
+      "effect_id": "B06",
+      "source": {
+        "character_id": 1023,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "shield": 0
+    },
+    {
+      "id": "B07",
+      "character_id": "baicang",
+      "name": "判予秋",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "instant": true,
+      "description": "瞬发。",
+      "effect_id": "B07",
+      "source": {
+        "character_id": 1023,
+        "type": "ability",
+        "index": 1
+      },
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 7
+    },
+    {
+      "id": "B08",
+      "character_id": "baicang",
+      "name": "茶花会",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "装备时对白藏造成 4 点伤害。",
+      "effect_id": "B08",
+      "source": {
+        "character_id": 1023,
+        "type": "arc",
+        "index": 1
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "hp": 9
+    },
+    {
+      "id": "Q01",
+      "character_id": "xiaozhi",
+      "name": "太阳太阳请回答",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "二选一。① 直接出击；② 消耗 3 点金谷，此次攻击额外 +3。",
+      "effect_id": "Q01",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 1,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 4,
+      "shield": 1,
+      "attack_mode": "set",
+      "play_options": [
+        {
+          "id": "base",
+          "label": "基础效果",
+          "description": "攻击设为 4。"
+        },
+        {
+          "id": "boost",
+          "label": "3 金谷 · 攻击 +3",
+          "description": "攻击设为 4，并额外 +3。",
+          "costs": {
+            "jingu": 3
+          },
+          "cost_label": "3 点金谷"
+        }
+      ]
+    },
+    {
+      "id": "Q02",
+      "character_id": "xiaozhi",
+      "name": "烟花，悄然无声",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "命中后，使目标本回合下次受到的光属性伤害抗性 -2。二选一。① 直接出击；② 消耗 3 点金谷，出击后额外释放「太阳太阳请回答」。",
+      "effect_id": "Q02",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 2,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 3,
+      "shield": 1,
+      "attack_mode": "set",
+      "play_options": [
+        {
+          "id": "base",
+          "label": "基础效果",
+          "description": "攻击设为 3，命中后降低本回合下次光属性伤害抗性。"
+        },
+        {
+          "id": "release_a",
+          "label": "3 金谷 · 追加战斗 A",
+          "description": "出击后额外释放「太阳太阳请回答」。",
+          "costs": {
+            "jingu": 3
+          },
+          "cost_label": "3 点金谷"
+        }
+      ]
+    },
+    {
+      "id": "Q03",
+      "character_id": "xiaozhi",
+      "name": "倘若没有雨天",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "三选一。① 直接出击；② 消耗 3 点金谷，出击后额外释放「烟花，悄然无声」；③ 消耗 6 点金谷，出击后依次额外释放「烟花，悄然无声」和「太阳太阳请回答」。",
+      "effect_id": "Q03",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 3,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "attack": 4,
+      "shield": 1,
+      "attack_mode": "set",
+      "play_options": [
+        {
+          "id": "base",
+          "label": "基础效果",
+          "description": "攻击设为 4。"
+        },
+        {
+          "id": "release_b",
+          "label": "3 金谷 · 追加战斗 B",
+          "description": "出击后额外释放「烟花，悄然无声」。",
+          "costs": {
+            "jingu": 3
+          },
+          "cost_label": "3 点金谷"
+        },
+        {
+          "id": "release_ba",
+          "label": "6 金谷 · 追加 B 和 A",
+          "description": "出击后依次释放「烟花，悄然无声」和「太阳太阳请回答」。",
+          "costs": {
+            "jingu": 6
+          },
+          "cost_label": "6 点金谷"
+        }
+      ]
+    },
+    {
+      "id": "Q04",
+      "character_id": "xiaozhi",
+      "name": "致饭团·绷带·方斯",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "响应：小吱被攻击时，自动使用。",
+      "effect_id": "Q04",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 4,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "attack": 5,
+      "shield": 0,
+      "response": "self_attacked",
+      "attack_mode": "set"
+    },
+    {
+      "id": "Q05",
+      "character_id": "xiaozhi",
+      "name": "日记的空白页",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。获得 1 点金谷，将一张本牌的复制洗入牌库，并抽 1 张牌。",
+      "effect_id": "Q05",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 5,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "instant": true
+    },
+    {
+      "id": "Q06",
+      "character_id": "xiaozhi",
+      "name": "三十三天",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。本回合触发过盈蓄才能打出。使小吱充满能量。",
+      "effect_id": "Q06",
+      "source": {
+        "character_id": 1073,
+        "type": "awaken",
+        "index": 6,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "instant": true,
+      "require": "surplus"
+    },
+    {
+      "id": "Q07",
+      "character_id": "xiaozhi",
+      "name": "Afterglow",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "没有普通出击次数时，小吱可以消耗 3 点金谷额外出击，不消耗行动力，此次攻击 +2。",
+      "effect_id": "Q07",
+      "source": {
+        "character_id": 1073,
+        "type": "ability",
+        "index": 7,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18",
+        "naming_note": "用户指定：官方 EP Afterglow"
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 5
+    },
+    {
+      "id": "Q08",
+      "character_id": "xiaozhi",
+      "name": "思考喵",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "小吱每有 2 点金谷，使战斗牌造成的伤害 +1。",
+      "effect_id": "Q08",
+      "source": {
+        "character_id": 1073,
+        "type": "arc",
+        "index": 8,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 3,
+      "hp": 5
+    },
+    {
+      "id": "U01",
+      "character_id": "haiyue",
+      "name": "未来序曲",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "在对方回合获得瞬发。响应：对方回合结束时，若对方前排为空，自动使用。",
+      "effect_id": "U01",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 1,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "shield": 0,
+      "response": "enemy_turn_end_empty"
+    },
+    {
+      "id": "U02",
+      "character_id": "haiyue",
+      "name": "一支特别的歌",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "本回合若有其他己方异能者攻击，本牌获得瞬发。",
+      "effect_id": "U02",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 2,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "shield": 0
+    },
+    {
+      "id": "U03",
+      "character_id": "haiyue",
+      "name": "三重奏的休止符",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "无视前排，直接攻击对方玩家。",
+      "effect_id": "U03",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 3,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "attack": 0,
+      "shield": 0
+    },
+    {
+      "id": "U04",
+      "character_id": "haiyue",
+      "name": "五线谱的空白处",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "选择 1 名对方备战区的存活异能者。本次战斗改为单方面攻击该目标。",
+      "effect_id": "U04",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 4,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "attack": 2,
+      "shield": 0
+    },
+    {
+      "id": "U05",
+      "character_id": "haiyue",
+      "name": "一支平凡的歌",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "【黯星强化】黯星的伤害 +1。",
+      "effect_id": "U05",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 5,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 2,
+      "hp": 6
+    },
+    {
+      "id": "U06",
+      "character_id": "haiyue",
+      "name": "往日赋格",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "本回合若有其他己方异能者攻击，海月可以消耗瞬发机会发起普通出击。",
+      "effect_id": "U06",
+      "source": {
+        "character_id": 1070,
+        "type": "awaken",
+        "index": 6,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 0,
+      "attack": 4,
+      "hp": 4
+    },
+    {
+      "id": "U07",
+      "character_id": "haiyue",
+      "name": "海阔天空",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "本回合若有其他己方异能者攻击，本牌获得瞬发。",
+      "effect_id": "U07",
+      "source": {
+        "character_id": 1070,
+        "type": "ability",
+        "index": 7,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18",
+        "naming_note": "用户指定：官方技能 海阔天空"
+      },
+      "starter_copies": 0,
+      "attack": 5,
+      "hp": 4
+    },
+    {
+      "id": "U08",
+      "character_id": "haiyue",
+      "name": "银河暂留",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "海月每次攻击前，攻击 +1。",
+      "effect_id": "U08",
+      "source": {
+        "character_id": 1070,
+        "type": "arc",
+        "index": 8,
+        "verified_at": "2026-09-18",
+        "rules_source": "user_tabletop_2026-09-18"
+      },
+      "starter_copies": 2,
+      "attack": 3,
+      "hp": 4
+    },
+    {
+      "id": "XF01",
+      "character_id": "xun",
+      "name": "伊波恩大家庭",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "根据存活的己方伊波恩角色，选择视为打出他们的一张牌，或召唤一个 2/4 的塔吉多。",
+      "tooltip": "娜娜莉存活且未倾陷：视为打出「要叫大姐头」。\n零存活且未倾陷：视为打出「探悉天职」。\n己方有编队异能者倒地：在战斗区召唤一个 2/4 的塔吉多。",
+      "effect_id": "XF01",
+      "derived": true,
+      "starter_copies": 0,
+      "source": {
+        "character_id": "xun",
+        "type": "derived",
+        "index": 0
+      }
+    },
+    {
+      "id": "XA01",
+      "character_id": "xun",
+      "name": "随机古董",
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "不消耗行动力。随机获得 0–3 点行动力。己方零存活时，0 点改为 1 点。",
+      "effect_id": "XA01",
+      "derived": true,
+      "starter_copies": 0,
+      "source": {
+        "character_id": "xun",
+        "type": "derived",
+        "index": 0
+      }
+    },
+    {
+      "id": "E01",
+      "character_id": "edgar",
+      "name": "热爱异象的观察员",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "本局触发过盈蓄才能打出。此后，无牌可抽时改为获胜。",
+      "effect_id": "E01",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "E02",
+      "character_id": "edgar",
+      "name": "尚在实习的异象猎人",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "抽 2 张牌。",
+      "effect_id": "E02",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "E03",
+      "character_id": "edgar",
+      "name": "伊波恩侦探之一",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。进行一次手牌调度，最多查阅 6 张手牌，选择至多 3 张替换。",
+      "effect_id": "E03",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "instant": true
+    },
+    {
+      "id": "E04",
+      "character_id": "edgar",
+      "name": "熟练的计划制定家",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。其他己方异能者每有 1 点已损生命，埃德嘉获得 1 点能量。",
+      "effect_id": "E04",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "E05",
+      "character_id": "edgar",
+      "name": "古董店灯火的守望者",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。随机获得其他己方异能者各 1 张卡牌，并使它们获得瞬发。",
+      "effect_id": "E05",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "E06",
+      "character_id": "edgar",
+      "name": "好奇星球的来客",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "使生命最低的己方角色回复 5 点生命。获得 1 点真理之匙。",
+      "effect_id": "E06",
+      "source": {
+        "character_id": 1021,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 2,
+      "attack": 0,
+      "shield": 0
+    },
+    {
+      "id": "E07",
+      "character_id": "edgar",
+      "name": "芬尼根守灵夜",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方回合的通常抽牌改为：检视牌库顶 3 张，选择 1 张加入手牌，其余置于牌库底。",
+      "effect_id": "E07",
+      "source": {
+        "character_id": 1021,
+        "type": "ability",
+        "index": 0
+      },
+      "starter_copies": 0,
+      "attack": 1,
+      "hp": 7
+    },
+    {
+      "id": "E08",
+      "character_id": "edgar",
+      "name": "扭曲之城的呼唤",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "埃德嘉的治疗效果 +1。每回合一次，己方回复任意角色生命后，抽 1 张牌。",
+      "effect_id": "E08",
+      "source": {
+        "character_id": 1021,
+        "type": "arc",
+        "index": 0
+      },
+      "starter_copies": 2,
+      "attack": 1,
+      "hp": 7
+    },
+    {
+      "id": "V01",
+      "character_id": "haniya",
+      "name": "新人！天才转校生报道",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。获得 1 点主角光环。重置你的普通出击次数。",
+      "effect_id": "V01",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 2,
+      "instant": true
+    },
+    {
+      "id": "V02",
+      "character_id": "haniya",
+      "name": "传说！后排靠窗的故乡",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "选择 1 名己方异能者，使其本回合普通出击不消耗行动力。获得 2 点主角光环。",
+      "effect_id": "V02",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 2
+    },
+    {
+      "id": "V03",
+      "character_id": "haniya",
+      "name": "集结！主角团正式成立",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。使 1 名对方异能者攻击 -2。获得 2 点主角光环。",
+      "effect_id": "V03",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 2,
+      "instant": true
+    },
+    {
+      "id": "V04",
+      "character_id": "haniya",
+      "name": "海边！永恒的七八定律",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "本局己方每触发过 1 次黯星，获得 2 点主角光环。",
+      "effect_id": "V04",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "V05",
+      "character_id": "haniya",
+      "name": "危机！濒临破碎的信任",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "消耗全部主角光环，将其 2 倍数值的伤害随机分配给所有对方角色。",
+      "effect_id": "V05",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "V06",
+      "character_id": "haniya",
+      "name": "决战！终将到来的黎明",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方触发黯星时，本次战斗不消耗主角光环。",
+      "effect_id": "V06",
+      "source": {
+        "character_id": 1020,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
+    },
+    {
+      "id": "V07",
+      "character_id": "haniya",
+      "name": "名为哈尼娅的旋律",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方异能者的攻击对对方玩家造成伤害时，抽 1 张牌。",
+      "effect_id": "V07",
+      "source": {
+        "character_id": 1020,
+        "type": "ability",
+        "index": 7,
+        "name_source": "用户指定标题；Everness 同名终结主题"
+      },
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 6
+    },
+    {
+      "id": "V08",
+      "character_id": "haniya",
+      "name": "引爆全场",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "己方异能者使用战斗牌时，也能触发哈尼娅的异能。",
+      "effect_id": "V08",
+      "source": {
+        "character_id": 1020,
+        "type": "arc",
+        "index": 8,
+        "name_source": "用户指定专属武备名"
+      },
+      "starter_copies": 2,
+      "attack": 3,
+      "hp": 5
+    },
+    {
+      "id": "RF01",
+      "character_id": "zhenhong",
+      "name": "升腾之赤",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "抽 1 张牌。",
+      "effect_id": "RF01",
+      "source": {
+        "character_id": 1076,
+        "type": "derived",
+        "index": 1
+      },
+      "derived": true,
+      "attack": 4,
+      "shield": 4,
+      "starter_copies": 0
+    },
+    {
+      "id": "I01",
+      "name": "排斥变节的规程",
+      "character_id": "yi",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "生成持续 4 个己方回合的「兽牙影刺」。",
+      "effect_id": "I01",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 0,
+      "attack": 1,
+      "shield": 1
+    },
+    {
+      "id": "I02",
+      "name": "秩序井然的待办",
+      "character_id": "yi",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "description": "生成持续 4 个己方回合的「兽牙影刺」。",
+      "effect_id": "I02",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 0,
+      "attack": 0,
+      "shield": 2
+    },
+    {
+      "id": "I03",
+      "name": "异类处理的草案",
+      "character_id": "yi",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。生成持续 4 个己方回合的「兽牙影刺」。抽 1 张牌。",
+      "effect_id": "I03",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 0,
+      "instant": true
+    },
+    {
+      "id": "I04",
+      "name": "划定常规的决议",
+      "character_id": "yi",
+      "type": "tactic",
+      "cost": 0,
+      "terminal": false,
+      "description": "不消耗行动力。生成持续 2 个己方回合的「兽牙影刺」。抽 1 张牌。",
+      "effect_id": "I04",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0,
+      "instant": false
+    },
+    {
+      "id": "I05",
+      "name": "社会适应的重任",
+      "character_id": "yi",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "存在延滞才能打出。对方下个回合的普通出击机会 -1。",
+      "effect_id": "I05",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "I06",
+      "name": "无谓形貌的立身",
+      "character_id": "yi",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "选择 1 名对方异能者。本局延滞每存在 1 回合，使其攻击 -1，持续 2 个对方回合。",
+      "effect_id": "I06",
+      "source": {
+        "character_id": 1008,
+        "type": "awaken",
+        "index": 6
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "I07",
+      "name": "潜影追击",
+      "character_id": "yi",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "「兽牙影刺」存在时，每个回合开始时，对对方前排异能者造成 1 点伤害。",
+      "effect_id": "I07",
+      "source": {
+        "character_id": 1008,
+        "type": "ability",
+        "index": 1,
+        "naming": "user"
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
+    },
+    {
+      "id": "I08",
+      "name": "群犬吠形",
+      "character_id": "yi",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "延滞存在时，本牌获得瞬发。",
+      "effect_id": "I08",
+      "source": {
+        "character_id": 1008,
+        "type": "ability",
+        "index": 2,
+        "naming": "user"
+      },
+      "starter_copies": 0,
+      "attack": 3,
+      "hp": 6
+    },
+    {
+      "id": "AF01",
+      "character_id": "anhunqu",
+      "name": "茄汁金属乐",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "instant": false,
+      "derived": true,
+      "starter_copies": 0,
+      "attack": 1,
+      "shield": 2,
+      "effect_id": "AF01",
+      "description": "获得 1 张「冰淇淋在烈阳中融化」。该牌在回合结束时弃置。",
+      "source": {
+        "character_id": 1004,
+        "type": "derived",
+        "index": 1
+      }
+    },
+    {
+      "id": "D01",
+      "character_id": "adler",
+      "name": "无色",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "对一名对方异能者造成 3 点伤害。阿德勒获得 3 点护盾。若已有浊燃，再随机对另一名对方异能者重复 1 次。",
+      "effect_id": "D01",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 1
+      }
+    },
+    {
+      "id": "D02",
+      "character_id": "adler",
+      "name": "无受",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "全体己方角色获得 3 点护盾。施加持续 3 个己方回合的「诛恶护持」。",
+      "effect_id": "D02",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 2
+      }
+    },
+    {
+      "id": "D03",
+      "character_id": "adler",
+      "name": "无想",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "response": "ally_attacked",
+      "description": "选择另一名己方异能者，使其获得 4 点护盾。响应：其他己方异能者被攻击时，自动使用。",
+      "effect_id": "D03",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 3
+      }
+    },
+    {
+      "id": "D04",
+      "character_id": "adler",
+      "name": "无行",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "attack": 0,
+      "shield": 2,
+      "description": "若已有浊燃，为你回复本次造成伤害等量的生命。",
+      "effect_id": "D04",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 4
+      }
+    },
+    {
+      "id": "D05",
+      "character_id": "adler",
+      "name": "无识",
+      "type": "battle",
+      "cost": 1,
+      "terminal": false,
+      "attack": 0,
+      "shield": 1,
+      "description": "施加「诛恶护持」，持续 2 个己方回合。若已有浊燃，改为 3 个己方回合。",
+      "effect_id": "D05",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 5
+      }
+    },
+    {
+      "id": "D06",
+      "character_id": "adler",
+      "name": "诸法空相",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "attack": 0,
+      "hp": 7,
+      "description": "其他己方异能者的护盾破碎时，溢出伤害转移至阿德勒。装备时，阿德勒获得 2 点护盾。",
+      "effect_id": "D06",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "awaken",
+        "index": 6
+      }
+    },
+    {
+      "id": "D07",
+      "character_id": "adler",
+      "name": "克己",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "attack": 0,
+      "hp": 5,
+      "description": "其他咒属性己方异能者攻击 +1。",
+      "effect_id": "D07",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "ability",
+        "index": 1
+      }
+    },
+    {
+      "id": "D08",
+      "character_id": "adler",
+      "name": "正心",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "attack": 0,
+      "hp": 7,
+      "description": "【浊燃】强化：浊燃获得层数时，随机对一名对方存活异能者施加以下之一，同种类不可叠加：全属性抗性 -1、倾陷值上限 -1 或攻击 -1。",
+      "effect_id": "D08",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1033,
+        "type": "ability",
+        "index": 2
+      }
+    }
+  ],
+  "starter_decks": [
+    {
+      "id": "starter",
+      "name": "创生预组",
+      "official": true,
+      "character_ids": [
+        "nanali",
+        "iloy",
+        "zero",
+        "jiuyuan"
+      ],
+      "card_ids": [
+        "N02",
+        "N02",
+        "N03",
+        "N03",
+        "N04",
+        "N04",
+        "N07",
+        "N08",
+        "Z03",
+        "Z04",
+        "Z04",
+        "Z05",
+        "Z05",
+        "Z07",
+        "Z07",
+        "Z08",
+        "J02",
+        "J02",
+        "J03",
+        "J04",
+        "J04",
+        "J07",
+        "J08",
+        "J08",
+        "Y02",
+        "Y02",
+        "Y03",
+        "Y04",
+        "Y06",
+        "Y06",
+        "Y08",
+        "Y08"
+      ]
+    },
+    {
+      "id": "weave-rush",
+      "name": "覆纹预组",
+      "official": true,
+      "character_ids": [
+        "bohe",
+        "baicang",
+        "zero",
+        "iloy"
+      ],
+      "card_ids": [
+        "Z03",
+        "Z03",
+        "Z04",
+        "Z04",
+        "Z05",
+        "Z05",
+        "Z08",
+        "Z08",
+        "Y02",
+        "Y02",
+        "Y03",
+        "Y04",
+        "Y06",
+        "Y06",
+        "Y07",
+        "Y07",
+        "M01",
+        "M01",
+        "M03",
+        "M03",
+        "M04",
+        "M04",
+        "M07",
+        "M07",
+        "B01",
+        "B01",
+        "B02",
+        "B02",
+        "B06",
+        "B06",
+        "B07",
+        "B08"
+      ]
+    },
+    {
+      "id": "quick-rush",
+      "name": "小吱预组",
+      "official": true,
+      "character_ids": [
+        "xiaozhi",
+        "zero",
+        "bohe",
+        "jiuyuan"
+      ],
+      "card_ids": [
+        "Z03",
+        "Z03",
+        "Z04",
+        "Z04",
+        "Z05",
+        "Z05",
+        "Z08",
+        "Z08",
+        "M01",
+        "M01",
+        "M03",
+        "M03",
+        "M04",
+        "M04",
+        "M07",
+        "M07",
+        "Q01",
+        "Q01",
+        "Q02",
+        "Q02",
+        "Q05",
+        "Q05",
+        "Q08",
+        "Q08",
+        "J02",
+        "J02",
+        "J03",
+        "J04",
+        "J04",
+        "J07",
+        "J08",
+        "J08"
+      ]
+    },
+    {
+      "id": "zhenhong",
+      "name": "真红预组",
+      "official": true,
+      "character_ids": [
+        "zhenhong",
+        "zero",
+        "iloy",
+        "yi"
+      ],
+      "card_ids": [
+        "R01",
+        "R02",
+        "R04",
+        "R04",
+        "R06",
+        "R06",
+        "R07",
+        "R08",
+        "Z03",
+        "Z03",
+        "Z04",
+        "Z04",
+        "Z05",
+        "Z05",
+        "Z08",
+        "Z08",
+        "Y02",
+        "Y02",
+        "Y03",
+        "Y03",
+        "Y06",
+        "Y06",
+        "Y08",
+        "Y08",
+        "I01",
+        "I01",
+        "I03",
+        "I03",
+        "I04",
+        "I04",
+        "I08",
+        "I08"
+      ]
+    },
+    {
+      "id": "murk",
+      "name": "浊燃预组",
+      "official": true,
+      "character_ids": [
+        "anhunqu",
+        "canhong",
+        "zaowu",
+        "adler"
+      ],
+      "card_ids": [
+        "A02",
+        "A02",
+        "A04",
+        "A04",
+        "A05",
+        "A05",
+        "A08",
+        "A08",
+        "C01",
+        "C01",
+        "C04",
+        "C04",
+        "C05",
+        "C05",
+        "C08",
+        "C08",
+        "S01",
+        "S01",
+        "S02",
+        "S02",
+        "S03",
+        "S03",
+        "S08",
+        "S08",
+        "D01",
+        "D01",
+        "D02",
+        "D02",
+        "D04",
+        "D04",
+        "D06",
+        "D06"
+      ]
+    }
+  ]
+}

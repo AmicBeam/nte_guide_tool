@@ -1,4 +1,7 @@
+import json
 import re
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -23,6 +26,127 @@ def _js_number_constant(name: str) -> int:
 
 
 class ShaftBuffStatusUiTestCase(unittest.TestCase):
+    def test_character_catalog_keeps_elements_grouped_and_canhong_with_curse(self):
+        characters = load_shaft_catalog()['characters']
+        elements = ['光', '灵', '咒', '暗', '魂', '相']
+        ranks = [elements.index(c['element']) for c in characters]
+        self.assertEqual(ranks, sorted(ranks))
+        names = [c['name'] for c in characters]
+        index = names.index('残虹')
+        self.assertEqual(names[index - 1:index + 2], ['薄荷', '残虹', '白藏'])
+
+    def test_dissonance_tooltip_and_same_tick_group_preserve_gauge_events(self):
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        functions = source[source.index('  function damageMarkerTooltip('):source.index('  function renderTimeline(')]
+        event = {'reaction': '失谐', 'tick': 36, 'visual_tick': 41, 'contributor_slot': 2,
+                 'stagger_amount': 8.27, 'dissonance_stagger': 1.27, 'level_gap': 10,
+                 'daphne_extra_stagger': 7, 'daphne_stacks': 2,
+                 'stagger_limit_before': 63, 'stagger_limit_after': 56, 'heiyu_recast': True}
+        script = 'const formatNumber = (v) => String(v); const memberName = () => "黑羽";\n' + functions
+        script += '\nconst e = ' + json.dumps(event, ensure_ascii=False) + ';'
+        script += 'const groups = groupedTimelineDamageEvents([e, {...e, effect_id: "second"}]); console.log(JSON.stringify({tooltip: damageMarkerTooltip(e), groups}));'
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertIn('削减倾陷值 8.27', result['tooltip'])
+        self.assertIn('黑羽重新施加黯星触发', result['tooltip'])
+        self.assertIn('63 → 56', result['tooltip'])
+        self.assertNotIn('伤害', result['tooltip'])
+        self.assertEqual(len(result['groups']), 1)
+        self.assertEqual(len(result['groups'][0]['events']), 2)
+        self.assertEqual(result['groups'][0]['visual_tick'], 41)
+
+    def test_resource_markers_separate_damage_and_follow_projected_action(self):
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        functions = source[source.index('  function resourceDamageEvents('):source.index('  function renderTimeline(')]
+        script = """
+          const actionForStep = () => ({resource_damage: {resource: '恶意'}});
+          const formatNumber = (n) => String(n);
+          const ticksToSeconds = (n) => n / 10;
+          const memberName = () => '黑羽';
+        """ + functions + """
+          const detail = {slot: 3, start_tick: 12, display_start_tick: 27,
+            action_name: '魔援护', resource_damage: 180, resource_atk_multiplier: 1.4,
+            direct_damage: 500, personal_resources_consumed: {'恶意': 3.5},
+            resource_formula_parts: {scaling_stats: {atk: 1200}, scaling_multipliers: {atk: 1.4},
+              damage_bonus: .5, crit_rate: .6, crit_dmg: 1.2, def_down: .1,
+              def_ignore: .2, res_down: .08, final_dmg: .25,
+              action_multiplier: 2, non_fuwen_amplification: 1.3}};
+          const events = resourceDamageEvents([detail, {...detail, resource_atk_multiplier: 0, resource_damage: 0}]);
+          const grouped = groupedTimelineDamageEvents(events);
+          console.log(JSON.stringify({events, grouped, tooltip: damageMarkerTooltip(grouped[0]),
+            body: actionBodyDamage(detail), missing: actionBodyDamage({direct_damage: 42})}));
+        """
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertEqual(len(result['events']), 1)
+        self.assertEqual(result['events'][0]['visual_tick'], 27)
+        self.assertTrue(result['grouped'][0]['resource_damage_marker'])
+        self.assertEqual(result['body'] + result['events'][0]['damage'], 500)
+        self.assertEqual(result['missing'], 42)
+        self.assertIn('恶意追加 · 180 伤害 · 黑羽', result['tooltip'])
+        self.assertIn('来源动作 魔援护 · 1.2s', result['tooltip'])
+        self.assertIn('消耗恶意 3.5', result['tooltip'])
+        for part in ('攻击力 1200', '增伤 50%', '暴击 60%', '暴伤 120%',
+                     '减防 10%', '穿防 20%', '减抗 8%', '最终增伤 25%',
+                     '动作倍数 ×2', '环合增幅 ×1.3'):
+            self.assertIn(part, result['tooltip'])
+
+    def test_periodic_marker_snapshots_panel_and_buffs_at_each_tick(self):
+        catalog = load_shaft_catalog()
+        character = next(c for c in catalog['characters'] if c['name'] == '安魂曲')
+        action = next(a for a in catalog['actions_by_character'][character['id']] if a['name'].startswith('a1'))
+        arc = next(a for a in catalog['arcs'] if '最后一朵玫瑰' in a['name'])
+        result = simulate_shaft_axis({'team': [{'slot': 0, 'character_id': character['id'],
+            'arc_id': arc['id'], 'cartridge_id': ''}], 'steps': [
+            {'id': 'hit', 'slot': 0, 'action_id': action['id'], 'start_tick': 0},
+            {'id': 'tail', 'slot': 0, 'action_id': action['id'], 'start_tick': 50},
+        ]})['result']
+        first, second = result['periodic_damage_events'][:2]
+        for event in (first, second):
+            self.assertEqual(event['panel']['atk'], event['formula_parts']['scaling_stats']['atk'])
+            self.assertEqual(event['panel']['crit_rate'], .5)
+            self.assertEqual(event['panel']['crit_dmg'], event['formula_parts']['crit_dmg'])
+            self.assertIsInstance(event['applied_buffs'], list)
+        self.assertGreater(second['panel']['crit_dmg'], first['panel']['crit_dmg'])
+        self.assertNotEqual(first['applied_buffs'], second['applied_buffs'])
+
+    def test_timeline_ruler_cursor_and_cooldown_share_background_joint_clock(self):
+        # Regression: three off-field Lingke assists added 1.5 fake seconds to the ruler,
+        # so an action at real 4.0s looked like 5.5s while self-check correctly said wait to 5.0s.
+        catalog = load_shaft_catalog()
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        clock_helpers = source[source.index('  function qVirtualStartTick('):source.index('  function syncAddTimeInput(')]
+        ruler_clock = source[source.index('    const timelineQStarts ='):source.index('    const cursor =', source.index('    const timelineQStarts ='))]
+        for loop in (False, True):
+            with self.subTest(loop=loop):
+                axis = {'team': [
+                    {'slot': 0, 'character_id': 'char_0846d632e0', 'arc_id': '', 'cartridge_id': ''},
+                    {'slot': 1, 'character_id': 'char_dd034941ef', 'arc_id': '', 'cartridge_id': ''},
+                    {'slot': 2, 'character_id': 'char_heiyu', 'arc_id': '', 'cartridge_id': ''},
+                    {'slot': 3, 'character_id': 'char_076a1f4e53', 'arc_id': '', 'cartridge_id': ''},
+                ], 'steps': [
+                    {'id': 'q', 'slot': 0, 'action_id': 'action_lingke_q', 'start_tick': 0},
+                    {'id': 'light', 'slot': 1, 'action_id': 'action_33c0ac631e', 'start_tick': 5},
+                    {'id': 'soul', 'slot': 2, 'action_id': 'action_heiyu_support', 'start_tick': 10},
+                    {'id': 'curse', 'slot': 3, 'action_id': 'action_canhong_support', 'start_tick': 15},
+                    {'id': 'first-e', 'slot': 3, 'action_id': 'action_canhong_e1', 'start_tick': 20},
+                    {'id': 'early-e', 'slot': 3, 'action_id': 'action_canhong_e1', 'start_tick': 60},
+                ], 'options': {'loop_enabled': loop}}
+                result = simulate_shaft_axis(axis)['result']
+                details = result['details']
+                early = next(d for d in details if d['step_id'] == 'early-e')
+                self.assertEqual(early['start_tick'], 40)
+                self.assertTrue(any('5.0s' in w for w in early['warnings']))
+                script = 'const details = ' + json.dumps(details) + ';\n'
+                script += 'const actions = new Map(' + json.dumps(catalog['actions']) + '.map(a => [a.id,a]));\n'
+                script += 'const actionForStep = step => actions.get(step.action_id) || {};\n'
+                script += 'const hasTimelineMaskAbility = a => Boolean(a.is_time_stop_zero);\n'
+                script += 'const ZERO_ACTION_VISUAL_TICKS=5; const ticksToSeconds = tick => (tick/10).toFixed(1);\n'
+                script += 'const qVirtualStartTicks = () => ' + json.dumps(result['time_axis']['frozen_intervals']) + ';\n'
+                script += clock_helpers + ruler_clock
+                script += 'console.log(JSON.stringify(details.map(d => visualTickLabel(d.display_start_tick, timelineQStarts))));'
+                labels = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+                self.assertEqual(labels, [f"{d['start_tick']/10:.1f}s" for d in details])
+                self.assertEqual(labels[-1], '4.0s')
+
     def test_rotation_header_has_no_manual_calculation_button(self) -> None:
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -30,13 +154,56 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertNotIn('id="shaft-run-btn"', template)
         self.assertNotIn("$('shaft-run-btn')", source)
 
-    def test_shaft_source_version_is_1_0_2(self) -> None:
+    def test_shaft_source_version_is_1_0_6(self) -> None:
         catalog = get_shaft_catalog_payload()
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
 
-        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.0.2')
+        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.0.6')
         self.assertIn('{% block title %}异环云配队——排轴计算{% endblock %}', template)
         self.assertIn('<h1>异环云配队——排轴计算</h1>', template)
+
+    def test_main_q_cooldowns_match_nanoka_except_xun(self) -> None:
+        catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
+        characters_by_name = {character['name']: character for character in catalog['characters']}
+        expected_ticks = {
+            '主角': 150,
+            '真红': 200,
+            '小吱': 150,
+            '埃德嘉': 200,
+            '娜娜莉': 150,
+            '九原': 150,
+            '薄荷': 150,
+            '白藏': 200,
+            '早雾': 200,
+            '阿德勒': 200,
+            '安魂曲': 200,
+            '达芙蒂尔': 200,
+            '法帝娅': 200,
+            '哈尼娅': 200,
+            '海月': 150,
+            '卡厄斯': 150,
+            '哈索尔': 150,
+            '翳': 150,
+            '伊洛伊': 160,
+        }
+
+        for character_name, cooldown_ticks in expected_ticks.items():
+            character = characters_by_name[character_name]
+            q_action = next(
+                action
+                for action in catalog['actions_by_character'][character['id']]
+                if action['name'] == 'q'
+            )
+            self.assertEqual(q_action['cooldown_ticks'], cooldown_ticks, character_name)
+            self.assertIn('Nanoka 2026-09-01 实时核实', q_action['source_note'])
+
+        xun = characters_by_name['浔']
+        xun_q = next(
+            action
+            for action in catalog['actions_by_character'][xun['id']]
+            if action['name'] == 'q'
+        )
+        self.assertEqual(xun_q['cooldown_ticks'], 0)
 
     def test_unimplemented_awakenings_are_marked_in_tooltips(self) -> None:
         catalog = get_shaft_catalog_payload()
@@ -85,6 +252,14 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertIsNotNone(command_panel)
         self.assertIn('grid-template-columns: minmax(0, 1fr) auto;', command_panel.group('body'))
 
+    def test_heiyu_malice_stays_visible_when_empty_or_consumed(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        constants = source[source.index('  const TIMELINE_FIXED_PERSONAL_RESOURCES'):source.index('  const DETAIL_HIDDEN_APPLIED_BUFF_IDS')]
+        function = source[source.index('  function timelinePersonalResourceEntries('):source.index('  function memberName(')]
+        script = constants + function + "\nconsole.log(JSON.stringify([{}, {'恶意': 0}, {'恶意': 20}].map(resources => timelinePersonalResourceEntries({id: 'char_heiyu'}, resources))));"
+        result = subprocess.run(['node', '-e', script], check=True, capture_output=True, text=True)
+        self.assertEqual(json.loads(result.stdout), [[['恶意', 0]], [['恶意', 0]], [['恶意', 20]]])
+
     def test_loop_axis_uses_settings_dialog_with_character_resources(self) -> None:
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -99,6 +274,9 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertIn("'<option value=\"\">不携带</option>'", source)
         self.assertIn('.filter((option) => option && Number(option.duration_ticks) > 0)', source)
         self.assertIn('data-loop-initial-personal-resource', source)
+        self.assertIn('data-loop-initial-dot-layer', source)
+        self.assertIn("['蚀心', '鸩火']", source)
+        self.assertIn('dot_layers: dotLayers,', source)
         self.assertIn('function loopPersonalResourceDefinitions(member)', source)
         self.assertIn("'personal_resource_cost', 'personal_resource_gain', 'personal_resource_threshold'", source)
         self.assertIn('personal_resources: personalResources,', source)
@@ -291,40 +469,57 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('id="shaft-axis-preview-cancel-btn"', template)
         self.assertIn('id="shaft-axis-preview-save-btn"', template)
         self.assertIn('function groupedPreviewActions', source)
-        self.assertIn('return startsForeground(step, action);', source)
+        self.assertIn('return switchesForeground(step, action);', source)
         self.assertIn(".join(' ')", source)
         self.assertIn('previous.durationTicks += detail.durationTicks', source)
-        self.assertIn('function previewDamageTypeShares', source)
-        self.assertIn('Math.round(damage / totalDamage * 100)', source)
+        self.assertIn('function damageContributionShares', source)
+        self.assertIn('function previewContributionShares', source)
+        self.assertIn("label: '环合伤害'", source)
+        self.assertIn("label: '倾陷伤害'", source)
+        self.assertIn('percent: Math.round(Number(item.percent || 0))', source)
+        self.assertIn('<span>伤害占比</span>', source)
         self.assertIn('function prioritizeAxisPreviewActionLabels', source)
         self.assertIn('function handleAxisPreviewWheel', source)
         self.assertIn('function previewMinimumTickPx', source)
+        self.assertIn('function previewQVirtualIntervals', source)
+        self.assertIn('const calculationEndTick = calculationTickFromVisual(endTick, previewQStarts);', source)
+        self.assertIn('const visualTick = visualTickFromCalculation(tick, previewQStarts);', source)
+        self.assertIn('class="shaft-axis-preview-grid-mark"', source)
+        self.assertIn('.shaft-axis-preview-grid-mark', css)
         self.assertIn('async function openMarketAxisPreview(axisId, trigger)', source)
         self.assertIn("if (card.dataset.axisSource === 'market')", source)
         self.assertIn('await openMarketAxisPreview(Number(card.dataset.axisId), card)', source)
         self.assertIn('function marketAxisLocalTitle(payload)', source)
         self.assertIn('const suffix = ` - ${author}`;', source)
-        self.assertIn('async function saveMarketAxisToLocal()', source)
+        self.assertIn("async function saveMarketAxisToLocal(conflictAction = '')", source)
         self.assertIn('title: marketAxisLocalTitle(payload)', source)
+        self.assertIn("? '更新到本地'", source)
+        self.assertIn('const localCopyId = Number(payload.local_copy_id || 0);', source)
+        self.assertIn("method: updateLocalCopy ? 'PUT' : 'POST'", source)
+        self.assertIn('source_axis_id: payload.is_owner ? 0 : Number(payload.id || 0)', source)
         self.assertIn('axis: payload.axis', source)
         self.assertIn('result: payload.result', source)
         self.assertNotIn('shaft-buff-trigger-line', source[source.index('function renderAxisPreview'):source.index('function fitAxisPreview')])
         self.assertNotIn('shaft-reaction-damage-marker', source[source.index('function renderAxisPreview'):source.index('function fitAxisPreview')])
         self.assertIn('.shaft-axis-preview-bubble', css)
         self.assertIn('.shaft-axis-preview-summary', css)
+        self.assertIn('.shaft-axis-preview-contributions', css)
         self.assertIn('.shaft-axis-preview-bubble.hide-duration > em', css)
         self.assertIn('padding-inline: 3px;', css)
         self.assertIn('.shaft-axis-preview-footer', css)
 
-    def test_timeline_length_uses_foreground_and_clips_after_one_second_padding(self) -> None:
+    def test_timeline_length_uses_foreground_switches_and_clips_after_one_second_padding(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
 
         self.assertIn(
-            'const foregroundSteps = (state.axis?.steps || []).filter((step) => startsForeground(step, actionForStep(step)));',
+            'const foregroundSteps = (state.axis?.steps || []).filter((step) => switchesForeground(step, actionForStep(step)));',
             source,
         )
-        self.assertIn('const foregroundDetails = details.filter((detail) => !detail.is_background_damage);', source)
-        self.assertIn('const displayCutoffTick = foregroundAxisEndTick + TIMELINE_END_PADDING_TICKS;', source)
+        self.assertIn("!detail.is_background_damage || isInstantSwitchAction(actionForStep({ action_id: detail.action_id }))", source)
+        self.assertIn('const visibleAxisEndTick = renderedAxisEndTick(projectedDetails, { includeBackground: true });', source)
+        self.assertIn('const displayCutoffTick = visibleAxisEndTick + TIMELINE_END_PADDING_TICKS;', source)
+        self.assertIn('const actionAxisEndTick = foregroundAxisEndTick;', source)
+        self.assertIn('state.axis.duration_ticks = Math.max(0, axisEndTick(false));', source)
         self.assertIn(
             '.filter((detail) => Number(detail.display_start_tick ?? detail.start_tick ?? 0) < displayCutoffTick)',
             source,
@@ -354,12 +549,13 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('const appliedBuffs =', source)
         self.assertIn('<strong class="shaft-detail-line-list">${detailLines(appliedBuffExplanations)}</strong>', source)
         self.assertIn('<div class="shaft-detail-kv"><span>通伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>', source)
-        self.assertIn('<div class="shaft-detail-kv"><span>属伤</span><strong>${formatNumber((panelStats.element_dmg || 0) * 100, 1)}%</strong></div>', source)
+        self.assertIn('<div class="shaft-detail-kv"><span>${escapeHtml(actionElement)}属性伤害</span><strong>${formatNumber(actionElementDamage * 100, 1)}%</strong></div>', source)
         self.assertIn('const finalDamageBonus = Number(panelStats.final_dmg || 0);', source)
         self.assertIn('...(finalDamageBonus ? [`<div class="shaft-detail-kv"><span>最终伤害</span><strong>${formatNumber(finalDamageBonus * 100, 1)}%</strong></div>`] : [])', source)
         self.assertIn('panelStats.other_dmg', source)
+        self.assertIn("other_dmg: '其他增伤'", source)
         self.assertIn('- Number(panelStats.all_dmg || 0)', source)
-        self.assertIn('- Number(panelStats.element_dmg || 0)', source)
+        self.assertIn('- actionElementDamage', source)
         self.assertIn('<div class="shaft-detail-kv"><span>其他增伤</span><strong>${formatNumber(otherDamageBonus * 100, 1)}%</strong></div>', source)
         self.assertIn('<span>敌人结算属抗</span>', source)
         self.assertIn('detail?.formula_parts?.settled_resistance', source)
@@ -419,6 +615,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("const key = String(buff?.definition_id || buff?.rule_id || buff?.name || '');", source)
         self.assertIn('current.stack_count = Number(current.stack_count || 0) + Number(buff?.stack_count || 0);', source)
         self.assertIn('current.effects[effectKey] = Number(current.effects[effectKey] || 0) + Number(value || 0);', source)
+        self.assertIn('const leftOwnerSlot = Number(left.buff?.owner_slot);', source)
+        self.assertIn('return leftGroup - rightGroup || left.originalIndex - right.originalIndex;', source)
         self.assertIn("const stackSuffix = stackCount > 1 ? ` · ${formatNumber(stackCount, 0)}层` : '';", source)
         self.assertIn('if (Number(nightmareStacks) > 0) {', source)
         self.assertIn(
@@ -426,16 +624,30 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             source,
         )
 
-    def test_canhong_is_only_available_to_shaft_test_accounts_and_yiloyi_is_public(self) -> None:
+    def test_canhong_lingke_and_yiloyi_are_public(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         public_catalog = get_shaft_catalog_payload()
+        invited_catalog = get_shaft_catalog_payload(player=SimpleNamespace(
+            shaft_invited=True,
+            shaft_test_whitelisted=False,
+        ))
         test_catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
-        public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残红')
-        test_canhong = next(character for character in test_catalog['characters'] if character['name'] == '残红')
+        public_canhong = next(character for character in public_catalog['characters'] if character['name'] == '残虹')
+        invited_canhong = next(character for character in invited_catalog['characters'] if character['name'] == '残虹')
+        test_canhong = next(character for character in test_catalog['characters'] if character['name'] == '残虹')
+        public_lingke = next(character for character in public_catalog['characters'] if character['name'] == '灵可')
+        invited_lingke = next(character for character in invited_catalog['characters'] if character['name'] == '灵可')
+        test_lingke = next(character for character in test_catalog['characters'] if character['name'] == '灵可')
         public_yiloyi = next(character for character in public_catalog['characters'] if character['name'] == '伊洛伊')
 
-        self.assertTrue(public_canhong['selection_disabled'])
+        self.assertFalse(public_canhong['selection_disabled'])
+        self.assertFalse(invited_canhong['selection_disabled'])
         self.assertFalse(test_canhong['selection_disabled'])
+        self.assertFalse(public_lingke['selection_disabled'])
+        self.assertFalse(invited_lingke['selection_disabled'])
+        self.assertFalse(test_lingke['selection_disabled'])
+        self.assertEqual(public_canhong['avatar'], '/static/images/characters/avatar/残虹.png')
+        self.assertEqual(public_canhong['portrait'], '/static/images/characters/avatar/残虹.png')
         self.assertFalse(public_yiloyi['selection_disabled'])
         self.assertIn("record.selection_disabled ? 'disabled' : ''", source)
         self.assertIn(".filter((character) => !character.selection_disabled)", source)
@@ -445,11 +657,12 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
     def test_canhong_uses_tencent_document_panel_and_actions(self) -> None:
         catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
         characters = {character['name']: character for character in catalog['characters']}
-        canhong = characters['残红']
+        canhong = characters['残虹']
         protagonist = characters['主角']
 
-        self.assertTrue(canhong['test_character'])
-        self.assertNotIn('bond_bonus', canhong)
+        self.assertNotIn('test_character', canhong)
+        self.assertEqual(canhong['bond_bonus']['label'], '4暴击')
+        self.assertEqual(canhong['bond_bonus']['modifiers']['crit_rate'], 0.04)
         self.assertNotIn('bond_bonus', protagonist)
         self.assertEqual(canhong['element'], '咒')
         self.assertEqual(canhong['adaptation'], '气态')
@@ -472,8 +685,12 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('折楼（最高）', actions)
         self.assertNotIn('虚徊', actions)
         self.assertEqual(actions['幻e']['multipliers']['atk'], 4.498)
-        self.assertEqual(actions['幻e']['harmony'], 19)
-        self.assertEqual(actions['幻e']['stagger'], 6)
+        self.assertEqual(actions['幻e']['energy_gain'], 24.999)
+        self.assertEqual(actions['幻e']['harmony'], 18.901)
+        self.assertEqual(actions['幻e']['stagger'], 2.299)
+        self.assertTrue(actions['幻e']['locks_foreground_switch'])
+        self.assertEqual(actions['血宴']['multipliers']['atk'], 6.999)
+
         self.assertEqual(actions['血宴']['energy_cost'], 120)
         self.assertEqual(actions['e']['duration_ticks'], 10)
         self.assertEqual(actions['强化e']['duration_ticks'], 10)
@@ -486,15 +703,17 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions['幻a4']['duration_ticks'], 11)
         self.assertEqual(actions['援护']['duration_ticks'], 15)
         self.assertEqual(actions['援护']['multipliers']['atk'], 2.0)
-        self.assertEqual(actions['援护']['energy_gain'], 6.5)
+        self.assertEqual(actions['援护']['energy_gain'], 5.2)
         self.assertEqual(actions['援护']['harmony'], 0)
         self.assertEqual(actions['援护']['stagger'], 2.5)
         self.assertEqual(actions['援护']['hit_count'], 1)
         self.assertFalse(actions['援护']['is_background_damage'])
-        self.assertIn('经验估值', actions['援护']['source_note'])
+        self.assertIn('SkillDamageData_Zankou_Radio.xlsx', actions['援护']['source_note'])
+        self.assertFalse(actions['a1']['can_background_override'])
+        self.assertFalse(actions['幻a1']['can_background_override'])
         self.assertTrue(all(
             actions[name]['can_background_override']
-            for name in ('幻a1', '幻a2', '幻a3', '幻a4')
+            for name in ('a2', 'a3', 'a4', 'a5', '幻a2', '幻a3', '幻a4')
         ))
         self.assertEqual(actions['焚天']['duration_ticks'], 0)
         self.assertEqual(actions['强化焚天']['duration_ticks'], 0)
@@ -519,19 +738,22 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(buffs['character_canhong_delusion_exit_delay']['duration']['ticks'], 80)
         self.assertEqual(buffs['character_canhong_a1_delusion']['target']['tags'], ['DOT'])
         self.assertEqual(buffs['character_canhong_hunt']['target'], {'scope': 'registrar'})
-        self.assertEqual(buffs['character_canhong_hunt']['effects']['all_dmg'], 0.25)
-        self.assertEqual(buffs['character_canhong_hunt_illusion_delay']['duration']['ticks'], 80)
-        self.assertEqual(buffs['character_canhong_hunt_reality_restore']['duration']['type'], 'permanent')
-        self.assertEqual(buffs['character_canhong_hunt_natural_restore']['duration']['delay_ticks'], 80)
-        self.assertEqual(
-            buffs['character_canhong_hunt_natural_restore']['calculation']['team_unique_key'],
-            'character_canhong_hunt_effect',
-        )
+        self.assertEqual(buffs['character_canhong_hunt']['effects']['other_dmg'], 0.25)
+        self.assertEqual(buffs['character_canhong_a1_hunt']['effects']['other_dmg'], 0.4)
+        self.assertFalse(buffs['character_canhong_hunt']['display']['line'])
+        self.assertFalse(buffs['character_canhong_a1_hunt']['display']['line'])
+        self.assertEqual(buffs['character_canhong_b_blaze_stack']['stacking']['max_stacks'], 1)
+        self.assertEqual(buffs['character_canhong_b_blaze_fentian_damage']['effects']['blaze_final_dmg'], 1.5)
+        self.assertEqual(buffs['character_canhong_six_node_resonance_attack']['trigger']['event'], 'action_hit')
+        self.assertTrue(buffs['character_canhong_six_node_resonance_attack']['trigger']['periodic_damage'])
+        self.assertNotIn('character_canhong_hunt_illusion_delay', buffs)
+        self.assertNotIn('character_canhong_hunt_reality_restore', buffs)
+        self.assertNotIn('character_canhong_hunt_natural_restore', buffs)
         self.assertTrue(
             buffs['character_canhong_illusion_dot_spread']['activation']['increase_all_active_dot_layers']
         )
         canhong_arc = next(arc for arc in catalog['arcs'] if arc['name'] == '噬心诡刃')
-        self.assertEqual(catalog['arcs'][0]['id'], canhong_arc['id'])
+        self.assertEqual(next(arc for arc in catalog['arcs'] if arc['adaptation'] == '气态')['name'], '罪与罚')
         self.assertEqual(canhong_arc['adaptation'], '气态')
         self.assertEqual(canhong_arc['base_atk'], 570)
         self.assertEqual(catalog['arc_refinements']['arcs'][canhong_arc['id']]['levels']['5']['panel_modifiers']['crit_rate'], 0.56)
@@ -539,6 +761,136 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('function characterHasBondBonus(characterId)', source)
         self.assertIn("const bondLabel = hasBondBonus ? character.bond_bonus.label : '无羁绊加成';", source)
         self.assertIn("${hasBondBonus ? '' : 'disabled'}", source)
+
+    def test_lingke_uses_user_panel_mapping_and_manual_joint_actions(self) -> None:
+        catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
+        lingke = next(character for character in catalog['characters'] if character['name'] == '灵可')
+        actions = catalog['actions_by_character'][lingke['id']]
+        action_by_name = {action['name']: action for action in actions}
+
+        self.assertNotIn('test_character', lingke)
+        self.assertEqual(lingke['element'], '灵')
+        self.assertEqual(lingke['adaptation'], '等离子')
+        self.assertEqual(lingke['base_stats'], {'atk': 652.0, 'hp': 15513.0, 'def': 921.1})
+        self.assertEqual(lingke['bond_bonus']['label'], '4暴击')
+        self.assertEqual(lingke['bond_bonus']['modifiers']['crit_rate'], 0.04)
+        self.assertEqual(
+            catalog['formula_constants']['default_build_options'][lingke['id']]['curtain_bonus'],
+            {'value': 8, 'stat': '暴击', 'passive_type': 'type3'},
+        )
+        self.assertEqual(action_by_name['4觉同频追加']['skill_level_category'], 'ultimate')
+        self.assertEqual(action_by_name['4觉同频追加']['action_type'], 'Q')
+        self.assertEqual(action_by_name['4觉同频追加']['damage_type'], '追击')
+        self.assertEqual(
+            {action['name'] for action in actions},
+            {
+                '恶灵闪击战', 'a1', 'a2', 'a3', 'a4', 'a5', '援护', 'e',
+                'q展开', 'q范围', 'q多段', 'q爆发', '时停选人',
+                '消耗标记同频', '小贞同频',
+                '4觉同频追加', '闪', '无',
+            },
+        )
+        actions_by_name = {action['name']: action for action in actions}
+        legacy = [a for a in catalog['actions'] if a.get('legacy_only') and a['character_id'] == 'char_0846d632e0']
+        self.assertEqual({a['name'] for a in legacy}, {'光同频', '灵同频', '咒同频', '暗同频', '魂同频', '相同频'})
+        actions_by_name.update({a['name']: a for a in legacy})
+        self.assertEqual(actions_by_name['恶灵闪击战']['multipliers']['atk'], 0.5)
+        self.assertEqual(actions_by_name['恶灵闪击战']['cooldown_ticks'], 80)
+        self.assertEqual(actions_by_name['恶灵闪击战']['cooldown_ticks_by_awakening_node'], {'1': 60})
+        expected_basic_attacks = {
+            'a1': (0.496, 1, 3.105, 5.161, 0.618, False),
+            'a2': (0.34, 2, 1.065, 1.77, 0.212, True),
+            'a3': (0.404, 1, 2.531, 4.207, 0.504, True),
+            'a4': (1.47, 8, 5.725, 9.516, 1.14, True),
+            'a5': (0.74, 1, 4.635, 7.703, 0.923, True),
+        }
+        for name, (multiplier, hits, energy, harmony, stagger, can_background) in expected_basic_attacks.items():
+            action = actions_by_name[name]
+            self.assertEqual(action['multipliers']['atk'], multiplier)
+            self.assertEqual(action['hit_count'], hits)
+            self.assertEqual(action['energy_gain'], energy)
+            self.assertEqual(action['harmony'], harmony)
+            self.assertEqual(action['stagger'], stagger)
+            self.assertEqual(action['duration_ticks'], 0)
+            self.assertEqual(action['can_background_override'], can_background)
+        self.assertEqual(actions_by_name['援护']['duration_ticks'], 15)
+        self.assertEqual(actions_by_name['e']['duration_ticks'], 10)
+        self.assertEqual(actions_by_name['e']['multipliers']['atk'], 1.0)
+        self.assertEqual(actions_by_name['e']['hit_count'], 4)
+        self.assertEqual(actions_by_name['q展开']['multipliers']['atk'], 0)
+        self.assertEqual(actions_by_name['q展开']['energy_cost'], 100)
+        self.assertEqual(actions_by_name['q展开']['hit_count'], 0)
+        self.assertEqual(actions_by_name['q展开']['stagger'], 0)
+        self.assertEqual(actions_by_name['q范围']['multipliers']['atk'], 0.735)
+        self.assertEqual(actions_by_name['q范围']['energy_cost'], 0)
+        self.assertEqual(actions_by_name['q范围']['hit_count'], 1)
+        self.assertEqual(actions_by_name['q范围']['stagger'], 0.074)
+        self.assertTrue(actions_by_name['q范围']['is_background_damage'])
+        self.assertEqual(actions_by_name['q多段']['multipliers']['atk'], 3.456)
+        self.assertEqual(actions_by_name['q多段']['hit_count'], 6)
+        self.assertEqual(actions_by_name['q多段']['energy_cost'], 0)
+        self.assertEqual(actions_by_name['q爆发']['multipliers']['atk'], 7.353)
+        self.assertEqual(actions_by_name['q爆发']['hit_count'], 1)
+        self.assertEqual(actions_by_name['q爆发']['multipliers_add_by_awakening_node']['2']['atk'], 2.2059)
+        time_stop_select = actions_by_name['时停选人']
+        self.assertEqual(time_stop_select['action_type'], '无')
+        self.assertEqual(time_stop_select['duration_ticks'], 0)
+        self.assertEqual(time_stop_select['hit_count'], 0)
+        self.assertEqual(time_stop_select['energy_cost'], 0)
+        self.assertEqual(time_stop_select['energy_gain'], 0)
+        self.assertEqual(time_stop_select['harmony'], 0)
+        self.assertEqual(time_stop_select['stagger'], 0)
+        self.assertTrue(time_stop_select['is_timeline_mask'])
+        self.assertTrue(time_stop_select['is_time_stop_zero'])
+        for element in ('光', '灵', '咒', '暗', '魂', '相'):
+            joint = actions_by_name[f'{element}同频']
+            self.assertEqual(joint['duration_ticks'], 0)
+            self.assertTrue(joint['duration_implemented'])
+            self.assertTrue(joint['is_time_stop_zero'])
+            self.assertEqual(joint['multipliers']['atk'], 2.0)
+            self.assertEqual(joint['harmony'], 0)
+            self.assertEqual(joint['damage_element'], element)
+            self.assertEqual(joint['personal_resource_consume_all'], ['谐频'])
+            self.assertFalse(joint['is_background_damage'])
+            self.assertFalse(joint.get('is_timeline_mask', False))
+            self.assertTrue(joint['disable_reaction'])
+            self.assertEqual(joint['trigger_character_selector'], 'same_element_non_lingke')
+        mark_joint = actions_by_name['消耗标记同频']
+        self.assertEqual(mark_joint['damage_element'], '灵')
+        self.assertEqual(mark_joint['duration_ticks'], 0)
+        self.assertEqual(mark_joint['multipliers']['atk'], 5.0)
+        self.assertEqual(mark_joint['harmony'], 15)
+        self.assertEqual(mark_joint['personal_resource_gain'], {'谐频': 34})
+        self.assertEqual(mark_joint['stagger'], 2.5)
+        self.assertTrue(mark_joint['is_background_damage'])
+        self.assertTrue(mark_joint['disable_reaction'])
+        self.assertIn('消耗标记', mark_joint['tags'])
+        self.assertEqual(actions_by_name['小贞同频']['multipliers']['atk'], 1.999)
+        self.assertEqual(actions_by_name['小贞同频']['hit_count'], 4)
+        self.assertEqual(actions_by_name['小贞同频']['stagger'], 1.667)
+        self.assertEqual(actions_by_name['小贞同频']['duration_ticks'], 15)
+        self.assertFalse(actions_by_name['小贞同频']['is_background_damage'])
+        self.assertTrue(actions_by_name['小贞同频']['can_background_override'])
+        self.assertFalse(actions_by_name['小贞同频']['locks_foreground_switch'])
+        self.assertEqual(actions_by_name['4觉同频追加']['required_awakening'], 4)
+
+        arc = next(arc for arc in catalog['arcs'] if arc['name'] == '远行者之声')
+        plasma_arcs = [candidate for candidate in catalog['arcs'] if candidate['adaptation'] == '等离子']
+        self.assertEqual(plasma_arcs[0]['id'], arc['id'])
+        self.assertEqual(arc['adaptation'], '等离子')
+        self.assertEqual(arc['base_atk'], 570)
+        self.assertEqual(arc['modifiers']['crit_rate'], 0.24)
+        refinements = catalog['arc_refinements']['arcs'][arc['id']]
+        self.assertEqual(refinements['nanoka_id'], 'fork_GoldRecord')
+        self.assertEqual(refinements['levels']['1']['panel_modifiers']['atk_pct'], 0.24)
+        self.assertEqual(refinements['levels']['5']['panel_modifiers']['atk_pct'], 0.48)
+        self.assertEqual(
+            refinements['levels']['5']['buff_effects']['arc_gold_record_support_crit_damage']['crit_dmg'],
+            1.32,
+        )
+        buffs = {buff['id']: buff for buff in catalog['buffs']}
+        self.assertEqual(buffs['arc_gold_record_support_crit_damage']['effects']['crit_dmg'], 0.66)
+        self.assertEqual(buffs['arc_gold_record_q_crit_damage']['stacking']['max_stacks'], 3)
 
     def test_yiloyi_bond_bonus_is_five_percent_attack(self) -> None:
         catalog = get_shaft_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
@@ -601,13 +953,14 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         ).read_text(encoding='utf-8')
 
         self.assertIn("{ key: 'all_dmg', label: '通伤', percent: true }", source)
-        self.assertIn("['属伤', formatPercent(panelStats.element_dmg || 0)]", source)
+        self.assertIn('formatPercent(elementDamageValue(panelStats, member.element', source)
+        self.assertIn('属性伤害`, formatPercent', source)
         self.assertIn("['通伤', formatPercent(panelStats.all_dmg || 0)]", source)
         self.assertIn('"label": "通伤"', formula_constants)
 
-        labels = ['暴击', '暴伤', '环合强度', '倾陷强度', '通伤', '属伤', '充能']
-        positions = [source.index(f"['{label}',", source.index('const minorStats = [')) for label in labels]
-        self.assertEqual(positions, sorted(positions))
+        self.assertIn('buildStatLabel(key, character)', source)
+        engine_source = (ROOT / 'app' / 'modules' / 'shaft' / 'static' / 'js' / 'shaft_engine.js').read_text(encoding='utf-8')
+        self.assertIn("configuredKey === 'character_element_dmg' ? elementDamageKey(element)", engine_source)
 
     def test_team_furniture_bonus_displays_actual_caps(self) -> None:
         defaults = _frontend_team_panel_bonus_defaults()
@@ -739,15 +1092,118 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("'创生': DAMAGE_SOURCE_COLORS['创生']", source)
         self.assertIn("'浊燃': DAMAGE_SOURCE_COLORS['浊燃']", source)
         self.assertIn("'黯星': DAMAGE_SOURCE_COLORS['黯星']", source)
+        contribution_shares = source[source.index('function damageContributionShares'):source.index('function renderResults()')]
         render_results = source[source.index('function renderResults()'):source.index('function actionContributionForSlot')]
-        self.assertIn("const independentRows = [", render_results)
-        self.assertIn("label: '环合伤害'", render_results)
-        self.assertIn("label: '倾陷伤害'", render_results)
-        self.assertIn("color: DAMAGE_SOURCE_COLORS['创生']", render_results)
-        self.assertIn("color: DAMAGE_SOURCE_COLORS['倾陷']", render_results)
+        self.assertIn("label: '环合伤害'", contribution_shares)
+        self.assertIn("label: '倾陷伤害'", contribution_shares)
+        self.assertIn("color: DAMAGE_SOURCE_COLORS['创生']", contribution_shares)
+        self.assertIn("color: DAMAGE_SOURCE_COLORS['倾陷']", contribution_shares)
+        self.assertIn("const independentRows = contributionShares.filter", render_results)
         self.assertIn('shaft-contribution-source-row', render_results)
         self.assertIn('--contribution-color:${item.color}', render_results)
         self.assertIn('.shaft-contribution-source-row .shaft-contribution-bar span', css)
+
+    def test_substat_contribution_analysis_is_local_normalized_and_non_mutating(self) -> None:
+        template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
+        css = SHAFT_CSS.read_text(encoding='utf-8')
+
+        self.assertIn('id="shaft-substat-contribution-btn"', template)
+        self.assertIn('id="shaft-substat-contribution-dialog"', template)
+        self.assertIn('id="shaft-substat-contribution-content"', template)
+        self.assertIn('>副词条贡献度</button>', template)
+        self.assertIn('>副词条贡献度</h2>', template)
+        self.assertNotIn('>计算词条贡献度</button>', template)
+        self.assertIn('以8类主要副词条各 ${formatNumber(analysis.base_count || 0)} 条', source)
+        self.assertIn('纯前端计算，不改配装或对比快照', source)
+        self.assertNotIn('基准临时将每位角色的通伤', source)
+        self.assertIn('.shaft-substat-contribution-table', css)
+        self.assertIn('max-height: calc(100vh - 28px);', css)
+        self.assertIn('overflow-y: auto;', css)
+        self.assertIn('function analyzeSubstatContributions(', engine)
+        self.assertIn("{ key: 'all_dmg', label: '通伤' }", engine)
+        self.assertIn("{ key: 'def_pct', label: '防御%' }", engine)
+        self.assertIn("'flat_atk'", engine)
+        self.assertIn("'flat_hp'", engine)
+        self.assertIn("'flat_def'", engine)
+        self.assertIn('const BASELINE_SUBSTAT_FIELDS = SUBSTAT_CONTRIBUTION_FIELDS.slice(0, 8);', engine)
+        self.assertIn('num(candidateMember.substat_counts[field.key]) + incrementCount', engine)
+        self.assertIn('row.increase_damage / maxIncreaseDamage * 100', engine)
+        self.assertIn('const contributionByCell = new Map', source)
+        self.assertIn('const topContributionRanksBySlot = new Map', source)
+        self.assertIn('.slice(0, 4);', source)
+        self.assertIn('contribution-rank-${rank}', source)
+        self.assertIn("contribution > 0 ? `${formatNumber(contribution, 1)}%` : '—'", source)
+        for rank in range(1, 5):
+            self.assertIn(f'td.contribution-rank-{rank}', css)
+
+        open_analysis = source[
+            source.index('async function openSubstatContributionAnalysis'):
+            source.index('function closeSubstatContributionAnalysis')
+        ]
+        self.assertIn('window.ShaftEngine.analyzeSubstatContributions(state.axis, state.catalog', open_analysis)
+        self.assertNotIn('shaftRequest(', open_analysis)
+        self.assertNotIn('state.compareSnapshot =', open_analysis)
+
+        node_bin = shutil.which('node')
+        if not node_bin:
+            self.skipTest('node is required for shaft engine regression tests')
+        catalog = get_shaft_catalog_payload()
+        action = next(
+            item
+            for item in catalog['actions']
+            if item.get('action_type') == '普攻'
+            and float((item.get('multipliers') or {}).get('atk') or 0) > 0
+        )
+        character = next(item for item in catalog['characters'] if item['id'] == action['character_id'])
+        axis = {
+            'team': [{
+                'slot': 0,
+                'character_id': character['id'],
+                'character_name': character['name'],
+                'arc_id': '',
+                'cartridge_id': '',
+                'substat_counts': {'all_dmg': 30, 'flat_atk': 30},
+            }],
+            'steps': [{
+                'id': 'substat-analysis-action',
+                'slot': 0,
+                'action_id': action['id'],
+                'start_tick': 0,
+            }],
+            'enemy': {'level': 90, 'initial_resistance': 0.3},
+            'initial_energy': 1000,
+        }
+        completed = subprocess.run(
+            [node_bin, str(ROOT / 'scripts' / 'shaft_compute.js')],
+            input=json.dumps({
+                'operation': 'analyze_substats',
+                'axis': axis,
+                'catalog': catalog,
+                'options': {'base_count': 15, 'increment_count': 5},
+            }),
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+        analysis = json.loads(completed.stdout)['result']
+        self.assertEqual(analysis['base_count'], 15)
+        self.assertEqual(analysis['increment_count'], 5)
+        self.assertGreater(analysis['baseline_total_damage'], 0)
+        self.assertTrue(analysis['rows'])
+        self.assertAlmostEqual(analysis['rows'][0]['contribution_percent'], 100.0)
+        self.assertTrue(all(row['increase_damage'] > 0 for row in analysis['rows']))
+        self.assertEqual(
+            {field['key'] for field in analysis['fields']},
+            {
+                'all_dmg', 'crit_rate', 'crit_dmg', 'harmony_strength',
+                'stagger_strength', 'atk_pct', 'hp_pct', 'def_pct',
+                'flat_atk', 'flat_hp', 'flat_def',
+            },
+        )
+        self.assertIn('flat_atk', {row['stat_key'] for row in analysis['rows']})
 
     def test_character_action_contribution_dialog_aggregates_repeated_actions(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -795,7 +1251,10 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("additionalTags.has(damageType)", source)
         self.assertIn("? (actionType || '其他')", source)
         self.assertIn('damage_type: detail.damage_type', SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
-        self.assertIn("if (tags.has('追击')) total += panelMods.follow_dmg;", SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
+        self.assertIn(
+            "if (damageType === '追击' || tags.has('追击') || tags.has('追加攻击')) total += panelMods.follow_dmg;",
+            SHAFT_ENGINE_JS.read_text(encoding='utf-8'),
+        )
         self.assertIn("if (tags.has('附着')) total += panelMods.attach_dmg;", SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
         self.assertIn('damage_by_action_by_slot: clone(result.damage_by_action_by_slot || [])', source)
         self.assertIn('function mergeActionAnalysisComparison(', source)
@@ -894,9 +1353,9 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('id="shaft-harmony-analysis-content"', template)
         self.assertIn('data-open-harmony-analysis', source)
         self.assertIn('class="shaft-contribution-row shaft-contribution-source-row"', source)
-        self.assertIn('function renderHarmonyAnalysis()', source)
+        self.assertIn("function renderHarmonyAnalysis(kind = 'harmony')", source)
         self.assertIn('result.harmony_contributions_by_slot', source)
-        self.assertIn('环合伤害独立计入全队总伤和 DPS', source)
+        self.assertIn('${label}伤害独立计入全队总伤和 DPS', source)
         self.assertIn('不计入角色自身伤害占比或动作贡献', source)
         self.assertIn("renderResultCard('shaft-direct-damage', '角色伤害', summary.character_damage", source)
 
@@ -994,11 +1453,13 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("if (type === 'awakening_min')", source)
         self.assertIn("if (type === 'awakening_max')", source)
         self.assertIn("if (type === 'awakening_count_min')", source)
-        self.assertIn("return awakeningNodes.size >= requiredCount;", source)
         self.assertIn("if (type === 'owner_character_id')", source)
         self.assertNotIn('panel_modifiers || arc.modifiers', source[source.index('function activeMechanismGroups(member)'):source.index('function activeMechanismTooltipHtml(member, character)')])
         self.assertIn('function mechanismRuleSummary(rule)', source)
         self.assertIn("arcRefinementRecord(member)?.buff_effects", source)
+        self.assertIn('arcRefinementDefinition.active_mechanisms', source)
+        self.assertIn('activeArcRefinement?.panel_modifiers?.[effectKey]', source)
+        self.assertIn("trigger: { event: 'passive' }", source)
         self.assertIn('mechanismRuleSummary(rule)', source)
         self.assertIn('class="shaft-mechanism-item"', source)
         self.assertIn('class="shaft-mechanism-tooltip"', source)
@@ -1082,12 +1543,46 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const clipboardSpanTicks = Math.max(1,', paste_body)
         self.assertIn('step.start_tick = Number(step.start_tick || 0) + clipboardSpanTicks;', paste_body)
         self.assertIn('normalizeEditedSteps(new Set(newIds));', paste_body)
+        self.assertIn('const baseTick = preparePasteInsertionTick(state.cursorTick);', paste_body)
+        self.assertIn('function preparePasteInsertionTick(tick) {', source)
+        self.assertIn('Number(source.slot || 0)', source)
+        self.assertIn('const interval = actionIntervalAtTick(tick, slot);', source)
 
         self.assertIn('function compactSpaceReleasedByDeletion(', source)
+        self.assertIn('function compactReleasedTimelineIntervals(intervals, preserveRelativeAfterTick = null) {', source)
         self.assertIn('beforeDeleteResult?.time_axis?.frozen_intervals', remove_body)
         self.assertIn('compactSpaceReleasedByDeletion(', remove_body)
         self.assertIn('oldEnd > newEnd', source)
         self.assertIn('originalTick - releasedBeforeStep', source)
+        self.assertIn('let latestRemovedStart = 0;', source)
+        self.assertIn('latestRemovedStart = Math.max(latestRemovedStart, start);', source)
+        self.assertIn('const relativeTailShift = relativeTailSteps.length', source)
+        self.assertIn('originalTick > Number(preserveRelativeAfterTick)', source)
+        self.assertIn('compactReleasedTimelineIntervals(releasedIntervals, latestRemovedStart);', source)
+
+    def test_modifier_backspace_removes_the_empty_interval_before_current_action(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
+
+        shortcut_start = source.index('function earliestStartTickPreservingActionOrder(currentStep)')
+        shortcut_end = source.index('function pasteStepsAtCursor()', shortcut_start)
+        shortcut_body = source[shortcut_start:shortcut_end]
+        keydown = source[source.index('function handleKeydown(event) {'):source.index('function handleClipboardCopy(event) {')]
+
+        self.assertIn('state.selectedStepId', shortcut_body)
+        self.assertIn('applyForegroundConflictOrder(simulatedSteps);', shortcut_body)
+        self.assertIn('function earliestVisualTickRespectingForegroundReturn(currentStep, proposedVisualTick)', shortcut_body)
+        self.assertIn('window.ShaftSelfCheck?.isMaskingTimeStopZero(step, action)', shortcut_body)
+        self.assertIn('window.ShaftSelfCheck?.MIN_FOREGROUND_RETURN_TICKS || 12', shortcut_body)
+        self.assertIn('calculationTickFromVisual(visualTick) < requiredCalculationTick', shortcut_body)
+        self.assertIn('const shiftTicks = currentStart - earliestStart;', shortcut_body)
+        self.assertIn('Number(step.start_tick || 0) >= currentStart', shortcut_body)
+        self.assertIn('normalizeEditedSteps(new Set([currentStep.id]));', shortcut_body)
+        self.assertIn("(event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'Backspace'", keydown)
+        self.assertIn('moveCurrentStepEarlier();', keydown)
+        self.assertIn('<kbd>Ctrl / ⌘</kbd><span>+</span><kbd>Backspace</kbd>', template)
+        self.assertIn('id="shaft-move-earlier-btn"', template)
+        self.assertIn("$('shaft-move-earlier-btn').addEventListener('click', moveCurrentStepEarlier);", source)
 
     def test_batch_drag_preserves_each_selected_action_placement(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1100,6 +1595,20 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('if (canChangePlacement) {', drag_body)
         self.assertIn('applyDraggedPlacement(item, drag, deltaY);', drag_body)
 
+    def test_noop_can_move_to_background_without_losing_foreground_switch_semantics(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
+        catalog = load_shaft_catalog()
+        noop = next(action for action in catalog['actions'] if action['name'] == '无')
+
+        self.assertTrue(noop['can_background_override'])
+        self.assertIn('return Boolean(action?.can_background_override);', source)
+        self.assertIn('return Boolean(action?.can_background_override);', engine)
+        self.assertIn('function switchesForeground(step, action = actionForStep(step)) {', source)
+        self.assertIn("isInstantSwitchAction(action) ? '后台切人'", source)
+        self.assertIn('function switchesForeground(step, action) {', engine)
+        self.assertIn('const changesForeground = switchesForeground(step, action);', engine)
+
     def test_native_background_action_multiplier_uses_confirmation_dialog_and_is_visible_on_bar(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
@@ -1109,7 +1618,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const MAX_BACKGROUND_ACTION_MULTIPLIER = 999;', source)
         self.assertIn('const MAX_BACKGROUND_ACTION_MULTIPLIER = 999;', engine)
         self.assertIn('function backgroundActionMultiplier(step, action = actionForStep(step)) {', source)
-        self.assertIn('${isBackgroundAction(action) ? `', source)
+        self.assertIn('${!damageEvent && isBackgroundAction(action) && action.lingke_joint_source_slot == null ? `', source)
         self.assertIn('data-open-background-multiplier', source)
         self.assertIn('aria-haspopup="dialog">设置</button>', source)
         self.assertNotIn('aria-haspopup="dialog">×${actionMultiplier} · 设置</button>', source)
@@ -1132,6 +1641,25 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('Math.min(12, int(step?.repeat, 1))', engine)
         self.assertIn("actionMultiplier > 1 ? `×${actionMultiplier}` : ''", source)
         self.assertIn('step.repeat = backgroundActionMultiplier(step, action);', source)
+
+    def test_actions_open_double_click_editor_and_detached_steps_use_distinct_name_color(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
+        template = (ROOT / 'app' / 'modules' / 'shaft' / 'templates' / 'shaft' / 'index.html').read_text(encoding='utf-8')
+        css = (ROOT / 'app' / 'modules' / 'shaft' / 'static' / 'css' / 'shaft-page.css').read_text(encoding='utf-8')
+
+        self.assertIn("$('shaft-timeline').addEventListener('dblclick', handleTimelineDoubleClick);", source)
+        self.assertIn('function openActionEditor(stepId, trigger = null) {', source)
+        self.assertIn('step.detached = true;', source)
+        self.assertIn('detached_duration_ticks', source)
+        self.assertIn('configuredActionDurationTicks(step, action)', engine)
+        self.assertIn('id="shaft-action-edit-dialog"', template)
+        self.assertIn('id="shaft-action-edit-detached"', template)
+        self.assertIn('id="shaft-action-edit-trigger-character"', template)
+        self.assertIn('function triggerCharactersForAction(action) {', source)
+        self.assertIn('step.trigger_character_id = nextTriggerCharacterId;', source)
+        self.assertIn('.shaft-action-edit-trigger-character {', css)
+        self.assertIn('.shaft-action-bar.detached-action .shaft-action-name {', css)
 
     def test_native_background_actions_display_as_zero_seconds_with_five_tick_footprint(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1169,29 +1697,32 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("if (!loopEnabled || effect?.loop_primed || endTick <= Number(axisEndTick || 0)) {", source)
         self.assertIn('return segments.filter((segment) => segment.startTick > 0);', source)
         self.assertIn('reactionBuffLineSegments(effect, buffAxisEndTick, loopEnabled).forEach((segment) => {', source)
-        self.assertIn('const timelineDamageEvents = [...reactionDamageEvents, ...periodicDamageEvents];', source)
+        self.assertIn('const timelineDamageEvents = [...reactionDamageEvents, ...periodicDamageEvents, ...dissonanceEvents];', source)
         self.assertIn('function groupedTimelineDamageEvents(events) {', source)
         self.assertIn('const groupedDamageEvents = groupedTimelineDamageEvents(timelineDamageEvents);', source)
         self.assertIn('const reactionDamageMarkers = groupedDamageEvents', source)
         self.assertIn("return event.events.map((item) => damageMarkerTooltip(item)).join('\\n');", source)
-        self.assertIn('class="shaft-reaction-damage-marker ${isPeriodicDamage ?', source)
-        self.assertIn('const opensUpward = isPeriodicDamage && Number(member.slot) === 3;', source)
+        self.assertIn('class="shaft-reaction-damage-marker ${isResourceDamage ?', source)
+        self.assertIn('const opensUpward = (isPeriodicDamage || isResourceDamage) && Number(member.slot) === 3;', source)
         self.assertIn("${opensUpward ? 'shaft-damage-tooltip-above' : ''}", source)
         self.assertIn('function damageMarkerTooltip(event) {', source)
-        self.assertIn("addZone('基础区', isPeriodicDamage ? formula.unscaled_base : formula.base);", source)
+        self.assertIn("addScalingStat(scalingParts, 'atk', '攻击力');", source)
+        self.assertIn("addScalingStat(scalingParts, 'hp', '生命');", source)
+        self.assertIn("addScalingStat(scalingParts, 'def', '防御');", source)
+        self.assertIn('`层数 ${formatNumber(formula.periodic_scale ?? 1, 1)}`', source)
+        self.assertIn('`增伤 ${percent(formula.damage_bonus)}　暴击 ${percent(formula.crit_rate)}　暴伤 ${percent(formula.crit_dmg)}`', source)
+        self.assertIn('`基础值 ${formatNumber(formula.base || 0, 1)}`', source)
+        self.assertIn('`环合强度 ${formatNumber(formula.harmony_strength || 0, 1)}`', source)
+        self.assertIn('`频率 ×${formatNumber(formula.frequency_multiplier ?? 1, 2)}`', source)
+        self.assertIn('`减防 ${percent(formula.def_down)}　穿防 ${percent(formula.def_ignore)}　减抗 ${percent(formula.res_down)}`', source)
+        self.assertIn('lines.push(`最终增伤 ${percent(formula.final_dmg)}`);', source)
+        self.assertIn("const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害 · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;", source)
+        self.assertNotIn('最终 ${formatNumber(event?.damage || 0)} 伤害', source)
+        self.assertNotIn('const zones = [];', source)
+        self.assertNotIn('乘区　${zones.join', source)
         self.assertNotIn("['噩梦', '蚀心'].includes", source)
-        self.assertNotIn('攻击力（基础区）', source)
-        self.assertIn("addZone('频率乘区', formula.frequency_multiplier);", source)
-        self.assertNotIn("addZone('九原频率乘区', formula.frequency_multiplier);", source)
         self.assertNotIn('const frequencyText = Number(effect.frequency_multiplier || 1) > 1', source)
         self.assertIn('tooltip: `${effect.reaction} · ${ticksToSeconds(effect.duration_ticks || 1)}s`', source)
-        self.assertNotIn("addZone('技能等级', formula.skill_multiplier);", source)
-        self.assertIn("addZone('最终倍率区', formula.final_multiplier);", source)
-        self.assertEqual(source.count("addZone('最终倍率区', formula.final_multiplier);"), 2)
-        self.assertIn("if (String(event?.reaction || '') !== '黯星') addZone('防御', formula.defense);", source)
-        self.assertIn("addZone('双暴区', formula.critical);", source)
-        self.assertEqual(source.count("addZone('双暴区', formula.critical);"), 2)
-        self.assertIn("if (String(event?.reaction || '') === '浊燃') addZone('双暴区', formula.critical);", source)
         self.assertIn('data-tooltip="${escapeHtml(tooltip)}"', source)
         self.assertIn('tabindex="0"', source)
         self.assertIn('function positionDamageMarkerTooltip(event) {', source)
@@ -1236,6 +1767,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('.shaft-reaction-damage-marker.shaft-damage-tooltip-above:hover::after,', css)
         self.assertIn("isPeriodicDamage ? trackHeight - 5 : buffLineTop + 9", source)
         self.assertIn('const warnings = Array.from(new Set([...axisWarnings, ...simulationWarnings]));', source)
+        self.assertIn('inspectAxis(state.axis, state.catalog, simulationResult)', source)
 
     def test_buff_line_uses_only_the_latest_stack_snapshot(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1421,7 +1953,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('if (state.axis.initial_energy === 100) {', source)
         self.assertNotIn('const energyCapacity = Number(resource.energy_capacity ?? 0);', source)
         self.assertIn('const energyLabel = formatNumber(resources.energy || 0, 1);', source)
-        self.assertIn('const harmony = Number(snapshot.harmony ?? resource.initial_harmony ?? 0);', source)
+        self.assertIn('(result?.harmony_events || []).reduce', source)
+        self.assertIn('latestHarmonyEvent?.harmony_after ?? resource.initial_harmony', source)
         self.assertNotIn('function slotResourcesForAxis', source)
         self.assertNotIn('primarySelectedLayoutForCursor', source)
         self.assertIn("node.style.left = `${leftPx(state.cursorTick)}px`;", source)
@@ -1454,6 +1987,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         add_body = add_match.group('body')
         self.assertNotIn('shiftStepsFromTick', source)
         self.assertIn('const insertTick = prepareInsertionTick(startTick, action, slot);', add_body)
+        self.assertIn('reserveTimeStopZeroInsertionSpan(insertTick, action, step);', add_body)
         self.assertIn('startsForeground(candidateStep, action || {})', source)
         self.assertIn('!actionIntervalAtTick(target, slot)', source)
         self.assertIn('!startsForeground(candidateStep, action || {}) && !blocksSlotOverlap(candidateStep, action || {})', source)
@@ -1463,6 +1997,23 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('renderAll();', add_body)
         self.assertLess(add_body.index('scheduleSimulation();'), add_body.index('revealTimelineTick(state.cursorTick);'))
         self.assertIn("const shell = timeline?.closest('.shaft-timeline-shell');", source)
+
+    def test_time_stop_zero_insertion_reserves_one_virtual_span_for_every_following_step(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        helper_match = re.search(
+            r'function\s+reserveTimeStopZeroInsertionSpan\s*\([^)]*\)\s*{\s*(?P<body>.*?)\n  }\n\n  function addActionAt',
+            source,
+            re.S,
+        )
+        if not helper_match:
+            raise AssertionError('reserveTimeStopZeroInsertionSpan function is missing.')
+
+        helper_body = helper_match.group('body')
+        self.assertIn('if (!isTimeStopZeroForegroundStep(candidateStep, action))', helper_body)
+        self.assertIn('const spanTicks = actionVisualDurationTicks(action, candidateStep);', helper_body)
+        self.assertIn('Number(step.start_tick || 0) >= insertTick', helper_body)
+        self.assertIn('step.start_tick = Number(step.start_tick || 0) + spanTicks;', helper_body)
+        self.assertIn('return spanTicks;', helper_body)
 
     def test_drag_preview_keeps_timeline_and_buff_snapshots_until_drop(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1521,6 +2072,14 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const mappedDisplayTick = Math.max(0, tickFromTimelineXWithScale(', source)
         self.assertIn('const mappedTick = axisTickFromDragDisplayTick(drag, mappedDisplayTick);', source)
 
+    def test_drag_cursor_uses_the_projected_action_display_tick(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+
+        self.assertIn('function timelineDisplayTickForResultStep(step, result = timelineResult()) {', source)
+        self.assertIn("const detail = (result?.details || []).find((item) => item.step_id === step?.id);", source)
+        self.assertIn('state.cursorTick = timelineDisplayTickForResultStep(normalizedStep, drag.previewResult);', source)
+        self.assertIn('state.cursorTick = timelineDisplayTickForResultStep(primary, drag.previewResult);', source)
+
     def test_drag_priority_does_not_reverse_when_crossing_yi_e_to_support_end(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
 
@@ -1537,7 +2096,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         source = SHAFT_JS.read_text(encoding='utf-8')
 
         self.assertIn('const slotBlockingEnd = new Map();', source)
-        self.assertIn('previousForegroundStartTick + MIN_FOREGROUND_START_GAP_TICKS', source)
+        self.assertIn('previousForegroundAction?.switch_gap_after_ticks ?? MIN_FOREGROUND_START_GAP_TICKS', source)
         self.assertIn('function locksForegroundSwitch(step, action = actionForStep(step)) {', source)
         self.assertIn('function foregroundLockEndTick(step, action, startTick) {', source)
         self.assertIn('detail.display_visual_end_tick ?? detail.visual_end_tick', source)
@@ -1572,6 +2131,39 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('`/api/shaft/axes/${axisId}/backup`', source)
         self.assertIn("await loadAxis(Number(backup.id), 'mine');", source)
 
+    @unittest.skipUnless(shutil.which('node'), 'Node.js is required')
+    def test_readonly_share_preserves_restricted_character_and_steps(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        filtering = source[source.index('    const disabledCharacterIds = new Set('):
+                           source.index('    state.axis.steps = window.ShaftEngine.migrateLingkeJointSteps(')]
+        script = """
+const clone = (value) => JSON.parse(JSON.stringify(value));
+const run = (readOnly) => {
+  const state = {
+    sharedReadOnly: readOnly,
+    catalog: {
+      characters: [{id: 'test_character', selection_disabled: true}],
+      starter_axis: {team: [{slot: 0, character_id: 'public_character'}]},
+    },
+    axis: {
+      team: [{slot: 0, character_id: 'test_character'}],
+      steps: [{slot: 0, action_id: 'test_action'}, {slot: 1, action_id: 'public_action'}],
+    },
+  };
+""" + filtering + """
+  return state.axis;
+};
+process.stdout.write(JSON.stringify([run(true), run(false)]));
+"""
+        completed = subprocess.run([shutil.which('node'), '-e', script],
+                                   capture_output=True, text=True, check=True)
+        shared, editable = json.loads(completed.stdout)
+        self.assertEqual(shared['team'][0]['character_id'], 'test_character')
+        self.assertEqual([step['action_id'] for step in shared['steps']],
+                         ['test_action', 'public_action'])
+        self.assertEqual(editable['team'][0]['character_id'], 'public_character')
+        self.assertEqual([step['action_id'] for step in editable['steps']], ['public_action'])
+
     def test_my_axis_share_link_copies_and_opening_protects_dirty_workspace(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
@@ -1585,8 +2177,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             self.assertIn(f'value="{value}"', template)
         self.assertIn('async function openSharedAxisFromUrl()', source)
         self.assertIn('if (hasUnsavedAxisChanges()) {', source)
-        self.assertIn("action === 'save' && !await saveAxis()", source)
-        self.assertIn("action === 'save_as' && !await saveAxisAsCopy()", source)
+        self.assertIn("if (action === 'save') return Boolean(await saveAxis());", source)
+        self.assertIn("if (action === 'save_as') return Boolean(await saveAxisAsCopy());", source)
         self.assertIn('state.savedAxisId = null;', source)
         self.assertIn('sharedReadOnly: false,', source)
         self.assertIn('state.sharedReadOnly = Boolean(payload.read_only);', source)
@@ -1597,6 +2189,52 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('not (allow_anonymous_shaft_share | default(false))', base_template)
         self.assertIn("setPage('rotation');", source)
         self.assertIn('await openSharedAxisFromUrl();', source)
+
+    def test_my_axis_load_waits_for_unsaved_resolution_and_successful_save(self):
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        load = source[source.index('  async function loadAxis('):source.index('  async function shareAxis(')]
+        guard = source[source.index('  async function confirmWorkspaceReplacement('):source.index('  async function replaceWorkspaceWithSharedAxis(')]
+        script = """
+          let state, dirty, choice, saved, calls;
+          const fields = {'shaft-title-input': {}, 'shaft-description-input': {}};
+          const $ = id => fields[id];
+          const hasUnsavedAxisChanges = () => dirty;
+          const resolveSharedAxisWorkspace = async () => { calls.push('prompt'); return choice; };
+          const saveAxis = async () => { calls.push('save'); return saved; };
+          const saveAxisAsCopy = async () => { calls.push('copy'); return saved; };
+          const shaftRequest = async () => { calls.push('fetch'); return {id: 2, title: 'Target', axis: {target: true}}; };
+          const setStatus = () => {};
+          const ensureAxisShape = () => {};
+          const markSimulationStale = () => {};
+          const renderAll = () => {};
+          const setPage = () => {};
+          const runSimulation = async () => {};
+          const markAxisDocumentClean = () => {};
+          const persistAxisDraft = () => {};
+        """ + load + guard + """
+          (async () => {
+            const results = [];
+            for (const config of [[false,'cancel',false],[true,'cancel',false],
+              [true,'discard',false],[true,'save',false],[true,'save',true],
+              [true,'save_as',false],[true,'save_as',true]]) {
+              [dirty,choice,saved] = config;
+              calls = []; state = {axis: {draft: true}, savedAxisId: 1};
+              await loadAxis(2, 'mine');
+              results.push({calls: [...calls], axis: state.axis, savedAxisId: state.savedAxisId,
+                locked: state.axisOpenInProgress});
+            }
+            console.log(JSON.stringify(results));
+          })();
+        """
+        results = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertEqual([r['calls'] for r in results], [
+            ['fetch'], ['prompt'], ['prompt', 'fetch'], ['prompt', 'save'],
+            ['prompt', 'save', 'fetch'], ['prompt', 'copy'], ['prompt', 'copy', 'fetch']])
+        for i, result in enumerate(results):
+            loaded = i in (0, 2, 4, 6)
+            self.assertEqual(result['axis'], {'target': True} if loaded else {'draft': True})
+            self.assertEqual(result['savedAxisId'], 2 if loaded else 1)
+            self.assertFalse(result['locked'])
 
     def test_plaza_uses_equal_columns_snapshot_upload_and_my_axis_filters(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1674,6 +2312,44 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('result,', save_body)
         self.assertLess(save_body.index('await runSimulation();'), save_body.index('const payload = {'))
 
+    def test_online_copy_cancel_does_not_write_or_close_preview(self):
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        code = source[source.index("  async function saveMarketAxisToLocal("):source.index('  function handleAxisPreviewWheel')]
+        script = """
+          const state = {axisPreviewPayload: {local_copy_id: 9}, axisPreviewSaving: false};
+          const getToken = () => 'fixture'; const $ = () => ({});
+          let prompted = false;
+          const window = {confirm: () => { prompted = true; return false; }};
+        """ + code + """
+          saveMarketAxisToLocal().then(() => console.log(JSON.stringify({prompted,state})));
+        """
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertTrue(result['prompted'])
+        self.assertEqual(result['state']['axisPreviewPayload']['local_copy_id'], 9)
+        self.assertFalse(result['state']['axisPreviewSaving'])
+
+    def test_save_response_preserves_edits_made_while_request_is_pending(self):
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        code = source[source.index("  async function saveAxis(conflictAction = '')"):source.index('  function sharedCopyTitle()')]
+        script = """
+          const state = {savedAxisId: 1, axis: {revision: 1}};
+          const fields = {'shaft-title-input': {value:'Original'}, 'shaft-description-input': {value:''}};
+          const $ = id => fields[id];
+          const getToken = () => 'fixture'; const freshResult = () => ({});
+          const axisDocumentFingerprint = () => JSON.stringify({axis:state.axis,title:fields['shaft-title-input'].value});
+          const persistAxisDraft = () => {}; const setStatus = () => {}; const showToast = () => {};
+          const shaftRequest = async () => {
+            state.axis = {revision:2}; fields['shaft-title-input'].value = 'Edited while saving';
+            return {id:1, title:'Original', axis:{revision:1}, result:{}};
+          };
+        """ + code + """
+          saveAxis().then(saved => console.log(JSON.stringify({saved,axis:state.axis,title:fields['shaft-title-input'].value})));
+        """
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertFalse(result['saved'])
+        self.assertEqual(result['axis'], {'revision':2})
+        self.assertEqual(result['title'], 'Edited while saving')
+
     def test_axis_save_as_requires_a_changed_title(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
@@ -1699,6 +2375,19 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(lucid_dream['name'], '清明梦')
         self.assertEqual(lucid_dream['action_type'], '普攻')
         self.assertTrue(lucid_dream['can_background_override'])
+
+    def test_dafutier_yixing_can_move_from_foreground_to_background(self) -> None:
+        catalog = load_shaft_catalog()
+        yixing = next(
+            action for action in catalog['actions']
+            if action['id'] == 'action_5e2016e57b'
+        )
+
+        self.assertEqual(yixing['character_name'], '达芙蒂尔')
+        self.assertEqual(yixing['name'], '移行')
+        self.assertEqual(yixing['action_type'], '普攻')
+        self.assertEqual(yixing['duration_ticks'], 10)
+        self.assertTrue(yixing['can_background_override'])
 
     def test_market_dislike_uses_authenticated_toggle_and_refreshes_market(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1732,6 +2421,13 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         source = SHAFT_JS.read_text(encoding='utf-8')
 
         self.assertIn('if (isEditableTarget(event.target)) {', source)
+        keydown = source[source.index('function handleKeydown(event) {'):source.index('function handleClipboardCopy(event) {')]
+        self.assertIn("if (state.page !== 'rotation') {", keydown)
+        self.assertLess(keydown.index("if (state.page !== 'rotation') {"), keydown.index("event.key.toLowerCase() === 'z'"))
+        clipboard_copy = source[source.index('function handleClipboardCopy(event) {'):source.index('function handleClipboardPaste(event) {')]
+        clipboard_paste = source[source.index('function handleClipboardPaste(event) {'):source.index('function timelineShell() {')]
+        self.assertIn("state.page !== 'rotation' || state.sharedReadOnly", clipboard_copy)
+        self.assertIn("state.page !== 'rotation' || state.sharedReadOnly", clipboard_paste)
         self.assertIn('function selectAllTimelineSteps() {', source)
         self.assertIn("event.key.toLowerCase() === 'a' &&", source)
         self.assertIn("state.page === 'rotation'", source)
@@ -1832,12 +2528,17 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
     def test_q_timeline_abilities_require_zero_duration_foreground_q(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
 
+        self.assertTrue(all(action.get('is_time_stop_zero') for action in _zero_q_actions()))
         self.assertIn('function isZeroForegroundQStep(step, action = actionForStep(step)) {', source)
-        self.assertIn('startsForeground(step, action) && isQAction(action) && actionDurationTicks(action) === 0', source)
+        self.assertIn('return isTimeStopZeroForegroundStep(step, action) && hasTimelineMaskAbility(action);', source)
+        self.assertIn("return isQAction(action) || Boolean(action?.is_timeline_mask) || Boolean(action?.is_time_stop_zero);", source)
         self.assertIn('const actionIsQ = isZeroForegroundQStep(step, action);', source)
-        self.assertIn('.filter((item) => isZeroForegroundQStep(item.step, item.action))', source)
+        self.assertIn('.filter((item) => isTimeStopZeroForegroundStep(item.step, item.action))', source)
         self.assertIn('isZeroForegroundQStep(candidateStep, action || {}) ||', source)
+        self.assertIn('isTimeStopZeroForegroundStep(candidateStep, action || {}) ||', source)
         self.assertIn('tickHasForegroundQ(target) ||', source)
+        self.assertIn('function isTimeStopZeroForegroundStep(step, action = actionForStep(step)) {', source)
+        self.assertIn('Boolean(action?.is_time_stop_zero)', source)
         self.assertNotIn('const currentIsQ = foregroundStart && isQAction(action);', source)
 
     def test_noop_switch_has_independent_timeline_semantics(self) -> None:

@@ -5,6 +5,13 @@ from app.db import init_db
 from app.models import (
     AccessToken,
     DeckBuild,
+    DuelV2Build,
+    DuelV2Member,
+    DuelV2Replay,
+    DuelV2ReplayStar,
+    DuelV2TutorialProgress,
+    DuelV2Room,
+    DuelV2Run,
     GameRun,
     LoginCode,
     Player,
@@ -36,6 +43,13 @@ def create_app() -> Flask:
         LoginCode,
         AccessToken,
         DeckBuild,
+        DuelV2Build,
+        DuelV2Room,
+        DuelV2Member,
+        DuelV2Run,
+        DuelV2Replay,
+        DuelV2ReplayStar,
+        DuelV2TutorialProgress,
         Room,
         RoomMember,
         GameRun,
@@ -71,12 +85,14 @@ def create_app() -> Flask:
         return response
 
     from app.modules.card_game import blueprint as card_game_module
+    from app.modules.card_game.v2_routes import blueprint as duel_v2_api
     from app.modules.kongmu import blueprint as kongmu_module
     from app.modules.preteam import blueprint as preteam_module
     from app.modules.shaft import blueprint as shaft_module
     from .routes import main_bp
 
     app.register_blueprint(card_game_module)
+    app.register_blueprint(duel_v2_api)
     app.register_blueprint(kongmu_module)
     app.register_blueprint(preteam_module)
     app.register_blueprint(shaft_module)

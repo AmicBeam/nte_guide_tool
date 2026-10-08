@@ -39,6 +39,7 @@ from app.modules.shaft.service import (
     set_shaft_axis_dislike,
     set_shaft_axis_favorite,
     set_shaft_axis_like,
+    shaft_player_access_level,
 )
 from app.errors import AppError
 from app.room_service import (
@@ -142,12 +143,12 @@ def default_page():
 
 @main_bp.get('/favicon.ico')
 def favicon():
-    return redirect(url_for('static', filename='images/brand/duel-icon.webp'))
+    return redirect(url_for('static', filename='images/brand/esper-duel-icon.webp'))
 
 
 @main_bp.get('/card-game')
 def card_game_home():
-    return render_template('card_game/index.html')
+    return render_template('card_game/index.html' if request.args.get('legacy') == '1' else 'card_game/v2_index.html')
 
 
 @main_bp.get('/login')
@@ -162,12 +163,12 @@ def profile_page():
 
 @main_bp.get('/build')
 def build_page():
-    return render_template('card_game/build.html')
+    return render_template('card_game/build.html' if request.args.get('legacy') == '1' else 'card_game/v2_build.html')
 
 
 @main_bp.get('/codex')
 def codex_page():
-    return render_template('card_game/codex.html')
+    return render_template('card_game/codex.html' if request.args.get('legacy') == '1' else 'card_game/v2_codex.html')
 
 
 @main_bp.get('/analytics')
@@ -205,7 +206,12 @@ def shaft_page(page: str = 'rotation'):
 
 @main_bp.get('/table')
 def table_page():
-    return render_template('card_game/table.html')
+    return render_template('card_game/table.html' if request.args.get('legacy') == '1' else 'card_game/v2_table.html')
+
+
+@main_bp.get('/replays')
+def replays_page():
+    return render_template('card_game/v2_replays.html')
 
 
 @main_bp.get('/preteam')
@@ -330,15 +336,7 @@ def api_balance_analytics():
 @main_bp.get('/api/kongmu/catalog')
 def api_kongmu_catalog():
     try:
-        player = _optional_current_player()
-        response = jsonify(get_kongmu_catalog_payload(include_test_characters=bool(
-            player and player.shaft_test_whitelisted
-        )))
-        # This URL returns a different catalog for test-whitelisted accounts.
-        # Never let an anonymous response mask the authenticated variant.
-        response.headers['Cache-Control'] = 'private, no-store'
-        response.headers.add('Vary', 'Authorization')
-        return response
+        return jsonify(get_kongmu_catalog_payload())
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400
     except Exception:
@@ -354,11 +352,9 @@ def api_kongmu_plan():
     if source_lock is None:
         return jsonify({'error': '同一来源已有空幕计算正在进行，请稍后再试。'}), 429
     try:
-        player = _optional_current_player()
         return jsonify(plan_kongmu_layout(
             str(payload.get('character_id', '')),
             str(payload.get('cartridge_id', '')),
-            include_test_characters=bool(player and player.shaft_test_whitelisted),
         ))
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400

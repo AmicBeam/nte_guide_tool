@@ -1,5 +1,23 @@
 [
   {
+    "id": "arc_heiyu_crime_punishment",
+    "name": "罪与罚",
+    "level": 80,
+    "rarity": "",
+    "adaptation": "气态",
+    "detail": "环合强度+72～144，魂伤+20%～40%；释放极轨终结后全队暴击伤害提高16%～32%，装备者额外提高32%～64%，持续15秒，重复获得刷新持续时间。",
+    "base_atk": 570,
+    "modifiers": {
+      "crit_rate": 0.24,
+      "harmony_strength": 72
+    },
+    "element_dmg": {
+      "魂": 0.2
+    },
+    "source_row": 0,
+    "source_note": "用户2026-09-18补充调整，非Nanoka核实数据。2–4精沿用用户授权的等差插值。"
+  },
+  {
     "id": "arc_canhong_devouring_heart",
     "name": "噬心诡刃",
     "level": 80,
@@ -524,6 +542,21 @@
       "相": 0
     },
     "source_row": 15
+  },
+  {
+    "id": "arc_akane_moon_antipode",
+    "name": "月的对跖点",
+    "level": 80,
+    "rarity": "",
+    "adaptation": "液态",
+    "detail": "暴击率提升16%～32%。普攻命中后变轨伤害每层提升7%～14%，持续5秒，最多4层，0.3秒触发间隔；释放变轨后普攻伤害提升28%～56%，持续15秒。同时拥有两种效果时，相伤提升16%～32%。",
+    "base_atk": 570,
+    "modifiers": {
+      "crit_dmg": 0.48,
+      "crit_rate": 0.16
+    },
+    "element_dmg": {},
+    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 精炼2–4等差插值。"
   },
   {
     "id": "arc_bab179ec33",
@@ -1286,6 +1319,45 @@
     "source_row": 35
   },
   {
+    "id": "arc_614aec6ed1",
+    "name": "远行者之声",
+    "level": 80,
+    "rarity": "S",
+    "adaptation": "等离子",
+    "detail": "攻击力提升24%~48%；援护技暴击伤害提升66%~132%；每次援护技造成伤害，使极轨终结暴击伤害提升22%~44%，持续3秒、最多3层，重复触发刷新（随精炼等级）",
+    "base_atk": 570,
+    "modifiers": {
+      "crit_rate": 0.24,
+      "crit_dmg": 0,
+      "atk_pct": 0.24,
+      "hp_pct": 0,
+      "def_pct": 0,
+      "energy_recharge": 0,
+      "harmony_strength": 0,
+      "stagger_strength": 0,
+      "def_ignore": 0,
+      "res_down": 0,
+      "all_dmg": 0,
+      "basic_dmg": 0,
+      "dodge_counter_dmg": 0,
+      "skill_dmg": 0,
+      "ultimate_dmg": 0,
+      "mind_dmg": 0,
+      "follow_dmg": 0,
+      "attach_dmg": 0
+    },
+    "element_dmg": {
+      "光": 0,
+      "灵": 0,
+      "咒": 0,
+      "暗": 0,
+      "魂": 0,
+      "相": 0
+    },
+    "source_row": 59,
+    "source_note": "Nanoka NTE 1.3.9 weapon/fork_GoldRecord.json；用户2026-08-24明确该等离子弧盘为灵可专属弧盘。"
+  },
+  {
     "id": "arc_ce53905d70",
     "name": "预备备",
     "level": 80,
@@ -1329,7 +1401,7 @@
     "level": 80,
     "rarity": "S",
     "adaptation": "等离子",
-    "detail": "造成的伤害提升22%~38%；对生命低于50%的目标改为提升28%~52%（随精炼等级）",
+    "detail": "半血以下额外增伤按1/2收益折算常驻：造成的伤害提升25%~45%（随精炼等级）",
     "base_atk": 512,
     "modifiers": {
       "crit_rate": 0,
@@ -1342,7 +1414,7 @@
       "stagger_strength": 0,
       "def_ignore": 0,
       "res_down": 0,
-      "all_dmg": 0.22,
+      "all_dmg": 0.25,
       "basic_dmg": 0,
       "dodge_counter_dmg": 0,
       "skill_dmg": 0,
@@ -1367,7 +1439,7 @@
     "level": 80,
     "rarity": "S",
     "adaptation": "等离子",
-    "detail": "38增伤；半血下提升至52%",
+    "detail": "半血以下额外增伤按1/2收益折算常驻：45%增伤",
     "base_atk": 512,
     "modifiers": {
       "crit_rate": 0,
@@ -1380,7 +1452,7 @@
       "stagger_strength": 0,
       "def_ignore": 0,
       "res_down": 0,
-      "all_dmg": 0.38,
+      "all_dmg": 0.45,
       "basic_dmg": 0,
       "dodge_counter_dmg": 0,
       "skill_dmg": 0,
@@ -1443,7 +1515,7 @@
     "level": 80,
     "rarity": "S",
     "adaptation": "等离子",
-    "detail": "12%攻击，倾陷增伤12%",
+    "detail": "12%攻击；倾陷目标增伤按1/3收益折算为4%常驻增伤",
     "base_atk": 512,
     "modifiers": {
       "crit_rate": 0,
@@ -1456,7 +1528,7 @@
       "stagger_strength": 0,
       "def_ignore": 0,
       "res_down": 0,
-      "all_dmg": 0,
+      "all_dmg": 0.04,
       "basic_dmg": 0,
       "dodge_counter_dmg": 0,
       "skill_dmg": 0,

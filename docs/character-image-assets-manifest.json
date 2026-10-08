@@ -1,0 +1,437 @@
+{
+  "repository": "mc-ctrl/NTEData",
+  "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+  "conversion": {
+    "format": "WebP",
+    "quality": 90,
+    "method": 6,
+    "resize": false,
+    "crop": false,
+    "alpha": "preserved",
+    "encoder": "Pillow 12.3.0"
+  },
+  "assets": [
+    {
+      "character": "零",
+      "character_id": "1051",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1051_2",
+      "fashion_name": "猎人不上班",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_nvzhu6.png",
+      "blob_sha": "6bd71eec8e46d023f9e50a77ce6401dd9d9bd520",
+      "output": "app/static/images/characters/costume/Fashion_1051_2.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "b3d0a93313d9658aca803e3c63054f38dd1ee4d179824a8d84e1f708bc103ea1",
+      "output_sha256": "97cd17bc8da8cce20d8443bfd28cbce60f03d573e2ded7aafcea2baf8294e322",
+      "bytes": 131604,
+      "card_ids": [
+        "Z07"
+      ]
+    },
+    {
+      "character": "浔",
+      "character_id": "1052",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1052_nighty",
+      "fashion_name": "闲满庭",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_xun2.png",
+      "blob_sha": "d590776754859e0c47d327b630a335998f1b95d6",
+      "output": "app/static/images/characters/costume/Fashion_1052_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "8cd3053b196b187c109d02fec7726ed1d0c87eee12b53de16cd5061e9824f1f6",
+      "output_sha256": "af86e129ecdac9a55f8ab64843a4866df55f63ba77cef9697409253d4bf1992b",
+      "bytes": 186058,
+      "card_ids": [
+        "X08"
+      ]
+    },
+    {
+      "character": "真红",
+      "character_id": "1076",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1076_1",
+      "fashion_name": "地海高校生",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_zhenhong5.png",
+      "blob_sha": "20b0c153cadf1aeec421757abd414d85a46f9500",
+      "output": "app/static/images/characters/costume/Fashion_1076_1.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "24fa904d11817352121167e9c42ea96db4bf2d518b11209db5acb84c9ca071f6",
+      "output_sha256": "de0f4ef4c8c5b96ab20d1d7b827681f596bdcb1720f26b45194103a76d9d71bf",
+      "bytes": 254698,
+      "card_ids": [
+        "R07"
+      ]
+    },
+    {
+      "character": "真红",
+      "character_id": "1076",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1076_nighty",
+      "fashion_name": "迷宫屋主",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_zhenhong3.png",
+      "blob_sha": "78396bca6917ea44fe67251e0f1741ea86844642",
+      "output": "app/static/images/characters/costume/Fashion_1076_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "118753ff3979e78f6f1cbb5c647f510796443d16010ba0659bbae883c85f6f63",
+      "output_sha256": "32698385da5da4c6103b84811f1037c99a4125c129e4496a335d5daa51e79769",
+      "bytes": 216428,
+      "card_ids": [
+        "R08"
+      ]
+    },
+    {
+      "character": "小吱",
+      "character_id": "1073",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1073_nighty",
+      "fashion_name": "绒绒春日",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshopi_xiaozhi2.png",
+      "blob_sha": "ad0ac9e8bbc529c1a5700fcc89df9a6f7f32b598",
+      "output": "app/static/images/characters/costume/Fashion_1073_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "0764867b15a8b1b0d0a00033ae03aa2709afd1f08c0b0886697c28dc517e9370",
+      "output_sha256": "e19a409d0df22575b0fc472e429380d35fdbe2d8baaa369b58b8c3e1a8813af3",
+      "bytes": 150766,
+      "card_ids": [
+        "Q08"
+      ]
+    },
+    {
+      "character": "小吱",
+      "character_id": "1073",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1073_1",
+      "fashion_name": "青竹猗猗",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshopi_xiaozhi1_2.png",
+      "blob_sha": "6f3d6e3eeaee060c21bb59e3fbe127f60fe38763",
+      "output": "app/static/images/characters/costume/Fashion_1073_1.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "5449afe31395cffc3ffc70c5d1ba2376102192b030b0ddac83c4cdbd0b44dea1",
+      "output_sha256": "a1e9a92b4f1ad6ce4c885dbbb8bcff8313821dc324b5e5ddf3f2d473f86f6e2d",
+      "bytes": 209200,
+      "card_ids": [
+        "Q07"
+      ]
+    },
+    {
+      "character": "娜娜莉",
+      "character_id": "1010",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1010_3",
+      "fashion_name": "学园之星",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_nanali2_2.png",
+      "blob_sha": "fd9eaf5ce4c5de6c527e9932d9caf43ab7f0a2cf",
+      "output": "app/static/images/characters/costume/Fashion_1010_3.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "0584f33976f501dfcf98b0cea1daaea15912f411684d9b7db5b5416982231ba5",
+      "output_sha256": "30ff9eeb150a2f2897ac39e1519be581d685a6e3bc056a6beb1e5a326f99b5dc",
+      "bytes": 243634,
+      "card_ids": [
+        "N07"
+      ]
+    },
+    {
+      "character": "娜娜莉",
+      "character_id": "1010",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1010_nighty",
+      "fashion_name": "绵绵飞虎",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_nanal4.png",
+      "blob_sha": "b621e3ea4754ecb97aae48e571f9ff357cfbf43c",
+      "output": "app/static/images/characters/costume/Fashion_1010_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "8b6621beebf75fb6984e4a099c606cf09f6c3f060c570a6f1027fa3f4716fbcd",
+      "output_sha256": "9527c8cf34286e6d028c9153c8ea227d09143d9b310cab370eb34e2f47ad48c4",
+      "bytes": 162812,
+      "card_ids": [
+        "N08"
+      ]
+    },
+    {
+      "character": "九原",
+      "character_id": "1055",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1055_nighty",
+      "fashion_name": "自律时间",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_UI_shizhuang_lihui_jiuyuan_2.png",
+      "blob_sha": "07fcfa8d180197258a053e9c9aeb4c710e2438fe",
+      "output": "app/static/images/characters/costume/Fashion_1055_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "24322b6a6ffa9ed8f164e379ff245a4dfd03b2cc0300de8af36eed7b5de474a1",
+      "output_sha256": "a87882db1c4245ec107234dabca76c9d990287332c872893e37ba501f04731a8",
+      "bytes": 132126,
+      "card_ids": [
+        "J08"
+      ]
+    },
+    {
+      "character": "灵可",
+      "character_id": "1072",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1072_school",
+      "fashion_name": "暮春物语",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_lingke3.png",
+      "blob_sha": "2276c2523fcca8ee54b90fc4c29c82d092859e02",
+      "output": "app/static/images/characters/costume/Fashion_1072_school.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "8a29719aeed5c286a1a3753a6ad01ac65c525c96b39923d5f13d3d0551bca3a9",
+      "output_sha256": "408638249394fb2006c20abe68c7c67921bb7cf9f6313821568d99cd6986887d",
+      "bytes": 132772,
+      "card_ids": [
+        "K07"
+      ]
+    },
+    {
+      "character": "灵可",
+      "character_id": "1072",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1072_nighty",
+      "fashion_name": "待机状态",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_lingke1.png",
+      "blob_sha": "2fcd95332d32ddaa5080237c56c5ee71c7206ac7",
+      "output": "app/static/images/characters/costume/Fashion_1072_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "a79e26779ffb4e1ce6f181d77d20732f96205a98c0ed528cbd81b177ebc5c99d",
+      "output_sha256": "c3f8978cf02b5a623b8a86eb48dde34427facce996e6efaa934f9edacdbe578f",
+      "bytes": 97300,
+      "card_ids": [
+        "K08"
+      ]
+    },
+    {
+      "character": "伊洛伊",
+      "character_id": "1075",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1075_rpg_level3",
+      "fashion_name": "织梦者",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_yiluoyi2_2.png",
+      "blob_sha": "c6bf48988c8d8dd986958b3eefccfca1b975a03e",
+      "output": "app/static/images/characters/costume/Fashion_1075_rpg_level3.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "c9f235af53d8ca993b46398c8efa7b546b7a48a457cfc67b65e1218dc453c73b",
+      "output_sha256": "cf1b7c719a0efa32a1dc7d3be32dea10d178028b584f5ac5a88ade9ee10c6a9a",
+      "bytes": 125888,
+      "card_ids": [
+        "Y07"
+      ]
+    },
+    {
+      "character": "伊洛伊",
+      "character_id": "1075",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1075_nighty",
+      "fashion_name": "星月夜",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_yiluoy5.png",
+      "blob_sha": "fc0d6ce7baa889a0e4b607c9aa0cd4dd919e6160",
+      "output": "app/static/images/characters/costume/Fashion_1075_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "cbf22f78d479256093821828eba2f345ef95d21d1132d66b07164e6122cff37a",
+      "output_sha256": "06c490c195e4a69682e13e8e7da1ccd49882792b509c8301002df3a15bcec7db",
+      "bytes": 147860,
+      "card_ids": [
+        "Y08"
+      ]
+    },
+    {
+      "character": "薄荷",
+      "character_id": "1019",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1019_nighty",
+      "fashion_name": "悠闲假日",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_bohe2.png",
+      "blob_sha": "5572aa2ffd7d0071c9cf918dd0a508f1a80cb166",
+      "output": "app/static/images/characters/costume/Fashion_1019_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "e58ed2db0f3a3378dbb597fd5f31ad66681e8a6a41b3baeb0532b717fc5a67e3",
+      "output_sha256": "59975a921904f4da5eb4bb90f6dd180403cab9a64e9f8a928a279a0443bc5925",
+      "bytes": 171266,
+      "card_ids": [
+        "M08"
+      ]
+    },
+    {
+      "character": "薄荷",
+      "character_id": "1019",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1019_rpg_level3",
+      "fashion_name": "幽火照影",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_bohe5.png",
+      "blob_sha": "f3d1083d7d02fb1565ec2a3b43c8bdceaca646f3",
+      "output": "app/static/images/characters/costume/Fashion_1019_rpg_level3.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "cc81489ac96f8ed22bc684d536e354f0640533ebeefea19a337a0ee8d16b7bfb",
+      "output_sha256": "7ef85cf8304bc18a39c79567d92237593a28132a88e8fdaa5535db56563739b5",
+      "bytes": 273498,
+      "card_ids": [
+        "M07"
+      ]
+    },
+    {
+      "character": "安魂曲",
+      "character_id": "1004",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1004_1",
+      "fashion_name": "鎏金交响诗",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshopi_anhunqu3.png",
+      "blob_sha": "699549e1a423802ce018dc4c22ec67f2d963427a",
+      "output": "app/static/images/characters/costume/Fashion_1004_1.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "0918f92a54effb23dcd082e2a178e8416321b9d43767b241b6f3b2bb16283ca0",
+      "output_sha256": "30f6faa7907ab92181eaa98122dc66eac3fba83a47ccf5d9cda0ab5146158729",
+      "bytes": 203328,
+      "card_ids": [
+        "A07"
+      ]
+    },
+    {
+      "character": "安魂曲",
+      "character_id": "1004",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1004_nighty",
+      "fashion_name": "新月摇篮曲",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshopi_anhunqu4.png",
+      "blob_sha": "6f4b3b0f88f39c930fe7c3886d5d41288d4e6a87",
+      "output": "app/static/images/characters/costume/Fashion_1004_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "c01eedad14975e55078f0d41a6bb5f3b0b5500276a14c06dc69b383d645b6eaf",
+      "output_sha256": "a980d34c3d46817c2bcd24fd5057f544f9305989f623ac75cf3ca4285611744c",
+      "bytes": 129976,
+      "card_ids": [
+        "A08"
+      ]
+    },
+    {
+      "character": "残虹",
+      "character_id": "1036",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1036_1",
+      "fashion_name": "「赤葵」",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_canhong5.png",
+      "blob_sha": "d3730b2deec897595e91a40ef211e34ee875865e",
+      "output": "app/static/images/characters/costume/Fashion_1036_1.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "8830c741022197083d6420b388a32b24b212ae5db334f08825200d96440dd180",
+      "output_sha256": "b4482b051ef2264c32aeab748c177784b0e03ffc09ffefcffd7f088f7d58ebb8",
+      "bytes": 266618,
+      "card_ids": [
+        "C07"
+      ]
+    },
+    {
+      "character": "残虹",
+      "character_id": "1036",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1036_nighty",
+      "fashion_name": "月下闲庭",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_canhong3.png",
+      "blob_sha": "57fe879d1ea5dcbbf5a3c112c6fa40b71d364462",
+      "output": "app/static/images/characters/costume/Fashion_1036_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "853dd07168df9e2c44fa3d09893ef18b26c3069d3db3edf57283dec74f92adab",
+      "output_sha256": "506e8acde693f2fcb484c67d57c19b9902b03bd1ee71886c40f7b85d9d171fcb",
+      "bytes": 126420,
+      "card_ids": [
+        "C08"
+      ]
+    },
+    {
+      "character": "早雾",
+      "character_id": "1003",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1003_1",
+      "fashion_name": "南瓜魔法",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_zaowu1.png",
+      "blob_sha": "0320e4c24efc85ae92e5891c6993faeeebc4c667",
+      "output": "app/static/images/characters/costume/Fashion_1003_1.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "655a5aa8c5246cdc6176df15e102eedfd99959ed856e627f1174fccf16527559",
+      "output_sha256": "964d66795ed052f3cb0934e01d7ad5a311608997658046dd294a6e88578489ec",
+      "bytes": 202018,
+      "card_ids": [
+        "S08"
+      ]
+    }
+  ],
+  "default_portraits": "Restored to pre-task files per user request: keep existing character scale and head alignment. Not migrated in this batch.",
+  "default_avatars": "As of this 2026-09-20 costume batch, restored to pre-import files from a40b55ac4 parent; no NTEData default avatars were retained in this batch. The 2026-09-24 Black Feather addition is documented separately in character-image-assets.md."
+}

@@ -1,0 +1,2 @@
+# Optional CPU inference for advanced card-game opponents; no CUDA/PyTorch.
+numpy>=1.26,<3.0

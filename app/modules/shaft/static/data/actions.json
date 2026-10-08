@@ -58,7 +58,9 @@
       "flat": 0
     },
     "energy_gain": 8.801,
-    "harmony": 100,
+    "harmony": 14.599,
+    "harmony_on_start": 100,
+    "harmony_source": "用户2026-09-19：释放瞬间额外获得100环合；动作逐段环合为0.973/0.973/6.11/6.543，随动作时间均分，非Nanoka数值。",
     "stagger": 1.8,
     "energy_return": 0,
     "energy_return_by_awakening_node": {
@@ -81,8 +83,9 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 5,
+    "source_formula": "{0}%+{1}%+{2}%+{3}%",
     "can_background_override": false,
-    "hit_count": 1
+    "hit_count": 4
   },
   {
     "id": "action_4e1fab68e7",
@@ -129,6 +132,7 @@
   },
   {
     "id": "action_b356b46da2",
+    "is_time_stop_zero": true,
     "character_id": "char_dd034941ef",
     "character_name": "主角",
     "name": "q",
@@ -160,11 +164,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 7,
+    "source_note": "Nanoka 2026-09-01 实时核实：「零」两个角色 ID（1046/1051）的极轨终结「奇零除尽」冷却时间均为15秒。",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -938,6 +943,7 @@
     "character_id": "char_b52cc8f160",
     "character_name": "真红",
     "name": "龙e",
+    "can_interrupt": false,
     "action_type": "E",
     "damage_type": "E",
     "extra_tag": "",
@@ -978,6 +984,7 @@
   },
   {
     "id": "action_c32b4b9417",
+    "is_time_stop_zero": true,
     "character_id": "char_b52cc8f160",
     "character_name": "真红",
     "name": "q",
@@ -1009,11 +1016,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 60,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 18,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「沸血赤红」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 9
   },
@@ -1061,6 +1069,7 @@
   },
   {
     "id": "action_e3711f0cf5",
+    "is_time_stop_zero": true,
     "character_id": "char_b52cc8f160",
     "character_name": "真红",
     "name": "q2",
@@ -1225,6 +1234,7 @@
   },
   {
     "id": "action_50de5ed4be",
+    "is_time_stop_zero": true,
     "character_id": "char_15f458f7ef",
     "character_name": "浔",
     "name": "q",
@@ -1978,6 +1988,7 @@
   },
   {
     "id": "action_fa751813d2",
+    "is_time_stop_zero": true,
     "character_id": "char_4f917797cb",
     "character_name": "小吱",
     "name": "q",
@@ -2009,11 +2020,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 38,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「零和博弈」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 6
   },
@@ -2103,6 +2115,7 @@
   },
   {
     "id": "action_16e181ce7c",
+    "is_time_stop_zero": true,
     "character_id": "char_31c5130304",
     "character_name": "埃德嘉",
     "name": "q",
@@ -2134,11 +2147,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 41,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「芬尼根守灵夜」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 1,
     "tags": ["heal", "治疗"]
@@ -3250,6 +3264,7 @@
   },
   {
     "id": "action_0f1e29b8ca",
+    "is_time_stop_zero": true,
     "character_id": "char_bdc43f82c6",
     "character_name": "娜娜莉",
     "name": "q",
@@ -3281,11 +3296,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 55,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「柯林斯·终极术」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 7
   },
@@ -3424,14 +3440,14 @@
     "duration_seconds": 1.3,
     "duration_ticks": 13,
     "multipliers": {
-      "atk": 0.8,
+      "atk": 1.998,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 5,
-    "harmony": 8.3,
-    "stagger": 1,
+    "energy_gain": 0,
+    "harmony": 0,
+    "stagger": 0,
     "energy_return": 0,
     "self_modifiers": {
       "crit_rate": 0,
@@ -3450,7 +3466,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 59,
-    "source_formula": "{0}%",
+    "source_formula": "{0}%*6",
     "can_background_override": false,
     "hit_count": 6
   },
@@ -3730,11 +3746,13 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 64,
+    "source_formula": "{0}%+{1}%*4+{2}%",
     "can_background_override": false,
     "hit_count": 6
   },
   {
     "id": "action_5501c87ce7",
+    "is_time_stop_zero": true,
     "character_id": "char_b2e3b2bf7a",
     "character_name": "九原",
     "name": "q",
@@ -3766,11 +3784,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 65,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「终局清账」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 12
   },
@@ -4122,6 +4141,7 @@
   },
   {
     "id": "action_9670752877",
+    "is_time_stop_zero": true,
     "character_id": "char_dda9fae1ef",
     "character_name": "薄荷",
     "name": "q",
@@ -4153,11 +4173,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 70,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「奥义·霹雳疾风斩」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 7
   },
@@ -4477,7 +4498,7 @@
     "duration_seconds": 0.7,
     "duration_ticks": 7,
     "multipliers": {
-      "atk": 1.725,
+      "atk": 0.66,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -4503,6 +4524,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 74,
+    "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -4627,6 +4649,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 77,
+    "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -4798,6 +4821,7 @@
   },
   {
     "id": "action_9307778f01",
+    "is_time_stop_zero": true,
     "character_id": "char_701295143d",
     "character_name": "白藏",
     "name": "q",
@@ -4829,11 +4853,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 82,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「判予秋」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -4928,47 +4953,6 @@
     "hit_count": 1
   },
   {
-    "id": "action_4c5142a40f",
-    "character_id": "char_1895e259be",
-    "character_name": "早雾",
-    "name": "5a",
-    "action_type": "普攻",
-    "damage_type": "普攻",
-    "extra_tag": "",
-    "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "multipliers": {
-      "atk": 3.717,
-      "hp": 0,
-      "def": 0,
-      "flat": 0
-    },
-    "energy_gain": 18.588,
-    "harmony": 30.946,
-    "stagger": 3.698,
-    "energy_return": 0,
-    "self_modifiers": {
-      "crit_rate": 0,
-      "crit_dmg": 0,
-      "all_dmg": 0,
-      "flat_atk": 0,
-      "atk_pct": 0,
-      "hp_pct": 0,
-      "def_pct": 0,
-      "harmony_strength": 0,
-      "def_ignore": 0,
-      "res_down": 0
-    },
-    "cooldown_ticks": 0,
-    "energy_cost": 0,
-    "personal_resource_cost": {},
-    "personal_resource_gain": {},
-    "source_row": 85,
-    "can_background_override": false,
-    "hit_count": 10
-  },
-  {
     "id": "action_fc0889c388",
     "character_id": "char_1895e259be",
     "character_name": "早雾",
@@ -5052,6 +5036,7 @@
   },
   {
     "id": "action_0db78d1f01",
+    "is_time_stop_zero": true,
     "character_id": "char_1895e259be",
     "character_name": "早雾",
     "name": "q",
@@ -5083,11 +5068,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 88,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「千钧隆重的饕餮宴」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 6
   },
@@ -5266,6 +5252,7 @@
   },
   {
     "id": "action_95733904eb",
+    "is_time_stop_zero": true,
     "character_id": "char_6f46705fd1",
     "character_name": "阿德勒",
     "name": "q",
@@ -5300,11 +5287,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 93,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「万象澄寂」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -5732,8 +5720,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 2.411,
       "hp": 0,
@@ -5763,103 +5751,14 @@
       "噩梦": 4
     },
     "source_row": 96,
-    "duration_pending": true,
+    "source_note": "普通耗时 1.2 秒、脱手耗时 0.5 秒来自用户 2026-08-20 补充；倍率与资源数据来自腾讯表 row 96。",
     "source_formula": "{0}%*3+{1}%",
     "can_background_override": true,
+    "can_detach": true,
+    "detached_duration_seconds": 0.5,
+    "detached_duration_ticks": 5,
     "nightmare_stacks": 4,
     "source_action_name": "5a远",
-    "hit_count": 4
-  },
-  {
-    "id": "action_182423b934",
-    "character_id": "char_c78f7a08d5",
-    "character_name": "安魂曲",
-    "name": "a4闪",
-    "action_type": "普攻",
-    "damage_type": "普攻",
-    "extra_tag": "",
-    "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
-    "multipliers": {
-      "atk": 2.411,
-      "hp": 0,
-      "def": 0,
-      "flat": 0
-    },
-    "energy_gain": 9.275,
-    "harmony": 15.434,
-    "stagger": 1.837,
-    "energy_return": 0,
-    "self_modifiers": {
-      "crit_rate": 0,
-      "crit_dmg": 0,
-      "all_dmg": 0,
-      "flat_atk": 0,
-      "atk_pct": 0,
-      "hp_pct": 0,
-      "def_pct": 0,
-      "harmony_strength": 0,
-      "def_ignore": 0,
-      "res_down": 0
-    },
-    "cooldown_ticks": 0,
-    "energy_cost": 0,
-    "personal_resource_cost": {},
-    "personal_resource_gain": {
-      "噩梦": 4
-    },
-    "source_row": 96,
-    "source_formula": "{0}%*3+{1}%",
-    "can_background_override": false,
-    "nightmare_stacks": 4,
-    "source_action_name": "",
-    "hit_count": 4
-  },
-  {
-    "id": "action_97ef5c83d2",
-    "character_id": "char_c78f7a08d5",
-    "character_name": "安魂曲",
-    "name": "a4脱手",
-    "action_type": "普攻",
-    "damage_type": "普攻",
-    "extra_tag": "",
-    "is_background_damage": false,
-    "duration_seconds": 0.5,
-    "duration_ticks": 5,
-    "multipliers": {
-      "atk": 2.411,
-      "hp": 0,
-      "def": 0,
-      "flat": 0
-    },
-    "energy_gain": 9.275,
-    "harmony": 15.434,
-    "stagger": 1.837,
-    "energy_return": 0,
-    "self_modifiers": {
-      "crit_rate": 0,
-      "crit_dmg": 0,
-      "all_dmg": 0,
-      "flat_atk": 0,
-      "atk_pct": 0,
-      "hp_pct": 0,
-      "def_pct": 0,
-      "harmony_strength": 0,
-      "def_ignore": 0,
-      "res_down": 0
-    },
-    "cooldown_ticks": 0,
-    "energy_cost": 0,
-    "personal_resource_cost": {},
-    "personal_resource_gain": {
-      "噩梦": 4
-    },
-    "source_row": 96,
-    "source_formula": "{0}%*3+{1}%",
-    "can_background_override": false,
-    "nightmare_stacks": 4,
-    "source_action_name": "",
     "hit_count": 4
   },
   {
@@ -6083,8 +5982,11 @@
     },
     "source_row": 104,
     "can_background_override": false,
+    "can_detach": true,
+    "detached_duration_seconds": 0.5,
+    "detached_duration_ticks": 5,
     "nightmare_stacks": 5,
-    "hit_count": 5
+    "hit_count": 1
   },
   {
     "id": "action_b9b3237c74",
@@ -6215,6 +6117,7 @@
   },
   {
     "id": "action_1104de864b",
+    "is_time_stop_zero": true,
     "character_id": "char_c78f7a08d5",
     "character_name": "安魂曲",
     "name": "q",
@@ -6246,13 +6149,14 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {
       "噩梦": 5
     },
     "source_row": 108,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「工作日最终审判」冷却时间为20秒。",
     "source_formula": "{0}%*4+{1}%",
     "source_action_name": "工作日最终审判（汽车）",
     "can_background_override": false,
@@ -6338,8 +6242,9 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 110,
+    "source_note": "按用户 2026-09-04 补充口径，移行默认前台但可手动放到后台。",
     "source_formula": "{0}%+{1}%*4+{2}%",
-    "can_background_override": false,
+    "can_background_override": true,
     "hit_count": 6
   },
   {
@@ -6513,6 +6418,7 @@
   },
   {
     "id": "action_f5e921e6d8",
+    "is_time_stop_zero": true,
     "character_id": "char_e8ad982185",
     "character_name": "达芙蒂尔",
     "name": "q",
@@ -6544,11 +6450,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 115,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「见此终幕」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 14
   },
@@ -6687,6 +6594,7 @@
   },
   {
     "id": "action_122b6bf962",
+    "is_time_stop_zero": true,
     "character_id": "char_caa6c2e5a8",
     "character_name": "法帝娅",
     "name": "q",
@@ -6718,57 +6626,14 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 119,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「痛苦让位于狂喜」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 6,
-    "tags": [
-      "心灵"
-    ]
-  },
-  {
-    "id": "action_441d3aa300",
-    "character_id": "char_caa6c2e5a8",
-    "character_name": "法帝娅",
-    "name": "q后5a",
-    "action_type": "Q",
-    "damage_type": "Q",
-    "extra_tag": "心灵",
-    "is_background_damage": false,
-    "duration_seconds": 3,
-    "duration_ticks": 30,
-    "multipliers": {
-      "atk": 0,
-      "hp": 0.35100000000000003,
-      "def": 0,
-      "flat": 0
-    },
-    "energy_gain": 18.898,
-    "harmony": 31.401,
-    "stagger": 3.799,
-    "energy_return": 0,
-    "self_modifiers": {
-      "crit_rate": 0,
-      "crit_dmg": 0,
-      "all_dmg": 0,
-      "flat_atk": 0,
-      "atk_pct": 0,
-      "hp_pct": 0,
-      "def_pct": 0,
-      "harmony_strength": 0,
-      "def_ignore": 0,
-      "res_down": 0
-    },
-    "cooldown_ticks": 0,
-    "energy_cost": 0,
-    "personal_resource_cost": {},
-    "personal_resource_gain": {},
-    "source_row": 120,
-    "can_background_override": false,
-    "hit_count": 13,
     "tags": [
       "心灵"
     ]
@@ -6852,8 +6717,9 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 122,
+    "source_formula": "{0}%*6",
     "can_background_override": false,
-    "hit_count": 1
+    "hit_count": 6
   },
   {
     "id": "action_db30565b20",
@@ -6983,6 +6849,7 @@
   },
   {
     "id": "action_3529c3d915",
+    "is_time_stop_zero": true,
     "character_id": "char_e0a4292b4e",
     "character_name": "哈尼娅",
     "name": "q",
@@ -7014,11 +6881,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 200,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 126,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「名为『哈尼娅』的旋律」冷却时间为20秒。",
     "can_background_override": false,
     "hit_count": 1
   },
@@ -7142,6 +7010,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 129,
+    "can_interrupt": false,
     "can_background_override": false,
     "hit_count": 1
   },
@@ -7224,6 +7093,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 131,
+    "can_interrupt": false,
     "can_background_override": false,
     "hit_count": 4
   },
@@ -7317,6 +7187,7 @@
   },
   {
     "id": "action_952b4b561f",
+    "is_time_stop_zero": true,
     "character_id": "char_699966e2e7",
     "character_name": "海月",
     "name": "q",
@@ -7348,11 +7219,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 120,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 134,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「众声轮唱」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 6
   },
@@ -7815,7 +7687,7 @@
       "flat": 0
     },
     "energy_gain": 7.3,
-    "harmony": 12,
+    "harmony": 12.2,
     "stagger": 1.5,
     "energy_return": 0,
     "self_modifiers": {
@@ -7837,12 +7709,14 @@
       "罪状": 100
     },
     "source_row": 141,
+    "source_formula": "{0}%+{1}%",
     "can_background_override": false,
     "sin_recovery": 100,
-    "hit_count": 4
+    "hit_count": 2
   },
   {
     "id": "action_dbd682321e",
+    "is_time_stop_zero": true,
     "character_id": "char_d38b672525",
     "character_name": "卡厄斯",
     "name": "q",
@@ -7874,107 +7748,14 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 142,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「罪业清偿」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 5
-  },
-  {
-    "id": "action_be26cd6a7c",
-    "character_id": "char_d38b672525",
-    "character_name": "卡厄斯",
-    "name": "延滞结算",
-    "action_type": "被动",
-    "damage_type": "被动",
-    "extra_tag": "",
-    "is_background_damage": true,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "multipliers": {
-      "atk": 8.0,
-      "hp": 0,
-      "def": 0,
-      "flat": 0
-    },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
-    "energy_return": 0,
-    "self_modifiers": {
-      "crit_rate": 0,
-      "crit_dmg": 0,
-      "all_dmg": 0,
-      "flat_atk": 0,
-      "atk_pct": 0,
-      "hp_pct": 0,
-      "def_pct": 0,
-      "harmony_strength": 0,
-      "def_ignore": 0,
-      "res_down": 0
-    },
-    "cooldown_ticks": 0,
-    "energy_cost": 0,
-    "personal_resource_cost": {},
-    "personal_resource_gain": {},
-    "source_row": 143,
-    "can_background_override": false,
-    "hit_count": 1,
-    "tags": [
-      "debuff:延滞",
-      "enemy_debuff:延滞",
-      "延滞",
-      "被动"
-    ]
-  },
-  {
-    "id": "action_82c5415d69",
-    "character_id": "char_d38b672525",
-    "character_name": "卡厄斯",
-    "name": "哈索尔延滞",
-    "action_type": "被动",
-    "damage_type": "被动",
-    "extra_tag": "",
-    "is_background_damage": true,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "multipliers": {
-      "atk": 32.0,
-      "hp": 0,
-      "def": 0,
-      "flat": 0
-    },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
-    "energy_return": 0,
-    "self_modifiers": {
-      "crit_rate": 0,
-      "crit_dmg": 0,
-      "all_dmg": 0,
-      "flat_atk": 0,
-      "atk_pct": 0,
-      "hp_pct": 0,
-      "def_pct": 0,
-      "harmony_strength": 0,
-      "def_ignore": 0,
-      "res_down": 0
-    },
-    "cooldown_ticks": 0,
-    "energy_cost": 0,
-    "personal_resource_cost": {},
-    "personal_resource_gain": {},
-    "source_row": 144,
-    "can_background_override": false,
-    "hit_count": 1,
-    "tags": [
-      "debuff:延滞",
-      "enemy_debuff:延滞",
-      "延滞",
-      "被动"
-    ]
   },
   {
     "id": "action_f229587fd2",
@@ -8096,6 +7877,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 147,
+    "source_formula": "{0}%*4+{1}%+{2}%*5",
     "can_background_override": false,
     "hit_count": 10
   },
@@ -8111,7 +7893,7 @@
     "duration_seconds": 4.5,
     "duration_ticks": 45,
     "multipliers": {
-      "atk": 11,
+      "atk": 11.12,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -8137,11 +7919,13 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 148,
+    "source_formula": "每段{0}%*20",
     "can_background_override": false,
     "hit_count": 20
   },
   {
     "id": "action_cc530277d3",
+    "is_time_stop_zero": true,
     "character_id": "char_912dbfe17c",
     "character_name": "哈索尔",
     "name": "q",
@@ -8173,11 +7957,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 149,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「铁骑速递」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 3
   },
@@ -8193,13 +7978,13 @@
     "duration_seconds": 1.3,
     "duration_ticks": 13,
     "multipliers": {
-      "atk": 2,
+      "atk": 3.003,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
     "energy_gain": 8.897,
-    "harmony": 14.9,
+    "harmony": 14.903,
     "stagger": 1.799,
     "energy_return": 0,
     "self_modifiers": {
@@ -8219,6 +8004,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 150,
+    "source_formula": "{0}%*7",
     "can_background_override": false,
     "hit_count": 7
   },
@@ -8234,7 +8020,7 @@
     "duration_seconds": 1.5,
     "duration_ticks": 15,
     "multipliers": {
-      "atk": 3.5,
+      "atk": 4.0,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -8260,6 +8046,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 151,
+    "source_formula": "{0}%+{1}%+{2}%",
     "can_background_override": false,
     "hit_count": 3
   },
@@ -8275,7 +8062,7 @@
     "duration_seconds": 1.7,
     "duration_ticks": 17,
     "multipliers": {
-      "atk": 4,
+      "atk": 5.5,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -8301,6 +8088,7 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 152,
+    "source_formula": "{0}%+{1}%",
     "can_background_override": false,
     "hit_count": 2
   },
@@ -8403,9 +8191,9 @@
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 5.4,
-    "harmony": 9,
-    "stagger": 1.1,
+    "energy_gain": 8.7,
+    "harmony": 14.6,
+    "stagger": 1.8,
     "energy_return": 0,
     "self_modifiers": {
       "crit_rate": 0,
@@ -8424,8 +8212,9 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 155,
+    "source_formula": "{0}%*4+{1}%+{2}%+{3}%",
     "can_background_override": false,
-    "hit_count": 6
+    "hit_count": 7
   },
   {
     "id": "action_ff4f07b530",
@@ -8518,6 +8307,7 @@
   },
   {
     "id": "action_6ece34aff8",
+    "is_time_stop_zero": true,
     "character_id": "char_7578b18979",
     "character_name": "翳",
     "name": "q",
@@ -8549,11 +8339,12 @@
       "def_ignore": 0,
       "res_down": 0
     },
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 150,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 158,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「群犬吠形」冷却时间为15秒。",
     "can_background_override": false,
     "hit_count": 4
   },
@@ -8778,6 +8569,7 @@
   },
   {
     "id": "action_307ad00e8e",
+    "is_time_stop_zero": true,
     "character_id": "char_a01c39f576",
     "character_name": "伊洛伊",
     "name": "q",
@@ -8793,12 +8585,13 @@
     "stagger": 1.5,
     "energy_return": 0,
     "self_modifiers": {},
-    "cooldown_ticks": 0,
+    "cooldown_ticks": 160,
     "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "personal_resource_threshold": {"臆想": 30},
     "source_row": 44,
+    "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「三十八亿年的海市蜃楼」冷却时间为16秒。",
     "can_background_override": false,
     "hit_count": 1,
     "tags": ["heal", "治疗"]
@@ -9171,83 +8964,1569 @@
     "tags": ["个人资源", "被动"]
   },
   {
-    "id": "action_canhong_support", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "", "is_background_damage": false, "duration_seconds": 1.5, "duration_ticks": 15,
-    "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 6.5, "harmony": 0, "stagger": 2.5, "tags": ["援护"], "source_note": "耗时1.5秒来自用户2026-08-06补充；200%攻击力、回能6.5、环合0与倾陷2.5均为按同类普通援护整体量级给出的独立经验估值，无额外援护效果。"
+    "id": "action_canhong_support", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "饲火", "is_background_damage": false, "duration_seconds": 1.5, "duration_ticks": 15,
+    "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 5.2, "harmony": 0, "stagger": 2.5, "resonance_skill_level_bonus": false, "tags": ["援护", "饲火"], "source_row": 44, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 44；耗时1.5秒来自用户2026-08-06补充，无额外援护效果。"
   },
   {
-    "id": "action_canhong_a1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "duration_seconds": 0.6, "duration_ticks": 6,
-    "multipliers": {"atk": 0.432, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 2.4, "harmony": 2.5, "stagger": 0.3, "tags": ["燎原", "现实形态"], "source_note": "回能、环合与倾陷为按普攻前段给出的经验估值。"
+    "id": "action_canhong_a1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": false, "duration_seconds": 0.6, "duration_ticks": 6,
+    "multipliers": {"atk": 0.432, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 1.444, "harmony": 2.405, "stagger": 0.435, "tags": ["燎原", "现实形态"], "source_row": 2, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 2-3，按倍率呈现方式聚合。"
   },
   {
-    "id": "action_canhong_a2", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "duration_seconds": 0.6, "duration_ticks": 6,
-    "multipliers": {"atk": 0.352, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.1, "harmony": 2.0, "stagger": 0.3, "tags": ["燎原", "现实形态"], "source_note": "回能、环合与倾陷为按普攻前段给出的经验估值。"
+    "id": "action_canhong_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.6, "duration_ticks": 6,
+    "multipliers": {"atk": 0.352, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 1.176, "harmony": 1.958, "stagger": 0.355, "tags": ["燎原", "现实形态"], "source_row": 4, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 4。"
   },
   {
-    "id": "action_canhong_a3", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "duration_seconds": 0.8, "duration_ticks": 8,
-    "multipliers": {"atk": 1.114, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.3, "harmony": 4.0, "stagger": 0.7, "tags": ["燎原", "现实形态"], "source_note": "回能、环合与倾陷为按普攻中段给出的经验估值。"
+    "id": "action_canhong_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.8, "duration_ticks": 8,
+    "multipliers": {"atk": 1.114, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.719, "harmony": 6.193, "stagger": 1.121, "tags": ["燎原", "现实形态"], "source_row": 5, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 5-7，按倍率呈现方式聚合。"
   },
   {
-    "id": "action_canhong_a4", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "duration_seconds": 1.1, "duration_ticks": 11,
-    "multipliers": {"atk": 1.782, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%+{4}%", "hit_count": 5, "energy_gain": 4.2, "harmony": 6.0, "stagger": 1.1, "tags": ["燎原", "现实形态"], "source_note": "命中后可强化e；回能、环合与倾陷为按普攻后段给出的经验估值。"
+    "id": "action_canhong_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.1, "duration_ticks": 11,
+    "multipliers": {"atk": 1.782, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%+{4}%", "hit_count": 5, "energy_gain": 5.948, "harmony": 9.905, "stagger": 1.793, "tags": ["燎原", "现实形态"], "source_row": 8, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 8-12，按倍率呈现方式聚合；命中后可强化e。"
   },
   {
-    "id": "action_canhong_a5", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "duration_seconds": 1.2, "duration_ticks": 12,
-    "multipliers": {"atk": 2.0336, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%", "hit_count": 4, "energy_gain": 4.8, "harmony": 7.0, "stagger": 1.3, "tags": ["燎原", "现实形态", "牵引"], "source_note": "命中后可强化e；回能、环合与倾陷为按普攻终段给出的经验估值，牵引不进入单敌伤害计算。"
+    "id": "action_canhong_a5", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.2, "duration_ticks": 12,
+    "multipliers": {"atk": 2.579, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2+{2}%+{3}%", "hit_count": 6, "energy_gain": 8.611, "harmony": 14.339, "stagger": 2.595, "tags": ["燎原", "现实形态", "牵引"], "source_row": 590, "source_note": "腾讯文档《角色属性》tab 000003 rows 590-593，按倍率呈现方式聚合；命中后可强化e，牵引不进入单敌伤害计算。"
   },
   {
-    "id": "action_canhong_z1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "z", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "长按普攻", "duration_seconds": 1.0, "duration_ticks": 10,
-    "multipliers": {"atk": 2.178, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 4.5, "harmony": 6.5, "stagger": 1.4, "tags": ["z", "现实形态"], "source_note": "仅可在a1或a2期间触发；回能、环合与倾陷为按长按普攻给出的经验估值。"
+    "id": "action_canhong_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "z", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "长按普攻", "duration_seconds": 1.0, "duration_ticks": 10,
+    "multipliers": {"atk": 2.178, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 7.301, "harmony": 12.1, "stagger": 2.25, "tags": ["z", "现实形态"], "source_row": 17, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 17-18，按倍率呈现方式聚合；对应「绰影」，仅可在a1或a2期间触发。"
   },
   {
-    "id": "action_canhong_illusion_a1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻a1", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.3, "duration_ticks": 3,
-    "multipliers": {"atk": 0.183, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 1.2, "harmony": 1.5, "stagger": 0.2, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_note": "回能、环合与倾陷为按低倍率追击前段给出的经验估值。"
+    "id": "action_canhong_illusion_a1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a1", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": false, "duration_seconds": 0.3, "duration_ticks": 3,
+    "multipliers": {"atk": 0.183, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0.61, "harmony": 1.018, "stagger": 0.121, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 21, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 21；对应「魇舞」一段。"
   },
   {
-    "id": "action_canhong_illusion_a2", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻a2", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.7, "duration_ticks": 7,
-    "multipliers": {"atk": 0.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 2.8, "harmony": 3.5, "stagger": 0.6, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_note": "回能、环合与倾陷为按追击中段给出的经验估值。"
+    "id": "action_canhong_illusion_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a2", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.7, "duration_ticks": 7,
+    "multipliers": {"atk": 0.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.321, "harmony": 5.544, "stagger": 0.661, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 22, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 22-24，按倍率呈现方式聚合；对应「魇舞」二段。"
   },
   {
-    "id": "action_canhong_illusion_a3", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻a3", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
-    "multipliers": {"atk": 0.988, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2", "hit_count": 4, "energy_gain": 3.0, "harmony": 4.0, "stagger": 0.7, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层", "牵引"], "source_note": "回能、环合与倾陷为按多段追击给出的经验估值。"
+    "id": "action_canhong_illusion_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a3", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
+    "multipliers": {"atk": 0.988, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2", "hit_count": 4, "energy_gain": 3.288, "harmony": 5.486, "stagger": 0.654, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层", "牵引"], "source_row": 25, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 25-26，按倍率呈现方式聚合；对应「魇舞」三段。"
   },
   {
-    "id": "action_canhong_illusion_a4", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻a4", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1.1, "duration_ticks": 11,
-    "multipliers": {"atk": 2.82, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%", "hit_count": 3, "energy_gain": 4.8, "harmony": 7.5, "stagger": 1.6, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_note": "回能、环合与倾陷为按高倍率追击终段给出的经验估值。"
+    "id": "action_canhong_illusion_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a4", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1.1, "duration_ticks": 11,
+    "multipliers": {"atk": 2.82, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%", "hit_count": 3, "energy_gain": 9.38, "harmony": 15.653, "stagger": 1.865, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 27, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 27-28，按倍率呈现方式聚合；对应「魇舞」四段。"
   },
   {
-    "id": "action_canhong_illusion_z1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻z", "action_type": "普攻", "damage_type": "追击", "extra_tag": "长按普攻", "is_background_damage": false, "duration_seconds": 1.1, "duration_ticks": 11,
-    "multipliers": {"atk": 2.138, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%*2", "hit_count": 5, "energy_gain": 4.2, "harmony": 6.5, "stagger": 1.3, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["幻z", "追击", "幻境形态", "蚀心"], "source_note": "回能、环合与倾陷为按长按追击给出的经验估值。"
+    "id": "action_canhong_illusion_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻z", "action_type": "普攻", "damage_type": "追击", "extra_tag": "长按普攻", "is_background_damage": false, "duration_seconds": 1.1, "duration_ticks": 11,
+    "multipliers": {"atk": 2.138, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%*2", "hit_count": 5, "energy_gain": 7.099, "harmony": 11.901, "stagger": 1.399, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["幻z", "追击", "幻境形态", "蚀心"], "source_row": 29, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 29-32，按倍率呈现方式聚合；对应「落月」。"
   },
   {
-    "id": "action_canhong_plunge", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "下落", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "下落攻击", "duration_seconds": 1.0, "duration_ticks": 10,
-    "multipliers": {"atk": 0.574, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.8, "harmony": 4.6, "stagger": 0.7, "tags": ["下落攻击"], "source_note": "随下落高度最高提升至2倍；本动作按基础倍率录入，回能、环合与倾陷为按下落攻击给出的经验估值。"
+    "id": "action_canhong_plunge", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "下落", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "下落攻击", "duration_seconds": 1.0, "duration_ticks": 10,
+    "multipliers": {"atk": 0.574, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.1, "harmony": 3.4, "stagger": 0.4, "tags": ["下落攻击"], "source_row": 19, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 19；对应「折枝」，随下落高度最高提升至2倍，本动作按基础倍率录入。"
   },
   {
-    "id": "action_canhong_dodge_counter", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "闪反", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "闪避反击", "duration_seconds": 1.0, "duration_ticks": 10,
-    "multipliers": {"atk": 1.75, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 4.0, "harmony": 6.3, "stagger": 2.5, "tags": ["闪避反击", "现实形态"], "source_note": "回能、环合与倾陷为按闪避反击类型给出的经验估值。"
+    "id": "action_canhong_dodge_counter", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "闪反", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "闪避反击", "duration_seconds": 1.0, "duration_ticks": 10,
+    "multipliers": {"atk": 1.75, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.5, "harmony": 4.2, "stagger": 2.5, "tags": ["闪避反击", "现实形态"], "source_row": 20, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 20；对应「虚徊」。"
   },
   {
-    "id": "action_canhong_e1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.0, "duration_ticks": 10,
-    "multipliers": {"atk": 1.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 6.3, "harmony": 6, "stagger": 1.4, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "tags": ["现实转幻境"], "source_note": "与强化e、幻e共享5秒冷却；回能与倾陷为按普通变轨技能给出的经验估值。"
+    "id": "action_canhong_e1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.0, "duration_ticks": 10,
+    "multipliers": {"atk": 1.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 0.8, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "tags": ["现实转幻境"], "source_row": 34, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 34-35，按倍率呈现方式聚合；与强化e、幻e共享5秒冷却。"
   },
   {
-    "id": "action_canhong_E1", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "强化e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.0, "duration_ticks": 10,
-    "multipliers": {"atk": 1.752, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 7.0, "harmony": 6, "stagger": 2.0, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "force_stagger_by_awakening_node": {"5": true}, "tags": ["强化", "现实转幻境", "蚀心5层", "乱"], "source_note": "需在燎原a4/a5、z或闪反后释放；施加5层蚀心；与e、幻e共享5秒冷却。回能与倾陷为按强化变轨技能给出的经验估值；E觉仅在非循环轴首次命中强制倾陷。"
+    "id": "action_canhong_E1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "强化e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.0, "duration_ticks": 10,
+    "multipliers": {"atk": 1.752, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 6.0, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "force_stagger_by_awakening_node": {"5": true}, "tags": ["强化", "现实转幻境", "蚀心5层", "乱"], "source_row": 36, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 36-37，按倍率呈现方式聚合；需在燎原a4/a5、z或闪反后释放，施加5层蚀心，与e、幻e共享5秒冷却；E觉仅在非循环轴首次命中强制倾陷。"
   },
   {
-    "id": "action_canhong_E2", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "幻e", "action_type": "E", "damage_type": "追击", "is_background_damage": false, "duration_seconds": 2.2, "duration_ticks": 22,
-    "multipliers": {"atk": 4.498, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*4+{2}%", "hit_count": 7, "last_hit_atk_multiplier": 2.498, "dot_layers_applied_before_last_hit": 5, "energy_gain": 9.5, "harmony": 19, "stagger": 6, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["强化", "追击", "幻境转现实", "蚀心5层", "灭"], "source_note": "仅在幻境结束前3秒可强化；施加5层蚀心并触发灭；与e、强化e共享5秒冷却；技能时停敌人但不暂停轴计时。回能为按高倍率追击变轨给出的经验估值，倾陷6沿用腾讯文档。F觉按最后一段命中时目标DOT总层数强化该段。"
+    "id": "action_canhong_E2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻e", "action_type": "E", "damage_type": "追击", "is_background_damage": false, "locks_foreground_switch": true, "duration_seconds": 2.2, "duration_ticks": 22,
+    "multipliers": {"atk": 4.498, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*4+{2}%", "hit_count": 7, "last_hit_atk_multiplier": 2.498, "dot_layers_applied_before_last_hit": 5, "energy_gain": 24.999, "harmony": 18.901, "stagger": 2.299, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["强化", "追击", "幻境转现实", "蚀心5层", "灭"], "source_row": 41, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 41-43，按强化「离魂错」的倍率呈现方式聚合；仅在幻境结束前3秒可强化，施加5层蚀心并触发灭，与e、强化e共享5秒冷却；技能时停敌人但不暂停轴计时。F觉按最后一段命中时目标DOT总层数强化该段。"
   },
   {
-    "id": "action_canhong_q", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "焚天", "action_type": "Q", "damage_type": "Q", "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 4.2, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 0, "stagger": 2.5, "cooldown_ticks": 200, "cooldown_group": "canhong_q", "energy_cost": 120, "tags": ["焚天"], "source_note": "极轨终结不自回能；倾陷按用户口径统一取2.5。"
+    "id": "action_canhong_q", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "焚天", "action_type": "Q", "damage_type": "Q", "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
+    "multipliers": {"atk": 4.2, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 200, "cooldown_group": "canhong_q", "energy_cost": 120, "tags": ["焚天"], "source_row": 45, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 45-46，按倍率呈现方式聚合；极轨终结不自回能。"
   },
   {
-    "id": "action_canhong_q_enhanced", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "强化焚天", "action_type": "Q", "damage_type": "Q", "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 5.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 0, "stagger": 2.5, "cooldown_ticks": 200, "energy_cost": 0, "required_buff_key": "character_canhong_enhanced_fentian_window", "required_buff_name": "血宴后的5秒强化焚天窗口", "tags": ["强化", "焚天"], "source_note": "成功释放血宴后5秒内可不消耗终结能量释放1次；窗口由自检校验，释放后消耗。极轨终结不自回能；倾陷按用户口径统一取2.5。"
+    "id": "action_canhong_q_enhanced", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "强化焚天", "action_type": "Q", "damage_type": "Q", "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
+    "multipliers": {"atk": 5.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 200, "energy_cost": 0, "required_buff_key": "character_canhong_enhanced_fentian_window", "required_buff_name": "血宴后的5秒强化焚天窗口", "tags": ["强化", "焚天"], "source_row": 47, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 47-48，按倍率呈现方式聚合；成功释放血宴后5秒内可不消耗终结能量释放1次，窗口由自检校验，释放后消耗；极轨终结不自回能。"
   },
   {
-    "id": "action_canhong_q_blood_banquet", "character_id": "char_076a1f4e53", "character_name": "残红", "name": "血宴", "action_type": "Q", "damage_type": "追击", "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 7.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 0, "stagger": 2.5, "cooldown_ticks": 200, "cooldown_group": "canhong_q", "energy_cost": 120, "canhong_blood_activation_required": true, "tags": ["追击", "血宴", "鸩火5层", "解除幻境"], "source_note": "血宴激活时优先于焚天，实际施加5层独立DOT「鸩火」而非蚀心，并解除幻境。灭可激活血宴；D觉时终结能量蓄满也会自动激活，由自检校验。极轨终结不自回能；倾陷按用户口径统一取2.5。"
+    "id": "action_canhong_q_blood_banquet", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "血宴", "action_type": "Q", "damage_type": "追击", "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
+    "multipliers": {"atk": 6.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 0, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 200, "cooldown_group": "canhong_q", "energy_cost": 120, "canhong_blood_activation_required": true, "tags": ["追击", "血宴", "鸩火5层", "解除幻境"], "source_row": 49, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 49-50，按倍率呈现方式聚合；表内倾陷聚合为2.499，按用户明确口径记为2.5。血宴激活时优先于焚天，施加5层独立DOT「鸩火」并解除幻境；灭或D觉可激活血宴，极轨终结不自回能。"
+  },
+  {
+    "id": "action_lingke_ghost_blitz", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "恶灵闪击战", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵闪击战！", "is_background_damage": true,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 0, "cooldown_ticks": 80, "cooldown_ticks_by_awakening_node": {"1": 60}, "cooldown_group": "lingke_ghost_blitz", "energy_cost": 0, "tags": ["后台攻击"], "source_row": 0, "source_note": "Nanoka 2026-08-24实时核实：小贞攻击1级倍率50%，灵可处于后台时基础间隔8秒，1觉后缩短25%为6秒。按用户2026-08-24口径作为0秒手工后台动作，不建立「小鬼打这里！」标记系统，未提供的回能、环合与倾陷不计。"
+  },
+  {
+    "id": "action_lingke_a1", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 1, "is_background_damage": false, "can_background_override": false,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.496, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 3.105, "harmony": 5.161, "stagger": 0.618, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 466, "source_note": "腾讯文档《角色属性》tab 000003 row 466：1级倍率49.6%、1段，回能3.105、环合5.161、倾陷0.618。表格未提供动作耗时，当前0秒表示耗时待录入，前台排轴由自检提示。"
+  },
+  {
+    "id": "action_lingke_a2", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 2, "is_background_damage": false, "can_background_override": true,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.34, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2", "hit_count": 2, "energy_gain": 1.065, "harmony": 1.77, "stagger": 0.212, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 467, "source_note": "腾讯文档《角色属性》tab 000003 row 467：17%×2=34%、2段，回能1.065、环合1.77、倾陷0.212。表格未提供动作耗时，当前0秒表示耗时待录入；可按普攻后段规则手动放到后台。"
+  },
+  {
+    "id": "action_lingke_a3", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 3, "is_background_damage": false, "can_background_override": true,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.404, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.531, "harmony": 4.207, "stagger": 0.504, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 468, "source_note": "腾讯文档《角色属性》tab 000003 row 468：1级倍率40.4%、1段，回能2.531、环合4.207、倾陷0.504。表格未提供动作耗时，当前0秒表示耗时待录入；可按普攻后段规则手动放到后台。"
+  },
+  {
+    "id": "action_lingke_a4", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 4, "is_background_damage": false, "can_background_override": true,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 1.47, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%*5+{3}%", "hit_count": 8, "energy_gain": 5.725, "harmony": 9.516, "stagger": 1.14, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 469, "source_note": "腾讯文档《角色属性》tab 000003 rows 469-472：13.3%+29.8%+13.9%×5+34.4%=147%、8段，回能5.725、环合9.516、倾陷1.14。表格未提供动作耗时，当前0秒表示耗时待录入；可按普攻后段规则手动放到后台。"
+  },
+  {
+    "id": "action_lingke_a5", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 5, "is_background_damage": false, "can_background_override": true,
+    "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.74, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 4.635, "harmony": 7.703, "stagger": 0.923, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 473, "source_note": "腾讯文档《角色属性》tab 000003 row 473：1级倍率74%、1段，回能4.635、环合7.703、倾陷0.923。表格未提供动作耗时，当前0秒表示耗时待录入；可按普攻后段规则手动放到后台。"
+  },
+  {
+    "id": "action_lingke_support", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "恶灵左直拳！", "is_background_damage": false,
+    "duration_seconds": 1.5, "duration_ticks": 15,
+    "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 5.2, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护"], "source_row": 487, "source_note": "腾讯文档《角色属性》tab 000003 row 487；技能描述由Nanoka 2026-08-24实时核实。动作耗时1.5秒来自用户2026-08-24补充。"
+  },
+  {
+    "id": "action_lingke_e", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "e", "action_type": "E", "damage_type": "E", "extra_tag": "瞬息全频振", "is_background_damage": false,
+    "duration_seconds": 1.0, "duration_ticks": 10,
+    "multipliers": {"atk": 1.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%", "hit_count": 4, "energy_gain": 8.4, "harmony": 14.099, "stagger": 1.7, "cooldown_ticks": 120, "cooldown_group": "lingke_e", "energy_cost": 0, "tags": ["瞬息全频振"], "source_row": 479, "source_note": "腾讯文档《角色属性》tab 000003 rows 479-482：17.8%+13.8%+23.8%+44.6%=100%，回能8.4、环合14.099、倾陷1.7；12秒CD与技能描述由Nanoka 2026-08-24实时核实。动作耗时1秒来自用户2026-08-24补充。"
+  },
+  {
+    "id": "action_lingke_q", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q展开", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·展开", "display_order": 20, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
+    "multipliers": {"atk": 0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "", "hit_count": 0, "energy_gain": 0, "harmony": 0, "stagger": 0, "cooldown_ticks": 200, "cooldown_group": "lingke_q", "energy_cost": 100, "tags": ["超负荷共鸣", "共鸣领域", "展开"], "source_row": 483, "source_note": "Nanoka 2026-08-25实时核实100终结能量、20秒CD与8秒共鸣领域；按用户2026-08-29最新口径，q展开仅作为消耗终结能量并触发领域的0秒启动动作，本身倍率、命中段数和倾陷均为0，原展开范围伤害移至手工后台动作q范围。"
+  },
+  {
+    "id": "action_lingke_q_range", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q范围", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·范围", "display_order": 21, "is_background_damage": true, "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 0.735, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 0.074, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["超负荷共鸣", "范围", "后台攻击"], "source_row": 483, "source_note": "腾讯文档《角色属性》tab 000003 row 483：展开范围伤害73.5%、倾陷0.074。按用户2026-08-29最新口径从q展开拆出为可手工排入的0秒后台动作，不重复耗能、CD或共鸣领域触发。"
+  },
+  {
+    "id": "action_lingke_q_multi", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q多段", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·多段", "display_order": 22, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
+    "multipliers": {"atk": 3.456, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*6", "hit_count": 6, "energy_gain": 0, "harmony": 0, "stagger": 0.115, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["超负荷共鸣", "多段"], "source_row": 485, "source_note": "腾讯文档《角色属性》tab 000003 row 485：57.6%×6=345.6%、倾陷0.115。按用户2026-08-25口径从原聚合Q拆出，动作耗时0秒且不重复消耗终结能量。"
+  },
+  {
+    "id": "action_lingke_q_burst", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q爆发", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·爆发", "display_order": 23, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
+    "multipliers": {"atk": 7.353, "hp": 0, "def": 0, "flat": 0}, "multipliers_add_by_awakening_node": {"2": {"atk": 2.2059}}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 0.735, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["超负荷共鸣", "爆发", "负面状态增伤"], "source_row": 486, "source_note": "腾讯文档《角色属性》tab 000003 row 486：爆发伤害735.3%、倾陷0.735；按腾讯文档《灵可角色资料汇总》2026-08-25最新口径，2觉使该段倍率提升30%。Nanoka 2026-08-25实时核实爆发根据目标负面状态种类增伤且上限20%；按用户2026-08-25口径每种+4%，负面包括减防、减抗、各类DOT与延滞/覆纹/浸染/浊燃/黯星等，每类去重。"
+  },
+  {
+    "id": "action_lingke_time_stop_select", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "时停选人", "action_type": "无", "damage_type": "无", "extra_tag": "时停选人", "display_order": 24, "is_background_damage": false, "is_timeline_mask": true, "duration_seconds": 0, "duration_ticks": 0,
+    "is_time_stop_zero": true,
+    "multipliers": {"atk": 0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "", "hit_count": 0, "energy_gain": 0, "harmony": 0, "stagger": 0, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["时停", "选人", "遮罩"], "source_row": 0, "source_note": "用户2026-08-25明确新增：灵可专属0秒无效果动作，仅用于时间轴遮罩和选人占位；不视为Q，不触发Q类技能、Buff、耗能或资源效果。"
+  },
+  {
+    "id": "action_lingke_mark_joint", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "消耗标记同频", "action_type": "援护", "damage_type": "追击", "damage_element": "灵", "extra_tag": "小鬼打这里！", "is_background_damage": true, "disable_reaction": true, "duration_seconds": 0, "duration_ticks": 0,
+    "multipliers": {"atk": 5.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 15, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "personal_resource_gain": {"谐频": 34}, "tags": ["援护", "同频合击", "追加攻击", "消耗标记"], "source_row": 488, "source_note": "腾讯文档《角色属性》tab 000003 row 488提供灵可同频500%倍率与2.5倾陷；Nanoka 2026-08-25实时核实前台角色E命中可消耗「小鬼打这里！」并触发灵可同频，同时积攒34谐频与15环合。按用户口径作为玩家手工排入的0秒后台动作，固定为灵属性并使用灵可面板与援护技等级；不建立或校验真实标记，5觉暂不实装因此不触发环合反应。"
+  },
+  {
+    "id": "action_lingke_xiaozhen_joint", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "小贞同频", "action_type": "援护", "damage_type": "追击", "extra_tag": "同频合击", "is_background_damage": false, "can_background_override": true, "locks_foreground_switch": false, "duration_seconds": 1.5, "duration_ticks": 15,
+    "damage_element": "灵", "disable_reaction": true, "multipliers": {"atk": 1.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 0, "harmony": 0, "stagger": 1.667, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护", "同频合击", "追加攻击", "小贞"], "source_row": 489, "source_note": "腾讯文档《角色属性》tab 000003 rows 489-490：33.3%×3+100%=199.9%，倾陷0.417+1.25=1.667；Nanoka 2026-08-24核实小贞发起时为灵属性，伤害受灵可面板与援护技技能等级影响。按用户2026-09-02最新口径调整为默认前台、可手动放到后台的1.5秒动作；5觉暂不实装，因此不触发环合。"
+  },
+  {
+    "id": "action_lingke_a4_joint_extra", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "4觉同频追加", "action_type": "Q", "damage_type": "追击", "extra_tag": "星星也说悄悄话！", "is_background_damage": true, "duration_seconds": 0, "duration_ticks": 0,
+    "damage_element": "灵", "skill_level_category": "ultimate", "multipliers": {"atk": 1.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0, "harmony": 0, "stagger": 1.5, "cooldown_ticks": 0, "energy_cost": 0, "required_awakening": 4, "required_buff_key": "character_lingke_resonance_field", "required_buff_name": "共鸣领域", "tags": ["同频合击相关", "追加攻击", "范围"], "source_row": 484, "source_note": "腾讯文档《角色属性》tab 000003 row 484；Nanoka 4觉描述核实为共鸣领域内每次触发同频合击时追加100%范围灵属性伤害。按用户2026-08-25补充，该额外攻击依据极轨终结技能等级成长倍率。按用户2026-09-02最新口径，该额外动作也属于极轨终结伤害，动作类别改为Q，可获得「远行者之声」的援护后终结暴伤叠层；同时保留追击伤害类型与追加攻击标签。动作耗时0秒，由玩家在每次同频后手工排入；不建立「小鬼打这里！」标记系统。"
+  },
+  {
+    "id": "action_heiyu_a1",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "a1",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 1,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
+    "multipliers": {
+      "atk": 0.237,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 0.838,
+    "harmony": 1.161,
+    "stagger": 0.141,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 2,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_gain": {
+      "恶意": 0.857919
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_heiyu_a2",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "a2",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 2,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
+    "multipliers": {
+      "atk": 0.974,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*2",
+    "hit_count": 2,
+    "energy_gain": 3.452,
+    "harmony": 4.782,
+    "stagger": 0.582,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 3,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_gain": {
+      "恶意": 3.525792
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_heiyu_a3",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "a3",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 3,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "multipliers": {
+      "atk": 1.204,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*4",
+    "hit_count": 4,
+    "energy_gain": 4.264,
+    "harmony": 5.904,
+    "stagger": 0.72,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 4,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_gain": {
+      "恶意": 4.358372
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_heiyu_a4",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "a4",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 4,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "multipliers": {
+      "atk": 1.29,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*5",
+    "hit_count": 5,
+    "energy_gain": 4.565,
+    "harmony": 6.325,
+    "stagger": 0.77,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 5,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_gain": {
+      "恶意": 4.669685
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_heiyu_a5",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "a5",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 5,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
+    "multipliers": {
+      "atk": 1.82,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*5",
+    "hit_count": 5,
+    "energy_gain": 6.445,
+    "harmony": 8.925,
+    "stagger": 1.085,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 6,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_gain": {
+      "恶意": 6.588232
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_heiyu_z",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "z",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 6,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "multipliers": {
+      "atk": 1.139,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 4.08,
+    "harmony": 5.6,
+    "stagger": 0.7,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 7,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "personal_resource_gain": {
+      "恶意": 4.123077
+    },
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate"
+  },
+  {
+    "id": "action_heiyu_plunge",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "下落",
+    "action_type": "下落",
+    "damage_type": "下落",
+    "extra_tag": "掠影",
+    "display_order": 7,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "multipliers": {
+      "atk": 0.476,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 1.68,
+    "harmony": 2.3,
+    "stagger": 0.3,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 8,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "personal_resource_gain": {
+      "恶意": 1.723077
+    },
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate"
+  },
+  {
+    "id": "action_heiyu_counter",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "闪反",
+    "action_type": "闪反",
+    "damage_type": "闪反",
+    "extra_tag": "掠影",
+    "display_order": 8,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
+    "multipliers": {
+      "atk": 1.275,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 3.0,
+    "harmony": 4.2,
+    "stagger": 2.5,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 9,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "personal_resource_gain": {
+      "恶意": 4.615385
+    },
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate"
+  },
+  {
+    "id": "action_heiyu_form_a1",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔a1",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 9,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
+    "multipliers": {
+      "atk": 0.65,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*2",
+    "hit_count": 2,
+    "energy_gain": 1.948,
+    "harmony": 2.706,
+    "stagger": 0.324,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 10,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "duration_source": "user-supplied",
+    "personal_resource_cost": {
+      "恶意": 1.083182
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
+  },
+  {
+    "id": "action_heiyu_form_a2",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔a2",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 10,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "multipliers": {
+      "atk": 1.11,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*5",
+    "hit_count": 5,
+    "energy_gain": 3.325,
+    "harmony": 4.62,
+    "stagger": 0.555,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 11,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "duration_source": "user-supplied",
+    "personal_resource_cost": {
+      "恶意": 1.849745
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
+  },
+  {
+    "id": "action_heiyu_form_a3",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔a3",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 11,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
+    "multipliers": {
+      "atk": 1.26,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*6",
+    "hit_count": 6,
+    "energy_gain": 3.78,
+    "harmony": 5.244,
+    "stagger": 0.63,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 12,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "duration_source": "user-supplied",
+    "personal_resource_cost": {
+      "恶意": 2.099706
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
+  },
+  {
+    "id": "action_heiyu_form_a4",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔a4",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 12,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
+    "multipliers": {
+      "atk": 1.355,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 4.066,
+    "harmony": 5.648,
+    "stagger": 0.678,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 13,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "duration_source": "user-supplied",
+    "personal_resource_cost": {
+      "恶意": 2.25802
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
+  },
+  {
+    "id": "action_heiyu_form_a5",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔a5",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 13,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
+    "multipliers": {
+      "atk": 2.826,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*6",
+    "hit_count": 6,
+    "energy_gain": 8.484,
+    "harmony": 11.778,
+    "stagger": 1.416,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 14,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "duration_source": "user-supplied",
+    "personal_resource_cost": {
+      "恶意": 4.709347
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    },
+    "can_detach": true,
+    "detached_duration_seconds": 0.6,
+    "detached_duration_ticks": 6
+  },
+  {
+    "id": "action_heiyu_form_z1",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔z1",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 14,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "multipliers": {
+      "atk": 2.16,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*5",
+    "hit_count": 5,
+    "energy_gain": 6.51,
+    "harmony": 8.99,
+    "stagger": 1.085,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 15,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "personal_resource_cost": {
+      "恶意": 3.5995
+    },
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    },
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_heiyu_form_z2",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔z2",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "掠影",
+    "display_order": 15,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
+    "multipliers": {
+      "atk": 2.02,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*5",
+    "hit_count": 5,
+    "energy_gain": 6.09,
+    "harmony": 8.41,
+    "stagger": 1.015,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 16,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "personal_resource_cost": {
+      "恶意": 3.3662
+    },
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    },
+    "duration_source": "user-supplied",
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_heiyu_form_plunge",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔下落",
+    "action_type": "下落",
+    "damage_type": "下落",
+    "extra_tag": "掠影",
+    "display_order": 16,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "multipliers": {
+      "atk": 0.56,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 1.68,
+    "harmony": 2.3,
+    "stagger": 0.3,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 17,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_cost": {
+      "恶意": 0.933204
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
+  },
+  {
+    "id": "action_heiyu_form_counter",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔闪反",
+    "action_type": "闪反",
+    "damage_type": "闪反",
+    "extra_tag": "掠影",
+    "display_order": 17,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "multipliers": {
+      "atk": 1.26,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 2.52,
+    "harmony": 3.5,
+    "stagger": 2.5,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 18,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_cost": {
+      "恶意": 2.099708
+    },
+    "personal_resource_scale_with_damage_ratio": true,
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    }
+  },
+  {
+    "id": "action_heiyu_e",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "e",
+    "action_type": "E",
+    "damage_type": "E",
+    "extra_tag": "葬羽冥",
+    "display_order": 18,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
+    "multipliers": {
+      "atk": 4.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*4",
+    "hit_count": 4,
+    "energy_gain": 7.56,
+    "harmony": 10.4,
+    "harmony_on_start": 100,
+    "harmony_source": "用户2026-09-19：释放瞬间额外获得100环合；动作逐段环合为2.6/2.6/2.6/2.6，随动作时间均分，非Nanoka数值。",
+    "stagger": 1.3,
+    "cooldown_ticks": 160,
+    "energy_cost": 0,
+    "source_row": 19,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "personal_resource_gain": {
+      "恶意": 40
+    },
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate"
+  },
+  {
+    "id": "action_heiyu_assist",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "失乐鸟",
+    "action_type": "E",
+    "damage_type": "E",
+    "extra_tag": "葬羽冥",
+    "display_order": 19,
+    "is_background_damage": true,
+    "can_background_override": false,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "multipliers": {
+      "atk": 2.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 2.0,
+    "harmony": 3.34,
+    "stagger": 0.4,
+    "cooldown_ticks": 20,
+    "energy_cost": 0,
+    "source_row": 20,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "tags": [
+      "协同攻击",
+      "后台攻击"
+    ],
+    "required_buff_key": "character_heiyu_assist_window",
+    "required_buff_name": "失乐鸟（15秒、最多5次）",
+    "consume_buff_stack_key": "character_heiyu_assist_window",
+    "duration_source": "manual-background"
+  },
+  {
+    "id": "action_heiyu_form_e",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔e",
+    "action_type": "E",
+    "damage_type": "E",
+    "extra_tag": "葬羽冥",
+    "display_order": 20,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "multipliers": {
+      "atk": 4.2,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*4",
+    "hit_count": 4,
+    "energy_gain": 5.04,
+    "harmony": 7.0,
+    "stagger": 0.8,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 21,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "personal_resource_cost": {
+      "恶意": 13
+    },
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "required_additional_buff_keys": [
+      "character_heiyu_e_ready"
+    ],
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    },
+    "duration_source": "user-supplied",
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_heiyu_q1",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "q1",
+    "action_type": "Q",
+    "damage_type": "Q",
+    "extra_tag": "恳请众魂安息",
+    "display_order": 21,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "multipliers": {
+      "atk": 4.203,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*9",
+    "hit_count": 9,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 2.502,
+    "cooldown_ticks": 200,
+    "energy_cost": 100,
+    "source_row": 25,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "is_time_stop_zero": true,
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "existing-time-stop"
+  },
+  {
+    "id": "action_heiyu_q2",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "q2",
+    "action_type": "Q",
+    "damage_type": "Q",
+    "extra_tag": "恳请众魂安息",
+    "display_order": 22,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "multipliers": {
+      "atk": 6.3,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%*7",
+    "hit_count": 7,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 2.499,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 26,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "is_time_stop_zero": true,
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "personal_resource_consume_all_by_awakening_node": {
+      "1": [
+        "恶意"
+      ]
+    },
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    },
+    "duration_source": "existing-time-stop"
+  },
+  {
+    "id": "action_heiyu_support",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "援护",
+    "action_type": "援护",
+    "damage_type": "援护",
+    "extra_tag": "断罪于我",
+    "display_order": 23,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
+    "multipliers": {
+      "atk": 2.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 7.56,
+    "harmony": 0.0,
+    "stagger": 2.5,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 29,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "resonance_skill_level_bonus": false,
+    "personal_resource_gain": {
+      "恶意": 20
+    },
+    "forbidden_buff_key": "character_heiyu_form",
+    "duration_source": "user-authorized-estimate"
+  },
+  {
+    "id": "action_heiyu_form_support",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "魔援护",
+    "action_type": "援护",
+    "damage_type": "援护",
+    "extra_tag": "断罪于我",
+    "display_order": 24,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
+    "multipliers": {
+      "atk": 2.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "{0}%",
+    "hit_count": 1,
+    "energy_gain": 6.0,
+    "harmony": 0.0,
+    "stagger": 2.5,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 30,
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "resonance_skill_level_bonus": false,
+    "personal_resource_cost": {
+      "恶意": 1.666435
+    },
+    "required_buff_key": "character_heiyu_form",
+    "required_buff_name": "二形态",
+    "resource_damage": {
+      "resource": "恶意",
+      "atk_per_point": 0.28,
+      "damage_type": "普攻",
+      "skill_level_category": "basic"
+    },
+    "duration_source": "user-authorized-estimate",
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_heiyu_parry",
+    "character_id": "char_heiyu",
+    "character_name": "黑羽",
+    "name": "弹刀",
+    "action_type": "无",
+    "damage_type": "无",
+    "extra_tag": "弹刀",
+    "display_order": 18,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
+    "multipliers": {
+      "atk": 0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "source_formula": "",
+    "hit_count": 0,
+    "energy_gain": 0.0,
+    "harmony": 0,
+    "stagger": 0,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_row": 0,
+    "source_note": "用户腾讯文档：弹刀获得20恶意并激活二形态变轨； 用户2026-09-16授权使用经验耗时；当前暂估0.5秒，非实测帧数。 用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
+    "personal_resource_gain": {
+      "恶意": 20
+    },
+    "duration_source": "user-authorized-estimate"
+  },
+  {
+    "id": "action_akane_a1",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "a1",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "",
+    "display_order": 0,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
+    "multipliers": {
+      "atk": 0.788,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 2,
+    "energy_gain": 1.968,
+    "harmony": 3.29,
+    "stagger": 0.4,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      32
+    ],
+    "source_row": 32,
+    "duration_source": "user-authorized-estimate",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%*2",
+    "personal_resource_gain": {
+      "弦能": 1
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_akane_a2",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "a2",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "",
+    "display_order": 1,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "multipliers": {
+      "atk": 1.158,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 2,
+    "energy_gain": 2.894,
+    "harmony": 4.836,
+    "stagger": 0.586,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      33
+    ],
+    "source_row": 33,
+    "duration_source": "user-authorized-estimate",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%*2",
+    "personal_resource_gain": {
+      "弦能": 2
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_akane_a3",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "a3",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "",
+    "display_order": 2,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
+    "multipliers": {
+      "atk": 2.253,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 7,
+    "energy_gain": 5.625,
+    "harmony": 9.404,
+    "stagger": 1.141,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      34,
+      35
+    ],
+    "source_row": 34,
+    "duration_source": "user-authorized-estimate",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%*3+{1}%*4",
+    "personal_resource_gain": {
+      "弦能": 4
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_akane_a4",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "a4",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "extra_tag": "",
+    "display_order": 3,
+    "is_background_damage": false,
+    "can_background_override": true,
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
+    "multipliers": {
+      "atk": 1.526,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 3.812,
+    "harmony": 6.371,
+    "stagger": 0.773,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      36
+    ],
+    "source_row": 36,
+    "duration_source": "user-authorized-estimate",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%",
+    "personal_resource_gain": {
+      "弦能": 3
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_akane_plunge",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "下落",
+    "action_type": "下落",
+    "damage_type": "下落",
+    "extra_tag": "",
+    "display_order": 4,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "multipliers": {
+      "atk": 0.625,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 3.1,
+    "harmony": 5.2,
+    "stagger": 0.6,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      37
+    ],
+    "source_row": 37,
+    "duration_source": "user-authorized-estimate",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%",
+    "personal_resource_gain": {
+      "弦能": 4
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_akane_counter",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "闪反",
+    "action_type": "闪反",
+    "damage_type": "闪反",
+    "extra_tag": "",
+    "display_order": 5,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "multipliers": {
+      "atk": 0.25,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 1.5,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      45
+    ],
+    "source_row": 45,
+    "duration_source": "user-authorized-estimate",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%",
+    "personal_resource_gain": {
+      "弦能": 2
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_akane_support",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "援护",
+    "action_type": "援护",
+    "damage_type": "援护",
+    "extra_tag": "",
+    "display_order": 6,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
+    "multipliers": {
+      "atk": 1.29,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 1.5,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      44
+    ],
+    "source_row": 44,
+    "duration_source": "user-authorized-estimate",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%",
+    "resonance_skill_level_bonus": false,
+    "personal_resource_gain": {
+      "弦能": 4
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_akane_e",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "e",
+    "action_type": "E",
+    "damage_type": "E",
+    "extra_tag": "",
+    "display_order": 7,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "multipliers": {
+      "atk": 5.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 1.7,
+    "harmony": 2.8,
+    "stagger": 0.3,
+    "cooldown_ticks": 160,
+    "energy_cost": 0,
+    "source_rows": [
+      39
+    ],
+    "source_row": 39,
+    "duration_source": "user-authorized-estimate",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%",
+    "cooldown_group": "akane_e",
+    "personal_resource_gain": {
+      "弦能": 6
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_akane_hold_e",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "长e",
+    "action_type": "E",
+    "damage_type": "E",
+    "extra_tag": "",
+    "display_order": 8,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
+    "multipliers": {
+      "atk": 4.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 2,
+    "energy_gain": 4.9,
+    "harmony": 8.2,
+    "stagger": 1.0,
+    "cooldown_ticks": 160,
+    "energy_cost": 0,
+    "source_rows": [
+      39,
+      40
+    ],
+    "source_row": 39,
+    "duration_source": "user-authorized-estimate",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%*2",
+    "cooldown_group": "akane_e",
+    "personal_resource_gain": {
+      "弦能": 6
+    },
+    "personal_resource_scale_with_damage_ratio": true
+  },
+  {
+    "id": "action_akane_enhanced_e",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "同调共振",
+    "action_type": "E",
+    "damage_type": "E",
+    "extra_tag": "",
+    "display_order": 9,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "multipliers": {
+      "atk": 8.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 0.0,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      41
+    ],
+    "source_row": 41,
+    "duration_source": "user-authorized-estimate",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%",
+    "personal_resource_cost": {
+      "弦能": 30
+    },
+    "personal_resource_cost_on_hit": true,
+    "required_buff_key": "character_akane_mode",
+    "required_buff_name": "泛音列或音域"
+  },
+  {
+    "id": "action_akane_q1",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "q1",
+    "action_type": "Q",
+    "damage_type": "Q",
+    "extra_tag": "",
+    "display_order": 10,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0.0,
+    "duration_ticks": 0,
+    "multipliers": {
+      "atk": 1.2,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 0.15,
+    "cooldown_ticks": 250,
+    "energy_cost": 120,
+    "source_rows": [
+      42
+    ],
+    "source_row": 42,
+    "duration_source": "existing-time-stop",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_formula": "{0}%",
+    "is_time_stop_zero": true
+  },
+  {
+    "id": "action_akane_q2",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "q2",
+    "action_type": "Q",
+    "damage_type": "Q",
+    "extra_tag": "音障爆鸣·第二段",
+    "display_order": 11,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "duration_seconds": 0.0,
+    "duration_ticks": 0,
+    "multipliers": {
+      "atk": 10.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 1.5,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "duration_source": "existing-time-stop",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 第二段需在华彩连段后半手动释放，不在状态结束时自动结算。",
+    "source_formula": "{0}%",
+    "is_time_stop_zero": true,
+    "required_buff_key": "character_akane_cadenza",
+    "required_buff_name": "华彩连段",
+    "forbidden_buff_key": "character_akane_cadenza_front"
   }
 ]

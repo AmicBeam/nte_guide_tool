@@ -1,0 +1,58 @@
+{% extends 'common/base.html' %}
+{% block title %}构筑{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_common.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_home.css') }}">
+<link rel="stylesheet" href="{{ url_for('card_game_module.static', filename='css/v2_build.css') }}">
+{% endblock %}
+{% block body %}
+<main class="v2-build-page" id="v2-build-page">
+    <header class="v2-home-nav">
+        <a class="v2-home-logo" href="{{ url_for('main.card_game_home') }}">
+            <img src="{{ url_for('static', filename='images/brand/esper-duel-logo.webp') }}" alt="异能对决" width="1086" height="362">
+        </a>
+        <nav class="v2-home-links" aria-label="大厅导航">
+            <a href="{{ url_for('main.card_game_home') }}">大厅</a>
+            <a class="is-current" href="{{ url_for('main.build_page') }}">构筑</a>
+            <a href="{{ url_for('main.codex_page') }}">图鉴</a>
+            <a href="{{ url_for('main.replays_page') }}">回放</a>
+        </nav>
+        <div class="v2-home-account">
+            <div class="v2-build-summary-bar">
+                <input id="v2-build-name" type="text" maxlength="16" placeholder="构筑名称" spellcheck="false">
+                <p id="v2-build-total">总牌数 0 / 32</p>
+                <p id="v2-build-source">尚未读取构筑。</p>
+            </div>
+            <button class="secondary-btn" id="v2-build-new-btn" type="button">新建</button>
+            <button class="secondary-btn" id="v2-build-delete-btn" type="button">删除</button>
+            <button class="primary-btn" id="v2-save-build-btn" type="button">保存</button>
+        </div>
+    </header>
+    <section class="v2-banner" id="v2-build-banner" hidden></section>
+    <section class="v2-build-stage">
+        <div class="v2-build-toolbar">
+            <div class="v2-build-transfer-actions"><button class="secondary-btn" id="v2-build-import-btn" type="button">导入</button><button class="secondary-btn" id="v2-build-export-btn" type="button">导出</button></div>
+            <section id="v2-build-library" aria-label="我的构筑"></section>
+        </div>
+        <section class="v2-build-board" id="v2-build-groups" aria-label="配卡"></section>
+        <footer class="v2-build-team" id="v2-build-team" aria-label="出战四人"></footer>
+        <aside class="v2-build-gallery" id="v2-build-roster" hidden aria-label="选择角色"></aside>
+    </section>
+</main>
+<dialog id="v2-build-transfer" class="v2-build-transfer" aria-labelledby="v2-build-transfer-title">
+    <h2 id="v2-build-transfer-title">导入构筑</h2>
+    <p>纯文本，# 后为注释。导入后成为新草稿，点击保存后加入我的构筑。</p>
+    <label for="v2-build-text">构筑文本</label>
+    <textarea id="v2-build-text" rows="16" maxlength="16384" spellcheck="false"></textarea>
+    <p id="v2-build-transfer-error" role="status"></p>
+    <div class="v2-build-transfer-actions">
+        <button class="primary-btn" id="v2-build-import-apply" type="button">导入为新草稿</button>
+        <button class="secondary-btn" id="v2-build-copy" type="button">复制文本</button>
+        <button class="secondary-btn" id="v2-build-download" type="button">下载 .txt</button>
+        <button class="secondary-btn" id="v2-build-transfer-close" type="button">关闭</button>
+    </div>
+</dialog>
+<script src="{{ url_for('static', filename='common/js/common.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_build.js') }}"></script>
+{% endblock %}

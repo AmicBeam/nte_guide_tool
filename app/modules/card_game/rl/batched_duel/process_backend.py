@@ -497,6 +497,9 @@ class ResidentRuleBackend:
 
     backend_kind = "python_resident_process"
     supports_gpu = False
+    # WireOp carries its own method; one wave can batch different rule queries
+    # together and keep all workers busy instead of serializing by method.
+    supports_mixed_operations = True
 
     def __init__(
         self,

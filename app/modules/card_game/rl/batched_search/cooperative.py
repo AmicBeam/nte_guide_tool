@@ -105,6 +105,104 @@ class CooperativeScheduler:
         if type(allow_cpu_oracle) is not bool:raise TypeError('CPU oracle opt-in must be boolean')
         self.inference=inference;self.max_roots=max_roots;self.allow_cpu_oracle=allow_cpu_oracle
         self._running=False
+        self.dispatch_metrics={}
+
+    def _record_dispatch(self,name,items,started):
+        elapsed=time.perf_counter()-started
+        row=self.dispatch_metrics.setdefault(name,dict(batches=0,items=0,wall_seconds=0.,max_seconds=0.))
+        row['batches']+=1;row['items']+=items;row['wall_seconds']+=elapsed
+        row['max_seconds']=max(row['max_seconds'],elapsed)
+
+    def run_stream(self,admit,completed,*,max_waves=100000,cancelled=None):
+        """Refill a bounded window after publishing each wave's completed roots.
+
+        ``admit`` constructs a root only when a slot is available; its deadline
+        starts at admission. ``completed`` commits physical actions before the
+        next admission, so a game's next generation cannot overlap its old one.
+        No per-decision result history is retained in the scheduler.
+        """
+        if self._running:raise RuntimeError('Scheduler already owns an active run')
+        if not callable(admit) or not callable(completed):raise TypeError('Admission and completion callbacks required')
+        if type(max_waves) is not int or max_waves<1:raise ValueError('Positive wave limit required')
+        import math
+        from .traversal import TraversalCancelled,_DeadlineReached
+        pending={};generations={};owned={};root_ids=set();waves=0;stalled_waves=0;count=0;peak=0
+        start=time.monotonic();self._running=True
+        def stopped():return cancelled is not None and cancelled()
+        def publish(rows):
+            nonlocal stalled_waves
+            for job,_ in rows:
+                owned.pop(job.game_id,None)
+                job.generator.close()
+            if rows:
+                completed(rows)
+                stalled_waves=0
+        try:
+            while True:
+                immediate=[]
+                while len(pending)<self.max_roots and not stopped():
+                    job=admit()
+                    if job is None:break
+                    if (not isinstance(job,RootJob) or not isinstance(job.root_id,str) or not job.root_id
+                        or not isinstance(job.game_id,str) or not job.game_id
+                        or type(job.generation) is not int or job.generation<1
+                        or not inspect.isgenerator(job.generator)):
+                        raise ValueError('Versioned root jobs with generator traversal required')
+                    # Include the new generator in cleanup even if validation fails.
+                    if job.game_id in owned or job.root_id in root_ids or job.generation<=generations.get(job.game_id,0):
+                        job.generator.close()
+                        raise ValueError('Duplicate root, overlapping game, or stale generation')
+                    owned[job.game_id]=job;root_ids.add(job.root_id);generations[job.game_id]=job.generation
+                    if job.deadline is not None and (isinstance(job.deadline,bool)
+                        or not isinstance(job.deadline,(int,float)) or not math.isfinite(job.deadline)):
+                        raise ValueError('Finite monotonic root deadline required')
+                    count+=1
+                    try:pending[job.root_id]=(job,next(job.generator))
+                    except StopIteration as stop:immediate.append((job,stop.value))
+                peak=max(peak,len(pending))
+                publish(immediate)
+                if stopped():
+                    finished=[];finalizing=[]
+                    for job,_ in pending.values():
+                        try:query=job.generator.throw(TraversalCancelled())
+                        except StopIteration as stop:finished.append((job,stop.value))
+                        except TraversalCancelled:finished.append((job,dict(stop_reason='cancelled_before_policy',complete=False,simulations=0)))
+                        else:
+                            if (not isinstance(query,OperationQuery) or not query.finalization
+                                or query.method not in ('snapshot','final_summary')
+                                or not getattr(query.backend,'read_only_finalization',False)):
+                                raise RuntimeError('Traversal ignored root cancellation')
+                            finalizing.append((job,query))
+                    if finalizing:
+                        responses=self._resolve([query for _,query in finalizing])
+                        for job,query in finalizing:
+                            try:job.generator.send(responses[query.id])
+                            except StopIteration as stop:finished.append((job,stop.value))
+                            else:raise RuntimeError('Traversal continued after final statistics snapshot')
+                    pending.clear();publish(finished);break
+                if not pending:
+                    if immediate:continue
+                    break
+                # A continuous run may legitimately contain millions of waves.
+                # Bound lack of progress, not the total work of all real games.
+                if stalled_waves>=max_waves:raise TimeoutError('Cooperative wave allowance exhausted')
+                responses=self._resolve([replace(q,deadline=job.deadline) for job,q in pending.values()]);waves+=1;stalled_waves+=1
+                finished=[];next_pending={}
+                for key,(job,query) in pending.items():
+                    try:
+                        if isinstance(responses[query.id],RequestExpired):
+                            value=job.generator.throw(_DeadlineReached('Queued operation exceeded its root deadline'))
+                        else:value=job.generator.send(responses[query.id])
+                        next_pending[key]=(job,value)
+                    except StopIteration as stop:finished.append((job,stop.value))
+                pending=next_pending
+                publish(finished)
+            return dict(root_count=count,peak_outstanding_roots=peak,waves=waves,
+                wall_seconds=time.monotonic()-start,cpu_oracle_opt_in=self.allow_cpu_oracle,
+                dispatch_metrics=self.dispatch_metrics)
+        finally:
+            for job in owned.values():job.generator.close()
+            self._running=False
 
     def _resolve(self,queries):
         from .traversal import InferenceQuery,InferenceResponse
@@ -115,7 +213,9 @@ class CooperativeScheduler:
             deadline=getattr(query,'deadline',None)
             if not getattr(query,'finalization',False) and deadline is not None and time.monotonic()>=deadline:
                 responses[query.id]=RequestExpired(query.id);continue
-            if isinstance(query,OperationQuery):groups.setdefault((id(query.backend),query.method),[]).append(query)
+            if isinstance(query,OperationQuery):
+                method=None if getattr(query.backend,'supports_mixed_operations',False) else query.method
+                groups.setdefault((id(query.backend),method),[]).append(query)
             elif isinstance(query,InferenceQuery):neural.append(query)
             else:raise TypeError('Unknown cooperative request type')
         for (_,method),group in groups.items():
@@ -127,6 +227,7 @@ class CooperativeScheduler:
             group=fresh
             if not group:continue
             backend=group[0].backend
+            dispatch_started=time.perf_counter()
             if callable(getattr(backend,'resolve_operations',None)):
                 result=backend.resolve_operations(group)
                 if len(result)!=len(group):raise ValueError('Bulk backend dropped or added operations')
@@ -142,6 +243,8 @@ class CooperativeScheduler:
                 if method not in _PROTOCOL_METHODS:raise ValueError('Unknown backend operation')
                 for q in group:
                     responses[q.id]=OperationResponse(q.id,getattr(backend,method)(*q.args,**dict(q.kwargs)))
+            prefix='statistics.' if getattr(backend,'read_only_finalization',False) else 'rules.'
+            self._record_dispatch(prefix+(method or 'mixed'),len(group),dispatch_started)
         if neural:
             fresh=[]
             for query in neural:
@@ -151,7 +254,9 @@ class CooperativeScheduler:
             neural=fresh
         if neural:
             requests=[InferenceRequest(q.id,q.policy_key,q.model_version,q.x,q.c,q.value_actor,q.value_only,q.deadline) for q in neural]
+            dispatch_started=time.perf_counter()
             result=self.inference.predict(requests)
+            self._record_dispatch('inference',len(requests),dispatch_started)
             if len(result)!=len(requests):raise ValueError('Inference dropped or added requests')
             expected={q.id:q for q in neural}
             for row in result:

@@ -226,6 +226,10 @@ def generate_report_markdown(
         "",
         f"- `game_execution_complete`: **{str(eval_result.get('game_execution_complete', False)).lower()}**",
         f"- `concurrency_1600_full_games_complete`: **{str(eval_result.get('concurrency_1600_full_games_complete', False)).lower()}**",
+        f"- `resident_1600_full_games_complete`: **{str(eval_result.get('resident_1600_full_games_complete', False)).lower()}**",
+        f"- `fixed_budget_complete`: **{str(eval_result.get('fixed_budget_complete', False)).lower()}**",
+        f"- 同时准入搜索上限：**{eval_result.get('search_root_limit', 'unknown')}**；驻留对局数：**{eval_result.get('total_games', 0)}**",
+        "- 离线3秒窗口从搜索准入计时；驻留等待及动作端到端延迟另报，不能等同网站3秒响应。",
         f"- `evaluation_accepted`: **{str(eval_result.get('evaluation_accepted', False)).lower()}**",
         f"- `behavior_approved`: **{str((eval_result.get('behavior') or {}).get('behavior_approved', False)).lower()}**",
         "- `quality_approved`: **false**",
@@ -446,6 +450,7 @@ def evaluate_jobs(
     proof_cap: int = 8,
     deadline: Optional[float] = None,
     max_actions: int = 800,
+    search_roots: Optional[int] = None,
     output_dir: Optional[Union[str, Path]] = None,
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     statistics=None,
@@ -454,9 +459,10 @@ def evaluate_jobs(
     """Execute complete real-game cooperative evaluation across resident worker states.
 
     Import up to 1600 games once into backend workers. In each round, construct
-    RootJob instances using serving_search for all active games, batch resolve via
-    CooperativeScheduler, and apply single-operation physical commits on backend.
+    RootJob instances are admitted into a bounded rolling search window. Finished
+    roots commit immediately, before waiting for slower roots or refilling slots.
     """
+    evaluation_started = clock()
     if budget_mode not in ('simulations', 'wall_clock'):
         raise ValueError(f"Explicit serving budget mode ('simulations' or 'wall_clock') required, got {budget_mode!r}")
     if type(simulations) is not int or simulations < 1:
@@ -473,6 +479,12 @@ def evaluate_jobs(
     jobs = list(jobs)
     if not jobs or len(jobs) > 1600:
         raise ValueError(f"Non-empty sequence of at most 1600 jobs required, got {len(jobs)}")
+
+    if search_roots is None:
+        search_roots = min(len(jobs), 2 * getattr(backend, 'workers', 16))
+    if type(search_roots) is not int or not 1 <= search_roots <= 1600:
+        raise ValueError('search_roots must be an integer in 1..1600')
+    search_roots = min(search_roots, len(jobs))
 
     # Strict game id and configuration deduplication check
     seen_ids = set()
@@ -524,6 +536,7 @@ def evaluate_jobs(
     game_ids = [j['id'] for j in jobs]
     root_generations = [1] * len(jobs)
     initial_refs = backend.import_states(states, game_ids, root_generations)
+    del states  # Workers own the immutable initial states and replay journals now.
 
     active_games: Dict[str, Tuple[Dict[str, Any], Any]] = {
         ref.game_id: (job, ref) for job, ref in zip(jobs, initial_refs)
@@ -544,8 +557,15 @@ def evaluate_jobs(
     fallback_reasons: collections.Counter[str] = collections.Counter()
     planner_outcomes: collections.Counter[str] = collections.Counter()
     peak_outstanding_roots = 0
+    queue_latencies = []
+    decision_latencies = []
+    budget_failures = collections.Counter()
+    committed_budget_complete = 0
+    committed_decisions = 0
+    scheduler_stats = None
 
-    start_monotonic = clock()
+    resident_setup_seconds = clock() - evaluation_started
+    start_monotonic = evaluation_started
 
     def _flush_records(batch_results: Sequence[Dict[str, Any]]) -> None:
         if out_path is None:
@@ -591,210 +611,132 @@ def evaluate_jobs(
     from .behavior import BehaviorGate
     behavior_gate=BehaviorGate()
     method_error=None
-    try:
-        while active_games:
-            # 1. Harvest any games whose resident state reached 'finished'
-            ready_finish_refs = []
-            ready_finish_jobs = []
-            for gid, (job, ref) in list(active_games.items()):
-                if ref.phase == 'finished':
-                    ready_finish_refs.append(ref)
-                    ready_finish_jobs.append(job)
-                    del active_games[gid]
+    last_progress_write = float('-inf')
+    # Resident games waiting for admission do not own a search deadline. This
+    # offline protocol reports their wait separately from the admitted 3s window.
+    ready = collections.deque((gid, clock()) for gid in active_games)
+    searching = {}
 
-            if ready_finish_refs:
-                summaries = backend.finish_games(ready_finish_refs, ready_finish_jobs)
-                backend.release(ready_finish_refs)
-                for res in summaries:
-                    finished_results[res['id']] = res
-                _flush_records(summaries)
-                _update_progress()
+    def retire(refs, job_rows):
+        if not refs:
+            return
+        summaries = backend.finish_games(refs, job_rows)
+        backend.release(refs)
+        for row in summaries:
+            target = finished_results if row.get('complete') else uncompleted_results
+            target[row['id']] = row
+            active_games.pop(row['id'], None)
+        _flush_records(summaries)
 
-            if not active_games:
-                break
+    def admit():
+        nonlocal peak_outstanding_roots
+        while ready:
+            gid, ready_at = ready.popleft()
+            job, ref = active_games[gid]
+            if ref.phase == 'finished':
+                retire([ref], [job])
+                continue
+            if action_counts[gid] >= max_actions:
+                retire([ref], [dict(job, completion_reason='max_actions')])
+                continue
+            actor = ref.actor
+            if not ref.phase or actor not in ('a', 'b'):
+                raise RuntimeError(f'P0: Abnormal resident metadata for game {gid}')
+            policy_spec = job['policies'][actor]
+            if isinstance(policy_spec, str):
+                model = models[policy_spec]
+            elif isinstance(policy_spec, PolicyIdentity) or hasattr(policy_spec, 'version') or isinstance(policy_spec, tuple) and len(policy_spec) == 2:
+                model = policy_spec
+            else:
+                raise ValueError(f'Unknown policy key {policy_spec!r}')
+            admitted_at = clock()
+            queue_seconds = admitted_at - ready_at
+            queue_latencies.append(queue_seconds)
+            root_token = f'{ref.game_id}:r{ref.root_generation}:{uuid4().hex[:8]}'
+            searching[root_token] = (gid, job, ref, actor, ready_at, queue_seconds)
+            peak_outstanding_roots = max(peak_outstanding_roots, len(searching))
+            gen = serving_search(ref, actor, model, backend=backend,
+                budget_mode=budget_mode, seconds=decision_seconds,
+                simulations=simulations, proof_cap=proof_cap, deadline=search_deadline,
+                root_id=root_token, queued_at=admitted_at, statistics=statistics, clock=clock)
+            root_deadline = search_deadline
+            if budget_mode == 'wall_clock':
+                root_deadline = min(admitted_at + decision_seconds, search_deadline) if search_deadline is not None else admitted_at + decision_seconds
+            return RootJob(root_token, ref.game_id, ref.root_generation, gen, root_deadline)
+        return None
 
-            # 2. Check global search deadline (reserving 30s for disk output)
-            time_now = clock()
-            if search_deadline is not None and time_now >= search_deadline:
-                break
-
-            # 3. Check for games reaching max_actions limit
-            exceeded_gids = {
-                gid for gid, count in action_counts.items()
-                if gid in active_games and count >= max_actions
-            }
-            if len(exceeded_gids) == len(active_games):
-                # All active games exhausted action budget
-                break
-
-            # 4. Construct RootJob for each active unexhausted game
-            games_to_search = []
-            root_jobs = []
-            queued_at = clock()
-
-            for gid, (job, ref) in active_games.items():
-                if action_counts[gid] >= max_actions:
-                    continue
-
-                actor = ref.actor
-                phase = ref.phase
-                # P0 sanity check on worker metadata
-                if phase != 'finished' and actor not in ('a', 'b'):
-                    raise RuntimeError(f"P0: Abnormal actor {actor!r} or phase {phase!r} on game {gid}")
-                if not phase:
-                    raise RuntimeError(f"P0: Missing phase on game {gid}")
-
-                policy_spec = job['policies'][actor]
-                if policy_spec in models:
-                    model = models[policy_spec]
-                elif isinstance(policy_spec, PolicyIdentity) or hasattr(policy_spec, 'version'):
-                    model = policy_spec
-                elif isinstance(policy_spec, tuple) and len(policy_spec) == 2:
-                    model = policy_spec
-                else:
-                    model = models.get(policy_spec)
-                    if model is None:
-                        raise ValueError(f"Unknown policy key {policy_spec!r} for actor {actor}")
-
-                root_token = f"{ref.game_id}:r{ref.root_generation}:{uuid4().hex[:8]}"
-
-                gen = serving_search(
-                    ref,
-                    actor,
-                    model,
-                    backend=backend,
-                    budget_mode=budget_mode,
-                    seconds=decision_seconds,
-                    simulations=simulations,
-                    proof_cap=proof_cap,
-                    deadline=search_deadline,
-                    root_id=root_token,
-                    queued_at=queued_at,
-                    statistics=statistics,
-                    clock=clock,
-                )
-
-                root_job = RootJob(
-                    root_id=root_token,
-                    game_id=ref.game_id,
-                    generation=ref.root_generation,
-                    generator=gen,
-                    deadline=(min(queued_at+decision_seconds,search_deadline) if search_deadline is not None else queued_at+decision_seconds)
-                        if budget_mode=='wall_clock' else search_deadline,
-                )
-                root_jobs.append(root_job)
-                games_to_search.append((gid, job, ref, actor, root_token))
-
-            if not root_jobs:
-                break
-
-            peak_outstanding_roots = max(peak_outstanding_roots, len(root_jobs))
-
-            # 5. Batch resolve all cooperative search operations
-            search_t0 = clock()
-            scheduler = CooperativeScheduler(inference, max_roots=len(root_jobs), allow_cpu_oracle=False)
-            sched_output = scheduler.run(root_jobs,cancelled=(
-                (lambda:clock()>=search_deadline) if search_deadline is not None else None))
-            search_dur = clock() - search_t0
-            search_batch_latencies.append(search_dur)
-            peak_outstanding_roots = max(peak_outstanding_roots, sched_output.get('peak_outstanding_roots', len(root_jobs)))
-
-            results_by_root = sched_output['results']
-
-            # 6. Validate search decisions and prepare batch physical commits
-            commits = []
-            old_refs_to_release = []
-            policy_timeouts=[]
-
-            for gid, job, ref, actor, root_token in games_to_search:
-                search_res = results_by_root.get(root_token)
-                if search_res is None:
-                    raise RuntimeError(f"Scheduler dropped result for root {root_token}")
-
-                selected_action = search_res.get('selected_action')
-                actions = search_res.get('actions', [])
-                p_checks = search_res.get('proof_checks', 0)
-                t_sims = search_res.get('tree_simulations', 0)
-                tot_sims = search_res.get('total_simulations', 0)
-                stop_reason = search_res.get('stop_reason')
-                used_fallback = search_res.get('used_fallback', False)
-
-                if type(tot_sims) is not int or tot_sims < 0 or tot_sims > simulations:
-                    raise ValueError(f"Invalid total_simulations {tot_sims} (must be 0..{simulations})")
-                if type(p_checks) is not int or p_checks < 0:
-                    raise ValueError(f"Invalid proof_checks {p_checks}")
-                if type(t_sims) is not int or t_sims < 0:
-                    raise ValueError(f"Invalid tree_simulations {t_sims}")
-                if p_checks>proof_cap or p_checks+t_sims!=tot_sims:
-                    raise ValueError('Public proofs and tree simulations exceeded their shared budget')
-                latency=search_res.get('wall_seconds')
-                if isinstance(latency,bool) or not isinstance(latency,(int,float)) or not math.isfinite(latency) or latency<0:
-                    raise ValueError('Finite actual per-root search latency required')
-                search_latencies.append(latency)
-
-                proof_checks_list.append(p_checks)
-                tree_simulations_list.append(t_sims)
-                total_simulations_list.append(tot_sims)
-                if stop_reason:planner_outcomes[stop_reason]+=1
-                if stop_reason and used_fallback:
-                    fallback_reasons[stop_reason] += 1
-
-                if selected_action is None:
-                    # A root never obtains a fresh budget for the same physical
-                    # decision after missing its 3-second policy window.
-                    policy_timeouts.append((gid,job,ref))
-                    continue
-
-                if selected_action not in actions:
-                    raise ValueError(f"P0: Selected action {selected_action} not in legal actions {actions}")
-
-                compact_stats = {
-                    'simulations': tot_sims,
-                    'tree_simulations': t_sims,
-                    'proof_checks': p_checks,
-                    'proof_attempts':search_res.get('proof_attempts'),
-                    'used_fallback': used_fallback,
-                    'stop_reason': stop_reason,
-                    'tree_stop_reason':search_res.get('tree_stop_reason'),
-                    'deadline_reached':search_res.get('deadline_reached'),
-                    'wall_seconds': search_res.get('wall_seconds'),
-                    'surrogate_model_key': search_res.get('surrogate_model_key'),
-                    'surrogate_model_version': search_res.get('surrogate_model_version'),
-                }
-
-                commits.append((ref, actor, selected_action, ref.root_generation + 1, compact_stats))
-                old_refs_to_release.append(ref)
-
-            # 7. Apply physical commits before deadline cutoff
+    def completed(rows):
+        nonlocal committed_budget_complete, committed_decisions, last_progress_write
+        commits = []; old_refs = []; rejected_refs = []; rejected_jobs = []
+        commit_context = []
+        for root, search_res in rows:
+            gid, job, ref, actor, ready_at, queue_seconds = searching.pop(root.root_id)
+            p_checks = search_res.get('proof_checks', 0)
+            t_sims = search_res.get('tree_simulations', 0)
+            tot_sims = search_res.get('total_simulations', 0)
+            if any(type(n) is not int or n < 0 for n in (p_checks, t_sims, tot_sims)) or p_checks > proof_cap or p_checks + t_sims != tot_sims or tot_sims > simulations:
+                raise ValueError('Invalid completed search work accounting')
+            latency = search_res.get('wall_seconds', max(0., clock() - ready_at - queue_seconds))
+            if isinstance(latency, bool) or not isinstance(latency, (int, float)) or not math.isfinite(latency) or latency < 0:
+                raise ValueError('Finite actual per-root search latency required')
+            search_latencies.append(latency)
+            proof_checks_list.append(p_checks); tree_simulations_list.append(t_sims); total_simulations_list.append(tot_sims)
+            reason = search_res.get('stop_reason')
+            if reason: planner_outcomes[reason] += 1
+            if reason and search_res.get('used_fallback'): fallback_reasons[reason] += 1
+            selected = search_res.get('selected_action')
+            budget_complete = (
+                reason == 'forced_action' and len(search_res.get('actions', [])) == 1
+                or reason == 'public_terminal_win' and p_checks > 0
+                or reason == 'tree_search' and search_res.get('tree_complete') is True
+                   and tot_sims == simulations
+            )
+            if search_res.get('budget_complete', False) != budget_complete:
+                raise ValueError('Search budget declaration disagrees with completed work')
+            reject_reason = None
+            if selected is None:
+                reject_reason = 'root_deadline_without_policy'
+            elif budget_mode == 'simulations' and not budget_complete:
+                reject_reason = 'incomplete_search_budget'
+            if reject_reason:
+                budget_failures[reject_reason] += 1
+                rejected_refs.append(ref); rejected_jobs.append(dict(job, completion_reason=reject_reason))
+                continue
+            if selected not in search_res.get('actions', []):
+                raise ValueError(f'P0: Selected action outside legal root on game {gid}')
+            # A global cutoff never grants a fresh policy window or commits late work.
             if search_deadline is not None and clock() >= search_deadline:
-                # Do not commit past deadline
-                break
-
-            if policy_timeouts:
-                timeout_refs=[ref for _,_,ref in policy_timeouts]
-                timeout_jobs=[dict(job,completion_reason='root_deadline_without_policy')
-                              for _,job,_ in policy_timeouts]
-                summaries=backend.finish_games(timeout_refs,timeout_jobs)
-                backend.release(timeout_refs)
-                for row in summaries:uncompleted_results[row['id']]=row
-                _flush_records(summaries)
-                for gid,_,_ in policy_timeouts:active_games.pop(gid,None)
-
-            if commits:
-                commit_t0 = clock()
-                new_refs = backend.commit_actions(commits)
-                commit_dur = clock() - commit_t0
-                commit_latencies.append(commit_dur)
-
-                for old_ref, new_ref in zip(old_refs_to_release, new_refs):
-                    gid = old_ref.game_id
-                    job = game_job_map[gid]
-                    active_games[gid] = (job, new_ref)
-                    action_counts[gid] += 1
-
-                backend.release(old_refs_to_release)
-
+                continue
+            compact = {key: search_res.get(key) for key in (
+                'proof_attempts', 'used_fallback', 'stop_reason', 'tree_stop_reason',
+                'deadline_reached', 'wall_seconds', 'surrogate_model_key', 'surrogate_model_version')}
+            compact.update(simulations=tot_sims, tree_simulations=t_sims, proof_checks=p_checks,
+                budget_complete=budget_complete, budget_mode=budget_mode,
+                queue_seconds=queue_seconds, deadline_scope='search_admission')
+            commits.append((ref, actor, selected, ref.root_generation + 1, compact))
+            old_refs.append(ref); commit_context.append((gid, ready_at, budget_complete))
+        if commits:
+            t0 = clock(); new_refs = backend.commit_actions(commits)
+            commit_latencies.append(clock() - t0)
+            if len(new_refs) != len(commits): raise ValueError('Physical commit lost a game')
+            backend.release(old_refs)
+            for ref, (gid, ready_at, budget_complete) in zip(new_refs, commit_context):
+                active_games[gid] = (game_job_map[gid], ref)
+                action_counts[gid] += 1
+                committed_decisions += 1; committed_budget_complete += int(budget_complete)
+                decision_latencies.append(clock() - ready_at)
+                ready.append((gid, clock()))
+        retire(rejected_refs, rejected_jobs)
+        if clock() - last_progress_write >= 1.:
             _update_progress()
+            last_progress_write = clock()
+
+    try:
+        _update_progress()
+        scheduler = CooperativeScheduler(inference, max_roots=search_roots, allow_cpu_oracle=False)
+        scheduler_stats = scheduler.run_stream(admit, completed, cancelled=(
+            (lambda: clock() >= search_deadline) if search_deadline is not None else None))
+        peak_outstanding_roots = scheduler_stats['peak_outstanding_roots']
 
     except Exception as exc:
         method_error=repr(exc)
@@ -855,7 +797,8 @@ def evaluate_jobs(
     completed_count = sum(1 for r in all_results if r.get('complete') is True)
     uncompleted_count = len(all_results) - completed_count
     game_execution_complete = (method_error is None and completed_count == len(jobs) and all(r.get('replay_verified') is True for r in all_results))
-    concurrency_1600_full_games_complete = (len(jobs) == 1600 and game_execution_complete)
+    concurrency_1600_full_games_complete = (len(jobs) == 1600 and game_execution_complete and peak_outstanding_roots == 1600)
+    fixed_budget_complete = budget_mode == 'simulations' and game_execution_complete and committed_decisions == committed_budget_complete and not budget_failures
 
     def _percentile(data: List[Union[int, float]], p: float) -> Optional[float]:
         if not data:
@@ -863,6 +806,20 @@ def evaluate_jobs(
         return round(float(np.percentile(data, p)), 6)
 
     stats = {
+        'resident_queue_latency_p50': _percentile(queue_latencies, 50),
+        'resident_queue_latency_p95': _percentile(queue_latencies, 95),
+        'resident_queue_latency_p99': _percentile(queue_latencies, 99),
+        'decision_end_to_end_latency_p50': _percentile(decision_latencies, 50),
+        'decision_end_to_end_latency_p95': _percentile(decision_latencies, 95),
+        'decision_end_to_end_latency_p99': _percentile(decision_latencies, 99),
+        'search_root_limit': search_roots,
+        'resident_games': len(jobs),
+        'resident_setup_seconds': resident_setup_seconds,
+        'deadline_scope': 'search_admission',
+        'committed_decisions': committed_decisions,
+        'committed_budget_complete_decisions': committed_budget_complete,
+        'incomplete_budget_roots': dict(budget_failures),
+        'scheduler': scheduler_stats,
         'search_latency_p50': _percentile(search_latencies, 50),
         'search_latency_p95': _percentile(search_latencies, 95),
         'search_latency_p99': _percentile(search_latencies, 99),
@@ -898,6 +855,9 @@ def evaluate_jobs(
         'uncompleted_games': uncompleted_count,
         'game_execution_complete': game_execution_complete,
         'concurrency_1600_full_games_complete': concurrency_1600_full_games_complete,
+        'resident_1600_full_games_complete': len(jobs) == 1600 and game_execution_complete,
+        'fixed_budget_complete': fixed_budget_complete,
+        'search_root_limit': search_roots,
         'quality_approved': False,
         'training_updates': 0,
         'gpu_rule_execution': False,
@@ -908,5 +868,5 @@ def evaluate_jobs(
         'device_statistics':device_stats,
         'method_error':method_error,
         'behavior':behavior_gate.report(),
-        'evaluation_accepted':game_execution_complete and behavior_gate.report()['behavior_approved'],
+        'evaluation_accepted':game_execution_complete and behavior_gate.report()['behavior_approved'] and (budget_mode != 'simulations' or fixed_budget_complete),
     }

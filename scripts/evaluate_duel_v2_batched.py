@@ -50,6 +50,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Number of dedicated resident CPU rule worker processes (1..64).",
     )
     parser.add_argument(
+        "--search-roots",
+        type=int,
+        default=None,
+        help="Simultaneous admitted searches (1..1600; default min(games, workers*2)); resident games wait separately.",
+    )
+    parser.add_argument(
         "--games",
         type=int,
         default=1600,
@@ -71,7 +77,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--budget-mode",
         choices=("simulations", "wall_clock"),
         default=None,
-        help="Search budget mode: 'simulations' (fixed 32) or 'wall_clock' (3.0s shared).",
+        help="Search budget: fixed 32 work units or 3s from search admission (resident queue wait reported separately).",
     )
     parser.add_argument(
         "--models",
@@ -86,6 +92,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error(f"--workers must be between 1 and 64, got {args.workers}")
     if not 1 <= args.games <= 1600:
         parser.error(f"--games must be between 1 and 1600, got {args.games}")
+    if args.search_roots is not None and not 1 <= args.search_roots <= 1600:
+        parser.error("--search-roots must be between 1 and 1600")
+    args.search_roots = min(args.games, args.search_roots or args.workers * 2)
     if not 1 <= args.seconds <= 14400:
         parser.error(f"--seconds must be a positive integer <= 14400, got {args.seconds}")
 
@@ -120,7 +129,9 @@ def main(argv: list[str] | None = None) -> int:
             "torch_imported": torch_imported,
             "processes_started": False,
             "weights_loaded": False,
-            "requested_concurrent_games": args.games,
+            "requested_resident_games": args.games,
+            "search_roots": args.search_roots,
+            "deadline_scope": "search_admission",
             "concurrency_1600_ready": False,
         }
         print(json.dumps(config_check, indent=2))
@@ -195,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     source_snapshot = make_source_snapshot(models, args.budget_mode, models_dir)
-    with backend,BatchedStatistics(33*args.games,2048,device=args.device) as statistics:
+    with backend,BatchedStatistics(33*args.search_roots,2048,device=args.device) as statistics:
         eval_result = evaluate_jobs(
             jobs=jobs,
             models=models,
@@ -207,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
             proof_cap=8,
             deadline=deadline,
             max_actions=800,
+            search_roots=args.search_roots,
             output_dir=output_dir,
             statistics=statistics,
         )
@@ -214,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
     config_dict = {
         "device": args.device,
         "workers": args.workers,
+        "search_roots": args.search_roots,
+        "deadline_scope": "search_admission",
         "games": args.games,
         "seconds": args.seconds,
         "seed_base": args.seed_base,

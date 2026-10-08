@@ -182,7 +182,7 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None,
     c.operation['option_id'] = option.get('id')
     c.operation['ap_paid'] = ap_paid
     fire(c, GameEvent.V2_CARD_USED, actor_id=card['character_id'], card=card)
-    if form_bonus and not finished(state) and alive(state, side, card['character_id']):
+    if form_bonus and not finished(state):
         draw(state, side, 1)
     if finished(state):
         return

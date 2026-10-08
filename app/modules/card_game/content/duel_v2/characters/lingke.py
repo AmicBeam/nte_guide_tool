@@ -90,11 +90,9 @@ class Lingke:
             count = int(chain.get('count', 0)) + 1 if chain.get('entity_id') == actor.entity_id else 1
             c.character['lingke_chain'] = dict(entity_id=actor.entity_id, character_id=actor_id, count=count % 3)
             if count == 3:
-                c.state.setdefault('deferred_actions', []).append(dict(
-                    side=c.side, actor=c.cid, entity_id=c.entity_id,
-                    kind='lingke_sync', attribute=actor['attribute'],
-                    support_actor=dict(character_id=actor_id, entity_id=actor.entity_id)))
-                c.history(f'{actor["name"]}连续使用 3 张牌，将触发「同频合击」。')
+                c.history(f'{actor["name"]}连续使用 3 张牌，触发「同频合击」。')
+                _sync(c, actor['attribute'],
+                      support_actor=dict(character_id=actor_id, entity_id=actor.entity_id))
         if card.get('type') != 'battle':
             return
         foe = other(c.side)

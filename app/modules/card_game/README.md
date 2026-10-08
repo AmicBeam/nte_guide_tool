@@ -1001,3 +1001,10 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 灵可减抗文案统一为「持续到下个己方回合开始时」。玩家减抗仅在生命面板旁、异能者减抗在角色旁，以属性图标和下箭头展示；战斗区不重复显示减抗气泡。K01 从指定异能者的牌库随机抽取至多三种不同牌，再经通用完整牌面弹窗选一张；九原 J01 也共用该弹窗、详情与收起查看战场。随机状态与候选由后端保存。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_effect_markers tests.test_duel_v2_engine tests.test_duel_v2_presentation tests.test_duel_v2_replay`；`node --test tests/js/duel_v2_effect_markers.test.cjs tests/js/duel_v2_card_choice.test.cjs tests/js/duel_v2_selection_view.test.cjs`。
+
+
+### 2026-10-09 使用时统一先于卡效
+
+通用使用阶段为支付费用→完成使用时触发→卡框与卡效→明确写明的使用后／结算后。灵可第三张牌立即完成合击，不排入操作结束队列；第三张牌进入选择前已完成，JSON恢复选择不重复触发。零武备使用抽牌前移至卡效前，允许复活武备在恢复所属者前触发；残虹赤葵自动使用接入同一入口并保持免费；哈尼娅V08在使用战斗牌时消费光环、记录战斗准备加攻，普通出击仍按原入场时机，覆写攻击与响应规则保留。来源为用户明确时机纠正，旧回放不追改。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_card_use_timing tests.test_duel_v2_lingke tests.test_duel_v2_haniya tests.test_duel_v2_zero_refund tests.test_duel_v2_jingu_marks tests.test_duel_v2_hooks tests.test_duel_v2_engine tests.test_duel_v2_presentation tests.test_duel_v2_replay`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。

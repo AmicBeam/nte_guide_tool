@@ -86,14 +86,45 @@ class LingkeTest(unittest.TestCase):
             s = play(s, 'K06')
         self.assertEqual(calls, ['zero', 'baicang', 'iloy', 'jiuyuan'])
 
-    def test_three_card_deferred_trigger_preserves_owner_identity(self):
+    def test_three_card_use_trigger_precedes_effect_and_preserves_owner_identity(self):
         from app.modules.card_game.content.duel_v2.registry import KITS
         s = game(); calls = []
         def own_support(c, actor_id):
             if actor_id == c.cid: calls.append(c.cid)
         with patch.object(KITS['zero'], 'on_support', staticmethod(own_support), create=True):
-            for _ in range(3): s = play(s, 'Z07')
+            for _ in range(2): s = play(s, 'Z07')
+            seq = s['event_seq']
+            s = play(s, 'Z07')
         self.assertEqual(calls, ['zero'])
+        events = [e for e in s['events'] if e['seq'] > seq]
+        hit_index = next(i for i, e in enumerate(events) if e['type'] == 'combat' and e.get('source') == 'a:lingke')
+        shape_index = next(i for i, e in enumerate(events) if e['type'] == 'shape')
+        self.assertLess(hit_index, shape_index)
+        self.assertFalse(s.get('deferred_actions'))
+
+    def test_third_battle_card_sync_precedes_frame_and_attack(self):
+        s = game()
+        for _ in range(2): s = play(s, 'Z07')
+        s['sides']['b']['front'] = 'zero'
+        seq = s['event_seq']; opening = capture_public_board(s)
+        action = give(s, 'a', 'Z03')
+        after = apply_action(s, 'a', action)
+        events = [e for e in after['events'] if e['seq'] > seq]
+        sync = next(i for i, e in enumerate(events) if e['type'] == 'attack' and e.get('actor') == 'a:lingke')
+        frame = next(i for i, e in enumerate(events) if e['type'] == 'shield' and e.get('target') == 'a:zero')
+        attack = next(i for i, e in enumerate(events) if e['type'] == 'attack' and e.get('actor') == 'a:zero')
+        self.assertLess(sync, frame); self.assertLess(sync, attack)
+        self.assertEqual(replay_public_board(opening, events), capture_public_board(after))
+        self.assertEqual(capture_public_board(simulate_action(s, 'a', action)), capture_public_board(after))
+
+    def test_use_trigger_terminal_stops_the_third_card_effect(self):
+        s = game()
+        for _ in range(2): s = play(s, 'Z07')
+        s['sides']['b']['hp'] = 1
+        seq = s['event_seq']; s = play(s, 'Z07')
+        self.assertEqual(s['phase'], 'finished')
+        events = [e for e in s['events'] if e['seq'] > seq]
+        self.assertFalse(any(e['type'] == 'shape' for e in events))
 
     def test_team_observer_does_not_trigger_twice_when_it_is_borrowed_owner(self):
         s = game(); s['sides']['a']['characters']['edgar'] = new_character('edgar')
@@ -110,13 +141,16 @@ class LingkeTest(unittest.TestCase):
         s = play(s, 'E04'); s = play(s, 'E04'); give(s, 'a', 'Z07')
         s = play(s, 'E03')
         self.assertEqual(s['phase'], 'choice')
-        self.assertEqual(s['deferred_actions'][0]['support_actor']['entity_id'], hero(s, 'a', 'edgar').entity_id)
+        self.assertFalse(s.get('deferred_actions'))
+        self.assertEqual(hero(s, 'a', 'edgar')['truth_keys'], 1)
+        hits = [e for e in s['events'] if e['type'] == 'combat' and e.get('source') == 'a:lingke']
+        self.assertEqual(len(hits), 1)
         observed = []; original = KITS['edgar'].on_support
         def capture(c, actor_id):
             observed.append(actor_id); original(c, actor_id)
         with patch.object(KITS['edgar'], 'on_support', staticmethod(capture)):
             s = apply_action(json.loads(json.dumps(s)), 'a', dict(type='choose_cards', card_ids=[]))
-        self.assertEqual(observed, ['edgar'])
+        self.assertEqual(observed, [])
         self.assertEqual(hero(s, 'a', 'edgar')['truth_keys'], 1)
 
     def test_stale_or_downed_borrowed_entity_does_not_receive_own_trigger(self):

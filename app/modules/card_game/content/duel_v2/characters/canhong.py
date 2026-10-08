@@ -6,7 +6,7 @@ from app.modules.card_game.engine.duel_v2.continuous import (
 )
 from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
 from app.modules.card_game.engine.duel_v2.state import (
-    add_hand, alive, card_instance, damage, discard, force_collapse,
+    add_hand, alive, card_instance, damage, force_collapse,
     front_target, hero, is_esper, other,
 )
 
@@ -95,11 +95,12 @@ def _play_c07(c):
                 break
     if card is None:
         return
-    c.operation['card'] = card
-    # The downed-ally context was built before this card existed on the operation.
-    _c07(c.for_character(c.side, c.cid))
-    discard(c.state, c.side, card)
-    c.history('持续伤害不少于 20 层，自动使用「赤葵」。')
+    from app.modules.card_game.engine.duel_v2.flow import resolve_play
+    parent = c.state.get('operation')
+    try:
+        resolve_play(c.state, c.side, card, pay=False, response=True)
+    finally:
+        c.state['operation'] = parent
 
 
 @register

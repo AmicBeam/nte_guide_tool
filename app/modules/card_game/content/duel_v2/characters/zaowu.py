@@ -88,7 +88,7 @@ def _maybe_recall(c):
         return
     item = _rng(c.state).choice(ITEMS)
     cid = summon_gulang(c, item)
-    damage(c.state, c.side, cid, 3, source=f'{c.side}:{c.cid}', reason='「小鬼头大胃口」')
+    damage(c.state, c.side, cid, 3, source=f'{c.side}:{c.cid}', reason='「小熊曲奇」')
 
 
 def _s07(c):
@@ -160,4 +160,4 @@ class Zaowu:
             missing = energy_max(c.character) - int(c.character.get('energy') or 0)
             if missing:
                 energy(c.state, c.side, c.cid, missing)
-                c.history('鬼郎丸消灭对方异能者，「好狗狗走四方」触发：早雾回满能量。')
+                c.history('鬼郎丸消灭对方异能者，「南瓜魔法」触发：早雾回满能量。')

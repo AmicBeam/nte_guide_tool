@@ -86,5 +86,5 @@ def team_effect_markers(team):
     if not team.get('extra_genesis_pending'):
         return markers
     actor = (team.get('characters') or {}).get(team.get('extra_genesis_actor')) or {}
-    return markers + [_marker('extra_genesis', '错误的门', '下个己方回合开始',
+    return markers + [_marker('extra_genesis', '星月夜', '下个己方回合开始',
                     '伊洛伊倒地后保留；原环合角色' + actor.get('name', '') + '须存活，再触发一次创生', False)]

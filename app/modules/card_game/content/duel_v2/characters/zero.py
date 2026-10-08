@@ -53,7 +53,7 @@ def _weapon_heal(c):
     from app.modules.card_game.engine.duel_v2.state import heal
     front = c.state['sides'][c.side]['front']
     if front:
-        heal(c.state, c.side, front, 2, reason='回合结束，「休息日」触发')
+        heal(c.state, c.side, front, 2, reason='回合结束，「猎人不上班」触发')
 
 
 def _weapon_ap(c):

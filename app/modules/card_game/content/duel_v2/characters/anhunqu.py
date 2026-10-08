@@ -99,7 +99,7 @@ def _a07(c):
 
 def _a07_turn_begin(c):
     apply_dot(c.state, other(c.side), 'nightmare', by=c.side, source_cid=c.cid, stacks=2)
-    c.history('己方回合开始，「广告拍摄中！」施加 2 层「噩梦」。')
+    c.history('己方回合开始，「鎏金交响诗」施加 2 层「噩梦」。')
 
 
 @register

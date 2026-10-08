@@ -289,7 +289,7 @@ def _rose_followup(state, dot, cid, dealt):
     if h.get('hp', 0) > 0:
         reduce_max_hp(state, target_side, cid, dealt, source=source, settle=False)
     if not finished(state) and alive(state, ctx.side, ctx.cid):
-        heal(state, ctx.side, ctx.cid, dealt, source=source, reason='「最后一朵玫瑰」')
+        heal(state, ctx.side, ctx.cid, dealt, source=source, reason='「新月摇篮曲」')
 
 
 def _kill_player(state, dot, killed):

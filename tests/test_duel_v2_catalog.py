@@ -1,4 +1,5 @@
 import copy
+import json
 import re
 import unittest
 from pathlib import Path
@@ -22,6 +23,9 @@ from app.modules.card_game.content.duel_v2.catalog import (
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC_ROOT = ROOT / 'app' / 'static'
+COSTUME_SOURCES = {cid: asset for asset in json.loads(
+    (ROOT / 'docs/character-image-assets-manifest.json').read_text())['assets']
+    for cid in asset.get('card_ids', [])}
 
 STARTER_CHARACTERS = ('nanali', 'iloy', 'zero', 'jiuyuan')
 ATTRIBUTE_ORDER = ('光', '灵', '相', '暗', '咒', '魂')
@@ -188,8 +192,8 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['M04']['response'], 'self_attacked')
         self.assertIn('响应：', CARDS['M04']['description'])
         self.assertEqual(CARDS['B03']['require'], 'own_burn')
-        self.assertEqual(CARDS['M07']['name'], '美好的一天从睡醒开始')
-        self.assertEqual(CARDS['M08']['name'], '开始净空')
+        self.assertEqual(CARDS['M07']['name'], '幽火照影')
+        self.assertEqual(CARDS['M08']['name'], '悠闲假日')
         self.assertEqual(CARDS['B07']['name'], '判予秋')
         self.assertEqual(CARDS['B08']['name'], '茶花会')
         self.assertEqual(CARDS['B07']['attack'], 2)
@@ -218,7 +222,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['Z02']['description'], '从牌库将 2 张武备牌加入手牌。')
         self.assertEqual(CHARACTERS['zero']['passive'], '零使用战斗牌后，立刻充满自己的环合值。零已装备武备时，零的武备牌获得瞬发，使用时抽 1 张牌。')
         self.assertEqual(CHARACTERS['zero']['awakened_passive'], '己方武备牌变为瞬发，使用时抽 1 张牌，持续 2 个己方回合。')
-        self.assertEqual(CARDS['Z07']['name'], '休息日')
+        self.assertEqual(CARDS['Z07']['name'], '猎人不上班')
         self.assertEqual(CARDS['Z06']['type'], 'form')
         self.assertEqual(CARDS['Z03']['shield'], 2)
         self.assertNotIn('redeem', CARDS['X05'])
@@ -226,16 +230,16 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertNotIn('redeem', CARDS['X03'])
         self.assertEqual(CARDS['N07']['type'], 'form')
         self.assertEqual(CARDS['N08']['type'], 'form')
-        self.assertEqual(CARDS['N07']['name'], '心有猛虎')
-        self.assertEqual(CARDS['N08']['name'], '预备备')
-        self.assertEqual(CARDS['S08']['name'], '好狗狗走四方')
-        self.assertEqual(CARDS['S08']['source']['type'], 'arc')
+        self.assertEqual(CARDS['N07']['name'], '学园之星')
+        self.assertEqual(CARDS['N08']['name'], '绵绵飞虎')
+        self.assertEqual(CARDS['S08']['name'], '南瓜魔法')
+        self.assertEqual(CARDS['S08']['source']['type'], 'fashion')
         self.assertEqual(CARDS['X07']['name'], '壶中往昔')
-        self.assertEqual(CARDS['A07']['name'], '广告拍摄中！')
-        self.assertEqual(CARDS['C07']['name'], '惑心谲影')
-        self.assertEqual(CARDS['K07']['name'], '宇宙的频段')
-        self.assertEqual(CARDS['R07']['name'], '梦的边缘')
-        self.assertEqual(CARDS['Y07']['name'], '想做什么梦？')
+        self.assertEqual(CARDS['A07']['name'], '鎏金交响诗')
+        self.assertEqual(CARDS['C07']['name'], '赤葵')
+        self.assertEqual(CARDS['K07']['name'], '暮春物语')
+        self.assertEqual(CARDS['R07']['name'], '地海高校生')
+        self.assertEqual(CARDS['Y07']['name'], '织梦者')
         self.assertEqual(CARDS['Y07']['attack'], 1)
         self.assertEqual(CARDS['M08']['hp'], 4)
         self.assertEqual(CARDS['B08']['hp'], 9)
@@ -243,15 +247,24 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['J07']['hp'], 5)
         self.assertIn('伊洛伊永久获得攻击 +1、生命 +1', CARDS['Y05']['description'])
         self.assertIn('第 5 回合', CARDS['NF01']['description'])
-        self.assertEqual(CARDS['S07']['name'], '小鬼头大胃口')
+        self.assertEqual(CARDS['S07']['name'], '小熊曲奇')
         self.assertEqual(CARDS['H07']['name'], '铁骑速递')
         for character_id, prefix in CARD_PREFIXES.items():
             self.assertEqual(CARDS[f'{prefix}08']['type'], 'form', character_id)
         for character_id in CATALOG_ORDER:
             owned = [card_id for card_id, card in named.items() if card['character_id'] == character_id]
             card_07, card_08 = CARDS[owned[6]], CARDS[owned[7]]
-            self.assertEqual(card_08['source']['type'], 'ability' if character_id in ('yi', 'adler') else 'arc', character_id)
-            if character_id == 'zero':
+            self.assertEqual(card_08['source']['type'], 'fashion' if card_08['id'] in COSTUME_SOURCES
+                             else 'ability' if character_id in ('yi', 'adler') else 'arc', character_id)
+            for card in (card_07, card_08):
+                if card['id'] in COSTUME_SOURCES:
+                    source = COSTUME_SOURCES[card['id']]
+                    self.assertEqual(card['name'], source['fashion_name'].removeprefix('「').removesuffix('」'))
+                    self.assertEqual(card['source']['fashion_id'], source['fashion_id'])
+                    self.assertEqual(card['source']['index'], int(card['id'][-2:]))
+            if card_07['id'] in COSTUME_SOURCES:
+                self.assertEqual(card_07['source']['type'], 'fashion', character_id)
+            elif character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc', character_id)
             elif character_id in ('zaowu', 'hathor', 'jiuyuan', 'baicang', 'xiaozhi', 'haiyue', 'edgar', 'haniya', 'yi', 'adler', 'dafutier'):
                 self.assertEqual(card_07['source']['type'], 'ability', character_id)
@@ -272,8 +285,10 @@ class DuelV2CatalogTest(unittest.TestCase):
             card_08 = CARDS[f'{prefix}08']
             self.assertEqual(card_07['source']['character_id'], expected_ids[character_id])
             self.assertEqual(card_08['source']['character_id'], expected_ids[character_id])
-            self.assertEqual(card_08['source']['type'], 'arc')
-            if character_id == 'zero':
+            self.assertEqual(card_08['source']['type'], 'fashion' if card_08['id'] in COSTUME_SOURCES else 'arc')
+            if card_07['id'] in COSTUME_SOURCES:
+                self.assertEqual(card_07['source']['type'], 'fashion')
+            elif character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc')
             elif character_id in ('jiuyuan',):
                 self.assertEqual(card_07['source']['type'], 'ability')

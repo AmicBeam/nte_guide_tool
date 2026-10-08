@@ -96,7 +96,7 @@ class Bohe:
         if finished(c.state) or not alive(c.state, c.side, c.cid) or collapsed(c.character):
             return
         from app.modules.card_game.engine.duel_v2.flow import finish_operation, operation
-        c.history('回合开始，「开始净空」触发：薄荷自动出击。')
+        c.history('回合开始，「悠闲假日」触发：薄荷自动出击。')
         parent = c.state.get('operation')
         # User balance rule (2026-09-15): automatic attack grants no combat resources.
         operation(c.state, c.side, c.cid).sortie(no_combat_resources=True)

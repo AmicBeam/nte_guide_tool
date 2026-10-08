@@ -574,12 +574,23 @@
     {
       "id": "N07",
       "character_id": "nanali",
-      "name": "心有猛虎",
+      "name": "学园之星",
       "effect_id": "N07",
       "source": {
         "character_id": 1010,
-        "type": "pv",
-        "index": 1
+        "type": "fashion",
+        "index": 7,
+        "fashion_id": "Fashion_1010_3",
+        "fashion_name": "学园之星",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_nanali2_2.png",
+        "previous_name": "心有猛虎",
+        "previous_source": {
+          "character_id": 1010,
+          "type": "pv",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -592,12 +603,23 @@
     {
       "id": "N08",
       "character_id": "nanali",
-      "name": "预备备",
+      "name": "绵绵飞虎",
       "effect_id": "N08",
       "source": {
         "character_id": 1010,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1010_nighty",
+        "fashion_name": "绵绵飞虎",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_nanal4.png",
+        "previous_name": "预备备",
+        "previous_source": {
+          "character_id": 1010,
+          "type": "arc",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -732,12 +754,23 @@
     {
       "id": "Z07",
       "character_id": "zero",
-      "name": "休息日",
+      "name": "猎人不上班",
       "effect_id": "Z07",
       "source": {
         "character_id": 1051,
-        "type": "arc",
-        "index": 2
+        "type": "fashion",
+        "index": 7,
+        "fashion_id": "Fashion_1051_2",
+        "fashion_name": "猎人不上班",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_nvzhu6.png",
+        "previous_name": "休息日",
+        "previous_source": {
+          "character_id": 1051,
+          "type": "arc",
+          "index": 2
+        }
       },
       "type": "form",
       "cost": 1,
@@ -885,12 +918,23 @@
     {
       "id": "J08",
       "character_id": "jiuyuan",
-      "name": "现实避难所",
+      "name": "自律时间",
       "effect_id": "J08",
       "source": {
         "character_id": 1055,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1055_nighty",
+        "fashion_name": "自律时间",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_UI_shizhuang_lihui_jiuyuan_2.png",
+        "previous_name": "现实避难所",
+        "previous_source": {
+          "character_id": 1055,
+          "type": "arc",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1019,12 +1063,23 @@
     {
       "id": "X08",
       "character_id": "xun",
-      "name": "行进于时间之外",
+      "name": "闲满庭",
       "effect_id": "X08",
       "source": {
         "character_id": 1052,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1052_nighty",
+        "fashion_name": "闲满庭",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_xun2.png",
+        "previous_name": "行进于时间之外",
+        "previous_source": {
+          "character_id": 1052,
+          "type": "arc",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1143,12 +1198,23 @@
     {
       "id": "A07",
       "character_id": "anhunqu",
-      "name": "广告拍摄中！",
+      "name": "鎏金交响诗",
       "effect_id": "A07",
       "source": {
         "character_id": 1004,
-        "type": "pv",
-        "index": 1
+        "type": "fashion",
+        "index": 7,
+        "fashion_id": "Fashion_1004_1",
+        "fashion_name": "鎏金交响诗",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshopi_anhunqu3.png",
+        "previous_name": "广告拍摄中！",
+        "previous_source": {
+          "character_id": 1004,
+          "type": "pv",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1161,12 +1227,23 @@
     {
       "id": "A08",
       "character_id": "anhunqu",
-      "name": "最后一朵玫瑰",
+      "name": "新月摇篮曲",
       "effect_id": "A08",
       "source": {
         "character_id": 1004,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1004_nighty",
+        "fashion_name": "新月摇篮曲",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshopi_anhunqu4.png",
+        "previous_name": "最后一朵玫瑰",
+        "previous_source": {
+          "character_id": 1004,
+          "type": "arc",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1287,12 +1364,23 @@
     {
       "id": "C07",
       "character_id": "canhong",
-      "name": "惑心谲影",
+      "name": "赤葵",
       "effect_id": "C07",
       "source": {
         "character_id": 1036,
-        "type": "pv",
-        "index": 1
+        "type": "fashion",
+        "index": 7,
+        "fashion_id": "Fashion_1036_1",
+        "fashion_name": "「赤葵」",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_canhong5.png",
+        "previous_name": "惑心谲影",
+        "previous_source": {
+          "character_id": 1036,
+          "type": "pv",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1306,12 +1394,23 @@
     {
       "id": "C08",
       "character_id": "canhong",
-      "name": "噬心诡刃",
+      "name": "月下闲庭",
       "effect_id": "C08",
       "source": {
         "character_id": 1036,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1036_nighty",
+        "fashion_name": "月下闲庭",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_canhong3.png",
+        "previous_name": "噬心诡刃",
+        "previous_source": {
+          "character_id": 1036,
+          "type": "arc",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1423,12 +1522,23 @@
     {
       "id": "S07",
       "character_id": "zaowu",
-      "name": "小鬼头大胃口",
+      "name": "小熊曲奇",
       "effect_id": "S07",
       "source": {
         "character_id": 1003,
-        "type": "ability",
-        "index": 1
+        "type": "fashion",
+        "index": 7,
+        "fashion_id": "Fashion_1003_2",
+        "fashion_name": "小熊曲奇",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_zaowu2.png",
+        "previous_name": "小鬼头大胃口",
+        "previous_source": {
+          "character_id": 1003,
+          "type": "ability",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1441,12 +1551,23 @@
     {
       "id": "S08",
       "character_id": "zaowu",
-      "name": "好狗狗走四方",
+      "name": "南瓜魔法",
       "effect_id": "S08",
       "source": {
         "character_id": 1003,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1003_1",
+        "fashion_name": "南瓜魔法",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_zaowu1.png",
+        "previous_name": "好狗狗走四方",
+        "previous_source": {
+          "character_id": 1003,
+          "type": "arc",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1557,12 +1678,23 @@
     {
       "id": "K07",
       "character_id": "lingke",
-      "name": "宇宙的频段",
+      "name": "暮春物语",
       "effect_id": "K07",
       "source": {
         "character_id": 1072,
-        "type": "pv",
-        "index": 1
+        "type": "fashion",
+        "index": 7,
+        "fashion_id": "Fashion_1072_school",
+        "fashion_name": "暮春物语",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_lingke3.png",
+        "previous_name": "宇宙的频段",
+        "previous_source": {
+          "character_id": 1072,
+          "type": "pv",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1575,12 +1707,23 @@
     {
       "id": "K08",
       "character_id": "lingke",
-      "name": "远行者之声",
+      "name": "待机状态",
       "effect_id": "K08",
       "source": {
         "character_id": 1072,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1072_nighty",
+        "fashion_name": "待机状态",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_lingke1.png",
+        "previous_name": "远行者之声",
+        "previous_source": {
+          "character_id": 1072,
+          "type": "arc",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1699,12 +1842,23 @@
     {
       "id": "R07",
       "character_id": "zhenhong",
-      "name": "梦的边缘",
+      "name": "地海高校生",
       "effect_id": "R07",
       "source": {
         "character_id": 1076,
-        "type": "pv",
-        "index": 1
+        "type": "fashion",
+        "index": 7,
+        "fashion_id": "Fashion_1076_1",
+        "fashion_name": "地海高校生",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_zhenhong5.png",
+        "previous_name": "梦的边缘",
+        "previous_source": {
+          "character_id": 1076,
+          "type": "pv",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1717,12 +1871,23 @@
     {
       "id": "R08",
       "character_id": "zhenhong",
-      "name": "穿过胭红蜃景",
+      "name": "迷宫屋主",
       "effect_id": "R08",
       "source": {
         "character_id": 1076,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1076_nighty",
+        "fashion_name": "迷宫屋主",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_zhenhong3.png",
+        "previous_name": "穿过胭红蜃景",
+        "previous_source": {
+          "character_id": 1076,
+          "type": "arc",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1970,12 +2135,23 @@
     {
       "id": "Y07",
       "character_id": "iloy",
-      "name": "想做什么梦？",
+      "name": "织梦者",
       "effect_id": "Y07",
       "source": {
         "character_id": 1075,
-        "type": "pv",
-        "index": 1
+        "type": "fashion",
+        "index": 7,
+        "fashion_id": "Fashion_1075_rpg_level3",
+        "fashion_name": "织梦者",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_yiluoyi2_2.png",
+        "previous_name": "想做什么梦？",
+        "previous_source": {
+          "character_id": 1075,
+          "type": "pv",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -1988,12 +2164,23 @@
     {
       "id": "Y08",
       "character_id": "iloy",
-      "name": "错误的门",
+      "name": "星月夜",
       "effect_id": "Y08",
       "source": {
         "character_id": 1075,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1075_nighty",
+        "fashion_name": "星月夜",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_yiluoy5.png",
+        "previous_name": "错误的门",
+        "previous_source": {
+          "character_id": 1075,
+          "type": "arc",
+          "index": 1
+        }
       },
       "type": "form",
       "cost": 1,
@@ -2109,7 +2296,7 @@
     {
       "id": "M07",
       "character_id": "bohe",
-      "name": "美好的一天从睡醒开始",
+      "name": "幽火照影",
       "type": "form",
       "cost": 1,
       "terminal": false,
@@ -2118,8 +2305,19 @@
       "effect_id": "M07",
       "source": {
         "character_id": 1019,
-        "type": "pv",
-        "index": 1
+        "type": "fashion",
+        "index": 7,
+        "fashion_id": "Fashion_1019_rpg_level3",
+        "fashion_name": "幽火照影",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_bohe5.png",
+        "previous_name": "美好的一天从睡醒开始",
+        "previous_source": {
+          "character_id": 1019,
+          "type": "pv",
+          "index": 1
+        }
       },
       "starter_copies": 0,
       "attack": 5,
@@ -2128,7 +2326,7 @@
     {
       "id": "M08",
       "character_id": "bohe",
-      "name": "开始净空",
+      "name": "悠闲假日",
       "type": "form",
       "cost": 1,
       "terminal": false,
@@ -2136,8 +2334,19 @@
       "effect_id": "M08",
       "source": {
         "character_id": 1019,
-        "type": "arc",
-        "index": 1
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1019_nighty",
+        "fashion_name": "悠闲假日",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_bohe2.png",
+        "previous_name": "开始净空",
+        "previous_source": {
+          "character_id": 1019,
+          "type": "arc",
+          "index": 1
+        }
       },
       "starter_copies": 2,
       "attack": 3,
@@ -2467,7 +2676,7 @@
     {
       "id": "Q07",
       "character_id": "xiaozhi",
-      "name": "Afterglow",
+      "name": "青竹猗猗",
       "type": "form",
       "cost": 1,
       "terminal": false,
@@ -2475,11 +2684,22 @@
       "effect_id": "Q07",
       "source": {
         "character_id": 1073,
-        "type": "ability",
+        "type": "fashion",
         "index": 7,
-        "verified_at": "2026-09-18",
-        "rules_source": "user_tabletop_2026-09-18",
-        "naming_note": "用户指定：官方 EP Afterglow"
+        "fashion_id": "Fashion_1073_1",
+        "fashion_name": "青竹猗猗",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshopi_xiaozhi1_2.png",
+        "previous_name": "Afterglow",
+        "previous_source": {
+          "character_id": 1073,
+          "type": "ability",
+          "index": 7,
+          "verified_at": "2026-09-18",
+          "rules_source": "user_tabletop_2026-09-18",
+          "naming_note": "用户指定：官方 EP Afterglow"
+        }
       },
       "starter_copies": 0,
       "attack": 3,
@@ -2488,7 +2708,7 @@
     {
       "id": "Q08",
       "character_id": "xiaozhi",
-      "name": "思考喵",
+      "name": "绒绒春日",
       "type": "form",
       "cost": 1,
       "terminal": false,
@@ -2496,10 +2716,21 @@
       "effect_id": "Q08",
       "source": {
         "character_id": 1073,
-        "type": "arc",
+        "type": "fashion",
         "index": 8,
-        "verified_at": "2026-09-18",
-        "rules_source": "user_tabletop_2026-09-18"
+        "fashion_id": "Fashion_1073_nighty",
+        "fashion_name": "绒绒春日",
+        "repository": "mc-ctrl/NTEData",
+        "commit": "6887b8ced1812db9671d3d4800a0f15d6322a251",
+        "path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshopi_xiaozhi2.png",
+        "previous_name": "思考喵",
+        "previous_source": {
+          "character_id": 1073,
+          "type": "arc",
+          "index": 8,
+          "verified_at": "2026-09-18",
+          "rules_source": "user_tabletop_2026-09-18"
+        }
       },
       "starter_copies": 2,
       "attack": 3,

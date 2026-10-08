@@ -882,3 +882,10 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 角色包负责失谐永久降倾陷上限、洞察生成／增伤／使用计数、造物之众回收、湖心花响应、两种武备及清场。通用引擎统一派发进入倾陷、两种失谐顺序、对方攻击和援护结算后时机；永久上限修正独立于倒地清理。实时牌面、计数、倾陷与公开回放同步；旧模型不自动重绑，本次不训练或部署。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_dafutier tests.test_duel_v2_catalog tests.test_duel_v2_lingke tests.test_duel_v2_engine tests.test_duel_v2_continuous_cast tests.test_duel_v2_presentation tests.test_duel_v2_replay`；模拟对拍单独运行 `.venv/bin/python -m unittest tests.test_duel_v2_simulation`。
+
+
+### 2026-10-08 07／08 皮肤命名试行
+
+按用户要求将已有皮肤绑定的 21 张 07／08 改为对应皮肤名，未绑定者保留原名。目录记录皮肤 ID 与上游来源，并保留旧命名来源；角色包、效果提示和牌面卡名引用同步更名。稳定卡牌 ID、卡效、面板、费用、构筑及换装资源不变，历史回放与冻结资料不批量回写。对应表见规则手册本日专节。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_costume_art tests.test_duel_v2_card_art tests.test_duel_v2_engine tests.test_duel_v2_continuous_cast tests.test_duel_v2_lingke tests.test_duel_v2_dafutier tests.test_duel_v2_presentation tests.test_duel_v2_replay`。

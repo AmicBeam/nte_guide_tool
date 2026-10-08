@@ -99,4 +99,4 @@ class Jiuyuan:
         if damage_dealt and is_esper(cid):
             c.attach_pact(side, cid)
         if c.character.get('shape') == 'J08':
-            damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}', reason='创生造成伤害，「现实避难所」触发')
+            damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}', reason='创生造成伤害，「自律时间」触发')

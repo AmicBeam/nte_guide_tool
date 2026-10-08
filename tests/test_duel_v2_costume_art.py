@@ -34,7 +34,7 @@ for (const delta of [{shape_id:null},{shape_id:'unknown'},{shape_id:'J08'},{down
 }
 // Reconstructed historical public state and current state use identical selection.
 assert.equal(api.battlePortrait(JSON.parse(JSON.stringify(equipped))),api.battlePortrait(equipped));
-assert.equal(api.battlePortrait({...original,shape:'预备备'}),'/default.webp'); // No guessed ID in old replays.
+assert.equal(api.battlePortrait({...original,shape:'绵绵飞虎'}),'/default.webp'); // No guessed ID in old replays.
 assert.match(api.battlePortrait({id:'anhunqu',shape_id:'A07'}),/Fashion_1004_1.webp/);
 assert.match(api.battlePortrait({id:'lingke',shape_id:'K07'}),/Fashion_1072_school.webp/);
 assert.match(api.characterAsset({avatar:'/static/images/characters/avatar/灵可.png'}), /灵可.png\?nte_art=/);

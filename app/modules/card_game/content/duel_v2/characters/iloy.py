@@ -69,7 +69,7 @@ def _y07_heal(c):
     if len(candidates) > 1:
         shuffle(c.state, candidates)
     cid = candidates[0]
-    heal(c.state, c.side, cid, 2, reason='「想做什么梦？」触发')
+    heal(c.state, c.side, cid, 2, reason='「织梦者」触发')
     _mark_healed(c, c.side, cid)
 
 
@@ -123,7 +123,7 @@ class Iloy:
             return
         team['extra_genesis_pending'] = True
         team['extra_genesis_actor'] = entering or c.cid
-        c.history('「错误的门」触发：下个己方回合开始时追加一次创生。',
+        c.history('「星月夜」触发：下个己方回合开始时追加一次创生。',
                   target_id=entering or c.cid)
 
     @staticmethod

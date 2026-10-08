@@ -555,7 +555,7 @@ def begin_turn(state, side):
         actor = team.pop('extra_genesis_actor', None)
         if actor and alive(state, side, actor):
             EffectContext(state, side, actor, {'side': side}).history(
-                '回合开始，结算「错误的门」留下的追加创生。')
+                '回合开始，结算「星月夜」留下的追加创生。')
             resolve_genesis(EffectContext(state, side, actor, {'side': side, 'actor': actor}),
                             arm_delay=False)
     other_side = other(side)

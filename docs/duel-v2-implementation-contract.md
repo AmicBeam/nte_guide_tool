@@ -28,7 +28,7 @@ validate_deck(deck: dict) -> dict  # 不合法抛 ValueError，合法返回规�
 
 角色字段：`id, name, attribute`（中文光/灵）, `attack, max_hp, avatar, portrait, passive, awakened_passive`。图片复用共享角色头像和立绘；zero 使用鉴定师图片。
 
-卡牌字段：`id, character_id, name, type`（`battle/tactic/form`）, `cost, terminal, description, effect_id, source`。`cost` 通常为 1，显式零费牌为 0，灵可 K06 为 3。弧盘另有 `stat`（`attack` 或 `hp`）与 `stat_value`；战斗牌另有 `shield`（护盾值，可为 0），并可另有 `attack`（无条件攻击加成，至少为 1）。浔的兑现战斗牌另有 `redeem: true`。可选 `instant`、`response`、`derived`。`derived: true` 为对局内衍生牌，展示「不可构筑」，不能进入构筑。effect_id 默认与卡牌 ID 相同。`terminal` 保留为协议字段，现行卡表一律为 false。**08 固定为专属武备**；**07 优先用官方角色 PV 名**，没有角色 PV 时用官方短片或用户指定名。零另有第 6 张「诓定解放」也是武备。source 至少含 Everness 角色 ID；`type` 为 `awaken`（01–06）、`arc`（专属武备，08）、`pv`（官方角色 PV）或 `ability`（短片或指定名），衍生牌为 `derived`。
+卡牌字段：`id, character_id, name, type`（`battle/tactic/form`）, `cost, terminal, description, effect_id, source`。`cost` 通常为 1，显式零费牌为 0，灵可 K06 为 3。弧盘另有 `stat`（`attack` 或 `hp`）与 `stat_value`；战斗牌另有 `shield`（护盾值，可为 0），并可另有 `attack`（无条件攻击加成，至少为 1）。浔的兑现战斗牌另有 `redeem: true`。可选 `instant`、`response`、`derived`。`derived: true` 为对局内衍生牌，展示「不可构筑」，不能进入构筑。effect_id 默认与卡牌 ID 相同。`terminal` 保留为协议字段，现行卡表一律为 false。**07／08 按已绑定皮肤名命名，未绑定独立皮肤时保留现名**；08 的武备类别不变。零另有第 6 张「诓定解放」也是武备。source 至少含 Everness 角色 ID；`type` 为 `awaken`（01–06）、`fashion`（已绑定皮肤的 07／08）或 `derived`（衍生牌）；未绑定皮肤时保留原 `arc`、`pv` 或 `ability` 来源，具体元数据见文末皮肤命名契约。
 
 标准构筑 JSON：`{id, name, character_ids: [4个ID], card_ids: [32个卡牌ID]}`。card_ids 是重复展开列表。validate_deck 严格验证恰好 4 名不同已实现角色、每人 8 张、总数 32、同名最多 2、没有未知或其他角色卡，不能静默截断。返回独立副本。
 
@@ -234,3 +234,8 @@ events: 投影后的公开演出事件
 通用时机新增 `V2_COLLAPSE_ENTERED`、`V2_DISSONANCE`、`V2_OPPONENT_ATTACK`、`V2_SUPPORT_RESOLVED`，由正式引擎派发；达芙蒂尔效果留在其角色包。`collapse_max(character)` 组合临时上限与按来源实体保存的永久减量，永久减量不放入倒地会清空的 flags。援护计数按全局回合与实际释放累计，借用角色回调不重复累计。`front_attacked` 响应将实际攻击者传给牌效，`collapsed_enemy_esper` 提供限定倾陷目标的合法动作。
 
 双方公开阵营补 `insight_damage`、`insight_played`、`support_count`，异能者实时与回放棋盘统一输出 `collapse_count`、`collapse_max`、`collapse` 及永久减益标记。卡牌动态文案仍通过既有 `card_description` 查询，不改变手牌实体或隐藏信息协议。
+
+
+### 2026-10-08 皮肤命名来源
+
+已绑定皮肤的 07／08 使用 `source.type=fashion`，含 `index=7/8`、`fashion_id`、`fashion_name`、`repository`、`commit`、`path`，并保留 `previous_name`／`previous_source` 追溯旧名；未绑定者沿用现有命名来源。卡牌 ID、effect_id、武备绑定与构筑存档不变。静态目录、牌面引用与内容提示同步新名，旧快照及公开回放不按中文名称迁移。

@@ -714,7 +714,7 @@ class DuelV2EngineTest(unittest.TestCase):
                 events = [e for e in s['events'] if e['seq'] > start]
                 downs = [e['target'] for e in events if e['type'] == 'down']
                 self.assertCountEqual(downs, [attacker + ':bohe', defender + ':baicang'])
-                self.assertFalse(any('想做什么梦？' in e.get('text', '') for e in events))
+                self.assertFalse(any('织梦者' in e.get('text', '') for e in events))
                 from app.modules.card_game.engine.duel_v2.state import knockdowns
                 seq = s['event_seq']
                 knockdowns(s)

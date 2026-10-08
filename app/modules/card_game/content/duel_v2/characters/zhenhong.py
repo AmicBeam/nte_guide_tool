@@ -84,7 +84,7 @@ class Zhenhong:
                 if finished(c.state):
                     break
                 if alive(c.state, foe, cid) and not hero(c.state, foe, cid).get('summoned'):
-                    damage(c.state, foe, cid, 2, source=f'{c.side}:{c.cid}', reason='「梦的边缘」触发')
+                    damage(c.state, foe, cid, 2, source=f'{c.side}:{c.cid}', reason='「地海高校生」触发')
 
     @staticmethod
     def on_deferred_action(c, action):
@@ -164,7 +164,7 @@ class Zhenhong:
         team = c.state['sides'][c.side]
         if c.character.get('shape') == 'R08' and c.entity_id not in team.get('attacked_this_turn', []):
             c.character['intimidation'] = min(2, int(c.character.get('intimidation', 0)) + 1)
-            c.history(f"「穿过胭红蜃景」触发：威慑凝视 {c.character['intimidation']} 点。")
+            c.history(f"「迷宫屋主」触发：威慑凝视 {c.character['intimidation']} 点。")
 
     @staticmethod
     def on_sortie_ready(c, actor_id, **_data):

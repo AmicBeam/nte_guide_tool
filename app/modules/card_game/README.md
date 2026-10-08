@@ -1027,3 +1027,7 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 ### 按角色锁定的预选候选
 
 `rl/local_card_search.py:preselection_neighbors` 接受明确的可换牌角色，只生成这些角色的合法单换及有界双换，其他角色的8张配牌锁定；支持当前公开卡池，保持历史 `local_neighbors` 的默认编码边界。此入口只枚举未评分候选，不启动训练或授予模型／配牌批准。验证：`.venv/bin/python -m unittest tests.test_duel_v2_scoped_preselection tests.test_duel_v2_local_card_search`；实际训练接入及验收仍按训练手册。
+
+### 七队学习适配组件
+
+`rl/seven_*` 为七队独立数值／编码、生成牌采样、联合更新辅助、价值校准和恢复契约；保留旧五队入口与schema。顶／底牌有序选择、退出终结及新角色公开计次进入独立具名列，旧权重须显式核验后迁移，两套新队独立冷启动。准备入口为 `scripts/prepare_duel_v2_seven_value.py` 与 `scripts/prepare_duel_v2_seven_foundation.py`；实际开训仍需本轮完整同源CUDA预检与硬截止预算，不因组件存在视为已训练。验证：`.venv/bin/python -m unittest tests.test_duel_v2_seven_training tests.test_duel_v2_scoped_preselection`。冻结评估器增加显式 `runtime=seven`，沿用完整遥测和公开回放校验，不更新服务模型。

@@ -30,6 +30,7 @@
     A08: { characterId: 'anhunqu', fashion: 'Fashion_1004_nighty' },
     C07: { characterId: 'canhong', fashion: 'Fashion_1036_1' },
     C08: { characterId: 'canhong', fashion: 'Fashion_1036_nighty' },
+    S07: { characterId: 'zaowu', fashion: 'Fashion_1003_2' },
     S08: { characterId: 'zaowu', fashion: 'Fashion_1003_1' },
     K07: { characterId: 'lingke', fashion: 'Fashion_1072_school' },
     K08: { characterId: 'lingke', fashion: 'Fashion_1072_nighty' },
@@ -42,7 +43,7 @@
     Q07: { characterId: 'xiaozhi', fashion: 'Fashion_1073_1' },
     Q08: { characterId: 'xiaozhi', fashion: 'Fashion_1073_nighty' },
   };
-  const CHARACTER_IMAGE_VERSION = 'ntedata-lingke-20261008-v5';
+  const CHARACTER_IMAGE_VERSION = 'ntedata-zaowu-20261008-v6';
 
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.

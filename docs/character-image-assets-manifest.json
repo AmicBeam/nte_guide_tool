@@ -430,6 +430,37 @@
       "card_ids": [
         "S08"
       ]
+    },
+    {
+      "character": "早雾",
+      "character_id": "1003",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1003_2",
+      "fashion_name": "小熊曲奇",
+      "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_zaowu2.png",
+      "blob_sha": "4cce093a5f14095a68ea015adf4607a1ddc15935",
+      "output": "app/static/images/characters/costume/Fashion_1003_2.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "0085a5b5ef643903985d2e28dc18e1009624053ef3b8bf25c774110de0c43bb6",
+      "output_sha256": "8ed6c25177f8a9ea3d77b00304951a8bb04fdb47ede203d542d20a7e80869c9e",
+      "bytes": 134172,
+      "card_ids": [
+        "S07"
+      ],
+      "conversion": {
+        "format": "WebP",
+        "quality": 90,
+        "method": 6,
+        "resize": false,
+        "crop": false,
+        "alpha": "preserved",
+        "encoder": "cwebp"
+      }
     }
   ],
   "default_portraits": "Restored to pre-task files per user request: keep existing character scale and head alignment. Not migrated in this batch.",

@@ -91,7 +91,7 @@ with Image.open('/tmp/nte-character-source.png') as source:
 | 浔 | 不适用：07 为战术 | 闲满庭 |
 | 安魂曲 | 鎏金交响诗（用户指定） | 新月摇篮曲 |
 | 残虹 | 赤葵 | 月下闲庭 |
-| 早雾 | 默认（仅一套额外睡衣，留给 08） | 南瓜魔法（节日睡衣） |
+| 早雾 | 小熊曲奇（2026-10-08 新增） | 南瓜魔法（节日睡衣） |
 | 灵可 | 暮春物语（用户指定校园装） | 待机状态 |
 | 真红 | 地海高校生 | 迷宫屋主 |
 | 伊洛伊 | 织梦者 | 星月夜 |
@@ -99,7 +99,7 @@ with Image.open('/tmp/nte-character-source.png') as source:
 | 小吱 | 青竹猗猗 | 绒绒春日 |
 | 白藏、哈索尔、海月、埃德嘉、哈尼娅 | 默认（本次上游无额外时装图） | 默认（本次上游无额外时装图） |
 
-08 优先使用上游 `nighty` 居家服；早雾仅有节日睡衣，按睡衣候选采用。07 按本次用户选择配置；其他武备编号仍默认。测试角色适用同一逻辑，不改变账号可见权限。维护入口为 `app/modules/card_game/static/js/v2_api.js` 的 `EQUIPMENT_PORTRAITS`，图片位于共享 `images/characters/costume/`，切勿为了换图修改 `catalog.json` 或规则引擎。
+08 优先使用上游 `nighty` 居家服；早雾 08 沿用节日睡衣「南瓜魔法」，07 于 2026-10-08 按用户要求绑定新增的「小熊曲奇」。07 按用户选择配置；其他武备编号仍默认。测试角色适用同一逻辑，不改变账号可见权限。维护入口为 `app/modules/card_game/static/js/v2_api.js` 的 `EQUIPMENT_PORTRAITS`，图片位于共享 `images/characters/costume/`，切勿为了换图修改 `catalog.json` 或规则引擎。
 
 验证：`python3 -m unittest tests.test_duel_v2_costume_art tests.test_duel_v2_card_art tests.test_duel_v2_table_contract tests.test_duel_v2_presentation tests.test_duel_v2_replay`。资源完整性检查不依赖 Pillow；真实解码、透明度及页面视觉检查在导入时执行。
 
@@ -162,3 +162,12 @@ with Image.open('/tmp/nte-character-source.png') as source:
 原图路径 `UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_lingke.png`，1024×1024 RGBA、905212 字节，SHA256 `3abce6cd5da5393a5a9e63dc4aeeeebdee86e70df9bcefa317019596339cabc5`。使用 `cwebp -q 90 -m 6` 转换，不额外缩放或裁切，保留透明通道与上游构图；输出覆盖 `app/static/images/characters/portrait/灵可.webp`，1024×1024、192990 字节，SHA256 `a42c25c5d56d240c81576c78d1f5e2efe29f47f629d6fb8627530f8b328697b3`。
 
 与旧图对照，姿势、角色占比和头部位置接近，采用上游修订后的脸部、发丝及服装细节。头像、武备时装和角色可见权限保持原设置；V2 图片缓存版本同步更新。上文旧版恢复记录保留当时状态，灵可默认立绘的当前来源以本节为准。
+
+
+## 早雾「小熊曲奇」绑定（2026-10-08）
+
+用户要求将 S07「小鬼头大胃口」绑定到「小熊曲奇」；S08「好狗狗走四方」保持「南瓜魔法」。核对 Nanoka NTE `1.4.6` 角色 `1003` 的 `Fashion_1003_2` 名称、服装资源与 NTEData 最新提交 `d7fe705451f189cec8447d876e6c31db7ed3d9df` 的 [1024 展示原图](https://github.com/mc-ctrl/NTEData/blob/d7fe705451f189cec8447d876e6c31db7ed3d9df/UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_zaowu2.png)。
+
+原图为 1024×1024 RGBA、624376 字节，SHA256 `0085a5b5ef643903985d2e28dc18e1009624053ef3b8bf25c774110de0c43bb6`。使用 `cwebp -q 90 -m 6` 转为 `app/static/images/characters/costume/Fashion_1003_2.webp`，不缩放或裁切，保留透明通道；输出 134172 字节，SHA256 `8ed6c25177f8a9ea3d77b00304951a8bb04fdb47ede203d542d20a7e80869c9e`。资源清单新增这一张，使用条目内的 `commit` / `conversion` 记录本次来源与编码参数；原有 20 张资源继续沿用清单顶层的历史提交与转换记录。
+
+沿用既有实体武备换装与公开回放逻辑，未装备武备或倒地时使用默认造型；默认头像、默认立绘、手牌、构筑及图鉴保持原图。图片缓存版本同步更新。

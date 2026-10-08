@@ -18,8 +18,8 @@ def _mirage(c):
 def _enter_mirage(c):
     add_effect(c.character, 'canhong.mirage', 'status.mirage', 1, stacking='replace',
                source_entity_id=c.entity_id, source_key='mirage', label='幻境',
-               expiry=deadline(c.state, c.side, 2, 'turn_start'), clear_on=('down',))
-    c.history('残虹进入幻境，持续 2 个己方回合。')
+               expiry=deadline(c.state, c.side, 3, 'turn_start'), clear_on=('down',))
+    c.history('残虹进入幻境，持续 3 个己方回合。')
 
 
 def _targets(c):

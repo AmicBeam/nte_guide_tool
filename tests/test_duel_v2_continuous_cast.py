@@ -180,6 +180,27 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertEqual(s['sides']['a']['ap'], before - 1)
         self.assertTrue(any(c['instance_id'] == held['instance_id'] for c in s['sides']['a']['hand']))
 
+    def test_mirage_lasts_three_friendly_turns_and_refreshes_after_battle_card(self):
+        from app.modules.card_game.content.duel_v2.characters.canhong import _mirage
+        from app.modules.card_game.engine.duel_v2.context import EffectContext
+        for refresh in (False, True):
+            with self.subTest(refresh=refresh):
+                s = self.play(self.game(), 'C04')
+                self.assertIn('残虹进入幻境，持续 3 个己方回合。', [e['text'] for e in s['events']])
+                s = json.loads(json.dumps(s))
+                for step in range(1, 4):
+                    begin_turn(s, 'b')
+                    self.assertTrue(_mirage(EffectContext(s, 'a', 'canhong', {'side': 'a'})))
+                    begin_turn(s, 'a')
+                    self.assertEqual(_mirage(EffectContext(s, 'a', 'canhong', {'side': 'a'})),
+                                     step < 3 or refresh)
+                    if refresh and step == 1:
+                        s = self.play(s, 'C04')
+                if refresh:
+                    begin_turn(s, 'b')
+                    begin_turn(s, 'a')
+                    self.assertFalse(_mirage(EffectContext(s, 'a', 'canhong', {'side': 'a'})))
+
     def test_mirage_dot_damage_grows_all_dots_without_splitting_animation(self):
         from app.modules.card_game.content.duel_v2.characters.canhong import _enter_mirage
         from app.modules.card_game.engine.duel_v2.context import EffectContext

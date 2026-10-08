@@ -110,7 +110,13 @@
     ] : [];
     if (data.truth_keys != null) stats.push({ cls: 'truth-keys', text: '真理之匙 ' + data.truth_keys });
     if (data.arid != null) stats.push({ cls: 'arid', text: '荒时 ' + data.arid });
-    if (data.lingke_chain && data.lingke_chain.count) stats.push({ cls: '', text: '连用 ' + data.lingke_chain.count + '/3' });
+    if (data.lingke_chain && data.lingke_chain.count) {
+      const chain = data.lingke_chain;
+      const characters = options.characters || [];
+      const actor = characters.find(function (h) { return chain.entity_id && h.entity_id === chain.entity_id; }) ||
+        characters.find(function (h) { return h.id === chain.character_id; }) || V2.characterFallback(chain.character_id);
+      if (actor && actor.name) stats.push({ cls: '', text: actor.name + ' ' + chain.count + '/3' });
+    }
     if (resourceHtml && !data.summoned) stats.push({ html: '<div class="v2-resource-row">' + resourceHtml + '</div>' });
     if (!hideEnergy && data.awakened) stats.push({ cls: 'energy', text: '终结 ' + (data.ultimate_expires === 'turn_end' ? '本回合' : (data.ultimate_turns || 0)) });
     if (Number(data.growth) > 0) {
@@ -323,6 +329,7 @@
       ? ctx.findUltimateAction(frontId) : ctx.findAction('ultimate', { character_id: frontId }));
     fillCharacterCard(node, character, {
       side: side,
+      characters: state.characters,
       isOpponent: isOpponent,
       usePortrait: true,
       canAttack: canAct && !isOpponent && Boolean(ctx.findAction('attack', { character_id: frontId })),
@@ -353,6 +360,7 @@
         ghost.className = 'v2-character-card is-placeholder';
         fillCharacterCard(ghost, character, {
           side: side,
+          characters: state.characters,
           isOpponent: isOpponent,
           usePortrait: true,
           ghost: true,
@@ -368,6 +376,7 @@
         ? ctx.findUltimateAction(character.id) : ctx.findAction('ultimate', { character_id: character.id }));
       fillCharacterCard(node, character, {
         side: side,
+        characters: state.characters,
         isOpponent: isOpponent,
         usePortrait: true,
         canAttack: canAct && !isOpponent && Boolean(ctx.findAction('attack', { character_id: character.id })),

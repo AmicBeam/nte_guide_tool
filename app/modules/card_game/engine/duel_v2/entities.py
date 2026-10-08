@@ -193,6 +193,22 @@ def normalize_entity_action(state, side, action):
         if 'card_ids' in result and result['card_ids'] != values:
             raise ValueError('Conflicting mulligan entity IDs')
         result['card_ids'] = values
+    if 'bottom_card_entity_ids' in result:
+        ids = result.pop('bottom_card_entity_ids')
+        if not isinstance(ids, list):
+            raise ValueError('Expected bottom card entity ID list')
+        values = []
+        for eid in ids:
+            try:
+                card = resolve_entity(state, eid)
+            except KeyError as exc:
+                raise ValueError('Unknown bottom card entity ID') from exc
+            if not isinstance(card, CardEntity) or card.side != side:
+                raise ValueError('Expected your bottom card entity')
+            values.append(card['instance_id'])
+        if 'bottom_card_ids' in result and result['bottom_card_ids'] != values:
+            raise ValueError('Conflicting bottom card entity IDs')
+        result['bottom_card_ids'] = values
     if 'bottom_card_entity_id' in result:
         eid = result.pop('bottom_card_entity_id')
         if eid in (None, ''):
@@ -208,6 +224,18 @@ def normalize_entity_action(state, side, action):
             if result.get('bottom_card_id') not in (None, value):
                 raise ValueError('Conflicting legacy and entity target')
             result['bottom_card_id'] = value
+    if result.get('type') == 'choose_deck_order':
+        from .flow import deck_order_choice
+        pending = deck_order_choice(state) or {}
+    else:
+        pending = {}
+    if pending.get('multi_bottom'):
+        if 'bottom_card_id' in result:
+            bottom = result.pop('bottom_card_id')
+            values = [bottom] if bottom else []
+            if 'bottom_card_ids' in result and result['bottom_card_ids'] != values:
+                raise ValueError('Conflicting bottom card selection')
+            result['bottom_card_ids'] = values
     return result
 
 
@@ -237,6 +265,8 @@ def entity_action(state, side, action):
                 result.pop('target_id')
     if 'card_ids' in result:
         result['card_entity_ids'] = [cards[cid]['entity_id'] for cid in result.pop('card_ids')]
+    if 'bottom_card_ids' in result:
+        result['bottom_card_entity_ids'] = [cards[cid]['entity_id'] for cid in result.pop('bottom_card_ids')]
     bottom = result.get('bottom_card_id')
     if bottom in cards:
         result['bottom_card_entity_id'] = cards[bottom]['entity_id']

@@ -8,33 +8,35 @@
   }
 
   function moveCard(draft, id, row, index) {
-    const next = { topIds: draft.topIds.slice(), bottomId: draft.bottomId || null };
-    const from = next.topIds.indexOf(id);
-    if (from < 0 && next.bottomId !== id) return next;
-    if (row === 'bottom') {
-      if (next.bottomId === id) return next;
-      next.topIds.splice(from, 1);
-      // The displaced bottom card occupies the incoming card's former top slot.
-      if (next.bottomId) next.topIds.splice(from, 0, next.bottomId);
-      next.bottomId = id;
-      return next;
+    const next = Object.assign({}, draft, {topIds: draft.topIds.slice(), bottomIds: (draft.bottomIds || []).slice()});
+    const fromTop = next.topIds.indexOf(id);
+    const fromBottom = next.bottomIds.indexOf(id);
+    if ((fromTop < 0 && fromBottom < 0) || (row !== 'top' && row !== 'bottom')) return next;
+    if (row === 'bottom' && fromBottom >= 0 && !Number.isInteger(index)) return next;
+    if (fromTop >= 0) next.topIds.splice(fromTop, 1);
+    if (fromBottom >= 0) next.bottomIds.splice(fromBottom, 1);
+    // Preserve a pending old single-bottom snapshot; new choices have no swap.
+    if (row === 'bottom' && draft.maxBottom === 1 && next.bottomIds.length) {
+      const displaced = next.bottomIds.pop();
+      next.topIds.splice(Math.max(0, fromTop), 0, displaced);
     }
-    if (row !== 'top') return next;
-    if (from >= 0) next.topIds.splice(from, 1);
-    else next.bottomId = null;
-    const at = Number.isInteger(index) ? Math.max(0, Math.min(index, next.topIds.length)) : next.topIds.length;
-    next.topIds.splice(at, 0, id);
+    const target = row === 'top' ? next.topIds : next.bottomIds;
+    const at = Number.isInteger(index) ? Math.max(0, Math.min(index, target.length)) : target.length;
+    target.splice(at, 0, id);
     return next;
   }
 
   function choiceKey(pending) {
-    return pending ? [pending.side, pending.kind, (pending.choices || []).map(function (c) { return c.id; }).join('|')].join(':') : '';
+    return pending ? [pending.side, pending.kind, pending.min_bottom || 0, pending.max_bottom,
+      (pending.choices || []).map(function (c) { return c.id; }).join('|')].join(':') : '';
   }
 
   function findEntry(game, draft) {
     return V2.findLegalEntry(game, function (action) {
+      const bottoms = Array.isArray(action.bottom_card_ids) ? action.bottom_card_ids :
+        (action.bottom_card_id ? [action.bottom_card_id] : []);
       return action.type === 'choose_deck_order' && sameOrder(action.card_ids, draft.topIds) &&
-        String(action.bottom_card_id || '') === String(draft.bottomId || '');
+        sameOrder(bottoms, draft.bottomIds || []);
     });
   }
 
@@ -78,15 +80,15 @@
             V2.escapeHtml(effectText(choice.card, '占卜效果') || '无占卜效果') + '</p></article>') + '</div>';
       }
       overlay.innerHTML = '<div class="v2-choice-dialog v2-divination-dialog" role="dialog" aria-modal="true" aria-labelledby="v2-divination-title">' +
-        '<header><h2 id="v2-divination-title">占卜</h2><p class="subtle">拖动排列牌库顶；第二行至多放一张牌，拖入新牌会替换原牌。</p></header>' +
+        '<header><h2 id="v2-divination-title">占卜</h2><p class="subtle">两行均可拖动排序；第二行可放多张牌。' + (state.minBottom ? '谕石至少置底 1 张。' : '可以不置底。') + '</p></header>' +
         '<section class="v2-divination-zone" data-divination-row="top" aria-label="牌库顶">' +
         '<div class="v2-divination-zone-label"><strong>牌库顶</strong><span>从左到右依次抽取</span></div>' +
         '<div class="v2-divination-row">' + state.topIds.map(function (id, index) { return card(id, index + 1); }).join('') +
         (state.topIds.length ? '' : '<span class="v2-divination-placeholder">拖到这里放回牌库顶</span>') + '</div></section>' +
         '<section class="v2-divination-zone" data-divination-row="bottom" aria-label="牌库底">' +
-        '<div class="v2-divination-zone-label"><strong>牌库底</strong><span>至多一张</span></div>' +
-        '<div class="v2-divination-row">' + (state.bottomId ? card(state.bottomId, '底') :
-          '<span class="v2-divination-placeholder">可拖入一张牌，也可以留空</span>') + '</div></section>' +
+        '<div class="v2-divination-zone-label"><strong>牌库底</strong><span>基础形态按从左到右结算占卜效果</span></div>' +
+        '<div class="v2-divination-row">' + (state.bottomIds.length ? state.bottomIds.map(function (id, index) { return card(id, '底' + (index + 1)); }).join('') :
+          '<span class="v2-divination-placeholder">' + (state.minBottom ? '至少拖入 1 张牌' : '可拖入多张牌，也可以留空') + '</span>') + '</div></section>' +
         '<footer><span class="v2-divination-status" role="status" aria-live="polite">' + V2.escapeHtml(message || '') +
         '</span><button class="primary-btn" id="v2-divination-confirm" type="button">确定</button></footer></div>';
       overlay.classList.add('open');
@@ -105,14 +107,11 @@
     function move(id, row, index) {
       const state = ctx.divinationDraft;
       if (!state) return;
-      const previousBottom = state.bottomId;
       const next = moveCard(state, id, row, index);
       state.topIds = next.topIds;
-      state.bottomId = next.bottomId;
+      state.bottomIds = next.bottomIds;
       const name = state.byId[id].card.name;
-      const message = row === 'bottom' ? ('已将「' + name + '」置于牌库底。' +
-        (previousBottom && previousBottom !== id ? '「' + state.byId[previousBottom].card.name + '」已回到第一行原位置。' : '')) :
-        ('已调整「' + name + '」在牌库顶的顺序。');
+      const message = '已调整「' + name + '」在' + (row === 'bottom' ? '牌库底' : '牌库顶') + '的顺序。';
       render(message, id);
     }
 
@@ -124,7 +123,7 @@
       choices.forEach(function (choice) { byId[String(choice.id)] = choice; });
       const team = ((ctx.game || {}).sides || {})[pending.side] || {};
       const heiyu = (team.characters || []).find(function (character) { return character.id === 'heiyu'; });
-      ctx.divinationDraft = { key: choiceKey(pending), topIds: choices.map(function (c) { return String(c.id); }), bottomId: null, byId: byId, witch: Boolean(heiyu && heiyu.awakened) };
+      ctx.divinationDraft = { key: choiceKey(pending), topIds: choices.map(function (c) { return String(c.id); }), bottomIds: [], minBottom: Number(pending.min_bottom || 0), maxBottom: pending.max_bottom == null ? choices.length : Number(pending.max_bottom), byId: byId, witch: Boolean(heiyu && heiyu.awakened) };
       ctx.localChoice = { kind: 'server-divination', key: choiceKey(pending) };
       render();
     };
@@ -171,7 +170,7 @@
       const hit = document.elementFromPoint(event.clientX, event.clientY);
       const zone = hit && hit.closest('[data-divination-row]');
       let index = 0;
-      if (zone && zone.getAttribute('data-divination-row') === 'top') {
+      if (zone) {
         const cards = Array.from(zone.querySelectorAll('[data-divination-id]')).filter(function (node) {
           return node.getAttribute('data-divination-id') !== id;
         });
@@ -192,11 +191,14 @@
       if (!node) return;
       const id = node.getAttribute('data-divination-id');
       const state = ctx.divinationDraft;
-      const index = state.topIds.indexOf(id);
-      if (event.key === 'ArrowDown') { event.preventDefault(); move(id, 'bottom'); }
-      else if (event.key === 'ArrowUp' && state.bottomId === id) { event.preventDefault(); move(id, 'top', state.topIds.length); }
-      else if (event.key === 'ArrowLeft' && index > 0) { event.preventDefault(); move(id, 'top', index - 1); }
-      else if (event.key === 'ArrowRight' && index >= 0 && index < state.topIds.length - 1) { event.preventDefault(); move(id, 'top', index + 1); }
+      const bottom = state.bottomIds.indexOf(id) >= 0;
+      const row = bottom ? 'bottom' : 'top';
+      const ids = bottom ? state.bottomIds : state.topIds;
+      const index = ids.indexOf(id);
+      if (event.key === 'ArrowDown' && !bottom) { event.preventDefault(); move(id, 'bottom'); }
+      else if (event.key === 'ArrowUp' && bottom) { event.preventDefault(); move(id, 'top', state.topIds.length); }
+      else if (event.key === 'ArrowLeft' && index > 0) { event.preventDefault(); move(id, row, index - 1); }
+      else if (event.key === 'ArrowRight' && index >= 0 && index < ids.length - 1) { event.preventDefault(); move(id, row, index + 1); }
     });
 
     overlay.addEventListener('click', function (event) {

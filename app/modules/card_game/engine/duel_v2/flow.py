@@ -371,19 +371,32 @@ def _is_deck_order_choice(pending):
     return bool(pending and (pending.get('kind') == 'heiyu_divination' or pending.get('deck_order')))
 
 
+def deck_order_choice(state):
+    """Resolve current content constraints without mutating a saved choice."""
+    pending = state.get('pending_choice')
+    if not _is_deck_order_choice(pending):
+        return pending
+    op = state.get('operation') or {}
+    side = pending['side']
+    actor = pending.get('actor') or op.get('actor') or team_order(state, side)[0]
+    return decide(EffectContext(state, side, actor, op), 'deck_order_spec',
+                  deepcopy(pending), actor_only=True, include_down=True)
+
+
 def deck_order_actions(pending):
     ids = [card['instance_id'] for card in pending['cards']]
-    max_bottom = int(pending.get('max_bottom') if pending.get('max_bottom') is not None else 1)
-    actions = [{'type': 'choose_deck_order', 'card_ids': list(order), 'bottom_card_id': None}
-               for order in permutations(ids)]
-    if max_bottom >= 1:
-        for bottom in ids:
-            rest = [item for item in ids if item != bottom]
-            if rest:
-                actions.extend({'type': 'choose_deck_order', 'card_ids': list(order), 'bottom_card_id': bottom}
-                               for order in permutations(rest))
+    minimum = max(0, int(pending.get('min_bottom') or 0))
+    maximum = min(len(ids), int(pending.get('max_bottom', len(ids) if pending.get('multi_bottom') else 1)))
+    actions = []
+    for count in range(minimum, maximum + 1):
+        for order in permutations(ids):
+            split = len(ids) - count
+            action = {'type': 'choose_deck_order', 'card_ids': list(order[:split])}
+            if pending.get('multi_bottom'):
+                action['bottom_card_ids'] = list(order[split:])
             else:
-                actions.append({'type': 'choose_deck_order', 'card_ids': [], 'bottom_card_id': bottom})
+                action['bottom_card_id'] = order[split] if count else None
+            actions.append(action)
     return actions
 
 
@@ -414,7 +427,7 @@ def legal_actions(state, side=None):
         return result + [{'type': 'choose_cards', 'card_ids': list(group)}
                          for size in range(min(3, len(ids)) + 1) for group in combinations(ids, size)]
     if phase == 'choice' and _is_deck_order_choice(state['pending_choice']):
-        return result + deck_order_actions(state['pending_choice'])
+        return result + deck_order_actions(deck_order_choice(state))
     if phase == 'choice':
         return result + [{'type': 'choose', 'choice_id': c['instance_id']}
                          for c in state['pending_choice']['cards']]
@@ -894,28 +907,29 @@ def choose(state, side, choice_id):
 
 
 def resolve_deck_order(state, side, action):
-    pending = state['pending_choice']
+    pending = deck_order_choice(state)
     cards = list(pending['cards'])
     by_id = {card['instance_id']: card for card in cards}
     top_ids = list(action.get('card_ids') or [])
-    bottom_id = action.get('bottom_card_id')
+    bottom_ids = list(action.get('bottom_card_ids') or ([action['bottom_card_id']] if action.get('bottom_card_id') else []))
     inspected = [card['instance_id'] for card in cards]
-    chosen = list(top_ids) + ([bottom_id] if bottom_id else [])
+    chosen = list(top_ids) + bottom_ids
     if (len(set(chosen)) != len(chosen) or set(chosen) != set(inspected)
-            or (bottom_id and bottom_id in top_ids)
+            or len(bottom_ids) < int(pending.get('min_bottom') or 0)
+            or len(bottom_ids) > int(pending.get('max_bottom', len(cards)))
             or any(item not in by_id for item in chosen)):
         raise ValueError('当前不能执行此操作：请检查回合、行动力、角色状态和目标。')
     team = state['sides'][side]
     team['deck'][0:0] = [by_id[item] for item in top_ids]
-    bottom = by_id[bottom_id] if bottom_id else None
-    if bottom is not None:
-        team['deck'].append(bottom)
+    bottoms = [by_id[item] for item in bottom_ids]
+    team['deck'].extend(bottoms)
     actor = pending.get('actor') or (state.get('operation') or {}).get('actor')
     execute = pending.get('execute_divination')
     state['phase'], state['pending_choice'] = 'playing', None
     if actor:
         fire(EffectContext(state, side, actor, state.get('operation') or {'side': side, 'actor': actor}),
-             'on_deck_reorder', actor_only=True, bottom=bottom, execute_divination=execute)
+             'on_deck_reorder', actor_only=True, bottoms=bottoms,
+             bottom=bottoms[0] if len(bottoms) == 1 else None, execute_divination=execute)
     if state['phase'] != 'choice':
         finish_operation(state)
         if state.get('turn_start_pending'):

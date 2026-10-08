@@ -83,7 +83,7 @@ def _advance_owned(c):
         c.history('「不凋羽」：随机将 1 张黑羽的牌提前置于牌库顶。')
 
 
-def start_inspection(c, *, after=None):
+def start_inspection(c, *, after=None, min_bottom=0):
     if finished(c.state) or not alive(c.state, c.side, c.cid):
         return
     team = c.state['sides'][c.side]
@@ -96,9 +96,10 @@ def start_inspection(c, *, after=None):
     cards, team['deck'] = team['deck'][:count], team['deck'][count:]
     if cards:
         c.choose('heiyu_divination', cards,
-                 f'检视牌库顶 {len(cards)} 张牌：至多 1 张置底，其余自由排序。',
+                 f'检视牌库顶 {len(cards)} 张牌：' + ('至少置底 1 张，其余自由排序。' if min_bottom else '可将任意数量置底，其余自由排序。'),
                  deck_cards=True, deck_order=True, execute_divination=not in_witch(c),
-                 actor=c.cid, snapshot_n=count, max_bottom=1)
+                 actor=c.cid, snapshot_n=count, min_bottom=min_bottom,
+                 max_bottom=len(cards), multi_bottom=True)
     else:
         _resume_inspection(c)
 
@@ -201,7 +202,7 @@ def _p06(c):
 
 
 def _pf01(c):
-    start_inspection(c, after='draw')
+    start_inspection(c, after='draw', min_bottom=1)
 
 
 def _penetrate(c, current=0, attacker_id=None, raw_overflow=0, **_data):
@@ -279,9 +280,19 @@ class Heiyu:
             start_inspection(c, after='sortie')
 
     @staticmethod
-    def on_deck_reorder(c, bottom=None, execute_divination=None, **_data):
-        if bottom and not in_witch(c) and execute_divination is not False:
-            apply_divination_benefit(c, bottom)
+    def deck_order_spec(c, current, **_data):
+        if current.get('kind') != 'heiyu_divination':
+            return current
+        return dict(current, multi_bottom=True, max_bottom=len(current['cards']),
+                    min_bottom=1 if (c.card or {}).get('card_id') == 'PF01' else 0)
+
+    @staticmethod
+    def on_deck_reorder(c, bottom=None, bottoms=None, execute_divination=None, **_data):
+        if not in_witch(c) and execute_divination is not False:
+            for card in (bottoms if bottoms is not None else ([bottom] if bottom else [])):
+                if finished(c.state) or not alive(c.state, c.side, c.cid):
+                    break
+                apply_divination_benefit(c, card)
         _resume_inspection(c)
 
     @staticmethod

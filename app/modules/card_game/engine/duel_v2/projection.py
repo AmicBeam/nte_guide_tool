@@ -63,7 +63,8 @@ def action_label(state, side, action):
         card = next(c for c in state['pending_choice']['cards'] if c['instance_id'] == action['choice_id'])
         return f"选择「{card['name']}」"
     if kind == 'choose_deck_order':
-        return '整理牌库并置底 1 张' if action.get('bottom_card_id') else '整理牌库顶'
+        count = len(action.get('bottom_card_ids') or ([action['bottom_card_id']] if action.get('bottom_card_id') else []))
+        return f'整理牌库并置底 {count} 张' if count else '整理牌库顶'
     return {'end_turn': '结束回合', 'concede': '认输'}.get(kind, kind)
 
 
@@ -252,11 +253,15 @@ def observe(state, side, after_seq=None, *, include_previews=True):
     pending = state['pending_choice']
     result['pending_choice'] = None
     if pending:
+        from .flow import deck_order_choice
+        pending = deck_order_choice(state) or pending
         result['pending_choice'] = {'side': pending['side'], 'kind': pending['kind'],
             'prompt': pending['prompt'] if pending['side'] == side else '对手正在选择',
             'max_select': pending.get('max_select') if pending['side'] == side else None,
             'min_select': pending.get('min_select') if pending['side'] == side else None,
             'max_bottom': pending.get('max_bottom') if pending['side'] == side else None,
+            'min_bottom': pending.get('min_bottom', 0) if pending['side'] == side else None,
+            'multi_bottom': bool(pending.get('multi_bottom')) if pending['side'] == side else None,
             'choices': [{'id': c['instance_id'], 'label': c['name'], 'card': public_card(c, state, ('b' if pending['side']=='a' else 'a') if pending['kind']=='enemy_hand' else pending['side'])}
                         for c in pending['cards']] if pending['side'] == side else []}
     op = state['operation']
@@ -288,7 +293,7 @@ def choose_action(state, side):
     if orders:
         pending = state.get('pending_choice') or {}
         original = [card['instance_id'] for card in pending.get('cards') or []]
-        keep = next((e for e in orders if e['action'].get('card_ids') == original and e['action'].get('bottom_card_id') is None), None)
+        keep = next((e for e in orders if e['action'].get('card_ids') == original and not e['action'].get('bottom_card_id') and not e['action'].get('bottom_card_ids')), None)
         return (keep or orders[0])['action']
     cards = {c['instance_id']: c for c in observation['sides'][side]['hand']}
     def score(entry):

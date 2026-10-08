@@ -60,7 +60,7 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual([CARDS[c]['name'] for c in ('P07', 'P08')], ['牧星者', '不凋羽'])
         for cid in ('P07', 'P08'):
             self.assertEqual((CARDS[cid]['attack'], CARDS[cid]['hp']), (3, 6))
-        self.assertEqual(CARDS['PF01']['description'], '瞬发。占卜，然后抽 1 张牌。')
+        self.assertEqual(CARDS['PF01']['description'], '瞬发。占卜（至少置底 1 张），然后抽 1 张牌。')
         self.assertTrue(CARDS['PF01']['derived'])
         self.assertFalse(any('【魔女效果】' in CARDS[f'P{i:02d}']['description'] for i in range(1, 9)))
         self.assertIn('heiyu', {c['id'] for c in get_catalog(include_test_characters=False)['characters']})
@@ -131,3 +131,33 @@ class HeiyuTest(unittest.TestCase):
         owned = top(s, ['Z01', 'P04', 'Z02', 'Z03'])[1]
         s = play(s, 'PF01')
         self.assertEqual(s['pending_choice']['cards'][0]['entity_id'], owned['entity_id'])
+
+    def test_omen_rejects_zero_bottom_and_multiple_bottom_effects_resolve(self):
+        from app.modules.card_game.engine.duel_v2.entities import entity_action
+        s = game()
+        hero(s, 'a', 'nanali').update(hp=0, down_turns=2)
+        cards = top(s, ['Z01', 'P06', 'P06'])
+        s = play(s, 'PF01')
+        self.assertEqual(s['pending_choice']['min_bottom'], 1)
+        self.assertEqual(s['pending_choice']['max_bottom'], 3)
+        self.assertEqual(len(s['pending_choice']['cards']), 3)
+        with self.assertRaises(ValueError):
+            apply_action(s, 'a', dict(type='choose_deck_order',
+                card_ids=[c['instance_id'] for c in cards], bottom_card_ids=[]))
+        action = dict(type='choose_deck_order', card_ids=[cards[0]['instance_id']],
+                      bottom_card_ids=[cards[1]['instance_id'], cards[2]['instance_id']])
+        s = apply_action(clone_state(json.loads(json.dumps(s))), 'a', entity_action(s, 'a', action))
+        self.assertEqual(hero(s, 'a', 'nanali')['down_turns'], 0)
+        self.assertEqual(hero(s, 'a', 'nanali')['hp'], hero(s, 'a', 'nanali')['max_hp'])
+        self.assertEqual(s['sides']['a']['heiyu_divinations'], 1)
+        self.assertEqual([c['entity_id'] for c in s['sides']['a']['hand']], [cards[0]['entity_id']])
+
+    def test_all_inspected_cards_may_go_to_bottom_in_chosen_order(self):
+        s = game()
+        cards = top(s, ['Z01', 'Z02', 'Z03', 'Z04'])
+        s = play(s, 'PF01')
+        order = list(reversed(cards))
+        s = apply_action(s, 'a', dict(type='choose_deck_order', card_ids=[],
+            bottom_card_ids=[c['instance_id'] for c in order]))
+        self.assertEqual([c['entity_id'] for c in s['sides']['a']['hand']], [order[0]['entity_id']])
+        self.assertEqual([c['entity_id'] for c in s['sides']['a']['deck']], [c['entity_id'] for c in order[1:]])

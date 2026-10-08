@@ -9,8 +9,8 @@
       return V2.findLegalEntry(ctx.game, function (action) {
         if (action.type !== type) return false;
         return Object.keys(extra).every(function (key) {
-          if (key === 'card_ids') return type === 'choose_deck_order'
-            ? TABLE.sameDeckOrder(action.card_ids, extra.card_ids) : V2.sameIdSet(action.card_ids, extra.card_ids);
+          if (key === 'card_ids' || key === 'bottom_card_ids') return type === 'choose_deck_order'
+            ? TABLE.sameDeckOrder(action[key], extra[key]) : V2.sameIdSet(action.card_ids, extra.card_ids);
           return String(action[key] || '') === String(extra[key] || '');
         });
       });

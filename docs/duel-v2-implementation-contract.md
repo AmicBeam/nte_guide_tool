@@ -269,3 +269,10 @@ PF01 谕石为衍生瞬发战术，不能进入构筑。检视选择保存完成
 ### 倾陷公开预组与下一轮请求
 
 collapse为第六套官方预组，四人顺序固定heiyu/dafutier/canhong/lingke，均为公开角色。普通人机沿用公开预组选择，新增高级模型槽位缺数值文件时明确拒绝。catalog.advanced_pending_presets提供待训练槽位状态，前端据此标记与禁用；模型文件存在仅解除待训练显示，真正开局仍严格校验规则／schema／数组与构筑，不代表质量批准。next_training.json与next_training.plan物化六队、42局学习轮转及36格结构，状态为planned_not_started，预检未通过；不修改现行五队模型协议。
+
+
+### 2026-10-08 多张置底动作
+
+新占卜选择携带multi_bottom=true、min_bottom与max_bottom：一般为0..实际检视张数，谕石为1..实际张数。choose_deck_order提交有序card_ids和bottom_card_ids；实体接口对应card_entity_ids和bottom_card_entity_ids。两份列表必须恰好且不重复地分割候选，顺序均有意义；逐张移回牌库后按bottoms顺序派发一次on_deck_reorder，内容层逐张结算并最后恢复抽牌／出击。多张收益不额外增加占卜次数。
+
+兼容旧单张bottom_card_id／bottom_card_entity_id：新选择中可转换为长度0或1的列表，但不得与显式列表冲突；已有黑羽旧待选择通过角色deck_order_spec钩子只读解析为现行多张限制，谕石按原操作卡识别至少一张；其他旧单张选择维持自身限制。私有投影仅向选择者提供人数限制与候选。全置底合法，空库不创建无合法动作的选择。新选择最多4张时一般有120种有序分割、谕石96种；合法动作精确列举，不把任一行当作无序集合。

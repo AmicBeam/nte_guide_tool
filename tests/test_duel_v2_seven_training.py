@@ -115,3 +115,21 @@ class SevenNumericTest(unittest.TestCase):
             xx,cc,mask=tensors([(x,c)],'cpu');scores,_=net(xx,cc,mask)
             np.testing.assert_allclose(scores.detach().numpy()[0],policy.scores(x,c),rtol=2e-4,atol=2e-4)
             self.assertTrue(all(torch.equal(t,restored.state_dict()[n]) for n,t in net.state_dict().items()))
+
+
+class SevenAliasNumericTest(unittest.TestCase):
+    def test_equal_features_share_exact_scores_without_merging_actions_or_targets(self):
+        import torch
+        from app.modules.card_game.rl.seven_policy import canonical_scores_tensor,canonical_scores_numpy
+        c=np.asarray([[3,1],[3,1],[4,2]],dtype=np.float32)
+        values=torch.tensor([[2.8669748,2.8669751,1.]],requires_grad=True)
+        mask=torch.ones(1,3,dtype=torch.bool)
+        result=canonical_scores_tensor(values,torch.tensor(c)[None],mask)
+        self.assertEqual(result.shape,(1,3))
+        self.assertEqual(result[0,0].item(),result[0,1].item())
+        self.assertEqual(int(result.argmax()),0)
+        pi=torch.tensor([[.1,.8,.1]])
+        loss=-(pi*result.log_softmax(-1)).sum();loss.backward()
+        self.assertTrue(torch.isfinite(values.grad).all())
+        self.assertNotEqual(values.grad[0,0].item(),0)
+        np.testing.assert_array_equal(canonical_scores_numpy(np.asarray([2.8669748,2.8669751,1.]),c),[2.8669748,2.8669748,1.])

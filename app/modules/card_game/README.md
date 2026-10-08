@@ -1039,3 +1039,7 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 ### 七队构筑与冻结源码一致性
 
 七队导出／固定采样／专家变化构筑／监督重放统一规范化牌列，保证训练与冻结评估的模型构筑SHA一致，角色顺序不变。`rl/offline_sources.snapshot` 支持已认证的独立源码清单，逐成员核SHA后复制，保持外层旧checkout和当前工作区隔离。验证：`.venv/bin/python -m unittest tests.test_duel_v2_source_revision tests.test_duel_v2_learning_audits tests.test_duel_v2_seven_training`。
+
+### 七队相同候选的稳定分数
+
+七队Torch／NumPy对完全相同的候选数字向量统一同分，修正CUDA批量乘法末位差异造成的最高动作不一致；保留每个物理动作及完整策略目标，不合并标签或降低数值闸门。`seven_prepared` 只在规则、编码和隐藏世界采样逐文件SHA相同的情况下显式迁移锁定的准备数组，重新执行独立价值核验、CUDA32、恢复与P0预检；不继承旧ready。验证：`.venv/bin/python -m unittest tests.test_duel_v2_seven_training tests.test_duel_v2_mimic_generated_choices`。

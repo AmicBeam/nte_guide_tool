@@ -9,7 +9,7 @@ SCHEMA = 'seven_restore_check_v1'
 def algorithm_identity():
     from .recovery_checkpoint import algorithm_identity as shared
     root=Path(__file__).parent;digest=sha256(shared().encode())
-    for name in ('seven_lineup.py','seven_grounded.py','seven_policy.py','seven_runtime.py','seven_round.py','seven_checkpoint.py','seven_schedule.py','seven_sampler.py','seven_source.py','seven_covered_value.py','seven_value_metrics.py','seven_rule_foundation.py','full_cycle_experiment.py','new_model_report.py'):
+    for name in ('seven_lineup.py','seven_grounded.py','seven_policy.py','seven_runtime.py','seven_round.py','seven_checkpoint.py','seven_schedule.py','seven_sampler.py','seven_source.py','seven_covered_value.py','seven_value_metrics.py','seven_rule_foundation.py','full_cycle_experiment.py','new_model_report.py','seven_prepared.py'):
         digest.update(name.encode());digest.update((root/name).read_bytes())
     return digest.hexdigest()
 

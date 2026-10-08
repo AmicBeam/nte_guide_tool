@@ -91,7 +91,7 @@ def network(hidden=64, device='cpu'):
             scores = scores.masked_fill(~mask, torch.finfo(scores.dtype).min)
             actor = torch.ones((len(x), 1), dtype=x.dtype, device=x.device)
             wdl = self.wdl(torch.cat((self.value_net(x), actor), -1)).softmax(-1)
-            return scores, wdl[:, 2] - wdl[:, 0]
+            return canonical_scores_tensor(scores,c,mask), wdl[:, 2] - wdl[:, 0]
 
     return Scorer().to(device)
 
@@ -152,7 +152,7 @@ def scores_numpy(x, candidates, weights):
     scores = _linear(_silu(_linear(joint, weights, 'score.0')), weights, 'score.2').reshape(-1)
     if not np.isfinite(scores).all():
         raise ValueError('Non-finite residual policy scores')
-    return scores
+    return canonical_scores_numpy(scores,candidates)
 
 
 def wdl_numpy(x, is_actor, weights):
@@ -185,6 +185,30 @@ def attach_legacy(net, key):
     original = type(net).forward
     def forward(self,x,c,mask):
         scores,value=original(self,x,c,mask)
-        return (scores+self.legacy(x,c,mask)).masked_fill(~mask,torch.finfo(scores.dtype).min),value
+        return canonical_scores_tensor(scores+self.legacy(x,c,mask),c,mask),value
     net.forward=types.MethodType(forward,net)
     return net
+
+
+def alias_indices(candidates, valid=None):
+    """Exact representation aliases share one evaluated score, not one action."""
+    raw=np.asarray(candidates,dtype=np.float32)
+    seen={};indices=[]
+    for i,row in enumerate(raw):
+        key=(True if valid is None else bool(valid[i]),row.tobytes())
+        indices.append(seen.setdefault(key,i))
+    return np.asarray(indices,dtype=np.int64)
+
+
+def canonical_scores_numpy(scores,candidates):
+    return scores[alias_indices(candidates)]
+
+
+def canonical_scores_tensor(scores,candidates,mask):
+    import torch
+    # Candidate inputs have no gradients. Group their exact visible numeric
+    # representations; retain every physical action and its original pi entry.
+    raw=candidates.detach().cpu().numpy();valid=mask.detach().cpu().numpy()
+    indexes=np.stack([alias_indices(c,m) for c,m in zip(raw,valid)])
+    indexes=torch.as_tensor(indexes,device=scores.device)
+    return scores.gather(1,indexes).masked_fill(~mask,torch.finfo(scores.dtype).min)

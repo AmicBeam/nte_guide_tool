@@ -37,7 +37,7 @@ def export(net,directory,key,build,origin):
     write(root/(key+'.json'),dict(schema=architecture.SCHEMA,deck=key,hidden=net.hidden,rule_hash=identity(),
         architecture_sha256=architecture.fingerprint(),candidate_transform_sha256=grounded.fingerprint(),
         features=all_features(),candidates=candidate_names(),grounded_features=grounded.transformed_names(),
-        source_identity=getattr(net,'source_identity',None),sha256=sha256(path.read_bytes()).hexdigest(),
+        source_identity=getattr(net,'source_identity',None),equal_input_scores='canonical_first_v1',sha256=sha256(path.read_bytes()).hexdigest(),
         build=build,build_sha256=build_hash(build),origin=origin,wdl_order=['loss','draw','win'],
         value_context=['viewer_is_actor'],reward_mode='terminal_wdl_only',
         automatic_serving_approval=False,validation=dict(approved=False)))
@@ -54,6 +54,7 @@ class SevenModel:
                 or m.get('features')!=all_features() or m.get('candidates')!=candidate_names()
                 or m.get('grounded_features')!=grounded.transformed_names() or m.get('sha256')!=self.version
                 or m.get('reward_mode')!='terminal_wdl_only' or m.get('automatic_serving_approval') is not False
+                or m.get('equal_input_scores')!='canonical_first_v1'
                 or m.get('wdl_order')!=['loss','draw','win'] or m.get('value_context')!=['viewer_is_actor']):
             raise ValueError('Seven-team numeric identity mismatch')
         self.hidden=m['hidden'];expected=architecture.tensor_shapes(self.hidden);self.teacher=None
@@ -95,7 +96,7 @@ class SevenModel:
             unknown=(c[:,0]>=6)|(c[:,1]>=len(SEATS))|(c[:,2]>=len(CARD_IDS))|(c[:,4]>=len(SEATS))|(np.abs(c[:,extra])>1e-8).any(-1)
             if not unknown.any():
                 scores=scores+teacher_scores(self.teacher,x[self.teacher['observation_index']],c[:,self.teacher['candidate_index']])
-        return scores
+        return architecture.canonical_scores_numpy(scores,c)
     scores_only=scores
 
     def wdl(self,x,is_actor):return architecture.wdl_numpy(x,is_actor,self.weights)

@@ -33,11 +33,20 @@ class RecoveryServingModel(ResidualModel):
         path = root / f'{key}.npz'
         self.manifest = m = json.loads(manifest_path.read_text(encoding='utf-8'))
         self.version = sha256(path.read_bytes()).hexdigest()
+        source_fields = ('source_rule_hash', 'source_request', 'source_report')
+        source_rule_hash = SOURCE_RULE_HASH
+        if any(field in pin for field in source_fields):
+            source_rule_hash = pin.get('source_rule_hash')
+            if (not isinstance(source_rule_hash, str) or len(source_rule_hash) != 64
+                    or any(c not in '0123456789abcdef' for c in source_rule_hash)
+                    or any(not isinstance(pin.get(field), str) or not pin[field].strip()
+                           for field in ('source_request', 'source_report'))):
+                raise ValueError('Recovery per-model source authorization missing')
         if (binding.get('kind') != 'explicit_user_candidate' or not binding.get('request')
                 or not binding.get('report') or binding.get('quality_approved') is not False
                 or binding.get('runtime_rule_hash') != cross_lineup.identity()
                 or binding.get('source_rule_hash') != SOURCE_RULE_HASH
-                or m.get('rule_hash') != SOURCE_RULE_HASH
+                or m.get('rule_hash') != source_rule_hash
                 or pin.get('manifest_sha256') != sha256(manifest_path.read_bytes()).hexdigest()
                 or pin.get('model_sha256') != self.version
                 or pin.get('build_sha256') != m.get('build_sha256')):

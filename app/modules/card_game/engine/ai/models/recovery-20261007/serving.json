@@ -4,7 +4,7 @@
   "runtime_rule_hash": "ba8946fedaef946c0920fceef61a078a62dfd69e3b53904152450d7924c742b3",
   "source_rule_hash": "7c928f692ad643ba32bb6d2e70808a137744fde82e58e5ee451e4744d3d5de9e",
   "report": "artifacts/rl-evals/murk-hour-corrected-20261007/delivery-report.md",
-  "selection": "selected-models; murk best batch 1; other four frozen",
+  "selection": "zhenhong: guided-online-short-20261008 latest, explicitly user-selected; other four: previous selected-models",
   "quality_approved": false,
   "compatibility_note": "Current rules and user-selected Zhenhong serving build differ from training; original model/source identities retained; experimental serving compatibility is not new-build strength acceptance.",
   "models": {
@@ -24,9 +24,9 @@
       "build_sha256": "bc6e5df6e5365c167deec54ed81f21fb59ba267714adb5bc19c97c545b05aca3"
     },
     "zhenhong": {
-      "manifest_sha256": "a0d9edb665ffff01b6ddf50b3e07addf169fdf9b163145c822bd9ef52241e952",
-      "model_sha256": "3f2be48f5ac5a751ae4b84c725007953aaef01cef2c834b822982fb4b33ef9d4",
-      "build_sha256": "8cabdfa32f1a16dffa82c118e21dd9b12f2e81b8a08800ed08d318c6dff8fb24",
+      "manifest_sha256": "467732ad673514cfe77487fcba4c179bcdd7f7d495b8c9c8c8a0e2e5d8a76b71",
+      "model_sha256": "a3209030a44ed5d270f6974a12bf1ec681837e67cad0ce66440a70401bd5f07a",
+      "build_sha256": "69ecad0bbc5373b7052ca472b5c7ec9a189595c25d239796b5ed1fc605bbfb59",
       "serving_build": {
         "id": "zhenhong",
         "name": "真红预组",
@@ -72,7 +72,13 @@
         ]
       },
       "serving_build_sha256": "69ecad0bbc5373b7052ca472b5c7ec9a189595c25d239796b5ed1fc605bbfb59",
-      "serving_build_request": "把翳的牌换成截图所选：I01、I03、I04、I08各2张，预组和高级人机都是"
+      "serving_build_request": "把翳的牌换成截图所选：I01、I03、I04、I08各2张，预组和高级人机都是",
+      "source_rule_hash": "962a490120b05f40c768930946a7ee3e5f4837d1ab127a6bbb26f0c6f942492e",
+      "source_request": "替换这个新的模型吧：仅真红使用已回传短训练latest候选，保留搜索、不启用指导",
+      "source_report": "artifacts/rl-evals/zhenhong-guided-online-short-20261008/report.md",
+      "source_selection": "latest_unapproved",
+      "source_learning_seconds": 242.196755,
+      "source_formal_policy_updates": 4
     },
     "murk": {
       "manifest_sha256": "5c6c0ea499303beda35ce0d85969ae0b7d391d9a3b7f93a8ebc80a90dc6ed9c2",
@@ -127,6 +133,69 @@
       "checked_features": 2420,
       "checked_candidates": 254,
       "checked_at": "2026-10-08T11:14:00+08:00"
+    }
+  ],
+  "model_replacement_history": [
+    {
+      "key": "zhenhong",
+      "request": "替换这个新的模型吧",
+      "previous": {
+        "manifest_sha256": "a0d9edb665ffff01b6ddf50b3e07addf169fdf9b163145c822bd9ef52241e952",
+        "model_sha256": "3f2be48f5ac5a751ae4b84c725007953aaef01cef2c834b822982fb4b33ef9d4",
+        "build_sha256": "8cabdfa32f1a16dffa82c118e21dd9b12f2e81b8a08800ed08d318c6dff8fb24",
+        "serving_build": {
+          "id": "zhenhong",
+          "name": "真红预组",
+          "character_ids": [
+            "zhenhong",
+            "zero",
+            "iloy",
+            "yi"
+          ],
+          "card_ids": [
+            "R01",
+            "R02",
+            "R04",
+            "R04",
+            "R06",
+            "R06",
+            "R07",
+            "R08",
+            "Z03",
+            "Z03",
+            "Z04",
+            "Z04",
+            "Z05",
+            "Z05",
+            "Z08",
+            "Z08",
+            "Y02",
+            "Y02",
+            "Y03",
+            "Y03",
+            "Y06",
+            "Y06",
+            "Y08",
+            "Y08",
+            "I01",
+            "I01",
+            "I03",
+            "I03",
+            "I04",
+            "I04",
+            "I08",
+            "I08"
+          ]
+        },
+        "serving_build_sha256": "69ecad0bbc5373b7052ca472b5c7ec9a189595c25d239796b5ed1fc605bbfb59",
+        "serving_build_request": "把翳的牌换成截图所选：I01、I03、I04、I08各2张，预组和高级人机都是"
+      },
+      "replacement_model_sha256": "a3209030a44ed5d270f6974a12bf1ec681837e67cad0ce66440a70401bd5f07a",
+      "source_rule_hash": "962a490120b05f40c768930946a7ee3e5f4837d1ab127a6bbb26f0c6f942492e",
+      "runtime_rule_hash": "ba8946fedaef946c0920fceef61a078a62dfd69e3b53904152450d7924c742b3",
+      "quality_approved": false,
+      "website_guidance": false,
+      "search_unchanged": true
     }
   ]
 }

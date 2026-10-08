@@ -15,7 +15,7 @@ KEYS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk')
 
 
 class RecoveryServingTest(unittest.TestCase):
-    def test_user_selected_yi_build_preserves_training_manifest_and_other_roles(self):
+    def test_short_trained_zhenhong_keeps_user_selected_yi_build(self):
         from collections import Counter
         from app.modules.card_game.content.duel_v2 import STARTER_DECKS, validate_deck
         from app.modules.card_game.engine.ai.advanced_model import load_model
@@ -26,10 +26,33 @@ class RecoveryServingTest(unittest.TestCase):
                          Counter({'I01': 2, 'I03': 2, 'I04': 2, 'I08': 2}))
         original = model.manifest['build']
         self.assertEqual(Counter(c for c in original['card_ids'] if c.startswith('I')),
-                         Counter({'I01': 2, 'I03': 1, 'I04': 2, 'I05': 1, 'I07': 1, 'I08': 1}))
+                         Counter({'I01': 2, 'I03': 2, 'I04': 2, 'I08': 2}))
         self.assertEqual([c for c in original['card_ids'] if not c.startswith('I')],
                          [c for c in model.serving_deck['card_ids'] if not c.startswith('I')])
-        self.assertNotEqual(model.serving_build_sha256, model.manifest['build_sha256'])
+        self.assertEqual(model.serving_build_sha256, model.manifest['build_sha256'])
+        self.assertEqual(model.version,
+                         'a3209030a44ed5d270f6974a12bf1ec681837e67cad0ce66440a70401bd5f07a')
+
+    def test_per_model_training_source_requires_explicit_provenance(self):
+        from app.modules.card_game.engine.ai.recovery_model import RecoveryServingModel
+        for mutation in ('source_rule_hash', 'source_request', 'source_report',
+                         'all_source_fields', 'invalid_rule_hash', 'wrong_rule_hash'):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for name in ('serving.json', 'zhenhong.json', 'zhenhong.npz'):
+                    shutil.copyfile(ROOT / name, root / name)
+                binding = json.loads((root / 'serving.json').read_text())
+                pin = binding['models']['zhenhong']
+                if mutation == 'all_source_fields':
+                    for field in ('source_rule_hash', 'source_request', 'source_report'):
+                        pin.pop(field)
+                elif mutation in ('invalid_rule_hash', 'wrong_rule_hash'):
+                    pin['source_rule_hash'] = 'not-a-hash' if mutation == 'invalid_rule_hash' else '0' * 64
+                else:
+                    pin.pop(mutation)
+                (root / 'serving.json').write_text(json.dumps(binding))
+                with self.assertRaisesRegex(ValueError, 'authorization'):
+                    RecoveryServingModel(root, 'zhenhong')
 
     def test_serving_build_override_requires_authorization_hash_and_original_roster(self):
         from app.modules.card_game.engine.ai.recovery_model import RecoveryServingModel
@@ -63,7 +86,8 @@ class RecoveryServingTest(unittest.TestCase):
             with self.subTest(key=key):
                 model = ai.load_model(key)
                 self.assertEqual(model.version, binding['models'][key]['model_sha256'])
-                self.assertEqual(model.manifest['rule_hash'], SOURCE_RULE_HASH)
+                self.assertEqual(model.manifest['rule_hash'],
+                                 binding['models'][key].get('source_rule_hash', SOURCE_RULE_HASH))
                 self.assertFalse(model.manifest['validation']['approved'])
                 self.assertTrue(model.serving_authorized)
                 state = new_game(seed=310+i, first_side='b', skip_mulligan=True,

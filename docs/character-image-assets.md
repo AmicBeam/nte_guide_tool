@@ -98,6 +98,7 @@ with Image.open('/tmp/nte-character-source.png') as source:
 | 薄荷 | 幽火照影 | 悠闲假日 |
 | 小吱 | 青竹猗猗 | 绒绒春日 |
 | 哈尼娅 | 青春注脚 | 默认（无第二套独立皮肤绑定） |
+| 黑羽 | 默认 | 不凋羽（2026-10-09补齐） |
 | 白藏、哈索尔、海月、埃德嘉 | 默认（本次上游无额外时装图） | 默认（本次上游无额外时装图） |
 
 08 优先使用上游 `nighty` 居家服；早雾 08 沿用节日睡衣「南瓜魔法」，07 于 2026-10-08 按用户要求绑定新增的「小熊曲奇」。07 按用户选择配置；其他武备编号仍默认。测试角色适用同一逻辑，不改变账号可见权限。维护入口为 `app/modules/card_game/static/js/v2_api.js` 的 `EQUIPMENT_PORTRAITS`，图片位于共享 `images/characters/costume/`，切勿为了换图修改 `catalog.json` 或规则引擎。
@@ -198,3 +199,12 @@ with Image.open('/tmp/nte-character-source.png') as source:
 ### 2026-10-08 黑羽武备皮肤命名核对
 
 用户约定 08 优先使用睡衣／居家服。黑羽 P07 为「牧星者」（`Fashion_1042_1`），P08 为「不凋羽」（`Fashion_1042_nighty`）；NTEData 提交 `d7fe705451f189cec8447d876e6c31db7ed3d9df` 的 `DataTable/Character/Appearance/DT_AppearanceData.json` 将后者描述为黑羽的居家服装。「红与黑」（`Fashion_1042_2`）为复古套装。本轮仅修改卡名和来源记录，仍复用默认头像／立绘，尚未导入这两张换装图片。
+
+
+## 黑羽「不凋羽」换装补齐（2026-10-09）
+
+前一轮只有P08卡名，没有换装资源和EQUIPMENT_PORTRAITS映射，导致装备后战斗区仍显示默认图。本次补入Fashion_1042_nighty并绑定P08；名称、CharacterID=1042和SmallPortraitImg核对自NTEData最新提交`d7fe705451f189cec8447d876e6c31db7ed3d9df`的服装表。原图路径`UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_heiyu_nighty.png`，blob SHA `e616e34d9fba4de6315a20b20b0b3c125dcb3370`。沿用已核实的黑羽角色与服装ID，不把日常服或红与黑当作睡衣。
+
+原图1024×1024 RGBA，SHA256 `493b86e93e5614b319646c215d2bcacadc46dc3487a95b11891f94b1b86eb5bb`。使用Pillow 12.3.0转换为WebP，quality=90、method=6，不裁切或缩放，保留透明度。输出`app/static/images/characters/costume/Fashion_1042_nighty.webp`，82870字节，SHA256 `7b3d391d2a40d16aaf7bcdb330f17dc39a933d4f7d3908eea94449aae2f95bfb`；条目已写入资源清单。默认头像／立绘文件不替换。
+
+角色实体的shape_id=P08现在用于双方前排、备战区、角色详情与公开回放的换装；卸装／倒地或加载失败沿用默认图回退。图片缓存版本已更新。本次按用户此前快速收尾要求未运行回归或页面验收，不将资源导入和代码修改声称为实机验证。

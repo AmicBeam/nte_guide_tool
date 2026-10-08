@@ -616,6 +616,37 @@
         "alpha": "preserved",
         "encoder": "cwebp"
       }
+    },
+    {
+      "character": "黑羽",
+      "character_id": "1042",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1042_nighty",
+      "fashion_name": "不凋羽",
+      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_heiyu_nighty.png",
+      "blob_sha": "e616e34d9fba4de6315a20b20b0b3c125dcb3370",
+      "output": "app/static/images/characters/costume/Fashion_1042_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "493b86e93e5614b319646c215d2bcacadc46dc3487a95b11891f94b1b86eb5bb",
+      "output_sha256": "7b3d391d2a40d16aaf7bcdb330f17dc39a933d4f7d3908eea94449aae2f95bfb",
+      "bytes": 82870,
+      "card_ids": [
+        "P08"
+      ],
+      "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+      "conversion": {
+        "format": "WebP",
+        "quality": 90,
+        "method": 6,
+        "resize": false,
+        "crop": false,
+        "alpha": "preserved",
+        "encoder": "Pillow 12.3.0"
+      }
     }
   ],
   "default_portraits": "Restored to pre-task files per user request: keep existing character scale and head alignment. Not migrated in this batch.",

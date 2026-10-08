@@ -48,8 +48,9 @@
     K03: { characterId: 'lingke', fashion: 'Fashion_1072_space' },
     C06: { characterId: 'canhong', fashion: 'Fashion_1036_2' },
     V07: { characterId: 'haniya', fashion: 'Fashion_1020_1' },
+    P08: { characterId: 'heiyu', fashion: 'Fashion_1042_nighty' },
   };
-  const CHARACTER_IMAGE_VERSION = 'ntedata-weapons-20261008-v7';
+  const CHARACTER_IMAGE_VERSION = 'ntedata-heiyu-nighty-20261009-v8';
 
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.
@@ -394,6 +395,16 @@
         seen.add(identity);
       }
     }
+    // Mechanism terms can appear naturally without corner quotes, e.g. 谕石.
+    Object.keys(cardsByName).sort(function (a, b) { return b.length - a.length; }).forEach(function (name) {
+      const referenced = cardsByName[name];
+      if (!referenced || referenced.type !== 'mechanism' || !text.includes(name)) return;
+      const identity = referenced.id || referenced.card_id || name;
+      if (name !== card.name && (!card.id || referenced.id !== card.id) && !seen.has(identity)) {
+        result.push(Object.assign({}, referenced));
+        seen.add(identity);
+      }
+    });
     return result;
   }
 

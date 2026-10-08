@@ -90,3 +90,15 @@ test('summons use their own portrait and pact uses the debuff icon', ()=>{
   assert.match(node.innerHTML,/v2-effect-icon is-debuff/);
   assert.doesNotMatch(node.innerHTML,/<span class="">枚约<\/span>/);
 });
+
+test('unquoted divination in the actual omen card opens its mechanism once', async()=>{
+  const raw=JSON.parse(fs.readFileSync('app/modules/card_game/content/duel_v2/catalog.json','utf8'));
+  const heiyu=clone(raw.characters.find(c=>c.id==='heiyu'));
+  heiyu.mechanisms.forEach(m=>Object.assign(m,{type:'mechanism',character_id:heiyu.id}));
+  const omen=raw.cards.find(c=>c.id==='PF01');
+  const api=await load({characters:[heiyu],cards:[omen]});
+  assert.deepEqual(clone(api.referencedCards(omen)).map(c=>c.id),['mechanism-divination']);
+  assert.deepEqual(clone(api.referencedCards({...omen,description:'占卜，然后「占卜」。占卜效果。'})).map(c=>c.id),['mechanism-divination']);
+  const own=heiyu.mechanisms.find(m=>m.id==='mechanism-divination');
+  assert.ok(!api.referencedCards(own).some(c=>c.id===own.id));
+});

@@ -73,8 +73,8 @@
     node.classList.toggle('target-legal', Boolean(options.canTarget));
     node.classList.toggle('harmony-source', Boolean(data.harmony_source));
     node.classList.toggle('harmony-ready', Boolean(data.harmony_ready));
-    const showCollapse = Boolean(options.inFront && data.collapse && Number(data.hp) > 0 && !Number(data.down_turns) && !options.placeholder);
-    node.classList.toggle('is-collapsed-front', showCollapse);
+    const showCollapse = Boolean(data.collapse && Number(data.hp) > 0 && !Number(data.down_turns) && !options.placeholder);
+    node.classList.toggle('is-collapsed', showCollapse);
     const compact = !options.usePortrait;
     const energyMax = data.energy_max == null ? 5 : data.energy_max;
     const energyNow = data.energy == null ? 0 : data.energy;
@@ -338,7 +338,6 @@
       side: side,
       characters: state.characters,
       isOpponent: isOpponent,
-      inFront: true,
       usePortrait: true,
       canAttack: canAct && !isOpponent && Boolean(ctx.findAction('attack', { character_id: frontId })),
       canAwaken: Boolean(ultimate),

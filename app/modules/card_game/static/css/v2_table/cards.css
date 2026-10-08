@@ -40,7 +40,7 @@
   filter: grayscale(0.4);
 }
 
-.v2-character-card.is-collapsed-front {
+.v2-character-card.is-collapsed {
   overflow: visible;
 }
 

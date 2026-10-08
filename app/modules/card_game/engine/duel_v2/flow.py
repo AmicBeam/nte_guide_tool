@@ -146,7 +146,6 @@ def card_play_options(state, side, card):
 
 
 def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None, response=False, present=True):
-    from app.modules.card_game.content.duel_v2.characters.common import scale_battle_frame
     from .presentation import public_card
     team = state['sides'][side]
     options = card.get('play_options') or []
@@ -184,6 +183,27 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None,
     fire(c, GameEvent.V2_CARD_USED, actor_id=card['character_id'], card=card)
     if form_bonus and not finished(state):
         draw(state, side, 1)
+    _resolve_card_effect(c)
+
+
+def resolve_release(state, side, card, target_id=None, *, present=True):
+    """Release a physical card without paying or dispatching card-use triggers."""
+    from .presentation import public_card
+    log(state, f"{hero(state, side, card['character_id'])['name']}自动释放「{card['name']}」。",
+        'play', side=side, source=card['character_id'], actor=f"{side}:{card['character_id']}",
+        card=public_card(card, state, side), release_only=True, response=False, present=present)
+    c = operation(state, side, card['character_id'], card, target_id)
+    options = card.get('play_options') or [{}]
+    c.operation.update(release_only=True, ap_paid=0, option_id=options[0].get('id'))
+    _resolve_card_effect(c)
+
+
+def _resolve_card_effect(c):
+    from app.modules.card_game.content.duel_v2.characters.common import scale_battle_frame
+    state, side, card = c.state, c.side, c.card
+    if finished(state):
+        return
+    fire(c, GameEvent.V2_CARD_RELEASED, actor_id=card['character_id'], card=card)
     if finished(state):
         return
     if card.get('type') == 'battle' and alive(state, side, card['character_id']):
@@ -823,8 +843,9 @@ def finish_operation(state):
             add_hand(state, side, card)
         else:
             discard(state, side, card)
-        fire(c, 'after_card', actor_id=cid, card=card)
-        if op.get('card_mark'):
+        if not op.get('release_only'):
+            fire(c, 'after_card', actor_id=cid, card=card)
+        if op.get('card_mark') and not op.get('release_only'):
             if state.get('_response_intercept') and card.get('type') == 'battle':
                 state.setdefault('_deferred_card_marks', []).append(deepcopy(op))
             else:

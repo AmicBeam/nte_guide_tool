@@ -1005,6 +1005,13 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 
 ### 2026-10-09 使用时统一先于卡效
 
-通用使用阶段为支付费用→完成使用时触发→卡框与卡效→明确写明的使用后／结算后。灵可第三张牌立即完成合击，不排入操作结束队列；第三张牌进入选择前已完成，JSON恢复选择不重复触发。零武备使用抽牌前移至卡效前，允许复活武备在恢复所属者前触发；残虹赤葵自动使用接入同一入口并保持免费；哈尼娅V08在使用战斗牌时消费光环、记录战斗准备加攻，普通出击仍按原入场时机，覆写攻击与响应规则保留。来源为用户明确时机纠正，旧回放不追改。
+通用使用阶段为支付费用→完成使用时触发→卡框与卡效→明确写明的使用后／结算后。灵可第三张牌立即完成合击，不排入操作结束队列；第三张牌进入选择前已完成，JSON恢复选择不重复触发。零武备使用抽牌前移至卡效前，允许复活武备在恢复所属者前触发；残虹赤葵自动复活属于直接释放，不触发使用事件；哈尼娅V08在使用战斗牌时消费光环、记录战斗准备加攻，普通出击仍按原入场时机，覆写攻击与响应规则保留。来源为用户明确时机纠正，旧回放不追改。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_card_use_timing tests.test_duel_v2_lingke tests.test_duel_v2_haniya tests.test_duel_v2_zero_refund tests.test_duel_v2_jingu_marks tests.test_duel_v2_hooks tests.test_duel_v2_engine tests.test_duel_v2_presentation tests.test_duel_v2_replay`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。
+
+
+### 2026-10-09 直接释放不算使用
+
+赤葵自动复活及黑羽占卜的P01／P02／P04直接释放（含魔女P04延后释放）统一走`resolve_release`，执行释放时机、卡框与卡效，跳过使用时／使用后、费用、瞬发消费与使用标注兑现。灵可不累计这些释放，哈尼娅V08不消耗光环，零使用抽牌及黑羽使用后回满环合也不触发；手动打出不变。赤葵释放保留父操作，牌实体只弃置一次；黑羽复用已有公开占卜展示，不重复播放牌面。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_card_release_timing tests.test_duel_v2_card_use_timing tests.test_duel_v2_auto_release tests.test_duel_v2_heiyu tests.test_duel_v2_heiyu_presentation tests.test_duel_v2_lingke tests.test_duel_v2_continuous_cast`，以及引擎／呈现／回放与独立模拟对拍。

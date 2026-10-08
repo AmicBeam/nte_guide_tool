@@ -59,24 +59,39 @@ class CardUseTimingTest(unittest.TestCase):
         self.assertEqual(hero(after, 'a', 'canhong')['hp'], 0)
         self.assertFalse(any(e['type'] == 'shape' for e in after['events'] if e['seq'] > seq))
 
-    def test_automatic_revival_weapon_uses_the_common_use_event_once(self):
+    def test_automatic_revival_weapon_only_releases_without_use_triggers(self):
         s = game(); team = s['sides']['a']
         actor = hero(s, 'a', 'canhong')
+        hero(s, 'a', 'zero')['awakened'] = True
         hero(s, 'a', 'lingke')['lingke_chain'] = dict(entity_id=actor.entity_id,
                                                       character_id='canhong', count=2)
-        team['hand'] = [card_instance(s, 'C07', 'a')]; team['ap'] = 0
+        team.update(hand=[card_instance(s, 'C07', 'a')], deck=[], ap=0)
         front_debuff(s, 'b')['burn'] = dict(left=2, by='a', stacks=20)
         actor['hp'] = 0; seq = s['event_seq']
         knockdowns(s)
         events = [e for e in s['events'] if e['seq'] > seq]
-        used = [e for e in events if e['type'] == 'play' and (e.get('card') or {}).get('card_id') == 'C07']
-        self.assertEqual(len(used), 1)
-        sync = next(i for i, e in enumerate(events) if e['type'] == 'attack' and e.get('actor') == 'a:lingke')
-        revive = next(i for i, e in enumerate(events) if e['type'] == 'revive')
-        self.assertLess(sync, revive)
+        played = [e for e in events if e['type'] == 'play' and (e.get('card') or {}).get('card_id') == 'C07']
+        self.assertEqual(len(played), 1)
+        self.assertTrue(played[0]['release_only'])
+        self.assertIn('自动释放', played[0]['text'])
+        self.assertFalse(any(e['type'] in ('draw', 'attack') for e in events))
+        self.assertEqual(hero(s, 'a', 'lingke')['lingke_chain']['count'], 2)
+        self.assertEqual(s['phase'], 'playing')
         self.assertEqual(actor['shape'], 'C07')
+        self.assertGreater(actor['hp'], 0)
         self.assertEqual(team['ap'], 0)
+        self.assertFalse(team['used'].get('instant'))
         self.assertEqual([c['card_id'] for c in team['discard']], ['C07'])
+
+    def test_automatic_release_preserves_the_interrupted_parent_card(self):
+        s = game(); actor = hero(s, 'a', 'canhong')
+        actor.update(hp=1, harmony=0)
+        s['sides']['b']['front'] = 'zero'
+        s['sides']['a']['hand'] = [card_instance(s, 'C07', 'a')]
+        front_debuff(s, 'b')['burn'] = dict(left=2, by='a', stacks=20)
+        after = play(s, 'C02')
+        self.assertEqual(sorted(c['card_id'] for c in after['sides']['a']['discard']), ['C02', 'C07'])
+        self.assertEqual(hero(after, 'a', 'lingke')['lingke_chain']['count'], 1)
 
     def test_haniya_weapon_use_consumes_aura_before_card_frame_once(self):
         s = game(); hero(s, 'a', 'haniya').update(shape='V08', protagonist_aura=4)

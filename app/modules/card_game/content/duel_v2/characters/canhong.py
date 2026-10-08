@@ -83,7 +83,7 @@ def _c07(c):
     set_shape(c)
 
 
-def _play_c07(c):
+def _release_c07(c):
     team = c.state['sides'][c.side]
     card = next((item for item in team['hand'] if item.get('card_id') == 'C07'), None)
     if card is not None:
@@ -95,10 +95,10 @@ def _play_c07(c):
                 break
     if card is None:
         return
-    from app.modules.card_game.engine.duel_v2.flow import resolve_play
+    from app.modules.card_game.engine.duel_v2.flow import resolve_release
     parent = c.state.get('operation')
     try:
-        resolve_play(c.state, c.side, card, pay=False, response=True)
+        resolve_release(c.state, c.side, card)
     finally:
         c.state['operation'] = parent
 
@@ -165,7 +165,7 @@ class Canhong:
     @staticmethod
     def on_ally_down(c, downed=None, **_data):
         if downed == c.cid and total_stacks(c.state, c.side) >= 20:
-            _play_c07(c)
+            _release_c07(c)
 
     @staticmethod
     def hp_floor(c, current=0, target_id=None, **_data):

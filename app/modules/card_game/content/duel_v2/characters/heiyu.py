@@ -53,15 +53,15 @@ def _reveal(c, card, *, response=False):
 
 
 def _release(c, card, target=None):
-    """Free automatic use, preserving the enclosing divination/attack operation."""
-    from app.modules.card_game.engine.duel_v2.flow import resolve_play
+    """Release an effect without use triggers; preserve the enclosing operation."""
+    from app.modules.card_game.engine.duel_v2.flow import resolve_release
     parent = c.state.get('operation')
     draining = c.state.get('_draining_actions')
     _detach(c, card)
     c.state['_draining_actions'] = True
     try:
         # The preceding reveal already presents this card to both players.
-        resolve_play(c.state, c.side, Heiyu.hand_card(c, card, card), target, pay=False, present=False)
+        resolve_release(c.state, c.side, Heiyu.hand_card(c, card, card), target, present=False)
     finally:
         c.state['operation'] = parent
         if draining is None:

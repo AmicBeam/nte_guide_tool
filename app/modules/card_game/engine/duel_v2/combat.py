@@ -26,7 +26,8 @@ def harmony_payer(state, side, cid):
     previous = harmony_previous(state, side, cid)
     if not previous or not alive(state, side, previous):
         return None
-    if hero(state, side, previous)['harmony'] < harmony_cap(state):
+    payer = hero(state, side, previous)
+    if collapsed(payer) or payer['harmony'] < harmony_cap(state):
         return None
     return previous
 
@@ -154,6 +155,8 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
     s, side, cid, op = c.state, c.side, c.cid, c.operation
     team = s['sides'][side]
     payer = hero(s, side, payer_id) if payer_id else None
+    if payer is not None and collapsed(payer):
+        return
     before = payer['harmony'] if payer else 0
     if pay:
         payer['harmony'] -= harmony_cap(s)

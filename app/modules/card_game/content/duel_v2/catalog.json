@@ -3666,7 +3666,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。使 1 名异能者的倾陷值 +1。每当你使异能者进入倾陷，将 1 张本牌从牌库或弃牌堆加入手牌。",
+      "description": "瞬发。使 1 名异能者的倾陷值 +2。每当你使异能者进入倾陷，将 1 张本牌从牌库或弃牌堆加入手牌。",
       "effect_id": "F03",
       "source": {
         "character_id": "1054",
@@ -3683,7 +3683,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "所有对方异能者的倾陷值 +1。本局「洞察」的伤害 +1。",
+      "description": "所有对方异能者的倾陷值 +2。本局「洞察」的伤害 +1。",
       "effect_id": "F04",
       "source": {
         "character_id": "1054",
@@ -3715,7 +3715,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "使 1 名对方异能者的倾陷值 +3。响应：己方前排被攻击时，自动对攻击方使用。",
+      "description": "使 1 名对方异能者的倾陷值 +4。响应：己方前排被攻击时，自动对攻击方使用。",
       "effect_id": "F06",
       "source": {
         "character_id": "1054",
@@ -3748,7 +3748,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "每当对方异能者攻击时，使其倾陷值 +2。",
+      "description": "每当对方异能者出击时，使其倾陷值 +3。",
       "effect_id": "F08",
       "source": {
         "character_id": "1054",

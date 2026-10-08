@@ -229,6 +229,7 @@ def move_out(state, side, cid, *, reason=None):
     from .escalation import harmony_cap
     # Capture eligibility at departure; later bench resource gains cannot create it.
     team['last_front'] = (cid if alive(state, side, cid)
+                          and not collapsed(h)
                           and h['harmony'] >= harmony_cap(state) else None)
     if reason == 'replace' and alive(state, side, cid) and not h.get('summoned'):
         from app.modules.card_game.content.duel_v2.registry import fire

@@ -3,7 +3,7 @@ from app.modules.card_game.content.duel_v2.characters.common import set_shape
 from app.modules.card_game.content.duel_v2.registry import KITS, register
 from app.modules.card_game.engine.duel_v2.continuous import apply_dot
 from app.modules.card_game.engine.duel_v2.state import (
-    add_hand, alive, card_instance, damage, front_debuff, hero, other,
+    add_hand, alive, card_instance, collapsed, damage, front_debuff, hero, other,
 )
 
 
@@ -73,7 +73,8 @@ def _a06(c):
     team = c.state['sides'][c.side]
     front = team.get('front')
     payer = hero(c.state, c.side, front) if front and front != c.cid else None
-    if payer and payer.get('attribute') in ('魂', '咒') and int(payer.get('harmony') or 0) < harmony_cap(c.state):
+    if (payer and not collapsed(payer) and payer.get('attribute') in ('魂', '咒')
+            and int(payer.get('harmony') or 0) < harmony_cap(c.state)):
         c.operation['skip_nightmare'] = True
         kind = '浊燃' if payer['attribute'] == '咒' else '黯星'
         enter(c, resolve_harmony=False)

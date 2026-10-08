@@ -935,3 +935,10 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 ### 2026-10-08 星间漫游内联效果
 
 移除灵可独立衍生牌「同频行动」，瞬发与获得 1 点行动力直接写进 K03「星间漫游」。装备且行动力为 0、仍有瞬发机会时，灵可手牌按这项战术效果结算，保留物理牌身份和弃牌结果；不执行原卡效果、选取原卡目标或重新装备。验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_catalog tests.test_duel_v2_hooks tests.test_duel_v2_engine tests.test_duel_v2_hand_face tests.test_duel_v2_entities`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。
+
+
+### 2026-10-09 倾陷环合限制与达芙蒂尔加强
+
+倾陷中的异能者不能提供环合值产生环合效果，统一环合付款、来源残留、预览与公开标记采用相同判定。达芙蒂尔F03／F04／F06／F08的倾陷值分别为+2／+2／+4／+3；漆黑青春妄想使用动作术语「出击」。现行效果与来源边界见完整手册，图鉴词表同步。
+
+专项验证：`.venv/bin/python -m unittest tests.test_duel_v2_collapse_harmony tests.test_duel_v2_dafutier tests.test_duel_v2_harmony_residue.HarmonyResidueTest`。本轮235项Python规则／目录／回放／模拟检查及4项JavaScript测试通过，真实图鉴词条核对通过；不作为平衡结论。服务继续监听0.0.0.0:5001，本机与当前局域网192.168.10.3均返回200。

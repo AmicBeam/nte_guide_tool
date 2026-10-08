@@ -34,18 +34,18 @@ def _target_collapse(c, amount):
 
 
 def _creations(c):
-    _target_collapse(c, 1)
+    _target_collapse(c, 2)
 
 
 def _lake(c):
-    _target_collapse(c, 3)
+    _target_collapse(c, 4)
 
 
 def _hidden(c):
     foe = other(c.side)
     for cid in list(team_order(c.state, foe)):
         if not hero(c.state, foe, cid).get('summoned'):
-            add_collapse(c.state, foe, cid, 1, by=c.side)
+            add_collapse(c.state, foe, cid, 2, by=c.side)
     team = c.state['sides'][c.side]
     team['insight_bonus'] = int(team.get('insight_bonus', 0)) + 1
     c.history(f"「于隐匿中」：本局「洞察」的伤害 +1（当前为 {_insight_damage(c)}）。")
@@ -84,7 +84,7 @@ def _insight(c):
 
 def _black_weapon(c, attacker_side, attacker_id, **_data):
     if attacker_side == other(c.side) and not hero(c.state, attacker_side, attacker_id).get('summoned'):
-        add_collapse(c.state, attacker_side, attacker_id, 2, by=c.side)
+        add_collapse(c.state, attacker_side, attacker_id, 3, by=c.side)
 
 
 @register

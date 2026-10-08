@@ -85,7 +85,7 @@ class HarmonyResidueTest(unittest.TestCase):
         self.assertEqual(s['sides']['a']['front'], 'nanali')
         self.assertIsNone(s['sides']['a']['last_front'])
         hero(s, 'a', 'nanali')['harmony'] = 2
-        self.assertTrue(harmony_marks(s, 'a')['available'])
+        self.assertFalse(harmony_marks(s, 'a')['available'])
 
     def test_death_expires_residue(self):
         s = self.game(2)

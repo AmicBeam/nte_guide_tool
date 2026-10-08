@@ -373,11 +373,15 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     amount = max(0, int(evaluate(state, side, target, 'damage.amount', amount,
                                query={'kind': kind, 'source': source})['value']))
     src_side, src_cid = source_parts(source)
-    if additional_attack and not _additional_bonus_applied and src_side and src_cid in state['sides'][src_side]['characters']:
+    if not _additional_bonus_applied and src_side and src_cid in state['sides'][src_side]['characters']:
         from .context import EffectContext
         from app.modules.card_game.content.duel_v2.registry import decide
-        amount += int(decide(EffectContext(state, src_side, src_cid, {'side': src_side}),
-                             'additional_attack_damage_bonus', 0, target_side=side, target_id=cid) or 0)
+        source_context = EffectContext(state, src_side, src_cid, {'side': src_side})
+        additional_attack = bool(decide(source_context, 'damage_is_additional', additional_attack,
+                                        actor_only=True, target_side=side, target_id=cid, damage_kind=kind))
+        if additional_attack:
+            amount += int(decide(source_context, 'additional_attack_damage_bonus', 0,
+                                 target_side=side, target_id=cid) or 0)
     if damage_class == 'attachment' and src_side:
         from .context import EffectContext
         from app.modules.card_game.content.duel_v2.registry import tally

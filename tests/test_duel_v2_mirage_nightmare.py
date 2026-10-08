@@ -3,7 +3,7 @@ import json
 import unittest
 
 from tests import test_duel_v2_continuous_cast as continuous
-from app.modules.card_game.engine.duel_v2 import apply_action, observe
+from app.modules.card_game.engine.duel_v2 import apply_action, new_game, observe
 from app.modules.card_game.engine.duel_v2.continuous import apply_dot, tick_owner_end
 from app.modules.card_game.engine.duel_v2.entities import clone_state
 from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
@@ -17,6 +17,105 @@ class MirageNightmareTest(unittest.TestCase):
 
     def play(self, s, card_id):
         return continuous.ContinuousCastTest().play(s, card_id)
+
+    def additional_damage_game(self):
+        deck = continuous._deck(('canhong', 'lingke', 'zero', 'iloy'), ('C', 'K', 'Z', 'Y'))
+        s = new_game(seed=3, first_side='a', skip_mulligan=True,
+                     decks={'a': deck, 'b': deck}, escalation=False)
+        for team in s['sides'].values():
+            team.update(hand=[], shield=0, hp=200)
+            for h in team['characters'].values():
+                h.update(hp=40, max_hp=40)
+        return self.play(s, 'K08')
+
+    def test_mirage_battle_damage_is_additional_without_changing_counter_or_resources(self):
+        s = self.additional_damage_game()
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'a', 'canhong')['harmony'] = 0
+        seq = s['event_seq']
+        s = self.play(s, 'C04')
+        hits = [e for e in s['events'] if e['seq'] > seq and e['type'] == 'combat']
+        outgoing = next(e for e in hits if e['source'] == 'a:canhong')
+        counter = next(e for e in hits if e['source'] == 'b:zero')
+        self.assertEqual(outgoing['amount'], 3)  # 2 attack + K08 once.
+        self.assertTrue(outgoing['additional_attack'])
+        self.assertEqual(counter['amount'], 2)
+        self.assertFalse(counter.get('additional_attack', False))
+        h = hero(s, 'a', 'canhong')
+        self.assertEqual((h['hp'], h['harmony'], h['energy']), (38, 1, 2))
+        self.assertEqual(s['sides']['a']['ap'], 9)
+        self.assertTrue(s['sides']['a']['normal_attack_available'])
+        self.assertEqual(front_debuff(s, 'b')['dots']['etch']['stacks'], 2)
+
+    def test_mirage_damage_classification_is_source_relative_and_does_not_double_bonus(self):
+        from app.modules.card_game.content.duel_v2.characters.canhong import _enter_mirage
+        from app.modules.card_game.engine.duel_v2.context import EffectContext
+        s = self.additional_damage_game()
+        _enter_mirage(EffectContext(s, 'a', 'canhong', {'side': 'a'}))
+        s = clone_state(json.loads(json.dumps(s)))
+        for target_side, source, explicit, expected, marked in (
+                ('b', 'a:canhong', False, 2, True),
+                ('b', 'a:canhong', True, 2, True),
+                ('b', 'a:zero', False, 1, False),
+                ('a', 'b:canhong', False, 1, False)):
+            with self.subTest(source=source, explicit=explicit):
+                opening, seq = capture_public_board(s), s['event_seq']
+                before = s['sides'][target_side]['hp']
+                damage(s, target_side, 'player', 1, source=source, additional_attack=explicit)
+                self.assertEqual(s['sides'][target_side]['hp'], before - expected)
+                events = [e for e in s['events'] if e['seq'] > seq]
+                hit = next(e for e in events if e['type'] == 'damage')
+                self.assertEqual(hit.get('additional_attack', False), marked)
+                for viewer in ('a', 'b'):
+                    public = observe(s, viewer)['presentation']['events']
+                    projected = next(e for e in public if e['seq'] == hit['seq'])
+                    self.assertEqual(projected.get('additional_attack', False), marked)
+                self.assertEqual(replay_public_board(opening, events), capture_public_board(s))
+
+    def test_mirage_noncombat_weapon_damage_gets_additional_bonus_and_expiry_clears_it(self):
+        from app.modules.card_game.engine.duel_v2.flow import begin_turn
+        s = self.additional_damage_game()
+        s = self.play(s, 'C06')
+        s = self.play(s, 'C04')
+        seq = s['event_seq']
+        s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
+        hit = next(e for e in s['events'] if e['seq'] > seq and e['type'] == 'damage'
+                   and e.get('source') == 'a:canhong')
+        self.assertEqual(hit['amount'], 2)
+        self.assertTrue(hit['additional_attack'])
+        for _ in range(3):
+            begin_turn(s, 'a')
+        damage(s, 'b', 'player', 1, source='a:canhong')
+        hit = next(e for e in reversed(s['events']) if e['type'] == 'damage')
+        self.assertEqual(hit['amount'], 1)
+        self.assertFalse(hit.get('additional_attack', False))
+
+    def test_mirage_counter_uses_its_own_side_bonus_and_disabled_counter_stays_disabled(self):
+        from app.modules.card_game.content.duel_v2.characters.canhong import _enter_mirage
+        from app.modules.card_game.engine.duel_v2.combat import additional_attack
+        from app.modules.card_game.engine.duel_v2.context import EffectContext
+        from app.modules.card_game.engine.duel_v2.flow import begin_turn
+        for counter_enabled in (True, False):
+            with self.subTest(counter=counter_enabled):
+                s = self.additional_damage_game()
+                s['sides']['a']['front'] = 'canhong'
+                _enter_mirage(EffectContext(s, 'a', 'canhong', {'side': 'a'}))
+                seq = s['event_seq']
+                if counter_enabled:
+                    begin_turn(s, 'b')
+                    s['sides']['b']['hand'] = []
+                    s = apply_action(s, 'b', {'type': 'attack', 'character_id': 'zero'})
+                else:
+                    additional_attack(EffectContext(s, 'b', 'zero', {'side': 'b'}), '光')
+                attack = next(e for e in s['events'] if e['seq'] > seq and e['type'] == 'attack')
+                counter = next(e for e in s['events'] if e['seq'] > seq and e['type'] == 'combat'
+                               and e.get('source') == 'a:canhong')
+                expected = 3 if counter_enabled else 0
+                self.assertEqual(attack['counter'], expected)
+                self.assertEqual(counter['amount'], expected)
+                self.assertEqual(counter.get('additional_attack', False), counter_enabled)
+                self.assertEqual(hero(s, 'b', 'zero')['hp'], 40 - expected)
+                self.assertEqual(hero(s, 'a', 'canhong')['energy'], 0)
 
     def test_first_battle_card_enters_mirage_before_attack_and_applies_etch(self):
         s = self.game()

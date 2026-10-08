@@ -135,6 +135,10 @@ class Canhong:
             _enter_mirage(c)
 
     @staticmethod
+    def damage_is_additional(c, current=False, **_data):
+        return True if alive(c.state, c.side, c.cid) and _mirage(c) else current
+
+    @staticmethod
     def after_hits(c, target_loss=0, **_data):
         if not _mirage(c) or not alive(c.state, c.side, c.cid):
             return

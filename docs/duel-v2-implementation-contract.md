@@ -287,6 +287,12 @@ PlayerEntity及双方公开side新增max_hp，初始30；旧快照、旧回放�
 `pending_choice` 的 `hand_placement=true` 配合 `deck_order=true` 表示从当前手牌选择恰好 1 张放至牌库顶或底，候选仍在手牌，不计入待归还牌库张数。复用 `choose_deck_order`：`card_ids=[id], bottom_card_ids=[]` 为置顶，反之为置底；两组总共必须恰好 1 个合法实体。其余手牌不动，采用正常实体 ID 转换与 JSON 恢复。公开投影仅向操作者提供候选与布局标志，对手看不到候选。内容回调恢复原操作；不再次支付行动力，也不默认发动占卜效果。
 
 
+### 2026-10-09 幻境伤害归类
+
+内容包通过源角色专用的 `damage_is_additional` 决策声明伤害是否视为追加攻击；攻击、可执行的反击和独立伤害在追加攻击加成前以 `actor_only=True` 查询来源实体，队友的状态不串到来源。既有 `attack_is_additional` 继续处理队伍援护判定。攻击与反击预先计算各自阵营的加成，伤害入口的 `_additional_bonus_applied` 保留预先确定的归类并防止重复加成；穿透和转移伤害继承原段标记，不再次增伤。不允许反击时，不因来源状态或加成制造伤害。
+
+幻境沿用 `canhong.mirage`／`status.mirage` 与既有到期、倒地清理；目录新增 `mechanism-mirage`，由残虹异能显式引用，不进入构筑。公开演出投影保留事件已有的 `attribute`／`additional_attack` 字段，双方与新回放一致；不改动作格式，不授予旧模型新规则兼容。
+
 ### 2026-10-09 灵可随机检索与属性标记
 
 K01 先随机抽取至多三种不同的所属牌，直接进入 pending_choice.kind=kit；只提供单张 choose，不再为新使用产生 kit_multi／choose_cards。候选、随机状态及 deck_cards 计数沿用现有快照契约；旧 kit_multi 待选择兼容仍保留。玩家与异能者的属性抗性 effect_markers 可携带 attribute，取值为六种属性之一；该字段只用于图标展示，规则计算仍从正式效果读取。

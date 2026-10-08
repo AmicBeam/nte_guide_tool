@@ -353,6 +353,8 @@ def attack(c, spec, index):
     attribute = spec.get('attribute') or h['attribute']
     additional = bool(decide(c, 'attack_is_additional', bool(spec.get('additional_attack') or op.get('additional_attack')),
                              attacker_id=cid, support=bool(op.get('support'))))
+    additional = bool(decide(c, 'damage_is_additional', additional, actor_only=True,
+                             target_side=enemy, target_id=target_id, damage_kind='combat'))
     fire(c, GameEvent.V2_BEFORE_ATTACK_DAMAGE, attacker_id=cid, target_side=enemy,
          target_id=target_id, attribute=attribute, additional_attack=additional,
          support=bool(op.get('support')), sync_attack=bool(spec.get('sync_attack')))
@@ -384,6 +386,14 @@ def attack(c, spec, index):
         counter = max(0, counter_base + extra_counter - _zone_slow(s, enemy, target_id))
     else:
         counter = 0
+    counter_additional = False
+    if is_esper(target_id) and not no_counter:
+        counter_context = c.for_character(enemy, target_id)
+        counter_additional = bool(decide(counter_context, 'damage_is_additional', False, actor_only=True,
+                                         target_side=side, target_id=cid, damage_kind='combat'))
+        if counter_additional:
+            counter = max(0, counter + int(decide(counter_context, 'additional_attack_damage_bonus', 0,
+                                                 target_side=side, target_id=cid) or 0))
     bypass = bool(spec.get('bypass'))
     bypass = bool(decide(c, 'attack_bypass', bypass, attacker_id=cid, target=target,
                          target_id=target_id, spec=spec))
@@ -441,7 +451,8 @@ def attack(c, spec, index):
                              attribute=attribute, additional_attack=additional, _additional_bonus_applied=True)
     self_loss = damage(s, side, cid, counter, source=f'{enemy}:{target_id}',
                        kind='combat', settle=False, group_id=group_id,
-                       counter_immunity='support' if support_immunity else None) if is_esper(target_id) else 0
+                       counter_immunity='support' if support_immunity else None,
+                       additional_attack=counter_additional, _additional_bonus_applied=True) if is_esper(target_id) else 0
     player_damage = target_loss if is_player(target_id) else 0
     if overflow:
         player_damage += damage(s, enemy, PLAYER_ID, overflow, source=f'{side}:{cid}', kind='penetration',
@@ -506,7 +517,7 @@ def sortie(c, **spec):
     s, side, cid, op = c.state, c.side, c.cid, c.operation
     if _attack_stopped(c):
         return
-    op['sortie_attack_bonus'] = 0
+    op.setdefault('sortie_attack_bonus', 0)
     if s.get('_response_intercept'):
         intercept_enter(c)
         if not finished(s) and alive(s, side, cid):

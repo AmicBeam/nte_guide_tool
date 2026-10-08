@@ -91,6 +91,18 @@ test('summons use their own portrait and pact uses the debuff icon', ()=>{
   assert.doesNotMatch(node.innerHTML,/<span class="">枚约<\/span>/);
 });
 
+test('Canhong passive references mirage and its mechanism explains additional attack damage', async()=>{
+  const catalog=JSON.parse(fs.readFileSync('app/modules/card_game/content/duel_v2/catalog.json','utf8'));
+  catalog.characters.forEach(c=>(c.mechanisms||[]).forEach(m=>Object.assign(m,{type:'mechanism',character_id:c.id})));
+  const api=await load(catalog);
+  const hero=catalog.characters.find(c=>c.id==='canhong');
+  const refs=api.referencedCards({name:hero.name,description:hero.passive});
+  assert.deepEqual(clone(refs).map(c=>c.id),['mechanism-mirage']);
+  assert.match(refs[0].description,/造成伤害视为追加攻击/);
+  assert.deepEqual(clone(api.referencedCards(refs[0])).map(c=>c.id),['mechanism-etch-venom']);
+  assert.ok(!catalog.cards.some(c=>c.id==='mechanism-mirage'));
+});
+
 test('quoted divination on Heiyu cards resolves without broad unquoted matching', async()=>{
   const raw=JSON.parse(fs.readFileSync('app/modules/card_game/content/duel_v2/catalog.json','utf8'));
   const heiyu=clone(raw.characters.find(c=>c.id==='heiyu'));

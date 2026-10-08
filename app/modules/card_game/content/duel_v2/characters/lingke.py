@@ -8,7 +8,7 @@ from app.modules.card_game.engine.duel_v2.state import (
 from app.modules.card_game.engine.duel_v2.modifiers import add_effect, all_effects, deadline
 
 
-def _sync(c, attribute, target=None):
+def _sync(c, attribute, target=None, *, support_actor=None):
     if finished(c.state) or not alive(c.state, c.side, c.cid):
         return
     from app.modules.card_game.engine.duel_v2.combat import additional_attack, resolve_harmony_effect
@@ -18,7 +18,7 @@ def _sync(c, attribute, target=None):
             resolve_harmony_effect(c, '创生')
         elif attribute == '咒':
             resolve_harmony_effect(c, '覆纹')
-    additional_attack(c, attribute, target=target, sync_attack=True)
+    additional_attack(c, attribute, target=target, sync_attack=True, support_actor=support_actor)
 
 
 def _k01(c):
@@ -53,14 +53,16 @@ def _k04(c):
 
 def _k05(c):
     side, cid = c.operation['target_id'].split(':', 1)
-    _sync(c, hero(c.state, side, cid)['attribute'])
+    owner = hero(c.state, side, cid)
+    _sync(c, owner['attribute'], support_actor=dict(character_id=cid, entity_id=owner.entity_id))
 
 
 def _k06(c):
-    attributes = [hero(c.state, c.side, cid)['attribute'] for cid in team_order(c.state, c.side)
-                  if cid != c.cid and not hero(c.state, c.side, cid).get('summoned')]
-    for attribute in attributes:
-        _sync(c, attribute)
+    owners = [(cid, hero(c.state, c.side, cid).entity_id, hero(c.state, c.side, cid)['attribute'])
+              for cid in team_order(c.state, c.side)
+              if cid != c.cid and not hero(c.state, c.side, cid).get('summoned')]
+    for cid, entity_id, attribute in owners:
+        _sync(c, attribute, support_actor=dict(character_id=cid, entity_id=entity_id))
 
 
 def _action(c):
@@ -87,7 +89,8 @@ class Lingke:
             if count == 3:
                 c.state.setdefault('deferred_actions', []).append(dict(
                     side=c.side, actor=c.cid, entity_id=c.entity_id,
-                    kind='lingke_sync', attribute=actor['attribute']))
+                    kind='lingke_sync', attribute=actor['attribute'],
+                    support_actor=dict(character_id=actor_id, entity_id=actor.entity_id)))
                 c.history(f'{actor["name"]}连续使用 3 张牌，将触发「同频合击」。')
         if card.get('type') != 'battle':
             return
@@ -107,7 +110,7 @@ class Lingke:
     @staticmethod
     def on_deferred_action(c, action):
         if action.get('kind') == 'lingke_sync':
-            _sync(c, action['attribute'])
+            _sync(c, action['attribute'], support_actor=action.get('support_actor'))
 
     @staticmethod
     def before_attack_damage(c, target_side, target_id, attribute, support=False, sync_attack=False, **_data):

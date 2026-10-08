@@ -870,6 +870,6 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 
 ### 2026-10-08 灵可覆纹辅助重做
 
-灵可角色包负责跨回合连续使用三张牌（含响应）、指定属性同频合击、共鸣领域及五张战术／三张武备；取消旧同频桥接。通用引擎新增实际使用与攻击命中前时机、指定属性／追加攻击标记、多选后续选择及可消费的下一张瞬发效果，覆纹继承原攻击属性。K06 为 3 费例外，目录接受非负整数费用。机制说明、计数、玩家抗性减益在实时投影、生命 HUD 与公开回放同步；卡牌和具体边界见唯一设计手册灵可专节。
+灵可角色包负责跨回合连续使用三张牌（含响应）、指定属性同频合击、借用角色自身援护技回调、共鸣领域及五张战术／三张武备；取消旧同频桥接。通用引擎新增实际使用与攻击命中前时机、指定属性／追加攻击标记、多选后续选择及可消费的下一张瞬发效果，覆纹继承原攻击属性。K06 为 3 费例外，目录接受非负整数费用。机制说明、计数、玩家抗性减益在实时投影、生命 HUD 与公开回放同步；卡牌和具体边界见唯一设计手册灵可专节。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_modifiers tests.test_duel_v2_effect_markers tests.test_duel_v2_presentation tests.test_duel_v2_replay tests.test_duel_v2_hand_face tests.test_duel_v2_entities`，模拟对拍单独运行 `tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_effect_markers.test.cjs tests/js/duel_v2_hand_face.test.cjs tests/js/duel_v2_table_state.test.cjs`。

@@ -126,7 +126,8 @@ def _kit_handlers(c, hook: str, *, actor_only: bool = False, include_down: bool 
             yield cid, dispatch
 
 
-def fire(c, hook: str, *, actor_only: bool = False, include_down: bool = False, **data) -> None:
+def fire(c, hook: str, *, actor_only: bool = False, include_down: bool = False,
+         exclude_entity_ids=(), **data) -> None:
     """Run append-only kit callbacks. Missing hooks are skipped."""
     from app.modules.card_game.engine.duel_v2.state import finished
     from app.modules.card_game.engine.duel_v2.tutorial import tutorial_flags
@@ -135,7 +136,10 @@ def fire(c, hook: str, *, actor_only: bool = False, include_down: bool = False, 
     if tutorial_flags(c.state).get('disable_passives'):
         return
     for cid, handler in _kit_handlers(c, hook, actor_only=actor_only, include_down=include_down):
-        handler(c.for_character(c.side, cid), **data)
+        context = c.for_character(c.side, cid)
+        if exclude_entity_ids and context.entity_id in exclude_entity_ids:
+            continue
+        handler(context, **data)
 
 
 def decide(c, hook: str, default, *, actor_only: bool = False, include_down: bool = False, **data):

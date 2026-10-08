@@ -2,6 +2,8 @@
 import json
 import unittest
 from copy import deepcopy
+from unittest.mock import patch
+from contextlib import ExitStack
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, validate_deck
 from app.modules.card_game.engine.duel_v2 import new_game, apply_action, legal_actions, observe
 from app.modules.card_game.engine.duel_v2.state import card_instance, hero, new_character, effective_card
@@ -38,6 +40,103 @@ def play(s, cid, target=None, side='a'):
 
 
 class LingkeTest(unittest.TestCase):
+    def test_borrowed_owner_passive_and_weapon_trigger_after_hit_without_changing_attacker(self):
+        from app.modules.card_game.content.duel_v2.registry import KITS
+        s = game(); hero(s, 'a', 'zero')['shape'] = 'Z07'
+        calls = []
+        def own_support(c, actor_id):
+            if actor_id == c.cid:
+                hits = [e for e in c.state['events'] if e['type'] == 'combat' and e.get('source') == 'a:lingke']
+                calls.append((c.cid, len(hits), c.operation['actor']))
+        with patch.object(KITS['zero'], 'on_support', staticmethod(own_support), create=True), \
+             patch.object(KITS['zero'], 'weapon_hooks', {'Z07': {'on_support': own_support}}, create=True):
+            s = play(s, 'K05', 'a:zero')
+        self.assertEqual(calls, [('zero', 1, 'lingke'), ('zero', 1, 'lingke')])
+        hit = next(e for e in s['events'] if e['type'] == 'combat' and e.get('source') == 'a:lingke')
+        self.assertEqual(hit['attribute'], '光')
+        self.assertEqual((hero(s, 'a', 'zero')['harmony'], hero(s, 'a', 'zero')['energy']), (0, 0))
+
+    def test_same_attribute_uses_selected_entity_and_fixed_spirit_mark_has_no_borrowed_owner(self):
+        from app.modules.card_game.content.duel_v2.registry import KITS
+        s = game(); s['sides']['a']['characters']['jiuyuan'] = new_character('jiuyuan')
+        s['sides']['a']['order'].append('jiuyuan')
+        calls = []
+        def own_support(c, actor_id):
+            if actor_id == c.cid: calls.append(c.cid)
+        with ExitStack() as stack:
+            for cid in ('lingke', 'iloy', 'jiuyuan'):
+                stack.enter_context(patch.object(KITS[cid], 'on_support', staticmethod(own_support), create=True))
+            s = play(s, 'K05', 'a:iloy')
+            self.assertEqual(calls, ['lingke', 'iloy'])
+            calls.clear(); s = play(s, 'K04', 'b:iloy'); s = play(s, 'Z03')
+            self.assertEqual(calls, ['lingke'])
+            calls.clear(); s = play(s, 'K05', 'a:lingke')
+            self.assertEqual(calls, ['lingke'])
+
+    def test_k06_notifies_each_borrowed_owner_once_even_for_same_attribute(self):
+        from app.modules.card_game.content.duel_v2.registry import KITS
+        s = game(); s['sides']['a']['characters']['jiuyuan'] = new_character('jiuyuan')
+        s['sides']['a']['order'].append('jiuyuan')
+        calls = []
+        def own_support(c, actor_id):
+            if actor_id == c.cid: calls.append(c.cid)
+        with ExitStack() as stack:
+            for cid in ('zero', 'baicang', 'iloy', 'jiuyuan'):
+                stack.enter_context(patch.object(KITS[cid], 'on_support', staticmethod(own_support), create=True))
+            s = play(s, 'K06')
+        self.assertEqual(calls, ['zero', 'baicang', 'iloy', 'jiuyuan'])
+
+    def test_three_card_deferred_trigger_preserves_owner_identity(self):
+        from app.modules.card_game.content.duel_v2.registry import KITS
+        s = game(); calls = []
+        def own_support(c, actor_id):
+            if actor_id == c.cid: calls.append(c.cid)
+        with patch.object(KITS['zero'], 'on_support', staticmethod(own_support), create=True):
+            for _ in range(3): s = play(s, 'Z07')
+        self.assertEqual(calls, ['zero'])
+
+    def test_team_observer_does_not_trigger_twice_when_it_is_borrowed_owner(self):
+        s = game(); s['sides']['a']['characters']['edgar'] = new_character('edgar')
+        s['sides']['a']['order'].append('edgar'); hero(s, 'a', 'edgar')['truth_keys'] = 0
+        s = play(s, 'K05', 'a:edgar')
+        self.assertEqual(hero(s, 'a', 'edgar')['truth_keys'], 1)
+        s = play(s, 'K05', 'a:zero')
+        self.assertEqual(hero(s, 'a', 'edgar')['truth_keys'], 2)
+
+    def test_borrowed_owner_survives_json_while_third_card_waits_for_choice(self):
+        from app.modules.card_game.content.duel_v2.registry import KITS
+        s = game(); s['sides']['a']['characters']['edgar'] = new_character('edgar')
+        s['sides']['a']['order'].append('edgar'); hero(s, 'a', 'edgar')['truth_keys'] = 0
+        s = play(s, 'E04'); s = play(s, 'E04'); give(s, 'a', 'Z07')
+        s = play(s, 'E03')
+        self.assertEqual(s['phase'], 'choice')
+        self.assertEqual(s['deferred_actions'][0]['support_actor']['entity_id'], hero(s, 'a', 'edgar').entity_id)
+        observed = []; original = KITS['edgar'].on_support
+        def capture(c, actor_id):
+            observed.append(actor_id); original(c, actor_id)
+        with patch.object(KITS['edgar'], 'on_support', staticmethod(capture)):
+            s = apply_action(json.loads(json.dumps(s)), 'a', dict(type='choose_cards', card_ids=[]))
+        self.assertEqual(observed, ['edgar'])
+        self.assertEqual(hero(s, 'a', 'edgar')['truth_keys'], 1)
+
+    def test_stale_or_downed_borrowed_entity_does_not_receive_own_trigger(self):
+        from app.modules.card_game.content.duel_v2.registry import KITS
+        from app.modules.card_game.content.duel_v2.characters.lingke import _sync
+        from app.modules.card_game.engine.duel_v2.context import EffectContext
+        for mode in ('stale', 'down'):
+            s = game(); owner = hero(s, 'a', 'zero'); calls = []
+            identity = dict(character_id='zero', entity_id=owner.entity_id)
+            if mode == 'stale':
+                s['sides']['a']['characters']['zero'] = new_character('zero')
+            else:
+                owner.update(hp=0, down_turns=3)
+            def own_support(c, actor_id):
+                if actor_id == c.cid: calls.append(c.cid)
+            with patch.object(KITS['zero'], 'on_support', staticmethod(own_support), create=True):
+                _sync(EffectContext(s, 'a', 'lingke', {'side': 'a'}), '光', support_actor=identity)
+            self.assertEqual(calls, [], mode)
+            self.assertTrue(any(e['type'] == 'combat' and e.get('source') == 'a:lingke' for e in s['events']))
+
     def test_catalog_three_weapons_no_battle_and_mechanism(self):
         cards = [c for c in CARDS.values() if c['character_id'] == 'lingke' and not c.get('derived')]
         self.assertEqual(len(cards), 8)

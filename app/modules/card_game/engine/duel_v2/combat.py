@@ -472,11 +472,21 @@ def sortie(c, **spec):
             c.draw(1)
 
 
-def additional_attack(c, attribute, *, target=None, sync_attack=False):
+def additional_attack(c, attribute, *, target=None, sync_attack=False, support_actor=None):
     """A one-sided extra hit; preserve the enclosing card/response operation."""
     from .context import EffectContext
     if finished(c.state) or not alive(c.state, c.side, c.cid):
         return
+    # Borrowed identity affects only that character's own support callbacks.
+    # Other observers still see the actual attacker, exactly once.
+    borrowed = None
+    if sync_attack and support_actor:
+        owner_id = support_actor.get('character_id')
+        owner = c.state['sides'][c.side]['characters'].get(owner_id)
+        if (owner and alive(c.state, c.side, owner_id)
+                and owner.entity_id == support_actor.get('entity_id')
+                and owner.entity_id != c.entity_id):
+            borrowed = owner
     parent = c.state.get('operation')
     op = dict(side=c.side, actor=c.cid, card=None, target_id=None, participants=[],
               harmony=None, first_bonus=0, redeem_bonus=0, sortie_attack_bonus=0)
@@ -486,9 +496,14 @@ def additional_attack(c, attribute, *, target=None, sync_attack=False):
     try:
         context = EffectContext(c.state, c.side, c.cid, op)
         if sync_attack:
-            fire(context, 'on_support', actor_id=c.cid)
+            fire(context, 'on_support', actor_id=c.cid,
+                 exclude_entity_ids=(borrowed.entity_id,) if borrowed else ())
         attack(context,
                dict(attribute=attribute, target=target, no_counter=True,
                     no_combat_resources=True, additional_attack=True, sync_attack=sync_attack), 0)
+        if (borrowed and alive(c.state, c.side, borrowed['id'])
+                and hero(c.state, c.side, borrowed['id']).entity_id == borrowed.entity_id):
+            fire(context.for_character(c.side, borrowed['id']), 'on_support',
+                 actor_only=True, actor_id=borrowed['id'])
     finally:
         c.state['operation'] = parent

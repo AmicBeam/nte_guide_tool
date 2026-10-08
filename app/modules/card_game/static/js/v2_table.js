@@ -72,7 +72,7 @@ async function bootstrapTable() {
     logList: document.getElementById('v2-log-list'),
     normalAttack: document.getElementById('v2-normal-attack'),
     ultimate: document.getElementById('v2-ultimate'),
-    mulliganToggle: document.getElementById('v2-mulligan-toggle'),
+    selectionToggle: document.getElementById('v2-selection-toggle'),
     mulliganBtn: document.getElementById('v2-mulligan-btn'),
     mulliganStage: document.getElementById('v2-mulligan-stage'),
     mulliganRail: document.getElementById('v2-mulligan-rail'),
@@ -160,6 +160,7 @@ async function bootstrapTable() {
 
   TABLE.bindSync(ctx);
   TABLE.bindInteraction(ctx);
+  TABLE.bindSelectionView(ctx);
   if (typeof TABLE.bindTutorial === 'function') {
     TABLE.bindTutorial(ctx);
   }

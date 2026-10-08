@@ -210,6 +210,7 @@
       if (ctx.endBoardTargetSelect) ctx.endBoardTargetSelect();
       ctx.lastVersion = -1;
       ctx.page.classList.remove('presentation-busy');
+      if (ctx.clearSelectionView) ctx.clearSelectionView();
       if (ctx.player && typeof ctx.player.cancel === 'function') {
         ctx.player.cancel();
       }
@@ -262,6 +263,7 @@
     }
 
     function renderEmpty(title, copy, kind) {
+      if (ctx.clearSelectionView) ctx.clearSelectionView();
       ctx.emptyTitle.textContent = title;
       ctx.emptyCopy.textContent = copy;
       V2.setHidden(ctx.emptyState, false);
@@ -279,12 +281,10 @@
       const inMulligan = Boolean(ctx.forceMulliganStage || (ctx.game && ctx.game.phase === 'mulligan' && !ctx.mulliganFinished));
       const canMulligan = inMulligan && actionsOf('mulligan').length > 0;
       ctx.page.classList.toggle('is-mulligan', inMulligan);
-      V2.setHidden(ctx.nodes.mulliganToggle, !inMulligan);
-      if (!inMulligan) {
-        ctx.page.classList.remove('mulligan-collapsed');
-        ctx.nodes.mulliganToggle.setAttribute('aria-expanded', 'true');
-        ctx.nodes.mulliganToggle.textContent = '收起换牌';
-      }
+      if (inMulligan && ctx.setSelectionView) ctx.setSelectionView({
+        key: 'mulligan:' + (ctx.room && ctx.room.room_code), label: '换牌', region: ctx.nodes.mulliganStage,
+      });
+      else if (ctx.clearSelectionView) ctx.clearSelectionView(ctx.nodes.mulliganStage);
       if (ctx.nodes.mulliganStage) V2.setHidden(ctx.nodes.mulliganStage, !inMulligan);
       V2.setHidden(ctx.nodes.mulliganBtn, !canMulligan);
       const selected = ctx.mulliganIds.length;

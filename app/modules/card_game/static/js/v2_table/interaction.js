@@ -67,6 +67,7 @@
       node.classList.remove('open', 'is-divination');
       node.setAttribute('aria-hidden', 'true');
       node.innerHTML = '';
+      if (ctx.clearSelectionView) ctx.clearSelectionView(node);
     }
 
     function isTouchLike(pointerType) {
@@ -242,6 +243,10 @@
         '</div>';
       choiceOverlay.classList.add('open');
       choiceOverlay.setAttribute('aria-hidden', 'false');
+      if (ctx.setSelectionView) ctx.setSelectionView({
+        key: 'choice:' + (config.title || '') + ':' + choices.map(function (choice) { return choice.id; }).join('|'),
+        label: '选择', region: choiceOverlay,
+      });
       document.getElementById('v2-choice-close').addEventListener('click', function () {
         markRaisedCard(ctx.localChoice && ctx.localChoice.cardId, false);
         ctx.localChoice = null;
@@ -876,7 +881,6 @@
 
     page.addEventListener('pointerover', function (event) {
       if (event.pointerType === 'touch' || ctx.dragState || ctx.busy) return;
-      if (ctx.game && ctx.game.phase === 'mulligan') return;
       const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
       if (!source || source.classList.contains('v2-hidden-card')) return;
       const payload = payloadFromNode(source);
@@ -940,11 +944,6 @@
 
     nodes.endTurnBtn.addEventListener('click', function () { ctx.submitEntry(ctx.findAction('end_turn')); });
     nodes.concedeBtn.addEventListener('click', function () { ctx.submitEntry(ctx.findAction('concede')); });
-    nodes.mulliganToggle.addEventListener('click', function () {
-      const collapsed = ctx.page.classList.toggle('mulligan-collapsed');
-      nodes.mulliganToggle.setAttribute('aria-expanded', String(!collapsed));
-      nodes.mulliganToggle.textContent = collapsed ? '展开换牌' : '收起换牌';
-    });
     nodes.mulliganBtn.addEventListener('click', ctx.submitMulligan);
     nodes.playerDiscard.addEventListener('click', function () { openPile('我方弃牌', TABLE.sideState(ctx.game, ctx.viewer()).discard || []); });
     nodes.opponentDiscard.addEventListener('click', function () { openPile('对手弃牌', TABLE.sideState(ctx.game, ctx.opponent()).discard || []); });

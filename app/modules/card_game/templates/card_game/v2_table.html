@@ -43,7 +43,6 @@
             <span class="phase-chip" id="v2-phase-chip">加载中</span>
             <span class="v2-room-chip" id="v2-room-chip">房间 --</span>
             <span class="v2-connection-chip" id="v2-connection-chip">同步中</span>
-            <button class="secondary-btn" id="v2-mulligan-toggle" type="button" aria-expanded="true" aria-controls="v2-mulligan-rail" hidden>收起换牌</button>
             <button class="secondary-btn" id="v2-menu-btn" type="button">菜单</button>
         </div>
     </header>
@@ -239,6 +238,7 @@
             </div>
         </div>
     </section>
+    <button class="secondary-btn v2-selection-toggle" id="v2-selection-toggle" type="button" aria-expanded="true" hidden>查看战场</button>
     <section class="v2-choice-overlay" id="v2-choice-overlay" aria-hidden="true"></section>
     <section class="v2-pile-modal" id="v2-pile-modal" aria-hidden="true"></section>
     <aside class="v2-hover-preview" id="v2-card-preview" aria-hidden="true"></aside>
@@ -255,6 +255,7 @@
 <script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_animation.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/helpers.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_table/selection_view.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/render.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/divination.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/interaction.js') }}"></script>

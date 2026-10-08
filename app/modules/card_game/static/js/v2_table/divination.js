@@ -94,6 +94,7 @@
       overlay.classList.add('open');
       overlay.classList.add('is-divination');
       overlay.setAttribute('aria-hidden', 'false');
+      if (ctx.setSelectionView) ctx.setSelectionView({ key: 'divination:' + state.key, label: '占卜', region: overlay });
       const confirm = overlay.querySelector('#v2-divination-confirm');
       confirm.disabled = Boolean(ctx.busy || !findEntry(ctx.game, state));
       if (focusId) {
@@ -184,6 +185,23 @@
       if (moved && zone) move(id, zone.getAttribute('data-divination-row'), index);
     });
     overlay.addEventListener('pointercancel', clearDrag);
+
+    function showDetail(event) {
+      if (!ctx.divinationDraft || drag || event.pointerType === 'touch') return;
+      const detail = event.target.closest('[data-divination-detail]');
+      if (!detail) return;
+      const choice = ctx.divinationDraft.byId[detail.getAttribute('data-divination-detail')];
+      if (choice && ctx.showHoverPreview) ctx.showHoverPreview({ kind: 'card', card: choice.card }, detail,
+        { pointerType: event.pointerType || 'keyboard' });
+    }
+    function hideDetail(event) {
+      const detail = event.target.closest('[data-divination-detail]');
+      if (detail && !detail.contains(event.relatedTarget)) ctx.hideHoverPreview();
+    }
+    overlay.addEventListener('pointerover', showDetail);
+    overlay.addEventListener('focusin', showDetail);
+    overlay.addEventListener('pointerout', hideDetail);
+    overlay.addEventListener('focusout', hideDetail);
 
     overlay.addEventListener('keydown', function (event) {
       if (!ctx.divinationDraft || ctx.busy || event.target.closest('button')) return;

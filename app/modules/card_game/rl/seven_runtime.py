@@ -57,6 +57,7 @@ class SevenModel:
                 or m.get('wdl_order')!=['loss','draw','win'] or m.get('value_context')!=['viewer_is_actor']):
             raise ValueError('Seven-team numeric identity mismatch')
         self.hidden=m['hidden'];expected=architecture.tensor_shapes(self.hidden);self.teacher=None
+        self.legacy_extra_indices=None
         if m.get('source_identity'):
             from .cross_teacher_distillation import verify_old_teacher, REPO_TEACHERS, named_index_map
             from .preserved_policy import encoded_name
@@ -67,6 +68,8 @@ class SevenModel:
             if source!=m['source_identity']:raise ValueError('Seven-team frozen teacher changed')
             expected.update({'legacy.'+encoded_name(name):value.shape for name,value in teacher['weights'].items()})
             self.teacher=dict(teacher,**source)
+            supported=set(source['candidates'])
+            self.legacy_extra_indices=np.asarray([i for i,name in enumerate(candidate_names()) if name not in supported],dtype=np.int64)
         with np.load(path,allow_pickle=False) as arrays:
             if set(arrays.files)!=set(expected):raise ValueError('Seven-team tensor set mismatch')
             self.weights={n:arrays[n].copy() for n in arrays.files}
@@ -88,7 +91,7 @@ class SevenModel:
         if self.teacher is not None and len(c):
             from .fixed_lineup import SEATS,CARD_IDS
             from .cross_teacher_distillation import teacher_scores
-            extra=[i for i,name in enumerate(candidate_names()) if name not in self.teacher['candidates']]
+            extra=self.legacy_extra_indices
             unknown=(c[:,0]>=6)|(c[:,1]>=len(SEATS))|(c[:,2]>=len(CARD_IDS))|(c[:,4]>=len(SEATS))|(np.abs(c[:,extra])>1e-8).any(-1)
             if not unknown.any():
                 scores=scores+teacher_scores(self.teacher,x[self.teacher['observation_index']],c[:,self.teacher['candidate_index']])

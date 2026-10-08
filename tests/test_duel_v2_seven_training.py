@@ -20,7 +20,9 @@ class SevenEncodingTest(unittest.TestCase):
         for key in ROSTER:
             with self.subTest(key=key):
                 state=new_game(seed=31,decks={'a':DECKS[key],'b':DECKS['collapse']})
+                view=observe(state,'a',include_previews=False);before_view=deepcopy(view)
                 actions,(x,c)=rt.decision(state,'a')
+                layout.encode(view,actions);self.assertEqual(view,before_view)
                 self.assertEqual(x.shape,(len(layout.all_features()),))
                 self.assertEqual(c.shape,(len(actions),layout.CAND_DIM))
                 self.assertTrue(np.isfinite(c).all())

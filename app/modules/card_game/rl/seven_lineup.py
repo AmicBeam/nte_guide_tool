@@ -146,8 +146,7 @@ def encode(view, actions):
     from copy import deepcopy
     actions = list(actions)
     old_actions = [a if a['type'] in ACTION_TYPES[:6] else {'type':'end_turn'} for a in actions]
-    adapted = deepcopy(view)
-    x, c = _encode_old_fields(adapted, old_actions)
+    x, c = _encode_old_fields(view, old_actions)
     # The shared packer allocates the expanded width; physical columns in the
     # legacy encoder must still refer to OLD_CAND_DIM, not new order columns.
     c = c[:,:OLD_CAND_DIM]

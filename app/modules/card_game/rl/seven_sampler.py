@@ -85,6 +85,7 @@ def determinize(state,viewer,seed):
 
     elif state['phase']!='playing' or pending or state.get('operation'):
         raise ValueError('Unsupported recovery root')
+    before=observe(state,viewer,include_previews=False)
     out=deepcopy(state);rng=Random(seed);foe='b' if viewer=='a' else 'a';team=out['sides'][foe]
     revealed=set(team.get('revealed_ids',[]))
     if choosing and pending['kind']=='enemy_hand':revealed.update(c['instance_id'] for c in pending['cards'])
@@ -141,7 +142,7 @@ def determinize(state,viewer,seed):
     fields=('ephemeral_turn','copy','expires_turn','jingu_mark','character_id','original_character_id')
     own=[(c['card_id'],{k:deepcopy(c[k]) for k in fields if k in c}) for c in out['sides'][viewer]['deck']]
     import json
-    visible_own=observe(state,viewer,include_previews=False)['sides'][viewer].get('visible_deck')
+    visible_own=before['sides'][viewer].get('visible_deck')
     if visible_own is None:
         own.sort(key=lambda c:json.dumps(c,sort_keys=True));rng.shuffle(own)
     visible=[]
@@ -169,7 +170,7 @@ def determinize(state,viewer,seed):
         if h and h.get('hp',0)>0 and h.get('awakened'):
             c['jingu_mark']=dict(delta=rng.choice((-1,0,1)),source_entity_id=h['entity_id'])
     out['rng']=rng.randrange(1,2**30);clean(out)
-    before=observe(state,viewer,include_previews=False);actions=[e['action'] for e in before['legal_actions'] if e['action']['type']!='concede']
+    actions=[e['action'] for e in before['legal_actions'] if e['action']['type']!='concede']
     x,c=encode(before,actions);after=observe(out,viewer,include_previews=False);xx,cc=encode(after,actions)
     if not np.array_equal(x,xx) or not np.array_equal(c,cc):raise ValueError('Particle changed learner information')
     return out

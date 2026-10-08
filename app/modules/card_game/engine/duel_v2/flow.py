@@ -120,14 +120,19 @@ def card_cost(state, side, card):
                               'card.cost', base, query={'card': card})['value']))
 
 
+def card_ap_payment(state, side, card):
+    """Instant discounts only the ordinary card cost, never the explicit surcharge."""
+    ordinary = 0 if card_is_free_instant(state, side, card) else card_cost(state, side, card)
+    return ordinary + int(card.get('additional_ap_cost') or 0)
+
+
 def can_afford_card(state, side, card):
     if card.get('spend_all_ap') and state['sides'][side]['ap'] <= 0:
         return False
     if not decide(EffectContext(state, side, card['character_id'], {'side': side}),
                   'can_play', True, actor_only=True, card=card):
         return False
-    cost = card_cost(state, side, card)
-    return card_is_free_instant(state, side, card) or int(state['sides'][side].get('ap') or 0) >= cost
+    return int(state['sides'][side].get('ap') or 0) >= card_ap_payment(state, side, card)
 
 
 def card_play_options(state, side, card):
@@ -160,11 +165,10 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None,
     form_bonus = kit_makes_form_instant(state, side, card)
     ap_paid = 0
     if pay:
+        ap_paid = card_ap_payment(state, side, card)
         if card_is_free_instant(state, side, card):
             team['used']['instant'] = True
-        else:
-            ap_paid = card_cost(state, side, card)
-            team['ap'] -= ap_paid
+        team['ap'] -= ap_paid
     # The next-card grant is consumed even by an intrinsically zero-cost card;
     # that card still does not spend the shared instant opportunity.
     from .modifiers import evaluate, consume_applied
@@ -178,6 +182,8 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None,
     c.operation['option_id'] = option.get('id')
     c.operation['ap_paid'] = ap_paid
     fire(c, GameEvent.V2_CARD_USED, actor_id=card['character_id'], card=card)
+    if form_bonus and not finished(state) and alive(state, side, card['character_id']):
+        draw(state, side, 1)
     if finished(state):
         return
     if card.get('type') == 'battle' and alive(state, side, card['character_id']):
@@ -199,8 +205,6 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None,
                 c.operation['card_bonus'] = attack
     from app.modules.card_game.content.duel_v2.effects import EFFECTS
     EFFECTS[card['effect_id']](c)
-    if form_bonus and not finished(state) and alive(state, side, card['character_id']):
-        draw(state, side, 1)
     if state['phase'] != 'choice':
         finish_operation(state)
 

@@ -990,7 +990,7 @@ class DuelV2EngineTest(unittest.TestCase):
                         s['sides'][side]['characters'][owner] = new_character(owner)
                         s['sides'][side]['order'].append(owner)
                 card = self.hand(s, cid)
-                initial_ap = max(2, CARDS[cid]['cost'])
+                initial_ap = max(2, CARDS[cid]['cost'] + CARDS[cid].get('additional_ap_cost', 0))
                 s['sides']['a']['ap'] = initial_ap
                 s['sides']['a']['harmony_damage'] = True
                 s['sides']['a']['surplus'] = True
@@ -1032,7 +1032,7 @@ class DuelV2EngineTest(unittest.TestCase):
                 while s['phase'] == 'choice':
                     s = apply_action(s, 'a', next(a for a in legal_actions(s) if a['type'] in ('choose', 'choose_cards', 'choose_deck_order')))
                 self.assertEqual(s['phase'], 'playing')
-                spent = 0 if CARDS[cid].get('instant') else CARDS[cid]['cost']
+                spent = (0 if CARDS[cid].get('instant') else CARDS[cid]['cost']) + CARDS[cid].get('additional_ap_cost', 0)
                 if CARDS[cid].get('free_if_surplus'): spent = 0
                 if cid == 'X04': spent = 2
                 if cid == 'XA01': spent = 2 - s['sides']['a']['ap']

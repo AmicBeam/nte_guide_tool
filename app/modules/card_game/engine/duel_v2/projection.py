@@ -5,7 +5,7 @@ from .entities import clone_state, entity_action, needs_hydration
 
 from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
-from .flow import acting_side, apply_action, card_plays_instant, card_is_free_instant, legal_actions, normal_attack_payment, ultimate_spec, card_cost
+from .flow import acting_side, apply_action, card_plays_instant, legal_actions, normal_attack_payment, ultimate_spec, card_ap_payment
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
 from .combat import harmony_marks
@@ -75,7 +75,7 @@ def preview(state, side, action):
     cost = 1 if kind in ('attack', 'cycle') else 0
     card = _card(state, side, action['card_id']) if kind == 'play_card' else None
     if card:
-        cost = 0 if card_is_free_instant(state, side, card) else card_cost(state, side, card)
+        cost = card_ap_payment(state, side, card)
     payment = normal_attack_payment(state, side, action['character_id']) if kind == 'attack' else None
     if payment is not None:
         cost = payment['ap']
@@ -245,8 +245,8 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                     reason = '所属角色倒地'
                 elif collapsed(source['characters'][raw['character_id']]):
                     reason = '所属角色倾陷'
-                elif source['ap'] < raw['cost']:
-                    reason = f"还差 {raw['cost'] - source['ap']} 点行动力"
+                elif source['ap'] < card_ap_payment(state, side, raw):
+                    reason = f"还差 {card_ap_payment(state, side, raw) - source['ap']} 点行动力"
                 else:
                     reason = '没有合法目标'
                 card['unavailable_reason'] = reason

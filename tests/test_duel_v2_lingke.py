@@ -142,7 +142,8 @@ class LingkeTest(unittest.TestCase):
         self.assertEqual(len(cards), 8)
         self.assertEqual([c['id'] for c in cards if c['type'] == 'form'], ['K03', 'K07', 'K08'])
         self.assertFalse(any(c['type'] == 'battle' for c in cards))
-        self.assertEqual(CARDS['K06']['cost'], 3)
+        self.assertEqual(CARDS['K06']['cost'], 1)
+        self.assertEqual(CARDS['K06']['additional_ap_cost'], 2)
         self.assertEqual((CHARACTERS['lingke']['attack'], CHARACTERS['lingke']['max_hp']), (3, 4))
         self.assertEqual(CHARACTERS['lingke']['mechanisms'][0]['name'], '同频合击')
 

@@ -97,6 +97,11 @@ def _card_public(raw: dict[str, Any]) -> dict[str, Any]:
     kind = raw.get('type')
     if type(public['cost']) is not int or public['cost'] < 0:
         raise ValueError(f'卡牌 {card_id} 费用必须为非负整数')
+    if 'additional_ap_cost' in raw:
+        extra = raw['additional_ap_cost']
+        if type(extra) is not int or extra < 0:
+            raise ValueError(f'卡牌 {card_id} 额外行动力费用必须为非负整数')
+        public['additional_ap_cost'] = extra
     if kind == 'form':
         attack = int(raw.get('attack') or 0)
         hp = int(raw.get('hp') or 0)

@@ -1750,9 +1750,10 @@
       "character_id": "lingke",
       "name": "世界将予你回声！",
       "type": "tactic",
-      "cost": 3,
+      "cost": 1,
+      "additional_ap_cost": 2,
       "terminal": false,
-      "description": "消耗 3 点行动力。依据其他己方异能者的属性，各发动一次该属性的「同频合击」。前排优先。",
+      "description": "额外消耗 2 点行动力。依据其他己方异能者的属性，各发动一次该属性的「同频合击」。前排优先。",
       "effect_id": "K06",
       "source": {
         "character_id": 1072,

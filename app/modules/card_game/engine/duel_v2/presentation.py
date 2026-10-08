@@ -18,7 +18,7 @@ def other(side):
     return 'b' if side == 'a' else 'a'
 
 CARD_FIELDS = (
-    'entity_id', 'instance_id', 'card_id', 'character_id', 'name', 'type', 'cost', 'terminal',
+    'entity_id', 'instance_id', 'card_id', 'character_id', 'name', 'type', 'cost', 'terminal', 'additional_ap_cost',
     'description', 'copy', 'expires_turn', 'original_character_id',
     'stat', 'stat_value', 'shield', 'attack', 'hp', 'instant', 'response', 'require', 'redeem',
     'derived', 'attack_mode', 'jingu_mark', 'play_options', 'antique_investment',
@@ -38,10 +38,11 @@ def public_card(card, state=None, side=None):
         result['description'] = decide(EffectContext(state, side, card['character_id'], {'side': side}),
             'card_description', result.get('description', ''), actor_only=True, include_down=True, card=card)
     # Independent of the once-per-turn instant discount. Hidden cards never pass here.
-    result['action_point_free'] = int(card.get('cost') or 0) == 0
+    extra_ap = int(card.get('additional_ap_cost') or 0)
+    result['action_point_free'] = int(card.get('cost') or 0) + extra_ap == 0
     if state is not None and side in SIDES:
         from .flow import card_cost
-        result['action_point_free'] = card_cost(state, side, card) == 0
+        result['action_point_free'] = card_cost(state, side, card) + extra_ap == 0
     if card.get('original_character_id'):
         original = text_name(card.get('original_character_id'))
         if original:

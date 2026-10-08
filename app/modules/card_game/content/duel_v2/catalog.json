@@ -208,15 +208,22 @@
       "max_hp": 4,
       "avatar": "/static/images/characters/avatar/灵可.png",
       "portrait": "/static/images/characters/portrait/灵可.webp",
-      "role": "把非法环合改成同频，让咒灵队也能换人收益",
-      "passive": "灵可存活时，己方入场已满足环合资格但没有基础属性对时，改为触发「同频」：入场者获得 1 点护盾，造成 1 点伤害。前排优先。每个己方回合最多 1 次。",
-      "awakened_passive": "同频改为 2 点护盾与 2 点伤害。持续 2 个己方回合。",
+      "role": "覆纹强化、同频合击与共鸣领域",
+      "passive": "【覆纹】强化：己方覆纹的追加伤害由 2 点提升至 3 点。每当一名其他己方异能者连续使用 3 张牌时，灵可发起一次该属性的「同频合击」。前排优先。",
+      "awakened_passive": "展开共鸣领域，己方援护技也视为追加攻击，并在命中前使目标对应属性抗性 -1，持续至下个己方回合开始。援护技仍正常获得环合值和能量。共鸣领域持续 2 个己方回合。",
       "everness_id": 1072,
       "ultimate": {
         "kind": "status",
         "turns": 2
       },
-      "faction": "E.T.D六队队员"
+      "faction": "E.T.D六队队员",
+      "mechanisms": [
+        {
+          "id": "lingke-sync",
+          "name": "同频合击",
+          "description": "灵可存活时，由卡牌或异能效果发起指定属性的单方面追加攻击，视为援护技，命中对方前排时倾陷值 +1。保持原站位，不受反击，不消耗普通出击机会，不产生基础环合值和能量。命中前使目标对应属性抗性 -1，持续至下个己方回合开始；玩家也可被减抗，同属性减抗可叠加。连续使用计数可跨回合累计，灵可牌不打断，换另一名非灵可异能者时从 1 重新计数；响应牌也计数，每满 3 张重新累计。"
+        }
+      ]
     },
     {
       "id": "iloy",
@@ -1438,7 +1445,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "抽 1 张牌。灵可获得 1 点能量。",
+      "description": "选择 1 名己方异能者。从牌库选择 3 张不同的其所属牌，再选择其中 1 张加入手牌，其余洗回牌库。",
       "effect_id": "K01",
       "source": {
         "character_id": 1072,
@@ -1457,22 +1464,20 @@
         "type": "awaken",
         "index": 2
       },
-      "type": "battle",
+      "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +1。若本次从备战区入场，抽 1 张牌。",
-      "starter_copies": 0,
-      "shield": 0,
-      "attack": 1
+      "description": "抽 1 张牌。下一张使用的非灵可牌获得瞬发。",
+      "starter_copies": 0
     },
     {
       "id": "K03",
       "character_id": "lingke",
       "name": "将孤岛彼此相连！",
-      "type": "battle",
+      "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "若本次入场触发了环合或同频，本次攻击伤害 +1。",
+      "description": "行动力为 0 且仍有瞬发机会时，可以将灵可的手牌视为「同频行动」打出。",
       "effect_id": "K03",
       "source": {
         "character_id": 1072,
@@ -1480,8 +1485,8 @@
         "index": 3
       },
       "starter_copies": 2,
-      "shield": 0,
-      "attack": 0
+      "attack": 3,
+      "hp": 5
     },
     {
       "id": "K04",
@@ -1490,7 +1495,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对对手前排造成 1 点伤害。若本局已触发过同频，改为 2 点。",
+      "description": "选择 1 名对方异能者，附着「小鬼打这里」。己方使用战斗牌时，灵可立刻对该目标发动灵属性的「同频合击」，消耗标记，并获得 1 点能量。",
       "effect_id": "K04",
       "source": {
         "character_id": 1072,
@@ -1509,22 +1514,20 @@
         "type": "awaken",
         "index": 5
       },
-      "type": "battle",
+      "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "连续攻击 2 次。若本次触发了环合或同频，两次均不受反击。",
-      "starter_copies": 2,
-      "shield": 1,
-      "attack": 0
+      "description": "选择 1 名己方存活异能者。发动一次其属性的「同频合击」。前排优先。",
+      "starter_copies": 2
     },
     {
       "id": "K06",
       "character_id": "lingke",
       "name": "世界将予你回声！",
       "type": "tactic",
-      "cost": 1,
+      "cost": 3,
       "terminal": false,
-      "description": "选择另一名己方存活角色。其获得 1 点自己的环合值。",
+      "description": "消耗 3 点行动力。依据其他己方异能者的属性，各发动一次该属性的「同频合击」。前排优先。",
       "effect_id": "K06",
       "source": {
         "character_id": 1072,
@@ -1546,10 +1549,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "灵可入场触发同频后：本次出击第一次攻击伤害 +1。",
+      "description": "灵可发起光属性的「同频合击」时，额外触发创生；发起咒属性的「同频合击」时，额外施加覆纹。",
       "starter_copies": 0,
-      "hp": 0,
-      "attack": 1
+      "attack": 2,
+      "hp": 4
     },
     {
       "id": "K08",
@@ -1564,10 +1567,10 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "每个对手回合，灵可第一次受到战斗伤害且仍存活后：获得 1 点护盾。",
+      "description": "己方追加攻击伤害 +1。",
       "starter_copies": 2,
-      "attack": 0,
-      "hp": 1
+      "attack": 3,
+      "hp": 4
     },
     {
       "id": "R01",
@@ -3272,6 +3275,24 @@
         "character_id": 1033,
         "type": "ability",
         "index": 2
+      }
+    },
+    {
+      "id": "KF01",
+      "character_id": "lingke",
+      "name": "同频行动",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "瞬发。获得 1 点行动力。",
+      "instant": true,
+      "derived": true,
+      "effect_id": "KF01",
+      "starter_copies": 0,
+      "source": {
+        "character_id": 1072,
+        "type": "derived",
+        "index": 1
       }
     }
   ],

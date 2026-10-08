@@ -867,3 +867,9 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 用户可明确选择已回传的真红短训 `latest` 候选作为实验性网页对手。`serving.json` 的模型项可通过成套 `source_rule_hash`、`source_request`、`source_report` 记录独立训练来源；原五队顶层来源与其他四队不变。加载仍要求当前运行规则、原始模型/清单/构筑SHA、具名观察/动作、数值结构和未批准质量状态全部一致；来源字段缺失或与原清单不符则拒绝，不能重写训练清单冒充当前规则训练。
 
 真红当前使用2026-10-08短训练未批准候选，保留 I01/I03/I04/I08 各2张的服务配牌，继续现有信息集搜索，不在网页运行真红v3指导；更新权重后旧真红房间须重新开局。此为用户指定试用，不是确认强度提升，也不采用五队失败预检的模型。验证沿用恢复服务、实验性对手和搜索测试；原候选、旧服务模型及检查记录留在 `artifacts/rl-evals/`。
+
+### 2026-10-08 灵可覆纹辅助重做
+
+灵可角色包负责跨回合连续使用三张牌（含响应）、指定属性同频合击、共鸣领域及五张战术／三张武备；取消旧同频桥接。通用引擎新增实际使用与攻击命中前时机、指定属性／追加攻击标记、多选后续选择及可消费的下一张瞬发效果，覆纹继承原攻击属性。K06 为 3 费例外，目录接受非负整数费用。机制说明、计数、玩家抗性减益在实时投影、生命 HUD 与公开回放同步；卡牌和具体边界见唯一设计手册灵可专节。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_modifiers tests.test_duel_v2_effect_markers tests.test_duel_v2_presentation tests.test_duel_v2_replay tests.test_duel_v2_hand_face tests.test_duel_v2_entities`，模拟对拍单独运行 `tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_effect_markers.test.cjs tests/js/duel_v2_hand_face.test.cjs tests/js/duel_v2_table_state.test.cjs`。

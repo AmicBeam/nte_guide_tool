@@ -27,6 +27,7 @@ def attack_result(c, spec, index, target, enemy, target_id):
         add('目标生命条件', spec.get('low_hp_bonus', 0))
     add('兑现', op.get('redeem_bonus', 0))
     add('战斗牌加攻', int(op.get('card_bonus') or 0))
+    add('追加攻击伤害', int(spec.get('additional_damage_bonus') or 0))
     if index == 0:
         add('战斗准备加成', op['first_bonus'], -90)
     if spec.get('harmony_bonus') and op.get('harmony'):

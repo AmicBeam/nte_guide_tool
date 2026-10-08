@@ -450,7 +450,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertIn('阿德勒', names)
         self.assertIn('薄荷', names)
         self.assertIn('白藏', names)
-        self.assertEqual(len(catalog['cards']), 157)
+        self.assertEqual(len(catalog['cards']), 158)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
             ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组'],

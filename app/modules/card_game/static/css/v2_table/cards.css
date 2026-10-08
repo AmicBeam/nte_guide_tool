@@ -1244,3 +1244,13 @@
 .v2-hover-references .is-mechanism .v2-chip { font-size: calc(24px * var(--table-font-scale, 1)); }
 
 .v2-combat-stat.is-fang { color: #ffda55; }
+
+/* Player resistance belongs beside player life, including public replays. */
+.v2-player-effects { display: inline-flex; gap: 3px; align-items: center; }
+.v2-player-effects .v2-effect-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; flex: 0 0 auto; border: 1px solid currentColor;
+  border-radius: 50%; color: #8de2c1; background: rgba(22, 25, 31, .96);
+}
+.v2-player-effects .v2-effect-icon.is-debuff,
+.v2-zone-effect-list .v2-chip.is-debuff { color: #ff9b9b; }

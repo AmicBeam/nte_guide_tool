@@ -409,6 +409,11 @@ def _damage_attribute(c, args):
     return c['query'].get('attribute') == args.get('attribute')
 
 
+@condition('card_owner_other')
+def _card_owner_other(c, args):
+    return bool(c['source'] and c['subject'].get('entity_id') != c['source'].get('entity_id'))
+
+
 def resistance_values(holder):
     """Compatibility observation only; gameplay resolves damage.resistance."""
     values = dict(holder.get('next_damage_resistance') or {})

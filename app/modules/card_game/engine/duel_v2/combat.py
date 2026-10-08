@@ -165,6 +165,15 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
     else:
         log(s, f"{c.character['name']}入场，不消耗环合值，触发{kind}。", 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id or cid}')
+    resolve_harmony_effect(c, kind)
+    if not finished(s) and alive(s, side, cid):
+        c.on_shape(GameEvent.V2_HARMONY_RESOLVED, operation=op)
+
+
+def resolve_harmony_effect(c, kind):
+    """Apply an effect without fabricating entry, payment or support events."""
+    s, side, cid, op = c.state, c.side, c.cid, c.operation
+    team = s['sides'][side]
     enemy, target = front_target(s, side)
     if kind == '创生':
         resolve_genesis(c)
@@ -217,9 +226,6 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
     elif kind == '同频':
         team['used']['sync'] = True
         fire(c, 'on_sync', entering=cid)
-    if not finished(s) and alive(s, side, cid):
-        c.on_shape(GameEvent.V2_HARMONY_RESOLVED, operation=op)
-
 
 def enter(c, *, as_support=True, resolve_harmony=True):
     s, side, cid = c.state, c.side, c.cid
@@ -289,10 +295,17 @@ def attack(c, spec, index):
         attacked.append(c.entity_id)
     h = c.character
     target = hero(s, enemy, target_id) if is_esper(target_id) else s['sides'][enemy]
+    attribute = spec.get('attribute') or h['attribute']
+    additional = bool(decide(c, 'attack_is_additional', bool(spec.get('additional_attack') or op.get('additional_attack')),
+                             attacker_id=cid, support=bool(op.get('support'))))
+    fire(c, GameEvent.V2_BEFORE_ATTACK_DAMAGE, attacker_id=cid, target_side=enemy,
+         target_id=target_id, attribute=attribute, additional_attack=additional,
+         support=bool(op.get('support')), sync_attack=bool(spec.get('sync_attack')))
     from .attack_modifiers import attack_result
     from .modifiers import consume_applied, migrate_legacy, entities
     for owner_side, owner in entities(s):
         migrate_legacy(owner, s, owner_side)
+    spec['additional_damage_bonus'] = int(decide(c, 'additional_attack_damage_bonus', 0) or 0) if additional else 0
     attack_effects = attack_result(c, spec, index, target, enemy, target_id)
     attack_amount = attack_effects['value']
     op['last_attack_amount'] = attack_amount
@@ -340,10 +353,10 @@ def attack(c, spec, index):
         if tutorial_flags(s).get('disable_overflow'):
             overflow = 0
     weave_targets = []
-    if h['attribute'] in ('灵', '咒') and front_debuff(s, enemy).get('weave'):
-        weave_targets.append((side, cid, enemy, target_id))
+    if attribute in ('灵', '咒') and front_debuff(s, enemy).get('weave'):
+        weave_targets.append((side, cid, enemy, target_id, attribute))
     if is_esper(target_id) and not no_counter and target['attribute'] in ('灵', '咒') and front_debuff(s, side).get('weave'):
-        weave_targets.append((enemy, target_id, side, cid))
+        weave_targets.append((enemy, target_id, side, cid, target['attribute']))
     # Counters deal simultaneous damage but do not accumulate combat resources.
     attacker = [side, cid]
     if not spec.get('no_combat_resources') and attacker not in op['participants']:
@@ -355,6 +368,7 @@ def attack(c, spec, index):
         'attack', side=side, source=cid, actor=f'{side}:{cid}',
         target=f'{enemy}:{target_id}', amount=attack_amount, attack=attack_amount,
         counter=counter, group_id=group_id, hit_index=hit_index,
+        attribute=attribute, additional_attack=additional,
         attack_modifiers=[e for e in attack_effects['contributions'] if e['visibility'] == 'public'])
     if cut_max:
         reduce_max_hp(s, enemy, target_id, attack_amount, source=f'{side}:{cid}',
@@ -363,15 +377,18 @@ def attack(c, spec, index):
     else:
         target_loss = damage(s, enemy, target_id, attack_amount,
                              bypass=bool(spec.get('ignore_shield')), source=f'{side}:{cid}',
-                             kind='combat', settle=False, group_id=group_id)
+                             kind='combat', settle=False, group_id=group_id,
+                             attribute=attribute, additional_attack=additional, _additional_bonus_applied=True)
     self_loss = damage(s, side, cid, counter, source=f'{enemy}:{target_id}',
                        kind='combat', settle=False, group_id=group_id,
                        counter_immunity='support' if support_immunity else None) if is_esper(target_id) else 0
     player_damage = target_loss if is_player(target_id) else 0
     if overflow:
         player_damage += damage(s, enemy, PLAYER_ID, overflow, source=f'{side}:{cid}', kind='penetration',
-               settle=False, group_id=group_id)
-    if op.get('support') and is_esper(target_id) and alive(s, enemy, target_id):
+               settle=False, group_id=group_id, attribute=attribute,
+               additional_attack=additional, _additional_bonus_applied=True)
+    if (op.get('support') and is_esper(target_id) and s['sides'][enemy]['front'] == target_id
+            and alive(s, enemy, target_id)):
         add_collapse(s, enemy, target_id, 1, by=side)
     op['last_attack_target'] = [enemy, target_id]
     fire(c, 'after_hits', actor_only=True, include_down=True, target_loss=target_loss,
@@ -386,13 +403,17 @@ def attack(c, spec, index):
     if finished(s):
         settle_deferred_card_marks(s)
         return
-    for source_side, source_id, target_side, target_cid in weave_targets:
+    for source_side, source_id, target_side, target_cid, attack_attribute in weave_targets:
         if not alive(s, source_side, source_id):
             continue
         if is_esper(target_cid) and (not alive(s, target_side, target_cid) or s['sides'][target_side]['front'] != target_cid):
             continue
-        damage(s, target_side, target_cid, 2, source=f'{source_side}:{source_id}',
-               kind='overlay', group_id=next_group_id(s), damage_class='harmony')
+        from .context import EffectContext
+        source_context = EffectContext(s, source_side, source_id, {'side': source_side})
+        amount = int(decide(source_context, 'weave_damage', 2) or 0)
+        damage(s, target_side, target_cid, amount, source=f'{source_side}:{source_id}',
+               kind='overlay', group_id=next_group_id(s), damage_class='harmony',
+               attribute=attack_attribute, additional_attack=True)
         if finished(s):
             settle_deferred_card_marks(s)
             return
@@ -449,3 +470,25 @@ def sortie(c, **spec):
         if not finished(s) and alive(s, side, cid) and c.character['flags'].pop('return_after', False):
             move_out(s, side, cid)
             c.draw(1)
+
+
+def additional_attack(c, attribute, *, target=None, sync_attack=False):
+    """A one-sided extra hit; preserve the enclosing card/response operation."""
+    from .context import EffectContext
+    if finished(c.state) or not alive(c.state, c.side, c.cid):
+        return
+    parent = c.state.get('operation')
+    op = dict(side=c.side, actor=c.cid, card=None, target_id=None, participants=[],
+              harmony=None, first_bonus=0, redeem_bonus=0, sortie_attack_bonus=0)
+    if sync_attack:
+        op['support'] = True
+    c.state['operation'] = op
+    try:
+        context = EffectContext(c.state, c.side, c.cid, op)
+        if sync_attack:
+            fire(context, 'on_support', actor_id=c.cid)
+        attack(context,
+               dict(attribute=attribute, target=target, no_counter=True,
+                    no_combat_resources=True, additional_attack=True, sync_attack=sync_attack), 0)
+    finally:
+        c.state['operation'] = parent

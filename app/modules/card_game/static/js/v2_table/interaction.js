@@ -214,6 +214,8 @@
       const choices = config.choices || [];
       const selectedIds = new Set();
       const maxSelect = Number(config.maxSelect) || 0;
+      const minSelect = Number(config.minSelect) || 0;
+      const confirmLabel = minSelect ? '确认选择' : '确认调度';
       const hasCards = choices.some(function (choice) {
         return Boolean(choice && choice.card && !choice.card.hidden);
       });
@@ -236,7 +238,7 @@
               '</button>'
             );
           }).join('') : '<p class="subtle">没有候选。</p>') + '</div>' +
-          (maxSelect ? '<button class="primary-btn" id="v2-choice-confirm" type="button">确认调度（0 / ' + maxSelect + '）</button>' : '') +
+          (maxSelect ? '<button class="primary-btn" id="v2-choice-confirm" type="button"' + (minSelect ? ' disabled' : '') + '>' + confirmLabel + '（0 / ' + maxSelect + '）</button>' : '') +
         '</div>';
       choiceOverlay.classList.add('open');
       choiceOverlay.setAttribute('aria-hidden', 'false');
@@ -248,6 +250,7 @@
       });
       const confirm = choiceOverlay.querySelector('#v2-choice-confirm');
       if (confirm) confirm.addEventListener('click', function () {
+        if (selectedIds.size < minSelect) return;
         ctx.localChoice = null;
         closeOverlay(choiceOverlay);
         config.onPick({ ids: Array.from(selectedIds) });
@@ -261,7 +264,8 @@
             ctx.localChoice = { kind: 'server-multi' };
             button.classList.toggle('is-selected', selectedIds.has(picked.id));
             button.setAttribute('aria-pressed', String(selectedIds.has(picked.id)));
-            confirm.textContent = '确认调度（' + selectedIds.size + ' / ' + maxSelect + '）';
+            confirm.textContent = confirmLabel + '（' + selectedIds.size + ' / ' + maxSelect + '）';
+            confirm.disabled = selectedIds.size < minSelect;
             return;
           }
           ctx.localChoice = null;

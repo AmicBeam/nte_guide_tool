@@ -110,6 +110,7 @@
     ] : [];
     if (data.truth_keys != null) stats.push({ cls: 'truth-keys', text: '真理之匙 ' + data.truth_keys });
     if (data.arid != null) stats.push({ cls: 'arid', text: '荒时 ' + data.arid });
+    if (data.lingke_chain && data.lingke_chain.count) stats.push({ cls: '', text: '连用 ' + data.lingke_chain.count + '/3' });
     if (resourceHtml && !data.summoned) stats.push({ html: '<div class="v2-resource-row">' + resourceHtml + '</div>' });
     if (!hideEnergy && data.awakened) stats.push({ cls: 'energy', text: '终结 ' + (data.ultimate_expires === 'turn_end' ? '本回合' : (data.ultimate_turns || 0)) });
     if (Number(data.growth) > 0) {
@@ -221,7 +222,7 @@
     if (!Array.isArray(markers) || !markers.length) return '';
     return '<div class="' + className + '">' + markers.map(function (marker) {
       const detail = [marker.name, marker.description, marker.timing, marker.clears_on_down ? '倒地时失去' : '倒地后保留'].filter(Boolean).join(' · ');
-      if (className === 'v2-character-effects') {
+      if (className === 'v2-character-effects' || className === 'v2-player-effects') {
         // Older replay markers predate the explicit presentation kind.
         const debuff = marker.kind ? marker.kind === 'debuff' : ['timed_attack', 'next_resistance'].includes(marker.id);
         const label = debuff ? '减益' : '增益';
@@ -229,7 +230,7 @@
         return '<span class="v2-effect-icon is-' + (debuff ? 'debuff' : 'buff') + '" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(label + '：' + detail) + '">' +
           '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg></span>';
       }
-      return '<span class="v2-chip" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(detail) + '">' +
+      return '<span class="v2-chip is-' + (marker.kind === 'debuff' ? 'debuff' : 'buff') + '" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(detail) + '">' +
         '<span class="v2-effect-name">' + V2.escapeHtml(marker.name) + '</span><small>' + V2.escapeHtml(marker.timing || '') + '</small></span>';
     }).join('') + '</div>';
   }
@@ -464,6 +465,19 @@
     if (ctx.nodes.opponentHand) ctx.nodes.opponentHand.setAttribute('data-hand-side', opponent);
   }
 
+  function fillPlayerEffects(node, markers) {
+    if (!node) return;
+    const line = node.querySelector('.v2-hud-subline');
+    if (!line) return;
+    let effects = line.querySelector('[data-player-effects]');
+    if (!effects) {
+      effects = document.createElement('span');
+      effects.setAttribute('data-player-effects', '');
+      line.appendChild(effects);
+    }
+    effects.innerHTML = effectMarkersHtml(markers, 'v2-player-effects');
+  }
+
   function syncJinguOverlay(ctx) {
     const rail = ctx.nodes.playerHand;
     if (!ctx.page || !rail || !rail.querySelectorAll) return;
@@ -648,6 +662,8 @@
     ctx.nodes.playerHp.closest('.v2-player-hud').classList.toggle('is-life-locked', Boolean(mine.life_locked));
     ctx.nodes.opponentHp.closest('.v2-player-hud').classList.toggle('is-life-locked', Boolean(theirs.life_locked));
     ctx.nodes.playerShield.textContent = '护盾 ' + (mine.shield == null ? '-' : mine.shield);
+    fillPlayerEffects(ctx.nodes.playerLife, mine.effect_markers);
+    fillPlayerEffects(ctx.nodes.opponentLife, theirs.effect_markers);
     ctx.nodes.playerAp.textContent = mine.ap == null ? '-' : mine.ap;
     const playerApReadout = ctx.nodes.playerAp && ctx.nodes.playerAp.closest('.v2-ap-readout');
     const instantSpent = Boolean(mine.used && mine.used.instant);
@@ -702,4 +718,5 @@
   TABLE.setPileLabel = setPileLabel;
   TABLE.renderGame = renderGame;
   TABLE.renderHands = renderHands;
+  TABLE.fillPlayerEffects = fillPlayerEffects;
 }(window));

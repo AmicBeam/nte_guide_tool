@@ -97,7 +97,10 @@ def kit_makes_card_instant(state, side, card):
 
 
 def card_plays_instant(state, side, card):
-    return bool(card.get('instant')) or kit_makes_form_instant(state, side, card) or kit_makes_card_instant(state, side, card)
+    from .modifiers import evaluate
+    base = bool(card.get('instant')) or kit_makes_form_instant(state, side, card) or kit_makes_card_instant(state, side, card)
+    return bool(evaluate(state, side, hero(state, side, card['character_id']),
+                         'card.instant', base, query={'card': card})['value'])
 
 
 def card_is_free_instant(state, side, card):
@@ -162,12 +165,21 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None)
         else:
             ap_paid = card_cost(state, side, card)
             team['ap'] -= ap_paid
+    # The next-card grant is consumed even by an intrinsically zero-cost card;
+    # that card still does not spend the shared instant opportunity.
+    from .modifiers import evaluate, consume_applied
+    instant_grants = evaluate(state, side, hero(state, side, card['character_id']),
+                             'card.instant', False, query={'card': card})
+    consume_applied(state, 'card_use', [e['effect_id'] for e in instant_grants['contributions']])
     log(state, f"{hero(state, side, card['character_id'])['name']}使用「{card['name']}」。",
         'play', side=side, source=card['character_id'],
         actor=f"{side}:{card['character_id']}", card=public_card(card, state, side))
     c = operation(state, side, card['character_id'], card, target_id)
     c.operation['option_id'] = option.get('id')
     c.operation['ap_paid'] = ap_paid
+    fire(c, GameEvent.V2_CARD_USED, actor_id=card['character_id'], card=card)
+    if finished(state):
+        return
     if card.get('type') == 'battle' and alive(state, side, card['character_id']):
         attack = int(card.get('attack') or 0)
         value = int(card.get('shield') or 0)
@@ -260,6 +272,9 @@ def targets(state, side, card):
     if policy == 'living_ally':
         return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
                 if alive(state, side, cid)]
+    if policy == 'ally_esper':
+        return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
+                if not hero(state, side, cid).get('summoned')]
     if policy == 'other_living_ally':
         return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
                 if cid != card['character_id'] and alive(state, side, cid)]
@@ -361,8 +376,12 @@ def legal_actions(state, side=None):
         return result
     if side != acting_side(state):
         return result
-    if phase == 'choice' and state['pending_choice']['kind'] == 'hand_redraw':
+    if phase == 'choice' and state['pending_choice']['kind'] in ('hand_redraw', 'kit_multi'):
         ids = [c['instance_id'] for c in state['pending_choice']['cards']]
+        if state['pending_choice']['kind'] == 'kit_multi':
+            count = state['pending_choice']['max_select']
+            return result + [{'type': 'choose_cards', 'card_ids': list(group)}
+                             for group in combinations(ids, count)]
         return result + [{'type': 'choose_cards', 'card_ids': list(group)}
                          for size in range(min(3, len(ids)) + 1) for group in combinations(ids, size)]
     if phase == 'choice':
@@ -816,6 +835,7 @@ def choose(state, side, choice_id):
     state['phase'], state['pending_choice'] = 'playing', None
     if kind == 'kit':
         op = state['operation']
+        op['choice_cards'] = pending['cards']
         fire(EffectContext(state, side, op['actor'], op), 'on_choice', actor_only=True, selected=selected)
     if state['phase'] != 'choice':
         finish_operation(state)
@@ -885,7 +905,17 @@ def apply_action(state, side, action):
         if len(result['mulligan_done']) == 2:
             begin_turn(result, result['first_side'])
     elif kind == 'choose_cards':
-        redraw_hand(result, side, candidate['card_ids'])
+        if result['pending_choice']['kind'] == 'kit_multi':
+            pending = result['pending_choice']
+            selected = [c for c in pending['cards'] if c['instance_id'] in candidate['card_ids']]
+            result['phase'], result['pending_choice'] = 'playing', None
+            op = result['operation']
+            fire(EffectContext(result, side, op['actor'], op), 'on_choice_cards',
+                 actor_only=True, selected=selected)
+            if result['phase'] != 'choice':
+                finish_operation(result)
+        else:
+            redraw_hand(result, side, candidate['card_ids'])
     elif kind == 'choose':
         choose(result, side, candidate['choice_id'])
     elif kind == 'end_turn':

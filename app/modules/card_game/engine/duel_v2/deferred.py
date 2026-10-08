@@ -22,6 +22,7 @@ def drain(state):
             if not alive(state, side, cid) or hero(state, side, cid).entity_id != action['entity_id']:
                 continue
             c = operation(state, side, cid)
+            c.operation['additional_attack'] = True
             fire(c, GameEvent.V2_DEFERRED_ACTION, actor_only=True, action=action)
             finish_operation(state)
     finally:

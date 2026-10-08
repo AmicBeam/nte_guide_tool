@@ -353,7 +353,8 @@ def damage_limit(state, side, cid):
 
 
 def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage', settle=True,
-           group_id=None, damage_class=None, reason=None, counter_immunity=None):
+           group_id=None, damage_class=None, reason=None, counter_immunity=None,
+           attribute=None, additional_attack=False, _additional_bonus_applied=False):
     if finished(state):
         return 0
     esper = is_esper(cid)
@@ -364,7 +365,12 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     from .modifiers import evaluate
     amount = max(0, int(evaluate(state, side, target, 'damage.amount', amount,
                                query={'kind': kind, 'source': source})['value']))
-    src_side, _ = source_parts(source)
+    src_side, src_cid = source_parts(source)
+    if additional_attack and not _additional_bonus_applied and src_side and src_cid in state['sides'][src_side]['characters']:
+        from .context import EffectContext
+        from app.modules.card_game.content.duel_v2.registry import decide
+        amount += int(decide(EffectContext(state, src_side, src_cid, {'side': src_side}),
+                             'additional_attack_damage_bonus', 0, target_side=side, target_id=cid) or 0)
     if damage_class == 'attachment' and src_side:
         from .context import EffectContext
         from app.modules.card_game.content.duel_v2.registry import tally
@@ -377,7 +383,7 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
                         amount, kind=kind, target_id=cid, source=source)
         amount = max(0, int(amount or 0))
     klass = damage_class_for(kind, damage_class)
-    attr = source_attribute(state, source)
+    attr = attribute or source_attribute(state, source)
     zone = front_debuff(state, side)
     immune = ((esper and damage_immune(state, side, cid))
               or (counter_immunity == 'support' and kind == 'combat'))
@@ -434,6 +440,8 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         team = state['sides'][src_side]
         team['genesis_player_hits'] = int(team.get('genesis_player_hits', 0)) + 1
     extra = {}
+    if attribute is not None or additional_attack:
+        extra.update(attribute=attr, additional_attack=bool(additional_attack))
     if group_id:
         extra['group_id'] = group_id
     if counter_immunity == 'support' and kind == 'combat' and amount == 0:
@@ -469,7 +477,8 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
                      damage_kind=kind)
     if redirect_loss and redirect and not finished(state):
         damage(state, side, redirect, redirect_loss, source=source, kind=kind, settle=settle,
-               group_id=group_id, damage_class=damage_class, reason='护盾破碎，溢出伤害转移')
+               group_id=group_id, damage_class=damage_class, reason='护盾破碎，溢出伤害转移',
+               attribute=attribute, additional_attack=additional_attack, _additional_bonus_applied=True)
         return loss
     if settle:
         knockdowns(state)

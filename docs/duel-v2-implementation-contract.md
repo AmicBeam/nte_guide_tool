@@ -28,7 +28,7 @@ validate_deck(deck: dict) -> dict  # 不合法抛 ValueError，合法返回规�
 
 角色字段：`id, name, attribute`（中文光/灵）, `attack, max_hp, avatar, portrait, passive, awakened_passive`。图片复用共享角色头像和立绘；zero 使用鉴定师图片。
 
-卡牌字段：`id, character_id, name, type`（`battle/tactic/form`）, `cost, terminal, description, effect_id, source`。`cost` 一律为 1。弧盘另有 `stat`（`attack` 或 `hp`）与 `stat_value`；战斗牌另有 `shield`（护盾值，可为 0），并可另有 `attack`（无条件攻击加成，至少为 1）。浔的兑现战斗牌另有 `redeem: true`。可选 `instant`、`response`、`derived`。`derived: true` 为对局内衍生牌，展示「不可构筑」，不能进入构筑。effect_id 默认与卡牌 ID 相同。`terminal` 保留为协议字段，现行卡表一律为 false。**08 固定为专属武备**；**07 优先用官方角色 PV 名**，没有角色 PV 时用官方短片或用户指定名。零另有第 6 张「诓定解放」也是武备。source 至少含 Everness 角色 ID；`type` 为 `awaken`（01–06）、`arc`（专属武备，08）、`pv`（官方角色 PV）或 `ability`（短片或指定名），衍生牌为 `derived`。
+卡牌字段：`id, character_id, name, type`（`battle/tactic/form`）, `cost, terminal, description, effect_id, source`。`cost` 通常为 1，显式零费牌为 0，灵可 K06 为 3。弧盘另有 `stat`（`attack` 或 `hp`）与 `stat_value`；战斗牌另有 `shield`（护盾值，可为 0），并可另有 `attack`（无条件攻击加成，至少为 1）。浔的兑现战斗牌另有 `redeem: true`。可选 `instant`、`response`、`derived`。`derived: true` 为对局内衍生牌，展示「不可构筑」，不能进入构筑。effect_id 默认与卡牌 ID 相同。`terminal` 保留为协议字段，现行卡表一律为 false。**08 固定为专属武备**；**07 优先用官方角色 PV 名**，没有角色 PV 时用官方短片或用户指定名。零另有第 6 张「诓定解放」也是武备。source 至少含 Everness 角色 ID；`type` 为 `awaken`（01–06）、`arc`（专属武备，08）、`pv`（官方角色 PV）或 `ability`（短片或指定名），衍生牌为 `derived`。
 
 标准构筑 JSON：`{id, name, character_ids: [4个ID], card_ids: [32个卡牌ID]}`。card_ids 是重复展开列表。validate_deck 严格验证恰好 4 名不同已实现角色、每人 8 张、总数 32、同名最多 2、没有未知或其他角色卡，不能静默截断。返回独立副本。
 
@@ -219,3 +219,11 @@ events: 投影后的公开演出事件
 # 2026-10-07 高级人机逐操作补充契约
 
 高级人机的玩家动作与人机动作分次提交。`POST /api/duel-v2/ai-step` 接受 `room_code`、`expected_version`、`request_id`，仅当前advanced房间的人类成员可调用；服务端决定b方动作，客户端不能指定该动作或冒充b方。每次成功请求仅应用一次正式规则动作并保存公开回放。重复请求返回已有结果；版本或房间冲突返回409；不是人机决策时不推进状态。`room.ai_pending` 表示人机是否仍为当前决策方，前端等本次事件演出完成后才请求下一步。普通人机、教程与PVP保持既有调度。
+
+### 2026-10-08 灵可与追加攻击协议
+
+目录 `cost` 接受非负整数，K06 为 3 费例外。通用卡牌使用时机 `V2_CARD_USED` 包括响应自动使用，发生在支付及公开使用之后、卡效之前；命中前 `V2_BEFORE_ATTACK_DAMAGE` 提供实际目标、属性、援护与追加攻击标记。指定属性通过攻击规格及伤害参数显式传递，不改写异能者固有属性；公开事件可携带 `attribute` 与 `additional_attack`。追加攻击不自动没收资源，是否产生基础资源由操作规格分别决定。
+
+角色公开 `lingke_chain` 包含公开的使用者实体／角色 ID 与 0–2 计数，实时与回放 patch 同步，不包含隐藏牌身份。`pending_choice.kind=kit_multi` 支持 `min_select/max_select` 与既有 `choose_cards` 动作；引擎完整列出固定数量的合法组合，候选仅选择者可见。后续单选仍用 `kind=kit`，从牌库暂取出的候选计入牌库数量。
+
+下一张瞬发用可消费 `card.instant` 效果表示，天然零费使用也消费该效果，但不消费共享瞬发机会。手牌视为沿用实体身份及 `hand_face`，离手恢复物理原牌。玩家限时属性减抗沿用公开 `effect_markers`，清除及到期由后端统一处理。

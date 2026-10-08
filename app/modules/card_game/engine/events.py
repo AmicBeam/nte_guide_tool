@@ -38,6 +38,8 @@ class GameEvent(str, Enum):
     V2_EFFECT_EXPIRED = 'on_effect_expired'
     V2_LEAVE_FRONT = 'on_leave_front'
     V2_TURN_COUNTDOWN = 'on_turn_countdown'
+    V2_CARD_USED = 'on_card_used'
+    V2_BEFORE_ATTACK_DAMAGE = 'before_attack_damage'
 
 
 

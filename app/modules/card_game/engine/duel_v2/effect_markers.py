@@ -23,14 +23,23 @@ def character_effect_markers(character, state=None, side=None):
         if not effect.get('show_marker') or effect.get('visibility') != 'public':
             continue
         left = remaining(effect, state, side)
-        timing = (('本回合下次受到对应属性伤害' if (effect.get('expiry') or {}).get('phase') == 'turn_end' else '下次受到对应属性伤害') if effect.get('consume_on') == 'damage' else
-                  '下次主动攻击' if effect.get('consume_on') == 'attack' else
-                  f'剩余 {left} 个己方回合' if left is not None else '指定时点到期')
+        if effect['definition_id'] == 'lingke.resistance':
+            timing = '至灵可下个己方回合开始'
+        elif effect['definition_id'] == 'lingke.taunt':
+            timing = '下一次己方使用战斗牌'
+        elif effect.get('consume_on') == 'damage':
+            timing = ('本回合下次受到对应属性伤害'
+                      if (effect.get('expiry') or {}).get('phase') == 'turn_end'
+                      else '下次受到对应属性伤害')
+        elif effect.get('consume_on') == 'attack':
+            timing = '下次主动攻击'
+        else:
+            timing = f'剩余 {left} 个己方回合' if left is not None else '指定时点到期'
         amount = effect['value']
         markers.append(_marker(effect['effect_id'], effect['label'], timing,
                                f"攻击 {amount:+d}" if effect['property'].startswith('attack.') and isinstance(amount, int)
                                else effect['label'], 'down' in effect['clear_on'],
-                               kind='debuff' if amount < 0 else 'buff'))
+                               kind='debuff' if amount < 0 or effect['definition_id'] == 'lingke.taunt' else 'buff'))
     if flags.get('free_normal_attack_turn'):
         markers.append(_marker('free_normal_attack', '普通出击免费', '本回合',
                                '普通出击不消耗行动力，仍需普通出击机会'))
@@ -56,11 +65,12 @@ def character_effect_markers(character, state=None, side=None):
 def team_effect_markers(team):
     from .modifiers import all_effects
     markers = [_marker('next_resistance', attribute + '抗性', '玩家下次受到该属性伤害',
-                       f'{attribute}属性伤害抗性 {value:+d}', False)
+                       f'{attribute}属性伤害抗性 {value:+d}', False, kind='debuff' if value < 0 else 'buff')
                for attribute, value in (team.get('next_damage_resistance') or {}).items()]
     for e in all_effects(team):
         if e['property'] == 'damage.resistance' and e.get('visibility') == 'public':
             markers.append(_marker(e['effect_id'], e['label'],
+                                   '至灵可下个己方回合开始' if e['definition_id'] == 'lingke.resistance' else
                                    '本回合下次受到对应属性伤害' if (e.get('expiry') or {}).get('phase') == 'turn_end' else '下次受到对应属性伤害',
                                    e['label'], False, kind='debuff' if e['value'] < 0 else 'buff'))
     if team.get('empty_draw_wins'):

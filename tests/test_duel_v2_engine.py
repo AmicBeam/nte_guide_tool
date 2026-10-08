@@ -92,7 +92,7 @@ class DuelV2EngineTest(unittest.TestCase):
         owners = [card['character_id'] for card in view['sides']['a']['hand']]
         self.assertEqual(owners, [order[0], order[-1], order[-1]])
 
-    def test_lingke_turns_unpaired_switch_into_sync(self) -> None:
+    def test_lingke_does_not_replace_unpaired_entry_harmony(self) -> None:
         from app.modules.card_game.content.duel_v2 import STARTER_DECKS
         deck = test_character_deck('sync-curse')
         s = new_game(seed=3, first_side='a', skip_mulligan=True, decks={'a': deck, 'b': deck})
@@ -100,8 +100,8 @@ class DuelV2EngineTest(unittest.TestCase):
         s['sides']['a']['front'] = 'lingke'
         hero(s, 'a', 'lingke')['harmony'] = 2
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'iloy'})
-        self.assertTrue(any(e['type'] == 'harmony' and '同频' in e['text'] for e in s['events']))
-        self.assertEqual(hero(s, 'a', 'iloy')['shield'], 1)
+        self.assertFalse(any(e['type'] == 'harmony' and '同频' in e['text'] for e in s['events']))
+        self.assertEqual(hero(s, 'a', 'iloy')['shield'], 0)
 
     def test_illegal_atomic_and_json_replay(self):
         s = self.game()
@@ -990,6 +990,8 @@ class DuelV2EngineTest(unittest.TestCase):
                         s['sides'][side]['characters'][owner] = new_character(owner)
                         s['sides'][side]['order'].append(owner)
                 card = self.hand(s, cid)
+                initial_ap = max(2, CARDS[cid]['cost'])
+                s['sides']['a']['ap'] = initial_ap
                 s['sides']['a']['harmony_damage'] = True
                 s['sides']['a']['surplus'] = True
                 s['sides']['a']['surplus_ever'] = True
@@ -1024,14 +1026,14 @@ class DuelV2EngineTest(unittest.TestCase):
                     summon_front(s, 'a', name='鬼郎丸', attack=0, hp=4)
                 a = next(a for a in legal_actions(s) if a['type'] == 'play_card' and a['card_id'] == card['instance_id'])
                 s = apply_action(s, 'a', a)
-                if s['phase'] == 'choice':
+                while s['phase'] == 'choice':
                     s = apply_action(s, 'a', next(a for a in legal_actions(s) if a['type'] in ('choose', 'choose_cards')))
                 self.assertEqual(s['phase'], 'playing')
                 spent = 0 if CARDS[cid].get('instant') else CARDS[cid]['cost']
                 if CARDS[cid].get('free_if_surplus'): spent = 0
                 if cid == 'X04': spent = 2
                 if cid == 'XA01': spent = 2 - s['sides']['a']['ap']
-                self.assertEqual(s['sides']['a']['ap'], 2 - spent)
+                self.assertEqual(s['sides']['a']['ap'], initial_ap - spent + (1 if cid == 'KF01' else 0))
                 pile = 'hand' if CARDS[cid].get('retain') else ('removed' if cid == 'X01' else 'discard')
                 self.assertTrue(any(c['instance_id'] == card['instance_id'] for c in s['sides']['a'][pile]))
                 json.dumps(observe(s, 'a'))

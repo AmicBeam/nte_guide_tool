@@ -65,18 +65,21 @@ def _k06(c):
         _sync(c, attribute, support_actor=dict(character_id=cid, entity_id=entity_id))
 
 
-def _action(c):
+def _k03(c):
+    if not c.card.get('_k03_recovery'):
+        set_shape(c)
+        return
     team = c.state['sides'][c.side]
     team['ap'] += 1
-    c.history('「同频行动」：获得 1 点行动力。', before={'ap': team['ap'] - 1}, after={'ap': team['ap']})
+    c.history('「星间漫游」：获得 1 点行动力。', before={'ap': team['ap'] - 1}, after={'ap': team['ap']})
 
 
 @register
 class Lingke:
     id = 'lingke'
     text_name = '灵可'
-    effects = {'K01': _k01, 'K02': _k02, 'K03': set_shape, 'K04': _k04,
-               'K05': _k05, 'K06': _k06, 'K07': set_shape, 'K08': set_shape, 'KF01': _action}
+    effects = {'K01': _k01, 'K02': _k02, 'K03': _k03, 'K04': _k04,
+               'K05': _k05, 'K06': _k06, 'K07': set_shape, 'K08': set_shape}
     target_policies = {'K01': 'ally_esper', 'K04': 'living_enemy_esper', 'K05': 'living_ally'}
 
     @staticmethod
@@ -143,13 +146,16 @@ class Lingke:
         if (c.character.get('shape') != 'K03' or current.get('character_id') != c.cid
                 or team['ap'] != 0 or team['used'].get('instant') or card.get('card_id') == 'unknown'):
             return None
-        from app.modules.card_game.content.duel_v2 import CARDS
         from app.modules.card_game.engine.duel_v2.entities import CardEntity
-        result = deepcopy(CARDS['KF01'])
+        # The equipped weapon owns this alternative effect; no derived card is
+        # created. K03 has no target policy, regardless of the physical card.
+        result = dict(id='K03', card_id='K03', character_id=c.cid, name=card['name'],
+                      type='tactic', cost=1, terminal=False, instant=True,
+                      description='瞬发。获得 1 点行动力。', effect_id='K03', _k03_recovery=True)
         for key in ('entity_id', 'instance_id', 'side', 'copy', 'jingu_mark', 'expires_turn', 'original_character_id'):
             if key in card:
                 result[key] = deepcopy(card[key])
-        result.update(card_id='KF01', _physical_card=card)
+        result['_physical_card'] = card
         return CardEntity(result)
 
     @staticmethod

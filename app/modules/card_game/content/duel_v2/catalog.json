@@ -1691,7 +1691,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "行动力为 0 且仍有瞬发机会时，可以将灵可的手牌视为「同频行动」打出。",
+      "description": "行动力为 0 且仍有瞬发机会时，可以将灵可的手牌视为具有“瞬发。获得 1 点行动力。”效果的战术牌打出。",
       "effect_id": "K03",
       "source": {
         "character_id": 1072,
@@ -3621,24 +3621,6 @@
         "character_id": 1033,
         "type": "ability",
         "index": 2
-      }
-    },
-    {
-      "id": "KF01",
-      "character_id": "lingke",
-      "name": "同频行动",
-      "type": "tactic",
-      "cost": 1,
-      "terminal": false,
-      "description": "瞬发。获得 1 点行动力。",
-      "instant": true,
-      "derived": true,
-      "effect_id": "KF01",
-      "starter_copies": 0,
-      "source": {
-        "character_id": 1072,
-        "type": "derived",
-        "index": 1
       }
     },
     {

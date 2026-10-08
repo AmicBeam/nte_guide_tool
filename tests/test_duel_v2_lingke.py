@@ -256,16 +256,31 @@ class LingkeTest(unittest.TestCase):
         self.assertFalse(card_plays_instant(s, 'a', card_instance(s, 'Z03', 'a')))
 
     def test_k03_substitution_preserves_physical_card_and_instant_opportunity(self):
-        s = game(); s = play(s, 'K03'); s['sides']['a']['ap'] = 0
-        action = give(s, 'a', 'K06'); physical = s['sides']['a']['hand'][-1]
-        card = effective_card(s, 'a', physical)
-        self.assertEqual((card['card_id'], card['cost'], card['instant']), ('KF01', 1, True))
-        s = apply_action(s, 'a', action)
-        self.assertEqual(s['sides']['a']['ap'], 1)
-        self.assertTrue(s['sides']['a']['used']['instant'])
-        self.assertEqual(s['sides']['a']['discard'][-1]['card_id'], 'K06')
-        s['sides']['a']['ap'] = 0
-        self.assertEqual(effective_card(s, 'a', card_instance(s, 'K01', 'a'))['card_id'], 'K01')
+        self.assertNotIn('KF01', CARDS)
+        self.assertIn('瞬发。获得 1 点行动力。', CARDS['K03']['description'])
+        for physical_id in ('K01', 'K03', 'K06'):
+            with self.subTest(physical_id=physical_id):
+                s = game(); s = play(s, 'K03'); s['sides']['a']['ap'] = 0
+                action = give(s, 'a', physical_id); physical = s['sides']['a']['hand'][-1]
+                card = effective_card(s, 'a', physical)
+                self.assertEqual((card['card_id'], card['type'], card['cost'], card['instant']),
+                                 ('K03', 'tactic', 1, True))
+                self.assertEqual(card['entity_id'], physical['entity_id'])
+                self.assertEqual(card['name'], physical['name'])
+                actions = [a for a in legal_actions(s, 'a')
+                           if a['type'] == 'play_card' and a['card_id'] == physical['instance_id']]
+                self.assertEqual(actions, [action])  # no original K01 target requirement
+                before_hp = hero(s, 'a', 'lingke')['hp'] = 2
+                s = apply_action(json.loads(json.dumps(s)), 'a', action)
+                self.assertEqual(s['phase'], 'playing')
+                self.assertEqual(s['sides']['a']['ap'], 1)
+                self.assertTrue(s['sides']['a']['used']['instant'])
+                self.assertEqual(s['sides']['a']['discard'][-1]['card_id'], physical_id)
+                self.assertEqual(hero(s, 'a', 'lingke')['hp'], before_hp)  # no re-equip/heal
+                self.assertTrue(any('「星间漫游」：获得 1 点行动力。' in e.get('text', '')
+                                    for e in s['events']))
+                s['sides']['a']['ap'] = 0
+                self.assertEqual(effective_card(s, 'a', card_instance(s, 'K01', 'a'))['card_id'], 'K01')
 
     def test_k01_three_distinct_then_one_private_and_json_restorable(self):
         s = game(); ids = [c['entity_id'] for c in s['sides']['a']['deck']]

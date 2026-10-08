@@ -1036,7 +1036,7 @@ class DuelV2EngineTest(unittest.TestCase):
                 if CARDS[cid].get('free_if_surplus'): spent = 0
                 if cid == 'X04': spent = 2
                 if cid == 'XA01': spent = 2 - s['sides']['a']['ap']
-                self.assertEqual(s['sides']['a']['ap'], initial_ap - spent + (1 if cid == 'KF01' else 0))
+                self.assertEqual(s['sides']['a']['ap'], initial_ap - spent)
                 pile = 'hand' if CARDS[cid].get('retain') else ('removed' if cid == 'X01' else 'discard')
                 self.assertTrue(any(c['instance_id'] == card['instance_id'] for c in s['sides']['a'][pile]))
                 json.dumps(observe(s, 'a'))

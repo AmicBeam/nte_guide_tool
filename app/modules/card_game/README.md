@@ -930,3 +930,8 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 ### 2026-10-08 占卜多张置底
 
 黑羽占卜允许任意数量置底，两行都可排序；基础形态按底牌从左到右逐张结算占卜效果。谕石要求至少置底1张，全部收益结束后抽牌，多张只计1次占卜。动作使用有序bottom_card_ids及实体寻址列表；兼容旧单张动作，已有黑羽待选择刷新后也使用现行多张限制。用户此前要求快速收尾，本次未执行测试或页面校验。
+
+
+### 2026-10-08 星间漫游内联效果
+
+移除灵可独立衍生牌「同频行动」，瞬发与获得 1 点行动力直接写进 K03「星间漫游」。装备且行动力为 0、仍有瞬发机会时，灵可手牌按这项战术效果结算，保留物理牌身份和弃牌结果；不执行原卡效果、选取原卡目标或重新装备。验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_catalog tests.test_duel_v2_hooks tests.test_duel_v2_engine tests.test_duel_v2_hand_face tests.test_duel_v2_entities`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。

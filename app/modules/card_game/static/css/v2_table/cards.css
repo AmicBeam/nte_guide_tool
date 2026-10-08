@@ -70,6 +70,20 @@
   fill: #ffd05c;
   stroke: #fff2b9;
   stroke-width: 1;
+  transform-origin: 50% 50%;
+  animation: v2-collapse-orbit 2.8s linear infinite;
+}
+
+@keyframes v2-collapse-orbit {
+  to { transform: rotate(360deg); }
+}
+
+.v2-table-page[data-reduced-motion='1'] .v2-collapse-orbit {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-table-page:not([data-reduced-motion='0']) .v2-collapse-orbit { animation: none; }
 }
 
 .v2-down-badge {

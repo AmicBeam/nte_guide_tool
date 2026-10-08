@@ -178,6 +178,7 @@ async function bootstrapTable() {
   const mobileLayout = window.matchMedia('(pointer: coarse) and (max-width: 1200px)');
 
   function applyPlayerOptions() {
+    page.setAttribute('data-reduced-motion', ctx.options.reducedMotion ? '1' : '0');
     const fontSize = Number.isInteger(ctx.options.fontSize) && ctx.options.fontSize >= 0 && ctx.options.fontSize <= 4 ? ctx.options.fontSize : 2;
     ctx.options.fontSize = fontSize;
     const layoutScale = [0.8, 1, 1.5, 2].includes(ctx.options.layoutScale) ? ctx.options.layoutScale : 1;

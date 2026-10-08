@@ -197,3 +197,23 @@ def collect_effects() -> tuple[dict[str, Callable], dict[str, str]]:
         effects.update(getattr(kit, 'effects', {}))
         policies.update(getattr(kit, 'target_policies', {}))
     return effects, policies
+
+
+CHOICE_CONTINUATIONS = {}
+
+
+def choice_continuation(name):
+    """Register a content-owned, serializable choice continuation identity."""
+    def decorate(handler):
+        if name in CHOICE_CONTINUATIONS:
+            raise ValueError('Duplicate choice continuation: ' + name)
+        CHOICE_CONTINUATIONS[name] = handler
+        return handler
+    return decorate
+
+
+def continue_choice(c, name, **data):
+    _ensure_kits()
+    if name not in CHOICE_CONTINUATIONS:
+        raise ValueError('Unknown choice continuation: ' + name)
+    CHOICE_CONTINUATIONS[name](c, **data)

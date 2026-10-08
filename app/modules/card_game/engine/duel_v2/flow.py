@@ -965,9 +965,13 @@ def resolve_deck_order(state, side, action):
     execute = pending.get('execute_divination')
     state['phase'], state['pending_choice'] = 'playing', None
     if actor:
-        fire(EffectContext(state, side, actor, state.get('operation') or {'side': side, 'actor': actor}),
-             'on_deck_reorder', actor_only=True, bottoms=bottoms,
-             bottom=bottoms[0] if len(bottoms) == 1 else None, execute_divination=execute)
+        context = EffectContext(state, side, actor, state.get('operation') or {'side': side, 'actor': actor})
+        data = dict(bottoms=bottoms, bottom=bottoms[0] if len(bottoms) == 1 else None, execute_divination=execute)
+        if pending.get('continuation'):
+            from app.modules.card_game.content.duel_v2.registry import continue_choice
+            continue_choice(context, pending['continuation'], **data)
+        else:
+            fire(context, 'on_deck_reorder', actor_only=True, **data)
     if state['phase'] != 'choice':
         finish_operation(state)
         if state.get('turn_start_pending'):

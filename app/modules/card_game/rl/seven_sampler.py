@@ -23,7 +23,7 @@ def generated_kind(card):
     return None
 
 
-def _allocation(team,public,surplus,rng,hand_n,hidden_family,temporary_allowed):
+def _allocation(team,public,surplus,rng,hand_n,hidden_family,temporary_allowed, generated_owners=()):
     # A03 timing metadata is absent from public_card: do not use its real
     # original/generated flag, even on a revealed/discarded enemy card.
     originals=Counter(c['card_id'] for c in public if c['card_id']!='NF01'
@@ -54,7 +54,8 @@ def _allocation(team,public,surplus,rng,hand_n,hidden_family,temporary_allowed):
         if 'anhunqu' in team['characters']:
             limits['AF01']=discarded['A04']-special['AF01']
             limits['A03_ephemeral']=discarded['AF01']-temporary if temporary_allowed else 0
-        if 'heiyu' in team['characters']:limits['PF01']=max(0,surplus-special['PF01'])
+        if 'heiyu' in generated_owners:limits['PF01']=max(0,surplus-special['PF01'])
+        if 'dafutier' in generated_owners:limits['FF01']=max(0,surplus-special['FF01'])
         if (remaining>=0 and all(v>=0 for v in limits.values()) and remaining<=sum(limits.values())
                 and feasible(known,copies,Counter(),limits,remaining)):
             possibilities.append((known,copies,limits,remaining,temporary))
@@ -94,8 +95,10 @@ def determinize(state,viewer,seed):
     if not 0<=hidden_family<=hand_n+deck_n:raise ValueError('Inconsistent public family count')
     surplus=len(team['discard'])+len(team['hand'])+deck_n-int(team.get('nanali_family',0))-32
     if surplus<0:raise ValueError('Negative public generated surplus')
+    generated_owners=set(team['characters'])
+    if 'anhunqu' in generated_owners:generated_owners.update(out['sides'][viewer]['characters'])
     original,copies,allocated,temporary=_allocation(team,public,surplus,rng,hand_n,hidden_family,
-        out['active_side']==foe)
+        out['active_side']==foe,generated_owners=generated_owners)
     a03=[c for c in public if c['card_id']=='A03'];rng.shuffle(a03)
     for i,c in enumerate(a03):
         if i<temporary:c['ephemeral_turn']=out['turn']
@@ -124,8 +127,8 @@ def determinize(state,viewer,seed):
     # The supported lineups have no hand-to-deck return: generated cards
     # enter hand, and playing/expiry moves them to discard, never to deck.
     placement=bool(set(team['characters']) & {'heiyu','lingke'})
-    mandatory=[] if placement else [c for c in pool if c[0] in ('NF01','AF01') or c[1]]
-    pool=pool if placement else [c for c in pool if c[0] not in ('NF01','AF01') and not c[1]]
+    mandatory=[] if placement else [c for c in pool if c[0] in ('NF01','AF01','FF01') or c[1]]
+    pool=pool if placement else [c for c in pool if c[0] not in ('NF01','AF01','FF01') and not c[1]]
     for cid,n in ({} if placement else copies).items():
         count=max(0,n-original[cid]+int(cid=='C02' and any(c['card_id']=='C02' for c in team['discard'])))
         for _ in range(count):
@@ -135,7 +138,7 @@ def determinize(state,viewer,seed):
     hidden_deck=pool[hand_n-len(mandatory):]
     # Own deck multiset is known from construction/private history; its order
     # and instance serials are not. Keep timing metadata of known own copies.
-    fields=('ephemeral_turn','copy','expires_turn','jingu_mark')
+    fields=('ephemeral_turn','copy','expires_turn','jingu_mark','character_id','original_character_id')
     own=[(c['card_id'],{k:deepcopy(c[k]) for k in fields if k in c}) for c in out['sides'][viewer]['deck']]
     import json
     visible_own=observe(state,viewer,include_previews=False)['sides'][viewer].get('visible_deck')
@@ -150,6 +153,8 @@ def determinize(state,viewer,seed):
     out['next_instance']=max([int(c['instance_id'].rsplit('-',1)[1]) for c in visible if c.get('instance_id')]+[0])
     def instantiate(item,side):
         cid,temporary=item;c=card_instance(out,cid,side)
+        if c['character_id'] not in out['sides'][side]['characters'] and 'anhunqu' in out['sides'][side]['characters']:
+            c['original_character_id']=c['character_id'];c['character_id']='anhunqu'
         if temporary:c['ephemeral_turn']=out['turn']
         return c
     team['hand']=keep+[instantiate(c,foe) for c in hidden_hand]

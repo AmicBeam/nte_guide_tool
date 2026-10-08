@@ -3,8 +3,8 @@ from copy import deepcopy
 from random import Random
 
 from app.modules.card_game.content.duel_v2 import CARDS
-from app.modules.card_game.content.duel_v2.characters.common import revive_character, set_shape
-from app.modules.card_game.content.duel_v2.registry import register
+from app.modules.card_game.content.duel_v2.characters.common import revive_character, set_shape, generated_card
+from app.modules.card_game.content.duel_v2.registry import register, choice_continuation
 from app.modules.card_game.engine.duel_v2.deferred import enqueue
 from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
 from app.modules.card_game.engine.duel_v2.state import (
@@ -21,7 +21,7 @@ def living_espers(state, side):
 
 
 def in_witch(c):
-    return bool(c.character.get('awakened'))
+    return c.cid == 'heiyu' and bool(c.character.get('awakened'))
 
 
 def _rng(state):
@@ -34,7 +34,7 @@ def insert_omen(c):
     if in_witch(c) or not alive(c.state, c.side, c.cid) or finished(c.state):
         return
     deck = c.state['sides'][c.side]['deck']
-    deck.insert(_rng(c.state).randrange(len(deck) + 1), card_instance(c.state, 'PF01', c.side))
+    deck.insert(_rng(c.state).randrange(len(deck) + 1), generated_card(c, 'PF01'))
     c.history('异能：将 1 张「谕石」随机插入己方牌库。')
 
 
@@ -100,7 +100,7 @@ def start_inspection(c, *, after=None, min_bottom=0):
         c.choose('heiyu_divination', cards,
                  f'检视牌库顶 {len(cards)} 张牌：' + ('至少置底 1 张，其余自由排序。' if min_bottom else '可将任意数量置底，其余自由排序。'),
                  deck_cards=True, deck_order=True, execute_divination=not in_witch(c),
-                 actor=c.cid, snapshot_n=count, min_bottom=min_bottom,
+                 actor=c.cid, snapshot_n=count, min_bottom=min_bottom, continuation='heiyu.divination',
                  max_bottom=len(cards), multi_bottom=True)
     else:
         _resume_inspection(c)
@@ -334,3 +334,9 @@ class Heiyu:
             count = int(c.state['sides'][c.side].get('heiyu_divinations') or 0)
             text = text.replace('当前为0', f'当前为{count}')
         return text
+
+
+@choice_continuation('heiyu.divination')
+def _continue_divination(c, **data):
+    # The card effect remains bound after a copied passive has expired.
+    Heiyu.on_deck_reorder(c, **data)

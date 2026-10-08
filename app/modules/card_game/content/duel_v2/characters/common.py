@@ -21,6 +21,16 @@ def draw_owned_card(c, character_id=None, *, reveal=True):
             return
 
 
+def generated_card(c, card_id):
+    """A copied ability generates for its acting entity, keeping the original kit."""
+    from app.modules.card_game.engine.duel_v2.state import card_instance
+    card = card_instance(c.state, card_id, c.side)
+    if card['character_id'] != c.cid:
+        card['original_character_id'] = card['character_id']
+        card['character_id'] = c.cid
+    return card
+
+
 def grant_seed(c, limit=3, *, reason=None):
     from app.modules.card_game.content.duel_v2.registry import KITS
     from app.modules.card_game.engine.duel_v2.state import add_hand, card_instance
@@ -35,10 +45,7 @@ def grant_seed(c, limit=3, *, reason=None):
     if gained >= limit:
         return
     team[key] = gained + 1
-    card = card_instance(c.state, card_id, c.side)
-    if mimic.get('id'):
-        card['original_character_id'] = card['character_id']
-        card['character_id'] = c.cid
+    card = generated_card(c, card_id)
     add_hand(c.state, c.side, card, reason=reason)
 
 

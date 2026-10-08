@@ -107,8 +107,8 @@ class Dafutier:
             return
         if target_side == other(c.side) and c.character.get('insight_used_turn') != c.state['turn']:
             c.character['insight_used_turn'] = c.state['turn']
-            card = card_instance(c.state, 'FF01', c.side)
-            card['character_id'] = c.cid
+            from .common import generated_card
+            card = generated_card(c, 'FF01')
             add_hand(c.state, c.side, card, reason='使对方异能者倾陷，达芙蒂尔的异能触发')
         # This card has an unconditional in-zone trigger, independently of the
         # once-per-turn passive. The resolving instance is in neither zone.

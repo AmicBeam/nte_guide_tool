@@ -116,7 +116,7 @@ ACTION_TYPES = ('end_turn', 'attack', 'ultimate', 'play_card', 'choose', 'mullig
 ORDER_SLOTS = 4
 OLD_CAND_DIM = CAND_DIM
 NEW_SIDE = ('max_hp', 'insight_damage', 'insight_played', 'support_count', 'heiyu_divinations')
-NEW_CHAR = ('collapse_max', 'chain_count', 'chain_actor', 'insight_used')
+NEW_CHAR = ('collapse_max', 'chain_count', 'chain_actor', 'insight_used', 'mimic_actor')
 ATTRIBUTES = ('光', '暗', '灵', '魂', '相', '咒')
 CHOICES = ('inspect_top','discard','enemy_hand','kit','kit_multi','heiyu_divination','hand_deck_placement','hand_redraw')
 ORDER_FIELDS = tuple(f'order:{zone}:{slot}:{cid}' for zone in ('top','bottom')
@@ -184,7 +184,8 @@ def encode(view, actions):
             chain=h.get('lingke_chain') or {}
             fields.extend([float(h.get('collapse_max') or 0)/10,float(chain.get('count') or 0)/10,
                            (SEAT_INDEX[chain['character_id']]+1)/20 if chain.get('character_id') else 0,
-                           float((view['policy_state']['sides'][s]['characters'].get(cid) or {}).get('insight_used_turn')==view['turn'])])
+                           float((view['policy_state']['sides'][s]['characters'].get(cid) or {}).get('insight_used_turn')==view['turn']),
+                           (SEAT_INDEX[((view['policy_state']['sides'][s]['characters'].get(cid) or {}).get('flags',{}).get('mimic') or {})['id']]+1)/20 if ((view['policy_state']['sides'][s]['characters'].get(cid) or {}).get('flags',{}).get('mimic') or {}).get('id') else 0])
     for s in order:
         values=view['policy_state']['sides'][s].get('resistances') or {}
         fields.extend(float(values.get(attribute) or 0)/10 for attribute in ATTRIBUTES)

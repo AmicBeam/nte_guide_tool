@@ -1031,3 +1031,7 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 ### 七队学习适配组件
 
 `rl/seven_*` 为七队独立数值／编码、生成牌采样、联合更新辅助、价值校准和恢复契约；保留旧五队入口与schema。顶／底牌有序选择、退出终结及新角色公开计次进入独立具名列，旧权重须显式核验后迁移，两套新队独立冷启动。准备入口为 `scripts/prepare_duel_v2_seven_value.py` 与 `scripts/prepare_duel_v2_seven_foundation.py`；实际开训仍需本轮完整同源CUDA预检与硬截止预算，不因组件存在视为已训练。验证：`.venv/bin/python -m unittest tests.test_duel_v2_seven_training tests.test_duel_v2_scoped_preselection`。冻结评估器增加显式 `runtime=seven`，沿用完整遥测和公开回放校验，不更新服务模型。
+
+### 复制异能生成牌与占卜续步
+
+复制黑羽产生的谕石归属实际触发者，复制达芙蒂尔产生的洞悉保留原角色来源；占卜续步通过内容注册的序列化标识完成，复制结束或安魂曲自身终结不改变这张牌的普通占卜效果。七队采样支持公开阵容中的复制生成来源与洞悉，保持生成归属和隐藏信息边界。验证：`.venv/bin/python -m unittest tests.test_duel_v2_mimic_generated_choices tests.test_duel_v2_seven_training tests.test_duel_v2_heiyu tests.test_duel_v2_dafutier`。

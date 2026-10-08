@@ -659,7 +659,7 @@ def energy(state, side, cid, amount=1):
     h['energy'] = min(energy_cap(state, h), h['energy'] + amount)
 
 
-def add_hand(state, side, card, *, reveal=False, reason=None):
+def add_hand(state, side, card, *, reveal=False, reason=None, emit_gain=True):
     from .presentation import public_card
     if finished(state):
         return
@@ -672,7 +672,7 @@ def add_hand(state, side, card, *, reveal=False, reason=None):
         from .context import EffectContext
         fire(EffectContext(state, side, team_order(state, side)[0], {'side': side}),
              'on_hand_added', card=card)
-        if reveal or card.get('copy') or card.get('derived'):
+        if emit_gain and (reveal or card.get('copy') or card.get('derived')):
             log(state, (f'{reason}：' if reason else '') + f"{name(state, side)}获得{'临时复制' if card.get('copy') else ''}「{card['name']}」。",
                 'gain', side=side, card=public_card(card), actor=f'{side}:player')
 
@@ -690,7 +690,9 @@ def draw(state, side, count=1, *, card_type=None):
                 break
         if team['deck']:
             card = team['deck'].pop(index)
-            add_hand(state, side, card)
+            # The draw event owns this hand movement, even for derived/copy cards.
+            # Do not publish a second gain event or reveal the drawn identity.
+            add_hand(state, side, card, emit_gain=False)
             log(state, f"{name(state, side)}抽 1 张牌。", 'draw', side=side,
                 actor=f'{side}:player', private_side=side, private_card=public_card(effective_card(state, side, card)))
         else:

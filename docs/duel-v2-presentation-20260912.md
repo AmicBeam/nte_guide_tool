@@ -93,3 +93,12 @@
 ### 2026-10-09 召唤物异能详情
 
 召唤物公开棋盘补齐`passive`、`awakened_passive`与`flavor`文本，随事件patch同步到实时演出和新公开回放。内容包可通过通用`summon_passive`描述入口按召唤物公开状态生成异能文本；鬼郎丸根据已吞噬物品显示具体受伤效果，已有房间的旧占位文案在观察时更新，不修改规则状态。历史已导出回放不回写，不公开隐藏手牌或牌序。
+
+
+### 2026-10-09 回合内抽牌的单次入手事件
+
+从牌库抽取同一实体时，以draw事件承载抽牌动画与手牌更新；即使该牌为衍生牌或临时复制，也不因add_hand再次输出gain。否则同一实体会先播放获得入手，再播放抽牌入手，且可能提前公开抽到的牌。draw仍只向抽牌方提供private_card，对方与公开回放保持隐藏。
+
+add_hand的emit_gain默认为true，直接生成／复制／公开获得仍输出原gain并保留获得动画；draw调用时仅关闭额外gain，手牌加入、on_hand_added、手牌上限弃置与通常抽牌规则保持。动画无需按实体ID全局去重，以免误删同一牌稍后真实回收／再次抽取的合法事件。
+
+回归入口：tests.test_duel_v2_draw_presentation、tests.test_duel_v2_replay_hand_counts、tests.test_duel_v2_action_presentation_boundary及tests/js/duel_v2_animation.test.cjs，覆盖双方视角、普通／衍生／复制、直接生成保留、满手牌与动画结束后只更新一次手牌。

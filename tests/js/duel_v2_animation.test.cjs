@@ -1271,3 +1271,29 @@ test("cancelling a response title applies state once without starting a later re
   assert.equal(reveals, 0);
   assert.equal(harness.stage.querySelector(".v2-fx-harmony-art"), null);
 });
+
+test("derived and copied deck draws use one draw animation and one hand patch", async () => {
+  for (const flag of ['derived', 'copy']) {
+    const harness = makeRoot();
+    const patches = [];
+    const player = new Player({root:harness.root, clock:harness.clock, viewerSide:'a',
+      applyPatch(_patch, event) { patches.push(event.seq); }});
+    const card = {...publicCard(), [flag]:true};
+    let flyers = 0;
+    const create = player._el.bind(player);
+    player._el = function(tag, classes) {
+      if (classes === 'v2-fx-draw-card') flyers += 1;
+      return create(...arguments);
+    };
+    const done = player.play([{seq:1001,type:'draw',side:'a',actor:'a:player',card,
+      patch:{sides:{a:{hand_count:1}}}}]);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.equal(overlayOf(harness).querySelector('.v2-fx-draw-card').getAttribute('data-v2-fx-kind'), 'draw-public');
+    assert.equal(flyers, 1);
+    assert.deepEqual(patches, []);
+    await settle(done, harness.clock, player);
+    assert.equal(flyers, 1);
+    assert.deepEqual(patches, [1001]);
+  }
+});

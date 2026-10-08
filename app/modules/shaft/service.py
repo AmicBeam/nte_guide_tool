@@ -42,12 +42,13 @@ MAX_BUFF_RULES = 48
 MAX_BACKGROUND_ACTION_MULTIPLIER = 999
 VISIBILITIES = frozenset({'private', 'public'})
 MARKET_SORTS = frozenset({'dps', 'likes', 'favorites', 'new'})
-DEFAULT_UNPUBLISHED_CHARACTERS = {'char_heiyu': '黑羽', 'char_akane': '明音凛'}
+DEFAULT_UNPUBLISHED_CHARACTERS = {'char_akane': '明音凛'}
 HALF_OPEN_CHARACTERS = {}
 RELEASED_CHARACTERS = {
     'char_0846d632e0': '灵可',
     'char_a01c39f576': '伊洛伊',
     'char_076a1f4e53': '残虹',
+    'char_heiyu': '黑羽',
 }
 ELEMENTS = ('光', '灵', '咒', '暗', '魂', '相')
 ZERO_ACTION_VISUAL_TICKS = 5

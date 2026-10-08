@@ -379,7 +379,7 @@
       "portrait": "/static/images/characters/portrait/早雾.webp",
       "role": "持续伤害增幅与鬼郎丸",
       "passive": "已施加浊燃时，己方持续伤害分配的伤害每有 1 种持续伤害便 +25%（向下取整）。鬼郎丸被召唤时，每有 1 种持续伤害，其攻击 +1。",
-      "awakened_passive": "其他己方异能者攻击 +2，持续 2 个己方回合。不可叠加。",
+      "awakened_passive": "其他己方异能者及己方召唤物攻击 +2，持续 2 个己方回合。不可叠加。",
       "everness_id": 1003,
       "ultimate": {
         "kind": "status",

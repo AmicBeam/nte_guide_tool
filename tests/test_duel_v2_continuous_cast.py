@@ -559,6 +559,79 @@ class ContinuousCastTest(unittest.TestCase):
         guard = front_debuff(s, 'a')['dots']['guard']
         self.assertEqual((guard['stacks'], guard['left'], guard['source']), (1, 2, 'b:adler'))
 
+    def test_zaowu_ultimate_buffs_allied_summons_in_live_state_and_replay(self):
+        from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
+        from app.modules.card_game.engine.duel_v2.state import energy_max
+        from app.modules.card_game.engine.duel_v2.summons import summon_front
+        for summon_kind in ('gulang', 'other'):
+            for equipped, bonus in ((False, 2), (True, 3)):
+                with self.subTest(summon=summon_kind, equipped=equipped):
+                    s = self.game()
+                    if summon_kind == 'gulang':
+                        s = self.play(s, 'S01')
+                        cid = s['sides']['a']['front']
+                    else:
+                        cid = summon_front(s, 'a', name='塔吉多', attack=2, hp=4)
+                    if equipped:
+                        s = self.play(s, 'S08')
+                    foe = summon_front(s, 'b', name='对方召唤物', attack=2, hp=4)
+                    hero(s, 'a', 'canhong').update(hp=0, down_turns=3)
+                    targets = [('a', cid), ('a', 'nanali'), ('a', 'anhunqu'),
+                               ('a', 'zaowu'), ('a', 'canhong'), ('b', foe), ('b', 'zero')]
+                    before = {(side, target): attack_value(hero(s, side, target), s, side)
+                              for side, target in targets}
+                    hero(s, 'a', 'zaowu')['energy'] = energy_max(hero(s, 'a', 'zaowu'))
+                    opening, seq = capture_public_board(s), s['event_seq']
+                    s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zaowu'})
+                    s = clone_state(json.loads(json.dumps(s)))
+                    replay = replay_public_board(opening, [e for e in s['events'] if e['seq'] > seq])
+                    views = [observe(s, viewer, include_previews=False) for viewer in ('a', 'b')] + [replay]
+                    for side, target in targets:
+                        expected = before[side, target] + (bonus if side == 'a' and target in
+                                   (cid, 'nanali', 'anhunqu') else 0)
+                        self.assertEqual(attack_value(hero(s, side, target), s, side), expected)
+                        for view in views:
+                            shown = next(h for h in view['sides'][side]['characters'] if h['id'] == target)
+                            self.assertEqual(shown['attack'], expected)
+                    self.assertTrue(any('己方召唤物' in e['text'] for e in s['events'] if e['seq'] > seq))
+
+    def test_zaowu_ultimate_does_not_transfer_bonus_to_later_summons(self):
+        from app.modules.card_game.engine.duel_v2.state import energy_max
+        s = self.play(self.game(), 'S01')
+        old = s['sides']['a']['front']
+        hero(s, 'a', 'zaowu')['energy'] = energy_max(hero(s, 'a', 'zaowu'))
+        s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zaowu'})
+        self.assertEqual(attack_value(hero(s, 'a', old), s, 'a'), 2)
+        s = self.play(s, 'S02')
+        new = s['sides']['a']['front']
+        self.assertNotEqual(new, old)
+        self.assertNotIn(old, s['sides']['a']['order'])
+        self.assertEqual(attack_value(hero(s, 'a', new), s, 'a'), 0)
+
+    def test_zaowu_summon_bonus_refreshes_without_stacking_and_expires(self):
+        from app.modules.card_game.engine.duel_v2.state import energy_max
+        s = self.play(self.game(), 'S01')
+        cid = s['sides']['a']['front']
+        base = attack_value(hero(s, 'a', cid), s, 'a')
+        hero(s, 'a', 'zaowu')['energy'] = energy_max(hero(s, 'a', 'zaowu'))
+        s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zaowu'})
+        self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), base + 2)
+        end_turn(s, 'a')
+        end_turn(s, 'b')
+        self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), base + 2)
+        s = self.play(s, 'S08')
+        hero(s, 'a', 'zaowu')['energy'] = energy_max(hero(s, 'a', 'zaowu'))
+        s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zaowu'})
+        self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), base + 3)
+        s = clone_state(json.loads(json.dumps(s)))
+        end_turn(s, 'a')
+        end_turn(s, 'b')
+        self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), base + 3)
+        end_turn(s, 'a')
+        end_turn(s, 'b')
+        self.assertEqual(s['sides']['a']['front'], cid)
+        self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), base)
+
     def test_zaowu_bonus_floors_per_kind(self):
         s = self.game()
         front_debuff(s, 'b')['burn'] = {'left': 2, 'by': 'a', 'stacks': 1}

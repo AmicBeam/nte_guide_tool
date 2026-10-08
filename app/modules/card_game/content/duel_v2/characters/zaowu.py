@@ -137,12 +137,12 @@ class Zaowu:
         bonus = 3 if c.character.get('shape') == 'S08' else 2
         for cid in team_order(c.state, c.side):
             h = hero(c.state, c.side, cid)
-            if cid == c.cid or h.get('summoned') or h.get('hp', 0) <= 0:
+            if cid == c.cid or h.get('hp', 0) <= 0:
                 continue
             add_effect(h, 'zaowu.ultimate_atk', 'attack.panel', bonus, stacking='replace',
                        source_entity_id=c.entity_id, source_key='S-ultimate', label='饕餮宴',
                        expiry=deadline(c.state, c.side, 2, 'turn_start'))
-        c.history(f'发动终结：其他己方异能者攻击 +{bonus}，持续 2 个己方回合。')
+        c.history(f'发动终结：其他己方异能者及己方召唤物攻击 +{bonus}，持续 2 个己方回合。')
 
     @staticmethod
     def on_ally_summon_hurt(c, summon_id=None, amount=0, **_data):

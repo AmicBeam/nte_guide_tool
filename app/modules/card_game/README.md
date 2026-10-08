@@ -1023,3 +1023,7 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 倾陷预组改为黑羽－达芙蒂尔－残虹－安魂曲，新增灵可预组（残虹－薄荷－灵可－早雾）；角色顺序和32张配牌取用户指定的测试账号保存构筑，详见规则手册当日专节。普通人机和新赠送接入七套公开预组，已有个人构筑不覆盖、同名或同队不重复赠送。
 
 两套高级人机保留待训练入口，并作为下一轮七队任务的固定人工起点；计划检查绑定构筑身份、规范化牌列及7×7矩阵，42局跨队加14局镜像。没有启动训练或改写旧权重／兼容授权。验证：`.venv/bin/python -m unittest tests.test_duel_v2_preset_starts tests.test_duel_v2_catalog tests.test_duel_v2_simple_ai_presets tests.test_duel_v2_opponent_selection tests.test_duel_v2_api`；`scripts/plan_duel_v2_next_round.py`只物化请求，不预约种子或启动学习。
+
+### 按角色锁定的预选候选
+
+`rl/local_card_search.py:preselection_neighbors` 接受明确的可换牌角色，只生成这些角色的合法单换及有界双换，其他角色的8张配牌锁定；支持当前公开卡池，保持历史 `local_neighbors` 的默认编码边界。此入口只枚举未评分候选，不启动训练或授予模型／配牌批准。验证：`.venv/bin/python -m unittest tests.test_duel_v2_scoped_preselection tests.test_duel_v2_local_card_search`；实际训练接入及验收仍按训练手册。

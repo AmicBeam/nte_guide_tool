@@ -237,3 +237,5 @@ python scripts/train_duel_v2_current_round.py --output artifacts/rl-evals/EXISTI
 七队专家价值与冷启动准备分别由 `prepare_duel_v2_seven_value.py` 和 `prepare_duel_v2_seven_foundation.py` 执行。后者只用专家TRAINING完整轨迹，为倾陷／灵可做监督初始化，其他五队逐数组保持；不将监督初始化计为正式Gumbel更新。准备、正式搜索学习及最终冻结评估的样本和种子隔离。按角色限定预选仍遵循配牌协议，未评分候选不是预选通过，未完成公平适应和独立确认时保留人工起始牌。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_seven_training tests.test_duel_v2_scoped_preselection tests.test_duel_v2_local_card_search`。CPU检查仅验证工程契约，Windows CUDA数值、恢复、价值、完整轮转与容量须在每轮新冻结源码上执行；不预先承诺训练成功或强度改善。
+
+七队数值导出、固定构筑采样、专家变化构筑及监督重放统一调用 `canonical_build`，仅按卡牌ID排序，不改变四人顺序。原始源清单及原牌列仍保留在迁移来源；新模型清单和实际开局使用同一规范化身份，不能只在最终评估时排序。已冻结源码目录的后续快照从经SHA核验的 `source-manifest.json` 取文件，不依赖其在外层Windows旧Git checkout中是否被跟踪；空文件集也创建清单目录，拒绝已变更或外部符号链接来源。

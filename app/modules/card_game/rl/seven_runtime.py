@@ -27,10 +27,10 @@ def create_network(key,hidden=128,device='cpu',legacy=False):
 
 def export(net,directory,key,build,origin):
     from .recovery_round import write
-    from ..content.duel_v2 import validate_deck
+    from .build_acceptance import canonical_build
     from .seven_lineup import KEYS
     if key not in KEYS or net.policy_schema!=architecture.SCHEMA:raise ValueError('Seven-team policy required')
-    build=validate_deck(build)
+    build=canonical_build(build)
     root=Path(directory);root.mkdir(parents=True,exist_ok=True)
     path=root/(key+'.npz');tmp=root/(key+'.tmp.npz')
     np.savez_compressed(tmp,**{name:t.detach().cpu().numpy() for name,t in net.state_dict().items()});tmp.replace(path)

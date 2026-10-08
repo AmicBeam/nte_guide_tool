@@ -17,8 +17,9 @@ def preset_decks():
     from copy import deepcopy
     from app.modules.card_game.content.duel_v2 import STARTER_DECKS, validate_deck
     from app.modules.card_game.rl.seven_schedule import ROSTER
+    from app.modules.card_game.rl.build_acceptance import canonical_build
     decks={d['id']:d for d in STARTER_DECKS}
-    return {key:validate_deck(deepcopy(decks[key])) for key in ROSTER}
+    return {key:canonical_build(decks[key]) for key in ROSTER}
 
 
 def main():
@@ -38,7 +39,7 @@ def main():
     import numpy as np
     from app.modules.card_game.rl import seven_runtime as rt,seven_round as rr,seven_covered_value as cv
     from app.modules.card_game.rl.seven_schedule import ROSTER,learning_schedule
-    from app.modules.card_game.rl.build_acceptance import claim_seeds
+    from app.modules.card_game.rl.build_acceptance import claim_seeds,canonical_build
     from app.modules.card_game.content.duel_v2 import CARDS,validate_deck
     from app.modules.card_game.rl.seven_lineup import identity
     from app.modules.card_game.rl.offline_sources import snapshot
@@ -72,7 +73,7 @@ def main():
                         else:
                             bag=[c for c in kit for _ in range(2)]
                             cards+=[bag[int(j)] for j in rng.choice(len(bag),8,replace=False)]
-                    builds[side]=validate_deck(dict(decks[key],card_ids=cards))
+                    builds[side]=canonical_build(dict(decks[key],card_ids=cards))
                 result.append(dict(seed=seed,first=item['first'],keys={'a':item['left'],'b':item['right']},
                     decks=builds,deadline=end-30))
         return result

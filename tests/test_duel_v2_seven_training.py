@@ -31,6 +31,16 @@ class SevenEncodingTest(unittest.TestCase):
                 aa,(xx,cc)=rt.decision(sample,'a');bb,(yy,dd)=rt.decision(proxy,'a')
                 self.assertEqual(aa,bb);np.testing.assert_array_equal(xx,yy);np.testing.assert_array_equal(cc,dd)
 
+    def test_every_training_job_uses_canonical_cards_and_fixed_character_order(self):
+        from app.modules.card_game.rl.seven_round import jobs_for
+        jobs=jobs_for('numerical-source',DECKS,771,99999999999,pure=True)
+        self.assertEqual(len(jobs),56)
+        for job in jobs:
+            for side in ('a','b'):
+                key=job['policies'][side][1];build=job['decks'][side]
+                self.assertEqual(build['card_ids'],sorted(DECKS[key]['card_ids']))
+                self.assertEqual(build['character_ids'],DECKS[key]['character_ids'])
+
     def test_ordered_top_bottom_and_exit_are_distinct(self):
         from tests.test_duel_v2_heiyu import game,top,play,witch
         state=game();top(state,['P01','P03','Z01','P05']);state=play(state,'PF01')
@@ -101,6 +111,7 @@ class SevenNumericTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             rt.export(net,root,'lingke',DECKS['lingke'],dict(test_only=True))
             policy=rt.model(root,'lingke');restored,_,_=rt.restore(root,'lingke')
+            self.assertEqual(policy.serving_deck['card_ids'],sorted(DECKS['lingke']['card_ids']))
             xx,cc,mask=tensors([(x,c)],'cpu');scores,_=net(xx,cc,mask)
             np.testing.assert_allclose(scores.detach().numpy()[0],policy.scores(x,c),rtol=2e-4,atol=2e-4)
             self.assertTrue(all(torch.equal(t,restored.state_dict()[n]) for n,t in net.state_dict().items()))

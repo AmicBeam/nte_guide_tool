@@ -60,6 +60,7 @@ def replay_training_job(job):
 def training_jobs(folder,deadline):
     """Reconstruct only authenticated TRAINING builds; never read heldout labels."""
     from .seven_schedule import ROSTER,learning_schedule
+    from .build_acceptance import canonical_build
     from .seven_lineup import all_features,candidate_names
     from .seven_covered_value import phase_counts
     from ..content.duel_v2 import CARDS,validate_deck
@@ -94,7 +95,7 @@ def training_jobs(folder,deadline):
                 else:
                     bag=[cid for cid in kit for _ in range(2)]
                     cards+=[bag[int(j)] for j in rng.choice(len(bag),8,replace=False)]
-            builds[side]=validate_deck(dict(decks[key],card_ids=cards))
+            builds[side]=canonical_build(dict(decks[key],card_ids=cards))
         jobs.append(dict(path=str(path),seed=seed,first=item['first'],decks=builds,
                          keys={'a':item['left'],'b':item['right']},deadline=deadline))
     return jobs

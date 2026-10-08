@@ -45,6 +45,8 @@ def versions(folder):
 def jobs_for(models, decks, base, deadline, *, pure=True, cycle=0, mirrors=True, report=None,
              simulations=32, historical=None,teacher_mode='network',covered_value_source=None,
              keys=None):
+    from .build_acceptance import canonical_build
+    decks={key:canonical_build(build) for key,build in decks.items()}
     selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
     plan = learning_schedule()
     if mirrors:

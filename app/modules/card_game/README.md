@@ -1035,3 +1035,7 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 ### 复制异能生成牌与占卜续步
 
 复制黑羽产生的谕石归属实际触发者，复制达芙蒂尔产生的洞悉保留原角色来源；占卜续步通过内容注册的序列化标识完成，复制结束或安魂曲自身终结不改变这张牌的普通占卜效果。七队采样支持公开阵容中的复制生成来源与洞悉，保持生成归属和隐藏信息边界。验证：`.venv/bin/python -m unittest tests.test_duel_v2_mimic_generated_choices tests.test_duel_v2_seven_training tests.test_duel_v2_heiyu tests.test_duel_v2_dafutier`。
+
+### 七队构筑与冻结源码一致性
+
+七队导出／固定采样／专家变化构筑／监督重放统一规范化牌列，保证训练与冻结评估的模型构筑SHA一致，角色顺序不变。`rl/offline_sources.snapshot` 支持已认证的独立源码清单，逐成员核SHA后复制，保持外层旧checkout和当前工作区隔离。验证：`.venv/bin/python -m unittest tests.test_duel_v2_source_revision tests.test_duel_v2_learning_audits tests.test_duel_v2_seven_training`。

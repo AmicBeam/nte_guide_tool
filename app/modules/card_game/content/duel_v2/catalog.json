@@ -129,7 +129,7 @@
         {
           "id": "mechanism-solitary",
           "name": "独行",
-          "description": "回复真红的全部生命。直到下个己方回合开始时，真红攻击 +1，单次至多受到 1 点伤害。当前操作完成后，真红进入战斗区并发起一次额外攻击，对方可以正常反击；此次攻击不获得基础环合值。"
+          "description": "回复真红的全部生命。直到下个己方回合开始时，真红攻击 +1，单次至多受到 1 点伤害。当前操作完成后，真红进入战斗区并发起 1 次额外攻击，对方可以正常反击；此次攻击不获得基础环合值。"
         }
       ]
     },
@@ -193,7 +193,7 @@
       "max_hp": 4,
       "avatar": "/static/images/characters/avatar/九原.webp",
       "portrait": "/static/images/characters/portrait/九原.webp",
-      "passive": "【创生强化】九原存活时，创生效果额外结算一次。创生对异能者造成伤害时，附着枚约。",
+      "passive": "【创生强化】九原存活时，创生效果额外结算 1 次。创生对异能者造成伤害时，附着枚约。",
       "awakened_passive": "对所有对方异能者造成 1 点伤害。对所有枚约目标额外造成 2 点伤害，并消耗枚约。",
       "everness_id": 1055,
       "role": "创生强化与枚约",
@@ -212,7 +212,7 @@
       "avatar": "/static/images/characters/avatar/灵可.png",
       "portrait": "/static/images/characters/portrait/灵可.webp",
       "role": "覆纹强化、同频合击与共鸣领域",
-      "passive": "【覆纹】强化：己方覆纹的追加伤害由 2 点提升至 3 点。每当一名其他己方异能者连续使用 3 张牌时，灵可发起一次该属性的「同频合击」。前排优先。",
+      "passive": "【覆纹】强化：己方覆纹的追加伤害由 2 点提升至 3 点。每当 1 名其他己方异能者连续使用 3 张牌时，灵可发起 1 次该属性的「同频合击」。前排优先。",
       "awakened_passive": "展开共鸣领域，己方援护技也可享受「同频合击」增益，持续 2 个己方回合。",
       "everness_id": 1072,
       "ultimate": {
@@ -272,9 +272,9 @@
       "max_hp": 5,
       "avatar": "/static/images/characters/avatar/哈索尔.webp",
       "portrait": "/static/images/characters/portrait/哈索尔.webp",
-      "role": "延滞强化，对应九原之于创生",
-      "passive": "哈索尔存活时，己方施加的延滞改为持续 3 个己方回合，不保留延滞的减攻效果。",
-      "awakened_passive": "己方触发延滞时，其持续时间改为 4 个己方回合。本效果持续 2 个己方回合。",
+      "role": "",
+      "passive": "",
+      "awakened_passive": "",
       "everness_id": 1025,
       "ultimate": {
         "kind": "status",
@@ -430,7 +430,7 @@
         {
           "id": "mechanism-guard",
           "name": "诛恶护持",
-          "description": "不可叠加。施加方回合结束时，随机对一名对方存活异能者造成 1 点无视护盾的伤害。持续时间由施加效果决定。"
+          "description": "不可叠加。施加方回合结束时，随机对 1 名对方存活异能者造成 1 点无视护盾的伤害。持续时间由施加效果决定。"
         }
       ]
     },
@@ -642,7 +642,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。（当前为0）",
+      "description": "本局每使用过 1 次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。（当前为0）",
       "starter_copies": 2,
       "attack": 2,
       "hp": 5
@@ -1165,7 +1165,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "选择一名不在己方阵容中的对方异能者。本回合安魂曲的异能视为与其相同，并触发其回合开始时的效果。",
+      "description": "选择 1 名不在己方阵容中的对方异能者。本回合安魂曲的异能视为与其相同，并触发其回合开始时的效果。",
       "effect_id": "A01",
       "source": {
         "character_id": 1004,
@@ -1188,7 +1188,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。对一名异能者造成等同于「噩梦」层数的伤害。若「噩梦」不少于 5 层，对对方玩家造成 3 点伤害。",
+      "description": "瞬发。对 1 名异能者造成等同于「噩梦」层数的伤害。若「噩梦」不少于 5 层，对对方玩家造成 3 点伤害。",
       "starter_copies": 2,
       "instant": true
     },
@@ -1233,7 +1233,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "指定一名对方角色。安魂曲可以在备战区远程出击。",
+      "description": "指定 1 名对方角色。安魂曲可以在备战区远程出击。",
       "effect_id": "A05",
       "source": {
         "character_id": 1004,
@@ -1529,7 +1529,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "召唤鬼郎丸。其吞噬了好狗狗的项圈。鬼郎丸受到伤害时，随机使一名对方异能者进入倾陷。",
+      "description": "召唤鬼郎丸。其吞噬了好狗狗的项圈。鬼郎丸受到伤害时，随机使 1 名对方异能者进入倾陷。",
       "starter_copies": 0
     },
     {
@@ -1539,7 +1539,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "召唤鬼郎丸。其吞噬了气味奇怪的液体。鬼郎丸受到伤害时，随机对一名对方异能者造成等量伤害。",
+      "description": "召唤鬼郎丸。其吞噬了气味奇怪的液体。鬼郎丸受到伤害时，随机对 1 名对方异能者造成等量伤害。",
       "effect_id": "S03",
       "source": {
         "character_id": 1003,
@@ -1555,7 +1555,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。可重复使用。对一个召唤物造成 3 点伤害。",
+      "description": "瞬发。可重复使用。对 1 个召唤物造成 3 点伤害。",
       "effect_id": "S04",
       "source": {
         "character_id": 1003,
@@ -1747,7 +1747,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "选择 1 名己方存活异能者。发动一次其属性的「同频合击」。前排优先。",
+      "description": "选择 1 名己方存活异能者。发动 1 次其属性的「同频合击」。前排优先。",
       "starter_copies": 2
     },
     {
@@ -1758,7 +1758,7 @@
       "cost": 1,
       "additional_ap_cost": 1,
       "terminal": false,
-      "description": "额外消耗 1 点行动力。依据其他存活己方异能者的属性，各发动一次该属性的「同频合击」，最后再发动一次灵可的「同频合击」。本牌触发的「同频合击」不会攻击玩家。",
+      "description": "额外消耗 1 点行动力。依据其他存活己方异能者的属性，各发动 1 次该属性的「同频合击」，最后再发动 1 次灵可的「同频合击」。本牌触发的「同频合击」不会攻击玩家。",
       "effect_id": "K06",
       "source": {
         "character_id": 1072,
@@ -1996,7 +1996,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "哈索尔获得 1 点能量。本回合己方下一次延滞额外造成 1 点伤害。",
+      "description": "",
       "effect_id": "H01",
       "source": {
         "character_id": 1025,
@@ -2018,7 +2018,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "哈索尔获得 1 点能量。选择另一名己方存活角色。其获得 1 点自己的环合值。",
+      "description": "",
       "starter_copies": 0
     },
     {
@@ -2028,7 +2028,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若目标剩余生命不高于 4，本次攻击伤害 +2。",
+      "description": "",
       "effect_id": "H03",
       "source": {
         "character_id": 1025,
@@ -2052,7 +2052,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本次攻击伤害 +2。减少生命上限。",
+      "description": "",
       "starter_copies": 2,
       "shield": 1,
       "attack": 2
@@ -2064,7 +2064,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "抽 1 张牌。哈索尔回复 1 点生命。",
+      "description": "",
       "effect_id": "H05",
       "source": {
         "character_id": 1025,
@@ -2080,7 +2080,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "检视牌库顶 2 张牌。选择 1 张加入手牌，另 1 张置于牌库底。",
+      "description": "",
       "effect_id": "H06",
       "source": {
         "character_id": 1025,
@@ -2102,7 +2102,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "本弧盘期间，哈索尔入场触发延滞后：本次出击不受反击。",
+      "description": "",
       "starter_copies": 0,
       "attack": 1,
       "hp": 0
@@ -2120,7 +2120,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "每个己方回合，己方首次结算延滞额外伤害后：哈索尔对该目标造成 1 点追击伤害。",
+      "description": "",
       "starter_copies": 2,
       "attack": 1,
       "hp": 0
@@ -2277,7 +2277,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "【创生强化】触发创生后，下个己方回合开始时额外触发一次创生。不可叠加。",
+      "description": "【创生强化】触发创生后，下个己方回合开始时额外触发 1 次创生。不可叠加。",
       "starter_copies": 2,
       "attack": 2,
       "hp": 6
@@ -2649,7 +2649,7 @@
         },
         {
           "id": "release_a",
-          "label": "3 金谷 · 追加战斗 A",
+          "label": "3 金谷 · 释放「太阳太阳请回答」",
           "description": "出击后额外释放「太阳太阳请回答」。",
           "costs": {
             "jingu": 3
@@ -2686,7 +2686,7 @@
         },
         {
           "id": "release_b",
-          "label": "3 金谷 · 追加战斗 B",
+          "label": "3 金谷 · 释放「烟花，悄然无声」",
           "description": "出击后额外释放「烟花，悄然无声」。",
           "costs": {
             "jingu": 3
@@ -2695,7 +2695,7 @@
         },
         {
           "id": "release_ba",
-          "label": "6 金谷 · 追加 B 和 A",
+          "label": "6 金谷 · 依次释放「烟花，悄然无声」和「太阳太阳请回答」",
           "description": "出击后依次释放「烟花，悄然无声」和「太阳太阳请回答」。",
           "costs": {
             "jingu": 6
@@ -2733,7 +2733,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。获得 1 点金谷，将一张本牌的复制洗入牌库，并抽 1 张牌。",
+      "description": "瞬发。获得 1 点金谷，将 1 张本牌的复制洗入牌库，并抽 1 张牌。",
       "effect_id": "Q05",
       "source": {
         "character_id": 1073,
@@ -2997,8 +2997,8 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "根据存活的己方伊波恩角色，选择视为打出他们的一张牌，或召唤一个 2/4 的塔吉多。",
-      "tooltip": "娜娜莉存活且未倾陷：视为打出「要叫大姐头」。\n零存活且未倾陷：视为打出「探悉天职」。\n己方有编队异能者倒地：在战斗区召唤一个 2/4 的塔吉多。",
+      "description": "根据存活的己方伊波恩角色，选择视为打出他们的 1 张牌，或召唤 1 个 2/4 的塔吉多。",
+      "tooltip": "娜娜莉存活且未倾陷：视为打出「要叫大姐头」。\n零存活且未倾陷：视为打出「探悉天职」。\n己方有编队异能者倒地：在战斗区召唤 1 个 2/4 的塔吉多。",
       "effect_id": "XF01",
       "derived": true,
       "starter_copies": 0,
@@ -3064,7 +3064,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。进行一次手牌调度，最多查阅 6 张手牌，选择至多 3 张替换。",
+      "description": "瞬发。进行 1 次手牌调度，最多查阅 6 张手牌，选择至多 3 张替换。",
       "effect_id": "E03",
       "source": {
         "character_id": 1021,
@@ -3151,7 +3151,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "埃德嘉的治疗效果 +1。每回合一次，己方回复任意角色生命后，抽 1 张牌。",
+      "description": "埃德嘉的治疗效果 +1。每回合 1 次，己方回复任意角色生命后，抽 1 张牌。",
       "effect_id": "E08",
       "source": {
         "character_id": 1021,
@@ -3497,7 +3497,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对一名对方异能者造成 3 点伤害。阿德勒获得 3 点护盾。若已有浊燃，再随机对另一名对方异能者重复 1 次。",
+      "description": "对 1 名对方异能者造成 3 点伤害。阿德勒获得 3 点护盾。若已有浊燃，再随机对另 1 名对方异能者重复 1 次。",
       "effect_id": "D01",
       "starter_copies": 0,
       "source": {
@@ -3530,7 +3530,7 @@
       "cost": 1,
       "terminal": false,
       "response": "ally_attacked",
-      "description": "选择另一名己方异能者，使其获得 4 点护盾。响应：其他己方异能者被攻击时，自动使用。",
+      "description": "选择另 1 名己方异能者，使其获得 4 点护盾。响应：其他己方异能者被攻击时，自动使用。",
       "effect_id": "D03",
       "starter_copies": 0,
       "source": {
@@ -3620,7 +3620,7 @@
       "terminal": false,
       "attack": 0,
       "hp": 7,
-      "description": "【浊燃】强化：浊燃获得层数时，随机对一名对方存活异能者施加以下之一，同种类不可叠加：全属性抗性 -1、倾陷值上限 -1 或攻击 -1。",
+      "description": "【浊燃】强化：浊燃获得层数时，随机对 1 名对方存活异能者施加以下之一，同种类不可叠加：全属性抗性 -1、倾陷值上限 -1 或攻击 -1。",
       "effect_id": "D08",
       "starter_copies": 0,
       "source": {
@@ -3808,7 +3808,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "对一个对方异能者造成3点伤害。\n【占卜效果】对随机目标释放本牌。",
+      "description": "对 1 名对方异能者造成3 点伤害。\n【占卜效果】对随机目标释放本牌。",
       "effect_id": "P02",
       "source": {
         "character_id": 1042,
@@ -3860,7 +3860,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "随机对X名对方异能者造成2点伤害，X为本局你「占卜」次数（当前为0）。然后「占卜」。\n【占卜效果】将本牌置入手牌。",
+      "description": "随机对X名对方异能者造成2 点伤害，X为本局你「占卜」次数（当前为0）。然后「占卜」。\n【占卜效果】将本牌置入手牌。",
       "effect_id": "P05",
       "source": {
         "character_id": 1042,
@@ -3876,7 +3876,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "复活一个己方异能者，然后「占卜」。\n【占卜效果】随机使一个己方倒地异能者倒计时-1。",
+      "description": "复活 1 名己方异能者，然后「占卜」。\n【占卜效果】随机使 1 个己方倒地异能者倒计时-1。",
       "effect_id": "P06",
       "source": {
         "character_id": 1042,
@@ -3923,7 +3923,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "当你「占卜」时，随机将一张黑羽的牌提前置入牌库顶。\n【占卜效果】瞬发机会恢复为 1 次。",
+      "description": "当你「占卜」时，随机将 1 张黑羽的牌提前置入牌库顶。\n【占卜效果】瞬发机会恢复为 1 次。",
       "effect_id": "P08",
       "source": {
         "character_id": 1042,

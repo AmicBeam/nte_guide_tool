@@ -105,7 +105,7 @@ def _q05(c):
         card = card_instance(c.state, 'Q05', c.side)
         c.state['sides'][c.side]['deck'].append(card)
         shuffle(c.state, c.state['sides'][c.side]['deck'])
-        c.history(f"将一张「{card['name']}」的复制洗入牌库。")
+        c.history(f"将 1 张「{card['name']}」的复制洗入牌库。")
     c.draw(1)
 
 

@@ -24,8 +24,8 @@ def family_options(state, side, *, available=True):
 
 def family_description(state, side):
     from app.modules.card_game.content.duel_v2 import CARDS
-    parts = [f"视为打出一张「{CARDS[card]['name']}」" if card
-             else '在战斗区召唤一个 2/4 的塔吉多'
+    parts = [f"视为打出 1 张「{CARDS[card]['name']}」" if card
+             else '在战斗区召唤 1 个 2/4 的塔吉多'
              for _, card in family_options(state, side)]
     if not parts:
         return '当前无可用选项。'

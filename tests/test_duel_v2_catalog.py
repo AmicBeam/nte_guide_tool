@@ -119,7 +119,8 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertIn('创生强化', CHARACTERS['jiuyuan']['passive'])
         self.assertIn('枚约', CHARACTERS['jiuyuan']['awakened_passive'])
         self.assertIn('前排优先', CHARACTERS['lingke']['passive'])
-        self.assertIn('延滞', CHARACTERS['hathor']['passive'])
+        self.assertEqual(CHARACTERS['hathor']['passive'], '')
+        self.assertEqual(CHARACTERS['hathor']['awakened_passive'], '')
         self.assertIn('溢出伤害', CHARACTERS['bohe']['passive'])
         self.assertIn('穿透', CHARACTERS['bohe']['passive'])
         self.assertEqual(CHARACTERS['bohe']['passive'], '薄荷战斗造成的溢出伤害穿透至玩家。')
@@ -220,7 +221,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         for card in CARDS.values():
             if card['type'] == 'battle':
                 self.assertIsNone(sortie.search(card['description'] or ''), card['id'])
-        self.assertEqual(CARDS['N07']['description'], '本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。（当前为0）')
+        self.assertEqual(CARDS['N07']['description'], '本局每使用过 1 次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。（当前为0）')
         self.assertEqual(CARDS['Z08']['name'], '学园随想')
         self.assertEqual(CARDS['Z08']['description'], '回合结束时，己方前排攻击 +1。')
         self.assertEqual(CARDS['Z02']['description'], '从牌库将 2 张武备牌加入手牌。')

@@ -123,7 +123,7 @@ class Iloy:
             return
         team['extra_genesis_pending'] = True
         team['extra_genesis_actor'] = entering or c.cid
-        c.history('「星月夜」触发：下个己方回合开始时追加一次创生。',
+        c.history('「星月夜」触发：下个己方回合开始时追加 1 次创生。',
                   target_id=entering or c.cid)
 
     @staticmethod

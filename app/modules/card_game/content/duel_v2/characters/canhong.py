@@ -45,7 +45,7 @@ def _c02(c):
     c.sortie()
     if before - set(living_espers(c.state, foe)):
         add_hand(c.state, c.side, card_instance(c.state, 'C02', c.side))
-        c.history('击倒对方异能者，获得 1 张「渊底之吻」。')
+        c.history('使对方异能者倒地，获得 1 张「渊底之吻」。')
 
 
 def _c03(c):

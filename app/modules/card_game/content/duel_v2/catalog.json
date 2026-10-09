@@ -79,7 +79,7 @@
       "max_hp": 5,
       "avatar": "/static/images/characters/avatar/鉴定师.webp",
       "portrait": "/static/images/characters/portrait/鉴定师.webp",
-      "passive": "零使用战斗牌后，立刻充满自己的环合值。零已装备武备时，零的武备牌获得瞬发，使用时抽 1 张牌。",
+      "passive": "零使用战斗牌后，充满自己的环合值。零已装备武备时，零的武备牌获得瞬发，使用时抽 1 张牌。",
       "awakened_passive": "己方武备牌变为瞬发，使用时抽 1 张牌，持续 2 个己方回合。",
       "everness_id": 1051,
       "role": "战斗牌回满环合，弧盘过牌",
@@ -481,7 +481,7 @@
       "everness_id": 1042,
       "faction": "尤克阿什庭",
       "passive": "每个己方回合开始时或黑羽主动出击时，将 1 张「谕石」随机插入己方牌库。黑羽使用战斗牌后，充满自己的环合值。【浸染】强化：己方施加的浸染持续时间翻倍。【黯星】强化：己方施加的黯星结束时，额外施加 1 次黯星；额外施加的黯星不会再次触发此效果。",
-      "awakened_passive": "全体己方异能者攻击 +1，持续 2 个己方回合，不可叠加。黑羽进入「救世魔女」状态，持续 2 个己方回合。可以再次点击终结按钮，退出该状态。",
+      "awakened_passive": "全体己方异能者攻击 +1，持续 2 个己方回合，不可叠加。黑羽进入「救世魔女」状态，持续 2 个己方回合。可退出该状态。",
       "ultimate": {
         "kind": "status",
         "turns": 2
@@ -503,7 +503,7 @@
             "救世魔女",
             "魔女效果"
           ],
-          "description": "黑羽环合强化外的异能暂停生效。黑羽出击时，先「占卜」，完成后继续本次出击。期间可手动退出该状态。"
+          "description": "黑羽环合强化外的异能暂停生效。黑羽出击时，先「占卜」，完成后继续本次出击。期间可退出该状态。"
         }
       ],
       "energy_max": 5
@@ -1252,7 +1252,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若己方前排为魂或咒属性，安魂曲以援护技登场并触发环合，不消耗环合值。以此形式出场不施加「噩梦」。",
+      "description": "若己方前排为魂或咒属性，安魂曲以援护技登场并触发环合，不消耗环合值。以此形式登场不施加「噩梦」。",
       "effect_id": "A06",
       "source": {
         "character_id": 1004,
@@ -1353,7 +1353,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "若已有不少于 10 层持续伤害，抽 1 张牌。若击倒对方异能者，获得 1 张「渊底之吻」。",
+      "description": "若已有不少于 10 层持续伤害，抽 1 张牌。若使对方异能者倒地，获得 1 张「渊底之吻」。",
       "starter_copies": 2,
       "shield": 1,
       "attack": 1
@@ -1465,7 +1465,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "复活残虹。若已有不少于 20 层持续伤害，残虹倒地时从牌库或手牌自动释放这张卡。（残虹倒地时也能打出）",
+      "description": "复活残虹。若已有不少于 20 层持续伤害，残虹倒地时从牌库或手牌自动释放本牌。（残虹倒地时也能打出）",
       "starter_copies": 0,
       "attack": 2,
       "hp": 6,
@@ -1623,7 +1623,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "装备时和己方回合开始时，若已施加 4 种持续伤害，召唤一只吞噬了随机物品的鬼郎丸，并对其造成 3 点伤害。",
+      "description": "装备时和己方回合开始时，若已施加 4 种持续伤害，召唤 1 个吞噬了随机物品的鬼郎丸，并对其造成 3 点伤害。",
       "starter_copies": 2,
       "hp": 4,
       "attack": 2
@@ -1725,7 +1725,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "选择 1 名对方异能者，附着「小鬼打这里」。己方使用战斗牌时，灵可立刻对该目标发动灵属性的「同频合击」，消耗标记，并获得 1 点能量。",
+      "description": "选择 1 名对方异能者，附着「小鬼打这里」。己方使用战斗牌时，灵可对该目标发动灵属性的「同频合击」，消耗标记，并获得 1 点能量。",
       "effect_id": "K04",
       "source": {
         "character_id": 1072,
@@ -1902,7 +1902,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。弃掉手中全部真红牌，抽取等量的牌。响应：真红倒地后，自动使用。",
+      "description": "瞬发。弃置全部真红手牌，抽等量的牌。响应：真红倒地后，自动使用。",
       "effect_id": "R05",
       "source": {
         "character_id": 1076,
@@ -2341,7 +2341,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "交战时，对方异能者攻击造成的溢出伤害也会转移至玩家。响应：薄荷被攻击时，自动使用。",
+      "description": "战斗时，对方异能者攻击造成的溢出伤害也会转移至玩家。响应：薄荷被攻击时，自动使用。",
       "effect_id": "M04",
       "source": {
         "character_id": 1019,
@@ -3064,7 +3064,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。进行 1 次手牌调度，最多查阅 6 张手牌，选择至多 3 张替换。",
+      "description": "瞬发。进行 1 次手牌调度，检视至多 6 张手牌，选择至多 3 张替换。",
       "effect_id": "E03",
       "source": {
         "character_id": 1021,
@@ -3790,7 +3790,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "免疫战斗伤害。\n【占卜效果】释放本牌。若为「救世魔女」形态下，叠加至原攻击。",
+      "description": "免疫战斗伤害。\n【占卜效果】释放本牌。若处于「救世魔女」状态，叠加至原攻击。",
       "effect_id": "P01",
       "source": {
         "character_id": 1042,
@@ -3842,7 +3842,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "【占卜效果】释放本牌。若为「救世魔女」形态下，在原攻击结束后释放。",
+      "description": "【占卜效果】释放本牌。若处于「救世魔女」状态，在原攻击结束后释放。",
       "effect_id": "P04",
       "source": {
         "character_id": 1042,
@@ -3860,7 +3860,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "随机对X名对方异能者造成2 点伤害，X为本局你「占卜」次数（当前为0）。然后「占卜」。\n【占卜效果】将本牌置入手牌。",
+      "description": "随机对 X 名对方异能者造成 2 点伤害，X 为本局你「占卜」次数（当前为0）。然后「占卜」。\n【占卜效果】将本牌置入手牌。",
       "effect_id": "P05",
       "source": {
         "character_id": 1042,
@@ -3876,7 +3876,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "复活 1 名己方异能者，然后「占卜」。\n【占卜效果】随机使 1 个己方倒地异能者倒计时-1。",
+      "description": "复活 1 名己方异能者，然后「占卜」。\n【占卜效果】随机使 1 名己方倒地异能者恢复倒计时 -1。",
       "effect_id": "P06",
       "source": {
         "character_id": 1042,
@@ -3892,7 +3892,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "黑羽攻击的溢出伤害可以穿透至对方玩家。\n【占卜效果】本回合通常出击可以消耗瞬发机会。",
+      "description": "黑羽攻击的溢出伤害可以穿透至对方玩家。\n【占卜效果】本回合普通出击可以消耗瞬发机会。",
       "effect_id": "P07",
       "source": {
         "character_id": 1042,
@@ -3923,7 +3923,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "当你「占卜」时，随机将 1 张黑羽的牌提前置入牌库顶。\n【占卜效果】瞬发机会恢复为 1 次。",
+      "description": "「占卜」检视牌库前，随机将 1 张黑羽的牌置于牌库顶。\n【占卜效果】瞬发机会恢复为 1 次。",
       "effect_id": "P08",
       "source": {
         "character_id": 1042,

@@ -83,7 +83,7 @@ def _advance_owned(c):
     if choices:
         card = deck.pop(_rng(c.state).choice(choices))
         deck.insert(0, card)
-        c.history('「不凋羽」：随机将 1 张黑羽的牌提前置于牌库顶。')
+        c.history('「不凋羽」：「占卜」检视牌库前，随机将 1 张黑羽的牌置于牌库顶。')
 
 
 def start_inspection(c, *, after=None, min_bottom=0):
@@ -173,8 +173,8 @@ def apply_divination_benefit(c, card, *, witch=False):
         add_effect(c.state['sides'][c.side], 'heiyu.instant_sortie', 'rule.normal_attack_instant', True,
                    op='allow', scope='allies', stacking='replace', clear_on=(),
                    source_entity_id=c.entity_id, source_key='P07',
-                   expiry=deadline(c.state, c.side, 0, 'turn_end'), label='通常出击可消耗瞬发机会')
-        c.history('「牧星者」：本回合通常出击可以消耗瞬发机会。')
+                   expiry=deadline(c.state, c.side, 0, 'turn_end'), label='普通出击可消耗瞬发机会')
+        c.history('「牧星者」：本回合普通出击可以消耗瞬发机会。')
     elif card_id == 'P08':
         c.state['sides'][c.side]['used']['instant'] = False
         c.history('「不凋羽」：瞬发机会恢复为 1 次。')

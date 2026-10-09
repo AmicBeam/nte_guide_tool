@@ -225,7 +225,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         self.assertEqual(CARDS['Z08']['name'], '学园随想')
         self.assertEqual(CARDS['Z08']['description'], '回合结束时，己方前排攻击 +1。')
         self.assertEqual(CARDS['Z02']['description'], '从牌库将 2 张武备牌加入手牌。')
-        self.assertEqual(CHARACTERS['zero']['passive'], '零使用战斗牌后，立刻充满自己的环合值。零已装备武备时，零的武备牌获得瞬发，使用时抽 1 张牌。')
+        self.assertEqual(CHARACTERS['zero']['passive'], '零使用战斗牌后，充满自己的环合值。零已装备武备时，零的武备牌获得瞬发，使用时抽 1 张牌。')
         self.assertEqual(CHARACTERS['zero']['awakened_passive'], '己方武备牌变为瞬发，使用时抽 1 张牌，持续 2 个己方回合。')
         self.assertEqual(CARDS['Z07']['name'], '猎人不上班')
         self.assertEqual(CARDS['Z06']['type'], 'form')

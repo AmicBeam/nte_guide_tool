@@ -62,7 +62,7 @@ def _esper(cid, name, attribute, attack, max_hp, art, passive='', awakened_passi
 TUTORIAL_CHARACTERS = {
     'tutorial_protagonist': _esper(
         'tutorial_protagonist', '主角', '光', 2, 5, 'protagonist',
-        passive='主角使用战斗牌后，立刻充满自己的环合值。',
+        passive='主角使用战斗牌后，充满自己的环合值。',
         awakened_passive=CHARACTERS['zero']['awakened_passive'],
     ),
     'tutorial_bohe': _esper(
@@ -545,7 +545,7 @@ _L06_STEPS = [
 
 _L07_STEPS = [
     _ack('l07_intro', '环合',
-         '主角的异能：使用战斗牌后，立刻充满自己的环合值。环合满 2 后，下一名出战的队友可以消耗它，发动入场环合。光+灵是创生。',
+         '主角的异能：使用战斗牌后，充满自己的环合值。环合满 2 后，下一名出战的队友可以消耗它，发动入场环合。光+灵是创生。',
          ['character:a:tutorial_protagonist', 'hand:a-1']),
     _act('l07_play', '打出战斗牌',
          '这一回合有 2 点行动力。先打出主角的战斗牌：她会额外出击，并且环合加满。',
@@ -643,7 +643,7 @@ _L12_STEPS = [
          '常规对战每方 4 名不同角色，牌库共 32 张。新手教学前面用 2 人，是为了看清位置。这一关使用四人编队，牌库仍为教学专用。',
          ['bench:a', 'bench:b']),
     _ack('l12_empty', '空牌库',
-         '自己的回合开始时，抽 1 张牌。抽牌时若牌库已空，会立刻失败。留意剩余牌数，合理使用抽牌效果，避免空库时再次抽牌。',
+         '自己的回合开始时，抽 1 张牌。抽牌时若牌库已空，会立即失败。留意剩余牌数，合理使用抽牌效果，避免空库时再次抽牌。',
          ['deck:a'], finish=True, primary='完成本关'),
 ]
 

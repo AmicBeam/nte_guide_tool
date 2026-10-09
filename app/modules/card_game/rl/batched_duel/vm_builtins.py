@@ -330,7 +330,7 @@ __device__ inline int device_dict_update(Context* c, int dict_ref, int other_ref
     const int* on = node(c, other_ref);
     if (!on) {{ c->error = BAD_CALL; return -1; }}
     int otag = on[0];
-    if (otag == TAG_DICT || (otag >= 8 && otag <= 10)) {{
+    if (otag == TAG_DICT || (otag >= 8 && otag <= 10) || otag == 73) {{
         int count = on[2];
         for (int i = 0; i < count; i++) {{
             int k = edge(c, other_ref, i, 0);
@@ -436,7 +436,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                     *out = make_int64(&c->h, (long long)chars);
                     return 1;
                 }} else if (ttag == TAG_LIST || ttag == TAG_TUPLE || ttag == TAG_DICT ||
-                           (ttag >= 8 && ttag <= 10) || ttag == 21 || ttag == 22) {{
+                           (ttag >= 8 && ttag <= 10) || ttag == 21 || ttag == 22 || ttag == 73) {{
                     const int* tn = node(c, target);
                     if (!tn) {{ c->error = BAD_PROGRAM; return 1; }}
                     *out = make_int64(&c->h, (long long)tn[2]);
@@ -477,6 +477,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                 if (nargs != 1) {{ c->error = BAD_CALL; return 1; }}
                 int target = args[0];
                 int ttag = kind(c, target);
+                if (decimal_numeric(c,target,0,out)) return 1;
                 if (ttag == TAG_INT) {{
                     *out = target;
                     return 1;
@@ -514,6 +515,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                 if (nargs != 1) {{ c->error = BAD_CALL; return 1; }}
                 int target = args[0];
                 int ttag = kind(c, target);
+                if (decimal_numeric(c,target,1,out)) return 1;
                 if (ttag == TAG_FLOAT) {{
                     *out = target;
                     return 1;
@@ -611,7 +613,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                     }}
                     *out = res;
                     return 1;
-                }} else if (stag == TAG_DICT || (stag >= 8 && stag <= 10)) {{
+                }} else if (stag == TAG_DICT || (stag >= 8 && stag <= 10) || stag == 73) {{
                     int res = make_list(&c->h);
                     if (res < 0) return 1;
                     int cnt = length(c, src);
@@ -659,7 +661,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                     *out = src;
                     return 1;
                 }} else if (stag == TAG_LIST || stag == 21 || stag == 22 ||
-                           stag == TAG_DICT || (stag >= 8 && stag <= 10)) {{
+                           stag == TAG_DICT || (stag >= 8 && stag <= 10) || stag == 73) {{
                     int cnt = length(c, src);
                     if (cnt == 0) {{
                         *out = make_tuple(&c->h, 0, 0);
@@ -698,7 +700,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                     c->error = UNSUPPORTED_TYPE;
                     return 1;
                 }}
-                if (stag == TAG_DICT || (stag >= 8 && stag <= 10)) {{
+                if (stag == TAG_DICT || (stag >= 8 && stag <= 10) || stag == 73) {{
                     int res = make_dict(&c->h);
                     if (res < 0) return 1;
                     int cnt = length(c, src);
@@ -796,6 +798,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                 return 1;
             }}
             case METHOD_DICT_POP: {{
+                if(nargs)c->error_value=args[0];
                 if (nargs < 1 || nargs > 2) {{ c->error = BAD_CALL; return 1; }}
                 if (owner < 0) {{ c->h.error = ERROR_CONSTANT_WRITE; return 1; }}
                 int idx = dict_find(&c->h, owner, args[0]);
@@ -859,7 +862,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                     }}
                     *out = NIL;
                     return 1;
-                }} else if (stag == TAG_DICT || (stag >= 8 && stag <= 10)) {{
+                }} else if (stag == TAG_DICT || (stag >= 8 && stag <= 10) || stag == 73) {{
                     int cnt = length(c, src);
                     for (int i = 0; i < cnt; i++) {{
                         if (list_append(&c->h, owner, edge(c, src, i, 0)) != 0) return 1;
@@ -872,6 +875,7 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                 }}
             }}
             case METHOD_LIST_POP: {{
+                c->error_kind=length(c,owner)==0?3:4;
                 if (nargs > 1) {{ c->error = BAD_CALL; return 1; }}
                 int val = MISSING;
                 if (nargs == 0) {{

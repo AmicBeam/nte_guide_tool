@@ -685,15 +685,36 @@ __device__ inline int key_equal_internal(Heap* heap, int ref_a, int ref_b, int d
     // Check hashability: reject lists, dicts, entities, and unknown tags
     if (na.tag == TAG_LIST || na.tag == TAG_DICT ||
         na.tag == TAG_PLAYER_ENTITY || na.tag == TAG_CHARACTER_ENTITY || na.tag == TAG_CARD_ENTITY ||
-        na.tag < 0 || na.tag > TAG_CARD_ENTITY) {
+        na.tag == 21 || na.tag == 73 ||
+        na.tag < 0 || (na.tag > TAG_CARD_ENTITY && na.tag != 22 && na.tag != 27)) {
         heap->error = ERROR_UNHASHABLE_KEY;
         return 0;
     }
     if (nb.tag == TAG_LIST || nb.tag == TAG_DICT ||
         nb.tag == TAG_PLAYER_ENTITY || nb.tag == TAG_CHARACTER_ENTITY || nb.tag == TAG_CARD_ENTITY ||
-        nb.tag < 0 || nb.tag > TAG_CARD_ENTITY) {
+        nb.tag == 21 || nb.tag == 73 ||
+        nb.tag < 0 || (nb.tag > TAG_CARD_ENTITY && nb.tag != 22 && nb.tag != 27)) {
         heap->error = ERROR_UNHASHABLE_KEY;
         return 0;
+    }
+
+    // Scalar Enum subclasses compare as their scalar values, including dict keys.
+    // Ordinary Enum members compare only with members of the same frozen class.
+    if (na.tag == 27 || nb.tag == 27) {
+        int a=ref_a,b=ref_b,unused=0;
+        if (na.tag==27 && na.extra) {
+            if (!get_edge(heap,&na,1,&a,&unused)) {heap->error=ERROR_INVALID_REF;return 0;}
+        }
+        if (nb.tag==27 && nb.extra) {
+            if (!get_edge(heap,&nb,1,&b,&unused)) {heap->error=ERROR_INVALID_REF;return 0;}
+        }
+        if (a!=ref_a || b!=ref_b) return key_equal_internal(heap,a,b,depth+1);
+        if (na.tag!=27 || nb.tag!=27) return 0;
+        int ca=0,cb=0;
+        if (!get_edge(heap,&na,0,&ca,&unused) || !get_edge(heap,&nb,0,&cb,&unused)) {heap->error=ERROR_INVALID_REF;return 0;}
+        if (ca!=cb) return 0;
+        if (!get_edge(heap,&na,1,&a,&unused) || !get_edge(heap,&nb,1,&b,&unused)) {heap->error=ERROR_INVALID_REF;return 0;}
+        return key_equal_internal(heap,a,b,depth+1);
     }
 
     // 1. None
@@ -723,6 +744,26 @@ __device__ inline int key_equal_internal(Heap* heap, int ref_a, int ref_b, int d
             int eq = key_equal_internal(heap, ca, cb, depth + 1);
             if (heap->error != ERROR_OK) return 0;
             if (!eq) return 0;
+        }
+        return 1;
+    }
+
+    // 3b. Frozenset (tag 22): order-independent set equality. Mutable set 21 stays unhashable.
+    if (na.tag == 22 || nb.tag == 22) {
+        if (na.tag != 22 || nb.tag != 22) return 0;
+        if (na.count != nb.count) return 0;
+        for (int i = 0; i < na.count; i++) {
+            int ca = 0, va = 0;
+            if (!get_edge(heap, &na, i, &ca, &va)) { heap->error = ERROR_INVALID_REF; return 0; }
+            int found = 0;
+            for (int j = 0; j < nb.count; j++) {
+                int cb = 0, vb = 0;
+                if (!get_edge(heap, &nb, j, &cb, &vb)) { heap->error = ERROR_INVALID_REF; return 0; }
+                int eq = key_equal_internal(heap, ca, cb, depth + 1);
+                if (heap->error != ERROR_OK) return 0;
+                if (eq) { found = 1; break; }
+            }
+            if (!found) return 0;
         }
         return 1;
     }
@@ -789,7 +830,8 @@ __device__ inline int dict_find(Heap* heap, int dict_ref, int key_ref) {
         return -1;
     }
     if (node.tag != TAG_DICT && node.tag != TAG_PLAYER_ENTITY &&
-        node.tag != TAG_CHARACTER_ENTITY && node.tag != TAG_CARD_ENTITY) {
+        node.tag != TAG_CHARACTER_ENTITY && node.tag != TAG_CARD_ENTITY &&
+        node.tag != 73) {
         heap->error = ERROR_TYPE_MISMATCH;
         return -1;
     }
@@ -832,7 +874,8 @@ __device__ inline int dict_set(Heap* heap, int dict_ref, int key_ref, int val_re
         return -1;
     }
     if (node.tag != TAG_DICT && node.tag != TAG_PLAYER_ENTITY &&
-        node.tag != TAG_CHARACTER_ENTITY && node.tag != TAG_CARD_ENTITY) {
+        node.tag != TAG_CHARACTER_ENTITY && node.tag != TAG_CARD_ENTITY &&
+        node.tag != 73) {
         heap->error = ERROR_TYPE_MISMATCH;
         return -1;
     }

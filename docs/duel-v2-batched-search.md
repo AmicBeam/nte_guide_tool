@@ -60,6 +60,22 @@
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_vm_image tests.test_duel_v2_vm_heap tests.test_duel_v2_vm_collections tests.test_duel_v2_cuda_vm tests.test_duel_v2_gpu_candidates`。没有 CUDA 时必须记录跳过；Windows 3.13 用显式冻结程序目录 `NTE_VM_TEST_PROGRAM_DIR`，不得以跳过或 source emission 成功替代设备执行。
 
+### 正式规则冻结入口与CUDA批量适配
+
+`gpu_rule_entries.py` 提供实际正式函数的源码入口：行动方、终局/价值、完整合法动作与公开观察、物理推进、假想推进、清理、观察者一致采样、公开根元数据及一步终局探查。公开视图不按旧座位表截断。采样显式绑定现有恢复运行时，不偷偷改用较旧的默认采样器；该运行时已有的编队与选择范围限制继续生效，目录包含新角色不表示旧恢复编码和采样已经支持它们。
+
+`gpu_rule_program.py` 与 `build_duel_v2_gpu_rule_program.py` 只构建/核验源码程序，不执行设备规则。构建须CPython3.10，Windows3.13只加载显式冻结程序；入口集、程序身份与来源SHA必须一致。来源检查在读取前拒绝越界路径、敏感文件名及指向仓库外的符号链接。默认CLI只检查；`--build --output NEW_DIR`才创建新产物。`declared_capabilities_ready`仅表示声明的指令/原语齐备，`device_ready`和`device_verified`不会因源码生成成功而设为true。`vm_image`的入口依赖扫描同时覆盖函数内部的相对导入；导入的实际被调函数缺指令/原语时，不能把外层入口当作就绪。
+
+`GpuRuleBackend` 对接协作搜索协议，提供有界CUDA图状态槽、代次/归属引用、输入参数合并、批量规则入口调用、分叉/释放、物理提交与明确导出。CPU设备、缺失能力及来源失配被拒绝，不回退到驻留Python规则后端。`gpu_rule_arguments.py`在CUDA合并状态与明确给定的参数字面值；`gpu_rule_projection.py`从GPU公开图生成token并调用原设备观察/候选编码器，运行路径不调用主机token提取或NumPy编码器。既有具名编码表的未知角色/动作仍须显式拒绝，不能填默认值或截断候选。CPU完整原始记录与正式引擎重放属于明确的取证验证边界，不用于生成GPU规则结果。
+
+上述批量适配、上下文与数值原语是研究实现，完整CUDA规则仍需设备逐项对拍与完整对局验证。`supports_full_duel_rules=False`继续保留；源码入口、宿主C++诊断、独立模块用例或低预算动作前缀均不能代替1600场正式预算终局验收。
+
+`vm_numpy.py`与`vm_json.py`接入解释器原生调用、数组索引/写入、迭代、算术和垃圾回收；`vm_stdlib.py`接入回调排序、生成器消费、Counter、组合/排列、枚举与super。只实现明确有界子集，超出类型、维度或容量明确失败。Counter保留零值键；str/int枚举字典键遵循其标量等价关系。`clone_state`仅接受已经规范化且水合不会改动的实体状态，检查身份、别名、阵营与编号计数；拒绝把普通字典deepcopy冒作完整水合。冻结器对`sys.modules[__name__]`只保存当前纯模块的数值/字符串常量契约，不保存宿主进程全部模块；动态模块索引拒绝。
+
+默认严格能力检查仍列出并拒绝`uuid.uuid4`。正式对局验证可显式构造`GpuRuleBackend(..., guard_standalone_entities=True)`，该选项只允许进入包含独立实体兜底分支的入口；一旦实际调用该分支，设备立即报`UNSUPPORTED_TYPE`。它不生成替代UUID、不启用CPU规则回退、不改变完整规则/设备验收标记。来源能力报告继续显示缺失UUID，并与设备执行准入及运行时拒绝列表分开。正式对局使用的局内实体编号也必须继续经过真实设备对拍。
+
+验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_gpu_rule_program tests.test_duel_v2_gpu_rule_imports tests.test_duel_v2_gpu_rule_backend tests.test_duel_v2_vm_image tests.test_duel_v2_vm_stdlib tests.test_duel_v2_vm_numpy tests.test_duel_v2_vm_json tests.test_duel_v2_vm_integrations`；`scripts/check_duel_v2_gpu_rule_backend.py`默认只检查，显式`--run`才进行有界CUDA验证。CPU主机须保留设备跳过记录，单次报告和程序包只进入artifacts。
+
 ### 驻留式正式规则与真实记录
 
 `process_backend.py` 使用固定数量的独立工作进程保存完整 Python 状态，每个状态只在导入/明确导出时跨进程传输；后续规则请求携带绑定后端、工作进程、槽位、代次和游戏根的引用。发放时的不可变元数据也参与校验，不能伪造 actor/phase。每个后端承载一轮实验，`max_games` 限制该轮累计唯一游戏准入，不作为可无限补充的流式游戏池。

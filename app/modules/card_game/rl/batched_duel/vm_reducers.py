@@ -25,8 +25,9 @@ Scope and Design Contracts:
    - sum(): supports optional start (positional or start= keyword, default 0).
    - min()/max(): supports single iterable or multiple positional arguments; default= keyword
      for empty iterables; rejects default= with multiple positional arguments.
-   - key= keyword: key callback is not implemented on device and explicitly fails with BAD_CALL
-     (never silently ignored).
+   - key= keyword: intercepted by stdlib_call (mode 7 VM callbacks) before reducer_call.
+     If stdlib does not handle it, reducer_call still rejects key= with BAD_CALL and never
+     ignores the keyword.
    - compare: numeric and string ordering via forward-declared compare(c, a, b, mode).
    - reduce_add: forward-declared reduce_add(c, a, b) provided by Main for sum arithmetic.
 """

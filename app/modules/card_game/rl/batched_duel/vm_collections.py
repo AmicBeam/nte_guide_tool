@@ -247,6 +247,8 @@ __device__ inline int resolve_slice_indices(
 // Unified subscript access supporting dict/entity key access, list/tuple indexing,
 // and sequence slicing (list, tuple, string).
 __device__ inline int collection_subscript(Context* c, int owner, int key) {
+    int np_out=MISSING;if(numpy_try_subscript(c,owner,key,&np_out))return np_out;
+    c->error_value=key;c->error_kind=1;
     int tag = kind(c, owner);
     if (tag == TAG_DICT || (tag >= 8 && tag <= 10)) {
         if (kind(c, key) == T_SLICE) {
@@ -424,6 +426,8 @@ __device__ inline int collection_subscript(Context* c, int owner, int key) {
 // Subscript assignment supporting dict/entity keys and list element assignment.
 // List slice assignment (list[a:b] = iterable) is omitted in this device subset.
 __device__ inline int collection_store(Context* c, int owner, int key, int val) {
+    if(numpy_try_store(c,owner,key,val))return !c->error&&!c->h.error;
+    c->error_value=key;c->error_kind=2;
     if (owner < 0) {
         c->h.error = ERROR_CONSTANT_WRITE;
         return 0;
@@ -457,6 +461,7 @@ __device__ inline int collection_store(Context* c, int owner, int key, int val) 
 
 // Subscript deletion supporting dict/entity keys and list element deletion.
 __device__ inline int collection_delete(Context* c, int owner, int key) {
+    c->error_value=key;c->error_kind=2;
     if (owner < 0) {
         c->h.error = ERROR_CONSTANT_WRITE;
         return 0;

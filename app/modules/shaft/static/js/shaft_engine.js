@@ -385,10 +385,11 @@
     const source = member?.curtain_bonus && typeof member.curtain_bonus === 'object' ? member.curtain_bonus : {};
     const options = constants?.curtain_bonus_stat_options || {};
     const fallback = normalizeStatName(defaults.stat) || Object.keys(options)[0] || '';
-    const stat = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, HEIYU_CHARACTER_ID].includes(characterId)
+    const fixed = defaults.fixed === true || [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, HEIYU_CHARACTER_ID].includes(characterId);
+    const stat = fixed
       ? fallback
       : (normalizeStatName(source.stat) || fallback);
-    const passiveType = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, HEIYU_CHARACTER_ID].includes(characterId)
+    const passiveType = fixed
       ? (CURTAIN_PASSIVE_TYPES.includes(String(defaults.passive_type || '')) ? String(defaults.passive_type) : 'type3')
       : (CURTAIN_PASSIVE_TYPES.includes(String(source.passive_type || ''))
         ? String(source.passive_type)
@@ -2515,6 +2516,7 @@
       });
     }
     const cooldownUntil = new Map();
+    const actionSequenceUses = new Map();
     function recordActionCooldown(slot, action, snapshot, startTick, durationTicks) {
       if (snapshot?.character?.uses_cooldowns === false) return;
       const actionCooldownTicks = Math.max(0, int(actionValueForAwakeningNodes(
@@ -5037,6 +5039,18 @@
         && buffTick < int(buff.end_tick)
       ))) {
         warnings.push(`动作需要处于 ${String(action.required_buff_name || requiredBuffKey)} 状态。`);
+      }
+      const sequenceStart = String(action.starts_action_sequence || '');
+      if (sequenceStart) actionSequenceUses.set(`${slot}:${sequenceStart}`, 0);
+      const sequence = String(action.action_sequence || '');
+      const maxSequenceUses = Math.max(0, int(action.max_uses_per_action_sequence));
+      if (sequence && maxSequenceUses) {
+        const key = `${slot}:${sequence}`;
+        const used = actionSequenceUses.get(key) || 0;
+        if (used + actionMultiplier > maxSequenceUses) {
+          warnings.push(String(action.action_sequence_usage_warning || `本次动作序列内该动作最多使用${maxSequenceUses}次。`));
+        }
+        actionSequenceUses.set(key, used + actionMultiplier);
       }
       const requiredBuffAnyKeys = strSet(action.required_buff_any_keys);
       asList(action.required_additional_buff_keys).forEach((key) => {

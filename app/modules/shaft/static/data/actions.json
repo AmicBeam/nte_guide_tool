@@ -10464,6 +10464,7 @@
   },
   {
     "id": "action_akane_q1",
+    "starts_action_sequence": "akane_ultra",
     "character_id": "char_akane",
     "character_name": "明音凛",
     "name": "q1",
@@ -10525,8 +10526,8 @@
     "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "source_formula": "{0}%",
     "is_time_stop_zero": true,
-    "required_buff_key": "character_akane_cadenza",
-    "required_buff_name": "华彩连段",
-    "forbidden_buff_key": "character_akane_cadenza_front"
+    "action_sequence": "akane_ultra",
+    "max_uses_per_action_sequence": 1,
+    "action_sequence_usage_warning": "同一次音障爆鸣的第二段只能布置1次。"
   }
 ]

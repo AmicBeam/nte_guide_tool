@@ -2,7 +2,7 @@
 import unittest
 
 from app.modules.shaft.domain.catalog import load_shaft_catalog
-from app.modules.shaft.service import simulate_shaft_axis, DEFAULT_UNPUBLISHED_CHARACTERS
+from app.modules.shaft.service import normalize_axis_payload, simulate_shaft_axis, DEFAULT_UNPUBLISHED_CHARACTERS
 
 CID = 'char_akane'
 ARC = 'arc_akane_moon_antipode'
@@ -93,9 +93,9 @@ class AkaneTest(unittest.TestCase):
         self.assertFalse(any('CD' in w for w in r['details'][2]['warnings']))
         self.assertTrue(any('泛音列或音域' in w for w in r['details'][3]['warnings']))
 
-    def test_q2_is_manual_during_the_second_half(self):
+    def test_q2_is_manual_without_cadenza_time_window(self):
         early = self.sim([('q1', 0), ('q2', 50)])
-        self.assertTrue(any('不能使用' in warning for warning in early['details'][1]['warnings']))
+        self.assertFalse(any('不能使用' in warning or '华彩' in warning for warning in early['details'][1]['warnings']))
         late = self.sim([('q1', 0), ('q2', 110)])
         q2 = late['details'][1]
         self.assertFalse(any('不能使用' in warning or '华彩连段' in warning for warning in q2['warnings']))
@@ -104,7 +104,32 @@ class AkaneTest(unittest.TestCase):
         self.assertAlmostEqual(late['details'][0]['stagger_amount'], .15)
         self.assertAlmostEqual(late['summary']['character_damage'], sum(d['direct_damage'] for d in late['details']))
         missing = self.sim([('q2', 0)])['details'][0]
-        self.assertTrue(any('华彩连段' in warning for warning in missing['warnings']))
+        self.assertFalse(any('华彩连段' in warning for warning in missing['warnings']))
+        after_window = self.sim([('q1', 0), ('q2', 400)])['details'][1]
+        self.assertFalse(any('华彩' in warning for warning in after_window['warnings']))
+        self.assertFalse(any('cadenza' in b['rule_id'] for b in late['details'][0]['applied_buffs']))
+
+    def test_q2_repeated_per_q1_warns_and_new_q1_resets(self):
+        details=self.sim([('q1',0),('q2',110),('q2',130),('q1',270),('q2',390)])['details']
+        self.assertFalse(any('第二段只能' in w for w in details[1]['warnings']))
+        self.assertTrue(any('第二段只能布置1次' in w for w in details[2]['warnings']))
+        self.assertFalse(any('第二段只能' in w for w in details[4]['warnings']))
+        self.assertGreater(details[2]['direct_damage'],0)  # Self-check does not block trial calculation.
+
+    def test_manual_early_q2_counts_for_duplicate_self_check(self):
+        details=self.sim([('q1',0),('q2',50),('q2',110)])['details']
+        self.assertFalse(any('不能使用' in w for w in details[1]['warnings']))
+        self.assertTrue(any('第二段只能' in w for w in details[2]['warnings']))
+
+    def test_curtain_uses_type_three_attack_and_migrates_old_zero_bonus(self):
+        p=self.payload([('a1',0)])
+        p['team'][0].update(cartridge_id='cartridge_f4282fad3f',substat_counts={},
+                            curtain_bonus={'value':0,'stat':'暴伤','passive_type':'type2'})
+        axis=normalize_axis_payload(p)
+        self.assertEqual(axis['team'][0]['curtain_bonus'],{'value':10,'stat':'攻击','passive_type':'type3'})
+        panel=simulate_shaft_axis(p)['result']['build_panels_by_slot'][0]
+        self.assertAlmostEqual(panel['zones']['atk_pct'],.4)
+        self.assertEqual(panel['build_options']['curtain_bonus']['layers'],4)
 
     def test_arc_is_permanent_and_e_grants_both_timed_bonuses(self):
         for level, bonus in [(1,.28),(2,.35),(3,.42),(4,.49),(5,.56)]:

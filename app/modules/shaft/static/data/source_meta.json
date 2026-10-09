@@ -139,7 +139,6 @@
     "estimates": {
       "base_stats": "已由Nanoka 1.4.6的80级实值替换；历史暂估660/15000/900。",
       "string_per_hit": "2026-09-21暂估；2026-09-24改为按整次动作发放",
-      "cadenza_seconds": 20,
       "delay_interval_seconds": 3,
       "delay_base_multiplier": 2,
       "delay_remaining_second_bonus": 0.2,
@@ -164,6 +163,25 @@
       "area_transmission": "最新曲线50%/90%、文本36%/60%；用户确认沿用36%/60%。",
       "talent2": "上游文本自身伤害20%/25秒、曲线伤害30%/20秒；用户确认采用自身攻击力30%/20秒。",
       "passive1": "X参数仍未填，保留暂估3秒、200%、每秒20%、上限200%、1秒CD。"
-    }
+    },
+    "cadenza_source": {
+      "seconds": 20,
+      "first_half_seconds": 10,
+      "second_half_seconds": 10,
+      "revision": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+      "paths": [
+        "Blueprints/Abilities/Player/Ability_057_Akane/Buff/Buff_Akane_Skill_UltraSkill_Begin.json",
+        "Blueprints/Abilities/Player/Ability_057_Akane/Buff/Buff_Akane_Skill_UltraSkill_Enhanced.json"
+      ],
+      "sha256": {
+        "cadenza_begin": "a26bc198945902692fabe020e1a99b50a21ac8cbbc3aa87938118b3a21c8c3cd",
+        "cadenza_enhanced": "f9b9697b34efe34aa536bd074f3be001e21907cb626ed909b13a8520c888a913",
+        "q2_ability": "7f3789146a55de4bacb259735f77bb58d1f3d1af5ce939d7f80710deb43f214a"
+      },
+      "implemented": false,
+      "implementation_note": "用户2026-10-09最新要求暂不模拟华彩；Q2由用户手动布置，不验证前后半或持续窗口，重复Q2仅按两次Q1之间最多1次自检。"
+    },
+    "curtain_source": "Nanoka NTE1.4.6角色1057：每个Ⅲ型驱动攻击力+10%，2026-10-09启用排轴，fixed属性纠正历史0值及错误属性/类型。",
+    "q2_self_check": "用户2026-10-09：Q1重置序列，Q2手动、最多1次；重复提示但继续计算。独立Q2也可试算。"
   }
 }

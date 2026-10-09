@@ -374,9 +374,10 @@
     "char_akane": {
       "cartridge_main_stat": "属伤",
       "curtain_bonus": {
-        "value": 0,
+        "value": 10,
         "stat": "攻击",
-        "passive_type": "type3"
+        "passive_type": "type3",
+        "fixed": true
       }
     }
   },

@@ -891,10 +891,11 @@
     const source = raw && typeof raw === 'object' ? raw : {};
     const options = curtainStatOptions();
     const defaultStat = normalizeStatName(defaults.stat) || Object.keys(options)[0] || '';
-    const stat = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+    const fixed = defaults.fixed === true || [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId);
+    const stat = fixed
       ? defaultStat
       : (normalizeStatName(source.stat) || defaultStat);
-    const passiveType = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+    const passiveType = fixed
       ? (CURTAIN_PASSIVE_TYPES.some((item) => item.key === defaults.passive_type) ? defaults.passive_type : 'type3')
       : (CURTAIN_PASSIVE_TYPES.some((item) => item.key === source.passive_type)
         ? source.passive_type

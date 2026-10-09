@@ -401,14 +401,15 @@ def _normalize_curtain_bonus(raw: Any, character_id: str, catalog: dict[str, Any
     default_bonus = defaults if isinstance(defaults, dict) else {}
     source = raw if isinstance(raw, dict) else {}
     default_stat = _normalize_stat_name(default_bonus.get('stat')) or next(iter(stat_options), '')
+    fixed = bool(default_bonus.get('fixed')) or character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, 'char_heiyu'}
     stat = (
         default_stat
-        if character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, 'char_heiyu'}
+        if fixed
         else (_normalize_stat_name(source.get('stat')) or default_stat)
     )
     passive_type = str(
         default_bonus.get('passive_type')
-        if character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, 'char_heiyu'}
+        if fixed
         else (source.get('passive_type') or default_bonus.get('passive_type') or 'type3')
     )
     if passive_type not in CURTAIN_PASSIVE_TYPES:

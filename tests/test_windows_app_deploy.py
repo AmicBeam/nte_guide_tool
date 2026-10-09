@@ -183,15 +183,31 @@ root = pathlib.Path(os.environ['NTE_MOCK_ROOT'])
 with (root / 'calls.jsonl').open('a') as log:
     log.write(json.dumps(sys.argv) + '\\n')
 if pathlib.Path(sys.argv[0]).name == 'ssh':
+    control = next((arg.split('=', 1)[1] for arg in sys.argv if arg.startswith('ControlPath=')), None)
+    if '-N' in sys.argv:
+        if os.environ.get('NTE_MOCK_AUTH_FAIL'):
+            sys.exit(1)
+        pathlib.Path(control).touch()
+        sys.exit(0)
+    if '-O' in sys.argv:
+        pathlib.Path(control).unlink(missing_ok=True)
+        sys.exit(0)
+    if not control or not pathlib.Path(control).exists() or 'BatchMode=yes' not in sys.argv or 'ProxyCommand=false' not in sys.argv:
+        sys.exit('Expected the existing authenticated connection')
     decoded = base64.b64decode(sys.argv[-1].split()[-1]).decode('utf-16le')
     (root / 'remote-command.txt').write_text(decoded)
     if '-ReadState' in decoded:
         print((root / 'base.json').read_text())
+        if os.environ.get('NTE_MOCK_DROP_AFTER_READ'):
+            pathlib.Path(control).unlink()
     elif os.environ.get('NTE_MOCK_FAIL'):
         sys.exit(1)
     else:
         print('DEPLOY_SUCCESS')
 else:
+    control = next((arg.split('=', 1)[1] for arg in sys.argv if arg.startswith('ControlPath=')), None)
+    if not control or not pathlib.Path(control).exists() or 'BatchMode=yes' not in sys.argv or 'ProxyCommand=false' not in sys.argv:
+        sys.exit('Expected the existing authenticated connection')
     for arg in sys.argv[1:-1]:
         if arg.endswith('.zip'):
             shutil.copy2(arg, root / 'captured.zip')
@@ -217,10 +233,44 @@ else:
         self.assertIn('app/obsolete.py', manifest['deletes'])
         self.assertFalse(list((self.repo / 'dist/deploy').glob('*.zip')))
         self.assertIn("'C:/A B/''quoted'''", (self.root / 'remote-command.txt').read_text())
+        calls = [json.loads(line) for line in (self.root / 'calls.jsonl').read_text().splitlines()]
+        masters = [call for call in calls if '-N' in call]
+        self.assertEqual(len(masters), 1)
+        controls = {arg for call in calls for arg in call if arg.startswith('ControlPath=')}
+        self.assertEqual(len(controls), 1)
+        self.assertEqual(len([call for call in calls if '-O' in call]), 1)
+        control = Path(next(iter(controls)).split('=', 1)[1])
+        self.assertFalse(control.parent.exists())
+        self.assertIn("$ProgressPreference = 'SilentlyContinue';", (self.root / 'remote-command.txt').read_text())
         self.env['NTE_MOCK_FAIL'] = '1'
         result = self.client('--deploy')
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(len(list((self.repo / 'dist/deploy').glob('*.zip'))), 1)
+        calls = [json.loads(line) for line in (self.root / 'calls.jsonl').read_text().splitlines()]
+        for call in calls:
+            for arg in call:
+                if arg.startswith('ControlPath='):
+                    self.assertFalse(Path(arg.split('=', 1)[1]).parent.exists())
+
+    def test_authentication_failure_never_uploads_or_reprompts(self):
+        self.env['NTE_MOCK_AUTH_FAIL'] = '1'
+        result = self.client('--deploy')
+        self.assertNotEqual(result.returncode, 0)
+        calls = [json.loads(line) for line in (self.root / 'calls.jsonl').read_text().splitlines()]
+        self.assertEqual(len(calls), 1)
+        self.assertIn('-N', calls[0])
+        control = next(arg.split('=', 1)[1] for arg in calls[0] if arg.startswith('ControlPath='))
+        self.assertFalse(Path(control).parent.exists())
+
+    def test_lost_connection_fails_without_second_authentication(self):
+        self.env['NTE_MOCK_DROP_AFTER_READ'] = '1'
+        result = self.client('--deploy')
+        self.assertNotEqual(result.returncode, 0)
+        calls = [json.loads(line) for line in (self.root / 'calls.jsonl').read_text().splitlines()]
+        self.assertEqual(len([call for call in calls if '-N' in call]), 1)
+        self.assertFalse((self.root / 'captured.zip').exists())
+        control = next(arg.split('=', 1)[1] for call in calls for arg in call if arg.startswith('ControlPath='))
+        self.assertFalse(Path(control).parent.exists())
 
     def test_check_and_offline_prepare_never_contact_server(self):
         self.assertEqual(self.client('--check').returncode, 0)

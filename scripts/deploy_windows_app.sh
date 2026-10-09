@@ -27,7 +27,20 @@ ALLOW_DIRTY_APP="false"
 FORCE_FULL="false"
 BASE_STATE=""
 TEMP_BASE_STATE=""
-trap '[[ -z "$TEMP_BASE_STATE" ]] || rm -f "$TEMP_BASE_STATE"' EXIT
+SSH_CONTROL_DIR=""
+SSH_MASTER_STARTED="false"
+SSH_OPTIONS=()
+
+cleanup() {
+    local result=$?
+    if [[ "$SSH_MASTER_STARTED" == "true" ]]; then
+        ssh "${SSH_OPTIONS[@]}" -O exit "$DEPLOY_HOST" >/dev/null 2>&1 || true
+    fi
+    [[ -z "$TEMP_BASE_STATE" ]] || rm -f "$TEMP_BASE_STATE" || true
+    [[ -z "$SSH_CONTROL_DIR" ]] || rm -rf "$SSH_CONTROL_DIR" || true
+    return "$result"
+}
+trap cleanup EXIT
 
 usage() {
     cat <<'EOF'
@@ -80,7 +93,7 @@ encode_remote_command() {
 import base64, sys
 def quote(value):
     return "'" + value.replace("'", "''") + "'"
-parts = ['&', quote(sys.argv[1])]
+parts = ["$ProgressPreference = 'SilentlyContinue';", '&', quote(sys.argv[1])]
 args = sys.argv[2:]
 allowed = {'-ProjectRoot', '-ArchivePath', '-ArchiveSha256', '-ReleaseId',
            '-ServiceName', '-RestartBatch', '-ListenPort'}
@@ -158,10 +171,8 @@ GIT_BRANCH="$(git -C "$REPO_ROOT" branch --show-current)"
 APP_CHANGES="$(git -C "$REPO_ROOT" status --porcelain --untracked-files=all -- app)"
 FILE_COUNT="$(git -C "$REPO_ROOT" ls-tree -r --name-only "$GIT_COMMIT" app | wc -l | tr -d ' ')"
 
-printf 'Git source:     %s@%s\n' "${GIT_BRANCH:-detached}" "$GIT_REV"
-printf 'Committed files:%s\n' " $FILE_COUNT"
-printf 'Remote host:    %s\n' "$DEPLOY_HOST"
-printf 'Remote target:  %s/app\n' "$DEPLOY_PROJECT"
+printf 'Source: %s@%s (%s files)\n' "${GIT_BRANCH:-detached}" "$GIT_REV" "$FILE_COUNT"
+printf 'Target: %s — %s/app\n' "$DEPLOY_HOST" "$DEPLOY_PROJECT"
 if [[ -n "$DEPLOY_SERVICE" ]]; then
     printf 'Restart service: %s\n' "$DEPLOY_SERVICE"
 elif [[ -n "$DEPLOY_RESTART_BATCH" ]]; then
@@ -196,12 +207,22 @@ ARCHIVE_PATH="$OUTPUT_DIR/$ARCHIVE_NAME"
 
 REMOTE_HELPER="$REMOTE_TEMP/deploy_windows_app_${RELEASE_ID}.ps1"
 if [[ "$MODE" == "deploy" ]]; then
-    scp "$REMOTE_SCRIPT" "$DEPLOY_HOST:$REMOTE_HELPER"
+    # A short private socket path avoids macOS Unix socket length limits.
+    # Authenticate once; later channels fail rather than prompting again if lost.
+    SSH_CONTROL_DIR="$(mktemp -d /tmp/nte-deploy-ssh.XXXXXX)"
+    chmod 700 "$SSH_CONTROL_DIR"
+    SSH_OPTIONS=(-o "ControlPath=$SSH_CONTROL_DIR/socket" -o ControlMaster=no -o BatchMode=yes -o ProxyCommand=false
+                 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
+    printf 'Connecting (one authentication for this deployment)...\n'
+    ssh -o "ControlPath=$SSH_CONTROL_DIR/socket" -o ControlMaster=yes -o ControlPersist=no \
+        -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -f -N "$DEPLOY_HOST"
+    SSH_MASTER_STARTED="true"
+    scp -q "${SSH_OPTIONS[@]}" "$REMOTE_SCRIPT" "$DEPLOY_HOST:$REMOTE_HELPER"
     if [[ "$FORCE_FULL" != "true" ]]; then
         TEMP_BASE_STATE="$(mktemp "${TMPDIR:-/tmp}/nte-deploy-base.XXXXXX")"
         READ_COMMAND="$(encode_remote_command "$REMOTE_HELPER" -ProjectRoot "$DEPLOY_PROJECT" -ReadState)"
         printf 'Reading server deployment state...\n'
-        ssh "$DEPLOY_HOST" "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $READ_COMMAND" > "$TEMP_BASE_STATE"
+        ssh "${SSH_OPTIONS[@]}" "$DEPLOY_HOST" "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $READ_COMMAND" > "$TEMP_BASE_STATE"
         BASE_STATE="$TEMP_BASE_STATE"
     fi
 fi
@@ -223,7 +244,7 @@ fi
 REMOTE_ARCHIVE="$REMOTE_TEMP/$ARCHIVE_NAME"
 
 printf 'Uploading app package...\n'
-scp "$ARCHIVE_PATH" "$DEPLOY_HOST:$REMOTE_TEMP/"
+scp "${SSH_OPTIONS[@]}" "$ARCHIVE_PATH" "$DEPLOY_HOST:$REMOTE_TEMP/"
 
 REMOTE_COMMAND=(
     "$REMOTE_HELPER"
@@ -244,7 +265,7 @@ fi
 
 printf 'Activating release %s...\n' "$RELEASE_ID"
 ACTIVATE_COMMAND="$(encode_remote_command "${REMOTE_COMMAND[@]}")"
-ssh "$DEPLOY_HOST" "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $ACTIVATE_COMMAND"
+ssh "${SSH_OPTIONS[@]}" "$DEPLOY_HOST" "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $ACTIVATE_COMMAND"
 if ! rm -f "$ARCHIVE_PATH"; then
     printf 'WARNING: deployment succeeded; failed to clean local archive %s\n' "$ARCHIVE_PATH" >&2
 fi

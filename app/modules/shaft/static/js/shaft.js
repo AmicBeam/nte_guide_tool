@@ -92,12 +92,30 @@
     furniture_flat_def: 30,
     small_flat_atk: 420,
     small_flat_hp: 5200,
+    // User-specified 噗咔特训 values, 2026-10-09; percentages stored as fractions.
+    training_crit_rate: 0.02,
+    training_crit_dmg: 0.04,
+    training_flat_atk: 23,
+    training_flat_def: 25,
+    training_flat_hp: 340,
+    training_harmony_strength: 10,
+    training_stagger_strength: 10,
   };
-  const TEAM_PANEL_BONUS_FIELDS = [
+  const TEAM_FURNITURE_BONUS_FIELDS = [
     { key: 'furniture_crit_dmg', label: '暴伤家具', kind: 'percent', max: 4, step: 0.1 },
     { key: 'furniture_flat_atk', label: '攻击家具', kind: 'flat', max: 20, step: 1 },
     { key: 'furniture_flat_def', label: '防御家具', kind: 'flat', max: 30, step: 1 },
   ];
+  const TEAM_TRAINING_BONUS_FIELDS = [
+    { key: 'training_crit_rate', label: '暴击', kind: 'percent', max: 2.5, step: 0.1 },
+    { key: 'training_crit_dmg', label: '暴伤', kind: 'percent', max: 5, step: 0.1 },
+    { key: 'training_flat_atk', label: '攻击', kind: 'flat', max: 28, step: 1 },
+    { key: 'training_flat_def', label: '防御', kind: 'flat', max: 30, step: 1 },
+    { key: 'training_flat_hp', label: '生命值', kind: 'flat', max: 420, step: 1 },
+    { key: 'training_harmony_strength', label: '环合强度', kind: 'flat', max: 12, step: 1 },
+    { key: 'training_stagger_strength', label: '倾陷强度', kind: 'flat', max: 12, step: 1 },
+  ];
+  const TEAM_PANEL_BONUS_FIELDS = [...TEAM_FURNITURE_BONUS_FIELDS, ...TEAM_TRAINING_BONUS_FIELDS];
   const SKILL_LEVEL_FIELDS = [
     { key: 'basic', label: '普攻' },
     { key: 'skill', label: 'E' },
@@ -793,7 +811,7 @@
     if (version < 2 && furnitureFlatAtk === 20 && smallFlatAtk === 440) {
       smallFlatAtk = 420;
     }
-    return {
+    const bonus = {
       version: DEFAULT_TEAM_PANEL_BONUS.version,
       furniture_crit_dmg: furnitureCritDmg,
       furniture_flat_atk: furnitureFlatAtk,
@@ -801,15 +819,25 @@
       small_flat_atk: smallFlatAtk,
       small_flat_hp: Math.max(0, Math.min(100000, numberValue(source.small_flat_hp, DEFAULT_TEAM_PANEL_BONUS.small_flat_hp))),
     };
+    TEAM_TRAINING_BONUS_FIELDS.forEach((field) => {
+      const max = field.kind === 'percent' ? field.max / 100 : field.max;
+      const scale = field.kind === 'percent' ? 1000 : 1;
+      bonus[field.key] = Math.round(Math.max(0, Math.min(max,
+        numberValue(source[field.key], DEFAULT_TEAM_PANEL_BONUS[field.key]))) * scale) / scale;
+    });
+    return bonus;
   }
 
   function teamPanelBonusMods(raw = state.axis?.team_panel_bonus) {
     const bonus = normalizeTeamPanelBonus(raw);
     const mods = emptyPanelMods();
-    mods.crit_dmg += bonus.furniture_crit_dmg;
-    mods.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk;
-    mods.flat_def += bonus.furniture_flat_def;
-    mods.flat_hp += bonus.small_flat_hp;
+    mods.crit_rate += bonus.training_crit_rate;
+    mods.crit_dmg += bonus.furniture_crit_dmg + bonus.training_crit_dmg;
+    mods.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk + bonus.training_flat_atk;
+    mods.flat_def += bonus.furniture_flat_def + bonus.training_flat_def;
+    mods.flat_hp += bonus.small_flat_hp + bonus.training_flat_hp;
+    mods.harmony_strength += bonus.training_harmony_strength;
+    mods.stagger_strength += bonus.training_stagger_strength;
     return mods;
   }
 
@@ -2655,7 +2683,13 @@
     }
     state.axis.team_panel_bonus = normalizeTeamPanelBonus(state.axis.team_panel_bonus);
     const bonus = state.axis.team_panel_bonus;
-    node.innerHTML = TEAM_PANEL_BONUS_FIELDS.map((field) => {
+    renderTeamBonusGrid(node, TEAM_FURNITURE_BONUS_FIELDS, bonus);
+    renderTeamBonusGrid($('shaft-training-bonus-grid'), TEAM_TRAINING_BONUS_FIELDS, bonus);
+  }
+
+  function renderTeamBonusGrid(node, fields, bonus) {
+    if (!node) return;
+    node.innerHTML = fields.map((field) => {
       const rawValue = bonus[field.key];
       const value = field.kind === 'percent' ? formatNumber(rawValue * 100, 1) : formatNumber(rawValue, 0);
       const suffix = field.kind === 'percent' ? '%' : '';
@@ -6640,6 +6674,10 @@
       state.axis.team_panel_bonus || {},
       { [field.key]: storedValue },
     ));
+    if (rawValue < 0 || rawValue > field.max) {
+      const normalized = state.axis.team_panel_bonus[field.key];
+      input.value = field.kind === 'percent' ? normalized * 100 : normalized;
+    }
     renderBuildPanel();
     scheduleSimulation();
   }
@@ -9095,10 +9133,12 @@
       state.axis.enemy.track_outside = event.target.checked;
       scheduleSimulation();
     });
-    $('shaft-team-bonus-grid').addEventListener('input', handleTeamBonusInput);
-    $('shaft-team-bonus-grid').addEventListener('change', (event) => {
-      handleTeamBonusInput(event);
-      renderTeamBonus();
+    ['shaft-team-bonus-grid', 'shaft-training-bonus-grid'].forEach((id) => {
+      $(id).addEventListener('input', handleTeamBonusInput);
+      $(id).addEventListener('change', (event) => {
+        handleTeamBonusInput(event);
+        renderTeamBonus();
+      });
     });
     $('shaft-weakness-row').addEventListener('change', () => {
       state.axis.enemy.weakness_elements = Array.from($('shaft-weakness-row').querySelectorAll('input:checked')).map((input) => input.value);

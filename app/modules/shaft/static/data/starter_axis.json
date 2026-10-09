@@ -284,7 +284,14 @@
     "furniture_flat_atk": 20,
     "furniture_flat_def": 30,
     "small_flat_atk": 420,
-    "small_flat_hp": 5200
+    "small_flat_hp": 5200,
+    "training_crit_rate": 0.02,
+    "training_crit_dmg": 0.04,
+    "training_flat_atk": 23,
+    "training_flat_def": 25,
+    "training_flat_hp": 340,
+    "training_harmony_strength": 10,
+    "training_stagger_strength": 10
   },
   "options": {
     "reaction_mastery_policy": "team_max",

@@ -105,6 +105,23 @@ TEAM_PANEL_BONUS_DEFAULTS = {
     'furniture_flat_def': 30.0,
     'small_flat_atk': 420.0,
     'small_flat_hp': 5200.0,
+    # User-specified 噗咔特训 values, 2026-10-09; not an upstream data import.
+    'training_crit_rate': 0.02,
+    'training_crit_dmg': 0.04,
+    'training_flat_atk': 23.0,
+    'training_flat_def': 25.0,
+    'training_flat_hp': 340.0,
+    'training_harmony_strength': 10.0,
+    'training_stagger_strength': 10.0,
+}
+TEAM_TRAINING_BONUS_CAPS = {
+    'training_crit_rate': 0.025,
+    'training_crit_dmg': 0.05,
+    'training_flat_atk': 28.0,
+    'training_flat_def': 30.0,
+    'training_flat_hp': 420.0,
+    'training_harmony_strength': 12.0,
+    'training_stagger_strength': 12.0,
 }
 SKILL_LEVEL_KEYS = ('basic', 'skill', 'ultimate', 'support')
 SKILL_LEVEL_DEFAULTS = {
@@ -777,7 +794,7 @@ def _normalize_team_panel_bonus(raw: Any, catalog: dict[str, Any]) -> dict[str, 
     small_flat_atk = max(0.0, min(5000.0, _num(source.get('small_flat_atk'), defaults['small_flat_atk'])))
     if version < 2 and furniture_flat_atk == 20.0 and small_flat_atk == 440.0:
         small_flat_atk = 420.0
-    return {
+    bonus = {
         'version': 3,
         'furniture_crit_dmg': furniture_crit_dmg,
         'furniture_flat_atk': furniture_flat_atk,
@@ -785,6 +802,11 @@ def _normalize_team_panel_bonus(raw: Any, catalog: dict[str, Any]) -> dict[str, 
         'small_flat_atk': small_flat_atk,
         'small_flat_hp': max(0.0, min(100000.0, _num(source.get('small_flat_hp'), defaults['small_flat_hp']))),
     }
+    for key, cap in TEAM_TRAINING_BONUS_CAPS.items():
+        value = max(0.0, min(cap, _num(source.get(key), defaults[key])))
+        scale = 1000 if key in {'training_crit_rate', 'training_crit_dmg'} else 1
+        bonus[key] = int(value * scale + 0.5) / scale
+    return bonus
 
 
 def _is_background_action(action: dict[str, Any]) -> bool:

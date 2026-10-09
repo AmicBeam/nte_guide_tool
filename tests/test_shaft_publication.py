@@ -6,6 +6,28 @@ from tests.test_solo_room_flow import RoomFlowTestCase
 
 
 class ShaftPublicationTest(RoomFlowTestCase):
+    def test_training_bonus_survives_save_share_and_public_snapshot(self):
+        token = self._issue_login_and_get_token('puka-training-owner')
+        axis = self._get('/api/shaft/catalog', token=token)['starter_axis']
+        bonus = {
+            'training_crit_rate': 0, 'training_crit_dmg': .05,
+            'training_flat_atk': 28, 'training_flat_def': 30,
+            'training_flat_hp': 420, 'training_harmony_strength': 12,
+            'training_stagger_strength': 12,
+        }
+        axis['team_panel_bonus'].update(bonus)
+        saved = self._post('/api/shaft/axes', {
+            'title': '噗咔特训保存', 'axis': axis, 'result': self._shaft_client_result(axis),
+        }, token=token)
+        shared = self._post(f"/api/shaft/axes/{saved['id']}/share", {}, token=token)
+        published = self._post(f"/api/shaft/axes/{saved['id']}/publish", {}, token=token)
+        for payload in (
+            self._get(f"/api/shaft/axes/{saved['id']}", token=token),
+            self._get(f"/api/shaft/shared/{shared['share_token']}"),
+            self._get(f"/api/shaft/axes/{published['id']}"),
+        ):
+            self.assertEqual({key: payload['axis']['team_panel_bonus'][key] for key in bonus}, bonus)
+
     def test_online_copy_requires_explicit_overwrite_when_matched_by_source(self):
         owner = self._issue_login_and_get_token('copy-source-owner')
         viewer = self._issue_login_and_get_token('copy-viewer')

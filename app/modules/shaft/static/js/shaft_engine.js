@@ -24,6 +24,23 @@
     furniture_flat_def: 30,
     small_flat_atk: 420,
     small_flat_hp: 5200,
+    // User-specified 噗咔特训 values, 2026-10-09.
+    training_crit_rate: 0.02,
+    training_crit_dmg: 0.04,
+    training_flat_atk: 23,
+    training_flat_def: 25,
+    training_flat_hp: 340,
+    training_harmony_strength: 10,
+    training_stagger_strength: 10,
+  };
+  const TEAM_TRAINING_BONUS_CAPS = {
+    training_crit_rate: 0.025,
+    training_crit_dmg: 0.05,
+    training_flat_atk: 28,
+    training_flat_def: 30,
+    training_flat_hp: 420,
+    training_harmony_strength: 12,
+    training_stagger_strength: 12,
   };
   const DEFAULT_PERSONAL_RESOURCE_CAPS = {
     char_31c5130304: { '真理之匙': 3 },
@@ -323,16 +340,23 @@
       bonus.furniture_flat_def = Math.round(Math.max(0, Math.min(TEAM_PANEL_BONUS_DEFAULTS.furniture_flat_def, bonus.furniture_flat_def)));
     }
     bonus.version = TEAM_PANEL_BONUS_DEFAULTS.version;
+    Object.entries(TEAM_TRAINING_BONUS_CAPS).forEach(([key, cap]) => {
+      const scale = key === 'training_crit_rate' || key === 'training_crit_dmg' ? 1000 : 1;
+      bonus[key] = Math.round(Math.max(0, Math.min(cap, bonus[key])) * scale) / scale;
+    });
     return bonus;
   }
 
   function teamPanelBonusMods(raw, catalog) {
     const bonus = normalizeTeamPanelBonus(raw, catalog);
     const out = mods();
-    out.crit_dmg += bonus.furniture_crit_dmg;
-    out.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk;
-    out.flat_def += bonus.furniture_flat_def;
-    out.flat_hp += bonus.small_flat_hp;
+    out.crit_rate += bonus.training_crit_rate;
+    out.crit_dmg += bonus.furniture_crit_dmg + bonus.training_crit_dmg;
+    out.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk + bonus.training_flat_atk;
+    out.flat_def += bonus.furniture_flat_def + bonus.training_flat_def;
+    out.flat_hp += bonus.small_flat_hp + bonus.training_flat_hp;
+    out.harmony_strength += bonus.training_harmony_strength;
+    out.stagger_strength += bonus.training_stagger_strength;
     return out;
   }
 

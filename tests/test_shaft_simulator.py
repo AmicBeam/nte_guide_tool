@@ -14,6 +14,13 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         'furniture_flat_def': 0,
         'small_flat_atk': 0,
         'small_flat_hp': 0,
+        'training_crit_rate': 0,
+        'training_crit_dmg': 0,
+        'training_flat_atk': 0,
+        'training_flat_def': 0,
+        'training_flat_hp': 0,
+        'training_harmony_strength': 0,
+        'training_stagger_strength': 0,
     }
 
     def test_every_character_has_zero_second_noop_switch_action(self) -> None:
@@ -3419,6 +3426,13 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 'furniture_flat_def': 30.0,
                 'small_flat_atk': 420.0,
                 'small_flat_hp': 5200.0,
+                'training_crit_rate': 0.02,
+                'training_crit_dmg': 0.04,
+                'training_flat_atk': 23.0,
+                'training_flat_def': 25.0,
+                'training_flat_hp': 340.0,
+                'training_harmony_strength': 10.0,
+                'training_stagger_strength': 10.0,
             },
         )
 
@@ -5992,7 +6006,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             sum(item['damage'] for item in contributions),
             result['summary']['stagger_damage'],
         )
-        self.assertEqual(contributions[0]['average_stagger_strength'], 60)
+        self.assertEqual(contributions[0]['average_stagger_strength'], 70)  # Arc 60 + default training 10.
         self.assertGreater(contributions[0]['damage_per_trigger'], contributions[1]['damage_per_trigger'])
         self.assertAlmostEqual(
             sum(item['damage'] for item in result['damage_by_slot']),
@@ -6097,7 +6111,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         daphne_only = simulate([])
         with_canhong = simulate([5])
 
-        self.assertEqual(daphne_only['average_stagger_strength'], 0)
+        self.assertEqual(daphne_only['average_stagger_strength'], 10)  # Default 噗咔特训.
         strength_bonus = daphne_only['average_stagger_strength'] / 300
         self.assertAlmostEqual(daphne_only['average_stagger_damage_bonus'], strength_bonus + 0.2)
         self.assertAlmostEqual(with_canhong['average_stagger_damage_bonus'], strength_bonus + 0.2 + 3)
@@ -7258,6 +7272,10 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             ],
             'initial_energy': 200,
         }
+        # Freeze the historical workbook comparison before the new training bonuses.
+        payload['team_panel_bonus'].update({
+            key: 0 for key in payload['team_panel_bonus'] if key.startswith('training_')
+        })
 
         result = simulate_shaft_axis(payload)['result']
         detail = next(item for item in result['details'] if item['step_id'] == 'zhenhong_q')

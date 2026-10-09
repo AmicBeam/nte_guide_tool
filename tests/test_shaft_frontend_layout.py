@@ -944,7 +944,10 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertLess(template.index('id="shaft-build-panel"'), template.index('<h2>敌人</h2>'))
         self.assertLess(template.index('<h2>敌人</h2>'), loadout)
         self.assertNotIn('<h2>全队面板</h2>', template)
-        self.assertIn('<h2>家具上限</h2>', template)
+        self.assertIn('<h2>家具增益</h2>', template)
+        self.assertLess(template.index('<h2>家具增益</h2>'), template.index('<h2>噗咔特训</h2>'))
+        self.assertLess(template.index('<h2>噗咔特训</h2>'), template.index('<h2>伤害总览</h2>'))
+        self.assertEqual(template.count('id="shaft-training-bonus-grid"'), 1)
 
     def test_character_panel_distinguishes_general_and_element_damage(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')

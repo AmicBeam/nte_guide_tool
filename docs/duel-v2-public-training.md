@@ -808,3 +808,10 @@ Windows验收前可仅输出配置：
 混合采样可显式配置`rule_backend=resident_cpu`、`device=cuda`和`search_statistics_device=cuda`：正式Python规则在驻留进程执行，冻结网络推理、Gumbel树统计及网络更新使用CUDA。参数进入采样／恢复身份；CUDA统计不能退成主机统计。未指定统计设备的既有混合配置保持原行为。它与`cuda_vm`的设备规则能力分开验收，同样要在本轮实际完整Gumbel32局、数值／Adam／RNG和独立闸门通过后才进入正式学习。
 
 验证：`tests.test_duel_v2_seven_migration`、`tests.test_duel_v2_training_statistics_device`及既有七队／采样回归。合成绑定或迁移测试不提供设备、吞吐或强度批准。
+
+
+### 协作搜索采集诊断
+
+`TrainingRollout.last_diagnostics`在关闭采集资源前保存调度波次、驻留规则RPC、推理微批次／行数／候选填充和设备统计池的累计计数。`seven_round.collect_search_batch`将其写入当前批次的`search-diagnostics.json`，采集异常时也保留已取得的计数与原错误。缺失接口或读取失败的项为`null`，读取错误另列`diagnostic_errors`；不能把它们当作零耗时。计数分别使用各接口标注的秒或纳秒，CPU worker累计执行时间不能直接与父进程墙钟时间相加。
+
+这些诊断用于本轮实测定位，不改变搜索预算、动作和学习标签；记录存在不提供CUDA吞吐、1600完整局或模型质量批准。验证：`tests.test_duel_v2_search_diagnostics`覆盖真实CPU受控轨迹一致、异常清理、缺失计数与失败批次落盘。

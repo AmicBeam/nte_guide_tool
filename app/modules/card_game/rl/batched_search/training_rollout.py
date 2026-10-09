@@ -9,6 +9,7 @@ Importing this module does not import Torch, start CUDA or train.
 from __future__ import annotations
 
 from collections import deque
+from copy import deepcopy
 from dataclasses import dataclass
 import hashlib
 import math
@@ -271,8 +272,10 @@ class TrainingRollout:
     own_statistics: bool = False
     value_models: Any = None
     max_buffer_bytes: int = 8 * 1024**3
+    last_diagnostics: Optional[dict] = None
 
     def collect(self, jobs, *, deadline=None, max_actions=DEFAULT_MAX_ACTIONS):
+        self.last_diagnostics = {}
         return collect_training_games(
             jobs, inference=self.inference, backend=self.backend, models=self.models,
             search_roots=self.search_roots, query_batch_rows=self.query_batch_rows,
@@ -284,7 +287,26 @@ class TrainingRollout:
             own_statistics=self.own_statistics,
             value_models=self.value_models,
             max_buffer_bytes=self.max_buffer_bytes,
+            diagnostics=self.last_diagnostics,
         )
+
+
+def _capture_diagnostics(sink, scheduler, inference, backend, statistics, error):
+    """Read aggregate counters before owned resources close; preserve failures."""
+    if sink is None:
+        return
+    sink.update(schema='cooperative_search_diagnostics_v1', method_error=error,
+                scheduler_dispatch=deepcopy(getattr(scheduler, 'dispatch_metrics', None)))
+    errors = {}
+    for name, resource in (('inference', inference), ('rules', backend),
+                           ('device_statistics', statistics)):
+        reader = getattr(resource, 'stats', None)
+        try:
+            sink[name] = deepcopy(reader()) if callable(reader) else None
+        except Exception as exc:
+            sink[name] = None
+            errors[name] = repr(exc)
+    sink['diagnostic_errors'] = errors
 
 
 def _collect_training_games(
@@ -309,6 +331,7 @@ def _collect_training_games(
     own_statistics=False,
     value_models=None,
     max_buffer_bytes=8 * 1024**3,
+    diagnostics=None,
 ):
     """Stream complete official games and admit training rows only after terminal WDL.
 
@@ -316,6 +339,8 @@ def _collect_training_games(
     the kernel/call workspace (default 32) and is never reported as root concurrency.
     """
     jobs = validate_training_jobs(jobs)
+    if diagnostics is not None and not isinstance(diagnostics, dict):
+        raise TypeError('Diagnostics sink must be a dictionary')
     if type(search_roots) is not int or not 1 <= search_roots <= MAX_SEARCH_ROOTS:
         raise ValueError('search_roots must be an integer in 1..1600')
     if type(query_batch_rows) is not int or not 1 <= query_batch_rows <= DEFAULT_QUERY_BATCH_ROWS:
@@ -393,6 +418,7 @@ def _collect_training_games(
     active = {}
     searching = {}
     method_error = None
+    scheduler = None
     peak = 0
     ready = deque()
     buffer_bytes = 0
@@ -613,6 +639,7 @@ def _collect_training_games(
                 for job in leftover_jobs:
                     uncompleted.setdefault(job['id'], _incomplete(job, 'backend_unrecoverable'))
             active.clear()
+        _capture_diagnostics(diagnostics, scheduler, inference, backend, statistics, method_error)
         if stats_entered:
             statistics.__exit__(None, None, None)
         if entered:
@@ -644,6 +671,12 @@ def collect_training_games(jobs, **kwargs):
     """Close owned resources even when pre-admission validation fails."""
     try:
         return _collect_training_games(jobs, **kwargs)
+    except Exception as exc:
+        sink = kwargs.get('diagnostics')
+        if isinstance(sink, dict) and 'schema' not in sink:
+            _capture_diagnostics(sink, None, kwargs.get('inference'), kwargs.get('backend'),
+                                 kwargs.get('statistics'), repr(exc))
+        raise
     finally:
         for flag, name in (('own_statistics', 'statistics'), ('own_backend', 'backend')):
             resource = kwargs.get(name)

@@ -1065,3 +1065,10 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 `train_duel_v2_current_round.py`默认seven，GPU采样显式选`--rule-backend cuda_vm`并提供含训练教师的冻结程序与同源设备对拍回执。`seven_round.run`保留联合WDL更新、独立闸门、历史对手、择优回退与原截止恢复；`batched_search/training_rollout.py`复用协作搜索后端，按真实来源绑定冻结权重，仅完整终局进入学习。1600根上限与32行调用工作区、GPU预算和训练轨迹缓冲分别记录；普通七队轮实际56局，历史轮112局。源码／CPU测试不批准CUDA性能或模型质量，Windows验收待独立执行。参数和验证边界见[训练手册](../../../docs/duel-v2-public-training.md#七队-gpu-搜索训练采样)。验证：`.venv/bin/python -m unittest tests.test_duel_v2_gpu_training tests.test_duel_v2_gpu_training_teachers tests.test_duel_v2_seven_training tests.test_duel_v2_batch_traversal tests.test_duel_v2_batch_cooperative tests.test_duel_v2_recovery_round tests.test_duel_v2_current_round`。
 
 研究七队数值的同布局迁入使用`rl/seven_source.py:migrate_seven`，保留全部实际数值与原身份，重新核验规则／价值／设备与独立闸门。混合搜索采样可显式使用`resident_cpu`正式规则、CUDA推理和`search_statistics_device=cuda`树统计；配置与全设备`cuda_vm`分开验收。新增检查：`.venv/bin/python -m unittest tests.test_duel_v2_seven_migration tests.test_duel_v2_training_statistics_device tests.test_duel_v2_cuda_compile_profile tests.test_duel_v2_gpu_argument_abi tests.test_duel_v2_vm_join tests.test_duel_v2_vm_callable_copy`。单次数据和报告只进入`artifacts/rl-evals/`。
+
+
+### 协作搜索采集诊断
+
+`TrainingRollout.last_diagnostics`在关闭采集资源前保存调度波次、驻留规则RPC、推理微批次／行数／候选填充和设备统计池的累计计数。`seven_round.collect_search_batch`将其写入当前批次的`search-diagnostics.json`，采集异常时也保留已取得的计数与原错误。缺失接口或读取失败的项为`null`，读取错误另列`diagnostic_errors`；不能把它们当作零耗时。计数分别使用各接口标注的秒或纳秒，CPU worker累计执行时间不能直接与父进程墙钟时间相加。
+
+这些诊断用于本轮实测定位，不改变搜索预算、动作和学习标签；记录存在不提供CUDA吞吐、1600完整局或模型质量批准。验证：`tests.test_duel_v2_search_diagnostics`覆盖真实CPU受控轨迹一致、异常清理、缺失计数与失败批次落盘。

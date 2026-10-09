@@ -84,7 +84,12 @@ def collect_search_batch(pool, jobs, folder, config, **kwargs):
     models = models_for_jobs(jobs)
     bounded = dict(config, max_games=len(jobs), search_roots=min(config['search_roots'],len(jobs)))
     collector = rollout_from_config(bounded,models)
-    games=collect(pool,jobs,folder,rollout=collector,**kwargs)
+    try:
+        games=collect(pool,jobs,folder,rollout=collector,**kwargs)
+    finally:
+        diagnostics = getattr(collector, 'last_diagnostics', None)
+        if diagnostics:
+            write(Path(folder)/'search-diagnostics.json', diagnostics)
     if config.get('preflight') and config.get('rule_backend')=='cuda_vm':
         from .batched_search.training_rollout import verify_training_replay
         checks=[verify_training_replay(job,game) for job,game in zip(jobs,games)]

@@ -86,9 +86,12 @@ async function bootstrapHome() {
       const option = Array.from(aiDeck.options).find(function (node) { return node.value === item.id; });
       if (option) {
         option.disabled = Boolean(item.pending);
-        option.textContent = item.pending ? item.name + '（待训练）' : '实验性 · ' + item.name;
+        option.textContent = item.unavailable_reason ? item.name + '（暂不开放）' :
+          (item.pending ? item.name + '（待训练）' : '实验性 · ' + item.name);
+        option.title = item.unavailable_reason || '';
       }
     });
+    if (aiDeck.options[aiDeck.selectedIndex] && aiDeck.options[aiDeck.selectedIndex].disabled) aiDeck.value = 'random';
     const previousSolo = soloDeck.value;
     soloDeck.innerHTML = '<option value="random">随机</option><option value="mirror">镜像对局</option>' + ((catalog && catalog.starter_decks) || []).map(function (deck) {
       return '<option value="' + V2.escapeAttr(deck.id) + '">' + V2.escapeHtml(deck.name) + '</option>';
@@ -98,7 +101,7 @@ async function bootstrapHome() {
       const opponentName = aiDeck.options[aiDeck.selectedIndex].text;
       const playerDeck = saved || starter;
       buildSummary.textContent = '我方「' + ((playerDeck && playerDeck.name) || '当前构筑') + '」· 对手「' + opponentName + '」';
-      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。已有高级人机采用实验性模型与搜索；倾陷、灵可预组已设为下一轮训练起点，待模型接入后开放。';
+      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。已有高级人机采用实验性模型与搜索；倾陷预组因黑羽卡牌调整暂不开放；灵可预组待模型接入后开放。';
       return;
     }
     if (selectedMode === 'solo') {

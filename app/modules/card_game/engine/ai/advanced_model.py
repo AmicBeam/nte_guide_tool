@@ -29,7 +29,7 @@ _CACHE = {}
 _LOCK = threading.RLock()
 PRESETS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke')
 RANDOM_PRESETS = PRESETS
-UNTRAINED_STRATEGIES = {}
+UNTRAINED_STRATEGIES = {'collapse': '黑羽卡牌已调整，倾陷预组高级人机暂不开放，请先使用普通人机。'}
 PENDING_PRESETS = frozenset(('collapse', 'lingke'))
 
 
@@ -44,8 +44,9 @@ def pending_strategy_options():
     from .recovery_model import RELEASE
     configured = Path(config.DUEL_AI_MODEL_DIR).resolve()
     root = configured / RELEASE if (configured / RELEASE).is_dir() else configured
-    return [dict(id=key, name=preset(key)['name'], pending=not all(
-        (root / f'{key}{suffix}').is_file() for suffix in ('.json', '.npz')))
+    return [dict(id=key, name=preset(key)['name'], pending=key in UNTRAINED_STRATEGIES or not all(
+        (root / f'{key}{suffix}').is_file() for suffix in ('.json', '.npz')),
+        **({'unavailable_reason': UNTRAINED_STRATEGIES[key]} if key in UNTRAINED_STRATEGIES else {}))
         for key in sorted(PENDING_PRESETS)]
 
 
@@ -247,6 +248,8 @@ class FrozenModel:
 
 def load_model(deck_id):
     preset(deck_id)
+    if deck_id in UNTRAINED_STRATEGIES:
+        raise RuleValidationError(UNTRAINED_STRATEGIES[deck_id])
     from .experimental_cross_model import ARCHIVE, EXPERIMENTAL, ExperimentalCrossModel
     from .recovery_model import RELEASE, RecoveryServingModel
     configured = Path(config.DUEL_AI_MODEL_DIR).resolve()

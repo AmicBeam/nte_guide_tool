@@ -37,3 +37,22 @@ test('negative battle attack is visible while zero placeholders remain hidden', 
   assert.equal(api.cardFrameStat({type:'battle',attack:0,shield:0}), '');
   assert.equal(api.cardFrameStatText({type:'battle',attack:1,shield:0}), '攻击 +1');
 });
+
+test('Heiyu divination benefits start a separate displayed line while escaping HTML', () => {
+  const context = {window: {localStorage: {getItem: () => ''}}};
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync('app/modules/card_game/static/js/v2_api.js', 'utf8'), context);
+  const markup = context.window.NTE_V2.cardDescriptionMarkup;
+  const raw = JSON.parse(fs.readFileSync('app/modules/card_game/content/duel_v2/catalog.json', 'utf8'));
+  for (const card of raw.cards.filter(c => c.character_id === 'heiyu' && !c.derived)) {
+    const at = card.description.indexOf('【占卜效果】');
+    assert.ok(at >= 0);
+    if (at) {
+      assert.equal(card.description[at - 1], '\n', card.id);
+      assert.match(markup(card.description), /<br>【占卜效果】/);
+    } else {
+      assert.ok(!markup(card.description).startsWith('<br>'));
+    }
+  }
+  assert.equal(markup('<script>\n【占卜效果】抽牌。'), '&lt;script&gt;<br>【占卜效果】抽牌。');
+});

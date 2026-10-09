@@ -87,3 +87,16 @@ test('divination detail shows a hover preview without selecting or submitting', 
   ctx.choiceOverlay.listeners.pointerover({target, pointerType: 'touch'});
   assert.equal(ctx.preview, null);
 });
+
+test('only divination candidates with a benefit receive the extra glowing edge', () => {
+  const {ctx, table} = setup();
+  ctx.game = {sides: {}, legal_actions: []};
+  table.bindDivination(ctx, card => '<article>' + card.description + '</article>');
+  const choices = [{id: 'benefit', card: {name: '失明症', description: '抽牌。\n【占卜效果】抽 1 张牌。'}},
+    {id: 'ordinary', card: {name: '其他牌', description: '普通效果。'}}];
+  ctx.openDivinationChoice({side: 'a', kind: 'heiyu_divination', choices});
+  assert.equal((ctx.choiceOverlay.innerHTML.match(/has-divination-benefit/g) || []).length, 1);
+  assert.match(ctx.choiceOverlay.innerHTML, /class="v2-divination-card has-divination-benefit"[^>]+data-divination-id="benefit"/);
+  ctx.openDivinationChoice({side: 'a', kind: 'hand_deck_placement', hand_placement: true, choices});
+  assert.doesNotMatch(ctx.choiceOverlay.innerHTML, /has-divination-benefit/);
+});

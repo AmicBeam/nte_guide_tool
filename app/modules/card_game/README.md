@@ -1047,3 +1047,7 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 ### 2026-10-09 魔女先占卜与共享瞬发出击
 
 占卜至少检视 2 张（短库按实际数量），所有形态均结算置底效果。P03／P07／P08 增加抽牌、当前回合共享瞬发机会换出击、恢复一次瞬发机会的占卜效果。combat 的 pending_sortie／resume_sortie 负责暂停和续接，内容文件保留各牌效果；normal_attack_payment 复用通用修正属性处理付款。双方仍看到被释放牌的揭牌动画，不显示旧响应大字。验证使用 tests.test_duel_v2_heiyu、tests.test_duel_v2_heiyu_presentation、tests.test_duel_v2_card_release_timing 及 tests/js/duel_v2_animation.test.cjs。
+
+### 2026-10-09 倾陷高级人机暂停与占卜视觉提示
+
+按用户要求，因黑羽卡牌调整暂停 collapse 倾陷预组高级人机：模型文件和缓存存在也不开放，随机高级对手池跳过它，直接指定开局由后端拒绝。普通人机与构筑可见性保留。pending_strategy_options 返回暂停原因，大厅显示「暂不开放」。黑羽占卜效果前插入描述换行；公共文字渲染器将换行展示为换行，图鉴、手牌、详情、占卜与公示共用。占卜中含【占卜效果】的卡牌追加发光边缘，减弱动态时保留静态光圈，手牌置顶／置底选择不加该提示。

@@ -683,7 +683,7 @@ class DuelV2ApiTest(RoomFlowTestCase):
                 self._post('/api/duel-v2/leave', token=self.a)
                 with TemporaryDirectory() as tmp, patch.object(advanced_model.config, 'DUEL_AI_MODEL_DIR', Path(tmp)):
                     error = self._post_error('/api/duel-v2/start', {'mode': 'advanced', 'ai_deck': key}, token=self.a)
-                self.assertIn('尚待训练', error['error'])
+                self.assertIn('暂不开放' if key == 'collapse' else '尚待训练', error['error'])
                 self.assertIsNone(self.repository.current_room(player))
 
     def test_regular_account_cannot_save_or_start_with_test_characters(self):

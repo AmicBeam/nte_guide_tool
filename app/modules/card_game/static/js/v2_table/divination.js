@@ -76,7 +76,8 @@
       function card(id, position) {
         const choice = byId[id];
         if (!choice || !choice.card) return '';
-        return '<div class="v2-divination-card" tabindex="0" role="button" data-divination-id="' + V2.escapeAttr(id) +
+        const benefit = !state.handPlacement && String(choice.card.description || '').includes('【占卜效果】');
+        return '<div class="v2-divination-card' + (benefit ? ' has-divination-benefit' : '') + '" tabindex="0" role="button" data-divination-id="' + V2.escapeAttr(id) +
           '" aria-label="' + V2.escapeAttr(choice.card.name + '，可拖动至牌库顶或底') + '">' +
           '<span class="v2-divination-position">' + position + '</span>' +
           '<button type="button" class="v2-divination-detail" data-divination-detail="' + V2.escapeAttr(id) +

@@ -8,9 +8,19 @@
 .v2-divination-zone { flex: 0 0 auto; padding: 10px; border: 1px solid #8ab4c344; border-radius: 12px; background: #0b1926b3; }
 .v2-divination-zone-label { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
 .v2-divination-zone-label span { color: #adc7ce; font-size: 12px; }
-.v2-divination-row { display: flex; align-items: stretch; gap: 12px; min-height: 64px; overflow-x: auto; padding-bottom: 4px; }
+.v2-divination-row { display: flex; align-items: stretch; gap: 12px; min-height: 64px; overflow-x: auto; padding: 8px; }
 .v2-divination-card { position: relative; flex: 0 0 190px; min-width: 0; width: 190px; display: flex; flex-direction: column; cursor: grab; touch-action: none; user-select: none; }
 .v2-divination-card:focus-visible { outline: 3px solid #64e8d1; outline-offset: 3px; border-radius: 9px; }
+.v2-divination-card.has-divination-benefit::after {
+  content: ""; position: absolute; inset: -2px; border-radius: 12px;
+  border: 1px solid #ffe4a8; box-shadow: 0 0 8px #ffd377bb, inset 0 0 8px #ffd37755;
+  pointer-events: none; z-index: 2; animation: v2-divination-glow 1.8s ease-in-out infinite;
+}
+@keyframes v2-divination-glow { 50% { opacity: .45; } }
+.v2-table-page[data-reduced-motion='1'] .v2-divination-card.has-divination-benefit::after { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .v2-table-page:not([data-reduced-motion='0']) .v2-divination-card.has-divination-benefit::after { animation: none; }
+}
 .v2-choice-overlay .v2-selection-card {
   width: 100%; height: auto; min-height: 180px; box-sizing: border-box;
   padding: 34px 10px 32px; flex: 1 1 auto; gap: 8px; cursor: inherit;

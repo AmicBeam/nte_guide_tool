@@ -10114,8 +10114,8 @@
       32
     ],
     "source_row": 32,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
+    "duration_source": "user-provided-2026-10-10",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时按用户2026-10-10提供，不标为新表逐段实测。",
     "source_formula": "{0}%*2",
     "personal_resource_gain": {
       "弦能": 1
@@ -10133,8 +10133,8 @@
     "display_order": 1,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
     "multipliers": {
       "atk": 0.486,
       "hp": 0,
@@ -10151,8 +10151,8 @@
       33
     ],
     "source_row": 33,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
+    "duration_source": "user-provided-2026-10-10",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时按用户2026-10-10提供，不标为新表逐段实测。",
     "source_formula": "{0}%*2",
     "personal_resource_gain": {
       "弦能": 1
@@ -10170,8 +10170,8 @@
     "display_order": 2,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 0.945,
       "hp": 0,
@@ -10189,8 +10189,8 @@
       35
     ],
     "source_row": 34,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
+    "duration_source": "user-provided-2026-10-10",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时按用户2026-10-10提供，不标为新表逐段实测。",
     "source_formula": "{0}%*3+{1}%*4",
     "personal_resource_gain": {
       "弦能": 2
@@ -10208,8 +10208,8 @@
     "display_order": 3,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.9,
-    "duration_ticks": 9,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 4.719,
       "hp": 0,
@@ -10226,8 +10226,8 @@
       36
     ],
     "source_row": 36,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
+    "duration_source": "user-provided-2026-10-10",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时按用户2026-10-10提供，不标为新表逐段实测。",
     "source_formula": "{0}%",
     "personal_resource_gain": {
       "弦能": 6
@@ -10357,8 +10357,8 @@
     "display_order": 7,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "multipliers": {
       "atk": 4.0,
       "hp": 0,
@@ -10375,8 +10375,8 @@
       39
     ],
     "source_row": 39,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 新C觉额外增加1200%攻击倍率，不乘原倍率。",
+    "duration_source": "user-provided-2026-10-10",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时按用户2026-10-10提供，不标为新表逐段实测。 新C觉额外增加1200%攻击倍率，不乘原倍率。",
     "source_formula": "{0}%",
     "cooldown_group": "akane_e",
     "personal_resource_gain": {
@@ -10400,8 +10400,8 @@
     "display_order": 8,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 3.6,
       "hp": 0,
@@ -10419,8 +10419,8 @@
       40
     ],
     "source_row": 39,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
+    "duration_source": "user-provided-2026-10-10",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时按用户2026-10-10提供，不标为新表逐段实测。",
     "source_formula": "{0}%*2",
     "cooldown_group": "akane_e",
     "personal_resource_gain": {
@@ -10439,8 +10439,8 @@
     "display_order": 9,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 11.25,
       "hp": 0,
@@ -10457,7 +10457,7 @@
       41
     ],
     "source_row": 41,
-    "duration_source": "user-authorized-estimate",
+    "duration_source": "user-provided-2026-10-10",
     "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 三觉共鸣额外增加1200%攻击倍率，读取独立共鸣开关。",
     "source_formula": "{0}%",
     "personal_resource_cost": {
@@ -10503,7 +10503,7 @@
     ],
     "source_row": 42,
     "duration_source": "existing-time-stop",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 Q1改为10段、总倍率720%，原聚合倾陷0.15保持不放大。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 Q1改为10段、总倍率720%，原聚合倾陷0.15保持不放大。 Q1/Q2的0秒耗时由用户2026-10-10再次确认。",
     "source_formula": "{0}%*10",
     "is_time_stop_zero": true
   },
@@ -10533,7 +10533,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "duration_source": "existing-time-stop",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 三觉共鸣额外增加1200%攻击倍率，读取独立共鸣开关。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 三觉共鸣额外增加1200%攻击倍率，读取独立共鸣开关。 Q1/Q2的0秒耗时由用户2026-10-10再次确认。",
     "source_formula": "{0}%",
     "is_time_stop_zero": true,
     "action_sequence": "akane_ultra",

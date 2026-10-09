@@ -184,6 +184,20 @@
       "priority": "本轮最新腾讯文档倍率、弦能、传导、绝对音准和全部觉醒/共鸣；普攻环合按用户确认保留NTEData原逐段值。"
     },
     "harmony_source_note": "用户确认保留NTEData原逐段环合，普攻合计24.899，不缩放至文档概述24。",
-    "latest_awakening_source": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
+    "latest_awakening_source": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。",
+    "confirmed_action_durations": {
+      "source": "用户2026-10-10提供",
+      "seconds": {
+        "a1": 0.4,
+        "a2": 0.4,
+        "a3": 1.0,
+        "a4": 0.7,
+        "e": 0.5,
+        "hold_e": 1.0,
+        "enhanced_e": 0.7,
+        "q1": 0.0,
+        "q2": 0.0
+      }
+    }
   }
 }

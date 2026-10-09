@@ -65,6 +65,13 @@ class Nanali:
     on_rout = staticmethod(on_rout_seed)
 
     @staticmethod
+    def card_description(c, current, card):
+        if card.get('card_id') == 'N07':
+            count = int(c.state['sides'][c.side].get(Nanali.seed_play_key) or 0)
+            return current.removesuffix('（当前为0）') + f'（当前为{count}）'
+        return current
+
+    @staticmethod
     def makes_instant(state, side, card):
         if card.get('card_id') != 'NF01':
             return False

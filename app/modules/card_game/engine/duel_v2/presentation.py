@@ -51,6 +51,7 @@ def public_card(card, state=None, side=None):
     physical = card.get('_physical_card')
     if physical is not None:
         # Presentation only: retain the physical face without exposing internal state.
+        physical = public_card(physical, state, side)
         result['hand_face'] = {key: deepcopy(physical[key]) for key in (
             'card_id', 'character_id', 'name', 'type', 'description', 'stat', 'stat_value',
             'shield', 'attack', 'hp', 'attack_mode', 'derived',
@@ -113,6 +114,9 @@ def capture_public_board(state):
         for cid in duel_state.team_order(state, ps):
             hero = source['characters'][cid]
             shape_id = hero.get('shape')
+            shape_card = lookup_card(shape_id) if shape_id else None
+            shape_description = (public_card(dict(shape_card, card_id=shape_id), state, ps).get('description')
+                                 if shape_card else None)
             attack_breakdown = duel_state.attack_value(hero, state, ps, explain=True)
             characters.append({
                 'id': cid,
@@ -150,6 +154,7 @@ def capture_public_board(state):
                 **({'jingu': hero['jingu']} if 'jingu' in hero else {}),
                 'shape': (lookup_card(shape_id) or {}).get('name') if shape_id else None,
                 'shape_id': shape_id,
+                'shape_description': shape_description,
             })
         team['characters'] = characters
         sides[ps] = team

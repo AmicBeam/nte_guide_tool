@@ -63,6 +63,13 @@ class Yi:
     target_policies = {'I06': 'living_enemy_esper'}
 
     @staticmethod
+    def card_description(c, current, card):
+        if card.get('card_id') == 'I06':
+            count = int(c.state['sides'][c.side].get('delay_turns', 0))
+            return current.removesuffix('（当前为0）') + f'（当前为{count}）'
+        return current
+
+    @staticmethod
     def on_ultimate(c):
         c.character['beast_fangs'] = int(c.character.get('beast_fangs', 0)) + 1
         c.history(f"「兽牙影刺」持续时间 +1 个己方回合（剩余 {c.character['beast_fangs']} 个己方回合）。")

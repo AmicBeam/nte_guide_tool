@@ -169,7 +169,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         team['insight_played'] = int(source.get('insight_played', 0))
         team['support_count'] = int(source.get('support_count', 0)) if source.get('support_turn') == state['turn'] else 0
         if ps == side and source.get('deck_visible_turn') == state['turn'] and state['active_side'] == ps:
-            team['visible_deck'] = [public_card(c) for c in source['deck']]
+            team['visible_deck'] = [public_card(c, state, ps) for c in source['deck']]
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
         team['harmony_available'] = marks['available']
         team['effect_markers'] = team_effect_markers(source)
@@ -192,6 +192,8 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                     c[field] = template[field]
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None
+            if form:
+                form = public_card(dict(form, card_id=h['shape']), state, ps)
             from .equipment import stat_layers, public_equipment
             c['stat_layers'] = stat_layers(h)
             c['equipment'] = public_equipment(h)

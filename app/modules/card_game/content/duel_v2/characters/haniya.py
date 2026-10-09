@@ -83,6 +83,13 @@ class Haniya:
     target_policies = {'V02': 'living_ally', 'V03': 'living_enemy'}
 
     @staticmethod
+    def card_description(c, current, card):
+        if card.get('card_id') == 'V04':
+            count = int(c.state['sides'][c.side].get('dark_star_count', 0))
+            return current.removesuffix('（当前为0）') + f'（当前为{count}）'
+        return current
+
+    @staticmethod
     def on_game_start(c):
         c.character['protagonist_aura'] = 0
 

@@ -220,7 +220,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         for card in CARDS.values():
             if card['type'] == 'battle':
                 self.assertIsNone(sortie.search(card['description'] or ''), card['id'])
-        self.assertEqual(CARDS['N07']['description'], '本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。')
+        self.assertEqual(CARDS['N07']['description'], '本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。（当前为0）')
         self.assertEqual(CARDS['Z08']['name'], '学园随想')
         self.assertEqual(CARDS['Z08']['description'], '回合结束时，己方前排攻击 +1。')
         self.assertEqual(CARDS['Z02']['description'], '从牌库将 2 张武备牌加入手牌。')

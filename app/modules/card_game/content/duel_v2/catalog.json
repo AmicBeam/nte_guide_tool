@@ -642,7 +642,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。",
+      "description": "本局每使用过一次「家族壮大」，娜娜莉的战斗牌额外获得攻击 +1、护盾 +1。（当前为0）",
       "starter_copies": 2,
       "attack": 2,
       "hp": 5
@@ -1920,7 +1920,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本局每触发 1 次「独行」，本牌额外获得 +1 攻击、+1 护盾。",
+      "description": "本局每触发 1 次「独行」，本牌额外获得 +1 攻击、+1 护盾。（当前为0）",
       "effect_id": "R06",
       "source": {
         "character_id": 1076,
@@ -3219,7 +3219,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "本局己方每触发过 1 次黯星，获得 2 点主角光环。",
+      "description": "本局己方每触发过 1 次黯星，获得 2 点主角光环。（当前为0）",
       "effect_id": "V04",
       "source": {
         "character_id": 1020,
@@ -3423,7 +3423,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "选择 1 名对方异能者。本局延滞每存在 1 回合，使其攻击 -1，持续 2 个对方回合。",
+      "description": "选择 1 名对方异能者。本局延滞每存在 1 回合，使其攻击 -1，持续 2 个对方回合。（当前为0）",
       "effect_id": "I06",
       "source": {
         "character_id": 1008,

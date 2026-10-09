@@ -153,6 +153,13 @@ class Zhenhong:
         c.character['intimidation'] = 0
 
     @staticmethod
+    def card_description(c, current, card):
+        if card.get('card_id') == 'R06':
+            count = int(c.character.get('surplus_passive_triggers', 0))
+            return current.removesuffix('（当前为0）') + f'（当前为{count}）'
+        return current
+
+    @staticmethod
     def battle_frame(c, attack, shield):
         if c.card and c.card['card_id'] == 'R06':
             count = int(c.character.get('surplus_passive_triggers', 0))

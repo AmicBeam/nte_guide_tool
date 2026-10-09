@@ -1,4 +1,4 @@
-"""User-authored K06: an ordinary one-AP play plus a mandatory two-AP surcharge."""
+"""User-authored K06: an ordinary one-AP play plus a mandatory one-AP surcharge."""
 import json
 import unittest
 
@@ -13,6 +13,7 @@ class AdditionalApCostTest(unittest.TestCase):
     def prepare(self, ap, *, instant=False, ordinary_zero=False, spent=False):
         state = game()
         state['sides']['a']['ap'] = ap
+        state['sides']['b']['front'] = 'iloy'
         state['sides']['a']['used']['instant'] = spent
         owner = hero(state, 'a', 'lingke')
         if instant:
@@ -23,15 +24,15 @@ class AdditionalApCostTest(unittest.TestCase):
         return state, action
 
     def test_catalog_separates_ordinary_and_extra_costs(self):
-        self.assertEqual((CARDS['K06']['cost'], CARDS['K06']['additional_ap_cost']), (1, 2))
+        self.assertEqual((CARDS['K06']['cost'], CARDS['K06']['additional_ap_cost']), (1, 1))
         shown = next(card for card in get_catalog()['cards'] if card['id'] == 'K06')
-        self.assertEqual(shown['additional_ap_cost'], 2)
-        self.assertTrue(shown['description'].startswith('额外消耗 2 点行动力。'))
+        self.assertEqual(shown['additional_ap_cost'], 1)
+        self.assertTrue(shown['description'].startswith('额外消耗 1 点行动力。'))
 
     def test_legality_preview_and_actual_payment_agree_at_boundaries(self):
-        for instant, zero, spent, required in ((False, False, False, 3), (True, False, False, 2),
-                                               (True, False, True, 3), (False, True, False, 2),
-                                               (True, True, False, 2)):
+        for instant, zero, spent, required in ((False, False, False, 2), (True, False, False, 1),
+                                               (True, False, True, 2), (False, True, False, 1),
+                                               (True, True, False, 1)):
             for ap in (required - 1, required):
                 with self.subTest(instant=instant, zero=zero, spent=spent, ap=ap):
                     state, action = self.prepare(ap, instant=instant, ordinary_zero=zero, spent=spent)
@@ -51,7 +52,7 @@ class AdditionalApCostTest(unittest.TestCase):
                         self.assertEqual(after['sides']['a']['ap'], 0)
                         self.assertEqual(after['sides']['a']['used']['instant'], spent or (instant and not zero))
                         hits = [e for e in after['events'] if e['type'] == 'combat' and e.get('source') == 'a:lingke']
-                        self.assertEqual([e['attribute'] for e in hits], ['光', '咒', '灵'])
+                        self.assertEqual([e['attribute'] for e in hits], ['光', '咒', '灵', '灵'])
                     self.assertEqual(json.dumps(state, sort_keys=True), before)
 
     def test_k03_substitution_does_not_inherit_original_surcharge(self):

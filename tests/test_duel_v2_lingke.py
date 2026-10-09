@@ -77,6 +77,7 @@ class LingkeTest(unittest.TestCase):
         from app.modules.card_game.content.duel_v2.registry import KITS
         s = game(); s['sides']['a']['characters']['jiuyuan'] = new_character('jiuyuan')
         s['sides']['a']['order'].append('jiuyuan')
+        s['sides']['b']['front'] = 'iloy'
         calls = []
         def own_support(c, actor_id):
             if actor_id == c.cid: calls.append(c.cid)
@@ -177,7 +178,7 @@ class LingkeTest(unittest.TestCase):
         self.assertEqual([c['id'] for c in cards if c['type'] == 'form'], ['K03', 'K07', 'K08'])
         self.assertFalse(any(c['type'] == 'battle' for c in cards))
         self.assertEqual(CARDS['K06']['cost'], 1)
-        self.assertEqual(CARDS['K06']['additional_ap_cost'], 2)
+        self.assertEqual(CARDS['K06']['additional_ap_cost'], 1)
         self.assertEqual((CHARACTERS['lingke']['attack'], CHARACTERS['lingke']['max_hp']), (3, 4))
         self.assertEqual(CHARACTERS['lingke']['mechanisms'][0]['name'], '同频合击')
 
@@ -382,12 +383,13 @@ class LingkeTest(unittest.TestCase):
         self.assertEqual(hero(s, 'a', 'lingke')['energy'], energy+2)  # mark + team share
         self.assertFalse(any(e['definition_id'] == 'lingke.taunt' for e in hero(s, 'b', 'iloy').get('effects', [])))
 
-    def test_k06_pays_three_and_uses_all_three_ally_attributes(self):
-        s = game(); ap = s['sides']['a']['ap']; seq=s['event_seq']; s=play(s,'K06')
+    def test_k06_pays_two_and_uses_ally_attributes_then_own_spirit(self):
+        s = game(); s['sides']['b']['front'] = 'iloy'
+        ap = s['sides']['a']['ap']; seq=s['event_seq']; s=play(s,'K06')
         hits=[e for e in s['events'] if e['seq']>seq and e['type']=='combat' and e.get('source')=='a:lingke']
-        self.assertEqual([e['attribute'] for e in hits], ['光','咒','灵'])
-        self.assertEqual(s['sides']['a']['ap'], ap-3)
-        s = game(); s['sides']['a']['ap']=2; action=give(s,'a','K06')
+        self.assertEqual([e['attribute'] for e in hits], ['光','咒','灵','灵'])
+        self.assertEqual(s['sides']['a']['ap'], ap-2)
+        s = game(); s['sides']['a']['ap']=1; action=give(s,'a','K06')
         self.assertNotIn(action, legal_actions(s,'a'))
 
     def test_k07_curse_applies_weave_and_light_triggers_genesis_without_entry(self):
@@ -398,6 +400,78 @@ class LingkeTest(unittest.TestCase):
         self.assertTrue(any(e['type']=='genesis' for e in s['events'] if e['seq']>seq))
         self.assertIsNone(s['sides']['a']['front'])
         self.assertEqual(hero(s,'a','lingke')['harmony'],0)
+
+    def test_k06_skips_empty_front_without_restricting_later_sync(self):
+        s = game(); hp = s['sides']['b']['hp']; seq = s['event_seq']
+        s = play(s, 'K06')
+        self.assertEqual(s['sides']['b']['hp'], hp)
+        self.assertFalse(any(e['type'] == 'attack' for e in s['events'] if e['seq'] > seq))
+        self.assertEqual(resistance_values(s['sides']['b']), {})
+        s = play(s, 'K05', 'a:zero')
+        self.assertLess(s['sides']['b']['hp'], hp)
+
+    def test_k06_remaining_sync_skips_after_front_is_defeated_and_replays_match(self):
+        s = game(); s['sides']['b']['front'] = 'iloy'
+        hero(s, 'b', 'iloy')['hp'] = 1
+        action = give(s, 'a', 'K06'); hp = s['sides']['b']['hp']
+        opening = capture_public_board(s); seq = s['event_seq']
+        after = apply_action(json.loads(json.dumps(s)), 'a', action)
+        hits = [e for e in after['events'] if e['seq'] > seq and e['type'] == 'attack']
+        self.assertEqual([e['target'] for e in hits], ['b:iloy'])
+        self.assertEqual(after['sides']['b']['hp'], hp)
+        self.assertEqual((hero(after, 'a', 'lingke')['harmony'], hero(after, 'a', 'lingke')['energy']), (0, 0))
+        self.assertEqual(capture_public_board(simulate_action(s, 'a', action)), capture_public_board(after))
+        self.assertEqual(replay_public_board(opening, [e for e in after['events'] if e['seq'] > seq]),
+                         capture_public_board(after))
+
+    def test_k06_does_not_retarget_player_when_front_returns_in_response(self):
+        s = game(); s['sides']['b']['front'] = 'zero'
+        s['sides']['b']['characters']['xun'] = new_character('xun')
+        s['sides']['b']['order'].append('xun')
+        give(s, 'b', 'X05')
+        hp = s['sides']['b']['hp']; seq = s['event_seq']
+        s = play(s, 'K06')
+        self.assertIsNone(s['sides']['b']['front'])
+        self.assertEqual(s['sides']['b']['hp'], hp)
+        self.assertFalse(any(e['type'] == 'attack' for e in s['events'] if e['seq'] > seq))
+
+    def test_k06_does_not_attack_player_when_k07_genesis_defeats_front(self):
+        s = game(); hero(s, 'a', 'lingke')['shape'] = 'K07'
+        s['sides']['b']['front'] = 'iloy'; hero(s, 'b', 'iloy')['hp'] = 1
+        hp = s['sides']['b']['hp']; seq = s['event_seq']
+        s = play(s, 'K06')
+        self.assertEqual(s['sides']['b']['hp'], hp)
+        self.assertFalse(any(e['type'] == 'attack' for e in s['events'] if e['seq'] > seq))
+
+    def test_k06_can_attack_front_summon(self):
+        from app.modules.card_game.engine.duel_v2.summons import summon_front
+        s = game(); front = summon_front(s, 'b', name='测试召唤物', attack=0, hp=40)
+        seq = s['event_seq']; s = play(s, 'K06')
+        hits = [e for e in s['events'] if e['seq'] > seq and e['type'] == 'attack']
+        self.assertEqual([e['target'] for e in hits], [f'b:{front}'] * 4)
+
+    def test_k06_skips_downed_allies_and_finishes_with_own_spirit_without_borrowing_self(self):
+        from app.modules.card_game.content.duel_v2.registry import KITS
+        s = game(); s['sides']['b']['front'] = 'iloy'
+        hero(s, 'a', 'baicang').update(hp=0, down_turns=3)
+        calls = []
+        def own_support(c, actor_id):
+            if actor_id == c.cid: calls.append(c.cid)
+        with ExitStack() as stack:
+            for cid in ('lingke', 'zero', 'baicang', 'iloy'):
+                stack.enter_context(patch.object(KITS[cid], 'on_support', staticmethod(own_support), create=True))
+            seq = s['event_seq']; s = play(s, 'K06')
+        hits = [e for e in s['events'] if e['seq'] > seq and e['type'] == 'combat' and e.get('source') == 'a:lingke']
+        self.assertEqual([e['attribute'] for e in hits], ['光', '灵', '灵'])
+        self.assertEqual(calls, ['lingke', 'zero', 'lingke', 'iloy', 'lingke'])
+
+    def test_k06_with_all_other_allies_downed_still_uses_own_spirit(self):
+        s = game(); s['sides']['b']['front'] = 'iloy'
+        for cid in ('zero', 'baicang', 'iloy'):
+            hero(s, 'a', cid).update(hp=0, down_turns=3)
+        seq = s['event_seq']; s = play(s, 'K06')
+        hits = [e for e in s['events'] if e['seq'] > seq and e['type'] == 'combat' and e.get('source') == 'a:lingke']
+        self.assertEqual([e['attribute'] for e in hits], ['灵'])
 
     def test_ultimate_support_reduces_resistance_and_keeps_normal_resources(self):
         s=game();hero(s,'a','lingke')['energy']=5

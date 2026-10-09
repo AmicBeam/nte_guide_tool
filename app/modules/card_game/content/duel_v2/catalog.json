@@ -1756,9 +1756,9 @@
       "name": "世界将予你回声！",
       "type": "tactic",
       "cost": 1,
-      "additional_ap_cost": 2,
+      "additional_ap_cost": 1,
       "terminal": false,
-      "description": "额外消耗 2 点行动力。依据其他己方异能者的属性，各发动一次该属性的「同频合击」。前排优先。",
+      "description": "额外消耗 1 点行动力。依据其他存活己方异能者的属性，各发动一次该属性的「同频合击」，最后再发动一次灵可的「同频合击」。本牌触发的「同频合击」不会攻击玩家。",
       "effect_id": "K06",
       "source": {
         "character_id": 1072,

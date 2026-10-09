@@ -319,6 +319,8 @@ def attack(c, spec, index):
     if _attack_stopped(c):
         return False
     enemy, target_id = spec.get('target') or front_target(s, side)
+    if spec.get('front_only') and not is_esper(target_id):
+        return False
     if is_esper(target_id) and not alive(s, enemy, target_id):
         return False
     fire(c, 'before_attack', actor_only=True)
@@ -344,6 +346,8 @@ def attack(c, spec, index):
             return False
         if not spec.get('target'):
             enemy, target_id = front_target(s, side)
+    if spec.get('front_only') and not is_esper(target_id):
+        return False
     fire(c.for_character(enemy, target_id if is_esper(target_id) else next(iter(s['sides'][enemy]['characters']))),
          GameEvent.V2_OPPONENT_ATTACK, attacker_side=side, attacker_id=cid, target_id=target_id)
     if _attack_stopped(c):
@@ -568,10 +572,12 @@ def sortie(c, **spec):
     _notify_opponent_sortie_finished(c)
 
 
-def additional_attack(c, attribute, *, target=None, sync_attack=False, support_actor=None):
+def additional_attack(c, attribute, *, target=None, sync_attack=False, support_actor=None, front_only=False):
     """A one-sided extra hit; preserve the enclosing card/response operation."""
     from .context import EffectContext
     if _attack_stopped(c):
+        return
+    if front_only and not c.state['sides'][other(c.side)]['front']:
         return
     # Borrowed identity affects only that character's own support callbacks.
     # Other observers still see the actual attacker, exactly once.
@@ -595,7 +601,8 @@ def additional_attack(c, attribute, *, target=None, sync_attack=False, support_a
             notify_support(context, exclude_entity_ids=(borrowed.entity_id,) if borrowed else ())
         attacked = attack(context,
                dict(attribute=attribute, target=target, no_counter=True,
-                    no_combat_resources=True, additional_attack=True, sync_attack=sync_attack), 0)
+                    no_combat_resources=True, additional_attack=True, sync_attack=sync_attack,
+                    front_only=front_only), 0)
         if (attacked and borrowed and alive(c.state, c.side, borrowed['id'])
                 and hero(c.state, c.side, borrowed['id']).entity_id == borrowed.entity_id):
             fire(context.for_character(c.side, borrowed['id']), 'on_support',

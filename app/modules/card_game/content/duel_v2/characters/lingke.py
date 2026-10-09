@@ -8,8 +8,10 @@ from app.modules.card_game.engine.duel_v2.state import (
 from app.modules.card_game.engine.duel_v2.modifiers import add_effect, all_effects, deadline
 
 
-def _sync(c, attribute, target=None, *, support_actor=None):
+def _sync(c, attribute, target=None, *, support_actor=None, front_only=False):
     if finished(c.state) or not alive(c.state, c.side, c.cid):
+        return
+    if front_only and not c.state['sides'][other(c.side)]['front']:
         return
     from app.modules.card_game.engine.duel_v2.combat import additional_attack, resolve_harmony_effect
     c.history(f'{c.character["name"]}发起{attribute}属性的「同频合击」。', present=True)
@@ -18,7 +20,8 @@ def _sync(c, attribute, target=None, *, support_actor=None):
             resolve_harmony_effect(c, '创生')
         elif attribute == '咒':
             resolve_harmony_effect(c, '覆纹')
-    additional_attack(c, attribute, target=target, sync_attack=True, support_actor=support_actor)
+    additional_attack(c, attribute, target=target, sync_attack=True,
+                      support_actor=support_actor, front_only=front_only)
 
 
 def _k01(c):
@@ -60,9 +63,12 @@ def _k05(c):
 def _k06(c):
     owners = [(cid, hero(c.state, c.side, cid).entity_id, hero(c.state, c.side, cid)['attribute'])
               for cid in team_order(c.state, c.side)
-              if cid != c.cid and not hero(c.state, c.side, cid).get('summoned')]
+              if cid != c.cid and alive(c.state, c.side, cid)
+              and not hero(c.state, c.side, cid).get('summoned')]
     for cid, entity_id, attribute in owners:
-        _sync(c, attribute, support_actor=dict(character_id=cid, entity_id=entity_id))
+        if alive(c.state, c.side, cid):
+            _sync(c, attribute, support_actor=dict(character_id=cid, entity_id=entity_id), front_only=True)
+    _sync(c, c.character['attribute'], front_only=True)
 
 
 def _k03(c):

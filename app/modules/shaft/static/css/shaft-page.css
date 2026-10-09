@@ -927,8 +927,30 @@ body:has(.shaft-page) .shell {
 }
 
 .shaft-team-bonus-panel {
-    display: grid;
-    gap: 10px;
+    display: block;
+}
+
+.shaft-team-bonus-panel > summary {
+    margin-bottom: 0;
+    cursor: pointer;
+    list-style: none;
+}
+
+.shaft-team-bonus-panel > summary::-webkit-details-marker {
+    display: none;
+}
+
+.shaft-team-bonus-panel > summary::after {
+    content: '▸';
+    color: var(--muted);
+}
+
+.shaft-team-bonus-panel[open] > summary::after {
+    transform: rotate(90deg);
+}
+
+.shaft-team-bonus-panel[open] > .shaft-team-bonus-grid {
+    margin-top: 10px;
 }
 
 .shaft-team-bonus-panel .section-title-row span {

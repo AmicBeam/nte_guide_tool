@@ -942,14 +942,14 @@
     "name": "明音凛",
     "element": "相",
     "adaptation": "液态",
-    "rarity": "",
+    "rarity": "S",
     "level": 80,
     "avatar": "/static/images/characters/avatar/明音凛.webp",
     "portrait": "/static/images/characters/portrait/明音凛.webp",
     "base_stats": {
-      "atk": 660,
-      "hp": 15000,
-      "def": 900
+      "atk": 636,
+      "hp": 15998,
+      "def": 921
     },
     "modifiers": {
       "crit_rate": 0.05,
@@ -975,8 +975,8 @@
     },
     "bond_bonus": {},
     "source_row": 0,
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿定义排轴数值，缺失80级面板暂估660/15000/900，羁绊未实装；2026-09-24以Nanoka NTE 1.4.6角色1057与NTEData核对图片，并在独立空幕规划器接入Ⅲ型驱动每层攻击力+10%，不改本角色排轴估值。",
-    "energy_capacity": 120,
+    "source_note": "80级面板636攻击/15998生命/921防御、终结耗能100、五星来自Nanoka NTE 1.4.6角色1057；映射为项目S稀有度。NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 羁绊未实装；空幕仍在独立规划器，不自动叠加。",
+    "energy_capacity": 100,
     "initial_personal_resources": {
       "弦能": 0
     },

@@ -1,4 +1,4 @@
-"""User workbook + Tencent document, 2026-09-21. Estimates are not official data."""
+"""NTEData 1.4.10 + explicit user overrides, 2026-10-09; X parameters remain estimates."""
 import unittest
 
 from app.modules.shaft.domain.catalog import load_shaft_catalog
@@ -25,21 +25,23 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(DEFAULT_UNPUBLISHED_CHARACTERS[CID], '明音凛')
         self.assertEqual(next(a['id'] for a in c['arcs'] if a['adaptation'] == '液态'), ARC)
         self.assertEqual(actions['a1']['hit_count'], 2)
-        self.assertAlmostEqual(actions['a1']['multipliers']['atk'], .788)
+        self.assertAlmostEqual(actions['a1']['multipliers']['atk'], .552)
         self.assertEqual(actions['a2']['hit_count'], 2)
-        self.assertAlmostEqual(actions['a2']['multipliers']['atk'], 1.158)
+        self.assertAlmostEqual(actions['a2']['multipliers']['atk'], .81)
         self.assertEqual(actions['a3']['hit_count'], 7)
-        self.assertAlmostEqual(actions['a3']['multipliers']['atk'], 2.253)
-        self.assertAlmostEqual(actions['a3']['energy_gain'], 5.625)
-        self.assertEqual(actions['a3']['hit_profile']['cumulative'][3]['damage'], .825)
+        self.assertAlmostEqual(actions['a3']['multipliers']['atk'], 1.351)
+        self.assertAlmostEqual(actions['a3']['energy_gain'], 5.442)
+        self.assertEqual(actions['a3']['hit_profile']['cumulative'][3]['damage'], .495)
         self.assertEqual(actions['援护']['damage_type'], '援护')
         self.assertEqual(actions['闪反']['damage_type'], '闪反')
-        self.assertAlmostEqual(actions['援护']['multipliers']['atk'], 1.29)
+        self.assertAlmostEqual(actions['援护']['multipliers']['atk'], 2)
+        self.assertAlmostEqual(actions['援护']['energy_gain'], 6.5)
         self.assertAlmostEqual(actions['闪反']['multipliers']['atk'], .25)
-        self.assertAlmostEqual(actions['q1']['multipliers']['atk'], 1.2)
+        self.assertAlmostEqual(actions['q1']['multipliers']['atk'], .9)
+        self.assertEqual(actions['q1']['energy_cost'], 100)
         self.assertAlmostEqual(actions['q1']['stagger'], .15)
-        self.assertAlmostEqual(actions['q2']['multipliers']['atk'], 10)
-        self.assertAlmostEqual(actions['同调共振']['multipliers']['atk'], 8)
+        self.assertAlmostEqual(actions['q2']['multipliers']['atk'], 12)
+        self.assertAlmostEqual(actions['同调共振']['multipliers']['atk'], 11.25)
         self.assertFalse(any(a.get('source_row') in (31, 38) for a in actions.values()))
 
     def test_resource_cap_and_awakening_refund(self):
@@ -49,7 +51,7 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(r['details'][1]['personal_resources_after']['弦能'], 10)
         self.assertEqual(r['details'][2]['personal_resources_after']['弦能'], 14)
         self.assertTrue(r['healing_events'])
-        self.assertEqual(r['healing_events'][0]['healing'], 660)
+        self.assertEqual(r['healing_events'][0]['healing'], 636)
         poor = self.sim([('enhanced_e', 0)])['details'][0]
         self.assertTrue(any('弦能' in w for w in poor['warnings']))
         self.assertTrue(any('泛音列或音域' in w for w in poor['warnings']))
@@ -60,7 +62,11 @@ class AkaneTest(unittest.TestCase):
         partial_result = simulate_shaft_axis(partial)['result']
         before = partial_result['details'][0]['personal_resources_after']['弦能']
         self.assertAlmostEqual(partial_result['details'][1]['personal_resources_after']['弦能'],
-                               before + 4 * .825 / 2.253)
+                               before + 4 * .495 / 1.351)
+        detail = partial_result['details'][1]
+        self.assertAlmostEqual(detail['energy_gain'], 2.046)
+        self.assertAlmostEqual(detail['harmony'], 3.42)
+        self.assertAlmostEqual(detail['stagger_amount'], .414)
         empty = self.payload([('e', 0), ('a3', 20)])
         empty['steps'][1].update(interrupted=True, interrupt_duration_ticks=2, interrupt_hit_count=0)
         empty_result = simulate_shaft_axis(empty)['result']
@@ -93,23 +99,47 @@ class AkaneTest(unittest.TestCase):
         late = self.sim([('q1', 0), ('q2', 110)])
         q2 = late['details'][1]
         self.assertFalse(any('不能使用' in warning or '华彩连段' in warning for warning in q2['warnings']))
-        self.assertAlmostEqual(q2['formula_parts']['raw_base'] / q2['panel']['atk'], 10)
+        self.assertAlmostEqual(q2['formula_parts']['raw_base'] / q2['panel']['atk'], 12)
         self.assertAlmostEqual(q2['stagger_amount'], 1.5)
         self.assertAlmostEqual(late['details'][0]['stagger_amount'], .15)
         self.assertAlmostEqual(late['summary']['character_damage'], sum(d['direct_damage'] for d in late['details']))
         missing = self.sim([('q2', 0)])['details'][0]
         self.assertTrue(any('华彩连段' in warning for warning in missing['warnings']))
 
-    def test_arc_stacks_expiry_and_refinements(self):
-        for level in [1,5]:
-            p=self.payload([('e',0),('a1',12),('a2',18),('a1',30),('a1',36),('enhanced_e',45),('a1',210)],arc=ARC)
+    def test_arc_is_permanent_and_e_grants_both_timed_bonuses(self):
+        for level, bonus in [(1,.28),(2,.35),(3,.42),(4,.49),(5,.56)]:
+            p=self.payload([('a1',0),('e',10),('a1',25),('a1',170)],arc=ARC)
             p['team'][0]['arc_refinement']=level
-            r=simulate_shaft_axis(p)['result'];d=r['details'][5]
-            b=next(b for b in d['applied_buffs'] if b['rule_id']=='arc_akane_skill')
-            self.assertEqual(b['stack_count'],4)
-            self.assertAlmostEqual(b['effects']['skill_dmg'],.28 if level==1 else .56)
-            self.assertIn('arc_akane_element',{b['rule_id'] for b in d['applied_buffs']})
-            self.assertNotIn('arc_akane_element',{b['rule_id'] for b in r['details'][-1]['applied_buffs']})
+            details=simulate_shaft_axis(p)['result']['details']
+            for d in details:
+                b=next(b for b in d['applied_buffs'] if b['rule_id']=='arc_akane_skill')
+                self.assertEqual(b['stack_count'],1)
+                self.assertAlmostEqual(b['effects']['skill_dmg'],bonus)
+            for i in (0,3):
+                ids={b['rule_id'] for b in details[i]['applied_buffs']}
+                self.assertNotIn('arc_akane_element',ids)
+                self.assertNotIn('arc_akane_basic',ids)
+            active={b['rule_id']:b for b in details[2]['applied_buffs']}
+            self.assertAlmostEqual(active['arc_akane_basic']['effects']['basic_dmg'],bonus)
+            self.assertAlmostEqual(active['arc_akane_element']['effects']['element_dmg_相'],.16+.04*(level-1))
+
+    def test_arc_e_refreshes_the_fifteen_second_window(self):
+        r=self.sim([('e',0),('e',160),('a1',300),('a1',311)],arc=ARC)
+        active={b['rule_id'] for b in r['details'][2]['applied_buffs']}
+        expired={b['rule_id'] for b in r['details'][3]['applied_buffs']}
+        self.assertTrue({'arc_akane_basic','arc_akane_element'} <= active)
+        self.assertTrue({'arc_akane_basic','arc_akane_element'}.isdisjoint(expired))
+
+    def test_talent_is_attack_for_twenty_seconds_and_f_stays_damage(self):
+        for nodes, damage_bonus in [((),0),([6],.1)]:
+            # q1 inserts five visual ticks; 230 is beyond 20 real seconds.
+            details=self.sim([('q1',0),('a1',20),('a1',230)],nodes=nodes)['details']
+            during,after=details[1:]
+            self.assertAlmostEqual(during['panel']['atk']-after['panel']['atk'],636*.3)
+            self.assertAlmostEqual(during['formula_parts']['dmg_bonus']-after['formula_parts']['dmg_bonus'],damage_bonus)
+            b=next(b for b in during['applied_buffs'] if b['rule_id']=='character_akane_talent2')
+            self.assertEqual(b['effects'],{'atk_pct':.3})
+            self.assertEqual(b['end_tick']-b['start_tick'],200)
 
     def test_delay_unlock_pulses_remaining_time_and_mode_switch(self):
         p=self.payload([('e',30),('hold_e',100),('a1',210)])
@@ -131,5 +161,5 @@ class AkaneTest(unittest.TestCase):
     def test_single_mode_enhanced_attack_is_higher_than_area_mode(self):
         single = self.sim([('e', 0), ('enhanced_e', 20)])['details'][1]
         area = self.sim([('hold_e', 0), ('enhanced_e', 20)])['details'][1]
-        self.assertAlmostEqual(single['formula_parts']['base'] / single['panel']['atk'], 10)
-        self.assertAlmostEqual(area['formula_parts']['base'] / area['panel']['atk'], 8)
+        self.assertAlmostEqual(single['formula_parts']['base'] / single['panel']['atk'], 12.5)
+        self.assertAlmostEqual(area['formula_parts']['base'] / area['panel']['atk'], 11.25)

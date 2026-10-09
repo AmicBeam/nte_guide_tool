@@ -216,9 +216,10 @@
     "character_id": "char_akane",
     "talent": 2,
     "name": "明音凛·烁星激昂",
-    "description": "释放音障爆鸣后，自身伤害提升20%，持续25秒。",
+    "description": "释放音障爆鸣第一段后，自身攻击力提升30%，持续20秒，不叠加，重复触发刷新。",
     "replaces_rule_ids": [
       "character_akane_talent2"
-    ]
+    ],
+    "source_note": "用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。"
   }
 ]

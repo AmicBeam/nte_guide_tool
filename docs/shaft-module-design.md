@@ -873,8 +873,13 @@ Everness当天核实「未迟到的正义」：基础800%攻击力相属性伤�
 
 ### 配置化延时伤害与环合重施（2026-09-21）
 
-明音凛使用通用配置扩展，未在主流程分支写角色ID：`initial_personal_resources_by_awakening_count` 只在非循环入场按觉醒数量授予资源；`activation.personal_resource_gain_per_hit` 根据实际保留命中段数获取资源；`personal_resource_cost_on_hit` 使0段打断不支付指定动作的资源成本。`activation.heal_base_atk_ratio` 输出基于角色和弧盘基础攻击的回复事件。
+明音凛使用通用配置扩展，未在主流程分支写角色ID：`initial_personal_resources_by_awakening_count` 只在非循环入场按觉醒数量授予资源；历史配置`activation.personal_resource_gain_per_hit`可按保留段数获取资源；当前明音凛改由动作`personal_resource_gain`发放整次资源，`personal_resource_scale_with_damage_ratio`按实际保留伤害占比缩减；`personal_resource_cost_on_hit` 使0段打断不支付指定动作的资源成本。`activation.heal_base_atk_ratio` 输出基于角色和弧盘基础攻击的回复事件。
 
 `triggered_damage` 给Buff触发器配置延迟tick与独立动作定义，加入真实时间事件队列，以出伤时的面板、技能等级和普通暴击计算，记录独立伤害/倾陷及增益快照；结果沿用可点击伤害标记。派生伤害只派发命中事件，不派发动作开始，避免重复Q耗能、冷却或释放增益。轴外投影不计总伤。循环预热保留跨边界的待结算事件。
 
 `reaction_reapplication` 在旧环合被替换前读取剩余时间，按配置结算重施伤害与单目标CD并解锁周期强化。Buff的`reaction_pulse` 在有效窗口按固定间隔施加环合；显式清除、到期及重施的代次校验会取消旧节拍。队列每次只结算最早事件，保证其派生事件先于后续事件处理。具体未知参数与来源边界见排轴README及Buff验收清单的明音凛章节。
+
+
+### 明音凛配置更新（2026-10-09）
+
+现行数值改为NTEData `d7fe705`（1.4.10.566418）与用户本轮裁定：音域传导36%/E觉60%、烁星自身攻击30%/20秒。月的对跖点复用常驻`passive`变轨增伤，以及`action_start` E触发的两个15秒刷新Buff，不再使用普攻叠层或相伤双状态条件。强化泛音列的125%额外攻击倍率按1125%基础归一化为1/9的`base_multiplier_pct`，得到1250%，无需角色ID主流程分支。Q2是华彩后半手动动作，不使用历史`triggered_damage`自动派生；弦能按完整动作发放并按打断伤害占比缩减。面板/耗能取Nanoka1.4.6的80级实值与100能量；未知延滞X参数和耗时保持来源明确的暂估。完整动作与来源差异见模块README、角色动作清单及Buff验收说明。

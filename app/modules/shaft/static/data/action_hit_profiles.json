@@ -4735,7 +4735,7 @@
   },
   "action_akane_a1": {
     "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4746,23 +4746,23 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.394,
-        "energy": 0.984,
-        "harmony": 1.645,
-        "stagger": 0.2
+        "damage": 0.276,
+        "energy": 1.065,
+        "harmony": 1.78,
+        "stagger": 0.216
       },
       {
         "hit_count": 2,
-        "damage": 0.788,
-        "energy": 1.968,
-        "harmony": 3.29,
-        "stagger": 0.4
+        "damage": 0.552,
+        "energy": 2.13,
+        "harmony": 3.56,
+        "stagger": 0.432
       }
     ]
   },
   "action_akane_a2": {
     "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4773,23 +4773,23 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.579,
-        "energy": 1.447,
-        "harmony": 2.418,
-        "stagger": 0.293
+        "damage": 0.405,
+        "energy": 1.644,
+        "harmony": 2.748,
+        "stagger": 0.333
       },
       {
         "hit_count": 2,
-        "damage": 1.158,
-        "energy": 2.894,
-        "harmony": 4.836,
-        "stagger": 0.586
+        "damage": 0.81,
+        "energy": 3.288,
+        "harmony": 5.496,
+        "stagger": 0.666
       }
     ]
   },
   "action_akane_a3": {
     "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4800,58 +4800,58 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.275,
-        "energy": 0.687,
-        "harmony": 1.148,
-        "stagger": 0.139
+        "damage": 0.165,
+        "energy": 0.682,
+        "harmony": 1.14,
+        "stagger": 0.138
       },
       {
         "hit_count": 2,
-        "damage": 0.55,
-        "energy": 1.374,
-        "harmony": 2.296,
-        "stagger": 0.278
+        "damage": 0.33,
+        "energy": 1.364,
+        "harmony": 2.28,
+        "stagger": 0.276
       },
       {
         "hit_count": 3,
-        "damage": 0.825,
-        "energy": 2.061,
-        "harmony": 3.444,
-        "stagger": 0.417
+        "damage": 0.495,
+        "energy": 2.046,
+        "harmony": 3.42,
+        "stagger": 0.414
       },
       {
         "hit_count": 4,
-        "damage": 1.182,
-        "energy": 2.952,
-        "harmony": 4.934,
-        "stagger": 0.598
+        "damage": 0.709,
+        "energy": 2.895,
+        "harmony": 4.839,
+        "stagger": 0.586
       },
       {
         "hit_count": 5,
-        "damage": 1.539,
-        "energy": 3.843,
-        "harmony": 6.424,
-        "stagger": 0.779
+        "damage": 0.923,
+        "energy": 3.744,
+        "harmony": 6.258,
+        "stagger": 0.758
       },
       {
         "hit_count": 6,
-        "damage": 1.896,
-        "energy": 4.734,
-        "harmony": 7.914,
-        "stagger": 0.96
+        "damage": 1.137,
+        "energy": 4.593,
+        "harmony": 7.677,
+        "stagger": 0.93
       },
       {
         "hit_count": 7,
-        "damage": 2.253,
-        "energy": 5.625,
-        "harmony": 9.404,
-        "stagger": 1.141
+        "damage": 1.351,
+        "energy": 5.442,
+        "harmony": 9.096,
+        "stagger": 1.102
       }
     ]
   },
   "action_akane_a4": {
     "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4862,16 +4862,16 @@
       },
       {
         "hit_count": 1,
-        "damage": 1.526,
-        "energy": 3.812,
-        "harmony": 6.371,
-        "stagger": 0.773
+        "damage": 3.814,
+        "energy": 3.439,
+        "harmony": 6.747,
+        "stagger": 0.697
       }
     ]
   },
   "action_akane_plunge": {
     "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4891,7 +4891,7 @@
   },
   "action_akane_counter": {
     "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4903,15 +4903,15 @@
       {
         "hit_count": 1,
         "damage": 0.25,
-        "energy": 0.0,
-        "harmony": 0.0,
-        "stagger": 1.5
+        "energy": 1.3,
+        "harmony": 2.1,
+        "stagger": 2.5
       }
     ]
   },
   "action_akane_e": {
     "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4924,14 +4924,14 @@
         "hit_count": 1,
         "damage": 5.0,
         "energy": 1.7,
-        "harmony": 2.8,
+        "harmony": 4.0,
         "stagger": 0.3
       }
     ]
   },
   "action_akane_hold_e": {
     "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4942,23 +4942,23 @@
       },
       {
         "hit_count": 1,
-        "damage": 2.0,
+        "damage": 2.25,
         "energy": 2.45,
-        "harmony": 4.1,
+        "harmony": 4.0,
         "stagger": 0.5
       },
       {
         "hit_count": 2,
-        "damage": 4.0,
+        "damage": 4.5,
         "energy": 4.9,
-        "harmony": 8.2,
+        "harmony": 8.0,
         "stagger": 1.0
       }
     ]
   },
   "action_akane_enhanced_e": {
     "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4969,7 +4969,7 @@
       },
       {
         "hit_count": 1,
-        "damage": 8.0,
+        "damage": 11.25,
         "energy": 0.0,
         "harmony": 0.0,
         "stagger": 0.0

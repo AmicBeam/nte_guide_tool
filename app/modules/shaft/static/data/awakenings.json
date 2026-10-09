@@ -867,12 +867,14 @@
     {
       "title": "E觉·乐队间的节拍器",
       "description": "泛音列传导倍率提升至50%；音域传导增伤提升至60%。",
-      "implemented": true
+      "implemented": true,
+      "source_note": "用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。"
     },
     {
       "title": "F觉·舞台前的超新星",
-      "description": "烁星激昂额外使全队伤害+10%。",
-      "implemented": true
+      "description": "烁星激昂额外使全队伤害+10%，持续20秒。",
+      "implemented": true,
+      "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
     },
     {
       "title": "三觉共鸣·全音阶",

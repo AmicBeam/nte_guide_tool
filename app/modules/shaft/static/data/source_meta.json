@@ -134,14 +134,10 @@
       "31": "通用Reaction GE，不是角色普通动作",
       "38": "占位分支0.1%且文档无对应技能，不导入"
     },
-    "checked_at": "2026-09-21",
+    "checked_at": "2026-10-09",
     "everness": "按明音凛检索无匹配",
     "estimates": {
-      "base_stats": {
-        "atk": 660,
-        "hp": 15000,
-        "def": 900
-      },
+      "base_stats": "已由Nanoka 1.4.6的80级实值替换；历史暂估660/15000/900。",
       "string_per_hit": "2026-09-21暂估；2026-09-24改为按整次动作发放",
       "cadenza_seconds": 20,
       "delay_interval_seconds": 3,
@@ -151,6 +147,23 @@
       "delay_proc_seconds": 1
     },
     "interpretation": "2026-09-21当时口径：单敌传导按本次普攻结算一次；长E曾按400%+160%；强化E曾沿用500%。",
-    "ntedata": "2026-09-24起改用NTEData提交43dd106。点按E 500%，音域400%两段；同调共振音域800%、泛音列1000%。弦能按整次动作发放。华彩20秒，第二段后半手动释放。绝对音准的X参数仍用暂估值。烁星激昂按技能描述保持20%，未采用曲线表中的30%。"
+    "ntedata": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "ntedata_revision": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+    "ntedata_version": "1.4.10.566418",
+    "nanoka_url": "https://static.nanoka.cc/nte/1.4.6/zh/character/1057.json",
+    "user_override": "用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。",
+    "ntedata_sources_sha256": {
+      "DataTable_Skill_GlobalCharacterData_DT_AkaneEffectFigure.json": "0101ab9125b447b41042f44b75b45c791080d24a2f3d09d7dd80d59819c2199e",
+      "DataTable_Skill_DT_SkillDamageData.json": "9c36e94b9b452b88d2160385dc7f6453e1584063c3020e33657e03773f77bf7a",
+      "Text_PlayerSkillDes_Akane_SkillDes.json": "fab95437022f9fd969b05db172c31f3f28a6c104bee97455082e6e74516e18d7",
+      "Text_ST_Fork.json": "68e47f787748c06eaf99bdb1be5fe0bb429f7e2c27d28db7edf371d30e38670f",
+      "DataTable_Fork_CT_ForkBuff.json": "2f45eee61818e86db9a8e2dcdd2a0877906cb14b355e4e384570b5ba28f7a866"
+    },
+    "nanoka_sha256": "1569f5e6f61793d7accd2b95af5ca16d445655fb5ca3d3975d3db4d7394dd5d3",
+    "conflicts": {
+      "area_transmission": "最新曲线50%/90%、文本36%/60%；用户确认沿用36%/60%。",
+      "talent2": "上游文本自身伤害20%/25秒、曲线伤害30%/20秒；用户确认采用自身攻击力30%/20秒。",
+      "passive1": "X参数仍未填，保留暂估3秒、200%、每秒20%、上限200%、1秒CD。"
+    }
   }
 }

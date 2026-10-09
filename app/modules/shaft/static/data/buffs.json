@@ -4000,7 +4000,7 @@
       "interval_ticks": 30,
       "requires_reaction_unlock": true
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 延滞周期3秒仍属X参数暂估。"
   },
   {
     "id": "character_akane_area",
@@ -4045,7 +4045,7 @@
       "interval_ticks": 30,
       "requires_reaction_unlock": true
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 延滞周期3秒仍属X参数暂估。"
   },
   {
     "id": "character_akane_mode",
@@ -4081,7 +4081,7 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_transmit_single",
@@ -4120,7 +4120,7 @@
     "effects": {
       "base_multiplier_pct": 0.325
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_e_single",
@@ -4165,7 +4165,7 @@
     "effects": {
       "base_multiplier_pct": 0.175
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_transmit_area",
@@ -4204,7 +4204,7 @@
     "effects": {
       "all_dmg": 0.36
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。"
   },
   {
     "id": "character_akane_e_area",
@@ -4249,7 +4249,7 @@
     "effects": {
       "all_dmg": 0.24
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。"
   },
   {
     "id": "character_akane_c",
@@ -4285,7 +4285,7 @@
     "effects": {
       "base_multiplier_pct": 1.5
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_b_single",
@@ -4330,7 +4330,7 @@
       "res_down_相": 0.075,
       "res_down_心灵": 0.075
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_b_area",
@@ -4369,7 +4369,7 @@
     "effects": {
       "all_dmg": 0.125
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_a",
@@ -4402,7 +4402,7 @@
     "effects": {
       "crit_rate": 0.12
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_d",
@@ -4445,7 +4445,7 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_three",
@@ -4478,7 +4478,7 @@
     "effects": {
       "atk_pct": 0.2
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_six",
@@ -4526,7 +4526,7 @@
         "弦能": 10
       }
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_talent2",
@@ -4552,18 +4552,18 @@
     },
     "duration": {
       "type": "time",
-      "ticks": 250,
+      "ticks": 200,
       "loop_carry": true
     },
     "effects": {
-      "all_dmg": 0.2
+      "atk_pct": 0.3
     },
     "stacking": {
       "key": "character_akane_talent2",
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。"
   },
   {
     "id": "character_akane_f",
@@ -4595,7 +4595,7 @@
     },
     "duration": {
       "type": "time",
-      "ticks": 250,
+      "ticks": 200,
       "loop_carry": true
     },
     "effects": {
@@ -4606,7 +4606,7 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 全队伤害+10%持续20秒；时间取最新Level6_GlobleDamageUP_CD曲线，与烁星窗口同步。"
   },
   {
     "id": "character_akane_cadenza",
@@ -4641,7 +4641,7 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 华彩连段持续20秒；第二段不自动结算。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_cadenza_front",
@@ -4679,7 +4679,7 @@
     "display": {
       "line": false
     },
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 第二段只在华彩后半可释放；前10秒放置会提示。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_enhanced_single",
@@ -4710,12 +4710,12 @@
       "type": "permanent"
     },
     "effects": {
-      "base_multiplier_pct": 0.25
+      "base_multiplier_pct": 0.1111111111111111
     },
     "display": {
       "line": false
     },
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 同调共振基础800%；泛音列额外+200%，合计1000%。音域保持800%。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 音域1125%；泛音列额外125%攻击倍率，合计1250%，对应归一化基础倍率增益1/9。"
   },
   {
     "id": "character_akane_heal",
@@ -4762,7 +4762,7 @@
     "display": {
       "line": false
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "arc_akane_skill",
@@ -4775,32 +4775,21 @@
     ],
     "priority": 50,
     "trigger": {
-      "event": "action_hit",
+      "event": "passive",
       "source": {
-        "scope": "registrar",
-        "action_types": [
-          "普攻"
-        ]
-      },
-      "cooldown_ticks": 3
+        "scope": "registrar"
+      }
     },
     "target": {
       "scope": "registrar"
     },
     "duration": {
-      "type": "time",
-      "ticks": 50,
-      "loop_carry": true
+      "type": "permanent"
     },
     "effects": {
-      "skill_dmg": 0.07
+      "skill_dmg": 0.28
     },
-    "stacking": {
-      "key": "arc_akane_skill",
-      "mode": "add_stack",
-      "max_stacks": 4
-    },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "arc_akane_basic",
@@ -4837,7 +4826,7 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "arc_akane_element",
@@ -4850,30 +4839,30 @@
     ],
     "priority": 50,
     "trigger": {
-      "event": "passive",
+      "event": "action_start",
       "source": {
-        "scope": "registrar"
+        "scope": "registrar",
+        "action_types": [
+          "E"
+        ]
       }
     },
     "target": {
-      "scope": "registrar",
-      "conditions": [
-        {
-          "type": "active_buff_key",
-          "key": "arc_akane_skill"
-        },
-        {
-          "type": "active_buff_key",
-          "key": "arc_akane_basic"
-        }
-      ]
+      "scope": "registrar"
     },
     "duration": {
-      "type": "permanent"
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
     },
     "effects": {
       "element_dmg_相": 0.16
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "stacking": {
+      "key": "arc_akane_element",
+      "mode": "refresh",
+      "max_stacks": 1
+    }
   }
 ]

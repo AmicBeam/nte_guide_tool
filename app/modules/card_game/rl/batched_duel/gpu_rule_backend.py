@@ -18,6 +18,7 @@ import threading
 import time
 import weakref
 import sys
+import inspect
 
 import numpy as np
 
@@ -38,6 +39,17 @@ from app.modules.card_game.rl.batched_duel.gpu_rule_program import (
     lower_gpu_program,
     resolve_entry_names,
     verify_source_hashes,
+    detect_frozen_runtime,
+)
+from app.modules.card_game.rl.batched_duel.gpu_rule_capacity import (
+    GpuRuleCapacityError,
+    GpuRuleSlotLedger,
+    normalize_runtime,
+    resolve_gpu_rule_backend_capacity,
+    DEFAULT_QUERY_BATCH_ROWS,
+    graph_state_bytes,
+    plan_gpu_rule_capacity,
+    split_query_batches,
 )
 from app.modules.card_game.rl.batched_duel.schema import GraphLayout, PackedStateBatch, TAG_TUPLE
 from app.modules.card_game.rl.batched_duel.vm_image import ImageError, VmImage
@@ -120,6 +132,35 @@ class _SlotMeta:
     actor: object
     phase: str
     winner: object
+    kind: str = 'hypothetical'
+
+
+def _call_with_runtime(fn, /, *args, runtime, **kwargs):
+    try:
+        params = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        params = {}
+    if 'runtime' in params:
+        kwargs['runtime'] = runtime
+    return fn(*args, **kwargs)
+
+
+def _program_runtime(program):
+    for attr in ('runtime', 'wrapper_runtime'):
+        value = getattr(program, attr, None)
+        if value in ('recovery', 'seven'):
+            return value
+    to_dict = getattr(program, 'to_dict', None)
+    if callable(to_dict):
+        payload = to_dict()
+        if isinstance(payload, dict):
+            for key in ('runtime', 'wrapper_runtime'):
+                if payload.get(key) in ('recovery', 'seven'):
+                    return payload[key]
+            status = payload.get('status')
+            if isinstance(status, dict) and status.get('runtime') in ('recovery', 'seven'):
+                return status['runtime']
+    return None
 
 
 class GpuRuleBackend:
@@ -150,6 +191,8 @@ class GpuRuleBackend:
         limits=None,
         max_candidates=128,
         guard_standalone_entities=False,
+        runtime='recovery',
+        capacity_plan=None,
     ):
         self._owner_thread = threading.get_ident()
         if type(guard_standalone_entities) is not bool:
@@ -159,10 +202,6 @@ class GpuRuleBackend:
             raise GpuRuleBackendError('CPU device rejected; CUDA-only rule backend')
         if not isinstance(device, str) or not device.startswith('cuda'):
             raise GpuRuleBackendError('CUDA device required; no CPU fallback')
-        if type(max_games) is not int or isinstance(max_games, bool) or max_games < 1:
-            raise ValueError('Positive max_games required')
-        if type(max_states) is not int or isinstance(max_states, bool) or max_states < 1:
-            raise ValueError('Positive max_states required')
         if (
             type(operation_timeout) not in (int, float)
             or isinstance(operation_timeout, bool)
@@ -170,14 +209,49 @@ class GpuRuleBackend:
             or operation_timeout <= 0
         ):
             raise ValueError('Positive finite operation_timeout required')
+        try:
+            self.runtime = normalize_runtime(runtime)
+            self._capacity = resolve_gpu_rule_backend_capacity(
+                runtime=self.runtime,
+                capacity_plan=capacity_plan,
+                max_games=max_games,
+                max_states=max_states,
+                max_nodes=max_nodes,
+                max_edges=max_edges,
+                max_payload_bytes=max_payload_bytes,
+                max_candidates=max_candidates,
+            )
+        except GpuRuleCapacityError as exc:
+            raise GpuRuleBackendError(str(exc)) from exc
+        max_games = self._capacity['max_games']
+        max_states = self._capacity['max_states']
+        max_nodes = self._capacity['max_nodes']
+        max_edges = self._capacity['max_edges']
+        max_payload_bytes = self._capacity['max_payload_bytes']
+        max_candidates = self._capacity['max_candidates']
         self.max_games = max_games
         self.max_states = max_states
+        self.max_roots = self._capacity['max_roots']
+        self.query_batch_rows = int(self._capacity.get('query_batch_rows') or DEFAULT_QUERY_BATCH_ROWS)
+        self.vm_max_nodes = int(self._capacity.get('vm_max_nodes') or max_nodes)
+        self.vm_max_edges = int(self._capacity.get('vm_max_edges') or max_edges)
+        self.vm_max_payload_bytes = int(self._capacity.get('vm_max_payload_bytes') or max_payload_bytes)
+        if self.vm_max_nodes < max_nodes or self.vm_max_edges < max_edges or self.vm_max_payload_bytes < max_payload_bytes:
+            raise GpuRuleBackendError('VM workspace must not shrink persistent graph capacity')
         self.operation_timeout = float(operation_timeout)
         self.backend_id = uuid4().hex
         self.record_output = str(Path(record_output).resolve()) if record_output is not None else None
         self._closed = False
         self._poisoned = False
-        self.program = self._load_program(program, verify_sources=verify_sources, repo_root=repo_root)
+        self._gpu_released = False
+        self.program = self._load_program(
+            program, verify_sources=verify_sources, repo_root=repo_root, runtime=self.runtime,
+        )
+        bound_runtime = _program_runtime(self.program)
+        if bound_runtime is not None and bound_runtime != self.runtime:
+            raise GpuRuleBackendError(
+                'Frozen program runtime %r does not match backend runtime %r' % (bound_runtime, self.runtime)
+            )
         self.entry_names = resolve_entry_names(entries)
         if 'acting_side' not in self.entry_names:
             raise GpuRuleBackendError('acting_side entry is required for GPU state metadata')
@@ -208,9 +282,19 @@ class GpuRuleBackend:
             raise GpuRuleBackendError('CPU device rejected; CUDA-only rule backend')
         self.vm = CudaVm(self.image, device=str(self.device), limits=limits or VmLimits(),
                          guard_standalone_entities=guard_standalone_entities)
-        self.arguments = GraphArgumentKernel(device=str(self.device))
+        self.arguments = GraphArgumentKernel(
+            device=str(self.device),
+            max_nodes=self._capacity['argument_max_nodes'],
+            max_edges=self._capacity['argument_max_edges'],
+            max_payload_bytes=self._capacity['argument_max_payload_bytes'],
+        )
         from .gpu_rule_projection import GraphProjectionKernel
-        self.projection = GraphProjectionKernel(device=str(self.device), max_candidates=max_candidates)
+        self.projection = _call_with_runtime(
+            GraphProjectionKernel,
+            device=str(self.device),
+            max_candidates=max_candidates,
+            runtime=self.runtime,
+        )
         if layout is None:
             layout = GraphLayout(max_states, max_nodes, max_edges, max_payload_bytes)
         if not isinstance(layout, GraphLayout):
@@ -220,7 +304,6 @@ class GpuRuleBackend:
         self.layout = layout
         self._init_pool()
         self._ref_cache = weakref.WeakValueDictionary()
-        self._live_slots = set()
         self._release_queue = queue.Queue()
         self._known_clean = set()
         self._game_to_slot = {}
@@ -232,18 +315,28 @@ class GpuRuleBackend:
         self._decision_cache = {}
         self._physical_records = {}
         self._kernel_ns = 0
+        self._peak_query_rows = 0
+        self._peak_query_workspace_bytes = 0
+        self._observed_query_bytes = 0
 
     @staticmethod
-    def _load_program(program, *, verify_sources, repo_root):
+    def _load_program(program, *, verify_sources, repo_root, runtime='recovery'):
         if program is None:
             raise GpuRuleBackendError('Frozen GPU rule program required')
         if isinstance(program, (str, Path)):
-            loaded = load_program(program, verify_sources=verify_sources, repo_root=repo_root)
+            loaded = _call_with_runtime(
+                load_program, program, verify_sources=verify_sources, repo_root=repo_root, runtime=runtime,
+            )
         elif isinstance(program, FrozenRuleProgram):
             loaded = program
             loaded.validate()
+            detected = detect_frozen_runtime(loaded)
+            if detected != runtime:
+                raise GpuRuleBackendError(
+                    'Frozen program runtime %r does not match backend runtime %r' % (detected, runtime)
+                )
             if verify_sources:
-                verify_source_hashes(loaded, repo_root=repo_root)
+                _call_with_runtime(verify_source_hashes, loaded, repo_root=repo_root, runtime=runtime)
         else:
             raise TypeError('FrozenRuleProgram or program path required')
         return loaded
@@ -257,8 +350,7 @@ class GpuRuleBackend:
         self._payload = torch.zeros((cap, layout.max_payload_bytes), dtype=torch.uint8, device=self.device)
         self._counts = torch.zeros((cap, 3), dtype=torch.int32, device=self.device)
         self._roots = torch.zeros((cap,), dtype=torch.int32, device=self.device)
-        self._free = list(range(cap - 1, -1, -1))
-        self._generations = [0] * cap
+        self._ledger = GpuRuleSlotLedger(cap, self.max_games)
         self._slot_meta = {}
 
     def __enter__(self):
@@ -268,24 +360,46 @@ class GpuRuleBackend:
         self.close()
 
     def close(self):
+        if getattr(self, '_closed', False) and getattr(self, '_gpu_released', False):
+            return
         self._closed = True
-        if getattr(self, 'projection', None) is not None:
-            self.projection.close()
-        if getattr(self, 'arguments', None) is not None:
-            self.arguments.close()
-        if getattr(self, 'vm', None) is not None:
-            self.vm.close()
-        self._live_slots.clear()
-        self._ref_cache.clear()
-        self._slot_meta.clear()
+        try:
+            if getattr(self, '_ledger', None) is not None:
+                self._ledger.close()
+        except Exception:
+            pass
+        for name in ('projection', 'arguments', 'vm'):
+            obj = getattr(self, name, None)
+            if obj is not None:
+                try:
+                    obj.close()
+                except Exception:
+                    pass
+                setattr(self, name, None)
+        for name in ('_nodes', '_edges', '_payload', '_counts', '_roots'):
+            setattr(self, name, None)
+        cache = getattr(self, '_ref_cache', None)
+        if cache is not None:
+            cache.clear()
+        meta = getattr(self, '_slot_meta', None)
+        if meta is not None:
+            meta.clear()
+        known = getattr(self, '_known_clean', None)
+        if known is not None:
+            known.clear()
+        self._gpu_released = True
+
+    def _abort(self):
+        self._poisoned = True
+        self.close()
 
     def _check_healthy(self):
         if threading.get_ident() != self._owner_thread:
             raise RuntimeError('CUDA rule backend requires its owning scheduler thread')
-        if self._closed:
-            raise RuntimeError('Backend is closed')
         if self._poisoned:
             raise RuntimeError('Backend is poisoned from a previous failure and cannot be reused')
+        if self._closed:
+            raise RuntimeError('Backend is closed')
 
     def capability_report(self):
         return {
@@ -293,6 +407,7 @@ class GpuRuleBackend:
             'device_verified': False,
             'guard_standalone_entities': self.guard_standalone_entities,
             'actual_backend': 'cuda',
+            'runtime': self.runtime,
             'entries': dict(self._capability_report),
             'program_identity': self.program.identity,
             'image_identity': self.image.identity,
@@ -301,6 +416,16 @@ class GpuRuleBackend:
     def stats(self):
         self._check_healthy()
         self._flush_releases()
+        ledger = self._ledger.metrics()
+        pool = 0
+        if self._nodes is not None:
+            pool = int(
+                self._nodes.numel() * self._nodes.element_size()
+                + self._edges.numel() * self._edges.element_size()
+                + self._payload.numel() * self._payload.element_size()
+                + self._counts.numel() * self._counts.element_size()
+                + self._roots.numel() * self._roots.element_size()
+            )
         return {
             'backend_id': self.backend_id,
             'backend_kind': self.backend_kind,
@@ -308,24 +433,73 @@ class GpuRuleBackend:
             'supports_full_duel_rules': False,
             'device_verified': False,
             'device': str(self.device),
+            'runtime': self.runtime,
             'max_games': self.max_games,
             'max_states': self.max_states,
-            'live_states': len(self._live_slots),
-            'peak_states': self._peak_states,
-            'released_states': self._released_count,
-            'free_slots': len(self._free),
-            'allocated_slots': self.max_states - len(self._free),
+            'max_roots': self.max_roots,
+            'live_states': ledger['live_states'],
+            'peak_states': max(self._peak_states, ledger['peak_states']),
+            'released_states': ledger['released_states'],
+            'free_slots': ledger['free_slots'],
+            'allocated_slots': ledger['allocated_slots'],
+            'live_by_kind': ledger['live_by_kind'],
+            'candidate_capacity': self._capacity['candidate_capacity'],
+            'state_bytes': self._capacity['state_bytes'],
+            'query_batch_rows': self.query_batch_rows,
+            'vm_max_nodes': self.vm_max_nodes,
+            'vm_max_edges': self.vm_max_edges,
+            'vm_max_payload_bytes': self.vm_max_payload_bytes,
+            'peak_query_rows': self._peak_query_rows,
+            'peak_query_workspace_bytes': self._peak_query_workspace_bytes,
+            'estimated_peak_bytes': self._capacity['estimated_peak_bytes'],
+            'estimated_modeled_bytes': self._capacity.get('estimated_modeled_bytes'),
+            'unmodeled_reserve_bytes': self._capacity.get('unmodeled_reserve_bytes'),
+            'observed_pool_bytes': pool,
+            'observed_query_peak_bytes': self._peak_query_workspace_bytes,
+            'observed_peak_bytes': pool + self._peak_query_workspace_bytes,
+            'estimated_peak_bytes_are_device_observed': False,
+            'derived_from_plan': self._capacity['derived_from_plan'],
             'methods': dict(self._method_counts),
             'inline_operations': dict(self._inline_counts),
             'kernel_ns': self._kernel_ns,
-            'pool_bytes': int(
-                self._nodes.numel() * self._nodes.element_size()
-                + self._edges.numel() * self._edges.element_size()
-                + self._payload.numel() * self._payload.element_size()
-                + self._counts.numel() * self._counts.element_size()
-                + self._roots.numel() * self._roots.element_size()
-            ),
+            'pool_bytes': pool,
         }
+
+    def _query_layout(self, rows):
+        return GraphLayout(rows, self.vm_max_nodes, self.vm_max_edges, self.vm_max_payload_bytes)
+
+    def _persistent_batch_layout(self, rows):
+        return GraphLayout(rows, self.layout.max_nodes, self.layout.max_edges, self.layout.max_payload_bytes)
+
+    def _record_query_workspace(self, rows, layout):
+        bytes_ = rows * graph_state_bytes(layout.max_nodes, layout.max_edges, layout.max_payload_bytes)
+        if rows > self._peak_query_rows:
+            self._peak_query_rows = rows
+        if bytes_ > self._peak_query_workspace_bytes:
+            self._peak_query_workspace_bytes = bytes_
+        self._observed_query_bytes = bytes_
+
+    def _iter_query_batches(self, items):
+        items = list(items)
+        sizes = split_query_batches(len(items), self.query_batch_rows)
+        start = 0
+        for size in sizes:
+            yield items[start:start + size]
+            start += size
+
+    def _runtime_cand_dim(self):
+        plan = self._capacity.get('plan')
+        if isinstance(plan, dict) and plan.get('cand_dim'):
+            return int(plan['cand_dim'])
+        if self._capacity.get('cand_dim'):
+            return int(self._capacity['cand_dim'])
+        from .gpu_schema_contract import GPU_RUNTIME_CONTRACTS
+        row = GPU_RUNTIME_CONTRACTS.get(self.runtime)
+        if not isinstance(row, dict) or not row.get('cand_dim'):
+            raise GpuRuleBackendError(
+                'gpu_schema_contract candidate width is unbound for runtime %r' % (self.runtime,)
+            )
+        return int(row['cand_dim'])
 
     def _validate_ref(self, ref):
         if not isinstance(ref, StateRef):
@@ -335,8 +509,7 @@ class GpuRuleBackend:
         if ref.worker != 0:
             raise ValueError('CUDA backend uses worker 0')
         key = (0, ref.slot, ref.generation)
-        if key not in self._live_slots:
-            raise ValueError('Stale or released state reference')
+        self._ledger.validate_key(key)
         canonical = self._ref_cache.get(key)
         if canonical is None or canonical != ref:
             raise ValueError('State metadata does not match its issued reference')
@@ -351,9 +524,11 @@ class GpuRuleBackend:
         return entry
 
     def _allocate_slots(self, n):
-        if n > len(self._free):
-            raise OverflowError('GPU state slot capacity exceeded')
-        return [self._free.pop() for _ in range(n)]
+        try:
+            return self._ledger.allocate(n)
+        except OverflowError:
+            self._abort()
+            raise
 
     def _store_graph(self, graph, slots):
         if graph.rows != len(slots):
@@ -419,7 +594,20 @@ class GpuRuleBackend:
             raise GpuRuleBackendError(
                 'GPU output graph compact failed row=%s status=%s' % (int(bad[0]), int(values[int(bad[0])]))
             )
-        return DeviceGraph(layout, dn, de, dp, dc, dr)
+        compacted = DeviceGraph(layout, dn, de, dp, dc, dr)
+        persistent = self._persistent_batch_layout(rows)
+        if (
+            layout.max_nodes == persistent.max_nodes
+            and layout.max_edges == persistent.max_edges
+            and layout.max_payload_bytes == persistent.max_payload_bytes
+        ):
+            return compacted
+        try:
+            return self.arguments.copy_to_layout(compacted, persistent)
+        except Exception as exc:
+            raise GpuRuleBackendError(
+                'GPU output could not fit persistent graph limits: %s' % exc
+            ) from exc
 
     def _compact_custom_roots(self, arena, roots, executor):
         torch = executor.torch
@@ -450,13 +638,30 @@ class GpuRuleBackend:
             raise GpuRuleBackendError(
                 'GPU explicit export compact failed row=%s status=%s' % (int(bad[0]), int(values[int(bad[0])]))
             )
+        compacted = DeviceGraph(layout, dn, de, dp, dc, dr)
+        persistent = self._persistent_batch_layout(rows)
+        if (
+            layout.max_nodes != persistent.max_nodes
+            or layout.max_edges != persistent.max_edges
+            or layout.max_payload_bytes != persistent.max_payload_bytes
+        ):
+            try:
+                compacted = self.arguments.copy_to_layout(compacted, persistent)
+            except Exception as exc:
+                raise GpuRuleBackendError(
+                    'GPU explicit export could not fit persistent graph limits: %s' % exc
+                ) from exc
         packed = PackedStateBatch(
-            layout, *(value.cpu().numpy() for value in (dn, de, dp, dc, dr)),
+            compacted.layout, *(value.cpu().numpy() for value in (
+                compacted.nodes, compacted.edges, compacted.payload, compacted.counts, compacted.roots,
+            )),
         )
         return unpack_states(packed)
 
     def _register(self, slot, meta):
-        generation = self._generations[slot]
+        kind = meta.kind if getattr(meta, 'kind', None) else ('real' if meta.role == 'real' else 'hypothetical')
+        key = self._ledger.register(slot, kind)
+        generation = key[2]
         ref = StateRef(
             backend_id=self.backend_id,
             worker=0,
@@ -469,27 +674,23 @@ class GpuRuleBackend:
             winner=meta.winner,
             role=meta.role,
         )
-        key = (0, slot, generation)
-        self._live_slots.add(key)
         self._ref_cache[key] = ref
         self._slot_meta[slot] = meta
         weakref.finalize(ref, _enqueue_release, self._release_queue, key)
-        if len(self._live_slots) > self._peak_states:
-            self._peak_states = len(self._live_slots)
+        live = len(self._ledger.live)
+        if live > self._peak_states:
+            self._peak_states = live
         return ref
 
     def _release_slot(self, slot, generation):
         key = (0, slot, generation)
-        if key not in self._live_slots:
+        if not self._ledger._release_key(key, require_live=False):
             return False
-        self._live_slots.discard(key)
         self._known_clean.discard(key)
         self._ref_cache.pop(key, None)
         self._slot_meta.pop(slot, None)
         for side in ('a', 'b'):
             self._decision_cache.pop((slot, generation, side), None)
-        self._generations[slot] += 1
-        self._free.append(slot)
         self._released_count += 1
         return True
 
@@ -507,27 +708,41 @@ class GpuRuleBackend:
     def _flush_releases(self):
         self._get_pending_releases()
 
-    def _refresh_meta(self, slots, *, game_ids, root_generations, roles, is_clean):
-        try:
-            graph = self._gather_slots(slots)
-            bound = self.arguments.bind(graph, [() for _ in slots])
-            call = self.vm.launch(bound.arena, 'acting_side', argument_refs=bound.argument_refs)
-            actors = call.decode()
-            phases, winners = self.arguments.read_meta(bound.arena)
-        except Exception:
-            self._poisoned = True
-            raise
+    def _refresh_meta(self, slots, *, game_ids, root_generations, roles, is_clean, kinds=None):
+        if kinds is None:
+            kinds = ['real' if role == 'real' else 'hypothetical' for role in roles]
+        slots = list(slots)
+        game_ids = list(game_ids)
+        root_generations = list(root_generations)
+        roles = list(roles)
+        is_clean = list(is_clean)
+        kinds = list(kinds)
         refs = []
-        for slot, actor, phase, winner, game_id, root_generation, role, clean in zip(
-            slots, actors, phases, winners, game_ids, root_generations, roles, is_clean,
-        ):
-            if actor not in (None, 'a', 'b'):
-                raise GpuRuleBackendError('GPU acting_side returned an invalid actor')
-            meta = _SlotMeta(game_id, root_generation, role, clean, actor, phase, winner)
-            ref = self._register(slot, meta)
-            if clean:
-                self._known_clean.add((0, slot, ref.generation))
-            refs.append(ref)
+        try:
+            for start in range(0, len(slots), self.query_batch_rows):
+                end = start + self.query_batch_rows
+                chunk_slots = slots[start:end]
+                graph = self._gather_slots(chunk_slots)
+                self._record_query_workspace(len(chunk_slots), graph.layout)
+                bound = self.arguments.bind(graph, [() for _ in chunk_slots])
+                call = self.vm.launch(bound.arena, 'acting_side', argument_refs=bound.argument_refs)
+                actors = call.decode()
+                phases, winners = self.arguments.read_meta(bound.arena)
+                for slot, actor, phase, winner, game_id, root_generation, role, clean, kind in zip(
+                    chunk_slots, actors, phases, winners,
+                    game_ids[start:end], root_generations[start:end], roles[start:end],
+                    is_clean[start:end], kinds[start:end],
+                ):
+                    if actor not in (None, 'a', 'b'):
+                        raise GpuRuleBackendError('GPU acting_side returned an invalid actor')
+                    meta = _SlotMeta(game_id, root_generation, role, clean, actor, phase, winner, kind)
+                    ref = self._register(slot, meta)
+                    if clean:
+                        self._known_clean.add((0, slot, ref.generation))
+                    refs.append(ref)
+        except Exception:
+            self._abort()
+            raise
         return refs
 
     def import_states(self, states, game_ids, root_generations):
@@ -550,18 +765,31 @@ class GpuRuleBackend:
             raise ValueError('A game can be imported only once in this backend')
         if len(self._game_to_slot) + len(game_ids) > self.max_games:
             raise OverflowError('Real game admission capacity exceeded')
-        packed = pack_states(states, GraphLayout(len(states), self.layout.max_nodes, self.layout.max_edges, self.layout.max_payload_bytes))
-        graph = self.vm.ingest(packed)
-        slots = self._allocate_slots(len(states))
-        self._store_graph(graph, slots)
-        self._require_entry('acting_side')
-        refs = self._refresh_meta(
-            slots,
-            game_ids=list(game_ids),
-            root_generations=list(root_generations),
-            roles=['real'] * len(states),
-            is_clean=[False] * len(states),
-        )
+        try:
+            self._require_entry('acting_side')
+            slots = self._allocate_slots(len(states))
+            refs = []
+            for start in range(0, len(states), self.query_batch_rows):
+                end = start + self.query_batch_rows
+                packed = pack_states(
+                    states[start:end],
+                    GraphLayout(end - start, self.layout.max_nodes, self.layout.max_edges, self.layout.max_payload_bytes),
+                )
+                graph = self.vm.ingest(packed)
+                chunk_slots = slots[start:end]
+                self._store_graph(graph, chunk_slots)
+                refs.extend(self._refresh_meta(
+                    chunk_slots,
+                    game_ids=list(game_ids[start:end]),
+                    root_generations=list(root_generations[start:end]),
+                    roles=['real'] * (end - start),
+                    is_clean=[False] * (end - start),
+                    kinds=['real'] * (end - start),
+                ))
+        except Exception:
+            self._abort()
+            raise
+        self._ledger.admit_real_games(game_ids)
         for ref in refs:
             self._game_to_slot[ref.game_id] = ref.slot
             self._latest_real_generation[ref.game_id] = ref.root_generation
@@ -579,16 +807,19 @@ class GpuRuleBackend:
         self._flush_releases()
         if not refs:
             return []
-        graph, _ = self.gather(refs)
-        packed = PackedStateBatch(
-            self.layout,
-            graph.nodes.detach().cpu().numpy().copy(),
-            graph.edges.detach().cpu().numpy().copy(),
-            graph.payload.detach().cpu().numpy().copy(),
-            graph.counts.detach().cpu().numpy().copy(),
-            graph.roots.detach().cpu().numpy().copy(),
-        )
-        return unpack_states(packed)
+        exported = []
+        for chunk in self._iter_query_batches(refs):
+            graph, _ = self.gather(chunk)
+            packed = PackedStateBatch(
+                self._persistent_batch_layout(len(chunk)),
+                graph.nodes.detach().cpu().numpy().copy(),
+                graph.edges.detach().cpu().numpy().copy(),
+                graph.payload.detach().cpu().numpy().copy(),
+                graph.counts.detach().cpu().numpy().copy(),
+                graph.roots.detach().cpu().numpy().copy(),
+            )
+            exported.extend(unpack_states(packed))
+        return exported
 
     def release(self, refs):
         self._check_healthy()
@@ -608,21 +839,36 @@ class GpuRuleBackend:
             raise ValueError('role must be real or hypothetical')
         if not refs:
             return []
-        graph, _ = self.gather(refs)
-        slots = self._allocate_slots(len(refs))
-        self._store_graph(graph, slots)
-        return self._refresh_meta(
-            slots,
-            game_ids=[ref.game_id for ref in refs],
-            root_generations=[ref.root_generation for ref in refs],
-            roles=[role] * len(refs),
-            is_clean=[(0, ref.slot, ref.generation) in self._known_clean for ref in refs],
-        )
+        cloned = []
+        try:
+            for chunk in self._iter_query_batches(refs):
+                graph, _ = self.gather(chunk)
+                slots = self._allocate_slots(len(chunk))
+                self._store_graph(graph, slots)
+                cloned.extend(self._refresh_meta(
+                    slots,
+                    game_ids=[ref.game_id for ref in chunk],
+                    root_generations=[ref.root_generation for ref in chunk],
+                    roles=[role] * len(chunk),
+                    is_clean=[(0, ref.slot, ref.generation) in self._known_clean for ref in chunk],
+                    kinds=['real' if role == 'real' else 'hypothetical'] * len(chunk),
+                ))
+        except Exception:
+            self._abort()
+            raise
+        return cloned
 
     def _launch(self, refs, entry, extras, deadlines=None):
+        if len(refs) > self.query_batch_rows:
+            raise GpuRuleBackendError(
+                'kernel batch %s exceeds query_batch_rows %s; split the group, do not launch all roots'
+                % (len(refs), self.query_batch_rows)
+            )
         graph, slots = self.gather(refs)
         try:
-            bound = self.arguments.bind(graph, extras)
+            destination_layout = self._query_layout(len(refs))
+            self._record_query_workspace(len(refs), destination_layout)
+            bound = self.arguments.bind(graph, extras, destination_layout=destination_layout)
             gpu_deadlines = None
             if deadlines is not None:
                 gpu_deadlines = self._deadline_tensor(len(refs), deadlines)
@@ -631,7 +877,7 @@ class GpuRuleBackend:
             call.check()
             self._kernel_ns += time.perf_counter_ns() - started
         except Exception:
-            self._poisoned = True
+            self._abort()
             raise
         return call, slots
 
@@ -650,17 +896,26 @@ class GpuRuleBackend:
                 out[i] = int(clock + remaining * 1_000_000_000.0)
         return out
 
-    def _adopt_outputs(self, call, source_refs, *, role, is_clean, root_generations=None):
-        graph = self._compact_outputs(call)
-        slots = self._allocate_slots(len(source_refs))
-        self._store_graph(graph, slots)
-        return self._refresh_meta(
-            slots,
-            game_ids=[ref.game_id for ref in source_refs],
-            root_generations=list(root_generations) if root_generations is not None else [ref.root_generation for ref in source_refs],
-            roles=[role] * len(source_refs),
-            is_clean=[is_clean] * len(source_refs),
-        )
+    def _adopt_outputs(self, call, source_refs, *, role, is_clean, root_generations=None, kind=None, kinds=None):
+        if kinds is None:
+            if kind is None:
+                kind = 'real' if role == 'real' else 'hypothetical'
+            kinds = [kind] * len(source_refs)
+        try:
+            graph = self._compact_outputs(call)
+            slots = self._allocate_slots(len(source_refs))
+            self._store_graph(graph, slots)
+            return self._refresh_meta(
+                slots,
+                game_ids=[ref.game_id for ref in source_refs],
+                root_generations=list(root_generations) if root_generations is not None else [ref.root_generation for ref in source_refs],
+                roles=[role] * len(source_refs),
+                is_clean=[is_clean] * len(source_refs),
+                kinds=kinds,
+            )
+        except Exception:
+            self._abort()
+            raise
 
     def _tuple_child_refs(self, call, index):
         """Read a tuple child reference on device. Does not export state or run host extractors."""
@@ -693,6 +948,7 @@ class GpuRuleBackend:
         except GraphProjectionError as exc:
             if 'empty_policy' in str(exc):
                 raise ValueError('No legal non-concede action') from exc
+            self._abort()
             raise
         exported = self._compact_custom_roots(projected.arena, projected.action_roots, call.executor)
         observations = projected.observations.observations
@@ -703,6 +959,10 @@ class GpuRuleBackend:
             if not actions:
                 raise ValueError('No legal non-concede action')
             count = int(counts[i])
+            if count > int(candidates.shape[1]):
+                raise GpuRuleBackendError(
+                    'Candidate count %s exceeds bound %s' % (count, int(candidates.shape[1]))
+                )
             x = observations[i].detach().cpu().numpy()
             c = candidates[i, :count].detach().cpu().numpy()
             results.append((list(actions), (x, c)))
@@ -756,59 +1016,77 @@ class GpuRuleBackend:
         for method, group in groups.items():
             entry = self._require_entry(method)
             self._method_counts[method] += len(group)
-            refs = [query.args[0] for query in group]
-            extras = [tuple(query.args[1:]) for query in group]
-            deadlines = [query.deadline for query in group]
-            if method == 'clean':
-                values = []
-                launch_refs = []
-                launch_index = []
-                for i, ref in enumerate(refs):
-                    key = (ref.worker, ref.slot, ref.generation)
-                    if key in self._known_clean:
-                        values.append(ref)
+            for chunk in self._iter_query_batches(group):
+                now = time.monotonic()
+                live = []
+                for query in chunk:
+                    if query.deadline is not None and now >= query.deadline:
+                        responses[query.id] = OperationResponse(query.id, RequestExpired(query.id))
                     else:
-                        launch_index.append(i)
-                        launch_refs.append(ref)
-                        values.append(None)
-                if launch_refs:
-                    call, _ = self._launch(launch_refs, entry, [() for _ in launch_refs], [deadlines[i] for i in launch_index])
-                    adopted = self._adopt_outputs(call, launch_refs, role=launch_refs[0].role, is_clean=True)
-                    for i, ref in zip(launch_index, adopted):
-                        values[i] = ref
-                for query, value in zip(group, values):
-                    responses[query.id] = OperationResponse(query.id, value)
-                continue
-            call, _ = self._launch(refs, entry, extras, deadlines)
-            if method == 'decision':
-                values = self._decision_from_call(call)
-                for query, value in zip(group, values):
-                    self._decision_cache[(query.args[0].slot, query.args[0].generation, query.args[1])] = value
-                    responses[query.id] = OperationResponse(query.id, value)
-            elif method == 'value_observation':
-                from .gpu_candidates import CAND_DIM
-                view_refs = self._tuple_child_refs(call, 1)
-                projected = self.projection.project_observation(call, view_refs)
-                observations = projected.observations
-                for i, query in enumerate(group):
-                    x = observations[i].detach().cpu().numpy()
-                    c = np.zeros((0, CAND_DIM), dtype=np.float32)
-                    responses[query.id] = OperationResponse(query.id, (x, c))
-            elif method in STATE_METHODS:
-                if method == 'step':
-                    mid = self._adopt_outputs(call, refs, role='hypothetical', is_clean=False)
-                    call2, _ = self._launch(mid, 'clean', [() for _ in mid], deadlines)
-                    values = self._adopt_outputs(call2, mid, role='hypothetical', is_clean=True)
-                    self.release(mid)
+                        live.append(query)
+                if not live:
+                    continue
+                refs = [query.args[0] for query in live]
+                extras = [tuple(query.args[1:]) for query in live]
+                deadlines = [query.deadline for query in live]
+                if method == 'clean':
+                    values = []
+                    launch_refs = []
+                    launch_index = []
+                    for i, ref in enumerate(refs):
+                        key = (ref.worker, ref.slot, ref.generation)
+                        if key in self._known_clean:
+                            values.append(ref)
+                        else:
+                            launch_index.append(i)
+                            launch_refs.append(ref)
+                            values.append(None)
+                    if launch_refs:
+                        call, _ = self._launch(launch_refs, entry, [() for _ in launch_refs], [deadlines[i] for i in launch_index])
+                        adopted = self._adopt_outputs(
+                            call, launch_refs, role=launch_refs[0].role, is_clean=True,
+                            kinds=['root_clean' if ref.role == 'real' else 'hypothetical' for ref in launch_refs],
+                        )
+                        for i, ref in zip(launch_index, adopted):
+                            values[i] = ref
+                    for query, value in zip(live, values):
+                        responses[query.id] = OperationResponse(query.id, value)
+                    continue
+                call, _ = self._launch(refs, entry, extras, deadlines)
+                if method == 'decision':
+                    values = self._decision_from_call(call)
+                    for query, value in zip(live, values):
+                        self._decision_cache[(query.args[0].slot, query.args[0].generation, query.args[1])] = value
+                        responses[query.id] = OperationResponse(query.id, value)
+                elif method == 'value_observation':
+                    view_refs = self._tuple_child_refs(call, 1)
+                    projected = self.projection.project_observation(call, view_refs)
+                    observations = projected.observations
+                    cand_dim = self._runtime_cand_dim()
+                    for i, query in enumerate(live):
+                        x = observations[i].detach().cpu().numpy()
+                        c = np.zeros((0, cand_dim), dtype=np.float32)
+                        responses[query.id] = OperationResponse(query.id, (x, c))
+                elif method in STATE_METHODS:
+                    if method == 'step':
+                        mid = self._adopt_outputs(call, refs, role='hypothetical', is_clean=False, kind='simulated')
+                        try:
+                            call2, _ = self._launch(mid, 'clean', [() for _ in mid], deadlines)
+                            values = self._adopt_outputs(call2, mid, role='hypothetical', is_clean=True, kind='temporary')
+                            self.release(mid)
+                        except Exception:
+                            self._abort()
+                            raise
+                    else:
+                        role = 'hypothetical' if method == 'sample_world' else refs[0].role
+                        kind = 'sampled' if method == 'sample_world' else ('root_clean' if role == 'real' else 'hypothetical')
+                        values = self._adopt_outputs(call, refs, role=role, is_clean=method == 'clean', kind=kind)
+                    for query, value in zip(live, values):
+                        responses[query.id] = OperationResponse(query.id, value)
                 else:
-                    role = 'hypothetical' if method == 'sample_world' else refs[0].role
-                    values = self._adopt_outputs(call, refs, role=role, is_clean=method == 'clean')
-                for query, value in zip(group, values):
-                    responses[query.id] = OperationResponse(query.id, value)
-            else:
-                decoded = call.decode()
-                for query, value in zip(group, decoded):
-                    responses[query.id] = OperationResponse(query.id, value)
+                    decoded = call.decode()
+                    for query, value in zip(live, decoded):
+                        responses[query.id] = OperationResponse(query.id, value)
         return [responses[query.id] for query in queries]
 
     def inline_operation(self, method, args):
@@ -904,16 +1182,24 @@ class GpuRuleBackend:
         entry = self._require_entry('commit')
         before_states = None
         if self.record_output is not None:
-            before_states = self.export_states(refs)
-        call, _ = self._launch(refs, entry, extras)
-        results = self._adopt_outputs(
-            call, refs, role='real', is_clean=False, root_generations=next_gens,
-        )
+            before_states = []
+            for chunk in self._iter_query_batches(refs):
+                before_states.extend(self.export_states(chunk))
+        results = []
+        for start in range(0, len(refs), self.query_batch_rows):
+            end = start + self.query_batch_rows
+            call, _ = self._launch(refs[start:end], entry, extras[start:end])
+            results.extend(self._adopt_outputs(
+                call, refs[start:end], role='real', is_clean=False,
+                root_generations=next_gens[start:end], kind='real',
+            ))
         for dest in results:
             self._game_to_slot[dest.game_id] = dest.slot
             self._latest_real_generation[dest.game_id] = dest.root_generation
         if self.record_output is not None:
-            after_states = self.export_states(results)
+            after_states = []
+            for chunk in self._iter_query_batches(results):
+                after_states.extend(self.export_states(chunk))
             for source, extra, before, after, search_stats in zip(refs, extras, before_states, after_states, stats):
                 side, action = extra
                 decision = self._decision_cache.get((source.slot, source.generation, side))
@@ -948,22 +1234,26 @@ class GpuRuleBackend:
         return results
 
 
-def inspect_backend_configuration(requested=None):
+def inspect_backend_configuration(requested=None, *, runtime='recovery'):
     """CPU-only capability/check report. Does not construct a CUDA backend."""
     from .cuda_vm import SUPPORTED_INTRINSICS, SUPPORTED_OPS
     from .gpu_rule_program import capture_gpu_rule_program, source_capture_available
+    runtime = normalize_runtime(runtime)
     entry_names = resolve_entry_names(requested)
     program = None
     capture_error = None
     if source_capture_available():
         try:
-            program = capture_gpu_rule_program(entry_names)
+            program = _call_with_runtime(capture_gpu_rule_program, entry_names, runtime=runtime)
         except (ExportError, GpuRuleProgramError, ValidationError, TypeError, ValueError, RuntimeError) as exc:
             capture_error = str(exc)
-    status = inspect_gpu_rule_program(entry_names, program=program, lower=program is not None)
+    status = _call_with_runtime(
+        inspect_gpu_rule_program, entry_names, program=program, lower=program is not None, runtime=runtime,
+    )
     if capture_error and not status.get('error'):
         status['error'] = capture_error
     status['mode'] = 'check'
+    status['runtime'] = runtime
     status['supports_full_duel_rules'] = False
     status['device_verified'] = False
     status['actual_backend'] = 'cuda'
@@ -971,7 +1261,10 @@ def inspect_backend_configuration(requested=None):
     status['source_capture_available'] = source_capture_available()
     status['supported_opcodes'] = sorted(SUPPORTED_OPS)
     status['supported_intrinsics'] = sorted(SUPPORTED_INTRINSICS)
-    status['sampler_contract'] = 'existing recovery runtime; additional catalog rosters are not implicitly supported'
+    if runtime == 'recovery':
+        status['sampler_contract'] = 'existing recovery runtime; additional catalog rosters are not implicitly supported'
+    else:
+        status['sampler_contract'] = 'explicit seven-team runtime; recovery five-team identity is not used'
     status['torch_imported'] = 'torch' in sys.modules
     entries = status.get('entries') or {}
     status['capability_ready_entries'] = [

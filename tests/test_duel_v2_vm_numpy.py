@@ -417,6 +417,26 @@ class TestVmNumpyHost(unittest.TestCase):
         self.assertTrue(np.array_equal(h.to_numpy(physical), oracle))
         self.assertEqual(h.lib.h_kind(h.method(physical, "tolist")), 5)
 
+    def test_seven_candidate_column_slice_preserves_shape_and_alias(self) -> None:
+        h = self.host
+        oracle = np.arange(20, dtype=np.float32).reshape(4, 5)
+        array = h.asarray(h.lst([h.lst([h.f(v) for v in row]) for row in oracle]))
+        all_rows = h.lib.h_slice(h.lib.h_none(), h.lib.h_none(), h.lib.h_none())
+        columns = h.lib.h_slice(h.lib.h_none(), h.i(3), h.lib.h_none())
+        view = h.lib.h_sub(array, h.tup([all_rows, columns]))
+        h.check(view)
+        self.assertTrue(np.array_equal(h.to_numpy(view), oracle[:, :3]))
+        h.check(h.lib.h_store(view, h.tup([h.i(1), h.i(2)]), h.f(77)))
+        oracle[1, 2] = 77
+        self.assertTrue(np.array_equal(h.to_numpy(array), oracle))
+        rows = h.lib.h_slice(h.i(1), h.i(3), h.lib.h_none())
+        column = h.lib.h_sub(array, h.tup([rows, h.i(2)]))
+        h.check(column)
+        self.assertTrue(np.array_equal(h.to_numpy(column), oracle[1:3, 2]))
+        empty = h.lib.h_sub(array, h.tup([h.lib.h_slice(h.i(4), h.i(4), h.lib.h_none()), columns]))
+        h.check(empty)
+        self.assertEqual(h.to_numpy(empty).shape, (0, 3))
+
     def test_error_paths(self) -> None:
         h = self.host
         h.lib.h_call_np(h.native("numpy.zeros"), (ctypes.c_int * 1)(h.i(2)), 1, MISSING, None, 0)

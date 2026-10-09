@@ -100,9 +100,9 @@ def run_cuda(args, requested):
         raise SystemExit('Bounded --max-seconds must be in (0, 120]')
     names = requested if requested is not None else entries.LIGHT_ENTRY_NAMES
     if args.load is not None:
-        program = gp.load_program(args.load, expected_entries=names)
+        program = gp.load_program(args.load, expected_entries=names, runtime='seven')
     else:
-        program = gp.capture_gpu_rule_program(names)
+        program = gp.capture_gpu_rule_program(names, runtime='seven')
     started = time.monotonic()
     report = {
         'mode': 'run',
@@ -117,7 +117,7 @@ def run_cuda(args, requested):
     }
     collapse = next(item for item in STARTER_DECKS if item['id'] == 'collapse')
     lingke = next(item for item in STARTER_DECKS if item['id'] == 'lingke')
-    with gb.GpuRuleBackend(program, entries=names, max_games=args.max_cases, max_states=max(8, args.max_cases * 4)) as backend:
+    with gb.GpuRuleBackend(program, entries=names, runtime='seven', max_games=args.max_cases, max_states=max(8, args.max_cases * 4)) as backend:
         report['backend_id'] = backend.backend_id
         report['capability'] = backend.capability_report()
         for index in range(args.max_cases):
@@ -174,7 +174,7 @@ def main(argv=None):
         from app.modules.card_game.rl.batched_duel.gpu_rule_backend import inspect_backend_configuration
         if 'torch' in sys.modules:
             raise RuntimeError('Torch must not be imported by GPU rule backend check')
-        status = inspect_backend_configuration(requested)
+        status = inspect_backend_configuration(requested, runtime='seven')
         status['torch_imported'] = 'torch' in sys.modules
         if status['torch_imported']:
             raise RuntimeError('GPU rule backend check imported Torch')

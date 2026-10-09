@@ -39,6 +39,41 @@ from app.modules.card_game.rl.batched_search.cooperative import (
 PROTOCOL_METHODS = _PROTOCOL_METHODS
 
 
+RECOVERY_RUNTIME_MODULE = 'app.modules.card_game.rl.recovery_runtime'
+SEVEN_RUNTIME_MODULE = 'app.modules.card_game.rl.seven_runtime'
+RESIDENT_RUNTIME_MODULES = {
+    RECOVERY_RUNTIME_MODULE: 'recovery',
+    SEVEN_RUNTIME_MODULE: 'seven',
+}
+
+
+def import_resident_runtime(alias: str):
+    """Import the explicit resident runtime module. Unknown aliases fail closed."""
+    if alias == 'recovery':
+        from app.modules.card_game.rl import recovery_runtime
+        return recovery_runtime
+    if alias == 'seven':
+        from app.modules.card_game.rl import seven_runtime
+        return seven_runtime
+    raise ValueError(
+        f'Unsupported resident runtime {alias!r}; expected recovery or seven. No implicit fallback.'
+    )
+
+
+def bind_resident_runtime(runtime: Optional[Any]) -> tuple[Any, str]:
+    """Bind recovery_runtime or seven_runtime. None keeps the historical recovery default."""
+    if runtime is None:
+        return import_resident_runtime('recovery'), 'recovery'
+    name = getattr(runtime, '__name__', None)
+    alias = RESIDENT_RUNTIME_MODULES.get(name)
+    if alias is None:
+        raise ValueError(
+            'Resident rules bind recovery_runtime or seven_runtime explicitly; '
+            f'got {name!r}. No implicit fallback.'
+        )
+    return runtime, alias
+
+
 @dataclass(frozen=True)
 class StateRef:
     """Immutable state reference handle referencing resident state in a CPU worker slot.
@@ -133,7 +168,9 @@ _worker_state: Optional[_WorkerState] = None
 class _WorkerState:
     """Worker-local resident state storage and execution engine."""
 
-    def __init__(self, worker_id: int, max_states: int, record_output=None) -> None:
+    def __init__(self, worker_id: int, max_states: int, record_output=None, runtime_name: str = 'recovery') -> None:
+        self.runtime_name = runtime_name
+        self._runtime = None
         self.worker_id = worker_id
         self.max_states = max_states
         self.states: dict[int, Any] = {}
@@ -147,6 +184,11 @@ class _WorkerState:
         self.record_output=record_output
         self.physical_records={}
         self.decision_cache={}
+
+    def runtime(self):
+        if self._runtime is None:
+            self._runtime = import_resident_runtime(self.runtime_name)
+        return self._runtime
 
     def allocate_slot(
         self,
@@ -217,20 +259,19 @@ class _WorkerState:
             return public_terminal_probe(state,op.args[0],op.args[1])
 
         if op.method == "decision":
-            from app.modules.card_game.rl import recovery_runtime
-
             side = op.args[0]
             key=(slot,gen,side)
             if key not in self.decision_cache:
-                self.decision_cache[key]=recovery_runtime.decision(state,side)
+                self.decision_cache[key]=self.runtime().decision(state,side)
             return self.decision_cache[key]
 
         elif op.method == "sample_world":
-            from app.modules.card_game.rl import information_search, recovery_runtime
+
+            from app.modules.card_game.rl import information_search
 
             viewer = op.args[0]
             seed = op.args[1]
-            sampled = information_search.sample_world(state, viewer, seed, runtime=recovery_runtime)
+            sampled = information_search.sample_world(state, viewer, seed, runtime=self.runtime())
             return self.allocate_slot(
                 sampled,
                 role="hypothetical",
@@ -285,11 +326,10 @@ class _WorkerState:
 
         elif op.method == "value_observation":
             from app.modules.card_game.engine.duel_v2 import observe
-            from app.modules.card_game.rl import recovery_runtime
 
             viewer = op.args[0]
             view = observe(state, viewer, include_previews=False)
-            return recovery_runtime.encode(view, [])
+            return self.runtime().encode(view, [])
 
         elif op.method == "acting_side":
             from app.modules.card_game.engine.duel_v2 import acting_side
@@ -312,9 +352,14 @@ class _WorkerState:
             raise ValueError(f"Worker {self.worker_id}: unsupported operation method {op.method}")
 
 
-def _worker_init(worker_id: int, max_states: int, record_output=None) -> None:
+def _worker_init(worker_id: int, max_states: int, record_output=None, runtime_name: str = 'recovery') -> None:
     global _worker_state
-    _worker_state = _WorkerState(worker_id=worker_id, max_states=max_states,record_output=record_output)
+    _worker_state = _WorkerState(
+        worker_id=worker_id,
+        max_states=max_states,
+        record_output=record_output,
+        runtime_name=runtime_name,
+    )
 
 
 def _worker_warmup(worker_id: int) -> dict[str, Any]:
@@ -400,9 +445,9 @@ def _worker_commit_action(
     # Retain old state in source slot, create new real state with official apply_action
     new_state = apply_action(source, side, action)
     if _worker_state.record_output is not None:
-        from app.modules.card_game.rl import recovery_runtime,league_rollout
+        from app.modules.card_game.rl import league_rollout
         decision=_worker_state.decision_cache.get((slot,generation,side))
-        if decision is None:decision=recovery_runtime.decision(source,side)
+        if decision is None:decision=_worker_state.runtime().decision(source,side)
         legal=decision[0]
         if action not in legal:
             from app.modules.card_game.engine.duel_v2 import observe
@@ -538,9 +583,7 @@ class ResidentRuleBackend:
         self.max_games = max_games
         self.max_states_per_worker = max_states_per_worker
         self.operation_timeout = float(operation_timeout)
-        self.runtime = runtime
-        if runtime is not None and getattr(runtime,'__name__',None)!='app.modules.card_game.rl.recovery_runtime':
-            raise ValueError('Resident rules bind the explicit recovery runtime')
+        self.runtime, self.runtime_name = bind_resident_runtime(runtime)
         from pathlib import Path
         self.record_output=str(Path(record_output).resolve()) if record_output is not None else None
         self.backend_id = uuid4().hex
@@ -575,7 +618,7 @@ class ResidentRuleBackend:
                 max_workers=1,
                 mp_context=self._ctx,
                 initializer=_worker_init,
-                initargs=(i, self.max_states_per_worker, self.record_output),
+                initargs=(i, self.max_states_per_worker, self.record_output, self.runtime_name),
             )
             for i in range(self.workers)
         ]
@@ -758,6 +801,8 @@ class ResidentRuleBackend:
             "backend_id": self.backend_id,
             "backend_kind": self.backend_kind,
             "supports_gpu": self.supports_gpu,
+            "rule_backend": "resident_cpu",
+            "runtime": self.runtime_name,
             "workers": self.workers,
             "max_games": self.max_games,
             "max_states_per_worker": self.max_states_per_worker,

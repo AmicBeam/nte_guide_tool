@@ -225,10 +225,24 @@ class RawObservationTokens:
     request_ids: tuple = ()
 
 
+
+def _seven_module():
+    from . import gpu_seven_observation as seven
+    return seven
+
+
+def _dispatch_runtime(runtime):
+    from .gpu_schema_contract import normalize_runtime, SEVEN_RUNTIME
+    name = normalize_runtime(runtime)
+    if name == SEVEN_RUNTIME:
+        return _seven_module()
+    return None
+
 def extract_raw_observation_tokens(
     views: Sequence[Dict[str, Any]],
     *,
     capacity: Optional[int] = None,
+    runtime: Optional[str] = None,
 ) -> RawObservationTokens:
     """Extract compact token tables from sanitized public views on host.
 
@@ -236,6 +250,9 @@ def extract_raw_observation_tokens(
     Filters hidden opponent hand cards without reading their identities.
     Summon aliases are adapted per murk._adapt semantics (only front or latest summon).
     """
+    seven = _dispatch_runtime(runtime)
+    if seven is not None:
+        return seven.extract_raw_observation_tokens(views, capacity=capacity)
     n = len(views)
     if n>16384:raise ValueError("Observation batch exceeds bounded capacity")
     if capacity is not None:
@@ -581,6 +598,7 @@ def encode_observation_tokens(
     tokens: RawObservationTokens,
     *,
     device: Optional[Union[str, Any]] = None,
+    runtime: Optional[str] = None,
 ) -> PackedObservationBatch:
     """Encode RawObservationTokens into 2420 observation tensor purely on GPU.
 
@@ -588,6 +606,9 @@ def encode_observation_tokens(
     card counting, mark aggregation, extra attributes, and substituted hand counts
     strictly using PyTorch tensor operations.
     """
+    seven = _dispatch_runtime(runtime)
+    if seven is not None:
+        return seven.encode_observation_tokens(tokens, device=device)
     t = _require_torch()
     dev = _resolve_device(device)
 
@@ -966,14 +987,15 @@ def encode_observation_batch(
     *,
     capacity: Optional[int] = None,
     device: Optional[Union[str, Any]] = None,
+    runtime: Optional[str] = None,
 ) -> PackedObservationBatch:
     """Batch GPU observation encoder.
 
     Extracts compact raw tokens on host and encodes observation vectors
     on GPU via PyTorch tensor operations.
     """
-    tokens = extract_raw_observation_tokens(views, capacity=capacity)
-    return encode_observation_tokens(tokens, device=device)
+    tokens = extract_raw_observation_tokens(views, capacity=capacity, runtime=runtime)
+    return encode_observation_tokens(tokens, device=device, runtime=runtime)
 
 
 def encode_single_observation(
@@ -981,6 +1003,7 @@ def encode_single_observation(
     *,
     capacity: Optional[int] = None,
     device: Optional[Union[str, Any]] = None,
+    runtime: Optional[str] = None,
 ) -> PackedObservationBatch:
     """Convenience helper for encoding a single view."""
-    return encode_observation_batch([view], capacity=capacity, device=device)
+    return encode_observation_batch([view], capacity=capacity, device=device, runtime=runtime)

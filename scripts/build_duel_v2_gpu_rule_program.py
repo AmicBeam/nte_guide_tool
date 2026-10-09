@@ -44,6 +44,8 @@ def parse_args(argv=None):
                         help='Comma-separated GPU rule entry subset for diagnosis. A subset is never labelled full coverage.')
     parser.add_argument('--skip-lower', action='store_true',
                         help='Validate capture/load without lowering a numeric VM image.')
+    parser.add_argument('--runtime', choices=('seven',), default='seven',
+                        help='Current frozen evaluation program uses the unified seven-team schema.')
     args = parser.parse_args(argv)
     if args.build and args.load:
         parser.error('--build and --load cannot be combined')
@@ -72,23 +74,24 @@ def main(argv=None):
     if 'torch' in sys.modules:
         raise RuntimeError('Torch must not be imported by GPU rule program check/build')
     if args.build:
-        program, status = gp.build_gpu_rule_program(requested, lower=not args.skip_lower)
+        program, status = gp.build_gpu_rule_program(requested, lower=not args.skip_lower, runtime=args.runtime)
         paths = gp.save_program(program, args.output, status=status)
         payload = dict(mode='build', paths=paths, status=status, torch_imported='torch' in sys.modules)
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0 if status.get('compile_ready') or status.get('unresolved') is not None else 1
     if args.load:
         expected = requested
-        program = gp.load_program(args.load, expected_entries=expected)
+        program = gp.load_program(args.load, expected_entries=expected, runtime=args.runtime)
         status = gp.inspect_gpu_rule_program(
             expected if expected is not None else tuple(program.entries),
             program=program,
             lower=not args.skip_lower,
+            runtime=args.runtime,
         )
         payload = dict(mode='load', path=str(args.load), status=status, torch_imported='torch' in sys.modules)
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0 if status.get('error') is None else 1
-    payload = gp.check_configuration(requested)
+    payload = gp.check_configuration(requested, runtime=args.runtime)
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
 

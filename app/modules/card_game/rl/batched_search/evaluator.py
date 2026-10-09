@@ -2,7 +2,10 @@
 
 Drives batches of up to 1,600 resident real games using official Duel V2 rules
 on worker processes, cooperative Gumbel serving search, and batch neural inference.
-Never falls back to CPU or fake rules; never executes GPU rules.
+Default rule execution stays resident CPU. GPU rule execution is opt-in via
+an explicit cuda_vm backend and is independent of inference --device. Missing
+CUDA, unsupported entries, or runtime/schema mismatch fail closed with no CPU
+fallback. Device verification stays false until actual device evidence.
 """
 from __future__ import annotations
 
@@ -22,6 +25,219 @@ from app.modules.card_game.engine.duel_v2 import new_game
 from .cooperative import CooperativeScheduler, RootJob
 from .serving import serving_search
 from .traversal import PolicyIdentity
+
+
+
+RULE_BACKEND_RESIDENT_CPU = 'resident_cpu'
+RULE_BACKEND_CUDA_VM = 'cuda_vm'
+RUNTIME_RECOVERY = 'recovery'
+RUNTIME_SEVEN = 'seven'
+RECOVERY_MATRIX_KEYS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk')
+MATRIX_ORDER = 'row_first_col_second'
+COMPLETED_DENOMINATOR = 'completed_normal_games'
+
+
+def runtime_matrix_keys(runtime_name: str) -> Tuple[str, ...]:
+    if runtime_name == RUNTIME_RECOVERY:
+        return RECOVERY_MATRIX_KEYS
+    if runtime_name == RUNTIME_SEVEN:
+        from app.modules.card_game.rl.seven_lineup import KEYS
+        return tuple(KEYS)
+    raise ValueError(f'Unsupported runtime {runtime_name!r}; expected recovery or seven')
+
+
+def resolve_runtime_module(runtime_name: str):
+    if runtime_name == RUNTIME_RECOVERY:
+        from app.modules.card_game.rl import recovery_runtime
+        return recovery_runtime
+    if runtime_name == RUNTIME_SEVEN:
+        from app.modules.card_game.rl import seven_runtime
+        return seven_runtime
+    raise ValueError(f'Unsupported runtime {runtime_name!r}; expected recovery or seven')
+
+
+def report_rule_backend(backend: Any, explicit: Optional[str] = None) -> str:
+    kind = explicit or getattr(backend, 'backend_kind', None) or RULE_BACKEND_RESIDENT_CPU
+    if kind in (RULE_BACKEND_RESIDENT_CPU, 'python_resident_process'):
+        return RULE_BACKEND_RESIDENT_CPU
+    if kind == RULE_BACKEND_CUDA_VM:
+        return RULE_BACKEND_CUDA_VM
+    raise ValueError(f'Unknown rule backend {kind!r}')
+
+
+def _require_kwarg(func: Any, name: str, label: str) -> None:
+    import inspect
+    try:
+        signature = inspect.signature(func)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(f'{label} is not inspectable: {exc}. No CPU fallback.') from exc
+    if name not in signature.parameters:
+        raise RuntimeError(
+            f'{label} does not accept {name}=; integration is pending. '
+            'No CPU fallback and no source-only ready gate.'
+        )
+
+
+def _resolve_capacity_planner(capacity_planner: Any = None):
+    if capacity_planner is not None:
+        return capacity_planner
+    try:
+        from app.modules.card_game.rl.batched_duel.gpu_rule_backend import plan_gpu_rule_capacity
+        return plan_gpu_rule_capacity
+    except ImportError:
+        pass
+    try:
+        from app.modules.card_game.rl.batched_duel.gpu_rule_capacity import plan_gpu_rule_capacity
+        return plan_gpu_rule_capacity
+    except ImportError as exc:
+        raise RuntimeError(
+            'plan_gpu_rule_capacity is not available; B-side capacity planner integration is pending. '
+            'No CPU fallback.'
+        ) from exc
+
+
+def _load_gpu_rule_program(program_api: Any, path: Any, runtime: str):
+    load = getattr(program_api, 'load_program', None)
+    if load is None:
+        raise RuntimeError('gp.load_program is missing; A-side program API integration is pending. No CPU fallback.')
+    _require_kwarg(load, 'runtime', 'gp.load_program')
+    return load(path, runtime=runtime)
+
+
+def _capture_or_build_gpu_rule_program(program_api: Any, runtime: str):
+    capture_available = getattr(program_api, 'source_capture_available', lambda: False)
+    if not capture_available():
+        raise RuntimeError(
+            'Frozen GPU rule program JSON is required when CPython 3.10 source capture is unavailable. '
+            'No CPU fallback.'
+        )
+    if hasattr(program_api, 'build_gpu_rule_program'):
+        build = program_api.build_gpu_rule_program
+        _require_kwarg(build, 'runtime', 'gp.build_gpu_rule_program')
+        program, status = build(runtime=runtime)
+        return program, status
+    capture = getattr(program_api, 'capture_gpu_rule_program', None)
+    if capture is None:
+        raise RuntimeError('gp.capture/build are missing; A-side program API integration is pending. No CPU fallback.')
+    _require_kwarg(capture, 'runtime', 'gp.capture_gpu_rule_program')
+    return capture(runtime=runtime), {'source_capture': True, 'device_verified': False}
+
+
+def statistics_capacity(rule_backend, search_roots, capacity_plan=None):
+    """Bind actual statistics allocation to the same limits used in the plan."""
+    if type(search_roots) is not int or not 1 <= search_roots <= 1600:
+        raise ValueError('search_roots must be an integer in 1..1600')
+    if rule_backend == RULE_BACKEND_RESIDENT_CPU:
+        return 33 * search_roots, 2048
+    if rule_backend != RULE_BACKEND_CUDA_VM:
+        raise ValueError('Unknown rule backend')
+    from app.modules.card_game.rl.batched_duel.gpu_rule_capacity import validate_capacity_plan
+    validate_capacity_plan(capacity_plan)
+    node_capacity = capacity_plan['node_capacity']
+    candidate_capacity = capacity_plan['candidate_capacity']
+    if type(node_capacity) is not int or node_capacity < 1:
+        raise ValueError('Positive planned node capacity required')
+    if type(candidate_capacity) is not int or candidate_capacity < 1:
+        raise ValueError('Positive planned candidate capacity required')
+    return node_capacity, candidate_capacity
+
+
+def select_rule_backend(
+    *,
+    rule_backend: str,
+    runtime: str,
+    workers: int,
+    max_games: int,
+    search_roots: int,
+    record_output: Any = None,
+    gpu_rule_program: Any = None,
+    guard_standalone_entities: bool = False,
+    gpu_memory_budget_mib: Optional[int] = None,
+    max_nodes: Optional[int] = None,
+    max_edges: Optional[int] = None,
+    max_payload_bytes: Optional[int] = None,
+    max_candidates: Optional[int] = None,
+    resident_backend_cls: Any = None,
+    gpu_backend_cls: Any = None,
+    capacity_planner: Any = None,
+    program_api: Any = None,
+    fake_label: Optional[str] = None,
+) -> Any:
+    """Construct the explicit rule backend. cuda_vm never falls back to resident CPU."""
+    if rule_backend not in (RULE_BACKEND_RESIDENT_CPU, RULE_BACKEND_CUDA_VM):
+        raise ValueError(f'Unsupported rule backend {rule_backend!r}')
+    if runtime not in (RUNTIME_RECOVERY, RUNTIME_SEVEN):
+        raise ValueError(f'Unsupported runtime {runtime!r}')
+    runtime_module = resolve_runtime_module(runtime)
+    if rule_backend == RULE_BACKEND_RESIDENT_CPU:
+        if fake_label:
+            raise ValueError('fake_label is only valid for labeled GPU constructor tests')
+        cls = resident_backend_cls
+        if cls is None:
+            from app.modules.card_game.rl.batched_duel.process_backend import ResidentRuleBackend
+            cls = ResidentRuleBackend
+        backend = cls(
+            workers=workers,
+            max_games=max_games,
+            runtime=runtime_module,
+            record_output=record_output,
+        )
+        backend.requested_search_roots = search_roots
+        return backend
+
+    if fake_label is not None:
+        label = str(fake_label).lower()
+        if 'fake' not in label and 'synthetic' not in label:
+            raise ValueError('GPU constructor fakes must be labeled fake or synthetic; no real CUDA claim')
+        if gpu_backend_cls is None:
+            raise ValueError('Labeled GPU fakes require an explicit gpu_backend_cls')
+
+    cls = gpu_backend_cls
+    if cls is None:
+        from app.modules.card_game.rl.batched_duel.gpu_rule_backend import GpuRuleBackend
+        cls = GpuRuleBackend
+    api = program_api
+    if api is None:
+        from app.modules.card_game.rl.batched_duel import gpu_rule_program as api
+    if gpu_rule_program is not None:
+        program = _load_gpu_rule_program(api, gpu_rule_program, runtime)
+        program_status = {'loaded': True, 'device_verified': False}
+    else:
+        program, program_status = _capture_or_build_gpu_rule_program(api, runtime)
+    planner = _resolve_capacity_planner(capacity_planner)
+    _require_kwarg(planner, 'runtime', 'plan_gpu_rule_capacity')
+    memory_budget_bytes = None if gpu_memory_budget_mib is None else int(gpu_memory_budget_mib) * 1024 * 1024
+    plan = planner(
+        max_games,
+        search_roots,
+        memory_budget_bytes=memory_budget_bytes,
+        max_nodes=max_nodes,
+        max_edges=max_edges,
+        max_payload_bytes=max_payload_bytes,
+        max_candidates=max_candidates,
+        runtime=runtime,
+    )
+    _require_kwarg(cls.__init__, 'runtime', 'GpuRuleBackend')
+    _require_kwarg(cls.__init__, 'capacity_plan', 'GpuRuleBackend')
+    backend = cls(
+        program,
+        runtime=runtime,
+        capacity_plan=plan,
+        guard_standalone_entities=bool(guard_standalone_entities),
+        record_output=record_output,
+        max_games=max_games,
+    )
+    backend.requested_search_roots = search_roots
+    backend.capacity_plan = getattr(backend, 'capacity_plan', plan)
+    backend.program_status = program_status
+
+    if getattr(backend, 'runtime_name', None) not in (RUNTIME_RECOVERY, RUNTIME_SEVEN):
+        backend.runtime_name = runtime
+    if fake_label is not None:
+        backend.fake_label = fake_label
+        if getattr(backend, 'device_verified', False):
+            raise RuntimeError('Labeled GPU fakes cannot claim device_verified')
+    return backend
 
 
 def wilson_score_interval(wins: int, total: int, confidence: float = 0.95) -> Tuple[Optional[float], Optional[float]]:
@@ -55,21 +271,28 @@ def generate_matrix_jobs(
     """
     if type(total_games) is not int or total_games < 1 or total_games > 1600:
         raise ValueError(f"total_games must be an integer 1..1600, got {total_games!r}")
-    if len(keys) != 5:
-        raise ValueError(f"Exactly 5 keys required for 5x5 matrix, got {len(keys)}")
+
+    team_count = len(keys)
+    if team_count not in (5, 7):
+        raise ValueError(f"Matrix keys must be the five-team or seven-team roster, got {team_count}")
+    if team_count == 7:
+        from app.modules.card_game.rl.seven_lineup import KEYS as SEVEN_KEYS
+        if set(keys) != set(SEVEN_KEYS):
+            raise ValueError(f'Seven-team matrix keys must match seven_lineup.KEYS, got {tuple(keys)}')
     if type(seed_base) is not int:
         raise TypeError("seed_base must be an integer")
 
     jobs = []
     seen_dedup = set()
+    cell_count = team_count * team_count
     for index in range(total_games):
-        cell = index % 25
-        row_idx = cell // 5
-        col_idx = cell % 5
+        cell = index % cell_count
+        row_idx = cell // team_count
+        col_idx = cell % team_count
         row_model = keys[row_idx]
         col_model = keys[col_idx]
 
-        pair_index = index // 25
+        pair_index = index // cell_count
         first_engine_side = 'a' if (pair_index % 2 == 0) else 'b'
 
         if first_engine_side == 'a':
@@ -192,6 +415,11 @@ def compute_matrix_summary(keys: Sequence[str], results: Sequence[Dict[str, Any]
         'cells': cell_list,
         'grid': matrix_grid,
         'keys': list(keys),
+
+        'matrix_order': MATRIX_ORDER,
+        'denominator': COMPLETED_DENOMINATOR,
+        'team_count': len(keys),
+        'partial_cells': sum(1 for cell in cell_list if cell['uncompleted'] > 0 or cell['completed'] == 0),
     }
 
 
@@ -234,7 +462,13 @@ def generate_report_markdown(
         f"- `behavior_approved`: **{str((eval_result.get('behavior') or {}).get('behavior_approved', False)).lower()}**",
         "- `quality_approved`: **false**",
         "- `training_updates`: **0**",
-        "- `gpu_rule_execution`: **false**",
+        f"- `rule_backend`: **{eval_result.get('rule_backend', config.get('rule_backend', RULE_BACKEND_RESIDENT_CPU))}**",
+        f"- `runtime`: **{eval_result.get('runtime', config.get('runtime', RUNTIME_RECOVERY))}**",
+        f"- `gpu_rule_execution`: **{str(eval_result.get('gpu_rule_execution', False)).lower()}**",
+        f"- `device_verified`: **{str(eval_result.get('device_verified', False)).lower()}**",
+        f"- requested search roots: **{eval_result.get('requested_search_roots', eval_result.get('search_root_limit', config.get('search_roots', 'unknown')))}**",
+        f"- observed search-root peak: **{eval_result.get('observed_search_root_peak', eval_result.get('peak_outstanding_roots', 0))}**",
+        f"- denominator: **{eval_result.get('denominator', COMPLETED_DENOMINATOR)}**; uncompleted/partial games are not mixed into the normal-cell rate",
         "- `training_workflow_complete`: **false**",
         "",
         "> [!IMPORTANT]",
@@ -245,7 +479,7 @@ def generate_report_markdown(
         "> - `lineup_variations_comparison`: **missing**",
         "> - `tactical_cases_gate`: **missing**",
         "",
-        "## 5×5 互搏胜率主矩阵（行：先手，列：后手）",
+        f"## {len(keys)}×{len(keys)} 互搏胜率主矩阵（行：先手，列：后手）",
         "",
         "表格每格格式为：`胜-平-负 (胜局率% [参考 Wilson 95% 区间]) | 未完成数`。区间未作成对根聚类修正，不能当独立确认门槛。",
         "",
@@ -339,7 +573,16 @@ def write_result_json(
         'quality_approved': False,
         'evaluation_accepted':eval_result.get('evaluation_accepted',False),
         'training_updates': 0,
-        'gpu_rule_execution': False,
+        'gpu_rule_execution': bool(eval_result.get('gpu_rule_execution', False)),
+        'rule_backend': eval_result.get('rule_backend', config.get('rule_backend', RULE_BACKEND_RESIDENT_CPU)),
+        'runtime': eval_result.get('runtime', config.get('runtime', RUNTIME_RECOVERY)),
+        'device_verified': bool(eval_result.get('device_verified', False)),
+        'requested_search_roots': eval_result.get('requested_search_roots', config.get('search_roots')),
+        'observed_search_root_peak': eval_result.get('observed_search_root_peak', eval_result.get('peak_outstanding_roots', 0)),
+        'capacity_plan': eval_result.get('capacity_plan', config.get('capacity_plan')),
+        'gpu_memory_budget_mib': eval_result.get('gpu_memory_budget_mib', config.get('gpu_memory_budget_mib')),
+        'denominator': eval_result.get('denominator', COMPLETED_DENOMINATOR),
+        'matrix_order': matrix_summary.get('matrix_order', MATRIX_ORDER),
         'training_workflow_complete': False,
         'full_spec_report_complete': False,
         'missing_evaluations': {
@@ -373,7 +616,21 @@ def write_result_json(
     tmp.replace(p)
 
 
-def make_source_snapshot(models: Mapping[str, Any], budget_mode: str, models_dir: Optional[Union[str, Path]] = None) -> Dict[str, Any]:
+def make_source_snapshot(
+    models: Mapping[str, Any],
+    budget_mode: str,
+    models_dir: Optional[Union[str, Path]] = None,
+    *,
+    rule_backend: str = RULE_BACKEND_RESIDENT_CPU,
+    runtime: str = RUNTIME_RECOVERY,
+    search_roots: Optional[int] = None,
+    games: Optional[int] = None,
+    capacity_plan: Any = None,
+    gpu_program_identity: Any = None,
+    gpu_memory_budget_mib: Optional[int] = None,
+    guard_standalone_entities: Optional[bool] = None,
+    device_verified: bool = False,
+) -> Dict[str, Any]:
     """Capture runtime source SHA snapshot and verify source manifest if present."""
     from app.modules.card_game.rl import cross_lineup
     from app.modules.card_game.rl.batched_duel import process_backend, recording, serving_protocol
@@ -421,6 +678,19 @@ def make_source_snapshot(models: Mapping[str, Any], budget_mode: str, models_dir
         'model_shas': model_shas,
         'manifest_shas': manifest_shas,
         'build_shas': build_shas,
+
+        'rule_backend': rule_backend,
+        'runtime': runtime,
+        'requested_search_roots': search_roots,
+        'requested_games': games,
+        'capacity_plan': capacity_plan,
+        'gpu_program_identity': gpu_program_identity,
+        'gpu_memory_budget_mib': gpu_memory_budget_mib,
+        'guard_standalone_entities': guard_standalone_entities,
+        'device_verified': bool(device_verified),
+        'concurrency_1600_ready': False,
+        'matrix_order': MATRIX_ORDER,
+        'denominator': COMPLETED_DENOMINATOR,
     }
 
     if models_dir is not None:
@@ -455,6 +725,11 @@ def evaluate_jobs(
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     statistics=None,
     clock: Callable[[], float] = time.monotonic,
+
+    rule_backend: Optional[str] = None,
+    runtime_name: Optional[str] = None,
+    capacity_plan: Any = None,
+    gpu_memory_budget_mib: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Execute complete real-game cooperative evaluation across resident worker states.
 
@@ -848,6 +1123,25 @@ def evaluate_jobs(
     try:device_stats=statistics.stats() if statistics is not None else None
     except RuntimeError:device_stats=None
 
+
+    resolved_rule_backend = report_rule_backend(backend, rule_backend)
+
+    raw_runtime = runtime_name or getattr(backend, 'runtime_name', None) or getattr(backend, 'runtime', None)
+    if raw_runtime in (RUNTIME_RECOVERY, RUNTIME_SEVEN):
+        resolved_runtime = raw_runtime
+    elif getattr(raw_runtime, '__name__', '').endswith('seven_runtime'):
+        resolved_runtime = RUNTIME_SEVEN
+    elif getattr(raw_runtime, '__name__', '').endswith('recovery_runtime'):
+        resolved_runtime = RUNTIME_RECOVERY
+    else:
+        if raw_runtime is None:
+            resolved_runtime = RUNTIME_RECOVERY
+        else:
+            raise ValueError(f'Cannot identify evaluation runtime from {raw_runtime!r}')
+    resolved_capacity = capacity_plan if capacity_plan is not None else getattr(backend, 'capacity_plan', None)
+    resolved_device_verified = bool(getattr(backend, 'device_verified', False))
+    gpu_rule_execution = resolved_rule_backend == RULE_BACKEND_CUDA_VM
+
     return {
         'results': all_results,
         'total_games': len(jobs),
@@ -860,7 +1154,16 @@ def evaluate_jobs(
         'search_root_limit': search_roots,
         'quality_approved': False,
         'training_updates': 0,
-        'gpu_rule_execution': False,
+        'gpu_rule_execution': gpu_rule_execution,
+        'rule_backend': resolved_rule_backend,
+        'runtime': resolved_runtime,
+        'device_verified': resolved_device_verified,
+        'requested_search_roots': search_roots,
+        'observed_search_root_peak': peak_outstanding_roots,
+        'capacity_plan': resolved_capacity,
+        'gpu_memory_budget_mib': gpu_memory_budget_mib,
+        'denominator': COMPLETED_DENOMINATOR,
+        'matrix_order': MATRIX_ORDER,
         'training_workflow_complete': False,
         'peak_outstanding_roots': peak_outstanding_roots,
         'stats': stats,

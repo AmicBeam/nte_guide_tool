@@ -16,6 +16,60 @@ FEATURE_DIM = len(cross_lineup.all_features())
 CANDIDATE_DIM = len(cross_lineup.candidate_names())
 
 
+def _five_team_schemas():
+    from app.modules.card_game.rl import residual_policy, recovery_policy, preserved_policy
+    return {
+        residual_policy.SCHEMA,
+        recovery_policy.RESIDUAL_SCHEMA,
+        preserved_policy.SCHEMA,
+        preserved_policy.PARTIAL_SCHEMA,
+        recovery_policy.PRESERVED_SCHEMA,
+    }
+
+
+def named_observation_contract(schema, manifest):
+    """Bind exact named feature/candidate widths for one policy family.
+
+    Seven-team models keep seven_lineup widths. Five-team recovery models keep
+    cross_lineup widths. There is no old-width default padding in either direction.
+    """
+    from app.modules.card_game.rl import cross_grounded, cross_lineup, seven_grounded, seven_lineup, seven_policy
+    five = _five_team_schemas()
+    features = manifest.get('features')
+    candidates = manifest.get('candidates')
+    if schema in five:
+        expected_features = cross_lineup.all_features()
+        expected_candidates = cross_lineup.candidate_names()
+        grounded = cross_grounded
+        family = 'recovery'
+    elif schema == seven_policy.SCHEMA:
+        expected_features = seven_lineup.all_features()
+        expected_candidates = seven_lineup.candidate_names()
+        grounded = seven_grounded
+        family = 'seven'
+    else:
+        raise ValueError(f'Unsupported schema: {schema}')
+    if features != expected_features:
+        raise ValueError(
+            f'Model features do not match the {family} named observation contract '
+            f'(expected {len(expected_features)} named columns, got {None if features is None else len(features)})'
+        )
+    if candidates != expected_candidates:
+        raise ValueError(
+            f'Model candidates do not match the {family} named candidate contract '
+            f'(expected {len(expected_candidates)} named columns, got {None if candidates is None else len(candidates)})'
+        )
+    return {
+        'family': family,
+        'schema': schema,
+        'features': tuple(expected_features),
+        'candidates': tuple(expected_candidates),
+        'feature_dim': len(expected_features),
+        'candidate_dim': len(expected_candidates),
+        'categories': tuple(grounded.CATEGORIES),
+    }
+
+
 @dataclass(frozen=True)
 class InferenceRequest:
     request_id: Any
@@ -88,7 +142,14 @@ class BatchedInference:
         self._model_versions: Dict[str, str] = {}
         self._networks: Dict[str, Any] = {}
 
+        from app.modules.card_game.rl import seven_policy
+        valid_schemas = set(valid_schemas)
+        valid_schemas.add(seven_policy.SCHEMA)
+
         total_weight_bytes = 0
+
+        self._contracts: Dict[str, Dict[str, Any]] = {}
+        self._families: Dict[str, str] = {}
 
         for key, model in models.items():
             if not isinstance(key, str) or not key:
@@ -115,11 +176,12 @@ class BatchedInference:
                     f"Model {key} version ({version}) does not match manifest sha256 ({manifest.get('sha256')})"
                 )
 
-            # Strict verification: features and candidates must match current 2420 schema
-            if manifest.get('features') != cross_lineup.all_features():
-                raise ValueError(f"Model {key} features do not match current 2420 schema contract")
-            if manifest.get('candidates') != cross_lineup.candidate_names():
-                raise ValueError(f"Model {key} candidates do not match current schema contract")
+            contract = named_observation_contract(schema, manifest)
+            if self._families and contract['family'] not in set(self._families.values()):
+                raise ValueError(
+                    'BatchedInference binds one runtime family per instance; '
+                    f'recovery and seven models cannot be mixed (got {contract["family"]} after {sorted(set(self._families.values()))})'
+                )
 
             hidden = getattr(model, 'hidden', None) or manifest.get('hidden')
             if type(hidden) is not int or not 16 <= hidden <= 256:
@@ -129,23 +191,34 @@ class BatchedInference:
             if not isinstance(weights, dict):
                 raise ValueError(f"Model {key} weights must be a dict of numpy arrays")
 
-            expected_shapes = dict(residual_policy.tensor_shapes(hidden))
-            separated = getattr(model, 'separated', False) or (schema in recovery_policy.SCHEMAS)
-            if separated:
-                expected_shapes.update(recovery_policy.extra_shapes(hidden))
-
-            if schema in (preserved_policy.SCHEMA, preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA):
-                from app.modules.card_game.rl.fixed_lineup import tensor_shapes as old_tensor_shapes, CAND_DIM as OLD_CAND_DIM
+            if contract['family'] == 'seven':
+                from app.modules.card_game.rl import seven_policy
+                expected_shapes = dict(seven_policy.tensor_shapes(hidden))
+                separated = False
                 teacher = getattr(model, 'teacher', None)
-                if teacher is None:
-                    from app.modules.card_game.rl.cross_teacher_distillation import REPO_TEACHERS, verify_old_teacher
-                    deck_name = manifest.get('deck') or key
-                    teacher = verify_old_teacher(REPO_TEACHERS, deck_name)
-                teacher_hidden = teacher['hidden']
-                old = old_tensor_shapes(teacher_hidden)
-                old['state_net.0.weight'] = (teacher_hidden, len(teacher['features']))
-                old['cand_net.0.weight'] = (teacher_hidden, OLD_CAND_DIM)
-                expected_shapes.update({'legacy.' + preserved_policy.encoded_name(name): s for name, s in old.items()})
+                if teacher is not None:
+                    from app.modules.card_game.rl.preserved_policy import encoded_name
+                    expected_shapes.update({
+                        'legacy.' + encoded_name(name): value.shape
+                        for name, value in teacher['weights'].items()
+                    })
+            else:
+                expected_shapes = dict(residual_policy.tensor_shapes(hidden))
+                separated = getattr(model, 'separated', False) or (schema in recovery_policy.SCHEMAS)
+                if separated:
+                    expected_shapes.update(recovery_policy.extra_shapes(hidden))
+                if schema in (preserved_policy.SCHEMA, preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA):
+                    from app.modules.card_game.rl.fixed_lineup import tensor_shapes as old_tensor_shapes, CAND_DIM as OLD_CAND_DIM
+                    teacher = getattr(model, 'teacher', None)
+                    if teacher is None:
+                        from app.modules.card_game.rl.cross_teacher_distillation import REPO_TEACHERS, verify_old_teacher
+                        deck_name = manifest.get('deck') or key
+                        teacher = verify_old_teacher(REPO_TEACHERS, deck_name)
+                    teacher_hidden = teacher['hidden']
+                    old = old_tensor_shapes(teacher_hidden)
+                    old['state_net.0.weight'] = (teacher_hidden, len(teacher['features']))
+                    old['cand_net.0.weight'] = (teacher_hidden, OLD_CAND_DIM)
+                    expected_shapes.update({'legacy.' + preserved_policy.encoded_name(name): s for name, s in old.items()})
 
             if set(weights.keys()) != set(expected_shapes.keys()):
                 missing = set(expected_shapes) - set(weights)
@@ -162,7 +235,12 @@ class BatchedInference:
                     raise ValueError(f"Model {key} tensor {name} contains non-finite values")
 
             # Build Torch network
-            if schema in (preserved_policy.SCHEMA, preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA):
+            if contract['family'] == 'seven':
+                from app.modules.card_game.rl import seven_policy
+                net = seven_policy.network(hidden, self._torch_device)
+                if getattr(model, 'teacher', None) is not None:
+                    net = seven_policy.attach_legacy(net, key)
+            elif schema in (preserved_policy.SCHEMA, preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA):
                 deck_name = manifest.get('deck') or key
                 net, _ = preserved_policy.create_network(
                     deck_name,
@@ -170,11 +248,12 @@ class BatchedInference:
                     device=self._torch_device,
                     partial=schema in (preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA),
                 )
+                if separated:
+                    net = recovery_policy.attach(net)
             else:
                 net = residual_policy.network(hidden, self._torch_device)
-
-            if separated:
-                net = recovery_policy.attach(net)
+                if separated:
+                    net = recovery_policy.attach(net)
 
             state_dict = {
                 name: torch.as_tensor(arr.copy(), dtype=torch.float32, device=self._torch_device)
@@ -195,6 +274,9 @@ class BatchedInference:
             self._models[key] = model
             self._model_versions[key] = version
             self._networks[key] = net
+
+            self._contracts[key] = contract
+            self._families[key] = contract['family']
 
         self._weight_nbytes = total_weight_bytes
         self._total_batches = 0
@@ -224,6 +306,11 @@ class BatchedInference:
             'candidate_padding': self._total_candidate_padding,
             'weight_nbytes': self._weight_nbytes,
             'device': self._device_str,
+
+            'feature_dims': {key: row['feature_dim'] for key, row in self._contracts.items()},
+            'candidate_dims': {key: row['candidate_dim'] for key, row in self._contracts.items()},
+            'schemas': {key: row['schema'] for key, row in self._contracts.items()},
+            'runtime_family': sorted(set(self._families.values())),
         }
 
     def predict(self, requests: Sequence[InferenceRequest]) -> List[InferenceResult]:
@@ -257,14 +344,18 @@ class BatchedInference:
                     f"Model version mismatch for {req.model_key}: expected {expected_version}, got {req.model_version}"
                 )
 
+            contract = self._contracts[req.model_key]
+            feature_dim = contract['feature_dim']
+            candidate_dim = contract['candidate_dim']
+
             # Validate observation x: finite float32 shape (FEATURE_DIM,)
             if not isinstance(req.x, np.ndarray):
                 raise ValueError(f"Request {req.request_id} observation x must be a numpy array")
             if req.x.dtype != np.float32:
                 raise ValueError(f"Request {req.request_id} observation x dtype must be float32, got {req.x.dtype}")
-            if req.x.ndim != 1 or req.x.shape != (FEATURE_DIM,):
+            if req.x.ndim != 1 or req.x.shape != (feature_dim,):
                 raise ValueError(
-                    f"Request {req.request_id} observation x shape must be ({FEATURE_DIM},), got {req.x.shape}"
+                    f"Request {req.request_id} observation x shape must be ({feature_dim},), got {req.x.shape}"
                 )
             if not np.isfinite(req.x).all():
                 raise ValueError(f"Request {req.request_id} observation x contains non-finite values")
@@ -274,9 +365,9 @@ class BatchedInference:
                 raise ValueError(f"Request {req.request_id} candidates must be a numpy array")
             if req.candidates.dtype != np.float32:
                 raise ValueError(f"Request {req.request_id} candidates dtype must be float32, got {req.candidates.dtype}")
-            if req.candidates.ndim != 2 or req.candidates.shape[1] != CANDIDATE_DIM:
+            if req.candidates.ndim != 2 or req.candidates.shape[1] != candidate_dim:
                 raise ValueError(
-                    f"Request {req.request_id} candidates shape must be (A, {CANDIDATE_DIM}), got {req.candidates.shape}"
+                    f"Request {req.request_id} candidates shape must be (A, {candidate_dim}), got {req.candidates.shape}"
                 )
             if type(req.value_only) is not bool:
                 raise ValueError('value_only must be boolean')
@@ -289,13 +380,12 @@ class BatchedInference:
 
             # Check candidate element cap
             A = req.candidates.shape[0]
-            if A * CANDIDATE_DIM > self._max_candidate_elements:
+            if A * candidate_dim > self._max_candidate_elements:
                 raise ValueError(
-                    f"Request {req.request_id} candidate scalar count ({A * CANDIDATE_DIM}) exceeds max_candidate_elements ({self._max_candidate_elements})"
+                    f"Request {req.request_id} candidate scalar count ({A * candidate_dim}) exceeds max_candidate_elements ({self._max_candidate_elements})"
                 )
 
-            from app.modules.card_game.rl.cross_grounded import CATEGORIES
-            for column, size in CATEGORIES:
+            for column, size in contract['categories']:
                 values = req.candidates[:, column]
                 ids = values + (column != 0)
                 if np.any(values != np.rint(values)) or np.any((ids < 0) | (ids >= size)):
@@ -335,6 +425,10 @@ class BatchedInference:
         for (model_key, _, value_only), group_items in groups.items():
             net = self._networks[model_key]
 
+            contract = self._contracts[model_key]
+            feature_dim = contract['feature_dim']
+            candidate_dim = contract['candidate_dim']
+
             start_idx = 0
             while start_idx < len(group_items):
                 # Bound the padded scalar tensor, not just each row's action count.
@@ -342,7 +436,7 @@ class BatchedInference:
                 M = 0
                 for item in group_items[start_idx:start_idx + self._max_batch_rows]:
                     next_m = max(M, item[1].candidates.shape[0])
-                    if microbatch and (len(microbatch) + 1) * next_m * CANDIDATE_DIM > self._max_candidate_elements:
+                    if microbatch and (len(microbatch) + 1) * next_m * candidate_dim > self._max_candidate_elements:
                         break
                     microbatch.append(item)
                     M = next_m
@@ -358,8 +452,8 @@ class BatchedInference:
                 B = len(microbatch)
 
                 # Prepare padded batch arrays
-                x_batch = np.zeros((B, FEATURE_DIM), dtype=np.float32)
-                c_batch = np.zeros((B, M, CANDIDATE_DIM), dtype=np.float32)
+                x_batch = np.zeros((B, feature_dim), dtype=np.float32)
+                c_batch = np.zeros((B, M, candidate_dim), dtype=np.float32)
                 mask_batch = np.zeros((B, M), dtype=bool)
                 actor_batch = np.zeros((B, 1), dtype=np.float32)
 

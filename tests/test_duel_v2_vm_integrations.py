@@ -35,6 +35,13 @@ def numpy_json_probe(value):
     return json.dumps({'values': array.tolist(), 'valid': bool(np.isfinite(array).all())}, sort_keys=True)
 
 
+def seven_slice_probe(value):
+    array = np.asarray(value, dtype=np.float32)
+    legacy_columns = array[:, :3]
+    legacy_columns[0, 0] += np.float32(0.5)
+    return legacy_columns.tolist(), array.tolist()
+
+
 def counter_zero_probe(value):
     counts = Counter(value)
     counts['explicit'] = 0
@@ -88,7 +95,7 @@ def integration_program():
     return probe_program(
         {'numpy_json': numpy_json_probe, 'counter_zero': counter_zero_probe,
          'signed_modulo': signed_modulo_probe, 'enum_keys': enum_keys_probe,
-         'self_module': self_module_probe},
+         'self_module': self_module_probe, 'seven_slice': seven_slice_probe},
         'integrations',
     )
 
@@ -153,6 +160,7 @@ class TestVmIntegrationSource(unittest.TestCase):
                 ('signed_modulo', signed_modulo_probe, [-2, 2]),
                 ('enum_keys', enum_keys_probe, [3, 7]),
                 ('self_module', self_module_probe, [3, 7]),
+                ('seven_slice', seven_slice_probe, [[[1, 2, 3, 4], [5, 6, 7, 8]]]),
             ):
                 arena = vm.ingest(pack_states(values, GraphLayout(len(values), 8192, 16384, 131072)))
                 self.assertEqual(vm.launch(arena, entry).decode(), [function(value) for value in values])

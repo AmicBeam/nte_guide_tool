@@ -62,6 +62,24 @@
 
 ### 正式规则冻结入口与CUDA批量适配
 
+当前正式互搏统一使用七队：创生、覆纹、小吱、真红、浊燃、倾陷、灵可。`evaluate_duel_v2_batched.py`默认七队，`--runtime`仅接受seven；冻结程序CLI也使用七队。旧recovery格式仅保留为历史源码／数据兼容接口，不作为当前互搏的另一套运行方案。`--device`只指定推理／统计设备；规则后端由`--rule-backend resident_cpu|cuda_vm`明确选择，GPU规则失败不回退CPU。
+
+`gpu_schema_contract.py`绑定七队具名3479列观察、1576列候选和当前采样器；独立设备编码及公开图投影覆盖有序顶／底牌、手牌置顶／置底、退出终结、公开计次与抗性。加载冻结程序校验运行时和来源SHA，旧维度不能填充为七队。七队矩阵为49格，先手为行／后手为列，对角线真实内战，仍按实际完成分母统计。
+
+`gpu_rule_capacity.py`提供不加载Torch的容量计划及槽位账本。以真实状态、清理根、采样、嵌套终局探查父引用、推进和返回重叠推导峰值，持久状态与VM执行堆分开。默认每次GPU调用至多32行；1600个已准入搜索根仍保留，不把分批行数称为根并发。导入、参数绑定、推进、提交和导出遵守同一分批界限；源／目标堆使用各自步幅，输出压回持久限额，溢出明确失败。统计池实际候选容量与计划一致。内存报告含临时编码数组、GPU缓冲、搜索池和未建模预留，公式与实测峰值分开；不适配预算时拒绝，不能缩小候选或状态冒充通过。
+
+本地检查示例（不连接设备、不加载权重、不预约种子）：
+
+```bash
+.venv/bin/python scripts/evaluate_duel_v2_batched.py --rule-backend cuda_vm --device cuda --games 1600 --search-roots 1600 --gpu-memory-budget-mib 14336
+.venv/bin/python scripts/build_duel_v2_gpu_rule_program.py --build --output artifacts/rl-evals/NEW_RUN/frozen-program
+.venv/bin/python scripts/validate_duel_v2_gpu_seven.py
+```
+
+14336MiB是上述示例的显式可用预算，不是设备实测。正式`--run`还须新输出目录、明确模型目录、冻结程序、独立种子与预算模式；Windows只能读取CPython3.10冻结的程序。设备对拍、完整局／回放以及64→256→512→1600实测仍是后续验收，不因本地计划通过而批准运行性能或模型质量。
+
+设备上线后，`validate_duel_v2_gpu_seven.py --run --program FROZEN_JSON --output NEW_DIR`用于14个七队起手／正常行动根的有界规则、完整候选顺序、观察编码、采样、模拟与物理推进对拍；不读取模型或训练，不代表完整对局或1600容量。默认仅输出配置，没有CUDA明确失败；正式设备执行须另加外层进程时间保护并保留原始失败证据。
+
 `gpu_rule_entries.py` 提供实际正式函数的源码入口：行动方、终局/价值、完整合法动作与公开观察、物理推进、假想推进、清理、观察者一致采样、公开根元数据及一步终局探查。公开视图不按旧座位表截断。采样显式绑定现有恢复运行时，不偷偷改用较旧的默认采样器；该运行时已有的编队与选择范围限制继续生效，目录包含新角色不表示旧恢复编码和采样已经支持它们。
 
 `gpu_rule_program.py` 与 `build_duel_v2_gpu_rule_program.py` 只构建/核验源码程序，不执行设备规则。构建须CPython3.10，Windows3.13只加载显式冻结程序；入口集、程序身份与来源SHA必须一致。来源检查在读取前拒绝越界路径、敏感文件名及指向仓库外的符号链接。默认CLI只检查；`--build --output NEW_DIR`才创建新产物。`declared_capabilities_ready`仅表示声明的指令/原语齐备，`device_ready`和`device_verified`不会因源码生成成功而设为true。`vm_image`的入口依赖扫描同时覆盖函数内部的相对导入；导入的实际被调函数缺指令/原语时，不能把外层入口当作就绪。

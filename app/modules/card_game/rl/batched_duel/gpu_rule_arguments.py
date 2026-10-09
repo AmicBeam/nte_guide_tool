@@ -10,7 +10,7 @@ import numpy as np
 
 from .codec import pack_states
 from .cuda_vm import DeviceGraph
-from .schema import GraphLayout, PackedStateBatch, TAG_BOOL, TAG_DICT, TAG_FLOAT, TAG_INT, TAG_LIST, TAG_NONE, TAG_STR, TAG_TUPLE
+from .schema import CodecCapacityError, GraphLayout, PackedStateBatch, TAG_BOOL, TAG_DICT, TAG_FLOAT, TAG_INT, TAG_LIST, TAG_NONE, TAG_STR, TAG_TUPLE
 from .vm_heap import emit_vm_heap_source
 
 
@@ -43,7 +43,7 @@ _APPEND_SPEC = (
     'int32*', 'int32*', 'uint8*', 'int32*', 'int32*',
     'int32*', 'int32*', 'uint8*', 'int32*', 'int32*',
     'int32*', 'int32*',
-    'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32',
+    'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32',
 )
 _META_SPEC = (
     'int32*', 'int32*', 'uint8*', 'int32*', 'int32*',
@@ -87,23 +87,25 @@ extern "C" __global__ void graph_append_arguments(
  const int* an,const int* ae,const unsigned char* ap,const int* ac,const int* ar,
  int* dn,int* de,unsigned char* dp,int* dc,int* dr,
  int* arg_refs,int* status,
- int rows,int maxn,int maxe,int maxp,int extra_nargs,int arg_maxn,int arg_maxe,int arg_maxp){
+ int rows,int src_maxn,int src_maxe,int src_maxp,int dst_maxn,int dst_maxe,int dst_maxp,int extra_nargs,int arg_maxn,int arg_maxe,int arg_maxp){
  int row=(int)(blockIdx.x*blockDim.x+threadIdx.x); if(row>=rows) return;
  const int* scn=sc+row*3; int nN=scn[0],nE=scn[1],nP=scn[2];
- if(nN<0||nE<0||nP<0||nN>maxn||nE>maxe||nP>maxp){status[row]=ARG_REF;return;}
- long long nbase=(long long)row*maxn*4, ebase=(long long)row*maxe*2, pbase=(long long)row*maxp;
- for(int i=0;i<nN*4;i++) dn[nbase+i]=sn[nbase+i];
- for(int i=0;i<nE*2;i++) de[ebase+i]=se[ebase+i];
- for(int i=0;i<nP;i++) dp[pbase+i]=sp[pbase+i];
+ if(nN<0||nE<0||nP<0||nN>src_maxn||nE>src_maxe||nP>src_maxp){status[row]=ARG_REF;return;}
+ if(nN>dst_maxn||nE>dst_maxe||nP>dst_maxp){status[row]=ARG_NODE;return;}
+ long long s_nbase=(long long)row*src_maxn*4, s_ebase=(long long)row*src_maxe*2, s_pbase=(long long)row*src_maxp;
+ long long nbase=(long long)row*dst_maxn*4, ebase=(long long)row*dst_maxe*2, pbase=(long long)row*dst_maxp;
+ for(int i=0;i<nN*4;i++) dn[nbase+i]=sn[s_nbase+i];
+ for(int i=0;i<nE*2;i++) de[ebase+i]=se[s_ebase+i];
+ for(int i=0;i<nP;i++) dp[pbase+i]=sp[s_pbase+i];
  dc[row*3+0]=nN; dc[row*3+1]=nE; dc[row*3+2]=nP; dr[row]=sr[row];
  int cols=1+extra_nargs; arg_refs[row*cols+0]=sr[row];
  for(int i=1;i<cols;i++) arg_refs[row*cols+i]=-1;
  if(extra_nargs==0){status[row]=ARG_OK;return;}
  const int* acn=ac+row*3; int aN=acn[0],aE=acn[1],aP=acn[2];
  if(aN<1||aE<0||aP<0||aN>arg_maxn||aE>arg_maxe||aP>arg_maxp){status[row]=ARG_REF;return;}
- if(nN+aN>maxn){status[row]=ARG_NODE;return;}
- if(nE+aE>maxe){status[row]=ARG_EDGE;return;}
- if(nP+aP>maxp){status[row]=ARG_PAYLOAD;return;}
+ if(nN+aN>dst_maxn){status[row]=ARG_NODE;return;}
+ if(nE+aE>dst_maxe){status[row]=ARG_EDGE;return;}
+ if(nP+aP>dst_maxp){status[row]=ARG_PAYLOAD;return;}
  long long abase_n=(long long)row*arg_maxn*4, abase_e=(long long)row*arg_maxe*2, abase_p=(long long)row*arg_maxp;
  int outN=nN,outE=nE,outP=nP;
  for(int i=0;i<aN;i++){
@@ -205,15 +207,24 @@ class BoundArguments:
 class GraphArgumentKernel:
     """Compiled GPU graph argument / metadata kernels. CUDA-only."""
 
-    def __init__(self, device='cuda'):
+    def __init__(self, device='cuda', *, max_nodes=4096, max_edges=8192, max_payload_bytes=65536):
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():
             raise RuntimeError('Actual CUDA required for graph argument kernels; no CPU fallback')
+        if type(max_nodes) is not int or isinstance(max_nodes, bool) or max_nodes < 1:
+            raise ValueError('Positive argument max_nodes required')
+        if type(max_edges) is not int or isinstance(max_edges, bool) or max_edges < 1:
+            raise ValueError('Positive argument max_edges required')
+        if type(max_payload_bytes) is not int or isinstance(max_payload_bytes, bool) or max_payload_bytes < 1:
+            raise ValueError('Positive argument max_payload_bytes required')
         from .cuda_runtime import CudaModule
         self.torch = torch
         self.device = torch.device(device)
         if self.device.index is None:
             self.device = torch.device('cuda', torch.cuda.current_device())
+        self.max_nodes = max_nodes
+        self.max_edges = max_edges
+        self.max_payload_bytes = max_payload_bytes
         self.module = CudaModule(
             emit_argument_source(),
             {'graph_append_arguments': _APPEND_SPEC, 'graph_read_meta': _META_SPEC},
@@ -236,8 +247,62 @@ class GraphArgumentKernel:
     def __exit__(self, *args):
         self.close()
 
-    def bind(self, source, extras):
-        """Copy immutable source rows and append packed CPU argument tuples on GPU."""
+    def _empty_graph(self, layout, rows):
+        torch = self.torch
+        if type(rows) is not int or isinstance(rows, bool) or rows < 1:
+            raise ValueError('Positive graph row count required')
+        if not isinstance(layout, GraphLayout):
+            raise TypeError('GraphLayout required')
+        if layout.game_capacity < rows:
+            raise GraphArgumentError('destination_layout game_capacity must cover the batch')
+        return DeviceGraph(
+            GraphLayout(rows, layout.max_nodes, layout.max_edges, layout.max_payload_bytes),
+            torch.zeros((rows, layout.max_nodes, 4), dtype=torch.int32, device=self.device),
+            torch.zeros((rows, layout.max_edges, 2), dtype=torch.int32, device=self.device),
+            torch.zeros((rows, layout.max_payload_bytes), dtype=torch.uint8, device=self.device),
+            torch.zeros((rows, 3), dtype=torch.int32, device=self.device),
+            torch.zeros((rows,), dtype=torch.int32, device=self.device),
+        )
+
+    def copy_to_layout(self, source, dest_layout):
+        """Copy compacted rows into a possibly smaller persistent layout. Not a rule result."""
+        if self.closed:
+            raise RuntimeError('Graph argument kernel closed')
+        if not isinstance(source, DeviceGraph):
+            raise TypeError('Device graph required')
+        if not isinstance(dest_layout, GraphLayout):
+            raise TypeError('GraphLayout required')
+        rows = source.rows
+        if rows < 1:
+            raise ValueError('Nonempty device batch required')
+        overflow = (
+            (source.counts[:, 0] > dest_layout.max_nodes)
+            | (source.counts[:, 1] > dest_layout.max_edges)
+            | (source.counts[:, 2] > dest_layout.max_payload_bytes)
+        )
+        if bool(overflow.any()):
+            row = int(overflow.nonzero(as_tuple=False)[0].item())
+            raise GraphArgumentError(
+                'GPU output graph exceeds persistent layout row=%s nodes=%s edges=%s payload=%s limits=%s/%s/%s'
+                % (
+                    row,
+                    int(source.counts[row, 0]), int(source.counts[row, 1]), int(source.counts[row, 2]),
+                    dest_layout.max_nodes, dest_layout.max_edges, dest_layout.max_payload_bytes,
+                )
+            )
+        dest = self._empty_graph(dest_layout, rows)
+        nodes = min(source.layout.max_nodes, dest_layout.max_nodes)
+        edges = min(source.layout.max_edges, dest_layout.max_edges)
+        payload = min(source.layout.max_payload_bytes, dest_layout.max_payload_bytes)
+        dest.nodes[:, :nodes].copy_(source.nodes[:, :nodes])
+        dest.edges[:, :edges].copy_(source.edges[:, :edges])
+        dest.payload[:, :payload].copy_(source.payload[:, :payload])
+        dest.counts.copy_(source.counts)
+        dest.roots.copy_(source.roots)
+        return dest
+
+    def bind(self, source, extras, destination_layout=None):
+        """Copy immutable source rows into destination_layout and append CPU argument tuples."""
         if self.closed:
             raise RuntimeError('Graph argument kernel closed')
         if not isinstance(source, DeviceGraph):
@@ -254,14 +319,11 @@ class GraphArgumentKernel:
         if any(not isinstance(row, tuple) or len(row) != extra_nargs for row in extras):
             raise ValueError('Each row must supply the same explicit argument tuple')
         torch = self.torch
-        dest = DeviceGraph(
-            source.layout,
-            torch.zeros_like(source.nodes),
-            torch.zeros_like(source.edges),
-            torch.zeros_like(source.payload),
-            torch.zeros_like(source.counts),
-            torch.zeros_like(source.roots),
-        )
+        if destination_layout is None:
+            destination_layout = source.layout
+        elif not isinstance(destination_layout, GraphLayout):
+            raise TypeError('GraphLayout required')
+        dest = self._empty_graph(destination_layout, rows)
         cols = 1 + extra_nargs
         arg_refs = torch.empty((rows, cols), dtype=torch.int32, device=self.device)
         status = torch.empty(rows, dtype=torch.int32, device=self.device)
@@ -269,8 +331,13 @@ class GraphArgumentKernel:
             arg_layout = GraphLayout(rows, 1, 1, 1)
             packed = pack_states([() for _ in range(rows)], arg_layout)
         else:
-            arg_layout = GraphLayout(rows, 4096, 8192, 65536)
-            packed = pack_states(extras, arg_layout)
+            arg_layout = GraphLayout(rows, self.max_nodes, self.max_edges, self.max_payload_bytes)
+            try:
+                packed = pack_states(extras, arg_layout)
+            except CodecCapacityError as exc:
+                raise GraphArgumentError(
+                    'GPU argument heap capacity exceeded: %s' % exc
+                ) from exc
         args = DeviceGraph(
             packed.layout,
             *(torch.tensor(np.array(getattr(packed, name), copy=True), device=self.device)
@@ -283,6 +350,7 @@ class GraphArgumentKernel:
              dest.nodes, dest.edges, dest.payload, dest.counts, dest.roots,
              arg_refs, status,
              rows, source.layout.max_nodes, source.layout.max_edges, source.layout.max_payload_bytes,
+             dest.layout.max_nodes, dest.layout.max_edges, dest.layout.max_payload_bytes,
              extra_nargs, args.layout.max_nodes, args.layout.max_edges, args.layout.max_payload_bytes],
             grid=(rows + 127) // 128, block=128,
         )
@@ -341,4 +409,7 @@ def pack_argument_tuples(rows, layout=None):
     values = [tuple(row) for row in rows]
     if layout is None:
         layout = GraphLayout(max(1, len(values)), 4096, 8192, 65536)
-    return pack_states(values, layout)
+    try:
+        return pack_states(values, layout)
+    except CodecCapacityError as exc:
+        raise GraphArgumentError('GPU argument heap capacity exceeded: %s' % exc) from exc

@@ -61,6 +61,38 @@ class GpuRuleBackendContractTest(unittest.TestCase):
         )
         subprocess.run([sys.executable, '-c', code], check=True, cwd=REPO, capture_output=True)
 
+    def test_invalid_runtime_is_rejected_before_program_or_torch(self):
+        code = (
+            'from app.modules.card_game.rl.batched_duel.gpu_rule_backend import '
+            'GpuRuleBackend, GpuRuleBackendError\n'
+            'try:\n'
+            '    GpuRuleBackend(None, runtime="five")\n'
+            'except GpuRuleBackendError as exc:\n'
+            '    assert "recovery" in str(exc) or "seven" in str(exc)\n'
+            'else:\n'
+            '    raise SystemExit("invalid runtime was accepted")\n'
+            'import sys\n'
+            'assert "torch" not in sys.modules\n'
+        )
+        subprocess.run([sys.executable, '-c', code], check=True, cwd=REPO, capture_output=True)
+
+    def test_rejected_capacity_plan_is_rejected_before_torch(self):
+        code = (
+            'from app.modules.card_game.rl.batched_duel.gpu_rule_backend import '
+            'GpuRuleBackend, GpuRuleBackendError, plan_gpu_rule_capacity\n'
+            'plan = plan_gpu_rule_capacity(1600, 1600, memory_budget_bytes=1024)\n'
+            'assert plan["rejected"] is True\n'
+            'try:\n'
+            '    GpuRuleBackend(None, capacity_plan=plan)\n'
+            'except GpuRuleBackendError as exc:\n'
+            '    assert "rejected" in str(exc) or "truncate" in str(exc)\n'
+            'else:\n'
+            '    raise SystemExit("rejected plan was accepted")\n'
+            'import sys\n'
+            'assert "torch" not in sys.modules\n'
+        )
+        subprocess.run([sys.executable, '-c', code], check=True, cwd=REPO, capture_output=True)
+
     def test_production_path_does_not_import_host_extractors_or_numpy_encoder(self):
         owned = [
             REPO / 'app/modules/card_game/rl/batched_duel/gpu_rule_backend.py',
@@ -139,11 +171,15 @@ class GpuRuleBackendCapabilityTest(unittest.TestCase):
         self.assertEqual(status['mode'], 'check')
         self.assertFalse(status['supports_full_duel_rules'])
         self.assertFalse(status['device_verified'])
+        self.assertEqual(status['runtime'], 'recovery')
         self.assertIn('public_legal_decision', status['blocked_entries'])
         self.assertIn('sample_world', status['blocked_entries'])
         self.assertIn('acting_side', status['capability_ready_entries'])
         missing = status['blocked_entries']['public_legal_decision']
         self.assertTrue(missing['opcodes'] or missing['intrinsics'])
+        seven = gb.inspect_backend_configuration(runtime='seven')
+        self.assertEqual(seven['runtime'], 'seven')
+        self.assertIn('seven-team', seven['sampler_contract'])
 
 
 class GpuRuleBackendCliTest(unittest.TestCase):

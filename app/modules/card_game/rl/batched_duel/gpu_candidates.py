@@ -235,17 +235,34 @@ class RawCandidateTokens:
     request_ids: tuple = ()
 
 
+
+def _seven_module():
+    from . import gpu_seven_candidates as seven
+    return seven
+
+
+def _dispatch_runtime(runtime):
+    from .gpu_schema_contract import normalize_runtime, SEVEN_RUNTIME
+    name = normalize_runtime(runtime)
+    if name == SEVEN_RUNTIME:
+        return _seven_module()
+    return None
+
 def extract_raw_tokens(
     views: Sequence[Dict[str, Any]],
     actions_batch: Sequence[Sequence[Dict[str, Any]]],
     *,
     capacity: Optional[int] = None,
+    runtime: Optional[str] = None,
 ) -> RawCandidateTokens:
     """Extract compact token tables from public views and actions on host.
 
     Entity IDs (instance_id, choice_id) are used ONLY for looking up visible
     objects in the viewer's hand or pending choices, and are immediately discarded.
     """
+    seven = _dispatch_runtime(runtime)
+    if seven is not None:
+        return seven.extract_raw_tokens(views, actions_batch, capacity=capacity)
     n = len(views)
     if len(actions_batch) != n:
         raise ValueError(f"Batch views count ({n}) != actions_batch count ({len(actions_batch)})")
@@ -446,11 +463,15 @@ def encode_tokens(
     tokens: RawCandidateTokens,
     *,
     device: Optional[Union[str, Any]] = None,
+    runtime: Optional[str] = None,
 ) -> PackedCandidateBatch:
     """Encode RawCandidateTokens purely on GPU via PyTorch tensor operations.
 
     No host candidate matrix creation. Emits PackedCandidateBatch with finite checks.
     """
+    seven = _dispatch_runtime(runtime)
+    if seven is not None:
+        return seven.encode_tokens(tokens, device=device)
     t = _require_torch()
     dev = _resolve_device(device)
 
@@ -635,14 +656,15 @@ def encode_candidate_batch(
     *,
     capacity: Optional[int] = None,
     device: Optional[Union[str, Any]] = None,
+    runtime: Optional[str] = None,
 ) -> PackedCandidateBatch:
     """Batch GPU candidate action encoder.
 
     Extracts compact raw tokens on host and encodes candidate action matrices
     on GPU via PyTorch tensor operations.
     """
-    tokens = extract_raw_tokens(views, actions_batch, capacity=capacity)
-    return encode_tokens(tokens, device=device)
+    tokens = extract_raw_tokens(views, actions_batch, capacity=capacity, runtime=runtime)
+    return encode_tokens(tokens, device=device, runtime=runtime)
 
 
 def encode_single(
@@ -651,6 +673,7 @@ def encode_single(
     *,
     capacity: Optional[int] = None,
     device: Optional[Union[str, Any]] = None,
+    runtime: Optional[str] = None,
 ) -> PackedCandidateBatch:
     """Convenience helper for encoding a single (view, actions) pair."""
-    return encode_candidate_batch([view], [actions], capacity=capacity, device=device)
+    return encode_candidate_batch([view], [actions], capacity=capacity, device=device, runtime=runtime)

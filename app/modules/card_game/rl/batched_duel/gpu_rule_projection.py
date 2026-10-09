@@ -89,7 +89,13 @@ FIELD_NAMES = (
 ACTION_TYPE_NAMES = ('end_turn', 'attack', 'play_card', 'ultimate', 'mulligan', 'choose')
 
 
-def intern_layout():
+def intern_layout(runtime=None):
+    if runtime is not None:
+        from .gpu_schema_contract import SEVEN_RUNTIME, normalize_runtime
+        name = normalize_runtime(runtime)
+        if name == SEVEN_RUNTIME:
+            from .gpu_seven_projection import intern_layout_seven
+            return intern_layout_seven()
     names = list(FIELD_NAMES) + list(SEATS) + list(CARD_IDS) + list(OPTION_IDS_TUPLE) + list(ACTION_TYPE_NAMES)
     unique = []
     index = {}
@@ -898,24 +904,55 @@ class GraphProjectionKernel:
     uses_host_extractors = False
     uses_numpy_encoder = False
 
-    def __init__(self, device='cuda', max_candidates=128):
+    def __init__(self, device='cuda', max_candidates=128, runtime=None):
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():
             raise RuntimeError('Actual CUDA required for graph projection; no CPU fallback')
         if type(max_candidates) is not int or isinstance(max_candidates, bool) or not 1 <= max_candidates <= 16384:
             raise ValueError('Positive bounded candidate capacity required')
         from .cuda_runtime import CudaModule
+        from .gpu_schema_contract import SEVEN_RUNTIME, normalize_runtime, runtime_metadata
+        runtime = normalize_runtime(runtime)
+        meta = runtime_metadata(runtime)
         self.torch = torch
         self.device = torch.device(device)
         if self.device.index is None:
             self.device = torch.device('cuda', torch.cuda.current_device())
         self.max_candidates = max_candidates
+        self.runtime = runtime
+        self.obs_dim = meta['obs_dim']
+        self.cand_dim = meta['cand_dim']
+        self.schema = meta['schema']
+        self.observation_schema = meta['observation_schema']
+        self.schema_sha = meta['schema_sha']
+        self.candidate_schema_sha = meta['candidate_schema_sha']
+        self.seats = tuple(meta['seats'])
+        self.card_ids = tuple(meta['card_ids'])
+        self.action_types = tuple(meta['action_types'])
+        self.keys = tuple(meta['keys'])
+        self.prefix_obs_dim = meta['prefix_obs_dim']
+        self.old_cand_dim = meta['old_cand_dim']
+        if runtime == SEVEN_RUNTIME:
+            from .gpu_seven_projection import (
+                SEVEN_DECISION_SPEC,
+                SEVEN_OBS_SPEC,
+                emit_seven_projection_source,
+                intern_layout_seven,
+            )
+            intern_names, _intern_index = intern_layout_seven()
+            source = emit_seven_projection_source()
+            specs = {'project_public_decision': SEVEN_DECISION_SPEC, 'project_public_observation': SEVEN_OBS_SPEC}
+        else:
+            intern_names = INTERN_NAMES
+            source = emit_projection_source()
+            specs = {'project_public_decision': _DECISION_SPEC, 'project_public_observation': _OBS_SPEC}
+        self._intern_names = intern_names
         self.module = CudaModule(
-            emit_projection_source(),
-            {'project_public_decision': _DECISION_SPEC, 'project_public_observation': _OBS_SPEC},
+            source,
+            specs,
             device=str(self.device),
         )
-        payload, offsets, lengths = _intern_buffers(INTERN_NAMES)
+        payload, offsets, lengths = _intern_buffers(intern_names)
         self._names = torch.tensor(payload, dtype=torch.uint8, device=self.device)
         self._off = torch.tensor(offsets, dtype=torch.int32, device=self.device)
         self._len = torch.tensor(lengths, dtype=torch.int32, device=self.device)
@@ -963,35 +1000,67 @@ class GraphProjectionKernel:
         action_roots = torch.full((rows,), -1, dtype=torch.int32, device=self.device)
         status = torch.zeros(rows, dtype=torch.int32, device=self.device)
         buffers = vm._buffers
-        event = self.module.launch(
-            'project_public_decision',
-            [arena.nodes, arena.edges, arena.payload, arena.counts,
+        args = [arena.nodes, arena.edges, arena.payload, arena.counts,
              buffers['nodes'], buffers['edges'], buffers['payload'],
              len(vm.image.nodes), len(vm.image.edges), len(vm.image.payload), call.outputs,
-             self._names, self._off, self._len, len(INTERN_NAMES),
+             self._names, self._off, self._len, len(self._intern_names),
              obs['global_tokens'], obs['side_int'], obs['side_float'], obs['char_present'], obs['char_seats'],
              obs['char_int'], obs['char_float'], obs['char_timed'], obs['zone_cards'], obs['mark_cards'],
              obs['mark_deltas'], obs['mark_valid'], obs['substituted_cards'], obs['substituted_valid'],
              obs['mask'], obs['counts'],
              int_tokens, float_tokens, item_flags, turn_counts, mulligan, cand_counts, cand_mask,
-             action_roots, status,
-             rows, arena.layout.max_nodes, arena.layout.max_edges, arena.layout.max_payload_bytes, m],
+             action_roots]
+        extras = None
+        cand_extras = None
+        if self.runtime == 'seven':
+            from .gpu_seven_projection import zero_seven_candidate_extras, zero_seven_observation_extras
+            extras = zero_seven_observation_extras(torch, rows, self.device)
+            cand_extras = zero_seven_candidate_extras(torch, rows, m, self.device)
+            args.extend([
+                cand_extras['order_cards'], cand_extras['select_cards'], cand_extras['extra_ap'],
+                extras['seven_side'], extras['seven_char'], extras['side_resist'], extras['char_resist'],
+                extras['choice_kind'], extras['choice_cards'],
+            ])
+        args.extend([status, rows, arena.layout.max_nodes, arena.layout.max_edges, arena.layout.max_payload_bytes, m])
+        event = self.module.launch(
+            'project_public_decision',
+            args,
             grid=(rows + 127) // 128, block=128,
         )
         event.synchronize()
         self._check(status)
-        observation_tokens = _to_observation_tokens(obs, torch)
-        candidate_tokens = RawCandidateTokens(
-            int_tokens=int_tokens.to(dtype=torch.int64),
-            float_tokens=float_tokens,
-            item_flags=item_flags,
-            turn_counts=turn_counts,
-            mulligan_cards=mulligan.to(dtype=torch.int64),
-            counts=cand_counts.to(dtype=torch.int64),
-            mask=cand_mask.to(dtype=torch.bool),
-        )
-        observations = encode_observation_tokens(observation_tokens, device=self.device)
-        candidates = encode_tokens(candidate_tokens, device=self.device)
+        if self.runtime == 'seven':
+            from .gpu_seven_candidates import RawCandidateTokens as SevenCandidateTokens
+            from .gpu_seven_candidates import encode_tokens as encode_seven_tokens
+            from .gpu_seven_observation import encode_observation_tokens as encode_seven_observation
+            observation_tokens = _to_seven_observation_tokens(obs, extras, torch)
+            candidate_tokens = SevenCandidateTokens(
+                int_tokens=int_tokens.to(dtype=torch.int64),
+                float_tokens=float_tokens,
+                item_flags=item_flags,
+                turn_counts=turn_counts,
+                mulligan_cards=mulligan.to(dtype=torch.int64),
+                counts=cand_counts.to(dtype=torch.int64),
+                mask=cand_mask.to(dtype=torch.bool),
+                order_cards=cand_extras['order_cards'].to(dtype=torch.int64),
+                select_cards=cand_extras['select_cards'].to(dtype=torch.int64),
+                extra_ap=cand_extras['extra_ap'],
+            )
+            observations = encode_seven_observation(observation_tokens, device=self.device)
+            candidates = encode_seven_tokens(candidate_tokens, device=self.device)
+        else:
+            observation_tokens = _to_observation_tokens(obs, torch)
+            candidate_tokens = RawCandidateTokens(
+                int_tokens=int_tokens.to(dtype=torch.int64),
+                float_tokens=float_tokens,
+                item_flags=item_flags,
+                turn_counts=turn_counts,
+                mulligan_cards=mulligan.to(dtype=torch.int64),
+                counts=cand_counts.to(dtype=torch.int64),
+                mask=cand_mask.to(dtype=torch.bool),
+            )
+            observations = encode_observation_tokens(observation_tokens, device=self.device)
+            candidates = encode_tokens(candidate_tokens, device=self.device)
         return ProjectedDecision(observations, candidates, action_roots, arena)
 
     def project_observation(self, call, view_refs):
@@ -1010,19 +1079,59 @@ class GraphProjectionKernel:
         obs = _zero_obs_tensors(torch, rows, self.device)
         status = torch.zeros(rows, dtype=torch.int32, device=self.device)
         buffers = vm._buffers
-        event = self.module.launch(
-            'project_public_observation',
-            [arena.nodes, arena.edges, arena.payload, arena.counts,
+        args = [arena.nodes, arena.edges, arena.payload, arena.counts,
              buffers['nodes'], buffers['edges'], buffers['payload'],
              len(vm.image.nodes), len(vm.image.edges), len(vm.image.payload), view_refs,
-             self._names, self._off, self._len, len(INTERN_NAMES),
+             self._names, self._off, self._len, len(self._intern_names),
              obs['global_tokens'], obs['side_int'], obs['side_float'], obs['char_present'], obs['char_seats'],
              obs['char_int'], obs['char_float'], obs['char_timed'], obs['zone_cards'], obs['mark_cards'],
              obs['mark_deltas'], obs['mark_valid'], obs['substituted_cards'], obs['substituted_valid'],
-             obs['mask'], obs['counts'], status,
-             rows, arena.layout.max_nodes, arena.layout.max_edges, arena.layout.max_payload_bytes],
+             obs['mask'], obs['counts']]
+        extras = None
+        if self.runtime == 'seven':
+            from .gpu_seven_projection import zero_seven_observation_extras
+            extras = zero_seven_observation_extras(torch, rows, self.device)
+            args.extend([
+                extras['seven_side'], extras['seven_char'], extras['side_resist'], extras['char_resist'],
+                extras['choice_kind'], extras['choice_cards'],
+            ])
+        args.extend([status, rows, arena.layout.max_nodes, arena.layout.max_edges, arena.layout.max_payload_bytes])
+        event = self.module.launch(
+            'project_public_observation',
+            args,
             grid=(rows + 127) // 128, block=128,
         )
         event.synchronize()
         self._check(status)
+        if self.runtime == 'seven':
+            from .gpu_seven_observation import encode_observation_tokens as encode_seven_observation
+            return encode_seven_observation(_to_seven_observation_tokens(obs, extras, torch), device=self.device)
         return encode_observation_tokens(_to_observation_tokens(obs, torch), device=self.device)
+
+
+def _to_seven_observation_tokens(arrays, extras, torch):
+    from .gpu_seven_observation import RawObservationTokens as SevenObservationTokens
+    return SevenObservationTokens(
+        global_tokens=arrays['global_tokens'],
+        side_int_tokens=arrays['side_int'].to(dtype=torch.int64),
+        side_float_tokens=arrays['side_float'],
+        char_present=arrays['char_present'].to(dtype=torch.bool),
+        char_seats=arrays['char_seats'].to(dtype=torch.int64),
+        char_int_tokens=arrays['char_int'].to(dtype=torch.int64),
+        char_float_tokens=arrays['char_float'],
+        char_timed_attacks=arrays['char_timed'],
+        zone_cards=arrays['zone_cards'].to(dtype=torch.int64),
+        mark_cards=arrays['mark_cards'].to(dtype=torch.int64),
+        mark_deltas=arrays['mark_deltas'].to(dtype=torch.int64),
+        mark_valid=arrays['mark_valid'].to(dtype=torch.bool),
+        substituted_cards=arrays['substituted_cards'].to(dtype=torch.int64),
+        substituted_valid=arrays['substituted_valid'].to(dtype=torch.bool),
+        seven_side=extras['seven_side'],
+        seven_char=extras['seven_char'],
+        side_resist=extras['side_resist'],
+        char_resist=extras['char_resist'],
+        choice_kind=extras['choice_kind'],
+        choice_cards=extras['choice_cards'].to(dtype=torch.int64),
+        mask=arrays['mask'].to(dtype=torch.bool),
+        counts=arrays['counts'].to(dtype=torch.int64),
+    )

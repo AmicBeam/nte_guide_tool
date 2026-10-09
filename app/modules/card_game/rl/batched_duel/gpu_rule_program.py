@@ -15,6 +15,15 @@ from typing import Any, Iterable, Mapping, Sequence
 from app.modules.card_game.rl.batched_duel.gpu_rule_entries import (
     ENTRY_FUNCTIONS,
     FULL_ENTRY_NAMES,
+    entry_functions,
+    sampler_runtime,
+)
+from app.modules.card_game.rl.batched_duel.gpu_schema_contract import (
+    DEFAULT_RUNTIME,
+    GPU_RUNTIME_CONTRACTS,
+    GpuSchemaContractError,
+    normalize_runtime,
+    runtime_metadata,
 )
 from app.modules.card_game.rl.rule_ir.portable_program import (
     DEFAULT_ALLOWED_MODULE_PREFIXES,
@@ -95,16 +104,39 @@ def coverage_flags(entry_names: Sequence[str]) -> dict[str, Any]:
     }
 
 
-def capture_entries(entry_names: Sequence[str]) -> dict[str, Any]:
-    missing = [name for name in entry_names if ENTRY_FUNCTIONS.get(name) is None]
+def capture_entries(entry_names: Sequence[str], runtime: str | None = None) -> dict[str, Any]:
+    functions = entry_functions(runtime)
+    missing = [name for name in entry_names if functions.get(name) is None]
     if missing:
         raise GpuRuleProgramError('Missing canonical GPU rule entries: ' + ','.join(missing))
-    return {name: ENTRY_FUNCTIONS[name] for name in entry_names}
+    return {name: functions[name] for name in entry_names}
+
+
+def detect_frozen_runtime(program: FrozenRuleProgram) -> str:
+    names = []
+    for item in list(program.functions) + list(program.classes):
+        names.append(str(item.get('name') or ''))
+        names.append(str(item.get('qualname') or ''))
+        names.append(str(item.get('id') or ''))
+    blob = ' '.join(names)
+    seven = (
+        'FrozenSevenRuntime' in blob
+        or 'seven_sample_world' in blob
+        or 'seven_acting_side' in blob
+        or 'seven_public_legal_decision' in blob
+    )
+    recovery = 'FrozenRecoveryRuntime' in blob
+    if seven and recovery:
+        raise ValidationError('Frozen program mixes recovery and seven sampler bindings')
+    if seven:
+        return 'seven'
+    return 'recovery'
 
 
 def capture_gpu_rule_program(
     requested: Iterable[str] | None = None,
     *,
+    runtime: str | None = None,
     scope_character_ids: Iterable[str] | None | object = Ellipsis,
     scope_card_ids: Iterable[str] | None | object = Ellipsis,
 ) -> FrozenRuleProgram:
@@ -113,8 +145,9 @@ def capture_gpu_rule_program(
             'Host bytecode export must be run under CPython 3.10, got ' + sys.version
             + '. Windows 3.13 loads an explicit frozen program with source/hash/entry-set checks.'
         )
+    runtime = normalize_runtime(runtime)
     entry_names = resolve_entry_names(requested)
-    entries = capture_entries(entry_names)
+    entries = capture_entries(entry_names, runtime=runtime)
     if scope_character_ids is Ellipsis or scope_card_ids is Ellipsis:
         if tuple(entry_names) == FULL_ENTRY_NAMES or set(entry_names) & HEAVY_ENTRIES:
             characters, cards = catalog_scope()
@@ -156,12 +189,20 @@ def load_program(
     path: str | Path,
     *,
     expected_entries: Iterable[str] | None = None,
+    runtime: str | None = None,
     verify_sources: bool = True,
     repo_root: Path | None = None,
 ) -> FrozenRuleProgram:
     payload = Path(path).read_text()
     program = FrozenRuleProgram.from_json(payload)
     program.validate()
+    requested_runtime = normalize_runtime(runtime)
+    detected = detect_frozen_runtime(program)
+    if detected != requested_runtime:
+        raise ValidationError(
+            'Frozen program runtime mismatch: expected '
+            + requested_runtime + ' got ' + detected
+        )
     if expected_entries is not None:
         expected = resolve_entry_names(expected_entries)
         if tuple(sorted(program.entries)) != tuple(sorted(expected)):
@@ -220,8 +261,11 @@ def program_status(
     requested: Sequence[str],
     image=None,
     error: str | None = None,
+    runtime: str | None = None,
 ) -> dict[str, Any]:
+    runtime = normalize_runtime(runtime)
     flags = coverage_flags(requested)
+    meta = runtime_metadata(runtime)
     unresolved = list(program.unresolved) if program is not None else []
     validated = bool(program is not None and not unresolved and error is None)
     compile_ready = validated
@@ -244,7 +288,20 @@ def program_status(
             }
     status = {
         'compiler_python_required': '3.10',
-        'sampler_contract': 'existing recovery runtime; additional catalog rosters are not implicitly supported',
+        'runtime': runtime,
+        'schema': meta['schema'],
+        'observation_schema': meta['observation_schema'],
+        'policy_schema': meta['policy_schema'],
+        'keys': list(meta['keys']),
+        'obs_dim': meta['obs_dim'],
+        'cand_dim': meta['cand_dim'],
+        'feature_names': list(meta['feature_names']),
+        'candidate_names': list(meta['candidate_names']),
+        'schema_sha': meta['schema_sha'],
+        'candidate_schema_sha': meta['candidate_schema_sha'],
+        'sampler': meta['sampler'],
+        'sampler_runtime': sampler_runtime(runtime).__name__,
+        'sampler_contract': meta['sampler_contract'],
         'host_python': sys.version.split()[0],
         'source_capture_available': source_capture_available(),
         'compile_ready': compile_ready,
@@ -267,8 +324,17 @@ def inspect_gpu_rule_program(
     *,
     program: FrozenRuleProgram | None = None,
     lower: bool = True,
+    runtime: str | None = None,
 ) -> dict[str, Any]:
+    runtime = normalize_runtime(runtime)
     entry_names = resolve_entry_names(requested)
+    if program is not None:
+        detected = detect_frozen_runtime(program)
+        if detected != runtime:
+            error = 'Frozen program runtime mismatch: expected %s got %s' % (runtime, detected)
+            status = program_status(program, requested=entry_names, image=None, error=error, runtime=runtime)
+            status['lower_error'] = None
+            return status
     error = None
     image = None
     lower_error = None
@@ -285,7 +351,7 @@ def inspect_gpu_rule_program(
                 image = lower_gpu_program(program)
             except (TypeError, ValueError, RuntimeError) as exc:
                 lower_error = str(exc)
-    status = program_status(program, requested=entry_names, image=image, error=error)
+    status = program_status(program, requested=entry_names, image=image, error=error, runtime=runtime)
     status['lower_error'] = lower_error
     return status
 
@@ -294,10 +360,12 @@ def build_gpu_rule_program(
     requested: Iterable[str] | None = None,
     *,
     lower: bool = True,
+    runtime: str | None = None,
 ) -> tuple[FrozenRuleProgram, dict[str, Any]]:
+    runtime = normalize_runtime(runtime)
     entry_names = resolve_entry_names(requested)
-    program = capture_gpu_rule_program(entry_names)
-    status = inspect_gpu_rule_program(entry_names, program=program, lower=lower)
+    program = capture_gpu_rule_program(entry_names, runtime=runtime)
+    status = inspect_gpu_rule_program(entry_names, program=program, lower=lower, runtime=runtime)
     return program, status
 
 
@@ -327,9 +395,10 @@ def save_program(
     return {'program': str(program_path), 'manifest': str(manifest_path)}
 
 
-def check_configuration(requested: Iterable[str] | None = None) -> dict[str, Any]:
+def check_configuration(requested: Iterable[str] | None = None, runtime: str | None = None) -> dict[str, Any]:
+    runtime = normalize_runtime(runtime)
     entry_names = resolve_entry_names(requested)
-    status = program_status(None, requested=entry_names, error=None)
+    status = program_status(None, requested=entry_names, error=None, runtime=runtime)
     status['mode'] = 'check'
     status['torch_imported'] = 'torch' in sys.modules
     status['catalog_characters'] = None

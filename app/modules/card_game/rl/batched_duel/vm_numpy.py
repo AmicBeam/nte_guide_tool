@@ -258,15 +258,19 @@ __device__ inline int numpy_gc_trace(Context* c,int ref,int* tail){const int* n=
 __device__ inline int numpy_numeric(Context* c,int a,int b,int op,int* out){if(kind(c,a)!=T_NP_SCALAR)return 0;const int* n=node(c,a);if(!n||n[2]!=NP_DTYPE_F32){c->error=UNSUPPORTED_TYPE;return 1;}float left=np_bits_f32((unsigned int)n[3]),right=0;if(!np_from_py_f32(c,b,&right))return 1;float r=0;if(op==NP_OP_ADD)r=left+right;else if(op==NP_OP_SUB)r=left-right;else if(op==NP_OP_MUL)r=left*right;else if(op==NP_OP_DIV){if(right==0.0f){c->error=BAD_CALL;return 1;}r=left/right;}else{c->error=UNSUPPORTED_OP;return 1;}*out=np_make_f32_scalar(c,r);return 1;}
 __device__ inline int np_unpack_key(Context* c,const NpArr* a,int key,int* k0,int* k1,int* sl0,int* sl1,int* s0,int* e0,int* p0,int* s1,int* e1,int* p1){
  *sl0=0;*sl1=0;*k0=0;*k1=0;int t=kind(c,key);
- if(t==T_SLICE){if(a->ndim!=1){c->error=UNSUPPORTED_TYPE;return 0;}*sl0=1;return np_slice_axis(c,key,a->shape0,s0,e0,p0);}
- if(t==TAG_TUPLE){if(a->ndim!=2||length(c,key)!=2){c->error=UNSUPPORTED_TYPE;return 0;}int a0=edge(c,key,0),a1=edge(c,key,1);if(kind(c,a0)==T_SLICE){c->error=UNSUPPORTED_TYPE;return 0;}if(!np_index1(c,a0,a->shape0,k0))return 0;if(kind(c,a1)==T_SLICE){*sl1=1;return np_slice_axis(c,a1,a->shape1,s1,e1,p1);}return np_index1(c,a1,a->shape1,k1);}
+ if(t==T_SLICE){*sl0=1;if(a->ndim==2){*sl1=1;*s1=0;*e1=a->shape1;*p1=1;}return np_slice_axis(c,key,a->shape0,s0,e0,p0);}
+ if(t==TAG_TUPLE){if(a->ndim!=2||length(c,key)!=2){c->error=UNSUPPORTED_TYPE;return 0;}int a0=edge(c,key,0),a1=edge(c,key,1);if(kind(c,a0)==T_SLICE){*sl0=1;if(!np_slice_axis(c,a0,a->shape0,s0,e0,p0))return 0;}else if(!np_index1(c,a0,a->shape0,k0))return 0;if(kind(c,a1)==T_SLICE){*sl1=1;return np_slice_axis(c,a1,a->shape1,s1,e1,p1);}return np_index1(c,a1,a->shape1,k1);}
  if(t==TAG_INT||t==TAG_BOOL)return np_index1(c,key,a->shape0,k0);
  c->error=UNSUPPORTED_TYPE;return 0;
 }
 __device__ inline int numpy_try_subscript(Context* c,int owner,int key,int* out){
  NpArr a;int ok=np_load(c,owner,&a);if(ok==0)return 0;if(ok<0)return 1;int k0=0,k1=0,sl0=0,sl1=0,s0=0,e0=0,p0=1,s1=0,e1=0,p1=1;
  if(!np_unpack_key(c,&a,key,&k0,&k1,&sl0,&sl1,&s0,&e0,&p0,&s1,&e1,&p1))return 1;
- if(sl0){if(p0!=1){c->error=UNSUPPORTED_TYPE;return 1;}int n=np_slice_count(s0,e0,p0),view=MISSING;if(np_view(c,&a,1,n,1,a.stride0,a.stride0,a.data+s0*a.stride0,&view)<=0)return 1;*out=view;return 1;}
+ if(sl0){if(p0!=1||(sl1&&p1!=1)){c->error=UNSUPPORTED_TYPE;return 1;}int n=np_slice_count(s0,e0,p0),view=MISSING;
+  if(a.ndim==2){int cols=sl1?np_slice_count(s1,e1,p1):1,data=a.data+s0*a.stride0+(sl1?s1:k1)*a.stride1;if(!n||!cols)data=a.data;
+   if(np_view(c,&a,sl1?2:1,n,cols,a.stride0,a.stride1,data,&view)<=0)return 1;
+  }else if(np_view(c,&a,1,n,1,a.stride0,a.stride0,n?a.data+s0*a.stride0:a.data,&view)<=0)return 1;
+  *out=view;return 1;}
  if(a.ndim==1){float v=0;if(!np_get_f32(c,&a,k0,0,&v))return 1;*out=np_make_f32_scalar(c,v);return 1;}
  if(sl1){if(p1!=1){c->error=UNSUPPORTED_TYPE;return 1;}int n=np_slice_count(s1,e1,p1),view=MISSING;if(np_view(c,&a,1,n,1,a.stride1,a.stride1,a.data+k0*a.stride0+s1*a.stride1,&view)<=0)return 1;*out=view;return 1;}
  if(kind(c,key)==TAG_INT||kind(c,key)==TAG_BOOL){int view=MISSING;if(np_view(c,&a,1,a.shape1,1,a.stride1,a.stride1,a.data+k0*a.stride0,&view)<=0)return 1;*out=view;return 1;}

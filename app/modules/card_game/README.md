@@ -6,7 +6,7 @@
 
 恢复训练可显式使用 `--value-full-tower --value-replicas 12 --value-check-replicas 3` 扩大独立价值分支校准；轮数／温度只在选择集决定，不改变策略或放松留出条件。不同协议需新CUDA预检，见[价值校准协议](../../../docs/duel-v2-policy-recovery.md#独立价值分支的扩大校准)。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_recovery_round tests.test_duel_v2_current_round`。
 
-离线互搏使用有界滚动搜索窗口：`evaluate_duel_v2_batched.py --search-roots N` 区分驻留局数与同时搜索数，完成即提交；固定预算不足会保留未完成记录。等待、搜索与端到端延迟分别报告，GPU统计池随窗口大小分配。协议与验证入口见[离线批量搜索](../../../docs/duel-v2-batched-search.md)，不代表完整CUDA规则后端或模型质量已通过。
+离线互搏统一七队，`evaluate_duel_v2_batched.py`默认seven，旧五队只保留历史数据与迁移兼容。`--rule-backend cuda_vm`显式接入GPU规则，`--device`独立选择推理设备；`--search-roots N`区分驻留局数与同时在途搜索根。容量计划分开持久图、VM临时堆及每次至多32行的调用工作区，统计池按同一候选限额分配；1600根不因分批缩减。等待、搜索、端到端延迟与实际峰值分别报告。协议、冻结程序和验证入口见[离线批量搜索](../../../docs/duel-v2-batched-search.md)，设备规则／完整终局与模型质量仍须独立验收。
 
 2026-09-15 起模块名称改为「异能对决」。Logo 使用青金色字标与 `ESPER DUEL` 副标，移除异象道具卡片及徽章；旧名称的构筑文本仍可导入。
 

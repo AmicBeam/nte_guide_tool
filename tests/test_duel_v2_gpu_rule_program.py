@@ -273,5 +273,72 @@ class CliTest(unittest.TestCase):
             self.assertNotEqual(again.returncode, 0)
 
 
+class RuntimeBindingTest(unittest.TestCase):
+    def test_default_runtime_keeps_recovery_identity(self):
+        from app.modules.card_game.rl.batched_duel.gpu_schema_contract import GPU_RUNTIME_CONTRACTS
+        check = gp.check_configuration()
+        self.assertEqual(check['runtime'], 'recovery')
+        self.assertEqual(check['obs_dim'], 2420)
+        self.assertEqual(check['cand_dim'], 254)
+        self.assertEqual(check['keys'], ['starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk'])
+        self.assertEqual(check['sampler_runtime'], '_FrozenRecoveryRuntime')
+        self.assertIs(entries.entry_functions()['sample_world'], entries.sample_world)
+        self.assertIs(entries.entry_functions('recovery')['sample_world'], entries.sample_world)
+        self.assertEqual(GPU_RUNTIME_CONTRACTS['recovery']['obs_dim'], 2420)
+        self.assertEqual(GPU_RUNTIME_CONTRACTS['recovery']['cand_dim'], 254)
+
+    def test_seven_wrappers_are_distinct_and_do_not_replace_recovery_sampler(self):
+        from app.modules.card_game.rl import recovery_runtime, seven_runtime
+        self.assertIsNot(entries.sample_world, entries.seven_sample_world)
+        self.assertIs(entries.entry_functions('seven')['sample_world'], entries.seven_sample_world)
+        self.assertIs(entries.sampler_runtime('recovery').decision, recovery_runtime.decision)
+        self.assertIs(entries.sampler_runtime('recovery').determinize, recovery_runtime.determinize)
+        self.assertIs(entries.sampler_runtime('seven').decision, seven_runtime.decision)
+        self.assertIs(entries.sampler_runtime('seven').determinize, seven_runtime.determinize)
+        self.assertEqual(entries.sampler_runtime('seven').__name__, '_FrozenSevenRuntime')
+        self.assertNotEqual(entries.sampler_runtime('recovery'), entries.sampler_runtime('seven'))
+        state = new_game(seed=21, first_side='a', skip_mulligan=True)
+        viewer = entries.acting_side(state)
+        recovered = entries.sample_world(deepcopy(state), viewer, 99)
+        expected = entries.CANONICAL_FUNCTIONS['sample_world'](
+            deepcopy(state), viewer, 99, runtime=recovery_runtime
+        )
+        self.assertEqual(recovered['rng'], expected['rng'])
+        seven_state = new_game(
+            seed=21, first_side='a', skip_mulligan=True,
+            decks={'a': COLLAPSE, 'b': LINGKE},
+        )
+        seven_viewer = entries.seven_acting_side(seven_state)
+        seven_sampled = entries.seven_sample_world(deepcopy(seven_state), seven_viewer, 99)
+        seven_expected = entries.CANONICAL_FUNCTIONS['sample_world'](
+            deepcopy(seven_state), seven_viewer, 99, runtime=seven_runtime
+        )
+        self.assertEqual(seven_sampled['rng'], seven_expected['rng'])
+        self.assertEqual(entries.seven_acting_side(seven_state), entries.acting_side(seven_state))
+
+    def test_seven_check_reports_versioned_widths(self):
+        status = gp.check_configuration(runtime='seven')
+        self.assertEqual(status['runtime'], 'seven')
+        self.assertEqual(status['obs_dim'], 3479)
+        self.assertEqual(status['cand_dim'], 1576)
+        self.assertEqual(
+            status['keys'],
+            ['starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke'],
+        )
+        self.assertEqual(status['sampler_runtime'], '_FrozenSevenRuntime')
+        self.assertIn('existing recovery sampler is not replaced', status['sampler_contract'])
+
+    @unittest.skipUnless(_can_capture(), 'CPython 3.10 source capture required')
+    def test_load_rejects_runtime_mismatch(self):
+        program, _ = gp.build_gpu_rule_program(('acting_side',), lower=False, runtime='seven')
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / 'seven.json'
+            path.write_text(program.to_json())
+            loaded = gp.load_program(path, expected_entries=('acting_side',), runtime='seven', verify_sources=False)
+            self.assertEqual(loaded.identity, program.identity)
+            with self.assertRaisesRegex(ValidationError, 'runtime mismatch'):
+                gp.load_program(path, expected_entries=('acting_side',), runtime='recovery', verify_sources=False)
+
+
 if __name__ == '__main__':
     unittest.main()

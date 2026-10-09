@@ -47,6 +47,7 @@ $ProjectRoot = Resolve-WindowsPath -Path $ProjectRoot
 $TargetApp = Join-Path $ProjectRoot 'app'
 $StatePath = Join-Path $ProjectRoot '.nte-deploy-app.json'
 $LockPath = Join-Path $ProjectRoot '.nte-deploy-app.lock'
+$PendingPath = Join-Path $ProjectRoot '.nte-deploy-app.pending.json'
 # Staging and rollback stay on the app's volume, so directory moves are atomic.
 $WorkRoot = Join-Path (Join-Path $ProjectRoot '.nte-deploy') $ReleaseId
 $StageRoot = Join-Path $WorkRoot 'stage'
@@ -198,12 +199,12 @@ function Get-StateMap {
     param($State)
     Assert-Properties $State @('schema', 'release_id', 'commit', 'files')
     if ($State.schema -ne 1 -or $State.release_id -notmatch '^[A-Za-z0-9._-]+$' -or
-        $State.commit -notmatch '^[0-9a-f]{40,64}$' -or $State.files -isnot [Array]) {
+        $State.commit -notmatch '^[0-9a-f]{40,64}$' -or $null -eq $State.files) {
         throw 'Invalid deployment state.'
     }
     $Map = New-Object 'Collections.Generic.Dictionary[string,object]' ([StringComparer]::Ordinal)
     $Names = New-Object 'Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
-    foreach ($Entry in $State.files) {
+    foreach ($Entry in @($State.files)) {
         Assert-Properties $Entry @('path', 'sha256', 'size')
         Assert-AppPath $Entry.path
         if ($Entry.sha256 -cnotmatch '^[0-9a-f]{64}$' -or
@@ -245,8 +246,8 @@ function Assert-FileIdentity {
 }
 
 function Get-PathSet {
-    param($Paths)
-    if ($Paths -isnot [Array]) { throw 'Expected a deployment path array.' }
+    param([object[]]$Paths)
+    if ($null -eq $Paths) { throw 'Expected a deployment path array.' }
     $Set = New-Object 'Collections.Generic.HashSet[string]' ([StringComparer]::Ordinal)
     foreach ($Path in $Paths) {
         Assert-AppPath $Path
@@ -255,18 +256,87 @@ function Get-PathSet {
     return ,$Set
 }
 
-if (-not (Test-Path -LiteralPath $ProjectRoot -PathType Container) -or
-    -not (Test-Path -LiteralPath $TargetApp -PathType Container)) {
-    throw 'Project root and existing app directory are required.'
+function Stop-DeploymentProcess {
+    param([string]$Service, [string]$Batch, [int]$Port)
+    if ($Service) {
+        Stop-Service -Name $Service -ErrorAction Stop
+        (Get-Service -Name $Service).WaitForStatus([ServiceProcess.ServiceControllerStatus]::Stopped, [TimeSpan]::FromSeconds(30))
+    }
+    elseif ($Batch) { $null = Stop-PortListener $Port }
+}
+
+function Restore-PendingDeployment {
+    # A journal is written before stopping/switching anything. Its paths are derived
+    # from a validated release ID, never supplied as arbitrary recovery paths.
+    if (-not (Test-Path -LiteralPath $PendingPath -PathType Leaf)) { return }
+    Assert-NoReparse $PendingPath
+    $Pending = [IO.File]::ReadAllText($PendingPath) | ConvertFrom-Json
+    Assert-Properties $Pending @('schema', 'release_id', 'service', 'batch', 'port', 'was_running', 'base_present', 'base_sha256')
+    if ($Pending.schema -ne 1 -or $Pending.release_id -notmatch '^[A-Za-z0-9_-][A-Za-z0-9._-]*$' -or
+        $Pending.service -notmatch '^[A-Za-z0-9._-]*$' -or $Pending.port -lt 1 -or $Pending.port -gt 65535 -or
+        $Pending.was_running -isnot [bool] -or $Pending.base_present -isnot [bool]) {
+        throw 'Invalid interrupted-deployment journal.'
+    }
+    $RecoveryRoot = Join-Path (Join-Path $ProjectRoot '.nte-deploy') $Pending.release_id
+    Assert-NoReparse (Join-Path $ProjectRoot '.nte-deploy')
+    Assert-NoReparse $RecoveryRoot
+    $RecoveryBackup = Join-Path $RecoveryRoot 'backup-app'
+    $CurrentText = $null
+    if (Test-Path -LiteralPath $StatePath -PathType Leaf) {
+        $CurrentText = [IO.File]::ReadAllText($StatePath).Trim()
+        $Current = $CurrentText | ConvertFrom-Json
+        $null = Get-StateMap $Current
+        if ($Current.release_id -ceq $Pending.release_id) {
+            # State publication is the commit point. Never undo a committed release.
+            if (-not (Test-Path -LiteralPath $TargetApp -PathType Container)) { throw 'Committed app is missing.' }
+            Remove-Item -LiteralPath $PendingPath -Force
+            return
+        }
+    }
+    if (($Pending.base_present -and ($null -eq $CurrentText -or (Get-TextHash $CurrentText) -cne $Pending.base_sha256)) -or
+        (-not $Pending.base_present -and $null -ne $CurrentText)) {
+        throw 'Interrupted deployment baseline changed; preserve the backup for manual recovery.'
+    }
+    Stop-DeploymentProcess $Pending.service $Pending.batch $Pending.port
+    if (Test-Path -LiteralPath $RecoveryBackup -PathType Container) {
+        Assert-NoReparse $RecoveryBackup
+        if (Test-Path -LiteralPath $TargetApp) {
+            Assert-NoReparse $TargetApp
+            $Discard = Join-Path $RecoveryRoot ('interrupted-app-' + [Guid]::NewGuid().ToString('N'))
+            Move-Item -LiteralPath $TargetApp -Destination $Discard
+        }
+        Move-Item -LiteralPath $RecoveryBackup -Destination $TargetApp
+    }
+    if (-not (Test-Path -LiteralPath $TargetApp -PathType Container)) { throw 'Interrupted deployment has no recoverable app.' }
+    if ($Pending.was_running) {
+        if ($Pending.service) {
+            Start-Service -Name $Pending.service -ErrorAction Stop
+            (Get-Service -Name $Pending.service).WaitForStatus([ServiceProcess.ServiceControllerStatus]::Running, [TimeSpan]::FromSeconds(30))
+        }
+        elseif ($Pending.batch) {
+            $BatchPath = Resolve-WindowsPath $Pending.batch
+            Start-WaitressBatch $BatchPath $ProjectRoot
+            if (-not (Wait-ForPort $Pending.port 30)) { throw 'Previous app restored, but startup verification failed.' }
+        }
+    }
+    Remove-Item -LiteralPath $PendingPath -Force
+    [Console]::Error.WriteLine("Recovered interrupted deployment: $($Pending.release_id)")
+}
+
+if (-not (Test-Path -LiteralPath $ProjectRoot -PathType Container)) {
+    throw 'Project root is required.'
 }
 Assert-NoReparse $ProjectRoot
 Assert-NoReparse $TargetApp
 Assert-NoReparse $StatePath
 Assert-NoReparse $LockPath
+Assert-NoReparse $PendingPath
 
 # The OS releases this lock on crash. A leftover lock file is harmless.
 $DeployLock = [IO.File]::Open($LockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
 try {
+    Restore-PendingDeployment
+    if (-not (Test-Path -LiteralPath $TargetApp -PathType Container)) { throw 'Existing app directory is required.' }
     $OldStateText = $null
     $Baseline = $null
     if (Test-Path -LiteralPath $StatePath -PathType Leaf) {
@@ -380,6 +450,17 @@ try {
     $NoChanges = $Manifest.kind -ceq 'delta' -and $Upserts.Count -eq 0 -and $Deletes.Count -eq 0
     try {
         if (-not $NoChanges) {
+            $WasRunning = $false
+            if ($ServiceName) { $WasRunning = (Get-Service -Name $ServiceName).Status -eq [ServiceProcess.ServiceControllerStatus]::Running }
+            elseif ($RestartBatch) { $WasRunning = @(Get-ListeningProcessIds $ListenPort).Count -gt 0 }
+            $Pending = @{
+                schema = 1; release_id = $ReleaseId; service = $ServiceName; batch = $RestartBatch;
+                port = $ListenPort; was_running = $WasRunning; base_present = ($null -ne $OldStateText);
+                base_sha256 = $(if ($null -ne $OldStateText) { Get-TextHash $OldStateText } else { $null })
+            }
+            $NewPendingPath = Join-Path $WorkRoot 'pending.json'
+            [IO.File]::WriteAllText($NewPendingPath, ($Pending | ConvertTo-Json -Compress), (New-Object Text.UTF8Encoding($false)))
+            [IO.File]::Move($NewPendingPath, $PendingPath)
             if ($ServiceName) {
                 $ServiceStopped = $true
                 Stop-Service -Name $ServiceName -ErrorAction Stop
@@ -408,23 +489,31 @@ try {
     catch {
         $DeploymentError = $_
         try {
-            if ($Activated -and $ServiceName) { Stop-Service -Name $ServiceName -ErrorAction Stop }
-            elseif ($Activated -and $RestartBatch) { $null = Stop-PortListener $ListenPort }
+            if ($Activated -or $ServiceStopped -or $StoppedProcessCount -gt 0) {
+                Stop-DeploymentProcess $ServiceName $RestartBatch $ListenPort
+            }
+            if ($OldAppMoved) {
+                if (Test-Path -LiteralPath $TargetApp) { Move-Item -LiteralPath $TargetApp -Destination $FailedApp }
+                Move-Item -LiteralPath $BackupApp -Destination $TargetApp
+            }
+            if ($ServiceStopped -and $WasRunning) {
+                Start-Service -Name $ServiceName -ErrorAction Stop
+                (Get-Service -Name $ServiceName).WaitForStatus([ServiceProcess.ServiceControllerStatus]::Running, [TimeSpan]::FromSeconds(30))
+            }
+            elseif ($RestartBatch -and $StoppedProcessCount -gt 0) {
+                Start-WaitressBatch $RestartBatch $ProjectRoot
+                if (-not (Wait-ForPort $ListenPort 30)) { throw 'Previous app restart verification failed.' }
+            }
+            if (Test-Path -LiteralPath $PendingPath) { Remove-Item -LiteralPath $PendingPath -Force }
         }
-        catch { Write-Warning 'Failed to stop the new app; attempting directory rollback.' }
-        if ($OldAppMoved) {
-            if (Test-Path -LiteralPath $TargetApp) { Move-Item -LiteralPath $TargetApp -Destination $FailedApp }
-            Move-Item -LiteralPath $BackupApp -Destination $TargetApp
-        }
-        if ($ServiceStopped) { Start-Service -Name $ServiceName -ErrorAction SilentlyContinue }
-        elseif ($RestartBatch -and $StoppedProcessCount -gt 0) {
-            try { Start-WaitressBatch $RestartBatch $ProjectRoot }
-            catch { Write-Warning 'Previous app restored; Waitress restart failed.' }
+        catch {
+            throw "Deployment failed: $DeploymentError. Rollback incomplete: $_. Backup: $BackupApp. Retry deployment to recover the journal."
         }
         throw $DeploymentError
     }
     # Cleanup failures must not turn a committed deployment into a reported rollback.
     $CleanupPaths = @($StageRoot, $IncomingRoot, $ArchivePath)
+    if (-not $NoChanges) { $CleanupPaths += $PendingPath }
     $UploadedHelper = Join-Path (Split-Path -Parent $ArchivePath) ("deploy_windows_app_" + $ReleaseId + '.ps1')
     if ($PSCommandPath -eq $UploadedHelper) { $CleanupPaths += $PSCommandPath }
     if ($NoChanges) { $CleanupPaths += $WorkRoot }

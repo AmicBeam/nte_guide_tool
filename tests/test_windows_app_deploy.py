@@ -351,7 +351,7 @@ class ActivationTests(DeployFixture):
         mocks = """
 function Stop-Service { param($Name, $ErrorAction) }
 function Start-Service { param($Name, $ErrorAction) if (Test-Path (Join-Path $WorkRoot 'backup-app')) { throw 'Injected restart failure' } }
-function Get-Service { param($Name) $s = New-Object PSObject; $s | Add-Member ScriptMethod WaitForStatus { param($Status, $Timeout) }; return $s }
+function Get-Service { param($Name) $s = New-Object PSObject; $s | Add-Member NoteProperty Status ([ServiceProcess.ServiceControllerStatus]::Running); $s | Add-Member ScriptMethod WaitForStatus { param($Status, $Timeout) }; return $s }
 """
         source = self.source.replace('$DeployLock =', mocks + '\n$DeployLock =', 1)
         result = self.activate(delta, 'rollback', source, service=True)
@@ -407,7 +407,8 @@ function Get-Service { param($Name) $s = New-Object PSObject; $s | Add-Member Sc
         mocks = """
 function Stop-PortListener { param($Port) Add-Content (Join-Path $ProjectRoot 'stop-log') 'stop'; return 1 }
 function Start-WaitressBatch { param($BatchPath, $WorkingDirectory) Add-Content (Join-Path $ProjectRoot 'start-log') 'start' }
-function Wait-ForPort { param($Port, $TimeoutSeconds) return $false }
+function Get-ListeningProcessIds { param($Port) return @(1) }
+function Wait-ForPort { param($Port, $TimeoutSeconds) return -not (Test-Path (Join-Path $WorkRoot 'backup-app')) }
 """
         source = self.source.replace('$DeployLock =', mocks + '\n$DeployLock =', 1)
         # Supply the existing batch to the actual activation parameters.
@@ -439,6 +440,7 @@ function Wait-ForPort { param($Port, $TimeoutSeconds) return $false }
         args = [PWSH, '-NoProfile', '-NonInteractive', '-File', str(helper), '-ProjectRoot', str(self.project), '-ReadState']
         result = subprocess.run(args, capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
         self.assertEqual(json.loads(result.stdout), json.loads(self.base.read_bytes()))
         locker = self.root / 'lock.ps1'
         locker.write_text("""param($LockPath, $ReadyPath)
@@ -461,6 +463,78 @@ try { [IO.File]::WriteAllText($ReadyPath, 'ready'); $null = [Console]::ReadLine(
                 proc.communicate('\n', timeout=10)
         result = subprocess.run(args, capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+
+    def read_server_state(self):
+        helper = self.root / 'recover.ps1'; helper.write_text(self.source)
+        return subprocess.run([PWSH, '-NoProfile', '-NonInteractive', '-File', str(helper),
+                               '-ProjectRoot', str(self.project), '-ReadState'],
+                              capture_output=True, text=True, timeout=45)
+
+    def test_interrupted_moves_restore_old_app_before_next_state_read(self):
+        for point in ('after-old-move', 'before-state-commit'):
+            with self.subTest(point=point):
+                # Each interruption has an independent app + original baseline.
+                archive = self.root / (point + '-full.zip')
+                self.build(archive, point + '-base')
+                result = self.activate(archive, point + '-base')
+                self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+                before = (self.project / '.nte-deploy-app.json').read_bytes()
+                self.base.write_bytes(before)
+                self.write('app/__init__.py', point.encode())
+                self.commit()
+                delta = self.root / (point + '.zip')
+                self.build(delta, point, self.base)
+                if point == 'after-old-move':
+                    source = self.source.replace('$OldAppMoved = $true', '$OldAppMoved = $true\n[Environment]::Exit(91)', 1)
+                else:
+                    source = self.source.replace('# Publish the new baseline only after successful activation/health checks.', '[Environment]::Exit(91)', 1)
+                result = self.activate(delta, point, source)
+                self.assertEqual(result.returncode, 91, result.stderr + result.stdout)
+                self.assertTrue((self.project / '.nte-deploy-app.pending.json').exists())
+                recovered = self.read_server_state()
+                self.assertEqual(recovered.returncode, 0, recovered.stderr + recovered.stdout)
+                self.assertEqual(json.loads(recovered.stdout), json.loads(before))
+                self.assertFalse((self.project / '.nte-deploy-app.pending.json').exists())
+                self.assert_target()
+
+    def test_interruption_after_state_commit_keeps_new_app(self):
+        self.bootstrap()
+        self.change_all()
+        delta = self.root / 'committed-crash.zip'
+        self.build(delta, 'committed-crash', self.base)
+        source = self.source.replace('# Cleanup failures must not turn a committed deployment into a reported rollback.',
+                                    '[Environment]::Exit(92)', 1)
+        result = self.activate(delta, 'committed-crash', source)
+        self.assertEqual(result.returncode, 92, result.stderr + result.stdout)
+        recovered = self.read_server_state()
+        self.assertEqual(recovered.returncode, 0, recovered.stderr + recovered.stdout)
+        self.assertEqual(json.loads(recovered.stdout)['release_id'], 'committed-crash')
+        self.assert_target()
+        self.assertFalse((self.project / '.nte-deploy-app.pending.json').exists())
+
+    def test_rollback_failure_preserves_journal_and_recovers_next_time(self):
+        self.bootstrap()
+        self.change_all()
+        delta = self.root / 'rollback-fail.zip'
+        self.build(delta, 'rollback-fail', self.base)
+        source = self.source.replace('# Publish the new baseline only after successful activation/health checks.',
+                                    '[IO.File]::Delete($NewStatePath)', 1)
+        source = source.replace('$DeployLock =', """
+function Move-Item {
+    param($LiteralPath, $Destination)
+    if ($LiteralPath -eq $BackupApp) { throw 'Injected rollback move failure' }
+    Microsoft.PowerShell.Management\\Move-Item -LiteralPath $LiteralPath -Destination $Destination
+}
+$DeployLock =""", 1)
+        result = self.activate(delta, 'rollback-fail', source)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Rollback incomplete', result.stderr)
+        self.assertTrue((self.project / '.nte-deploy-app.pending.json').exists())
+        recovered = self.read_server_state()
+        self.assertEqual(recovered.returncode, 0, recovered.stderr + recovered.stdout)
+        self.assertEqual(json.loads(recovered.stdout)['release_id'], 'first')
+        self.assert_target()
 
 
 if __name__ == '__main__':

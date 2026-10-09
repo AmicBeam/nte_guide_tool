@@ -74,7 +74,7 @@ scripts/deploy_windows_app.sh --deploy
 
 `--deploy` 自动读取服务器项目根目录的 `.nte-deploy-app.json`，按逐文件 SHA-256 比较当前提交：只上传新增／修改文件，并携带完整目标清单与删除清单。改名按删除旧路径＋新增新路径处理，纯删除、大小写改名、文件与目录互换、换分支和回退旧提交均支持；比较不依赖 Git 历史或本机旧 ZIP。首次使用新版脚本没有服务器基准时自动全量，也可通过 `--deploy --full` 强制全量恢复。
 
-服务器在项目根目录的 `.nte-deploy/<release-id>/` 中组装并核验完整新 `app/`，删除清单中的文件不会进入新目录；旧 `app/` 保留为该目录下的 `backup-app/`。所有增量基准文件（包括将修改／删除的文件）都须与服务器清单一致，手工改动或缺文件会拒绝增量，须检查后使用 `--full`。服务器部署锁与基准身份校验阻止并发包交错应用；重启或状态提交失败时回滚，成功后才原子更新基准。无文件变化时不替换目录、不重启进程。账号、数据库、日志等项目根目录资料不进入部署范围；`app/` 内缓存或未跟踪文件不带入新目录。
+服务器在项目根目录的 `.nte-deploy/<release-id>/` 中组装并核验完整新 `app/`，删除清单中的文件不会进入新目录；旧 `app/` 保留为该目录下的 `backup-app/`。所有增量基准文件（包括将修改／删除的文件）都须与服务器清单一致，手工改动或缺文件会拒绝增量，须检查后使用 `--full`。服务器部署锁与基准身份校验阻止并发包交错应用；重启或状态提交失败时回滚，成功后才原子更新基准。切换前写入 `.nte-deploy-app.pending.json` 恢复记录：进程异常退出或回滚暂时失败后，下一次读取基准／部署会先在锁内恢复旧目录和原进程状态；若新基准已经提交，则保留新目录并清理记录。恢复失败会保留记录与备份并明确报错，不继续叠加新的增量。无文件变化时不替换目录、不重启进程。账号、数据库、日志等项目根目录资料不进入部署范围；`app/` 内缓存或未跟踪文件不带入新目录。
 
 `--prepare` 默认只在 `dist/deploy/` 生成全量 ZIP，不连接服务器；可用 `--prepare --base-state /path/to/saved-state.json` 离线生成增量包。清单基于 Git 导出的已提交字节（保留 `export-ignore` 等属性），不读取未提交的 `app/` 文件。本机需 Python 3.10+，无需第三方库。`--deploy` 成功后自动删除本机和服务器上的本次 ZIP，失败时保留包；`--prepare` 的包保留供检查。服务器旧版本备份仍保留，清理历史 ZIP 不会影响下一次增量比较。
 
@@ -82,7 +82,7 @@ scripts/deploy_windows_app.sh --deploy
 
 可用环境变量覆盖：`NTE_DEPLOY_HOST`、`NTE_DEPLOY_PROJECT`、`NTE_DEPLOY_RESTART_BATCH`、`NTE_DEPLOY_LISTEN_PORT`。若改成 Windows 服务，设置 `NTE_DEPLOY_SERVICE` 后改为重启服务。
 
-部署专项验证：`python3 -m unittest tests.test_windows_app_deploy -v`。有 `pwsh`／Windows `powershell.exe` 时同时执行真实文件激活、纯删除、无变化、损坏包、基准漂移与重启失败回滚；也可用 `NTE_TEST_PWSH=/path/to/pwsh` 指定运行时。macOS 测试仅替换 Windows 输入路径规范化，实际校验、目录切换和状态提交代码保持一致；Windows 服务与 Waitress/WMI 重启仍需 Windows 环境验证。
+部署专项验证：`python3 -m unittest tests.test_windows_app_deploy -v`。有 `pwsh`／Windows `powershell.exe` 时同时执行真实文件激活、纯删除、无变化、损坏包、基准漂移、并发锁、重启失败回滚及关键切换点异常退出后的恢复；也可用 `NTE_TEST_PWSH=/path/to/pwsh` 指定运行时。macOS 测试仅替换 Windows 输入路径规范化，实际校验、目录切换和状态提交代码保持一致；Windows 服务与 Waitress/WMI 重启仍需 Windows 环境验证。
 
 ## 共享约定
 

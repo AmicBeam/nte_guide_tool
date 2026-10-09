@@ -895,3 +895,12 @@ Everness当天核实「未迟到的正义」：基础800%攻击力相属性伤�
 `default_build_options.<id>.curtain_bonus.fixed=true`使前端、引擎与保存归一化按目录固定属性和驱动类型，兼容旧轴错误字段；明音凛为每个Ⅲ型驱动攻击+10%，依卡带Ⅲ型数量计入攻击百分比。无需角色ID主流程分支。
 
 动作`starts_action_sequence`开启或重置拥有者的指定序列，`action_sequence`与`max_uses_per_action_sequence`声明后续动作允许次数，`action_sequence_usage_warning`提供自检文案。Q1重置`akane_ultra`，Q2最多1次；没有Q1时仍允许单独Q2试算，重复时提示，均不阻断计算。按用户最新口径，移除华彩及前半Buff、Q2的时间窗口与状态门槛。原始10秒前半+10秒后半仅作为来源记录保留。A/D/六觉共鸣仍由同调共振触发，F觉仍由烁星触发，移除窗口不删除这些独立增益。
+
+
+### 最新腾讯文档觉醒与倍率接入
+
+`multipliers_add_by_awakening_node`表示A–F节点的攻击倍率追加；新`multipliers_add_by_awakening_resonance`按独立3/6共鸣状态追加，不能按节点数量直接替代手动开关。两类追加与`base_atk_multiplier_add`在基础攻击倍率区相加，再应用技能等级及其他基础倍率乘区。明音C的+1200%和三共鸣的+1200%各有独立来源；泛音列强化固定额外125%不再用旧比例乘整个三共鸣后倍率。
+
+`reaction_reapplication.damage_type`与`skill_level_category`可配置重施伤害归属，缺失时沿用被动。明音绝对音准配置为E/skill，继承变轨增伤和等级；触发者仍为被动，不派发E释放，避免重复触发专武释放增益。最新文档参数不再作为X暂估，普攻环合则按用户确认保留24.899。新版A回血和抗打断、B相抗、D无视防御、F自身暴击/暴伤及共鸣均通过内容配置接入。
+
+打断时节点/共鸣的额外倍率按保留伤害比例缩减，Buff固定攻击倍率追加同样读取`interrupt_damage_scale`；0命中不得残留三共鸣或泛音列额外伤害，也不触发强化命中回血/返还。

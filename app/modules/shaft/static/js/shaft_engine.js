@@ -291,6 +291,7 @@
       other_dmg: 0,
       final_dmg: 0,
       base_multiplier_pct: 0,
+      base_atk_multiplier_add: 0,
     };
   }
 
@@ -778,6 +779,13 @@
         multipliers[key] = num(multipliers[key]) + num(value);
       });
     });
+    Object.entries(action.multipliers_add_by_awakening_resonance || {}).forEach(([level, additions]) => {
+      if (!hasAwakeningResonance(snapshot, int(level)) || !additions || typeof additions !== 'object') return;
+      Object.entries(additions).forEach(([key, value]) => {
+        multipliers[key] = num(multipliers[key]) + num(value);
+      });
+    });
+    multipliers.atk = num(multipliers.atk) + panelMods.base_atk_multiplier_add * num(action.interrupt_damage_scale, 1);
     const rawScalingBase = stats.atk * num(multipliers.atk) + stats.hp * num(multipliers.hp) + stats.def * num(multipliers.def);
     const baseMultiplierFactor = Math.max(0, 1 + panelMods.base_multiplier_pct);
     const scalingBase = rawScalingBase * baseMultiplierFactor;
@@ -997,6 +1005,11 @@
         Object.entries(action.multipliers_add_by_awakening_node || {})
           .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
       ),
+      multipliers_add_by_awakening_resonance: Object.fromEntries(
+        Object.entries(action.multipliers_add_by_awakening_resonance || {})
+          .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
+      ),
+      interrupt_damage_scale: damageRatio,
       stagger: num(action.stagger) * staggerRatio,
       stagger_by_awakening_node: scaledMap(action.stagger_by_awakening_node, staggerRatio),
       harmony: num(action.harmony) * ratio('harmony'),
@@ -3243,7 +3256,9 @@
         const remaining = (previousEnd - tick) / 10;
         const multiplier = num(config.atk_multiplier) * (1 + Math.min(num(config.max_bonus), remaining * num(config.bonus_per_remaining_second)));
         enqueueTriggeredDamage(owner, {id: `reaction-reapply:${owner.character.id}`, name: config.source,
-          action_type: '被动', damage_type: '被动', multipliers: {atk: multiplier}, hit_count: 1}, tick,
+          action_type: '被动', damage_type: config.damage_type || '被动',
+          skill_level_category: config.skill_level_category || '',
+          multipliers: {atk: multiplier}, hit_count: 1}, tick,
         {remaining_seconds: remaining});
         reapplicationCooldowns.set(key, tick + Math.max(1, int(config.cooldown_ticks)));
       });

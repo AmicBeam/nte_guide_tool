@@ -4105,7 +4105,8 @@
         "action_akane_a1",
         "action_akane_a2",
         "action_akane_a3",
-        "action_akane_a4"
+        "action_akane_a4",
+        "action_akane_counter"
       ],
       "conditions": [
         {
@@ -4118,9 +4119,9 @@
       "type": "permanent"
     },
     "effects": {
-      "base_multiplier_pct": 0.325
+      "base_multiplier_pct": 0.4
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
   {
     "id": "character_akane_e_single",
@@ -4150,7 +4151,8 @@
         "action_akane_a1",
         "action_akane_a2",
         "action_akane_a3",
-        "action_akane_a4"
+        "action_akane_a4",
+        "action_akane_counter"
       ],
       "conditions": [
         {
@@ -4163,9 +4165,9 @@
       "type": "permanent"
     },
     "effects": {
-      "base_multiplier_pct": 0.175
+      "base_multiplier_pct": 0.3
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
   {
     "id": "character_akane_transmit_area",
@@ -4189,7 +4191,8 @@
         "action_akane_a1",
         "action_akane_a2",
         "action_akane_a3",
-        "action_akane_a4"
+        "action_akane_a4",
+        "action_akane_counter"
       ],
       "conditions": [
         {
@@ -4202,9 +4205,9 @@
       "type": "permanent"
     },
     "effects": {
-      "all_dmg": 0.36
+      "all_dmg": 0.6
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。"
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
   {
     "id": "character_akane_e_area",
@@ -4234,7 +4237,8 @@
         "action_akane_a1",
         "action_akane_a2",
         "action_akane_a3",
-        "action_akane_a4"
+        "action_akane_a4",
+        "action_akane_counter"
       ],
       "conditions": [
         {
@@ -4247,49 +4251,13 @@
       "type": "permanent"
     },
     "effects": {
-      "all_dmg": 0.24
+      "all_dmg": 0.3
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。"
-  },
-  {
-    "id": "character_akane_c",
-    "name": "明音凛C觉·泛音列倍率",
-    "providers": [
-      {
-        "kind": "character",
-        "id": "char_akane"
-      }
-    ],
-    "priority": 50,
-    "trigger": {
-      "event": "passive",
-      "source": {
-        "scope": "registrar"
-      },
-      "conditions": [
-        {
-          "type": "awakening_min",
-          "min": 3
-        }
-      ]
-    },
-    "target": {
-      "scope": "registrar",
-      "action_ids": [
-        "action_akane_e"
-      ]
-    },
-    "duration": {
-      "type": "permanent"
-    },
-    "effects": {
-      "base_multiplier_pct": 1.5
-    },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
   {
     "id": "character_akane_b_single",
-    "name": "明音凛B觉·全抗降低",
+    "name": "明音凛B觉·泛音列相抗降低",
     "providers": [
       {
         "kind": "character",
@@ -4322,19 +4290,13 @@
       "type": "permanent"
     },
     "effects": {
-      "res_down_光": 0.075,
-      "res_down_灵": 0.075,
-      "res_down_咒": 0.075,
-      "res_down_暗": 0.075,
-      "res_down_魂": 0.075,
-      "res_down_相": 0.075,
-      "res_down_心灵": 0.075
+      "res_down_相": 0.12
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
   },
   {
     "id": "character_akane_b_area",
-    "name": "明音凛B觉·前台增伤",
+    "name": "明音凛B觉·音域相抗降低",
     "providers": [
       {
         "kind": "character",
@@ -4355,7 +4317,7 @@
       ]
     },
     "target": {
-      "scope": "front",
+      "scope": "team",
       "conditions": [
         {
           "type": "active_buff_key",
@@ -4367,13 +4329,13 @@
       "type": "permanent"
     },
     "effects": {
-      "all_dmg": 0.125
+      "res_down_相": 0.12
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
   },
   {
     "id": "character_akane_a",
-    "name": "明音凛A觉·暴击",
+    "name": "明音凛A觉·抗打断",
     "providers": [
       {
         "kind": "character",
@@ -4382,9 +4344,12 @@
     ],
     "priority": 50,
     "trigger": {
-      "event": "passive",
+      "event": "action_hit",
       "source": {
-        "scope": "registrar"
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_enhanced_e"
+        ]
       },
       "conditions": [
         {
@@ -4397,16 +4362,23 @@
       "scope": "registrar"
     },
     "duration": {
-      "type": "permanent"
+      "type": "time",
+      "ticks": 120,
+      "loop_carry": true
     },
     "effects": {
-      "crit_rate": 0.12
+      "interrupt_resistance": 0.5
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。",
+    "stacking": {
+      "key": "character_akane_a",
+      "mode": "refresh",
+      "max_stacks": 1
+    }
   },
   {
     "id": "character_akane_d",
-    "name": "明音凛D觉·攻击",
+    "name": "明音凛D觉·无视防御",
     "providers": [
       {
         "kind": "character",
@@ -4438,14 +4410,14 @@
       "loop_carry": true
     },
     "effects": {
-      "atk_pct": 0.16
+      "def_ignore": 0.16
     },
     "stacking": {
       "key": "character_akane_d",
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
   },
   {
     "id": "character_akane_three",
@@ -4476,9 +4448,9 @@
       "type": "permanent"
     },
     "effects": {
-      "atk_pct": 0.2
+      "atk_pct": 0.1
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
   },
   {
     "id": "character_akane_six",
@@ -4514,7 +4486,7 @@
       "loop_carry": true
     },
     "effects": {
-      "crit_dmg": 0.5
+      "crit_dmg": 0.6
     },
     "stacking": {
       "key": "character_akane_six",
@@ -4526,7 +4498,7 @@
         "弦能": 10
       }
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
   },
   {
     "id": "character_akane_talent2",
@@ -4567,7 +4539,7 @@
   },
   {
     "id": "character_akane_f",
-    "name": "明音凛F觉·全队增伤",
+    "name": "明音凛F觉·暴击暴伤",
     "providers": [
       {
         "kind": "character",
@@ -4591,7 +4563,7 @@
       ]
     },
     "target": {
-      "scope": "team"
+      "scope": "registrar"
     },
     "duration": {
       "type": "time",
@@ -4599,14 +4571,15 @@
       "loop_carry": true
     },
     "effects": {
-      "all_dmg": 0.1
+      "crit_rate": 0.1,
+      "crit_dmg": 0.2
     },
     "stacking": {
       "key": "character_akane_f",
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 全队伤害+10%持续20秒；时间取最新Level6_GlobleDamageUP_CD曲线，与烁星窗口同步。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
   },
   {
     "id": "character_akane_enhanced_single",
@@ -4637,12 +4610,12 @@
       "type": "permanent"
     },
     "effects": {
-      "base_multiplier_pct": 0.1111111111111111
+      "base_atk_multiplier_add": 1.25
     },
     "display": {
       "line": false
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 音域1125%；泛音列额外125%攻击倍率，合计1250%，对应归一化基础倍率增益1/9。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。 泛音列在基础1125%上增加125%攻击倍率；三觉额外1200%在同一基础倍率区相加。"
   },
   {
     "id": "character_akane_heal",
@@ -4684,12 +4657,12 @@
       "max_stacks": 1
     },
     "activation": {
-      "heal_base_atk_ratio": 1
+      "heal_base_atk_ratio": 6
     },
     "display": {
       "line": false
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
   },
   {
     "id": "arc_akane_skill",

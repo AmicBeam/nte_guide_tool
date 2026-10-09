@@ -4734,8 +4734,8 @@
     ]
   },
   "action_akane_a1": {
-    "source": "ntedata",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source": "tencent-document",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4746,14 +4746,14 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.276,
+        "damage": 0.166,
         "energy": 1.065,
         "harmony": 1.78,
         "stagger": 0.216
       },
       {
         "hit_count": 2,
-        "damage": 0.552,
+        "damage": 0.332,
         "energy": 2.13,
         "harmony": 3.56,
         "stagger": 0.432
@@ -4761,8 +4761,8 @@
     ]
   },
   "action_akane_a2": {
-    "source": "ntedata",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source": "tencent-document",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4773,14 +4773,14 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.405,
+        "damage": 0.243,
         "energy": 1.644,
         "harmony": 2.748,
         "stagger": 0.333
       },
       {
         "hit_count": 2,
-        "damage": 0.81,
+        "damage": 0.486,
         "energy": 3.288,
         "harmony": 5.496,
         "stagger": 0.666
@@ -4788,8 +4788,8 @@
     ]
   },
   "action_akane_a3": {
-    "source": "ntedata",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source": "tencent-document",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4800,49 +4800,49 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.165,
+        "damage": 0.115,
         "energy": 0.682,
         "harmony": 1.14,
         "stagger": 0.138
       },
       {
         "hit_count": 2,
-        "damage": 0.33,
+        "damage": 0.23,
         "energy": 1.364,
         "harmony": 2.28,
         "stagger": 0.276
       },
       {
         "hit_count": 3,
-        "damage": 0.495,
+        "damage": 0.345,
         "energy": 2.046,
         "harmony": 3.42,
         "stagger": 0.414
       },
       {
         "hit_count": 4,
-        "damage": 0.709,
+        "damage": 0.495,
         "energy": 2.895,
         "harmony": 4.839,
         "stagger": 0.586
       },
       {
         "hit_count": 5,
-        "damage": 0.923,
+        "damage": 0.645,
         "energy": 3.744,
         "harmony": 6.258,
         "stagger": 0.758
       },
       {
         "hit_count": 6,
-        "damage": 1.137,
+        "damage": 0.795,
         "energy": 4.593,
         "harmony": 7.677,
         "stagger": 0.93
       },
       {
         "hit_count": 7,
-        "damage": 1.351,
+        "damage": 0.945,
         "energy": 5.442,
         "harmony": 9.096,
         "stagger": 1.102
@@ -4850,8 +4850,8 @@
     ]
   },
   "action_akane_a4": {
-    "source": "ntedata",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source": "tencent-document",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4862,7 +4862,7 @@
       },
       {
         "hit_count": 1,
-        "damage": 3.814,
+        "damage": 4.719,
         "energy": 3.439,
         "harmony": 6.747,
         "stagger": 0.697
@@ -4890,8 +4890,8 @@
     ]
   },
   "action_akane_counter": {
-    "source": "ntedata",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source": "tencent-document",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4902,7 +4902,7 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.25,
+        "damage": 1.375,
         "energy": 1.3,
         "harmony": 2.1,
         "stagger": 2.5
@@ -4910,8 +4910,8 @@
     ]
   },
   "action_akane_e": {
-    "source": "ntedata",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source": "tencent-document",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4922,7 +4922,7 @@
       },
       {
         "hit_count": 1,
-        "damage": 5.0,
+        "damage": 4.0,
         "energy": 1.7,
         "harmony": 4.0,
         "stagger": 0.3
@@ -4930,8 +4930,8 @@
     ]
   },
   "action_akane_hold_e": {
-    "source": "ntedata",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source": "tencent-document",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4942,14 +4942,14 @@
       },
       {
         "hit_count": 1,
-        "damage": 2.25,
+        "damage": 1.8,
         "energy": 2.45,
         "harmony": 4.0,
         "stagger": 0.5
       },
       {
         "hit_count": 2,
-        "damage": 4.5,
+        "damage": 3.6,
         "energy": 4.9,
         "harmony": 8.0,
         "stagger": 1.0

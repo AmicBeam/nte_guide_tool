@@ -10099,7 +10099,7 @@
     "duration_seconds": 0.4,
     "duration_ticks": 4,
     "multipliers": {
-      "atk": 0.552,
+      "atk": 0.332,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10115,7 +10115,7 @@
     ],
     "source_row": 32,
     "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "source_formula": "{0}%*2",
     "personal_resource_gain": {
       "弦能": 1
@@ -10136,7 +10136,7 @@
     "duration_seconds": 0.7,
     "duration_ticks": 7,
     "multipliers": {
-      "atk": 0.81,
+      "atk": 0.486,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10152,10 +10152,10 @@
     ],
     "source_row": 33,
     "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "source_formula": "{0}%*2",
     "personal_resource_gain": {
-      "弦能": 2
+      "弦能": 1
     },
     "personal_resource_scale_with_damage_ratio": true
   },
@@ -10173,7 +10173,7 @@
     "duration_seconds": 1.2,
     "duration_ticks": 12,
     "multipliers": {
-      "atk": 1.351,
+      "atk": 0.945,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10190,10 +10190,10 @@
     ],
     "source_row": 34,
     "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "source_formula": "{0}%*3+{1}%*4",
     "personal_resource_gain": {
-      "弦能": 4
+      "弦能": 2
     },
     "personal_resource_scale_with_damage_ratio": true
   },
@@ -10211,7 +10211,7 @@
     "duration_seconds": 0.9,
     "duration_ticks": 9,
     "multipliers": {
-      "atk": 3.814,
+      "atk": 4.719,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10227,10 +10227,10 @@
     ],
     "source_row": 36,
     "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "source_formula": "{0}%",
     "personal_resource_gain": {
-      "弦能": 3
+      "弦能": 6
     },
     "personal_resource_scale_with_damage_ratio": true
   },
@@ -10285,7 +10285,7 @@
     "duration_seconds": 1.0,
     "duration_ticks": 10,
     "multipliers": {
-      "atk": 0.25,
+      "atk": 1.375,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10301,7 +10301,7 @@
     ],
     "source_row": 45,
     "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "source_formula": "{0}%",
     "personal_resource_gain": {
       "弦能": 2
@@ -10360,7 +10360,7 @@
     "duration_seconds": 1.0,
     "duration_ticks": 10,
     "multipliers": {
-      "atk": 5.0,
+      "atk": 4.0,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10376,13 +10376,18 @@
     ],
     "source_row": 39,
     "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 新C觉额外增加1200%攻击倍率，不乘原倍率。",
     "source_formula": "{0}%",
     "cooldown_group": "akane_e",
     "personal_resource_gain": {
       "弦能": 6
     },
-    "personal_resource_scale_with_damage_ratio": true
+    "personal_resource_scale_with_damage_ratio": true,
+    "multipliers_add_by_awakening_node": {
+      "3": {
+        "atk": 12
+      }
+    }
   },
   {
     "id": "action_akane_hold_e",
@@ -10398,7 +10403,7 @@
     "duration_seconds": 1.2,
     "duration_ticks": 12,
     "multipliers": {
-      "atk": 4.5,
+      "atk": 3.6,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10415,7 +10420,7 @@
     ],
     "source_row": 39,
     "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
     "source_formula": "{0}%*2",
     "cooldown_group": "akane_e",
     "personal_resource_gain": {
@@ -10453,14 +10458,19 @@
     ],
     "source_row": 41,
     "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 三觉共鸣额外增加1200%攻击倍率，读取独立共鸣开关。",
     "source_formula": "{0}%",
     "personal_resource_cost": {
       "弦能": 30
     },
     "personal_resource_cost_on_hit": true,
     "required_buff_key": "character_akane_mode",
-    "required_buff_name": "泛音列或音域"
+    "required_buff_name": "泛音列或音域",
+    "multipliers_add_by_awakening_resonance": {
+      "3": {
+        "atk": 12
+      }
+    }
   },
   {
     "id": "action_akane_q1",
@@ -10477,24 +10487,24 @@
     "duration_seconds": 0.0,
     "duration_ticks": 0,
     "multipliers": {
-      "atk": 0.9,
+      "atk": 7.2,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "hit_count": 1,
+    "hit_count": 10,
     "energy_gain": 0.0,
     "harmony": 0.0,
     "stagger": 0.15,
-    "cooldown_ticks": 250,
+    "cooldown_ticks": 200,
     "energy_cost": 100,
     "source_rows": [
       42
     ],
     "source_row": 42,
     "duration_source": "existing-time-stop",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 终结耗能100按Nanoka NTE 1.4.6角色1057参数行核对。",
-    "source_formula": "{0}%",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 Q1改为10段、总倍率720%，原聚合倾陷0.15保持不放大。",
+    "source_formula": "{0}%*10",
     "is_time_stop_zero": true
   },
   {
@@ -10511,7 +10521,7 @@
     "duration_seconds": 0.0,
     "duration_ticks": 0,
     "multipliers": {
-      "atk": 12.0,
+      "atk": 10.2,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10523,11 +10533,16 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "duration_source": "existing-time-stop",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 三觉共鸣额外增加1200%攻击倍率，读取独立共鸣开关。",
     "source_formula": "{0}%",
     "is_time_stop_zero": true,
     "action_sequence": "akane_ultra",
     "max_uses_per_action_sequence": 1,
-    "action_sequence_usage_warning": "同一次音障爆鸣的第二段只能布置1次。"
+    "action_sequence_usage_warning": "同一次音障爆鸣的第二段只能布置1次。",
+    "multipliers_add_by_awakening_resonance": {
+      "3": {
+        "atk": 12
+      }
+    }
   }
 ]

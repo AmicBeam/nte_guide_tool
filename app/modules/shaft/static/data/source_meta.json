@@ -137,20 +137,14 @@
     "checked_at": "2026-10-09",
     "everness": "按明音凛检索无匹配",
     "estimates": {
-      "base_stats": "已由Nanoka 1.4.6的80级实值替换；历史暂估660/15000/900。",
-      "string_per_hit": "2026-09-21暂估；2026-09-24改为按整次动作发放",
-      "delay_interval_seconds": 3,
-      "delay_base_multiplier": 2,
-      "delay_remaining_second_bonus": 0.2,
-      "delay_bonus_cap": 2,
-      "delay_proc_seconds": 1
+      "base_stats": "已由Nanoka 1.4.6的80级实值替换；历史暂估660/15000/900。"
     },
     "interpretation": "2026-09-21当时口径：单敌传导按本次普攻结算一次；长E曾按400%+160%；强化E曾沿用500%。",
     "ntedata": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "ntedata_revision": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
     "ntedata_version": "1.4.10.566418",
     "nanoka_url": "https://static.nanoka.cc/nte/1.4.6/zh/character/1057.json",
-    "user_override": "用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。",
+    "user_override": "本轮：传导基础40%/60%、E觉70%/90%，弦刃与羽刃回响均可传导；华彩仍不模拟，Q2手动。",
     "ntedata_sources_sha256": {
       "DataTable_Skill_GlobalCharacterData_DT_AkaneEffectFigure.json": "0101ab9125b447b41042f44b75b45c791080d24a2f3d09d7dd80d59819c2199e",
       "DataTable_Skill_DT_SkillDamageData.json": "9c36e94b9b452b88d2160385dc7f6453e1584063c3020e33657e03773f77bf7a",
@@ -160,9 +154,9 @@
     },
     "nanoka_sha256": "1569f5e6f61793d7accd2b95af5ca16d445655fb5ca3d3975d3db4d7394dd5d3",
     "conflicts": {
-      "area_transmission": "最新曲线50%/90%、文本36%/60%；用户确认沿用36%/60%。",
+      "area_transmission": "最新用户文档基础40%/60%，E觉由用户明确补充70%/90%，覆盖旧版本与文档E觉旧段落。",
       "talent2": "上游文本自身伤害20%/25秒、曲线伤害30%/20秒；用户确认采用自身攻击力30%/20秒。",
-      "passive1": "X参数仍未填，保留暂估3秒、200%、每秒20%、上限200%、1秒CD。"
+      "passive1": "最新用户文档明确3秒、200%、每秒20%、上限160%、1秒CD以及变轨分类，已接入。"
     },
     "cadenza_source": {
       "seconds": 20,
@@ -179,9 +173,17 @@
         "q2_ability": "7f3789146a55de4bacb259735f77bb58d1f3d1af5ce939d7f80710deb43f214a"
       },
       "implemented": false,
-      "implementation_note": "用户2026-10-09最新要求暂不模拟华彩；Q2由用户手动布置，不验证前后半或持续窗口，重复Q2仅按两次Q1之间最多1次自检。"
+      "implementation_note": "用户2026-10-09最新要求暂不模拟华彩；Q2由用户手动布置，不验证前后半或持续窗口，重复Q2仅按两次Q1之间最多1次自检。",
+      "latest_tencent_unlock_seconds": 4
     },
     "curtain_source": "Nanoka NTE1.4.6角色1057：每个Ⅲ型驱动攻击力+10%，2026-10-09启用排轴，fixed属性纠正历史0值及错误属性/类型。",
-    "q2_self_check": "用户2026-10-09：Q1重置序列，Q2手动、最多1次；重复提示但继续计算。独立Q2也可试算。"
+    "q2_self_check": "用户2026-10-09：Q1重置序列，Q2手动、最多1次；重复提示但继续计算。独立Q2也可试算。",
+    "latest_tencent_source": {
+      "url": "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y?p=vwOdEFsBKeWF9RTVzLN68S",
+      "content_sha256": "ccbfbfb9f4201e8348eb8a229d0d399ae14cfb980772102441435b2ffa3f1f93",
+      "priority": "本轮最新腾讯文档倍率、弦能、传导、绝对音准和全部觉醒/共鸣；普攻环合按用户确认保留NTEData原逐段值。"
+    },
+    "harmony_source_note": "用户确认保留NTEData原逐段环合，普攻合计24.899，不缩放至文档概述24。",
+    "latest_awakening_source": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
   }
 }

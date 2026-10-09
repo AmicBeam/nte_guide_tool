@@ -990,9 +990,11 @@
       "source": "绝对音准",
       "atk_multiplier": 2,
       "bonus_per_remaining_second": 0.2,
-      "max_bonus": 2,
+      "max_bonus": 1.6,
       "cooldown_ticks": 10,
-      "source_note": "文档X参数暂估：基础200%、每剩余秒20%、上限200%、触发间隔1秒。"
+      "source_note": "最新用户腾讯文档明确：变轨技能伤害，基础200%，每剩余秒整体+20%，上限160%，同目标1秒间隔；不再按X暂估。",
+      "damage_type": "E",
+      "skill_level_category": "skill"
     }
   },
   {

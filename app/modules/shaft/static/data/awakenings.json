@@ -846,45 +846,51 @@
   "明音凛": [
     {
       "title": "A觉·教室后的吉他谱",
-      "description": "暴击率+12%；同调共振命中后回复100%基础攻击力生命。",
-      "implemented": true
+      "description": "同调共振命中后回复600%基础攻击力生命，并获得50%抗打断12秒。",
+      "implemented": true,
+      "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
     },
     {
       "title": "B觉·琴行中的变调夹",
-      "description": "泛音列目标全抗-7.5%；音域内前台角色伤害+12.5%。",
-      "implemented": true
+      "description": "泛音列附着目标或音域内目标相属性抗性降低12%。",
+      "implemented": true,
+      "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
     },
     {
       "title": "C觉·树荫下的胶囊罐",
-      "description": "点按E倍率提高150%；范围扩大与聚怪不参与单敌伤害计算。",
-      "implemented": true
+      "description": "点按E额外增加1200%攻击倍率；音域范围扩大25%与聚怪不参与单敌伤害。",
+      "implemented": true,
+      "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
     },
     {
       "title": "D觉·耳机里的底噪声",
-      "description": "同调共振后攻击+16%，持续10秒。",
-      "implemented": true
+      "description": "同调共振后无视防御+16%，持续10秒。",
+      "implemented": true,
+      "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
     },
     {
       "title": "E觉·乐队间的节拍器",
-      "description": "泛音列传导倍率提升至50%；音域传导增伤提升至60%。",
+      "description": "泛音列传导倍率提升至70%；音域传导增伤提升至90%，弦刃与羽刃回响均可传导。",
       "implemented": true,
-      "source_note": "用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。"
+      "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
     },
     {
       "title": "F觉·舞台前的超新星",
-      "description": "烁星激昂额外使全队伤害+10%，持续20秒。",
+      "description": "烁星激昂额外使自身暴击率+10%、暴击伤害+20%，持续20秒。",
       "implemented": true,
-      "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
+      "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
     },
     {
       "title": "三觉共鸣·全音阶",
-      "description": "普攻、变轨、终结技能等级+1，攻击+20%。",
-      "implemented": true
+      "description": "普攻、变轨、终结技能等级+1，攻击+10%；同调共振与Q2各额外增加1200%攻击倍率。",
+      "implemented": true,
+      "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
     },
     {
       "title": "六觉共鸣·复调式",
-      "description": "非循环入战30弦能；同调共振后返还10弦能并获得50%暴伤25秒。",
-      "implemented": true
+      "description": "非循环入战30弦能；同调共振后返还10弦能并获得60%暴伤25秒。",
+      "implemented": true,
+      "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
     }
   ]
 }

@@ -524,6 +524,8 @@
       all_dmg: '伤害',
       final_dmg: '最终伤害',
       base_multiplier_pct: '基础倍率',
+      base_atk_multiplier_add: '额外攻击倍率',
+      interrupt_resistance: '抗打断',
     };
     if (String(key).startsWith('element_dmg_')) return `${String(key).slice('element_dmg_'.length)}属性伤害`;
     return labels[key] || (String(key).startsWith('res_down_') ? `${String(key).slice('res_down_'.length)}属性抗性降低` : '');
@@ -5358,7 +5360,7 @@
       dodge_counter_dmg: '闪反增伤',
       skill_dmg: '变轨增伤', ultimate_dmg: '终结增伤', follow_dmg: '追击增伤',
       mind_dmg: '心灵增伤', attach_dmg: '附着增伤',
-      all_dmg: '全伤增伤', other_dmg: '其他增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升',
+      all_dmg: '全伤增伤', other_dmg: '其他增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升', base_atk_multiplier_add: '额外攻击倍率', interrupt_resistance: '抗打断',
     };
     const flatBuffEffects = new Set(['flat_atk', 'flat_hp', 'flat_def', 'harmony_strength', 'stagger_strength']);
     const describeBuff = (buff) => {

@@ -25,22 +25,24 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(DEFAULT_UNPUBLISHED_CHARACTERS[CID], '明音凛')
         self.assertEqual(next(a['id'] for a in c['arcs'] if a['adaptation'] == '液态'), ARC)
         self.assertEqual(actions['a1']['hit_count'], 2)
-        self.assertAlmostEqual(actions['a1']['multipliers']['atk'], .552)
+        self.assertAlmostEqual(actions['a1']['multipliers']['atk'], .332)
         self.assertEqual(actions['a2']['hit_count'], 2)
-        self.assertAlmostEqual(actions['a2']['multipliers']['atk'], .81)
+        self.assertAlmostEqual(actions['a2']['multipliers']['atk'], .486)
         self.assertEqual(actions['a3']['hit_count'], 7)
-        self.assertAlmostEqual(actions['a3']['multipliers']['atk'], 1.351)
+        self.assertAlmostEqual(actions['a3']['multipliers']['atk'], .945)
         self.assertAlmostEqual(actions['a3']['energy_gain'], 5.442)
-        self.assertEqual(actions['a3']['hit_profile']['cumulative'][3]['damage'], .495)
+        self.assertEqual(actions['a3']['hit_profile']['cumulative'][3]['damage'], .345)
         self.assertEqual(actions['援护']['damage_type'], '援护')
         self.assertEqual(actions['闪反']['damage_type'], '闪反')
         self.assertAlmostEqual(actions['援护']['multipliers']['atk'], 2)
         self.assertAlmostEqual(actions['援护']['energy_gain'], 6.5)
-        self.assertAlmostEqual(actions['闪反']['multipliers']['atk'], .25)
-        self.assertAlmostEqual(actions['q1']['multipliers']['atk'], .9)
+        self.assertAlmostEqual(actions['闪反']['multipliers']['atk'], 1.375)
+        self.assertAlmostEqual(actions['q1']['multipliers']['atk'], 7.2)
+        self.assertEqual(actions['q1']['hit_count'],10)
+        self.assertEqual(actions['q1']['cooldown_ticks'],200)
         self.assertEqual(actions['q1']['energy_cost'], 100)
         self.assertAlmostEqual(actions['q1']['stagger'], .15)
-        self.assertAlmostEqual(actions['q2']['multipliers']['atk'], 12)
+        self.assertAlmostEqual(actions['q2']['multipliers']['atk'], 10.2)
         self.assertAlmostEqual(actions['同调共振']['multipliers']['atk'], 11.25)
         self.assertFalse(any(a.get('source_row') in (31, 38) for a in actions.values()))
 
@@ -49,9 +51,9 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(r['details'][0]['personal_resources_after']['弦能'], 30)
         self.assertEqual(r['details'][1]['personal_resources_consumed']['弦能'], 30)
         self.assertEqual(r['details'][1]['personal_resources_after']['弦能'], 10)
-        self.assertEqual(r['details'][2]['personal_resources_after']['弦能'], 14)
+        self.assertEqual(r['details'][2]['personal_resources_after']['弦能'], 12)
         self.assertTrue(r['healing_events'])
-        self.assertEqual(r['healing_events'][0]['healing'], 636)
+        self.assertEqual(r['healing_events'][0]['healing'], 636*6)
         poor = self.sim([('enhanced_e', 0)])['details'][0]
         self.assertTrue(any('弦能' in w for w in poor['warnings']))
         self.assertTrue(any('泛音列或音域' in w for w in poor['warnings']))
@@ -62,7 +64,7 @@ class AkaneTest(unittest.TestCase):
         partial_result = simulate_shaft_axis(partial)['result']
         before = partial_result['details'][0]['personal_resources_after']['弦能']
         self.assertAlmostEqual(partial_result['details'][1]['personal_resources_after']['弦能'],
-                               before + 4 * .495 / 1.351)
+                               before + 2 * .345 / .945)
         detail = partial_result['details'][1]
         self.assertAlmostEqual(detail['energy_gain'], 2.046)
         self.assertAlmostEqual(detail['harmony'], 3.42)
@@ -77,13 +79,14 @@ class AkaneTest(unittest.TestCase):
         enhanced_result = simulate_shaft_axis(enhanced)['result']
         self.assertEqual(enhanced_result['details'][1]['personal_resources_after']['弦能'], 30)
         self.assertFalse(enhanced_result['healing_events'])
+        self.assertEqual(enhanced_result['details'][1]['direct_damage'],0)
 
     def test_modes_exclude_each_other_and_expire(self):
         r = self.sim([('e', 0), ('a1', 12), ('hold_e', 170), ('a1', 184), ('a1', 440)], nodes=[2,5])
         single, area, expired = [r['details'][i] for i in [1,3,4]]
-        self.assertAlmostEqual(single['formula_parts']['base_multiplier_factor'], 1.5)
+        self.assertAlmostEqual(single['formula_parts']['base_multiplier_factor'], 1.7)
         self.assertAlmostEqual(area['formula_parts']['base_multiplier_factor'], 1)
-        self.assertAlmostEqual(area['formula_parts']['dmg_bonus'] - expired['formula_parts']['dmg_bonus'], .725)
+        self.assertAlmostEqual(area['formula_parts']['dmg_bonus'] - expired['formula_parts']['dmg_bonus'], .9)
         self.assertNotIn('character_akane_transmit_single', {b['rule_id'] for b in area['applied_buffs']})
         self.assertFalse(any('character_akane_transmit' in b['rule_id'] for b in expired['applied_buffs']))
 
@@ -99,7 +102,7 @@ class AkaneTest(unittest.TestCase):
         late = self.sim([('q1', 0), ('q2', 110)])
         q2 = late['details'][1]
         self.assertFalse(any('不能使用' in warning or '华彩连段' in warning for warning in q2['warnings']))
-        self.assertAlmostEqual(q2['formula_parts']['raw_base'] / q2['panel']['atk'], 12)
+        self.assertAlmostEqual(q2['formula_parts']['raw_base'] / q2['panel']['atk'], 10.2)
         self.assertAlmostEqual(q2['stagger_amount'], 1.5)
         self.assertAlmostEqual(late['details'][0]['stagger_amount'], .15)
         self.assertAlmostEqual(late['summary']['character_damage'], sum(d['direct_damage'] for d in late['details']))
@@ -155,13 +158,15 @@ class AkaneTest(unittest.TestCase):
         self.assertTrue({'arc_akane_basic','arc_akane_element'} <= active)
         self.assertTrue({'arc_akane_basic','arc_akane_element'}.isdisjoint(expired))
 
-    def test_talent_is_attack_for_twenty_seconds_and_f_stays_damage(self):
-        for nodes, damage_bonus in [((),0),([6],.1)]:
+    def test_talent_is_attack_for_twenty_seconds_and_f_is_self_crit(self):
+        for nodes, crit_rate,crit_dmg in [((),0,0),([6],.1,.2)]:
             # q1 inserts five visual ticks; 230 is beyond 20 real seconds.
             details=self.sim([('q1',0),('a1',20),('a1',230)],nodes=nodes)['details']
             during,after=details[1:]
             self.assertAlmostEqual(during['panel']['atk']-after['panel']['atk'],636*.3)
-            self.assertAlmostEqual(during['formula_parts']['dmg_bonus']-after['formula_parts']['dmg_bonus'],damage_bonus)
+            self.assertAlmostEqual(during['formula_parts']['dmg_bonus']-after['formula_parts']['dmg_bonus'],0)
+            self.assertAlmostEqual(during['panel']['crit_rate']-after['panel']['crit_rate'],crit_rate)
+            self.assertAlmostEqual(during['panel']['crit_dmg']-after['panel']['crit_dmg'],crit_dmg)
             b=next(b for b in during['applied_buffs'] if b['rule_id']=='character_akane_talent2')
             self.assertEqual(b['effects'],{'atk_pct':.3})
             self.assertEqual(b['end_tick']-b['start_tick'],200)
@@ -188,3 +193,44 @@ class AkaneTest(unittest.TestCase):
         area = self.sim([('hold_e', 0), ('enhanced_e', 20)])['details'][1]
         self.assertAlmostEqual(single['formula_parts']['base'] / single['panel']['atk'], 12.5)
         self.assertAlmostEqual(area['formula_parts']['base'] / area['panel']['atk'], 11.25)
+
+    def test_new_c_is_additive_and_resonance_can_be_toggled_independently(self):
+        def sim(resonances):
+            p=self.payload([('e',0),('enhanced_e',20),('q2',30)],nodes=[1,2,3])
+            p['team'][0]['awakening_resonances']=resonances
+            return simulate_shaft_axis(p)['result']['details']
+        off,on=sim([]),sim([3])
+        for rows in (off,on):
+            self.assertAlmostEqual(rows[0]['formula_parts']['raw_base']/rows[0]['panel']['atk'],16)
+        self.assertAlmostEqual(off[1]['formula_parts']['raw_base']/off[1]['panel']['atk'],12.5)
+        self.assertAlmostEqual(on[1]['formula_parts']['raw_base']/on[1]['panel']['atk'],24.5)
+        self.assertAlmostEqual(off[2]['formula_parts']['raw_base']/off[2]['panel']['atk'],10.2)
+        self.assertAlmostEqual(on[2]['formula_parts']['raw_base']/on[2]['panel']['atk'],22.2)
+        self.assertAlmostEqual(on[1]['formula_parts']['skill_level_multiplier'],1.08)
+
+    def test_new_a_and_d_expire_and_b_is_phase_only_in_both_forms(self):
+        for form in ['e','hold_e']:
+            r=self.sim([(form,0),('enhanced_e',20),('a1',35),('a1',160)],nodes=[1,2,4])
+            during,after=r['details'][2:]
+            self.assertAlmostEqual(during['panel']['interrupt_resistance'],.5)
+            self.assertAlmostEqual(after['panel']['interrupt_resistance'],0)
+            self.assertAlmostEqual(during['formula_parts']['def_ignore'],.16)
+            self.assertAlmostEqual(after['formula_parts']['def_ignore'],0)
+            self.assertAlmostEqual(during['panel']['crit_rate'],after['panel']['crit_rate'])
+            b=next(x for x in during['applied_buffs'] if x['rule_id'].startswith('character_akane_b_'))
+            self.assertEqual(b['effects'],{'res_down_相':.12})
+
+    def test_counter_gets_transmission_and_passive_is_skill_damage(self):
+        for form,factor,bonus in [('e',1.7,0),('hold_e',1,.9)]:
+            rows=self.sim([(form,0),('counter',20),('counter',270)],nodes=[5])['details']
+            d,expired=rows[1:]
+            self.assertAlmostEqual(d['formula_parts']['base_multiplier_factor'],factor)
+            self.assertAlmostEqual(d['formula_parts']['dmg_bonus']-expired['formula_parts']['dmg_bonus'],bonus)
+        p=self.payload([('e',30),('a1',120)],arc=ARC)
+        p['team'].append(dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id=''))
+        p['steps'][:0]=[dict(id='front',slot=1,action_id='action_none_dd034941ef',start_tick=0),dict(id='support',slot=0,action_id='action_akane_support',start_tick=10)]
+        events=simulate_shaft_axis(p)['result']['periodic_damage_events']
+        hit=next(x for x in events if x['reaction']=='绝对音准')
+        self.assertEqual(hit['damage_type'],'E')
+        self.assertEqual(hit['formula_parts']['skill_level_category'],'skill')
+        self.assertGreaterEqual(hit['formula_parts']['damage_bonus'],.28)

@@ -86,26 +86,41 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual({c['entity_id'] for c in s['sides']['a']['hand']},
                          {cards[0]['entity_id'], cards[3]['entity_id']})
 
-    def test_witch_uses_one_top_effect_and_free_exit_keeps_buff(self):
+    def test_witch_divines_before_attack_and_free_exit_keeps_buff(self):
         s = witch(game())
-        top(s, ['P01', 'P01'])
+        cards = top(s, ['P01', 'P01'])
         s = apply_action(s, 'a', dict(type='attack', character_id='heiyu'))
+        self.assertEqual(s['phase'], 'choice')
+        self.assertEqual(s['sides']['b']['hp'], 100)
+        self.assertEqual(s['sides']['a']['ap'], 9)
+        self.assertEqual(s['sides']['a']['heiyu_divinations'], 1)
+        self.assertFalse(any(e.get('response') for e in s['events']))
+        s = confirm(clone_state(json.loads(json.dumps(s))), 'P01')
         self.assertEqual(s['sides']['b']['hp'], 96)
-        self.assertEqual([c['card_id'] for c in s['sides']['a']['deck']], ['P01'])
+        self.assertEqual([c['entity_id'] for c in s['sides']['a']['deck']], [cards[1]['entity_id']])
         self.assertEqual(hero(s, 'a', 'heiyu')['harmony'], 1)
+        self.assertEqual(s['sides']['a']['ap'], 9)
         before = observe(s, 'a')['sides']['a']
         s = apply_action(s, 'a', dict(type='exit_ultimate', character_id='heiyu'))
         after = observe(s, 'a')['sides']['a']
         self.assertEqual(after['ap'], before['ap'])
         self.assertEqual([c['attack'] for c in after['characters']], [c['attack'] for c in before['characters']])
 
-    def test_witch_p04_releases_after_original_attack_and_triggers_next_top(self):
+    def test_witch_p04_releases_after_original_attack_and_divines_again(self):
         s = witch(game())
-        top(s, ['P04', 'P01'])
+        top(s, ['P04', 'P01', 'Z01'])
         s = apply_action(s, 'a', dict(type='attack', character_id='heiyu'))
+        s = confirm(s, 'P04')
+        self.assertEqual(s['sides']['b']['hp'], 97)
+        self.assertEqual(s['phase'], 'choice')
+        self.assertEqual(s['operation']['card']['card_id'], 'P04')
+        self.assertTrue(s['operation']['release_only'])
+        self.assertEqual(s['sides']['a']['heiyu_divinations'], 2)
+        s = confirm(clone_state(json.loads(json.dumps(s))), 'P01')
         self.assertEqual(s['sides']['b']['hp'], 93)
-        self.assertEqual(s['sides']['a']['deck'], [])
+        self.assertEqual([c['card_id'] for c in s['sides']['a']['deck']], ['Z01'])
         self.assertEqual(len([e for e in s['events'] if e['type'] == 'attack' and e.get('actor') == 'a:heiyu']), 2)
+        self.assertEqual(s['sides']['a']['ap'], 9)
 
     def test_p03_draw_then_place_one_hand_card_at_either_end(self):
         from app.modules.card_game.engine.duel_v2.entities import entity_action
@@ -157,7 +172,7 @@ class HeiyuTest(unittest.TestCase):
             with self.subTest(top=top_ids, bottom=bottom_ids), self.assertRaises(ValueError):
                 apply_action(s, 'a', dict(type='choose_deck_order', card_ids=top_ids, bottom_card_ids=bottom_ids))
 
-    def test_p03_does_not_trigger_bottomed_cards_divination_benefit(self):
+    def test_p03_hand_placement_does_not_trigger_divination_benefits(self):
         s = game()
         drawn = top(s, ['P05'])[0]
         s = play(s, 'P03')
@@ -165,15 +180,20 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(s['sides']['a']['hand'], [])
         self.assertTrue(any(c['entity_id'] == drawn['entity_id'] for c in s['sides']['a']['deck']))
 
-    def test_p03_witch_sortie_still_checks_placed_top_card(self):
+    def test_p03_witch_sortie_divines_after_hand_placement(self):
         s = witch(game())
         drawn = top(s, ['P05', 'Z02'])[0]
         s = play(s, 'P03')
         s = apply_action(s, 'a', dict(type='choose_deck_order', card_ids=[drawn['instance_id']], bottom_card_ids=[]))
+        self.assertEqual(s['pending_choice']['kind'], 'heiyu_divination')
+        self.assertEqual(s['sides']['b']['hp'], 100)
+        self.assertEqual(s['sides']['a']['heiyu_divinations'], 1)
+        s = confirm(s, 'P05')
+        self.assertEqual(s['phase'], 'playing')
         self.assertEqual(s['sides']['a']['front'], 'heiyu')
         self.assertEqual([c['entity_id'] for c in s['sides']['a']['hand']], [drawn['entity_id']])
-        self.assertEqual(s['sides']['a'].get('heiyu_divinations', 0), 0)
-        self.assertTrue(any(e['type'] == 'reveal' and e['card']['entity_id'] == drawn['entity_id'] for e in s['events']))
+        self.assertEqual(s['sides']['b']['hp'], 96)
+        self.assertEqual(s['sides']['a']['ap'], 9)
 
     def test_p03_empty_draw_ends_game_before_choice_or_sortie(self):
         s = game()
@@ -184,6 +204,69 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(s['winner'], 'b')
         self.assertIsNone(s['pending_choice'])
         self.assertIsNone(s['sides']['a']['front'])
+
+    def test_divination_inspects_at_least_two_with_one_living_esper(self):
+        for size in (0, 1, 2, 3):
+            with self.subTest(deck_size=size):
+                s = game()
+                for cid in TEAM[1:]: hero(s, 'a', cid).update(hp=0, down_turns=3)
+                cards = top(s, ['Z01', 'Z02', 'Z03'][:size])
+                s = play(s, 'PF01')
+                if size:
+                    self.assertEqual(len(s['pending_choice']['cards']), min(size, 2))
+                    self.assertEqual(s['pending_choice']['snapshot_n'], 2)
+                else:
+                    self.assertEqual(s['phase'], 'finished')
+
+    def test_p03_bottom_effect_draws_once_and_keeps_unrevealed_cards_private(self):
+        for magical in (False, True):
+            with self.subTest(witch=magical):
+                s = witch(game()) if magical else game()
+                cards = top(s, ['P03', 'Z01', 'Z02', 'Z03', 'Z04'])
+                s = play(s, 'P05')
+                self.assertTrue(s['pending_choice']['execute_divination'])
+                s = confirm(s, 'P03')
+                self.assertEqual([c['entity_id'] for c in s['sides']['a']['hand']], [cards[1]['entity_id']])
+                self.assertEqual([c['entity_id'] for c in s['sides']['a']['deck']],
+                                 [c['entity_id'] for c in (cards[2], cards[3], cards[4], cards[0])])
+                self.assertNotIn(cards[1]['entity_id'], str(observe(s, 'b')))
+
+    def test_p07_grants_team_instant_sortie_and_p08_restores_exactly_one(self):
+        from app.modules.card_game.engine.duel_v2.flow import normal_attack_payment
+        s = game()
+        top(s, ['P07', 'Z01', 'Z02', 'Z03', 'Z04', 'Z05'])
+        s = confirm(play(s, 'P05'), 'P07')
+        s['sides']['a']['ap'] = 0
+        for cid in TEAM:
+            self.assertEqual(normal_attack_payment(s, 'a', cid), {'ap': 0, 'normal': False, 'resource': 'instant'})
+        s = apply_action(s, 'a', dict(type='attack', character_id='zero'))
+        self.assertTrue(s['sides']['a']['used']['instant'])
+        self.assertTrue(s['sides']['a']['normal_attack_available'])
+        self.assertEqual(normal_attack_payment(s, 'a', 'zero')['ap'], 1)
+        s['sides']['a']['ap'] = 1
+        top(s, ['P08', 'Z01', 'Z02', 'Z03', 'Z04'])
+        s = confirm(play(s, 'P05'), 'P08')
+        self.assertFalse(s['sides']['a']['used']['instant'])
+        s = apply_action(s, 'a', dict(type='attack', character_id='nanali'))
+        self.assertTrue(s['sides']['a']['used']['instant'])
+        self.assertEqual(s['sides']['a']['ap'], 0)
+        s = apply_action(s, 'a', dict(type='end_turn'))
+        self.assertFalse(any(e.get('property') == 'rule.normal_attack_instant' for e in s['sides']['a'].get('effects', [])))
+
+    def test_instant_sortie_grant_preserves_bans_and_precedes_other_payment_offers(self):
+        from unittest.mock import patch
+        from app.modules.card_game.content.duel_v2.registry import KITS
+        from app.modules.card_game.engine.duel_v2.flow import normal_attack_payment
+        s = game()
+        top(s, ['P07', 'Z01', 'Z02', 'Z03'])
+        s = confirm(play(s, 'P05'), 'P07')
+        with patch.object(KITS['zero'], 'normal_attack_payment', staticmethod(lambda c, current: False), create=True):
+            self.assertIsNone(normal_attack_payment(s, 'a', 'zero'))
+        offer = {'ap': 1, 'normal': False, 'resource': 'jingu', 'bonus': 2}
+        with patch.object(KITS['zero'], 'normal_attack_payment', staticmethod(lambda c, current: offer), create=True):
+            self.assertEqual(normal_attack_payment(s, 'a', 'zero'), {'ap': 0, 'normal': False, 'resource': 'instant'})
+            s['sides']['a']['used']['instant'] = True
+            self.assertEqual(normal_attack_payment(s, 'a', 'zero'), offer)
 
     def test_p05_uses_previous_count_then_divines_and_p08_advances_owned_card(self):
         s = game()

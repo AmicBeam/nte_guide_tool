@@ -55,6 +55,8 @@ class CardReleaseTimingTest(unittest.TestCase):
         hero(s,'a','haniya')['shape']=None
         card=card_instance(s,'P04','a'); s['sides']['a']['deck']=[card]
         seq=s['event_seq']; after=apply_action(s,'a',dict(type='attack',character_id='heiyu'))
+        self.assertEqual(after['phase'],'choice')
+        after=apply_action(after,'a',dict(type='choose_deck_order',card_ids=[],bottom_card_ids=[card['instance_id']]))
         events=[e for e in after['events'] if e['seq']>seq]
         releases=[e for e in events if e['type']=='play' and (e.get('card') or {}).get('card_id')=='P04']
         self.assertEqual(len(releases),1); self.assertTrue(releases[0]['release_only'])

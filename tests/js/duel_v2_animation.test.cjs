@@ -1298,7 +1298,7 @@ test("derived and copied deck draws use one draw animation and one hand patch", 
   }
 });
 
-test("witch reveals use the deck and show public cards to either viewer without touching hand cards", async () => {
+test("legacy deck responses show public cards to either viewer without touching hand cards", async () => {
   for (const side of ["a", "b"]) {
     const harness = makeRoot();
     const card = publicCard();
@@ -1339,4 +1339,19 @@ test("public basic divination reveals own card without a response title", async 
   await settle(player.play([{seq: 942, type: "reveal", side: "a", response: false,
     card_source: "deck", card: publicCard(), patch: {}}]), harness.clock, player);
   assert.equal(reveals, 1);
+});
+
+test("divination releases reveal publicly to both viewers without response or a duplicate play animation", async () => {
+  for (const side of ["a", "b"]) {
+    const harness = makeRoot();
+    const order = [];
+    const player = new Player({root: harness.root, clock: harness.clock, applyPatch() {order.push("patch");}});
+    player._presentHarmony = async () => assert.fail("divination must not announce a response");
+    player._presentPlay = async () => {order.push("reveal");};
+    await settle(player.play([
+      {seq: 950, type: "reveal", side, actor: side + ":heiyu", response: false, card_source: "deck", card: publicCard(), patch: {}},
+      {seq: 951, type: "play", side, actor: side + ":heiyu", present: false, release_only: true, card: publicCard(), patch: {}},
+    ]), harness.clock, player);
+    assert.deepEqual(order, ["reveal", "patch", "patch"]);
+  }
 });

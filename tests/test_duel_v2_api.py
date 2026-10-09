@@ -106,6 +106,44 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self.assertEqual(sum(c['entity_id'] == selected['entity_id'] for c in saved['sides']['a']['deck']), 1)
         self.assertNotIn(selected['entity_id'], json.dumps(observe(saved, 'b')))
 
+    def test_witch_sortie_waits_for_private_reloadable_choice_and_pays_once(self):
+        from tests.test_duel_v2_heiyu import game, witch, top
+        from app.modules.card_game.engine.application import v2_replay
+        self._pvp()
+        state = witch(game())
+        cards = top(state, ['P01', 'Z01', 'Z02', 'Z03', 'Z04'])
+        cursor = state['event_seq']
+        room = self.repository.room_by_code(self.code)
+        self.storage.initialize(room, {'rules_version': 'duel_v2', 'game': state, 'requests': []})
+        v2_replay.begin(room, state)
+        view = self._get('/api/duel-v2/state', token=self.a)['game']
+        entry = next(e for e in view['legal_actions'] if e['action'] == dict(type='attack', character_id='heiyu'))
+        request = dict(room_code=self.code, request_id='witch-sortie', expected_version=view['version'], action=entry['entity_action'])
+        waiting = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        self.assertEqual(waiting['phase'], 'choice')
+        self.assertEqual(waiting['sides']['b']['hp'], 100)
+        self.assertEqual(waiting['sides']['a']['ap'], 9)
+        retried = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        self.assertEqual(retried['version'], waiting['version'])
+        self.assertTrue(self.storage.flush(5))
+        self.storage.clear_cache()
+        loaded = self._get('/api/duel-v2/state', token=self.a)['game']
+        foe = self._get('/api/duel-v2/state', token=self.b)['game']
+        self.assertEqual(foe['pending_choice']['choices'], [])
+        action = dict(type='choose_deck_order', card_ids=[c['id'] for c in loaded['pending_choice']['choices'] if c['id'] != cards[0]['instance_id']],
+                      bottom_card_ids=[cards[0]['instance_id']])
+        entry = next(e for e in loaded['legal_actions'] if e['action'] == action)
+        request = dict(room_code=self.code, request_id='witch-order', expected_version=loaded['version'], action=entry['entity_action'])
+        final = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        retried = self._post('/api/duel-v2/action', request, token=self.a)['game']
+        self.assertEqual(final['version'], retried['version'])
+        self.assertEqual(final['phase'], 'playing')
+        self.assertEqual(final['sides']['b']['hp'], 96)
+        self.assertEqual(final['sides']['a']['ap'], 9)
+        events = [e for e in final['presentation']['events'] if e['seq'] > cursor]
+        self.assertEqual(sum(e['type'] == 'attack' for e in events), 1)
+        self.assertFalse(any(e.get('response') for e in events))
+
     def test_heiyu_order_and_free_exit_are_private_idempotent_and_reloadable(self):
         from app.modules.card_game.content.duel_v2 import CARDS, validate_deck
         from app.modules.card_game.engine.duel_v2 import new_game, apply_action

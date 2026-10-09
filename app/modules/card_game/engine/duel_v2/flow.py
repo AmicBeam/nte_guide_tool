@@ -386,6 +386,11 @@ def normal_attack_payment(state, side, cid):
         return None
     offer = decide(EffectContext(state, side, cid, {'side': side, 'actor': cid}),
                    'normal_attack_payment', default, actor_only=True)
+    from .modifiers import evaluate
+    instant = evaluate(state, side, hero(state, side, cid), 'rule.normal_attack_instant', False)['value']
+    if (instant and not team['used'].get('instant')
+            and (offer is None or isinstance(offer, dict))):
+        offer = {'ap': 0, 'normal': False, 'resource': 'instant'}
     if isinstance(offer, dict) and hero(state, side, cid).get('flags', {}).get('free_normal_attack_turn') == state['turn']:
         offer = {**offer, 'ap': 0}
     return offer if isinstance(offer, dict) else None
@@ -1069,6 +1074,8 @@ def apply_action(state, side, action):
         team['ap'] -= payment['ap']
         if payment.get('normal'):
             team['normal_attack_available'] = False
+        if payment.get('resource') == 'instant':
+            team['used']['instant'] = True
         c = operation(result, side, cid)
         if candidate.get('target_id'):
             c.operation['target_id'] = candidate['target_id']

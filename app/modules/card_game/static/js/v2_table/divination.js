@@ -99,7 +99,7 @@
           '两行均可拖动排序；第二行可放多张牌。' + (state.minBottom ? '谕石至少置底 1 张。' : '可以不置底。')) + '</p></header>' +
         (state.handPlacement ? zone('source', '手牌', '其余手牌保留', state.sourceIds, '手牌已选入下方区域') : '') +
         zone('top', '牌库顶', '从左到右依次抽取', state.topIds, '拖到这里放回牌库顶') +
-        zone('bottom', '牌库底', state.handPlacement ? '所选牌放在牌库最后' : '基础形态按从左到右结算占卜效果', state.bottomIds,
+        zone('bottom', '牌库底', state.handPlacement ? '所选牌放在牌库最后' : '按从左到右结算占卜效果', state.bottomIds,
           state.handPlacement ? '拖到这里放回牌库底' : (state.minBottom ? '至少拖入 1 张牌' : '可拖入多张牌，也可以留空')) +
         '<footer><span class="v2-divination-status" role="status" aria-live="polite">' + V2.escapeHtml(message || (state.handPlacement ? '请选择 1 张手牌及放置位置。' : '')) +
         '</span><button class="primary-btn" id="v2-divination-confirm" type="button">确定</button></footer></div>';

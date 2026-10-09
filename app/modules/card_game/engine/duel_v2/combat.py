@@ -1,4 +1,5 @@
 """Sortie, harmony, simultaneous damage, and timing hooks for character kits."""
+from copy import deepcopy
 from app.modules.card_game.content.duel_v2.registry import decide, fire, genesis_flowers, tally
 from app.modules.card_game.engine.events import GameEvent
 from .state import (PLAYER_ID, add_collapse, alive, attack_value, collapsed, damage, energy,
@@ -548,6 +549,23 @@ def sortie(c, **spec):
         return
     if not finished(s) and alive(s, side, cid):
         fire(c, 'on_sortie_ready', actor_id=cid, response=False)
+    if _attack_stopped(c):
+        return
+    if s['phase'] == 'choice':
+        op['pending_sortie'] = dict(spec=deepcopy(spec), stay_bench=stay_bench)
+        return
+    _finish_sortie(c, spec, stay_bench)
+
+
+def resume_sortie(c):
+    """Continue a serialized sortie without re-entering or repeating ready hooks."""
+    pending = c.operation.pop('pending_sortie', None)
+    if pending is not None:
+        _finish_sortie(c, pending['spec'], pending['stay_bench'])
+
+
+def _finish_sortie(c, spec, stay_bench):
+    s, side, cid = c.state, c.side, c.cid
     if _attack_stopped(c):
         return
     fire(c, 'before_hits', actor_only=True)

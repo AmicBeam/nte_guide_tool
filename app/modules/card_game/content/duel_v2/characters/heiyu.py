@@ -12,7 +12,7 @@ from app.modules.card_game.engine.duel_v2.state import (
 )
 
 
-DIVINATION_CARDS = frozenset(('P01', 'P02', 'P04', 'P05', 'P06'))
+DIVINATION_CARDS = frozenset(f'P{i:02d}' for i in range(1, 9))
 
 
 def living_espers(state, side):
@@ -45,14 +45,14 @@ def _detach(c, card):
         team[zone] = [item for item in team[zone] if item['entity_id'] != card['entity_id']]
 
 
-def _reveal(c, card, *, response=False):
+def _reveal(c, card):
     from app.modules.card_game.engine.duel_v2.presentation import public_card
     log(c.state, f"黑羽公开「{card['name']}」并发动占卜效果。", 'reveal',
-        side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}', card=public_card(card),
-        response=response, card_source='deck')
+        side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}', card=public_card(card, c.state, c.side),
+        response=False, card_source='deck')
 
 
-def _release(c, card, target=None):
+def _release(c, card, target=None, *, preserve_parent=True):
     """Release an effect without use triggers; preserve the enclosing operation."""
     from app.modules.card_game.engine.duel_v2.flow import resolve_release
     parent = c.state.get('operation')
@@ -63,7 +63,8 @@ def _release(c, card, target=None):
         # The preceding reveal already presents this card to both players.
         resolve_release(c.state, c.side, Heiyu.hand_card(c, card, card), target, present=False)
     finally:
-        c.state['operation'] = parent
+        if preserve_parent:
+            c.state['operation'] = parent
         if draining is None:
             c.state.pop('_draining_actions', None)
         else:
@@ -94,12 +95,12 @@ def start_inspection(c, *, after=None, min_bottom=0):
         c.operation['heiyu_after_divination'] = after
     if c.character.get('shape') == 'P08':
         _advance_owned(c)
-    count = len(living_espers(c.state, c.side))
+    count = max(2, len(living_espers(c.state, c.side)))
     cards, team['deck'] = team['deck'][:count], team['deck'][count:]
     if cards:
         c.choose('heiyu_divination', cards,
                  f'检视牌库顶 {len(cards)} 张牌：' + ('至少置底 1 张，其余自由排序。' if min_bottom else '可将任意数量置底，其余自由排序。'),
-                 deck_cards=True, deck_order=True, execute_divination=not in_witch(c),
+                 deck_cards=True, deck_order=True, execute_divination=True,
                  actor=c.cid, snapshot_n=count, min_bottom=min_bottom, continuation='heiyu.divination',
                  max_bottom=len(cards), multi_bottom=True)
     else:
@@ -114,16 +115,20 @@ def _resume_inspection(c):
         c.draw(1)
     elif after == 'sortie':
         c.sortie()
+    elif c.operation.get('pending_sortie') is not None:
+        from app.modules.card_game.engine.duel_v2.combat import resume_sortie
+        resume_sortie(c)
 
 
-def apply_divination_benefit(c, card, *, witch=False, revealed=False):
+def apply_divination_benefit(c, card, *, witch=False):
     if finished(c.state) or not card or card.get('card_id') not in DIVINATION_CARDS:
         return
-    if not revealed:
-        _reveal(c, card)
+    _reveal(c, card)
     card_id = card['card_id']
     if card_id == 'P01':
         if witch:
+            _detach(c, card)
+            discard(c.state, c.side, card)
             add_effect(c.character, 'heiyu.divination_attack', 'attack.hit', 1,
                        source_entity_id=c.entity_id, source_key=card['entity_id'],
                        clear_on=('battle', 'operation_end', 'down'), consume_on='attack',
@@ -135,8 +140,12 @@ def apply_divination_benefit(c, card, *, witch=False, revealed=False):
         targets = living_espers(c.state, other(c.side))
         if targets:
             _release(c, card, f'{other(c.side)}:{_rng(c.state).choice(targets)}')
+    elif card_id == 'P03':
+        c.draw(1)
     elif card_id == 'P04':
         if witch:
+            _detach(c, card)
+            discard(c.state, c.side, card)
             enqueue(c, 'heiyu_release_after_attack')
             c.state['deferred_actions'][-1]['card'] = card
         else:
@@ -160,6 +169,15 @@ def apply_divination_benefit(c, card, *, witch=False, revealed=False):
                     before={'hp': 0, 'down_turns': before}, after={'hp': h['hp'], 'down_turns': 0})
             else:
                 c.history(f"{h['name']}的倒地倒计时 -1。", target_id=cid)
+    elif card_id == 'P07':
+        add_effect(c.state['sides'][c.side], 'heiyu.instant_sortie', 'rule.normal_attack_instant', True,
+                   op='allow', scope='allies', stacking='replace', clear_on=(),
+                   source_entity_id=c.entity_id, source_key='P07',
+                   expiry=deadline(c.state, c.side, 0, 'turn_end'), label='通常出击可消耗瞬发机会')
+        c.history('「牧星者」：本回合通常出击可以消耗瞬发机会。')
+    elif card_id == 'P08':
+        c.state['sides'][c.side]['used']['instant'] = False
+        c.history('「不凋羽」：瞬发机会恢复为 1 次。')
 
 
 def _p01(c):
@@ -263,18 +281,12 @@ class Heiyu:
         if not in_witch(c):
             insert_omen(c)
             return
-        deck = c.state['sides'][c.side]['deck']
-        if deck and deck[0].get('card_id') in DIVINATION_CARDS:
-            card = deck.pop(0)
-            # Reveal and discard before resolving; P05 can then move this entity to hand.
-            _reveal(c, card, response=True)
-            discard(c.state, c.side, card)
-            apply_divination_benefit(c, card, witch=True, revealed=True)
+        start_inspection(c)
 
     @staticmethod
     def on_deferred_action(c, action):
         if action.get('kind') == 'heiyu_release_after_attack' and alive(c.state, c.side, c.cid):
-            _release(c, action['card'])
+            _release(c, action['card'], preserve_parent=False)
 
     @staticmethod
     def on_choice(c, selected):
@@ -290,18 +302,19 @@ class Heiyu:
         if current.get('kind') != 'heiyu_divination':
             return current
         return dict(current, multi_bottom=True, max_bottom=len(current['cards']),
-                    min_bottom=1 if (c.card or {}).get('card_id') == 'PF01' else 0)
+                    min_bottom=1 if (c.card or {}).get('card_id') == 'PF01' else 0,
+                    execute_divination=True)
 
     @staticmethod
     def on_deck_reorder(c, bottom=None, bottoms=None, execute_divination=None, **_data):
         if c.operation.pop('heiyu_after_placement', False):
             c.sortie()
             return
-        if not in_witch(c) and execute_divination is not False:
+        if execute_divination is not False:
             for card in (bottoms if bottoms is not None else ([bottom] if bottom else [])):
                 if finished(c.state) or not alive(c.state, c.side, c.cid):
                     break
-                apply_divination_benefit(c, card)
+                apply_divination_benefit(c, card, witch=in_witch(c))
         _resume_inspection(c)
 
     @staticmethod

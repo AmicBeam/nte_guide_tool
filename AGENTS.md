@@ -48,7 +48,7 @@
 ### 模型训练任务的默认阅读与执行顺序
 
 1. 先读本文件、`app/modules/card_game/README.md` 和 `docs/everness-item-chain-card-design.md`，确定本轮角色、配牌、现行规则与账号可见范围。
-2. 完整读取 `docs/duel-v2-public-training.md` 和 `docs/duel-v2-full-training-report-spec.md`。涉及配牌搜索时读 `docs/duel-v2-build-acceptance.md`；长训／恢复读停止标准；真红激励读专门奖励文档。 默认硬截止为北京时间上午09:00，具体日期按训练手册解析，用户另有指定时覆盖；不再因未单独提供时间而重复询问。
+2. 完整读取 `docs/duel-v2-public-training.md` 和 `docs/duel-v2-full-training-report-spec.md`。完整训练按 `docs/duel-v2-full-training-flow.md` 和项目技能 `.agents/skills/duel-v2-full-training-flow/SKILL.md` 执行：开始前集中确认是否包含换牌候选、带日期的截止时间是否为北京时间09:00、训练的高级人机及实际构筑范围。同一轮已明确回答的项沿用确认记录，不重复询问；推荐09:00不是自动批准。涉及配牌搜索时读 `docs/duel-v2-build-acceptance.md`；长训／恢复读停止标准；真红激励读专门奖励文档。
 3. 根据手册在运行配置中明确学习对象、冻结对手、配牌范围、搜索和奖励、选择／评估矩阵、独立种子、停学／验收／硬截止及完整回传清单。角色数量和对阵数量按本轮计算，历史数字只作示例。
 4. 复用手册规定的逐决策信息集搜索、策略／终局价值联合学习、检查点及择优流程，完成本轮预检和有界链路验证，再启动训练。用户已经授权的预算和范围直接执行，不因阅读手册重复请求许可。
 5. 停学后冻结权重，逐项执行完整评估矩阵，保存逐卡、角色、终结／环合和可复核录像所需原始记录；按实际结果核对质量及配牌接受条件。单个脚本退出或状态字段不代替验收清单。

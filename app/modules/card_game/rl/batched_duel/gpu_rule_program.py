@@ -89,7 +89,7 @@ def resolve_entry_names(requested: Iterable[str] | None = None) -> tuple[str, ..
     unknown = [name for name in names if name not in ENTRY_FUNCTIONS]
     if unknown:
         raise GpuRuleProgramError('Unknown GPU rule entries: ' + ','.join(unknown))
-    order = {name: index for index, name in enumerate(FULL_ENTRY_NAMES)}
+    order = {name: index for index, name in enumerate(ENTRY_FUNCTIONS)}
     return tuple(sorted(names, key=lambda name: order[name]))
 
 

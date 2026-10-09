@@ -45,6 +45,7 @@ def main(argv=None):
     from app.modules.card_game.engine.duel_v2 import new_game, apply_action
     from app.modules.card_game.engine.duel_v2.simulation import simulate_action
     from app.modules.card_game.rl import seven_runtime
+    from app.modules.card_game.rl.covered_rollout import rule_decision
     from app.modules.card_game.rl.information_search import sample_world
     from app.modules.card_game.rl.league_rollout import clean
     from app.modules.card_game.rl.batched_duel.gpu_rule_backend import GpuRuleBackend
@@ -83,6 +84,10 @@ def main(argv=None):
                     assert actions == expected_actions, (key, 'legal action order')
                     np.testing.assert_array_equal(x, xx)
                     np.testing.assert_array_equal(c, cc)
+                    teacher_actions, teacher_choice = backend.rule_decision(ref,side)
+                    expected_teacher_actions, expected_teacher_choice = rule_decision(state,side)
+                    assert teacher_actions == expected_teacher_actions, (key, 'teacher legal order')
+                    assert teacher_choice == expected_teacher_choice, (key, 'teacher choice')
                     sampled = backend.sample_world(ref, side, 2026100950 + len(report['cases']))
                     expected_sample = sample_world(state, side, 2026100950 + len(report['cases']), runtime=seven_runtime)
                     assert backend.export_states([sampled])[0] == expected_sample, (key, 'sample world')
@@ -97,7 +102,7 @@ def main(argv=None):
                     assert backend.export_states([committed])[0] == expected_commit, (key, 'physical action')
                     backend.release([ref, sampled, stepped, committed])
                     report['cases'].append({'key': key, 'mulligan': mulligan, 'passed': True,
-                                            'candidates': len(actions)})
+                                            'teacher_passed': True, 'candidates': len(actions)})
             report['backend_stats'] = backend.stats()
         report['device_verified'] = True
     except Exception as exc:

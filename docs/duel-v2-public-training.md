@@ -779,3 +779,24 @@ python scripts/train_duel_v2_fixed_n06.py --check --learner STARTER.pt --opponen
 截止预算须先预留最终矩阵、对照、回传和校验，按本次真实吞吐及至少25%余量设置实际停学时刻，全部阶段不越过用户截止。未训练够预算、提前停学、缺覆盖、失败／截断分别报告，不能以更新次数或文件名冒称完整质量批准。固定构筑最终至少包含先手为行／后手为列的五队N×N纯网络与搜索表、initial／selected／latest身份、同模型镜像与新旧交叉、真红指导开关和起手全留对照、逐卡／角色／终结／环合原始与真实录像。样本端点在新任务开始前声明；完全相同模型／构筑／推理条件可以显式引用同一实测数据，必须标明别名且不增加独立局数。
 
 已验证的批量推理可先用于父进程WDL校准统计，`value_metric_backend=cuda_batched`只替换数值概率查询，保持观察者行动标志、loss/draw/win顺序及完整局等权；原NumPy后端仍默认。CUDA前须在本轮真实公开观察上与NumPy对拍，TF32关闭，不接受静默CPU回退；初始选择哪个后端需记录。批量推理不等于完整GPU规则并发。另一个任务的GPU后端尚未完成时，已验证Python规则并行链路继续运行；只有同冻结规则／模型／随机与动作语义通过对拍和完整局验证的后端才能在新批次／阶段边界使用，旧在途批次和冻结源码不热改，截止不变。
+
+## 七队 GPU 搜索训练采样
+
+`scripts/train_duel_v2_current_round.py`默认使用`seven`。`recovery/cross`显式选项仅复现历史契约；当前七队训练通过`seven_round.run`复用完整局学习、逐批价值核验、历史冻结对手、独立闸门、择优／回退、两代恢复及冻结矩阵。候选配牌与完整报告仍按完整训练 Flow 的本轮合同另行编排，代码接入不启动训练或授予模型质量批准。
+
+`--device cuda`选择网络优化设备，`--rule-backend cuda_vm`才选择GPU搜索采样；默认`serial_cpu`保留正式Python采样，`resident_cpu`提供显式混合批量路径。GPU采样由`rl/batched_search/training_rollout.py`复用协作Gumbel遍历、设备规则／公开编码、FP32批量推理及设备统计。`network`仅用于有界诊断；正式入口保持`covered_terminal/covered_expert/covered_value`教师要求，覆盖教师规则在冻结VM中执行，辅助价值按独立具名模型身份绑定。真红指导、过程奖励、PUCT等未接入选项在采样前明确拒绝，不改变原有默认目标。
+
+每批加载独立导出的冻结数值，完成采样后才更新实时网络；相同队名的当前／历史模型按实际来源目录与版本分开。保留探索噪声、完整Gumbel `pi`／`visit_pi`／真实动作、观察者WDL及`value_actor`；历史对手仅收当前学习方样本。未完成搜索、截断、错误或过期对局没有终局标签。正式GPU预检还按实际动作进行CPU完整重放，核对最终私有状态SHA；这是验证边界，不参与GPU假想搜索。校准、独立闸门及末端矩阵继续沿用既有编排，与GPU采样吞吐分开计时。
+
+`--search-roots`上限1600，`--query-batch-rows`默认32；前者是同时在途根，后者是设备调用／推理工作区。普通七队一轮56局，历史轮112局，实际峰值由任务数与上限共同决定。GPU图容量按本批真实局数和根数计划；`--gpu-memory-budget-mib`示例14336是预算。`--training-buffer-mib`默认8192，约束累计数值轨迹与诊断缓冲估计，超限失败并释放资源，不截掉标签；它不是整进程RAM或显存实测。所有这些参数和搜索源码进入恢复身份，原截止不能延长。
+
+Windows验收前可仅输出配置：
+
+```bash
+.venv/bin/python scripts/build_duel_v2_gpu_rule_program.py --training-teachers
+.venv/bin/python scripts/train_duel_v2_current_round.py --output artifacts/rl-evals/NEW_RUN --runtime seven --rule-backend cuda_vm --device cuda --search-roots 1600 --query-batch-rows 32
+```
+
+上述默认命令不创建对局、优化器、输出目录或种子。冻结时使用`build_duel_v2_gpu_rule_program.py --build --training-teachers --output NEW_PROGRAM_DIR`。设备端先运行`validate_duel_v2_gpu_seven.py`的14个规则／教师根对拍，再为新训练任务提供`--gpu-rule-program`、`--gpu-validation-report`、`--guard-standalone-entities`及同源码CUDA32完整局／更新／恢复／独立容量预检。没有CUDA、教师入口、有效价值或匹配回执时明确失败。源码生成与本机CPU用例不构成CUDA或1600完整对局吞吐批准；旧回执不能沿用。
+
+工程验证：`.venv/bin/python -m unittest tests.test_duel_v2_gpu_training tests.test_duel_v2_gpu_training_teachers tests.test_duel_v2_seven_training tests.test_duel_v2_batch_traversal tests.test_duel_v2_batch_cooperative tests.test_duel_v2_recovery_round tests.test_duel_v2_current_round`。采样适配测试使用明确的合成推理／受控CPU规则局面，覆盖标签、截止、缓冲、联合更新、冻结对手与Adam／RNG恢复；设备执行另需Windows证据。

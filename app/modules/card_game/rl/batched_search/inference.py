@@ -239,7 +239,7 @@ class BatchedInference:
                 from app.modules.card_game.rl import seven_policy
                 net = seven_policy.network(hidden, self._torch_device)
                 if getattr(model, 'teacher', None) is not None:
-                    net = seven_policy.attach_legacy(net, key)
+                    net = seven_policy.attach_legacy(net, manifest.get('deck') or key)
             elif schema in (preserved_policy.SCHEMA, preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA):
                 deck_name = manifest.get('deck') or key
                 net, _ = preserved_policy.create_network(
@@ -312,6 +312,14 @@ class BatchedInference:
             'schemas': {key: row['schema'] for key, row in self._contracts.items()},
             'runtime_family': sorted(set(self._families.values())),
         }
+
+    def assert_frozen(self) -> None:
+        """Rollout may not share a live learner; weights stay eval and detached."""
+        for key, net in self._networks.items():
+            if any(param.requires_grad for param in net.parameters()):
+                raise RuntimeError(f'Inference weights for {key} are trainable; freeze before training rollout')
+            if net.training:
+                raise RuntimeError(f'Inference network {key} is in train mode; freeze before training rollout')
 
     def predict(self, requests: Sequence[InferenceRequest]) -> List[InferenceResult]:
         if not isinstance(requests, (list, tuple)):

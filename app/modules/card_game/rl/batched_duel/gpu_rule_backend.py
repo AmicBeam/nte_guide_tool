@@ -70,6 +70,7 @@ METHOD_ENTRY = {
     'serving_root_metadata': 'serving_root_metadata',
     'public_terminal_probe': 'public_terminal_probe',
     'commit': 'apply_action',
+    'rule_decision': 'rule_decision',
 }
 
 METHOD_EXTRAS = {
@@ -83,6 +84,7 @@ METHOD_EXTRAS = {
     'value_observation': 1,
     'serving_root_metadata': 1,
     'public_terminal_probe': 2,
+    'rule_decision': 1,
 }
 
 STATE_METHODS = frozenset({'sample_world', 'step', 'clean'})
@@ -252,7 +254,7 @@ class GpuRuleBackend:
             raise GpuRuleBackendError(
                 'Frozen program runtime %r does not match backend runtime %r' % (bound_runtime, self.runtime)
             )
-        self.entry_names = resolve_entry_names(entries)
+        self.entry_names = resolve_entry_names(entries if entries is not None else tuple(self.program.entries))
         if 'acting_side' not in self.entry_names:
             raise GpuRuleBackendError('acting_side entry is required for GPU state metadata')
         try:
@@ -1127,6 +1129,11 @@ class GpuRuleBackend:
         if ref.winner not in ('a', 'b'):
             return 0.0
         return 1.0 if ref.winner == viewer else -1.0
+
+    def rule_decision(self,ref,side):
+        if 'rule_decision' not in self.program.entries:
+            raise GpuRuleBackendError('Frozen program lacks the canonical rule teacher')
+        return self.resolve_operations([OperationQuery(uuid4().hex,self,'rule_decision',(ref,side),())])[0].value
 
     def decision(self, ref, side):
         return self.resolve_operations([OperationQuery(uuid4().hex, self, 'decision', (ref, side), ())])[0].value

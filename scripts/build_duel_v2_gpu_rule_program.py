@@ -42,6 +42,8 @@ def parse_args(argv=None):
                         help='Load and validate an explicit frozen program JSON. Windows CPython 3.13 uses this instead of recapturing host bytecode.')
     parser.add_argument('--entries', type=str,
                         help='Comma-separated GPU rule entry subset for diagnosis. A subset is never labelled full coverage.')
+    parser.add_argument('--training-teachers',action='store_true',
+                        help='Include the canonical visible-rule teacher needed by GPU training.')
     parser.add_argument('--skip-lower', action='store_true',
                         help='Validate capture/load without lowering a numeric VM image.')
     parser.add_argument('--runtime', choices=('seven',), default='seven',
@@ -71,6 +73,9 @@ def main(argv=None):
     args = parse_args(argv)
     from app.modules.card_game.rl.batched_duel import gpu_rule_program as gp
     requested = parse_entries(args.entries)
+    if args.training_teachers:
+        from app.modules.card_game.rl.batched_duel.gpu_rule_entries import FULL_ENTRY_NAMES, TEACHER_ENTRY_NAMES
+        requested = tuple(requested or FULL_ENTRY_NAMES) + TEACHER_ENTRY_NAMES
     if 'torch' in sys.modules:
         raise RuntimeError('Torch must not be imported by GPU rule program check/build')
     if args.build:

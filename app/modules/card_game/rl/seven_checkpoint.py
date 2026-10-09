@@ -9,8 +9,18 @@ SCHEMA = 'seven_restore_check_v1'
 def algorithm_identity():
     from .recovery_checkpoint import algorithm_identity as shared
     root=Path(__file__).parent;digest=sha256(shared().encode())
-    for name in ('seven_lineup.py','seven_grounded.py','seven_policy.py','seven_runtime.py','seven_round.py','seven_checkpoint.py','seven_schedule.py','seven_sampler.py','seven_source.py','seven_covered_value.py','seven_value_metrics.py','seven_rule_foundation.py','full_cycle_experiment.py','new_model_report.py','seven_prepared.py'):
+    for name in ('seven_lineup.py','seven_grounded.py','seven_policy.py','seven_runtime.py','seven_round.py','seven_checkpoint.py','seven_schedule.py','seven_sampler.py','seven_source.py','seven_covered_value.py','seven_value_metrics.py','seven_rule_foundation.py','full_cycle_experiment.py','new_model_report.py','seven_prepared.py',
+                 'recovery_capacity.py','next_training.py','batched_search/training_rollout.py',
+                 'batched_search/cooperative.py','batched_search/traversal.py','batched_search/inference.py',
+                 'batched_search/statistics.py','batched_search/nodes.py','batched_search/budget.py',
+                 'batched_search/evaluator.py','batched_duel/gpu_rule_backend.py',
+                 'batched_duel/process_backend.py',
+                 'batched_duel/gpu_rule_entries.py','batched_duel/gpu_rule_program.py',
+                 'batched_duel/gpu_rule_capacity.py','batched_duel/gpu_rule_arguments.py',
+                 'batched_duel/gpu_seven_projection.py','batched_duel/gpu_seven_observation.py',
+                 'batched_duel/gpu_seven_candidates.py','batched_duel/gpu_schema_contract.py'):
         digest.update(name.encode());digest.update((root/name).read_bytes())
+    digest.update((root.parents[3]/'scripts/train_duel_v2_current_round.py').read_bytes())
     return digest.hexdigest()
 
 

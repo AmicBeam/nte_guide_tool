@@ -46,7 +46,7 @@ class RootJob:
 
 
 _PROTOCOL_METHODS=frozenset(('acting_side','finished','terminal_value','decision',
-    'sample_world','step','clean','value_observation','serving_root_metadata','public_terminal_probe'))
+    'sample_world','step','clean','value_observation','serving_root_metadata','public_terminal_probe','rule_decision'))
 _PREFIX=uuid4().hex
 _COUNTER=itertools.count()
 _CACHE={}
@@ -86,7 +86,8 @@ def cooperative_search(*args,**kwargs):
     if kwargs.get('time_limit') is not None:
         raise ValueError('Cooperative roots require a queue-anchored absolute deadline')
     from . import traversal
-    names=('_follow_terminal_generator','_short_terminal_value_generator','search_traversal')
+    names=('_follow_terminal_generator','_short_terminal_value_generator',
+           '_teacher_terminal_generator','_teacher_value_generator','search_traversal')
     functions=tuple(getattr(traversal,name) for name in names)
     if functions not in _CACHE:
         source='\n\n'.join(inspect.getsource(fn) for fn in functions)

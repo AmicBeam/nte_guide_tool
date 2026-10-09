@@ -1059,3 +1059,7 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 哈索尔角色包仅保留战斗牌正常出击、武备装备和无效果战术；专属异能、终结强化、八张牌特殊效果及目标／事件回调清空，原身份、基础面板、卡框攻防和测试权限保留。正文数量统一阿拉伯数字，小吱选项使用完整卡名；图鉴角色／前排包含召唤物，补释放定义并纠正倒计时说明。规则见完整手册，措辞见卡牌描述规范。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_hathor_rework tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_lingke tests.test_duel_v2_counter_text`。
+
+## 七队 GPU 训练采样入口
+
+`train_duel_v2_current_round.py`默认seven，GPU采样显式选`--rule-backend cuda_vm`并提供含训练教师的冻结程序与同源设备对拍回执。`seven_round.run`保留联合WDL更新、独立闸门、历史对手、择优回退与原截止恢复；`batched_search/training_rollout.py`复用协作搜索后端，按真实来源绑定冻结权重，仅完整终局进入学习。1600根上限与32行调用工作区、GPU预算和训练轨迹缓冲分别记录；普通七队轮实际56局，历史轮112局。源码／CPU测试不批准CUDA性能或模型质量，Windows验收待独立执行。参数和验证边界见[训练手册](../../../docs/duel-v2-public-training.md#七队-gpu-搜索训练采样)。验证：`.venv/bin/python -m unittest tests.test_duel_v2_gpu_training tests.test_duel_v2_gpu_training_teachers tests.test_duel_v2_seven_training tests.test_duel_v2_batch_traversal tests.test_duel_v2_batch_cooperative tests.test_duel_v2_recovery_round tests.test_duel_v2_current_round`。

@@ -56,6 +56,10 @@ def cross_pairs():
 
 def validate_round_launch(config, *, resume=False):
     """Check recovery evidence at every entry; keep historical formal cross closed."""
+    if isinstance(config,dict) and config.get('runtime')=='seven':
+        from app.modules.card_game.rl.seven_round import validate_launch
+        validate_launch(config,resume=resume)
+        return
     if isinstance(config,dict) and config.get('runtime')=='recovery':
         from app.modules.card_game.rl.recovery_round import validate_launch
         validate_launch(config,resume=resume)
@@ -235,6 +239,9 @@ def _rollback(out, config, nets, best_state, best_dir, decks, origins, learning_
 
 def learn(out, config, *, resume=False):
     validate_round_launch(config,resume=resume)
+    if config.get('runtime')=='seven':
+        from app.modules.card_game.rl.seven_round import run
+        return run(out,config,resume=resume)
     if config.get('runtime')=='recovery':
         from app.modules.card_game.rl.recovery_round import run
         return run(out,config,resume=resume)
@@ -505,7 +512,16 @@ def main():
     p.add_argument('--worker', action='store_true')
     p.add_argument('--resume',action='store_true',help='Resume existing recovery config within its original deadline')
     p.add_argument('--smoke-batches',type=int,choices=(1,2,3),default=1)
-    p.add_argument('--runtime',choices=('recovery','cross'),default='recovery')
+    p.add_argument('--runtime',choices=('seven','recovery','cross'),default='seven',
+                   help='seven is the current roster; recovery/cross only reproduce historical contracts')
+    p.add_argument('--rule-backend',choices=('serial_cpu','resident_cpu','cuda_vm'),default='serial_cpu')
+    p.add_argument('--gpu-rule-program',type=Path)
+    p.add_argument('--gpu-validation-report',type=Path)
+    p.add_argument('--guard-standalone-entities',action='store_true')
+    p.add_argument('--search-roots',type=int,default=1600)
+    p.add_argument('--query-batch-rows',type=int,default=32)
+    p.add_argument('--gpu-memory-budget-mib',type=int,default=14336)
+    p.add_argument('--training-buffer-mib',type=int,default=8192)
     p.add_argument('--teacher-mode',choices=('network','covered_terminal','covered_expert','covered_value'),default='network',
                    help='Explicit recovery teacher; covered modes use visible rules and real-terminal leaves')
     p.add_argument('--recovery-source',type=Path)
@@ -536,7 +552,7 @@ def main():
     if a.resume:
         if not a.run: p.error('Resume requires --run and an existing recovery output')
         config=json.loads((out/'config.json').read_text())
-        if config.get('runtime')!='recovery': p.error('Only recovery runtime supports this resume')
+        if config.get('runtime') not in ('seven','recovery'): p.error('Only current/residual runtimes support exact resume')
         guard=json.loads((out/'guard.json').read_text())
         pid=guard.get('worker_pid')
         if type(pid) is int and pid>0:
@@ -551,7 +567,15 @@ def main():
         p.error('workers must be 1..16')
     if not 5<=a.gate_roots<=64 or not 1<=a.search_gate_roots<=8 or not .5<=a.train_fraction<=.8:
         p.error('Bounded formal gate roots and training fraction required')
-    matrix_schedule(a.matrix_games)
+    if a.runtime=='seven':
+        from app.modules.card_game.rl.seven_schedule import ROSTER as roster, matrix_schedule as schedule
+    else:
+        roster, schedule = ROSTER, matrix_schedule
+    schedule(a.matrix_games)
+    if not 1<=a.search_roots<=1600 or not 1<=a.query_batch_rows<=32 or a.training_buffer_mib<1:
+        p.error('search-roots must be 1..1600, query-batch-rows 1..32 and training buffer positive')
+    if a.rule_backend!='serial_cpu' and a.runtime!='seven':
+        p.error('Batched training only supports the current seven-team contract')
     now = datetime.now(shanghai_zone())
     hard = now.replace(hour=9, minute=0, second=0, microsecond=0)
     if hard <= now:
@@ -568,7 +592,7 @@ def main():
     if seconds < 300:
         p.error('Insufficient time before hard stop')
     from app.modules.card_game.rl.cross_lineup import identity
-    config = dict(kind='five_cross_grounded_v2', runtime='cross', roster=list(ROSTER),
+    config = dict(kind='five_cross_grounded_v2', runtime='cross', roster=list(roster),
         rule_hash=identity(), hidden=a.hidden, device=a.device, workers=a.workers,
         train_until=now.timestamp()+seconds*a.train_fraction, evaluate_until=hard.timestamp()-60,
         hard_deadline=hard.timestamp(), hard_deadline_iso=hard.isoformat(),
@@ -581,10 +605,10 @@ def main():
         policy_passes=a.policy_passes, max_row_reuse=a.max_row_reuse,
         website_approval=False, roster_source=str(a.roster_source) if a.roster_source else '',
         murk_source=str(a.murk_source) if a.murk_source else '')
-    if a.runtime=='recovery':
+    if a.runtime in ('seven','recovery'):
         if a.roster_source or a.murk_source:
             p.error('Old sources cannot initialize recovery; use explicit recovery-source')
-        config.update(started_at=now.timestamp(),kind='five_recovery_v1',runtime='recovery',smoke=a.smoke or a.preflight,
+        config.update(started_at=now.timestamp(),kind='seven_recovery_v1' if a.runtime=='seven' else 'five_recovery_v1',runtime=a.runtime,smoke=a.smoke or a.preflight,
             preflight=a.preflight,teacher_mode=a.teacher_mode,
             preflight_replicas=a.preflight_replicas if a.preflight else 1,
             covered_value_source=str(a.covered_value_source.resolve()) if a.covered_value_source else None,
@@ -602,6 +626,15 @@ def main():
             config['train_until']=hard.timestamp()-60
         elif not a.smoke:
             config['evaluate_until']=hard.timestamp()-900
+    if a.runtime=='seven':
+        from app.modules.card_game.rl.seven_lineup import identity as seven_identity
+        config['rule_hash']=seven_identity()
+        config.update(rule_backend=a.rule_backend,search_roots=a.search_roots,
+                      query_batch_rows=a.query_batch_rows,gpu_memory_budget_mib=a.gpu_memory_budget_mib,
+                      gpu_rule_program=str(a.gpu_rule_program.resolve()) if a.gpu_rule_program else None,
+                      gpu_validation_report=str(a.gpu_validation_report.resolve()) if a.gpu_validation_report else None,
+                      guard_standalone_entities=a.guard_standalone_entities)
+        config['training_buffer_mib']=a.training_buffer_mib
     config['source_rule_hashes'] = json.loads(a.source_rule_hashes.read_text()) if a.source_rule_hashes else {}
     print(json.dumps(config, ensure_ascii=False, indent=2), flush=True)
     if not a.run:
@@ -610,7 +643,7 @@ def main():
         validate_round_launch(config)
     except (ValueError,OSError,KeyError) as exc:
         p.error(str(exc))
-    if a.runtime=='recovery':
+    if a.runtime in ('seven','recovery'):
         import torch
         if a.device=='cuda' and not torch.cuda.is_available():
             p.error('CUDA unavailable; no fallback, output or seeds created')

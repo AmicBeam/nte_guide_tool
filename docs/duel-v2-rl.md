@@ -174,3 +174,9 @@ python scripts/train_duel_v2.py --train --sample-public --deck starter \
 ### 单队恢复辅助与残虹限次观察
 
 `recovery_round`的调度、批次更新和独立选择支持显式学习队子集，`recovery_capacity.fit(keys=...)`按同一子集检验完整搜索教材和独立留出。默认仍是五队；单队编排必须完成训练手册规定的同源码预检，不借此绕过正式启动保护。`murk_lineup`和`cross_lineup`新增双方残虹本回合持续伤害加攻已用状态；它来自公开信息，实体重新编号不改变编码。数值迁移需按具名列映射首层并将新增列置零。
+
+## 七队 GPU 搜索训练采样
+
+当前`train_duel_v2_current_round.py`默认seven，`seven_round.run`维护七队完整局学习、价值核验、历史对手、独立闸门、择优回退与两代恢复。GPU采样入口`batched_search/training_rollout.py`复用协作Gumbel、冻结VM规则、设备公开编码、FP32推理与设备统计，保持完整`pi`、真实终局WDL、探索和样本归属；覆盖教师及独立辅助价值按实际身份绑定。网络优化设备与规则后端分别指定，CPU默认路径保留。
+
+GPU源程序需包含训练教师，真实设备规则／教师对拍和CUDA32完整局、梯度、数值／Adam／RNG恢复及独立容量证据后才能启动正式任务。1600根上限、32行工作区、设备预算与轨迹缓冲独立记录；标准七队一轮56局，历史轮112局，实际峰值据任务数计。源码或合成CPU验证不批准设备性能／强度，参数、命令和验证见[训练手册](duel-v2-public-training.md#七队-gpu-搜索训练采样)。

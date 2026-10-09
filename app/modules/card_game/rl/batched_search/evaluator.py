@@ -162,6 +162,7 @@ def select_rule_backend(
     capacity_planner: Any = None,
     program_api: Any = None,
     fake_label: Optional[str] = None,
+    query_batch_rows: Optional[int] = None,
 ) -> Any:
     """Construct the explicit rule backend. cuda_vm never falls back to resident CPU."""
     if rule_backend not in (RULE_BACKEND_RESIDENT_CPU, RULE_BACKEND_CUDA_VM):
@@ -207,15 +208,18 @@ def select_rule_backend(
     planner = _resolve_capacity_planner(capacity_planner)
     _require_kwarg(planner, 'runtime', 'plan_gpu_rule_capacity')
     memory_budget_bytes = None if gpu_memory_budget_mib is None else int(gpu_memory_budget_mib) * 1024 * 1024
+    plan_options = dict(
+        memory_budget_bytes=memory_budget_bytes, max_nodes=max_nodes, max_edges=max_edges,
+        max_payload_bytes=max_payload_bytes, max_candidates=max_candidates, runtime=runtime,
+    )
+    if query_batch_rows is not None:
+        if type(query_batch_rows) is not int or not 1 <= query_batch_rows <= 32:
+            raise ValueError('Bounded GPU query batch required')
+        plan_options['query_batch_rows'] = query_batch_rows
     plan = planner(
         max_games,
         search_roots,
-        memory_budget_bytes=memory_budget_bytes,
-        max_nodes=max_nodes,
-        max_edges=max_edges,
-        max_payload_bytes=max_payload_bytes,
-        max_candidates=max_candidates,
-        runtime=runtime,
+        **plan_options,
     )
     _require_kwarg(cls.__init__, 'runtime', 'GpuRuleBackend')
     _require_kwarg(cls.__init__, 'capacity_plan', 'GpuRuleBackend')
@@ -645,6 +649,7 @@ def make_source_snapshot(
         process_backend.__file__, recording.__file__, serving_protocol.__file__,
         __file__,
     ]
+    search_files.append(str(Path(__file__).with_name('training_rollout.py')))
     search_hasher = sha256()
     for sf in search_files:
         if not sf:

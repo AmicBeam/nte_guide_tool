@@ -257,6 +257,9 @@ class _WorkerState:
         if op.method=='public_terminal_probe':
             from .serving_protocol import public_terminal_probe
             return public_terminal_probe(state,op.args[0],op.args[1])
+        if op.method=='rule_decision':
+            from app.modules.card_game.rl.covered_rollout import rule_decision
+            return rule_decision(state,op.args[0])
 
         if op.method == "decision":
             side = op.args[0]
@@ -991,7 +994,7 @@ class ResidentRuleBackend:
         methods_by_id={q.id:q.method for q in queries}
         arities={'acting_side':1,'finished':1,'terminal_value':2,'decision':2,
                  'sample_world':3,'step':3,'clean':1,'value_observation':2,
-                 'serving_root_metadata':2,'public_terminal_probe':3}
+                 'serving_root_metadata':2,'public_terminal_probe':3,'rule_decision':2}
         for q in queries:
             if q.method not in arities or len(q.args)!=arities[q.method] or q.kwargs:
                 raise ValueError('Unsupported rule operation signature')
@@ -1112,6 +1115,10 @@ class ResidentRuleBackend:
         if winner not in ("a", "b"):
             return 0.0
         return 1.0 if winner == viewer else -1.0
+
+    def rule_decision(self, ref, side):
+        q = OperationQuery(uuid4().hex,self,'rule_decision',(ref,side),())
+        return self.resolve_operations([q])[0].value
 
     def decision(
         self, ref: StateRef, side: str

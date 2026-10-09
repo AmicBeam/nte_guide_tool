@@ -22,6 +22,7 @@ from app.modules.card_game.rl.information_search import (
     terminal_value as canonical_terminal_value,
 )
 from app.modules.card_game.rl.league_rollout import clean as canonical_clean
+from app.modules.card_game.rl.covered_rollout import rule_decision as canonical_rule_decision
 from app.modules.card_game.rl.batched_duel.gpu_schema_contract import (
     DEFAULT_RUNTIME,
     GPU_RUNTIME_CONTRACTS,
@@ -148,6 +149,15 @@ def public_terminal_probe(state, side, action):
     return canonical_public_terminal_probe(state, side, action)
 
 
+def rule_decision(state, actor):
+    """Canonical public-rule teacher decision. Capture input, not a CUDA runtime."""
+    return canonical_rule_decision(state, actor)
+
+
+def seven_rule_decision(state, actor):
+    return canonical_rule_decision(state, actor)
+
+
 CANONICAL_FUNCTIONS = {
     'acting_side': canonical_acting_side,
     'finished': canonical_finished,
@@ -160,6 +170,7 @@ CANONICAL_FUNCTIONS = {
     'sample_world': canonical_sample_world,
     'serving_root_metadata': canonical_root_metadata,
     'public_terminal_probe': canonical_public_terminal_probe,
+    'rule_decision': canonical_rule_decision,
 }
 
 ENTRY_FUNCTIONS = {
@@ -176,6 +187,8 @@ ENTRY_FUNCTIONS = {
 }
 
 FULL_ENTRY_NAMES = tuple(ENTRY_FUNCTIONS)
+TEACHER_ENTRY_NAMES = ('rule_decision',)
+ENTRY_FUNCTIONS['rule_decision'] = rule_decision
 LIGHT_ENTRY_NAMES = (
     'acting_side',
     'finished',
@@ -196,6 +209,7 @@ SEVEN_ENTRY_FUNCTIONS = {
     'serving_root_metadata': seven_serving_root_metadata,
     'public_terminal_probe': seven_public_terminal_probe,
 }
+SEVEN_ENTRY_FUNCTIONS['rule_decision'] = seven_rule_decision
 
 ENTRY_FUNCTIONS_BY_RUNTIME = {
     'recovery': ENTRY_FUNCTIONS,

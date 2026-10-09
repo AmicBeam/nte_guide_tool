@@ -790,7 +790,24 @@
     const baseMultiplierFactor = Math.max(0, 1 + panelMods.base_multiplier_pct);
     const scalingBase = rawScalingBase * baseMultiplierFactor;
     const skill = skillLevelMultiplier(snapshot, action);
-    let base = scalingBase * skill.multiplier + num(multipliers.flat);
+    const finalAdditions = {};
+    const addFinalMultipliers = (values, enabled) => {
+      Object.entries(values || {}).forEach(([level, additions]) => {
+        if (!enabled(level) || !additions || typeof additions !== 'object') return;
+        Object.entries(additions).forEach(([key, value]) => {
+          finalAdditions[key] = num(finalAdditions[key]) + num(value);
+        });
+      });
+    };
+    addFinalMultipliers(action.final_multipliers_add_by_awakening_node,
+      (level) => hasAwakeningNode(snapshot, level));
+    addFinalMultipliers(action.final_multipliers_add_by_awakening_resonance,
+      (level) => hasAwakeningResonance(snapshot, int(level)));
+    const postSkillLevelBase = stats.atk * num(finalAdditions.atk)
+      + stats.hp * num(finalAdditions.hp) + stats.def * num(finalAdditions.def)
+      + num(finalAdditions.flat);
+    let base = scalingBase * skill.multiplier
+      + postSkillLevelBase * baseMultiplierFactor + num(multipliers.flat);
     let skillCategory = skill.category;
     let skillLevel = skill.level;
     let skillMult = skill.multiplier;
@@ -848,6 +865,7 @@
       formula_parts: {
         base,
         raw_base: rawScalingBase + num(multipliers.flat),
+        post_skill_level_base: postSkillLevelBase,
         base_multiplier_factor: baseMultiplierFactor,
         skill_level_category: skillCategory,
         skill_level: skillLevel,
@@ -1007,6 +1025,14 @@
       ),
       multipliers_add_by_awakening_resonance: Object.fromEntries(
         Object.entries(action.multipliers_add_by_awakening_resonance || {})
+          .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
+      ),
+      final_multipliers_add_by_awakening_node: Object.fromEntries(
+        Object.entries(action.final_multipliers_add_by_awakening_node || {})
+          .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
+      ),
+      final_multipliers_add_by_awakening_resonance: Object.fromEntries(
+        Object.entries(action.final_multipliers_add_by_awakening_resonance || {})
           .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
       ),
       interrupt_damage_scale: damageRatio,

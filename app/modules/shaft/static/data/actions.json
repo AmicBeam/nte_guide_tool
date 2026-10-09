@@ -10376,14 +10376,14 @@
     ],
     "source_row": 39,
     "duration_source": "user-provided-2026-10-10",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时按用户2026-10-10提供，不标为新表逐段实测。 新C觉额外增加1200%攻击倍率，不乘原倍率。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时按用户2026-10-10提供，不标为新表逐段实测。 新C觉额外增加1200%攻击倍率，不乘原倍率。 用户2026-10-10明确：觉醒追加1200%在技能等级换算后的最终倍率中加算，追加部分不乘等级系数。",
     "source_formula": "{0}%",
     "cooldown_group": "akane_e",
     "personal_resource_gain": {
       "弦能": 6
     },
     "personal_resource_scale_with_damage_ratio": true,
-    "multipliers_add_by_awakening_node": {
+    "final_multipliers_add_by_awakening_node": {
       "3": {
         "atk": 12
       }
@@ -10458,7 +10458,7 @@
     ],
     "source_row": 41,
     "duration_source": "user-provided-2026-10-10",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 三觉共鸣额外增加1200%攻击倍率，读取独立共鸣开关。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 三觉共鸣额外增加1200%攻击倍率，读取独立共鸣开关。 用户2026-10-10明确：觉醒追加1200%在技能等级换算后的最终倍率中加算，追加部分不乘等级系数。",
     "source_formula": "{0}%",
     "personal_resource_cost": {
       "弦能": 30
@@ -10466,7 +10466,7 @@
     "personal_resource_cost_on_hit": true,
     "required_buff_key": "character_akane_mode",
     "required_buff_name": "泛音列或音域",
-    "multipliers_add_by_awakening_resonance": {
+    "final_multipliers_add_by_awakening_resonance": {
       "3": {
         "atk": 12
       }
@@ -10533,13 +10533,13 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "duration_source": "existing-time-stop",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 三觉共鸣额外增加1200%攻击倍率，读取独立共鸣开关。 Q1/Q2的0秒耗时由用户2026-10-10再次确认。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 三觉共鸣额外增加1200%攻击倍率，读取独立共鸣开关。 Q1/Q2的0秒耗时由用户2026-10-10再次确认。 用户2026-10-10明确：觉醒追加1200%在技能等级换算后的最终倍率中加算，追加部分不乘等级系数。",
     "source_formula": "{0}%",
     "is_time_stop_zero": true,
     "action_sequence": "akane_ultra",
     "max_uses_per_action_sequence": 1,
     "action_sequence_usage_warning": "同一次音障爆鸣的第二段只能布置1次。",
-    "multipliers_add_by_awakening_resonance": {
+    "final_multipliers_add_by_awakening_resonance": {
       "3": {
         "atk": 12
       }

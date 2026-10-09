@@ -195,18 +195,40 @@ class AkaneTest(unittest.TestCase):
         self.assertAlmostEqual(area['formula_parts']['base'] / area['panel']['atk'], 11.25)
 
     def test_new_c_is_additive_and_resonance_can_be_toggled_independently(self):
-        def sim(resonances):
-            p=self.payload([('e',0),('enhanced_e',20),('q2',30)],nodes=[1,2,3])
-            p['team'][0]['awakening_resonances']=resonances
-            return simulate_shaft_axis(p)['result']['details']
-        off,on=sim([]),sim([3])
-        for rows in (off,on):
-            self.assertAlmostEqual(rows[0]['formula_parts']['raw_base']/rows[0]['panel']['atk'],16)
-        self.assertAlmostEqual(off[1]['formula_parts']['raw_base']/off[1]['panel']['atk'],12.5)
-        self.assertAlmostEqual(on[1]['formula_parts']['raw_base']/on[1]['panel']['atk'],24.5)
-        self.assertAlmostEqual(off[2]['formula_parts']['raw_base']/off[2]['panel']['atk'],10.2)
-        self.assertAlmostEqual(on[2]['formula_parts']['raw_base']/on[2]['panel']['atk'],22.2)
-        self.assertAlmostEqual(on[1]['formula_parts']['skill_level_multiplier'],1.08)
+        # User 2026-10-10: awakening +1200% is added AFTER skill-level scaling.
+        for level in (1, 10):
+            for form, enhanced_base in [('e', 12.5), ('hold_e', 11.25)]:
+                for resonances in ([], [3]):
+                    with self.subTest(level=level, form=form, resonances=resonances):
+                        p=self.payload([(form,0),('enhanced_e',20),('q2',30)],nodes=[1,2,3])
+                        p['team'][0].update(awakening_resonances=resonances,
+                            skill_levels=dict(basic=level,skill=level,ultimate=level,support=1))
+                        rows=simulate_shaft_axis(p)['result']['details']
+                        fixed=[12 if form=='e' else 0, 12 if resonances else 0,
+                               12 if resonances else 0]
+                        for d, original, addition in zip(rows,
+                                [4 if form=='e' else 3.6, enhanced_base, 10.2], fixed):
+                            f=d['formula_parts'];atk=d['panel']['atk']
+                            self.assertAlmostEqual(f['raw_base']/atk,original)
+                            self.assertAlmostEqual(f['post_skill_level_base']/atk,addition)
+                            self.assertAlmostEqual(f['skill_level_multiplier'],
+                                1.08**(level-1+bool(resonances)))
+                            self.assertAlmostEqual(f['base']/atk,
+                                original*f['skill_level_multiplier']+addition)
+                        if level==1 and resonances:
+                            self.assertAlmostEqual(rows[1]['formula_parts']['skill_level_multiplier'],1.08)
+
+    def test_final_awakening_multiplier_vanishes_on_zero_hit(self):
+        for name in ('e', 'enhanced_e'):
+            with self.subTest(action=name):
+                p=self.payload([(name,0)],nodes=[1,2,3])
+                p['team'][0].update(awakening_resonances=[3],
+                    skill_levels=dict(basic=10,skill=10,ultimate=10,support=1))
+                p['steps'][0].update(interrupted=True,interrupt_duration_ticks=1,
+                                    interrupt_hit_count=0)
+                d=simulate_shaft_axis(p)['result']['details'][0]
+                self.assertEqual(d['formula_parts']['post_skill_level_base'],0)
+                self.assertEqual(d['direct_damage'],0)
 
     def test_new_a_and_d_expire_and_b_is_phase_only_in_both_forms(self):
         for form in ['e','hold_e']:

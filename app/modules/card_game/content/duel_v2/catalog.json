@@ -1676,12 +1676,12 @@
     {
       "id": "K02",
       "character_id": "lingke",
-      "name": "幽灵其实很可爱！",
+      "name": "星星也说悄悄话！",
       "effect_id": "K02",
       "source": {
         "character_id": 1072,
         "type": "awaken",
-        "index": 2
+        "index": 4
       },
       "type": "tactic",
       "cost": 1,
@@ -1721,7 +1721,7 @@
     {
       "id": "K04",
       "character_id": "lingke",
-      "name": "星星也说悄悄话！",
+      "name": "幽灵其实很可爱！",
       "type": "tactic",
       "cost": 1,
       "terminal": false,
@@ -1730,7 +1730,7 @@
       "source": {
         "character_id": 1072,
         "type": "awaken",
-        "index": 4
+        "index": 2
       },
       "starter_copies": 0
     },

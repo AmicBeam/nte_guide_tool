@@ -7,6 +7,79 @@ from . import cross_lineup as old, cross_grounded as old_grounded
 from . import seven_lineup as current, seven_grounded as grounded, seven_runtime as rt
 
 
+def migrate_seven(directory, key, build, output, *, source_snapshot,
+                  expected_sha256, expected_manifest_sha256, device='cuda'):
+    """Fresh research migration from an authenticated, same-layout seven model.
+
+    Rule changes require fresh preparation/preflight; no previous readiness,
+    optimizer, experience, value qualification or serving approval is adopted.
+    """
+    import ast
+    import torch
+    from .seven_policy import SCHEMA
+    from .build_acceptance import build_identity
+    source = Path(source_snapshot).resolve()
+    declared = json.loads((source/'source-manifest.json').read_text(encoding='utf8'))
+    module = source/'app/modules/card_game'
+    paths = sorted({*(module/'engine/duel_v2').rglob('*.py'),
+                    *(module/'content/duel_v2').rglob('*.py'),
+                    module/'content/duel_v2/catalog.json', module/'rl/league_schema.py',
+                    module/'rl/league_observation.py'})
+    checked = {}
+    def data(path):
+        relative = path.relative_to(source).as_posix()
+        if path.is_symlink() or source not in path.resolve().parents or relative not in declared:
+            raise ValueError('Unverified seven-model source member: '+relative)
+        payload = path.read_bytes(); entry = declared[relative]
+        if sha256(payload).hexdigest()!=entry['sha256'] or len(payload)!=entry['bytes']:
+            raise ValueError('Seven-model source member changed: '+relative)
+        checked[relative] = entry['sha256']
+        return payload
+    tree = ast.parse(data(module/'rl/league_schema.py'))
+    schema = next(ast.literal_eval(node.value) for node in tree.body
+                  if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='SCHEMA' for t in node.targets))
+    historical = sha256(schema.encode())
+    for path in paths:
+        historical.update(path.relative_to(module).as_posix().encode()); historical.update(data(path))
+    historical_seven = sha256(historical.hexdigest().encode())
+    for name in ('seven_lineup.py','seven_grounded.py','seven_runtime.py','seven_policy.py',
+                 'murk_lineup.py','information_search.py','search_policy.py'):
+        historical_seven.update(data(module/'rl'/name))
+    root = Path(directory); manifest_path=root/(key+'.json'); path=root/(key+'.npz')
+    m=json.loads(manifest_path.read_text(encoding='utf8'))
+    if (sha256(manifest_path.read_bytes()).hexdigest()!=expected_manifest_sha256
+            or sha256(path.read_bytes()).hexdigest()!=expected_sha256 or m.get('sha256')!=expected_sha256
+            or m.get('rule_hash')!=historical_seven.hexdigest() or m.get('schema')!=SCHEMA
+            or m.get('deck')!=key or m.get('reward_mode')!='terminal_wdl_only'
+            or m.get('automatic_serving_approval') is not False
+            or m.get('features')!=current.all_features() or m.get('candidates')!=current.candidate_names()
+            or m.get('grounded_features')!=grounded.transformed_names()
+            or build_identity(m['build'])!=build_identity(build)
+            or m.get('architecture_sha256')!=sha256(data(module/'rl/seven_policy.py')).hexdigest()
+            or data(module/'rl/seven_policy.py')!=Path(rt.architecture.__file__).read_bytes()
+            or data(module/'rl/seven_grounded.py')!=Path(grounded.__file__).read_bytes()):
+        raise ValueError('Authenticated same-layout seven-model migration required')
+    net=rt.create_network(key,m['hidden'],device,legacy=bool(m.get('source_identity')))
+    expected=net.state_dict()
+    with np.load(path,allow_pickle=False) as saved:
+        if set(saved.files)!=set(expected):raise ValueError('Seven source tensor set mismatch')
+        arrays={name:saved[name].copy() for name in saved.files}
+    if any(w.shape!=tuple(expected[n].shape) or w.dtype!=expected[n].detach().cpu().numpy().dtype
+           or not np.isfinite(w).all() for n,w in arrays.items()):
+        raise ValueError('Seven source tensor shape/nonfinite mismatch')
+    net.load_state_dict({n:torch.as_tensor(w,device=device) for n,w in arrays.items()})
+    origin=dict(m['origin'],research_migration=dict(source=str(root),source_sha256=expected_sha256,
+        source_manifest_sha256=expected_manifest_sha256,source_rule_hash=m['rule_hash'],
+        authenticated_source_files=checked,all_numeric_arrays_preserved=True,
+        prior_ready_adopted=False,prior_quality_adopted=False,optimizer_reset=True,experience_reset=True))
+    rt.export(net,output,key,build,origin)
+    policy=rt.model(output,key)
+    if any(w.dtype!=policy.weights[n].dtype or w.tobytes()!=policy.weights[n].tobytes()
+           for n,w in arrays.items()):
+        raise ValueError('Research migration changed seven source arrays')
+    return net,origin
+
+
 def old_transformed_names():
     categories=(tuple(map(str,range(6))),('none',*old.SEATS),('none',*old.CARD_IDS),
                 ('none','own','enemy'),('none',*old.SEATS))

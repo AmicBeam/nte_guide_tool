@@ -800,3 +800,11 @@ Windows验收前可仅输出配置：
 上述默认命令不创建对局、优化器、输出目录或种子。冻结时使用`build_duel_v2_gpu_rule_program.py --build --training-teachers --output NEW_PROGRAM_DIR`。设备端先运行`validate_duel_v2_gpu_seven.py`的14个规则／教师根对拍，再为新训练任务提供`--gpu-rule-program`、`--gpu-validation-report`、`--guard-standalone-entities`及同源码CUDA32完整局／更新／恢复／独立容量预检。没有CUDA、教师入口、有效价值或匹配回执时明确失败。源码生成与本机CPU用例不构成CUDA或1600完整对局吞吐批准；旧回执不能沿用。
 
 工程验证：`.venv/bin/python -m unittest tests.test_duel_v2_gpu_training tests.test_duel_v2_gpu_training_teachers tests.test_duel_v2_seven_training tests.test_duel_v2_batch_traversal tests.test_duel_v2_batch_cooperative tests.test_duel_v2_recovery_round tests.test_duel_v2_current_round`。采样适配测试使用明确的合成推理／受控CPU规则局面，覆盖标签、截止、缓冲、联合更新、冻结对手与Adam／RNG恢复；设备执行另需Windows证据。
+
+### 已冻结七队数值的研究迁入与混合设备采样
+
+`seven_source.migrate_seven`支持旧七队数值在相同具名布局和网络架构下迁入新规则研究目录：核对原源码清单、实际规则身份、NPZ及清单SHA、角色顺序、完整配牌、特征名、张量名／形状／dtype与有限值，并逐字节保留全部数值。来源仍记录原规则和数值身份；重置优化器与经验，重新准备价值并做同源CUDA／P0／容量预检，不继承旧ready、质量或服务批准。布局或架构改变时明确拒绝，此接口不代替具名扩列迁移。
+
+混合采样可显式配置`rule_backend=resident_cpu`、`device=cuda`和`search_statistics_device=cuda`：正式Python规则在驻留进程执行，冻结网络推理、Gumbel树统计及网络更新使用CUDA。参数进入采样／恢复身份；CUDA统计不能退成主机统计。未指定统计设备的既有混合配置保持原行为。它与`cuda_vm`的设备规则能力分开验收，同样要在本轮实际完整Gumbel32局、数值／Adam／RNG和独立闸门通过后才进入正式学习。
+
+验证：`tests.test_duel_v2_seven_migration`、`tests.test_duel_v2_training_statistics_device`及既有七队／采样回归。合成绑定或迁移测试不提供设备、吞吐或强度批准。

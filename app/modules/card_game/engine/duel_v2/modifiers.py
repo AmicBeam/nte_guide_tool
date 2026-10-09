@@ -30,6 +30,9 @@ class Effect(TypedDict, total=False):
     stack_limit: int
 
 
+PUBLIC_EFFECT_FIELDS = tuple(Effect.__annotations__)
+
+
 PHASES = ('turn_start', 'turn_end')
 OPS = ('add', 'multiply', 'set', 'allow', 'forbid')
 SCOPES = ('self', 'allies', 'other_allies', 'enemies', 'all')
@@ -307,7 +310,7 @@ def tick(state, side, phase):
 
 
 def public_effects(holder):
-    allowed = tuple(Effect.__annotations__)
+    allowed = PUBLIC_EFFECT_FIELDS
     return [{k: deepcopy(e[k]) for k in allowed if k in e}
             for e in all_effects(holder) if e.get('visibility') == 'public']
 

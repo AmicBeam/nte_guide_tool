@@ -3,7 +3,7 @@
 The emitter performs no host string evaluation and has no fixed text buffer.
 Results use the per-game heap; UTF-8 indices count Unicode codepoints. Split
 requires an explicit nonempty separator; join accepts materialized list/tuple
-only (a VM continuation may collect generators before calling ``text_join``).
+directly; generators and simple iterators are collected by mode-8 VM continuations.
 ``isdigit`` supports ASCII exactly and rejects every non-ASCII input explicitly.
 Default rstrip uses Python's Unicode whitespace set, including U+001C..U+001F.
 Bad arity/separators use BAD_CALL, unsupported capabilities UNSUPPORTED_TYPE;
@@ -233,6 +233,41 @@ __device__ inline int text_count(Context* c,int owner,const int* args,int nargs)
  }
  return make_int64(&c->h,count);
 }
+// Mode 8 keeps a normal tuple [delimiter, generator, materialized values].
+__device__ inline void text_join_resume(Context* c,int generator,int caller,int accumulator,int item,int exhausted){
+ int delimiter=edge(c,accumulator,0),values=edge(c,accumulator,2);
+ if(exhausted){
+  int result=text_join(c,delimiter,values);c->current=caller;
+  if(!c->error&&!c->h.error)push(c,frame(c,caller),result);return;
+ }
+ // Like PySequence_Fast, consume the iterable before validating its string items.
+ list_append(&c->h,values,item);if(c->error||c->h.error)return;
+ resume_generator(c,generator,caller,8,accumulator,MISSING);
+}
+__device__ inline int text_iterable_call(Context* c,int callee,const int* args,int nargs,int caller){
+ if(kind(c,callee)!=T_TEXT_METHOD)return 0;
+ const int* bound=node(c,callee);if(!bound||bound[3]!=TEXT_JOIN)return 0;
+ if(nargs!=1){c->error=BAD_CALL;return 1;}
+ int owner=bound[1],input=args[0],tag=kind(c,input);
+ if(tag==TAG_LIST||tag==TAG_TUPLE)return 0;
+ int values=make_list(&c->h);if(c->h.error)return 1;
+ if(tag==T_GEN){
+  const int* gen=node(c,input);if(!gen)return 1;
+  if(gen[3]<0){int result=text_join(c,owner,values);if(!c->error&&!c->h.error)push(c,frame(c,caller),result);return 1;}
+  int refs[3]={owner,input,values},accumulator=make_tuple(&c->h,refs,3);
+  if(!c->h.error)resume_generator(c,input,caller,8,accumulator,MISSING);return 1;
+ }
+ int it=iterator(c,input);if(c->error||c->h.error)return 1;
+ if(kind(c,it)!=T_ITER&&kind(c,it)!=64){c->error=UNSUPPORTED_TYPE;return 1;}
+ while(!c->error&&!c->h.error){
+  if(++c->steps>c->step_limit){c->error=STEP_LIMIT;return 1;}
+  if(c->deadline&&(c->steps&63)==0&&clock_ns()>=(unsigned long long)c->deadline){c->error=DEADLINE;return 1;}
+  int item=iterator_next(c,it);if(item==MISSING)break;list_append(&c->h,values,item);
+ }
+ if(!c->error&&!c->h.error){int result=text_join(c,owner,values);if(!c->error&&!c->h.error)push(c,frame(c,caller),result);}
+ return 1;
+}
+
 __device__ inline int text_call(Context* c,int callee,const int* args,int nargs,int* out){
  if(kind(c,callee)!=T_TEXT_METHOD)return 0;*out=MISSING;
  const int* bound=node(c,callee);if(!bound)return 1;int owner=bound[1],code=bound[3];

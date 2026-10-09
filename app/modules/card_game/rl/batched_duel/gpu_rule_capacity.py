@@ -21,6 +21,7 @@ DEFAULT_MAX_PAYLOAD_BYTES = 131072
 DEFAULT_MAX_CANDIDATES = 128
 DEFAULT_SIMULATIONS = 32
 DEFAULT_QUERY_BATCH_ROWS = 32
+MAX_VM_CONSTANT_NODES = 65536
 DEFAULT_TERMINAL_HORIZON = 3
 ARGUMENT_MAX_NODES = 4096
 ARGUMENT_MAX_EDGES = 8192
@@ -37,6 +38,9 @@ PROJECTION_INTERMEDIATE_COPIES = 2
 DEFAULT_UNMODELED_RESERVE_BYTES = 2 * 1024 * 1024 * 1024
 KNOWN_DEVICE_NAME = 'RTX 5060 Ti'
 KNOWN_DEVICE_BYTES = 16 * 1024 * 1024 * 1024
+VM_OPERATION_MIN_NODES = 262144
+VM_OPERATION_MIN_EDGES = 524288
+VM_OPERATION_MIN_PAYLOAD_BYTES = 32 * 1024 * 1024
 VM_MAX_NODES_CAP = 1048576
 VM_MAX_EDGES_CAP = 2097152
 VM_MAX_PAYLOAD_BYTES_CAP = 64 * 1024 * 1024
@@ -212,7 +216,7 @@ def derive_vm_workspace(
     vm_max_edges=None,
     vm_max_payload_bytes=None,
 ):
-    """Source-only conservative VM heap, never below persistent graph limits."""
+    """Source-only bounded VM heap, including multi-view sampling and rule previews."""
     max_nodes = _positive_int('max_nodes', max_nodes)
     max_edges = _positive_int('max_edges', max_edges)
     max_payload_bytes = _positive_int('max_payload_bytes', max_payload_bytes)
@@ -229,9 +233,9 @@ def derive_vm_workspace(
         'encode_candidate_matrix_bytes': int(candidate_matrix),
         'encode_observation_vector_bytes': int(observation_vector),
         'encode_payload_bytes': int(encode_payload),
-        'derived_vm_max_nodes': int(max(max_nodes, derived_nodes)),
-        'derived_vm_max_edges': int(max(max_edges, derived_edges)),
-        'derived_vm_max_payload_bytes': int(max(max_payload_bytes, derived_payload)),
+        'derived_vm_max_nodes': int(max(max_nodes, derived_nodes, VM_OPERATION_MIN_NODES)),
+        'derived_vm_max_edges': int(max(max_edges, derived_edges, VM_OPERATION_MIN_EDGES)),
+        'derived_vm_max_payload_bytes': int(max(max_payload_bytes, derived_payload, VM_OPERATION_MIN_PAYLOAD_BYTES)),
     }
     chosen_nodes = estimates['derived_vm_max_nodes'] if vm_max_nodes is None else _positive_int('vm_max_nodes', vm_max_nodes)
     chosen_edges = estimates['derived_vm_max_edges'] if vm_max_edges is None else _positive_int('vm_max_edges', vm_max_edges)
@@ -384,7 +388,7 @@ def plan_gpu_rule_capacity(
     compact_persistent_bytes = query_batch_rows * state_bytes
     compact_bytes = compact_workspace_bytes + compact_persistent_bytes
     frame_bytes = _vm_frame_bytes(query_batch_rows)
-    gc_bytes = query_batch_rows * (workspace['vm_max_nodes'] * 4 * 2 + 4096 * 4)
+    gc_bytes = query_batch_rows * (workspace['vm_max_nodes'] * 12 + MAX_VM_CONSTANT_NODES * 8)
     workspace_bytes = (
         gather_bytes + bind_dest_bytes + argument_heap_bytes + vm_scratch_bytes
         + compact_bytes + frame_bytes + gc_bytes

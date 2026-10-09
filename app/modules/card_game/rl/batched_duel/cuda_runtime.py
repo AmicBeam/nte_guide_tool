@@ -45,6 +45,33 @@ class CudaCompilationError(CudaError):
     pass
 
 
+def cuda_compilation_profile() -> dict:
+    """Explicit short-test profile; defaults preserve strict FP and driver behavior."""
+    fast = os.environ.get('NTE_CUDA_FAST_COMPILE', '0')
+    if fast not in ('0', 'min', 'mid', 'max'):
+        raise ValueError('NTE_CUDA_FAST_COMPILE must be 0/min/mid/max')
+    raw = os.environ.get('NTE_CUDA_JIT_OPT_LEVEL')
+    if raw is not None and raw not in ('0', '1', '2', '3', '4'):
+        raise ValueError('NTE_CUDA_JIT_OPT_LEVEL must be an integer from 0 to 4')
+    return dict(fast_compile=fast, jit_optimization_level=None if raw is None else int(raw))
+
+
+def _load_driver_module(drv, module, ptx, jit_level):
+    if jit_level is None:
+        rc = drv.cuModuleLoadData(ctypes.byref(module), ptx)
+        operation = 'cuModuleLoadData'
+    else:
+        if not hasattr(drv, 'cuModuleLoadDataEx'):
+            raise CudaDriverError('Explicit JIT optimization requires cuModuleLoadDataEx')
+        # CU_JIT_OPTIMIZATION_LEVEL=7. Values are cast to void*, not integer pointers.
+        options = (ctypes.c_int * 1)(7)
+        values = (ctypes.c_void_p * 1)(jit_level)
+        rc = drv.cuModuleLoadDataEx(ctypes.byref(module), ptx, 1, options, values)
+        operation = 'cuModuleLoadDataEx'
+    if rc != 0:
+        raise CudaDriverError(_format_cuda_error(drv, rc, operation))
+
+
 class CudaDriverError(CudaError):
     """Raised when CUDA driver API operations return a non-zero status."""
     pass
@@ -508,6 +535,7 @@ class CudaModule:
 
         self._source = source
         self._source_sha = hashlib.sha256(source.encode("utf-8")).hexdigest()
+        self._compilation_profile = cuda_compilation_profile()
         self._closed = False
         self._module: Optional[ctypes.c_void_p] = None
         self._kernels: Dict[str, ctypes.c_void_p] = {}
@@ -577,6 +605,8 @@ class CudaModule:
                 arch_flag,
                 "--fmad=false",
             ]
+            if self._compilation_profile['fast_compile'] != '0':
+                flags.append('--Ofast-compile=' + self._compilation_profile['fast_compile'])
             if extra_compile_options:
                 if any(not isinstance(flag, str) or not flag.startswith('-D')
                        for flag in extra_compile_options):
@@ -590,9 +620,8 @@ class CudaModule:
             # Load module into CUDA primary context
             mod = ctypes.c_void_p()
             try:
-                rc = self._drv.cuModuleLoadData(ctypes.byref(mod), ptx)
-                if rc != 0:
-                    raise CudaDriverError(_format_cuda_error(self._drv, rc, "cuModuleLoadData"))
+                _load_driver_module(self._drv, mod, ptx,
+                                    self._compilation_profile['jit_optimization_level'])
 
                 self._module = mod
 
@@ -685,6 +714,35 @@ class CudaModule:
     @property
     def compile_options(self) -> Tuple[str, ...]:
         return self._compile_options
+
+    @property
+    def compilation_profile(self) -> dict:
+        return dict(self._compilation_profile)
+
+    @_bound_cuda_device
+    def ensure_stack(self, requested_bytes: int = 65536) -> int:
+        """Bound the interpreter's device-call stack; never lower an existing limit."""
+        if type(requested_bytes) is not int or not 4096 <= requested_bytes <= 1024**2:
+            raise ValueError('Bounded device stack request required')
+        drv=self._drv
+        if not hasattr(drv,'cuCtxGetLimit') or not hasattr(drv,'cuCtxSetLimit'):
+            raise CudaDriverError('Device interpreter requires CUDA stack-limit APIs')
+        drv.cuCtxGetLimit.argtypes=[ctypes.POINTER(ctypes.c_size_t),ctypes.c_int]
+        drv.cuCtxGetLimit.restype=ctypes.c_int
+        drv.cuCtxSetLimit.argtypes=[ctypes.c_int,ctypes.c_size_t]
+        drv.cuCtxSetLimit.restype=ctypes.c_int
+        value=ctypes.c_size_t()
+        rc=drv.cuCtxGetLimit(ctypes.byref(value),0)
+        if rc:raise CudaDriverError(_format_cuda_error(drv,rc,'cuCtxGetLimit'))
+        if value.value < requested_bytes:
+            rc=drv.cuCtxSetLimit(0,requested_bytes)
+            if rc:raise CudaDriverError(_format_cuda_error(drv,rc,'cuCtxSetLimit'))
+            rc=drv.cuCtxGetLimit(ctypes.byref(value),0)
+            if rc:raise CudaDriverError(_format_cuda_error(drv,rc,'cuCtxGetLimit'))
+        if value.value < requested_bytes:
+            raise CudaDriverError('Driver did not satisfy the device interpreter stack request')
+        self._compilation_profile['device_stack_bytes']=value.value
+        return value.value
 
     @property
     def backend(self) -> str:

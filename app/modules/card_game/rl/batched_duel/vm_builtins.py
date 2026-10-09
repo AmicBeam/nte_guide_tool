@@ -417,6 +417,21 @@ __device__ inline int builtin_attribute(Context* c, int owner, int name) {{
 // Directly call a native builtin (tag 15) or bound method (tag 34).
 // Returns 1 if handled (successful or errored via c->error/c->h.error), 0 if unhandled.
 // Result reference is written to *out.
+__device__ inline int dict_keyword_call(Context* c,int callable,const int* args,int nargs,int kw_names,const int* kw_values,int nkw,int* out) {{
+ const int* n=node(c,callable);if(!n)return 0;
+ int construct=n[0]==T_NATIVE&&n[3]==NATIVE_DICT;
+ int update=n[0]==T_BOUND_METHOD&&n[3]==METHOD_DICT_UPDATE;
+ if(!construct&&!update)return 0;
+ if(nargs<0||nargs>1||nkw<0){{c->error=BAD_CALL;return 1;}}
+ int owner=construct?make_dict(&c->h):n[1];if(c->h.error)return 1;
+ if(nargs&&device_dict_update(c,owner,args[0]))return 1;
+ for(int i=0;i<nkw;i++){{
+  int key=edge(c,kw_names,i);if(kind(c,key)!=TAG_STR){{c->error=BAD_CALL;return 1;}}
+  if(dict_set(&c->h,owner,key,kw_values[i]))return 1;
+ }}
+ *out=construct?owner:NIL;return 1;
+}}
+
 __device__ inline int native_builtin_call(Context* c, int callable, const int* args, int nargs, int* out) {{
     const int* n = node(c, callable);
     if (!n) return 0;

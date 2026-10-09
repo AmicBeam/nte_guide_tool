@@ -83,7 +83,7 @@ _VM_SOURCE=r'''
 // Frame: function,pc,sp,caller,status,return_kind,return_target,default,globals,closure,generator,cells_count.
 struct Context {
  Heap h; const int* classes;int class_count;const int* modules;int module_count; const int* instructions; const int* functions; int function_count; int* frames;
- int* gc_marks;int* gc_queue;int raised;int error_value;int error_kind;int current; int output; int error; int steps; int step_limit; long long deadline; int context_values;
+ long long* gc_marks;int* gc_queue;unsigned int deepcopy_epoch;int raised;int error_value;int error_kind;int current; int output; int error; int steps; int step_limit; long long deadline; int context_values;
 };
 __device__ inline unsigned long long clock_ns(){unsigned long long value;asm volatile("mov.u64 %0, %%globaltimer;" : "=l"(value));return value;}
 __device__ inline int* frame(Context* c,int id){return c->frames+id*STRIDE;}
@@ -251,6 +251,18 @@ __device__ inline long long range_size(Context* c,int ref){
 __device__ inline void call(Context* c,int callable,const int* args,int nargs,int caller,int kw_names=MISSING,const int* kw_values=0,int nkw=0){
  const int* n=node(c,callable);if(!n)return;
  int bound_args[VM_STACK];
+ if(n[0]==29){
+  // Python special-method invocation looks on the type, ignoring instance shadows.
+  int instance=callable,cls=class_ref(c,instance),category=-1;
+  int name=make_utf8(&c->h,"__call__",8);
+  int method=cls==MISSING?MISSING:lookup_class(c,node(c,cls)[3],name,&category);
+  if(method==MISSING){c->error=BAD_CALL;return;}
+  if(category==2)callable=bind_method(c,method,instance);
+  else if(category==4)callable=bind_method(c,method,cls);
+  else if(category==3)callable=method;
+  else{c->error=UNSUPPORTED_TYPE;return;}
+  n=node(c,callable);if(!n)return;
+ }
  if(n[0]==18){
   if(nargs+1>VM_STACK){c->error=STACK_OVERFLOW;return;}
   bound_args[0]=edge(c,callable,1);for(int i=0;i<nargs;i++)bound_args[i+1]=args[i];
@@ -291,7 +303,11 @@ __device__ inline void call(Context* c,int callable,const int* args,int nargs,in
  if(context_call(c,callable,args,nargs,kw_names,kw_values,nkw,&native_result)){
   if(!c->error&&!c->h.error&&c->raised==MISSING)push(c,frame(c,caller),native_result);return;
  }
+ if(dict_keyword_call(c,callable,args,nargs,kw_names,kw_values,nkw,&native_result)){
+  if(!c->error&&!c->h.error)push(c,frame(c,caller),native_result);return;
+ }
  if(nkw && (n[0]==T_NATIVE||n[0]==34||n[0]==41||n[0]==45||n[0]==46||n[0]==47)){c->error=BAD_CALL;return;}
+ if(text_iterable_call(c,callable,args,nargs,caller))return;
  if(deepcopy_call(c,callable,args,nargs,&native_result)||text_call(c,callable,args,nargs,&native_result)||string_call(c,callable,args,nargs,&native_result)||exception_call(c,callable,args,nargs,&native_result)||random_call(c,callable,args,nargs,&native_result)||native_builtin_call(c,callable,args,nargs,&native_result)){
   if(!c->error&&!c->h.error)push(c,frame(c,caller),native_result);return;
  }
@@ -321,7 +337,8 @@ __device__ inline void return_value(Context* c,int value,int yielded){
  int id=c->current;int* f=frame(c,id);int caller=f[3],mode=f[5],target=f[6],fallback=f[7];
  if(yielded){
   if(f[10]<0 || caller<0){c->error=BAD_CALL;return;}f[4]=2;if(mode==5){reducer_resume(c,f[10],caller,target,value,0);return;}
-  if(mode==7){stdlib_resume(c,f[10],caller,target,value,0);return;}push(c,frame(c,caller),value);c->current=caller;return;
+  if(mode==7){stdlib_resume(c,f[10],caller,target,value,0);return;}
+  if(mode==8){text_join_resume(c,f[10],caller,target,value,0);return;}push(c,frame(c,caller),value);c->current=caller;return;
  }
  if(f[10]>=0){
   int* gen=mutable_node(c,f[10]);if(gen)gen[3]=-1;
@@ -329,6 +346,7 @@ __device__ inline void return_value(Context* c,int value,int yielded){
   if(caller<0){c->error=BAD_CALL;return;}
   if(mode==5){reducer_resume(c,f[10],caller,target,MISSING,1);return;}
   if(mode==7){stdlib_resume(c,f[10],caller,target,MISSING,1);return;}
+  if(mode==8){text_join_resume(c,f[10],caller,target,MISSING,1);return;}
   if(mode==2){pop(c,frame(c,caller));frame(c,caller)[1]=target;}
   else if(fallback!=MISSING)push(c,frame(c,caller),fallback);else c->error=STOP_ITERATION;
  }else{
@@ -543,9 +561,9 @@ extern "C" __global__ void vm_execute(
  const int* instructions,const int* functions,int function_count,
  int constant_node_count,int constant_edge_count,int constant_payload_count,
  int* frames,int* outputs,int* statuses,const long long* deadlines,
- int rows,int max_nodes,int max_edges,int max_payload,int entry,int step_limit,const int* classes,int class_count,const int* modules,int module_count,int* gc_marks,int* gc_queue){
+ int rows,int max_nodes,int max_edges,int max_payload,int entry,int step_limit,const int* classes,int class_count,const int* modules,int module_count,long long* gc_marks,int* gc_queue){
  using namespace duel_rule_vm;int tid=(int)(blockIdx.x*blockDim.x+threadIdx.x);if(tid>=rows)return;
- Context c;c.gc_marks=gc_marks+(long long)tid*(max_nodes+constant_node_count);c.gc_queue=gc_queue+(long long)tid*max_nodes;c.classes=classes;c.class_count=class_count;c.modules=modules;c.module_count=module_count;c.h.nodes=nodes+(long long)tid*max_nodes*4;c.h.edges=edges+(long long)tid*max_edges*2;
+ Context c;c.deepcopy_epoch=0;c.gc_marks=gc_marks+(long long)tid*(max_nodes+constant_node_count);c.gc_queue=gc_queue+(long long)tid*max_nodes;c.classes=classes;c.class_count=class_count;c.modules=modules;c.module_count=module_count;c.h.nodes=nodes+(long long)tid*max_nodes*4;c.h.edges=edges+(long long)tid*max_edges*2;
  c.h.payload=payload+(long long)tid*max_payload;c.h.counts=counts+tid*3;
  c.h.max_nodes=max_nodes;c.h.max_edges=max_edges;c.h.max_payload=max_payload;
  c.h.constant_nodes=constants_nodes;c.h.constant_edges=constants_edges;c.h.constant_payload=constants_payload;
@@ -555,7 +573,7 @@ extern "C" __global__ void vm_execute(
  c.current=-1;c.output=MISSING;c.error=0;c.raised=MISSING;c.error_value=MISSING;c.error_kind=0;c.steps=0;c.step_limit=step_limit;c.deadline=deadlines[tid];c.context_values=MISSING;
  c.current=new_frame(&c,entry,args+(long long)tid*nargs,nargs,-1,3);
  if(c.current>=0)execute(&c);
- outputs[tid]=c.output;statuses[tid*4]=c.error?c.error:c.h.error;
+ outputs[tid]=c.output;statuses[tid*4]=c.h.error?c.h.error:c.error;
  statuses[tid*4+1]=c.current>=0?frame(&c,c.current)[0]:entry;
  statuses[tid*4+2]=c.current>=0?frame(&c,c.current)[1]:-1;statuses[tid*4+3]=c.steps;
 }
@@ -661,11 +679,16 @@ class CudaVm:
             ('instructions','functions','nodes','edges','payload','classes','modules')}
         signature=['int32*','int32*','uint8*','int32*','int32*','int32',
             'int32*','int32*','uint8*','int32*','int32*','int32','int32','int32','int32',
-            'int32*','int32*','int32*','int64*','int32','int32','int32','int32','int32','int32','int32*','int32','int32*','int32','int32*','int32*']
+            'int32*','int32*','int32*','int64*','int32','int32','int32','int32','int32','int32','int32*','int32','int32*','int32','int64*','int32*']
         compact_signature=['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
             'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*','int32*','int32*','int32*',
             'int32','int32','int32','int32','int32']
         self.module=CudaModule(emit_vm_source(image,limits),{'vm_execute':signature,'vm_clock':['int64*'],'vm_compact':compact_signature},device=str(self.device))
+        try:
+            self.module.ensure_stack()
+        except BaseException:
+            self.module.close()
+            raise
         self.closed=False
     def capability(self,entry):
         missing=self.image.missing_capabilities(entry,opcodes=SUPPORTED_OPS,intrinsics=SUPPORTED_INTRINSICS)
@@ -707,7 +730,7 @@ class CudaVm:
         frames=torch.empty((rows,self.limits.frames,stride),dtype=torch.int32,device=self.device)
         outputs=torch.empty(rows,dtype=torch.int32,device=self.device);statuses=torch.zeros((rows,4),dtype=torch.int32,device=self.device)
         b=self._buffers;l=arena.layout
-        gc_marks=torch.empty((rows,l.max_nodes+len(self.image.nodes)),dtype=torch.int32,device=self.device);gc_queue=torch.empty((rows,l.max_nodes),dtype=torch.int32,device=self.device)
+        gc_marks=torch.zeros((rows,l.max_nodes+len(self.image.nodes)),dtype=torch.int64,device=self.device);gc_queue=torch.empty((rows,l.max_nodes),dtype=torch.int32,device=self.device)
         event=self.module.launch('vm_execute',[scratch.nodes,scratch.edges,scratch.payload,scratch.counts,argument_refs,argument_refs.shape[1],
             b['nodes'],b['edges'],b['payload'],b['instructions'],b['functions'],len(self.image.functions),
             len(self.image.nodes),len(self.image.edges),len(self.image.payload),frames,outputs,statuses,gpu_deadlines,

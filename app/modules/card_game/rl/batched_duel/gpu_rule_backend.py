@@ -47,6 +47,7 @@ from app.modules.card_game.rl.batched_duel.gpu_rule_capacity import (
     normalize_runtime,
     resolve_gpu_rule_backend_capacity,
     DEFAULT_QUERY_BATCH_ROWS,
+    MAX_VM_CONSTANT_NODES,
     graph_state_bytes,
     plan_gpu_rule_capacity,
     split_query_batches,
@@ -261,6 +262,8 @@ class GpuRuleBackend:
             self.image = lower_gpu_program(self.program)
         except (ImageError, TypeError, ValueError, RuntimeError) as exc:
             raise GpuRuleBackendError('Failed to lower GPU rule program: %s' % exc) from exc
+        if len(self.image.nodes) > MAX_VM_CONSTANT_NODES:
+            raise GpuRuleBackendError("Frozen constants exceed the planned VM memo capacity")
         from .cuda_vm import SUPPORTED_INTRINSICS, SUPPORTED_OPS, DENIED_STANDALONE_INTRINSICS
         self._capability_report = entry_blockers(
             self.image, self.entry_names, opcodes=SUPPORTED_OPS, intrinsics=SUPPORTED_INTRINSICS,
@@ -521,8 +524,12 @@ class GpuRuleBackend:
         if entry not in self.image.entries or entry not in self.entry_names:
             raise GpuRuleCapabilityError('GPU rule entry %s is not loaded' % entry)
         row = self._capability_report.get(entry)
-        if row is not None and not row['declared_capabilities_ready']:
-            raise GpuRuleCapabilityError('GPU rule entry %s is unsupported: %s' % (entry, row['missing']))
+        if row is not None:
+            from .cuda_vm import DENIED_STANDALONE_INTRINSICS
+            missing=row['missing']
+            permitted=DENIED_STANDALONE_INTRINSICS if self.guard_standalone_entities else set()
+            if missing['opcodes'] or set(missing['intrinsics'])-permitted:
+                raise GpuRuleCapabilityError('GPU rule entry %s is unsupported: %s' % (entry, missing))
         return entry
 
     def _allocate_slots(self, n):

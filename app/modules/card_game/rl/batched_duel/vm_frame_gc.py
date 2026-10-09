@@ -22,7 +22,7 @@ __device__ inline void gc_frame(Context* c,int id,int* marked,int* tail){
  for(int i=0;i<f[2];i++)gc_ref(c,f[SBASE+i],tail);
  for(int i=0;i<f[11];i++)gc_ref(c,f[CBASE+i],tail);
  gc_ref(c,f[8],tail);gc_ref(c,f[9],tail);gc_ref(c,f[10],tail);
- if(f[5]==4||f[5]==5||f[5]==7)gc_ref(c,f[6],tail);
+ if(f[5]==4||f[5]==5||f[5]==7||f[5]==8)gc_ref(c,f[6],tail);
  if(f[5]==1)gc_ref(c,f[7],tail);
  if(HEADER>12)gc_ref(c,f[12],tail);
  if(HEADER>13)gc_ref(c,f[13],tail);

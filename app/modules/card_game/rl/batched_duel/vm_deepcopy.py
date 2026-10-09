@@ -1,9 +1,10 @@
 """Device deepcopy for the codec's exact scalar, container and Entity tags.
 
 Insert the emitted source after Context/node/edge and before call(). The caller
-must provide gc_marks with max_nodes + constant_node_count int32 entries per
-row, and gc_queue with max_nodes entries. Neither scratch array is persistent
-across calls. This primitive does not invoke Python or user __deepcopy__ hooks.
+must provide zero-initialized gc_marks with max_nodes + constant_node_count
+int64 entries per row, and gc_queue with max_nodes entries. Memo epochs
+distinguish repeated copies within one VM invocation. This primitive does not
+invoke Python or user __deepcopy__ hooks.
 
 Traversal is iterative, so nesting consumes the declared graph/work budget
 rather than a fixed recursive stack. Cyclic mutable containers are supported
@@ -75,23 +76,33 @@ __device__ inline int deepcopy_source_edge(Context* c,const NodeView* n,int i,in
  return edges[((long long)n->offset+i)*2+side];
 }
 
+// High bits identify one deepcopy invocation; low bits retain the exact signed ref.
+// GC writes only 0/1, which carry epoch zero and cannot match an active copy.
+__device__ inline int deepcopy_memo_get(Context* c,int key){
+ unsigned long long packed=(unsigned long long)c->gc_marks[key];
+ return (unsigned int)(packed>>32)==c->deepcopy_epoch?(int)(unsigned int)packed:MISSING;
+}
+__device__ inline void deepcopy_memo_set(Context* c,int key,int value){
+ c->gc_marks[key]=(long long)(((unsigned long long)c->deepcopy_epoch<<32)|(unsigned int)value);
+}
+
 __device__ inline int deepcopy_discover(Context* c,int ref,int old_nodes,
  int old_edges,int old_payload,int* tail){
  if(!deepcopy_tick(c))return 0;
  int key=deepcopy_key(c,ref,old_nodes);if(key<0)return 0;
- if(c->gc_marks[key]!=MISSING)return 1;
+ if(deepcopy_memo_get(c,key)!=MISSING)return 1;
  NodeView n;if(!deepcopy_source_node(c,ref,old_nodes,old_edges,old_payload,&n))return 0;
  // Atomic immutable objects retain identity and their exact payload bytes.
- if(n.tag<=TAG_STR){c->gc_marks[key]=ref;return 1;}
+ if(n.tag<=TAG_STR){deepcopy_memo_set(c,key,ref);return 1;}
  if(*tail>=c->h.max_nodes){c->error=STACK_OVERFLOW;return 0;}
- c->gc_marks[key]=n.tag==TAG_TUPLE?ref:DEEPCOPY_CHANGED;
+ deepcopy_memo_set(c,key,n.tag==TAG_TUPLE?ref:DEEPCOPY_CHANGED);
  c->gc_queue[(*tail)++]=ref;
  return 1;
 }
 
 __device__ inline int deepcopy_mapped(Context* c,int ref,int old_nodes){
  int key=deepcopy_key(c,ref,old_nodes);if(key<0)return MISSING;
- int result=c->gc_marks[key];
+ int result=deepcopy_memo_get(c,key);
  if(result==MISSING || result==DEEPCOPY_CHANGED){c->h.error=ERROR_INVALID_REF;return MISSING;}
  return result;
 }
@@ -106,11 +117,13 @@ __device__ inline int native_deepcopy(Context* c,int root){
   memo_size>2147483646LL || !c->gc_marks || !c->gc_queue){
   c->error=BAD_PROGRAM;return MISSING;
  }
+ // Atomic immutables need no memo. Public projections copy hundreds of these;
+ // clearing the entire heap memo for each scalar made work grow with unrelated objects.
+ NodeView root_node;
+ if(!deepcopy_source_node(c,root,old_nodes,old_edges,old_payload,&root_node))return MISSING;
+ if(root_node.tag<=TAG_STR)return deepcopy_tick(c)?root:MISSING;
  int tail=0;
- for(int i=0;i<memo_size;i++){
-  if(!deepcopy_tick(c))return MISSING;
-  c->gc_marks[i]=MISSING;
- }
+ if(++c->deepcopy_epoch==0){c->error=BAD_PROGRAM;return MISSING;}
  if(!deepcopy_discover(c,root,old_nodes,old_edges,old_payload,&tail))return MISSING;
 
  // Phase one: visit every original object exactly once, including dict keys.
@@ -137,13 +150,13 @@ __device__ inline int native_deepcopy(Context* c,int root){
    if(!deepcopy_tick(c))return MISSING;
    int ref=c->gc_queue[pos],key=deepcopy_key(c,ref,old_nodes);NodeView n;
    if(key<0 || !deepcopy_source_node(c,ref,old_nodes,old_edges,old_payload,&n))return MISSING;
-   if(n.tag!=TAG_TUPLE || c->gc_marks[key]==DEEPCOPY_CHANGED)continue;
+   if(n.tag!=TAG_TUPLE || deepcopy_memo_get(c,key)==DEEPCOPY_CHANGED)continue;
    for(int i=0;i<n.count;i++){
     if(!deepcopy_tick(c))return MISSING;
     int child=deepcopy_source_edge(c,&n,i,0),child_key=deepcopy_key(c,child,old_nodes);
     if(child_key<0)return MISSING;
-    if(c->gc_marks[child_key]==MISSING){c->h.error=ERROR_INVALID_REF;return MISSING;}
-    if(c->gc_marks[child_key]!=child){c->gc_marks[key]=DEEPCOPY_CHANGED;changed=1;break;}
+    if(deepcopy_memo_get(c,child_key)==MISSING){c->h.error=ERROR_INVALID_REF;return MISSING;}
+    if(deepcopy_memo_get(c,child_key)!=child){deepcopy_memo_set(c,key,DEEPCOPY_CHANGED);changed=1;break;}
    }
   }
  }
@@ -155,13 +168,13 @@ __device__ inline int native_deepcopy(Context* c,int root){
   if(!deepcopy_tick(c))break;
   int ref=c->gc_queue[pos],key=deepcopy_key(c,ref,old_nodes);NodeView n;
   if(key<0 || !deepcopy_source_node(c,ref,old_nodes,old_edges,old_payload,&n))break;
-  if(c->gc_marks[key]!=DEEPCOPY_CHANGED)continue;
+  if(deepcopy_memo_get(c,key)!=DEEPCOPY_CHANGED)continue;
   if(c->h.counts[0]>=c->h.max_nodes){c->h.error=ERROR_NODE_CAPACITY;break;}
   if((long long)c->h.counts[1]+n.count>c->h.max_edges){c->h.error=ERROR_EDGE_CAPACITY;break;}
   int dest=c->h.counts[0]++,offset=c->h.counts[1];c->h.counts[1]+=n.count;
   int* out=c->h.nodes+(long long)dest*4;
   out[0]=n.tag;out[1]=offset;out[2]=n.count;out[3]=n.extra;
-  c->gc_marks[key]=dest;
+  deepcopy_memo_set(c,key,dest);
  }
 
  // Phase two: fill ordered edges using the complete memo, preserving aliases

@@ -761,6 +761,7 @@ def training_source_identity(models, config, backend=None, models_dir=None):
     snapshot['query_batch_rows'] = int(config.get('query_batch_rows', DEFAULT_QUERY_BATCH_ROWS))
     snapshot['simulations'] = int(config.get('simulations', DEFAULT_SIMULATIONS))
     snapshot['training_buffer_mib'] = int(config.get('training_buffer_mib',8192))
+    snapshot['search_statistics_device'] = config.get('search_statistics_device')
     snapshot['search_code_includes_training_rollout'] = True
     snapshot['query_batch_is_not_root_concurrency'] = snapshot['query_batch_rows'] != snapshot.get('requested_search_roots')
     return snapshot
@@ -771,6 +772,11 @@ def rollout_from_config(config, models, *, inference=None, backend=None, statist
     """Build a frozen collector. Caller owns live learner nets separately."""
     own_backend = backend is None
     own_statistics = False
+    requested_statistics = config.get('search_statistics_device')
+    if requested_statistics not in (None, 'cuda'):
+        raise ValueError('Known explicit search statistics device required')
+    if requested_statistics == 'cuda' and config.get('device') != 'cuda':
+        raise ValueError('CUDA statistics require the explicit CUDA training device')
     value_models=None
     if config.get('teacher_mode')=='covered_value':
         from app.modules.card_game.rl.seven_covered_value import load_scope
@@ -794,16 +800,19 @@ def rollout_from_config(config, models, *, inference=None, backend=None, statist
             assert_inference_frozen(inference)
         search_roots = int(config.get('search_roots', MAX_SEARCH_ROOTS))
         query_batch_rows = int(config.get('query_batch_rows', DEFAULT_QUERY_BATCH_ROWS))
-        if statistics is None and report_rule_backend(backend, config.get('rule_backend')) == RULE_BACKEND_CUDA_VM:
+        resolved_backend = report_rule_backend(backend, config.get('rule_backend'))
+        if statistics is None and (resolved_backend == RULE_BACKEND_CUDA_VM or requested_statistics == 'cuda'):
             from .statistics import BatchedStatistics
             node_capacity, candidate_capacity = statistics_capacity(
-                RULE_BACKEND_CUDA_VM, search_roots, getattr(backend, 'capacity_plan', None),
+                resolved_backend, search_roots, getattr(backend, 'capacity_plan', None),
             )
             statistics = BatchedStatistics(
                 node_capacity, candidate_capacity, device=config.get('device', 'cuda'),
                 q_scale='natural_wdl',
             )
             own_statistics = True
+        if requested_statistics == 'cuda' and not str(getattr(getattr(statistics, 'pool', None), 'device', '')).startswith('cuda'):
+            raise ValueError('Explicit CUDA statistics cannot use a host statistics pool')
     except BaseException:
         if own_statistics and statistics is not None:
             statistics.close()

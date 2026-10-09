@@ -43,7 +43,7 @@ _APPEND_SPEC = (
     'int32*', 'int32*', 'uint8*', 'int32*', 'int32*',
     'int32*', 'int32*', 'uint8*', 'int32*', 'int32*',
     'int32*', 'int32*',
-    'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32',
+    'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32', 'int32',
 )
 _META_SPEC = (
     'int32*', 'int32*', 'uint8*', 'int32*', 'int32*',

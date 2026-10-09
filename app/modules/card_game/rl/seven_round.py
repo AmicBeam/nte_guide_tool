@@ -45,6 +45,11 @@ def rollout_contract(config):
     result = dict(rule_backend=backend, search_roots=roots, query_batch_rows=rows,
                   gpu_memory_budget_mib=config.get('gpu_memory_budget_mib'),
                   guard_standalone_entities=config.get('guard_standalone_entities',False))
+    statistics_device=config.get('search_statistics_device')
+    if statistics_device not in (None,'cuda') or (statistics_device=='cuda' and
+            (backend=='serial_cpu' or config.get('device')!='cuda')):
+        raise ValueError('Explicit CUDA statistics require a cooperative CUDA training path')
+    result['search_statistics_device']=statistics_device
     buffer_mib=config.get('training_buffer_mib',8192)
     if type(buffer_mib) is not int or buffer_mib < 1:
         raise ValueError('Positive training trajectory buffer budget required')

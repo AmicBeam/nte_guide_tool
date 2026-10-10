@@ -781,6 +781,7 @@ class CudaModule:
         grid: Union[int, Sequence[int]],
         block: Union[int, Sequence[int]],
         shared_bytes: int = 0,
+        capture_safe: bool = False,
     ) -> Any:
         """Asynchronously launch a kernel on the module's stream and return a completion event.
 
@@ -792,6 +793,8 @@ class CudaModule:
         """
         if self._closed:
             raise RuntimeError("CudaModule is closed")
+        if type(capture_safe) is not bool:
+            raise TypeError('capture_safe must be an explicit boolean')
 
         if name not in self._kernels:
             raise KeyError(f"Kernel '{name}' not found in compiled module")
@@ -869,12 +872,13 @@ class CudaModule:
 
         # Coordinate caller producer stream
         caller_stream = torch.cuda.current_stream(device=self._device)
-        if caller_stream != self._stream:
+        launch_stream = caller_stream if capture_safe else self._stream
+        if caller_stream != launch_stream:
             self._stream.wait_stream(caller_stream)
 
         # Extend asynchronous memory lifetime for tensor arguments
         for t in tensors_to_record:
-            t.record_stream(self._stream)
+            t.record_stream(launch_stream)
 
         # Construct parameter pointers array; elements remain alive on Python stack across call
         param_ptrs = (ctypes.c_void_p * len(c_values))()
@@ -882,7 +886,7 @@ class CudaModule:
             param_ptrs[idx] = ctypes.cast(ctypes.byref(val), ctypes.c_void_p)
 
         kernel_fn = self._kernels[name]
-        stream_handle = ctypes.c_void_p(self._stream.cuda_stream)
+        stream_handle = ctypes.c_void_p(launch_stream.cuda_stream)
 
         rc = self._drv.cuLaunchKernel(
             kernel_fn,
@@ -900,6 +904,11 @@ class CudaModule:
         if rc != 0:
             raise CudaDriverError(_format_cuda_error(self._drv, rc, f"cuLaunchKernel for '{name}'"))
 
+        # Conditional graph bodies cannot contain event record/wait nodes.
+        # The capture-safe path uses the caller's already ordered stream and
+        # returns no event; it does not claim synchronous completion.
+        if capture_safe:
+            return None
         # Record completion event on the module stream
         event = torch.cuda.Event()
         event.record(self._stream)

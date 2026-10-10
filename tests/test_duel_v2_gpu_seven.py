@@ -82,9 +82,70 @@ class GpuSevenContractTest(unittest.TestCase):
 
 @unittest.skipUnless(has_torch, 'PyTorch required for GPU encoder tests')
 class GpuSevenEncoderTest(unittest.TestCase):
+    def test_device_observation_errors_stay_per_row_and_preserve_inputs(self):
+        import torch
+        from dataclasses import fields
+        from app.modules.card_game.rl.batched_duel.gpu_seven_observation import extract_raw_observation_tokens, encode_observation_tokens_device, RawObservationTokens
+        deck = self.decks['starter']
+        view = observe(new_game(seed=7, decks={'a': deck, 'b': deepcopy(deck)}, skip_mulligan=True), 'a', include_previews=False)
+        raw = extract_raw_observation_tokens([view, view])
+        values = {field.name: torch.as_tensor(getattr(raw, field.name)).clone() for field in fields(raw) if field.name != 'request_ids'}
+        values['char_seats'][1, 0, 0] = 999
+        before = values['char_seats'].clone()
+        device_tokens = RawObservationTokens(**values)
+        encoded, errors = encode_observation_tokens_device(device_tokens, device='cpu', allow_cpu_reference=True)
+        self.assertEqual(errors.tolist(), [0, 1])
+        self.assertTrue(torch.equal(values['char_seats'], before))
+        self.assertTrue(torch.isfinite(encoded.observations).all())
+        self.assertEqual(encoded.request_ids, ())
+
+    def test_actual_cuda_observation_encoding_capture_keeps_error_masks(self):
+        import torch
+        if not torch.cuda.is_available():
+            self.skipTest('Actual CUDA required')
+        from dataclasses import fields
+        from app.modules.card_game.rl.batched_duel.gpu_seven_observation import extract_raw_observation_tokens, encode_observation_tokens_device, RawObservationTokens
+        deck = self.decks['starter']
+        view = observe(new_game(seed=7, decks={'a': deck, 'b': deepcopy(deck)}, skip_mulligan=True), 'a', include_previews=False)
+        raw = extract_raw_observation_tokens([view, view])
+        values = {field.name: torch.as_tensor(getattr(raw, field.name), device='cuda').clone() for field in fields(raw) if field.name != 'request_ids'}
+        tokens = RawObservationTokens(**values)
+        encode_observation_tokens_device(tokens, device='cuda:0')
+        torch.cuda.synchronize()
+        graph = torch.cuda.CUDAGraph()
+        with torch.cuda.graph(graph):
+            encoded, errors = encode_observation_tokens_device(tokens, device='cuda:0')
+        graph.replay();torch.cuda.synchronize()
+        self.assertEqual(errors.tolist(), [0, 0])
+        values['global_tokens'][1, 0] = float('nan')
+        graph.replay();torch.cuda.synchronize()
+        self.assertEqual(errors.tolist(), [0, 1])
+        self.assertTrue(torch.isfinite(encoded.observations).all())
+
     @classmethod
     def setUpClass(cls):
         cls.decks = _decks()
+
+    def test_scalar_normalization_rounds_once_like_formal_encoder(self):
+        from app.modules.card_game.rl.batched_duel.gpu_seven_observation import encode_observation_batch
+        views = [observe(new_game(seed=19501+i, skip_mulligan=True,
+                                  decks={'a': deck, 'b': deck}), 'a', include_previews=False)
+                 for i, deck in enumerate(self.decks.values())]
+        expected = np.stack([seven_lineup.encode(view, [])[0] for view in views])
+        actual = encode_observation_batch(views, device='cpu').observations.numpy()
+        np.testing.assert_array_equal(actual, expected)
+        self.assertEqual(actual[0, 35], np.float32(26 / 10))
+
+    def test_actual_cuda_exact_scalar_observation_normalization(self):
+        import torch
+        if not torch.cuda.is_available(): self.skipTest('Actual CUDA required')
+        from app.modules.card_game.rl.batched_duel.gpu_seven_observation import encode_observation_batch
+        views = [observe(new_game(seed=19501+i, skip_mulligan=True,
+                                  decks={'a': deck, 'b': deck}), 'a', include_previews=False)
+                 for i, deck in enumerate(self.decks.values())]
+        expected = np.stack([seven_lineup.encode(view, [])[0] for view in views])
+        actual = encode_observation_batch(views, device='cuda').observations.cpu().numpy()
+        np.testing.assert_array_equal(actual, expected)
 
     def test_recovery_encode_still_rejects_seven_only_roster(self):
         from app.modules.card_game.rl.batched_duel.gpu_observation import encode_single_observation

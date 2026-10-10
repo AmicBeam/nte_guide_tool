@@ -667,10 +667,22 @@ def extract_raw_observation_tokens(
     )
 
 
+def _reference_ratio32(value, denominator):
+    """Python scalar division rounds once to the model's float32 output.
+
+    CUDA float32 reciprocal multiplication can differ by one ULP from the
+    formal NumPy encoder. Keep the division in binary64 on the same device,
+    then perform the declared float32 output conversion.
+    """
+    t = _require_torch()
+    return (value.to(dtype=t.float64) / denominator).to(dtype=t.float32)
+
+
 def encode_observation_tokens(
     tokens: RawObservationTokens,
     *,
     device: Optional[Union[str, Any]] = None,
+    _device_errors=None,
 ) -> PackedObservationBatch:
     """Encode RawObservationTokens into the versioned seven observation tensor.
 
@@ -716,9 +728,22 @@ def encode_observation_tokens(
     m_valid=arrays['mark_valid'];sub_cards=arrays['substituted_cards'];sub_valid=arrays['substituted_valid']
     seven_side=arrays['seven_side'];seven_char=arrays['seven_char'];side_res=arrays['side_resist'];char_res=arrays['char_resist']
     choice_k=arrays['choice_kind'];choice_c=arrays['choice_cards'];mask=arrays['mask'];counts=arrays['counts']
+    device_checks = _device_errors is not None
+    if device_checks:
+        if (_device_errors.shape != (size,) or _device_errors.dtype != t.int32
+                or _device_errors.device != dev):
+            raise ValueError('Device error vector must match token batch')
+        if any(not isinstance(getattr(tokens,name),t.Tensor) or getattr(tokens,name).device != dev for name in specs):
+            raise ValueError('Device token encoder requires device-resident tensors')
+    def reject(condition, label):
+        bad = condition if condition.ndim == 1 else condition.flatten(1).any(1)
+        if device_checks:
+            _device_errors.bitwise_or_(bad.to(t.int32))
+        elif bool(bad.any()):
+            raise ValueError(label)
     def bounded(value,lo,hi,label):
-        if bool(((value<lo)|(value>hi)).any()):raise ValueError('Invalid token domain: '+label)
-    if not bool(t.equal(counts,mask.long())):raise ValueError('Observation mask/count mismatch')
+        reject((value<lo)|(value>hi),'Invalid token domain: '+label)
+    reject(counts!=mask.long(),'Observation mask/count mismatch')
     bounded(ch_seats,-1,NUM_SEATS-1,'character seats');bounded(ch_int[:,:,:,0],-1,NUM_CARDS-1,'shapes')
     bounded(ch_int[:,:,:,1],-1,1,'collapse side');bounded(z_cards,-1,NUM_CARDS-1,'zone cards')
     bounded(m_cards,-1,NUM_CARDS-1,'marked cards');bounded(sub_cards,-1,NUM_CARDS-1,'physical cards');bounded(m_deltas,-1,1,'mark deltas')
@@ -726,21 +751,21 @@ def encode_observation_tokens(
     bounded(choice_c,-1,NUM_CARDS-1,'choice cards');bounded(choice_k,0,1,'choice kind')
     for field in (0,1,4):bounded(side_int[:,:,field],-1,NUM_SEATS-1,'side character')
     for field in (2,3,5):bounded(side_int[:,:,field],-1,1,'side identity')
-    if bool((ch_pres&(ch_seats<0)).any()):raise ValueError('Active character without seat')
+    reject(ch_pres&(ch_seats<0),'Active character without seat')
     seats=ch_seats.unsqueeze(-1)==ch_seats.unsqueeze(-2)
     active=ch_pres.unsqueeze(-1)&ch_pres.unsqueeze(-2)
     identity=t.eye(MAX_PRESENT,dtype=t.bool,device=dev).view(1,1,MAX_PRESENT,MAX_PRESENT)
-    if bool((seats&active&~identity).any()):raise ValueError('Duplicate character seat')
-    if bool((m_valid&(m_cards<0)).any()) or bool((sub_valid&(sub_cards<0)).any()):raise ValueError('Active card token missing identity')
+    reject(seats&active&~identity,'Duplicate character seat')
+    reject((m_valid&(m_cards<0))|(sub_valid&(sub_cards<0)),'Active card token missing identity')
     for field,lo,hi in ((1,0,1),(2,0,1),(3,0,1),(4,0,3),(5,-1,3),(7,-1,NUM_CARDS-1),(8,0,1)):
         value=global_tok[:,field];bounded(value,lo,hi,'header')
-        if bool((value!=value.floor()).any()):raise ValueError('Nonintegral header identity')
+        reject(value!=value.floor(),'Nonintegral header identity')
     n = int(global_tok.shape[0])
     ids = tuple(tokens.request_ids)
-    if not ids:
+    if not ids and not device_checks:
         epoch = uuid4().hex
         ids = tuple(epoch + ':' + str(i) for i in range(n))
-    if len(ids) != n or len(set(ids)) != n or any(not isinstance(x, str) or not x for x in ids):
+    if not device_checks and (len(ids) != n or len(set(ids)) != n or any(not isinstance(x, str) or not x for x in ids)):
         raise ValueError("Versioned unique observation request IDs required")
 
     if n == 0:
@@ -753,15 +778,21 @@ def encode_observation_tokens(
             request_ids=ids,
         )
 
-    # Finite check on inputs
-    if not bool(
-        t.isfinite(global_tok).all() and t.isfinite(side_flt).all() and
-        t.isfinite(ch_flt).all() and t.isfinite(ch_timed).all() and
-        t.isfinite(seven_side).all() and t.isfinite(seven_char).all() and
-        t.isfinite(side_res).all() and t.isfinite(char_res).all() and
-        t.isfinite(choice_k).all()
-    ):
-        raise ValueError("Non-finite input tokens detected")
+    for value in (global_tok, side_flt, ch_flt, ch_timed, seven_side,
+                  seven_char, side_res, char_res, choice_k):
+        reject(~t.isfinite(value), 'Non-finite input tokens detected')
+    if device_checks:
+        # Invalid rows carry sticky errors, never execute an invalid scatter.
+        # Preserve the supplied tokens; sanitized copies are not valid outputs.
+        for name, value in arrays.items():
+            bad = (_device_errors != 0).view((size,) + (1,)*(value.ndim-1))
+            arrays[name] = t.where(bad, t.zeros_like(value), value)
+    global_tok=arrays['global_tokens'];side_int=arrays['side_int_tokens'];side_flt=arrays['side_float_tokens']
+    ch_pres=arrays['char_present'];ch_seats=arrays['char_seats'];ch_int=arrays['char_int_tokens'];ch_flt=arrays['char_float_tokens']
+    ch_timed=arrays['char_timed_attacks'];z_cards=arrays['zone_cards'];m_cards=arrays['mark_cards'];m_deltas=arrays['mark_deltas']
+    m_valid=arrays['mark_valid'];sub_cards=arrays['substituted_cards'];sub_valid=arrays['substituted_valid']
+    seven_side=arrays['seven_side'];seven_char=arrays['seven_char'];side_res=arrays['side_resist'];char_res=arrays['char_resist']
+    choice_k=arrays['choice_kind'];choice_c=arrays['choice_cards'];mask=arrays['mask'];counts=arrays['counts']
 
     # 1. Header features [N, 7]
     turn = global_tok[:, 0]
@@ -774,17 +805,17 @@ def encode_observation_tokens(
     resolving_idx = global_tok[:, 7]
     has_pending_resolving = global_tok[:, 8]
 
-    col0 = turn / 30.0
+    col0 = _reference_ratio32(turn, 30.0)
     col1 = (viewer_code == first_code).float()
     col2 = escalation
-    col3 = phase_val / 10.0
-    col4 = pending_kind / 10.0
+    col3 = _reference_ratio32(phase_val, 10.0)
+    col4 = _reference_ratio32(pending_kind, 10.0)
     col5 = t.where(
         has_pending_resolving > 0.5,
-        resolving_idx / float(NUM_OLD_CARDS),
-        t.tensor(-1.0 / float(NUM_OLD_CARDS), device=dev)
+        _reference_ratio32(resolving_idx, float(NUM_OLD_CARDS)),
+        global_tok.new_full((), -1.0 / float(NUM_OLD_CARDS))
     )
-    col6 = choices_count / 10.0
+    col6 = _reference_ratio32(choices_count, 10.0)
     header_block = t.stack([col0, col1, col2, col3, col4, col5, col6], dim=1)
 
     # 2. Side fields [N, 60]
@@ -803,47 +834,47 @@ def encode_observation_tokens(
 
     burn_by = t.where(
         burn_by_side < 0,
-        t.tensor(-1.0, device=dev),
+        global_tok.new_full((), -1.0),
         (burn_by_side != side_ids).float()
     )
     dark_by = t.where(
         dark_by_side < 0,
-        t.tensor(-1.0, device=dev),
+        global_tok.new_full((), -1.0),
         (dark_by_side != side_ids).float()
     )
 
     # 30 field values for s in (0, 1), each divided by 10.0
     side_values_list = [
-        side_flt[:, :, 0] / 10.0,   # hp
-        side_flt[:, :, 1] / 10.0,   # shield
-        side_flt[:, :, 2] / 10.0,   # ap
-        front_seat / 10.0,          # front
-        last_front_seat / 10.0,     # last_front
-        side_flt[:, :, 3] / 10.0,   # turn_count
-        side_flt[:, :, 5] / 10.0,   # normal_atk
-        side_flt[:, :, 6] / 10.0,   # ultimate_ok
-        side_flt[:, :, 7] / 10.0,   # used_instant
-        side_flt[:, :, 19] / 10.0,  # extra_genesis
-        extra_genesis_actor_seat / 10.0,  # extra_genesis_actor
-        side_flt[:, :, 23] / 10.0,  # nanali_seed
-        side_flt[:, :, 24] / 10.0,  # nanali_seed_played
-        side_flt[:, :, 9] / 10.0,   # hand_n
-        side_flt[:, :, 10] / 10.0,  # deck_n
-        side_flt[:, :, 11] / 10.0,  # discard_n
-        side_flt[:, :, 12] / 10.0,  # weave
-        side_flt[:, :, 4] / 10.0,   # fatigue
-        side_flt[:, :, 18] / 10.0,  # extra_ap
-        side_flt[:, :, 20] / 10.0,  # surplus
-        side_flt[:, :, 8] / 10.0,   # ultimate_remaining
-        side_flt[:, :, 13] / 10.0,  # burn_left
-        side_flt[:, :, 14] / 10.0,  # burn_infinite
-        side_flt[:, :, 15] / 10.0,  # delay_end
-        side_flt[:, :, 22] / 10.0,  # harmony_damage
-        burn_by / 10.0,             # burn_by
-        side_flt[:, :, 21] / 10.0,  # genesis_damage_bonus
-        side_flt[:, :, 16] / 10.0,  # light_resistance
-        side_flt[:, :, 17] / 10.0,  # dark_left
-        dark_by / 10.0,             # dark_by
+        _reference_ratio32(side_flt[:, :, 0], 10.0),   # hp
+        _reference_ratio32(side_flt[:, :, 1], 10.0),   # shield
+        _reference_ratio32(side_flt[:, :, 2], 10.0),   # ap
+        _reference_ratio32(front_seat, 10.0),          # front
+        _reference_ratio32(last_front_seat, 10.0),     # last_front
+        _reference_ratio32(side_flt[:, :, 3], 10.0),   # turn_count
+        _reference_ratio32(side_flt[:, :, 5], 10.0),   # normal_atk
+        _reference_ratio32(side_flt[:, :, 6], 10.0),   # ultimate_ok
+        _reference_ratio32(side_flt[:, :, 7], 10.0),   # used_instant
+        _reference_ratio32(side_flt[:, :, 19], 10.0),  # extra_genesis
+        _reference_ratio32(extra_genesis_actor_seat, 10.0),  # extra_genesis_actor
+        _reference_ratio32(side_flt[:, :, 23], 10.0),  # nanali_seed
+        _reference_ratio32(side_flt[:, :, 24], 10.0),  # nanali_seed_played
+        _reference_ratio32(side_flt[:, :, 9], 10.0),   # hand_n
+        _reference_ratio32(side_flt[:, :, 10], 10.0),  # deck_n
+        _reference_ratio32(side_flt[:, :, 11], 10.0),  # discard_n
+        _reference_ratio32(side_flt[:, :, 12], 10.0),  # weave
+        _reference_ratio32(side_flt[:, :, 4], 10.0),   # fatigue
+        _reference_ratio32(side_flt[:, :, 18], 10.0),  # extra_ap
+        _reference_ratio32(side_flt[:, :, 20], 10.0),  # surplus
+        _reference_ratio32(side_flt[:, :, 8], 10.0),   # ultimate_remaining
+        _reference_ratio32(side_flt[:, :, 13], 10.0),  # burn_left
+        _reference_ratio32(side_flt[:, :, 14], 10.0),  # burn_infinite
+        _reference_ratio32(side_flt[:, :, 15], 10.0),  # delay_end
+        _reference_ratio32(side_flt[:, :, 22], 10.0),  # harmony_damage
+        _reference_ratio32(burn_by, 10.0),             # burn_by
+        _reference_ratio32(side_flt[:, :, 21], 10.0),  # genesis_damage_bonus
+        _reference_ratio32(side_flt[:, :, 16], 10.0),  # light_resistance
+        _reference_ratio32(side_flt[:, :, 17], 10.0),  # dark_left
+        _reference_ratio32(dark_by, 10.0),             # dark_by
     ]
     # side_values_list has 30 tensors of shape [N, 2]
     # Stack along field dimension: [N, 30, 2] -> reshape [N, 60]
@@ -872,7 +903,7 @@ def encode_observation_tokens(
     col_by_side = ch_int[:, :, :, 1]
     ch_collapse_by = t.where(
         col_by_side < 0,
-        t.tensor(-1.0, device=dev),
+        global_tok.new_full((), -1.0),
         (col_by_side != side_ids_expanded).float()
     )
     ult_used = (ch_flt[:, :, :, 28] == turn_expanded).float()
@@ -919,13 +950,15 @@ def encode_observation_tokens(
 
     # Scatter active character rows into fixed seat positions
     valid_slots = ch_pres & (ch_seats >= 0) & (ch_seats < NUM_SEATS)
-    if valid_slots.any():
-        b_idx, s_idx, p_idx = t.where(valid_slots)
-        target_seat = ch_seats[b_idx, s_idx, p_idx]
-        char_grid[b_idx, s_idx, target_seat, :] = char_rows[b_idx, s_idx, p_idx, :]
+    seats_for_lookup = t.arange(NUM_SEATS, device=dev).view(1,1,NUM_SEATS,1)
+    seat_matches = (ch_seats.unsqueeze(-2) == seats_for_lookup) & valid_slots.unsqueeze(-2)
+    seat_indices = seat_matches.long().argmax(-1)
+    seat_present = seat_matches.any(-1)
+    selected = char_rows.gather(2, seat_indices.unsqueeze(-1).expand(n,2,NUM_SEATS,NUM_CHAR_FIELDS))
+    char_grid = t.where(seat_present.unsqueeze(-1), selected, char_grid)
 
     # Normalize by 10.0 and permute to: for key in char_fields, for s in (0, 1), for c in SEATS
-    char_grid = char_grid / 10.0
+    char_grid = _reference_ratio32(char_grid, 10.0)
     char_block = char_grid.permute(0, 3, 1, 2).reshape(n, NUM_CHAR_FIELDS * 2 * NUM_SEATS)
 
     # 4. Five zone card counts [N, 575]
@@ -952,24 +985,24 @@ def encode_observation_tokens(
     delay_by_side = side_int[:, :, 5]
     delay_by = t.where(
         delay_by_side < 0,
-        t.tensor(-1.0, device=dev),
+        global_tok.new_full((), -1.0),
         (delay_by_side != side_ids).float()
     )
     delay_slow = t.where(
         side_flt[:, :, 27] == turn.view(n, 1),
         side_flt[:, :, 26],
-        t.tensor(0.0, device=dev)
+        global_tok.new_zeros(())
     )
     genesis_this_turn = (side_flt[:, :, 30] == turn.view(n, 1)).float()
 
     extra_side_list = [
-        side_flt[:, :, 25] / 10.0,   # delay_left
-        delay_by / 10.0,             # delay_by
-        delay_slow / 10.0,           # delay_slow
-        side_flt[:, :, 28] / 10.0,   # delay_turns
-        side_flt[:, :, 29] / 10.0,   # skip_normal_attack
-        genesis_this_turn / 10.0,    # genesis_this_turn
-        side_flt[:, :, 31] / 10.0,   # genesis_player_hits
+        _reference_ratio32(side_flt[:, :, 25], 10.0),   # delay_left
+        _reference_ratio32(delay_by, 10.0),             # delay_by
+        _reference_ratio32(delay_slow, 10.0),           # delay_slow
+        _reference_ratio32(side_flt[:, :, 28], 10.0),   # delay_turns
+        _reference_ratio32(side_flt[:, :, 29], 10.0),   # skip_normal_attack
+        _reference_ratio32(genesis_this_turn, 10.0),    # genesis_this_turn
+        _reference_ratio32(side_flt[:, :, 31], 10.0),   # genesis_player_hits
     ]
     # [N, 7, 2] -> reshape [N, 14]
     extra_side_block = t.stack(extra_side_list, dim=1).reshape(n, NUM_EXTRA_SIDE * 2)
@@ -983,8 +1016,8 @@ def encode_observation_tokens(
     # timed_attack left 1 and left 2 summing
     timed_left = ch_timed[:, :, :, :, 1]
     timed_amount = ch_timed[:, :, :, :, 0]
-    timed_1 = t.where(timed_left == 1.0, timed_amount, t.tensor(0.0, device=dev)).sum(dim=-1)
-    timed_2 = t.where(timed_left == 2.0, timed_amount, t.tensor(0.0, device=dev)).sum(dim=-1)
+    timed_1 = t.where(timed_left == 1.0, timed_amount, global_tok.new_zeros(())).sum(dim=-1)
+    timed_2 = t.where(timed_left == 2.0, timed_amount, global_tok.new_zeros(())).sum(dim=-1)
 
     extra_char_extracted = [
         ch_flt[:, :, :, 32],  # beast_fangs
@@ -999,18 +1032,16 @@ def encode_observation_tokens(
     # [N, 2, MAX_PRESENT, 8]
     extra_char_rows = t.stack(extra_char_extracted, dim=-1)
 
-    if valid_slots.any():
-        b_idx, s_idx, p_idx = t.where(valid_slots)
-        target_seat = ch_seats[b_idx, s_idx, p_idx]
-        extra_char_grid[b_idx, s_idx, target_seat, :] = extra_char_rows[b_idx, s_idx, p_idx, :]
+    selected = extra_char_rows.gather(2,seat_indices.unsqueeze(-1).expand(n,2,NUM_SEATS,NUM_EXTRA_CHAR))
+    extra_char_grid = t.where(seat_present.unsqueeze(-1),selected,extra_char_grid)
 
-    extra_char_grid = extra_char_grid / 10.0
+    extra_char_grid = _reference_ratio32(extra_char_grid, 10.0)
     extra_char_block = extra_char_grid.permute(0, 3, 1, 2).reshape(n, NUM_EXTRA_CHAR * 2 * NUM_SEATS)
 
     # 8. Murk zone extras, mirage, and dot_attack_used [N, 14]
     # order: viewer 5 debuffs / 10, opp 5 debuffs / 10, viewer mirage, opp mirage, viewer dot, opp dot
-    murk_debuffs_v = side_flt[:, 0, 32:37] / 10.0  # burn_stacks, nightmare, etch, venom, guard
-    murk_debuffs_o = side_flt[:, 1, 32:37] / 10.0
+    murk_debuffs_v = _reference_ratio32(side_flt[:, 0, 32:37], 10.0)  # burn_stacks, nightmare, etch, venom, guard
+    murk_debuffs_o = _reference_ratio32(side_flt[:, 1, 32:37], 10.0)
     mirage_v = side_flt[:, 0, 37:38]
     mirage_o = side_flt[:, 1, 37:38]
     dot_attack_v = (side_flt[:, 0, 38:39] == turn.view(n, 1)).float()
@@ -1047,8 +1078,8 @@ def encode_observation_tokens(
     chain_actor = seven_char[:, :, :, 2]
     mimic_actor = seven_char[:, :, :, 4]
     seven_char_encoded = t.stack([
-        seven_char[:, :, :, 0] / 10.0,
-        seven_char[:, :, :, 1] / 10.0,
+        _reference_ratio32(seven_char[:, :, :, 0], 10.0),
+        _reference_ratio32(seven_char[:, :, :, 1], 10.0),
         t.where(chain_actor >= 0, (chain_actor + 1.0) / 20.0, t.zeros_like(chain_actor)),
         seven_char[:, :, :, 3],
         t.where(mimic_actor >= 0, (mimic_actor + 1.0) / 20.0, t.zeros_like(mimic_actor)),
@@ -1057,10 +1088,10 @@ def encode_observation_tokens(
     valid_choice = (choice_c >= 0) & (choice_c < NUM_CARDS)
     choice_counts.scatter_add_(dim=1, index=choice_c.clamp(min=0), src=valid_choice.float() * 0.5)
     extras = t.cat([
-        (seven_side / 10.0).reshape(n, SEVEN_SIDE_LEN),
+        (_reference_ratio32(seven_side, 10.0)).reshape(n, SEVEN_SIDE_LEN),
         seven_char_encoded.reshape(n, SEVEN_CHAR_LEN),
-        (side_res / 10.0).reshape(n, SEVEN_SIDE_RESIST_LEN),
-        (char_res / 10.0).reshape(n, SEVEN_CHAR_RESIST_LEN),
+        (_reference_ratio32(side_res, 10.0)).reshape(n, SEVEN_SIDE_RESIST_LEN),
+        (_reference_ratio32(char_res, 10.0)).reshape(n, SEVEN_CHAR_RESIST_LEN),
         choice_k,
         choice_counts,
     ], dim=1)
@@ -1073,8 +1104,7 @@ def encode_observation_tokens(
     observations = observations * mask.view(n, 1).float()
 
     # 12. Finite check
-    if not t.isfinite(observations).all():
-        raise ValueError("Non-finite model observation detected")
+    reject(~t.isfinite(observations), "Non-finite model observation detected")
 
     return PackedObservationBatch(
         observations=observations,
@@ -1083,6 +1113,21 @@ def encode_observation_tokens(
         device=dev,
         request_ids=ids,
     )
+
+
+def encode_observation_tokens_device(tokens, *, device='cuda', allow_cpu_reference=False):
+    """Capture-safe validation with per-row sticky device errors, no host IDs.
+
+    Bad rows are sanitized before scattering and must never feed search rules.
+    CPU use is explicitly restricted to the encoder numerical oracle.
+    """
+    t = _require_torch()
+    dev = _resolve_device(device)
+    if dev.type != 'cuda' and not (dev.type == 'cpu' and allow_cpu_reference is True):
+        raise ValueError('CUDA required; CPU only explicit token encoder oracle')
+    errors = t.zeros(tokens.global_tokens.shape[0], dtype=t.int32, device=dev)
+    encoded = encode_observation_tokens(tokens, device=dev, _device_errors=errors)
+    return encoded, errors
 
 
 def encode_observation_batch(

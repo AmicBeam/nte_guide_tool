@@ -7,6 +7,7 @@ capabilities and formal-rule GPU parity tests pass.
 """
 from dataclasses import dataclass
 import time
+import os
 import numpy as np
 from .vm_image import VmImage
 from .vm_heap import emit_vm_heap_source
@@ -76,7 +77,13 @@ const int NATIVE_OBJECT={image.intrinsic_names.index('object') if 'object' in im
 enum VmError {{ BAD_PROGRAM=100,STACK_OVERFLOW=101,FRAME_OVERFLOW=102,UNBOUND_LOCAL=103,
  BAD_CALL=104,UNSUPPORTED_OP=105,UNSUPPORTED_TYPE=106,STEP_LIMIT=107,DEADLINE=108,STOP_ITERATION=109 }};
 '''
-    return '#define BMT_DEVICE __device__\n'+emit_random_source()+emit_ryu_source()+emit_vm_heap_source()+prefix+_VM_SOURCE.replace('// COLLECTION_HANDLERS',emit_collection_source()).replace('// OBJECT_HANDLERS',emit_object_source(image)).replace('// BUILTIN_HANDLERS',emit_builtin_source(image.intrinsic_names)).replace('// NUMERIC_HANDLERS',emit_numeric_source()).replace('// REDUCER_HANDLERS',emit_reducer_source(image.intrinsic_names)).replace('// FRAME_GC_HANDLERS',emit_frame_gc_source()).replace('// RANDOM_HANDLERS',emit_random_vm_source(image.intrinsic_names)).replace('// EXCEPTION_HANDLERS',emit_exception_source(image)).replace('// STRING_HANDLERS',emit_string_source(image.intrinsic_names)).replace('// DEEPCOPY_HANDLERS',emit_deepcopy_source(image.intrinsic_names)).replace('// TEXT_HANDLERS',emit_text_method_source()).replace('// DECIMAL_HANDLERS',emit_decimal_source(image.intrinsic_names)).replace('// CONTEXT_HANDLERS',emit_context_source(image)).replace('// STDLIB_HANDLERS','// STDLIB_HANDLERS\n'+emit_stdlib_source(image)).replace('// NUMPY_HANDLERS','// NUMPY_HANDLERS\n'+emit_numpy_source(image.intrinsic_names)+emit_json_source(image.intrinsic_names))
+    source=_VM_SOURCE
+    device_kernel=source[source.index('extern "C" __global__ void vm_execute('):]
+    device_kernel=device_kernel.replace('void vm_execute(', 'void vm_execute_device(', 1)
+    device_kernel=device_kernel.replace('int* gc_queue){', 'int* gc_queue,const unsigned char* active){', 1)
+    device_kernel=device_kernel.replace('if(tid>=rows)return;', 'if(tid>=rows)return;\n if(!active[tid]||deadlines[tid]<0){outputs[tid]=args[(long long)tid*nargs];statuses[tid*4]=active[tid]?108:0;statuses[tid*4+1]=entry;statuses[tid*4+2]=-1;statuses[tid*4+3]=0;return;}', 1)
+    source+=device_kernel
+    return '#define BMT_DEVICE __device__\n'+emit_random_source()+emit_ryu_source()+emit_vm_heap_source()+prefix+source.replace('// COLLECTION_HANDLERS',emit_collection_source()).replace('// OBJECT_HANDLERS',emit_object_source(image)).replace('// BUILTIN_HANDLERS',emit_builtin_source(image.intrinsic_names)).replace('// NUMERIC_HANDLERS',emit_numeric_source()).replace('// REDUCER_HANDLERS',emit_reducer_source(image.intrinsic_names)).replace('// FRAME_GC_HANDLERS',emit_frame_gc_source()).replace('// RANDOM_HANDLERS',emit_random_vm_source(image.intrinsic_names)).replace('// EXCEPTION_HANDLERS',emit_exception_source(image)).replace('// STRING_HANDLERS',emit_string_source(image.intrinsic_names)).replace('// DEEPCOPY_HANDLERS',emit_deepcopy_source(image.intrinsic_names)).replace('// TEXT_HANDLERS',emit_text_method_source()).replace('// DECIMAL_HANDLERS',emit_decimal_source(image.intrinsic_names)).replace('// CONTEXT_HANDLERS',emit_context_source(image)).replace('// STDLIB_HANDLERS','// STDLIB_HANDLERS\n'+emit_stdlib_source(image)).replace('// NUMPY_HANDLERS','// NUMPY_HANDLERS\n'+emit_numpy_source(image.intrinsic_names)+emit_json_source(image.intrinsic_names))
 
 
 _VM_SOURCE=r'''
@@ -593,12 +600,50 @@ class DeviceCall:
     def __init__(self,executor,arena,outputs,statuses,frames,event,scratch_buffers=()):
         self.executor=executor;self.arena=arena;self.outputs=outputs;self.statuses=statuses;self.frames=frames;self.event=event;self.scratch_buffers=scratch_buffers
     def check(self):
-        self.event.synchronize();statuses=self.statuses.cpu().numpy()
+        if self.event is None:
+            self.executor.torch.cuda.current_stream(self.executor.device).synchronize()
+        else:
+            self.event.synchronize()
+        statuses=self.statuses.cpu().numpy()
         bad=np.flatnonzero(statuses[:,0])
         if len(bad):
             row=int(bad[0]);code,fid,pc,steps=map(int,statuses[row]);name=self.executor.image.function_ids[fid] if 0<=fid<len(self.executor.image.function_ids) else 'unknown'
+            path=os.environ.get('NTE_CUDA_VM_FAILURE_REPORT')
+            if path:
+                self.write_failure_report(path,row,fid,pc)
             raise VmExecutionError(f'CUDA VM row {row}: status={code}, function={name}, pc={pc}, steps={steps}')
         return statuses
+    def write_failure_report(self,path,row,fid,pc):
+        """Explicit bounded post-failure diagnostics; never a search hot path.
+
+        Only local references and short scalar text are retained. This does not
+        resume rules, decode whole states or turn failure into a valid result.
+        """
+        import json
+        from pathlib import Path
+        ex=self.executor
+        frames=self.frames[row].cpu().numpy()
+        nodes=self.arena.nodes[row].cpu().numpy()
+        payload=self.arena.payload[row].cpu().numpy()
+        def describe(ref):
+            ref=int(ref)
+            if ref==-2147483648:return dict(ref=ref,missing=True)
+            source=ex.image.nodes if ref<0 else nodes
+            index=-1-ref if ref<0 else ref
+            if index<0 or index>=len(source):return dict(ref=ref,invalid=True)
+            tag,off,count,extra=map(int,source[index]);result=dict(ref=ref,tag=tag,extra=extra)
+            data=ex.image.payload if ref<0 else payload
+            if tag==4 and 0<=off and 0<=count<=128 and off+count<=len(data):
+                result['text']=data[off:off+count].tobytes().decode('utf8',errors='replace')
+            return result
+        report=dict(row=row,function=fid,pc=pc,frames=[])
+        for index,f in enumerate(frames):
+            if not f[4]:continue
+            fn=int(f[0]);meta=ex.image.functions[fn] if 0<=fn<len(ex.image.functions) else None
+            count=min(int(meta[5]) if meta is not None else 0,ex.limits.locals)
+            report['frames'].append(dict(frame=index,function=fn,pc=int(f[1]),status=int(f[4]),
+                locals=[describe(v) for v in f[14:14+count]]))
+        Path(path).write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
     def decode(self):
         """Explicit diagnostic export. Does not run Python rule functions."""
         self.check();refs=self.outputs.cpu().tolist();ex=self.executor;torch=ex.torch
@@ -683,7 +728,7 @@ class CudaVm:
         compact_signature=['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
             'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*','int32*','int32*','int32*',
             'int32','int32','int32','int32','int32']
-        self.module=CudaModule(emit_vm_source(image,limits),{'vm_execute':signature,'vm_clock':['int64*'],'vm_compact':compact_signature},device=str(self.device))
+        self.module=CudaModule(emit_vm_source(image,limits),{'vm_execute':signature,'vm_execute_device':signature+['uint8*'],'vm_clock':['int64*'],'vm_compact':compact_signature},device=str(self.device))
         try:
             self.module.ensure_stack()
         except BaseException:
@@ -736,6 +781,36 @@ class CudaVm:
             len(self.image.nodes),len(self.image.edges),len(self.image.payload),frames,outputs,statuses,gpu_deadlines,
             rows,l.max_nodes,l.max_edges,l.max_payload_bytes,self.image.entries[entry],self.limits.steps,b['classes'],len(self.image.classes),b['modules'],len(self.image.modules),gc_marks,gc_queue],grid=(rows+127)//128,block=128)
         return DeviceCall(self,scratch,outputs,statuses,frames,event,(gc_marks,gc_queue))
+    def launch_device(self,arena,entry,*,argument_refs,active,gpu_deadlines):
+        """Masked capturable rule call with device-owned errors and no checks.
+
+        Exact static entry/shape validation remains mandatory. Inactive rows
+        preserve their graph and never invoke rules. The caller checks statuses
+        after the complete device batch; this method is not full-game approval.
+        """
+        if self.closed:raise RuntimeError('VM closed')
+        if not self.capability(entry)['ready']:raise VmCapabilityError('Unsupported frozen device entry')
+        if not isinstance(arena,DeviceGraph):raise TypeError('Device graph required')
+        t=self.torch;rows=arena.rows
+        for value,dtype,shape in ((active,t.uint8,(rows,)),(gpu_deadlines,t.int64,(rows,))):
+            if (not isinstance(value,t.Tensor) or value.device!=self.device or value.dtype!=dtype
+                    or value.shape!=shape or not value.is_contiguous()):raise ValueError('Exact device selector/deadline vector required')
+        if (not isinstance(argument_refs,t.Tensor) or argument_refs.device!=self.device
+                or argument_refs.dtype!=t.int32 or argument_refs.ndim!=2 or argument_refs.shape[0]!=rows
+                or argument_refs.shape[1]<1 or not argument_refs.is_contiguous()):raise ValueError('Exact device argument matrix required')
+        scratch=arena.fork();stride=14+self.limits.locals+self.limits.stack+self.limits.cells
+        frames=t.empty((rows,self.limits.frames,stride),dtype=t.int32,device=self.device)
+        outputs=t.empty(rows,dtype=t.int32,device=self.device)
+        statuses=t.zeros((rows,4),dtype=t.int32,device=self.device)
+        b=self._buffers;l=arena.layout
+        marks=t.zeros((rows,l.max_nodes+len(self.image.nodes)),dtype=t.int64,device=self.device)
+        queue=t.empty((rows,l.max_nodes),dtype=t.int32,device=self.device)
+        self.module.launch('vm_execute_device',[scratch.nodes,scratch.edges,scratch.payload,scratch.counts,argument_refs,argument_refs.shape[1],
+            b['nodes'],b['edges'],b['payload'],b['instructions'],b['functions'],len(self.image.functions),
+            len(self.image.nodes),len(self.image.edges),len(self.image.payload),frames,outputs,statuses,gpu_deadlines,
+            rows,l.max_nodes,l.max_edges,l.max_payload_bytes,self.image.entries[entry],self.limits.steps,b['classes'],len(self.image.classes),b['modules'],len(self.image.modules),marks,queue,active],
+            grid=(rows+127)//128,block=128,capture_safe=True)
+        return DeviceCall(self,scratch,outputs,statuses,frames,None,(marks,queue))
     def close(self):
         if self.closed:return
         self.module.close();self._buffers.clear();self.closed=True

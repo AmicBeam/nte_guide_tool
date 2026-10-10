@@ -1082,3 +1082,12 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 驻留后端提供所有者线程上的提交／轮询／取消，调度器默认按能力启用；完整训练可显式`--async-rule-dispatch auto|on|off`，混合CUDA树统计可用`--search-statistics-device cuda`。`--collection-replicas 1..5`生成真实独立的56／112局组，默认1，整批模型冻结；不倍增独立P0／评估。输入与树统计缓冲复用保留容量和异常检查，JSON状态复制保留实体、别名、未知字段和hydration验证，不删规则状态。配置、实际批次数和剩余恢复工作进入预算／身份。
 
 统一性能入口为`scripts/benchmark_duel_v2_gpu_collection.py`：默认仅计划，显式执行完整Gumbel32／16候选／3步＋合格WDL的混合CUDA采集；旧／新源码、分批安排可比较，但任务、数值、设备及实际轨迹须匹配。至少三轮真实时间和实际原始文件／SHA才报告5倍，采集、准备和重放核验分开计时，不替代P0、矩阵或质量批准。验证新增：`tests.test_duel_v2_async_rule_dispatch`、`tests.test_duel_v2_async_collection_integration`、`tests.test_duel_v2_collection_replicas`、`tests.test_duel_v2_device_sync_reduction`、`tests.test_duel_v2_state_copy_fast`、`tests.test_duel_v2_collection_benchmark`；GPU规则源码捕获、实体、模拟及既有采集／评估回归另保留。操作细节见训练手册“完整CUDA采集的统一性能验收”。
+
+
+### GPU设备内搜索接口
+
+正式训练及搜索互搏遵循 `docs/duel-v2-public-training.md` 的GPU设备内并行硬要求，验收清单见 `docs/duel-v2-device-search-acceptance.md`。CPU规则／逐根主机协程只作历史诊断和对拍，不能作为GPU错误后的回退。
+
+离线边界：`rl/batched_duel/device_rule_protocol.py`定义状态／动作租约；`gpu_seven_candidates.py`和`gpu_seven_observation.py`提供保留设备错误掩码的编码；`rl/batched_search/device_inference.py`、`device_search.py`、`device_statistics.py`、`device_info_key.py`及`batched_duel/device_graph_pool.py`分别管理设备推理、阶段机、树统计、信息集键和页所有权；`cuda_conditional_graph.py`提供GPU谓词控制的有界循环。这些组件不被网站导入，接口与原语通过不能代替完整规则／完整搜索／真实终局验收。
+
+有界部件验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_inference tests.test_duel_v2_device_vm tests.test_duel_v2_cuda_conditional_graph tests.test_duel_v2_device_candidates tests.test_duel_v2_device_projection tests.test_duel_v2_device_statistics tests.test_duel_v2_device_search -v`。没有CUDA时必须记录实际设备用例跳过；CPU数值oracle和合成树不提供完整对局批准。

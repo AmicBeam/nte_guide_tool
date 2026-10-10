@@ -896,6 +896,23 @@ class ProjectedDecision:
     candidates: object
     action_roots: object
     arena: object
+    errors: object = None
+    action_refs: object = None
+    action_types: object = None
+
+
+def _masked_projection_source(source):
+    decision=source[source.index('extern "C" __global__ void project_public_decision('):source.index('extern "C" __global__ void project_public_observation(')]
+    observation=source[source.index('extern "C" __global__ void project_public_observation('):]
+    device=[]
+    for name,kernel in (("decision",decision),("observation",observation)):
+        kernel=kernel.replace("void project_public_"+name+"(","void project_public_"+name+"_device(",1)
+        marker="int max_candidates){" if name=="decision" else "int maxp){"
+        if kernel.count(marker)!=1:raise ValueError("Unrecognized frozen projection signature")
+        kernel=kernel.replace(marker,marker[:-2]+",const unsigned char* active){",1)
+        kernel=kernel.replace("if(row>=rows) return;","if(row>=rows) return; if(!active[row]){status[row]=0;return;}",1)
+        device.append(kernel)
+    return source+"\n"+"\n".join(device)
 
 
 class GraphProjectionKernel:
@@ -947,6 +964,8 @@ class GraphProjectionKernel:
             source = emit_projection_source()
             specs = {'project_public_decision': _DECISION_SPEC, 'project_public_observation': _OBS_SPEC}
         self._intern_names = intern_names
+        specs.update({name+"_device":list(signature)+["uint8*"] for name,signature in list(specs.items())})
+        source = _masked_projection_source(source)
         self.module = CudaModule(
             source,
             specs,
@@ -956,6 +975,10 @@ class GraphProjectionKernel:
         self._names = torch.tensor(payload, dtype=torch.uint8, device=self.device)
         self._off = torch.tensor(offsets, dtype=torch.int32, device=self.device)
         self._len = torch.tensor(lengths, dtype=torch.int32, device=self.device)
+        if self.runtime == 'seven':
+            # Static card configuration is uploaded before any graph capture.
+            from .gpu_seven_candidates import get_card_template_table
+            get_card_template_table(self.device)
         self.closed = False
 
     def close(self):
@@ -979,11 +1002,13 @@ class GraphProjectionKernel:
                 % (int(bad[0]), _STATUS_NAMES.get(code, str(code)))
             )
 
-    def project_decision(self, call):
+    def project_decision(self, call, *, active=None):
         """Project public_legal_decision GPU outputs to encoder tokens on device."""
         if self.closed:
             raise RuntimeError('Graph projection kernel closed')
-        call.check()
+        device_path=active is not None
+        if device_path and self.runtime != "seven":raise ValueError("Device projection requires frozen seven schema")
+        if not device_path:call.check()
         arena = call.arena
         vm = call.executor
         rows = arena.rows
@@ -999,6 +1024,9 @@ class GraphProjectionKernel:
         cand_mask = torch.zeros((rows, m), dtype=torch.int32, device=self.device)
         action_roots = torch.full((rows,), -1, dtype=torch.int32, device=self.device)
         status = torch.zeros(rows, dtype=torch.int32, device=self.device)
+        if device_path:
+            self._validate_device_mask(active, rows)
+            active=active & (call.statuses[:,0]==0).to(torch.uint8)
         buffers = vm._buffers
         args = [arena.nodes, arena.edges, arena.payload, arena.counts,
              buffers['nodes'], buffers['edges'], buffers['payload'],
@@ -1023,12 +1051,13 @@ class GraphProjectionKernel:
             ])
         args.extend([status, rows, arena.layout.max_nodes, arena.layout.max_edges, arena.layout.max_payload_bytes, m])
         event = self.module.launch(
-            'project_public_decision',
-            args,
-            grid=(rows + 127) // 128, block=128,
+            'project_public_decision_device' if device_path else 'project_public_decision',
+            args+[active] if device_path else args,
+            grid=(rows + 127) // 128, block=128, capture_safe=device_path,
         )
-        event.synchronize()
-        self._check(status)
+        if not device_path:
+            event.synchronize()
+            self._check(status)
         if self.runtime == 'seven':
             from .gpu_seven_candidates import RawCandidateTokens as SevenCandidateTokens
             from .gpu_seven_candidates import encode_tokens as encode_seven_tokens
@@ -1046,8 +1075,14 @@ class GraphProjectionKernel:
                 select_cards=cand_extras['select_cards'].to(dtype=torch.int64),
                 extra_ap=cand_extras['extra_ap'],
             )
-            observations = encode_seven_observation(observation_tokens, device=self.device)
-            candidates = encode_seven_tokens(candidate_tokens, device=self.device)
+            if device_path:
+                from .gpu_seven_observation import encode_observation_tokens_device
+                from .gpu_seven_candidates import encode_tokens_device
+                observations,observation_errors=encode_observation_tokens_device(observation_tokens,device=self.device)
+                candidates,candidate_errors=encode_tokens_device(candidate_tokens,device=self.device)
+            else:
+                observations = encode_seven_observation(observation_tokens, device=self.device)
+                candidates = encode_seven_tokens(candidate_tokens, device=self.device)
         else:
             observation_tokens = _to_observation_tokens(obs, torch)
             candidate_tokens = RawCandidateTokens(
@@ -1061,13 +1096,27 @@ class GraphProjectionKernel:
             )
             observations = encode_observation_tokens(observation_tokens, device=self.device)
             candidates = encode_tokens(candidate_tokens, device=self.device)
+        if device_path:
+            roots=action_roots.clamp(0,arena.layout.max_nodes-1).long()
+            indices=torch.arange(rows,device=self.device)
+            node=arena.nodes[indices,roots]
+            positions=torch.arange(m,device=self.device)[None,:]
+            offsets=node[:,1].long()[:,None]+positions
+            valid=candidates.mask & active[:,None].bool()
+            malformed=(node[:,0]!=5)|(node[:,2]!=candidates.counts)|(node[:,1]<0)|(node[:,1]+node[:,2]>arena.counts[:,1])
+            errors=status | call.statuses[:,0] | observation_errors | candidate_errors | (malformed & active.bool()).int()*8
+            refs=arena.edges[indices[:,None],offsets.clamp(0,arena.layout.max_edges-1),0]
+            refs=torch.where(valid,refs,torch.full_like(refs,-1))
+            return ProjectedDecision(observations,candidates,action_roots,arena,errors,refs,int_tokens[:,:,0].long())
         return ProjectedDecision(observations, candidates, action_roots, arena)
 
-    def project_observation(self, call, view_refs):
+    def project_observation(self, call, view_refs, *, active=None):
         """Project a generic public view graph to observation tokens on device."""
         if self.closed:
             raise RuntimeError('Graph projection kernel closed')
-        call.check()
+        device_path=active is not None
+        if device_path and self.runtime != "seven":raise ValueError("Device projection requires frozen seven schema")
+        if not device_path:call.check()
         arena = call.arena
         vm = call.executor
         rows = arena.rows
@@ -1078,6 +1127,9 @@ class GraphProjectionKernel:
             raise ValueError('Contiguous CUDA int32 view refs required')
         obs = _zero_obs_tensors(torch, rows, self.device)
         status = torch.zeros(rows, dtype=torch.int32, device=self.device)
+        if device_path:
+            self._validate_device_mask(active, rows)
+            active=active & (call.statuses[:,0]==0).to(torch.uint8)
         buffers = vm._buffers
         args = [arena.nodes, arena.edges, arena.payload, arena.counts,
              buffers['nodes'], buffers['edges'], buffers['payload'],
@@ -1097,16 +1149,28 @@ class GraphProjectionKernel:
             ])
         args.extend([status, rows, arena.layout.max_nodes, arena.layout.max_edges, arena.layout.max_payload_bytes])
         event = self.module.launch(
-            'project_public_observation',
-            args,
-            grid=(rows + 127) // 128, block=128,
+            'project_public_observation_device' if device_path else 'project_public_observation',
+            args+[active] if device_path else args,
+            grid=(rows + 127) // 128, block=128, capture_safe=device_path,
         )
-        event.synchronize()
-        self._check(status)
+        if not device_path:
+            event.synchronize()
+            self._check(status)
         if self.runtime == 'seven':
             from .gpu_seven_observation import encode_observation_tokens as encode_seven_observation
-            return encode_seven_observation(_to_seven_observation_tokens(obs, extras, torch), device=self.device)
+            tokens=_to_seven_observation_tokens(obs,extras,torch)
+            if device_path:
+                from .gpu_seven_observation import encode_observation_tokens_device
+                encoded,errors=encode_observation_tokens_device(tokens,device=self.device)
+                return encoded,status | call.statuses[:,0] | errors
+            return encode_seven_observation(tokens, device=self.device)
         return encode_observation_tokens(_to_observation_tokens(obs, torch), device=self.device)
+
+    def _validate_device_mask(self,active,rows):
+        t=self.torch
+        if (not isinstance(active,t.Tensor) or active.dtype!=t.uint8 or active.device!=self.device
+                or active.shape!=(rows,) or not active.is_contiguous()):
+            raise ValueError('Exact contiguous uint8[B] device activity required')
 
 
 def _to_seven_observation_tokens(arrays, extras, torch):

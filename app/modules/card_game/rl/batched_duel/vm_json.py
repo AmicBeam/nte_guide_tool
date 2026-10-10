@@ -9,7 +9,9 @@ Hooks in namespace duel_rule_vm:
 
 - json_call(c, callee, args, nargs, kw_names, kw_values, nkw, out)
   Handles T_NATIVE json.dumps. Supported kwargs: sort_keys, separators,
-  ensure_ascii. Unknown kwargs, cycles, nonfinite floats, non-string dict
+  ensure_ascii, and default=None/str for already JSON-encodable input. This
+  does not implement arbitrary object callbacks: an input requiring default
+  conversion still fails explicitly. Unknown kwargs, cycles, nonfinite floats, non-string dict
   keys, unsupported types and capacity failures are explicit.
   Uses integer_string/float_string; never calls Python json.dumps.
 
@@ -32,8 +34,10 @@ JSON_INTEGRATION = (
 def emit_json_source(intrinsic_names: tuple[str, ...] | Sequence[str] = ()) -> str:
     names = tuple(intrinsic_names)
     native = names.index("json.dumps") if "json.dumps" in names else -8001
+    native_str = names.index('str') if 'str' in names else -8002
     src = r'''
 const int NATIVE_JSON_DUMPS=@J@;
+const int NATIVE_JSON_DEFAULT_STR=@S@;
 const int JSON_MAX_DEPTH=32,JSON_MAX_KEYS=64;
 #ifndef T_NATIVE
 #define T_NATIVE 15
@@ -58,7 +62,7 @@ __device__ inline int json_u16(Context* c,int* off,int* n,unsigned int cp){
 __device__ inline int json_seen(const int* stack,int depth,int ref){for(int i=0;i<depth;i++)if(stack[i]==ref)return 1;return 0;}
 __device__ inline int json_kw_only(Context* c,int names,int nkw){
  if(!nkw)return 1;if(names==MISSING||length(c,names)!=nkw)return json_fail_call(c);
- for(int i=0;i<nkw;i++){int nm=edge(c,names,i);int ok=vm_text_equals(c,nm,"sort_keys")||vm_text_equals(c,nm,"separators")||vm_text_equals(c,nm,"ensure_ascii");if(!ok)return json_fail_call(c);}return 1;
+ for(int i=0;i<nkw;i++){int nm=edge(c,names,i);int ok=vm_text_equals(c,nm,"sort_keys")||vm_text_equals(c,nm,"separators")||vm_text_equals(c,nm,"ensure_ascii")||vm_text_equals(c,nm,"default");if(!ok)return json_fail_call(c);}return 1;
 }
 __device__ inline int json_kw_get(Context* c,int names,const int* vals,int nkw,const char* key){if(!nkw||names==MISSING||!vals)return MISSING;for(int i=0;i<nkw;i++)if(vm_text_equals(c,edge(c,names,i),key))return vals[i];return MISSING;}
 __device__ inline int json_truth(Context* c,int ref,int* out){int t=kind(c,ref);if(t==TAG_BOOL){*out=node(c,ref)[3]?1:0;return 1;}if(t==TAG_INT){long long v=0;if(numeric_int(c,ref,&v)<0)return 0;*out=v!=0;return 1;}if(t==TAG_NONE){*out=0;return 1;}c->error=BAD_CALL;return 0;}
@@ -146,6 +150,11 @@ __device__ inline int json_call(Context* c,int callee,const int* args,int nargs,
  if(kind(c,callee)!=T_NATIVE||node(c,callee)[3]!=NATIVE_JSON_DUMPS)return 0;*out=MISSING;
  if(nargs!=1||!json_kw_only(c,kn,nkw)){if(!c->error)c->error=BAD_CALL;return 1;}
  int sort_ref=json_kw_get(c,kn,kv,nkw,"sort_keys"),sep_ref=json_kw_get(c,kn,kv,nkw,"separators"),ascii_ref=json_kw_get(c,kn,kv,nkw,"ensure_ascii");
+ int default_ref=json_kw_get(c,kn,kv,nkw,"default");
+ if(default_ref!=MISSING && kind(c,default_ref)!=TAG_NONE &&
+    !(kind(c,default_ref)==T_NATIVE && NATIVE_JSON_DEFAULT_STR>=0 && node(c,default_ref)[3]==NATIVE_JSON_DEFAULT_STR)){
+  c->error=BAD_CALL;return 1;
+ }
  int sort_keys=0;if(sort_ref!=MISSING&&!json_truth(c,sort_ref,&sort_keys))return 1;
  int ensure_ascii=1;if(ascii_ref!=MISSING&&!json_truth(c,ascii_ref,&ensure_ascii))return 1;
  int item_sep=MISSING,key_sep=MISSING;
@@ -155,4 +164,4 @@ __device__ inline int json_call(Context* c,int callee,const int* args,int nargs,
  return 1;
 }
 '''
-    return src.replace("@J@", str(native))
+    return src.replace("@J@", str(native)).replace('@S@',str(native_str))

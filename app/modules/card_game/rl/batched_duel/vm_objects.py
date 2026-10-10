@@ -36,7 +36,7 @@ def emit_object_source(image):
     orders=[[index for tag,index in mro((13,i)) if tag==13] for i in range(len(image.classes))]
     refs={int(n[3]):-1-i for i,n in enumerate(image.nodes) if n[0]==13}
     def entity_ref(name):
-        found=[i for i,k in enumerate(image.class_ids) if ':entities:'+name+':' in k]
+        found=[i for i,k in enumerate(image.class_ids) if '.entities:'+name+':' in k]
         return refs[found[0]] if len(found)==1 else -2147483648
     names=tuple(image.intrinsic_names)
     native_ok=frozenset(('object','dict','enum.Enum'))
@@ -59,9 +59,9 @@ def emit_object_source(image):
         for tag,index in chain:
             if tag==13:
                 cid=image.class_ids[index]
-                if ':entities:CardEntity:' in cid:etag=10
-                elif ':entities:CharacterEntity:' in cid and etag==0:etag=9
-                elif ':entities:PlayerEntity:' in cid and etag==0:etag=8
+                if '.entities:CardEntity:' in cid:etag=10
+                elif '.entities:CharacterEntity:' in cid and etag==0:etag=9
+                elif '.entities:PlayerEntity:' in cid and etag==0:etag=8
             elif tag==15:
                 n=native_name(index)
                 if n=='dict':has_dict=1

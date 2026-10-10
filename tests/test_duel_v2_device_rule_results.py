@@ -17,7 +17,8 @@ class DeviceRuleResultCudaTest(unittest.TestCase):
     def test_actual_metadata_refs_capture_masks_and_errors_are_device_owned(self):
         import torch
         if not torch.cuda.is_available():self.skipTest('Actual CUDA required; no metadata fallback')
-        from app.modules.card_game.engine.duel_v2 import new_game,acting_side,finished
+        from app.modules.card_game.engine.duel_v2 import new_game,acting_side
+        from app.modules.card_game.engine.duel_v2.state import finished
         from app.modules.card_game.rl.batched_duel.cuda_vm import CudaVm
         from app.modules.card_game.rl.batched_duel.codec import pack_states
         from app.modules.card_game.rl.batched_duel.schema import GraphLayout

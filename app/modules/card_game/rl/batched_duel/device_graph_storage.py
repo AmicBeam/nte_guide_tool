@@ -178,6 +178,9 @@ class CompactDeviceGraphStore:
         t = self.t
         rows = int(slots.shape[0])
         src = self._row_bytes(dense)
+        # Payload count columns are strided views. The native pointer ABI is
+        # contiguous even when the logical vector has the correct dtype.
+        used=used.contiguous()
         take_u8 = take.view(t.uint8) if take.dtype == t.bool else take
         if self.module is None:
             return self._copy_cpu(to_pages, pool, src, slots, used, take_u8)

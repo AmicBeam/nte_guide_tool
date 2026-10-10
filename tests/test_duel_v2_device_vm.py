@@ -45,6 +45,18 @@ class DeviceVmTest(unittest.TestCase):
             actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),4096,8192,65536))),'wide').decode()
         self.assertEqual(actual,[wide_seed_probe(value) for value in values])
 
+    def test_rule_launch_block_geometry_preserves_exact_random_rows(self):
+        from app.modules.card_game.rl.batched_duel.cuda_vm import CudaVm
+        from app.modules.card_game.rl.batched_duel.codec import pack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        values=[(1<<256)+i for i in range(17)]
+        image=lower_program(program());expected=[wide_seed_probe(seed) for seed in values]
+        for block in (1,128):
+            with CudaVm(image,rule_threads_per_block=block) as vm:
+                self.assertEqual(vm.capability('wide')['rule_threads_per_block'],block)
+                actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(17,4096,8192,65536))),'wide').decode()
+            self.assertEqual(actual,expected)
+
     def test_used_graph_transfer_preserves_aliases_and_empties_invalid_lanes(self):
         import torch
         from app.modules.card_game.rl.batched_duel.cuda_vm import CudaVm,DeviceGraph

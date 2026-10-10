@@ -790,12 +790,21 @@ class DeviceCall:
 class CudaVm:
     """CUDA-only IR execution. Capability checks are entry-specific and mandatory."""
     supports_full_duel_rules=False
-    def __init__(self,image,*,device='cuda',limits=VmLimits(),guard_standalone_entities=False):
+    rule_threads_per_block=1
+    def __init__(self,image,*,device='cuda',limits=VmLimits(),guard_standalone_entities=False,
+                 rule_threads_per_block=1):
         if not isinstance(image,VmImage):raise TypeError('Numeric VM image required')
         image.verify()
         if not isinstance(limits,VmLimits):raise TypeError('VmLimits required')
         if type(guard_standalone_entities) is not bool:raise TypeError('Boolean standalone-entity guard required')
+        if type(rule_threads_per_block) is not int or not 1<=rule_threads_per_block<=1024:
+            raise ValueError('Positive bounded rule thread block size required')
         self.guard_standalone_entities=guard_standalone_entities
+        # Each VM row is a large, irregular scalar interpreter. A one-thread
+        # block lets independent scratch rows spread across SMs; packing a small
+        # batch into one 128-thread block confines all rule work to one SM.
+        # This is a launch policy, not a measured speedup or capacity approval.
+        self.rule_threads_per_block=rule_threads_per_block
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():raise RuntimeError('Actual CUDA required, no CPU VM fallback')
         from .cuda_runtime import CudaModule
@@ -826,7 +835,8 @@ class CudaVm:
         guarded=sorted(set(missing['intrinsics'])&DENIED_STANDALONE_INTRINSICS) if self.guard_standalone_entities else []
         blocked=bool(missing['opcodes'] or set(missing['intrinsics'])-set(guarded))
         return dict(entry=entry,ready=not blocked,missing=missing,runtime_denied_intrinsics=guarded,
-                    full_duel_rules=False,actual_backend='cuda')
+                    full_duel_rules=False,actual_backend='cuda',
+                    rule_threads_per_block=self.rule_threads_per_block)
     def clock_ns(self):
         if self.closed:raise RuntimeError('VM closed')
         out=self.torch.empty(1,dtype=self.torch.int64,device=self.device)
@@ -865,7 +875,7 @@ class CudaVm:
         event=self.module.launch('vm_execute',[scratch.nodes,scratch.edges,scratch.payload,scratch.counts,argument_refs,argument_refs.shape[1],
             b['nodes'],b['edges'],b['payload'],b['instructions'],b['functions'],len(self.image.functions),
             len(self.image.nodes),len(self.image.edges),len(self.image.payload),frames,outputs,statuses,gpu_deadlines,
-            rows,l.max_nodes,l.max_edges,l.max_payload_bytes,self.image.entries[entry],self.limits.steps,b['classes'],len(self.image.classes),b['modules'],len(self.image.modules),gc_marks,gc_queue],grid=(rows+127)//128,block=128)
+            rows,l.max_nodes,l.max_edges,l.max_payload_bytes,self.image.entries[entry],self.limits.steps,b['classes'],len(self.image.classes),b['modules'],len(self.image.modules),gc_marks,gc_queue],grid=(rows+self.rule_threads_per_block-1)//self.rule_threads_per_block,block=self.rule_threads_per_block)
         return DeviceCall(self,scratch,outputs,statuses,frames,event,(gc_marks,gc_queue))
     def launch_device(self,arena,entry,*,argument_refs,active,gpu_deadlines):
         """Masked capturable rule call with device-owned errors and no checks.
@@ -895,7 +905,8 @@ class CudaVm:
             b['nodes'],b['edges'],b['payload'],b['instructions'],b['functions'],len(self.image.functions),
             len(self.image.nodes),len(self.image.edges),len(self.image.payload),frames,outputs,statuses,gpu_deadlines,
             rows,l.max_nodes,l.max_edges,l.max_payload_bytes,self.image.entries[entry],self.limits.steps,b['classes'],len(self.image.classes),b['modules'],len(self.image.modules),marks,queue,active],
-            grid=(rows+127)//128,block=128,capture_safe=True)
+            grid=(rows+self.rule_threads_per_block-1)//self.rule_threads_per_block,
+            block=self.rule_threads_per_block,capture_safe=True)
         return DeviceCall(self,scratch,outputs,statuses,frames,None,(marks,queue))
 
     def prepare_device_workspace(self, arena):
@@ -975,7 +986,8 @@ class CudaVm:
             workspace.frames,workspace.outputs,workspace.statuses,gpu_deadlines,
             rows,l.max_nodes,l.max_edges,l.max_payload_bytes,self.image.entries[entry],self.limits.steps,
             b['classes'],len(self.image.classes),b['modules'],len(self.image.modules),workspace.marks,
-            workspace.queue,active],grid=(rows+127)//128,block=128,capture_safe=True)
+            workspace.queue,active],grid=(rows+self.rule_threads_per_block-1)//self.rule_threads_per_block,
+            block=self.rule_threads_per_block,capture_safe=True)
         return DeviceCall(self,arena,workspace.outputs,workspace.statuses,
                           workspace.frames,None,(workspace.marks,workspace.queue))
 

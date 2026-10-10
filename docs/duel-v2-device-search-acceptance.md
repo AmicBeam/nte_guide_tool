@@ -84,3 +84,5 @@
 `validate_duel_v2_gpu_seven.py` 是 14 个开局/正常行动根的有界真实规则对拍，`--seconds` 可显式取 1–3600 秒，但仍受原授权绝对截止及外部进程树守护限制。它按 decision、rule_decision、sample_world、step、commit 原子保存阶段完成、CPU oracle 通过和查询墙钟；后续阶段失败不能抹去或升级此前证据。该脚本使用主机准备对拍请求，不是正式设备内搜索或完整局执行器；其查询时间包含准备/传输，不能当完整 Gumbel 吞吐。物理 commit 也携带同一剩余截止，不获得无限时间。
 
 纯网络冻结评估使用 `device_pure_policy.py`：同一设备规则接口给出完整合法动作后，由设备模型按实际行动者路由并执行 masked argmax。非法输入、陈旧状态租约和非有限分数按行保留错误；搜索预算、访问次数和对局搜索计数全部为0。它不调用世界采样或规则教师，不生成 Gumbel 策略标签；`DeviceTrainingTape`会拒绝零搜索预算。纯网络及搜索模式仍各自需要真实完整局和独立评估，组件通过不授予完整执行服务批准。
+
+规则诊断可显式传入 `validate_duel_v2_gpu_seven.py --vm-max-nodes --vm-max-edges --vm-max-payload-bytes`，仅改变有界查询 scratch，不修改持久状态容量或原默认值；仍须通过14GiB计划检查和原绝对截止。容量规划的估计与设备实测分开保存。扩大 scratch 的14根对拍不能证明生产队列、GPU初始化、堆回收或1600真实根容量。

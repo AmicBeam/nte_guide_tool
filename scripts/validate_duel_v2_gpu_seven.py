@@ -17,6 +17,9 @@ def parse_args(argv=None):
     parser.add_argument('--program', type=Path, help='CPython 3.10 frozen seven-team program')
     parser.add_argument('--output', type=Path, help='Fresh artifact directory')
     parser.add_argument('--seconds', type=float, default=120)
+    parser.add_argument('--vm-max-nodes', type=int, help='Explicit diagnostic VM scratch nodes; resident state capacity is unchanged')
+    parser.add_argument('--vm-max-edges', type=int, help='Explicit diagnostic VM scratch edges')
+    parser.add_argument('--vm-max-payload-bytes', type=int, help='Explicit diagnostic VM scratch payload')
     if argv is None:
         argv = sys.argv[1:]
     args = parser.parse_args(argv)
@@ -24,6 +27,10 @@ def parse_args(argv=None):
         parser.error('--seconds must be in 1..3600; external original hard cutoff still applies')
     if args.run and (args.program is None or args.output is None):
         parser.error('--run requires --program and a fresh --output')
+    for name in ('vm_max_nodes', 'vm_max_edges', 'vm_max_payload_bytes'):
+        value = getattr(args, name)
+        if value is not None and not 1 <= value < 2**31:
+            parser.error('--' + name.replace('_', '-') + ' must be a positive int32 capacity')
     return args
 
 
@@ -32,7 +39,9 @@ def main(argv=None):
     if not args.run:
         print(json.dumps({'runtime': 'seven', 'mode': 'config_only', 'device_verified': False,
                           'games_started': 0, 'torch_imported': 'torch' in sys.modules,
-                          'seconds': args.seconds, 'full_1600_games_complete': False}))
+                          'seconds': args.seconds, 'full_1600_games_complete': False,
+                          'diagnostic_vm_scratch': {name: getattr(args, name) for name in
+                              ('vm_max_nodes', 'vm_max_edges', 'vm_max_payload_bytes')}}))
         return 0
     import torch
     if not torch.cuda.is_available():
@@ -59,7 +68,9 @@ def main(argv=None):
     torch.backends.cudnn.allow_tf32 = False
     program = load_program(args.program, runtime='seven')
     plan = plan_gpu_rule_capacity(14, 14, runtime='seven', query_batch_rows=14,
-                                  memory_budget_bytes=14 * 1024**3)
+                                  memory_budget_bytes=14 * 1024**3,
+                                  vm_max_nodes=args.vm_max_nodes, vm_max_edges=args.vm_max_edges,
+                                  vm_max_payload_bytes=args.vm_max_payload_bytes)
     if not plan['valid']:
         raise ValueError(plan['rejection_reason'])
     started = time.monotonic()

@@ -20,8 +20,8 @@ def parse_args(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = parser.parse_args(argv)
-    if not 1 <= args.seconds <= 600:
-        parser.error('--seconds must be in 1..600')
+    if not 1 <= args.seconds <= 3600:
+        parser.error('--seconds must be in 1..3600; external original hard cutoff still applies')
     if args.run and (args.program is None or args.output is None):
         parser.error('--run requires --program and a fresh --output')
     return args
@@ -62,11 +62,25 @@ def main(argv=None):
                                   memory_budget_bytes=14 * 1024**3)
     if not plan['valid']:
         raise ValueError(plan['rejection_reason'])
-    deadline = time.monotonic() + args.seconds
+    started = time.monotonic()
+    deadline = started + args.seconds
     report = {'runtime': 'seven', 'device_verified': False, 'full_1600_games_complete': False,
               'scope': 'bounded parity only; no throughput or complete-game claim',
-              'program_identity': program.identity, 'capacity_plan': plan, 'cases': []}
+              'program_identity': program.identity, 'capacity_plan': plan, 'cases': [],
+              'requested_seconds': args.seconds, 'stages': []}
     args.output.mkdir(parents=True)
+    report_path = args.output / 'seven-cuda-parity.json'
+
+    def save_progress():
+        report['elapsed_seconds'] = time.monotonic() - started
+        temporary = report_path.with_suffix('.tmp')
+        temporary.write_text(json.dumps(report, indent=2) + '\n')
+        temporary.replace(report_path)
+
+    def oracle_passed(method):
+        stage = next(s for s in reversed(report['stages']) if s['method'] == method)
+        stage['oracle_passed'] = True
+        save_progress()
     try:
         with GpuRuleBackend(program, runtime='seven', capacity_plan=plan,
                             guard_standalone_entities=True) as backend:
@@ -87,11 +101,21 @@ def main(argv=None):
                 if time.monotonic() >= deadline:
                     raise TimeoutError('Bounded CUDA parity time expired')
                 report['stage'] = method
+                stage = {'method': method, 'rows': len(refs), 'device_returned': False,
+                         'oracle_passed': False, 'query_seconds': None}
+                report['stages'].append(stage)
+                save_progress()
                 pending = [OperationQuery(uuid4().hex, backend, method, (ref, *extra), (), deadline=deadline)
                            for ref, extra in zip(refs, extras)]
-                responses = backend.resolve_operations(pending)
+                query_start = time.monotonic()
+                try:
+                    responses = backend.resolve_operations(pending)
+                finally:
+                    stage['query_seconds'] = time.monotonic() - query_start
+                    save_progress()
                 if any(isinstance(response.value, RequestExpired) for response in responses):
                     raise TimeoutError('Bounded CUDA parity query expired')
+                stage['device_returned'] = True
                 return [response.value for response in responses]
 
             decisions = queries('decision', [(side,) for side in sides])
@@ -100,30 +124,45 @@ def main(argv=None):
                 assert actions == expected_actions, (row['key'], 'legal action order')
                 np.testing.assert_array_equal(x, xx)
                 np.testing.assert_array_equal(c, cc)
+            oracle_passed('decision')
             teachers = queries('rule_decision', [(side,) for side in sides])
             for row, side, (actions, choice) in zip(rows, sides, teachers):
                 expected_actions, expected_choice = rule_decision(row['state'], side)
                 assert actions == expected_actions, (row['key'], 'teacher legal order')
                 assert choice == expected_choice, (row['key'], 'teacher choice')
+            oracle_passed('rule_decision')
             seeds = [2026100950 + i for i in range(len(rows))]
             sampled = queries('sample_world', list(zip(sides, seeds)))
             for row, side, seed, actual in zip(rows, sides, seeds, backend.export_states(sampled)):
                 expected = sample_world(row['state'], side, seed, runtime=seven_runtime)
                 assert actual == expected, (row['key'], 'sample world')
+            oracle_passed('sample_world')
             actions = [decision[0][0] for decision in decisions]
             stepped = queries('step', list(zip(sides, actions)))
             for row, side, action, actual in zip(rows, sides, actions, backend.export_states(stepped)):
                 expected = simulate_action(row['state'], side, action)
                 clean(expected)
                 assert actual == expected, (row['key'], 'simulation')
+            oracle_passed('step')
             report['stage'] = 'commit'
-            committed = backend.commit_actions([(ref, side, action, 1, None)
-                                                for ref, side, action in zip(refs, sides, actions)])
+            stage = {'method': 'commit', 'rows': len(refs), 'device_returned': False,
+                     'oracle_passed': False, 'query_seconds': None}
+            report['stages'].append(stage)
+            save_progress()
+            query_start = time.monotonic()
+            try:
+                committed = backend.commit_actions([(ref, side, action, 1, deadline)
+                                                    for ref, side, action in zip(refs, sides, actions)])
+            finally:
+                stage['query_seconds'] = time.monotonic() - query_start
+                save_progress()
+            stage['device_returned'] = True
             for row, side, action, actual, decision in zip(rows, sides, actions,
                                                           backend.export_states(committed), decisions):
                 assert actual == apply_action(row['state'], side, action), (row['key'], 'physical action')
                 report['cases'].append({'key': row['key'], 'mulligan': row['mulligan'], 'passed': True,
                                         'teacher_passed': True, 'candidates': len(decision[0])})
+            oracle_passed('commit')
             backend.release([*refs, *sampled, *stepped, *committed])
             report['backend_stats'] = backend.stats()
         report['device_verified'] = True
@@ -131,7 +170,7 @@ def main(argv=None):
         report['error'] = f'{type(exc).__name__}: {exc}'
         raise
     finally:
-        (args.output / 'seven-cuda-parity.json').write_text(json.dumps(report, indent=2) + '\n')
+        save_progress()
     print(json.dumps(report, indent=2))
     return 0
 

@@ -72,3 +72,5 @@
 单轮 trace、日志、原始记录、权重、数值 SHA 和胜率表全部放 `artifacts/rl-evals/<run-id>/`，不提交 Git。本协议只保存长期执行和验收口径。
 
 验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_device_execution_contract tests.test_duel_v2_device_graph_pool tests.test_duel_v2_device_statistics tests.test_duel_v2_device_info_key tests.test_duel_v2_device_search tests.test_duel_v2_device_candidates`。没有 CUDA 的主机必须如实记录设备测试跳过；实际设备原语、完整规则和完整对局分开报告。
+
+`validate_duel_v2_gpu_seven.py` 是 14 个开局/正常行动根的有界真实规则对拍，`--seconds` 可显式取 1–3600 秒，但仍受原授权绝对截止及外部进程树守护限制。它按 decision、rule_decision、sample_world、step、commit 原子保存阶段完成、CPU oracle 通过和查询墙钟；后续阶段失败不能抹去或升级此前证据。该脚本使用主机准备对拍请求，不是正式设备内搜索或完整局执行器；其查询时间包含准备/传输，不能当完整 Gumbel 吞吐。物理 commit 也携带同一剩余截止，不获得无限时间。

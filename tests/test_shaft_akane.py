@@ -1,4 +1,4 @@
-"""NTEData 1.4.10 + explicit user overrides, 2026-10-09; X parameters remain estimates."""
+"""NTEData + user overrides; five resource updates from the 2026-10-10 unpacked workbook."""
 import unittest
 
 from app.modules.shaft.domain.catalog import load_shaft_catalog
@@ -41,7 +41,7 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(actions['q1']['hit_count'],10)
         self.assertEqual(actions['q1']['cooldown_ticks'],200)
         self.assertEqual(actions['q1']['energy_cost'], 100)
-        self.assertAlmostEqual(actions['q1']['stagger'], .15)
+        self.assertAlmostEqual(actions['q1']['stagger'], 1.5)
         self.assertAlmostEqual(actions['q2']['multipliers']['atk'], 10.2)
         self.assertAlmostEqual(actions['同调共振']['multipliers']['atk'], 11.25)
         self.assertFalse(any(a.get('source_row') in (31, 38) for a in actions.values()))
@@ -57,6 +57,25 @@ class AkaneTest(unittest.TestCase):
         poor = self.sim([('enhanced_e', 0)])['details'][0]
         self.assertTrue(any('弦能' in w for w in poor['warnings']))
         self.assertTrue(any('泛音列或音域' in w for w in poor['warnings']))
+
+    def test_unpacked_resource_totals_and_one_hit_hold_e(self):
+        # SkillDamageData_Akane.xlsx / SkillDamage rows 6, 8, 9, 10, 14.
+        cases={'a4':(3.439,5.847,.697), 'counter':(2.5,4.2,2.5),
+               'e':(3.6,6,.5), 'hold_e':(4.9,8.2,1), 'q1':(0,0,1.5)}
+        for name,values in cases.items():
+            with self.subTest(action=name):
+                d=self.sim([(name,0)])['details'][0]
+                for field,value in zip(('energy_gain','harmony','stagger_amount'),values):
+                    self.assertAlmostEqual(d[field],value)
+        basics=self.sim([('a1',0),('a2',10),('a3',20),('a4',40)])['details']
+        self.assertAlmostEqual(sum(d['harmony'] for d in basics),23.999)
+        p=self.payload([('hold_e',0)])
+        p['steps'][0].update(interrupted=True,interrupt_duration_ticks=5,interrupt_hit_count=1)
+        d=simulate_shaft_axis(p)['result']['details'][0]
+        self.assertAlmostEqual(d['harmony'],4.1)
+        self.assertAlmostEqual(d['energy_gain'],2.45)
+        self.assertAlmostEqual(d['stagger_amount'],.5)
+        self.assertAlmostEqual(d['personal_resources_after']['弦能'],3)
 
     def test_zero_hit_and_partial_interruption(self):
         partial = self.payload([('e', 0), ('a3', 20)])
@@ -104,7 +123,7 @@ class AkaneTest(unittest.TestCase):
         self.assertFalse(any('不能使用' in warning or '华彩连段' in warning for warning in q2['warnings']))
         self.assertAlmostEqual(q2['formula_parts']['raw_base'] / q2['panel']['atk'], 10.2)
         self.assertAlmostEqual(q2['stagger_amount'], 1.5)
-        self.assertAlmostEqual(late['details'][0]['stagger_amount'], .15)
+        self.assertAlmostEqual(late['details'][0]['stagger_amount'], 1.5)
         self.assertAlmostEqual(late['summary']['character_damage'], sum(d['direct_damage'] for d in late['details']))
         missing = self.sim([('q2', 0)])['details'][0]
         self.assertFalse(any('华彩连段' in warning for warning in missing['warnings']))

@@ -181,9 +181,9 @@
     "latest_tencent_source": {
       "url": "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y?p=vwOdEFsBKeWF9RTVzLN68S",
       "content_sha256": "ccbfbfb9f4201e8348eb8a229d0d399ae14cfb980772102441435b2ffa3f1f93",
-      "priority": "本轮最新腾讯文档倍率、弦能、传导、绝对音准和全部觉醒/共鸣；普攻环合按用户确认保留NTEData原逐段值。"
+      "priority": "本轮最新腾讯文档倍率、弦能、传导、绝对音准和全部觉醒/共鸣；普攻环合按用户确认保留NTEData原逐段值。 用户2026-10-10授权的五项资源由SkillDamageData_Akane.xlsx覆盖。"
     },
-    "harmony_source_note": "用户确认保留NTEData原逐段环合，普攻合计24.899，不缩放至文档概述24。",
+    "harmony_source_note": "用户2026-10-10按新解包仅更新a4环合为5.847；a1/a2/a3仍为3.56/5.496/9.096，普攻合计23.999，不强行缩放至24。",
     "latest_awakening_source": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。",
     "confirmed_action_durations": {
       "source": "用户2026-10-10提供",
@@ -202,6 +202,71 @@
     "awakening_multiplier_stage": {
       "source": "用户2026-10-10明确补充，非外部数据源核实",
       "rule": "C节点与三觉共鸣额外1200%在技能等级换算后加算，不再次乘等级区；泛音列强化额外125%仍随本体等级换算。"
+    },
+    "unpacked_resource_update": {
+      "workbook": "SkillDamageData_Akane.xlsx",
+      "sha256": "7ecbac5678268810dfb063dc4fc2af1931f7082308a6f1cf2541a0c1c4361c46",
+      "sheet": "SkillDamage",
+      "checked_at": "2026-10-10",
+      "scope": "用户仅授权五项资源更新；其余倍率、等级区、动作时间、觉醒、触发时机及烁星激昂保持既有口径。",
+      "actions": {
+        "action_akane_a4": {
+          "row": 6,
+          "cells": [
+            "N6"
+          ],
+          "values": {
+            "harmony": 5.847
+          },
+          "hit_count": 1
+        },
+        "action_akane_counter": {
+          "row": 8,
+          "cells": [
+            "M8",
+            "N8"
+          ],
+          "values": {
+            "energy_gain": 2.5,
+            "harmony": 4.2
+          },
+          "hit_count": 1
+        },
+        "action_akane_e": {
+          "row": 9,
+          "cells": [
+            "M9",
+            "N9",
+            "O9"
+          ],
+          "values": {
+            "energy_gain": 3.6,
+            "harmony": 6.0,
+            "stagger": 0.5
+          },
+          "hit_count": 1
+        },
+        "action_akane_hold_e": {
+          "row": 10,
+          "cells": [
+            "N10"
+          ],
+          "values": {
+            "harmony": 8.2
+          },
+          "hit_count": 2
+        },
+        "action_akane_q1": {
+          "row": 14,
+          "cells": [
+            "O14"
+          ],
+          "values": {
+            "stagger": 1.5
+          },
+          "hit_count": 10
+        }
+      }
     }
   }
 }

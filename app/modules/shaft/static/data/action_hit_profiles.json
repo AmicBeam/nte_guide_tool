@@ -4851,7 +4851,7 @@
   },
   "action_akane_a4": {
     "source": "tencent-document",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。未列入本次更新的资源仍沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 用户2026-10-10：SkillDamageData_Akane.xlsx / SkillDamage 第6行，仅同步指定资源的逐段累计值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4864,7 +4864,7 @@
         "hit_count": 1,
         "damage": 4.719,
         "energy": 3.439,
-        "harmony": 6.747,
+        "harmony": 5.847,
         "stagger": 0.697
       }
     ]
@@ -4891,7 +4891,7 @@
   },
   "action_akane_counter": {
     "source": "tencent-document",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。未列入本次更新的资源仍沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 用户2026-10-10：SkillDamageData_Akane.xlsx / SkillDamage 第8行，仅同步指定资源的逐段累计值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4903,15 +4903,15 @@
       {
         "hit_count": 1,
         "damage": 1.375,
-        "energy": 1.3,
-        "harmony": 2.1,
+        "energy": 2.5,
+        "harmony": 4.2,
         "stagger": 2.5
       }
     ]
   },
   "action_akane_e": {
     "source": "tencent-document",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。未列入本次更新的资源仍沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 用户2026-10-10：SkillDamageData_Akane.xlsx / SkillDamage 第9行，仅同步指定资源的逐段累计值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4923,15 +4923,15 @@
       {
         "hit_count": 1,
         "damage": 4.0,
-        "energy": 1.7,
-        "harmony": 4.0,
-        "stagger": 0.3
+        "energy": 3.6,
+        "harmony": 6.0,
+        "stagger": 0.5
       }
     ]
   },
   "action_akane_hold_e": {
     "source": "tencent-document",
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。未列入本次更新的资源仍沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 用户2026-10-10：SkillDamageData_Akane.xlsx / SkillDamage 第10行，仅同步指定资源的逐段累计值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4944,14 +4944,14 @@
         "hit_count": 1,
         "damage": 1.8,
         "energy": 2.45,
-        "harmony": 4.0,
+        "harmony": 4.1,
         "stagger": 0.5
       },
       {
         "hit_count": 2,
         "damage": 3.6,
         "energy": 4.9,
-        "harmony": 8.0,
+        "harmony": 8.2,
         "stagger": 1.0
       }
     ]

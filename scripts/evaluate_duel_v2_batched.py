@@ -199,7 +199,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return args
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, device_driver=None) -> int:
     args = parse_args(argv)
 
     if not args.run:
@@ -258,6 +258,32 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(config_check, indent=2))
         return 2 if capacity_plan is not None and not capacity_plan['valid'] else 0
 
+    # The historical CUDA VM backend is still a host cooperative dispatcher.
+    # No output, weights, seed allocation or worker launch precedes this gate.
+    from app.modules.card_game.rl.batched_search.device_execution_contract import (
+        DeviceExecutionNotReady, require_closed_device_driver,
+    )
+    try:
+        driver = require_closed_device_driver(device_driver, purpose='winrate_evaluation')
+    except DeviceExecutionNotReady as exc:
+        print(json.dumps(dict(action='refused_formal_device_execution', reason=str(exc),
+                              outputs_created=False, weights_loaded=False,
+                              processes_started=False, quality_approved=False), ensure_ascii=False))
+        return 2
+    driver.validate_frozen_inputs(args)
+    result = driver.run_device_batch(args)
+    if not isinstance(result, dict):
+        raise TypeError('Closed device evaluator must return an evidence mapping')
+    print(json.dumps(result, ensure_ascii=False))
+    return 0 if result.get('device_execution_complete') is True else 2
+
+
+def _historical_cooperative_run(args) -> int:
+    """Historical host dispatcher, unreachable from the formal CLI entry.
+
+    Kept for source reproduction only. It cannot fulfill the current closed
+    GPU-search requirement or be selected by --device/--rule-backend flags.
+    """
     start_monotonic = time.monotonic()
     deadline = start_monotonic + float(args.seconds)
     output_dir = args.output.resolve()

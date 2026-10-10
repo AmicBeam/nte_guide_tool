@@ -7,10 +7,69 @@ import unittest
 
 from app.modules.card_game.rl.batched_search.device_execution_contract import (
     SCHEMA, SEARCH_STAGES, DeviceSearchContract, audit_device_search,
+    DeviceExecutionNotReady, require_closed_device_driver,
 )
 
 
 class DeviceExecutionContractTest(unittest.TestCase):
+    def test_formal_gate_rejects_missing_service_configuration_and_legacy_backend(self):
+        from types import SimpleNamespace
+        for service in (None, dict(rule_backend='cuda_vm', device='cuda', search_roots=1600),
+                        SimpleNamespace(backend_kind='cuda_vm', supports_gpu=True)):
+            for purpose in ('training', 'winrate_evaluation'):
+                with self.subTest(service=type(service).__name__, purpose=purpose):
+                    with self.assertRaises(DeviceExecutionNotReady):
+                        require_closed_device_driver(service, purpose=purpose)
+        with self.assertRaises(ValueError):
+            require_closed_device_driver(None, purpose='diagnostic')
+
+    def test_receipt_capabilities_do_not_implicitly_grant_capacity_or_quality(self):
+        from types import SimpleNamespace
+        sha = 'a'*64
+        service = SimpleNamespace(execution_kind='closed_device_gumbel', runtime='seven',
+            algorithm='gumbel', q_scale='natural_wdl', device_control='cuda_conditional_graph',
+            allow_synthetic=False, host_root_dispatch=False, cpu_rule_callbacks=False,
+            run_device_batch=lambda: None, validate_frozen_inputs=lambda: None,
+            rules=SimpleNamespace(execution_kind='frozen_cuda_rules', supports_device_graph=True,
+                                  host_rule_callbacks=False), source_manifest_sha256=sha,
+            device_validation_receipt=dict(schema='closed_device_preflight_v1', source_kind='actual_cuda',
+                rule_parity_passed=True, full_search_parity_passed=True,
+                independent_review_passed=True, source_manifest_sha256=sha))
+        self.assertIs(require_closed_device_driver(service, purpose='training'), service)
+        self.assertFalse(hasattr(service, 'quality_approved'))
+        service.allow_synthetic = True
+        with self.assertRaises(DeviceExecutionNotReady):
+            require_closed_device_driver(service, purpose='training')
+        service.allow_synthetic = False
+        service.device_validation_receipt['source_manifest_sha256'] = 'b'*64
+        with self.assertRaises(DeviceExecutionNotReady):
+            require_closed_device_driver(service, purpose='training')
+
+    def test_formal_evaluation_cli_refuses_old_path_before_output_or_workers(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest.mock import patch
+        from scripts.evaluate_duel_v2_batched import main
+        output = self.root / 'must-not-exist'
+        with redirect_stdout(StringIO()) as captured, patch(
+                'scripts.evaluate_duel_v2_batched._historical_cooperative_run',
+                side_effect=AssertionError('Old host dispatcher invoked')):
+            result = main(['--run', '--output', str(output), '--seed-base', '1',
+                           '--games', '49', '--budget-mode', 'simulations',
+                           '--rule-backend', 'resident_cpu', '--device', 'cpu'])
+        self.assertEqual(result, 2)
+        self.assertFalse(output.exists())
+        self.assertIn('refused_formal_device_execution', captured.getvalue())
+
+    def test_plan_mode_still_does_not_require_or_create_execution_service(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from scripts.evaluate_duel_v2_batched import main
+        with redirect_stdout(StringIO()) as captured:
+            result = main(['--games', '49'])
+        self.assertEqual(result, 0)
+        self.assertIn('config_check_only', captured.getvalue())
+
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)

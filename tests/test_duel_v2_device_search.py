@@ -268,6 +268,26 @@ class DeviceSearchTest(unittest.TestCase):
         self.assertFalse(bool(result.complete.any()))
         self.assertTrue(bool((result.errors & METADATA_ERROR).all()))
 
+    def test_step_reusing_input_and_clean_replacing_it_releases_old_lease_once(self):
+        import torch
+        from app.modules.card_game.rl.batched_search.device_search import STEP
+        torch.set_num_threads(1)
+        engine, fixture = self.engine()
+        self.initialize(engine, fixture)
+        engine.tick()  # Allocate sampled worlds, retaining physical roots.
+        original_release = fixture.release_device
+        release_errors = torch.zeros(2, dtype=torch.bool)
+        def checked_release(states):
+            release_errors.logical_or_(states.active & ~fixture.live[states.slots])
+            original_release(states)
+        fixture.release_device = checked_release
+        fixture.step_device = lambda states, actors, decision, indices, physical=False: states
+        fixture.clean_device = lambda states: fixture._new(states, fixture.data[states.slots])
+        engine.phase.fill_(STEP)
+        engine.tick()
+        self.assertFalse(bool(release_errors.any()))
+        self.assertEqual(int(fixture.live.sum()), 4)
+
     def test_actual_cuda_1600_fixture_ticks_can_be_captured(self):
         import torch
         if not torch.cuda.is_available():

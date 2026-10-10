@@ -51,6 +51,10 @@
 
 ## 终局证据审计
 
+正式入口在产生输出、载入权重、分配种子或启动 worker 前调用 `require_closed_device_driver(driver, purpose='training'|'winrate_evaluation')`。它拒绝配置字典、仅标为 `cuda_vm` 的旧 backend、主机逐根调度、合成服务、缺失图规则适配及缺少同源设备搜索/独立预检回执的对象。此检查只判断执行服务和前置资格，不能代替实际原始记录审计或授予容量/质量。
+
+`scripts/evaluate_duel_v2_batched.py` 的静态计划仍可运行；正式 `--run` 在尚未接入合格 closed-device service 时明确退出 2，不创建输出或启动历史 cooperative 实现。该服务只能经具体验证的代码接线，不能通过新增 mode 名、`--device cuda`、1600 配置或 `diag` 标志放行旧路径。原主机执行体只留源复现，不再由正式 CLI 选择。
+
 `batched_search/device_execution_contract.py:audit_device_search` 是批次完成后的纯主机审计入口，要求：
 
 - 具名七队、Gumbel/natural-WDL 和预算身份；真实 CUDA 来源与设备控制边界。

@@ -16,6 +16,58 @@ SEARCH_STAGES = frozenset({
 })
 
 
+class DeviceExecutionNotReady(RuntimeError):
+    """The requested formal method has no qualified closed device executor."""
+
+
+def require_closed_device_driver(driver, *, purpose):
+    """Reject legacy dispatch before side effects; never grant CUDA approval.
+
+    This is capability/receipt validation, not proof that execution succeeded.
+    Actual traces, complete episodes and independent review are still required.
+    A configuration dictionary is deliberately not an execution service.
+    """
+    if purpose not in ('training', 'winrate_evaluation'):
+        raise ValueError('Explicit formal training or winrate-evaluation purpose required')
+    reasons = []
+    if driver is None or isinstance(driver, dict):
+        reasons.append('missing_real_device_driver')
+    else:
+        requirements = dict(execution_kind='closed_device_gumbel', runtime='seven',
+                            algorithm='gumbel', q_scale='natural_wdl',
+                            device_control='cuda_conditional_graph', allow_synthetic=False,
+                            host_root_dispatch=False, cpu_rule_callbacks=False)
+        for key, value in requirements.items():
+            actual = getattr(driver, key, None)
+            if (actual is not value if type(value) is bool else actual != value):
+                reasons.append('driver:' + key)
+        for name in ('run_device_batch', 'validate_frozen_inputs'):
+            if not callable(getattr(driver, name, None)):
+                reasons.append('driver:' + name)
+        rules = getattr(driver, 'rules', None)
+        if (rules is None or getattr(rules, 'execution_kind', None) != 'frozen_cuda_rules'
+                or getattr(rules, 'supports_device_graph', None) is not True
+                or getattr(rules, 'host_rule_callbacks', None) is not False):
+            reasons.append('missing_capturable_formal_rule_adapter')
+        receipt = getattr(driver, 'device_validation_receipt', None)
+        source = getattr(driver, 'source_manifest_sha256', None)
+        if (not isinstance(receipt, dict) or receipt.get('schema') != 'closed_device_preflight_v1'
+                or receipt.get('source_kind') != 'actual_cuda'
+                or receipt.get('rule_parity_passed') is not True
+                or receipt.get('full_search_parity_passed') is not True
+                or receipt.get('independent_review_passed') is not True
+                or not isinstance(source, str) or len(source) != 64
+                or any(char not in '0123456789abcdef' for char in source)
+                or receipt.get('source_manifest_sha256') != source):
+            reasons.append('missing_same_source_device_preflight')
+    if reasons:
+        raise DeviceExecutionNotReady(
+            purpose + ' requires a qualified closed GPU Gumbel driver: ' + ', '.join(reasons)
+            + '. Legacy cuda_vm/cooperative dispatch and configuration flags cannot substitute. '
+            'Use explicit bounded parity diagnostics to repair the device chain; no CPU fallback.')
+    return driver
+
+
 @dataclass(frozen=True)
 class DeviceSearchContract:
     concurrent_roots: int = 1600

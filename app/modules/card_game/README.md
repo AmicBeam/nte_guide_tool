@@ -1093,3 +1093,5 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 有界部件验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_inference tests.test_duel_v2_device_vm tests.test_duel_v2_cuda_conditional_graph tests.test_duel_v2_device_candidates tests.test_duel_v2_device_projection tests.test_duel_v2_device_statistics tests.test_duel_v2_device_search -v`。没有CUDA时必须记录实际设备用例跳过；CPU数值oracle和合成树不提供完整对局批准。
 
 正式七队训练和互搏的实际入口已增加前置拒绝：缺少同源验证通过的完整设备执行服务时，`--run`、`--worker`、`--resume`及直接七队`run/learn`调用均在输出／种子／模型／进程创建前停止。当前closed factory与真实规则适配未接通，不能用`cuda_vm`或ready配置走回旧主机协程；静态计划和独立规则对拍只提供诊断。
+
+设备学习桥接：`rl/batched_search/device_learning_context.py`连接合格设备服务与`seven_round.run_closed_device_learning`的既有联合更新／择优／恢复，并核对完整任务身份及顺序。`device_training_tape.py`以有界记录和合法动作前缀存储观察、完整策略目标和自然终局标签，拒绝陈旧动作模板、错误租约、容量越界与重复终局；只有整批返回后才能导出数值。它不保存原始动作字典或证明完整重放，正式服务仍须提供原始轨迹和同源CUDA验收。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_learning_context tests.test_duel_v2_device_training_tape tests.test_duel_v2_device_games`。

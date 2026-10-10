@@ -14,6 +14,45 @@ class DeviceRuleResultContractTest(unittest.TestCase):
 
 
 class DeviceRuleResultCudaTest(unittest.TestCase):
+    def test_pair_and_scalar_references_capture_keep_errors_on_device(self):
+        import torch
+        from types import SimpleNamespace
+        if not torch.cuda.is_available():self.skipTest('Actual CUDA required')
+        from app.modules.card_game.rl.batched_duel.cuda_vm import CudaVm
+        from app.modules.card_game.rl.batched_duel.codec import pack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        from app.modules.card_game.rl.batched_duel.device_rule_results import DeviceRuleResultReader
+        from app.modules.card_game.rl.batched_duel.vm_image import lower_program
+        from tests.test_duel_v2_device_vm import program
+        # Graph ABI fixture only, not a rule call or game.
+        pairs=[([1,2],.75),([],-1.),([8],0.),([7],1.)]
+        with CudaVm(lower_program(program())) as vm:
+            arena=vm.ingest(pack_states(pairs,GraphLayout(4,128,256,4096)))
+            reader=DeviceRuleResultReader(vm);self.addCleanup(reader.close)
+            pair=reader.prepare_pair_workspace(4);scalar=reader.prepare_float_workspace(4)
+            active=torch.ones(4,dtype=torch.uint8,device=vm.device)
+            statuses=torch.zeros((4,4),dtype=torch.int32,device=vm.device)
+            call=SimpleNamespace(executor=vm,arena=arena,outputs=arena.roots,statuses=statuses)
+            def decode():
+                reader.pair_into_device(call,active=active,output=pair)
+                return reader.float_into_device(arena,pair.second,input_errors=pair.errors,
+                                                 active=active,output=scalar)
+            decode();torch.cuda.synchronize()
+            graph=torch.cuda.CUDAGraph()
+            with ExitStack() as stack:
+                for name in ('cpu','numpy','item','tolist','__bool__'):
+                    stack.enter_context(patch.object(torch.Tensor,name,side_effect=AssertionError(name)))
+                with torch.cuda.graph(graph):result=decode()
+            graph.replay();torch.cuda.synchronize()
+            self.assertEqual(result.errors.tolist(),[0]*4)
+            self.assertEqual(result.values.tolist(),[.75,-1.,0.,1.])
+            statuses[0,0]=108
+            arena.roots[2]=pair.second[2] # Scalar is not an accepted two-element tuple.
+            active[3]=0
+            graph.replay();torch.cuda.synchronize()
+            self.assertEqual(result.errors.tolist(),[108,0,150,0])
+            self.assertEqual(result.values.tolist(),[0.,-1.,0.,0.])
+
     def test_actual_metadata_refs_capture_masks_and_errors_are_device_owned(self):
         import torch
         if not torch.cuda.is_available():self.skipTest('Actual CUDA required; no metadata fallback')

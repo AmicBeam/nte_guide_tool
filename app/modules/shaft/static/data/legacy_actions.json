@@ -346,5 +346,69 @@
       "被动"
     ],
     "automatic_settlement": true
+  },
+  {
+    "id": "action_akane_enhanced_e",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "同调共振",
+    "action_type": "E",
+    "damage_type": "E",
+    "extra_tag": "",
+    "display_order": 9,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "locks_foreground_switch": true,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "multipliers": {
+      "atk": 11.25,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 0.0,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      41
+    ],
+    "source_row": 41,
+    "duration_source": "user-provided-2026-10-10",
+    "source_note": "退役的同调共振入口，仅供旧轴迁移：按同槽位此前最近一次点按E/长E映射短强E/长强E；没有前置时回退长强E以保留旧1125%基础试算，同时由状态自检提示音域缺失。新动作不自动互换。",
+    "foreground_lock_source": "用户2026-10-10：强化E期间不能切人，沿用残虹灭的前台锁定；完整耗时0.7秒，锁定按实际动作时长。",
+    "source_formula": "{0}%",
+    "personal_resource_cost": {
+      "弦能": 30
+    },
+    "personal_resource_cost_on_hit": true,
+    "required_buff_key": "character_akane_mode",
+    "required_buff_name": "泛音列或音域",
+    "final_multipliers_add_by_awakening_resonance": {
+      "3": {
+        "atk": 7.5
+      }
+    },
+    "legacy_only": true,
+    "legacy_form_action_migration": {
+      "default_action_id": "action_akane_long_enhanced_e",
+      "forms": [
+        {
+          "setup_action_ids": [
+            "action_akane_e"
+          ],
+          "action_id": "action_akane_short_enhanced_e"
+        },
+        {
+          "setup_action_ids": [
+            "action_akane_hold_e"
+          ],
+          "action_id": "action_akane_long_enhanced_e"
+        }
+      ]
+    }
   }
 ]

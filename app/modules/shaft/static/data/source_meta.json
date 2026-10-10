@@ -194,9 +194,10 @@
         "a4": 0.7,
         "e": 0.5,
         "hold_e": 1.0,
-        "enhanced_e": 0.7,
         "q1": 0.0,
-        "q2": 0.0
+        "q2": 0.0,
+        "short_enhanced_e": 0.7,
+        "long_enhanced_e": 1.5
       }
     },
     "awakening_multiplier_stage": {
@@ -303,6 +304,25 @@
         "a3_a4_input_bug": "预输入后切人仍出a4待修复；排轴手工动作不模拟输入缓存"
       },
       "arc_six_implementation": "用户2026-10-10要求实装10月9日公告的弧盘与六觉调整；暴击12%–24%、相伤20%–40%，精炼2–4按端点等差换算，六觉暴伤50%；覆盖旧NTEData同名值，不标为新解包实值。 六共鸣沿用强化命中后25秒及返还10弦能，独立共鸣开关保持有效。"
+    },
+    "enhanced_e_manual_split": {
+      "source": "用户2026-10-10要求两个手动动作，长强E1.5秒；倍率沿用现行用户文档，非新的解包数值",
+      "short": {
+        "id": "action_akane_short_enhanced_e",
+        "name": "短强E",
+        "base_atk_multiplier": 12.5,
+        "seconds": 0.7,
+        "required_mode": "泛音列"
+      },
+      "long": {
+        "id": "action_akane_long_enhanced_e",
+        "name": "长强E",
+        "base_atk_multiplier": 11.25,
+        "seconds": 1.5,
+        "required_mode": "音域"
+      },
+      "shared": "两者锁定前台，命中支付30弦能、零命中不支付，各自按三觉开关追加750%；A/D/六共鸣的命中增益保留。",
+      "migration": "旧同调共振按同槽位此前最近一次点按E/长E迁移，无前置回退长强E并保持状态自检；步骤ID、时刻及编辑属性不变，重新计算结果，不批量改库。"
     }
   }
 }

@@ -4348,7 +4348,8 @@
       "source": {
         "scope": "registrar",
         "action_ids": [
-          "action_akane_enhanced_e"
+          "action_akane_short_enhanced_e",
+          "action_akane_long_enhanced_e"
         ]
       },
       "conditions": [
@@ -4370,7 +4371,7 @@
       "interrupt_resistance": 0.5,
       "def_pct": 0.5
     },
-    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。",
+    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。 用户2026-10-10：短强E与长强E命中均触发本效果，零命中不触发。",
     "stacking": {
       "key": "character_akane_a",
       "mode": "refresh",
@@ -4392,7 +4393,8 @@
       "source": {
         "scope": "registrar",
         "action_ids": [
-          "action_akane_enhanced_e"
+          "action_akane_short_enhanced_e",
+          "action_akane_long_enhanced_e"
         ]
       },
       "conditions": [
@@ -4418,7 +4420,7 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。 用户2026-10-10：短强E与长强E命中均触发本效果，零命中不触发。"
   },
   {
     "id": "character_akane_three",
@@ -4468,7 +4470,8 @@
       "source": {
         "scope": "registrar",
         "action_ids": [
-          "action_akane_enhanced_e"
+          "action_akane_short_enhanced_e",
+          "action_akane_long_enhanced_e"
         ]
       },
       "conditions": [
@@ -4499,7 +4502,7 @@
         "弦能": 10
       }
     },
-    "source_note": "用户2026-10-10要求实装10月9日公告的弧盘与六觉调整；暴击12%–24%、相伤20%–40%，精炼2–4按端点等差换算，六觉暴伤50%；覆盖旧NTEData同名值，不标为新解包实值。"
+    "source_note": "用户2026-10-10要求实装10月9日公告的弧盘与六觉调整；暴击12%–24%、相伤20%–40%，精炼2–4按端点等差换算，六觉暴伤50%；覆盖旧NTEData同名值，不标为新解包实值。 用户2026-10-10：短强E与长强E命中均触发本效果，零命中不触发。"
   },
   {
     "id": "character_akane_talent2",
@@ -4582,42 +4585,6 @@
     "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。"
   },
   {
-    "id": "character_akane_enhanced_single",
-    "name": "明音凛·泛音列同调共振",
-    "providers": [
-      {
-        "kind": "character",
-        "id": "char_akane"
-      }
-    ],
-    "priority": 50,
-    "trigger": {
-      "event": "passive"
-    },
-    "target": {
-      "scope": "registrar",
-      "action_ids": [
-        "action_akane_enhanced_e"
-      ],
-      "conditions": [
-        {
-          "type": "active_buff_key",
-          "key": "character_akane_single"
-        }
-      ]
-    },
-    "duration": {
-      "type": "permanent"
-    },
-    "effects": {
-      "base_atk_multiplier_add": 1.25
-    },
-    "display": {
-      "line": false
-    },
-    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。 泛音列在基础1125%上增加125%攻击倍率并随本体等级换算；用户2026-10-10明确三觉额外750%在技能等级换算后加算，不乘等级系数。 用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。"
-  },
-  {
     "id": "character_akane_heal",
     "name": "明音凛A觉·恢复",
     "providers": [
@@ -4632,7 +4599,8 @@
       "source": {
         "scope": "registrar",
         "action_ids": [
-          "action_akane_enhanced_e"
+          "action_akane_short_enhanced_e",
+          "action_akane_long_enhanced_e"
         ]
       },
       "conditions": [
@@ -4662,7 +4630,7 @@
     "display": {
       "line": false
     },
-    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。"
+    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。 用户2026-10-10：短强E与长强E命中均触发本效果，零命中不触发。"
   },
   {
     "id": "arc_akane_skill",

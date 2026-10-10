@@ -1,7 +1,12 @@
 """NTEData + user overrides; five resource updates from the 2026-10-10 unpacked workbook."""
+import json
+import subprocess
 import unittest
+from copy import deepcopy
+from pathlib import Path
 
 from app.modules.shaft.domain.catalog import load_shaft_catalog
+from app.modules.shaft.domain.legacy_actions import migrate_lingke_joint_steps
 from app.modules.shaft.service import normalize_axis_payload, simulate_shaft_axis, DEFAULT_UNPUBLISHED_CHARACTERS
 
 CID = 'char_akane'
@@ -43,7 +48,10 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(actions['q1']['energy_cost'], 100)
         self.assertAlmostEqual(actions['q1']['stagger'], 1.5)
         self.assertAlmostEqual(actions['q2']['multipliers']['atk'], 10.2)
-        self.assertAlmostEqual(actions['同调共振']['multipliers']['atk'], 11.25)
+        self.assertAlmostEqual(actions['短强E']['multipliers']['atk'], 12.5)
+        self.assertAlmostEqual(actions['长强E']['multipliers']['atk'], 11.25)
+        self.assertEqual(actions['长强E']['duration_ticks'],15)
+        self.assertNotIn('同调共振',actions)
         self.assertFalse(any(a.get('source_row') in (31, 38) for a in actions.values()))
 
     def test_resource_cap_and_awakening_refund(self):
@@ -56,7 +64,55 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(r['healing_events'][0]['healing'], 636*10)
         poor = self.sim([('enhanced_e', 0)])['details'][0]
         self.assertTrue(any('弦能' in w for w in poor['warnings']))
-        self.assertTrue(any('泛音列或音域' in w for w in poor['warnings']))
+        self.assertTrue(any('音域' in w for w in poor['warnings']))
+
+    def test_manual_enhanced_variants_keep_own_multiplier_duration_and_buffs(self):
+        for form,name,base,duration in [('e','short_enhanced_e',12.5,7),
+                                        ('hold_e','long_enhanced_e',11.25,15)]:
+            with self.subTest(action=name):
+                p=self.payload([(form,0),(name,20),('a1',50)],nodes=range(1,7))
+                rows=simulate_shaft_axis(p)['result']['details']
+                d=rows[1]
+                self.assertEqual(d['action_id'],'action_akane_'+name)
+                self.assertEqual(d['duration_ticks'],duration)
+                self.assertAlmostEqual(d['formula_parts']['raw_base']/d['panel']['atk'],base)
+                self.assertAlmostEqual(d['formula_parts']['post_skill_level_base']/d['panel']['atk'],7.5)
+                self.assertEqual(d['personal_resources_consumed']['弦能'],30)
+                self.assertEqual(d['personal_resources_after']['弦能'],10)
+                self.assertTrue({'character_akane_a','character_akane_d','character_akane_six'} <= {
+                    b['rule_id'] for b in rows[2]['applied_buffs']})
+                wrong_form='hold_e' if form=='e' else 'e'
+                wrong=self.sim([(wrong_form,0),(name,20)])['details'][1]
+                self.assertEqual(wrong['action_id'],d['action_id'])
+                required='泛音列' if form=='e' else '音域'
+                self.assertTrue(any(required in w for w in wrong['warnings']))
+                self.assertAlmostEqual(wrong['formula_parts']['raw_base']/wrong['panel']['atk'],base)
+
+    def test_retired_enhanced_migration_is_ordered_idempotent_and_matches_browser(self):
+        catalog=load_shaft_catalog()
+        axis=self.payload([('enhanced_e',200),('e',0),('enhanced_e',20),
+                           ('hold_e',160),('short_enhanced_e',220)])
+        axis['steps'][0].update(interrupted=True,interrupt_duration_ticks=5,interrupt_hit_count=1)
+        original=deepcopy(axis['steps'])
+        expected=migrate_lingke_joint_steps(original,axis['team'],catalog)
+        self.assertEqual(axis['steps'],original)
+        self.assertEqual(expected[0]['action_id'],'action_akane_long_enhanced_e')
+        self.assertEqual(expected[2]['action_id'],'action_akane_short_enhanced_e')
+        self.assertEqual(expected[4]['action_id'],'action_akane_short_enhanced_e')
+        self.assertTrue(expected[0]['interrupted'])
+        for before,after in zip(original,expected):
+            self.assertEqual(before['id'],after['id'])
+            self.assertEqual(before['start_tick'],after['start_tick'])
+        self.assertEqual(migrate_lingke_joint_steps(expected,axis['team'],catalog),expected)
+        engine=Path(__file__).resolve().parents[1]/'app/modules/shaft/static/js/shaft_engine.js'
+        script=('const x=JSON.parse(require("fs").readFileSync(0,"utf8"));'
+                'const e=require('+json.dumps(str(engine))+');'
+                'console.log(JSON.stringify(e.migrateLingkeJointSteps(x.steps,x.team,x.catalog)));')
+        output=subprocess.run(['node','-e',script],input=json.dumps({
+            'steps':original,'team':axis['team'],'catalog':catalog}),text=True,capture_output=True,check=True)
+        self.assertEqual(json.loads(output.stdout),expected)
+        fallback=normalize_axis_payload(self.payload([('enhanced_e',0)]))
+        self.assertEqual(fallback['steps'][0]['action_id'],'action_akane_long_enhanced_e')
 
     def test_unpacked_resource_totals_and_one_hit_hold_e(self):
         # SkillDamageData_Akane.xlsx / SkillDamage rows 6, 8, 9, 10, 14.
@@ -115,24 +171,22 @@ class AkaneTest(unittest.TestCase):
         r = self.sim([('e',0),('hold_e',20),('enhanced_e',40),('enhanced_e',280)], nodes=range(1,7))
         self.assertTrue(any('CD' in w for w in r['details'][1]['warnings']))
         self.assertFalse(any('CD' in w for w in r['details'][2]['warnings']))
-        self.assertTrue(any('泛音列或音域' in w for w in r['details'][3]['warnings']))
+        self.assertTrue(any('音域' in w for w in r['details'][3]['warnings']))
 
     def test_enhanced_e_locks_teammate_switch_until_action_ends(self):
         catalog=load_shaft_catalog()
-        enhanced=next(a for a in catalog['actions'] if a['id']=='action_akane_enhanced_e')
-        self.assertTrue(enhanced['locks_foreground_switch'])
         teammate=next(c for c in catalog['characters'] if c['name']=='真红')
         entry=next(a for a in catalog['actions_by_character'][teammate['id']] if a['name']=='a1')
-        for form in ('e','hold_e'):
-            for switch_tick in (23,27):
+        for form, name, duration in [('e','short_enhanced_e',7),('hold_e','long_enhanced_e',15)]:
+            for switch_tick in (23,20+duration):
                 with self.subTest(form=form, switch_tick=switch_tick):
-                    p=self.payload([(form,0),('enhanced_e',20)],nodes=range(1,7))
+                    p=self.payload([(form,0),(name,20)],nodes=range(1,7))
                     p['team'].append(dict(slot=1,character_id=teammate['id'],arc_id='',cartridge_id=''))
                     p['steps'].append(dict(id='switch',slot=1,action_id=entry['id'],start_tick=switch_tick))
                     details=simulate_shaft_axis(p)['result']['details']
-                    cast=next(d for d in details if d['action_id']==enhanced['id'])
+                    cast=details[1]
                     switched=next(d for d in details if d['step_id']=='switch')
-                    self.assertEqual(cast['duration_ticks'],7)
+                    self.assertEqual(cast['duration_ticks'],duration)
                     self.assertEqual(switched['start_tick'],cast['end_tick'])
 
     def test_q2_is_manual_without_cadenza_time_window(self):

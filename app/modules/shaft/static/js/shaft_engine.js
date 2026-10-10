@@ -1098,11 +1098,44 @@
     );
   }
 
+  function migrateFormActionSteps(steps, actions) {
+    const selectors = new Map();
+    actions.forEach((action, actionId) => {
+      asList(action.legacy_form_action_migration?.forms).forEach((form) => {
+        asList(form.setup_action_ids).forEach((setupId) => {
+          const entries = selectors.get(setupId) || [];
+          entries.push({oldId: actionId, targetId: form.action_id});
+          selectors.set(setupId, entries);
+        });
+      });
+    });
+    const converted = asList(steps).slice();
+    const modes = new Map();
+    converted.map((step, index) => ({step, index}))
+      .sort((left, right) => num(left.step?.start_tick) - num(right.step?.start_tick) || left.index - right.index)
+      .forEach(({step, index}) => {
+        if (!step || typeof step !== 'object') return;
+        const slot = int(step.slot);
+        const actionId = String(step.action_id || '');
+        asList(selectors.get(actionId)).forEach(({oldId, targetId}) => {
+          modes.set(`${slot}:${oldId}`, targetId);
+        });
+        const policy = actions.get(actionId)?.legacy_form_action_migration;
+        if (!policy) return;
+        const targetId = modes.get(`${slot}:${actionId}`) || policy.default_action_id;
+        const target = actions.get(targetId);
+        if (target && !target.legacy_only) {
+          converted[index] = Object.assign({}, step, {action_id: targetId, action_name: target.name});
+        }
+      });
+    return converted;
+  }
+
   function migrateLingkeJointSteps(steps, team, catalog) {
     const actions = recordMap(catalog.actions);
     const characters = recordMap(catalog.characters);
     const members = asList(team).slice().sort((a, b) => int(a.slot) - int(b.slot));
-    return asList(steps).flatMap((step) => {
+    return migrateFormActionSteps(steps, actions).flatMap((step) => {
       const old = actions.get(String(step?.action_id || '')) || {};
       if (old.automatic_settlement) return [];
       if (!old.legacy_only || old.trigger_character_selector !== 'same_element_non_lingke') return [step];

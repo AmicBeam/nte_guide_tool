@@ -4956,9 +4956,29 @@
       }
     ]
   },
-  "action_akane_enhanced_e": {
-    "source": "ntedata",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+  "action_akane_short_enhanced_e": {
+    "source": "user-provided",
+    "source_note": "用户2026-10-10要求拆为两个手动动作：短强E1250%/0.7秒，长强E1125%/1.5秒；三觉共鸣在等级换算后各追加750%，均需30弦能，不能切人，不占普通E冷却、不刷新形态。倍率沿用现行用户文档，名称与长强E耗时为本轮用户指定，不冒充新解包验证。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0.0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 12.5,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_akane_long_enhanced_e": {
+    "source": "user-provided",
+    "source_note": "用户2026-10-10要求拆为两个手动动作：短强E1250%/0.7秒，长强E1125%/1.5秒；三觉共鸣在等级换算后各追加750%，均需30弦能，不能切人，不占普通E冷却、不刷新形态。倍率沿用现行用户文档，名称与长强E耗时为本轮用户指定，不冒充新解包验证。",
     "cumulative": [
       {
         "hit_count": 0,

@@ -10429,10 +10429,10 @@
     "personal_resource_scale_with_damage_ratio": true
   },
   {
-    "id": "action_akane_enhanced_e",
+    "id": "action_akane_short_enhanced_e",
     "character_id": "char_akane",
     "character_name": "明音凛",
-    "name": "同调共振",
+    "name": "短强E",
     "action_type": "E",
     "damage_type": "E",
     "extra_tag": "",
@@ -10442,6 +10442,52 @@
     "locks_foreground_switch": true,
     "duration_seconds": 0.7,
     "duration_ticks": 7,
+    "multipliers": {
+      "atk": 12.5,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 0.0,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      41
+    ],
+    "source_row": 41,
+    "duration_source": "user-provided-2026-10-10",
+    "source_note": "用户2026-10-10要求拆为两个手动动作：短强E1250%/0.7秒，长强E1125%/1.5秒；三觉共鸣在等级换算后各追加750%，均需30弦能，不能切人，不占普通E冷却、不刷新形态。倍率沿用现行用户文档，名称与长强E耗时为本轮用户指定，不冒充新解包验证。",
+    "foreground_lock_source": "用户2026-10-10：短强E与长强E均沿用前台锁定；锁定覆盖各自实际动作时长。",
+    "source_formula": "{0}%",
+    "personal_resource_cost": {
+      "弦能": 30
+    },
+    "personal_resource_cost_on_hit": true,
+    "required_buff_key": "character_akane_single",
+    "required_buff_name": "泛音列",
+    "final_multipliers_add_by_awakening_resonance": {
+      "3": {
+        "atk": 7.5
+      }
+    }
+  },
+  {
+    "id": "action_akane_long_enhanced_e",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "长强E",
+    "action_type": "E",
+    "damage_type": "E",
+    "extra_tag": "",
+    "display_order": 10,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "locks_foreground_switch": true,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
     "multipliers": {
       "atk": 11.25,
       "hp": 0,
@@ -10459,15 +10505,15 @@
     ],
     "source_row": 41,
     "duration_source": "user-provided-2026-10-10",
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 三觉共鸣额外增加750%攻击倍率，读取独立共鸣开关。 用户2026-10-10明确：觉醒追加750%在技能等级换算后的最终倍率中加算，追加部分不乘等级系数。 用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。",
-    "foreground_lock_source": "用户2026-10-10：强化E期间不能切人，沿用残虹灭的前台锁定；完整耗时0.7秒，锁定按实际动作时长。",
+    "source_note": "用户2026-10-10要求拆为两个手动动作：短强E1250%/0.7秒，长强E1125%/1.5秒；三觉共鸣在等级换算后各追加750%，均需30弦能，不能切人，不占普通E冷却、不刷新形态。倍率沿用现行用户文档，名称与长强E耗时为本轮用户指定，不冒充新解包验证。",
+    "foreground_lock_source": "用户2026-10-10：短强E与长强E均沿用前台锁定；锁定覆盖各自实际动作时长。",
     "source_formula": "{0}%",
     "personal_resource_cost": {
       "弦能": 30
     },
     "personal_resource_cost_on_hit": true,
-    "required_buff_key": "character_akane_mode",
-    "required_buff_name": "泛音列或音域",
+    "required_buff_key": "character_akane_area",
+    "required_buff_name": "音域",
     "final_multipliers_add_by_awakening_resonance": {
       "3": {
         "atk": 7.5

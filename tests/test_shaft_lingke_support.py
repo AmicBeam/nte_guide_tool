@@ -355,7 +355,8 @@ const revealTimelineTick = () => {};
         ]
         steps = [{'id': str(i), 'slot': 0, 'action_id': a['id'], 'start_tick': 10 + i*5,
                   'trigger_character_id': 'char_1895e259be'}
-                 for i, a in enumerate(a for a in catalog['actions'] if a.get('legacy_only'))]
+                 for i, a in enumerate(a for a in catalog['actions'] if a.get('legacy_only')
+                                       and a.get('trigger_character_selector') == 'same_element_non_lingke')]
         original = deepcopy(steps)
         expected = migrate_lingke_joint_steps(steps, team, catalog)
         self.assertEqual(steps, original)

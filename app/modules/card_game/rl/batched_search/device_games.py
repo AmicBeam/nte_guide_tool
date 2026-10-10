@@ -71,6 +71,9 @@ class DeviceGameLoop:
             if type(value) is not int or value < 1:
                 raise ValueError('Positive bounded ' + name + ' required')
         self.rules, self.search, self.sink = rules, search, sink
+        self._counts_as_search = getattr(search, 'counts_as_search', True)
+        if type(self._counts_as_search) is not bool:
+            raise TypeError('Explicit boolean search accounting required')
         self.world_seed_provider, self.random_plan = world_seed_provider, random_plan
         self.max_decisions = max_decisions
         self.allow_synthetic = allow_synthetic
@@ -265,7 +268,8 @@ class DeviceGameLoop:
         self._error(incomplete, incomplete, GUARD_ERROR)
         ready = (searched & result.complete & (result.completed == result.requested)
                  & (result.errors == 0) & (self._errors == 0))
-        self._searched.add_((searched & result.complete).long())
+        if self._counts_as_search:
+            self._searched.add_((searched & result.complete).long())
         sink_err = self.sink.append_device(self._physical(self._present), self._actors,
                                            self._steps, result, ready)
         self._error(sink_err, ready, SINK_ERROR)
@@ -330,10 +334,13 @@ class DeviceGameLoop:
         if (self._outer.graph is not None or self._outer._loop_built
                 or self._inner.graph is not None or self._inner._loop_built):
             raise RuntimeError('Device loop is already frozen')
-        self.search.statistics.bind_capture_streams(self._outer.body_stream, self._inner.body_stream)
+        if self._counts_as_search:
+            self.search.statistics.bind_capture_streams(self._outer.body_stream, self._inner.body_stream)
         if self.random_plan is not None and callable(getattr(self.random_plan, 'bind_capture_streams', None)):
             self.random_plan.bind_capture_streams(self._outer.body_stream, self._inner.body_stream)
-        with self.search.statistics.capture_scope():
+        from contextlib import nullcontext
+        scope = self.search.statistics.capture_scope() if self._counts_as_search else nullcontext()
+        with scope:
             self._outer.capture(self._unfinished, self.tick, initialize=lambda:
                 self.initialize(roots, job_seeds, policy_index_by_side,
                                 auxiliary_index_by_side, train_sides))

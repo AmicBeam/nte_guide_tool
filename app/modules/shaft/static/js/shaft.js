@@ -1715,6 +1715,10 @@
     const configuredPersonal = configured?.personal_resources && typeof configured.personal_resources === 'object'
       ? configured.personal_resources
       : {};
+    const integerResources = new Set(character.personal_resource_integer_resources || []);
+    const normalizedPersonal = Object.fromEntries(Object.entries(configuredPersonal).map(([name, value]) => [
+      name, integerResources.has(name) ? Math.max(0, Math.floor(numberValue(value))) : value,
+    ]));
     const configuredDotLayers = configured?.dot_layers && typeof configured.dot_layers === 'object'
       ? configured.dot_layers
       : {};
@@ -1730,7 +1734,7 @@
         : '',
       energyCapacity,
       usesEnergy,
-      personalResources: configuredPersonal,
+      personalResources: normalizedPersonal,
       dotLayers: String(member?.character_id || '') === CANHONG_CHARACTER_ID
         ? {
           '蚀心': Math.max(0, Math.min(10, Number(configuredDotLayers['蚀心'] || 0))),
@@ -1865,11 +1869,13 @@
       const harmony = Math.max(0, Math.min(100, Number(row.querySelector('[data-loop-initial-harmony]')?.value || 0)));
       const reaction = String(row.querySelector('[data-loop-initial-reaction]')?.value || '');
       const personalResources = {};
+      const integerResources = new Set(character.personal_resource_integer_resources || []);
       row.querySelectorAll('[data-loop-initial-personal-resource]').forEach((input) => {
         const name = String(input.dataset.loopInitialPersonalResource || '');
         const maximum = input.max === '' ? Number.POSITIVE_INFINITY : Math.max(0, Number(input.max));
         if (name) {
           personalResources[name] = Math.max(0, Math.min(maximum, Number(input.value || 0)));
+          if (integerResources.has(name)) personalResources[name] = Math.floor(personalResources[name]);
         }
       });
       const dotLayers = {};
@@ -5004,7 +5010,7 @@
       const energyLabel = formatNumber(resources.energy || 0, 1);
       const harmonyLabel = formatNumber(resources.harmony || 0, 1);
       const personalResourceLabels = timelinePersonalResourceEntries(character, resources.personalResources)
-        .map(([name, value]) => `<small>${escapeHtml(name)} ${formatNumber(value, 1)}</small>`)
+        .map(([name, value]) => `<small>${escapeHtml(name)} ${formatNumber(value, (character.personal_resource_integer_resources || []).includes(name) ? 0 : 1)}</small>`)
         .join('');
       const slotDetails = details
         .filter((detail) => Number(detail.slot) === Number(member.slot))

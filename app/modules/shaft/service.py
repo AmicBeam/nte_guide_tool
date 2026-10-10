@@ -738,11 +738,14 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
         character_caps = personal_resource_caps.get(character_id)
         character_caps = character_caps if isinstance(character_caps, dict) else {}
         normalized_personal = {}
+        integer_resources = set((characters.get(character_id) or {}).get('personal_resource_integer_resources') or [])
         for name in sorted(personal_resource_names.get(character_id, set())):
             if name not in configured_personal:
                 continue
             maximum = max(0, _num(character_caps.get(name), 1_000_000))
             normalized_personal[name] = max(0, min(maximum, _num(configured_personal.get(name))))
+            if name in integer_resources:
+                normalized_personal[name] = int(normalized_personal[name])
         loop_initial_resources[character_id] = {
             'energy': max(0, min(energy_capacity, _num(configured.get('energy')))),
             'harmony': max(0, min(100, _num(configured.get('harmony')))),

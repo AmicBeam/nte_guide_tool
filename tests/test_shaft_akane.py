@@ -131,15 +131,14 @@ class AkaneTest(unittest.TestCase):
         self.assertAlmostEqual(d['harmony'],4.1)
         self.assertAlmostEqual(d['energy_gain'],2.45)
         self.assertAlmostEqual(d['stagger_amount'],.5)
-        self.assertAlmostEqual(d['personal_resources_after']['弦能'],3)
+        self.assertEqual(d['personal_resources_after']['弦能'],6)
 
     def test_zero_hit_and_partial_interruption(self):
         partial = self.payload([('e', 0), ('a3', 20)])
         partial['steps'][1].update(interrupted=True, interrupt_duration_ticks=2, interrupt_hit_count=3)
         partial_result = simulate_shaft_axis(partial)['result']
         before = partial_result['details'][0]['personal_resources_after']['弦能']
-        self.assertAlmostEqual(partial_result['details'][1]['personal_resources_after']['弦能'],
-                               before + 2 * .345 / .945)
+        self.assertEqual(partial_result['details'][1]['personal_resources_after']['弦能'],before + 2)
         detail = partial_result['details'][1]
         self.assertAlmostEqual(detail['energy_gain'], 2.046)
         self.assertAlmostEqual(detail['harmony'], 3.42)
@@ -166,6 +165,37 @@ class AkaneTest(unittest.TestCase):
         self.assertAlmostEqual(area['formula_parts']['dmg_bonus'] - expired['formula_parts']['dmg_bonus'], .9)
         self.assertNotIn('character_akane_transmit_single', {b['rule_id'] for b in area['applied_buffs']})
         self.assertFalse(any('character_akane_transmit' in b['rule_id'] for b in expired['applied_buffs']))
+
+    def test_first_hit_gives_full_integer_string_energy_once(self):
+        for name, hits, gain in [('a1',2,1),('a2',2,1),('a3',7,2),('hold_e',2,6)]:
+            for kept in (0,1,hits):
+                with self.subTest(action=name, kept=kept):
+                    p=self.payload([(name,0)])
+                    p['steps'][0].update(interrupted=True,interrupt_duration_ticks=1,interrupt_hit_count=kept)
+                    d=simulate_shaft_axis(p)['result']['details'][0]
+                    self.assertEqual(d['personal_resources_after']['弦能'],gain if kept else 0)
+                    self.assertEqual(d['duration_ticks'],1)
+
+    def test_initial_string_energy_is_integer_without_rounding_other_resources(self):
+        p=self.payload([('a3',0)],loop_enabled=True,loop_initial_resources={
+            CID:{'personal_resources':{'弦能':28.9}},
+            'char_heiyu':{'personal_resources':{'恶意':7.25}}})
+        p['team'].append(dict(slot=1,character_id='char_heiyu',arc_id='',cartridge_id=''))
+        normalized=normalize_axis_payload(p)
+        configured=normalized['options']['loop_initial_resources']
+        self.assertEqual(configured[CID]['personal_resources']['弦能'],28)
+        self.assertEqual(configured['char_heiyu']['personal_resources']['恶意'],7.25)
+        engine=Path(__file__).resolve().parents[1]/'app/modules/shaft/static/js/shaft_engine.js'
+        script=('const x=JSON.parse(require("fs").readFileSync(0,"utf8"));'
+                'const e=require('+json.dumps(str(engine))+');'
+                'console.log(JSON.stringify(e.simulateAxis(x.axis,x.catalog)));')
+        output=subprocess.run(['node','-e',script],input=json.dumps({
+            'axis':p,'catalog':load_shaft_catalog()}),text=True,capture_output=True,check=True)
+        result=json.loads(output.stdout)
+        resources={r['slot']:r['initial_personal_resources'] for r in result['resources_by_slot']}
+        self.assertEqual(resources[0]['弦能'],28)
+        self.assertEqual(resources[1]['恶意'],7.25)
+        self.assertEqual(result['details'][0]['personal_resources_after']['弦能'],30)
 
     def test_shared_cd_and_enhanced_does_not_refresh_mode(self):
         r = self.sim([('e',0),('hold_e',20),('enhanced_e',40),('enhanced_e',280)], nodes=range(1,7))

@@ -1040,8 +1040,10 @@
       stagger_by_awakening_node: scaledMap(action.stagger_by_awakening_node, staggerRatio),
       harmony: num(action.harmony) * ratio('harmony'),
       energy_gain: num(action.energy_gain) * ratio('energy'),
-      personal_resource_gain: action.personal_resource_scale_with_damage_ratio
-        ? scaledMap(action.personal_resource_gain, damageRatio) : action.personal_resource_gain,
+      personal_resource_gain: action.personal_resource_gain_on_first_hit
+        ? scaledMap(action.personal_resource_gain, selectedHitCount > 0 ? 1 : 0)
+        : action.personal_resource_scale_with_damage_ratio
+          ? scaledMap(action.personal_resource_gain, damageRatio) : action.personal_resource_gain,
       personal_resource_cost: action.personal_resource_scale_with_damage_ratio
         ? scaledMap(action.personal_resource_cost, damageRatio) : action.personal_resource_cost,
       hit_count: selectedHitCount,
@@ -2491,6 +2493,13 @@
       && typeof catalog.formula_constants.personal_resource_caps === 'object'
       ? catalog.formula_constants.personal_resource_caps
       : DEFAULT_PERSONAL_RESOURCE_CAPS;
+    const integerPersonalResources = new Map(asList(catalog.characters).map((character) => [
+      character.id, new Set(asList(character.personal_resource_integer_resources)),
+    ]));
+    function integerPersonalResourceValue(characterId, name, value) {
+      return integerPersonalResources.get(characterId)?.has(name)
+        ? Math.max(0, Math.floor(num(value))) : value;
+    }
     const fonsFull = options.fons_full == null ? true : Boolean(options.fons_full);
     const switchLossTicks = Math.max(
       0,
@@ -2631,7 +2640,10 @@
         : {};
       Object.entries(configuredPersonal).forEach(([name, value]) => {
         const cap = num(personalResourceCaps[characterId]?.[name], 1000000);
-        resources[name] = Math.max(0, Math.min(cap, value));
+        resources[name] = integerPersonalResourceValue(characterId, name, Math.max(0, Math.min(cap, value)));
+      });
+      Object.entries(resources).forEach(([name, value]) => {
+        resources[name] = integerPersonalResourceValue(characterId, name, value);
       });
       initialPersonalResourcesBySlot.set(slot, Object.assign({}, resources));
     });
@@ -4502,7 +4514,8 @@
         const activationResources = personalResources.get(ownerSlot) || {};
         Object.entries(resourceMap(activation.personal_resource_gain_per_hit)).forEach(([key, gain]) => {
           const cap = num(personalResourceCaps[String(rule.owner_character_id || '')]?.[key], Infinity);
-          activationResources[key] = Math.min(cap, num(activationResources[key]) + gain * Math.max(0, num(context.hit_count)));
+          activationResources[key] = integerPersonalResourceValue(String(rule.owner_character_id || ''), key,
+            Math.min(cap, num(activationResources[key]) + gain * Math.max(0, num(context.hit_count))));
         });
         if (num(activation.heal_base_atk_ratio) > 0 && triggerTick >= 0) {
           const owner = snapshots.get(ownerSlot);
@@ -4515,14 +4528,15 @@
             personalResourceCaps[String(rule.owner_character_id || '')]?.[key],
             Number.POSITIVE_INFINITY,
           );
-          activationResources[key] = Math.min(cap, (activationResources[key] || 0) + gain);
+          activationResources[key] = integerPersonalResourceValue(String(rule.owner_character_id || ''), key,
+            Math.min(cap, (activationResources[key] || 0) + gain));
         });
         asList(activation.personal_resource_set_to_cap).map(String).filter(Boolean).forEach((key) => {
           const cap = num(
             personalResourceCaps[String(rule.owner_character_id || '')]?.[key],
             Number.POSITIVE_INFINITY,
           );
-          if (Number.isFinite(cap)) activationResources[key] = cap;
+          if (Number.isFinite(cap)) activationResources[key] = integerPersonalResourceValue(String(rule.owner_character_id || ''), key, cap);
         });
         const activationEnergyGain = num(activation.energy_gain);
         if (activationEnergyGain !== 0) {
@@ -5257,6 +5271,7 @@
         slotResources[key] = 0;
       });
       Object.entries(resourceMap(action.personal_resource_gain)).forEach(([key, gain]) => {
+        if (action.personal_resource_gain_on_first_hit === true && actionHitCount(action) === 0) return;
         const gainBlockers = activeResourceEffectConfigs(activeBuffs, slot, buffTick, 'block_gain', key, step, action, snapshot, isBackground);
         if (gainBlockers.length) {
           if (gainBlockers.some((buff) => buff.rule.resource_effects.block_gain[key]?.warn !== false)) {
@@ -5266,7 +5281,8 @@
         }
         const cap = num(personalResourceCaps[String(snapshot.character?.id || '')]?.[key], Number.POSITIVE_INFINITY);
         const gainMultiplier = Math.max(0, 1 + num(personalResourceGainPct[key]));
-        slotResources[key] = Math.min(cap, (slotResources[key] || 0) + gain * gainMultiplier * actionMultiplier);
+        slotResources[key] = integerPersonalResourceValue(String(snapshot.character?.id || ''), key,
+          Math.min(cap, (slotResources[key] || 0) + gain * gainMultiplier * actionMultiplier));
       });
       triggeredBuffs.forEach((summary) => {
         const instance = activeBuffs.find((buff) => (

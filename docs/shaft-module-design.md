@@ -873,7 +873,7 @@ Everness当天核实「未迟到的正义」：基础800%攻击力相属性伤�
 
 ### 配置化延时伤害与环合重施（2026-09-21）
 
-明音凛使用通用配置扩展，未在主流程分支写角色ID：`initial_personal_resources_by_awakening_count` 只在非循环入场按觉醒数量授予资源；历史配置`activation.personal_resource_gain_per_hit`可按保留段数获取资源；当前明音凛改由动作`personal_resource_gain`发放整次资源，`personal_resource_scale_with_damage_ratio`按实际保留伤害占比缩减；`personal_resource_cost_on_hit` 使0段打断不支付指定动作的资源成本。`activation.heal_base_atk_ratio` 输出基于角色和弧盘基础攻击的回复事件。
+明音凛使用通用配置扩展，未在主流程分支写角色ID：`initial_personal_resources_by_awakening_count` 只在非循环入场按觉醒数量授予资源；历史配置`activation.personal_resource_gain_per_hit`可按保留段数获取资源；明音凛由动作`personal_resource_gain`发放整次资源；2026-10-11改为`personal_resource_gain_on_first_hit`，至少命中1段即完整获取，0命中为0，不再用`personal_resource_scale_with_damage_ratio`缩减弦能；`personal_resource_cost_on_hit` 使0段打断不支付指定动作的资源成本。`activation.heal_base_atk_ratio` 输出基于角色和弧盘基础攻击的回复事件。
 
 `triggered_damage` 给Buff触发器配置延迟tick与独立动作定义，加入真实时间事件队列，以出伤时的面板、技能等级和普通暴击计算，记录独立伤害/倾陷及增益快照；结果沿用可点击伤害标记。派生伤害只派发命中事件，不派发动作开始，避免重复Q耗能、冷却或释放增益。轴外投影不计总伤。循环预热保留跨边界的待结算事件。
 
@@ -914,3 +914,9 @@ Everness当天核实「未迟到的正义」：基础800%攻击力相属性伤�
 退役动作保存在`legacy_actions.json`，可配置`legacy_form_action_migration`：`forms`列出前置`setup_action_ids`及对应新`action_id`，`default_action_id`声明没有前置时的回退。Python与JS迁移按原始`start_tick`和同刻列表顺序读取同槽位最近一次前置动作，保留输出列表顺序、步骤ID、原始时刻及打断等编辑字段。明音旧入口的点按E映射短强E、长E映射长强E，没有前置回退长强E，后续状态自检继续报告缺失音域。仅退役ID参与迁移，新手动动作不自动互换。
 
 复用既有迁移调用入口，在保存归一化、已保存/分享/广场响应、本地草稿、粘贴及直接模拟前执行。旧结果由`legacy_actions_migrated`标记作废，公开预览在浏览器重算；不批量改写数据库，不要求线上Node，不改变测试角色可见范围。
+
+### 首段资源获取与整数个人资源（2026-10-11）
+
+动作`personal_resource_gain_on_first_hit=true`表示聚合动作只要至少1段命中即一次获得整套`personal_resource_gain`；打断保留0段时清零，后续命中不重复发放。仅明音提供弦能的动作开启该配置；既有按保留伤害比例处理的其他角色资源规则不变。
+
+角色`personal_resource_integer_resources`列出整数资源，明音声明「弦能」。引擎在初始资源、动作获取和Buff获取/补满时按此配置向下取整，保存归一化、循环设置与轨道展示使用同一精度；旧循环小数不继续进入新计算。只改变弦能，恶意等其他角色资源保留小数。0命中不获取，强化支付30/六共鸣返还10/上限30，以及其他伤害、回能、环合、倾陷的打断规则保持不变。

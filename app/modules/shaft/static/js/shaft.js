@@ -3569,7 +3569,7 @@
       .filter((detail) => {
         const step = stepById.get(detail.step_id) || { action_id: detail.action_id };
         const action = actionForStep(step);
-        return switchesForeground(step, action);
+        return detail.lingke_joint_source_slot != null || switchesForeground(step, action);
       })
       .map((detail) => {
         const step = stepById.get(detail.step_id) || { action_id: detail.action_id };

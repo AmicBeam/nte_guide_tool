@@ -470,7 +470,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('id="shaft-axis-preview-cancel-btn"', template)
         self.assertIn('id="shaft-axis-preview-save-btn"', template)
         self.assertIn('function groupedPreviewActions', source)
-        self.assertIn('return switchesForeground(step, action);', source)
+        self.assertIn('return detail.lingke_joint_source_slot != null || switchesForeground(step, action);', source)
         self.assertIn(".join(' ')", source)
         self.assertIn('previous.durationTicks += detail.durationTicks', source)
         self.assertIn('function damageContributionShares', source)

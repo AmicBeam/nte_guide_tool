@@ -53,7 +53,7 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(r['details'][1]['personal_resources_after']['弦能'], 10)
         self.assertEqual(r['details'][2]['personal_resources_after']['弦能'], 12)
         self.assertTrue(r['healing_events'])
-        self.assertEqual(r['healing_events'][0]['healing'], 636*6)
+        self.assertEqual(r['healing_events'][0]['healing'], 636*10)
         poor = self.sim([('enhanced_e', 0)])['details'][0]
         self.assertTrue(any('弦能' in w for w in poor['warnings']))
         self.assertTrue(any('泛音列或音域' in w for w in poor['warnings']))
@@ -103,7 +103,7 @@ class AkaneTest(unittest.TestCase):
     def test_modes_exclude_each_other_and_expire(self):
         r = self.sim([('e', 0), ('a1', 12), ('hold_e', 170), ('a1', 184), ('a1', 440)], nodes=[2,5])
         single, area, expired = [r['details'][i] for i in [1,3,4]]
-        self.assertAlmostEqual(single['formula_parts']['base_multiplier_factor'], 1.7)
+        self.assertAlmostEqual(single['formula_parts']['base_multiplier_factor'], 1.6)
         self.assertAlmostEqual(area['formula_parts']['base_multiplier_factor'], 1)
         self.assertAlmostEqual(area['formula_parts']['dmg_bonus'] - expired['formula_parts']['dmg_bonus'], .9)
         self.assertNotIn('character_akane_transmit_single', {b['rule_id'] for b in area['applied_buffs']})
@@ -177,8 +177,8 @@ class AkaneTest(unittest.TestCase):
         self.assertTrue({'arc_akane_basic','arc_akane_element'} <= active)
         self.assertTrue({'arc_akane_basic','arc_akane_element'}.isdisjoint(expired))
 
-    def test_talent_is_attack_for_twenty_seconds_and_f_is_self_crit(self):
-        for nodes, crit_rate,crit_dmg in [((),0,0),([6],.1,.2)]:
+    def test_talent_is_attack_for_twenty_seconds_and_f_is_self_crit_damage(self):
+        for nodes, crit_rate,crit_dmg in [((),0,0),([6],0,.25)]:
             # q1 inserts five visual ticks; 230 is beyond 20 real seconds.
             details=self.sim([('q1',0),('a1',20),('a1',230)],nodes=nodes)['details']
             during,after=details[1:]
@@ -214,7 +214,7 @@ class AkaneTest(unittest.TestCase):
         self.assertAlmostEqual(area['formula_parts']['base'] / area['panel']['atk'], 11.25)
 
     def test_new_c_is_additive_and_resonance_can_be_toggled_independently(self):
-        # User 2026-10-10: awakening +1200% is added AFTER skill-level scaling.
+        # User notice: C +1000%, enhanced E +750%, Q2 +1000%, AFTER level scaling.
         for level in (1, 10):
             for form, enhanced_base in [('e', 12.5), ('hold_e', 11.25)]:
                 for resonances in ([], [3]):
@@ -223,8 +223,8 @@ class AkaneTest(unittest.TestCase):
                         p['team'][0].update(awakening_resonances=resonances,
                             skill_levels=dict(basic=level,skill=level,ultimate=level,support=1))
                         rows=simulate_shaft_axis(p)['result']['details']
-                        fixed=[12 if form=='e' else 0, 12 if resonances else 0,
-                               12 if resonances else 0]
+                        fixed=[10 if form=='e' else 0, 7.5 if resonances else 0,
+                               10 if resonances else 0]
                         for d, original, addition in zip(rows,
                                 [4 if form=='e' else 3.6, enhanced_base, 10.2], fixed):
                             f=d['formula_parts'];atk=d['panel']['atk']
@@ -255,14 +255,20 @@ class AkaneTest(unittest.TestCase):
             during,after=r['details'][2:]
             self.assertAlmostEqual(during['panel']['interrupt_resistance'],.5)
             self.assertAlmostEqual(after['panel']['interrupt_resistance'],0)
+            self.assertAlmostEqual(during['panel']['def']-after['panel']['def'],921*.5)
             self.assertAlmostEqual(during['formula_parts']['def_ignore'],.16)
             self.assertAlmostEqual(after['formula_parts']['def_ignore'],0)
             self.assertAlmostEqual(during['panel']['crit_rate'],after['panel']['crit_rate'])
             b=next(x for x in during['applied_buffs'] if x['rule_id'].startswith('character_akane_b_'))
-            self.assertEqual(b['effects'],{'res_down_相':.12})
+            self.assertEqual(b['effects'],{'res_down_相':.1})
+            a=next(x for x in during['applied_buffs'] if x['rule_id']=='character_akane_a')
+            self.assertEqual(a['end_tick']-a['start_tick'],120)
+            without_a=self.sim([(form,0),('enhanced_e',20),('a1',35)],nodes=[2,4])['details'][2]
+            self.assertAlmostEqual(without_a['panel']['def'],after['panel']['def'])
+            self.assertNotIn('character_akane_a',{x['rule_id'] for x in without_a['applied_buffs']})
 
     def test_counter_gets_transmission_and_passive_is_skill_damage(self):
-        for form,factor,bonus in [('e',1.7,0),('hold_e',1,.9)]:
+        for form,factor,bonus in [('e',1.6,0),('hold_e',1,.9)]:
             rows=self.sim([(form,0),('counter',20),('counter',270)],nodes=[5])['details']
             d,expired=rows[1:]
             self.assertAlmostEqual(d['formula_parts']['base_multiplier_factor'],factor)

@@ -144,7 +144,7 @@
     "ntedata_revision": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
     "ntedata_version": "1.4.10.566418",
     "nanoka_url": "https://static.nanoka.cc/nte/1.4.6/zh/character/1057.json",
-    "user_override": "本轮：传导基础40%/60%、E觉70%/90%，弦刃与羽刃回响均可传导；华彩仍不模拟，Q2手动。",
+    "user_override": "本轮：传导基础40%/60%、E觉60%/90%，弦刃与羽刃回响均可传导；华彩仍不模拟，Q2手动。",
     "ntedata_sources_sha256": {
       "DataTable_Skill_GlobalCharacterData_DT_AkaneEffectFigure.json": "0101ab9125b447b41042f44b75b45c791080d24a2f3d09d7dd80d59819c2199e",
       "DataTable_Skill_DT_SkillDamageData.json": "9c36e94b9b452b88d2160385dc7f6453e1584063c3020e33657e03773f77bf7a",
@@ -154,7 +154,7 @@
     },
     "nanoka_sha256": "1569f5e6f61793d7accd2b95af5ca16d445655fb5ca3d3975d3db4d7394dd5d3",
     "conflicts": {
-      "area_transmission": "最新用户文档基础40%/60%，E觉由用户明确补充70%/90%，覆盖旧版本与文档E觉旧段落。",
+      "area_transmission": "用户10月9日调整公告覆盖旧E觉：基础40%/60%，E觉60%/90%。",
       "talent2": "上游文本自身伤害20%/25秒、曲线伤害30%/20秒；用户确认采用自身攻击力30%/20秒。",
       "passive1": "最新用户文档明确3秒、200%、每秒20%、上限160%、1秒CD以及变轨分类，已接入。"
     },
@@ -184,7 +184,7 @@
       "priority": "本轮最新腾讯文档倍率、弦能、传导、绝对音准和全部觉醒/共鸣；普攻环合按用户确认保留NTEData原逐段值。 用户2026-10-10授权的五项资源由SkillDamageData_Akane.xlsx覆盖。"
     },
     "harmony_source_note": "用户2026-10-10按新解包仅更新a4环合为5.847；a1/a2/a3仍为3.56/5.496/9.096，普攻合计23.999，不强行缩放至24。",
-    "latest_awakening_source": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。",
+    "latest_awakening_source": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，标为后续调整的弧盘与六觉保持现行配置。",
     "confirmed_action_durations": {
       "source": "用户2026-10-10提供",
       "seconds": {
@@ -266,6 +266,29 @@
           },
           "hit_count": 10
         }
+      }
+    },
+    "oct9_change_notice": {
+      "source": "用户2026-10-10提供的10月9日改动及待修改清单，非上游解包核实",
+      "applied": {
+        "a_heal_base_atk_ratio": 10,
+        "a_def_pct": 0.5,
+        "b_phase_res_down": 0.1,
+        "c_flat_atk_multiplier_add": 10,
+        "e_single_transmission": 0.6,
+        "f_crit_rate": 0,
+        "f_crit_dmg": 0.25,
+        "three_enhanced_e_flat_add": 7.5,
+        "three_q2_flat_add": 10
+      },
+      "duration_policy": "A新增防御与既有抗打断共享命中后12秒；F沿用烁星20秒。",
+      "unmodeled": "大招期间抗打断50%、闪反后暂时保留普攻连段、Q2时停与无敌延后：当前不模拟华彩、输入缓存和无敌帧，未提供精确延后时间，不改Q2零秒耗时。战斗音效、BGM与皮肤特效不属于排轴范围。",
+      "energy_pending": "普攻与技能回能略微提高未给逐动作数值，保留已授权解包值；普攻总回能14.299。",
+      "future_changes": {
+        "arc_crit_rate": "12%–24%，尚待调整，现行仍16%–32%",
+        "arc_phase_damage": "20%–40%，尚待调整，现行仍16%–32%",
+        "six_crit_dmg": "50%，公告标为未生效且待修复，现行仍60%",
+        "a3_a4_input_bug": "预输入后切人仍出a4待修复；排轴手工动作不模拟输入缓存"
       }
     }
   }

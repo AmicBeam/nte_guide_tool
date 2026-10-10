@@ -4121,7 +4121,7 @@
     "effects": {
       "base_multiplier_pct": 0.4
     },
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%按用户10月9日调整公告更新。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
   {
     "id": "character_akane_e_single",
@@ -4165,9 +4165,9 @@
       "type": "permanent"
     },
     "effects": {
-      "base_multiplier_pct": 0.3
+      "base_multiplier_pct": 0.2
     },
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
+    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，标为后续调整的弧盘与六觉保持现行配置。"
   },
   {
     "id": "character_akane_transmit_area",
@@ -4207,7 +4207,7 @@
     "effects": {
       "all_dmg": 0.6
     },
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%按用户10月9日调整公告更新。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
   {
     "id": "character_akane_e_area",
@@ -4253,7 +4253,7 @@
     "effects": {
       "all_dmg": 0.3
     },
-    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%按用户10月9日调整公告更新。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
   {
     "id": "character_akane_b_single",
@@ -4290,9 +4290,9 @@
       "type": "permanent"
     },
     "effects": {
-      "res_down_相": 0.12
+      "res_down_相": 0.1
     },
-    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
+    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，标为后续调整的弧盘与六觉保持现行配置。"
   },
   {
     "id": "character_akane_b_area",
@@ -4329,13 +4329,13 @@
       "type": "permanent"
     },
     "effects": {
-      "res_down_相": 0.12
+      "res_down_相": 0.1
     },
-    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
+    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，标为后续调整的弧盘与六觉保持现行配置。"
   },
   {
     "id": "character_akane_a",
-    "name": "明音凛A觉·抗打断",
+    "name": "明音凛A觉·抗打断与防御",
     "providers": [
       {
         "kind": "character",
@@ -4367,9 +4367,10 @@
       "loop_carry": true
     },
     "effects": {
-      "interrupt_resistance": 0.5
+      "interrupt_resistance": 0.5,
+      "def_pct": 0.5
     },
-    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。",
+    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，标为后续调整的弧盘与六觉保持现行配置。",
     "stacking": {
       "key": "character_akane_a",
       "mode": "refresh",
@@ -4539,7 +4540,7 @@
   },
   {
     "id": "character_akane_f",
-    "name": "明音凛F觉·暴击暴伤",
+    "name": "明音凛F觉·暴伤",
     "providers": [
       {
         "kind": "character",
@@ -4571,15 +4572,14 @@
       "loop_carry": true
     },
     "effects": {
-      "crit_rate": 0.1,
-      "crit_dmg": 0.2
+      "crit_dmg": 0.25
     },
     "stacking": {
       "key": "character_akane_f",
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
+    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，标为后续调整的弧盘与六觉保持现行配置。"
   },
   {
     "id": "character_akane_enhanced_single",
@@ -4615,7 +4615,7 @@
     "display": {
       "line": false
     },
-    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。 泛音列在基础1125%上增加125%攻击倍率并随本体等级换算；用户2026-10-10明确三觉额外1200%在技能等级换算后加算，不乘等级系数。"
+    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。 泛音列在基础1125%上增加125%攻击倍率并随本体等级换算；用户2026-10-10明确三觉额外750%在技能等级换算后加算，不乘等级系数。 用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，标为后续调整的弧盘与六觉保持现行配置。"
   },
   {
     "id": "character_akane_heal",
@@ -4657,12 +4657,12 @@
       "max_stacks": 1
     },
     "activation": {
-      "heal_base_atk_ratio": 6
+      "heal_base_atk_ratio": 10
     },
     "display": {
       "line": false
     },
-    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
+    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，标为后续调整的弧盘与六觉保持现行配置。"
   },
   {
     "id": "arc_akane_skill",

@@ -1,5 +1,18 @@
 # 公开卡池训练、按需分析与录像
 
+## 当前硬要求：GPU设备内批量并行，禁止CPU规则回退
+
+2026-10-11用户明确要求：正式搜索训练、GPU搜索互搏及其容量／耗时验收，必须使用GPU设备内批量并行执行。下文历史CPU入口和混合采样实现说明不能覆盖本节，也不能成为GPU规则失败后的替代路径。
+
+- **规则与完整搜索都在设备内推进。** 对局状态、合法动作、观察编码、隐藏世界采样、规则推进、教师续局、Gumbel选择／扩展／备份及网络推理使用设备驻留数据和批量运算。仅将网络或树统计放到CUDA、再由CPU规则进程池或主机逐根协程推进，不满足此要求。增加CPU进程或在途任务数不等于完成GPU级并行。
+- **禁止CPU规则回退。** 无CUDA、编译失败、缺失规则语义、规则／编码／随机对拍失败、显存不足或设备运行错误时，保存真实失败证据并停止该GPU方法。不得改选`serial_cpu`／`resident_cpu`、调用Python规则回调、缩减卡池／搜索预算或用合成状态继续并宣称完成。CPU正式引擎只作为同源对拍参考；数据保存、编译、启动设备批次及结果展示可以在主机执行，不得在搜索热路径逐步取回动作、观察或Q值再调度CPU规则。
+- **沿用同源规则编译策略。** 正式Python规则冻结为可移植IR／VM镜像，由CUDA规则执行器处理实际规则。源捕获、`unresolved=[]`、CUDA编译或加载成功都不代表完整规则／设备内搜索通过；缺失能力应修复该设备链路，不能绕过。规则、候选顺序、实体身份、隐藏信息边界、逐根RNG、终局WDL及原Gumbel预算不改变。
+- **实测并行能力。** 区分总局数、设备驻留根数、实际同时搜索根峰值和一次kernel／推理工作区行数。配置1600或完成1600局不证明1600设备并行；记录实际峰值、设备内循环证据、跨设备传输与CPU规则调用边界、显存／轨迹缓冲峰值和后台负载。多模型批次保留实际权重、版本和观察者归属，不混用模型。
+- **先验证，再计时。** 新冻结源先完成七队规则／合法动作／观察／采样／教师的真实CUDA对拍与完整搜索链路检查；确认热路径没有CPU规则执行或逐步骤主机搜索调度后，才能启动目标互搏计时。设备规则通过但搜索仍由主机协作调度，也不能批准本节要求。采集、编译／准备及事后CPU回放核验分开计时，实际完整局与原始文件／SHA才算完成。测试失败不启动优化器或正式训练。
+- **有界单轮性能测试。** 用户仅要求七套牌搜索互搏耗时时，预先冻结七份数值与各自32张构筑、搜索条件和绝对截止，按先手为行／后手为列执行一轮7×7对阵（49局，包含同模型同构筑内战）。若本轮约定不同样本，明确记录；不自动改成三轮、扩成数百局或运行旧方案。低样本性能覆盖不批准胜率／质量。后台资源竞争注明；截止／失败保全已有结果，不延期、不补CPU对局。
+
+本节是执行与验收要求，不表示现有`cuda_vm`或完整设备搜索已经通过。GPU链路尚未具备时须如实记录测试未能开始／未完成，并继续修复必要设备能力；不得将历史混合采集成绩继承为通过。
+
 ## 完整训练入口：主 Agent 与轻量 Flow
 
 完整训练开始前，先确认本轮是否包含换牌候选、截止时间是否采用带日期的北京时间09:00、训练哪些高级人机及其实际32张构筑。使用[完整训练轻量 Flow](duel-v2-full-training-flow.md)与项目技能 `.agents/skills/duel-v2-full-training-flow/SKILL.md`；默认委派 Grok 子 agent，持续主 agent 保留执行、根因修复和最终验收职责。推荐值和历史回答不得冒充本轮三项确认；同轮已经明确确认的内容不再重复询问。
@@ -778,13 +791,13 @@ python scripts/train_duel_v2_fixed_n06.py --check --learner STARTER.pt --opponen
 
 截止预算须先预留最终矩阵、对照、回传和校验，按本次真实吞吐及至少25%余量设置实际停学时刻，全部阶段不越过用户截止。未训练够预算、提前停学、缺覆盖、失败／截断分别报告，不能以更新次数或文件名冒称完整质量批准。固定构筑最终至少包含先手为行／后手为列的五队N×N纯网络与搜索表、initial／selected／latest身份、同模型镜像与新旧交叉、真红指导开关和起手全留对照、逐卡／角色／终结／环合原始与真实录像。样本端点在新任务开始前声明；完全相同模型／构筑／推理条件可以显式引用同一实测数据，必须标明别名且不增加独立局数。
 
-已验证的批量推理可先用于父进程WDL校准统计，`value_metric_backend=cuda_batched`只替换数值概率查询，保持观察者行动标志、loss/draw/win顺序及完整局等权；原NumPy后端仍默认。CUDA前须在本轮真实公开观察上与NumPy对拍，TF32关闭，不接受静默CPU回退；初始选择哪个后端需记录。批量推理不等于完整GPU规则并发。另一个任务的GPU后端尚未完成时，已验证Python规则并行链路继续运行；只有同冻结规则／模型／随机与动作语义通过对拍和完整局验证的后端才能在新批次／阶段边界使用，旧在途批次和冻结源码不热改，截止不变。
+已验证的批量推理可先用于父进程WDL校准统计，`value_metric_backend=cuda_batched`只替换数值概率查询，保持观察者行动标志、loss/draw/win顺序及完整局等权；原NumPy后端仍默认。CUDA前须在本轮真实公开观察上与NumPy对拍，TF32关闭，不接受静默CPU回退；初始选择哪个后端需记录。批量推理不等于完整GPU规则并发。GPU后端尚未完成时，目标GPU训练／互搏停止并修复；Python规则只作显式诊断或对拍，不能继续该GPU任务；只有同冻结规则／模型／随机与动作语义通过对拍和完整局验证的后端才能在新批次／阶段边界使用，旧在途批次和冻结源码不热改，截止不变。
 
 ## 七队 GPU 搜索训练采样
 
 `scripts/train_duel_v2_current_round.py`默认使用`seven`。`recovery/cross`显式选项仅复现历史契约；当前七队训练通过`seven_round.run`复用完整局学习、逐批价值核验、历史冻结对手、独立闸门、择优／回退、两代恢复及冻结矩阵。候选配牌与完整报告仍按完整训练 Flow 的本轮合同另行编排，代码接入不启动训练或授予模型质量批准。
 
-`--device cuda`选择网络优化设备，`--rule-backend cuda_vm`才选择GPU搜索采样；默认`serial_cpu`保留正式Python采样，`resident_cpu`提供显式混合批量路径。GPU采样由`rl/batched_search/training_rollout.py`复用协作Gumbel遍历、设备规则／公开编码、FP32批量推理及设备统计。`network`仅用于有界诊断；正式入口保持`covered_terminal/covered_expert/covered_value`教师要求，覆盖教师规则在冻结VM中执行，辅助价值按独立具名模型身份绑定。真红指导、过程奖励、PUCT等未接入选项在采样前明确拒绝，不改变原有默认目标。
+`--device cuda`选择网络优化设备，`--rule-backend cuda_vm`才选择设备规则；仅指定这两个参数不证明完整设备内搜索。`serial_cpu`和`resident_cpu`仅保留历史／显式诊断用途，不是当前正式GPU任务的可接受采样后端。GPU采样由`rl/batched_search/training_rollout.py`复用协作Gumbel遍历、设备规则／公开编码、FP32批量推理及设备统计。`network`仅用于有界诊断；正式入口保持`covered_terminal/covered_expert/covered_value`教师要求，覆盖教师规则在冻结VM中执行，辅助价值按独立具名模型身份绑定。真红指导、过程奖励、PUCT等未接入选项在采样前明确拒绝，不改变原有默认目标。
 
 每批加载独立导出的冻结数值，完成采样后才更新实时网络；相同队名的当前／历史模型按实际来源目录与版本分开。保留探索噪声、完整Gumbel `pi`／`visit_pi`／真实动作、观察者WDL及`value_actor`；历史对手仅收当前学习方样本。未完成搜索、截断、错误或过期对局没有终局标签。正式GPU预检还按实际动作进行CPU完整重放，核对最终私有状态SHA；这是验证边界，不参与GPU假想搜索。校准、独立闸门及末端矩阵继续沿用既有编排，与GPU采样吞吐分开计时。
 
@@ -801,11 +814,11 @@ Windows验收前可仅输出配置：
 
 工程验证：`.venv/bin/python -m unittest tests.test_duel_v2_gpu_training tests.test_duel_v2_gpu_training_teachers tests.test_duel_v2_seven_training tests.test_duel_v2_batch_traversal tests.test_duel_v2_batch_cooperative tests.test_duel_v2_recovery_round tests.test_duel_v2_current_round`。采样适配测试使用明确的合成推理／受控CPU规则局面，覆盖标签、截止、缓冲、联合更新、冻结对手与Adam／RNG恢复；设备执行另需Windows证据。
 
-### 已冻结七队数值的研究迁入与混合设备采样
+### 已冻结七队数值的研究迁入与历史混合诊断
 
 `seven_source.migrate_seven`支持旧七队数值在相同具名布局和网络架构下迁入新规则研究目录：核对原源码清单、实际规则身份、NPZ及清单SHA、角色顺序、完整配牌、特征名、张量名／形状／dtype与有限值，并逐字节保留全部数值。来源仍记录原规则和数值身份；重置优化器与经验，重新准备价值并做同源CUDA／P0／容量预检，不继承旧ready、质量或服务批准。布局或架构改变时明确拒绝，此接口不代替具名扩列迁移。
 
-混合采样可显式配置`rule_backend=resident_cpu`、`device=cuda`和`search_statistics_device=cuda`：正式Python规则在驻留进程执行，冻结网络推理、Gumbel树统计及网络更新使用CUDA。参数进入采样／恢复身份；CUDA统计不能退成主机统计。未指定统计设备的既有混合配置保持原行为。它与`cuda_vm`的设备规则能力分开验收，同样要在本轮实际完整Gumbel32局、数值／Adam／RNG和独立闸门通过后才进入正式学习。
+混合采样可显式配置`rule_backend=resident_cpu`、`device=cuda`和`search_statistics_device=cuda`：正式Python规则在驻留进程执行，冻结网络推理、Gumbel树统计及网络更新使用CUDA。参数进入采样／恢复身份；CUDA统计不能退成主机统计。未指定统计设备的既有混合配置保持原行为。该混合路径仅作显式诊断与历史兼容，不能进入当前要求的GPU设备内并行正式学习或目标互搏验收；`cuda_vm`也必须另证完整设备搜索循环。
 
 验证：`tests.test_duel_v2_seven_migration`、`tests.test_duel_v2_training_statistics_device`及既有七队／采样回归。合成绑定或迁移测试不提供设备、吞吐或强度批准。
 
@@ -816,7 +829,7 @@ Windows验收前可仅输出配置：
 
 这些诊断用于本轮实测定位，不改变搜索预算、动作和学习标签；记录存在不提供CUDA吞吐、1600完整局或模型质量批准。验证：`tests.test_duel_v2_search_diagnostics`覆盖真实CPU受控轨迹一致、异常清理、缺失计数与失败批次落盘。
 
-### 混合采集的规则热路径优化
+### 历史混合诊断的规则热路径优化
 
 `ResidentRuleBackend`提供可选的`covered_value_continuation`：在所属驻留进程中完成原教师的逐步公开规则决策、正式假想推进、清理和最终观察编码，返回终局固定观察者值或辅助价值网络输入。父进程仍使用原具名辅助WDL模型做推理；不在规则进程加载网络。仅具有该能力的非GPU规则后端启用，其他后端（含`cuda_vm`）保留逐步操作。三步教师由原来三组`rule_decision/step/clean`加最终编码合并成一个规则RPC；每个根仍保持原顺序、种子、终局优先和单调截止，不削减Gumbel预算或教师步数。
 
@@ -824,7 +837,7 @@ Windows验收前可仅输出配置：
 
 验证：`tests.test_duel_v2_fused_teacher`、`tests.test_duel_v2_rule_preview_fast`和既有驻留后端、协作遍历、教师、隐藏信息与模拟回归。CPU等价性和规则RPC数量减少不能证明GPU完整采集加速；5倍目标必须在同一Windows CUDA设备以同源、同配置、相同完整局任务和种子比较墙钟时间，并分别记录采集、P0与评估，不把预检缩减算作采集提速。引擎文件变化产生新规则身份，旧模型与验收回执不得静默沿用。
 
-### 异步驻留调度、真实采集批量与精确复制
+### 历史混合调度、真实采集批量与精确复制
 
 `CooperativeScheduler`的`async_rule_dispatch=None`按后端能力选择提交／轮询；`False`保留同步波次，`True`要求驻留规则后端提供异步接口。统计查询继续按当前已就绪的根批量执行。驻留进程池在所有者线程登记引用、世代、取消与迟到结果，独立worker完成后即可继续该根，物理动作提交和GC回收也不等待无关worker。每根仍只有一个在途操作；原种子、根内顺序、终局优先、截止和取消保留。队列过期可直接取消并结束该根，迟到新状态回收；不会为了等过期结果执行零超时忙轮询。`search-diagnostics.json`另存`scheduler_progress`及真实提交／轮询计数；未测得的队列耗时仍为`null`。
 
@@ -832,7 +845,7 @@ Windows验收前可仅输出配置：
 
 推理以一次微批次回传策略分数和WDL；树统计批量回传选择／快照。只复用有容量和版本边界的输入、噪声缓冲，不缓存可变树值；校验、填充、候选顺序、actor绑定和每请求异常身份保留。并发主机调用串行保护复用输入，候选缓冲增长仍受元素预算限制。`copy_state_graph`保留全部规则字段、实体类型、ID、别名、循环、未知字段和独立可变对象，非JSON类型及自定义复制钩子按原`deepcopy`处理；`clone_state`仍执行完整hydration校验。公开操作和预演输出不变；规则冻结捕获使用显式预演上下文类，GPU codec复制入口对应既有无损复制能力，不代表完整GPU规则对拍通过。
 
-以下只输出配置，不启动训练：
+以下只输出历史混合诊断配置，不启动训练，也不满足顶部GPU硬要求：
 
 ```bash
 .venv/bin/python scripts/train_duel_v2_current_round.py --output artifacts/rl-evals/NEW_RUN --runtime seven --rule-backend resident_cpu --device cuda --search-statistics-device cuda --async-rule-dispatch auto --collection-replicas 3 --search-roots 1600 --query-batch-rows 32
@@ -840,7 +853,7 @@ Windows验收前可仅输出配置：
 
 验证：`tests.test_duel_v2_async_rule_dispatch`、`tests.test_duel_v2_async_collection_integration`、`tests.test_duel_v2_collection_replicas`、`tests.test_duel_v2_device_sync_reduction`、`tests.test_duel_v2_state_copy_fast`及既有采集／评估／规则回归。CPU用例与显式设备用例分别记账，跳过CUDA不得写为实机通过。
 
-### 完整CUDA采集的统一性能验收
+### 历史混合CUDA采集计时（不批准设备内并行）
 
 `scripts/benchmark_duel_v2_gpu_collection.py --case CASE_JSON`只检查配置；`--execute --output NEW_DIR`才运行冻结数值的完整七队混合CUDA采集，不创建优化器、不调用更新，也不复启已经截止的训练。case含`config`和完整`jobs`，使用新的独立绝对截止、经实际验证的辅助价值scope及主WDL回执，显式`resident_cpu`规则＋CUDA推理／统计、Gumbel32／16候选／3步。可用`--source FROZEN_SOURCE`对比隔离的旧／新源码，始终使用同一计时入口；`chunk_games`允许旧方案分批和新方案整批完成完全相同的任务。更换源码产生的新规则身份仍需正常数值迁入与新验证，不篡改清单继承旧ready。
 

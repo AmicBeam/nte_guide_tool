@@ -1076,3 +1076,9 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 ### 驻留教师与规则预演热路径
 
 `ResidentRuleBackend.covered_value_continuation`在规则进程内合并公开教师推进与最终编码，父进程继续执行原辅助WDL推理；不支持该能力的后端保留原路径。教师使用只含四个评分数值的正式战斗预演，同次决策复用匿名化模板、逐动作隔离沙盒，避免重复复制；公开操作不可变性和完整展示字段保留。验证：`.venv/bin/python -m unittest tests.test_duel_v2_fused_teacher tests.test_duel_v2_rule_preview_fast tests.test_duel_v2_batch_process_backend tests.test_duel_v2_batch_cooperative tests.test_duel_v2_batch_traversal tests.test_duel_v2_gpu_training_teachers tests.test_duel_v2_covered_rollout tests.test_duel_v2_preview_privacy tests.test_duel_v2_simulation`。这是规则执行优化，GPU完整采集5倍、1600完整局与模型质量需独立实测，不能由CPU用例批准；规则身份变化不得复用旧回执。细节见训练手册“混合采集的规则热路径优化”。
+
+### 异步规则调度与完整CUDA采集计时
+
+驻留后端提供所有者线程上的提交／轮询／取消，调度器默认按能力启用；完整训练可显式`--async-rule-dispatch auto|on|off`，混合CUDA树统计可用`--search-statistics-device cuda`。`--collection-replicas 1..5`生成真实独立的56／112局组，默认1，整批模型冻结；不倍增独立P0／评估。输入与树统计缓冲复用保留容量和异常检查，JSON状态复制保留实体、别名、未知字段和hydration验证，不删规则状态。配置、实际批次数和剩余恢复工作进入预算／身份。
+
+统一性能入口为`scripts/benchmark_duel_v2_gpu_collection.py`：默认仅计划，显式执行完整Gumbel32／16候选／3步＋合格WDL的混合CUDA采集；旧／新源码、分批安排可比较，但任务、数值、设备及实际轨迹须匹配。至少三轮真实时间和实际原始文件／SHA才报告5倍，采集、准备和重放核验分开计时，不替代P0、矩阵或质量批准。验证新增：`tests.test_duel_v2_async_rule_dispatch`、`tests.test_duel_v2_async_collection_integration`、`tests.test_duel_v2_collection_replicas`、`tests.test_duel_v2_device_sync_reduction`、`tests.test_duel_v2_state_copy_fast`、`tests.test_duel_v2_collection_benchmark`；GPU规则源码捕获、实体、模拟及既有采集／评估回归另保留。操作细节见训练手册“完整CUDA采集的统一性能验收”。

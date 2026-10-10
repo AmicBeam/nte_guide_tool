@@ -8,6 +8,55 @@ from copy import deepcopy
 from uuid import uuid4
 
 
+_ATOMIC_TYPES = {type(None), bool, int, float, str}
+_MISSING = object()
+
+
+def copy_state_graph(value, memo=None, *, _entity_root=False):
+    """Copy dict/list/atomic graphs with memoized aliases; other types use deepcopy.
+
+    Primitive immutable keys and values are reused. Entity instances share the
+    same memo so live aliases stay aliases. Mutable objects are never shared.
+    """
+    if memo is None:
+        memo = {}
+    atomic = _ATOMIC_TYPES
+    missing = _MISSING
+    memo_get = memo.get
+
+    def copy(item, force_entity=False):
+        cls = type(item)
+        if cls in atomic:
+            return item
+        ident = id(item)
+        cached = memo_get(ident, missing)
+        if cached is not missing:
+            return cached
+        if cls is dict:
+            result = {}
+            memo[ident] = result
+            for key, nested in item.items():
+                copied_key = key if type(key) in atomic else copy(key)
+                result[copied_key] = nested if type(nested) in atomic else copy(nested)
+            return result
+        if cls is list:
+            result = [None] * len(item)
+            memo[ident] = result
+            for index, nested in enumerate(item):
+                result[index] = nested if type(nested) in atomic else copy(nested)
+            return result
+        if isinstance(item, Entity) and (force_entity or cls.__deepcopy__ is Entity.__deepcopy__):
+            result = cls.__new__(cls)
+            memo[ident] = result
+            for key, nested in item.items():
+                copied_key = key if type(key) in atomic else copy(key)
+                result[copied_key] = nested if type(nested) in atomic else copy(nested)
+            return result
+        return deepcopy(item, memo)
+
+    return copy(value, force_entity=_entity_root)
+
+
 class Entity(dict):
     kind = 'entity'
 
@@ -19,11 +68,9 @@ class Entity(dict):
             self['side'] = side
 
     def __deepcopy__(self, memo):
-        result = type(self).__new__(type(self))
-        memo[id(self)] = result
-        for key, value in self.items():
-            result[deepcopy(key, memo)] = deepcopy(value, memo)
-        return result
+        # A subclass may override deepcopy and call super(); copy its base
+        # fields here without re-entering the override through the fallback.
+        return copy_state_graph(self, memo, _entity_root=True)
 
     @property
     def entity_id(self):
@@ -115,7 +162,7 @@ def hydrate_entities(state):
 
 
 def clone_state(state):
-    return hydrate_entities(deepcopy(state))
+    return hydrate_entities(copy_state_graph(state))
 
 
 def character_entity(state, side, template_id):

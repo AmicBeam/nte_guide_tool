@@ -13,6 +13,18 @@ import time
 
 from .seven_schedule import ROSTER, learning_schedule, matrix_schedule, coverage
 
+from .training_config import (
+    COLLECTION_GAMES_PER_REPLICA,
+    COLLECTION_HISTORICAL_GAMES_PER_REPLICA,
+    COLLECTION_REPLICA_SEED_STRIDE,
+    DEFAULT_COLLECTION_REPLICAS,
+    collection_episode_pool_limit,
+    collection_replicas as configured_collection_replicas,
+    collection_uses_historical,
+    planned_complete_games,
+    validate_collection_option,
+)
+
 
 def learning_keys(config):
     keys = tuple(config.get('learning_keys', ROSTER))
@@ -50,10 +62,25 @@ def rollout_contract(config):
             (backend=='serial_cpu' or config.get('device')!='cuda')):
         raise ValueError('Explicit CUDA statistics require a cooperative CUDA training path')
     result['search_statistics_device']=statistics_device
+    async_rules=config.get('async_rule_dispatch')
+    if async_rules is not None and type(async_rules) is not bool:
+        raise ValueError('Boolean or automatic async rule dispatch required')
+    if async_rules is True and backend!='resident_cpu':
+        raise ValueError('Explicit async rules require resident_cpu')
+    result['async_rule_dispatch']=async_rules
     buffer_mib=config.get('training_buffer_mib',8192)
     if type(buffer_mib) is not int or buffer_mib < 1:
         raise ValueError('Positive training trajectory buffer budget required')
     result['training_buffer_mib']=buffer_mib
+    replicas=configured_collection_replicas(config)
+    historical=collection_uses_historical(config)
+    validate_collection_option(
+        replicas, search_roots=roots, training_buffer_mib=buffer_mib,
+        gpu_memory_budget_mib=config.get('gpu_memory_budget_mib'),
+        rule_backend=backend, runtime=config.get('runtime','seven'), historical=historical)
+    result['collection_replicas']=replicas
+    result['planned_complete_games']=planned_complete_games(replicas)
+    result['planned_historical_complete_games']=planned_complete_games(replicas, historical=True)
     if backend == 'cuda_vm':
         from .batched_duel.gpu_rule_program import load_program
         if config.get('device') != 'cuda' or not config.get('gpu_rule_program'):
@@ -82,6 +109,9 @@ def collect_search_batch(pool, jobs, folder, config, **kwargs):
     if not gpu_training_requested(config):
         return collect(pool,jobs,folder,**kwargs)
     models = models_for_jobs(jobs)
+    if not jobs:
+        raise ValueError('Non-empty collection batch required')
+    # Live Gumbel roots are a window. Do not drop pending complete games to fit it.
     bounded = dict(config, max_games=len(jobs), search_roots=min(config['search_roots'],len(jobs)))
     collector = rollout_from_config(bounded,models)
     try:
@@ -137,6 +167,99 @@ def jobs_for(models, decks, base, deadline, *, pure=True, cycle=0, mirrors=True,
         else:
             jobs.append(j)
     return jobs
+
+
+def collection_jobs(models, decks, base, deadline, *, replicas=DEFAULT_COLLECTION_REPLICAS, **kwargs):
+    """One frozen snapshot, unique complete games. Replica 0 keeps the default ids/seeds."""
+    replicas = configured_collection_replicas(value=replicas)
+    jobs = []
+    for replica in range(replicas):
+        replica_jobs = jobs_for(models, decks, base + replica * COLLECTION_REPLICA_SEED_STRIDE, deadline, **kwargs)
+        for job in replica_jobs:
+            job['collection_replica'] = replica
+            if replica:
+                job['id'] = '%s-r%s' % (job['id'], replica)
+        jobs.extend(replica_jobs)
+    return jobs
+
+
+def learning_collection_jobs(models, decks, config, cycle, deadline, *, historical=None, report=None):
+    replicas = configured_collection_replicas(config)
+    jobs = collection_jobs(
+        models, decks, config['seeds']['foundation'] + cycle * 10000, deadline,
+        replicas=replicas, pure=False, cycle=cycle, report=report,
+        simulations=config['simulations'], historical=historical,
+        teacher_mode=config.get('teacher_mode', 'network'),
+        covered_value_source=config.get('covered_value_source'))
+    if config.get('preflight'):
+        for replica in range(1, config.get('preflight_replicas', 1)):
+            jobs += jobs_for(
+                models, decks, config['seeds']['foundation'] + cycle * 10000 + replica * 100,
+                deadline, pure=False, cycle=replica + 1000, report=report,
+                simulations=config['simulations'], teacher_mode=config.get('teacher_mode', 'network'),
+                covered_value_source=config.get('covered_value_source'))
+        # Extra collection groups must not enter the existing independent
+        # capacity seed block when callers supply their own reservation.
+        held_base=config['seeds']['probes']+10000
+        held_seeds={held_base+replica*100+index//2
+                    for replica in range(config.get('preflight_replicas',1))
+                    for index in range(COLLECTION_GAMES_PER_REPLICA)}
+        if held_seeds & {job['seed'] for job in jobs}:
+            raise ValueError('Collection and independent capacity seed blocks overlap')
+    return jobs
+
+
+def capacity_heldout_jobs(models, decks, config, deadline, report=None):
+    jobs = jobs_for(
+        models, decks, config['seeds']['probes'] + 10000, deadline,
+        pure=False, cycle=100, report=report, simulations=config['simulations'],
+        teacher_mode=config.get('teacher_mode', 'network'),
+        covered_value_source=config.get('covered_value_source'))
+    for replica in range(1, config.get('preflight_replicas', 1)):
+        jobs += jobs_for(
+            models, decks, config['seeds']['probes'] + 10000 + replica * 100,
+            deadline, pure=False, cycle=replica + 2000, report=report,
+            simulations=config['simulations'], teacher_mode=config.get('teacher_mode', 'network'),
+            covered_value_source=config.get('covered_value_source'))
+    for job in jobs:
+        job.update(training=False, exploration=True, data_partition='capacity_heldout')
+    return jobs
+
+
+def collection_pool_limit(config):
+    return collection_episode_pool_limit(configured_collection_replicas(config))
+
+
+def expected_preflight_learning_games(config_or_receipt):
+    replicas = configured_collection_replicas(config_or_receipt)
+    extra = max(0, config_or_receipt.get('preflight_replicas', 1) - 1)
+    return COLLECTION_GAMES_PER_REPLICA * (replicas + extra)
+
+
+def projected_learning_work(config, receipt, *, resume=False, completed_batches=0):
+    replicas = configured_collection_replicas(config)
+    games = COLLECTION_GAMES_PER_REPLICA * replicas
+    planned = config['planned_batches']
+    if type(completed_batches) is not int or not 0 <= completed_batches <= planned:
+        raise ValueError('Validated completed batch count required')
+    if not resume and completed_batches:
+        raise ValueError('Fresh learning cannot inherit completed batches')
+    batches = planned - completed_batches
+    historical_batches = planned // 4 - completed_batches // 4
+    per_cycle = (
+        games * receipt['search_seconds_per_game']
+        + receipt['update_and_numeric_seconds']
+        + config['gate_roots'] / receipt['gate_roots'] * receipt['pure_gate_seconds']
+        + 2 * receipt['selected_value_seconds']
+        + config['search_gate_roots'] * 224 * receipt['search_seconds_per_game'])
+    needed = (receipt['selected_value_seconds'] + per_cycle * batches
+              + games * receipt['search_seconds_per_game'] * historical_batches) * 1.25
+    needed_eval = receipt['search_seconds_per_game'] * 49 * config['matrix_games'] * 2 * 1.25
+    return dict(
+        collection_replicas=replicas,
+        planned_complete_games=games,
+        planned_historical_complete_games=COLLECTION_HISTORICAL_GAMES_PER_REPLICA * replicas,
+        per_cycle=per_cycle, needed=needed, needed_eval=needed_eval)
 
 
 def collect(pool, jobs, folder, *, learning=False, require_search=False, rollout=None):
@@ -529,13 +652,21 @@ def immutable_receipt_files(out):
             for p in root.rglob('*') if p.is_file() and p.relative_to(root).as_posix() not in excluded}
 
 
-def validate_launch(config, *, resume=False):
+def validate_launch(config, *, resume=False, completed_batches=0):
     """Formal launches require actual current-source CUDA preflight, not flags."""
     from .seven_lineup import identity
     if config.get('runtime') != 'seven' or config.get('rule_hash') != identity():
         raise ValueError('Recovery rule/runtime mismatch')
     if set(learning_keys(config)) != set(ROSTER):
         raise ValueError('Current seven-round orchestration requires all seven learners')
+    validate_collection_option(
+        config.get('collection_replicas', DEFAULT_COLLECTION_REPLICAS),
+        search_roots=config.get('search_roots'),
+        training_buffer_mib=config.get('training_buffer_mib'),
+        gpu_memory_budget_mib=config.get('gpu_memory_budget_mib'),
+        rule_backend=config.get('rule_backend'),
+        runtime=config.get('runtime'),
+        historical=collection_uses_historical(config))
     if config.get('teacher_mode','network') not in ('network','covered_terminal','covered_expert','covered_value'):
         raise ValueError('Unknown frozen teacher mode')
     if (type(config.get('value_full_tower',False)) is not bool
@@ -613,7 +744,9 @@ def validate_launch(config, *, resume=False):
     capacity=json.loads((path.parent/'cycles/1/capacity.json').read_text())
     if (capacity.get('schema')!='seven_recovery_isolation_fit_v1' or capacity.get('passed') is not True
             or capacity.get('complete') is not True or capacity.get('device')!='cuda'
-            or capacity.get('source_models')!=receipt['initial_models']):
+            or capacity.get('source_models')!=receipt['initial_models']
+            or capacity.get('collection_replicas', DEFAULT_COLLECTION_REPLICAS)!=configured_collection_replicas(config)
+            or capacity.get('planned_complete_games', COLLECTION_GAMES_PER_REPLICA)!=planned_complete_games(configured_collection_replicas(config))):
         raise ValueError('CUDA whole-network isolation fit and heldout required')
     numeric=json.loads((path.parent/'cycles/1/numeric.json').read_text())
     restored=json.loads((path.parent/'cycles/1/restore-check.json').read_text())
@@ -626,7 +759,7 @@ def validate_launch(config, *, resume=False):
                    {r['id']:r.get('final_state_sha256') for r in records}
                 or not all(r.get('rule_backend')=='cuda_vm' and r.get('final_state_sha256') for r in records)):
             raise ValueError('Complete real GPU trajectories and formal CPU replay evidence required')
-    if (len(records)!=56*receipt.get('preflight_replicas',1) or not all(r['complete'] for r in records)
+    if (len(records)!=expected_preflight_learning_games(receipt) or not all(r['complete'] for r in records)
             or set(numeric)!=set(ROSTER) or set(restored)!=set(ROSTER)
             or not all(numeric[k]['actions_equal'] and numeric[k]['policy_wdl_equal']
                        and restored[k]['adam_next_step_equal'] and restored[k]['rng_equal'] for k in ROSTER)
@@ -636,22 +769,11 @@ def validate_launch(config, *, resume=False):
     # matrices before launching; retain 25% capacity slack and 15min delivery.
     # The short receipt has small gates; explicitly expand the actual
     # formal pure/search gate counts and the historical 60-game round.
-    batches=config['planned_batches']
-    if resume:
-        batches=0  # restore_round enforces original remaining cycles/deadline
     # Isolation fitting and its separate heldout corpus are performed once.
     # Their cost is not silently charged as a recurring learning batch.
-    # Include both candidate and possible mixed-slate value/gate checks.
-    per_cycle=(56*receipt['search_seconds_per_game']
-        +receipt['update_and_numeric_seconds']
-        +config['gate_roots']/receipt['gate_roots']*receipt['pure_gate_seconds']
-        +2*receipt['selected_value_seconds']
-        +config['search_gate_roots']*224*receipt['search_seconds_per_game'])
-    needed = (receipt['selected_value_seconds']+per_cycle*batches
-              +56*receipt['search_seconds_per_game']*(batches//4))*1.25
-    if needed > config['train_until']-time.time(): raise ValueError('Insufficient staged learning capacity')
-    needed_eval = receipt['search_seconds_per_game']*49*config['matrix_games']*2*1.25
-    if needed_eval > config['evaluate_until']-config['train_until']:
+    work=projected_learning_work(config, receipt, resume=resume, completed_batches=completed_batches)
+    if work['needed'] > config['train_until']-time.time(): raise ValueError('Insufficient staged learning capacity')
+    if work['needed_eval'] > config['evaluate_until']-config['train_until']:
         raise ValueError('Insufficient frozen matrix capacity')
     if config['hard_deadline']-config['evaluate_until']<900 or config['device']!='cuda':
         raise ValueError('CUDA and 15min delivery reserve required')
@@ -685,6 +807,8 @@ def restore_round(out, device, config):
     for key in ROSTER:
         nets[key],opts[key],data=restore(folder/f'{key}.pt',directory=pointer['models'],key=key,device=device)
         if data['metadata']['config']!=config: raise ValueError('Resume config changed')
+        if data['metadata']['cycle']!=pointer['cycle']:
+            raise ValueError('Resume pointer cycle differs from the actual checkpoint')
         saved=data
     pools={k:EpisodePool.from_state(v) for k,v in json.loads((folder/'pools.json').read_text()).items()}
     # JSON replay arrays must regain numeric type for tensors/update.
@@ -731,9 +855,23 @@ def evaluate_frozen(pool, out, selected, initial, decks, report, config):
     return bool(all_complete)
 
 
+def resume_completed_batches(out, config):
+    """Read source/deadline-bound progress; checkpoint metadata is verified on restore."""
+    pointer=json.loads((Path(out)/'recovery/pointer.json').read_text())
+    if (pointer['algorithm_sha256']!=fingerprint()
+            or pointer['hard_deadline']!=config['hard_deadline']
+            or pointer['original_train_until']!=config['train_until']):
+        raise ValueError('Resume source/deadline mismatch')
+    completed=pointer['cycle']
+    if type(completed) is not int or not 0 <= completed < config['planned_batches']:
+        raise ValueError('Valid incomplete checkpoint progress required')
+    return completed
+
+
 def run(out, config, *, resume=False):
     """Complete fixed-build seven-team learning path; supplemental release eval stays explicit."""
-    validate_launch(config,resume=resume)
+    completed_batches=resume_completed_batches(out,config) if resume else 0
+    validate_launch(config,resume=resume,completed_batches=completed_batches)
     import numpy as np
     import torch
     from concurrent.futures import ProcessPoolExecutor
@@ -764,7 +902,7 @@ def run(out, config, *, resume=False):
         current=out/'uncalibrated-initial';best=None
         rng=np.random.default_rng(config['seeds']['foundation'])
         opts={k:torch.optim.Adam(net.parameters(),lr=config['learning_rate']) for k,net in nets.items()}
-        pools={k:EpisodePool(limit=64,max_row_reuse=config['max_row_reuse']) for k in ROSTER}
+        pools={k:EpisodePool(limit=collection_pool_limit(config),max_row_reuse=config['max_row_reuse']) for k in ROSTER}
         snapshot(Path(__file__).resolve().parents[4],out/'source',(*EXTRA,
             'app/modules/card_game/rl/batched_search/training_rollout.py'))
     def status(phase,**extra):
@@ -787,16 +925,8 @@ def run(out, config, *, resume=False):
             cycle+=1;folder=out/'cycles'/str(cycle);status('searching')
             historical=cycle%4==0
             combined=merged_reports(report,best_report) if historical else report
-            jobs=jobs_for(current,decks,config['seeds']['foundation']+cycle*10000,
-                          config['train_until']-20,pure=False,cycle=cycle,report=combined,
-                          simulations=config['simulations'],historical=best if historical else None,
-                          teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'))
-            if config.get('preflight'):
-                for replica in range(1,config.get('preflight_replicas',1)):
-                    jobs+=jobs_for(current,decks,config['seeds']['foundation']+cycle*10000+replica*100,
-                        config['train_until']-20,pure=False,cycle=replica+1000,report=report,
-                        simulations=config['simulations'],teacher_mode=config.get('teacher_mode','network'),
-                        covered_value_source=config.get('covered_value_source'))
+            jobs=learning_collection_jobs(current,decks,config,cycle,config['train_until']-20,
+                                          historical=best if historical else None,report=combined)
             start=time.time();games=collect_search_batch(pool,jobs,folder/'sampling',config,learning=True)
             search_wall+=time.time()-start;search_games+=len(games)
             if config.get('preflight'):
@@ -804,19 +934,15 @@ def run(out, config, *, resume=False):
                 status('isolation_fit')
                 # Same opponents and initiatives with genuinely new paired
                 # seeds. Capacity heldout never enters update_batch/pools.
-                held_jobs=jobs_for(current,decks,config['seeds']['probes']+10000,config['train_until']-20,
-                                   pure=False,cycle=100,report=report,simulations=config['simulations'],
-                                   teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'))
-                for replica in range(1,config.get('preflight_replicas',1)):
-                    held_jobs+=jobs_for(current,decks,config['seeds']['probes']+10000+replica*100,
-                        config['train_until']-20,pure=False,cycle=replica+2000,report=report,
-                        simulations=config['simulations'],teacher_mode=config.get('teacher_mode','network'),
-                        covered_value_source=config.get('covered_value_source'))
-                for job in held_jobs:
-                    job.update(training=False,exploration=True,data_partition='capacity_heldout')
+                held_jobs=capacity_heldout_jobs(current,decks,config,config['train_until']-20,report=report)
                 held_games=collect_search_batch(pool,held_jobs,folder/'capacity-heldout',config,learning=False,require_search=True)
                 capacity=fit(current,jobs,games,config,min(config['train_until'],time.time()+1200),
                              held_jobs=held_jobs,held_games=held_games,runtime_name="seven")
+                replicas=configured_collection_replicas(config)
+                capacity.update(collection_replicas=replicas,
+                                planned_complete_games=planned_complete_games(replicas),
+                                planned_historical_complete_games=planned_complete_games(replicas, historical=True),
+                                measured_learning_games=len(jobs), measured_heldout_games=len(held_jobs))
                 write(folder/'capacity.json',capacity)
                 if not capacity['passed']:
                     stop_reason='isolation_fit_failed'
@@ -847,7 +973,7 @@ def run(out, config, *, resume=False):
                 stop_reason='p0';current=best;report=best_report
                 nets={k:rt.restore(best,k,config['device'])[0] for k in ROSTER}
                 opts={k:torch.optim.Adam(n.parameters(),lr=config['learning_rate']*.1) for k,n in nets.items()}
-                pools={k:EpisodePool(limit=64,max_row_reuse=config['max_row_reuse']) for k in ROSTER}
+                pools={k:EpisodePool(limit=collection_pool_limit(config),max_row_reuse=config['max_row_reuse']) for k in ROSTER}
                 save_round(out,nets,opts,pools,current,rng,config,cycle,best,no_gain)
                 break
             # No candidate can search again with its starting-value receipt.
@@ -865,7 +991,7 @@ def run(out, config, *, resume=False):
                 stop_reason='candidate_value_failed';current=best;report=best_report
                 nets={k:rt.restore(best,k,config['device'])[0] for k in ROSTER}
                 opts={k:torch.optim.Adam(n.parameters(),lr=config['learning_rate']) for k,n in nets.items()}
-                pools={k:EpisodePool(limit=64,max_row_reuse=config['max_row_reuse']) for k in ROSTER}
+                pools={k:EpisodePool(limit=collection_pool_limit(config),max_row_reuse=config['max_row_reuse']) for k in ROSTER}
                 save_round(out,nets,opts,pools,current,rng,config,cycle,best,no_gain)
                 break
             report=new_report
@@ -923,7 +1049,7 @@ def run(out, config, *, resume=False):
                 # Actual in-memory rollback as well as exported pointer rollback.
                 nets={k:rt.restore(best,k,config['device'])[0] for k in ROSTER}
                 opts={k:torch.optim.Adam(n.parameters(),lr=config['learning_rate']*.1) for k,n in nets.items()}
-                pools={k:EpisodePool(limit=64,max_row_reuse=config['max_row_reuse']) for k in ROSTER}
+                pools={k:EpisodePool(limit=collection_pool_limit(config),max_row_reuse=config['max_row_reuse']) for k in ROSTER}
                 current=best;report=best_report
             elif designated: no_gain=True
             save_round(out,nets,opts,pools,current,rng,config,cycle,best,no_gain)
@@ -943,6 +1069,9 @@ def run(out, config, *, resume=False):
                 covered_value_sha=sha256((Path(config['covered_value_source'])/'scope.json').read_bytes()).hexdigest() if config.get('covered_value_source') else None,
                 selected_value_seconds=value_wall,
                 preflight_replicas=config.get('preflight_replicas',1),
+                collection_replicas=configured_collection_replicas(config),
+                planned_complete_games=planned_complete_games(configured_collection_replicas(config)),
+                planned_historical_complete_games=planned_complete_games(configured_collection_replicas(config), historical=True),
                 update_and_numeric_seconds=update_wall,
                 workers=config['workers'],health=health,measured_at=time.time(),initial_models=versions(initial),
                 rollout_contract=rollout_contract(config),

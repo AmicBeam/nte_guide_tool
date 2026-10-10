@@ -7,6 +7,7 @@ is explicitly instantiated.
 from dataclasses import dataclass
 import math
 import time
+from threading import Lock
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 import numpy as np
 
@@ -282,6 +283,13 @@ class BatchedInference:
         self._total_batches = 0
         self._total_rows = 0
         self._total_candidate_padding = 0
+        self._torch = torch
+        self._inference_ctx = getattr(torch, 'inference_mode', torch.no_grad)
+        self._workspace_guard = (self._device_str, tuple(sorted(self._model_versions.items())))
+        self._host_workspace = None
+        self._host_materializations = 0
+        self._workspace_allocations = 0
+        self._predict_lock = Lock()
 
     @property
     def device(self) -> str:
@@ -306,6 +314,8 @@ class BatchedInference:
             'candidate_padding': self._total_candidate_padding,
             'weight_nbytes': self._weight_nbytes,
             'device': self._device_str,
+            'host_materializations': self._host_materializations,
+            'workspace_allocations': self._workspace_allocations,
 
             'feature_dims': {key: row['feature_dim'] for key, row in self._contracts.items()},
             'candidate_dims': {key: row['candidate_dim'] for key, row in self._contracts.items()},
@@ -321,7 +331,77 @@ class BatchedInference:
             if net.training:
                 raise RuntimeError(f'Inference network {key} is in train mode; freeze before training rollout')
 
+    def _acquire_host_workspace(self, batch_rows, max_actions, feature_dim, candidate_dim):
+        """Reuse a bounded host pad buffer; grow only when the live microbatch no longer fits."""
+        guard = (self._workspace_guard, feature_dim, candidate_dim)
+        buf = self._host_workspace
+        reuse = (
+            buf is not None
+            and buf['guard'] == guard
+            and buf['x'].shape[0] >= batch_rows
+            and buf['x'].shape[1] == feature_dim
+            and buf['c'].shape[1] >= max_actions
+            and buf['c'].shape[2] == candidate_dim
+        )
+        if not reuse:
+            prev_rows = buf['x'].shape[0] if buf is not None and buf['guard'] == guard else 0
+            prev_cols = buf['c'].shape[1] if buf is not None and buf['guard'] == guard else 0
+            rows = min(self._max_batch_rows, max(batch_rows, prev_rows))
+            cols = max(max_actions, prev_cols)
+            if batch_rows * max_actions * candidate_dim > self._max_candidate_elements:
+                raise ValueError('Microbatch exceeds candidate workspace capacity')
+            if rows * cols * candidate_dim > self._max_candidate_elements:
+                cols = min(cols, self._max_candidate_elements // (rows * candidate_dim))
+            if cols < max_actions:
+                rows = batch_rows
+                cols = max_actions
+            self._host_workspace = {
+                'guard': guard,
+                'x': np.zeros((rows, feature_dim), dtype=np.float32),
+                'c': np.zeros((rows, cols, candidate_dim), dtype=np.float32),
+                'mask': np.zeros((rows, cols), dtype=bool),
+                'actor': np.zeros((rows, 1), dtype=np.float32),
+            }
+            self._workspace_allocations += 1
+            buf = self._host_workspace
+        x = buf['x'][:batch_rows]
+        c = buf['c'][:batch_rows, :max_actions]
+        mask = buf['mask'][:batch_rows, :max_actions]
+        actor = buf['actor'][:batch_rows]
+        return x, c, mask, actor
+
+    def _fill_host_workspace(self, microbatch, max_actions, feature_dim, candidate_dim):
+        batch_rows = len(microbatch)
+        x, c, mask, actor = self._acquire_host_workspace(batch_rows, max_actions, feature_dim, candidate_dim)
+        if max_actions:
+            c.fill(0)
+            mask.fill(False)
+        actor.fill(0)
+        lengths = np.empty(batch_rows, dtype=np.int32)
+        for i, (_, req) in enumerate(microbatch):
+            x[i] = req.x
+            action_len = req.candidates.shape[0]
+            lengths[i] = action_len
+            if action_len:
+                c[i, :action_len] = req.candidates
+            actor[i, 0] = 1.0 if bool(req.value_actor) else 0.0
+        if max_actions:
+            mask[:] = np.arange(max_actions, dtype=np.int32)[None, :] < lengths[:, None]
+        padding_count = int(batch_rows * max_actions - int(lengths.sum())) if max_actions else 0
+        return x, c, mask, actor, lengths, padding_count
+
+    def _materialize_microbatch(self, packed):
+        host = packed.detach().to(device='cpu', dtype=self._torch.float32).numpy()
+        self._host_materializations += 1
+        return host
+
     def predict(self, requests: Sequence[InferenceRequest]) -> List[InferenceResult]:
+        # Workspace reuse must not introduce cross-call aliasing when callers
+        # share this frozen inference object between host threads.
+        with self._predict_lock:
+            return self._predict(requests)
+
+    def _predict(self, requests: Sequence[InferenceRequest]) -> List[InferenceResult]:
         if not isinstance(requests, (list, tuple)):
             raise TypeError("requests must be a sequence of InferenceRequest instances")
 
@@ -426,9 +506,6 @@ class BatchedInference:
 
         results: List[Optional[InferenceResult]] = [None] * len(requests)
 
-        import torch
-        inference_ctx = getattr(torch, 'inference_mode', torch.no_grad)
-
         # Step 3: Execute microbatches per group
         for (model_key, _, value_only), group_items in groups.items():
             net = self._networks[model_key]
@@ -458,24 +535,14 @@ class BatchedInference:
                 microbatch=fresh
                 if not microbatch:continue
                 B = len(microbatch)
+                M = max(req.candidates.shape[0] for _, req in microbatch)
+                x_batch, c_batch, mask_batch, actor_batch, lengths, padding_count = self._fill_host_workspace(
+                    microbatch, M, feature_dim, candidate_dim
+                )
 
-                # Prepare padded batch arrays
-                x_batch = np.zeros((B, feature_dim), dtype=np.float32)
-                c_batch = np.zeros((B, M, candidate_dim), dtype=np.float32)
-                mask_batch = np.zeros((B, M), dtype=bool)
-                actor_batch = np.zeros((B, 1), dtype=np.float32)
-
-                padding_count = 0
-                for i, (_, req) in enumerate(microbatch):
-                    x_batch[i] = req.x
-                    a_len = req.candidates.shape[0]
-                    c_batch[i, :a_len] = req.candidates
-                    mask_batch[i, :a_len] = True
-                    actor_batch[i, 0] = 1.0 if bool(req.value_actor) else 0.0
-                    padding_count += (M - a_len)
-
-                # Forward inference on chosen device
-                with inference_ctx():
+                # Forward inference on chosen device. One packed D2H materialization per live microbatch.
+                torch = self._torch
+                with self._inference_ctx():
                     x_t = torch.as_tensor(x_batch, device=self._torch_device, dtype=torch.float32)
                     c_t = torch.as_tensor(c_batch, device=self._torch_device, dtype=torch.float32)
                     mask_t = torch.as_tensor(mask_batch, device=self._torch_device, dtype=torch.bool)
@@ -497,28 +564,32 @@ class BatchedInference:
 
                     wdl_logits = net.wdl(torch.cat((val_repr, actor_t), dim=-1))
                     wdl_probs = torch.softmax(wdl_logits, dim=-1)
+                    packed = torch.cat((scores, wdl_probs), dim=-1)
+                    host = self._materialize_microbatch(packed)
 
-                    # CUDA synchronization happens only once for the whole microbatch
-                    scores_cpu = scores.detach().to(device='cpu', dtype=torch.float32).numpy()
-                    wdl_cpu = wdl_probs.detach().to(device='cpu', dtype=torch.float32).numpy()
+                scores_cpu = host[:, :M]
+                wdl_cpu = host[:, M:]
+                if wdl_cpu.shape[1] != 3:
+                    raise ValueError('Packed inference host copy must keep 3-way WDL probabilities')
+                if M and not np.isfinite(scores_cpu[mask_batch]).all():
+                    for i, (_, req) in enumerate(microbatch):
+                        if not np.isfinite(scores_cpu[i, :int(lengths[i])]).all():
+                            raise ValueError(f"Non-finite logits detected in inference result for request {req.request_id}")
+                    raise ValueError('Non-finite logits detected in inference result')
+                if (not np.isfinite(wdl_cpu).all()) or np.any(wdl_cpu < 0) or (not np.allclose(wdl_cpu.sum(axis=-1), 1.)):
+                    for i, (_, req) in enumerate(microbatch):
+                        wdl = wdl_cpu[i]
+                        if not np.isfinite(wdl).all() or np.any(wdl < 0) or not np.isclose(wdl.sum(), 1.):
+                            raise ValueError(f"Non-finite WDL probabilities detected in inference result for request {req.request_id}")
+                    raise ValueError('Non-finite WDL probabilities detected in inference result')
 
-                # Slice exact candidate lengths, verify finiteness, and populate results
                 for i, (orig_idx, req) in enumerate(microbatch):
-                    a_len = req.candidates.shape[0]
-                    logits = scores_cpu[i, :a_len].copy()
-                    wdl = wdl_cpu[i].copy()
-
-                    if not np.isfinite(logits).all():
-                        raise ValueError(f"Non-finite logits detected in inference result for request {req.request_id}")
-                    if not np.isfinite(wdl).all() or np.any(wdl < 0) or not np.isclose(wdl.sum(), 1.):
-                        raise ValueError(f"Non-finite WDL probabilities detected in inference result for request {req.request_id}")
-
                     results[orig_idx] = InferenceResult(
                         request_id=req.request_id,
                         model_key=req.model_key,
                         model_version=req.model_version,
-                        logits=logits,
-                        wdl=wdl,
+                        logits=scores_cpu[i, :int(lengths[i])].copy(),
+                        wdl=wdl_cpu[i].copy(),
                         expired=req.deadline is not None and time.monotonic()>=req.deadline,
                     )
 

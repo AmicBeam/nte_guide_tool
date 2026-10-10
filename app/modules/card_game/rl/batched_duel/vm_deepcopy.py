@@ -12,13 +12,17 @@ inside the VM; the final state codec may still reject their export. Pure tuple
 subgraphs retain their original identity, including nested/shared tuples.
 """
 
-SUPPORTED_DEEPCOPY_NAMES = ('copy.deepcopy',)
+SUPPORTED_DEEPCOPY_NAMES = ('copy.deepcopy',
+    'app.modules.card_game.engine.duel_v2.entities.copy_state_graph')
 
 
 def emit_deepcopy_source(intrinsic_names) -> str:
     names = tuple(intrinsic_names)
     native_id = names.index('copy.deepcopy') if 'copy.deepcopy' in names else -1
-    return _SOURCE.replace('DEEPCOPY_NATIVE_ID', str(native_id))
+    graph_name = 'app.modules.card_game.engine.duel_v2.entities.copy_state_graph'
+    graph_id = names.index(graph_name) if graph_name in names else -1
+    return (_SOURCE.replace('DEEPCOPY_NATIVE_ID', str(native_id))
+                   .replace('GRAPH_COPY_NATIVE_ID', str(graph_id)))
 
 
 _SOURCE = r'''
@@ -26,6 +30,7 @@ _SOURCE = r'''
 // "needs copying" state; the checked memo size excludes that constant ref.
 const int DEEPCOPY_CHANGED = (-2147483647);
 const int NATIVE_DEEPCOPY = DEEPCOPY_NATIVE_ID;
+const int NATIVE_GRAPH_COPY = GRAPH_COPY_NATIVE_ID;
 
 __device__ inline int deepcopy_tick(Context* c){
  if(c->error || c->h.error)return 0;
@@ -210,7 +215,8 @@ __device__ inline int native_deepcopy(Context* c,int root){
 __device__ inline int deepcopy_call(Context* c,int callee,const int* args,int nargs,int* out){
  const int* n=node(c,callee);
  if(!n)return 0;
- if(NATIVE_DEEPCOPY<0 || n[0]!=T_NATIVE || n[3]!=NATIVE_DEEPCOPY)return 0;
+ if(n[0]!=T_NATIVE || !((NATIVE_DEEPCOPY>=0 && n[3]==NATIVE_DEEPCOPY) ||
+                       (NATIVE_GRAPH_COPY>=0 && n[3]==NATIVE_GRAPH_COPY)))return 0;
  if((nargs!=1 && nargs!=2) || !args || !out){c->error=BAD_CALL;return 1;}
  // An explicit memo affects Python object identity across independent calls.
  // Only the default None is supported; never silently ignore a caller memo.

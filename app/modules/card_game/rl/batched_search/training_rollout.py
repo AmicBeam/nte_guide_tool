@@ -273,6 +273,7 @@ class TrainingRollout:
     value_models: Any = None
     max_buffer_bytes: int = 8 * 1024**3
     last_diagnostics: Optional[dict] = None
+    async_rule_dispatch: Optional[bool] = None
 
     def collect(self, jobs, *, deadline=None, max_actions=DEFAULT_MAX_ACTIONS):
         self.last_diagnostics = {}
@@ -288,6 +289,7 @@ class TrainingRollout:
             value_models=self.value_models,
             max_buffer_bytes=self.max_buffer_bytes,
             diagnostics=self.last_diagnostics,
+            async_rule_dispatch=self.async_rule_dispatch,
         )
 
 
@@ -296,7 +298,8 @@ def _capture_diagnostics(sink, scheduler, inference, backend, statistics, error)
     if sink is None:
         return
     sink.update(schema='cooperative_search_diagnostics_v1', method_error=error,
-                scheduler_dispatch=deepcopy(getattr(scheduler, 'dispatch_metrics', None)))
+                scheduler_dispatch=deepcopy(getattr(scheduler, 'dispatch_metrics', None)),
+                scheduler_progress=deepcopy(getattr(scheduler, 'progress_metrics', None)))
     errors = {}
     for name, resource in (('inference', inference), ('rules', backend),
                            ('device_statistics', statistics)):
@@ -332,6 +335,7 @@ def _collect_training_games(
     value_models=None,
     max_buffer_bytes=8 * 1024**3,
     diagnostics=None,
+    async_rule_dispatch=None,
 ):
     """Stream complete official games and admit training rows only after terminal WDL.
 
@@ -339,6 +343,10 @@ def _collect_training_games(
     the kernel/call workspace (default 32) and is never reported as root concurrency.
     """
     jobs = validate_training_jobs(jobs)
+    if async_rule_dispatch is not None and type(async_rule_dispatch) is not bool:
+        raise TypeError('Boolean or automatic async rule dispatch required')
+    if async_rule_dispatch is True and not getattr(backend, 'supports_async_operations', False):
+        raise ValueError('Explicit async rules require a capable resident backend')
     if diagnostics is not None and not isinstance(diagnostics, dict):
         raise TypeError('Diagnostics sink must be a dictionary')
     if type(search_roots) is not int or not 1 <= search_roots <= MAX_SEARCH_ROOTS:
@@ -615,6 +623,7 @@ def _collect_training_games(
             ready.append((job['id'], clock()))
         scheduler = CooperativeScheduler(
             inference, max_roots=search_roots, allow_cpu_oracle=allow_cpu_oracle,
+            async_rule_dispatch=async_rule_dispatch,
         )
         cancelled = (lambda: clock() >= search_deadline) if search_deadline is not None else None
         scheduler_stats = scheduler.run_stream(admit, completed, cancelled=cancelled)
@@ -795,6 +804,8 @@ def training_source_identity(models, config, backend=None, models_dir=None):
     snapshot['simulations'] = int(config.get('simulations', DEFAULT_SIMULATIONS))
     snapshot['training_buffer_mib'] = int(config.get('training_buffer_mib',8192))
     snapshot['search_statistics_device'] = config.get('search_statistics_device')
+    snapshot['async_rule_dispatch'] = config.get('async_rule_dispatch')
+    snapshot['collection_replicas'] = config.get('collection_replicas', 1)
     snapshot['search_code_includes_training_rollout'] = True
     snapshot['query_batch_is_not_root_concurrency'] = snapshot['query_batch_rows'] != snapshot.get('requested_search_roots')
     return snapshot
@@ -862,4 +873,5 @@ def rollout_from_config(config, models, *, inference=None, backend=None, statist
         create_states=create_states, own_backend=own_backend, own_statistics=own_statistics,
         value_models=value_models,
         max_buffer_bytes=int(config.get('training_buffer_mib',8192))*1024**2,
+        async_rule_dispatch=config.get('async_rule_dispatch'),
     )

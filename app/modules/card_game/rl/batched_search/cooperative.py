@@ -3,6 +3,23 @@
 Only calls to the explicit backend protocol are rewritten. Rule code, search
 formulas, RNG streams and model inputs are not rewritten. CPU oracle dispatch
 requires an explicit opt-in; a GPU backend must provide a bulk resolver.
+
+Async rule dispatch API for the primary agent:
+- CooperativeScheduler(..., async_rule_dispatch=None)
+  None (default): capability-gated. A rule backend is used asynchronously iff
+  supports_async_operations is True and submit_operations/poll_operations exist.
+  GPU rule backends and other unsupported backends keep the synchronous
+  resolve_operations wave.
+  False: force the legacy global wave barrier for every backend.
+  True: require async capability on every rule backend that receives
+  OperationQuery; statistics and inference stay bulk-dispatched among
+  currently ready roots only.
+- Ready roots may advance and infer while an unrelated worker is still
+  executing. Each root still has at most one outstanding operation and the
+  same internal deterministic RNG/sequence.
+- Final statistics snapshots remain synchronous read-only finalization.
+- progress_metrics reports actual pending_operations, ready_roots and
+  idle_workers. It does not invent queue wait.
 """
 from dataclasses import dataclass,replace
 from hashlib import sha256
@@ -104,18 +121,156 @@ def cooperative_search(*args,**kwargs):
 
 class CooperativeScheduler:
     """One host scheduler with one outstanding query per independently owned root."""
-    def __init__(self,inference,*,max_roots=1600,allow_cpu_oracle=False):
+    def __init__(self,inference,*,max_roots=1600,allow_cpu_oracle=False,async_rule_dispatch=None):
         if type(max_roots) is not int or max_roots<1:raise ValueError('Positive root capacity required')
         if type(allow_cpu_oracle) is not bool:raise TypeError('CPU oracle opt-in must be boolean')
+        if async_rule_dispatch is not None and type(async_rule_dispatch) is not bool:
+            raise TypeError('async_rule_dispatch must be boolean or None')
         self.inference=inference;self.max_roots=max_roots;self.allow_cpu_oracle=allow_cpu_oracle
+        self.async_rule_dispatch=async_rule_dispatch
         self._running=False
         self.dispatch_metrics={}
+        self.progress_metrics=dict(pending_operations=0,ready_roots=0,idle_workers=None,
+            peak_pending_operations=0,peak_ready_roots=0)
 
     def _record_dispatch(self,name,items,started):
         elapsed=time.perf_counter()-started
         row=self.dispatch_metrics.setdefault(name,dict(batches=0,items=0,wall_seconds=0.,max_seconds=0.))
         row['batches']+=1;row['items']+=items;row['wall_seconds']+=elapsed
         row['max_seconds']=max(row['max_seconds'],elapsed)
+
+    def _use_async(self,backend):
+        if getattr(backend,'read_only_finalization',False):
+            return False
+        capable=(bool(getattr(backend,'supports_async_operations',False))
+                 and callable(getattr(backend,'submit_operations',None))
+                 and callable(getattr(backend,'poll_operations',None)))
+        if self.async_rule_dispatch is False:return False
+        if self.async_rule_dispatch is True and not capable:
+            raise RuntimeError('Explicit async rule dispatch requires submit_operations and poll_operations')
+        return capable
+
+    def _async_queries(self,queries):
+        return [query for query in queries if isinstance(query,OperationQuery) and self._use_async(query.backend)]
+
+    def _abandon_async(self,queries):
+        grouped={}
+        for query in queries:
+            if not isinstance(query,OperationQuery):
+                continue
+            backend=query.backend
+            capable=(bool(getattr(backend,'supports_async_operations',False))
+                     and callable(getattr(backend,'submit_operations',None))
+                     and callable(getattr(backend,'poll_operations',None))
+                     and not getattr(backend,'read_only_finalization',False))
+            if not capable:
+                continue
+            grouped.setdefault(id(query.backend),(query.backend,[]))[1].append(query.id)
+        for backend,ids in grouped.values():
+            cancel=getattr(backend,'cancel_operations',None)
+            if callable(cancel) and ids:cancel(ids)
+
+    def _wait_timeout(self,queries):
+        now=time.monotonic();remain=[]
+        for query in queries:
+            deadline=getattr(query,'deadline',None)
+            if deadline is not None and not isinstance(deadline,bool) and isinstance(deadline,(int,float)):
+                remain.append(max(0.,deadline-now))
+        if remain:return min(1.,min(remain))
+        return 1.
+
+    def _update_progress(self,queries,outstanding,responses):
+        pending=len(outstanding)
+        ready=sum(1 for query in queries if query.id in responses)
+        idle=None
+        seen=set()
+        idle_total=0;have=False
+        for query in queries:
+            if not isinstance(query,OperationQuery) or id(query.backend) in seen:continue
+            seen.add(id(query.backend))
+            value=getattr(query.backend,'idle_workers',None)
+            if type(value) is int:
+                idle_total+=value;have=True
+        if have:idle=idle_total
+        self.progress_metrics['pending_operations']=pending
+        self.progress_metrics['ready_roots']=ready
+        self.progress_metrics['idle_workers']=idle
+        self.progress_metrics['peak_pending_operations']=max(self.progress_metrics['peak_pending_operations'],pending)
+        self.progress_metrics['peak_ready_roots']=max(self.progress_metrics['peak_ready_roots'],ready)
+
+    def _poll_async(self,queries,outstanding,timeout):
+        responses={}
+        backends=[];seen=set()
+        for query in queries:
+            if query.id in outstanding and isinstance(query,OperationQuery) and self._use_async(query.backend):
+                if id(query.backend) not in seen:
+                    seen.add(id(query.backend));backends.append(query.backend)
+        waited=False
+        for backend in backends:
+            slice_timeout=0. if waited else timeout
+            started=time.perf_counter()
+            rows=backend.poll_operations(timeout=slice_timeout)
+            if slice_timeout>0:waited=True
+            self._record_dispatch('rules.poll',len(rows),started)
+            for row in rows:
+                if not isinstance(row,OperationResponse):
+                    raise ValueError('Bulk operation response identity mismatch')
+                if row.id not in outstanding or row.id in responses:
+                    raise ValueError('Bulk operation response identity mismatch')
+                outstanding.discard(row.id)
+                responses[row.id]=row.value if isinstance(row.value,RequestExpired) else row
+        return responses
+
+    def _dispatch_available(self,queries,outstanding):
+        from .traversal import InferenceQuery
+        if len({q.id for q in queries})!=len(queries):raise ValueError('Duplicate outstanding query identity')
+        # Harvest ready terminal results before considering newly elapsed root
+        # deadlines. Retire expired queued roots instead of spinning on them.
+        responses=self._poll_async(queries,outstanding,0.)
+        groups={};neural=[];async_groups={}
+        now=time.monotonic()
+        for query in queries:
+            if query.id in responses:
+                continue
+            deadline=getattr(query,'deadline',None)
+            expired=(not getattr(query,'finalization',False) and deadline is not None and now>=deadline)
+            if query.id in outstanding:
+                cancel=getattr(query.backend,'cancel_operations',None)
+                if expired and callable(cancel):
+                    cancel([query.id])
+                    outstanding.discard(query.id)
+                    responses[query.id]=RequestExpired(query.id)
+                continue
+            if expired:
+                responses[query.id]=RequestExpired(query.id);continue
+            if isinstance(query,OperationQuery):
+                if self._use_async(query.backend):
+                    async_groups.setdefault(id(query.backend),[]).append(query)
+                else:
+                    method=None if getattr(query.backend,'supports_mixed_operations',False) else query.method
+                    groups.setdefault((id(query.backend),method),[]).append(query)
+            elif isinstance(query,InferenceQuery):neural.append(query)
+            else:raise TypeError('Unknown cooperative request type')
+        for group in async_groups.values():
+            backend=group[0].backend
+            started=time.perf_counter()
+            backend.submit_operations(group)
+            for query in group:outstanding.add(query.id)
+            prefix='statistics.' if getattr(backend,'read_only_finalization',False) else 'rules.'
+            method=None if getattr(backend,'supports_mixed_operations',False) else group[0].method
+            self._record_dispatch(prefix+(method or 'mixed')+'.submit',len(group),started)
+        if groups:
+            sync_queries=[query for group in groups.values() for query in group]
+            responses.update(self._resolve(sync_queries))
+        if neural:
+            responses.update(self._resolve(neural))
+        responses.update(self._poll_async(queries,outstanding,0.))
+        return responses
+
+    def _pump(self,queries,outstanding):
+        completed=self._dispatch_available(queries,outstanding)
+        if completed:return completed
+        return self._poll_async(queries,outstanding,self._wait_timeout(queries))
 
     def run_stream(self,admit,completed,*,max_waves=100000,cancelled=None):
         """Refill a bounded window after publishing each wave's completed roots.
@@ -130,7 +285,7 @@ class CooperativeScheduler:
         if type(max_waves) is not int or max_waves<1:raise ValueError('Positive wave limit required')
         import math
         from .traversal import TraversalCancelled,_DeadlineReached
-        pending={};generations={};owned={};root_ids=set();waves=0;stalled_waves=0;count=0;peak=0
+        pending={};generations={};owned={};root_ids=set();waves=0;stalled_waves=0;count=0;peak=0;outstanding=set()
         start=time.monotonic();self._running=True
         def stopped():return cancelled is not None and cancelled()
         def publish(rows):
@@ -167,6 +322,7 @@ class CooperativeScheduler:
                 publish(immediate)
                 if stopped():
                     finished=[];finalizing=[]
+                    self._abandon_async([query for _,query in pending.values()]);outstanding.clear()
                     for job,_ in pending.values():
                         try:query=job.generator.throw(TraversalCancelled())
                         except StopIteration as stop:finished.append((job,stop.value))
@@ -190,10 +346,18 @@ class CooperativeScheduler:
                 # A continuous run may legitimately contain millions of waves.
                 # Bound lack of progress, not the total work of all real games.
                 if stalled_waves>=max_waves:raise TimeoutError('Cooperative wave allowance exhausted')
-                responses=self._resolve([replace(q,deadline=job.deadline) for job,q in pending.values()]);waves+=1;stalled_waves+=1
+                queries=[replace(q,deadline=job.deadline) for job,q in pending.values()]
+                if outstanding or self._async_queries(queries):
+                    responses=self._pump(queries,outstanding)
+                else:
+                    responses=self._resolve(queries)
+                waves+=1;stalled_waves+=1
+                self._update_progress(queries,outstanding,responses)
                 finished=[];next_pending={}
                 for key,(job,query) in pending.items():
                     try:
+                        if query.id not in responses:
+                            next_pending[key]=(job,query);continue
                         if isinstance(responses[query.id],RequestExpired):
                             value=job.generator.throw(_DeadlineReached('Queued operation exceeded its root deadline'))
                         else:value=job.generator.send(responses[query.id])
@@ -203,8 +367,10 @@ class CooperativeScheduler:
                 publish(finished)
             return dict(root_count=count,peak_outstanding_roots=peak,waves=waves,
                 wall_seconds=time.monotonic()-start,cpu_oracle_opt_in=self.allow_cpu_oracle,
-                dispatch_metrics=self.dispatch_metrics)
+                dispatch_metrics=self.dispatch_metrics,async_rule_dispatch=self.async_rule_dispatch,
+                progress_metrics=self.progress_metrics)
         finally:
+            self._abandon_async([query for _,query in pending.values()] if pending else [])
             for job in owned.values():job.generator.close()
             self._running=False
 
@@ -291,7 +457,7 @@ class CooperativeScheduler:
                 if isinstance(job.deadline,bool) or not isinstance(job.deadline,(int,float)) or not math.isfinite(job.deadline):
                     raise ValueError('Finite monotonic root deadline required')
             roots.add(job.root_id);games.add(job.game_id)
-        self._running=True;pending={};results={};start=time.monotonic();waves=0
+        self._running=True;pending={};results={};start=time.monotonic();waves=0;outstanding=set()
         try:
             for job in jobs:
                 try:pending[job.root_id]=(job,next(job.generator))
@@ -302,6 +468,7 @@ class CooperativeScheduler:
                 if cancelled is not None and cancelled():
                     from .traversal import TraversalCancelled
                     finishing=[]
+                    self._abandon_async([query for _,query in pending.values()])
                     for key,(job,_) in list(pending.items()):
                         try:query=job.generator.throw(TraversalCancelled())
                         except StopIteration as stop:results[key]=stop.value
@@ -319,10 +486,17 @@ class CooperativeScheduler:
                             else:raise RuntimeError('Traversal continued after final statistics snapshot')
                     pending.clear();break
                 queries=[replace(q,deadline=job.deadline) for job,q in pending.values()]
-                responses=self._resolve(queries);waves+=1
+                if outstanding or self._async_queries(queries):
+                    responses=self._pump(queries,outstanding)
+                else:
+                    responses=self._resolve(queries)
+                waves+=1
+                self._update_progress(queries,outstanding,responses)
                 next_pending={}
                 for key,(job,query) in pending.items():
                     try:
+                        if query.id not in responses:
+                            next_pending[key]=(job,query);continue
                         if isinstance(responses[query.id],RequestExpired):
                             from .traversal import _DeadlineReached
                             value=job.generator.throw(_DeadlineReached('Queued operation exceeded its root deadline'))
@@ -332,7 +506,9 @@ class CooperativeScheduler:
                 pending=next_pending
             if set(results)!=roots:raise ValueError('A root disappeared from scheduler accounting')
             return dict(results=results,root_count=len(jobs),peak_outstanding_roots=peak,waves=waves,
-                        wall_seconds=time.monotonic()-start,cpu_oracle_opt_in=self.allow_cpu_oracle)
+                        wall_seconds=time.monotonic()-start,cpu_oracle_opt_in=self.allow_cpu_oracle,
+                        async_rule_dispatch=self.async_rule_dispatch,progress_metrics=self.progress_metrics)
         finally:
+            self._abandon_async([query for _,query in pending.values()] if pending else [])
             for job in jobs:job.generator.close()
             self._running=False

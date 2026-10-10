@@ -37,6 +37,12 @@ def repeated_copy_probe(value):
     after_gc=deepcopy(second)
     return first,second,after_gc,second[0] is second[1],after_gc[0] is after_gc[1],first is second
 
+def graph_copy_probe(value):
+    from app.modules.card_game.engine.duel_v2.entities import copy_state_graph
+    result=copy_state_graph(value)
+    result['first'].append(9)
+    return result,result['first'] is result['alias'],value['first']
+
 def set_probe(value):
     a=set(value)
     b={2,3,7}
@@ -58,9 +64,23 @@ def program():
     if sys.version_info[:2]!=(3,10):
         if not folder:raise RuntimeError('Frozen CPython3.10 callable/copy fixture required')
         return FrozenRuleProgram.from_json((Path(folder)/'callable_copy.json').read_text(encoding='utf8'))
-    return capture_program({'callable':callable_probe,'atomic':atomic_copy_probe,'copies':repeated_copy_probe,'sets':set_probe},allowed_module_prefixes=(*DEFAULT_ALLOWED_MODULE_PREFIXES,__name__))
+    return capture_program({'callable':callable_probe,'atomic':atomic_copy_probe,'copies':repeated_copy_probe,'sets':set_probe,'graph_copy':graph_copy_probe},allowed_module_prefixes=(*DEFAULT_ALLOWED_MODULE_PREFIXES,__name__))
 
 class CallableCopySourceTest(unittest.TestCase):
+    def test_graph_copy_preserves_aliases_and_is_a_supported_native_intrinsic(self):
+        prog=program()
+        if 'graph_copy' not in prog.entries:
+            self.skipTest('Fresh graph-copy source fixture required')
+        name='app.modules.card_game.engine.duel_v2.entities.copy_state_graph'
+        self.assertIn(name,prog.required_intrinsics)
+        source=emit_vm_source(lower_gpu_program(prog))
+        self.assertNotIn('NATIVE_GRAPH_COPY = -1',source)
+        shared=[1,2];value={'first':shared,'alias':shared}
+        result,aliased,original=graph_copy_probe(value)
+        self.assertTrue(aliased)
+        self.assertEqual(result['first'],[1,2,9])
+        self.assertEqual(original,[1,2])
+
     def test_frozen_inherited_method_and_scalar_fast_path(self):
         source=emit_vm_source(lower_gpu_program(program()))
         self.assertIn('lookup_class(c,node(c,cls)[3],name,&category)',source)
@@ -77,6 +97,18 @@ except ImportError:CUDA=False
 
 @unittest.skipUnless(CUDA,'Actual CUDA required')
 class CallableCopyCudaTest(unittest.TestCase):
+    def test_graph_copy_native_alias_keeps_input_and_shared_lists(self):
+        prog=program()
+        if 'graph_copy' not in prog.entries:
+            self.skipTest('Fresh graph-copy source fixture required')
+        shared=[1,2];value={'first':shared,'alias':shared}
+        with CudaVm(lower_gpu_program(prog)) as vm:
+            arena=vm.ingest(pack_states([value],GraphLayout(1,2048,4096,16384)))
+            actual=vm.launch(arena,'graph_copy').decode()[0]
+        self.assertEqual(actual,graph_copy_probe(value))
+        self.assertIs(actual[0]['first'],actual[0]['alias'])
+        self.assertEqual(value['first'],[1,2])
+
     def test_inherited_call_ignores_instance_shadow_and_forwards_keywords(self):
         with CudaVm(lower_gpu_program(program())) as vm:
             arena=vm.ingest(pack_states([4],GraphLayout(1,1024,2048,8192)))

@@ -54,11 +54,12 @@ def cross_pairs():
     return [(a, b) for a in ROSTER for b in ROSTER if a != b]
 
 
-def validate_round_launch(config, *, resume=False):
+def validate_round_launch(config, *, resume=False, output=None):
     """Check recovery evidence at every entry; keep historical formal cross closed."""
     if isinstance(config,dict) and config.get('runtime')=='seven':
-        from app.modules.card_game.rl.seven_round import validate_launch
-        validate_launch(config,resume=resume)
+        from app.modules.card_game.rl.seven_round import validate_launch,resume_completed_batches
+        completed=resume_completed_batches(output,config) if resume and output is not None else 0
+        validate_launch(config,resume=resume,completed_batches=completed)
         return
     if isinstance(config,dict) and config.get('runtime')=='recovery':
         from app.modules.card_game.rl.recovery_round import validate_launch
@@ -530,6 +531,12 @@ def main():
     p.add_argument('--preflight',action='store_true',help='One all-five Gumbel32 batch, no strength approval')
     p.add_argument('--preflight-replicas',type=int,choices=(1,2,3),default=1,
                    help='New paired training and heldout games per matchup; never reuse old-rule data')
+    p.add_argument('--collection-replicas',type=int,default=1,
+                   help='Unique complete search collections per frozen seven-team batch; default 1')
+    p.add_argument('--async-rule-dispatch',choices=('auto','on','off'),default='auto',
+                   help='Resident rule submit/poll; auto uses backend capability, off keeps waves')
+    p.add_argument('--search-statistics-device',choices=('cuda',),default=None,
+                   help='Explicit CUDA tree statistics for the hybrid resident CPU path')
     p.add_argument('--planned-batches',type=int,choices=(4,5,6),default=6)
     p.add_argument('--gate-roots',type=int,default=32)
     p.add_argument('--search-gate-roots',type=int,default=2)
@@ -542,7 +549,7 @@ def main():
     out = a.output.resolve()
     if a.worker:
         config = json.loads((out / 'config.json').read_text(encoding='utf-8'))
-        validate_round_launch(config,resume=a.resume)
+        validate_round_launch(config,resume=a.resume,output=out)
         try:
             learn(out, config,resume=a.resume)
         except Exception as exc:
@@ -559,7 +566,7 @@ def main():
             try: os.kill(pid,0)
             except ProcessLookupError: pass
             else: p.error('Previous worker is still live; refuse concurrent resume')
-        validate_round_launch(config,resume=True)
+        validate_round_launch(config,resume=True,output=out)
         if time.time()>=config['train_until']: p.error('Original learning deadline expired')
         supervise(out,config,resume=True)
         return
@@ -576,6 +583,22 @@ def main():
         p.error('search-roots must be 1..1600, query-batch-rows 1..32 and training buffer positive')
     if a.rule_backend!='serial_cpu' and a.runtime!='seven':
         p.error('Batched training only supports the current seven-team contract')
+    if a.async_rule_dispatch!='auto' and a.runtime!='seven':
+        p.error('Async rule dispatch is a seven-team cooperative option')
+    if a.async_rule_dispatch=='on' and a.rule_backend!='resident_cpu':
+        p.error('Explicit async rules require resident_cpu')
+    if a.search_statistics_device and (a.runtime!='seven' or a.device!='cuda' or a.rule_backend=='serial_cpu'):
+        p.error('Explicit CUDA statistics require a cooperative CUDA seven-team path')
+    from app.modules.card_game.rl.training_config import validate_collection_option
+    try:
+        validate_collection_option(
+            a.collection_replicas, search_roots=a.search_roots,
+            training_buffer_mib=a.training_buffer_mib,
+            gpu_memory_budget_mib=a.gpu_memory_budget_mib,
+            rule_backend=a.rule_backend, runtime=a.runtime,
+            historical=not (a.smoke or a.preflight))
+    except ValueError as exc:
+        p.error(str(exc))
     now = datetime.now(shanghai_zone())
     hard = now.replace(hour=9, minute=0, second=0, microsecond=0)
     if hard <= now:
@@ -635,6 +658,9 @@ def main():
                       gpu_validation_report=str(a.gpu_validation_report.resolve()) if a.gpu_validation_report else None,
                       guard_standalone_entities=a.guard_standalone_entities)
         config['training_buffer_mib']=a.training_buffer_mib
+        config['collection_replicas']=a.collection_replicas
+        config['async_rule_dispatch']={'auto':None,'on':True,'off':False}[a.async_rule_dispatch]
+        config['search_statistics_device']=a.search_statistics_device
     config['source_rule_hashes'] = json.loads(a.source_rule_hashes.read_text()) if a.source_rule_hashes else {}
     print(json.dumps(config, ensure_ascii=False, indent=2), flush=True)
     if not a.run:

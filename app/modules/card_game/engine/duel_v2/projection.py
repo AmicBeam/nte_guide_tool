@@ -1,9 +1,8 @@
 """Viewer-specific projection. Never expose decks, RNG, or private choices."""
 from .modifiers import compatibility_flags, public_effects
 from copy import deepcopy
-from contextlib import contextmanager
 from contextvars import ContextVar
-from .entities import clone_state, entity_action, hydrate_entities, needs_hydration
+from .entities import clone_state, copy_state_graph, entity_action, hydrate_entities, needs_hydration
 
 from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
@@ -99,26 +98,38 @@ def _anonymize_preview_hidden(sandbox, side):
 
 
 def _prepare_preview_template(state, side):
-    template = deepcopy(state)
+    template = copy_state_graph(state)
     _anonymize_preview_hidden(template, side)
     if needs_hydration(template):
         hydrate_entities(template)
     return template
 
 
-@contextmanager
+class _PreparedPreviewSandbox:
+    """An explicit context class keeps frozen rule capture independent of decorators."""
+    def __init__(self, state, side):
+        self.template = _prepare_preview_template(state, side)
+        self.context = {'side': side, 'source_id': id(state),
+                        'version': state.get('version'), 'event_seq': state.get('event_seq'),
+                        'template': self.template}
+        self.entered = False
+        self.token = None
+
+    def __enter__(self):
+        if self.entered:
+            raise RuntimeError('Preview context cannot be reused')
+        self.entered = True
+        self.token = _PREPARED_PREVIEW.set(self.context)
+        return self.template
+
+    def __exit__(self, exc_type, exc, traceback):
+        _PREPARED_PREVIEW.reset(self.token)
+        return False
+
+
 def prepared_preview_sandbox(state, side):
     """Anonymize hidden cards once; preview clones only a private sandbox per action."""
-    template = _prepare_preview_template(state, side)
-    token = _PREPARED_PREVIEW.set({
-        'side': side, 'source_id': id(state),
-        'version': state.get('version'), 'event_seq': state.get('event_seq'),
-        'template': template,
-    })
-    try:
-        yield template
-    finally:
-        _PREPARED_PREVIEW.reset(token)
+    return _PreparedPreviewSandbox(state, side)
 
 
 def _preview_owned_sandbox(state, side):
@@ -126,7 +137,7 @@ def _preview_owned_sandbox(state, side):
     if (prepared and prepared['side'] == side and prepared['source_id'] == id(state)
             and prepared['version'] == state.get('version')
             and prepared['event_seq'] == state.get('event_seq')):
-        return deepcopy(prepared['template'])
+        return copy_state_graph(prepared['template'])
     return _prepare_preview_template(state, side)
 
 

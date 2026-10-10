@@ -142,6 +142,7 @@ ALLOWED_BUILTIN_INTRINSICS: frozenset[str] = frozenset({
 
 DEFAULT_EXPLICIT_INTRINSICS: frozenset[str] = frozenset({
     'app.modules.card_game.engine.duel_v2.entities.clone_state',
+    'app.modules.card_game.engine.duel_v2.entities.copy_state_graph',
     'copy.deepcopy',
     'random.Random',
     'contextvars.ContextVar',

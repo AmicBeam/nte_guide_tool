@@ -20,6 +20,9 @@ class BatchedStatistics:
         self.q_scale=q_scale;self.clock=clock;self._owners={};self._counts={};self._releases=queue.SimpleQueue()
         self._closed=False;self._operations=Counter();self._wall=0.;self._peak=0
         self._completed_backups=0;self._late_backups=0
+        self._host_materializations=0;self._workspace_allocations=0
+        self._workspace_guard=(id(self.pool),self.pool.capacity,self.pool.max_actions,str(self.pool.device),self.q_scale)
+        self._noise_workspace=None;self._noise_guard=None
 
     def new_owner(self):
         self._check();owner=_Owner();self._owners[owner.id]=[]
@@ -41,6 +44,48 @@ class BatchedStatistics:
         if released:
             self.pool.release(released)
             for ref in released:self._counts.pop(ref,None)
+
+    def _host_numpy(self,tensor):
+        host=tensor.detach().to(device='cpu').contiguous().numpy()
+        self._host_materializations+=1
+        return host
+
+    def _noise_buffer(self,rows,width):
+        guard=self._workspace_guard;cap=self.pool.capacity
+        if rows>cap:
+            return np.zeros((rows,width),dtype=np.float64)
+        buf=self._noise_workspace
+        reuse=buf is not None and self._noise_guard==guard and buf.shape[0]>=rows and buf.shape[1]>=width
+        if not reuse:
+            prev_rows=buf.shape[0] if buf is not None and self._noise_guard==guard else 0
+            prev_cols=buf.shape[1] if buf is not None and self._noise_guard==guard else 0
+            alloc_rows=min(cap,max(rows,prev_rows));alloc_cols=min(self.pool.max_actions,max(width,prev_cols))
+            if alloc_rows<rows:alloc_rows=rows
+            if alloc_cols<width:alloc_cols=width
+            self._noise_workspace=np.zeros((alloc_rows,alloc_cols),dtype=np.float64)
+            self._noise_guard=guard;self._workspace_allocations+=1;buf=self._noise_workspace
+        view=buf[:rows,:width];view.fill(0);return view
+
+    def _choice_ints(self,tensor):
+        return [int(value) for value in np.asarray(self._host_numpy(tensor)).reshape(-1)]
+
+    def _snapshot_rows(self,refs):
+        snap=self.pool.snapshot(refs)
+        width=max(self._counts[ref] for ref in refs)
+        prior=snap['prior'][:,:width];visits=snap['visits'][:,:width];total=snap['total'][:,:width];value=snap['value']
+        packed=prior.new_empty((len(refs),width*3+1))
+        packed[:,:width]=prior
+        packed[:,width:2*width]=total
+        packed[:,2*width:3*width]=visits.to(dtype=prior.dtype)
+        packed[:,3*width]=value
+        host=self._host_numpy(packed)
+        out=[]
+        for index,ref in enumerate(refs):
+            n=self._counts[ref]
+            out.append(dict(prior=host[index,:n].copy(),
+                visits=host[index,2*width:2*width+n].astype(np.int32,copy=True),
+                total=host[index,width:width+n].copy(),raw_value=float(host[index,3*width])))
+        return out
 
     def create(self,prior,value,owner):return _operation(self,'create',prior,value,owner.id)
     def root_choice(self,node,noise,visit):return _operation(self,'root_choice',node,noise,visit)
@@ -76,7 +121,7 @@ class BatchedStatistics:
                     raise ValueError('Foreign or released statistics node')
             if method in ('root_choice','final_summary'):
                 width=max(self._counts[ref] for ref in refs)
-                noise=np.zeros((len(queries),width),dtype=np.float64)
+                noise=self._noise_buffer(len(queries),width)
                 visits=[]
                 for index,query in enumerate(queries):
                     n=self._counts[query.args[0]];value=np.asarray(query.args[1],dtype=np.float64)
@@ -85,9 +130,11 @@ class BatchedStatistics:
                         if type(query.args[2]) is not int:raise TypeError('Integer visit target required')
                         visits.append(query.args[2])
                     noise[index,:n]=value
-                if method=='root_choice':out=self.pool.select_root(refs,noise,visits).cpu().tolist()
-                else:out=[dict(search_choice=row[0],roots_covered=row[1]) for row in self.pool.final_summary(refs,noise).cpu().tolist()]
-            elif method=='interior_choice':out=self.pool.select_interior(refs).cpu().tolist()
+                if method=='root_choice':out=self._choice_ints(self.pool.select_root(refs,noise,visits))
+                else:
+                    rows=np.asarray(self._host_numpy(self.pool.final_summary(refs,noise)))
+                    out=[dict(search_choice=int(row[0]),roots_covered=int(row[1])) for row in rows]
+            elif method=='interior_choice':out=self._choice_ints(self.pool.select_interior(refs))
             elif method=='backup':
                 out=self.pool.backup_admitted([q.args[0] for q in queries],[q.args[1] for q in queries],
                                              [q.args[2] for q in queries],self.clock)
@@ -95,11 +142,7 @@ class BatchedStatistics:
             elif method=='set_value':
                 self.pool.set_raw_value(refs,[q.args[1] for q in queries]);out=[None]*len(queries)
             else:
-                snapshot={key:value.cpu().numpy() for key,value in self.pool.snapshot(refs).items()}
-                for index,ref in enumerate(refs):
-                    n=self._counts[ref]
-                    out.append(dict(prior=snapshot['prior'][index,:n].copy(),visits=snapshot['visits'][index,:n].copy(),
-                        total=snapshot['total'][index,:n].copy(),raw_value=float(snapshot['value'][index])))
+                out=self._snapshot_rows(refs)
         self._operations[method]+=len(queries);self._wall+=time.monotonic()-start
         return [OperationResponse(query.id,value) for query,value in zip(queries,out)]
 
@@ -107,7 +150,8 @@ class BatchedStatistics:
         self._flush()
         return dict(device=str(self.pool.device),active_nodes=self.pool.active_nodes,peak_nodes=self._peak,
             allocated_bytes=self.pool.allocated_bytes,operations=dict(self._operations),dispatch_wall_seconds=self._wall,
-            completed_backups=self._completed_backups,late_backups_discarded=self._late_backups)
+            completed_backups=self._completed_backups,late_backups_discarded=self._late_backups,
+            host_materializations=self._host_materializations,workspace_allocations=self._workspace_allocations)
 
     def close(self):
         if self._closed:return

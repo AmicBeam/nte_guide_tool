@@ -823,3 +823,27 @@ Windows验收前可仅输出配置：
 规则教师使用`rule_battle_preview`只提取攻击、攻击次数、创生花伤害与反击数值，仍执行完整正式规则；私有牌匿名化在一次决策中准备一次，各动作独立复制沙盒。公开`apply_action`保持不可变，内部拥有沙盒的执行入口避免再次复制。公开预演保留完整展示字段；换牌、选择和无战斗动作的教师决策跳过无用预演。沙盒不删除规则需要的事件、资源、随机状态或效果。
 
 验证：`tests.test_duel_v2_fused_teacher`、`tests.test_duel_v2_rule_preview_fast`和既有驻留后端、协作遍历、教师、隐藏信息与模拟回归。CPU等价性和规则RPC数量减少不能证明GPU完整采集加速；5倍目标必须在同一Windows CUDA设备以同源、同配置、相同完整局任务和种子比较墙钟时间，并分别记录采集、P0与评估，不把预检缩减算作采集提速。引擎文件变化产生新规则身份，旧模型与验收回执不得静默沿用。
+
+### 异步驻留调度、真实采集批量与精确复制
+
+`CooperativeScheduler`的`async_rule_dispatch=None`按后端能力选择提交／轮询；`False`保留同步波次，`True`要求驻留规则后端提供异步接口。统计查询继续按当前已就绪的根批量执行。驻留进程池在所有者线程登记引用、世代、取消与迟到结果，独立worker完成后即可继续该根，物理动作提交和GC回收也不等待无关worker。每根仍只有一个在途操作；原种子、根内顺序、终局优先、截止和取消保留。队列过期可直接取消并结束该根，迟到新状态回收；不会为了等过期结果执行零超时忙轮询。`search-diagnostics.json`另存`scheduler_progress`及真实提交／轮询计数；未测得的队列耗时仍为`null`。
+
+七队`--collection-replicas`显式允许1–5，默认1。一次更新前的常规真实完整局数为`56×replicas`，历史轮为`112×replicas`，整批模型冻结，队伍和先后手平衡，新增任务ID及每组间隔1000的配对种子；第0组保留原ID／种子。`preflight_replicas`仍独立控制预检附加组和容量留出，采集倍数不乘入P0、独立确认或最终矩阵。新经验池容量随采集倍数增长，全量新策略行通行与终局WDL规则保留。1600仍是根窗口上限，实际峰值依据真实任务和完成情况记录。设备容量计划使用所有真实驻留局数；轨迹缓冲以实际保留数组／记录的估计字节硬限执行，不用固定“每局若干MiB”猜测授予容量通过。更大批次必须完成同配置实机容量预检；预检采集、更新／数值、价值和闸门耗时按实际批次写回，恢复预算按已核验checkpoint轮次计入剩余轮和历史轮，不能把续训工作量记为零。采集配置、源码和`training_config.py`进入冻结／恢复身份。
+
+推理以一次微批次回传策略分数和WDL；树统计批量回传选择／快照。只复用有容量和版本边界的输入、噪声缓冲，不缓存可变树值；校验、填充、候选顺序、actor绑定和每请求异常身份保留。并发主机调用串行保护复用输入，候选缓冲增长仍受元素预算限制。`copy_state_graph`保留全部规则字段、实体类型、ID、别名、循环、未知字段和独立可变对象，非JSON类型及自定义复制钩子按原`deepcopy`处理；`clone_state`仍执行完整hydration校验。公开操作和预演输出不变；规则冻结捕获使用显式预演上下文类，GPU codec复制入口对应既有无损复制能力，不代表完整GPU规则对拍通过。
+
+以下只输出配置，不启动训练：
+
+```bash
+.venv/bin/python scripts/train_duel_v2_current_round.py --output artifacts/rl-evals/NEW_RUN --runtime seven --rule-backend resident_cpu --device cuda --search-statistics-device cuda --async-rule-dispatch auto --collection-replicas 3 --search-roots 1600 --query-batch-rows 32
+```
+
+验证：`tests.test_duel_v2_async_rule_dispatch`、`tests.test_duel_v2_async_collection_integration`、`tests.test_duel_v2_collection_replicas`、`tests.test_duel_v2_device_sync_reduction`、`tests.test_duel_v2_state_copy_fast`及既有采集／评估／规则回归。CPU用例与显式设备用例分别记账，跳过CUDA不得写为实机通过。
+
+### 完整CUDA采集的统一性能验收
+
+`scripts/benchmark_duel_v2_gpu_collection.py --case CASE_JSON`只检查配置；`--execute --output NEW_DIR`才运行冻结数值的完整七队混合CUDA采集，不创建优化器、不调用更新，也不复启已经截止的训练。case含`config`和完整`jobs`，使用新的独立绝对截止、经实际验证的辅助价值scope及主WDL回执，显式`resident_cpu`规则＋CUDA推理／统计、Gumbel32／16候选／3步。可用`--source FROZEN_SOURCE`对比隔离的旧／新源码，始终使用同一计时入口；`chunk_games`允许旧方案分批和新方案整批完成完全相同的任务。更换源码产生的新规则身份仍需正常数值迁入与新验证，不篡改清单继承旧ready。
+
+`timing.json`记录初始准备、完整采集墙钟、后续序列化／CPU逐动作重放核验的分开耗时、GPU／软件身份、实际峰值、诊断和完整对局摘要。采集计时包含对局创建、搜索、终局编码及资源关闭；新增分批所需的构造也计入其中。仅正常完整搜索局可资格化时间；一合法动作根按实际1次，其他根仍为32次。原始`episodes/*.json.gz`实际保存并逐文件SHA核验，动作和终局摘要匹配后才能比较；只剩JSON清单不能验收。
+
+`--baseline OLD_1/timing.json OLD_2/timing.json OLD_3/timing.json --optimized NEW_1/timing.json NEW_2/timing.json NEW_3/timing.json`要求至少三轮匹配任务、实际数值／具名schema、设备与轨迹的完整实测，以采集墙钟中位数之比报告是否达到5倍。重复试验不当作新增独立胜率样本；P0、冻结评估、完整报告和模型强度另行验收，性能通过不授予质量或部署批准。Windows离线时只能完成实现和CPU等价性检查，不能用局部CPU加速、缓存次数、合成微批次或准备完成预测GPU端到端5倍。

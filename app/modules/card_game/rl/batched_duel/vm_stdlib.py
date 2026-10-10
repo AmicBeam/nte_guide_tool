@@ -155,6 +155,7 @@ const int NATIVE_STDLIB_ENUM_NEXT=ID_ENUM_NEXT,NATIVE_STDLIB_REPR=ID_REPR;
 const int STDLIB_KITS_MODULE=KITS_MODULE_INDEX,STDLIB_KITS_COUNT=KITS_EXPECTED_COUNT,STDLIB_POOL_CAP=64;
 const int STDLIB_METHOD_DICT_INIT=1,STDLIB_METHOD_OBJECT_INIT=2,STDLIB_METHOD_SET_ADD=3;
 const int STDLIB_METHOD_SET_UPDATE=4,STDLIB_METHOD_COUNTER_GET=5,STDLIB_METHOD_COUNTER_UPDATE=6,STDLIB_METHOD_COUNTER_COPY=7,STDLIB_METHOD_ENUM_REPR=8;
+const int STDLIB_METHOD_LIST_SORT=9;
 const int STDLIB_ACC_LIST=1,STDLIB_ACC_TUPLE=2,STDLIB_ACC_SET=3,STDLIB_ACC_FROZEN=4,STDLIB_ACC_SORTED=5;
 const int STDLIB_ACC_SORTED_KEYS=6,STDLIB_ACC_COUNTER=7,STDLIB_ACC_MINKEY=8,STDLIB_ACC_MAXKEY=9;
 const int STDLIB_ACC_COMB_POOL=10,STDLIB_ACC_PERM_POOL=11,STDLIB_ACC_EXTEND=12;
@@ -411,6 +412,14 @@ __device__ inline int stdlib_invoke(Context* c,int fn,int arg,int caller,int acc
 __device__ inline void stdlib_sorted_keys(Context* c,int acc);
 __device__ inline void stdlib_minmax_next(Context* c,int acc);
 __device__ inline int stdlib_bound_apply(Context* c,int callable,const int* args,int nargs,int kw_names,const int* kw_values,int nkw,int* out);
+__device__ inline void stdlib_sort_unwind(Context* c,int acc){
+ const int* a=node(c,acc);if(!a||a[0]!=T_STDLIB_ACC)return;
+ int op=edge(c,acc,0);if(op!=STDLIB_ACC_SORTED&&op!=STDLIB_ACC_SORTED_KEYS)return;
+ int owner=edge(c,acc,8);if(owner==MISSING)return;
+ int snapshot=edge(c,acc,3);int* dst=mutable_node(c,owner);const int* src=node(c,snapshot);
+ if(!dst||!src||dst[0]!=TAG_LIST||src[0]!=TAG_LIST){c->error=BAD_PROGRAM;return;}
+ dst[1]=src[1];dst[2]=src[2];
+}
 __device__ inline void stdlib_finish(Context* c,int acc){
  if(c->error||c->h.error)return;
  int op=edge(c,acc,0),caller=edge(c,acc,1),result=edge(c,acc,3),keyfn=edge(c,acc,4),keys=edge(c,acc,5),extra=edge(c,acc,7);
@@ -421,6 +430,14 @@ __device__ inline void stdlib_finish(Context* c,int acc){
  else if(op==STDLIB_ACC_FROZEN){int* n=mutable_node(c,result);if(n)n[0]=22;}
  else if(op==STDLIB_ACC_COMB_POOL||op==STDLIB_ACC_PERM_POOL){int* n=mutable_node(c,result);if(n)n[0]=TAG_TUPLE;result=stdlib_combo_init(c,result,extra,op==STDLIB_ACC_PERM_POOL);}
  else if(op==STDLIB_ACC_MINKEY||op==STDLIB_ACC_MAXKEY){if(!edge(c,acc,6)){int def=edge(c,acc,8);if(stdlib_is_none(c,def)){c->error=BAD_CALL;return;}result=def;}}
+ if(c->error||c->h.error)return;
+ if((op==STDLIB_ACC_SORTED||op==STDLIB_ACC_SORTED_KEYS)&&edge(c,acc,8)!=MISSING){
+  int owner=edge(c,acc,8);const int* dest=node(c,owner);
+  int changed=!dest||dest[2]!=0||dest[1]!=node(c,acc)[3];
+  stdlib_sort_unwind(c,acc);result=NIL;c->current=caller;
+  if(changed){int text=make_utf8(&c->h,"list modified during sort",25);
+   c->raised=exception_create(c,exception_type(c,2),make_tuple(&c->h,&text,1));return;}
+ }
  stdlib_push(c,caller,result);c->current=caller;
 }
 __device__ inline void stdlib_sorted_keys(Context* c,int acc){int items=edge(c,acc,3),idx=edge(c,acc,6),n=length(c,items);if(idx>=n){stdlib_finish(c,acc);return;}stdlib_invoke(c,edge(c,acc,4),edge(c,items,idx),edge(c,acc,1),acc);}
@@ -498,6 +515,19 @@ __device__ inline void stdlib_resume(Context* c,int generator,int caller,int tar
 }
 __device__ inline int stdlib_call(Context* c,int callable,const int* args,int nargs,int caller,int kw_names,const int* kw_values,int nkw){
  const int* n=node(c,callable);if(!n)return 0;
+ if(n[0]==T_STDLIB_BOUND&&n[3]==STDLIB_METHOD_LIST_SORT){
+  int owner=n[1],has_key=0,has_reverse=0;
+  int keyfn=stdlib_kw(c,kw_names,kw_values,nkw,"key",&has_key);
+  int reverse_ref=stdlib_kw(c,kw_names,kw_values,nkw,"reverse",&has_reverse);
+  if(nargs||stdlib_unknown_kw(c,kw_names,nkw,"key","reverse",0)||owner<0||kind(c,owner)!=TAG_LIST){c->error=BAD_CALL;return 1;}
+  int reverse=has_reverse?truth_value(c,reverse_ref):0;
+  int result=make_list(&c->h),count=length(c,owner);
+  for(int i=0;i<count;i++)if(list_append(&c->h,result,edge(c,owner,i)))return 1;
+  if(c->error||c->h.error)return 1;
+  int acc=stdlib_make_acc(c,STDLIB_ACC_SORTED,caller,owner,result,has_key?keyfn:MISSING,reverse);
+  stdlib_acc_set(c,acc,8,owner);mutable_node(c,acc)[3]=node(c,owner)[1];
+  mutable_node(c,owner)[2]=0;stdlib_finish(c,acc);return 1;
+ }
  if(n[0]==34&&n[3]==METHOD_LIST_EXTEND&&nargs==1&&!nkw){
   int src=args[0],tag=kind(c,src);
   if(tag==T_GEN||tag==T_ITER||tag==T_STDLIB_ENUMERATE||tag==T_STDLIB_COMB||tag==T_STDLIB_PERM){
@@ -542,6 +572,7 @@ __device__ inline int stdlib_call(Context* c,int callable,const int* args,int na
 }
 __device__ inline int stdlib_attribute(Context* c,int owner,int name){
  int tag=kind(c,owner);
+ if(tag==TAG_LIST&&vm_text_equals(c,name,"sort"))return stdlib_bind(c,owner,STDLIB_METHOD_LIST_SORT);
  if(tag==27){if(vm_text_equals(c,name,"name"))return edge(c,owner,2);if(vm_text_equals(c,name,"value"))return edge(c,owner,1);if(vm_text_equals(c,name,"__repr__"))return stdlib_bind(c,owner,8);return MISSING;}
  if(tag==T_STDLIB_SUPER){int getter=0,found=lookup_super(c,edge(c,owner,0),edge(c,owner,1),name,&getter);if(found!=MISSING||c->error||c->h.error)return found;if(vm_text_equals(c,name,"__init__")){int obj=edge(c,owner,1),cls=class_ref(c,obj);if(cls!=MISSING&&kind(c,cls)==13&&class_dict_subclass(node(c,cls)[3]))return stdlib_bind(c,obj,STDLIB_METHOD_DICT_INIT);return stdlib_bind(c,obj,STDLIB_METHOD_OBJECT_INIT);}return MISSING;}
  if(tag==T_STDLIB_COUNTER){if(vm_text_equals(c,name,"update"))return stdlib_bind(c,owner,STDLIB_METHOD_COUNTER_UPDATE);if(vm_text_equals(c,name,"copy"))return stdlib_bind(c,owner,STDLIB_METHOD_COUNTER_COPY);if(vm_text_equals(c,name,"get"))return meta(c,34,owner,0,1);if(vm_text_equals(c,name,"keys"))return meta(c,34,owner,0,2);if(vm_text_equals(c,name,"values"))return meta(c,34,owner,0,3);if(vm_text_equals(c,name,"items"))return meta(c,34,owner,0,4);return MISSING;}

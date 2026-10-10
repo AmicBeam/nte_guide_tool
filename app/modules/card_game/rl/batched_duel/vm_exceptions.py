@@ -19,6 +19,7 @@ def emit_exception_source(image):
             if found:refs.append(f'case {code}:return {found[0]};')
     source=r'''
 const int T_EXCEPTION=23,T_BLOCK=44,UNHANDLED_PYTHON_EXCEPTION=110;
+__device__ inline void stdlib_sort_unwind(Context* c,int accumulator);
 __device__ inline int exception_class_code(Context* c,int ref){
  if(kind(c,ref)!=T_NATIVE)return -1;switch(node(c,ref)[3]){ @IDENTITIES@ default:return -1;}
 }
@@ -125,6 +126,8 @@ __device__ inline void unwind_exception(Context* c){
     c->raised=exception_create(c,exception_type(c,6),args,original);exception_set(c,c->raised,3,original);
    }
   }
+  if(f[5]==7)stdlib_sort_unwind(c,f[6]);
+  if(c->error||c->h.error)return;
   int caller=f[3];f[4]=0;c->current=caller;
  }
  if(c->raised!=MISSING&&!c->error&&!c->h.error)c->error=UNHANDLED_PYTHON_EXCEPTION;

@@ -141,6 +141,40 @@ def keyword_probe(value):
     return sorted(value, key=lambda item: item, unexpected=True)
 
 
+def inplace_sort_probe(mode):
+    # The sampler imports json locally and captures that module in its key.
+    import json
+    items=[('B',{'z':2}),('A',{'z':1}),('A',{'z':0})]
+    alias=items
+    result=items.sort(key=lambda c:json.dumps(c,sort_keys=True),reverse=bool(mode))
+    return items,alias,result,items is alias
+
+
+def inplace_sort_keys_probe(mode):
+    items=[(2,'b'),(1,'z'),(2,'a'),(1,'x')]
+    seen=[];alias=items
+    def key(value):
+        seen.append((value[0],len(items)))
+        return value[0]
+    result=items.sort(key=key,reverse=bool(mode))
+    return items,alias,result,seen,items is alias
+
+
+def inplace_sort_exception_probe(mode):
+    items=[3,1,2];alias=items;seen=[]
+    def key(value):
+        seen.append(value)
+        if mode==0 and value==1:raise ValueError('key error')
+        if mode==1:items.append(9)
+        return value
+    error=None
+    try:
+        items.sort(key=key)
+    except ValueError as exc:
+        error=exc.args
+    return items,alias,error,seen,items is alias
+
+
 def test_program(stem, entry, function, *, own=False):
     if sys.version_info[:2] == (3, 10):
         kwargs = dict(scope_character_ids=None, scope_card_ids=None)
@@ -232,6 +266,9 @@ class SourceTest(unittest.TestCase):
             ('classes', class_enum_super_probe),
             ('clone', clone_probe),
             ('ensure', ensure_probe),
+            ('inplace_sort',inplace_sort_probe),
+            ('inplace_sort_keys',inplace_sort_keys_probe),
+            ('inplace_sort_exception',inplace_sort_exception_probe),
         )
         for entry, fn in cases:
             program = test_program(entry, entry, fn, own=True)
@@ -252,6 +289,20 @@ class SourceTest(unittest.TestCase):
 
 
 class CudaExecutionTest(unittest.TestCase):
+    def test_inplace_sort_local_module_closure_stability_and_exception_restore(self):
+        from app.modules.card_game.rl.batched_duel.codec import pack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        for stem,probe in (('inplace_sort',inplace_sort_probe),
+                ('inplace_sort_keys',inplace_sort_keys_probe),
+                ('inplace_sort_exception',inplace_sort_exception_probe)):
+            program=test_program(stem,stem,probe,own=True)
+            packed=pack_states([0,1],GraphLayout(2,8192,16384,131072))
+            with self.executor(lower_program(program)) as vm:
+                actual=vm.launch(vm.ingest(packed),stem).decode()
+            self.assertEqual(actual,[probe(0),probe(1)])
+            for result in actual:
+                self.assertIs(result[0],result[1])
+
     @classmethod
     def setUpClass(cls):
         try:

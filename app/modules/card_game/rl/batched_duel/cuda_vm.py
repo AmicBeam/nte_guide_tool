@@ -164,12 +164,12 @@ __device__ inline int truth_value(Context* c,int value){
 // FRAME_GC_HANDLERS
 __device__ inline int new_frame(Context* c,int fid,const int* args,int nargs,int caller,int return_kind,
  int globals_override=MISSING,int closure_override=MISSING,int defaults_override=MISSING,
- int kw_names=MISSING,const int* kw_values=0,int nkw=0,int kwdefaults_override=MISSING){
+ int kw_names=MISSING,const int* kw_values=0,int nkw=0,int kwdefaults_override=MISSING,int pending_root=MISSING){
  const int* fn=function(c,fid);if(!fn)return -1;
  if(fn[5]>VM_LOCALS || fn[6]>VM_STACK){c->error=BAD_CALL;return -1;}
  int id=-1;for(int i=0;i<VM_FRAMES;i++)if(frame(c,i)[4]==0){id=i;break;}
  if(id<0){
-  collect_suspended(c,args,nargs,globals_override,closure_override,defaults_override,kw_names,kw_values,nkw,kwdefaults_override);
+  collect_suspended(c,args,nargs,globals_override,closure_override,defaults_override,kw_names,kw_values,nkw,kwdefaults_override,pending_root);
   if(c->error||c->h.error)return -1;
   for(int i=0;i<VM_FRAMES;i++)if(frame(c,i)[4]==0){id=i;break;}
   if(id<0){c->error=FRAME_OVERFLOW;return -1;}

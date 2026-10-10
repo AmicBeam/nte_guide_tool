@@ -213,7 +213,7 @@ __device__ inline void stdlib_acc_set(Context* c,int acc,int field,int val){
  long long slot=(long long)n[1]+field;if(slot<0||slot>=c->h.counts[1]){c->error=BAD_PROGRAM;return;}c->h.edges[slot*2]=val;
 }
 __device__ inline int stdlib_make_acc(Context* c,int op,int caller,int source,int result,int keyfn,int extra){
- int fields[10]={op,caller,source,result,keyfn,MISSING,0,extra,MISSING,0};
+ int fields[10]={op,caller,source,result,keyfn,MISSING,0,extra,MISSING,MISSING};
  int acc=make_tuple(&c->h,fields,10);int* n=mutable_node(c,acc);if(!n)return MISSING;n[0]=T_STDLIB_ACC;return acc;
 }
 __device__ inline int stdlib_push(Context* c,int caller,int value){if(caller<0)c->output=value;else push(c,frame(c,caller),value);return 1;}
@@ -502,7 +502,7 @@ __device__ inline int stdlib_invoke(Context* c,int fn,int arg,int caller,int acc
  if(n[0]==18){args_buf[0]=edge(c,fn,1);args_buf[1]=arg;args=args_buf;nargs=2;fn=edge(c,fn,0);n=node(c,fn);if(!n)return 0;}
  if(n[0]==T_FUNCTION||n[0]==T_DYNFN){int fid=n[3],globals=MISSING,closure=MISSING,defaults=MISSING,kwdefaults=MISSING;
   if(n[0]==T_DYNFN){globals=edge(c,fn,0);closure=edge(c,fn,1);defaults=edge(c,fn,2);kwdefaults=edge(c,fn,3);}
-  int id=new_frame(c,fid,args,nargs,caller,7,globals,closure,defaults,MISSING,0,0,kwdefaults);if(id<0)return 0;frame(c,id)[6]=acc;
+  int id=new_frame(c,fid,args,nargs,caller,7,globals,closure,defaults,MISSING,0,0,kwdefaults,acc);if(id<0)return 0;frame(c,id)[6]=acc;
   if(function(c,fid)[7]&32){int gen=meta(c,T_GEN,0,0,id);frame(c,id)[4]=2;frame(c,id)[10]=gen;stdlib_resume(c,MISSING,caller,acc,gen,0);return 1;}
   c->current=id;return 1;}
  int out=MISSING;

@@ -33,6 +33,12 @@ def _capture(names=entries.LIGHT_ENTRY_NAMES, lower=True):
 
 
 class WrapperCorrespondenceTest(unittest.TestCase):
+    @unittest.skipUnless(_can_capture(),'CPython3.10 source capture required')
+    def test_captured_contract_exports_retain_function_attribute_binding(self):
+        program=gp.capture_gpu_rule_program(['sample_world'],runtime='seven')
+        table=program.modules['app.modules.card_game.rl.seven_lineup']
+        self.assertEqual(table['feature_names']['kind'],'function')
+        self.assertTrue(any(fn['id']==table['feature_names']['id'] for fn in program.functions))
     def test_device_setup_extension_preserves_exact_formal_new_game(self):
         parameters=dict(seed=20261011,decks={'a':COLLAPSE,'b':LINGKE},first_side='b',
                         skip_mulligan=False,escalation=True)

@@ -198,6 +198,25 @@ def type_identity_probe(value):
     return [type(item) is types[i] for i,item in enumerate(values)],type(True) is int,type(value) is int
 
 
+def accumulator_frame_pressure_probe(count):
+    kept=(item for item in (7,8,9))
+    first=next(kept)
+    seen=[];total=0
+    def key(value):
+        # Abandoned suspended generators fill a small VM frame pool while the
+        # sorted-key accumulator still owns its receiver, keys and callback.
+        for _ in range(count):
+            total_one=any(item for item in (1,2))
+        seen.append(value)
+        return -value
+    for index in range(count):
+        values=[3,1,2]
+        values.sort(key=key)
+        expanded=(*(v for v in values),)
+        total+=sum(expanded)
+    return total,seen,first,next(kept),next(kept)
+
+
 def test_program(stem, entry, function, *, own=False):
     if sys.version_info[:2] == (3, 10):
         kwargs = dict(scope_character_ids=None, scope_card_ids=None)
@@ -295,6 +314,7 @@ class SourceTest(unittest.TestCase):
             ('unpacked_generator',unpacked_generator_probe),
             ('sequence_repeat',sequence_repeat_probe),
             ('type_identity',type_identity_probe),
+            ('accumulator_frame_pressure',accumulator_frame_pressure_probe),
         )
         for entry, fn in cases:
             program = test_program(entry, entry, fn, own=True)
@@ -315,6 +335,15 @@ class SourceTest(unittest.TestCase):
 
 
 class CudaExecutionTest(unittest.TestCase):
+    def test_accumulator_roots_survive_forced_generator_frame_collection(self):
+        from app.modules.card_game.rl.batched_duel.cuda_vm import VmLimits
+        from app.modules.card_game.rl.batched_duel.codec import pack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        program=test_program('accumulator_frame_pressure','accumulator_frame_pressure',accumulator_frame_pressure_probe,own=True)
+        with CudaVm(lower_program(program),limits=VmLimits(frames=8)) as vm:
+            actual=vm.launch(vm.ingest(pack_states([12],GraphLayout(1,32768,65536,262144))),'accumulator_frame_pressure').decode()
+        self.assertEqual(actual,[accumulator_frame_pressure_probe(12)])
+
     def test_sequence_repetition_keeps_aliases_empty_counts_and_inplace_identity(self):
         from app.modules.card_game.rl.batched_duel.codec import pack_states
         from app.modules.card_game.rl.batched_duel.schema import GraphLayout

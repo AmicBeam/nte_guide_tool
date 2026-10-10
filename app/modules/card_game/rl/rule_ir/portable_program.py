@@ -972,6 +972,18 @@ class ProgramExporter:
             return
         self._processed_func_ids.add(fid)
 
+        # A captured callable can also be reached through a module passed as
+        # a contract parameter. Preserve actual static module aliases, rather
+        # than capturing its code but omitting that module's callable binding.
+        # Only functions already in this capture queue are exposed; this does
+        # not discover or execute arbitrary additional module members.
+        module_name=fn.__globals__.get('__name__')
+        if module_name==fn.__module__:
+            table=self.modules.setdefault(module_name,{})
+            for alias,value in tuple(fn.__globals__.items()):
+                if value is fn:
+                    table[alias]={'kind':'function','id':fid}
+
         co = fn.__code__
         instructions = list(dis.get_instructions(co))
         offset_to_index = {inst.offset: idx for idx, inst in enumerate(instructions)}

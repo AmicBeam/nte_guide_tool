@@ -223,3 +223,5 @@ VM字典键视图使用内部tag80保留原字典所有者；len、布尔值、�
 `device_rule_calls.py`将checked图租约通过设备cohort接到正式clean/sample_world/simulate_action/apply_action入口，复用一个大VM工作区，动作先按来源slot／代次／owner核验并压缩。`device_rule_presentation.py`提供同一工作区的正式actor／finished元数据及公开合法决策投影；候选仅持久保存原始tokens，密集编码由消费方分片执行。元数据与决策缓冲每次重置，条件循环期限错误进入输出错误，不允许复用上一批结果冒充新请求。两个组件仍不等于完成的规则适配器：固定观察者价值、教师选择一致性、GPU初始化、动作租约生命周期和完整真实终局须联合验证后才能放行正式服务。
 
 VM列表／元组重复支持序列乘整数及整数乘序列，保留重复元素的别名；列表`*=`保留原容器身份，非正次数得到空序列。重复先核对完整边容量再分配，不截断、不逐项造深副本；生成器星号展开后的`[0.0] * len(CARD_IDS)`纳入同一设备回归。源码支持不代表完整采样预检或完整局已经通过。
+
+冻结器保留已捕获函数在真实模块命名空间中的静态别名；不能只保存函数代码而漏掉作为contract参数调用的`feature_names`绑定，也不动态发现无关模块函数。暂停帧GC对tag75累加器只追踪source/result/key/keys/default-or-sort-owner/current-item引用，op/caller/index/options整数不作heap引用；尚未建帧的mode7累加器作为pending root进入GC。小帧池下的排序回调、星号展开与保留生成器纳入设备压力回归。此GC仅回收暂停帧，不回收堆容量，不能据此宣称initialize节点容量失败已解决。

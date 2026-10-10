@@ -309,6 +309,8 @@ class DeviceTrainingTape:
         illegal = ~prefix
         pi_mass = t.where(prefix, pi, 0.).sum(-1)
         visit_mass = t.where(prefix, visit_pi, 0.).sum(-1)
+        visit_count = t.where(prefix, visits, 0).sum(-1)
+        expected_visit_pi = visits.to(t.float32) / visit_count.clamp_min(1)[:, None]
         pi_ok = (t.isfinite(pi).all(-1) & (pi >= 0).all(-1) & t.isfinite(visit_pi).all(-1)
                  & (visit_pi >= 0).all(-1) & (visits >= 0).all(-1)
                  & (t.where(illegal, pi, 0.).abs().sum(-1) == 0)
@@ -316,9 +318,11 @@ class DeviceTrainingTape:
                  & (t.where(illegal, visits, 0).sum(-1) == 0)
                  & ((pi_mass - 1).abs() <= 1e-5)
                  & ((visit_mass - 1).abs() <= 1e-5)
+                 & ((visit_pi - expected_visit_pi).abs() <= 1e-5).all(-1)
                  & chosen_ok)
         budget_ok = ((search_result.requested >= 1)
                      & (search_result.completed == search_result.requested)
+                     & (visit_count == search_result.completed)
                      & (search_result.completed >= 1))
         errors = t.zeros(self.rows, dtype=t.int32, device=self.device)
         errors = errors | ((active & ~mask_ok).to(t.int32) * MASK_ERROR)

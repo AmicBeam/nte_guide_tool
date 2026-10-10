@@ -108,7 +108,7 @@ def _search_result(compact, observations, counts, chosen, requested=8):
     pi = prefix.to(torch.float32)
     pi = pi / counts.clamp(min=1).to(torch.float32)[:, None]
     visit = (torch.arange(width, device=device)[None, :] == chosen[:, None]).to(torch.float32)
-    visits = visit.to(torch.int32)
+    visits = visit.to(torch.int32) * requested
     zeros = torch.zeros(rows, dtype=torch.int32, device=device)
     decision = SimpleNamespace(
         counts=counts.contiguous(), valid=prefix.contiguous(),
@@ -395,6 +395,19 @@ class DeviceTrainingTapeTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'actual compact'):
             tape.append_device(roots, rules.actors, torch.zeros(2, dtype=torch.int64),
                                result, roots.active)
+        self.assertEqual(int(tape._record_count), 0)
+
+    def test_claimed_completed_budget_requires_matching_visits(self):
+        import torch
+        from app.modules.card_game.rl.batched_search.device_training_tape import BUDGET_ERROR
+        tape, compact, rules, obs, roots, seeds, ids, train = self._tape(self.openings[:2])
+        tape.begin_device(roots, ids, ids, seeds, train, roots.active)
+        result = _search_result(compact, obs, compact.tokens.counts,
+                                torch.zeros(2, dtype=torch.int64))
+        result.visits.div_(8, rounding_mode='floor')
+        errors = tape.append_device(roots, rules.actors, torch.zeros(2, dtype=torch.int64),
+                                    result, roots.active)
+        self.assertTrue(bool(((errors & BUDGET_ERROR) != 0).all()))
         self.assertEqual(int(tape._record_count), 0)
 
     def test_terminal_step_mismatch_and_repeated_finish_do_not_relabel(self):

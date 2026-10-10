@@ -332,10 +332,11 @@ class DeviceGameLoopTest(unittest.TestCase):
         from unittest.mock import patch as mock_patch
         if not torch.cuda.is_available():
             self.skipTest('Actual CUDA required; nested WHILE integration, zero formal games')
-        loop, fixture, sink, roots, job_seeds, ids, train = self.make(device='cuda', simulations=2)
+        loop, fixture, sink, roots, job_seeds, ids, train = self.make(
+            rows=1600, device='cuda', simulations=32, actions=20)
         production = DeviceGameLoop(fixture, loop.search, sink, FixtureWorldSeeds(), max_decisions=4,
             device=str(fixture.device), allow_cpu_reference=False, allow_synthetic=False,
-            inner_max_ticks=400, outer_max_ticks=8, seconds=30)
+            inner_max_ticks=2000, outer_max_ticks=8, seconds=60)
         self.addCleanup(production.close)
         production.capture(roots, job_seeds, ids, ids, train)
         with mock_patch.object(torch.Tensor, 'item', side_effect=AssertionError('Host loop predicate')), \

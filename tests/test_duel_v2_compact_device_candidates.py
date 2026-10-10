@@ -349,6 +349,7 @@ class CompactDeviceCandidatesTest(unittest.TestCase):
         table = encoder.get_card_template_table(tokens.int_tokens.device)
         compact = CompactDeviceCandidates(
             tokens, scratch_rows=32, device=tokens.int_tokens.device, template_table=table)
+        torch.cuda.reset_peak_memory_stats()
         dense_bytes = 1600 * 800 * encoder.CAND_DIM * 4
         self.assertEqual(compact.shape, (1600, 800, encoder.CAND_DIM))
         self.assertLess(compact.allocated_bytes, dense_bytes // 8)
@@ -387,6 +388,10 @@ class CompactDeviceCandidatesTest(unittest.TestCase):
         torch.cuda.synchronize()
         self.assertEqual(captured.errors[:2].cpu().tolist(), [0, 1])
         self.assertTrue(bool((captured.keys[1] == 0).all()))
+        peak = torch.cuda.max_memory_allocated()
+        print('compact_candidate_primitive_bytes', compact.allocated_bytes,
+              'torch_peak_allocated_bytes', peak, 'formal_games', 0, flush=True)
+        self.assertLess(peak, 14 * 1024**3)
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 
 ## 当前目标
 
-本项目是一个独立的 Flask 网站，以仓库级工具主页承载异能对决、空幕计算、预配队和排轴计算四个业务模块。各模块共享玩家账号、数据库、基础模板和通用角色资源，但分别维护自己的 README、服务、模板和静态资源。
+本项目是一个独立的 Flask 网站，以仓库级工具主页承载异能对决、空幕计算和排轴计算三个业务模块。各模块共享玩家账号、数据库、基础模板和通用角色资源，但分别维护自己的 README、服务、模板和静态资源。
 
 桌游模块名称为“异能对决”。2026-09-08 起，新版设计采用每方 4 名角色、备战区开局、每方单人战斗区、玩家生命胜负与完整回合轮替；每名角色独立记录自己的环合值和能量。当前公开角色为娜娜莉、零、九原、伊洛伊、薄荷、白藏、小吱、海月、真红、翳、安魂曲、残虹、早雾、阿德勒、黑羽、达芙蒂尔、灵可；其余角色仅测试账号可见。
 
@@ -22,7 +22,7 @@
 | --- | --- | --- |
 | `AGENTS.md` | 全仓库架构、依赖方向、数据边界、验证与交付规则；是所有任务的仓库级约束。 | 处理仓库内任何任务前。 |
 | `README.md` | 仓库入口、模块索引、公共运行方式；不承载具体业务规则。 | 修改仓库主页、共享设施、模块索引、启动方式或新增/删除模块时。 |
-| `app/modules/<module>/README.md` | 对应模块的产品范围、页面入口、代码边界和验证命令；是进入模块工作的第一份说明。 | 修改 `card_game`、`kongmu`、`preteam` 或 `shaft` 中任一模块前，必须读取对应 README。 |
+| `app/modules/<module>/README.md` | 对应模块的产品范围、页面入口、代码边界和验证命令；是进入模块工作的第一份说明。 | 修改 `card_game`、`kongmu` 或 `shaft` 中任一模块前，必须读取对应 README。 |
 | `app/static/AGENTS.md` | 共享静态资源的目录归属、CSS 入口、导入顺序和性能约束；在其目录范围内与根 `AGENTS.md` 同时生效。 | 修改 `app/static/` 下的 CSS、JavaScript 或共享图片组织时。 |
 | `docs/character-image-assets.md` | 角色头像、立绘的 NTEData / Nanoka 来源、构图对齐与 WebP 交付约定。 | 新增、替换、同步或转码任何模块的角色头像、立绘时。 |
 | `docs/everness-item-chain-card-design.md` | 新版四人轮替完整手册、置顶基础队与卡表的唯一设计真源；包含实现状态与试玩参数来源边界。 | 修改异能对决规则、卡牌、异能者、构筑、AI、牌桌交互、规则文案或相关测试前。 |
@@ -107,7 +107,7 @@
 - `app/auth.py`
   负责 token 创建、校验，以及 Flask 路由鉴权装饰器。
 - `app/modules/`
-  维护四个业务模块。每个模块以自己的 `README.md` 说明产品范围、代码边界和验证命令，并自行拥有模板与模块静态资源。
+  维护三个业务模块。每个模块以自己的 `README.md` 说明产品范围、代码边界和验证命令，并自行拥有模板与模块静态资源。
 - `app/modules/card_game/content/duel_common.py`
   内容层薄聚合入口。仅汇总 `app/modules/card_game/content/common/` 与 `app/modules/card_game/content/effects/` 中的定义；新增卡牌内容优先直接从 `app/modules/card_game/content/effects/` 导入通用效果工具。
 - `app/modules/card_game/content/common/`
@@ -153,7 +153,7 @@
 
 ## 架构规则
 
-- 模块业务代码必须进入 `app/modules/card_game`、`app/modules/kongmu`、`app/modules/preteam` 或 `app/modules/shaft`，不能重新散落到 `app/engine`、`app/content`、`app/shaft` 或共享静态目录。
+- 模块业务代码必须进入 `app/modules/card_game`、`app/modules/kongmu` 或 `app/modules/shaft`，不能重新散落到 `app/engine`、`app/content`、`app/shaft` 或共享静态目录。
 - 模块可依赖 `app/auth.py`、`app/db.py`、`app/models.py`、`app/dao.py` 等共享基础设施；模块之间不得直接依赖对方的领域服务。共享角色图片等资源保留在 `app/static/images/`。
 - 路由层只做参数校验、鉴权和调用服务；不要在 `app/routes.py` 中写费用、抽牌、宣言、素材、胜负或 AI 决策。
 - `app/modules/card_game/engine/game_service.py` 是对局 API 编排入口，不是所有规则的堆放点。只保留路由直接调用的对局操作，加载/持久化/公开投影通过 `app/modules/card_game/engine/application/run_state.py` 适配，新增可复用规则优先进入 `app/modules/card_game/engine/rules/`，新增公开状态字段优先进入 `app/modules/card_game/engine/projection/`，新增开局/套牌/战场初始化逻辑优先进入 `app/modules/card_game/engine/setup/`，新增 AI 行为优先进入 `app/modules/card_game/engine/ai/`。

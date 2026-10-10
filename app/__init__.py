@@ -87,14 +87,12 @@ def create_app() -> Flask:
     from app.modules.card_game import blueprint as card_game_module
     from app.modules.card_game.v2_routes import blueprint as duel_v2_api
     from app.modules.kongmu import blueprint as kongmu_module
-    from app.modules.preteam import blueprint as preteam_module
     from app.modules.shaft import blueprint as shaft_module
     from .routes import main_bp
 
     app.register_blueprint(card_game_module)
     app.register_blueprint(duel_v2_api)
     app.register_blueprint(kongmu_module)
-    app.register_blueprint(preteam_module)
     app.register_blueprint(shaft_module)
     app.register_blueprint(main_bp)
     logger.info('Flask app initialized successfully.')

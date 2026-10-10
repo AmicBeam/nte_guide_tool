@@ -329,7 +329,7 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         portal_html = portal.get_data(as_text=True)
         self.assertIn('卡牌桌游', portal_html)
         self.assertIn('空幕', portal_html)
-        self.assertIn('预配队', portal_html)
+        self.assertNotIn('预配队', portal_html)
         self.assertIn('排轴计算', portal_html)
         self.assertIn('/card-game', portal_html)
         self.assertIn('/shaft/rotation', portal_html)
@@ -357,7 +357,7 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         card_game = self.client.get('/card-game')
         self.assertEqual(card_game.status_code, 200)
         self.assertNotIn('id="logout-btn"', card_game.get_data(as_text=True))
-        self.assertIn('异象对决', card_game.get_data(as_text=True))
+        self.assertIn('异能对决', card_game.get_data(as_text=True))
         self.assertEqual(self.client.get('/home').status_code, 404)
 
         legacy_plaza = self.client.get('/shaft/market')

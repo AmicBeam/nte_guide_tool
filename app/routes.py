@@ -20,8 +20,6 @@ from app.modules.card_game.engine.game_service import (
 )
 from app.modules.card_game.engine.application.analytics_service import get_duel_analytics_payload
 from app.modules.kongmu.service import get_kongmu_catalog_payload, plan_kongmu_layout
-from app.modules.preteam.catalog import MAIN_CANDIDATES as PRETEAM_MAIN_CANDIDATES
-from app.modules.preteam.catalog import TEAMMATES as PRETEAM_TEAMMATES
 from app.modules.shaft.service import (
     ShaftAxisNameConflictError,
     backup_shaft_axis,
@@ -212,15 +210,6 @@ def table_page():
 @main_bp.get('/replays')
 def replays_page():
     return render_template('card_game/v2_replays.html')
-
-
-@main_bp.get('/preteam')
-def preteam_page():
-    return render_template(
-        'preteam/index.html',
-        main_candidates=PRETEAM_MAIN_CANDIDATES,
-        teammates=PRETEAM_TEAMMATES,
-    )
 
 
 @main_bp.post('/api/auth/login')

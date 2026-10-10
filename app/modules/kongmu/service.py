@@ -440,7 +440,7 @@ def element_label(element_id: str | None, element: str | None = None) -> str:
 
 
 def element_icon_url(label: str) -> str:
-    return static_asset_url(f'preteam/element/{label}.png')
+    return static_asset_url(f'images/elements/{label}.png')
 
 
 def icon_stem(icon_path: str | None) -> str:

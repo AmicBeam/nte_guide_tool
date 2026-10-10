@@ -41,6 +41,7 @@ ALLOWED_MODULE_PREFIXES = tuple(DEFAULT_ALLOWED_MODULE_PREFIXES) + (
     'app.modules.card_game.engine.ai',
 )
 HEAVY_ENTRIES = frozenset({
+    'initialize',
     'public_legal_decision',
     'apply_action',
     'simulate_action',

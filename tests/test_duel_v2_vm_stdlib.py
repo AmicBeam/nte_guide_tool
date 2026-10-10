@@ -175,6 +175,21 @@ def inplace_sort_exception_probe(mode):
     return items,alias,error,seen,items is alias
 
 
+def unpacked_generator_probe(values):
+    # Same opcode pattern as encode_base's tuple of hand + generated discards.
+    parts=([-1],*([v,v+1] for v in values))
+    expanded=[-2,*(v for v in values),99]
+    reused=(v*2 for v in values)
+    first=(*reused,);second=(*reused,)
+    return parts,expanded,first,second,(*range(len(values)),),[*iter(values),42]
+
+
+def type_identity_probe(value):
+    types=(bool,int,float,str,list,tuple,dict,set,frozenset,range,Counter)
+    values=(True,1,1.25,'x',[1],(1,),{'x':1},set(),frozenset(),range(2),Counter())
+    return [type(item) is types[i] for i,item in enumerate(values)],type(True) is int,type(value) is int
+
+
 def test_program(stem, entry, function, *, own=False):
     if sys.version_info[:2] == (3, 10):
         kwargs = dict(scope_character_ids=None, scope_card_ids=None)
@@ -269,6 +284,8 @@ class SourceTest(unittest.TestCase):
             ('inplace_sort',inplace_sort_probe),
             ('inplace_sort_keys',inplace_sort_keys_probe),
             ('inplace_sort_exception',inplace_sort_exception_probe),
+            ('unpacked_generator',unpacked_generator_probe),
+            ('type_identity',type_identity_probe),
         )
         for entry, fn in cases:
             program = test_program(entry, entry, fn, own=True)
@@ -289,6 +306,24 @@ class SourceTest(unittest.TestCase):
 
 
 class CudaExecutionTest(unittest.TestCase):
+    def test_generator_star_expansion_keeps_stack_and_exhaustion(self):
+        from app.modules.card_game.rl.batched_duel.codec import pack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        rows=[[],[7],[3,1,4]]
+        program=test_program('unpacked_generator','unpacked_generator',unpacked_generator_probe,own=True)
+        with self.executor(lower_program(program)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(rows,GraphLayout(3,8192,16384,131072))),'unpacked_generator').decode()
+        self.assertEqual(actual,[unpacked_generator_probe(row) for row in rows])
+
+    def test_type_returns_canonical_type_identity_without_erasing_bool(self):
+        from app.modules.card_game.rl.batched_duel.codec import pack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        rows=[1,True,'word']
+        program=test_program('type_identity','type_identity',type_identity_probe,own=True)
+        with self.executor(lower_program(program)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(rows,GraphLayout(3,8192,16384,131072))),'type_identity').decode()
+        self.assertEqual(actual,[type_identity_probe(row) for row in rows])
+
     def test_inplace_sort_local_module_closure_stability_and_exception_restore(self):
         from app.modules.card_game.rl.batched_duel.codec import pack_states
         from app.modules.card_game.rl.batched_duel.schema import GraphLayout

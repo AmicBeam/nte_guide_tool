@@ -33,6 +33,15 @@ def _capture(names=entries.LIGHT_ENTRY_NAMES, lower=True):
 
 
 class WrapperCorrespondenceTest(unittest.TestCase):
+    def test_device_setup_extension_preserves_exact_formal_new_game(self):
+        parameters=dict(seed=20261011,decks={'a':COLLAPSE,'b':LINGKE},first_side='b',
+                        skip_mulligan=False,escalation=True)
+        before=deepcopy(parameters)
+        self.assertEqual(entries.seven_initialize(parameters),new_game(**parameters))
+        self.assertEqual(parameters,before)
+        self.assertEqual(entries.DEVICE_SETUP_ENTRY_NAMES,('initialize',))
+        self.assertNotIn('initialize',entries.FULL_ENTRY_NAMES)
+        self.assertIs(entries.entry_functions('seven')['initialize'],entries.seven_initialize)
     def test_canonical_function_identities(self):
         from app.modules.card_game.engine.duel_v2.flow import acting_side, apply_action, legal_actions
         from app.modules.card_game.engine.duel_v2.projection import observe

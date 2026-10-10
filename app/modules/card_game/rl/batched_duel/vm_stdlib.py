@@ -18,6 +18,7 @@ SUPPORTED_STDLIB_NAMES: tuple[str, ...] = (
     'enumerate',
     'isinstance',
     'getattr',
+    'type',
     'hasattr',
     'super',
     'sorted',
@@ -90,6 +91,7 @@ def emit_stdlib_source(image) -> str:
     names = tuple(image.intrinsic_names)
     kits_module, kits_count = _kits_precondition(image)
     mapping = {
+        'ID_TYPE': _nid(names,'type',-7035),
         'ID_ENUMERATE': _nid(names, 'enumerate', -7001),
         'ID_ISINSTANCE': _nid(names, 'isinstance', -7002),
         'ID_GETATTR': _nid(names, 'getattr', -7003),
@@ -124,6 +126,13 @@ def emit_stdlib_source(image) -> str:
         'KITS_MODULE_INDEX': kits_module,
         'KITS_EXPECTED_COUNT': kits_count,
     }
+    for label,name in (('BOOL','bool'),('INT','int'),('FLOAT','float'),('STR','str'),
+            ('LIST','list'),('TUPLE','tuple'),('DICT','dict'),('RANGE','range'),
+            ('SET','set'),('FROZEN','frozenset'),('TYPE','type'),
+            ('COUNTER','collections.Counter' if 'collections.Counter' in names else 'Counter')):
+        native=_nid(names,name,-99999)
+        mapping['TYPE_'+label+'_REF']=next((-1-i for i,node in enumerate(image.nodes)
+            if int(node[0])==15 and int(node[3])==native),-2147483648)
     source = _SOURCE
     # Replace longer tokens first: ID_COUNTER is a prefix of ID_COUNTER_SHORT.
     for key in sorted(mapping, key=len, reverse=True):
@@ -141,6 +150,7 @@ const int T_STDLIB_SUPER=74,T_STDLIB_ACC=75,T_STDLIB_BOUND=78;
 #endif
 const int NATIVE_STDLIB_ENUMERATE=ID_ENUMERATE,NATIVE_STDLIB_ISINSTANCE=ID_ISINSTANCE;
 const int NATIVE_STDLIB_GETATTR=ID_GETATTR,NATIVE_STDLIB_HASATTR=ID_HASATTR,NATIVE_STDLIB_SUPER=ID_SUPER;
+const int NATIVE_STDLIB_TYPE=ID_TYPE;
 const int NATIVE_STDLIB_SORTED=ID_SORTED,NATIVE_STDLIB_SET=ID_SET,NATIVE_STDLIB_FROZENSET=ID_FROZENSET;
 const int NATIVE_STDLIB_COUNTER=ID_COUNTER,NATIVE_STDLIB_COUNTER_SHORT=ID_COUNTER_SHORT;
 const int NATIVE_STDLIB_COMBINATIONS=ID_COMBINATIONS,NATIVE_STDLIB_PERMUTATIONS=ID_PERMUTATIONS;
@@ -159,6 +169,7 @@ const int STDLIB_METHOD_LIST_SORT=9;
 const int STDLIB_ACC_LIST=1,STDLIB_ACC_TUPLE=2,STDLIB_ACC_SET=3,STDLIB_ACC_FROZEN=4,STDLIB_ACC_SORTED=5;
 const int STDLIB_ACC_SORTED_KEYS=6,STDLIB_ACC_COUNTER=7,STDLIB_ACC_MINKEY=8,STDLIB_ACC_MAXKEY=9;
 const int STDLIB_ACC_COMB_POOL=10,STDLIB_ACC_PERM_POOL=11,STDLIB_ACC_EXTEND=12;
+const int STDLIB_ACC_OPCODE_EXTEND=13;
 
 __device__ inline int make_set(Context* c);
 __device__ inline int set_add(Context* c,int set_ref,int value);
@@ -423,6 +434,7 @@ __device__ inline void stdlib_sort_unwind(Context* c,int acc){
 __device__ inline void stdlib_finish(Context* c,int acc){
  if(c->error||c->h.error)return;
  int op=edge(c,acc,0),caller=edge(c,acc,1),result=edge(c,acc,3),keyfn=edge(c,acc,4),keys=edge(c,acc,5),extra=edge(c,acc,7);
+ if(op==STDLIB_ACC_OPCODE_EXTEND){c->current=caller;return;}
  if(op==STDLIB_ACC_EXTEND)result=NIL;
  else if(op==STDLIB_ACC_SORTED){if(!stdlib_is_none(c,keyfn)){stdlib_acc_set(c,acc,0,STDLIB_ACC_SORTED_KEYS);stdlib_acc_set(c,acc,5,make_list(&c->h));stdlib_acc_set(c,acc,6,0);stdlib_sorted_keys(c,acc);return;}stdlib_sort_lists(c,result,MISSING,extra);}
  else if(op==STDLIB_ACC_SORTED_KEYS)stdlib_sort_lists(c,result,keys,extra);
@@ -451,7 +463,7 @@ __device__ inline void stdlib_minmax_next(Context* c,int acc){
 }
 __device__ inline int stdlib_append_raw(Context* c,int acc,int item){
  int op=edge(c,acc,0),result=edge(c,acc,3);
- if(op==STDLIB_ACC_EXTEND||op==STDLIB_ACC_LIST||op==STDLIB_ACC_TUPLE||op==STDLIB_ACC_SORTED||op==STDLIB_ACC_COMB_POOL||op==STDLIB_ACC_PERM_POOL)return list_append(&c->h,result,item)==0;
+ if(op==STDLIB_ACC_OPCODE_EXTEND||op==STDLIB_ACC_EXTEND||op==STDLIB_ACC_LIST||op==STDLIB_ACC_TUPLE||op==STDLIB_ACC_SORTED||op==STDLIB_ACC_COMB_POOL||op==STDLIB_ACC_PERM_POOL)return list_append(&c->h,result,item)==0;
  if(op==STDLIB_ACC_SET||op==STDLIB_ACC_FROZEN)return set_add(c,result,item);
  if(op==STDLIB_ACC_COUNTER)return stdlib_counter_add(c,result,item,MISSING);
  c->error=BAD_PROGRAM;return 0;
@@ -537,6 +549,21 @@ __device__ inline int stdlib_call(Context* c,int callable,const int* args,int na
  }
  if(n[0]==T_STDLIB_BOUND){int out=MISSING;if(!stdlib_bound_apply(c,callable,args,nargs,kw_names,kw_values,nkw,&out)){c->error=BAD_CALL;return 1;}if(!c->error&&!c->h.error)stdlib_push(c,caller,out);return 1;}
  if(n[0]!=T_NATIVE)return 0;int id=n[3];
+ if(NATIVE_STDLIB_TYPE>=0&&id==NATIVE_STDLIB_TYPE){
+  if(nkw||nargs!=1){c->error=BAD_CALL;return 1;}
+  int value=args[0],tag=kind(c,value),ref=MISSING;
+  switch(tag){
+   case TAG_BOOL:ref=TYPE_BOOL_REF;break;case TAG_INT:ref=TYPE_INT_REF;break;
+   case TAG_FLOAT:ref=TYPE_FLOAT_REF;break;case TAG_STR:ref=TYPE_STR_REF;break;
+   case TAG_LIST:ref=TYPE_LIST_REF;break;case TAG_TUPLE:ref=TYPE_TUPLE_REF;break;
+   case TAG_DICT:ref=TYPE_DICT_REF;break;case 26:ref=TYPE_RANGE_REF;break;
+   case 21:ref=TYPE_SET_REF;break;case 22:ref=TYPE_FROZEN_REF;break;
+   case T_STDLIB_COUNTER:ref=TYPE_COUNTER_REF;break;case 13:ref=TYPE_TYPE_REF;break;
+   default:ref=class_ref(c,value);break;
+  }
+  if(ref==MISSING){c->error=UNSUPPORTED_TYPE;return 1;}
+  stdlib_push(c,caller,ref);return 1;
+ }
  if(NATIVE_STDLIB_UUID>=0&&id==NATIVE_STDLIB_UUID){
   // uuid.uuid4 is not a supported intrinsic. Missing entity identities must stay typed; random UUIDs are not forged.
   c->error=UNSUPPORTED_TYPE;return 1;}
@@ -628,6 +655,18 @@ __device__ inline int stdlib_binary(Context* c,int a,int b,int op,int* out){
 __device__ inline int stdlib_subscript(Context* c,int owner,int key,int* out){if(kind(c,owner)!=T_STDLIB_COUNTER)return 0;int v=dict_get(&c->h,owner,key,MISSING);if(c->h.error)return 1;if(v==MISSING)v=make_int64(&c->h,0);*out=v;return 1;}
 __device__ inline int stdlib_store(Context* c,int owner,int key,int val){if(kind(c,owner)!=T_STDLIB_COUNTER)return 0;long long n=0;if(read_int64(&c->h,val,&n)<0)return 1;dict_set(&c->h,owner,key,val);return 1;}
 __device__ inline int stdlib_handle_opcode(Context* c,int* f,int op,int arg,int value,int target){
+ if(op==OP_LIST_EXTEND){
+  if(f[2]<1)return 0;
+  int src=peek(c,f),tag=kind(c,src);
+  if(tag==TAG_LIST||tag==TAG_TUPLE||tag==21)return 0;
+  pop(c,f);
+  if(arg<1||arg>f[2]){c->error=BAD_PROGRAM;return 1;}
+  int owner=f[SBASE+f[2]-arg];if(kind(c,owner)!=TAG_LIST||owner<0){c->error=BAD_CALL;return 1;}
+  if(tag!=T_GEN&&tag!=T_ITER&&tag!=T_STDLIB_ENUMERATE&&tag!=T_STDLIB_COMB&&tag!=T_STDLIB_PERM)
+   src=iterator(c,src);
+  if(c->error||c->h.error)return 1;
+  return stdlib_consume(c,src,STDLIB_ACC_OPCODE_EXTEND,c->current,MISSING,0,owner);
+ }
  if(op==OP_FOR_ITER)return stdlib_for_iter(c,peek(c,f),target);
  if(op==OP_GET_ITER){int owner=peek(c,f),tag=kind(c,owner);if(tag==T_STDLIB_ENUMERATE||tag==T_STDLIB_COMB||tag==T_STDLIB_PERM){pop(c,f);push(c,f,owner);return 1;}return 0;}
  if(op==OP_STORE_SUBSCR){if(f[2]<3)return 0;int owner=f[SBASE+f[2]-2];if(kind(c,owner)!=T_STDLIB_COUNTER)return 0;int key=pop(c,f);owner=pop(c,f);int val=pop(c,f);return stdlib_store(c,owner,key,val);}

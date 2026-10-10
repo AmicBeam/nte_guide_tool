@@ -9,6 +9,7 @@ from app.modules.card_game.engine.duel_v2.flow import (
     acting_side as canonical_acting_side,
     apply_action as canonical_apply_action,
     legal_actions as canonical_legal_actions,
+    new_game as canonical_new_game,
 )
 from app.modules.card_game.engine.duel_v2.projection import observe as canonical_observe
 from app.modules.card_game.engine.duel_v2.simulation import simulate_action as canonical_simulate_action
@@ -158,6 +159,23 @@ def seven_rule_decision(state, actor):
     return canonical_rule_decision(state, actor)
 
 
+def initialize(parameters):
+    """Frozen capture entry for canonical setup; no host game initializer.
+
+    Parameters are batch ingress data: the actual seed, both fixed builds,
+    first side and declared mulligan/escalation settings. Initialization must
+    execute in the VM and pass independent full-state/RNG/entity parity.
+    """
+    return canonical_new_game(seed=parameters['seed'],decks=parameters['decks'],
+        first_side=parameters['first_side'],
+        skip_mulligan=parameters.get('skip_mulligan',False),
+        escalation=parameters.get('escalation',True))
+
+
+def seven_initialize(parameters):
+    return initialize(parameters)
+
+
 CANONICAL_FUNCTIONS = {
     'acting_side': canonical_acting_side,
     'finished': canonical_finished,
@@ -215,6 +233,12 @@ ENTRY_FUNCTIONS_BY_RUNTIME = {
     'recovery': ENTRY_FUNCTIONS,
     'seven': SEVEN_ENTRY_FUNCTIONS,
 }
+
+# Explicit device-setup extension. Historical rule-parity entry sets stay
+# unchanged; a closed driver must freeze and validate this additional entry.
+DEVICE_SETUP_ENTRY_NAMES=('initialize',)
+ENTRY_FUNCTIONS['initialize']=initialize
+SEVEN_ENTRY_FUNCTIONS['initialize']=seven_initialize
 
 
 def entry_functions(runtime=None):

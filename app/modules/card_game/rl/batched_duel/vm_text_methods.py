@@ -6,6 +6,8 @@ requires an explicit nonempty separator; join accepts materialized list/tuple
 directly; generators and simple iterators are collected by mode-8 VM continuations.
 ``isdigit`` supports ASCII exactly and rejects every non-ASCII input explicitly.
 Default rstrip uses Python's Unicode whitespace set, including U+001C..U+001F.
+removeprefix/removesuffix remove one exact UTF-8 affix, preserving empty and
+unmatched inputs; they are not character-set stripping operations.
 Bad arity/separators use BAD_CALL, unsupported capabilities UNSUPPORTED_TYPE;
 invalid references/types/UTF-8 and capacity errors use the heap error codes.
 Integer parameters accept bool/int within int64, with overflow reported by the
@@ -18,7 +20,8 @@ def emit_text_method_source() -> str:
     return r'''
 const int T_TEXT_METHOD=45;
 enum TextMethod { TEXT_SPLIT=1,TEXT_RSPLIT=2,TEXT_JOIN=3,TEXT_STARTSWITH=4,
- TEXT_ENDSWITH=5,TEXT_REPLACE=6,TEXT_ISDIGIT=7,TEXT_RSTRIP=8,TEXT_COUNT=9 };
+ TEXT_ENDSWITH=5,TEXT_REPLACE=6,TEXT_ISDIGIT=7,TEXT_RSTRIP=8,TEXT_COUNT=9,
+ TEXT_REMOVEPREFIX=10,TEXT_REMOVESUFFIX=11 };
 struct TextView { const unsigned char* p;int bytes;int chars; };
 __device__ inline int text_view(Context* c,int ref,TextView* out){
  if(c->error||c->h.error)return 0;
@@ -85,7 +88,17 @@ __device__ inline int text_attribute(Context* c,int owner,int name){
  else if(vm_text_equals(c,name,"isdigit"))code=TEXT_ISDIGIT;
  else if(vm_text_equals(c,name,"rstrip"))code=TEXT_RSTRIP;
  else if(vm_text_equals(c,name,"count"))code=TEXT_COUNT;
+ else if(vm_text_equals(c,name,"removeprefix"))code=TEXT_REMOVEPREFIX;
+ else if(vm_text_equals(c,name,"removesuffix"))code=TEXT_REMOVESUFFIX;
  return code?meta(c,T_TEXT_METHOD,owner,0,code):MISSING;
+}
+__device__ inline int text_remove_affix(Context* c,int owner,int affix_ref,int suffix){
+ TextView text,affix;
+ if(!text_view(c,owner,&text)||!text_view(c,affix_ref,&affix))return MISSING;
+ if(!affix.bytes||affix.bytes>text.bytes)return owner;
+ int begin=suffix?text.bytes-affix.bytes:0;
+ if(!text_matches(&text,begin,&affix,text.bytes))return owner;
+ return text_slice(c,&text,suffix?0:affix.bytes,suffix?begin:text.bytes);
 }
 __device__ inline int text_split(Context* c,int owner,int sep_ref,long long limit,int reverse){
  TextView text,sep;if(!text_view(c,owner,&text)||!text_view(c,sep_ref,&sep))return MISSING;
@@ -295,6 +308,9 @@ __device__ inline int text_call(Context* c,int callee,const int* args,int nargs,
   if(nargs>1)c->error=BAD_CALL;else *out=text_rstrip(c,owner,nargs?args[0]:MISSING);
  }else if(code==TEXT_COUNT){
   if(nargs<1||nargs>3)c->error=BAD_CALL;else *out=text_count(c,owner,args,nargs);
+ }else if(code==TEXT_REMOVEPREFIX||code==TEXT_REMOVESUFFIX){
+  if(nargs!=1)c->error=BAD_CALL;
+  else *out=text_remove_affix(c,owner,args[0],code==TEXT_REMOVESUFFIX);
  }else c->error=BAD_PROGRAM;
  return 1;
 }

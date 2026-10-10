@@ -231,6 +231,19 @@ def text_probe(value):
             value.count(''),value.count('🙂',1,-1),'0123'.isdigit(),''.isdigit())
 
 
+def remove_affix_probe(value):
+    text,affix=value
+    return text.removeprefix(affix),text.removesuffix(affix)
+
+
+def identity_probe(value):
+    from copy import deepcopy
+    cloned=deepcopy(value)
+    return (id(value)==id(value),id(value[0])==id(value[1]),
+            id(value)!=id(cloned),id(cloned[0])==id(cloned[1]),
+            id(value[0])!=id(cloned[0]))
+
+
 def decimal_probe(value):
     original=Decimal(value)
     rounded=original.quantize(Decimal('0.1'),rounding=ROUND_HALF_UP)
@@ -565,6 +578,22 @@ class CudaExecutionTest(unittest.TestCase):
         with self.executor(lower_program(p)) as vm:
             actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),2048,4096,32768))),'text').decode()
         self.assertEqual(actual,[text_probe(value) for value in values])
+
+    def test_exact_prefix_suffix_and_zhenhong_description_affix(self):
+        values=[('', ''),('abcabc','abc'),('abc','abcd'),('abc',''),
+                ('真红🙂（当前为0）','（当前为0）'),('🙂真红🙂','🙂'),
+                ('🙂','🙂'),('a\x00b','\x00b'),('é','e\u0301'),('  aa',' ')]
+        p=test_program('remove_affix','remove_affix',remove_affix_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),2048,4096,32768))),'remove_affix').decode()
+        self.assertEqual(actual,[remove_affix_probe(value) for value in values])
+
+    def test_live_row_identity_preserves_aliases_and_independent_copies(self):
+        shared={'trace':[1]};values=[[shared,shared],[{'trace':[1]},{'trace':[1]}]]
+        p=test_program('identity','identity',identity_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),2048,4096,32768))),'identity').decode()
+        self.assertEqual(actual,[identity_probe(value) for value in values])
 
     def test_decimal_exact_round_half_up_and_conversions(self):
         values=['0','-0.00','1.25','-1.25','1.15','2.00','2.05','-2.05','999.95',1,0.5,-1.25]

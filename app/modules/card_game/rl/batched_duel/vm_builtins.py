@@ -41,6 +41,7 @@ SUPPORTED_BUILTIN_NAMES: tuple[str, ...] = (
     "list",
     "tuple",
     "dict",
+    "id",
 )
 
 
@@ -96,6 +97,7 @@ const int NATIVE_ITER = {injected_ids['iter']};
 const int NATIVE_LIST = {injected_ids['list']};
 const int NATIVE_TUPLE = {injected_ids['tuple']};
 const int NATIVE_DICT = {injected_ids['dict']};
+const int NATIVE_ID = {injected_ids['id']};
 
 // Device UTF-8 string comparison against ASCII literal without host compute
 __device__ inline bool vm_str_equals(Context* c, int str_ref, const char* lit, int lit_len) {{
@@ -440,6 +442,15 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
     if (callee_tag == T_NATIVE) {{
         int intrinsic_id = n[3];
         switch (intrinsic_id) {{
+            case NATIVE_ID: {{
+                if (NATIVE_ID < 0) return 0;
+                if (nargs != 1) {{ c->error = BAD_CALL; return 1; }}
+                // Checked graph refs preserve identity within a live VM row;
+                // this is not a CPython memory address or a cross-row ID.
+                if (!node(c, args[0])) return 1;
+                *out = make_int64(&c->h, (long long)args[0]);
+                return 1;
+            }}
             case NATIVE_LEN: {{
                 if (NATIVE_LEN < 0) return 0;
                 if (nargs != 1) {{ c->error = BAD_CALL; return 1; }}

@@ -3090,7 +3090,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertIn('character_iloy_q_ivory_dream', dream_buffs)
         self.assertNotIn('个人资源 臆想 不足。', details['dream-z1']['warnings'])
         self.assertEqual(details['dream-z1']['personal_resources_after']['臆想'], 43)
-        self.assertIn('臆想 正在持续消耗，期间无法积攒。', details['dream-e']['warnings'])
+        self.assertNotIn('臆想 正在持续消耗，期间无法积攒。', details['dream-e']['warnings'])
         self.assertEqual(details['dream-e']['personal_resources_after']['臆想'], 33)
         self.assertIn('个人资源 臆想 不足。', details['awake-z1']['warnings'])
 

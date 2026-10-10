@@ -248,7 +248,7 @@
     "activation": {"duration_from_personal_resource": {"resource": "臆想", "per_second": 10, "min_ticks": 16}},
     "resource_effects": {
       "ignore_cost": {"臆想": {"tags": ["蓄力", "重击"]}},
-      "block_gain": {"臆想": true}
+      "block_gain": {"臆想": {"warn": false}}
     },
     "effects": {},
     "display": {"line": false}

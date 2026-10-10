@@ -5224,8 +5224,11 @@
         slotResources[key] = 0;
       });
       Object.entries(resourceMap(action.personal_resource_gain)).forEach(([key, gain]) => {
-        if (activeResourceEffectConfigs(activeBuffs, slot, buffTick, 'block_gain', key, step, action, snapshot, isBackground).length) {
-          warnings.push(`${key} 正在持续消耗，期间无法积攒。`);
+        const gainBlockers = activeResourceEffectConfigs(activeBuffs, slot, buffTick, 'block_gain', key, step, action, snapshot, isBackground);
+        if (gainBlockers.length) {
+          if (gainBlockers.some((buff) => buff.rule.resource_effects.block_gain[key]?.warn !== false)) {
+            warnings.push(`${key} 正在持续消耗，期间无法积攒。`);
+          }
           return;
         }
         const cap = num(personalResourceCaps[String(snapshot.character?.id || '')]?.[key], Number.POSITIVE_INFINITY);

@@ -423,8 +423,31 @@ def _teacher_terminal_generator(world, viewer, rng, *, backend, query_factory, d
         world=backend.clean(backend.step(world,actor,legal[chosen]))
 
 
+def _can_fuse_covered_value(backend):
+    return (getattr(backend,'supports_covered_value_continuation',False) is True
+            and getattr(backend,'supports_gpu',False) is not True)
+
+
 def _teacher_value_generator(world, viewer, *, backend, query_factory, deadline, clock, horizon, q_scale):
     """Public-rule continuation, then the qualified fixed-observer auxiliary WDL."""
+    if _can_fuse_covered_value(backend):
+        if backend.finished(world):
+            return backend.terminal_value(world,viewer), True
+        payload=backend.covered_value_continuation(world,viewer,horizon,deadline=deadline)
+        if not isinstance(payload,tuple) or not payload:
+            raise _DeadlineReached('Covered value deadline')
+        if payload[0]=='terminal':
+            return payload[1], True
+        if payload[0]!='observation' or len(payload)!=4:
+            raise ValueError('Invalid covered value continuation result')
+        _,x,c,viewer_is_actor=payload
+        query=query_factory(viewer,x,c,value_actor=bool(viewer_is_actor),
+                            value_only=True,auxiliary=True)
+        response=yield query
+        if deadline is not None and clock() >= deadline:
+            raise _DeadlineReached('Covered value inference deadline')
+        _,value=_unpack_response(response,query,q_scale=q_scale)
+        return value, True
     for step in range(horizon+1):
         if backend.finished(world):
             return backend.terminal_value(world,viewer), True

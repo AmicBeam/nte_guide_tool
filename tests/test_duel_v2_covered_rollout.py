@@ -34,7 +34,7 @@ class CoveredRolloutTest(unittest.TestCase):
 
     def test_selective_previews_match_full_preview_policy_without_patches(self):
         decks=preset_decks();keys=list(decks);checked=0
-        original_preview=projection.preview
+        original_preview=projection.rule_battle_preview
         for i,key in enumerate(keys):
             state=new_game(seed=31+i,first_side='a',skip_mulligan=True,
                            decks={'a':decks[key],'b':decks[keys[(i+1)%len(keys)]]})
@@ -48,9 +48,9 @@ class CoveredRolloutTest(unittest.TestCase):
                     self.assertFalse(collecting_patches());checked+=1
                     result=original_preview(source,side,action)
                     expected=next(e['preview'] for e in reference['legal_actions'] if e['action']==action)
-                    self.assertEqual(result,expected)
+                    self.assertEqual(result,projection.rule_preview_scores(expected))
                     return result
-                with patch.object(projection,'preview',side_effect=preview):
+                with patch.object(projection,'rule_battle_preview',side_effect=preview):
                     legal,index=covered.rule_decision(state,actor)
                 self.assertTrue(collecting_patches());self.assertEqual(state,before)
                 self.assertEqual(legal,ref_legal)
@@ -60,7 +60,7 @@ class CoveredRolloutTest(unittest.TestCase):
 
     def test_preview_exception_restores_presentation_context(self):
         self.assertTrue(collecting_patches())
-        with patch.object(projection,'preview',side_effect=RuntimeError('preview failure')):
+        with patch.object(projection,'rule_battle_preview',side_effect=RuntimeError('preview failure')):
             with self.assertRaisesRegex(RuntimeError,'preview failure'):
                 covered.rule_decision(self.state(),'a')
         self.assertTrue(collecting_patches())

@@ -34,9 +34,10 @@ from app.modules.card_game.rl.batched_search.cooperative import (
     OperationResponse,
     RequestExpired,
     _PROTOCOL_METHODS,
+    _OPTIONAL_PROTOCOL_METHODS,
 )
 
-PROTOCOL_METHODS = _PROTOCOL_METHODS
+PROTOCOL_METHODS = _PROTOCOL_METHODS | _OPTIONAL_PROTOCOL_METHODS
 
 
 RECOVERY_RUNTIME_MODULE = 'app.modules.card_game.rl.recovery_runtime'
@@ -261,6 +262,9 @@ class _WorkerState:
             from app.modules.card_game.rl.covered_rollout import rule_decision
             return rule_decision(state,op.args[0])
 
+        if op.method=='covered_value_continuation':
+            return self._covered_value_continuation(state, op)
+
         if op.method == "decision":
             side = op.args[0]
             key=(slot,gen,side)
@@ -353,6 +357,35 @@ class _WorkerState:
 
         else:
             raise ValueError(f"Worker {self.worker_id}: unsupported operation method {op.method}")
+
+    def _covered_value_continuation(self, state: Any, op: WireOp) -> Any:
+        from app.modules.card_game.engine.duel_v2 import acting_side, observe
+        from app.modules.card_game.engine.duel_v2.simulation import simulate_action
+        from app.modules.card_game.rl.covered_rollout import rule_decision
+        from app.modules.card_game.rl import league_rollout
+
+        viewer = op.args[0]
+        horizon = op.args[1]
+        world = state
+        for step in range(horizon + 1):
+            phase = world.get("phase") if isinstance(world, dict) else getattr(world, "phase", None)
+            if phase == "finished":
+                winner = world.get("winner") if isinstance(world, dict) else getattr(world, "winner", None)
+                if winner not in ("a", "b"):
+                    value = 0.0
+                else:
+                    value = 1.0 if winner == viewer else -1.0
+                return ("terminal", value)
+            if op.deadline is not None and time.monotonic() >= op.deadline:
+                return RequestExpired(op.id, step > 0)
+            if step == horizon:
+                break
+            actor = acting_side(world)
+            legal, chosen = rule_decision(world, actor)
+            world = league_rollout.clean(simulate_action(world, actor, legal[chosen]))
+        view = observe(world, viewer, include_previews=False)
+        encoded, candidates = self.runtime().encode(view, [])
+        return ("observation", encoded, candidates, acting_side(world) == viewer)
 
 
 def _worker_init(worker_id: int, max_states: int, record_output=None, runtime_name: str = 'recovery') -> None:
@@ -503,13 +536,14 @@ def _worker_ops_batch(
     results: list[tuple[str, Any]] = []
     methods_ns: dict[str, int] = {}
     for op in ops:
-        if op.deadline is not None and time.monotonic()>=op.deadline:
+        fused = op.method == "covered_value_continuation"
+        if not fused and op.deadline is not None and time.monotonic()>=op.deadline:
             results.append((op.id,RequestExpired(op.id)));continue
         op_t0 = time.perf_counter_ns()
         val = _worker_state.execute_op(op)
         op_t1 = time.perf_counter_ns()
         methods_ns[op.method] = methods_ns.get(op.method, 0) + (op_t1 - op_t0)
-        if op.deadline is not None and time.monotonic()>=op.deadline:
+        if not fused and op.deadline is not None and time.monotonic()>=op.deadline:
             if isinstance(val,WireStateMeta) and (val.slot,val.generation)!=(op.slot,op.generation):
                 _worker_state.release_slot(val.slot,val.generation)
             val=RequestExpired(op.id,True)
@@ -548,6 +582,7 @@ class ResidentRuleBackend:
     # WireOp carries its own method; one wave can batch different rule queries
     # together and keep all workers busy instead of serializing by method.
     supports_mixed_operations = True
+    supports_covered_value_continuation = True
 
     def __init__(
         self,
@@ -994,7 +1029,8 @@ class ResidentRuleBackend:
         methods_by_id={q.id:q.method for q in queries}
         arities={'acting_side':1,'finished':1,'terminal_value':2,'decision':2,
                  'sample_world':3,'step':3,'clean':1,'value_observation':2,
-                 'serving_root_metadata':2,'public_terminal_probe':3,'rule_decision':2}
+                 'serving_root_metadata':2,'public_terminal_probe':3,'rule_decision':2,
+                 'covered_value_continuation':3}
         for q in queries:
             if q.method not in arities or len(q.args)!=arities[q.method] or q.kwargs:
                 raise ValueError('Unsupported rule operation signature')
@@ -1006,6 +1042,11 @@ class ResidentRuleBackend:
                 raise ValueError('Rule operation requires side a or b')
             if q.method=='sample_world' and type(q.args[2]) is not int:
                 raise TypeError('Integer world seed required')
+            if q.method=='covered_value_continuation':
+                if type(q.args[2]) is not int:
+                    raise TypeError('Non-negative integer covered value horizon required')
+                if q.args[2]<0:
+                    raise ValueError('Non-negative integer covered value horizon required')
 
         responses: dict[str, OperationResponse] = {}
         worker_ops: dict[int, list[WireOp]] = {w: [] for w in range(self.workers)}
@@ -1143,3 +1184,11 @@ class ResidentRuleBackend:
     ) -> Tuple[np.ndarray, np.ndarray]:
         q = OperationQuery(uuid4().hex, self, "value_observation", (ref, viewer), ())
         return self.resolve_operations([q])[0].value  # type: ignore
+
+    def covered_value_continuation(self, ref: StateRef, viewer: str, horizon: int, *,
+                                   deadline: Optional[float] = None):
+        q = OperationQuery(
+            uuid4().hex, self, "covered_value_continuation", (ref, viewer, horizon), (),
+            deadline=deadline,
+        )
+        return self.resolve_operations([q])[0].value

@@ -1,6 +1,6 @@
 """Pure immutable public commands and sequential turn/choice orchestration."""
 from copy import deepcopy
-from .entities import PlayerEntity, allocate_entity_id, clone_state, hydrate_entities, normalize_entity_action
+from .entities import PlayerEntity, allocate_entity_id, clone_state, hydrate_entities, needs_hydration, normalize_entity_action
 from itertools import combinations, permutations
 from random import Random
 
@@ -1004,10 +1004,17 @@ def redraw_hand(state, side, card_ids):
 def apply_action(state, side, action):
     if side not in SIDES or not isinstance(action, dict):
         raise ValueError('无效的操作格式。')
-    from .tutorial import after_player_action, apply_tutorial_ack, is_tutorial
+    from .tutorial import apply_tutorial_ack, is_tutorial
     if is_tutorial(state) and action.get('type') == 'tutorial_ack':
         return apply_tutorial_ack(state, side)
-    state = clone_state(state)
+    return apply_owned_action(clone_state(state), side, action)
+
+
+def apply_owned_action(state, side, action):
+    """Execute on a caller-owned sandbox. Public apply_action clones first."""
+    from .tutorial import after_player_action, is_tutorial
+    if needs_hydration(state):
+        hydrate_entities(state)
     candidate = normalize_entity_action(state, side, action)
     if candidate.get('type') in ('mulligan', 'choose_cards') and isinstance(candidate.get('card_ids'), list):
         ids = candidate['card_ids']

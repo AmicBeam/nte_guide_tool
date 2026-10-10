@@ -1,11 +1,13 @@
 """Viewer-specific projection. Never expose decks, RNG, or private choices."""
 from .modifiers import compatibility_flags, public_effects
 from copy import deepcopy
-from .entities import clone_state, entity_action, needs_hydration
+from contextlib import contextmanager
+from contextvars import ContextVar
+from .entities import clone_state, entity_action, hydrate_entities, needs_hydration
 
 from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
-from .flow import acting_side, apply_action, card_plays_instant, legal_actions, normal_attack_payment, ultimate_spec, card_ap_payment
+from .flow import acting_side, apply_owned_action, card_plays_instant, legal_actions, normal_attack_payment, ultimate_spec, card_ap_payment
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
 from .combat import harmony_marks
@@ -70,6 +72,86 @@ def action_label(state, side, action):
     return {'end_turn': '结束回合', 'concede': '认输'}.get(kind, kind)
 
 
+RULE_PREVIEW_SCORE_FIELDS = ('attack', '攻击次数', '创生花伤害', 'counter')
+_PREPARED_PREVIEW = ContextVar('duel_v2_prepared_preview', default=None)
+
+
+def _unknown_preview_card(ps, zone, i):
+    return {'instance_id': f'preview-{ps}-{zone}-{i}', 'card_id': 'unknown',
+            'character_id': 'unknown', 'name': '未公开牌', 'copy': False,
+            'type': 'tactic', 'cost': 999}
+
+
+def _anonymize_preview_hidden(sandbox, side):
+    """Replace unknown decks and opposing hidden hands in an owned sandbox."""
+    for ps in SIDES:
+        team = sandbox['sides'][ps]
+        team['deck'] = [_unknown_preview_card(ps, 'deck', i) for i in range(len(team['deck']))]
+        if ps != side:
+            revealed = set(team.get('revealed_ids') or [])
+            # Keep public hand counts and known cards, but never simulate a
+            # response based on an unrevealed opposing card or private gold mark.
+            team['hand'] = [card if card.get('copy') or card['instance_id'] in revealed
+                            else _unknown_preview_card(ps, 'hand', i)
+                            for i, card in enumerate(team['hand'])]
+            for card in team['hand']:
+                card.pop('jingu_mark', None)
+
+
+def _prepare_preview_template(state, side):
+    template = deepcopy(state)
+    _anonymize_preview_hidden(template, side)
+    if needs_hydration(template):
+        hydrate_entities(template)
+    return template
+
+
+@contextmanager
+def prepared_preview_sandbox(state, side):
+    """Anonymize hidden cards once; preview clones only a private sandbox per action."""
+    template = _prepare_preview_template(state, side)
+    token = _PREPARED_PREVIEW.set({
+        'side': side, 'source_id': id(state),
+        'version': state.get('version'), 'event_seq': state.get('event_seq'),
+        'template': template,
+    })
+    try:
+        yield template
+    finally:
+        _PREPARED_PREVIEW.reset(token)
+
+
+def _preview_owned_sandbox(state, side):
+    prepared = _PREPARED_PREVIEW.get()
+    if (prepared and prepared['side'] == side and prepared['source_id'] == id(state)
+            and prepared['version'] == state.get('version')
+            and prepared['event_seq'] == state.get('event_seq')):
+        return deepcopy(prepared['template'])
+    return _prepare_preview_template(state, side)
+
+
+def rule_preview_scores(preview_value):
+    value = preview_value if isinstance(preview_value, dict) else {}
+    return {key: value[key] for key in RULE_PREVIEW_SCORE_FIELDS if key in value}
+
+
+def rule_battle_preview(state, side, action):
+    """Exact teacher score fields, without building presentation-only fields."""
+    sandbox = _preview_owned_sandbox(state, side)
+    before = sandbox['event_seq']
+    projected = apply_owned_action(sandbox, side, action)
+    events = [e for e in projected['events'] if e['seq'] > before]
+    attacks = [e for e in events if e['type'] == 'attack']
+    result = {}
+    if attacks:
+        result.update(attack=attacks[0]['amount'], counter=attacks[0]['counter'],
+                      攻击次数=len(attacks))
+    flowers = sum(e['amount'] for e in events if e['type'] == 'flower')
+    if flowers:
+        result['创生花伤害'] = flowers
+    return result
+
+
 def preview(state, side, action):
     kind = action['type']
     cost = 1 if kind in ('attack', 'cycle') else 0
@@ -91,25 +173,9 @@ def preview(state, side, action):
     cid = action.get('character_id') or card['character_id']
     # Only combat is previewed. Replace private opposing hands and unknown decks;
     # public counts still drive shield, fatigue and hand-limit behavior.
-    sandbox = deepcopy(state)
-    def unknown_card(ps, zone, i):
-        return {'instance_id': f'preview-{ps}-{zone}-{i}', 'card_id': 'unknown',
-                'character_id': 'unknown', 'name': '未公开牌', 'copy': False,
-                'type': 'tactic', 'cost': 999}
-    for ps in SIDES:
-        team = sandbox['sides'][ps]
-        team['deck'] = [unknown_card(ps, 'deck', i) for i in range(len(team['deck']))]
-        if ps != side:
-            revealed = set(team.get('revealed_ids') or [])
-            # Keep public hand counts and known cards, but never simulate a
-            # response based on an unrevealed opposing card or private gold mark.
-            team['hand'] = [card if card.get('copy') or card['instance_id'] in revealed
-                            else unknown_card(ps, 'hand', i)
-                            for i, card in enumerate(team['hand'])]
-            for card in team['hand']:
-                card.pop('jingu_mark', None)
+    sandbox = _preview_owned_sandbox(state, side)
     before = sandbox['event_seq']
-    projected = apply_action(sandbox, side, action)
+    projected = apply_owned_action(sandbox, side, action)
     events = [e for e in projected['events'] if e['seq'] > before]
     attacks = [e for e in events if e['type'] == 'attack']
     harmony = next((e for e in events if e['type'] == 'harmony'), None)
@@ -145,11 +211,18 @@ def observe(state, side, after_seq=None, *, include_previews=True):
     actions = legal_actions(state, side)
     playable = {a['card_id'] for a in actions if a['type'] == 'play_card'}
     result = {key: deepcopy(state[key]) for key in ('rules_version', 'version', 'phase', 'active_side', 'first_side', 'turn', 'winner', 'reason')}
+    def legal_entry(action, preview_value, interaction):
+        return {'action': deepcopy(action), 'entity_action': entity_action(state, side, action),
+                'label': action_label(state, side, action), 'preview': preview_value, 'interaction': interaction}
+    if include_previews:
+        with prepared_preview_sandbox(state, side):
+            legal_entries = [legal_entry(action, preview(state, side, action),
+                                         interaction_for_action(state, side, action)) for action in actions]
+    else:
+        legal_entries = [legal_entry(action, {}, {}) for action in actions]
     result.update(escalation=public_progress(state), viewer_side=side, is_my_turn=(side == acting_side(state) or
                   state['phase'] == 'mulligan' and side not in state['mulligan_done']), sides={},
-                  legal_actions=[{'action': deepcopy(a), 'entity_action': entity_action(state, side, a), 'label': action_label(state, side, a),
-                                  'preview': preview(state, side, a) if include_previews else {},
-                                  'interaction': interaction_for_action(state, side, a) if include_previews else {}} for a in actions],
+                  legal_actions=legal_entries,
                   events=[sanitize_public_event(event, side) for event in deepcopy(state['events'][-200:])] if include_previews else [],
                   logs=[], presentation=presentation_bundle(state, side, after_seq=after_seq) if include_previews else {})
     for event in result['events']:

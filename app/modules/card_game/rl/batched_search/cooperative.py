@@ -47,6 +47,8 @@ class RootJob:
 
 _PROTOCOL_METHODS=frozenset(('acting_side','finished','terminal_value','decision',
     'sample_world','step','clean','value_observation','serving_root_metadata','public_terminal_probe','rule_decision'))
+_OPTIONAL_PROTOCOL_METHODS=frozenset(('covered_value_continuation',))
+_SUSPEND_METHODS=_PROTOCOL_METHODS|_OPTIONAL_PROTOCOL_METHODS
 _PREFIX=uuid4().hex
 _COUNTER=itertools.count()
 _CACHE={}
@@ -54,11 +56,12 @@ _CACHE={}
 
 def _operation(backend,method,*args,_finalization=False,**kwargs):
     if type(_finalization) is not bool:raise TypeError('Boolean finalization marker required')
+    deadline=kwargs.pop('deadline',None)
     inline=getattr(backend,'inline_operation',None)
     if inline is not None and not kwargs and not _finalization:
         handled,value=inline(method,args)
         if handled:return value
-    query=OperationQuery(f'{_PREFIX}:{next(_COUNTER)}',backend,method,args,tuple(kwargs.items()),_finalization)
+    query=OperationQuery(f'{_PREFIX}:{next(_COUNTER)}',backend,method,args,tuple(kwargs.items()),_finalization,deadline)
     response=yield query
     if not isinstance(response,OperationResponse) or response.id!=query.id:
         raise ValueError('Rule operation response belongs to a different request')
@@ -69,7 +72,7 @@ class _SuspendBackend(ast.NodeTransformer):
     def visit_Call(self,node):
         node=self.generic_visit(node)
         if (isinstance(node.func,ast.Attribute) and isinstance(node.func.value,ast.Name)
-                and node.func.value.id=='backend' and node.func.attr in _PROTOCOL_METHODS):
+                and node.func.value.id=='backend' and node.func.attr in _SUSPEND_METHODS):
             call=ast.Call(func=ast.Name(id='_batch_operation',ctx=ast.Load()),
                 args=[ast.Name(id='backend',ctx=ast.Load()),ast.Constant(node.func.attr),*node.args],
                 keywords=node.keywords)

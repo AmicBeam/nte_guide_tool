@@ -23,16 +23,22 @@ def rule_decision(state,actor):
     # No neural encoding is needed by this policy. Obtain the public legal
     # mask and previews once, rather than rebuilding them through runtime.
     view=observe(state,actor,include_previews=False)
-    from ..engine.duel_v2.projection import preview
-    cards={c['instance_id']:c for c in view['sides'][actor]['hand']}
-    # Preview still anonymizes hidden cards and executes the exact rules.
-    # Its numerical result does not consume replay patches or board caches.
-    with _without_patches():
-        for entry in view['legal_actions']:
-            action=entry['action']
-            if action['type']=='attack' or (action['type']=='play_card' and cards[action['card_id']]['type']=='battle'):
-                entry['preview']=preview(state,actor,action)
     legal=[e['action'] for e in view['legal_actions'] if e['action']['type']!='concede']
+    if any(action.get('type') in ('mulligan','choose') for action in legal):
+        return legal,int(VisibleEngineRulePolicy()(view,tuple(legal)))
+    from ..engine.duel_v2.projection import rule_battle_preview, prepared_preview_sandbox
+    cards={c['instance_id']:c for c in view['sides'][actor]['hand']}
+    combat_entries=[entry for entry in view['legal_actions']
+                    if entry['action']['type']=='attack' or
+                    (entry['action']['type']=='play_card' and
+                     cards.get(entry['action'].get('card_id'),{}).get('type')=='battle')]
+    if not combat_entries:
+        return legal,int(VisibleEngineRulePolicy()(view,tuple(legal)))
+    # Anonymize hidden cards once, then clone only a private sandbox per combat
+    # action. Numerical results still use the exact rules and score fields.
+    with _without_patches(), prepared_preview_sandbox(state,actor):
+        for entry in combat_entries:
+            entry['preview']=rule_battle_preview(state,actor,entry['action'])
     return legal,int(VisibleEngineRulePolicy()(view,tuple(legal)))
 
 

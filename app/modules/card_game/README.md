@@ -1072,3 +1072,7 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 `TrainingRollout.last_diagnostics`在关闭采集资源前保存调度波次、驻留规则RPC、推理微批次／行数／候选填充和设备统计池的累计计数。`seven_round.collect_search_batch`将其写入当前批次的`search-diagnostics.json`，采集异常时也保留已取得的计数与原错误。缺失接口或读取失败的项为`null`，读取错误另列`diagnostic_errors`；不能把它们当作零耗时。计数分别使用各接口标注的秒或纳秒，CPU worker累计执行时间不能直接与父进程墙钟时间相加。
 
 这些诊断用于本轮实测定位，不改变搜索预算、动作和学习标签；记录存在不提供CUDA吞吐、1600完整局或模型质量批准。验证：`tests.test_duel_v2_search_diagnostics`覆盖真实CPU受控轨迹一致、异常清理、缺失计数与失败批次落盘。
+
+### 驻留教师与规则预演热路径
+
+`ResidentRuleBackend.covered_value_continuation`在规则进程内合并公开教师推进与最终编码，父进程继续执行原辅助WDL推理；不支持该能力的后端保留原路径。教师使用只含四个评分数值的正式战斗预演，同次决策复用匿名化模板、逐动作隔离沙盒，避免重复复制；公开操作不可变性和完整展示字段保留。验证：`.venv/bin/python -m unittest tests.test_duel_v2_fused_teacher tests.test_duel_v2_rule_preview_fast tests.test_duel_v2_batch_process_backend tests.test_duel_v2_batch_cooperative tests.test_duel_v2_batch_traversal tests.test_duel_v2_gpu_training_teachers tests.test_duel_v2_covered_rollout tests.test_duel_v2_preview_privacy tests.test_duel_v2_simulation`。这是规则执行优化，GPU完整采集5倍、1600完整局与模型质量需独立实测，不能由CPU用例批准；规则身份变化不得复用旧回执。细节见训练手册“混合采集的规则热路径优化”。

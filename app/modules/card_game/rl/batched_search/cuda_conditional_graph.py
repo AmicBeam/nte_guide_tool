@@ -72,6 +72,7 @@ class CudaConditionalWhile:
         self.capture_stream = torch.cuda.Stream(device=self.device)
         self.body_stream = torch.cuda.Stream(device=self.device)
         self.graph = None
+        self._loop_built = False
 
     def _condition(self, handle, predicate, advance):
         self.module.launch('update_condition', [int(handle), predicate, predicate.numel(),
@@ -114,25 +115,44 @@ class CudaConditionalWhile:
             if active:
                 _checked(rt.cudaStreamEndCapture(body_stream.cuda_stream))
 
-    def capture(self, predicate, body, *, initialize=None):
+    def _validate_inputs(self, predicate, body, initialize):
         t = self.t
-        if self.graph is not None:
-            raise RuntimeError('Graph is already frozen')
+        if self.graph is not None or self._loop_built:
+            raise RuntimeError('Device loop is already frozen')
         if (not isinstance(predicate, t.Tensor) or predicate.device != self.device
                 or predicate.dtype != t.uint8 or predicate.ndim != 1
                 or not predicate.is_contiguous() or predicate.numel() < 1):
             raise ValueError('Persistent contiguous uint8[B] CUDA predicate required')
         if not callable(body) or (initialize is not None and not callable(initialize)):
             raise TypeError('Static graph callbacks required')
+
+    def capture_loop(self, predicate, body, *, initialize=None):
+        """Embed this guarded WHILE in an already captured device graph.
+
+        A separate instance owns each nested loop and its body stream. The
+        enclosing graph retains this instance and all captured buffers. This
+        method never launches a graph or evaluates the predicate on the host.
+        """
+        self._validate_inputs(predicate, body, initialize)
+        if not self.t.cuda.is_current_stream_capturing():
+            raise RuntimeError('Embedded device loop requires active CUDA capture')
+        self.module.launch('initialize_guard', [self.counter, self.start, self.errors],
+                           grid=1, block=1, capture_safe=True)
+        if initialize is not None:
+            initialize()
+        with self._while_body(predicate):
+            body()
+        self.predicate = predicate
+        self._loop_built = True
+
+    def capture(self, predicate, body, *, initialize=None):
+        self._validate_inputs(predicate, body, initialize)
+        t = self.t
         graph = t.cuda.CUDAGraph()
         stream = self.capture_stream
         stream.wait_stream(t.cuda.current_stream(self.device))
         with t.cuda.graph(graph, stream=stream, capture_error_mode='thread_local'):
-            self.module.launch('initialize_guard',[self.counter,self.start,self.errors],grid=1,block=1,capture_safe=True)
-            if initialize is not None:
-                initialize()
-            with self._while_body(predicate):
-                body()
+            self.capture_loop(predicate, body, initialize=initialize)
         self.graph, self.predicate = graph, predicate
 
     def replay(self):

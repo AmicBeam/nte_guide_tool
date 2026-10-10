@@ -61,3 +61,59 @@ class ConditionalGraphTest(unittest.TestCase):
             self.assertEqual(runner.errors.item(), 1)
         finally:
             runner.close()
+
+    def test_actual_cuda_nested_loops_keep_turns_and_search_on_device(self):
+        import torch
+        if not torch.cuda.is_available():
+            self.skipTest('Actual CUDA required')
+        from app.modules.card_game.rl.batched_search.cuda_conditional_graph import CudaConditionalWhile
+        from unittest.mock import patch
+        rows = torch.arange(1600, device='cuda')
+        turns_target = rows.remainder(4)
+        search_target = rows.remainder(5) + 1
+        turns = torch.zeros_like(rows)
+        inner_count = torch.zeros_like(rows)
+        work = torch.zeros_like(rows)
+        outer_predicate = torch.zeros_like(rows, dtype=torch.uint8)
+        inner_predicate = torch.zeros_like(outer_predicate)
+        outer = CudaConditionalWhile(max_ticks=10, seconds=20)
+        inner = CudaConditionalWhile(max_ticks=10, seconds=10)
+
+        def initialize_outer():
+            turns.zero_();work.zero_()
+            outer_predicate.copy_((turns_target > 0).to(torch.uint8))
+
+        def initialize_inner():
+            inner_count.zero_()
+            inner_predicate.copy_(outer_predicate)
+
+        def search_body():
+            inner_count.add_(inner_predicate.to(torch.int64))
+            inner_predicate.copy_(((outer_predicate != 0)
+                & (inner_count < search_target)).to(torch.uint8))
+
+        def turn_body():
+            inner.capture_loop(inner_predicate, search_body, initialize=initialize_inner)
+            work.add_(inner_count)
+            turns.add_(outer_predicate.to(torch.int64))
+            outer_predicate.copy_(((turns < turns_target)
+                & (inner.errors == 0)).to(torch.uint8))
+
+        try:
+            with self.assertRaisesRegex(RuntimeError, 'active CUDA capture'):
+                inner.capture_loop(inner_predicate, search_body)
+            outer.capture(outer_predicate, turn_body, initialize=initialize_outer)
+            with patch.object(torch.Tensor, 'item', side_effect=AssertionError('Host loop predicate')), \
+                 patch.object(torch.Tensor, 'cpu', side_effect=AssertionError('Host root stepping')):
+                outer.replay()
+            torch.cuda.synchronize()
+            self.assertTrue(torch.equal(turns, turns_target))
+            self.assertTrue(torch.equal(work, turns_target * search_target))
+            self.assertEqual(outer.errors.item(), 0)
+            self.assertEqual(inner.errors.item(), 0)
+            turns_target.fill_(2);search_target.fill_(3)
+            outer.replay();torch.cuda.synchronize()
+            self.assertTrue(torch.equal(work, torch.full_like(work, 6)))
+        finally:
+            outer.close()
+            inner.close()

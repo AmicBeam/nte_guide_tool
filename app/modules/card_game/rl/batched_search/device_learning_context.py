@@ -26,10 +26,27 @@ class ClosedDeviceLearningContext:
 
     @property
     def collector(self):
-        return self.driver
+        return self
+
+    @property
+    def last_diagnostics(self):
+        return getattr(self.driver, 'last_diagnostics', None)
+
+    def _checked_results(self, jobs, results):
+        results = list(results)
+        ids = [job.get('id') for job in jobs]
+        if any(not isinstance(id, str) or not id for id in ids) or len(set(ids)) != len(ids):
+            raise ValueError('Unique nonempty device job identities required')
+        if len(results) != len(jobs):
+            raise ValueError('Closed device execution omitted or duplicated jobs')
+        for job, result in zip(jobs, results):
+            if not isinstance(result, dict) or any(result.get(key) != job[key]
+                    for key in ('id', 'seed', 'first', 'left', 'right') if key in job):
+                raise ValueError('Closed device result identity/order mismatch')
+        return results
+
+    def collect(self, jobs):
+        return self._checked_results(jobs, self.driver.collect(jobs))
 
     def evaluate_jobs(self, jobs):
-        results = list(self.driver.evaluate_jobs(jobs))
-        if len(results) != len(jobs):
-            raise ValueError('Closed device evaluation omitted or duplicated jobs')
-        return results
+        return self._checked_results(jobs, self.driver.evaluate_jobs(jobs))

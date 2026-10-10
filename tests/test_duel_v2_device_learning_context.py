@@ -57,7 +57,7 @@ class ClosedDeviceLearningContextTest(unittest.TestCase):
         context = self.fixture(driver)
         events = []
         def collect(*args, **kwargs):
-            self.assertIs(kwargs['rollout'], driver)
+            self.assertIs(kwargs['rollout'], context)
             events.append('device_batch_returned')
             return [game]
         def oracle(j, g):
@@ -70,6 +70,16 @@ class ClosedDeviceLearningContextTest(unittest.TestCase):
             self.assertEqual(seven_round.collect_search_batch(context, [job], folder, {'preflight': True}), [game])
             self.assertTrue((Path(folder)/'gpu-replay-check.json').exists())
         self.assertEqual(events, ['device_batch_returned', 'oracle'])
+
+    def test_same_count_wrong_order_or_seed_is_rejected(self):
+        jobs = [{'id': 'a', 'seed': 3}, {'id': 'b', 'seed': 4}]
+        for results in ([jobs[0], jobs[0]], list(reversed(jobs)),
+                        [{'id': 'a', 'seed': 9}, jobs[1]]):
+            context = self.fixture(SimpleNamespace(collect=lambda _: results,
+                                                   evaluate_jobs=lambda _: results))
+            for call in (context.collect, context.evaluate_jobs):
+                with self.assertRaisesRegex(ValueError, 'identity/order'):
+                    call(jobs)
 
 
 if __name__ == '__main__':

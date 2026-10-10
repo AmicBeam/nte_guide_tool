@@ -248,6 +248,49 @@ class DeviceRuleArgumentsCudaTest(unittest.TestCase):
         self.assertEqual(errors.cpu().tolist(),[0,0])
         self.assertEqual([_decode_ref(graph,row,int(refs[row,1].cpu())) for row in range(2)],['b','a'])
 
+    def test_selected_action_graph_binding_preserves_fields_aliases_and_failed_rows(self):
+        t=self.torch
+        graph=_graph([{'state':'one'},{'state':'two'}],'cuda',max_payload=256)
+        shared={'unknown':[7,8]}
+        actions=[{'type':'choose','choice_id':'精确实体','extra':[shared,shared]},
+                 {'type':'attack','actor_entity_id':'entity17','target_entity_id':'entity21'}]
+        action_graph=_graph(actions,'cuda',max_payload=256)
+        before=_clone_counts(graph);source=_clone_counts(action_graph)
+        actors=t.tensor([0,1],dtype=t.int64,device='cuda')
+        active=t.tensor([1,0],dtype=t.uint8,device='cuda')
+        refs=t.empty((2,3),dtype=t.int32,device='cuda')
+        errors=t.empty(2,dtype=t.int32,device='cuda')
+        args=dict(argument_refs=refs,errors=errors)
+        with self._hot_path(), patch.object(DeviceGraph,'fork',side_effect=AssertionError('Action heap clone')):
+            result=self.binder.bind_action_into_device(graph,actors,action_graph,active,**args)
+        t.cuda.synchronize()
+        self.assertIs(result.arena,graph)
+        self.assertEqual(errors.cpu().tolist(),[0,0])
+        decoded=unpack_states(_packed_row(graph,0,int(refs[0,2].cpu())))[0]
+        self.assertEqual(decoded,actions[0])
+        self.assertIs(decoded['extra'][0],decoded['extra'][1])
+        self.assertEqual(_decode_ref(graph,0,int(refs[0,1].cpu())),'a')
+        self.assertEqual(refs[1,1:].cpu().tolist(),[-1,-1])
+        for name,value in zip(('nodes','edges','payload','counts','roots'),source):
+            self.assertTrue(t.equal(getattr(action_graph,name),value))
+        for name,value in zip(('nodes','edges','payload','counts','roots'),before):
+            self.assertTrue(t.equal(getattr(graph,name)[1],value[1]))
+            getattr(graph,name).copy_(value)
+        captured=t.cuda.CUDAGraph()
+        with self._hot_path():
+            with t.cuda.graph(captured):
+                result=self.binder.bind_action_into_device(graph,actors,action_graph,active,**args)
+        # A malformed selected graph and an invalid actor fail before graph writes.
+        first_root=int(action_graph.roots[0].cpu())
+        edge_offset=int(action_graph.nodes[0,first_root,1].cpu())
+        action_graph.edges[0,edge_offset,0]=-1
+        actors[1]=9;active.fill_(1)
+        captured.replay();t.cuda.synchronize()
+        self.assertEqual(errors.cpu().tolist(),[ERROR_INVALID_REF,ERROR_TYPE_MISMATCH])
+        for name,value in zip(('nodes','edges','payload','counts','roots'),before):
+            self.assertTrue(t.equal(getattr(graph,name),value))
+        self.assertEqual(refs[:,1:].cpu().tolist(),[[-1,-1],[-1,-1]])
+
     def test_actual_cuda_decodes_bound_args_only_after_completed_batch(self):
         t = self.torch
         values = (0, 1 << 63, 1 << 255, 1 << 256, ROOT, ROOT + 31 * 104729)

@@ -25,6 +25,10 @@ _BIND_SPEC = (
     'int64*', 'int64*', 'uint8*', 'int32*', 'int32*',
     'int32', 'int32', 'int32', 'int32', 'int32',
 )
+_ACTION_SPEC = ('int32*','int32*','uint8*','int32*','int32*') * 2 + (
+    'int64*','uint8*','int32*','int32*','int32','int32','int32','int32',
+    'int32','int32','int32',
+)
 
 
 def emit_binder_source():
@@ -74,6 +78,59 @@ extern "C" __global__ void bind_actor_seed_args(
  if(seed<0){ errors[row]=h.error?h.error:ERROR_PAYLOAD_CAPACITY; h.counts[0]=nN; h.counts[1]=nE; h.counts[2]=nP; return; }
  arg_refs[row*cols+1]=side; arg_refs[row*cols+2]=seed;
 }
+extern "C" __global__ void bind_actor_action_args(
+ int* nodes,int* edges,unsigned char* payload,int* counts,int* roots,
+ const int* an,const int* ae,const unsigned char* ap,const int* ac,const int* ar,
+ const long long* actors,const unsigned char* active,int* refs,int* errors,
+ int rows,int maxn,int maxe,int maxp,int amn,int ame,int amp){
+ int row=blockIdx.x*blockDim.x+threadIdx.x;if(row>=rows)return;
+ errors[row]=0;refs[row*3]=roots[row];refs[row*3+1]=-1;refs[row*3+2]=-1;
+ if(!active[row])return;
+ int n=counts[row*3],e=counts[row*3+1],p=counts[row*3+2];
+ int na=ac[row*3],ea=ac[row*3+1],pa=ac[row*3+2],root=ar[row];
+ if(n<1||e<0||p<0||n>maxn||e>maxe||p>maxp||roots[row]<0||roots[row]>=n
+     ||na<1||ea<0||pa<0||na>amn||ea>ame||pa>amp||root<0||root>=na){errors[row]=ERROR_INVALID_REF;return;}
+ if(actors[row]!=0&&actors[row]!=1){errors[row]=ERROR_TYPE_MISMATCH;return;}
+ if((long long)n+na+1>maxn){errors[row]=ERROR_NODE_CAPACITY;return;}
+ if((long long)e+ea>maxe){errors[row]=ERROR_EDGE_CAPACITY;return;}
+ if((long long)p+pa+1>maxp){errors[row]=ERROR_PAYLOAD_CAPACITY;return;}
+ const int* src=an+(long long)row*amn*4;
+ const int* sedges=ae+(long long)row*ame*2;
+ const unsigned char* spayload=ap+(long long)row*amp;
+ if(src[root*4]!=TAG_DICT){errors[row]=ERROR_TYPE_MISMATCH;return;}
+ // Validate all references and offsets before any write to destination scratch.
+ for(int i=0;i<na;i++){
+  int tag=src[i*4],off=src[i*4+1],len=src[i*4+2];
+  if(tag<0||tag>TAG_CARD_ENTITY){errors[row]=ERROR_INVALID_TAG;return;}
+  if(tag==TAG_INT||tag==TAG_FLOAT||tag==TAG_STR){
+   if(off<0||len<0||(long long)off+len>pa){errors[row]=ERROR_INVALID_REF;return;}
+  }else if(tag>=TAG_LIST){
+   if(off<0||len<0||(long long)off+len>ea){errors[row]=ERROR_INVALID_REF;return;}
+   for(int j=0;j<len;j++){
+    int k=sedges[(off+j)*2],v=sedges[(off+j)*2+1];
+    if(k<0||k>=na||(tag>=TAG_DICT&&(v<0||v>=na))){errors[row]=ERROR_INVALID_REF;return;}
+   }
+  }
+ }
+ int* dest=nodes+(long long)row*maxn*4;
+ int* dedges=edges+(long long)row*maxe*2;
+ unsigned char* dpayload=payload+(long long)row*maxp;
+ for(int i=0;i<pa;i++)dpayload[p+i]=spayload[i];
+ for(int i=0;i<na;i++){
+  int tag=src[i*4],off=src[i*4+1],len=src[i*4+2];
+  int mapped=tag>=TAG_LIST?e+off:(tag>=TAG_INT&&tag<=TAG_STR?p+off:off);
+  dest[(n+i)*4]=tag;dest[(n+i)*4+1]=mapped;
+  dest[(n+i)*4+2]=len;dest[(n+i)*4+3]=src[i*4+3];
+  if(tag>=TAG_LIST)for(int j=0;j<len;j++){
+   dedges[(e+off+j)*2]=n+sedges[(off+j)*2];
+   dedges[(e+off+j)*2+1]=tag>=TAG_DICT?n+sedges[(off+j)*2+1]:-1;
+  }
+ }
+ int side=n+na;dpayload[p+pa]=actors[row]?98:97;
+ dest[side*4]=TAG_STR;dest[side*4+1]=p+pa;dest[side*4+2]=1;dest[side*4+3]=0;
+ counts[row*3]=n+na+1;counts[row*3+1]=e+ea;counts[row*3+2]=p+pa+1;
+ refs[row*3+1]=side;refs[row*3+2]=n+root;
+}
 '''
 
 
@@ -114,7 +171,8 @@ class DeviceRuleArgumentBinder:
         if not self._cpu:
             from .cuda_runtime import CudaModule
             self.module = CudaModule(
-                emit_binder_source(), {'bind_actor_seed_args': _BIND_SPEC}, device=str(self.device))
+                emit_binder_source(), {'bind_actor_seed_args': _BIND_SPEC,
+                                      'bind_actor_action_args': _ACTION_SPEC}, device=str(self.device))
 
     def close(self):
         if self.closed:
@@ -208,6 +266,35 @@ class DeviceRuleArgumentBinder:
                  rows, layout.max_nodes, layout.max_edges, layout.max_payload_bytes, int(with_seed)],
                 grid=(rows + 127) // 128, block=128, capture_safe=True)
         return BoundDeviceArguments(graph, refs, errors)
+
+    def bind_action_into_device(self, graph, actors, action_graph, active, *, argument_refs, errors):
+        """Append a compact selected action graph to reusable rule lanes.
+
+        The caller must validate the decision's owner/generation/index lease and
+        compact the selected action first. No host action dict is reconstructed.
+        Action/state buffers must be distinct. This preserves every action field
+        and alias and fails before writes for a malformed or overflowing row.
+        """
+        rows,layout=self._require_graph(graph)
+        action_rows,a=self._require_graph(action_graph)
+        if self._cpu:raise RuntimeError('Actual CUDA required for action graph binding')
+        if rows!=action_rows:raise ValueError('Matching action graph rows required')
+        t=self.torch
+        self._exact(actors,t.int64,(rows,),'actors')
+        self._exact(active,t.uint8,(rows,),'active')
+        self._exact(argument_refs,t.int32,(rows,3),'action argument refs')
+        self._exact(errors,t.int32,(rows,),'action argument errors')
+        if any(getattr(graph,key).untyped_storage().data_ptr()==getattr(action_graph,key).untyped_storage().data_ptr()
+               for key in ('nodes','edges','payload','counts','roots')):
+            raise ValueError('Separate action graph storage required')
+        self.module.launch('bind_actor_action_args',[
+            graph.nodes,graph.edges,graph.payload,graph.counts,graph.roots,
+            action_graph.nodes,action_graph.edges,action_graph.payload,action_graph.counts,action_graph.roots,
+            actors,active,argument_refs,errors,rows,
+            layout.max_nodes,layout.max_edges,layout.max_payload_bytes,
+            a.max_nodes,a.max_edges,a.max_payload_bytes],
+            grid=(rows+127)//128,block=128,capture_safe=True)
+        return BoundDeviceArguments(graph,argument_refs,errors)
 
     def _bind_cpu(self, dest, actors, seeds, active, refs, errors, with_seed):
         layout = dest.layout

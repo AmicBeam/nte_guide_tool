@@ -22,7 +22,10 @@ def increment(value):
 def program():
     fixture=os.environ.get('NTE_DEVICE_VM_TEST_PROGRAM')
     if fixture:return FrozenRuleProgram.from_json(Path(fixture).read_text())
-    return capture_program({'wide':wide_seed_probe,'increment':increment},
+    from app.modules.card_game.engine.duel_v2.flow import acting_side
+    from app.modules.card_game.engine.duel_v2.state import finished
+    return capture_program({'wide':wide_seed_probe,'increment':increment,
+                            'actor':acting_side,'finished':finished},
         allowed_module_prefixes=DEFAULT_ALLOWED_MODULE_PREFIXES+(__name__,),scope_character_ids=None,scope_card_ids=None)
 
 
@@ -41,6 +44,46 @@ class DeviceVmTest(unittest.TestCase):
         with CudaVm(lower_program(program())) as vm:
             actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),4096,8192,65536))),'wide').decode()
         self.assertEqual(actual,[wide_seed_probe(value) for value in values])
+
+    def test_used_graph_transfer_preserves_aliases_and_empties_invalid_lanes(self):
+        import torch
+        from app.modules.card_game.rl.batched_duel.cuda_vm import CudaVm,DeviceGraph
+        from app.modules.card_game.rl.batched_duel.codec import pack_states,unpack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout,PackedStateBatch
+        from unittest.mock import patch
+        shared={'unknown':[8,9]};values=[{'calls':0,'alias':[shared,shared]},{'calls':1},{'calls':2}]
+        with CudaVm(lower_program(program())) as vm:
+            source=vm.ingest(pack_states(values,GraphLayout(3,32,64,256)))
+            target=vm.ingest(pack_states([{'old':True}]*3,GraphLayout(3,128,256,4096)))
+            workspace=vm.prepare_device_workspace(target)
+            active=torch.ones(3,dtype=torch.uint8,device=vm.device)
+            errors=torch.empty(3,dtype=torch.int32,device=vm.device)
+            vm.load_graph_into_device(workspace,source,active=active,errors=errors)
+            torch.cuda.synchronize()
+            graph=torch.cuda.CUDAGraph()
+            with patch.object(DeviceGraph,'fork',side_effect=AssertionError('Graph transfer fork')):
+                with torch.cuda.graph(graph):
+                    bound=vm.load_graph_into_device(workspace,source,active=active,errors=errors)
+            source.roots[1]=999;active[2]=0
+            before=[getattr(source,k).clone() for k in ('nodes','edges','payload','counts','roots')]
+            graph.replay();torch.cuda.synchronize()
+            self.assertIs(bound,target)
+            self.assertNotEqual(errors[1].item(),0)
+            self.assertEqual(errors[[0,2]].tolist(),[0,0])
+            row=PackedStateBatch(GraphLayout(1,128,256,4096),*[
+                getattr(target,k)[:1].cpu().numpy() for k in ('nodes','edges','payload','counts','roots')])
+            decoded=unpack_states(row)[0]
+            self.assertEqual(decoded,values[0])
+            self.assertIs(decoded['alias'][0],decoded['alias'][1])
+            self.assertEqual(target.counts[1:].tolist(),[[0,0,0],[0,0,0]])
+            self.assertEqual(target.roots[1:].tolist(),[0,0])
+            for name,value in zip(('nodes','edges','payload','counts','roots'),before):
+                self.assertTrue(torch.equal(getattr(source,name),value))
+            tiny=vm.ingest(pack_states([None]*3,GraphLayout(3,1,1,1)))
+            small=vm.prepare_device_workspace(tiny)
+            vm.load_graph_into_device(small,source,active=active,errors=errors);torch.cuda.synchronize()
+            self.assertNotEqual(errors[0].item(),0)
+            self.assertEqual(tiny.counts[0].tolist(),[0,0,0])
 
     def test_actual_cuda_masked_call_graph_never_executes_inactive_rows(self):
         import torch

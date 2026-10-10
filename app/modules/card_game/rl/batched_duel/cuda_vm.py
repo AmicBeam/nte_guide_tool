@@ -94,6 +94,7 @@ enum VmError {{ BAD_PROGRAM=100,STACK_OVERFLOW=101,FRAME_OVERFLOW=102,UNBOUND_LO
     compact_kernel=compact_kernel.replace('dn+(long long)row*maxn*4,de+(long long)row*maxe*2,dp+(long long)row*maxp,\n  dc+row*3,maxn,maxe,maxp',
         'dn+(long long)row*destn*4,de+(long long)row*deste*2,dp+(long long)row*destp,\n  dc+row*3,destn,deste,destp',1)
     source+=compact_kernel
+    source+=_GRAPH_TRANSFER_SOURCE
     return '#define BMT_DEVICE __device__\n'+emit_random_source()+emit_ryu_source()+emit_vm_heap_source()+prefix+source.replace('// COLLECTION_HANDLERS',emit_collection_source()).replace('// OBJECT_HANDLERS',emit_object_source(image)).replace('// BUILTIN_HANDLERS',emit_builtin_source(image.intrinsic_names)).replace('// NUMERIC_HANDLERS',emit_numeric_source()).replace('// REDUCER_HANDLERS',emit_reducer_source(image.intrinsic_names)).replace('// FRAME_GC_HANDLERS',emit_frame_gc_source()).replace('// RANDOM_HANDLERS',emit_random_vm_source(image.intrinsic_names)).replace('// EXCEPTION_HANDLERS',emit_exception_source(image)).replace('// STRING_HANDLERS',emit_string_source(image.intrinsic_names)).replace('// DEEPCOPY_HANDLERS',emit_deepcopy_source(image.intrinsic_names)).replace('// TEXT_HANDLERS',emit_text_method_source()).replace('// DECIMAL_HANDLERS',emit_decimal_source(image.intrinsic_names)).replace('// CONTEXT_HANDLERS',emit_context_source(image)).replace('// STDLIB_HANDLERS','// STDLIB_HANDLERS\n'+emit_stdlib_source(image)).replace('// NUMPY_HANDLERS','// NUMPY_HANDLERS\n'+emit_numpy_source(image.intrinsic_names)+emit_json_source(image.intrinsic_names))
 
 
@@ -611,6 +612,34 @@ extern "C" __global__ void vm_execute(
 '''
 
 
+_GRAPH_TRANSFER_SOURCE=r'''
+extern "C" __global__ void vm_load_graph(
+ const int* sn,const int* se,const unsigned char* sp,const int* sc,const int* sr,
+ int* dn,int* de,unsigned char* dp,int* dc,int* dr,const unsigned char* active,int* errors,
+ int rows,int smn,int sme,int smp,int dmn,int dme,int dmp){
+ using namespace duel_vm_heap;
+ int row=blockIdx.x;if(row>=rows)return;
+ __shared__ int valid,n,e,p;
+ if(threadIdx.x==0){
+  n=sc[row*3];e=sc[row*3+1];p=sc[row*3+2];valid=0;errors[row]=0;
+  if(active[row]){
+   if(n<1||n>smn||e<0||e>sme||p<0||p>smp||sr[row]<0||sr[row]>=n)errors[row]=ERROR_INVALID_REF;
+   else if(n>dmn)errors[row]=ERROR_NODE_CAPACITY;
+   else if(e>dme)errors[row]=ERROR_EDGE_CAPACITY;
+   else if(p>dmp)errors[row]=ERROR_PAYLOAD_CAPACITY;
+   else valid=1;
+  }
+  if(!valid){dc[row*3]=0;dc[row*3+1]=0;dc[row*3+2]=0;dr[row]=0;}
+ }
+ __syncthreads();if(!valid)return;
+ for(long long i=threadIdx.x;i<(long long)n*4;i+=blockDim.x)dn[(long long)row*dmn*4+i]=sn[(long long)row*smn*4+i];
+ for(long long i=threadIdx.x;i<(long long)e*2;i+=blockDim.x)de[(long long)row*dme*2+i]=se[(long long)row*sme*2+i];
+ for(long long i=threadIdx.x;i<p;i+=blockDim.x)dp[(long long)row*dmp+i]=sp[(long long)row*smp+i];
+ __syncthreads();if(threadIdx.x==0){dc[row*3]=n;dc[row*3+1]=e;dc[row*3+2]=p;dr[row]=sr[row];}
+}
+'''
+
+
 class DeviceGraph:
     """Owned GPU graph buffers. Ingress copying is not rule computation."""
     def __init__(self,layout,nodes,edges,payload,counts,roots):
@@ -783,7 +812,9 @@ class CudaVm:
         self.module=CudaModule(emit_vm_source(image,limits),{
             'vm_execute':signature,'vm_execute_device':signature+['uint8*'],
             'vm_clock':['int64*'],'vm_compact':compact_signature,
-            'vm_compact_device':compact_signature+['int32','int32','int32','uint8*','int32*']},device=str(self.device))
+            'vm_compact_device':compact_signature+['int32','int32','int32','uint8*','int32*'],
+            'vm_load_graph':['int32*','int32*','uint8*','int32*','int32*']*2
+                            +['uint8*','int32*']+['int32']*7},device=str(self.device))
         try:
             self.module.ensure_stack()
         except BaseException:
@@ -947,6 +978,34 @@ class CudaVm:
             workspace.queue,active],grid=(rows+127)//128,block=128,capture_safe=True)
         return DeviceCall(self,arena,workspace.outputs,workspace.statuses,
                           workspace.frames,None,(workspace.marks,workspace.queue))
+
+    def load_graph_into_device(self, workspace, source, *, active, errors):
+        """Copy used compact graph bytes into larger reusable rule scratch.
+
+        No full-heap fork or host unpack occurs. References/aliases retain their
+        exact row-local indices. Failed/inactive lanes expose an empty graph;
+        consumers still gate rule calls with all upstream errors.
+        """
+        if self.closed:raise RuntimeError('VM closed')
+        if not isinstance(workspace,DeviceVmWorkspace) or workspace.executor is not self:
+            raise ValueError('Workspace must belong to this frozen VM')
+        target=workspace.arena;self._validate_device_graph(source);self._validate_device_graph(target)
+        t=self.torch;rows=source.rows
+        if rows!=target.rows:raise ValueError('Matching graph lane rows required')
+        for value,dtype in ((active,t.uint8),(errors,t.int32)):
+            if (not isinstance(value,t.Tensor) or value.device!=self.device
+                    or value.dtype!=dtype or value.shape!=(rows,) or not value.is_contiguous()):
+                raise ValueError('Exact graph lane selector/error vector required')
+        if any(getattr(source,key).untyped_storage().data_ptr()==getattr(target,key).untyped_storage().data_ptr()
+               for key in ('nodes','edges','payload','counts','roots')):
+            raise ValueError('Separate graph transfer storage required')
+        a=source.layout;d=target.layout
+        self.module.launch('vm_load_graph',[
+            source.nodes,source.edges,source.payload,source.counts,source.roots,
+            target.nodes,target.edges,target.payload,target.counts,target.roots,active,errors,
+            rows,a.max_nodes,a.max_edges,a.max_payload_bytes,d.max_nodes,d.max_edges,d.max_payload_bytes],
+            grid=rows,block=128,capture_safe=True)
+        return target
 
     def prepare_compaction_workspace(self, source, destination):
         """Bind reusable maps/queue before capture; destination is scratch.

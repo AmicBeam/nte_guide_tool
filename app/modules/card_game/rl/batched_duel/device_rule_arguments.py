@@ -231,4 +231,3 @@ class DeviceRuleArgumentBinder:
                 n_payload += len(raw_seed)
             dest.counts[row, 0] = n_nodes
             dest.counts[row, 2] = n_payload
-

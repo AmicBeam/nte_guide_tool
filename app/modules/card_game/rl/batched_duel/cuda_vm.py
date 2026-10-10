@@ -125,6 +125,7 @@ __device__ inline int length(Context* c,int ref){
  int np_length=0;if(numpy_length(c,ref,&np_length))return np_length;
  const int* n=node(c,ref);if(!n)return 0;
  if(n[0]==TAG_NONE)return 0;
+ if(n[0]==80)return length(c,n[1]);
  if(n[0]==TAG_LIST || n[0]==TAG_TUPLE || n[0]==TAG_DICT || (n[0]>=8&&n[0]<=10) || n[0]==21 || n[0]==22 || n[0]==73)return n[2];
  c->error=UNSUPPORTED_TYPE;return 0;
 }
@@ -145,7 +146,7 @@ __device__ inline int decimal_numeric(Context* c,int ref,int as_float,int* out);
 __device__ inline int decimal_string(Context* c,int ref);
 __device__ inline int truth_value(Context* c,int value){
  int np_truth=0;if(numpy_truth(c,value,&np_truth))return np_truth;
- int tag=kind(c,value);if(tag==28)return decimal_truth(c,value);if(tag==26)return range_size(c,value)!=0;if(tag==21||tag==22||tag==73)return length(c,value)!=0;if(tag>=11)return 1;return duel_vm_heap::truth(&c->h,value);
+ int tag=kind(c,value);if(tag==80)return length(c,value)!=0;if(tag==28)return decimal_truth(c,value);if(tag==26)return range_size(c,value)!=0;if(tag==21||tag==22||tag==73)return length(c,value)!=0;if(tag>=11)return 1;return duel_vm_heap::truth(&c->h,value);
 
 }
 // FRAME_GC_HANDLERS
@@ -208,13 +209,13 @@ __device__ inline int iterator(Context* c,int owner){
  if(kind(c,owner)==60)return numpy_iterator(c,owner);
  int tag=kind(c,owner);if(tag==T_ITER || tag==T_GEN)return owner;
  if(tag==70||tag==71||tag==72)return owner;
- if(tag!=26 && tag!=TAG_LIST && tag!=TAG_TUPLE && tag!=TAG_DICT && !(tag>=8&&tag<=10) && tag!=21 && tag!=22 && tag!=73){c->error=UNSUPPORTED_TYPE;return MISSING;}
+ if(tag!=26 && tag!=TAG_LIST && tag!=TAG_TUPLE && tag!=TAG_DICT && !(tag>=8&&tag<=10) && tag!=21 && tag!=22 && tag!=73 && tag!=80){c->error=UNSUPPORTED_TYPE;return MISSING;}
  return meta(c,T_ITER,owner,0,0);
 }
 __device__ inline int iterator_next(Context* c,int ref){
  if(kind(c,ref)==64)return numpy_iterator_next(c,ref);
  int* it=mutable_node(c,ref);if(!it || it[0]!=T_ITER){c->error=BAD_CALL;return MISSING;}
- int owner=it[1],index=it[2];const int* n=node(c,owner);if(!n)return MISSING;
+ int owner=it[1],index=it[2];if(kind(c,owner)==80)owner=node(c,owner)[1];const int* n=node(c,owner);if(!n)return MISSING;
  if(n[0]==26){
   long long count=range_size(c,owner);if(index>=count)return MISSING;
   long long start=0,step=0;read_int64(&c->h,edge(c,owner,0),&start);read_int64(&c->h,edge(c,owner,2),&step);
@@ -376,7 +377,7 @@ __device__ inline int subscript(Context* c,int owner,int key){
  c->error=UNSUPPORTED_TYPE;return MISSING;
 }
 __device__ inline int contains(Context* c,int needle,int owner){
- int tag=kind(c,owner);if(tag==TAG_DICT || (tag>=8&&tag<=10) || tag==73)return dict_find(&c->h,owner,needle)>=0;
+ int tag=kind(c,owner);if(tag==80)return dict_find(&c->h,node(c,owner)[1],needle)>=0; if(tag==TAG_DICT || (tag>=8&&tag<=10) || tag==73)return dict_find(&c->h,owner,needle)>=0;
  if(tag==21||tag==22)return set_contains(c,needle,owner);
  if(tag==TAG_STR){
   if(kind(c,needle)!=TAG_STR){c->error=UNSUPPORTED_TYPE;return 0;}

@@ -174,6 +174,12 @@ __device__ inline int stdlib_for_iter(Context* c,int ref,int target);
 __device__ inline int stdlib_attribute(Context* c,int owner,int name);
 __device__ inline void stdlib_resume(Context* c,int generator,int caller,int accumulator,int item,int exhausted);
 __device__ inline int stdlib_compare(Context* c,int a,int b,int mode,int* out);
+__device__ inline int stdlib_setlike_item(Context* c,int owner,int i){
+ return edge(c,kind(c,owner)==80?node(c,owner)[1]:owner,i);
+}
+__device__ inline int stdlib_setlike_contains(Context* c,int item,int owner){
+ return kind(c,owner)==80?dict_find(&c->h,node(c,owner)[1],item)>=0:set_contains(c,item,owner);
+}
 __device__ inline int stdlib_binary(Context* c,int a,int b,int op,int* out);
 __device__ inline int stdlib_subscript(Context* c,int owner,int key,int* out);
 __device__ inline int stdlib_store(Context* c,int owner,int key,int val);
@@ -434,6 +440,7 @@ __device__ inline int stdlib_append_raw(Context* c,int acc,int item){
  c->error=BAD_PROGRAM;return 0;
 }
 __device__ inline int stdlib_consume(Context* c,int src,int op,int caller,int keyfn,int extra,int result_override=MISSING){
+ if(kind(c,src)==80)src=iterator(c,src);
  int result=result_override!=MISSING?result_override:(op==STDLIB_ACC_SET||op==STDLIB_ACC_FROZEN)?make_set(c):(op==STDLIB_ACC_COUNTER?stdlib_new_counter(c):make_list(&c->h));
  int acc=stdlib_make_acc(c,op,caller,src,result,keyfn,extra);int tag=kind(c,src);
  if(tag==T_GEN){if(node(c,src)[3]<0)stdlib_finish(c,acc);else resume_generator(c,src,caller,7,acc,MISSING);return 1;}
@@ -514,7 +521,7 @@ __device__ inline int stdlib_call(Context* c,int callable,const int* args,int na
    if(t==TAG_INT||t==TAG_FLOAT||t==TAG_BOOL){result=numeric_binary(c,last,make_int64(&c->h,1),OP_BINARY_ADD);break;}}
   stdlib_push(c,caller,result);return 1;
  }
- if((NATIVE_STDLIB_LIST>=0&&id==NATIVE_STDLIB_LIST)||(NATIVE_STDLIB_TUPLE>=0&&id==NATIVE_STDLIB_TUPLE)){if(nkw){c->error=BAD_CALL;return 1;}if(nargs==1){int tag=kind(c,args[0]);if(tag==T_GEN||tag==T_ITER||tag==T_STDLIB_ENUMERATE||tag==T_STDLIB_COMB||tag==T_STDLIB_PERM){stdlib_consume(c,args[0],id==NATIVE_STDLIB_TUPLE?STDLIB_ACC_TUPLE:STDLIB_ACC_LIST,caller,MISSING,0);return 1;}}return 0;}
+ if((NATIVE_STDLIB_LIST>=0&&id==NATIVE_STDLIB_LIST)||(NATIVE_STDLIB_TUPLE>=0&&id==NATIVE_STDLIB_TUPLE)){if(nkw){c->error=BAD_CALL;return 1;}if(nargs==1){int tag=kind(c,args[0]);if(tag==80){stdlib_consume(c,iterator(c,args[0]),id==NATIVE_STDLIB_TUPLE?STDLIB_ACC_TUPLE:STDLIB_ACC_LIST,caller,MISSING,0);return 1;}if(tag==T_GEN||tag==T_ITER||tag==T_STDLIB_ENUMERATE||tag==T_STDLIB_COMB||tag==T_STDLIB_PERM){stdlib_consume(c,args[0],id==NATIVE_STDLIB_TUPLE?STDLIB_ACC_TUPLE:STDLIB_ACC_LIST,caller,MISSING,0);return 1;}}return 0;}
  if((NATIVE_STDLIB_MIN>=0&&id==NATIVE_STDLIB_MIN)||(NATIVE_STDLIB_MAX>=0&&id==NATIVE_STDLIB_MAX)){int has_key=0,has_def=0,keyfn=stdlib_kw(c,kw_names,kw_values,nkw,"key",&has_key),def=stdlib_kw(c,kw_names,kw_values,nkw,"default",&has_def);if(stdlib_unknown_kw(c,kw_names,nkw,"key","default",0))return 1;if(!has_key)return 0;if(nargs==0||(nargs>1&&has_def)){c->error=BAD_CALL;return 1;}
   int src=nargs==1?args[0]:make_list(&c->h);if(nargs>1){for(int i=0;i<nargs;i++)list_append(&c->h,src,args[i]);}int acc=stdlib_make_acc(c,id==NATIVE_STDLIB_MAX?STDLIB_ACC_MAXKEY:STDLIB_ACC_MINKEY,caller,src,MISSING,keyfn,id==NATIVE_STDLIB_MAX?1:0);stdlib_acc_set(c,acc,8,has_def?def:MISSING);if(kind(c,src)==T_GEN)resume_generator(c,src,caller,7,acc,MISSING);else stdlib_minmax_next(c,acc);return 1;}
  if(NATIVE_STDLIB_ENUMERATE>=0&&id==NATIVE_STDLIB_ENUMERATE){if(stdlib_unknown_kw(c,kw_names,nkw,"start",0,0)||nargs<1||nargs>2){c->error=BAD_CALL;return 1;}int has_start=0,start=nargs==2?args[1]:stdlib_kw(c,kw_names,kw_values,nkw,"start",&has_start);if(nargs==2&&has_start){c->error=BAD_CALL;return 1;}if(stdlib_is_none(c,start))start=make_int64(&c->h,0);long long s=0;if(read_int64(&c->h,start,&s)<0)return 1;int refs[3]={args[0],NIL,start};int ref=make_tuple(&c->h,refs,3);int* p=mutable_node(c,ref);if(p){p[0]=T_STDLIB_ENUMERATE;p[3]=(int)s;}stdlib_push(c,caller,ref);return 1;}
@@ -544,6 +551,18 @@ __device__ inline int stdlib_attribute(Context* c,int owner,int name){
 }
 __device__ inline int stdlib_compare(Context* c,int a,int b,int mode,int* out){
  int ta=kind(c,a),tb=kind(c,b);
+ if(ta==80||tb==80){
+  if(mode!=2&&mode!=3){c->error=UNSUPPORTED_TYPE;*out=0;return 1;}
+  int valid_a=ta==21||ta==22||ta==80,valid_b=tb==21||tb==22||tb==80;
+  int equal=valid_a&&valid_b;
+  if(equal){int n=length(c,a);equal=n==length(c,b);
+   for(int i=0;i<n&&equal&&!c->error&&!c->h.error;i++){
+    int item=edge(c,ta==80?node(c,a)[1]:a,i);
+    equal=tb==80?dict_find(&c->h,node(c,b)[1],item)>=0:set_contains(c,item,b);
+   }
+  }
+  *out=mode==2?equal:!equal;return 1;
+ }
  if(ta==27||tb==27){if(mode==2||mode==3){*out=stdlib_enum_eq(c,a,b);if(mode==3)*out=!*out;return 1;}c->error=UNSUPPORTED_TYPE;*out=0;return 1;}
  if((ta==21||ta==22)&&(tb==21||tb==22)){if(mode==2||mode==3){*out=stdlib_set_eq(c,a,b);if(mode==3)*out=!*out;return 1;}c->error=UNSUPPORTED_TYPE;*out=0;return 1;}
  if(ta==T_STDLIB_COUNTER&&tb==T_STDLIB_COUNTER&&(mode==2||mode==3)){*out=stdlib_mapping_eq(c,a,b);if(mode==3)*out=!*out;return 1;return 1;}
@@ -556,15 +575,15 @@ __device__ inline int stdlib_binary(Context* c,int a,int b,int op,int* out){
  int union_=op==OP_BINARY_OR||op==OP_INPLACE_OR;
  int symmetric=op==OP_BINARY_XOR||op==OP_INPLACE_XOR;
  if(!difference&&!intersection&&!union_&&!symmetric)return 0;
- int ta=kind(c,a),tb=kind(c,b);if(ta!=21&&ta!=22)return 0;
- if(tb!=21&&tb!=22){c->error=UNSUPPORTED_TYPE;return 1;}
+ int ta=kind(c,a),tb=kind(c,b);if(ta!=21&&ta!=22&&ta!=80)return 0;
+ if(tb!=21&&tb!=22&&tb!=80){c->error=UNSUPPORTED_TYPE;return 1;}
  int dest=make_set(c),n=length(c,a);
  for(int i=0;i<n&&!c->error&&!c->h.error;i++){
-  int item=edge(c,a,i),present=set_contains(c,item,b);
+  int item=stdlib_setlike_item(c,a,i),present=stdlib_setlike_contains(c,item,b);
   if(union_||(intersection?present:!present))set_add(c,dest,item);
  }
  if(union_||symmetric)for(int i=0;i<length(c,b)&&!c->error&&!c->h.error;i++){
-  int item=edge(c,b,i);if(union_||!set_contains(c,item,a))set_add(c,dest,item);
+  int item=stdlib_setlike_item(c,b,i);if(union_||!stdlib_setlike_contains(c,item,a))set_add(c,dest,item);
  }
  if(c->error||c->h.error)return 1;
  int inplace=op==OP_INPLACE_SUBTRACT||op==OP_INPLACE_AND||op==OP_INPLACE_OR||op==OP_INPLACE_XOR;
@@ -572,7 +591,7 @@ __device__ inline int stdlib_binary(Context* c,int a,int b,int op,int* out){
   int* original=mutable_node(c,a);if(!original)return 1;original[2]=0;
   for(int i=0;i<length(c,dest)&&!c->error&&!c->h.error;i++)set_add(c,a,edge(c,dest,i));
   *out=a;
- }else{if(ta==22){int* p=mutable_node(c,dest);if(p)p[0]=22;}*out=dest;}
+ }else{if(ta==22&&tb!=80){int* p=mutable_node(c,dest);if(p)p[0]=22;}*out=dest;}
  return 1;
 }
 __device__ inline int stdlib_subscript(Context* c,int owner,int key,int* out){if(kind(c,owner)!=T_STDLIB_COUNTER)return 0;int v=dict_get(&c->h,owner,key,MISSING);if(c->h.error)return 1;if(v==MISSING)v=make_int64(&c->h,0);*out=v;return 1;}

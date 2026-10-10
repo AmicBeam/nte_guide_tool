@@ -46,13 +46,25 @@ def sequence_order_probe(value):
     return left<right,left<=right,left>right,left>=right,left==right,left!=right
 
 
+def keys_view_probe(value):
+    keys=value.keys()
+    before=list(keys)
+    clock=sorted({'turn','remaining'} & keys)
+    equal_before=keys==set(before)
+    sorted_before=sorted(keys)
+    empty_before=bool(keys)
+    value['added']=1
+    after=list(keys)
+    return before,clock,empty_before,after,bool(keys),'added' in keys,equal_before,sorted_before,keys==set(before)
+
+
 def program():
     fixture = os.environ.get('NTE_ENTITY_TEST_PROGRAM')
     if fixture:
         return FrozenRuleProgram.from_json(Path(fixture).read_text())
     return capture_program({'construct_entities': construct_entities, 'enum_attributes': enum_attribute_probe,
                            'json_action_key': json_action_key_probe, 'tuple_key': tuple_key_probe,
-                           'sequence_order': sequence_order_probe},
+                           'sequence_order': sequence_order_probe, 'keys_view': keys_view_probe},
                            allowed_module_prefixes=DEFAULT_ALLOWED_MODULE_PREFIXES + (__name__,),
                            scope_character_ids=None, scope_card_ids=None)
 
@@ -115,3 +127,15 @@ class EntityConstructionTest(unittest.TestCase):
             self.assertEqual(actual,[tuple_key_probe(v) for v in values])
             actual=vm.launch(vm.ingest(pack_states(pairs,GraphLayout(5,4096,8192,65536))),'sequence_order').decode()
             self.assertEqual(actual,[sequence_order_probe(v) for v in pairs])
+
+    def test_actual_cuda_live_dictionary_key_view_and_effect_clock_intersection(self):
+        from copy import deepcopy
+        import torch
+        if not torch.cuda.is_available():self.skipTest('Actual CUDA required')
+        from app.modules.card_game.rl.batched_duel.cuda_vm import CudaVm
+        from app.modules.card_game.rl.batched_duel.codec import pack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        values=[{}, {'phase':'end','turn':2}, {'remaining':3,'turn':1}]
+        with CudaVm(lower_program(program()),guard_standalone_entities=True) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(3,4096,8192,65536))),'keys_view').decode()
+        self.assertEqual(actual,[keys_view_probe(deepcopy(v)) for v in values])

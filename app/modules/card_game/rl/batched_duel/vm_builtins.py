@@ -467,6 +467,9 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
                     if (!tn) {{ c->error = BAD_PROGRAM; return 1; }}
                     *out = make_int64(&c->h, (long long)tn[2]);
                     return 1;
+                }} else if (ttag == 80) {{
+                    *out = make_int64(&c->h, length(c, target));
+                    return 1;
                 }} else if (ttag == T_RANGE_NODE) {{
                     int r_start = edge(c, target, 0, 0);
                     int r_stop = edge(c, target, 1, 0);
@@ -776,13 +779,8 @@ __device__ inline int native_builtin_call(Context* c, int callable, const int* a
             }}
             case METHOD_DICT_KEYS: {{
                 if (nargs != 0) {{ c->error = BAD_CALL; return 1; }}
-                int res = make_list(&c->h);
-                if (res < 0) return 1;
-                int cnt = length(c, owner);
-                for (int i = 0; i < cnt; i++) {{
-                    if (list_append(&c->h, res, edge(c, owner, i, 0)) != 0) return 1;
-                }}
-                *out = res;
+                // Tag 80 is a live dictionary-key view; retain the owner.
+                *out = meta(c, 80, owner, 0, 0);
                 return 1;
             }}
             case METHOD_DICT_VALUES: {{

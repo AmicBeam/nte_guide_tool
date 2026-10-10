@@ -99,6 +99,8 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(enhanced_result['details'][1]['personal_resources_after']['弦能'], 30)
         self.assertFalse(enhanced_result['healing_events'])
         self.assertEqual(enhanced_result['details'][1]['direct_damage'],0)
+        self.assertNotIn('character_akane_six', {
+            b['rule_id'] for b in enhanced_result['details'][1]['triggered_buffs']})
 
     def test_modes_exclude_each_other_and_expire(self):
         r = self.sim([('e', 0), ('a1', 12), ('hold_e', 170), ('a1', 184), ('a1', 440)], nodes=[2,5])
@@ -154,11 +156,13 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(panel['build_options']['curtain_bonus']['layers'],4)
 
     def test_arc_is_permanent_and_e_grants_both_timed_bonuses(self):
+        base_crit=self.sim([('a1',0)])['details'][0]['panel']['crit_rate']
         for level, bonus in [(1,.28),(2,.35),(3,.42),(4,.49),(5,.56)]:
             p=self.payload([('a1',0),('e',10),('a1',25),('a1',170)],arc=ARC)
             p['team'][0]['arc_refinement']=level
             details=simulate_shaft_axis(p)['result']['details']
             for d in details:
+                self.assertAlmostEqual(d['panel']['crit_rate']-base_crit,.12+.03*(level-1))
                 b=next(b for b in d['applied_buffs'] if b['rule_id']=='arc_akane_skill')
                 self.assertEqual(b['stack_count'],1)
                 self.assertAlmostEqual(b['effects']['skill_dmg'],bonus)
@@ -168,7 +172,7 @@ class AkaneTest(unittest.TestCase):
                 self.assertNotIn('arc_akane_basic',ids)
             active={b['rule_id']:b for b in details[2]['applied_buffs']}
             self.assertAlmostEqual(active['arc_akane_basic']['effects']['basic_dmg'],bonus)
-            self.assertAlmostEqual(active['arc_akane_element']['effects']['element_dmg_相'],.16+.04*(level-1))
+            self.assertAlmostEqual(active['arc_akane_element']['effects']['element_dmg_相'],.20+.05*(level-1))
 
     def test_arc_e_refreshes_the_fifteen_second_window(self):
         r=self.sim([('e',0),('e',160),('a1',300),('a1',311)],arc=ARC)
@@ -176,6 +180,20 @@ class AkaneTest(unittest.TestCase):
         expired={b['rule_id'] for b in r['details'][3]['applied_buffs']}
         self.assertTrue({'arc_akane_basic','arc_akane_element'} <= active)
         self.assertTrue({'arc_akane_basic','arc_akane_element'}.isdisjoint(expired))
+
+    def test_six_resonance_grants_fifty_crit_damage_then_expires(self):
+        for resonances, bonus in [([],0),([6],.5)]:
+            with self.subTest(resonances=resonances):
+                p=self.payload([('e',0),('enhanced_e',12),('a1',24),('a1',280)],nodes=range(1,7))
+                p['team'][0]['awakening_resonances']=resonances
+                during,after=simulate_shaft_axis(p)['result']['details'][2:]
+                self.assertAlmostEqual(during['panel']['crit_dmg']-after['panel']['crit_dmg'],bonus)
+                active={b['rule_id']:b for b in during['applied_buffs']}
+                self.assertEqual('character_akane_six' in active,bool(resonances))
+                if resonances:
+                    buff=active['character_akane_six']
+                    self.assertEqual(buff['end_tick']-buff['start_tick'],250)
+                self.assertNotIn('character_akane_six',{b['rule_id'] for b in after['applied_buffs']})
 
     def test_talent_is_attack_for_twenty_seconds_and_f_is_self_crit_damage(self):
         for nodes, crit_rate,crit_dmg in [((),0,0),([6],0,.25)]:

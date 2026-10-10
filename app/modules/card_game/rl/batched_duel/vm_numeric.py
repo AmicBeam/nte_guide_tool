@@ -54,6 +54,32 @@ __device__ inline int numeric_binary(Context* c,int a,int b,int op){
  else if(op==OP_BINARY_TRUE_DIVIDE||op==OP_INPLACE_TRUE_DIVIDE)np_op=4;
  if(numpy_numeric(c,a,b,np_op,&np_out))return np_out;
  int ta=kind(c,a),tb=kind(c,b);
+ if(op==OP_BINARY_MULTIPLY||op==OP_INPLACE_MULTIPLY){
+  int seq=MISSING,times=MISSING;
+  if((ta==TAG_LIST||ta==TAG_TUPLE)&&(tb==TAG_INT||tb==TAG_BOOL)){seq=a;times=b;}
+  else if((tb==TAG_LIST||tb==TAG_TUPLE)&&(ta==TAG_INT||ta==TAG_BOOL)&&op==OP_BINARY_MULTIPLY){seq=b;times=a;}
+  if(seq!=MISSING){
+   long long repeat=0;if(numeric_int(c,times,&repeat)<0)return MISSING;
+   const int* original=node(c,seq);if(!original)return MISSING;
+   int tag=original[0],count=original[2],offset=original[1];
+   if(count<0){c->error=BAD_PROGRAM;return MISSING;}
+   if(repeat<0)repeat=0;
+   long long available=(long long)c->h.max_edges-c->h.counts[1];
+   if(count&&repeat>available/count){c->h.error=ERROR_EDGE_CAPACITY;return MISSING;}
+   long long total=count?repeat*count:0;
+   int out=op==OP_INPLACE_MULTIPLY&&tag==TAG_LIST?seq:meta(c,tag,0,0,0);
+   if(c->error||c->h.error||out==MISSING)return MISSING;
+   if(out<0){c->h.error=ERROR_CONSTANT_WRITE;return MISSING;}
+   int start=c->h.counts[1];
+   for(long long i=0;i<total;i++){
+    int child=edge(c,seq,(int)(i%count));if(c->error||c->h.error)return MISSING;
+    c->h.edges[((long long)start+i)*2]=child;c->h.edges[((long long)start+i)*2+1]=-1;
+   }
+   c->h.counts[1]+=(int)total;
+   int* target=mutable_node(c,out);if(!target)return MISSING;
+   target[1]=start;target[2]=(int)total;return out;
+  }
+ }
  if(op==OP_BINARY_ADD||op==OP_INPLACE_ADD){
   if(ta==TAG_STR&&tb==TAG_STR){int refs[2]={a,b};return concat_strings(c,refs,2);}
   if((ta==TAG_LIST&&tb==TAG_LIST)||(ta==TAG_TUPLE&&tb==TAG_TUPLE)){

@@ -181,7 +181,15 @@ def unpacked_generator_probe(values):
     expanded=[-2,*(v for v in values),99]
     reused=(v*2 for v in values)
     first=(*reused,);second=(*reused,)
-    return parts,expanded,first,second,(*range(len(values)),),[*iter(values),42]
+    counts=[0.0]*len(values)
+    return parts,expanded,first,second,(*range(len(values)),),[*iter(values),42],counts
+
+
+def sequence_repeat_probe(count):
+    shared=[7];original=[shared];alias=original
+    repeated=original*count;reversed_order=count*original
+    original*=count
+    return repeated,reversed_order,original,alias,original is alias,('x',shared)*count
 
 
 def type_identity_probe(value):
@@ -285,6 +293,7 @@ class SourceTest(unittest.TestCase):
             ('inplace_sort_keys',inplace_sort_keys_probe),
             ('inplace_sort_exception',inplace_sort_exception_probe),
             ('unpacked_generator',unpacked_generator_probe),
+            ('sequence_repeat',sequence_repeat_probe),
             ('type_identity',type_identity_probe),
         )
         for entry, fn in cases:
@@ -306,6 +315,18 @@ class SourceTest(unittest.TestCase):
 
 
 class CudaExecutionTest(unittest.TestCase):
+    def test_sequence_repetition_keeps_aliases_empty_counts_and_inplace_identity(self):
+        from app.modules.card_game.rl.batched_duel.codec import pack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        rows=[-1,0,1,3,False,True]
+        program=test_program('sequence_repeat','sequence_repeat',sequence_repeat_probe,own=True)
+        with self.executor(lower_program(program)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(rows,GraphLayout(6,8192,16384,131072))),'sequence_repeat').decode()
+        self.assertEqual(actual,[sequence_repeat_probe(row) for row in rows])
+        for result in actual:
+            self.assertIs(result[2],result[3])
+            if len(result[0])>1:self.assertIs(result[0][0],result[0][1])
+
     def test_generator_star_expansion_keeps_stack_and_exhaustion(self):
         from app.modules.card_game.rl.batched_duel.codec import pack_states
         from app.modules.card_game.rl.batched_duel.schema import GraphLayout

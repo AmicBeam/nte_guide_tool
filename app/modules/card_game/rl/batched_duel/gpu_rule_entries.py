@@ -176,6 +176,22 @@ def seven_initialize(parameters):
     return initialize(parameters)
 
 
+def teacher_continue(state):
+    """Exact three-step rule continuation used by covered-value leaves."""
+    from copy import deepcopy
+    world=deepcopy(state)
+    for _ in range(3):
+        if canonical_finished(world):break
+        actor=canonical_acting_side(world)
+        legal,index=canonical_rule_decision(world,actor)
+        world=canonical_clean(canonical_simulate_action(world,actor,legal[index]))
+    return world
+
+
+def seven_teacher_continue(state):
+    return teacher_continue(state)
+
+
 CANONICAL_FUNCTIONS = {
     'acting_side': canonical_acting_side,
     'finished': canonical_finished,
@@ -237,8 +253,11 @@ ENTRY_FUNCTIONS_BY_RUNTIME = {
 # Explicit device-setup extension. Historical rule-parity entry sets stay
 # unchanged; a closed driver must freeze and validate this additional entry.
 DEVICE_SETUP_ENTRY_NAMES=('initialize',)
+DEVICE_CONTINUATION_ENTRY_NAMES=('teacher_continue',)
 ENTRY_FUNCTIONS['initialize']=initialize
 SEVEN_ENTRY_FUNCTIONS['initialize']=seven_initialize
+ENTRY_FUNCTIONS['teacher_continue']=teacher_continue
+SEVEN_ENTRY_FUNCTIONS['teacher_continue']=seven_teacher_continue
 
 
 def entry_functions(runtime=None):

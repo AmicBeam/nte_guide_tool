@@ -19,7 +19,7 @@ class DeviceRuleCallsContractTest(unittest.TestCase):
             self.assertFalse(hasattr(DeviceRuleGraphCalls, name))
         self.assertEqual(
             ALLOWED_ENTRIES,
-            frozenset(('clean', 'sample_world', 'simulate_action', 'apply_action')))
+            frozenset(('clean','teacher_continue','sample_world','simulate_action','apply_action')))
         layout = GraphLayout(2, 8, 8, 32)
         with self.assertRaises((TypeError, RuntimeError, ValueError)):
             DeviceRuleGraphCalls(object(), object(), rows=2, compact_layout=layout)

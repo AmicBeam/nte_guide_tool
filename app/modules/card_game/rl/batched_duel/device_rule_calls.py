@@ -24,7 +24,7 @@ from .schema import GraphLayout
 from .vm_heap import ERROR_INDEX_OUT_OF_BOUNDS
 
 
-ALLOWED_ENTRIES = frozenset(('clean', 'sample_world', 'simulate_action', 'apply_action'))
+ALLOWED_ENTRIES = frozenset(('clean','teacher_continue','sample_world','simulate_action','apply_action'))
 LARGE_NODES = 262144
 LARGE_EDGES = 524288
 LARGE_PAYLOAD_BYTES = 32 * 1024 * 1024
@@ -246,7 +246,7 @@ class DeviceRuleGraphCalls:
     def _validate_inputs(self, entry, inputs, *, actors, seeds, decision, action_indices):
         self._validate_states(inputs, self.rows, pool=self.state_store, name='input')
         t = self.t
-        if entry == 'clean':
+        if entry in ('clean','teacher_continue'):
             if actors is not None or seeds is not None or decision is not None or action_indices is not None:
                 raise ValueError('clean takes no actor, seed, or action arguments')
             return
@@ -310,7 +310,7 @@ class DeviceRuleGraphCalls:
         self.vm.load_graph_into_device(
             self.workspace, self.input_graph, active=self.lane_active, errors=self.load_errors)
         self._or_errors(self.load_errors)
-        if plan.entry == 'clean':
+        if plan.entry in ('clean','teacher_continue'):
             self.refs_clean[:, 0].copy_(self.large.roots)
             argument_refs = self.refs_clean
         elif plan.entry == 'sample_world':

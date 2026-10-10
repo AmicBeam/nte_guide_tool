@@ -8,7 +8,7 @@ from dataclasses import fields,replace
 
 from .device_rule_calls import DeviceRuleGraphCalls,_empty_graph
 from .device_rule_lanes import DeviceRuleLanes
-from .device_rule_protocol import DeviceDecision,DeviceStateBatch
+from .device_rule_protocol import DeviceDecision,DeviceStateBatch,DeviceValueObservation
 from .device_rule_results import DeviceRuleResultReader
 from .gpu_rule_projection import GraphProjectionKernel
 from .gpu_seven_candidates import RawCandidateTokens,MAX_MULLIGAN_SELECTIONS,ORDER_SLOTS
@@ -41,10 +41,14 @@ class DeviceRulePresentation:
     def prepare_decision(self,action_store):
         return self._prepare('decision',action_store)
 
+    def prepare_value(self):
+        return self._prepare('value')
+
     def _prepare(self,kind,action_store=None):
         if self.closed or self.calls.closed:raise RuntimeError('Rule presentation closed')
         if self.t.cuda.is_current_stream_capturing():raise RuntimeError('Prepare presentation plans before capture')
-        required=('acting_side','finished') if kind=='metadata' else ('public_legal_decision',)
+        required=(('acting_side','finished','public_legal_decision','terminal_value') if kind=='value'
+                  else ('acting_side','finished') if kind=='metadata' else ('public_legal_decision',))
         for entry in required:
             if entry not in self.vm.image.entries or not self.vm.capability(entry)['ready']:
                 raise RuntimeError('Missing frozen presentation entry: '+entry)
@@ -82,6 +86,19 @@ class DevicePresentationPlan:
         if kind=='metadata':
             self.local=p.reader.prepare_metadata_workspace(p.scratch_rows)
             self.output=p.reader.prepare_metadata_workspace(p.rows)
+            self.action_store=None
+            return
+        if kind=='value':
+            self.local=p.reader.prepare_metadata_workspace(p.scratch_rows)
+            self.pair=p.reader.prepare_pair_workspace(p.scratch_rows)
+            self.scalar=p.reader.prepare_float_workspace(p.scratch_rows)
+            self.root_refs=t.empty((p.scratch_rows,1),dtype=t.int32,device=p.device)
+            self.output=DeviceValueObservation(
+                t.zeros((p.rows,p.projection.obs_dim),dtype=t.float32,device=p.device),
+                t.zeros((p.rows,1),dtype=t.float32,device=p.device),
+                t.zeros(p.rows,dtype=t.bool,device=p.device),
+                t.zeros(p.rows,dtype=t.float64,device=p.device),
+                t.zeros(p.rows,dtype=t.int32,device=p.device))
             self.action_store=None
             return
         from .device_graph_storage import CompactDeviceGraphStore
@@ -125,8 +142,12 @@ class DevicePresentationPlan:
         if not t.cuda.is_current_stream_capturing():raise RuntimeError('Embed presentation in CUDA capture')
         c._validate_states(states,p.rows,pool=c.state_store)
         if states.active.dtype!=t.bool:raise ValueError('Device lease active mask must be bool')
-        if self.kind=='decision':
+        if self.kind in ('decision','value'):
             c._exact(observers,t.int64,(p.rows,),'decision observers')
+        if self.kind=='value':
+            self.output.observations.zero_();self.output.viewer_is_actor.zero_()
+            self.output.terminal.zero_();self.output.terminal_value.zero_();self.output.errors.copy_(states.errors)
+        elif self.kind=='decision':
             self.action_leases.slots.fill_(-1);self.action_leases.generations.zero_()
             self.action_leases.owners.copy_(states.owners);self.action_leases.active.zero_()
             self.action_leases.errors.copy_(states.errors)
@@ -143,27 +164,50 @@ class DevicePresentationPlan:
             active=(local.active&(errors==0)).view(t.uint8)
             p.vm.load_graph_into_device(c.workspace,c.input_graph,active=active,errors=self.load_errors)
             errors=errors|self.load_errors;active=(local.active&(errors==0)).view(t.uint8)
-            if self.kind=='metadata':
-                self.refs[:,0].copy_(c.large.roots)
-                actor=p.vm.launch_into_device(c.workspace,'acting_side',argument_refs=self.refs,
+            if self.kind in ('metadata','value'):
+                root_refs=self.refs if self.kind=='metadata' else self.root_refs
+                root_refs[:,0].copy_(c.large.roots)
+                actor=p.vm.launch_into_device(c.workspace,'acting_side',argument_refs=root_refs,
                     active=active,gpu_deadlines=c.deadlines)
                 self.actor_refs.copy_(actor.outputs);errors=errors|actor.statuses[:,0]
                 active=(local.active&(errors==0)).view(t.uint8)
-                ended=p.vm.launch_into_device(c.workspace,'finished',argument_refs=self.refs,
+                ended=p.vm.launch_into_device(c.workspace,'finished',argument_refs=root_refs,
                     active=active,gpu_deadlines=c.deadlines)
                 errors=errors|ended.statuses[:,0]
                 meta=p.reader.metadata_into_device(c.large,actor_refs=self.actor_refs,finished_refs=ended.outputs,
                     input_errors=errors.contiguous(),active=local.active.view(t.uint8),output=self.local)
                 meta=replace(meta,errors=meta.errors|errors)
-                for field in fields(meta):
-                    self.lanes.scatter_tensor_device(getattr(meta,field.name),getattr(self.output.meta,field.name))
-                return
+                if self.kind=='metadata':
+                    for field in fields(meta):
+                        self.lanes.scatter_tensor_device(getattr(meta,field.name),getattr(self.output.meta,field.name))
+                    return
+                errors=meta.errors
+                active=(local.active&(errors==0)).view(t.uint8)
             self.actor_rows.copy_(t.where(valid.bool(),observers[ids],0))
             c.binder.bind_into_device(c.large,self.actor_rows,active,argument_refs=self.refs,errors=self.bind_errors)
             errors=errors|self.bind_errors;active=(local.active&(errors==0)).view(t.uint8)
             call=p.vm.launch_into_device(c.workspace,'public_legal_decision',argument_refs=self.refs,
                 active=active,gpu_deadlines=c.deadlines)
             errors=errors|call.statuses[:,0];active=(local.active&(errors==0)).view(t.uint8)
+            if self.kind=='value':
+                pair=p.reader.pair_into_device(call,active=active,output=self.pair)
+                errors=errors|pair.errors;active=(local.active&(errors==0)).view(t.uint8)
+                observed,view_errors=p.projection.project_observation(call,pair.second,active=active)
+                errors=errors|view_errors;active=(local.active&(errors==0)).view(t.uint8)
+                terminal=p.vm.launch_into_device(c.workspace,'terminal_value',argument_refs=self.refs,
+                    active=active,gpu_deadlines=c.deadlines)
+                errors=errors|terminal.statuses[:,0]
+                scalar=p.reader.float_into_device(c.large,terminal.outputs,input_errors=errors.contiguous(),
+                    active=active,output=self.scalar)
+                errors=errors|scalar.errors
+                bad=meta.finished&((scalar.values!=0.)&(scalar.values!=1.)&(scalar.values!=-1.))
+                errors=errors|bad.to(t.int32)*153
+                value=DeviceValueObservation(observed.observations,
+                    ((meta.actors==self.actor_rows)&local.active).to(t.float32)[:,None],meta.finished,
+                    t.where(meta.finished,scalar.values,0.),errors)
+                for field in fields(value):
+                    self.lanes.scatter_tensor_device(getattr(value,field.name),getattr(self.output,field.name))
+                return
             raw=p.projection.project_tokens_device(call,active=active)
             errors=errors|raw.errors;active=(local.active&(errors==0)).view(t.uint8)
             p.vm.compact_into_device(call,self.compact,active=active)
@@ -188,10 +232,12 @@ class DevicePresentationPlan:
             self.lanes.scatter_tensor_device(raw.action_types,self.action_types)
         self.lanes.capture_dispatch(states,operation)
         guard_error=(self.lanes.loop.errors!=0).to(t.int32)[0]*152
-        destination_errors=self.output.meta.errors if self.kind=='metadata' else self.action_leases.errors
+        destination_errors=(self.output.meta.errors if self.kind=='metadata' else self.output.errors
+                            if self.kind=='value' else self.action_leases.errors)
         destination_errors.bitwise_or_(states.active.to(t.int32)*guard_error)
         self.captured=True
         if self.kind=='metadata':return self.output.meta
+        if self.kind=='value':return self.output
         return DeviceDecision(states,self.action_store,self.action_leases.slots,self.action_leases.generations,
             self.action_refs,self.action_types,self.candidates.tokens.counts,self.candidates.tokens.mask,
             self.observations,self.candidates,self.action_leases.errors)

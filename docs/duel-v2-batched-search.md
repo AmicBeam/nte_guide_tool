@@ -225,3 +225,5 @@ VM字典键视图使用内部tag80保留原字典所有者；len、布尔值、�
 VM列表／元组重复支持序列乘整数及整数乘序列，保留重复元素的别名；列表`*=`保留原容器身份，非正次数得到空序列。重复先核对完整边容量再分配，不截断、不逐项造深副本；生成器星号展开后的`[0.0] * len(CARD_IDS)`纳入同一设备回归。源码支持不代表完整采样预检或完整局已经通过。
 
 冻结器保留已捕获函数在真实模块命名空间中的静态别名；不能只保存函数代码而漏掉作为contract参数调用的`feature_names`绑定，也不动态发现无关模块函数。暂停帧GC对tag75累加器只追踪source/result/key/keys/default-or-sort-owner/current-item引用，op/caller/index/options整数不作heap引用；尚未建帧的mode7累加器作为pending root进入GC。小帧池下的排序回调、星号展开与保留生成器纳入设备压力回归。此GC仅回收暂停帧，不回收堆容量，不能据此宣称initialize节点容量失败已解决。
+
+固定观察者价值计划在CUDA调用正式actor／finished、viewer公共观察和terminal_value，viewer不随当前行动方切换，非终局显式标记value-only上下文。`teacher_continue`为显式冻结的三步covered-value规则续演扩展，复用原教师选择、simulate_action及clean，终局提前结束；它和初始化扩展均须额外冻结与实测，不从历史默认entry集合继承资格。公开投影／图调用组件接线不代表完整Adapter或完整终局已经批准。

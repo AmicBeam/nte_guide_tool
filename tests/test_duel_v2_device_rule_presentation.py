@@ -39,7 +39,7 @@ class DeviceRulePresentationCudaTest(unittest.TestCase):
         if fixture:
             program=FrozenRuleProgram.from_json(Path(fixture).read_text());verify_source_hashes(program)
         elif sys.version_info[:2]==(3,10):
-            program=capture_gpu_rule_program(['acting_side','finished','public_legal_decision','clean'],runtime='seven')
+            program=capture_gpu_rule_program(['acting_side','finished','public_legal_decision','terminal_value','clean'],runtime='seven')
         else:self.fail('Explicit CPython3.10 frozen presentation fixture required')
         keys=runtime_matrix_keys('seven');decks={deck['id']:deck for deck in STARTER_DECKS}
         states=[new_game(seed=20261011+i,first_side='a',skip_mulligan=True,
@@ -61,6 +61,7 @@ class DeviceRulePresentationCudaTest(unittest.TestCase):
                     self.addCleanup(presentation.close)
                     metadata_plan=presentation.prepare_metadata()
                     decision_plan=presentation.prepare_decision(actions_pool)
+                    value_plan=presentation.prepare_value()
                     outer=CudaConditionalWhile(device=vm.device,max_ticks=2,seconds=300)
                     self.addCleanup(outer.close)
                     pending=torch.ones(1,dtype=torch.uint8,device=vm.device)
@@ -69,11 +70,16 @@ class DeviceRulePresentationCudaTest(unittest.TestCase):
                     def body():
                         meta=metadata_plan.capture_device(roots)
                         decision=decision_plan.capture_device(roots,viewers)
-                        captured.extend((meta,decision));pending.zero_()
+                        value=value_plan.capture_device(roots,1-viewers)
+                        captured.extend((meta,decision,value));pending.zero_()
                     outer.capture(pending,body,initialize=lambda:pending.fill_(1));outer.replay();torch.cuda.synchronize()
-                    meta,decision=captured
+                    meta,decision,value=captured
                     self.assertEqual(meta.errors.tolist(),[0]*len(states))
                     self.assertEqual(decision.errors.tolist(),[0]*len(states))
+                    self.assertEqual(value.errors.tolist(),[0]*len(states))
+                    self.assertEqual(value.viewer_is_actor.tolist(),[[0.]]*len(states))
+                    self.assertEqual(value.terminal.tolist(),[False]*len(states))
+                    self.assertEqual(value.terminal_value.tolist(),[0.]*len(states))
                     self.assertEqual(outer.errors.item(),0)
                     self.assertEqual(metadata_plan.lanes.loop.errors.item(),0)
                     self.assertEqual(decision_plan.lanes.loop.errors.item(),0)
@@ -90,6 +96,9 @@ class DeviceRulePresentationCudaTest(unittest.TestCase):
                         self.assertEqual(errors.item(),0)
                         np.testing.assert_array_equal(dense.candidates[0,:len(c)].cpu().numpy(),c)
                         self.assertEqual(decision.counts[row].item(),len(legal))
+                        fixed_view=observe(state,'b',include_previews=False)
+                        fixed_x,_=encode(fixed_view,[])
+                        np.testing.assert_array_equal(value.observations[row].cpu().numpy(),fixed_x)
                     self.assertEqual(actions_pool.live.sum().item(),len(states))
                     presentation.release_decision_device(decision)
                     roots_pool.release_device(roots)

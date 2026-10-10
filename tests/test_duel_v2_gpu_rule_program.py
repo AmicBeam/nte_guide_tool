@@ -33,6 +33,22 @@ def _capture(names=entries.LIGHT_ENTRY_NAMES, lower=True):
 
 
 class WrapperCorrespondenceTest(unittest.TestCase):
+    def test_fixed_teacher_continuation_matches_original_three_steps(self):
+        from app.modules.card_game.rl.covered_rollout import rule_decision
+        from app.modules.card_game.rl.league_rollout import clean
+        from app.modules.card_game.engine.duel_v2 import acting_side
+        from app.modules.card_game.engine.duel_v2.simulation import simulate_action
+        state=new_game(seed=717,first_side='a',skip_mulligan=True,
+                       decks={'a':COLLAPSE,'b':LINGKE})
+        before=deepcopy(state);expected=deepcopy(state)
+        for _ in range(3):
+            if expected['phase']=='finished':break
+            actor=acting_side(expected);legal,chosen=rule_decision(expected,actor)
+            expected=clean(simulate_action(expected,actor,legal[chosen]))
+        self.assertEqual(entries.seven_teacher_continue(state),expected)
+        self.assertEqual(state,before)
+        ended=deepcopy(state);ended['phase']='finished';ended['winner']='a'
+        self.assertEqual(entries.seven_teacher_continue(ended),ended)
     @unittest.skipUnless(_can_capture(),'CPython3.10 source capture required')
     def test_captured_contract_exports_retain_function_attribute_binding(self):
         program=gp.capture_gpu_rule_program(['sample_world'],runtime='seven')

@@ -392,7 +392,19 @@ __device__ inline int compare(Context* c,int a,int b,int mode){
  int decimal_result=0;if(decimal_compare(c,a,b,mode,&decimal_result))return decimal_result;
  if(mode==2 || mode==3){int eq=vm_equal(c,a,b);return mode==2?eq:!eq;}
  int ta=kind(c,a),tb=kind(c,b),cmp=0;
- if(ta==TAG_STR&&tb==TAG_STR)cmp=str_compare(&c->h,a,b);
+ if((ta==TAG_TUPLE&&tb==TAG_TUPLE)||(ta==TAG_LIST&&tb==TAG_LIST)){
+  int left=length(c,a),right=length(c,b),limit=left<right?left:right;
+  for(int i=0;i<limit;i++){
+   int av=edge(c,a,i),bv=edge(c,b,i);
+   if(vm_equal(c,av,bv))continue;
+   if(c->error||c->h.error)return 0;
+   // Python compares the first unequal pair with the requested operator;
+   // length is relevant only after an entirely equal common prefix.
+   return compare(c,av,bv,mode);
+  }
+  cmp=left<right?-1:left>right?1:0;
+ }
+ else if(ta==TAG_STR&&tb==TAG_STR)cmp=str_compare(&c->h,a,b);
  else if((ta==TAG_INT||ta==TAG_BOOL)&&(tb==TAG_INT||tb==TAG_BOOL)){
   long long aa=0,bb=0;numeric_int(c,a,&aa);numeric_int(c,b,&bb);cmp=aa<bb?-1:aa>bb?1:0;
  }else if(ta==TAG_FLOAT||tb==TAG_FLOAT){

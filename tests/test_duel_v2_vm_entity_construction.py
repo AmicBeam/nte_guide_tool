@@ -37,11 +37,22 @@ def json_action_key_probe(value):
     return json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
 
 
+def tuple_key_probe(value):
+    return max(range(len(value)), key=lambda index: (value[index], -index))
+
+
+def sequence_order_probe(value):
+    left,right=value
+    return left<right,left<=right,left>right,left>=right,left==right,left!=right
+
+
 def program():
     fixture = os.environ.get('NTE_ENTITY_TEST_PROGRAM')
     if fixture:
         return FrozenRuleProgram.from_json(Path(fixture).read_text())
-    return capture_program({'construct_entities': construct_entities, 'enum_attributes': enum_attribute_probe, 'json_action_key': json_action_key_probe},
+    return capture_program({'construct_entities': construct_entities, 'enum_attributes': enum_attribute_probe,
+                           'json_action_key': json_action_key_probe, 'tuple_key': tuple_key_probe,
+                           'sequence_order': sequence_order_probe},
                            allowed_module_prefixes=DEFAULT_ALLOWED_MODULE_PREFIXES + (__name__,),
                            scope_character_ids=None, scope_card_ids=None)
 
@@ -89,3 +100,18 @@ class EntityConstructionTest(unittest.TestCase):
         with CudaVm(lower_program(program()),guard_standalone_entities=True) as vm:
             actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(2,4096,8192,65536))),'json_action_key').decode()
         self.assertEqual(actual,[json_action_key_probe(v) for v in values])
+
+    def test_actual_cuda_teacher_tuple_ranking_and_nested_sequence_order(self):
+        import torch
+        if not torch.cuda.is_available():self.skipTest('Actual CUDA required')
+        from app.modules.card_game.rl.batched_duel.cuda_vm import CudaVm
+        from app.modules.card_game.rl.batched_duel.codec import pack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        values=[[0.5,0.5,0.4],[-2,-1,-1],[0.0,-0.0,0.0]]
+        pairs=[((1,2),(1,3)),((1,),(1,0)),([1,4],[1,3]),
+               ((('a',2),1),(('a',2),0)),((1.0,0),(True,0))]
+        with CudaVm(lower_program(program()),guard_standalone_entities=True) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(3,4096,8192,65536))),'tuple_key').decode()
+            self.assertEqual(actual,[tuple_key_probe(v) for v in values])
+            actual=vm.launch(vm.ingest(pack_states(pairs,GraphLayout(5,4096,8192,65536))),'sequence_order').decode()
+            self.assertEqual(actual,[sequence_order_probe(v) for v in pairs])

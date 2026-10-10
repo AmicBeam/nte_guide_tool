@@ -422,6 +422,7 @@ __device__ inline void stdlib_minmax_next(Context* c,int acc){
  int src=edge(c,acc,2),tag=kind(c,src),item=MISSING;
  if(tag==T_STDLIB_ENUMERATE||tag==T_STDLIB_COMB||tag==T_STDLIB_PERM)item=stdlib_iter_next(c,src);
  else if(tag==T_ITER)item=iterator_next(c,src);
+ else if(tag==26){int it=iterator(c,src);stdlib_acc_set(c,acc,2,it);item=iterator_next(c,it);}
  else{int idx=node(c,acc)[3],n=length(c,src);if(idx>=n){stdlib_finish(c,acc);return;}item=edge(c,src,idx);mutable_node(c,acc)[3]=idx+1;}
  if(item==MISSING){stdlib_finish(c,acc);return;}stdlib_acc_set(c,acc,9,item);stdlib_invoke(c,edge(c,acc,4),item,edge(c,acc,1),acc);
 }

@@ -238,11 +238,11 @@ def _rollback(out, config, nets, best_state, best_dir, decks, origins, learning_
     return learning_rate, folder
 
 
-def learn(out, config, *, resume=False):
-    validate_round_launch(config,resume=resume)
-    if config.get('runtime')=='seven':
+def learn(out, config, *, resume=False, device_driver=None):
+    if isinstance(config,dict) and config.get('runtime')=='seven':
         from app.modules.card_game.rl.seven_round import run
-        return run(out,config,resume=resume)
+        return run(out,config,resume=resume,device_driver=device_driver)
+    validate_round_launch(config,resume=resume)
     if config.get('runtime')=='recovery':
         from app.modules.card_game.rl.recovery_round import run
         return run(out,config,resume=resume)
@@ -492,7 +492,7 @@ def learn(out, config, *, resume=False):
         for p in out.rglob('*') if p.is_file() and p.name != 'delivery-manifest.json'})
 
 
-def main():
+def main(*, device_driver=None):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--workers', type=int, default=6)
@@ -547,11 +547,17 @@ def main():
     p.add_argument('--value-check-replicas',type=int,choices=(1,2,3),default=1)
     a = p.parse_args()
     out = a.output.resolve()
+    if a.runtime=='seven' and (a.run or a.worker or a.resume):
+        from app.modules.card_game.rl.batched_search.device_execution_contract import require_closed_device_driver,DeviceExecutionNotReady
+        try:
+            require_closed_device_driver(device_driver,purpose='training')
+        except DeviceExecutionNotReady as exc:
+            p.error(str(exc))
     if a.worker:
         config = json.loads((out / 'config.json').read_text(encoding='utf-8'))
         validate_round_launch(config,resume=a.resume,output=out)
         try:
-            learn(out, config,resume=a.resume)
+            learn(out, config,resume=a.resume,device_driver=device_driver)
         except Exception as exc:
             write(out / 'failure.json', dict(error=repr(exc), time=time.time()))
             raise
@@ -560,6 +566,14 @@ def main():
         if not a.run: p.error('Resume requires --run and an existing recovery output')
         config=json.loads((out/'config.json').read_text())
         if config.get('runtime') not in ('seven','recovery'): p.error('Only current/residual runtimes support exact resume')
+        if config.get('runtime')=='seven':
+            from app.modules.card_game.rl.batched_search.device_execution_contract import require_closed_device_driver,DeviceExecutionNotReady
+            try:
+                driver=require_closed_device_driver(device_driver,purpose='training')
+            except DeviceExecutionNotReady as exc:
+                p.error(str(exc))
+            driver.validate_frozen_inputs(config)
+            return driver.run_device_batch(config,output=out,resume=True)
         guard=json.loads((out/'guard.json').read_text())
         pid=guard.get('worker_pid')
         if type(pid) is int and pid>0:
@@ -665,6 +679,11 @@ def main():
     print(json.dumps(config, ensure_ascii=False, indent=2), flush=True)
     if not a.run:
         return
+    if a.runtime=='seven':
+        # The actual closed service owns its complete GPU orchestration. Do not
+        # fall through to the historical ProcessPool/cooperative supervisor.
+        device_driver.validate_frozen_inputs(config)
+        return device_driver.run_device_batch(config,output=out,resume=False)
     try:
         validate_round_launch(config)
     except (ValueError,OSError,KeyError) as exc:

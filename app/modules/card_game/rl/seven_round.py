@@ -868,7 +868,20 @@ def resume_completed_batches(out, config):
     return completed
 
 
-def run(out, config, *, resume=False):
+def run(out, config, *, resume=False, device_driver=None):
+    """Current training must own a qualified closed GPU service before writes.
+
+    The legacy CPU/cooperative implementation remains a historical reference,
+    not a fallback. Static planning and separate parity diagnostics are not
+    this execution entry and cannot manufacture a service from config flags.
+    """
+    from .batched_search.device_execution_contract import require_closed_device_driver
+    driver=require_closed_device_driver(device_driver,purpose='training')
+    driver.validate_frozen_inputs(config)
+    return driver.run_device_batch(config,output=out,resume=resume)
+
+
+def _historical_cooperative_run(out, config, *, resume=False):
     """Complete fixed-build seven-team learning path; supplemental release eval stays explicit."""
     completed_batches=resume_completed_batches(out,config) if resume else 0
     validate_launch(config,resume=resume,completed_batches=completed_batches)

@@ -41,7 +41,8 @@ def write(path, data):
 
 def fingerprint():
     from .seven_checkpoint import algorithm_identity
-    return sha256((algorithm_identity()+Path(__file__).read_text()).encode()).hexdigest()
+    boundary = Path(__file__).parent/'batched_search/device_learning_context.py'
+    return sha256((algorithm_identity()+Path(__file__).read_text()+boundary.read_text()).encode()).hexdigest()
 
 
 def rollout_contract(config):
@@ -105,6 +106,17 @@ def rollout_contract(config):
 
 
 def collect_search_batch(pool, jobs, folder, config, **kwargs):
+    from .batched_search.device_learning_context import ClosedDeviceLearningContext
+    if isinstance(pool, ClosedDeviceLearningContext):
+        games = collect(pool, jobs, folder, rollout=pool.collector, **kwargs)
+        diagnostics = getattr(pool.collector, 'last_diagnostics', None)
+        if diagnostics:
+            write(Path(folder)/'search-diagnostics.json', diagnostics)
+        if config.get('preflight'):
+            from .batched_search.training_rollout import verify_training_replay
+            checks = [verify_training_replay(job, game) for job, game in zip(jobs, games)]
+            write(Path(folder)/'gpu-replay-check.json', checks)
+        return games
     from .batched_search.training_rollout import gpu_training_requested, models_for_jobs, rollout_from_config
     if not gpu_training_requested(config):
         return collect(pool,jobs,folder,**kwargs)
@@ -264,8 +276,15 @@ def projected_learning_work(config, receipt, *, resume=False, completed_batches=
 
 def collect(pool, jobs, folder, *, learning=False, require_search=False, rollout=None):
     from .episode_replay import dump_episode
+    from .batched_search.device_learning_context import ClosedDeviceLearningContext
     folder = Path(folder); records = []; games = []
-    results = rollout.collect(jobs) if rollout is not None else pool.map(play, jobs)
+    if isinstance(pool, ClosedDeviceLearningContext):
+        if rollout is not None and rollout is not pool.collector:
+            raise ValueError('Closed collection cannot substitute a cooperative rollout')
+        rollout = pool.collector
+    results = list(rollout.collect(jobs) if rollout is not None else pool.map(play, jobs))
+    if len(results) != len(jobs):
+        raise ValueError('Collection omitted or duplicated jobs')
     for job, result in zip(jobs, results):
         record = {k: job[k] for k in ('id', 'seed', 'first', 'left', 'right') if k in job}
         record.update(complete=result['complete'], winner=result.get('winner'), reason=result.get('reason'),
@@ -844,9 +863,14 @@ def evaluate_frozen(pool, out, selected, initial, decks, report, config):
                 teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source')))
         write(folder/'planned-jobs.json',jobs)
         results=[]
-        for offset in range(0,len(jobs),config['workers']):
-            if time.time()>=config['evaluate_until']: break
-            results.extend(pool.map(evaluate_job,jobs[offset:offset+config['workers']]))
+        from .batched_search.device_learning_context import ClosedDeviceLearningContext
+        if isinstance(pool, ClosedDeviceLearningContext):
+            if time.time() < config['evaluate_until']:
+                results = pool.evaluate_jobs(jobs)
+        else:
+            for offset in range(0,len(jobs),config['workers']):
+                if time.time()>=config['evaluate_until']: break
+                results.extend(pool.map(evaluate_job,jobs[offset:offset+config['workers']]))
         write(folder/'evaluation/index.json',results)
         write_matrix(folder,results,ROSTER,selected,dict(config,smoke=False,initial_models=str(initial),inference=mode))
         cells=coverage(results,plan);write(folder/'coverage.json',cells)
@@ -881,7 +905,20 @@ def run(out, config, *, resume=False, device_driver=None):
     return driver.run_device_batch(config,output=out,resume=resume)
 
 
+def run_closed_device_learning(out, config, *, device_driver, resume=False):
+    """Reuse the learning core only after the real device service is qualified."""
+    from .batched_search.device_learning_context import ClosedDeviceLearningContext
+    context = ClosedDeviceLearningContext(device_driver)
+    context.driver.validate_frozen_inputs(config)
+    return _run_learning_core(out, config, resume=resume, device_context=context)
+
+
 def _historical_cooperative_run(out, config, *, resume=False):
+    """Explicit historical diagnostics only; never a formal-entry fallback."""
+    return _run_learning_core(out, config, resume=resume)
+
+
+def _run_learning_core(out, config, *, resume=False, device_context=None):
     """Complete fixed-build seven-team learning path; supplemental release eval stays explicit."""
     completed_batches=resume_completed_batches(out,config) if resume else 0
     validate_launch(config,resume=resume,completed_batches=completed_batches)
@@ -923,7 +960,9 @@ def _historical_cooperative_run(out, config, *, resume=False):
             hard_deadline=config['hard_deadline'],runtime='seven',roster=list(ROSTER),
             **dict(dict(full_matrix=False,complete_report=False,quality_approved=False,website_approval=False),**extra)))
         print(phase,cycle,extra,flush=True)
-    with ProcessPoolExecutor(max_workers=config['workers'],mp_context=get_context('spawn')) as pool:
+    collection_context = (device_context if device_context is not None else
+        ProcessPoolExecutor(max_workers=config['workers'],mp_context=get_context('spawn')))
+    with collection_context as pool:
         if not resume:
             status('value_preflight')
             value_started=time.time()

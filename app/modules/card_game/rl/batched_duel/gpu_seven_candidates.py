@@ -597,7 +597,37 @@ def encode_tokens(
         )
 
     card_templates = get_card_template_table(dev)
+    candidates = _encode_token_arrays(int_tok, flt_tok, flags, turns, mull_cards,
+        counts, mask, order_tok, select_tok, extra_ap, card_templates)
 
+    # 11. Finite check
+    if not t.isfinite(candidates).all():
+        raise ValueError("Non-finite candidate features detected in GPU encoding")
+
+    return PackedCandidateBatch(
+        candidates=candidates,
+        mask=mask,
+        counts=counts,
+        schema_sha=SCHEMA_SHA,
+        device=dev,
+        request_ids=ids,
+    )
+
+
+def _candidate_ratio32(value, exact):
+    if exact:
+        t = _require_torch()
+        return (value.to(dtype=t.float64) / 10.0).to(dtype=t.float32)
+    return value / 10.0
+
+
+def _encode_token_arrays(int_tok, flt_tok, flags, turns, mull_cards, counts, mask,
+                         order_tok, select_tok, extra_ap, card_templates,
+                         *, exact_ratios=False):
+    """Pure tensor encoding shared by host-validation and device-validation APIs."""
+    t = _require_torch()
+    dev = int_tok.device
+    n, m = int_tok.shape[:2]
     # 1. Unpack integer tokens
     action_type = int_tok[:, :, 0]
     actor_seat_idx = int_tok[:, :, 1]
@@ -624,7 +654,7 @@ def encode_tokens(
     clamped_card_idx = t.where(
         card_kind_idx >= 0,
         card_kind_idx,
-        t.tensor(NUM_CARDS, dtype=t.int64, device=dev),
+        t.full_like(card_kind_idx, NUM_CARDS),
     )
     gathered = card_templates[clamped_card_idx]  # [N, M, 6]
     card_cost = gathered[:, :, 0]
@@ -639,16 +669,16 @@ def encode_tokens(
     # 4. Fill base features (cols 0..10)
     is_mulligan = (action_type == ACT_MULLIGAN)
     col0 = action_type.float()
-    col1 = t.where(is_mulligan, t.tensor(-1.0, device=dev), actor_seat_idx.float())
-    col2 = t.where(is_mulligan, t.tensor(-1.0, device=dev), card_kind_idx.float())
-    col3 = t.where(is_mulligan, t.tensor(-1.0, device=dev), target_side.float())
-    col4 = t.where(is_mulligan, t.tensor(-1.0, device=dev), target_seat_idx.float())
-    col5 = t.where(is_mulligan, t.tensor(0.0, device=dev), card_cost)
-    col6 = t.where(is_mulligan, t.tensor(0.0, device=dev), card_attack)
-    col7 = t.where(is_mulligan, t.tensor(0.0, device=dev), card_shield)
-    col8 = t.where(is_mulligan, t.tensor(0.0, device=dev), card_hp)
-    col9 = t.where(is_mulligan, t.tensor(0.0, device=dev), card_instant)
-    col10 = t.where(is_mulligan, t.tensor(0.0, device=dev), revealed)
+    col1 = t.where(is_mulligan, t.full_like(actor_seat_idx, -1).float(), actor_seat_idx.float())
+    col2 = t.where(is_mulligan, t.full_like(card_kind_idx, -1).float(), card_kind_idx.float())
+    col3 = t.where(is_mulligan, t.full_like(target_side, -1).float(), target_side.float())
+    col4 = t.where(is_mulligan, t.full_like(target_seat_idx, -1).float(), target_seat_idx.float())
+    col5 = t.where(is_mulligan, t.zeros_like(card_cost), card_cost)
+    col6 = t.where(is_mulligan, t.zeros_like(card_attack), card_attack)
+    col7 = t.where(is_mulligan, t.zeros_like(card_shield), card_shield)
+    col8 = t.where(is_mulligan, t.zeros_like(card_hp), card_hp)
+    col9 = t.where(is_mulligan, t.zeros_like(card_instant), card_instant)
+    col10 = t.where(is_mulligan, t.zeros_like(revealed), revealed)
 
     candidates[:, :, 0:11] = t.stack(
         [col0, col1, col2, col3, col4, col5, col6, col7, col8, col9, col10],
@@ -678,7 +708,8 @@ def encode_tokens(
 
     # 8. Candidate context (cols CONTEXT_START..CONTEXT_START+NUM_CONTEXT)
     turn_count_2d = turns.view(n, 1)
-    expires_in = t.clamp(raw_expires - turn_count_2d, min=0.0) / 10.0
+    expires = t.clamp(raw_expires - turn_count_2d, min=0.0)
+    expires_in = _candidate_ratio32(expires, exact_ratios)
     derived_diff = (item_derived != static_derived).float()
     context_block = t.stack(
         [is_copy, expires_in, derived_diff, antique],
@@ -713,24 +744,113 @@ def encode_tokens(
             select_tok[:, :, slot].clamp(min=0).unsqueeze(-1),
             valid_sel[:, :, slot].unsqueeze(-1).float() * 0.5,
         )
-    extra[:, :, -1] = extra_ap / 10.0
+    extra[:, :, -1] = _candidate_ratio32(extra_ap, exact_ratios)
     candidates = t.cat([candidates, extra], dim=-1)
 
     # 10. Mask out padded candidates
     candidates = candidates * mask.unsqueeze(-1).float()
 
-    # 11. Finite check
-    if not t.isfinite(candidates).all():
-        raise ValueError("Non-finite candidate features detected in GPU encoding")
+    return candidates
 
-    return PackedCandidateBatch(
-        candidates=candidates,
-        mask=mask,
-        counts=counts,
-        schema_sha=SCHEMA_SHA,
-        device=dev,
-        request_ids=ids,
-    )
+
+def encode_tokens_device(tokens: RawCandidateTokens, *, device='cuda',
+                         allow_cpu_reference=False, active=None, template_table=None):
+    """Encode pre-resident tokens and return per-row device validation errors.
+
+    No UUID/request IDs, host tensor predicates, NumPy conversion or ingress
+    copies. Invalid rows become zero candidates/counts/masks and error=1;
+    inactive rows stay inert. Prepare the static template table before capture.
+    This primitive does not claim complete device-rule execution.
+    """
+    t = _require_torch()
+    dev = _resolve_device(device)
+    if dev.type != 'cuda' and not (dev.type == 'cpu' and allow_cpu_reference is True):
+        raise ValueError('CUDA required; CPU is an explicit encoding oracle only')
+    if not isinstance(tokens, RawCandidateTokens):
+        raise TypeError('Device RawCandidateTokens required')
+    integer_names = ('int_tokens', 'mulligan_cards', 'counts', 'order_cards', 'select_cards')
+    float_names = ('float_tokens', 'item_flags', 'turn_counts', 'extra_ap')
+    for name in integer_names + float_names + ('mask',):
+        value = getattr(tokens, name)
+        allowed = ((t.int32, t.int64) if name in integer_names else
+                   (t.float32, t.float64) if name in float_names else (t.bool,))
+        if not isinstance(value, t.Tensor) or value.device != dev or value.dtype not in allowed:
+            raise ValueError('Exact pre-resident candidate token dtype/device required: ' + name)
+    int_tok = tokens.int_tokens.to(dtype=t.int64)
+    if int_tok.ndim != 3 or int_tok.shape[2] != 7:
+        raise ValueError('Candidate token shape must be N,M,7')
+    n, m = int_tok.shape[:2]
+    if n < 1 or m < 1:
+        raise ValueError('Nonempty static candidate capacity required')
+    expected = dict(float_tokens=(n, m, 8), item_flags=(n, m, 2), turn_counts=(n,),
+                    counts=(n,), mask=(n, m), order_cards=(n, m, 2, ORDER_SLOTS), extra_ap=(n, m))
+    for name, shape in expected.items():
+        if getattr(tokens, name).shape != shape:
+            raise ValueError('Candidate token buffers are misaligned: ' + name)
+    for name in ('mulligan_cards', 'select_cards'):
+        value = getattr(tokens, name)
+        if value.ndim != 3 or value.shape[:2] != (n, m) or value.shape[2] > MAX_MULLIGAN_SELECTIONS:
+            raise ValueError('Bounded card-selection token shape required')
+    if active is None:
+        active = t.ones(n, dtype=t.bool, device=dev)
+    if not isinstance(active, t.Tensor) or active.device != dev or active.dtype != t.bool or active.shape != (n,):
+        raise ValueError('Device boolean row activity required')
+    if template_table is None:
+        if dev.type == 'cuda' and t.cuda.is_current_stream_capturing() and str(dev) not in _TEMPLATE_CACHE:
+            raise RuntimeError('Prepare card template table before CUDA capture')
+        template_table = get_card_template_table(dev)
+    if (not isinstance(template_table, t.Tensor) or template_table.device != dev
+            or template_table.dtype != t.float32 or template_table.shape != (NUM_CARDS + 1, 6)):
+        raise ValueError('Exact resident static card template table required')
+
+    flt_tok = tokens.float_tokens.to(dtype=t.float64)
+    flags = tokens.item_flags.to(dtype=t.float64)
+    turns = tokens.turn_counts.to(dtype=t.float64)
+    extra_ap = tokens.extra_ap.to(dtype=t.float64)
+    counts = tokens.counts.to(dtype=t.int64)
+    mask = tokens.mask
+    mull_cards = tokens.mulligan_cards.to(dtype=t.int64)
+    order_tok = tokens.order_cards.to(dtype=t.int64)
+    select_tok = tokens.select_cards.to(dtype=t.int64)
+    bad = ((counts < 0) | (counts > m)
+           | (mask != (t.arange(m, device=dev)[None, :] < counts[:, None])).any(-1))
+    for value in (flt_tok, flags, extra_ap):
+        bad = bad | ~t.isfinite(value).reshape(n, -1).all(-1)
+    bad = bad | ~t.isfinite(turns)
+    limits = (len(ACTION_TYPES)-1, NUM_SEATS-1, NUM_CARDS-1, 1,
+              NUM_SEATS-1, NUM_OPTIONS-1, NUM_CARDS-1)
+    safe_cols = []
+    for col, maximum in enumerate(limits):
+        values = int_tok[:, :, col]
+        bad = bad | ((values < -1) | (values > maximum)).any(-1)
+        safe_cols.append(values.clamp(-1, maximum))
+    bad = bad | (mask & (int_tok[:, :, 0] < 0)).any(-1)
+    for value in (mull_cards, order_tok, select_tok):
+        bad = bad | ((value < -1) | (value >= NUM_CARDS)).reshape(n, -1).any(-1)
+    bad = bad | ~t.isfinite(template_table).all()
+    errors = (bad & active).to(t.int32)
+    good = active & ~bad
+    safe_mask = mask & good[:, None]
+    safe_count = t.where(good, counts, 0)
+    safe_int = t.stack(safe_cols, -1)
+    safe_int = t.where(good[:, None, None], safe_int, -1)
+    safe_float = t.where(good[:, None, None], flt_tok, 0.)
+    safe_flags = t.where(good[:, None, None], flags, 0.)
+    safe_turns = t.where(good, turns, 0.)
+    safe_ap = t.where(good[:, None], extra_ap, 0.)
+    safe_mull = t.where(good[:, None, None], mull_cards.clamp(-1, NUM_CARDS-1), -1)
+    safe_order = t.where(good[:, None, None, None], order_tok.clamp(-1, NUM_CARDS-1), -1)
+    safe_select = t.where(good[:, None, None], select_tok.clamp(-1, NUM_CARDS-1), -1)
+    safe_templates = t.where(t.isfinite(template_table), template_table, 0.)
+    candidates = _encode_token_arrays(safe_int, safe_float, safe_flags, safe_turns,
+        safe_mull, safe_count, safe_mask, safe_order, safe_select, safe_ap,
+        safe_templates, exact_ratios=True)
+    invalid_output = ~t.isfinite(candidates).all(-1).all(-1)
+    errors = errors | (invalid_output & active).to(t.int32)
+    output_good = good & ~invalid_output
+    candidates = t.where(output_good[:, None, None], candidates, 0.)
+    return PackedCandidateBatch(candidates, safe_mask & output_good[:, None],
+        t.where(output_good, safe_count, 0), SCHEMA_SHA, dev, ()), errors
 
 
 def encode_candidate_batch(

@@ -186,11 +186,11 @@
     "harmony_source_note": "用户2026-10-10按新解包仅更新a4环合为5.847；a1/a2/a3仍为3.56/5.496/9.096，普攻合计23.999，不强行缩放至24。",
     "latest_awakening_source": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。",
     "confirmed_action_durations": {
-      "source": "用户2026-10-10提供",
+      "source": "用户2026-10-10提供；2026-10-11普攻前三段各延长0.1秒，其他耗时沿用原确认值。",
       "seconds": {
-        "a1": 0.4,
-        "a2": 0.4,
-        "a3": 1.0,
+        "a1": 0.5,
+        "a2": 0.5,
+        "a3": 1.1,
         "a4": 0.7,
         "e": 0.5,
         "hold_e": 1.0,
@@ -198,6 +198,16 @@
         "q2": 0.0,
         "short_enhanced_e": 0.7,
         "long_enhanced_e": 1.5
+      },
+      "basic_chain_update": {
+        "source": "用户2026-10-11补充，非官方实测帧数",
+        "changed_seconds": {
+          "a1": 0.5,
+          "a2": 0.5,
+          "a3": 1.1
+        },
+        "a4_seconds": 0.7,
+        "full_chain_seconds": 2.8
       }
     },
     "awakening_multiplier_stage": {

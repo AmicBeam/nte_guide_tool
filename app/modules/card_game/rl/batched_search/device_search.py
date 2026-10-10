@@ -137,6 +137,7 @@ class DeviceGumbelSearch:
         self.phase_work = torch.zeros((DONE, rows), dtype=torch.int64, **z)
         self.peak_device_roots = torch.zeros((), dtype=torch.int64, **z)
         self._unfinished = torch.zeros(rows, dtype=torch.uint8, **z)
+        self._world_live = torch.zeros(rows, dtype=torch.bool, **z)
         self._pool = None
         self._root_decision = self._decision = None
 
@@ -178,6 +179,13 @@ class DeviceGumbelSearch:
         t = self.t
         observed = self.rules.value_observation_device(self._masked(states, mask), viewers)
         self._error(observed.errors, mask, RULE_ERROR)
+        meta = self.rules.metadata_device(self._masked(states, mask))
+        self._error(meta.errors, mask, RULE_ERROR)
+        invalid_terminal_meta = meta.finished & ((meta.winners < -1) | (meta.winners > 1))
+        self._error(invalid_terminal_meta | (meta.finished != observed.terminal), mask, METADATA_ERROR)
+        bad_terminal = observed.terminal & ((observed.terminal_value != -1.)
+            & (observed.terminal_value != 0.) & (observed.terminal_value != 1.))
+        self._error(bad_terminal, mask, METADATA_ERROR)
         c = t.zeros((self.rows, 1, self.auxiliary.candidate_dim), dtype=t.float32, device=self.device)
         valid = t.zeros((self.rows, 1), dtype=t.bool, device=self.device)
         value_only = t.ones(self.rows, dtype=t.bool, device=self.device)
@@ -256,6 +264,7 @@ class DeviceGumbelSearch:
                       self.leaf_values, self.policy, self.visit_policy, self.visits, self.phase_work):
             value.zero_()
         self.peak_device_roots.zero_()
+        self._world_live.zero_()
         mask = roots.active & (self.errors == 0)
         meta = self.rules.metadata_device(self._masked(roots, mask))
         self._error(meta.errors, mask, RULE_ERROR)
@@ -318,6 +327,10 @@ class DeviceGumbelSearch:
         cleaned = self.rules.clean_device(self._masked(sampled, sample))
         self._release_replaced(sampled, cleaned, sample)
         self._replace_world(cleaned, sample)
+        leased = ((cleaned.slots != self._roots.slots)
+                  | (cleaned.generations != self._roots.generations))
+        self._error(~leased, sample & (self.errors == 0), RULE_ERROR)
+        self._world_live.copy_(t.where(sample, leased, self._world_live))
         self.depth.copy_(t.where(sample, 0, self.depth))
         self.path_valid.masked_fill_(sample[:, None], False)
         self.phase.copy_(t.where(sample, INSPECT, self.phase))
@@ -327,6 +340,7 @@ class DeviceGumbelSearch:
         meta = self.rules.metadata_device(world)
         self._error(meta.errors, inspect, RULE_ERROR)
         terminal = inspect & meta.finished
+        self._error((meta.winners < -1) | (meta.winners > 1), terminal, METADATA_ERROR)
         terminal_value = t.where(meta.winners == self._viewers, 1.,
                                  t.where(meta.winners >= 0, -1., 0.)).to(t.float64)
         self.leaf_values.copy_(t.where(terminal, terminal_value, self.leaf_values))
@@ -425,6 +439,7 @@ class DeviceGumbelSearch:
         accepted = backup & (self.errors == 0)
         self.completed.add_(accepted.long())
         self.rules.release_device(self._world(backup))
+        self._world_live.logical_and_(~backup)
         self.phase.copy_(t.where(accepted & (self.completed < self.requested), SAMPLE, self.phase))
         self.phase.copy_(t.where(accepted & (self.completed == self.requested), FINAL, self.phase))
 
@@ -443,6 +458,14 @@ class DeviceGumbelSearch:
         self.phase.copy_(t.where(final, CLEANUP, self.phase))
 
         cleanup = (before == CLEANUP)
+        # Execution errors must not strand already-issued hypothetical leases.
+        # Release is a checked ownership operation, not further rule execution;
+        # the adapter validates slot/generation/owner even after search failure.
+        cleanup_world = DeviceStateBatch(self._pool, self._world_slots,
+            self._world_generations, self._world_owners, cleanup & self._world_live,
+            t.zeros_like(self.errors))
+        self.rules.release_device(cleanup_world)
+        self._world_live.logical_and_(~cleanup)
         for column in range(self.nodes_per_root):
             active = cleanup & (column < self.node_count)
             released = self.statistics.release_nodes(self.node_slots[:, column],

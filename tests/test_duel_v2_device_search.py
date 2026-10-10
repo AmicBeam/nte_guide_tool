@@ -239,6 +239,35 @@ class DeviceSearchTest(unittest.TestCase):
             value = sum(int(word) << (64*j) for j, word in enumerate(actual[i]))
             self.assertEqual(value, seed + 31*104729)
 
+    def test_failure_cleanup_releases_hypothetical_lease_but_keeps_physical_root(self):
+        import torch
+        torch.set_num_threads(1)
+        engine, fixture = self.engine()
+        roots = self.initialize(engine, fixture)
+        engine.tick()  # SAMPLE issues one hypothetical lease per root.
+        self.assertEqual(int(fixture.live.sum()), 4)
+        engine.errors[0] = 2  # A failed inference must still drain its lease.
+        result = self.finish_cpu(engine)
+        self.assertFalse(bool(result.complete[0]))
+        self.assertTrue(bool(result.complete[1]))
+        self.assertEqual(int(fixture.live.sum()), 2)
+        self.assertTrue(bool(fixture.live[roots.slots].all()))
+
+    def test_terminal_winner_cannot_silently_turn_unfinished_code_into_draw(self):
+        import torch
+        torch.set_num_threads(1)
+        engine, fixture = self.engine()
+        self.initialize(engine, fixture)
+        original = fixture.metadata_device
+        def malformed(states):
+            meta = original(states)
+            winners = torch.where(meta.finished, torch.full_like(meta.winners, -2), meta.winners)
+            return DeviceMeta(meta.actors, meta.phases, winners, meta.finished, meta.versions, meta.errors)
+        fixture.metadata_device = malformed
+        result = self.finish_cpu(engine)
+        self.assertFalse(bool(result.complete.any()))
+        self.assertTrue(bool((result.errors & METADATA_ERROR).all()))
+
     def test_actual_cuda_1600_fixture_ticks_can_be_captured(self):
         import torch
         if not torch.cuda.is_available():

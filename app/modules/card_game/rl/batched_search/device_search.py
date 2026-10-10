@@ -165,6 +165,9 @@ class DeviceGumbelSearch:
     def _replace_world(self, states, mask):
         if states.pool is not self._pool:
             raise ValueError('Device worlds must share a stable checked state arena')
+        physical = self._is_physical_lease(states)
+        self._error(physical | (states.owners != self._roots.owners), mask, METADATA_ERROR)
+        self._world_live.copy_(self.t.where(mask, states.active & ~physical, self._world_live))
         for target, value in ((self._world_slots, states.slots),
                               (self._world_generations, states.generations),
                               (self._world_owners, states.owners)):
@@ -173,7 +176,24 @@ class DeviceGumbelSearch:
 
     def _release_replaced(self, old, new, mask):
         changed = (old.slots != new.slots) | (old.generations != new.generations)
-        self.rules.release_device(self._masked(old, mask & changed))
+        self._release_lease(old, mask & changed)
+
+    def _release_lease(self, states, mask):
+        # A search execution error is not a failed ownership check. Keep it in
+        # self.errors while validating/reclaiming the separately issued lease.
+        physical = self._is_physical_lease(states)
+        self._error(physical, mask & states.active, METADATA_ERROR)
+        request = DeviceStateBatch(states.pool, states.slots, states.generations,
+            states.owners, mask & states.active & ~physical, self.t.zeros_like(self.errors))
+        self.rules.release_device(request)
+        self._error(request.errors, mask, RULE_ERROR)
+
+    def _is_physical_lease(self, states):
+        t = self.t
+        at = t.searchsorted(self._sorted_root_slots, states.slots).clamp(0, self.rows-1)
+        root = self._root_order[at]
+        return ((states.slots == self._roots.slots[root])
+                & (states.generations == self._roots.generations[root]))
 
     def _fixed_value(self, states, viewers, model_ids, mask):
         t = self.t
@@ -183,6 +203,9 @@ class DeviceGumbelSearch:
         self._error(meta.errors, mask, RULE_ERROR)
         invalid_terminal_meta = meta.finished & ((meta.winners < -1) | (meta.winners > 1))
         self._error(invalid_terminal_meta | (meta.finished != observed.terminal), mask, METADATA_ERROR)
+        expected_terminal = t.where(meta.winners == viewers, 1.,
+                                     t.where(meta.winners >= 0, -1., 0.)).to(t.float64)
+        self._error(meta.finished & (observed.terminal_value != expected_terminal), mask, METADATA_ERROR)
         bad_terminal = observed.terminal & ((observed.terminal_value != -1.)
             & (observed.terminal_value != 0.) & (observed.terminal_value != 1.))
         self._error(bad_terminal, mask, METADATA_ERROR)
@@ -250,6 +273,7 @@ class DeviceGumbelSearch:
         self._vector(policy_index_by_side, t.int64, (self.rows, 2))
         self._vector(auxiliary_index_by_side, t.int64, (self.rows, 2))
         self._roots, self._viewers, self._seeds = roots, viewers, world_seed_limbs
+        self._sorted_root_slots, self._root_order = roots.slots.sort()
         self._simulation_seeds = t.stack([add_world_seed_stride(world_seed_limbs, i)
                                           for i in range(self.simulations)], 1)
         self._pool = roots.pool
@@ -288,9 +312,11 @@ class DeviceGumbelSearch:
         written = self.statistics.write_nodes(self._base_slots, roots.owners, prior, value,
             decision.valid, active=active, expected_generations=self.node_generations[:, 0])
         self._error(written.error, active, STATISTICS_ERROR)
-        self.node_generations[:, 0].copy_(written.generations)
-        self.keys[:, 0].copy_(hashed.keys)
-        self.node_count.copy_(active.long())
+        claimed = active & ~written.error
+        self.node_generations[:, 0].copy_(t.where(claimed, written.generations,
+                                                 self.node_generations[:, 0]))
+        self.keys[:, 0].copy_(t.where(claimed[:, None], hashed.keys, 0))
+        self.node_count.copy_(claimed.long())
         self._noise = t.zeros_like(prior)
         if self.noise:
             draw = self.random.gumbel_device(decision.valid, active)
@@ -324,13 +350,12 @@ class DeviceGumbelSearch:
                                                 self.completed.clamp(0, self.simulations - 1)]
         sampled = self.rules.sample_world_device(self._masked(self._roots, sample),
                                                  self._viewers, selected_seeds)
-        cleaned = self.rules.clean_device(self._masked(sampled, sample))
-        self._release_replaced(sampled, cleaned, sample)
-        self._replace_world(cleaned, sample)
-        leased = ((cleaned.slots != self._roots.slots)
-                  | (cleaned.generations != self._roots.generations))
+        # recovery_search starts traversal directly from sample_world. Applying
+        # an extra clean here would silently change that source contract.
+        self._replace_world(sampled, sample)
+        leased = ((sampled.slots != self._roots.slots)
+                  | (sampled.generations != self._roots.generations))
         self._error(~leased, sample & (self.errors == 0), RULE_ERROR)
-        self._world_live.copy_(t.where(sample, leased, self._world_live))
         self.depth.copy_(t.where(sample, 0, self.depth))
         self.path_valid.masked_fill_(sample[:, None], False)
         self.phase.copy_(t.where(sample, INSPECT, self.phase))
@@ -343,6 +368,10 @@ class DeviceGumbelSearch:
         self._error((meta.winners < -1) | (meta.winners > 1), terminal, METADATA_ERROR)
         terminal_value = t.where(meta.winners == self._viewers, 1.,
                                  t.where(meta.winners >= 0, -1., 0.)).to(t.float64)
+        terminal_observation = self.rules.value_observation_device(self._world(terminal), self._viewers)
+        self._error(terminal_observation.errors, terminal, RULE_ERROR)
+        self._error(~terminal_observation.terminal
+                    | (terminal_observation.terminal_value != terminal_value), terminal, METADATA_ERROR)
         self.leaf_values.copy_(t.where(terminal, terminal_value, self.leaf_values))
         exhausted = inspect & ~meta.finished & (self.depth >= self.max_depth)
         traverse = inspect & ~meta.finished & ~exhausted
@@ -440,7 +469,7 @@ class DeviceGumbelSearch:
         self._error(backed.error, backup, STATISTICS_ERROR)
         accepted = backup & (self.errors == 0)
         self.completed.add_(accepted.long())
-        self.rules.release_device(self._world(backup))
+        self._release_lease(self._world(backup), backup & self._world_live)
         self._world_live.logical_and_(~backup)
         self.phase.copy_(t.where(accepted & (self.completed < self.requested), SAMPLE, self.phase))
         self.phase.copy_(t.where(accepted & (self.completed == self.requested), FINAL, self.phase))
@@ -466,7 +495,7 @@ class DeviceGumbelSearch:
         cleanup_world = DeviceStateBatch(self._pool, self._world_slots,
             self._world_generations, self._world_owners, cleanup & self._world_live,
             t.zeros_like(self.errors))
-        self.rules.release_device(cleanup_world)
+        self._release_lease(cleanup_world, cleanup & self._world_live)
         self._world_live.logical_and_(~cleanup)
         for column in range(self.nodes_per_root):
             active = cleanup & (column < self.node_count)

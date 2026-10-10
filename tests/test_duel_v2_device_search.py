@@ -288,6 +288,129 @@ class DeviceSearchTest(unittest.TestCase):
         self.assertFalse(bool(release_errors.any()))
         self.assertEqual(int(fixture.live.sum()), 4)
 
+    def test_valid_but_wrong_viewer_terminal_value_is_rejected(self):
+        import torch
+        torch.set_num_threads(1)
+        engine, fixture = self.engine()
+        self.initialize(engine, fixture)
+        original = fixture.value_observation_device
+        def wrong_frame(states, viewers):
+            observed = original(states, viewers)
+            value = torch.where(observed.terminal, -observed.terminal_value, observed.terminal_value)
+            return DeviceValueObservation(observed.observations, observed.viewer_is_actor,
+                                          observed.terminal, value, observed.errors)
+        fixture.value_observation_device = wrong_frame
+        result = self.finish_cpu(engine)
+        self.assertFalse(bool(result.complete.any()))
+        self.assertTrue(bool((result.errors & METADATA_ERROR).all()))
+
+    def test_backup_failure_does_not_disable_checked_world_release(self):
+        import torch
+        from app.modules.card_game.rl.batched_search.device_search import BACKUP
+        torch.set_num_threads(1)
+        engine, fixture = self.engine()
+        roots = self.initialize(engine, fixture)
+        original_release = fixture.release_device
+        def skip_execution_error_rows(states):
+            active = states.active & (states.errors == 0)
+            original_release(DeviceStateBatch(states.pool, states.slots, states.generations,
+                                             states.owners, active, states.errors))
+        fixture.release_device = skip_execution_error_rows
+        for _ in range(30):
+            if bool((engine.phase == BACKUP).all()):
+                break
+            engine.tick()
+        self.assertTrue(bool((engine.phase == BACKUP).all()))
+        original_backup = engine.statistics.backup
+        fired = [False]
+        def reject_first(*args, **kwargs):
+            result = original_backup(*args, **kwargs)
+            if not fired[0]:
+                result.error[0] = True
+                fired[0] = True
+            return result
+        engine.statistics.backup = reject_first
+        result = self.finish_cpu(engine)
+        self.assertFalse(bool(result.complete[0]))
+        self.assertTrue(bool(result.complete[1]))
+        self.assertEqual(int(fixture.live.sum()), 2)
+        self.assertTrue(bool(fixture.live[roots.slots].all()))
+
+    def test_teacher_cannot_replace_hypothetical_lease_with_physical_root(self):
+        import torch
+        torch.set_num_threads(1)
+        engine, fixture = self.engine()
+        roots = self.initialize(engine, fixture)
+        def alias_root(states, viewers, horizon=3):
+            return DeviceStateBatch(fixture, roots.slots, roots.generations,
+                                    roots.owners, states.active, states.errors)
+        fixture.teacher_continue_device = alias_root
+        result = self.finish_cpu(engine)
+        self.assertFalse(bool(result.complete.any()))
+        self.assertTrue(bool((result.errors & METADATA_ERROR).all()))
+        self.assertTrue(bool(fixture.live[roots.slots].all()))
+        self.assertEqual(int(fixture.live.sum()), 2)
+
+    def test_failed_root_node_claim_cannot_release_an_existing_foreign_node(self):
+        import torch
+        torch.set_num_threads(1)
+        engine, fixture = self.engine()
+        slots = torch.tensor([0])
+        owners = torch.tensor([99])
+        prior = torch.tensor([[.4, .3, .3]], dtype=torch.float64)
+        first = engine.statistics.write_nodes(slots, owners, prior,
+            torch.tensor([0.], dtype=torch.float64), torch.ones((1, 3), dtype=torch.bool))
+        self.assertFalse(bool(first.error.any()))
+        self.initialize(engine, fixture)
+        result = self.finish_cpu(engine)
+        self.assertFalse(bool(result.complete[0]))
+        self.assertTrue(bool(result.complete[1]))
+        self.assertEqual(int(engine.node_count[0]), 0)
+        saved = engine.statistics.snapshot(slots, first.generations)
+        self.assertFalse(bool(saved.error.any()))
+        self.assertEqual(int(saved.owners[0]), 99)
+
+    def test_cross_row_sample_cannot_free_an_inactive_physical_root(self):
+        import torch
+        torch.set_num_threads(1)
+        engine, fixture = self.engine()
+        roots = fixture.roots()
+        roots.active[1] = False
+        def steal_inactive(states, viewers, seeds):
+            slots = roots.slots.flip(0)
+            generations = roots.generations.flip(0)
+            return DeviceStateBatch(fixture, slots, generations, states.owners,
+                                    states.active, states.errors)
+        fixture.sample_world_device = steal_inactive
+        seeds = torch.zeros((2, 5), dtype=torch.int64)
+        seeds[:, 4] = 1
+        ids = torch.zeros((2, 2), dtype=torch.int64)
+        engine.initialize(roots, fixture.viewer, seeds, ids, ids)
+        result = self.finish_cpu(engine)
+        self.assertFalse(bool(result.complete.any()))
+        self.assertEqual(int(result.errors[0]) & METADATA_ERROR, METADATA_ERROR)
+        self.assertTrue(bool(fixture.live[roots.slots].all()))
+
+    def test_inspect_terminal_uses_same_fixed_viewer_consistency_check_as_leaf(self):
+        import torch
+        from app.modules.card_game.rl.batched_search.device_search import INSPECT
+        torch.set_num_threads(1)
+        engine, fixture = self.engine()
+        self.initialize(engine, fixture)
+        engine.tick()
+        fixture.data[engine._world_slots, 0] = 3
+        fixture.data[engine._world_slots, 1] = 1  # viewer wins
+        original = fixture.value_observation_device
+        def disagree(states, viewers):
+            observation = original(states, viewers)
+            return DeviceValueObservation(observation.observations, observation.viewer_is_actor,
+                observation.terminal, torch.zeros_like(observation.terminal_value), observation.errors)
+        fixture.value_observation_device = disagree
+        engine.phase.fill_(INSPECT)
+        result = self.finish_cpu(engine)
+        self.assertFalse(bool(result.complete.any()))
+        self.assertTrue(bool((result.errors & METADATA_ERROR).all()))
+
     def test_actual_cuda_1600_fixture_ticks_can_be_captured(self):
         import torch
         if not torch.cuda.is_available():

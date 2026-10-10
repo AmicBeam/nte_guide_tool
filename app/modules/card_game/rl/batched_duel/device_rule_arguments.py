@@ -167,8 +167,24 @@ class DeviceRuleArgumentBinder:
         return self._bind(graph, actors, seeds, active, with_seed=True)
 
     def _bind(self, graph, actors, seeds, active, *, with_seed):
+        rows, _ = self._require_graph(graph)
+        t = self.torch
+        dest = graph.fork()
+        refs = t.empty((rows, 3 if with_seed else 2), dtype=t.int32, device=self.device)
+        errors = t.zeros(rows, dtype=t.int32, device=self.device)
+        return self.bind_into_device(dest, actors, active, argument_refs=refs,
+                                     errors=errors, seeds=seeds)
+
+    def bind_into_device(self, graph, actors, active, *, argument_refs, errors, seeds=None):
+        """Bind actors/whole seed into reusable scratch without a heap fork.
+
+        The caller refills these scratch lanes before reuse. Persistent leased
+        states must not be passed directly. Inputs and results stay on device;
+        invalid rows keep their original graph counts and receive row errors.
+        """
         rows, layout = self._require_graph(graph)
         t = self.torch
+        with_seed = seeds is not None
         self._exact(actors, t.int64, (rows,), 'actors')
         if with_seed:
             self._exact(seeds, t.int64, (rows, 5), 'seeds')
@@ -176,19 +192,22 @@ class DeviceRuleArgumentBinder:
         if not isinstance(active, t.Tensor) or active.dtype not in (t.bool, t.uint8):
             raise ValueError('active must be contiguous bool/uint8[B]')
         active_u8 = active.view(t.uint8) if active.dtype == t.bool else active
-        dest = graph.fork()
-        refs = t.empty((rows, 3 if with_seed else 2), dtype=t.int32, device=self.device)
-        errors = t.zeros(rows, dtype=t.int32, device=self.device)
+        refs=argument_refs
+        self._exact(refs,t.int32,(rows,3 if with_seed else 2),'argument refs')
+        self._exact(errors,t.int32,(rows,),'argument errors')
+        if any(refs.data_ptr()==getattr(graph,key).data_ptr()
+               for key in ('nodes','edges','payload','counts','roots')):
+            raise ValueError('Separate argument output storage required')
         if self._cpu:
-            self._bind_cpu(dest, actors, seeds, active_u8, refs, errors, with_seed)
+            self._bind_cpu(graph, actors, seeds, active_u8, refs, errors, with_seed)
         else:
             self.module.launch(
                 'bind_actor_seed_args',
-                [dest.nodes, dest.edges, dest.payload, dest.counts, dest.roots,
+                [graph.nodes, graph.edges, graph.payload, graph.counts, graph.roots,
                  actors, seeds if with_seed else self._dummy_seeds, active_u8, refs, errors,
                  rows, layout.max_nodes, layout.max_edges, layout.max_payload_bytes, int(with_seed)],
                 grid=(rows + 127) // 128, block=128, capture_safe=True)
-        return BoundDeviceArguments(dest, refs, errors)
+        return BoundDeviceArguments(graph, refs, errors)
 
     def _bind_cpu(self, dest, actors, seeds, active, refs, errors, with_seed):
         layout = dest.layout

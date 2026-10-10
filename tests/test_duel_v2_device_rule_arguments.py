@@ -74,6 +74,22 @@ def _unpack_original(arena, row, counts, root):
 
 
 class DeviceRuleArgumentsCpuTest(unittest.TestCase):
+    def test_inplace_scratch_binding_uses_preallocated_outputs_without_fork(self):
+        import torch
+        from app.modules.card_game.rl.batched_duel.cuda_vm import DeviceGraph
+        graph=_graph([{'unknown':7},{'unknown':8}],'cpu')
+        counts=graph.counts.clone()
+        refs=torch.empty((2,2),dtype=torch.int32)
+        errors=torch.empty(2,dtype=torch.int32)
+        with self.binder() as binder, patch.object(DeviceGraph,'fork',side_effect=AssertionError('Heap fork')):
+            result=binder.bind_into_device(graph,torch.tensor([1,9]),torch.tensor([True,True]),
+                                          argument_refs=refs,errors=errors)
+        self.assertIs(result.arena,graph)
+        self.assertIs(result.argument_refs,refs)
+        self.assertEqual(errors.tolist(),[0,ERROR_TYPE_MISMATCH])
+        self.assertEqual(_decode_ref(graph,0,int(refs[0,1])),'b')
+        torch.testing.assert_close(graph.counts[1],counts[1])
+
     def test_invalid_live_root_is_rejected_without_binding(self):
         import torch
         graph=_graph([{'v':1},{'v':2}],'cpu')
@@ -207,6 +223,30 @@ class DeviceRuleArgumentsCudaTest(unittest.TestCase):
             stack.enter_context(patch.object(
                 t.Tensor, name, side_effect=AssertionError('Hot-path ' + label)))
         return stack
+
+    def test_actual_cuda_inplace_capture_reuses_bound_heap_and_outputs(self):
+        from app.modules.card_game.rl.batched_duel.cuda_vm import DeviceGraph
+        t=self.torch
+        graph=_graph([{'unknown':7},{'unknown':8}],'cuda')
+        original=graph.fork()
+        actors=t.tensor([0,1],dtype=t.int64,device='cuda')
+        active=t.tensor([True,False],device='cuda')
+        refs=t.empty((2,2),dtype=t.int32,device='cuda')
+        errors=t.empty(2,dtype=t.int32,device='cuda')
+        args=dict(argument_refs=refs,errors=errors)
+        self.binder.bind_into_device(graph,actors,active,**args);t.cuda.synchronize()
+        captured=t.cuda.CUDAGraph()
+        with self._hot_path(), patch.object(DeviceGraph,'fork',side_effect=AssertionError('Heap fork')):
+            with t.cuda.graph(captured):
+                result=self.binder.bind_into_device(graph,actors,active,**args)
+        for name in ('nodes','edges','payload','counts','roots'):
+            getattr(graph,name).copy_(getattr(original,name))
+        actors.copy_(t.tensor([1,0],dtype=t.int64,device='cuda'))
+        active.fill_(True)
+        captured.replay();t.cuda.synchronize()
+        self.assertIs(result.arena,graph)
+        self.assertEqual(errors.cpu().tolist(),[0,0])
+        self.assertEqual([_decode_ref(graph,row,int(refs[row,1].cpu())) for row in range(2)],['b','a'])
 
     def test_actual_cuda_decodes_bound_args_only_after_completed_batch(self):
         t = self.torch

@@ -201,3 +201,9 @@ GPU节点统计池按 `33*search_roots` 分配和循环回收，而不是按全�
 教师策略的`max(range(...), key=(score, -index))`要求range迭代续接和同类型tuple/list的词典序比较，不能以新的评分器替换原教师择优。GPU JSON接受可直接JSON编码动作的`default=str`参数；需要任意对象转换的输入仍明确失败，此限定不等于实现了通用Python回调。
 
 VM字典键视图使用内部tag80保留原字典所有者；len、布尔值、迭代、membership及集合交并差／相等读取活跃字典，不把keys()转成永久快照或任意可序列化状态。视图的GC跟踪其所有者；需要导出时先按原规则转为普通容器。此原语验证不代替完整效果时钟及完整对局对拍。
+
+持久图与规则临时堆分开分配。`CudaVm.prepare_device_workspace/launch_into_device`预分配固定数量的工作槽，执行时就地复用，不为每个持久根fork规则堆；调用结果借用工作槽，下一次调用前必须消费或压缩。`prepare_compaction_workspace/compact_into_device`在设备端保留全部可达字段与别名，允许较小的输出工作槽，超界保留错误；失败调用和未激活行不得覆盖目的图。压缩目的地只能是临时槽，不能覆盖已有存活租约。`DeviceRuleArgumentBinder.bind_into_device`同样使用预分配参数输出，不能直接修改持久局面。
+
+`GraphProjectionKernel.project_tokens_device`输出完整合法动作的原始候选tokens和动作引用，不分配全批密集候选特征。消费方必须在设备端编码分片时完成原有逐行校验，再做推理及完整合法前缀哈希；原始tokens本身不是已经验收的网络输入。不得缩小合法动作上限来节省显存。
+
+每次真实决策须按实际`(job_seed, step, actor)`选取原搜索的PCG64初态，不能把一次初始化的连续流跨决策沿用。`DevicePCG64.reset_device`接受设备选出的完整六字段状态，检查奇数增量及uint32缓存标志，错误行／未激活行保留原状态，不推进随机数；SeedSequence展开仅在批次准备时完成。以上新接口的源码与本地检查不代表新的CUDA实机、完整规则或真实终局验收。

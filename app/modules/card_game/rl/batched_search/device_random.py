@@ -29,9 +29,29 @@ PCG64_OK = 0
 PCG64_ERR_PROB = 1
 PCG64_ERR_EMPTY = 2
 PCG64_ERR_SCALE = 3
+PCG64_ERR_STATE = 5
 
 _CUDA_SOURCE = r'''
 /* duel_v2_device_pcg64_v1: NumPy PCG64 XSL-RR, 128-bit state/inc, uint64 limbs. */
+extern "C" __global__ void pcg64_reset(
+ unsigned long long* state_hi, unsigned long long* state_lo,
+ unsigned long long* inc_hi, unsigned long long* inc_lo,
+ unsigned int* has_uint32, unsigned int* uinteger,
+ const unsigned long long* next_hi, const unsigned long long* next_lo,
+ const unsigned long long* next_inc_hi, const unsigned long long* next_inc_lo,
+ const unsigned int* next_has_uint32, const unsigned int* next_uinteger,
+ const unsigned char* active, int* errors, int rows) {
+ int row = blockIdx.x * blockDim.x + threadIdx.x;
+ if (row >= rows) return;
+ errors[row] = 0;
+ if (!active[row]) return;
+ unsigned long long hi=next_hi[row], lo=next_lo[row];
+ unsigned long long ihi=next_inc_hi[row], ilo=next_inc_lo[row];
+ unsigned int has=next_has_uint32[row], cached=next_uinteger[row];
+ if (!(ilo & 1ULL) || has > 1u) { errors[row]=5; return; }
+ state_hi[row]=hi; state_lo[row]=lo; inc_hi[row]=ihi; inc_lo[row]=ilo;
+ has_uint32[row]=has; uinteger[row]=cached;
+}
 __device__ __forceinline__ unsigned long long pcg_checked_add(
  unsigned long long a, unsigned long long b, unsigned int* carry) {
  unsigned long long s = a + b;
@@ -214,6 +234,8 @@ extern "C" __global__ void pcg64_categorical(
 '''
 
 _KERNEL_SPECS = {
+    'pcg64_reset': ('uint64*',) * 4 + ('uint32*',) * 2
+        + ('uint64*',) * 4 + ('uint32*',) * 2 + ('uint8*', 'int32*', 'int32'),
     'pcg64_raw64': (
         'uint64*', 'uint64*', 'uint64*', 'uint64*', 'uint8*', 'uint64*', 'int32*',
         'int32', 'int32', 'int32',
@@ -262,6 +284,8 @@ def verify_numpy_pcg64_state(state: Mapping[str, Any]) -> dict:
         packed[key] = _as_int(inner[key], key)
         if not 0 <= packed[key] <= MASK128:
             raise ValueError('Full 128-bit PCG ' + key + ' required; not a truncated seed')
+    if not packed['inc'] & 1:
+        raise ValueError('PCG64 increment must be odd')
     packed['has_uint32'] = _as_int(state.get('has_uint32'), 'has_uint32')
     packed['uinteger'] = _as_int(state.get('uinteger'), 'uinteger')
     if packed['has_uint32'] not in (0, 1):
@@ -433,6 +457,7 @@ class DevicePCG64:
         self._out_f64 = t.zeros((self.max_rows, self.max_draws), dtype=t.float64, **z)
         self._indices = t.zeros(self.max_rows, dtype=t.int64, **z)
         self._errors = t.zeros(self.max_rows, dtype=t.int32, **z)
+        self._reset_errors = t.zeros(self.max_rows, dtype=t.int32, **z)
         self._counts = t.zeros(self.max_rows, dtype=t.int64, **z)
         self._probs = t.zeros((self.max_rows, self.max_choices), dtype=t.float64, **z)
 
@@ -455,7 +480,7 @@ class DevicePCG64:
     def allocated_bytes(self) -> int:
         names = ('_state_hi', '_state_lo', '_inc_hi', '_inc_lo', '_has_uint32',
                  '_uinteger', '_out_u64', '_out_f64', '_indices', '_errors',
-                 '_counts', '_probs')
+                 '_counts', '_probs', '_reset_errors')
         return sum(getattr(self, name).numel() * getattr(self, name).element_size()
                    for name in names)
 
@@ -494,6 +519,48 @@ class DevicePCG64:
             self._has_uint32, self._uinteger,
         )]
         return tuple(numpy_pcg64_state_from_limbs(*row) for row in zip(*parts))
+
+    def reset_device(self, state: DevicePCG64State, active):
+        """Reset actual decision rows from device-gathered NumPy state limbs.
+
+        SeedSequence expansion belongs to batch setup. The caller selects the
+        prepared state by the actual game step and actor on device; this call
+        neither expands seeds nor advances randomness. Returns int32 row errors
+        (5 for an even increment or invalid cache flag). Invalid and inactive
+        rows preserve all six old fields. CPU execution is an explicit oracle.
+        """
+        rows = self._active(active)
+        t = self.t
+        if not isinstance(state, DevicePCG64State):
+            raise TypeError('DevicePCG64State required')
+        fields = (state.state_hi, state.state_lo, state.inc_hi, state.inc_lo,
+                  state.has_uint32, state.uinteger)
+        for value, dtype in zip(fields, (t.uint64,) * 4 + (t.uint32,) * 2):
+            if (not isinstance(value, t.Tensor) or value.device != self.device
+                    or value.dtype != dtype or value.shape != (rows,)
+                    or not value.is_contiguous()):
+                raise ValueError('Exact contiguous device PCG64 state vectors required')
+        if self.device.type == 'cpu':
+            # Copy each row's inputs before writes so self.state is also valid.
+            self._reset_errors.zero_()
+            targets = (self._state_hi, self._state_lo, self._inc_hi, self._inc_lo,
+                       self._has_uint32, self._uinteger)
+            for row in range(rows):
+                if not bool(active[row]):
+                    continue
+                values = [int(value[row].item()) for value in fields]
+                if not values[3] & 1 or values[4] > 1:
+                    self._reset_errors[row] = PCG64_ERR_STATE
+                    continue
+                for target, value in zip(targets, values):
+                    target[row] = value
+        else:
+            self._launch('pcg64_reset', [
+                self._state_hi, self._state_lo, self._inc_hi, self._inc_lo,
+                self._has_uint32, self._uinteger, *fields,
+                active.view(t.uint8), self._reset_errors, rows,
+            ])
+        return self._reset_errors[:rows]
 
     def _active(self, active):
         t = self.t

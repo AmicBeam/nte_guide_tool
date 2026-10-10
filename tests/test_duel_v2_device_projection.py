@@ -45,6 +45,22 @@ class DeviceProjectionTest(unittest.TestCase):
                 np.testing.assert_array_equal(result.observations.observations[row].cpu().numpy(),x)
                 np.testing.assert_array_equal(result.candidates.candidates[row,:len(c)].cpu().numpy(),c)
                 self.assertEqual(result.action_refs[row,:len(c)].shape,(len(c),))
+            from app.modules.card_game.rl.batched_duel.gpu_seven_candidates import encode_tokens_device
+            token_graph=torch.cuda.CUDAGraph()
+            with patch('app.modules.card_game.rl.batched_duel.gpu_seven_candidates.encode_tokens_device',
+                       side_effect=AssertionError('Dense candidate allocation during raw projection')):
+                with torch.cuda.graph(token_graph):
+                    token_call=SimpleNamespace(arena=base,executor=vm,outputs=base.roots,statuses=statuses)
+                    raw=projection.project_tokens_device(token_call,active=active)
+            token_graph.replay();torch.cuda.synchronize()
+            dense,errors=encode_tokens_device(raw.candidates,device=vm.device)
+            self.assertEqual(errors.tolist(),[0]*7)
+            self.assertEqual(raw.errors.tolist(),[0]*7)
+            self.assertTrue(torch.equal(raw.action_refs,result.action_refs))
+            self.assertTrue(torch.equal(raw.candidates.counts,result.candidates.counts))
+            self.assertTrue(torch.equal(dense.candidates,result.candidates.candidates))
+            self.assertTrue(torch.equal(raw.observations.observations,result.observations.observations))
+            self.assertFalse(hasattr(raw.candidates,'candidates'))
             active.zero_();graph.replay();torch.cuda.synchronize()
             self.assertEqual(result.errors.tolist(),[0]*7)
             self.assertFalse(bool(result.candidates.mask.any()))

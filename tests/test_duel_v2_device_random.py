@@ -296,5 +296,125 @@ class DevicePCG64CudaTest(unittest.TestCase):
         self.assertEqual(replayed, self.bank.export_numpy_states())
 
 
+class DevicePCG64ResetMixin:
+    def state_vectors(self, seeds):
+        t = self.bank.t
+        packed = prepare_numpy_pcg64_states(seeds)
+        columns = [[] for _ in range(6)]
+        for entry in packed:
+            state, inc = entry['state']['state'], entry['state']['inc']
+            values = [state >> 64, state & device_random.MASK64,
+                      inc >> 64, inc & device_random.MASK64,
+                      entry['has_uint32'], entry['uinteger']]
+            for column, value in zip(columns, values):
+                column.append(value)
+        return device_random.DevicePCG64State(*[
+            t.tensor(values, dtype=dtype, device=self.bank.device)
+            for values, dtype in zip(columns, [t.uint64] * 4 + [t.uint32] * 2)
+        ])
+
+    def test_reset_is_exact_masked_and_does_not_advance_or_mutate_source(self):
+        t = self.bank.t
+        active = t.tensor([True, True, False, True], device=self.bank.device)
+        self.bank.uniform(active, draws=3)
+        before = self.bank.export_numpy_states()
+        # Include a cached uint32 to prove all six fields survive reset.
+        cached = Generator(PCG64((1 << 300) + 123))
+        cached.integers(0, 2**32, dtype=np.uint32)
+        states = [0, cached.bit_generator.state, 42, 99]
+        vectors = self.state_vectors(states)
+        source = [value.clone() for value in vars(vectors).values()]
+        errors = self.bank.reset_device(vectors, active)
+        self.assertEqual(errors.cpu().tolist(), [0, 0, 0, 0])
+        got = self.bank.export_numpy_states()
+        expected = prepare_numpy_pcg64_states(states)
+        for row in range(4):
+            self.assertEqual(got[row], before[row] if row == 2 else expected[row])
+        for value, old in zip(vars(vectors).values(), source):
+            self.assertTrue(t.equal(value, old))
+        result = self.bank.uniform(active, draws=3)
+        for row in (0, 1, 3):
+            generator = Generator(PCG64())
+            generator.bit_generator.state = expected[row]
+            np.testing.assert_array_equal(result.values[row].cpu().numpy(), generator.random(3))
+            self.assertEqual(self.bank.export_numpy_states()[row], generator.bit_generator.state)
+
+    def test_reset_invalid_state_is_row_local_and_preserves_old_state(self):
+        t = self.bank.t
+        before = self.bank.export_numpy_states()
+        vectors = self.state_vectors([7, 8, 9, 10])
+        vectors.inc_lo[0] = 2
+        vectors.has_uint32[1] = 2
+        vectors.inc_lo[2] = 0  # Inactive invalid input is ignored.
+        active = t.tensor([True, True, False, True], device=self.bank.device)
+        errors = self.bank.reset_device(vectors, active)
+        self.assertEqual(errors.cpu().tolist(), [5, 5, 0, 0])
+        got = self.bank.export_numpy_states()
+        for row in range(3):
+            self.assertEqual(got[row], before[row])
+        self.assertEqual(got[3], PCG64(10).state)
+        self.bank.uniform(active & (errors == 0),draws=1)
+        self.assertEqual(errors.cpu().tolist(),[5,5,0,0])
+        self.assertEqual(self.bank.export_numpy_states()[0],before[0])
+
+    def test_reset_rejects_shape_and_dtype_before_launch(self):
+        t = self.bank.t
+        vectors = self.state_vectors([7, 8, 9, 10])
+        values = dict(vars(vectors))
+        values['state_hi'] = t.zeros(4, dtype=t.int64, device=self.bank.device)
+        active = t.ones(4, dtype=t.bool, device=self.bank.device)
+        with self.assertRaises(ValueError):
+            self.bank.reset_device(device_random.DevicePCG64State(**values), active)
+        with self.assertRaises(TypeError):
+            self.bank.reset_device(values, active)
+
+
+class DevicePCG64ResetOracleTest(DevicePCG64ResetMixin, unittest.TestCase):
+    def setUp(self):
+        self.bank = DevicePCG64(SEEDS, device='cpu', allow_cpu_reference=True,
+                                max_draws=8, max_choices=8)
+        self.addCleanup(self.bank.close)
+
+
+class DevicePCG64ResetCudaTest(DevicePCG64ResetMixin, unittest.TestCase):
+    def setUp(self):
+        import torch
+        if not torch.cuda.is_available():
+            self.skipTest('Actual CUDA required; no CPU reset fallback')
+        self.bank = DevicePCG64(SEEDS, device='cuda', max_draws=8, max_choices=8)
+        self.addCleanup(self.bank.close)
+
+    def test_reset_and_draw_capture_reads_changed_device_inputs(self):
+        from contextlib import ExitStack
+        t = self.bank.t
+        active = t.tensor([True, True, False, True], device=self.bank.device)
+        vectors = self.state_vectors([7, 8, 9, 10])
+        self.bank.reset_device(vectors, active)
+        self.bank.uniform(active, draws=2)
+        t.cuda.synchronize()
+        graph = t.cuda.CUDAGraph()
+        with ExitStack() as blockers:
+            for name in ('cpu', 'numpy', 'item', 'tolist', '__bool__'):
+                blockers.enter_context(patch.object(t.Tensor, name, side_effect=AssertionError(name)))
+            with t.cuda.graph(graph):
+                reset_errors = self.bank.reset_device(vectors, active)
+                draw = self.bank.uniform(active, draws=2)
+        # Actual step/actor LUT gather can populate the same bound inputs later.
+        changed = self.state_vectors([17, 18, 19, 20])
+        for destination, source in zip(vars(vectors).values(), vars(changed).values()):
+            destination.copy_(source)
+        inactive_before = self.bank.export_numpy_states()[2]
+        graph.replay()
+        t.cuda.synchronize()
+        self.assertEqual(reset_errors.cpu().tolist(), [0, 0, 0, 0])
+        for row, seed in enumerate([17, 18, 19, 20]):
+            if row == 2:
+                self.assertEqual(self.bank.export_numpy_states()[row], inactive_before)
+                continue
+            generator = Generator(PCG64(seed))
+            np.testing.assert_array_equal(draw.values[row].cpu().numpy(), generator.random(2))
+            self.assertEqual(self.bank.export_numpy_states()[row], generator.bit_generator.state)
+
+
 if __name__ == '__main__':
     unittest.main()

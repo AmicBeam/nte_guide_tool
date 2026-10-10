@@ -83,6 +83,17 @@ enum VmError {{ BAD_PROGRAM=100,STACK_OVERFLOW=101,FRAME_OVERFLOW=102,UNBOUND_LO
     device_kernel=device_kernel.replace('int* gc_queue){', 'int* gc_queue,const unsigned char* active){', 1)
     device_kernel=device_kernel.replace('if(tid>=rows)return;', 'if(tid>=rows)return;\n if(!active[tid]||deadlines[tid]<0){outputs[tid]=args[(long long)tid*nargs];statuses[tid*4]=active[tid]?108:0;statuses[tid*4+1]=entry;statuses[tid*4+2]=-1;statuses[tid*4+3]=0;return;}', 1)
     source+=device_kernel
+    compact_kernel=_VM_SOURCE[_VM_SOURCE.index('extern "C" __global__ void vm_compact('):_VM_SOURCE.index('extern "C" __global__ void vm_execute(')]
+    compact_kernel=compact_kernel.replace('void vm_compact(', 'void vm_compact_device(', 1)
+    compact_kernel=compact_kernel.replace('int maxp,int capacity){',
+        'int maxp,int capacity,int destn,int deste,int destp,const unsigned char* active,const int* call_status){',1)
+    compact_kernel=compact_kernel.replace('if(row>=rows)return;',
+        'if(row>=rows)return; status[row]=0; if(!active[row])return; '
+        'if(call_status[row*4]){status[row]=call_status[row*4];return;} '
+        'dc[row*3]=0;dc[row*3+1]=0;dc[row*3+2]=0;',1)
+    compact_kernel=compact_kernel.replace('dn+(long long)row*maxn*4,de+(long long)row*maxe*2,dp+(long long)row*maxp,\n  dc+row*3,maxn,maxe,maxp',
+        'dn+(long long)row*destn*4,de+(long long)row*deste*2,dp+(long long)row*destp,\n  dc+row*3,destn,deste,destp',1)
+    source+=compact_kernel
     return '#define BMT_DEVICE __device__\n'+emit_random_source()+emit_ryu_source()+emit_vm_heap_source()+prefix+source.replace('// COLLECTION_HANDLERS',emit_collection_source()).replace('// OBJECT_HANDLERS',emit_object_source(image)).replace('// BUILTIN_HANDLERS',emit_builtin_source(image.intrinsic_names)).replace('// NUMERIC_HANDLERS',emit_numeric_source()).replace('// REDUCER_HANDLERS',emit_reducer_source(image.intrinsic_names)).replace('// FRAME_GC_HANDLERS',emit_frame_gc_source()).replace('// RANDOM_HANDLERS',emit_random_vm_source(image.intrinsic_names)).replace('// EXCEPTION_HANDLERS',emit_exception_source(image)).replace('// STRING_HANDLERS',emit_string_source(image.intrinsic_names)).replace('// DEEPCOPY_HANDLERS',emit_deepcopy_source(image.intrinsic_names)).replace('// TEXT_HANDLERS',emit_text_method_source()).replace('// DECIMAL_HANDLERS',emit_decimal_source(image.intrinsic_names)).replace('// CONTEXT_HANDLERS',emit_context_source(image)).replace('// STDLIB_HANDLERS','// STDLIB_HANDLERS\n'+emit_stdlib_source(image)).replace('// NUMPY_HANDLERS','// NUMPY_HANDLERS\n'+emit_numpy_source(image.intrinsic_names)+emit_json_source(image.intrinsic_names))
 
 
@@ -609,6 +620,34 @@ class DeviceGraph:
     def fork(self):return DeviceGraph(self.layout,*(getattr(self,k).clone() for k in ('nodes','edges','payload','counts','roots')))
 
 
+@dataclass(frozen=True)
+class DeviceVmWorkspace:
+    """Reusable borrowed VM scratch, independent of persistent root count.
+
+    The graph is mutated in place. Calls and their outputs borrow these buffers
+    until the next use; compact or consume the result before reusing the lanes.
+    This is execution storage, not a completed-rule or concurrency receipt.
+    """
+    executor:object
+    arena:DeviceGraph
+    frames:object
+    outputs:object
+    statuses:object
+    marks:object
+    queue:object
+
+
+@dataclass(frozen=True)
+class DeviceCompactionWorkspace:
+    """Reusable reachable-graph projection into smaller temporary lanes."""
+    executor:object
+    source:DeviceGraph
+    arena:DeviceGraph
+    mapping:object
+    queue:object
+    errors:object
+
+
 class DeviceCall:
     def __init__(self,executor,arena,outputs,statuses,frames,event,scratch_buffers=()):
         self.executor=executor;self.arena=arena;self.outputs=outputs;self.statuses=statuses;self.frames=frames;self.event=event;self.scratch_buffers=scratch_buffers
@@ -741,7 +780,10 @@ class CudaVm:
         compact_signature=['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
             'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*','int32*','int32*','int32*',
             'int32','int32','int32','int32','int32']
-        self.module=CudaModule(emit_vm_source(image,limits),{'vm_execute':signature,'vm_execute_device':signature+['uint8*'],'vm_clock':['int64*'],'vm_compact':compact_signature},device=str(self.device))
+        self.module=CudaModule(emit_vm_source(image,limits),{
+            'vm_execute':signature,'vm_execute_device':signature+['uint8*'],
+            'vm_clock':['int64*'],'vm_compact':compact_signature,
+            'vm_compact_device':compact_signature+['int32','int32','int32','uint8*','int32*']},device=str(self.device))
         try:
             self.module.ensure_stack()
         except BaseException:
@@ -824,6 +866,145 @@ class CudaVm:
             rows,l.max_nodes,l.max_edges,l.max_payload_bytes,self.image.entries[entry],self.limits.steps,b['classes'],len(self.image.classes),b['modules'],len(self.image.modules),marks,queue,active],
             grid=(rows+127)//128,block=128,capture_safe=True)
         return DeviceCall(self,scratch,outputs,statuses,frames,None,(marks,queue))
+
+    def prepare_device_workspace(self, arena):
+        """Allocate scratch once, before capture, for GPU-selected work lanes.
+
+        Persistent roots live elsewhere. This method does not fork the graph or
+        allocate a heap for every root; the caller owns and refills these lanes.
+        """
+        if self.closed:raise RuntimeError('VM closed')
+        t=self.torch
+        if t.cuda.is_current_stream_capturing():
+            raise RuntimeError('Prepare reusable VM storage before CUDA capture')
+        self._validate_device_graph(arena)
+        rows=arena.rows;l=arena.layout
+        stride=14+self.limits.locals+self.limits.stack+self.limits.cells
+        return DeviceVmWorkspace(self,arena,
+            t.empty((rows,self.limits.frames,stride),dtype=t.int32,device=self.device),
+            t.empty(rows,dtype=t.int32,device=self.device),
+            t.zeros((rows,4),dtype=t.int32,device=self.device),
+            t.zeros((rows,l.max_nodes+len(self.image.nodes)),dtype=t.int64,device=self.device),
+            t.empty((rows,l.max_nodes),dtype=t.int32,device=self.device))
+
+    def _validate_device_graph(self, arena):
+        if not isinstance(arena,DeviceGraph):raise TypeError('Device graph required')
+        t=self.torch;l=arena.layout;rows=arena.rows
+        if not 0<rows<=l.game_capacity:raise ValueError('Bounded graph rows required')
+        for value,dtype,shape in (
+                (arena.nodes,t.int32,(rows,l.max_nodes,4)),
+                (arena.edges,t.int32,(rows,l.max_edges,2)),
+                (arena.payload,t.uint8,(rows,l.max_payload_bytes)),
+                (arena.counts,t.int32,(rows,3)),(arena.roots,t.int32,(rows,))):
+            if (not isinstance(value,t.Tensor) or value.dtype!=dtype
+                    or value.device!=self.device or value.shape!=shape
+                    or not value.is_contiguous()):
+                raise ValueError('Exact contiguous CUDA graph buffers required')
+
+    def launch_into_device(self, workspace, entry, *, argument_refs, active, gpu_deadlines):
+        """Run masked frozen rules in reusable lanes without heap allocation.
+
+        No host row dispatch, fork, synchronization or numeric selector read is
+        performed. Error/status vectors stay on device. The caller must compact
+        successful results before another call overwrites the borrowed buffers.
+        """
+        if self.closed:raise RuntimeError('VM closed')
+        if not isinstance(workspace,DeviceVmWorkspace) or workspace.executor is not self:
+            raise ValueError('Workspace must belong to this frozen VM')
+        if not self.capability(entry)['ready']:
+            raise VmCapabilityError('Unsupported frozen device entry')
+        arena=workspace.arena;self._validate_device_graph(arena)
+        t=self.torch;rows=arena.rows
+        stride=14+self.limits.locals+self.limits.stack+self.limits.cells
+        for value,dtype,shape in (
+                (workspace.frames,t.int32,(rows,self.limits.frames,stride)),
+                (workspace.outputs,t.int32,(rows,)),(workspace.statuses,t.int32,(rows,4)),
+                (workspace.marks,t.int64,(rows,arena.layout.max_nodes+len(self.image.nodes))),
+                (workspace.queue,t.int32,(rows,arena.layout.max_nodes))):
+            if (not isinstance(value,t.Tensor) or value.device!=self.device
+                    or value.dtype!=dtype or value.shape!=shape or not value.is_contiguous()):
+                raise ValueError('Exact bound VM scratch buffers required')
+        for value,dtype,shape in ((active,t.uint8,(rows,)),(gpu_deadlines,t.int64,(rows,))):
+            if (not isinstance(value,t.Tensor) or value.device!=self.device
+                    or value.dtype!=dtype or value.shape!=shape or not value.is_contiguous()):
+                raise ValueError('Exact device selector/deadline vector required')
+        if (not isinstance(argument_refs,t.Tensor) or argument_refs.device!=self.device
+                or argument_refs.dtype!=t.int32 or argument_refs.ndim!=2
+                or argument_refs.shape[0]!=rows or argument_refs.shape[1]<1
+                or not argument_refs.is_contiguous()):
+            raise ValueError('Exact device argument matrix required')
+        # Deepcopy epochs restart at one for each VM call. Reused marks must not
+        # retain an earlier call's epoch, including references to program constants.
+        workspace.marks.zero_()
+        b=self._buffers;l=arena.layout
+        self.module.launch('vm_execute_device',[
+            arena.nodes,arena.edges,arena.payload,arena.counts,argument_refs,argument_refs.shape[1],
+            b['nodes'],b['edges'],b['payload'],b['instructions'],b['functions'],len(self.image.functions),
+            len(self.image.nodes),len(self.image.edges),len(self.image.payload),
+            workspace.frames,workspace.outputs,workspace.statuses,gpu_deadlines,
+            rows,l.max_nodes,l.max_edges,l.max_payload_bytes,self.image.entries[entry],self.limits.steps,
+            b['classes'],len(self.image.classes),b['modules'],len(self.image.modules),workspace.marks,
+            workspace.queue,active],grid=(rows+127)//128,block=128,capture_safe=True)
+        return DeviceCall(self,arena,workspace.outputs,workspace.statuses,
+                          workspace.frames,None,(workspace.marks,workspace.queue))
+
+    def prepare_compaction_workspace(self, source, destination):
+        """Bind reusable maps/queue before capture; destination is scratch.
+
+        The destination may be much smaller than the rule heap. Overflow remains
+        a device error; no fields are truncated and failed output cannot be stored
+        as a persistent state. Existing live leased graphs must not be targets.
+        """
+        if self.closed:raise RuntimeError('VM closed')
+        t=self.torch
+        if t.cuda.is_current_stream_capturing():
+            raise RuntimeError('Prepare compaction storage before CUDA capture')
+        self._validate_device_graph(source);self._validate_device_graph(destination)
+        if source.rows!=destination.rows:raise ValueError('Matching compaction rows required')
+        if any(getattr(source,k).data_ptr()==getattr(destination,k).data_ptr()
+               for k in ('nodes','edges','payload','counts','roots')):
+            raise ValueError('Separate compaction destination required')
+        rows=source.rows;capacity=source.layout.max_nodes+len(self.image.nodes)
+        return DeviceCompactionWorkspace(self,source,destination,
+            t.empty((rows,capacity),dtype=t.int32,device=self.device),
+            t.empty((rows,capacity),dtype=t.int32,device=self.device),
+            t.zeros(rows,dtype=t.int32,device=self.device))
+
+    def compact_into_device(self, call, workspace, *, active):
+        """Keep reachable result fields/aliases on GPU before VM lanes reuse.
+
+        Returns the bound workspace. Mapping converts source graph references
+        into destination references; it is borrowed until the next compaction.
+        Failed calls and inactive rows preserve the destination and set errors.
+        """
+        if self.closed:raise RuntimeError('VM closed')
+        if (not isinstance(workspace,DeviceCompactionWorkspace) or workspace.executor is not self
+                or call.executor is not self or call.arena is not workspace.source):
+            raise ValueError('Compaction must bind the exact source VM lanes')
+        source=workspace.source;target=workspace.arena;t=self.torch;rows=source.rows
+        self._validate_device_graph(source);self._validate_device_graph(target)
+        if rows!=target.rows:raise ValueError('Matching compaction rows required')
+        if any(getattr(source,k).data_ptr()==getattr(target,k).data_ptr()
+               for k in ('nodes','edges','payload','counts','roots')):
+            raise ValueError('Separate compaction destination required')
+        capacity=source.layout.max_nodes+len(self.image.nodes)
+        for value,dtype,shape in ((active,t.uint8,(rows,)),
+                (call.outputs,t.int32,(rows,)),(call.statuses,t.int32,(rows,4)),
+                (workspace.mapping,t.int32,(rows,capacity)),(workspace.queue,t.int32,(rows,capacity)),
+                (workspace.errors,t.int32,(rows,))):
+            if (not isinstance(value,t.Tensor) or value.device!=self.device
+                    or value.dtype!=dtype or value.shape!=shape or not value.is_contiguous()):
+                raise ValueError('Exact device compaction selectors required')
+        b=self._buffers;l=source.layout;d=target.layout
+        self.module.launch('vm_compact_device',[
+            source.nodes,source.edges,source.payload,source.counts,b['nodes'],b['edges'],b['payload'],
+            len(self.image.nodes),len(self.image.edges),len(self.image.payload),call.outputs,
+            target.nodes,target.edges,target.payload,target.counts,target.roots,
+            workspace.mapping,workspace.queue,workspace.errors,
+            rows,l.max_nodes,l.max_edges,l.max_payload_bytes,workspace.mapping.shape[1],
+            d.max_nodes,d.max_edges,d.max_payload_bytes,active,call.statuses],
+            grid=(rows+127)//128,block=128,capture_safe=True)
+        return workspace
     def close(self):
         if self.closed:return
         self.module.close();self._buffers.clear();self.closed=True

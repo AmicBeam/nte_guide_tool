@@ -1002,11 +1002,23 @@ class GraphProjectionKernel:
                 % (int(bad[0]), _STATUS_NAMES.get(code, str(code)))
             )
 
-    def project_decision(self, call, *, active=None):
+    def project_tokens_device(self, call, *, active):
+        """Return compact raw candidate tokens without a dense feature matrix.
+
+        Public observations are encoded on device. Candidate feature validation
+        and encoding must run in the consuming device tile before inference or
+        hashing; raw tokens are not an accepted network input by themselves.
+        This retains every filtered legal action and its graph reference.
+        """
+        return self.project_decision(call, active=active, raw_candidates=True)
+
+    def project_decision(self, call, *, active=None, raw_candidates=False):
         """Project public_legal_decision GPU outputs to encoder tokens on device."""
         if self.closed:
             raise RuntimeError('Graph projection kernel closed')
         device_path=active is not None
+        if type(raw_candidates) is not bool:raise TypeError('Boolean raw candidate selector required')
+        if raw_candidates and not device_path:raise ValueError('Raw candidates require device projection')
         if device_path and self.runtime != "seven":raise ValueError("Device projection requires frozen seven schema")
         if not device_path:call.check()
         arena = call.arena
@@ -1079,7 +1091,11 @@ class GraphProjectionKernel:
                 from .gpu_seven_observation import encode_observation_tokens_device
                 from .gpu_seven_candidates import encode_tokens_device
                 observations,observation_errors=encode_observation_tokens_device(observation_tokens,device=self.device)
-                candidates,candidate_errors=encode_tokens_device(candidate_tokens,device=self.device)
+                if raw_candidates:
+                    candidates=candidate_tokens
+                    candidate_errors=torch.zeros_like(status)
+                else:
+                    candidates,candidate_errors=encode_tokens_device(candidate_tokens,device=self.device)
             else:
                 observations = encode_seven_observation(observation_tokens, device=self.device)
                 candidates = encode_seven_tokens(candidate_tokens, device=self.device)

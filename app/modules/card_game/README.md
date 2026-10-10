@@ -1091,3 +1091,5 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 离线边界：`rl/batched_duel/device_rule_protocol.py`定义状态／动作租约；`gpu_seven_candidates.py`和`gpu_seven_observation.py`提供保留设备错误掩码的编码；`rl/batched_search/device_inference.py`、`device_search.py`、`device_statistics.py`、`device_info_key.py`及`batched_duel/device_graph_pool.py`分别管理设备推理、阶段机、树统计、信息集键和页所有权；`cuda_conditional_graph.py`提供GPU谓词控制的有界循环。这些组件不被网站导入，接口与原语通过不能代替完整规则／完整搜索／真实终局验收。
 
 有界部件验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_inference tests.test_duel_v2_device_vm tests.test_duel_v2_cuda_conditional_graph tests.test_duel_v2_device_candidates tests.test_duel_v2_device_projection tests.test_duel_v2_device_statistics tests.test_duel_v2_device_search -v`。没有CUDA时必须记录实际设备用例跳过；CPU数值oracle和合成树不提供完整对局批准。
+
+正式七队训练和互搏的实际入口已增加前置拒绝：缺少同源验证通过的完整设备执行服务时，`--run`、`--worker`、`--resume`及直接七队`run/learn`调用均在输出／种子／模型／进程创建前停止。当前closed factory与真实规则适配未接通，不能用`cuda_vm`或ready配置走回旧主机协程；静态计划和独立规则对拍只提供诊断。

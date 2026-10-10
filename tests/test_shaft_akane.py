@@ -117,6 +117,24 @@ class AkaneTest(unittest.TestCase):
         self.assertFalse(any('CD' in w for w in r['details'][2]['warnings']))
         self.assertTrue(any('泛音列或音域' in w for w in r['details'][3]['warnings']))
 
+    def test_enhanced_e_locks_teammate_switch_until_action_ends(self):
+        catalog=load_shaft_catalog()
+        enhanced=next(a for a in catalog['actions'] if a['id']=='action_akane_enhanced_e')
+        self.assertTrue(enhanced['locks_foreground_switch'])
+        teammate=next(c for c in catalog['characters'] if c['name']=='真红')
+        entry=next(a for a in catalog['actions_by_character'][teammate['id']] if a['name']=='a1')
+        for form in ('e','hold_e'):
+            for switch_tick in (23,27):
+                with self.subTest(form=form, switch_tick=switch_tick):
+                    p=self.payload([(form,0),('enhanced_e',20)],nodes=range(1,7))
+                    p['team'].append(dict(slot=1,character_id=teammate['id'],arc_id='',cartridge_id=''))
+                    p['steps'].append(dict(id='switch',slot=1,action_id=entry['id'],start_tick=switch_tick))
+                    details=simulate_shaft_axis(p)['result']['details']
+                    cast=next(d for d in details if d['action_id']==enhanced['id'])
+                    switched=next(d for d in details if d['step_id']=='switch')
+                    self.assertEqual(cast['duration_ticks'],7)
+                    self.assertEqual(switched['start_tick'],cast['end_tick'])
+
     def test_q2_is_manual_without_cadenza_time_window(self):
         early = self.sim([('q1', 0), ('q2', 50)])
         self.assertFalse(any('不能使用' in warning or '华彩' in warning for warning in early['details'][1]['warnings']))

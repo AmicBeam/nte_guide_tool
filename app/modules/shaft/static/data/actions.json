@@ -10439,6 +10439,7 @@
     "display_order": 9,
     "is_background_damage": false,
     "can_background_override": false,
+    "locks_foreground_switch": true,
     "duration_seconds": 0.7,
     "duration_ticks": 7,
     "multipliers": {
@@ -10459,6 +10460,7 @@
     "source_row": 41,
     "duration_source": "user-provided-2026-10-10",
     "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 三觉共鸣额外增加750%攻击倍率，读取独立共鸣开关。 用户2026-10-10明确：觉醒追加750%在技能等级换算后的最终倍率中加算，追加部分不乘等级系数。 用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。",
+    "foreground_lock_source": "用户2026-10-10：强化E期间不能切人，沿用残虹灭的前台锁定；完整耗时0.7秒，锁定按实际动作时长。",
     "source_formula": "{0}%",
     "personal_resource_cost": {
       "弦能": 30

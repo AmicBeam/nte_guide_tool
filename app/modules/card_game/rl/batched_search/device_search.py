@@ -220,12 +220,24 @@ class DeviceGumbelSearch:
 
     def _policy_prediction(self, decision, actors, mask):
         ids = self._policy_ids.gather(1, actors.clamp(0, 1)[:, None])[:, 0]
-        prediction = self.inference.predict_device(decision.observations, decision.candidates,
-            decision.valid, ids, self.t.ones((self.rows, 1), dtype=self.t.float32, device=self.device))
+        context = self.t.ones((self.rows, 1), dtype=self.t.float32, device=self.device)
+        if isinstance(decision.candidates, self.t.Tensor):
+            prediction = self.inference.predict_device(decision.observations, decision.candidates,
+                decision.valid, ids, context)
+        else:
+            prediction = decision.candidates.predict_device(self.inference, decision.observations,
+                decision.valid, ids, context, mask)
         self._error(prediction.invalid_rows, mask, INFERENCE_ERROR)
         logits = prediction.logits.to(self.t.float64).masked_fill(~decision.valid, -float('inf'))
         prior = logits.softmax(-1)
         return self.t.where(decision.valid, prior, 0.)
+
+    def _hash_decision(self, decision, mask):
+        if isinstance(decision.candidates, self.t.Tensor):
+            return self.information_keys.hash(decision.observations, decision.candidates,
+                                              decision.counts, mask)
+        return decision.candidates.hash_device(self.information_keys, decision.observations,
+                                               decision.counts, mask)
 
     def _save_decision(self, decision, mask):
         t = self.t
@@ -243,6 +255,10 @@ class DeviceGumbelSearch:
                 continue
             target, source = getattr(self._decision, name), getattr(decision, name)
             if source is None and target is None:
+                continue
+            if name == 'candidates' and not isinstance(target, t.Tensor):
+                errors = target.copy_masked_device(source, mask)
+                self._error(errors, mask, RULE_ERROR)
                 continue
             expand = mask.reshape((self.rows,) + (1,) * (target.ndim - 1))
             target.copy_(t.where(expand, source, target))
@@ -305,8 +321,7 @@ class DeviceGumbelSearch:
         self._limits = decision.counts.clamp(1, self._candidate_cap) - 1
         prior = self._policy_prediction(decision, viewers, mask)
         value = self._fixed_value(roots, viewers, self._aux_ids, mask)
-        hashed = self.information_keys.hash(decision.observations, decision.candidates,
-                                            decision.counts, mask)
+        hashed = self._hash_decision(decision, mask)
         self._error(hashed.errors, mask, KEY_ERROR)
         active = mask & (self.errors == 0)
         written = self.statistics.write_nodes(self._base_slots, roots.owners, prior, value,
@@ -381,7 +396,7 @@ class DeviceGumbelSearch:
         decision = self.rules.decision_device(self._world(own), self._viewers)
         self._error(decision.errors, own, RULE_ERROR)
         self._save_decision(decision, own)
-        hashed = self.information_keys.hash(decision.observations, decision.candidates, decision.counts, own)
+        hashed = self._hash_decision(decision, own)
         self._error(hashed.errors, own, KEY_ERROR)
         matches = (self.keys == hashed.keys[:, None, :]).all(-1)
         matches = matches & (self._columns[None, :] < self.node_count[:, None])
@@ -416,8 +431,7 @@ class DeviceGumbelSearch:
         fresh = masks[EVALUATE_NODE]
         prior = self._policy_prediction(self._decision, self._viewers, fresh)
         value = self._fixed_value(self._world(fresh), self._viewers, self._aux_ids, fresh)
-        hashed = self.information_keys.hash(self._decision.observations, self._decision.candidates,
-                                            self._decision.counts, fresh)
+        hashed = self._hash_decision(self._decision, fresh)
         self._error(hashed.errors, fresh, KEY_ERROR)
         index = self.node_count.clamp(0, self.nodes_per_root - 1)
         written = self.statistics.write_nodes(self._base_slots + index, self._roots.owners,

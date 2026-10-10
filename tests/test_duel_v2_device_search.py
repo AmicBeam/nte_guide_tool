@@ -139,6 +139,61 @@ class InjectiveFixtureKeys:
 
 
 class DeviceSearchTest(unittest.TestCase):
+    def test_compact_candidates_match_dense_full_budget_and_snapshot_isolation(self):
+        import torch
+        from dataclasses import replace
+        from app.modules.card_game.rl.batched_search.compact_device_candidates import CompactDeviceCandidates
+        from app.modules.card_game.rl.batched_duel.gpu_seven_candidates import (
+            RawCandidateTokens, ORDER_SLOTS, MAX_MULLIGAN_SELECTIONS, encode_tokens_device,
+        )
+        results = []
+        for compact in (False, True):
+            rules = TensorTreeFixture(3, actions=20)
+            original = rules.decision_device
+            def decision(states, observers, original=original, compact=compact):
+                base = original(states, observers)
+                integer = torch.full((3, 20, 7), -1, dtype=torch.int64)
+                integer[:, :, 0] = 0
+                tokens = RawCandidateTokens(integer, torch.zeros(3, 20, 8),
+                    torch.zeros(3, 20, 2), torch.zeros(3),
+                    torch.full((3, 20, MAX_MULLIGAN_SELECTIONS), -1, dtype=torch.int64),
+                    base.counts, base.valid,
+                    torch.full((3, 20, 2, ORDER_SLOTS), -1, dtype=torch.int64),
+                    torch.full((3, 20, MAX_MULLIGAN_SELECTIONS), -1, dtype=torch.int64),
+                    torch.arange(20).float().expand(3, -1).clone())
+                if compact:
+                    candidates = CompactDeviceCandidates(tokens, device='cpu', scratch_rows=1,
+                                                         allow_cpu_reference=True)
+                else:
+                    candidates = encode_tokens_device(tokens, device='cpu',
+                        allow_cpu_reference=True)[0].candidates
+                return replace(base, candidates=candidates)
+            rules.decision_device = decision
+            inference = FixtureInference();inference.device = torch.device('cpu')
+            keys = InjectiveFixtureKeys();keys.device = torch.device('cpu')
+            statistics = DeviceStatisticsPool(3 * 5, 20, device='cpu', max_batch=3,
+                max_path_len=4, allow_cpu_reference=True)
+            search = DeviceGumbelSearch(rules, inference, inference, statistics, keys,
+                rows=3, max_actions=20, simulations=4, gumbel_candidates=4, max_depth=4,
+                device='cpu', allow_cpu_reference=True, allow_synthetic=True)
+            roots = rules.roots();ids = torch.zeros(3, 2, dtype=torch.int64)
+            search.initialize(roots, rules.viewer, torch.zeros(3, 5, dtype=torch.int64), ids, ids)
+            root_snapshot = search._root_decision.candidates
+            for _ in range(150):
+                if not bool(search.unfinished_device.any()):break
+                search.tick()
+            result = search.result_device()
+            self.assertTrue(bool(result.complete.all()))
+            self.assertFalse(bool(result.errors.any()))
+            results.append((result.actions.clone(), result.policy.clone(), result.visits.clone()))
+            if compact:
+                before = root_snapshot.tokens.extra_ap.clone()
+                search._decision.candidates.tokens.extra_ap.fill_(900)
+                self.assertTrue(torch.equal(root_snapshot.tokens.extra_ap, before))
+                self.assertEqual(root_snapshot.shape, (3, 20, 1576))
+        for dense, compact in zip(results[0], results[1]):
+            self.assertTrue(torch.equal(dense, compact))
+
     def engine(self, rows=2, device='cpu', simulations=32, actions=3):
         fixture = TensorTreeFixture(rows, device, actions=actions)
         stats = DeviceStatisticsPool(rows*(simulations+1), actions, device=str(fixture.device),

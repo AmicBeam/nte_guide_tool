@@ -88,3 +88,5 @@
 规则诊断可显式传入 `validate_duel_v2_gpu_seven.py --vm-max-nodes --vm-max-edges --vm-max-payload-bytes`，仅改变有界查询 scratch，不修改持久状态容量或原默认值；仍须通过14GiB计划检查和原绝对截止。容量规划的估计与设备实测分开保存。扩大 scratch 的14根对拍不能证明生产队列、GPU初始化、堆回收或1600真实根容量。
 
 数字轨迹的策略和价值导出按不同学习对象筛选：`numerical_rows_after_batch`仅输出行动方属于本轮学习范围的完整搜索标签；`value_rows_after_batch`在正常终局后输出每个学习视角的公开观察、实际行动方上下文和纯胜负终局值。冻结对手行动时，学习方的价值行仍须保留。未终局、截断、设备错误或重复终局确认均不得输出学习价值行；对手观察不能错误标为当前行动方。两种导出都发生在整批设备执行结束后，不产生CPU热路径规则调用，也不代替原始动作重放核验。
+
+收集器核对全部物理决策的完整搜索计数时，可用 `numerical_rows_after_batch(include_frozen=True)` 导出冻结行动方的完整策略记录；这些行明确标记 `learning_eligible=False`，终局值仍来自该实际视角。它们用于搜索与重放审计，既有经验导出仍按 `job.train_sides` 过滤，不能把审计导出扩大为新的学习范围。

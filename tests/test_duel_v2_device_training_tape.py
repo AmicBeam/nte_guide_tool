@@ -367,6 +367,12 @@ class DeviceTrainingTapeTest(unittest.TestCase):
                            roots.active, torch.zeros(2, dtype=torch.int32))
         self.assertEqual(tape.numerical_rows_after_batch(), [])
         values = tape.value_rows_after_batch()
+        audited = tape.numerical_rows_after_batch(include_frozen=True)
+        self.assertEqual(len(audited), 2)
+        self.assertEqual([row['learning_eligible'] for row in audited], [False, False])
+        self.assertEqual([row['z'] for row in audited], [1, 0])
+        with self.assertRaises(TypeError):
+            tape.numerical_rows_after_batch(include_frozen=1)
         self.assertEqual([row['actor'] for row in values], [1, 1])
         self.assertEqual([row['value_actor'] for row in values], [0, 0])
         self.assertEqual([row['z'] for row in values], [-1, 0])

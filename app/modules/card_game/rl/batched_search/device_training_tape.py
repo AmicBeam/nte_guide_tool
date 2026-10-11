@@ -456,8 +456,10 @@ class DeviceTrainingTape:
         values['mask'] = take
         return encoder.RawCandidateTokens(**values, request_ids=()), take, counts, offsets
 
-    def numerical_rows_after_batch(self):
+    def numerical_rows_after_batch(self, *, include_frozen=False):
         self._export_forbidden()
+        if type(include_frozen) is not bool:
+            raise TypeError('Explicit boolean frozen-opponent audit export required')
         t = self.t
         if self.device.type == 'cuda':
             t.cuda.synchronize()
@@ -465,10 +467,16 @@ class DeviceTrainingTape:
         if used < 1:
             return []
         rec_index = t.arange(used, dtype=t.int64, device=self.device)
-        rec_index = rec_index.masked_select(self._eligible[:used])
+        game = self._rec_game[:used]
+        completed = (self._game_complete[game] & (self._game_errors[game] == 0)
+                     & (self._rec_errors[:used] == 0))
+        rec_index = rec_index.masked_select(completed if include_frozen else self._eligible[:used])
         if rec_index.numel() == 0:
             return []
         rows = []
+        winner = self._game_winners[self._rec_game.clamp(0, self.rows - 1)]
+        actual_z = t.where(winner == -1, 0,
+                           t.where(winner == self._rec_actor, 1, -1)).to(t.float32)
         scratch = self.compact.scratch_rows
         for start in range(0, rec_index.numel(), scratch):
             stop = min(start + scratch, rec_index.numel())
@@ -494,7 +502,8 @@ class DeviceTrainingTape:
                 visit_pi=visit.detach().cpu(),
                 visits=visits.detach().cpu(),
                 selected=self._rec_chosen.index_select(0, local_ids).detach().cpu(),
-                z=self._z.index_select(0, local_ids).detach().cpu(),
+                z=actual_z.index_select(0, local_ids).detach().cpu(),
+                eligible=self._eligible.index_select(0, local_ids).detach().cpu(),
                 actor=self._rec_actor.index_select(0, local_ids).detach().cpu(),
                 step=self._rec_step.index_select(0, local_ids).detach().cpu(),
                 version=self._rec_version.index_select(0, local_ids).detach().cpu(),
@@ -525,7 +534,7 @@ class DeviceTrainingTape:
                     requested=int(host['requested'][i]),
                     completed=int(host['completed'][i]),
                     encode_error=int(host['enc_err'][i]),
-                    learning_eligible=True,
+                    learning_eligible=bool(host['eligible'][i]),
                     caveat=CAVEAT,
                 ))
         return rows

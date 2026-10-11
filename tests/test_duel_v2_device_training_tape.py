@@ -348,9 +348,48 @@ class DeviceTrainingTapeTest(unittest.TestCase):
         tape.finish_device(roots, winners, torch.ones(2, dtype=torch.int64), complete, errors)
         self.assertEqual(tape.numerical_rows_after_batch(), [])
         self.assertEqual(tape._z[:2].tolist(), [0.0, 0.0])
+        self.assertEqual(tape.value_rows_after_batch(), [])
         self.assertEqual(tape._eligible[:2].tolist(), [False, False])
         self.assertTrue(bool(tape._game_truncated[0]))
         self.assertFalse(bool(tape._unfinished[:2].any()))
+
+    def test_frozen_actor_retains_learning_viewer_opponent_turn_values(self):
+        import torch
+        tape, compact, rules, obs, roots, seeds, ids, train = self._tape(self.openings[:2])
+        train[:, 0] = False
+        rules.value_obs.copy_(obs + 3)
+        result = _search_result(compact, obs, compact.tokens.counts,
+                                torch.zeros(2, dtype=torch.int64))
+        tape.begin_device(roots, ids, ids, seeds, train, roots.active)
+        tape.append_device(roots, rules.actors, torch.zeros(2, dtype=torch.int64), result, roots.active)
+        self.assertEqual(tape.value_rows_after_batch(), [])
+        tape.finish_device(roots, torch.tensor([0, -1]), torch.ones(2, dtype=torch.int64),
+                           roots.active, torch.zeros(2, dtype=torch.int32))
+        self.assertEqual(tape.numerical_rows_after_batch(), [])
+        values = tape.value_rows_after_batch()
+        self.assertEqual([row['actor'] for row in values], [1, 1])
+        self.assertEqual([row['value_actor'] for row in values], [0, 0])
+        self.assertEqual([row['z'] for row in values], [-1, 0])
+        for i, row in enumerate(values):
+            np.testing.assert_array_equal(row['x'], (obs + 3)[i].numpy())
+            self.assertNotIn('pi', row)
+        tape.finish_device(roots, torch.tensor([0, -1]), torch.ones(2, dtype=torch.int64),
+                           roots.active, torch.zeros(2, dtype=torch.int32))
+        self.assertEqual(tape.value_rows_after_batch(), [])
+
+    def test_opponent_value_context_cannot_claim_to_be_the_actor(self):
+        import torch
+        tape, compact, rules, obs, roots, seeds, ids, train = self._tape(self.openings[:1])
+        result = _search_result(compact, obs, compact.tokens.counts,
+                                torch.zeros(1, dtype=torch.int64))
+        tape.begin_device(roots, ids, ids, seeds, train, roots.active)
+        wrong = DeviceValueObservation(rules.value_obs, torch.ones((1, 1)), rules.terminal,
+                                      rules.terminal_value, rules.value_errors)
+        with patch.object(rules, 'value_observation_device', return_value=wrong):
+            errors = tape.append_device(roots, rules.actors, torch.zeros(1, dtype=torch.int64),
+                                        result, roots.active)
+        self.assertNotEqual(int(errors[0]), 0)
+        self.assertEqual(int(tape._record_count), 0)
 
     def test_byteguard_refuses_oversize_allocation(self):
         tokens = _tokens(self.openings[:1], capacity=32)
@@ -479,6 +518,10 @@ class DeviceTrainingTapeTest(unittest.TestCase):
         self.assertGreater(len(rows[0]['c']), 16)
         self.assertEqual(rows[0]['c'].shape[1], encoder.CAND_DIM)
         self.assertEqual(rows[0]['caveat'], CAVEAT)
+        values = tape.value_rows_after_batch()
+        self.assertEqual([row['actor'] for row in values], [0, 1, 0, 1])
+        self.assertEqual([row['z'] for row in values], [1, -1, -1, 1])
+        self.assertEqual([row['value_actor'] for row in values], [1, 0, 1, 0])
 
 
 if __name__ == '__main__':

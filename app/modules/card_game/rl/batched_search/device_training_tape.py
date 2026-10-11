@@ -284,7 +284,8 @@ class DeviceTrainingTape:
                     & (roots.owners == self._owners) & (self._owners >= 0))
         gen_ok = ((roots.generations > 0) & (meta.errors == 0) & (decision.errors == 0)
                   & (value.errors == 0) & (search_result.errors == 0)
-                  & (actors == meta.actors) & (actors >= 0) & (actors <= 1))
+                  & (actors == meta.actors) & (actors >= 0) & (actors <= 1)
+                  & (value.viewer_is_actor[:, 0] == 0))
         states = getattr(decision, 'states', None)
         if isinstance(states, DeviceStateBatch):
             if states.pool is not roots.pool:
@@ -526,6 +527,49 @@ class DeviceTrainingTape:
                     encode_error=int(host['enc_err'][i]),
                     learning_eligible=True,
                     caveat=CAVEAT,
+                ))
+        return rows
+
+    def value_rows_after_batch(self):
+        """Both trained viewers at each completed decision, including opponent turns.
+
+        Policy eligibility depends on the acting side. Value eligibility depends
+        on the viewer, so a frozen actor must not hide the learning opponent's
+        already recorded public observation. Export happens after the whole batch.
+        """
+        self._export_forbidden()
+        t = self.t
+        if self.device.type == 'cuda':
+            t.cuda.synchronize()
+        used = int(self._record_count.item())
+        if used == 0:
+            return []
+        game = self._rec_game[:used]
+        valid = (self._game_complete[game] & (self._game_errors[game] == 0)
+                 & (self._rec_errors[:used] == 0))
+        ids = t.arange(used, dtype=t.int64, device=self.device).masked_select(valid)
+        host = {name: value.index_select(0, ids).detach().cpu() for name, value in (
+            ('x', self._obs), ('other_x', self._value_obs), ('other_ctx', self._value_ctx),
+            ('actor', self._rec_actor), ('step', self._rec_step), ('version', self._rec_version),
+            ('seed', self._rec_seed), ('owner', self._rec_owner), ('game', self._rec_game))}
+        train = self._train_sides.detach().cpu()
+        winners = self._game_winners.detach().cpu()
+        rows = []
+        for i in range(ids.numel()):
+            actor, game_id = int(host['actor'][i]), int(host['game'][i])
+            winner = int(winners[game_id])
+            for viewer in (actor, 1 - actor):
+                if not bool(train[game_id, viewer]):
+                    continue
+                own = viewer == actor
+                rows.append(dict(
+                    x=host['x' if own else 'other_x'][i].numpy(),
+                    value_actor=1 if own else float(host['other_ctx'][i, 0]),
+                    actor=viewer,
+                    step=int(host['step'][i]), version=int(host['version'][i]),
+                    job_seed=int(host['seed'][i]), owner=int(host['owner'][i]),
+                    z=0.0 if winner == -1 else (1.0 if winner == viewer else -1.0),
+                    learning_eligible=True, caveat=CAVEAT,
                 ))
         return rows
 

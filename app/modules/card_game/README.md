@@ -1101,3 +1101,5 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际压缩动作图和执行身份，支持设备内有界恢复；它不替代不可变开局和完整GPU重放验收。`DeviceGameLoop`按既有训练语义执行physical apply后clean，并回收中间租约。数字轨迹在正常终局后按学习视角分别导出策略与价值；冻结对手行动时保留学习方价值行，审计用冻结策略行不会扩大学习范围。源码原语通过不代表完整对局、真实1600或训练已获准。
 
 搜索和物理循环通过 `device_action_leases.py` 单独回收动作图租约，保护root/current和借用state的别名；该检查沿用正式分页store非负generation首代契约。独立动作生命周期测试与CUDA图回放仍属于组件预检，不等于实际完整局或1600容量批准。
+
+`batched_search/device_game_policy_sink.py` 将物理对局版本和完整根信息集哈希接入轻量策略轨迹；它不重建训练输入，标签仍需原始动作 GPU 重放及逐哈希验证。

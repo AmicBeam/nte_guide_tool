@@ -1109,3 +1109,5 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 `batched_search/device_physical_action_capture.py` 在冻结 GPU `apply_action` 选中原始动作后归档物理动作图；假想 `simulate_action` 不进入归档。组合 sink 要求原始动作计数与终局物理步数相同，归档错误会撤销策略标签；该接线仍需完整真实规则对局与 GPU 重放验收。
 
 `batched_search/device_raw_replay.py` 从独立 GPU 初态副本按归档的原始动作执行设备 WHILE 回放及 clean，校验 owner、seed、step、归档计数与永久错误。可注入实际 GPU 元数据核验 actor/version；缺少该核验时 `metadata_checked` 为 false。序列回放完成不等于真实终局或可学习标签，仍需真实规则与全观察／合法动作哈希验收。
+
+`batched_search/device_frozen_rules.py` 将已分配的冻结 VM、共享 GPU scratch、公开投影和独立动作图 arena 接入搜索／对局接口。元数据、完整合法动作、规则教师、固定视角价值及物理／假想执行都使用预分配捕获点；它不自行授予完整规则、1600 根或训练资格。

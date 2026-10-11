@@ -34,6 +34,12 @@ def _checked(result):
     return tuple(values)
 
 
+# Torch's caching allocator may retain an allocation's originating stream after
+# its tensor or captured graph owner closes. As with Torch's own stream pools,
+# these native streams remain valid until the bounded worker process exits.
+_PROCESS_CAPTURE_STREAMS = []
+
+
 class CudaConditionalWhile:
     """Capture an exact static body with a persistent uint8[B] CUDA predicate.
 
@@ -69,10 +75,31 @@ class CudaConditionalWhile:
         self.counter = torch.zeros(1, dtype=torch.int64, device=self.device)
         self.start = torch.zeros_like(self.counter)
         self.errors = torch.zeros(1, dtype=torch.int32, device=self.device)
-        self.capture_stream = torch.cuda.Stream(device=self.device)
-        self.body_stream = torch.cuda.Stream(device=self.device)
+        # torch.cuda.Stream() round-robins a finite pool. Distinct Python
+        # objects can therefore alias an actively capturing parent's stream.
+        # Every embedded loop owns two native nonblocking streams instead.
+        self._owned_streams = []
         self.graph = None
         self._loop_built = False
+        self._closed = False
+        try:
+            with torch.cuda.device(self.device):
+                self.capture_stream = self._new_stream()
+                self.body_stream = self._new_stream()
+        except BaseException:
+            self.close()
+            raise
+
+    def _new_stream(self):
+        native, = _checked(self.runtime.cudaStreamCreateWithFlags(1))
+        try:
+            stream = self.t.cuda.ExternalStream(int(native), device=self.device)
+        except BaseException:
+            _checked(self.runtime.cudaStreamDestroy(native))
+            raise
+        _PROCESS_CAPTURE_STREAMS.append(native)
+        self._owned_streams.append(native)
+        return stream
 
     def _condition(self, handle, predicate, advance):
         self.module.launch('update_condition', [int(handle), predicate, predicate.numel(),
@@ -117,6 +144,8 @@ class CudaConditionalWhile:
 
     def _validate_inputs(self, predicate, body, initialize):
         t = self.t
+        if self._closed:
+            raise RuntimeError('Device loop closed')
         if self.graph is not None or self._loop_built:
             raise RuntimeError('Device loop is already frozen')
         if (not isinstance(predicate, t.Tensor) or predicate.device != self.device
@@ -161,5 +190,11 @@ class CudaConditionalWhile:
         self.graph.replay()
 
     def close(self):
+        if self._closed:
+            return
+        self._closed = True
         self.graph = None
+        # Drop logical ownership, but do not invalidate allocator-held stream
+        # handles. Worker exit releases the CUDA context and all native streams.
+        self._owned_streams.clear()
         self.module.close()

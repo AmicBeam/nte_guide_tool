@@ -117,3 +117,52 @@ class ConditionalGraphTest(unittest.TestCase):
         finally:
             outer.close()
             inner.close()
+
+class ConditionalStreamOwnershipTest(unittest.TestCase):
+    def test_close_keeps_allocator_stream_handles_valid_and_is_idempotent(self):
+        from types import SimpleNamespace
+        from contextlib import nullcontext
+        from app.modules.card_game.rl.batched_search.cuda_conditional_graph import CudaConditionalWhile
+        destroyed=[];closed=[]
+        def destroy(handle):
+            destroyed.append(handle)
+            raise AssertionError("Allocator-held stream must remain valid")
+        loop=object.__new__(CudaConditionalWhile)
+        loop.t=SimpleNamespace(cuda=SimpleNamespace(device=lambda device:nullcontext()))
+        loop.device=None;loop.runtime=SimpleNamespace(cudaStreamDestroy=destroy)
+        loop._owned_streams=[11,12];loop._closed=False;loop.graph=object()
+        loop.module=SimpleNamespace(close=lambda:closed.append(True))
+        loop.close()
+        loop.close()
+        self.assertEqual(destroyed,[]);self.assertEqual(closed,[True])
+        self.assertEqual(loop._owned_streams,[]);self.assertIsNone(loop.graph)
+
+    def test_actual_cuda_more_than_pool_size_streams_capture_and_replay(self):
+        import torch
+        from contextlib import ExitStack
+        from app.modules.card_game.rl.batched_search.cuda_conditional_graph import CudaConditionalWhile
+        if not torch.cuda.is_available():
+            self.skipTest('Actual CUDA required')
+        with ExitStack() as cleanup:
+            loops=[CudaConditionalWhile(max_ticks=2,seconds=30) for _ in range(40)]
+            for loop in loops:cleanup.callback(loop.close)
+            handles=[stream.cuda_stream for loop in loops for stream in (loop.capture_stream,loop.body_stream)]
+            self.assertEqual(len(set(handles)),80)
+            flags=[torch.zeros(1,dtype=torch.uint8,device='cuda') for _ in loops]
+            result=torch.zeros(1,dtype=torch.int64,device='cuda')
+            graph=torch.cuda.CUDAGraph();stream=loops[0].capture_stream
+            stream.wait_stream(torch.cuda.current_stream())
+            with torch.cuda.graph(graph,stream=stream,capture_error_mode='thread_local'):
+                result.zero_()
+                for loop,flag in zip(loops,flags):
+                    def body(flag=flag):
+                        result.add_(1);flag.zero_()
+                    loop.capture_loop(flag,body,initialize=lambda flag=flag:flag.fill_(1))
+            for _ in range(2):
+                graph.replay();torch.cuda.synchronize()
+                self.assertEqual(result.cpu().tolist(),[40])
+                self.assertEqual([int(loop.errors.cpu()[0]) for loop in loops],[0]*40)
+            graph=None
+            for loop in loops:
+                loop.close();loop.close()
+                self.assertEqual(loop._owned_streams,[])

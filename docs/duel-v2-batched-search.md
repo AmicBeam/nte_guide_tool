@@ -233,3 +233,5 @@ VM列表／元组重复支持序列乘整数及整数乘序列，保留重复元
 `device_teacher_pipeline.py`提供 collector 可显式接线的三步 continuation：先以独立租约在同一设备状态池复制输入，再按实际 actor／finished 元数据调用原教师决策、simulate_action 和 clean，每步将可达输出压缩回分页池，下一次 VM 调用复用临时工作区。三步之间不积累上一调用的临时节点，不改变 horizon、教师评分或正式规则；终局保留已复制状态。独立静态计划不消费外层搜索的调用配额，热路径无 CPU 规则或逐根主机调度。输入租约受保护，中间状态和动作图按 owner／generation 核验后单次释放，重复执行清理旧输出，错误保持在设备向量中。阶段错误可在整个批次返回后读取；此组件没有完整规则验收回执，也不代替完整 Gumbel、1600 真根和终局／重放验收。
 
 流水线回归入口为 `tests.test_duel_v2_device_teacher_pipeline`；Windows 从同源 CPython 3.10 的 `program()` 导出夹具，并通过 `NTE_DEVICE_TEACHER_PIPELINE_PROGRAM` 显式加载。夹具公开决策必须遵守 `(legal_actions, public_view)` 顺序及现行投影协议。受控 CUDA 用例检查三步、终局遮罩、输入不变、首次代次零、部分工作波、重复执行租约回收和 foreign-owner 错误恢复；真实规则另以整个 GPU 批次后的完整状态 oracle 核对。夹具通过不能推广成真实搜索容量或学习批准。
+
+条件图的 capture／body 流使用独立的原生非阻塞 CUDA 流，并由 `torch.cuda.ExternalStream` 接入 PyTorch；不依赖 `torch.cuda.Stream()` 的轮转流池来保证每个长期存在的嵌套计划互不别名。捕获图及张量分配器可能在逻辑计划关闭后仍引用原始流，因此这些句柄保留到有界工作进程退出，由进程 CUDA context 统一回收。计划关闭清理逻辑所有权、图和模块，且幂等；尚未交给 PyTorch 的创建失败句柄单独销毁。所有流在静态准备时创建，设备执行不按根／tick 新建流。`tests.test_duel_v2_cuda_conditional_graph` 覆盖超过池大小的独立句柄、嵌套捕获、重复重放和关闭后的分配器句柄有效性；该回归不替代真实规则搜索验收。

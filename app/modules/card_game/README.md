@@ -1105,3 +1105,5 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 `batched_search/device_game_policy_sink.py` 将物理对局版本和完整根信息集哈希接入轻量策略轨迹；它不重建训练输入，标签仍需原始动作 GPU 重放及逐哈希验证。
 
 `batched_search/device_replay_policy_tape.py` 以有界 ragged 前缀保存完整合法动作的 pi、visit_pi、visits 与根信息集哈希，不持久保存观察或候选向量。错误、过期版本和终局后写入永久撤销本局标签；训练输入必须另经 GPU 原始动作重放恢复并核验。
+
+`batched_search/device_physical_action_capture.py` 在冻结 GPU `apply_action` 选中原始动作后归档物理动作图；假想 `simulate_action` 不进入归档。组合 sink 要求原始动作计数与终局物理步数相同，归档错误会撤销策略标签；该接线仍需完整真实规则对局与 GPU 重放验收。

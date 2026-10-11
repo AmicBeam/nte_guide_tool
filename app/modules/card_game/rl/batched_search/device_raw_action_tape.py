@@ -162,6 +162,22 @@ class DeviceRawActionTape:
         return sum(value.numel() * value.element_size() for value in vars(self).values()
                    if isinstance(value, self.t.Tensor))
 
+    @property
+    def errors_device(self):
+        """Borrowed permanent per-game archive errors, for terminal qualification."""
+        self._require_open()
+        if not self._ready:
+            raise RuntimeError('Raw action cohort has not begun')
+        return self._game_errors
+
+    @property
+    def steps_device(self):
+        """Borrowed count of successfully archived physical actions per game."""
+        self._require_open()
+        if not self._ready:
+            raise RuntimeError('Raw action cohort has not begun')
+        return self._expected_step
+
     def __enter__(self):
         return self
 

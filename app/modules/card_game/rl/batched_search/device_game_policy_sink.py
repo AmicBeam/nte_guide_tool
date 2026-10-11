@@ -14,7 +14,8 @@ class DeviceGamePolicySink:
         self.loop = None
 
     def bind_game_loop(self, loop):
-        if self.loop is not None or getattr(loop, 'sink', None) is not self:
+        sink = getattr(loop, 'sink', None)
+        if self.loop is not None or (sink is not self and getattr(sink, 'policy_sink', None) is not self):
             raise ValueError('Bind once to the exact owning physical game loop')
         self.loop = loop
 

@@ -1099,3 +1099,5 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 `rl/batched_search/device_pure_policy.py`为冻结纯网络评估提供设备内合法 argmax，按行动者选择模型，并与`device_games.py`共用物理循环；其搜索计数／预算／访问为0，不能替代Gumbel训练或形成搜索标签。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_pure_policy tests.test_duel_v2_device_games`；真实规则整局与CUDA容量仍独立验收。
 
 GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际压缩动作图和执行身份，支持设备内有界恢复；它不替代不可变开局和完整GPU重放验收。`DeviceGameLoop`按既有训练语义执行physical apply后clean，并回收中间租约。数字轨迹在正常终局后按学习视角分别导出策略与价值；冻结对手行动时保留学习方价值行，审计用冻结策略行不会扩大学习范围。源码原语通过不代表完整对局、真实1600或训练已获准。
+
+搜索和物理循环通过 `device_action_leases.py` 单独回收动作图租约，保护root/current和借用state的别名；该检查沿用正式分页store非负generation首代契约。独立动作生命周期测试与CUDA图回放仍属于组件预检，不等于实际完整局或1600容量批准。

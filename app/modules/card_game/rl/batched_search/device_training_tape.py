@@ -222,7 +222,7 @@ class DeviceTrainingTape:
         self._unfinished.zero_()
         self._z.zero_()
         self._rec_chosen.fill_(-1)
-        invalid = active & ((roots.owners < 0) | (roots.generations < 1) | (roots.slots < 0))
+        invalid = active & ((roots.owners < 0) | (roots.generations < 0) | (roots.slots < 0))
         begun = active & ~invalid
         self._begun.copy_(begun)
         self._job_seeds.copy_(t.where(begun, job_seeds, t.zeros_like(job_seeds)))
@@ -282,7 +282,7 @@ class DeviceTrainingTape:
                    & (tokens.counts == counts))
         owner_ok = (self._begun & roots.active & (roots.errors == 0)
                     & (roots.owners == self._owners) & (self._owners >= 0))
-        gen_ok = ((roots.generations > 0) & (meta.errors == 0) & (decision.errors == 0)
+        gen_ok = ((roots.generations >= 0) & (meta.errors == 0) & (decision.errors == 0)
                   & (value.errors == 0) & (search_result.errors == 0)
                   & (actors == meta.actors) & (actors >= 0) & (actors <= 1)
                   & (value.viewer_is_actor[:, 0] == 0))

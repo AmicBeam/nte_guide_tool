@@ -94,3 +94,7 @@
 物理循环在GPU执行正式 `apply_action` 后执行正式 `clean`，与既有七队训练一致；成功后回收原物理状态和已消费的中间状态，失败时保留原状态并回收本行新租约。清理结果不能窃取另一行尚存活的物理中间状态。纯网络物理评估也使用同一清理路径，搜索计数仍为0。
 
 `device_raw_action_tape.py`在原始物理动作图完成压缩后、提交前归档实际使用的node/edge/payload前缀及owner、种子、step、version、actor，GPU有界前缀分配并整体拒绝容量不足的选中队列。非活动补齐行不得覆盖新版本；同一物理根的版本必须递增。GPU `gather_into_device`恢复独立原始动作图供重放，不能用仅chosen ordinal替代。该原语仍不保存不可变开局、不确认物理提交成功或真实终局，也不授予完整对局、1600容量或训练资格；这些须由实际collector和同源预检提供。`allocated_bytes`仅统计其持久Torch缓冲区，不能写成总GPU峰值。
+
+动作图有独立租约：`device_action_leases.py`以零执行错误向量核对action arena的live、owner及generation，回收后将本快照slot标为-1，避免重复释放。搜索覆盖当前决策前保护根动作、传入动作和借用状态；结束／失败清理只回收当前动作，根动作保留到物理消费或放弃后，由同一GameLoop路径回收，纯网络同样适用。复制root/current数字缓冲区不增加底层图引用计数，Adapter不得提前回收仍被这两个快照引用的动作。
+
+分页图的首个合法generation可为0；有效槽位接受非负代号，未分配slot为-1。循环、轨迹和动作回收必须与实际store的live/gen/owner核验一致，不能把toy fixture默认generation1当正式存储契约。独立动作图的成功、失败、冻结／纯策略和首代0测试须单独通过，默认action_slot==state_slot的借用夹具不能掩盖动作泄漏。

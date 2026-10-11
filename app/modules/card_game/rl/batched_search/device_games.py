@@ -215,7 +215,7 @@ class DeviceGameLoop:
         self._source_versions.zero_()
         self._search_mask.zero_()
         self._sink_done.zero_()
-        allocated = (roots.slots >= 0) & (roots.generations > 0) & (roots.owners >= 0)
+        allocated = (roots.slots >= 0) & (roots.generations >= 0) & (roots.owners >= 0)
         duplicate = self._duplicate_leases(roots.slots, roots.generations, allocated)
         self._error(~allocated | duplicate, self._present, METADATA_ERROR)
         admitted = self._present & (self._errors == 0)
@@ -296,7 +296,7 @@ class DeviceGameLoop:
             raise ValueError('Physical results must share the stable checked state arena')
         self._error(advanced.errors, commit, RULE_ERROR)
         self._error((advanced.owners != self._owners) | ~advanced.active
-                    | (advanced.slots < 0) | (advanced.generations < 1), commit, METADATA_ERROR)
+                    | (advanced.slots < 0) | (advanced.generations < 0), commit, METADATA_ERROR)
         alias = self._cross_alias(advanced, commit)
         self._error(alias, commit, METADATA_ERROR)
         clean_mask = commit & (self._errors == 0)
@@ -307,7 +307,7 @@ class DeviceGameLoop:
             raise ValueError('Cleaned physical results must share the checked state arena')
         self._error(cleaned.errors, clean_mask, RULE_ERROR)
         self._error((cleaned.owners != self._owners) | ~cleaned.active
-                    | (cleaned.slots < 0) | (cleaned.generations < 1), clean_mask, METADATA_ERROR)
+                    | (cleaned.slots < 0) | (cleaned.generations < 0), clean_mask, METADATA_ERROR)
         clean_alias = self._cross_alias(cleaned, clean_mask)
         # Cleaning must not return a different game's still-live apply result.
         sorted_mid, order = advanced.slots.sort()
@@ -331,6 +331,10 @@ class DeviceGameLoop:
         self._slots.copy_(t.where(success, cleaned.slots, self._slots))
         self._generations.copy_(t.where(success, cleaned.generations, self._generations))
         self._steps.add_(success.long())
+        from .device_action_leases import release_actions_device
+        action_errors = release_actions_device(result.decision, searched, self._owners,
+                                                protected=(old, advanced, cleaned, self._physical(self._present)))
+        self._error(action_errors, searched, RULE_ERROR)
         live = self._present & (self._errors == 0)
         meta = self.rules.metadata_device(self._physical(live))
         self._error(meta.errors, live, RULE_ERROR)

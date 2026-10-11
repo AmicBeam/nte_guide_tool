@@ -246,6 +246,7 @@ class DeviceGumbelSearch:
             return
         if decision.action_pool is not self._decision.action_pool:
             raise ValueError('Decision action arena identity must remain stable')
+        self._release_decision_actions(mask, incoming=decision)
         for name in ('slots', 'generations', 'owners', 'active', 'errors'):
             target, source = getattr(self._decision.states, name), getattr(decision.states, name)
             target.copy_(t.where(mask, source, target))
@@ -262,6 +263,17 @@ class DeviceGumbelSearch:
                 continue
             expand = mask.reshape((self.rows,) + (1,) * (target.ndim - 1))
             target.copy_(t.where(expand, source, target))
+
+    def _release_decision_actions(self, mask, *, incoming=None):
+        from .device_action_leases import action_states, release_actions_device
+        if self._decision is None:
+            return
+        protected = [self._roots, self._world(self._world_live), action_states(self._root_decision)]
+        if incoming is not None:
+            protected.append(action_states(incoming))
+        errors = release_actions_device(self._decision, mask, self._roots.owners,
+                                        protected=protected)
+        self._error(errors, mask, RULE_ERROR)
 
     def _clone_decision(self, decision):
         copied = {}
@@ -503,6 +515,7 @@ class DeviceGumbelSearch:
         self.phase.copy_(t.where(final, CLEANUP, self.phase))
 
         cleanup = (before == CLEANUP)
+        self._release_decision_actions(cleanup)
         # Execution errors must not strand already-issued hypothetical leases.
         # Release is a checked ownership operation, not further rule execution;
         # the adapter validates slot/generation/owner even after search failure.

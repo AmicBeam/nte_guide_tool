@@ -289,28 +289,28 @@ class DeviceRawActionTape:
         edge_off = t.where(commit, self._edge_used + edge_rank, 0)
         pay_off = t.where(commit, self._payload_used + pay_rank, 0)
         rec_dest = rec_dest.clamp(0, self.max_records)
-        self._rec_game.index_copy_(0, rec_dest, t.where(commit, game_rows, self._rec_game[self._record_sink]))
-        self._rec_owner.index_copy_(0, rec_dest, t.where(commit, owners, self._rec_owner[self._record_sink]))
+        self._rec_game.index_copy_(0, rec_dest, t.where(commit, game_rows, self._rec_game[self.max_records]))
+        self._rec_owner.index_copy_(0, rec_dest, t.where(commit, owners, self._rec_owner[self.max_records]))
         self._rec_seed.index_copy_(
-            0, rec_dest, t.where(commit, self._job_seeds[game], self._rec_seed[self._record_sink]))
-        self._rec_actor.index_copy_(0, rec_dest, t.where(commit, actors, self._rec_actor[self._record_sink]))
-        self._rec_step.index_copy_(0, rec_dest, t.where(commit, steps, self._rec_step[self._record_sink]))
+            0, rec_dest, t.where(commit, self._job_seeds[game], self._rec_seed[self.max_records]))
+        self._rec_actor.index_copy_(0, rec_dest, t.where(commit, actors, self._rec_actor[self.max_records]))
+        self._rec_step.index_copy_(0, rec_dest, t.where(commit, steps, self._rec_step[self.max_records]))
         self._rec_version.index_copy_(
-            0, rec_dest, t.where(commit, versions, self._rec_version[self._record_sink]))
+            0, rec_dest, t.where(commit, versions, self._rec_version[self.max_records]))
         self._rec_root.index_copy_(
-            0, rec_dest, t.where(commit, graph.roots, self._rec_root[self._record_sink]))
+            0, rec_dest, t.where(commit, graph.roots, self._rec_root[self.max_records]))
         self._rec_node_off.index_copy_(
-            0, rec_dest, t.where(commit, node_off, self._rec_node_off[self._record_sink]))
+            0, rec_dest, t.where(commit, node_off, self._rec_node_off[self.max_records]))
         self._rec_node_count.index_copy_(
-            0, rec_dest, t.where(commit, safe_n, self._rec_node_count[self._record_sink]))
+            0, rec_dest, t.where(commit, safe_n, self._rec_node_count[self.max_records]))
         self._rec_edge_off.index_copy_(
-            0, rec_dest, t.where(commit, edge_off, self._rec_edge_off[self._record_sink]))
+            0, rec_dest, t.where(commit, edge_off, self._rec_edge_off[self.max_records]))
         self._rec_edge_count.index_copy_(
-            0, rec_dest, t.where(commit, safe_e, self._rec_edge_count[self._record_sink]))
+            0, rec_dest, t.where(commit, safe_e, self._rec_edge_count[self.max_records]))
         self._rec_pay_off.index_copy_(
-            0, rec_dest, t.where(commit, pay_off, self._rec_pay_off[self._record_sink]))
+            0, rec_dest, t.where(commit, pay_off, self._rec_pay_off[self.max_records]))
         self._rec_pay_count.index_copy_(
-            0, rec_dest, t.where(commit, safe_p, self._rec_pay_count[self._record_sink]))
+            0, rec_dest, t.where(commit, safe_p, self._rec_pay_count[self.max_records]))
         self._scatter_used(graph, node_off, edge_off, pay_off, commit)
         self._record_count.add_(commit.long().sum())
         self._node_used.add_(safe_n.sum())

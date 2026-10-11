@@ -43,7 +43,7 @@ REQUIRED_PRESENTATION_ENTRIES = (
 )
 REQUIRED_TEACHER_ENTRY = 'rule_decision'
 DEFAULT_SITES = {
-    'metadata': 8,
+    'metadata': 9,
     'decision': 2,
     'rule_decision': 1,
     'value': 4,

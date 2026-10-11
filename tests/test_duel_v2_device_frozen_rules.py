@@ -47,6 +47,7 @@ class DeviceFrozenRulesContractTest(unittest.TestCase):
             {'metadata', 'decision', 'rule_decision', 'value', 'sample_world',
              'apply_action', 'simulate_action', 'clean', 'teacher_continue'})
         self.assertGreaterEqual(DEFAULT_SITES['decision'], 2)
+        self.assertGreaterEqual(DEFAULT_SITES['metadata'], 9)
         self.assertTrue(issubclass(PhysicalActionRecordingCalls, DeviceRuleGraphCalls))
 
     def test_formal_schema_dimensions_and_teacher_horizon_are_current(self):

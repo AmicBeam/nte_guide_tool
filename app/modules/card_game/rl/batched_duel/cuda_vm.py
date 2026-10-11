@@ -58,8 +58,9 @@ class VmLimits:
             if type(value) is not int or value<1 or value>2**30:raise ValueError('Positive bounded VM limits required')
 
 
-def emit_vm_source(image,limits=VmLimits(),*,compiled_blocks=None,constant_lookup=False):
+def emit_vm_source(image,limits=VmLimits(),*,compiled_blocks=None,constant_lookup=False,compact_frame_init=False):
     if type(constant_lookup) is not bool:raise TypeError("Boolean constant lookup option required")
+    if type(compact_frame_init) is not bool:raise TypeError("Boolean compact frame initialization required")
     image.verify()
     names=set(image.opcode_names)|set(SUPPORTED_OPS)
     ids={n:i for i,n in enumerate(image.opcode_names)}
@@ -85,6 +86,9 @@ enum VmError {{ BAD_PROGRAM=100,STACK_OVERFLOW=101,FRAME_OVERFLOW=102,UNBOUND_LO
         from .vm_compiled_blocks import emit_compiled_blocks
         compiled_plan = emit_compiled_blocks(image, **compiled_blocks)
     source=_VM_SOURCE
+    if compact_frame_init:
+        from .vm_frame_init import integrate_frame_init
+        source=integrate_frame_init(source)
     if compiled_plan is not None:
         declaration='__device__ inline void execute(Context* c){'
         source=source.replace(declaration,compiled_plan.source+'\n'+declaration,1)
@@ -809,7 +813,7 @@ class CudaVm:
     supports_full_duel_rules=False
     rule_threads_per_block=1
     def __init__(self,image,*,device='cuda',limits=VmLimits(),guard_standalone_entities=False,
-                 rule_threads_per_block=1,compiled_blocks=None,constant_lookup=False):
+                 rule_threads_per_block=1,compiled_blocks=None,constant_lookup=False,compact_frame_init=False):
         if not isinstance(image,VmImage):raise TypeError('Numeric VM image required')
         image.verify()
         if not isinstance(limits,VmLimits):raise TypeError('VmLimits required')
@@ -819,6 +823,8 @@ class CudaVm:
         if compiled_blocks is not None and not isinstance(compiled_blocks,dict):
             raise TypeError('Explicit compiled-block budget mapping required')
         if type(constant_lookup) is not bool:raise TypeError("Boolean constant lookup option required")
+        if type(compact_frame_init) is not bool:raise TypeError("Boolean compact frame initialization required")
+        self.compact_frame_init = compact_frame_init
         self.constant_lookup = constant_lookup
         self.constant_lookup_plan = None
         if constant_lookup:
@@ -848,7 +854,7 @@ class CudaVm:
         compact_signature=['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
             'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*','int32*','int32*','int32*',
             'int32','int32','int32','int32','int32']
-        self.module=CudaModule(emit_vm_source(image,limits,compiled_blocks=self.compiled_blocks_config,constant_lookup=constant_lookup),{
+        self.module=CudaModule(emit_vm_source(image,limits,compiled_blocks=self.compiled_blocks_config,constant_lookup=constant_lookup,compact_frame_init=compact_frame_init),{
             'vm_execute':signature,'vm_execute_device':signature+['uint8*'],
             'vm_clock':['int64*'],'vm_compact':compact_signature,
             'vm_compact_device':compact_signature+['int32','int32','int32','uint8*','int32*'],

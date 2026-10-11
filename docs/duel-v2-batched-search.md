@@ -267,3 +267,5 @@ gpu_teacher_preview_parts.py 提供尚待 GPU 批量调度接入的教师拆分�
 `vm_library_boundaries.py` 提供另一个默认关闭的编译选项 `CudaVm(..., library_call_boundaries=True)`，为固定十个大型标准库／对象 helper 的声明及定义设置 `__noinline__`。它与三函数调用边界独立，仍只改变修饰符，保留函数体和错误协议；用于测量设备代码展开量、编译／加载成本和执行耗时，不代表类型化规则向量化，也不能保证提速。`tests.test_duel_v2_vm_library_boundaries_cuda` 使用同源 CPython 3.10 导出的 `NTE_VM_LIBRARY_BOUNDARIES_PROGRAM` 比较实际 CUDA 的排序／最值、签名、生成器回收及步数错误；真实批次另核对采样信息集、三步教师和完整状态。未经这些验证及完整搜索吞吐验收，不放行训练。
 
 实验性采样拆分保留 `seven_sampler.determinize` 的默认完整检查，私有 `_determinize_transition` 只提供同一生成逻辑与原始公开视图，不能直接作为已验收采样器。`gpu_sample_guard_views.py` 的内部包携带生成世界及两组有序公开视图；`device_view_sampler.py` 在接纳世界槽位前由现有 GPU 编码器逐值核对完整 float32 观察／候选。普通行动和选择根保留原来的前置动作顺序；换牌根另外保留转换为 playing 的内部校验及恢复原 phase／active_side 后的外部校验。任何编码、非有限值、数量、掩码或顺序错误均拒绝该世界，未校验包不提供公开 capture 接口。此路径须冻结新 IR、真实批次对拍和故障注入验收；不能继承旧 IR 的并发／性能资格，也不允许主机逐根规则回退。
+
+`device_int32_presentation.py` 在收集器层包装既有公开计划，按原生解析器精度保存候选种类／卡牌／选牌／牌序索引为 int32，数量和租约 ID 保留 int64，完整候选宽度及 float32 特征不变。每次转换先在设备上检查 int32 范围，越界拒绝该行；不是截断候选或近似编码。根快照、当前决策和教师计划使用一致存储类型，既有主规则／投影源码保持不变。`tests.test_duel_v2_device_int32_presentation` 对所有七队开局和换牌视图比较原／压缩存储的完整有序编码、掩码和数量，并检查越界拒绝；实际 1600 根搜索分配／捕获／执行须重新实测，不能由单数组节省量推断总峰值或并发验收。

@@ -235,3 +235,7 @@ VM列表／元组重复支持序列乘整数及整数乘序列，保留重复元
 流水线回归入口为 `tests.test_duel_v2_device_teacher_pipeline`；Windows 从同源 CPython 3.10 的 `program()` 导出夹具，并通过 `NTE_DEVICE_TEACHER_PIPELINE_PROGRAM` 显式加载。夹具公开决策必须遵守 `(legal_actions, public_view)` 顺序及现行投影协议。受控 CUDA 用例检查三步、终局遮罩、输入不变、首次代次零、部分工作波、重复执行租约回收和 foreign-owner 错误恢复；真实规则另以整个 GPU 批次后的完整状态 oracle 核对。夹具通过不能推广成真实搜索容量或学习批准。
 
 条件图的 capture／body 流使用独立的原生非阻塞 CUDA 流，并由 `torch.cuda.ExternalStream` 接入 PyTorch；不依赖 `torch.cuda.Stream()` 的轮转流池来保证每个长期存在的嵌套计划互不别名。捕获图及张量分配器可能在逻辑计划关闭后仍引用原始流，因此这些句柄保留到有界工作进程退出，由进程 CUDA context 统一回收。计划关闭清理逻辑所有权、图和模块，且幂等；尚未交给 PyTorch 的创建失败句柄单独销毁。所有流在静态准备时创建，设备执行不按根／tick 新建流。`tests.test_duel_v2_cuda_conditional_graph` 覆盖超过池大小的独立句柄、嵌套捕获、重复重放和关闭后的分配器句柄有效性；该回归不替代真实规则搜索验收。
+
+吞吐不能由显存驻留、图捕获或部分模拟的次数推断。`device_performance_gate.py`只接收整批 GPU 执行并同步结束后的实测数据，单独报告准备／编译与稳态执行耗时、完成模拟总数和完整根决策吞吐；部分搜索的完整决策吞吐为零。诊断使用独立 epoch 和 monotonic 硬截止，任一时钟耗尽即超时；准备阶段和执行阶段分别计时，超时应由所属进程控制器停止本任务子树并保全报告，不停止其他进程。默认诊断预算为准备 300 秒、执行 120 秒，预算可配置；这不是训练吞吐验收阈值。
+
+正式 GPU 训练执行器必须在正确性、完整终局／原动作重放和恢复检查之外调用 `require_training_performance`：1600 个独立种子真实根、设备驻留搜索、零 CPU 规则／逐根搜索回退、完整既有策略合法候选、32 模拟／cap16／horizon3 全部完成且无错误或超时，并以同源、不同批次的连续重复测量核对已确定的稳态耗时门槛。门槛尚未确定、测量不足或任何项目失败时明确拒绝进入训练。该工具本身不提供规则执行器资格或用户学习授权；不能用夹具报告绕过 TrainingFlow 的确认与冻结流程。验证入口为 `tests.test_duel_v2_device_performance_gate`。

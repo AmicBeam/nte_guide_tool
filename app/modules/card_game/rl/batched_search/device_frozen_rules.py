@@ -205,6 +205,47 @@ class _PlanQueue:
         return plan
 
 
+class _ActiveRuleLanes(DeviceRuleLanes):
+    """Skip a whole scratch queue when its device cohort has no live leases.
+
+    The enclosing plan resets its borrowed outputs before dispatch. Preserve
+    errored active leases for its usual checked error propagation.
+    """
+    def capture_dispatch(self, states, operation):
+        if self.closed:
+            raise RuntimeError('Rule scratch dispatcher closed')
+        self._validate_states(states, self.rows)
+        if not callable(operation):
+            raise TypeError('Static operation callback required')
+        if not self.t.cuda.is_current_stream_capturing():
+            raise RuntimeError('Rule dispatch must be embedded in CUDA capture')
+
+        def initialize():
+            self.cursor.zero_()
+            self.pending.copy_(states.active.any().reshape(1).to(self.t.uint8))
+            self.processed.zero_()
+            self.peak.zero_()
+
+        def body():
+            local = self.select_states_device(states)
+            operation(local, self.ids, self.valid)
+            self.module.launch('advance_rule_lanes',
+                [self.cursor, self.pending, self.rows, self.lanes],
+                grid=1, block=1, capture_safe=True)
+
+        self.loop.capture_loop(self.pending, body, initialize=initialize)
+
+
+def _active_plan(plan):
+    """Specialize collector-owned plans without changing the shared helper."""
+    old = plan.lanes
+    replacement = _ActiveRuleLanes(old.rows, old.lanes, device=str(old.device),
+                                  seconds=old.loop.budget_ns / 1e9)
+    plan.lanes = replacement
+    old.close()
+    return plan
+
+
 class DeviceTeacherChoicePlan:
     """Launch frozen rule_decision and decode the teacher index on CUDA."""
 
@@ -215,7 +256,7 @@ class DeviceTeacherChoicePlan:
         self.rules = rules
         self.captured = False
         self.closed = False
-        self.lanes = DeviceRuleLanes(c.rows, c.lanes, device=c.device, seconds=c.seconds)
+        self.lanes = _ActiveRuleLanes(c.rows, c.lanes, device=c.device, seconds=c.seconds)
         self.refs = t.empty((c.lanes, 2), dtype=t.int32, device=c.device)
         self.load_errors = t.empty(c.lanes, dtype=t.int32, device=c.device)
         self.bind_errors = t.empty(c.lanes, dtype=t.int32, device=c.device)
@@ -356,21 +397,21 @@ class DeviceFrozenRules:
                 _INT_SOURCE, {'decode_int64': _INT_SPEC}, device=str(self.device))
             self._owned.append(self._decoder)
             self._queues['metadata'] = _PlanQueue(
-                'metadata', [presentation.prepare_metadata() for _ in range(self.sites['metadata'])])
+                'metadata', [_active_plan(presentation.prepare_metadata()) for _ in range(self.sites['metadata'])])
             decisions = []
             for _ in range(self.sites['decision']):
-                plan = presentation.prepare_decision(action_store)
+                plan = _active_plan(presentation.prepare_decision(action_store))
                 self._require_compact_decision_plan(plan)
                 decisions.append(plan)
             self._queues['decision'] = _PlanQueue('decision', decisions)
             self._queues['value'] = _PlanQueue(
-                'value', [presentation.prepare_value() for _ in range(self.sites['value'])])
+                'value', [_active_plan(presentation.prepare_value()) for _ in range(self.sites['value'])])
             for entry in ('sample_world', 'apply_action', 'simulate_action', 'clean', 'teacher_continue'):
-                plans = [calls.prepare_call(entry) for _ in range(self.sites[entry])]
+                plans = [_active_plan(calls.prepare_call(entry)) for _ in range(self.sites[entry])]
                 self._queues[entry] = _PlanQueue(entry, plans)
             teacher = []
             for _ in range(self.sites['rule_decision']):
-                decision = presentation.prepare_decision(action_store)
+                decision = _active_plan(presentation.prepare_decision(action_store))
                 self._require_compact_decision_plan(decision)
                 choice = DeviceTeacherChoicePlan(self)
                 self._owned.append(choice)

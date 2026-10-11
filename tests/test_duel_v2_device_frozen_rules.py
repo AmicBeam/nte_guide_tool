@@ -265,6 +265,38 @@ class DeviceFrozenRulesCudaTest(unittest.TestCase):
         if not torch.cuda.is_available():
             self.skipTest('Actual CUDA required')
 
+    def test_empty_queue_skips_body_and_reactivation_keeps_partial_and_errors(self):
+        import torch
+        from app.modules.card_game.rl.batched_search.device_frozen_rules import _ActiveRuleLanes
+        from app.modules.card_game.rl.batched_duel.device_rule_protocol import DeviceStateBatch
+        device = torch.device('cuda', torch.cuda.current_device())
+        lanes = _ActiveRuleLanes(3, 2, device=str(device), seconds=30)
+        self.addCleanup(lanes.close)
+        pool = object()
+        active = torch.zeros(3, dtype=torch.bool, device=device)
+        errors = torch.zeros(3, dtype=torch.int32, device=device)
+        roots = DeviceStateBatch(pool, torch.arange(3, device=device),
+            torch.zeros(3, dtype=torch.int64, device=device),
+            torch.arange(3, device=device), active, errors)
+        output = torch.full((3,), -1, dtype=torch.int64, device=device)
+        executed = torch.zeros(1, dtype=torch.int64, device=device)
+        graph = torch.cuda.CUDAGraph()
+        stream = torch.cuda.Stream(device=device)
+        stream.wait_stream(torch.cuda.current_stream(device))
+        with torch.cuda.graph(graph, stream=stream):
+            output.fill_(-1)
+            def operation(local, ids, valid):
+                executed.add_(1)
+                lanes.scatter_tensor_device(local.errors.long(), output)
+            lanes.capture_dispatch(roots, operation)
+        for expected_calls, enabled in ((0, False), (2, True), (2, False)):
+            active.zero_(); active[2] = enabled
+            errors.zero_(); errors[2] = 17
+            graph.replay(); torch.cuda.synchronize()
+            self.assertEqual(executed.cpu().tolist(), [expected_calls])
+            self.assertEqual(lanes.loop.errors.cpu().tolist(), [0])
+            self.assertEqual(output.cpu().tolist(), [0, 0, 17] if enabled else [-1, -1, -1])
+
     def test_incomplete_frozen_vm_fails_closed_with_named_gaps(self):
         import torch
         from app.modules.card_game.rl.batched_duel.cuda_vm import CudaVm

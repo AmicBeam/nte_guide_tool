@@ -126,6 +126,7 @@ class PhysicalActionCaptureTest(unittest.TestCase):
             decision = DeviceDecision(states=initial, action_pool=actions,
                 action_slots=lease.slots, action_generations=lease.generations,
                 action_refs=refs.contiguous(), counts=zero + 2,
+                action_types=torch.zeros((3, 2), dtype=torch.int64, device=vm.device),
                 valid=torch.ones((3, 2), dtype=torch.bool, device=vm.device),
                 observations=torch.zeros((3, 1), device=vm.device),
                 candidates=torch.zeros((3, 2, 1), device=vm.device), errors=initial.errors)

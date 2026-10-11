@@ -1002,7 +1002,10 @@ __device__ inline int list_set(Heap* heap, int list_ref, int index, int val_ref)
     return 0;
 }
 
-// 19. list_append: appends element to list with edge relocation if needed
+// VM-private LIST extra stores a reserved END edge index. Relocation to the
+// monotonic allocation tail invalidates an old end automatically. Canonical
+// exports and deep copies clear it because they allocate only logical edges.
+// This keeps fragmented bound-method appends amortized rather than quadratic.
 __device__ inline int list_append(Heap* heap, int list_ref, int val_ref) {
     if (heap->error != ERROR_OK) return -1;
     if (list_ref < 0) {
@@ -1018,34 +1021,42 @@ __device__ inline int list_append(Heap* heap, int list_ref, int val_ref) {
         heap->error = ERROR_TYPE_MISMATCH;
         return -1;
     }
-    if (node.offset + node.count == heap->counts[1]) {
-        if (heap->counts[1] + 1 > heap->max_edges) {
-            heap->error = ERROR_EDGE_CAPACITY;
-            return -1;
-        }
-        int edge_idx = heap->counts[1]++;
-        heap->edges[edge_idx * 2 + 0] = val_ref;
-        heap->edges[edge_idx * 2 + 1] = -1;
-        heap->nodes[list_ref * 4 + 2] = node.count + 1;
-        return 0;
-    } else {
-        int new_count = node.count + 1;
-        if (heap->counts[1] + new_count > heap->max_edges) {
-            heap->error = ERROR_EDGE_CAPACITY;
-            return -1;
-        }
-        int new_offset = heap->counts[1];
-        for (int i = 0; i < node.count; i++) {
-            heap->edges[(new_offset + i) * 2 + 0] = heap->edges[(node.offset + i) * 2 + 0];
-            heap->edges[(new_offset + i) * 2 + 1] = -1;
-        }
-        heap->edges[(new_offset + node.count) * 2 + 0] = val_ref;
-        heap->edges[(new_offset + node.count) * 2 + 1] = -1;
-        heap->counts[1] += new_count;
-        heap->nodes[list_ref * 4 + 1] = new_offset;
-        heap->nodes[list_ref * 4 + 2] = new_count;
-        return 0;
+    long long logical_end=(long long)node.offset+node.count;
+    if(node.offset<0 || node.count<0 || logical_end>heap->counts[1]){
+        heap->error=ERROR_INVALID_REF;return -1;
     }
+    bool reserved=node.extra>0 && node.extra>=logical_end && node.extra<=heap->counts[1];
+    int capacity=reserved?node.extra-node.offset:node.count;
+    long long needed=(long long)node.count+1;
+    if(needed>capacity){
+        bool tail=logical_end==heap->counts[1];
+        long long desired=capacity?2LL*capacity:4;
+        if(desired<needed)desired=needed;
+        long long available=heap->max_edges-heap->counts[1];
+        long long allocation=tail?desired-node.count:desired;
+        if(allocation>available){
+            desired=needed;allocation=tail?1:needed;
+        }
+        if(allocation>available){heap->error=ERROR_EDGE_CAPACITY;return -1;}
+        int offset=tail?node.offset:heap->counts[1];
+        if(!tail){
+            for(int i=0;i<node.count;i++){
+                heap->edges[(offset+i)*2]=heap->edges[(node.offset+i)*2];
+                heap->edges[(offset+i)*2+1]=-1;
+            }
+        }
+        for(int i=node.count;i<desired;i++){
+            heap->edges[(offset+i)*2]=-1;heap->edges[(offset+i)*2+1]=-1;
+        }
+        heap->counts[1]+=(int)allocation;
+        node.offset=offset;
+        heap->nodes[list_ref*4+1]=offset;
+        heap->nodes[list_ref*4+3]=offset+(int)desired;
+    }
+    heap->edges[(node.offset+node.count)*2]=val_ref;
+    heap->edges[(node.offset+node.count)*2+1]=-1;
+    heap->nodes[list_ref*4+2]=(int)needed;
+    return 0;
 }
 
 // 20. list_pop: pops last element from list
@@ -1276,7 +1287,7 @@ __device__ inline int deep_clone(Heap* heap, int root_ref) {
             heap->nodes[new_node_ref * 4 + 0] = node.tag;
             heap->nodes[new_node_ref * 4 + 1] = edge_start;
             heap->nodes[new_node_ref * 4 + 2] = node.count;
-            heap->nodes[new_node_ref * 4 + 3] = node.extra;
+            heap->nodes[new_node_ref * 4 + 3] = node.tag == TAG_LIST ? 0 : node.extra;
 
             memo[memo_count].old_ref = curr_ref;
             memo[memo_count].new_ref = new_node_ref;
@@ -1434,7 +1445,7 @@ __device__ inline int compact_into(Heap* source,Heap* target,int root,int* map,i
                 if(n.tag>=TAG_DICT && !compact_enqueue(source,target,v,map,queue,capacity,&tail))break;
             }
         }
-        int* out=target->nodes+index*4;out[0]=n.tag;out[1]=offset;out[2]=n.count;out[3]=n.extra;
+        int* out=target->nodes+index*4;out[0]=n.tag;out[1]=offset;out[2]=n.count;out[3]=n.tag==TAG_LIST?0:n.extra;
         map[compact_index(source,old)]=index;
     }
     // Fill child edges only after all aliased references have been assigned.

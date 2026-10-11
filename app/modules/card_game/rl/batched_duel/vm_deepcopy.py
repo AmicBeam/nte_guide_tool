@@ -178,7 +178,7 @@ __device__ inline int native_deepcopy(Context* c,int root){
   if((long long)c->h.counts[1]+n.count>c->h.max_edges){c->h.error=ERROR_EDGE_CAPACITY;break;}
   int dest=c->h.counts[0]++,offset=c->h.counts[1];c->h.counts[1]+=n.count;
   int* out=c->h.nodes+(long long)dest*4;
-  out[0]=n.tag;out[1]=offset;out[2]=n.count;out[3]=n.extra;
+  out[0]=n.tag;out[1]=offset;out[2]=n.count;out[3]=n.tag==TAG_LIST?0:n.extra;
   deepcopy_memo_set(c,key,dest);
  }
 

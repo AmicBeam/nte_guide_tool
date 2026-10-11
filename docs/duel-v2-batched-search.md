@@ -229,3 +229,7 @@ VM列表／元组重复支持序列乘整数及整数乘序列，保留重复元
 冻结器保留已捕获函数在真实模块命名空间中的静态别名；不能只保存函数代码而漏掉作为contract参数调用的`feature_names`绑定，也不动态发现无关模块函数。暂停帧GC对tag75累加器只追踪source/result/key/keys/default-or-sort-owner/current-item引用，op/caller/index/options整数不作heap引用；尚未建帧的mode7累加器作为pending root进入GC。小帧池下的排序回调、星号展开与保留生成器纳入设备压力回归。此GC仅回收暂停帧，不回收堆容量，不能据此宣称initialize节点容量失败已解决。
 
 固定观察者价值计划在CUDA调用正式actor／finished、viewer公共观察和terminal_value，viewer不随当前行动方切换，非终局显式标记value-only上下文。`teacher_continue`为显式冻结的三步covered-value规则续演扩展，复用原教师选择、simulate_action及clean，终局提前结束；它和初始化扩展均须额外冻结与实测，不从历史默认entry集合继承资格。公开投影／图调用组件接线不代表完整Adapter或完整终局已经批准。
+
+`device_teacher_pipeline.py`提供 collector 可显式接线的三步 continuation：先以独立租约在同一设备状态池复制输入，再按实际 actor／finished 元数据调用原教师决策、simulate_action 和 clean，每步将可达输出压缩回分页池，下一次 VM 调用复用临时工作区。三步之间不积累上一调用的临时节点，不改变 horizon、教师评分或正式规则；终局保留已复制状态。独立静态计划不消费外层搜索的调用配额，热路径无 CPU 规则或逐根主机调度。输入租约受保护，中间状态和动作图按 owner／generation 核验后单次释放，重复执行清理旧输出，错误保持在设备向量中。阶段错误可在整个批次返回后读取；此组件没有完整规则验收回执，也不代替完整 Gumbel、1600 真根和终局／重放验收。
+
+流水线回归入口为 `tests.test_duel_v2_device_teacher_pipeline`；Windows 从同源 CPython 3.10 的 `program()` 导出夹具，并通过 `NTE_DEVICE_TEACHER_PIPELINE_PROGRAM` 显式加载。夹具公开决策必须遵守 `(legal_actions, public_view)` 顺序及现行投影协议。受控 CUDA 用例检查三步、终局遮罩、输入不变、首次代次零、部分工作波、重复执行租约回收和 foreign-owner 错误恢复；真实规则另以整个 GPU 批次后的完整状态 oracle 核对。夹具通过不能推广成真实搜索容量或学习批准。

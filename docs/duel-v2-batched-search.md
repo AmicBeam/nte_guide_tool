@@ -259,3 +259,5 @@ device_split_sampler.py 的 DeviceTransitionSampleCalls 只专门化采样的调
 验证入口为 tests.test_duel_v2_device_decision_equality 和 tests.test_duel_v2_gpu_sample_transition；实际 CUDA 还须证明所有换牌检查标志执行、未校验入口被拒绝、观察／候选不一致会失败且临时状态／动作租约回收，以及整个 GPU 批次后的 canonical sample_world／三步教师完整状态对拍。通过后仍要进行完整 32 模拟、cap16、horizon3、真实 1600 根、终局和原动作重放验收；不能用包解码或少量根对拍宣布训练和互搏已完成。
 
 搜索中的规则失败必须保留原错误。DeviceGumbelSearch 在决策返回失败后停止该行的信息键查找，哈希仅处理规则／推理均未失败且决策有效的行。超时产生的空候选不能再派生 KEY_ERROR、伪装成根信息集不一致。tests.test_duel_v2_search_failed_decision 注入根遍历阶段的规则超时，检查 CPU 显式 FSM oracle 与实际 CUDA 都保留 RULE_ERROR、不哈希空候选、不增加 KEY_ERROR；该错误回归不构成搜索吞吐或真实规则容量证据。
+
+vm_call_boundaries.py 可通过 CudaVm(..., device_call_boundaries=True) 把生成的 call、new_frame 和 execute 三个大型设备函数改为显式 CUDA 调用边界。变换仅将其声明／定义的 inline 修饰替换为 __noinline__，跳过注释和字符串，函数体、参数、冻结指令、步数／截止和设备栈预算均保持原样；默认关闭，生成源码不变。该选项用于检验编译内联和寄存器／局部内存开销，不是规则向量化或提速保证。tests.test_duel_v2_vm_call_boundaries 比较实际 CUDA 的嵌套调用、默认／变长参数、闭包、有限帧池的生成器回收和逐指令错误状态，Windows 使用同源 NTE_VM_CALL_BOUNDARIES_PROGRAM 夹具。还须比较相同真实批次、实际编译配置和完整搜索吞吐，不能由修饰符或内核资源计数推断 1600 根验收。

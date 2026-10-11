@@ -58,9 +58,10 @@ class VmLimits:
             if type(value) is not int or value<1 or value>2**30:raise ValueError('Positive bounded VM limits required')
 
 
-def emit_vm_source(image,limits=VmLimits(),*,compiled_blocks=None,constant_lookup=False,compact_frame_init=False):
+def emit_vm_source(image,limits=VmLimits(),*,compiled_blocks=None,constant_lookup=False,compact_frame_init=False,device_call_boundaries=False):
     if type(constant_lookup) is not bool:raise TypeError("Boolean constant lookup option required")
     if type(compact_frame_init) is not bool:raise TypeError("Boolean compact frame initialization required")
+    if type(device_call_boundaries) is not bool:raise TypeError("Boolean device call boundary option required")
     image.verify()
     names=set(image.opcode_names)|set(SUPPORTED_OPS)
     ids={n:i for i,n in enumerate(image.opcode_names)}
@@ -116,7 +117,11 @@ enum VmError {{ BAD_PROGRAM=100,STACK_OVERFLOW=101,FRAME_OVERFLOW=102,UNBOUND_LO
     if constant_lookup:
         from .vm_constant_lookup import emit_constant_lookup,integrate_constant_lookup
         heap_source=integrate_constant_lookup(heap_source,emit_constant_lookup(image))
-    return '#define BMT_DEVICE __device__\n'+emit_random_source()+emit_ryu_source()+heap_source+prefix+source.replace('// COLLECTION_HANDLERS',emit_collection_source()).replace('// OBJECT_HANDLERS',emit_object_source(image)).replace('// BUILTIN_HANDLERS',emit_builtin_source(image.intrinsic_names)).replace('// NUMERIC_HANDLERS',emit_numeric_source()).replace('// REDUCER_HANDLERS',emit_reducer_source(image.intrinsic_names)).replace('// FRAME_GC_HANDLERS',emit_frame_gc_source()).replace('// RANDOM_HANDLERS',emit_random_vm_source(image.intrinsic_names)).replace('// EXCEPTION_HANDLERS',emit_exception_source(image)).replace('// STRING_HANDLERS',emit_string_source(image.intrinsic_names)).replace('// DEEPCOPY_HANDLERS',emit_deepcopy_source(image.intrinsic_names)).replace('// TEXT_HANDLERS',emit_text_method_source()).replace('// DECIMAL_HANDLERS',emit_decimal_source(image.intrinsic_names)).replace('// CONTEXT_HANDLERS',emit_context_source(image)).replace('// STDLIB_HANDLERS','// STDLIB_HANDLERS\n'+emit_stdlib_source(image)).replace('// NUMPY_HANDLERS','// NUMPY_HANDLERS\n'+emit_numpy_source(image.intrinsic_names)+emit_json_source(image.intrinsic_names))
+    emitted='#define BMT_DEVICE __device__\n'+emit_random_source()+emit_ryu_source()+heap_source+prefix+source.replace('// COLLECTION_HANDLERS',emit_collection_source()).replace('// OBJECT_HANDLERS',emit_object_source(image)).replace('// BUILTIN_HANDLERS',emit_builtin_source(image.intrinsic_names)).replace('// NUMERIC_HANDLERS',emit_numeric_source()).replace('// REDUCER_HANDLERS',emit_reducer_source(image.intrinsic_names)).replace('// FRAME_GC_HANDLERS',emit_frame_gc_source()).replace('// RANDOM_HANDLERS',emit_random_vm_source(image.intrinsic_names)).replace('// EXCEPTION_HANDLERS',emit_exception_source(image)).replace('// STRING_HANDLERS',emit_string_source(image.intrinsic_names)).replace('// DEEPCOPY_HANDLERS',emit_deepcopy_source(image.intrinsic_names)).replace('// TEXT_HANDLERS',emit_text_method_source()).replace('// DECIMAL_HANDLERS',emit_decimal_source(image.intrinsic_names)).replace('// CONTEXT_HANDLERS',emit_context_source(image)).replace('// STDLIB_HANDLERS','// STDLIB_HANDLERS\n'+emit_stdlib_source(image)).replace('// NUMPY_HANDLERS','// NUMPY_HANDLERS\n'+emit_numpy_source(image.intrinsic_names)+emit_json_source(image.intrinsic_names))
+    if device_call_boundaries:
+        from .vm_call_boundaries import separate_calls_source
+        emitted=separate_calls_source(emitted)
+    return emitted
 
 
 _VM_SOURCE=r'''
@@ -813,7 +818,7 @@ class CudaVm:
     supports_full_duel_rules=False
     rule_threads_per_block=1
     def __init__(self,image,*,device='cuda',limits=VmLimits(),guard_standalone_entities=False,
-                 rule_threads_per_block=1,compiled_blocks=None,constant_lookup=False,compact_frame_init=False):
+                 rule_threads_per_block=1,compiled_blocks=None,constant_lookup=False,compact_frame_init=False,device_call_boundaries=False):
         if not isinstance(image,VmImage):raise TypeError('Numeric VM image required')
         image.verify()
         if not isinstance(limits,VmLimits):raise TypeError('VmLimits required')
@@ -824,6 +829,8 @@ class CudaVm:
             raise TypeError('Explicit compiled-block budget mapping required')
         if type(constant_lookup) is not bool:raise TypeError("Boolean constant lookup option required")
         if type(compact_frame_init) is not bool:raise TypeError("Boolean compact frame initialization required")
+        if type(device_call_boundaries) is not bool:raise TypeError("Boolean device call boundary option required")
+        self.device_call_boundaries = device_call_boundaries
         self.compact_frame_init = compact_frame_init
         self.constant_lookup = constant_lookup
         self.constant_lookup_plan = None
@@ -854,7 +861,7 @@ class CudaVm:
         compact_signature=['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
             'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*','int32*','int32*','int32*',
             'int32','int32','int32','int32','int32']
-        self.module=CudaModule(emit_vm_source(image,limits,compiled_blocks=self.compiled_blocks_config,constant_lookup=constant_lookup,compact_frame_init=compact_frame_init),{
+        self.module=CudaModule(emit_vm_source(image,limits,compiled_blocks=self.compiled_blocks_config,constant_lookup=constant_lookup,compact_frame_init=compact_frame_init,device_call_boundaries=device_call_boundaries),{
             'vm_execute':signature,'vm_execute_device':signature+['uint8*'],
             'vm_clock':['int64*'],'vm_compact':compact_signature,
             'vm_compact_device':compact_signature+['int32','int32','int32','uint8*','int32*'],

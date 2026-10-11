@@ -122,7 +122,7 @@ class PhysicalActionCaptureTest(unittest.TestCase):
             lease = actions.put_device(graph, owners, active)
             rows = torch.arange(3, device=vm.device)
             start = graph.nodes[rows, graph.roots.long(), 1].long()
-            refs = torch.stack((graph.edges[rows, start, 1], graph.edges[rows, start + 1, 1]), 1)
+            refs = torch.stack((graph.edges[rows, start, 0], graph.edges[rows, start + 1, 0]), 1)
             decision = DeviceDecision(states=initial, action_pool=actions,
                 action_slots=lease.slots, action_generations=lease.generations,
                 action_refs=refs.contiguous(), counts=zero + 2,

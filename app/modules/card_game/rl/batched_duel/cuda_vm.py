@@ -58,7 +58,7 @@ class VmLimits:
             if type(value) is not int or value<1 or value>2**30:raise ValueError('Positive bounded VM limits required')
 
 
-def emit_vm_source(image,limits=VmLimits()):
+def emit_vm_source(image,limits=VmLimits(),*,compiled_blocks=None):
     image.verify()
     names=set(image.opcode_names)|set(SUPPORTED_OPS)
     ids={n:i for i,n in enumerate(image.opcode_names)}
@@ -77,7 +77,19 @@ const int NATIVE_OBJECT={image.intrinsic_names.index('object') if 'object' in im
 enum VmError {{ BAD_PROGRAM=100,STACK_OVERFLOW=101,FRAME_OVERFLOW=102,UNBOUND_LOCAL=103,
  BAD_CALL=104,UNSUPPORTED_OP=105,UNSUPPORTED_TYPE=106,STEP_LIMIT=107,DEADLINE=108,STOP_ITERATION=109 }};
 '''
+    compiled_plan = None
+    if compiled_blocks is not None:
+        if not isinstance(compiled_blocks, dict):
+            raise TypeError('Explicit compiled-block budget mapping required')
+        from .vm_compiled_blocks import emit_compiled_blocks
+        compiled_plan = emit_compiled_blocks(image, **compiled_blocks)
     source=_VM_SOURCE
+    if compiled_plan is not None:
+        declaration='__device__ inline void execute(Context* c){'
+        source=source.replace(declaration,compiled_plan.source+'\n'+declaration,1)
+        hook='  if(++c->steps>c->step_limit){c->error=STEP_LIMIT;break;}'
+        source=source.replace(hook,'  if(run_compiled_block(c))continue;\n'+hook,1)
+
     device_kernel=source[source.index('extern "C" __global__ void vm_execute('):]
     device_kernel=device_kernel.replace('void vm_execute(', 'void vm_execute_device(', 1)
     device_kernel=device_kernel.replace('int* gc_queue){', 'int* gc_queue,const unsigned char* active){', 1)
@@ -792,13 +804,20 @@ class CudaVm:
     supports_full_duel_rules=False
     rule_threads_per_block=1
     def __init__(self,image,*,device='cuda',limits=VmLimits(),guard_standalone_entities=False,
-                 rule_threads_per_block=1):
+                 rule_threads_per_block=1,compiled_blocks=None):
         if not isinstance(image,VmImage):raise TypeError('Numeric VM image required')
         image.verify()
         if not isinstance(limits,VmLimits):raise TypeError('VmLimits required')
         if type(guard_standalone_entities) is not bool:raise TypeError('Boolean standalone-entity guard required')
         if type(rule_threads_per_block) is not int or not 1<=rule_threads_per_block<=1024:
             raise ValueError('Positive bounded rule thread block size required')
+        if compiled_blocks is not None and not isinstance(compiled_blocks,dict):
+            raise TypeError('Explicit compiled-block budget mapping required')
+        self.compiled_blocks_config = None if compiled_blocks is None else dict(compiled_blocks)
+        self.compiled_block_plan = None
+        if compiled_blocks is not None:
+            from .vm_compiled_blocks import emit_compiled_blocks
+            self.compiled_block_plan=emit_compiled_blocks(image,**compiled_blocks)
         self.guard_standalone_entities=guard_standalone_entities
         # Each VM row is a large, irregular scalar interpreter. A one-thread
         # block lets independent scratch rows spread across SMs; packing a small
@@ -818,7 +837,7 @@ class CudaVm:
         compact_signature=['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
             'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*','int32*','int32*','int32*',
             'int32','int32','int32','int32','int32']
-        self.module=CudaModule(emit_vm_source(image,limits),{
+        self.module=CudaModule(emit_vm_source(image,limits,compiled_blocks=self.compiled_blocks_config),{
             'vm_execute':signature,'vm_execute_device':signature+['uint8*'],
             'vm_clock':['int64*'],'vm_compact':compact_signature,
             'vm_compact_device':compact_signature+['int32','int32','int32','uint8*','int32*'],

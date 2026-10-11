@@ -241,3 +241,7 @@ VM列表／元组重复支持序列乘整数及整数乘序列，保留重复元
 正式 GPU 训练执行器必须在正确性、完整终局／原动作重放和恢复检查之外调用 `require_training_performance`：1600 个独立种子真实根、设备驻留搜索、零 CPU 规则／逐根搜索回退、完整既有策略合法候选、32 模拟／cap16／horizon3 全部完成且无错误或超时，并以同源、不同批次的连续重复测量核对已确定的稳态耗时门槛。门槛尚未确定、测量不足或任何项目失败时明确拒绝进入训练。该工具本身不提供规则执行器资格或用户学习授权；不能用夹具报告绕过 TrainingFlow 的确认与冻结流程。验证入口为 `tests.test_duel_v2_device_performance_gate`。
 
 三步 continuation 可显式选择 `DeviceTeacherPipeline(..., raw_teacher=True)`：内部 `device_teacher_actions.py`只调用正式冻结 `rule_decision`，直接解码完整原动作列表和原选中索引，压缩动作图后接入既有 simulate_action 绑定，不重复生成公开观察或策略候选编码。原动作中的 concede、顺序、未知字段和别名保持；容量按现行 800 个策略动作加一个原始 concede 有界核验，超限或索引非法明确失败。空观察／候选字段仅用于内部步进，不能送入根策略、模型或信息哈希。外层完整策略候选、32 模拟、cap16 和三步 horizon 保持不变。验证入口为 `tests.test_duel_v2_device_teacher_actions` 和流水线 legacy／raw 两种模式；Windows 同源夹具通过 `NTE_DEVICE_TEACHER_ACTIONS_PROGRAM` 加载，真实规则另做整批后的完整状态 oracle。此优化不代表吞吐已经达标。
+
+`vm_compiled_blocks.py`可将冻结 VmImage 中有界选择的直线基本块生成 CUDA helper，并通过 `CudaVm(..., compiled_blocks={...})` 显式接入；默认 `None` 保持原发射源码不变。生成器内联冻结操作数，复用现有 GPU 栈、数值和容器原语，在调用、跳转、返回、生成器、属性 getter、上下文及异常边界分块，不另写游戏规则。helper 在原 execute 的异常处理之后、普通步数递增与取指之前执行；逐指令步数、周期 GPU 截止、局部／栈界限和失败 next-PC 协议保持一致。未选择或不支持的区域继续使用 GPU VM，不能回退 CPU。代码量、函数、基本块、操作数和前缀范围都有显式编译预算，输出标明覆盖范围和身份；这是减少解释分发的第一层编译路径，不等于完成类型化状态／规则全向量化，也不自动证明高吞吐。
+
+验证入口为 `tests.test_duel_v2_vm_compiled_blocks`，Windows 使用同源 CPython 3.10 导出的 `NTE_VM_COMPILED_BLOCKS_PROGRAM`。实际 CUDA 回归比较编译／原 VM 的输出、共享引用、逐指令步数上限、周期截止、溢出及错误函数／PC／步数；真实游戏规则另做整批后的完整状态 oracle。所有提速与 1600 根训练能力仍由分离编译／预热的完整搜索、终局和重放实测确定，不能以生成源码或少量编译块通过代替。

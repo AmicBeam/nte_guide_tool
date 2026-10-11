@@ -44,7 +44,7 @@ class DeviceGameLoop:
         for name in ('begin_device', 'append_device', 'finish_device'):
             if not callable(getattr(sink, name, None)):
                 raise ValueError('Missing device trajectory sink: ' + name)
-        for name in ('metadata_device', 'step_device', 'release_device'):
+        for name in ('metadata_device', 'step_device', 'clean_device', 'release_device'):
             if not callable(getattr(rules, name, None)):
                 raise ValueError('Missing device rule interface: ' + name)
         if getattr(search, 'supports_full_duel_rules', None) is True:
@@ -105,6 +105,7 @@ class DeviceGameLoop:
         self._truncated = torch.zeros_like(self._finished)
         self._searched = torch.zeros(self.rows, dtype=torch.int64, **z)
         self._actors = torch.zeros(self.rows, dtype=torch.int64, **z)
+        self._source_versions = torch.zeros_like(self._actors)
         self._search_mask = torch.zeros(self.rows, dtype=torch.bool, **z)
         self._sink_done = torch.zeros(self.rows, dtype=torch.bool, **z)
         self._unfinished = torch.zeros(self.rows, dtype=torch.uint8, **z)
@@ -173,6 +174,16 @@ class DeviceGameLoop:
     def unfinished_device(self):
         return self._unfinished
 
+    @property
+    def steps_device(self):
+        """Borrowed counters for a physical trace hook before commit."""
+        return self._steps
+
+    @property
+    def source_versions_device(self):
+        """Physical decision revisions retained across hypothetical search."""
+        return self._source_versions
+
     def initialize(self, roots, job_seeds, policy_index_by_side, auxiliary_index_by_side,
                    train_sides):
         t = self.t
@@ -201,6 +212,7 @@ class DeviceGameLoop:
         self._truncated.zero_()
         self._searched.zero_()
         self._actors.zero_()
+        self._source_versions.zero_()
         self._search_mask.zero_()
         self._sink_done.zero_()
         allocated = (roots.slots >= 0) & (roots.generations > 0) & (roots.owners >= 0)
@@ -217,7 +229,10 @@ class DeviceGameLoop:
         t = self.t
         live = self._present & ~self._finished & ~self._truncated & (self._errors == 0)
         meta = self.rules.metadata_device(self._physical(live))
+        self._vector(meta.versions.contiguous(), t.int64, (self.rows,))
         self._error(meta.errors, live, RULE_ERROR)
+        self._error(meta.versions < 0, live, METADATA_ERROR)
+        self._source_versions.copy_(t.where(live, meta.versions, self._source_versions))
         invalid_actor = live & ~meta.finished & ((meta.actors < 0) | (meta.actors > 1))
         self._error(invalid_actor, live, METADATA_ERROR)
         self._error(live & meta.finished & ((meta.winners < -1) | (meta.winners > 1)),
@@ -284,13 +299,37 @@ class DeviceGameLoop:
                     | (advanced.slots < 0) | (advanced.generations < 1), commit, METADATA_ERROR)
         alias = self._cross_alias(advanced, commit)
         self._error(alias, commit, METADATA_ERROR)
-        success = commit & (self._errors == 0)
-        distinct = (advanced.slots != self._slots) | (advanced.generations != self._generations)
-        self._release_checked(advanced, commit & ~success & distinct & ~alias & advanced.active
-                              & (advanced.owners == self._owners))
-        self._release_checked(old, success & distinct)
-        self._slots.copy_(t.where(success, advanced.slots, self._slots))
-        self._generations.copy_(t.where(success, advanced.generations, self._generations))
+        clean_mask = commit & (self._errors == 0)
+        clean_input = DeviceStateBatch(advanced.pool, advanced.slots, advanced.generations,
+            advanced.owners, clean_mask, advanced.errors)
+        cleaned = self.rules.clean_device(clean_input)
+        if cleaned.pool is not self._pool:
+            raise ValueError('Cleaned physical results must share the checked state arena')
+        self._error(cleaned.errors, clean_mask, RULE_ERROR)
+        self._error((cleaned.owners != self._owners) | ~cleaned.active
+                    | (cleaned.slots < 0) | (cleaned.generations < 1), clean_mask, METADATA_ERROR)
+        clean_alias = self._cross_alias(cleaned, clean_mask)
+        # Cleaning must not return a different game's still-live apply result.
+        sorted_mid, order = advanced.slots.sort()
+        at = t.searchsorted(sorted_mid, cleaned.slots).clamp(0, self.rows - 1)
+        mid_row = order[at]
+        clean_alias |= (clean_mask & clean_mask[mid_row] & (mid_row != self._rows)
+                        & (cleaned.slots == advanced.slots[mid_row])
+                        & (cleaned.generations == advanced.generations[mid_row]))
+        self._error(clean_alias, clean_mask, METADATA_ERROR)
+        success = clean_mask & (self._errors == 0)
+        distinct_old = (cleaned.slots != self._slots) | (cleaned.generations != self._generations)
+        distinct_mid = ((cleaned.slots != advanced.slots)
+                        | (cleaned.generations != advanced.generations))
+        advanced_distinct = ((advanced.slots != self._slots)
+                             | (advanced.generations != self._generations))
+        self._release_checked(cleaned, clean_mask & ~success & distinct_old & distinct_mid
+                              & ~clean_alias & cleaned.active & (cleaned.owners == self._owners))
+        self._release_checked(advanced, commit & advanced_distinct & (~success | distinct_mid)
+                              & ~alias & advanced.active & (advanced.owners == self._owners))
+        self._release_checked(old, success & distinct_old)
+        self._slots.copy_(t.where(success, cleaned.slots, self._slots))
+        self._generations.copy_(t.where(success, cleaned.generations, self._generations))
         self._steps.add_(success.long())
         live = self._present & (self._errors == 0)
         meta = self.rules.metadata_device(self._physical(live))

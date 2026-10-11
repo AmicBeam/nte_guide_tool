@@ -1097,3 +1097,5 @@ P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备
 设备学习桥接：`rl/batched_search/device_learning_context.py`连接合格设备服务与`seven_round.run_closed_device_learning`的既有联合更新／择优／恢复，并核对完整任务身份及顺序。`device_training_tape.py`以有界记录和合法动作前缀存储观察、完整策略目标和自然终局标签，拒绝陈旧动作模板、错误租约、容量越界与重复终局；只有整批返回后才能导出数值。它不保存原始动作字典或证明完整重放，正式服务仍须提供原始轨迹和同源CUDA验收。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_learning_context tests.test_duel_v2_device_training_tape tests.test_duel_v2_device_games`。
 
 `rl/batched_search/device_pure_policy.py`为冻结纯网络评估提供设备内合法 argmax，按行动者选择模型，并与`device_games.py`共用物理循环；其搜索计数／预算／访问为0，不能替代Gumbel训练或形成搜索标签。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_pure_policy tests.test_duel_v2_device_games`；真实规则整局与CUDA容量仍独立验收。
+
+GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际压缩动作图和执行身份，支持设备内有界恢复；它不替代不可变开局和完整GPU重放验收。`DeviceGameLoop`按既有训练语义执行physical apply后clean，并回收中间租约。数字轨迹在正常终局后按学习视角分别导出策略与价值；冻结对手行动时保留学习方价值行，审计用冻结策略行不会扩大学习范围。源码原语通过不代表完整对局、真实1600或训练已获准。

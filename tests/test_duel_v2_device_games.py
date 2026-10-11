@@ -130,6 +130,8 @@ class DeviceGameLoopTest(unittest.TestCase):
         self.assertEqual(result.truncated.tolist(), [False, False])
         self.assertEqual(result.steps.tolist(), [3, 3])
         self.assertEqual(result.searched_count.tolist(), [3, 3])
+        self.assertEqual(loop.steps_device.tolist(), [3, 3])
+        self.assertEqual(loop.source_versions_device.tolist(), [2, 2])
         self.assertEqual(result.winners.tolist(), fixture.viewer.tolist())
         self.assertTrue(bool(sink.physical.all()))
         self.assertEqual(sink.begins.tolist(), [1, 1])
@@ -141,6 +143,77 @@ class DeviceGameLoopTest(unittest.TestCase):
         self.assertFalse(bool(fixture.live[initial].any()))
         self.assertTrue(bool(fixture.live[result.states.slots].all()))
         self.assertTrue(torch.equal(result.states.owners, torch.arange(2)))
+
+    def test_physical_cleanup_replaces_and_releases_intermediate_states(self):
+        import torch
+        loop, fixture, sink, roots, seeds, ids, train = self.make()
+        original_step = fixture.step_device
+        physical = torch.zeros_like(fixture.live)
+        clean_count = torch.zeros(2, dtype=torch.int64)
+        mids = []
+        def step(states, actors, decision, indices, *, physical=False):
+            out = original_step(states, actors, decision, indices, physical=physical)
+            if physical:
+                mids.append((out.slots.clone(), out.active.clone()))
+                marked[out.slots] |= out.active
+            return out
+        marked = physical
+        def clean(states):
+            clean_count.add_((marked[states.slots] & states.active).long())
+            return fixture._new(states, fixture.data[states.slots])
+        fixture.step_device, fixture.clean_device = step, clean
+        result = self.finish_cpu(loop, roots, seeds, ids, train)
+        self.assertEqual(result.complete.tolist(), [True, True])
+        self.assertEqual(clean_count.tolist(), [3, 3])
+        for slots, active in mids:
+            self.assertFalse(bool(fixture.live[slots[active]].any()))
+        self.assertEqual(int(fixture.live.sum()), 2)
+        self.assertTrue(bool(fixture.live[result.states.slots].all()))
+
+    def test_physical_cleanup_failure_releases_new_states_preserves_original(self):
+        import torch
+        loop, fixture, sink, roots, seeds, ids, train = self.make()
+        initial = roots.slots.clone()
+        marked = torch.zeros_like(fixture.live)
+        original_step = fixture.step_device
+        def step(states, actors, decision, indices, *, physical=False):
+            out = original_step(states, actors, decision, indices, physical=physical)
+            if physical:marked[out.slots] |= out.active
+            return out
+        def clean(states):
+            failed = marked[states.slots] & states.active
+            out = fixture._new(states, fixture.data[states.slots])
+            return DeviceStateBatch(out.pool, out.slots, out.generations, out.owners,
+                                    out.active, failed.to(torch.int32))
+        fixture.step_device, fixture.clean_device = step, clean
+        result = self.finish_cpu(loop, roots, seeds, ids, train)
+        self.assertFalse(bool(result.complete.any()))
+        self.assertTrue(bool((result.errors & RULE_ERROR).all()))
+        self.assertEqual(result.steps.tolist(), [0, 0])
+        self.assertTrue(torch.equal(result.states.slots, initial))
+        self.assertEqual(int(fixture.live.sum()), 2)
+
+    def test_physical_cleanup_cannot_steal_other_games_intermediate(self):
+        import torch
+        loop, fixture, sink, roots, seeds, ids, train = self.make()
+        initial = roots.slots.clone()
+        marked = torch.zeros_like(fixture.live)
+        original_step = fixture.step_device
+        def step(states, actors, decision, indices, *, physical=False):
+            out = original_step(states, actors, decision, indices, physical=physical)
+            if physical:marked[out.slots] |= out.active
+            return out
+        def clean(states):
+            physical = marked[states.slots] & states.active
+            slots = torch.where(physical, states.slots.flip(0), states.slots)
+            return DeviceStateBatch(states.pool, slots, states.generations, states.owners,
+                                    states.active, states.errors)
+        fixture.step_device, fixture.clean_device = step, clean
+        result = self.finish_cpu(loop, roots, seeds, ids, train)
+        self.assertFalse(bool(result.complete.any()))
+        self.assertTrue(bool((result.errors & METADATA_ERROR).all()))
+        self.assertTrue(torch.equal(result.states.slots, initial))
+        self.assertEqual(int(fixture.live.sum()), 2)
 
     def test_inactive_row_never_searches_or_steps(self):
         loop, fixture, sink, roots, job_seeds, ids, train = self.make(active=[True, False])

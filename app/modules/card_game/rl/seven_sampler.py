@@ -76,7 +76,8 @@ def _allocation(team,public,surplus,rng,hand_n,hidden_family,temporary_allowed, 
     return known,copies,allocated,temporary
 
 
-def determinize(state,viewer,seed):
+def _determinize_transition(state,viewer,seed):
+    """Internal generation stage; requires the canonical information guard."""
     pending=state.get('pending_choice');choosing=state['phase']=='choice'
     if choosing:
         if (not pending or pending.get('side')!=viewer or pending.get('kind') not in
@@ -170,6 +171,11 @@ def determinize(state,viewer,seed):
         if h and h.get('hp',0)>0 and h.get('awakened'):
             c['jingu_mark']=dict(delta=rng.choice((-1,0,1)),source_entity_id=h['entity_id'])
     out['rng']=rng.randrange(1,2**30);clean(out)
+    return out,before
+
+
+def determinize(state,viewer,seed):
+    out,before=_determinize_transition(state,viewer,seed)
     actions=[e['action'] for e in before['legal_actions'] if e['action']['type']!='concede']
     x,c=encode(before,actions);after=observe(out,viewer,include_previews=False);xx,cc=encode(after,actions)
     if not np.array_equal(x,xx) or not np.array_equal(c,cc):raise ValueError('Particle changed learner information')

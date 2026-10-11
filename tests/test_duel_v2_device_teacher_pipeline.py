@@ -106,7 +106,7 @@ class TeacherPipelineCudaTest(unittest.TestCase):
         with CudaVm(lower_program(program())) as vm:
             calls=DeviceRuleGraphCalls(vm,physical,rows=rows,lanes=2,seconds=60,compact_layout=compact);self.addCleanup(calls.close)
             pres=DeviceRulePresentation(calls,max_actions=800,max_output_bytes=1<<30,seconds=60);self.addCleanup(pres.close)
-            pipeline=DeviceTeacherPipeline(calls,pres,action_store=actions);self.addCleanup(pipeline.close)
+            pipeline=DeviceTeacherPipeline(calls,pres,action_store=actions,raw_teacher=getattr(self,'raw_teacher',False));self.addCleanup(pipeline.close)
             owners=torch.arange(rows,dtype=torch.int64,device=d);roots=physical.put_device(_graph(data,d,max_payload=512),owners,torch.ones(rows,dtype=torch.bool,device=d));viewers=torch.zeros(rows,dtype=torch.int64,device=d)
             records={name:torch.zeros((calls.lanes,4),dtype=torch.int32,device=d) for name in vm.image.entries}
             launch=vm.launch_into_device
@@ -129,6 +129,10 @@ class TeacherPipelineCudaTest(unittest.TestCase):
             roots.owners[0]+=10;graph.replay();torch.cuda.synchronize();self.assertNotEqual(int(out.errors[0].cpu()),0)
             roots.owners[0]-=10;graph.replay();torch.cuda.synchronize();self.assertEqual(out.errors.cpu().tolist(),[0]*rows, (pipeline.stage_errors.cpu().tolist(), [(site.decision.action_leases.errors.cpu().tolist(), site.choice.errors.cpu().tolist()) for site in pipeline.rules._teacher_sites], {name:value.cpu().tolist() for name,value in records.items()}))
             self.assertEqual(int(physical.live.sum().cpu()),6);self.assertEqual(int(actions.live.sum().cpu()),0)
+
+
+class TeacherPipelineRawCudaTest(TeacherPipelineCudaTest):
+    raw_teacher=True
 
 
 if __name__=='__main__':unittest.main()

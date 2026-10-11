@@ -20,11 +20,13 @@ class DeviceTeacherPipeline:
     host_rule_callbacks = False
     teacher_horizon = 3
 
-    def __init__(self, calls, presentation, *, action_store):
+    def __init__(self, calls, presentation, *, action_store, raw_teacher=False):
         if not isinstance(calls, DeviceRuleGraphCalls) or calls.closed:
             raise TypeError('Live device rule calls required')
         if not isinstance(presentation, DeviceRulePresentation) or presentation.calls is not calls:
             raise TypeError('Presentation must use the same calls')
+        if type(raw_teacher) is not bool:
+            raise TypeError('Explicit raw teacher mode required')
         t = calls.t
         if t.cuda.is_current_stream_capturing():
             raise RuntimeError('Prepare teacher pipeline before capture')
@@ -33,11 +35,17 @@ class DeviceTeacherPipeline:
         self.closed, self.captured = False, False
         self.rules = None
         self.copy_lanes = None
+        self.teacher_action_sites = []
+        self.raw_teacher = raw_teacher
         try:
             # These queues belong to this pipeline, not the surrounding search.
             self.rules = DeviceFrozenRules(calls, presentation, action_store=action_store,
                 sites=dict(metadata=3, decision=1, rule_decision=3, value=1,
                            simulate_action=3, clean=3))
+            if raw_teacher:
+                from .device_teacher_actions import DeviceTeacherActions
+                for _ in range(3):
+                    self.teacher_action_sites.append(DeviceTeacherActions(self.rules))
             self.copy_lanes = _ActiveRuleLanes(self.rows, calls.lanes,
                 device=self.device, seconds=calls.seconds)
             small = calls.input_graph.layout
@@ -68,6 +76,8 @@ class DeviceTeacherPipeline:
 
     def close(self):
         if not self.closed:
+            for site in self.teacher_action_sites:
+                site.close()
             if self.copy_lanes is not None:
                 self.copy_lanes.close()
             if self.rules is not None:
@@ -141,7 +151,10 @@ class DeviceTeacherPipeline:
             self.work.active.copy_(advance)
             self.work.errors.copy_(self.current.errors)
             actor = meta.actors.clamp(0, 1).contiguous()
-            decision, chosen, decision_errors = self.rules.rule_decision_device(self.work, actor)
+            if self.raw_teacher:
+                decision, chosen, decision_errors = self.teacher_action_sites[stage].capture_device(self.work, actor)
+            else:
+                decision, chosen, decision_errors = self.rules.rule_decision_device(self.work, actor)
             self.stage_errors[stage, 1].copy_(decision_errors)
             self.current.errors.bitwise_or_(decision_errors)
             self.work.errors.copy_(self.current.errors)

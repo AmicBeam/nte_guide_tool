@@ -239,3 +239,5 @@ VM列表／元组重复支持序列乘整数及整数乘序列，保留重复元
 吞吐不能由显存驻留、图捕获或部分模拟的次数推断。`device_performance_gate.py`只接收整批 GPU 执行并同步结束后的实测数据，单独报告准备／编译与稳态执行耗时、完成模拟总数和完整根决策吞吐；部分搜索的完整决策吞吐为零。诊断使用独立 epoch 和 monotonic 硬截止，任一时钟耗尽即超时；准备阶段和执行阶段分别计时，超时应由所属进程控制器停止本任务子树并保全报告，不停止其他进程。默认诊断预算为准备 300 秒、执行 120 秒，预算可配置；这不是训练吞吐验收阈值。
 
 正式 GPU 训练执行器必须在正确性、完整终局／原动作重放和恢复检查之外调用 `require_training_performance`：1600 个独立种子真实根、设备驻留搜索、零 CPU 规则／逐根搜索回退、完整既有策略合法候选、32 模拟／cap16／horizon3 全部完成且无错误或超时，并以同源、不同批次的连续重复测量核对已确定的稳态耗时门槛。门槛尚未确定、测量不足或任何项目失败时明确拒绝进入训练。该工具本身不提供规则执行器资格或用户学习授权；不能用夹具报告绕过 TrainingFlow 的确认与冻结流程。验证入口为 `tests.test_duel_v2_device_performance_gate`。
+
+三步 continuation 可显式选择 `DeviceTeacherPipeline(..., raw_teacher=True)`：内部 `device_teacher_actions.py`只调用正式冻结 `rule_decision`，直接解码完整原动作列表和原选中索引，压缩动作图后接入既有 simulate_action 绑定，不重复生成公开观察或策略候选编码。原动作中的 concede、顺序、未知字段和别名保持；容量按现行 800 个策略动作加一个原始 concede 有界核验，超限或索引非法明确失败。空观察／候选字段仅用于内部步进，不能送入根策略、模型或信息哈希。外层完整策略候选、32 模拟、cap16 和三步 horizon 保持不变。验证入口为 `tests.test_duel_v2_device_teacher_actions` 和流水线 legacy／raw 两种模式；Windows 同源夹具通过 `NTE_DEVICE_TEACHER_ACTIONS_PROGRAM` 加载，真实规则另做整批后的完整状态 oracle。此优化不代表吞吐已经达标。

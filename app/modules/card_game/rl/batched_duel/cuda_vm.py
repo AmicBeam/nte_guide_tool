@@ -58,7 +58,8 @@ class VmLimits:
             if type(value) is not int or value<1 or value>2**30:raise ValueError('Positive bounded VM limits required')
 
 
-def emit_vm_source(image,limits=VmLimits(),*,compiled_blocks=None):
+def emit_vm_source(image,limits=VmLimits(),*,compiled_blocks=None,constant_lookup=False):
+    if type(constant_lookup) is not bool:raise TypeError("Boolean constant lookup option required")
     image.verify()
     names=set(image.opcode_names)|set(SUPPORTED_OPS)
     ids={n:i for i,n in enumerate(image.opcode_names)}
@@ -107,7 +108,11 @@ enum VmError {{ BAD_PROGRAM=100,STACK_OVERFLOW=101,FRAME_OVERFLOW=102,UNBOUND_LO
         'dn+(long long)row*destn*4,de+(long long)row*deste*2,dp+(long long)row*destp,\n  dc+row*3,destn,deste,destp',1)
     source+=compact_kernel
     source+=_GRAPH_TRANSFER_SOURCE
-    return '#define BMT_DEVICE __device__\n'+emit_random_source()+emit_ryu_source()+emit_vm_heap_source()+prefix+source.replace('// COLLECTION_HANDLERS',emit_collection_source()).replace('// OBJECT_HANDLERS',emit_object_source(image)).replace('// BUILTIN_HANDLERS',emit_builtin_source(image.intrinsic_names)).replace('// NUMERIC_HANDLERS',emit_numeric_source()).replace('// REDUCER_HANDLERS',emit_reducer_source(image.intrinsic_names)).replace('// FRAME_GC_HANDLERS',emit_frame_gc_source()).replace('// RANDOM_HANDLERS',emit_random_vm_source(image.intrinsic_names)).replace('// EXCEPTION_HANDLERS',emit_exception_source(image)).replace('// STRING_HANDLERS',emit_string_source(image.intrinsic_names)).replace('// DEEPCOPY_HANDLERS',emit_deepcopy_source(image.intrinsic_names)).replace('// TEXT_HANDLERS',emit_text_method_source()).replace('// DECIMAL_HANDLERS',emit_decimal_source(image.intrinsic_names)).replace('// CONTEXT_HANDLERS',emit_context_source(image)).replace('// STDLIB_HANDLERS','// STDLIB_HANDLERS\n'+emit_stdlib_source(image)).replace('// NUMPY_HANDLERS','// NUMPY_HANDLERS\n'+emit_numpy_source(image.intrinsic_names)+emit_json_source(image.intrinsic_names))
+    heap_source=emit_vm_heap_source()
+    if constant_lookup:
+        from .vm_constant_lookup import emit_constant_lookup,integrate_constant_lookup
+        heap_source=integrate_constant_lookup(heap_source,emit_constant_lookup(image))
+    return '#define BMT_DEVICE __device__\n'+emit_random_source()+emit_ryu_source()+heap_source+prefix+source.replace('// COLLECTION_HANDLERS',emit_collection_source()).replace('// OBJECT_HANDLERS',emit_object_source(image)).replace('// BUILTIN_HANDLERS',emit_builtin_source(image.intrinsic_names)).replace('// NUMERIC_HANDLERS',emit_numeric_source()).replace('// REDUCER_HANDLERS',emit_reducer_source(image.intrinsic_names)).replace('// FRAME_GC_HANDLERS',emit_frame_gc_source()).replace('// RANDOM_HANDLERS',emit_random_vm_source(image.intrinsic_names)).replace('// EXCEPTION_HANDLERS',emit_exception_source(image)).replace('// STRING_HANDLERS',emit_string_source(image.intrinsic_names)).replace('// DEEPCOPY_HANDLERS',emit_deepcopy_source(image.intrinsic_names)).replace('// TEXT_HANDLERS',emit_text_method_source()).replace('// DECIMAL_HANDLERS',emit_decimal_source(image.intrinsic_names)).replace('// CONTEXT_HANDLERS',emit_context_source(image)).replace('// STDLIB_HANDLERS','// STDLIB_HANDLERS\n'+emit_stdlib_source(image)).replace('// NUMPY_HANDLERS','// NUMPY_HANDLERS\n'+emit_numpy_source(image.intrinsic_names)+emit_json_source(image.intrinsic_names))
 
 
 _VM_SOURCE=r'''
@@ -804,7 +809,7 @@ class CudaVm:
     supports_full_duel_rules=False
     rule_threads_per_block=1
     def __init__(self,image,*,device='cuda',limits=VmLimits(),guard_standalone_entities=False,
-                 rule_threads_per_block=1,compiled_blocks=None):
+                 rule_threads_per_block=1,compiled_blocks=None,constant_lookup=False):
         if not isinstance(image,VmImage):raise TypeError('Numeric VM image required')
         image.verify()
         if not isinstance(limits,VmLimits):raise TypeError('VmLimits required')
@@ -813,6 +818,12 @@ class CudaVm:
             raise ValueError('Positive bounded rule thread block size required')
         if compiled_blocks is not None and not isinstance(compiled_blocks,dict):
             raise TypeError('Explicit compiled-block budget mapping required')
+        if type(constant_lookup) is not bool:raise TypeError("Boolean constant lookup option required")
+        self.constant_lookup = constant_lookup
+        self.constant_lookup_plan = None
+        if constant_lookup:
+            from .vm_constant_lookup import emit_constant_lookup
+            self.constant_lookup_plan=emit_constant_lookup(image)
         self.compiled_blocks_config = None if compiled_blocks is None else dict(compiled_blocks)
         self.compiled_block_plan = None
         if compiled_blocks is not None:
@@ -837,7 +848,7 @@ class CudaVm:
         compact_signature=['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
             'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*','int32*','int32*','int32*',
             'int32','int32','int32','int32','int32']
-        self.module=CudaModule(emit_vm_source(image,limits,compiled_blocks=self.compiled_blocks_config),{
+        self.module=CudaModule(emit_vm_source(image,limits,compiled_blocks=self.compiled_blocks_config,constant_lookup=constant_lookup),{
             'vm_execute':signature,'vm_execute_device':signature+['uint8*'],
             'vm_clock':['int64*'],'vm_compact':compact_signature,
             'vm_compact_device':compact_signature+['int32','int32','int32','uint8*','int32*'],

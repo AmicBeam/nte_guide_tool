@@ -1103,3 +1103,5 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 搜索和物理循环通过 `device_action_leases.py` 单独回收动作图租约，保护root/current和借用state的别名；该检查沿用正式分页store非负generation首代契约。独立动作生命周期测试与CUDA图回放仍属于组件预检，不等于实际完整局或1600容量批准。
 
 `batched_search/device_game_policy_sink.py` 将物理对局版本和完整根信息集哈希接入轻量策略轨迹；它不重建训练输入，标签仍需原始动作 GPU 重放及逐哈希验证。
+
+`batched_search/device_replay_policy_tape.py` 以有界 ragged 前缀保存完整合法动作的 pi、visit_pi、visits 与根信息集哈希，不持久保存观察或候选向量。错误、过期版本和终局后写入永久撤销本局标签；训练输入必须另经 GPU 原始动作重放恢复并核验。

@@ -35,6 +35,7 @@ class DeviceGumbelResult:
     node_count: Any
     phase_work: Any
     peak_device_roots: Any
+    information_keys: Any = None
 
 
 def add_world_seed_stride(limbs, simulation):
@@ -541,4 +542,4 @@ class DeviceGumbelSearch:
         complete = complete & (self.completed == self.requested)
         return DeviceGumbelResult(self._root_decision, self.actions, self.policy, self.visit_policy,
             self.visits, self.requested, self.completed, complete, self.errors, self.node_count,
-            self.phase_work, self.peak_device_roots)
+            self.phase_work, self.peak_device_roots, self.keys[:, 0].contiguous())

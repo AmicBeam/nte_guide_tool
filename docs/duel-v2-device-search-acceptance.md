@@ -98,3 +98,7 @@
 动作图有独立租约：`device_action_leases.py`以零执行错误向量核对action arena的live、owner及generation，回收后将本快照slot标为-1，避免重复释放。搜索覆盖当前决策前保护根动作、传入动作和借用状态；结束／失败清理只回收当前动作，根动作保留到物理消费或放弃后，由同一GameLoop路径回收，纯网络同样适用。复制root/current数字缓冲区不增加底层图引用计数，Adapter不得提前回收仍被这两个快照引用的动作。
 
 分页图的首个合法generation可为0；有效槽位接受非负代号，未分配slot为-1。循环、轨迹和动作回收必须与实际store的live/gen/owner核验一致，不能把toy fixture默认generation1当正式存储契约。独立动作图的成功、失败、冻结／纯策略和首代0测试须单独通过，默认action_slot==state_slot的借用夹具不能掩盖动作泄漏。
+
+完整搜索结果提供原根的 `information_keys`，绑定原观察和完整合法候选前缀的GPU哈希。轻量策略轨迹可保存此哈希和完整pi/访问计数；之后必须以不可变GPU开局和原始动作在GPU重放中恢复x/c并逐行核对哈希，才能交给学习接口。哈希本身不构成重放或终局验收。
+
+`device_initial_archive.py`以设备内有界lane队列将原物理图复制到独立分页arena，保留实体、别名和RNG字段；原物理状态释放或改写不影响归档。复制组件无规则回调和CPU开局重建，只供一个有界对局／重放cohort使用。调用方必须在GPU重放完成前保留这些lease，不能反复重放复制graph覆盖原始副本；最终原始／公开录像和GPU重放仍须实际collector核验。

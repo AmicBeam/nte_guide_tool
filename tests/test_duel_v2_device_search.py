@@ -231,6 +231,10 @@ class DeviceSearchTest(unittest.TestCase):
         self.assertEqual(result.errors.tolist(), [0, 0])
         self.assertEqual(result.complete.tolist(), [True, True])
         self.assertEqual(result.completed.tolist(), [32, 32])
+        expected_keys = engine.information_keys.hash(result.decision.observations,
+            result.decision.candidates, result.decision.counts, roots.active).keys
+        self.assertTrue(torch.equal(result.information_keys, expected_keys))
+        self.assertTrue(result.information_keys.is_contiguous())
         prior = search_policy.normalized_exp(np.asarray([.2, 0., -.1], dtype=np.float32).astype(np.float64))
         node = Node.create(prior, 0.)
         values = [-1., 1., 0.]

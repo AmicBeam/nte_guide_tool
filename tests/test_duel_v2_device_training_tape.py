@@ -470,6 +470,42 @@ class DeviceTrainingTapeTest(unittest.TestCase):
                            roots.active, torch.zeros(2, dtype=torch.int32))
         self.assertFalse(bool(tape.result_device().learning_eligible[:2].any()))
 
+    def test_actual_cuda_frozen_actor_values_survive_graph_replay(self):
+        import torch
+        if not torch.cuda.is_available():
+            self.skipTest('Actual CUDA required; frozen-opponent value export component only')
+        tape, compact, rules, obs, roots, seeds, ids, train = self._tape(
+            self.openings[:2], device='cuda', scratch_rows=2)
+        train[:, 0] = False
+        rules.value_obs.copy_(obs + 2)
+        result = _search_result(compact, obs, compact.tokens.counts,
+                                torch.zeros(2, dtype=torch.int64, device=compact.device))
+        result.decision.states = roots
+        steps = torch.zeros(2, dtype=torch.int64, device=compact.device)
+        end_steps = torch.ones_like(steps)
+        winners = torch.tensor([0, -1], dtype=torch.int64, device=compact.device)
+        errors = torch.zeros(2, dtype=torch.int32, device=compact.device)
+        def record():
+            tape.begin_device(roots, ids, ids, seeds, train, roots.active)
+            tape.append_device(roots, rules.actors, steps, result, roots.active)
+            tape.finish_device(roots, winners, end_steps, roots.active, errors)
+        record()
+        graph = torch.cuda.CUDAGraph()
+        with torch.cuda.graph(graph):
+            record()
+        rules.value_obs.add_(3)
+        graph.replay()
+        torch.cuda.synchronize()
+        self.assertEqual(tape.numerical_rows_after_batch(), [])
+        values = tape.value_rows_after_batch()
+        self.assertEqual([row['z'] for row in values], [-1, 0])
+        self.assertEqual([row['actor'] for row in values], [1, 1])
+        for i, row in enumerate(values):
+            np.testing.assert_array_equal(row['x'], (obs + 5)[i].cpu().numpy())
+        audit = tape.numerical_rows_after_batch(include_frozen=True)
+        self.assertEqual([row['learning_eligible'] for row in audit], [False, False])
+        self.assertEqual([row['z'] for row in audit], [1, 0])
+
     def test_actual_cuda_graph_replay_packs_skip_aware_full_widths(self):
         import torch
         if not torch.cuda.is_available():

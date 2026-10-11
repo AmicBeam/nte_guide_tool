@@ -251,3 +251,9 @@ VM列表／元组重复支持序列乘整数及整数乘序列，保留重复元
 编译配置须与吞吐证据一起冻结。`NTE_CUDA_FAST_COMPILE=max` 是缩短编译时间的诊断配置，会关闭部分运行时优化；不得据此默认判断正常优化后的稳态吞吐。性能比较应保持规则镜像、根状态、完整搜索预算及严格浮点选项一致，单列编译／预热和设备执行耗时，并记录实际配置。恢复正常优化也须有独立编译截止，不能无限等待编译或把配置变化当成真实并发已通过。
 
 `vm_frame_init.py`通过 `CudaVm(..., compact_frame_init=True)` 显式减少每次 Python 调用帧初始化的写入。保留全部 header 和函数声明的局部变量初始化为 MISSING，在绑定参数前设置有效 cell 数为零；操作数栈由有效长度 `f[2]` 保护，闭包 cell 在构造时逐一写入并由 `f[11]` 保护，未访问的保留槽无需清零。默认关闭保持原初始化源码；不改变函数绑定、冻结指令、步数或错误定位。验证入口 `tests.test_duel_v2_vm_frame_init` 覆盖默认／关键字／变长参数、闭包、有限帧池下的生成器回收和重复调用后未绑定变量的准确错误，Windows 同源夹具使用 `NTE_VM_FRAME_INIT_PROGRAM`。组件正确性仍须配合真实整批状态对拍和完整搜索实测，不能推断 1600 根吞吐已经达标。
+
+换牌采样可以使用单独冻结的内部 sample_world_transition_packet 入口：gpu_sample_transition.py 保留 canonical seven_determinize、原 RNG、代理 playing 状态及原 phase／active_side 恢复，返回 (world, 0.0/1.0) 包。它不是公开 sample_world 替代接口；seven_determinize 内部的信息断言保持原样，只有外层换牌的两次 dense 编码比较移至设备编码器。新入口须重新冻结并核验源码身份，不能从旧镜像继承资格。
+
+device_split_sampler.py 的 DeviceTransitionSampleCalls 只专门化采样的调用与包解码，其余调用沿用既有 checked 图租约流程。原动作录制调用可通过静态多继承组合，仍须验证物理 apply_action 录制钩子。原始包的公共 capture 会明确拒绝；DeviceValidatedSampler 对要求检查的每个根调用已核验的 GPU 公开观察／完整候选编码，并由 device_decision_equality.py 做逐元素精确 float32 比较、合法长度／前缀／编码错误检查，保留 -0 与 +0 相等语义，不使用 epsilon 或仅凭哈希。完整候选按静态行片段编码，CPU 仅用于显式单元 oracle，生产路径拒绝 CPU。错误保持在设备向量中；检查后的动作图按 owner／generation 回收，被拒绝的新世界先回收再清除 active，避免搜索只回收 active 状态时泄漏。原输入状态不释放。
+
+验证入口为 tests.test_duel_v2_device_decision_equality 和 tests.test_duel_v2_gpu_sample_transition；实际 CUDA 还须证明所有换牌检查标志执行、未校验入口被拒绝、观察／候选不一致会失败且临时状态／动作租约回收，以及整个 GPU 批次后的 canonical sample_world／三步教师完整状态对拍。通过后仍要进行完整 32 模拟、cap16、horizon3、真实 1600 根、终局和原动作重放验收；不能用包解码或少量根对拍宣布训练和互搏已完成。

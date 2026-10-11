@@ -286,15 +286,24 @@ def normalize_entity_action(state, side, action):
     return result
 
 
-def entity_action(state, side, action):
-    """Preferred entity-addressed action, alongside the compatible legacy action."""
-    result = deepcopy(action)
-    if 'character_id' in result:
-        result['actor_entity_id'] = state['sides'][side]['characters'][result.pop('character_id')]['entity_id']
+def action_card_index(state):
+    """Card identities for one unchanged snapshot, including pending cards."""
     all_cards = [c for team in state['sides'].values() for zone in ('hand', 'deck', 'discard', 'removed')
                  for c in team.get(zone, [])]
     all_cards += (state.get('pending_choice') or {}).get('cards', [])
-    cards = {c['instance_id']: c for c in all_cards if c.get('instance_id')}
+    return {c['instance_id']: c for c in all_cards if c.get('instance_id')}
+
+
+def entity_action(state, side, action, *, card_index=None):
+    """Preferred entity-addressed action, alongside the compatible legacy action.
+
+    An observation may reuse its snapshot's card index across legal actions.
+    Standalone callers build a fresh index; the index is never mutated.
+    """
+    result = deepcopy(action)
+    if 'character_id' in result:
+        result['actor_entity_id'] = state['sides'][side]['characters'][result.pop('character_id')]['entity_id']
+    cards = action_card_index(state) if card_index is None else card_index
     for legacy, field in (('card_id', 'card_entity_id'), ('choice_id', 'choice_entity_id')):
         if result.get(legacy) in cards:
             result[field] = cards[result.pop(legacy)]['entity_id']

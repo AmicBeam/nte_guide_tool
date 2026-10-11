@@ -2,7 +2,7 @@
 from .modifiers import compatibility_flags, public_effects
 from copy import deepcopy
 from contextvars import ContextVar
-from .entities import clone_state, copy_state_graph, entity_action, hydrate_entities, needs_hydration
+from .entities import clone_state, copy_state_graph, entity_action, action_card_index, hydrate_entities, needs_hydration
 
 from .effect_markers import character_effect_markers, team_effect_markers
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
@@ -220,10 +220,11 @@ def observe(state, side, after_seq=None, *, include_previews=True):
     if needs_hydration(state):
         state = clone_state(state)
     actions = legal_actions(state, side)
+    card_index = action_card_index(state)
     playable = {a['card_id'] for a in actions if a['type'] == 'play_card'}
     result = {key: deepcopy(state[key]) for key in ('rules_version', 'version', 'phase', 'active_side', 'first_side', 'turn', 'winner', 'reason')}
     def legal_entry(action, preview_value, interaction):
-        return {'action': deepcopy(action), 'entity_action': entity_action(state, side, action),
+        return {'action': deepcopy(action), 'entity_action': entity_action(state, side, action, card_index=card_index),
                 'label': action_label(state, side, action), 'preview': preview_value, 'interaction': interaction}
     if include_previews:
         with prepared_preview_sandbox(state, side):

@@ -17,6 +17,15 @@ from app.modules.card_game.engine.duel_v2.presentation import capture_public_boa
 
 
 class ModifiersTest(unittest.TestCase):
+    def test_empty_legacy_flags_return_fresh_empty_results(self):
+        from app.modules.card_game.engine.duel_v2.modifiers import legacy_effects
+        for holder in ({}, {'flags': None}, {'flags': {}}, {'flags': {'unrelated': 2}}):
+            before = deepcopy(holder)
+            first = legacy_effects(holder)
+            self.assertEqual(first, [])
+            self.assertIsNot(first, legacy_effects(holder))
+            self.assertEqual(holder, before)
+
     def game(self):
         s = new_game(seed=91, first_side='a', skip_mulligan=True, escalation=False)
         for side in s['sides'].values():

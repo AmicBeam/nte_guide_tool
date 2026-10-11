@@ -124,6 +124,8 @@ def deadline(state, side, turns, phase='turn_start'):
 
 def legacy_effects(holder):
     flags = holder.get('flags') or {}
+    if not flags:
+        return []
     source = holder.get('entity_id')
     result = []
     def make(key, value, property='attack.panel', **kw):

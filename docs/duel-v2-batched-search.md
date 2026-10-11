@@ -257,3 +257,5 @@ VM列表／元组重复支持序列乘整数及整数乘序列，保留重复元
 device_split_sampler.py 的 DeviceTransitionSampleCalls 只专门化采样的调用与包解码，其余调用沿用既有 checked 图租约流程。原动作录制调用可通过静态多继承组合，仍须验证物理 apply_action 录制钩子。原始包的公共 capture 会明确拒绝；DeviceValidatedSampler 对要求检查的每个根调用已核验的 GPU 公开观察／完整候选编码，并由 device_decision_equality.py 做逐元素精确 float32 比较、合法长度／前缀／编码错误检查，保留 -0 与 +0 相等语义，不使用 epsilon 或仅凭哈希。完整候选按静态行片段编码，CPU 仅用于显式单元 oracle，生产路径拒绝 CPU。错误保持在设备向量中；检查后的动作图按 owner／generation 回收，被拒绝的新世界先回收再清除 active，避免搜索只回收 active 状态时泄漏。原输入状态不释放。
 
 验证入口为 tests.test_duel_v2_device_decision_equality 和 tests.test_duel_v2_gpu_sample_transition；实际 CUDA 还须证明所有换牌检查标志执行、未校验入口被拒绝、观察／候选不一致会失败且临时状态／动作租约回收，以及整个 GPU 批次后的 canonical sample_world／三步教师完整状态对拍。通过后仍要进行完整 32 模拟、cap16、horizon3、真实 1600 根、终局和原动作重放验收；不能用包解码或少量根对拍宣布训练和互搏已完成。
+
+搜索中的规则失败必须保留原错误。DeviceGumbelSearch 在决策返回失败后停止该行的信息键查找，哈希仅处理规则／推理均未失败且决策有效的行。超时产生的空候选不能再派生 KEY_ERROR、伪装成根信息集不一致。tests.test_duel_v2_search_failed_decision 注入根遍历阶段的规则超时，检查 CPU 显式 FSM oracle 与实际 CUDA 都保留 RULE_ERROR、不哈希空候选、不增加 KEY_ERROR；该错误回归不构成搜索吞吐或真实规则容量证据。

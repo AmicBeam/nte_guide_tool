@@ -245,6 +245,9 @@ class DeviceGumbelSearch:
         return self.t.where(decision.valid, prior, 0.)
 
     def _hash_decision(self, decision, mask):
+        # A failed rule/inference row has no valid candidate byte stream. Keep
+        # its original error instead of hashing empty output and adding KEY_ERROR.
+        mask = mask & (self.errors == 0) & (decision.errors == 0)
         if isinstance(decision.candidates, self.t.Tensor):
             return self.information_keys.hash(decision.observations, decision.candidates,
                                               decision.counts, mask)
@@ -419,6 +422,7 @@ class DeviceGumbelSearch:
         opposing = traverse & (meta.actors != self._viewers) & (self.errors == 0)
         decision = self.rules.decision_device(self._world(own), self._viewers)
         self._error(decision.errors, own, RULE_ERROR)
+        own = own & (self.errors == 0)
         self._save_decision(decision, own)
         hashed = self._hash_decision(decision, own)
         self._error(hashed.errors, own, KEY_ERROR)

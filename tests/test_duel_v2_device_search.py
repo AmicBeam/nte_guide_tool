@@ -139,6 +139,41 @@ class InjectiveFixtureKeys:
 
 
 class DeviceSearchTest(unittest.TestCase):
+    def test_value_slices_preserve_models_viewers_terminal_and_invalid_tail(self):
+        import torch
+        from app.modules.card_game.rl.batched_search.device_search import INFERENCE_ERROR
+        engine, fixture = self.engine(rows=65)
+        class RowInference:
+            candidate_dim = 2
+            def __init__(self): self.calls = []
+            def predict_device(self, x, c, valid, ids, actor, *, value_only):
+                self.calls.append((len(x), c.shape[1], ids.clone(), actor.clone()))
+                score = ids.float() * .07 + x[:, 0] * .03 + actor[:, 0] * .11
+                wdl = torch.stack((-score, torch.zeros_like(score), score), -1).softmax(-1)
+                return SimpleNamespace(wdl=wdl, invalid_rows=(ids == 3))
+        inference = RowInference();engine.auxiliary = inference
+        roots = fixture.roots()
+        fixture.data[roots.slots[0]] = torch.tensor([3, 1])
+        fixture.data[roots.slots[-1]] = torch.tensor([3, 0])
+        ids = torch.arange(65, dtype=torch.int64) % 7
+        mask = torch.ones(65, dtype=torch.bool);mask[10] = False
+        observed = fixture.value_observation_device(roots, fixture.viewer)
+        whole = RowInference().predict_device(observed.observations, torch.empty(65, 0, 2),
+            torch.empty(65, 0, dtype=torch.bool), ids, observed.viewer_is_actor,
+            value_only=torch.ones(65, dtype=torch.bool))
+        expected = torch.where(observed.terminal, observed.terminal_value,
+            (whole.wdl[:, 2] - whole.wdl[:, 0]).double())
+        with patch.object(torch.Tensor, 'cpu', side_effect=AssertionError('CPU copy')), \
+             patch.object(torch.Tensor, 'item', side_effect=AssertionError('Scalar read')), \
+             patch.object(torch.Tensor, '__bool__', side_effect=AssertionError('Host branch')):
+            value = engine._fixed_value(roots, fixture.viewer, ids, mask)
+        torch.testing.assert_close(value, expected, rtol=0, atol=0)
+        self.assertEqual([(n, m) for n, m, _, _ in inference.calls], [(32, 0), (32, 0), (1, 0)])
+        self.assertTrue(torch.equal(torch.cat([c[2] for c in inference.calls]), ids))
+        self.assertTrue(torch.equal(torch.cat([c[3] for c in inference.calls]), observed.viewer_is_actor))
+        expected_errors = ((ids == 3) & mask & ~observed.terminal).int() * INFERENCE_ERROR
+        self.assertTrue(torch.equal(engine.errors, expected_errors))
+
     def test_compact_candidates_match_dense_full_budget_and_snapshot_isolation(self):
         import torch
         from dataclasses import replace

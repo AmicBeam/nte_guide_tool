@@ -68,7 +68,7 @@ class DeviceGumbelSearch:
                  *, rows, max_actions, simulations=32, gumbel_candidates=16,
                  max_depth=10, terminal_horizon=3, teacher_mode='covered_value',
                  random=None, noise=False, device='cuda', allow_cpu_reference=False,
-                 allow_synthetic=False):
+                 allow_synthetic=False, value_batch_rows=32):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -76,6 +76,8 @@ class DeviceGumbelSearch:
                 raise ValueError('Positive integer bounded device search dimensions required')
         if type(terminal_horizon) is not int or terminal_horizon < 0:
             raise ValueError('Bounded terminal horizon required')
+        if type(value_batch_rows) is not int or value_batch_rows < 1:
+            raise ValueError('Positive bounded value inference row count required')
         if teacher_mode != 'covered_value':
             raise NotImplementedError('Device FSM currently requires the covered_value teacher')
         if type(noise) is not bool or type(allow_synthetic) is not bool:
@@ -108,6 +110,7 @@ class DeviceGumbelSearch:
         self.statistics, self.information_keys = statistics, information_keys
         self.random, self.noise, self.allow_synthetic = random, noise, allow_synthetic
         self.rows, self.max_actions = rows, max_actions
+        self.value_batch_rows = min(rows, value_batch_rows)
         self.simulations, self.max_depth, self.terminal_horizon = simulations, max_depth, terminal_horizon
         self.nodes_per_root = simulations + 1
         z = dict(device=self.device)
@@ -210,13 +213,21 @@ class DeviceGumbelSearch:
         bad_terminal = observed.terminal & ((observed.terminal_value != -1.)
             & (observed.terminal_value != 0.) & (observed.terminal_value != 1.))
         self._error(bad_terminal, mask, METADATA_ERROR)
-        c = t.zeros((self.rows, 1, self.auxiliary.candidate_dim), dtype=t.float32, device=self.device)
-        valid = t.zeros((self.rows, 1), dtype=t.bool, device=self.device)
-        value_only = t.ones(self.rows, dtype=t.bool, device=self.device)
-        prediction = self.auxiliary.predict_device(observed.observations, c, valid, model_ids,
-                                                   observed.viewer_is_actor, value_only=value_only)
-        self._error(prediction.invalid_rows, mask & ~observed.terminal, INFERENCE_ERROR)
-        value = (prediction.wdl[:, 2] - prediction.wdl[:, 0]).to(t.float64)
+        # Static capture-time slices bound replicated network weights and
+        # intermediates. All roots remain resident; GPU replay runs every slice.
+        values, invalid = [], []
+        for start in range(0, self.rows, self.value_batch_rows):
+            stop = min(start + self.value_batch_rows, self.rows)
+            count = stop - start
+            c = t.empty((count, 0, self.auxiliary.candidate_dim), dtype=t.float32, device=self.device)
+            valid = t.empty((count, 0), dtype=t.bool, device=self.device)
+            value_only = t.ones(count, dtype=t.bool, device=self.device)
+            prediction = self.auxiliary.predict_device(observed.observations[start:stop], c, valid,
+                model_ids[start:stop], observed.viewer_is_actor[start:stop], value_only=value_only)
+            values.append((prediction.wdl[:, 2] - prediction.wdl[:, 0]).to(t.float64))
+            invalid.append(prediction.invalid_rows)
+        self._error(t.cat(invalid), mask & ~observed.terminal, INFERENCE_ERROR)
+        value = t.cat(values)
         return t.where(observed.terminal, observed.terminal_value, value)
 
     def _policy_prediction(self, decision, actors, mask):

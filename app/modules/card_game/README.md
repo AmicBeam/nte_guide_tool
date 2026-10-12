@@ -1115,3 +1115,5 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 ### Mctx 批量改造的验收顺序
 
 设备批量搜索按[逐级容量验收](../../../docs/duel-v2-device-search-acceptance.md#mctx-批量改造与逐级容量验收)执行：8 根小批完整 Gumbel32 → 32 → 128 → 400 → 1600 根。每级保持 cap16、covered_value horizon3 和完整合法候选；同级完整搜索、真实终局与 GPU 原始动作重放通过后才晋级，显存和性能单独实测。规则工作槽与网络／编码 tile 分别记录，不作为独立根数。设备离线只做源码与 CPU 参考检查，不连接远端或将 CUDA 跳过写成通过。
+
+首阶段离线组件 `batched_search/device_teacher_ranking.py` 执行具名动作和四个公开预演数值的批量教师评分；`device_teacher_preview_jobs.py` 准备完整战斗预演任务，核验带 epoch／actor／状态租约的分组回执和全部任务完成。它们保持未合格，不被网站导入，尚未接入正式规则预演／三步教师；后续接线与 CUDA 验收按上述协议执行。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_teacher_ranking tests.test_duel_v2_device_teacher_preview_jobs`，CPU 参考和 CUDA skip 分开记账。

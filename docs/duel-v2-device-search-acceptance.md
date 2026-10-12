@@ -76,6 +76,10 @@
 
 设备离线期间只推进源码、文档与明确标注的 CPU 参考检查；不反复 SSH 探测或发起远端作业。用户明确通知设备恢复后，重新核对本任务所属进程及冻结身份，先执行当前新源码的 CUDA 组件和 8 根闭环，再按上述顺序扩容。所有单次记录进入 `artifacts/rl-evals/<run-id>/`。
 
+首阶段组件为 `batched_search/device_teacher_ranking.py` 和 `device_teacher_preview_jobs.py`，均显式不提供 closed-service 或容量资格。前者以完整已知 canonical AST 绑定教师评分，接收公开的四个 float64 预演数值，保留换牌／选择优先级、七队额外动作和原顺序同分选点；动作按它的 `KIND_CODES` 以名称绑定，不能直接套用另一编码器的动作序号。后者只准备和核验 GPU 预演任务，不生成规则结果；回执必须携带任务发出时的 epoch、actor、owner、generation、slot、parent 与原候选 ordinal，迟到、重复、非有限或外来结果拒绝，分组回传需全部完成并通过 `finalize_device` 后才可进入评分。容量不足整体拒绝，不保留部分有效任务。
+
+这些部件尚未接入正式规则教师。后续先将同源 `teacher_prepare/teacher_preview/teacher_finish` 的精确公开沙盒和预演结果解码接入设备 dispatcher，证明全部战斗候选、早期选择分支、实体／RNG／租约与原始状态不变；再将 prepare → preview jobs → ranking → simulate/clean 接入原有三步教师和完整 Gumbel。CPU oracle 显式 opt-in；CUDA 捕获／重放、完整规则对拍与小批闭环须独立执行。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_device_teacher_ranking tests.test_duel_v2_device_teacher_preview_jobs`。
+
 ### 完整训练与独立评估
 
 1. 原语：规则、编码、随机、Gumbel 数学、页分配和 CUDA graph 捕获分别对拍。合成 1600 行测试仅证明原语，不批准真实局容量。

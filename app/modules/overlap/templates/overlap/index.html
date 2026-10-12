@@ -19,6 +19,11 @@
             <label>闪避替代<select id="overlap-dodge"><option value="all">全部</option><option value="without">不使用闪</option><option value="with">只看使用闪</option></select></label>
             <label>排序<select id="overlap-sort"><option value="multiplier_rate">倍率 / 占轴最高</option><option value="foreground_seconds">占轴最短</option><option value="harmony_rate">环合 / 占轴最高</option><option value="energy_rate">回能 / 占轴最高</option></select></label>
         </div>
+        <fieldset class="overlap-contains">
+            <legend>包含动作</legend>
+            <div class="overlap-contains-heading"><span id="overlap-contains-hint">可多选，路线须包含全部已选动作</span><button id="overlap-contains-clear" type="button" disabled>清空已选动作</button></div>
+            <div id="overlap-contains" class="overlap-contains-options" aria-describedby="overlap-contains-hint"></div>
+        </fieldset>
         <p id="overlap-status" role="status" aria-live="polite">正在读取收益表…</p>
     </section>
     <section class="glass-card overlap-results" aria-label="合轴操作收益">

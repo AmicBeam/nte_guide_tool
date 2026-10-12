@@ -13,6 +13,15 @@
     let selected;
     let shown = 60;
     let generation = 0;
+    const includedActions = new Set();
+
+    function updateIncludedActions() {
+        const names = [...new Set(selected.rows.flatMap((row) => row.timeline.map((step) => step.action)))];
+        for (const name of includedActions) {
+            if (!names.includes(name)) includedActions.delete(name);
+        }
+        $('contains').innerHTML = names.map((name) => `<label class="overlap-contains-option"><input type="checkbox" value="${escape(name)}"${includedActions.has(name) ? ' checked' : ''}><span>${escape(name)}</span></label>`).join('');
+    }
 
     function fillActionOptions(field, names) {
         const previous = $(field).value;
@@ -92,7 +101,9 @@
                 || returnFilter === 'two' && Boolean(row.window_1) && !row.requires_three_characters)
             && (dodge === 'all' || row.has_dodge === (dodge === 'with'))
             && (!firstAction || row.timeline[0].action === firstAction)
-            && (!lastAction || row.timeline[row.timeline.length-1].action === lastAction));
+            && (!lastAction || row.timeline[row.timeline.length-1].action === lastAction)
+            && [...includedActions].every((name) => row.timeline.some((step) => step.action === name)));
+        $('contains-clear').disabled = includedActions.size === 0;
         const metric = (row) => sort === 'multiplier_rate' ? row.multiplier_rates.atk : row[sort];
         rows.sort((a, b) => {
             const first = metric(a), second = metric(b);
@@ -112,6 +123,7 @@
         shown = 60;
         fillActionOptions('first', [...new Set(character.rows.map((row) => row.timeline[0].action))]);
         updateLastActions();
+        updateIncludedActions();
         document.querySelectorAll('[data-character]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.character === character.id)));
         const url = new URL(window.location.href);
         url.searchParams.set('character', character.id);
@@ -141,6 +153,20 @@
         shown = 60;
         render();
     }));
+    $('contains').addEventListener('change', (event) => {
+        const input = event.target;
+        if (!input.matches('input[type="checkbox"]')) return;
+        if (input.checked) includedActions.add(input.value);
+        else includedActions.delete(input.value);
+        shown = 60;
+        render();
+    });
+    $('contains-clear').addEventListener('click', () => {
+        includedActions.clear();
+        $('contains').querySelectorAll('input').forEach((input) => { input.checked = false; });
+        shown = 60;
+        render();
+    });
     $('rows').addEventListener('toggle', (event) => {
         const disclosure = event.target;
         if (!disclosure.matches('.overlap-route')) return;

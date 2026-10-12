@@ -68,7 +68,8 @@ class DeviceGumbelSearch:
                  *, rows, max_actions, simulations=32, gumbel_candidates=16,
                  max_depth=10, terminal_horizon=3, teacher_mode='covered_value',
                  random=None, noise=False, device='cuda', allow_cpu_reference=False,
-                 allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False):
+                 allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False,
+                 reuse_root_policy_value=False, verify_root_value_reuse=False):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -87,6 +88,11 @@ class DeviceGumbelSearch:
         if borrow_root_candidates and not callable(getattr(rules,'borrow_root_candidates_device',None)):
             raise ValueError('Dedicated immutable root candidate binding required')
         if type(queued_row_work) is not bool:raise TypeError('Explicit queued row-work option required')
+        if type(reuse_root_policy_value) is not bool or type(verify_root_value_reuse) is not bool:
+            raise TypeError('Explicit root value reuse and verification options required')
+        if verify_root_value_reuse and not reuse_root_policy_value:
+            raise ValueError('Root value verification requires opt-in reuse')
+        self.verify_root_value_reuse = verify_root_value_reuse
         self.t = torch
         self.device = torch.device(device)
         if self.device.type == 'cuda' and self.device.index is None:
@@ -112,6 +118,10 @@ class DeviceGumbelSearch:
         if auxiliary_inference is None:
             raise ValueError('Qualified independent auxiliary WDL inference required')
         self.rules, self.inference, self.auxiliary = rules, inference, auxiliary_inference
+        self.root_value_reuse = None
+        if reuse_root_policy_value:
+            from .device_root_value_reuse import DeviceRootValueReuse
+            self.root_value_reuse = DeviceRootValueReuse(rules, inference, auxiliary_inference)
         self.statistics, self.information_keys = statistics, information_keys
         self.random, self.noise, self.allow_synthetic = random, noise, allow_synthetic
         self.rows, self.max_actions = rows, max_actions
@@ -145,6 +155,8 @@ class DeviceGumbelSearch:
         self.visits = torch.zeros((rows, max_actions), dtype=torch.int32, **z)
         self.phase_work = torch.zeros((DONE, rows), dtype=torch.int64, **z)
         self.peak_device_roots = torch.zeros((), dtype=torch.int64, **z)
+        self.root_value_reuse_rows = torch.zeros((), dtype=torch.int64, **z)
+        self.root_value_reuse_validation_errors = torch.zeros(rows, dtype=torch.int32, **z)
         self._unfinished = torch.zeros(rows, dtype=torch.uint8, **z)
         self._world_live = torch.zeros(rows, dtype=torch.bool, **z)
         self._pool = None
@@ -215,6 +227,7 @@ class DeviceGumbelSearch:
     def _fixed_value(self, states, viewers, model_ids, mask):
         t = self.t
         observed = self.rules.value_observation_device(self._masked(states, mask), viewers)
+        self._last_value_observation = observed
         self._error(observed.errors, mask, RULE_ERROR)
         meta = self.rules.metadata_device(self._masked(states, mask))
         self._error(meta.errors, mask, RULE_ERROR)
@@ -259,6 +272,7 @@ class DeviceGumbelSearch:
             prediction = decision.candidates.predict_device(self.inference, decision.observations,
                 decision.valid, ids, context, mask)
         self._error(prediction.invalid_rows, mask, INFERENCE_ERROR)
+        self._last_policy_prediction = prediction
         logits = prediction.logits.to(self.t.float64).masked_fill(~decision.valid, -float('inf'))
         prior = logits.softmax(-1)
         return self.t.where(decision.valid, prior, 0.)
@@ -353,6 +367,8 @@ class DeviceGumbelSearch:
                       self.leaf_values, self.policy, self.visit_policy, self.visits, self.phase_work):
             value.zero_()
         self.peak_device_roots.zero_()
+        self.root_value_reuse_rows.zero_()
+        self.root_value_reuse_validation_errors.zero_()
         self._world_live.zero_()
         mask = roots.active & (self.errors == 0)
         meta = self.rules.metadata_device(self._masked(roots, mask))
@@ -369,7 +385,26 @@ class DeviceGumbelSearch:
         self.requested.copy_(t.where(decision.counts == 1, 1, self.simulations))
         self._limits = decision.counts.clamp(1, self._candidate_cap) - 1
         prior = self._policy_prediction(decision, viewers, mask)
-        value = self._fixed_value(roots, viewers, self._aux_ids, mask)
+        reuse = self.root_value_reuse
+        if reuse is not None and reuse.enabled:
+            ids = self._policy_ids.gather(1, viewers.clamp(0, 1)[:, None])[:, 0]
+            cached, eligible = reuse.value_device(roots, decision, meta,
+                self._last_policy_prediction, viewers, ids, self._aux_ids, mask)
+            self.root_value_reuse_rows.copy_(eligible.to(t.int64).sum())
+            fallback_mask = mask if self.verify_root_value_reuse else mask & ~eligible
+            original = self._fixed_value(roots, viewers, self._aux_ids, fallback_mask)
+            if self.verify_root_value_reuse:
+                observed = self._last_value_observation
+                mismatch = eligible & ((cached != original)
+                    | (decision.observations != observed.observations).any(-1)
+                    | observed.terminal | (observed.viewer_is_actor[:, 0] != 1.))
+                self.root_value_reuse_validation_errors.copy_(mismatch.to(t.int32))
+                self._error(mismatch, mask, INFERENCE_ERROR)
+                value = original
+            else:
+                value = t.where(eligible, cached, original)
+        else:
+            value = self._fixed_value(roots, viewers, self._aux_ids, mask)
         hashed = self._hash_decision(decision, mask)
         self._error(hashed.errors, mask, KEY_ERROR)
         active = mask & (self.errors == 0)

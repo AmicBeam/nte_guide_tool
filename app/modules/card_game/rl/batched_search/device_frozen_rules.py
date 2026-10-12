@@ -489,6 +489,21 @@ class DeviceFrozenRules:
     def metadata_device(self, states):
         return self._consume('metadata').capture_device(states)
 
+    def borrow_root_candidates_device(self,decision):
+        """Root site's tokens stay immutable until the next root initialization.
+
+        Child decision uses a separate captured site; mutable current snapshots
+        must still clone. Only tokens are borrowed, never state or action leases.
+        """
+        if self.closed or not self.t.cuda.is_current_stream_capturing():
+            raise RuntimeError('Root candidate binding requires active CUDA capture')
+        queue=self._queues['decision']
+        if (not isinstance(decision,DeviceDecision) or queue.index!=1
+                or len(queue.plans)<2 or decision.candidates is not queue.plans[0].candidates
+                or queue.plans[0].candidates is queue.plans[1].candidates):
+            raise ValueError('Distinct dedicated root/child candidate buffers required')
+        return decision.candidates
+
     def decision_device(self, states, observers):
         decision = self._consume('decision').capture_device(states, observers)
         if not isinstance(decision.candidates, CompactDeviceCandidates):

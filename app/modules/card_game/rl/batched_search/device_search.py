@@ -68,7 +68,7 @@ class DeviceGumbelSearch:
                  *, rows, max_actions, simulations=32, gumbel_candidates=16,
                  max_depth=10, terminal_horizon=3, teacher_mode='covered_value',
                  random=None, noise=False, device='cuda', allow_cpu_reference=False,
-                 allow_synthetic=False, value_batch_rows=32):
+                 allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -82,6 +82,11 @@ class DeviceGumbelSearch:
             raise NotImplementedError('Device FSM currently requires the covered_value teacher')
         if type(noise) is not bool or type(allow_synthetic) is not bool:
             raise TypeError('Explicit boolean noise and synthetic controls required')
+        if type(borrow_root_candidates) is not bool:raise TypeError('Explicit root candidate borrow option required')
+        self.borrow_root_candidates=borrow_root_candidates
+        if borrow_root_candidates and not callable(getattr(rules,'borrow_root_candidates_device',None)):
+            raise ValueError('Dedicated immutable root candidate binding required')
+        if type(queued_row_work) is not bool:raise TypeError('Explicit queued row-work option required')
         self.t = torch
         self.device = torch.device(device)
         if self.device.type == 'cuda' and self.device.index is None:
@@ -144,6 +149,14 @@ class DeviceGumbelSearch:
         self._world_live = torch.zeros(rows, dtype=torch.bool, **z)
         self._pool = None
         self._root_decision = self._decision = None
+        self.row_work = None
+        if queued_row_work:
+            from .device_search_row_work import DeviceSearchRowWork
+            self.row_work=DeviceSearchRowWork(inference,auxiliary_inference,information_keys,
+                rows=rows,max_actions=max_actions,tile=self.value_batch_rows,seconds=row_work_seconds)
+
+    def close(self):
+        if self.row_work is not None:self.row_work.close()
 
     def _build_context(self):
         if (self.device.type == 'cuda' and not self.allow_synthetic
@@ -213,6 +226,10 @@ class DeviceGumbelSearch:
         bad_terminal = observed.terminal & ((observed.terminal_value != -1.)
             & (observed.terminal_value != 0.) & (observed.terminal_value != 1.))
         self._error(bad_terminal, mask, METADATA_ERROR)
+        if self.row_work is not None:
+            value,invalid=self.row_work.value(observed,model_ids,mask)
+            self._error(invalid,mask & ~observed.terminal,INFERENCE_ERROR)
+            return t.where(observed.terminal,observed.terminal_value,value)
         # Static capture-time slices bound replicated network weights and
         # intermediates. All roots remain resident; GPU replay runs every slice.
         values, invalid = [], []
@@ -233,7 +250,9 @@ class DeviceGumbelSearch:
     def _policy_prediction(self, decision, actors, mask):
         ids = self._policy_ids.gather(1, actors.clamp(0, 1)[:, None])[:, 0]
         context = self.t.ones((self.rows, 1), dtype=self.t.float32, device=self.device)
-        if isinstance(decision.candidates, self.t.Tensor):
+        if self.row_work is not None:
+            prediction=self.row_work.policy(decision,ids,context,mask)
+        elif isinstance(decision.candidates, self.t.Tensor):
             prediction = self.inference.predict_device(decision.observations, decision.candidates,
                 decision.valid, ids, context)
         else:
@@ -248,6 +267,7 @@ class DeviceGumbelSearch:
         # A failed rule/inference row has no valid candidate byte stream. Keep
         # its original error instead of hashing empty output and adding KEY_ERROR.
         mask = mask & (self.errors == 0) & (decision.errors == 0)
+        if self.row_work is not None:return self.row_work.hash(decision,mask)
         if isinstance(decision.candidates, self.t.Tensor):
             return self.information_keys.hash(decision.observations, decision.candidates,
                                               decision.counts, mask)
@@ -290,11 +310,13 @@ class DeviceGumbelSearch:
                                         protected=protected)
         self._error(errors, mask, RULE_ERROR)
 
-    def _clone_decision(self, decision):
+    def _clone_decision(self, decision, *, root=False):
         copied = {}
         for field in fields(decision):
             value = getattr(decision, field.name)
-            if field.name == 'states':
+            if field.name == 'candidates' and root and self.borrow_root_candidates:
+                copied[field.name]=self.rules.borrow_root_candidates_device(decision)
+            elif field.name == 'states':
                 copied[field.name] = DeviceStateBatch(value.pool, value.slots.clone(),
                     value.generations.clone(), value.owners.clone(), value.active.clone(), value.errors.clone())
             elif field.name == 'action_pool' or value is None:
@@ -339,7 +361,7 @@ class DeviceGumbelSearch:
                     | (roots.owners < 0), mask, METADATA_ERROR)
         mask = mask & (self.errors == 0)
         decision = self.rules.decision_device(self._masked(roots, mask), viewers)
-        self._root_decision = self._clone_decision(decision)
+        self._root_decision = self._clone_decision(decision,root=True)
         self._decision = None
         self._save_decision(decision, mask)
         self._error(decision.errors, mask, RULE_ERROR)

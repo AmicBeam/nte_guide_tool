@@ -106,6 +106,23 @@ class DeviceTeacherRankingResult:
     identity: str
 
 
+def _canonical_ast_dump(tree):
+    """Preserve the pinned 3.10 AST across empty-field changes in 3.12/3.13."""
+    import ast
+    import inspect
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if getattr(node, 'type_params', ()):
+                raise RuntimeError('Unsupported canonical teacher type parameters')
+            # Empty generic metadata was added in 3.12; nonempty metadata is
+            # rejected above, so removing this field loses no source semantics.
+            node._fields = tuple(name for name in node._fields if name != 'type_params')
+    # Python 3.13 omits empty lists by default. Older dumps included them,
+    # which is the representation authenticated by the existing source pin.
+    kwargs = {'show_empty': True} if 'show_empty' in inspect.signature(ast.dump).parameters else {}
+    return ast.dump(tree, include_attributes=False, **kwargs)
+
+
 def canonical_teacher_ranking_identity():
     """Bind the entire known canonical AST, not matching source fragments."""
     import ast
@@ -120,8 +137,7 @@ def canonical_teacher_ranking_identity():
                         'choose', 'end_turn', 'concede'):
         raise RuntimeError('Unsupported canonical action-kind ABI')
     try:
-        source = '\n'.join(ast.dump(ast.parse(inspect.getsource(obj)),
-                                   include_attributes=False)
+        source = '\n'.join(_canonical_ast_dump(ast.parse(inspect.getsource(obj)))
                            for obj in (VisibleEngineRulePolicy, _action_key,
                                        teacher_prepare, teacher_finish))
     except (OSError, TypeError, SyntaxError) as exc:

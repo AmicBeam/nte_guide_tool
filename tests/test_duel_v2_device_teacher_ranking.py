@@ -238,6 +238,30 @@ class DeviceTeacherRankingTest(unittest.TestCase):
         self.assertEqual(int(result.choices[0]), -1)
         self.assertEqual(int(result.errors[0]), ERR_NONFINITE)
 
+    def test_empty_generic_ast_metadata_preserves_existing_identity(self):
+        import ast
+        expected = canonical_teacher_ranking_identity()
+        parse = ast.parse
+        def newer_ast(source):
+            tree = parse(source)
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    if 'type_params' not in node._fields:
+                        node._fields += ('type_params',)
+                    node.type_params = []
+            return tree
+        with patch('ast.parse', side_effect=newer_ast):
+            self.assertEqual(canonical_teacher_ranking_identity(), expected)
+        self.assertEqual(expected, '28eff382b26005ccfefa96a42071deffe14a98e6196f59b5e6ecade5c80f5940')
+
+    def test_nonempty_generic_ast_metadata_is_rejected(self):
+        import ast
+        from app.modules.card_game.rl.batched_search.device_teacher_ranking import _canonical_ast_dump
+        tree = ast.parse('def example(): return 1')
+        tree.body[0].type_params = [ast.Name(id='T', ctx=ast.Load())]
+        with self.assertRaisesRegex(RuntimeError, 'Unsupported canonical teacher type parameters'):
+            _canonical_ast_dump(tree)
+
     def test_actual_cuda_full_kind_and_invalid_row_policy_parity(self):
         import torch as t
         from app.modules.card_game.rl.batched_search.device_teacher_ranking import KIND_NAMES, KIND_CODES

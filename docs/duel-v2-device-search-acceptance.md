@@ -80,6 +80,8 @@
 
 这些部件尚未接入正式规则教师。后续先将同源 `teacher_prepare/teacher_preview/teacher_finish` 的精确公开沙盒和预演结果解码接入设备 dispatcher，证明全部战斗候选、早期选择分支、实体／RNG／租约与原始状态不变；再将 prepare → preview jobs → ranking → simulate/clean 接入原有三步教师和完整 Gumbel。CPU oracle 显式 opt-in；CUDA 捕获／重放、完整规则对拍与小批闭环须独立执行。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_device_teacher_ranking tests.test_duel_v2_device_teacher_preview_jobs`。
 
+教师评分的源码 AST 身份使用固定表示：Python 3.13 显式保留空列表，3.12 起新增的空 `type_params` 不进入旧表示；非空类型参数拒绝。原完整 AST SHA 与教师身份保持不变，评分公式、控制流或其他源码变化仍拒绝，不新增不同 Python 版本的宽松白名单。验证需在实际 Windows Python/CUDA 上执行现有评分与预演组件测试；跨版本 CPU 检查不代替 CUDA、正式三步教师或完整搜索验收。
+
 ### 完整训练与独立评估
 
 1. 原语：规则、编码、随机、Gumbel 数学、页分配和 CUDA graph 捕获分别对拍。合成 1600 行测试仅证明原语，不批准真实局容量。

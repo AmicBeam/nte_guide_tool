@@ -10533,7 +10533,7 @@
           "preinput_action_indices": [
             1
           ],
-          "operation": "魔a2预魔a3 / 魔a5正常切人",
+          "operation": "魔a2预魔a3 / 魔a4 → 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 1.4,
           "switch_seconds": 3.0,
@@ -12340,7 +12340,7 @@
           "preinput_action_indices": [
             1
           ],
-          "operation": "魔a2预魔a3 / 魔a3正常切人",
+          "operation": "魔a2预魔a3 / 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 4.1,
           "switch_seconds": 5.7,
@@ -12567,7 +12567,7 @@
           "preinput_action_indices": [
             2
           ],
-          "operation": "魔a3预魔a4 / 魔a3正常切人",
+          "operation": "魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 4.4,
           "switch_seconds": 5.7,
@@ -13617,7 +13617,7 @@
             1,
             7
           ],
-          "operation": "魔a2预魔a3 / 魔a3预魔a4",
+          "operation": "魔a2预魔a3 / 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3预魔a4",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 4.2,
           "switch_seconds": 5.8,
@@ -13861,7 +13861,7 @@
             2,
             7
           ],
-          "operation": "魔a3预魔a4 / 魔a3预魔a4",
+          "operation": "魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3预魔a4",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 4.5,
           "switch_seconds": 5.8,
@@ -14316,7 +14316,7 @@
           "preinput_action_indices": [
             1
           ],
-          "operation": "魔a2预魔a3 / 魔a4正常切人",
+          "operation": "魔a2预魔a3 / 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3 → 魔a4正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 5.3,
           "switch_seconds": 6.9,
@@ -14559,7 +14559,7 @@
           "preinput_action_indices": [
             2
           ],
-          "operation": "魔a3预魔a4 / 魔a4正常切人",
+          "operation": "魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3 → 魔a4正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 5.6,
           "switch_seconds": 6.9,
@@ -15872,7 +15872,7 @@
           "preinput_action_indices": [
             1
           ],
-          "operation": "魔a2预魔a3 / 魔a4正常切人",
+          "operation": "魔a2预魔a3 / 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 4.8,
           "switch_seconds": 6.4,
@@ -16117,7 +16117,7 @@
           "preinput_action_indices": [
             2
           ],
-          "operation": "魔a3预魔a4 / 魔a4正常切人",
+          "operation": "魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 5.1,
           "switch_seconds": 6.4,
@@ -17249,7 +17249,7 @@
             1,
             8
           ],
-          "operation": "魔a2预魔a3 / 魔a4预魔a5",
+          "operation": "魔a2预魔a3 / 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3 → 魔a4预魔a5",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 5.4,
           "switch_seconds": 7.0,
@@ -17509,7 +17509,7 @@
             2,
             8
           ],
-          "operation": "魔a3预魔a4 / 魔a4预魔a5",
+          "operation": "魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3 → 魔a4预魔a5",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 5.7,
           "switch_seconds": 7.0,
@@ -17996,7 +17996,7 @@
           "preinput_action_indices": [
             1
           ],
-          "operation": "魔a2预魔a3 / 魔a5正常切人",
+          "operation": "魔a2预魔a3 / 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3 → 魔a4 → 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 5.7,
           "switch_seconds": 7.3,
@@ -18255,7 +18255,7 @@
           "preinput_action_indices": [
             2
           ],
-          "operation": "魔a3预魔a4 / 魔a5正常切人",
+          "operation": "魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3 → 魔a4 → 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 6.0,
           "switch_seconds": 7.3,
@@ -18514,7 +18514,7 @@
           "preinput_action_indices": [
             7
           ],
-          "operation": "魔a3预魔a4 / 魔a5正常切人",
+          "operation": "魔a1 → 魔a2 → 魔a3 → 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3预魔a4 / 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 6.0,
           "switch_seconds": 7.3,
@@ -19692,7 +19692,7 @@
           "preinput_action_indices": [
             7
           ],
-          "operation": "魔a3预魔a4 / 魔a5正常切人",
+          "operation": "魔a1 → 魔a2 → 魔a3闪 → 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3预魔a4 / 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 5.5,
           "switch_seconds": 6.8,
@@ -20645,7 +20645,7 @@
             1,
             8
           ],
-          "operation": "魔a2预魔a3 / 魔a4预魔a5",
+          "operation": "魔a2预魔a3 / 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4预魔a5",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 4.9,
           "switch_seconds": 6.5,
@@ -20907,7 +20907,7 @@
             2,
             8
           ],
-          "operation": "魔a3预魔a4 / 魔a4预魔a5",
+          "operation": "魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4预魔a5",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 5.2,
           "switch_seconds": 6.5,
@@ -21398,7 +21398,7 @@
           "preinput_action_indices": [
             1
           ],
-          "operation": "魔a2预魔a3 / 魔a5正常切人",
+          "operation": "魔a2预魔a3 / 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4 → 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 5.2,
           "switch_seconds": 6.8,
@@ -21659,7 +21659,7 @@
           "preinput_action_indices": [
             2
           ],
-          "operation": "魔a3预魔a4 / 魔a5正常切人",
+          "operation": "魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4 → 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 5.5,
           "switch_seconds": 6.8,
@@ -24828,7 +24828,7 @@
           "preinput_action_indices": [
             4
           ],
-          "operation": "魔a3预魔a4 / 魔a5正常切人",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3预魔a4 / 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 3.8,
           "switch_seconds": 5.1,
@@ -26797,7 +26797,7 @@
           "preinput_action_indices": [
             4
           ],
-          "operation": "魔a3预魔a4 / 魔a3正常切人",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 6.5,
           "switch_seconds": 7.8,
@@ -28014,7 +28014,7 @@
             4,
             9
           ],
-          "operation": "魔a3预魔a4 / 魔a3预魔a4",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3预魔a4",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 6.6,
           "switch_seconds": 7.9,
@@ -28535,7 +28535,7 @@
           "preinput_action_indices": [
             4
           ],
-          "operation": "魔a3预魔a4 / 魔a4正常切人",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3 → 魔a4正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 7.7,
           "switch_seconds": 9.0,
@@ -30051,7 +30051,7 @@
           "preinput_action_indices": [
             4
           ],
-          "operation": "魔a3预魔a4 / 魔a4正常切人",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 7.2,
           "switch_seconds": 8.5,
@@ -31349,7 +31349,7 @@
             4,
             10
           ],
-          "operation": "魔a3预魔a4 / 魔a4预魔a5",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3 → 魔a4预魔a5",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 7.8,
           "switch_seconds": 9.1,
@@ -31902,7 +31902,7 @@
           "preinput_action_indices": [
             4
           ],
-          "operation": "魔a3预魔a4 / 魔a5正常切人",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3 → 魔a4 → 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 8.1,
           "switch_seconds": 9.4,
@@ -32194,7 +32194,7 @@
           "preinput_action_indices": [
             9
           ],
-          "operation": "魔a3预魔a4 / 魔a5正常切人",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3 → 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3预魔a4 / 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 8.1,
           "switch_seconds": 9.4,
@@ -33540,7 +33540,7 @@
           "preinput_action_indices": [
             9
           ],
-          "operation": "魔a3预魔a4 / 魔a5正常切人",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3闪 → 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3预魔a4 / 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 7.6,
           "switch_seconds": 8.9,
@@ -34629,7 +34629,7 @@
             4,
             10
           ],
-          "operation": "魔a3预魔a4 / 魔a4预魔a5",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4预魔a5",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 7.3,
           "switch_seconds": 8.6,
@@ -35188,7 +35188,7 @@
           "preinput_action_indices": [
             4
           ],
-          "operation": "魔a3预魔a4 / 魔a5正常切人",
+          "operation": "魔a1 → 魔a2 → 魔z1 → 魔z2 → 魔a3预魔a4 / 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4 → 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 7.6,
           "switch_seconds": 8.9,
@@ -38190,7 +38190,7 @@
           "preinput_action_indices": [
             2
           ],
-          "operation": "魔a3预魔a4 / 魔a5正常切人",
+          "operation": "魔e → 魔z2 → 魔a3预魔a4 / 魔a5正常切人",
           "switch_label": "衔接动作合轴",
           "foreground_seconds": 2.6,
           "switch_seconds": 3.9,
@@ -40733,7 +40733,7 @@
     "characters.json": "5ca0f1e50cecd559549201068874585ab4f458cc8befa2eb5c7b1b157b077503",
     "actions.json": "17743804f37bdf68e80dad0c8cca1cedc212475208cebb89d67a834d119bb467",
     "rules.json": "f8d493a9568ed3ab9945b982aa73ee4856ec5101e078cdbc92f93032cd20c2fe",
-    "generator.py": "b561dd527eed0e90fbc184bccd5af55815101d120bfc27dbd0503594015b9fb6"
+    "generator.py": "63afddee16841645c88fac8c3ca6859131d573dae521d17d1ac43c56c09170ad"
   },
   "basis": "1级裸动作收益；按前排占轴归一。未含配装、Buff、资源上限与队友分享；经验耗时用于试算。",
   "sources": [

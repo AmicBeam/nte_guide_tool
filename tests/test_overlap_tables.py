@@ -210,6 +210,13 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertTrue(row['timeline'][-1]['automatic'])
         self.assertIsNone(row['timeline'][-1]['input_seconds'])
 
+    def test_return_title_keeps_intermediate_skill_and_dodge_actions(self):
+        names=['魔a1','魔a2','魔a3','魔a4','魔a5','魔e','魔z2','魔a3','魔a4','魔a5']
+        row=next(r for r in self.character('黑羽')['rows'] if r['original_actions']==names
+                 and r['kind']=='分段合轴' and r['switch_method']=='preinput'
+                 and r['window_1']['start_seconds']==0.8 and r['actions'][7]=='魔a3闪')
+        self.assertEqual(row['operation'],'魔a2预魔a3 / 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4预魔a5')
+
     def test_delayed_switch_point_configuration(self):
         rules = copy.deepcopy(self.rules)
         rules['characters']['明音凛']['transitions'].append({'from':'a1','to':'a2','switch_delay_seconds':0.3,'source':'synthetic timing fixture'})

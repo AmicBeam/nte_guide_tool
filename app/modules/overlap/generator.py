@@ -299,6 +299,16 @@ def advanced_rows(names, links, by_name, points, options, final_point=None):
         first_operation = (f'{clean(final["actions"][split-2])}预{clean(final["actions"][split-1])}' if first_method=='preinput'
                            else f'{clean(final["actions"][split-1])}正常切人')
         last_operation = final['operation'] if final_point is None else f'{clean(final["actions"][-1])}正常切人'
+        title_action = lambda step: clean(step['action']) + ('脱手' if step['detached'] else '')
+        first_source = split-2 if first_method=='preinput' else split-1
+        first_prefix = final['timeline'][:first_source]
+        if any(not re.fullmatch(r'.*a\d.*', step['action']) or step['dodge_replaces'] or step['detached']
+               for step in first_prefix):
+            first_operation = ' → '.join([*(title_action(step) for step in first_prefix), first_operation])
+        last_source = final['preinput_action_indices'][-1] if final_point is None else len(names)-1
+        middle = [title_action(step) for step in final['timeline'][split:last_source]]
+        if middle:
+            last_operation = ' → '.join([*middle, last_operation])
         row['operation'] = f'{first_operation} / {last_operation}'
         row['window_1'] = {
             'start_seconds': round_value(first_switch), 'end_seconds': round_value(first_end),

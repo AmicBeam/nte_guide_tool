@@ -6,7 +6,9 @@ This experimental adapter has no inherited full-rules qualification.
 """
 from ..batched_duel.cuda_vm import DeviceCall,VmCapabilityError
 from ..batched_duel.gpu_rule_projection import GraphProjectionKernel
-from ..batched_duel.gpu_seven_candidates import encode_tokens_device,get_card_template_table
+from ..batched_duel.gpu_seven_candidates import get_card_template_table
+from .device_inplace_guard_encoding import (
+    encode_guard_tokens_device as encode_tokens_device, prepare_inplace_guard_encoding)
 from ..batched_duel.device_rule_protocol import DeviceStateBatch
 from .device_split_sampler import DeviceTransitionSampleCalls,_PacketPlan
 
@@ -39,6 +41,7 @@ class DeviceViewSampleCalls(DeviceTransitionSampleCalls):
         if TRANSITION_VIEWS_ENTRY not in vm.image.entries or not vm.capability(TRANSITION_VIEWS_ENTRY)['ready']:
             raise VmCapabilityError('Frozen mandatory dual-guard packet entry required')
         self.projection=None
+        self.guard_encoding_identity=prepare_inplace_guard_encoding()
         super().__init__(vm,*args,**kwargs)
         try:
             self.projection=GraphProjectionKernel(device=self.device,max_candidates=max_actions,runtime='seven')

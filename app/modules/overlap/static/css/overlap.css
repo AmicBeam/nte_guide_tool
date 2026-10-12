@@ -25,7 +25,7 @@
 .overlap-emphasis { color: #6ddcc7; font-weight: 700; }
 .overlap-foreground-times { display: grid; gap: 5px; min-width: 95px; line-height: 1.5; }
 .overlap-foreground-times strong { font-size: 14px; }
-.overlap-foreground-times small { color: #90a5b4; font-weight: 400; }
+.overlap-table .overlap-release-end { color: #9199a3; font-weight: 400; }
 .overlap-route summary { cursor: pointer; list-style: none; display: grid; grid-template-columns: 12px minmax(0,1fr); gap: 4px 6px; }
 .overlap-route summary > * { grid-column: 2; }
 .overlap-route summary::before { content: '＋'; color: #6ddcc7; grid-column: 1; grid-row: 1; }

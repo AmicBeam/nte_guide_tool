@@ -68,7 +68,7 @@ class OverlapTablesTest(unittest.TestCase):
         c=self.character('明音凛')
         held=next(r for r in c['rows'] if r['switch_method']=='hold' and r['original_actions']==['a1','a2','a3','a4'] and not r['has_dodge'] and r['kind']=='打满')
         self.assertEqual(held['operation'],'a4打满')
-        self.assertEqual(held['hold_reason'],'no_successor')
+        self.assertEqual(held['hold_reason'],'cycle_to_start')
         self.assertAlmostEqual(held['foreground_seconds'],2.8)
         self.assertIsNone(held['switch_seconds'])
         self.assertFalse(held['ends_with_switch'])
@@ -80,6 +80,27 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertEqual(cycle['hold_reason'],'cycle_to_start')
         self.assertIn('魔e',cycle['operation'])
         self.assertTrue(cycle['operation'].endswith('魔a5打满'))
+
+    def test_basic_terminal_restarts_same_form_without_preinput(self):
+        expected = {'安魂曲': [('a5远','a1远')], '残虹': [('a5','a1'),('幻a4','幻a1')],
+                    '黑羽': [('魔a5','魔a1')], '明音凛': [('a4','a1')]}
+        for name, pairs in expected.items():
+            character = self.character(name)
+            for terminal, opener in pairs:
+                action = next(a for a in character['actions'] if a['name'] == terminal)
+                restart = next(e for e in action['successors'] if e['to'] == opener)
+                self.assertFalse(restart['can_preinput'])
+                self.assertIn('用户2026-10-12', restart['source'])
+                self.assertTrue(all(r['original_actions'].count(opener) <= 1 for r in character['rows']))
+                self.assertFalse(any((terminal, opener) in list(zip(r['original_actions'],r['original_actions'][1:]))
+                                     for r in character['rows']))
+        for kind in ('打满','分段合轴'):
+            held = next(r for r in self.character('黑羽')['rows'] if r['switch_method']=='hold'
+                        and r['original_actions']==[f'魔a{i}' for i in range(1,6)]
+                        and r['kind']==kind and not r['has_dodge'])
+            self.assertEqual(held['hold_reason'],'cycle_to_start')
+            self.assertTrue(held['operation'].endswith('魔a5打满'))
+        self.assertEqual(generator.hold_eligibility(['a1','a2'], {'a1': [], 'a2': []}), 'no_successor')
 
     def test_hold_finish_is_supported_after_return(self):
         row=next(r for r in self.character('明音凛')['rows'] if r['switch_method']=='hold'

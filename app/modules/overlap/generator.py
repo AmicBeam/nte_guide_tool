@@ -76,6 +76,12 @@ def build_graph(actions, rule):
             if next_name in by_name:
                 edges[name].append({'from': name, 'to': next_name,
                                     'source': '动作目录连续段；按完整动作顺接'})
+            elif kind == 'a' and int(index) > 1 and rule.get('basic_chain_restart_source'):
+                opener = f'{prefix}a1{suffix}'
+                if all(f'{prefix}a{i}{suffix}' in by_name for i in range(1, int(index))):
+                    edges[name].append({'from': name, 'to': opener, 'can_preinput': False,
+                                        'basic_chain_restart': True,
+                                        'source': rule['basic_chain_restart_source']})
     for edge in rule.get('transitions', []):
         if edge.get('from') not in by_name or edge.get('to') not in by_name:
             raise ValueError(f'衔接引用不存在的动作：{edge}')
@@ -102,7 +108,7 @@ def build_graph(actions, rule):
 def enumerate_paths(by_name, edges, max_actions, max_uses=None, start_actions=None):
     """All simple directed paths, bounded and deterministic; no repeat/CD invention."""
     def walk(names, links):
-        candidates = [e for e in edges[names[-1]] if names.count(e['to']) < (max_uses or {}).get(e['to'], 1) and (
+        candidates = [e for e in edges[names[-1]] if not e.get('basic_chain_restart') and names.count(e['to']) < (max_uses or {}).get(e['to'], 1) and (
             not e.get('requires_prefix') or names == e['requires_prefix']
         ) and (
             not e.get('requires_previous') or len(names) >= 2 and names[-2] in e['requires_previous']

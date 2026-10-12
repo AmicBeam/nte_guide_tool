@@ -75,6 +75,10 @@ class CompactDeviceCandidates:
         self._template_table = template_table
         self._rows = n
         self._max_candidates = m
+        self._row_copy_module=None
+        if dev.type=='cuda':
+            from .device_masked_row_copy import prepare_masked_row_copy
+            self._row_copy_module=prepare_masked_row_copy(dev)
 
     @property
     def ndim(self):
@@ -138,7 +142,13 @@ class CompactDeviceCandidates:
             if src.shape != dest.shape or src.dtype != dest.dtype or src.device != dest.device:
                 raise ValueError('Stable compact token layout required')
             view = mask if dest.ndim == 1 else mask.view((-1,) + (1,) * (dest.ndim - 1))
-            dest.copy_(t.where(view, src, dest))
+            independent=(src.untyped_storage().data_ptr()!=dest.untyped_storage().data_ptr()
+                         or src.data_ptr()==dest.data_ptr())
+            if self.device.type=='cuda' and src.is_contiguous() and dest.is_contiguous() and mask.is_contiguous() and independent:
+                from .device_masked_row_copy import copy_masked_rows_device
+                copy_masked_rows_device(src,dest,mask,self._row_copy_module)
+            else:
+                dest.copy_(t.where(view,src,dest))
         return t.zeros(self._rows, dtype=t.int32, device=self.device)
 
     def encode_slice_device(self, start, stop, active):

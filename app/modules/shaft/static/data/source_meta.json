@@ -180,8 +180,8 @@
     "q2_self_check": "用户2026-10-09：Q1重置序列，Q2手动、最多1次；重复提示但继续计算。独立Q2也可试算。",
     "latest_tencent_source": {
       "url": "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y?p=vwOdEFsBKeWF9RTVzLN68S",
-      "content_sha256": "ccbfbfb9f4201e8348eb8a229d0d399ae14cfb980772102441435b2ffa3f1f93",
-      "priority": "本轮最新腾讯文档倍率、弦能、传导、绝对音准和全部觉醒/共鸣；普攻环合按用户确认保留NTEData原逐段值。 用户2026-10-10授权的五项资源由SkillDamageData_Akane.xlsx覆盖。"
+      "content_sha256": "001085820a0ebfdf6ea7be73da9a6b4aec5808d8835212a0210000625c2ed232",
+      "priority": "2026-10-12文档括号内基础倍率及专武新值；不覆盖用户此前10月11日被动/觉醒、耗时和资源确认。"
     },
     "harmony_source_note": "用户2026-10-10按新解包仅更新a4环合为5.847；a1/a2/a3仍为3.56/5.496/9.096，普攻合计23.999，不强行缩放至24。",
     "latest_awakening_source": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。",
@@ -212,7 +212,7 @@
     },
     "awakening_multiplier_stage": {
       "source": "用户2026-10-10明确补充，非外部数据源核实",
-      "rule": "C节点与三觉Q2追加1000%、三觉强化追加800%在技能等级换算后加算，不再次乘等级区；泛音列强化额外125%仍随本体等级换算。"
+      "rule": "C节点与三觉Q2追加1000%、三觉强化追加800%在技能等级换算后加算，不再次乘等级区；两种强化技能的基础倍率按最新腾讯文档分别记录，并随本体等级换算。"
     },
     "unpacked_resource_update": {
       "workbook": "SkillDamageData_Akane.xlsx",
@@ -317,18 +317,18 @@
       "historical_note": "历史记录；同名效果以oct11_change_notice和当前运行配置为准。"
     },
     "enhanced_e_manual_split": {
-      "source": "用户2026-10-10要求两个手动动作，长强E1.5秒；倍率沿用现行用户文档，非新的解包数值",
+      "source": "用户2026-10-10要求两个手动动作，长强E1.5秒；倍率沿用现行用户文档，非新的解包数值；2026-10-12基础倍率由最新腾讯文档覆盖，长强E按用户纠正为单次1012.5%。",
       "short": {
         "id": "action_akane_short_enhanced_e",
         "name": "短强E",
-        "base_atk_multiplier": 12.5,
+        "base_atk_multiplier": 11.25,
         "seconds": 0.7,
         "required_mode": "泛音列"
       },
       "long": {
         "id": "action_akane_long_enhanced_e",
         "name": "长强E",
-        "base_atk_multiplier": 11.25,
+        "base_atk_multiplier": 10.125,
         "seconds": 1.5,
         "required_mode": "音域"
       },
@@ -386,11 +386,145 @@
         "enhanced_skill_defense": "短强E和长强E释放期间获得免伤与霸体；当前单敌伤害轴不模拟角色受击或敌方打断，不改前台锁定和手动打断试算。"
       },
       "pending": {
-        "base_multipliers": "普攻、普通/强化技能和大招仅说明下调，未给新倍率，保留现值及打断累计曲线。",
         "skill_text": "部分技能文本优化未给完整原文，不猜测其他文本或时序。"
       },
       "unchanged": "A回血1000%基础攻击与防御50%、C追加1000%、音域传导90%、Q2三觉追加1000%、六觉返还10与25秒、F烁星20秒、资源/耗时/CD及循环起始资源保持既有口径。",
-      "enhanced_skill_bonus_confirmation": "用户2026-10-12确认10月11日调整：强化技能追加倍率仍属三觉共鸣，750%改为800%，在技能等级换算后加算；基础倍率下调未给新值，保留现值。"
+      "enhanced_skill_bonus_confirmation": "用户2026-10-12确认10月11日调整：强化技能追加倍率仍属三觉共鸣，750%改为800%，在技能等级换算后加算；基础倍率下调未给新值，保留现值。",
+      "base_multipliers_followup": "已于2026-10-12按oct11_document_update接入文档括号内值，长强E×2由用户纠正为单次。"
+    },
+    "oct11_document_update": {
+      "source": "用户2026-10-12提供的腾讯文档《明音凛资料汇总》括号内10月11日新倍率；仅同步基础倍率及其逐段伤害，资源、耗时、已确认被动/觉醒不由文档旧正文覆盖。非Nanoka/NTEData新版本核实。",
+      "url": "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y",
+      "content_sha256": "001085820a0ebfdf6ea7be73da9a6b4aec5808d8835212a0210000625c2ed232",
+      "checked_at": "2026-10-12",
+      "parsing": "括号内为新基础倍率；a3的13.5按所在倍率列解释为13.5%。仅倍率更新，文档动作速度旧值和觉醒/被动旧正文不回写。",
+      "actions": {
+        "a1": {
+          "atk_multiplier": 0.298,
+          "per_hit_atk_multipliers": [
+            0.149,
+            0.149
+          ],
+          "formula": "14.9%*2"
+        },
+        "a2": {
+          "atk_multiplier": 0.438,
+          "per_hit_atk_multipliers": [
+            0.219,
+            0.219
+          ],
+          "formula": "21.9%*2"
+        },
+        "a3": {
+          "atk_multiplier": 0.849,
+          "per_hit_atk_multipliers": [
+            0.103,
+            0.103,
+            0.103,
+            0.135,
+            0.135,
+            0.135,
+            0.135
+          ],
+          "formula": "10.3%*3+13.5%*4"
+        },
+        "a4": {
+          "atk_multiplier": 4.247,
+          "per_hit_atk_multipliers": [
+            4.247
+          ],
+          "formula": "424.7%"
+        },
+        "e": {
+          "atk_multiplier": 3.6,
+          "per_hit_atk_multipliers": [
+            3.6
+          ],
+          "formula": "360%"
+        },
+        "hold_e": {
+          "atk_multiplier": 3.24,
+          "per_hit_atk_multipliers": [
+            1.62,
+            1.62
+          ],
+          "formula": "162%*2"
+        },
+        "short_enhanced_e": {
+          "atk_multiplier": 11.25,
+          "per_hit_atk_multipliers": [
+            11.25
+          ],
+          "formula": "1125%"
+        },
+        "long_enhanced_e": {
+          "atk_multiplier": 10.125,
+          "per_hit_atk_multipliers": [
+            10.125
+          ],
+          "formula": "1012.5%"
+        },
+        "q1": {
+          "atk_multiplier": 6.48,
+          "per_hit_atk_multipliers": [
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648
+          ],
+          "formula": "64.8%*10"
+        },
+        "q2": {
+          "atk_multiplier": 9.18,
+          "per_hit_atk_multipliers": [
+            9.18
+          ],
+          "formula": "918%"
+        }
+      },
+      "long_enhanced_e_correction": "用户本轮纠正：1012.5%×2为文档笔误，按单次1012.5%，保留1段。",
+      "arc": {
+        "source": "用户2026-10-12腾讯文档括号内新值复核：暴击12%–24%、相伤20%–40%，与此前已接入值一致；2–4精继续按用户已授权端点等差换算，非新解包核实。",
+        "crit_rate": [
+          0.12,
+          0.15,
+          0.18,
+          0.21,
+          0.24
+        ],
+        "phase_damage": [
+          0.2,
+          0.25,
+          0.3,
+          0.35,
+          0.4
+        ],
+        "skill_damage": [
+          0.28,
+          0.35,
+          0.42,
+          0.49,
+          0.56
+        ],
+        "basic_damage": [
+          0.28,
+          0.35,
+          0.42,
+          0.49,
+          0.56
+        ],
+        "seconds": 15,
+        "base_atk": 570,
+        "crit_dmg": 0.48,
+        "already_applied": true
+      },
+      "unchanged": "回能、环合、倾陷、弦能、耗时、冷却与已确认被动/觉醒保留。三共鸣强化追加800%、Q2追加1000%仍在本体等级换算后加算。"
     }
   }
 }

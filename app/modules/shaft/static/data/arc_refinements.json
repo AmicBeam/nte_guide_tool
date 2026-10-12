@@ -5043,8 +5043,8 @@
         4,
         5
       ],
-      "source_url": "https://github.com/mc-ctrl/NTEData/blob/d7fe705451f189cec8447d876e6c31db7ed3d9df/DataTable/Fork/CT_ForkBuff.json",
-      "source_note": "用户2026-10-10要求实装10月9日公告的弧盘与六觉调整；暴击12%–24%、相伤20%–40%，精炼2–4按端点等差换算，六觉暴伤50%；覆盖旧NTEData同名值，不标为新解包实值。",
+      "source_url": "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y",
+      "source_note": "用户2026-10-12腾讯文档括号内新值复核：暴击12%–24%、相伤20%–40%，与此前已接入值一致；2–4精继续按用户已授权端点等差换算，非新解包核实。",
       "levels": {
         "1": {
           "panel_modifiers": {

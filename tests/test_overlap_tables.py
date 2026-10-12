@@ -54,8 +54,8 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertAlmostEqual(row['release_end_seconds'],2.4)
         self.assertFalse(row['timeline'][2]['preinput'])
         self.assertEqual(row['timeline'][3]['input_seconds'], row['timeline'][2]['end_seconds'])
-        self.assertEqual(row['overlap_windows'],[{'number':1,'start_seconds':1.9,'end_seconds':2.4,
-            'duration_seconds':0.5,'requires_return':False,'after_action_index':3}])
+        self.assertEqual(row['overlap_windows'],[])
+        self.assertEqual(row['foreground_segments'],[{'number':1,'start_seconds':0,'end_seconds':1.9,'duration_seconds':1.9}])
 
     def test_normal_final_switch_can_follow_a_return(self):
         row = next(r for r in self.character('明音凛')['rows'] if r['original_actions']==['a1','a2','a3','a4']
@@ -174,8 +174,9 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertEqual(row['timeline'][3]['input_seconds'], 2.4)
         self.assertEqual([s['placement'] for s in row['timeline']], ['foreground','foreground','background','foreground','background'])
         self.assertEqual([s['preinput_before_switch'] for s in row['timeline']], [False,True,False,True,False])
-        self.assertEqual([w['duration_seconds'] for w in row['overlap_windows']],[1.6,1.5])
-        self.assertEqual([w['requires_return'] for w in row['overlap_windows']],[True,False])
+        self.assertEqual([w['duration_seconds'] for w in row['overlap_windows']],[1.6])
+        self.assertEqual([w['requires_return'] for w in row['overlap_windows']],[True])
+        self.assertEqual([s['duration_seconds'] for s in row['foreground_segments']],[0.8,0.3])
         self.assertEqual(row['overlap_windows'][0]['return_start_seconds'],2.0)
         for c in self.payload['characters']:
             for r in c['rows']:
@@ -187,9 +188,13 @@ class OverlapTablesTest(unittest.TestCase):
             for row in character['rows']:
                 windows=row['overlap_windows']
                 self.assertEqual([w['number'] for w in windows],list(range(1,len(windows)+1)))
-                if row['background_seconds'] is not None:
-                    self.assertAlmostEqual(sum(w['duration_seconds'] for w in windows),row['background_seconds'],places=5)
+                if row['foreground_seconds'] is not None:
+                    self.assertAlmostEqual(sum(s['duration_seconds'] for s in row['foreground_segments']),row['foreground_seconds'],places=5)
+                expected=sum(row['foreground_intervals'][i+1][0]-interval[1]
+                             for i,interval in enumerate(row['foreground_intervals'][:-1]))
+                self.assertAlmostEqual(sum(w['duration_seconds'] for w in windows),expected,places=5)
                 for window in windows:
+                    self.assertTrue(window['requires_return'])
                     self.assertGreater(window['duration_seconds'],0)
                     if window['requires_return']:
                         self.assertGreaterEqual(window['duration_seconds'],1.2)

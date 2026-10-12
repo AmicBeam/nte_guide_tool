@@ -233,13 +233,19 @@ def project_placements(row):
         ) else 'background'
         step['preinput'] = step['input_seconds'] is not None and start is not None and step['input_seconds'] < start - 1e-9
         step['preinput_before_switch'] = index in row['preinput_action_indices']
+    row['foreground_segments'] = [
+        {'number':index+1,'start_seconds':left,'end_seconds':right,'duration_seconds':round_value(right-left)}
+        for index,(left,right) in enumerate(row['foreground_intervals'])
+    ]
     row['overlap_windows'] = []
     if row['release_end_seconds'] is None:
         return row
     intervals = row['foreground_intervals']
     for index, (left, right) in enumerate(intervals):
         requires_return = index+1 < len(intervals)
-        end = intervals[index+1][0] if requires_return else row['release_end_seconds']
+        if not requires_return:
+            continue
+        end = intervals[index+1][0]
         if end <= right + 1e-9:
             continue
         source_indices = [i for i, step in enumerate(row['timeline']) if step['start_seconds'] is not None

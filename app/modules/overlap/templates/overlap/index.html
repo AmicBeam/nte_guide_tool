@@ -24,7 +24,7 @@
         <div class="overlap-result-heading"><h2 id="overlap-title">操作列表</h2><span class="subtle">实线前台 · 虚线后台 · 展开查看时刻</span></div>
         <div class="overlap-table-scroll" tabindex="0" aria-label="收益表，窄屏可横向滚动">
             <table class="overlap-table"><thead><tr>
-                <th scope="col">操作路线 / 合轴点</th><th scope="col">前排占轴</th><th scope="col">合轴窗口时长</th><th scope="col">释放结束</th><th scope="col">脱离前排</th><th scope="col">总倍率</th><th scope="col">倍率 / 秒</th><th scope="col">环合</th><th scope="col">环合 / 秒</th><th scope="col">回能</th><th scope="col">回能 / 秒</th><th scope="col">倾陷</th>
+                <th scope="col">操作路线 / 合轴点</th><th scope="col">前台合计</th><th scope="col">合轴窗口时长</th><th scope="col">释放结束</th><th scope="col">总倍率</th><th scope="col">倍率 / 秒</th><th scope="col">环合</th><th scope="col">环合 / 秒</th><th scope="col">回能</th><th scope="col">回能 / 秒</th><th scope="col">倾陷</th>
             </tr></thead><tbody id="overlap-rows"></tbody></table>
         </div>
         <p id="overlap-empty" hidden>没有符合条件的路线，试试修改筛选条件。</p>
@@ -37,7 +37,7 @@
     <section class="glass-card overlap-basis"><h2>统计口径</h2>
         <p id="overlap-basis"></p><p>只从角色配置的合法起手动作生成路线；后段普攻不能单独起手。黑羽魔E接魔z2返回魔a3的路线按配置允许重走一次；魔E不支持预输入，必须前台打完再接魔z2，魔E起手以已激活为前提。动作释放时间与前排占轴分开记录，后台完成的尾段也计入收益。</p>
         <p>支持闪避保留连段时，只把超过 0.7 秒的中间普攻替换为 0.7 秒的闪；跳过动作的倍率、环合、回能与个人资源均计 0。首段和末段不替换，安魂曲不使用此分支。</p>
-        <p>每次切走到下一次回场或后台释放完成，都单独标为一个合轴窗口；粗体秒数就是可供其他角色行动的时长。需要回场续连段的窗口至少1.2秒，切走满1.2秒后才可切回，本表按窗口结束时回场。最后一次切走后的窗口无需回场，不受这一门槛限制。不计入队友在窗口内的伤害。</p><p>倍率是动作本体的 1 级基础倍率，按攻击／生命／防御分列。环合是理论获取量，包含释放奖励；回能不等于净能量。未模拟资源溢出、恶意追加伤害、蚀心与噩梦等后续效果，不能把这张表当作配装 DPS。</p>
+        <p>前台耗时按每次上前台分别列出，并显示合计。回场后台窗口只记录切走后到再次回场续连段的时间，至少1.2秒，切走满1.2秒后才可切回；本表按窗口结束时回场。末尾切走后不再回场的后台尾段不展示为窗口。不计入队友在窗口内的伤害。</p><p>倍率是动作本体的 1 级基础倍率，按攻击／生命／防御分列。环合是理论获取量，包含释放奖励；回能不等于净能量。未模拟资源溢出、恶意追加伤害、蚀心与噩梦等后续效果，不能把这张表当作配装 DPS。</p>
         <details><summary>数据来源与版本</summary><ul id="overlap-sources"></ul><p id="overlap-version" class="subtle"></p></details>
     </section>
 </main>

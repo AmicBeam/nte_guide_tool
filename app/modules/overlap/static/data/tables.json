@@ -233,6 +233,14 @@
           "status": "可计算",
           "notes": [],
           "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.4,
+              "duration_seconds": 0.4
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -305,16 +313,15 @@
           "sources": [
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.2,
-              "end_seconds": 0.4,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 0
+              "start_seconds": 0,
+              "end_seconds": 0.2,
+              "duration_seconds": 0.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "b3601df0e8ed2b9f",
@@ -401,6 +408,14 @@
           "notes": [],
           "sources": [
             "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            }
           ],
           "overlap_windows": []
         },
@@ -491,16 +506,15 @@
             "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.6,
-              "end_seconds": 0.8,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "f48935129766bcf2",
@@ -603,6 +617,14 @@
           "notes": [],
           "sources": [
             "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            }
           ],
           "overlap_windows": []
         },
@@ -709,16 +731,15 @@
             "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.0,
-              "end_seconds": 1.5,
-              "duration_seconds": 0.5,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.0,
+              "duration_seconds": 1.0
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "315aa386f6e1494a",
@@ -837,6 +858,14 @@
           "notes": [],
           "sources": [
             "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.7,
+              "duration_seconds": 2.7
+            }
           ],
           "overlap_windows": []
         },
@@ -959,16 +988,15 @@
             "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.7,
-              "end_seconds": 2.7,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 1.7,
+              "duration_seconds": 1.7
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "c16b8c2c39f4cd7e",
@@ -1103,6 +1131,14 @@
           "notes": [],
           "sources": [
             "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.7,
+              "duration_seconds": 4.7
+            }
           ],
           "overlap_windows": []
         }
@@ -1547,6 +1583,14 @@
           "status": "可计算",
           "notes": [],
           "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -1617,16 +1661,15 @@
           "sources": [
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.2,
-              "end_seconds": 0.6,
-              "duration_seconds": 0.4,
-              "requires_return": false,
-              "after_action_index": 0
+              "start_seconds": 0,
+              "end_seconds": 0.2,
+              "duration_seconds": 0.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "bc71c8de850b477e",
@@ -1711,6 +1754,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.2,
+              "duration_seconds": 1.2
+            }
           ],
           "overlap_windows": []
         },
@@ -1801,16 +1852,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.3,
-              "end_seconds": 1.2,
-              "duration_seconds": 0.9,
-              "requires_return": false,
-              "after_action_index": 0
+              "start_seconds": 0,
+              "end_seconds": 0.3,
+              "duration_seconds": 0.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "adeae49dd72e09d2",
@@ -1897,16 +1947,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.8,
-              "end_seconds": 1.2,
-              "duration_seconds": 0.4,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "4c67e601444f5a9d",
@@ -2007,6 +2056,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.0,
+              "duration_seconds": 2.0
+            }
           ],
           "overlap_windows": []
         },
@@ -2113,16 +2170,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.9,
-              "end_seconds": 2.0,
-              "duration_seconds": 1.1,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.9,
+              "duration_seconds": 0.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "27266192cffe3180",
@@ -2225,16 +2281,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.4,
-              "end_seconds": 2.0,
-              "duration_seconds": 0.6,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.4,
+              "duration_seconds": 1.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "36e2b0719e6b3f75",
@@ -2351,6 +2406,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.1,
+              "duration_seconds": 3.1
+            }
           ],
           "overlap_windows": []
         },
@@ -2473,16 +2536,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.5,
-              "end_seconds": 3.1,
-              "duration_seconds": 1.6,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "ce7ba4ecf5a1afa6",
@@ -2601,16 +2663,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.2,
-              "end_seconds": 3.1,
-              "duration_seconds": 0.9,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.2,
+              "duration_seconds": 2.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "500fe2d11c46e095",
@@ -2729,6 +2790,14 @@
             "动作目录连续段；按完整动作顺接",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.0,
+              "duration_seconds": 3.0
+            }
           ],
           "overlap_windows": []
         },
@@ -2851,16 +2920,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.1,
-              "end_seconds": 3.0,
-              "duration_seconds": 0.9,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.1,
+              "duration_seconds": 2.1
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "fd8ec96ce895e66b",
@@ -2993,6 +3061,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.3,
+              "duration_seconds": 4.3
+            }
           ],
           "overlap_windows": []
         },
@@ -3131,16 +3207,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.3,
-              "end_seconds": 4.3,
-              "duration_seconds": 2.0,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.3,
+              "duration_seconds": 2.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "fd6519ce63753e9b",
@@ -3275,16 +3350,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.3,
-              "end_seconds": 4.3,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 3.3,
+              "duration_seconds": 3.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "fd6519ce63753e9b-return-4-preinput",
@@ -3426,6 +3500,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.1,
+              "end_seconds": 3.3,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -3436,14 +3524,6 @@
               "after_action_index": 2,
               "return_start_seconds": 2.7,
               "return_end_seconds": 3.1
-            },
-            {
-              "number": 2,
-              "start_seconds": 3.3,
-              "end_seconds": 4.3,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 4
             }
           ],
           "window_1": {
@@ -3588,6 +3668,14 @@
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.2,
+              "duration_seconds": 4.2
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -3727,16 +3815,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.2,
-              "end_seconds": 4.2,
-              "duration_seconds": 2.0,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.2,
+              "duration_seconds": 2.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "41dbed3a15420913",
@@ -3873,16 +3960,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.2,
-              "end_seconds": 4.2,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 3.2,
+              "duration_seconds": 3.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "436641348fd4b82a",
@@ -4017,6 +4103,14 @@
             "动作目录连续段；按完整动作顺接",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.9,
+              "duration_seconds": 3.9
+            }
           ],
           "overlap_windows": []
         },
@@ -4155,16 +4249,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.9,
-              "end_seconds": 3.9,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 2.9,
+              "duration_seconds": 2.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "ff22ce7cd59c48fa",
@@ -4299,6 +4392,14 @@
             "动作目录连续段；按完整动作顺接",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.8,
+              "duration_seconds": 3.8
+            }
           ],
           "overlap_windows": []
         },
@@ -4437,16 +4538,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.8,
-              "end_seconds": 3.8,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 2.8,
+              "duration_seconds": 2.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "b80323cb04453304",
@@ -4548,6 +4648,14 @@
           "sources": [
             "动作目录连续段；按完整动作顺接",
             "actions.json绰影备注：a1/a2期间可触发。精确提前输入时刻待补。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.2,
+              "duration_seconds": 2.2
+            }
           ],
           "overlap_windows": []
         },
@@ -4668,6 +4776,14 @@
             "动作目录连续段；按完整动作顺接",
             "actions.json绰影备注：a1/a2期间可触发。精确提前输入时刻待补。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.4,
+              "duration_seconds": 3.4
+            }
           ],
           "overlap_windows": []
         },
@@ -4792,16 +4908,15 @@
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.5,
-              "end_seconds": 3.4,
-              "duration_seconds": 1.9,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "22c74ad8cb9a01bb",
@@ -4922,16 +5037,15 @@
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.4,
-              "end_seconds": 3.4,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.4,
+              "duration_seconds": 2.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "2794a172f482af0a",
@@ -5016,6 +5130,14 @@
           "notes": [],
           "sources": [
             "用户2026-09-02确认a1→z；actions.json备注a1/a2可触发绰影。精确提前输入时刻待补。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            }
           ],
           "overlap_windows": []
         },
@@ -5119,6 +5241,14 @@
           "sources": [
             "用户2026-09-02确认a1→z；actions.json备注a1/a2可触发绰影。精确提前输入时刻待补。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.8,
+              "duration_seconds": 2.8
+            }
           ],
           "overlap_windows": []
         },
@@ -5226,16 +5356,15 @@
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.9,
-              "end_seconds": 2.8,
-              "duration_seconds": 1.9,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.9,
+              "duration_seconds": 0.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "1129a6a449e1995f",
@@ -5339,16 +5468,15 @@
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.8,
-              "end_seconds": 2.8,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.8,
+              "duration_seconds": 1.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "c028284042e01693",
@@ -5416,6 +5544,14 @@
           "status": "可计算",
           "notes": [],
           "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.3,
+              "duration_seconds": 0.3
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -5486,16 +5622,15 @@
           "sources": [
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.2,
-              "end_seconds": 0.3,
-              "duration_seconds": 0.1,
-              "requires_return": false,
-              "after_action_index": 0
+              "start_seconds": 0,
+              "end_seconds": 0.2,
+              "duration_seconds": 0.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "34d02c0b2ae3bbdf",
@@ -5580,6 +5715,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.0,
+              "duration_seconds": 1.0
+            }
           ],
           "overlap_windows": []
         },
@@ -5670,16 +5813,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.3,
-              "end_seconds": 1.0,
-              "duration_seconds": 0.7,
-              "requires_return": false,
-              "after_action_index": 0
+              "start_seconds": 0,
+              "end_seconds": 0.3,
+              "duration_seconds": 0.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "7e1f95d2439549d7",
@@ -5766,16 +5908,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.5,
-              "end_seconds": 1.0,
-              "duration_seconds": 0.5,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.5,
+              "duration_seconds": 0.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "0637bfde43dff4a2",
@@ -5876,6 +6017,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.9,
+              "duration_seconds": 1.9
+            }
           ],
           "overlap_windows": []
         },
@@ -5982,16 +6131,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.6,
-              "end_seconds": 1.9,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "2460016bae9cb3a1",
@@ -6094,16 +6242,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.2,
-              "end_seconds": 1.9,
-              "duration_seconds": 0.7,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.2,
+              "duration_seconds": 1.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "76418070ca26961e",
@@ -6220,6 +6367,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.0,
+              "duration_seconds": 3.0
+            }
           ],
           "overlap_windows": []
         },
@@ -6342,16 +6497,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.3,
-              "end_seconds": 3.0,
-              "duration_seconds": 1.7,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.3,
+              "duration_seconds": 1.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "c8fe9d1029ff19b6",
@@ -6470,16 +6624,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.1,
-              "end_seconds": 3.0,
-              "duration_seconds": 0.9,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.1,
+              "duration_seconds": 2.1
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "c8fe9d1029ff19b6-return-3-preinput",
@@ -6605,6 +6758,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 1.9,
+              "end_seconds": 2.1,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -6615,14 +6782,6 @@
               "after_action_index": 1,
               "return_start_seconds": 1.8,
               "return_end_seconds": 1.9
-            },
-            {
-              "number": 2,
-              "start_seconds": 2.1,
-              "end_seconds": 3.0,
-              "duration_seconds": 0.9,
-              "requires_return": false,
-              "after_action_index": 3
             }
           ],
           "window_1": {
@@ -6751,6 +6910,14 @@
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.8,
+              "duration_seconds": 2.8
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -6872,16 +7039,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.9,
-              "end_seconds": 2.8,
-              "duration_seconds": 0.9,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 1.9,
+              "duration_seconds": 1.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "9a20547ef57c9af1",
@@ -6983,6 +7149,14 @@
           "sources": [
             "动作目录连续段；按完整动作顺接",
             "腾讯文档DVXF0ZkVKSEV3Y2t4：幻境a1/a2中长按可触发落月。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.1,
+              "duration_seconds": 2.1
+            }
           ],
           "overlap_windows": []
         },
@@ -7103,6 +7277,14 @@
             "动作目录连续段；按完整动作顺接",
             "腾讯文档DVXF0ZkVKSEV3Y2t4：幻境a1/a2中长按可触发落月。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.2,
+              "duration_seconds": 3.2
+            }
           ],
           "overlap_windows": []
         },
@@ -7227,16 +7409,15 @@
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.3,
-              "end_seconds": 3.2,
-              "duration_seconds": 1.9,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.3,
+              "duration_seconds": 1.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "c26d141489fac460",
@@ -7357,16 +7538,15 @@
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.3,
-              "end_seconds": 3.2,
-              "duration_seconds": 0.9,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.3,
+              "duration_seconds": 2.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "0a0eec291b25c270",
@@ -7451,6 +7631,14 @@
           "notes": [],
           "sources": [
             "用户2026-09-02确认幻a1→幻z。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.4,
+              "duration_seconds": 1.4
+            }
           ],
           "overlap_windows": []
         },
@@ -7554,6 +7742,14 @@
           "sources": [
             "用户2026-09-02确认幻a1→幻z。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.5,
+              "duration_seconds": 2.5
+            }
           ],
           "overlap_windows": []
         },
@@ -7661,16 +7857,15 @@
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.6,
-              "end_seconds": 2.5,
-              "duration_seconds": 1.9,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "aaa44affb8f1261b",
@@ -7774,16 +7969,15 @@
             "用户2026-10-12确认：从a1/a2插重击后均接本形态末段，现实为a5、幻境为幻a4。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.6,
-              "end_seconds": 2.5,
-              "duration_seconds": 0.9,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
             }
-          ]
+          ],
+          "overlap_windows": []
         }
       ],
       "dodge_preserves_combo": true,
@@ -8173,6 +8367,14 @@
           "status": "可计算",
           "notes": [],
           "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.5,
+              "duration_seconds": 0.5
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -8245,16 +8447,15 @@
           "sources": [
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.2,
-              "end_seconds": 0.5,
-              "duration_seconds": 0.3,
-              "requires_return": false,
-              "after_action_index": 0
+              "start_seconds": 0,
+              "end_seconds": 0.2,
+              "duration_seconds": 0.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "11dc710228bf9a3c",
@@ -8341,6 +8542,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.2,
+              "duration_seconds": 1.2
+            }
           ],
           "overlap_windows": []
         },
@@ -8433,16 +8642,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.3,
-              "end_seconds": 1.2,
-              "duration_seconds": 0.9,
-              "requires_return": false,
-              "after_action_index": 0
+              "start_seconds": 0,
+              "end_seconds": 0.3,
+              "duration_seconds": 0.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "d0553812b7d23231",
@@ -8531,16 +8739,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.7,
-              "end_seconds": 1.2,
-              "duration_seconds": 0.5,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.7,
+              "duration_seconds": 0.7
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "2601e8fe6e0f021b",
@@ -8643,6 +8850,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.4,
+              "duration_seconds": 2.4
+            }
           ],
           "overlap_windows": []
         },
@@ -8751,16 +8966,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.8,
-              "end_seconds": 2.4,
-              "duration_seconds": 1.6,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "9795db3463508592",
@@ -8865,16 +9079,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.4,
-              "end_seconds": 2.4,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.4,
+              "duration_seconds": 1.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "aac26ec5d2d1ffdd",
@@ -8993,6 +9206,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.8,
+              "duration_seconds": 2.8
+            }
           ],
           "overlap_windows": []
         },
@@ -9117,16 +9338,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.5,
-              "end_seconds": 2.8,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "ad48e5373da2dd39",
@@ -9247,16 +9467,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.6,
-              "end_seconds": 2.8,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.6,
+              "duration_seconds": 2.6
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "ad48e5373da2dd39-return-3-preinput",
@@ -9384,6 +9603,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 2.6,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -9394,14 +9627,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 2.6,
-              "end_seconds": 2.8,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 3
             }
           ],
           "window_1": {
@@ -9532,6 +9757,14 @@
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.3,
+              "duration_seconds": 2.3
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -9655,16 +9888,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.1,
-              "end_seconds": 2.3,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.1,
+              "duration_seconds": 2.1
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "34f75cfc21df778e",
@@ -9799,6 +10031,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.2,
+              "duration_seconds": 4.2
+            }
           ],
           "overlap_windows": []
         },
@@ -9939,16 +10179,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.7,
-              "end_seconds": 4.2,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.7,
+              "duration_seconds": 2.7
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "07b30da0b0deecd0-return-3-preinput",
@@ -10093,6 +10332,20 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 2.7,
+              "duration_seconds": 0.3
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -10103,14 +10356,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 2.7,
-              "end_seconds": 4.2,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 3
             }
           ],
           "window_1": {
@@ -10256,16 +10501,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.0,
-              "end_seconds": 4.2,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 3.0,
+              "duration_seconds": 3.0
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "44e14f8da72edbd1-return-3-preinput",
@@ -10409,6 +10653,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 3.0,
+              "duration_seconds": 0.6
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -10419,14 +10677,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 3.0,
-              "end_seconds": 4.2,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 4
             }
           ],
           "window_1": {
@@ -10579,6 +10829,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.8,
+              "end_seconds": 3.0,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -10589,14 +10853,6 @@
               "after_action_index": 2,
               "return_start_seconds": 2.7,
               "return_end_seconds": 2.8
-            },
-            {
-              "number": 2,
-              "start_seconds": 3.0,
-              "end_seconds": 4.2,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 4
             }
           ],
           "window_1": {
@@ -10742,16 +10998,15 @@
             "动作目录连续段；按完整动作顺接",
             "actions.json：can_detach / detached_duration_seconds"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.4,
-              "end_seconds": 4.2,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 3.4,
+              "duration_seconds": 3.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "e1dc4d7e8bf286f9",
@@ -10888,6 +11143,14 @@
             "动作目录连续段；按完整动作顺接",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.7,
+              "duration_seconds": 3.7
+            }
           ],
           "overlap_windows": []
         },
@@ -11030,16 +11293,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.2,
-              "end_seconds": 3.7,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.2,
+              "duration_seconds": 2.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "8d0a632e6a3f2dbc",
@@ -11178,16 +11440,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.5,
-              "end_seconds": 3.7,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 2.5,
+              "duration_seconds": 2.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "c06da2f1e18abbed",
@@ -11326,16 +11587,15 @@
             "actions.json：can_detach / detached_duration_seconds",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.9,
-              "end_seconds": 3.7,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 2.9,
+              "duration_seconds": 2.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "dbf85c4bd59a50c7",
@@ -11487,6 +11747,14 @@
           "sources": [
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.4,
+              "duration_seconds": 4.4
+            }
           ],
           "overlap_windows": []
         },
@@ -11642,6 +11910,14 @@
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.9,
+              "duration_seconds": 3.9
+            }
           ],
           "overlap_windows": []
         },
@@ -11829,6 +12105,14 @@
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。",
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 6.7,
+              "duration_seconds": 6.7
+            }
           ],
           "overlap_windows": []
         },
@@ -12018,16 +12302,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 5.7,
-              "end_seconds": 6.7,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 7
+              "start_seconds": 0,
+              "end_seconds": 5.7,
+              "duration_seconds": 5.7
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "ea02f50f3be165b7-return-3-preinput",
@@ -12222,6 +12505,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 5.7,
+              "duration_seconds": 3.3
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -12232,14 +12529,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 5.7,
-              "end_seconds": 6.7,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 7
             }
           ],
           "window_1": {
@@ -12443,6 +12732,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.8,
+              "end_seconds": 5.7,
+              "duration_seconds": 2.9
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -12453,14 +12756,6 @@
               "after_action_index": 2,
               "return_start_seconds": 2.7,
               "return_end_seconds": 2.8
-            },
-            {
-              "number": 2,
-              "start_seconds": 5.7,
-              "end_seconds": 6.7,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 7
             }
           ],
           "window_1": {
@@ -12658,6 +12953,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 6.2,
+              "duration_seconds": 6.2
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -12848,16 +13151,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 5.2,
-              "end_seconds": 6.2,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 7
+              "start_seconds": 0,
+              "end_seconds": 5.2,
+              "duration_seconds": 5.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "f8369128b67e696e",
@@ -13059,6 +13361,14 @@
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。",
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 7.1,
+              "duration_seconds": 7.1
+            }
           ],
           "overlap_windows": []
         },
@@ -13266,16 +13576,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 5.8,
-              "end_seconds": 7.1,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 7
+              "start_seconds": 0,
+              "end_seconds": 5.8,
+              "duration_seconds": 5.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "7bfaca11ce85d1f7-return-3-preinput",
@@ -13487,6 +13796,20 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 5.8,
+              "duration_seconds": 3.4
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -13497,14 +13820,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 5.8,
-              "end_seconds": 7.1,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 7
             }
           ],
           "window_1": {
@@ -13725,6 +14040,20 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.8,
+              "end_seconds": 5.8,
+              "duration_seconds": 3.0
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -13735,14 +14064,6 @@
               "after_action_index": 2,
               "return_start_seconds": 2.7,
               "return_end_seconds": 2.8
-            },
-            {
-              "number": 2,
-              "start_seconds": 5.8,
-              "end_seconds": 7.1,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 7
             }
           ],
           "window_1": {
@@ -13955,16 +14276,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 6.9,
-              "end_seconds": 7.1,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 8
+              "start_seconds": 0,
+              "end_seconds": 6.9,
+              "duration_seconds": 6.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "48eff1da28c73b52-return-3-preinput",
@@ -14175,6 +14495,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 6.9,
+              "duration_seconds": 4.5
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -14185,14 +14519,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 6.9,
-              "end_seconds": 7.1,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 8
             }
           ],
           "window_1": {
@@ -14412,6 +14738,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.8,
+              "end_seconds": 6.9,
+              "duration_seconds": 4.1
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -14422,14 +14762,6 @@
               "after_action_index": 2,
               "return_start_seconds": 2.7,
               "return_end_seconds": 2.8
-            },
-            {
-              "number": 2,
-              "start_seconds": 6.9,
-              "end_seconds": 7.1,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 8
             }
           ],
           "window_1": {
@@ -14643,6 +14975,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 6.6,
+              "duration_seconds": 6.6
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -14851,16 +15191,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 5.3,
-              "end_seconds": 6.6,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 7
+              "start_seconds": 0,
+              "end_seconds": 5.3,
+              "duration_seconds": 5.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "9aa52f5f18772699",
@@ -15066,16 +15405,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 6.4,
-              "end_seconds": 6.6,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 8
+              "start_seconds": 0,
+              "end_seconds": 6.4,
+              "duration_seconds": 6.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "1018fc88b6afce1a",
@@ -15279,6 +15617,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 6.6,
+              "duration_seconds": 6.6
+            }
           ],
           "overlap_windows": []
         },
@@ -15486,16 +15832,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 6.4,
-              "end_seconds": 6.6,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 8
+              "start_seconds": 0,
+              "end_seconds": 6.4,
+              "duration_seconds": 6.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "2accb3dcbc9eb98e-return-3-preinput",
@@ -15708,6 +16053,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 6.4,
+              "duration_seconds": 4.0
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -15718,14 +16077,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 6.4,
-              "end_seconds": 6.6,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 8
             }
           ],
           "window_1": {
@@ -15947,6 +16298,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.8,
+              "end_seconds": 6.4,
+              "duration_seconds": 3.6
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -15957,14 +16322,6 @@
               "after_action_index": 2,
               "return_start_seconds": 2.7,
               "return_end_seconds": 2.8
-            },
-            {
-              "number": 2,
-              "start_seconds": 6.4,
-              "end_seconds": 6.6,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 8
             }
           ],
           "window_1": {
@@ -16178,6 +16535,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 6.1,
+              "duration_seconds": 6.1
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -16384,16 +16749,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 5.9,
-              "end_seconds": 6.1,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 8
+              "start_seconds": 0,
+              "end_seconds": 5.9,
+              "duration_seconds": 5.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "c929723939a5bdfa",
@@ -16611,6 +16975,14 @@
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。",
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 8.5,
+              "duration_seconds": 8.5
+            }
           ],
           "overlap_windows": []
         },
@@ -16834,16 +17206,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 7.0,
-              "end_seconds": 8.5,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 8
+              "start_seconds": 0,
+              "end_seconds": 7.0,
+              "duration_seconds": 7.0
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "b2dd41490de10452-return-3-preinput",
@@ -17071,6 +17442,20 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 7.0,
+              "duration_seconds": 4.6
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -17081,14 +17466,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 7.0,
-              "end_seconds": 8.5,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 8
             }
           ],
           "window_1": {
@@ -17325,6 +17702,20 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.8,
+              "end_seconds": 7.0,
+              "duration_seconds": 4.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -17335,14 +17726,6 @@
               "after_action_index": 2,
               "return_start_seconds": 2.7,
               "return_end_seconds": 2.8
-            },
-            {
-              "number": 2,
-              "start_seconds": 7.0,
-              "end_seconds": 8.5,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 8
             }
           ],
           "window_1": {
@@ -17571,16 +17954,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 7.3,
-              "end_seconds": 8.5,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 7.3,
+              "duration_seconds": 7.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "48733a6d44b19e9b-return-3-preinput",
@@ -17807,6 +18189,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 7.3,
+              "duration_seconds": 4.9
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -17817,14 +18213,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 7.3,
-              "end_seconds": 8.5,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 9
             }
           ],
           "window_1": {
@@ -18060,6 +18448,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.8,
+              "end_seconds": 7.3,
+              "duration_seconds": 4.5
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -18070,14 +18472,6 @@
               "after_action_index": 2,
               "return_start_seconds": 2.7,
               "return_end_seconds": 2.8
-            },
-            {
-              "number": 2,
-              "start_seconds": 7.3,
-              "end_seconds": 8.5,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 9
             }
           ],
           "window_1": {
@@ -18313,6 +18707,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 5.8,
+              "duration_seconds": 5.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 7.1,
+              "end_seconds": 7.3,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -18323,14 +18731,6 @@
               "after_action_index": 7,
               "return_start_seconds": 7.0,
               "return_end_seconds": 7.1
-            },
-            {
-              "number": 2,
-              "start_seconds": 7.3,
-              "end_seconds": 8.5,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 9
             }
           ],
           "window_1": {
@@ -18559,16 +18959,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "actions.json：can_detach / detached_duration_seconds"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 7.7,
-              "end_seconds": 8.5,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 7.7,
+              "duration_seconds": 7.7
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "f0b7c5b6a7a1dc2a",
@@ -18788,6 +19187,14 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 8.0,
+              "duration_seconds": 8.0
+            }
           ],
           "overlap_windows": []
         },
@@ -19013,16 +19420,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 6.5,
-              "end_seconds": 8.0,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 8
+              "start_seconds": 0,
+              "end_seconds": 6.5,
+              "duration_seconds": 6.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "1f600f2b24f253c8",
@@ -19244,16 +19650,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 6.8,
-              "end_seconds": 8.0,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 6.8,
+              "duration_seconds": 6.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "1f600f2b24f253c8-return-9-preinput",
@@ -19482,6 +19887,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 5.3,
+              "duration_seconds": 5.3
+            },
+            {
+              "number": 2,
+              "start_seconds": 6.6,
+              "end_seconds": 6.8,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -19492,14 +19911,6 @@
               "after_action_index": 7,
               "return_start_seconds": 6.5,
               "return_end_seconds": 6.6
-            },
-            {
-              "number": 2,
-              "start_seconds": 6.8,
-              "end_seconds": 8.0,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 9
             }
           ],
           "window_1": {
@@ -19730,16 +20141,15 @@
             "actions.json：can_detach / detached_duration_seconds",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 7.2,
-              "end_seconds": 8.0,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 7.2,
+              "duration_seconds": 7.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "083561d4c05f7092",
@@ -19959,6 +20369,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 8.0,
+              "duration_seconds": 8.0
+            }
           ],
           "overlap_windows": []
         },
@@ -20184,16 +20602,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 6.5,
-              "end_seconds": 8.0,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 8
+              "start_seconds": 0,
+              "end_seconds": 6.5,
+              "duration_seconds": 6.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "7f46d4bf3899be0d-return-3-preinput",
@@ -20423,6 +20840,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 6.5,
+              "duration_seconds": 4.1
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -20433,14 +20864,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 6.5,
-              "end_seconds": 8.0,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 8
             }
           ],
           "window_1": {
@@ -20679,6 +21102,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.8,
+              "end_seconds": 6.5,
+              "duration_seconds": 3.7
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -20689,14 +21126,6 @@
               "after_action_index": 2,
               "return_start_seconds": 2.7,
               "return_end_seconds": 2.8
-            },
-            {
-              "number": 2,
-              "start_seconds": 6.5,
-              "end_seconds": 8.0,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 8
             }
           ],
           "window_1": {
@@ -20927,16 +21356,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 6.8,
-              "end_seconds": 8.0,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 6.8,
+              "duration_seconds": 6.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "69d90fb6bcd6ed21-return-3-preinput",
@@ -21165,6 +21593,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.4,
+              "end_seconds": 6.8,
+              "duration_seconds": 4.4
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -21175,14 +21617,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.4
-            },
-            {
-              "number": 2,
-              "start_seconds": 6.8,
-              "end_seconds": 8.0,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 9
             }
           ],
           "window_1": {
@@ -21420,6 +21854,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.5,
+              "duration_seconds": 1.5
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.8,
+              "end_seconds": 6.8,
+              "duration_seconds": 4.0
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -21430,14 +21878,6 @@
               "after_action_index": 2,
               "return_start_seconds": 2.7,
               "return_end_seconds": 2.8
-            },
-            {
-              "number": 2,
-              "start_seconds": 6.8,
-              "end_seconds": 8.0,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 9
             }
           ],
           "window_1": {
@@ -21668,16 +22108,15 @@
             "actions.json：can_detach / detached_duration_seconds",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 7.2,
-              "end_seconds": 8.0,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 7.2,
+              "duration_seconds": 7.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "70a6a45aa000c9cb",
@@ -21897,6 +22336,14 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 7.5,
+              "duration_seconds": 7.5
+            }
           ],
           "overlap_windows": []
         },
@@ -22122,16 +22569,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 6.0,
-              "end_seconds": 7.5,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 8
+              "start_seconds": 0,
+              "end_seconds": 6.0,
+              "duration_seconds": 6.0
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "bdc86c57f0a1188a",
@@ -22353,16 +22799,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 6.3,
-              "end_seconds": 7.5,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 6.3,
+              "duration_seconds": 6.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "4a361a8fbce99ba8",
@@ -22584,16 +23029,15 @@
             "actions.json：can_detach / detached_duration_seconds",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 6.7,
-              "end_seconds": 7.5,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 6.7,
+              "duration_seconds": 6.7
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "c67dab336ab03153",
@@ -22697,6 +23141,14 @@
           "sources": [
             "动作目录连续段；按完整动作顺接",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.2,
+              "duration_seconds": 2.2
+            }
           ],
           "overlap_windows": []
         },
@@ -22835,6 +23287,14 @@
             "动作目录连续段；按完整动作顺接",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.5,
+              "duration_seconds": 4.5
+            }
           ],
           "overlap_windows": []
         },
@@ -22975,16 +23435,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.5,
-              "end_seconds": 4.5,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 3.5,
+              "duration_seconds": 3.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "0e5b7b25131a9ce2",
@@ -23137,6 +23596,14 @@
             "动作目录连续段；按完整动作顺接",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.9,
+              "duration_seconds": 4.9
+            }
           ],
           "overlap_windows": []
         },
@@ -23295,16 +23762,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.6,
-              "end_seconds": 4.9,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "5158dc15a22f8fb8",
@@ -23459,16 +23925,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 4.7,
-              "end_seconds": 4.9,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 5
+              "start_seconds": 0,
+              "end_seconds": 4.7,
+              "duration_seconds": 4.7
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "1eeb06bab56ae092",
@@ -23623,6 +24088,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.4,
+              "duration_seconds": 4.4
+            }
           ],
           "overlap_windows": []
         },
@@ -23781,16 +24254,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 4.2,
-              "end_seconds": 4.4,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 5
+              "start_seconds": 0,
+              "end_seconds": 4.2,
+              "duration_seconds": 4.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "e52d831d4407edc6",
@@ -23959,6 +24431,14 @@
             "动作目录连续段；按完整动作顺接",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 6.3,
+              "duration_seconds": 6.3
+            }
           ],
           "overlap_windows": []
         },
@@ -24133,16 +24613,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 4.8,
-              "end_seconds": 6.3,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 5
+              "start_seconds": 0,
+              "end_seconds": 4.8,
+              "duration_seconds": 4.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "dd011fbe6776b975",
@@ -24313,16 +24792,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 5.1,
-              "end_seconds": 6.3,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 6
+              "start_seconds": 0,
+              "end_seconds": 5.1,
+              "duration_seconds": 5.1
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "dd011fbe6776b975-return-6-preinput",
@@ -24500,6 +24978,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 4.9,
+              "end_seconds": 5.1,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -24510,14 +25002,6 @@
               "after_action_index": 4,
               "return_start_seconds": 4.8,
               "return_end_seconds": 4.9
-            },
-            {
-              "number": 2,
-              "start_seconds": 5.1,
-              "end_seconds": 6.3,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 6
             }
           ],
           "window_1": {
@@ -24697,16 +25181,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "actions.json：can_detach / detached_duration_seconds"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 5.5,
-              "end_seconds": 6.3,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 6
+              "start_seconds": 0,
+              "end_seconds": 5.5,
+              "duration_seconds": 5.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "cbd694ab980fa57d",
@@ -24877,6 +25360,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 5.8,
+              "duration_seconds": 5.8
+            }
           ],
           "overlap_windows": []
         },
@@ -25053,16 +25544,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 4.3,
-              "end_seconds": 5.8,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 5
+              "start_seconds": 0,
+              "end_seconds": 4.3,
+              "duration_seconds": 4.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "f7fe3da500971826",
@@ -25235,16 +25725,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 4.6,
-              "end_seconds": 5.8,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 6
+              "start_seconds": 0,
+              "end_seconds": 4.6,
+              "duration_seconds": 4.6
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "0b06fd28c4975b88",
@@ -25417,16 +25906,15 @@
             "actions.json：can_detach / detached_duration_seconds",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 5.0,
-              "end_seconds": 5.8,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 6
+              "start_seconds": 0,
+              "end_seconds": 5.0,
+              "duration_seconds": 5.0
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "d565b751a9200ba0",
@@ -25612,6 +26100,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 6.5,
+              "duration_seconds": 6.5
+            }
           ],
           "overlap_windows": []
         },
@@ -25801,6 +26297,14 @@
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 6.0,
+              "duration_seconds": 6.0
+            }
           ],
           "overlap_windows": []
         },
@@ -26021,6 +26525,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。",
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 8.8,
+              "duration_seconds": 8.8
+            }
           ],
           "overlap_windows": []
         },
@@ -26243,16 +26755,15 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 7.8,
-              "end_seconds": 8.8,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 7.8,
+              "duration_seconds": 7.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "b16f65821fb28646-return-6-preinput",
@@ -26480,6 +26991,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 4.9,
+              "end_seconds": 7.8,
+              "duration_seconds": 2.9
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -26490,14 +27015,6 @@
               "after_action_index": 4,
               "return_start_seconds": 4.8,
               "return_end_seconds": 4.9
-            },
-            {
-              "number": 2,
-              "start_seconds": 7.8,
-              "end_seconds": 8.8,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 9
             }
           ],
           "window_1": {
@@ -26729,6 +27246,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 8.3,
+              "duration_seconds": 8.3
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -26953,16 +27478,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 7.3,
-              "end_seconds": 8.3,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 7.3,
+              "duration_seconds": 7.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "364cb9888ff007de",
@@ -27197,6 +27721,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。",
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 9.2,
+              "duration_seconds": 9.2
+            }
           ],
           "overlap_windows": []
         },
@@ -27437,16 +27969,15 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 7.9,
-              "end_seconds": 9.2,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 7.9,
+              "duration_seconds": 7.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "446092a2db6326bb-return-6-preinput",
@@ -27691,6 +28222,20 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 4.9,
+              "end_seconds": 7.9,
+              "duration_seconds": 3.0
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -27701,14 +28246,6 @@
               "after_action_index": 4,
               "return_start_seconds": 4.8,
               "return_end_seconds": 4.9
-            },
-            {
-              "number": 2,
-              "start_seconds": 7.9,
-              "end_seconds": 9.2,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 9
             }
           ],
           "window_1": {
@@ -27954,16 +28491,15 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 9.0,
-              "end_seconds": 9.2,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 10
+              "start_seconds": 0,
+              "end_seconds": 9.0,
+              "duration_seconds": 9.0
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "6299e3c3744f5fbb-return-6-preinput",
@@ -28207,6 +28743,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 4.9,
+              "end_seconds": 9.0,
+              "duration_seconds": 4.1
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -28217,14 +28767,6 @@
               "after_action_index": 4,
               "return_start_seconds": 4.8,
               "return_end_seconds": 4.9
-            },
-            {
-              "number": 2,
-              "start_seconds": 9.0,
-              "end_seconds": 9.2,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 10
             }
           ],
           "window_1": {
@@ -28472,6 +29014,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 8.7,
+              "duration_seconds": 8.7
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -28714,16 +29264,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 7.4,
-              "end_seconds": 8.7,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 9
+              "start_seconds": 0,
+              "end_seconds": 7.4,
+              "duration_seconds": 7.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "90cc8e1858fe77e3",
@@ -28963,16 +29512,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 8.5,
-              "end_seconds": 8.7,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 10
+              "start_seconds": 0,
+              "end_seconds": 8.5,
+              "duration_seconds": 8.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "c7249188894ccbab",
@@ -29210,6 +29758,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 8.7,
+              "duration_seconds": 8.7
+            }
           ],
           "overlap_windows": []
         },
@@ -29451,16 +30007,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 8.5,
-              "end_seconds": 8.7,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 10
+              "start_seconds": 0,
+              "end_seconds": 8.5,
+              "duration_seconds": 8.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "4752a7551a2d6269-return-6-preinput",
@@ -29707,6 +30262,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 4.9,
+              "end_seconds": 8.5,
+              "duration_seconds": 3.6
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -29717,14 +30286,6 @@
               "after_action_index": 4,
               "return_start_seconds": 4.8,
               "return_end_seconds": 4.9
-            },
-            {
-              "number": 2,
-              "start_seconds": 8.5,
-              "end_seconds": 8.7,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 10
             }
           ],
           "window_1": {
@@ -29971,6 +30532,14 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 8.2,
+              "duration_seconds": 8.2
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -30210,16 +30779,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 8.0,
-              "end_seconds": 8.2,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 10
+              "start_seconds": 0,
+              "end_seconds": 8.0,
+              "duration_seconds": 8.0
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "56bc511e86df5a64",
@@ -30470,6 +31038,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。",
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 10.6,
+              "duration_seconds": 10.6
+            }
           ],
           "overlap_windows": []
         },
@@ -30726,16 +31302,15 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 9.1,
-              "end_seconds": 10.6,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 10
+              "start_seconds": 0,
+              "end_seconds": 9.1,
+              "duration_seconds": 9.1
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "490d0cac5e737a3f-return-6-preinput",
@@ -30996,6 +31571,20 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 4.9,
+              "end_seconds": 9.1,
+              "duration_seconds": 4.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -31006,14 +31595,6 @@
               "after_action_index": 4,
               "return_start_seconds": 4.8,
               "return_end_seconds": 4.9
-            },
-            {
-              "number": 2,
-              "start_seconds": 9.1,
-              "end_seconds": 10.6,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 10
             }
           ],
           "window_1": {
@@ -31275,16 +31856,15 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 9.4,
-              "end_seconds": 10.6,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 11
+              "start_seconds": 0,
+              "end_seconds": 9.4,
+              "duration_seconds": 9.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "de462eeeea59d1ea-return-6-preinput",
@@ -31544,6 +32124,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 4.9,
+              "end_seconds": 9.4,
+              "duration_seconds": 4.5
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -31554,14 +32148,6 @@
               "after_action_index": 4,
               "return_start_seconds": 4.8,
               "return_end_seconds": 4.9
-            },
-            {
-              "number": 2,
-              "start_seconds": 9.4,
-              "end_seconds": 10.6,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 11
             }
           ],
           "window_1": {
@@ -31830,6 +32416,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 7.9,
+              "duration_seconds": 7.9
+            },
+            {
+              "number": 2,
+              "start_seconds": 9.2,
+              "end_seconds": 9.4,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -31840,14 +32440,6 @@
               "after_action_index": 9,
               "return_start_seconds": 9.1,
               "return_end_seconds": 9.2
-            },
-            {
-              "number": 2,
-              "start_seconds": 9.4,
-              "end_seconds": 10.6,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 11
             }
           ],
           "window_1": {
@@ -32109,16 +32701,15 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "actions.json：can_detach / detached_duration_seconds"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 9.8,
-              "end_seconds": 10.6,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 11
+              "start_seconds": 0,
+              "end_seconds": 9.8,
+              "duration_seconds": 9.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "e50fa2ad7ab728b1",
@@ -32372,6 +32963,14 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 10.1,
+              "duration_seconds": 10.1
+            }
           ],
           "overlap_windows": []
         },
@@ -32631,16 +33230,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 8.6,
-              "end_seconds": 10.1,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 10
+              "start_seconds": 0,
+              "end_seconds": 8.6,
+              "duration_seconds": 8.6
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "f631d271d34a7b76",
@@ -32896,16 +33494,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 8.9,
-              "end_seconds": 10.1,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 11
+              "start_seconds": 0,
+              "end_seconds": 8.9,
+              "duration_seconds": 8.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "f631d271d34a7b76-return-11-preinput",
@@ -33168,6 +33765,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 7.4,
+              "duration_seconds": 7.4
+            },
+            {
+              "number": 2,
+              "start_seconds": 8.7,
+              "end_seconds": 8.9,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -33178,14 +33789,6 @@
               "after_action_index": 9,
               "return_start_seconds": 8.6,
               "return_end_seconds": 8.7
-            },
-            {
-              "number": 2,
-              "start_seconds": 8.9,
-              "end_seconds": 10.1,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 11
             }
           ],
           "window_1": {
@@ -33450,16 +34053,15 @@
             "actions.json：can_detach / detached_duration_seconds",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 9.3,
-              "end_seconds": 10.1,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 11
+              "start_seconds": 0,
+              "end_seconds": 9.3,
+              "duration_seconds": 9.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "75189e03a6e8ec2f",
@@ -33713,6 +34315,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 10.1,
+              "duration_seconds": 10.1
+            }
           ],
           "overlap_windows": []
         },
@@ -33972,16 +34582,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 8.6,
-              "end_seconds": 10.1,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 10
+              "start_seconds": 0,
+              "end_seconds": 8.6,
+              "duration_seconds": 8.6
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "5bf0162ac4ab1a52-return-6-preinput",
@@ -34245,6 +34854,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 4.9,
+              "end_seconds": 8.6,
+              "duration_seconds": 3.7
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -34255,14 +34878,6 @@
               "after_action_index": 4,
               "return_start_seconds": 4.8,
               "return_end_seconds": 4.9
-            },
-            {
-              "number": 2,
-              "start_seconds": 8.6,
-              "end_seconds": 10.1,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 10
             }
           ],
           "window_1": {
@@ -34527,16 +35142,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 8.9,
-              "end_seconds": 10.1,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 11
+              "start_seconds": 0,
+              "end_seconds": 8.9,
+              "duration_seconds": 8.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "8523a1cae5fc0414-return-6-preinput",
@@ -34799,6 +35413,20 @@
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 4.9,
+              "end_seconds": 8.9,
+              "duration_seconds": 4.0
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -34809,14 +35437,6 @@
               "after_action_index": 4,
               "return_start_seconds": 4.8,
               "return_end_seconds": 4.9
-            },
-            {
-              "number": 2,
-              "start_seconds": 8.9,
-              "end_seconds": 10.1,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 11
             }
           ],
           "window_1": {
@@ -35081,16 +35701,15 @@
             "actions.json：can_detach / detached_duration_seconds",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 9.3,
-              "end_seconds": 10.1,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 11
+              "start_seconds": 0,
+              "end_seconds": 9.3,
+              "duration_seconds": 9.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "0f0f02f41a43c4be",
@@ -35343,6 +35962,14 @@
             "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。",
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 9.6,
+              "duration_seconds": 9.6
+            }
           ],
           "overlap_windows": []
         },
@@ -35601,16 +36228,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 8.1,
-              "end_seconds": 9.6,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 10
+              "start_seconds": 0,
+              "end_seconds": 8.1,
+              "duration_seconds": 8.1
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "d0d2bd024fc64c5e",
@@ -35865,16 +36491,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 8.4,
-              "end_seconds": 9.6,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 11
+              "start_seconds": 0,
+              "end_seconds": 8.4,
+              "duration_seconds": 8.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "40ffec07e915fc87",
@@ -36129,16 +36754,15 @@
             "actions.json：can_detach / detached_duration_seconds",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 8.8,
-              "end_seconds": 9.6,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 11
+              "start_seconds": 0,
+              "end_seconds": 8.8,
+              "duration_seconds": 8.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "d161f6c7131169e9",
@@ -36208,6 +36832,14 @@
           "status": "可计算",
           "notes": [],
           "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.0,
+              "duration_seconds": 1.0
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -36312,6 +36944,14 @@
           "sources": [
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.3,
+              "duration_seconds": 3.3
+            }
           ],
           "overlap_windows": []
         },
@@ -36419,16 +37059,15 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.3,
-              "end_seconds": 3.3,
-              "duration_seconds": 1.0,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 2.3,
+              "duration_seconds": 2.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "9da8425b5eccbab4",
@@ -36549,6 +37188,14 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.7,
+              "duration_seconds": 3.7
+            }
           ],
           "overlap_windows": []
         },
@@ -36675,16 +37322,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.4,
-              "end_seconds": 3.7,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 2.4,
+              "duration_seconds": 2.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "dc6a911585a41dde",
@@ -36807,16 +37453,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.5,
-              "end_seconds": 3.7,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 3.5,
+              "duration_seconds": 3.5
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "f53b781a42f73d32",
@@ -36938,6 +37583,14 @@
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.2,
+              "duration_seconds": 3.2
+            }
           ],
           "overlap_windows": []
         },
@@ -37063,16 +37716,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.0,
-              "end_seconds": 3.2,
-              "duration_seconds": 0.2,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 3.0,
+              "duration_seconds": 3.0
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "74ee19adc69030dd",
@@ -37209,6 +37861,14 @@
             "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。 用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
             "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 5.1,
+              "duration_seconds": 5.1
+            }
           ],
           "overlap_windows": []
         },
@@ -37351,16 +38011,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.6,
-              "end_seconds": 5.1,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 3.6,
+              "duration_seconds": 3.6
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "dfd7910417e17d7d",
@@ -37499,16 +38158,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.9,
-              "end_seconds": 5.1,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 3.9,
+              "duration_seconds": 3.9
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "dfd7910417e17d7d-return-4-preinput",
@@ -37654,6 +38312,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.4,
+              "duration_seconds": 2.4
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.7,
+              "end_seconds": 3.9,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -37664,14 +38336,6 @@
               "after_action_index": 2,
               "return_start_seconds": 3.6,
               "return_end_seconds": 3.7
-            },
-            {
-              "number": 2,
-              "start_seconds": 3.9,
-              "end_seconds": 5.1,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 4
             }
           ],
           "window_1": {
@@ -37819,16 +38483,15 @@
             "动作目录连续段；按完整动作顺接",
             "actions.json：can_detach / detached_duration_seconds"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 4.3,
-              "end_seconds": 5.1,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 4.3,
+              "duration_seconds": 4.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "1fee1bb5f14639fe",
@@ -37967,6 +38630,14 @@
             "动作目录连续段；按完整动作顺接 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.6,
+              "duration_seconds": 4.6
+            }
           ],
           "overlap_windows": []
         },
@@ -38111,16 +38782,15 @@
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.1,
-              "end_seconds": 4.6,
-              "duration_seconds": 1.5,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 3.1,
+              "duration_seconds": 3.1
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "2ca923eee9577808",
@@ -38261,16 +38931,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.4,
-              "end_seconds": 4.6,
-              "duration_seconds": 1.2,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 3.4,
+              "duration_seconds": 3.4
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "02351c5953a9bf24",
@@ -38411,16 +39080,15 @@
             "actions.json：can_detach / detached_duration_seconds",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 3.8,
-              "end_seconds": 4.6,
-              "duration_seconds": 0.8,
-              "requires_return": false,
-              "after_action_index": 4
+              "start_seconds": 0,
+              "end_seconds": 3.8,
+              "duration_seconds": 3.8
             }
-          ]
+          ],
+          "overlap_windows": []
         }
       ],
       "dodge_preserves_combo": true,
@@ -38639,6 +39307,14 @@
           "status": "可计算",
           "notes": [],
           "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.5,
+              "duration_seconds": 0.5
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -38711,16 +39387,15 @@
           "sources": [
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.2,
-              "end_seconds": 0.5,
-              "duration_seconds": 0.3,
-              "requires_return": false,
-              "after_action_index": 0
+              "start_seconds": 0,
+              "end_seconds": 0.2,
+              "duration_seconds": 0.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "bc71c8de850b477e",
@@ -38807,6 +39482,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.0,
+              "duration_seconds": 1.0
+            }
           ],
           "overlap_windows": []
         },
@@ -38899,16 +39582,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.3,
-              "end_seconds": 1.0,
-              "duration_seconds": 0.7,
-              "requires_return": false,
-              "after_action_index": 0
+              "start_seconds": 0,
+              "end_seconds": 0.3,
+              "duration_seconds": 0.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "adeae49dd72e09d2",
@@ -38997,16 +39679,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.7,
-              "end_seconds": 1.0,
-              "duration_seconds": 0.3,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.7,
+              "duration_seconds": 0.7
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "4c67e601444f5a9d",
@@ -39109,6 +39790,14 @@
           "notes": [],
           "sources": [
             "动作目录连续段；按完整动作顺接"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.1,
+              "duration_seconds": 2.1
+            }
           ],
           "overlap_windows": []
         },
@@ -39217,16 +39906,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 0.8,
-              "end_seconds": 2.1,
-              "duration_seconds": 1.3,
-              "requires_return": false,
-              "after_action_index": 1
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "27266192cffe3180",
@@ -39331,16 +40019,15 @@
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.2,
-              "end_seconds": 2.1,
-              "duration_seconds": 0.9,
-              "requires_return": false,
-              "after_action_index": 2
+              "start_seconds": 0,
+              "end_seconds": 1.2,
+              "duration_seconds": 1.2
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "36e2b0719e6b3f75",
@@ -39460,6 +40147,14 @@
           "sources": [
             "动作目录连续段；按完整动作顺接",
             "用户2026-10-12明确：明音不支持a3预a4合轴；保留完整动作顺接。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.8,
+              "duration_seconds": 2.8
+            }
           ],
           "overlap_windows": []
         },
@@ -39583,16 +40278,15 @@
             "用户2026-10-12明确：明音不支持a3预a4合轴；保留完整动作顺接。",
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 2.3,
-              "end_seconds": 2.8,
-              "duration_seconds": 0.5,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 2.3,
+              "duration_seconds": 2.3
             }
-          ]
+          ],
+          "overlap_windows": []
         },
         {
           "id": "ce7ba4ecf5a1afa6-return-3-preinput",
@@ -39721,6 +40415,20 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            },
+            {
+              "number": 2,
+              "start_seconds": 2.1,
+              "end_seconds": 2.3,
+              "duration_seconds": 0.2
+            }
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -39731,14 +40439,6 @@
               "after_action_index": 1,
               "return_start_seconds": 2.0,
               "return_end_seconds": 2.1
-            },
-            {
-              "number": 2,
-              "start_seconds": 2.3,
-              "end_seconds": 2.8,
-              "duration_seconds": 0.5,
-              "requires_return": false,
-              "after_action_index": 3
             }
           ],
           "window_1": {
@@ -39870,6 +40570,14 @@
             "用户2026-10-12明确：明音不支持a3预a4合轴；保留完整动作顺接。 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.4,
+              "duration_seconds": 2.4
+            }
+          ],
           "overlap_windows": []
         },
         {
@@ -39994,16 +40702,15 @@
             "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
             "用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。"
           ],
-          "overlap_windows": [
+          "foreground_segments": [
             {
               "number": 1,
-              "start_seconds": 1.9,
-              "end_seconds": 2.4,
-              "duration_seconds": 0.5,
-              "requires_return": false,
-              "after_action_index": 3
+              "start_seconds": 0,
+              "end_seconds": 1.9,
+              "duration_seconds": 1.9
             }
-          ]
+          ],
+          "overlap_windows": []
         }
       ],
       "dodge_preserves_combo": true,
@@ -40026,7 +40733,7 @@
     "characters.json": "5ca0f1e50cecd559549201068874585ab4f458cc8befa2eb5c7b1b157b077503",
     "actions.json": "17743804f37bdf68e80dad0c8cca1cedc212475208cebb89d67a834d119bb467",
     "rules.json": "f8d493a9568ed3ab9945b982aa73ee4856ec5101e078cdbc92f93032cd20c2fe",
-    "generator.py": "a4363b7696d1bf6c7afbcaeb1d7ace367b5a7522cc7a6883fd8aae6075001571"
+    "generator.py": "b561dd527eed0e90fbc184bccd5af55815101d120bfc27dbd0503594015b9fb6"
   },
   "basis": "1级裸动作收益；按前排占轴归一。未含配装、Buff、资源上限与队友分享；经验耗时用于试算。",
   "sources": [

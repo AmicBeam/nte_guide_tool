@@ -107,6 +107,12 @@ class TeacherPipelineCudaTest(unittest.TestCase):
             calls=DeviceRuleGraphCalls(vm,physical,rows=rows,lanes=2,seconds=60,compact_layout=compact);self.addCleanup(calls.close)
             pres=DeviceRulePresentation(calls,max_actions=800,max_output_bytes=1<<30,seconds=60);self.addCleanup(pres.close)
             pipeline=DeviceTeacherPipeline(calls,pres,action_store=actions,raw_teacher=getattr(self,'raw_teacher',False));self.addCleanup(pipeline.close)
+            from app.modules.card_game.rl.batched_search.device_teacher_pipeline import _teacher_capture_sites
+            self.assertEqual(pipeline.rules.prepared, _teacher_capture_sites(pipeline.raw_teacher))
+            self.assertEqual(len(pipeline.teacher_action_sites), 3 if pipeline.raw_teacher else 0)
+            if pipeline.raw_teacher:
+                with self.assertRaisesRegex(RuntimeError, 'No remaining prepared rule_decision'):
+                    pipeline.rules._queues['rule_decision'].consume()
             owners=torch.arange(rows,dtype=torch.int64,device=d);roots=physical.put_device(_graph(data,d,max_payload=512),owners,torch.ones(rows,dtype=torch.bool,device=d));viewers=torch.zeros(rows,dtype=torch.int64,device=d)
             records={name:torch.zeros((calls.lanes,4),dtype=torch.int32,device=d) for name in vm.image.entries}
             launch=vm.launch_into_device

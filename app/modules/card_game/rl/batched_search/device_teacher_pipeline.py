@@ -14,6 +14,15 @@ from .device_frozen_rules import DeviceFrozenRules, _ActiveRuleLanes
 LEASE_ERROR = 2048
 
 
+def _teacher_capture_sites(raw_teacher):
+    """Reserve only operations the exact three-step composition invokes."""
+    if type(raw_teacher) is not bool:
+        raise TypeError('Explicit raw teacher mode required')
+    return dict(metadata=3, decision=0, rule_decision=0 if raw_teacher else 3,
+                value=0, sample_world=0, apply_action=0, simulate_action=3,
+                clean=3, teacher_continue=0)
+
+
 class DeviceTeacherPipeline:
     """Capture exactly three ordinary teacher decisions and hypothetical steps."""
     supports_full_duel_rules = False
@@ -40,8 +49,7 @@ class DeviceTeacherPipeline:
         try:
             # These queues belong to this pipeline, not the surrounding search.
             self.rules = DeviceFrozenRules(calls, presentation, action_store=action_store,
-                sites=dict(metadata=3, decision=1, rule_decision=3, value=1,
-                           simulate_action=3, clean=3))
+                sites=_teacher_capture_sites(raw_teacher))
             if raw_teacher:
                 from .device_teacher_actions import DeviceTeacherActions
                 for _ in range(3):

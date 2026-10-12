@@ -175,6 +175,7 @@ def inspect_device_frozen_rule_dependencies(calls, presentation, action_store):
 
 
 def _positive_sites(sites):
+    """Static quotas; explicit zero leaves an operation unavailable at capture."""
     if sites is None:
         chosen = dict(DEFAULT_SITES)
     else:
@@ -186,8 +187,8 @@ def _positive_sites(sites):
         chosen = dict(DEFAULT_SITES)
         chosen.update(sites)
     for name, value in chosen.items():
-        if type(value) is not int or value < 1:
-            raise ValueError('Positive static site quota required for ' + name)
+        if type(value) is not int or value < 0:
+            raise ValueError('Nonnegative static site quota required for ' + name)
     return chosen
 
 
@@ -351,7 +352,9 @@ class DeviceFrozenRules:
       calls: DeviceRuleGraphCalls or PhysicalActionRecordingCalls
       presentation: DeviceRulePresentation wrapping the same calls
       action_store: independent CompactDeviceGraphStore for legal action graphs
-      sites: per-operation static CUDA capture quotas (see DEFAULT_SITES)
+      sites: per-operation static CUDA capture quotas (see DEFAULT_SITES).
+        Explicit zero allocates no site; any call to it fails closed. A
+        composing pipeline must reserve every operation it actually invokes.
 
     Operations: metadata, full legal decision, teacher rule_decision, fixed-viewer
     value, sample_world int64[B,5], physical apply vs hypothetical simulate,

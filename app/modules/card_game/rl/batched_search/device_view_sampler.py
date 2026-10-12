@@ -10,6 +10,7 @@ from ..batched_duel.gpu_seven_candidates import get_card_template_table
 from .device_inplace_guard_encoding import (
     encode_guard_tokens_device as encode_tokens_device, prepare_inplace_guard_encoding)
 from .device_guard_candidate_rows import candidate_mismatch_rows
+from .device_guard_row_work import DeviceGuardRowWork
 from ..batched_duel.device_rule_protocol import DeviceStateBatch
 from .device_split_sampler import DeviceTransitionSampleCalls,_PacketPlan
 
@@ -111,11 +112,16 @@ class DeviceViewSampleCalls(DeviceTransitionSampleCalls):
 
 class DeviceViewValidatedSampler:
     """Only the internally checked packet may produce active sampled states."""
-    def __init__(self,rules):
+    def __init__(self,rules,*,guard_tile=8):
         if not isinstance(rules.calls,DeviceViewSampleCalls):raise TypeError('Mandatory dual-guard calls required')
         self.rules=rules;self.closed=False;self.captured=False
-        self.compare=compare_projected_views_device
-    def close(self):self.closed=True
+        self.guard_work=DeviceGuardRowWork(rows=rules.calls.lanes,tile=guard_tile,
+            seconds=rules.calls.seconds,device=rules.calls.device,
+            compare=compare_projected_views_device)
+        self.compare=self.guard_work.compare
+    def close(self):
+        if not self.closed:
+            self.guard_work.close();self.closed=True
     def capture_device(self,states,viewers,seeds):
         if self.closed or self.captured:raise RuntimeError('Sampler site closed or already captured')
         r=self.rules;r.calls._exact(seeds,r.t.int64,(r.rows,5),'sampler seeds')

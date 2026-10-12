@@ -176,8 +176,8 @@
         {
           "from": "魔z2",
           "to": "魔a3",
-          "source": "腾讯文档DVVRZempSSmZ4THVj，2026-10-12读取：二形态a2可接魔z1；魔z1可接魔z2；魔z2后自动接魔a3。",
-          "automatic": true
+          "source": "用户2026-10-13补充：魔z2可预输入魔a3，按现行0.4秒预输入并切人口径生成，覆盖此前仅按自动接续处理的配置。",
+          "can_preinput": true
         },
         {
           "from": "魔a5",

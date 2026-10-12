@@ -369,15 +369,49 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertFalse(requirements([0.2,0.4],False)['requires_three_characters'])
         self.assertEqual(requirements([2,0.4,0.8],False)['three_character_segments'],[2])
 
-    def test_heiyu_e_forces_detached_a5_and_z2_automatically_returns_a3(self):
+    def test_heiyu_e_forces_detached_a5_and_z2_can_preinput_a3(self):
         names = ['魔a1','魔a2','魔a3','魔a4','魔a5','魔e','魔z2','魔a3']
         row = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==names and not r['has_dodge'] and r['kind']=='连招')
         a5 = row['timeline'][4]
         e = row['timeline'][5]
         self.assertEqual(a5['duration_seconds'], 0.6)
         self.assertAlmostEqual(e['start_seconds'], a5['end_seconds'])
-        self.assertTrue(row['timeline'][-1]['automatic'])
-        self.assertIsNone(row['timeline'][-1]['input_seconds'])
+        z2, a3 = row['timeline'][-2:]
+        self.assertFalse(a3['automatic'])
+        self.assertAlmostEqual(a3['input_seconds'], z2['start_seconds'] + 0.4)
+        self.assertEqual(a3['start_seconds'], z2['end_seconds'])
+        for prefix in (['魔a1','魔a2','魔z1'], ['魔e'], names[:-2]):
+            path = [*prefix, '魔z2', '魔a3']
+            pre = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==path
+                       and not r['has_dodge'] and r['kind']=='合轴' and r['switch_method']=='preinput')
+            full = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==path
+                        and not r['has_dodge'] and r['kind']=='连招')
+            self.assertEqual(pre['operation'], '魔z2预魔a3')
+            self.assertEqual(pre['preinput_action_indices'], [len(path)-2])
+            self.assertAlmostEqual(pre['switch_seconds'], pre['timeline'][-2]['start_seconds'] + 0.4)
+            self.assertEqual(pre['timeline'][-1]['placement'], 'background')
+            self.assertEqual(pre['release_end_seconds'], full['release_end_seconds'])
+            for metric in ('multipliers','energy_gain','harmony','personal_resources'):
+                self.assertEqual(pre[metric], full[metric])
+        returned = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==names
+                        and not r['has_dodge'] and r['kind']=='分段合轴' and r['switch_method']=='preinput')
+        self.assertTrue(returned['operation'].endswith('魔z2预魔a3'))
+
+    def test_heiyu_z2_can_finish_without_forcing_a3(self):
+        rows = self.character('黑羽')['rows']
+        for path in (['魔e','魔z2'], ['魔a1','魔a2','魔z1','魔z2']):
+            full = next(r for r in rows if r['original_actions']==path and r['switch_method']=='full')
+            normal = next(r for r in rows if r['original_actions']==path and r['switch_method']=='normal'
+                          and r['kind']=='合轴')
+            self.assertEqual(normal['timeline'][-1]['action'], '魔z2')
+            self.assertTrue(normal['timeline'][-1]['terminal_switch'])
+            self.assertAlmostEqual(normal['switch_seconds'], normal['timeline'][-1]['start_seconds'] + 0.2)
+            self.assertEqual(normal['multipliers'], full['multipliers'])
+            originals = [next(a for a in self.actions if a['character_name']=='黑羽' and a['name']==n) for n in path]
+            self.assertAlmostEqual(normal['multipliers']['atk'], sum(a['multipliers']['atk'] for a in originals))
+        returned = next(r for r in rows if r['original_actions'][-1]=='魔z2' and r['kind']=='分段合轴'
+                        and r['switch_method']=='normal')
+        self.assertTrue(returned['operation'].endswith('魔z2正常切人'))
 
     def test_return_title_keeps_intermediate_skill_and_dodge_actions(self):
         names=['魔a1','魔a2','魔a3','魔a4','魔a5','魔e','魔z2','魔a3','魔a4','魔a5']

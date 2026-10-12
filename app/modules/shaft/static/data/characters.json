@@ -975,24 +975,24 @@
     },
     "bond_bonus": {},
     "source_row": 0,
-    "source_note": "80级面板636攻击/15998生命/921防御、终结耗能100、五星来自Nanoka NTE 1.4.6角色1057；映射为项目S稀有度。NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 羁绊未实装；空幕仍在独立规划器，不自动叠加。",
+    "source_note": "80级面板636攻击/15998生命/921防御、终结耗能100、五星来自Nanoka NTE 1.4.6角色1057；映射为项目S稀有度。NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 羁绊未实装；空幕仍在独立规划器，不自动叠加。 用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。 非循环开战满弦能由六觉共鸣移至三觉共鸣，循环轴仍读取起始资源。",
     "energy_capacity": 100,
     "initial_personal_resources": {
       "弦能": 0
     },
     "initial_personal_resources_by_awakening_count": {
-      "6": {
+      "3": {
         "弦能": 30
       }
     },
     "reaction_reapplication": {
       "reaction": "延滞",
       "source": "绝对音准",
-      "atk_multiplier": 2,
+      "atk_multiplier": 1.5,
       "bonus_per_remaining_second": 0.2,
       "max_bonus": 1.6,
       "cooldown_ticks": 10,
-      "source_note": "最新用户腾讯文档明确：变轨技能伤害，基础200%，每剩余秒整体+20%，上限160%，同目标1秒间隔；不再按X暂估。",
+      "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。 基础150%，每剩余秒整体+20%，上限160%，同目标1秒间隔及变轨分类沿用现行口径。",
       "damage_type": "E",
       "skill_level_category": "skill"
     },

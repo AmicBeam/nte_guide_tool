@@ -4165,9 +4165,9 @@
       "type": "permanent"
     },
     "effects": {
-      "base_multiplier_pct": 0.2
+      "base_multiplier_pct": 0.24
     },
-    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_transmit_area",
@@ -4290,9 +4290,9 @@
       "type": "permanent"
     },
     "effects": {
-      "res_down_相": 0.1
+      "res_down_相": 0.12
     },
-    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_b_area",
@@ -4329,9 +4329,9 @@
       "type": "permanent"
     },
     "effects": {
-      "res_down_相": 0.1
+      "res_down_相": 0.12
     },
-    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_a",
@@ -4364,14 +4364,14 @@
     },
     "duration": {
       "type": "time",
-      "ticks": 120,
+      "ticks": 150,
       "loop_carry": true
     },
     "effects": {
-      "interrupt_resistance": 0.5,
+      "interrupt_resistance": 0.6,
       "def_pct": 0.5
     },
-    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。 用户2026-10-10：短强E与长强E命中均触发本效果，零命中不触发。",
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。",
     "stacking": {
       "key": "character_akane_a",
       "mode": "refresh",
@@ -4380,7 +4380,7 @@
   },
   {
     "id": "character_akane_d",
-    "name": "明音凛D觉·无视防御",
+    "name": "明音凛D觉·暴伤",
     "providers": [
       {
         "kind": "character",
@@ -4409,51 +4409,18 @@
     },
     "duration": {
       "type": "time",
-      "ticks": 100,
+      "ticks": 150,
       "loop_carry": true
     },
     "effects": {
-      "def_ignore": 0.16
+      "crit_dmg": 0.3
     },
     "stacking": {
       "key": "character_akane_d",
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。 用户2026-10-10：短强E与长强E命中均触发本效果，零命中不触发。"
-  },
-  {
-    "id": "character_akane_three",
-    "name": "明音凛三觉共鸣·攻击",
-    "providers": [
-      {
-        "kind": "character",
-        "id": "char_akane"
-      }
-    ],
-    "priority": 50,
-    "trigger": {
-      "event": "passive",
-      "source": {
-        "scope": "registrar"
-      },
-      "conditions": [
-        {
-          "type": "awakening_count_min",
-          "min": 3
-        }
-      ]
-    },
-    "target": {
-      "scope": "registrar"
-    },
-    "duration": {
-      "type": "permanent"
-    },
-    "effects": {
-      "atk_pct": 0.1
-    },
-    "source_note": "本轮用户更新的腾讯文档《明音凛资料汇总》新版觉醒与共鸣；按当前明确数值接入，不标为旧Nanoka觉醒数据。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_six",
@@ -4490,7 +4457,7 @@
       "loop_carry": true
     },
     "effects": {
-      "crit_dmg": 0.5
+      "crit_dmg": 0.64
     },
     "stacking": {
       "key": "character_akane_six",
@@ -4502,7 +4469,7 @@
         "弦能": 10
       }
     },
-    "source_note": "用户2026-10-10要求实装10月9日公告的弧盘与六觉调整；暴击12%–24%、相伤20%–40%，精炼2–4按端点等差换算，六觉暴伤50%；覆盖旧NTEData同名值，不标为新解包实值。 用户2026-10-10：短强E与长强E命中均触发本效果，零命中不触发。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_talent2",
@@ -4532,18 +4499,18 @@
       "loop_carry": true
     },
     "effects": {
-      "atk_pct": 0.3
+      "atk_pct": 0.24
     },
     "stacking": {
       "key": "character_akane_talent2",
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 用户2026-10-09确认：音域传导基础36%、E觉后60%；烁星激昂为自身攻击力+30%、20秒，非伤害增益。与上游文本/曲线差异分别记录，不标为官方统一口径。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_f",
-    "name": "明音凛F觉·暴伤",
+    "name": "明音凛F觉·无视防御",
     "providers": [
       {
         "kind": "character",
@@ -4575,14 +4542,14 @@
       "loop_carry": true
     },
     "effects": {
-      "crit_dmg": 0.25
+      "def_ignore": 0.16
     },
     "stacking": {
       "key": "character_akane_f",
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_heal",

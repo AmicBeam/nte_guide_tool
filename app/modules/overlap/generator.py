@@ -131,7 +131,7 @@ def enumerate_paths(by_name, edges, max_actions, max_uses=None, start_actions=No
         yield from walk([name], [])
 
 
-def calculate_row(names, links, by_name, points, final_point=None, preinput=False, dodge_indices=(), default_delay=0.3, hold=False):
+def calculate_row(names, links, by_name, points, final_point=None, preinput=False, dodge_indices=(), default_delay=0.4, hold=False):
     actions = [by_name[name] for name in names]
     for index in dodge_indices:
         actions[index] = {
@@ -228,7 +228,7 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
         'status': '可计算' if known and foreground is not None else '时长待补',
         'notes': constraint_notes,
         'sources': list(dict.fromkeys([e['source'] for e in links] + ([final_point['source']] if final_point else []) +
-                                     (['用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。'] if preinput else []) +
+                                     (['用户2026-10-12：动作开始后0.4秒预输入即可切人，完成当前和下一动作。'] if preinput else []) +
                                      (['用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。'] if dodge_indices else []))),
     }
     if hold:
@@ -298,6 +298,8 @@ def advanced_rows(names, links, by_name, points, options, final_point=None, hold
             if point['id']=='normal' and split-1 not in options['dodge_indices']:
                 candidates.append((split, final['timeline'][split-1]['start_seconds']+point['after_seconds'], 'normal'))
     for split, first_switch, first_method in candidates:
+        if final_point is None and not hold and final['preinput_action_indices'][-1] < split:
+            continue  # The final preinput must originate from an action started after returning.
         first_end = final['timeline'][split - 1]['end_seconds']
         if first_end - first_switch < 1.2 - 1e-9:
             continue
@@ -414,7 +416,7 @@ def generate(characters, actions, rules):
             inventory.append({
                 'name': action['name'], 'action_id': action['id'], 'type': action['action_type'],
                 'duration_seconds': duration(action), 'switch_points': points[action['name']],
-                'preinput_seconds': rules.get('default_input_delay_seconds', 0.3) if edges[action['name']] else None,
+                'preinput_seconds': rules.get('default_input_delay_seconds', 0.4) if edges[action['name']] else None,
                 'successors': edges[action['name']], 'gaps': gaps,
                 'can_background_override': bool(action.get('can_background_override')),
                 'locks_foreground_switch': bool(action.get('locks_foreground_switch')),
@@ -435,7 +437,7 @@ def generate(characters, actions, rules):
                           and duration(by_name[names[i]]) > 0.7 and not links[i].get('detach_previous')]
             for count in range(len(candidates) + 1):
                 for skipped in combinations(candidates, count):
-                    options = {'dodge_indices': skipped, 'default_delay': rules.get('default_input_delay_seconds', 0.3)}
+                    options = {'dodge_indices': skipped, 'default_delay': rules.get('default_input_delay_seconds', 0.4)}
                     variant_links = [dict(edge) for edge in links]
                     for index, edge in enumerate(variant_links):
                         if index in skipped or index+1 in skipped:

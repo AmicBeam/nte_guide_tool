@@ -463,4 +463,4 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(buffs['character_akane_d']['effects'],{'crit_dmg':.3})
         self.assertEqual(buffs['character_akane_f']['effects'],{'def_ignore':.16})
         self.assertEqual(buffs['character_akane_e_single']['effects'],{'base_multiplier_pct':.24})
-        self.assertEqual([next(x for x in c['actions'] if x['id']=='action_akane_'+a)['duration_ticks'] for a in ('a1','a2','a3','a4')],[5,5,11,7])
+        self.assertEqual([next(x for x in c['actions'] if x['id']=='action_akane_'+a)['duration_ticks'] for a in ('a1','a2','a3','a4')],[5,5,10,8])

@@ -13,6 +13,19 @@
     let shown = 60;
     let generation = 0;
 
+    function fillActionOptions(field, names) {
+        const previous = $(field).value;
+        $(field).innerHTML = '<option value="">全部</option>' + names.map((name) => `<option value="${escape(name)}">${escape(name)}</option>`).join('');
+        $(field).value = names.includes(previous) ? previous : '';
+    }
+
+    function updateLastActions() {
+        if (!selected) return;
+        const first = $('first').value;
+        const rows = selected.rows.filter((row) => !first || row.timeline[0].action === first);
+        fillActionOptions('last', [...new Set(rows.map((row) => row.timeline[row.timeline.length-1].action))]);
+    }
+
     function renderActions() {
         $('actions').innerHTML = selected.actions.map((action) => {
             const predecessors = [...new Set([
@@ -52,8 +65,7 @@
             return `<span class="overlap-action-chip overlap-time-bubble ${phase.placement === 'background' ? 'is-background' : ''}" title="${escape(title)}" aria-label="${escape(title)}">${number(phase.duration_seconds)}秒</span>`;
         }).join('')}</div>`;
         const windowDetail = `<div class="overlap-window-details">${row.foreground_segments.map((segment) => `<p><strong>前台${segment.number}：${number(segment.duration_seconds)}秒</strong>（${seconds(segment.start_seconds)}–${seconds(segment.end_seconds)}）</p>`).join('')}${windows.map((window) => `<p><strong>回场后台窗口${window.number}：${number(window.duration_seconds)}秒</strong><br>${seconds(window.start_seconds)}切走 → ${seconds(window.end_seconds)}回场续连段。切人冷却为1.2秒，可在${seconds(window.return_start_seconds)}–${seconds(window.return_end_seconds)}切回；本表按${seconds(window.end_seconds)}回场。</p>`).join('')}</div>`;
-        const sources = row.sources.map((source) => `<li>${escape(source)}</li>`).join('');
-        return `<tr><td><details class="overlap-route"><summary><strong>${escape(row.operation)}</strong><span class="overlap-bubble-route">${bubbles}</span><span class="overlap-badge">${escape(row.switch_label)}${row.has_dodge ? ' · 闪避替代' : ''}</span></summary><div class="overlap-route-detail">${windowDetail}<p>切人时刻 ${escape(seconds(row.switch_seconds))}，整条路线释放结束 ${escape(seconds(row.release_end_seconds))}。</p><table aria-label="动作输入与释放时刻"><thead><tr><th>动作</th><th>输入</th><th>开始释放</th><th>释放结束</th></tr></thead><tbody>${timeline}</tbody></table><p>耗能 ${number(row.energy_cost)}，返还 ${number(row.energy_return)}，净能量 ${number(row.energy_net)}；释放时环合 ${number(row.harmony_on_start)}${personal ? `；${escape(personal)}` : ''}。</p>${row.notes.map((note) => `<p>${escape(note)}</p>`).join('')}<ul>${sources}</ul></div></details></td><td class="overlap-emphasis">${foregroundHtml}</td><td class="overlap-window">${windowHtml}</td><td>${seconds(row.release_end_seconds)}</td><td>${multiplier(row.multipliers)}</td><td>${multiplier(row.multiplier_rates)}</td><td>${number(row.harmony)}${row.harmony_on_start ? ` + ${number(row.harmony_on_start)}释放` : ''}</td><td>${row.harmony_rate == null ? '—' : number(row.harmony_rate)}</td><td>${number(row.energy_gain)}</td><td>${row.energy_rate == null ? '—' : number(row.energy_rate)}</td><td>${number(row.stagger)}</td></tr>`;
+        return `<tr><td><details class="overlap-route"><summary><strong>${escape(row.operation)}</strong><span class="overlap-bubble-route">${bubbles}</span><span class="overlap-badge">${escape(row.switch_label)}${row.has_dodge ? ' · 闪避替代' : ''}</span></summary><div class="overlap-route-detail">${windowDetail}<p>切人时刻 ${escape(seconds(row.switch_seconds))}，整条路线释放结束 ${escape(seconds(row.release_end_seconds))}。</p><table aria-label="动作输入与释放时刻"><thead><tr><th>动作</th><th>输入</th><th>开始释放</th><th>释放结束</th></tr></thead><tbody>${timeline}</tbody></table><p>耗能 ${number(row.energy_cost)}，返还 ${number(row.energy_return)}，净能量 ${number(row.energy_net)}；释放时环合 ${number(row.harmony_on_start)}${personal ? `；${escape(personal)}` : ''}。</p>${row.notes.map((note) => `<p>${escape(note)}</p>`).join('')}</div></details></td><td class="overlap-emphasis">${foregroundHtml}</td><td class="overlap-window">${windowHtml}</td><td>${seconds(row.release_end_seconds)}</td><td>${multiplier(row.multipliers)}</td><td>${multiplier(row.multiplier_rates)}</td><td>${number(row.harmony)}${row.harmony_on_start ? ` + ${number(row.harmony_on_start)}释放` : ''}</td><td>${row.harmony_rate == null ? '—' : number(row.harmony_rate)}</td><td>${number(row.energy_gain)}</td><td>${row.energy_rate == null ? '—' : number(row.energy_rate)}</td><td>${number(row.stagger)}</td></tr>`;
     }
 
     function render() {
@@ -61,13 +73,15 @@
         const kind = $('kind').value;
         const dodge = $('dodge').value;
         const returnFilter = $('return').value;
-        const query = $('query').value.trim().toLowerCase();
+        const firstAction = $('first').value;
+        const lastAction = $('last').value;
         const sort = $('sort').value;
         const rows = selected.rows.filter((row) => (kind === 'all' || row.kind === kind || kind === '合轴' && row.kind === '分段合轴'
             || kind === 'normal' && row.switch_method === 'normal' || kind === 'preinput' && row.switch_method === 'preinput')
             && (returnFilter === 'all' || Boolean(row.window_1) === (returnFilter === 'with'))
             && (dodge === 'all' || row.has_dodge === (dodge === 'with'))
-            && (!query || `${row.operation} ${row.actions.join(' ')}`.toLowerCase().includes(query)));
+            && (!firstAction || row.timeline[0].action === firstAction)
+            && (!lastAction || row.timeline[row.timeline.length-1].action === lastAction));
         const metric = (row) => sort === 'multiplier_rate' ? row.multiplier_rates.atk : row[sort];
         rows.sort((a, b) => {
             const first = metric(a), second = metric(b);
@@ -85,6 +99,8 @@
     function selectCharacter(character) {
         selected = character;
         shown = 60;
+        fillActionOptions('first', [...new Set(character.rows.map((row) => row.timeline[0].action))]);
+        updateLastActions();
         document.querySelectorAll('[data-character]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.character === character.id)));
         const url = new URL(window.location.href);
         url.searchParams.set('character', character.id);
@@ -109,7 +125,11 @@
             $('status').textContent = `${error.message}，请刷新重试。`;
         }
     }
-    ['kind', 'return', 'dodge', 'sort', 'query'].forEach((name) => $(name).addEventListener(name === 'query' ? 'input' : 'change', () => { shown = 60; render(); }));
+    ['kind', 'return', 'dodge', 'sort', 'first', 'last'].forEach((name) => $(name).addEventListener('change', () => {
+        if (name === 'first') updateLastActions();
+        shown = 60;
+        render();
+    }));
     $('more').addEventListener('click', () => { shown += 60; render(); });
     load();
 })();

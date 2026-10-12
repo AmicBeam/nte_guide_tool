@@ -9,7 +9,8 @@
 .overlap-character img { width: 42px; height: 42px; object-fit: cover; border-radius: 8px; }
 .overlap-character[aria-pressed="true"] { border-color: #6ddcc7; background: rgba(109,220,199,.12); }
 .overlap-character:focus-visible, .overlap-route summary:focus-visible { outline: 2px solid #6ddcc7; outline-offset: 3px; }
-.overlap-filters { display: grid; grid-template-columns: repeat(3, minmax(140px,1fr)) minmax(220px,1.4fr); gap: 14px; }
+.overlap-filters { display: grid; grid-template-columns: repeat(4, minmax(140px,1fr)); gap: 14px; }
+.overlap-search { grid-column: 1 / -1; }
 .overlap-filters label { display: grid; gap: 7px; color: #c2cbd8; font-size: 13px; }
 .overlap-filters input, .overlap-filters select { width: 100%; min-width: 0; min-height: 40px; padding: 9px 12px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; color: #d3dce7; background: #0d141d; }
 .overlap-filters input::placeholder { color: #778b9d; }

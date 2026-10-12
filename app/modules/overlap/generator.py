@@ -35,10 +35,13 @@ def duration(action):
     return value
 
 
-def switch_points(action, override):
+def switch_points(action, override, normal_seconds=None, replace_detach=False):
     """Manual background placement alone never grants an early switch."""
     result = list(override.get('switch_points', []))
-    if action.get('can_detach'):
+    if normal_seconds is not None:
+        result.append({'id':'normal', 'after_seconds':number(normal_seconds), 'label':'正常切人',
+                       'source':'用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。'})
+    if action.get('can_detach') and not replace_detach:
         result.append({
             'id': 'detached', 'after_seconds': action['detached_duration_seconds'],
             'label': '脱手切人', 'source': 'actions.json：can_detach / detached_duration_seconds',
@@ -85,10 +88,18 @@ def build_graph(actions, rule):
             raise ValueError(f'衔接前置路径无效：{prefix}')
         edges[edge['from']] = [e for e in edges[edge['from']] if e['to'] != edge['to']]
         edges[edge['from']].append(dict(edge))
+    forbidden = rule.get('preinput_forbidden_actions', {})
+    if set(forbidden) - set(by_name) or any(not source for source in forbidden.values()):
+        raise ValueError('禁止预输入的动作须存在并记录source')
+    for successors in edges.values():
+        for edge in successors:
+            if edge['to'] in forbidden:
+                edge['can_preinput'] = False
+                edge['source'] += ' ' + forbidden[edge['to']]
     return by_name, edges
 
 
-def enumerate_paths(by_name, edges, max_actions, max_uses=None):
+def enumerate_paths(by_name, edges, max_actions, max_uses=None, start_actions=None):
     """All simple directed paths, bounded and deterministic; no repeat/CD invention."""
     def walk(names, links):
         candidates = [e for e in edges[names[-1]] if names.count(e['to']) < (max_uses or {}).get(e['to'], 1) and (
@@ -107,11 +118,11 @@ def enumerate_paths(by_name, edges, max_actions, max_uses=None):
             return
         for edge in candidates:
             yield from walk([*names, edge['to']], [*links, edge])
-    for name in by_name:
+    for name in start_actions if start_actions is not None else by_name:
         yield from walk([name], [])
 
 
-def calculate_row(names, links, by_name, points, final_point=None, preinput=False, dodge_indices=(), default_delay=0.2):
+def calculate_row(names, links, by_name, points, final_point=None, preinput=False, dodge_indices=(), default_delay=0.3):
     actions = [by_name[name] for name in names]
     for index in dodge_indices:
         actions[index] = {
@@ -130,7 +141,8 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
         previous = starts[-1]
         offset = edge.get('after_seconds', durations[index])
         delay = number(edge.get('input_delay_seconds', default_delay))
-        inputs.append(None if edge.get('automatic') or previous is None else previous + delay)
+        input_offset = durations[index] if edge.get('can_preinput') is False else delay
+        inputs.append(None if edge.get('automatic') or previous is None or input_offset is None else previous + input_offset)
         starts.append(None if previous is None or offset is None else max(previous + offset, inputs[-1] or previous))
     ends = [None if s is None or d is None else s + d for s, d in zip(starts, durations)]
     known = all(e is not None for e in ends)
@@ -157,6 +169,9 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
             if foreground is not None and required_until > foreground:
                 foreground = required_until
                 constraint_notes.append(f"等待{action['name']}允许离场")
+    for action, end in zip(actions, ends):
+        if action.get('locks_foreground_switch') and foreground is not None:
+            foreground = None if end is None else max(foreground, end)
     totals = {base: round_value(sum(float(a.get('multipliers', {}).get(base, 0)) for a in actions)) for base in BASES}
     harmony = sum(float(a.get('harmony', 0)) for a in actions)
     start_harmony = sum(float(a.get('harmony_on_start', 0)) for a in actions)
@@ -175,7 +190,9 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
         'id': hashlib.sha256(json.dumps([names, final_point and final_point['id'], preinput, dodge_indices], ensure_ascii=False).encode()).hexdigest()[:16],
         'actions': [a['name'] for a in actions], 'original_actions': names,
         'kind': '合轴' if final_point or preinput else ('连招' if len(names) > 1 else '单动作'),
+        'switch_method': 'preinput' if preinput else final_point['id'] if final_point else 'full',
         'has_dodge': bool(dodge_indices),
+        'preinput_action_indices': [input_index-1] if preinput else [],
         'operation': ((actions[input_index-1]['name'].removesuffix('远') + '预' + actions[input_index]['name'].removesuffix('远')) +
                       ('（自动接' + '→'.join(a['name'] for a in actions[input_index+1:]) + '）' if input_index < len(actions)-1 else '')) if preinput else ' → '.join(a['name'] for a in actions),
         'switch_label': ('预输入合轴' if preinput else final_point.get('label', final_point['id']) if final_point else '完整释放'),
@@ -186,6 +203,7 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
         'background_seconds': None if foreground is None or release_end is None else round_value(max(0, release_end - foreground)),
         'timeline': [{'action': a['name'], 'input_seconds': i, 'start_seconds': s, 'end_seconds': e,
                       'duration_seconds': d, 'automatic': index > 0 and bool(links[index-1].get('automatic')),
+                      'locks_foreground_switch': bool(a.get('locks_foreground_switch')),
                       'dodge_replaces': a.get('dodge_replaces'),
                       'detached': bool(index < len(links) and links[index].get('detach_previous') or
                                        index == len(actions)-1 and final_point and final_point['id']=='detached')}
@@ -200,7 +218,7 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
         'status': '可计算' if known and foreground is not None else '时长待补',
         'notes': constraint_notes,
         'sources': list(dict.fromkeys([e['source'] for e in links] + ([final_point['source']] if final_point else []) +
-                                     (['用户2026-10-12：动作开始后0.2秒预输入即可切人，完成当前和下一动作。'] if preinput else []) +
+                                     (['用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。'] if preinput else []) +
                                      (['用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。'] if dodge_indices else []))),
     }
     return project_placements(row)
@@ -214,25 +232,30 @@ def project_placements(row):
             left - 1e-9 <= start < right - 1e-9 for left, right in row['foreground_intervals']
         ) else 'background'
         step['preinput'] = step['input_seconds'] is not None and start is not None and step['input_seconds'] < start - 1e-9
+        step['preinput_before_switch'] = index in row['preinput_action_indices']
     return row
 
 
-def advanced_rows(names, links, by_name, points, options):
+def advanced_rows(names, links, by_name, points, options, final_point=None):
     """Return at queued tail end, retain combo; no teammate benefits are invented."""
     explicit = [edge for edge in links if not edge.get('automatic')]
-    if not explicit or not explicit[-1].get('can_preinput', True):
+    if final_point is None and (not explicit or not explicit[-1].get('can_preinput', True)):
         return
-    final = calculate_row(names, links, by_name, points, preinput=True, **options)
+    final = calculate_row(names, links, by_name, points, final_point, preinput=final_point is None, **options)
     if final['status'] != '可计算':
         return
-    for split in range(2, len(names) - 1):
-        if not links[split - 2].get('can_preinput', True) or links[split - 2].get('automatic'):
-            continue
+    candidates = []
+    for split in range(1, len(names)):
         # The first queued segment must be a basic attack chain; resume its next stage.
         if not re.fullmatch(r'.*a\d.*', names[split - 1]) or not re.fullmatch(r'.*a\d.*', names[split]):
             continue
+        if split >= 2 and links[split-2].get('can_preinput', True) and not links[split-2].get('automatic'):
+            candidates.append((split, final['timeline'][split-1]['input_seconds'] + number(links[split-2].get('switch_delay_seconds',0)), 'preinput'))
+        for point in points[names[split-1]]:
+            if point['id']=='normal' and split-1 not in options['dodge_indices']:
+                candidates.append((split, final['timeline'][split-1]['start_seconds']+point['after_seconds'], 'normal'))
+    for split, first_switch, first_method in candidates:
         first_end = final['timeline'][split - 1]['end_seconds']
-        first_switch = final['timeline'][split - 1]['input_seconds'] + number(links[split - 2].get('switch_delay_seconds', 0))
         if first_end - first_switch < 1.2 - 1e-9:
             continue
         last_switch = final['switch_seconds']
@@ -241,11 +264,15 @@ def advanced_rows(names, links, by_name, points, options):
         row = dict(final)
         row['timeline'] = [dict(step) for step in final['timeline']]
         row['timeline'][split]['input_seconds'] = first_end
-        row['id'] += f'-return-{split}'
+        row['preinput_action_indices'] = sorted(set([*final['preinput_action_indices'], *([split-2] if first_method=='preinput' else [])]))
+        row['id'] += f'-return-{split}-{first_method}'
         row['kind'] = '分段合轴'
         row['switch_label'] = '衔接动作合轴'
         clean = lambda name: name.removesuffix('远')
-        row['operation'] = f'{clean(final["actions"][split-2])}预{clean(final["actions"][split-1])} / {final["operation"]}'
+        first_operation = (f'{clean(final["actions"][split-2])}预{clean(final["actions"][split-1])}' if first_method=='preinput'
+                           else f'{clean(final["actions"][split-1])}正常切人')
+        last_operation = final['operation'] if final_point is None else f'{clean(final["actions"][-1])}正常切人'
+        row['operation'] = f'{first_operation} / {last_operation}'
         row['window_1'] = {
             'start_seconds': round_value(first_switch), 'end_seconds': round_value(first_end),
             'duration_seconds': round_value(first_end - first_switch),
@@ -255,6 +282,11 @@ def advanced_rows(names, links, by_name, points, options):
         occupied = first_switch + last_switch - first_end
         row['foreground_seconds'] = round_value(occupied)
         row['foreground_intervals'] = [[0, round_value(first_switch)], [round_value(first_end), last_switch]]
+        if any(step.get('locks_foreground_switch') and not any(
+            left <= step['start_seconds'] + 1e-9 and right >= step['end_seconds'] - 1e-9
+            for left, right in row['foreground_intervals']
+        ) for step in row['timeline']):
+            continue
         row['background_seconds'] = round_value(row['release_end_seconds'] - occupied)
         row['multiplier_rates'] = {b: round_value(v / occupied) for b, v in row['multipliers'].items()}
         row['harmony_rate'] = round_value((row['harmony'] + row['harmony_on_start']) / occupied)
@@ -283,13 +315,25 @@ def generate(characters, actions, rules):
             raise ValueError(f"{character['name']}存在未识别的动作覆写")
         for action in current:
             override = override_map.get(action['name'], {})
+            if 'locks_foreground_switch' in override:
+                if not isinstance(override['locks_foreground_switch'], bool) or not override.get('source'):
+                    raise ValueError('前台锁定覆写须有布尔值与source')
+                action['locks_foreground_switch'] = override['locks_foreground_switch']
             if 'duration_seconds' in override:
                 if not override.get('source'):
                     raise ValueError('耗时覆写须注明source')
                 action.update(duration_seconds=number(override['duration_seconds']), duration_pending=False,
                               duration_implemented=True, duration_source=override['source'])
         by_name, edges = build_graph(current, rule)
-        points = {a['name']: switch_points(a, override_map.get(a['name'], {})) for a in current}
+        start_actions = rule.get('start_actions', [name for name in by_name if re.fullmatch(r'.*a1.*|[魔幻]?e|q\d*', name)])
+        if not start_actions or set(start_actions) - set(by_name):
+            raise ValueError(f"{character['name']}起手动作配置无效")
+        normal_actions = rule.get('normal_switch_actions', [])
+        if set(normal_actions)-set(by_name):
+            raise ValueError('正常切人动作必须存在')
+        points = {a['name']: switch_points(a, override_map.get(a['name'], {}),
+                  rules.get('normal_switch_seconds',0.2) if a['name'] in normal_actions else None,
+                  bool(rule.get('normal_replaces_detach'))) for a in current}
         inventory = []
         for action in current:
             gaps = []
@@ -300,10 +344,12 @@ def generate(characters, actions, rules):
             inventory.append({
                 'name': action['name'], 'action_id': action['id'], 'type': action['action_type'],
                 'duration_seconds': duration(action), 'switch_points': points[action['name']],
-                'preinput_seconds': rules.get('default_input_delay_seconds', 0.2) if edges[action['name']] else None,
+                'preinput_seconds': rules.get('default_input_delay_seconds', 0.3) if edges[action['name']] else None,
                 'successors': edges[action['name']], 'gaps': gaps,
                 'can_background_override': bool(action.get('can_background_override')),
                 'locks_foreground_switch': bool(action.get('locks_foreground_switch')),
+                'can_start': action['name'] in start_actions,
+                'preinput_forbidden': action['name'] in rule.get('preinput_forbidden_actions', {}),
                 'source': action.get('source_note') or action.get('duration_source') or '仓库当前动作数据',
                 'conditions': {k: v for k, v in action.items() if k.startswith('required_') or k in (
                     'forbidden_buff_key', 'personal_resource_threshold', 'cooldown_ticks', 'cooldown_group',
@@ -311,27 +357,36 @@ def generate(characters, actions, rules):
                 )},
             })
         rows = []
-        for names, links in enumerate_paths(by_name, edges, max_actions, rule.get('max_uses')):
-            # Multi-action rows begin at a combo opener. Singles still inventory every action.
-            if len(names) > 1 and not re.fullmatch(r'.*a1.*', names[0]):
-                continue
+        for names, links in enumerate_paths(by_name, edges, max_actions, rule.get('max_uses'), start_actions):
             candidates = [i for i in range(1, len(names) - 1) if rule.get('dodge_preserves_combo')
                           and re.fullmatch(r'.*a\d.*', names[i]) and duration(by_name[names[i]]) is not None
                           and duration(by_name[names[i]]) > 0.7 and not links[i].get('detach_previous')]
             for count in range(len(candidates) + 1):
                 for skipped in combinations(candidates, count):
-                    options = {'dodge_indices': skipped, 'default_delay': rules.get('default_input_delay_seconds', 0.2)}
-                    rows.append(calculate_row(names, links, by_name, points, **options))
-                    explicit = [edge for edge in links if not edge.get('automatic')]
+                    options = {'dodge_indices': skipped, 'default_delay': rules.get('default_input_delay_seconds', 0.3)}
+                    variant_links = [dict(edge) for edge in links]
+                    for index, edge in enumerate(variant_links):
+                        if index in skipped or index+1 in skipped:
+                            edge['can_preinput']=False
+                            if index+1 in skipped:
+                                edge['automatic']=False
+                            edge['source'] += ' 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。'
+                    rows.append(calculate_row(names, variant_links, by_name, points, **options))
+                    explicit = [edge for edge in variant_links if not edge.get('automatic')]
                     if explicit and explicit[-1].get('can_preinput', True):
-                        rows.append(calculate_row(names, links, by_name, points, preinput=True, **options))
-                        rows.extend(advanced_rows(names, links, by_name, points, options))
+                        rows.append(calculate_row(names, variant_links, by_name, points, preinput=True, **options))
+                        rows.extend(advanced_rows(names, variant_links, by_name, points, options))
                     for point in points[names[-1]]:
-                        rows.append(calculate_row(names, links, by_name, points, point, **options))
+                        rows.append(calculate_row(names, variant_links, by_name, points, point, **options))
+                        if point['id']=='normal':
+                            rows.extend(advanced_rows(names, variant_links, by_name, points, options, point))
+        rows = [row for row in rows if not any(step['dodge_replaces'] and step['placement']=='background'
+                                             for step in row['timeline'])]
         result.append({
             **{k: character[k] for k in ('id', 'name', 'element', 'avatar')},
             'actions': inventory, 'rows': rows,
             'dodge_preserves_combo': bool(rule.get('dodge_preserves_combo')),
+            'start_actions': start_actions,
             'notes': rule.get('notes', []),
             'coverage': {'actions': len(inventory), 'rows': len(rows),
                          'switch_points': sum(len(p) for p in points.values()),
@@ -340,6 +395,10 @@ def generate(characters, actions, rules):
     unknown = set(rules.get('characters', {})) - {c['name'] for c in characters}
     if unknown:
         raise ValueError(f'未识别的角色规则：{unknown}')
+    order = rules.get('character_order', [c['name'] for c in result])
+    if len(order) != len(set(order)) or set(order) != {c['name'] for c in result}:
+        raise ValueError('角色展示顺序须恰好包含全部生成角色')
+    result.sort(key=lambda c: order.index(c['name']))
     return {'schema_version': 1, 'characters': result}
 
 

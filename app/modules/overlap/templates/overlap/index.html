@@ -12,7 +12,8 @@
     <section class="glass-card overlap-controls" aria-label="收益表筛选">
         <div id="overlap-characters" class="overlap-characters" aria-label="选择角色"></div>
         <div class="overlap-filters">
-            <label>路线类型<select id="overlap-kind"><option value="合轴">合轴操作</option><option value="分段合轴">衔接动作合轴</option><option value="all">全部操作与基准</option><option value="连招">完整连招</option><option value="单动作">单动作</option></select></label>
+            <label>路线类型<select id="overlap-kind"><option value="合轴">合轴操作</option><option value="normal">正常切人</option><option value="preinput">预输入合轴</option><option value="分段合轴">多轮合轴（涉及回场）</option><option value="all">全部操作与基准</option><option value="连招">完整连招</option><option value="单动作">单动作</option></select></label>
+            <label>回场筛选<select id="overlap-return"><option value="all">全部</option><option value="with">只看回场（多轮）</option><option value="without">排除回场（单轮）</option></select></label>
             <label>闪避替代<select id="overlap-dodge"><option value="all">全部</option><option value="without">不使用闪</option><option value="with">只看使用闪</option></select></label>
             <label>排序<select id="overlap-sort"><option value="foreground_seconds">占轴最短</option><option value="multiplier_rate">倍率 / 占轴最高</option><option value="harmony_rate">环合 / 占轴最高</option><option value="energy_rate">回能 / 占轴最高</option></select></label>
             <label class="overlap-search">搜索动作或形态<input id="overlap-query" type="search" placeholder="例如：幻、魔z、a4远" maxlength="60"></label>
@@ -30,11 +31,11 @@
         <button id="overlap-more" class="secondary-btn" type="button" hidden>显示更多</button>
     </section>
     <section class="glass-card overlap-reference">
-        <h2>动作衔接与合轴点</h2><p class="subtle">预输入发生在前一个动作开始后 0.2 秒；切人后完成当前动作和已输入的下一动作。安魂曲只看远程。</p>
+        <h2>动作衔接与合轴点</h2><p class="subtle">正常切人：动作开始后 0.2 秒结束前排占轴，完整收益继续后台结算。预输入合轴：动作开始后 0.3 秒输入下一段并切走。z与闪不能被预输入，闪须完整释放后再接下一段。</p>
         <div id="overlap-actions" class="overlap-action-grid"></div>
     </section>
     <section class="glass-card overlap-basis"><h2>统计口径</h2>
-        <p id="overlap-basis"></p><p>合轴路线从连段首段开始；仅枚举已记录的衔接；黑羽魔E接魔z2返回魔a3的路线按配置允许重走一次。动作释放时间与前排占轴分开记录，后台完成的尾段也计入收益。单动作是局部基准，使用后段仍需满足前段条件。</p>
+        <p id="overlap-basis"></p><p>只从角色配置的合法起手动作生成路线；后段普攻不能单独起手。黑羽魔E接魔z2返回魔a3的路线按配置允许重走一次；魔E不支持预输入，必须前台打完再接魔z2，魔E起手以已激活为前提。动作释放时间与前排占轴分开记录，后台完成的尾段也计入收益。</p>
         <p>支持闪避保留连段时，只把超过 0.7 秒的中间普攻替换为 0.7 秒的闪；跳过动作的倍率、环合、回能与个人资源均计 0。首段和末段不替换，安魂曲不使用此分支。</p>
         <p>衔接动作合轴的窗口1从首次切走到已预输入的尾段结束；只有窗口至少1.2秒才生成，可回场范围为切走后1.2秒至尾段结束。本表按尾段结束时回场继续连段，前排占轴累加两段，不计入队友在窗口内的伤害。</p><p>倍率是动作本体的 1 级基础倍率，按攻击／生命／防御分列。环合是理论获取量，包含释放奖励；回能不等于净能量。未模拟资源溢出、恶意追加伤害、蚀心与噩梦等后续效果，不能把这张表当作配装 DPS。</p>
         <details><summary>数据来源与版本</summary><ul id="overlap-sources"></ul><p id="overlap-version" class="subtle"></p></details>

@@ -1,6 +1,7 @@
 import copy
 import importlib.util
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,19 +26,94 @@ class OverlapTablesTest(unittest.TestCase):
         return next(c for c in self.payload['characters'] if c['name'] == name)
 
     def test_scope_and_no_melee_requiem(self):
+        self.assertEqual([c['name'] for c in self.payload['characters']], ['安魂曲','残虹','黑羽','明音凛'])
         self.assertEqual({c['name'] for c in self.payload['characters']}, {'安魂曲', '残虹', '黑羽', '明音凛'})
         self.assertEqual([a['name'] for a in self.character('安魂曲')['actions']], [f'a{i}远' for i in range(1, 6)])
 
-    def test_preinput_foreground_and_full_background_benefits(self):
-        row = next(r for r in self.character('安魂曲')['rows'] if r['original_actions'] == ['a1远', 'a2远', 'a3远', 'a4远'] and r['switch_label'] == '预输入合轴')
-        self.assertEqual(row['operation'], 'a3预a4')
-        self.assertAlmostEqual(row['foreground_seconds'], 1.0)
+    def test_normal_switch_preserves_full_requiem_benefits(self):
+        row = next(r for r in self.character('安魂曲')['rows'] if r['original_actions'] == ['a1远', 'a2远', 'a3远', 'a4远'] and r['switch_method'] == 'normal')
+        self.assertAlmostEqual(row['foreground_seconds'], 1.7)
         self.assertAlmostEqual(row['release_end_seconds'], 2.7)
-        self.assertAlmostEqual(row['background_seconds'], 1.7)
+        self.assertAlmostEqual(row['background_seconds'], 1.0)
         self.assertAlmostEqual(row['multipliers']['atk'], 4.401)
-        self.assertAlmostEqual(row['timeline'][-1]['input_seconds'], 1.0)
+        self.assertAlmostEqual(row['timeline'][-1]['input_seconds'], 1.5)
         self.assertAlmostEqual(row['timeline'][-1]['start_seconds'], 1.5)
-        self.assertEqual([s['placement'] for s in row['timeline']], ['foreground','foreground','foreground','background'])
+        self.assertTrue(all(not step['preinput_before_switch'] for step in row['timeline']))
+        self.assertFalse(any(r['switch_method']=='preinput' for r in self.character('安魂曲')['rows']))
+
+    def test_preinput_now_uses_point_three_seconds(self):
+        row = next(r for r in self.character('残虹')['rows'] if r['original_actions']==['a1','a2','a3','a4'] and r['switch_method']=='preinput')
+        self.assertEqual(row['operation'], 'a3预a4')
+        self.assertAlmostEqual(row['foreground_seconds'], 1.5)
+        self.assertEqual([s['preinput_before_switch'] for s in row['timeline']], [False,False,True,False])
+
+    def test_normal_switch_supports_akane_intermediate_dodge_route(self):
+        row = next(r for r in self.character('明音凛')['rows'] if r['original_actions']==['a1','a2','a3','a4'] and r['has_dodge'] and r['switch_method']=='normal')
+        self.assertEqual(row['actions'], ['a1','a2','a3闪','a4'])
+        self.assertAlmostEqual(row['foreground_seconds'],1.9)
+        self.assertAlmostEqual(row['release_end_seconds'],2.4)
+        self.assertFalse(row['timeline'][2]['preinput'])
+        self.assertEqual(row['timeline'][3]['input_seconds'], row['timeline'][2]['end_seconds'])
+
+    def test_normal_final_switch_can_follow_a_return(self):
+        row = next(r for r in self.character('明音凛')['rows'] if r['original_actions']==['a1','a2','a3','a4']
+                   and r['kind']=='分段合轴' and r['switch_method']=='normal' and not r['has_dodge'])
+        self.assertEqual(row['operation'],'a2预a3 / a4正常切人')
+        self.assertEqual(row['window_1']['duration_seconds'],1.3)
+        self.assertEqual(row['window_1']['return_start_seconds'],2.0)
+        self.assertEqual(row['window_1']['end_seconds'],2.1)
+        self.assertAlmostEqual(row['foreground_seconds'],1.0)
+        self.assertEqual([s['preinput_before_switch'] for s in row['timeline']],[False,True,False,False])
+
+    def test_dodge_requires_foreground_and_full_execution(self):
+        for c in self.payload['characters']:
+            for row in c['rows']:
+                for index, step in enumerate(row['timeline']):
+                    if not step['dodge_replaces']:
+                        continue
+                    self.assertEqual(step['placement'],'foreground')
+                    self.assertTrue(any(left<=step['start_seconds']+1e-9 and right>=step['end_seconds']-1e-9
+                                        for left,right in row['foreground_intervals']))
+                    self.assertEqual(step['input_seconds'],step['start_seconds'])
+                    self.assertFalse(step['preinput_before_switch'])
+                    if index+1<len(row['timeline']):
+                        self.assertEqual(row['timeline'][index+1]['input_seconds'],step['end_seconds'])
+
+    def test_only_legal_start_actions_generate_routes(self):
+        for character in self.payload['characters']:
+            for row in character['rows']:
+                self.assertIn(row['original_actions'][0], character['start_actions'])
+        self.assertFalse(any(r['original_actions']==['a4远'] for r in self.character('安魂曲')['rows']))
+
+    def test_heiyu_e_is_directly_input_and_entirely_foreground(self):
+        for row in self.character('黑羽')['rows']:
+            self.assertNotIn('魔e预', row['operation'])
+            self.assertNotIn('预魔e', row['operation'])
+            for index, step in enumerate(row['timeline']):
+                if step['action'] != '魔e':
+                    continue
+                self.assertFalse(step['preinput'])
+                self.assertEqual(step['input_seconds'], step['start_seconds'])
+                self.assertTrue(any(left <= step['start_seconds']+1e-9 and right >= step['end_seconds']-1e-9
+                                    for left,right in row['foreground_intervals']))
+                if index+1 < len(row['timeline']):
+                    following=row['timeline'][index+1]
+                    self.assertEqual(following['action'], '魔z2')
+                    self.assertEqual(following['input_seconds'], step['end_seconds'])
+                    self.assertEqual(following['start_seconds'], step['end_seconds'])
+                    self.assertFalse(following['preinput'])
+
+    def test_heavy_attacks_cannot_receive_preinput(self):
+        for character in self.payload['characters']:
+            for row in character['rows']:
+                self.assertIsNone(re.search(r'预[幻魔]?z', row['operation']))
+                for index, step in enumerate(row['timeline']):
+                    if not re.fullmatch(r'.*z\d*', step['action']):
+                        continue
+                    self.assertFalse(step['preinput'])
+                    self.assertEqual(step['input_seconds'], step['start_seconds'])
+                    if index:
+                        self.assertEqual(step['input_seconds'], row['timeline'][index-1]['end_seconds'])
 
     def test_akane_exception_cannot_reappear_in_candidates(self):
         c = self.character('明音凛')
@@ -87,14 +163,15 @@ class OverlapTablesTest(unittest.TestCase):
                     self.assertTrue(all(n.startswith('幻') for n in names))
 
     def test_advanced_window_and_foreground_occupancy(self):
-        row = next(r for r in self.character('黑羽')['rows'] if r['original_actions'] == ['魔a1','魔a2','魔a3','魔a4','魔a5'] and r['kind']=='分段合轴' and not r['has_dodge'])
+        row = next(r for r in self.character('黑羽')['rows'] if r['original_actions'] == ['魔a1','魔a2','魔a3','魔a4','魔a5'] and r['kind']=='分段合轴' and r['switch_method']=='preinput' and not r['has_dodge'])
         self.assertEqual(row['operation'], '魔a2预魔a3 / 魔a4预魔a5')
-        self.assertEqual(row['window_1'], {'start_seconds':0.7,'end_seconds':2.4,'duration_seconds':1.7,'return_start_seconds':1.9,'return_end_seconds':2.4})
-        self.assertAlmostEqual(row['foreground_seconds'], 0.9)
-        self.assertAlmostEqual(row['switch_seconds'], 2.6)
+        self.assertEqual(row['window_1'], {'start_seconds':0.8,'end_seconds':2.4,'duration_seconds':1.6,'return_start_seconds':2.0,'return_end_seconds':2.4})
+        self.assertAlmostEqual(row['foreground_seconds'], 1.1)
+        self.assertAlmostEqual(row['switch_seconds'], 2.7)
         self.assertAlmostEqual(row['release_end_seconds'], 4.2)
         self.assertEqual(row['timeline'][3]['input_seconds'], 2.4)
         self.assertEqual([s['placement'] for s in row['timeline']], ['foreground','foreground','background','foreground','background'])
+        self.assertEqual([s['preinput_before_switch'] for s in row['timeline']], [False,True,False,True,False])
         for c in self.payload['characters']:
             for r in c['rows']:
                 if r['kind']=='分段合轴':
@@ -115,7 +192,7 @@ class OverlapTablesTest(unittest.TestCase):
         rules['characters']['明音凛']['transitions'].append({'from':'a1','to':'a2','switch_delay_seconds':0.3,'source':'synthetic timing fixture'})
         payload = generator.generate(self.characters, self.actions, rules)
         row = next(r for c in payload['characters'] if c['name']=='明音凛' for r in c['rows'] if r['original_actions']==['a1','a2'] and r['switch_label']=='预输入合轴')
-        self.assertAlmostEqual(row['foreground_seconds'], 0.5)
+        self.assertAlmostEqual(row['foreground_seconds'], 0.6)
 
     def test_missing_duration_is_not_free_zero_seconds(self):
         actions = copy.deepcopy(self.actions)

@@ -60,6 +60,25 @@
       "notes": [
         "现实和幻境分别统计；幻境需已由E建立，离场后解除，预输入尾段按用户本次口径统计。",
         "耗时沿用仓库经验值；重击后只录入已有确认的收尾，不推测其他分支。"
+      ],
+      "start_actions": [
+        "a1",
+        "幻a1"
+      ],
+      "preinput_forbidden_actions": {
+        "z": "用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
+        "幻z": "用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。"
+      },
+      "normal_switch_actions": [
+        "a1",
+        "a2",
+        "a3",
+        "a4",
+        "a5",
+        "幻a1",
+        "幻a2",
+        "幻a3",
+        "幻a4"
       ]
     },
     "安魂曲": {
@@ -73,6 +92,42 @@
       "dodge_preserves_combo": false,
       "notes": [
         "只统计远程普攻；不支持闪避保留连段。"
+      ],
+      "start_actions": [
+        "a1远"
+      ],
+      "normal_switch_actions": [
+        "a1远",
+        "a2远",
+        "a3远",
+        "a4远"
+      ],
+      "normal_replaces_detach": true,
+      "transitions": [
+        {
+          "from": "a1远",
+          "to": "a2远",
+          "can_preinput": false,
+          "source": "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。"
+        },
+        {
+          "from": "a2远",
+          "to": "a3远",
+          "can_preinput": false,
+          "source": "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。"
+        },
+        {
+          "from": "a3远",
+          "to": "a4远",
+          "can_preinput": false,
+          "source": "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。"
+        },
+        {
+          "from": "a4远",
+          "to": "a5远",
+          "can_preinput": false,
+          "source": "用户2026-10-12：安魂曲a1-a4改为正常切人，不采用预输入合轴。"
+        }
       ]
     },
     "黑羽": {
@@ -108,24 +163,49 @@
           "from": "魔a5",
           "to": "魔e",
           "detach_previous": true,
-          "source": "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。"
+          "source": "用户2026-10-12：魔e可接在魔a5后，魔a5转为脱手版本，耗时读取can_detach配置0.6秒。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。",
+          "can_preinput": false
         },
         {
           "from": "魔e",
           "to": "魔z2",
-          "source": "用户2026-10-12：魔e后可衔接魔z2。"
+          "source": "用户2026-10-12：魔e后可衔接魔z2。 用户2026-10-12进一步确认：魔e不支持预输入，前台打完才能接魔z2。",
+          "can_preinput": false
         }
       ],
       "notes": [
         "用户2026-10-12指定：只统计魔女形态；需事先建立形态，不列普通普攻与普通z。",
-        "收益只统计动作本体，恶意追加伤害依赖起始恶意与觉醒，不纳入裸倍率。"
+        "收益只统计动作本体，恶意追加伤害依赖起始恶意与觉醒，不纳入裸倍率。",
+        "用户2026-10-12：魔e不支持预输入，必须前台打完再z2；魔e起手以已激活为前提。"
       ],
       "max_uses": {
         "魔a3": 2,
         "魔a4": 2,
         "魔a5": 2,
         "魔z2": 2
-      }
+      },
+      "start_actions": [
+        "魔a1",
+        "魔e"
+      ],
+      "actions": {
+        "魔e": {
+          "locks_foreground_switch": true,
+          "source": "用户2026-10-12：魔e不支持预输入，只能前台打完再接魔z2。"
+        }
+      },
+      "preinput_forbidden_actions": {
+        "魔z1": "用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
+        "魔z2": "用户2026-10-12进一步确认：z不能被预输入，必须前一个动作完整打完后直接输入z。",
+        "魔e": "用户2026-10-12：魔e不能被预输入，只能前台打完再接魔z2。"
+      },
+      "normal_switch_actions": [
+        "魔a1",
+        "魔a2",
+        "魔a3",
+        "魔a4",
+        "魔a5"
+      ]
     },
     "明音凛": {
       "action_names": [
@@ -146,13 +226,29 @@
           "can_preinput": false,
           "source": "用户2026-10-12明确：明音不支持a3预a4合轴；保留完整动作顺接。"
         }
+      ],
+      "start_actions": [
+        "a1"
+      ],
+      "normal_switch_actions": [
+        "a1",
+        "a2",
+        "a3",
+        "a4"
       ]
     }
   },
-  "default_input_delay_seconds": 0.2,
+  "default_input_delay_seconds": 0.3,
   "sources": [
     "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y",
     "https://docs.qq.com/aio/DVVRZempSSmZ4THVj",
     "https://docs.qq.com/aio/DVXF0ZkVKSEV3Y2t4"
-  ]
+  ],
+  "character_order": [
+    "安魂曲",
+    "残虹",
+    "黑羽",
+    "明音凛"
+  ],
+  "normal_switch_seconds": 0.2
 }

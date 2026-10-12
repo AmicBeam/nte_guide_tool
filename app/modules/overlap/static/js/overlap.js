@@ -17,7 +17,7 @@
         $('actions').innerHTML = selected.actions.map((action) => {
             const successors = action.successors.map((edge) => `${edge.to}${edge.automatic ? '（自动）' : ''}${edge.can_preinput === false ? '（仅顺接，不支持合轴）' : ''}${edge.requires_previous ? `（${edge.requires_previous.join('/')}插重击后）` : ''}`).join('、') || '尚无后续记录';
             const points = action.switch_points.map((point) => `${point.label || point.id} ${seconds(point.after_seconds)}`).join('；');
-            return `<article class="overlap-action"><h3>${escape(action.name)} <small>${escape(seconds(action.duration_seconds))}</small></h3><p>衔接：${escape(successors)}</p><p>${!action.successors.some((edge) => edge.can_preinput !== false) ? '无后续预输入合轴记录' : `开始后 ${escape(seconds(action.preinput_seconds))} 可预输入下一段并切人`}</p>${points ? `<p>${escape(points)}</p>` : ''}${action.gaps.length ? `<p class="overlap-pending">待补：${escape(action.gaps.join('、'))}</p>` : ''}</article>`;
+            return `<article class="overlap-action"><h3>${escape(action.name)} <small>${escape(seconds(action.duration_seconds))}</small></h3><p>${action.can_start ? '可作为起手' : '需从前段衔接'}${action.preinput_forbidden ? ' · 不可被预输入' : ''}${action.locks_foreground_switch ? ' · 必须前台打完' : ''}</p><p>衔接：${escape(successors)}</p><p>${!action.successors.some((edge) => edge.can_preinput !== false && !edge.automatic) ? '无后续预输入合轴记录' : `开始后 ${escape(seconds(action.preinput_seconds))} 可预输入下一段并切人`}</p>${points ? `<p>${escape(points)}</p>` : ''}${action.gaps.length ? `<p class="overlap-pending">待补：${escape(action.gaps.join('、'))}</p>` : ''}</article>`;
         }).join('');
     }
 
@@ -30,7 +30,7 @@
             }
             const dodged = Boolean(step.dodge_replaces);
             const label = step.action;
-            const badges = `${step.preinput ? '<small>预</small>' : ''}${step.detached ? '<small>脱手</small>' : ''}${step.automatic ? '<small>自动</small>' : ''}`;
+            const badges = `${step.preinput_before_switch ? '<small>预</small>' : ''}${step.detached ? '<small>脱手</small>' : ''}${step.automatic ? '<small>自动</small>' : ''}`;
             const hint = `${step.action}${dodged ? `（跳过${step.dodge_replaces}全部收益）` : ''} · ${step.placement === 'background' ? '后台释放' : '前台起手'} · 输入${step.automatic ? '自动' : seconds(step.input_seconds)} · 释放${seconds(step.start_seconds)}–${seconds(step.end_seconds)}`;
             return `${separator}<span class="overlap-action-chip ${step.placement === 'background' ? 'is-background' : ''} ${dodged ? 'is-dodge' : ''}" title="${escape(hint)}" aria-label="${escape(hint)}">${escape(label)}${badges}</span>`;
         }).join('');
@@ -47,9 +47,12 @@
         if (!selected) return;
         const kind = $('kind').value;
         const dodge = $('dodge').value;
+        const returnFilter = $('return').value;
         const query = $('query').value.trim().toLowerCase();
         const sort = $('sort').value;
-        const rows = selected.rows.filter((row) => (kind === 'all' || row.kind === kind || kind === '合轴' && row.kind === '分段合轴')
+        const rows = selected.rows.filter((row) => (kind === 'all' || row.kind === kind || kind === '合轴' && row.kind === '分段合轴'
+            || kind === 'normal' && row.switch_method === 'normal' || kind === 'preinput' && row.switch_method === 'preinput')
+            && (returnFilter === 'all' || Boolean(row.window_1) === (returnFilter === 'with'))
             && (dodge === 'all' || row.has_dodge === (dodge === 'with'))
             && (!query || `${row.operation} ${row.actions.join(' ')}`.toLowerCase().includes(query)));
         const metric = (row) => sort === 'multiplier_rate' ? row.multiplier_rates.atk : row[sort];
@@ -96,7 +99,7 @@
             $('status').textContent = `${error.message}，请刷新重试。`;
         }
     }
-    ['kind', 'dodge', 'sort', 'query'].forEach((name) => $(name).addEventListener(name === 'query' ? 'input' : 'change', () => { shown = 60; render(); }));
+    ['kind', 'return', 'dodge', 'sort', 'query'].forEach((name) => $(name).addEventListener(name === 'query' ? 'input' : 'change', () => { shown = 60; render(); }));
     $('more').addEventListener('click', () => { shown += 60; render(); });
     load();
 })();

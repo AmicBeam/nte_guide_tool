@@ -50,7 +50,7 @@
             }
             const dodged = Boolean(step.dodge_replaces);
             const label = step.action + (step.terminal_switch ? '切' : '');
-            const badges = `${step.preinput_before_switch ? '<small>预</small>' : ''}${step.detached ? '<small>脱手</small>' : ''}${step.automatic ? '<small>自动</small>' : ''}`;
+            const badges = `${step.preinput_before_switch ? '<small>预</small>' : ''}${step.detached ? '<small>脱手</small>' : ''}`;
             const hint = `${step.action}${dodged ? `（跳过${step.dodge_replaces}全部收益）` : ''} · ${step.placement === 'background' ? '后台释放' : '前台起手'} · 输入${step.automatic ? '自动' : seconds(step.input_seconds)} · 释放${seconds(step.start_seconds)}–${seconds(step.end_seconds)}`;
             return `${separator}<span class="overlap-action-chip ${step.placement === 'background' ? 'is-background' : ''} ${dodged ? 'is-dodge' : ''}" title="${escape(hint)}" aria-label="${escape(hint)}">${escape(label)}${badges}</span>`;
         }).join('');

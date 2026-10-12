@@ -65,7 +65,9 @@
             return `<span class="overlap-action-chip overlap-time-bubble ${phase.placement === 'background' ? 'is-background' : ''}" title="${escape(title)}" aria-label="${escape(title)}">${number(phase.duration_seconds)}秒</span>`;
         }).join('')}</div>`;
         const windowDetail = `<div class="overlap-window-details">${row.foreground_segments.map((segment) => `<p><strong>前台${segment.number}：${number(segment.duration_seconds)}秒</strong>（${seconds(segment.start_seconds)}–${seconds(segment.end_seconds)}）</p>`).join('')}${windows.map((window) => `<p><strong>回场后台窗口${window.number}：${number(window.duration_seconds)}秒</strong><br>${seconds(window.start_seconds)}切走 → ${seconds(window.end_seconds)}回场续连段。切人冷却为1.2秒，可在${seconds(window.return_start_seconds)}–${seconds(window.return_end_seconds)}切回；本表按${seconds(window.end_seconds)}回场。</p>`).join('')}</div>`;
-        return `<tr><td><details class="overlap-route"><summary><strong>${escape(row.operation)}</strong><span class="overlap-bubble-route">${bubbles}</span><span class="overlap-badge">${escape(row.switch_label)}${row.has_dodge ? ' · 闪避替代' : ''}</span></summary><div class="overlap-route-detail">${windowDetail}<p>${row.ends_with_switch ? `切人时刻 ${escape(seconds(row.switch_seconds))}` : `前台完整释放至 ${escape(seconds(row.release_end_seconds))}`}，整条路线释放结束 ${escape(seconds(row.release_end_seconds))}。</p><table aria-label="动作输入与释放时刻"><thead><tr><th>动作</th><th>输入</th><th>开始释放</th><th>释放结束</th></tr></thead><tbody>${timeline}</tbody></table><p>耗能 ${number(row.energy_cost)}，返还 ${number(row.energy_return)}，净能量 ${number(row.energy_net)}；释放时环合 ${number(row.harmony_on_start)}${personal ? `；${escape(personal)}` : ''}。</p>${row.notes.map((note) => `<p>${escape(note)}</p>`).join('')}</div></details></td><td class="overlap-emphasis">${foregroundHtml}</td><td class="overlap-window">${windowHtml}</td><td>${multiplier(row.multipliers)}</td><td>${multiplier(row.multiplier_rates)}</td><td>${number(row.harmony)}${row.harmony_on_start ? ` + ${number(row.harmony_on_start)}释放` : ''}</td><td>${row.harmony_rate == null ? '—' : number(row.harmony_rate)}</td><td>${number(row.energy_gain)}</td><td>${row.energy_rate == null ? '—' : number(row.energy_rate)}</td><td>${number(row.stagger)}</td></tr>`;
+        const detailId = `overlap-detail-${row.id}`;
+        const columns = root.querySelector('.overlap-table > thead > tr').children.length;
+        return `<tr class="overlap-main-row"><td><details class="overlap-route"><summary aria-controls="${escape(detailId)}" aria-expanded="false"><strong>${escape(row.operation)}</strong><span class="overlap-bubble-route">${bubbles}</span><span class="overlap-badge">${escape(row.switch_label)}${row.has_dodge ? ' · 闪避替代' : ''}</span></summary></details></td><td class="overlap-emphasis">${foregroundHtml}</td><td class="overlap-window">${windowHtml}</td><td>${multiplier(row.multipliers)}</td><td>${multiplier(row.multiplier_rates)}</td><td>${number(row.harmony)}${row.harmony_on_start ? ` + ${number(row.harmony_on_start)}释放` : ''}</td><td>${row.harmony_rate == null ? '—' : number(row.harmony_rate)}</td><td>${number(row.energy_gain)}</td><td>${row.energy_rate == null ? '—' : number(row.energy_rate)}</td><td>${number(row.stagger)}</td></tr><tr class="overlap-detail-row" id="${escape(detailId)}" hidden><td colspan="${columns}"><div class="overlap-route-detail">${windowDetail}<p>${row.ends_with_switch ? `切人时刻 ${escape(seconds(row.switch_seconds))}` : `前台完整释放至 ${escape(seconds(row.release_end_seconds))}`}，整条路线释放结束 ${escape(seconds(row.release_end_seconds))}。</p><table aria-label="动作输入与释放时刻"><thead><tr><th>动作</th><th>输入</th><th>开始释放</th><th>释放结束</th></tr></thead><tbody>${timeline}</tbody></table><p>耗能 ${number(row.energy_cost)}，返还 ${number(row.energy_return)}，净能量 ${number(row.energy_net)}；释放时环合 ${number(row.harmony_on_start)}${personal ? `；${escape(personal)}` : ''}。</p>${row.notes.map((note) => `<p>${escape(note)}</p>`).join('')}</div></td></tr>`;
     }
 
     function render() {
@@ -131,6 +133,14 @@
         shown = 60;
         render();
     }));
+    $('rows').addEventListener('toggle', (event) => {
+        const disclosure = event.target;
+        if (!disclosure.matches('.overlap-route')) return;
+        const summary = disclosure.querySelector('summary');
+        const detailRow = disclosure.closest('tr').nextElementSibling;
+        detailRow.hidden = !disclosure.open;
+        summary.setAttribute('aria-expanded', String(disclosure.open));
+    }, true);
     $('more').addEventListener('click', () => { shown += 60; render(); });
     load();
 })();

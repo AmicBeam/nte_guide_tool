@@ -122,7 +122,7 @@ def enumerate_paths(by_name, edges, max_actions, max_uses=None, start_actions=No
         yield from walk([name], [])
 
 
-def calculate_row(names, links, by_name, points, final_point=None, preinput=False, dodge_indices=(), default_delay=0.3):
+def calculate_row(names, links, by_name, points, final_point=None, preinput=False, dodge_indices=(), default_delay=0.3, hold=False):
     actions = [by_name[name] for name in names]
     for index in dodge_indices:
         actions[index] = {
@@ -187,17 +187,18 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
     def rate(value):
         return round_value(value / foreground) if foreground is not None and foreground > 0 else None
     row = {
-        'id': hashlib.sha256(json.dumps([names, final_point and final_point['id'], preinput, dodge_indices], ensure_ascii=False).encode()).hexdigest()[:16],
+        'id': hashlib.sha256(json.dumps([names, final_point and final_point['id'], preinput, dodge_indices], ensure_ascii=False).encode()).hexdigest()[:16] + ('-hold' if hold else ''),
         'actions': [a['name'] for a in actions], 'original_actions': names,
-        'kind': '合轴' if final_point or preinput else ('连招' if len(names) > 1 else '单动作'),
-        'switch_method': 'preinput' if preinput else final_point['id'] if final_point else 'full',
+        'kind': '打满' if hold else '合轴' if final_point or preinput else ('连招' if len(names) > 1 else '单动作'),
+        'switch_method': 'hold' if hold else 'preinput' if preinput else final_point['id'] if final_point else 'full',
+        'ends_with_switch': bool(preinput or final_point),
         'has_dodge': bool(dodge_indices),
         'preinput_action_indices': [input_index-1] if preinput else [],
         'operation': ((actions[input_index-1]['name'].removesuffix('远') + '预' + actions[input_index]['name'].removesuffix('远')) +
                       ('（自动接' + '→'.join(a['name'] for a in actions[input_index+1:]) + '）' if input_index < len(actions)-1 else '')) if preinput else ' → '.join(a['name'] for a in actions),
-        'switch_label': ('预输入合轴' if preinput else final_point.get('label', final_point['id']) if final_point else '完整释放'),
+        'switch_label': ('末段打满' if hold else '预输入合轴' if preinput else final_point.get('label', final_point['id']) if final_point else '完整释放'),
         'foreground_seconds': None if foreground is None else round_value(foreground),
-        'switch_seconds': None if foreground is None else round_value(foreground),
+        'switch_seconds': None if hold or foreground is None else round_value(foreground),
         'foreground_intervals': [] if foreground is None else [[0, round_value(foreground)]],
         'release_end_seconds': None if release_end is None else round_value(release_end),
         'background_seconds': None if foreground is None or release_end is None else round_value(max(0, release_end - foreground)),
@@ -221,6 +222,11 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
                                      (['用户2026-10-12：动作开始后0.3秒预输入即可切人，完成当前和下一动作。'] if preinput else []) +
                                      (['用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。'] if dodge_indices else []))),
     }
+    if hold:
+        row['operation'] = row['actions'][-1].removesuffix('远') + '打满'
+        prefix = row['timeline'][:-1]
+        if any(not re.fullmatch(r'.*a\d.*', step['action']) or step['dodge_replaces'] or step['detached'] for step in prefix):
+            row['operation'] = ' → '.join([*(step['action'].removesuffix('远') + ('脱手' if step['detached'] else '') for step in prefix), row['operation']])
     return project_placements(row)
 
 
@@ -233,6 +239,7 @@ def project_placements(row):
         ) else 'background'
         step['preinput'] = step['input_seconds'] is not None and start is not None and step['input_seconds'] < start - 1e-9
         step['preinput_before_switch'] = index in row['preinput_action_indices']
+        step['terminal_switch'] = index == len(row['timeline'])-1 and row['switch_method'] in {'normal','detached'}
     row['foreground_segments'] = [
         {'number':index+1,'start_seconds':left,'end_seconds':right,'duration_seconds':round_value(right-left)}
         for index,(left,right) in enumerate(row['foreground_intervals'])
@@ -263,12 +270,12 @@ def project_placements(row):
     return row
 
 
-def advanced_rows(names, links, by_name, points, options, final_point=None):
+def advanced_rows(names, links, by_name, points, options, final_point=None, hold=False, hold_reason=None):
     """Return at queued tail end, retain combo; no teammate benefits are invented."""
     explicit = [edge for edge in links if not edge.get('automatic')]
-    if final_point is None and (not explicit or not explicit[-1].get('can_preinput', True)):
+    if not hold and final_point is None and (not explicit or not explicit[-1].get('can_preinput', True)):
         return
-    final = calculate_row(names, links, by_name, points, final_point, preinput=final_point is None, **options)
+    final = calculate_row(names, links, by_name, points, final_point, preinput=final_point is None and not hold, hold=hold, **options)
     if final['status'] != '可计算':
         return
     candidates = []
@@ -285,7 +292,7 @@ def advanced_rows(names, links, by_name, points, options, final_point=None):
         first_end = final['timeline'][split - 1]['end_seconds']
         if first_end - first_switch < 1.2 - 1e-9:
             continue
-        last_switch = final['switch_seconds']
+        last_switch = final['release_end_seconds'] if hold else final['switch_seconds']
         if last_switch < first_end:
             continue
         row = dict(final)
@@ -294,18 +301,20 @@ def advanced_rows(names, links, by_name, points, options, final_point=None):
         row['preinput_action_indices'] = sorted(set([*final['preinput_action_indices'], *([split-2] if first_method=='preinput' else [])]))
         row['id'] += f'-return-{split}-{first_method}'
         row['kind'] = '分段合轴'
+        if hold:
+            row['hold_reason'] = hold_reason
         row['switch_label'] = '衔接动作合轴'
         clean = lambda name: name.removesuffix('远')
         first_operation = (f'{clean(final["actions"][split-2])}预{clean(final["actions"][split-1])}' if first_method=='preinput'
                            else f'{clean(final["actions"][split-1])}正常切人')
-        last_operation = final['operation'] if final_point is None else f'{clean(final["actions"][-1])}正常切人'
+        last_operation = f'{clean(final["actions"][-1])}打满' if hold else final['operation'] if final_point is None else f'{clean(final["actions"][-1])}正常切人'
         title_action = lambda step: clean(step['action']) + ('脱手' if step['detached'] else '')
         first_source = split-2 if first_method=='preinput' else split-1
         first_prefix = final['timeline'][:first_source]
         if any(not re.fullmatch(r'.*a\d.*', step['action']) or step['dodge_replaces'] or step['detached']
                for step in first_prefix):
             first_operation = ' → '.join([*(title_action(step) for step in first_prefix), first_operation])
-        last_source = final['preinput_action_indices'][-1] if final_point is None else len(names)-1
+        last_source = final['preinput_action_indices'][-1] if final_point is None and not hold else len(names)-1
         middle = [title_action(step) for step in final['timeline'][split:last_source]]
         if middle:
             last_operation = ' → '.join([*middle, last_operation])
@@ -331,6 +340,17 @@ def advanced_rows(names, links, by_name, points, options, final_point=None):
         row['stagger_rate'] = round_value(row['stagger'] / occupied)
         row['sources'] = [*row['sources'], '用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。']
         yield project_placements(row)
+
+
+def hold_eligibility(names, edges):
+    successors = [edge for edge in edges[names[-1]] if
+                  (not edge.get('requires_prefix') or names == edge['requires_prefix']) and
+                  (not edge.get('requires_previous') or len(names)>1 and names[-2] in edge['requires_previous'])]
+    if not successors:
+        return 'no_successor'
+    if any(edge['to'] == names[0] for edge in successors):
+        return 'cycle_to_start'
+    return None
 
 
 def generate(characters, actions, rules):
@@ -409,6 +429,12 @@ def generate(characters, actions, rules):
                                 edge['automatic']=False
                             edge['source'] += ' 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。'
                     rows.append(calculate_row(names, variant_links, by_name, points, **options))
+                    hold_reason = hold_eligibility(names, edges)
+                    if hold_reason:
+                        held = calculate_row(names, variant_links, by_name, points, hold=True, **options)
+                        held['hold_reason'] = hold_reason
+                        rows.append(held)
+                        rows.extend(advanced_rows(names, variant_links, by_name, points, options, hold=True, hold_reason=hold_reason))
                     explicit = [edge for edge in variant_links if not edge.get('automatic')]
                     if explicit and explicit[-1].get('can_preinput', True):
                         rows.append(calculate_row(names, variant_links, by_name, points, preinput=True, **options))

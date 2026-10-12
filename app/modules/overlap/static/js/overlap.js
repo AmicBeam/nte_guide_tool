@@ -48,7 +48,7 @@
                 separator = `<span class="overlap-chip-switch">${step.placement === 'background' ? '切走' : '回场'}</span>`;
             }
             const dodged = Boolean(step.dodge_replaces);
-            const label = step.action;
+            const label = step.action + (step.terminal_switch ? '切' : '');
             const badges = `${step.preinput_before_switch ? '<small>预</small>' : ''}${step.detached ? '<small>脱手</small>' : ''}${step.automatic ? '<small>自动</small>' : ''}`;
             const hint = `${step.action}${dodged ? `（跳过${step.dodge_replaces}全部收益）` : ''} · ${step.placement === 'background' ? '后台释放' : '前台起手'} · 输入${step.automatic ? '自动' : seconds(step.input_seconds)} · 释放${seconds(step.start_seconds)}–${seconds(step.end_seconds)}`;
             return `${separator}<span class="overlap-action-chip ${step.placement === 'background' ? 'is-background' : ''} ${dodged ? 'is-dodge' : ''}" title="${escape(hint)}" aria-label="${escape(hint)}">${escape(label)}${badges}</span>`;
@@ -65,7 +65,7 @@
             return `<span class="overlap-action-chip overlap-time-bubble ${phase.placement === 'background' ? 'is-background' : ''}" title="${escape(title)}" aria-label="${escape(title)}">${number(phase.duration_seconds)}秒</span>`;
         }).join('')}</div>`;
         const windowDetail = `<div class="overlap-window-details">${row.foreground_segments.map((segment) => `<p><strong>前台${segment.number}：${number(segment.duration_seconds)}秒</strong>（${seconds(segment.start_seconds)}–${seconds(segment.end_seconds)}）</p>`).join('')}${windows.map((window) => `<p><strong>回场后台窗口${window.number}：${number(window.duration_seconds)}秒</strong><br>${seconds(window.start_seconds)}切走 → ${seconds(window.end_seconds)}回场续连段。切人冷却为1.2秒，可在${seconds(window.return_start_seconds)}–${seconds(window.return_end_seconds)}切回；本表按${seconds(window.end_seconds)}回场。</p>`).join('')}</div>`;
-        return `<tr><td><details class="overlap-route"><summary><strong>${escape(row.operation)}</strong><span class="overlap-bubble-route">${bubbles}</span><span class="overlap-badge">${escape(row.switch_label)}${row.has_dodge ? ' · 闪避替代' : ''}</span></summary><div class="overlap-route-detail">${windowDetail}<p>切人时刻 ${escape(seconds(row.switch_seconds))}，整条路线释放结束 ${escape(seconds(row.release_end_seconds))}。</p><table aria-label="动作输入与释放时刻"><thead><tr><th>动作</th><th>输入</th><th>开始释放</th><th>释放结束</th></tr></thead><tbody>${timeline}</tbody></table><p>耗能 ${number(row.energy_cost)}，返还 ${number(row.energy_return)}，净能量 ${number(row.energy_net)}；释放时环合 ${number(row.harmony_on_start)}${personal ? `；${escape(personal)}` : ''}。</p>${row.notes.map((note) => `<p>${escape(note)}</p>`).join('')}</div></details></td><td class="overlap-emphasis">${foregroundHtml}</td><td class="overlap-window">${windowHtml}</td><td>${seconds(row.release_end_seconds)}</td><td>${multiplier(row.multipliers)}</td><td>${multiplier(row.multiplier_rates)}</td><td>${number(row.harmony)}${row.harmony_on_start ? ` + ${number(row.harmony_on_start)}释放` : ''}</td><td>${row.harmony_rate == null ? '—' : number(row.harmony_rate)}</td><td>${number(row.energy_gain)}</td><td>${row.energy_rate == null ? '—' : number(row.energy_rate)}</td><td>${number(row.stagger)}</td></tr>`;
+        return `<tr><td><details class="overlap-route"><summary><strong>${escape(row.operation)}</strong><span class="overlap-bubble-route">${bubbles}</span><span class="overlap-badge">${escape(row.switch_label)}${row.has_dodge ? ' · 闪避替代' : ''}</span></summary><div class="overlap-route-detail">${windowDetail}<p>${row.ends_with_switch ? `切人时刻 ${escape(seconds(row.switch_seconds))}` : `前台完整释放至 ${escape(seconds(row.release_end_seconds))}`}，整条路线释放结束 ${escape(seconds(row.release_end_seconds))}。</p><table aria-label="动作输入与释放时刻"><thead><tr><th>动作</th><th>输入</th><th>开始释放</th><th>释放结束</th></tr></thead><tbody>${timeline}</tbody></table><p>耗能 ${number(row.energy_cost)}，返还 ${number(row.energy_return)}，净能量 ${number(row.energy_net)}；释放时环合 ${number(row.harmony_on_start)}${personal ? `；${escape(personal)}` : ''}。</p>${row.notes.map((note) => `<p>${escape(note)}</p>`).join('')}</div></details></td><td class="overlap-emphasis">${foregroundHtml}</td><td class="overlap-window">${windowHtml}</td><td>${seconds(row.release_end_seconds)}</td><td>${multiplier(row.multipliers)}</td><td>${multiplier(row.multiplier_rates)}</td><td>${number(row.harmony)}${row.harmony_on_start ? ` + ${number(row.harmony_on_start)}释放` : ''}</td><td>${row.harmony_rate == null ? '—' : number(row.harmony_rate)}</td><td>${number(row.energy_gain)}</td><td>${row.energy_rate == null ? '—' : number(row.energy_rate)}</td><td>${number(row.stagger)}</td></tr>`;
     }
 
     function render() {
@@ -76,7 +76,8 @@
         const firstAction = $('first').value;
         const lastAction = $('last').value;
         const sort = $('sort').value;
-        const rows = selected.rows.filter((row) => (kind === 'all' || row.kind === kind || kind === '合轴' && row.kind === '分段合轴'
+        const rows = selected.rows.filter((row) => (kind === 'all' || row.kind === kind || kind === '合轴' && ['分段合轴','打满'].includes(row.kind)
+            || kind === 'hold' && row.switch_method === 'hold'
             || kind === 'normal' && row.switch_method === 'normal' || kind === 'preinput' && row.switch_method === 'preinput')
             && (returnFilter === 'all' || Boolean(row.window_1) === (returnFilter === 'with'))
             && (dodge === 'all' || row.has_dodge === (dodge === 'with'))

@@ -56,6 +56,38 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertEqual(row['timeline'][3]['input_seconds'], row['timeline'][2]['end_seconds'])
         self.assertEqual(row['overlap_windows'],[])
         self.assertEqual(row['foreground_segments'],[{'number':1,'start_seconds':0,'end_seconds':1.9,'duration_seconds':1.9}])
+        self.assertTrue(row['timeline'][-1]['terminal_switch'])
+
+    def test_terminal_switch_marker_only_marks_active_last_action(self):
+        for character in self.payload['characters']:
+            for row in character['rows']:
+                marked=[i for i,step in enumerate(row['timeline']) if step['terminal_switch']]
+                self.assertEqual(marked,[len(row['timeline'])-1] if row['switch_method'] in {'normal','detached'} else [])
+
+    def test_hold_candidates_follow_terminal_or_cycle_rule(self):
+        c=self.character('明音凛')
+        held=next(r for r in c['rows'] if r['switch_method']=='hold' and r['original_actions']==['a1','a2','a3','a4'] and not r['has_dodge'] and r['kind']=='打满')
+        self.assertEqual(held['operation'],'a4打满')
+        self.assertEqual(held['hold_reason'],'no_successor')
+        self.assertAlmostEqual(held['foreground_seconds'],2.8)
+        self.assertIsNone(held['switch_seconds'])
+        self.assertFalse(held['ends_with_switch'])
+        self.assertFalse(held['timeline'][-1]['terminal_switch'])
+        self.assertEqual(held['timeline'][-1]['action'],'a4')
+        self.assertFalse(any(r['switch_method']=='hold' and r['original_actions']==['a1','a2'] for r in c['rows']))
+        cycle=next(r for r in self.character('黑羽')['rows'] if r['switch_method']=='hold'
+                   and r['original_actions'][0]=='魔e' and r['original_actions'][-1]=='魔a5' and r['kind']=='打满' and not r['has_dodge'])
+        self.assertEqual(cycle['hold_reason'],'cycle_to_start')
+        self.assertIn('魔e',cycle['operation'])
+        self.assertTrue(cycle['operation'].endswith('魔a5打满'))
+
+    def test_hold_finish_is_supported_after_return(self):
+        row=next(r for r in self.character('明音凛')['rows'] if r['switch_method']=='hold'
+                 and r['kind']=='分段合轴' and not r['has_dodge'])
+        self.assertEqual(row['operation'],'a2预a3 / a4打满')
+        self.assertEqual([s['duration_seconds'] for s in row['foreground_segments']],[0.8,0.7])
+        self.assertAlmostEqual(row['foreground_seconds'],1.5)
+        self.assertFalse(row['timeline'][-1]['terminal_switch'])
 
     def test_normal_final_switch_can_follow_a_return(self):
         row = next(r for r in self.character('明音凛')['rows'] if r['original_actions']==['a1','a2','a3','a4']

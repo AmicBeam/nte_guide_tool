@@ -314,6 +314,8 @@
               "duration_seconds": 0.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -416,6 +418,8 @@
               "duration_seconds": 0.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -516,6 +520,8 @@
               "duration_seconds": 0.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -632,6 +638,8 @@
               "duration_seconds": 1.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -751,6 +759,8 @@
               "duration_seconds": 0.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -868,6 +878,8 @@
               "duration_seconds": 1.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -1001,6 +1013,8 @@
               "duration_seconds": 2.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -1137,6 +1151,8 @@
               "duration_seconds": 1.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -1271,6 +1287,8 @@
               "duration_seconds": 1.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -1421,6 +1439,8 @@
               "duration_seconds": 4.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -1571,6 +1591,8 @@
               "duration_seconds": 4.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -1735,6 +1757,8 @@
               "duration_seconds": 2.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -1907,6 +1931,8 @@
               "duration_seconds": 1.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -2058,6 +2084,8 @@
               "duration_seconds": 2.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -2221,6 +2249,10 @@
               "end_seconds": 2.9,
               "duration_seconds": 0.2
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -2391,6 +2423,8 @@
               "duration_seconds": 2.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -2543,6 +2577,8 @@
               "duration_seconds": 2.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -2712,6 +2748,8 @@
               "duration_seconds": 4.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -2881,6 +2919,8 @@
               "duration_seconds": 4.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -3052,6 +3092,8 @@
               "duration_seconds": 3.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -3151,6 +3193,8 @@
               "duration_seconds": 2.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -3251,6 +3295,8 @@
               "duration_seconds": 1.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         }
       ],
@@ -3755,6 +3801,8 @@
               "duration_seconds": 1.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -3855,6 +3903,8 @@
               "duration_seconds": 0.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -3953,6 +4003,8 @@
               "duration_seconds": 0.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -4067,6 +4119,8 @@
               "duration_seconds": 2.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -4184,6 +4238,8 @@
               "duration_seconds": 1.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -4299,6 +4355,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -4430,6 +4488,8 @@
               "duration_seconds": 3.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -4564,6 +4624,8 @@
               "duration_seconds": 1.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -4696,6 +4758,8 @@
               "duration_seconds": 2.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -4829,6 +4893,8 @@
               "duration_seconds": 3.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -4963,6 +5029,8 @@
               "duration_seconds": 2.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -5111,6 +5179,8 @@
               "duration_seconds": 4.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -5259,6 +5329,8 @@
               "duration_seconds": 4.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -5421,6 +5493,8 @@
               "duration_seconds": 1.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -5591,6 +5665,8 @@
               "duration_seconds": 2.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -5740,6 +5816,8 @@
               "duration_seconds": 3.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -5901,6 +5979,10 @@
               "end_seconds": 3.3,
               "duration_seconds": 0.2
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -6070,6 +6152,8 @@
               "duration_seconds": 4.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -6220,6 +6304,8 @@
               "duration_seconds": 4.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -6374,6 +6460,8 @@
               "duration_seconds": 2.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -6525,6 +6613,8 @@
               "duration_seconds": 3.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -6675,6 +6765,8 @@
               "duration_seconds": 3.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -6825,6 +6917,8 @@
               "duration_seconds": 3.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -6977,6 +7071,8 @@
               "duration_seconds": 2.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -7127,6 +7223,8 @@
               "duration_seconds": 3.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -7277,6 +7375,8 @@
               "duration_seconds": 3.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -7429,6 +7529,8 @@
               "duration_seconds": 2.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -7544,6 +7646,8 @@
               "duration_seconds": 2.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -7660,6 +7764,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -7793,6 +7899,8 @@
               "duration_seconds": 3.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -7926,6 +8034,8 @@
               "duration_seconds": 3.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -8063,6 +8173,8 @@
               "duration_seconds": 1.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -8197,6 +8309,8 @@
               "duration_seconds": 2.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -8294,6 +8408,8 @@
               "duration_seconds": 1.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -8392,6 +8508,8 @@
               "duration_seconds": 0.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -8507,6 +8625,8 @@
               "duration_seconds": 2.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -8622,6 +8742,8 @@
               "duration_seconds": 2.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -8741,6 +8863,8 @@
               "duration_seconds": 1.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -8857,6 +8981,8 @@
               "duration_seconds": 1.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -8954,6 +9080,8 @@
               "duration_seconds": 1.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -9054,6 +9182,8 @@
               "duration_seconds": 0.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -9152,6 +9282,8 @@
               "duration_seconds": 0.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -9266,6 +9398,8 @@
               "duration_seconds": 2.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -9383,6 +9517,8 @@
               "duration_seconds": 0.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -9498,6 +9634,8 @@
               "duration_seconds": 1.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -9629,6 +9767,8 @@
               "duration_seconds": 3.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -9760,6 +9900,8 @@
               "duration_seconds": 3.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -9905,6 +10047,8 @@
               "duration_seconds": 1.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -10058,6 +10202,8 @@
               "duration_seconds": 1.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -10190,6 +10336,8 @@
               "duration_seconds": 2.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -10334,6 +10482,10 @@
               "end_seconds": 2.2,
               "duration_seconds": 0.2
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -10486,6 +10638,8 @@
               "duration_seconds": 2.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -10619,6 +10773,8 @@
               "duration_seconds": 2.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -10754,6 +10910,8 @@
               "duration_seconds": 2.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -10869,6 +11027,8 @@
               "duration_seconds": 2.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -10985,6 +11145,8 @@
               "duration_seconds": 1.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -11118,6 +11280,8 @@
               "duration_seconds": 3.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -11251,6 +11415,8 @@
               "duration_seconds": 3.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -11388,6 +11554,8 @@
               "duration_seconds": 1.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -11522,6 +11690,8 @@
               "duration_seconds": 2.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -11619,6 +11789,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -11717,6 +11889,8 @@
               "duration_seconds": 0.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -11832,6 +12006,8 @@
               "duration_seconds": 2.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -11947,6 +12123,8 @@
               "duration_seconds": 2.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -12066,6 +12244,8 @@
               "duration_seconds": 0.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -12182,6 +12362,8 @@
               "duration_seconds": 1.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         }
       ],
@@ -12629,6 +12811,8 @@
               "duration_seconds": 1.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -12731,6 +12915,8 @@
               "duration_seconds": 0.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -12831,6 +13017,8 @@
               "duration_seconds": 0.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -12947,6 +13135,8 @@
               "duration_seconds": 2.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -13066,6 +13256,8 @@
               "duration_seconds": 0.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -13183,6 +13375,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -13316,6 +13510,8 @@
               "duration_seconds": 2.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -13452,6 +13648,8 @@
               "duration_seconds": 1.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -13586,6 +13784,8 @@
               "duration_seconds": 2.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -13732,6 +13932,10 @@
               "end_seconds": 2.6,
               "duration_seconds": 0.2
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -13886,6 +14090,8 @@
               "duration_seconds": 2.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -14022,6 +14228,8 @@
               "duration_seconds": 2.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -14172,6 +14380,8 @@
               "duration_seconds": 4.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -14322,6 +14532,8 @@
               "duration_seconds": 4.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -14486,6 +14698,8 @@
               "duration_seconds": 1.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -14668,6 +14882,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -14840,6 +15056,8 @@
               "duration_seconds": 2.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -15004,6 +15222,10 @@
               "end_seconds": 2.8,
               "duration_seconds": 0.4
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -15174,6 +15396,8 @@
               "duration_seconds": 3.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -15337,6 +15561,10 @@
               "end_seconds": 3.0,
               "duration_seconds": 0.6
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -15520,6 +15748,10 @@
               "duration_seconds": 0.2
             }
           ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -15689,6 +15921,8 @@
               "duration_seconds": 3.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -15841,6 +16075,8 @@
               "duration_seconds": 3.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -15993,6 +16229,8 @@
               "duration_seconds": 3.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -16149,6 +16387,8 @@
               "duration_seconds": 2.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -16302,6 +16542,8 @@
               "duration_seconds": 2.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -16455,6 +16697,8 @@
               "duration_seconds": 2.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -16623,6 +16867,8 @@
               "duration_seconds": 4.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -16792,6 +17038,8 @@
               "duration_seconds": 3.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -16974,6 +17222,8 @@
               "duration_seconds": 1.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -17174,6 +17424,10 @@
               "duration_seconds": 0.8
             }
           ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -17362,6 +17616,8 @@
               "duration_seconds": 3.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -17533,6 +17789,8 @@
               "duration_seconds": 3.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -17737,6 +17995,8 @@
               "duration_seconds": 6.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -17942,6 +18202,8 @@
               "duration_seconds": 5.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -18160,6 +18422,8 @@
               "duration_seconds": 3.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -18396,6 +18660,8 @@
               "duration_seconds": 2.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -18620,6 +18886,8 @@
               "duration_seconds": 6.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -18827,6 +19095,8 @@
               "duration_seconds": 5.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -19048,6 +19318,8 @@
               "duration_seconds": 7.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -19272,6 +19544,8 @@
               "duration_seconds": 5.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -19508,6 +19782,8 @@
               "duration_seconds": 3.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -19762,6 +20038,8 @@
               "duration_seconds": 3.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -20002,6 +20280,8 @@
               "duration_seconds": 6.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -20237,6 +20517,8 @@
               "duration_seconds": 4.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -20490,6 +20772,8 @@
               "duration_seconds": 4.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -20731,6 +21015,8 @@
               "duration_seconds": 6.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -20957,6 +21243,8 @@
               "duration_seconds": 5.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -21181,6 +21469,8 @@
               "duration_seconds": 6.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -21404,6 +21694,8 @@
               "duration_seconds": 6.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -21628,6 +21920,8 @@
               "duration_seconds": 6.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -21865,6 +22159,8 @@
               "duration_seconds": 4.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -22120,6 +22416,8 @@
               "duration_seconds": 3.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -22361,6 +22659,8 @@
               "duration_seconds": 6.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -22585,6 +22885,8 @@
               "duration_seconds": 5.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -22823,6 +23125,8 @@
               "duration_seconds": 8.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -23061,6 +23365,8 @@
               "duration_seconds": 8.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -23313,6 +23619,8 @@
               "duration_seconds": 6.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -23583,6 +23891,8 @@
               "duration_seconds": 5.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -23853,6 +24163,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -24113,6 +24425,8 @@
               "duration_seconds": 7.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -24366,6 +24680,8 @@
               "duration_seconds": 4.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -24637,6 +24953,8 @@
               "duration_seconds": 4.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -24894,6 +25212,8 @@
               "duration_seconds": 7.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -25146,6 +25466,8 @@
               "duration_seconds": 4.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -25416,6 +25738,8 @@
               "duration_seconds": 4.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -25686,6 +26010,10 @@
               "duration_seconds": 0.2
             }
           ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -25943,6 +26271,8 @@
               "duration_seconds": 7.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -26183,6 +26513,8 @@
               "duration_seconds": 8.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -26423,6 +26755,8 @@
               "duration_seconds": 8.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -26677,6 +27011,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -26939,6 +27275,8 @@
               "duration_seconds": 6.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -27180,6 +27518,8 @@
               "duration_seconds": 6.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -27433,6 +27773,10 @@
               "end_seconds": 6.8,
               "duration_seconds": 0.2
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -27693,6 +28037,8 @@
               "duration_seconds": 7.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -27933,6 +28279,8 @@
               "duration_seconds": 8.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -28173,6 +28521,8 @@
               "duration_seconds": 8.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -28427,6 +28777,8 @@
               "duration_seconds": 5.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -28699,6 +29051,8 @@
               "duration_seconds": 5.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -28961,6 +29315,8 @@
               "duration_seconds": 6.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -29216,6 +29572,8 @@
               "duration_seconds": 4.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -29489,6 +29847,8 @@
               "duration_seconds": 3.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -29748,6 +30108,8 @@
               "duration_seconds": 6.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -30002,6 +30364,8 @@
               "duration_seconds": 4.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -30274,6 +30638,8 @@
               "duration_seconds": 4.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -30533,6 +30899,8 @@
               "duration_seconds": 7.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -30773,6 +31141,8 @@
               "duration_seconds": 7.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -31013,6 +31383,8 @@
               "duration_seconds": 7.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -31257,6 +31629,8 @@
               "duration_seconds": 6.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -31498,6 +31872,8 @@
               "duration_seconds": 6.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -31739,6 +32115,8 @@
               "duration_seconds": 6.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -31856,6 +32234,8 @@
               "duration_seconds": 2.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -31974,6 +32354,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -32126,6 +32508,8 @@
               "duration_seconds": 4.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -32279,6 +32663,8 @@
               "duration_seconds": 3.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -32448,6 +32834,8 @@
               "duration_seconds": 4.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -32620,6 +33008,8 @@
               "duration_seconds": 3.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -32790,6 +33180,8 @@
               "duration_seconds": 4.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -32961,6 +33353,8 @@
               "duration_seconds": 4.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -33133,6 +33527,8 @@
               "duration_seconds": 4.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -33319,6 +33715,8 @@
               "duration_seconds": 6.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -33505,6 +33903,8 @@
               "duration_seconds": 6.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -33705,6 +34105,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -33913,6 +34315,8 @@
               "duration_seconds": 4.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -34100,6 +34504,8 @@
               "duration_seconds": 5.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -34299,6 +34705,10 @@
               "end_seconds": 5.1,
               "duration_seconds": 0.2
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -34505,6 +34915,8 @@
               "duration_seconds": 5.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -34693,6 +35105,8 @@
               "duration_seconds": 5.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -34881,6 +35295,8 @@
               "duration_seconds": 5.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -35073,6 +35489,8 @@
               "duration_seconds": 4.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -35262,6 +35680,8 @@
               "duration_seconds": 4.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -35451,6 +35871,8 @@
               "duration_seconds": 5.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -35655,6 +36077,8 @@
               "duration_seconds": 6.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -35860,6 +36284,8 @@
               "duration_seconds": 5.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -36077,6 +36503,10 @@
               "end_seconds": 5.7,
               "duration_seconds": 0.8
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -36302,6 +36732,8 @@
               "duration_seconds": 6.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -36509,6 +36941,8 @@
               "duration_seconds": 5.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -36748,6 +37182,8 @@
               "duration_seconds": 8.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -36988,6 +37424,8 @@
               "duration_seconds": 7.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -37241,6 +37679,8 @@
               "duration_seconds": 2.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -37501,6 +37941,8 @@
               "duration_seconds": 8.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -37744,6 +38186,8 @@
               "duration_seconds": 7.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -38000,6 +38444,8 @@
               "duration_seconds": 9.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -38259,6 +38705,8 @@
               "duration_seconds": 8.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -38530,6 +38978,8 @@
               "duration_seconds": 3.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -38805,6 +39255,8 @@
               "duration_seconds": 9.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -39075,6 +39527,8 @@
               "duration_seconds": 4.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -39352,6 +39806,8 @@
               "duration_seconds": 8.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -39614,6 +40070,8 @@
               "duration_seconds": 7.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -39874,6 +40332,8 @@
               "duration_seconds": 8.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -40133,6 +40593,8 @@
               "duration_seconds": 8.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -40393,6 +40855,8 @@
               "duration_seconds": 8.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -40666,6 +41130,8 @@
               "duration_seconds": 3.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -40942,6 +41408,8 @@
               "duration_seconds": 8.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -41201,6 +41669,8 @@
               "duration_seconds": 8.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -41474,6 +41944,8 @@
               "duration_seconds": 10.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -41747,6 +42219,8 @@
               "duration_seconds": 10.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -42034,6 +42508,8 @@
               "duration_seconds": 5.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -42339,6 +42815,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -42634,6 +43112,8 @@
               "duration_seconds": 9.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -42922,6 +43402,8 @@
               "duration_seconds": 4.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -43214,6 +43696,8 @@
               "duration_seconds": 9.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -43501,6 +43985,8 @@
               "duration_seconds": 4.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -43806,6 +44292,10 @@
               "duration_seconds": 0.2
             }
           ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
+          ],
           "overlap_windows": [
             {
               "number": 1,
@@ -44098,6 +44588,8 @@
               "duration_seconds": 9.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -44374,6 +44866,8 @@
               "duration_seconds": 10.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -44650,6 +45144,8 @@
               "duration_seconds": 10.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -44940,6 +45436,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -45238,6 +45736,8 @@
               "duration_seconds": 8.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -45515,6 +46015,8 @@
               "duration_seconds": 8.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -45804,6 +46306,10 @@
               "end_seconds": 8.9,
               "duration_seconds": 0.2
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -46100,6 +46606,8 @@
               "duration_seconds": 9.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -46376,6 +46884,8 @@
               "duration_seconds": 10.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -46652,6 +47162,8 @@
               "duration_seconds": 10.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -46942,6 +47454,8 @@
               "duration_seconds": 5.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -47240,6 +47754,8 @@
               "duration_seconds": 8.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -47531,6 +48047,8 @@
               "duration_seconds": 3.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -47826,6 +48344,8 @@
               "duration_seconds": 8.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -48116,6 +48636,8 @@
               "duration_seconds": 4.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -48411,6 +48933,8 @@
               "duration_seconds": 9.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -48686,6 +49210,8 @@
               "duration_seconds": 9.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -48961,6 +49487,8 @@
               "duration_seconds": 9.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -49240,6 +49768,8 @@
               "duration_seconds": 8.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -49516,6 +50046,8 @@
               "duration_seconds": 8.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -49792,6 +50324,8 @@
               "duration_seconds": 8.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -49909,6 +50443,8 @@
               "duration_seconds": 3.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -50027,6 +50563,8 @@
               "duration_seconds": 2.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -50162,6 +50700,8 @@
               "duration_seconds": 3.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -50300,6 +50840,8 @@
               "duration_seconds": 2.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -50436,6 +50978,8 @@
               "duration_seconds": 3.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -50572,6 +51116,8 @@
               "duration_seconds": 3.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -50709,6 +51255,8 @@
               "duration_seconds": 3.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -50861,6 +51409,8 @@
               "duration_seconds": 5.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -51013,6 +51563,8 @@
               "duration_seconds": 5.1
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -51179,6 +51731,8 @@
               "duration_seconds": 1.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [
             {
               "number": 1,
@@ -51353,6 +51907,8 @@
               "duration_seconds": 3.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -51506,6 +52062,8 @@
               "duration_seconds": 3.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -51671,6 +52229,10 @@
               "end_seconds": 3.9,
               "duration_seconds": 0.2
             }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
           ],
           "overlap_windows": [
             {
@@ -51843,6 +52405,8 @@
               "duration_seconds": 4.3
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -51997,6 +52561,8 @@
               "duration_seconds": 4.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -52151,6 +52717,8 @@
               "duration_seconds": 4.6
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -52309,6 +52877,8 @@
               "duration_seconds": 3.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -52464,6 +53034,8 @@
               "duration_seconds": 3.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -52619,6 +53191,8 @@
               "duration_seconds": 3.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         }
       ],
@@ -52875,6 +53449,8 @@
               "duration_seconds": 1.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -52977,6 +53553,8 @@
               "duration_seconds": 0.4
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -53077,6 +53655,8 @@
               "duration_seconds": 0.7
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -53193,6 +53773,8 @@
               "duration_seconds": 2.0
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -53312,6 +53894,8 @@
               "duration_seconds": 0.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -53429,6 +54013,8 @@
               "duration_seconds": 1.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -53563,6 +54149,8 @@
               "duration_seconds": 2.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -53697,6 +54285,8 @@
               "duration_seconds": 2.8
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -53833,6 +54423,8 @@
               "duration_seconds": 2.2
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -53969,6 +54561,8 @@
               "duration_seconds": 2.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         },
         {
@@ -54105,6 +54699,8 @@
               "duration_seconds": 2.5
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": [],
           "hold_reason": "cycle_to_start"
         },
@@ -54243,6 +54839,8 @@
               "duration_seconds": 1.9
             }
           ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
           "overlap_windows": []
         }
       ],
@@ -54266,7 +54864,7 @@
     "characters.json": "5ca0f1e50cecd559549201068874585ab4f458cc8befa2eb5c7b1b157b077503",
     "actions.json": "ae4249303fd2a0ed38f834f1cb105c5ce6c2617c3daff6ba7e44515aeeb306f9",
     "rules.json": "528a1f8d674eb17901312f0827db345c4239cd52d3da3405a97670c83b7155af",
-    "generator.py": "682c5808cf19b9dfd94cc8ede25f65cc1336a3d121d1c27e4a1e0be3608984ab"
+    "generator.py": "7eabc2beecab267a1177d19c7af0056210bc3ce9793035454a605ef5e21bbfef"
   },
   "basis": "1级裸动作收益；按前排占轴归一。未含配装、Buff、资源上限与队友分享；经验耗时用于试算。",
   "sources": [

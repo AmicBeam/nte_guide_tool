@@ -341,6 +341,34 @@ class OverlapTablesTest(unittest.TestCase):
                         self.assertGreaterEqual(window['duration_seconds'],1.2)
                         self.assertLessEqual(window['return_start_seconds'],window['end_seconds'])
 
+    def test_short_return_cut_requires_three_characters_but_hold_does_not(self):
+        names=[f'魔a{i}' for i in range(1,6)]
+        rows=[r for r in self.character('黑羽')['rows'] if r['original_actions']==names
+              and r['kind']=='分段合轴' and not r['has_dodge']]
+        pre=next(r for r in rows if r['switch_method']=='preinput')
+        normal=next(r for r in rows if r['switch_method']=='normal')
+        held=next(r for r in rows if r['switch_method']=='hold')
+        self.assertEqual(pre['foreground_segments'][1]['duration_seconds'],0.4)
+        self.assertEqual(normal['foreground_segments'][1]['duration_seconds'],0.6)
+        for row in (pre,normal):
+            self.assertTrue(row['requires_three_characters'])
+            self.assertEqual(row['three_character_segments'],[2])
+        self.assertFalse(held['requires_three_characters'])
+        self.assertEqual(held['three_character_segments'],[])
+        self.assertTrue(all(not r['requires_three_characters'] for c in self.payload['characters']
+                            for r in c['rows'] if not r.get('window_1')))
+
+    def test_three_character_rule_exempts_first_segment_and_full_finish(self):
+        def requirements(durations, cut=True):
+            return generator.return_requirements({'foreground_segments':[
+                {'number':i+1,'duration_seconds':duration} for i,duration in enumerate(durations)
+            ], 'ends_with_switch':cut})
+        self.assertFalse(requirements([0.2])['requires_three_characters'])
+        self.assertFalse(requirements([0.2,1.2])['requires_three_characters'])
+        self.assertEqual(requirements([2,1.199])['three_character_segments'],[2])
+        self.assertFalse(requirements([0.2,0.4],False)['requires_three_characters'])
+        self.assertEqual(requirements([2,0.4,0.8],False)['three_character_segments'],[2])
+
     def test_heiyu_e_forces_detached_a5_and_z2_automatically_returns_a3(self):
         names = ['魔a1','魔a2','魔a3','魔a4','魔a5','魔e','魔z2','魔a3']
         row = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==names and not r['has_dodge'] and r['kind']=='连招')

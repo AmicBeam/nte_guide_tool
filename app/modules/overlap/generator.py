@@ -239,6 +239,15 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
     return project_placements(row)
 
 
+def return_requirements(row):
+    """Only short, switched foreground segments after the first require a third character."""
+    segments = row['foreground_segments']
+    short = [segment['number'] for index, segment in enumerate(segments) if index > 0
+             and segment['duration_seconds'] < 1.2 - 1e-9
+             and (index < len(segments)-1 or row['ends_with_switch'])]
+    return {'requires_three_characters': bool(short), 'three_character_segments': short}
+
+
 def project_placements(row):
     """Presentation uses offline foreground intervals, never browser-derived rules."""
     for index, step in enumerate(row['timeline']):
@@ -253,6 +262,7 @@ def project_placements(row):
         {'number':index+1,'start_seconds':left,'end_seconds':right,'duration_seconds':round_value(right-left)}
         for index,(left,right) in enumerate(row['foreground_intervals'])
     ]
+    row.update(return_requirements(row))
     row['overlap_windows'] = []
     if row['release_end_seconds'] is None:
         return row

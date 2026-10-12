@@ -13,7 +13,7 @@ from .state import (SIDES, add_hand, alive, card_instance, clear_harmony_source,
                     draw, effective_card, energy, finished, front_debuff, hero, knockdowns, log, move_out, name,
                     new_character, other, shield, shuffle, team_order, upgrade_harmony_residue)
 
-from .escalation import begin_escalation, clamp_resources, energy_cap, harmony_cap, ultimate_remaining
+from .escalation import begin_escalation, clamp_resources, energy_cap, harmony_cap, turn_action_points, ultimate_remaining
 
 
 def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=None, escalation=True):
@@ -677,7 +677,7 @@ def begin_turn(state, side):
         if flags.get('ap_per_turn') is not None:
             team['ap'] = int(flags['ap_per_turn']) + extra
         else:
-            team['ap'] = (1 if state['turn'] == 1 else 2) + extra
+            team['ap'] = turn_action_points(state) + extra
         if extra:
             log(state, f'回合开始，结算延后效果：额外获得 {extra} 点行动力。',
                 'effect', side=side, actor=f'{side}:player', target=f'{side}:player', present=False)

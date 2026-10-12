@@ -75,6 +75,7 @@
 - 回放换牌面板随当前公开局面的阶段显示，自动播放进入第一回合时立即收起；暂停、单步与跳转使用相同阶段判断。
 - 回放顶部控制栏以回合下拉框替代时间显示：可选择开局或已有回合，立即暂停并还原该回合起点的公开局面；播放和单步前进时同步当前回合。
 - 回放控制栏占满顶部生命面板与右侧状态区之间的可用宽度；步骤摘要悬停显示完整内容与步数，场中央不再重复显示步骤。白热化进度放在中央区域左半部，避免伸入左侧异能者编队。
+- 白热化按后端公开阶段装饰屏幕边缘：第 6 回合柔和金色发光，第 13 回合增强为暖橙光，第 20 回合显示沿边缘燃烧的动效。实时牌桌与回放共用；装饰不接收指针、不占布局，减弱动态选项或系统减少动态时使用静态边缘。
 
 - 菜单提供「拖动选择目标」开关，默认开启并保存在本机。按下或点击卡牌时不显示拖动热区；按住移动超过 8 像素后才显示拖动卡影与合法目标。有目标牌只高亮目标，拖到目标松开出牌，非法落点回弹，不显示取消按钮。无目标卡（含固定作用于所属角色的装备，以及自动选取攻击目标的战斗牌）可拖到整个战斗大区，包含双方备战区、前排和其间空白。关闭后，所有牌先拖到同一战斗大区松开，有目标卡再进入可取消的点选界面。
 - 手牌瞬发虚线边框仅在我方本回合瞬发机会尚未使用时显示；虚线与内光保留卡牌类型原色，选中时也不改写边框颜色。机会用完后恢复普通可用牌边框，响应标记保留。
@@ -181,7 +182,7 @@
 
 ## 对局白热化
 
-新建 V2 对局在总第 6 回合起，每回合开始为当前玩家最低能量存活异能者 +1 能量（同值随机），并有每回合 2 次终结机会；第 13 回合双方能量上限 -1；第 20 回合双方环合上限降为 1。上限变化会同步截断双方已有资源。战斗区中间左侧显示下一阶段倒计时。旧快照和前 11 关教学不追加。第 12 关「白热化」显式启用，从后手总第 4 回合开始，到第 6 回合完成补能与两次终结。完整口径见手册「对局白热化」。
+新建 V2 对局在总第 6 回合起，每回合开始为全体己方可获能的存活异能者各 +1 能量，并有每回合 2 次终结机会；第 13 回合双方能量上限 -1、环合上限降为 1；第 20 回合每个己方回合开始随机从己方弃牌堆回收 1 张可构筑卡牌，基础行动力刷新为 3 点。回收排除衍生牌和临时复制，空候选跳过，通常抽牌仍为 1 张。非前排或终结中的真红、浔时计不参与全体回能。行动力没有统一硬上限，卡效可额外增加；剩余留给对方回合响应，下个己方回合重置。上限变化会同步截断双方已有资源。战斗区中间左侧显示下一阶段倒计时。旧快照和前 11 关教学不追加。第 12 关「白热化」显式启用，从后手总第 4 回合开始，到第 6 回合完成补能与两次终结。完整口径见手册「对局白热化」。
 
 规则快攻镜像对照：`python3 scripts/evaluate_duel_v2_escalation.py --pairs 64 --workers 4 --output /private/tmp/nte-escalation-eval.json`。
 
@@ -230,7 +231,7 @@ Windows 已完成一次有界 CUDA 出牌/配牌短训练，启动所需 MSVC �
 
 ```bash
 python3 -m unittest tests.test_module_routes.ModuleRoutesTest.test_card_game_module_page_and_asset
-python3 -m unittest tests.test_duel_v2_zone_status tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_table_contract tests.test_duel_v2_tutorial tests.test_duel_v2_opening_draw tests.test_duel_v2_escalation tests.test_duel_v2_trigger_history
+python3 -m unittest tests.test_duel_v2_zone_status tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_table_contract tests.test_duel_v2_tutorial tests.test_duel_v2_opening_draw tests.test_duel_v2_escalation tests.test_duel_v2_escalation_backends tests.test_duel_v2_trigger_history
 node --check app/modules/card_game/static/js/v2_api.js
 node --check app/modules/card_game/static/js/v2_build.js
 node --check app/modules/card_game/static/js/v2_table.js

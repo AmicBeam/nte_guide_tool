@@ -312,7 +312,7 @@ static void grant_seed(int *row, int s){
 
 static void move_out(int *row, int s, int seat){
   if(SI(FRONT,s)!=seat) return;
-  int hcap=(row[OFF_ESCALATION_ENABLED] && row[OFF_TURN]>=20) ? 1 : 2;
+  int hcap=(row[OFF_ESCALATION_ENABLED] && row[OFF_TURN]>=13) ? 1 : 2;
   SI(LAST_FRONT,s)=(CH(CH_HP,s,seat)>0 && CH(CH_DOWN,s,seat)==0 && CH(CH_HARMONY,s,seat)>=hcap) ? seat : -1;
   SI(FRONT,s)=-1;
   CH(CH_SHIELD,s,seat)=0;
@@ -388,7 +388,7 @@ static int energy_cap_for(int *row, int seat){
   return cap;
 }
 static int harmony_cap_for(int *row){
-  return (row[OFF_ESCALATION_ENABLED] && row[OFF_TURN] >= 20) ? 1 : 2;
+  return (row[OFF_ESCALATION_ENABLED] && row[OFF_TURN] >= 13) ? 1 : 2;
 }
 static int ultimate_limit_for(int *row){
   return (row[OFF_ESCALATION_ENABLED] && row[OFF_TURN] >= 6) ? 2 : 1;
@@ -979,36 +979,29 @@ static void clamp_resources(int *row){
 
 static void begin_escalation(int *row, int s){
   if(!(row[OFF_ESCALATION_ENABLED] && row[OFF_TURN] >= 6)) return;
-  int ties[N_SEATS];
-  int n_tie=0;
-  int best_energy=1<<30;
-  for(int rank=1; rank<=N_SEATS; rank++){
-    int k=-1;
-    for(int cand=0; cand<N_SEATS; cand++){
-      if(team_rank(row,s,cand)==rank){ k=cand; break; }
+  for(int k=0; k<N_SEATS; k++){
+    if(!present_alive(row,s,k)) continue;
+    int e=CH(CH_ENERGY,s,k)+1;
+    int cap=energy_cap_for(row,k);
+    CH(CH_ENERGY,s,k)=e>cap?cap:e;
+  }
+  if(row[OFF_TURN] >= 20){
+    int candidates[DISCARD_SLOTS], n=0;
+    for(int i=0;i<SI(DISCARD_N,s);i++){
+      int kind=XK(s,i);
+      if(kind>=0 && !CAT_DERIVED[kind]) candidates[n++]=i;
     }
-    if(k<0 || !present_alive(row,s,k)) continue;
-    int e=CH(CH_ENERGY,s,k);
-    if(n_tie==0 || e<best_energy){
-      best_energy=e;
-      n_tie=1;
-      ties[0]=k;
-    } else if(e==best_energy){
-      ties[n_tie++]=k;
+    if(n>0){
+      int slot=candidates[n>1 ? lcg(&row[OFF_RNG])%n : 0];
+      int kind=XK(s,slot), inst=XI(s,slot);
+      for(int i=slot;i<SI(DISCARD_N,s)-1;i++){
+        XK(s,i)=XK(s,i+1); XI(s,i)=XI(s,i+1);
+      }
+      SI(DISCARD_N,s)-=1;
+      XK(s,SI(DISCARD_N,s))=-1; XI(s,SI(DISCARD_N,s))=0;
+      add_hand(row,s,kind,inst);
     }
   }
-  if(n_tie<=0) return;
-  if(n_tie>1){
-    for(int i=n_tie-1;i>0;i--){
-      int j = lcg(&row[OFF_RNG]) % (i+1);
-      int tmp=ties[i]; ties[i]=ties[j]; ties[j]=tmp;
-    }
-  }
-  int best=ties[0];
-  int e=CH(CH_ENERGY,s,best)+1;
-  int cap=energy_cap_for(row,best);
-  if(e>cap) e=cap;
-  CH(CH_ENERGY,s,best)=e;
 }
 
 static void begin_turn(int *row, int s){
@@ -1099,7 +1092,7 @@ static void begin_turn(int *row, int s){
   if(!live(row)) return;
   int extra=SI(EXTRA_AP,s);
   SI(EXTRA_AP,s)=0;
-  SI(AP,s)=(row[OFF_TURN]==1?1:2)+extra;
+  SI(AP,s)=(row[OFF_TURN]==1?1:(row[OFF_ESCALATION_ENABLED] && row[OFF_TURN]>=20?3:2))+extra;
   SI(NORMAL_ATK,s)=1;
   SI(ULTIMATES_USED,s)=0;
   SI(ULTIMATE_OK,s)=1;

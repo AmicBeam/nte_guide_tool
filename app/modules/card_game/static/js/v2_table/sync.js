@@ -263,6 +263,7 @@
     }
 
     function renderEmpty(title, copy, kind) {
+      ctx.page.setAttribute('data-escalation-stage', '0');
       if (ctx.clearSelectionView) ctx.clearSelectionView();
       ctx.emptyTitle.textContent = title;
       ctx.emptyCopy.textContent = copy;

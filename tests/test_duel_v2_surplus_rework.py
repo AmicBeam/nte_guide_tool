@@ -92,7 +92,7 @@ class SurplusReworkTest(unittest.TestCase):
         for cid in ('yi','zero','jiuyuan'):hero(s,'a',cid)['energy']=1
         energy(s,'a','zhenhong',5);self.assertEqual(h['energy'],0)
         begin_escalation(s,'a');self.assertEqual(h['energy'],0)
-        self.assertEqual(sum(hero(s,'a',cid)['energy'] for cid in ('yi','zero','jiuyuan')),4)
+        self.assertEqual(sum(hero(s,'a',cid)['energy'] for cid in ('yi','zero','jiuyuan')),6)
         s['sides']['a']['front']='zhenhong';energy(s,'a','zhenhong');self.assertEqual(h['energy'],1)
         h['awakened']=True;energy(s,'a','zhenhong');self.assertEqual(h['energy'],1)
 

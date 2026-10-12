@@ -1,0 +1,94 @@
+/* The server's stage drives this decorative viewport border, including replays. */
+.v2-escalation-edge {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  overflow: hidden;
+  visibility: hidden;
+  --edge-color: 255, 187, 92;
+  --edge-size: 12px;
+}
+
+.v2-escalation-edge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(var(--edge-color), .48);
+  box-shadow: inset 0 0 var(--edge-size) rgba(var(--edge-color), .32);
+  animation: v2-edge-glow 4s ease-in-out infinite alternate;
+}
+
+.v2-table-page[data-escalation-stage='1'] .v2-escalation-edge,
+.v2-table-page[data-escalation-stage='2'] .v2-escalation-edge,
+.v2-table-page[data-escalation-stage='3'] .v2-escalation-edge {
+  visibility: visible;
+}
+
+.v2-table-page[data-escalation-stage='2'] .v2-escalation-edge {
+  --edge-color: 255, 128, 49;
+  --edge-size: 22px;
+}
+
+.v2-table-page[data-escalation-stage='3'] .v2-escalation-edge {
+  --edge-color: 255, 94, 27;
+  --edge-size: 30px;
+}
+
+.v2-edge-flame { display: none; }
+.v2-table-page[data-escalation-stage='3'] .v2-edge-flame {
+  display: block;
+  position: absolute;
+  height: 28px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.v2-edge-flame::before,
+.v2-edge-flame::after {
+  content: "";
+  position: absolute;
+  inset: -2px -100px;
+  background:
+    radial-gradient(ellipse 17px 37px at 24px 0, rgba(255, 225, 136, .8), rgba(255, 130, 38, .6) 32%, rgba(232, 57, 17, .22) 56%, transparent 76%) 0 0 / 83px 40px repeat-x,
+    radial-gradient(ellipse 26px 20px at 55px 0, rgba(255, 183, 58, .65), rgba(247, 79, 21, .35) 45%, transparent 76%) 0 0 / 109px 30px repeat-x;
+  transform-origin: center top;
+  animation: v2-edge-burn 2.8s ease-in-out infinite alternate;
+}
+
+.v2-edge-flame::after {
+  opacity: .55;
+  background-position: 42px 0, 23px 0;
+  animation-duration: 1.9s;
+  animation-delay: -.8s;
+}
+
+.v2-edge-flame.top { top: 0; left: 0; }
+.v2-edge-flame.bottom { bottom: 0; left: 0; transform: rotate(180deg); }
+.v2-table-page[data-escalation-stage='3'] .v2-edge-flame.left,
+.v2-table-page[data-escalation-stage='3'] .v2-edge-flame.right {
+  width: 100dvh;
+  top: 0;
+}
+.v2-edge-flame.left { left: 0; transform-origin: 0 0; transform: rotate(-90deg) translateX(-100%); }
+.v2-edge-flame.right { right: 0; transform-origin: 100% 0; transform: rotate(90deg) translateX(100%); }
+
+@keyframes v2-edge-glow { from { opacity: .65; } to { opacity: 1; } }
+@keyframes v2-edge-burn {
+  from { transform: translateX(-12px) scaleY(.72); opacity: .65; }
+  to { transform: translateX(14px) scaleY(1.12); opacity: .95; }
+}
+
+.v2-table-page[data-reduced-motion='1'] .v2-escalation-edge::before,
+.v2-table-page[data-reduced-motion='1'] .v2-edge-flame::before,
+.v2-table-page[data-reduced-motion='1'] .v2-edge-flame::after {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-escalation-edge::before,
+  .v2-edge-flame::before,
+  .v2-edge-flame::after { animation: none; }
+}
+@media (max-height: 500px) {
+  .v2-table-page[data-escalation-stage='3'] .v2-edge-flame { height: 18px; }
+}

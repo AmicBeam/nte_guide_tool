@@ -2,6 +2,7 @@
 @import url("./v2_table/cards.css");
 @import url("./v2_table/tutorial.css");
 @import url("./v2_table/divination.css");
+@import url("./v2_table/escalation.css");
 
 .v2-table-page #v2-fx-stage {
   position: fixed;

@@ -39,7 +39,7 @@ class GpuTransitionTest(unittest.TestCase):
         s.front[:, 0] = nana
         s.last_front.fill_(-1)
         s.ch_harmony[:, 0, nana] = torch.tensor([1, 2, 1, 1])
-        s.turn[:] = torch.tensor([18, 18, 19, 19])
+        s.turn[:] = torch.tensor([11, 11, 12, 12])
         s.escalation_enabled.fill_(1)
         mask = torch.tensor([True, True, True, False])
         begin_turn(s, torch.zeros(4, dtype=torch.long), mask)

@@ -67,14 +67,14 @@ class HarmonyResidueTest(unittest.TestCase):
             self.assertEqual(s['sides']['a']['last_front'], 'nanali' if amount == 2 else None)
             self.assertEqual(harmony_marks(s, 'a')['available'], amount == 2)
 
-    def test_twentieth_turn_lowers_cap_before_return(self):
-        for turn, expected in ((19, None), (20, 'nanali')):
+    def test_thirteenth_turn_lowers_cap_before_return(self):
+        for turn, expected in ((12, None), (13, 'nanali')):
             s = self.game(1)
             s['turn'] = turn - 1
             begin_turn(s, 'a')
             self.assertEqual(s['sides']['a']['last_front'], expected)
-            self.assertEqual(harmony_marks(s, 'a')['available'], turn == 20)
-            if turn == 20:
+            self.assertEqual(harmony_marks(s, 'a')['available'], turn == 13)
+            if turn == 13:
                 s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'zero'})
                 self.assertEqual(hero(s, 'a', 'nanali')['harmony'], 0)
 
@@ -147,13 +147,13 @@ class GeneratedHarmonyResidueTest(unittest.TestCase):
         cls.engine.close()
         cls.tmp.cleanup()
 
-    def test_return_snapshot_and_twentieth_turn(self):
+    def test_return_snapshot_and_thirteenth_turn(self):
         from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
         from app.modules.card_game.rl.rule_ir.compiled_oracle import map_python_action
         from app.modules.card_game.rl.rule_ir.layout import OFFSETS
         from app.modules.card_game.rl.gpu_duel.catalog import N_SEATS, SEAT_INDEX
         nana, zero = SEAT_INDEX['nanali'], SEAT_INDEX['zero']
-        for turn, amount, expected in ((19, 1, -1), (19, 2, nana), (20, 1, nana)):
+        for turn, amount, expected in ((12, 1, -1), (12, 2, nana), (13, 1, nana)):
             s = new_game(seed=9, first_side='a', skip_mulligan=True)
             s['turn'] = turn - 1
             for team in s['sides'].values():
@@ -166,7 +166,7 @@ class GeneratedHarmonyResidueTest(unittest.TestCase):
             self.assertEqual(row[OFFSETS['last_front'] + 1], expected)
             self.assertEqual(row[OFFSETS['front'] + 1], -1)
             h = OFFSETS['ch_harmony'] + N_SEATS + nana
-            row[h] = 1 if turn == 20 else 2  # bench fill cannot invent departure evidence
+            row[h] = 1 if turn == 13 else 2  # bench fill cannot invent departure evidence
             index = map_python_action(row, s, {'type': 'attack', 'character_id': 'zero'})
             row = self.engine.launch_lists([row], [index])[0]
             self.assertEqual(row[h], 0 if expected >= 0 else 2)

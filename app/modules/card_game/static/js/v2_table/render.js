@@ -675,12 +675,13 @@
 
   function renderGame(ctx) {
     const game = ctx.game;
+    const progress = game && game.escalation;
+    ctx.page.setAttribute('data-escalation-stage', String(progress ? progress.stage : 0));
     const mine = TABLE.sideState(game, ctx.viewer);
     const theirs = TABLE.sideState(game, ctx.opponent);
     bindHudSides(ctx);
     const escalation = ctx.page.querySelector('#v2-escalation');
     if (escalation) {
-      const progress = game && game.escalation;
       escalation.hidden = !progress;
       escalation.textContent = progress ? progress.hint : '';
       escalation.title = progress ? [progress.description, (progress.active || []).length ? '已生效：' + progress.active.join('；') : '尚未生效'].filter(Boolean).join('\n') : '';

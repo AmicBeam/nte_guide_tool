@@ -41,7 +41,7 @@ def _energy_cap(s: GpuState, seat: int) -> torch.Tensor:
 def _harmony_cap(s: GpuState) -> torch.Tensor:
     cap = torch.full((s.n,), 2, dtype=torch.int32, device=s.device)
     if hasattr(s, 'escalation_enabled'):
-        cap = torch.where((s.escalation_enabled > 0) & (s.turn >= 20), torch.ones_like(cap), cap)
+        cap = torch.where((s.escalation_enabled > 0) & (s.turn >= 13), torch.ones_like(cap), cap)
     return cap
 
 
@@ -421,6 +421,46 @@ def draw(s: GpuState, side: torch.Tensor, mask: torch.Tensor, count: int = 1) ->
             s.deck_n[:, si] = torch.where(pick, s.deck_n[:, si] - 1, s.deck_n[:, si])
 
 
+def _recover_buildable(s: GpuState, si: int, mask: torch.Tensor) -> None:
+    if _cpu_mask_empty(mask):
+        return
+    kinds = s.discard_kind[:, si]
+    slots = torch.arange(DISCARD_SLOTS, device=s.device).unsqueeze(0)
+    eligible = ((slots < s.discard_n[:, si].unsqueeze(1)) & (kinds >= 0)
+                & (s.catalog_derived[kinds.clamp(min=0)] == 0))
+    count = eligible.sum(1)
+    recover = mask & (count > 0) & _live(s)
+    rng = (s.rng * 1103515245 + 12345) & 0x7FFFFFFF
+    s.rng = torch.where(recover & (count > 1), rng, s.rng)
+    rank = torch.where(count > 1, rng % count.clamp(min=1), torch.zeros_like(count))
+    picked = eligible & (eligible.cumsum(1) == rank.unsqueeze(1) + 1)
+    index = picked.int().argmax(1)
+    rows = _b(s)
+    kind = kinds[rows, index].clone()
+    inst = s.discard_inst[rows, si, index].clone()
+    # Remove only the selected physical instance, preserving the other slots.
+    for slot in range(DISCARD_SLOTS):
+        move = recover & (index <= slot)
+        next_kind = kinds[:, slot + 1].clone() if slot + 1 < DISCARD_SLOTS else torch.full_like(kind, -1)
+        next_inst = s.discard_inst[:, si, slot + 1].clone() if slot + 1 < DISCARD_SLOTS else torch.zeros_like(inst)
+        kinds[:, slot] = torch.where(move, next_kind, kinds[:, slot])
+        s.discard_inst[:, si, slot] = torch.where(move, next_inst, s.discard_inst[:, si, slot])
+    s.discard_n[:, si] = torch.where(recover, s.discard_n[:, si] - 1, s.discard_n[:, si])
+    hn = s.hand_n[:, si].clone()
+    room = recover & (hn < HAND_SLOTS)
+    for slot in range(HAND_SLOTS):
+        put = room & (hn == slot)
+        s.hand_kind[:, si, slot] = torch.where(put, kind, s.hand_kind[:, si, slot])
+        s.hand_inst[:, si, slot] = torch.where(put, inst, s.hand_inst[:, si, slot])
+    s.hand_n[:, si] = torch.where(room, hn + 1, hn)
+    full = recover & ~room
+    for slot in range(DISCARD_SLOTS):
+        put = full & (s.discard_n[:, si] == slot)
+        kinds[:, slot] = torch.where(put, kind, kinds[:, slot])
+        s.discard_inst[:, si, slot] = torch.where(put, inst, s.discard_inst[:, si, slot])
+    s.discard_n[:, si] = torch.where(full, s.discard_n[:, si] + 1, s.discard_n[:, si])
+
+
 def compact_deck(s: GpuState, si: int, mask: torch.Tensor) -> None:
     if not bool(mask.any()):
         return
@@ -482,6 +522,13 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
     s.phase = torch.where(mask, torch.full_like(s.phase, PHASE_PLAYING), s.phase)
     s.active = torch.where(mask, side, s.active)
     s.turn = torch.where(mask, s.turn + 1, s.turn)
+    if hasattr(s, 'escalation_enabled'):
+        for owner in range(SIDES):
+            for seat in range(N_SEATS):
+                s.ch_energy[:, owner, seat] = torch.where(
+                    mask, torch.minimum(s.ch_energy[:, owner, seat], _energy_cap(s, seat)), s.ch_energy[:, owner, seat])
+                s.ch_harmony[:, owner, seat] = torch.where(
+                    mask, torch.minimum(s.ch_harmony[:, owner, seat], _harmony_cap(s)), s.ch_harmony[:, owner, seat])
     for si in range(SIDES):
         here = mask & (side == si)
         s.turn_count[:, si] = torch.where(here, s.turn_count[:, si] + 1, s.turn_count[:, si])
@@ -507,39 +554,14 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
             revived = recovering & (s.ch_down[:, si, seat] == 0)
             s.ch_hp[:, si, seat] = torch.where(revived, s.ch_max_hp[:, si, seat], s.ch_hp[:, si, seat])
         if hasattr(s, 'escalation_enabled'):
-            for seat in range(N_SEATS):
-                s.ch_energy[:, si, seat] = torch.where(here, torch.minimum(s.ch_energy[:, si, seat], _energy_cap(s, seat)), s.ch_energy[:, si, seat])
-                s.ch_harmony[:, si, seat] = torch.where(here, torch.minimum(s.ch_harmony[:, si, seat], _harmony_cap(s)), s.ch_harmony[:, si, seat])
-            # lowest-alive-energy +1 at global turn >= 6
             escalate = here & (s.escalation_enabled > 0) & (s.turn >= 6)
-            if bool(escalate.any()) if escalate.device.type == 'cpu' else True:
-                alive_mask = []
-                energies = []
-                for seat in range(N_SEATS):
-                    live = (s.ch_present[:, si, seat] > 0) & (s.ch_hp[:, si, seat] > 0) & (s.ch_down[:, si, seat] == 0)
-                    alive_mask.append(live)
-                    energies.append(torch.where(live, s.ch_energy[:, si, seat], torch.full_like(s.ch_energy[:, si, seat], 10**6)))
-                stacked = torch.stack(energies, dim=1)
-                lowest = stacked.min(dim=1).values
-                eligible = []
-                for seat in range(N_SEATS):
-                    eligible.append(escalate & alive_mask[seat] & (s.ch_energy[:, si, seat] == lowest))
-                chosen = torch.zeros(s.n, dtype=torch.int32, device=s.device)
-                remaining = escalate.clone()
-                rng = s.rng
-                for seat in range(N_SEATS):
-                    cand = remaining & eligible[seat]
-                    # among remaining candidates, keep seat with LCG if multiple
-                    chosen = torch.where(cand & (chosen == 0), torch.full_like(chosen, seat + 1), chosen)
-                    # if already chosen and this is also candidate, maybe replace
-                    both = cand & (chosen > 0) & (chosen != seat + 1)
-                    rng = (rng * 1103515245 + 12345) & 0x7FFFFFFF
-                    replace = both & ((rng % 2) == 0)
-                    chosen = torch.where(replace, torch.full_like(chosen, seat + 1), chosen)
-                s.rng = torch.where(escalate, rng, s.rng)
-                for seat in range(N_SEATS):
-                    hit = escalate & (chosen == seat + 1)
-                    s.ch_energy[:, si, seat] = torch.where(hit, torch.minimum(s.ch_energy[:, si, seat] + 1, _energy_cap(s, seat)), s.ch_energy[:, si, seat])
+            for seat in range(N_SEATS):
+                eligible = (escalate & (s.ch_present[:, si, seat] > 0)
+                            & (s.ch_hp[:, si, seat] > 0) & (s.ch_down[:, si, seat] == 0))
+                s.ch_energy[:, si, seat] = torch.where(
+                    eligible, torch.minimum(s.ch_energy[:, si, seat] + 1, _energy_cap(s, seat)),
+                    s.ch_energy[:, si, seat])
+            _recover_buildable(s, si, here & (s.escalation_enabled > 0) & (s.turn >= 20))
         # return front
         for seat in range(N_SEATS):
             leaving = here & (s.front[:, si] == seat)
@@ -578,7 +600,10 @@ def begin_turn(s: GpuState, side: torch.Tensor, mask: torch.Tensor) -> None:
                 s.ch_energy[:, si, seat])
         extra = s.extra_ap[:, si]
         s.extra_ap[:, si] = torch.where(here, torch.zeros_like(extra), extra)
-        ap = torch.where(s.turn == 1, torch.ones_like(s.ap[:, si]), torch.full_like(s.ap[:, si], 2)) + extra
+        base_ap = torch.full_like(s.ap[:, si], 2)
+        if hasattr(s, 'escalation_enabled'):
+            base_ap = torch.where((s.escalation_enabled > 0) & (s.turn >= 20), torch.full_like(base_ap, 3), base_ap)
+        ap = torch.where(s.turn == 1, torch.ones_like(base_ap), base_ap) + extra
         s.ap[:, si] = torch.where(here, ap, s.ap[:, si])
         s.normal_atk[:, si] = torch.where(here, torch.ones_like(s.normal_atk[:, si]), s.normal_atk[:, si])
         s.ultimate_ok[:, si] = torch.where(here, torch.ones_like(s.ultimate_ok[:, si]), s.ultimate_ok[:, si])

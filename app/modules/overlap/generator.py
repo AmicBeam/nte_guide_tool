@@ -99,6 +99,9 @@ def build_graph(actions, rule):
         raise ValueError('禁止预输入的动作须存在并记录source')
     for successors in edges.values():
         for edge in successors:
+            if by_name[edge['from']]['action_type'] == 'E':
+                edge['can_preinput'] = False
+                edge['source'] += ' 用户2026-10-12最新确认：E不能预输入后续动作，须等E完整结束后输入下一动作。'
             if edge['to'] in forbidden:
                 edge['can_preinput'] = False
                 edge['source'] += ' ' + forbidden[edge['to']]
@@ -396,7 +399,8 @@ def generate(characters, actions, rules):
             raise ValueError('正常切人动作必须存在')
         points = {a['name']: switch_points(a, override_map.get(a['name'], {}),
                   rules.get('normal_switch_seconds',0.2) if a['name'] in normal_actions else None,
-                  bool(rule.get('normal_replaces_detach')) and a['name'] in normal_actions) for a in current}
+                  a['name'] in rule.get('normal_replaces_detach_actions',
+                      normal_actions if rule.get('normal_replaces_detach') else [])) for a in current}
         inventory = []
         for action in current:
             gaps = []

@@ -47,20 +47,20 @@ class OverlapTablesTest(unittest.TestCase):
     def test_requiem_normal_e_and_detached_a4_connect_to_a5(self):
         character = self.character('安魂曲')
         self.assertEqual(character['start_actions'],['a1远','e'])
-        simple = next(r for r in character['rows'] if r['original_actions']==['e','a5远'] and r['switch_method']=='preinput')
-        self.assertEqual(simple['operation'],'e预a5')
-        self.assertAlmostEqual(simple['foreground_seconds'],0.3)
+        simple = next(r for r in character['rows'] if r['original_actions']==['e','a5远'] and r['switch_method']=='normal')
+        self.assertEqual(simple['actions'],['e','a5远'])
+        self.assertAlmostEqual(simple['foreground_seconds'],1.0)
         self.assertAlmostEqual(simple['release_end_seconds'],2.8)
-        self.assertEqual(simple['timeline'][-1]['placement'],'background')
+        self.assertEqual(simple['timeline'][-1]['input_seconds'],simple['timeline'][0]['end_seconds'])
         names = ['a1远','a2远','a3远','a4远','e','a5远']
-        row = next(r for r in character['rows'] if r['original_actions']==names and r['switch_method']=='preinput' and r['kind']=='合轴')
+        row = next(r for r in character['rows'] if r['original_actions']==names and r['switch_method']=='normal' and r['kind']=='合轴')
         a4, e, a5 = row['timeline'][-3:]
         self.assertTrue(a4['detached'])
         self.assertAlmostEqual(a4['duration_seconds'],0.5)
         self.assertAlmostEqual(e['start_seconds'],2.0)
         self.assertEqual(e['input_seconds'],a4['end_seconds'])
         self.assertFalse(e['preinput'])
-        self.assertAlmostEqual(row['foreground_seconds'],2.3)
+        self.assertAlmostEqual(row['foreground_seconds'],3.0)
         self.assertAlmostEqual(a5['start_seconds'],2.8)
         originals = [a for a in self.actions if a['character_name']=='安魂曲' and a['name'] in names]
         self.assertAlmostEqual(row['multipliers']['atk'],sum(a['multipliers']['atk'] for a in originals))
@@ -168,7 +168,7 @@ class OverlapTablesTest(unittest.TestCase):
                 self.assertIn(row['original_actions'][0], character['start_actions'])
         self.assertFalse(any(r['original_actions']==['a4远'] for r in self.character('安魂曲')['rows']))
 
-    def test_heiyu_e_is_directly_input_and_entirely_foreground(self):
+    def test_heiyu_e_cannot_be_preinput_but_can_switch_normally(self):
         for row in self.character('黑羽')['rows']:
             self.assertNotIn('魔e预', row['operation'])
             self.assertNotIn('预魔e', row['operation'])
@@ -177,7 +177,8 @@ class OverlapTablesTest(unittest.TestCase):
                     continue
                 self.assertFalse(step['preinput'])
                 self.assertEqual(step['input_seconds'], step['start_seconds'])
-                self.assertTrue(any(left <= step['start_seconds']+1e-9 and right >= step['end_seconds']-1e-9
+                required_end = step['start_seconds']+0.2 if index==len(row['timeline'])-1 and row['switch_method']=='normal' else step['end_seconds']
+                self.assertTrue(any(left <= step['start_seconds']+1e-9 and right >= required_end-1e-9
                                     for left,right in row['foreground_intervals']))
                 if index+1 < len(row['timeline']):
                     following=row['timeline'][index+1]
@@ -185,6 +186,44 @@ class OverlapTablesTest(unittest.TestCase):
                     self.assertEqual(following['input_seconds'], step['end_seconds'])
                     self.assertEqual(following['start_seconds'], step['end_seconds'])
                     self.assertFalse(following['preinput'])
+
+    def test_all_scoped_actions_allow_normal_switch(self):
+        for character in self.payload['characters']:
+            for action in character['actions']:
+                normal = next(p for p in action['switch_points'] if p['id']=='normal')
+                self.assertEqual(normal['after_seconds'],0.2)
+                self.assertFalse(action['locks_foreground_switch'])
+        names = [f'魔a{i}' for i in range(1,6)] + ['魔e']
+        rows = [r for r in self.character('黑羽')['rows'] if r['original_actions']==names
+                and r['switch_method']=='normal' and not r['has_dodge']]
+        self.assertTrue(any(r['kind']=='合轴' for r in rows))
+        self.assertTrue(any(r['kind']=='分段合轴' for r in rows))
+        for row in rows:
+            self.assertAlmostEqual(row['switch_seconds']-row['timeline'][-1]['start_seconds'],0.2)
+            self.assertAlmostEqual(row['release_end_seconds']-row['switch_seconds'],0.8)
+            self.assertEqual(row['timeline'][-1]['duration_seconds'],1.0)
+            self.assertTrue(row['timeline'][-1]['terminal_switch'])
+            full = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==names
+                        and r['kind']=='连招' and not r['has_dodge'])
+            for field in ('multipliers','energy_gain','harmony','personal_resources'):
+                self.assertEqual(row[field],full[field])
+        simple = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==['魔e']
+                      and r['switch_method']=='normal')
+        self.assertEqual(simple['foreground_seconds'],0.2)
+
+    def test_e_cannot_preinput_followup_for_any_character(self):
+        for character in self.payload['characters']:
+            e_names = {a['name'] for a in character['actions'] if a['type']=='E'}
+            for action in character['actions']:
+                if action['name'] in e_names:
+                    self.assertTrue(all(e['can_preinput'] is False for e in action['successors']))
+            for row in character['rows']:
+                for index, step in enumerate(row['timeline']):
+                    if step['action'] in e_names:
+                        self.assertFalse(step['preinput_before_switch'])
+                        if index+1<len(row['timeline']):
+                            self.assertEqual(row['timeline'][index+1]['input_seconds'],step['end_seconds'])
+        self.assertFalse(any(r['operation']=='e预a5' for r in self.character('安魂曲')['rows']))
 
     def test_heavy_attacks_cannot_receive_preinput(self):
         for character in self.payload['characters']:

@@ -11,7 +11,7 @@
         <div class="portal-heading">
             <p class="eyebrow">NTE Tools</p>
             <h1>异环工具主页</h1>
-            <p class="subtle">从这里进入卡牌桌游、空幕计算和排轴计算。</p>
+            <p class="subtle">从这里进入卡牌桌游、空幕计算、排轴计算和合轴收益表。</p>
         </div>
         <div class="header-actions">
             <a class="secondary-btn" href="{{ url_for('main.login_page') }}" data-login-link>登录</a>
@@ -36,6 +36,12 @@
             <strong>排轴计算</strong>
             <p>编辑动作轴、计算输出，并在排轴广场查看已发布方案。</p>
             <span class="portal-module-action">编辑排轴</span>
+        </a>
+        <a class="glass-card portal-module-card" href="{{ url_for('overlap_module.index') }}">
+            <span class="portal-module-kicker">Overlap Reference</span>
+            <strong>合轴收益表</strong>
+            <p>按角色查看合轴点、动作衔接与重击路线，比较占轴和资源收益。</p>
+            <span class="portal-module-action">查看收益表</span>
         </a>
     </section>
 

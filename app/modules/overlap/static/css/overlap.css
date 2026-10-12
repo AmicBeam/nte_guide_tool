@@ -1,0 +1,66 @@
+.overlap-page { display: grid; gap: 18px; padding-bottom: 40px; }
+.overlap-page h1 { font-size: clamp(26px, 3vw, 40px); margin: 6px 0; }
+.overlap-page h2 { margin: 0; font-size: 20px; }
+.overlap-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 28px; }
+.overlap-header p { margin: 0; }
+.overlap-controls, .overlap-results, .overlap-reference, .overlap-basis { padding: 22px; min-width: 0; }
+.overlap-characters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+.overlap-character { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.16); border-radius: 12px; padding: 8px 16px 8px 8px; color: inherit; cursor: pointer; }
+.overlap-character img { width: 42px; height: 42px; object-fit: cover; border-radius: 8px; }
+.overlap-character[aria-pressed="true"] { border-color: #6ddcc7; background: rgba(109,220,199,.12); }
+.overlap-character:focus-visible, .overlap-route summary:focus-visible { outline: 2px solid #6ddcc7; outline-offset: 3px; }
+.overlap-filters { display: grid; grid-template-columns: repeat(3, minmax(140px,1fr)) minmax(220px,1.4fr); gap: 14px; }
+.overlap-filters label { display: grid; gap: 7px; color: #c2cbd8; font-size: 13px; }
+.overlap-filters input, .overlap-filters select { width: 100%; min-width: 0; min-height: 40px; padding: 9px 12px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; color: #d3dce7; background: #0d141d; }
+.overlap-filters input::placeholder { color: #778b9d; }
+#overlap-status { margin: 16px 0 0; color: #8fa3b7; font-size: 13px; }
+.overlap-result-heading { display: flex; justify-content: space-between; gap: 14px; align-items: center; margin-bottom: 18px; }
+.overlap-result-heading span { font-size: 12px; }
+.overlap-table-scroll { overflow-x: auto; }
+.overlap-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+.overlap-table th { padding: 14px 10px; white-space: nowrap; background: rgba(255,255,255,.05); color: #a9bbcd; }
+.overlap-table td { padding: 14px 10px; border-bottom: 1px solid rgba(255,255,255,.08); white-space: nowrap; vertical-align: top; font-variant-numeric: tabular-nums; }
+.overlap-table tr:hover > td { background: rgba(109,220,199,.035); }
+.overlap-table td:first-child { min-width: 310px; max-width: 580px; white-space: normal; }
+.overlap-emphasis { color: #6ddcc7; font-weight: 700; }
+.overlap-route summary { cursor: pointer; list-style: none; display: grid; grid-template-columns: 12px minmax(0,1fr); gap: 4px 6px; }
+.overlap-route summary > * { grid-column: 2; }
+.overlap-route summary::before { content: '＋'; color: #6ddcc7; grid-column: 1; grid-row: 1; }
+.overlap-route[open] summary::before { content: '−'; }
+.overlap-route strong { line-height: 1.7; }
+.overlap-badge { display: block; color: #8fa3b7; font-size: 11px; }
+.overlap-route-prefix { color: #b3c3d2; font-size: 11px; line-height: 1.8; }
+.overlap-bubble-route { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 3px 0; }
+.overlap-action-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px; border: 1px solid #65978d; border-radius: 8px; background: rgba(109,220,199,.09); color: #d7ece7; font-size: 11px; white-space: nowrap; line-height: 1.4; }
+.overlap-action-chip.is-background { border-style: dashed; border-color: #6f91af; background: rgba(106,153,191,.07); color: #aac6df; }
+.overlap-action-chip.is-dodge { border-color: #c5ad71; background: rgba(197,173,113,.08); color: #e4d3a6; }
+.overlap-action-chip small { font-size: 9px; opacity: .7; }
+.overlap-chip-arrow { color: #708491; font-size: 10px; }
+.overlap-chip-switch { color: #d0b5e8; font-size: 9px; padding: 0 2px; }
+.overlap-window { color: #a2d9c9; }
+.overlap-window small { color: #90a5b4; }
+.overlap-route-detail { margin-top: 14px; padding: 12px; background: rgba(0,0,0,.14); border-radius: 8px; line-height: 1.7; }
+.overlap-route-detail table { width: 100%; border-collapse: collapse; }
+.overlap-route-detail th, .overlap-route-detail td { padding: 5px; font-size: 11px; }
+.overlap-route-detail td:first-child { min-width: 0; max-width: none; }
+.overlap-route-detail li { word-break: break-word; }
+#overlap-more { margin-top: 16px; }
+.overlap-action-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 12px; }
+.overlap-action { padding: 14px; border: 1px solid rgba(255,255,255,.09); border-radius: 12px; background: rgba(255,255,255,.025); }
+.overlap-action h3 { margin: 0 0 10px; font-size: 15px; }
+.overlap-action small { float: right; font-weight: 400; color: #8fa3b7; }
+.overlap-action p { margin: 5px 0; font-size: 12px; line-height: 1.7; color: #b4c2d0; }
+.overlap-action .overlap-pending { color: #eac78b; }
+.overlap-basis p, .overlap-reference > p { font-size: 13px; line-height: 1.9; color: #9eafc0; }
+.overlap-basis summary { cursor: pointer; font-size: 13px; }
+#overlap-version { overflow-wrap: anywhere; }
+@media (max-width: 1000px) { .overlap-filters { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 600px) {
+    .overlap-header { padding: 18px; align-items: flex-start; }
+    .overlap-header .secondary-btn { white-space: nowrap; font-size: 12px; }
+    .overlap-controls, .overlap-results, .overlap-reference, .overlap-basis { padding: 16px; }
+    .overlap-character { flex: 1 1 40%; }
+    .overlap-result-heading { display: block; }
+    .overlap-result-heading span { display: block; margin-top: 8px; }
+    .overlap-filters { gap: 10px; }
+}

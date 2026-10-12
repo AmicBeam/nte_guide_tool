@@ -22,23 +22,26 @@
     }
 
     function rowHtml(row) {
+        const windows = row.overlap_windows;
         const bubbles = row.timeline.map((step, index) => {
             const previous = row.timeline[index - 1];
+            const previousWindow = windows.find((window) => window.after_action_index === index-1);
             let separator = index ? '<span class="overlap-chip-arrow" aria-hidden="true">→</span>' : '';
             if (previous && step.placement !== previous.placement) {
-                separator = `<span class="overlap-chip-switch">${step.placement === 'background' ? '切走' : '回场'}</span>`;
+                separator = step.placement === 'background' && previousWindow ? '' : `<span class="overlap-chip-switch">${step.placement === 'background' ? '切走' : '回场'}</span>`;
             }
             const dodged = Boolean(step.dodge_replaces);
             const label = step.action;
             const badges = `${step.preinput_before_switch ? '<small>预</small>' : ''}${step.detached ? '<small>脱手</small>' : ''}${step.automatic ? '<small>自动</small>' : ''}`;
             const hint = `${step.action}${dodged ? `（跳过${step.dodge_replaces}全部收益）` : ''} · ${step.placement === 'background' ? '后台释放' : '前台起手'} · 输入${step.automatic ? '自动' : seconds(step.input_seconds)} · 释放${seconds(step.start_seconds)}–${seconds(step.end_seconds)}`;
-            return `${separator}<span class="overlap-action-chip ${step.placement === 'background' ? 'is-background' : ''} ${dodged ? 'is-dodge' : ''}" title="${escape(hint)}" aria-label="${escape(hint)}">${escape(label)}${badges}</span>`;
+            const window = windows.find((item) => item.after_action_index === index);
+            const marker = window ? `<span class="overlap-window-marker" title="${window.requires_return ? '切走后可让其他角色行动，随后回场续连段' : '切走后继续后台释放，无需回场'}">切走 · 窗口${window.number} ${seconds(window.duration_seconds)}</span>` : '';
+            return `${separator}<span class="overlap-action-chip ${step.placement === 'background' ? 'is-background' : ''} ${dodged ? 'is-dodge' : ''}" title="${escape(hint)}" aria-label="${escape(hint)}">${escape(label)}${badges}</span>${marker}`;
         }).join('');
         const timeline = row.timeline.map((step) => `<tr><td>${escape(step.action)}</td><td>${escape(step.automatic ? '自动' : seconds(step.input_seconds))}</td><td>${escape(seconds(step.start_seconds))}</td><td>${escape(seconds(step.end_seconds))}</td></tr>`).join('');
         const personal = Object.entries(row.personal_resources).map(([name, value]) => `${name} ${value > 0 ? '+' : ''}${number(value)}`).join('，');
-        const window = row.window_1;
-        const windowHtml = window ? `${seconds(window.start_seconds)}–${seconds(window.end_seconds)}<br><small>可回 ${seconds(window.return_start_seconds)}–${seconds(window.return_end_seconds)}</small>` : '—';
-        const windowDetail = window ? `<p>窗口1：${seconds(window.start_seconds)}–${seconds(window.end_seconds)}，共${seconds(window.duration_seconds)}；可回场范围${seconds(window.return_start_seconds)}–${seconds(window.return_end_seconds)}。本路线在尾段结束时回场。</p><p>前排区间：${row.foreground_intervals.map(([start,end]) => `${seconds(start)}–${seconds(end)}`).join('；')}，累计占轴${seconds(row.foreground_seconds)}。</p>` : '';
+        const windowHtml = windows.length ? windows.map((window) => `<div class="overlap-window-card"><strong>窗口${window.number} <b>${number(window.duration_seconds)}秒</b></strong><small>${window.requires_return ? '切走 → 回场续连段' : '切走 → 后台释放完成'}</small><small>${seconds(window.start_seconds)} → ${seconds(window.end_seconds)}</small>${window.requires_return ? `<small>可切回：${seconds(window.return_start_seconds)}–${seconds(window.return_end_seconds)}</small>` : '<small>无需回场</small>'}</div>`).join('') : '—';
+        const windowDetail = windows.length ? `<div class="overlap-window-details">${windows.map((window) => `<p><strong>合轴窗口${window.number}：${number(window.duration_seconds)}秒可供其他角色行动</strong><br>${seconds(window.start_seconds)}切走 → ${seconds(window.end_seconds)}${window.requires_return ? '回场续连段' : '后台释放完成'}。${window.requires_return ? `切人冷却为1.2秒，可在${seconds(window.return_start_seconds)}–${seconds(window.return_end_seconds)}切回；本表按${seconds(window.end_seconds)}回场。` : '这一段无需回场。'}</p>`).join('')}</div><p>前排区间：${row.foreground_intervals.map(([start,end]) => `${seconds(start)}–${seconds(end)}`).join('；')}，累计占轴${seconds(row.foreground_seconds)}。</p>` : '';
         const sources = row.sources.map((source) => `<li>${escape(source)}</li>`).join('');
         return `<tr><td><details class="overlap-route"><summary><strong>${escape(row.operation)}</strong><span class="overlap-bubble-route">${bubbles}</span><span class="overlap-badge">${escape(row.switch_label)}${row.has_dodge ? ' · 闪避替代' : ''}</span></summary><div class="overlap-route-detail">${windowDetail}<p>切人时刻 ${escape(seconds(row.switch_seconds))}，整条路线释放结束 ${escape(seconds(row.release_end_seconds))}。</p><table aria-label="动作输入与释放时刻"><thead><tr><th>动作</th><th>输入</th><th>开始释放</th><th>释放结束</th></tr></thead><tbody>${timeline}</tbody></table><p>耗能 ${number(row.energy_cost)}，返还 ${number(row.energy_return)}，净能量 ${number(row.energy_net)}；释放时环合 ${number(row.harmony_on_start)}${personal ? `；${escape(personal)}` : ''}。</p>${row.notes.map((note) => `<p>${escape(note)}</p>`).join('')}<ul>${sources}</ul></div></details></td><td class="overlap-emphasis">${seconds(row.foreground_seconds)}</td><td class="overlap-window">${windowHtml}</td><td>${seconds(row.release_end_seconds)}</td><td>${seconds(row.background_seconds)}</td><td>${multiplier(row.multipliers)}</td><td>${multiplier(row.multiplier_rates)}</td><td>${number(row.harmony)}${row.harmony_on_start ? ` + ${number(row.harmony_on_start)}释放` : ''}</td><td>${row.harmony_rate == null ? '—' : number(row.harmony_rate)}</td><td>${number(row.energy_gain)}</td><td>${row.energy_rate == null ? '—' : number(row.energy_rate)}</td><td>${number(row.stagger)}</td></tr>`;
     }

@@ -54,6 +54,8 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertAlmostEqual(row['release_end_seconds'],2.4)
         self.assertFalse(row['timeline'][2]['preinput'])
         self.assertEqual(row['timeline'][3]['input_seconds'], row['timeline'][2]['end_seconds'])
+        self.assertEqual(row['overlap_windows'],[{'number':1,'start_seconds':1.9,'end_seconds':2.4,
+            'duration_seconds':0.5,'requires_return':False,'after_action_index':3}])
 
     def test_normal_final_switch_can_follow_a_return(self):
         row = next(r for r in self.character('明音凛')['rows'] if r['original_actions']==['a1','a2','a3','a4']
@@ -172,10 +174,26 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertEqual(row['timeline'][3]['input_seconds'], 2.4)
         self.assertEqual([s['placement'] for s in row['timeline']], ['foreground','foreground','background','foreground','background'])
         self.assertEqual([s['preinput_before_switch'] for s in row['timeline']], [False,True,False,True,False])
+        self.assertEqual([w['duration_seconds'] for w in row['overlap_windows']],[1.6,1.5])
+        self.assertEqual([w['requires_return'] for w in row['overlap_windows']],[True,False])
+        self.assertEqual(row['overlap_windows'][0]['return_start_seconds'],2.0)
         for c in self.payload['characters']:
             for r in c['rows']:
                 if r['kind']=='分段合轴':
                     self.assertGreaterEqual(r['window_1']['duration_seconds'], 1.2)
+
+    def test_each_off_field_window_is_numbered_and_totals_match(self):
+        for character in self.payload['characters']:
+            for row in character['rows']:
+                windows=row['overlap_windows']
+                self.assertEqual([w['number'] for w in windows],list(range(1,len(windows)+1)))
+                if row['background_seconds'] is not None:
+                    self.assertAlmostEqual(sum(w['duration_seconds'] for w in windows),row['background_seconds'],places=5)
+                for window in windows:
+                    self.assertGreater(window['duration_seconds'],0)
+                    if window['requires_return']:
+                        self.assertGreaterEqual(window['duration_seconds'],1.2)
+                        self.assertLessEqual(window['return_start_seconds'],window['end_seconds'])
 
     def test_heiyu_e_forces_detached_a5_and_z2_automatically_returns_a3(self):
         names = ['魔a1','魔a2','魔a3','魔a4','魔a5','魔e','魔z2','魔a3']

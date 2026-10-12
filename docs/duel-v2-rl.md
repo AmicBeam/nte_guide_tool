@@ -2,6 +2,8 @@
 
 > **训练前先读：**[训练手册的当前链路与报告落点](duel-v2-public-training.md#当前训练链路与报告落点)及[完整训练、测试与报告要求](duel-v2-full-training-report-spec.md)。本页镜像、SB3、六人编译和早期PPO说明是历史技术背景，不覆盖已确认的信息集搜索学习链路；单轮报告和原始产物统一放在 `artifacts/rl-evals/`，不提交Git。
 
+设备批量改造和容量验收按[设备搜索协议](duel-v2-device-search-acceptance.md#mctx-批量改造与逐级容量验收)执行：8 → 32 → 128 → 400 → 1600 个真实独立根，每级完整 Gumbel32／cap16／covered_value horizon3、正常终局及 GPU 重放通过后再扩容。部件、CPU oracle、显存估算和 CUDA skip 不提供完整搜索或容量批准。
+
 > 当前网站已接入两套冻结模型，见文末 2026-09-15 章节。下方 2026-09-12 的单预组训练说明保留其适用范围；不能把旧镜像训练成绩当作公开角色自由构筑的验证结果。
 
 状态：2026-09-12，可运行短程训练与固定种子策略评估。游戏规则以 [V2.4 手册](everness-item-chain-card-design.md) 为准，接口以 [实现契约](duel-v2-implementation-contract.md) 为准。小样本结果只用于发现问题，不是平衡结论。

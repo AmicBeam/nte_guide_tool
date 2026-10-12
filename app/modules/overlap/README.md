@@ -57,6 +57,8 @@ node --check app/modules/overlap/static/js/overlap.js
 
 魔z2也可单独作为路线收尾，枚举完整释放与开始0.2秒后正常切人；收尾动作下拉提供魔z2，不再强制追加魔a3。只有选择魔z2预魔a3时才计入魔a3收益。
 
+用户2026-10-13补充：新增魔z1→魔a3，可在魔z1开始0.4秒后预输入，但须等到开始后0.8秒才切人（输入后额外等待0.4秒）。魔z1的合轴完整时长覆写为1.4秒，魔a3在魔z1完整结束后释放；原魔z1→魔z2顺接继续保留。特殊输入／切人时刻在动作衔接卡片分开显示，回场窗口也从实际0.8秒切人节点计算。此次按合轴范围在rules.json记录用户补充覆写，不改变排轴原始动作数据，不表述为解包或实测耗时。
+
 衔接配置可写 `input_delay_seconds`（从前动作开始到输入的延迟）、`switch_delay_seconds`（输入后额外等待）、`can_preinput=false`（前动作结束时直接输入，不提前排队）、`detach_previous=true`（前动作必须脱手）、`automatic=true`（自动衔接，无再次手动输入）、`requires_previous` / `requires_prefix`（上下文约束）；动作覆写 `locks_foreground_switch=true` 要求完整释放区间由前台覆盖，现有四名角色的动作均未配置此锁定。`start_actions`与`character_order`分别维护合法起手和展示顺序。这些属性分别记录输入、合轴与释放时刻，避免把延后合轴误算为丢伤害。
 
 ## 来源与收益边界

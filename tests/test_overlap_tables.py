@@ -287,6 +287,35 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertTrue(all(n.startswith('魔') for names in paths for n in names))
         self.assertIn(['魔a1', '魔a2', '魔z1', '魔z2', '魔a3'], paths)
 
+    def test_heiyu_z1_preinput_waits_until_point_eight_to_switch(self):
+        character = self.character('黑羽')
+        action = next(a for a in character['actions'] if a['name']=='魔z1')
+        self.assertEqual(action['duration_seconds'], 1.4)
+        self.assertTrue(action['preinput_forbidden'])
+        path = ['魔a1','魔a2','魔z1','魔a3']
+        pre = next(r for r in character['rows'] if r['original_actions']==path
+                   and r['kind']=='合轴' and r['switch_method']=='preinput')
+        full = next(r for r in character['rows'] if r['original_actions']==path and r['kind']=='连招')
+        z1, a3 = pre['timeline'][-2:]
+        self.assertEqual(pre['operation'], '魔z1预魔a3')
+        self.assertAlmostEqual(a3['input_seconds'] - z1['start_seconds'], 0.4)
+        self.assertAlmostEqual(pre['switch_seconds'] - z1['start_seconds'], 0.8)
+        self.assertEqual(z1['duration_seconds'], 1.4)
+        self.assertEqual(a3['start_seconds'], z1['end_seconds'])
+        self.assertAlmostEqual(pre['foreground_seconds'], 2.0)
+        self.assertAlmostEqual(pre['release_end_seconds'], 3.8)
+        self.assertEqual(a3['placement'], 'background')
+        for metric in ('multipliers','harmony','energy_gain','personal_resources'):
+            self.assertEqual(pre[metric], full[metric])
+        return_path = [*path,'魔a4','魔a5']
+        returned = next(r for r in character['rows'] if r['original_actions']==return_path
+                        and r['kind']=='分段合轴' and r['switch_method']=='preinput'
+                        and r['operation'].startswith('魔z1预魔a3 /'))
+        self.assertAlmostEqual(returned['window_1']['start_seconds'], 2.0)
+        self.assertAlmostEqual(returned['window_1']['duration_seconds'], 1.8)
+        self.assertAlmostEqual(returned['foreground_seconds'], 2.4)
+        self.assertIn(['魔a1','魔a2','魔z1','魔z2'], [r['original_actions'] for r in character['rows']])
+
     def test_canhong_second_stage_heavy_finishes_at_each_forms_last_stage(self):
         paths = [r['original_actions'] for r in self.character('残虹')['rows']]
         self.assertIn(['a1','a2','z','a5'], paths)

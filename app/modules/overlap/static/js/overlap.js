@@ -45,7 +45,16 @@
             const entryLabel = action.can_start ? '可作为起手' : predecessors.length ? `需从 ${predecessors.join('、')} 衔接` : '衔接来源待补';
             const successors = action.successors.map((edge) => `${edge.to}${edge.automatic ? '（自动）' : ''}${edge.can_preinput === false ? '（仅顺接，不支持合轴）' : ''}${edge.requires_previous ? `（${edge.requires_previous.join('/')}插重击后）` : ''}`).join('、') || '尚无后续记录';
             const points = action.switch_points.map((point) => `${point.label || point.id} ${seconds(point.after_seconds)}`).join('；');
-            return `<article class="overlap-action"><h3>${escape(action.name)} <small>${escape(seconds(action.duration_seconds))}</small></h3><p>${escape(entryLabel)}${action.preinput_forbidden ? ' · 不可被预输入' : ''}${action.locks_foreground_switch ? ' · 必须前台打完' : ''}</p><p>衔接：${escape(successors)}</p><p>${!action.successors.some((edge) => edge.can_preinput !== false && !edge.automatic) ? '无后续预输入合轴记录' : `开始后 ${escape(seconds(action.preinput_seconds))} 可预输入下一段并切人`}</p>${points ? `<p>${escape(points)}</p>` : ''}${action.gaps.length ? `<p class="overlap-pending">待补：${escape(action.gaps.join('、'))}</p>` : ''}</article>`;
+            const preinputs = action.successors.filter((edge) => edge.can_preinput !== false && !edge.automatic);
+            const preinputText = !preinputs.length ? '无后续预输入合轴记录'
+                : preinputs.some((edge) => edge.input_delay_seconds != null || edge.switch_delay_seconds)
+                    ? preinputs.map((edge) => {
+                        const input = edge.input_delay_seconds ?? action.preinput_seconds;
+                        const cut = input + (edge.switch_delay_seconds ?? 0);
+                        return `${edge.to}：动作开始后 ${seconds(input)} 预输入，开始后 ${seconds(cut)} 可切人`;
+                    }).join('；')
+                    : `开始后 ${seconds(action.preinput_seconds)} 可预输入下一段并切人`;
+            return `<article class="overlap-action"><h3>${escape(action.name)} <small>${escape(seconds(action.duration_seconds))}</small></h3><p>${escape(entryLabel)}${action.preinput_forbidden ? ' · 不可被预输入' : ''}${action.locks_foreground_switch ? ' · 必须前台打完' : ''}</p><p>衔接：${escape(successors)}</p><p>${escape(preinputText)}</p>${points ? `<p>${escape(points)}</p>` : ''}${action.gaps.length ? `<p class="overlap-pending">待补：${escape(action.gaps.join('、'))}</p>` : ''}</article>`;
         }).join('');
     }
 

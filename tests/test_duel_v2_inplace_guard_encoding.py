@@ -10,7 +10,7 @@ from app.modules.card_game.rl.batched_search.device_inplace_guard_encoding impor
 class InplaceGuardEncodingTest(unittest.TestCase):
     def check(self,device):
         import torch as t
-        prepare_inplace_guard_encoding();cases=fixture._cases()
+        prepare_inplace_guard_encoding(device);cases=fixture._cases()
         raw=fixture._tokens(cases,device=device);active=t.ones(len(cases),dtype=t.bool,device=device)
         raw=replace(raw,float_tokens=raw.float_tokens.to(t.float64))
         raw.float_tokens[0,0,0]=float('nan');raw.float_tokens[1,0,0]=1e300

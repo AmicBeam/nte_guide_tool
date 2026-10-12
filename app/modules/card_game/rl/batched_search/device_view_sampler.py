@@ -9,6 +9,7 @@ from ..batched_duel.gpu_rule_projection import GraphProjectionKernel
 from ..batched_duel.gpu_seven_candidates import get_card_template_table
 from .device_inplace_guard_encoding import (
     encode_guard_tokens_device as encode_tokens_device, prepare_inplace_guard_encoding)
+from .device_guard_candidate_rows import candidate_mismatch_rows
 from ..batched_duel.device_rule_protocol import DeviceStateBatch
 from .device_split_sampler import DeviceTransitionSampleCalls,_PacketPlan
 
@@ -29,8 +30,7 @@ def compare_projected_views_device(left,right,active,template_table):
     prefix=t.arange(lc.mask.shape[1],device=active.device)[None,:]<lc.counts[:,None]
     mask_bad=((lc.mask!=prefix)|(rc.mask!=prefix)).any(-1)
     obs_bad=((x!=y)|~t.isfinite(x)|~t.isfinite(y)).any(-1)
-    relevant=(lc.mask|rc.mask)[:,:,None]
-    cand_bad=(relevant&((lc.candidates!=rc.candidates)|~t.isfinite(lc.candidates)|~t.isfinite(rc.candidates))).any(-1).any(-1)
+    cand_bad=candidate_mismatch_rows(lc.candidates,rc.candidates,lc.mask,rc.mask)
     bad=(lc.counts!=rc.counts)|(lc.counts<1)|mask_bad|obs_bad|cand_bad
     errors=t.where((errors==0)&bad,VALIDATION_ERROR,errors)
     return t.where(active,errors,0).to(t.int32)
@@ -41,7 +41,7 @@ class DeviceViewSampleCalls(DeviceTransitionSampleCalls):
         if TRANSITION_VIEWS_ENTRY not in vm.image.entries or not vm.capability(TRANSITION_VIEWS_ENTRY)['ready']:
             raise VmCapabilityError('Frozen mandatory dual-guard packet entry required')
         self.projection=None
-        self.guard_encoding_identity=prepare_inplace_guard_encoding()
+        self.guard_encoding_identity=prepare_inplace_guard_encoding(vm.device)
         super().__init__(vm,*args,**kwargs)
         try:
             self.projection=GraphProjectionKernel(device=self.device,max_candidates=max_actions,runtime='seven')

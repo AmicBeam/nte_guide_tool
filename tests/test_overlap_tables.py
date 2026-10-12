@@ -66,8 +66,16 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertAlmostEqual(row['multipliers']['atk'],sum(a['multipliers']['atk'] for a in originals))
         self.assertAlmostEqual(row['energy_gain'],sum(a.get('energy_gain',0) for a in originals))
         self.assertAlmostEqual(row['harmony'],sum(a.get('harmony',0) for a in originals))
-        detached = next(r for r in character['rows'] if r['original_actions']==['e'] and r['switch_method']=='detached')
-        self.assertAlmostEqual(detached['foreground_seconds'],0.5)
+        e_action = next(a for a in character['actions'] if a['name']=='e')
+        self.assertFalse(any(p['id']=='detached' for p in e_action['switch_points']))
+        self.assertFalse(any(step['detached'] for r in character['rows'] for step in r['timeline'] if step['action']=='e'))
+
+    def test_single_action_routes_are_excluded_but_action_inventory_remains(self):
+        for character in self.payload['characters']:
+            self.assertTrue(character['rows'])
+            self.assertTrue(all(len(row['actions'])>=2 for row in character['rows']))
+            self.assertEqual(character['coverage']['rows'],len(character['rows']))
+            self.assertTrue(all(any(a['name']==name for a in character['actions']) for name in character['start_actions']))
 
     def test_preinput_now_uses_point_three_seconds(self):
         row = next(r for r in self.character('残虹')['rows'] if r['original_actions']==['a1','a2','a3','a4'] and r['switch_method']=='preinput')
@@ -207,9 +215,6 @@ class OverlapTablesTest(unittest.TestCase):
                         and r['kind']=='连招' and not r['has_dodge'])
             for field in ('multipliers','energy_gain','harmony','personal_resources'):
                 self.assertEqual(row[field],full[field])
-        simple = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==['魔e']
-                      and r['switch_method']=='normal')
-        self.assertEqual(simple['foreground_seconds'],0.2)
 
     def test_e_cannot_preinput_followup_for_any_character(self):
         for character in self.payload['characters']:
@@ -348,7 +353,7 @@ class OverlapTablesTest(unittest.TestCase):
         actions = copy.deepcopy(self.actions)
         next(a for a in actions if a['character_name']=='明音凛' and a['name']=='a1').update(duration_seconds=0,duration_pending=True)
         payload = generator.generate(self.characters, actions, self.rules)
-        row = next(r for c in payload['characters'] if c['name']=='明音凛' for r in c['rows'] if r['original_actions']==['a1'])
+        row = next(r for c in payload['characters'] if c['name']=='明音凛' for r in c['rows'] if r['original_actions']==['a1','a2'])
         self.assertIsNone(row['foreground_seconds'])
         self.assertIsNone(row['energy_rate'])
 

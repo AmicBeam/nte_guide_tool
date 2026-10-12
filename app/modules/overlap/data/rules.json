@@ -95,7 +95,8 @@
       ],
       "dodge_preserves_combo": false,
       "notes": [
-        "只统计远程普攻；不支持闪避保留连段。"
+        "只统计远程普攻；不支持闪避保留连段。",
+        "用户2026-10-12最新要求：取消普通e脱手候选，仅保留a4远脱手后接e；e仍可正常切人。"
       ],
       "start_actions": [
         "a1远",
@@ -145,7 +146,8 @@
       ],
       "basic_chain_restart_source": "用户2026-10-12确认：普攻末段默认可在完整释放后接回本形态a1；不新增预输入合轴点。",
       "normal_replaces_detach_actions": [
-        "a4远"
+        "a4远",
+        "e"
       ]
     },
     "黑羽": {
@@ -267,5 +269,6 @@
     "黑羽",
     "明音凛"
   ],
-  "normal_switch_seconds": 0.2
+  "normal_switch_seconds": 0.2,
+  "min_route_actions": 2
 }

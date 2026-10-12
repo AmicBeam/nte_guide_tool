@@ -368,6 +368,9 @@ def generate(characters, actions, rules):
     max_actions = int(rules.get('max_actions', 8))
     if not 1 <= max_actions <= 16:
         raise ValueError('max_actions应为1–16')
+    min_route_actions = int(rules.get('min_route_actions', 1))
+    if not 1 <= min_route_actions <= max_actions:
+        raise ValueError('min_route_actions必须在1与max_actions之间')
     result = []
     for character in characters:
         if character['name'] not in rules.get('characters', {}):
@@ -425,6 +428,8 @@ def generate(characters, actions, rules):
             })
         rows = []
         for names, links in enumerate_paths(by_name, edges, max_actions, rule.get('max_uses'), start_actions):
+            if len(names) < min_route_actions:
+                continue
             candidates = [i for i in range(1, len(names) - 1) if rule.get('dodge_preserves_combo')
                           and re.fullmatch(r'.*a\d.*', names[i]) and duration(by_name[names[i]]) is not None
                           and duration(by_name[names[i]]) > 0.7 and not links[i].get('detach_previous')]

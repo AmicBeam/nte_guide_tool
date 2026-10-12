@@ -4699,5 +4699,40 @@
       "mode": "refresh",
       "max_stacks": 1
     }
+  },
+  {
+    "id": "arc_paperplane_spirit_eq",
+    "name": "开始净空·纸翼战队",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_edbcee2b65"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive"
+    },
+    "target": {
+      "scope": "registrar",
+      "action_types": [
+        "E",
+        "Q"
+      ],
+      "elements": [
+        "灵"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "effects": {
+      "all_dmg": 0.35
+    },
+    "display": {
+      "line": false
+    },
+    "source_url": "https://static.nanoka.cc/nte/1.4.6/zh/weapon/fork_PaperPlane.json",
+    "note": "2026-10-13按Nanoka 1.4.6核验：只作用装备者变轨技能和极轨终结造成的灵属性伤害，精炼1–5为20/23.75/27.5/31.25/35%。"
   }
 ]

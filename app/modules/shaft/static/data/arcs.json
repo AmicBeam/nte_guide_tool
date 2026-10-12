@@ -884,8 +884,8 @@
       "all_dmg": 0,
       "basic_dmg": 0,
       "dodge_counter_dmg": 0,
-      "skill_dmg": 0.35,
-      "ultimate_dmg": 0.35,
+      "skill_dmg": 0,
+      "ultimate_dmg": 0,
       "mind_dmg": 0,
       "follow_dmg": 0,
       "attach_dmg": 0

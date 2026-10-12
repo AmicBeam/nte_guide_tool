@@ -55,7 +55,7 @@ PANEL_EFFECTS: dict[str, list[tuple[int, str, float]]] = {
     'fork_GoldWool': [(0, 'element:相', 0.01)],
     'fork_LunarPhase': [(0, 'atk_pct', 0.01)],
     'fork_Nakupeda': [(0, 'hp_pct', 0.01)],
-    'fork_PaperPlane': [(0, 'skill_dmg', 0.01), (0, 'ultimate_dmg', 0.01)],
+    'fork_PaperPlane': [],  # 灵属性 E/Q 限定由条件 Buff 处理，不能进入通用面板。
     'fork_PoliceRat': [(0, 'atk_pct', 0.01), (1, 'all_dmg', 0.01)],
     'fork_Prokaryon': [(0, 'basic_dmg', 0.01)],
     'fork_Rose': [(0, 'atk_pct', 0.01)],
@@ -81,6 +81,7 @@ PANEL_EFFECTS: dict[str, list[tuple[int, str, float]]] = {
 }
 
 BUFF_EFFECTS: dict[str, tuple[int, dict[str, tuple[int, float] | tuple[int, float, int]]]] = {
+    'arc_paperplane_spirit_eq': (0, {'all_dmg': (0, 0.01)}),
     'arc_time_outside_recorded_crit_def': (
         0,
         {'crit_dmg': (1, 0.01), 'def_ignore': (3, 0.01)},

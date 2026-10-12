@@ -29,7 +29,7 @@ SAFE_STACK_OPS = frozenset((
 SAFE_PRIMITIVE_OPS = frozenset((
     'BUILD_TUPLE', 'BUILD_LIST',
     'UNARY_NOT', 'UNARY_NEGATIVE',
-    'IS_OP', 'COMPARE_OP',
+    'IS_OP', 'COMPARE_OP', 'BINARY_SUBSCR', 'CONTAINS_OP',
     'BINARY_ADD', 'BINARY_SUBTRACT', 'BINARY_MULTIPLY',
 )) | NUMERIC_OPS
 SAFE_OPS = SAFE_STACK_OPS | SAFE_PRIMITIVE_OPS
@@ -97,6 +97,7 @@ def emit_compiled_blocks(
     max_prefix_ops=256,
     max_block_ops=32,
     entries=None,
+    function_ids=None,
 ):
     """Compile selected frozen basic blocks to a __device__ helper.
 
@@ -113,7 +114,20 @@ def emit_compiled_blocks(
         max_block_ops=_bound('max_block_ops', max_block_ops, 256),
     )
     _validate_image(image)
-    selected = _hot_functions(image, entries, budget['max_functions'])
+    if function_ids is None:
+        selected = _hot_functions(image, entries, budget['max_functions'])
+    else:
+        if entries is not None:
+            raise CompiledBlockError('Choose entries or explicit function IDs')
+        if isinstance(function_ids, (str, bytes)) or not hasattr(function_ids, '__iter__'):
+            raise TypeError('Explicit function IDs must be an iterable')
+        selected = tuple(function_ids)
+        if not selected or len(selected) > budget['max_functions']:
+            raise CompiledBlockError('Explicit function selection exceeds budget or is empty')
+        if any(type(v) is not int or not 0 <= v < len(image.functions) for v in selected):
+            raise CompiledBlockError('Exact in-range integer function IDs required')
+        if len(set(selected)) != len(selected):
+            raise CompiledBlockError('Duplicate explicit function ID')
     names = image.opcode_names
     blocks = []
     fenced = []
@@ -406,8 +420,16 @@ def _emit_block(block):
         lines.extend((
             '   if(!', BEGIN_OP_NAME, '(c,f,', _c_int(next_pc), '))return 1;\n',
         ))
+        # Preserve execute()'s early interception, including sequence/string
+        # arithmetic and container exceptions. Constants specialize dispatch;
+        # they do not authorize skipping a handler.
+        args = ','.join(('c', 'f', 'OP_' + inst['op'], _c_int(inst['arg'])))
+        full_args = args + ',' + _c_int(inst['operand']) + ',' + _c_int(inst['target'])
+        lines.append('   if(!handle_strings(' + args + ') && !handle_exceptions(' + full_args + ')\n')
+        lines.append('      && !stdlib_handle_opcode(' + full_args + ') && !handle_collections(' + full_args + ')){\n')
         lines.extend(_emit_op(inst, nlocals))
-        lines.append('   if(c->error||c->h.error)return 1;\n')
+        lines.append('   }\n')
+        lines.append('   if(c->error||c->h.error||c->raised!=MISSING||c->current!=id)return 1;\n')
     lines.append('   return 1;}\n')
     return lines
 
@@ -492,6 +514,10 @@ def _emit_op(inst, nlocals):
         return (
             '   {int b=pop(c,f),a=pop(c,f);push(c,f,compare(c,a,b,', arg, ')?TRUE_REF:FALSE_REF);}\n',
         )
+    if op == 'BINARY_SUBSCR':
+        return ('   {int key=pop(c,f),owner=pop(c,f);push(c,f,collection_subscript(c,owner,key));}\n',)
+    if op == 'CONTAINS_OP':
+        return ('   {int owner=pop(c,f),needle=pop(c,f);int yes=contains(c,needle,owner);push(c,f,(', arg, '?!yes:yes)?TRUE_REF:FALSE_REF);}\n',)
     if op in SAFE_PRIMITIVE_OPS:
         return (
             '   {int b=pop(c,f),a=pop(c,f);int stdlib_out=MISSING;\n',

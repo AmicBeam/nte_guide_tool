@@ -84,7 +84,6 @@
         const url = new URL(window.location.href);
         url.searchParams.set('character', character.id);
         history.replaceState(null, '', url);
-        $('basis').textContent = `${dataset.basis} ${character.notes.join(' ')}`;
         renderActions();
         render();
     }
@@ -99,8 +98,6 @@
             dataset = data;
             $('characters').innerHTML = data.characters.map((character) => `<button type="button" class="overlap-character" data-character="${escape(character.id)}" aria-pressed="false"><img src="${escape(character.avatar)}" alt="" loading="lazy"><span>${escape(character.name)}</span></button>`).join('');
             document.querySelectorAll('[data-character]').forEach((button) => button.addEventListener('click', () => selectCharacter(data.characters.find((character) => character.id === button.dataset.character))));
-            $('sources').innerHTML = data.sources.map((url, index) => `<li><a href="${escape(url)}" target="_blank" rel="noopener noreferrer">角色资料 ${index + 1}</a></li>`).join('');
-            $('version').textContent = Object.entries(data.input_sha256).map(([name, hash]) => `${name}: ${hash.slice(0, 12)}`).join(' · ');
             const id = new URL(location.href).searchParams.get('character');
             selectCharacter(data.characters.find((character) => character.id === id) || data.characters[0]);
         } catch (error) {

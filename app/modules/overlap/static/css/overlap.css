@@ -3,7 +3,7 @@
 .overlap-page h2 { margin: 0; font-size: 20px; }
 .overlap-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 28px; }
 .overlap-header p { margin: 0; }
-.overlap-controls, .overlap-results, .overlap-reference, .overlap-basis { padding: 22px; min-width: 0; }
+.overlap-controls, .overlap-results, .overlap-reference { padding: 22px; min-width: 0; }
 .overlap-characters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
 .overlap-character { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.16); border-radius: 12px; padding: 8px 16px 8px 8px; color: inherit; cursor: pointer; }
 .overlap-character img { width: 42px; height: 42px; object-fit: cover; border-radius: 8px; }
@@ -58,14 +58,12 @@
 .overlap-action small { float: right; font-weight: 400; color: #8fa3b7; }
 .overlap-action p { margin: 5px 0; font-size: 12px; line-height: 1.7; color: #b4c2d0; }
 .overlap-action .overlap-pending { color: #eac78b; }
-.overlap-basis p, .overlap-reference > p { font-size: 13px; line-height: 1.9; color: #9eafc0; }
-.overlap-basis summary { cursor: pointer; font-size: 13px; }
-#overlap-version { overflow-wrap: anywhere; }
+.overlap-reference > p { font-size: 13px; line-height: 1.9; color: #9eafc0; }
 @media (max-width: 1000px) { .overlap-filters { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 600px) {
     .overlap-header { padding: 18px; align-items: flex-start; }
     .overlap-header .secondary-btn { white-space: nowrap; font-size: 12px; }
-    .overlap-controls, .overlap-results, .overlap-reference, .overlap-basis { padding: 16px; }
+    .overlap-controls, .overlap-results, .overlap-reference { padding: 16px; }
     .overlap-character { flex: 1 1 40%; }
     .overlap-result-heading { display: block; }
     .overlap-result-heading span { display: block; margin-top: 8px; }

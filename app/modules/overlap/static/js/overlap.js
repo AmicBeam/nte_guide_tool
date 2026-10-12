@@ -15,9 +15,14 @@
 
     function renderActions() {
         $('actions').innerHTML = selected.actions.map((action) => {
+            const predecessors = [...new Set([
+                ...selected.actions.filter((source) => source.successors.some((edge) => edge.to === action.name)).map((source) => source.name),
+                ...selected.rows.flatMap((row) => row.timeline.flatMap((step, index) => step.action === action.name && index > 0 ? [row.timeline[index-1].action] : [])),
+            ])];
+            const entryLabel = action.can_start ? '可作为起手' : predecessors.length ? `需从 ${predecessors.join('、')} 衔接` : '衔接来源待补';
             const successors = action.successors.map((edge) => `${edge.to}${edge.automatic ? '（自动）' : ''}${edge.can_preinput === false ? '（仅顺接，不支持合轴）' : ''}${edge.requires_previous ? `（${edge.requires_previous.join('/')}插重击后）` : ''}`).join('、') || '尚无后续记录';
             const points = action.switch_points.map((point) => `${point.label || point.id} ${seconds(point.after_seconds)}`).join('；');
-            return `<article class="overlap-action"><h3>${escape(action.name)} <small>${escape(seconds(action.duration_seconds))}</small></h3><p>${action.can_start ? '可作为起手' : '需从前段衔接'}${action.preinput_forbidden ? ' · 不可被预输入' : ''}${action.locks_foreground_switch ? ' · 必须前台打完' : ''}</p><p>衔接：${escape(successors)}</p><p>${!action.successors.some((edge) => edge.can_preinput !== false && !edge.automatic) ? '无后续预输入合轴记录' : `开始后 ${escape(seconds(action.preinput_seconds))} 可预输入下一段并切人`}</p>${points ? `<p>${escape(points)}</p>` : ''}${action.gaps.length ? `<p class="overlap-pending">待补：${escape(action.gaps.join('、'))}</p>` : ''}</article>`;
+            return `<article class="overlap-action"><h3>${escape(action.name)} <small>${escape(seconds(action.duration_seconds))}</small></h3><p>${escape(entryLabel)}${action.preinput_forbidden ? ' · 不可被预输入' : ''}${action.locks_foreground_switch ? ' · 必须前台打完' : ''}</p><p>衔接：${escape(successors)}</p><p>${!action.successors.some((edge) => edge.can_preinput !== false && !edge.automatic) ? '无后续预输入合轴记录' : `开始后 ${escape(seconds(action.preinput_seconds))} 可预输入下一段并切人`}</p>${points ? `<p>${escape(points)}</p>` : ''}${action.gaps.length ? `<p class="overlap-pending">待补：${escape(action.gaps.join('、'))}</p>` : ''}</article>`;
         }).join('');
     }
 

@@ -10,6 +10,7 @@
 - `generator.py`：离线枚举、时间安排与裸收益加总。
 - `static/data/tables.json`：随网站发布的静态结果，附输入 SHA-256。
 - `templates/overlap/index.html`、`static/js/overlap.js`、`static/css/overlap.css`：独立展示页面。
+- 动作衔接卡片从静态合法衔接关系和已生成路线列出具体前置动作；多个来源及合法的闪替代来源全部列出，不使用“前段”等泛称，不在网页推测新衔接。
 - `scripts/generate_overlap_tables.py`：生成入口，不导入 Flask 应用、不初始化数据库。
 
 只读取排轴的 `actions.json` / `characters.json` 数据文件，不依赖排轴领域服务；不修改排轴动作或权限。更新动作数值或合轴配置后显式运行：

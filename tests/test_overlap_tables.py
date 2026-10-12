@@ -28,7 +28,7 @@ class OverlapTablesTest(unittest.TestCase):
     def test_scope_and_no_melee_requiem(self):
         self.assertEqual([c['name'] for c in self.payload['characters']], ['安魂曲','残虹','黑羽','明音凛'])
         self.assertEqual({c['name'] for c in self.payload['characters']}, {'安魂曲', '残虹', '黑羽', '明音凛'})
-        self.assertEqual([a['name'] for a in self.character('安魂曲')['actions']], [f'a{i}远' for i in range(1, 6)])
+        self.assertEqual({a['name'] for a in self.character('安魂曲')['actions']}, {*(f'a{i}远' for i in range(1, 6)), 'e'})
 
     def test_normal_switch_preserves_full_requiem_benefits(self):
         row = next(r for r in self.character('安魂曲')['rows'] if r['original_actions'] == ['a1远', 'a2远', 'a3远', 'a4远'] and r['switch_method'] == 'normal')
@@ -36,10 +36,38 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertAlmostEqual(row['release_end_seconds'], 2.7)
         self.assertAlmostEqual(row['background_seconds'], 1.0)
         self.assertAlmostEqual(row['multipliers']['atk'], 4.401)
-        self.assertAlmostEqual(row['timeline'][-1]['input_seconds'], 1.5)
+        self.assertAlmostEqual(row['timeline'][-1]['input_seconds'], 1.1)
         self.assertAlmostEqual(row['timeline'][-1]['start_seconds'], 1.5)
         self.assertTrue(all(not step['preinput_before_switch'] for step in row['timeline']))
-        self.assertFalse(any(r['switch_method']=='preinput' for r in self.character('安魂曲')['rows']))
+        pre = next(r for r in self.character('安魂曲')['rows'] if r['original_actions']==['a1远','a2远','a3远','a4远'] and r['switch_method']=='preinput')
+        self.assertAlmostEqual(pre['foreground_seconds'],1.1)
+        self.assertEqual(pre['operation'],'a3预a4')
+        self.assertEqual(pre['multipliers'],row['multipliers'])
+
+    def test_requiem_normal_e_and_detached_a4_connect_to_a5(self):
+        character = self.character('安魂曲')
+        self.assertEqual(character['start_actions'],['a1远','e'])
+        simple = next(r for r in character['rows'] if r['original_actions']==['e','a5远'] and r['switch_method']=='preinput')
+        self.assertEqual(simple['operation'],'e预a5')
+        self.assertAlmostEqual(simple['foreground_seconds'],0.3)
+        self.assertAlmostEqual(simple['release_end_seconds'],2.8)
+        self.assertEqual(simple['timeline'][-1]['placement'],'background')
+        names = ['a1远','a2远','a3远','a4远','e','a5远']
+        row = next(r for r in character['rows'] if r['original_actions']==names and r['switch_method']=='preinput' and r['kind']=='合轴')
+        a4, e, a5 = row['timeline'][-3:]
+        self.assertTrue(a4['detached'])
+        self.assertAlmostEqual(a4['duration_seconds'],0.5)
+        self.assertAlmostEqual(e['start_seconds'],2.0)
+        self.assertEqual(e['input_seconds'],a4['end_seconds'])
+        self.assertFalse(e['preinput'])
+        self.assertAlmostEqual(row['foreground_seconds'],2.3)
+        self.assertAlmostEqual(a5['start_seconds'],2.8)
+        originals = [a for a in self.actions if a['character_name']=='安魂曲' and a['name'] in names]
+        self.assertAlmostEqual(row['multipliers']['atk'],sum(a['multipliers']['atk'] for a in originals))
+        self.assertAlmostEqual(row['energy_gain'],sum(a.get('energy_gain',0) for a in originals))
+        self.assertAlmostEqual(row['harmony'],sum(a.get('harmony',0) for a in originals))
+        detached = next(r for r in character['rows'] if r['original_actions']==['e'] and r['switch_method']=='detached')
+        self.assertAlmostEqual(detached['foreground_seconds'],0.5)
 
     def test_preinput_now_uses_point_three_seconds(self):
         row = next(r for r in self.character('残虹')['rows'] if r['original_actions']==['a1','a2','a3','a4'] and r['switch_method']=='preinput')

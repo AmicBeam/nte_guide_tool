@@ -396,7 +396,7 @@ def generate(characters, actions, rules):
             raise ValueError('正常切人动作必须存在')
         points = {a['name']: switch_points(a, override_map.get(a['name'], {}),
                   rules.get('normal_switch_seconds',0.2) if a['name'] in normal_actions else None,
-                  bool(rule.get('normal_replaces_detach'))) for a in current}
+                  bool(rule.get('normal_replaces_detach')) and a['name'] in normal_actions) for a in current}
         inventory = []
         for action in current:
             gaps = []

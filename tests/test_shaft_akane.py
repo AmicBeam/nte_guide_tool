@@ -52,6 +52,8 @@ class AkaneTest(unittest.TestCase):
         self.assertAlmostEqual(actions['长强E']['multipliers']['atk'], 10.125)
         self.assertEqual(actions['长强E']['duration_ticks'],15)
         self.assertNotIn('同调共振',actions)
+        c_awaken=c['awakenings']['明音凛'][2]
+        self.assertIn('音域范围扩大30%',c_awaken['description'])
         self.assertFalse(any(a.get('source_row') in (31, 38) for a in actions.values()))
 
     def test_resource_cap_and_awakening_refund(self):
@@ -264,7 +266,7 @@ class AkaneTest(unittest.TestCase):
             p['team'][0]['arc_refinement']=level
             details=simulate_shaft_axis(p)['result']['details']
             for d in details:
-                self.assertAlmostEqual(d['panel']['crit_rate']-base_crit,.12+.03*(level-1))
+                self.assertAlmostEqual(d['panel']['crit_rate']-base_crit,.15+.03*(level-1))
                 b=next(b for b in d['applied_buffs'] if b['rule_id']=='arc_akane_skill')
                 self.assertEqual(b['stack_count'],1)
                 self.assertAlmostEqual(b['effects']['skill_dmg'],bonus)
@@ -297,19 +299,19 @@ class AkaneTest(unittest.TestCase):
                     self.assertEqual(buff['end_tick']-buff['start_tick'],250)
                 self.assertNotIn('character_akane_six',{b['rule_id'] for b in after['applied_buffs']})
 
-    def test_talent_is_twenty_four_attack_and_f_is_defense_ignore_for_twenty_seconds(self):
-        # Oct 11 user notice: F changes effect, retaining the existing 20s window.
+    def test_talent_is_twenty_percent_attack_and_f_is_defense_ignore_for_twenty_seconds(self):
+        # Oct 12 user notice lowers attack to 20%; F and the existing 20s window remain.
         for nodes, ignore in [((),0),([6],.16)]:
             details=self.sim([('q1',0),('a1',20),('a1',230)],nodes=nodes)['details']
             during,after=details[1:]
-            self.assertAlmostEqual(during['panel']['atk']-after['panel']['atk'],636*.24)
+            self.assertAlmostEqual(during['panel']['atk']-after['panel']['atk'],636*.2)
             self.assertAlmostEqual(during['formula_parts']['dmg_bonus']-after['formula_parts']['dmg_bonus'],0)
             self.assertAlmostEqual(during['panel']['crit_rate'],after['panel']['crit_rate'])
             self.assertAlmostEqual(during['panel']['crit_dmg'],after['panel']['crit_dmg'])
             self.assertAlmostEqual(during['formula_parts']['def_ignore'],ignore)
             self.assertAlmostEqual(after['formula_parts']['def_ignore'],0)
             b=next(b for b in during['applied_buffs'] if b['rule_id']=='character_akane_talent2')
-            self.assertEqual(b['effects'],{'atk_pct':.24})
+            self.assertEqual(b['effects'],{'atk_pct':.2})
             self.assertEqual(b['end_tick']-b['start_tick'],200)
             if nodes:
                 f=next(b for b in during['applied_buffs'] if b['rule_id']=='character_akane_f')
@@ -459,7 +461,7 @@ class AkaneTest(unittest.TestCase):
         c=load_shaft_catalog()
         self.assertEqual(next(x for x in c['characters'] if x['id']==CID)['reaction_reapplication']['atk_multiplier'],1.5)
         buffs={b['id']:b for b in c['buffs']}
-        self.assertEqual(buffs['character_akane_talent2']['effects'],{'atk_pct':.24})
+        self.assertEqual(buffs['character_akane_talent2']['effects'],{'atk_pct':.2})
         self.assertEqual(buffs['character_akane_d']['effects'],{'crit_dmg':.3})
         self.assertEqual(buffs['character_akane_f']['effects'],{'def_ignore':.16})
         self.assertEqual(buffs['character_akane_e_single']['effects'],{'base_multiplier_pct':.24})

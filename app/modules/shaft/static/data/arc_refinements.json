@@ -5054,12 +5054,12 @@
         5
       ],
       "source_url": "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y",
-      "source_note": "用户2026-10-12腾讯文档括号内新值复核：暴击12%–24%、相伤20%–40%，与此前已接入值一致；2–4精继续按用户已授权端点等差换算，非新解包核实。",
+      "source_note": "用户2026-10-13提供的10月12日调整公告：烁星激昂攻击提升20%、C觉音域范围30%、月的对跖点暴击15%–27%；非Nanoka/NTEData新版本核实。 2–4档继续按已授权端点等差换算，每档3个百分点；相伤、变轨/普攻增伤与15秒窗口保持原值。",
       "levels": {
         "1": {
           "panel_modifiers": {
             "crit_dmg": 0.48,
-            "crit_rate": 0.12
+            "crit_rate": 0.15
           },
           "element_dmg": {},
           "buff_effects": {
@@ -5074,7 +5074,7 @@
             }
           },
           "effect_values": [
-            "12%",
+            "15%",
             "28%",
             "28%",
             "20%"
@@ -5083,7 +5083,7 @@
         "2": {
           "panel_modifiers": {
             "crit_dmg": 0.48,
-            "crit_rate": 0.15
+            "crit_rate": 0.18
           },
           "element_dmg": {},
           "buff_effects": {
@@ -5098,7 +5098,7 @@
             }
           },
           "effect_values": [
-            "15%",
+            "18%",
             "35%",
             "35%",
             "25%"
@@ -5107,7 +5107,7 @@
         "3": {
           "panel_modifiers": {
             "crit_dmg": 0.48,
-            "crit_rate": 0.18
+            "crit_rate": 0.21
           },
           "element_dmg": {},
           "buff_effects": {
@@ -5122,7 +5122,7 @@
             }
           },
           "effect_values": [
-            "18%",
+            "21%",
             "42%",
             "42%",
             "30%"
@@ -5131,7 +5131,7 @@
         "4": {
           "panel_modifiers": {
             "crit_dmg": 0.48,
-            "crit_rate": 0.21
+            "crit_rate": 0.24
           },
           "element_dmg": {},
           "buff_effects": {
@@ -5146,7 +5146,7 @@
             }
           },
           "effect_values": [
-            "21%",
+            "24%",
             "49%",
             "49%",
             "35%"
@@ -5155,7 +5155,7 @@
         "5": {
           "panel_modifiers": {
             "crit_dmg": 0.48,
-            "crit_rate": 0.24
+            "crit_rate": 0.27
           },
           "element_dmg": {},
           "buff_effects": {
@@ -5170,7 +5170,7 @@
             }
           },
           "effect_values": [
-            "24%",
+            "27%",
             "56%",
             "56%",
             "40%"

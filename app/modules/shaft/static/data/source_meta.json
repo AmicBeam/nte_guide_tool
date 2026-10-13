@@ -134,7 +134,7 @@
       "31": "通用Reaction GE，不是角色普通动作",
       "38": "占位分支0.1%且文档无对应技能，不导入"
     },
-    "checked_at": "2026-10-12",
+    "checked_at": "2026-10-13",
     "everness": "按明音凛检索无匹配",
     "estimates": {
       "base_stats": "已由Nanoka 1.4.6的80级实值替换；历史暂估660/15000/900。"
@@ -155,7 +155,7 @@
     "nanoka_sha256": "1569f5e6f61793d7accd2b95af5ca16d445655fb5ca3d3975d3db4d7394dd5d3",
     "conflicts": {
       "area_transmission": "用户10月11日公告：基础40%/60%，E觉64%/90%。",
-      "talent2": "Nanoka1.4.6文本自身伤害20%/25秒；用户10月11日明确自身攻击力24%/20秒，按最新用户口径。",
+      "talent2": "Nanoka1.4.6仍写伤害20%/25秒；用户10月12日公告明确攻击力提升由24%改20%，原20秒与刷新条件保留。",
       "passive1": "用户10月11日明确基础150%；3秒、每剩余秒20%、上限160%、1秒CD及变轨分类沿用已确认口径。"
     },
     "cadenza_source": {
@@ -184,7 +184,7 @@
       "priority": "2026-10-12文档括号内基础倍率及专武新值；不覆盖用户此前10月11日被动/觉醒、耗时和资源确认。"
     },
     "harmony_source_note": "用户2026-10-10按新解包仅更新a4环合为5.847；a1/a2/a3仍为3.56/5.496/9.096，普攻合计23.999，不强行缩放至24。",
-    "latest_awakening_source": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。",
+    "latest_awakening_source": "用户2026-10-13提供的10月12日调整公告：烁星激昂攻击提升20%、C觉音域范围30%、月的对跖点暴击15%–27%；非Nanoka/NTEData新版本核实。",
     "confirmed_action_durations": {
       "source": "用户2026-10-10提供；2026-10-11普攻前三段各延长0.1秒，其他耗时沿用原确认值。",
       "seconds": {
@@ -390,7 +390,8 @@
       },
       "unchanged": "A回血1000%基础攻击与防御50%、C追加1000%、音域传导90%、Q2三觉追加1000%、六觉返还10与25秒、F烁星20秒、资源/耗时/CD及循环起始资源保持既有口径。",
       "enhanced_skill_bonus_confirmation": "用户2026-10-12确认10月11日调整：强化技能追加倍率仍属三觉共鸣，750%改为800%，在技能等级换算后加算；基础倍率下调未给新值，保留现值。",
-      "base_multipliers_followup": "已于2026-10-12按oct11_document_update接入文档括号内值，长强E×2由用户纠正为单次。"
+      "base_multipliers_followup": "已于2026-10-12按oct11_document_update接入文档括号内值，长强E×2由用户纠正为单次。",
+      "historical_note": "历史记录；烁星攻击24%已由oct12_change_notice覆盖，其他本轮未修改项继续有效。"
     },
     "oct11_document_update": {
       "source": "用户2026-10-12提供的腾讯文档《明音凛资料汇总》括号内10月11日新倍率；仅同步基础倍率及其逐段伤害，资源、耗时、已确认被动/觉醒不由文档旧正文覆盖。非Nanoka/NTEData新版本核实。",
@@ -524,7 +525,40 @@
         "crit_dmg": 0.48,
         "already_applied": true
       },
-      "unchanged": "回能、环合、倾陷、弦能、耗时、冷却与已确认被动/觉醒保留。三共鸣强化追加800%、Q2追加1000%仍在本体等级换算后加算。"
+      "unchanged": "回能、环合、倾陷、弦能、耗时、冷却与已确认被动/觉醒保留。三共鸣强化追加800%、Q2追加1000%仍在本体等级换算后加算。",
+      "historical_note": "倍率与资源边界继续有效；专武暴击12%–24%已由oct12_change_notice覆盖。"
+    },
+    "oct12_change_notice": {
+      "source": "用户2026-10-13提供的10月12日调整公告：烁星激昂攻击提升20%、C觉音域范围30%、月的对跖点暴击15%–27%；非Nanoka/NTEData新版本核实。",
+      "notice_date": "2026-10-12",
+      "received_at": "2026-10-13",
+      "applied": {
+        "talent2_atk_pct": 0.2,
+        "talent2_duration_ticks": 200,
+        "c_sound_field_range_bonus": 0.3,
+        "arc_crit_rate_by_refinement": [
+          0.15,
+          0.18,
+          0.21,
+          0.24,
+          0.27
+        ]
+      },
+      "arc_middle_level_policy": "沿用用户已授权端点等差换算，2–4档为18%/21%/24%；每档3个百分点。",
+      "recorded_unmodeled": {
+        "base_sound_field_range": "基础音域继续扩大，未提供新半径，不猜测具体空间值。",
+        "sound_field_transmission_knockback": "音域传导攻击不再击退；单敌伤害轴不模拟空间或击退，不改变攻击命中、伤害、前台锁定或手动打断。",
+        "c_sound_field_range": "C觉音域范围25%改30%，同步觉醒说明，不虚构伤害增益。"
+      },
+      "pending_text": "部分技能文本优化未给全文，不补猜测其他机制或时序。",
+      "nanoka_check": {
+        "checked_at": "2026-10-13",
+        "version": "1.4.6",
+        "character_id": 1057,
+        "sha256": "1569f5e6f61793d7accd2b95af5ca16d445655fb5ca3d3975d3db4d7394dd5d3",
+        "boundary": "公开当前角色仍为旧技能/觉醒描述；新值采用用户10月12日公告。"
+      },
+      "unchanged": "基础倍率、回能、环合、倾陷、弦能、耗时、CD、其他觉醒/共鸣、专武基础攻击570/暴伤48%、相伤20%–40%、变轨与普攻增伤28%–56%及15秒刷新窗口保留。"
     }
   }
 }

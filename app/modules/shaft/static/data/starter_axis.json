@@ -291,7 +291,11 @@
     "training_flat_def": 25,
     "training_flat_hp": 340,
     "training_harmony_strength": 10,
-    "training_stagger_strength": 10
+    "training_stagger_strength": 10,
+    "food_crit_rate": 0,
+    "food_crit_dmg": 0,
+    "food_flat_atk": 0,
+    "blessing": "none"
   },
   "options": {
     "reaction_mastery_policy": "team_max",

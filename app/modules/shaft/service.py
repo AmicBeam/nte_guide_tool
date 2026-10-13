@@ -113,6 +113,10 @@ TEAM_PANEL_BONUS_DEFAULTS = {
     'training_flat_hp': 340.0,
     'training_harmony_strength': 10.0,
     'training_stagger_strength': 10.0,
+    # User-provided food caps and blessing candidates, 2026-10-13; see module README.
+    'food_crit_rate': 0.0,
+    'food_crit_dmg': 0.0,
+    'food_flat_atk': 0.0,
 }
 TEAM_TRAINING_BONUS_CAPS = {
     'training_crit_rate': 0.025,
@@ -123,6 +127,8 @@ TEAM_TRAINING_BONUS_CAPS = {
     'training_harmony_strength': 12.0,
     'training_stagger_strength': 12.0,
 }
+TEAM_FOOD_BONUS_CAPS = {'food_crit_rate': 0.12, 'food_crit_dmg': 0.24, 'food_flat_atk': 150.0}
+TEAM_BLESSING_IDS = {'none', 'crit_rate', 'crit_dmg', 'all_dmg', 'atk_pct', 'stagger_strength', 'harmony_strength'}
 SKILL_LEVEL_KEYS = ('basic', 'skill', 'ultimate', 'support')
 SKILL_LEVEL_DEFAULTS = {
     'basic': 10,
@@ -778,7 +784,7 @@ def _team_panel_bonus_defaults(catalog: dict[str, Any]) -> dict[str, float]:
     return defaults
 
 
-def _normalize_team_panel_bonus(raw: Any, catalog: dict[str, Any]) -> dict[str, float]:
+def _normalize_team_panel_bonus(raw: Any, catalog: dict[str, Any]) -> dict[str, Any]:
     defaults = _team_panel_bonus_defaults(catalog)
     source = raw if isinstance(raw, dict) else {}
     version = max(0, _int(source.get('version')))
@@ -806,10 +812,12 @@ def _normalize_team_panel_bonus(raw: Any, catalog: dict[str, Any]) -> dict[str, 
         'small_flat_atk': small_flat_atk,
         'small_flat_hp': max(0.0, min(100000.0, _num(source.get('small_flat_hp'), defaults['small_flat_hp']))),
     }
-    for key, cap in TEAM_TRAINING_BONUS_CAPS.items():
+    for key, cap in {**TEAM_TRAINING_BONUS_CAPS, **TEAM_FOOD_BONUS_CAPS}.items():
         value = max(0.0, min(cap, _num(source.get(key), defaults[key])))
-        scale = 1000 if key in {'training_crit_rate', 'training_crit_dmg'} else 1
+        scale = 1000 if key.endswith(('_crit_rate', '_crit_dmg')) else 1
         bonus[key] = int(value * scale + 0.5) / scale
+    blessing = source.get('blessing')
+    bonus['blessing'] = blessing if isinstance(blessing, str) and blessing in TEAM_BLESSING_IDS else 'none'
     return bonus
 
 

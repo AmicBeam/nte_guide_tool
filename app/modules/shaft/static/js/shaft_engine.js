@@ -32,6 +32,10 @@
     training_flat_hp: 340,
     training_harmony_strength: 10,
     training_stagger_strength: 10,
+    // User-provided food caps and blessing candidates, 2026-10-13; see module README.
+    food_crit_rate: 0,
+    food_crit_dmg: 0,
+    food_flat_atk: 0,
   };
   const TEAM_TRAINING_BONUS_CAPS = {
     training_crit_rate: 0.025,
@@ -41,6 +45,18 @@
     training_flat_hp: 420,
     training_harmony_strength: 12,
     training_stagger_strength: 12,
+  };
+  const TEAM_FOOD_BONUS_CAPS = {
+    food_crit_rate: 0.12, food_crit_dmg: 0.24, food_flat_atk: 150,
+  };
+  const TEAM_BLESSING_EFFECTS = {
+    none: {},
+    crit_rate: { crit_rate: 0.10 },
+    crit_dmg: { crit_dmg: 0.20 },
+    all_dmg: { all_dmg: 0.15 },
+    atk_pct: { atk_pct: 0.15 },
+    stagger_strength: { stagger_strength: 60 },
+    harmony_strength: { harmony_strength: 60 },
   };
   const DEFAULT_PERSONAL_RESOURCE_CAPS = {
     char_31c5130304: { '真理之匙': 3 },
@@ -341,23 +357,26 @@
       bonus.furniture_flat_def = Math.round(Math.max(0, Math.min(TEAM_PANEL_BONUS_DEFAULTS.furniture_flat_def, bonus.furniture_flat_def)));
     }
     bonus.version = TEAM_PANEL_BONUS_DEFAULTS.version;
-    Object.entries(TEAM_TRAINING_BONUS_CAPS).forEach(([key, cap]) => {
-      const scale = key === 'training_crit_rate' || key === 'training_crit_dmg' ? 1000 : 1;
+    Object.entries({...TEAM_TRAINING_BONUS_CAPS, ...TEAM_FOOD_BONUS_CAPS}).forEach(([key, cap]) => {
+      const scale = key.endsWith('_crit_rate') || key.endsWith('_crit_dmg') ? 1000 : 1;
       bonus[key] = Math.round(Math.max(0, Math.min(cap, bonus[key])) * scale) / scale;
     });
+    bonus.blessing = typeof source.blessing === 'string' && Object.prototype.hasOwnProperty.call(TEAM_BLESSING_EFFECTS, source.blessing)
+      ? source.blessing : 'none';
     return bonus;
   }
 
   function teamPanelBonusMods(raw, catalog) {
     const bonus = normalizeTeamPanelBonus(raw, catalog);
     const out = mods();
-    out.crit_rate += bonus.training_crit_rate;
-    out.crit_dmg += bonus.furniture_crit_dmg + bonus.training_crit_dmg;
-    out.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk + bonus.training_flat_atk;
+    out.crit_rate += bonus.training_crit_rate + bonus.food_crit_rate;
+    out.crit_dmg += bonus.furniture_crit_dmg + bonus.training_crit_dmg + bonus.food_crit_dmg;
+    out.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk + bonus.training_flat_atk + bonus.food_flat_atk;
     out.flat_def += bonus.furniture_flat_def + bonus.training_flat_def;
     out.flat_hp += bonus.small_flat_hp + bonus.training_flat_hp;
     out.harmony_strength += bonus.training_harmony_strength;
     out.stagger_strength += bonus.training_stagger_strength;
+    Object.entries(TEAM_BLESSING_EFFECTS[bonus.blessing]).forEach(([key, value]) => { out[key] += value; });
     return out;
   }
 

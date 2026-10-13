@@ -100,6 +100,10 @@
     training_flat_hp: 340,
     training_harmony_strength: 10,
     training_stagger_strength: 10,
+    // User-provided food caps and blessing candidates, 2026-10-13; see module README.
+    food_crit_rate: 0,
+    food_crit_dmg: 0,
+    food_flat_atk: 0,
   };
   const TEAM_FURNITURE_BONUS_FIELDS = [
     { key: 'furniture_crit_dmg', label: '暴伤家具', kind: 'percent', max: 4, step: 0.1 },
@@ -115,7 +119,26 @@
     { key: 'training_harmony_strength', label: '环合强度', kind: 'flat', max: 12, step: 1 },
     { key: 'training_stagger_strength', label: '倾陷强度', kind: 'flat', max: 12, step: 1 },
   ];
-  const TEAM_PANEL_BONUS_FIELDS = [...TEAM_FURNITURE_BONUS_FIELDS, ...TEAM_TRAINING_BONUS_FIELDS];
+  const TEAM_FOOD_BONUS_FIELDS = [
+    { key: 'food_crit_rate', label: '暴击率', kind: 'percent', max: 12, step: 0.1 },
+    { key: 'food_crit_dmg', label: '暴伤', kind: 'percent', max: 24, step: 0.1 },
+    { key: 'food_flat_atk', label: '攻击', kind: 'flat', max: 150, step: 1 },
+  ];
+  const TEAM_BLESSING_EFFECTS = {
+    none: {},
+    crit_rate: { crit_rate: 0.10 },
+    crit_dmg: { crit_dmg: 0.20 },
+    all_dmg: { all_dmg: 0.15 },
+    atk_pct: { atk_pct: 0.15 },
+    stagger_strength: { stagger_strength: 60 },
+    harmony_strength: { harmony_strength: 60 },
+  };
+  const TEAM_BLESSING_LABELS = {
+    none: '无', crit_rate: '暴击率 +10%', crit_dmg: '暴伤 +20%',
+    all_dmg: '增伤 +15%', atk_pct: '攻击 +15%',
+    stagger_strength: '倾陷强度 +60', harmony_strength: '环合强度 +60',
+  };
+  const TEAM_PANEL_BONUS_FIELDS = [...TEAM_FURNITURE_BONUS_FIELDS, ...TEAM_TRAINING_BONUS_FIELDS, ...TEAM_FOOD_BONUS_FIELDS];
   const SKILL_LEVEL_FIELDS = [
     { key: 'basic', label: '普攻' },
     { key: 'skill', label: 'E' },
@@ -821,25 +844,28 @@
       small_flat_atk: smallFlatAtk,
       small_flat_hp: Math.max(0, Math.min(100000, numberValue(source.small_flat_hp, DEFAULT_TEAM_PANEL_BONUS.small_flat_hp))),
     };
-    TEAM_TRAINING_BONUS_FIELDS.forEach((field) => {
+    [...TEAM_TRAINING_BONUS_FIELDS, ...TEAM_FOOD_BONUS_FIELDS].forEach((field) => {
       const max = field.kind === 'percent' ? field.max / 100 : field.max;
       const scale = field.kind === 'percent' ? 1000 : 1;
       bonus[field.key] = Math.round(Math.max(0, Math.min(max,
         numberValue(source[field.key], DEFAULT_TEAM_PANEL_BONUS[field.key]))) * scale) / scale;
     });
+    bonus.blessing = typeof source.blessing === 'string' && Object.prototype.hasOwnProperty.call(TEAM_BLESSING_EFFECTS, source.blessing)
+      ? source.blessing : 'none';
     return bonus;
   }
 
   function teamPanelBonusMods(raw = state.axis?.team_panel_bonus) {
     const bonus = normalizeTeamPanelBonus(raw);
     const mods = emptyPanelMods();
-    mods.crit_rate += bonus.training_crit_rate;
-    mods.crit_dmg += bonus.furniture_crit_dmg + bonus.training_crit_dmg;
-    mods.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk + bonus.training_flat_atk;
+    mods.crit_rate += bonus.training_crit_rate + bonus.food_crit_rate;
+    mods.crit_dmg += bonus.furniture_crit_dmg + bonus.training_crit_dmg + bonus.food_crit_dmg;
+    mods.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk + bonus.training_flat_atk + bonus.food_flat_atk;
     mods.flat_def += bonus.furniture_flat_def + bonus.training_flat_def;
     mods.flat_hp += bonus.small_flat_hp + bonus.training_flat_hp;
     mods.harmony_strength += bonus.training_harmony_strength;
     mods.stagger_strength += bonus.training_stagger_strength;
+    Object.entries(TEAM_BLESSING_EFFECTS[bonus.blessing]).forEach(([key, value]) => { mods[key] += value; });
     return mods;
   }
 
@@ -2694,6 +2720,9 @@
     const bonus = state.axis.team_panel_bonus;
     renderTeamBonusGrid(node, TEAM_FURNITURE_BONUS_FIELDS, bonus);
     renderTeamBonusGrid($('shaft-training-bonus-grid'), TEAM_TRAINING_BONUS_FIELDS, bonus);
+    renderTeamBonusGrid($('shaft-food-bonus-grid'), TEAM_FOOD_BONUS_FIELDS, bonus);
+    $('shaft-blessing-select').innerHTML = Object.entries(TEAM_BLESSING_LABELS).map(([key, label]) =>
+      `<option value="${key}" ${key === bonus.blessing ? 'selected' : ''}>${label}</option>`).join('');
   }
 
   function renderTeamBonusGrid(node, fields, bonus) {
@@ -9142,12 +9171,19 @@
       state.axis.enemy.track_outside = event.target.checked;
       scheduleSimulation();
     });
-    ['shaft-team-bonus-grid', 'shaft-training-bonus-grid'].forEach((id) => {
+    ['shaft-team-bonus-grid', 'shaft-training-bonus-grid', 'shaft-food-bonus-grid'].forEach((id) => {
       $(id).addEventListener('input', handleTeamBonusInput);
       $(id).addEventListener('change', (event) => {
         handleTeamBonusInput(event);
         renderTeamBonus();
       });
+    });
+    $('shaft-blessing-select').addEventListener('change', (event) => {
+      state.axis.team_panel_bonus = normalizeTeamPanelBonus({
+        ...state.axis.team_panel_bonus, blessing: event.target.value,
+      });
+      renderBuildPanel();
+      scheduleSimulation();
     });
     $('shaft-weakness-row').addEventListener('change', () => {
       state.axis.enemy.weakness_elements = Array.from($('shaft-weakness-row').querySelectorAll('input:checked')).map((input) => input.value);

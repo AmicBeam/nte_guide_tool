@@ -14,6 +14,8 @@ class ShaftPublicationTest(RoomFlowTestCase):
             'training_flat_atk': 28, 'training_flat_def': 30,
             'training_flat_hp': 420, 'training_harmony_strength': 12,
             'training_stagger_strength': 12,
+            'food_crit_rate': .12, 'food_crit_dmg': .24, 'food_flat_atk': 150,
+            'blessing': 'atk_pct',
         }
         axis['team_panel_bonus'].update(bonus)
         saved = self._post('/api/shaft/axes', {

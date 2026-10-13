@@ -3433,6 +3433,10 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 'training_flat_hp': 340.0,
                 'training_harmony_strength': 10.0,
                 'training_stagger_strength': 10.0,
+                'food_crit_rate': 0.0,
+                'food_crit_dmg': 0.0,
+                'food_flat_atk': 0.0,
+                'blessing': 'none',
             },
         )
 

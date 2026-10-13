@@ -6,7 +6,8 @@ import unittest
 from app.modules.card_game.rl.batched_duel.vm_image import lower_program
 from app.modules.card_game.rl.batched_duel.vm_constant_lookup import emit_constant_lookup
 
-VALUES = {'alpha': 11, 'omega': 29, 'zero': 0}
+VALUES = {'alpha': 11, 'omega': 29, 'zero': 0, '汉字': 41, '': 53,
+          'é': 67, 'e\u0301': 71}
 MIXED = {True: 'bool', 'name': 'str', 2.0: 'float'}
 
 
@@ -21,7 +22,8 @@ def lookups(value):
     del local['omega']
     local['omega'] = 303
     return (VALUES['alpha'], VALUES.get(dynamic, -7), local['alpha'],
-            local['omega'], MIXED[1], MIXED[2], Example.number)
+            local['omega'], MIXED[1], MIXED[2], Example.number,
+            VALUES.get(tuple(value), -19), getattr(Example, dynamic, -23))
 
 
 def program():
@@ -47,7 +49,9 @@ class ConstantLookupTest(unittest.TestCase):
         hit = source.index('int hit = frozen_dict_hit', start)
         self.assertLess(source.index('node.tag != TAG_DICT', start), hit)
         self.assertLess(hit, source.index('key_equal(heap, k, key_ref)', hit))
-        self.assertIn('if(dict_ref>=0||key_ref>=0)return -2', source)
+        self.assertIn('if(dict_ref>=0)return -2', source)
+        self.assertIn('query.tag!=TAG_STR)return -2', source)
+        self.assertIn('frozen_dict_values', source)
 
     def test_real_cuda_plain_indexed_outputs_and_statuses(self):
         import torch
@@ -57,11 +61,13 @@ class ConstantLookupTest(unittest.TestCase):
         from app.modules.card_game.rl.batched_duel.codec import pack_states
         from app.modules.card_game.rl.batched_duel.schema import GraphLayout
         image = lower_program(program())
-        inputs = [['a','l','p','h','a'], ['o','m','e','g','a'], ['missing']]
+        inputs = [['a','l','p','h','a'], ['o','m','e','g','a'], ['missing'],
+                  ['汉','字'], [], ['é'], ['e','\u0301'], ['汉'], ['汉字x'],
+                  ['n','u','m','b','e','r']]
         observed = []
         for flag in (False, True):
             with CudaVm(image, constant_lookup=flag) as vm:
-                call = vm.launch(vm.ingest(pack_states(inputs, GraphLayout(3,4096,8192,32768))), 'lookups')
+                call = vm.launch(vm.ingest(pack_states(inputs, GraphLayout(len(inputs),4096,8192,32768))), 'lookups')
                 values = call.decode()
                 observed.append((values, call.statuses.cpu().tolist()))
         self.assertEqual(observed[0], observed[1])

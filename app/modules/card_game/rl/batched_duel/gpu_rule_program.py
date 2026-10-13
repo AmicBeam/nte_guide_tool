@@ -45,6 +45,8 @@ HEAVY_ENTRIES = frozenset({
     'teacher_continue',
     'teacher_prepare',
     'teacher_preview',
+    'teacher_prepare_with_template',
+    'teacher_preview_with_template',
     'public_legal_decision',
     'apply_action',
     'simulate_action',

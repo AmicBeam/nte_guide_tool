@@ -69,7 +69,8 @@ class DeviceGumbelSearch:
                  max_depth=10, terminal_horizon=3, teacher_mode='covered_value',
                  random=None, noise=False, device='cuda', allow_cpu_reference=False,
                  allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False,
-                 reuse_root_policy_value=False, verify_root_value_reuse=False):
+                 reuse_root_policy_value=False, verify_root_value_reuse=False,
+                 group_ready_leaves=False):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -93,6 +94,9 @@ class DeviceGumbelSearch:
         if verify_root_value_reuse and not reuse_root_policy_value:
             raise ValueError('Root value verification requires opt-in reuse')
         self.verify_root_value_reuse = verify_root_value_reuse
+        if type(group_ready_leaves) is not bool:
+            raise TypeError('Explicit ready-leaf grouping option required')
+        self.group_ready_leaves=group_ready_leaves
         self.t = torch
         self.device = torch.device(device)
         if self.device.type == 'cuda' and self.device.index is None:
@@ -450,8 +454,18 @@ class DeviceGumbelSearch:
         alive = self._roots.active & (before != DONE)
         self.peak_device_roots.copy_(t.maximum(self.peak_device_roots, alive.sum()))
         masks = tuple((before == phase) & (self.errors == 0) for phase in range(DONE))
+        if self.group_ready_leaves:
+            # A per-simulation device barrier fills independent teacher lanes.
+            # Every root keeps its own selection, RNG and backup order. Roots
+            # with an error or in FINAL/CLEANUP/DONE cannot hold the barrier.
+            progressing=t.stack([masks[p] for p in (SAMPLE,INSPECT,EVALUATE_NODE,OPPONENT,STEP)]).any()
+            leaf_waiting=masks[LEAF].any()
+            grouped=list(masks)
+            grouped[LEAF]=masks[LEAF]&~progressing
+            grouped[BACKUP]=masks[BACKUP]&~progressing&~leaf_waiting
+            masks=tuple(grouped)
         for phase in range(DONE):
-            self.phase_work[phase].add_((before == phase).long())
+            self.phase_work[phase].add_((masks[phase] if self.group_ready_leaves else before==phase).long())
 
         sample = masks[SAMPLE]
         selected_seeds = self._simulation_seeds[self._rows,

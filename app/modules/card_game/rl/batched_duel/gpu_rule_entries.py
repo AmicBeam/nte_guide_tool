@@ -278,6 +278,11 @@ ENTRY_FUNCTIONS['teacher_prepare'] = seven_teacher_prepare
 ENTRY_FUNCTIONS['teacher_preview'] = seven_teacher_preview
 DEVICE_BATCH_TEACHER_ENTRY_NAMES = ('teacher_prepare', 'teacher_preview')
 
+from .gpu_teacher_prepared_template import teacher_prepare_with_template,teacher_preview_with_template
+for _entries in (SEVEN_ENTRY_FUNCTIONS,ENTRY_FUNCTIONS):
+    _entries['teacher_prepare_with_template']=teacher_prepare_with_template
+    _entries['teacher_preview_with_template']=teacher_preview_with_template
+
 
 def entry_functions(runtime=None):
     name = normalize_runtime(runtime)

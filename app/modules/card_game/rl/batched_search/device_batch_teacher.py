@@ -53,14 +53,19 @@ class DeviceBatchTeacherActions:
     host_rule_callbacks=False
     root_policy_compatible=False
 
-    def __init__(self,rules,*,max_actions=800):
+    def __init__(self,rules,*,max_actions=800,shared_template=False):
         if not isinstance(rules,DeviceFrozenRules) or rules.closed:
             raise TypeError('Live same-source DeviceFrozenRules required')
         if type(max_actions)is not int or not 1<=max_actions<=800:
             raise ValueError('Complete bounded teacher action capacity required')
+        if type(shared_template)is not bool:
+            raise TypeError('Static shared-template declaration required')
         c=rules.calls;t=c.t;d=c.device
         if t.cuda.is_current_stream_capturing():raise RuntimeError('Prepare teacher outside capture')
-        for entry in ('teacher_prepare','teacher_preview'):
+        self.shared_template=shared_template
+        self.prepare_entry='teacher_prepare_with_template' if shared_template else 'teacher_prepare'
+        self.preview_entry='teacher_preview_with_template' if shared_template else 'teacher_preview'
+        for entry in (self.prepare_entry,self.preview_entry):
             if entry not in c.vm.image.entries or not c.vm.capability(entry)['ready']:
                 raise RuntimeError('Missing exact frozen teacher entry: '+entry)
         self.rules,self.calls,self.t,self.device=rules,c,t,d
@@ -81,6 +86,7 @@ class DeviceBatchTeacherActions:
             self.counts=t.zeros(b,dtype=t.int64,**kw)
             self.errors=t.zeros(b,dtype=t.int32,**kw)
             self.action_refs=t.full((b,m),-1,dtype=t.int32,**kw)
+            self.preview_refs=t.full((b,m),-1,dtype=t.int32,**kw)
             self.leases=DeviceStateBatch(rules.action_store,
                 t.full((b,),-1,dtype=t.int64,**kw),t.zeros(b,dtype=t.int64,**kw),
                 t.zeros(b,dtype=t.int64,**kw),t.zeros(b,dtype=t.bool,**kw),self.errors)
@@ -93,6 +99,7 @@ class DeviceBatchTeacherActions:
             self.local_battle=t.empty((l,m),dtype=t.bool,**kw)
             self.local_counts=t.empty(l,dtype=t.int64,**kw)
             self.local_refs=t.empty((l,m),dtype=t.int32,**kw)
+            self.local_preview_refs=t.empty((l,m),dtype=t.int32,**kw)
             self.local_valid=t.empty((l,m),dtype=t.bool,**kw)
             self.local_errors=t.empty(l,dtype=t.int32,**kw)
             self.decode_errors=t.empty_like(self.local_errors)
@@ -125,25 +132,28 @@ class DeviceBatchTeacherActions:
             c.binder.bind_into_device(c.large,self.actor_rows,active,
                 argument_refs=self.prepare_refs,errors=c.bind_errors)
             errors=errors|c.bind_errors;active=(local.active&(errors==0)).view(t.uint8)
-            call=c.vm.launch_into_device(c.workspace,'teacher_prepare',
+            call=c.vm.launch_into_device(c.workspace,self.prepare_entry,
                 argument_refs=self.prepare_refs,active=active,gpu_deadlines=c.deadlines)
             errors=errors|call.statuses[:,0]
             self.decoder.decode('decode_prepare',call,errors,local.active,
                 [self.legal_refs,self.local_kinds,self.local_battle.view(t.uint8),
-                 self.local_counts,self.local_errors],width=self.max_actions)
+                 self.local_counts,self.local_errors],width=self.max_actions,
+                 shared_template=self.shared_template)
             errors=errors|self.local_errors;active=(local.active&(errors==0)).view(t.uint8)
             legal_call=DeviceCall(c.vm,call.arena,self.legal_refs,call.statuses,call.frames,None)
             c.vm.compact_into_device(legal_call,self.compact,active=active)
             errors=errors|self.compact.errors
             self.decoder.legal(self.graph,errors,local.active,
-                [self.local_refs,self.local_valid.view(t.uint8),self.local_counts,self.local_errors],self.max_actions)
+                [self.local_refs,self.local_preview_refs,self.local_valid.view(t.uint8),self.local_counts,self.local_errors],
+                self.max_actions,shared_template=self.shared_template)
             errors=errors|self.local_errors
             saved=self.rules.action_store.put_device(self.graph,local.owners,
                 (local.active&(errors==0)).contiguous())
             saved.errors.bitwise_or_(errors)
             self.prepare_lanes.scatter_states_device(saved,self.leases)
             for scratch,output in ((self.local_kinds,self.kinds),(self.local_battle,self.battle),
-                    (self.local_counts,self.counts),(self.local_refs,self.action_refs),(self.local_valid,self.valid)):
+                    (self.local_counts,self.counts),(self.local_refs,self.action_refs),
+                    (self.local_preview_refs,self.preview_refs),(self.local_valid,self.valid)):
                 self.prepare_lanes.scatter_tensor_device(scratch,output)
         self.prepare_lanes.capture_dispatch(states,operation)
         self.errors.bitwise_or_(states.active.to(t.int32)*(self.prepare_lanes.loop.errors!=0).to(t.int32)[0]*PREVIEW_ERROR)
@@ -165,7 +175,7 @@ class DeviceBatchTeacherActions:
                 (on&(errors==0)).contiguous(),errors)
             gathered=self.rules.action_store.gather_into_device(action_states,c.action_graph,shared_reads=True)
             errors=errors|gathered.errors;active=(on&(errors==0)).view(t.uint8)
-            c.selected_refs.copy_(t.where(on,self.action_refs[parent,ordinal],0))
+            c.selected_refs.copy_(t.where(on,self.preview_refs[parent,ordinal],0))
             c.action_statuses.zero_()
             c.vm.compact_into_device(c.action_call,c.action_compact,active=active)
             errors=errors|c.action_compact.errors;active=(on&(errors==0)).view(t.uint8)
@@ -173,7 +183,7 @@ class DeviceBatchTeacherActions:
             c.binder.bind_action_into_device(c.large,self.actor_rows,c.selected_action,active,
                 argument_refs=c.refs_bound,errors=c.bind_errors)
             errors=errors|c.bind_errors;active=(on&(errors==0)).view(t.uint8)
-            call=c.vm.launch_into_device(c.workspace,'teacher_preview',argument_refs=c.refs_bound,
+            call=c.vm.launch_into_device(c.workspace,self.preview_entry,argument_refs=c.refs_bound,
                 active=active,gpu_deadlines=c.deadlines)
             errors=errors|call.statuses[:,0]
             self.decoder.decode('decode_preview',call,errors,on,[*self.local_values,self.decode_errors])
@@ -198,6 +208,7 @@ class DeviceBatchTeacherActions:
         c._exact(actors,t.int64,(c.rows,),'teacher actors')
         self.errors.copy_(states.errors);self.counts.zero_();self.valid.zero_();self.battle.zero_()
         self.action_refs.fill_(-1);self.kinds.fill_(-1);self.preview_statuses.zero_()
+        self.preview_refs.fill_(-1)
         self.leases.slots.fill_(-1);self.leases.generations.zero_()
         self.leases.owners.copy_(states.owners);self.leases.active.zero_()
         for value in self.preview_values:value.zero_()

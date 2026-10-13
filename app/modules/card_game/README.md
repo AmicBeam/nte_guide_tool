@@ -1122,3 +1122,7 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 正式教师桥研究入口为 `batched_search/device_batch_teacher.py` 与 `device_teacher_decode.py`：冻结VM执行同源准备及独立战斗预演，GPU解码完整合法动作和四标量，全部带身份的回执完成后再评分；三步pipeline支持显式决策工厂注入，默认路径保留。该桥仍需实际CUDA、正式规则与完整搜索证据，不因源码或CPU检查批准容量或服务。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_batch_teacher tests.test_duel_v2_device_teacher_pipeline tests.test_duel_v2_gpu_rule_program`；单次证据继续进入 `artifacts/rl-evals/`。
 
 设备VM的 `batched_duel/vm_collections.py` 支持正式效果刷新所需的列表／元组右值切片写入，保留原列表身份、自赋值和共享别名；扩展切片长度错误及容量不足拒绝，未知迭代器不近似执行。验证：`.venv/bin/python -m unittest tests.test_duel_v2_vm_slice_assignment tests.test_duel_v2_vm_collections`，正式教师与完整搜索另验。
+
+教师桥可用显式 `shared_template=True` 和 `batched_duel/gpu_teacher_prepared_template.py` 复用同一父状态的匿名化模板，按正式教师为每个战斗候选复制独立沙盒。预演任务包与物理原始动作引用分开保存，默认路径保留；模板身份、回执、原始状态不变与实际CUDA须重新对拍。CPU参考验证入口为 `tests.test_duel_v2_teacher_prepared_template`，设备隔离与重放仍由 `tests.test_duel_v2_device_batch_teacher` 验证，完整搜索和容量另验。
+
+搜索可用显式 `group_ready_leaves=True` 由GPU等待本次模拟的未就绪根，批量执行三步教师与回传，保持每根随机、选点、状态和访问更新顺序；错误及已结束根不阻挡队列。验证：`tests.test_duel_v2_device_search` 包含混合深度、尾槽与完整32次搜索对照及实际CUDA捕获检查。原语通过后仍从8根正式规则搜索与终局／原始动作重放重新验收。

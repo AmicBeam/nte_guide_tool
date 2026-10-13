@@ -21,6 +21,19 @@ def _preview(state,actor,action):
             '攻击次数':2,'创生花伤害':0.5,'counter':1}
 
 
+def _prepare_shared(state,actor):
+    view,legal,indices=_prepare(state,actor)
+    template={'version':state.get('version',0)} if indices else None
+    return view,legal,indices,template
+
+
+def _preview_shared(state,actor,packet):
+    template=packet['template']
+    if template['version']!=state.get('version',0):raise ValueError('Shared template mutated')
+    template['version']+=100
+    return _preview(state,actor,packet['action'])
+
+
 def _simulate(state,actor,action):
     result=dict(state);result['observed']=action;result['version']+=1
     return result
@@ -37,6 +50,7 @@ def program():
            'rule_decision','apply_action','simulate_action','clean','sample_world','teacher_continue')
     entries={name:getattr(old,'_'+name) for name in names}
     entries.update(teacher_prepare=_prepare,teacher_preview=_preview,simulate_action=_simulate)
+    entries.update(teacher_prepare_with_template=_prepare_shared,teacher_preview_with_template=_preview_shared)
     return capture_program(entries,allowed_module_prefixes=DEFAULT_ALLOWED_MODULE_PREFIXES+
         (__name__,old.__name__),scope_character_ids=None,scope_card_ids=None)
 
@@ -80,7 +94,8 @@ class BatchTeacherCudaTest(unittest.TestCase):
             rules=DeviceFrozenRules(calls,pres,action_store=actions);self.addCleanup(rules.close)
             roots=store.put_device(_graph(data,d),t.arange(3,dtype=t.int64,device=d),t.tensor([True,True,False],device=d))
             actors=t.tensor([0,1,0],dtype=t.int64,device=d)
-            teacher=DeviceBatchTeacherActions(rules,max_actions=4);self.addCleanup(teacher.close)
+            teacher=DeviceBatchTeacherActions(rules,max_actions=4,
+                shared_template=getattr(self,'shared_template',False));self.addCleanup(teacher.close)
             step=calls.prepare_call('simulate_action');graph=t.cuda.CUDAGraph()
             with ExitStack() as stack:
                 for name in ('cpu','numpy','item','tolist','__bool__'):
@@ -126,13 +141,52 @@ class BatchTeacherCudaTest(unittest.TestCase):
                 pres=DeviceRulePresentation(calls,max_actions=800,max_output_bytes=1<<30);self.addCleanup(pres.close)
                 rules=DeviceFrozenRules(calls,pres,action_store=actions);self.addCleanup(rules.close)
                 roots=store.put_device(_graph([{'kind':kind}],vm.device),t.zeros(1,dtype=t.int64,device=vm.device),t.ones(1,dtype=t.bool,device=vm.device))
-                teacher=DeviceBatchTeacherActions(rules,max_actions=width);self.addCleanup(teacher.close)
+                teacher=DeviceBatchTeacherActions(rules,max_actions=width,
+                    shared_template=getattr(self,'shared_template',False));self.addCleanup(teacher.close)
                 graph=t.cuda.CUDAGraph()
                 with t.cuda.graph(graph,capture_error_mode='thread_local'):
                     _,chosen,errors=teacher.capture_device(roots,t.zeros(1,dtype=t.int64,device=vm.device))
                 graph.replay();t.cuda.synchronize()
                 self.assertNotEqual(int(errors[0].cpu()),0);self.assertEqual(int(chosen[0].cpu()),-1)
                 self.assertEqual(int(actions.live.sum().cpu()),0)
+
+
+class BatchTeacherSharedTemplateCudaTest(BatchTeacherCudaTest):
+    shared_template=True
+
+    def test_transport_graph_is_fully_reachable_and_templates_remain_immutable(self):
+        import torch as t
+        from app.modules.card_game.rl.batched_duel.cuda_vm import CudaVm
+        from app.modules.card_game.rl.batched_duel.vm_image import lower_program
+        from app.modules.card_game.rl.batched_duel.device_rule_calls import DeviceRuleGraphCalls
+        from app.modules.card_game.rl.batched_duel.device_rule_presentation import DeviceRulePresentation
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        from app.modules.card_game.rl.batched_duel.device_rule_protocol import DeviceStateBatch
+        from app.modules.card_game.rl.batched_search.device_frozen_rules import DeviceFrozenRules
+        from app.modules.card_game.rl.batched_search.device_batch_teacher import DeviceBatchTeacherActions
+        from app.modules.card_game.rl.batched_search.device_action_leases import release_actions_device
+        from tests.test_duel_v2_device_frozen_rules import _store,_graph
+        from tests.test_duel_v2_device_rule_calls import _decode_row
+        store=_store('cuda',slots=32);actions=_store('cuda',slots=32)
+        self.addCleanup(store.close);self.addCleanup(actions.close)
+        with CudaVm(lower_program(program())) as vm:
+            compact=GraphLayout(1,512,1024,4096)
+            calls=DeviceRuleGraphCalls(vm,store,rows=1,lanes=1,seconds=60,compact_layout=compact);self.addCleanup(calls.close)
+            pres=DeviceRulePresentation(calls,max_actions=800,max_output_bytes=1<<30);self.addCleanup(pres.close)
+            rules=DeviceFrozenRules(calls,pres,action_store=actions);self.addCleanup(rules.close)
+            roots=store.put_device(_graph([{'version':0}],vm.device),t.zeros(1,dtype=t.int64,device=vm.device),t.ones(1,dtype=t.bool,device=vm.device))
+            teacher=DeviceBatchTeacherActions(rules,max_actions=4,shared_template=True);self.addCleanup(teacher.close)
+            graph=t.cuda.CUDAGraph()
+            with t.cuda.graph(graph,capture_error_mode='thread_local'):
+                decision,_,errors=teacher.capture_device(roots,t.zeros(1,dtype=t.int64,device=vm.device))
+            graph.replay();t.cuda.synchronize();self.assertEqual(errors.cpu().tolist(),[0])
+            leases=DeviceStateBatch(actions,decision.action_slots,decision.action_generations,
+                roots.owners,roots.active,t.zeros_like(errors))
+            legal,(template,packets)=_decode_row(actions,leases,0,compact)
+            self.assertEqual(template,{'version':0});self.assertEqual(len(packets),len(legal))
+            for index,packet in enumerate(packets):
+                self.assertIs(packet['template'],template);self.assertIs(packet['action'],legal[index])
+            release_actions_device(decision,roots.active,roots.owners,protected=(roots,))
 
 
 if __name__=='__main__':unittest.main()

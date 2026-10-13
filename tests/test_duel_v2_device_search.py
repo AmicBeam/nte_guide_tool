@@ -253,14 +253,15 @@ class DeviceSearchTest(unittest.TestCase):
         for dense, compact in zip(results[0], results[1]):
             self.assertTrue(torch.equal(dense, compact))
 
-    def engine(self, rows=2, device='cpu', simulations=32, actions=3):
+    def engine(self, rows=2, device='cpu', simulations=32, actions=3,group_ready_leaves=False):
         fixture = TensorTreeFixture(rows, device, actions=actions)
         stats = DeviceStatisticsPool(rows*(simulations+1), actions, device=str(fixture.device),
             max_batch=rows, max_path_len=4, allow_cpu_reference=device == 'cpu')
         engine = DeviceGumbelSearch(fixture, FixtureInference(), FixtureInference(), stats,
             InjectiveFixtureKeys(), rows=rows, max_actions=actions, simulations=simulations,
             max_depth=4, terminal_horizon=3, device=str(fixture.device),
-            allow_cpu_reference=device == 'cpu', allow_synthetic=True)
+            allow_cpu_reference=device == 'cpu', allow_synthetic=True,
+            group_ready_leaves=group_ready_leaves)
         return engine, fixture
 
     def initialize(self, engine, fixture, active=None):
@@ -280,6 +281,45 @@ class DeviceSearchTest(unittest.TestCase):
                 return engine.result_device()
             engine.tick()
         self.fail('Bounded fixture FSM did not finish')
+
+    def test_ready_leaf_groups_preserve_ragged_root_search_and_random_order(self):
+        import torch
+        from dataclasses import replace
+        torch.set_num_threads(1)
+        def run(grouped):
+            engine,fixture=self.engine(rows=9,group_ready_leaves=grouped)
+            limits=torch.tensor([2,3,6,2,6,3,6,2,3])
+            metadata=fixture.metadata_device;teacher=fixture.teacher_continue_device;calls=[]
+            def meta(states):
+                original=metadata(states);done=fixture.data[states.slots,0]>=limits
+                chosen=fixture.data[states.slots,1]
+                winners=torch.where(chosen==1,fixture.viewer,
+                    torch.where(chosen==0,1-fixture.viewer,-1))
+                depth=fixture.data[states.slots,0]
+                actors=torch.where(torch.arange(9).remainder(3)==0,fixture.viewer,
+                    fixture.viewer^depth.remainder(2))
+                return replace(original,finished=done,
+                    actors=torch.where(done,-1,actors),
+                    winners=torch.where(done,winners,torch.full_like(original.winners,-2)))
+            fixture.metadata_device=meta
+            def continue_group(states,viewers,*,horizon=3):
+                active=int(states.active.sum())
+                if active:calls.append(active)
+                data=fixture.data[states.slots]
+                return fixture._new(states,torch.stack((torch.minimum(data[:,0]+horizon,limits),data[:,1]),-1))
+            fixture.teacher_continue_device=continue_group
+            self.initialize(engine,fixture,active=[True]*8+[False])
+            return self.finish_cpu(engine),fixture,calls
+        reference,original,old_calls=run(False)
+        result,grouped,new_calls=run(True)
+        self.assertEqual(result.errors.tolist(),[0]*9)
+        self.assertEqual(result.completed.tolist(),[32]*8+[0])
+        for field in ('policy','visits','actions','information_keys','complete'):
+            torch.testing.assert_close(getattr(result,field),getattr(reference,field))
+        torch.testing.assert_close(grouped.sample_seeds,original.sample_seeds)
+        self.assertEqual(int(grouped.live.sum()),int(original.live.sum()))
+        self.assertLess(len(new_calls),len(old_calls))
+        self.assertGreater(sum(new_calls)/len(new_calls),sum(old_calls)/len(old_calls))
 
     def test_full_budget_matches_numpy_root_semantics_without_value_sign_flip(self):
         import torch
@@ -555,6 +595,27 @@ class DeviceSearchTest(unittest.TestCase):
         self.assertTrue(bool(captured.complete.all()))
         self.assertEqual(int(captured.peak_device_roots), 1600)
         self.assertTrue(bool((captured.completed == 4).all()))
+
+    def test_actual_cuda_ready_leaf_groups_capture_and_preserve_full_budget(self):
+        import torch
+        if not torch.cuda.is_available():self.skipTest('Actual CUDA required; controlled fixture only')
+        from app.modules.card_game.rl.batched_search.cuda_conditional_graph import CudaConditionalWhile
+        reference,oracle=self.engine(rows=8)
+        self.initialize(reference,oracle);expected=self.finish_cpu(reference)
+        engine,fixture=self.engine(rows=8,device='cuda',group_ready_leaves=True)
+        roots=fixture.roots();seeds=torch.zeros((8,5),dtype=torch.int64,device=fixture.device);seeds[:,4]=1
+        ids=torch.zeros((8,2),dtype=torch.int64,device=fixture.device)
+        runner=CudaConditionalWhile(device=str(fixture.device),max_ticks=3000,seconds=120)
+        self.addCleanup(runner.close)
+        engine.statistics.bind_capture_streams(runner.capture_stream,runner.body_stream)
+        with engine.statistics.capture_scope():
+            runner.capture(engine.unfinished_device,engine.tick,
+                initialize=lambda:engine.initialize(roots,fixture.viewer,seeds,ids,ids))
+        runner.replay();torch.cuda.synchronize();actual=engine.result_device()
+        self.assertEqual(actual.errors.cpu().tolist(),[0]*8)
+        self.assertEqual(actual.completed.cpu().tolist(),[32]*8)
+        for field in ('policy','visits','actions','information_keys','complete'):
+            torch.testing.assert_close(getattr(actual,field).cpu(),getattr(expected,field))
 
     def test_actual_cuda_1600_full_budget_conditional_fsm_without_host_predicate(self):
         import torch

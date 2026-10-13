@@ -260,6 +260,25 @@ ENTRY_FUNCTIONS['teacher_continue']=teacher_continue
 SEVEN_ENTRY_FUNCTIONS['teacher_continue']=seven_teacher_continue
 
 
+def seven_teacher_prepare(state, actor):
+    from .gpu_teacher_preview_parts import teacher_prepare
+    return teacher_prepare(state, actor)
+
+
+def seven_teacher_preview(state, actor, action):
+    from .gpu_teacher_preview_parts import teacher_preview
+    return teacher_preview(state, actor, action)
+
+
+# Explicit standalone batch-teacher extension. These endpoints execute the
+# same formal public sandbox; adding them does not qualify a device driver.
+SEVEN_ENTRY_FUNCTIONS['teacher_prepare'] = seven_teacher_prepare
+SEVEN_ENTRY_FUNCTIONS['teacher_preview'] = seven_teacher_preview
+ENTRY_FUNCTIONS['teacher_prepare'] = seven_teacher_prepare
+ENTRY_FUNCTIONS['teacher_preview'] = seven_teacher_preview
+DEVICE_BATCH_TEACHER_ENTRY_NAMES = ('teacher_prepare', 'teacher_preview')
+
+
 def entry_functions(runtime=None):
     name = normalize_runtime(runtime)
     try:

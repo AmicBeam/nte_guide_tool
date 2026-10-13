@@ -237,7 +237,7 @@ class CompactDeviceGraphStore:
             dense.view(-1).copy_(acc.to(t.uint8))
         return errors
 
-    def _leases(self, slots, generations, owners, active, *, live):
+    def _leases(self, slots, generations, owners, active, *, live, shared_reads=False):
         t = self.t
         self._vector(slots, t.int64, slots.shape)
         shape = slots.shape
@@ -259,6 +259,8 @@ class CompactDeviceGraphStore:
         histogram = t.zeros(self.slot_capacity, dtype=t.int64, device=self.device)
         histogram.index_add_(0, indices, (active_b & in_range).long())
         duplicate = histogram[indices] > 1
+        if shared_reads:
+            duplicate = t.zeros_like(duplicate)
         errors = (active_b & ~valid).to(t.int32) * INVALID_HANDLE
         errors = errors | ((active_b & duplicate).to(t.int32) * DUPLICATE_SLOT)
         return indices, active_b & valid & ~duplicate, errors, active_b
@@ -385,7 +387,14 @@ class CompactDeviceGraphStore:
         gens_out = t.where(take, self.generation[idx], 0)
         return DeviceStateBatch(self, slots_out, gens_out, owners, active_b, errors)
 
-    def gather_into_device(self, states, destination):
+    def gather_into_device(self, states, destination, *, shared_reads=False):
+        """Copy checked leases into separate rows; opt in to repeated read leases.
+
+        Shared reads never write the arena or relax owner/generation checks.
+        Mutating operations continue to reject duplicate slots.
+        """
+        if type(shared_reads) is not bool:
+            raise TypeError('Static boolean shared-read declaration required')
         if not isinstance(states, DeviceStateBatch):
             raise TypeError('DeviceStateBatch required')
         if states.pool is not self:
@@ -395,7 +404,8 @@ class CompactDeviceGraphStore:
         self._vector(states.slots, t.int64, (rows,))
         self._vector(states.errors,t.int32,(rows,))
         idx, good, errors, active = self._leases(
-            states.slots, states.generations, states.owners, states.active, live=True)
+            states.slots, states.generations, states.owners, states.active, live=True,
+            shared_reads=shared_reads)
         good,component_errors=self._component_integrity(idx,states.owners,good)
         errors=errors|component_errors|states.errors
         good=good&(errors==0)

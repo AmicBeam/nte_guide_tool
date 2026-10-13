@@ -82,6 +82,8 @@
 
 教师评分的源码 AST 身份使用固定表示：Python 3.13 显式保留空列表，3.12 起新增的空 `type_params` 不进入旧表示；非空类型参数拒绝。原完整 AST SHA 与教师身份保持不变，评分公式、控制流或其他源码变化仍拒绝，不新增不同 Python 版本的宽松白名单。验证需在实际 Windows Python/CUDA 上执行现有评分与预演组件测试；跨版本 CPU 检查不代替 CUDA、正式三步教师或完整搜索验收。
 
+`device_batch_teacher.py` 提供独立、未合格的正式教师桥：冻结 VM 的 `teacher_prepare` 返回原始完整合法动作及公开预演位置，设备解码器保留原次序与别名；预演读取显式使用 `gather_into_device(shared_reads=True)`，允许同一经 owner/generation 核验的原图复制到多个独立 scratch 行；写入与释放仍拒绝重复租约。GPU 按实际任务数分发独立 `teacher_preview`，仅解码四个正式预演标量。CUDA 源码中的中文字段名以等价 UTF-8 八进制字节转义生成，避免 Windows NVRTC 按本地代码页错误解析字符串；字段字节和长度不变。带 epoch、actor 与租约的回执全部核验后，才调用既有批量评分器，返回原始动作图和选点。三步 pipeline 可显式注入该决策工厂；尚未完成同源 CUDA、正式规则及完整搜索证明时，不自动替换默认路径或授予 closed-service 资格。无工作队列跳过预演；容量、未知动作、预演错误、部分结果或守护截止均拒绝，不删合法候选。组件验证入口为 `tests.test_duel_v2_device_batch_teacher`，正式规则与8根闭环另验。
+
 ### 完整训练与独立评估
 
 1. 原语：规则、编码、随机、Gumbel 数学、页分配和 CUDA graph 捕获分别对拍。合成 1600 行测试仅证明原语，不批准真实局容量。

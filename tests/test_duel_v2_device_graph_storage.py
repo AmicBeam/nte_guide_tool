@@ -54,6 +54,27 @@ def _packed(graph):
 
 
 class DeviceGraphStorageTest(unittest.TestCase):
+    def test_shared_reads_copy_independent_rows_without_relaxing_write_leases(self):
+        import torch
+        from dataclasses import replace
+        graph=_graph([{'shared':[1,2]}],'cpu')
+        with self.store() as store:
+            owners,active=self.vectors(graph)
+            saved=store.put_device(graph,owners,active)
+            repeated=DeviceStateBatch(store,saved.slots.repeat(2),saved.generations.repeat(2),
+                saved.owners.repeat(2),saved.active.repeat(2),saved.errors.repeat(2))
+            target=_graph([{},{}],'cpu')
+            self.assertEqual(store.gather_into_device(repeated,target).errors.tolist(),[DUPLICATE_SLOT]*2)
+            self.assertEqual(store.gather_into_device(repeated,target,shared_reads=True).errors.tolist(),[0,0])
+            self.assertEqual(unpack_states(_packed(target)),[{'shared':[1,2]}]*2)
+            bad=replace(repeated,owners=torch.tensor([int(saved.owners[0]),99]))
+            self.assertEqual(store.gather_into_device(bad,target,shared_reads=True).errors.tolist(),[0,INVALID_HANDLE])
+            store.release_device(repeated)
+            self.assertEqual(repeated.errors.tolist(),[DUPLICATE_SLOT]*2)
+            self.assertEqual(int(store.live.sum()),1)
+            store.release_device(saved)
+            self.assertEqual(int(store.live.sum()),0)
+
     def test_invalid_root_is_not_admitted(self):
         graph=_graph([{'a':1},{'a':2}],'cpu');graph.roots[0]=999
         with self.store() as store:

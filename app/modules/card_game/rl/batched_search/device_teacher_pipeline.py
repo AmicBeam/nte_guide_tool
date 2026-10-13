@@ -29,13 +29,16 @@ class DeviceTeacherPipeline:
     host_rule_callbacks = False
     teacher_horizon = 3
 
-    def __init__(self, calls, presentation, *, action_store, raw_teacher=False):
+    def __init__(self, calls, presentation, *, action_store, raw_teacher=False,
+                 decision_factory=None):
         if not isinstance(calls, DeviceRuleGraphCalls) or calls.closed:
             raise TypeError('Live device rule calls required')
         if not isinstance(presentation, DeviceRulePresentation) or presentation.calls is not calls:
             raise TypeError('Presentation must use the same calls')
         if type(raw_teacher) is not bool:
             raise TypeError('Explicit raw teacher mode required')
+        if decision_factory is not None and (not raw_teacher or not callable(decision_factory)):
+            raise TypeError('Explicit raw decision factory required')
         t = calls.t
         if t.cuda.is_current_stream_capturing():
             raise RuntimeError('Prepare teacher pipeline before capture')
@@ -52,8 +55,9 @@ class DeviceTeacherPipeline:
                 sites=_teacher_capture_sites(raw_teacher))
             if raw_teacher:
                 from .device_teacher_actions import DeviceTeacherActions
+                factory=decision_factory or DeviceTeacherActions
                 for _ in range(3):
-                    self.teacher_action_sites.append(DeviceTeacherActions(self.rules))
+                    self.teacher_action_sites.append(factory(self.rules))
             self.copy_lanes = _ActiveRuleLanes(self.rows, calls.lanes,
                 device=self.device, seconds=calls.seconds)
             small = calls.input_graph.layout

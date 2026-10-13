@@ -43,6 +43,8 @@ ALLOWED_MODULE_PREFIXES = tuple(DEFAULT_ALLOWED_MODULE_PREFIXES) + (
 HEAVY_ENTRIES = frozenset({
     'initialize',
     'teacher_continue',
+    'teacher_prepare',
+    'teacher_preview',
     'public_legal_decision',
     'apply_action',
     'simulate_action',

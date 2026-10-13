@@ -1132,3 +1132,5 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 就绪分组也覆盖对手教师与新节点评估。显式 `reuse_interior_observation=True` 只复用己方INSPECT已生成的完整观察，绑定当前slot/generation/owner并重新核验正式metadata的非终局与actor==viewer；辅助模型不替换，终局/H3后仍取正式观察。验证：`tests.test_duel_v2_device_search` 包含完整32次结果、混合深度随机顺序、陈旧拒绝与实际CUDA捕获对照，真实搜索与终局重放另验。
 
 冻结VM的 `constant_lookup=True` 继续只索引不可变且全部为字符串键的字典；常量引用直接命中后，动态或其它引用的字符串按精确UTF-8值二分查询，保留第一个相等键的位置与缺失结果。混合键、非字符串查询和可变字典回到原正式相等路径，不缓存可变值。验证：`tests.test_duel_v2_vm_constant_lookup` 包含动态字符串、Unicode不同序列、空键、缺失键、属性查找与可变／混合键对照；组件通过后仍需正式教师和完整搜索验收。
+
+设备VM可显式使用 `frozen_class_lookup=True`，按冻结类命名空间的描述符类别顺序和C3继承顺序生成精确静态索引，返回原值引用和类别。常量字符串与动态UTF-8字符串都保留相等和缺失语义；不支持的键仍走原查询。实例字段仍读取当前可变字典，getter、方法绑定与super继续由原对象处理器执行。默认关闭；`tests.test_duel_v2_vm_frozen_attributes` 对照多继承、描述符遮蔽、属性／静态／类方法、动态名称及实例写入，实际CUDA及正式教师／完整搜索分别验收。

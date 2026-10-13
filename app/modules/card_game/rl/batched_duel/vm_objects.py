@@ -8,7 +8,9 @@ This component is not a full-rule executor.
 OBJECT_OPS=frozenset(('LOAD_ATTR','LOAD_METHOD','CALL_METHOD','STORE_ATTR','IMPORT_NAME','IMPORT_FROM'))
 
 
-def emit_object_source(image):
+def emit_object_source(image, *, frozen_lookup=False):
+    if type(frozen_lookup) is not bool:
+        raise TypeError('Boolean frozen attribute lookup option required')
     def node(ref):
         if ref>=0:raise ValueError('Immutable class metadata required')
         return image.nodes[-1-ref]
@@ -83,7 +85,7 @@ def emit_object_source(image):
     enum_sw=''.join('case '+str(i)+':return '+str(v)+';' for i,v in enumerate(enum_sub))
     str_sw=''.join('case '+str(i)+':return '+str(v)+';' for i,v in enumerate(str_sub))
     switches=''.join('case '+str(i)+':{const int order[]={'+','.join(map(str,order))+'}; for(int j=0;j<'+str(len(order))+';j++){int out=lookup_own(c,order[j],name,category);if(out!=MISSING)return out;}break;}\n' for i,order in enumerate(orders))
-    return (
+    source = (
         '__device__ inline int class_constructible(int cid){switch(cid){'+constructors+'default:return 0;}}\n'
         '__device__ inline int class_entity_tag(int cid){switch(cid){'+entity_sw+'default:return 0;}}\n'
         '__device__ inline int class_dict_subclass(int cid){switch(cid){'+dict_sw+'default:return 0;}}\n'
@@ -167,3 +169,7 @@ __device__ inline void object_store(Context* c,int owner,int name,int value){
 }
 '''
 )
+    if frozen_lookup:
+        from .vm_frozen_attributes import integrate_frozen_attributes
+        source = integrate_frozen_attributes(source, image, orders)
+    return source

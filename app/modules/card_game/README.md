@@ -1120,3 +1120,5 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 首阶段离线组件 `batched_search/device_teacher_ranking.py` 执行具名动作和四个公开预演数值的批量教师评分；`device_teacher_preview_jobs.py` 准备完整战斗预演任务，核验带 epoch／actor／状态租约的分组回执和全部任务完成。它们保持未合格，不被网站导入，尚未接入正式规则预演／三步教师；后续接线与 CUDA 验收按上述协议执行。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_teacher_ranking tests.test_duel_v2_device_teacher_preview_jobs`，CPU 参考和 CUDA skip 分开记账。
 
 正式教师桥研究入口为 `batched_search/device_batch_teacher.py` 与 `device_teacher_decode.py`：冻结VM执行同源准备及独立战斗预演，GPU解码完整合法动作和四标量，全部带身份的回执完成后再评分；三步pipeline支持显式决策工厂注入，默认路径保留。该桥仍需实际CUDA、正式规则与完整搜索证据，不因源码或CPU检查批准容量或服务。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_batch_teacher tests.test_duel_v2_device_teacher_pipeline tests.test_duel_v2_gpu_rule_program`；单次证据继续进入 `artifacts/rl-evals/`。
+
+设备VM的 `batched_duel/vm_collections.py` 支持正式效果刷新所需的列表／元组右值切片写入，保留原列表身份、自赋值和共享别名；扩展切片长度错误及容量不足拒绝，未知迭代器不近似执行。验证：`.venv/bin/python -m unittest tests.test_duel_v2_vm_slice_assignment tests.test_duel_v2_vm_collections`，正式教师与完整搜索另验。

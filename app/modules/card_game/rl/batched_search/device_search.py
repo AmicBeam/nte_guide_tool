@@ -288,9 +288,13 @@ class DeviceGumbelSearch:
         return decision.candidates.hash_device(self.information_keys, decision.observations,
                                                decision.counts, mask)
 
-    def _save_decision(self, decision, mask):
+    def _save_decision(self, decision, mask, *, actions_only=False):
         t = self.t
+        if type(actions_only) is not bool:
+            raise TypeError('Static action-only decision declaration required')
         if self._decision is None:
+            if actions_only:
+                raise ValueError('An encoded root decision must precede raw teacher actions')
             self._decision = self._clone_decision(decision)
             return
         if decision.action_pool is not self._decision.action_pool:
@@ -302,6 +306,11 @@ class DeviceGumbelSearch:
         for field in fields(decision):
             name = field.name
             if name in ('states', 'action_pool'):
+                continue
+            # Opponent rule teachers provide raw actions for STEP. They do not
+            # feed policy/value/hash inference; those buffers are replaced at
+            # the next own INSPECT before EVALUATE_NODE may consume them.
+            if actions_only and name in ('observations', 'candidates'):
                 continue
             target, source = getattr(self._decision, name), getattr(decision, name)
             if source is None and target is None:
@@ -544,7 +553,7 @@ class DeviceGumbelSearch:
         teacher_decision, teacher_choice, teacher_errors = self.rules.rule_decision_device(
             self._world(opponent), meta.actors)
         self._error(meta.errors | teacher_errors, opponent, RULE_ERROR)
-        self._save_decision(teacher_decision, opponent)
+        self._save_decision(teacher_decision, opponent, actions_only=True)
         self.actions.copy_(t.where(opponent, teacher_choice, self.actions))
         self.phase.copy_(t.where(opponent, STEP, self.phase))
 

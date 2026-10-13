@@ -16,7 +16,7 @@
 
 保持现行 natural-WDL completed-Q、完整合法动作策略目标、最大访问层最终选点、32 次预算、16 个根候选上限、树深和短终局/覆盖教师语义。16 是根搜索候选数，不是合法动作编码容量。单合法动作或公开必胜证明可以按既有协议提前完成，但它们不能代替用于证明 1600 路完整 Gumbel 负载的非平凡根 cohort。
 
-`batched_search/device_search.py` 当前实现具名 `covered_value` 的张量 FSM：`initialize` 保留物理根与模型/观察者绑定，`tick` 用设备掩码推进采样、信息集节点查找、顺序选点、规则步进、三步规则教师、独立辅助 WDL 和完整备份，`unfinished_device` 返回持久 `uint8[B]` 谓词。生产 CUDA 拒绝普通 eager 逐步调用，须接入设备 WHILE graph；其它教师模式明确拒绝。它尚不能替代 serving 的公开证明共用预算层，不能把训练搜索输出标成既有 serving 行为。
+`batched_search/device_search.py` 当前实现具名 `covered_value` 的张量 FSM：`initialize` 保留物理根与模型/观察者绑定，`tick` 用设备掩码推进采样、信息集节点查找、顺序选点、规则步进、三步规则教师、独立辅助 WDL 和完整备份，`unfinished_device` 返回持久 `uint8[B]` 谓词。生产 CUDA 拒绝普通 eager 逐步调用，须接入设备 WHILE graph；其它教师模式明确拒绝。对手教师的原始动作决策仅更新状态与动作租约、完整候选引用和掩码，不复制缺失的观察／网络候选编码；STEP 只消费原始动作。下一次己方 INSPECT 会先完整更新编码，再进入 EVALUATE_NODE，原根信息哈希独立保留。它尚不能替代 serving 的公开证明共用预算层，不能把训练搜索输出标成既有 serving 行为。
 
 统计池 `bind_capture_streams(parent, body)` 必须在捕获前注册同设备的确定 parent/body stream，并由唯一 driver 在线程内使用 `capture_scope()` 构建图；仅此受控捕获允许跨这两条依赖连接的流。普通 eager 操作或任意其它流仍拒绝。`device_info_key.py` 保留 SHA-256 的全部公开字节（观察加合法候选前缀，不含 padding），捕获时调用当前 stream 的 `capture_safe` 内核，不产生 conditional body 禁止的 event/wait 节点。
 

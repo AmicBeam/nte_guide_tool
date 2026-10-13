@@ -139,6 +139,30 @@ class InjectiveFixtureKeys:
 
 
 class DeviceSearchTest(unittest.TestCase):
+    def test_raw_opponent_actions_preserve_full_search_and_own_information_keys(self):
+        import torch
+        from dataclasses import replace
+        torch.set_num_threads(1)
+        reference,ref_fixture=self.engine()
+        self.initialize(reference,ref_fixture)
+        expected=self.finish_cpu(reference)
+        engine,fixture=self.engine()
+        choose=fixture.rule_decision_device
+        def raw_teacher(states,actors):
+            decision,index,errors=choose(states,actors)
+            return replace(decision,observations=decision.observations[:,:0],
+                candidates=decision.candidates[:,:,:0]),index,errors
+        fixture.rule_decision_device=raw_teacher
+        roots=self.initialize(engine,fixture)
+        result=self.finish_cpu(engine)
+        self.assertEqual(result.errors.tolist(),[0,0])
+        self.assertEqual(result.completed.tolist(),[32,32])
+        for field in ('policy','visits','actions','information_keys'):
+            torch.testing.assert_close(getattr(result,field),getattr(expected,field))
+        self.assertGreater(int(engine.phase_work[OPPONENT].sum()),0)
+        self.assertEqual(int(fixture.live.sum()),2)
+        torch.testing.assert_close(fixture.data[roots.slots],torch.tensor([[0,-1],[0,-1]]))
+
     def test_value_slices_preserve_models_viewers_terminal_and_invalid_tail(self):
         import torch
         from app.modules.card_game.rl.batched_search.device_search import INFERENCE_ERROR

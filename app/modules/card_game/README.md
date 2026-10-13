@@ -1126,3 +1126,5 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 教师桥可用显式 `shared_template=True` 和 `batched_duel/gpu_teacher_prepared_template.py` 复用同一父状态的匿名化模板，按正式教师为每个战斗候选复制独立沙盒。预演任务包与物理原始动作引用分开保存，默认路径保留；模板身份、回执、原始状态不变与实际CUDA须重新对拍。CPU参考验证入口为 `tests.test_duel_v2_teacher_prepared_template`，设备隔离与重放仍由 `tests.test_duel_v2_device_batch_teacher` 验证，完整搜索和容量另验。
 
 搜索可用显式 `group_ready_leaves=True` 由GPU等待本次模拟的未就绪根，批量执行三步教师与回传，保持每根随机、选点、状态和访问更新顺序；错误及已结束根不阻挡队列。验证：`tests.test_duel_v2_device_search` 包含混合深度、尾槽与完整32次搜索对照及实际CUDA捕获检查。原语通过后仍从8根正式规则搜索与终局／原始动作重放重新验收。
+
+设备VM可显式启用 `mutable_lookup_cache=True`，只缓存可变字典／实体常量字符串查询的位置提示；每次命中重核当前头、索引及正式键相等，字段变化与冲突回到完整扫描，每个VM执行清空提示，不修改状态或默认路径。实际CUDA回归入口：`tests.test_duel_v2_vm_mutable_lookup`，覆盖值更新、删后重插、挂起帧回收和同头字段换位；正式规则、完整32次搜索及容量另验。

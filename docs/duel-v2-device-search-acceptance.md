@@ -144,3 +144,5 @@
 教师桥可显式启用 `shared_template=True`，要求冻结的 `teacher_prepare_with_template/teacher_preview_with_template`：按正式教师生命周期为同一父状态只匿名化一次，保留不可变模板；每个预演经独立任务包在自己的VM scratch中复制模板，并由正式 `rule_battle_preview` 生成四标量。模板与合法原始动作共享经租约核验的arena，预演包引用与物理原始动作引用分别保留。默认独立准备路径不变；模板版本／事件序号及任务epoch／actor／owner／generation继续核验。复用须重新执行CPU同源、实际CUDA候选隔离／捕获重放、14根正式规则及8根完整搜索，不能沿用未共享模板路径的批准。CPU参考入口为 `tests.test_duel_v2_teacher_prepared_template`，实际组件仍由 `tests.test_duel_v2_device_batch_teacher` 覆盖。
 
 搜索可显式启用 `group_ready_leaves=True`：GPU 先让本次模拟仍处于采样／查找／扩展／对手选择／推进的根继续执行，准备好的叶子等待；全部活跃根到达叶子或回传后，批量执行三步教师，再批量回传。错误与 FINAL／CLEANUP／DONE 根不阻挡等待。每根的种子、选择、状态推进与访问回传顺序保持独立；此模式的 phase_work 只累计实际放行的阶段行，不把等待记成教师工作。分组不能缩减32次预算或混合观察者，CPU混合深度／尾槽结果、随机顺序与实际CUDA捕获对拍需通过，再重验8根真实搜索。
+
+VM可显式启用 `mutable_lookup_cache=True`，只为可变字典／实体的常量字符串键保存32槽查询位置提示。命中须重核 owner、当前偏移／计数、索引范围及当前边的正式键相等；替换值仍读取当前边，缺失键不缓存，碰撞或失效回到原完整扫描。提示不进入状态，每个VM执行重新初始化，GC或字段变化不能沿用未经验证的位置。默认关闭，固定字段、顺序、别名、写入与异常语义不变。实际CUDA回归入口为 `tests.test_duel_v2_vm_mutable_lookup`，包括更新／删后重插／GC与同头字段换位，之后重做正式教师及8根完整搜索；不能依据缓存源码声明性能或容量。

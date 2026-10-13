@@ -136,6 +136,9 @@ enum ErrorCode {
 #ifndef DUEL_VM_MEMO_LIMIT
 #define DUEL_VM_MEMO_LIMIT 512
 #endif
+#ifndef DUEL_VM_MUTABLE_LOOKUP_CACHE
+#define DUEL_VM_MUTABLE_LOOKUP_CACHE 0
+#endif
 
 // Heap ABI structure (per-game independent context, no global mutable state)
 struct Heap {
@@ -149,6 +152,10 @@ struct Heap {
     const unsigned char* constant_payload;
     int constant_node_count, constant_edge_count, constant_payload_count;
     int error;
+#if DUEL_VM_MUTABLE_LOOKUP_CACHE
+    // Per-execution hints only. Every hit rechecks the current graph edge/key.
+    int lookup_owner[32],lookup_key[32],lookup_offset[32],lookup_count[32],lookup_index[32];
+#endif
 };
 
 // Internal node view
@@ -276,6 +283,9 @@ __device__ inline void init_heap(
     heap->constant_edge_count = constant_edge_count;
     heap->constant_payload_count = constant_payload_count;
     heap->error = ERROR_OK;
+#if DUEL_VM_MUTABLE_LOOKUP_CACHE
+    for(int i=0;i<32;i++)heap->lookup_owner[i]=(-2147483647-1);
+#endif
 }
 
 // Internal node resolution (positive: mutable state; negative: constant program graph)
@@ -835,6 +845,27 @@ __device__ inline int dict_find(Heap* heap, int dict_ref, int key_ref) {
         heap->error = ERROR_TYPE_MISMATCH;
         return -1;
     }
+#if DUEL_VM_MUTABLE_LOOKUP_CACHE
+    int cache_slot=-1;
+    if(dict_ref>=0&&key_ref<0&&node.count>=8){
+        NodeView query;
+        if(!get_node(heap,key_ref,&query)){heap->error=ERROR_INVALID_REF;return -1;}
+        if(query.tag==TAG_STR){
+            cache_slot=(int)(((unsigned)dict_ref*2654435761U^(unsigned)key_ref)&31U);
+            if(heap->lookup_owner[cache_slot]==dict_ref&&heap->lookup_key[cache_slot]==key_ref&&
+                heap->lookup_offset[cache_slot]==node.offset&&heap->lookup_count[cache_slot]==node.count){
+                int index=heap->lookup_index[cache_slot];
+                if(index>=0&&index<node.count){
+                    int k=0,v=0;
+                    if(!get_edge(heap,&node,index,&k,&v)){heap->error=ERROR_INVALID_REF;return -1;}
+                    int equal=key_equal(heap,k,key_ref);
+                    if(heap->error)return -1;
+                    if(equal)return index;
+                }
+            }
+        }
+    }
+#endif
     for (int i = 0; i < node.count; i++) {
         int k = 0, v = 0;
         if (!get_edge(heap, &node, i, &k, &v)) {
@@ -843,7 +874,16 @@ __device__ inline int dict_find(Heap* heap, int dict_ref, int key_ref) {
         }
         int eq = key_equal(heap, k, key_ref);
         if (heap->error != ERROR_OK) return -1;
-        if (eq) return i;
+        if (eq){
+#if DUEL_VM_MUTABLE_LOOKUP_CACHE
+            if(cache_slot>=0){
+                heap->lookup_owner[cache_slot]=dict_ref;heap->lookup_key[cache_slot]=key_ref;
+                heap->lookup_offset[cache_slot]=node.offset;heap->lookup_count[cache_slot]=node.count;
+                heap->lookup_index[cache_slot]=i;
+            }
+#endif
+            return i;
+        }
     }
     return -1;
 }

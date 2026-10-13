@@ -13,7 +13,7 @@ rejected, not substituted. Serving public-proof budgeting is a separate layer.
 from dataclasses import dataclass, fields
 from typing import Any
 
-from ..batched_duel.device_rule_protocol import DeviceStateBatch, DeviceDecision
+from ..batched_duel.device_rule_protocol import DeviceStateBatch, DeviceDecision, DeviceValueObservation
 
 
 SAMPLE, INSPECT, EVALUATE_NODE, LEAF, OPPONENT, STEP, BACKUP, FINAL, CLEANUP, DONE = range(10)
@@ -70,7 +70,7 @@ class DeviceGumbelSearch:
                  random=None, noise=False, device='cuda', allow_cpu_reference=False,
                  allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False,
                  reuse_root_policy_value=False, verify_root_value_reuse=False,
-                 group_ready_leaves=False):
+                 group_ready_leaves=False,reuse_interior_observation=False):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -97,6 +97,9 @@ class DeviceGumbelSearch:
         if type(group_ready_leaves) is not bool:
             raise TypeError('Explicit ready-leaf grouping option required')
         self.group_ready_leaves=group_ready_leaves
+        if type(reuse_interior_observation) is not bool:
+            raise TypeError('Explicit interior observation reuse option required')
+        self.reuse_interior_observation=reuse_interior_observation
         self.t = torch
         self.device = torch.device(device)
         if self.device.type == 'cuda' and self.device.index is None:
@@ -228,13 +231,17 @@ class DeviceGumbelSearch:
         return ((states.slots == self._roots.slots[root])
                 & (states.generations == self._roots.generations[root]))
 
-    def _fixed_value(self, states, viewers, model_ids, mask):
+    def _fixed_value(self, states, viewers, model_ids, mask, *, observed=None):
         t = self.t
-        observed = self.rules.value_observation_device(self._masked(states, mask), viewers)
+        reused=observed is not None
+        if not reused:
+            observed = self.rules.value_observation_device(self._masked(states, mask), viewers)
         self._last_value_observation = observed
         self._error(observed.errors, mask, RULE_ERROR)
         meta = self.rules.metadata_device(self._masked(states, mask))
         self._error(meta.errors, mask, RULE_ERROR)
+        if reused:
+            self._error(meta.finished|(meta.actors!=viewers),mask,METADATA_ERROR)
         invalid_terminal_meta = meta.finished & ((meta.winners < -1) | (meta.winners > 1))
         self._error(invalid_terminal_meta | (meta.finished != observed.terminal), mask, METADATA_ERROR)
         expected_terminal = t.where(meta.winners == viewers, 1.,
@@ -458,9 +465,14 @@ class DeviceGumbelSearch:
             # A per-simulation device barrier fills independent teacher lanes.
             # Every root keeps its own selection, RNG and backup order. Roots
             # with an error or in FINAL/CLEANUP/DONE cannot hold the barrier.
-            progressing=t.stack([masks[p] for p in (SAMPLE,INSPECT,EVALUATE_NODE,OPPONENT,STEP)]).any()
+            earlier=t.stack([masks[p] for p in (SAMPLE,INSPECT,STEP)]).any()
+            opposing_waiting=masks[OPPONENT].any()
+            evaluating_waiting=masks[EVALUATE_NODE].any()
+            progressing=earlier|opposing_waiting|evaluating_waiting
             leaf_waiting=masks[LEAF].any()
             grouped=list(masks)
+            grouped[OPPONENT]=masks[OPPONENT]&~earlier
+            grouped[EVALUATE_NODE]=masks[EVALUATE_NODE]&~earlier&~opposing_waiting
             grouped[LEAF]=masks[LEAF]&~progressing
             grouped[BACKUP]=masks[BACKUP]&~progressing&~leaf_waiting
             masks=tuple(grouped)
@@ -538,7 +550,18 @@ class DeviceGumbelSearch:
 
         fresh = masks[EVALUATE_NODE]
         prior = self._policy_prediction(self._decision, self._viewers, fresh)
-        value = self._fixed_value(self._world(fresh), self._viewers, self._aux_ids, fresh)
+        observed=None
+        if self.reuse_interior_observation:
+            world=self._world(fresh);saved=self._decision.states
+            if saved.pool is not world.pool:
+                raise ValueError('Interior decision observation must use the same state arena')
+            mismatch=(saved.slots!=world.slots)|(saved.generations!=world.generations)|(saved.owners!=world.owners)
+            self._error(mismatch,fresh,METADATA_ERROR)
+            observed=DeviceValueObservation(self._decision.observations,
+                t.ones((self.rows,1),dtype=t.float32,device=self.device),
+                t.zeros(self.rows,dtype=t.bool,device=self.device),
+                t.zeros(self.rows,dtype=t.float64,device=self.device),self._decision.errors)
+        value = self._fixed_value(self._world(fresh), self._viewers, self._aux_ids, fresh,observed=observed)
         hashed = self._hash_decision(self._decision, fresh)
         self._error(hashed.errors, fresh, KEY_ERROR)
         index = self.node_count.clamp(0, self.nodes_per_root - 1)

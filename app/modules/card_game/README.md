@@ -1128,3 +1128,5 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 搜索可用显式 `group_ready_leaves=True` 由GPU等待本次模拟的未就绪根，批量执行三步教师与回传，保持每根随机、选点、状态和访问更新顺序；错误及已结束根不阻挡队列。验证：`tests.test_duel_v2_device_search` 包含混合深度、尾槽与完整32次搜索对照及实际CUDA捕获检查。原语通过后仍从8根正式规则搜索与终局／原始动作重放重新验收。
 
 设备VM可显式启用 `mutable_lookup_cache=True`，只缓存可变字典／实体常量字符串查询的位置提示；每次命中重核当前头、索引及正式键相等，字段变化与冲突回到完整扫描，每个VM执行清空提示，不修改状态或默认路径。实际CUDA回归入口：`tests.test_duel_v2_vm_mutable_lookup`，覆盖值更新、删后重插、挂起帧回收和同头字段换位；正式规则、完整32次搜索及容量另验。
+
+就绪分组也覆盖对手教师与新节点评估。显式 `reuse_interior_observation=True` 只复用己方INSPECT已生成的完整观察，绑定当前slot/generation/owner并重新核验正式metadata的非终局与actor==viewer；辅助模型不替换，终局/H3后仍取正式观察。验证：`tests.test_duel_v2_device_search` 包含完整32次结果、混合深度随机顺序、陈旧拒绝与实际CUDA捕获对照，真实搜索与终局重放另验。

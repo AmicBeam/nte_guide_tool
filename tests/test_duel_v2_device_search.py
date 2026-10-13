@@ -253,7 +253,7 @@ class DeviceSearchTest(unittest.TestCase):
         for dense, compact in zip(results[0], results[1]):
             self.assertTrue(torch.equal(dense, compact))
 
-    def engine(self, rows=2, device='cpu', simulations=32, actions=3,group_ready_leaves=False):
+    def engine(self, rows=2, device='cpu', simulations=32, actions=3,group_ready_leaves=False,reuse_interior_observation=False):
         fixture = TensorTreeFixture(rows, device, actions=actions)
         stats = DeviceStatisticsPool(rows*(simulations+1), actions, device=str(fixture.device),
             max_batch=rows, max_path_len=4, allow_cpu_reference=device == 'cpu')
@@ -261,7 +261,7 @@ class DeviceSearchTest(unittest.TestCase):
             InjectiveFixtureKeys(), rows=rows, max_actions=actions, simulations=simulations,
             max_depth=4, terminal_horizon=3, device=str(fixture.device),
             allow_cpu_reference=device == 'cpu', allow_synthetic=True,
-            group_ready_leaves=group_ready_leaves)
+            group_ready_leaves=group_ready_leaves,reuse_interior_observation=reuse_interior_observation)
         return engine, fixture
 
     def initialize(self, engine, fixture, active=None):
@@ -320,6 +320,36 @@ class DeviceSearchTest(unittest.TestCase):
         self.assertEqual(int(grouped.live.sum()),int(original.live.sum()))
         self.assertLess(len(new_calls),len(old_calls))
         self.assertGreater(sum(new_calls)/len(new_calls),sum(old_calls)/len(old_calls))
+
+    def test_interior_observation_reuse_preserves_full_search_and_refuses_stale_binding(self):
+        import torch
+        from dataclasses import replace
+        torch.set_num_threads(1)
+        baseline,reference=self.engine();self.initialize(baseline,reference);expected=self.finish_cpu(baseline)
+        engine,fixture=self.engine(group_ready_leaves=True,reuse_interior_observation=True)
+        original=fixture.value_observation_device;calls=[]
+        def count(states,viewers):
+            if bool(states.active.any()):calls.append(int(states.active.sum()))
+            return original(states,viewers)
+        fixture.value_observation_device=count
+        self.initialize(engine,fixture);actual=self.finish_cpu(engine)
+        for field in ('errors','policy','visits','actions','information_keys','complete','completed'):
+            torch.testing.assert_close(getattr(actual,field),getattr(expected,field))
+        # Both root and H3 still obtain formal value observations; only the
+        # matching nonterminal own interior observation may be borrowed.
+        self.assertTrue(calls)
+        bad,fixture=self.engine(reuse_interior_observation=True)
+        self.initialize(bad,fixture)
+        from app.modules.card_game.rl.batched_search.device_search import EVALUATE_NODE
+        for _ in range(100):
+            if bool((bad.phase==EVALUATE_NODE).any()):break
+            bad.tick()
+        self.assertTrue(bool((bad.phase==EVALUATE_NODE).any()))
+        bad._decision=replace(bad._decision,
+            states=replace(bad._decision.states,owners=bad._decision.states.owners+1))
+        rejected=self.finish_cpu(bad)
+        self.assertTrue(bool((rejected.errors&METADATA_ERROR).any()))
+        self.assertFalse(bool(rejected.complete.all()))
 
     def test_full_budget_matches_numpy_root_semantics_without_value_sign_flip(self):
         import torch
@@ -602,7 +632,7 @@ class DeviceSearchTest(unittest.TestCase):
         from app.modules.card_game.rl.batched_search.cuda_conditional_graph import CudaConditionalWhile
         reference,oracle=self.engine(rows=8)
         self.initialize(reference,oracle);expected=self.finish_cpu(reference)
-        engine,fixture=self.engine(rows=8,device='cuda',group_ready_leaves=True)
+        engine,fixture=self.engine(rows=8,device='cuda',group_ready_leaves=True,reuse_interior_observation=True)
         roots=fixture.roots();seeds=torch.zeros((8,5),dtype=torch.int64,device=fixture.device);seeds[:,4]=1
         ids=torch.zeros((8,2),dtype=torch.int64,device=fixture.device)
         runner=CudaConditionalWhile(device=str(fixture.device),max_ticks=3000,seconds=120)

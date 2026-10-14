@@ -110,6 +110,7 @@ class DeviceRawReplay:
         self.closed = False
         self.metadata_provider = metadata_provider
         self._captured = False
+        self._capture_inputs = None
         calls._validate_states(initial_states, self.rows, name='initial')
         lane_layout = GraphLayout(
             self.lanes, compact_layout.max_nodes, compact_layout.max_edges,
@@ -185,6 +186,7 @@ class DeviceRawReplay:
         if self._restore is not None:
             self._restore.close()
         self._archive.close()
+        self._capture_inputs = None
         self.closed = True
 
     def __enter__(self):
@@ -409,6 +411,10 @@ class DeviceRawReplay:
         self._exact(record_index_plan, t.int64, (self.max_steps, self.rows), 'record_index_plan')
         self._exact(job_seeds, t.int64, (self.rows,), 'job_seeds')
         self._exact(decision_counts, t.int64, (self.rows,), 'decision_counts')
+        # The graph's prologue copies from these external device allocations.
+        # Keep them alive even when the caller passed temporary tensors; CUDA
+        # graph capture does not retain their Python owners for us.
+        self._capture_inputs = (record_index_plan, job_seeds, decision_counts)
         self._outer.capture(
             self._unfinished, self._tick,
             initialize=lambda: self._initialize(record_index_plan, job_seeds, decision_counts))

@@ -205,7 +205,18 @@ class DeviceRawReplayCudaTest(unittest.TestCase):
         self.addCleanup(replay.close)
         plan = torch.tensor([[0, -1, 1], [2, -1, -1]], dtype=torch.int64, device=device)
         counts = torch.tensor([2, 0, 1], dtype=torch.int64, device=device)
-        replay.capture(plan, env['seeds'], counts)
+        import gc
+        import weakref
+        seeds = env['seeds'].clone()
+        inputs = [weakref.ref(value) for value in (plan, seeds, counts)]
+        replay.capture(plan, seeds, counts)
+        del plan, seeds, counts
+        gc.collect()
+        self.assertTrue(all(ref() is not None for ref in inputs))
+        # Reusing a freed input allocation corrupted record zero in formal
+        # replay. Exercise caller lifetime loss plus allocator pressure before
+        # replay, rather than keeping the input variables in the test scope.
+        pressure = torch.full((6,), -777, dtype=torch.int64, device=device)
         with ExitStack() as stack:
             stack.enter_context(patch.object(
                 DeviceGraph, 'fork', side_effect=AssertionError('Heap fork')))

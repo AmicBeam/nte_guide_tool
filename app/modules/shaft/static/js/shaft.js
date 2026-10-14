@@ -3101,15 +3101,15 @@
   function actionAnalysisRelativePercent(current, baseline) {
     const currentDamage = Number(current || 0);
     const baselineDamage = Number(baseline || 0);
-    if (baselineDamage <= 0) return currentDamage > 0 ? null : 0;
-    return (currentDamage - baselineDamage) / baselineDamage * 100;
+    if (baselineDamage <= 0) return currentDamage > 0 ? null : 100;
+    return currentDamage / baselineDamage * 100;
   }
 
   function actionAnalysisRelativePercentText(current, baseline) {
     const relativePercent = actionAnalysisRelativePercent(current, baseline);
     return relativePercent === null
       ? '新增'
-      : actionAnalysisDeltaText(relativePercent, 1, '%');
+      : `${formatNumber(relativePercent, 1)}%`;
   }
 
   function polarPoint(radius, angle) {

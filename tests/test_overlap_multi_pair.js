@@ -126,7 +126,12 @@ const eGroup=JSON.stringify(['魔e','魔z2']);
 const ePlans=engine.match(heiyu,{containsGroups:[eGroup,''],groupCount:'with-two',withoutDodge:true});
 assert(ePlans.plans.length>0);
 for(const plan of ePlans.plans.slice(0,40)){check(plan,heiyu);assert.equal(plan.groups[0].length,2);}
-assert(ePlans.plans.some(p=>p.jobs.some(j=>j.role===0 && j.rowId.includes('~0.7'))),'cross-group magic-E must reuse recorded detached a5 duration');
+for(const plan of ePlans.plans) for(const job of plan.jobs.filter(j=>j.role===0)) {
+    for(const step of engine.rowById(heiyu[0],job.rowId).timeline.filter(s=>s.action==='魔a5')) {
+        assert.equal(step.duration_seconds,.7);
+        assert.equal(step.detached,false);
+    }
+}
 const badE=engine.match(heiyu,{containsGroups:[eGroup,''],groupCount:'single',maxGroups:1});
 assert.equal(badE.plans.length,0);
 // Only background a3 -> foreground a4 may linger. Keep an extended

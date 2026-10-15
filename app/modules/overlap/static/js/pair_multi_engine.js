@@ -5,6 +5,7 @@
     const ms = s => Math.round(s * 1000), sec = t => t / 1000;
     const key = row => JSON.stringify(row.actions);
     const activeWindows = new WeakMap();
+    const bodyWindowCache = new WeakMap();
     const tailDurations = new WeakMap();
     let groupMetadata = new Map();
     const metadata = row => {const id = key(row); if (!groupMetadata.has(id)) groupMetadata.set(id, {key: id, actions: row.actions}); return groupMetadata.get(id);};
@@ -13,6 +14,7 @@
         const heiyu = character.name === '黑羽';
         const allowed = new Set(character.actions.filter(a => heiyu || core.unrestricted(a)).map(a => a.name));
         return character.rows.filter(r => core.eligible(r) && (!options.withoutDodge || !r.has_dodge)
+            && (!options.noForegroundIdle || r.foreground_intervals.every(([left,right])=>bodyWindows(r).some(([a,b])=>a<=ms(left) && b>=ms(right))))
             && (r.original_actions || r.actions).every(n => allowed.has(n))
             && (!heiyu || r.actions.every((n, i, names) => n !== '魔e' || i === 0 || names[i - 1] === '魔a5')));
     }
@@ -118,7 +120,19 @@
         }
         cache.set(id,merged); return merged;
     }
-    function model(sequences, order) {
+    function bodyWindows(row) {
+        if (bodyWindowCache.has(row)) return bodyWindowCache.get(row);
+        const spans=row.timeline.map(step=>[ms(step.start_seconds),ms(step.start_seconds+(step.base_duration_seconds ?? step.duration_seconds))])
+            .filter(([a,b])=>b>a).sort((a,b)=>a[0]-b[0]);
+        const merged=[];
+        for (const [start,end] of spans) {
+            const previous=merged.at(-1);
+            if (previous && start<=previous[1]) previous[1]=Math.max(previous[1],end);
+            else merged.push([start,end]);
+        }
+        bodyWindowCache.set(row,merged); return merged;
+    }
+    function model(sequences, order, options = {}) {
         const jobs = [], queues = [[], []];
         sequences.forEach((sequence, role) => sequence.rows.forEach((row, occurrence) => {
             queues[role].push(jobs.length); jobs.push({row, role, occurrence});
@@ -162,22 +176,56 @@
             links.push({entry, wrap, required, normal, gap: sequence.gaps[occurrence], role,
                 from: row.actions.at(-1), to: sequence.rows[next].actions[0]});
         }));
-        const entryOptions = [];
-        blocks.forEach((block, i) => {
-            if (i === 0 && sameEnd) return; // continuation, not a handover
-            const first = block.items[0], job = jobs[first.job], node = first.job + 1, cut = cuts[i];
-            const limit = ms(job.row.foreground_intervals[first.segment][0]);
-            const options = windows(job.row, limit).map(([start,end]) => [[cut,node,-start,0],[node,cut,end,0]]);
-            if (first.segment === 0) {
-                const own = queues[first.role], previous = own[(first.occurrence + own.length - 1) % own.length];
-                const shift = first.occurrence === 0 ? -1 : 0;
-                for (const [start,end] of windows(jobs[previous].row)) options.push([
-                    [cut,previous+1,-start,-shift],[previous+1,cut,end,shift],
-                ]);
+        const entryOptions = [], fixedExtra=[];
+        if (options.noForegroundIdle) {
+            // Cover each entire foreground block with connected BODY intervals.
+            // Recovery windows deliberately do not participate in this union.
+            for (let i=0;i<blocks.length;i++) {
+                const block=blocks[i], chain=[];
+                for (const item of block.items) {
+                    const row=jobs[item.job].row, spans=bodyWindows(row);
+                    const [left,right]=row.foreground_intervals[item.segment].map(ms);
+                    const index=spans.findIndex(([a,b])=>a<=left && b>=right);
+                    if (index<0) return null;
+                    if (chain.at(-1)?.job===item.job && chain.at(-1).index===index) continue;
+                    chain.push({job:item.job,index,start:spans[index][0],end:spans[index][1],count:spans.length});
+                }
+                for (let j=1;j<chain.length;j++) {
+                    const previous=chain[j-1], next=chain[j];
+                    if (previous.job===next.job || previous.index+1!==previous.count || next.index!==0) return null;
+                    fixedExtra.push([previous.job+1,next.job+1,previous.end-next.start,0]);
+                }
+                const first=chain[0], last=chain.at(-1), cut=cuts[i];
+                if (i+1<cuts.length) fixedExtra.push([last.job+1,cuts[i+1],last.end,0]);
+                else fixedExtra.push([last.job+1,0,last.end,-1]); // T <= last body's end
+                const choices=[[[cut,first.job+1,-first.start,0]]];
+                const item=block.items[0];
+                if (item.segment===0 && first.index===0 && !(i===0 && sameEnd)) {
+                    const own=queues[item.role], previous=own[(item.occurrence+own.length-1)%own.length];
+                    const span=bodyWindows(jobs[previous].row).at(-1), shift=item.occurrence===0 ? -1 : 0;
+                    if (span) choices.push([[cut,previous+1,-span[0],-shift],
+                        [previous+1,first.job+1,span[1]-first.start,shift]]);
+                }
+                entryOptions.push(choices);
             }
-            entryOptions.push(options);
-        });
-        return {size, constant, periodic, jobs, queues, cuts, blocks, sameEnd, links, sequences, order, entryOptions, extra: []};
+        } else {
+            blocks.forEach((block, i) => {
+                if (i === 0 && sameEnd) return; // continuation, not a handover
+                const first = block.items[0], job = jobs[first.job], node = first.job + 1, cut = cuts[i];
+                const limit = ms(job.row.foreground_intervals[first.segment][0]);
+                const options = windows(job.row, limit).map(([start,end]) => [[cut,node,-start,0],[node,cut,end,0]]);
+                if (first.segment === 0) {
+                    const own = queues[first.role], previous = own[(first.occurrence + own.length - 1) % own.length];
+                    const shift = first.occurrence === 0 ? -1 : 0;
+                    for (const [start,end] of windows(jobs[previous].row)) options.push([
+                        [cut,previous+1,-start,-shift],[previous+1,cut,end,shift],
+                    ]);
+                }
+                entryOptions.push(options);
+            });
+        }
+        return {size, constant, periodic, jobs, queues, cuts, blocks, sameEnd, links, sequences, order, entryOptions,
+            fixedExtra, noForegroundIdle:!!options.noForegroundIdle, extra:fixedExtra};
     }
     function edgesAt(model, period, ignore = null) {
         return [...model.constant, ...model.periodic.map(e => [e[0], e[1], e[2] + period])].map(e => {
@@ -219,7 +267,7 @@
         return values ? {period, values} : null;
     }
     function specialize(model, choices) {
-        return {...model, entryChoices: choices, extra: choices.flatMap((choice,i)=>model.entryOptions[i][choice])};
+        return {...model, entryChoices: choices, extra: [...(model.fixedExtra || []), ...choices.flatMap((choice,i)=>model.entryOptions[i][choice])]};
     }
     // Signed period edges add upper as well as lower bounds (previous-cycle tails).
     // Lift the lower bound using a witnessed negative cycle; an upper-bound cycle
@@ -369,7 +417,8 @@
                 const rotations = initialB.rows.length === 1 ? [initialB] : [initialB,
                     {...initialB, rows: [...initialB.rows].reverse(), actions: [...initialB.rows].reverse().flatMap(r => r.actions), gaps: [...initialB.gaps].reverse(), groups: [...initialB.groups].reverse()}];
                 for (const b of rotations) for (const order of orders([a, b])) {
-                    const m = model([a, b], order), current = best.get(id);
+                    const m = model([a, b], order, options), current = best.get(id);
+                    if (!m) continue;
                     // Each handover needs 1.2s before the next, including the seam.
                     const switches = m.blocks.length - (m.sameEnd ? 1 : 0);
                     if (current && Math.max(lower, switches * 1200) >= ms(current.period)) continue;
@@ -382,7 +431,8 @@
                     feasible++;
                     if (!current || plan.period < current.period) {
                         plan.id = id;
-                        plan.recipe = {sequences: m.sequences.map(s => s.rows.map(r => r.id)), order: m.order, entryChoices: solution.entryChoices};
+                        plan.recipe = {sequences: m.sequences.map(s => s.rows.map(r => r.id)), order: m.order,
+                            entryChoices: solution.entryChoices, noForegroundIdle:!!options.noForegroundIdle};
                         best.set(id, plan);
                     }
                 }
@@ -485,7 +535,9 @@
                     {...initialB,rows:[...initialB.rows].reverse(),actions:[...initialB.rows].reverse().flatMap(r=>r.actions),
                         gaps:[...initialB.gaps].reverse(),groups:[...initialB.groups].reverse()}];
                 for (const b of rotations) for (const order of orders([a,b])) {
-                    const m=model([a,b],order), switches=m.blocks.length-(m.sameEnd ? 1 : 0);
+                    const m=model([a,b],order,options);
+                    if (!m) continue;
+                    const switches=m.blocks.length-(m.sameEnd ? 1 : 0);
                     if (best && Math.max(lower,switches*1200)>=ms(best.period)) continue;
                     solved++;
                     const solution=minimum(m,best ? ms(best.period)-1 : Infinity);
@@ -495,7 +547,8 @@
                     feasible++;
                     if (!best || plan.period<best.period) {
                         plan.id=task.optimistic.id;
-                        plan.recipe={sequences:m.sequences.map(s=>s.rows.map(r=>r.id)),order:m.order,entryChoices:solution.entryChoices};
+                        plan.recipe={sequences:m.sequences.map(s=>s.rows.map(r=>r.id)),order:m.order,
+                            entryChoices:solution.entryChoices,noForegroundIdle:!!options.noForegroundIdle};
                         best=plan;
                     }
                 }
@@ -553,7 +606,7 @@
             const rows = ids.map(id => rowById(characters[role], id));
             return {rows, actions: rows.flatMap(r => r.actions), groups: rows.map(key), gaps: rows.map((r, i) => transition(characters[role], r, rows[(i + 1) % rows.length]))};
         });
-        const m = model(sequences, plan.recipe.order), period = ms(plan.period);
+        const m = model(sequences, plan.recipe.order, {noForegroundIdle:plan.recipe.noForegroundIdle}), period = ms(plan.period);
         const unique = new Map();
         for (const branch of entryModelsAt(m,period)) {
             const extremes = [0, 1].map(role => {

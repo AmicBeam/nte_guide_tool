@@ -122,7 +122,7 @@
             console.error('合轴匹配错误', event.message);
             fail('匹配未能完成，请重新匹配或刷新页面。');
         };
-        worker.postMessage({characters: chars, limit: shown, options: {sort: $('sort').value, withoutDodge: $('no-dodge').checked, maxGroups: 2, groupCount: $('group-count').value, containsGroups: [$('first-group').value, $('second-group').value]}});
+        worker.postMessage({characters: chars, limit: shown, options: {sort: $('sort').value, noForegroundIdle: $('no-foreground-idle').checked, withoutDodge: $('no-dodge').checked, maxGroups: 2, groupCount: $('group-count').value, containsGroups: [$('first-group').value, $('second-group').value]}});
     }
     function fail(message) {
         if (worker) worker.terminate(); worker = null;
@@ -134,7 +134,7 @@
         for (const field of ['first', 'second']) {
             const character = dataset.characters.find(c => c.id === $(field).value), select = $(`${field}-group`);
             const previous = select.dataset.characterId === character.id ? select.value : '';
-            const groups = window.OverlapMultiEngine.groupOptions(character, {withoutDodge: $('no-dodge').checked});
+            const groups = window.OverlapMultiEngine.groupOptions(character, {withoutDodge: $('no-dodge').checked, noForegroundIdle: $('no-foreground-idle').checked});
             select.innerHTML = '<option value="">不限动作组</option>' + groups.map(g => `<option value="${escape(g.key)}">${escape(g.actions.join(' → '))}</option>`).join('');
             select.value = groups.some(g => g.key === previous) ? previous : '';
             select.dataset.characterId = character.id;
@@ -148,7 +148,7 @@
         updateGroupOptions();
     }
     for (const field of ['first', 'second']) $(field).addEventListener('change', () => {updateChoices(); calculate();});
-    $('no-dodge').addEventListener('change', () => {updateGroupOptions(); calculate();});
+    for (const field of ['no-dodge','no-foreground-idle']) $(field).addEventListener('change', () => {updateGroupOptions(); calculate();});
     for (const field of ['first-group', 'second-group', 'group-count']) $(field).addEventListener('change', calculate);
     $('calculate').addEventListener('click', calculate);
     $('swap').addEventListener('click', () => {

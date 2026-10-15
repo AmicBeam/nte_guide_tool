@@ -285,6 +285,6 @@
         }
         return {plans: groups, checked, feasible: plans.length};
     }
-    scope.OverlapPairEngine = {schedule, match, prune, subsequence, eligible, unrestricted, availableRows, restartDelay};
+    scope.OverlapPairEngine = {solve, optimize, schedule, match, prune, subsequence, eligible, unrestricted, availableRows, restartDelay};
     if (typeof module !== 'undefined') module.exports = scope.OverlapPairEngine;
 }(typeof self !== 'undefined' ? self : globalThis));

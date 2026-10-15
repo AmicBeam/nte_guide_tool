@@ -177,3 +177,9 @@
 .pair-allocation-slider { display:block; width:100%; min-height:32px; margin:8px 0 2px; accent-color:#9bd5da; cursor:pointer; }
 .pair-allocation p { margin:0; color:#7f95a7; font-size:10px; line-height:1.7; }
 @media(max-width:600px) { .pair-allocation-labels output { order:3; width:100%; } }
+.pair-group-filters { display:grid; grid-template-columns:1fr 1fr minmax(160px,.7fr); gap:14px; margin-top:18px; }
+.pair-group-filters label { display:grid; gap:8px; min-width:0; color:#b4c2d0; font-size:12px; }
+.pair-group-filters select { min-width:0; max-width:100%; color:#e1eaf1; background:#101923; border:1px solid #43505d; border-radius:8px; padding:10px; font:inherit; }
+.pair-group-line { display:block; margin-top:3px; }
+.pair-variant-loading { color:#8196aa; font-size:11px; }
+@media(max-width:700px) { .pair-group-filters { grid-template-columns:minmax(0,1fr); } }

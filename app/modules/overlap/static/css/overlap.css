@@ -155,6 +155,7 @@
 .pair-metric + .pair-metric { border-top:1px solid #273745; }
 .pair-metric strong { font-size:19px; }
 .pair-metric small { color:#8ca1b3; font-size:10px; }
+.pair-metric .pair-metric-rate { color:#fff; font-size:11px; }
 .pair-plan-yield { display:grid; gap:5px; text-align:right; font-variant-numeric:tabular-nums; }
 .pair-plan-yield > strong { font-size:22px; color:#a3e5d3; }
 .pair-plan-yield > strong small { font-size:11px; font-weight:400; }

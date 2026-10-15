@@ -7,8 +7,9 @@ does not claim complete game support merely by constructing the FSM.
 
 The production execution wrapper must put initialize/tick inside a device
 conditional CUDA graph. CPU and synthetic execution are explicit test modes.
-Covered-value is the current implemented teacher contract; other modes are
-rejected, not substituted. Serving public-proof budgeting is a separate layer.
+Covered-value retains the historical teacher contract. network_value performs
+no leaf continuation and uses the explicitly bound fixed-observer WDL model.
+Serving public-proof budgeting is a separate layer.
 """
 from dataclasses import dataclass, fields
 from typing import Any
@@ -80,8 +81,11 @@ class DeviceGumbelSearch:
             raise ValueError('Bounded terminal horizon required')
         if type(value_batch_rows) is not int or value_batch_rows < 1:
             raise ValueError('Positive bounded value inference row count required')
-        if teacher_mode != 'covered_value':
-            raise NotImplementedError('Device FSM currently requires the covered_value teacher')
+        if teacher_mode not in ('covered_value', 'network_value'):
+            raise NotImplementedError('Unknown device leaf evaluation mode')
+        if teacher_mode == 'network_value' and terminal_horizon != 0:
+            raise ValueError('network_value requires zero teacher horizon')
+        self.teacher_mode = teacher_mode
         if type(noise) is not bool or type(allow_synthetic) is not bool:
             raise TypeError('Explicit boolean noise and synthetic controls required')
         if type(borrow_root_candidates) is not bool:raise TypeError('Explicit root candidate borrow option required')
@@ -574,13 +578,18 @@ class DeviceGumbelSearch:
         self.node_generations[self._rows, index] = t.where(success, written.generations,
                                                           self.node_generations[self._rows, index])
         self.node_count.add_(success.long())
-        self.phase.copy_(t.where(success, LEAF, self.phase))
+        if self.teacher_mode == 'network_value':
+            self.leaf_values.copy_(t.where(success, value, self.leaf_values))
+            self.phase.copy_(t.where(success, BACKUP, self.phase))
+        else:
+            self.phase.copy_(t.where(success, LEAF, self.phase))
 
         leaf = masks[LEAF]
         old = self._world(leaf)
-        continuation = self.rules.teacher_continue_device(old, self._viewers, horizon=self.terminal_horizon)
-        self._release_replaced(old, continuation, leaf)
-        self._replace_world(continuation, leaf)
+        if self.teacher_mode == 'covered_value':
+            continuation = self.rules.teacher_continue_device(old, self._viewers, horizon=self.terminal_horizon)
+            self._release_replaced(old, continuation, leaf)
+            self._replace_world(continuation, leaf)
         value = self._fixed_value(self._world(leaf), self._viewers, self._aux_ids, leaf)
         self.leaf_values.copy_(t.where(leaf, value, self.leaf_values))
         self.phase.copy_(t.where(leaf, BACKUP, self.phase))

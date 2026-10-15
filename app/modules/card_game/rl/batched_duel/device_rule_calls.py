@@ -102,7 +102,8 @@ class DeviceRuleGraphCalls:
 
     supports_full_duel_rules = False
 
-    def __init__(self, vm, state_store, *, rows, lanes=32, seconds=60, compact_layout):
+    def __init__(self,vm,state_store,*,rows,lanes=32,seconds=60,compact_layout,
+                 vm_layout=None,max_workspace_bytes=None):
         if not isinstance(vm, CudaVm) or vm.closed:
             raise TypeError('Live frozen CUDA VM required')
         if not isinstance(state_store, CompactDeviceGraphStore) or state_store.closed:
@@ -134,7 +135,27 @@ class DeviceRuleGraphCalls:
         lane_layout = GraphLayout(
             self.lanes, compact_layout.max_nodes, compact_layout.max_edges,
             compact_layout.max_payload_bytes)
-        large_layout = GraphLayout(self.lanes, LARGE_NODES, LARGE_EDGES, LARGE_PAYLOAD_BYTES)
+        large_layout=(GraphLayout(self.lanes,LARGE_NODES,LARGE_EDGES,LARGE_PAYLOAD_BYTES)
+                      if vm_layout is None else vm_layout)
+        if (not isinstance(large_layout,GraphLayout) or large_layout.game_capacity!=self.lanes
+                or large_layout.max_nodes<LARGE_NODES or large_layout.max_edges<LARGE_EDGES
+                or large_layout.max_payload_bytes<LARGE_PAYLOAD_BYTES):
+            raise ValueError('Declared VM lane layout must retain formal workspace minima')
+        if any(v>=2**31 for v in (large_layout.max_nodes,large_layout.max_edges,large_layout.max_payload_bytes)):
+            raise ValueError('Bounded int32 VM workspace required')
+        constants=len(vm.image.nodes)
+        heap=self.lanes*(16*large_layout.max_nodes+8*large_layout.max_edges+large_layout.max_payload_bytes+16)
+        small=self.lanes*(16*lane_layout.max_nodes+8*lane_layout.max_edges+lane_layout.max_payload_bytes+16)
+        frames=self.lanes*vm.limits.frames*(14+vm.limits.locals+vm.limits.stack+vm.limits.cells)*4
+        marks_queue=self.lanes*(8*(large_layout.max_nodes+constants)+4*large_layout.max_nodes)
+        compact_maps=self.lanes*8*(large_layout.max_nodes+lane_layout.max_nodes+2*constants)
+        self.planned_workspace_bytes=heap+4*small+frames+marks_queue+compact_maps+self.lanes*512
+        self.vm_layout=large_layout
+        if max_workspace_bytes is not None:
+            if type(max_workspace_bytes) is not int or max_workspace_bytes<1:
+                raise ValueError('Positive explicit shared-workspace byte bound required')
+            if self.planned_workspace_bytes>max_workspace_bytes:
+                raise MemoryError('Declared shared rule scratch exceeds byte budget')
         self.binder = DeviceRuleArgumentBinder(device=self.device)
         try:
             self.large = _empty_graph(t, large_layout, self.device)

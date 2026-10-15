@@ -1136,3 +1136,10 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 设备VM可显式使用 `frozen_class_lookup=True`，按冻结类命名空间的描述符类别顺序和C3继承顺序生成精确静态索引，返回原值引用和类别。常量字符串与动态UTF-8字符串都保留相等和缺失语义；不支持的键仍走原查询。实例字段仍读取当前可变字典，getter、方法绑定与super继续由原对象处理器执行。默认关闭；`tests.test_duel_v2_vm_frozen_attributes` 对照多继承、描述符遮蔽、属性／静态／类方法、动态名称及实例写入，实际CUDA及正式教师／完整搜索分别验收。
 
 原始动作重放的CUDA图捕获保留外部索引、种子和逐根计数张量直到关闭图，避免调用方传入临时张量后设备分配器复用其内存。保留引用不改变输入内容或CPU／GPU边界；`tests.test_duel_v2_device_raw_replay` 以释放调用方引用、分配压力、完整多步／尾槽重放验证，正式原始动作／全合法哈希仍单独验收。
+
+
+### 无叶子延续的设备搜索与真红根指导
+
+`DeviceGumbelSearch` 可显式选择 `teacher_mode=network_value, terminal_horizon=0`：新叶子直接使用固定观察者的独立绑定 WDL 预测，已有新节点评价直接回传，不调用三步规则延续。独立根仍按设备阶段聚合遍历、扩展、估值和回传，保留 Gumbel32、完整合法候选及信息集采样；对手的公开规则选点与叶子教师分开配置和计时。该分支不自动修改网站或正式训练入口。
+
+`DeviceGameLoop(root_guide=...)` 支持搜索完成后的设备根指导。`DeviceZhenhongGuide` 仅对具名真红策略调用冻结指导入口，按公开版本生成三个信息集世界，固定至多24个计划，共用v3的保牌、完整准备组合、合法性和安全排序；不使用主机时间剪枝。实际动作与原Gumbel选点、原策略分布分开保存，混合训练目标仍须由完整采集接口明确接线。组件及真实八根计时不授予完整对局、学习、容量或强度资格。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_device_network_guide tests.test_duel_v2_device_search tests.test_duel_v2_device_games tests.test_duel_v2_zhenhong_guide`。

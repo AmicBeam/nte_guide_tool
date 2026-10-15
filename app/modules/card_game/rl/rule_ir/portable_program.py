@@ -137,7 +137,7 @@ ALLOWED_BUILTIN_INTRINSICS: frozenset[str] = frozenset({
     'zip',
     'Exception', 'ValueError', 'TypeError', 'KeyError', 'IndexError',
     'AttributeError', 'StopIteration', 'RuntimeError', 'AssertionError',
-    'ZeroDivisionError', 'OverflowError', 'LookupError', 'Warning',
+    'ZeroDivisionError', 'OverflowError', 'LookupError', 'Warning', 'NotImplementedError',
 })
 
 DEFAULT_EXPLICIT_INTRINSICS: frozenset[str] = frozenset({

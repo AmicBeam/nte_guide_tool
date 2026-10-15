@@ -295,3 +295,21 @@ def entry_functions(runtime=None):
 def sampler_runtime(runtime=None):
     name = normalize_runtime(runtime)
     return _FrozenSevenRuntime if name == 'seven' else _FrozenRecoveryRuntime
+
+
+def zhenhong_guide(state, actor, baseline):
+    from .gpu_zhenhong_guide import guide_index
+    return guide_index(state, actor, baseline)
+
+
+# Optional root-only extension; not part of historical teacher entry sets.
+ENTRY_FUNCTIONS['zhenhong_guide'] = zhenhong_guide
+SEVEN_ENTRY_FUNCTIONS['zhenhong_guide'] = zhenhong_guide
+
+
+def zhenhong_guide_probe(packet):
+    return zhenhong_guide(packet['state'], packet['side'], packet['action']), packet
+
+
+ENTRY_FUNCTIONS['zhenhong_guide_probe'] = zhenhong_guide_probe
+SEVEN_ENTRY_FUNCTIONS['zhenhong_guide_probe'] = zhenhong_guide_probe

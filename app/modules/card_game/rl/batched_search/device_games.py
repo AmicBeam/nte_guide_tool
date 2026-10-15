@@ -33,7 +33,7 @@ class DeviceGameLoop:
     def __init__(self, rules, search, sink, world_seed_provider, *, max_decisions,
                  random_plan=None, device='cuda', allow_cpu_reference=False,
                  allow_synthetic=False, outer_loop=None, inner_loop=None,
-                 outer_max_ticks=None, inner_max_ticks=None, seconds=60):
+                 outer_max_ticks=None, inner_max_ticks=None, seconds=60, root_guide=None):
         import torch
         if type(max_decisions) is not int or max_decisions < 1:
             raise ValueError('Positive bounded physical decision count required')
@@ -70,6 +70,9 @@ class DeviceGameLoop:
         for value, name in ((outer_max_ticks, 'outer_max_ticks'), (inner_max_ticks, 'inner_max_ticks')):
             if type(value) is not int or value < 1:
                 raise ValueError('Positive bounded ' + name + ' required')
+        if root_guide is not None and not callable(getattr(root_guide, 'capture_result', None)):
+            raise TypeError('Device root guide must provide capture_result')
+        self.root_guide = root_guide
         self.rules, self.search, self.sink = rules, search, sink
         self._counts_as_search = getattr(search, 'counts_as_search', True)
         if type(self._counts_as_search) is not bool:
@@ -278,6 +281,9 @@ class DeviceGameLoop:
         t = self.t
         result = self.search.result_device()
         searched = self._search_mask
+        if self.root_guide is not None:
+            result = self.root_guide.capture_result(self._physical(searched),
+                self._actors, result, self._policy_ids, searched)
         self._errors.bitwise_or_(t.where(searched, result.errors, 0))
         incomplete = searched & ~result.complete & (self._errors == 0)
         self._error(incomplete, incomplete, GUARD_ERROR)

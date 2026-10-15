@@ -5,7 +5,7 @@ POP_EXCEPT. This independent implementation preserves type/args/cause/context;
 traceback objects, lasti introspection and custom exception classes are omitted.
 VM capacity, deadline, unsupported capabilities and numeric faults stay fatal.
 """
-EXCEPTION_NAMES=('BaseException','Exception','ValueError','KeyError','IndexError','TypeError','RuntimeError','StopIteration','ZeroDivisionError','OverflowError','AttributeError','LookupError','AssertionError')
+EXCEPTION_NAMES=('BaseException','Exception','ValueError','KeyError','IndexError','TypeError','RuntimeError','StopIteration','ZeroDivisionError','OverflowError','AttributeError','LookupError','AssertionError','NotImplementedError')
 EXCEPTION_OPS=frozenset(('SETUP_FINALLY','POP_BLOCK','POP_EXCEPT','RERAISE','RAISE_VARARGS','JUMP_IF_NOT_EXC_MATCH','ROT_FOUR','ROT_N'))
 
 
@@ -24,7 +24,7 @@ __device__ inline int exception_class_code(Context* c,int ref){
  if(kind(c,ref)!=T_NATIVE)return -1;switch(node(c,ref)[3]){ @IDENTITIES@ default:return -1;}
 }
 __device__ inline int exception_type(Context* c,int code){
- if(code<0||code>=13){c->error=BAD_PROGRAM;return MISSING;}
+ if(code<0||code>=14){c->error=BAD_PROGRAM;return MISSING;}
  switch(code){ @REFS@ default:return meta(c,T_NATIVE,0,0,-4000-code);}
 }
 // Frames store only their OWN exception; inheritance follows the active caller chain.
@@ -75,7 +75,7 @@ __device__ inline void raise_exception(Context* c,int ref,int cause=MISSING){
 __device__ inline int exception_match_one(Context* c,int actual,int wanted){
  int a=exception_class_code(c,actual),b=exception_class_code(c,wanted);
  if(a<0||b<0){c->error=BAD_CALL;return 0;}
- return a==b||b==0||(b==1&&a!=0)||(b==11&&(a==3||a==4));
+ return a==b||b==0||(b==1&&a!=0)||(b==11&&(a==3||a==4))||(b==6&&a==13);
 }
 __device__ inline int exception_matches(Context* c,int actual,int wanted){
  int pending[64],top=1,matched=0;pending[0]=wanted;

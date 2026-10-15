@@ -83,10 +83,10 @@
         worker = activeWorker;
         worker.onmessage = ({data}) => {
             if (worker !== activeWorker) return;
-            if (data.progress) $('status').textContent = data.progress.phase === 'prune' ? '正在合并相同方案并去除冗余…' : `正在筛选 ${data.progress.checked} / ${data.progress.total} 组候选 · 已进入匹配 ${data.progress.evaluated} 组 · 已剪枝 ${data.progress.pruned} 组…`;
+            if (data.progress) $('status').textContent = data.progress.phase === 'prune' ? '正在合并相同方案并去除冗余…' : `正在筛选 ${data.progress.checked} / ${data.progress.total} 组候选 · 规则过滤 ${data.progress.filtered} 组 · 界限剪枝 ${data.progress.pruned} 组 · 进入匹配 ${data.progress.evaluated} 组…`;
             if (data.result) {
                 plans = data.result.plans;
-                summary = `匹配完成 · 候选 ${data.result.checked} 组 · 进入匹配 ${data.result.evaluated} 组 · 剪枝 ${data.result.pruned} 组 · 保留 ${plans.length} 个非冗余循环`;
+                summary = `匹配完成 · 候选 ${data.result.checked} 组 · 规则过滤 ${data.result.filtered} 组 · 界限剪枝 ${data.result.pruned} 组 · 进入匹配 ${data.result.evaluated} 组 · 保留 ${plans.length} 个非冗余循环`;
                 $('results').setAttribute('aria-busy', 'false');
                 render();
             }

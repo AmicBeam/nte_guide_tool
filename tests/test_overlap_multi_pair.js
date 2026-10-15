@@ -60,7 +60,7 @@ const pair=chars(['安魂曲','残虹']);
 let count=0,variants=0;
 for(const groupCount of ['all','single','with-two','both-two']) {
     const result=engine.match(pair,{groupCount,maxGroups:2});
-    assert.equal(result.evaluated+result.pruned,result.checked);
+    assert.equal(result.evaluated+result.filtered+result.pruned,result.checked);
     assert(result.pruned>0);
     assert(result.evaluated<result.checked);
     assert(result.plans.length>0);
@@ -168,10 +168,17 @@ for(const plan of engine.match(pair,{groupCount:'both-two'}).plans.slice(0,20)) 
     assert.equal(engine.minimum(model,period).period,period);
     checkedMinimum++;
 }
+// Rule exclusion is not algorithmic pruning: these candidates are all forbidden.
+const forbidden=engine.match(pair,{maxGroups:1,groupCount:'both-two'});
+assert(forbidden.checked>0);
+assert.equal(forbidden.filtered,forbidden.checked);
+assert.equal(forbidden.pruned,0);
+assert.equal(forbidden.evaluated,0);
+assert.equal(forbidden.solved,0);
 // The known one-group recovery allocation remains available under the single filter.
 const original=engine.match(pair,{groupCount:'single',maxGroups:1,containsGroups:[JSON.stringify(['a1远','a2远','a3远']),JSON.stringify(['a1','z','a5'])]});
 assert(original.plans.length>0);
-assert.equal(original.evaluated+original.pruned,original.checked);
+assert.equal(original.evaluated+original.filtered+original.pruned,original.checked);
 
 assert.equal(original.plans[0].period,2.8);
 const allocations=engine.variants(original.plans[0],pair);

@@ -344,7 +344,7 @@
             sequence.foreground = sequence.rows.reduce((sum,row)=>sum+row.foreground_intervals.reduce((n,[a,b])=>n+ms(b)-ms(a),0),0);
         });
         const best = new Map(), total = choices[0].length * choices[1].length;
-        let checked = 0, feasible = 0, evaluated = 0, pruned = 0, solved = 0;
+        let checked = 0, feasible = 0, evaluated = 0, filtered = 0, pruned = 0, solved = 0;
         for (const a of choices[0]) {
             for (const initialB of choices[1]) {
                 const kinds = [a.kinds, initialB.kinds];
@@ -352,7 +352,7 @@
                 if ((a.rows.length === 2 && initialB.rows.length === 2 && kinds.every(n => n === 1))
                     || (options.groupCount === 'single' && kinds.some(n => n !== 1))
                     || (options.groupCount === 'with-two' && !kinds.includes(2))
-                    || (options.groupCount === 'both-two' && kinds.some(n => n !== 2))) {checked++; pruned++; continue;}
+                    || (options.groupCount === 'both-two' && kinds.some(n => n !== 2))) {checked++; filtered++; continue;}
                 const id = `${a.code}|${initialB.code}`, previous = best.get(id);
                 // Own releases cannot overlap; mandatory foreground of both actors
                 // also fits within one cycle. An incumbent tie adds no new recipe.
@@ -381,9 +381,9 @@
                 }
                 checked++;
             }
-            progress({checked, total, evaluated, pruned, solved});
+            progress({checked, total, evaluated, filtered, pruned, solved});
         }
-        progress({checked, total, evaluated, pruned, solved, phase: 'prune'});
+        progress({checked, total, evaluated, filtered, pruned, solved, phase: 'prune'});
         const candidates = [...best.values()];
         // Group boundaries are part of identity. Compare ordered action content for
         // Pareto pruning only after the requested contains-group filters apply.
@@ -391,7 +391,7 @@
         for (const plan of retained) {
             plan.variants = null; // computed lazily for displayed pages
         }
-        return {plans: retained, checked, feasible, evaluated, pruned, solved};
+        return {plans: retained, checked, feasible, evaluated, filtered, pruned, solved};
     }
     function materialize(plan, characters) {
         if (!plan.jobs) return plan;

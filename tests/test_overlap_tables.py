@@ -26,47 +26,42 @@ class OverlapTablesTest(unittest.TestCase):
         return next(c for c in self.payload['characters'] if c['name'] == name)
 
     def test_heiyu_linger_slots_delay_suffix_without_extra_benefits(self):
-        # User 2026-10-15: overlap-only 0/0.1/0.2s, not shaft action duration.
-        names = ['魔a1', '魔a2', '魔a3', '魔a4']
+        # User 2026-10-15: only background a3 -> foreground a4 may linger.
+        names = [f'魔a{i}' for i in range(1, 6)]
         rows = [r for r in self.character('黑羽')['rows'] if r['original_actions'] == names
-                and r['kind'] == '连招' and not r['has_dodge']]
+                and r['operation'] == '魔a2预魔a3 / 魔a4预魔a5' and not r['has_dodge']]
         self.assertEqual(len(rows), 3)
         base = rows[0]
         self.assertEqual(next(a for a in self.actions if a['id'] == 'action_heiyu_form_a3')['duration_seconds'], 1.2)
         for row, extra in zip(rows, (0, .1, .2)):
-            a3, a4 = row['timeline'][2:]
+            a3, a4 = row['timeline'][2:4]
             self.assertEqual(a3.get('linger_seconds', 0), extra)
             self.assertAlmostEqual(a3['duration_seconds'], 1.2 + extra)
             self.assertAlmostEqual(a4['start_seconds'], 2.5 + extra)
             self.assertEqual(a4['duration_seconds'], .4)
+            self.assertEqual((a3['placement'], a4['placement']), ('background', 'foreground'))
             for field in ('multipliers', 'energy_gain', 'energy_return', 'energy_cost', 'harmony',
                           'harmony_on_start', 'personal_resources', 'stagger'):
                 self.assertEqual(row[field], base[field])
         self.assertEqual(len({r['id'] for r in rows}), 3)
 
-    def test_heiyu_linger_can_enable_return_at_cooldown_boundary(self):
-        rows = [r for r in self.character('黑羽')['rows']
-                if r['original_actions'] == [f'魔a{i}' for i in range(1, 6)] and not r['has_dodge']
-                and r['operation'] == '魔a3正常切人 / 魔a4预魔a5']
-        self.assertEqual(len(rows), 1)
-        row = rows[0]
-        self.assertEqual(row['timeline'][2]['linger_seconds'], .2)
-        self.assertEqual(row['window_1']['start_seconds'], 1.5)
-        self.assertEqual(row['window_1']['end_seconds'], 2.7)
-        self.assertEqual(row['window_1']['duration_seconds'], 1.2)
+    def test_heiyu_linger_cannot_create_a_foreground_a3_return(self):
+        self.assertFalse(any(r['operation'] == '魔a3正常切人 / 魔a4预魔a5'
+                             for r in self.character('黑羽')['rows']))
 
-    def test_heiyu_linger_is_per_occurrence_and_never_on_dodge(self):
-        names = ['魔a1', '魔a2', '魔a3', '魔a4', '魔a5', '魔e', '魔z2', '魔a3']
-        rows = [r for r in self.character('黑羽')['rows'] if r['original_actions'] == names
-                and r['kind'] == '连招' and not r['has_dodge']]
-        self.assertEqual({tuple(r['timeline'][i].get('linger_seconds', 0) for i in (2, 7)) for r in rows},
-                         {(a, b) for a in (0, .1, .2) for b in (0, .1, .2)})
+    def test_heiyu_linger_only_on_background_a3_followed_by_foreground_a4(self):
+        lingered = 0
         for row in self.character('黑羽')['rows']:
-            for step in row['timeline']:
+            for index, step in enumerate(row['timeline']):
                 if step.get('linger_seconds'):
+                    lingered += 1
                     self.assertEqual(step['action'], '魔a3')
                     self.assertFalse(step['dodge_replaces'])
+                    self.assertEqual(step['placement'], 'background')
+                    self.assertEqual(row['timeline'][index + 1]['action'], '魔a4')
+                    self.assertEqual(row['timeline'][index + 1]['placement'], 'foreground')
                     self.assertLessEqual(step['duration_seconds'], 1.4)
+        self.assertGreater(lingered, 0)
 
     def test_scope_and_no_melee_requiem(self):
         self.assertEqual([c['name'] for c in self.payload['characters']], ['安魂曲','残虹','黑羽','明音凛'])

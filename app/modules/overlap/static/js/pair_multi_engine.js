@@ -245,14 +245,14 @@
         }
         return null;
     }
-    function minimum(model) {
+    function minimum(model, upper = Infinity) {
         const baseline=baseMinimum(model);
-        if(!baseline) return null;
+        if(!baseline || baseline.period > upper) return null;
         let best=null;
         function visit(choices, lower) {
             if (best?.period === baseline.period) return;
             const branch=specialize(model,choices);
-            const solution=choices.length ? boundSolve(branch,lower,best?.period ?? Infinity) : baseline;
+            const solution=choices.length ? boundSolve(branch,lower,best?.period ?? upper) : baseline;
             if(!solution) return;
             if(choices.length===model.entryOptions.length) {
                 if(!best || solution.period<best.period) best={...solution,entryChoices:choices};
@@ -338,30 +338,41 @@
         const choices = characters.map((c, role) => sequences(c, options, options.containsGroups?.[role] || ''));
         groupMetadata = new Map();
         const codes = new Map(characters.flatMap(c => groupOptions(c, options)).map((g, i) => [g.key, i]));
-        const idFor = sequences => sequences.map(s => s.groups.map(g => codes.get(g)).sort((a,b)=>a-b).join('+')).join('|');
+        choices.flat().forEach(sequence => {
+            sequence.code = sequence.groups.map(g => codes.get(g)).sort((a,b)=>a-b).join('+');
+            sequence.kinds = new Set(sequence.groups).size;
+            sequence.foreground = sequence.rows.reduce((sum,row)=>sum+row.foreground_intervals.reduce((n,[a,b])=>n+ms(b)-ms(a),0),0);
+        });
         const best = new Map(), total = choices[0].length * choices[1].length;
-        let checked = 0, feasible = 0;
+        let checked = 0, feasible = 0, evaluated = 0, pruned = 0, solved = 0;
         for (const a of choices[0]) {
             for (const initialB of choices[1]) {
-                const kinds = [new Set(a.groups).size, new Set(initialB.groups).size];
+                const kinds = [a.kinds, initialB.kinds];
                 // Both actors repeating their sole group adds no new group mix.
                 if ((a.rows.length === 2 && initialB.rows.length === 2 && kinds.every(n => n === 1))
                     || (options.groupCount === 'single' && kinds.some(n => n !== 1))
                     || (options.groupCount === 'with-two' && !kinds.includes(2))
-                    || (options.groupCount === 'both-two' && kinds.some(n => n !== 2))) {checked++; continue;}
-                const id = idFor([a, initialB]), previous = best.get(id);
-                if (previous && Math.max(a.lower, initialB.lower) > ms(previous.period)) {checked++; continue;}
+                    || (options.groupCount === 'both-two' && kinds.some(n => n !== 2))) {checked++; pruned++; continue;}
+                const id = `${a.code}|${initialB.code}`, previous = best.get(id);
+                // Own releases cannot overlap; mandatory foreground of both actors
+                // also fits within one cycle. An incumbent tie adds no new recipe.
+                const lower = Math.max(a.lower, initialB.lower, a.foreground + initialB.foreground, 2400);
+                if (previous && lower >= ms(previous.period)) {checked++; pruned++; continue;}
+                evaluated++;
                 const rotations = initialB.rows.length === 1 ? [initialB] : [initialB,
                     {...initialB, rows: [...initialB.rows].reverse(), actions: [...initialB.rows].reverse().flatMap(r => r.actions), gaps: [...initialB.gaps].reverse(), groups: [...initialB.groups].reverse()}];
                 for (const b of rotations) for (const order of orders([a, b])) {
-                    const m = model([a, b], order), solution = minimum(m);
+                    const m = model([a, b], order), current = best.get(id);
+                    // Each handover needs 1.2s before the next, including the seam.
+                    const switches = m.blocks.length - (m.sameEnd ? 1 : 0);
+                    if (current && Math.max(lower, switches * 1200) >= ms(current.period)) continue;
+                    solved++;
+                    const solution = minimum(m, current ? ms(current.period) - 1 : Infinity);
                     if (!solution) continue;
-                    if (previous && solution.period > ms(previous.period)) continue;
                     const branch = specialize(m, solution.entryChoices);
                     const plan = realize(branch, solution.period, solution.values, characters);
                     if (!plan) continue;
                     feasible++;
-                    const current = best.get(id);
                     if (!current || plan.period < current.period) {
                         plan.id = id;
                         plan.recipe = {sequences: m.sequences.map(s => s.rows.map(r => r.id)), order: m.order, entryChoices: solution.entryChoices};
@@ -370,9 +381,9 @@
                 }
                 checked++;
             }
-            progress({checked, total});
+            progress({checked, total, evaluated, pruned, solved});
         }
-        progress({checked, total, phase: 'prune'});
+        progress({checked, total, evaluated, pruned, solved, phase: 'prune'});
         const candidates = [...best.values()];
         // Group boundaries are part of identity. Compare ordered action content for
         // Pareto pruning only after the requested contains-group filters apply.
@@ -380,7 +391,7 @@
         for (const plan of retained) {
             plan.variants = null; // computed lazily for displayed pages
         }
-        return {plans: retained, checked, feasible};
+        return {plans: retained, checked, feasible, evaluated, pruned, solved};
     }
     function materialize(plan, characters) {
         if (!plan.jobs) return plan;

@@ -60,6 +60,9 @@ const pair=chars(['安魂曲','残虹']);
 let count=0,variants=0;
 for(const groupCount of ['all','single','with-two','both-two']) {
     const result=engine.match(pair,{groupCount,maxGroups:2});
+    assert.equal(result.evaluated+result.pruned,result.checked);
+    assert(result.pruned>0);
+    assert(result.evaluated<result.checked);
     assert(result.plans.length>0);
     for(const plan of result.plans) {
         check(plan,pair); count++;
@@ -105,11 +108,12 @@ for(const plan of ePlans.plans.slice(0,40)){check(plan,heiyu);assert.equal(plan.
 assert(ePlans.plans.some(p=>p.jobs.some(j=>j.role===0 && j.rowId.includes('~0.7'))),'cross-group magic-E must reuse recorded detached a5 duration');
 const badE=engine.match(heiyu,{containsGroups:[eGroup,''],groupCount:'single',maxGroups:1});
 assert.equal(badE.plans.length,0);
-// A user-authorized 0.2s a3 linger enables a normal-switch return exactly at
-// 1.2s. Keep the recorded slot through recipes, materialization and sliders;
+// Only background a3 -> foreground a4 may linger. Keep an extended
+// recorded slot through recipes, materialization and sliders;
 // it remains the same action group and never adds multiplier.
 const lingerRows=heiyu[0].rows.filter(r=>r.original_actions.join()==='魔a1,魔a2,魔a3,魔a4,魔a5'
-    && r.switch_method==='hold' && r.operation==='魔a3正常切人 / 魔a4 → 魔a5打满');
+    && r.switch_method==='hold' && r.operation==='魔a2预魔a3 / 魔a4 → 魔a5打满'
+    && r.timeline[2].linger_seconds===.2);
 assert.equal(lingerRows.length,1);
 const lingerPair=[{...heiyu[0],rows:lingerRows},heiyu[1]];
 const lingerPlans=engine.match(lingerPair,{maxGroups:1});
@@ -121,6 +125,9 @@ for(const plan of lingerPlans.plans) {
         const step=projected.rows[0].timeline.find(s=>s.action==='魔a3');
         assert.equal(step.duration_seconds,1.4);
         assert.equal(step.linger_seconds,.2);
+        const recorded=engine.rowById(lingerPair[0],choice.jobs.find(j=>j.role===0).rowId);
+        assert.equal(recorded.timeline[2].placement,'background');
+        assert.equal(recorded.timeline[3].placement,'foreground');
         assert(near(plan.multipliers[0].atk,7.201));
         assert.deepEqual(plan.groups[0][0].actions,['魔a1','魔a2','魔a3','魔a4','魔a5']);
     }
@@ -156,11 +163,16 @@ for(const plan of engine.match(pair,{groupCount:'both-two'}).plans.slice(0,20)) 
     const baseEdges=t=>[...model.constant,...model.periodic.map(([u,v,w])=>[u,v,w+t])];
     while(low<high){const mid=Math.floor((low+high)/2);if(core.solve(model.size,baseEdges(mid)))high=mid;else low=mid+1;}
     while(low<period && !engine.entryModelsAt(model,low).length)low++;
-    assert.equal(period,low);checkedMinimum++;
+    assert.equal(period,low);
+    assert.equal(engine.minimum(model,period-1),null);
+    assert.equal(engine.minimum(model,period).period,period);
+    checkedMinimum++;
 }
 // The known one-group recovery allocation remains available under the single filter.
 const original=engine.match(pair,{groupCount:'single',maxGroups:1,containsGroups:[JSON.stringify(['a1远','a2远','a3远']),JSON.stringify(['a1','z','a5'])]});
 assert(original.plans.length>0);
+assert.equal(original.evaluated+original.pruned,original.checked);
+
 assert.equal(original.plans[0].period,2.8);
 const allocations=engine.variants(original.plans[0],pair);
 assert(near(Math.max(...allocations.map(p=>p.foregroundSeconds[1])),1.6));

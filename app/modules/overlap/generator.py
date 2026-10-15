@@ -249,7 +249,9 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
 
 def timing_variants(names, by_name, skipped):
     """User-authorized discrete linger slots; skipped attacks cannot grant linger."""
-    indices = [i for i, name in enumerate(names) if i not in skipped and by_name[name].get('linger_seconds')]
+    indices = [i for i, name in enumerate(names) if i not in skipped and i + 1 < len(names)
+               and i + 1 not in skipped and by_name[name].get('linger_seconds')
+               and names[i + 1] in by_name[name]['linger_before']]
     for values in product(*([0, *by_name[names[i]]['linger_seconds']] for i in indices)):
         yield tuple((i, extra) for i, extra in zip(indices, values) if extra)
 
@@ -417,6 +419,10 @@ def generate(characters, actions, rules):
                     raise ValueError('滞留档位须为不重复的正数、具有已知动作时长与source')
                 action['linger_seconds'] = sorted(values)
                 action['linger_source'] = override['source']
+                targets = override.get('linger_before', [])
+                if not targets or set(targets) - {a['name'] for a in current}:
+                    raise ValueError('滞留须指定有效后续动作linger_before')
+                action['linger_before'] = targets
             if 'locks_foreground_switch' in override:
                 if not isinstance(override['locks_foreground_switch'], bool) or not override.get('source'):
                     raise ValueError('前台锁定覆写须有布尔值与source')
@@ -495,7 +501,11 @@ def generate(characters, actions, rules):
                             if point['id']=='normal':
                                 rows.extend(advanced_rows(names, variant_links, by_name, points, options, point))
         rows = [row for row in rows if not any(step['dodge_replaces'] and step['placement']=='background'
-                                             for step in row['timeline'])]
+                                             for step in row['timeline'])
+                and all(not step.get('linger_seconds') or (
+                    step['placement'] == 'background' and index + 1 < len(row['timeline'])
+                    and row['timeline'][index + 1]['placement'] == 'foreground'
+                ) for index, step in enumerate(row['timeline']))]
         result.append({
             **{k: character[k] for k in ('id', 'name', 'element', 'avatar')},
             'actions': inventory, 'rows': rows,

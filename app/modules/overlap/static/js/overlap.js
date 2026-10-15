@@ -54,7 +54,7 @@
                         return `${edge.to}：动作开始后 ${seconds(input)} 预输入，开始后 ${seconds(cut)} 可切人`;
                     }).join('；')
                     : `开始后 ${seconds(action.preinput_seconds)} 可预输入下一段并切人`;
-            const linger = action.linger_seconds?.length ? `<p>可额外滞留 ${action.linger_seconds.map(seconds).join(' / ')}，不增加伤害与资源。</p>` : '';
+            const linger = action.linger_seconds?.length ? `<p>仅后台虚线接下一段前台实线时，可额外滞留 ${action.linger_seconds.map(seconds).join(' / ')}，不增加伤害与资源。</p>` : '';
             return `<article class="overlap-action"><h3>${escape(action.name)} <small>${escape(seconds(action.duration_seconds))}</small></h3><p>${escape(entryLabel)}${action.preinput_forbidden ? ' · 不可被预输入' : ''}${action.locks_foreground_switch ? ' · 必须前台打完' : ''}</p><p>衔接：${escape(successors)}</p><p>${escape(preinputText)}</p>${linger}${points ? `<p>${escape(points)}</p>` : ''}${action.gaps.length ? `<p class="overlap-pending">待补：${escape(action.gaps.join('、'))}</p>` : ''}</article>`;
         }).join('');
     }

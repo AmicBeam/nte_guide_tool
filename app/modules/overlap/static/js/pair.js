@@ -10,12 +10,16 @@
     const pendingVariants = new Set();
     function bubble(step, offset, repeat, period, px, segments, role) {
         const start = offset + step.start_seconds + repeat * period;
-        const end = offset + step.end_seconds + repeat * period;
+        const bodyDuration = step.base_duration_seconds ?? step.duration_seconds;
+        const end = start + bodyDuration;
+        const recoveryEnd = offset + (step.recovery_end_seconds ?? step.end_seconds) + repeat * period;
+        const recoveryUsed = Math.max(0,recoveryEnd-end);
         const input = step.input_seconds == null ? null : offset + step.input_seconds + repeat * period;
         const front = segments.some(s => s.role === role && start >= s.start + repeat * period - 1e-8 && start < s.end + repeat * period - 1e-8);
-        const linger = step.linger_seconds ? ` · 含滞留 ${n(step.linger_seconds)}s，不增加伤害与资源` : '';
-        const title = `${step.group ? `组 ${step.group} · ` : ''}${step.action} · 占用 ${n(start)}–${n(end)}s${linger}${input == null ? ' · 自动衔接' : ` · 输入 ${n(input)}s`}`;
-        return `<span class="pair-bubble ${front ? '' : 'is-background'} ${repeat ? 'is-repeat' : ''}" style="left:${start * px}px;width:${step.duration_seconds * px}px" title="${escape(title)}"><span>${escape(step.action)}</span><small>${n(step.duration_seconds)}s${step.linger_seconds ? ` · 滞留${n(step.linger_seconds)}s` : ''}</small></span>`
+        const recovery = recoveryUsed > .0005 ? ` · 恢复后摇 ${n(end)}–${n(recoveryEnd)}s，不增加伤害与资源` : '';
+        const title = `${step.group ? `组 ${step.group} · ` : ''}${step.action} · 动作 ${n(start)}–${n(end)}s${recovery}${input == null ? ' · 自动衔接' : ` · 输入 ${n(input)}s`}`;
+        return `<span class="pair-bubble ${front ? '' : 'is-background'} ${repeat ? 'is-repeat' : ''}" style="left:${start * px}px;width:${bodyDuration * px}px" title="${escape(title)}"><span>${escape(step.action)}</span><small>${n(bodyDuration)}s</small></span>`
+            + (recoveryUsed > .0005 ? `<span class="pair-recovery ${repeat ? 'is-repeat' : ''}" style="left:${end * px}px;width:${recoveryUsed * px}px" title="${escape(`${step.action}恢复后摇 ${n(end)}–${n(recoveryEnd)}s`)}">${recoveryUsed*px>=30 ? '后摇' : ''}</span>` : '')
             + (input == null ? '' : `<span class="pair-input ${repeat ? 'is-repeat' : ''}" style="left:${input * px}px" title="${escape(`${n(input)}s 输入 ${step.action}${input < start ? `；${n(start)}s 开始释放` : ''}`)}">◆</span>`);
     }
     function card(group, index) {
@@ -34,7 +38,7 @@
         const seam = `<span class="pair-seam" style="left:${period * px}px"><b>↻ 下一轮 · ${n(period)}s</b></span>`;
         const rows = chars.map((character, globalRole) => {
             const role = plan.roles.indexOf(globalRole), row = plan.rows[role], offset = plan.offsets[role];
-            let content = row.timeline.filter(step => offset + step.end_seconds > period).map(step => bubble(step, offset, -1, period, px, plan.segments, role)).join('');
+            let content = row.timeline.filter(step => offset + (step.recovery_end_seconds ?? step.end_seconds) > period).map(step => bubble(step, offset, -1, period, px, plan.segments, role)).join('');
             for (let repeat = 0; repeat < 2; repeat++) {
                 content += plan.segments.filter(s => s.role === role).map(s => `<span class="pair-occupation ${repeat ? 'is-repeat' : ''}" style="left:${(s.start + repeat * period) * px}px;width:${(s.end - s.start) * px}px" title="前台 ${n(s.start + repeat * period)}–${n(s.end + repeat * period)}s"></span>`).join('');
                 content += row.timeline.map(step => bubble(step, offset, repeat, period, px, plan.segments, role)).join('');
@@ -46,7 +50,7 @@
         const switchText = switches.map(s => `${n(s.time)}s → ${chars[plan.roles[s.role]].name}`).join('　·　');
         const delays = plan.segments.filter(s => s.end > s.earliestEnd + 0.0005 && !(plan.sameEnd && s === plan.segments.at(-1)))
             .map(s => `${chars[plan.roles[s.role]].name}在 ${n(s.earliestEnd)}s 已可切人，延后至 ${n(s.end)}s`);
-        const restarts = (plan.restartWarnings || []).map(w => `${chars[w.role].name} ${w.from} → ${w.to}：不属于已有衔接，须在末动作结束后等待至少 0.5s`);
+        const restarts = (plan.recoveryWarnings || []).map(w => `${chars[w.role].name} ${w.from} → ${w.to}：重新起手前须完成 ${n(w.seconds)}s 恢复后摇`);
         const metrics = `<aside class="pair-metrics" aria-label="每轮倍率"><div class="pair-metrics-heading">每轮攻击倍率</div>${chars.map((character, i) => `<div class="pair-metric pair-color-${i ? 'b' : 'a'}"><strong>${percent(plan.multipliers[i].atk || 0)}</strong><small class="pair-metric-rate">${percent((plan.multipliers[i].atk || 0) / period)} / 秒</small><small>${escape(character.name)} · 前台 ${plan.foregroundSeconds[i].toFixed(1)}s</small></div>`).join('')}</aside>`;
         const cutLines = switches.flatMap(s => [0, 1].filter(r => s.time + r * period < period * 2).map(r => `<span class="pair-cut" style="left:${(s.time + r * period) * px}px" title="${n(s.time + r * period)}s 切至${escape(chars[plan.roles[s.role]].name)}"></span>`)).join('');
         return `<article class="glass-card pair-plan" data-rate="${plan.multiplierRate}" data-group="${escape(key)}" data-plan-index="${index}"><header><div><span class="pair-plan-number">方案 ${index + 1}</span><h2>${n(period)}<small> 秒 / 循环</small></h2></div><div class="pair-plan-yield"><strong>${percent(plan.multiplierRate)}<small> / 秒</small></strong><span>双人合计 ${percent(plan.totalMultiplier)} / 循环</span><span class="pair-plan-count">${plan.groups.map(g => g.length).join(' / ')} 组 · ${plan.actions.map(a => a.length).join(' + ')} 个动作 · ${plan.sameEnd ? '同角色打满接回' : '异角色接回'}</span></div></header>

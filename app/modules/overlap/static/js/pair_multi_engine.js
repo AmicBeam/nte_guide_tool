@@ -21,9 +21,9 @@
     }
     function transition(character, previous, next) {
         if (character.name === '黑羽' && next.actions[0] === '魔e' && previous.actions.at(-1) !== '魔a5') return null;
-        // restartDelay needs the previous LAST action and its original prefix.
+        // recoveryDelay needs the previous LAST action and its original prefix.
         const composite = {...previous, timeline: [next.timeline[0], previous.timeline.at(-1)]};
-        return ms(core.restartDelay(character, composite));
+        return ms(core.recoveryDelay(character, composite));
     }
     function pool(character, options) {
         const rows = rawRows(character, options);
@@ -43,7 +43,8 @@
     function withTailDuration(row, duration) {
         if (Math.abs(row.timeline.at(-1).duration_seconds - duration) < 1e-9) return row;
         const timeline = row.timeline.map((step, i) => i + 1 === row.timeline.length
-            ? {...step, duration_seconds: duration, end_seconds: step.start_seconds + duration, detached: true} : step);
+            ? {...step, duration_seconds: duration, base_duration_seconds: duration,
+                recovery_used_seconds: 0, end_seconds: step.start_seconds + duration, detached: true} : step);
         const release = Math.max(...timeline.map(step => step.end_seconds));
         const foreground_intervals = row.foreground_intervals.map(([start, end]) => [start, Math.min(end, release)]);
         return {...row, id: `${row.id.split('~')[0]}~${duration}`, timeline, foreground_intervals,
@@ -101,12 +102,12 @@
         walk([0, 0], []);
         return result;
     }
-    // Inclusive integer-ms windows: an ended action cannot justify a new entry.
+    // Integer-ms release/recovery windows; the next action covers their end boundary.
     function windows(row, limit = Infinity) {
         if (!activeWindows.has(row)) activeWindows.set(row, new Map());
         const cache = activeWindows.get(row), id = String(limit);
         if (cache.has(id)) return cache.get(id);
-        const spans = row.timeline.map(step => [ms(step.start_seconds), Math.min(limit, ms(step.end_seconds) - 1)])
+        const spans = row.timeline.map((step,index) => [ms(step.start_seconds), Math.min(limit, ms(core.availabilityEnd(row,index)) - 1)])
             .filter(([start, end]) => start <= end);
         spans.sort((a,b)=>a[0]-b[0]);
         const merged = [];
@@ -282,25 +283,31 @@
             start: sec(values[model.cuts[i]]), end: sec(i + 1 < model.cuts.length ? values[model.cuts[i + 1]] : period),
             earliestEnd: sec(Math.max(...block.items.map(item => values[item.job + 1] + ms(model.jobs[item.job].row.foreground_intervals[item.segment][1]))))}));
         const offsets = [0, 1].map(role => jobs.find(j => j.role === role).offset);
+        const endAt = (jobIndex,stepIndex) => {
+            const job=model.jobs[jobIndex], queue=model.queues[job.role], position=queue.indexOf(jobIndex);
+            const next=queue[(position+1)%queue.length];
+            const nextInput=ms(jobs[next].offset)+firstInput(model.jobs[next].row)+(position+1===queue.length ? period : 0);
+            return Math.min(ms(jobs[jobIndex].offset)+ms(core.availabilityEnd(job.row,stepIndex)),nextInput);
+        };
         const hasEntryAction = segment => jobs.some((job,index) => job.role === segment.role
-            && model.jobs[index].row.timeline.some(step => [-period,0,period].some(shift => {
-                const time=ms(segment.start), start=ms(job.offset+step.start_seconds)+shift, end=ms(job.offset+step.end_seconds)+shift;
+            && model.jobs[index].row.timeline.some((step,stepIndex) => [-period,0,period].some(shift => {
+                const time=ms(segment.start), start=ms(job.offset+step.start_seconds)+shift, end=endAt(index,stepIndex)+shift;
                 return start<=time && time<end;
             })));
         if (segments.some(segment=>!hasEntryAction(segment))) return null;
         let overlap = 0;
-        model.jobs.forEach((job, index) => job.row.timeline.forEach(step => {
+        model.jobs.forEach((job, index) => job.row.timeline.forEach((step,stepIndex) => {
             const offset = sec(values[index + 1]);
             for (const segment of segments.filter(s => s.role !== job.role)) for (const shift of [-sec(period), 0, sec(period)]) overlap += Math.max(0,
-                Math.min(offset + step.end_seconds, segment.end + shift) - Math.max(offset + step.start_seconds, segment.start + shift));
+                Math.min(sec(endAt(index,stepIndex)), segment.end + shift) - Math.max(offset + step.start_seconds, segment.start + shift));
         }));
         if (overlap < 0.0005) return null;
         const groups = model.sequences.map(s => s.rows.map(metadata));
         const multipliers = model.sequences.map(s => ({atk: s.rows.reduce((sum, r) => sum + (r.multipliers.atk || 0), 0)}));
-        const restartWarnings = warnings ? model.links.filter(link => link.gap && core.solve(model.size, edgesAt(model, period - 1, link)))
-            .map(link => ({role: link.role, from: link.from, to: link.to})) : [];
+        const recoveryWarnings = warnings ? model.links.filter(link => link.gap && core.solve(model.size, edgesAt(model, period - 1, link)))
+            .map(link => ({role: link.role, from: link.from, to: link.to, seconds:sec(link.gap)})) : [];
         return {jobs, offsets, roles: [0, 1], segments, period: sec(period), sameEnd: model.sameEnd, overlap,
-            groups, actions: model.sequences.map(s => s.actions || s.rows.flatMap(r => r.actions)), multipliers, restartWarnings,
+            groups, actions: model.sequences.map(s => s.actions || s.rows.flatMap(r => r.actions)), multipliers, recoveryWarnings,
             foregroundSeconds: [0, 1].map(role => sec(segments.filter(s => s.role === role).reduce((sum, s) => sum + ms(s.end) - ms(s.start), 0))),
             totalMultiplier: multipliers[0].atk + multipliers[1].atk,
             multiplierRate: (multipliers[0].atk + multipliers[1].atk) / sec(period)};
@@ -530,6 +537,12 @@
                 const row = rowById(characters[role], job.rowId), shift = job.offset - plan.offsets[role];
                 row.timeline.forEach(step => timeline.push({...step, start_seconds: step.start_seconds + shift,
                     end_seconds: step.end_seconds + shift, input_seconds: step.input_seconds == null ? null : step.input_seconds + shift, group: job.occurrence + 1}));
+            });
+            timeline.forEach((step,index)=>{
+                const next=timeline[(index+1)%timeline.length];
+                const nextStart=next.start_seconds+(index+1===timeline.length ? plan.period : 0);
+                const remainder=Math.max(0,(step.recovery_seconds || 0)-(step.recovery_used_seconds || 0));
+                step.recovery_end_seconds=Math.max(step.end_seconds,Math.min(step.end_seconds+remainder,nextStart));
             });
             return {timeline, actions: timeline.map(s => s.action)};
         });

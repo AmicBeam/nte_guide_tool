@@ -25,43 +25,55 @@ class OverlapTablesTest(unittest.TestCase):
     def character(self, name):
         return next(c for c in self.payload['characters'] if c['name'] == name)
 
-    def test_heiyu_linger_slots_delay_suffix_without_extra_benefits(self):
-        # User 2026-10-15: only background a3 -> foreground a4 may linger.
-        names = [f'魔a{i}' for i in range(1, 6)]
-        rows = [r for r in self.character('黑羽')['rows'] if r['original_actions'] == names
-                and r['operation'] == '魔a2预魔a3 / 魔a4预魔a5' and not r['has_dodge']]
-        self.assertEqual(len(rows), 3)
-        base = rows[0]
-        self.assertEqual(next(a for a in self.actions if a['id'] == 'action_heiyu_form_a3')['duration_seconds'], 1.2)
-        for row, extra in zip(rows, (0, .1, .2)):
-            a3, a4 = row['timeline'][2:4]
-            self.assertEqual(a3.get('linger_seconds', 0), extra)
-            self.assertAlmostEqual(a3['duration_seconds'], 1.2 + extra)
-            self.assertAlmostEqual(a4['start_seconds'], 2.5 + extra)
-            self.assertEqual(a4['duration_seconds'], .4)
-            self.assertEqual((a3['placement'], a4['placement']), ('background', 'foreground'))
-            for field in ('multipliers', 'energy_gain', 'energy_return', 'energy_cost', 'harmony',
-                          'harmony_on_start', 'personal_resources', 'stagger'):
-                self.assertEqual(row[field], base[field])
-        self.assertEqual(len({r['id'] for r in rows}), 3)
+    def test_recovery_catalog_defaults_and_sources(self):
+        configured = {(c['name'], a['name']): a['recovery_seconds']
+                      for c in self.payload['characters'] for a in c['actions'] if a['recovery_seconds']}
+        self.assertEqual(configured, {('安魂曲', 'a4远'): .5, ('黑羽', '魔a3'): .5})
+        self.assertFalse(any('linger_seconds' in a for c in self.payload['characters'] for a in c['actions']))
 
-    def test_heiyu_linger_cannot_create_a_foreground_a3_return(self):
+    def test_recovery_slots_delay_continuation_without_extra_benefits(self):
+        for character, names, operation, index, base_duration, next_start in [
+            ('黑羽', [f'魔a{i}' for i in range(1, 6)], '魔a2预魔a3 / 魔a4预魔a5', 2, 1.0, 2.3),
+            ('安魂曲', [f'a{i}远' for i in range(1, 6)], 'a3预a4 / a5打满', 3, 1.2, 2.7),
+        ]:
+            rows = [r for r in self.character(character)['rows'] if r['original_actions'] == names
+                    and r['operation'] == operation and not r['has_dodge']]
+            self.assertEqual(len(rows), 6)
+            for row, extra in zip(rows, (0, .1, .2, .3, .4, .5)):
+                step, following = row['timeline'][index:index + 2]
+                self.assertEqual(step['recovery_seconds'], .5)
+                self.assertEqual(step['recovery_used_seconds'], extra)
+                self.assertEqual(step['base_duration_seconds'], base_duration)
+                self.assertAlmostEqual(step['duration_seconds'], base_duration + extra)
+                self.assertAlmostEqual(following['start_seconds'], next_start + extra)
+                self.assertEqual((step['placement'], following['placement']), ('background', 'foreground'))
+                for field in ('multipliers', 'energy_gain', 'energy_return', 'energy_cost', 'harmony',
+                              'harmony_on_start', 'personal_resources', 'stagger'):
+                    self.assertEqual(row[field], rows[0][field])
+            self.assertEqual(len({r['id'] for r in rows}), 6)
+
+    def test_recovery_wait_only_on_background_to_foreground_not_dodge_or_tail(self):
+        for character in self.payload['characters']:
+            for row in character['rows']:
+                for index, step in enumerate(row['timeline']):
+                    if step['recovery_used_seconds']:
+                        self.assertFalse(step['dodge_replaces'])
+                        self.assertEqual(step['placement'], 'background')
+                        self.assertEqual(row['timeline'][index + 1]['placement'], 'foreground')
+                        self.assertLessEqual(step['recovery_used_seconds'], step['recovery_seconds'])
         self.assertFalse(any(r['operation'] == '魔a3正常切人 / 魔a4预魔a5'
                              for r in self.character('黑羽')['rows']))
 
-    def test_heiyu_linger_only_on_background_a3_followed_by_foreground_a4(self):
-        lingered = 0
-        for row in self.character('黑羽')['rows']:
-            for index, step in enumerate(row['timeline']):
-                if step.get('linger_seconds'):
-                    lingered += 1
-                    self.assertEqual(step['action'], '魔a3')
-                    self.assertFalse(step['dodge_replaces'])
-                    self.assertEqual(step['placement'], 'background')
-                    self.assertEqual(row['timeline'][index + 1]['action'], '魔a4')
-                    self.assertEqual(row['timeline'][index + 1]['placement'], 'foreground')
-                    self.assertLessEqual(step['duration_seconds'], 1.4)
-        self.assertGreater(lingered, 0)
+    def test_new_recovery_action_can_enable_return_without_character_branches(self):
+        rules = copy.deepcopy(self.rules)
+        rules['characters']['明音凛'].setdefault('actions', {})['a3'] = {
+            'recovery_seconds': .3, 'source': 'synthetic recovery configuration'}
+        payload = generator.generate(self.characters, self.actions, rules)
+        rows = [r for c in payload['characters'] if c['name'] == '明音凛' for r in c['rows']
+                if r['original_actions'] == ['a1','a2','a3','a4']
+                and r['operation'] == 'a2预a3 / a4打满']
+        self.assertEqual([r['timeline'][2]['recovery_used_seconds'] for r in rows], [.1,.2,.3])
+        self.assertEqual(rows[0]['window_1']['duration_seconds'], 1.2)
 
     def test_scope_and_no_melee_requiem(self):
         self.assertEqual([c['name'] for c in self.payload['characters']], ['安魂曲','残虹','黑羽','明音凛'])
@@ -181,18 +193,18 @@ class OverlapTablesTest(unittest.TestCase):
                  and r['kind']=='分段合轴' and not r['has_dodge']
                  and r['original_actions']==[f'魔a{i}' for i in range(1,6)])
         self.assertEqual(row['operation'],'魔a2预魔a3 / 魔a4 → 魔a5打满')
-        self.assertEqual([s['duration_seconds'] for s in row['foreground_segments']],[1.1,1.8])
-        self.assertAlmostEqual(row['foreground_seconds'],2.9)
+        self.assertEqual([s['duration_seconds'] for s in row['foreground_segments']],[1.1,2.0])
+        self.assertAlmostEqual(row['foreground_seconds'],3.1)
         self.assertFalse(row['timeline'][-1]['terminal_switch'])
 
     def test_normal_final_switch_can_follow_a_return(self):
         row = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==[f'魔a{i}' for i in range(1,6)]
                    and r['kind']=='分段合轴' and r['switch_method']=='normal' and not r['has_dodge'])
         self.assertEqual(row['operation'],'魔a2预魔a3 / 魔a4 → 魔a5正常切人')
-        self.assertEqual(row['window_1']['duration_seconds'],1.4)
+        self.assertEqual(row['window_1']['duration_seconds'],1.2)
         self.assertEqual(row['window_1']['return_start_seconds'],2.3)
-        self.assertEqual(row['window_1']['end_seconds'],2.5)
-        self.assertAlmostEqual(row['foreground_seconds'],1.7)
+        self.assertEqual(row['window_1']['end_seconds'],2.3)
+        self.assertAlmostEqual(row['foreground_seconds'],1.9)
         self.assertEqual([s['preinput_before_switch'] for s in row['timeline']],[False,True,False,False,False])
 
     def test_updated_akane_window_is_too_short_to_return(self):
@@ -341,7 +353,7 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertEqual(z1['duration_seconds'], 1.4)
         self.assertEqual(a3['start_seconds'], z1['end_seconds'])
         self.assertAlmostEqual(pre['foreground_seconds'], 2.1)
-        self.assertAlmostEqual(pre['release_end_seconds'], 3.9)
+        self.assertAlmostEqual(pre['release_end_seconds'], 3.7)
         self.assertEqual(a3['placement'], 'background')
         for metric in ('multipliers','harmony','energy_gain','personal_resources'):
             self.assertEqual(pre[metric], full[metric])
@@ -350,7 +362,7 @@ class OverlapTablesTest(unittest.TestCase):
                         and r['kind']=='分段合轴' and r['switch_method']=='preinput'
                         and r['operation'].startswith('魔z1预魔a3 /'))
         self.assertAlmostEqual(returned['window_1']['start_seconds'], 2.1)
-        self.assertAlmostEqual(returned['window_1']['duration_seconds'], 1.8)
+        self.assertAlmostEqual(returned['window_1']['duration_seconds'], 1.6)
         self.assertAlmostEqual(returned['foreground_seconds'], 2.5)
         self.assertIn(['魔a1','魔a2','魔z1','魔z2'], [r['original_actions'] for r in character['rows']])
 
@@ -375,14 +387,14 @@ class OverlapTablesTest(unittest.TestCase):
     def test_advanced_window_and_foreground_occupancy(self):
         row = next(r for r in self.character('黑羽')['rows'] if r['original_actions'] == ['魔a1','魔a2','魔a3','魔a4','魔a5'] and r['kind']=='分段合轴' and r['switch_method']=='preinput' and not r['has_dodge'])
         self.assertEqual(row['operation'], '魔a2预魔a3 / 魔a4预魔a5')
-        self.assertEqual(row['window_1'], {'start_seconds':1.1,'end_seconds':2.5,'duration_seconds':1.4,'return_start_seconds':2.3,'return_end_seconds':2.5})
+        self.assertEqual(row['window_1'], {'start_seconds':1.1,'end_seconds':2.3,'duration_seconds':1.2,'return_start_seconds':2.3,'return_end_seconds':2.3})
         self.assertAlmostEqual(row['foreground_seconds'], 1.5)
-        self.assertAlmostEqual(row['switch_seconds'], 2.9)
+        self.assertAlmostEqual(row['switch_seconds'], 2.7)
         self.assertAlmostEqual(row['release_end_seconds'], 4.3)
-        self.assertEqual(row['timeline'][3]['input_seconds'], 2.5)
+        self.assertEqual(row['timeline'][3]['input_seconds'], 2.3)
         self.assertEqual([s['placement'] for s in row['timeline']], ['foreground','foreground','background','foreground','background'])
         self.assertEqual([s['preinput_before_switch'] for s in row['timeline']], [False,True,False,True,False])
-        self.assertEqual([w['duration_seconds'] for w in row['overlap_windows']],[1.4])
+        self.assertEqual([w['duration_seconds'] for w in row['overlap_windows']],[1.2])
         self.assertEqual([w['requires_return'] for w in row['overlap_windows']],[True])
         self.assertEqual([s['duration_seconds'] for s in row['foreground_segments']],[1.1,0.4])
         self.assertEqual(row['overlap_windows'][0]['return_start_seconds'],2.3)
@@ -416,7 +428,7 @@ class OverlapTablesTest(unittest.TestCase):
         normal=next(r for r in rows if r['switch_method']=='normal')
         held=next(r for r in rows if r['switch_method']=='hold')
         self.assertEqual(pre['foreground_segments'][1]['duration_seconds'],0.4)
-        self.assertEqual(normal['foreground_segments'][1]['duration_seconds'],0.6)
+        self.assertEqual(normal['foreground_segments'][1]['duration_seconds'],0.8)
         for row in (pre,normal):
             self.assertTrue(row['requires_three_characters'])
             self.assertEqual(row['three_character_segments'],[2])

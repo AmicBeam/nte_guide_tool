@@ -64,21 +64,24 @@
         // optimum, so a secondary preference cannot sacrifice foreground time.
         return secondary ? optimize(size, optimalEdges, secondary) : solve(size, optimalEdges);
     }
-    // User 2026-10-15: restarting a basic attack outside the recorded graph
-    // requires 0.5s after the previous own action finishes, even across switches.
-    function restartDelay(character, row) {
+    // User-configured recovery belongs to the previous action. A legal
+    // continuation cancels it; a new opener waits only the unused remainder.
+    function recoveryDelay(character, row) {
         const first = row.timeline[0], last = row.timeline.at(-1);
-        const next = character.actions.find(a => a.name === first.action);
-        if (!next || next.type !== '普攻' || /z\d*$/.test(first.action)) return 0;
         const previous = character.actions.find(a => a.name === last.action);
         const names = row.original_actions || row.actions;
         const linked = (previous?.successors || []).some(edge => edge.to === first.action
             && (!edge.requires_previous || edge.requires_previous.includes(names.at(-2)))
             && (!edge.requires_prefix || JSON.stringify(edge.requires_prefix) === JSON.stringify(names))
             && (!edge.detach_previous || last.detached));
-        return linked ? 0 : 0.5;
+        return linked ? 0 : Math.max(0,(previous?.recovery_seconds || 0)-(last.recovery_used_seconds || 0));
     }
-    function schedule(first, second, restartDelays = [0, 0], foregroundRole = null) {
+    function availabilityEnd(row, index) {
+        const step=row.timeline[index];
+        return step.end_seconds + (index+1===row.timeline.length
+            ? Math.max(0,(step.recovery_seconds || 0)-(step.recovery_used_seconds || 0)) : 0);
+    }
+    function schedule(first, second, recoveryDelays = [0, 0], foregroundRole = null) {
         if (!eligible(first) || !eligible(second)) return null;
         const rows = [first, second];
         const counts = rows.map(r => r.foreground_intervals.length);
@@ -104,9 +107,9 @@
         const actualCuts = sameEnd ? cuts.slice(1) : cuts;
         for (let i = 1; i < actualCuts.length; i++) base.push([actualCuts[i], actualCuts[i - 1], -COOLDOWN]);
         const releaseLimits = rows.map(r => tick(r.release_end_seconds));
-        const restartLimits = rows.map((r, role) => tick(r.timeline.at(-1).end_seconds)
-            + tick(restartDelays[role]) - tick(r.timeline[0].input_seconds ?? r.timeline[0].start_seconds));
-        const lower = Math.max(...releaseLimits, ...restartLimits);
+        const recoveryLimits = rows.map((r, role) => tick(r.timeline.at(-1).end_seconds)
+            + tick(recoveryDelays[role]) - tick(r.timeline[0].input_seconds ?? r.timeline[0].start_seconds));
+        const lower = Math.max(...releaseLimits, ...recoveryLimits);
         function constraints(period) {
             const edges = [...base, [0, 3, period], [3, 0, -period]];
             // In an A…A loop, the seam has no switch. Check last -> next first switch.
@@ -120,11 +123,11 @@
             const mid = Math.floor((low + high) / 2);
             if (feasible(mid)) high = mid; else low = mid + 1;
         }
-        // Warn only when relaxing THIS restart rule permits a shorter cycle.
+        // Warn only when relaxing THIS recovery rule permits a shorter cycle.
         // Existing cooldown/partner timing can naturally leave the same gap.
-        const restartLimited = restartDelays.map((delay, role) => delay > 0
-            && low === restartLimits[role]
-            && low > Math.max(...releaseLimits, ...restartLimits.filter((_, i) => i !== role))
+        const recoveryLimited = recoveryDelays.map((delay, role) => delay > 0
+            && low === recoveryLimits[role]
+            && low > Math.max(...releaseLimits, ...recoveryLimits.filter((_, i) => i !== role))
             && feasible(low - 1) !== null);
         let values = feasible(low);
         if (foregroundRole === 0 || foregroundRole === 1) {
@@ -146,14 +149,16 @@
         const period = seconds(low);
         // A pair must actually release damage while the other character occupies the field.
         let overlap = 0;
-        rows.forEach((row, role) => row.timeline.forEach(step => {
-            const start = offsets[role] + step.start_seconds, end = offsets[role] + step.end_seconds;
+        rows.forEach((row, role) => row.timeline.forEach((step,index) => {
+            const start = offsets[role] + step.start_seconds;
+            const end = offsets[role] + Math.min(availabilityEnd(row,index),
+                period+(row.timeline[0].input_seconds ?? row.timeline[0].start_seconds));
             for (const segment of segments.filter(s => s.role !== role)) {
                 for (const shift of [0, period]) overlap += Math.max(0, Math.min(end, segment.end + shift) - Math.max(start, segment.start + shift));
             }
         }));
         if (overlap < 0.0005) return null;
-        return {rows, offsets, segments, period, sameEnd, overlap, restartDelays, restartLimited};
+        return {rows, offsets, segments, period, sameEnd, overlap, recoveryDelays, recoveryLimited};
     }
     function subsequence(small, large) {
         let index = 0;
@@ -195,7 +200,7 @@
     function match(characters, options = {}, progress = () => {}) {
         if (characters.length !== 2 || characters[0].id === characters[1].id) throw new Error('请选择两个不同的角色');
         const candidates = characters.map(c => availableRows(c, options));
-        const delays = new Map(characters.flatMap((c, i) => candidates[i].map(r => [r, restartDelay(c, r)])));
+        const delays = new Map(characters.flatMap((c, i) => candidates[i].map(r => [r, recoveryDelay(c, r)])));
         const plans = [];
         let checked = 0;
         for (const a of candidates[0]) {
@@ -224,7 +229,7 @@
         function compact(plan) {
             return {rowIds: plan.rows.map(r => r.id), roles: plan.roles, offsets: plan.offsets,
                 segments: plan.segments, period: plan.period, sameEnd: plan.sameEnd,
-                restartDelays: plan.restartDelays, restartLimited: plan.restartLimited, overlap: plan.overlap,
+                recoveryDelays: plan.recoveryDelays, recoveryLimited: plan.recoveryLimited, overlap: plan.overlap,
                 foregroundSeconds: [0, 1].map(role => seconds(plan.segments.filter(s => plan.roles[s.role] === role)
                     .reduce((sum, s) => sum + tick(s.end) - tick(s.start), 0)))};
         }
@@ -254,7 +259,7 @@
             if (!group || plan.period !== group.period) continue;
             add(group, plan);
             const extremes = [0, 1].map(role => {
-                const optimized = schedule(...plan.rows, plan.restartDelays, role);
+                const optimized = schedule(...plan.rows, plan.recoveryDelays, role);
                 if (optimized) {optimized.roles = plan.roles; add(group, optimized);}
                 return optimized;
             });
@@ -288,6 +293,6 @@
         }
         return {plans: groups, checked, feasible: plans.length};
     }
-    scope.OverlapPairEngine = {solve, optimize, schedule, match, prune, subsequence, eligible, unrestricted, availableRows, restartDelay};
+    scope.OverlapPairEngine = {solve, optimize, schedule, match, prune, subsequence, eligible, unrestricted, availableRows, recoveryDelay, availabilityEnd};
     if (typeof module !== 'undefined') module.exports = scope.OverlapPairEngine;
 }(typeof self !== 'undefined' ? self : globalThis));

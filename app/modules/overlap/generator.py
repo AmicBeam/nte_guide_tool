@@ -131,7 +131,7 @@ def enumerate_paths(by_name, edges, max_actions, max_uses=None, start_actions=No
         yield from walk([name], [])
 
 
-def calculate_row(names, links, by_name, points, final_point=None, preinput=False, dodge_indices=(), default_delay=0.4, hold=False, linger=()):
+def calculate_row(names, links, by_name, points, final_point=None, preinput=False, dodge_indices=(), default_delay=0.4, hold=False, recovery_used=()):
     actions = [by_name[name] for name in names]
     for index in dodge_indices:
         actions[index] = {
@@ -139,14 +139,15 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
             'multipliers': {}, 'duration_implemented': True,
         }
     durations = [duration(a) for a in actions]
-    linger = dict(linger)
-    for index, extra in linger.items():
-        durations[index] = round_value(durations[index] + extra)
+    recovery_used = dict(recovery_used)
     for index, edge in enumerate(links):
         if edge.get('detach_previous'):
             if not actions[index].get('can_detach'):
                 raise ValueError('脱手衔接要求原动作支持can_detach')
             durations[index] = number(actions[index]['detached_duration_seconds'])
+    base_durations = list(durations)
+    for index, extra in recovery_used.items():
+        durations[index] = round_value(durations[index] + extra)
     starts = [0.0]
     inputs = [0.0]
     for index, edge in enumerate(links):
@@ -199,7 +200,7 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
     def rate(value):
         return round_value(value / foreground) if foreground is not None and foreground > 0 else None
     row = {
-        'id': hashlib.sha256(json.dumps([names, final_point and final_point['id'], preinput, dodge_indices, *([sorted(linger.items())] if linger else [])], ensure_ascii=False).encode()).hexdigest()[:16] + ('-hold' if hold else ''),
+        'id': hashlib.sha256(json.dumps([names, final_point and final_point['id'], preinput, dodge_indices, *([sorted(recovery_used.items())] if recovery_used else [])], ensure_ascii=False).encode()).hexdigest()[:16] + ('-hold' if hold else ''),
         'actions': [a['name'] for a in actions], 'original_actions': names,
         'kind': '打满' if hold else '合轴' if final_point or preinput else ('连招' if len(names) > 1 else '单动作'),
         'switch_method': 'hold' if hold else 'preinput' if preinput else final_point['id'] if final_point else 'full',
@@ -215,7 +216,9 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
         'release_end_seconds': None if release_end is None else round_value(release_end),
         'background_seconds': None if foreground is None or release_end is None else round_value(max(0, release_end - foreground)),
         'timeline': [{'action': a['name'], 'input_seconds': i, 'start_seconds': s, 'end_seconds': e,
-                      'duration_seconds': d, 'automatic': index > 0 and bool(links[index-1].get('automatic')),
+                      'duration_seconds': d, 'base_duration_seconds': base_durations[index],
+                      'recovery_seconds': a.get('recovery_seconds', 0),
+                      'recovery_used_seconds': recovery_used.get(index, 0), 'automatic': index > 0 and bool(links[index-1].get('automatic')),
                       'locks_foreground_switch': bool(a.get('locks_foreground_switch')),
                       'dodge_replaces': a.get('dodge_replaces'),
                       'detached': bool(index < len(links) and links[index].get('detach_previous') or
@@ -234,10 +237,10 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
                                      (['用户2026-10-12：动作开始后0.4秒预输入即可切人，完成当前和下一动作。'] if preinput else []) +
                                      (['用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。'] if dodge_indices else []))),
     }
-    for index, extra in linger.items():
-        row['timeline'][index]['linger_seconds'] = extra
-        row['notes'].append(f'{actions[index]["name"]}额外滞留{extra:g}秒，不增加伤害或资源')
-        row['sources'].append(actions[index]['linger_source'])
+    for index, extra in recovery_used.items():
+        row['timeline'][index]['recovery_used_seconds'] = extra
+        row['notes'].append(f'{actions[index]["name"]}使用恢复后摇{extra:g}秒，不增加伤害或资源')
+        row['sources'].append(actions[index]['recovery_source'])
     row['sources'] = list(dict.fromkeys(row['sources']))
     if hold:
         row['operation'] = row['actions'][-1].removesuffix('远') + '打满'
@@ -248,11 +251,13 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
 
 
 def timing_variants(names, by_name, skipped):
-    """User-authorized discrete linger slots; skipped attacks cannot grant linger."""
+    """Recovery is cancellable by a legal continuation; use 0.1s slots plus endpoint."""
     indices = [i for i, name in enumerate(names) if i not in skipped and i + 1 < len(names)
-               and i + 1 not in skipped and by_name[name].get('linger_seconds')
-               and names[i + 1] in by_name[name]['linger_before']]
-    for values in product(*([0, *by_name[names[i]]['linger_seconds']] for i in indices)):
+               and i + 1 not in skipped and by_name[name].get('recovery_seconds', 0) > 0]
+    def slots(index):
+        end = round(by_name[names[index]]['recovery_seconds'] * 1000)
+        return [0, *(tick / 1000 for tick in range(100, end, 100)), end / 1000]
+    for values in product(*(slots(i) for i in indices)):
         yield tuple((i, extra) for i, extra in zip(indices, values) if extra)
 
 
@@ -413,16 +418,12 @@ def generate(characters, actions, rules):
             raise ValueError(f"{character['name']}存在未识别的动作覆写")
         for action in current:
             override = override_map.get(action['name'], {})
-            if 'linger_seconds' in override:
-                values = [number(v) for v in override['linger_seconds']]
-                if not override.get('source') or not values or any(v <= 0 for v in values) or len(values) != len(set(values)) or duration(action) is None:
-                    raise ValueError('滞留档位须为不重复的正数、具有已知动作时长与source')
-                action['linger_seconds'] = sorted(values)
-                action['linger_source'] = override['source']
-                targets = override.get('linger_before', [])
-                if not targets or set(targets) - {a['name'] for a in current}:
-                    raise ValueError('滞留须指定有效后续动作linger_before')
-                action['linger_before'] = targets
+            recovery = number(override.get('recovery_seconds', 0))
+            if recovery and (not override.get('source') or duration(action) is None
+                             or abs(recovery * 1000 - round(recovery * 1000)) > 1e-6):
+                raise ValueError('恢复后摇须有source、已知动作时长且精确到毫秒')
+            action['recovery_seconds'] = recovery
+            action['recovery_source'] = override.get('source', '')
             if 'locks_foreground_switch' in override:
                 if not isinstance(override['locks_foreground_switch'], bool) or not override.get('source'):
                     raise ValueError('前台锁定覆写须有布尔值与source')
@@ -453,7 +454,7 @@ def generate(characters, actions, rules):
             inventory.append({
                 'name': action['name'], 'action_id': action['id'], 'type': action['action_type'],
                 'duration_seconds': duration(action), 'switch_points': points[action['name']],
-                **({'linger_seconds': action['linger_seconds']} if action.get('linger_seconds') else {}),
+                'recovery_seconds': action['recovery_seconds'],
                 'preinput_seconds': rules.get('default_input_delay_seconds', 0.4) if edges[action['name']] else None,
                 'successors': edges[action['name']], 'gaps': gaps,
                 'can_background_override': bool(action.get('can_background_override')),
@@ -483,8 +484,8 @@ def generate(characters, actions, rules):
                             if index+1 in skipped:
                                 edge['automatic']=False
                             edge['source'] += ' 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。'
-                    for linger in timing_variants(names, by_name, skipped):
-                        options['linger'] = linger
+                    for recovery_used in timing_variants(names, by_name, skipped):
+                        options['recovery_used'] = recovery_used
                         rows.append(calculate_row(names, variant_links, by_name, points, **options))
                         hold_reason = hold_eligibility(names, edges)
                         if hold_reason:
@@ -502,7 +503,7 @@ def generate(characters, actions, rules):
                                 rows.extend(advanced_rows(names, variant_links, by_name, points, options, point))
         rows = [row for row in rows if not any(step['dodge_replaces'] and step['placement']=='background'
                                              for step in row['timeline'])
-                and all(not step.get('linger_seconds') or (
+                and all(not step.get('recovery_used_seconds') or (
                     step['placement'] == 'background' and index + 1 < len(row['timeline'])
                     and row['timeline'][index + 1]['placement'] == 'foreground'
                 ) for index, step in enumerate(row['timeline']))]

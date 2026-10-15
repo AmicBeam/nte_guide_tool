@@ -50,7 +50,7 @@ function check(plan, characters) {
     plan.segments.forEach((segment,index)=>{
         const time=ms(segment.start),offset=plan.offsets[segment.role];
         assert(projected.rows[segment.role].timeline.some(action=>[-ms(plan.period),0,ms(plan.period)].some(shift=>{
-            const start=ms(offset+action.start_seconds)+shift,end=ms(offset+action.end_seconds)+shift;
+            const start=ms(offset+action.start_seconds)+shift,end=ms(offset+(action.recovery_end_seconds ?? action.end_seconds))+shift;
             return start<=time && time<end;
         })),`empty entry at ${segment.start}s for role ${segment.role}`);
     });
@@ -78,6 +78,27 @@ for(const groupCount of ['all','single','with-two','both-two']) {
         choices.forEach(v=>{check(v,pair);assert.equal(v.period,plan.period);variants++;});
     }
 }
+// Recovery can cover an entry after the previous-cycle attack has ended.
+function recoveryCharacter(id, duration, recovery) {
+    const names=[`${id}1`,`${id}2`];
+    return {id,name:id,actions:names.map((name,i)=>({name,type:'普攻',successors:i?[]:[{to:names[1]}],recovery_seconds:i?recovery:0})),
+        rows:[{id,actions:names,original_actions:names,requires_three_characters:false,
+            foreground_intervals:[[0,.2]],foreground_seconds:.2,release_end_seconds:duration,multipliers:{atk:2},
+            timeline:[{action:names[0],input_seconds:0,start_seconds:0,end_seconds:.2,duration_seconds:.2,base_duration_seconds:.2,recovery_seconds:0},
+                {action:names[1],input_seconds:.1,start_seconds:.2,end_seconds:duration,duration_seconds:duration-.2,
+                    base_duration_seconds:duration-.2,recovery_seconds:recovery}]}]};
+}
+const recoveryPair=[recoveryCharacter('recovery-A',2.1,.5),recoveryCharacter('recovery-B',1.2,0)];
+const recoverySequences=recoveryPair.map(c=>engine.sequences(c,{maxGroups:1})[0]);
+const recoveryModel=engine.model(recoverySequences,[{role:0,occurrence:0,segment:0},{role:1,occurrence:0,segment:0}]);
+recoveryModel.constant.push([0,1,100],[1,0,-100]); // New A starts at .1s, entry is at 0s.
+const recoverySolution=engine.minimum(recoveryModel);
+assert.equal(recoverySolution.period,2600);
+const recoveryPlan=engine.realize(engine.specialize(recoveryModel,recoverySolution.entryChoices),2600,recoverySolution.values,recoveryPair);
+check(recoveryPlan,recoveryPair);
+const recoveryStep=engine.materialize(recoveryPlan,recoveryPair).rows[0].timeline.at(-1);
+assert(recoveryPlan.jobs[0].offset+recoveryStep.end_seconds-recoveryPlan.period<0);
+assert(recoveryPlan.jobs[0].offset+recoveryStep.recovery_end_seconds-recoveryPlan.period>0);
 // Contains-group uses exact membership, not action-subsequence matching, and
 // applies before Pareto pruning so the only witness cannot disappear.
 const required=JSON.stringify(['a1远','a2远']);
@@ -113,7 +134,7 @@ assert.equal(badE.plans.length,0);
 // it remains the same action group and never adds multiplier.
 const lingerRows=heiyu[0].rows.filter(r=>r.original_actions.join()==='魔a1,魔a2,魔a3,魔a4,魔a5'
     && r.switch_method==='hold' && r.operation==='魔a2预魔a3 / 魔a4 → 魔a5打满'
-    && r.timeline[2].linger_seconds===.2);
+    && r.timeline[2].recovery_used_seconds===.2);
 assert.equal(lingerRows.length,1);
 const lingerPair=[{...heiyu[0],rows:lingerRows},heiyu[1]];
 const lingerPlans=engine.match(lingerPair,{maxGroups:1});
@@ -123,8 +144,8 @@ for(const plan of lingerPlans.plans) {
         check(choice,lingerPair);
         const projected=engine.materialize(choice,lingerPair);
         const step=projected.rows[0].timeline.find(s=>s.action==='魔a3');
-        assert.equal(step.duration_seconds,1.4);
-        assert.equal(step.linger_seconds,.2);
+        assert.equal(step.duration_seconds,1.2);
+        assert.equal(step.recovery_used_seconds,.2);
         const recorded=engine.rowById(lingerPair[0],choice.jobs.find(j=>j.role===0).rowId);
         assert.equal(recorded.timeline[2].placement,'background');
         assert.equal(recorded.timeline[3].placement,'foreground');

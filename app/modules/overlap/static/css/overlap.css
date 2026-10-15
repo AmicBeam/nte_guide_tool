@@ -183,3 +183,4 @@
 .pair-group-line { display:block; margin-top:3px; }
 .pair-variant-loading { color:#8196aa; font-size:11px; }
 @media(max-width:700px) { .pair-group-filters { grid-template-columns:minmax(0,1fr); } }
+.pair-recovery { position:absolute; top:30px; height:30px; box-sizing:border-box; border:1px dotted var(--pair-color); border-radius:0 6px 6px 0; background:var(--pair-fill); opacity:.55; display:flex; align-items:center; justify-content:center; overflow:hidden; white-space:nowrap; font-size:9px; }

@@ -1143,3 +1143,8 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 `DeviceGumbelSearch` 可显式选择 `teacher_mode=network_value, terminal_horizon=0`：新叶子直接使用固定观察者的独立绑定 WDL 预测，已有新节点评价直接回传，不调用三步规则延续。独立根仍按设备阶段聚合遍历、扩展、估值和回传，保留 Gumbel32、完整合法候选及信息集采样；对手的公开规则选点与叶子教师分开配置和计时。该分支不自动修改网站或正式训练入口。
 
 `DeviceGameLoop(root_guide=...)` 支持搜索完成后的设备根指导。`DeviceZhenhongGuide` 仅对具名真红策略调用冻结指导入口，按公开版本生成三个信息集世界，固定至多24个计划，共用v3的保牌、完整准备组合、合法性和安全排序；不使用主机时间剪枝。实际动作与原Gumbel选点、原策略分布分开保存，混合训练目标仍须由完整采集接口明确接线。组件及真实八根计时不授予完整对局、学习、容量或强度资格。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_device_network_guide tests.test_duel_v2_device_search tests.test_duel_v2_device_games tests.test_duel_v2_zhenhong_guide`。
+
+
+### 策略对手与最小设备编码投影（离线实验）
+
+设备搜索新增显式冻结策略对手、真红活跃根打包队列及指导前独立搜索轨迹。`rl/batched_duel/gpu_policy_projection.py` 从正式投影派生编码专用路径，保持完整观察／候选编码、合法顺序与隐藏信息边界；网站仍使用正式投影。VM按CPython语义支持有界 `Random.sample`。接口边界与验收见[设备搜索协议](../../../docs/duel-v2-device-search-acceptance.md)。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_policy_opponent tests.test_duel_v2_policy_projection tests.test_duel_v2_vm_sample tests.test_duel_v2_device_search tests.test_duel_v2_device_game_policy_sink tests.test_duel_v2_device_search_row_work`。完整根搜索、连续物理决策、自然终局和训练资格分别核验，计时通过不表示模型质量批准。

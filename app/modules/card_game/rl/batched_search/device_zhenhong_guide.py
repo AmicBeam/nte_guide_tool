@@ -9,7 +9,7 @@ class DeviceZhenhongGuide:
     host_rule_callbacks = False
     mode = 'zhenhong_setup_v3_fixed24'
 
-    def __init__(self, rules, *, policy_id, calls=None):
+    def __init__(self, rules, *, policy_id, calls=None, pack_active=False):
         from ..batched_duel.device_rule_calls import DeviceRuleGraphCalls
         c = rules.calls if calls is None else calls
         if (not isinstance(c, DeviceRuleGraphCalls) or c.closed
@@ -20,10 +20,13 @@ class DeviceZhenhongGuide:
             raise ValueError('Frozen root guide entry required')
         if type(policy_id) is not int or policy_id < 0:
             raise ValueError('Explicit Zhenhong policy identity required')
+        if type(pack_active) is not bool:
+            raise TypeError('Explicit packed guide option required')
         self.policy_id = policy_id
         self.rules, self.calls, self.t = rules, c, c.t
         self.rows, self.device = c.rows, c.device
-        self.lanes = _ActiveRuleLanes(c.rows, c.lanes, device=c.device, seconds=c.seconds)
+        lane_type = PackedGuideLanes if pack_active else _ActiveRuleLanes
+        self.lanes = lane_type(c.rows, c.lanes, device=c.device, seconds=c.seconds)
         self.choices = c.t.full((c.rows,), -1, dtype=c.t.int64, device=c.device)
         self.errors = c.t.zeros(c.rows, dtype=c.t.int32, device=c.device)
         self.local_choices = c.t.empty(c.lanes, dtype=c.t.int64, device=c.device)
@@ -108,3 +111,43 @@ def mix_guided_policy(policy, baseline, chosen, *, coefficient=.5):
     guide = torch.nn.functional.one_hot(chosen, policy.shape[1]).to(policy.dtype)
     mixed = (1-coefficient)*policy + coefficient*guide
     return torch.where((chosen != baseline)[:, None], mixed, policy)
+
+
+class PackedGuideLanes(_ActiveRuleLanes):
+    """Batch only eligible guide roots, preserving their original row order."""
+    def __init__(self, rows, lanes, *, device, seconds):
+        super().__init__(rows, lanes, device=device, seconds=seconds)
+        t=self.t
+        self.row_ids=t.arange(rows,dtype=t.int64,device=self.device)
+        self.positions=t.arange(self.lanes,dtype=t.int64,device=self.device)
+        self.order=t.empty(rows,dtype=t.int64,device=self.device)
+        self.count=t.zeros(1,dtype=t.int64,device=self.device)
+
+    def capture_dispatch(self, states, operation):
+        if self.closed:raise RuntimeError('Guide dispatcher closed')
+        self._validate_states(states,self.rows)
+        if not callable(operation) or not self.t.cuda.is_current_stream_capturing():
+            raise RuntimeError('Static guide operation inside CUDA capture required')
+        t=self.t
+        def initialize():
+            eligible=states.active&(states.errors==0)
+            scores=t.where(eligible,self.row_ids,self.row_ids+self.rows)
+            self.order.copy_(scores.argsort())
+            self.count.copy_(eligible.long().sum().reshape(1))
+            self.cursor.zero_();self.processed.zero_();self.peak.zero_()
+            self.pending.copy_((self.count>0).to(t.uint8))
+        def body():
+            position=self.cursor[0]+self.positions
+            valid=position<self.count[0]
+            self.ids.copy_(self.order[position.clamp_max(self.rows-1)])
+            self.valid.copy_(valid.to(t.uint8));self.selected.copy_(self.valid)
+            size=valid.long().sum();self.processed.add_(size.reshape(1))
+            self.peak.copy_(t.maximum(self.peak,size.reshape(1)))
+            local=DeviceStateBatch(states.pool,t.where(valid,states.slots[self.ids],-1),
+                t.where(valid,states.generations[self.ids],0),
+                t.where(valid,states.owners[self.ids],0),valid.contiguous(),
+                t.where(valid,states.errors[self.ids],0))
+            operation(local,self.ids,self.valid)
+            self.cursor.add_(self.lanes)
+            self.pending.copy_((self.cursor<self.count).to(t.uint8))
+        self.loop.capture_loop(self.pending,body,initialize=initialize)

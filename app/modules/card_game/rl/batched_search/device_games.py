@@ -33,7 +33,7 @@ class DeviceGameLoop:
     def __init__(self, rules, search, sink, world_seed_provider, *, max_decisions,
                  random_plan=None, device='cuda', allow_cpu_reference=False,
                  allow_synthetic=False, outer_loop=None, inner_loop=None,
-                 outer_max_ticks=None, inner_max_ticks=None, seconds=60, root_guide=None):
+                 outer_max_ticks=None, inner_max_ticks=None, seconds=60, root_guide=None, search_audit_sink=None):
         import torch
         if type(max_decisions) is not int or max_decisions < 1:
             raise ValueError('Positive bounded physical decision count required')
@@ -61,8 +61,9 @@ class DeviceGameLoop:
             raise ValueError('CPU game loop requires explicit synthetic fixture binding')
         if search.device != self.device or search.rows < 1:
             raise ValueError('Search cohort must match the game-loop device and rows')
-        if search.noise and (random_plan is None or not callable(getattr(random_plan, 'reset_device', None))):
-            raise ValueError('Exact RandomPlan.reset_device required when search.noise')
+        self._uses_random = search.noise or getattr(search, 'opponent_mode', 'rule') == 'policy'
+        if self._uses_random and (random_plan is None or not callable(getattr(random_plan, 'reset_device', None))):
+            raise ValueError('Exact RandomPlan.reset_device required for stochastic search')
         if outer_max_ticks is None:
             outer_max_ticks = max_decisions + 1
         if inner_max_ticks is None:
@@ -73,6 +74,13 @@ class DeviceGameLoop:
         if root_guide is not None and not callable(getattr(root_guide, 'capture_result', None)):
             raise TypeError('Device root guide must provide capture_result')
         self.root_guide = root_guide
+        if search_audit_sink is not None:
+            if search_audit_sink is sink:
+                raise ValueError('Original-search audit must use a distinct sink')
+            for name in ('begin_device', 'append_device', 'finish_device'):
+                if not callable(getattr(search_audit_sink, name, None)):
+                    raise TypeError('Original-search audit sink missing ' + name)
+        self.search_audit_sink = search_audit_sink
         self.rules, self.search, self.sink = rules, search, sink
         self._counts_as_search = getattr(search, 'counts_as_search', True)
         if type(self._counts_as_search) is not bool:
@@ -225,6 +233,10 @@ class DeviceGameLoop:
         begin = self.sink.begin_device(self._physical(admitted), self._policy_ids,
             self._aux_ids, self._job_seeds, self._train_sides, admitted)
         self._error(begin, admitted, SINK_ERROR)
+        if self.search_audit_sink is not None:
+            audited = self.search_audit_sink.begin_device(self._physical(admitted), self._policy_ids,
+                self._aux_ids, self._job_seeds, self._train_sides, admitted)
+            self._error(audited, admitted, SINK_ERROR)
         self._update_predicate()
         self._ready = True
 
@@ -252,7 +264,7 @@ class DeviceGameLoop:
             raise ValueError('World-seed derive must return int64[B,5] limbs and int32[B] errors')
         self._error(derived.errors, search_mask, RANDOM_ERROR)
         search_mask = search_mask & (derived.errors == 0) & (self._errors == 0)
-        if self.search.noise:
+        if self._uses_random:
             random_errors = self.random_plan.reset_device(self._steps, self._actors, search_mask)
             self._error(random_errors, search_mask, RANDOM_ERROR)
             search_mask = search_mask & (random_errors == 0) & (self._errors == 0)
@@ -281,6 +293,11 @@ class DeviceGameLoop:
         t = self.t
         result = self.search.result_device()
         searched = self._search_mask
+        if self.search_audit_sink is not None:
+            audit_active = searched & result.complete & (result.errors == 0) & (self._errors == 0)
+            audited = self.search_audit_sink.append_device(self._physical(self._present),
+                self._actors, self._steps, result, audit_active)
+            self._error(audited, audit_active, SINK_ERROR)
         if self.root_guide is not None:
             result = self.root_guide.capture_result(self._physical(searched),
                 self._actors, result, self._policy_ids, searched)
@@ -357,6 +374,10 @@ class DeviceGameLoop:
         finish_err = self.sink.finish_device(self._physical(newly), self._winners, self._steps,
                                              complete, self._errors)
         self._error(finish_err, newly, SINK_ERROR)
+        if self.search_audit_sink is not None:
+            audited = self.search_audit_sink.finish_device(self._physical(newly),
+                self._winners, self._steps, complete, self._errors)
+            self._error(audited, newly, SINK_ERROR)
         self._sink_done.logical_or_(newly)
         self._update_predicate()
         self._apply_inner_guard()

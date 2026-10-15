@@ -48,6 +48,7 @@ SUPPORTED_RANDOM_NAMES: tuple[str, ...] = ("random.Random",)
 SUPPORTED_RANDOM_METHODS: tuple[str, ...] = (
     "shuffle",
     "choice",
+    "sample",
     "getrandbits",
     "randrange",
     "randint",
@@ -100,7 +101,8 @@ enum RandomMethodCode {{
     METHOD_RANDOM_RANDOM = 6,
     METHOD_RANDOM_SEED = 7,
     METHOD_RANDOM_GETSTATE = 8,
-    METHOD_RANDOM_SETSTATE = 9
+    METHOD_RANDOM_SETSTATE = 9,
+    METHOD_RANDOM_SAMPLE = 10
 }};
 
 // Encode unsigned 64-bit integer into TAG_INT node (1 to 9 little-endian bytes)
@@ -206,6 +208,8 @@ __device__ inline int random_attribute(Context* c, int owner, int name) {{
     if (otag == T_RANDOM_INSTANCE) {{
         if (vm_text_equals(c, name, "shuffle")) {{
             return meta(c, T_RANDOM_BOUND_METHOD, owner, 0, METHOD_RANDOM_SHUFFLE);
+        }} else if (vm_text_equals(c, name, "sample")) {{
+            return meta(c, T_RANDOM_BOUND_METHOD, owner, 0, METHOD_RANDOM_SAMPLE);
         }} else if (vm_text_equals(c, name, "choice")) {{
             return meta(c, T_RANDOM_BOUND_METHOD, owner, 0, METHOD_RANDOM_CHOICE);
         }} else if (vm_text_equals(c, name, "getrandbits")) {{
@@ -358,6 +362,54 @@ __device__ inline int random_call(Context* c, int callable, const int* args, int
                 }}
                 // Selects actual element reference from the sequence
                 *out = edge(c, seq_ref, (int)idx, 0);
+                return 1;
+            }}
+
+            case METHOD_RANDOM_SAMPLE: {{
+                // Uniform sampling of sequence positions without replacement.
+                // Keep pool-vs-selected allocation and rejection draws exact.
+                if (nargs != 2) {{ c->error = BAD_CALL; return 1; }}
+                int population=args[0];NodeView pv;
+                if (!get_node(&c->h,population,&pv) ||
+                    (pv.tag!=TAG_LIST && pv.tag!=TAG_TUPLE)) {{
+                    c->error=UNSUPPORTED_TYPE;return 1;
+                }}
+                long long requested=0;
+                if(kind(c,args[1])!=TAG_INT || numeric_int(c,args[1],&requested)!=0 ||
+                   requested<0 || requested>pv.count) {{ c->error=BAD_CALL;return 1; }}
+                int n=pv.count,k=(int)requested;
+                unsigned long long setsize=21;
+                if(k>5) {{
+                    unsigned long long power=1,target=3ULL*(unsigned long long)k;
+                    while(power<target) power*=4;
+                    setsize+=power;
+                }}
+                int result=make_list(&c->h);
+                if(c->h.error)return 1;
+                if((unsigned long long)n<=setsize) {{
+                    int pool=make_list(&c->h);
+                    for(int i=0;i<n&&!c->h.error;i++)list_append(&c->h,pool,edge(c,population,i,0));
+                    for(int i=0;i<k&&!c->h.error&&!c->error;i++) {{
+                        uint64_t j=0;
+                        if(bmt_below(rng,(uint64_t)(n-i),&j)!=BMT_OK){{c->error=BAD_CALL;break;}}
+                        list_append(&c->h,result,edge(c,pool,(int)j,0));
+                        list_set(&c->h,pool,(int)j,edge(c,pool,n-i-1,0));
+                    }}
+                }} else {{
+                    int selected=make_list(&c->h);
+                    for(int i=0;i<k&&!c->h.error&&!c->error;i++) {{
+                        uint64_t j=0;bool seen=false;
+                        do {{
+                            if(bmt_below(rng,(uint64_t)n,&j)!=BMT_OK){{c->error=BAD_CALL;break;}}
+                            seen=false;
+                            for(int q=0;q<i;q++){{long long old=0;numeric_int(c,edge(c,selected,q,0),&old);if(old==(long long)j){{seen=true;break;}}}}
+                        }} while(seen&&!c->error&&!c->h.error);
+                        if(c->error||c->h.error)break;
+                        list_append(&c->h,selected,make_int64(&c->h,(long long)j));
+                        list_append(&c->h,result,edge(c,population,(int)j,0));
+                    }}
+                }}
+                if(!c->error&&!c->h.error)*out=result;
                 return 1;
             }}
 

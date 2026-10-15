@@ -84,10 +84,12 @@ class _WorkPlan:
 
 
 class DeviceSearchRowWork:
-    def __init__(self,inference,auxiliary,information_keys,*,rows,max_actions,tile=2,seconds=120):
+    def __init__(self,inference,auxiliary,information_keys,*,rows,max_actions,tile=2,seconds=120,policy_sites=2):
         import torch as t
         if any(type(v)is not int or v<1 for v in (rows,max_actions,tile)):
             raise ValueError('Positive bounded row work dimensions required')
+        if type(policy_sites) is not int or not 1<=policy_sites<=3:
+            raise ValueError('One to three static policy capture sites required')
         self.t=t;self.inference=inference;self.auxiliary=auxiliary;self.information_keys=information_keys
         self.device=inference.device;self.rows=rows;self.max_actions=max_actions;self.tile=tile;self.seconds=seconds
         if self.device.type!='cuda' or self.device!=auxiliary.device or self.device!=information_keys.device:
@@ -95,7 +97,7 @@ class DeviceSearchRowWork:
         if t.cuda.is_current_stream_capturing():raise RuntimeError('Prepare row work before capture')
         self.plans={};self.indices={};self.closed=False
         try:
-            for kind,count in (('policy',2),('hash',3),('value',3)):
+            for kind,count in (('policy',policy_sites),('hash',3),('value',3)):
                 self.plans[kind]=[];self.indices[kind]=0
                 for _ in range(count):self.plans[kind].append(_WorkPlan(self,kind))
             # Each native child stream needs actual numerical warmup before capture.

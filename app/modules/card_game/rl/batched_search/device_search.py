@@ -71,7 +71,7 @@ class DeviceGumbelSearch:
                  random=None, noise=False, device='cuda', allow_cpu_reference=False,
                  allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False,
                  reuse_root_policy_value=False, verify_root_value_reuse=False,
-                 group_ready_leaves=False,reuse_interior_observation=False):
+                 group_ready_leaves=False,reuse_interior_observation=False,opponent_mode='rule'):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -86,6 +86,11 @@ class DeviceGumbelSearch:
         if teacher_mode == 'network_value' and terminal_horizon != 0:
             raise ValueError('network_value requires zero teacher horizon')
         self.teacher_mode = teacher_mode
+        if opponent_mode not in ('rule', 'policy'):
+            raise ValueError('Unknown device opponent mode')
+        if opponent_mode == 'policy' and not callable(getattr(random, 'categorical', None)):
+            raise ValueError('Exact device categorical RNG required for policy opponents')
+        self.opponent_mode = opponent_mode
         if type(noise) is not bool or type(allow_synthetic) is not bool:
             raise TypeError('Explicit boolean noise and synthetic controls required')
         if type(borrow_root_candidates) is not bool:raise TypeError('Explicit root candidate borrow option required')
@@ -176,7 +181,8 @@ class DeviceGumbelSearch:
         if queued_row_work:
             from .device_search_row_work import DeviceSearchRowWork
             self.row_work=DeviceSearchRowWork(inference,auxiliary_inference,information_keys,
-                rows=rows,max_actions=max_actions,tile=self.value_batch_rows,seconds=row_work_seconds)
+                rows=rows,max_actions=max_actions,tile=self.value_batch_rows,seconds=row_work_seconds,
+                policy_sites=3 if opponent_mode=='policy' else 2)
 
     def close(self):
         if self.row_work is not None:self.row_work.close()
@@ -596,11 +602,22 @@ class DeviceGumbelSearch:
 
         opponent = masks[OPPONENT]
         meta = self.rules.metadata_device(self._world(opponent))
-        teacher_decision, teacher_choice, teacher_errors = self.rules.rule_decision_device(
-            self._world(opponent), meta.actors)
-        self._error(meta.errors | teacher_errors, opponent, RULE_ERROR)
-        self._save_decision(teacher_decision, opponent, actions_only=True)
-        self.actions.copy_(t.where(opponent, teacher_choice, self.actions))
+        if self.opponent_mode == 'policy':
+            opponent_decision = self.rules.decision_device(self._world(opponent), meta.actors)
+            self._error(opponent_decision.errors | meta.errors, opponent, RULE_ERROR)
+            probabilities = self._policy_prediction(opponent_decision, meta.actors, opponent)
+            draw = self.random.categorical(probabilities.contiguous(),
+                opponent_decision.counts.contiguous(),
+                (opponent & (self.errors == 0)).contiguous())
+            self._error(draw.errors, opponent, RANDOM_ERROR)
+            self._save_decision(opponent_decision, opponent)
+            self.actions.copy_(t.where(opponent, draw.indices, self.actions))
+        else:
+            teacher_decision, teacher_choice, teacher_errors = self.rules.rule_decision_device(
+                self._world(opponent), meta.actors)
+            self._error(meta.errors | teacher_errors, opponent, RULE_ERROR)
+            self._save_decision(teacher_decision, opponent, actions_only=True)
+            self.actions.copy_(t.where(opponent, teacher_choice, self.actions))
         self.phase.copy_(t.where(opponent, STEP, self.phase))
 
         step = masks[STEP]

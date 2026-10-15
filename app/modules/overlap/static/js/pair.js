@@ -99,6 +99,12 @@
     for (const field of ['first', 'second']) $(field).addEventListener('change', () => {updateChoices(); calculate();});
     $('no-dodge').addEventListener('change', calculate);
     $('calculate').addEventListener('click', calculate);
+    $('swap').addEventListener('click', () => {
+        const first = $('first').value;
+        $('first').value = $('second').value;
+        $('second').value = first;
+        updateChoices(); calculate();
+    });
     for (const field of ['sort', 'zoom']) $(field).addEventListener('change', render);
     $('results').addEventListener('input', event => {
         const input = event.target;
@@ -126,6 +132,7 @@
         $('first').innerHTML = options; $('second').innerHTML = options;
         $('second').selectedIndex = 1;
         $('calculate').disabled = false;
+        $('swap').disabled = false;
         updateChoices(); calculate();
     }).catch(error => fail(`${error.message}，请刷新重试。`));
 })();

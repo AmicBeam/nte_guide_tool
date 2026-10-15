@@ -90,7 +90,10 @@
 .pair-selectors label { display:grid; gap:8px; flex:1; min-width:150px; font-size:13px; color:#b4c2d0; }
 .pair-selectors select, .pair-toolbar select { color:#e1eaf1; background:#101923; border:1px solid #43505d; border-radius:8px; padding:10px 12px; font:inherit; }
 .pair-selectors button { min-height:42px; cursor:pointer; }
-.pair-cross { padding-bottom:10px; color:#73899b; }
+.pair-swap { flex:0 0 42px; width:42px; height:42px; padding:0; border:1px solid #43505d; border-radius:8px; background:#101923; color:#b9d8df; font-size:24px; line-height:1; }
+.pair-swap:hover:not(:disabled) { border-color:#78d9c4; color:#fff; background:rgba(120,217,196,.12); }
+.pair-swap:focus-visible { outline:2px solid #78d9c4; outline-offset:3px; }
+.pair-swap:disabled { opacity:.4; cursor:default; }
 .pair-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:22px; margin-top:20px; font-size:13px; color:#b4c2d0; }
 .pair-toolbar label { display:flex; align-items:center; gap:8px; }
 .pair-toolbar select { padding:6px 10px; }
@@ -142,7 +145,7 @@
     .pair-plan-count small { display:block; margin-top:5px; }
     .pair-selectors { gap:10px; }
     .pair-selectors label { min-width:100px; }
-    .pair-selectors button { width:100%; }
+    #pair-calculate { width:100%; }
     .pair-toolbar { gap:12px; }
     .overlap-tabs a { padding:12px; font-size:14px; }
 }

@@ -16,7 +16,7 @@
     <section class="glass-card overlap-controls" aria-label="双角色匹配">
         <div class="pair-selectors"><label>角色一<select id="pair-first"></select></label><span class="pair-cross" aria-hidden="true">×</span><label>角色二<select id="pair-second"></select></label><button id="pair-calculate" class="primary-btn" type="button" disabled>重新匹配</button></div>
         <div class="pair-toolbar"><label><input id="pair-no-dodge" type="checkbox"> 不使用闪避替代</label><label>排序 <select id="pair-sort"><option value="rate">双人倍率 / 秒最高</option><option value="time">循环最短</option><option value="actions">动作最多</option></select></label><label>时间轴缩放 <select id="pair-zoom"><option value="64">紧凑</option><option value="90" selected>标准</option><option value="120">放大</option></select></label></div>
-        <p class="pair-description">只匹配当前动作表中不含三人合轴、无需额外释放条件的路线。残虹幻境动作、安魂曲 E 不参与匹配；黑羽魔 E 须由黑羽自己的上一个魔 a5 激活，可隔着队友动作或跨循环衔接。切人可以延后；首尾接回下一轮时同样检查 1.2 秒切回间隔。相同动作只留更短周期，同等或更短周期内可多打动作的方案会替代其子集。</p>
+        <p class="pair-description">只匹配当前动作表中不含三人合轴、无需额外释放条件的路线。残虹幻境动作、安魂曲 E 不参与匹配；黑羽魔 E 须由黑羽自己的上一个魔 a5 激活，可隔着队友动作或跨循环衔接。非衔接普攻须在上一个自身动作结束后等待 0.5 秒，重击与 E 不加此等待。切人可以延后；首尾接回下一轮时同样检查 1.2 秒切回间隔。相同动作只留更短周期，同等或更短周期内可多打动作的方案会替代其子集。</p>
         <p id="pair-status" role="status" aria-live="polite">正在读取动作表…</p>
     </section>
     <div class="pair-legend"><span class="pair-color-a">● 角色一</span><span class="pair-color-b">● 角色二</span><span>色带：前台占轴</span><span>气泡：完整动作释放</span><span>◆：输入节点</span><span>竖线：切人</span><span>淡色：下一轮</span></div>

@@ -24,6 +24,8 @@ function check(plan) {
     });
     rows.forEach((r, role) => {
         assert(period >= r.release_end_seconds-1e-7);
+        assert(period + (r.timeline[0].input_seconds ?? r.timeline[0].start_seconds) - r.timeline.at(-1).end_seconds
+            >= plan.restartDelays[role] - 1e-7, 'restart gap must survive the cycle seam');
         r.foreground_intervals.forEach(([start,end], index) => {
             const s=segments.find(s => s.role===role && s.index===index);
             assert(s.start <= offsets[role]+start+1e-7);
@@ -42,6 +44,26 @@ check(delayed);
 assert.equal(delayed.period,2.4);
 assert.equal(delayed.segments[0].end,1.2);
 assert.equal(delayed.segments[1].end,2.4);
+// Resetting an unfinished basic chain needs 0.5s after its release, not its switch.
+const waited=engine.schedule(row([[0,.2]],2),row([[0,.2]],2),[.5,0]);
+check(waited); assert.equal(waited.period,2.5);
+const requiem=data.characters.find(c=>c.name==='安魂曲');
+const path=(character, names)=>character.rows.find(r=>JSON.stringify(r.actions)===JSON.stringify(names));
+const truncated=path(requiem,['a1远','a2远','a3远','a4远']);
+assert.equal(engine.restartDelay(requiem,truncated),.5);
+assert.equal(engine.restartDelay(requiem,path(requiem,['a1远','a2远','a3远','a4远','a5远'])),0);
+// Catalog calls z a basic attack too: identify the heavy-attack exception explicitly.
+const graph={actions:[{name:'a1',type:'普攻',successors:[]},{name:'a2',type:'普攻',successors:[]},
+ {name:'z',type:'普攻',successors:[]},{name:'e',type:'E',successors:[]}]};
+const jump=(first,last)=>({actions:[first,last],timeline:[{action:first},{action:last}]});
+assert.equal(engine.restartDelay(graph,jump('a1','a2')),.5);
+assert.equal(engine.restartDelay(graph,jump('z','a2')),0);
+assert.equal(engine.restartDelay(graph,jump('e','a2')),0);
+graph.actions[1].successors=[{to:'a1',requires_previous:['z']}];
+assert.equal(engine.restartDelay(graph,jump('a1','a2')),.5);
+assert.equal(engine.restartDelay(graph,jump('z','a2')),0);
+const contextual={actions:['a1','z','a2'],timeline:[{action:'a1'},{action:'z'},{action:'a2'}]};
+assert.equal(engine.restartDelay(graph,contextual),0);
 // A route requiring a third actor must never enter the matcher.
 assert.equal(engine.schedule(row([[0,.2]],2,{requires_three_characters:true}),row([[0,.2]],2)),null);
 // A returning A can end the cycle only after a legal full finish back to its start.
@@ -64,12 +86,18 @@ for (let i=0;i<data.characters.length;i++) for(let j=i+1;j<data.characters.lengt
     assert(result.plans.length>0);
     result.plans.forEach(plan=>{
         check(plan);assert(plan.rows.every(r=>!r.requires_three_characters));
+        plan.rows.forEach((r,role)=>assert.equal(plan.restartDelays[role],engine.restartDelay([data.characters[i],data.characters[j]][plan.roles[role]],r)));
         assert.equal(plan.totalMultiplier,plan.rows.reduce((sum,r)=>sum+(r.multipliers.atk||0),0));
         assert.equal(plan.multiplierRate,plan.totalMultiplier/plan.period);
         plan.multipliers.forEach((m,role)=>assert.equal(m.atk,plan.rows[plan.roles.indexOf(role)].multipliers.atk));
     });
     total+=result.plans.length;
 }
+const pictured=engine.match([data.characters[0],data.characters[1]]).plans.find(p=>
+    JSON.stringify(p.actions)===JSON.stringify([['a1远','a2远','a3远','a4远'],['a1','z','a5']]));
+assert(pictured); assert.equal(pictured.period,3.2);
+assert.equal(pictured.totalMultiplier,9.59);
+assert(Math.abs(pictured.multiplierRate - 9.59/3.2)<1e-9);
 const hei=engine.availableRows(data.characters[2]);
 assert(hei.length>0);
 assert(hei.some(r=>r.actions[0]==='魔e' && r.actions.at(-1)==='魔a5'));

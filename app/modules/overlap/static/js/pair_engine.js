@@ -24,7 +24,21 @@
         }
         return null;
     }
-    function schedule(first, second) {
+    // User 2026-10-15: restarting a basic attack outside the recorded graph
+    // requires 0.5s after the previous own action finishes, even across switches.
+    function restartDelay(character, row) {
+        const first = row.timeline[0], last = row.timeline.at(-1);
+        const next = character.actions.find(a => a.name === first.action);
+        if (!next || next.type !== '普攻' || /z\d*$/.test(first.action)) return 0;
+        const previous = character.actions.find(a => a.name === last.action);
+        const names = row.original_actions || row.actions;
+        const linked = (previous?.successors || []).some(edge => edge.to === first.action
+            && (!edge.requires_previous || edge.requires_previous.includes(names.at(-2)))
+            && (!edge.requires_prefix || JSON.stringify(edge.requires_prefix) === JSON.stringify(names))
+            && (!edge.detach_previous || last.detached));
+        return linked ? 0 : 0.5;
+    }
+    function schedule(first, second, restartDelays = [0, 0]) {
         if (!eligible(first) || !eligible(second)) return null;
         const rows = [first, second];
         const counts = rows.map(r => r.foreground_intervals.length);
@@ -49,7 +63,8 @@
         });
         const actualCuts = sameEnd ? cuts.slice(1) : cuts;
         for (let i = 1; i < actualCuts.length; i++) base.push([actualCuts[i], actualCuts[i - 1], -COOLDOWN]);
-        const lower = Math.max(...rows.map(r => tick(r.release_end_seconds)));
+        const lower = Math.max(...rows.map((r, role) => Math.max(tick(r.release_end_seconds),
+            tick(r.timeline.at(-1).end_seconds) + tick(restartDelays[role]) - tick(r.timeline[0].input_seconds ?? r.timeline[0].start_seconds))));
         function feasible(period) {
             const edges = [...base, [0, 3, period], [3, 0, -period]];
             // In an A…A loop, the seam has no switch. Check last -> next first switch.
@@ -79,7 +94,7 @@
             }
         }));
         if (overlap < 0.0005) return null;
-        return {rows, offsets, segments, period, sameEnd, overlap};
+        return {rows, offsets, segments, period, sameEnd, overlap, restartDelays};
     }
     function subsequence(small, large) {
         let index = 0;
@@ -121,12 +136,14 @@
     function match(characters, options = {}, progress = () => {}) {
         if (characters.length !== 2 || characters[0].id === characters[1].id) throw new Error('请选择两个不同的角色');
         const candidates = characters.map(c => availableRows(c, options));
+        const delays = new Map(characters.flatMap((c, i) => candidates[i].map(r => [r, restartDelay(c, r)])));
         const plans = [];
         let checked = 0;
         for (const a of candidates[0]) {
             for (const b of candidates[1]) {
                 for (const reverse of [false, true]) {
-                    const plan = schedule(...(reverse ? [b, a] : [a, b]));
+                    const ordered = reverse ? [b, a] : [a, b];
+                    const plan = schedule(...ordered, ordered.map(r => delays.get(r)));
                     if (plan) {
                         plan.roles = reverse ? [1, 0] : [0, 1];
                         plan.actions = [a.actions, b.actions];
@@ -142,6 +159,6 @@
         }
         return {plans: prune(plans), checked, feasible: plans.length};
     }
-    scope.OverlapPairEngine = {schedule, match, prune, subsequence, eligible, unrestricted, availableRows};
+    scope.OverlapPairEngine = {schedule, match, prune, subsequence, eligible, unrestricted, availableRows, restartDelay};
     if (typeof module !== 'undefined') module.exports = scope.OverlapPairEngine;
 }(typeof self !== 'undefined' ? self : globalThis));

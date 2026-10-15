@@ -14,12 +14,15 @@
         const end = start + bodyDuration;
         const recoveryEnd = offset + (step.recovery_end_seconds ?? step.end_seconds) + repeat * period;
         const recoveryUsed = Math.max(0,recoveryEnd-end);
+        // Only an explicit continuation through recovery gets a box; waiting
+        // for recovery to expire before a new opener stays visually blank.
+        const showRecovery = (step.recovery_used_seconds || 0) > .0005;
         const input = step.input_seconds == null ? null : offset + step.input_seconds + repeat * period;
         const front = segments.some(s => s.role === role && start >= s.start + repeat * period - 1e-8 && start < s.end + repeat * period - 1e-8);
         const recovery = recoveryUsed > .0005 ? ` · 恢复后摇 ${n(end)}–${n(recoveryEnd)}s，不增加伤害与资源` : '';
         const title = `${step.group ? `组 ${step.group} · ` : ''}${step.action} · 动作 ${n(start)}–${n(end)}s${recovery}${input == null ? ' · 自动衔接' : ` · 输入 ${n(input)}s`}`;
         return `<span class="pair-bubble ${front ? '' : 'is-background'} ${repeat ? 'is-repeat' : ''}" style="left:${start * px}px;width:${bodyDuration * px}px" title="${escape(title)}"><span>${escape(step.action)}</span><small>${n(bodyDuration)}s</small></span>`
-            + (recoveryUsed > .0005 ? `<span class="pair-recovery ${repeat ? 'is-repeat' : ''}" style="left:${end * px}px;width:${recoveryUsed * px}px" title="${escape(`${step.action}恢复后摇 ${n(end)}–${n(recoveryEnd)}s`)}">${recoveryUsed*px>=30 ? '后摇' : ''}</span>` : '')
+            + (showRecovery && recoveryUsed > .0005 ? `<span class="pair-recovery ${repeat ? 'is-repeat' : ''}" style="left:${end * px}px;width:${recoveryUsed * px}px" title="${escape(`${step.action}恢复后摇 ${n(end)}–${n(recoveryEnd)}s`)}">${recoveryUsed*px>=30 ? '后摇' : ''}</span>` : '')
             + (input == null ? '' : `<span class="pair-input ${repeat ? 'is-repeat' : ''}" style="left:${input * px}px" title="${escape(`${n(input)}s 输入 ${step.action}${input < start ? `；${n(start)}s 开始释放` : ''}`)}">◆</span>`);
     }
     function card(group, index) {

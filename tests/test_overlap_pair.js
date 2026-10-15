@@ -47,6 +47,11 @@ assert.equal(delayed.segments[1].end,2.4);
 // Resetting an unfinished basic chain needs 0.5s after its release, not its switch.
 const waited=engine.schedule(row([[0,.2]],2),row([[0,.2]],2),[.5,0]);
 check(waited); assert.equal(waited.period,2.5);
+assert.deepEqual(waited.restartLimited,[true,false]);
+const natural=engine.schedule(row([[0,.2]],2),row([[0,.2]],3),[.5,0]);
+assert.deepEqual(natural.restartLimited,[false,false]);
+const tied=engine.schedule(row([[0,.2]],2),row([[0,.2]],2.5),[.5,0]);
+assert.deepEqual(tied.restartLimited,[false,false]);
 const requiem=data.characters.find(c=>c.name==='安魂曲');
 const path=(character, names)=>character.rows.find(r=>JSON.stringify(r.actions)===JSON.stringify(names));
 const truncated=path(requiem,['a1远','a2远','a3远','a4远']);
@@ -91,6 +96,18 @@ for (let i=0;i<data.characters.length;i++) for(let j=i+1;j<data.characters.lengt
         assert.equal(plan.multiplierRate,plan.totalMultiplier/plan.period);
         plan.multipliers.forEach((m,role)=>assert.equal(m.atk,plan.rows[plan.roles.indexOf(role)].multipliers.atk));
     });
+    for (const group of result.plans) {
+        assert(group.variants.length > 0);
+        assert(group.defaultVariant >= 0 && group.defaultVariant < group.variants.length);
+        group.variants.forEach((variant, index) => {
+            const rows = variant.rowIds.map((id, role) => [data.characters[i], data.characters[j]][variant.roles[role]].rows.find(r => r.id === id));
+            check({...group, ...variant, rows});
+            assert.equal(variant.period, group.period);
+            assert.deepEqual(variant.roles.map((role,k)=>[role,rows[k].actions]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]),group.actions);
+            assert(Math.abs(variant.foregroundSeconds[0]+variant.foregroundSeconds[1]-group.period)<1e-7);
+            if (index) assert(variant.foregroundSeconds[1]>=group.variants[index-1].foregroundSeconds[1]);
+        });
+    }
     total+=result.plans.length;
 }
 const pictured=engine.match([data.characters[0],data.characters[1]]).plans.find(p=>
@@ -98,6 +115,16 @@ const pictured=engine.match([data.characters[0],data.characters[1]]).plans.find(
 assert(pictured); assert.equal(pictured.period,3.2);
 assert.equal(pictured.totalMultiplier,9.59);
 assert(Math.abs(pictured.multiplierRate - 9.59/3.2)<1e-9);
+const allocation=engine.match([data.characters[0],data.characters[1]]).plans.find(p=>
+    JSON.stringify(p.actions)===JSON.stringify([['a1远','a2远','a3远'],['a1','z','a5']]));
+assert.equal(allocation.period,2.8);
+assert(allocation.variants.length>1);
+assert.equal(allocation.variants[0].foregroundSeconds[1],1.2);
+assert.equal(allocation.variants.at(-1).foregroundSeconds[1],1.6);
+const last=allocation.variants.at(-1), residualRole=last.roles.indexOf(1);
+const returnAt=last.segments.find(s=>s.role===residualRole).start;
+const a5End=last.offsets[residualRole]; // previous cycle a5 ends at this cycle a1 start
+assert(a5End-returnAt>=.6-1e-7,'return during a5 recovery before a1 z pre-a5');
 const hei=engine.availableRows(data.characters[2]);
 assert(hei.length>0);
 assert(hei.some(r=>r.actions[0]==='魔e' && r.actions.at(-1)==='魔a5'));

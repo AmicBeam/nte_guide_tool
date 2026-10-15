@@ -6,6 +6,7 @@
     const n = v => Number(v.toFixed(3)).toLocaleString('zh-CN');
     const percent = v => `${n(v * 100)}%`;
     let dataset, worker, plans = [], shown = 20, summary = '';
+    const allocationChoices = new Map();
     function bubble(step, offset, repeat, period, px, segments, role) {
         const start = offset + step.start_seconds + repeat * period;
         const end = offset + step.end_seconds + repeat * period;
@@ -15,9 +16,15 @@
         return `<span class="pair-bubble ${front ? '' : 'is-background'} ${repeat ? 'is-repeat' : ''}" style="left:${start * px}px;width:${step.duration_seconds * px}px" title="${escape(title)}"><span>${escape(step.action)}</span><small>${n(step.duration_seconds)}s</small></span>`
             + (input == null ? '' : `<span class="pair-input ${repeat ? 'is-repeat' : ''}" style="left:${input * px}px" title="${escape(`${n(input)}s 输入 ${step.action}${input < start ? `；${n(start)}s 开始释放` : ''}`)}">◆</span>`);
     }
-    function card(plan, index) {
-        const px = Number($('zoom').value), period = plan.period, width = period * 2 * px;
+    function card(group, index) {
         const chars = [$('first').value, $('second').value].map(id => dataset.characters.find(c => c.id === id));
+        const key = JSON.stringify(group.actions);
+        const selection = allocationChoices.get(key) ?? group.defaultVariant ?? 0;
+        const variant = group.variants?.[selection];
+        const plan = variant ? {...group, ...variant, rows: variant.rowIds.map((id, role) => chars[variant.roles[role]].rows.find(r => r.id === id))} : group;
+        const px = Number($('zoom').value), period = plan.period, width = period * 2 * px;
+        const valueText = `解 ${selection + 1} / ${group.variants?.length || 1} · ${chars[0].name} ${n(plan.foregroundSeconds[0])}s / ${chars[1].name} ${n(plan.foregroundSeconds[1])}s`;
+        const allocation = group.variants?.length > 1 ? `<section class="pair-allocation" aria-label="本方案前台分配"><div class="pair-allocation-labels"><span>${escape(chars[0].name)}更多前台</span><output>${escape(valueText)}</output><span>${escape(chars[1].name)}更多前台</span></div><input type="range" class="pair-allocation-slider" min="0" max="${group.variants.length - 1}" step="1" value="${selection}" aria-label="方案${index + 1}前台分配" aria-valuetext="${escape(valueText)}"><p>各档均为合法代表解，保持动作、循环时间和倍率不变；按${escape(chars[1].name)}前台时长递增。</p></section>` : '';
         let ticks = '';
         const stride = period > 12 ? 2 : 1;
         for (let t = 0; t < period * 2; t += stride) ticks += `<span style="left:${t * px}px">${t}s</span>`;
@@ -36,13 +43,13 @@
         const switchText = switches.map(s => `${n(s.time)}s → ${chars[plan.roles[s.role]].name}`).join('　·　');
         const delays = plan.segments.filter(s => s.end > s.earliestEnd + 0.0005 && !(plan.sameEnd && s === plan.segments.at(-1)))
             .map(s => `${chars[plan.roles[s.role]].name}在 ${n(s.earliestEnd)}s 已可切人，延后至 ${n(s.end)}s`);
-        const restarts = plan.rows.flatMap((row, role) => plan.restartDelays[role] ? [`${chars[plan.roles[role]].name} ${row.timeline.at(-1).action} → ${row.timeline[0].action}：不属于已有衔接，须在末动作结束后等待至少 0.5s（本方案 ${n(period + (row.timeline[0].input_seconds ?? row.timeline[0].start_seconds) - row.timeline.at(-1).end_seconds)}s）`] : []);
-        const metrics = `<aside class="pair-metrics" aria-label="每轮倍率"><div class="pair-metrics-heading">每轮攻击倍率</div>${chars.map((character, i) => `<div class="pair-metric pair-color-${i ? 'b' : 'a'}"><strong>${percent(plan.multipliers[i].atk || 0)}</strong><small class="pair-metric-rate">${percent((plan.multipliers[i].atk || 0) / period)} / 秒</small><small>${escape(character.name)}</small></div>`).join('')}</aside>`;
+        const restarts = plan.rows.flatMap((row, role) => plan.restartLimited[role] ? [`${chars[plan.roles[role]].name} ${row.timeline.at(-1).action} → ${row.timeline[0].action}：不属于已有衔接，须在末动作结束后等待至少 0.5s`] : []);
+        const metrics = `<aside class="pair-metrics" aria-label="每轮倍率"><div class="pair-metrics-heading">每轮攻击倍率</div>${chars.map((character, i) => `<div class="pair-metric pair-color-${i ? 'b' : 'a'}"><strong>${percent(plan.multipliers[i].atk || 0)}</strong><small class="pair-metric-rate">${percent((plan.multipliers[i].atk || 0) / period)} / 秒</small><small>${escape(character.name)} · 前台 ${n(plan.foregroundSeconds[i])}s</small></div>`).join('')}</aside>`;
         const cutLines = switches.flatMap(s => [0, 1].filter(r => s.time + r * period < period * 2).map(r => `<span class="pair-cut" style="left:${(s.time + r * period) * px}px" title="${n(s.time + r * period)}s 切至${escape(chars[plan.roles[s.role]].name)}"></span>`)).join('');
-        return `<article class="glass-card pair-plan" data-rate="${plan.multiplierRate}"><header><div><span class="pair-plan-number">方案 ${index + 1}</span><h2>${n(period)}<small> 秒 / 循环</small></h2></div><div class="pair-plan-yield"><strong>${percent(plan.multiplierRate)}<small> / 秒</small></strong><span>双人合计 ${percent(plan.totalMultiplier)} / 循环</span><span class="pair-plan-count">${plan.actions.map(a => a.length).join(' + ')} 个动作 · ${plan.sameEnd ? '同角色打满接回' : '异角色接回'}</span></div></header>
-            <div class="pair-timeline-layout"><div class="pair-timeline-scroll" tabindex="0" aria-label="方案${index + 1}时间轴，可横向滚动"><div class="pair-timeline" style="--pair-width:${width}px"><div class="pair-ruler-label">时间 / 秒</div><div class="pair-ruler">${ticks}${seam}</div>${rows}<div class="pair-cuts">${cutLines}</div></div></div>${metrics}</div>
+        return `<article class="glass-card pair-plan" data-rate="${plan.multiplierRate}" data-group="${escape(key)}" data-plan-index="${index}"><header><div><span class="pair-plan-number">方案 ${index + 1}</span><h2>${n(period)}<small> 秒 / 循环</small></h2></div><div class="pair-plan-yield"><strong>${percent(plan.multiplierRate)}<small> / 秒</small></strong><span>双人合计 ${percent(plan.totalMultiplier)} / 循环</span><span class="pair-plan-count">${plan.actions.map(a => a.length).join(' + ')} 个动作 · ${plan.sameEnd ? '同角色打满接回' : '异角色接回'}</span></div></header>
+            ${allocation}<div class="pair-content"><div class="pair-timeline-layout"><div class="pair-timeline-scroll" tabindex="0" aria-label="方案${index + 1}时间轴，可横向滚动"><div class="pair-timeline" style="--pair-width:${width}px"><div class="pair-ruler-label">时间 / 秒</div><div class="pair-ruler">${ticks}${seam}</div>${rows}<div class="pair-cuts">${cutLines}</div></div></div>${metrics}</div>
             <p class="pair-switches">${escape(switchText)}</p>${delays.length ? `<p class="pair-delays">${escape(delays.join('；'))}。</p>` : ''}${restarts.length ? `<p class="pair-delays">${escape(restarts.join('；'))}。</p>` : ''}
-            <details class="pair-detail"><summary>动作与循环衔接</summary>${chars.map((c, i) => `<p class="pair-color-${i ? 'b' : 'a'}"><strong>${escape(c.name)}</strong>　${escape(plan.actions[i].join(' → '))}</p>`).join('')}<p>${plan.sameEnd ? '末段完整释放后，由同一角色衔接下一轮；跨轮两次切人之间也满足 1.2 秒。' : '周期末切回起手角色，至下一次切人至少 1.2 秒；上轮最后一次切人至周期末同样至少 1.2 秒。'} 每位角色本轮动作均在其下一轮起手前释放完毕。</p></details></article>`;
+            <details class="pair-detail"><summary>动作与循环衔接</summary>${chars.map((c, i) => `<p class="pair-color-${i ? 'b' : 'a'}"><strong>${escape(c.name)}</strong>　${escape(plan.actions[i].join(' → '))}</p>`).join('')}<p>${plan.sameEnd ? '末段完整释放后，由同一角色衔接下一轮；跨轮两次切人之间也满足 1.2 秒。' : '周期末切回起手角色，至下一次切人至少 1.2 秒；上轮最后一次切人至周期末同样至少 1.2 秒。'} 每位角色本轮动作均在其下一轮起手前释放完毕。</p></details></div></article>`;
     }
     function render() {
         const personalRate = (role) => (a, b) => (b.multipliers[role].atk || 0) / b.period - (a.multipliers[role].atk || 0) / a.period || b.multiplierRate - a.multiplierRate || a.period - b.period;
@@ -56,7 +63,7 @@
         if (!dataset) return;
         if (worker) worker.terminate();
         worker = null;
-        plans = []; shown = 20;
+        plans = []; shown = 20; allocationChoices.clear();
         $('results').innerHTML = ''; $('more').hidden = true;
         $('results').setAttribute('aria-busy', 'false');
         const chars = [$('first').value, $('second').value].map(id => dataset.characters.find(c => c.id === id));
@@ -93,6 +100,25 @@
     $('no-dodge').addEventListener('change', calculate);
     $('calculate').addEventListener('click', calculate);
     for (const field of ['sort', 'zoom']) $(field).addEventListener('change', render);
+    $('results').addEventListener('input', event => {
+        const input = event.target;
+        if (!input.matches('.pair-allocation-slider')) return;
+        const article = input.closest('.pair-plan'), key = article.dataset.group;
+        const group = plans.find(p => JSON.stringify(p.actions) === key);
+        allocationChoices.set(key, Number(input.value));
+        const template = document.createElement('template');
+        template.innerHTML = card(group, Number(article.dataset.planIndex));
+        const replacement = template.content.firstElementChild;
+        const oldContent = article.querySelector('.pair-content');
+        const scroll = oldContent.querySelector('.pair-timeline-scroll').scrollLeft;
+        const expanded = oldContent.querySelector('details').open;
+        oldContent.innerHTML = replacement.querySelector('.pair-content').innerHTML;
+        oldContent.querySelector('.pair-timeline-scroll').scrollLeft = scroll;
+        oldContent.querySelector('details').open = expanded;
+        article.querySelector('.pair-plan-count').textContent = replacement.querySelector('.pair-plan-count').textContent;
+        article.querySelector('output').textContent = replacement.querySelector('output').textContent;
+        input.setAttribute('aria-valuetext', replacement.querySelector('input[type="range"]').getAttribute('aria-valuetext'));
+    });
     $('more').addEventListener('click', () => {shown += 20; render();});
     fetch(root.dataset.tablesUrl).then(response => {if (!response.ok) throw new Error('无法读取动作表'); return response.json();}).then(data => {
         dataset = data;

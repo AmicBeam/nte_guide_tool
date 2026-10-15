@@ -24,6 +24,43 @@
         }
         return null;
     }
+    // Dual of max c*x under difference constraints: min-cost flow. Flow on a
+    // constraint makes it tight; residual potentials recover an optimal schedule.
+    function optimize(size, edges, objective) {
+        const source = size, sink = size + 1, graph = Array.from({length: size + 2}, () => []);
+        function add(u, v, cost, cap) {
+            const forward = {v, cost, cap, reverse: graph[v].length};
+            const backward = {v: u, cost: -cost, cap: 0, reverse: graph[u].length};
+            graph[u].push(forward); graph[v].push(backward);
+        }
+        edges.forEach(([u, v, cost]) => add(u, v, cost, 100));
+        let remaining = 0;
+        objective.forEach((coefficient, node) => {
+            if (coefficient < 0) add(source, node, 0, -coefficient);
+            if (coefficient > 0) {add(node, sink, 0, coefficient); remaining += coefficient;}
+        });
+        while (remaining > 0) {
+            const distances = Array(size + 2).fill(Infinity), previous = [];
+            distances[source] = 0;
+            for (let pass = 0; pass < size + 1; pass++) {
+                let changed = false;
+                graph.forEach((list, u) => list.forEach((edge, index) => {
+                    if (edge.cap > 0 && distances[edge.v] > distances[u] + edge.cost) {
+                        distances[edge.v] = distances[u] + edge.cost;
+                        previous[edge.v] = [u, index]; changed = true;
+                    }
+                }));
+                if (!changed) break;
+            }
+            if (!Number.isFinite(distances[sink])) throw new Error('无法优化前台分配');
+            for (let v = sink; v !== source;) {
+                const [u, index] = previous[v], edge = graph[u][index];
+                edge.cap--; graph[v][edge.reverse].cap++; v = u;
+            }
+            remaining--;
+        }
+        return solve(size, graph.flatMap((list, u) => u < size ? list.filter(e => e.v < size && e.cap > 0).map(e => [u, e.v, e.cost]) : []));
+    }
     // User 2026-10-15: restarting a basic attack outside the recorded graph
     // requires 0.5s after the previous own action finishes, even across switches.
     function restartDelay(character, row) {
@@ -38,7 +75,7 @@
             && (!edge.detach_previous || last.detached));
         return linked ? 0 : 0.5;
     }
-    function schedule(first, second, restartDelays = [0, 0]) {
+    function schedule(first, second, restartDelays = [0, 0], foregroundRole = null) {
         if (!eligible(first) || !eligible(second)) return null;
         const rows = [first, second];
         const counts = rows.map(r => r.foreground_intervals.length);
@@ -63,21 +100,40 @@
         });
         const actualCuts = sameEnd ? cuts.slice(1) : cuts;
         for (let i = 1; i < actualCuts.length; i++) base.push([actualCuts[i], actualCuts[i - 1], -COOLDOWN]);
-        const lower = Math.max(...rows.map((r, role) => Math.max(tick(r.release_end_seconds),
-            tick(r.timeline.at(-1).end_seconds) + tick(restartDelays[role]) - tick(r.timeline[0].input_seconds ?? r.timeline[0].start_seconds))));
-        function feasible(period) {
+        const releaseLimits = rows.map(r => tick(r.release_end_seconds));
+        const restartLimits = rows.map((r, role) => tick(r.timeline.at(-1).end_seconds)
+            + tick(restartDelays[role]) - tick(r.timeline[0].input_seconds ?? r.timeline[0].start_seconds));
+        const lower = Math.max(...releaseLimits, ...restartLimits);
+        function constraints(period) {
             const edges = [...base, [0, 3, period], [3, 0, -period]];
             // In an A…A loop, the seam has no switch. Check last -> next first switch.
             if (sameEnd) edges.push([actualCuts[0], actualCuts.at(-1), period - COOLDOWN]);
-            return solve(order.length + 3, edges);
+            return edges;
         }
+        const feasible = period => solve(order.length + 3, constraints(period));
         let low = lower, high = rows.reduce((sum, r) => sum + tick(r.release_end_seconds), 0) + COOLDOWN * (order.length + 1);
         if (!feasible(high)) return null;
         while (low < high) {
             const mid = Math.floor((low + high) / 2);
             if (feasible(mid)) high = mid; else low = mid + 1;
         }
-        const values = feasible(low);
+        // Warn only when relaxing THIS restart rule permits a shorter cycle.
+        // Existing cooldown/partner timing can naturally leave the same gap.
+        const restartLimited = restartDelays.map((delay, role) => delay > 0
+            && low === restartLimits[role]
+            && low > Math.max(...releaseLimits, ...restartLimits.filter((_, i) => i !== role))
+            && feasible(low - 1) !== null);
+        let values = feasible(low);
+        if (foregroundRole === 0 || foregroundRole === 1) {
+            const objective = Array(order.length + 3).fill(0);
+            order.forEach(({role}, i) => {
+                if (role !== foregroundRole) return;
+                objective[cuts[i]]--;
+                objective[i + 1 < cuts.length ? cuts[i + 1] : 3]++;
+            });
+            values = optimize(order.length + 3, constraints(low), objective);
+            if (!values) throw new Error('前台分配违反时序约束');
+        }
         const offsets = [seconds(values[1]), seconds(values[2])];
         const segments = order.map(({role, index}, i) => ({
             role, index, start: seconds(values[cuts[i]]),
@@ -94,7 +150,7 @@
             }
         }));
         if (overlap < 0.0005) return null;
-        return {rows, offsets, segments, period, sameEnd, overlap, restartDelays};
+        return {rows, offsets, segments, period, sameEnd, overlap, restartDelays, restartLimited};
     }
     function subsequence(small, large) {
         let index = 0;
@@ -145,6 +201,8 @@
                     const ordered = reverse ? [b, a] : [a, b];
                     const plan = schedule(...ordered, ordered.map(r => delays.get(r)));
                     if (plan) {
+                        plan.foregroundSeconds = [0, 0];
+                        for (const segment of plan.segments) plan.foregroundSeconds[(reverse ? [1, 0] : [0, 1])[segment.role]] += segment.end - segment.start;
                         plan.roles = reverse ? [1, 0] : [0, 1];
                         plan.actions = [a.actions, b.actions];
                         plan.multipliers = [a.multipliers, b.multipliers];
@@ -157,7 +215,75 @@
             }
             progress({checked, total: candidates[0].length * candidates[1].length});
         }
-        return {plans: prune(plans), checked, feasible: plans.length};
+        const groups = prune(plans);
+        const retained = new Map(groups.map(p => [JSON.stringify(p.actions), p]));
+        const variants = new Map(groups.map(p => [p, new Map()]));
+        function compact(plan) {
+            return {rowIds: plan.rows.map(r => r.id), roles: plan.roles, offsets: plan.offsets,
+                segments: plan.segments, period: plan.period, sameEnd: plan.sameEnd,
+                restartDelays: plan.restartDelays, restartLimited: plan.restartLimited, overlap: plan.overlap,
+                foregroundSeconds: [0, 1].map(role => seconds(plan.segments.filter(s => plan.roles[s.role] === role)
+                    .reduce((sum, s) => sum + tick(s.end) - tick(s.start), 0)))};
+        }
+        function add(group, plan) {
+            const value = compact(plan);
+            // Anchor to character one's first input so rotating a cyclic timeline,
+            // or using an equivalent row ID, does not create another slider stop.
+            const anchor = tick(plan.offsets[plan.roles.indexOf(0)]);
+            const period = tick(plan.period);
+            const phase = time => ((tick(time) - anchor) % period + period) % period;
+            const actions = [0, 1].map(role => {
+                const local = plan.roles.indexOf(role), offset = plan.offsets[local];
+                return plan.rows[local].timeline.map(step => [step.action,
+                    step.input_seconds == null ? null : phase(offset + step.input_seconds),
+                    phase(offset + step.start_seconds), tick(step.duration_seconds)]);
+            });
+            const switches = plan.segments.slice(plan.sameEnd ? 1 : 0)
+                .map(segment => [phase(segment.start), plan.roles[segment.role]])
+                .sort((a, b) => a[0] - b[0]);
+            const key = JSON.stringify([actions, switches]);
+            if (!variants.get(group).has(key)) variants.get(group).set(key, value);
+            return key;
+        }
+        for (const group of groups) group.defaultVariantKey = add(group, group);
+        for (const plan of plans) {
+            const group = retained.get(JSON.stringify(plan.actions));
+            if (!group || plan.period !== group.period) continue;
+            add(group, plan);
+            const extremes = [0, 1].map(role => {
+                const optimized = schedule(...plan.rows, plan.restartDelays, role);
+                if (optimized) {optimized.roles = plan.roles; add(group, optimized);}
+                return optimized;
+            });
+            if (!extremes[0] || !extremes[1]) continue;
+            const span = Math.abs(compact(extremes[0]).foregroundSeconds[1] - compact(extremes[1]).foregroundSeconds[1]);
+            // Discrete representative allocations, <=0.1s between foreground-duration
+            // levels, with both exact extrema retained. Interpolate only within the
+            // SAME route and handover topology; never across incompatible solutions.
+            const steps = Math.ceil(tick(span) / 100);
+            for (let step = 1; step < steps; step++) {
+                const ratio = step / steps;
+                const blend = (a, b) => seconds(Math.round(tick(a) * (1 - ratio) + tick(b) * ratio));
+                const left = extremes[0], right = extremes[1];
+                const offsets = left.offsets.map((v, i) => blend(v, right.offsets[i]));
+                const segments = left.segments.map((s, i) => ({...s, start: blend(s.start, right.segments[i].start),
+                    end: blend(s.end, right.segments[i].end), earliestEnd: seconds(tick(offsets[s.role]) + tick(plan.rows[s.role].foreground_intervals[s.index][1]))}));
+                let overlap = 0;
+                plan.rows.forEach((row, role) => row.timeline.forEach(action => {
+                    for (const s of segments.filter(s => s.role !== role)) for (const shift of [0, plan.period]) {
+                        overlap += Math.max(0, Math.min(offsets[role] + action.end_seconds, s.end + shift) - Math.max(offsets[role] + action.start_seconds, s.start + shift));
+                    }
+                }));
+                if (overlap > 0.0005) add(group, {...plan, offsets, segments, overlap});
+            }
+        }
+        for (const group of groups) {
+            const entries = [...variants.get(group)].sort(([, a], [, b]) => a.foregroundSeconds[1] - b.foregroundSeconds[1]);
+            group.defaultVariant = entries.findIndex(([key]) => key === group.defaultVariantKey);
+            group.variants = entries.map(([, value]) => value);
+            delete group.defaultVariantKey;
+        }
+        return {plans: groups, checked, feasible: plans.length};
     }
     scope.OverlapPairEngine = {schedule, match, prune, subsequence, eligible, unrestricted, availableRows, restartDelay};
     if (typeof module !== 'undefined') module.exports = scope.OverlapPairEngine;

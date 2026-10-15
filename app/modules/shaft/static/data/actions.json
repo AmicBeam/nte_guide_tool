@@ -9578,8 +9578,8 @@
     "display_order": 13,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 1.4,
-    "duration_ticks": 14,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 2.826,
       "hp": 0,
@@ -9594,7 +9594,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 14,
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 用户2026-10-15指定魔a5可选脱手0.7秒，普通耗时仍为1.4秒，非Nanoka核实或逐帧实测。",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。用户2026-10-15最新指定魔a5基础耗时0.7秒，取消可选脱手；完整伤害与资源不变。耗时非Nanoka核实或逐帧实测。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9607,10 +9607,7 @@
       "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    },
-    "can_detach": true,
-    "detached_duration_seconds": 0.7,
-    "detached_duration_ticks": 7
+    }
   },
   {
     "id": "action_heiyu_form_z1",

@@ -53,13 +53,13 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(actions['a1']['duration_ticks'], 4)
         self.assertEqual(actions['a1']['duration_source'], 'user-authorized-estimate')
         self.assertEqual(sum(actions[f'a{i}']['duration_ticks'] for i in range(1, 6)), 40)
-        # 魔a1–a4采用用户2026-10-15耗时；其余沿用2026-09-19，非Nanoka核实。
+        # 魔a1–a5采用用户2026-10-15最新基础耗时；其余沿用2026-09-19，非Nanoka核实。
         for name, ticks in {'魔a1': 7, '魔a2': 6, '魔a3': 10, '魔a4': 6,
-                            '魔a5': 14, '魔e': 10, '魔z2': 11}.items():
+                            '魔a5': 7, '魔e': 10, '魔z2': 11}.items():
             self.assertEqual(actions[name]['duration_ticks'], ticks)
             self.assertEqual(actions[name]['duration_seconds'], ticks / 10)
             self.assertEqual(actions[name]['duration_source'], 'user-supplied')
-        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 43)
+        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 36)
         self.assertEqual(len([a for a in actions.values() if a.get('source_row') == 19]), 1)
 
     def test_ntedata_energy_matches_damage_rows_and_interruptions(self):
@@ -131,11 +131,12 @@ class HeiyuTest(unittest.TestCase):
         detail = simulate_shaft_axis(axis)['result']['details'][0]
         self.assertAlmostEqual(detail['formula_parts']['raw_base'] / detail['panel']['atk'], .516)
 
-    def test_form_a5_optional_seven_tick_detach_preserves_damage_and_resources(self):
-        # User 2026-10-15: optional detach occupies 0.7s; full cast stays 1.4s.
+    def test_form_a5_seven_tick_base_ignores_legacy_detach_flag(self):
+        # User 2026-10-15: base duration is 0.7s; optional detach is removed.
         action = next(a for a in load_shaft_catalog()['actions_by_character'][CID] if a['name'] == '魔a5')
-        self.assertEqual(action['detached_duration_seconds'], 0.7)
-        self.assertEqual(action['detached_duration_ticks'], 7)
+        self.assertEqual(action['duration_seconds'], 0.7)
+        self.assertFalse(action.get('can_detach'))
+        self.assertNotIn('detached_duration_ticks', action)
         results = []
         for detached in (False, True):
             axis = {'team': [{'slot': 0, 'character_id': CID, 'arc_id': '', 'cartridge_id': ''}],
@@ -144,8 +145,8 @@ class HeiyuTest(unittest.TestCase):
                                'start_tick': 10, 'detached': detached}]}
             normalized = normalize_axis_payload(axis)
             detail = simulate_shaft_axis(normalized)['result']['details'][-1]
-            self.assertEqual(detail['duration_ticks'], 7 if detached else 14)
-            self.assertEqual(detail['is_detached'], detached)
+            self.assertEqual(detail['duration_ticks'], 7)
+            self.assertFalse(detail['is_detached'])
             results.append(detail)
         for key in ('direct_damage', 'energy_gain', 'harmony', 'personal_resources_consumed'):
             self.assertEqual(results[0][key], results[1][key])

@@ -13,14 +13,17 @@
     let selected;
     let shown = 60;
     let generation = 0;
-    const includedActions = new Set();
+    const actionFilters = new Map();
 
-    function updateIncludedActions() {
+    function updateActionFilters() {
         const names = [...new Set(selected.rows.flatMap((row) => row.timeline.map((step) => step.action)))];
-        for (const name of includedActions) {
-            if (!names.includes(name)) includedActions.delete(name);
+        for (const name of actionFilters.keys()) {
+            if (!names.includes(name)) actionFilters.delete(name);
         }
-        $('contains').innerHTML = names.map((name) => `<label class="overlap-contains-option"><input type="checkbox" value="${escape(name)}"${includedActions.has(name) ? ' checked' : ''}><span>${escape(name)}</span></label>`).join('');
+        $('contains').innerHTML = names.map((name) => {
+            const mode = actionFilters.get(name) || '';
+            return `<label class="overlap-contains-option" data-mode="${mode}"><span>${escape(name)}</span><select data-action="${escape(name)}" aria-label="${escape(name)}筛选"><option value=""${!mode ? ' selected' : ''}>不限</option><option value="include"${mode === 'include' ? ' selected' : ''}>包含</option><option value="exclude"${mode === 'exclude' ? ' selected' : ''}>排除</option></select></label>`;
+        }).join('');
     }
 
     function fillActionOptions(field, names) {
@@ -112,8 +115,8 @@
             && (dodge === 'all' || row.has_dodge === (dodge === 'with'))
             && (!firstAction || row.timeline[0].action === firstAction)
             && (!lastAction || row.timeline[row.timeline.length-1].action === lastAction)
-            && [...includedActions].every((name) => row.timeline.some((step) => step.action === name)));
-        $('contains-clear').disabled = includedActions.size === 0;
+            && [...actionFilters].every(([name, mode]) => row.timeline.some((step) => step.action === name) === (mode === 'include')));
+        $('contains-clear').disabled = actionFilters.size === 0;
         const metric = (row) => sort === 'multiplier_rate' ? row.multiplier_rates.atk : row[sort];
         rows.sort((a, b) => {
             const first = metric(a), second = metric(b);
@@ -133,7 +136,7 @@
         shown = 60;
         fillActionOptions('first', [...new Set(character.rows.map((row) => row.timeline[0].action))]);
         updateLastActions();
-        updateIncludedActions();
+        updateActionFilters();
         document.querySelectorAll('[data-character]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.character === character.id)));
         const url = new URL(window.location.href);
         url.searchParams.set('character', character.id);
@@ -165,15 +168,16 @@
     }));
     $('contains').addEventListener('change', (event) => {
         const input = event.target;
-        if (!input.matches('input[type="checkbox"]')) return;
-        if (input.checked) includedActions.add(input.value);
-        else includedActions.delete(input.value);
+        if (!input.matches('select[data-action]')) return;
+        if (input.value) actionFilters.set(input.dataset.action, input.value);
+        else actionFilters.delete(input.dataset.action);
+        input.closest('label').dataset.mode = input.value;
         shown = 60;
         render();
     });
     $('contains-clear').addEventListener('click', () => {
-        includedActions.clear();
-        $('contains').querySelectorAll('input').forEach((input) => { input.checked = false; });
+        actionFilters.clear();
+        updateActionFilters();
         shown = 60;
         render();
     });

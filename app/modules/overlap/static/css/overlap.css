@@ -20,8 +20,10 @@
 .overlap-contains-heading button:disabled { opacity: .4; cursor: default; }
 .overlap-contains-options { display: flex; flex-wrap: wrap; gap: 8px; }
 .overlap-contains-option { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: rgba(255,255,255,.025); color: #c2cbd8; font-size: 13px; cursor: pointer; }
-.overlap-contains-option input { margin: 0; accent-color: #6ddcc7; }
-.overlap-contains-option:has(input:checked) { border-color: #6ddcc7; background: rgba(109,220,199,.12); color: #d7ece7; }
+.overlap-contains-option > span { white-space: nowrap; }
+.overlap-contains-option select { min-height: 32px; padding: 4px 6px; border: 1px solid rgba(255,255,255,.16); border-radius: 6px; background: #0d141d; color: inherit; font: inherit; }
+.overlap-contains-option[data-mode="include"] { border-color: #6ddcc7; background: rgba(109,220,199,.12); color: #d7ece7; }
+.overlap-contains-option[data-mode="exclude"] { border-color: #e69b9b; background: rgba(230,155,155,.10); color: #f0c5c5; }
 .overlap-contains-option:focus-within, .overlap-contains-heading button:focus-visible { outline: 2px solid #6ddcc7; outline-offset: 3px; }
 #overlap-status { margin: 16px 0 0; color: #8fa3b7; font-size: 13px; }
 .overlap-result-heading { display: flex; justify-content: space-between; gap: 14px; align-items: center; margin-bottom: 18px; }

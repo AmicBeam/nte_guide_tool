@@ -47,7 +47,15 @@ function check(plan, characters) {
     assert(near(plan.foregroundSeconds[0]+plan.foregroundSeconds[1],plan.period));
     const projected=engine.materialize(plan,characters);
     assert.deepEqual(projected.rows.map(r=>r.actions),plan.actions);
+    plan.segments.forEach((segment,index)=>{
+        const time=ms(segment.start),offset=plan.offsets[segment.role];
+        assert(projected.rows[segment.role].timeline.some(action=>[-ms(plan.period),0,ms(plan.period)].some(shift=>{
+            const start=ms(offset+action.start_seconds)+shift,end=ms(offset+action.end_seconds)+shift;
+            return start<=time && time<end;
+        })),`empty entry at ${segment.start}s for role ${segment.role}`);
+    });
 }
+assert.deepEqual(core.optimize(3,[[0,1,10],[1,0,0],[0,2,10],[2,0,0]],[-1,1,0],[-1,0,1]),[0,10,10]);
 const pair=chars(['安魂曲','残虹']);
 let count=0,variants=0;
 for(const groupCount of ['all','single','with-two','both-two']) {
@@ -100,19 +108,22 @@ const raw=engine.rawRows(pair[0]);
 const a4=raw.find(r=>r.actions.at(-1)==='a4远'),a5=raw.find(r=>r.actions.at(-1)==='a5远');
 assert.equal(engine.transition(pair[0],a4,a5),500);
 assert.equal(engine.transition(pair[0],a5,a4),0);
-// Check the cycle-mean minimum against an independent feasibility/binary oracle.
+// Entry windows contain signed period edges, so feasibility is not monotone in
+// T. Scan from an independent lower bound and enumerate every entry disjunction.
 let checkedMinimum=0;
-for(const plan of engine.match(pair,{groupCount:'both-two'}).plans.slice(0,60)) {
+for(const plan of engine.match(pair,{groupCount:'both-two'}).plans.slice(0,20)) {
     const own=plan.recipe.sequences.map((ids,role)=>{
         const rows=ids.map(id=>engine.rowById(pair[role],id));
         return {rows,groups:rows.map(r=>JSON.stringify(r.actions)),gaps:rows.map((r,i)=>engine.transition(pair[role],r,rows[(i+1)%rows.length]))};
     });
     const model=engine.model(own,plan.recipe.order), period=ms(plan.period);
-    const edges=t=>[...model.constant,...model.periodic.map(([u,v,w])=>[u,v,w+t])];
-    assert(core.solve(model.size,edges(period)));
-    assert.equal(core.solve(model.size,edges(period-1)),null);
-    let low=0,high=period+10000;
-    while(low<high){const mid=Math.floor((low+high)/2);if(core.solve(model.size,edges(mid)))high=mid;else low=mid+1;}
+    const chosen=engine.specialize(model,plan.recipe.entryChoices);
+    assert(core.solve(chosen.size,engine.edgesAt(chosen,period)));
+    assert.equal(core.solve(chosen.size,engine.edgesAt(chosen,period-1)),null);
+    let low=0,high=period;
+    const baseEdges=t=>[...model.constant,...model.periodic.map(([u,v,w])=>[u,v,w+t])];
+    while(low<high){const mid=Math.floor((low+high)/2);if(core.solve(model.size,baseEdges(mid)))high=mid;else low=mid+1;}
+    while(low<period && !engine.entryModelsAt(model,low).length)low++;
     assert.equal(period,low);checkedMinimum++;
 }
 // The known one-group recovery allocation remains available under the single filter.
@@ -121,4 +132,13 @@ assert(original.plans.length>0);
 assert.equal(original.plans[0].period,2.8);
 const allocations=engine.variants(original.plans[0],pair);
 assert(near(Math.max(...allocations.map(p=>p.foregroundSeconds[1])),1.6));
+allocations.forEach(p=>check(p,pair));
+// The screenshot's idle start (0 -> 0.1s before the first action) is forbidden.
+assert(allocations.every(p=>near(p.offsets[0],0)));
+assert(allocations.some(p=>{
+    const segment=p.segments.find(s=>s.role===1),first=p.jobs.find(j=>j.role===1).offset;
+    return first-segment.start>=.6-1e-7 && near(p.foregroundSeconds[1],1.6);
+}),'returning during a5 recovery must remain possible');
+const idle={...allocations[0],jobs:allocations[0].jobs.map(j=>j.role===0?{...j,offset:j.offset+.1}:j),offsets:[.1,allocations[0].offsets[1]]};
+assert.throws(()=>check(idle,pair),/empty entry/);
 console.log(`PASS: ${count} multi-group plans, ${variants} allocations, ${checkedMinimum} exact period oracle checks`);

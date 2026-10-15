@@ -26,7 +26,7 @@
     }
     // Dual of max c*x under difference constraints: min-cost flow. Flow on a
     // constraint makes it tight; residual potentials recover an optimal schedule.
-    function optimize(size, edges, objective) {
+    function optimize(size, edges, objective, secondary = null) {
         const source = size, sink = size + 1, graph = Array.from({length: size + 2}, () => []);
         function add(u, v, cost, cap) {
             const forward = {v, cost, cap, reverse: graph[v].length};
@@ -59,7 +59,10 @@
             }
             remaining--;
         }
-        return solve(size, graph.flatMap((list, u) => u < size ? list.filter(e => e.v < size && e.cap > 0).map(e => [u, e.v, e.cost]) : []));
+        const optimalEdges = graph.flatMap((list, u) => u < size ? list.filter(e => e.v < size && e.cap > 0).map(e => [u, e.v, e.cost]) : []);
+        // Positive dual flow makes these constraints tight for every primary
+        // optimum, so a secondary preference cannot sacrifice foreground time.
+        return secondary ? optimize(size, optimalEdges, secondary) : solve(size, optimalEdges);
     }
     // User 2026-10-15: restarting a basic attack outside the recorded graph
     // requires 0.5s after the previous own action finishes, even across switches.

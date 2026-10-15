@@ -4,6 +4,7 @@
     const core = scope.OverlapPairEngine || (typeof require === 'function' ? require('./pair_engine.js') : null);
     const ms = s => Math.round(s * 1000), sec = t => t / 1000;
     const key = row => JSON.stringify(row.actions);
+    const activeWindows = new WeakMap();
     const tailDurations = new WeakMap();
     let groupMetadata = new Map();
     const metadata = row => {const id = key(row); if (!groupMetadata.has(id)) groupMetadata.set(id, {key: id, actions: row.actions}); return groupMetadata.get(id);};
@@ -100,6 +101,22 @@
         walk([0, 0], []);
         return result;
     }
+    // Inclusive integer-ms windows: an ended action cannot justify a new entry.
+    function windows(row, limit = Infinity) {
+        if (!activeWindows.has(row)) activeWindows.set(row, new Map());
+        const cache = activeWindows.get(row), id = String(limit);
+        if (cache.has(id)) return cache.get(id);
+        const spans = row.timeline.map(step => [ms(step.start_seconds), Math.min(limit, ms(step.end_seconds) - 1)])
+            .filter(([start, end]) => start <= end);
+        spans.sort((a,b)=>a[0]-b[0]);
+        const merged = [];
+        for (const [start,end] of spans) {
+            const previous = merged.at(-1);
+            if (previous && start <= previous[1]+1) previous[1] = Math.max(previous[1],end);
+            else merged.push([start,end]);
+        }
+        cache.set(id,merged); return merged;
+    }
     function model(sequences, order) {
         const jobs = [], queues = [[], []];
         sequences.forEach((sequence, role) => sequence.rows.forEach((row, occurrence) => {
@@ -116,6 +133,9 @@
         const size = jobs.length + blocks.length;
         const constant = [], periodic = [], links = [];
         jobs.forEach((_, j) => constant.push([j + 1, 0, 0]));
+        // A same-actor seam has no handover. Anchor its first action at zero
+        // rather than displaying an arbitrary idle prefix at the cycle origin.
+        if (sameEnd) constant.push([0, queues[0][0] + 1, 0]);
         blocks.forEach((block, i) => block.items.forEach(item => {
             const [start, end] = jobs[item.job].row.foreground_intervals[item.segment].map(ms);
             constant.push([item.job + 1, cuts[i], start]);
@@ -141,18 +161,33 @@
             links.push({entry, wrap, required, normal, gap: sequence.gaps[occurrence], role,
                 from: row.actions.at(-1), to: sequence.rows[next].actions[0]});
         }));
-        return {size, constant, periodic, jobs, queues, cuts, blocks, sameEnd, links, sequences, order};
+        const entryOptions = [];
+        blocks.forEach((block, i) => {
+            if (i === 0 && sameEnd) return; // continuation, not a handover
+            const first = block.items[0], job = jobs[first.job], node = first.job + 1, cut = cuts[i];
+            const limit = ms(job.row.foreground_intervals[first.segment][0]);
+            const options = windows(job.row, limit).map(([start,end]) => [[cut,node,-start,0],[node,cut,end,0]]);
+            if (first.segment === 0) {
+                const own = queues[first.role], previous = own[(first.occurrence + own.length - 1) % own.length];
+                const shift = first.occurrence === 0 ? -1 : 0;
+                for (const [start,end] of windows(jobs[previous].row)) options.push([
+                    [cut,previous+1,-start,-shift],[previous+1,cut,end,shift],
+                ]);
+            }
+            entryOptions.push(options);
+        });
+        return {size, constant, periodic, jobs, queues, cuts, blocks, sameEnd, links, sequences, order, entryOptions, extra: []};
     }
     function edgesAt(model, period, ignore = null) {
         return [...model.constant, ...model.periodic.map(e => [e[0], e[1], e[2] + period])].map(e => {
             if (ignore && e[0] === ignore.entry[0] && e[1] === ignore.entry[1]
                 && e[2] === -ignore.required + (ignore.wrap ? period : 0)) return [e[0], e[1], -ignore.normal + (ignore.wrap ? period : 0)];
             return e;
-        });
+        }).concat((model.extra || []).map(([u,v,w,coefficient])=>[u,v,w+coefficient*period]));
     }
     // Exact minimum period for constraints with constant edges and edges (w+T).
     // Collapse constant paths, then use Karp's minimum cycle mean on wrap edges.
-    function minimum(model) {
+    function baseMinimum(model) {
         if (!core.solve(model.size, model.constant)) return null;
         const p = model.periodic, n = p.length;
         const paths = new Map();
@@ -182,12 +217,77 @@
         const values = core.solve(model.size, edgesAt(model, period));
         return values ? {period, values} : null;
     }
+    function specialize(model, choices) {
+        return {...model, entryChoices: choices, extra: choices.flatMap((choice,i)=>model.entryOptions[i][choice])};
+    }
+    // Signed period edges add upper as well as lower bounds (previous-cycle tails).
+    // Lift the lower bound using a witnessed negative cycle; an upper-bound cycle
+    // already violated at that lower bound proves this branch infeasible.
+    function boundSolve(model, lower, upper = Infinity) {
+        const edges = [...model.constant.map(e=>[...e,0]), ...model.periodic.map(e=>[...e,1]), ...(model.extra || [])];
+        let period = lower;
+        while (period <= upper) {
+            const values = Array(model.size).fill(0), previous = [], size = model.size;
+            let changed = -1;
+            for (let pass=0;pass<size;pass++) {
+                changed = -1;
+                edges.forEach(([u,v,w,c],index)=>{
+                    if (values[v] > values[u]+w+c*period) {values[v]=values[u]+w+c*period;previous[v]=index;changed=v;}
+                });
+                if (changed === -1) return {period, values: values.map(v=>v-values[0])};
+            }
+            let cursor=changed;
+            for(let i=0;i<size;i++) cursor=edges[previous[cursor]][0];
+            const start=cursor; let constant=0,coefficient=0;
+            do {const edge=edges[previous[cursor]];constant+=edge[2];coefficient+=edge[3];cursor=edge[0];} while(cursor!==start);
+            if(coefficient<=0) return null;
+            period=Math.max(period+1,Math.ceil(-constant/coefficient-1e-9));
+        }
+        return null;
+    }
+    function minimum(model) {
+        const baseline=baseMinimum(model);
+        if(!baseline) return null;
+        let best=null;
+        function visit(choices, lower) {
+            if (best?.period === baseline.period) return;
+            const branch=specialize(model,choices);
+            const solution=choices.length ? boundSolve(branch,lower,best?.period ?? Infinity) : baseline;
+            if(!solution) return;
+            if(choices.length===model.entryOptions.length) {
+                if(!best || solution.period<best.period) best={...solution,entryChoices:choices};
+                return;
+            }
+            const options=model.entryOptions[choices.length];
+            const satisfied=i=>options[i].every(([u,v,w,c])=>solution.values[v]<=solution.values[u]+w+c*solution.period);
+            options.map((_,i)=>i).sort((a,b)=>Number(satisfied(b))-Number(satisfied(a)))
+                .forEach(i=>visit([...choices,i],solution.period));
+        }
+        visit([],baseline.period);
+        return best;
+    }
+    function entryModelsAt(model, period) {
+        const result=[];
+        function visit(choices) {
+            const branch=specialize(model,choices);
+            if(!core.solve(branch.size,edgesAt(branch,period))) return;
+            if(choices.length===model.entryOptions.length) {result.push(branch);return;}
+            model.entryOptions[choices.length].forEach((_,i)=>visit([...choices,i]));
+        }
+        visit([]); return result;
+    }
     function realize(model, period, values, characters, warnings = false) {
         const jobs = model.jobs.map((j, i) => ({role: j.role, rowId: j.row.id, occurrence: j.occurrence, offset: sec(values[i + 1])}));
         const segments = model.blocks.map((block, i) => ({role: block.role, index: i,
             start: sec(values[model.cuts[i]]), end: sec(i + 1 < model.cuts.length ? values[model.cuts[i + 1]] : period),
             earliestEnd: sec(Math.max(...block.items.map(item => values[item.job + 1] + ms(model.jobs[item.job].row.foreground_intervals[item.segment][1]))))}));
         const offsets = [0, 1].map(role => jobs.find(j => j.role === role).offset);
+        const hasEntryAction = segment => jobs.some((job,index) => job.role === segment.role
+            && model.jobs[index].row.timeline.some(step => [-period,0,period].some(shift => {
+                const time=ms(segment.start), start=ms(job.offset+step.start_seconds)+shift, end=ms(job.offset+step.end_seconds)+shift;
+                return start<=time && time<end;
+            })));
+        if (segments.some(segment=>!hasEntryAction(segment))) return null;
         let overlap = 0;
         model.jobs.forEach((job, index) => job.row.timeline.forEach(step => {
             const offset = sec(values[index + 1]);
@@ -254,13 +354,14 @@
                     const m = model([a, b], order), solution = minimum(m);
                     if (!solution) continue;
                     if (previous && solution.period > ms(previous.period)) continue;
-                    const plan = realize(m, solution.period, solution.values, characters);
+                    const branch = specialize(m, solution.entryChoices);
+                    const plan = realize(branch, solution.period, solution.values, characters);
                     if (!plan) continue;
                     feasible++;
                     const current = best.get(id);
                     if (!current || plan.period < current.period) {
                         plan.id = id;
-                        plan.recipe = {sequences: m.sequences.map(s => s.rows.map(r => r.id)), order: m.order};
+                        plan.recipe = {sequences: m.sequences.map(s => s.rows.map(r => r.id)), order: m.order, entryChoices: solution.entryChoices};
                         best.set(id, plan);
                     }
                 }
@@ -297,28 +398,33 @@
             return {rows, actions: rows.flatMap(r => r.actions), groups: rows.map(key), gaps: rows.map((r, i) => transition(characters[role], r, rows[(i + 1) % rows.length]))};
         });
         const m = model(sequences, plan.recipe.order), period = ms(plan.period);
-        const extremes = [0, 1].map(role => {
-            const objective = Array(m.size).fill(0);
-            m.blocks.forEach((b, i) => {if (b.role === role) {objective[m.cuts[i]]--; if (i + 1 < m.cuts.length) objective[m.cuts[i + 1]]++;}});
-            objective[0] -= objective.reduce((sum, x) => sum + x, 0);
-            return core.optimize(m.size, edgesAt(m, period), objective);
-        });
-        const values = [core.solve(m.size, edgesAt(m, period)), ...extremes];
-        const ends = extremes.map(v => realize(m, period, v, characters));
-        if (ends[0] && ends[1]) {
-            const steps = Math.ceil(Math.abs(ms(ends[0].foregroundSeconds[1]) - ms(ends[1].foregroundSeconds[1])) / 100);
-            for (let i = 1; i < steps; i++) values.push(extremes[0].map((v, j) => Math.round(v * (1 - i / steps) + extremes[1][j] * i / steps)));
-        }
         const unique = new Map();
-        for (const value of values) {
-            const variant = realize(m, period, value, characters, true);
-            if (!variant) continue;
-            const signature = JSON.stringify([variant.jobs.map(j => j.offset), variant.segments.map(s => [s.start, s.end])]);
-            delete variant.rows;
-            if (!unique.has(signature)) unique.set(signature, variant);
+        for (const branch of entryModelsAt(m,period)) {
+            const extremes = [0, 1].map(role => {
+                const objective = Array(branch.size).fill(0);
+                branch.blocks.forEach((b, i) => {if (b.role === role) {objective[branch.cuts[i]]--; if (i + 1 < branch.cuts.length) objective[branch.cuts[i + 1]]++;}});
+                objective[0] -= objective.reduce((sum, x) => sum + x, 0);
+                const secondary = Array(branch.size).fill(0);
+                branch.jobs.forEach((job,i)=>{if(job.role===role)secondary[i+1]++;});
+                secondary[0] -= secondary.reduce((sum,x)=>sum+x,0);
+                return core.optimize(branch.size, edgesAt(branch, period), objective, secondary);
+            });
+            const values = [core.solve(branch.size, edgesAt(branch, period)), ...extremes];
+            const ends = extremes.map(v => realize(branch, period, v, characters));
+            if (ends[0] && ends[1]) {
+                const steps = Math.ceil(Math.abs(ms(ends[0].foregroundSeconds[1]) - ms(ends[1].foregroundSeconds[1])) / 100);
+                for (let i = 1; i < steps; i++) values.push(extremes[0].map((v, j) => Math.round(v * (1 - i / steps) + extremes[1][j] * i / steps)));
+            }
+            for (const value of values) {
+                const variant = realize(branch, period, value, characters, true);
+                if (!variant) continue;
+                const signature = JSON.stringify([variant.jobs.map(j => j.offset), variant.segments.map(s => [s.start, s.end])]);
+                delete variant.rows;
+                if (!unique.has(signature)) unique.set(signature, variant);
+            }
         }
         return [...unique.values()].sort((a, b) => a.foregroundSeconds[1] - b.foregroundSeconds[1]);
     }
-    scope.OverlapMultiEngine = {match, variants, materialize, groupOptions, rawRows, transition, rowById, prune, sequences, model, minimum, realize};
+    scope.OverlapMultiEngine = {match, variants, materialize, groupOptions, rawRows, transition, rowById, prune, sequences, model, minimum, baseMinimum, edgesAt, specialize, entryModelsAt, realize};
     if (typeof module !== 'undefined') module.exports = scope.OverlapMultiEngine;
 }(typeof self !== 'undefined' ? self : globalThis));

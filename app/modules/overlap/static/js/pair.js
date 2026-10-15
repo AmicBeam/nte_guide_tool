@@ -110,7 +110,7 @@
             console.error('合轴匹配错误', event.message);
             fail('匹配未能完成，请重新匹配或刷新页面。');
         };
-        worker.postMessage({characters: chars, options: {withoutDodge: $('no-dodge').checked, maxGroups: $('group-count').value === 'single' ? 1 : 2, groupCount: $('group-count').value, containsGroups: [$('first-group').value, $('second-group').value]}});
+        worker.postMessage({characters: chars, options: {withoutDodge: $('no-dodge').checked, maxGroups: 2, groupCount: $('group-count').value, containsGroups: [$('first-group').value, $('second-group').value]}});
     }
     function fail(message) {
         if (worker) worker.terminate(); worker = null;

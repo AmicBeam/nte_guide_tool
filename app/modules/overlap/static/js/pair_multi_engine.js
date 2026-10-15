@@ -1,4 +1,4 @@
-/* Two distinct action groups per actor, once each. Pure browser-side scheduling. */
+/* Up to two action-group occurrences per actor, with repetition allowed. Pure browser-side scheduling. */
 (function (scope) {
     'use strict';
     const core = scope.OverlapPairEngine || (typeof require === 'function' ? require('./pair_engine.js') : null);
@@ -78,8 +78,8 @@
                 lower: sequence.reduce((sum, r, i) => sum + Math.max(ms(r.release_end_seconds), ms(r.timeline.at(-1).end_seconds) + gaps[i] - firstInput(sequence[(i + 1) % sequence.length])), 0)});
         }
         rows.forEach(r => add([r]));
-        if (options.maxGroups !== 1) for (let i = 0; i < rows.length; i++) for (let j = i + 1; j < rows.length; j++) {
-            if (key(rows[i]) !== key(rows[j])) add([rows[i], rows[j]]);
+        if (options.maxGroups !== 1) for (let i = 0; i < rows.length; i++) for (let j = i; j < rows.length; j++) {
+            add([rows[i], rows[j]]);
         }
         return result;
     }
@@ -343,9 +343,12 @@
         let checked = 0, feasible = 0;
         for (const a of choices[0]) {
             for (const initialB of choices[1]) {
-                if ((options.groupCount === 'single' && (a.rows.length !== 1 || initialB.rows.length !== 1))
-                    || (options.groupCount === 'with-two' && a.rows.length === 1 && initialB.rows.length === 1)
-                    || (options.groupCount === 'both-two' && (a.rows.length !== 2 || initialB.rows.length !== 2))) {checked++; continue;}
+                const kinds = [new Set(a.groups).size, new Set(initialB.groups).size];
+                // Both actors repeating their sole group adds no new group mix.
+                if ((a.rows.length === 2 && initialB.rows.length === 2 && kinds.every(n => n === 1))
+                    || (options.groupCount === 'single' && kinds.some(n => n !== 1))
+                    || (options.groupCount === 'with-two' && !kinds.includes(2))
+                    || (options.groupCount === 'both-two' && kinds.some(n => n !== 2))) {checked++; continue;}
                 const id = idFor([a, initialB]), previous = best.get(id);
                 if (previous && Math.max(a.lower, initialB.lower) > ms(previous.period)) {checked++; continue;}
                 const rotations = initialB.rows.length === 1 ? [initialB] : [initialB,

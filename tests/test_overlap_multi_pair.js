@@ -21,7 +21,7 @@ function check(plan, characters) {
         const jobs=plan.jobs.filter(j=>j.role===role).sort((a,b)=>a.occurrence-b.occurrence);
         assert(jobs.length>=1 && jobs.length<=2);
         const rows=jobs.map(j=>engine.rowById(characters[role],j.rowId));
-        assert.equal(new Set(rows.map(r=>JSON.stringify(r.actions))).size,jobs.length);
+        assert(new Set(rows.map(r=>JSON.stringify(r.actions))).size<=2);
         assert.equal(plan.groups[role].length,jobs.length);
         jobs.forEach((job,i)=>{
             const row=rows[i], next=jobs[(i+1)%jobs.length], nextRow=rows[(i+1)%jobs.length];
@@ -59,11 +59,12 @@ assert.deepEqual(core.optimize(3,[[0,1,10],[1,0,0],[0,2,10],[2,0,0]],[-1,1,0],[-
 const pair=chars(['安魂曲','残虹']);
 let count=0,variants=0;
 for(const groupCount of ['all','single','with-two','both-two']) {
-    const result=engine.match(pair,{groupCount,maxGroups:groupCount==='single'?1:2});
+    const result=engine.match(pair,{groupCount,maxGroups:2});
     assert(result.plans.length>0);
     for(const plan of result.plans) {
         check(plan,pair); count++;
-        const sizes=plan.groups.map(g=>g.length);
+        const sizes=plan.groups.map(g=>new Set(g.map(item=>item.key)).size);
+        assert(!(plan.groups.every(g=>g.length===2) && sizes.every(n=>n===1)));
         if(groupCount==='single')assert.deepEqual(sizes,[1,1]);
         if(groupCount==='with-two')assert(sizes.includes(2));
         if(groupCount==='both-two')assert.deepEqual(sizes,[2,2]);
@@ -84,6 +85,17 @@ const noDodge=engine.match(pair,{withoutDodge:true,groupCount:'both-two'});
 assert(noDodge.plans.every(p=>p.actions.flat().every(a=>!a.endsWith('闪'))));
 assert(!engine.groupOptions(pair[0]).some(g=>g.actions.includes('e')));
 assert(engine.groupOptions(pair[1]).every(g=>g.actions.every(a=>!a.startsWith('幻'))));
+// Repeating Akane's dodge group is one kind, even with two occurrences.
+const akanePair=chars(['明音凛','黑羽']);
+const akaneGroup=JSON.stringify(['a1','a2','a3闪','a4']);
+const magicGroup=JSON.stringify(['魔e','魔z2','魔a3','魔a4','魔a5']);
+const repeated=engine.match(akanePair,{containsGroups:[akaneGroup,magicGroup],groupCount:'single'});
+assert(repeated.plans.length>0);
+assert(repeated.plans.every(p=>p.groups.every(g=>new Set(g.map(item=>item.key)).size===1)));
+assert(repeated.plans.every(p=>!p.groups.every(g=>g.length===2)),'both actors repeating must be removed');
+const twiceDodge=repeated.plans.filter(p=>p.actions[0].filter(a=>a==='a3闪').length===2);
+assert(twiceDodge.length>0,'two a3-dodge uses must survive the one-kind filter');
+twiceDodge.forEach(p=>{check(p,akanePair);engine.variants(p,akanePair).forEach(v=>check(v,akanePair));});
 // Magic-E may start a group only if the previous OWN group ends in magic-a5.
 const heiyu=chars(['黑羽','明音凛']);
 const eGroup=JSON.stringify(['魔e','魔z2']);

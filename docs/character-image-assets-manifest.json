@@ -654,21 +654,17 @@
       "purpose": "costume",
       "fashion_id": "Fashion_1042_1",
       "fashion_name": "牧星者",
-      "source_path": "UI/UI/Appearance/Fashion/1024/YH_lihui_fashionshop_heiyu1.png",
-      "blob_sha": "e6734e9dc31a433445dff63cedfc062d10d65752",
       "output": "app/static/images/characters/costume/Fashion_1042_1.webp",
       "aliases": [],
       "size": [
         1024,
         1024
       ],
-      "source_sha256": "f1ab842f8587a940a3530367a121d4163a1de7f6b85e30e8759a2aa62d2faad3",
-      "output_sha256": "df6322fa5438a2e4f15b6a7f240396c4c3d5e8482bdf59d46b22e908a869de4d",
-      "bytes": 183894,
+      "output_sha256": "38431f28aa6cd4d264c1180255efed4b9b9f2ef03f0d275d322e14002b070cf1",
+      "bytes": 184038,
       "card_ids": [
         "P07"
       ],
-      "commit": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
       "conversion": {
         "format": "WebP",
         "quality": 90,
@@ -676,7 +672,7 @@
         "resize": false,
         "crop": false,
         "alpha": "preserved",
-        "encoder": "Pillow 12.3.0"
+        "encoder": "cwebp"
       }
     }
   ],

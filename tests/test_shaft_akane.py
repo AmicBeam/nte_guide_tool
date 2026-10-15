@@ -1,4 +1,4 @@
-"""NTEData resources + Oct 11 user notice and latest Tencent bracketed multipliers (Oct 12)."""
+"""Akane catalog, resources, interruption, buffs and resonance behavior."""
 import json
 import subprocess
 import unittest
@@ -40,7 +40,7 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(panels[1]['crit_rate'], panels[0]['crit_rate'])
         self.assertEqual(panels[1]['atk'], panels[0]['atk'])
 
-    def test_catalog_and_sources(self):
+    def test_catalog_and_resources(self):
         c = load_shaft_catalog()
         actions = {a['name']: a for a in c['actions_by_character'][CID]}
         self.assertEqual(DEFAULT_UNPUBLISHED_CHARACTERS[CID], '明音凛')
@@ -51,7 +51,7 @@ class AkaneTest(unittest.TestCase):
         self.assertAlmostEqual(actions['a2']['multipliers']['atk'], .438)
         self.assertEqual(actions['a3']['hit_count'], 7)
         self.assertAlmostEqual(actions['a3']['multipliers']['atk'], .849)
-        self.assertAlmostEqual(actions['a3']['energy_gain'], 5.442)
+        self.assertAlmostEqual(actions['a3']['energy_gain'], 6.356)
         self.assertEqual(actions['a3']['hit_profile']['cumulative'][3]['damage'], .309)
         self.assertEqual(actions['援护']['damage_type'], '援护')
         self.assertEqual(actions['闪反']['damage_type'], '闪反')
@@ -132,10 +132,9 @@ class AkaneTest(unittest.TestCase):
         fallback=normalize_axis_payload(self.payload([('enhanced_e',0)]))
         self.assertEqual(fallback['steps'][0]['action_id'],'action_akane_long_enhanced_e')
 
-    def test_unpacked_resource_totals_and_one_hit_hold_e(self):
-        # SkillDamageData_Akane.xlsx / SkillDamage rows 6, 8, 9, 10, 14.
-        cases={'a4':(3.439,5.847,.697), 'counter':(2.5,4.2,2.5),
-               'e':(3.6,6,.5), 'hold_e':(4.9,8.2,1), 'q1':(0,0,1.5)}
+    def test_resource_totals_and_one_hit_hold_e(self):
+        cases={'a4':(4.016,5.847,.697), 'counter':(2.5,4.2,2.5),
+               'e':(4.2,6,.7), 'hold_e':(5.7,8.2,1), 'q1':(0,0,1.5)}
         for name,values in cases.items():
             with self.subTest(action=name):
                 d=self.sim([(name,0)])['details'][0]
@@ -143,11 +142,12 @@ class AkaneTest(unittest.TestCase):
                     self.assertAlmostEqual(d[field],value)
         basics=self.sim([('a1',0),('a2',10),('a3',20),('a4',40)])['details']
         self.assertAlmostEqual(sum(d['harmony'] for d in basics),23.999)
+        self.assertAlmostEqual(sum(d['energy_gain'] for d in basics),16.7)
         p=self.payload([('hold_e',0)])
         p['steps'][0].update(interrupted=True,interrupt_duration_ticks=5,interrupt_hit_count=1)
         d=simulate_shaft_axis(p)['result']['details'][0]
         self.assertAlmostEqual(d['harmony'],4.1)
-        self.assertAlmostEqual(d['energy_gain'],2.45)
+        self.assertAlmostEqual(d['energy_gain'],2.85)
         self.assertAlmostEqual(d['stagger_amount'],.5)
         self.assertEqual(d['personal_resources_after']['弦能'],6)
 
@@ -158,7 +158,7 @@ class AkaneTest(unittest.TestCase):
         before = partial_result['details'][0]['personal_resources_after']['弦能']
         self.assertEqual(partial_result['details'][1]['personal_resources_after']['弦能'],before + 2)
         detail = partial_result['details'][1]
-        self.assertAlmostEqual(detail['energy_gain'], 2.046)
+        self.assertAlmostEqual(detail['energy_gain'], 2.388)
         self.assertAlmostEqual(detail['harmony'], 3.42)
         self.assertAlmostEqual(detail['stagger_amount'], .414)
         empty = self.payload([('e', 0), ('a3', 20)])
@@ -185,7 +185,7 @@ class AkaneTest(unittest.TestCase):
         self.assertFalse(any('character_akane_transmit' in b['rule_id'] for b in expired['applied_buffs']))
 
     def test_first_hit_gives_full_integer_string_energy_once(self):
-        for name, hits, gain in [('a1',2,1),('a2',2,1),('a3',7,2),('hold_e',2,6)]:
+        for name, hits, gain in [('a1',2,1),('a2',2,1),('a3',7,2),('hold_e',2,6),('plunge',1,1)]:
             for kept in (0,1,hits):
                 with self.subTest(action=name, kept=kept):
                     p=self.payload([(name,0)])

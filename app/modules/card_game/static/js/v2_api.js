@@ -51,7 +51,7 @@
     P07: { characterId: 'heiyu', fashion: 'Fashion_1042_1' },
     P08: { characterId: 'heiyu', fashion: 'Fashion_1042_nighty' },
   };
-  const CHARACTER_IMAGE_VERSION = 'ntedata-heiyu-weapons-20261009-v9';
+  const CHARACTER_IMAGE_VERSION = 'heiyu-costume-v10';
 
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.

@@ -24,6 +24,22 @@ class AkaneTest(unittest.TestCase):
     def sim(self, steps, **kwargs):
         return simulate_shaft_axis(self.payload(steps, **kwargs))['result']
 
+    def test_user_supplied_bond_bonus_adds_eight_percent_crit_damage(self):
+        # User 2026-10-15; this bonus is not Nanoka/NTEData-verified.
+        character = next(c for c in load_shaft_catalog()['characters'] if c['id'] == CID)
+        self.assertEqual(character['bond_bonus'], {'label': '8暴伤', 'modifiers': {'crit_dmg': .08}})
+        panels = []
+        for enabled in (False, True):
+            axis = self.payload([('a1', 0)])
+            axis['team'][0]['bond_full'] = enabled
+            normalized = normalize_axis_payload(axis)
+            self.assertEqual(normalized['team'][0]['bond_full'], enabled)
+            self.assertEqual(normalized['character_builds'][CID]['bond_full'], enabled)
+            panels.append(simulate_shaft_axis(axis)['result']['details'][0]['panel'])
+        self.assertAlmostEqual(panels[1]['crit_dmg'] - panels[0]['crit_dmg'], .08)
+        self.assertEqual(panels[1]['crit_rate'], panels[0]['crit_rate'])
+        self.assertEqual(panels[1]['atk'], panels[0]['atk'])
+
     def test_catalog_and_sources(self):
         c = load_shaft_catalog()
         actions = {a['name']: a for a in c['actions_by_character'][CID]}

@@ -62,6 +62,10 @@
         }).join('');
     }
 
+    const windowDuration = (window) => window.min_duration_seconds !== window.max_duration_seconds
+        ? `${number(window.min_duration_seconds)}～${number(window.max_duration_seconds)}s`
+        : seconds(window.duration_seconds);
+
     function rowHtml(row) {
         const windows = row.overlap_windows;
         const bubbles = row.timeline.map((step, index) => {
@@ -84,10 +88,11 @@
             ...windows.map((window) => ({...window, placement: 'background'})),
         ].sort((first, second) => first.start_seconds - second.start_seconds);
         const windowHtml = `<div class="overlap-duration-list">${phases.map((phase) => {
-            const title = `${phase.placement === 'background' ? '回场后台窗口' : '前台耗时'}：${seconds(phase.duration_seconds)}（${seconds(phase.start_seconds)}–${seconds(phase.end_seconds)}）`;
-            return `<span class="overlap-action-chip overlap-time-bubble ${phase.placement === 'background' ? 'is-background' : ''}" title="${escape(title)}" aria-label="${escape(title)}">${number(phase.duration_seconds)}秒</span>`;
+            const duration = phase.placement === 'background' ? windowDuration(phase) : seconds(phase.duration_seconds);
+            const title = `${phase.placement === 'background' ? '回场后台窗口' : '前台耗时'}：${duration}（零滞留：${seconds(phase.start_seconds)}–${seconds(phase.end_seconds)}）`;
+            return `<span class="overlap-action-chip overlap-time-bubble ${phase.placement === 'background' ? 'is-background' : ''}" title="${escape(title)}" aria-label="${escape(title)}">${duration}</span>`;
         }).join('')}</div>`;
-        const windowDetail = `<div class="overlap-window-details">${row.foreground_segments.map((segment) => `<p><strong>前台${segment.number}：${number(segment.duration_seconds)}秒</strong>（${seconds(segment.start_seconds)}–${seconds(segment.end_seconds)}）</p>`).join('')}${windows.map((window) => `<p><strong>回场后台窗口${window.number}：${number(window.duration_seconds)}秒</strong><br>${seconds(window.start_seconds)}切走 → ${seconds(window.end_seconds)}回场续连段。切人冷却为1.2秒，可在${seconds(window.return_start_seconds)}–${seconds(window.return_end_seconds)}切回；本表按${seconds(window.end_seconds)}回场。</p>`).join('')}</div>`;
+        const windowDetail = `<div class="overlap-window-details">${row.foreground_segments.map((segment) => `<p><strong>前台${segment.number}：${number(segment.duration_seconds)}秒</strong>（${seconds(segment.start_seconds)}–${seconds(segment.end_seconds)}）</p>`).join('')}${windows.map((window) => `<p><strong>回场后台窗口${window.number}：${windowDuration(window)}</strong><br>${seconds(window.start_seconds)}切走 → ${seconds(window.end_seconds)}回场续连段。切人冷却为1.2秒，可在${seconds(window.return_start_seconds)}–${seconds(window.return_end_seconds)}切回；本表按滞留0s、${seconds(window.end_seconds)}回场。</p>`).join('')}</div>`;
         const returnDetail = windows.length ? `<p>${row.requires_three_characters
             ? `回场人数：需三人合轴（第${row.three_character_segments.join('、')}段前台耗时不足1.2秒，且以切人收尾）。`
             : '回场人数：两人可合轴。'}</p>` : '';
@@ -124,7 +129,7 @@
             return (sort === 'foreground_seconds' ? first - second : second - first) || a.id.localeCompare(b.id);
         });
         $('title').textContent = `${selected.name} · ${rows.length} 条操作`;
-        $('status').textContent = `${selected.element}属性 · ${selected.coverage.actions} 个动作 · ${selected.coverage.rows} 条已生成操作 · ${selected.dodge_preserves_combo ? '支持闪避保留连段' : '不支持闪避保留连段'}`;
+        $('status').textContent = `${selected.element}属性 · ${selected.coverage.actions} 个动作 · ${selected.rows.length} 条去重操作 · ${selected.dodge_preserves_combo ? '支持闪避保留连段' : '不支持闪避保留连段'}`;
         $('rows').innerHTML = rows.slice(0, shown).map(rowHtml).join('');
         $('empty').hidden = rows.length > 0;
         $('more').hidden = rows.length <= shown;
@@ -132,7 +137,7 @@
     }
 
     function selectCharacter(character) {
-        selected = character;
+        selected = {...character, rows: OverlapReferenceRows.summarize(character.rows)};
         shown = 60;
         fillActionOptions('first', [...new Set(character.rows.map((row) => row.timeline[0].action))]);
         updateLastActions();

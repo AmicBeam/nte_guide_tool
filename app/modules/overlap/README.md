@@ -113,6 +113,7 @@ node --check app/modules/overlap/static/js/overlap.js
 ```bash
 node tests/test_overlap_pair.js
 node tests/test_overlap_multi_pair.js
+node tests/test_overlap_top.js
 node --check app/modules/overlap/static/js/pair.js
 node --check app/modules/overlap/static/js/pair_worker.js
 ```
@@ -145,3 +146,16 @@ node --check app/modules/overlap/static/js/pair_worker.js
 
 
 统计口径修正：滞留适用位置是硬性规则，生成静态表时即排除，不进入剪枝收益。匹配中的动作组种类与双方重复限制计入`filtered`（规则过滤）；只有同一完整组身份下、周期下界不可能改善现有结果而整体跳过的候选计入`pruned`（界限剪枝）。`checked = filtered + pruned + evaluated`。结构内部跳过和求解器内部界限不折算成候选组数；`solved`另记实际提交精确求解的结构次数，最终结果去冗余也不计入界限剪枝。
+
+
+## 按需精确前20名（2026-10-15）
+
+双角色分页默认只搜索当前角色、闪替代、包含动作组、组种类及排序下的前20名。改变筛选或排序会终止旧Worker并重新计算；缩放和滑块只更新展示。“显示更多”在同一个Worker中把K增加20，复用已求解组桶与尚未展开的候选，不从头匹配。结果可能少于K；仍有未展开候选或已知更多非冗余结果时显示继续按钮。原收益表、动作数值与滞留适用硬性条件均不变。
+
+`createTopSearch`先将时序变体按双方各自完整动作组集合分桶，保留组边界、各档滞留、合法回场及原枚举次序。桶的最优可能排名由自身释放/等待、双方强制占轴及切人冷却的保守周期下界计算；倍率由组内容固定求和。按当前排序优先展开最好可能排名更高的桶，桶内仍精确求最短周期并按原次序选择同周期代表。所有排序最终以组ID升序打破同分，完整枚举验收与页面共用`comparePlans`。
+
+已知非冗余结果足够K个后，若剩余桶最好可能排名均落后于第K名，仍需检查它们是否可能支配当前前K中的任何结果：动作序列可包含当前动作、周期下界不更长、且可能严格改进的桶必须继续求解，即使该桶自身按当前排序可能排不进前K。只有排名与支配两项检查都安全时才停止，避免先截前K再去冗余造成遗漏。已求解结果增量维护与完整`prune`等价的非冗余前沿。
+
+`topPruned`表示对本次K可以证明无需展开的剩余桶所覆盖的时序候选数；计入界限剪枝，扩大K时可重新展开，因此这个数可能下降。规则过滤仍独立统计，`checked = filtered + pruned + evaluated`。`completed/buckets`记录已精确求解的组桶数，`solved`记录提交精确周期求解的结构次数；分桶本身不记剪枝。完整`match`继续保留为测试与验收基线，网页Worker使用按需搜索。
+
+验收以同一份静态表的完整枚举为真值，覆盖全部六种角色配对、五种排序、无闪/组种类/指定包含组/无解条件；逐项比较Top1/20/40的组ID、周期、动作、倍率及所选时序配方。重复请求同一K不增加求解；扩大K复用缓存；返回配方和滑块还需通过合法性核验。使用`node tests/test_overlap_top.js`，并运行既有两套匹配回归、生成一致性及路由回归，网页验收筛选/排序重算与继续加载。

@@ -27,7 +27,7 @@
     <div class="pair-legend"><span class="pair-color-a">● 角色一</span><span class="pair-color-b">● 角色二</span><span>色带：前台占轴</span><span>气泡：完整动作释放</span><span>◆：输入节点</span><span>竖线：切人</span><span>淡色：下一轮</span></div>
     <section id="pair-results" class="pair-results" aria-label="可循环合轴方案" aria-busy="false"></section>
     <button id="pair-more" class="secondary-btn" type="button" hidden>显示更多方案</button>
-    <p class="pair-footnote">按已有动作范围匹配，每轮每位角色最多执行两组动作，可以相同或不同；去掉双方都重复同一种动作组的方案，包含组内已有的回场。时间轴展示连续两轮，后台尾段可跨越循环线；按已记录条件过滤动作；黑羽采用本页口径，仅检查魔 E 的上一个黑羽动作，不额外限制形态与恶意。</p>
+    <p class="pair-footnote">按当前筛选和排序计算前20名，修改条件会重新计算，显示更多可继续搜索。每轮每位角色最多执行两组动作，可以相同或不同；去掉双方都重复同一种动作组的方案，包含组内已有的回场。时间轴展示连续两轮，后台尾段可跨越循环线；按已记录条件过滤动作；黑羽采用本页口径，仅检查魔 E 的上一个黑羽动作，不额外限制形态与恶意。</p>
 </main>
 <script src="{{ url_for('overlap_module.static', filename='js/pair_engine.js', v=asset_version) }}" defer></script>
 <script src="{{ url_for('overlap_module.static', filename='js/pair_multi_engine.js', v=asset_version) }}" defer></script>

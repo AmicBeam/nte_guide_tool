@@ -5,7 +5,7 @@
     const escape = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
     const n = v => Number(v.toFixed(3)).toLocaleString('zh-CN');
     const percent = v => `${n(v * 100)}%`;
-    let dataset, worker, plans = [], shown = 20, summary = '';
+    let dataset, worker, plans = [], shown = 20, summary = '', hasMore = false;
     const allocationChoices = new Map();
     const pendingVariants = new Set();
     function bubble(step, offset, repeat, period, px, segments, role) {
@@ -55,22 +55,22 @@
             <details class="pair-detail"><summary>动作与循环衔接</summary>${chars.map((c, i) => `<p class="pair-color-${i ? 'b' : 'a'}"><strong>${escape(c.name)}</strong>　${plan.groups[i].map((g, j) => `<span class="pair-group-line">组 ${j + 1}：${escape(g.actions.join(' → '))}</span>`).join('')}</p>`).join('')}<p>${plan.sameEnd ? '末段完整释放后，由同一角色衔接下一轮；跨轮两次切人之间也满足 1.2 秒。' : '周期末切回起手角色，至下一次切人至少 1.2 秒；上轮最后一次切人至周期末同样至少 1.2 秒。'} 每位角色本轮动作均在其下一轮起手前释放完毕。</p></details></div></article>`;
     }
     function render() {
-        const personalRate = (role) => (a, b) => (b.multipliers[role].atk || 0) / b.period - (a.multipliers[role].atk || 0) / a.period || b.multiplierRate - a.multiplierRate || a.period - b.period;
-        const sorters = {'first-rate': personalRate(0), 'second-rate': personalRate(1), rate: (a, b) => b.multiplierRate - a.multiplierRate || a.period - b.period, actions: (a, b) => b.actions.flat().length - a.actions.flat().length || a.period - b.period, time: (a, b) => a.period - b.period};
-        const sorted = [...plans].sort(sorters[$('sort').value]);
+        const sorted = [...plans].sort(window.OverlapMultiEngine.comparePlans($('sort').value));
         const visible = sorted.slice(0, shown);
         $('results').innerHTML = visible.map(card).join('');
         for (const group of visible) if (group.variants == null && worker && !pendingVariants.has(group.id)) {
             pendingVariants.add(group.id); worker.postMessage({type: 'variants', planId: group.id});
         }
-        $('more').hidden = shown >= plans.length;
+        $('more').hidden = !hasMore;
+        $('more').disabled = false;
+        $('more').textContent = `显示更多方案（继续计算前 ${shown + 20} 名）`;
         $('status').textContent = summary + (plans.length ? ` · 已显示 ${Math.min(shown, plans.length)} 个` : ' · 当前动作范围内没有符合条件的双角色循环（有条件动作已排除）。');
     }
     function calculate() {
         if (!dataset) return;
         if (worker) {worker.onmessage = null; worker.onerror = null; worker.terminate();}
         worker = null;
-        plans = []; shown = 20; allocationChoices.clear(); pendingVariants.clear();
+        plans = []; shown = 20; hasMore = false; allocationChoices.clear(); pendingVariants.clear();
         $('results').innerHTML = ''; $('more').hidden = true;
         $('results').setAttribute('aria-busy', 'false');
         const chars = [$('first').value, $('second').value].map(id => dataset.characters.find(c => c.id === id));
@@ -85,8 +85,12 @@
             if (worker !== activeWorker) return;
             if (data.progress) $('status').textContent = data.progress.phase === 'prune' ? '正在合并相同方案并去除冗余…' : `正在筛选 ${data.progress.checked} / ${data.progress.total} 组候选 · 规则过滤 ${data.progress.filtered} 组 · 界限剪枝 ${data.progress.pruned} 组 · 进入匹配 ${data.progress.evaluated} 组…`;
             if (data.result) {
-                plans = data.result.plans;
-                summary = `匹配完成 · 候选 ${data.result.checked} 组 · 规则过滤 ${data.result.filtered} 组 · 界限剪枝 ${data.result.pruned} 组 · 进入匹配 ${data.result.evaluated} 组 · 保留 ${plans.length} 个非冗余循环`;
+                const previous = new Map(plans.map(plan=>[plan.id,plan]));
+                plans = data.result.plans.map(plan=>({...plan,variants:previous.get(plan.id)?.variants ?? null,
+                    defaultVariant:previous.get(plan.id)?.defaultVariant ?? 0}));
+                hasMore = data.result.hasMore;
+                shown = data.result.limit;
+                summary = `前 ${shown} 名匹配完成 · 候选 ${data.result.checked} 组 · 规则过滤 ${data.result.filtered} 组 · 界限剪枝 ${data.result.pruned} 组（含 Top${shown} 剪枝 ${data.result.topPruned} 组）· 进入匹配 ${data.result.evaluated} 组`;
                 $('results').setAttribute('aria-busy', 'false');
                 render();
             }
@@ -111,7 +115,7 @@
             console.error('合轴匹配错误', event.message);
             fail('匹配未能完成，请重新匹配或刷新页面。');
         };
-        worker.postMessage({characters: chars, options: {withoutDodge: $('no-dodge').checked, maxGroups: 2, groupCount: $('group-count').value, containsGroups: [$('first-group').value, $('second-group').value]}});
+        worker.postMessage({characters: chars, limit: shown, options: {sort: $('sort').value, withoutDodge: $('no-dodge').checked, maxGroups: 2, groupCount: $('group-count').value, containsGroups: [$('first-group').value, $('second-group').value]}});
     }
     function fail(message) {
         if (worker) worker.terminate(); worker = null;
@@ -149,7 +153,8 @@
         $('first-group').value = filters[1]; $('second-group').value = filters[0];
         calculate();
     });
-    for (const field of ['sort', 'zoom']) $(field).addEventListener('change', render);
+    $('sort').addEventListener('change', calculate);
+    $('zoom').addEventListener('change', render);
     $('results').addEventListener('input', event => {
         const input = event.target;
         if (!input.matches('.pair-allocation-slider')) return;
@@ -169,7 +174,12 @@
         article.querySelector('output').textContent = replacement.querySelector('output').textContent;
         input.setAttribute('aria-valuetext', replacement.querySelector('input[type="range"]').getAttribute('aria-valuetext'));
     });
-    $('more').addEventListener('click', () => {shown += 20; render();});
+    $('more').addEventListener('click', () => {
+        if (!worker) return;
+        $('more').disabled = true;
+        $('more').textContent = '正在继续计算…';
+        worker.postMessage({type:'more',limit:shown+20});
+    });
     fetch(root.dataset.tablesUrl).then(response => {if (!response.ok) throw new Error('无法读取动作表'); return response.json();}).then(data => {
         dataset = data;
         const options = data.characters.map(c => `<option value="${escape(c.id)}">${escape(c.name)}</option>`).join('');

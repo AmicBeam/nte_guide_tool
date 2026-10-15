@@ -393,6 +393,135 @@
         }
         return {plans: retained, checked, feasible, evaluated, filtered, pruned, solved};
     }
+    function comparePlans(sort = 'rate') {
+        const personal = role => (a,b) => (b.multipliers[role].atk || 0)/b.period-(a.multipliers[role].atk || 0)/a.period
+            || b.multiplierRate-a.multiplierRate || a.period-b.period;
+        const order = {'first-rate': personal(0), 'second-rate': personal(1),
+            rate: (a,b)=>b.multiplierRate-a.multiplierRate || a.period-b.period,
+            time: (a,b)=>a.period-b.period,
+            actions: (a,b)=>b.actions.flat().length-a.actions.flat().length || a.period-b.period}[sort];
+        if (!order) throw new Error('未知排序方式');
+        return (a,b)=>order(a,b) || a.id.localeCompare(b.id);
+    }
+    function dominates(a, b) {
+        return a.period <= b.period && a.actions.every((actions,role)=>core.subsequence(b.actions[role],actions))
+            && (a.period < b.period || a.actions.some((actions,role)=>JSON.stringify(actions)!==JSON.stringify(b.actions[role])));
+    }
+    // Exact Top-K over group identities. Timing variants stay in original order
+    // inside a bucket, preserving the exhaustive matcher's winning recipe at ties.
+    function createTopSearch(characters, options = {}, progress = () => {}) {
+        if (characters.length !== 2 || characters[0].id === characters[1].id) throw new Error('请选择两个不同的角色');
+        const compare = comparePlans(options.sort || 'rate');
+        const choices = characters.map((c,role)=>sequences(c,options,options.containsGroups?.[role] || ''));
+        const codes = new Map(characters.flatMap(c=>groupOptions(c,options)).map((g,i)=>[g.key,i]));
+        groupMetadata = new Map();
+        const buckets = choices.map(list=>{
+            const byCode = new Map();
+            for (const sequence of list) {
+                sequence.foreground = sequence.rows.reduce((sum,row)=>sum+row.foreground_intervals.reduce((n,[a,b])=>n+ms(b)-ms(a),0),0);
+                const code = sequence.groups.map(g=>codes.get(g)).sort((a,b)=>a-b).join('+');
+                if (!byCode.has(code)) byCode.set(code,{code,variants:[],kinds:new Set(sequence.groups).size,
+                    count:sequence.rows.length,lower:Infinity,foreground:Infinity,orders:new Map(),
+                    multiplier:sequence.rows.reduce((sum,r)=>sum+(r.multipliers.atk || 0),0)});
+                const bucket = byCode.get(code);
+                bucket.variants.push(sequence);
+                bucket.lower = Math.min(bucket.lower,sequence.lower);
+                bucket.foreground = Math.min(bucket.foreground,sequence.foreground);
+                bucket.orders.set(JSON.stringify(sequence.actions),sequence.actions);
+            }
+            return [...byCode.values()];
+        });
+        const tasks = [], total = choices[0].length*choices[1].length;
+        let filtered=0, checked=0, evaluated=0, pruned=0, solved=0, feasible=0, completed=0;
+        for (const a of buckets[0]) for (const b of buckets[1]) {
+            const weight=a.variants.length*b.variants.length, kinds=[a.kinds,b.kinds];
+            if ((a.count===2 && b.count===2 && kinds.every(n=>n===1))
+                || (options.groupCount==='single' && kinds.some(n=>n!==1))
+                || (options.groupCount==='with-two' && !kinds.includes(2))
+                || (options.groupCount==='both-two' && kinds.some(n=>n!==2))) {filtered+=weight;continue;}
+            const lower=Math.max(a.lower,b.lower,a.foreground+b.foreground,2400), period=sec(lower);
+            const totalMultiplier=a.multiplier+b.multiplier;
+            const optimistic={id:`${a.code}|${b.code}`,period,actions:[a.variants[0].actions,b.variants[0].actions],
+                multipliers:[{atk:a.multiplier},{atk:b.multiplier}],totalMultiplier,multiplierRate:totalMultiplier/period};
+            tasks.push({a,b,weight,lower,optimistic,done:false});
+        }
+        checked=filtered;
+        tasks.sort((a,b)=>compare(a.optimistic,b.optimistic));
+        let remainingWeight=tasks.reduce((sum,t)=>sum+t.weight,0), frontier=[], first=0;
+        const roleOrders = (bucket,role) => {
+            if (role===0) return [...bucket.orders.values()];
+            if (!bucket.rotatedOrders) {
+                const orders=new Map(bucket.orders);
+                for (const sequence of bucket.variants) {
+                    const actions=[...sequence.rows].reverse().flatMap(r=>r.actions);
+                    orders.set(JSON.stringify(actions),actions);
+                }
+                bucket.rotatedOrders=[...orders.values()];
+            }
+            return bucket.rotatedOrders;
+        };
+        // A lower-ranked unseen dominator could remove a Top-K entry (especially
+        // at equal period under time sorting). Resolve those threats before stopping.
+        function threatens(task, top) {
+            return top.some(plan=>task.lower<=ms(plan.period)
+                && task.optimistic.actions.every((actions,role)=>actions.length>=plan.actions[role].length)
+                && (task.lower<ms(plan.period) || task.optimistic.actions.some((actions,role)=>actions.length>plan.actions[role].length))
+                && [task.a,task.b].every((bucket,role)=>roleOrders(bucket,role).some(actions=>core.subsequence(plan.actions[role],actions))));
+        }
+        function solveTask(task) {
+            let best=null;
+            for (const a of task.a.variants) for (const initialB of task.b.variants) {
+                const lower=Math.max(a.lower,initialB.lower,a.foreground+initialB.foreground,2400);
+                if (best && lower>=ms(best.period)) {checked++;pruned++;continue;}
+                evaluated++;
+                const rotations=initialB.rows.length===1 ? [initialB] : [initialB,
+                    {...initialB,rows:[...initialB.rows].reverse(),actions:[...initialB.rows].reverse().flatMap(r=>r.actions),
+                        gaps:[...initialB.gaps].reverse(),groups:[...initialB.groups].reverse()}];
+                for (const b of rotations) for (const order of orders([a,b])) {
+                    const m=model([a,b],order), switches=m.blocks.length-(m.sameEnd ? 1 : 0);
+                    if (best && Math.max(lower,switches*1200)>=ms(best.period)) continue;
+                    solved++;
+                    const solution=minimum(m,best ? ms(best.period)-1 : Infinity);
+                    if (!solution) continue;
+                    const plan=realize(specialize(m,solution.entryChoices),solution.period,solution.values,characters);
+                    if (!plan) continue;
+                    feasible++;
+                    if (!best || plan.period<best.period) {
+                        plan.id=task.optimistic.id;
+                        plan.recipe={sequences:m.sequences.map(s=>s.rows.map(r=>r.id)),order:m.order,entryChoices:solution.entryChoices};
+                        best=plan;
+                    }
+                }
+                checked++;
+            }
+            task.done=true; completed++; remainingWeight-=task.weight;
+            if (best && !frontier.some(plan=>dominates(plan,best))) {
+                frontier=frontier.filter(plan=>!dominates(best,plan));
+                best.variants=null; frontier.push(best);
+            }
+        }
+        return {extend(limit=20) {
+            if (!Number.isSafeInteger(limit) || limit<1) throw new Error('结果数量须为正整数');
+            let top;
+            while (true) {
+                top=[...frontier].sort(compare).slice(0,limit);
+                while (tasks[first]?.done) first++;
+                let task=tasks[first];
+                if (!task) break;
+                if (top.length>=limit && compare(task.optimistic,top.at(-1))>0) {
+                    task=tasks.find(candidate=>!candidate.done && threatens(candidate,top));
+                    if (!task) break;
+                }
+                solveTask(task);
+                if (completed%16===0) progress({checked,total,evaluated,filtered,pruned,solved,completed,buckets:tasks.length});
+            }
+            // Unexpanded buckets remain cached for a later, larger K request.
+            progress({checked:total,total,evaluated,filtered,pruned:pruned+remainingWeight,solved,phase:'prune'});
+            return {plans:top,checked:total,filtered,pruned:pruned+remainingWeight,evaluated,solved,feasible,
+                topPruned:remainingWeight,completed,buckets:tasks.length,limit,sort:options.sort || 'rate',
+                hasMore:frontier.length>limit || first<tasks.length};
+        }};
+    }
     function materialize(plan, characters) {
         if (!plan.jobs) return plan;
         const rows = [0, 1].map(role => {
@@ -439,6 +568,6 @@
         }
         return [...unique.values()].sort((a, b) => a.foregroundSeconds[1] - b.foregroundSeconds[1]);
     }
-    scope.OverlapMultiEngine = {match, variants, materialize, groupOptions, rawRows, transition, rowById, prune, sequences, model, minimum, baseMinimum, edgesAt, specialize, entryModelsAt, realize};
+    scope.OverlapMultiEngine = {match, createTopSearch, comparePlans, variants, materialize, groupOptions, rawRows, transition, rowById, prune, sequences, model, minimum, baseMinimum, edgesAt, specialize, entryModelsAt, realize};
     if (typeof module !== 'undefined') module.exports = scope.OverlapMultiEngine;
 }(typeof self !== 'undefined' ? self : globalThis));

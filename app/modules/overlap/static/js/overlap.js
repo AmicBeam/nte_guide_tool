@@ -15,15 +15,79 @@
     let generation = 0;
     const actionFilters = new Map();
 
-    function updateActionFilters() {
-        const names = [...new Set(selected.rows.flatMap((row) => row.timeline.map((step) => step.action)))];
-        for (const name of actionFilters.keys()) {
-            if (!names.includes(name)) actionFilters.delete(name);
+    const actionName = (step) => step.dodge_replaces || step.action;
+    const filterLabels = {include: '包含', exclude: '排除', foreground: '前台', background: '后台', dodge: '闪替代', detached: '脱手', preinput: '预输入', normal: '普通'};
+    let menuTrigger;
+    const actionMenu = document.createElement('div');
+    actionMenu.className = 'overlap-action-menu';
+    actionMenu.id = 'overlap-action-menu';
+    actionMenu.setAttribute('role', 'menu');
+    actionMenu.hidden = true;
+    document.body.append(actionMenu);
+
+    function matchesAction(step, name, mode) {
+        if (actionName(step) !== name) return false;
+        return mode === 'foreground' ? step.placement === 'foreground'
+            : mode === 'background' ? step.placement === 'background'
+            : mode === 'dodge' ? Boolean(step.dodge_replaces)
+            : mode === 'normal' ? !step.dodge_replaces
+            : mode === 'detached' ? Boolean(step.detached)
+            : mode === 'preinput' ? Boolean(step.preinput_before_switch) : true;
+    }
+
+    function closeActionMenu(restoreFocus = false) {
+        actionMenu.hidden = true;
+        if (menuTrigger) {
+            menuTrigger.setAttribute('aria-expanded', 'false');
+            if (restoreFocus) menuTrigger.focus();
         }
-        $('contains').innerHTML = names.map((name) => {
-            const mode = actionFilters.get(name) || '';
-            return `<button type="button" class="overlap-contains-option" data-action="${escape(name)}" data-mode="${mode}" aria-label="${escape(name)}：${mode === 'include' ? '包含' : mode === 'exclude' ? '排除' : '不限'}" aria-describedby="overlap-contains-hint"><span class="overlap-filter-mark" aria-hidden="true">${mode === 'include' ? '＋' : mode === 'exclude' ? '−' : '·'}</span><span>${escape(name)}</span></button>`;
-        }).join('');
+        menuTrigger = null;
+    }
+
+    function paintActionButton(button, mode) {
+        const name = button.dataset.action;
+        button.dataset.mode = mode;
+        button.setAttribute('aria-label', `${name}：${filterLabels[mode] || '不限'}`);
+        button.querySelector('.overlap-filter-mark').textContent = mode === 'exclude' ? '−' : mode ? '＋' : '·';
+        button.querySelector('.overlap-filter-type').textContent = mode && !['include', 'exclude'].includes(mode) ? ` · ${filterLabels[mode]}` : '';
+    }
+
+    function setActionFilter(button, mode) {
+        if (mode) actionFilters.set(button.dataset.action, mode);
+        else actionFilters.delete(button.dataset.action);
+        paintActionButton(button, mode);
+        shown = 60;
+        render();
+    }
+
+    function openActionMenu(button) {
+        closeActionMenu();
+        menuTrigger = button;
+        button.setAttribute('aria-expanded', 'true');
+        const name = button.dataset.action;
+        const steps = selected.rows.flatMap((row) => row.timeline).filter((step) => actionName(step) === name);
+        const modes = ['exclude', '', 'include', 'foreground', 'background', 'dodge', 'detached', 'preinput', 'normal'];
+        const options = modes.filter((mode) => !mode || ['include', 'exclude'].includes(mode)
+            || mode === 'normal' && steps.some((step) => step.dodge_replaces) && steps.some((step) => !step.dodge_replaces)
+            || mode !== 'normal' && steps.some((step) => matchesAction(step, name, mode)));
+        actionMenu.setAttribute('aria-label', `${name}执行方式`);
+        actionMenu.innerHTML = options.map((mode) => `<button type="button" role="menuitemradio" aria-checked="${(actionFilters.get(name) || '') === mode}" data-mode="${mode}">${mode === 'include' ? '包含（任意类型）' : filterLabels[mode] || '不限'}</button>`).join('');
+        actionMenu.hidden = false;
+        const rect = button.getBoundingClientRect();
+        actionMenu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - actionMenu.offsetWidth - 8))}px`;
+        actionMenu.style.top = `${Math.max(8, Math.min(rect.bottom + 5, window.innerHeight - actionMenu.offsetHeight - 8))}px`;
+        actionMenu.querySelector('[aria-checked="true"]').focus();
+    }
+
+    function updateActionFilters() {
+        closeActionMenu();
+        const names = [...new Set(selected.rows.flatMap((row) => row.timeline.map(actionName)))];
+        for (const [name, mode] of actionFilters) {
+            if (!names.includes(name) || !['include', 'exclude'].includes(mode)
+                && !selected.rows.some((row) => row.timeline.some((step) => matchesAction(step, name, mode)))) actionFilters.delete(name);
+        }
+        $('contains').innerHTML = names.map((name) => `<button type="button" class="overlap-contains-option" data-action="${escape(name)}" aria-haspopup="menu" aria-expanded="false" aria-controls="overlap-action-menu" aria-describedby="overlap-contains-hint"><span class="overlap-filter-mark" aria-hidden="true"></span><span>${escape(name)}</span><span class="overlap-filter-type"></span><span class="overlap-filter-arrow" data-open-menu aria-label="执行方式">▾</span></button>`).join('');
+        $('contains').querySelectorAll('button').forEach((button) => paintActionButton(button, actionFilters.get(button.dataset.action) || ''));
     }
 
     function fillActionOptions(field, names) {
@@ -120,7 +184,7 @@
             && (dodge === 'all' || row.has_dodge === (dodge === 'with'))
             && (!firstAction || row.timeline[0].action === firstAction)
             && (!lastAction || row.timeline[row.timeline.length-1].action === lastAction)
-            && [...actionFilters].every(([name, mode]) => row.timeline.some((step) => step.action === name) === (mode === 'include')));
+            && [...actionFilters].every(([name, mode]) => row.timeline.some((step) => matchesAction(step, name, mode)) === (mode !== 'exclude')));
         $('contains-clear').disabled = actionFilters.size === 0;
         const metric = (row) => sort === 'multiplier_rate' ? row.multiplier_rates.atk : row[sort];
         rows.sort((a, b) => {
@@ -174,17 +238,46 @@
     $('contains').addEventListener('click', (event) => {
         const button = event.target.closest('button[data-action]');
         if (!button) return;
-        const name = button.dataset.action;
-        const current = actionFilters.get(name);
-        const next = current === 'include' ? 'exclude' : current === 'exclude' ? '' : 'include';
-        if (next) actionFilters.set(name, next);
-        else actionFilters.delete(name);
-        button.dataset.mode = next;
-        button.setAttribute('aria-label', `${name}：${next === 'include' ? '包含' : next === 'exclude' ? '排除' : '不限'}`);
-        button.querySelector('.overlap-filter-mark').textContent = next === 'include' ? '＋' : next === 'exclude' ? '−' : '·';
-        shown = 60;
-        render();
+        if (event.target.closest('[data-open-menu]')) return openActionMenu(button);
+        closeActionMenu();
+        const current = actionFilters.get(button.dataset.action);
+        setActionFilter(button, current && current !== 'exclude' ? '' : 'include');
     });
+    $('contains').addEventListener('contextmenu', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        event.preventDefault();
+        openActionMenu(button);
+    });
+    $('contains').addEventListener('keydown', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (button && (event.key === 'ArrowDown' || event.key === 'ContextMenu' || event.shiftKey && event.key === 'F10')) {
+            event.preventDefault();
+            openActionMenu(button);
+        }
+    });
+    actionMenu.addEventListener('click', (event) => {
+        const item = event.target.closest('button[data-mode]');
+        if (!item || !menuTrigger) return;
+        setActionFilter(menuTrigger, item.dataset.mode);
+        closeActionMenu(true);
+    });
+    actionMenu.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' || event.key === 'Tab') {
+            if (event.key === 'Escape') event.preventDefault();
+            closeActionMenu(true);
+        } else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+            event.preventDefault();
+            const items = [...actionMenu.querySelectorAll('button')];
+            const index = items.indexOf(document.activeElement);
+            items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+        }
+    });
+    document.addEventListener('pointerdown', (event) => {
+        if (!actionMenu.contains(event.target) && !event.target.closest('#overlap-contains')) closeActionMenu();
+    });
+    window.addEventListener('resize', () => closeActionMenu());
+    window.addEventListener('scroll', () => closeActionMenu(), true);
     $('contains-clear').addEventListener('click', () => {
         actionFilters.clear();
         updateActionFilters();

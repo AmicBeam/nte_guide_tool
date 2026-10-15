@@ -22,7 +22,7 @@
 .overlap-contains-option { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 7px 12px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: rgba(255,255,255,.025); color: #c2cbd8; font: inherit; font-size: 13px; white-space: nowrap; cursor: pointer; }
 .overlap-filter-mark { display: inline-block; width: 1em; text-align: center; font-weight: 700; }
 .overlap-contains-option:hover { background: rgba(255,255,255,.08); }
-.overlap-contains-option[data-mode="include"] { border-color: #6ddcc7; background: rgba(109,220,199,.12); color: #d7ece7; }
+.overlap-contains-option[data-mode]:not([data-mode=""]):not([data-mode="exclude"]) { border-color: #6ddcc7; background: rgba(109,220,199,.12); color: #d7ece7; }
 .overlap-contains-option[data-mode="exclude"] { border-color: #e69b9b; background: rgba(230,155,155,.10); color: #f0c5c5; }
 .overlap-contains-option:focus-within, .overlap-contains-heading button:focus-visible { outline: 2px solid #6ddcc7; outline-offset: 3px; }
 #overlap-status { margin: 16px 0 0; color: #8fa3b7; font-size: 13px; }
@@ -186,3 +186,12 @@
 .pair-variant-loading { color:#8196aa; font-size:11px; }
 @media(max-width:700px) { .pair-group-filters { grid-template-columns:minmax(0,1fr); } }
 .pair-recovery { position:absolute; top:30px; height:30px; box-sizing:border-box; border:1px dotted var(--pair-color); border-radius:0 6px 6px 0; background:var(--pair-fill); opacity:.55; display:flex; align-items:center; justify-content:center; overflow:hidden; white-space:nowrap; font-size:9px; }
+
+.overlap-filter-type { font-size: 11px; }
+.overlap-filter-arrow { margin-left: 2px; padding: 4px; color: #8fa3b7; }
+.overlap-action-menu { position: fixed; z-index: 100; min-width: 160px; max-height: calc(100vh - 16px); overflow-y: auto; padding: 5px; border: 1px solid #475566; border-radius: 10px; background: #111c28; box-shadow: 0 8px 28px #0008; }
+.overlap-action-menu[hidden] { display: none; }
+.overlap-action-menu button { display: block; width: 100%; min-height: 36px; padding: 8px 12px; border: 0; border-radius: 5px; background: transparent; color: #d3dce7; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.overlap-action-menu button[data-mode="exclude"] { color: #f0a8a8; border-bottom: 1px solid #ffffff16; }
+.overlap-action-menu button:hover, .overlap-action-menu button:focus-visible { background: #ffffff12; outline: 1px solid #6ddcc7; }
+.overlap-action-menu button[aria-checked="true"]::after { content: ' ✓'; color: #6ddcc7; }

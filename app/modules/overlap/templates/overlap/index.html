@@ -9,6 +9,10 @@
         <div><p class="eyebrow">Overlap Reference</p><h1>合轴收益表</h1><p class="subtle">把占轴留给下一位，把收益留在这一段。</p></div>
         <a class="secondary-btn" href="{{ url_for('main.default_page') }}">工具主页</a>
     </header>
+    <nav class="overlap-tabs" aria-label="合轴模块">
+        <a href="{{ url_for('overlap_module.index') }}" aria-current="page">合轴收益表</a>
+        <a href="{{ url_for('overlap_module.index', page='pair') }}">双角色合轴</a>
+    </nav>
     <section class="glass-card overlap-controls" aria-label="收益表筛选">
         <div id="overlap-characters" class="overlap-characters" aria-label="选择角色"></div>
         <div class="overlap-filters">

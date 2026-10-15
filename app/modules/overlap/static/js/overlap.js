@@ -22,7 +22,7 @@
         }
         $('contains').innerHTML = names.map((name) => {
             const mode = actionFilters.get(name) || '';
-            return `<label class="overlap-contains-option" data-mode="${mode}"><span>${escape(name)}</span><select data-action="${escape(name)}" aria-label="${escape(name)}筛选"><option value=""${!mode ? ' selected' : ''}>不限</option><option value="include"${mode === 'include' ? ' selected' : ''}>包含</option><option value="exclude"${mode === 'exclude' ? ' selected' : ''}>排除</option></select></label>`;
+            return `<button type="button" class="overlap-contains-option" data-action="${escape(name)}" data-mode="${mode}" aria-label="${escape(name)}：${mode === 'include' ? '包含' : mode === 'exclude' ? '排除' : '不限'}" aria-describedby="overlap-contains-hint"><span class="overlap-filter-mark" aria-hidden="true">${mode === 'include' ? '＋' : mode === 'exclude' ? '−' : '·'}</span><span>${escape(name)}</span></button>`;
         }).join('');
     }
 
@@ -166,12 +166,17 @@
         shown = 60;
         render();
     }));
-    $('contains').addEventListener('change', (event) => {
-        const input = event.target;
-        if (!input.matches('select[data-action]')) return;
-        if (input.value) actionFilters.set(input.dataset.action, input.value);
-        else actionFilters.delete(input.dataset.action);
-        input.closest('label').dataset.mode = input.value;
+    $('contains').addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const name = button.dataset.action;
+        const current = actionFilters.get(name);
+        const next = current === 'include' ? 'exclude' : current === 'exclude' ? '' : 'include';
+        if (next) actionFilters.set(name, next);
+        else actionFilters.delete(name);
+        button.dataset.mode = next;
+        button.setAttribute('aria-label', `${name}：${next === 'include' ? '包含' : next === 'exclude' ? '排除' : '不限'}`);
+        button.querySelector('.overlap-filter-mark').textContent = next === 'include' ? '＋' : next === 'exclude' ? '−' : '·';
         shown = 60;
         render();
     });

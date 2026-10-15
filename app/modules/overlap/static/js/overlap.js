@@ -16,7 +16,7 @@
     const actionFilters = new Map();
 
     const actionName = (step) => step.dodge_replaces || step.action;
-    const filterLabels = {include: '包含', exclude: '排除', foreground: '前台', background: '后台', dodge: '闪替代', detached: '脱手', preinput: '预输入', normal: '普通'};
+    const filterLabels = {include: '包含', exclude: '排除', foreground: '前台', background: '后台', dodge: '闪替代', detached: '脱手', preinput: '预输入', normal: '非闪'};
     let menuTrigger;
     const actionMenu = document.createElement('div');
     actionMenu.className = 'overlap-action-menu';
@@ -66,7 +66,7 @@
         button.setAttribute('aria-expanded', 'true');
         const name = button.dataset.action;
         const steps = selected.rows.flatMap((row) => row.timeline).filter((step) => actionName(step) === name);
-        const modes = ['exclude', '', 'include', 'foreground', 'background', 'dodge', 'detached', 'preinput', 'normal'];
+        const modes = ['exclude', '', 'include', 'foreground', 'background', 'dodge', 'normal', 'detached', 'preinput'];
         const options = modes.filter((mode) => !mode || ['include', 'exclude'].includes(mode)
             || mode === 'normal' && steps.some((step) => step.dodge_replaces) && steps.some((step) => !step.dodge_replaces)
             || mode !== 'normal' && steps.some((step) => matchesAction(step, name, mode)));

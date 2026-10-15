@@ -54,7 +54,8 @@
                         return `${edge.to}：动作开始后 ${seconds(input)} 预输入，开始后 ${seconds(cut)} 可切人`;
                     }).join('；')
                     : `开始后 ${seconds(action.preinput_seconds)} 可预输入下一段并切人`;
-            return `<article class="overlap-action"><h3>${escape(action.name)} <small>${escape(seconds(action.duration_seconds))}</small></h3><p>${escape(entryLabel)}${action.preinput_forbidden ? ' · 不可被预输入' : ''}${action.locks_foreground_switch ? ' · 必须前台打完' : ''}</p><p>衔接：${escape(successors)}</p><p>${escape(preinputText)}</p>${points ? `<p>${escape(points)}</p>` : ''}${action.gaps.length ? `<p class="overlap-pending">待补：${escape(action.gaps.join('、'))}</p>` : ''}</article>`;
+            const linger = action.linger_seconds?.length ? `<p>可额外滞留 ${action.linger_seconds.map(seconds).join(' / ')}，不增加伤害与资源。</p>` : '';
+            return `<article class="overlap-action"><h3>${escape(action.name)} <small>${escape(seconds(action.duration_seconds))}</small></h3><p>${escape(entryLabel)}${action.preinput_forbidden ? ' · 不可被预输入' : ''}${action.locks_foreground_switch ? ' · 必须前台打完' : ''}</p><p>衔接：${escape(successors)}</p><p>${escape(preinputText)}</p>${linger}${points ? `<p>${escape(points)}</p>` : ''}${action.gaps.length ? `<p class="overlap-pending">待补：${escape(action.gaps.join('、'))}</p>` : ''}</article>`;
         }).join('');
     }
 
@@ -68,7 +69,7 @@
             }
             const dodged = Boolean(step.dodge_replaces);
             const label = step.action + (step.terminal_switch ? '切' : '');
-            const badges = `${step.preinput_before_switch ? '<small>预</small>' : ''}${step.detached ? '<small>脱手</small>' : ''}`;
+            const badges = `${step.preinput_before_switch ? '<small>预</small>' : ''}${step.detached ? '<small>脱手</small>' : ''}${step.linger_seconds ? `<small>滞留${seconds(step.linger_seconds)}</small>` : ''}`;
             const hint = `${step.action}${dodged ? `（跳过${step.dodge_replaces}全部收益）` : ''} · ${step.placement === 'background' ? '后台释放' : '前台起手'} · 输入${step.automatic ? '自动' : seconds(step.input_seconds)} · 释放${seconds(step.start_seconds)}–${seconds(step.end_seconds)}`;
             return `${separator}<span class="overlap-action-chip ${step.placement === 'background' ? 'is-background' : ''} ${dodged ? 'is-dodge' : ''}" title="${escape(hint)}" aria-label="${escape(hint)}">${escape(label)}${badges}</span>`;
         }).join('');

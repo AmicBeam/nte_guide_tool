@@ -105,6 +105,26 @@ for(const plan of ePlans.plans.slice(0,40)){check(plan,heiyu);assert.equal(plan.
 assert(ePlans.plans.some(p=>p.jobs.some(j=>j.role===0 && j.rowId.includes('~0.7'))),'cross-group magic-E must reuse recorded detached a5 duration');
 const badE=engine.match(heiyu,{containsGroups:[eGroup,''],groupCount:'single',maxGroups:1});
 assert.equal(badE.plans.length,0);
+// A user-authorized 0.2s a3 linger enables a normal-switch return exactly at
+// 1.2s. Keep the recorded slot through recipes, materialization and sliders;
+// it remains the same action group and never adds multiplier.
+const lingerRows=heiyu[0].rows.filter(r=>r.original_actions.join()==='魔a1,魔a2,魔a3,魔a4,魔a5'
+    && r.switch_method==='hold' && r.operation==='魔a3正常切人 / 魔a4 → 魔a5打满');
+assert.equal(lingerRows.length,1);
+const lingerPair=[{...heiyu[0],rows:lingerRows},heiyu[1]];
+const lingerPlans=engine.match(lingerPair,{maxGroups:1});
+assert(lingerPlans.plans.length>0);
+for(const plan of lingerPlans.plans) {
+    for(const choice of [plan,...engine.variants(plan,lingerPair)]) {
+        check(choice,lingerPair);
+        const projected=engine.materialize(choice,lingerPair);
+        const step=projected.rows[0].timeline.find(s=>s.action==='魔a3');
+        assert.equal(step.duration_seconds,1.4);
+        assert.equal(step.linger_seconds,.2);
+        assert(near(plan.multipliers[0].atk,7.201));
+        assert.deepEqual(plan.groups[0][0].actions,['魔a1','魔a2','魔a3','魔a4','魔a5']);
+    }
+}
 // Exercise all other pairings with two selected real groups, including dodge
 // filtering and the larger Heiyu catalog without an unbounded test runtime.
 for (const names of [['安魂曲','明音凛'],['安魂曲','黑羽'],['残虹','明音凛'],['残虹','黑羽']]) {

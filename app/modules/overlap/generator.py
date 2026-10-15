@@ -5,7 +5,7 @@ import hashlib
 import json
 import math
 import re
-from itertools import combinations
+from itertools import combinations, product
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -131,7 +131,7 @@ def enumerate_paths(by_name, edges, max_actions, max_uses=None, start_actions=No
         yield from walk([name], [])
 
 
-def calculate_row(names, links, by_name, points, final_point=None, preinput=False, dodge_indices=(), default_delay=0.4, hold=False):
+def calculate_row(names, links, by_name, points, final_point=None, preinput=False, dodge_indices=(), default_delay=0.4, hold=False, linger=()):
     actions = [by_name[name] for name in names]
     for index in dodge_indices:
         actions[index] = {
@@ -139,6 +139,9 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
             'multipliers': {}, 'duration_implemented': True,
         }
     durations = [duration(a) for a in actions]
+    linger = dict(linger)
+    for index, extra in linger.items():
+        durations[index] = round_value(durations[index] + extra)
     for index, edge in enumerate(links):
         if edge.get('detach_previous'):
             if not actions[index].get('can_detach'):
@@ -196,7 +199,7 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
     def rate(value):
         return round_value(value / foreground) if foreground is not None and foreground > 0 else None
     row = {
-        'id': hashlib.sha256(json.dumps([names, final_point and final_point['id'], preinput, dodge_indices], ensure_ascii=False).encode()).hexdigest()[:16] + ('-hold' if hold else ''),
+        'id': hashlib.sha256(json.dumps([names, final_point and final_point['id'], preinput, dodge_indices, *([sorted(linger.items())] if linger else [])], ensure_ascii=False).encode()).hexdigest()[:16] + ('-hold' if hold else ''),
         'actions': [a['name'] for a in actions], 'original_actions': names,
         'kind': '打满' if hold else '合轴' if final_point or preinput else ('连招' if len(names) > 1 else '单动作'),
         'switch_method': 'hold' if hold else 'preinput' if preinput else final_point['id'] if final_point else 'full',
@@ -231,12 +234,24 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
                                      (['用户2026-10-12：动作开始后0.4秒预输入即可切人，完成当前和下一动作。'] if preinput else []) +
                                      (['用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。'] if dodge_indices else []))),
     }
+    for index, extra in linger.items():
+        row['timeline'][index]['linger_seconds'] = extra
+        row['notes'].append(f'{actions[index]["name"]}额外滞留{extra:g}秒，不增加伤害或资源')
+        row['sources'].append(actions[index]['linger_source'])
+    row['sources'] = list(dict.fromkeys(row['sources']))
     if hold:
         row['operation'] = row['actions'][-1].removesuffix('远') + '打满'
         prefix = row['timeline'][:-1]
         if any(not re.fullmatch(r'.*a\d.*', step['action']) or step['dodge_replaces'] or step['detached'] for step in prefix):
             row['operation'] = ' → '.join([*(step['action'].removesuffix('远') + ('脱手' if step['detached'] else '') for step in prefix), row['operation']])
     return project_placements(row)
+
+
+def timing_variants(names, by_name, skipped):
+    """User-authorized discrete linger slots; skipped attacks cannot grant linger."""
+    indices = [i for i, name in enumerate(names) if i not in skipped and by_name[name].get('linger_seconds')]
+    for values in product(*([0, *by_name[names[i]]['linger_seconds']] for i in indices)):
+        yield tuple((i, extra) for i, extra in zip(indices, values) if extra)
 
 
 def return_requirements(row):
@@ -396,6 +411,12 @@ def generate(characters, actions, rules):
             raise ValueError(f"{character['name']}存在未识别的动作覆写")
         for action in current:
             override = override_map.get(action['name'], {})
+            if 'linger_seconds' in override:
+                values = [number(v) for v in override['linger_seconds']]
+                if not override.get('source') or not values or any(v <= 0 for v in values) or len(values) != len(set(values)) or duration(action) is None:
+                    raise ValueError('滞留档位须为不重复的正数、具有已知动作时长与source')
+                action['linger_seconds'] = sorted(values)
+                action['linger_source'] = override['source']
             if 'locks_foreground_switch' in override:
                 if not isinstance(override['locks_foreground_switch'], bool) or not override.get('source'):
                     raise ValueError('前台锁定覆写须有布尔值与source')
@@ -426,6 +447,7 @@ def generate(characters, actions, rules):
             inventory.append({
                 'name': action['name'], 'action_id': action['id'], 'type': action['action_type'],
                 'duration_seconds': duration(action), 'switch_points': points[action['name']],
+                **({'linger_seconds': action['linger_seconds']} if action.get('linger_seconds') else {}),
                 'preinput_seconds': rules.get('default_input_delay_seconds', 0.4) if edges[action['name']] else None,
                 'successors': edges[action['name']], 'gaps': gaps,
                 'can_background_override': bool(action.get('can_background_override')),
@@ -455,21 +477,23 @@ def generate(characters, actions, rules):
                             if index+1 in skipped:
                                 edge['automatic']=False
                             edge['source'] += ' 用户2026-10-12：闪不可被预输入，闪完才能输入下一段。'
-                    rows.append(calculate_row(names, variant_links, by_name, points, **options))
-                    hold_reason = hold_eligibility(names, edges)
-                    if hold_reason:
-                        held = calculate_row(names, variant_links, by_name, points, hold=True, **options)
-                        held['hold_reason'] = hold_reason
-                        rows.append(held)
-                        rows.extend(advanced_rows(names, variant_links, by_name, points, options, hold=True, hold_reason=hold_reason))
-                    explicit = [edge for edge in variant_links if not edge.get('automatic')]
-                    if explicit and explicit[-1].get('can_preinput', True):
-                        rows.append(calculate_row(names, variant_links, by_name, points, preinput=True, **options))
-                        rows.extend(advanced_rows(names, variant_links, by_name, points, options))
-                    for point in points[names[-1]]:
-                        rows.append(calculate_row(names, variant_links, by_name, points, point, **options))
-                        if point['id']=='normal':
-                            rows.extend(advanced_rows(names, variant_links, by_name, points, options, point))
+                    for linger in timing_variants(names, by_name, skipped):
+                        options['linger'] = linger
+                        rows.append(calculate_row(names, variant_links, by_name, points, **options))
+                        hold_reason = hold_eligibility(names, edges)
+                        if hold_reason:
+                            held = calculate_row(names, variant_links, by_name, points, hold=True, **options)
+                            held['hold_reason'] = hold_reason
+                            rows.append(held)
+                            rows.extend(advanced_rows(names, variant_links, by_name, points, options, hold=True, hold_reason=hold_reason))
+                        explicit = [edge for edge in variant_links if not edge.get('automatic')]
+                        if explicit and explicit[-1].get('can_preinput', True):
+                            rows.append(calculate_row(names, variant_links, by_name, points, preinput=True, **options))
+                            rows.extend(advanced_rows(names, variant_links, by_name, points, options))
+                        for point in points[names[-1]]:
+                            rows.append(calculate_row(names, variant_links, by_name, points, point, **options))
+                            if point['id']=='normal':
+                                rows.extend(advanced_rows(names, variant_links, by_name, points, options, point))
         rows = [row for row in rows if not any(step['dodge_replaces'] and step['placement']=='background'
                                              for step in row['timeline'])]
         result.append({

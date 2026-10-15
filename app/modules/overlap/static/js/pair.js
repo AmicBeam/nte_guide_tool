@@ -13,8 +13,9 @@
         const end = offset + step.end_seconds + repeat * period;
         const input = step.input_seconds == null ? null : offset + step.input_seconds + repeat * period;
         const front = segments.some(s => s.role === role && start >= s.start + repeat * period - 1e-8 && start < s.end + repeat * period - 1e-8);
-        const title = `${step.group ? `组 ${step.group} · ` : ''}${step.action} · 释放 ${n(start)}–${n(end)}s${input == null ? ' · 自动衔接' : ` · 输入 ${n(input)}s`}`;
-        return `<span class="pair-bubble ${front ? '' : 'is-background'} ${repeat ? 'is-repeat' : ''}" style="left:${start * px}px;width:${step.duration_seconds * px}px" title="${escape(title)}"><span>${escape(step.action)}</span><small>${n(step.duration_seconds)}s</small></span>`
+        const linger = step.linger_seconds ? ` · 含滞留 ${n(step.linger_seconds)}s，不增加伤害与资源` : '';
+        const title = `${step.group ? `组 ${step.group} · ` : ''}${step.action} · 占用 ${n(start)}–${n(end)}s${linger}${input == null ? ' · 自动衔接' : ` · 输入 ${n(input)}s`}`;
+        return `<span class="pair-bubble ${front ? '' : 'is-background'} ${repeat ? 'is-repeat' : ''}" style="left:${start * px}px;width:${step.duration_seconds * px}px" title="${escape(title)}"><span>${escape(step.action)}</span><small>${n(step.duration_seconds)}s${step.linger_seconds ? ` · 滞留${n(step.linger_seconds)}s` : ''}</small></span>`
             + (input == null ? '' : `<span class="pair-input ${repeat ? 'is-repeat' : ''}" style="left:${input * px}px" title="${escape(`${n(input)}s 输入 ${step.action}${input < start ? `；${n(start)}s 开始释放` : ''}`)}">◆</span>`);
     }
     function card(group, index) {

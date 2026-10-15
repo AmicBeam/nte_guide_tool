@@ -102,7 +102,7 @@ const eGroup=JSON.stringify(['魔e','魔z2']);
 const ePlans=engine.match(heiyu,{containsGroups:[eGroup,''],groupCount:'with-two',withoutDodge:true});
 assert(ePlans.plans.length>0);
 for(const plan of ePlans.plans.slice(0,40)){check(plan,heiyu);assert.equal(plan.groups[0].length,2);}
-assert(ePlans.plans.some(p=>p.jobs.some(j=>j.role===0 && j.rowId.includes('~0.6'))),'cross-group magic-E must reuse recorded detached a5 duration');
+assert(ePlans.plans.some(p=>p.jobs.some(j=>j.role===0 && j.rowId.includes('~0.7'))),'cross-group magic-E must reuse recorded detached a5 duration');
 const badE=engine.match(heiyu,{containsGroups:[eGroup,''],groupCount:'single',maxGroups:1});
 assert.equal(badE.plans.length,0);
 // Exercise all other pairings with two selected real groups, including dodge

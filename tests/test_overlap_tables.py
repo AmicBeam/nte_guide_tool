@@ -143,18 +143,18 @@ class OverlapTablesTest(unittest.TestCase):
                  and r['kind']=='分段合轴' and not r['has_dodge']
                  and r['original_actions']==[f'魔a{i}' for i in range(1,6)])
         self.assertEqual(row['operation'],'魔a2预魔a3 / 魔a4 → 魔a5打满')
-        self.assertEqual([s['duration_seconds'] for s in row['foreground_segments']],[0.9,1.8])
-        self.assertAlmostEqual(row['foreground_seconds'],2.7)
+        self.assertEqual([s['duration_seconds'] for s in row['foreground_segments']],[1.1,2.0])
+        self.assertAlmostEqual(row['foreground_seconds'],3.1)
         self.assertFalse(row['timeline'][-1]['terminal_switch'])
 
     def test_normal_final_switch_can_follow_a_return(self):
         row = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==[f'魔a{i}' for i in range(1,6)]
                    and r['kind']=='分段合轴' and r['switch_method']=='normal' and not r['has_dodge'])
         self.assertEqual(row['operation'],'魔a2预魔a3 / 魔a4 → 魔a5正常切人')
-        self.assertEqual(row['window_1']['duration_seconds'],1.5)
-        self.assertEqual(row['window_1']['return_start_seconds'],2.1)
-        self.assertEqual(row['window_1']['end_seconds'],2.4)
-        self.assertAlmostEqual(row['foreground_seconds'],1.5)
+        self.assertEqual(row['window_1']['duration_seconds'],1.2)
+        self.assertEqual(row['window_1']['return_start_seconds'],2.3)
+        self.assertEqual(row['window_1']['end_seconds'],2.3)
+        self.assertAlmostEqual(row['foreground_seconds'],1.9)
         self.assertEqual([s['preinput_before_switch'] for s in row['timeline']],[False,True,False,False,False])
 
     def test_updated_akane_window_is_too_short_to_return(self):
@@ -302,8 +302,8 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertAlmostEqual(pre['switch_seconds'] - z1['start_seconds'], 0.8)
         self.assertEqual(z1['duration_seconds'], 1.4)
         self.assertEqual(a3['start_seconds'], z1['end_seconds'])
-        self.assertAlmostEqual(pre['foreground_seconds'], 2.0)
-        self.assertAlmostEqual(pre['release_end_seconds'], 3.8)
+        self.assertAlmostEqual(pre['foreground_seconds'], 2.1)
+        self.assertAlmostEqual(pre['release_end_seconds'], 3.7)
         self.assertEqual(a3['placement'], 'background')
         for metric in ('multipliers','harmony','energy_gain','personal_resources'):
             self.assertEqual(pre[metric], full[metric])
@@ -311,9 +311,9 @@ class OverlapTablesTest(unittest.TestCase):
         returned = next(r for r in character['rows'] if r['original_actions']==return_path
                         and r['kind']=='分段合轴' and r['switch_method']=='preinput'
                         and r['operation'].startswith('魔z1预魔a3 /'))
-        self.assertAlmostEqual(returned['window_1']['start_seconds'], 2.0)
-        self.assertAlmostEqual(returned['window_1']['duration_seconds'], 1.8)
-        self.assertAlmostEqual(returned['foreground_seconds'], 2.4)
+        self.assertAlmostEqual(returned['window_1']['start_seconds'], 2.1)
+        self.assertAlmostEqual(returned['window_1']['duration_seconds'], 1.6)
+        self.assertAlmostEqual(returned['foreground_seconds'], 2.5)
         self.assertIn(['魔a1','魔a2','魔z1','魔z2'], [r['original_actions'] for r in character['rows']])
 
     def test_canhong_second_stage_heavy_finishes_at_each_forms_last_stage(self):
@@ -337,17 +337,17 @@ class OverlapTablesTest(unittest.TestCase):
     def test_advanced_window_and_foreground_occupancy(self):
         row = next(r for r in self.character('黑羽')['rows'] if r['original_actions'] == ['魔a1','魔a2','魔a3','魔a4','魔a5'] and r['kind']=='分段合轴' and r['switch_method']=='preinput' and not r['has_dodge'])
         self.assertEqual(row['operation'], '魔a2预魔a3 / 魔a4预魔a5')
-        self.assertEqual(row['window_1'], {'start_seconds':0.9,'end_seconds':2.4,'duration_seconds':1.5,'return_start_seconds':2.1,'return_end_seconds':2.4})
-        self.assertAlmostEqual(row['foreground_seconds'], 1.3)
-        self.assertAlmostEqual(row['switch_seconds'], 2.8)
-        self.assertAlmostEqual(row['release_end_seconds'], 4.2)
-        self.assertEqual(row['timeline'][3]['input_seconds'], 2.4)
+        self.assertEqual(row['window_1'], {'start_seconds':1.1,'end_seconds':2.3,'duration_seconds':1.2,'return_start_seconds':2.3,'return_end_seconds':2.3})
+        self.assertAlmostEqual(row['foreground_seconds'], 1.5)
+        self.assertAlmostEqual(row['switch_seconds'], 2.7)
+        self.assertAlmostEqual(row['release_end_seconds'], 4.3)
+        self.assertEqual(row['timeline'][3]['input_seconds'], 2.3)
         self.assertEqual([s['placement'] for s in row['timeline']], ['foreground','foreground','background','foreground','background'])
         self.assertEqual([s['preinput_before_switch'] for s in row['timeline']], [False,True,False,True,False])
-        self.assertEqual([w['duration_seconds'] for w in row['overlap_windows']],[1.5])
+        self.assertEqual([w['duration_seconds'] for w in row['overlap_windows']],[1.2])
         self.assertEqual([w['requires_return'] for w in row['overlap_windows']],[True])
-        self.assertEqual([s['duration_seconds'] for s in row['foreground_segments']],[0.9,0.4])
-        self.assertEqual(row['overlap_windows'][0]['return_start_seconds'],2.1)
+        self.assertEqual([s['duration_seconds'] for s in row['foreground_segments']],[1.1,0.4])
+        self.assertEqual(row['overlap_windows'][0]['return_start_seconds'],2.3)
         for c in self.payload['characters']:
             for r in c['rows']:
                 if r['kind']=='分段合轴':
@@ -378,7 +378,7 @@ class OverlapTablesTest(unittest.TestCase):
         normal=next(r for r in rows if r['switch_method']=='normal')
         held=next(r for r in rows if r['switch_method']=='hold')
         self.assertEqual(pre['foreground_segments'][1]['duration_seconds'],0.4)
-        self.assertEqual(normal['foreground_segments'][1]['duration_seconds'],0.6)
+        self.assertEqual(normal['foreground_segments'][1]['duration_seconds'],0.8)
         for row in (pre,normal):
             self.assertTrue(row['requires_three_characters'])
             self.assertEqual(row['three_character_segments'],[2])
@@ -403,7 +403,7 @@ class OverlapTablesTest(unittest.TestCase):
         row = next(r for r in self.character('黑羽')['rows'] if r['original_actions']==names and not r['has_dodge'] and r['kind']=='连招')
         a5 = row['timeline'][4]
         e = row['timeline'][5]
-        self.assertEqual(a5['duration_seconds'], 0.6)
+        self.assertEqual(a5['duration_seconds'], 0.7)
         self.assertAlmostEqual(e['start_seconds'], a5['end_seconds'])
         z2, a3 = row['timeline'][-2:]
         self.assertFalse(a3['automatic'])
@@ -446,7 +446,7 @@ class OverlapTablesTest(unittest.TestCase):
         names=['魔a1','魔a2','魔a3','魔a4','魔a5','魔e','魔z2','魔a3','魔a4','魔a5']
         row=next(r for r in self.character('黑羽')['rows'] if r['original_actions']==names
                  and r['kind']=='分段合轴' and r['switch_method']=='preinput'
-                 and r['window_1']['start_seconds']==0.9 and r['actions'][7]=='魔a3闪')
+                 and r['window_1']['start_seconds']==1.1 and r['actions'][7]=='魔a3闪')
         self.assertEqual(row['operation'],'魔a2预魔a3 / 魔a4 → 魔a5脱手 → 魔e → 魔z2 → 魔a3闪 → 魔a4预魔a5')
 
     def test_delayed_switch_point_configuration(self):

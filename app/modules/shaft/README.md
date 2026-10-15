@@ -165,6 +165,8 @@ mcporter call "tencent-docs" "sheet.get_cell_data" \
 
 ## 验证
 
+修改共享 `static/data/actions.json` 或 `characters.json` 后，还须按[合轴模块说明](../overlap/README.md#目录与生成)运行 `python3 scripts/generate_overlap_tables.py`，提交更新的合轴 `tables.json`，并运行合轴原表与双角色匹配回归。合轴使用离线派生结果，排轴数据变化不会在网页访问时自动刷新；此步骤必须包含在同一次交付中。
+
 ```bash
 python3 -m unittest discover -s tests -p 'test_shaft_*.py'
 ```

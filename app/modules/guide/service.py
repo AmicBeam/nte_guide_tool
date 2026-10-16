@@ -226,7 +226,7 @@ def schema():
 
 def page_sections(kind, record):
     preferred = {
-        'characters': ('abilities', 'awaken', 'resonance', 'equip_slots', 'affinity', 'nouns', 'aliases'),
+        'characters': ('abilities', 'awaken', 'resonance', 'nouns', 'equip_slots', 'affinity', 'aliases'),
         'arcs': ('stats', 'effect', 'exclusive_desc', 'exclusive_character_ids', 'materials'),
         'challenges': ('resonance', 'stages', 'rewards'),
     }

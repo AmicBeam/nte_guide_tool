@@ -1,9 +1,34 @@
 """Authenticated adapters for private cultivation data."""
-from flask import g, jsonify, request
+from functools import wraps
+import secrets
+import traceback
+
+from flask import current_app, g, jsonify, request
+from werkzeug.exceptions import HTTPException
 from app.auth import token_required
 from app.db import atomic_transaction
 from . import game_sync, user_data, service
-from .game_provider import ProviderError
+from .game_provider import LoginDependencyError, ProviderError
+
+
+def private_errors(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        try:
+            return view(*args, **kwargs)
+        except (ProviderError, ValueError, LookupError, HTTPException):
+            raise
+        except Exception as error:
+            reference = secrets.token_hex(6)
+            frames = traceback.extract_tb(error.__traceback__)
+            location = frames[-1] if frames else None
+            # Never log exception text, request contents, credentials or locals.
+            current_app.logger.error('guide private failure ref=%s endpoint=%s type=%s function=%s line=%s',
+                reference, request.endpoint, type(error).__name__,
+                location.name if location else '', location.lineno if location else 0)
+            return jsonify(error={'code': 'private_data_unavailable',
+                'message': f'同步或读取资料失败，请稍后重试。错误编号：{reference}'}), 500
+    return wrapped
 
 
 def register(blueprint):
@@ -19,17 +44,23 @@ def register(blueprint):
             response.headers['Cache-Control'] = 'no-store'
         return response
 
+    @blueprint.errorhandler(LoginDependencyError)
+    def dependency_unavailable(error):
+        return jsonify(error={'code': 'login_dependency_unavailable', 'message': str(error)}), 503
+
     @blueprint.errorhandler(ProviderError)
     def unavailable(error):
         return jsonify(error={'code': 'game_service_unavailable', 'message': str(error)}), 502
 
     @blueprint.get('/api/guide/me/profiles')
     @token_required
+    @private_errors
     def my_profiles():
         return jsonify(data=user_data.profiles(g.current_player))
 
     @blueprint.delete('/api/guide/me/profiles/<role_id>')
     @token_required
+    @private_errors
     def delete_profile(role_id):
         with atomic_transaction():
             user_data.GuideGameProfile.delete().where(
@@ -39,6 +70,7 @@ def register(blueprint):
 
     @blueprint.get('/api/guide/me/profiles/<role_id>/characters/<identifier>/prefill')
     @token_required
+    @private_errors
     def character_prefill(role_id, identifier):
         record = service.detail('characters', identifier)
         profile = next((p for p in user_data.profiles(g.current_player) if p['role_id'] == role_id), None)
@@ -49,15 +81,18 @@ def register(blueprint):
 
     @blueprint.post('/api/guide/me/sync/sms')
     @token_required
+    @private_errors
     def sync_sms():
         return jsonify(data=game_sync.send_sms(g.current_player, body()))
 
     @blueprint.post('/api/guide/me/sync/verify')
     @token_required
+    @private_errors
     def sync_verify():
         return jsonify(data=game_sync.operate(g.current_player, body()))
 
     @blueprint.post('/api/guide/me/sync/select-role')
     @token_required
+    @private_errors
     def sync_select():
         return jsonify(data=game_sync.operate(g.current_player, body(), select=True))

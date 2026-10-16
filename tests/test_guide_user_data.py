@@ -27,6 +27,40 @@ class GuideUserDataTest(RoomFlowTestCase):
         return self.client.post('/api/guide/me/' + path, json=payload,
             headers={'Authorization': 'Bearer ' + (token or self.token)})
 
+    def test_missing_login_dependency_fails_before_sending_sms(self):
+        with patch.object(self.provider.importlib, 'import_module', side_effect=ModuleNotFoundError('synthetic')), \
+                patch.object(self.provider.GameClient, '_laohu') as upstream:
+            response = self.post('sync/sms', {'mobile': '13800000000'})
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json['error']['code'], 'login_dependency_unavailable')
+        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+        upstream.assert_not_called()
+        self.assertEqual(self.sync._sessions, {})
+
+    def test_native_cipher_failure_is_safe(self):
+        with patch.object(self.provider.importlib, 'import_module', side_effect=OSError('synthetic native failure')):
+            with self.assertRaises(self.provider.LoginDependencyError):
+                self.provider.GameClient().login('13800000000', '123456')
+
+    def test_unexpected_sync_failure_returns_json_and_preserves_snapshot(self):
+        player = self.dao_module.get_player_by_uid('guide-owner')
+        role = {'role_id': 'one', 'role_name': '旧快照'}
+        self.data.save_profile(player, role, self.raw)
+        with patch.object(self.sync, 'GameClient') as factory:
+            client = factory.return_value
+            session = self.post('sync/sms', {'mobile': '13800000000'}).json['data']['session_id']
+            client.login.return_value = [role]
+            client.characters.side_effect = RuntimeError('synthetic-private-secret')
+            with self.assertLogs(self.app.logger, level='ERROR') as logs:
+                response = self.post('sync/verify', {'session_id': session, 'code': '123456'})
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json['error']['code'], 'private_data_unavailable')
+        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+        self.assertNotIn('synthetic-private-secret', response.text + str(logs.output))
+        self.assertNotIn(session, str(logs.output))
+        self.assertIn('RuntimeError', str(logs.output))
+        self.assertEqual(self.data.profiles(player)[0]['role_name'], '旧快照')
+
     def test_anonymous_calculator_but_private_sync(self):
         for path in ['profiles', 'sync/sms', 'sync/verify', 'sync/select-role']:
             response = self.client.get('/api/guide/me/' + path) if path == 'profiles' else self.client.post('/api/guide/me/' + path, json={})

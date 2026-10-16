@@ -1,6 +1,7 @@
 """Bounded, explicit read-only game-data import through SMS authentication."""
 import base64
 import hashlib
+import importlib
 import json
 import secrets
 import time
@@ -11,6 +12,21 @@ from urllib.request import Request, HTTPRedirectHandler, build_opener
 
 class ProviderError(RuntimeError):
     pass
+
+
+class LoginDependencyError(ProviderError):
+    pass
+
+
+def login_cipher():
+    try:
+        aes = importlib.import_module('Crypto.Cipher.AES')
+        pad = importlib.import_module('Crypto.Util.Padding').pad
+        cipher = aes.new(GameClient.APP_KEY[-16:].encode(), aes.MODE_ECB)
+        cipher.encrypt(pad(b'', 16))
+        return aes, pad
+    except (ImportError, OSError):
+        raise LoginDependencyError('网站短信登录服务暂未就绪，请联系管理员。') from None
 
 
 class NoRedirects(HTTPRedirectHandler):
@@ -58,12 +74,12 @@ class GameClient:
                             {'User-Agent': 'okhttp/4.9.0'}, form=True)
 
     def send_sms(self, mobile):
+        login_cipher()
         self._laohu('/m/newApi/sendPhoneCaptchaWithOutLogin',
                     dict(cellphone=mobile, areaCodeId='1', type='16'))
 
     def login(self, mobile, code):
-        from Crypto.Cipher import AES
-        from Crypto.Util.Padding import pad
+        AES, pad = login_cipher()
         self._laohu('/m/newApi/checkPhoneCaptchaWithOutLogin', dict(cellphone=mobile, captcha=code))
         def encrypt(value):
             cipher = AES.new(self.APP_KEY[-16:].encode(), AES.MODE_ECB)

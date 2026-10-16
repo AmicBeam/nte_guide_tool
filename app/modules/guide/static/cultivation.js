@@ -1,5 +1,24 @@
 'use strict';
 
+async function readGuidePrivateResponse(response) {
+  const loginMessage = '请先登录本站，或重新登录后同步。';
+  if (response.status === 401 || (response.redirected && new URL(response.url, location.href).pathname === '/login')) {
+    throw new Error(loginMessage);
+  }
+  let payload;
+  try { payload = await response.json(); } catch (_) {
+    throw new Error(response.status === 404 ? '同步接口暂不可用，请联系管理员。' : '网站服务暂时不可用，请稍后重试。');
+  }
+  if (!response.ok) {
+    const message = typeof payload?.error === 'string' ? payload.error : payload?.error?.message;
+    throw new Error(typeof message === 'string' ? message : '读取失败，请稍后重试。');
+  }
+  if (!payload || typeof payload !== 'object' || (!Object.hasOwn(payload, 'data') && payload.ok !== true)) {
+    throw new Error('网站返回的资料格式异常，请稍后重试。');
+  }
+  return payload.data;
+}
+
 const cultivationForm = document.querySelector('form[data-boundary-levels]');
 if (cultivationForm) {
   const boundaries = JSON.parse(cultivationForm.dataset.boundaryLevels);
@@ -46,14 +65,17 @@ if (cultivationForm) {
   try { token = localStorage.getItem('nte_token') || ''; } catch (_) { /* anonymous works */ }
   const status = (message) => { $('personal-status').textContent = message; };
   const api = async (path, body, method) => {
-    const response = await fetch('/api/guide/me/' + path, {
-      method: method || (body ? 'POST' : 'GET'), cache: 'no-store',
-      headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
-      ...(body ? { body: JSON.stringify(body) } : {})
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(response.status === 401 ? '请先登录本站，或重新登录后同步。' : (payload.error?.message || payload.error || '读取失败，请重试。'));
-    return payload.data;
+    let response;
+    try {
+      response = await fetch('/api/guide/me/' + path, {
+        method: method || (body ? 'POST' : 'GET'), cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+        ...(body ? { body: JSON.stringify(body) } : {})
+      });
+    } catch (_) {
+      throw new Error('网络连接失败，请检查网络后重试。');
+    }
+    return readGuidePrivateResponse(response);
   };
   const selected = () => profiles.find(p => p.role_id === $('profile-select').value);
   const savedCharacter = () => selected()?.characters.find(c => c.id === root.dataset.characterId);

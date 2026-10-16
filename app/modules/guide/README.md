@@ -156,6 +156,8 @@ python scripts/refresh_guide_data.py --transport curl
 
 `user_data.py` 持有模块专表、字段白名单与纯预填适配；`user_routes.py` 仅做登录校验和调用服务。`GET /api/guide/me/profiles` 读取自己的资料，`DELETE /api/guide/me/profiles/<role_id>` 删除自己的资料，`GET /api/guide/me/profiles/<role_id>/characters/<id>/prefill` 返回可填写值和核对提示。`POST /api/guide/me/sync/sms` 接收 `mobile`，`POST /api/guide/me/sync/verify` 接收 `session_id` 与 `code`；多账号时返回 `select_role`，再以 `session_id` 与 `role_id` 调用 `POST /api/guide/me/sync/select-role`。以上接口均要求本站 Bearer 登录并返回 `Cache-Control: no-store`，不向浏览器返回游戏凭据。
 
+网站在发送短信前检查加密依赖（含原生组件加载）；缺失时返回503，不发送验证码。私有资料接口的意外错误返回带错误编号的JSON，日志只记录编号、接口、异常类型与代码位置，不记录异常原文或请求资料。页面遇到代理HTML错误页或失效登录时显示可读提示。
+
 网站依赖增加 `pycryptodome`，更新时须安装 `requirements.txt`；运行账户需要能通过 HTTPS 访问游戏服务，并保留正常证书验证。上游协议／风控可能变化，错误时保留旧数据并显示重试提示；首次真实短信和账号字段仍需在实际账号上验收，不以合成接口测试代替。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_user_data tests.test_guide tests.test_module_routes -v`，覆盖匿名计算与私有接口隔离、多用户／多账号归属、重连数据库、白名单保存、旧快照保护、短信频率与尝试次数、技能缺失／越界、临界突破及协议加密。浏览器核对同步弹窗、账号选择、预填确认、计算结果和390px窄屏布局。
@@ -226,3 +228,5 @@ python scripts/refresh_guide_data.py --transport curl
 机器人可信运行时可按当前消息事件的发送者QQ号，从网站账号数据库只读查询现存有效token，再用CLI读取本人快照。`plugins/nte_guide_access.py`、`plugins/nte_build_card.py` 由本仓库维护，宿主只负责调用和发送图片，详见 `plugins/README.md`。一图流仅展示已同步数据，保留同步时间，不推断基础技能等级或进行配装评分；个人数据接口仍按本站用户隔离，不自动同步游戏。公共攻略查询不再需要机器人直接接入其他攻略站工具，离线资料刷新机制保持不变。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_bot_tools tests.test_nte_account_db tests.test_guide_user_data tests.test_guide -v`，使用合成资料检查只读token桥接、所有权、失效状态、CLI认证、PNG渲染和旧公共命令兼容。
+
+同步错误回归：`node --test tests/test_guide_private_response.cjs`，覆盖HTML错误页、失效登录、JSON错误及删除成功响应。

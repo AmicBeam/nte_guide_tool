@@ -64,6 +64,7 @@ def index():
         items = service.filter_index_items(kind)
     counts = {key: len(service.catalog()[key]) for key in service.KINDS}
     return render_template('guide/index.html', kind=kind, kinds=service.KINDS, items=items, counts=counts, selected_ids=selected_ids, result_count=result_count,
+        catalog_asset_version=(Path(__file__).parent / 'static/catalog_cards.css').stat().st_mtime_ns,
         arc_types=sorted({c['arc_type']['id']: c['arc_type'] for c in service.catalog()['characters']}.values(),
                          key=lambda arc: int(arc['id'])))
 

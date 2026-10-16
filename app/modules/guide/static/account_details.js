@@ -39,10 +39,17 @@
     identity.append(node('span', 'account-level-badge', `Lv.${display(saved.level)}`));
     const title = node('h2', '', local?.name || saved.name || saved.id);
     title.id = 'account-detail-title'; identity.append(title);
-    panel.append(identity, node('p', 'account-build-uid', `UID：${profile.role_id}`), propertyRows(saved.properties?.slice(0, 8)));
-    if (saved.properties?.length > 8) {
+    const properties = saved.properties || [];
+    const featuredNames = new Set(['通用伤害增强']);
+    if (local?.element_name) featuredNames.add(`${local.element_name}属性异能伤害增强`);
+    const featured = properties.filter(property => featuredNames.has(property.name));
+    const remaining = properties.filter(property => !featuredNames.has(property.name));
+    const main = [...remaining.slice(0, Math.max(0, 8 - featured.length)), ...featured];
+    const extraProperties = properties.filter(property => !main.includes(property));
+    panel.append(identity, node('p', 'account-build-uid', `UID：${profile.role_id}`), propertyRows(main));
+    if (extraProperties.length) {
       const extra = node('details', 'account-extra-properties');
-      extra.append(node('summary', '', '查看其余属性'), propertyRows(saved.properties.slice(8)));
+      extra.append(node('summary', '', '查看其余属性'), propertyRows(extraProperties));
       panel.append(extra);
     }
     hero.append(art, panel);

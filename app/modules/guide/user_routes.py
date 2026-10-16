@@ -36,6 +36,7 @@ def register(blueprint):
     def account_page():
         characters = {item['id']: {
             'name': item['name'], 'avatar': item.get('assets', {}).get('avatar'),
+            'element_name': item.get('element_name'),
             'portrait': item.get('assets', {}).get('fullbody') or item.get('assets', {}).get('portrait'),
             'skills': {skill['id']: service.ability_title(skill) for skill in item['abilities']},
             'skill_details': {skill['id'].casefold(): {

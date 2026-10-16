@@ -14,6 +14,16 @@
 
 ## 第一步：逐字段 SoA 与直接规则计算
 
+### 软件入口与存储边界
+
+完整实现使用 `domain_soa_records.py`／`record_soa.py` 的专用字段列及类型引用池，`native_soa_*` 接正式规则的完整原生控制流。它与早期 `domain_soa_codec.py` 的换牌阶段编解码不同，也不把 `domain_soa_transition.py` 的局部算术切片当作完整规则。
+
+`scripts/validate_duel_v2_native_soa.py` 默认只列计划；显式运行分别验证原生初始化、持久SoA自然终局、完整专项机制和真实模型32搜索。终局检查必须包含类型、字典顺序、共享引用和RNG；搜索保存完整访问、先验、pi和逐模拟轨迹，额外真红模拟为0。`collect_duel_v2_soa_cases.py` 只生成正式规则输入，不算SoA执行证据。
+
+`compile_execution_schema` 为一次规则调用中的复制、事件与公开快照预留记录空间；规则结束后收集不可达记录。记录数量上限、列表长度上限、字符串容量和计算栈容量必须单独保存。调大临时池不能改变字段类型、删事件、截断合法动作或把容量错误转换为终局。
+
+事件协议继续遵循正式规则。训练链路原本的 `clean` 仍在同样位置执行；不能把“输入生成器保存整局累计事件”和“训练逐步清理后的状态”混为一谈。每个物理动作的原始载荷另存有界设备轨迹，批次结束后用正式规则重放，才能验证设备自然终局。
+
 ### 状态布局的完成条件
 
 | 对象 | 必须保存的语义 |
@@ -49,6 +59,20 @@
 ## 第二步：Windows 实机性能与自然终局
 
 ### 先正确性，后计时
+
+`validate_duel_v2_native_soa.py --backend cuda` 提供实际CUDA规则查询式对拍，包含显式主机列进出和主机搜索控制，只授予规则／编码语义证据，不作为闭环搜索耗时。`tests.test_duel_v2_device_soa_rules` 在实际CUDA上检查捕获、混合行动方、物理推进、父状态不变及双重采样检查；非Python3.10主机通过 `NTE_SOA_FROZEN_PROGRAM` 指定已冻结程序。
+
+`benchmark_duel_v2_soa_device.py` 默认只列计划；`--run` 才加载CUDA与冻结模型，运行设备内嵌套WHILE、原始动作记录及事后正式规则重放。默认8路、2批预热和3批测量，分别保留墙钟、GPU事件、捕获与初始化时间，以及真红适用／非零评分行次数。`--execution-seconds` 是每批执行预算，`--proof-seconds` 从批次结束后开始计；不能把多批的总墙钟误称单批搜索时间。
+
+设备计时包含验收轨迹与根数值快照；CPU重放及数值oracle在计时区间外。每个被记录决策核对完整候选、信息哈希、访问预算和原始动作；每批各根的最后一次搜索另核对CPU参考的访问、completed-Q、pi、先验、Gumbel与最终动作，整数精确比较，数值容差预设为rtol=1e-5／atol=1e-6，Gumbel为1e-12。
+
+```text
+python -X utf8 scripts/validate_duel_v2_native_soa.py --run --backend cuda --program FROZEN_PROGRAM --games 14 --mechanism-tests --output artifacts/rl-evals/NEW_RUN/cuda-rules
+python -X utf8 scripts/benchmark_duel_v2_soa_device.py --run --program FROZEN_PROGRAM --models MODELS --teachers TEACHERS --rows 8 --max-decisions 1 --output artifacts/rl-evals/NEW_RUN/cuda-step
+python -X utf8 scripts/benchmark_duel_v2_soa_device.py --run --program FROZEN_PROGRAM --models MODELS --teachers TEACHERS --rows 8 --max-decisions 400 --require-natural --execution-seconds 7200 --proof-seconds 1800 --output artifacts/rl-evals/NEW_RUN/cuda-games
+```
+
+单步试验的 `passed` 不批准自然终局、模型质量或更高并发。自然局要求全部真实结束、无错误、原始动作及完整信息核验通过；保护上限只产生截断。后端资格仍绑定实际设备回执，不因工具已实现或本机源代码对拍通过而自动批准。
 
 新源码和实际设备先完成相同规则／编码／随机／采样对拍，再进入设备内闭环。保存真实独立的根，而非把同一根复制8份；至少覆盖七队、双方行动和选择阶段。CPU只在批次外导入／导出、编译和事后重放。
 

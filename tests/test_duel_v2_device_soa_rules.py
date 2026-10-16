@@ -1,0 +1,96 @@
+"""Real CUDA integration gates; absence of hardware never becomes a pass."""
+import os
+import sys
+import unittest
+
+import numpy as np
+import torch
+
+
+class SoACudaBoundaryTests(unittest.TestCase):
+    def test_cpu_cannot_be_selected_as_cuda_backend(self):
+        from app.modules.card_game.rl.batched_duel.native_soa_cuda import CudaSoARules
+        with self.assertRaisesRegex(RuntimeError,'Actual CUDA'):
+            CudaSoARules(None,None,device='cpu')
+        from app.modules.card_game.rl.batched_duel.native_soa_cuda_query import NativeSoACUDAQuery
+        with self.assertRaisesRegex(RuntimeError,'Actual CUDA'):
+            NativeSoACUDAQuery(None,None,device='cpu')
+
+
+@unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+class SoACudaRuleIntegrationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from app.modules.card_game.rl.batched_duel.native_array_program import (
+            load_native_array_program,capture_native_array_program)
+        path=os.environ.get('NTE_SOA_FROZEN_PROGRAM')
+        if path:
+            program=load_native_array_program(path)
+        elif sys.version_info[:2]==(3,10):
+            program=capture_native_array_program()
+        else:
+            raise unittest.SkipTest('Set NTE_SOA_FROZEN_PROGRAM to the packaged frozen program')
+        from app.modules.card_game.rl.batched_duel.vm_image import lower_program
+        from app.modules.card_game.rl.batched_duel.domain_soa_records import compile_execution_schema
+        from app.modules.card_game.rl.batched_duel.cuda_vm import VmLimits
+        from app.modules.card_game.rl.batched_duel.native_soa_cuda import CudaSoARules
+        from app.modules.card_game.rl.batched_duel.device_soa_storage import DeviceSoAStore
+        from app.modules.card_game.rl.batched_duel.device_graph_storage import CompactDeviceGraphStore
+        from app.modules.card_game.rl.batched_search.device_soa_rules import DeviceSoARules
+        cls.schema=compile_execution_schema()
+        cls.executor=CudaSoARules(lower_program(program),cls.schema,limits=VmLimits(steps=48000000))
+        cls.store=DeviceSoAStore(cls.schema,8)
+        cls.actions=CompactDeviceGraphStore(slots=8,node_pages=128,edge_pages=128,payload_pages=256,
+            node_page_bytes=16384,edge_page_bytes=16384,payload_page_bytes=4096,
+            max_node_pages_per_slot=16,max_edge_pages_per_slot=16,max_payload_pages_per_slot=32)
+        cls.rules=DeviceSoARules(cls.executor,cls.store,cls.actions,rows=2)
+
+    @classmethod
+    def tearDownClass(cls):
+        torch.cuda.synchronize()
+        cls.rules.close();cls.actions.close();cls.executor.close()
+
+    def test_captured_mixed_actors_physical_step_and_both_sample_guards(self):
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+        from app.modules.card_game.engine.duel_v2 import new_game,acting_side,apply_action,legal_actions
+        from app.modules.card_game.rl.batched_duel.record_soa import unpack_game_states
+        from app.modules.card_game.rl.information_search import sample_world
+        from app.modules.card_game.rl import seven_runtime
+        decks={deck['id']:deck for deck in STARTER_DECKS}
+        params=[dict(seed=1016+i,first_side='ab'[i],decks={
+            'a':decks['zhenhong'],'b':decks['lingke']}) for i in range(2)]
+        roots=self.rules.initialize_device(params)
+        torch.cuda.synchronize()
+        self.assertEqual(roots.errors.cpu().tolist(),[0,0])
+        expected=[new_game(**param) for param in params]
+        self.assertEqual(unpack_game_states(self.store.gather_device(roots).to_host()),expected)
+        seeds=torch.tensor([[1016,0,0,0,1],[1017,0,0,0,1]],dtype=torch.int64,device='cuda')
+        indices=torch.zeros(2,dtype=torch.int64,device='cuda')
+        graph=torch.cuda.CUDAGraph()
+        with torch.cuda.graph(graph):
+            meta=self.rules.metadata_device(roots)
+            decision=self.rules.decision_device(roots,meta.actors)
+            stepped=self.rules.step_device(roots,meta.actors,decision,indices,physical=True)
+            sampled=self.rules.sample_world_device(roots,meta.actors,seeds)
+        graph.replay();torch.cuda.synchronize()
+        self.assertEqual(meta.actors.cpu().tolist(),[0,1])
+        self.assertEqual(meta.phases.cpu().tolist(),[0,0])
+        self.assertEqual(meta.errors.cpu().tolist(),[0,0])
+        self.assertEqual(decision.errors.cpu().tolist(),[0,0])
+        self.assertEqual(stepped.errors.cpu().tolist(),[0,0])
+        self.assertEqual(sampled.errors.cpu().tolist(),[0,0])
+        after=[];worlds=[]
+        for i,state in enumerate(expected):
+            actor=acting_side(state)
+            legal=[action for action in legal_actions(state,actor) if action['type']!='concede']
+            self.assertEqual(int(decision.counts[i].cpu()),len(legal))
+            after.append(apply_action(state,actor,legal[0]))
+            worlds.append(sample_world(state,actor,(1<<256)+1016+i,runtime=seven_runtime))
+        self.assertEqual(unpack_game_states(self.store.gather_device(stepped).to_host()),after)
+        self.assertEqual(unpack_game_states(self.store.gather_device(sampled).to_host()),worlds)
+        # Parent states survive both a physical sandbox commit and determinize.
+        self.assertEqual(unpack_game_states(self.store.gather_device(roots).to_host()),expected)
+
+
+if __name__ == '__main__':
+    unittest.main()

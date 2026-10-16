@@ -1165,7 +1165,7 @@ VM可显式设置 `direct_stack_dispatch=True`，让LOAD_CONST／LOAD_FAST／STO
 
 ## 批量数组规则改造
 
-离线数组分支提供共享规则IR的批量张量内核、固定观察者WDL的recurrent扩展接口、逐次取整的生命上限原语，以及无额外模拟的真红根先验。真红评分只调整搜索前的logits，不覆盖搜索后的动作；旧模拟指导与新先验不得叠加。七队完整规则已另接同源原生数组编译后端，专用SoA仍为后续优化；接口与验证命令见[数组搜索边界](../../../docs/duel-v2-array-search.md)和[原生规则后端](../../../docs/duel-v2-native-array-rules.md)。
+离线数组分支提供共享规则IR的批量张量内核、固定观察者WDL的recurrent扩展接口、逐次取整的生命上限原语，以及无额外模拟的真红根先验。真红评分只调整搜索前的logits，不覆盖搜索后的动作；旧模拟指导与新先验不得叠加。七队完整规则另有同源原生图后端和完整领域SoA后端；接口与验证命令见[数组搜索边界](../../../docs/duel-v2-array-search.md)和[原生规则后端](../../../docs/duel-v2-native-array-rules.md)。
 
 
 ## 七队同源原生规则
@@ -1174,13 +1174,20 @@ VM可显式设置 `direct_stack_dispatch=True`，让LOAD_CONST／LOAD_FAST／STO
 
 ## 专用 SoA 开发与 1016 验收
 
-`rl/batched_duel/domain_soa_*` 是独立的领域字段迁移分支：布局声明、字段算术、效果匹配、直接牌区洗牌及准备条件下的战斗／时钟切片分别验证。完整卡效／角色回调、选择续步、合法动作、观察编码和信息集采样尚未全部迁移，不能接入正式七队采集或把原生图后端回退包装成完整SoA。当前完整规则与CUDA资格均未批准。
+`rl/batched_duel/domain_soa_records.py` 与 `record_soa.py` 维护完整状态的逐字段列、类型引用池、顺序与别名；`native_soa_*` 将完整公开规则直接绑定到这些列。初始化、完整卡效／角色回调、选择续步、合法动作、公开观察和信息集采样沿用正式规则的原生控制流。`device_soa_storage.py` 管理所有者／代次租约，`record_soa_compact.py` 收集不可达状态，`batched_search/device_soa_rules.py` 接设备内完整32搜索、原始动作记录和无模拟真红先验。列、原生栈和回收工作区按顺序复用，完整Game不能通过公开输出导出器退回通用状态图。
 
-当前编解码仅支持换牌阶段的受限快照；正常行动阶段明确拒绝。输入生成器的完整局不算SoA执行的完整局。
+语言临时对象与标量装箱仍有有界工作区，后续按实机计时优化。`NativeSoACPU` 只作显式软件语义参考；CUDA捕获、性能、自然终局与容量资格须另行实测。早期 `domain_soa_codec.py` 仍仅支持换牌阶段，其他局部组件也不授予完整规则资格；输入生成器的完整局不算SoA规则执行。
 
 [1016验收协议](../../../docs/duel-v2-soa-1016-acceptance.md)覆盖完整状态与规则对拍、Windows 8路每根32搜索、自然终局与逐级扩容，以及官方Mctx的算法结果和真实规则性能对照。离线数值树工具默认仅计划；显式运行使用可选JAX/Mctx依赖，不自动安装。单轮结果保存在 `artifacts/rl-evals/`。
 
 ```bash
+.venv/bin/python -m unittest tests.test_duel_v2_record_soa tests.test_duel_v2_domain_soa_records tests.test_duel_v2_native_soa_cpu tests.test_duel_v2_record_soa_compact tests.test_duel_v2_device_soa_storage tests.test_duel_v2_device_soa_rules
+.venv/bin/python scripts/validate_duel_v2_native_soa.py
+.venv/bin/python scripts/validate_duel_v2_native_soa.py --run --program FROZEN_PROGRAM --models MODELS --teachers TEACHERS --games 14 --roots 8 --mechanism-tests --output artifacts/rl-evals/NEW_RUN/software
+.venv/bin/python scripts/benchmark_duel_v2_soa_device.py
+# Windows上线后先做CUDA查询式规则对拍，再跑设备内闭环；查询时间不作吞吐。
+python -X utf8 scripts/validate_duel_v2_native_soa.py --run --backend cuda --program FROZEN_PROGRAM --games 14 --mechanism-tests --output artifacts/rl-evals/NEW_RUN/cuda-rules
+python -X utf8 scripts/benchmark_duel_v2_soa_device.py --run --program FROZEN_PROGRAM --models MODELS --teachers TEACHERS --rows 8 --max-decisions 1 --output artifacts/rl-evals/NEW_RUN/cuda-step
 .venv/bin/python -m unittest tests.test_duel_v2_domain_soa_rules tests.test_duel_v2_domain_soa_effects tests.test_duel_v2_domain_soa_random tests.test_duel_v2_domain_soa_transition tests.test_duel_v2_domain_soa_codec tests.test_duel_v2_mctx_reference
 .venv/bin/python scripts/validate_duel_v2_domain_soa.py
 .venv/bin/python scripts/validate_duel_v2_mctx_reference.py --plan

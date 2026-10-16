@@ -51,7 +51,19 @@ loop = DeviceGameLoop(..., root_guide=None)
 
 `recovery_search.search(root_prior=guide)` 是同一评分的显式 CPU 参考，`score_numpy` 拒绝 CUDA 对象，不构成 GPU 热路径回传。它只改变根先验，保留原模型 `raw_choice` 与 WDL；零位移须复现原搜索结果。
 
-## 当前尚未完成的迁移
+## 完整领域 SoA 执行路径
+
+`domain_soa_records.py` 声明完整公开规则的封闭类型，`record_soa.py` 编译成逐字段的整数、浮点、索引和存在性列，物理地址为 `[column, row]`。玩家、异能者、实体牌、效果、牌区、操作续步及事件分别有专用记录池；列表、映射和元组只能引用声明的池，不能保存任意对象树或JSON。每个字段区分缺失、null、布尔和零，保存实体类、字段插入顺序和共享引用。
+
+`native_soa_source.py` 将正式规则的完整原生控制流绑定到这些列；`vm_soa_views.py` 的对象视图只有类型／记录引用头，没有游戏字段的通用边表副本。规则读取、修改、洗牌、深复制、初始化和采样直接访问权威列。冻结字段名通过 `vm_soa_constant_fields.py` 直接定位字段。`record_soa_compact.py` 按类型回收不可达记录、重排引用及字符串，CPU参考与CUDA实现使用同一算法。
+
+语言栈、闭包、临时列表、临时标量装箱和公开投影仍有有界工作区；这不等于已经消除了全部临时对象，也不构成性能结论。公开投影可导出到现有数值编码器的临时图接口，导出器拒绝完整Game，规则不能通过该接口退回通用状态图。旧 `native_array_*` 后端保留为独立对照，不是SoA的逐步回退。
+
+`NativeSoACPU` 是显式本机语义参考，接持久SoA状态；`NativeSoAReference` 的完整搜索不逐步重打包Game。`CudaSoARules` 与 `DeviceSoARules` 接CUDA状态池、完整候选、两组精确采样检查、原始物理动作记录及现有设备Gumbel驱动。规则调用顺序复用列、计算栈和回收工作区。搜索固定32／cap16、network-WDL／h0和策略对手，真红仅作数组根先验。
+
+软件对拍、实际CUDA对拍、设备闭环32搜索、自然终局和容量资格分别验收。Windows离线不能授予CUDA、提速、模型胜率或训练吞吐资格；也不能用CPU时间推算GPU完整局时间。
+
+## 早期阶段组件
 
 专用领域SoA另由 `batched_duel/domain_soa_schema.py` 声明字段、类型、存在性与容量；`domain_soa_rules.py`、`domain_soa_effects.py` 和 `domain_soa_random.py` 提供直接列计算的算术、效果匹配与CPython随机语义洗牌。`domain_soa_transition.py` 是预先解析条件下的战斗／时钟切片与有界队列，不包含完整角色回调、卡效、合法动作、观察或信息集采样；它与完整状态编解码的执行契约仍未接通，`schema_bound` 与完整规则资格保持false。不能把这些部件称为七队完整SoA规则或完整设备搜索。
 
@@ -59,13 +71,15 @@ loop = DeviceGameLoop(..., root_guide=None)
 
 本次逐字段布局、批量规则、8路32搜索、自然终局、逐级容量及官方Mctx结果／性能对照，按[1016验收协议](duel-v2-soa-1016-acceptance.md)分别记录。官方对照入口 `scripts/validate_duel_v2_mctx_reference.py` 只在显式运行时加载JAX/Mctx；预录数值树只核搜索语义，不替代真实规则、信息集搜索或GPU吞吐。
 
-这些张量组件之外，七队完整规则现已另接[同源原生数组后端](duel-v2-native-array-rules.md)：冻结规则控制流全部预编译，运行时不读取字节码指令流，初始化、推进、合法动作、公开投影和采样均使用该原生代码。数值编码、先验与树操作继续共享本文件的批量接口。实际CUDA资格与性能仍须单独验证，不能据此宣称搜索主耗时已解决。
-
-早期六人原生训练后端仍不能冒充七队支持。当前七队原生分支保留通用实体／牌区数组图；全部领域字段的专用SoA布局、减少临时对象及设备性能优化仍是后续工作。完整设备搜索、原始动作重放、自然终局和学习服务要按新生成源码分别验收。容量不足、未知机制或不支持字段须拒绝，不能删除效果、截断候选或悄悄回到CPU规则。
+早期六人原生训练后端仍不能冒充七队支持。阶段算术组件、旧通用图原生后端与完整领域SoA是不同实现边界；不能共用未经验证的资格标记。容量不足、未知机制或不支持字段须拒绝，不能删除效果、截断候选或悄悄回到CPU规则。
 
 ## 验证
 
 ```bash
+.venv/bin/python -m unittest tests.test_duel_v2_record_soa tests.test_duel_v2_domain_soa_records tests.test_duel_v2_native_soa_cpu tests.test_duel_v2_record_soa_compact tests.test_duel_v2_device_soa_storage tests.test_duel_v2_device_soa_rules
+.venv/bin/python scripts/validate_duel_v2_native_soa.py
+# 显式执行软件验收；模型及历史教师须已冻结且身份匹配。
+.venv/bin/python scripts/validate_duel_v2_native_soa.py --run --program FROZEN_PROGRAM --models MODELS --teachers TEACHERS --games 14 --roots 8 --mechanism-tests --output artifacts/rl-evals/NEW_RUN/software
 .venv/bin/python -m unittest tests.test_duel_v2_array_rules tests.test_duel_v2_array_health tests.test_duel_v2_array_recurrent tests.test_duel_v2_array_prior
 .venv/bin/python -m unittest tests.test_duel_v2_device_search tests.test_duel_v2_device_games tests.test_duel_v2_device_network_guide tests.test_duel_v2_device_policy_opponent
 .venv/bin/python scripts/benchmark_duel_v2_arrays.py --device cpu --rows 8 32 64 --output artifacts/rl-evals/<run-id>/cpu-components

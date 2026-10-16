@@ -104,3 +104,5 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
 攻略数据库的个人练度同步直接集成于网站后端；养成计算仍可匿名使用，读取和保存个人游戏资料须先登录本站。更新部署需同步安装 `requirements.txt` 中的 `pycryptodome`；数据库专表由网站启动时创建，详情见攻略模块 README。
+
+机器人 wiki 工具的只读账号桥接与角色配装图片脚本位于 `plugins/`，契约与部署文件见 [机器人桥接说明](plugins/README.md)。CLI 公共资料仍可匿名查询，`me` 通过 `NTE_GUIDE_TOKEN` 读取本人已保存的游戏账号与角色配装；绘图使用可选的 `requirements-bot.txt`，不进入网站默认依赖。

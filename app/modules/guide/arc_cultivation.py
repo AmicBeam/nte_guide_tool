@@ -8,7 +8,7 @@ from . import cultivation, service
 
 @lru_cache(maxsize=1)
 def config():
-    return json.loads((Path(__file__).parent / 'data/arc_cultivation.json').read_text())
+    return json.loads((Path(__file__).parent / 'data/arc_cultivation.json').read_text(encoding='utf-8'))
 
 
 def recommended(character):

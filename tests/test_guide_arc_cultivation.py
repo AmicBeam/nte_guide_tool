@@ -1,5 +1,7 @@
 """Arc selection, costs, recommended links and saved equipment prefill."""
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 from flask import Flask
 from app.modules.guide import blueprint, service, cultivation, arc_cultivation
 
@@ -12,6 +14,29 @@ class ArcCultivationTest(unittest.TestCase):
         app = Flask(__name__, template_folder=str(root / 'app/templates'))
         app.register_blueprint(blueprint)
         cls.client = app.test_client()
+
+    def test_character_pages_with_gbk_default_encoding(self):
+        original_open = Path.open
+
+        def gbk_open(path, mode='r', buffering=-1, encoding=None, errors=None, newline=None):
+            if 'b' not in mode and encoding in (None, 'locale'):
+                encoding = 'gbk'
+            return original_open(path, mode, buffering, encoding, errors, newline)
+
+        arc_cultivation.config.cache_clear()
+        self.addCleanup(arc_cultivation.config.cache_clear)
+        with patch.object(Path, 'open', gbk_open):
+            for character in service.catalog()['characters']:
+                with self.subTest(character=character['id']):
+                    response = self.client.get('/guide/characters/' + character['id'])
+                    self.assertEqual(response.status_code, 200, response.text[:300])
+                    self.assertIn(character['name'], response.text)
+            response = self.client.get('/guide/characters/1042/cultivation')
+            self.assertEqual(response.status_code, 200, response.text[:300])
+            response = self.client.post('/api/guide/characters/1042/cultivation',
+                                        json={'include_arc': True, 'arc_id': 'fork_twinbirds'})
+            self.assertEqual(response.status_code, 200, response.text[:300])
+            self.assertEqual(response.json['data']['arc']['name'], service.detail('arcs', 'fork_twinbirds')['name'])
 
     def test_recommendations_and_compatible_choices_cover_roster(self):
         for character in service.catalog()['characters']:

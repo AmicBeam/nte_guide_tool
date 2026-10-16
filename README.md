@@ -102,3 +102,5 @@ scripts/deploy_windows_app.sh --deploy
 ```bash
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
+
+攻略数据库的个人练度同步直接集成于网站后端；养成计算仍可匿名使用，读取和保存个人游戏资料须先登录本站。更新部署需同步安装 `requirements.txt` 中的 `pycryptodome`；数据库专表由网站启动时创建，详情见攻略模块 README。

@@ -37,8 +37,10 @@ def create_app() -> Flask:
     app.config['DUEL_SUPPORT_GROUP'] = DUEL_SUPPORT_GROUP
     app.config['SHAFT_SUPPORT_GROUP'] = SHAFT_SUPPORT_GROUP
     app.config['SHAFT_LOGIN_REQUIRED'] = SHAFT_LOGIN_REQUIRED
+    from app.modules.guide.user_data import GuideGameProfile
     init_db([
         Player,
+        GuideGameProfile,
         PlayerTutorial,
         LoginCode,
         AccessToken,

@@ -1,4 +1,4 @@
-"""Anonymous, server-rendered NTE reference and machine-readable API."""
+"""Public NTE reference, cultivation calculator and authenticated private imports."""
 from pathlib import Path
 
 from flask import Blueprint, Response, jsonify, render_template, request, send_file
@@ -178,3 +178,7 @@ CLI：python nte-guide.py --base-url http://127.0.0.1:5001 search 黑羽
 CLI：python nte-guide.py --base-url http://127.0.0.1:5001 get characters 1042 --section abilities
 '''
     return Response(text, content_type='text/plain; charset=utf-8')
+
+
+from .user_routes import register as register_user_routes
+register_user_routes(blueprint)

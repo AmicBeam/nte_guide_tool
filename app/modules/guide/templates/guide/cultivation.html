@@ -3,22 +3,36 @@
 {% macro level_input(name, label, low, high) %}
 <label class="guide-cultivation-field">{{ label }}<input name="{{ name }}" aria-label="{{ label }}" type="number" step="1" min="{{ low }}" max="{{ high }}" value="{{ values[name] }}" required></label>
 {% endmacro %}
+{% macro skill_slider(name, label, low, high, title) %}
+<label class="cultivation-slider-field" for="{{ name }}"><span>{{ title }}<output for="{{ name }}" id="{{ name }}_value">{{ values[name] }}</output></span><input id="{{ name }}" name="{{ name }}" aria-label="{{ label }}" type="range" step="1" min="{{ low }}" max="{{ high }}" value="{{ values[name] }}" data-skill-level><small><span>{{ low }}{% if low == 0 %} · 未解锁{% endif %}</span><span>{{ high }}</span></small></label>
+{% endmacro %}
 {% block title %}{{ record.name }} · 养成计算器 · NTE Tools{% endblock %}
-{% block head %}{{ super() }}<script defer src="{{ url_for('guide_module.static', filename='cultivation.js') }}"></script>{% endblock %}
+{% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='cultivation.css') }}"><script defer src="{{ url_for('guide_module.static', filename='cultivation.js') }}"></script>{% endblock %}
 {% block content %}
 <nav class="guide-breadcrumb"><a href="/guide">攻略数据库</a> / <a href="/guide/characters/{{ record.id }}">{{ record.name }}</a> / 养成计算器</nav>
 <header class="guide-hero"><p class="guide-eyebrow">CULTIVATION</p><h1>{{ record.name }} · 养成计算器</h1><p>填写当前练度与目标，计算角色升级、突破和技能养成所需的全部材料。</p></header>
-<form data-boundary-levels='{{ caps[:-1]|tojson }}' class="guide-cultivation-form" method="get" action="/guide/characters/{{ record.id }}/cultivation#cultivation-result">
+<section class="cultivation-personal" aria-label="我的游戏数据" data-character-id="{{ record.id }}">
+<div class="cultivation-personal-title"><div><h2>我的练度</h2><p id="personal-status" role="status">登录本站后，可同步并保存角色练度和已装备数据；也可直接手填计算。</p></div><button type="button" id="sync-open">同步游戏数据</button></div>
+<div id="personal-controls" hidden><label>游戏账号<select id="profile-select" aria-label="已同步游戏账号"></select></label><button type="button" id="use-profile">使用已同步练度</button><button type="button" id="delete-profile" class="cultivation-secondary">删除此账号数据</button></div>
+<details id="saved-equipment" hidden><summary>查看当前已装备数据</summary><div id="saved-equipment-content"></div></details>
+<label id="prefill-confirm-label" hidden><input type="checkbox" id="prefill-confirm" form="cultivation-input">我已核对同步的技能为基础等级，并确认临界等级的突破状态</label>
+<p id="prefill-notice" class="cultivation-notice" hidden role="status"></p>
+</section>
+<dialog id="sync-dialog" aria-labelledby="sync-title"><form id="sync-form"><div class="sync-heading"><h2 id="sync-title">同步塔吉多游戏数据</h2><button type="button" id="sync-close" aria-label="关闭同步窗口">×</button></div><p>仅保存角色当前练度与已装备的弧盘、空幕卡带等资料，用于养成计算。手机号、验证码和游戏登录凭据不写入数据库。</p>
+<label>手机号<input id="sync-mobile" type="tel" autocomplete="tel" inputmode="numeric" maxlength="11" required></label><div class="sync-code"><label>短信验证码<input id="sync-code" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="8"></label><button id="sms-send" type="button">获取验证码</button></div>
+<label id="sync-role-label" hidden>选择游戏账号<select id="sync-role"></select></label><button type="button" id="sync-reset">更换手机号 / 重新验证</button><p id="sync-status" role="status"></p><button id="sync-submit" type="submit">验证并同步</button></form></dialog>
+<form id="cultivation-input" data-boundary-levels='{{ caps[:-1]|tojson }}' class="guide-cultivation-form" method="get" action="/guide/characters/{{ record.id }}/cultivation#cultivation-result">
 <input type="hidden" name="calculate" value="1">
-<div class="guide-cultivation-columns">{% for side, title in [('current', '当前练度'), ('target', '目标练度')] %}<fieldset><legend>{{ title }}</legend>
+<section class="cultivation-character"><div class="cultivation-character-heading">{% if record.assets and record.assets.avatar %}<img src="{{ record.assets.avatar }}" alt="{{ record.name }}" width="72" height="72">{% endif %}<div><h2>{{ record.name }}</h2><p>当前练度 <span aria-hidden="true">→</span> 目标练度</p></div></div>
+<div class="cultivation-level-pair">{% for side, title in [('current', '当前练度'), ('target', '目标练度')] %}<fieldset><legend>{{ title }}</legend>
 {{ level_input(side ~ '_level', title ~ ' · 角色等级', 1, caps[-1]) }}
 <label class="guide-cultivation-field" data-boundary-side="{{ side }}" {% if values[side ~ '_level']|int not in caps[:-1] %}hidden{% endif %}>{{ title }} · 是否已突破<select name="{{ side }}_ascended" aria-label="{{ title }} · 是否已突破"><option value="0" {% if values[side ~ '_ascended'] not in [true, 1, '1'] %}selected{% endif %}>尚未突破</option><option value="1" {% if values[side ~ '_ascended'] in [true, 1, '1'] %}selected{% endif %}>已突破</option></select></label>
-<p class="guide-muted">突破阶段按等级自动判断；临界等级可选择是否已突破。按刚达到该等级计算，不计等级内已累计经验。</p>
-</fieldset>{% endfor %}</div>
+</fieldset>{% endfor %}</div><p class="guide-muted">突破阶段按等级自动判断；临界等级可选择是否已突破。按刚达到该等级计算，不计等级内已累计经验。</p>
+</section>
 <h2>技能与天赋</h2><p class="guide-muted">填写基础技能等级，不含觉醒或共鸣额外增加的等级。可解锁的天赋、都市技能以 0 表示未解锁。</p>
-<div class="guide-cultivation-skills">{% for skill in skills %}{% set i = loop.index0 %}<fieldset><legend>{{ skill.label }}</legend><div class="guide-cultivation-columns">{{ level_input('current_skill_' ~ i, skill.label ~ ' · 当前等级', skill.minimum, skill.maximum) }}{{ level_input('target_skill_' ~ i, skill.label ~ ' · 目标等级', skill.minimum, skill.maximum) }}</div></fieldset>{% endfor %}</div>
+<div class="guide-cultivation-skills cultivation-skill-rows">{% for skill in skills %}{% set i = loop.index0 %}<fieldset><legend>{{ skill.label }}</legend><div class="cultivation-sliders">{{ skill_slider('current_skill_' ~ i, skill.label ~ ' · 当前等级', skill.minimum, skill.maximum, '当前等级') }}{{ skill_slider('target_skill_' ~ i, skill.label ~ ' · 目标等级', skill.minimum, skill.maximum, '目标等级') }}</div></fieldset>{% endfor %}</div>
 {% if error %}<p class="guide-cultivation-error" role="alert">{{ error }}</p>{% endif %}
-<div class="guide-links"><button type="submit">计算所需资源</button><a href="/guide/characters/{{ record.id }}/cultivation">重置</a><a href="/guide/characters/{{ record.id }}#section-equip_slots">查看空幕</a></div>
+<div class="guide-links cultivation-actions"><button type="submit">计算所需资源</button><a href="/guide/characters/{{ record.id }}/cultivation">重置</a><a href="/guide/characters/{{ record.id }}#section-equip_slots">查看空幕</a></div>
 </form>
 {% if result %}<section class="guide-detail-section" id="cultivation-result" aria-label="养成计算结果"><h2>所需资源</h2>
 <div class="guide-cultivation-summary"><div><span>所需经验</span><strong>{{ '{:,}'.format(result.experience) }}</strong></div><div><span>甲硬币合计</span><strong>{{ '{:,}'.format(result.total_gold) }}</strong></div><div><span>经验书溢出经验</span><strong>{{ '{:,}'.format(result.overflow_experience) }}</strong></div></div>

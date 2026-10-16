@@ -7,7 +7,7 @@ from flask import current_app, g, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
 from app.auth import token_required
 from app.db import atomic_transaction
-from . import game_sync, user_data, service
+from . import game_sync, user_data, service, presentation
 from .game_provider import LoginDependencyError, ProviderError
 
 
@@ -46,6 +46,7 @@ def register(blueprint):
         arcs = {item['id']: {'name': item['name'], 'image': item.get('image')}
                 for item in service.catalog()['arcs']}
         return render_template('guide/account.html', characters=characters, arcs=arcs,
+            equipment_images=presentation.equipment_images(),
             kinds=service.KINDS, counts={key: len(service.catalog()[key]) for key in service.KINDS})
 
     def body():

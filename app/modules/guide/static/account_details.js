@@ -1,10 +1,25 @@
 'use strict';
 
+function guideEquipmentReference(entries, item, kind) {
+  const normalize = value => String(value || '').trim().replace(/^[「『“"]|[」』”"]$/g, '').toLowerCase();
+  const candidates = Object.entries(entries).filter(([, entry]) => !kind || entry.kind === kind);
+  const identifier = String(item.id || '').toLowerCase();
+  const exact = candidates.find(([id]) => id.toLowerCase() === identifier);
+  if (exact) return exact[1];
+  const name = normalize(item.name);
+  if (!name) return null;
+  const matching = candidates.filter(([, entry]) => [entry.name, ...(entry.aliases || [])].some(alias => normalize(alias) === name));
+  // Several quality IDs can point at the same shape, but a shared model name cannot select a shape.
+  const images = new Set(matching.map(([, entry]) => entry.image));
+  return images.size === 1 ? matching[0][1] : null;
+}
+
 (() => {
   const dialog = document.getElementById('account-detail-dialog');
   if (!dialog) return;
   const content = document.getElementById('account-detail-content');
   const arcs = JSON.parse(document.getElementById('account-arcs').textContent);
+  const equipmentImages = JSON.parse(document.getElementById('account-equipment-images').textContent);
   const node = (tag, className, text) => {
     const result = document.createElement(tag);
     if (className) result.className = className;
@@ -15,6 +30,7 @@
   const image = (src, className) => {
     const img = node('img', className);
     img.src = src; img.alt = '';
+    img.addEventListener('error', () => { img.hidden = true; });
     return img;
   };
   const propertyRows = (properties, className = '') => {
@@ -67,7 +83,7 @@
 
     const equipment = saved.equipment || {};
     const fork = equipment.fork || {};
-    const arc = arcs[fork.id];
+    const arc = guideEquipmentReference(arcs, fork);
     const arcPanel = node('section', 'account-build-arc');
     if (arc?.image) arcPanel.append(image(arc.image, 'account-arc-image'));
     const arcInfo = node('div');
@@ -85,7 +101,11 @@
         const card = node('section', 'account-gear-piece');
         const header = node('div', 'account-gear-piece-heading');
         header.append(node('span', 'account-section-label', category), node('span', '', `Lv.${display(item.level)}`));
-        card.append(header, node('h4', '', item.name || item.id || '未提供'));
+        const identity = node('div', 'account-piece-identity');
+        const reference = guideEquipmentReference(equipmentImages, item, category === '核心' ? 'core' : 'drive');
+        if (reference?.image) identity.append(image(reference.image, 'account-piece-image'));
+        identity.append(node('h4', '', item.name || reference?.name || item.id || '未提供'));
+        card.append(header, identity);
         if (item.main_properties?.length) card.append(propertyRows(item.main_properties, 'account-main-properties'));
         if (item.properties?.length) card.append(propertyRows(item.properties));
         if (!item.main_properties?.length && !item.properties?.length) card.append(node('p', 'account-missing', '属性未提供'));

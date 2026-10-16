@@ -11,6 +11,11 @@ def material_metadata():
     return json.loads((Path(__file__).parent / 'data/material_metadata.json').read_text(encoding='utf-8'))
 
 
+@lru_cache(maxsize=1)
+def equipment_images():
+    return json.loads((Path(__file__).parent / 'data/equipment_images.json').read_text(encoding='utf-8'))
+
+
 def material_display(item):
     return material_metadata().get(str(item['id']).casefold(), {})
 

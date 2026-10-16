@@ -188,7 +188,7 @@ class HeiyuTest(unittest.TestCase):
                 self.assertEqual(d['resource_damage'] > 0, hits > 0)
 
     def test_kongmu_access_and_topology(self):
-        c = next(c for c in get_kongmu_catalog_payload()['characters'] if c['id'] == CID)
+        c = next(c for c in get_kongmu_catalog_payload()['characters'] if c['id'] == '1042')
         self.assertEqual(c['element'], '魂')
         self.assertIn('暴击率增加8%', c['kongmu_passive']['text'])
         result = plan_kongmu_layout(CID, 'attack')

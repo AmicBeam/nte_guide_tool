@@ -11,6 +11,7 @@ blueprint = Blueprint('guide_module', __name__, template_folder='templates',
 blueprint.add_app_template_filter(description_html, 'guide_description_html')
 blueprint.add_app_template_filter(is_current_challenge, 'guide_current_challenge')
 blueprint.add_app_template_filter(presentation.material_display, 'guide_material_display')
+blueprint.add_app_template_filter(presentation.kongmu_entry, 'guide_kongmu_entry')
 blueprint.add_app_template_filter(service.label, 'guide_label')
 blueprint.add_app_template_filter(service.ability_title, 'guide_ability_title')
 blueprint.add_app_template_filter(service.effect_html, 'guide_effect_html')

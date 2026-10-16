@@ -3,6 +3,7 @@ from functools import lru_cache
 import json
 import re
 from pathlib import Path
+from urllib.parse import urlencode
 
 
 @lru_cache(maxsize=1)
@@ -37,3 +38,19 @@ def upgrade_material_preview(record):
                 visit(child)
     visit(record.get('materials', {}))
     return [item for _, item in families.values()]
+
+
+@lru_cache(maxsize=1)
+def kongmu_links():
+    return json.loads((Path(__file__).parent / 'data/kongmu_links.json').read_text(encoding='utf-8'))
+
+
+def kongmu_entry(record):
+    binding = kongmu_links().get(str(record['id']))
+    if not binding:
+        return None
+    params = {'character': binding['character_id']}
+    recommendations = binding['recommendations']
+    if recommendations:
+        params['cartridge'] = recommendations[0]['id']
+    return {'url': '/kongmu?' + urlencode(params), 'recommendations': recommendations}

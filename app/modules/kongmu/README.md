@@ -11,7 +11,7 @@
 - 主角目录头像使用共享本地角色资源，通过长效 immutable 静态缓存加载，不依赖 Nanoka 远程回退。
 - 属性图标统一使用共享资源 `app/static/images/elements/`，不依赖其他业务模块的静态资源。
 - 残虹头像使用共享资源 `app/static/images/characters/avatar/残虹.png`，空幕与排轴统一引用该文件。
-- 残虹的Ⅲ型特化、“每个Ⅲ型驱动增加16%暴击伤害”和20格空幕拓扑已按 Nanoka NTE 1.3.4 正式角色 ID `1036` 的角色详情接入；规划器保留排轴稳定角色 ID，但角色已公开。
+- 残虹的Ⅲ型特化、“每个Ⅲ型驱动增加16%暴击伤害”和20格空幕拓扑已按 Nanoka NTE 1.3.4 正式角色 ID `1036` 的角色详情接入；规划器使用正式角色 ID `1036`，角色已公开。
 - 灵可使用 Nanoka 角色 ID `1072`，为灵属性5星角色；空幕为Ⅲ型特化，每个Ⅲ型驱动增加8%暴击率。头像使用共享资源 `app/static/images/characters/avatar/灵可.png`。
 
 ## 代码边界
@@ -34,7 +34,7 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 
 ## 黑羽（2026-09-16 接入）
 
-黑羽使用稳定ID `char_heiyu`，魂属性；在空幕中对所有用户开放，排轴权限独立。现有数值来源为用户提供的[腾讯文档《黑羽资料汇总》](https://docs.qq.com/aio/DVVRZempSSmZ4THVj?p=MluEyftYtfADwlqnzgRzww)；Nanoka NTE `1.4.6` 已有角色 `1042` 的资源记录，本次只用来核对图片，不改写数值来源。Ⅲ型特化，每个Ⅲ型驱动提供8%暴击率。5×5拓扑按文档原始方向录入：
+黑羽使用正式ID `1042`，魂属性；在空幕中对所有用户开放，排轴权限独立。现有数值来源为用户提供的[腾讯文档《黑羽资料汇总》](https://docs.qq.com/aio/DVVRZempSSmZ4THVj?p=MluEyftYtfADwlqnzgRzww)；Nanoka NTE `1.4.6` 已有角色 `1042` 的资源记录，本次只用来核对图片，不改写数值来源。Ⅲ型特化，每个Ⅲ型驱动提供8%暴击率。5×5拓扑按文档原始方向录入：
 
 ```text
 11110
@@ -48,4 +48,10 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 
 ## 明音凛（2026-09-24 接入）
 
-明音凛沿用排轴稳定 ID `char_akane`，在空幕中对所有用户开放。空幕拓扑与被动来自 Nanoka NTE `1.4.6` 角色 `1057`：7×7 画布中间四行各五格，共20格；Ⅲ型特化，每个Ⅲ型驱动使攻击力增加10%。本次只为独立空幕规划器接入该配置，不改排轴既有的用户估算面板和机制。头像使用最新 NTEData 默认立绘裁成的共享方形图，来源和裁切参数见[角色图片资源说明](../../../docs/character-image-assets.md#明音凛默认造型补图2026-09-24)。验证：`tests.test_shaft_publication.ShaftPublicationTest.test_akane_kongmu_is_public_with_source_backed_grid`。
+明音凛使用正式角色 ID `1057`，在空幕中对所有用户开放。空幕拓扑与被动来自 Nanoka NTE `1.4.6` 角色 `1057`：7×7 画布中间四行各五格，共20格；Ⅲ型特化，每个Ⅲ型驱动使攻击力增加10%。本次只为独立空幕规划器接入该配置，不改排轴既有的用户估算面板和机制。头像使用最新 NTEData 默认立绘裁成的共享方形图，来源和裁切参数见[角色图片资源说明](../../../docs/character-image-assets.md#明音凛默认造型补图2026-09-24)。验证：`tests.test_shaft_publication.ShaftPublicationTest.test_akane_kongmu_is_public_with_source_backed_grid`。
+
+## 角色ID与跳转预选
+
+空幕目录、接口结果及本地角色文件使用正式数字ID，与攻略数据库统一。残虹为1036、黑羽为1042、明音凛为1057；旧 `char_076a1f4e53`、`char_heiyu`、`char_akane` 仍作为链接及计算请求别名接受，返回正式ID。男女主保留1046／1051，目录合并时通过 `merged_ids` 接受两者。`/kongmu?character=1042&cartridge=psyche` 可预选角色与卡带，进入后仍由用户点击计算。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_kongmu_links tests.test_module_routes tests.test_lingke_modules tests.test_shaft_heiyu tests.test_shaft_publication -q`；浏览器核对角色页入口、正式ID与旧链接预选和推荐卡带。

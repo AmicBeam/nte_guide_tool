@@ -67,6 +67,8 @@ OWNER_TYPE_LABELS = {
     4: 'IV型',
 }
 
+LEGACY_CHARACTER_IDS = {'char_076a1f4e53': '1036', 'char_heiyu': '1042', 'char_akane': '1057'}
+
 FIXED_CHARACTER_AVATAR_SOURCE_ICONS = {
     '1046': '/Game/UI/UI_Icon/AvatarImage/256/player_009_256',
     '1051': '/Game/UI/UI_Icon/AvatarImage/256/player_009_256',
@@ -75,10 +77,10 @@ FIXED_CHARACTER_AVATAR_SOURCE_ICONS = {
 FIXED_CHARACTER_AVATAR_LOCAL_PATHS = {
     '1046': 'images/characters/avatar/男主.webp',
     '1051': 'images/characters/avatar/男主.webp',
-    'char_076a1f4e53': 'images/characters/avatar/残虹.png',
+    '1036': 'images/characters/avatar/残虹.png',
     '1072': 'images/characters/avatar/灵可.png',
-    'char_heiyu': 'images/characters/avatar/黑羽.webp',
-    'char_akane': 'images/characters/avatar/明音凛.webp',
+    '1042': 'images/characters/avatar/黑羽.webp',
+    '1057': 'images/characters/avatar/明音凛.webp',
 }
 
 @dataclass(frozen=True)
@@ -711,6 +713,8 @@ def get_kongmu_catalog_payload() -> dict[str, Any]:
             for avatar_item in avatar_items
         ]
         compacted['merged_ids'] = merged_ids or [compacted['id']]
+        compacted['merged_ids'] += [legacy for legacy, current in LEGACY_CHARACTER_IDS.items()
+                                    if current in compacted['merged_ids']]
         compacted['avatar_choices'] = avatar_choices
         characters.append(compacted)
     cartridges = [compact_cartridge(item) for item in dedupe_cartridges(raw['cartridges'])]
@@ -730,6 +734,7 @@ def get_kongmu_catalog_payload() -> dict[str, Any]:
 
 
 def get_character_detail(character_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    character_id = LEGACY_CHARACTER_IDS.get(character_id, character_id)
     raw = get_kongmu_raw_data()
     record = resolve_record(
         [item['record'] for item in raw['characters']],

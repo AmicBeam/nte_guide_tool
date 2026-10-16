@@ -328,8 +328,8 @@ class GuideTest(unittest.TestCase):
         self.assertEqual(rows[-1]['required_exp'], 322380)
         self.assertIn('经验需求', self.client.get('/guide/characters/1042.md?section=experience').text)
         html = self.client.get('/guide/characters/1042?section=equip_slots').text
-        self.assertIn('href="/kongmu"', html)
-        self.assertIn('前往空幕计算', html)
+        self.assertIn('href="/kongmu?character=1042&amp;cartridge=psyche"', html)
+        self.assertIn('空幕计算', html)
 
     def test_cultivation_full_roster_and_cost_totals(self):
         for character in service.catalog()['characters']:

@@ -96,7 +96,7 @@ class ShaftPublicationTest(RoomFlowTestCase):
             akane = next(c for c in catalog['characters'] if c['id'] == 'char_akane')
             self.assertEqual(akane['selection_disabled'], token != tester)
             kongmu = self.client.get('/api/kongmu/catalog', headers=headers).get_json()
-            self.assertIn('char_heiyu', [c['id'] for c in kongmu['characters']])
+            self.assertIn('1042', [c['id'] for c in kongmu['characters']])
             plan = self.client.post('/api/kongmu/plan', json={'character_id': 'char_heiyu', 'cartridge_id': 'attack'}, headers=headers)
             self.assertEqual(plan.status_code, 200)
         axis = {'team': [{'slot': 0, 'character_id': 'char_heiyu', 'arc_id': '', 'cartridge_id': ''}], 'steps': []}
@@ -122,9 +122,9 @@ class ShaftPublicationTest(RoomFlowTestCase):
             models.Player.player_uid == 'akane-kongmu-tester'
         ).execute()
         regular_catalog = self._get('/api/kongmu/catalog', token=regular)
-        self.assertIn('char_akane', [c['id'] for c in regular_catalog['characters']])
+        self.assertIn('1057', [c['id'] for c in regular_catalog['characters']])
         catalog = self.client.get('/api/kongmu/catalog').get_json()
-        akane = next(c for c in catalog['characters'] if c['id'] == 'char_akane')
+        akane = next(c for c in catalog['characters'] if c['id'] == '1057')
         self.assertEqual(akane['avatar'], '/static/images/characters/avatar/明音凛.webp')
         self.assertIn('攻击力百分比', akane['kongmu_passive']['text'])
         self.assertIn('10%', akane['kongmu_passive']['text'])
@@ -132,7 +132,7 @@ class ShaftPublicationTest(RoomFlowTestCase):
         plan = self.client.post('/api/kongmu/plan', json={
             'character_id': 'char_akane', 'cartridge_id': 'attack'
         }).get_json()
-        self.assertEqual(plan['character']['id'], 'char_akane')
+        self.assertEqual(plan['character']['id'], '1057')
         slots = plan['character']['equip_slots']['slots']
         self.assertEqual(sum(cell >= 0 for row in slots for cell in row), 20)
         self.assertGreater(plan['result']['total_solution_count'], 0)

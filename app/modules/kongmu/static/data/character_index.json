@@ -308,7 +308,7 @@
       "icon": "/Game/UI/UI_Icon/AvatarImage/256/player_zhenhong_256"
     },
     {
-      "id": "char_076a1f4e53",
+      "id": "1036",
       "name": "残虹",
       "names": {
         "zh": "残虹"
@@ -320,7 +320,7 @@
       "source_note": "Nanoka NTE 1.3.4 已收录正式角色 ID 1036；本记录保留排轴稳定角色 ID，并于2026-08-24按用户口径转为公开角色。"
     },
     {
-      "id": "char_heiyu",
+      "id": "1042",
       "name": "黑羽",
       "names": {
         "zh": "黑羽"
@@ -330,7 +330,7 @@
       "source_note": "角色数值来自用户2026-09-15提供的腾讯文档《黑羽资料汇总》UTYzjRJfxLuc，非Nanoka核实数据；2026-09-24以Nanoka NTE 1.4.6角色1042和最新NTEData核对默认造型图片，未改数值来源。"
     },
     {
-      "id": "char_akane",
+      "id": "1057",
       "name": "明音凛",
       "names": {
         "zh": "明音凛"

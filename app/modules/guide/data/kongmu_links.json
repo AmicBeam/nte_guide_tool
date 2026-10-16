@@ -1,0 +1,227 @@
+{
+  "1003": {
+    "character_id": "1003",
+    "recommendations": [
+      {
+        "id": "get_efficiency",
+        "name": "音速蓝刺猬"
+      }
+    ]
+  },
+  "1004": {
+    "character_id": "1004",
+    "recommendations": [
+      {
+        "id": "chaos",
+        "name": "迪亚波罗斯"
+      }
+    ]
+  },
+  "1008": {
+    "character_id": "1008",
+    "recommendations": [
+      {
+        "id": "lakshana",
+        "name": "街头拳王"
+      }
+    ]
+  },
+  "1010": {
+    "character_id": "1010",
+    "recommendations": [
+      {
+        "id": "nature",
+        "name": "森林萤火之心"
+      }
+    ]
+  },
+  "1019": {
+    "character_id": "1019",
+    "recommendations": [
+      {
+        "id": "nature",
+        "name": "森林萤火之心"
+      }
+    ]
+  },
+  "1020": {
+    "character_id": "1020",
+    "recommendations": [
+      {
+        "id": "get_efficiency",
+        "name": "音速蓝刺猬"
+      }
+    ]
+  },
+  "1021": {
+    "character_id": "1021",
+    "recommendations": [
+      {
+        "id": "heal",
+        "name": "缇娅的夜间酒馆"
+      }
+    ]
+  },
+  "1023": {
+    "character_id": "1023",
+    "recommendations": [
+      {
+        "id": "incantation",
+        "name": "真红：双生蝶"
+      }
+    ]
+  },
+  "1025": {
+    "character_id": "1025",
+    "recommendations": [
+      {
+        "id": "lakshana",
+        "name": "街头拳王"
+      }
+    ]
+  },
+  "1033": {
+    "character_id": "1033",
+    "recommendations": [
+      {
+        "id": "shield",
+        "name": "守卫王国"
+      }
+    ]
+  },
+  "1036": {
+    "character_id": "1036",
+    "recommendations": [
+      {
+        "id": "incantation",
+        "name": "真红：双生蝶"
+      }
+    ]
+  },
+  "1039": {
+    "character_id": "1039",
+    "recommendations": [
+      {
+        "id": "mag",
+        "name": "小小大冒险"
+      }
+    ]
+  },
+  "1042": {
+    "character_id": "1042",
+    "recommendations": [
+      {
+        "id": "psyche",
+        "name": "恶魔之血：诅咒"
+      }
+    ]
+  },
+  "1046": {
+    "character_id": "1046",
+    "recommendations": [
+      {
+        "id": "cosmos",
+        "name": "失落光芒"
+      }
+    ]
+  },
+  "1051": {
+    "character_id": "1051",
+    "recommendations": [
+      {
+        "id": "cosmos",
+        "name": "失落光芒"
+      }
+    ]
+  },
+  "1052": {
+    "character_id": "1052",
+    "recommendations": [
+      {
+        "id": "cosmos",
+        "name": "失落光芒"
+      }
+    ]
+  },
+  "1054": {
+    "character_id": "1054",
+    "recommendations": [
+      {
+        "id": "chaos",
+        "name": "迪亚波罗斯"
+      }
+    ]
+  },
+  "1055": {
+    "character_id": "1055",
+    "recommendations": [
+      {
+        "id": "nature",
+        "name": "森林萤火之心"
+      }
+    ]
+  },
+  "1057": {
+    "character_id": "1057",
+    "recommendations": [
+      {
+        "id": "lakshana",
+        "name": "街头拳王"
+      }
+    ]
+  },
+  "1070": {
+    "character_id": "1070",
+    "recommendations": [
+      {
+        "id": "psyche",
+        "name": "恶魔之血：诅咒"
+      }
+    ]
+  },
+  "1071": {
+    "character_id": "1071",
+    "recommendations": [
+      {
+        "id": "lakshana",
+        "name": "街头拳王"
+      }
+    ]
+  },
+  "1072": {
+    "character_id": "1072",
+    "recommendations": [
+      {
+        "id": "nature",
+        "name": "森林萤火之心"
+      }
+    ]
+  },
+  "1073": {
+    "character_id": "1073",
+    "recommendations": [
+      {
+        "id": "cosmos",
+        "name": "失落光芒"
+      }
+    ]
+  },
+  "1075": {
+    "character_id": "1075",
+    "recommendations": [
+      {
+        "id": "get_efficiency",
+        "name": "音速蓝刺猬"
+      }
+    ]
+  },
+  "1076": {
+    "character_id": "1076",
+    "recommendations": [
+      {
+        "id": "cosmos",
+        "name": "失落光芒"
+      }
+    ]
+  }
+}

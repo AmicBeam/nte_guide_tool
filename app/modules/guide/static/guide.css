@@ -82,3 +82,5 @@
 .guide-character-intro .guide-character-art{pointer-events:none}.guide-character-intro .guide-character-art>img{height:100%;width:auto;max-width:none;flex:none}
 
 .guide-passive-heading{display:flex;align-items:center;gap:14px;margin-bottom:14px}.guide-passive-icon{width:56px;height:56px;flex:0 0 56px;object-fit:contain}.guide-passive-heading>div{min-width:0}.guide-passive-heading h3{margin:0}.guide-passive-heading .guide-eyebrow{display:block;margin-bottom:6px}
+
+#section-equip_slots .guide-equip-description{font-size:16px;line-height:1.9}#section-equip_slots .guide-muted{font-size:14px}

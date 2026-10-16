@@ -39,9 +39,11 @@ def create_app() -> Flask:
     app.config['SHAFT_LOGIN_REQUIRED'] = SHAFT_LOGIN_REQUIRED
     app.config['GUIDE_CHAT_SETTINGS'] = dict(GUIDE_CHAT_SETTINGS)
     from app.modules.guide.user_data import GuideGameProfile
+    from app.modules.guide.chat_quota import GuideChatQuota
     init_db([
         Player,
         GuideGameProfile,
+        GuideChatQuota,
         PlayerTutorial,
         LoginCode,
         AccessToken,

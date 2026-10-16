@@ -79,6 +79,84 @@ class GuideChatTest(unittest.TestCase):
         self.app.config['GUIDE_CHAT_SETTINGS'] = {}
         self.assertEqual(self.post_chat().status_code, 503)
 
+    def test_hourly_quota_and_rolling_expiry(self):
+        from datetime import datetime, timedelta
+        from app.modules.guide import chat_quota, chat_service
+        now = datetime(2026, 10, 17, 4)
+        with patch.object(chat_quota, 'datetime') as clock, \
+                patch.object(self.chat_model, 'complete', return_value={'content': '回答'}) as model:
+            clock.fromisoformat.side_effect = datetime.fromisoformat
+            clock.utcnow.return_value = now
+            for index in range(10):
+                clock.utcnow.return_value = now + timedelta(seconds=index)
+                response = self.post_chat()
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('回答', response.text)
+            blocked = self.post_chat()
+            self.assertEqual(blocked.status_code, 429)
+            self.assertEqual(blocked.json['error']['code'], 'chat_rate_limited')
+            self.assertEqual(blocked.headers['Retry-After'], '3591')
+            self.assertEqual(blocked.headers['Cache-Control'], 'no-store')
+            self.assertIn('10条', blocked.json['error']['message'])
+            self.assertEqual(model.call_count, 10)
+            # Reopening the database keeps usage, just as a service restart does.
+            self.db_module.db.close()
+            self.assertEqual(self.post_chat().status_code, 429)
+            player = self.dao_module.get_player_by_token(self.token)
+            self.assertTrue(chat_service.acquire(player.id))
+            chat_service.release(player.id)
+            clock.utcnow.return_value = now + timedelta(hours=1)
+            response = self.post_chat()
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('回答', response.text)
+            self.assertEqual(self.post_chat().status_code, 429)
+
+    def test_quota_is_per_account_and_excludes_rejected_requests(self):
+        from app.modules.guide import chat_quota, chat_service
+        from app.models import Player
+        owner = self.dao_module.get_player_by_token(self.token)
+        self.assertEqual(self.post_chat(messages=[]).status_code, 400)
+        self.app.config['GUIDE_CHAT_SETTINGS'] = {}
+        self.assertEqual(self.post_chat().status_code, 503)
+        self.app.config['GUIDE_CHAT_SETTINGS'] = self.settings
+        self.assertTrue(chat_service.acquire(owner.id))
+        try:
+            self.assertEqual(self.post_chat().status_code, 429)
+        finally:
+            chat_service.release(owner.id)
+        self.assertEqual(chat_quota.GuideChatQuota.select().count(), 0)
+        for _ in range(10):
+            self.assertEqual(chat_quota.consume(owner.id), 0)
+        self.assertGreater(chat_quota.consume(owner.id), 0)
+        other = Player.create(player_uid='quota-other')
+        self.assertEqual(chat_quota.consume(other.id), 0)
+        self.assertEqual(len(json.loads(chat_quota.GuideChatQuota.get(player=owner.id).timestamps)), 10)
+
+    def test_quota_failure_releases_concurrency_slot(self):
+        from app.modules.guide import chat_quota, chat_service
+        with patch.object(chat_quota, 'consume', side_effect=RuntimeError('quota unavailable')):
+            response = self.post_chat()
+            self.assertEqual(response.status_code, 500)
+        owner = self.dao_module.get_player_by_token(self.token)
+        self.assertTrue(chat_service.acquire(owner.id))
+        chat_service.release(owner.id)
+
+    def test_parallel_quota_reservations_do_not_exceed_limit(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from app.modules.guide import chat_quota
+        owner = self.dao_module.get_player_by_token(self.token)
+
+        def reserve(_):
+            try:
+                return chat_quota.consume(owner.id)
+            finally:
+                self.db_module.db.close()
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(reserve, range(16)))
+        self.assertEqual(results.count(0), 10)
+        self.assertEqual(sum(value > 0 for value in results), 6)
+
     def test_real_tool_dispatch_and_ephemeral_page_context(self):
         seen = []
         def model(settings, messages, tools):

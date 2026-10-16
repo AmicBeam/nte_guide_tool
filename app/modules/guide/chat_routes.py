@@ -7,7 +7,7 @@ import urllib.parse
 from flask import Response, current_app, g, jsonify, request, stream_with_context
 
 from app.auth import token_required
-from . import chat_history, chat_model, chat_service
+from . import chat_history, chat_model, chat_quota, chat_service
 
 
 def register(blueprint):
@@ -57,6 +57,20 @@ def register(blueprint):
         player = g.current_player
         if not chat_service.acquire(player.id):
             return jsonify(error={'code': 'chat_busy', 'message': '已有对话正在回答，或服务繁忙，请稍后重试。'}), 429
+        try:
+            retry_after = chat_quota.consume(player.id)
+        except Exception:
+            chat_service.release(player.id)
+            raise
+        if retry_after:
+            chat_service.release(player.id)
+            minutes = (retry_after + 59) // 60
+            response = jsonify(error={'code': 'chat_rate_limited',
+                'message': f'每个账号每小时最多发送10条消息，请在约{minutes}分钟后重试。',
+                'retry_after': retry_after})
+            response.status_code = 429
+            response.headers['Retry-After'] = str(retry_after)
+            return response
         reader = current_app.extensions.get('guide_axis_reader')
         logger = current_app.logger
         released = False

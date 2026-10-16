@@ -303,3 +303,9 @@ HTTP入口为`GET /api/guide/axes`（重复`character`参数）和`GET /api/guid
 验证：`.venv/bin/python -m unittest tests.test_guide_chat tests.test_guide_bot_tools tests.test_guide_builds tests.test_module_routes -q`；`node --test tests/test_guide_chat_state.cjs`。还需真实模型验证工具调用和图片识别，真实TapTap验证搜索、正文和一图流；浏览器验证登录显示、桌面非模态操作、390px手机、跨页恢复、6小时边界、账号切换、图片上传与错误状态。
 
 阶段状态：基础接口、工具、浏览器存储及浮动界面已实现，单元与模块回归通过，原生模型图片识别及公开TapTap检索已联通；完整桌面／移动端浏览器联测尚待完成。
+
+## 攻略助手消息额度
+
+每个本站账号在滚动60分钟内最多发送10条消息，文字和附图消息均按一次发送计数，模型内部工具查询不额外计数。通过输入校验且取得并发执行位后即计数，模型失败或用户停止仍计入；未登录、未配置、无效输入和并发繁忙请求不计入。达到上限返回HTTP 429、`chat_rate_limited`、`Retry-After`秒数，并在现有对话状态区提示预计等待分钟数。额度按账号跨页面／对话共用。
+
+`chat_quota.py`通过独立`GuideChatQuota`表和IMMEDIATE事务原子保留发送额度，只保存账号关联与至多10个请求时间，不保存消息或附图；服务启动自动建表，重启及多进程共用同一数据库时额度保持有效。过期时间在下次成功保留时清理。验证：`.venv/bin/python -m unittest tests.test_guide_chat -q`，覆盖第10／11条、滚动边界、账号隔离、重开数据库、并发请求及拒绝请求不扣额度。

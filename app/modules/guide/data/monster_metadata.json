@@ -1,150 +1,178 @@
 {
-  "罐头锡兵": {
-    "image": "/static/guide/monsters/罐头锡兵.webp",
+  "Boss_016_BP": {
+    "image": "/static/guide/monsters/Boss_016_BP.webp",
+    "swallowable": false
+  },
+  "Boss_017_BP": {
+    "image": "/static/guide/monsters/Boss_017_BP.webp",
+    "swallowable": false
+  },
+  "Boss_06_BP": {
+    "image": "/static/guide/monsters/Boss_06_BP.webp",
+    "swallowable": false
+  },
+  "Boss_07_BP": {
+    "image": "/static/guide/monsters/Boss_07_BP.webp",
+    "swallowable": false
+  },
+  "Boss_08_BP": {
+    "image": "/static/guide/monsters/Boss_08_BP.webp",
+    "swallowable": false
+  },
+  "Boss_15_BP": {
+    "image": "/static/guide/monsters/Boss_15_BP.webp",
+    "swallowable": false
+  },
+  "boss_05_BP": {
+    "image": "/static/guide/monsters/boss_05_BP.webp",
+    "swallowable": false
+  },
+  "boss_09_BP": {
+    "image": "/static/guide/monsters/boss_09_BP.webp",
+    "swallowable": false
+  },
+  "boss_18_BP": {
+    "image": "/static/guide/monsters/boss_18_BP.webp",
+    "swallowable": false
+  },
+  "boss_26_BP": {
+    "image": "/static/guide/monsters/boss_26_BP.webp",
+    "swallowable": false
+  },
+  "boss_33_BP": {
+    "image": "/static/guide/monsters/boss_33_BP.webp",
+    "swallowable": false
+  },
+  "mon_012_2_BP": {
+    "image": "/static/guide/monsters/mon_012_2_BP.webp",
+    "swallowable": false
+  },
+  "mon_015_BP": {
+    "image": "/static/guide/monsters/mon_015_BP.webp",
+    "swallowable": false
+  },
+  "mon_016_BP": {
+    "image": "/static/guide/monsters/mon_016_BP.webp",
+    "swallowable": false
+  },
+  "mon_019_BP": {
+    "image": "/static/guide/monsters/mon_019_BP.webp",
     "swallowable": true
   },
-  "分解者": {
-    "image": "/static/guide/monsters/分解者.webp",
+  "mon_01_BP": {
+    "image": "/static/guide/monsters/mon_01_BP.webp",
     "swallowable": true
   },
-  "低语种": {
-    "image": "/static/guide/monsters/低语种.webp",
+  "mon_020_BP": {
+    "image": "/static/guide/monsters/mon_020_BP.webp",
     "swallowable": true
   },
-  "迷失种": {
-    "image": "/static/guide/monsters/迷失种.webp",
+  "mon_022_BP": {
+    "image": "/static/guide/monsters/mon_022_BP.webp",
+    "swallowable": false
+  },
+  "mon_023_BP": {
+    "image": "/static/guide/monsters/mon_023_BP.webp",
     "swallowable": true
   },
-  "流梦种": {
-    "image": "/static/guide/monsters/流梦种.webp",
+  "mon_025_BP": {
+    "image": "/static/guide/monsters/mon_025_BP.webp",
+    "swallowable": false
+  },
+  "mon_025_double_1_BP": {
+    "image": "/static/guide/monsters/mon_025_double_1_BP.webp",
+    "swallowable": false
+  },
+  "mon_025_double_2_BP": {
+    "image": "/static/guide/monsters/mon_025_double_2_BP.webp",
+    "swallowable": false
+  },
+  "mon_029_BP": {
+    "image": "/static/guide/monsters/mon_029_BP.webp",
     "swallowable": true
   },
-  "风洞种": {
-    "image": "/static/guide/monsters/风洞种.webp",
+  "mon_02_BP": {
+    "image": "/static/guide/monsters/mon_02_BP.webp",
     "swallowable": true
   },
-  "棉绒绒": {
-    "image": "/static/guide/monsters/棉绒绒.webp",
+  "mon_030_BP": {
+    "image": "/static/guide/monsters/mon_030_BP.webp",
     "swallowable": true
   },
-  "扫晴娘": {
-    "image": "/static/guide/monsters/扫晴娘.webp",
+  "mon_030_BP_Rain": {
+    "image": "/static/guide/monsters/mon_030_BP_Rain.webp",
     "swallowable": true
   },
-  "唱片附电灵": {
-    "image": "/static/guide/monsters/唱片附电灵.webp",
+  "mon_030_BP_Snow": {
+    "image": "/static/guide/monsters/mon_030_BP_Snow.webp",
     "swallowable": true
   },
-  "长明灯": {
-    "image": "/static/guide/monsters/长明灯.webp",
+  "mon_03_BP": {
+    "image": "/static/guide/monsters/mon_03_BP.webp",
+    "swallowable": false
+  },
+  "mon_04_BP": {
+    "image": "/static/guide/monsters/mon_04_BP.webp",
     "swallowable": true
   },
-  "空铠甲": {
-    "image": "/static/guide/monsters/空铠甲.webp",
+  "mon_051_BP": {
+    "image": "/static/guide/monsters/mon_051_BP.webp",
+    "swallowable": false
+  },
+  "mon_05_BP": {
+    "image": "/static/guide/monsters/mon_05_BP.webp",
+    "swallowable": false
+  },
+  "mon_08_BP": {
+    "image": "/static/guide/monsters/mon_08_BP.webp",
+    "swallowable": false
+  },
+  "mon_14_BP": {
+    "image": "/static/guide/monsters/mon_14_BP.webp",
     "swallowable": true
   },
-  "伤心英熊": {
-    "image": "/static/guide/monsters/伤心英熊.webp",
+  "mon_17_BP": {
+    "image": "/static/guide/monsters/mon_17_BP.webp",
+    "swallowable": false
+  },
+  "mon_18_2_BP": {
+    "image": "/static/guide/monsters/mon_18_2_BP.webp",
     "swallowable": true
   },
-  "雨人": {
-    "image": "/static/guide/monsters/雨人.webp",
+  "mon_24_BP": {
+    "image": "/static/guide/monsters/mon_24_BP.webp",
     "swallowable": false
   },
-  "诡面筝": {
-    "image": "/static/guide/monsters/诡面筝.webp",
+  "mon_27_BP": {
+    "image": "/static/guide/monsters/mon_27_BP.webp",
     "swallowable": false
   },
-  "瑰夜魅影": {
-    "image": "/static/guide/monsters/瑰夜魅影.webp",
+  "mon_33_BP": {
+    "image": "/static/guide/monsters/mon_33_BP.webp",
+    "swallowable": true
+  },
+  "mon_35_BP_Blue": {
+    "image": "/static/guide/monsters/mon_35_BP_Blue.webp",
+    "swallowable": true
+  },
+  "mon_35_BP_Red": {
+    "image": "/static/guide/monsters/mon_35_BP_Red.webp",
+    "swallowable": true
+  },
+  "mon_38_BP": {
+    "image": "/static/guide/monsters/mon_38_BP.webp",
     "swallowable": false
   },
-  "羽偶": {
-    "image": "/static/guide/monsters/羽偶.webp",
+  "mon_39_2_BP": {
+    "image": "/static/guide/monsters/mon_39_2_BP.webp",
     "swallowable": false
   },
-  "迦楼罗": {
-    "image": "/static/guide/monsters/迦楼罗.webp",
+  "mon_39_BP": {
+    "image": "/static/guide/monsters/mon_39_BP.webp",
     "swallowable": false
   },
-  "诺诺斯": {
-    "image": "/static/guide/monsters/诺诺斯.webp",
-    "swallowable": false
-  },
-  "洄天鱼幡": {
-    "image": "/static/guide/monsters/洄天鱼幡.webp",
-    "swallowable": false
-  },
-  "凭依种": {
-    "image": "/static/guide/monsters/凭依种.webp",
-    "swallowable": false
-  },
-  "岩壳种": {
-    "image": "/static/guide/monsters/岩壳种.webp",
-    "swallowable": false
-  },
-  "售货附电灵": {
-    "image": "/static/guide/monsters/售货附电灵.webp",
-    "swallowable": false
-  },
-  "波普": {
-    "image": "/static/guide/monsters/波普.webp",
-    "swallowable": false
-  },
-  "蜘识藏家": {
-    "image": "/static/guide/monsters/蜘识藏家.webp",
-    "swallowable": false
-  },
-  "拖车艄": {
-    "image": "/static/guide/monsters/拖车艄.webp",
-    "swallowable": false
-  },
-  "胶卷-MANISH": {
-    "image": "/static/guide/monsters/胶卷-MANISH.webp",
-    "swallowable": false
-  },
-  "番茄酱恶魔": {
-    "image": "/static/guide/monsters/番茄酱恶魔.webp",
-    "swallowable": false
-  },
-  "音霸魔王": {
-    "image": "/static/guide/monsters/音霸魔王.webp",
-    "swallowable": false
-  },
-  "塞润尼缇": {
-    "image": "/static/guide/monsters/塞润尼缇.webp",
-    "swallowable": false
-  },
-  "墨菲克斯": {
-    "image": "/static/guide/monsters/墨菲克斯.webp",
-    "swallowable": false
-  },
-  "玛门": {
-    "image": "/static/guide/monsters/玛门.webp",
-    "swallowable": false
-  },
-  "随心泥": {
-    "image": "/static/guide/monsters/随心泥.webp",
-    "swallowable": false
-  },
-  "黑之书": {
-    "image": "/static/guide/monsters/黑之书.webp",
-    "swallowable": false
-  },
-  "桀桀熊": {
-    "image": "/static/guide/monsters/桀桀熊.webp",
-    "swallowable": false
-  },
-  "囿巢鸟": {
-    "image": "/static/guide/monsters/囿巢鸟.webp",
-    "swallowable": false
-  },
-  "讨债人": {
-    "image": "/static/guide/monsters/讨债人.webp",
-    "swallowable": false
-  },
-  "斑蝶": {
-    "image": "/static/guide/monsters/斑蝶.webp",
+  "mon_41_BP": {
+    "image": "/static/guide/monsters/mon_41_BP.webp",
     "swallowable": false
   }
 }

@@ -38,14 +38,14 @@ class GuideChallengesTest(unittest.TestCase):
                     for wave in half['waves']:
                         for monster in wave['monsters']:
                             self.assertIsInstance(monster['swallowable'], bool, monster['name'])
-                            self.assertTrue(monster['image'].startswith('/static/guide/monsters/'))
+                            self.assertEqual(monster['image'], f"/static/guide/monsters/{monster['id']}.webp")
                             if monster['image'] not in checked:
                                 response = self.client.get(monster['image'])
                                 self.assertEqual(response.status_code, 200)
                                 self.assertEqual(response.data[8:12], b'WEBP')
                                 response.close()
                                 checked.add(monster['image'])
-        self.assertEqual(len(checked), 37)
+        self.assertEqual(len(checked), 44)
 
     def test_stage_layout_and_collapsed_stats(self):
         response = self.client.get('/guide/challenges/Abyss_12?stage=12')
@@ -122,6 +122,26 @@ class GuideChallengesTest(unittest.TestCase):
         self.assertNotIn('guide-resistance-weak', render({'cosmos': None}))
         self.assertNotIn('guide-resistance-weak', render({}))
         self.assertIn('弱点抗性 -0.1', render({'cosmos': -0.1, 'nature': 0}))
+
+
+    def test_icon_bindings_use_exact_id_and_reject_conflicts(self):
+        from scripts.sync_guide_monster_images import collect_bindings
+        def record(monsters):
+            return {'stages': [{'halves': [{'waves': [{'monsters': monsters}]}]}]}
+        local = {'challenges': [record([{'id': 'a', 'name': '同名'}, {'id': 'b', 'name': '同名'}])]}
+        raw = record([{'id': 'a', 'name': '同名', 'icon': '/Game/Head/A'},
+                      {'id': 'b', 'name': '同名', 'icon': '/Game/Head/B'}])
+        self.assertEqual(collect_bindings(local, [raw]), {'a': '/Game/Head/A', 'b': '/Game/Head/B'})
+        with self.assertRaises(ValueError):
+            collect_bindings(local, [record([{'id': 'a', 'name': '同名', 'icon': '/Game/Head/A'}])])
+        with self.assertRaises(ValueError):
+            collect_bindings(local, [raw, record([{'id': 'a', 'name': '同名', 'icon': '/Game/Head/Other'}])])
+        with self.assertRaises(ValueError):
+            collect_bindings(local, [record([{'id': 'a', 'name': '同名', 'icon': ''}])])
+        profile = service.detail('challenges', 'Abyss_12', stage=12)
+        variants = profile['stages'][0]['halves'][0]['waves'][1]['monsters']
+        self.assertEqual(len({monster['image'] for monster in variants}), 3)
+        self.assertEqual(len({(ROOT / 'app/modules/guide/static/monsters' / f"{monster['id']}.webp").read_bytes() for monster in variants}), 3)
 
     def test_traits_in_machine_formats(self):
         record = self.client.get('/api/guide/challenges/Abyss_12?stage=1').json['data']

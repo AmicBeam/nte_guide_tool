@@ -99,7 +99,7 @@ def catalog():
             for half in stage['halves']:
                 for wave in half['waves']:
                     for monster in wave['monsters']:
-                        monster.update(monsters.get(monster['name'], {'image': None, 'swallowable': None}))
+                        monster.update(monsters.get(str(monster['id']), {'image': None, 'swallowable': None}))
     return data
 
 

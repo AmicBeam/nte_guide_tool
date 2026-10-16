@@ -72,3 +72,7 @@ python scripts/refresh_guide_data.py --transport curl
 ## 索引与弧盘展示
 
 角色索引以属性图标显示属性，保留无障碍名称。弧盘索引按固态、液态、气态、等离子、聚合分组，图片从本站 `app/static/images/arcs/` 读取WebP。显式同步图片命令：`python scripts/sync_guide_arc_images.py`。弧盘详情先展示属性成长，再展示效果；精炼滑块直接替换效果正文中的数值，所有数字使用绿色，不另列效果参数表。结构化详情仍保留各精炼档位数组。
+
+## 角色弧盘适配与定位
+
+角色页顶部用属性图标与稀有度图标（四星A、五星S）替代对应文字，稀有度图标放在 `app/static/images/rarities/`；同时显示弧盘适配类型及其图标，并为每个角色定位标签显示对应图标。`data/character_metadata.json` 保存按角色ID绑定的 `arc_type` 和 `char_tags`；图标使用本站 `app/static/images/arc-types/` 与 `character-tags/` 下的WebP。JSON、Markdown和CLI详情同时提供适配类型及标签图标路径。显式同步命令为 `python scripts/sync_guide_character_metadata.py`；同步按角色配置中的类型枚举与弧盘类型表连接，不根据专武名称推断角色适配。网站启动和请求只读取本地数据。

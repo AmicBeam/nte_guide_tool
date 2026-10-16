@@ -14,6 +14,7 @@ LABELS = {
     'energy_gain': '基础回能', 'stagger': '基础倾陷',
     'attack_values': '攻击倍率', 'defense_values': '防御倍率', 'hp_values': '生命倍率',
     'hit_detail_status': '命中数据状态',
+    'arc_type': '弧盘适配', 'icon': '图标',
     'assets': '角色图片', 'avatar': '头像', 'portrait': '立绘', 'fullbody': '高清立绘',
     'equip_slots': '空幕', 'materials': '升级材料', 'breakthrough': '角色突破',
     'skills': '技能升级', 'levels': '升级阶段', 'items': '所需材料',
@@ -57,8 +58,13 @@ def catalog():
     data = json.loads((Path(__file__).parent / 'data/catalog.json').read_text(encoding='utf-8'))
     art = json.loads((Path(__file__).resolve().parents[2] / 'static/images/characters/index.json').read_text(encoding='utf-8'))
     bindings = {record['id']: record for record in art['characters']}
+    metadata = json.loads((Path(__file__).parent / 'data/character_metadata.json').read_text(encoding='utf-8'))
+    metadata_by_id = {record['id']: record for record in metadata['characters']}
     for character in data['characters']:
         binding = bindings[str(character['id'])]
+        character.update(metadata_by_id[str(character['id'])])
+        rank = {4: 'A', 5: 'S'}[character['rarity']]
+        character['rarity_icon'] = f'/static/images/rarities/YH_UI_star{rank}.webp'
         character['element_icon'] = f'/static/images/elements/{character["element_name"]}.png'
         character['assets'] = {key: binding[key] for key in ('avatar', 'portrait', 'fullbody')}
     for arc in data['arcs']:

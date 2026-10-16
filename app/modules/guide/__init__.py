@@ -59,10 +59,11 @@ def index():
 def entry(kind, identifier):
     record = get_record(kind, identifier)
     sections = service.page_sections(kind, record)
-    art = service.detail(kind, identifier).get('assets') if kind == 'characters' else None
+    profile = service.detail(kind, identifier) if kind == 'characters' else None
+    art = profile.get('assets') if profile else None
     arc_image = service.detail(kind, identifier).get('image') if kind == 'arcs' else None
     return render_template('guide/detail.html', record=record, sections=sections, kind=kind,
-                           kinds=service.KINDS, art=art, arc_image=arc_image, notes=service.schema()['notes'])
+                           kinds=service.KINDS, art=art, profile=profile, arc_image=arc_image, notes=service.schema()['notes'])
 
 
 @blueprint.get('/guide/<kind>/<identifier>.md')

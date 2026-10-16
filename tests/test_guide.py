@@ -148,6 +148,24 @@ class GuideTest(unittest.TestCase):
         self.assertIn('基础回能', html)
         self.assertIn('0.838', html)
 
+    def test_character_arc_compatibility_and_badges(self):
+        character = self.client.get('/api/guide/characters/1042').json['data']
+        self.assertEqual(character['arc_type']['name'], '气态')
+        self.assertEqual([tag['name'] for tag in character['char_tags']], ['输出', '即瞬环合', '主力输出', '输出增益'])
+        for record in service.catalog()['characters']:
+            self.assertIn(record['arc_type']['name'], ['固态', '液态', '等离子', '气态', '聚合'])
+            self.assertTrue((ROOT / 'app' / record['rarity_icon'].removeprefix('/')).is_file())
+            for badge in [record['arc_type'], *record['char_tags']]:
+                self.assertTrue(badge['icon'].endswith('.webp'))
+                self.assertTrue((ROOT / 'app' / badge['icon'].removeprefix('/')).is_file())
+        html = self.client.get('/guide/characters/1042').text
+        self.assertIn('气态弧盘', html)
+        self.assertIn('弧盘适配与角色定位', html)
+        self.assertIn('alt="5星角色"', html)
+        self.assertIn('alt="魂属性"', html)
+        self.assertNotIn('魂 · 5 星', html)
+        self.assertIn('/static/images/character-tags/', html)
+
     def test_all_characters_have_local_webp_art(self):
         characters = service.catalog()['characters']
         self.assertEqual(len(characters), 25)

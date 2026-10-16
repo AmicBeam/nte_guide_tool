@@ -184,7 +184,7 @@ class GuideTest(unittest.TestCase):
         html = self.client.get('/guide/characters/1042').text
         self.assertIn('黑羽高清立绘', html)
         self.assertIn('黑羽头像', html)
-        self.assertIn('默认立绘预览', html)
+        self.assertNotIn('默认立绘预览', html)
 
     def test_errors_and_discovery(self):
         for path, status in [('/api/guide/unknown',404),('/api/guide/arcs/missing',404),

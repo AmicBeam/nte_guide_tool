@@ -42,3 +42,5 @@
 .guide-cultivation-summary div { display: flex; flex-direction: column; gap: .5rem; padding: 1rem; background: #ffffff08; border-radius: 10px; }
 .guide-cultivation-summary strong { font-size: 1.4rem; color: var(--g-accent); }
 @media (max-width: 650px) { .guide-cultivation-columns, .guide-cultivation-skills, .guide-cultivation-summary { grid-template-columns: 1fr; } }
+
+.guide-links a.guide-cultivation-action{display:inline-flex;align-items:center;justify-content:center;min-width:240px;min-height:60px;box-sizing:border-box;padding:16px 28px;background:var(--g-accent);border:1px solid var(--g-accent);border-radius:10px;color:#18230d;font-size:17px;font-weight:700;box-shadow:0 6px 22px #0002}.guide-links a.guide-cultivation-action:hover{background:#dcff9e;color:#18230d;border-color:#dcff9e}@media(max-width:700px){.guide-links a.guide-cultivation-action{width:100%;min-width:0;min-height:58px}}

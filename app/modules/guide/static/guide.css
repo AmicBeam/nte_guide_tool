@@ -28,3 +28,17 @@
 .guide-role-badges{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 8px;max-width:440px}.guide-role-badge{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:5px 10px;background:#ffffff06;border:1px solid var(--g-line);border-radius:6px;font-size:12px;white-space:nowrap;color:#cdd8de}.guide-role-badge img{object-fit:contain;flex:none}.guide-arc-badge{color:var(--g-accent);background:#c9f47a0a;border-color:#c9f47a2b}@media(max-width:700px){.guide-role-badge{padding:4px 7px;font-size:11px;gap:5px}.guide-role-badge img{width:20px;height:20px}.guide-role-badges{gap:5px}}
 
 .guide-profile-icons{display:flex;align-items:center;gap:14px;margin:16px 0}.guide-profile-icons img{object-fit:contain;flex:none}
+
+/* Character cultivation form. */
+.guide-cultivation-form { margin: 2rem 0; }
+.guide-cultivation-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.guide-cultivation-form fieldset { border: 1px solid var(--g-line); border-radius: 12px; margin: 0 0 1rem; padding: 1rem; min-width: 0; }
+.guide-cultivation-form legend { font-weight: 700; padding: 0 .4rem; }
+.guide-cultivation-field { display: flex; flex-direction: column; gap: .5rem; margin: .5rem 0 1rem; font-size: .9rem; }
+.guide-cultivation-field input, .guide-cultivation-field select { box-sizing: border-box; width: 100%; padding: .7rem; border: 1px solid #ffffff25; border-radius: 8px; background: #ffffff08; color: var(--g-ink); font: inherit; }
+.guide-cultivation-skills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.guide-cultivation-error { padding: 1rem; border: 1px solid #bd493a; border-radius: 8px; color: #ffb8a8; background: #6b221b40; }
+.guide-cultivation-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+.guide-cultivation-summary div { display: flex; flex-direction: column; gap: .5rem; padding: 1rem; background: #ffffff08; border-radius: 10px; }
+.guide-cultivation-summary strong { font-size: 1.4rem; color: var(--g-accent); }
+@media (max-width: 650px) { .guide-cultivation-columns, .guide-cultivation-skills, .guide-cultivation-summary { grid-template-columns: 1fr; } }

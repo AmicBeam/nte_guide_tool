@@ -1,0 +1,27 @@
+{% extends 'guide/layout.html' %}
+{% macro level_input(name, label, low, high) %}
+<label class="guide-cultivation-field">{{ label }}<input name="{{ name }}" aria-label="{{ label }}" type="number" step="1" min="{{ low }}" max="{{ high }}" value="{{ values[name] }}" required></label>
+{% endmacro %}
+{% block title %}{{ record.name }} · 养成计算器 · NTE Tools{% endblock %}
+{% block content %}
+<nav class="guide-breadcrumb"><a href="/guide">攻略数据库</a> / <a href="/guide/characters/{{ record.id }}">{{ record.name }}</a> / 养成计算器</nav>
+<header class="guide-hero"><p class="guide-eyebrow">CULTIVATION</p><h1>{{ record.name }} · 养成计算器</h1><p>填写当前练度与目标，计算角色升级、突破和技能养成所需的全部材料。</p></header>
+<form class="guide-cultivation-form" method="get" action="/guide/characters/{{ record.id }}/cultivation#cultivation-result">
+<input type="hidden" name="calculate" value="1">
+<div class="guide-cultivation-columns">{% for side, title in [('current', '当前练度'), ('target', '目标练度')] %}<fieldset><legend>{{ title }}</legend>
+{{ level_input(side ~ '_level', title ~ ' · 角色等级', 1, caps[-1]) }}
+<label class="guide-cultivation-field">{{ title }} · 已突破次数<select name="{{ side }}_breakthrough" aria-label="{{ title }} · 已突破次数">{% for cap in caps %}<option value="{{ loop.index0 }}" {% if values[side ~ '_breakthrough']|string == loop.index0|string %}selected{% endif %}>{{ loop.index0 }} 次 · 等级上限 {{ cap }}</option>{% endfor %}</select></label>
+{% if side == 'current' %}{{ level_input('current_exp', '当前等级已积累经验', 0, 1000000) }}<p class="guide-muted">填写等级经验条内已有数值；达到当前突破的等级上限时填 0。</p>{% else %}<p class="guide-muted">目标按刚达到该等级计算。20、30、40 等临界等级可选择突破前或突破后。</p>{% endif %}
+</fieldset>{% endfor %}</div>
+<h2>技能与天赋</h2><p class="guide-muted">填写基础技能等级，不含觉醒或共鸣额外增加的等级。可解锁的天赋、都市技能以 0 表示未解锁。</p>
+<div class="guide-cultivation-skills">{% for skill in skills %}{% set i = loop.index0 %}<fieldset><legend>{{ skill.name }}</legend><div class="guide-cultivation-columns">{{ level_input('current_skill_' ~ i, skill.name ~ ' · 当前等级', skill.minimum, skill.maximum) }}{{ level_input('target_skill_' ~ i, skill.name ~ ' · 目标等级', skill.minimum, skill.maximum) }}</div></fieldset>{% endfor %}</div>
+{% if error %}<p class="guide-cultivation-error" role="alert">{{ error }}</p>{% endif %}
+<div class="guide-links"><button type="submit">计算所需资源</button><a href="/guide/characters/{{ record.id }}/cultivation">重置</a><a href="/guide/characters/{{ record.id }}#section-equip_slots">查看空幕</a></div>
+</form>
+{% if result %}<section class="guide-detail-section" id="cultivation-result" aria-label="养成计算结果"><h2>所需资源</h2>
+<div class="guide-cultivation-summary"><div><span>所需经验</span><strong>{{ '{:,}'.format(result.experience) }}</strong></div><div><span>甲硬币合计</span><strong>{{ '{:,}'.format(result.total_gold) }}</strong></div><div><span>经验书溢出经验</span><strong>{{ '{:,}'.format(result.overflow_experience) }}</strong></div></div>
+<p class="guide-muted">经验书按每个突破区间分别配给，优先使用高档书，再用低档书补齐。甲硬币包含经验书使用费、突破和技能费用；不扣除库存，不自动合成材料。觉醒、共鸣与弧盘不计入本次计算。</p>
+<div class="guide-table-scroll"><table class="guide-data-table"><thead><tr><th scope="col">资源</th><th scope="col">数量</th></tr></thead><tbody>{% for item in result['items'] %}<tr><th scope="row">{{ item.name }}</th><td>{{ '{:,}'.format(item.amount) }}</td></tr>{% else %}<tr><td colspan="2">已达到目标，无需额外资源。</td></tr>{% endfor %}</tbody></table></div>
+<details class="guide-notes"><summary>查看分项消耗</summary>{% for group in result.breakdown %}<h3>{{ group.name }}</h3><ul>{% for item in group['items'] %}<li>{{ item.name }} × {{ '{:,}'.format(item.amount) }}</li>{% endfor %}</ul>{% else %}<p>无需额外资源。</p>{% endfor %}</details>
+</section>{% endif %}
+{% endblock %}

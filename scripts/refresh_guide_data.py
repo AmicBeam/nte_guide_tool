@@ -13,7 +13,8 @@ import urllib.request
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from guide_skill_details import enrich_catalog, load_tables
+from guide_skill_details import enrich_catalog, load_tables, table_rows
+from guide_cultivation_data import load_cultivation_data
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = 'https://static.nanoka.cc'
@@ -122,15 +123,40 @@ def build(version, fetcher=fetch):
     return result
 
 
+def character_experience(payload):
+    """Keep the configured level keys and XP values without shifting levels."""
+    rows = table_rows(payload)
+    result = []
+    for level in range(1, 81):
+        value = rows[f'character_Upgrade_{level}']['NeedExp']
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f'Invalid character experience at level {level}')
+        result.append({'level': level, 'required_exp': value})
+    return result
+
+
+def load_character_experience(directory=None):
+    if directory is not None:
+        payload = json.loads((directory / 'DT_CharacterUpgradeDataTable.json').read_text(encoding='utf-8'))
+    else:
+        response = subprocess.run(['gh', 'api',
+            'repos/mc-ctrl/NTEData/contents/DataTable/Character/DT_CharacterUpgradeDataTable.json',
+            '-H', 'Accept: application/vnd.github.raw+json'], check=True, capture_output=True)
+        payload = json.loads(response.stdout)
+    return character_experience(payload)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', default='latest')
-    parser.add_argument('--ntedata-dir', type=Path, help='Local directory with the two skill tables; otherwise read with gh.')
+    parser.add_argument('--ntedata-dir', type=Path, help='Local directory with skill and character cultivation tables; otherwise read with gh.')
     parser.add_argument('--transport', choices=('urllib', 'curl'), default='urllib')
     parser.add_argument('--output', type=Path, default=ROOT / 'app/modules/guide/data/catalog.json')
     args = parser.parse_args()
     tables = load_tables(args.ntedata_dir)
     data = enrich_catalog(build(args.version, fetch_curl if args.transport == 'curl' else fetch), tables)
+    data['character_experience'] = load_character_experience(args.ntedata_dir)
+    data['cultivation'] = load_cultivation_data(args.ntedata_dir)
     # Do not replace the working dataset until every detail has validated.
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix('.tmp')

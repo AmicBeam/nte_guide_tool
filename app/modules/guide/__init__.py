@@ -2,7 +2,7 @@
 from pathlib import Path
 
 from flask import Blueprint, Response, jsonify, render_template, request, send_file
-from . import service
+from . import service, cultivation
 
 blueprint = Blueprint('guide_module', __name__, template_folder='templates',
                       static_folder='static', static_url_path='/static/guide')
@@ -66,6 +66,36 @@ def entry(kind, identifier):
                            kinds=service.KINDS, art=art, profile=profile, arc_image=arc_image, notes=service.schema()['notes'])
 
 
+@blueprint.get('/guide/characters/<identifier>/cultivation')
+def cultivation_page(identifier):
+    record = service.detail('characters', identifier)
+    config = service.catalog()['cultivation']
+    values = cultivation.defaults(record, config)
+    values.update({key: request.args[key] for key in values if key in request.args})
+    result, error = None, None
+    if request.args.get('calculate') == '1':
+        try:
+            result = cultivation.calculate(record, config, record['experience'], values)
+        except ValueError as exc:
+            error = str(exc)
+    return render_template('guide/cultivation.html', record=record, values=values,
+        caps=config['level_caps'][identifier], skills=cultivation.skill_options(record),
+        result=result, error=error), 400 if error else 200
+
+
+@blueprint.post('/api/guide/characters/<identifier>/cultivation')
+def api_cultivation(identifier):
+    record = service.detail('characters', identifier)
+    config = service.catalog()['cultivation']
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise ValueError('请求须为 JSON 对象')
+    values = cultivation.defaults(record, config)
+    values.update(payload)
+    result = cultivation.calculate(record, config, record['experience'], values)
+    return jsonify(schema_version=1, kind='cultivation', data=result)
+
+
 @blueprint.get('/guide/<kind>/<identifier>.md')
 def markdown(kind, identifier):
     return Response(service.markdown_record(get_record(kind, identifier)), content_type='text/markdown; charset=utf-8')
@@ -118,6 +148,9 @@ def llms():
 详情：GET /api/guide/{characters|arcs|challenges}/{id}
 纯文本：GET /guide/{characters|arcs|challenges}/{id}.md
 空幕：角色详情加 ?section=equip_slots；升级材料：详情加 ?section=materials。
+等级经验：角色详情加 ?section=experience。
+好感度与喜好礼物：角色详情加 ?section=affinity，包含赠送数值和各商店标价。
+养成计算器：/guide/characters/{id}/cultivation；POST /api/guide/characters/{id}/cultivation 计算资源。
 按字段读取：详情加 ?section=abilities（角色技能）或 ?section=effect（弧盘效果）。
 按关卡读取：轨外之境详情加 ?stage=12。
 列表返回 total、next_offset 和摘要；详情返回 data。使用 ID 区分重名赛期。

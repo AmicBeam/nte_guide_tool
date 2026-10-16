@@ -16,7 +16,7 @@
 
 角色保留属性成长、完整技能、空幕格位与驱动特化、角色突破与技能升级材料、觉醒、共鸣和机制词条；弧盘保留成长、五档精炼效果、专属效果与突破材料；挑战保留赛期增益、目标、半场、波次、敌人数值与抗性。不纳入剧情、语音、物品库、商店、地图等独立资料功能。
 
-数值数组保留原始顺序：属性成长按等级、技能参数按技能等级、弧盘效果按精炼档位。说明中的 `{0}` 等对应同条目 `values` 内的 `id_value`；不猜测或提前替换。百分比保留字段表示，敌人抗性是小数比例。缺失值是 `null`，网页显示“未提供”。赛期日期缺失不代表当前开放。空幕 `slots` 的 -1 表示不可用格、0 表示可装配格，网页按原矩阵显示布局。材料按目标等级/突破阶段列出单次消耗，不是累计消耗；`items` 附中文材料名和数量，`items_id` 与 `amount` 保留原始配对。角色 `materials` 包含 `breakthrough` 和按技能分组的 `skills`，弧盘 `materials` 为突破阶段列表。当前数据不提供逐等级经验消耗表，不推算成升级总经验或经验书总数。数据查询不自动生成配队强度结论。
+数值数组保留原始顺序：属性成长按等级、技能参数按技能等级、弧盘效果按精炼档位。说明中的 `{0}` 等对应同条目 `values` 内的 `id_value`；不猜测或提前替换。百分比保留字段表示，敌人抗性是小数比例。缺失值是 `null`，网页显示“未提供”。赛期日期缺失不代表当前开放。空幕 `slots` 的 -1 表示不可用格、0 表示可装配格，网页按原矩阵显示布局。材料按目标等级/突破阶段列出单次消耗，不是累计消耗；`items` 附中文材料名和数量，`items_id` 与 `amount` 保留原始配对。角色 `materials` 包含 `breakthrough` 和按技能分组的 `skills`，弧盘 `materials` 为突破阶段列表。角色 `experience` 提供1–80级配置对应的 `required_exp`（经验需求），配置等级表示升入的目标等级，等级1的配置不计入从1级开始的升级消耗。网页在“等级经验”章节展开完整表；JSON、Markdown、CLI 支持 `section=experience`。空幕章节提供 `/kongmu` 空幕计算入口。数据查询不自动生成配队强度结论。
 
 ## CLI
 
@@ -47,7 +47,7 @@ python scripts/refresh_guide_data.py
 python scripts/refresh_guide_data.py --transport curl
 ```
 
-刷新使用 Nanoka 完整条目及 NTEData 技能参数/伤害表；默认通过已登录的 `gh` 只读获取技能表，也可传 `--ntedata-dir /path/to/tables` 使用本地 `DT_GameplayAbilityTipsData.json` 与 `DT_SkillDamageData.json`。所有联网仅发生在显式刷新阶段。
+刷新使用 Nanoka 完整条目及 NTEData 技能参数/伤害表；默认通过已登录的 `gh` 只读获取技能与等级经验表，也可传 `--ntedata-dir /path/to/tables` 使用本地 `DT_GameplayAbilityTipsData.json`、`DT_SkillDamageData.json` 与 `DT_CharacterUpgradeDataTable.json`。所有联网仅发生在显式刷新阶段。
 
 刷新先完整读取索引与每个详情，校验 ID、技能、效果和关卡数量，清理游戏富文本和非展示资源引用；全部成功后原子替换数据文件，失败保留原数据。不关闭 TLS 校验，不记录来源台账。服务进程读取后缓存数据，刷新后重启服务生效；请求和启动不执行同步。
 
@@ -57,7 +57,7 @@ python scripts/refresh_guide_data.py --transport curl
 .venv/bin/python -m unittest tests.test_guide tests.test_module_routes -v
 ```
 
-浏览器匿名验证主页入口、三类索引、搜索/筛选、空结果、角色和弧盘详情、技能等级滑块及属性/精炼滑块的首尾数值、空幕格位、材料表格、挑战单关、Markdown 与 CLI 下载。完成后确认本机与局域网 5001 端口均可访问。
+浏览器匿名验证主页入口、三类索引、搜索/筛选、空结果、角色和弧盘详情、技能等级滑块及属性/精炼滑块的首尾数值、空幕格位及空幕计算跳转、材料表格、1–80级经验表、挑战单关、Markdown 与 CLI 下载。完成后确认本机与局域网 5001 端口均可访问。
 
 ## 本地角色图片
 
@@ -76,3 +76,15 @@ python scripts/refresh_guide_data.py --transport curl
 ## 角色弧盘适配与定位
 
 角色页顶部用属性图标与稀有度图标（四星A、五星S）替代对应文字，稀有度图标放在 `app/static/images/rarities/`；同时显示弧盘适配类型及其图标，并为每个角色定位标签显示对应图标。`data/character_metadata.json` 保存按角色ID绑定的 `arc_type` 和 `char_tags`；图标使用本站 `app/static/images/arc-types/` 与 `character-tags/` 下的WebP。JSON、Markdown和CLI详情同时提供适配类型及标签图标路径。显式同步命令为 `python scripts/sync_guide_character_metadata.py`；同步按角色配置中的类型枚举与弧盘类型表连接，不根据专武名称推断角色适配。网站启动和请求只读取本地数据。
+
+## 角色养成计算器
+
+角色详情顶部与升级材料章节提供 `/guide/characters/<id>/cultivation` 入口。输入当前与目标角色等级、已突破次数、技能／天赋／都市技能基础等级，以及当前等级已积累经验；服务端汇总角色经验、经验书、甲硬币、突破材料、技能材料和都市技能使用的方斯等资源。0级表示尚未解锁的天赋或都市技能；普通战斗技能从1级起。觉醒／共鸣带来的额外技能等级不参与材料计算，觉醒、共鸣和弧盘养成不在此计算器范围内。
+
+突破次数与等级上限按角色配置校验；材料只累计当前之后至目标的阶段，技能须满足对应突破条件。角色经验按升入目标等级的需求逐级相加，扣除当前等级已有经验；每段到达突破上限后分别用经验书补齐，按高档优先、低档补齐组成使用方案，显示溢出经验。甲硬币合计包含这份方案的经验书使用费用，不假设溢出退费。不扣除库存，不自动折算合成，也不估算副本次数或体力。
+
+`cultivation.py` 只对本模块离线数据计算；GET表单无需JavaScript。`POST /api/guide/characters/<id>/cultivation` 接收 JSON 对象，字段为 `current_level`、`target_level`、`current_breakthrough`、`target_breakthrough`、`current_exp` 和 `current_skill_<index>`／`target_skill_<index>`；技能索引按角色 `materials.skills` 顺序，缺省按1级未突破至80级满突破、所有技能满级计算。返回 `data.state`、`experience`、`book_experience`、`overflow_experience`、`level_up_gold`、`total_gold`、`items` 和 `breakdown`。无效练度返回400，未知角色返回404。
+
+刷新还读取角色表、物品表及突破表的经验书和等级上限；`--ntedata-dir` 目录需同时包含 `DT_Character.json`、`DT_ItemConfig.json` 和 `DT_CharacterBreakthroughDataTable.json`。本地快照只保留实际参与计算的字段，不在请求时联网。
+
+验证覆盖全部25角色、满养成资源汇总、经验书使用费、已有经验、原地突破、当前等于目标、无效等级／突破／技能及网页表单。浏览器检查输入、计算结果、错误提示和空幕跳转。

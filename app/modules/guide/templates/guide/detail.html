@@ -19,6 +19,7 @@
 {% if kind == 'arcs' and record.description is defined %}<p class="guide-muted">{{ record.description }}</p>{% endif %}
 <p class="guide-muted">数值按等级或精炼档位顺序列出；敌人抗性为小数比例。完整字段可通过 JSON 查看。</p>
 {% if kind == 'challenges' %}<form class="guide-stage-filter" method="get"><label for="stage">关卡编号</label><input id="stage" name="stage" type="number" min="1" max="{{ record.stage_count|default(100) }}" value="{{ request.args.get('stage', '') }}" placeholder="全部"><button type="submit">查看关卡</button><a href="/guide/{{ kind }}/{{ record.id }}">全部关卡</a></form>{% endif %}
+{% if kind == 'characters' %}<p class="guide-links"><a href="/guide/characters/{{ record.id }}/cultivation">养成计算器 ↗</a></p>{% endif %}
 <button class="guide-toc-toggle" type="button" aria-expanded="false" aria-controls="guide-toc" data-toc-toggle>目录</button>
 <aside class="guide-toc" id="guide-toc" data-guide-toc data-open="false">
 <p class="guide-toc-title">本页目录</p><nav aria-label="详情章节">
@@ -30,10 +31,15 @@
 {% elif key == 'exclusive_character_ids' %}<div class="guide-links">{% for identifier in value %}<a href="/guide/characters/{{ identifier }}">{{ identifier|guide_character_name }} ↗</a>{% endfor %}</div>
 {% elif key == 'stats' %}{{ levels(value, record.name ~ '属性', 'stat-level', 'max') }}
 {% elif key in ['awaken', 'resonance', 'nouns'] %}<div class="guide-passive-grid">{% for item in value %}<article class="guide-passive-card"><span class="guide-eyebrow">{{ ('共鸣 ' ~ item.resonance_level) if item.resonance_level is defined else ('觉醒 ' ~ loop.index if key == 'awaken' else '机制词条') }}</span><h3>{{ item.name|default(item.title|default('')) }}</h3><p>{{ item.desc }}</p></article>{% endfor %}</div>
-{% elif key == 'materials' %}<p class="guide-muted">以下为每次升级的单次消耗，非累计材料。</p>{% if value is mapping %}{{ materials(value.breakthrough, '角色突破') }}{% for skill in value.skills %}{{ materials(skill.levels, skill.name ~ ' · 技能升级') }}{% endfor %}{% else %}{{ materials(value, '弧盘突破') }}{% endif %}
+{% elif key == 'materials' %}<p class="guide-links">{% if kind == 'characters' %}<a href="/guide/characters/{{ record.id }}/cultivation">打开养成计算器 ↗</a>{% endif %}</p><p class="guide-muted">以下为每次升级的单次消耗，非累计材料。</p>{% if value is mapping %}{{ materials(value.breakthrough, '角色突破') }}{% for skill in value.skills %}{{ materials(skill.levels, skill.name ~ ' · 技能升级') }}{% endfor %}{% else %}{{ materials(value, '弧盘突破') }}{% endif %}
+{% elif key == 'affinity' %}{% include 'guide/affinity.html' %}
+{% elif key == 'experience' %}
+<p class="guide-muted">列出升入各等级的经验需求（等级 1 为初始配置，不计入升级消耗）。养成计算器可汇总经验书、突破与技能材料。</p>
+<details class="guide-notes"><summary>展开 1–{{ value|length }} 级经验表</summary><div class="guide-table-scroll"><table class="guide-data-table"><thead><tr><th scope="col">等级配置</th><th scope="col">经验需求</th></tr></thead><tbody>{% for row in value %}<tr><th scope="row">Lv. {{ row.level }}</th><td>{{ row.required_exp }}</td></tr>{% endfor %}</tbody></table></div></details>
 {% elif key == 'effect' %}<article class="guide-skill-card"><h3>{{ value.name }}</h3>{% if value['values'] %}{{ levels(value['values'], record.name, 'arc-refinement', 1, '精炼档位', value.description) }}{% else %}<p class="guide-text">{{ value.description }}</p>{% endif %}</article>
 {% elif key == 'equip_slots' %}
 <p class="guide-text">{{ value|guide_equip_description }}</p>
+<p class="guide-links"><a href="/kongmu">前往空幕计算 ↗</a></p>
 <div class="guide-slot-layout"><table class="guide-slot-grid" aria-label="空幕格位"><tbody>{% for row in value.slots %}{% set row_index = loop.index %}<tr>{% for cell in row %}<td class="{{ 'slot-blocked' if cell == -1 else 'slot-open' }}" aria-label="第{{ row_index }}行第{{ loop.index }}列：{{ '不可用' if cell == -1 else '可装配' }}">{{ '×' if cell == -1 else '·' }}</td>{% endfor %}</tr>{% endfor %}</tbody></table><div><p class="guide-muted">亮格：可装配 · 暗格：不可用</p></div></div>
 {% else %}{{ tree(value) }}{% endif %}</section>{% endfor %}</div>
 <details class="guide-notes"><summary>数值阅读约定</summary>{% for note in notes %}<p>{{ note }}</p>{% endfor %}</details>

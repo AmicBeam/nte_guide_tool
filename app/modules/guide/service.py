@@ -9,6 +9,12 @@ from markupsafe import Markup, escape
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境'}
 LABELS = {
+    'affinity': '好感度', 'available': '已提供好感度配置', 'gifts': '喜好礼物',
+    'affinity_gain': '赠送好感值', 'default_gain': '基础好感值', 'exclusive': '专属礼物',
+    'unlimited': '不受普通赠礼次数限制', 'offers': '购买渠道', 'shop_name': '商店',
+    'shop_id': '商店 ID', 'goods_id': '商品 ID', 'currency_name': '货币', 'currency_id': '货币 ID',
+    'price': '商店标价', 'discount_price': '配置折扣价', 'discount_time_limited': '限时折扣',
+    'availability_limited': '限时商品', 'unlock_id': '解锁条件 ID', 'max_value': '本级好感值上限',
     'groups': '招式分组', 'hit_details': '详细命中数据', 'effect_id': '命中效果 ID',
     'hit_index': '命中项', 'repeat': '重复次数', 'harmony_gain': '基础环合',
     'energy_gain': '基础回能', 'stagger': '基础倾陷',
@@ -16,6 +22,7 @@ LABELS = {
     'hit_detail_status': '命中数据状态',
     'arc_type': '弧盘适配', 'icon': '图标',
     'assets': '角色图片', 'avatar': '头像', 'portrait': '立绘', 'fullbody': '高清立绘',
+    'experience': '等级经验', 'required_exp': '经验需求',
     'equip_slots': '空幕', 'materials': '升级材料', 'breakthrough': '角色突破',
     'skills': '技能升级', 'levels': '升级阶段', 'items': '所需材料',
     'items_id': '材料 ID', 'amount': '数量', 'cost_gold': '甲硬币',
@@ -60,7 +67,11 @@ def catalog():
     bindings = {record['id']: record for record in art['characters']}
     metadata = json.loads((Path(__file__).parent / 'data/character_metadata.json').read_text(encoding='utf-8'))
     metadata_by_id = {record['id']: record for record in metadata['characters']}
+    affinity = json.loads((Path(__file__).parent / 'data/affinity.json').read_text(encoding='utf-8'))
+    affinity_by_id = {record['id']: record['affinity'] for record in affinity['characters']}
     for character in data['characters']:
+        character['affinity'] = affinity_by_id[str(character['id'])]
+        character['experience'] = data['character_experience']
         binding = bindings[str(character['id'])]
         character.update(metadata_by_id[str(character['id'])])
         rank = {4: 'A', 5: 'S'}[character['rarity']]
@@ -161,10 +172,16 @@ def schema():
         'search': '/api/guide/search?q={query}',
         'detail': '/api/guide/{collection}/{id}?section={field}&stage={stage_id}',
         'markdown': '/guide/{collection}/{id}.md',
+        'cultivation': {'url': '/api/guide/characters/{id}/cultivation', 'method': 'POST',
+            'fields': ['current_level', 'target_level', 'current_breakthrough', 'target_breakthrough',
+                       'current_exp', 'current_skill_<index>', 'target_skill_<index>'],
+            'skill_index': '按角色 materials.skills 顺序；技能等级不含觉醒和共鸣加成',
+            'notes': '仅累计跨过阶段；经验书按突破区间配给，甲硬币包含使用费，不扣库存、不自动合成'},
         'hit_detail_fields': {'harmony_gain': 'HeterochromeAdd，单次命中基础环合',
             'energy_gain': 'ChargeAdd，单次命中基础终结回能', 'stagger': 'UnbalValue，单次命中基础倾陷',
             'repeat': '当前参数展示式中的重复次数，未知为 null，不推算技能实际总命中次数'},
-        'character_sections': {'equip_slots': '空幕格位矩阵、驱动特化和加成属性',
+        'character_sections': {'affinity': '好感度等级上限、喜好及专属礼物、赠送好感值与各商店标价；不表示玩家当前好感度或实时库存', 'experience': '角色1–80级配置及升入对应等级的经验需求；等级1不计入升级消耗',
+            'equip_slots': '空幕格位矩阵、驱动特化和加成属性',
             'materials': '突破与技能升级：每阶段所需材料、数量和突破条件'},
         'notes': ['空幕 slots 中 -1 为不可用格，0 为可装配格；矩阵按从上到下、从左到右排列。',
             '材料为各目标等级/阶段的单次消耗，不是累计消耗；items 为中文名称与数量，items_id/amount 保留原始配对。','数据为本地快照；请求与启动不会拉取外部数据。',
@@ -178,7 +195,7 @@ def schema():
 
 def page_sections(kind, record):
     preferred = {
-        'characters': ('abilities', 'awaken', 'resonance', 'equip_slots', 'materials', 'nouns', 'stats', 'aliases'),
+        'characters': ('abilities', 'awaken', 'resonance', 'equip_slots', 'materials', 'experience', 'affinity', 'nouns', 'stats', 'aliases'),
         'arcs': ('stats', 'effect', 'exclusive_desc', 'exclusive_character_ids', 'materials'),
         'challenges': ('resonance', 'stages', 'rewards'),
     }

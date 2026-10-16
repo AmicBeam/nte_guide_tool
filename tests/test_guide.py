@@ -215,6 +215,111 @@ class GuideTest(unittest.TestCase):
         for season in service.catalog()['challenges']:
             self.assertEqual(len(season['stages']),season['stage_count'])
 
+    def test_experience_and_kongmu_link(self):
+        rows = self.client.get('/api/guide/characters/1042?section=experience').json['data']['experience']
+        self.assertEqual(len(rows), 80)
+        self.assertEqual(rows[1], {'level': 2, 'required_exp': 300})
+        self.assertEqual(rows[-1]['required_exp'], 322380)
+        self.assertIn('经验需求', self.client.get('/guide/characters/1042.md?section=experience').text)
+        html = self.client.get('/guide/characters/1042?section=equip_slots').text
+        self.assertIn('href="/kongmu"', html)
+        self.assertIn('前往空幕计算', html)
+
+    def test_cultivation_full_roster_and_cost_totals(self):
+        for character in service.catalog()['characters']:
+            response = self.client.post(f"/api/guide/characters/{character['id']}/cultivation", json={})
+            self.assertEqual(response.status_code, 200, character['name'])
+            result = response.json['data']
+            self.assertEqual(result['experience'], 6492840)
+            self.assertEqual(result['level_up_gold'], 1624000)
+            self.assertEqual(result['total_gold'], 3967000)
+            self.assertEqual(result['overflow_experience'], 3160)
+            summed = {}
+            for group in result['breakdown']:
+                for item in group['items']:
+                    key = item['id'].casefold()
+                    summed[key] = summed.get(key, 0) + item['amount']
+            self.assertEqual(summed, {item['id'].casefold(): item['amount'] for item in result['items']})
+            self.assertTrue(all(item['amount'] > 0 and item['name'] for item in result['items']))
+
+    def test_cultivation_crossed_levels_noop_and_boundaries(self):
+        from app.modules.guide import cultivation
+        record = service.detail('characters', '1042')
+        values = cultivation.defaults(record, service.catalog()['cultivation'])
+        for key in list(values):
+            if key.startswith('target_'):
+                values[key] = values[key.replace('target_', 'current_')]
+        url = '/api/guide/characters/1042/cultivation'
+        self.assertEqual(self.client.post(url, json=values).json['data']['items'], [])
+        values['target_level'] = 2
+        result = self.client.post(url, json=values).json['data']
+        self.assertEqual(result['experience'], 300)
+        self.assertEqual(result['total_gold'], 250)
+        self.assertEqual(result['overflow_experience'], 700)
+        values['current_exp'] = 200
+        self.assertEqual(self.client.post(url, json=values).json['data']['experience'], 100)
+        values.update(current_level=20, target_level=20, current_exp=0, target_breakthrough=1)
+        result = self.client.post(url, json=values).json['data']
+        self.assertEqual(result['experience'], 0)
+        self.assertEqual(result['total_gold'], 25000)
+        self.assertEqual(len(result['breakdown']), 1)
+        values['current_breakthrough'] = 1
+        self.assertEqual(self.client.post(url, json=values).json['data']['items'], [])
+        values['target_level'] = 21
+        self.assertGreater(self.client.post(url, json=values).json['data']['experience'], 0)
+        for override in [{'target_level': 31}, {'current_exp': 1, 'current_breakthrough': 0},
+                         {'target_level': 19}, {'target_level': 20.5}, {'current_level': True},
+                         {'target_skill_0': 10}, {'target_skill_0': 99}, {'target_level': None}]:
+            response = self.client.post(url, json={**values, **override})
+            self.assertEqual(response.status_code, 400, override)
+        self.assertEqual(self.client.post(url, json=[]).status_code, 400)
+        page = self.client.get('/guide/characters/1042/cultivation')
+        self.assertEqual(page.status_code, 200)
+        self.assertIn('当前等级已积累经验', page.text)
+        page = self.client.get('/guide/characters/1042/cultivation?calculate=1')
+        self.assertIn('3,967,000', page.text)
+        self.assertIn('记忆的永恒', page.text)
+        invalid = self.client.get('/guide/characters/1042/cultivation?calculate=1&target_level=999')
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn('role="alert"', invalid.text)
+
+    def test_cultivation_skill_unlocks_and_city_currency(self):
+        from app.modules.guide import cultivation
+        record = service.detail('characters', '1042')
+        values = cultivation.defaults(record, service.catalog()['cultivation'])
+        for key in list(values):
+            if key.startswith('target_'):
+                values[key] = values[key.replace('target_', 'current_')]
+        url = '/api/guide/characters/1042/cultivation'
+        values.update(current_level=30, target_level=30, current_breakthrough=2, target_breakthrough=2)
+        values['target_skill_0'] = 2
+        result = self.client.post(url, json=values).json['data']
+        self.assertEqual(result['total_gold'], 2000)
+        self.assertEqual(result['experience'], 0)
+        self.assertEqual(len(result['breakdown']), 1)
+        values['target_skill_0'] = 1
+        values['target_skill_4'] = 1
+        result = self.client.post(url, json=values).json['data']
+        self.assertEqual(result['total_gold'], 30000)
+        self.assertEqual(len(result['breakdown']), 1)
+        values['target_skill_4'] = 0
+        values['target_skill_6'] = 1
+        result = self.client.post(url, json=values).json['data']
+        self.assertEqual(result['total_gold'], 0)
+        self.assertEqual({i['id'].casefold(): i['amount'] for i in result['items']},
+                         {'fons': 500, 'cityability_upmaterial': 2})
+
+    def test_experience_import_validation(self):
+        importer = load_file('guide_refresh_experience', 'scripts/refresh_guide_data.py')
+        payload = [{'Rows': {f'character_Upgrade_{i}': {'NeedExp': i * 100} for i in range(1, 81)}}]
+        self.assertEqual(importer.character_experience(payload)[-1]['required_exp'], 8000)
+        payload[0]['Rows']['character_Upgrade_80']['NeedExp'] = -1
+        with self.assertRaises(ValueError):
+            importer.character_experience(payload)
+        del payload[0]['Rows']['character_Upgrade_80']
+        with self.assertRaises(KeyError):
+            importer.character_experience(payload)
+
     def test_cli_encodes_query_and_reports_errors(self):
         cli = load_file('guide_cli', 'app/modules/guide/cli.py')
         response = self.client.get('/api/guide/search?q=黑羽')

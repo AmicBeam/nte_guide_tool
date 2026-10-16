@@ -24,12 +24,13 @@ function guideSavedCharacterLines(saved, labels = {}) {
   const suit = saved.equipment?.suit || {};
   const mix = typeof fork.slev === 'number' || typeof fork.slev === 'string' ? String(fork.slev) : '';
   const mixLabel = /^[1-5]$/.test(mix) ? mix : '未提供';
+  const skillLabels = Object.fromEntries(Object.entries(labels).map(([id, label]) => [id.toLowerCase(), label]));
   const lines = [`角色 ${saved.level ?? '未提供'} 级 · 觉醒 ${saved.awaken_level ?? '未提供'}`,
     `弧盘：${fork.name || '未提供'}${fork.alev ? ` · ${fork.alev}级` : ''} · 混频 ${mixLabel}`,
     '技能等级（接口展示值，计算前请核对基础等级）：'];
   if (saved.skills?.length) {
     for (const skill of saved.skills) {
-      lines.push(`${labels[skill.id] || skill.name || skill.id || '未知技能'}：${skill.level == null ? '等级未提供' : `${skill.level}级`}`);
+      lines.push(`${skillLabels[String(skill.id || '').toLowerCase()] || skill.name || skill.id || '未知技能'}：${skill.level == null ? '等级未提供' : `${skill.level}级`}`);
     }
   } else {
     lines.push('已保存数据没有技能等级，请重新同步或手动填写。');

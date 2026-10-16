@@ -115,11 +115,12 @@ def prefill(character, saved):
         warnings.append('角色等级未能确认，请手动填写。')
     if saved.get('level') in caps[:-1]:
         warnings.append('接口未提供可确认的角色突破状态，请选择是否已突破。')
+    # Provider skill IDs use lowercase; casing does not change identity.
     # Never map by name, type or list position.
     abilities = {x['id']: x for x in character['abilities']}
     for i, skill in enumerate(cultivation.skill_options(character)):
         group = 'citySkills' if abilities[skill['id']]['type'] == 'city' else 'skills'
-        candidates = [x for x in saved['skills'] if x['group'] == group and x['id'] == skill['id']]
+        candidates = [x for x in saved['skills'] if x['group'] == group and x['id'].casefold() == skill['id'].casefold()]
         if len(candidates) == 1 and candidates[0]['level'] is not None and skill['minimum'] <= candidates[0]['level'] <= skill['maximum']:
             values[f'current_skill_{i}'] = candidates[0]['level']
         else:

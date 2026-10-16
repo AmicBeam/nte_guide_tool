@@ -130,6 +130,15 @@ class BuildCardTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             card.choose_character(first, 'missing')
 
+    def test_skill_labels_match_case_insensitive_ids(self):
+        saved = profile()
+        character = saved['characters'][0]
+        character['skills'][0]['id'] = 'ga_blackbird_melee'
+        character['skills'][0]['name'] = ''
+        content = card.card_content(saved, character, {'abilities': [
+            {'id': 'GA_BlackBird_Melee', 'type': 'melee', 'name': '掠影'}]})
+        self.assertEqual(content['skills'][0], ('普通攻击 · 掠影', 'Lv.8'))
+
     def test_render_has_valid_image_and_private_permissions(self):
         try:
             from PIL import Image

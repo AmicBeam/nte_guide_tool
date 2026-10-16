@@ -47,10 +47,10 @@ def card_content(profile, character, reference=None):
     reference = reference or {}
     labels = {'melee': '普通攻击', 'skill': '变轨攻击', 'ultraskill': '极轨终结',
               'qte': '援护技', 'passive': '天赋', 'city': '都市技能', 'peculiarity': '特性'}
-    abilities = {str(ability['id']): ability for ability in reference.get('abilities', [])}
+    abilities = {str(ability['id']).casefold(): ability for ability in reference.get('abilities', [])}
     skills = []
     for skill in character.get('skills', [])[:24]:
-        ability = abilities.get(str(skill.get('id')), {})
+        ability = abilities.get(str(skill.get('id')).casefold(), {})
         name = skill.get('name') or ability.get('name') or skill.get('id')
         kind = labels.get(ability.get('type'), '都市技能' if skill.get('group') == 'citySkills' else '技能')
         skills.append((f'{kind} · {display(name)}', f'Lv.{display(skill.get("level"))}'))

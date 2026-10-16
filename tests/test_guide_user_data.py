@@ -61,6 +61,22 @@ class GuideUserDataTest(RoomFlowTestCase):
         self.assertIn('RuntimeError', str(logs.output))
         self.assertEqual(self.data.profiles(player)[0]['role_name'], '旧快照')
 
+    def test_skill_id_matching_ignores_case_but_rejects_ambiguous_ids(self):
+        character = self.data.service.detail('characters', '1042')
+        saved = self.data.normalize(self.raw)[0]
+        saved['skills'] = [
+            {'id': 'ga_blackbird_melee', 'group': 'skills', 'level': 8},
+            {'id': 'Ga_BlackBird_Skill', 'group': 'skills', 'level': 6},
+            {'id': 'city_ability_blackbird_01', 'group': 'citySkills', 'level': 3}]
+        result = self.data.prefill(character, saved)
+        self.assertEqual(result['values']['current_skill_0'], 8)
+        self.assertEqual(result['values']['current_skill_1'], 6)
+        self.assertEqual(result['values']['current_skill_6'], 3)
+        saved['skills'].append({'id': 'GA_BlackBird_Melee', 'group': 'skills', 'level': 7})
+        self.assertEqual(self.data.prefill(character, saved)['values']['current_skill_0'], 1)
+        saved['skills'] = [{'id': 'unknown', 'name': '掠影', 'group': 'skills', 'level': 8}]
+        self.assertEqual(self.data.prefill(character, saved)['values']['current_skill_0'], 1)
+
     def test_anonymous_calculator_but_private_sync(self):
         for path in ['profiles', 'sync/sms', 'sync/verify', 'sync/select-role']:
             response = self.client.get('/api/guide/me/' + path) if path == 'profiles' else self.client.post('/api/guide/me/' + path, json={})

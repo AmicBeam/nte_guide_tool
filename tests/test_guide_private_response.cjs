@@ -33,7 +33,7 @@ test('expired login and login redirect', async () => {
 test('saved display uses weapon mix rather than character slev and includes skill levels', () => {
   const lines = context.guideSavedCharacterLines({level: 80, awaken_level: 2, resonance_level: 6,
     skills: [{id: 'melee', level: 8}, {id: 'skill', name: '变轨攻击', level: null}],
-    equipment: {fork: {name: '测试弧盘', alev: '80', slev: '5'}, suit: {}}}, {melee: '普通攻击'}).join('\n');
+    equipment: {fork: {name: '测试弧盘', alev: '80', slev: '5'}, suit: {}}}, {Melee: '普通攻击'}).join('\n');
   assert.match(lines, /混频 5/);
   assert.doesNotMatch(lines, /混频 6/);
   assert.match(lines, /普通攻击：8级/);

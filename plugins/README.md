@@ -4,7 +4,7 @@
 
 - `nte_account.py`、`nte_account_db.py`：原有注册、重置密码、角色公开管理；保持现有共享数据库表名和行为；玩家表镜像包含网站的两个权限列，新注册默认关闭，已有权限不改写，并兼容旧插件表缺列。
 - `nte_guide_access.py`：标准库只读桥接。`get_sender_token(sender_qq_id, database_path=None)`（兼容 `get_token_for_qq_id`）按本站 `player.player_uid` 查找未撤销、未过期的现存网站 token。默认从 `NTE_DATABASE_PATH` 取数据库路径；未配置、文件不存在、缺表、无有效 token 时返回 `None`，不建库、不建表、不注册、不生成 token。
-- `nte_build_card.py`：独立配装 PNG 脚本。输入是已验证归属的本站快照，仅展示当前角色练度、面板、技能展示等级、弧盘和空幕卡带，不作配装评分或补造未知数值。多游戏账号时必须选择 `role_id`。图中保留同步时间，不展示 QQ 号或 token。
+- `nte_build_card.py`：独立配装 PNG 脚本。输入是已验证归属的本站快照，仅展示当前角色练度、面板、技能展示等级、弧盘和空幕卡带，不作配装评分或补造未知数值。多游戏账号时必须选择 `role_id`。技能名称与类型按忽略大小写的完整技能ID对应本地资料，不按名称或列表顺序猜测。图中保留同步时间，不展示 QQ 号或 token。
 - 公共 wiki CLI 真源为 `app/modules/guide/cli.py`，它本身只依赖标准库，可作为独立文件复制到机器人运行目录；无需导入 Flask。
 
 ## 可信运行时契约

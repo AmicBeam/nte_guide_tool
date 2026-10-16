@@ -106,8 +106,9 @@ if (cultivationForm) {
     try { await api(`profiles/${encodeURIComponent(selected().role_id)}`, null, 'DELETE'); await refresh(); }
     catch (error) { status(error.message); }
   });
-  $('sync-open').addEventListener('click', () => {
-    if (!token) { location.href = '/login?next=' + encodeURIComponent(location.pathname); return; }
+  $('sync-open').addEventListener('click', async () => {
+    if (window.guideAuth) token = await window.guideAuth.check();
+    if (!token) { location.href = window.guideAuth ? window.guideAuth.loginUrl() : '/login?next=' + encodeURIComponent(location.pathname + location.search + location.hash); return; }
     $('sync-dialog').showModal();
   });
   $('sync-close').addEventListener('click', () => { if (!busy) $('sync-dialog').close(); });
@@ -171,6 +172,9 @@ if (cultivationForm) {
     } catch (error) { $('sync-status').textContent = error.message; }
     finally { setBusy(false); }
   });
-  if (token) refresh().catch(error => status(error.message));
-  else $('sync-open').textContent = '登录后同步练度';
+  const ready = window.guideAuth ? window.guideAuth.ready : Promise.resolve(token);
+  ready.then(value => {
+    token = value;
+    if (token) refresh().catch(error => status(error.message));
+  });
 })();

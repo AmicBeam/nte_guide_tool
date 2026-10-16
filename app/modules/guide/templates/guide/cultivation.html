@@ -32,7 +32,7 @@
 <h2>技能与天赋</h2><p class="guide-muted">填写基础技能等级，不含觉醒或共鸣额外增加的等级。可解锁的天赋、都市技能以 0 表示未解锁。</p>
 <div class="guide-cultivation-skills cultivation-skill-rows">{% for skill in skills %}{% set i = loop.index0 %}<fieldset><legend>{{ skill.label }}</legend><div class="cultivation-sliders">{{ skill_slider('current_skill_' ~ i, skill.label ~ ' · 当前等级', skill.minimum, skill.maximum, '当前等级') }}{{ skill_slider('target_skill_' ~ i, skill.label ~ ' · 目标等级', skill.minimum, skill.maximum, '目标等级') }}</div></fieldset>{% endfor %}</div>
 {% if error %}<p class="guide-cultivation-error" role="alert">{{ error }}</p>{% endif %}
-<div class="guide-links cultivation-actions"><button type="submit">计算所需资源</button><a href="/guide/characters/{{ record.id }}/cultivation">重置</a><a href="/guide/characters/{{ record.id }}#section-equip_slots">查看空幕</a></div>
+<div class="guide-links cultivation-actions"><button type="submit">计算所需资源</button><a href="/guide/characters/{{ record.id }}/cultivation">重置</a></div>
 </form>
 {% if result %}<section class="guide-detail-section" id="cultivation-result" aria-label="养成计算结果"><h2>所需资源</h2>
 <div class="guide-cultivation-summary"><div><span>甲硬币合计</span><strong>{{ "{:,}".format(result.total_gold) }}</strong></div></div>

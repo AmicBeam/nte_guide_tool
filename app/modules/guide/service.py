@@ -6,9 +6,12 @@ import json
 from pathlib import Path
 import re
 from markupsafe import Markup, escape
+from .affinity import with_gift_costs
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境'}
 LABELS = {
+    'total_affinity': '从零到满好感所需好感值', 'required_gifts': '所需礼物份数',
+    'costs': '礼物花费', 'unit_price': '单价', 'total_cost': '总花费',
     'affinity': '好感度', 'available': '已提供好感度配置', 'gifts': '喜好礼物',
     'affinity_gain': '赠送好感值', 'default_gain': '基础好感值', 'exclusive': '专属礼物',
     'unlimited': '不受普通赠礼次数限制', 'offers': '购买渠道', 'shop_name': '商店',
@@ -70,7 +73,7 @@ def catalog():
     affinity = json.loads((Path(__file__).parent / 'data/affinity.json').read_text(encoding='utf-8'))
     affinity_by_id = {record['id']: record['affinity'] for record in affinity['characters']}
     for character in data['characters']:
-        character['affinity'] = affinity_by_id[str(character['id'])]
+        character['affinity'] = with_gift_costs(affinity_by_id[str(character['id'])])
         character['experience'] = data['character_experience']
         binding = bindings[str(character['id'])]
         character.update(metadata_by_id[str(character['id'])])

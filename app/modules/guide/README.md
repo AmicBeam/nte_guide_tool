@@ -93,10 +93,12 @@ python scripts/refresh_guide_data.py --transport curl
 
 角色详情的“好感度”章节展示每级配置的好感值上限、喜好及专属礼物、每份赠送好感值和普通次数限制标记。没有角色好感度配置的条目显示未提供，不套用其他角色数据。这里不记录玩家当前好感度。
 
-购买渠道在每份礼物下折叠展示；同名商店中标价、货币和条件相同的渠道合并，JSON 保留全部商店与商品 ID，网页展开可查看各渠道的货币与标价。标价不代表实时库存或已解锁，配置折扣价不视为当前生效；无商店记录显示“商店价格未提供”，不视为免费或推断获取方式。
+礼物表采用“礼物、好感值、单价、总花费”四列，不展示购买渠道。同一货币取最低商店标价，不同货币分别显示，不折算或相加。JSON 保留全部商店与商品配置。无价格时显示未提供，不按免费计算。
+
+`affinity.py` 在读取本地快照后计算 `total_affinity`（所有等级好感值上限之和）、`required_gifts`（总好感值除以每份赠送值，向上取整）与 `costs`（每币种 `unit_price` 和 `total_cost`）。总花费为从零到配置满好感、只赠送该礼物的理论花费，不计主角赠礼加成、折扣、聊天／任务好感或库存和购买限制。缺少等级配置时不推算总花费。
 
 网页、JSON、Markdown 与 CLI 共用 `data/affinity.json`，支持 `section=affinity`，CLI 示例：`python nte-guide.py get characters 1042 --section affinity`。全文搜索可按礼物名检索角色。
 
 显式刷新：`python scripts/sync_guide_affinity.py`；支持 `--ntedata-dir` 读取本地同名角色好感度、礼物、商品、商店、物品、货币与食物配置表。刷新验证全部条目后原子替换快照；请求和启动不联网。常规技能与材料刷新不覆盖此独立快照。
 
-验证：`.venv/bin/python -m unittest tests.test_guide_affinity tests.test_guide tests.test_module_routes -v`；浏览器核对目录跳转、礼物表、渠道展开、好感度等级及缺失配置提示。
+验证：`.venv/bin/python -m unittest tests.test_guide_affinity tests.test_guide tests.test_module_routes -v`；浏览器核对目录跳转、四列表格、总价与向上取整、多货币、好感度等级及缺失配置提示。

@@ -5,10 +5,9 @@
 </details>
 {% else %}<p class="guide-muted">该角色尚未提供好感度等级配置。</p>{% endif %}
 <h3>喜好礼物</h3>
-<p class="guide-muted">好感值按赠送一份礼物列出。“不限普通次数”来自礼物配置。商店标价不代表实时库存或当前可购买；折扣是否生效取决于游戏内条件。</p>
-{% if value.gifts %}<div class="guide-table-scroll"><table class="guide-data-table" aria-label="喜好礼物与商店售价"><thead><tr><th scope="col">礼物</th><th scope="col">好感值</th><th scope="col">购买渠道与标价</th></tr></thead><tbody>
+<p class="guide-muted">{% if value.total_affinity is not none %}从零到满好感共需 {{ '{:,}'.format(value.total_affinity) }} 好感值。{% endif %}总花费按只赠送该礼物、所需份数向上取整计算；同一货币取最低标价，不计赠礼加成、折扣及其他好感度获取。</p>
+{% if value.gifts %}<div class="guide-table-scroll"><table class="guide-data-table" aria-label="喜好礼物与总花费"><thead><tr><th scope="col">礼物</th><th scope="col">好感值</th><th scope="col">单价</th><th scope="col">总花费</th></tr></thead><tbody>
 {% for gift in value.gifts %}<tr><th scope="row">{{ gift.name }}{% if gift.exclusive %}<br><small class="guide-muted">专属礼物</small>{% endif %}{% if gift.unlimited %}<br><small class="guide-muted">不限普通次数</small>{% endif %}</th><td><strong class="guide-effect-number">+{{ '{:,}'.format(gift.affinity_gain) }}</strong></td><td>
-{% if gift.offers %}<details><summary>{{ gift.offers[0].shop_name }} · {{ '{:,}'.format(gift.offers[0].price) }} {{ gift.offers[0].currency_name }}{% if gift.offers|length > 1 %} 等 {{ gift.offers|length }} 种渠道{% endif %}</summary>{% for offer in gift.offers %}<p>{{ offer.shop_name }} · {{ '{:,}'.format(offer.price) }} {{ offer.currency_name }}{% if offer.discount_price is not none %} · 配置折扣价 {{ '{:,}'.format(offer.discount_price) }}{% if offer.discount_time_limited %}（限时）{% endif %}{% endif %}{% if offer.availability_limited or offer.unlock_id %} · 有购买条件{% endif %}</p>{% endfor %}</details>
-{% else %}<span class="guide-muted">商店价格未提供</span>{% endif %}
-</td></tr>{% endfor %}</tbody></table></div>
+{% for cost in gift.costs %}<div>{{ '{:,}'.format(cost.unit_price) }} {{ cost.currency_name }}</div>{% else %}<span class="guide-muted">价格未提供</span>{% endfor %}
+</td><td>{% for cost in gift.costs %}<div>{% if cost.total_cost is not none %}{{ '{:,}'.format(cost.total_cost) }} {{ cost.currency_name }}{% else %}未提供{% endif %}</div>{% else %}<span class="guide-muted">未提供</span>{% endfor %}{% if gift.required_gifts is not none %}<div><small class="guide-muted">共 {{ '{:,}'.format(gift.required_gifts) }} 份</small></div>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
 {% else %}<p class="guide-muted">该角色尚未提供喜好礼物配置。</p>{% endif %}

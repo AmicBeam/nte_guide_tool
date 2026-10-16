@@ -160,7 +160,7 @@ class GuideTest(unittest.TestCase):
                 self.assertTrue((ROOT / 'app' / badge['icon'].removeprefix('/')).is_file())
         html = self.client.get('/guide/characters/1042').text
         self.assertIn('气态弧盘', html)
-        self.assertIn('弧盘适配与角色定位', html)
+        self.assertIn('aria-label="角色定位"', html)
         self.assertIn('alt="5星角色"', html)
         self.assertIn('alt="魂属性"', html)
         self.assertNotIn('魂 · 5 星', html)

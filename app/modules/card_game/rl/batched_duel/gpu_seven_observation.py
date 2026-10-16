@@ -1080,9 +1080,9 @@ def encode_observation_tokens(
     seven_char_encoded = t.stack([
         _reference_ratio32(seven_char[:, :, :, 0], 10.0),
         _reference_ratio32(seven_char[:, :, :, 1], 10.0),
-        t.where(chain_actor >= 0, (chain_actor + 1.0) / 20.0, t.zeros_like(chain_actor)),
+        t.where(chain_actor >= 0, _reference_ratio32(chain_actor + 1.0, 20.0), t.zeros_like(chain_actor)),
         seven_char[:, :, :, 3],
-        t.where(mimic_actor >= 0, (mimic_actor + 1.0) / 20.0, t.zeros_like(mimic_actor)),
+        t.where(mimic_actor >= 0, _reference_ratio32(mimic_actor + 1.0, 20.0), t.zeros_like(mimic_actor)),
     ], dim=-1)
     choice_counts = t.zeros((n, NUM_CARDS), dtype=t.float32, device=dev)
     valid_choice = (choice_c >= 0) & (choice_c < NUM_CARDS)

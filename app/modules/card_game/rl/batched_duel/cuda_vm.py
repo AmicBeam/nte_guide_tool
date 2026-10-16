@@ -58,7 +58,8 @@ class VmLimits:
             if type(value) is not int or value<1 or value>2**30:raise ValueError('Positive bounded VM limits required')
 
 
-def emit_vm_source(image,limits=VmLimits(),*,compiled_blocks=None,constant_lookup=False,compact_frame_init=False,device_call_boundaries=False,library_call_boundaries=False,mutable_lookup_cache=False,frozen_class_lookup=False):
+def emit_vm_source(image,limits=VmLimits(),*,compiled_blocks=None,constant_lookup=False,compact_frame_init=False,device_call_boundaries=False,library_call_boundaries=False,mutable_lookup_cache=False,frozen_class_lookup=False,direct_stack_dispatch=False):
+    if type(direct_stack_dispatch) is not bool:raise TypeError('Boolean direct stack dispatch option required')
     if type(frozen_class_lookup) is not bool:raise TypeError('Boolean frozen class lookup option required')
     if type(mutable_lookup_cache) is not bool:raise TypeError('Boolean mutable lookup cache option required')
     if type(constant_lookup) is not bool:raise TypeError("Boolean constant lookup option required")
@@ -90,6 +91,18 @@ enum VmError {{ BAD_PROGRAM=100,STACK_OVERFLOW=101,FRAME_OVERFLOW=102,UNBOUND_LO
         from .vm_compiled_blocks import emit_compiled_blocks
         compiled_plan = emit_compiled_blocks(image, **compiled_blocks)
     source=_VM_SOURCE
+    if direct_stack_dispatch:
+        # These four ops have no library interception. Keep the original
+        # primitive switch, instruction limits, error checks and PC updates.
+        dispatch=('  if(handle_strings(c,f,op,arg))continue;\n'
+                  '  if(handle_exceptions(c,f,op,arg,value,target))continue;\n'
+                  '  if(stdlib_handle_opcode(c,f,op,arg,value,target))continue;\n'
+                  '  if(handle_collections(c,f,op,arg,value,target))continue;\n')
+        if source.count(dispatch)!=1:raise ValueError('Canonical VM dispatch boundary changed')
+        source=source.replace(dispatch,
+            '  // DIRECT_STACK_DISPATCH: primitive bodies remain canonical.\n'
+            '  if(op!=OP_LOAD_CONST && op!=OP_LOAD_FAST && op!=OP_STORE_FAST && op!=OP_POP_TOP){\n'
+            +dispatch+'  }\n',1)
     if compact_frame_init:
         from .vm_frame_init import integrate_frame_init
         source=integrate_frame_init(source)
@@ -827,7 +840,7 @@ class CudaVm:
     supports_full_duel_rules=False
     rule_threads_per_block=1
     def __init__(self,image,*,device='cuda',limits=VmLimits(),guard_standalone_entities=False,
-                 rule_threads_per_block=1,compiled_blocks=None,constant_lookup=False,compact_frame_init=False,device_call_boundaries=False,library_call_boundaries=False,mutable_lookup_cache=False,frozen_class_lookup=False):
+                 rule_threads_per_block=1,compiled_blocks=None,constant_lookup=False,compact_frame_init=False,device_call_boundaries=False,library_call_boundaries=False,mutable_lookup_cache=False,frozen_class_lookup=False,direct_stack_dispatch=False):
         if not isinstance(image,VmImage):raise TypeError('Numeric VM image required')
         image.verify()
         if not isinstance(limits,VmLimits):raise TypeError('VmLimits required')
@@ -842,6 +855,8 @@ class CudaVm:
         if type(device_call_boundaries) is not bool:raise TypeError("Boolean device call boundary option required")
         if type(library_call_boundaries) is not bool:raise TypeError("Boolean library call boundary option required")
         if type(mutable_lookup_cache) is not bool:raise TypeError('Boolean mutable lookup cache option required')
+        if type(direct_stack_dispatch) is not bool:raise TypeError('Boolean direct stack dispatch option required')
+        self.direct_stack_dispatch=direct_stack_dispatch
         self.mutable_lookup_cache=mutable_lookup_cache
         self.library_call_boundaries = library_call_boundaries
         self.device_call_boundaries = device_call_boundaries
@@ -876,7 +891,7 @@ class CudaVm:
         compact_signature=['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
             'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*','int32*','int32*','int32*',
             'int32','int32','int32','int32','int32']
-        self.module=CudaModule(emit_vm_source(image,limits,compiled_blocks=self.compiled_blocks_config,constant_lookup=constant_lookup,compact_frame_init=compact_frame_init,device_call_boundaries=device_call_boundaries,library_call_boundaries=library_call_boundaries,mutable_lookup_cache=mutable_lookup_cache,frozen_class_lookup=frozen_class_lookup),{
+        self.module=CudaModule(emit_vm_source(image,limits,compiled_blocks=self.compiled_blocks_config,constant_lookup=constant_lookup,compact_frame_init=compact_frame_init,device_call_boundaries=device_call_boundaries,library_call_boundaries=library_call_boundaries,mutable_lookup_cache=mutable_lookup_cache,frozen_class_lookup=frozen_class_lookup,direct_stack_dispatch=direct_stack_dispatch),{
             'vm_execute':signature,'vm_execute_device':signature+['uint8*'],
             'vm_clock':['int64*'],'vm_compact':compact_signature,
             'vm_compact_device':compact_signature+['int32','int32','int32','uint8*','int32*'],

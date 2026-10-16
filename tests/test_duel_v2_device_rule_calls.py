@@ -6,6 +6,22 @@ import unittest
 
 
 class DeviceRuleCallsContractTest(unittest.TestCase):
+    def test_reduced_payload_requires_explicit_bounded_layout(self):
+        from app.modules.card_game.rl.batched_duel.device_rule_calls import resolve_vm_layout,LARGE_NODES,LARGE_EDGES,LARGE_PAYLOAD_BYTES
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        compact=GraphLayout(128,16384,32768,131072)
+        small=GraphLayout(128,LARGE_NODES,LARGE_EDGES,2<<20)
+        self.assertEqual(resolve_vm_layout(128,compact).max_payload_bytes,LARGE_PAYLOAD_BYTES)
+        with self.assertRaises(ValueError):resolve_vm_layout(128,compact,small)
+        with self.assertRaises(ValueError):resolve_vm_layout(128,compact,allow_reduced_payload=True)
+        with self.assertRaises(TypeError):resolve_vm_layout(128,compact,small,allow_reduced_payload=1)
+        self.assertIs(resolve_vm_layout(128,compact,small,allow_reduced_payload=True),small)
+        for layout in (GraphLayout(127,LARGE_NODES,LARGE_EDGES,2<<20),
+                       GraphLayout(128,LARGE_NODES-1,LARGE_EDGES,2<<20),
+                       GraphLayout(128,LARGE_NODES,LARGE_EDGES-1,2<<20),
+                       GraphLayout(128,LARGE_NODES,LARGE_EDGES,65536)):
+            with self.assertRaises(ValueError):resolve_vm_layout(128,compact,layout,allow_reduced_payload=True)
+
     def test_rejects_cpu_callbacks_missing_entries_and_stays_unqualified(self):
         from app.modules.card_game.rl.batched_duel.device_rule_calls import (
             ALLOWED_ENTRIES, DeviceRuleGraphCalls,
@@ -112,6 +128,17 @@ class DeviceRuleCallsCudaTest(unittest.TestCase):
         import torch
         if not torch.cuda.is_available():
             self.skipTest('Actual CUDA required')
+
+    def test_actual_cuda_reduced_payload_preserves_masked_routing_and_leases(self):
+        from unittest.mock import patch
+        from app.modules.card_game.rl.batched_duel.device_rule_calls import DeviceRuleGraphCalls,LARGE_NODES,LARGE_EDGES
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        original=DeviceRuleGraphCalls.__init__
+        def reduced(instance,vm,store,**options):
+            options.update(vm_layout=GraphLayout(options['lanes'],LARGE_NODES,LARGE_EDGES,2<<20),allow_reduced_payload=True)
+            original(instance,vm,store,**options)
+        with patch.object(DeviceRuleGraphCalls,'__init__',reduced):
+            self.test_actual_cuda_masked_clean_and_sample_cohort_routing()
 
     def test_rejects_missing_frozen_entries_and_uncaptured_calls(self):
         import torch

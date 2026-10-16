@@ -1148,3 +1148,16 @@ GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际
 ### 策略对手与最小设备编码投影（离线实验）
 
 设备搜索新增显式冻结策略对手、真红活跃根打包队列及指导前独立搜索轨迹。`rl/batched_duel/gpu_policy_projection.py` 从正式投影派生编码专用路径，保持完整观察／候选编码、合法顺序与隐藏信息边界；网站仍使用正式投影。VM按CPython语义支持有界 `Random.sample`。接口边界与验收见[设备搜索协议](../../../docs/duel-v2-device-search-acceptance.md)。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_policy_opponent tests.test_duel_v2_policy_projection tests.test_duel_v2_vm_sample tests.test_duel_v2_device_search tests.test_duel_v2_device_game_policy_sink tests.test_duel_v2_device_search_row_work`。完整根搜索、连续物理决策、自然终局和训练资格分别核验，计时通过不表示模型质量批准。
+
+
+### 设备临时堆与自有副本转移实验
+
+`DeviceRuleGraphCalls` 默认保留原节点、边及32MiB载荷的临时堆下界。资源验证可在显式 `vm_layout` 上启用 `allow_reduced_payload=True`，只降低临时载荷下界，仍不少于压缩输出上界；节点／边、持久状态、完整候选与错误拒绝语义保持。此选项需要独立冻结与实际CUDA容量／重放验证，不提供训练资格。
+
+`rl/batched_duel/gpu_owned_transitions.py` 从正式转移源函数派生消费自有VM工作副本的入口，保留正式实体归一、规则校验、教程分支、效果与事件，避免在已复制的工作区内再次复制整张状态图；不得传入共享持久根，也不替换网页或默认冻结入口。结构检查、真实多步全状态／对象别名、JSON／实体计数、错误后重新装载及CUDA输入不变性验证见 `tests.test_duel_v2_owned_transitions`；临时堆边界和队列路由见 `tests.test_duel_v2_device_rule_calls`。完整搜索同种子对照与实际提速需另验收。
+
+
+VM可显式设置 `direct_stack_dispatch=True`，让LOAD_CONST／LOAD_FAST／STORE_FAST／POP_TOP直接进入原有指令switch，保留原指令主体、PC、预算、错误与截止逻辑；默认关闭。验证入口为 `tests.test_duel_v2_vm_direct_dispatch`，检查默认代码不变、库无拦截、实际编译源绑定、数值／别名及逐指令错误状态。启用后的完整搜索与耗时另行冻结验证。
+
+
+七队设备观察中的连锁来源／复制来源席位归一化使用binary64中间除法后单次转float32，与标准编码逐字节一致，避免CUDA常量倒数乘法的一ULP差异。回归覆盖全部席位的来源索引，见 `tests.test_duel_v2_gpu_seven`。此修正不回写历史计时或未通过的轨迹验收。

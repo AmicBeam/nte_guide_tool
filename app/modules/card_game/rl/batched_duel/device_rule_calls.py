@@ -30,6 +30,22 @@ LARGE_EDGES = 524288
 LARGE_PAYLOAD_BYTES = 32 * 1024 * 1024
 
 
+def resolve_vm_layout(lanes, compact_layout, vm_layout=None, *, allow_reduced_payload=False):
+    """Resolve scratch bounds; reduced payload is an explicit measured experiment."""
+    if type(allow_reduced_payload) is not bool:
+        raise TypeError('Explicit reduced-payload option required')
+    if allow_reduced_payload and vm_layout is None:
+        raise ValueError('Reduced payload requires an explicit VM layout')
+    layout=(GraphLayout(lanes,LARGE_NODES,LARGE_EDGES,LARGE_PAYLOAD_BYTES)
+            if vm_layout is None else vm_layout)
+    payload_floor=(compact_layout.max_payload_bytes if allow_reduced_payload else LARGE_PAYLOAD_BYTES)
+    if (not isinstance(layout,GraphLayout) or layout.game_capacity!=lanes
+            or layout.max_nodes<LARGE_NODES or layout.max_edges<LARGE_EDGES
+            or layout.max_payload_bytes<payload_floor):
+        raise ValueError('Declared VM lane layout violates its scratch bounds')
+    return layout
+
+
 def _empty_graph(torch, layout, device):
     rows = layout.game_capacity
     return DeviceGraph(
@@ -103,7 +119,7 @@ class DeviceRuleGraphCalls:
     supports_full_duel_rules = False
 
     def __init__(self,vm,state_store,*,rows,lanes=32,seconds=60,compact_layout,
-                 vm_layout=None,max_workspace_bytes=None):
+                 vm_layout=None,max_workspace_bytes=None,allow_reduced_payload=False):
         if not isinstance(vm, CudaVm) or vm.closed:
             raise TypeError('Live frozen CUDA VM required')
         if not isinstance(state_store, CompactDeviceGraphStore) or state_store.closed:
@@ -135,12 +151,8 @@ class DeviceRuleGraphCalls:
         lane_layout = GraphLayout(
             self.lanes, compact_layout.max_nodes, compact_layout.max_edges,
             compact_layout.max_payload_bytes)
-        large_layout=(GraphLayout(self.lanes,LARGE_NODES,LARGE_EDGES,LARGE_PAYLOAD_BYTES)
-                      if vm_layout is None else vm_layout)
-        if (not isinstance(large_layout,GraphLayout) or large_layout.game_capacity!=self.lanes
-                or large_layout.max_nodes<LARGE_NODES or large_layout.max_edges<LARGE_EDGES
-                or large_layout.max_payload_bytes<LARGE_PAYLOAD_BYTES):
-            raise ValueError('Declared VM lane layout must retain formal workspace minima')
+        large_layout=resolve_vm_layout(self.lanes,lane_layout,vm_layout,
+                                      allow_reduced_payload=allow_reduced_payload)
         if any(v>=2**31 for v in (large_layout.max_nodes,large_layout.max_edges,large_layout.max_payload_bytes)):
             raise ValueError('Bounded int32 VM workspace required')
         constants=len(vm.image.nodes)

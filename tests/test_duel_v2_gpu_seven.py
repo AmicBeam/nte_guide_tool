@@ -82,6 +82,32 @@ class GpuSevenContractTest(unittest.TestCase):
 
 @unittest.skipUnless(has_torch, 'PyTorch required for GPU encoder tests')
 class GpuSevenEncoderTest(unittest.TestCase):
+    def _actor_ratio_views(self):
+        base=observe(new_game(seed=701,decks={'a':self.decks['lingke'],'b':self.decks['starter']},skip_mulligan=True),'a',include_previews=False)
+        result=[]
+        for actor in seven_lineup.SEATS:
+            view=deepcopy(base)
+            hero=next(h for h in view['sides']['a']['characters'] if h['id']=='lingke')
+            hero['lingke_chain']={'character_id':actor,'count':1}
+            meta=view['policy_state']['sides']['a']['characters']['lingke']
+            meta.setdefault('flags',{})['mimic']={'id':actor}
+            result.append(view)
+        return result
+
+    def test_actor_ratios_match_canonical_for_every_seat(self):
+        from app.modules.card_game.rl.batched_duel.gpu_seven_observation import encode_observation_batch
+        views=self._actor_ratio_views();expected=np.stack([seven_lineup.encode(v,[])[0] for v in views])
+        actual=encode_observation_batch(views,device='cpu').observations.numpy()
+        self.assertEqual(actual.tobytes(),expected.tobytes())
+
+    def test_actual_cuda_actor_ratios_match_canonical_for_every_seat(self):
+        import torch
+        if not torch.cuda.is_available():self.skipTest('Actual CUDA required')
+        from app.modules.card_game.rl.batched_duel.gpu_seven_observation import encode_observation_batch
+        views=self._actor_ratio_views();expected=np.stack([seven_lineup.encode(v,[])[0] for v in views])
+        actual=encode_observation_batch(views,device='cuda').observations.cpu().numpy()
+        self.assertEqual(actual.tobytes(),expected.tobytes())
+
     def test_device_observation_errors_stay_per_row_and_preserve_inputs(self):
         import torch
         from dataclasses import fields

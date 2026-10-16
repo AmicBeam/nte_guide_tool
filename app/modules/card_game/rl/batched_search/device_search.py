@@ -20,6 +20,7 @@ from ..batched_duel.device_rule_protocol import DeviceStateBatch, DeviceDecision
 SAMPLE, INSPECT, EVALUATE_NODE, LEAF, OPPONENT, STEP, BACKUP, FINAL, CLEANUP, DONE = range(10)
 RULE_ERROR, INFERENCE_ERROR, STATISTICS_ERROR, KEY_ERROR = 1, 2, 4, 8
 CAPACITY_ERROR, RANDOM_ERROR, METADATA_ERROR = 16, 32, 64
+PRIOR_ERROR = 128
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,8 @@ class DeviceGumbelResult:
     phase_work: Any
     peak_device_roots: Any
     information_keys: Any = None
+    prior_shifts: Any = None
+    prior_version: str | None = None
 
 
 def add_world_seed_stride(limbs, simulation):
@@ -71,7 +74,8 @@ class DeviceGumbelSearch:
                  random=None, noise=False, device='cuda', allow_cpu_reference=False,
                  allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False,
                  reuse_root_policy_value=False, verify_root_value_reuse=False,
-                 group_ready_leaves=False,reuse_interior_observation=False,opponent_mode='rule'):
+                 group_ready_leaves=False,reuse_interior_observation=False,opponent_mode='rule',
+                 prior_guide=None):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -91,6 +95,10 @@ class DeviceGumbelSearch:
         if opponent_mode == 'policy' and not callable(getattr(random, 'categorical', None)):
             raise ValueError('Exact device categorical RNG required for policy opponents')
         self.opponent_mode = opponent_mode
+        if prior_guide is not None and not callable(getattr(prior_guide, 'score_device', None)):
+            raise TypeError('Array prior must provide score_device')
+        if prior_guide is not None and teacher_mode != 'network_value':
+            raise ValueError('Array-prior branch requires network_value with zero teacher horizon')
         if type(noise) is not bool or type(allow_synthetic) is not bool:
             raise TypeError('Explicit boolean noise and synthetic controls required')
         if type(borrow_root_candidates) is not bool:raise TypeError('Explicit root candidate borrow option required')
@@ -119,6 +127,9 @@ class DeviceGumbelSearch:
             raise RuntimeError('Actual CUDA required; no CPU search fallback')
         if self.device.type == 'cpu' and not allow_synthetic:
             raise ValueError('CPU FSM oracle requires explicit synthetic fixture binding')
+        if prior_guide is not None and getattr(prior_guide, 'device', None) != self.device:
+            raise ValueError('Array prior and search must share a device')
+        self.prior_guide = prior_guide
         if noise and (random is None or not callable(getattr(random, 'gumbel_device', None))):
             raise ValueError('Exact device Gumbel random stream required for exploration')
         if (statistics.device != self.device or statistics.q_scale != 'natural_wdl'
@@ -169,6 +180,7 @@ class DeviceGumbelSearch:
         self.policy = torch.zeros((rows, max_actions), dtype=torch.float32, **z)
         self.visit_policy = torch.zeros_like(self.policy)
         self.visits = torch.zeros((rows, max_actions), dtype=torch.int32, **z)
+        self.root_prior_shifts = None if prior_guide is None else torch.zeros_like(self.policy)
         self.phase_work = torch.zeros((DONE, rows), dtype=torch.int64, **z)
         self.peak_device_roots = torch.zeros((), dtype=torch.int64, **z)
         self.root_value_reuse_rows = torch.zeros((), dtype=torch.int64, **z)
@@ -281,7 +293,7 @@ class DeviceGumbelSearch:
         value = t.cat(values)
         return t.where(observed.terminal, observed.terminal_value, value)
 
-    def _policy_prediction(self, decision, actors, mask):
+    def _policy_prediction(self, decision, actors, mask, *, root=False):
         ids = self._policy_ids.gather(1, actors.clamp(0, 1)[:, None])[:, 0]
         context = self.t.ones((self.rows, 1), dtype=self.t.float32, device=self.device)
         if self.row_work is not None:
@@ -295,6 +307,18 @@ class DeviceGumbelSearch:
         self._error(prediction.invalid_rows, mask, INFERENCE_ERROR)
         self._last_policy_prediction = prediction
         logits = prediction.logits.to(self.t.float64).masked_fill(~decision.valid, -float('inf'))
+        if root and self.prior_guide is not None:
+            if self.root_prior_shifts is None:
+                raise RuntimeError('Bind the array prior before constructing the search')
+            hint = self.prior_guide.score_device(decision.observations, decision.candidates,
+                                                 decision.valid, mask)
+            self._vector(hint.shifts, self.t.float32, (self.rows, self.max_actions))
+            self._vector(hint.errors, self.t.int32, (self.rows,))
+            bad = ~self.t.isfinite(hint.shifts).all(-1)
+            self._error(hint.errors | bad.to(self.t.int32), mask, PRIOR_ERROR)
+            shifts = self.t.where((mask & (self.errors == 0))[:, None], hint.shifts, 0.)
+            self.root_prior_shifts.copy_(shifts)
+            logits = logits + shifts.to(self.t.float64)
         prior = logits.softmax(-1)
         return self.t.where(decision.valid, prior, 0.)
 
@@ -400,6 +424,8 @@ class DeviceGumbelSearch:
         self.root_value_reuse_rows.zero_()
         self.root_value_reuse_validation_errors.zero_()
         self._world_live.zero_()
+        if self.root_prior_shifts is not None:
+            self.root_prior_shifts.zero_()
         mask = roots.active & (self.errors == 0)
         meta = self.rules.metadata_device(self._masked(roots, mask))
         self._error(meta.errors, mask, RULE_ERROR)
@@ -414,7 +440,7 @@ class DeviceGumbelSearch:
         self._error((decision.counts < 1) | (decision.counts > self.max_actions), mask, CAPACITY_ERROR)
         self.requested.copy_(t.where(decision.counts == 1, 1, self.simulations))
         self._limits = decision.counts.clamp(1, self._candidate_cap) - 1
-        prior = self._policy_prediction(decision, viewers, mask)
+        prior = self._policy_prediction(decision, viewers, mask, root=True)
         reuse = self.root_value_reuse
         if reuse is not None and reuse.enabled:
             ids = self._policy_ids.gather(1, viewers.clamp(0, 1)[:, None])[:, 0]
@@ -686,4 +712,5 @@ class DeviceGumbelSearch:
         complete = complete & (self.completed == self.requested)
         return DeviceGumbelResult(self._root_decision, self.actions, self.policy, self.visit_policy,
             self.visits, self.requested, self.completed, complete, self.errors, self.node_count,
-            self.phase_work, self.peak_device_roots, self.keys[:, 0].contiguous())
+            self.phase_work, self.peak_device_roots, self.keys[:, 0].contiguous(),
+            self.root_prior_shifts, getattr(self.prior_guide, 'version', None))

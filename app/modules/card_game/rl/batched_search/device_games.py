@@ -73,6 +73,8 @@ class DeviceGameLoop:
                 raise ValueError('Positive bounded ' + name + ' required')
         if root_guide is not None and not callable(getattr(root_guide, 'capture_result', None)):
             raise TypeError('Device root guide must provide capture_result')
+        if root_guide is not None and getattr(search, 'prior_guide', None) is not None:
+            raise ValueError('Array prior replaces the post-search simulation guide')
         self.root_guide = root_guide
         if search_audit_sink is not None:
             if search_audit_sink is sink:

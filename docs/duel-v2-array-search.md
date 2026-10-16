@@ -1,0 +1,70 @@
+# 批量数组规则与搜索
+
+本文件维护当前改造边界、接口与验证方法；单轮计时、日志和产物保存在 `artifacts/rl-evals/<run-id>/`。本入口属于离线 RL，不改变网站模型、正式游戏规则或既有冻结任务，也不自动启动训练。
+
+## 执行结构
+
+目标链路为：有界数组状态及动作 → 一批规则推进 → 一批公开编码／合法动作 → 策略与固定视角 WDL → 树回传。参考 Mctx 的 recurrent 扩展结构，以 Torch 数组实现；不是直接调用 JAX Mctx，也不把 Python 规则解释器的批量调度称为规则数组化。
+
+当前已实现的组件：
+
+- `rule_ir/lower_array.py` 在准备阶段将共享规则 IR 编译成固定的张量表达式，运行时按批处理混合行动方、活动掩码与整数状态；不逐根解释字节码。输出按行错误，拒绝整数域或输出越界，失败行和非活动行保留输入。
+- `batched_search/array_recurrent.py` 的 `ArrayRuleRegistry` 显式登记动作对应的共享 IR 程序，不支持的动作拒绝。`SharedIrTransition` 将该注册表的数组结果接到 `ArrayRecurrentFn`，以固定布局数组保存状态，不分配实体图临时堆。现有共同交战／普通出击切片是组件覆盖，不是完整对局。
+- `ArrayRecurrentFn` 一次处理一批推进与评价。策略必须来自各实际行动方自身可见信息，WDL 始终属于显式固定观察者；同一玩家连续行动与换回合均不按树深翻转符号。新到达的终局只给一次真实 WDL reward，并设 discount=0、value=0；已有终局为吸收态，不重复发奖。非终局 reward=0、discount=1。终局的占位动作仅供树运算，不能提交为物理动作。转移或评价错误回退本次状态并保留错误，不生成有效终局。
+- `batched_duel/array_health.py` 为减少生命上限提供整数数组数值原语，保留逐次减少与逐次比例四舍五入，不能合并成一次比例缩放。完成状态、生命锁、倒地、事件和胜负由正式调度层处理；原语不单独执行这些规则。
+
+世界采样仍须按原信息集协议进行。不能把某个采样世界的私有状态缓存成所有世界共同的树状态，也不能以普通完全信息 Mctx 树替代现行信息集搜索。完整合法候选、原始动作身份、实际行动方、固定价值视角及完整策略目标继续保留。
+
+## 无额外模拟的真红先验
+
+`batched_search/array_zhenhong_prior.py:ArrayZhenhongPrior` 只读取现有七队公开观察与完整合法候选，支持密集编码及 `CompactDeviceCandidates`。索引、卡牌类型与属性表在捕获前准备；运行时不读取原始对局字典、不调用规则推进、不采样未知世界，也不执行旧24计划指导。
+
+仅在己方有存活、未处于终结的真红且有翳时适用；选择面板及无关队伍不额外加分。评分是启发式机会提示，不保证已经实际触发：
+
+| 项 | 默认 logit 提示 |
+| --- | ---: |
+| 已有延滞且可入场创生的机会 | 2.0 |
+| 建立延滞的入场机会 | 1.0 |
+| 尚无兽牙时使用兽牙牌 | 0.75 |
+| 有翳战斗牌、存活翳及足够当前资源时，零战斗牌准备 | 1.0 |
+| 尚未齐备时的 R01／Y02 过牌准备 | 0.25 |
+| 已获得准备提示的动作，按估计付费扣分 | 每点0.1 |
+| 起手换掉最后一份兽牙／零战斗牌核心 | 每组−1.0 |
+
+合计位移限制在 [−2, 2]；所有权重必须有限且非负。这些是待验证的启发式参数，不是胜率、奖励或已验证最优值。反击、响应、复制异能和多步收益继续由搜索判断；不把推测的未来抽牌作为已持有资源。倾陷值的累积不等于已经倾陷，准备检查使用当前倾陷状态。
+
+GPU 搜索显式接线：
+
+```python
+guide = ArrayZhenhongPrior(device=device)
+search = DeviceGumbelSearch(
+    rules, inference, auxiliary, statistics, keys,
+    rows=rows, max_actions=800, simulations=32, gumbel_candidates=16,
+    max_depth=10, teacher_mode='network_value', terminal_horizon=0,
+    opponent_mode='policy', random=random, device=device,
+    prior_guide=guide,
+)
+loop = DeviceGameLoop(..., root_guide=None)
+```
+
+`prior_guide` 在根的网络 logits 后、Gumbel分配前加入位移；不进入内部节点、对手策略或价值分支，不在搜索后覆盖动作。结果保留 `prior_shifts` 与 `prior_version`，冻结配置另存完整 `ZhenhongPriorWeights`。指导异常拒绝该搜索行；同时配置旧 `root_guide` 会被拒绝，避免两套指导叠加。默认 `prior_guide=None` 保持历史分支；新数组分支必须显式按上述参数启用，不能复用旧冻结回执。
+
+`recovery_search.search(root_prior=guide)` 是同一评分的显式 CPU 参考，`score_numpy` 拒绝 CUDA 对象，不构成 GPU 热路径回传。它只改变根先验，保留原模型 `raw_choice` 与 WDL；零位移须复现原搜索结果。
+
+## 当前尚未完成的迁移
+
+这些组件尚未组成七队数组执行器。原七队 GPU 搜索的正式规则、采样、候选提取和部分公开投影仍由 VM 执行；接上数组真红评分，只消除指导的额外模拟，不能据此宣称搜索主耗时已解决。
+
+早期原生训练后端只覆盖部分六人内容，不能冒充七队支持。后续需要迁移并逐项验证：完整实体／牌区／RNG数组布局、效果队列和响应、卡效与角色钩子、合法动作与所有选择面板、信息集采样、与3479／1576编码契约相同的公开编码、物理提交／原始动作重放；之后接入现有完整搜索和学习服务。容量不足、未知机制或不支持字段须拒绝，不能删除效果、截断候选或悄悄回到CPU规则。
+
+## 验证
+
+```bash
+.venv/bin/python -m unittest tests.test_duel_v2_array_rules tests.test_duel_v2_array_health tests.test_duel_v2_array_recurrent tests.test_duel_v2_array_prior
+.venv/bin/python -m unittest tests.test_duel_v2_device_search tests.test_duel_v2_device_games tests.test_duel_v2_device_network_guide tests.test_duel_v2_device_policy_opponent
+.venv/bin/python scripts/benchmark_duel_v2_arrays.py --device cpu --rows 8 32 64 --output artifacts/rl-evals/<run-id>/cpu-components
+```
+
+Windows 使用已配对隔离环境运行相同测试，并把计时脚本的 `--device` 设为 `cuda`。只有实际 CUDA 捕获／重放和数据对拍通过才记设备通过；无CUDA时的跳过不计通过。计时脚本分开记录真实开局编码上的真红评分与共享交战IR组件，不把组件调用命名为32搜索，不推算完整对局吞吐。
+
+先验需验证两视角换牌、可见组合准备、资源不足、倒地／终结、隐藏信息置换、密集／紧凑候选、错误与非活动尾槽。数组规则需验证混合行动方、输入不变、别名／快照写入语义、越界拒绝及正式规则对拍。完整七队规则、完整Gumbel32、自然终局与模型质量仍各自验收，组件不能自动授予任何一项资格。

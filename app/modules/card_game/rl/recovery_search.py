@@ -37,7 +37,8 @@ def choose_root(node, noise, visit, mode):
 
 def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_candidates=16,
            terminal_horizon=3, max_depth=10, deadline=None, noise=False, q_scale='natural_wdl',
-           fast_simulation=True,teacher_mode='network',value_policies=None,root_trace=False):
+           fast_simulation=True,teacher_mode='network',value_policies=None,root_trace=False,
+           root_prior=None):
     """Bounded version of the existing Gumbel traversal with an explicit planner.
 
     Keep root worlds, opponent private observations, fixed observer values,
@@ -61,6 +62,17 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
         raise ValueError('Search must use decision owner')
     actions, (x, c) = runtime.decision(state, viewer)
     logits, root_value = runtime.predict_encoded(policies[viewer], x, c)
+    raw_choice = int(np.argmax(logits))
+    prior_shifts = None
+    if root_prior is not None:
+        if teacher_mode != 'network' or terminal_horizon != 0:
+            raise ValueError('Array-prior reference requires network value and zero teacher horizon')
+        if not callable(getattr(root_prior, 'score_numpy', None)):
+            raise TypeError('Explicit CPU array-prior reference required')
+        prior_shifts = np.asarray(root_prior.score_numpy(x, c), dtype=np.float32)
+        if prior_shifts.shape != (len(actions),) or not np.isfinite(prior_shifts).all():
+            raise ValueError('Finite full legal root-prior shifts required')
+        logits = np.asarray(logits, dtype=np.float64) + prior_shifts
     if teacher_mode=='covered_value':root_value=runtime.value_for(state,viewer,value_policies)
     prior = core.search_prior(logits)
     rng = np.random.default_rng(seed)
@@ -161,9 +173,11 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
                 terminal_checks=terminal_checks, terminal_wins=terminal_wins,
                 complete=len(depths) == requested, simulations=len(depths), requested=requested,
                 roots_covered=int((visits > 0).sum()), search_choice=selected,
-                raw_choice=int(np.argmax(logits)), nodes=len(tree), worlds=worlds,
+                raw_choice=raw_choice, nodes=len(tree), worlds=worlds,
+                prior_shifts=prior_shifts, prior_version=getattr(root_prior, 'version', None),
                 max_depth=max(depths, default=0), policy_source='gumbel_q_' + q_scale +
-                    (':'+teacher_mode if teacher_mode!='network' else ''),
+                    (':'+teacher_mode if teacher_mode!='network' else '') +
+                    (':root_prior:'+str(getattr(root_prior, 'version', 'unknown')) if root_prior is not None else ''),
                 root_diagnostics=diagnostics, q_scale=q_scale,teacher_mode=teacher_mode,
                 **({'root_trace': trace} if root_trace else {}),
                 leaf_source='covered_expert_value_or_terminal' if teacher_mode=='covered_value' else

@@ -208,6 +208,23 @@ class GuideTest(unittest.TestCase):
         api = self.client.get('/api/guide/arcs/fork_PaperPlane?section=materials').json['data']
         self.assertTrue(api['materials'])
 
+    def test_skill_default_level_matches_server_values_and_short_caps(self):
+        page = self.client.get('/guide/characters/1042?section=abilities').text
+        skill = page.split('id="skill-1"', 1)[1].split('</article>', 1)[0]
+        self.assertRegex(skill, r'id="skill-level-1"[^>]*value="10"')
+        ability = service.detail('characters', '1042')['abilities'][0]
+        row = ability['groups'][0]['param_rows'][0]
+        self.assertIn('>' + row['values'][9] + '</td>', skill)
+        self.assertIn('data-level-inline>10</span>', skill)
+        from flask import render_template_string
+        row = {'label': '倍率', 'values': ['10%', '20%', '30%'], 'hit_details': []}
+        short = {'name': '短等级技能', 'type_name': 'Skill', 'param_rows': [row],
+                 'groups': [{'name': '招式', 'description': '', 'param_rows': [row]}]}
+        with self.client.application.app_context():
+            html = render_template_string("{% from 'guide/components.html' import skill %}{{ skill(ability, 1) }}", ability=short)
+        self.assertIn('value="3"', html)
+        self.assertIn('>30%</td>', html)
+
     def test_hit_details_and_move_groups(self):
         characters = service.catalog()['characters']
         blackbird = next(c for c in characters if c['id'] == '1042')

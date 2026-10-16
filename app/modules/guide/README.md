@@ -185,3 +185,5 @@ python scripts/refresh_guide_data.py --transport curl
 `data/character_rich_text.json` 保存25名角色的结构化描述片段、词条说明和技能样式颜色；运行时只渲染允许的文本／颜色／词条字段，未知标签不作为HTML执行，现有纯文本JSON、Markdown和倍率不变。显式刷新：`python scripts/sync_guide_rich_text.py`，在更新攻略正文后同步运行；可用 `--characters-json` 读取按角色ID映射的本地原始条目、`--style-table` 读取本地技能富文本样式表。同步核对全部现有招式正文与名词引用后原子替换快照；不匹配时保留旧快照，请求和启动不联网。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_rich_text tests.test_guide -v`；浏览器检查属性色、长词条提示、键盘与触屏操作、视口边缘及技能等级切换。
+
+角色详情的技能等级默认10级；上限低于10级时取其最高等级。服务端初始倍率、命中明细与等级标记保持一致，后续拖动仍按实际等级数组更新。

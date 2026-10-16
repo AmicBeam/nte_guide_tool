@@ -2,12 +2,6 @@
 {% block title %}攻略数据库 · NTE Tools{% endblock %}
 {% block head %}{{ super() }}{% if kind == 'challenges' %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='challenge_index.css') }}">{% endif %}{% endblock %}
 {% block content %}
-<section class="guide-hero">
-<p class="guide-eyebrow">NEVERNESS TO EVERNESS / REFERENCE</p>
-<h1>每一场战斗，<br><span>从读懂数据开始。</span></h1>
-<p>角色机制、弧盘效果与轨外之境。把需要的细节放在一起，随时查阅。</p>
-<div class="guide-counts">{% for key, title in kinds.items() %}<a href="?kind={{ key }}"><strong>{{ counts[key] }}</strong> {{ title }}</a>{% endfor %}</div>
-</section>
 <nav class="guide-tabs" aria-label="资料分类">{% for key, title in kinds.items() %}<a href="?kind={{ key }}" {% if key == kind %}aria-current="page"{% endif %}>{{ title }} <span>{{ counts[key] }}</span></a>{% endfor %}</nav>
 <form class="guide-search" action="/guide" method="get" role="search">
 <input type="hidden" name="kind" value="{{ kind }}">

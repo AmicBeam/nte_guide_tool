@@ -134,3 +134,5 @@ python scripts/refresh_guide_data.py --transport curl
 验证：`.venv/bin/python -m unittest tests.test_guide_challenges tests.test_guide_challenge_schedule tests.test_guide tests.test_module_routes -v`；浏览器检查共鸣、关卡筛选、贴图、吞噬标记、默认折叠与展开，以及窄屏布局。
 
 技能招式说明与技能／被动正文统一使用16px字号，倍率与命中数据表保持独立字号。
+
+轨外之境目录在每次请求时按系统当前时间判断限时环线：北京时间开始日05:00（含）至结束日05:00（不含）高亮卡片边缘。常驻、日期缺失、尚未开始和已结束的环线不高亮；判断不缓存，刷新页面即可按新时间更新。验证包含05:00切换边界和不同时区的等价时刻。

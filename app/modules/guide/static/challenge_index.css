@@ -1,0 +1,9 @@
+.guide-card.guide-challenge-current {
+  border-color:var(--g-accent);
+  box-shadow:0 0 0 1px #c9f47a55,0 0 24px #c9f47a22;
+}
+.guide-card.guide-challenge-current:hover,
+.guide-card.guide-challenge-current:focus-visible {
+  border-color:var(--g-accent);
+  box-shadow:0 0 0 2px #c9f47a88,0 0 28px #c9f47a33;
+}

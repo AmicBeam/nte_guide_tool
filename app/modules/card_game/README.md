@@ -1171,3 +1171,19 @@ VM可显式设置 `direct_stack_dispatch=True`，让LOAD_CONST／LOAD_FAST／STO
 ## 七队同源原生规则
 
 `rl/batched_duel/native_array_*` 冻结现行公开七队规则并把完整控制流编译为原生C++，对有界实体／区域数组执行，不读取字节码指令流，不回退Python规则。`NativeArrayCPU` 使用同一源码做本机语义验收，`CudaNativeArray` 接设备内搜索、双观察检查采样及原始动作记录。默认无三步教师、规则对手教师或模拟真红指导；真红使用数组先验。完整CPU对局、机制与32搜索对拍不授予CUDA或模型质量资格。说明与命令见[七队原生数组后端](../../../docs/duel-v2-native-array-rules.md)。
+
+## 专用 SoA 开发与 1016 验收
+
+`rl/batched_duel/domain_soa_*` 是独立的领域字段迁移分支：布局声明、字段算术、效果匹配、直接牌区洗牌及准备条件下的战斗／时钟切片分别验证。完整卡效／角色回调、选择续步、合法动作、观察编码和信息集采样尚未全部迁移，不能接入正式七队采集或把原生图后端回退包装成完整SoA。当前完整规则与CUDA资格均未批准。
+
+当前编解码仅支持换牌阶段的受限快照；正常行动阶段明确拒绝。输入生成器的完整局不算SoA执行的完整局。
+
+[1016验收协议](../../../docs/duel-v2-soa-1016-acceptance.md)覆盖完整状态与规则对拍、Windows 8路每根32搜索、自然终局与逐级扩容，以及官方Mctx的算法结果和真实规则性能对照。离线数值树工具默认仅计划；显式运行使用可选JAX/Mctx依赖，不自动安装。单轮结果保存在 `artifacts/rl-evals/`。
+
+```bash
+.venv/bin/python -m unittest tests.test_duel_v2_domain_soa_rules tests.test_duel_v2_domain_soa_effects tests.test_duel_v2_domain_soa_random tests.test_duel_v2_domain_soa_transition tests.test_duel_v2_domain_soa_codec tests.test_duel_v2_mctx_reference
+.venv/bin/python scripts/validate_duel_v2_domain_soa.py
+.venv/bin/python scripts/validate_duel_v2_mctx_reference.py --plan
+# 仅在已准备好JAX/Mctx的独立测试环境运行官方数值树对照：
+python scripts/validate_duel_v2_mctx_reference.py --run --exact --require-official --output artifacts/rl-evals/NEW_RUN/mctx
+```

@@ -1,0 +1,231 @@
+"""Initial-state domain SoA codec: seven-team mulligan roundtrip and explicit rejects."""
+from copy import deepcopy
+import unittest
+
+from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+from app.modules.card_game.engine.duel_v2.entities import CardEntity, CharacterEntity, PlayerEntity
+from app.modules.card_game.engine.duel_v2.flow import new_game
+from app.modules.card_game.rl.batched_duel.domain_soa_codec import (
+    coverage,
+    decode_domain_states,
+    encode_domain_states,
+    supports_full_duel_rules,
+)
+from app.modules.card_game.rl.batched_duel.domain_soa_schema import (
+    CHARACTER_INT_FIELDS,
+    DomainSoALayout,
+    DomainSoAUnsupportedError,
+    DomainSoADecodeError,
+    PLAYER_INT_FIELDS,
+    PRESENCE_ABSENT,
+    PRESENCE_CATALOG,
+    PRESENCE_NULL,
+    PRESENCE_VALUE,
+)
+
+KEYS = ("starter", "weave-rush", "quick-rush", "zhenhong", "murk", "collapse", "lingke")
+PRESENTATION = ("events", "_public_board")
+
+
+def _decks():
+    return {item["id"]: item for item in STARTER_DECKS}
+
+
+def _fourteen_initial_states():
+    decks = _decks()
+    states = []
+    for game in range(14):
+        first = "a" if game % 2 == 0 else "b"
+        pair = (game // 2) % 7
+        states.append(
+            new_game(
+                seed=10160000 + game,
+                decks={"a": decks[KEYS[pair]], "b": decks[KEYS[(pair + 1) % 7]]},
+                first_side=first,
+            )
+        )
+    return states
+
+
+def _authoritative(state):
+    return {key: value for key, value in state.items() if key not in PRESENTATION}
+
+
+def _assert_same(left, right, path="root"):
+    if type(left) is not type(right):
+        raise AssertionError(f"{path}: {type(left).__name__} != {type(right).__name__}")
+    if isinstance(left, dict):
+        if left.keys() != right.keys():
+            raise AssertionError(f"{path} key set changed")
+        for key in left:
+            _assert_same(left[key], right[key], path + "." + str(key))
+    elif isinstance(left, (list, tuple)):
+        if len(left) != len(right):
+            raise AssertionError(f"{path} length changed")
+        for index, (a, b) in enumerate(zip(left, right)):
+            _assert_same(a, b, path + f"[{index}]")
+    elif left != right:
+        raise AssertionError(f"{path}: {left!r} != {right!r}")
+
+
+class DomainSoACodecTest(unittest.TestCase):
+    def test_known_unimplemented_fields_and_mutable_aliases_are_rejected(self):
+        for mutate in (
+            lambda s: s['sides']['a'].update(effect_seq=1),
+            lambda s: s['sides']['a'].update(side=None),
+            lambda s: s['sides']['a']['deck'].append(s['sides']['a']['hand'][0]),
+            lambda s: s['sides']['b'].update(entity_id=s['sides']['a']['entity_id']),
+        ):
+            state = _fourteen_initial_states()[0]
+            mutate(state)
+            with self.assertRaises(DomainSoAUnsupportedError):
+                encode_domain_states([state], presentation='drop')
+
+    def test_catalog_binding_and_unused_column_corruption_fail_closed(self):
+        from unittest.mock import patch
+        from app.modules.card_game.content.duel_v2 import CARDS
+        state = _fourteen_initial_states()[0]
+        packed = encode_domain_states([state], presentation='drop')
+        key = state['sides']['a']['hand'][0]['card_id']
+        with patch.dict(CARDS[key], cost=int(CARDS[key]['cost'])+1):
+            with self.assertRaises(DomainSoADecodeError):
+                decode_domain_states(packed)
+        packed.effect_value_int[0, 0, 0] = 1
+        with self.assertRaises(DomainSoADecodeError):
+            decode_domain_states(packed)
+
+    def test_torch_export_rejects_float_or_bool_row_indices(self):
+        import torch
+        packed = encode_domain_states([_fourteen_initial_states()[0]], presentation='drop').to_torch()
+        for index in (torch.tensor([.9]), torch.tensor([True])):
+            with self.assertRaises(TypeError):
+                packed.clone_rows(index)
+        clone = packed.clone_rows(torch.tensor([0], dtype=torch.int64))
+        clone.arrays['character_hp'].zero_()
+        self.assertTrue(packed.arrays['character_hp'].any())
+        from app.modules.card_game.rl.batched_duel.domain_soa_schema import DomainSoABatch
+        host = DomainSoABatch.from_torch(packed)
+        host.character_hp.fill(0)
+        self.assertTrue(packed.arrays['character_hp'].any())
+
+    def test_coverage_does_not_claim_full_public17(self):
+        self.assertFalse(supports_full_duel_rules)
+        report = coverage()
+        self.assertFalse(report["supports_full_duel_rules"])
+        self.assertFalse(report["complete_soa"])
+        self.assertFalse(report["full_public17"])
+        self.assertEqual(report["seven_official_presets"], KEYS)
+
+    def test_fourteen_seven_team_initial_mulligan_roundtrip(self):
+        states = _fourteen_initial_states()
+        packed = encode_domain_states(states, DomainSoALayout(), presentation="drop")
+        restored = decode_domain_states(packed)
+        self.assertEqual(packed.n_rows, 14)
+        self.assertEqual(len(restored), 14)
+        for original, got in zip(states, restored):
+            self.assertEqual(original["phase"], "mulligan")
+            _assert_same(_authoritative(original), got)
+            self.assertIsInstance(got["sides"]["a"], PlayerEntity)
+            hero = next(iter(got["sides"]["a"]["characters"].values()))
+            self.assertIsInstance(hero, CharacterEntity)
+            self.assertIsInstance(got["sides"]["a"]["hand"][0], CardEntity)
+
+    def test_full_63bit_rng_is_python_int(self):
+        states = _fourteen_initial_states()
+        high = deepcopy(states[0])
+        high["rng"] = (1 << 63) - 1
+        packed = encode_domain_states(states + [high], DomainSoALayout(), presentation="drop")
+        restored = decode_domain_states(packed)
+        for original, got in zip(states, restored):
+            self.assertIs(type(got["rng"]), int)
+            self.assertEqual(got["rng"], original["rng"])
+        self.assertEqual(restored[-1]["rng"], (1 << 63) - 1)
+        self.assertGreaterEqual(max(state["rng"].bit_length() for state in states), 63)
+
+    def test_entities_cards_and_zone_order(self):
+        state = _fourteen_initial_states()[0]
+        packed = encode_domain_states([state], presentation="drop")
+        got = decode_domain_states(packed)[0]
+        self.assertEqual(got["next_entity"], state["next_entity"])
+        self.assertEqual(got["next_instance"], state["next_instance"])
+        for side in ("a", "b"):
+            self.assertEqual(got["sides"][side]["order"], state["sides"][side]["order"])
+            self.assertEqual(
+                [card["instance_id"] for card in got["sides"][side]["hand"]],
+                [card["instance_id"] for card in state["sides"][side]["hand"]],
+            )
+            self.assertEqual(
+                [card["entity_id"] for card in got["sides"][side]["deck"]],
+                [card["entity_id"] for card in state["sides"][side]["deck"]],
+            )
+            self.assertEqual(got["sides"][side]["entity_id"], state["sides"][side]["entity_id"])
+
+    def test_absent_null_zero_and_catalog_presence(self):
+        state = _fourteen_initial_states()[0]
+        packed = encode_domain_states([state], presentation="drop")
+        fatigue = PLAYER_INT_FIELDS.index("fatigue")
+        extra_ap = PLAYER_INT_FIELDS.index("extra_ap")
+        attack = CHARACTER_INT_FIELDS.index("attack")
+        harmony = CHARACTER_INT_FIELDS.index("harmony")
+        self.assertEqual(int(packed.winner_presence[0]), PRESENCE_NULL)
+        self.assertEqual(int(packed.player_front_presence[0, 0]), PRESENCE_NULL)
+        self.assertEqual(int(packed.player_int_presence[0, 0, fatigue]), PRESENCE_VALUE)
+        self.assertEqual(int(packed.player_int_value[0, 0, fatigue]), 0)
+        self.assertEqual(int(packed.player_int_presence[0, 0, extra_ap]), PRESENCE_ABSENT)
+        self.assertEqual(int(packed.character_int_presence[0, 0, 0, attack]), PRESENCE_CATALOG)
+        self.assertEqual(int(packed.character_int_presence[0, 0, 0, harmony]), PRESENCE_VALUE)
+        self.assertEqual(int(packed.character_int_value[0, 0, 0, harmony]), 0)
+        self.assertEqual(int(packed.card_source_presence[0, 0]), PRESENCE_CATALOG)
+
+    def test_rejects_choice_operation_deferred_effects_and_flags(self):
+        state = _authoritative(deepcopy(_fourteen_initial_states()[0]))
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([{**state, "pending_choice": {"kind": "discard"}}])
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([{**state, "operation": {"side": "a"}}])
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([{**state, "deferred_actions": [1]}])
+        flagged = deepcopy(state)
+        next(iter(flagged["sides"]["a"]["characters"].values()))["flags"] = {"atk_buff": 1}
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([flagged])
+        effected = deepcopy(state)
+        next(iter(effected["sides"]["a"]["characters"].values()))["effects"] = [{"id": "x"}]
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([effected])
+
+    def test_presentation_default_rejects_and_drop_omits(self):
+        state = _fourteen_initial_states()[0]
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([state])
+        got = decode_domain_states(encode_domain_states([state], presentation="drop"))[0]
+        self.assertNotIn("events", got)
+        self.assertNotIn("_public_board", got)
+
+    def test_rejects_bool_as_int_playing_phase_and_unknown_keys(self):
+        state = _authoritative(deepcopy(_fourteen_initial_states()[0]))
+        bad_hp = deepcopy(state)
+        bad_hp["sides"]["a"]["hp"] = True
+        with self.assertRaises(TypeError):
+            encode_domain_states([bad_hp])
+        playing = new_game(seed=3, first_side="a", skip_mulligan=True)
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([playing], presentation="drop")
+        mystery = dict(state)
+        mystery["mystery"] = 1
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([mystery])
+
+    def test_encode_does_not_mutate_and_empty_batch_roundtrips(self):
+        state = _fourteen_initial_states()[0]
+        before = deepcopy(_authoritative(state))
+        hand0 = state["sides"]["a"]["hand"][0]
+        packed = encode_domain_states([state], presentation="drop")
+        _assert_same(before, _authoritative(state))
+        got = decode_domain_states(packed)[0]
+        self.assertIsNot(got, state)
+        self.assertIsNot(got["sides"]["a"]["hand"][0], hand0)
+        self.assertIsNot(got["sides"]["a"]["hand"][0]["source"], hand0["source"])
+        empty = encode_domain_states([])
+        self.assertEqual(empty.n_rows, 0)
+        self.assertEqual(decode_domain_states(empty), [])

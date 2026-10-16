@@ -112,7 +112,7 @@ def summary(kind, record):
     return result
 
 
-def search(kind=None, query='', element='', rarity=None):
+def search(kind=None, query='', element='', rarity=None, arc_type=''):
     result = []
     for group in ([kind] if kind else KINDS):
         for record in catalog()[group]:
@@ -120,11 +120,29 @@ def search(kind=None, query='', element='', rarity=None):
                 continue
             if rarity is not None and record.get('rarity') != rarity:
                 continue
+            if arc_type and str(record.get('arc_type', {}).get('id', '')) != arc_type:
+                continue
             # Full text includes skills, nouns, arc effects and enemy names.
             if query.casefold() not in json.dumps(record, ensure_ascii=False).casefold():
                 continue
             result.append(summary(group, record))
     return result
+
+
+def character_index_items():
+    """Provide all cards and compact text for request-free browser filtering."""
+    def strings(value):
+        if isinstance(value, str):
+            yield value
+        elif isinstance(value, dict):
+            for child in value.values():
+                yield from strings(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from strings(child)
+    return [{**summary('characters', record), 'arc_type_id': record['arc_type']['id'],
+             'filter_text': '\n'.join(dict.fromkeys(strings(record))).casefold()}
+            for record in catalog()['characters']]
 
 
 def detail(kind, identifier, section=None, stage=None):

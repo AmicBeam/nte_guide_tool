@@ -31,7 +31,8 @@ def integer(name, default, low, high):
 
 def filters():
     return dict(query=request.args.get('q', '').strip(), element=request.args.get('element', ''),
-                rarity=integer('rarity', 5, 1, 5) if request.args.get('rarity') else None)
+                rarity=integer('rarity', 5, 1, 5) if request.args.get('rarity') else None,
+                arc_type=request.args.get('arc_type', ''))
 
 
 def get_record(kind, identifier):
@@ -54,8 +55,14 @@ def index():
     kind = request.args.get('kind', 'characters')
     kind_check(kind)
     items = service.search(kind, **filters())
+    selected_ids = {item['id'] for item in items}
+    result_count = len(items)
+    if kind == 'characters':
+        items = service.character_index_items()
     counts = {key: len(service.catalog()[key]) for key in service.KINDS}
-    return render_template('guide/index.html', kind=kind, kinds=service.KINDS, items=items, counts=counts)
+    return render_template('guide/index.html', kind=kind, kinds=service.KINDS, items=items, counts=counts, selected_ids=selected_ids, result_count=result_count,
+        arc_types=sorted({c['arc_type']['id']: c['arc_type'] for c in service.catalog()['characters']}.values(),
+                         key=lambda arc: int(arc['id'])))
 
 
 @blueprint.get('/guide/<kind>/<identifier>')

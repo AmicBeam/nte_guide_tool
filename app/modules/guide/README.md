@@ -4,7 +4,7 @@
 
 ## 网页和机器读取
 
-- `/guide?kind=characters|arcs|challenges&q=关键词`：服务端渲染索引，搜索技能正文、弧盘效果和敌人名；角色支持 `element=魂&rarity=5`。
+- `/guide?kind=characters|arcs|challenges&q=关键词`：服务端渲染索引，搜索技能正文、弧盘效果和敌人名；角色支持 `element=魂&rarity=5&arc_type=4`（弧盘类型ID）。属性、星级、弧盘类型使用三组图标单选按钮，各组提供“全部”，首次页面包含全部25个角色卡片与去重的文本检索字段，后续图标筛选与搜索只在前端显示／隐藏卡片，不发起查询请求、不跳转页面；保留滚动位置并同步地址栏。直接打开带筛选参数的URL仍由服务端渲染相同初始结果。无JavaScript时可点击搜索提交。
 - `/guide/<分类>/<id>`：完整详情，正文无需 JavaScript；角色技能、属性成长与弧盘精炼提供等级滑块，切换当前档位数值；详情采用左侧悬浮目录，技能有二级目录并保留“普通攻击：”“天赋一：”等类型前缀，当前章节随滚动高亮，窄屏通过左下角目录按钮展开；挑战详情可加 `?stage=12` 只看某关。
 - `/guide/<分类>/<id>.md`：相同内容的 Markdown，可加 `section=abilities`、`section=effect` 或 `stage=12` 限定返回量。
 - `/api/guide/<分类>`：分页摘要，支持 `q`、`element`、`rarity`、`limit`（1–100）、`offset`，返回 `total`、`next_offset`、`items`；摘要含三种详情链接。

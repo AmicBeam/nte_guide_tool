@@ -48,6 +48,25 @@ class GuideTest(unittest.TestCase):
         self.assertIn('没有找到相关资料', self.client.get('/guide?q=不存在的关键词XYZ&rarity=').text)
         self.assertEqual(self.client.get('/api/guide/search?q=不存在的关键词XYZ').json['total'], 0)
 
+    def test_character_icon_filters_combine_and_reset(self):
+        page = self.client.get('/guide?kind=characters&element=魂&rarity=5&arc_type=4')
+        self.assertEqual(page.status_code, 200)
+        self.assertIn('name="arc_type"', page.text)
+        self.assertIn('type="radio"', page.text)
+        self.assertNotIn('<select name="element"', page.text)
+        self.assertEqual(page.text.count('data-character-card'), 25)
+        self.assertIn('data-filter-text=', page.text)
+        result = self.client.get('/api/guide/characters?element=魂&rarity=5&arc_type=4').json
+        self.assertGreater(result['total'], 0)
+        for item in result['items']:
+            self.assertEqual(item['element_name'], '魂')
+            self.assertEqual(item['rarity'], 5)
+            self.assertEqual(service.detail('characters', item['id'])['arc_type']['id'], '4')
+        self.assertEqual(self.client.get('/api/guide/characters?arc_type=').json['total'], 25)
+        self.assertEqual(self.client.get('/api/guide/characters?arc_type=unknown').json['total'], 0)
+        self.assertTrue(any(item['id'] == '1042' for item in
+            self.client.get('/api/guide/characters?q=黑羽&arc_type=4').json['items']))
+
     def test_narrow_reads_and_numbers(self):
         full = self.client.get('/api/guide/characters/1042').json['data']
         narrowed = self.client.get('/api/guide/characters/1042?section=abilities').json['data']

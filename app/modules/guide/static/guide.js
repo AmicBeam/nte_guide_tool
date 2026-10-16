@@ -25,3 +25,45 @@ for (const group of document.querySelectorAll('[data-level-group]')) {
     control.addEventListener('change', update);
     update();
 }
+
+const toc = document.querySelector('[data-guide-toc]');
+const tocToggle = document.querySelector('[data-toc-toggle]');
+if (toc && tocToggle) {
+    const links = [...toc.querySelectorAll('a[href^="#"]')];
+    const entries = links.map(link => ({link, target: document.getElementById(link.hash.slice(1))})).filter(entry => entry.target);
+    const setOpen = open => {
+        toc.dataset.open = String(open);
+        tocToggle.setAttribute('aria-expanded', String(open));
+    };
+    tocToggle.addEventListener('click', () => setOpen(toc.dataset.open !== 'true'));
+    for (const link of links) link.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && toc.dataset.open === 'true') {
+            setOpen(false);
+            tocToggle.focus();
+        }
+    });
+    document.addEventListener('click', event => {
+        if (!toc.contains(event.target) && !tocToggle.contains(event.target)) setOpen(false);
+    });
+    let queued = false;
+    const updateCurrent = () => {
+        queued = false;
+        let current = entries[0];
+        for (const entry of entries) {
+            if (entry.target.getBoundingClientRect().top <= 100) current = entry;
+        }
+        for (const entry of entries) {
+            if (entry === current) entry.link.setAttribute('aria-current', 'location');
+            else entry.link.removeAttribute('aria-current');
+        }
+    };
+    window.addEventListener('scroll', () => {
+        if (!queued) {
+            queued = true;
+            requestAnimationFrame(updateCurrent);
+        }
+    }, {passive: true});
+    window.addEventListener('hashchange', updateCurrent);
+    updateCurrent();
+}

@@ -98,7 +98,9 @@ class GuideTest(unittest.TestCase):
         html = self.client.get('/guide/characters/1042?section=abilities').text
         self.assertIn('type="range"', html)
         self.assertIn('aria-label="掠影技能等级"', html)
-        self.assertIn('查看全部等级数据', html)
+        self.assertNotIn('查看全部等级数据', html)
+        self.assertIn('data-guide-toc', html)
+        self.assertIn('href="#skill-1"', html)
         self.assertIn('一段伤害倍率', html)
         self.assertIn('技能目录', html)
         abilities = self.client.get('/api/guide/characters/1042?section=abilities').json['data']['abilities']

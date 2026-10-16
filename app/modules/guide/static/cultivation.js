@@ -135,7 +135,7 @@ if (cultivationForm) {
       const name = document.createElement('strong');
       name.textContent = local?.name || saved.name || saved.id;
       const level = document.createElement('small');
-      level.textContent = `Lv.${saved.level ?? '未提供'} · 觉醒 ${saved.awaken_level ?? '未提供'} · 共鸣 ${saved.resonance_level ?? '未提供'}`;
+      level.textContent = `Lv.${saved.level ?? '未提供'} · 觉醒 ${saved.awaken_level ?? '未提供'}`;
       title.append(name, level); summary.append(title);
       const body = document.createElement('div'); body.className = 'account-character-body';
       const text = document.createElement('p');

@@ -235,7 +235,7 @@ python scripts/refresh_guide_data.py --transport curl
 
 ## 账号练度页面
 
-`/guide/account` 为独立账号练度页，入口位于目录分类行“全站深境”右侧。登录后复用 `/api/guide/me/profiles` 读取本人已保存账号，可切换账号、展开全部角色的等级、觉醒、共鸣、技能、面板与已装备弧盘／空幕卡带详情，并跳转角色资料或养成计算。角色名、头像及技能名复用本地攻略数据；未知角色保留已同步名称和ID，不猜测映射。页面显示快照同步时间，只有主动点击同步并完成短信验证才拉取游戏数据；同步弹窗和调用逻辑与养成页共用，删除仍使用现有本人资料接口。
+`/guide/account` 为独立账号练度页，入口位于目录分类行“全站深境”右侧。登录后复用 `/api/guide/me/profiles` 读取本人已保存账号，可切换账号、展开全部角色的等级、觉醒、技能、面板与已装备弧盘／空幕卡带详情，并跳转角色资料或养成计算。角色名、头像及技能名复用本地攻略数据；未知角色保留已同步名称和ID，不猜测映射。角色摘要只显示等级和觉醒阶数；不将含义未核实的角色 `slev` 显示为共鸣或激活觉醒。页面显示快照同步时间，只有主动点击同步并完成短信验证才拉取游戏数据；同步弹窗和调用逻辑与养成页共用，删除仍使用现有本人资料接口。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_account tests.test_guide_user_data tests.test_guide tests.test_module_routes -q`；`node --test tests/test_guide_private_response.cjs`。浏览器检查分类栏入口、账号切换、展开详情、未知角色、同步后选择账号、删除空状态、未登录回跳及390px窄屏。
 

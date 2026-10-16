@@ -28,3 +28,17 @@ test('expired login and login redirect', async () => {
   await assert.rejects(read(response(401, '<html>')), /请先登录本站/);
   await assert.rejects(read(response(200, '<html>', {redirected: true, url: 'https://example.invalid/login?next=x'})), /请先登录本站/);
 });
+
+
+test('saved display uses weapon mix rather than character slev and includes skill levels', () => {
+  const lines = context.guideSavedCharacterLines({level: 80, awaken_level: 2, resonance_level: 6,
+    skills: [{id: 'melee', level: 8}, {id: 'skill', name: '变轨攻击', level: null}],
+    equipment: {fork: {name: '测试弧盘', alev: '80', slev: '5'}, suit: {}}}, {melee: '普通攻击'}).join('\n');
+  assert.match(lines, /混频 5/);
+  assert.doesNotMatch(lines, /混频 6/);
+  assert.match(lines, /普通攻击：8级/);
+  assert.match(lines, /变轨攻击：等级未提供/);
+  for (const slev of ['6', '', null]) {
+    assert.match(context.guideSavedCharacterLines({equipment: {fork: {slev}}}).join('\n'), /混频 未提供/);
+  }
+});

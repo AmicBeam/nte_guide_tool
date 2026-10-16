@@ -19,6 +19,29 @@ async function readGuidePrivateResponse(response) {
   return payload.data;
 }
 
+function guideSavedCharacterLines(saved, labels = {}) {
+  const fork = saved.equipment?.fork || {};
+  const suit = saved.equipment?.suit || {};
+  const mix = typeof fork.slev === 'number' || typeof fork.slev === 'string' ? String(fork.slev) : '';
+  const mixLabel = /^[1-5]$/.test(mix) ? mix : '未提供';
+  const lines = [`角色 ${saved.level ?? '未提供'} 级 · 觉醒 ${saved.awaken_level ?? '未提供'}`,
+    `弧盘：${fork.name || '未提供'}${fork.alev ? ` · ${fork.alev}级` : ''} · 混频 ${mixLabel}`,
+    '技能等级（接口展示值，计算前请核对基础等级）：'];
+  if (saved.skills?.length) {
+    for (const skill of saved.skills) {
+      lines.push(`${labels[skill.id] || skill.name || skill.id || '未知技能'}：${skill.level == null ? '等级未提供' : `${skill.level}级`}`);
+    }
+  } else {
+    lines.push('已保存数据没有技能等级，请重新同步或手动填写。');
+  }
+  lines.push(`空幕 / 卡带：${suit.name || '未提供'}`);
+  for (const item of [...(suit.core || []), ...(suit.pie || [])]) {
+    const props = [...(item.main_properties || []), ...(item.properties || [])].map(p => `${p.name || p.id} ${p.value}`).join('、');
+    lines.push(`${item.name || item.id} · ${item.level ?? '未提供'}级${props ? ' · ' + props : ''}`);
+  }
+  return lines;
+}
+
 const cultivationForm = document.querySelector('form[data-boundary-levels]');
 if (cultivationForm) {
   const boundaries = JSON.parse(cultivationForm.dataset.boundaryLevels);
@@ -83,14 +106,8 @@ if (cultivationForm) {
     const saved = savedCharacter();
     $('saved-equipment').hidden = !saved;
     if (!saved) return;
-    const fork = saved.equipment.fork, suit = saved.equipment.suit;
-    const lines = [`角色 ${saved.level ?? '未提供'} 级 · 觉醒 ${saved.awaken_level ?? '未提供'} · 混频 ${saved.resonance_level ?? '未提供'}`,
-      `弧盘：${fork.name || '未提供'}${fork.alev ? ` · ${fork.alev}级` : ''}`, `空幕 / 卡带：${suit.name || '未提供'}`];
-    for (const item of [...suit.core, ...suit.pie]) {
-      const props = [...item.main_properties, ...item.properties].map(p => `${p.name || p.id} ${p.value}`).join('、');
-      lines.push(`${item.name || item.id} · ${item.level ?? '未提供'}级${props ? ' · ' + props : ''}`);
-    }
-    $('saved-equipment-content').textContent = lines.join('\n');
+    const labels = JSON.parse(root.dataset.skillLabels || '{}');
+    $('saved-equipment-content').textContent = guideSavedCharacterLines(saved, labels).join('\n');
     $('use-profile').disabled = false;
   };
   const refresh = async () => {

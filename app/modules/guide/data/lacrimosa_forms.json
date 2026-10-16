@@ -1,0 +1,376 @@
+[
+  {
+    "ability_id": "GA_mon_14_act05_Steal_BP",
+    "name": "分解者",
+    "description": "「分解者」喷射出桶内存储的垃圾，对前方扇形范围内目标造成至多8次伤害。",
+    "effect_ids": [
+      "GE_mon_14_act05_Dmg01_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_03_act03_Steal_BP",
+    "name": "岩壳种",
+    "description": "「岩壳种」以强壮的手臂重砸前方地面，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_03_act03_Steal_Dmg02_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_18_2_act03_Steal_BP",
+    "name": "「肉改」棉绒绒",
+    "description": "「肌肉棉绒绒」潇洒挥拳，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_18_2_act03_Dmg03_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_018_Skill03_Steal",
+    "name": "棉绒绒",
+    "description": "「棉绒绒」向前跃起并重重落下，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_018_act03_Dmg_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_05_act02_Steal_BP",
+    "name": "凭依种",
+    "description": "「凭依种」用手掌大力拍击地面，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_05_act02_Dmg01_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_01_act01_Steal_BP",
+    "name": "低语种",
+    "description": "「低语种」向前猛力爪击，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_01_act01_Dmg01_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_02_act02_Steal",
+    "name": "风洞种",
+    "description": "「风洞种」连续发射四枚追踪风弹，对单体目标造成伤害。",
+    "effect_ids": [
+      "GE_mon_02_act02_Dmg_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_04_act01_Steal",
+    "name": "迷失种",
+    "description": "「迷失种」迅速挥舞臂刃，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_04_act01_Dmg_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_02_Ghost_act04_Steal",
+    "name": "轰洞种",
+    "description": "「轰洞种」向四周抛出大量飞弹，造成范围伤害。",
+    "effect_ids": [
+      "GE_mon_02_Ghost_act04_Steal_Dmg"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_021_Steal_Skill05",
+    "name": "欧拉拳套",
+    "description": "「欧拉拳套」积蓄力量，向前打出强力直拳，对路径上的目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_021_act05_Dmg01_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_boss_13_act02_Steal",
+    "name": "无首铁驭",
+    "description": "「无首铁驭」高速回旋，以镰刀斩击周围敌人，造成伤害。若在旋转过程中发动攻击，「无首铁驭」将抬起车头并重击地面，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_boss_13_act01_Dmg01_Steal_BP",
+      "GE_boss_13_act01_Dmg02_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_Boss_07_Skill6_Steal",
+    "name": "塞润尼缇",
+    "description": "「塞润尼缇」以拒斥的花语震荡空气，持续伤害周围敌人。若在震荡中发动攻击，「塞润尼缇」将以严苛的花语强烈震荡前方空气，造成范围伤害。",
+    "effect_ids": [
+      "GE_Boss_07_act06_Dmg_Steal_BP",
+      "GE_Boss_07_act04_Dmg_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_011_Skill01_Steal",
+    "name": "抱抱藤",
+    "description": "「抱抱藤」撕咬前方敌人，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_011_act01_Steal_Dmg_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_12_act06_Steal_BP",
+    "name": "波普",
+    "description": "「波普」纵身跃上滑板，旋转起跳，灵活攻击周围敌人。",
+    "effect_ids": [
+      "GE_mon_12_act06_Dmg01_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_13_act02_1_Steal_BP",
+    "name": "妖刀",
+    "description": "「血染妖刀」摆出防御架势，受到攻击时免疫伤害，并发动反击。反击时，「血染妖刀」利落斩击前方扇形范围内的敌人，期间免疫伤害。",
+    "effect_ids": [
+      "GE_mon_13_act02_Dmg01_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_17_act03_Steal_BP",
+    "name": "雨人",
+    "description": "「雨人」积蓄力量，在自身周围发动1次爆炸，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_17_act03_Dmg02_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_022_Skill05_Steal",
+    "name": "蜘识藏家",
+    "description": "「蜘识藏家」积蓄力量，在前方引发1次爆炸，对范围内全体目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_022_act05_Dmg02_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_25_act03_Steal_BP",
+    "name": "洄天鱼幡",
+    "description": "「洄天鱼幡」积蓄力量，向前方甩尾，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_25_act03_Steal_Dmg_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_27_act03_Steal_BP",
+    "name": "诺诺斯",
+    "description": "「诺诺斯」积蓄力量，高速前冲撞击，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_27_act03_Steal_Dmg"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_016_act03_2_Steal_BP",
+    "name": "贩售机附电灵",
+    "description": "「售货附电灵」向前倒下并砸击地面，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_016_act03_Dmg01_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_029_Skill01_Steal",
+    "name": "唱片机附电灵",
+    "description": "「唱片附电灵」向前掷出唱片，每张唱片对目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_029_act01Steal_Dmg_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_015_Skill01Steal",
+    "name": "拖车艄",
+    "description": "「拖车艄」高高撑起车身并迅速下压，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_Mon_015_act01Steal_Dmg_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_023_Skill03Steal",
+    "name": "长明灯",
+    "description": "「长明灯」向前方抛掷多颗电浆弹，攻击范围内目标。",
+    "effect_ids": [
+      "GE_mon_023_act03Steal_Dmg_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_24_act04_Steal_BP",
+    "name": "诡面筝",
+    "description": "「诡面筝」积蓄力量并向前跃起，甩动尾部用力扇击目标，造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_24_act04_Dmg01_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_019_Skill03_2_Steal",
+    "name": "伤心英熊",
+    "description": "「伤心英熊」积蓄力量，向前用力挥砍，对范围内目标造成1次伤害。",
+    "effect_ids": [
+      "GE_mon_019_act03_2_Dmg04_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_35_act03_Blue_Steal",
+    "name": "罐头锡兵·蓝枪",
+    "description": "蓝色「罐头锡兵」快速向前方目标射击2次，并在短暂蓄力后再射击1次。",
+    "effect_ids": [
+      "GE_mon_35_act03_Dmg01_Steal_Blue_BP",
+      "GE_mon_35_act03_Dmg02_Steal_Blue_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_35_act02_Red_Steal",
+    "name": "罐头锡兵·红斧",
+    "description": "红色「罐头锡兵」挥动长枪，高速旋转，向前方目标攻击3次。",
+    "effect_ids": [
+      "GE_mon_35_act02_Dmg01_Steal_Red_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_31_01_Steal_BP",
+    "name": "增殖的C",
+    "description": "「增殖的C」积蓄力量，向前方发射一串大小不一的盒子，对前方目标造成伤害。",
+    "effect_ids": [
+      "GE_mon_31_act01_Dmg01_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_boss_15_act11_Steal",
+    "name": "音霸魔王",
+    "description": "「音霸魔王」升空后积蓄力量，接连两次用力下砸，对范围内全体目标造成伤害。",
+    "effect_ids": [
+      "GE_Boss_15_act11_Dmg_02_Steal"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_26_act02_Steal_BP",
+    "name": "纸翼战队",
+    "description": "「纸翼战队」高速盘旋飞行，形成龙卷涡旋，对范围内目标造成4次伤害。",
+    "effect_ids": [
+      "GE_mon_26_act02_Steal_Dmg01"
+    ]
+  },
+  {
+    "ability_id": "GA_boss_10_act06_Steal_BP",
+    "name": "永不谢幕的阿拉克涅",
+    "description": "「永不谢幕的阿拉克涅」蓄力后旋转飞舞，向前方目标发动1次爪击。",
+    "effect_ids": [
+      "GE_boss_10_act03_Dmg02_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_boss09_act08_Steal_BP",
+    "name": "黑之书",
+    "description": "「黑之书」召唤出一条锁链，向前方连续挥舞横扫2次，造成大范围伤害。",
+    "effect_ids": [
+      "GE_Boss_09_act08_Steal_Dmg_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_Boss_017_Steal_Skill05",
+    "name": "玛门",
+    "description": "「玛门」积蓄力量，向斜上方发动1次爪击，随后用身体猛砸地面，造成1次范围伤害。",
+    "effect_ids": [
+      "GE_Boss_017_act01_Dmg_05a_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_Boss_18_Steal_Skill19",
+    "name": "番茄酱恶魔",
+    "description": "「番茄酱恶魔」飞向高空，向目标发射若干番茄酱飞弹，追踪目标并造成伤害。",
+    "effect_ids": [
+      "GE_boss_018_act019_Steal_Dmg_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_037_Steal_Skill03",
+    "name": "ReroRero电话亭",
+    "description": "「ReroRero电话亭」积蓄力量砸击地面，造成1次范围伤害。",
+    "effect_ids": [
+      "GE_Mon_037_act03_Dmg_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_33_act02_Steal_BP",
+    "name": "流梦种",
+    "description": "「流梦种」引导水流，向前方进行挥击，造成2次范围伤害。",
+    "effect_ids": [
+      "GE_mon_33_act02_Dmg_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_41_act02_Steal",
+    "name": "羽偶",
+    "description": "「羽偶」旋转攻击，向前突进并造成伤害。",
+    "effect_ids": [
+      "GE_mon_41_act02_Dmg_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_39_act03_Steal",
+    "name": "无明众",
+    "description": "「迦楼罗」向前打出轰拳，造成1次范围伤害。",
+    "effect_ids": [
+      "GE_mon_39_act03_Steal_Dmg01_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_39_2_act02_01_Steal_BP",
+    "name": "无明众",
+    "description": "「迦楼罗」向前冲刺，挥舞双刀发动斩击。",
+    "effect_ids": [
+      "GE_mon_01_act01_Dmg01_Steal_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_boss_14_act04_Steal",
+    "name": "瓦楞城堡",
+    "description": "「瓦楞城堡」挥舞双臂，向前方进行挥击，造成2次范围伤害。",
+    "effect_ids": [
+      "GE_boss_14_act04_Steal_Dmg01"
+    ]
+  },
+  {
+    "ability_id": "GA_boss_08_act11_Steal_BP",
+    "name": "斑蝶",
+    "description": "「斑蝶」挥舞利爪，向前方进行挥击，造成2次范围伤害。",
+    "effect_ids": [
+      "GE_boss_08_act11_Steal_Dmg01_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_030_act02_Steal",
+    "name": "扫晴娘",
+    "description": "「扫晴娘」向前挥舞手臂，造成1次范围伤害。",
+    "effect_ids": [
+      "GE_mon_030_act02_Steal_Dmg_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_38_2_act01_Steal_BP",
+    "name": "无明众",
+    "description": "「迦楼罗」蓄力猛击地面，生成一道向前延伸的冲击波。",
+    "effect_ids": [
+      "GE_mon_38_2_act01_Steal_Dmg01_BP",
+      "GE_mon_38_2_act01_Steal_Dmg02_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_boss_33_act10_1_Steal_BP",
+    "name": "囿巢鸟",
+    "description": "「囿巢鸟」发出凄厉的喊叫，对周围的敌人造成范围伤害。",
+    "effect_ids": [
+      "GE_boss_33_act10_1_Steal_Dmg01_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_mon_51_act05_steal",
+    "name": "桀桀熊",
+    "description": "「桀桀熊」挥舞利爪，向前旋转攻击，造成伤害。",
+    "effect_ids": [
+      "GE_mon_51_act05_Steal_Dmg01_BP",
+      "GE_mon_51_act05_Steal_Dmg02_BP"
+    ]
+  },
+  {
+    "ability_id": "GA_boss_26_act01_Steal_BP",
+    "name": "讨债人",
+    "description": "「讨债人」积蓄力量向前挥砍，并发射1道刀光，造成伤害。",
+    "effect_ids": [
+      "GE_boss_26_act01_Steal_Dmg01_BP",
+      "GE_boss_26_act01_Steal_Dmg02_BP"
+    ]
+  }
+]

@@ -215,3 +215,5 @@ python scripts/refresh_guide_data.py --transport curl
 验证：`.venv/bin/python -m unittest tests.test_guide_endless tests.test_guide tests.test_guide_challenges tests.test_module_routes -v`；浏览器核对四组入口、组首／末层、层数切换、详情展开和旧环线。
 
 深境逐层机制包含推荐属性、强化抗性属性、节点起始／关底标记、备选角色数和角色栏位数。每10层关底显示当层配置的5组增益与代价，逐组保留配对关系，并显示默认增益数量及关联楼层的数量加成。敌人属性表使用固定属性包中的抗性，不额外按强化抗性标记猜测叠加值；关底可选的全属性抗性、生命、防御等修正不默认计入敌人数值。JSON与Markdown保留完整规则和每个效果的作用对象；不根据配置字段推断未明确提供的选择持续时间或生效时机。
+
+安魂曲“恶魔的礼物”在详细命中数据中展示46种习得技巧、52项伤害效果；命中项包含变身名称和攻击说明，攻击倍率跟随变轨技能等级切换。多伤害效果分别列出，不合计为一次攻击；未确认重复次数时保留未知。`data/lacrimosa_forms.json` 维护变身技能与专用伤害效果的显式绑定，常规离线刷新从伤害表重建倍率；缺失或归属不符时中止刷新，不使用怪物自身伤害。网页、JSON、Markdown和CLI共用这些明细。

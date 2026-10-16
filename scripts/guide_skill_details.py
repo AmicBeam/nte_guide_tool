@@ -8,6 +8,35 @@ import re
 import subprocess
 
 TABLES = ('DT_GameplayAbilityTipsData', 'DT_SkillDamageData')
+LACRIMOSA_FORMS = Path(__file__).resolve().parents[1] / 'app/modules/guide/data/lacrimosa_forms.json'
+LACRIMOSA_FORM_ROW = 'GA_Lacrimosa_Skill_stolen_damage'
+
+
+def stolen_damage_row(damages):
+    """Bind each learned form to its own player damage effects, never monster rates."""
+    hits = []
+    for form in json.loads(LACRIMOSA_FORMS.read_text(encoding='utf-8')):
+        for index, effect in enumerate(form['effect_ids'], 1):
+            raw = damages.get(effect)
+            if raw is None or raw.get('GAName') != 'GA_Lacrimosa_Skill':
+                raise ValueError(f'Missing or invalid stolen damage effect: {effect}')
+            label = form['name']
+            if len(form['effect_ids']) > 1:
+                label += f' · 伤害项{index}'
+            hits.append({
+                'effect_id': effect, 'hit_index': len(hits) + 1,
+                'hit_label': label, 'hit_description': form['description'],
+                'form_ability_id': form['ability_id'], 'repeat': None,
+                'harmony_gain': raw.get('HeterochromeAdd'),
+                'energy_gain': raw.get('ChargeAdd'), 'stagger': raw.get('UnbalValue'),
+                **{field: [percentage(v) for v in raw.get(source) or []]
+                   for field, source in [('attack_values', 'AtkRateBaseArray'),
+                                         ('defense_values', 'DefRateBaseArray'),
+                                         ('hp_values', 'HPRateBaseArray')]},
+            })
+    return {'key': LACRIMOSA_FORM_ROW, 'label': '「恶魔的礼物」各变身伤害倍率',
+            'values': [], 'details_only': True, 'hit_details': hits,
+            'hit_detail_status': 'available'}
 
 
 def table_rows(payload):
@@ -90,6 +119,9 @@ def select_group(row, phases):
 
 
 def enrich_ability(ability, tables):
+    # Rebuild supplemental rows on every refresh, including repeated enrichment.
+    ability['param_rows'] = [row for row in ability.get('param_rows') or []
+                             if row.get('key') != LACRIMOSA_FORM_ROW]
     tips = tables['DT_GameplayAbilityTipsData'].get(ability['id'])
     if tips is None and ability.get('param_rows'):
         raise ValueError(f'Missing skill tips: {ability["id"]}')
@@ -123,6 +155,8 @@ def enrich_ability(ability, tables):
                 detail[field] = [percentage(value) for value in raw.get(source) or []]
             row['hit_details'].append(detail)
         row['hit_detail_status'] = 'available' if effects else 'not_applicable'
+    if ability['id'] == 'GA_Lacrimosa_Skill':
+        ability['param_rows'].append(stolen_damage_row(damages))
     phases = ability.get('phases') or []
     groups = [{'name': p['name'], 'description': p.get('desc'), 'param_rows': []} for p in phases]
     shared = {'name': '共用与其他参数', 'description': None, 'param_rows': []}

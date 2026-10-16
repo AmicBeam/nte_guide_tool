@@ -251,6 +251,46 @@ class GuideTest(unittest.TestCase):
         self.assertIn('基础回能', html)
         self.assertIn('0.838', html)
 
+    def test_lacrimosa_gift_forms_and_refresh(self):
+        import copy
+        importer = load_file('guide_gift_details', 'scripts/guide_skill_details.py')
+        character = service.detail('characters', '1004')
+        ability = next(a for a in character['abilities'] if a['id'] == 'GA_Lacrimosa_Skill')
+        group = next(g for g in ability['groups'] if g['name'] == '变轨技能：恶魔的礼物')
+        row = next(r for r in group['param_rows'] if r.get('details_only'))
+        hits = row['hit_details']
+        self.assertEqual(len({h['form_ability_id'] for h in hits}), 46)
+        self.assertEqual(len(hits), 52)
+        first = hits[0]
+        self.assertEqual(first['hit_label'], '分解者')
+        self.assertEqual(first['effect_id'], 'GE_mon_14_act05_Dmg01_Steal_BP')
+        self.assertEqual(first['attack_values'][0], '48%')
+        self.assertEqual(first['attack_values'][9], '96%')
+        self.assertIn('至多8次', first['hit_description'])
+        self.assertTrue(all(h['repeat'] is None for h in hits))
+        self.assertTrue(all(len(h['attack_values']) == 13 for h in hits))
+        unnamed = [h for h in hits if h['hit_label'] == '无明众' or h['hit_label'].startswith('无明众 ·')]
+        self.assertEqual(len({h['hit_description'] for h in unnamed}), 3)
+        html = self.client.get('/guide/characters/1004').text
+        self.assertIn('分解者', html)
+        self.assertIn('96%', html)
+        self.assertIn('次数未提供', html)
+        self.assertIn('变身攻击说明', self.client.get('/guide/characters/1004.md').text)
+        # Supplemental rows are rebuilt from explicit bindings and damage arrays.
+        damages = {h['effect_id']: {'GAName': ability['id'], 'AtkRateBaseArray': [0.25] * 13}
+                   for h in hits}
+        original = copy.deepcopy(ability)
+        original['param_rows'] = [copy.deepcopy(row)]
+        tables = {'DT_GameplayAbilityTipsData': {ability['id']: {}}, 'DT_SkillDamageData': damages}
+        importer.enrich_ability(original, tables)
+        before = json.dumps(original, ensure_ascii=False)
+        importer.enrich_ability(original, tables)
+        self.assertEqual(json.dumps(original, ensure_ascii=False), before)
+        self.assertEqual(original['param_rows'][0]['hit_details'][0]['attack_values'][9], '25%')
+        del damages[first['effect_id']]
+        with self.assertRaises(ValueError):
+            importer.enrich_ability(original, tables)
+
     def test_character_arc_compatibility_and_badges(self):
         character = self.client.get('/api/guide/characters/1042').json['data']
         self.assertEqual(character['arc_type']['name'], '气态')

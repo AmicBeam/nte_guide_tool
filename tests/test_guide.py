@@ -1,5 +1,6 @@
 import importlib.util
 import io
+import re
 import json
 from pathlib import Path
 import unittest
@@ -106,7 +107,14 @@ class GuideTest(unittest.TestCase):
         abilities = self.client.get('/api/guide/characters/1042?section=abilities').json['data']['abilities']
         self.assertEqual(len(abilities[0]['param_rows'][0]['values']), 13)
         arc = self.client.get('/guide/arcs/fork_PaperPlane?section=effect').text
-        self.assertIn('灵属性异能伤害提升20%', arc)
+        self.assertIn('灵属性异能伤害提升20%', re.sub(r'<[^>]*>', '', arc))
+        self.assertIn('guide-effect-number', arc)
+        self.assertNotIn('效果 1', arc)
+        unsafe = service.effect_html('<img src=x>{0}', [{'id_value': 0, 'values': ['<script>1</script>']}], 1)
+        self.assertNotIn('<img', unsafe)
+        self.assertNotIn('<script>', unsafe)
+        self.assertIn('&lt;img', unsafe)
+        self.assertLess(self.client.get('/guide/arcs/fork_PaperPlane').text.index('id="section-stats"'), self.client.get('/guide/arcs/fork_PaperPlane').text.index('id="section-effect"'))
         self.assertIn('23.75%', arc)
         self.assertIn('35%', arc)
         materials = self.client.get('/guide/characters/1042?section=materials').text

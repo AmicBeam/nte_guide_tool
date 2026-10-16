@@ -4,6 +4,8 @@ from __future__ import annotations
 from functools import lru_cache
 import json
 from pathlib import Path
+import re
+from markupsafe import Markup, escape
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境'}
 LABELS = {
@@ -57,7 +59,10 @@ def catalog():
     bindings = {record['id']: record for record in art['characters']}
     for character in data['characters']:
         binding = bindings[str(character['id'])]
+        character['element_icon'] = f'/static/images/elements/{character["element_name"]}.png'
         character['assets'] = {key: binding[key] for key in ('avatar', 'portrait', 'fullbody')}
+    for arc in data['arcs']:
+        arc['image'] = f'/static/images/arcs/{arc["id"]}.webp'
     return data
 
 
@@ -68,7 +73,7 @@ def label(key):
 def summary(kind, record):
     identifier = str(record['id'])
     result = {k: record[k] for k in ('id', 'name', 'aliases', 'element_name', 'rarity',
-        'type_name', 'is_permanent', 'begin_date', 'end_date', 'stage_count') if k in record}
+        'type_name', 'image', 'element_icon', 'is_permanent', 'begin_date', 'end_date', 'stage_count') if k in record}
     result.update(kind=kind, url=f'/guide/{kind}/{identifier}',
                   json_url=f'/api/guide/{kind}/{identifier}',
                   markdown_url=f'/guide/{kind}/{identifier}.md')
@@ -168,7 +173,7 @@ def schema():
 def page_sections(kind, record):
     preferred = {
         'characters': ('abilities', 'equip_slots', 'materials', 'awaken', 'resonance', 'nouns', 'stats', 'aliases'),
-        'arcs': ('effect', 'exclusive_desc', 'exclusive_character_ids', 'stats', 'materials'),
+        'arcs': ('stats', 'effect', 'exclusive_desc', 'exclusive_character_ids', 'materials'),
         'challenges': ('resonance', 'stages', 'rewards'),
     }
     keys = preferred[kind] if len(record) > 3 else tuple(key for key in record if key not in ('id', 'name'))
@@ -194,3 +199,17 @@ def equip_description(equipment):
 
 def character_name(identifier):
     return next((c['name'] for c in catalog()['characters'] if str(c['id']) == str(identifier)), str(identifier))
+
+
+def effect_html(template, parameters, level):
+    values = {str(row['id_value']): row['values'][level - 1]
+              for row in parameters if level <= len(row['values'])}
+    text = re.sub(r'\{(\d+)\}', lambda m: str(values.get(m[1], m[0])), template)
+    parts = []
+    previous = 0
+    for match in re.finditer(r'[+-]?\d+(?:\.\d+)?%?', text):
+        parts.append(escape(text[previous:match.start()]))
+        parts.append(Markup('<span class="guide-effect-number">') + escape(match[0]) + Markup('</span>'))
+        previous = match.end()
+    parts.append(escape(text[previous:]))
+    return Markup('').join(parts)

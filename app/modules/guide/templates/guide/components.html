@@ -3,11 +3,11 @@
 {% set max_level = lengths|max if lengths else 1 %}
 {% set selected = max_level if initial == 'max' else initial %}
 <div class="guide-level-group" data-level-group>
-{% if description %}{% set rendered = namespace(text=description) %}{% for row in rows %}{% if row.id_value is defined and selected <= row['values']|length %}{% set rendered.text = rendered.text.replace('{' ~ row.id_value ~ '}', row['values'][selected-1]|string) %}{% endif %}{% endfor %}<p class="guide-effect-description" data-level-template="{{ description }}">{{ rendered.text }}</p>{% endif %}
+{% if description %}<p class="guide-effect-description" data-level-template="{{ description }}" data-level-parameters="{{ rows|tojson|forceescape }}">{{ description|guide_effect_html(rows, selected) }}</p>{% endif %}
 <div class="guide-level-bar"><label for="{{ group_id }}">{{ title }}{{ unit }}</label><span>Lv. <output for="{{ group_id }}" data-level-output aria-live="polite">{{ selected }}</output><small> / {{ max_level }}</small></span></div>
 <input id="{{ group_id }}" type="range" min="1" max="{{ max_level }}" step="1" value="{{ selected }}" data-level-control aria-label="{{ title }}{{ unit }}">
 <div class="guide-level-ends"><span>1</span><span>{{ max_level }}</span></div>
-<table class="guide-data-table"><thead><tr><th scope="col">参数</th><th scope="col">当前数值</th></tr></thead><tbody>{% for row in rows %}<tr><th scope="row">{{ row.label|default(row.name|default('效果 ' ~ (row.id_value|default(0)|int + 1))) }}{% if row.b_is_percent|default(false) or row.b_show_percent|default(false) or row.id_stats|default('') in ['CritBase','CritDamageBase'] %}（%）{% endif %}</th><td data-value-id="{{ row.id_value|default('') }}" data-level-values="{{ row['values']|tojson|forceescape }}">{{ row['values'][selected-1] if selected <= row['values']|length else '未提供' }}</td></tr>{% endfor %}</tbody></table>
+{% if not description %}<table class="guide-data-table"><thead><tr><th scope="col">属性</th><th scope="col">当前数值</th></tr></thead><tbody>{% for row in rows %}<tr><th scope="row">{{ row.label|default(row.name|default('效果 ' ~ (row.id_value|default(0)|int + 1))) }}{% if row.b_is_percent|default(false) or row.b_show_percent|default(false) or row.id_stats|default('') in ['CritBase','CritDamageBase'] %}（%）{% endif %}</th><td data-value-id="{{ row.id_value|default('') }}" data-level-values="{{ row['values']|tojson|forceescape }}">{{ row['values'][selected-1] if selected <= row['values']|length else '未提供' }}</td></tr>{% endfor %}</tbody></table>{% endif %}
 </div>
 {% endmacro %}
 

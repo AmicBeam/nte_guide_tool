@@ -15,10 +15,23 @@ for (const group of document.querySelectorAll('[data-level-group]')) {
         for (const {cell, values} of cells) cell.textContent = values[level - 1] ?? '未提供';
         const description = group.querySelector('[data-level-template]');
         if (description) {
-            description.textContent = description.dataset.levelTemplate.replace(/\{(\d+)\}/g, (token, id) => {
-                const row = cells.find(cell => cell.id === id);
+            const parameters = JSON.parse(description.dataset.levelParameters);
+            const resolved = description.dataset.levelTemplate.replace(/\{(\d+)\}/g, (token, id) => {
+                const row = parameters.find(row => String(row.id_value) === id);
                 return row?.values[level - 1] ?? token;
             });
+            const fragment = document.createDocumentFragment();
+            let previous = 0;
+            for (const match of resolved.matchAll(/[+-]?\d+(?:\.\d+)?%?/g)) {
+                fragment.append(document.createTextNode(resolved.slice(previous, match.index)));
+                const number = document.createElement('span');
+                number.className = 'guide-effect-number';
+                number.textContent = match[0];
+                fragment.append(number);
+                previous = match.index + match[0].length;
+            }
+            fragment.append(document.createTextNode(resolved.slice(previous)));
+            description.replaceChildren(fragment);
         }
     };
     control.addEventListener('input', update);

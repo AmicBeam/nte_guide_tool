@@ -7,6 +7,7 @@ from . import service
 blueprint = Blueprint('guide_module', __name__, template_folder='templates',
                       static_folder='static', static_url_path='/static/guide')
 blueprint.add_app_template_filter(service.label, 'guide_label')
+blueprint.add_app_template_filter(service.effect_html, 'guide_effect_html')
 blueprint.add_app_template_filter(service.character_name, 'guide_character_name')
 blueprint.add_app_template_filter(service.equip_description, 'guide_equip_description')
 blueprint.add_app_template_filter(service.display_scalar, 'guide_scalar')
@@ -58,8 +59,9 @@ def entry(kind, identifier):
     record = get_record(kind, identifier)
     sections = service.page_sections(kind, record)
     art = service.detail(kind, identifier).get('assets') if kind == 'characters' else None
+    arc_image = service.detail(kind, identifier).get('image') if kind == 'arcs' else None
     return render_template('guide/detail.html', record=record, sections=sections, kind=kind,
-                           kinds=service.KINDS, art=art, notes=service.schema()['notes'])
+                           kinds=service.KINDS, art=art, arc_image=arc_image, notes=service.schema()['notes'])
 
 
 @blueprint.get('/guide/<kind>/<identifier>.md')

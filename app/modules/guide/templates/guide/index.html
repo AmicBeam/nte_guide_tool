@@ -16,14 +16,16 @@
 </form>
 <div class="guide-section-heading"><h2>{{ kinds[kind] }}档案</h2><span>{{ items|length }} 条结果</span></div>
 {% if kind == 'challenges' %}<p class="guide-muted">包含常驻与轮换环线。未提供日期的赛期不标注开放状态。</p>{% endif %}
-<div class="guide-grid">
-{% for item in items %}<a class="guide-card" href="{{ item.url }}">
-<div class="guide-card-top"><span>{{ '%02d'|format(loop.index) }}</span><span>{{ item.element_name|default(item.type_name|default('常驻' if item.is_permanent|default(false) else '轮换环线')) }}{% if item.rarity is defined %} / {{ item.rarity }}★{% endif %}</span></div>
-<div class="guide-card-identity">{% if item.assets is defined %}<img src="{{ item.assets.avatar }}" alt="{{ item.name }}头像" width="72" height="72" loading="lazy" decoding="async">{% endif %}<h3>{{ item.name }}</h3></div>
-{% if kind == 'challenges' %}<p>{{ item.description }}</p><small>{{ item.stage_count }} 关 · {{ item.begin_date or '日期未提供' }}{% if item.end_date %} → {{ item.end_date }}{% endif %}</small>{% else %}<p>{{ item.aliases[0] if item.aliases|default([]) else item.id }}</p>{% endif %}
-<div class="guide-card-bottom"><code>{{ item.id }}</code><span aria-label="查看详情">↗</span></div>
-</a>{% else %}<div class="guide-empty"><h3>没有找到相关资料</h3><p>尝试角色名、技能关键词，或清除筛选条件。</p><a href="?kind={{ kind }}">查看全部{{ kinds[kind] }}</a></div>{% endfor %}
-</div>
+{% macro entry_card(item, number) %}<a class="guide-card{% if kind == 'arcs' %} guide-arc-card{% endif %}" href="{{ item.url }}">
+<div class="guide-card-top"><span>{{ '%02d'|format(number) }}</span><span class="guide-card-meta">{% if kind == 'characters' %}<img class="guide-element-icon" src="{{ item.element_icon }}" alt="{{ item.element_name }}属性" title="{{ item.element_name }}" width="24" height="24">{% elif kind == 'challenges' %}{{ '常驻' if item.is_permanent else '轮换环线' }}{% endif %}{% if item.rarity is defined %}{{ item.rarity }}★{% endif %}</span></div>
+<div class="guide-card-identity">{% if kind == 'characters' %}<img src="{{ item.assets.avatar }}" alt="{{ item.name }}头像" width="72" height="72" loading="lazy" decoding="async">{% elif kind == 'arcs' %}<img src="{{ item.image }}" alt="{{ item.name }}弧盘" width="112" height="112" loading="lazy" decoding="async">{% endif %}<h3>{{ item.name }}</h3></div>
+{% if kind == 'challenges' %}<p>{{ item.description }}</p><small>{{ item.stage_count }} 关 · {{ item.begin_date or '日期未提供' }}{% if item.end_date %} → {{ item.end_date }}{% endif %}</small>{% elif kind == 'characters' %}<p>{{ item.aliases[0] if item.aliases else item.id }}</p>{% endif %}
+<div class="guide-card-bottom"><code>{{ item.id }}</code><span aria-label="查看详情">↗</span></div></a>{% endmacro %}
+{% if kind == 'arcs' %}
+<nav class="guide-arc-types" aria-label="弧盘类型">{% for type in ['固态','液态','气态','等离子','聚合'] %}<a href="#arc-type-{{ loop.index }}">{{ type }}</a>{% endfor %}</nav>
+{% for type in ['固态','液态','气态','等离子','聚合'] %}{% set group = items|selectattr('type_name','equalto',type)|list %}{% if group %}<section class="guide-arc-group" id="arc-type-{{ loop.index }}"><div class="guide-section-heading"><h2>{{ type }}</h2><span>{{ group|length }} 个弧盘</span></div><div class="guide-grid">{% for item in group %}{{ entry_card(item,loop.index) }}{% endfor %}</div></section>{% endif %}{% endfor %}
+{% else %}<div class="guide-grid">{% for item in items %}{{ entry_card(item,loop.index) }}{% endfor %}</div>{% endif %}
+{% if not items %}<div class="guide-empty"><h3>没有找到相关资料</h3><p>尝试名称、技能关键词，或清除筛选条件。</p><a href="?kind={{ kind }}">查看全部{{ kinds[kind] }}</a></div>{% endif %}
 <section class="guide-machine" id="machine"><div><p class="guide-eyebrow">FOR YOUR NEXT QUESTION</p><h2>让数据进入你的工作流。</h2><p>网页、纯文本与命令行，读取同一份战斗数据。无需登录。</p><div class="guide-links"><a href="/guide/cli.py">下载 CLI ↓</a><a href="/guide/llms.txt">LLM 索引 ↗</a><a href="/api/guide/schema">API 说明 ↗</a></div></div><pre><code>python nte-guide.py search 黑羽
 python nte-guide.py get characters 1042 \
   --section abilities --format markdown

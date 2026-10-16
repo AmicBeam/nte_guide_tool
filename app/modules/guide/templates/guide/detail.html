@@ -23,7 +23,7 @@
 <aside class="guide-toc" id="guide-toc" data-guide-toc data-open="false">
 <p class="guide-toc-title">本页目录</p><nav aria-label="详情章节">
 {% for key, value in sections.items() %}<a href="#section-{{ key }}">{{ key|guide_label }}</a>
-{% if key == 'abilities' %}<div class="guide-toc-skills" aria-label="技能目录">{% for ability in value %}<a href="#skill-{{ loop.index }}">{{ ability.name }}</a>{% endfor %}</div>{% endif %}{% endfor %}
+{% if key == 'abilities' %}<div class="guide-toc-skills" aria-label="技能目录">{% for ability in value %}<a href="#skill-{{ loop.index }}">{{ ability|guide_ability_title }}</a>{% endfor %}</div>{% endif %}{% endfor %}
 </nav></aside>
 <div class="guide-detail-body">{% for key, value in sections.items() %}<section class="guide-detail-section" id="section-{{ key }}"><h2>{{ key|guide_label }}</h2>{% if key == 'abilities' %}
 {% for ability in value %}{{ skill(ability, loop.index) }}{% endfor %}

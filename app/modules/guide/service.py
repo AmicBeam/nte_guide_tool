@@ -172,7 +172,7 @@ def schema():
 
 def page_sections(kind, record):
     preferred = {
-        'characters': ('abilities', 'equip_slots', 'materials', 'awaken', 'resonance', 'nouns', 'stats', 'aliases'),
+        'characters': ('abilities', 'awaken', 'resonance', 'equip_slots', 'materials', 'nouns', 'stats', 'aliases'),
         'arcs': ('stats', 'effect', 'exclusive_desc', 'exclusive_character_ids', 'materials'),
         'challenges': ('resonance', 'stages', 'rewards'),
     }
@@ -213,3 +213,15 @@ def effect_html(template, parameters, level):
         previous = match.end()
     parts.append(escape(text[previous:]))
     return Markup('').join(parts)
+
+
+def ability_title(ability):
+    prefixes = {'melee': '普通攻击', 'skill': '变轨技能', 'ultraskill': '极轨终结',
+                'qte': '援护技', 'peculiarity': '特性', 'city': '都市技能', 'passive': '天赋'}
+    kind = ability.get('type')
+    prefix = prefixes.get(kind, display_scalar(ability.get('type_name', '技能')))
+    if kind in ('passive', 'city'):
+        index = int(ability.get('ability_index') or 1)
+        prefix += {1: '一', 2: '二', 3: '三', 4: '四'}.get(index, str(index))
+    name = ability['name']
+    return name if name.startswith((prefix + '：', prefix + ':')) else prefix + '：' + name

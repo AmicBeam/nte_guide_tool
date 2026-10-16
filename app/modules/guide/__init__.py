@@ -7,6 +7,7 @@ from . import service
 blueprint = Blueprint('guide_module', __name__, template_folder='templates',
                       static_folder='static', static_url_path='/static/guide')
 blueprint.add_app_template_filter(service.label, 'guide_label')
+blueprint.add_app_template_filter(service.ability_title, 'guide_ability_title')
 blueprint.add_app_template_filter(service.effect_html, 'guide_effect_html')
 blueprint.add_app_template_filter(service.character_name, 'guide_character_name')
 blueprint.add_app_template_filter(service.equip_description, 'guide_equip_description')

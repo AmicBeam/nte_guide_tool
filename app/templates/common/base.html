@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='images/brand/esper-duel-icon.webp') }}" type="image/webp">
     <link rel="stylesheet" href="{{ url_for('static', filename='common/css/app.css') }}">
-    {% set login_guard_exempt_endpoints = ['main.default_page', 'main.login_page', 'main.kongmu_page', 'overlap_module.index', 'guide_module.index', 'guide_module.entry', 'guide_module.cultivation_page', 'guide_module.character_builds_page', 'shaft_module.compare_page'] %}
+    {% set login_guard_exempt_endpoints = ['main.default_page', 'main.login_page', 'main.kongmu_page', 'overlap_module.index', 'guide_module.index', 'guide_module.entry', 'guide_module.cultivation_page', 'guide_module.character_builds_page', 'guide_module.axis_compare_page'] %}
     {% if request.endpoint not in login_guard_exempt_endpoints and not (allow_anonymous_shaft_share | default(false)) and (request.endpoint != 'main.shaft_page' or config['SHAFT_LOGIN_REQUIRED']) %}
     <script>
         (function () {

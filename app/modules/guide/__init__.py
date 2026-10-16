@@ -82,6 +82,18 @@ def entry(kind, identifier):
                            notes=service.schema()['notes'])
 
 
+@blueprint.get('/guide/characters/<identifier>/axes/<int:axis_id>/compare')
+def axis_compare_page(identifier, axis_id):
+    if axis_id <= 0:
+        raise LookupError('未找到排轴')
+    record = service.detail('characters', identifier)
+    static = Path(__file__).parent.parent / 'shaft' / 'static'
+    version = max(int(path.stat().st_mtime) for path in static.glob('js/shaft*.js'))
+    arc_rarities = {arc['name']: arc['rarity'] for arc in service.catalog()['arcs']}
+    return render_template('shaft/compare.html', compare_asset_version=version,
+                           axis_id=axis_id, record=record, arc_rarities=arc_rarities)
+
+
 @blueprint.get('/guide/characters/<identifier>/cultivation')
 def cultivation_page(identifier):
     record = service.detail('characters', identifier)

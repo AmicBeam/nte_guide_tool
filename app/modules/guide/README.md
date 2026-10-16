@@ -123,7 +123,7 @@ python scripts/refresh_guide_data.py --transport curl
 
 `static/related_axes.js` 只通过 `/api/shaft/catalog`、`/api/shaft/market`、`/api/shaft/me/axes`、`/api/shaft/me/favorites` 和既有轴详情接口组合展示；不导入排轴领域服务，不运行伤害公式。角色按目录真实名称匹配，两个零条目1046／1051明确对应排轴的主角；不按属性或列表位置猜测。权限仍由排轴接口校验。
 
-页面不提供独立的配装收益按钮；找到轴后，通过轴卡片或其预览中的“用此轴比较配装”进入 `/shaft/axes/<轴ID>/compare?character=<排轴角色ID>&guide_character=<攻略角色ID>&locked=1`。比较固定该轴与当前角色，不提供另选轴、浏览器草稿或示例轴入口；候选精炼、卡带与主词条比较由排轴模块持有，参见其README；此页不保存玩家练度、修改原轴或写入浏览器排轴草稿。问答尚未接入。
+页面不提供独立的配装收益按钮；找到轴后，通过轴卡片或其预览中的“用此轴比较配装”进入 `/guide/characters/<攻略角色ID>/axes/<轴ID>/compare`。比较固定该轴与当前角色，不提供另选轴、浏览器草稿或示例轴入口；比较页面路由由攻略模块持有，计算仍复用排轴浏览器引擎；候选弧盘按S级1精、A级／B级5精处理，参见其README；此页不保存玩家练度、修改原轴或写入浏览器排轴草稿。问答尚未接入。
 
 验证：`.venv/bin/python -m unittest tests.test_guide tests.test_guide_builds tests.test_module_routes tests.test_shaft_comparison -v`。浏览器检查有轴／空结果角色、队友筛选、个人范围、原地预览及带轴跳转试算；两个零条目的映射均须核对。
 
@@ -201,3 +201,5 @@ python scripts/refresh_guide_data.py --transport curl
 怪物头像覆盖当前44个配置ID，每个ID读取其明确配置的图片并保存到模块本地；同名的普通、Snow、Rain等变体使用各自绑定，不进行同名兜底。缺少ID绑定时显示暂无贴图，不借用同名怪物。显式同步命令：`python scripts/sync_guide_monster_images.py`，逐ID核对原始图标字段，拒绝缺失或冲突绑定；所有图片验证成功后才替换绑定文件，不改动关卡数值。
 
 角色技能标题左侧显示对应的本地技能图标，覆盖普通攻击、变轨技能、极轨终结、援护、被动、特性和都市技能；桌面56px、窄屏48px，等级滑块保持独立。`data/skill_icons.json` 按角色ID与技能ID绑定，资源位于模块 `static/skill-icons/`；无有效绑定时仅显示原标题。显式刷新 `python scripts/sync_guide_skill_icons.py`，支持 `--tips-table`、`--city-table` 读取本地技能表，使用 `cwebp` 转码；网站启动和页面请求不联网取图。 明音凛“随心拨弦”暂无可用独立图片，该项保留文字标题。
+
+比较页固定来源角色，不再提供试算角色或统一精炼选择框。每行弧盘显示本次采用的精炼档位，原轴100%基线保留原轴实际精炼。个别排轴条目缺少稀有度时，仅在比较页内按本地攻略弧盘的同名明确配置补齐；无法确定时停止试算，不从攻击值猜测品质。

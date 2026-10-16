@@ -1,4 +1,6 @@
 import json
+from html import unescape
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -8,6 +10,7 @@ from unittest.mock import patch
 from flask import Flask
 
 from app.modules.shaft import blueprint
+from app.modules.guide import blueprint as guide_blueprint
 from app.modules.shaft.domain.catalog import load_shaft_catalog
 from tests.test_solo_room_flow import RoomFlowTestCase
 
@@ -18,15 +21,22 @@ class ShaftComparisonTest(unittest.TestCase):
     def test_comparison_page_is_public_and_assets_are_available(self):
         app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
         app.register_blueprint(blueprint)
+        app.register_blueprint(guide_blueprint)
         client = app.test_client()
         self.assertEqual(client.get('/shaft/compare?axis=1').status_code, 404)
         self.assertEqual(client.get('/shaft/axes/1/compare').status_code, 404)
-        response = client.get('/shaft/axes/1/compare?character=example&guide_character=1042&locked=1')
+        self.assertEqual(client.get('/guide/characters/missing/axes/1/compare').status_code, 404)
+        response = client.get('/guide/characters/1042/axes/1/compare')
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('window.location.replace', response.text)
         self.assertIn('data-axis-id="1"', response.text)
+        grades = json.loads(unescape(re.search(r'data-arc-rarities="([^"]+)"', response.text)[1]))
+        self.assertEqual(grades['罪与罚'], 5)
+        self.assertEqual(grades['月的对跖点'], 5)
         self.assertIn('id="compare-matrices"', response.text)
         self.assertIn('id="compare-detail"', response.text)
+        self.assertNotIn('id="compare-target"', response.text)
+        self.assertNotIn('id="compare-refinement"', response.text)
         self.assertNotIn('compare-draft', response.text)
         self.assertNotIn('compare-axis"', response.text)
         for asset in ['js/shaft_compare_page.js', 'js/shaft_comparison.js',
@@ -50,6 +60,8 @@ const snapshot = engine.buildSnapshot(member, catalog, axis.team_panel_bonus);
 const selection = {character_id: member.character_id, arc_ids:[member.arc_id],
   cartridge_ids:[member.cartridge_id], main_stats:[snapshot.build_options.cartridge_main_stat],
   refinement:snapshot.arc_refinement};
+member.arc_refinement = comparison.candidateRefinement(catalog.arcs.find(arc => arc.id === member.arc_id));
+if (axis.character_builds?.[member.character_id]) axis.character_builds[member.character_id].arc_refinement = member.arc_refinement;
 const original = JSON.stringify(axis);
 const messages = [...comparison.compare(axis, catalog, selection, engine, checks)];
 assert.equal(messages[1].row.baseline_percent, 100, 'Original equipment must be exactly 100% of baseline');
@@ -61,7 +73,7 @@ const arc = catalog.arcs.find(a => a.adaptation === snapshot.character.adaptatio
 const changed = {...selection, arc_ids:[arc.id], main_stats:['暴伤'], refinement:1};
 const output = [...comparison.compare(axis, catalog, changed, engine, checks)];
 const candidate = clone(axis);
-Object.assign(candidate.team[0], {arc_id:arc.id, arc_refinement:1, cartridge_main_stat:'暴伤'});
+Object.assign(candidate.team[0], {arc_id:arc.id, arc_refinement:comparison.candidateRefinement(arc), cartridge_main_stat:'暴伤'});
 const expected = engine.simulateAxis(candidate, catalog);
 assert.equal(output[1].row.total_damage, expected.summary.total_damage);
 assert.equal(output[1].row.baseline_percent, expected.summary.total_damage / output[0].baseline.total_damage * 100);
@@ -77,7 +89,24 @@ assert.throws(() => [...comparison.compare(axis,catalog,{...selection,main_stats
 assert.throws(() => [...comparison.compare(axis,catalog,{...selection,arc_ids:[]},engine,checks)], /至少选择/);
 assert.throws(() => [...comparison.compare(axis,catalog,{...selection,arc_ids:['']},engine,checks)], /适应类型/);
 assert.throws(() => [...comparison.compare(axis,catalog,{...selection,cartridge_ids:['']},engine,checks)], /未知卡带/);
-assert.throws(() => [...comparison.compare(axis,catalog,{...selection,refinement:6},engine,checks)], /精炼档位/);
+assert.equal(comparison.candidateRefinement({rarity:'S'}), 1);
+assert.equal(comparison.candidateRefinement({rarity:'A'}), 5);
+assert.equal(comparison.candidateRefinement({rarity:5}), 1);
+assert.equal(comparison.candidateRefinement({rarity:4}), 5);
+assert.equal(comparison.candidateRefinement({rarity:'B'}), 5);
+assert.throws(() => comparison.candidateRefinement({rarity:''}), /稀有度/);
+const mixedArcs = ['S','A','B'].map(rank => catalog.arcs.find(arc => arc.adaptation === snapshot.character.adaptation && arc.rarity === rank)).filter(Boolean);
+assert.ok(mixedArcs.some(arc => arc.rarity === 'S') && mixedArcs.some(arc => arc.rarity === 'A'));
+const mixed = [...comparison.compare(axis,catalog,{...selection,arc_ids:mixedArcs.map(arc => arc.id),refinement:3},engine,checks)];
+for (const message of mixed.slice(1)) {
+  const rank = mixedArcs.find(arc => arc.id === message.row.arc_id).rarity;
+  assert.equal(message.row.arc_refinement,rank === 'S' ? 1 : 5);
+}
+const originalFive = clone(axis);
+originalFive.team[0].arc_refinement = 5;
+const retained = [...comparison.compare(originalFive,catalog,selection,engine,checks)];
+assert.equal(retained[0].baseline_options.arc_refinement,5);
+assert.equal(retained[1].row.arc_refinement,1);
 assert.throws(() => [...comparison.compare(axis,catalog,{...selection,character_id:'absent'},engine,checks)], /没有这个角色/);
 const restricted = clone(catalog);
 restricted.characters.find(c => c.id === member.character_id).selection_disabled = true;

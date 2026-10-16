@@ -2,8 +2,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const page = document.querySelector('.compare-page');
-  const params = new URLSearchParams(location.search);
-  const lockedCharacter = params.get('character') || '';
+  let lockedCharacter = '';
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
   const format = value => num(value).toLocaleString('zh-CN', {maximumFractionDigits: 0});
@@ -43,16 +42,15 @@
   }
   function setupOptions() {
     clearResults();
-    const member = state.axis.team.find(item => item.character_id === $('compare-target').value);
+    const member = state.axis.team.find(item => item.character_id === lockedCharacter);
     if (!member) return;
     const character = state.catalog.characters.find(item => item.id === member.character_id);
     const arcs = state.catalog.arcs.filter(arc => arc.adaptation === character.adaptation);
     const defaultArcs = new Set([member.arc_id || '', ...arcs.slice(0, 2).map(item => item.id)]);
-    checks('arcs', arcs, defaultArcs);
+    checks('arcs', arcs.map(arc => ({id:arc.id, name:`${arc.name} · ${ShaftComparison.candidateRefinement(arc)}精`})), defaultArcs);
     checks('cartridges', state.catalog.cartridges, new Set([member.cartridge_id || '', state.catalog.cartridges[0]?.id].filter(id => id !== undefined)));
     const stats = Object.entries(state.catalog.formula_constants.cartridge_main_stat_options).map(([id, option]) => ({id, name: option.label + (option.modifier_key ? '' : '（不参与伤害）')}));
     checks('stats', stats, new Set([member.cartridge_main_stat, '属伤', '暴击', '暴伤', '攻击']));
-    $('compare-refinement').value = '1';
     count();
   }
   function renderAxis() {
@@ -71,10 +69,6 @@
       return `<p>${esc(byId.get(member.character_id)?.name)}：${esc(arc?.name || '未装备弧盘')} · ${member.arc_refinement ? `${esc(member.arc_refinement)} 精` : '默认精炼'} · ${esc(cartridge?.name || '未装备卡带')} · 主词条 ${esc(catalog.formula_constants.cartridge_main_stat_options[member.cartridge_main_stat]?.label || '原轴默认')}<br>技能等级：${esc(skills)}；副词条数：${esc(substats)}</p>`;
     }).join('')}<p>敌人等级：${esc(axis.enemy?.level ?? '原轴默认')}；弱点：${esc((axis.enemy?.weakness_elements || []).join('、') || '未设置')}。其余敌人参数均沿用原轴。</p>${[...axis.steps].sort((a,b) => num(a.start_tick) - num(b.start_tick)).map(step => `<div>${(num(step.start_tick) / 10).toFixed(1)}s · ${esc(byId.get(axis.team.find(item => num(item.slot) === num(step.slot))?.character_id)?.name)} · ${esc(actions.get(step.action_id)?.name || step.action_name || step.action_id)}${step.placement === 'background' ? '（后台）' : ''}</div>`).join('')}</div></details>`;
     const selectable = axis.team.filter(member => !byId.get(member.character_id)?.selection_disabled && (!lockedCharacter || member.character_id === lockedCharacter));
-    $('compare-target').innerHTML = selectable.map(member => `<option value="${esc(member.character_id)}">${esc(byId.get(member.character_id)?.name)}</option>`).join('');
-    $('compare-target').disabled = Boolean(lockedCharacter);
-    const desired = params.get('character');
-    if (selectable.some(member => member.character_id === desired)) $('compare-target').value = desired;
     $('compare-form').hidden = !selectable.length;
     $('compare-source-link').hidden = !source.id;
     if (source.id) $('compare-source-link').href = `/shaft/rotation?preview=${encodeURIComponent(source.id)}`;
@@ -118,7 +112,7 @@
       const stats = Object.keys(statNames).filter(stat => entries.some(entry => entry.row.main_stat === stat));
       const arcs = [...new Set(entries.map(entry => entry.row.arc_id))];
       const cellMap = new Map(entries.map(entry => [JSON.stringify([entry.row.arc_id, entry.row.main_stat]), entry]));
-      return `<section class="compare-matrix-section"><h3>${esc(label('cartridges', cartridgeId))} · ${entries[0].row.arc_refinement} 精弧盘</h3><div class="compare-table-scroll"><table class="compare-matrix" aria-label="${esc(label('cartridges', cartridgeId))}配装收益"><thead><tr><th scope="col">弧盘 / 卡带主词条</th>${stats.map(stat => `<th scope="col">${esc(statNames[stat].label)}</th>`).join('')}</tr></thead><tbody>${arcs.map(arcId => `<tr><th scope="row">${esc(label('arcs', arcId))}</th>${stats.map(stat => {
+      return `<section class="compare-matrix-section"><h3>${esc(label('cartridges', cartridgeId))}</h3><div class="compare-table-scroll"><table class="compare-matrix" aria-label="${esc(label('cartridges', cartridgeId))}配装收益"><thead><tr><th scope="col">弧盘 / 卡带主词条</th>${stats.map(stat => `<th scope="col">${esc(statNames[stat].label)}</th>`).join('')}</tr></thead><tbody>${arcs.map(arcId => `<tr><th scope="row">${esc(label('arcs', arcId))}<small>${entries.find(entry => entry.row.arc_id === arcId).row.arc_refinement} 精</small></th>${stats.map(stat => {
         const entry = cellMap.get(JSON.stringify([arcId, stat]));
         if (!entry) return '<td>—</td>';
         const ratio = entry.row.baseline_percent;
@@ -141,7 +135,7 @@
   function run(event) {
     event.preventDefault(); clearResults();
     const selected = id => [...document.querySelectorAll(`#compare-${id} input:checked`)].map(input => input.value);
-    const selection = {character_id:$('compare-target').value, arc_ids:selected('arcs'), cartridge_ids:selected('cartridges'), main_stats:selected('stats'), refinement:Number($('compare-refinement').value)};
+    const selection = {character_id:lockedCharacter, arc_ids:selected('arcs'), cartridge_ids:selected('cartridges'), main_stats:selected('stats')};
     let worker;
     try { worker = new Worker(page.dataset.workerUrl); } catch { $('compare-progress').textContent = '浏览器无法启动计算，请在完整浏览器中重试。'; return; }
     state.worker = worker;
@@ -160,7 +154,7 @@
   }
   function download() {
     const cell = value => `"${String(typeof value === 'string' && /^[=+\-@]/.test(value) ? `'${value}` : value ?? '').replace(/"/g, '""')}"`;
-    const rows = [['参考轴',state.source.title,'角色',state.catalog.characters.find(c => c.id === $('compare-target').value)?.name], ['条件','固定原轴动作、队友、敌人、觉醒、技能、空幕与副词条；候选统一精炼'], ['基准总伤',state.baseline.total_damage,'基准DPS',state.baseline.dps], ['弧盘','精炼','卡带','主词条','全队总伤','DPS','原轴为100%的比例%','角色自身伤害','全队环合','全队倾陷','自检提示']];
+    const rows = [['参考轴',state.source.title,'角色',state.catalog.characters.find(c => c.id === lockedCharacter)?.name], ['条件','固定原轴动作、队友、敌人、觉醒、技能、空幕与副词条；S级弧盘1精、A级与B级5精'], ['基准总伤',state.baseline.total_damage,'基准DPS',state.baseline.dps], ['弧盘','精炼','卡带','主词条','全队总伤','DPS','原轴为100%的比例%','角色自身伤害','全队环合','全队倾陷','自检提示']];
     for (const row of state.rows) rows.push([label('arcs',row.arc_id),row.arc_refinement,label('cartridges',row.cartridge_id),state.catalog.formula_constants.cartridge_main_stat_options[row.main_stat]?.label,row.total_damage,row.dps,row.baseline_percent,row.own_damage,row.harmony_damage,row.stagger_damage,row.warnings.join('；')]);
     const url = URL.createObjectURL(new Blob(['\ufeff' + rows.map(row => row.map(cell).join(',')).join('\r\n')], {type:'text/csv;charset=utf-8'}));
     const link = document.createElement('a'); link.href = url; link.download = '配装收益对比.csv'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -168,13 +162,8 @@
   async function init() {
     $('compare-login').href = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
     $('compare-login').textContent = token() ? '账号 / 登录' : '登录';
-    if (/^\d+$/.test(params.get('guide_character') || '')) {
-      const back = document.querySelector('.compare-nav a');
-      back.href = `/guide/characters/${params.get('guide_character')}/builds`;
-      back.textContent = '← 角色排轴与配装';
-    }
     $('compare-form').onsubmit = run;
-    $('compare-form').onchange = event => { if (event.target.id === 'compare-target') setupOptions(); else { clearResults(); count(); } };
+    $('compare-form').onchange = () => { clearResults(); count(); };
     $('compare-form').onclick = event => {
       const button = event.target.closest('[data-select-all], [data-select-none]'); if (!button) return;
       const id = button.dataset.selectAll || button.dataset.selectNone;
@@ -190,7 +179,12 @@
     $('compare-detail').addEventListener('click', event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
     try {
       state.catalog = await request('/api/shaft/catalog');
-      if (!lockedCharacter || !state.catalog.characters.some(item => item.id === lockedCharacter && !item.selection_disabled)) throw new Error('当前角色尚不可用于配装试算，请返回角色页查看相关排轴。');
+      const name = ['1046','1051'].includes(page.dataset.guideCharacterId) ? '主角' : page.dataset.guideCharacterName;
+      const character = state.catalog.characters.find(item => item.name === name && !item.selection_disabled);
+      if (!character) throw new Error('当前角色尚不可用于配装比较，请返回角色页查看相关排轴。');
+      lockedCharacter = character.id;
+      const rarities = JSON.parse(page.dataset.arcRarities);
+      for (const arc of state.catalog.arcs) if (!arc.rarity && rarities[arc.name]) arc.rarity = rarities[arc.name];
       if (!/^\d+$/.test(page.dataset.axisId || '')) throw new Error('请从角色排轴与配装页面选择实际排轴。');
       await loadAxis(page.dataset.axisId);
     } catch (error) { $('compare-source-status').textContent = error.message; }

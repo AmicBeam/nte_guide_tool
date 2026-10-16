@@ -7,6 +7,13 @@
   const clone = value => JSON.parse(JSON.stringify(value));
   const MAX_COMBINATIONS = 600;
 
+  function candidateRefinement(arc) {
+    const rarity = String(arc?.rarity || '').toUpperCase();
+    if (rarity === 'S' || rarity === '5') return 1;
+    if (['A', 'B', '4', '3'].includes(rarity)) return 5;
+    throw new Error(`无法确定弧盘「${arc?.name || ''}」的稀有度。`);
+  }
+
   function plan(axis, catalog, selection, engine) {
     if (!Array.isArray(axis?.steps) || !axis.steps.length) throw new Error('请先选择包含动作的排轴。');
     const member = axis.team?.find(item => String(item.character_id) === String(selection.character_id));
@@ -17,19 +24,18 @@
     const arcIds = unique(selection.arc_ids);
     const cartridgeIds = unique(selection.cartridge_ids);
     const mainStats = unique(selection.main_stats);
-    const refinement = Number(selection.refinement);
     if (!arcIds.length || !cartridgeIds.length || !mainStats.length) throw new Error('弧盘、卡带和主词条各至少选择一项。');
-    if (!Number.isInteger(refinement) || refinement < 1 || refinement > 5) throw new Error('精炼档位须为 1–5。');
     for (const id of arcIds) {
       const arc = catalog.arcs.find(item => item.id === id);
       if (!arc || arc.adaptation !== character.adaptation) throw new Error('弧盘与角色适应类型不匹配。');
+      candidateRefinement(arc);
     }
     if (cartridgeIds.some(id => !catalog.cartridges.some(item => item.id === id))) throw new Error('存在未知卡带。');
     if (mainStats.some(stat => !Object.hasOwn(catalog.formula_constants.cartridge_main_stat_options, stat))) throw new Error('存在未知主词条。');
     const total = arcIds.length * cartridgeIds.length * mainStats.length;
     if (total > MAX_COMBINATIONS) throw new Error(`一次最多比较 ${MAX_COMBINATIONS} 个组合，请减少勾选项。`);
     const snapshot = engine.buildSnapshot(member, catalog, axis.team_panel_bonus);
-    return {member, total, arcIds, cartridgeIds, mainStats, refinement, snapshot};
+    return {member, total, arcIds, cartridgeIds, mainStats, snapshot};
   }
 
   function warningsFor(result, axis, catalog, selfCheck) {
@@ -73,7 +79,7 @@
     yield {type: 'baseline', baseline, baseline_options: baselineOptions, total};
     let completed = 0;
     for (const arcId of prepared.arcIds) for (const cartridgeId of prepared.cartridgeIds) for (const mainStat of prepared.mainStats) {
-      const option = {arc_id: arcId, arc_refinement: prepared.refinement, cartridge_id: cartridgeId, main_stat: mainStat};
+      const option = {arc_id: arcId, arc_refinement: candidateRefinement(catalog.arcs.find(arc => arc.id === arcId)), cartridge_id: cartridgeId, main_stat: mainStat};
       const candidate = candidateAxis(axis, member, option);
       const result = engine.simulateAxis(candidate, catalog);
       const summary = summarize(result, member, candidate, catalog, selfCheck);
@@ -93,5 +99,5 @@
     }
   }
 
-  return {MAX_COMBINATIONS, plan, compare, candidateAxis};
+  return {MAX_COMBINATIONS, plan, compare, candidateAxis, candidateRefinement};
 }));

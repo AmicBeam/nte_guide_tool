@@ -15,8 +15,7 @@
     return payload;
   }
   function compareUrl(axisId) {
-    const query = new URLSearchParams({character:character.id, guide_character:section.dataset.guideCharacterId, locked:'1'});
-    return `/shaft/axes/${axisId}/compare?${query}`;
+    return `/guide/characters/${section.dataset.guideCharacterId}/axes/${axisId}/compare`;
   }
   function teamHtml(team) {
     return `<div class="guide-axis-team">${(team || []).map(member => `<span>${member.character_avatar ? `<img src="${esc(member.character_avatar)}" alt="" loading="lazy">` : ''}${esc(member.character_name)}<small>${esc(member.awakening_nodes?.length ?? member.awakening ?? 0)}觉</small></span>`).join('')}</div>`;

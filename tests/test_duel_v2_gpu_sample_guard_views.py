@@ -22,8 +22,23 @@ class GuardViewsTest(unittest.TestCase):
                         if not skip:
                             self.assertEqual(pairs[0][0][1]['phase'],'playing')
                             self.assertEqual(pairs[1][0][1]['phase'],'mulligan')
+                        else:
+                            self.assertIs(pairs[0],pairs[1])
+                        self.assertIs(pairs[0][1][0],pairs[0][0][0])
     def test_unsupported_phase_fails(self):
         state=new_game(seed=1);state['phase']='finished'
         with self.assertRaises(ValueError):seven_sample_guard_views_packet(state,'a',2)
+    def test_mulligan_outer_pair_is_not_the_inner_before_action_alias(self):
+        playing=new_game(seed=19,first_side='a',skip_mulligan=True)
+        _,playing_pairs=seven_sample_guard_views_packet(playing,'b',23)
+        self.assertIs(playing_pairs[0],playing_pairs[1])
+        self.assertIs(playing_pairs[0][1][0],playing_pairs[0][0][0])
+        opening=new_game(seed=19,first_side='a',skip_mulligan=False)
+        _,pairs=seven_sample_guard_views_packet(opening,'b',23)
+        self.assertIsNot(pairs[0],pairs[1])
+        self.assertIs(pairs[0][1][0],pairs[0][0][0])
+        self.assertIsNot(pairs[1][0][0],pairs[0][0][0])
+        self.assertEqual(pairs[0][0][1]['phase'],'playing')
+        self.assertEqual(pairs[1][0][1]['phase'],'mulligan')
 
 if __name__=='__main__':unittest.main()

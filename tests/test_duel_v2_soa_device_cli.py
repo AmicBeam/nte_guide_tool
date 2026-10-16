@@ -67,6 +67,7 @@ class SoADeviceCliTests(unittest.TestCase):
             'teacher_mode': 'network_value', 'opponent_mode': 'policy',
             'prior': 'array_zhenhong', 'extra_guidance_simulations': 0,
             'cpu_fallback': False,
+            'world_sampling': 'per_decision',
         })
         self.assertEqual(plan['presets'], [
             'starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke'])

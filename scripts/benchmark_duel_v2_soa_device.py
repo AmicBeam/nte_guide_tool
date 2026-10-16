@@ -19,7 +19,8 @@ KEYS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', '
 SEARCH = dict(
     simulations=32, gumbel_candidates=16, terminal_horizon=0,
     teacher_mode='network_value', opponent_mode='policy',
-    prior='array_zhenhong', extra_guidance_simulations=0, cpu_fallback=False)
+    prior='array_zhenhong', extra_guidance_simulations=0, cpu_fallback=False,
+    world_sampling='per_decision')
 STAGE_SOURCE = r"""
 __device__ unsigned long long ticks(){unsigned long long t;asm volatile("mov.u64 %0, %%globaltimer;":"=l"(t));return t;}
 extern "C" __global__ void begin_span(long long* start,long long* live,const unsigned char* active,int rows,int site){
@@ -296,7 +297,7 @@ class IsolatedCohort:
             self.rules, shared['inference'], shared['inference'], self.stats, self.keys,
             rows=B, random=self.random, max_actions=shared['max_actions'], zhenhong_prior=True,
             noise=True, max_depth=10, value_batch_rows=min(8, B), queued_row_work=True,
-            row_work_seconds=seconds, reuse_root_policy_value=False,
+            row_work_seconds=seconds, reuse_root_policy_value=True,
             group_ready_leaves=True, reuse_interior_observation=True)
         policy = DeviceGamePolicySink(self.light)
         self.sink = RawActionPolicySink(policy, self.raw)
@@ -313,6 +314,13 @@ class IsolatedCohort:
         install_root_diagnostics(self,torch,B,shared['max_actions'])
         try:
             self.timing = StageTiming(self.loop.device)
+            for name in ('sample_world_device', 'decision_device', 'step_device',
+                         'clean_device', 'metadata_device', 'value_observation_device'):
+                original_rule = getattr(self.rules, name)
+                def timed_rule(states, *args, _name=name, _original=original_rule, **kwargs):
+                    return self.timing.call_mask(_name, states.active,
+                        _original, states, *args, **kwargs)
+                setattr(self.rules, name, timed_rule)
             prior = self.search.prior_guide
             original_prior = prior.score_device
 
@@ -438,6 +446,7 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
         replay_gpu_seconds=replay_gpu,
         per_root_requested=searched.requested.cpu().tolist(),
         per_root_completed=searched.completed.cpu().tolist(),
+        per_root_world_samples=cohort.search.world_samples.cpu().tolist(),
         per_root_search_errors=searched.errors.cpu().tolist(),
         per_root_game_errors=result.errors.cpu().tolist(),
         per_root_steps=result.steps.cpu().tolist(),
@@ -457,6 +466,9 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
                                cohort.raw, cohort.light),
         graph_executed=int(cohort.loop._outer.counter[0].cpu()) > 0)
     payload['peak_device_search_roots']=int(searched.peak_device_roots.cpu())
+    if 'output' in shared:
+        (shared['output'] / 'last-replay.json').write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf8')
     if time.monotonic()>deadline:
         raise TimeoutError('Per-trial CUDA execution budget exceeded')
     if not payload['graph_executed']:
@@ -595,6 +607,7 @@ def verify_last_searches(cohort,shared,states,counts,policy_map,deadline):
         result=search(state,actor,policies,seed=seed,runtime=seven_runtime,simulations=32,
             gumbel_candidates=16,terminal_horizon=0,teacher_mode='network',max_depth=10,
             noise=True,q_scale='natural_wdl',root_prior=guide,
+            world_sampling='per_decision',
             deadline=time.time()+max(0,deadline-time.monotonic()))
         if not result['complete']:
             raise AssertionError('CPU numerical oracle failed to finish its declared budget')
@@ -696,6 +709,7 @@ def run(args):
             parameters.append(row)
         shared = dict(
             rows=args.rows, device=str(device), schema=schema, executor=executor,
+            output=args.output,
             inference=inference, seed=args.seed, max_actions=args.max_actions,models=models,
             proof_seconds=args.proof_seconds,
             inner_max_ticks=args.inner_max_ticks, jobs=jobs, parameters=parameters,
@@ -712,10 +726,12 @@ def run(args):
                 exec_deadline=time.monotonic()+args.execution_seconds
                 cohort = IsolatedCohort(shared, max_decisions=1, seconds=args.execution_seconds)
                 cleanup.callback(cohort.close)
-                payload, _, _, _, _ = run_cohort(
+                payload, initial, final, result, searched = run_cohort(
                     cohort, shared, deadline=exec_deadline, verify=True)
                 if payload['per_root_requested']!=[32]*args.rows or payload['per_root_completed']!=[32]*args.rows:
                     raise AssertionError('One-step timing requires every independent root to finish exactly32')
+                if payload['per_root_world_samples'] != [1]*args.rows:
+                    raise AssertionError('Each physical decision must sample exactly one hidden world')
                 timings.append(dict(
                     trial=trial, warmup=trial < args.warmup, max_decisions=1,
                     capture_seconds=payload['capture_seconds'],
@@ -723,6 +739,7 @@ def run(args):
                     replay_gpu_seconds=payload['replay_gpu_seconds'],
                     complete_root_decisions=payload['complete_root_decisions'],
                     per_root_requested=payload['per_root_requested'],per_root_completed=payload['per_root_completed'],
+                    per_root_world_samples=payload['per_root_world_samples'],
                     graph_executed=payload['graph_executed'],
                     root_prior_separated=payload['root_prior_separated'],
                     stage_timings=payload['stage_timings'], memory=payload['memory']))
@@ -734,12 +751,13 @@ def run(args):
                 raise AssertionError('One-step repeats incomplete')
             report['one_step_repeat_seconds'] = [row['replay_gpu_seconds'] for row in measured]
             report['one_step_capture_seconds'] = [row['capture_seconds'] for row in measured]
-            exec_deadline=time.monotonic()+args.execution_seconds
-            acceptance = IsolatedCohort(
-                shared, max_decisions=args.max_decisions, seconds=args.execution_seconds)
-            cleanup.callback(acceptance.close)
-            payload, initial, final, result, searched = run_cohort(
-                acceptance, shared, deadline=exec_deadline)
+            if args.max_decisions != 1:
+                exec_deadline=time.monotonic()+args.execution_seconds
+                acceptance = IsolatedCohort(
+                    shared, max_decisions=args.max_decisions, seconds=args.execution_seconds)
+                cleanup.callback(acceptance.close)
+                payload, initial, final, result, searched = run_cohort(
+                    acceptance, shared, deadline=exec_deadline)
             report.update(payload)
             report['per_root'] = [dict(
                 row=i, seed=jobs[i]['seed'], first=jobs[i]['first_side'], decks=jobs[i]['keys'],

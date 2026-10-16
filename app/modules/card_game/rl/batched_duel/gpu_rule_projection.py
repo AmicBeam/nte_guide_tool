@@ -915,6 +915,16 @@ def _masked_projection_source(source):
     return source+"\n"+"\n".join(device)
 
 
+def _projection_call_boundaries(source):
+    """Keep public-view helpers out of the giant NVRTC fast-compile frame.
+
+    Only function qualifiers change; heap operations and encoder arithmetic
+    remain identical. Inlining this whole call graph can overflow the device
+    stack before the projection can report a per-row error.
+    """
+    return source.replace('__device__ inline', '__device__ __noinline__')
+
+
 class GraphProjectionKernel:
     """CUDA public-view/legality projector. Does not call host extractors."""
 
@@ -965,12 +975,17 @@ class GraphProjectionKernel:
             specs = {'project_public_decision': _DECISION_SPEC, 'project_public_observation': _OBS_SPEC}
         self._intern_names = intern_names
         specs.update({name+"_device":list(signature)+["uint8*"] for name,signature in list(specs.items())})
-        source = _masked_projection_source(source)
+        source = _projection_call_boundaries(_masked_projection_source(source))
         self.module = CudaModule(
             source,
             specs,
             device=str(self.device),
         )
+        try:
+            self.module.ensure_stack(131072)
+        except BaseException:
+            self.module.close()
+            raise
         payload, offsets, lengths = _intern_buffers(intern_names)
         self._names = torch.tensor(payload, dtype=torch.uint8, device=self.device)
         self._off = torch.tensor(offsets, dtype=torch.int32, device=self.device)

@@ -75,7 +75,7 @@ class DeviceGumbelSearch:
                  allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False,
                  reuse_root_policy_value=False, verify_root_value_reuse=False,
                  group_ready_leaves=False,reuse_interior_observation=False,opponent_mode='rule',
-                 prior_guide=None):
+                 prior_guide=None, reuse_sampled_world=False, reuse_root_decision=False):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -92,6 +92,12 @@ class DeviceGumbelSearch:
         if teacher_mode != 'network_value' and not getattr(rules, 'require_teacher', True):
             raise ValueError('Teacher-free rule adapter requires network_value')
         self.teacher_mode = teacher_mode
+        if type(reuse_sampled_world) is not bool:
+            raise TypeError('Explicit decision-world reuse option required')
+        self.reuse_sampled_world = reuse_sampled_world
+        if type(reuse_root_decision) is not bool or (reuse_root_decision and not reuse_sampled_world):
+            raise ValueError('Root decision reuse requires a decision-scoped checked particle')
+        self.reuse_root_decision = reuse_root_decision
         if opponent_mode not in ('rule', 'policy'):
             raise ValueError('Unknown device opponent mode')
         if opponent_mode == 'rule' and not getattr(rules, 'require_teacher', True):
@@ -191,6 +197,8 @@ class DeviceGumbelSearch:
         self.root_value_reuse_validation_errors = torch.zeros(rows, dtype=torch.int32, **z)
         self._unfinished = torch.zeros(rows, dtype=torch.uint8, **z)
         self._world_live = torch.zeros(rows, dtype=torch.bool, **z)
+        self._sampled_live = torch.zeros_like(self._world_live)
+        self.world_samples = torch.zeros(rows, dtype=torch.int64, **z)
         self._pool = None
         self._root_decision = self._decision = None
         self.row_work = None
@@ -245,10 +253,22 @@ class DeviceGumbelSearch:
         # self.errors while validating/reclaiming the separately issued lease.
         physical = self._is_physical_lease(states)
         self._error(physical, mask & states.active, METADATA_ERROR)
+        shared = (self._is_sampled_lease(states) if self.reuse_sampled_world
+                  else self.t.zeros_like(states.active))
         request = DeviceStateBatch(states.pool, states.slots, states.generations,
-            states.owners, mask & states.active & ~physical, self.t.zeros_like(self.errors))
+            states.owners, mask & states.active & ~physical & ~shared,
+            self.t.zeros_like(self.errors))
         self.rules.release_device(request)
         self._error(request.errors, mask, RULE_ERROR)
+
+    def _sampled_world(self, mask):
+        return DeviceStateBatch(self._pool, self._sampled_slots, self._sampled_generations,
+            self._sampled_owners, mask & self._sampled_live, self.t.zeros_like(self.errors))
+
+    def _is_sampled_lease(self, states):
+        return (self._sampled_live & (states.slots == self._sampled_slots)
+                & (states.generations == self._sampled_generations)
+                & (states.owners == self._sampled_owners))
 
     def _is_physical_lease(self, states):
         t = self.t
@@ -376,6 +396,8 @@ class DeviceGumbelSearch:
         if self._decision is None:
             return
         protected = [self._roots, self._world(self._world_live), action_states(self._root_decision)]
+        if self.reuse_sampled_world:
+            protected.append(self._sampled_world(self._sampled_live))
         if incoming is not None:
             protected.append(action_states(incoming))
         errors = release_actions_device(self._decision, mask, self._roots.owners,
@@ -419,6 +441,9 @@ class DeviceGumbelSearch:
         self._world_slots = roots.slots.clone()
         self._world_generations = roots.generations.clone()
         self._world_owners = roots.owners.clone()
+        self._sampled_slots = roots.slots.clone()
+        self._sampled_generations = roots.generations.clone()
+        self._sampled_owners = roots.owners.clone()
         self.errors.copy_(roots.errors.to(t.int32))
         for value in (self.completed, self.depth, self.node_count, self.keys, self.path_slots,
                       self.path_generations, self.path_actions, self.path_valid, self.actions,
@@ -428,6 +453,8 @@ class DeviceGumbelSearch:
         self.root_value_reuse_rows.zero_()
         self.root_value_reuse_validation_errors.zero_()
         self._world_live.zero_()
+        self._sampled_live.zero_()
+        self.world_samples.zero_()
         if self.root_prior_shifts is not None:
             self.root_prior_shifts.zero_()
         mask = roots.active & (self.errors == 0)
@@ -481,6 +508,18 @@ class DeviceGumbelSearch:
             draw = self.random.gumbel_device(decision.valid, active)
             self._error(draw.errors, active, RANDOM_ERROR)
             self._noise.copy_(draw.values)
+        if self.reuse_sampled_world:
+            sample = active & (self.errors == 0)
+            sampled = self.rules.sample_world_device(self._masked(roots, sample),
+                viewers, world_seed_limbs)
+            self.world_samples.add_(sample.long())
+            self._replace_world(sampled, sample)
+            issued = sample & sampled.active & ~self._is_physical_lease(sampled)
+            for target, source in ((self._sampled_slots, sampled.slots),
+                                   (self._sampled_generations, sampled.generations),
+                                   (self._sampled_owners, sampled.owners)):
+                target.copy_(t.where(issued, source, target))
+            self._sampled_live.logical_or_(issued)
         self.phase.copy_(t.where(roots.active, SAMPLE, DONE))
         self.phase.copy_(t.where(roots.active & (self.errors != 0), CLEANUP, self.phase))
         self._update_predicate()
@@ -520,10 +559,16 @@ class DeviceGumbelSearch:
             self.phase_work[phase].add_((masks[phase] if self.group_ready_leaves else before==phase).long())
 
         sample = masks[SAMPLE]
-        selected_seeds = self._simulation_seeds[self._rows,
-                                                self.completed.clamp(0, self.simulations - 1)]
-        sampled = self.rules.sample_world_device(self._masked(self._roots, sample),
-                                                 self._viewers, selected_seeds)
+        if self.reuse_sampled_world:
+            # No sampler kernels in the simulation loop, even with empty masks.
+            # All traversals borrow the immutable particle issued in initialize.
+            sampled = self._sampled_world(sample)
+        else:
+            selected_seeds = self._simulation_seeds[self._rows,
+                                                    self.completed.clamp(0, self.simulations - 1)]
+            sampled = self.rules.sample_world_device(self._masked(self._roots, sample),
+                                                     self._viewers, selected_seeds)
+            self.world_samples.add_(sample.long())
         # recovery_search starts traversal directly from sample_world. Applying
         # an extra clean here would silently change that source contract.
         self._replace_world(sampled, sample)
@@ -552,10 +597,19 @@ class DeviceGumbelSearch:
         self._error((meta.actors < 0) | (meta.actors > 1), traverse, METADATA_ERROR)
         own = traverse & (meta.actors == self._viewers) & (self.errors == 0)
         opposing = traverse & (meta.actors != self._viewers) & (self.errors == 0)
-        decision = self.rules.decision_device(self._world(own), self._viewers)
-        self._error(decision.errors, own, RULE_ERROR)
+        query = own
+        if self.reuse_root_decision:
+            from dataclasses import replace
+            root_rows = own & (self.depth == 0)
+            self._save_decision(replace(self._root_decision,
+                states=self._world(root_rows)), root_rows)
+            query = own & ~root_rows
+        decision = self.rules.decision_device(self._world(query), self._viewers)
+        self._error(decision.errors, query, RULE_ERROR)
         own = own & (self.errors == 0)
-        self._save_decision(decision, own)
+        self._save_decision(decision, query & (self.errors == 0))
+        if self.reuse_root_decision:
+            decision = self._decision
         hashed = self._hash_decision(decision, own)
         self._error(hashed.errors, own, KEY_ERROR)
         matches = (self.keys == hashed.keys[:, None, :]).all(-1)
@@ -699,6 +753,11 @@ class DeviceGumbelSearch:
             t.zeros_like(self.errors))
         self._release_lease(cleanup_world, cleanup & self._world_live)
         self._world_live.logical_and_(~cleanup)
+        if self.reuse_sampled_world:
+            cached = self._sampled_world(cleanup)
+            # Remove protection only after transient worlds/actions are drained.
+            self._sampled_live.logical_and_(~cleanup)
+            self._release_lease(cached, cleanup)
         for column in range(self.nodes_per_root):
             active = cleanup & (column < self.node_count)
             released = self.statistics.release_nodes(self.node_slots[:, column],

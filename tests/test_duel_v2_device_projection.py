@@ -5,6 +5,68 @@ import unittest
 
 
 class DeviceProjectionTest(unittest.TestCase):
+    def test_public_encoder_call_boundaries_preserve_source(self):
+        from app.modules.card_game.rl.batched_duel.gpu_rule_projection import (
+            _masked_projection_source, _projection_call_boundaries)
+        from app.modules.card_game.rl.batched_duel.gpu_seven_projection import emit_seven_projection_source
+        source = _masked_projection_source(emit_seven_projection_source())
+        bounded = _projection_call_boundaries(source)
+        self.assertNotIn('__device__ inline', bounded)
+        self.assertEqual(bounded.replace('__device__ __noinline__', '__device__ inline'), source)
+
+    def test_actual_cuda_projection_without_vm_stack_setup(self):
+        """The projector must provision its own stack, including fast compilation."""
+        import torch
+        if not torch.cuda.is_available():
+            self.skipTest('Actual CUDA required')
+        import numpy as np
+        from unittest.mock import patch
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+        from app.modules.card_game.engine.duel_v2 import new_game, observe
+        from app.modules.card_game.rl.seven_lineup import encode
+        from app.modules.card_game.rl.batched_duel.codec import pack_states
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        from app.modules.card_game.rl.batched_duel.cuda_vm import DeviceGraph
+        from app.modules.card_game.rl.batched_duel.gpu_rule_projection import GraphProjectionKernel
+        from app.modules.card_game.rl.batched_duel.gpu_seven_candidates import encode_tokens_device
+        decks = {d['id']: d for d in STARTER_DECKS}
+        fixtures, expected = [], []
+        for i, key in enumerate(('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke')):
+            state = new_game(seed=2026+i, first_side='ab'[i % 2], skip_mulligan=bool(i % 2),
+                             decks={'a': decks[key], 'b': decks['lingke']})
+            view = observe(state, 'ab'[i % 2], include_previews=False)
+            actions = [entry['action'] for entry in view['legal_actions'] if entry['action']['type'] != 'concede']
+            fixtures.append((actions, view))
+            expected.append(encode(view, actions))
+        packed = pack_states(fixtures, GraphLayout(7, 16384, 32768, 131072))
+        arena = DeviceGraph(packed.layout, *[torch.tensor(getattr(packed, name), device='cuda')
+                            for name in ('nodes', 'edges', 'payload', 'counts', 'roots')])
+        constants = dict(nodes=torch.zeros((1, 4), dtype=torch.int32, device='cuda'),
+                         edges=torch.zeros((1, 2), dtype=torch.int32, device='cuda'),
+                         payload=torch.zeros(1, dtype=torch.uint8, device='cuda'))
+        executor = SimpleNamespace(_buffers=constants, image=SimpleNamespace(**constants))
+        call = SimpleNamespace(arena=arena, executor=executor, outputs=arena.roots,
+                               statuses=torch.zeros((7, 4), dtype=torch.int32, device='cuda'))
+        active = torch.ones(7, dtype=torch.uint8, device='cuda')
+        with patch.dict('os.environ', {'NTE_CUDA_FAST_COMPILE': 'min'}):
+            with GraphProjectionKernel(runtime='seven', max_candidates=800) as projector:
+                graph = torch.cuda.CUDAGraph()
+                with torch.cuda.graph(graph):
+                    result = projector.project_tokens_device(call, active=active)
+                for mask in ([1]*7, [0, 1, 0, 1, 0, 1, 0], [1]*7):
+                    active.copy_(torch.tensor(mask, dtype=torch.uint8, device='cuda'))
+                    graph.replay()
+                    torch.cuda.synchronize()
+                    dense, errors = encode_tokens_device(result.candidates, device='cuda')
+                    self.assertEqual(result.errors.tolist(), [0]*7)
+                    self.assertEqual(errors.tolist(), [0]*7)
+                    for row, (x, c) in enumerate(expected):
+                        if mask[row]:
+                            np.testing.assert_array_equal(result.observations.observations[row].cpu().numpy(), x)
+                            np.testing.assert_array_equal(dense.candidates[row, :len(c)].cpu().numpy(), c)
+                        else:
+                            self.assertEqual(int(result.candidates.counts[row].cpu()), 0)
+
     def test_actual_cuda_public_projection_capture_and_physical_action_refs(self):
         import torch
         if not torch.cuda.is_available():self.skipTest('Actual CUDA required')

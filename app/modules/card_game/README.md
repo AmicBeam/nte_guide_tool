@@ -1196,3 +1196,11 @@ python -X utf8 scripts/benchmark_duel_v2_soa_device.py --run --program FROZEN_PR
 # 仅在已准备好JAX/Mctx的独立测试环境运行官方数值树对照：
 python scripts/validate_duel_v2_mctx_reference.py --run --exact --require-official --output artifacts/rl-evals/NEW_RUN/mctx
 ```
+
+### 决策内隐藏世界复用
+
+SoA搜索固定每个物理决策只采样一份符合公开信息的假想暗牌，全部32次模拟复用不可变世界；分支推进使用独立状态，下个决策重新采样，完成或失败后回收缓存租约。根观察及完整候选复用，内部和对手局面仍按各自信息重新编码；普通行动／选择阶段共享等价采样检查，换牌保留内外两项完整检查。CPU数值参考显式使用 `recovery_search.search(world_sampling='per_decision')`，历史默认分支保持不变。该近似减少世界覆盖，不代表策略强度已验收。
+
+验证入口为 `tests.test_duel_v2_device_world_reuse`、`tests.test_duel_v2_gpu_sample_guard_views` 及真实CUDA的 `tests.test_duel_v2_device_soa_rules`。`benchmark_duel_v2_soa_device.py` 记录每根实际采样数、完整32预算和分阶段耗时，批次外核对正式动作及相同采样协议的数值参考；只有一批时不宣称稳定吞吐。详见[数组搜索](../../../docs/duel-v2-array-search.md)和[1016协议](../../../docs/duel-v2-soa-1016-acceptance.md)。
+
+公开观察 CUDA 投影器独立准备至少 128 KiB 设备栈，并保留堆操作与编码辅助函数的调用边界，避免快速编译内联产生过大的栈帧。函数正文、观察与完整合法候选语义保持不变。`tests.test_duel_v2_device_projection` 包含不依赖 VM 栈初始化的七队公开局面、换牌／普通行动、混合活动行和重复 CUDA 图回放的逐字节编码对照；该组件验证不替代完整32搜索验收。

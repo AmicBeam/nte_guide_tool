@@ -39,8 +39,8 @@ class SoACudaRuleIntegrationTests(unittest.TestCase):
         from app.modules.card_game.rl.batched_search.device_soa_rules import DeviceSoARules
         cls.schema=compile_execution_schema()
         cls.executor=CudaSoARules(lower_program(program),cls.schema,limits=VmLimits(steps=48000000))
-        cls.store=DeviceSoAStore(cls.schema,8)
-        cls.actions=CompactDeviceGraphStore(slots=8,node_pages=128,edge_pages=128,payload_pages=256,
+        cls.store=DeviceSoAStore(cls.schema,32)
+        cls.actions=CompactDeviceGraphStore(slots=32,node_pages=128,edge_pages=128,payload_pages=256,
             node_page_bytes=16384,edge_page_bytes=16384,payload_page_bytes=4096,
             max_node_pages_per_slot=16,max_edge_pages_per_slot=16,max_payload_pages_per_slot=32)
         cls.rules=DeviceSoARules(cls.executor,cls.store,cls.actions,rows=2)
@@ -95,6 +95,67 @@ class SoACudaRuleIntegrationTests(unittest.TestCase):
         self.assertEqual(unpack_game_states(self.store.gather_device(sampled).to_host()),worlds)
         # Parent states survive both a physical sandbox commit and determinize.
         self.assertEqual(unpack_game_states(self.store.gather_device(roots).to_host()),expected)
+
+    def test_sample_outer_guard_projection_only_active_mulligan_rows(self):
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+        from app.modules.card_game.engine.duel_v2 import new_game,acting_side
+        from app.modules.card_game.rl.batched_duel.device_rule_results import DeviceRuleResultReader
+        from app.modules.card_game.rl.batched_duel.record_soa import unpack_game_states
+        from app.modules.card_game.rl.information_search import sample_world
+        from app.modules.card_game.rl import seven_runtime
+        decks={deck['id']:deck for deck in STARTER_DECKS}
+        mulligan=DeviceRuleResultReader.phase_codes.index('mulligan')
+        cases=(((False,True),[1,0]),((True,True),[0,0]),((False,False),[1,1]))
+        graph=None
+        bound=None
+        recorded=[]
+        seeds=torch.tensor([[2026+i,0,0,0,1] for i in range(2)],dtype=torch.int64,device='cuda')
+        for skips,outer_mask in cases:
+            params=[dict(seed=2026+i,first_side='ab'[i],skip_mulligan=skips[i],decks={
+                'a':decks['zhenhong'],'b':decks['lingke']}) for i in range(2)]
+            expected=[new_game(**param) for param in params]
+            phases=[DeviceRuleResultReader.phase_codes.index(state['phase']) for state in expected]
+            self.assertEqual(outer_mask,[int(code==mulligan) for code in phases],skips)
+            roots=self.rules.initialize_device(params)
+            torch.cuda.synchronize()
+            self.assertEqual(roots.errors.cpu().tolist(),[0,0],skips)
+            original=self.rules._project
+            def spy(call,active):
+                recorded.append(active)
+                return original(call,active)
+            self.rules._project=spy
+            sampled=None
+            try:
+                if graph is None:
+                    from dataclasses import replace
+                    bound=replace(roots,**{name:getattr(roots,name).clone()
+                        for name in ('slots','generations','owners','active','errors')})
+                    graph=torch.cuda.CUDAGraph()
+                    with torch.cuda.graph(graph):
+                        meta=self.rules.metadata_device(bound)
+                        sampled=self.rules.sample_world_device(bound,meta.actors,seeds)
+                    sampled_result=sampled
+                else:
+                    for name in ('slots','generations','owners','active','errors'):
+                        getattr(bound,name).copy_(getattr(roots,name))
+                    sampled=sampled_result
+                graph.replay();torch.cuda.synchronize()
+                masks=[mask.detach().cpu().tolist() for mask in recorded]
+                self.assertEqual(len(masks),4,skips)
+                self.assertEqual(masks[0],[1,1],skips)
+                self.assertEqual(masks[1],masks[0],skips)
+                self.assertEqual(masks[2],outer_mask,skips)
+                self.assertEqual(masks[3],masks[2],skips)
+                self.assertEqual(sampled.errors.cpu().tolist(),[0,0],skips)
+                worlds=[]
+                for i,state in enumerate(expected):
+                    worlds.append(sample_world(state,acting_side(state),(1<<256)+2026+i,runtime=seven_runtime))
+                self.assertEqual(unpack_game_states(self.store.gather_device(sampled).to_host()),worlds,skips)
+            finally:
+                self.rules._project=original
+                self.rules.release_device(roots)
+                if sampled is not None:
+                    self.rules.release_device(sampled)
 
 
 if __name__ == '__main__':

@@ -204,19 +204,37 @@ class DeviceSoARules:
         call=self._invoke('clean',batch,scratch,scratch.roots[:,None].contiguous(),active)
         return self._commit(call,states.owners,active,errors)
 
+    def _compare_sampled_guard(self, call, guard, active, errors):
+        from .device_view_sampler import compare_projected_views_device
+        pair=[]
+        for member in (0,1):
+            selected=self.executor.select_result(call,(1,guard,member),active=active)
+            pair.append(self._project(selected,active))
+        errors.bitwise_or_(compare_projected_views_device(pair[0],pair[1],active.bool(),self.templates))
+        self._keepalive.append(pair)
+        return errors
+
     def sample_world_device(self, states, viewers, seeds):
         batch,scratch,errors,active=self._begin(states)
+        unary=scratch.roots[:,None].contiguous()
+        actor=self._invoke('acting_side',batch,scratch,unary,active)
+        ended=self._invoke('finished',batch,scratch,unary,active)
+        meta=self.executor.metadata(actor,ended,active)
+        errors=errors|meta.errors
+        active=(states.active & (errors==0)).view(self.t.uint8)
         refs,extra=self._bind(scratch,viewers,active,seeds=seeds)
         errors.bitwise_or_(extra)
         active=(states.active & (errors==0)).view(self.t.uint8)
         call=self._invoke('sample_world_guard_views_packet',batch,scratch,refs,active)
-        from .device_view_sampler import compare_projected_views_device
-        for guard in (0,1):
-            pair=[]
-            for member in (0,1):
-                selected=self.executor.select_result(call,(1,guard,member),active=active)
-                pair.append(self._project(selected,active))
-            errors.bitwise_or_(compare_projected_views_device(pair[0],pair[1],active.bool(),self.templates))
+        from ..batched_duel.device_rule_results import DeviceRuleResultReader
+        mulligan=DeviceRuleResultReader.phase_codes.index('mulligan')
+        # Playing/choice inner and outer pairs alias exactly. Mulligan needs a
+        # second encoded pair. Device masks skip native projection work on
+        # inactive outer rows without host reads or capture-unsafe branches.
+        outer_active=(active.bool() & (meta.phases==mulligan)).to(dtype=self.t.uint8).contiguous()
+        self._keepalive.append((meta,outer_active,unary,actor,ended))
+        errors=self._compare_sampled_guard(call,0,active,errors)
+        errors=self._compare_sampled_guard(call,1,outer_active,errors)
         world=self.executor.select_result(call,(0,),active=active)
         return self._commit(world,states.owners,active,errors)
 
@@ -295,7 +313,7 @@ def create_soa_search(rules,inference,auxiliary,statistics,keys,*,rows,random,
     if not isinstance(rules,DeviceSoARules):
         raise TypeError('Typed domain SoA rules required')
     reserved={'teacher_mode','terminal_horizon','opponent_mode','prior_guide',
-              'simulations','gumbel_candidates','device'}
+              'simulations','gumbel_candidates','device','reuse_sampled_world','reuse_root_decision'}
     if reserved & set(options):
         raise ValueError('SoA search fixes Gumbel32/cap16/network-WDL/policy opponents')
     from .array_zhenhong_prior import ArrayZhenhongPrior
@@ -304,4 +322,4 @@ def create_soa_search(rules,inference,auxiliary,statistics,keys,*,rows,random,
     return DeviceGumbelSearch(rules,inference,auxiliary,statistics,keys,rows=rows,
         max_actions=max_actions,simulations=32,gumbel_candidates=16,terminal_horizon=0,
         teacher_mode='network_value',opponent_mode='policy',prior_guide=prior,random=random,
-        device=str(rules.device),**options)
+        device=str(rules.device),reuse_sampled_world=True,reuse_root_decision=True,**options)

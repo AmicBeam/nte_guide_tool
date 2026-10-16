@@ -112,3 +112,7 @@ python scripts/refresh_guide_data.py --transport curl
 `scripts/guide_challenge_schedule.py` 统一维护这14期日历，在显式刷新时覆盖不适用于国服的旧日期，并只处理已约定的赛期ID；常驻节理环线不填起止日期，未知新增赛期不自动延伸。可单独运行 `python scripts/guide_challenge_schedule.py` 更新本地日历；常规 `refresh_guide_data.py` 自动应用相同规则。网页、JSON、Markdown、CLI使用相同日期。
 
 日历验证：`.venv/bin/python -m unittest tests.test_guide_challenge_schedule tests.test_guide -v`，覆盖首期特例、14日连续性、未知赛期保留空值、国服日期与末期名称在各格式中的一致性。
+
+环线详情的共鸣为单个对象，独立显示 `resonance.name` 与 `resonance.description`；角色共鸣仍按列表展示。测试覆盖全部15个环线的共鸣名称与完整效果正文。
+
+详情目录固定在视口左侧，不占正文布局宽度；正文沿用1240px居中容器和对称留白。视口不超过1680px时，目录通过左下角按钮展开为浮层；展开与收起都不移动或压缩正文。

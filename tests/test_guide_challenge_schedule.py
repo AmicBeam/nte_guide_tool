@@ -28,6 +28,20 @@ class ChallengeScheduleTest(unittest.TestCase):
         self.assertIsNone(records[14]['begin_date'])
         self.assertIsNone(records[15]['begin_date'])
 
+    def test_every_challenge_shows_resonance_name_and_effect(self):
+        app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
+        app.register_blueprint(blueprint)
+        client = app.test_client()
+        for challenge in service.catalog()['challenges']:
+            with self.subTest(challenge=challenge['id']):
+                response = client.get('/guide/challenges/' + challenge['id'] + '?stage=1')
+                self.assertEqual(response.status_code, 200)
+                section = response.text.split('id="section-resonance"', 1)[1].split('</section>', 1)[0]
+                self.assertIn(challenge['resonance']['name'], section)
+                from html import unescape
+                self.assertIn(challenge['resonance']['description'], unescape(section))
+                self.assertNotIn('built-in method', section)
+
     def test_public_dates_and_unnamed_last_season(self):
         app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
         app.register_blueprint(blueprint)

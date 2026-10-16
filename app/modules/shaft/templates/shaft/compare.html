@@ -24,10 +24,11 @@
   </form>
   <section class="compare-card" id="compare-results" hidden aria-labelledby="results-heading">
     <h2 id="results-heading">03 · 计算结果</h2><div id="compare-baseline"></div>
-    <p class="compare-note">按全队总伤排序；提升均相对原轴重算基准。角色自身伤害不含单列的环合与倾陷伤害。存在自检提示的组合仍是试算结果，请先检查动作与资源条件。</p>
-    <div class="compare-table-scroll"><table><thead><tr><th>组合</th><th>全队总伤 / DPS</th><th>较原轴</th><th>角色自身</th><th>全队环合 / 倾陷</th><th>详情</th></tr></thead><tbody id="compare-rows"></tbody></table></div>
+    <p class="compare-note">原轴重算结果为100%；表格数值表示该组合全队总伤相对原轴的比例。每种卡带单独成表，点击数字查看组合详情。零伤基准显示“—”。</p>
+    <div id="compare-matrices"></div>
     <button type="button" id="compare-download" disabled>下载比较结果 CSV</button>
   </section>
+  <dialog id="compare-detail" aria-labelledby="compare-detail-title"><div class="compare-detail-content"><div class="compare-detail-heading"><h2 id="compare-detail-title">组合详情</h2><button type="button" id="compare-detail-close" aria-label="关闭组合详情">关闭</button></div><div id="compare-detail-body"></div></div></dialog>
   <noscript>请开启 JavaScript 以读取在线排轴并进行配装比较。角色资料仍可匿名阅读。</noscript>
 </main>
 {% endblock %}

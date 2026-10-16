@@ -25,6 +25,8 @@ class ShaftComparisonTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('window.location.replace', response.text)
         self.assertIn('data-axis-id="1"', response.text)
+        self.assertIn('id="compare-matrices"', response.text)
+        self.assertIn('id="compare-detail"', response.text)
         self.assertNotIn('compare-draft', response.text)
         self.assertNotIn('compare-axis"', response.text)
         for asset in ['js/shaft_compare_page.js', 'js/shaft_comparison.js',
@@ -50,6 +52,7 @@ const selection = {character_id: member.character_id, arc_ids:[member.arc_id],
   refinement:snapshot.arc_refinement};
 const original = JSON.stringify(axis);
 const messages = [...comparison.compare(axis, catalog, selection, engine, checks)];
+assert.equal(messages[1].row.baseline_percent, 100, 'Original equipment must be exactly 100% of baseline');
 assert.equal(messages[1].row.increase_percent, 0, 'Original equipment must have exactly zero difference');
 assert.deepEqual(messages[1].row.warnings, messages[0].baseline.warnings);
 assert.equal(JSON.stringify(axis), original, 'The source axis and its build mirror must not be mutated');
@@ -61,6 +64,7 @@ const candidate = clone(axis);
 Object.assign(candidate.team[0], {arc_id:arc.id, arc_refinement:1, cartridge_main_stat:'暴伤'});
 const expected = engine.simulateAxis(candidate, catalog);
 assert.equal(output[1].row.total_damage, expected.summary.total_damage);
+assert.equal(output[1].row.baseline_percent, expected.summary.total_damage / output[0].baseline.total_damage * 100);
 assert.equal(output[1].row.own_damage, expected.damage_by_slot.find(m => m.slot === member.slot).damage);
 assert.equal(output[1].row.harmony_damage, expected.summary.harmony_damage);
 assert.equal(output[1].row.stagger_damage, expected.summary.stagger_damage);
@@ -71,6 +75,8 @@ const wrongType = catalog.arcs.find(a => a.adaptation !== snapshot.character.ada
 assert.throws(() => [...comparison.compare(axis,catalog,{...selection,arc_ids:[wrongType.id]},engine,checks)], /适应类型/);
 assert.throws(() => [...comparison.compare(axis,catalog,{...selection,main_stats:['invalid']},engine,checks)], /未知主词条/);
 assert.throws(() => [...comparison.compare(axis,catalog,{...selection,arc_ids:[]},engine,checks)], /至少选择/);
+assert.throws(() => [...comparison.compare(axis,catalog,{...selection,arc_ids:['']},engine,checks)], /适应类型/);
+assert.throws(() => [...comparison.compare(axis,catalog,{...selection,cartridge_ids:['']},engine,checks)], /未知卡带/);
 assert.throws(() => [...comparison.compare(axis,catalog,{...selection,refinement:6},engine,checks)], /精炼档位/);
 assert.throws(() => [...comparison.compare(axis,catalog,{...selection,character_id:'absent'},engine,checks)], /没有这个角色/);
 const restricted = clone(catalog);
@@ -80,11 +86,25 @@ const tooMany = {...selection,arc_ids:catalog.arcs.filter(a=>a.adaptation===snap
   cartridge_ids:catalog.cartridges.map(c=>c.id),main_stats:Object.keys(catalog.formula_constants.cartridge_main_stat_options)};
 assert.throws(() => [...comparison.compare(axis,catalog,tooMany,engine,checks)], /600/);
 
+const unequipped = clone(axis);
+unequipped.team[0].arc_id = '';
+unequipped.team[0].cartridge_id = '';
+if (unequipped.character_builds?.[member.character_id]) {
+  unequipped.character_builds[member.character_id].arc_id = '';
+  unequipped.character_builds[member.character_id].cartridge_id = '';
+}
+const equippedCandidates = [...comparison.compare(unequipped,catalog,selection,engine,checks)];
+assert.equal(equippedCandidates[0].baseline_options.arc_id,'');
+assert.equal(equippedCandidates[0].baseline_options.cartridge_id,'');
+assert.equal(equippedCandidates[1].row.arc_id, member.arc_id);
+assert.ok(Number.isFinite(equippedCandidates[1].row.baseline_percent));
+
 const empty = clone(axis);
 empty.steps = [{id:'noop',slot:member.slot,action_id:'action_none_'+member.character_id.replace('char_',''),start_tick:0}];
 empty.team = [member];
 const zero = [...comparison.compare(empty,catalog,selection,engine,checks)];
 assert.equal(zero[0].baseline.total_damage,0);
+assert.equal(zero[1].row.baseline_percent,null);
 assert.equal(zero[1].row.increase_percent,null, 'A zero baseline must not produce Infinity or a fabricated percent');
 console.log('comparison invariants passed');
 '''

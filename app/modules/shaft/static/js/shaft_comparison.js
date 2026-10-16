@@ -22,9 +22,9 @@
     if (!Number.isInteger(refinement) || refinement < 1 || refinement > 5) throw new Error('精炼档位须为 1–5。');
     for (const id of arcIds) {
       const arc = catalog.arcs.find(item => item.id === id);
-      if (id !== '' && (!arc || arc.adaptation !== character.adaptation)) throw new Error('弧盘与角色适应类型不匹配。');
+      if (!arc || arc.adaptation !== character.adaptation) throw new Error('弧盘与角色适应类型不匹配。');
     }
-    if (cartridgeIds.some(id => id !== '' && !catalog.cartridges.some(item => item.id === id))) throw new Error('存在未知卡带。');
+    if (cartridgeIds.some(id => !catalog.cartridges.some(item => item.id === id))) throw new Error('存在未知卡带。');
     if (mainStats.some(stat => !Object.hasOwn(catalog.formula_constants.cartridge_main_stat_options, stat))) throw new Error('存在未知主词条。');
     const total = arcIds.length * cartridgeIds.length * mainStats.length;
     if (total > MAX_COMBINATIONS) throw new Error(`一次最多比较 ${MAX_COMBINATIONS} 个组合，请减少勾选项。`);
@@ -88,6 +88,7 @@
       }).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 5);
       completed++;
       yield {type: 'row', completed, total, row: {...option, ...summary, action_changes: actionChanges,
+        baseline_percent: baseline.total_damage > 0 ? summary.total_damage / baseline.total_damage * 100 : null,
         increase_percent: baseline.total_damage > 0 ? (summary.total_damage / baseline.total_damage - 1) * 100 : null}};
     }
   }

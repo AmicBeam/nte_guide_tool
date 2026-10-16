@@ -25,6 +25,8 @@
     if (message) $('compare-progress').textContent = message;
   }
   function clearResults() {
+    if ($('compare-detail').open) $('compare-detail').close();
+    $('compare-matrices').replaceChildren();
     stop(); state.rows = []; state.baseline = null; state.baselineOptions = null;
     $('compare-results').hidden = true;
     $('compare-download').disabled = true;
@@ -46,8 +48,8 @@
     const character = state.catalog.characters.find(item => item.id === member.character_id);
     const arcs = state.catalog.arcs.filter(arc => arc.adaptation === character.adaptation);
     const defaultArcs = new Set([member.arc_id || '', ...arcs.slice(0, 2).map(item => item.id)]);
-    checks('arcs', [{id:'', name:'不装备弧盘'}, ...arcs], defaultArcs);
-    checks('cartridges', [{id:'', name:'不装备卡带'}, ...state.catalog.cartridges], new Set([member.cartridge_id || '', state.catalog.cartridges[0]?.id].filter(id => id !== undefined)));
+    checks('arcs', arcs, defaultArcs);
+    checks('cartridges', state.catalog.cartridges, new Set([member.cartridge_id || '', state.catalog.cartridges[0]?.id].filter(id => id !== undefined)));
     const stats = Object.entries(state.catalog.formula_constants.cartridge_main_stat_options).map(([id, option]) => ({id, name: option.label + (option.modifier_key ? '' : '（不参与伤害）')}));
     checks('stats', stats, new Set([member.cartridge_main_stat, '属伤', '暴击', '暴伤', '攻击']));
     $('compare-refinement').value = '1';
@@ -99,17 +101,42 @@
   function label(kind, id) {
     return state.catalog[kind].find(item => item.id === id)?.name || (kind === 'arcs' ? '不装备弧盘' : '不装备卡带');
   }
-  const percent = value => value === null ? '—' : `${value > 0 ? '+' : ''}${num(value).toFixed(2)}%`;
+  const percent = value => value == null ? '—' : `${num(value).toFixed(2)}%`;
   const delta = (value, baseline) => `${num(value) - num(baseline) >= 0 ? '+' : ''}${format(num(value) - num(baseline))}`;
   function renderBaseline() {
     const b = state.baseline;
     const o = state.baselineOptions;
-    $('compare-baseline').innerHTML = `<p>原轴基准：${esc(label('arcs', o.arc_id))} · ${o.arc_refinement} 精 / ${esc(label('cartridges', o.cartridge_id))} / ${esc(state.catalog.formula_constants.cartridge_main_stat_options[o.main_stat]?.label || o.main_stat)}</p><div class="compare-baseline-grid">${[['全队总伤', b.total_damage], ['全队 DPS', b.dps], ['角色自身伤害', b.own_damage], ['轴长（秒）', b.duration_seconds]].map(([name,value]) => `<div><small>${name}</small><strong>${name.includes('轴长') ? num(value).toFixed(1) : format(value)}</strong></div>`).join('')}</div>${b.warnings.length ? `<details class="compare-warning"><summary>原轴有 ${b.warnings.length} 项自检提示</summary><ul>${b.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : ''}`;
+    $('compare-baseline').innerHTML = `<p>原轴基准（100%）：${esc(label('arcs', o.arc_id))} · ${o.arc_refinement} 精 / ${esc(label('cartridges', o.cartridge_id))} / ${esc(state.catalog.formula_constants.cartridge_main_stat_options[o.main_stat]?.label || o.main_stat)}</p><div class="compare-baseline-grid">${[['全队总伤', b.total_damage], ['全队 DPS', b.dps], ['角色自身伤害', b.own_damage], ['轴长（秒）', b.duration_seconds]].map(([name,value]) => `<div><small>${name}</small><strong>${name.includes('轴长') ? num(value).toFixed(1) : format(value)}</strong></div>`).join('')}</div>${b.warnings.length ? `<details class="compare-warning"><summary>原轴有 ${b.warnings.length} 项自检提示</summary><ul>${b.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : ''}`;
   }
   function renderRows() {
-    const b = state.baseline;
     state.rows.sort((a,b) => b.total_damage - a.total_damage);
-    $('compare-rows').innerHTML = state.rows.map((row, index) => `<tr><td><strong>${index + 1}. ${esc(label('arcs', row.arc_id))} · ${row.arc_refinement} 精</strong>${esc(label('cartridges', row.cartridge_id))}<small>${esc(state.catalog.formula_constants.cartridge_main_stat_options[row.main_stat]?.label || row.main_stat)}</small></td><td>${format(row.total_damage)}<small>${format(row.dps)} DPS</small></td><td class="${row.increase_percent > 0 ? 'compare-positive' : row.increase_percent < 0 ? 'compare-negative' : ''}">${percent(row.increase_percent)}</td><td>${format(row.own_damage)}<small>${delta(row.own_damage, b.own_damage)}</small></td><td>${format(row.harmony_damage)} / ${format(row.stagger_damage)}<small>${delta(row.harmony_damage, b.harmony_damage)} / ${delta(row.stagger_damage, b.stagger_damage)}</small></td><td><details><summary>${row.warnings.length ? `${row.warnings.length} 项提示 · ` : ''}收益明细</summary><p>全队直伤变化 ${delta(row.direct_damage, b.direct_damage)}；其他伤害变化 ${delta(row.other_damage, b.other_damage)}。</p><ul>${row.action_changes.map(item => `<li>${esc(item.name)}：${format(item.damage)}（${delta(item.delta, 0)}）</li>`).join('')}</ul>${row.warnings.length ? `<p class="compare-warning">自检提示</p><ul>${row.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : '<p>本组合未检出动作与资源问题。</p>'}</details></td></tr>`).join('');
+    const indexed = state.rows.map((row, index) => ({row, index}));
+    const cartridges = [...new Set(state.rows.map(row => row.cartridge_id))];
+    const statNames = state.catalog.formula_constants.cartridge_main_stat_options;
+    $('compare-matrices').innerHTML = cartridges.map(cartridgeId => {
+      const entries = indexed.filter(entry => entry.row.cartridge_id === cartridgeId);
+      const stats = Object.keys(statNames).filter(stat => entries.some(entry => entry.row.main_stat === stat));
+      const arcs = [...new Set(entries.map(entry => entry.row.arc_id))];
+      const cellMap = new Map(entries.map(entry => [JSON.stringify([entry.row.arc_id, entry.row.main_stat]), entry]));
+      return `<section class="compare-matrix-section"><h3>${esc(label('cartridges', cartridgeId))} · ${entries[0].row.arc_refinement} 精弧盘</h3><div class="compare-table-scroll"><table class="compare-matrix" aria-label="${esc(label('cartridges', cartridgeId))}配装收益"><thead><tr><th scope="col">弧盘 / 卡带主词条</th>${stats.map(stat => `<th scope="col">${esc(statNames[stat].label)}</th>`).join('')}</tr></thead><tbody>${arcs.map(arcId => `<tr><th scope="row">${esc(label('arcs', arcId))}</th>${stats.map(stat => {
+        const entry = cellMap.get(JSON.stringify([arcId, stat]));
+        if (!entry) return '<td>—</td>';
+        const ratio = entry.row.baseline_percent;
+        const color = ratio > 100 ? 'compare-positive' : ratio != null && ratio < 100 ? 'compare-negative' : '';
+        return `<td><button type="button" class="compare-cell ${color}" data-result-index="${entry.index}" aria-haspopup="dialog" aria-label="${esc(label('arcs', arcId))}，${esc(statNames[stat].label)}，${percent(ratio)}，查看详情">${percent(ratio)}</button></td>`;
+      }).join('')}</tr>`).join('')}</tbody></table></div></section>`;
+    }).join('');
+  }
+  function openResult(index) {
+    const row = state.rows[index];
+    const b = state.baseline;
+    if (!row || !b) return;
+    const dialog = $('compare-detail');
+    $('compare-detail-title').textContent = `${label('arcs', row.arc_id)} · ${row.arc_refinement} 精`;
+    const stat = state.catalog.formula_constants.cartridge_main_stat_options[row.main_stat]?.label || row.main_stat;
+    const metrics = [['全队总伤','total_damage'],['全队 DPS','dps'],['角色自身伤害','own_damage'],['全队环合伤害','harmony_damage'],['全队倾陷伤害','stagger_damage'],['其他伤害','other_damage']];
+    $('compare-detail-body').innerHTML = `<p>${esc(label('cartridges', row.cartridge_id))} · 主词条 ${esc(stat)}</p><p class="compare-detail-ratio">${percent(row.baseline_percent)}<small>原轴基准为100%</small></p><div class="compare-table-scroll"><table class="compare-detail-table"><thead><tr><th>指标</th><th>原轴</th><th>该组合</th><th>变化</th></tr></thead><tbody>${metrics.map(([name,key]) => `<tr><th scope="row">${name}</th><td>${format(b[key])}</td><td>${format(row[key])}</td><td>${delta(row[key], b[key])}</td></tr>`).join('')}</tbody></table></div><h3>主要动作变化</h3><ul>${row.action_changes.map(item => `<li>${esc(item.name)}：${format(item.damage)}（${delta(item.delta, 0)}）</li>`).join('')}</ul>${row.warnings.length ? `<h3 class="compare-warning">自检提示（${row.warnings.length}）</h3><ul class="compare-warning">${row.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : '<p class="compare-note">本组合未检出动作与资源问题。</p>'}`;
+    dialog.showModal();
   }
   function run(event) {
     event.preventDefault(); clearResults();
@@ -126,15 +153,15 @@
       if (data.type === 'error') { stop(data.error); $('compare-results').hidden = true; return; }
       if (data.type === 'baseline') { state.baseline = data.baseline; state.baselineOptions = data.baseline_options; renderBaseline(); }
       if (data.type === 'row') { state.rows.push(data.row); $('compare-progress').textContent = `已计算 ${data.completed} / ${data.total} 个组合`; }
-      if (data.type === 'done') { renderRows(); $('compare-results').hidden = false; $('compare-download').disabled = false; stop(`已完成 ${state.rows.length} 个组合，按全队总伤排序。`); }
+      if (data.type === 'done') { renderRows(); $('compare-results').hidden = false; $('compare-download').disabled = false; stop(`已完成 ${state.rows.length} 个组合，按卡带分表展示。`); }
     };
     worker.onerror = () => { if (state.worker === worker) { stop('计算未完成，请刷新后重试。'); $('compare-results').hidden = true; } };
     worker.postMessage({axis:state.axis, catalog:state.catalog, selection});
   }
   function download() {
     const cell = value => `"${String(typeof value === 'string' && /^[=+\-@]/.test(value) ? `'${value}` : value ?? '').replace(/"/g, '""')}"`;
-    const rows = [['参考轴',state.source.title,'角色',state.catalog.characters.find(c => c.id === $('compare-target').value)?.name], ['条件','固定原轴动作、队友、敌人、觉醒、技能、空幕与副词条；候选统一精炼'], ['基准总伤',state.baseline.total_damage,'基准DPS',state.baseline.dps], ['弧盘','精炼','卡带','主词条','全队总伤','DPS','较原轴提升%','角色自身伤害','全队环合','全队倾陷','自检提示']];
-    for (const row of state.rows) rows.push([label('arcs',row.arc_id),row.arc_refinement,label('cartridges',row.cartridge_id),state.catalog.formula_constants.cartridge_main_stat_options[row.main_stat]?.label,row.total_damage,row.dps,row.increase_percent,row.own_damage,row.harmony_damage,row.stagger_damage,row.warnings.join('；')]);
+    const rows = [['参考轴',state.source.title,'角色',state.catalog.characters.find(c => c.id === $('compare-target').value)?.name], ['条件','固定原轴动作、队友、敌人、觉醒、技能、空幕与副词条；候选统一精炼'], ['基准总伤',state.baseline.total_damage,'基准DPS',state.baseline.dps], ['弧盘','精炼','卡带','主词条','全队总伤','DPS','原轴为100%的比例%','角色自身伤害','全队环合','全队倾陷','自检提示']];
+    for (const row of state.rows) rows.push([label('arcs',row.arc_id),row.arc_refinement,label('cartridges',row.cartridge_id),state.catalog.formula_constants.cartridge_main_stat_options[row.main_stat]?.label,row.total_damage,row.dps,row.baseline_percent,row.own_damage,row.harmony_damage,row.stagger_damage,row.warnings.join('；')]);
     const url = URL.createObjectURL(new Blob(['\ufeff' + rows.map(row => row.map(cell).join(',')).join('\r\n')], {type:'text/csv;charset=utf-8'}));
     const link = document.createElement('a'); link.href = url; link.download = '配装收益对比.csv'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -155,6 +182,12 @@
     };
     $('compare-cancel').onclick = () => { stop('已取消计算，参考轴保持原样。'); state.rows = []; };
     $('compare-download').onclick = download;
+    $('compare-matrices').onclick = event => {
+      const button = event.target.closest('[data-result-index]');
+      if (button) openResult(Number(button.dataset.resultIndex));
+    };
+    $('compare-detail-close').onclick = () => $('compare-detail').close();
+    $('compare-detail').addEventListener('click', event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
     try {
       state.catalog = await request('/api/shaft/catalog');
       if (!lockedCharacter || !state.catalog.characters.some(item => item.id === lockedCharacter && !item.selection_disabled)) throw new Error('当前角色尚不可用于配装试算，请返回角色页查看相关排轴。');

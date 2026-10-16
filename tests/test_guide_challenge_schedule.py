@@ -1,5 +1,6 @@
 """Challenge dates remain coherent across refresh and public formats."""
 import importlib.util
+import re
 from pathlib import Path
 import unittest
 from datetime import date
@@ -52,7 +53,7 @@ class ChallengeScheduleTest(unittest.TestCase):
         self.assertEqual(last['name'], '未命名环线')
         self.assertEqual((last['begin_date'], last['end_date']), ('2026-11-13', '2026-11-27'))
         html = client.get('/guide?kind=challenges').text
-        self.assertIn('2026-10-16 → 2026-10-30', html)
+        self.assertIn('2026-10-16 → 2026-10-30', re.sub(r'<[^>]+>', '', html))
         self.assertIn('未命名环线', html)
         self.assertIn('长期开放', html)
         self.assertNotIn('日期未提供', html)

@@ -7,3 +7,10 @@
   border-color:var(--g-accent);
   box-shadow:0 0 0 2px #c9f47a88,0 0 28px #c9f47a33;
 }
+
+.guide-challenge-card{display:flex;flex-direction:column}
+.guide-challenge-card .guide-card-identity{margin:0 0 10px}
+.guide-challenge-label{align-self:flex-start;color:var(--g-dim);font-size:11px}
+.guide-challenge-card .guide-card-bottom{margin-top:auto;padding-top:20px;align-items:flex-end;flex-wrap:wrap}
+.guide-challenge-dates{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:2px 4px;margin-left:auto;text-align:right}
+.guide-challenge-dates span{white-space:nowrap}

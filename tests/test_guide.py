@@ -218,7 +218,10 @@ class GuideTest(unittest.TestCase):
         self.assertNotEqual(by_id['1046']['assets'], by_id['1051']['assets'])
         html = self.client.get('/guide/characters/1042').text
         self.assertIn('黑羽高清立绘', html)
-        self.assertIn('黑羽头像', html)
+        self.assertNotIn('黑羽头像', html)
+        self.assertNotIn('查看高清立绘', html)
+        self.assertNotIn('Markdown ↗', html)
+        self.assertNotIn('JSON ↗', html)
         self.assertNotIn('默认立绘预览', html)
 
     def test_errors_and_discovery(self):

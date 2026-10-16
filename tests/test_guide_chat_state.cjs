@@ -21,3 +21,13 @@ test('latest six images are sent while old local images remain intact',()=>{
  assert.match(context[0].text,/早前图片/);assert.deepEqual(context[7].images,['data:7']);
  assert.equal(messages[0].images.length,1);
 });
+test('long answers stay within the server limit and retain references for follow-up',()=>{
+ const messages=[{role:'assistant',text:'长'.repeat(24000),timestamp:1,
+   sources:[{title:'配队攻略',url:'https://www.taptap.cn/moment/123456789012345678'}]}];
+ const context=state.context(messages);
+ assert.equal(context[0].text.length,12000);
+ assert.match(context[0].text,/配队攻略: https:\/\/www.taptap.cn\/moment\/123456789012345678/);
+ assert.equal(messages[0].text.length,24000);
+ messages[0].sources=Array.from({length:20},()=>({title:'标题'.repeat(100),url:'https://example.com/'+ 'x'.repeat(600)}));
+ assert.equal(state.context(messages)[0].text.length,12000);
+});

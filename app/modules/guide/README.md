@@ -302,7 +302,7 @@ HTTP入口为`GET /api/guide/axes`（重复`character`参数）和`GET /api/guid
 
 验证：`.venv/bin/python -m unittest tests.test_guide_chat tests.test_guide_bot_tools tests.test_guide_builds tests.test_module_routes -q`；`node --test tests/test_guide_chat_state.cjs`。还需真实模型验证工具调用和图片识别，真实TapTap验证搜索、正文和一图流；浏览器验证登录显示、桌面非模态操作、390px手机、跨页恢复、6小时边界、账号切换、图片上传与错误状态。
 
-阶段状态：基础接口、工具、浏览器存储及浮动界面已实现，单元与模块回归通过，原生模型图片识别及公开TapTap检索已联通；完整桌面／移动端浏览器联测尚待完成。
+验收状态：单元与模块回归通过；真实模型已验证本站资料查询、当前页面切换、TapTap搜索与图片识别。桌面1280×900和手机390×844已核对浮窗／全屏布局、弹窗外操作、收起恢复滚动、刷新恢复图文历史及匿名隐藏入口。模型上下文按单条12000字裁剪并保留有界回答引用，完整本地记录不变；外部附图在同批工具结果全部返回后追加。
 
 ## 攻略助手消息额度
 

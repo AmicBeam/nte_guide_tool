@@ -12,6 +12,23 @@ from unittest.mock import patch
 
 
 class HistoryTest(unittest.TestCase):
+    def test_parallel_tool_replies_precede_external_images(self):
+        service = importlib.import_module('app.modules.guide.chat_service')
+        calls = [{'id': f'call-{i}', 'type': 'function', 'function': {
+            'name': 'read_taptap', 'arguments': '{}'}} for i in range(2)]
+        seen = []
+        def complete(settings, messages, tools):
+            seen.append(json.loads(json.dumps(messages)))
+            return {'tool_calls': calls} if len(seen) == 1 else {'content': '已读取。'}
+        with patch.object(service.chat_model, 'complete', side_effect=complete), \
+                patch.object(service.chat_tools, 'Toolkit') as toolkit:
+            toolkit.return_value.execute.return_value = ({'images_read': 1}, ['data:synthetic'])
+            toolkit.return_value.sources = []
+            list(service.events({}, [{'role': 'user', 'content': '读取两篇攻略'}], None, None, '/guide'))
+        self.assertEqual([row['role'] for row in seen[1]],
+                         ['system', 'user', 'assistant', 'tool', 'tool', 'user', 'user'])
+        self.assertIn('call-0', seen[1][-2]['content'][0]['text'])
+
     def test_six_hour_boundary_and_multimodal_input(self):
         history = importlib.import_module('app.modules.guide.chat_history')
         now = 1000000

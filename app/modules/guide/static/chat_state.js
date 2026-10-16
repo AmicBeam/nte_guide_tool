@@ -14,11 +14,16 @@
     let pictures = 6, text = 60000;
     const rows = [];
     for (const message of [...messages].slice(-32).reverse()) {
-      if (message.text.length > text) break;
-      text -= message.text.length;
       const images = message.images || [];
       const included = images.length <= pictures;
-      rows.push({role:message.role, text:message.text + (!included && images.length ? '\n[早前图片未包含，需要时请重发。]' : ''),
+      const references = message.role === 'assistant' ? (message.sources || []).slice(0,20).map(source =>
+        `${String(source.title).slice(0,160)}: ${String(source.url).slice(0,500)}`).join('\n').slice(0,4000) : '';
+      const suffix = (references ? `\n[上轮回答引用的资料，仅供追问定位]\n${references}` : '') +
+        (!included && images.length ? '\n[早前图片未包含，需要时请重发。]' : '');
+      const bounded = message.text.slice(0, Math.max(0,12000-suffix.length)) + suffix;
+      if (bounded.length > text) break;
+      text -= bounded.length;
+      rows.push({role:message.role, text:bounded,
         timestamp:message.timestamp, images:included ? images.map(image => typeof image === 'string' ? image : image.data) : []});
       if (included) pictures -= images.length;
     }

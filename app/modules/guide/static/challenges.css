@@ -31,3 +31,5 @@
 .guide-monster-name { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 8px; }
 .guide-monster-name>span { flex-shrink:0; }
 .guide-monster-name .guide-monster-id { font-size:11px; font-weight:400; color:var(--g-dim); font-family:ui-monospace,SFMono-Regular,monospace; overflow-wrap:anywhere; min-width:0; }
+
+.guide-monster-details .guide-resistance-weak { color:#70dec2; font-weight:650; }

@@ -108,6 +108,21 @@ class GuideChallengesTest(unittest.TestCase):
         api = self.client.get('/api/guide/challenges/Abyss_12?stage=12').json['data']
         self.assertEqual(len(api['stages'][0]['halves'][0]['waves'][1]['monsters']), 3)
 
+
+    def test_lowest_resistance_color_and_equal_values(self):
+        from flask import render_template
+        def render(values):
+            with self.client.application.app_context():
+                return render_template('guide/monster_stats.html', monster={'stats': {'resistances': values}})
+        html = render({'cosmos': 0.3, 'nature': 0.1, 'psyche': 0.1, 'chaos': None})
+        self.assertEqual(html.count('guide-resistance-weak'), 2)
+        self.assertIn('aria-label="弱点抗性 0.1"', html)
+        self.assertNotIn('弱点抗性 0.3', html)
+        self.assertNotIn('guide-resistance-weak', render({'cosmos': 0.3, 'nature': 0.3}))
+        self.assertNotIn('guide-resistance-weak', render({'cosmos': None}))
+        self.assertNotIn('guide-resistance-weak', render({}))
+        self.assertIn('弱点抗性 -0.1', render({'cosmos': -0.1, 'nature': 0}))
+
     def test_traits_in_machine_formats(self):
         record = self.client.get('/api/guide/challenges/Abyss_12?stage=1').json['data']
         monster = record['stages'][0]['halves'][0]['waves'][0]['monsters'][0]

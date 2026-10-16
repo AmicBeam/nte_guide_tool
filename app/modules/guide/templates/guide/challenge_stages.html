@@ -18,7 +18,7 @@
           <p class="guide-monster-weakness">弱点：{% for element in monster.weaknesses %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p></div>
         </div>
         {% if monster.swallowable == true %}<img class="guide-swallow-badge" src="{{ url_for('guide_module.static', filename='monsters/swallow-badge.webp') }}" alt="可被鬼郎丸吞噬" title="可被鬼郎丸吞噬" width="36" height="36">{% endif %}
-        <details class="guide-monster-details"><summary>{{ monster.name }} · 详细数据</summary>{{ tree(monster.stats) }}{% if monster.attach|default(none) %}{{ tree(monster.attach) }}{% endif %}</details>
+        <details class="guide-monster-details"><summary>{{ monster.name }} · 详细数据</summary>{% include 'guide/monster_stats.html' %}{% if monster.attach|default(none) %}{{ tree(monster.attach) }}{% endif %}</details>
       </article>{% endfor %}</div>
       <details class="guide-wave-details"><summary>出场条件</summary><p>出场方式：{{ '击败全部敌人后' if wave.spawn_type == 'KillAll' else wave.spawn_type }} · 出场时间：{{ wave.spawn_time }} 秒</p></details>
     </section>{% endfor %}

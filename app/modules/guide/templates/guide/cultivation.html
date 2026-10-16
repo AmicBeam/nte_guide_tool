@@ -35,7 +35,7 @@
 <div class="guide-links cultivation-actions"><button type="submit">计算所需资源</button><a href="/guide/characters/{{ record.id }}/cultivation">重置</a><a href="/guide/characters/{{ record.id }}#section-equip_slots">查看空幕</a></div>
 </form>
 {% if result %}<section class="guide-detail-section" id="cultivation-result" aria-label="养成计算结果"><h2>所需资源</h2>
-<div class="guide-cultivation-summary"><div><span>所需经验</span><strong>{{ '{:,}'.format(result.experience) }}</strong></div><div><span>甲硬币合计</span><strong>{{ '{:,}'.format(result.total_gold) }}</strong></div><div><span>经验书溢出经验</span><strong>{{ '{:,}'.format(result.overflow_experience) }}</strong></div></div>
+<div class="guide-cultivation-summary"><div><span>甲硬币合计</span><strong>{{ "{:,}".format(result.total_gold) }}</strong></div></div>
 <p class="guide-muted">经验书按每个突破区间分别配给，优先使用高档书，再用低档书补齐。甲硬币包含经验书使用费、突破和技能费用；不扣除库存，不自动合成材料。觉醒、共鸣与弧盘不计入本次计算。</p>
 {{ material_cards(result['items']) }}
 <details class="guide-notes"><summary>查看分项消耗</summary>{% for group in result.breakdown %}<h3>{{ group.name }}</h3>{{ material_cards(group['items']) }}{% else %}<p>无需额外资源。</p>{% endfor %}</details>

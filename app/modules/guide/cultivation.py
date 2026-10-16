@@ -113,8 +113,15 @@ def calculate(character, config, experience, values):
             if level not in rows:
                 raise ValueError(f'{skill["label"]}缺少 {level} 级材料配置')
             add(f'{skill["label"]} · {level} 级', rows[level]['items'])
+    book_order = {str(book['id']).casefold(): i for i, book in enumerate(
+        sorted(config['exp_books'], key=lambda book: book['exp'], reverse=True))}
+    def resource_order(item):
+        key = str(item['id']).casefold()
+        return (0 if key == 'gold' else 1 if key in book_order else 2,
+                book_order.get(key, 0), item['name'])
+
     return {'state': state, 'experience': xp_needed, 'book_experience': xp_provided,
             'overflow_experience': xp_provided - xp_needed, 'level_up_gold': book_gold,
             'total_gold': totals.get('gold', {}).get('amount', 0),
-            'items': sorted(totals.values(), key=lambda x: (x['id'].casefold() != 'gold', x['name'])),
+            'items': sorted(totals.values(), key=resource_order),
             'breakdown': breakdown}

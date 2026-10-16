@@ -10,3 +10,9 @@
 .guide-hero{padding:28px 0 20px}.guide-hero h1{font-size:34px;letter-spacing:-1px;margin:14px 0}.cultivation-personal{margin:16px 0}#prefill-confirm-label{display:flex;align-items:flex-start;gap:10px;margin-top:18px;line-height:1.6}#prefill-confirm-label[hidden]{display:none}#prefill-confirm{width:20px;height:20px;min-width:20px;margin-top:2px}#sync-dialog #sync-reset{background:none;padding-left:0;color:#49617e;font-size:13px}
 
 .cultivation-sliders{display:grid;gap:18px;padding:6px 0}.cultivation-slider-field{display:grid;gap:6px;font-size:14px}.cultivation-slider-field>span,.cultivation-slider-field>small{display:flex;align-items:center;justify-content:space-between;gap:12px}.cultivation-slider-field output{font-variant-numeric:tabular-nums;font-size:18px;font-weight:700;color:var(--g-accent);min-width:30px;text-align:right}.cultivation-slider-field>small{font-size:11px;color:var(--g-dim)}.guide-page .cultivation-slider-field input[type=range]{appearance:auto;accent-color:var(--g-accent);width:100%;height:32px;min-height:32px;padding:0;margin:0;border:0;background:transparent;cursor:pointer}.cultivation-slider-field input:focus-visible{outline:2px solid var(--g-accent);outline-offset:3px;border-radius:4px}
+
+#cultivation-result .guide-material-grid{grid-template-columns:repeat(auto-fill,90px);gap:20px 16px;max-width:100%;margin:20px 0 28px}
+#cultivation-result .guide-material-icon{border-radius:14px}
+#cultivation-result .guide-material-icon strong{font-size:14px;padding:4px 2px}
+#cultivation-result .guide-material-grid .guide-material-card>span{font-size:12px;margin-top:7px}
+@media(max-width:500px){#cultivation-result .guide-material-grid{grid-template-columns:repeat(auto-fill,76px);gap:16px 12px}#cultivation-result .guide-material-icon strong{font-size:12px}}

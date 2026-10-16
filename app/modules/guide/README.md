@@ -129,7 +129,7 @@ python scripts/refresh_guide_data.py --transport curl
 
 ## 环线怪物展示
 
-环线详情顶部显示共鸣名称与完整效果；关卡按编号倒序排列，按半场和波次展示怪物贴图、等级、数量、弱点；仅可吞噬怪物在卡片右上角显示鬼郎丸圆形图标（悬停或无障碍名称为“可被鬼郎丸吞噬”），不显示吞噬性质文字。生命、攻防、倾陷、抗性与出场条件默认折叠，可逐项展开；未标注的吞噬性质不显示图标，不按体型推断。`data/monster_metadata.json` 绑定名称、本站WebP路径和吞噬性质；图片由本模块 `static/monsters/` 持有，网站运行不依赖其他仓库或外部图床。JSON、Markdown与CLI同步提供 `image` 与 `swallowable` 字段。
+环线详情顶部显示共鸣名称与完整效果；关卡按编号倒序排列，按半场和波次展示怪物贴图、等级、数量、弱点；仅可吞噬怪物在卡片右上角显示鬼郎丸圆形图标（悬停或无障碍名称为“可被鬼郎丸吞噬”），不显示吞噬性质文字。单体生命值直接显示在怪物概览中，使用千分位数字；攻防、倾陷、抗性与出场条件默认折叠，可逐项展开；未标注的吞噬性质不显示图标，不按体型推断。`data/monster_metadata.json` 绑定名称、本站WebP路径和吞噬性质；图片由本模块 `static/monsters/` 持有，网站运行不依赖其他仓库或外部图床。JSON、Markdown与CLI同步提供 `image` 与 `swallowable` 字段。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_challenges tests.test_guide_challenge_schedule tests.test_guide tests.test_module_routes -v`；浏览器检查共鸣、关卡筛选、贴图、吞噬标记、默认折叠与展开，以及窄屏布局。
 
@@ -169,3 +169,5 @@ python scripts/refresh_guide_data.py --transport curl
 轨外之境详情不展示奖励章节或“关卡编号”提交表单。关卡使用与弧盘目录相同的单选筛选按钮，倒序排列；默认仅显示第12关，不含第12关时显示最高编号关卡。切换只在页面内显示／隐藏已加载的关卡，不请求、不跳转、不滚动，并同步地址栏 `stage` 参数；带 `stage` 的详情链接保留全部切换按钮并选中对应关卡。JSON与Markdown仍保留奖励和原有单关读取契约，不受网页隐藏规则影响。
 
 弧盘目录在每个类型分组内按稀有度从高到低展示（S、A、B），同级保持原有顺序；切换筛选后沿用该顺序。
+
+同一波内，除配置ID与数量外的展示数据完全一致的怪物合并为一张卡片并累加数量；生命值始终表示单只怪物的生命，不乘数量。等级、数值、弱点、吞噬性质或附加配置不同的条目不合并，跨波次和跨半场不合并。原始快照、JSON、Markdown保留独立配置条目。

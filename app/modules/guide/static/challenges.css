@@ -25,3 +25,5 @@
 .guide-wave-details p { font-size:13px; color:#aab6c6; }
 .guide-monster-placeholder { display:grid; place-items:center; width:112px; height:112px; flex-shrink:0; color:#aab6c6; }
 @media(max-width:760px) { .guide-challenge-halves { grid-template-columns:1fr; gap:0; } .guide-monster-overview img { width:88px; height:88px; } .guide-monster-card { padding:12px; } }
+
+.guide-monster-hp strong { font-variant-numeric:tabular-nums; color:var(--g-ink); }

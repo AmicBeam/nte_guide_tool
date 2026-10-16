@@ -2,7 +2,7 @@
 from pathlib import Path
 
 from flask import Blueprint, Response, jsonify, render_template, request, send_file
-from . import service, cultivation, presentation
+from . import service, cultivation, presentation, arc_cultivation
 from .challenge_calendar import is_current_challenge
 from .rich_text import description_html
 
@@ -80,7 +80,7 @@ def entry(kind, identifier):
     return render_template('guide/detail.html', record=record, sections=sections, kind=kind,
                            kinds=service.KINDS, art=art, profile=profile, overview=overview, arc_image=arc_image,
                            material_preview=presentation.upgrade_material_preview(overview) if overview else [],
-                           notes=service.schema()['notes'])
+                           notes=service.schema()['notes'], recommended_arc=arc_cultivation.recommended(profile) if profile else None)
 
 
 @blueprint.get('/guide/characters/<identifier>/axes/<int:axis_id>/compare')
@@ -99,17 +99,17 @@ def axis_compare_page(identifier, axis_id):
 def cultivation_page(identifier):
     record = service.detail('characters', identifier)
     config = service.catalog()['cultivation']
-    values = cultivation.defaults(record, config)
+    values = arc_cultivation.defaults(record, config)
     values.update({key: request.args[key] for key in values if key in request.args})
     result, error = None, None
     if request.args.get('calculate') == '1':
         try:
-            result = cultivation.calculate(record, config, record['experience'], values)
+            result = arc_cultivation.calculate(record, config, record['experience'], values)
         except ValueError as exc:
             error = str(exc)
     return render_template('guide/cultivation.html', record=record, values=values,
         caps=config['level_caps'][identifier], skills=cultivation.skill_options(record),
-        result=result, error=error), 400 if error else 200
+        result=result, error=error, arcs=arc_cultivation.choices(record), arc_configs=arc_cultivation.config()['arcs']), 400 if error else 200
 
 
 @blueprint.get('/guide/characters/<identifier>/builds')
@@ -127,9 +127,9 @@ def api_cultivation(identifier):
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         raise ValueError('请求须为 JSON 对象')
-    values = cultivation.defaults(record, config)
+    values = arc_cultivation.defaults(record, config)
     values.update(payload)
-    result = cultivation.calculate(record, config, record['experience'], values)
+    result = arc_cultivation.calculate(record, config, record['experience'], values)
     return jsonify(schema_version=1, kind='cultivation', data=result)
 
 

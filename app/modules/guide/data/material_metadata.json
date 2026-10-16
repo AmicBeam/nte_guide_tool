@@ -288,5 +288,20 @@
     "name": "海之泪",
     "icon": "/static/images/item/海之泪.webp",
     "quality": "purple"
+  },
+  "weaponupmaterial_lv1": {
+    "name": "淡色染剂",
+    "icon": "/static/images/item/淡色染剂.webp",
+    "quality": "green"
+  },
+  "weaponupmaterial_lv2": {
+    "name": "无彩染剂",
+    "icon": "/static/images/materials/weaponupmaterial_lv2.webp",
+    "quality": "blue"
+  },
+  "weaponupmaterial_lv3": {
+    "name": "混沌染剂",
+    "icon": "/static/images/materials/weaponupmaterial_lv3.webp",
+    "quality": "purple"
   }
 }

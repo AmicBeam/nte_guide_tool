@@ -81,13 +81,13 @@ python scripts/refresh_guide_data.py --transport curl
 
 养成结果以紧凑材料卡显示，桌面图标90px、窄屏76px；甲硬币在前，经验书按经验值从高到低紧随其后，再列其他材料。网页不显示所需经验和溢出经验汇总，内部经验书配给、费用计算及API经验字段保留。
 
-角色详情顶部提供工具入口，进入 `/guide/characters/<id>/cultivation`。输入当前与目标角色等级及技能／天赋／都市技能基础等级；突破阶段按等级自动判断，仅在20、30等临界等级选择是否已突破。技能以“普通攻击”“变轨攻击”等类型名显示。服务端汇总角色经验、经验书、甲硬币、突破材料、技能材料和都市技能使用的方斯等资源。0级表示尚未解锁的天赋或都市技能；普通战斗技能从1级起。觉醒／共鸣带来的额外技能等级不参与材料计算，觉醒、共鸣和弧盘养成不在此计算器范围内。
+角色详情顶部提供工具入口，进入 `/guide/characters/<id>/cultivation`。输入当前与目标角色等级及技能／天赋／都市技能基础等级；突破阶段按等级自动判断，仅在20、30等临界等级选择是否已突破。技能以“普通攻击”“变轨攻击”等类型名显示。服务端汇总角色经验、经验书、甲硬币、突破材料、技能材料和都市技能使用的方斯等资源。0级表示尚未解锁的天赋或都市技能；普通战斗技能从1级起。觉醒／共鸣带来的额外技能等级不参与材料计算，觉醒、共鸣与弧盘混频不在此计算器范围内；弧盘等级与突破可选一并计算。
 
 突破阶段与等级上限按角色配置判断；材料只累计当前之后至目标的阶段，技能须满足对应突破条件。角色经验按升入目标等级的需求逐级相加，不计当前等级内已累计经验；每段到达突破上限后分别用经验书补齐，按高档优先、低档补齐组成使用方案，显示溢出经验。甲硬币合计包含这份方案的经验书使用费用，不假设溢出退费。不扣除库存，不自动折算合成，也不估算副本次数或体力。
 
 材料展示绑定存于 `data/material_metadata.json`，WebP复用 `app/static/images/item/` 或放在 `app/static/images/materials/`；`presentation.py` 只读取图标与稀有度配色，不改变材料数量。显式同步：`python scripts/sync_guide_material_images.py`。页面初始结果由服务端渲染，无需脚本加载材料。
 
-`cultivation.py` 只对本模块离线数据计算；GET表单由服务端计算，`static/cultivation.js` 仅随等级切换临界突破选项的可见性。`POST /api/guide/characters/<id>/cultivation` 接收 JSON 对象，字段为 `current_level`、`target_level`、`current_ascended`、`target_ascended`（临界等级是否已突破，布尔值或0／1） 和 `current_skill_<index>`／`target_skill_<index>`；非临界等级忽略突破选项，旧突破次数字段与等级内经验字段不参与计算。返回状态包含自动推定的突破次数。技能索引按角色 `materials.skills` 顺序，缺省按1级未突破至80级满突破、所有技能满级计算。返回 `data.state`、`experience`、`book_experience`、`overflow_experience`、`level_up_gold`、`total_gold`、`items` 和 `breakdown`。无效练度返回400，未知角色返回404。
+`cultivation.py` 只对本模块离线数据计算；GET表单由服务端计算，`static/cultivation.js` 维护等级与突破选项、已同步练度预填和可选弧盘表单，材料计算仍在服务端完成。`POST /api/guide/characters/<id>/cultivation` 接收 JSON 对象，字段为 `current_level`、`target_level`、`current_ascended`、`target_ascended`（临界等级是否已突破，布尔值或0／1） 和 `current_skill_<index>`／`target_skill_<index>`；非临界等级忽略突破选项，旧突破次数字段与等级内经验字段不参与计算。返回状态包含自动推定的突破次数。技能索引按角色 `materials.skills` 顺序，缺省按1级未突破至80级满突破、所有技能满级计算。返回 `data.state`、`experience`、`book_experience`、`overflow_experience`、`level_up_gold`、`total_gold`、`items` 和 `breakdown`。无效练度返回400，未知角色返回404。
 
 刷新还读取角色表、物品表及突破表的经验书和等级上限；`--ntedata-dir` 目录需同时包含 `DT_Character.json`、`DT_ItemConfig.json` 和 `DT_CharacterBreakthroughDataTable.json`。本地快照只保留实际参与计算的字段，不在请求时联网。
 
@@ -250,3 +250,18 @@ python scripts/refresh_guide_data.py --transport curl
 目录卡片样式地址带文件版本参数，样式更新后浏览器请求新版本。
 
 练度弹窗的弧盘图片按忽略大小写的完整ID匹配；ID不匹配时，仅按本地唯一名称（兼容外层书名引号）定位图片。`data/equipment_images.json` 为核心卡带和12种驱动形状绑定本模块 `static/equipment/` 图片，驱动模板及品质变体按明确ID映射形状，同型号多形状时不按名称猜测。图片只在本站加载；未知条目保留文字，图片加载失败隐藏破图。验证：`node --test tests/test_guide_equipment_images.cjs`，浏览器核对实际图片加载、不同驱动形状及手机排版。
+
+
+## 推荐弧盘与联合养成
+
+角色详情顶部的弧盘类型可点击进入该角色首个推荐弧盘。`data/arc_cultivation.json` 按角色保存单个推荐弧盘，按弧盘保存等级上限与经验配置，并保存经验染剂的经验值与使用费用；推荐严格取配置列表首项，不按专属归属或个人装备推断。缺少推荐时类型标签保持普通文字。
+
+养成页在角色当前／目标练度下方提供“一并计算弧盘（可选）”，默认关闭。开启后可选择一张该角色适配类型的弧盘，填写当前／目标等级及临界等级突破状态。匿名默认预选首个推荐弧盘；有已同步数据时优先填入已装备弧盘与等级，可确认的弧盘突破阶数同时填入。选换其他弧盘从1级开始，目标为上限。升级按每个突破区间分别使用染剂，计算使用费用与突破材料，不计等级内已有经验、库存、合成、混频或消耗其他弧盘。角色与弧盘的同种材料及甲硬币合并，分项消耗保留独立弧盘明细。
+
+进入养成页且本站登录有效时，自动选择包含当前角色的已保存游戏账号并填入练度；没有记录时继续手填。切换游戏账号会填入该账号保存值，保留“使用已同步练度”按钮以重新应用。用户开始手动输入后，迟到的自动预填不覆盖输入；计算结果页与带 `calculate=1` 的表单保留提交值，不重复自动填入。接口不明确的技能或角色突破状态继续显示提示，不要求勾选核对复选框，不自动同步游戏。
+
+养成GET表单和POST接口增加 `include_arc`（0／1）、`arc_id`、`arc_current_level`、`arc_target_level`、`arc_current_ascended`、`arc_target_ascended`；未启用时忽略弧盘输入。启用时返回 `data.arc` 的独立消耗与状态，`data.items`、`total_gold`、`breakdown` 为合并结果，原角色经验字段保持角色口径。弧盘ID、类型、等级或突破无效时返回400。
+
+显式刷新：`python scripts/sync_guide_arc_cultivation.py`；可用 `--tables-dir` 指定包含 `DT_CultivationGuideData.json`、`DT_ForkItemData.json`、`DT_ForkUpgradeData.json`、`DT_ForkBreakthroughData.json` 和 `DT_ItemConfig.json` 的本地目录。核对全部弧盘材料、费用、经验与等级上限后原子替换；随后运行 `scripts/sync_guide_material_images.py` 补齐染剂展示。请求和启动不联网。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_arc_cultivation tests.test_guide_user_data tests.test_guide tests.test_guide_account tests.test_module_routes -q`；`node --test tests/test_guide_private_response.cjs tests/test_guide_equipment_images.cjs`。覆盖全部弧盘、首次升级、原地突破、无消耗、材料合计、无效类型／等级、推荐链接和同步预填；浏览器核对自动填入、手填保留、可选表单、换选弧盘与窄屏。

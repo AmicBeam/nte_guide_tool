@@ -35,6 +35,9 @@ def main():
             collect(record['materials'])
     for book in catalog['cultivation']['exp_books']:
         materials[book['id'].casefold()] = book['name']
+    arc_config = json.loads((ROOT / 'app/modules/guide/data/arc_cultivation.json').read_text())
+    for book in arc_config['exp_books']:
+        materials[book['id'].casefold()] = book['name']
     materials.update(gold='甲硬币', fons='方斯')
     output = ROOT / 'app/static/images/materials'
     output.mkdir(parents=True, exist_ok=True)

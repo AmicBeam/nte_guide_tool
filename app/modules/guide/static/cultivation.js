@@ -80,6 +80,41 @@ if (cultivationForm) {
   }
 }
 
+if (cultivationForm) {
+  const toggle = document.getElementById('include-arc');
+  const fields = document.getElementById('arc-fields');
+  const select = document.getElementById('arc-select');
+  const configs = JSON.parse(cultivationForm.dataset.arcConfigs || '{}');
+  const updateArc = () => {
+    fields.hidden = !toggle.checked;
+    fields.disabled = !toggle.checked;
+    const caps = configs[select.value]?.level_caps || [];
+    for (const side of ['current', 'target']) {
+      const level = cultivationForm.elements.namedItem(`arc_${side}_level`);
+      level.max = String(caps.at(-1) || 80);
+      const boundary = fields.querySelector(`[data-arc-boundary="${side}"]`);
+      const atBoundary = caps.slice(0, -1).includes(Number(level.value));
+      boundary.hidden = !atBoundary;
+      boundary.querySelector('select').disabled = !atBoundary;
+    }
+  };
+  toggle.addEventListener('change', updateArc);
+  select.addEventListener('change', () => {
+    cultivationForm.elements.namedItem('arc_current_level').value = '1';
+    cultivationForm.elements.namedItem('arc_current_ascended').value = '0';
+    cultivationForm.elements.namedItem('arc_target_level').value = String(configs[select.value]?.level_caps.at(-1) || 80);
+    cultivationForm.elements.namedItem('arc_target_ascended').value = '0';
+    updateArc();
+  });
+  for (const side of ['current', 'target']) {
+    cultivationForm.elements.namedItem(`arc_${side}_level`).addEventListener('input', () => {
+      cultivationForm.elements.namedItem(`arc_${side}_ascended`).value = '0';
+      updateArc();
+    });
+  }
+  updateArc();
+}
+
 (() => {
   const root = document.querySelector('[data-account-profiles], [data-character-id]');
   if (!root) return;
@@ -87,6 +122,8 @@ if (cultivationForm) {
   if (!accountPage && !cultivationForm) return;
   const $ = (id) => document.getElementById(id);
   let profiles = [], sessionId = '', choosing = false, busy = false, cooldownUntil = 0;
+  let formDirty = false, prefillSequence = 0;
+  if (cultivationForm) cultivationForm.addEventListener('input', event => { if (event.isTrusted) formDirty = true; });
   let token = '';
   try { token = localStorage.getItem('nte_token') || ''; } catch (_) { /* anonymous works */ }
   const status = (message) => { $('personal-status').textContent = message; };
@@ -149,6 +186,10 @@ if (cultivationForm) {
     profiles = await api('profiles');
     $('profile-select').replaceChildren(...profiles.map(p => new Option(p.role_name || p.role_id, p.role_id)));
     if (profiles.some(p => p.role_id === previous)) $('profile-select').value = previous;
+    else if (!accountPage) {
+      const owned = profiles.find(p => p.characters.some(c => c.id === root.dataset.characterId));
+      if (owned) $('profile-select').value = owned.role_id;
+    }
     $('personal-controls').hidden = profiles.length === 0;
     if (profiles.length) {
       status(accountPage ? '选择游戏账号，点击角色查看练度、技能与装备详情。' : `已保存 ${profiles.length} 个游戏账号。选择账号后，可将当前角色的练度填入下方。`);
@@ -159,24 +200,26 @@ if (cultivationForm) {
       else $('saved-equipment').hidden = true;
     }
   };
-  const useProfile = async () => {
+  const useProfile = async ({automatic = false} = {}) => {
     if (!savedCharacter()) { status('此游戏账号没有当前角色的可用数据，请手动填写或重新同步。'); return; }
+    const sequence = ++prefillSequence;
+    const roleId = selected().role_id;
     try {
-      const data = await api(`profiles/${encodeURIComponent(selected().role_id)}/characters/${encodeURIComponent(root.dataset.characterId)}/prefill`);
-      for (const [key, value] of Object.entries(data.values)) {
+      const data = await api(`profiles/${encodeURIComponent(roleId)}/characters/${encodeURIComponent(root.dataset.characterId)}/prefill`);
+      if (sequence !== prefillSequence || selected()?.role_id !== roleId || (automatic && formDirty)) return;
+      // Level input handlers reset breakthrough flags; restore those flags last.
+      const entries = Object.entries(data.values).sort(([a], [b]) => Number(a.endsWith('_ascended')) - Number(b.endsWith('_ascended')));
+      for (const [key, value] of entries) {
         const input = cultivationForm.elements.namedItem(key);
-        if (input) { input.value = String(value); input.dispatchEvent(new Event('input')); }
+        if (input) { input.value = typeof value === 'boolean' ? (value ? '1' : '0') : String(value); input.dispatchEvent(new Event('input')); }
       }
-      $('prefill-confirm-label').hidden = false;
-      $('prefill-confirm').checked = false;
-      $('prefill-confirm').required = true;
       $('prefill-notice').hidden = false;
       $('prefill-notice').textContent = ['已填入保存的当前练度。目标练度可自行调整。', ...data.warnings].join('\n');
       status(`已使用 ${selected().role_name || selected().role_id} 的数据；同步于 ${new Date(selected().updated_at).toLocaleString('zh-CN')}。`);
     } catch (error) { status(error.message); }
   };
-  $('profile-select').addEventListener('change', equipment);
-  if (!accountPage) $('use-profile').addEventListener('click', useProfile);
+  $('profile-select').addEventListener('change', () => { equipment(); if (!accountPage) useProfile(); });
+  if (!accountPage) $('use-profile').addEventListener('click', () => useProfile());
   $('delete-profile').addEventListener('click', async () => {
     if (!selected() || !confirm('删除此游戏账号保存的角色练度和装备数据？')) return;
     try { await api(`profiles/${encodeURIComponent(selected().role_id)}`, null, 'DELETE'); await refresh(); }
@@ -251,6 +294,8 @@ if (cultivationForm) {
   const ready = window.guideAuth ? window.guideAuth.ready : Promise.resolve(token);
   ready.then(value => {
     token = value;
-    if (token) refresh().catch(error => status(error.message));
+    if (token) refresh().then(() => {
+      if (!accountPage && cultivationForm.dataset.manualState !== '1' && !formDirty && savedCharacter()) return useProfile({automatic:true});
+    }).catch(error => status(error.message));
   });
 })();

@@ -126,5 +126,21 @@ def prefill(character, saved):
         else:
             values[f'current_skill_{i}'] = skill['minimum']
             warnings.append(f'{skill["label"]}未能确认基础等级，已恢复为初始值，请手动填写。')
+    from . import arc_cultivation
+    fork = saved.get('equipment', {}).get('fork', {})
+    arc = next((a for a in arc_cultivation.choices(character)
+                if a['id'].casefold() == str(fork.get('id', '')).casefold()), None)
+    if arc:
+        caps = arc_cultivation.config()['arcs'][arc['id']]['level_caps']
+        level = bounded_int(fork.get('alev'), 1, caps[-1])
+        if level is not None:
+            values.update(arc_id=arc['id'], arc_current_level=level)
+            stage = bounded_int(fork.get('blev'), 0, len(caps) - 1)
+            before = sum(cap < level for cap in caps[:-1])
+            if level in caps[:-1] and stage in (before, before + 1):
+                values['arc_current_ascended'] = stage == before + 1
+            elif level in caps[:-1]:
+                values['arc_current_ascended'] = False
+                warnings.append('请确认弧盘是否已突破。')
     warnings.append('同步技能等级可能包含额外加成，请核对为基础等级后计算。')
     return dict(values=values, warnings=warnings)

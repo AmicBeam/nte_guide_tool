@@ -77,6 +77,20 @@ class GuideUserDataTest(RoomFlowTestCase):
         saved['skills'] = [{'id': 'unknown', 'name': '掠影', 'group': 'skills', 'level': 8}]
         self.assertEqual(self.data.prefill(character, saved)['values']['current_skill_0'], 1)
 
+    def test_prefill_equipped_arc_level_and_boundary_breakthrough(self):
+        character = self.data.service.detail('characters', '1042')
+        saved = self.data.normalize(self.raw)[0]
+        saved['equipment']['fork'] = {'id': 'FORK_TWINBIRDS', 'alev': '40', 'blev': '3'}
+        result = self.data.prefill(character, saved)['values']
+        self.assertEqual(result['arc_id'], 'fork_twinbirds')
+        self.assertEqual(result['arc_current_level'], 40)
+        self.assertTrue(result['arc_current_ascended'])
+        self.assertNotIn('include_arc', result)
+        saved['equipment']['fork']['blev'] = '2'
+        self.assertFalse(self.data.prefill(character, saved)['values']['arc_current_ascended'])
+        saved['equipment']['fork']['id'] = 'unknown'
+        self.assertNotIn('arc_id', self.data.prefill(character, saved)['values'])
+
     def test_anonymous_calculator_but_private_sync(self):
         for path in ['profiles', 'sync/sms', 'sync/verify', 'sync/select-role']:
             response = self.client.get('/api/guide/me/' + path) if path == 'profiles' else self.client.post('/api/guide/me/' + path, json={})

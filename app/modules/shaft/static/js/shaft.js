@@ -3722,7 +3722,7 @@
 
   function previewMinimumTickPx(details = previewDetails()) {
     const viewport = $('shaft-axis-preview-viewport');
-    const availableWidth = Math.max(PREVIEW_MIN_BODY_PX, Number(viewport?.clientWidth || 0) - PREVIEW_LABEL_PX - 20);
+    const availableWidth = Math.max(PREVIEW_MIN_BODY_PX, Number(viewport?.clientWidth || 0) - PREVIEW_LABEL_PX - 40);
     return Math.min(PREVIEW_MAX_TICK_PX, availableWidth / previewEndTick(details));
   }
 

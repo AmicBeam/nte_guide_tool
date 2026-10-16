@@ -2,3 +2,13 @@
 .guide-builds-header{margin:30px 0}.guide-builds-header>div{display:flex;align-items:center;gap:18px}.guide-builds-header img{border-radius:12px;border:1px solid var(--g-line)}.guide-builds-header h1{font-size:clamp(24px,3.5vw,36px);margin:10px 0}.guide-builds-header .guide-eyebrow{margin:0}
 
 .guide-related dialog{max-width:1180px;width:calc(100vw - 32px);box-sizing:border-box}.guide-related-preview-frame,#related-preview-frame{display:block;width:100%;height: min(620px,68dvh);border:0;background:#101923;border-radius:10px}
+
+/* Reserve one flexible viewport for the embedded preview, including its summary. */
+#related-preview{height:min(820px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);padding:16px;overflow:hidden}
+#related-preview[open]{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:12px}
+#related-preview .guide-related-dialog-heading{min-width:0;gap:12px}
+#related-preview .guide-related-dialog-heading h2{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#related-preview .guide-related-dialog-heading form{flex:none}
+#related-preview-frame{height:100%;min-height:0;min-width:0}
+#related-preview>p{margin:0}
+@media(max-width:750px){#related-preview{padding:10px}#related-preview[open]{gap:8px}}

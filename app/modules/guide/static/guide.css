@@ -67,3 +67,6 @@
 .guide-card[hidden],.guide-empty[hidden]{display:none}
 
 [data-guide-filter-group][hidden]{display:none}.guide-detail-header img.guide-rarity-icon{object-fit:contain;vertical-align:middle}
+
+/* Affinity gain tiers remain readable as numbers as well as colors. */
+.guide-affinity-gain{font-weight:650;font-variant-numeric:tabular-nums;color:var(--g-ink)}.guide-affinity-gain-100{color:#8ecbff}.guide-affinity-gain-200{color:#9ee7b0}.guide-affinity-gain-400{color:#d4a4ff}.guide-affinity-gain-1200{color:#ffd078}.guide-affinity-gain-2000{color:#ff9bb8}

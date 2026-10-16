@@ -7,6 +7,20 @@ from pathlib import Path
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境'}
 LABELS = {
+    'groups': '招式分组', 'hit_details': '详细命中数据', 'effect_id': '命中效果 ID',
+    'hit_index': '命中项', 'repeat': '重复次数', 'harmony_gain': '基础环合',
+    'energy_gain': '基础回能', 'stagger': '基础倾陷',
+    'attack_values': '攻击倍率', 'defense_values': '防御倍率', 'hp_values': '生命倍率',
+    'hit_detail_status': '命中数据状态',
+    'assets': '角色图片', 'avatar': '头像', 'portrait': '立绘', 'fullbody': '高清立绘',
+    'equip_slots': '空幕', 'materials': '升级材料', 'breakthrough': '角色突破',
+    'skills': '技能升级', 'levels': '升级阶段', 'items': '所需材料',
+    'items_id': '材料 ID', 'amount': '数量', 'cost_gold': '甲硬币',
+    'require_breakthrough_level': '所需突破阶段', 'stage': '突破阶段',
+    'owner_grid_count': '特化驱动格数', 'special_desc': '驱动特化',
+    'slots': '格位矩阵', 'value': '数值', 'b_show_percent': '百分比',
+    'Melee': '普通攻击', 'Skill': '变轨技能', 'UltraSkill': '极轨终结',
+    'QTE': '援护技', 'Passive': '被动', 'Peculiarity': '特性', 'City': '都市技能',
     'param_rows': '技能倍率与参数', 'label': '参数名称', 'key': '参数 ID',
     'type': '类型代码', 'type_id': '类型 ID', 'ability_type': '技能类型',
     'ability_index': '技能序号', 'element': '属性代码', 'element_id': '属性 ID',
@@ -28,7 +42,7 @@ LABELS = {
     'recommended_elements': '推荐属性', 'resistances': '抗性（小数比例）',
     'unbalance': '倾陷上限', 'unbalance_duration': '倾陷持续（秒）', 'text': '说明',
     'remaining_time': '剩余时间（秒）', 'b_is_percent': '百分比', 'title': '名称',
-    'resonance_level': '共鸣等级', 'exclusive_character_ids': '专属角色 ID',
+    'resonance_level': '共鸣等级', 'exclusive_character_ids': '专属角色',
     'exclusive_desc': '专属效果', 'aliases': '别名', 'ability_name': '异能',
     'char_tags': '定位', 'normal': '常规', 'cosmos': '光', 'nature': '灵',
     'incantation': '咒', 'chaos': '暗', 'psyche': '魂', 'lakshana': '相',
@@ -38,7 +52,13 @@ LABELS = {
 
 @lru_cache(maxsize=1)
 def catalog():
-    return json.loads((Path(__file__).parent / 'data/catalog.json').read_text(encoding='utf-8'))
+    data = json.loads((Path(__file__).parent / 'data/catalog.json').read_text(encoding='utf-8'))
+    art = json.loads((Path(__file__).resolve().parents[2] / 'static/images/characters/index.json').read_text(encoding='utf-8'))
+    bindings = {record['id']: record for record in art['characters']}
+    for character in data['characters']:
+        binding = bindings[str(character['id'])]
+        character['assets'] = {key: binding[key] for key in ('avatar', 'portrait', 'fullbody')}
+    return data
 
 
 def label(key):
@@ -52,6 +72,8 @@ def summary(kind, record):
     result.update(kind=kind, url=f'/guide/{kind}/{identifier}',
                   json_url=f'/api/guide/{kind}/{identifier}',
                   markdown_url=f'/guide/{kind}/{identifier}.md')
+    if kind == 'characters':
+        result['assets'] = record['assets']
     if kind == 'challenges':
         result['description'] = record.get('resonance', {}).get('description', '')
     return result
@@ -128,7 +150,13 @@ def schema():
         'search': '/api/guide/search?q={query}',
         'detail': '/api/guide/{collection}/{id}?section={field}&stage={stage_id}',
         'markdown': '/guide/{collection}/{id}.md',
-        'notes': ['数据为本地快照；请求与启动不会拉取外部数据。',
+        'hit_detail_fields': {'harmony_gain': 'HeterochromeAdd，单次命中基础环合',
+            'energy_gain': 'ChargeAdd，单次命中基础终结回能', 'stagger': 'UnbalValue，单次命中基础倾陷',
+            'repeat': '当前参数展示式中的重复次数，未知为 null，不推算技能实际总命中次数'},
+        'character_sections': {'equip_slots': '空幕格位矩阵、驱动特化和加成属性',
+            'materials': '突破与技能升级：每阶段所需材料、数量和突破条件'},
+        'notes': ['空幕 slots 中 -1 为不可用格，0 为可装配格；矩阵按从上到下、从左到右排列。',
+            '材料为各目标等级/阶段的单次消耗，不是累计消耗；items 为中文名称与数量，items_id/amount 保留原始配对。','数据为本地快照；请求与启动不会拉取外部数据。',
             '数值数组保留原始顺序：角色属性与弧盘属性按等级，技能参数按技能等级，弧盘效果按精炼档位。',
             '百分比保留原字段表示；敌人 resistances 为小数比例（0.3 = 30%）。',
             '说明中的 {0} 等占位符对应同条目 values 中的 id_value，不自动猜测替换。',
@@ -139,18 +167,30 @@ def schema():
 
 def page_sections(kind, record):
     preferred = {
-        'characters': ('abilities', 'awaken', 'resonance', 'nouns', 'stats', 'aliases'),
-        'arcs': ('effect', 'exclusive_desc', 'exclusive_character_ids', 'stats'),
+        'characters': ('abilities', 'equip_slots', 'materials', 'awaken', 'resonance', 'nouns', 'stats', 'aliases'),
+        'arcs': ('effect', 'exclusive_desc', 'exclusive_character_ids', 'stats', 'materials'),
         'challenges': ('resonance', 'stages', 'rewards'),
     }
     keys = preferred[kind] if len(record) > 3 else tuple(key for key in record if key not in ('id', 'name'))
-    result = {key: record[key] for key in keys if key in record and record[key] is not None}
+    result = {key: record[key] for key in keys if key in record and record[key] is not None and record[key] != [] and record[key] != {}}
     if isinstance(result.get('nouns'), dict):
         result['nouns'] = list(result['nouns'].values())
     return result
 
 
 def display_scalar(value):
-    if isinstance(value, str) and value in ('cosmos', 'nature', 'incantation', 'chaos', 'psyche', 'lakshana', 'normal', 'psychically'):
+    if isinstance(value, str) and value in ('Melee', 'Skill', 'UltraSkill', 'QTE', 'Passive', 'Peculiarity', 'City', 'cosmos', 'nature', 'incantation', 'chaos', 'psyche', 'lakshana', 'normal', 'psychically'):
         return label(value)
     return scalar(value)
+
+
+def equip_description(equipment):
+    description = equipment.get('desc') or ''
+    stats = equipment.get('stats') or []
+    if len(stats) == 1:
+        description = description.replace('{0}', str(stats[0]['name'])).replace('{1}', str(stats[0]['value']))
+    return description
+
+
+def character_name(identifier):
+    return next((c['name'] for c in catalog()['characters'] if str(c['id']) == str(identifier)), str(identifier))

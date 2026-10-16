@@ -67,6 +67,97 @@ class GuideTest(unittest.TestCase):
         self.assertNotIn('>psyche<', stage_html)
         self.assertNotIn('1 · 始发站', stage_html)
 
+    def test_equipment_and_materials_across_formats(self):
+        equipment = self.client.get('/api/guide/characters/1042?section=equip_slots').json['data']['equip_slots']
+        self.assertEqual(equipment['owner_grid_count'], 3)
+        self.assertEqual(equipment['stats'][0]['value'], 8)
+        self.assertEqual(len(equipment['slots']), 7)
+        self.assertEqual(equipment['slots'][1], [-1, 0, 0, 0, 0, -1, -1])
+        html = self.client.get('/guide/characters/1042?section=equip_slots').text
+        self.assertIn('每装配一个Ⅲ型驱动，使暴击率增加8%', html)
+        self.assertIn('aria-label="空幕格位"', html)
+        self.assertNotIn('{0}', html.split('<details')[0])
+        materials = self.client.get('/api/guide/characters/1042?section=materials').json['data']['materials']
+        first = materials['breakthrough'][0]
+        self.assertEqual(first['level'], '30')
+        self.assertEqual(first['items'][0]['name'], '模糊数符')
+        self.assertEqual(first['items'][0]['amount'], 5)
+        self.assertEqual(first['items'][1]['name'], '甲硬币')
+        skill = materials['skills'][0]['levels'][0]
+        self.assertEqual(skill['require_breakthrough_level'], 2)
+        self.assertEqual(skill['items'][1]['name'], '水波的迟疑')
+        md = self.client.get('/guide/characters/1042.md?section=materials').text
+        self.assertIn('角色突破', md)
+        self.assertIn('技能升级', md)
+        self.assertIn('模糊数符', md)
+        arc = self.client.get('/api/guide/arcs/fork_PaperPlane?section=materials').json['data']['materials'][0]
+        self.assertEqual(arc['cost_gold'], 16000)
+        self.assertEqual(arc['items'][0]['name'], '无味冷点心')
+
+    def test_human_level_tables_preserve_full_data(self):
+        html = self.client.get('/guide/characters/1042?section=abilities').text
+        self.assertIn('type="range"', html)
+        self.assertIn('aria-label="掠影技能等级"', html)
+        self.assertIn('查看全部等级数据', html)
+        self.assertIn('一段伤害倍率', html)
+        self.assertIn('技能目录', html)
+        abilities = self.client.get('/api/guide/characters/1042?section=abilities').json['data']['abilities']
+        self.assertEqual(len(abilities[0]['param_rows'][0]['values']), 13)
+        arc = self.client.get('/guide/arcs/fork_PaperPlane?section=effect').text
+        self.assertIn('灵属性异能伤害提升20%', arc)
+        self.assertIn('23.75%', arc)
+        self.assertIn('35%', arc)
+        materials = self.client.get('/guide/characters/1042?section=materials').text
+        self.assertIn('guide-material-table', materials)
+        self.assertIn('模糊数符', materials)
+        self.assertNotIn('材料 ID', materials)
+
+    def test_hit_details_and_move_groups(self):
+        characters = service.catalog()['characters']
+        blackbird = next(c for c in characters if c['id'] == '1042')
+        melee = blackbird['abilities'][0]
+        group = next(g for g in melee['groups'] if g['name'] == '普通攻击：掠影')
+        self.assertTrue(any('五段伤害倍率' in row['label'] for row in group['param_rows']))
+        first = group['param_rows'][0]['hit_details'][0]
+        self.assertEqual(first['attack_values'][0], '23.7%')
+        self.assertEqual(first['attack_values'][12], '59.7%')
+        self.assertEqual(first['harmony_gain'], 1.161)
+        self.assertEqual(first['energy_gain'], 0.838)
+        self.assertEqual(first['stagger'], 0.141)
+        self.assertEqual(group['param_rows'][1]['hit_details'][0]['repeat'], 2)
+        for character in characters:
+            for ability in character['abilities']:
+                grouped = [r['key'] for g in ability['groups'] for r in g['param_rows']]
+                self.assertCountEqual(grouped, [r['key'] for r in ability['param_rows']])
+                self.assertFalse(any(r['hit_detail_status'] == 'not_provided' for r in ability['param_rows']))
+        nanally = next(c for c in characters if c['id'] == '1010')
+        third = nanally['abilities'][0]['param_rows'][2]
+        self.assertEqual(len(third['hit_details']), 3)
+        html = self.client.get('/guide/characters/1042?section=abilities').text
+        self.assertIn('详细命中数据', html)
+        self.assertIn('基础回能', html)
+        self.assertIn('0.838', html)
+
+    def test_all_characters_have_local_webp_art(self):
+        characters = service.catalog()['characters']
+        self.assertEqual(len(characters), 25)
+        for character in characters:
+            for kind in ('avatar', 'portrait', 'fullbody'):
+                url = character['assets'][kind]
+                self.assertTrue(url.startswith('/static/images/characters/'))
+                self.assertTrue(url.endswith('.webp'))
+                path = ROOT / 'app' / url.removeprefix('/')
+                with path.open('rb') as stream:
+                    header = stream.read(12)
+                self.assertEqual(header[:4], b'RIFF')
+                self.assertEqual(header[8:12], b'WEBP')
+        by_id = {c['id']: c for c in characters}
+        self.assertNotEqual(by_id['1046']['assets'], by_id['1051']['assets'])
+        html = self.client.get('/guide/characters/1042').text
+        self.assertIn('黑羽高清立绘', html)
+        self.assertIn('黑羽头像', html)
+        self.assertIn('默认立绘预览', html)
+
     def test_errors_and_discovery(self):
         for path, status in [('/api/guide/unknown',404),('/api/guide/arcs/missing',404),
                 ('/api/guide/arcs?limit=0',400),('/api/guide/arcs?offset=-1',400),
@@ -88,6 +179,7 @@ class GuideTest(unittest.TestCase):
         importer = load_file('guide_refresh', 'scripts/refresh_guide_data.py')
         value = {'desc':'<Hun>魂属性</>提升<lv>45%</>\\r\\n下一行', 'values':[0.3, 15], 'icon':'unused'}
         self.assertEqual(importer.clean(value), {'desc':'魂属性提升45%\n下一行','values':[0.3,15]})
+        self.assertEqual(importer.clean({'materials': [{'amount': [5]}]}), {'materials': [{'amount': [5]}]})
         for group in service.KINDS:
             records = service.catalog()[group]
             self.assertEqual(len(records),len({x['id'] for x in records}))

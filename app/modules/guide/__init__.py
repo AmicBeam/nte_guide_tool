@@ -7,6 +7,8 @@ from . import service
 blueprint = Blueprint('guide_module', __name__, template_folder='templates',
                       static_folder='static', static_url_path='/static/guide')
 blueprint.add_app_template_filter(service.label, 'guide_label')
+blueprint.add_app_template_filter(service.character_name, 'guide_character_name')
+blueprint.add_app_template_filter(service.equip_description, 'guide_equip_description')
 blueprint.add_app_template_filter(service.display_scalar, 'guide_scalar')
 
 
@@ -55,8 +57,9 @@ def index():
 def entry(kind, identifier):
     record = get_record(kind, identifier)
     sections = service.page_sections(kind, record)
+    art = service.detail(kind, identifier).get('assets') if kind == 'characters' else None
     return render_template('guide/detail.html', record=record, sections=sections, kind=kind,
-                           kinds=service.KINDS, notes=service.schema()['notes'])
+                           kinds=service.KINDS, art=art, notes=service.schema()['notes'])
 
 
 @blueprint.get('/guide/<kind>/<identifier>.md')
@@ -110,6 +113,7 @@ def llms():
 检索：GET /api/guide/search?q=关键词&limit=20&offset=0
 详情：GET /api/guide/{characters|arcs|challenges}/{id}
 纯文本：GET /guide/{characters|arcs|challenges}/{id}.md
+空幕：角色详情加 ?section=equip_slots；升级材料：详情加 ?section=materials。
 按字段读取：详情加 ?section=abilities（角色技能）或 ?section=effect（弧盘效果）。
 按关卡读取：轨外之境详情加 ?stage=12。
 列表返回 total、next_offset 和摘要；详情返回 data。使用 ID 区分重名赛期。

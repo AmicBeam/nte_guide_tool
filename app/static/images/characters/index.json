@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "characters": [
+    {
+      "id": "1003",
+      "name": "早雾",
+      "avatar": "/static/images/characters/avatar/早雾.webp",
+      "portrait": "/static/images/characters/portrait/早雾.webp",
+      "fullbody": "/static/images/characters/fullbody/早雾.webp"
+    },
+    {
+      "id": "1004",
+      "name": "安魂曲",
+      "avatar": "/static/images/characters/avatar/安魂曲.webp",
+      "portrait": "/static/images/characters/portrait/安魂曲.webp",
+      "fullbody": "/static/images/characters/fullbody/安魂曲.webp"
+    },
+    {
+      "id": "1008",
+      "name": "翳",
+      "avatar": "/static/images/characters/avatar/翳.webp",
+      "portrait": "/static/images/characters/portrait/翳.webp",
+      "fullbody": "/static/images/characters/fullbody/翳.webp"
+    },
+    {
+      "id": "1010",
+      "name": "娜娜莉",
+      "avatar": "/static/images/characters/avatar/娜娜莉.webp",
+      "portrait": "/static/images/characters/portrait/娜娜莉.webp",
+      "fullbody": "/static/images/characters/fullbody/娜娜莉.webp"
+    },
+    {
+      "id": "1019",
+      "name": "薄荷",
+      "avatar": "/static/images/characters/avatar/薄荷.webp",
+      "portrait": "/static/images/characters/portrait/薄荷.webp",
+      "fullbody": "/static/images/characters/fullbody/薄荷.webp"
+    },
+    {
+      "id": "1020",
+      "name": "哈尼娅",
+      "avatar": "/static/images/characters/avatar/哈尼娅.webp",
+      "portrait": "/static/images/characters/portrait/哈尼娅.webp",
+      "fullbody": "/static/images/characters/fullbody/哈尼娅.webp"
+    },
+    {
+      "id": "1021",
+      "name": "埃德嘉",
+      "avatar": "/static/images/characters/avatar/埃德嘉.webp",
+      "portrait": "/static/images/characters/portrait/埃德嘉.webp",
+      "fullbody": "/static/images/characters/fullbody/埃德嘉.webp"
+    },
+    {
+      "id": "1023",
+      "name": "白藏",
+      "avatar": "/static/images/characters/avatar/白藏.webp",
+      "portrait": "/static/images/characters/portrait/白藏.webp",
+      "fullbody": "/static/images/characters/fullbody/白藏.webp"
+    },
+    {
+      "id": "1025",
+      "name": "哈索尔",
+      "avatar": "/static/images/characters/avatar/哈索尔.webp",
+      "portrait": "/static/images/characters/portrait/哈索尔.webp",
+      "fullbody": "/static/images/characters/fullbody/哈索尔.webp"
+    },
+    {
+      "id": "1033",
+      "name": "阿德勒",
+      "avatar": "/static/images/characters/avatar/阿德勒.webp",
+      "portrait": "/static/images/characters/portrait/阿德勒.webp",
+      "fullbody": "/static/images/characters/fullbody/阿德勒.webp"
+    },
+    {
+      "id": "1036",
+      "name": "残虹",
+      "avatar": "/static/images/characters/avatar/残虹.webp",
+      "portrait": "/static/images/characters/portrait/残虹.webp",
+      "fullbody": "/static/images/characters/fullbody/残虹.webp"
+    },
+    {
+      "id": "1039",
+      "name": "法帝娅",
+      "avatar": "/static/images/characters/avatar/法帝娅.webp",
+      "portrait": "/static/images/characters/portrait/法帝娅.webp",
+      "fullbody": "/static/images/characters/fullbody/法帝娅.webp"
+    },
+    {
+      "id": "1042",
+      "name": "黑羽",
+      "avatar": "/static/images/characters/avatar/黑羽.webp",
+      "portrait": "/static/images/characters/portrait/黑羽.webp",
+      "fullbody": "/static/images/characters/fullbody/黑羽.webp"
+    },
+    {
+      "id": "1046",
+      "name": "男主",
+      "avatar": "/static/images/characters/avatar/男主.webp",
+      "portrait": "/static/images/characters/portrait/男主.webp",
+      "fullbody": "/static/images/characters/fullbody/男主.webp"
+    },
+    {
+      "id": "1051",
+      "name": "女主",
+      "avatar": "/static/images/characters/avatar/女主.webp",
+      "portrait": "/static/images/characters/portrait/女主.webp",
+      "fullbody": "/static/images/characters/fullbody/女主.webp"
+    },
+    {
+      "id": "1052",
+      "name": "浔",
+      "avatar": "/static/images/characters/avatar/浔.webp",
+      "portrait": "/static/images/characters/portrait/浔.webp",
+      "fullbody": "/static/images/characters/fullbody/浔.webp"
+    },
+    {
+      "id": "1054",
+      "name": "达芙蒂尔",
+      "avatar": "/static/images/characters/avatar/达芙蒂尔.webp",
+      "portrait": "/static/images/characters/portrait/达芙蒂尔.webp",
+      "fullbody": "/static/images/characters/fullbody/达芙蒂尔.webp"
+    },
+    {
+      "id": "1055",
+      "name": "九原",
+      "avatar": "/static/images/characters/avatar/九原.webp",
+      "portrait": "/static/images/characters/portrait/九原.webp",
+      "fullbody": "/static/images/characters/fullbody/九原.webp"
+    },
+    {
+      "id": "1057",
+      "name": "明音凛",
+      "avatar": "/static/images/characters/avatar/明音凛.webp",
+      "portrait": "/static/images/characters/portrait/明音凛.webp",
+      "fullbody": "/static/images/characters/fullbody/明音凛.webp"
+    },
+    {
+      "id": "1070",
+      "name": "海月",
+      "avatar": "/static/images/characters/avatar/海月.webp",
+      "portrait": "/static/images/characters/portrait/海月.webp",
+      "fullbody": "/static/images/characters/fullbody/海月.webp"
+    },
+    {
+      "id": "1071",
+      "name": "卡厄斯",
+      "avatar": "/static/images/characters/avatar/卡厄斯.webp",
+      "portrait": "/static/images/characters/portrait/卡厄斯.webp",
+      "fullbody": "/static/images/characters/fullbody/卡厄斯.webp"
+    },
+    {
+      "id": "1072",
+      "name": "灵可",
+      "avatar": "/static/images/characters/avatar/灵可.webp",
+      "portrait": "/static/images/characters/portrait/灵可.webp",
+      "fullbody": "/static/images/characters/fullbody/灵可.webp"
+    },
+    {
+      "id": "1073",
+      "name": "小吱",
+      "avatar": "/static/images/characters/avatar/小吱.webp",
+      "portrait": "/static/images/characters/portrait/小吱.webp",
+      "fullbody": "/static/images/characters/fullbody/小吱.webp"
+    },
+    {
+      "id": "1075",
+      "name": "伊洛伊",
+      "avatar": "/static/images/characters/avatar/伊洛伊.webp",
+      "portrait": "/static/images/characters/portrait/伊洛伊.webp",
+      "fullbody": "/static/images/characters/fullbody/伊洛伊.webp"
+    },
+    {
+      "id": "1076",
+      "name": "真红",
+      "avatar": "/static/images/characters/avatar/真红.webp",
+      "portrait": "/static/images/characters/portrait/真红.webp",
+      "fullbody": "/static/images/characters/fullbody/真红.webp"
+    }
+  ]
+}

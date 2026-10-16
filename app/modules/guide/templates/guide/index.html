@@ -19,7 +19,7 @@
 <div class="guide-grid">
 {% for item in items %}<a class="guide-card" href="{{ item.url }}">
 <div class="guide-card-top"><span>{{ '%02d'|format(loop.index) }}</span><span>{{ item.element_name|default(item.type_name|default('常驻' if item.is_permanent|default(false) else '轮换环线')) }}{% if item.rarity is defined %} / {{ item.rarity }}★{% endif %}</span></div>
-<h3>{{ item.name }}</h3>
+<div class="guide-card-identity">{% if item.assets is defined %}<img src="{{ item.assets.avatar }}" alt="{{ item.name }}头像" width="72" height="72" loading="lazy" decoding="async">{% endif %}<h3>{{ item.name }}</h3></div>
 {% if kind == 'challenges' %}<p>{{ item.description }}</p><small>{{ item.stage_count }} 关 · {{ item.begin_date or '日期未提供' }}{% if item.end_date %} → {{ item.end_date }}{% endif %}</small>{% else %}<p>{{ item.aliases[0] if item.aliases|default([]) else item.id }}</p>{% endif %}
 <div class="guide-card-bottom"><code>{{ item.id }}</code><span aria-label="查看详情">↗</span></div>
 </a>{% else %}<div class="guide-empty"><h3>没有找到相关资料</h3><p>尝试角色名、技能关键词，或清除筛选条件。</p><a href="?kind={{ kind }}">查看全部{{ kinds[kind] }}</a></div>{% endfor %}

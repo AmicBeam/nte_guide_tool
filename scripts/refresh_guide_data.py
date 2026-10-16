@@ -10,13 +10,17 @@ from pathlib import Path
 import re
 import subprocess
 import urllib.request
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from guide_skill_details import enrich_catalog, load_tables
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = 'https://static.nanoka.cc'
 # Presentation and implementation assets do not belong in a text reference.
 OMIT = {'bg_icon', 'color', 'icon', 'icon_gacha', 'element_icon', 'type_icon', 'card_icon', 'original_icon',
         'background', 'manual_background', 'asset', 'buffs', 'gameplay_tag',
-        'show_detail_info', 'materials', 'material', 'route_ui_id', 'display_drop_id',
+        'show_detail_info', 'route_ui_id', 'display_drop_id',
         'award_drop_id', 'pool_id', 'attribute_id'}
 
 
@@ -52,6 +56,25 @@ def build(version, fetcher=fetch):
     characters = fetcher(f'{root}/character.json')
     weapons = fetcher(f'{root}/weapon.json')
     seasons = fetcher(f'{root}/zh/abyss/index.json')['seasons']
+    item_index = fetcher(f'{root}/zh/item.json')
+    item_names = {str(item['id']).casefold(): item['name'] for item in item_index.values()}
+    for currency, bundled_id in (('gold', 'gold_1000'), ('fons', 'fons_100')):
+        if bundled_id in item_names:
+            item_names[currency] = re.sub(r'\s*[x×]\s*[\d,]+$', '', item_names[bundled_id], flags=re.I)
+
+    def material_names(value):
+        if isinstance(value, dict):
+            result = {key: material_names(child) for key, child in value.items()}
+            if 'items_id' in value:
+                ids, amounts = value['items_id'], value.get('amount', [])
+                if len(ids) != len(amounts):
+                    raise ValueError('Material IDs and quantities do not match')
+                result['items'] = [{'id': ident, 'name': item_names.get(str(ident).casefold(), str(ident)),
+                                    'amount': amount} for ident, amount in zip(ids, amounts)]
+            return result
+        if isinstance(value, list):
+            return [material_names(child) for child in value]
+        return value
     jobs = [('characters', x, f'{root}/zh/character/{x}.json') for x in characters]
     jobs += [('arcs', x, f'{root}/zh/weapon/{x}.json') for x in weapons]
     jobs += [('challenges', x['id'], f'{root}/zh/abyss/{x["id"]}.json') for x in seasons]
@@ -64,20 +87,27 @@ def build(version, fetcher=fetch):
         if kind == 'characters':
             keys = ('id', 'name', 'element', 'element_id', 'element_name', 'rarity',
                     'char_tags', 'ability_name', 'hp', 'atk', 'def', 'stats',
-                    'abilities', 'awaken', 'resonance', 'nouns')
+                    'abilities', 'awaken', 'resonance', 'nouns', 'equip_slots', 'breakthrough')
             raw = {k: raw[k] for k in keys if k in raw}
+            raw['materials'] = {
+                'breakthrough': raw.pop('breakthrough', []),
+                'skills': [{'id': a['id'], 'name': a['name'], 'levels': a['materials']}
+                           for a in raw.get('abilities', []) if a.get('materials')],
+            }
+            if not raw.get('equip_slots') or not raw['materials']['breakthrough']:
+                raise ValueError(f'Missing character equipment or breakthrough: {identifier}')
             if not raw.get('abilities'):
                 raise ValueError(f'Missing character abilities: {identifier}')
         elif kind == 'arcs':
             keys = ('id', 'name', 'rarity', 'type_id', 'type_name', 'description',
-                    'stats', 'effect', 'exclusive_character_ids', 'exclusive_desc')
+                    'stats', 'effect', 'exclusive_character_ids', 'exclusive_desc', 'materials')
             raw = {k: raw[k] for k in keys if k in raw}
             if not raw.get('effect'):
                 raise ValueError(f'Missing arc effect: {identifier}')
         else:
             if len(raw.get('stages', [])) != raw.get('stage_count'):
                 raise ValueError(f'Incomplete challenge stages: {identifier}')
-        record = clean(raw)
+        record = clean(material_names(raw))
         record['aliases'] = list(dict.fromkeys(str(characters[identifier][k])
             for k in ('en', 'zh', 'ja', 'ko') if characters[identifier].get(k))) if kind == 'characters' else []
         return kind, record
@@ -95,10 +125,12 @@ def build(version, fetcher=fetch):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', default='latest')
+    parser.add_argument('--ntedata-dir', type=Path, help='Local directory with the two skill tables; otherwise read with gh.')
     parser.add_argument('--transport', choices=('urllib', 'curl'), default='urllib')
     parser.add_argument('--output', type=Path, default=ROOT / 'app/modules/guide/data/catalog.json')
     args = parser.parse_args()
-    data = build(args.version, fetch_curl if args.transport == 'curl' else fetch)
+    tables = load_tables(args.ntedata_dir)
+    data = enrich_catalog(build(args.version, fetch_curl if args.transport == 'curl' else fetch), tables)
     # Do not replace the working dataset until every detail has validated.
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix('.tmp')

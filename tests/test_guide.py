@@ -257,17 +257,20 @@ class GuideTest(unittest.TestCase):
         self.assertEqual(result['total_gold'], 250)
         self.assertEqual(result['overflow_experience'], 700)
         values['current_exp'] = 200
-        self.assertEqual(self.client.post(url, json=values).json['data']['experience'], 100)
-        values.update(current_level=20, target_level=20, current_exp=0, target_breakthrough=1)
+        self.assertEqual(self.client.post(url, json=values).json['data']['experience'], 300)
+        values.update(current_level=20, target_level=20, current_ascended=False, target_ascended=True)
         result = self.client.post(url, json=values).json['data']
         self.assertEqual(result['experience'], 0)
         self.assertEqual(result['total_gold'], 25000)
         self.assertEqual(len(result['breakdown']), 1)
-        values['current_breakthrough'] = 1
+        values['current_ascended'] = True
         self.assertEqual(self.client.post(url, json=values).json['data']['items'], [])
         values['target_level'] = 21
         self.assertGreater(self.client.post(url, json=values).json['data']['experience'], 0)
-        for override in [{'target_level': 31}, {'current_exp': 1, 'current_breakthrough': 0},
+        automatic = self.client.post(url, json={**values, 'target_level': 31, 'target_breakthrough': 0}).json['data']
+        self.assertEqual(automatic['state']['target_breakthrough'], 2)
+        self.assertFalse(automatic['state']['target_ascended'])
+        for override in [{'current_ascended': 'invalid'}, {'target_level': 20, 'target_ascended': False},
                          {'target_level': 19}, {'target_level': 20.5}, {'current_level': True},
                          {'target_skill_0': 10}, {'target_skill_0': 99}, {'target_level': None}]:
             response = self.client.post(url, json={**values, **override})
@@ -275,7 +278,11 @@ class GuideTest(unittest.TestCase):
         self.assertEqual(self.client.post(url, json=[]).status_code, 400)
         page = self.client.get('/guide/characters/1042/cultivation')
         self.assertEqual(page.status_code, 200)
-        self.assertIn('当前等级已积累经验', page.text)
+        self.assertNotIn('name="current_exp"', page.text)
+        self.assertNotIn('已突破次数', page.text)
+        self.assertIn('<legend>普通攻击</legend>', page.text)
+        self.assertIn('<legend>变轨攻击</legend>', page.text)
+        self.assertNotIn('掠影', page.text)
         page = self.client.get('/guide/characters/1042/cultivation?calculate=1')
         self.assertIn('3,967,000', page.text)
         self.assertIn('记忆的永恒', page.text)
@@ -291,7 +298,7 @@ class GuideTest(unittest.TestCase):
             if key.startswith('target_'):
                 values[key] = values[key.replace('target_', 'current_')]
         url = '/api/guide/characters/1042/cultivation'
-        values.update(current_level=30, target_level=30, current_breakthrough=2, target_breakthrough=2)
+        values.update(current_level=30, target_level=30, current_ascended=True, target_ascended=True)
         values['target_skill_0'] = 2
         result = self.client.post(url, json=values).json['data']
         self.assertEqual(result['total_gold'], 2000)

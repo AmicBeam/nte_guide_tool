@@ -16,17 +16,24 @@ def number(value, name, low, high):
 
 def skill_options(character):
     result = []
+    abilities = {ability['id']: ability for ability in character['abilities']}
+    labels = {'melee': '普通攻击', 'skill': '变轨攻击', 'ultraskill': '极轨终结',
+              'qte': '援护技', 'passive': '天赋', 'city': '都市技能', 'peculiarity': '特性'}
     for skill in character['materials']['skills']:
         levels = sorted(int(row['level']) for row in skill['levels'])
         # Level-one entries are unlock costs, not free pre-existing passives.
         minimum = 0 if 1 in levels else 1
-        result.append({**skill, 'minimum': minimum, 'maximum': max(levels)})
+        ability = abilities[skill['id']]
+        label = labels[ability['type']]
+        if ability['type'] in ('passive', 'city'):
+            label += {1: '一', 2: '二', 3: '三'}.get(ability['ability_index'], str(ability['ability_index']))
+        result.append({**skill, 'label': label, 'minimum': minimum, 'maximum': max(levels)})
     return result
 
 
 def defaults(character, config):
     result = {'current_level': 1, 'target_level': config['level_caps'][str(character['id'])][-1],
-              'current_breakthrough': 0, 'target_breakthrough': 6, 'current_exp': 0}
+              'current_ascended': False, 'target_ascended': False}
     for i, skill in enumerate(skill_options(character)):
         result[f'current_skill_{i}'] = skill['minimum']
         result[f'target_skill_{i}'] = skill['maximum']
@@ -38,20 +45,21 @@ def calculate(character, config, experience, values):
     options = skill_options(character)
     state = {}
     for side in ('current', 'target'):
-        stage = number(values.get(f'{side}_breakthrough'), '突破次数', 0, len(caps) - 1)
         level = number(values.get(f'{side}_level'), '角色等级', 1, caps[-1])
-        minimum = 1 if stage == 0 else caps[stage - 1]
-        if not minimum <= level <= caps[stage]:
-            raise ValueError(f'{"当前" if side == "current" else "目标"}突破 {stage} 次时，角色等级须为 {minimum}–{caps[stage]}')
+        ascended = False
+        if level in caps[:-1]:
+            flag = values.get(f'{side}_ascended', False)
+            if not isinstance(flag, (str, int, bool)) or flag not in (False, True, '0', '1'):
+                raise ValueError('是否已突破须为 0 或 1')
+            ascended = flag in (True, '1')
+        stage = sum(cap < level for cap in caps[:-1]) + int(ascended)
         state[f'{side}_level'], state[f'{side}_breakthrough'] = level, stage
+        state[f'{side}_ascended'] = ascended
     for field in ('level', 'breakthrough'):
         if state[f'target_{field}'] < state[f'current_{field}']:
             raise ValueError('目标练度不能低于当前练度')
     xp_rows = {row['level']: row['required_exp'] for row in experience}
     current, target = state['current_level'], state['target_level']
-    exp_cap = xp_rows[current + 1] - 1 if current < caps[state['current_breakthrough']] else 0
-    current_exp = number(values.get('current_exp', 0), '当前等级已积累经验', 0, exp_cap)
-    state['current_exp'] = current_exp
     totals, breakdown = {}, []
 
     def add(category, entries):
@@ -73,8 +81,6 @@ def calculate(character, config, experience, values):
         if end <= segment_start:
             continue
         needed = sum(xp_rows[level] for level in range(segment_start + 1, end + 1))
-        if segment_start == current:
-            needed -= current_exp
         xp_needed += needed
         unit = min(book['exp'] for book in config['exp_books'])
         remaining = ((needed + unit - 1) // unit) * unit
@@ -96,17 +102,17 @@ def calculate(character, config, experience, values):
     for index in range(start, end):
         add(f'第 {index + 1} 次突破', stages[index]['items'])
     for i, skill in enumerate(options):
-        before = number(values.get(f'current_skill_{i}'), f'{skill["name"]}当前等级', skill['minimum'], skill['maximum'])
-        after = number(values.get(f'target_skill_{i}'), f'{skill["name"]}目标等级', before, skill['maximum'])
+        before = number(values.get(f'current_skill_{i}'), f'{skill["label"]}当前等级', skill['minimum'], skill['maximum'])
+        after = number(values.get(f'target_skill_{i}'), f'{skill["label"]}目标等级', before, skill['maximum'])
         state[f'current_skill_{i}'], state[f'target_skill_{i}'] = before, after
         rows = {int(row['level']): row for row in skill['levels']}
         for level, stage in ((before, start), (after, end)):
             if level in rows and rows[level].get('require_breakthrough_level', 0) > stage:
-                raise ValueError(f'{skill["name"]} {level} 级需要突破 {rows[level]["require_breakthrough_level"]} 次')
+                raise ValueError(f'{skill["label"]} {level} 级需要突破 {rows[level]["require_breakthrough_level"]} 次')
         for level in range(before + 1, after + 1):
             if level not in rows:
-                raise ValueError(f'{skill["name"]}缺少 {level} 级材料配置')
-            add(f'{skill["name"]} · {level} 级', rows[level]['items'])
+                raise ValueError(f'{skill["label"]}缺少 {level} 级材料配置')
+            add(f'{skill["label"]} · {level} 级', rows[level]['items'])
     return {'state': state, 'experience': xp_needed, 'book_experience': xp_provided,
             'overflow_experience': xp_provided - xp_needed, 'level_up_gold': book_gold,
             'total_gold': totals.get('gold', {}).get('amount', 0),

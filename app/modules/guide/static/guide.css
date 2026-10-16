@@ -34,6 +34,7 @@
 .guide-cultivation-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .guide-cultivation-form fieldset { border: 1px solid var(--g-line); border-radius: 12px; margin: 0 0 1rem; padding: 1rem; min-width: 0; }
 .guide-cultivation-form legend { font-weight: 700; padding: 0 .4rem; }
+.guide-cultivation-field[hidden] { display: none; }
 .guide-cultivation-field { display: flex; flex-direction: column; gap: .5rem; margin: .5rem 0 1rem; font-size: .9rem; }
 .guide-cultivation-field input, .guide-cultivation-field select { box-sizing: border-box; width: 100%; padding: .7rem; border: 1px solid #ffffff25; border-radius: 8px; background: #ffffff08; color: var(--g-ink); font: inherit; }
 .guide-cultivation-skills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }

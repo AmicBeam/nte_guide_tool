@@ -265,3 +265,5 @@ python scripts/refresh_guide_data.py --transport curl
 显式刷新：`python scripts/sync_guide_arc_cultivation.py`；可用 `--tables-dir` 指定包含 `DT_CultivationGuideData.json`、`DT_ForkItemData.json`、`DT_ForkUpgradeData.json`、`DT_ForkBreakthroughData.json` 和 `DT_ItemConfig.json` 的本地目录。核对全部弧盘材料、费用、经验与等级上限后原子替换；随后运行 `scripts/sync_guide_material_images.py` 补齐染剂展示。请求和启动不联网。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_arc_cultivation tests.test_guide_user_data tests.test_guide tests.test_guide_account tests.test_module_routes -q`；`node --test tests/test_guide_private_response.cjs tests/test_guide_equipment_images.cjs`。覆盖全部弧盘、首次升级、原地突破、无消耗、材料合计、无效类型／等级、推荐链接和同步预填；浏览器核对自动填入、手填保留、可选表单、换选弧盘与窄屏。
+
+“相关排轴与配装收益”标题右侧仅为有合轴第一页的角色显示“合轴收益表”按钮，进入 `/overlap?character=<合轴角色ID>` 并预选对应角色。`data/overlap_links.json` 保存攻略角色ID与已发布合轴角色ID的明确绑定，当前覆盖安魂曲、残虹、黑羽、明音凛；其他角色不显示。链接不进入双角色分页，不导入合轴领域服务；合轴第一页角色范围变化时同步更新绑定并运行 `tests.test_guide_builds`。

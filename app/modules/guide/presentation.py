@@ -59,3 +59,13 @@ def kongmu_entry(record):
     if recommendations:
         params['cartridge'] = recommendations[0]['id']
     return {'url': '/kongmu?' + urlencode(params), 'recommendations': recommendations}
+
+
+@lru_cache(maxsize=1)
+def overlap_links():
+    return json.loads((Path(__file__).parent / 'data/overlap_links.json').read_text(encoding='utf-8'))
+
+
+def overlap_entry(record):
+    identifier = overlap_links().get(str(record['id']))
+    return '/overlap?' + urlencode({'character': identifier}) if identifier else None

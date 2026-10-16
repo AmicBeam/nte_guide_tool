@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import unittest
 
@@ -31,6 +32,21 @@ class GuideBuildsTest(unittest.TestCase):
         self.assertNotIn('id="related-compare"', builds.text)
         self.assertNotIn('/shaft/compare', builds.text)
         self.assertIn('id="related-preview-frame"', builds.text)
+
+    def test_overlap_link_only_for_characters_in_published_first_page(self):
+        from app.modules.guide import presentation, service
+        published = json.loads((ROOT / 'app/modules/overlap/static/data/tables.json').read_text())
+        ids = {character['id'] for character in published['characters']}
+        bindings = presentation.overlap_links()
+        self.assertEqual(set(bindings.values()), ids)
+        for character in service.catalog()['characters']:
+            page = self.client.get(f"/guide/characters/{character['id']}/builds").text
+            if character['id'] in bindings:
+                self.assertIn('href="/overlap?character=' + bindings[character['id']] + '"', page)
+                self.assertIn('合轴收益表 ↗', page)
+            else:
+                self.assertNotIn('合轴收益表 ↗', page)
+            self.assertNotIn('/overlap?page=pair', page)
 
     def test_unknown_character_is_not_a_generic_unfiltered_page(self):
         self.assertEqual(self.client.get('/guide/characters/missing/builds').status_code, 404)

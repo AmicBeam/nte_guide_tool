@@ -65,7 +65,7 @@
     if (!state.current?.messages.length) container.append(node('p','可以问我角色怎么玩、怎么配队，查阅技能、在线排轴或TapTap攻略。也可以发送截图一起分析。','guide-chat-empty'));
     for (const message of state.current?.messages || []) {
       const article=node('article','',`guide-chat-message ${message.role}`);
-      article.append(node('small',message.role==='user'?'你':'攻略助手','guide-chat-message-label'));
+      article.append(node('small',message.role==='user'?'你':message.incomplete?'攻略助手 · 未完成':'攻略助手','guide-chat-message-label'));
       const body=node('div','','guide-chat-message-body');richText(body,message.text);article.append(body);
       if (message.images?.length) {
         const images=node('div','','guide-chat-message-images');
@@ -129,6 +129,8 @@
     session.updatedAt=Date.now();if(!session.title) session.title=(text || '图片问答').slice(0,24);
     state.busy=true;state.controller=new AbortController();
     $('guide-chat-input').value='';renderAttachments();render();await persist();status('正在连接攻略助手…');
+    let draft='',draftArticle=null,draftBody=null;
+    const resetDraft=()=>{draft='';draftArticle?.remove();draftArticle=null;draftBody=null;};
     try {
       const response=await fetch('/api/guide/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.token}`},
         body:JSON.stringify({messages:Store.context(session.messages),page:location.pathname+location.search,
@@ -140,7 +142,21 @@
         if(epoch!==state.epoch || state.current!==session) return;
         if(value.type==='status') status(value.text);
         if(value.type==='error') problem=value.text;
+        if(value.type==='answer_reset') resetDraft();
+        if(value.type==='answer_delta' && !answered) {
+          const text=String(value.text || '');draft+=text;
+          const container=$('guide-chat-messages');
+          const follow=container.scrollHeight-container.scrollTop-container.clientHeight<70;
+          if(!draftArticle) {
+            draftArticle=node('article','','guide-chat-message assistant');
+            draftArticle.append(node('small','攻略助手 · 正在回答','guide-chat-message-label'));
+            draftBody=node('div','','guide-chat-message-body');draftArticle.append(draftBody);container.append(draftArticle);
+          }
+          draftBody.replaceChildren();richText(draftBody,draft);status('正在回答…');
+          if(follow) container.scrollTop=container.scrollHeight;
+        }
         if(value.type==='answer' && !answered) {
+          resetDraft();
           answered=true;session.messages.push({role:'assistant',text:String(value.text),timestamp:Date.now(),sources:value.sources || []});
           session.updatedAt=Date.now();persist();render();status('');
         }
@@ -149,7 +165,13 @@
         while((newline=pending.indexOf('\n'))>=0) {accept(pending.slice(0,newline));pending=pending.slice(newline+1);}}
       pending+=decoder.decode();if(pending.trim()) accept(pending);
       if(!answered) throw new Error(problem || '回答未完成，请重新发送问题。');
-    } catch(error) {if(epoch===state.epoch) status(error.name==='AbortError'?'已停止。本次问题已保存在浏览器，可继续提问。':error.message);}
+    } catch(error) {if(epoch===state.epoch) {
+      if(draft) {
+        session.messages.push({role:'assistant',text:draft,timestamp:Date.now(),incomplete:true});
+        session.updatedAt=Date.now();persist();render();
+      }
+      status(error.name==='AbortError'?'已停止，已收到的内容保存在浏览器，可继续提问。':error.message);
+    }}
     finally {if(epoch===state.epoch) {state.busy=false;state.controller=null;controls();}}
   }
   async function authenticate() {

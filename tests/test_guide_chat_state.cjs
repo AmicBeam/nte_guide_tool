@@ -31,3 +31,8 @@ test('long answers stay within the server limit and retain references for follow
  messages[0].sources=Array.from({length:20},()=>({title:'标题'.repeat(100),url:'https://example.com/'+ 'x'.repeat(600)}));
  assert.equal(state.context(messages)[0].text.length,12000);
 });
+test('interrupted answers stay marked when included in the next model context',()=>{
+ const messages=[{role:'assistant',text:'未说完',timestamp:1,incomplete:true}];
+ assert.match(state.context(messages)[0].text,/上次回答中断/);
+ assert.equal(messages[0].text,'未说完');
+});

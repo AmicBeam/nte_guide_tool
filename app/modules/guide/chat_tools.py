@@ -2,7 +2,7 @@
 import json
 from typing import Any
 
-from . import read_tools, service, taptap
+from . import chat_links, read_tools, service, taptap
 
 
 def definition(name: str, description: str, properties: dict, required: list[str] | None = None) -> dict:
@@ -14,11 +14,11 @@ def definition(name: str, description: str, properties: dict, required: list[str
 TEXT = {'type': 'string'}
 KINDS = {'type': 'string', 'enum': ['characters', 'arcs', 'challenges', 'endless']}
 TOOLS = [
-    definition('wiki_search', '查询本站资料目录或跨分类全文搜索，等同CLI list/search。先搜索获得准确ID。',
+    definition('wiki_search', '查询本站资料目录或跨分类全文搜索，等同CLI list/search。先搜索获得准确ID；links为可直接使用的本站网页链接。',
                {'query': TEXT, 'kind': KINDS, 'limit': {'type': 'integer', 'minimum': 1, 'maximum': 20},
                 'offset': {'type': 'integer', 'minimum': 0}, 'element': TEXT,
                 'rarity': {'type': 'integer', 'minimum': 1, 'maximum': 5}}),
-    definition('wiki_get', '读取角色、弧盘、轨外之境或全站深境，等同CLI get。大条目请用section或stage缩小。',
+    definition('wiki_get', '读取角色、弧盘、轨外之境或全站深境，等同CLI get。大条目请用section或stage缩小；links提供详情、养成、配装等可用网页跳转。',
                {'kind': KINDS, 'id': TEXT, 'section': TEXT, 'stage': {'type': 'integer'}}, ['kind', 'id']),
     definition('wiki_schema', '读取本站数据范围和数值含义，等同CLI schema。', {}),
     definition('my_profiles', '仅在用户询问本人已同步练度或配装时读取当前登录者自己的快照，等同CLI me。不会同步游戏。',
@@ -59,18 +59,23 @@ class Toolkit:
         images = []
         if name == 'wiki_search':
             value = read_tools.reference_search(**args)
+            value = {**value, 'items': [{**row, 'links': chat_links.entry_links(row['kind'], row)}
+                                      for row in value['items']]}
             for row in value['items']:
-                self.source(row['name'], row.get('url') or f'/guide/{row["kind"]}/{row["id"]}')
+                self.source(row['name'], row['links']['detail'])
         elif name == 'wiki_get':
             value = service.detail(args['kind'], args['id'], args.get('section'), args.get('stage'))
-            self.source(value['name'], f'/guide/{args["kind"]}/{args["id"]}')
+            value = {**value, 'links': chat_links.entry_links(args['kind'], value, args.get('stage'))}
+            self.source(value['name'], value['links']['detail'])
         elif name == 'wiki_schema':
             value = service.schema()
         elif name == 'my_profiles':
             value = read_tools.my_profiles(self.player, **args)
+            value = {**value, 'links': {'account': '/guide/account'}}
             self.source('我的已同步配装', '/guide/account')
         elif name == 'calculate_cultivation':
             value = read_tools.cultivation_result(**args)
+            value = {**value, 'links': {'cultivation': f'/guide/characters/{args["character"]}/cultivation'}}
             self.source('角色养成计算器', f'/guide/characters/{args["character"]}/cultivation')
         elif name == 'search_axes':
             value = read_tools.axes(self.axis_reader, self.player, **args)

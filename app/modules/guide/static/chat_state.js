@@ -19,6 +19,7 @@
       const references = message.role === 'assistant' ? (message.sources || []).slice(0,20).map(source =>
         `${String(source.title).slice(0,160)}: ${String(source.url).slice(0,500)}`).join('\n').slice(0,4000) : '';
       const suffix = (references ? `\n[上轮回答引用的资料，仅供追问定位]\n${references}` : '') +
+        (message.incomplete ? '\n[上次回答中断，以上仅为未完成内容。]' : '') +
         (!included && images.length ? '\n[早前图片未包含，需要时请重发。]' : '');
       const bounded = message.text.slice(0, Math.max(0,12000-suffix.length)) + suffix;
       if (bounded.length > text) break;

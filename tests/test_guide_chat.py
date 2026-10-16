@@ -11,6 +11,15 @@ import unittest
 from unittest.mock import patch
 
 
+def streamed_model(model):
+    def stream(*args):
+        message = model(*args) if callable(model) else model
+        if message.get('content'):
+            yield {'type': 'delta', 'text': message['content']}
+        yield {'type': 'message', 'message': message}
+    return stream
+
+
 class HistoryTest(unittest.TestCase):
     def test_parallel_tool_replies_precede_external_images(self):
         service = importlib.import_module('app.modules.guide.chat_service')
@@ -20,7 +29,7 @@ class HistoryTest(unittest.TestCase):
         def complete(settings, messages, tools):
             seen.append(json.loads(json.dumps(messages)))
             return {'tool_calls': calls} if len(seen) == 1 else {'content': '已读取。'}
-        with patch.object(service.chat_model, 'complete', side_effect=complete), \
+        with patch.object(service.chat_model, 'stream', side_effect=streamed_model(complete)), \
                 patch.object(service.chat_tools, 'Toolkit') as toolkit:
             toolkit.return_value.execute.return_value = ({'images_read': 1}, ['data:synthetic'])
             toolkit.return_value.sources = []
@@ -101,7 +110,7 @@ class GuideChatTest(unittest.TestCase):
         from app.modules.guide import chat_quota, chat_service
         now = datetime(2026, 10, 17, 4)
         with patch.object(chat_quota, 'datetime') as clock, \
-                patch.object(self.chat_model, 'complete', return_value={'content': '回答'}) as model:
+                patch.object(self.chat_model, 'stream', side_effect=streamed_model({'content': '回答'})) as model:
             clock.fromisoformat.side_effect = datetime.fromisoformat
             clock.utcnow.return_value = now
             for index in range(10):
@@ -183,7 +192,7 @@ class GuideChatTest(unittest.TestCase):
                     'function': {'name': 'wiki_search', 'arguments': '{"query":"明音凛","kind":"characters"}'}}]}
             self.assertIn('1057', messages[-1]['content'])
             return {'content': '可以查看[明音凛资料](/guide/characters/1057)。'}
-        with patch.object(self.chat_model, 'complete', side_effect=model):
+        with patch.object(self.chat_model, 'stream', side_effect=streamed_model(model)):
             response = self.post_chat()
             events = [json.loads(line) for line in response.text.splitlines()]
         self.assertEqual(response.status_code, 200)
@@ -197,15 +206,46 @@ class GuideChatTest(unittest.TestCase):
         self.assertNotIn('当前页面', seen[0][1]['content'][0]['text'])
         self.assertEqual(response.headers['Cache-Control'], 'no-store')
 
+    def test_answer_deltas_are_delivered_before_final_message(self):
+        def model(*args):
+            yield {'type': 'delta', 'text': '先收到'}
+            yield {'type': 'delta', 'text': '后收到'}
+            yield {'type': 'message', 'message': {'content': '先收到后收到'}}
+        with patch.object(self.chat_model, 'stream', side_effect=model):
+            response = self.post_chat()
+            chunks = iter(response.response)
+            self.assertEqual(json.loads(next(chunks))['type'], 'status')
+            self.assertEqual(json.loads(next(chunks)), {'type': 'answer_delta', 'text': '先收到'})
+            self.assertEqual(json.loads(next(chunks)), {'type': 'answer_delta', 'text': '后收到'})
+            self.assertEqual(json.loads(next(chunks))['type'], 'answer')
+            response.close()
+
+    def test_tools_supply_verified_html_links(self):
+        player = self.dao_module.get_player_by_token(self.token)
+        toolkit = self.chat_tools.Toolkit(player, self.app.extensions['guide_axis_reader'])
+        result, _ = toolkit.execute('wiki_search', {'query': '黑羽', 'kind': 'characters'})
+        links = result['items'][0]['links']
+        self.assertEqual(links['detail'], '/guide/characters/1042')
+        self.assertEqual(links['cultivation'], '/guide/characters/1042/cultivation')
+        self.assertEqual(links['builds'], '/guide/characters/1042/builds')
+        for url in links.values():
+            self.assertEqual(self.client.get(url).status_code, 200, url)
+        result, _ = toolkit.execute('wiki_get', {'kind': 'characters', 'id': '1042', 'section': 'abilities'})
+        self.assertEqual(result['links'], links)
+        result, _ = toolkit.execute('wiki_get', {'kind': 'arcs', 'id': 'fork_twinbirds'})
+        self.assertEqual(result['links'], {'detail': '/guide/arcs/fork_twinbirds'})
+        result, _ = toolkit.execute('wiki_get', {'kind': 'endless', 'id': 'EndlessTrial_51_100', 'stage': 100})
+        self.assertEqual(result['links']['detail'], '/guide/endless/EndlessTrial_51_100?stage=100')
+
     def test_images_reach_model_and_failures_are_safe(self):
         image = 'data:image/png;base64,' + base64.b64encode(b'\x89PNG\r\n\x1a\nsynthetic').decode()
         def model(settings, messages, tools):
             self.assertEqual(messages[-1]['content'][1]['image_url']['url'], image)
             return {'content': '已读取图片。'}
-        with patch.object(self.chat_model, 'complete', side_effect=model):
+        with patch.object(self.chat_model, 'stream', side_effect=streamed_model(model)):
             response = self.post_chat(messages=[{'role': 'user', 'text': '', 'images': [image], 'timestamp': time.time() * 1000}])
             self.assertIn('已读取图片', response.text)
-        with patch.object(self.chat_model, 'complete', side_effect=OSError('synthetic-api-secret')):
+        with patch.object(self.chat_model, 'stream', side_effect=OSError('synthetic-api-secret')):
             response = self.post_chat()
             self.assertNotIn('synthetic-api-secret', response.text)
             self.assertIn('error', response.text)
@@ -219,7 +259,7 @@ class GuideChatTest(unittest.TestCase):
         toolkit = self.chat_tools.Toolkit(player, self.app.extensions['guide_axis_reader'])
         with patch.object(self.chat_tools.read_tools.user_data, 'profiles', return_value=[]) as profiles:
             value, images = toolkit.execute('my_profiles', {})
-            self.assertEqual(value, {'data': []})
+            self.assertEqual(value, {'data': [], 'links': {'account': '/guide/account'}})
             self.assertEqual(profiles.call_args.args[0].id, player.id)
         for arguments in [{'user_id': 'someone-else'}, {'token': 'secret'}, {'command': 'sh'}]:
             with self.assertRaises(ValueError):

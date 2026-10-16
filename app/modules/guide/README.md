@@ -309,3 +309,11 @@ HTTP入口为`GET /api/guide/axes`（重复`character`参数）和`GET /api/guid
 每个本站账号在滚动60分钟内最多发送10条消息，文字和附图消息均按一次发送计数，模型内部工具查询不额外计数。通过输入校验且取得并发执行位后即计数，模型失败或用户停止仍计入；未登录、未配置、无效输入和并发繁忙请求不计入。达到上限返回HTTP 429、`chat_rate_limited`、`Retry-After`秒数，并在现有对话状态区提示预计等待分钟数。额度按账号跨页面／对话共用。
 
 `chat_quota.py`通过独立`GuideChatQuota`表和IMMEDIATE事务原子保留发送额度，只保存账号关联与至多10个请求时间，不保存消息或附图；服务启动自动建表，重启及多进程共用同一数据库时额度保持有效。过期时间在下次成功保留时清理。验证：`.venv/bin/python -m unittest tests.test_guide_chat -q`，覆盖第10／11条、滚动边界、账号隔离、重开数据库、并发请求及拒绝请求不扣额度。
+
+## 攻略助手流式回答与站内链接
+
+模型请求启用SSE流式输出，后端增量拼接文字与工具参数，并向浏览器发送`answer_delta`正文片段；工具调用轮次用`answer_reset`清除临时文字，最终`answer`确认完整正文与引用。状态查询继续发送`status`，异常发送`error`。浏览器接收片段后即显示；停止或传输失败保留已收到内容并标记未完成，刷新仍可恢复，后续模型上下文带中断说明。上游连接随取消关闭；总用时、正文长度、响应体积及工具轮数继续受限，不转发上游错误正文。
+
+模型指令要求使用`[中文说明](/站内路径)`，不添加本机地址或猜测域名。`chat_links.py`为已核实的攻略条目生成HTML链接，`wiki_search`与`wiki_get`直接返回`links.detail`；角色另含养成、排轴配装，以及有明确绑定时的空幕与合轴入口。关卡详情保留已选层号。在线轴使用工具提供的`preview_url`，不将JSON接口当网页链接，不混用攻略角色ID与排轴角色ID。回答正文及引用继续通过安全DOM渲染链接，禁止模型HTML注入。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_chat_stream tests.test_guide_chat tests.test_guide_bot_tools tests.test_guide tests.test_module_routes -q`；`node --test tests/test_guide_chat_state.cjs`。浏览器使用隔离合成账号与延迟模型验证首段先于完成显示、站内链接跳转、停止后部分回答保留及刷新恢复。真实模型服务需支持SSE和工具调用，反向代理需关闭响应缓冲。

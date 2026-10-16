@@ -49,7 +49,33 @@ function guideEquipmentReference(entries, item, kind) {
     const art = node('div', 'account-build-art');
     if (local?.portrait || local?.avatar) art.append(image(local.portrait || local.avatar, 'account-build-portrait'));
     else art.append(node('p', 'account-missing', '暂无角色立绘'));
-    art.append(node('span', 'account-awaken-badge', `觉醒 ${display(saved.awaken_level)}`));
+    const awakenBar = node('div', 'account-awaken-bar');
+    awakenBar.append(node('span', 'account-awaken-badge', `觉醒 ${display(saved.awaken_level)}`));
+    const effects = (saved.awaken_effects || []).filter(value => String(value).trim());
+    const icons = node('div', 'account-awaken-icons');
+    icons.setAttribute('aria-label', '觉醒效果');
+    for (const value of effects) {
+      const metadata = local?.awakens?.[value];
+      if (!metadata?.icon) continue;
+      const effect = node('button', 'account-awaken-effect');
+      effect.type = 'button'; effect.title = value;
+      effect.setAttribute('aria-label', value);
+      effect.append(image(metadata.icon, 'account-awaken-icon'));
+      effect.addEventListener('click', () => {
+        const wasOpen = effect.classList.contains('is-open');
+        for (const other of icons.querySelectorAll('.is-open')) other.classList.remove('is-open');
+        if (!wasOpen) effect.classList.add('is-open');
+      });
+      effect.append(node('span', 'account-awaken-name', value));
+      icons.append(effect);
+    }
+    awakenBar.append(icons);
+    const unmatched = effects.filter(value => !local?.awakens?.[value]?.icon);
+    if (unmatched.length) {
+      const notice = node('span', 'account-awaken-missing', `${unmatched.length}项效果未识别`);
+      notice.title = unmatched.join('、'); awakenBar.append(notice);
+    }
+    art.append(awakenBar);
     const panel = node('div', 'account-build-panel');
     const identity = node('div', 'account-build-identity');
     identity.append(node('span', 'account-level-badge', `Lv.${display(saved.level)}`));

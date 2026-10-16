@@ -37,6 +37,8 @@ def register(blueprint):
         characters = {item['id']: {
             'name': item['name'], 'avatar': item.get('assets', {}).get('avatar'),
             'element_name': item.get('element_name'),
+            'awakens': {effect['name']: {'icon': effect.get('icon')}
+                        for effect in item.get('awaken', [])},
             'portrait': item.get('assets', {}).get('fullbody') or item.get('assets', {}).get('portrait'),
             'skills': {skill['id']: service.ability_title(skill) for skill in item['abilities']},
             'skill_details': {skill['id'].casefold(): {

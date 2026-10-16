@@ -52,6 +52,6 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 
 ## 角色ID与跳转预选
 
-空幕目录、接口结果及本地角色文件使用正式数字ID，与攻略数据库统一。残虹为1036、黑羽为1042、明音凛为1057；旧 `char_076a1f4e53`、`char_heiyu`、`char_akane` 仍作为链接及计算请求别名接受，返回正式ID。男女主保留1046／1051，目录合并时通过 `merged_ids` 接受两者。`/kongmu?character=1042&cartridge=psyche` 可预选角色与卡带，进入后仍由用户点击计算。
+空幕目录、接口结果及本地角色文件使用正式数字ID，与攻略数据库统一。残虹为1036、黑羽为1042、明音凛为1057；旧 `char_076a1f4e53`、`char_heiyu`、`char_akane` 仍作为链接及计算请求别名接受，返回正式ID。男女主保留1046／1051，目录合并时通过 `merged_ids` 接受两者。`/kongmu?character=1042&cartridge=psyche` 可预选角色与卡带，目录加载完成后自动计算一次。只传入一个有效预选参数时，另一项使用默认选择；无参数、参数为空或全部无效时保持手动计算。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_kongmu_links tests.test_module_routes tests.test_lingke_modules tests.test_shaft_heiyu tests.test_shaft_publication -q`；浏览器核对角色页入口、正式ID与旧链接预选和推荐卡带。

@@ -35,11 +35,16 @@ async function bootstrapKongmu() {
     const params = new URLSearchParams(window.location.search);
     const characters = kongmuState.catalog.characters || [];
     const cartridges = kongmuState.catalog.cartridges || [];
-    kongmuState.selectedCharacterId = pickExistingId(characters, params.get('character')) || characters[0]?.id || '';
-    kongmuState.selectedCartridgeId = pickExistingId(cartridges, params.get('cartridge')) || cartridges[0]?.id || '';
+    const linkedCharacterId = pickExistingId(characters, params.get('character'));
+    const linkedCartridgeId = pickExistingId(cartridges, params.get('cartridge'));
+    kongmuState.selectedCharacterId = linkedCharacterId || characters[0]?.id || '';
+    kongmuState.selectedCartridgeId = linkedCartridgeId || cartridges[0]?.id || '';
     renderKongmuPickers();
     bindKongmuEvents();
     updatePlanButton();
+    if (linkedCharacterId || linkedCartridgeId) {
+      await runKongmuPlan();
+    }
   } catch (error) {
     kongmuEls.planBtn.textContent = '读取失败';
     kongmuEls.characterGrid.innerHTML = `<div class="empty-state">${escapeHtml(error.message || error)}</div>`;

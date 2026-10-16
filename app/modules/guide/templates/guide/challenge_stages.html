@@ -1,0 +1,24 @@
+<nav class="guide-stage-nav" aria-label="关卡跳转">{% for stage in value|sort(attribute='id', reverse=true) %}<a href="#stage-{{ stage.id }}">第 {{ stage.id }} 关</a>{% endfor %}</nav>
+{% for stage in value|sort(attribute='id', reverse=true) %}
+<article class="guide-challenge-stage" id="stage-{{ stage.id }}">
+  <header><p class="guide-eyebrow">第 {{ stage.id }} 关 · 限时 {{ stage.maximum_time|int }} 秒</p><h3>{{ stage.name }}</h3></header>
+  <ul class="guide-challenge-objectives">{% for objective in stage.objectives %}<li>{{ objective.text }}</li>{% endfor %}</ul>
+  <div class="guide-challenge-halves">
+  {% for half in stage.halves %}<section class="guide-challenge-half">
+    <h4>{{ half.id|guide_label }}</h4><p class="guide-muted">推荐属性：{% for element in half.recommended_elements %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>
+    {% for wave in half.waves %}<section class="guide-challenge-wave">
+      <h5>第 {{ wave.wave }} 波</h5>
+      <div class="guide-monster-grid">{% for monster in wave.monsters %}<article class="guide-monster-card">
+        <div class="guide-monster-overview">
+          {% if monster.image %}<img src="{{ monster.image }}" alt="{{ monster.name }}" width="112" height="112" loading="lazy">{% else %}<span class="guide-monster-placeholder">暂无贴图</span>{% endif %}
+          <div><h6>{{ monster.name }}</h6><p>Lv.{{ monster.level }} · × {{ monster.count }}{% if monster.is_boss %} · 首领{% endif %}</p>
+          <p class="guide-monster-weakness">弱点：{% for element in monster.weaknesses %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p></div>
+        </div>
+        <p class="guide-swallow {{ 'is-swallowable' if monster.swallowable == true else '' }}">鬼郎丸：{{ '可吞噬' if monster.swallowable == true else ('不可吞噬' if monster.swallowable == false else '吞噬性质未提供') }}</p>
+        <details class="guide-monster-details"><summary>{{ monster.name }} · 详细数据</summary>{{ tree(monster.stats) }}{% if monster.attach|default(none) %}{{ tree(monster.attach) }}{% endif %}</details>
+      </article>{% endfor %}</div>
+      <details class="guide-wave-details"><summary>出场条件</summary><p>出场方式：{{ '击败全部敌人后' if wave.spawn_type == 'KillAll' else wave.spawn_type }} · 出场时间：{{ wave.spawn_time }} 秒</p></details>
+    </section>{% endfor %}
+  </section>{% endfor %}
+  </div>
+</article>{% endfor %}

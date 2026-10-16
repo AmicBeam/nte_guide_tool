@@ -126,3 +126,9 @@ python scripts/refresh_guide_data.py --transport curl
 验证：`.venv/bin/python -m unittest tests.test_guide tests.test_guide_builds tests.test_module_routes tests.test_shaft_comparison -v`。浏览器检查有轴／空结果角色、队友筛选、个人范围、原地预览及带轴跳转试算；两个零条目的映射均须核对。
 
 详情目录固定在视口左侧，不占正文布局宽度；正文沿用1240px居中容器和对称留白。视口不超过1680px时，目录通过左下角按钮展开为浮层；展开与收起都不移动或压缩正文。
+
+## 环线怪物展示
+
+环线详情顶部显示共鸣名称与完整效果；关卡按编号倒序排列，按半场和波次展示怪物贴图、等级、数量、弱点和鬼郎丸吞噬标记。生命、攻防、倾陷、抗性与出场条件默认折叠，可逐项展开；未标注的吞噬性质显示“未提供”，不按体型推断。`data/monster_metadata.json` 绑定名称、本站WebP路径和吞噬性质；图片由本模块 `static/monsters/` 持有，网站运行不依赖其他仓库或外部图床。JSON、Markdown与CLI同步提供 `image` 与 `swallowable` 字段。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_challenges tests.test_guide_challenge_schedule tests.test_guide tests.test_module_routes -v`；浏览器检查共鸣、关卡筛选、贴图、吞噬标记、默认折叠与展开，以及窄屏布局。

@@ -43,6 +43,7 @@ LABELS = {
     'required_seals': '所需印记', 'drop_id': '掉落 ID', 'only_half': '仅单半场',
     'spawn_type': '出场方式', 'spawn_time': '出场时间（秒）',
     'class_id': '敌人类型 ID', 'is_boss': '首领', 'attach': '附加说明',
+    'image': '图片', 'swallowable': '可被鬼郎丸吞噬',
     'stats': '属性数值', 'abilities': '技能', 'awaken': '觉醒', 'resonance': '共鸣',
     'nouns': '机制词条', 'effect': '弧盘效果', 'stages': '关卡', 'values': '数值',
     'name': '名称', 'id': 'ID', 'description': '说明', 'desc': '说明', 'simple_desc': '简述',
@@ -83,6 +84,13 @@ def catalog():
         character['assets'] = {key: binding[key] for key in ('avatar', 'portrait', 'fullbody')}
     for arc in data['arcs']:
         arc['image'] = f'/static/images/arcs/{arc["id"]}.webp'
+    monsters = json.loads((Path(__file__).parent / 'data/monster_metadata.json').read_text(encoding='utf-8'))
+    for challenge in data['challenges']:
+        for stage in challenge['stages']:
+            for half in stage['halves']:
+                for wave in half['waves']:
+                    for monster in wave['monsters']:
+                        monster.update(monsters.get(monster['name'], {'image': None, 'swallowable': None}))
     return data
 
 

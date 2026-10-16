@@ -1,0 +1,26 @@
+.guide-challenge-resonance { border-left:4px solid #70dec2; background:linear-gradient(110deg,#70dec214,transparent); }
+.guide-stage-nav { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; }
+.guide-stage-nav a { padding:7px 12px; border:1px solid var(--guide-border,#ffffff26); border-radius:8px; }
+.guide-challenge-stage { margin:24px 0 40px; padding-top:16px; border-top:1px solid #ffffff26; scroll-margin-top:24px; }
+.guide-challenge-stage h3 { font-size:24px; margin:6px 0; }
+.guide-challenge-objectives { display:flex; gap:12px 28px; flex-wrap:wrap; padding-left:20px; color:#bbc7d4; }
+.guide-challenge-halves { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+.guide-challenge-half { min-width:0; }
+.guide-challenge-half h4 { font-size:21px; margin:20px 0 8px; }
+.guide-challenge-wave { margin:16px 0; }
+.guide-challenge-wave h5 { font-size:16px; margin:12px 0; }
+.guide-monster-grid { display:grid; gap:12px; }
+.guide-monster-card { border:1px solid #ffffff26; border-radius:12px; padding:14px; background:#ffffff04; min-width:0; }
+.guide-monster-overview { display:flex; align-items:center; gap:14px; }
+.guide-monster-overview img { width:112px; height:112px; object-fit:contain; flex-shrink:0; background:#ffffff08; border-radius:10px; }
+.guide-monster-overview h6 { font-size:18px; margin:0 0 8px; overflow-wrap:anywhere; }
+.guide-monster-overview p { margin:6px 0; font-size:14px; }
+.guide-monster-weakness { color:#70dec2; }
+.guide-swallow { font-size:13px; color:#aab6c6; margin:12px 0; }
+.guide-swallow.is-swallowable { color:#70dec2; }
+.guide-monster-details summary,.guide-wave-details summary { cursor:pointer; color:#bbc7d4; padding:8px 0; font-size:14px; }
+.guide-monster-details .guide-tree { margin-top:12px; }
+.guide-wave-details { margin-top:8px; }
+.guide-wave-details p { font-size:13px; color:#aab6c6; }
+.guide-monster-placeholder { display:grid; place-items:center; width:112px; height:112px; flex-shrink:0; color:#aab6c6; }
+@media(max-width:760px) { .guide-challenge-halves { grid-template-columns:1fr; gap:0; } .guide-monster-overview img { width:88px; height:88px; } .guide-monster-card { padding:12px; } }

@@ -13,6 +13,14 @@ for (const group of document.querySelectorAll('[data-level-group]')) {
         for (const inline of group.querySelectorAll('[data-level-inline]')) inline.textContent = String(level);
         control.setAttribute('aria-valuetext', `等级 ${level}`);
         for (const {cell, values} of cells) cell.textContent = values[level - 1] ?? '未提供';
+        if (group.dataset.abilityId) {
+            for (const linked of document.querySelectorAll('[data-linked-ability]')) {
+                if (linked.dataset.linkedAbility !== group.dataset.abilityId) continue;
+                const values = JSON.parse(linked.dataset.linkedValues);
+                linked.querySelectorAll('[data-linked-value]').forEach(value => { value.textContent = values[level - 1] ?? '未提供'; });
+                linked.querySelectorAll('[data-linked-level]').forEach(value => { value.textContent = level; });
+            }
+        }
         const description = group.querySelector('[data-level-template]');
         if (description) {
             const parameters = JSON.parse(description.dataset.levelParameters);

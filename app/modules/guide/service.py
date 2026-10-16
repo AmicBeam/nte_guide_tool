@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 from markupsafe import Markup, escape
 from .affinity import with_gift_costs
+from .description_parameters import bind_description_parameters
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境'}
 LABELS = {
@@ -75,6 +76,7 @@ def catalog():
     affinity_by_id = {record['id']: record['affinity'] for record in affinity['characters']}
     passive_icons = json.loads((Path(__file__).parent / 'data/passive_icons.json').read_text(encoding='utf-8'))
     for character in data['characters']:
+        bind_description_parameters(character)
         for section in ('awaken', 'resonance'):
             passive_bindings = {item['name']: item['icon'] for item in passive_icons[str(character['id'])][section]}
             for item in character[section]:

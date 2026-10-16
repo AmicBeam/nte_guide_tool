@@ -117,7 +117,8 @@ def summary(kind, record):
 def search(kind=None, query='', element='', rarity=None, arc_type=''):
     result = []
     for group in ([kind] if kind else KINDS):
-        for record in catalog()[group]:
+        records = reversed(catalog()[group]) if group == 'challenges' else catalog()[group]
+        for record in records:
             if element and element not in (record.get('element_name'), record.get('element_id'), record.get('element')):
                 continue
             if rarity is not None and record.get('rarity') != rarity:

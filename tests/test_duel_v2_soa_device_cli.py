@@ -39,6 +39,10 @@ class SoADeviceCliTests(unittest.TestCase):
         from types import SimpleNamespace
         from unittest.mock import patch
         from scripts.benchmark_duel_v2_soa_device import verify_last_searches, save_report
+        # Import aliases before mocking the public entry; first import inside
+        # the patch would permanently bind information_search.acting_side to it.
+        from app.modules.card_game.rl import recovery_search, information_search
+        from app.modules.card_game.engine.duel_v2 import acting_side
         tensor = lambda x: torch.tensor(x, dtype=torch.float64)
         cohort = SimpleNamespace(
             diagnostics=dict(q=tensor([[.2, .3]]), prior=tensor([[.5, .5]]),
@@ -56,6 +60,7 @@ class SoADeviceCliTests(unittest.TestCase):
         with patch('app.modules.card_game.engine.duel_v2.acting_side', return_value='a'), \
              patch('app.modules.card_game.rl.recovery_search.search', return_value=result):
             rows=verify_last_searches(cohort, shared, [{}], [1], {(0, 0):0}, time.monotonic()+10)
+        self.assertIs(information_search.acting_side, acting_side)
         with tempfile.TemporaryDirectory() as directory:
             save_report(Path(directory), {'postbatch':rows}, 'complete', time.monotonic())
             saved=json.loads((Path(directory)/'report.json').read_text())

@@ -587,6 +587,16 @@ def verify_postbatch(cohort, shared, initial, final, result, searched, deadline)
     terminals = [bool(finished(state)) for state in expected]
     if terminals != result.complete.cpu().tolist():
         raise AssertionError(['natural terminal mismatch', terminals, result.complete.cpu().tolist()])
+    if 'output' in shared:
+        # Save device evidence before invoking the independent Python oracle so
+        # a proof/export failure can be investigated without replaying the GPU batch.
+        snapshot=dict(states=last_roots, counts=counts, policy_map=[[*key,value] for key,value in policy_map.items()],
+            diagnostics={name:value.cpu().tolist() for name,value in cohort.diagnostics.items()},
+            tape={name:getattr(light,name).cpu().tolist() for name in
+                  ('_rec_count','_rec_offset','_packed_visits','_packed_pi','_rec_chosen')},
+            raw_records=records, raw_replay_verified=True)
+        path=shared['output']/'postbatch-device-proof.json'
+        path.write_text(json.dumps(snapshot,ensure_ascii=False),encoding='utf8')
     numerical=verify_last_searches(cohort,shared,last_roots,counts,policy_map,deadline)
     return dict(verified=True, records=records, natural_terminals=terminals,
                 raw_records=raw_count, policy_records=policy_count,

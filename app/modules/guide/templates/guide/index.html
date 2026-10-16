@@ -2,7 +2,7 @@
 {% block title %}攻略数据库 · NTE Tools{% endblock %}
 {% block head %}{{ super() }}{% if kind in ['characters', 'arcs'] %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='catalog_cards.css') }}">{% endif %}{% if kind in ['challenges', 'endless'] %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='challenge_index.css') }}">{% endif %}<script src="{{ url_for('guide_module.static', filename='filters.js') }}" defer></script>{% endblock %}
 {% block content %}
-<nav class="guide-tabs" aria-label="资料分类">{% for key, title in kinds.items() %}<a href="?kind={{ key }}" {% if key == kind %}aria-current="page"{% endif %}>{{ title }} <span>{{ counts[key] }}</span></a>{% endfor %}</nav>
+{% include 'guide/tabs.html' %}
 <form class="guide-search" action="/guide" method="get" role="search">
 <input type="hidden" name="kind" value="{{ kind }}">
 <label for="guide-query">搜索{{ kinds[kind] }}</label>

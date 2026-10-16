@@ -81,8 +81,10 @@ if (cultivationForm) {
 }
 
 (() => {
-  const root = document.querySelector('[data-character-id]');
-  if (!root || !cultivationForm) return;
+  const root = document.querySelector('[data-account-profiles], [data-character-id]');
+  if (!root) return;
+  const accountPage = root.hasAttribute('data-account-profiles');
+  if (!accountPage && !cultivationForm) return;
   const $ = (id) => document.getElementById(id);
   let profiles = [], sessionId = '', choosing = false, busy = false, cooldownUntil = 0;
   let token = '';
@@ -104,6 +106,7 @@ if (cultivationForm) {
   const selected = () => profiles.find(p => p.role_id === $('profile-select').value);
   const savedCharacter = () => selected()?.characters.find(c => c.id === root.dataset.characterId);
   const equipment = () => {
+    if (accountPage) { renderAccount(); return; }
     const saved = savedCharacter();
     $('saved-equipment').hidden = !saved;
     if (!saved) return;
@@ -111,16 +114,60 @@ if (cultivationForm) {
     $('saved-equipment-content').textContent = guideSavedCharacterLines(saved, labels).join('\n');
     $('use-profile').disabled = false;
   };
+  const renderAccount = () => {
+    const profile = selected();
+    const list = $('account-characters');
+    list.replaceChildren();
+    $('account-summary').textContent = profile ? `账号 ${profile.role_id} · ${profile.characters.length} 名角色 · 同步于 ${new Date(profile.updated_at).toLocaleString('zh-CN')}` : '';
+    if (!profile) return;
+    const catalog = JSON.parse($('account-catalog').textContent);
+    for (const saved of profile.characters) {
+      const local = catalog[saved.id];
+      const card = document.createElement('details');
+      card.className = 'account-character';
+      const summary = document.createElement('summary');
+      if (local?.avatar) {
+        const image = document.createElement('img');
+        image.src = local.avatar; image.alt = ''; image.loading = 'lazy';
+        summary.append(image);
+      }
+      const title = document.createElement('div');
+      const name = document.createElement('strong');
+      name.textContent = local?.name || saved.name || saved.id;
+      const level = document.createElement('small');
+      level.textContent = `Lv.${saved.level ?? '未提供'} · 觉醒 ${saved.awaken_level ?? '未提供'} · 共鸣 ${saved.resonance_level ?? '未提供'}`;
+      title.append(name, level); summary.append(title);
+      const body = document.createElement('div'); body.className = 'account-character-body';
+      const text = document.createElement('p');
+      const lines = guideSavedCharacterLines(saved, local?.skills);
+      lines.push(`好感经验：${saved.affinity_experience ?? '未提供'}`);
+      for (const [label, props] of [['角色面板', saved.properties], ['弧盘属性', saved.equipment?.fork?.properties]]) {
+        lines.push(`${label}：${props?.length ? props.map(p => `${p.name || p.id} ${p.value}`).join('、') : '未提供'}`);
+      }
+      text.textContent = lines.join('\n'); body.append(text);
+      if (local) {
+        for (const [label, suffix] of [['角色资料', ''], ['养成计算', '/cultivation']]) {
+          const link = document.createElement('a'); link.textContent = label;
+          link.href = '/guide/characters/' + encodeURIComponent(saved.id) + suffix; body.append(link);
+        }
+      }
+      card.append(summary, body); list.append(card);
+    }
+    if (!profile.characters.length) list.textContent = '此账号暂无已保存角色，请重新同步。';
+  };
   const refresh = async () => {
+    const previous = $('profile-select').value;
     profiles = await api('profiles');
     $('profile-select').replaceChildren(...profiles.map(p => new Option(p.role_name || p.role_id, p.role_id)));
+    if (profiles.some(p => p.role_id === previous)) $('profile-select').value = previous;
     $('personal-controls').hidden = profiles.length === 0;
     if (profiles.length) {
-      status(`已保存 ${profiles.length} 个游戏账号。选择账号后，可将当前角色的练度填入下方。`);
+      status(accountPage ? '选择游戏账号，点击角色可展开练度、技能与装备详情。' : `已保存 ${profiles.length} 个游戏账号。选择账号后，可将当前角色的练度填入下方。`);
       equipment();
     } else {
-      status('尚未同步游戏数据。可短信验证后保存，也可直接手填计算。');
-      $('saved-equipment').hidden = true;
+      status(accountPage ? '尚未同步游戏数据。点击“同步游戏数据”，短信验证后即可保存和查看。' : '尚未同步游戏数据。可短信验证后保存，也可直接手填计算。');
+      if (accountPage) renderAccount();
+      else $('saved-equipment').hidden = true;
     }
   };
   const useProfile = async () => {
@@ -140,7 +187,7 @@ if (cultivationForm) {
     } catch (error) { status(error.message); }
   };
   $('profile-select').addEventListener('change', equipment);
-  $('use-profile').addEventListener('click', useProfile);
+  if (!accountPage) $('use-profile').addEventListener('click', useProfile);
   $('delete-profile').addEventListener('click', async () => {
     if (!selected() || !confirm('删除此游戏账号保存的角色练度和装备数据？')) return;
     try { await api(`profiles/${encodeURIComponent(selected().role_id)}`, null, 'DELETE'); await refresh(); }
@@ -206,7 +253,7 @@ if (cultivationForm) {
         $('sync-submit').textContent = '保存所选账号';
       } else {
         sessionId = ''; choosing = false; $('sync-mobile').value = '';
-        await refresh(); $('profile-select').value = data.profile.role_id; equipment(); await useProfile();
+        await refresh(); $('profile-select').value = data.profile.role_id; equipment(); if (!accountPage) await useProfile();
         $('sync-dialog').close();
       }
     } catch (error) { $('sync-status').textContent = error.message; }

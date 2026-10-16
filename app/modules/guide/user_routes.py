@@ -3,7 +3,7 @@ from functools import wraps
 import secrets
 import traceback
 
-from flask import current_app, g, jsonify, request
+from flask import current_app, g, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
 from app.auth import token_required
 from app.db import atomic_transaction
@@ -32,6 +32,15 @@ def private_errors(view):
 
 
 def register(blueprint):
+    @blueprint.get('/guide/account')
+    def account_page():
+        characters = {item['id']: {
+            'name': item['name'], 'avatar': item.get('assets', {}).get('avatar'),
+            'skills': {skill['id']: service.ability_title(skill) for skill in item['abilities']}
+        } for item in service.catalog()['characters']}
+        return render_template('guide/account.html', characters=characters,
+            kinds=service.KINDS, counts={key: len(service.catalog()[key]) for key in service.KINDS})
+
     def body():
         payload = request.get_json(silent=True)
         if not isinstance(payload, dict):

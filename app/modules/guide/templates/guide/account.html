@@ -1,0 +1,15 @@
+{% extends 'guide/layout.html' %}
+{% block title %}账号练度 · 攻略数据库 · NTE Tools{% endblock %}
+{% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='cultivation.css') }}"><script defer src="{{ url_for('guide_module.static', filename='cultivation.js') }}"></script>{% endblock %}
+{% block content %}
+{% set account_page = true %}{% include 'guide/tabs.html' %}
+<section class="cultivation-personal" data-account-profiles>
+<div class="cultivation-personal-title"><div><h1>账号练度</h1><p id="personal-status" role="status">登录本站后，可查看已保存的角色练度、技能和装备，或主动同步游戏数据。</p></div><button type="button" id="sync-open">同步游戏数据</button></div>
+<div id="personal-controls" hidden><label>游戏账号<select id="profile-select" aria-label="已同步游戏账号"></select></label><button type="button" id="delete-profile" class="cultivation-secondary">删除此账号数据</button></div>
+<p id="account-summary" class="guide-muted"></p>
+</section>
+<div id="account-characters" class="account-characters" aria-label="已同步角色"></div>
+<noscript><p>请启用 JavaScript 后登录查看账号练度。</p></noscript>
+<script id="account-catalog" type="application/json">{{ characters|tojson }}</script>
+{% include 'guide/sync_dialog.html' %}
+{% endblock %}

@@ -1,0 +1,12 @@
+.guide-tabs .guide-account-tab{margin-left:auto;white-space:nowrap}
+.account-characters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:20px}
+.account-character{min-width:0;border:1px solid var(--g-line);border-radius:12px;background:#ffffff04;padding:18px}
+.account-character summary{display:flex;align-items:center;gap:14px;cursor:pointer;list-style:none}
+.account-character summary::after{content:'展开详情 ＋';margin-left:auto;white-space:nowrap;color:var(--g-accent);font-size:12px}
+.account-character[open] summary::after{content:'收起详情 −'}
+.account-character summary img{width:64px;height:64px;object-fit:contain;border-radius:10px;background:#ffffff06}
+.account-character summary strong,.account-character summary small{display:block}.account-character summary small{color:var(--g-dim);font-size:12px;margin-top:7px}
+.account-character-body{border-top:1px solid var(--g-line);margin-top:16px;padding-top:12px;line-height:1.9;font-size:14px;overflow-wrap:anywhere}
+.account-character-body p{white-space:pre-line;margin:0 0 15px}.account-character-body a{display:inline-block;color:var(--g-accent);margin-right:18px}
+[data-account-profiles] h1{font-size:26px;margin:0 0 8px}#account-summary:empty{display:none}
+@media(max-width:700px){.guide-tabs{gap:12px;flex-wrap:nowrap;overflow-x:auto}.guide-tabs a{font-size:13px;white-space:nowrap}.guide-tabs span{margin-left:3px;font-size:10px}.guide-tabs .guide-account-tab{margin-left:0}.account-characters{grid-template-columns:1fr}.account-character{padding:14px}}

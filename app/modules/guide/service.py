@@ -73,7 +73,12 @@ def catalog():
     metadata_by_id = {record['id']: record for record in metadata['characters']}
     affinity = json.loads((Path(__file__).parent / 'data/affinity.json').read_text(encoding='utf-8'))
     affinity_by_id = {record['id']: record['affinity'] for record in affinity['characters']}
+    passive_icons = json.loads((Path(__file__).parent / 'data/passive_icons.json').read_text(encoding='utf-8'))
     for character in data['characters']:
+        for section in ('awaken', 'resonance'):
+            passive_bindings = {item['name']: item['icon'] for item in passive_icons[str(character['id'])][section]}
+            for item in character[section]:
+                item['icon'] = passive_bindings[item['name']]
         character['affinity'] = with_gift_costs(affinity_by_id[str(character['id'])])
         character['experience'] = data['character_experience']
         binding = bindings[str(character['id'])]

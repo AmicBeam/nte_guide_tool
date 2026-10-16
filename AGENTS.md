@@ -8,7 +8,7 @@
 
 ## 当前目标
 
-本项目是一个独立的 Flask 网站，承载异能对决、空幕计算、排轴计算和合轴收益表四个业务模块。工具主页提供前三个模块入口；合轴收益表仅通过 `/overlap` 直达链接访问，不展示主页入口。各模块共享玩家账号、数据库、基础模板和通用角色资源，但分别维护自己的 README、服务、模板和静态资源。合轴收益表位于 `app/modules/overlap`，原收益表由脚本离线生成静态结果，网页展示与筛选；双角色合轴分页在浏览器中匹配循环方案。不在服务端请求或启动时计算，不依赖其他模块的领域服务。
+本项目是一个独立的 Flask 网站，承载异能对决、空幕计算、排轴计算、合轴收益表和攻略数据库五个业务模块。工具主页提供异能对决、空幕计算、排轴计算和攻略数据库入口；合轴收益表仅通过 `/overlap` 直达链接访问，不展示主页入口。各模块共享玩家账号、数据库、基础模板和通用角色资源，但分别维护自己的 README、服务、模板和静态资源。合轴收益表位于 `app/modules/overlap`，原收益表由脚本离线生成静态结果，网页展示与筛选；双角色合轴分页在浏览器中匹配循环方案。不在服务端请求或启动时计算，不依赖其他模块的领域服务。
 
 桌游模块名称为“异能对决”。2026-09-08 起，新版设计采用每方 4 名角色、备战区开局、每方单人战斗区、玩家生命胜负与完整回合轮替；每名角色独立记录自己的环合值和能量。当前公开角色为娜娜莉、零、九原、伊洛伊、薄荷、白藏、小吱、海月、真红、翳、安魂曲、残虹、早雾、阿德勒、黑羽、达芙蒂尔、灵可；其余角色仅测试账号可见。
 
@@ -28,7 +28,7 @@
 | --- | --- | --- |
 | `AGENTS.md` | 全仓库架构、依赖方向、数据边界、验证与交付规则；是所有任务的仓库级约束。 | 处理仓库内任何任务前。 |
 | `README.md` | 仓库入口、模块索引、公共运行方式；不承载具体业务规则。 | 修改仓库主页、共享设施、模块索引、启动方式或新增/删除模块时。 |
-| `app/modules/<module>/README.md` | 对应模块的产品范围、页面入口、代码边界和验证命令；是进入模块工作的第一份说明。 | 修改 `card_game`、`kongmu`、`shaft` 或 `overlap` 中任一模块前，必须读取对应 README。 |
+| `app/modules/<module>/README.md` | 对应模块的产品范围、页面入口、代码边界和验证命令；是进入模块工作的第一份说明。 | 修改 `card_game`、`kongmu`、`shaft`、`overlap` 或 `guide` 中任一模块前，必须读取对应 README。 |
 | `app/static/AGENTS.md` | 共享静态资源的目录归属、CSS 入口、导入顺序和性能约束；在其目录范围内与根 `AGENTS.md` 同时生效。 | 修改 `app/static/` 下的 CSS、JavaScript 或共享图片组织时。 |
 | `docs/character-image-assets.md` | 角色头像、立绘的 NTEData / Nanoka 来源、构图对齐与 WebP 交付约定。 | 新增、替换、同步或转码任何模块的角色头像、立绘时。 |
 | `docs/everness-item-chain-card-design.md` | 新版四人轮替完整手册、置顶基础队与卡表的唯一设计真源；包含实现状态与试玩参数来源边界。 | 修改异能对决规则、卡牌、异能者、构筑、AI、牌桌交互、规则文案或相关测试前。 |
@@ -113,7 +113,7 @@
 - `app/auth.py`
   负责 token 创建、校验，以及 Flask 路由鉴权装饰器。
 - `app/modules/`
-  维护四个业务模块。每个模块以自己的 `README.md` 说明产品范围、代码边界和验证命令，并自行拥有模板与模块静态资源。
+  维护五个业务模块。每个模块以自己的 `README.md` 说明产品范围、代码边界和验证命令，并自行拥有模板与模块静态资源。
 - `app/modules/card_game/content/duel_common.py`
   内容层薄聚合入口。仅汇总 `app/modules/card_game/content/common/` 与 `app/modules/card_game/content/effects/` 中的定义；新增卡牌内容优先直接从 `app/modules/card_game/content/effects/` 导入通用效果工具。
 - `app/modules/card_game/content/common/`
@@ -159,7 +159,7 @@
 
 ## 架构规则
 
-- 模块业务代码必须进入 `app/modules/card_game`、`app/modules/kongmu`、`app/modules/shaft` 或 `app/modules/overlap`，不能重新散落到 `app/engine`、`app/content`、`app/shaft` 或共享静态目录。
+- 模块业务代码必须进入 `app/modules/card_game`、`app/modules/kongmu`、`app/modules/shaft`、`app/modules/overlap` 或 `app/modules/guide`，不能重新散落到 `app/engine`、`app/content`、`app/shaft` 或共享静态目录。
 - 模块可依赖 `app/auth.py`、`app/db.py`、`app/models.py`、`app/dao.py` 等共享基础设施；模块之间不得直接依赖对方的领域服务。共享角色图片等资源保留在 `app/static/images/`。
 - 路由层只做参数校验、鉴权和调用服务；不要在 `app/routes.py` 中写费用、抽牌、宣言、素材、胜负或 AI 决策。
 - `app/modules/card_game/engine/game_service.py` 是对局 API 编排入口，不是所有规则的堆放点。只保留路由直接调用的对局操作，加载/持久化/公开投影通过 `app/modules/card_game/engine/application/run_state.py` 适配，新增可复用规则优先进入 `app/modules/card_game/engine/rules/`，新增公开状态字段优先进入 `app/modules/card_game/engine/projection/`，新增开局/套牌/战场初始化逻辑优先进入 `app/modules/card_game/engine/setup/`，新增 AI 行为优先进入 `app/modules/card_game/engine/ai/`。
@@ -181,6 +181,12 @@
 - V2 使用 `DuelV2Build/Room/Member/Run/Replay` 专表，不覆盖旧 `DeckBuild/Room/GameRun`。公开回放只存开局公开 board 与带 patch 的公开事件，不写入隐藏手牌、牌序或种子。动作带 `room_code`、`expected_version` 与 `request_id`，保留最近 128 条请求回执；结束结果和房间状态同步提交，普通中间态异步写入并用 generation/revision 防止旧写回。
 - 共享 SQLite 写事务在读取前取得 IMMEDIATE 写预留，避免异步快照提交导致登录等读后写事务升级失败；事务内不等待外部网络。
 - 前端 `v2_*.js/css/html` 只消费公开投影和后端合法动作；训练依赖与网站依赖隔离，RL 框架不得在导入或网站运行时自动训练。
+
+## 攻略数据库边界
+
+- `app/modules/guide` 提供匿名只读的角色、弧盘和轨外之境资料，入口 `/guide`；JSON API、Markdown 和可下载标准库 CLI 共用本地数据。
+- 数据仅通过显式离线刷新更新，不在请求或启动时访问上游；不依赖其他模块领域服务，不使用异能对决原创数值。
+- 赛期缺失日期保持空值，不能据编号推断当前开放状态。
 
 ## 数据流
 

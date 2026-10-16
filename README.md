@@ -13,6 +13,7 @@
 | 异能对决 | `/card-game` | [模块 README](app/modules/card_game/README.md) | 现行四人轮替牌桌、构筑、图鉴、回放、教学与人机 |
 | 空幕计算 | `/kongmu` | [模块 README](app/modules/kongmu/README.md) | 角色空幕与卡带搭配计算 |
 | 排轴计算 | `/shaft` | [模块 README](app/modules/shaft/README.md) | 配装、动作轴、伤害计算与方案广场 |
+| 攻略数据库 | `/guide` | [模块 README](app/modules/guide/README.md) | 角色、弧盘、轨外之境；匿名网页、JSON、Markdown 与 CLI |
 | 合轴收益表 | `/overlap` | [模块 README](app/modules/overlap/README.md) | 静态收益表；双角色分页在浏览器匹配可循环合轴方案 |
 
 异能对决的现行规则见 [完整手册](docs/everness-item-chain-card-design.md)。默认页面已是四人轮替；旧盖卡入口与数据看板尚未迁移，见模块 README。
@@ -22,7 +23,7 @@
 ## 仓库结构
 
 - `app/`：Flask 应用与共享账号、数据库、鉴权和路由适配。
-- `app/modules/`：四个业务模块；各自维护 README、模板和静态资源。
+- `app/modules/`：五个业务模块；各自维护 README、模板和静态资源。
 - `app/modules/card_game/content/duel_v2/`、`engine/duel_v2/`：现行异能对决卡池与纯规则引擎。
 - `app/modules/card_game/rl/`：训练框架；导入或启动网站时不会自动训练。
 - `app/modules/shaft/domain/`：排轴领域计算。

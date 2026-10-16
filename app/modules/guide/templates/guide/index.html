@@ -1,0 +1,33 @@
+{% extends 'guide/layout.html' %}
+{% block title %}攻略数据库 · NTE Tools{% endblock %}
+{% block content %}
+<section class="guide-hero">
+<p class="guide-eyebrow">NEVERNESS TO EVERNESS / REFERENCE</p>
+<h1>每一场战斗，<br><span>从读懂数据开始。</span></h1>
+<p>角色机制、弧盘效果与轨外之境。把需要的细节放在一起，随时查阅。</p>
+<div class="guide-counts">{% for key, title in kinds.items() %}<a href="?kind={{ key }}"><strong>{{ counts[key] }}</strong> {{ title }}</a>{% endfor %}</div>
+</section>
+<nav class="guide-tabs" aria-label="资料分类">{% for key, title in kinds.items() %}<a href="?kind={{ key }}" {% if key == kind %}aria-current="page"{% endif %}>{{ title }} <span>{{ counts[key] }}</span></a>{% endfor %}</nav>
+<form class="guide-search" action="/guide" method="get" role="search">
+<input type="hidden" name="kind" value="{{ kind }}">
+<label for="guide-query">搜索{{ kinds[kind] }}</label>
+<div class="guide-search-row"><input id="guide-query" name="q" type="search" value="{{ request.args.get('q', '') }}" placeholder="名称、技能、效果或敌人关键词…"><button type="submit">搜索 ↗</button></div>
+{% if kind == 'characters' %}<div class="guide-filters"><label>属性 <select name="element"><option value="">全部</option>{% for value in ['光','灵','咒','暗','魂','相'] %}<option {% if request.args.get('element') == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label><label>星级 <select name="rarity"><option value="">全部</option>{% for value in [4,5] %}<option value="{{ value }}" {% if request.args.get('rarity') == value|string %}selected{% endif %}>{{ value }} 星</option>{% endfor %}</select></label></div>{% endif %}
+</form>
+<div class="guide-section-heading"><h2>{{ kinds[kind] }}档案</h2><span>{{ items|length }} 条结果</span></div>
+{% if kind == 'challenges' %}<p class="guide-muted">包含常驻与轮换环线。未提供日期的赛期不标注开放状态。</p>{% endif %}
+<div class="guide-grid">
+{% for item in items %}<a class="guide-card" href="{{ item.url }}">
+<div class="guide-card-top"><span>{{ '%02d'|format(loop.index) }}</span><span>{{ item.element_name|default(item.type_name|default('常驻' if item.is_permanent|default(false) else '轮换环线')) }}{% if item.rarity is defined %} / {{ item.rarity }}★{% endif %}</span></div>
+<h3>{{ item.name }}</h3>
+{% if kind == 'challenges' %}<p>{{ item.description }}</p><small>{{ item.stage_count }} 关 · {{ item.begin_date or '日期未提供' }}{% if item.end_date %} → {{ item.end_date }}{% endif %}</small>{% else %}<p>{{ item.aliases[0] if item.aliases|default([]) else item.id }}</p>{% endif %}
+<div class="guide-card-bottom"><code>{{ item.id }}</code><span aria-label="查看详情">↗</span></div>
+</a>{% else %}<div class="guide-empty"><h3>没有找到相关资料</h3><p>尝试角色名、技能关键词，或清除筛选条件。</p><a href="?kind={{ kind }}">查看全部{{ kinds[kind] }}</a></div>{% endfor %}
+</div>
+<section class="guide-machine" id="machine"><div><p class="guide-eyebrow">FOR YOUR NEXT QUESTION</p><h2>让数据进入你的工作流。</h2><p>网页、纯文本与命令行，读取同一份战斗数据。无需登录。</p><div class="guide-links"><a href="/guide/cli.py">下载 CLI ↓</a><a href="/guide/llms.txt">LLM 索引 ↗</a><a href="/api/guide/schema">API 说明 ↗</a></div></div><pre><code>python nte-guide.py search 黑羽
+python nte-guide.py get characters 1042 \
+  --section abilities --format markdown
+python nte-guide.py list challenges
+
+# 远程站点：在子命令前指定 --base-url</code></pre></section>
+{% endblock %}

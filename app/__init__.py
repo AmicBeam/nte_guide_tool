@@ -89,6 +89,7 @@ def create_app() -> Flask:
     from app.modules.kongmu import blueprint as kongmu_module
     from app.modules.shaft import blueprint as shaft_module
     from app.modules.overlap import blueprint as overlap_module
+    from app.modules.guide import blueprint as guide_module
     from .routes import main_bp
 
     app.register_blueprint(card_game_module)
@@ -96,6 +97,7 @@ def create_app() -> Flask:
     app.register_blueprint(kongmu_module)
     app.register_blueprint(shaft_module)
     app.register_blueprint(overlap_module)
+    app.register_blueprint(guide_module)
     app.register_blueprint(main_bp)
     logger.info('Flask app initialized successfully.')
     return app

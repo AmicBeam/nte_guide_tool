@@ -1,0 +1,22 @@
+{% extends 'guide/layout.html' %}
+{% macro tree(value) %}
+{% if value is mapping %}<dl class="guide-tree">{% for key, child in value.items() if key not in ['id', 'type', 'type_id', 'element_id', 'id_stats', 'key', 'class_id', 'ability_type', 'ability_index', 'drop_id', 'simple_desc', 'type_name', 'index'] %}<div><dt>{{ key|guide_label }}</dt><dd>{{ tree(child) }}</dd></div>{% endfor %}</dl>
+{% elif value is sequence and value is not string %}
+{% if value and value[0] is mapping %}<div class="guide-objects">{% for child in value %}<section class="guide-object">{% if child.name is defined %}<h3>{% if child.id is defined and child.id is number %}{{ child.id }} · {% endif %}{{ child.name }}</h3>{% elif child.title is defined %}<h3>{{ child.title }}</h3>{% elif child.label is defined %}<h3>{{ child.label }}</h3>{% elif child.id is defined %}<h3>{{ child.id|guide_label }}</h3>{% elif child.wave is defined %}<h3>第 {{ child.wave }} 波</h3>{% endif %}{{ tree(child) }}</section>{% endfor %}</div>
+{% elif value %}<div class="guide-values">{% for child in value %}<span><small>{{ loop.index }}</small>{{ tree(child) }}</span>{% endfor %}</div>{% else %}<span class="guide-muted">无条目</span>{% endif %}
+{% else %}<span class="guide-text">{{ value|guide_scalar }}</span>{% endif %}
+{% endmacro %}
+{% block title %}{{ record.name }} · {{ kinds[kind] }} · NTE Tools{% endblock %}
+{% block head %}{{ super() }}<link rel="alternate" type="text/markdown" href="/guide/{{ kind }}/{{ record.id }}.md">{% endblock %}
+{% block content %}
+<a class="guide-back" href="/guide?kind={{ kind }}">← {{ kinds[kind] }}档案</a>
+<section class="guide-detail-header"><div><p class="guide-eyebrow">{{ kinds[kind] }} / {{ record.id }}</p><h1>{{ record.name }}</h1><p>{{ record.element_name|default(record.type_name|default('轨外之境')) }}{% if record.rarity is defined %} · {{ record.rarity }} 星{% endif %}</p></div><div class="guide-links"><a href="/guide/{{ kind }}/{{ record.id }}.md{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}">Markdown ↗</a><a href="/api/guide/{{ kind }}/{{ record.id }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}">JSON ↗</a></div></section>
+{% if kind == 'characters' %}<div class="guide-facts">{% for key in ['ability_name', 'hp', 'atk', 'def'] if key in record %}<div><span>{{ key|guide_label }}{% if key in ['hp','atk','def'] %}（满级）{% endif %}</span><strong>{{ record[key] }}</strong></div>{% endfor %}</div>{% if record.char_tags is defined %}<p class="guide-tagline">{% for tag in record.char_tags %}<span>{{ tag.name }}</span>{% endfor %}</p>{% endif %}{% endif %}
+{% if kind == 'challenges' %}<p class="guide-muted">{{ '常驻环线' if record.is_permanent|default(false) else '轮换环线' }} · {{ record.begin_date|default(none) or '日期未提供' }}{% if record.end_date|default(none) %} → {{ record.end_date }}{% endif %} · {{ record.stage_count|default('') }} 关</p>{% endif %}
+{% if kind == 'arcs' and record.description is defined %}<p class="guide-muted">{{ record.description }}</p>{% endif %}
+<p class="guide-muted">数值按等级或精炼档位顺序列出；敌人抗性为小数比例。完整字段可通过 JSON 查看。</p>
+{% if kind == 'challenges' %}<form class="guide-stage-filter" method="get"><label for="stage">关卡编号</label><input id="stage" name="stage" type="number" min="1" max="{{ record.stage_count|default(100) }}" value="{{ request.args.get('stage', '') }}" placeholder="全部"><button type="submit">查看关卡</button><a href="/guide/{{ kind }}/{{ record.id }}">全部关卡</a></form>{% endif %}
+<nav class="guide-section-nav" aria-label="详情章节">{% for key in sections %}<a href="#section-{{ key }}">{{ key|guide_label }}</a>{% endfor %}</nav>
+<div class="guide-detail-body">{% for key, value in sections.items() %}<section class="guide-detail-section" id="section-{{ key }}"><h2>{{ key|guide_label }}</h2>{{ tree(value) }}</section>{% endfor %}</div>
+<details class="guide-notes"><summary>数值阅读约定</summary>{% for note in notes %}<p>{{ note }}</p>{% endfor %}</details>
+{% endblock %}

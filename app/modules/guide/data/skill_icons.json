@@ -1,0 +1,248 @@
+{
+  "1003": {
+    "GA_Sagiri_Melee": "/static/guide/skill-icons/Sagiri_Melee.webp",
+    "GA_Sagiri_Skill": "/static/guide/skill-icons/Sagiri_Skill.webp",
+    "GA_Sagiri_UltraSkill": "/static/guide/skill-icons/Sagiri_UltraSkill.webp",
+    "GA_Sagiri_QTE": "/static/guide/skill-icons/Sagiri_QTE.webp",
+    "GA_Sagiri_Passive_1": "/static/guide/skill-icons/Sagiri_Pas1.webp",
+    "GA_Sagiri_Passive_2": "/static/guide/skill-icons/Sagiri_Pas2.webp",
+    "City_Ability_Sagiri_01": "/static/guide/skill-icons/YH_UI_Skill_tptcg.webp"
+  },
+  "1004": {
+    "GA_Lacrimosa_Melee": "/static/guide/skill-icons/Lacrimosa_Melee.webp",
+    "GA_Lacrimosa_Skill": "/static/guide/skill-icons/Lacrimosa_Skill1.webp",
+    "GA_Lacrimosa_UltraSkill": "/static/guide/skill-icons/Lacrimosa_UltraSkill.webp",
+    "GA_Lacrimosa_QTE": "/static/guide/skill-icons/Lacrimosa_QTE.webp",
+    "GA_Lacrimosa_Passive_1": "/static/guide/skill-icons/Lacrimosa_Pas1.webp",
+    "GA_Lacrimosa_Passive_2": "/static/guide/skill-icons/Lacrimosa_Pas2.webp",
+    "GA_Lacrimosa_Passive_3": "/static/guide/skill-icons/Lacrimosa_Pas3.webp",
+    "City_Ability_lacrimosa_01": "/static/guide/skill-icons/YH_UI_Skill_fqdc.webp",
+    "City_Ability_lacrimosa_sp01": "/static/guide/skill-icons/YH_UI_Skill_zsfl.webp"
+  },
+  "1008": {
+    "GA_Skia_Melee": "/static/guide/skill-icons/Skia_Melee.webp",
+    "GA_Skia_Skill": "/static/guide/skill-icons/Skia_Skill.webp",
+    "GA_Skia_UltraSkill": "/static/guide/skill-icons/Skia_UltraSkill.webp",
+    "GA_Skia_QTE": "/static/guide/skill-icons/Skia_QTE.webp",
+    "GA_Skia_Passive_1": "/static/guide/skill-icons/Skia_Pas1.webp",
+    "GA_Skia_Passive_2": "/static/guide/skill-icons/Skia_Pas2.webp",
+    "City_Ability_skia_01": "/static/guide/skill-icons/YH_UI_Skill_zcgl.webp"
+  },
+  "1010": {
+    "GA_Nanally_Melee": "/static/guide/skill-icons/Nanally_Melee.webp",
+    "GA_Nanally_Skill": "/static/guide/skill-icons/Nanally_Skill.webp",
+    "GA_Nanally_UltraSkill": "/static/guide/skill-icons/Nanally_UltraSkill.webp",
+    "GA_Nanally_QTE": "/static/guide/skill-icons/Nanally_QTE.webp",
+    "GA_Nanally_Passive_1": "/static/guide/skill-icons/Nanally_Pas1.webp",
+    "GA_Nanally_Passive_2": "/static/guide/skill-icons/Nanally_Pas2.webp",
+    "City_Ability_nanally_01": "/static/guide/skill-icons/YH_UI_Skill_jzcy.webp"
+  },
+  "1019": {
+    "GA_Mint019_Melee": "/static/guide/skill-icons/Mint_Melee.webp",
+    "GA_Mint019_Skill": "/static/guide/skill-icons/Mint_Skill.webp",
+    "GA_Mint019_UltraSkill": "/static/guide/skill-icons/Mint_UltraSkill.webp",
+    "GA_Mint019_QTE": "/static/guide/skill-icons/Mint_QTE.webp",
+    "GA_Mint_Passive_1": "/static/guide/skill-icons/Mint_Pas1.webp",
+    "GA_Mint_Passive_2": "/static/guide/skill-icons/Mint_Pas2.webp",
+    "City_Ability_melt_01": "/static/guide/skill-icons/YH_UI_Skill_bhljf.webp"
+  },
+  "1020": {
+    "GA_Haniel_Melee": "/static/guide/skill-icons/Haniel_Melee.webp",
+    "GA_Haniel_Skill": "/static/guide/skill-icons/Haniel_Skill.webp",
+    "GA_Haniel_UltraSkill": "/static/guide/skill-icons/Haniel_UltraSkill.webp",
+    "GA_Haniel_QTE": "/static/guide/skill-icons/Haniel_QTE.webp",
+    "GA_Haniel_Passive_1": "/static/guide/skill-icons/Haniel_Pas1.webp",
+    "GA_Haniel_Passive_2": "/static/guide/skill-icons/Haniel_Pas2.webp",
+    "City_Ability_Haniel_01": "/static/guide/skill-icons/YH_UI_Skill_dgns.webp"
+  },
+  "1021": {
+    "GA_Edgar_Melee": "/static/guide/skill-icons/Edgar_Melee.webp",
+    "GA_Edgar_Skill": "/static/guide/skill-icons/Edgar_Skill.webp",
+    "GA_Edgar_UltraSkill": "/static/guide/skill-icons/Edgar_UltraSkill.webp",
+    "GA_Edgar_QTE": "/static/guide/skill-icons/Edgar_QTE.webp",
+    "GA_Edgar_Passive_1": "/static/guide/skill-icons/Edgar_Pas1.webp",
+    "GA_Edgar_Passive_2": "/static/guide/skill-icons/Edgar_Pas2.webp",
+    "City_Ability_Aidejia_01": "/static/guide/skill-icons/YH_UI_Skill_dyzy.webp"
+  },
+  "1023": {
+    "GA_Cang_Melee": "/static/guide/skill-icons/Cang_Melee.webp",
+    "GA_Cang_Skill": "/static/guide/skill-icons/Cang_Skill.webp",
+    "GA_Cang_UltraSkill": "/static/guide/skill-icons/Cang_UltraSkill.webp",
+    "GA_Cang_QTE": "/static/guide/skill-icons/Cang_QTE.webp",
+    "GA_Cang_Passive_1": "/static/guide/skill-icons/Cang_Pas1.webp",
+    "GA_Cang_Passive_2": "/static/guide/skill-icons/Cang_Pas2.webp",
+    "City_Ability_cang_01": "/static/guide/skill-icons/YH_UI_Skill_zzrs.webp"
+  },
+  "1025": {
+    "GA_Hathor_Melee": "/static/guide/skill-icons/Hathor_Melee.webp",
+    "GA_Hathor_Skill": "/static/guide/skill-icons/Hathor_Skill1.webp",
+    "GA_Hathor_UltraSkill": "/static/guide/skill-icons/Hathor_UltraSkill.webp",
+    "GA_Hathor_QTE": "/static/guide/skill-icons/Hathor_QTE.webp",
+    "GA_Hathor_Passive_1": "/static/guide/skill-icons/Hathor_Pas1.webp",
+    "GA_Hathor_Passive_2": "/static/guide/skill-icons/Hathor_Pas2.webp",
+    "GA_Hathor_Passive_3": "/static/guide/skill-icons/Hathor_Pas3.webp",
+    "City_Ability_hathor_01": "/static/guide/skill-icons/YH_UI_Skill_jykdy.webp"
+  },
+  "1033": {
+    "GA_Adler_Melee": "/static/guide/skill-icons/Adler_Melee.webp",
+    "GA_Adler_Skill": "/static/guide/skill-icons/Adler_Skill.webp",
+    "GA_Adler_UltraSkill": "/static/guide/skill-icons/Adler_UltraSkill.webp",
+    "GA_Adler_QTE": "/static/guide/skill-icons/Adler_QTE.webp",
+    "GA_Adler_Passive_1": "/static/guide/skill-icons/Adler_Pas1.webp",
+    "GA_Adler_Passive_2": "/static/guide/skill-icons/Adler_Pas2.webp",
+    "City_Ability_adler_01": "/static/guide/skill-icons/YH_UI_Skill_kfds.webp"
+  },
+  "1036": {
+    "GA_Zankou_Melee": "/static/guide/skill-icons/Zankou_Melee.webp",
+    "GA_Zankou_Skill": "/static/guide/skill-icons/Zankou_Skill1.webp",
+    "GA_Zankou_UltraSkill": "/static/guide/skill-icons/Zankou_Ultra.webp",
+    "GA_Zankou_QTE": "/static/guide/skill-icons/Zankou_QTE.webp",
+    "GA_Zankou_Passive1": "/static/guide/skill-icons/Zankou_Pas1.webp",
+    "GA_Zankou_Passive2": "/static/guide/skill-icons/Zankou_Pas2.webp",
+    "GA_Zankou_InvisibleSkill": "/static/guide/skill-icons/Zankou_Pas3.webp",
+    "City_Ability_Zankou_01": "/static/guide/skill-icons/YH_UI_Skill_zqhs.webp",
+    "City_Ability_Zankou_02": "/static/guide/skill-icons/YH_UI_Skill_qlyf.webp"
+  },
+  "1039": {
+    "GA_Fadia_Melee": "/static/guide/skill-icons/Fadia_Melee.webp",
+    "GA_Fadia_Skill": "/static/guide/skill-icons/Fadia_Skill.webp",
+    "GA_Fadia_UltraSkill": "/static/guide/skill-icons/Fadia_UltraSkill.webp",
+    "GA_Fadia_QTE": "/static/guide/skill-icons/Fadia_QTE.webp",
+    "GA_Fadia_Passive_1": "/static/guide/skill-icons/Fadia_Pas1.webp",
+    "GA_Fadia_Passive_2": "/static/guide/skill-icons/Fadia_Pas2.webp",
+    "GA_Fadia_Passive_3": "/static/guide/skill-icons/Fadia_Pas3.webp",
+    "City_Ability_fadia_02": "/static/guide/skill-icons/YH_UI_Skill_cjbc.webp"
+  },
+  "1042": {
+    "GA_BlackBird_Melee": "/static/guide/skill-icons/BlackBird_Melee.webp",
+    "GA_BlackBird_Skill": "/static/guide/skill-icons/BlackBird_Skill.webp",
+    "GA_BlackBird_UltraSkill": "/static/guide/skill-icons/BlackBird_UltraSkill.webp",
+    "GA_BlackBird_QTE": "/static/guide/skill-icons/BlackBird_QTE.webp",
+    "GA_BlackBird_Passive_1": "/static/guide/skill-icons/BlackBird_pas1.webp",
+    "GA_BlackBird_Passive_2": "/static/guide/skill-icons/BlackBird_pas2.webp",
+    "GA_BlackBird_Passive_3": "/static/guide/skill-icons/BlackBird_pas3.webp",
+    "City_Ability_BlackBird_01": "/static/guide/skill-icons/YH_UI_Skill_qg.webp",
+    "City_Ability_BlackBird_02": "/static/guide/skill-icons/YH_UI_Skill_dmmgs.webp"
+  },
+  "1046": {
+    "GA_Female046_Melee": "/static/guide/skill-icons/Female_melee.webp",
+    "GA_Female046_Skill": "/static/guide/skill-icons/Female_Skill.webp",
+    "GA_Female046_UltraSkill": "/static/guide/skill-icons/Female_UltraSkill.webp",
+    "GA_Female046_QTE": "/static/guide/skill-icons/Female_QTE.webp",
+    "GA_Female_Passive_1": "/static/guide/skill-icons/Female_Pas1.webp",
+    "GA_Female_Passive_2": "/static/guide/skill-icons/Female_Pas2.webp",
+    "City_Ability_palyer_01": "/static/guide/skill-icons/YH_UI_Skill_wxhr.webp"
+  },
+  "1051": {
+    "GA_Female051_Melee": "/static/guide/skill-icons/Female_melee.webp",
+    "GA_Female051_Skill": "/static/guide/skill-icons/Female_Skill.webp",
+    "GA_Female051_UltraSkill": "/static/guide/skill-icons/Female_UltraSkill.webp",
+    "GA_Female051_QTE": "/static/guide/skill-icons/Female_QTE.webp",
+    "GA_Female_Passive_1": "/static/guide/skill-icons/Female_Pas1.webp",
+    "GA_Female_Passive_2": "/static/guide/skill-icons/Female_Pas2.webp",
+    "City_Ability_palyer_01": "/static/guide/skill-icons/YH_UI_Skill_wxhr.webp"
+  },
+  "1052": {
+    "GA_Jin_Melee": "/static/guide/skill-icons/Jin_Melee.webp",
+    "GA_Jin_Skill": "/static/guide/skill-icons/Jin_Skill.webp",
+    "GA_Jin_UltraSkill": "/static/guide/skill-icons/Jin_UltraSkillA.webp",
+    "GA_Jin_QTE": "/static/guide/skill-icons/Jin_QTE.webp",
+    "GA_Jin_Passive_1": "/static/guide/skill-icons/Jin_Pas1.webp",
+    "GA_Jin_Passive_2": "/static/guide/skill-icons/Jin_Pas2.webp",
+    "GA_Jin_Passive_3": "/static/guide/skill-icons/Jin_Pas3.webp",
+    "City_Ability_jin_02": "/static/guide/skill-icons/YH_UI_Skill_xbsk.webp"
+  },
+  "1054": {
+    "GA_Daffodill_Melee": "/static/guide/skill-icons/Daffodill_Melee.webp",
+    "GA_Daffodill_Skill": "/static/guide/skill-icons/Daffodill_Skill1.webp",
+    "GA_Daffodill_UltraSkill": "/static/guide/skill-icons/Daffodill_UltraSkill.webp",
+    "GA_Daffodill_QTE": "/static/guide/skill-icons/Daffodill_QTE.webp",
+    "GA_Daffodill_Passive_1": "/static/guide/skill-icons/Daffodill_Pas1.webp",
+    "GA_Daffodill_Passive_2": "/static/guide/skill-icons/Daffodill_Pas2.webp",
+    "City_Ability_Dafudier_01": "/static/guide/skill-icons/YH_UI_Skill_dkxx.webp"
+  },
+  "1055": {
+    "GA_Kuhara_Melee": "/static/guide/skill-icons/Kuhara_Melee.webp",
+    "GA_Kuhara_Skill": "/static/guide/skill-icons/Kuhara_Skill.webp",
+    "GA_Kuhara_UltraSkill": "/static/guide/skill-icons/Kuhara_UltraSkill.webp",
+    "GA_Kuhara_QTE": "/static/guide/skill-icons/Kuhara_QTE.webp",
+    "GA_Kuhara_Passive_1": "/static/guide/skill-icons/Kuhara_Pas1.webp",
+    "GA_Kuhara_Passive_2": "/static/guide/skill-icons/Kuhara_Pas2.webp",
+    "City_Ability_Jiuyuan_01": "/static/guide/skill-icons/YH_UI_Skill_chgb.webp"
+  },
+  "1057": {
+    "GA_Akane_Melee": "/static/guide/skill-icons/Akane_Melee.webp",
+    "GA_Akane_Skill": "/static/guide/skill-icons/Akane_Skill.webp",
+    "GA_Akane_UltraSkill": "/static/guide/skill-icons/Akane_Ultraskill1.webp",
+    "GA_Akane_QTE": "/static/guide/skill-icons/Akane_QTE.webp",
+    "GA_Akane_Passive_1": "/static/guide/skill-icons/Akane_Passive1.webp",
+    "GA_Akane_Passive_2": "/static/guide/skill-icons/Akane_Passive2.webp",
+    "GA_Akane_Skill_Gitar": null,
+    "City_Ability_Akane_01": "/static/guide/skill-icons/YH_UI_Skill_bttt.webp",
+    "City_Ability_Akane_02": "/static/guide/skill-icons/YH_UI_Skill_wtzx.webp"
+  },
+  "1070": {
+    "GA_Mitsuki_Melee": "/static/guide/skill-icons/Mitsuki_Melee1.webp",
+    "GA_Mitsuki_Skill": "/static/guide/skill-icons/Mitsuki_Skill.webp",
+    "GA_Mitsuki_UltraSkill": "/static/guide/skill-icons/Mitsuki_UltraSkill.webp",
+    "GA_Mitsuki_QTE": "/static/guide/skill-icons/Mitsuki_QTE.webp",
+    "GA_Mitsuki_Passive1": "/static/guide/skill-icons/Mitsuki_Pas1.webp",
+    "GA_Mitsuki_Passive2": "/static/guide/skill-icons/Mitsuki_Pas2.webp",
+    "GA_Mitsuki_Passive3": "/static/guide/skill-icons/Mitsuki_Pas3.webp",
+    "City_Ability_Mitsuki_01": "/static/guide/skill-icons/YH_UI_Skill_zydk.webp"
+  },
+  "1071": {
+    "GA_Chaos071_Melee": "/static/guide/skill-icons/Chaos_Melee.webp",
+    "GA_Chaos071_Skill": "/static/guide/skill-icons/Chaos_Skill.webp",
+    "GA_Chaos071_UltraSkill": "/static/guide/skill-icons/Chaos_UltraSkill.webp",
+    "GA_Chaos071_QTE": "/static/guide/skill-icons/Chaos_QTE.webp",
+    "GA_Chaos_Passive_1": "/static/guide/skill-icons/Chaos_Passive1.webp",
+    "GA_Chaos_Passive_2": "/static/guide/skill-icons/Chaos_Passive2.webp",
+    "GA_Chaos071_Passive_3": "/static/guide/skill-icons/YH_UI_Icon_KESDog.webp",
+    "City_Ability_Chaos_01": "/static/guide/skill-icons/YH_UI_Skill_cdds.webp",
+    "City_Ability_Chaos_sp01": "/static/guide/skill-icons/YH_UI_Skill_kes_jycm.webp"
+  },
+  "1072": {
+    "GA_Radio072_Melee": "/static/guide/skill-icons/Linko_Melee.webp",
+    "GA_Radio072_Skill": "/static/guide/skill-icons/Linko_Skill.webp",
+    "GA_Radio072_UltraSkill": "/static/guide/skill-icons/Linko_UltraSkill.webp",
+    "GA_Radio072_QTE": "/static/guide/skill-icons/Linko_QTE.webp",
+    "GA_Radio072_Passive_1": "/static/guide/skill-icons/Linko_Passive1.webp",
+    "GA_Radio072_Passive_2": "/static/guide/skill-icons/Linko_Passive2.webp",
+    "GA_Radio072_Passive_3": "/static/guide/skill-icons/Linko_SpecialAbility.webp",
+    "City_Ability_Radio072_01": "/static/guide/skill-icons/YH_UI_Skill_cqmx.webp",
+    "City_Ability_Radio072_02": "/static/guide/skill-icons/YH_UI_Skill_fxy.webp"
+  },
+  "1073": {
+    "GA_Chiichan073_Melee": "/static/guide/skill-icons/chiichan_melee.webp",
+    "GA_Chiichan073_Skill": "/static/guide/skill-icons/chiichan_skill1.webp",
+    "GA_Chiichan073_UltraSkill": "/static/guide/skill-icons/chiichan_ultraskill.webp",
+    "GA_Chiichan073_QTE": "/static/guide/skill-icons/chiichan_qte.webp",
+    "GA_Chiichan073_Passive_1": "/static/guide/skill-icons/chiichan_pas1.webp",
+    "GA_Chiichan073_Passive_2": "/static/guide/skill-icons/chiichan_pas2.webp",
+    "City_Ability_Xiaozhi_01": "/static/guide/skill-icons/YH_UI_Skill_kkgj.webp",
+    "City_Ability_Xiaozhi_sp01": "/static/guide/skill-icons/YH_UI_Skill_yysw.webp"
+  },
+  "1075": {
+    "GA_Oneiroi_Melee": "/static/guide/skill-icons/Oneiroi_Melee.webp",
+    "GA_Oneiroi_Skill": "/static/guide/skill-icons/Oneiroi_Skill.webp",
+    "GA_Oneiroi_UltraSkill": "/static/guide/skill-icons/Oneiroi_UltraSkill.webp",
+    "GA_Oneiroi_QTE": "/static/guide/skill-icons/Oneiroi_QTE.webp",
+    "GA_Oneiroi_Passive_1": "/static/guide/skill-icons/Oneiroi_Pas1.webp",
+    "GA_Oneiroi_Passive_2": "/static/guide/skill-icons/Oneiroi_Pas2.webp",
+    "GA_Oneiroi_Passive_3": "/static/guide/skill-icons/Oneiroi_Pas3.webp",
+    "City_Ability_Oneiroi_01": "/static/guide/skill-icons/YH_UI_Skill_hyhy.webp",
+    "City_Ability_Oneiroi_02": "/static/guide/skill-icons/YH_UI_Skill_dtct.webp"
+  },
+  "1076": {
+    "GA_Shinku_Melee": "/static/guide/skill-icons/Shinku_Melee.webp",
+    "GA_Shinku_Skill": "/static/guide/skill-icons/Shinku_Skill.webp",
+    "GA_Shinku_UltraSkill": "/static/guide/skill-icons/Shinku_UltraSkill.webp",
+    "GA_Shinku_QTE": "/static/guide/skill-icons/Shinku_QTE.webp",
+    "GA_Shinku_Passive_1": "/static/guide/skill-icons/Shinku_Pas1.webp",
+    "GA_Shinku_Passive_2": "/static/guide/skill-icons/Shinku_Pas2.webp",
+    "GA_Shinku_Passive_3": "/static/guide/skill-icons/Shinku_Pas3.webp",
+    "City_Ability_Shinku_01": "/static/guide/skill-icons/YH_UI_Skill_oemy.webp",
+    "City_Ability_Shinku_02": "/static/guide/skill-icons/YH_UI_Skill_cchs.webp"
+  }
+}

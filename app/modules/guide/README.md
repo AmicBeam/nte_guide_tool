@@ -199,3 +199,5 @@ python scripts/refresh_guide_data.py --transport curl
 角色详情空幕特化说明使用16px正文，格位说明使用14px；空幕计算入口位于顶部工具区，不插入格位正文。跳转使用 `/kongmu?character=<正式角色ID>&cartridge=<推荐卡带ID>`，预选对应角色和推荐卡带。`data/kongmu_links.json` 保存离线映射；显式刷新 `python scripts/sync_guide_kongmu_links.py`，支持 `--plan-table` 与 `--equipment-table` 读取本地表，请求和启动不联网。未知角色不生成跳转，缺推荐配置时只携带角色，不推断推荐。
 
 怪物头像覆盖当前44个配置ID，每个ID读取其明确配置的图片并保存到模块本地；同名的普通、Snow、Rain等变体使用各自绑定，不进行同名兜底。缺少ID绑定时显示暂无贴图，不借用同名怪物。显式同步命令：`python scripts/sync_guide_monster_images.py`，逐ID核对原始图标字段，拒绝缺失或冲突绑定；所有图片验证成功后才替换绑定文件，不改动关卡数值。
+
+角色技能标题左侧显示对应的本地技能图标，覆盖普通攻击、变轨技能、极轨终结、援护、被动、特性和都市技能；桌面56px、窄屏48px，等级滑块保持独立。`data/skill_icons.json` 按角色ID与技能ID绑定，资源位于模块 `static/skill-icons/`；无有效绑定时仅显示原标题。显式刷新 `python scripts/sync_guide_skill_icons.py`，支持 `--tips-table`、`--city-table` 读取本地技能表，使用 `cwebp` 转码；网站启动和页面请求不联网取图。 明音凛“随心拨弦”暂无可用独立图片，该项保留文字标题。

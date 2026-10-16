@@ -75,8 +75,11 @@ def catalog():
     affinity = json.loads((Path(__file__).parent / 'data/affinity.json').read_text(encoding='utf-8'))
     affinity_by_id = {record['id']: record['affinity'] for record in affinity['characters']}
     passive_icons = json.loads((Path(__file__).parent / 'data/passive_icons.json').read_text(encoding='utf-8'))
+    skill_icons = json.loads((Path(__file__).parent / 'data/skill_icons.json').read_text(encoding='utf-8'))
     for character in data['characters']:
         bind_description_parameters(character)
+        for ability in character['abilities']:
+            ability['icon'] = skill_icons[str(character['id'])].get(ability['id'])
         for section in ('awaken', 'resonance'):
             passive_bindings = {item['name']: item['icon'] for item in passive_icons[str(character['id'])][section]}
             for item in character[section]:

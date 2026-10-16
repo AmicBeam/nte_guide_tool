@@ -227,9 +227,9 @@ python scripts/refresh_guide_data.py --transport curl
 
 独立CLI新增 `me [--role-id <游戏账号ID>] [--character <角色ID>]`，通过 `NTE_GUIDE_TOKEN` 环境变量携带本站登录凭据，读取 `/api/guide/me/profiles` 后只在当前用户结果内筛选。返回 `{"data":[profile,...]}`，包括同步时间、角色当前练度与已装备弧盘／空幕卡带；没有有效凭据则失败，不通过仅提供账号ID的方式读取他人资料。私有请求拒绝重定向，错误不回显上游响应或凭据，公共 `list/search/get/schema` 不携带 token。
 
-机器人可信运行时可按当前消息事件的发送者QQ号，从网站账号数据库只读查询现存有效token，再用CLI读取本人快照。`plugins/nte_guide_access.py`、`plugins/nte_build_card.py` 由本仓库维护，宿主只负责调用和发送图片，详见 `plugins/README.md`。一图流仅展示已同步数据，保留同步时间，不推断基础技能等级或进行配装评分；个人数据接口仍按本站用户隔离，不自动同步游戏。公共攻略查询不再需要机器人直接接入其他攻略站工具，离线资料刷新机制保持不变。
+机器人可信运行时按当前消息事件的发送者QQ号读取本人已保存配装；只读 token 桥接和一图流绘图实现在 `qqbot_fairy` 仓库的 `src/plugins/`，随机器人代码发布，本站不再保留这两个副本。本站继续维护独立 CLI 与按网站用户隔离的鉴权 API，部署边界见 `plugins/README.md`。图片仅展示已同步快照，不推断基础技能等级或评分；不自动同步游戏，公共资料的离线刷新机制保持不变。
 
-验证：`.venv/bin/python -m unittest tests.test_guide_bot_tools tests.test_nte_account_db tests.test_guide_user_data tests.test_guide -v`，使用合成资料检查只读token桥接、所有权、失效状态、CLI认证、PNG渲染和旧公共命令兼容。
+验证：`.venv/bin/python -m unittest tests.test_guide_bot_tools tests.test_nte_account_db tests.test_guide_user_data tests.test_guide -v`，使用合成资料检查 CLI 认证、所有权、私有错误脱敏、注册兼容和旧公共命令；只读桥接与 PNG 渲染测试在机器人仓库执行。
 
 同步错误回归：`node --test tests/test_guide_private_response.cjs`，覆盖HTML错误页、失效登录、JSON错误及删除成功响应。
 

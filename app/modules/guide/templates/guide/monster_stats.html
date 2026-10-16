@@ -5,8 +5,9 @@
 {% set lowest = numeric|min if numeric else none %}
 {% set varied = numeric and lowest < numeric|max %}
 <dl class="guide-tree">{% for element, resistance in child.items() %}
-{% set weak = varied and resistance is number and resistance == lowest %}
-<div><dt>{{ element|guide_label }}</dt><dd><span class="guide-text{% if weak %} guide-resistance-weak{% endif %}"{% if weak %} title="弱点抗性" aria-label="弱点抗性 {{ resistance|guide_scalar }}"{% endif %}>{{ resistance|guide_scalar }}</span></dd></div>
+{% set enhanced = resistance is number and element in monster.enhanced_resistances|default([]) %}
+{% set weak = not enhanced and varied and resistance is number and resistance == lowest %}
+<div><dt>{{ element|guide_label }}</dt><dd><span class="guide-text{% if enhanced %} guide-resistance-enhanced{% elif weak %} guide-resistance-weak{% endif %}"{% if enhanced %} title="强化抗性" aria-label="强化抗性 {{ resistance|guide_scalar }}"{% elif weak %} title="弱点抗性" aria-label="弱点抗性 {{ resistance|guide_scalar }}"{% endif %}>{{ resistance|guide_scalar }}</span></dd></div>
 {% endfor %}</dl>
 {% else %}{{ tree(child) }}{% endif %}
 </dd></div>

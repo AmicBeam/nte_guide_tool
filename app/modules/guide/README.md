@@ -192,7 +192,7 @@ python scripts/refresh_guide_data.py --transport curl
 
 角色觉醒卡片展示对应图标与名称，不显示“觉醒＋序号”；共鸣展示图标及“共鸣 Lv.3”格式的等级标签。图标由模块 `static/passive-icons/` 持有，`data/passive_icons.json` 按角色、章节与名称绑定；显式刷新使用 `python scripts/sync_guide_passive_icons.py`，请求和启动不联网。 明音凛的六个觉醒图标当前为空，缺失时只显示名称，不生成破图或替用其他角色图标。
 
-怪物详细数据中的抗性以数值比较标色：当数值并非全相同时，最低抗性（含并列最低）使用弱点绿色；全部相同或缺失的值不标色。数值仍按原有小数比例显示。
+怪物详细数据中的抗性按配置与数值标色：明确标记的强化抗性数值使用橙色，并提供“强化抗性”提示；其余数值并非全相同时，最低抗性（含并列最低）使用弱点绿色。缺失值不标色；没有强化标记且全部相同时不标色。数值仍按原有小数比例显示。
 
 安魂曲觉醒A的参数按普通攻击当前等级下“噩梦”伤害倍率乘以4/3显示，默认跟随10级，展示最多保留两位小数。`description_parameters.py` 提供显式技能ID绑定与逐级展示数组；网页保留原有颜色和名词注释，对应技能滑块同时更新觉醒正文与提示中的等级／倍率。娜娜莉觉醒C跟随普通攻击，灵可觉醒D跟随极轨终结，逐级倍率由本地 `data/awakening_damage.json` 提供。三处倍率均可悬停、聚焦或点按查看依据技能、当前技能等级、当前倍率和1级倍率。显式更新追加伤害数组：`python scripts/sync_guide_awakening_damage.py --damage-table /path/to/DT_SkillDamageData.json`。JSON／Markdown保留说明模板及 `parameters`，不修改技能原始倍率数组。未建立明确参数绑定的占位符不猜测补值。
 

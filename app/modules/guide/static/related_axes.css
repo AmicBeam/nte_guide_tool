@@ -12,3 +12,5 @@
 #related-preview-frame{height:100%;min-height:0;min-width:0}
 #related-preview>p{margin:0}
 @media(max-width:750px){#related-preview{padding:10px}#related-preview[open]{gap:8px}}
+
+.guide-axis-reactions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px;font-size:12px;color:var(--g-dim)}.guide-axis-reactions button{min-height:40px;padding:8px 13px}.guide-axis-reactions button[aria-pressed=true]{border-color:var(--g-accent);color:var(--g-accent);background:#c9f47a14}.guide-axis-reactions a{color:var(--g-accent)}.guide-axis-feedback{font-size:12px;color:var(--g-dim);line-height:1.6;margin:8px 0 0}.guide-axis-feedback:empty{display:none}

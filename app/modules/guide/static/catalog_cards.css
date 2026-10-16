@@ -1,0 +1,13 @@
+.guide-card[data-filter-card] .guide-card-identity { display:block; margin:0 0 12px; }
+.guide-card-media { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.guide-card-media>.guide-card-image { max-width:calc(100% - 42px); height:auto; aspect-ratio:1; }
+.guide-card-media .guide-card-meta { flex:none; margin-left:auto; }
+.guide-card-identity .guide-card-meta img { border:0; border-radius:0; background:none; object-fit:contain; align-self:flex-start; }
+.guide-card[data-filter-card] .guide-card-identity h3 { margin:14px 0 0; }
+.guide-arc-card .guide-card-media>.guide-card-image { align-self:flex-start; }
+@media(max-width:700px) {
+  .guide-card-media { gap:6px; }
+  .guide-card-media .guide-card-meta { flex-direction:column; gap:6px; }
+  .guide-arc-card .guide-card-identity .guide-card-meta img { width:32px; height:24px; }
+  .guide-card[data-filter-card] .guide-card-identity h3 { overflow-wrap:anywhere; }
+}

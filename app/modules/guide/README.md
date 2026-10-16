@@ -157,3 +157,5 @@ python scripts/refresh_guide_data.py --transport curl
 网站依赖增加 `pycryptodome`，更新时须安装 `requirements.txt`；运行账户需要能通过 HTTPS 访问游戏服务，并保留正常证书验证。上游协议／风控可能变化，错误时保留旧数据并显示重试提示；首次真实短信和账号字段仍需在实际账号上验收，不以合成接口测试代替。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_user_data tests.test_guide tests.test_module_routes -v`，覆盖匿名计算与私有接口隔离、多用户／多账号归属、重连数据库、白名单保存、旧快照保护、短信频率与尝试次数、技能缺失／越界、临界突破及协议加密。浏览器核对同步弹窗、账号选择、预填确认、计算结果和390px窄屏布局。
+
+角色与弧盘目录卡片不显示顶部编号行和右下角跳转箭头；属性、稀有度图标位于图片同一行的右上角，名称在图片下一行，整张卡片仍可点击进入详情。

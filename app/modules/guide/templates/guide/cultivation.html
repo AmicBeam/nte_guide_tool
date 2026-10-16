@@ -8,6 +8,7 @@
 {% endmacro %}
 {% block title %}{{ record.name }} · 养成计算器 · NTE Tools{% endblock %}
 {% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='cultivation.css') }}"><script defer src="{{ url_for('guide_module.static', filename='cultivation.js') }}"></script>{% endblock %}
+{% block guide_back %}<a class="guide-top-back" href="/guide/characters/{{ record.id }}" aria-label="返回{{ record.name }}角色资料">← 返回</a>{% endblock %}
 {% block content %}
 <nav class="guide-breadcrumb"><a href="/guide">攻略数据库</a> / <a href="/guide/characters/{{ record.id }}">{{ record.name }}</a> / 养成计算器</nav>
 <header class="guide-hero"><p class="guide-eyebrow">CULTIVATION</p><h1>{{ record.name }} · 养成计算器</h1><p>填写当前练度与目标，计算角色升级、突破和技能养成所需的全部材料。</p></header>

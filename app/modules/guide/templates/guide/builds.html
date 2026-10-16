@@ -1,8 +1,8 @@
 {% extends 'guide/layout.html' %}
 {% block title %}{{ record.name }} · 排轴与配装 · NTE Tools{% endblock %}
 {% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='related_axes.css', v=related_asset_version) }}"><script src="{{ url_for('guide_module.static', filename='related_axes.js', v=related_asset_version) }}" defer></script>{% endblock %}
+{% block guide_back %}<a class="guide-top-back" href="/guide/characters/{{ record.id }}" aria-label="返回{{ record.name }}角色资料">← 返回</a>{% endblock %}
 {% block content %}
-<a class="guide-back" href="/guide/characters/{{ record.id }}">← {{ record.name }}角色资料</a>
 <header class="guide-builds-header"><div>{% if record.assets %}<img src="{{ record.assets.avatar }}" alt="" width="64" height="64">{% endif %}<div><p class="guide-eyebrow">CHARACTER BUILD LAB</p><h1>{{ record.name }} · 排轴与配装</h1></div></div><p class="guide-muted">仅展示包含{{ record.name }}的排轴。选择队友、查阅操作，再用同一条轴比较装备收益。</p></header>
 {% include 'guide/related_axes.html' %}
 {% endblock %}

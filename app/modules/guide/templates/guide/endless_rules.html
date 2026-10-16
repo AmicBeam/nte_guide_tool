@@ -1,0 +1,15 @@
+<section class="guide-endless-rules" aria-label="楼层机制">
+  <p><strong>推荐属性：</strong>{% for element in half.recommended_elements %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>
+  <p><strong>强化抗性：</strong>{% for element in stage.rules.enhanced_resistances %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}无{% endfor %}</p>
+  <p class="guide-muted">{{ '节点起始层 · ' if stage.rules.node_first }}{{ '关底 · ' if stage.rules.node_last }}备选角色 {{ stage.rules.reserve_character_count }} · 角色栏位 {{ stage.rules.floor_slot_count }}</p>
+  {% set selection = stage.rules.buff_selection %}
+  {% if selection.enabled %}
+  <details class="guide-endless-buffs" open><summary>关底增益与代价</summary>
+    <p>默认增益数量：{{ selection.default_count }}{% for bonus in selection.count_bonuses %} · 第 {{ bonus.floor }} 层关联数量加成：+{{ bonus.count }}{% endfor %}</p>
+    <div class="guide-table-scroll"><table class="guide-data-table"><thead><tr><th>可选组合</th><th>增益</th><th>代价</th></tr></thead><tbody>
+    {% for option in selection.options %}<tr><th scope="row">{{ loop.index }}</th><td>{% for effect in option.positive %}<p>{{ effect.description }}</p>{% endfor %}</td><td>{% for effect in option.negative %}<p>{{ effect.description }}</p>{% endfor %}</td></tr>{% endfor %}
+    </tbody></table></div>
+  </details>
+  {% endif %}
+  <p class="guide-muted">下方敌人属性未叠加关底选项带来的增益或代价。</p>
+</section>

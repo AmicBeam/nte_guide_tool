@@ -1,10 +1,10 @@
 # 攻略数据库
 
-公共资料匿名只读，提供异环角色、弧盘、轨外之境三类攻略数据；个人练度同步须登录本站，养成计算仍可匿名使用。角色工具页通过排轴公开接口展示相关轴，并链接到排轴模块的配装收益比较。工具主页可进入 `/guide`；不依赖其他模块的领域服务，不使用异能对决的原创卡牌数值。当前快照包含 25 个角色条目（男女主分别计数）、51 个弧盘、15 个环线；包含数据集中已提供的条目，不以列表顺序推断实装或赛期开放状态。
+公共资料匿名只读，提供异环角色、弧盘、轨外之境、全站深境四类攻略数据；个人练度同步须登录本站，养成计算仍可匿名使用。角色工具页通过排轴公开接口展示相关轴，并链接到排轴模块的配装收益比较。工具主页可进入 `/guide`；不依赖其他模块的领域服务，不使用异能对决的原创卡牌数值。当前快照包含 25 个角色条目（男女主分别计数）、51 个弧盘、15 个环线，以及全站深境200层（每50层一组）；包含数据集中已提供的条目，不以列表顺序推断实装或赛期开放状态。
 
 ## 网页和机器读取
 
-- `/guide?kind=characters|arcs|challenges&q=关键词`：服务端渲染索引，搜索技能正文、弧盘效果和敌人名；角色支持 `element=魂&rarity=5&arc_type=4`（弧盘类型ID）。属性、星级、弧盘类型使用三组图标单选按钮，各组提供“全部”，首次页面包含全部25个角色卡片与去重的文本检索字段，后续图标筛选与搜索只在前端显示／隐藏卡片，不发起查询请求、不跳转页面；保留滚动位置并同步地址栏。直接打开带筛选参数的URL仍由服务端渲染相同初始结果。无JavaScript时可点击搜索提交。
+- `/guide?kind=characters|arcs|challenges|endless&q=关键词`：服务端渲染索引，搜索技能正文、弧盘效果和敌人名；角色支持 `element=魂&rarity=5&arc_type=4`（弧盘类型ID）。属性、星级、弧盘类型使用三组图标单选按钮，各组提供“全部”，首次页面包含全部25个角色卡片与去重的文本检索字段，后续图标筛选与搜索只在前端显示／隐藏卡片，不发起查询请求、不跳转页面；保留滚动位置并同步地址栏。直接打开带筛选参数的URL仍由服务端渲染相同初始结果。无JavaScript时可点击搜索提交。
 - `/guide/<分类>/<id>`：完整详情，正文无需 JavaScript；角色技能、属性成长与弧盘精炼提供等级滑块，切换当前档位数值；详情采用左侧悬浮目录，技能有二级目录并保留“普通攻击：”“天赋一：”等类型前缀，当前章节随滚动高亮，窄屏通过左下角目录按钮展开；挑战详情可加 `?stage=12` 只看某关。
 - `/guide/<分类>/<id>.md`：相同内容的 Markdown，可加 `section=abilities`、`section=effect` 或 `stage=12` 限定返回量。
 - `/api/guide/<分类>`：分页摘要，支持 `q`、`element`、`rarity`、`limit`（1–100）、`offset`，返回 `total`、`next_offset`、`items`；摘要含三种详情链接。
@@ -57,7 +57,7 @@ python scripts/refresh_guide_data.py --transport curl
 .venv/bin/python -m unittest tests.test_guide tests.test_module_routes -v
 ```
 
-浏览器匿名验证主页入口、三类索引、搜索/筛选、空结果、角色和弧盘详情、技能等级滑块及属性/精炼滑块的首尾数值、空幕格位及空幕计算跳转、材料概览、完整经验数据接口、挑战单关、Markdown 与 CLI 下载。完成后确认本机与局域网 5001 端口均可访问。
+浏览器匿名验证主页入口、四类索引、搜索/筛选、空结果、角色和弧盘详情、技能等级滑块及属性/精炼滑块的首尾数值、空幕格位及空幕计算跳转、材料概览、完整经验数据接口、挑战单关、Markdown 与 CLI 下载。完成后确认本机与局域网 5001 端口均可访问。
 
 ## 本地角色图片
 
@@ -203,3 +203,15 @@ python scripts/refresh_guide_data.py --transport curl
 角色技能标题左侧显示对应的本地技能图标，覆盖普通攻击、变轨技能、极轨终结、援护、被动、特性和都市技能；桌面56px、窄屏48px，等级滑块保持独立。`data/skill_icons.json` 按角色ID与技能ID绑定，资源位于模块 `static/skill-icons/`；无有效绑定时仅显示原标题。显式刷新 `python scripts/sync_guide_skill_icons.py`，支持 `--tips-table`、`--city-table` 读取本地技能表，使用 `cwebp` 转码；网站启动和页面请求不联网取图。 明音凛“随心拨弦”暂无可用独立图片，该项保留文字标题。
 
 比较页固定来源角色，不再提供试算角色或统一精炼选择框。每行弧盘显示本次采用的精炼档位，原轴100%基线保留原轴实际精炼。个别排轴条目缺少稀有度时，仅在比较页内按本地攻略弧盘的同名明确配置补齐；无法确定时停止试算，不从攻击值猜测品质。
+
+## 全站深境
+
+`/guide?kind=endless` 按1–50、51–100、101–150、151–200层分为四组；每组详情复用环线怪物卡片，按实际层号升序切换，默认显示组内首层。切换只显示／隐藏已加载楼层并同步 `stage`，分享链接和刷新保留选择；组间通过顶部层数范围跳转。敌人保留独立属性配置ID、单只生命、等级、数量、攻击、防御、倾陷上限与抗性。全部58个敌人模板按深境专表绑定名称、弱点及强化抗性；缺少图标或吞噬标记时保留未提供状态，不借用同名敌人的属性；基础属性不含局内增益。各层限时120秒，展示原始计分目标，不推断开放状态。
+
+网页、搜索、JSON、Markdown与CLI共用独立本地快照 `data/endless.json`。JSON列表 `/api/guide/endless`，详情 `/api/guide/endless/EndlessTrial_51_100?stage=100`；Markdown `/guide/endless/EndlessTrial_51_100.md?stage=100`；CLI `python nte-guide.py get endless EndlessTrial_51_100 --stage 100`。层号越组或不存在返回404。
+
+显式刷新：`python scripts/sync_guide_endless.py --ntedata-dir /path/to/NTEData`。读取解包目录的 `DataTable/CloneSystem/DT_EndlessTrialMonsterInfo.json`、`DataTable/PackData/DT_MonsterPackData.json`、`DataAssets/DataAssetSet/EndlessTrial/DT_EndlessTrialFloor_1.json`、`DT_EndlessTrialMonsterConfig.json` 及 `Text/PlayerSkillDes/EndlessTrail_Des.json`。名称与抗性标记来自深境怪物表，实体模板路径的功能绑定 `data/endless_identities.json` 提供本地图标和已知吞噬标记；可用 `--identities` 指定更新后的绑定。核验200层齐全、所有属性引用、固定等级与零成长项后原子替换快照；非零成长参数拒绝导入，不猜公式。常规角色／环线刷新不覆盖该独立快照；请求和启动不联网。刷新后重启服务生效。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_endless tests.test_guide tests.test_guide_challenges tests.test_module_routes -v`；浏览器核对四组入口、组首／末层、层数切换、详情展开和旧环线。
+
+深境逐层机制包含推荐属性、强化抗性属性、节点起始／关底标记、备选角色数和角色栏位数。每10层关底显示当层配置的5组增益与代价，逐组保留配对关系，并显示默认增益数量及关联楼层的数量加成。敌人属性表使用固定属性包中的抗性，不额外按强化抗性标记猜测叠加值；关底可选的全属性抗性、生命、防御等修正不默认计入敌人数值。JSON与Markdown保留完整规则和每个效果的作用对象；不根据配置字段推断未明确提供的选择持续时间或生效时机。

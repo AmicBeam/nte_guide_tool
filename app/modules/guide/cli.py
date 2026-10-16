@@ -9,7 +9,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-KINDS = ('characters', 'arcs', 'challenges')
+KINDS = ('characters', 'arcs', 'challenges', 'endless')
 
 
 def main(argv=None):

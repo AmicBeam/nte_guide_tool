@@ -33,3 +33,11 @@
 .guide-monster-name .guide-monster-id { font-size:11px; font-weight:400; color:var(--g-dim); font-family:ui-monospace,SFMono-Regular,monospace; overflow-wrap:anywhere; min-width:0; }
 
 .guide-monster-details .guide-resistance-weak { color:#70dec2; font-weight:650; }
+
+.guide-endless-enemies { grid-template-columns:1fr; }
+.guide-endless-enemies .guide-monster-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr)); }
+
+.guide-endless-rules { margin:0 0 20px; padding:16px; border:1px solid #70dec240; border-radius:12px; background:#70dec208; }
+.guide-endless-buffs summary { cursor:pointer; font-weight:650; }
+.guide-endless-buffs td { min-width:180px; }
+.guide-endless-buffs td p { margin:4px 0; }

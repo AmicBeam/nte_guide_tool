@@ -4,12 +4,12 @@
 <link rel="stylesheet" href="{{ url_for('guide_module.static', filename='navigation.css') }}">
 <script defer src="{{ url_for('guide_module.static', filename='navigation.js') }}"></script>
 <link rel="alternate" type="text/plain" href="/guide/llms.txt" title="LLM 阅读入口">
-<meta name="description" content="异环角色、弧盘与轨外之境战斗数据。支持全文检索、Markdown、JSON 和 CLI。">
+<meta name="description" content="异环角色、弧盘、轨外之境与全站深境战斗数据。支持全文检索、Markdown、JSON 和 CLI。">
 {% endblock %}
 {% block body %}
 <main class="guide-page {% block page_class %}{% endblock %}">
 <header class="guide-fixed-header"><div class="guide-top"><a class="guide-brand" href="/">NTE <span>TOOLS</span></a>{% block guide_back %}{% endblock %}<nav class="guide-top-actions" aria-label="站点导航"><a href="/guide">首页</a><a href="/login" id="guide-account-link">登录</a></nav></div></header>
 {% block content %}{% endblock %}
-<footer class="guide-footer">NTE Reference · 角色 / 弧盘 / 轨外之境 <a href="/guide/llms.txt">LLM 阅读入口 ↗</a></footer>
+<footer class="guide-footer">NTE Reference · 角色 / 弧盘 / 轨外之境 / 全站深境 <a href="/guide/llms.txt">LLM 阅读入口 ↗</a></footer>
 </main>
 {% endblock %}

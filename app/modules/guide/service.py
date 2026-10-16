@@ -9,8 +9,13 @@ from markupsafe import Markup, escape
 from .affinity import with_gift_costs
 from .description_parameters import bind_description_parameters
 
-KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境'}
+KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境', 'endless': '全站深境'}
 LABELS = {
+    'rules': '楼层机制', 'enhanced_resistances': '强化抗性', 'node_first': '节点起始层', 'node_last': '关底',
+    'reserve_character_count': '备选角色数', 'floor_slot_count': '角色栏位数',
+    'buff_selection': '关底增益与代价', 'enabled': '开放选择', 'default_count': '默认增益数量', 'count_bonuses': '数量加成',
+    'options': '可选组合', 'positive': '增益', 'negative': '代价', 'target': '目标', 'score': '挑战积分', 'floor': '层数',
+    'floor_begin': '起始层', 'floor_end': '结束层', 'single': '敌人配置',
     'total_affinity': '从零到满好感所需好感值', 'required_gifts': '所需礼物份数',
     'costs': '礼物花费', 'unit_price': '单价', 'total_cost': '总花费',
     'affinity': '好感度', 'available': '已提供好感度配置', 'gifts': '喜好礼物',
@@ -96,13 +101,14 @@ def catalog():
         rank = {3: 'B', 4: 'A', 5: 'S'}[arc['rarity']]
         arc['rarity_icon'] = f'/static/images/rarities/YH_UI_star{rank}.webp'
         arc['image'] = f'/static/images/arcs/{arc["id"]}.webp'
+    data['endless'] = json.loads((Path(__file__).parent / 'data/endless.json').read_text(encoding='utf-8'))['groups']
     monsters = json.loads((Path(__file__).parent / 'data/monster_metadata.json').read_text(encoding='utf-8'))
-    for challenge in data['challenges']:
+    for challenge in data['challenges'] + data['endless']:
         for stage in challenge['stages']:
             for half in stage['halves']:
                 for wave in half['waves']:
                     for monster in wave['monsters']:
-                        monster.update(monsters.get(str(monster['id']), {'image': None, 'swallowable': None}))
+                        monster.update(monsters.get(str(monster['id']), {'image': monster.get('image'), 'swallowable': monster.get('swallowable')}))
     return data
 
 
@@ -113,12 +119,14 @@ def label(key):
 def summary(kind, record):
     identifier = str(record['id'])
     result = {k: record[k] for k in ('id', 'name', 'aliases', 'element_name', 'rarity',
-        'type_name', 'image', 'element_icon', 'rarity_icon', 'is_permanent', 'begin_date', 'end_date', 'stage_count') if k in record}
+        'type_name', 'image', 'element_icon', 'rarity_icon', 'is_permanent', 'begin_date', 'end_date', 'stage_count', 'floor_begin', 'floor_end') if k in record}
     result.update(kind=kind, url=f'/guide/{kind}/{identifier}',
                   json_url=f'/api/guide/{kind}/{identifier}',
                   markdown_url=f'/guide/{kind}/{identifier}.md')
     if kind == 'characters':
         result['assets'] = record['assets']
+    if kind == 'endless':
+        result['description'] = record.get('description', '')
     if kind == 'challenges':
         result['description'] = record.get('resonance', {}).get('description', '')
     return result
@@ -163,8 +171,8 @@ def detail(kind, identifier, section=None, stage=None):
     if record is None:
         raise LookupError('未找到条目')
     if stage is not None:
-        if kind != 'challenges':
-            raise ValueError('stage 仅适用于轨外之境')
+        if kind not in ('challenges', 'endless'):
+            raise ValueError('stage 仅适用于轨外之境或全站深境')
         record = dict(record)
         record['stages'] = [x for x in record['stages'] if str(x['id']) == str(stage)]
         if not record['stages']:
@@ -239,6 +247,7 @@ def page_sections(kind, record):
         'characters': ('abilities', 'awaken', 'resonance', 'nouns', 'equip_slots', 'affinity', 'aliases'),
         'arcs': ('effect', 'exclusive_desc', 'exclusive_character_ids'),
         'challenges': ('resonance', 'stages', 'rewards'),
+        'endless': ('stages',),
     }
     keys = preferred[kind] if len(record) > 3 else tuple(key for key in record if key not in ('id', 'name'))
     result = {key: record[key] for key in keys if key in record and record[key] is not None and record[key] != [] and record[key] != {}}

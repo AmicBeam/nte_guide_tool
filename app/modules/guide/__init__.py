@@ -22,7 +22,7 @@ blueprint.add_app_template_filter(service.display_scalar, 'guide_scalar')
 
 def kind_check(kind):
     if kind not in service.KINDS:
-        raise LookupError('未知分类；可选 characters、arcs、challenges')
+        raise LookupError('未知分类；可选 characters、arcs、challenges、endless')
 
 
 def integer(name, default, low, high):
@@ -171,25 +171,26 @@ def cli_download():
 def llms():
     text = '''# NTE Tools 攻略数据库
 
-范围：角色、弧盘、轨外之境。匿名只读；网页正文由服务端渲染。
+范围：角色、弧盘、轨外之境、全站深境。匿名只读；网页正文由服务端渲染。
 
 - [网页入口](/guide)
 - [接口与数值约定](/api/guide/schema)
 - [角色列表](/api/guide/characters)
 - [弧盘列表](/api/guide/arcs)
 - [轨外之境赛期](/api/guide/challenges)
+- [全站深境（每50层一组）](/api/guide/endless)
 - [CLI 下载](/guide/cli.py)
 
 检索：GET /api/guide/search?q=关键词&limit=20&offset=0
-详情：GET /api/guide/{characters|arcs|challenges}/{id}
-纯文本：GET /guide/{characters|arcs|challenges}/{id}.md
+详情：GET /api/guide/{characters|arcs|challenges|endless}/{id}
+纯文本：GET /guide/{characters|arcs|challenges|endless}/{id}.md
 空幕：角色详情加 ?section=equip_slots；升级材料：详情加 ?section=materials。
 等级经验：角色详情加 ?section=experience。
 好感度与喜好礼物：角色详情加 ?section=affinity，包含赠送数值和各商店标价。
 养成计算器：/guide/characters/{id}/cultivation；POST /api/guide/characters/{id}/cultivation 计算资源。
 角色排轴与配装：/guide/characters/{id}/builds；固定当前角色筛选相关轴，再进入收益对比。
 按字段读取：详情加 ?section=abilities（角色技能）或 ?section=effect（弧盘效果）。
-按关卡读取：轨外之境详情加 ?stage=12。
+按关卡读取：轨外之境详情加 ?stage=12；全站深境详情加 ?stage=50（实际层号）。
 列表返回 total、next_offset 和摘要；详情返回 data。使用 ID 区分重名赛期。
 数值数组保留等级/精炼顺序；敌人抗性为小数比例。日期缺失不代表当前开放。
 CLI：python nte-guide.py --base-url http://127.0.0.1:5001 search 黑羽

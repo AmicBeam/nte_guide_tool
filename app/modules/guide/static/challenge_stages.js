@@ -17,7 +17,7 @@ for (const selector of document.querySelectorAll('[data-challenge-stage-selector
   });
   window.addEventListener('popstate', () => {
     const value = new URL(location.href).searchParams.get('stage') ||
-      (options.some(option => option.value === '12') ? '12' : options[0]?.value);
+      selector.dataset.defaultStage;
     const option = options.find(option => option.value === value);
     if (option) { option.checked = true; show(value); }
   });

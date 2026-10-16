@@ -1,13 +1,15 @@
-{% set stage_view = record|guide_stage_selection(request.args.get('stage')) %}
-<div data-challenge-stage-selector>
-<fieldset class="guide-stage-nav"><legend>选择关卡</legend><div class="guide-filter-options">{% for stage in stage_view.stages %}<label class="guide-filter-choice"><input type="radio" name="challenge-stage" value="{{ stage.id }}" aria-label="第 {{ stage.id }} 关" {% if stage.id|string == stage_view.selected %}checked{% endif %}><span>第 {{ stage.id }} 关</span></label>{% endfor %}</div></fieldset>
+{% set stage_view = record|guide_stage_selection(request.args.get('stage'), kind) %}
+<div data-challenge-stage-selector data-default-stage="{{ stage_view.selected }}">
+{% set unit = "层" if kind == "endless" else "关" %}
+<fieldset class="guide-stage-nav"><legend>{{ '选择层数' if kind == 'endless' else '选择关卡' }}</legend><div class="guide-filter-options">{% for stage in stage_view.stages %}<label class="guide-filter-choice"><input type="radio" name="challenge-stage" value="{{ stage.id }}" aria-label="第 {{ stage.id }} {{ unit }}" {% if stage.id|string == stage_view.selected %}checked{% endif %}><span>第 {{ stage.id }} {{ unit }}</span></label>{% endfor %}</div></fieldset>
 {% for stage in stage_view.stages %}
 <article class="guide-challenge-stage" id="stage-{{ stage.id }}" data-challenge-stage="{{ stage.id }}" {% if stage.id|string != stage_view.selected %}hidden{% endif %}>
-  <header><p class="guide-eyebrow">第 {{ stage.id }} 关 · 限时 {{ stage.maximum_time|int }} 秒</p><h3>{{ stage.name }}</h3></header>
-  <ul class="guide-challenge-objectives">{% for objective in stage.objectives %}<li>{{ objective.text }}</li>{% endfor %}</ul>
-  <div class="guide-challenge-halves">
+  <header>{% if kind != 'endless' %}<p class="guide-eyebrow">第 {{ stage.id }} {{ unit }}{% if stage.maximum_time is number %} · 限时 {{ stage.maximum_time|int }} 秒{% endif %}</p>{% endif %}<h3>{{ stage.name }}</h3>{% if kind == 'endless' and stage.maximum_time is number %}<p class="guide-muted">限时 {{ stage.maximum_time|int }} 秒</p>{% endif %}</header>
+  <ul class="guide-challenge-objectives">{% for objective in stage.objectives %}<li>{{ objective.text }}{% if kind == 'endless' %}（{{ objective.score }} 分）{% endif %}</li>{% endfor %}</ul>
+  <div class="guide-challenge-halves{% if kind == 'endless' %} guide-endless-enemies{% endif %}">
   {% for half in stage.halves %}<section class="guide-challenge-half">
-    <h4>{{ half.id|guide_label }}</h4><p class="guide-muted">推荐属性：{% for element in half.recommended_elements %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>
+    {% if kind == 'endless' and stage.rules is defined %}{% include 'guide/endless_rules.html' %}{% endif %}
+    {% if kind != 'endless' %}<h4>{{ half.id|guide_label }}</h4><p class="guide-muted">推荐属性：{% for element in half.recommended_elements %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>{% endif %}
     {% for wave in half.waves %}<section class="guide-challenge-wave">
       <h5>第 {{ wave.wave }} 波</h5>
       <div class="guide-monster-grid">{% for monster in wave.monsters %}<article class="guide-monster-card">
@@ -15,7 +17,7 @@
           {% if monster.image %}<img src="{{ monster.image }}" alt="{{ monster.name }}" width="112" height="112" loading="lazy">{% else %}<span class="guide-monster-placeholder">暂无贴图</span>{% endif %}
           <div><h6 class="guide-monster-name"><span>{{ monster.name }}</span><small class="guide-monster-id">{{ monster.id }}</small></h6><p>Lv.{{ monster.level }} · × {{ monster.count }}{% if monster.is_boss %} · 首领{% endif %}</p>
           <p class="guide-monster-hp">单体生命：<strong>{{ '{:,.0f}'.format(monster.stats.hp) if monster.stats.hp is number else '未提供' }}</strong></p>
-          <p class="guide-monster-weakness">弱点：{% for element in monster.weaknesses %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p></div>
+          <p class="guide-monster-weakness">弱点：{% for element in monster.weaknesses %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>{% if kind == 'endless' %}<p>强化抗性：{% for element in monster.enhanced_resistances|default([]) %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>{% endif %}</div>
         </div>
         {% if monster.swallowable == true %}<img class="guide-swallow-badge" src="{{ url_for('guide_module.static', filename='monsters/swallow-badge.webp') }}" alt="可被鬼郎丸吞噬" title="可被鬼郎丸吞噬" width="36" height="36">{% endif %}
         <details class="guide-monster-details"><summary>{{ monster.name }} · 详细数据</summary>{% include 'guide/monster_stats.html' %}{% if monster.attach|default(none) %}{{ tree(monster.attach) }}{% endif %}</details>

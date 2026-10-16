@@ -12,7 +12,7 @@ LABELS = {
     'affinity': '好感度', 'available': '已提供好感度配置', 'gifts': '喜好礼物',
     'affinity_gain': '赠送好感值', 'default_gain': '基础好感值', 'exclusive': '专属礼物',
     'unlimited': '不受普通赠礼次数限制', 'offers': '购买渠道', 'shop_name': '商店',
-    'shop_id': '商店 ID', 'goods_id': '商品 ID', 'currency_name': '货币', 'currency_id': '货币 ID',
+    'shop_ids': '商店 ID', 'goods_ids': '商品 ID', 'currency_name': '货币', 'currency_id': '货币 ID',
     'price': '商店标价', 'discount_price': '配置折扣价', 'discount_time_limited': '限时折扣',
     'availability_limited': '限时商品', 'unlock_id': '解锁条件 ID', 'max_value': '本级好感值上限',
     'groups': '招式分组', 'hit_details': '详细命中数据', 'effect_id': '命中效果 ID',

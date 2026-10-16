@@ -71,10 +71,11 @@ def entry(kind, identifier):
     sections = service.page_sections(kind, record)
     profile = service.detail(kind, identifier) if kind == 'characters' else None
     art = profile.get('assets') if profile else None
-    arc_image = service.detail(kind, identifier).get('image') if kind == 'arcs' else None
+    overview = profile if profile else (service.detail(kind, identifier) if kind == 'arcs' else None)
+    arc_image = overview.get('image') if kind == 'arcs' else None
     return render_template('guide/detail.html', record=record, sections=sections, kind=kind,
-                           kinds=service.KINDS, art=art, profile=profile, arc_image=arc_image,
-                           material_preview=presentation.character_material_preview(profile) if profile else [],
+                           kinds=service.KINDS, art=art, profile=profile, overview=overview, arc_image=arc_image,
+                           material_preview=presentation.upgrade_material_preview(overview) if overview else [],
                            notes=service.schema()['notes'])
 
 

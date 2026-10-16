@@ -14,8 +14,8 @@ def material_display(item):
     return material_metadata().get(str(item['id']).casefold(), {})
 
 
-def character_material_preview(character):
-    """Unique character materials, keeping the highest quality used per family."""
+def upgrade_material_preview(record):
+    """Unique upgrade materials, keeping the highest quality used per family."""
     qualities = {'gray': 0, 'green': 1, 'blue': 2, 'purple': 3, 'orange': 4, 'red': 5}
     families = {}
 
@@ -35,5 +35,5 @@ def character_material_preview(character):
         elif isinstance(value, list):
             for child in value:
                 visit(child)
-    visit(character.get('materials', {}))
+    visit(record.get('materials', {}))
     return [item for _, item in families.values()]

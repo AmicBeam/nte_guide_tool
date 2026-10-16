@@ -162,7 +162,7 @@ class GuideTest(unittest.TestCase):
         from app.modules.guide import presentation
         record = service.detail('characters', '1042')
         before = json.dumps(record['materials'], ensure_ascii=False)
-        preview = presentation.character_material_preview(record)
+        preview = presentation.upgrade_material_preview(record)
         self.assertEqual({item['name'] for item in preview}, {'扭曲数符', '斑斓的票根', '「第二人」', '记忆的永恒'})
         self.assertEqual(before, json.dumps(record['materials'], ensure_ascii=False))
         self.assertTrue(all(set(item) == {'id', 'name'} for item in preview))
@@ -180,10 +180,33 @@ class GuideTest(unittest.TestCase):
         self.assertNotIn('模糊数符', section)
         self.assertIn('记忆的永恒', section)
         for character in service.catalog()['characters']:
-            items = presentation.character_material_preview(character)
+            items = presentation.upgrade_material_preview(character)
             self.assertTrue(items)
             self.assertEqual(len({item['id'].lower().rsplit('_lv', 1)[0] for item in items}), len(items))
         self.assertIn('experience', self.client.get('/api/guide/characters/1042?section=experience').json['data'])
+
+    def test_arc_uses_shared_overview_without_duplicate_sections(self):
+        from app.modules.guide import presentation
+        character = service.detail('characters', '1042')
+        html = self.client.get('/guide/characters/1042').text
+        overview = html.split('class="guide-character-overview"', 1)[1].split('</section>', 1)[0]
+        self.assertNotIn(character['ability_name'], overview)
+        self.assertNotIn('<span>异能</span>', overview)
+        for arc in service.catalog()['arcs']:
+            preview = presentation.upgrade_material_preview(arc)
+            self.assertEqual(len(preview), 2)
+            self.assertTrue(all(item['id'].lower().endswith('_lv3') for item in preview))
+        page = self.client.get('/guide/arcs/fork_PaperPlane').text
+        self.assertEqual(page.count('id="stat-level"'), 1)
+        self.assertEqual(page.count('id="section-stats"'), 1)
+        self.assertNotIn('id="section-materials"', page)
+        self.assertNotIn('href="#section-materials"', page)
+        self.assertIn('弧盘属性与升级材料', page)
+        self.assertIn('guide-overview-materials', page)
+        self.assertLess(page.index('id="section-stats"'), page.index('id="section-effect"'))
+        self.assertIn('value="80"', page)
+        api = self.client.get('/api/guide/arcs/fork_PaperPlane?section=materials').json['data']
+        self.assertTrue(api['materials'])
 
     def test_hit_details_and_move_groups(self):
         characters = service.catalog()['characters']

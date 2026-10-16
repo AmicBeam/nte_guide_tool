@@ -227,12 +227,12 @@ def schema():
 def page_sections(kind, record):
     preferred = {
         'characters': ('abilities', 'awaken', 'resonance', 'nouns', 'equip_slots', 'affinity', 'aliases'),
-        'arcs': ('stats', 'effect', 'exclusive_desc', 'exclusive_character_ids', 'materials'),
+        'arcs': ('effect', 'exclusive_desc', 'exclusive_character_ids'),
         'challenges': ('resonance', 'stages', 'rewards'),
     }
     keys = preferred[kind] if len(record) > 3 else tuple(key for key in record if key not in ('id', 'name'))
     result = {key: record[key] for key in keys if key in record and record[key] is not None and record[key] != [] and record[key] != {}}
-    if kind == 'characters':
+    if kind in ('characters', 'arcs'):
         for key in ('stats', 'materials', 'experience'):
             result.pop(key, None)
     if isinstance(result.get('nouns'), dict):

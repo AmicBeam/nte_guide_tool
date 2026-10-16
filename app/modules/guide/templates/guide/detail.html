@@ -29,8 +29,7 @@
 {% elif key == 'effect' %}<article class="guide-skill-card"><h3>{{ value.name }}</h3>{% if value['values'] %}{{ levels(value['values'], record.name, 'arc-refinement', 1, '精炼档位', value.description) }}{% else %}<p class="guide-text">{{ value.description }}</p>{% endif %}</article>
 {% elif key == 'equip_slots' %}
 <p class="guide-text">{{ value|guide_equip_description }}</p>
-<p class="guide-muted">{{ value.special_desc }} · 特化驱动占 {{ value.owner_grid_count }} 格</p>
-<div class="guide-slot-layout"><table class="guide-slot-grid" aria-label="空幕格位"><tbody>{% for row in value.slots %}{% set row_index = loop.index %}<tr>{% for cell in row %}<td class="{{ 'slot-blocked' if cell == -1 else 'slot-open' }}" aria-label="第{{ row_index }}行第{{ loop.index }}列：{{ '不可用' if cell == -1 else '可装配' }}">{{ '×' if cell == -1 else '·' }}</td>{% endfor %}</tr>{% endfor %}</tbody></table><div><p class="guide-muted">亮格：可装配 · 暗格：不可用</p>{{ tree(value.stats) }}</div></div>
+<div class="guide-slot-layout"><table class="guide-slot-grid" aria-label="空幕格位"><tbody>{% for row in value.slots %}{% set row_index = loop.index %}<tr>{% for cell in row %}<td class="{{ 'slot-blocked' if cell == -1 else 'slot-open' }}" aria-label="第{{ row_index }}行第{{ loop.index }}列：{{ '不可用' if cell == -1 else '可装配' }}">{{ '×' if cell == -1 else '·' }}</td>{% endfor %}</tr>{% endfor %}</tbody></table><div><p class="guide-muted">亮格：可装配 · 暗格：不可用</p></div></div>
 {% else %}{{ tree(value) }}{% endif %}</section>{% endfor %}</div>
 <details class="guide-notes"><summary>数值阅读约定</summary>{% for note in notes %}<p>{{ note }}</p>{% endfor %}</details>
 {% endblock %}

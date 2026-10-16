@@ -11,9 +11,9 @@
 </div>
 {% endmacro %}
 
-{% macro material_cards(items) %}
+{% macro material_cards(items, show_amount=true) %}
 <ul class="guide-material-grid" aria-label="所需材料">{% for item in items %}{% set display = item|guide_material_display %}
-<li class="guide-material-card"><div class="guide-material-icon guide-quality-{{ display.quality|default('gray') }}">{% if display.icon %}<img src="{{ display.icon }}" alt="" loading="lazy" width="128" height="128">{% endif %}<strong aria-label="数量 {{ item.amount }}">×{{ item.amount }}</strong></div><span>{{ item.name }}</span></li>
+<li class="guide-material-card"><div class="guide-material-icon guide-quality-{{ display.quality|default('gray') }}">{% if display.icon %}<img src="{{ display.icon }}" alt="" loading="lazy" width="128" height="128">{% endif %}{% if show_amount %}<strong aria-label="数量 {{ item.amount }}">×{{ item.amount }}</strong>{% endif %}</div><span>{{ item.name }}</span></li>
 {% else %}<li class="guide-muted">无需额外资源。</li>{% endfor %}</ul>
 {% endmacro %}
 

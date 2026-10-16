@@ -73,7 +73,9 @@ def entry(kind, identifier):
     art = profile.get('assets') if profile else None
     arc_image = service.detail(kind, identifier).get('image') if kind == 'arcs' else None
     return render_template('guide/detail.html', record=record, sections=sections, kind=kind,
-                           kinds=service.KINDS, art=art, profile=profile, arc_image=arc_image, notes=service.schema()['notes'])
+                           kinds=service.KINDS, art=art, profile=profile, arc_image=arc_image,
+                           material_preview=presentation.character_material_preview(profile) if profile else [],
+                           notes=service.schema()['notes'])
 
 
 @blueprint.get('/guide/characters/<identifier>/cultivation')
@@ -182,3 +184,4 @@ CLI：python nte-guide.py --base-url http://127.0.0.1:5001 get characters 1042 -
 
 from .user_routes import register as register_user_routes
 register_user_routes(blueprint)
+

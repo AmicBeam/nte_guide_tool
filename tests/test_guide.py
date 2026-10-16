@@ -154,8 +154,36 @@ class GuideTest(unittest.TestCase):
         self.assertIn('35%', arc)
         materials = self.client.get('/guide/characters/1042?section=materials').text
         self.assertIn('guide-material-grid', materials)
-        self.assertIn('模糊数符', materials)
+        self.assertIn('扭曲数符', materials)
+        self.assertNotIn('id="section-materials"', materials)
         self.assertNotIn('材料 ID', materials)
+
+    def test_character_overview_merges_stats_and_highest_materials(self):
+        from app.modules.guide import presentation
+        record = service.detail('characters', '1042')
+        before = json.dumps(record['materials'], ensure_ascii=False)
+        preview = presentation.character_material_preview(record)
+        self.assertEqual({item['name'] for item in preview}, {'扭曲数符', '斑斓的票根', '「第二人」', '记忆的永恒'})
+        self.assertEqual(before, json.dumps(record['materials'], ensure_ascii=False))
+        self.assertTrue(all(set(item) == {'id', 'name'} for item in preview))
+        html = self.client.get('/guide/characters/1042').text
+        self.assertEqual(html.count('id="section-stats"'), 1)
+        self.assertEqual(html.count('id="stat-level"'), 1)
+        self.assertIn('value="80"', html)
+        self.assertIn('暴击伤害', html)
+        self.assertNotIn('id="section-materials"', html)
+        self.assertNotIn('id="section-experience"', html)
+        self.assertNotIn('href="#section-materials"', html)
+        self.assertNotIn('href="#section-experience"', html)
+        section = html.split('class="guide-overview-materials"', 1)[1].split('</section>', 1)[0]
+        self.assertNotIn('数量', section)
+        self.assertNotIn('模糊数符', section)
+        self.assertIn('记忆的永恒', section)
+        for character in service.catalog()['characters']:
+            items = presentation.character_material_preview(character)
+            self.assertTrue(items)
+            self.assertEqual(len({item['id'].lower().rsplit('_lv', 1)[0] for item in items}), len(items))
+        self.assertIn('experience', self.client.get('/api/guide/characters/1042?section=experience').json['data'])
 
     def test_hit_details_and_move_groups(self):
         characters = service.catalog()['characters']

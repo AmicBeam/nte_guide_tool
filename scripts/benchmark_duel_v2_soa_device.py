@@ -691,7 +691,7 @@ def verify_last_searches(cohort,shared,states,counts,policy_map,deadline):
         checks={key:bool(value) for key,value in checks.items()}
         rows.append(dict(row=row,step=step,seed=str(seed),checks=checks,visits=visits.tolist(),
             pi=pi.tolist(),completed_q=diagnostics['q'][row,:count].tolist(),
-            reference_completed_q=result['root_diagnostics']['completed_q'],
+            reference_completed_q=np.asarray(result['root_diagnostics']['completed_q']).tolist(),
             value_forward_checks=forwards.calls,
             max_numpy_cuda_wdl_abs_error=forwards.max_abs_error,
             reference_value_backend='independent_postbatch_cuda_forward_numpy_checked'))

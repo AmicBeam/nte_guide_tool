@@ -32,6 +32,36 @@ def _stderr(argv):
 
 
 class SoADeviceCliTests(unittest.TestCase):
+    def test_numerical_receipt_with_numpy_reference_q_serializes(self):
+        import time
+        import numpy as np
+        import torch
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from scripts.benchmark_duel_v2_soa_device import verify_last_searches, save_report
+        tensor = lambda x: torch.tensor(x, dtype=torch.float64)
+        cohort = SimpleNamespace(
+            diagnostics=dict(q=tensor([[.2, .3]]), prior=tensor([[.5, .5]]),
+                             mean=tensor([[.2, .3]]), value=tensor([.25]),
+                             gumbel=tensor([[0., 0.]]), errors=torch.tensor([False])),
+            light=SimpleNamespace(_rec_count=torch.tensor([2]), _rec_offset=torch.tensor([0]),
+                                  _packed_visits=torch.tensor([16, 16]),
+                                  _packed_pi=tensor([.5, .5]), _rec_chosen=torch.tensor([0])))
+        result=dict(complete=True, visits=np.array([16, 16]), pi=np.array([.5, .5]),
+                    root_diagnostics={'completed_q':np.array([.2, .3])},
+                    root_prior=np.array([.5, .5]), mean_values=np.array([.2, .3]),
+                    value=.25, root_gumbel=np.array([0., 0.]), search_choice=0)
+        shared=dict(inference=None, models={'m':object()},
+                    jobs=[dict(seed=1, keys={'a':'m', 'b':'m'})])
+        with patch('app.modules.card_game.engine.duel_v2.acting_side', return_value='a'), \
+             patch('app.modules.card_game.rl.recovery_search.search', return_value=result):
+            rows=verify_last_searches(cohort, shared, [{}], [1], {(0, 0):0}, time.monotonic()+10)
+        with tempfile.TemporaryDirectory() as directory:
+            save_report(Path(directory), {'postbatch':rows}, 'complete', time.monotonic())
+            saved=json.loads((Path(directory)/'report.json').read_text())
+        self.assertEqual(saved['postbatch'][0]['reference_completed_q'], [.2, .3])
+        self.assertTrue(all(saved['postbatch'][0]['checks'].values()))
+
     def test_postbatch_value_oracle_recomputes_and_rejects_changed_forward(self):
         import numpy as np
         import torch

@@ -36,13 +36,13 @@ class GuideAffinityTest(unittest.TestCase):
         self.assertIn('赠送好感值: 1200', md)
         self.assertIn('商店标价: 5000', md)
         html = self.client.get('/guide/characters/1042?section=affinity').text
-        for phrase in ['喜好礼物与总花费', '咕比奇原味薯片', '专属礼物', '价格未提供', '5,000', 'href="#section-affinity"']:
+        for phrase in ['喜好礼物与总花费', '咕比奇原味薯片', '专属礼物', '5,000', 'href="#section-affinity"']:
             self.assertIn(phrase, html)
         self.assertTrue(any(r['id'] == '1042' for r in service.search('characters', '天星仪')))
         self.assertIn('affinity', service.schema()['character_sections'])
         self.assertIn('section=affinity', self.client.get('/guide/llms.txt').text)
 
-    def test_total_costs_round_up_and_separate_currencies(self):
+    def test_total_costs_round_up_fons_only_and_sort(self):
         from app.modules.guide.affinity import with_gift_costs
         affinity = service.detail('characters', '1042')['affinity']
         self.assertEqual(affinity['total_affinity'], 56100)
@@ -53,12 +53,12 @@ class GuideAffinityTest(unittest.TestCase):
         self.assertEqual(gifts['天星仪']['costs'], [])
         self.assertEqual(gifts['天星仪']['required_gifts'], 47)
         data = {'levels': [{'max_value': 100}], 'gifts': [{'affinity_gain': 30,
-            'offers': [{'currency_id': 'a', 'currency_name': '币A', 'price': 40},
-                       {'currency_id': 'a', 'currency_name': '币A', 'price': 20},
+            'offers': [{'currency_id': 'Fons', 'currency_name': '方斯', 'price': 40},
+                       {'currency_id': 'Fons', 'currency_name': '方斯', 'price': 20},
                        {'currency_id': 'b', 'currency_name': '币B', 'price': 5}]}]}
         result = with_gift_costs(data)['gifts'][0]
         self.assertEqual(result['required_gifts'], 4)
-        self.assertEqual([row['total_cost'] for row in result['costs']], [80, 20])
+        self.assertEqual([row['total_cost'] for row in result['costs']], [80])
         self.assertNotIn('costs', data['gifts'][0])
         data['levels'] = []
         result = with_gift_costs(data)['gifts'][0]
@@ -69,6 +69,15 @@ class GuideAffinityTest(unittest.TestCase):
         self.assertIn('总花费</th>', html)
         self.assertNotIn('购买渠道与标价', html)
         self.assertNotIn('Oops！Chest', html)
+        self.assertNotIn('630 黑铁螺钉', html)
+        ticket_row = html.split('浮冰影券', 1)[1].split('</tr>', 1)[0]
+        self.assertNotIn('共 141 份', ticket_row)
+        self.assertEqual(ticket_row.count('>—</span>'), 2)
+        self.assertEqual(gifts['浮冰影券']['costs'], [])
+        costs = [g['costs'][0]['total_cost'] for g in affinity['gifts'] if g['costs']]
+        self.assertEqual(costs, sorted(costs))
+        self.assertEqual(affinity['gifts'][0]['name'], '咕比奇原味薯片')
+        self.assertEqual(affinity['gifts'][-1]['costs'], [])
 
     def test_all_character_coverage_and_missing_configuration(self):
         for character in service.catalog()['characters']:

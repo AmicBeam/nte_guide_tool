@@ -12,10 +12,12 @@ def with_gift_costs(affinity):
         gain = gift['affinity_gain']
         count = (total + gain - 1) // gain if total is not None and gain > 0 else None
         gift['required_gifts'] = count
-        # Compare only prices in the same currency; conditional discounts are excluded.
+        # Use Fons list prices only; conditional discounts are excluded.
         prices = {}
         for offer in gift['offers']:
             currency = offer['currency_id']
+            if currency.casefold() != 'fons':
+                continue
             if currency not in prices or offer['price'] < prices[currency]['unit_price']:
                 prices[currency] = {
                     'currency_id': currency, 'currency_name': offer['currency_name'],
@@ -23,4 +25,7 @@ def with_gift_costs(affinity):
                     'total_cost': count * offer['price'] if count is not None else None,
                 }
         gift['costs'] = list(prices.values())
+    result['gifts'].sort(key=lambda gift: (
+        gift['costs'][0]['total_cost'] if gift['costs'] and
+        gift['costs'][0]['total_cost'] is not None else float('inf')))
     return result

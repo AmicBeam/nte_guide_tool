@@ -66,6 +66,22 @@ def clone_tuple(state):
     return state['pair'] is other['pair']
 
 
+def clone_transient_views_twice(state):
+    wrapper={'left':state['left'],'right':state['right']}
+    first=copy.deepcopy(wrapper)
+    atomic=copy.deepcopy(state['hp'])
+    second=copy.deepcopy(wrapper)
+    first['left']['n']+=10
+    return state,first,second,first['left'] is first['right'],first['left'] is second['left'],atomic is state['hp']
+
+
+def clone_empty_twice(state):
+    first=copy.deepcopy(state['items'])
+    second=copy.deepcopy(state['items'])
+    first.append({'n':9})
+    return state,first,second,first is second
+
+
 def public_item(state):
     return {'left':state['left'],'right':state['right']}
 
@@ -93,7 +109,8 @@ class NativeSoACPUTests(unittest.TestCase):
     def setUpClass(cls):
         program = capture_program({fn.__name__: fn for fn in (
             mutate_hp, mutate_alias, mutate_containers, clone_alias, scalar_result,
-            sequence_operators,shuffle_items,clone_tuple,public_item,inplace_concat)},
+            sequence_operators,shuffle_items,clone_tuple,clone_transient_views_twice,
+            clone_empty_twice,public_item,inplace_concat)},
             scope_character_ids=None, scope_card_ids=None,
             allowed_module_prefixes=DEFAULT_ALLOWED_MODULE_PREFIXES+(__name__,))
         cls.schema = view_schema()
@@ -158,6 +175,19 @@ class NativeSoACPUTests(unittest.TestCase):
     def test_immutable_tuple_retains_deepcopy_identity(self):
         batch=pack_game_states([{'pair':(7,'x')}],self.schema)
         self.assertEqual(self.backend.call('clone_tuple',batch,[[None]]).decode(),[True])
+
+    def test_transient_copies_with_typed_children_have_independent_memos(self):
+        item={'n':3}
+        batch=pack_game_states([{'hp':1<<40,'left':item,'right':item}],self.schema)
+        state,first,second,aliased,shared,atomic=self.backend.call('clone_transient_views_twice',batch,[[None]]).decode()[0]
+        self.assertTrue(aliased);self.assertFalse(shared);self.assertTrue(atomic)
+        self.assertEqual([state['left']['n'],first['left']['n'],second['left']['n']],[3,13,3])
+
+    def test_empty_typed_copies_stay_independent(self):
+        batch=pack_game_states([{'items':[]}],self.schema)
+        state,first,second,shared=self.backend.call('clone_empty_twice',batch,[[None]]).decode()[0]
+        self.assertFalse(shared)
+        self.assertEqual(state['items'],[]);self.assertEqual(first,[{'n':9}]);self.assertEqual(second,[])
 
     def test_cuda_launch_signatures_match_generated_kernels(self):
         from app.modules.card_game.rl.batched_duel.native_soa_source import _kernel

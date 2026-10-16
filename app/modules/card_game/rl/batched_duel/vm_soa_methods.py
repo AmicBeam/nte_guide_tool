@@ -90,10 +90,17 @@ def integrate_soa_methods(source):
  }
 ''',1)
     deepcopy='__device__ inline int native_deepcopy(Context* c,int root){'
-    source=source.replace(deepcopy,deepcopy+'''
- if(soa_ready(&c->h))for(int i=0;i<SOA_TOTAL_OBJECTS;i++)
+    if deepcopy in source:
+        # Atomic roots already return before this point. A typed root owns its
+        # reset in soa_clone; only a nonempty transient graph can contain typed
+        # children that need a fresh cross-view memo for this copy invocation.
+        copy_marker=' int tail=0;\n if(++c->deepcopy_epoch==0)'
+        if source.count(copy_marker)!=1:
+            raise ValueError('Canonical non-atomic deepcopy boundary changed')
+        source=source.replace(copy_marker,'''
+ if(root_node.count>0 && soa_ready(&c->h))for(int i=0;i<SOA_TOTAL_OBJECTS;i++)
   c->h.soa->clone_map[(long long)i*c->h.soa->rows+c->h.soa->row]=0;
-''',1)
+'''+copy_marker,1)
     for declaration, body in (
         (marker,'return soa_method_pop(c,list_ref,index,out_val);'),
         ('__device__ inline int device_list_insert(Context* c, int list_ref, int index, int item_ref) {',

@@ -7,6 +7,7 @@ policy opponents with the array Zhenhong root prior. Not training.
 """
 from pathlib import Path
 import argparse
+import gc
 import hashlib
 import json
 import sys
@@ -403,8 +404,10 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
     import torch
     from app.modules.card_game.engine.duel_v2 import new_game
     B, device = shared['rows'], shared['device']
+    progress = shared.get('progress', lambda phase: None)
     if time.monotonic() >= deadline:
         raise TimeoutError('Execution budget exhausted before capture')
+    progress('initializing_cohort')
     warmup_inference(shared['inference'], cohort.loop, B, shared['max_actions'])
     roots = cohort.rules.initialize_device(shared['parameters'])
     torch.cuda.synchronize()
@@ -423,11 +426,13 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
     train = torch.zeros((B, 2), dtype=torch.bool, device=device)
     torch.cuda.synchronize()
     torch.cuda.empty_cache()
+    progress('capturing_cohort')
     capture_started = time.monotonic()
     cohort.loop.capture(roots, seed_tensor, ids, ids, train)
     capture_seconds = time.monotonic() - capture_started
     if time.monotonic() >= deadline:
         raise TimeoutError('Execution budget exhausted during capture')
+    progress('executing_cohort')
     start_event = torch.cuda.Event(enable_timing=True)
     end_event = torch.cuda.Event(enable_timing=True)
     replay_started = time.monotonic()
@@ -437,6 +442,7 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
     end_event.synchronize()
     replay_wall = time.monotonic() - replay_started
     replay_gpu = start_event.elapsed_time(end_event) / 1000.0
+    progress('reading_cohort_result')
     result = cohort.loop.result_device()
     searched = cohort.search.result_device()
     stage = cohort.timing.after_batch() if cohort.timing is not None else []
@@ -481,6 +487,7 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
     payload['root_prior_nonzero_row_calls']=int(cohort.nonzero_guided_row_calls.cpu()[0])
     final = None
     if verify:
+        progress('verifying_cohort')
         final = host_states(cohort.store, result.states)
         payload['postbatch'] = verify_postbatch(
             cohort, shared, initial, final, result, searched,time.monotonic()+shared['proof_seconds'])
@@ -587,6 +594,61 @@ def verify_postbatch(cohort, shared, initial, final, result, searched, deadline)
                 information_hashes_verified=policy_count == raw_count and raw_count > 0)
 
 
+
+class PostbatchValueOracle:
+    """Recompute NN forwards after replay; never read search values or device states.
+
+    The Python rule/search oracle uses the same FP32 CUDA arithmetic, separately
+    checked against frozen NumPy WDL at the inference component's tolerance.
+    This prevents amplifying permitted forward rounding by the Q-scale factor.
+    """
+    def __init__(self, bank, policies):
+        import torch
+        self.t = torch
+        self.bank = bank
+        self.policies = policies
+        self.cache = {}
+        self.calls = 0
+        self.max_abs_error = 0.
+
+    def policy(self, key):
+        oracle = self
+        base = self.policies[key]
+        class Policy:
+            def scores(self, x, c):
+                return base.scores(x, c)
+            def wdl(self, x, is_actor):
+                return oracle.wdl(key, x, is_actor)
+            def scores_value(self, x, c):
+                p = self.wdl(x, True)
+                return self.scores(x, c), float(p[2] - p[0])
+        return Policy()
+
+    def wdl(self, key, x, is_actor):
+        import numpy as np
+        cache_key = (key, bool(is_actor), x.tobytes())
+        if cache_key not in self.cache:
+            t = self.t; bank = self.bank; n = min(2, bank.max_rows)
+            xx = t.as_tensor(np.stack([x] * n), device=bank.device)
+            candidates = t.empty((n, 0, bank.candidate_dim), device=bank.device)
+            valid = t.empty((n, 0), dtype=t.bool, device=bank.device)
+            ids = t.full((n,), bank.keys.index(key), dtype=t.int64, device=bank.device)
+            context = t.full((n, 1), float(is_actor), device=bank.device)
+            value_only = t.ones(n, dtype=t.bool, device=bank.device)
+            prediction = bank.predict_device(xx, candidates, valid, ids, context,
+                                             value_only=value_only)
+            if bool(prediction.invalid_rows.any().cpu()):
+                raise AssertionError('Invalid independent postbatch value forward')
+            actual = prediction.wdl[0].cpu().numpy()
+            expected = self.policies[key].wdl(x, is_actor)
+            np.testing.assert_allclose(actual, expected, rtol=2e-5, atol=2e-5,
+                                       err_msg='Frozen NumPy/CUDA WDL component parity')
+            self.max_abs_error = max(self.max_abs_error, float(np.abs(actual - expected).max()))
+            self.calls += 1
+            self.cache[cache_key] = actual
+        return self.cache[cache_key]
+
+
 def verify_last_searches(cohort,shared,states,counts,policy_map,deadline):
     """Postbatch CPU oracle only; no search decision or rule result is supplied."""
     import numpy as np
@@ -597,13 +659,14 @@ def verify_last_searches(cohort,shared,states,counts,policy_map,deadline):
     guide=ArrayZhenhongPrior(device='cpu',allow_cpu_reference=True)
     diagnostics={name:value.detach().cpu().numpy() for name,value in cohort.diagnostics.items()}
     rows=[]
+    forwards=PostbatchValueOracle(shared['inference'],shared['models'])
     for row,state in enumerate(states):
         if state is None or time.monotonic()>=deadline:
             raise TimeoutError('Full numerical search proof incomplete')
         actor=acting_side(state);step=counts[row]-1
         seed=(1<<256)|int.from_bytes(hashlib.sha256(
             ('recovery:%s:%s:%s'%(shared['jobs'][row]['seed'],step,actor)).encode()).digest(),'big')
-        policies={side:shared['models'][key] for side,key in shared['jobs'][row]['keys'].items()}
+        policies={side:forwards.policy(key) for side,key in shared['jobs'][row]['keys'].items()}
         result=search(state,actor,policies,seed=seed,runtime=seven_runtime,simulations=32,
             gumbel_candidates=16,terminal_horizon=0,teacher_mode='network',max_depth=10,
             noise=True,q_scale='natural_wdl',root_prior=guide,
@@ -627,7 +690,11 @@ def verify_last_searches(cohort,shared,states,counts,policy_map,deadline):
             snapshot=not diagnostics['errors'][row])
         checks={key:bool(value) for key,value in checks.items()}
         rows.append(dict(row=row,step=step,seed=str(seed),checks=checks,visits=visits.tolist(),
-            pi=pi.tolist(),completed_q=diagnostics['q'][row,:count].tolist()))
+            pi=pi.tolist(),completed_q=diagnostics['q'][row,:count].tolist(),
+            reference_completed_q=result['root_diagnostics']['completed_q'],
+            value_forward_checks=forwards.calls,
+            max_numpy_cuda_wdl_abs_error=forwards.max_abs_error,
+            reference_value_backend='independent_postbatch_cuda_forward_numpy_checked'))
         if not all(checks.values()):
             raise AssertionError(['CUDA complete32 numerical parity',rows[-1]])
     return rows
@@ -709,7 +776,7 @@ def run(args):
             parameters.append(row)
         shared = dict(
             rows=args.rows, device=str(device), schema=schema, executor=executor,
-            output=args.output,
+            output=args.output, progress=checkpoint,
             inference=inference, seed=args.seed, max_actions=args.max_actions,models=models,
             proof_seconds=args.proof_seconds,
             inner_max_ticks=args.inner_max_ticks, jobs=jobs, parameters=parameters,
@@ -724,28 +791,33 @@ def run(args):
             cleanup.callback(executor.close)
             for trial in range(args.warmup + args.repeats):
                 exec_deadline=time.monotonic()+args.execution_seconds
-                cohort = IsolatedCohort(shared, max_decisions=1, seconds=args.execution_seconds)
-                cleanup.callback(cohort.close)
-                payload, initial, final, result, searched = run_cohort(
-                    cohort, shared, deadline=exec_deadline, verify=True)
-                if payload['per_root_requested']!=[32]*args.rows or payload['per_root_completed']!=[32]*args.rows:
-                    raise AssertionError('One-step timing requires every independent root to finish exactly32')
-                if payload['per_root_world_samples'] != [1]*args.rows:
-                    raise AssertionError('Each physical decision must sample exactly one hidden world')
-                timings.append(dict(
-                    trial=trial, warmup=trial < args.warmup, max_decisions=1,
-                    capture_seconds=payload['capture_seconds'],
-                    replay_wall_seconds=payload['replay_wall_seconds'],
-                    replay_gpu_seconds=payload['replay_gpu_seconds'],
-                    complete_root_decisions=payload['complete_root_decisions'],
-                    per_root_requested=payload['per_root_requested'],per_root_completed=payload['per_root_completed'],
-                    per_root_world_samples=payload['per_root_world_samples'],
-                    graph_executed=payload['graph_executed'],
-                    root_prior_separated=payload['root_prior_separated'],
-                    stage_timings=payload['stage_timings'], memory=payload['memory']))
-                report['one_step_timings'] = timings
-                checkpoint('one_step_timing')
-                cohort.close()
+                with ExitStack() as trial_cleanup:
+                    cohort = IsolatedCohort(shared, max_decisions=1, seconds=args.execution_seconds)
+                    trial_cleanup.callback(cohort.close)
+                    payload, initial, final, result, searched = run_cohort(
+                        cohort, shared, deadline=exec_deadline, verify=True)
+                    if payload['per_root_requested']!=[32]*args.rows or payload['per_root_completed']!=[32]*args.rows:
+                        raise AssertionError('One-step timing requires every independent root to finish exactly32')
+                    if payload['per_root_world_samples'] != [1]*args.rows:
+                        raise AssertionError('Each physical decision must sample exactly one hidden world')
+                    timings.append(dict(
+                        trial=trial, warmup=trial < args.warmup, max_decisions=1,
+                        capture_seconds=payload['capture_seconds'],
+                        replay_wall_seconds=payload['replay_wall_seconds'],
+                        replay_gpu_seconds=payload['replay_gpu_seconds'],
+                        complete_root_decisions=payload['complete_root_decisions'],
+                        per_root_requested=payload['per_root_requested'],per_root_completed=payload['per_root_completed'],
+                        per_root_world_samples=payload['per_root_world_samples'],
+                        graph_executed=payload['graph_executed'],
+                        root_prior_separated=payload['root_prior_separated'],
+                        stage_timings=payload['stage_timings'], memory=payload['memory']))
+                    report['one_step_timings'] = timings
+                    checkpoint('one_step_timing')
+                # A callback bound to a cohort retains its large state/work buffers.
+                # Drop that callback and all device receipts before allocating the next trial.
+                del cohort, result, searched
+                gc.collect()
+                torch.cuda.empty_cache()
             measured = [row for row in timings if not row['warmup']]
             if len(measured) != args.repeats:
                 raise AssertionError('One-step repeats incomplete')

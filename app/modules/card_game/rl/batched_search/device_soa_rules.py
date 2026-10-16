@@ -175,14 +175,21 @@ class DeviceSoARules:
         refs,extra=self._bind(scratch,viewers,active)
         errors=errors|extra|meta.errors
         active=(states.active & (errors==0)).view(self.t.uint8)
-        observed=self._project(self._invoke('public_legal_decision',batch,scratch,refs,active),active)
+        # A fixed viewer need not be the actor at the depth limit or terminal.
+        # Its public observation is valid even when it has no legal actions.
+        call=self._invoke('public_legal_decision',batch,scratch,refs,active)
+        view=self.executor.select_result(call,(1,),active=active)
+        exported=self.executor.export_projection(view,active=active)
+        observed,observation_errors=self.projection.project_observation(
+            exported,exported.outputs,active=active)
+        self._keepalive.extend((view,exported,observed,observation_errors))
         terminal=self._invoke('terminal_value',batch,scratch,refs,active)
         value=self.executor.read_result(terminal,active)
         self._keepalive.append(value)
-        errors=errors|observed.errors|value.errors
+        errors=errors|observation_errors|value.errors
         invalid=meta.finished & (value.values!=-1.) & (value.values!=0.) & (value.values!=1.)
         errors.bitwise_or_(invalid.to(self.t.int32)*153)
-        return DeviceValueObservation(observed.observations.observations,
+        return DeviceValueObservation(observed.observations,
             ((meta.actors==viewers)&states.active).float()[:,None],meta.finished,
             self.t.where(meta.finished,value.values,0.),errors)
 

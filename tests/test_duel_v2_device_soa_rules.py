@@ -157,6 +157,39 @@ class SoACudaRuleIntegrationTests(unittest.TestCase):
                 if sampled is not None:
                     self.rules.release_device(sampled)
 
+    def test_fixed_viewer_value_allows_empty_legal_actions(self):
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+        from app.modules.card_game.engine.duel_v2 import new_game, apply_action
+        from app.modules.card_game.rl import seven_runtime
+        from app.modules.card_game.rl.batched_duel.record_soa import pack_game_states, unpack_game_states
+        decks={deck['id']:deck for deck in STARTER_DECKS}
+        params=[dict(seed=2026+i,first_side='ab'[i],skip_mulligan=True,
+                     decks={'a':decks['starter'],'b':decks['weave-rush']}) for i in range(2)]
+        initial=[new_game(**p) for p in params]
+        terminal=[apply_action(state,'ab'[i],{'type':'concede'}) for i,state in enumerate(initial)]
+        for states,sides,terminal_values in ((initial,'ba',[0.,0.]),(terminal,'aa',[-1.,1.])):
+            owners=torch.arange(2,dtype=torch.int64,device='cuda')
+            active=torch.ones(2,dtype=torch.bool,device='cuda')
+            packed=pack_game_states(states,self.schema).to_torch('cuda')
+            roots=self.store.put_device(packed,owners,active)
+            viewers=torch.tensor(['ab'.index(s) for s in sides],dtype=torch.int64,device='cuda')
+            graph=torch.cuda.CUDAGraph()
+            try:
+                with torch.cuda.graph(graph):
+                    value=self.rules.value_observation_device(roots,viewers)
+                for _ in range(2):
+                    graph.replay();torch.cuda.synchronize()
+                    self.assertEqual(value.errors.cpu().tolist(),[0,0])
+                    self.assertEqual(value.terminal.cpu().tolist(),[states is terminal]*2)
+                    self.assertEqual(value.terminal_value.cpu().tolist(),terminal_values)
+                    for row,side in enumerate(sides):
+                        actions,(expected,_) = seven_runtime.decision(states[row],side)
+                        self.assertEqual(actions,[])
+                        np.testing.assert_array_equal(value.observations[row].cpu().numpy(),expected)
+                    self.assertEqual(unpack_game_states(self.store.gather_device(roots).to_host()),states)
+            finally:
+                self.rules.release_device(roots)
+
 
 if __name__ == '__main__':
     unittest.main()

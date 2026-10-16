@@ -87,7 +87,7 @@ class CudaSoARules:
         self.constants['instructions'] = torch.full((1, 4), MISSING, dtype=torch.int32, device=self.device)
         self._buffers = self.constants
         self._result_paths = {}
-        for path in ((), (0,), (1,0,0), (1,0,1), (1,1,0), (1,1,1)):
+        for path in ((), (0,), (1,), (1,0,0), (1,0,1), (1,1,0), (1,1,1)):
             self.prepare_result_path(path)
         self.closed = False
 

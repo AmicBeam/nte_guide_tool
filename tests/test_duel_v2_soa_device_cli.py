@@ -32,6 +32,47 @@ def _stderr(argv):
 
 
 class SoADeviceCliTests(unittest.TestCase):
+    def test_postbatch_value_oracle_recomputes_and_rejects_changed_forward(self):
+        import numpy as np
+        import torch
+        from types import SimpleNamespace
+        from scripts.benchmark_duel_v2_soa_device import PostbatchValueOracle
+        expected = np.array([.2, .3, .5], dtype=np.float32)
+        class Bank:
+            device = 'cpu'
+            max_rows = 2
+            candidate_dim = 3
+            keys = ('frozen',)
+            calls = 0
+            changed = False
+            def predict_device(self, x, c, valid, ids, context, *, value_only):
+                self.calls += 1
+                self.context = context.clone()
+                self.features = x.clone()
+                self_empty = c.shape == (2, 0, 3) and valid.shape == (2, 0)
+                assert self_empty and value_only.all()
+                p = torch.as_tensor(expected).repeat(2, 1)
+                if self.changed:
+                    p[:, 0] += .01
+                return SimpleNamespace(wdl=p, invalid_rows=torch.zeros(2, dtype=torch.bool))
+        bank = Bank()
+        model = SimpleNamespace(wdl=lambda x, actor: expected,
+                                scores=lambda x, c: np.arange(len(c)))
+        oracle = PostbatchValueOracle(bank, {'frozen': model})
+        policy = oracle.policy('frozen')
+        x = np.array([1., 2., 3.], dtype=np.float32)
+        np.testing.assert_array_equal(policy.wdl(x, False), expected)
+        np.testing.assert_array_equal(bank.features.numpy(), np.stack([x, x]))
+        self.assertFalse(bank.context.any())
+        policy.wdl(x.copy(), False)
+        self.assertEqual(bank.calls, 1)
+        _, value = policy.scores_value(x, [0, 1])
+        self.assertAlmostEqual(value, .3)
+        self.assertTrue(bank.context.all())
+        bank.changed = True
+        with self.assertRaisesRegex(AssertionError, 'WDL component parity'):
+            policy.wdl(x + 1, True)
+
     def test_module_import_does_not_load_cuda(self):
         result = subprocess.run(
             [sys.executable, '-c',

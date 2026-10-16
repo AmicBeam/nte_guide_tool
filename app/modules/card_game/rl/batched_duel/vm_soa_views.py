@@ -323,12 +323,16 @@ __device__ inline int soa_cache_ok(const Heap* heap,int ref){return ref>=0&&ref<
 __device__ inline int soa_ready(const Heap* heap){DomainSoAContext* s=soa_ctx(heap);return s&&s->rows>0&&s->row>=0&&s->row<s->rows&&s->i64&&s->f64&&s->i32&&s->u8&&s->views&&s->value_cache&&s->clone_map&&s->clone_queue;}
 __device__ inline int soa_locate(int global_ref,int* pool,int* slot){
  if(global_ref<1)return 0;
- for(int i=0;i<SOA_POOL_COUNT;i++){
-  if(SOA_POOL_BASE[i]<global_ref && global_ref<=SOA_POOL_BASE[i]+SOA_POOL_CAP[i]){
-   *pool=i;*slot=global_ref-SOA_POOL_BASE[i]-1;return 1;
-  }
+ // Schema pools have increasing, nonoverlapping ranges. Search inclusive ends
+ // so the last object in one pool never aliases the next pool's first object.
+ int lo=0,hi=SOA_POOL_COUNT;
+ while(lo<hi){
+  int mid=lo+(hi-lo)/2;
+  if(global_ref>SOA_POOL_BASE[mid]+SOA_POOL_CAP[mid])lo=mid+1;
+  else hi=mid;
  }
- return 0;
+ if(lo>=SOA_POOL_COUNT || global_ref<=SOA_POOL_BASE[lo])return 0;
+ *pool=lo;*slot=global_ref-SOA_POOL_BASE[lo]-1;return 1;
 }
 __device__ inline int soa_pool_allows_tag(int pool,int tag){
  int n=SOA_POOL_NTAGS[pool];
@@ -821,8 +825,15 @@ __device__ inline int soa_clone_gid(Heap* heap,int global_ref){
 __device__ inline int soa_clone(Heap* heap,int vm_ref,int reset_memo){
  DomainSoAContext* s=soa_ctx(heap);
  if(!soa_ready(heap)||!soa_is_view(heap,vm_ref))return soa_fail(heap,ERROR_INVALID_REF);
- if(reset_memo){for(int i=0;i<SOA_TOTAL_OBJECTS;i++)s->clone_map[(long long)i*s->rows+s->row]=0;}
  int gid=heap->nodes[vm_ref*4+3];
+ if(reset_memo){
+  int pool=0,slot=0;if(!soa_locate(gid,&pool,&slot))return soa_fail(heap,ERROR_INVALID_REF);
+  // Empty sequence/map roots have no child references. Reset their own memo
+  // entry so repeated copies stay independent without scanning unrelated IDs.
+  if(SOA_POOL_KIND[pool]!=SOA_KIND_RECORD && soa_load_i32(s,SOA_POOL_COUNT_COL[pool]+slot)==0)
+   s->clone_map[(long long)(gid-1)*s->rows+s->row]=0;
+  else for(int i=0;i<SOA_TOTAL_OBJECTS;i++)s->clone_map[(long long)i*s->rows+s->row]=0;
+ }
  int cloned=soa_clone_gid(heap,gid);if(cloned<1)return -1;
  return soa_view_ref(heap,cloned);
 }

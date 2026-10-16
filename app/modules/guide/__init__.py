@@ -84,6 +84,14 @@ def cultivation_page(identifier):
         result=result, error=error), 400 if error else 200
 
 
+@blueprint.get('/guide/characters/<identifier>/builds')
+def character_builds_page(identifier):
+    record = service.detail('characters', identifier)
+    static = Path(__file__).parent / 'static'
+    version = max(int((static / name).stat().st_mtime) for name in ['related_axes.js', 'related_axes.css'])
+    return render_template('guide/builds.html', record=record, related_asset_version=version)
+
+
 @blueprint.post('/api/guide/characters/<identifier>/cultivation')
 def api_cultivation(identifier):
     record = service.detail('characters', identifier)
@@ -152,6 +160,7 @@ def llms():
 等级经验：角色详情加 ?section=experience。
 好感度与喜好礼物：角色详情加 ?section=affinity，包含赠送数值和各商店标价。
 养成计算器：/guide/characters/{id}/cultivation；POST /api/guide/characters/{id}/cultivation 计算资源。
+角色排轴与配装：/guide/characters/{id}/builds；固定当前角色筛选相关轴，再进入收益对比。
 按字段读取：详情加 ?section=abilities（角色技能）或 ?section=effect（弧盘效果）。
 按关卡读取：轨外之境详情加 ?stage=12。
 列表返回 total、next_offset 和摘要；详情返回 data。使用 ID 区分重名赛期。

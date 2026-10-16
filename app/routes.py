@@ -194,6 +194,14 @@ def shaft_page(page: str = 'rotation'):
             allow_anonymous_shaft_share = True
         except AppError:
             pass
+    preview_id = str(request.args.get('preview') or '').strip()
+    if preview_id.isdigit():
+        try:
+            # Anonymous preview keeps the existing public-axis visibility checks.
+            get_shaft_axis(int(preview_id), player=None)
+            allow_anonymous_shaft_share = True
+        except AppError:
+            pass
     return render_template(
         'shaft/index.html',
         active_shaft_page=page,

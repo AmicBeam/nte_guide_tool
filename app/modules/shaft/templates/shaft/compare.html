@@ -1,0 +1,35 @@
+{% extends 'common/base.html' %}
+{% block title %}配装收益对比 · NTE Tools{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('shaft_module.static', filename='css/shaft-compare.css', v=compare_asset_version) }}">
+<script src="{{ url_for('shaft_module.static', filename='js/shaft_compare_page.js', v=compare_asset_version) }}" defer></script>
+{% endblock %}
+{% block body %}
+<main class="compare-page" data-worker-url="{{ url_for('shaft_module.static', filename='js/shaft_comparison_worker.js', v=compare_asset_version) }}">
+  <nav class="compare-nav"><a href="/guide">← 攻略数据库</a><a href="/shaft/plaza">排轴广场 ↗</a><a id="compare-login" href="/login?next=%2Fshaft%2Fcompare">登录</a></nav>
+  <header><p class="compare-eyebrow">BUILD LAB</p><h1>配装收益对比</h1><p>选一条实际操作轴，比较弧盘、卡带与主词条的组合。</p></header>
+  <section class="compare-card" aria-labelledby="source-heading">
+    <h2 id="source-heading">01 · 选择参考轴</h2>
+    <div class="compare-controls"><label>角色筛选<select id="compare-filter-character"><option value="">全部角色</option></select></label><label>排轴范围<select id="compare-scope"><option value="public">公开排轴</option><option value="mine">我的排轴</option><option value="favorites">收藏排轴</option></select></label><button type="button" id="compare-refresh">刷新列表</button></div>
+    <div class="compare-controls"><label class="compare-grow">参考排轴<select id="compare-axis"><option value="">正在读取…</option></select></label><button type="button" id="compare-load">载入参考轴</button><button type="button" id="compare-more" hidden>更多排轴</button></div>
+    <div class="compare-controls"><button type="button" id="compare-draft">用浏览器当前轴</button><button type="button" id="compare-example">用示例轴试用</button><a id="compare-source-link" hidden target="_blank" rel="noopener">在排轴页预览 ↗</a></div>
+    <p id="compare-source-status" role="status" aria-live="polite">正在读取排轴目录…</p>
+    <div id="compare-axis-info" hidden></div>
+  </section>
+  <form id="compare-form" class="compare-card" hidden>
+    <h2>02 · 选择要比较的组合</h2>
+    <div class="compare-controls"><label>试算角色<select id="compare-target"></select></label><label>候选弧盘精炼<select id="compare-refinement">{% for level in range(1, 6) %}<option value="{{ level }}">{{ level }} 精</option>{% endfor %}</select></label></div>
+    <p class="compare-note">参考基准使用原轴装备和精炼。候选组合统一使用上方精炼；动作、队友、敌人、觉醒、技能、空幕设置和副词条数均沿用原轴，不重新优化。</p>
+    <div class="compare-options"><fieldset><legend>弧盘 <button type="button" data-select-all="arcs">全选</button><button type="button" data-select-none="arcs">清空</button></legend><div id="compare-arcs" class="compare-checks"></div></fieldset><fieldset><legend>卡带 <button type="button" data-select-all="cartridges">全选</button><button type="button" data-select-none="cartridges">清空</button></legend><div id="compare-cartridges" class="compare-checks"></div></fieldset><fieldset><legend>卡带主词条 <button type="button" data-select-all="stats">全选</button><button type="button" data-select-none="stats">清空</button></legend><div id="compare-stats" class="compare-checks"></div></fieldset></div>
+    <div class="compare-controls"><button class="compare-primary" type="submit" id="compare-run">开始比较</button><button type="button" id="compare-cancel" hidden>取消计算</button><output id="compare-count">0 个组合</output></div>
+    <p id="compare-progress" role="status" aria-live="polite"></p>
+  </form>
+  <section class="compare-card" id="compare-results" hidden aria-labelledby="results-heading">
+    <h2 id="results-heading">03 · 计算结果</h2><div id="compare-baseline"></div>
+    <p class="compare-note">按全队总伤排序；提升均相对原轴重算基准。角色自身伤害不含单列的环合与倾陷伤害。存在自检提示的组合仍是试算结果，请先检查动作与资源条件。</p>
+    <div class="compare-table-scroll"><table><thead><tr><th>组合</th><th>全队总伤 / DPS</th><th>较原轴</th><th>角色自身</th><th>全队环合 / 倾陷</th><th>详情</th></tr></thead><tbody id="compare-rows"></tbody></table></div>
+    <button type="button" id="compare-download" disabled>下载比较结果 CSV</button>
+  </section>
+  <noscript>请开启 JavaScript 以读取在线排轴并进行配装比较。角色资料仍可匿名阅读。</noscript>
+</main>
+{% endblock %}

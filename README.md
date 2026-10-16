@@ -12,8 +12,8 @@
 | --- | --- | --- | --- |
 | 异能对决 | `/card-game` | [模块 README](app/modules/card_game/README.md) | 现行四人轮替牌桌、构筑、图鉴、回放、教学与人机 |
 | 空幕计算 | `/kongmu` | [模块 README](app/modules/kongmu/README.md) | 角色空幕与卡带搭配计算 |
-| 排轴计算 | `/shaft` | [模块 README](app/modules/shaft/README.md) | 配装、动作轴、伤害计算与方案广场 |
-| 攻略数据库 | `/guide` | [模块 README](app/modules/guide/README.md) | 角色、弧盘、轨外之境；匿名网页、JSON、Markdown 与 CLI |
+| 排轴计算 | `/shaft` | [模块 README](app/modules/shaft/README.md) | 配装、动作轴、伤害计算、方案广场与配装收益对比 |
+| 攻略数据库 | `/guide` | [模块 README](app/modules/guide/README.md) | 角色、弧盘、轨外之境与角色相关轴；匿名网页、JSON、Markdown 与 CLI |
 | 合轴收益表 | `/overlap` | [模块 README](app/modules/overlap/README.md) | 静态收益表；双角色分页在浏览器匹配可循环合轴方案 |
 
 异能对决的现行规则见 [完整手册](docs/everness-item-chain-card-design.md)。默认页面已是四人轮替；旧盖卡入口与数据看板尚未迁移，见模块 README。

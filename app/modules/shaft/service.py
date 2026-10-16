@@ -1674,7 +1674,7 @@ def list_shaft_market(
         query = query.order_by(ShaftAxis.published_at.desc(), ShaftAxis.updated_at.desc())
     else:
         query = query.order_by(ShaftAxis.dps_x100.desc(), ShaftAxis.like_count.desc(), ShaftAxis.updated_at.desc())
-    items = list(query.paginate(page, page_size + 1))
+    items = list(query.limit(page_size + 1).offset((page - 1) * page_size))
     visible_items = items[:page_size]
     return {
         'items': [

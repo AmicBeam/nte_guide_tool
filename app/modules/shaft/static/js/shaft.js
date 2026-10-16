@@ -8734,6 +8734,17 @@
     }
   }
 
+  async function openAxisPreviewFromUrl() {
+    const axisId = new URLSearchParams(window.location.search).get('preview') || '';
+    if (!/^\d+$/.test(axisId)) return;
+    try {
+      const payload = await shaftRequest(`/api/shaft/axes/${axisId}`);
+      openAxisPreview(null, payload);
+    } catch (error) {
+      setStatus(error.message, 'error');
+    }
+  }
+
   async function deleteAxis(axisId, title) {
     if (!getToken()) {
       persistAxisDraft();
@@ -9332,6 +9343,7 @@
       renderAll();
       await runSimulation();
       await openSharedAxisFromUrl();
+      await openAxisPreviewFromUrl();
       await loadMarket(true);
       await loadMyAxes();
     } catch (error) {

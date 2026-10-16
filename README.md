@@ -106,3 +106,5 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 攻略数据库的个人练度同步直接集成于网站后端；养成计算仍可匿名使用，读取和保存个人游戏资料须先登录本站。更新部署需同步安装 `requirements.txt` 中的 `pycryptodome`；数据库专表由网站启动时创建，详情见攻略模块 README。
 
 机器人账号只读桥接与配装绘图由 `qqbot_fairy/src/plugins/` 维护，本仓库不再保留这两个副本。本站保留注册插件、公开 Wiki CLI 与本人资料鉴权 API，部署边界见 [机器人桥接说明](plugins/README.md)。CLI 公共查询无需登录，`me` 通过运行时注入的 `NTE_GUIDE_TOKEN` 读取本人已保存配装。
+
+Wiki 登录用户可使用右下角浮动攻略助手，支持图片、本站资料／在线轴查询和TapTap攻略搜索。部署时在`.env`配置`NTE_GUIDE_CHAT_BASE_URL`、`NTE_GUIDE_CHAT_API_KEY`、`NTE_GUIDE_CHAT_MODEL`，模型需支持视觉和函数工具调用；可选受信任CA路径`NTE_GUIDE_CHAT_CA_BUNDLE`。会话只保存在浏览器，超过6小时间隔另开上下文；页面标题与地址临时附带，不进入历史。详细边界与验证见攻略模块README。

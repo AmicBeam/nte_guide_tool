@@ -209,3 +209,8 @@ register_user_routes(blueprint)
 
 from .challenge_view import stage_selection
 blueprint.add_app_template_filter(stage_selection, 'guide_stage_selection')
+
+from .axis_routes import register as register_axis_routes
+from .chat_routes import register as register_chat_routes
+register_axis_routes(blueprint)
+register_chat_routes(blueprint)

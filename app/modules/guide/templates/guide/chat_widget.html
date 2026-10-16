@@ -1,0 +1,14 @@
+<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='chat.css', v=guide_chat_asset_version|default(1)) }}">
+<script defer src="{{ url_for('guide_module.static', filename='chat_state.js', v=guide_chat_asset_version|default(1)) }}"></script>
+<script defer src="{{ url_for('guide_module.static', filename='chat.js', v=guide_chat_asset_version|default(1)) }}"></script>
+<div id="guide-chat-widget" hidden>
+  <button id="guide-chat-launcher" type="button" aria-label="打开攻略助手" aria-expanded="false" aria-controls="guide-chat-panel"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-8 8H5l-4 3v-11a9.5 9.5 0 0 1 19 0Z" transform="translate(1 -2)"/><path d="M7 9h8M7 13h5"/></svg><span>攻略助手</span></button>
+  <aside id="guide-chat-panel" role="dialog" aria-modal="false" aria-labelledby="guide-chat-title" hidden>
+    <header class="guide-chat-header"><div><strong id="guide-chat-title">攻略助手</strong><small>本站资料 · 在线排轴 · TapTap</small></div><button id="guide-chat-close" type="button" aria-label="收起攻略助手">×</button></header>
+    <div class="guide-chat-sessions"><select id="guide-chat-session" aria-label="选择历史对话"></select><button id="guide-chat-new" type="button">新对话</button><button id="guide-chat-clear" type="button" aria-label="删除当前对话">删除</button></div>
+    <div id="guide-chat-messages" role="log" aria-label="对话消息" aria-live="polite" tabindex="0"></div>
+    <p id="guide-chat-status" role="status" aria-live="polite"></p>
+    <form id="guide-chat-form"><div id="guide-chat-attachments" aria-label="待发送图片"></div><label class="guide-chat-input-label" for="guide-chat-input">向攻略助手提问</label><textarea id="guide-chat-input" rows="2" maxlength="12000" placeholder="问角色怎么玩、怎么配队，也可以粘贴截图…"></textarea><div class="guide-chat-compose-actions"><label class="guide-chat-image-button" for="guide-chat-files">＋ 图片<input id="guide-chat-files" type="file" accept="image/png,image/jpeg,image/webp" multiple></label><small>支持图片 · 最多2张</small><button id="guide-chat-send" type="submit">发送</button><button id="guide-chat-stop" type="button" hidden>停止</button></div></form>
+    <footer>对话保存在当前浏览器，间隔超过6小时自动开启新上下文。</footer>
+  </aside>
+</div>

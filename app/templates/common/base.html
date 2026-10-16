@@ -41,5 +41,8 @@
     <div class="shell">
         {% block body %}{% endblock %}
     </div>
+    {% if request.path == '/guide' or request.path.startswith('/guide/') %}
+    {% include 'guide/chat_widget.html' %}
+    {% endif %}
 </body>
 </html>

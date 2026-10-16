@@ -56,6 +56,16 @@ def main(argv=None):
     personal = commands.add_parser('me', help='Read your saved game profiles (NTE_GUIDE_TOKEN required)')
     personal.add_argument('--role-id', help='Select one of your own game accounts')
     personal.add_argument('--character', help='Select a character ID in the saved profiles')
+    axes = commands.add_parser('axes', help='Search online axes with the same visibility as the website')
+    axes.add_argument('--character', action='append', default=[], help='Character ID or full name; repeat up to four times')
+    axes.add_argument('--scope', choices=('public', 'mine', 'favorites'), default='public')
+    axes.add_argument('--query', default='')
+    axes.add_argument('--sort', choices=('new', 'dps', 'likes', 'favorites'), default='new')
+    axes.add_argument('--page', type=int, default=1)
+    axes.add_argument('--limit', type=int, default=10)
+    axis = commands.add_parser('axis', help='Read a visible online axis and its actual actions')
+    axis.add_argument('id', type=int)
+    axis.add_argument('--section', choices=('all', 'summary', 'axis', 'result'), default='all')
     args = parser.parse_args(argv)
     base = args.base_url.rstrip('/')
     parsed = urllib.parse.urlsplit(base)
@@ -64,8 +74,10 @@ def main(argv=None):
     if args.timeout <= 0:
         parser.error('--timeout must be positive')
     query = {}
-    token = os.environ.get('NTE_GUIDE_TOKEN', '').strip() if args.command == 'me' else ''
-    if args.command == 'me' and not token:
+    protected = args.command in ('me', 'axes', 'axis')
+    token = os.environ.get('NTE_GUIDE_TOKEN', '').strip() if protected else ''
+    needs_token = args.command == 'me' or (args.command == 'axes' and args.scope != 'public')
+    if needs_token and not token:
         print('读取个人资料需要本站登录凭据 NTE_GUIDE_TOKEN；请先登录网站并同步游戏数据。', file=sys.stderr)
         return 1
     if parsed.username or parsed.password:
@@ -81,11 +93,22 @@ def main(argv=None):
         query = {k: getattr(args, k) for k in ('section', 'stage') if getattr(args, k) is not None}
     elif args.command == 'me':
         path = '/api/guide/me/profiles'
+    elif args.command == 'axes':
+        if len(args.character) > 4 or not 1 <= args.limit <= 20 or not 1 <= args.page <= 200:
+            parser.error('axes requires at most four characters, limit 1–20 and page 1–200')
+        path = '/api/guide/axes'
+        query = {'character': args.character, 'scope': args.scope, 'q': args.query,
+                 'sort': args.sort, 'page': args.page, 'limit': args.limit}
+    elif args.command == 'axis':
+        if args.id <= 0:
+            parser.error('axis ID must be positive')
+        path = f'/api/guide/axes/{args.id}'
+        query = {'section': args.section}
     else:
         path = '/api/guide/schema'
-    url = base + path + ('?' + urllib.parse.urlencode(query) if query else '')
+    url = base + path + ('?' + urllib.parse.urlencode(query, doseq=True) if query else '')
     try:
-        if args.command == 'me':
+        if token:
             class NoRedirects(urllib.request.HTTPRedirectHandler):
                 def redirect_request(self, req, fp, code, msg, headers, newurl):
                     raise ValueError('个人数据请求不接受重定向，请核对站点地址。')
@@ -103,12 +126,12 @@ def main(argv=None):
         print(content.rstrip())
         return 0
     except urllib.error.HTTPError as error:
-        if args.command == 'me':
+        if protected:
             print(f'HTTP {error.code}: 无法读取个人资料，请检查本站登录是否有效并确认已同步。', file=sys.stderr)
         else:
             print(f'HTTP {error.code}: {error.read().decode("utf-8", errors="replace")}', file=sys.stderr)
     except (OSError, ValueError) as error:
-        message = '个人资料读取失败，请检查站点地址、网络及登录状态。' if args.command == 'me' else f'查询失败: {error}'
+        message = '资料读取失败，请检查站点地址、网络及登录状态。' if protected else f'查询失败: {error}'
         print(message, file=sys.stderr)
     return 1
 

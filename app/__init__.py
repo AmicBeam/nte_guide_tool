@@ -1,6 +1,6 @@
 from flask import Flask, g, request
 
-from app.config import DUEL_SUPPORT_GROUP, IS_DEV_ENV, SECRET_KEY, SHAFT_LOGIN_REQUIRED, SHAFT_SUPPORT_GROUP
+from app.config import DUEL_SUPPORT_GROUP, GUIDE_CHAT_SETTINGS, IS_DEV_ENV, SECRET_KEY, SHAFT_LOGIN_REQUIRED, SHAFT_SUPPORT_GROUP
 from app.db import init_db
 from app.models import (
     AccessToken,
@@ -37,6 +37,7 @@ def create_app() -> Flask:
     app.config['DUEL_SUPPORT_GROUP'] = DUEL_SUPPORT_GROUP
     app.config['SHAFT_SUPPORT_GROUP'] = SHAFT_SUPPORT_GROUP
     app.config['SHAFT_LOGIN_REQUIRED'] = SHAFT_LOGIN_REQUIRED
+    app.config['GUIDE_CHAT_SETTINGS'] = dict(GUIDE_CHAT_SETTINGS)
     from app.modules.guide.user_data import GuideGameProfile
     init_db([
         Player,
@@ -64,6 +65,9 @@ def create_app() -> Flask:
     ])
     from app.modules.shaft.service import initialize_shaft_character_publications
     initialize_shaft_character_publications()
+    # Composition root supplies a read-only adapter; guide never imports shaft services.
+    from app.modules.shaft.read_tools import ShaftReader
+    app.extensions['guide_axis_reader'] = ShaftReader()
 
     @app.before_request
     def attach_log_id():

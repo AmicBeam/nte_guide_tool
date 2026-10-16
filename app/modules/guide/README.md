@@ -37,7 +37,7 @@ python nte-guide.py schema
 
 ## 更新与代码边界
 
-`static/guide.js` 仅按等级索引读取已有数值并更新表格，不推算伤害或成长公式；网页初始等级由服务端渲染，前端只展示当前等级，完整数组通过 JSON/Markdown/CLI 读取。空幕使用一句完整的驱动特化说明和格位图，不再重复列出名称、数值、百分比属性卡片；材料使用按目标等级分组的表格。
+`static/guide.js` 仅按等级索引读取已有数值并更新表格，不推算伤害或成长公式；网页初始等级由服务端渲染，前端只展示当前等级，完整数组通过 JSON/Markdown/CLI 读取。空幕使用一句完整的驱动特化说明和格位图，不再重复列出名称、数值、百分比属性卡片；材料按目标等级分组，以带稀有度底色、WebP图标、数量与名称的卡片展示；角色、弧盘详情与养成计算结果／分项消耗共用卡片。
 
 `service.py` 只读取本地 `data/catalog.json`、好感度快照和图片／角色元数据绑定，提供检索、摘要、章节选择和 Markdown；`__init__.py` 仅做路由适配和参数校验；模板、样式均由本模块拥有；`cli.py` 是可独立下载运行的 HTTP 客户端。
 
@@ -82,6 +82,8 @@ python scripts/refresh_guide_data.py --transport curl
 角色详情顶部与升级材料章节提供醒目的大按钮，进入 `/guide/characters/<id>/cultivation`。输入当前与目标角色等级及技能／天赋／都市技能基础等级；突破阶段按等级自动判断，仅在20、30等临界等级选择是否已突破。技能以“普通攻击”“变轨攻击”等类型名显示。服务端汇总角色经验、经验书、甲硬币、突破材料、技能材料和都市技能使用的方斯等资源。0级表示尚未解锁的天赋或都市技能；普通战斗技能从1级起。觉醒／共鸣带来的额外技能等级不参与材料计算，觉醒、共鸣和弧盘养成不在此计算器范围内。
 
 突破阶段与等级上限按角色配置判断；材料只累计当前之后至目标的阶段，技能须满足对应突破条件。角色经验按升入目标等级的需求逐级相加，不计当前等级内已累计经验；每段到达突破上限后分别用经验书补齐，按高档优先、低档补齐组成使用方案，显示溢出经验。甲硬币合计包含这份方案的经验书使用费用，不假设溢出退费。不扣除库存，不自动折算合成，也不估算副本次数或体力。
+
+材料展示绑定存于 `data/material_metadata.json`，WebP复用 `app/static/images/item/` 或放在 `app/static/images/materials/`；`presentation.py` 只读取图标与稀有度配色，不改变材料数量。显式同步：`python scripts/sync_guide_material_images.py`。页面初始结果由服务端渲染，无需脚本加载材料。
 
 `cultivation.py` 只对本模块离线数据计算；GET表单由服务端计算，`static/cultivation.js` 仅随等级切换临界突破选项的可见性。`POST /api/guide/characters/<id>/cultivation` 接收 JSON 对象，字段为 `current_level`、`target_level`、`current_ascended`、`target_ascended`（临界等级是否已突破，布尔值或0／1） 和 `current_skill_<index>`／`target_skill_<index>`；非临界等级忽略突破选项，旧突破次数字段与等级内经验字段不参与计算。返回状态包含自动推定的突破次数。技能索引按角色 `materials.skills` 顺序，缺省按1级未突破至80级满突破、所有技能满级计算。返回 `data.state`、`experience`、`book_experience`、`overflow_experience`、`level_up_gold`、`total_gold`、`items` 和 `breakdown`。无效练度返回400，未知角色返回404。
 

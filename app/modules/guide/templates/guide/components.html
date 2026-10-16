@@ -11,9 +11,17 @@
 </div>
 {% endmacro %}
 
+{% macro material_cards(items) %}
+<ul class="guide-material-grid" aria-label="所需材料">{% for item in items %}{% set display = item|guide_material_display %}
+<li class="guide-material-card"><div class="guide-material-icon guide-quality-{{ display.quality|default('gray') }}">{% if display.icon %}<img src="{{ display.icon }}" alt="" loading="lazy" width="128" height="128">{% endif %}<strong aria-label="数量 {{ item.amount }}">×{{ item.amount }}</strong></div><span>{{ item.name }}</span></li>
+{% else %}<li class="guide-muted">无需额外资源。</li>{% endfor %}</ul>
+{% endmacro %}
+
 {% macro materials(stages, title) %}
 <h3 class="guide-subheading">{{ title }}</h3>
-<div class="guide-table-scroll"><table class="guide-data-table guide-material-table"><thead><tr><th scope="col">目标等级</th><th scope="col">所需材料</th><th scope="col">条件</th></tr></thead><tbody>{% for stage in stages %}<tr><th scope="row">Lv. {{ stage.level }}{% if stage.stage is defined %}<small>突破 {{ stage.stage }}</small>{% endif %}</th><td><div class="guide-material-list">{% for item in stage['items']|default([]) %}<span>{{ item.name }} <strong>× {{ item.amount }}</strong></span>{% endfor %}{% if stage.cost_gold is defined %}<span>甲硬币 <strong>× {{ stage.cost_gold }}</strong></span>{% endif %}</div></td><td>{{ '突破阶段 ' ~ stage.require_breakthrough_level if stage.require_breakthrough_level is defined else '—' }}</td></tr>{% else %}<tr><td colspan="3">未提供升级材料</td></tr>{% endfor %}</tbody></table></div>
+<div class="guide-material-stages">{% for stage in stages %}<section class="guide-material-stage"><h4>Lv. {{ stage.level }}{% if stage.stage is defined %} · 突破 {{ stage.stage }}{% endif %}{% if stage.require_breakthrough_level is defined %}<small>需要突破阶段 {{ stage.require_breakthrough_level }}</small>{% endif %}</h4>
+{% set entries = stage['items']|default([]) %}{% if stage.cost_gold is defined and stage.cost_gold %}{% set entries = entries + [{'id': 'gold', 'name': '甲硬币', 'amount': stage.cost_gold}] %}{% endif %}
+{{ material_cards(entries) }}</section>{% else %}<p class="guide-muted">未提供升级材料</p>{% endfor %}</div>
 {% endmacro %}
 
 {% macro skill(ability, skill_index) %}

@@ -118,7 +118,7 @@ class GuideTest(unittest.TestCase):
         self.assertIn('23.75%', arc)
         self.assertIn('35%', arc)
         materials = self.client.get('/guide/characters/1042?section=materials').text
-        self.assertIn('guide-material-table', materials)
+        self.assertIn('guide-material-grid', materials)
         self.assertIn('模糊数符', materials)
         self.assertNotIn('材料 ID', materials)
 
@@ -241,6 +241,37 @@ class GuideTest(unittest.TestCase):
                     summed[key] = summed.get(key, 0) + item['amount']
             self.assertEqual(summed, {item['id'].casefold(): item['amount'] for item in result['items']})
             self.assertTrue(all(item['amount'] > 0 and item['name'] for item in result['items']))
+
+    def test_material_cards_and_local_asset_coverage(self):
+        from app.modules.guide.presentation import material_metadata
+        metadata = material_metadata()
+        material_ids = {'gold', 'fons'}
+
+        def collect(value):
+            if isinstance(value, dict):
+                material_ids.update(str(item['id']).casefold() for item in value.get('items', []))
+                for child in value.values():
+                    collect(child)
+            elif isinstance(value, list):
+                for child in value:
+                    collect(child)
+        for kind in ('characters', 'arcs'):
+            for record in service.catalog()[kind]:
+                collect(record['materials'])
+        material_ids.update(book['id'].casefold() for book in service.catalog()['cultivation']['exp_books'])
+        self.assertFalse(material_ids - metadata.keys())
+        for item in metadata.values():
+            self.assertIn(item['quality'], ('gray', 'green', 'blue', 'purple', 'orange', 'red'))
+            data = (ROOT / 'app' / item['icon'].lstrip('/')).read_bytes()
+            self.assertEqual(data[:4], b'RIFF')
+            self.assertEqual(data[8:12], b'WEBP')
+        for url in ('/guide/characters/1042', '/guide/arcs/fork_PaperPlane',
+                    '/guide/characters/1042/cultivation?calculate=1'):
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('guide-material-grid', response.text)
+            self.assertIn('guide-quality-purple', response.text)
+            self.assertIn('loading="lazy" width="128" height="128"', response.text)
 
     def test_cultivation_crossed_levels_noop_and_boundaries(self):
         from app.modules.guide import cultivation

@@ -102,13 +102,14 @@
   async function preview(axisId) {
     const id = ++previewRequest;
     const dialog = $('related-preview');
-    $('related-preview-title').textContent = '正在读取排轴…'; $('related-preview-frame').src = 'about:blank'; $('related-preview-compare').hidden = true;
+    $('related-preview-title').textContent = '正在读取排轴…'; $('related-preview-frame').src = 'about:blank'; $('related-preview-compare').hidden = true; $('related-preview-simulator').hidden = true;
     if (!dialog.open) dialog.showModal();
     try {
       const payload = await request(`/api/shaft/axes/${axisId}`);
       if (id !== previewRequest || !dialog.open) return;
       $('related-preview-title').textContent = payload.title;
       $('related-preview-frame').src = `/shaft/rotation?preview=${axisId}&embedded=1`;
+      $('related-preview-simulator').href = `/shaft/rotation?preview=${axisId}`; $('related-preview-simulator').hidden = false;
       $('related-preview-compare').href = compareUrl(axisId); $('related-preview-compare').hidden = false;
     } catch(error) { if (id === previewRequest) $('related-preview-title').textContent = error.message; }
   }

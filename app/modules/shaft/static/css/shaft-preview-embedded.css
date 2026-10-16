@@ -1,0 +1,7 @@
+html,body{margin:0;padding:0;min-height:100%;background:#101923}
+.shaft-page[data-preview-only="true"]{padding:0;margin:0;width:100%;max-width:none}
+.shaft-page[data-preview-only="true"]>:not(#shaft-axis-preview-dialog):not(#shaft-embedded-preview-status){display:none!important}
+#shaft-embedded-preview-status{padding:20px;color:#dce6ef;font-size:14px}
+#shaft-axis-preview-dialog{position:fixed;inset:0;width:100%;max-width:none;height:100dvh;max-height:100dvh;margin:0;border:0;border-radius:0;box-sizing:border-box}
+#shaft-axis-preview-dialog::backdrop{background:#101923}
+#shaft-axis-preview-footer{display:none!important}

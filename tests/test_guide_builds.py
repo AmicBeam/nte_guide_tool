@@ -28,6 +28,9 @@ class GuideBuildsTest(unittest.TestCase):
         self.assertNotIn('data-guide-character-name="娜娜莉"', builds.text)
         self.assertIn('id="related-list"', builds.text)
         self.assertIn('related_axes.js', builds.text)
+        self.assertNotIn('id="related-compare"', builds.text)
+        self.assertNotIn('/shaft/compare', builds.text)
+        self.assertIn('id="related-preview-frame"', builds.text)
 
     def test_unknown_character_is_not_a_generic_unfiltered_page(self):
         self.assertEqual(self.client.get('/guide/characters/missing/builds').status_code, 404)

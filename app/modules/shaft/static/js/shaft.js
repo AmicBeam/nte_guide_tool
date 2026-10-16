@@ -9321,7 +9321,29 @@
     $('shaft-my-axis-list').addEventListener('click', handleMarketClick);
   }
 
+  async function initEmbeddedPreview() {
+    const status = $('shaft-embedded-preview-status');
+    const close = () => window.parent.postMessage({type: 'shaft-preview-close'}, location.origin);
+    $('shaft-axis-preview-fit-btn').addEventListener('click', fitAxisPreview);
+    $('shaft-axis-preview-viewport').addEventListener('wheel', handleAxisPreviewWheel, {passive:false});
+    $('shaft-axis-preview-dialog').addEventListener('cancel', event => { event.preventDefault(); close(); });
+    $('shaft-axis-preview-dialog').querySelector('[data-close-axis-preview]').addEventListener('click', close);
+    window.addEventListener('resize', () => { if ($('shaft-axis-preview-dialog').open) fitAxisPreview(); });
+    try {
+      state.catalog = await shaftRequest('/api/shaft/catalog');
+      const axisId = new URLSearchParams(location.search).get('preview');
+      const payload = await shaftRequest(`/api/shaft/axes/${axisId}`);
+      state.axis = JSON.parse(JSON.stringify(payload.axis));
+      openAxisPreview(null, payload);
+      status.hidden = true;
+    } catch (error) { status.textContent = error.message; }
+  }
+
   async function init() {
+    if (document.querySelector('.shaft-page')?.dataset.previewOnly === 'true') {
+      await initEmbeddedPreview();
+      return;
+    }
     const active = document.querySelector('.shaft-page')?.dataset.activePage || 'rotation';
     state.page = active;
     window.NTE_BEFORE_LOGIN_REDIRECT = persistAxisDraft;

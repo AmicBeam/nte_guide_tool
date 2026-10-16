@@ -119,11 +119,11 @@ python scripts/refresh_guide_data.py --transport curl
 
 ## 角色相关轴与配装收益
 
-角色详情在技能前提供并排的养成计算器与排轴配装工具卡片，材料章节保留轻量养成入口。“排轴与配装”进入独立的 `/guide/characters/<角色ID>/builds` 页面；角色ID在URL中固定，公开轴、我的轴、收藏和队友筛选始终包含该角色。匿名用户可以浏览包含该角色的公开轴，按一位队友筛选、按最新／DPS／点赞／收藏排序和加载更多；登录后可切换自己的轴或收藏。卡片显示队伍、觉醒数、保存版本、备注、轴长与保存时的DPS，可原地预览操作顺序，再用该轴比较配装。无匹配结果、读取失败和未登录个人范围均有独立提示。
+角色详情在技能前提供并排的养成计算器与排轴配装工具卡片，材料章节保留轻量养成入口。“排轴与配装”进入独立的 `/guide/characters/<角色ID>/builds` 页面；角色ID在URL中固定，公开轴、我的轴、收藏和队友筛选始终包含该角色。匿名用户可以浏览包含该角色的公开轴，按一位队友筛选、按最新／DPS／点赞／收藏排序和加载更多；登录后可切换自己的轴或收藏。卡片显示队伍、觉醒数、保存版本、备注、轴长与保存时的DPS，可原地打开排轴模拟器的原生时间轴预览，再用该轴比较配装。无匹配结果、读取失败和未登录个人范围均有独立提示。
 
 `static/related_axes.js` 只通过 `/api/shaft/catalog`、`/api/shaft/market`、`/api/shaft/me/axes`、`/api/shaft/me/favorites` 和既有轴详情接口组合展示；不导入排轴领域服务，不运行伤害公式。角色按目录真实名称匹配，两个零条目1046／1051明确对应排轴的主角；不按属性或列表位置猜测。权限仍由排轴接口校验。
 
-“配装收益对比”进入 `/shaft/compare?character=<排轴角色ID>&axis=<轴ID>&guide_character=<攻略角色ID>&locked=1`。参考轴筛选与试算目标锁定该角色，不能切到不含该角色的轴；候选精炼、卡带与主词条比较由排轴模块持有，参见其README；此页不保存玩家练度、修改原轴或写入浏览器排轴草稿。问答尚未接入。
+页面不提供独立的配装收益按钮；找到轴后，通过轴卡片或其预览中的“用此轴比较配装”进入 `/shaft/axes/<轴ID>/compare?character=<排轴角色ID>&guide_character=<攻略角色ID>&locked=1`。比较固定该轴与当前角色，不提供另选轴、浏览器草稿或示例轴入口；候选精炼、卡带与主词条比较由排轴模块持有，参见其README；此页不保存玩家练度、修改原轴或写入浏览器排轴草稿。问答尚未接入。
 
 验证：`.venv/bin/python -m unittest tests.test_guide tests.test_guide_builds tests.test_module_routes tests.test_shaft_comparison -v`。浏览器检查有轴／空结果角色、队友筛选、个人范围、原地预览及带轴跳转试算；两个零条目的映射均须核对。
 
@@ -187,3 +187,5 @@ python scripts/refresh_guide_data.py --transport curl
 验证：`.venv/bin/python -m unittest tests.test_guide_rich_text tests.test_guide -v`；浏览器检查属性色、长词条提示、键盘与触屏操作、视口边缘及技能等级切换。
 
 角色详情的技能等级默认10级；上限低于10级时取其最高等级。服务端初始倍率、命中明细与等级标记保持一致，后续拖动仍按实际等级数组更新。
+
+相关轴预览通过同源嵌入 `/shaft/rotation?preview=<轴ID>&embedded=1` 复用排轴原生轨道、时间刻度、滚轮缩放、显示全部、DPS／轴长和伤害占比。嵌入模式只加载目录与有权访问的轴，不初始化编辑器、不读取或写入排轴草稿，不显示保存按钮；关闭预览会卸载嵌入页。原有公开／私有轴权限继续由排轴接口校验。

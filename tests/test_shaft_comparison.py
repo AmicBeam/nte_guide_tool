@@ -19,9 +19,14 @@ class ShaftComparisonTest(unittest.TestCase):
         app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
         app.register_blueprint(blueprint)
         client = app.test_client()
-        response = client.get('/shaft/compare?axis=1')
+        self.assertEqual(client.get('/shaft/compare?axis=1').status_code, 404)
+        self.assertEqual(client.get('/shaft/axes/1/compare').status_code, 404)
+        response = client.get('/shaft/axes/1/compare?character=example&guide_character=1042&locked=1')
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('window.location.replace', response.text)
+        self.assertIn('data-axis-id="1"', response.text)
+        self.assertNotIn('compare-draft', response.text)
+        self.assertNotIn('compare-axis"', response.text)
         for asset in ['js/shaft_compare_page.js', 'js/shaft_comparison.js',
                       'js/shaft_comparison_worker.js', 'css/shaft-compare.css']:
             with client.get('/static/shaft/' + asset) as response:
@@ -114,8 +119,13 @@ class ShaftRelatedAxisTest(RoomFlowTestCase):
         with patch.dict(self.app.config, {'SHAFT_LOGIN_REQUIRED': True}):
             private_page = self.client.get(f'/shaft/rotation?preview={private.id}').text
             public_page = self.client.get(f'/shaft/rotation?preview={public.id}').text
+        self.assertEqual(self.client.get('/shaft/compare').status_code, 404)
         self.assertIn('window.location.replace', private_page)
         self.assertNotIn('window.location.replace', public_page)
+        embedded = self.client.get(f'/shaft/rotation?preview={public.id}&embedded=1').text
+        self.assertIn('data-preview-only="true"', embedded)
+        self.assertIn('shaft-preview-embedded.css', embedded)
+        self.assertNotIn('href="/shaft/compare"', embedded)
         self.assertEqual(self.client.get(f'/api/shaft/axes/{private.id}').status_code, 400)
         self.assertEqual(self.client.get(f'/api/shaft/axes/{public.id}').status_code, 200)
 

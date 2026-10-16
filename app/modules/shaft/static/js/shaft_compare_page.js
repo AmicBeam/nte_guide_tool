@@ -3,13 +3,13 @@
   const $ = id => document.getElementById(id);
   const page = document.querySelector('.compare-page');
   const params = new URLSearchParams(location.search);
-  const lockedCharacter = params.get('locked') === '1' ? params.get('character') || '' : '';
+  const lockedCharacter = params.get('character') || '';
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
   const format = value => num(value).toLocaleString('zh-CN', {maximumFractionDigits: 0});
   const clone = value => JSON.parse(JSON.stringify(value));
   const token = () => { try { return localStorage.getItem('nte_token') || ''; } catch { return ''; } };
-  const state = {catalog: null, axis: null, source: null, worker: null, timer: null, rows: [], baseline: null, baselineOptions: null, listPage: 1, listRequest: 0, axisRequest: 0};
+  const state = {catalog: null, axis: null, source: null, worker: null, timer: null, rows: [], baseline: null, baselineOptions: null, axisRequest: 0};
 
   async function request(url) {
     const response = await fetch(url, {headers: token() ? {Authorization: `Bearer ${token()}`} : {}, cache: 'no-store'});
@@ -85,38 +85,16 @@
     if (lockedCharacter && !source.axis.team.some(member => member.character_id === lockedCharacter)) throw new Error('这条轴没有当前角色，请选择包含该角色的排轴。');
     if (source.axis.team.some(member => !known.has(member.character_id) || known.get(member.character_id).selection_disabled)) throw new Error('这条轴包含当前账号不可用的角色，请选择其他排轴。');
     clearResults(); state.axis = clone(source.axis); state.source = source;
-    $('compare-load').disabled = false;
     renderAxis();
   }
   async function loadAxis(id) {
     const requestId = ++state.axisRequest;
-    $('compare-load').disabled = true;
     $('compare-source-status').textContent = '正在读取参考轴…';
     try {
       const source = await request(`/api/shaft/axes/${encodeURIComponent(id)}`);
       if (requestId !== state.axisRequest) return;
       useAxis(source);
     } catch (error) { if (requestId === state.axisRequest) $('compare-source-status').textContent = error.message; }
-    finally { if (requestId === state.axisRequest) $('compare-load').disabled = false; }
-  }
-  async function listAxes(more = false) {
-    const id = ++state.listRequest;
-    const scope = $('compare-scope').value;
-    if (scope !== 'public' && !token()) { $('compare-source-status').textContent = '登录后可读取自己的排轴和收藏。'; $('compare-axis').replaceChildren(new Option('请先登录', '')); $('compare-more').hidden = true; $('compare-refresh').disabled = false; return; }
-    const query = new URLSearchParams({sort:'new', page_size:'30', page:String(more ? state.listPage + 1 : 1)});
-    if (lockedCharacter || $('compare-filter-character').value) query.set('character_id', lockedCharacter || $('compare-filter-character').value);
-    const route = scope === 'public' ? '/api/shaft/market' : `/api/shaft/me/${scope === 'mine' ? 'axes' : 'favorites'}`;
-    $('compare-refresh').disabled = true; $('compare-more').disabled = true;
-    try {
-      const payload = await request(`${route}?${query}`);
-      if (id !== state.listRequest) return;
-      if (!more) $('compare-axis').replaceChildren(new Option('请选择参考轴', ''));
-      for (const item of payload.items || []) $('compare-axis').add(new Option(`${item.title} · ${item.owner?.nickname || '作者'} · ${format(item.dps)} DPS`, item.id));
-      state.listPage = more ? state.listPage + 1 : 1;
-      $('compare-more').hidden = scope !== 'public' || !payload.has_more;
-      if (!state.axis) $('compare-source-status').textContent = payload.items?.length ? '选择一条轴并载入，也可以使用浏览器当前轴。' : '没有找到相关排轴。可以用浏览器当前轴，或用示例轴体验比较。';
-    } catch (error) { if (id === state.listRequest) $('compare-source-status').textContent = error.message; }
-    finally { if (id === state.listRequest) { $('compare-refresh').disabled = false; $('compare-more').disabled = false; } }
   }
   function label(kind, id) {
     return state.catalog[kind].find(item => item.id === id)?.name || (kind === 'arcs' ? '不装备弧盘' : '不装备卡带');
@@ -161,7 +139,6 @@
     const link = document.createElement('a'); link.href = url; link.download = '配装收益对比.csv'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   async function init() {
-    $('compare-example').disabled = true; $('compare-draft').disabled = true;
     $('compare-login').href = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
     $('compare-login').textContent = token() ? '账号 / 登录' : '登录';
     if (/^\d+$/.test(params.get('guide_character') || '')) {
@@ -169,10 +146,6 @@
       back.href = `/guide/characters/${params.get('guide_character')}/builds`;
       back.textContent = '← 角色排轴与配装';
     }
-    $('compare-refresh').onclick = () => listAxes();
-    $('compare-more').onclick = () => listAxes(true);
-    $('compare-filter-character').onchange = () => listAxes(); $('compare-scope').onchange = () => listAxes();
-    $('compare-load').onclick = () => { if ($('compare-axis').value) loadAxis($('compare-axis').value); else $('compare-source-status').textContent = '请先选择参考轴。'; };
     $('compare-form').onsubmit = run;
     $('compare-form').onchange = event => { if (event.target.id === 'compare-target') setupOptions(); else { clearResults(); count(); } };
     $('compare-form').onclick = event => {
@@ -182,24 +155,11 @@
     };
     $('compare-cancel').onclick = () => { stop('已取消计算，参考轴保持原样。'); state.rows = []; };
     $('compare-download').onclick = download;
-    $('compare-draft').onclick = () => {
-      try { const draft = JSON.parse(localStorage.getItem('shaft_axis_draft_v1') || 'null'); ++state.axisRequest; if (!draft?.axis) throw new Error('浏览器中还没有保存的轴草稿。'); useAxis({axis:draft.axis,title:draft.title || '浏览器当前轴'}); }
-      catch (error) { $('compare-source-status').textContent = error instanceof SyntaxError ? '当前草稿无法读取，请在排轴页重新保存后重试。' : error.message; }
-    };
-    $('compare-example').onclick = () => { try { ++state.axisRequest; useAxis({axis:state.catalog.starter_axis,title:'示例轴（体验用，请检查自检提示）'}); } catch(error) { $('compare-source-status').textContent = error.message; } };
     try {
       state.catalog = await request('/api/shaft/catalog');
-      if (params.get('locked') === '1' && (!lockedCharacter || !state.catalog.characters.some(item => item.id === lockedCharacter && !item.selection_disabled))) throw new Error('当前角色尚不可用于配装试算，请返回角色页查看相关排轴。');
-      $('compare-example').disabled = false; $('compare-draft').disabled = false;
-      for (const character of state.catalog.characters.filter(item => !item.selection_disabled)) $('compare-filter-character').add(new Option(character.name, character.id));
-      if (state.catalog.characters.some(item => item.id === params.get('character') && !item.selection_disabled)) $('compare-filter-character').value = params.get('character');
-      $('compare-filter-character').disabled = Boolean(lockedCharacter);
-      if (lockedCharacter && !state.catalog.starter_axis.team.some(member => member.character_id === lockedCharacter)) {
-        $('compare-example').disabled = true;
-        $('compare-example').title = '示例队伍未包含当前角色，请选择实际排轴。';
-      }
-      await listAxes();
-      if (/^\d+$/.test(params.get('axis') || '')) await loadAxis(params.get('axis'));
+      if (!lockedCharacter || !state.catalog.characters.some(item => item.id === lockedCharacter && !item.selection_disabled)) throw new Error('当前角色尚不可用于配装试算，请返回角色页查看相关排轴。');
+      if (!/^\d+$/.test(page.dataset.axisId || '')) throw new Error('请从角色排轴与配装页面选择实际排轴。');
+      await loadAxis(page.dataset.axisId);
     } catch (error) { $('compare-source-status').textContent = error.message; }
   }
   window.addEventListener('pagehide', () => stop());

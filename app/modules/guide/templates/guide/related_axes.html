@@ -1,10 +1,10 @@
 <section class="guide-detail-section guide-related" id="section-related-axes" data-guide-character-id="{{ record.id }}" data-guide-character-name="{{ record.name }}" aria-labelledby="related-heading">
-  <div class="guide-related-heading"><div><p class="guide-eyebrow">ROTATIONS & BUILDS</p><h2 id="related-heading">相关排轴与配装收益</h2></div><a class="guide-related-action" id="related-compare" aria-disabled="true">配装收益对比 ↗</a></div>
+  <div class="guide-related-heading"><div><p class="guide-eyebrow">ROTATIONS & BUILDS</p><h2 id="related-heading">相关排轴与配装收益</h2></div></div>
   <p class="guide-muted">查看包含该角色的队伍与操作轴，或选择一条轴，比较弧盘、卡带和主词条的实际收益。</p>
   <div class="guide-related-filters"><label>范围<select id="related-scope"><option value="public">公开排轴</option><option value="mine">我的排轴</option><option value="favorites">收藏排轴</option></select></label><label>再选一位队友<select id="related-teammate"><option value="">不限队友</option></select></label><label>排序<select id="related-sort"><option value="new">最新</option><option value="dps">DPS</option><option value="likes">点赞</option><option value="favorites">收藏</option></select></label><button type="button" id="related-refresh">刷新</button></div>
   <p id="related-status" class="guide-muted" role="status" aria-live="polite">正在读取相关排轴…</p>
   <div id="related-list" class="guide-related-list" aria-busy="true"></div>
   <button type="button" id="related-more" hidden>加载更多</button>
-  <noscript><p>在线排轴需要 JavaScript。<a href="/shaft/compare">前往配装收益对比</a></p></noscript>
-  <dialog id="related-preview" aria-labelledby="related-preview-title"><div class="guide-related-dialog-heading"><h2 id="related-preview-title">排轴预览</h2><form method="dialog"><button type="submit" aria-label="关闭排轴预览">关闭</button></form></div><div id="related-preview-body"></div><p><a id="related-preview-compare" class="guide-related-action">用此轴比较配装 ↗</a></p></dialog>
+  <noscript><p>请开启 JavaScript 查看相关排轴并选择用于比较配装的轴。</p></noscript>
+  <dialog id="related-preview" aria-labelledby="related-preview-title"><div class="guide-related-dialog-heading"><h2 id="related-preview-title">排轴预览</h2><form method="dialog"><button type="submit" aria-label="关闭排轴预览">关闭</button></form></div><iframe id="related-preview-frame" title="排轴模拟器原生只读预览" src="about:blank"></iframe><p><a id="related-preview-compare" class="guide-related-action">用此轴比较配装 ↗</a></p></dialog>
 </section>

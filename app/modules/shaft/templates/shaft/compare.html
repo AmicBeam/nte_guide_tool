@@ -5,14 +5,12 @@
 <script src="{{ url_for('shaft_module.static', filename='js/shaft_compare_page.js', v=compare_asset_version) }}" defer></script>
 {% endblock %}
 {% block body %}
-<main class="compare-page" data-worker-url="{{ url_for('shaft_module.static', filename='js/shaft_comparison_worker.js', v=compare_asset_version) }}">
-  <nav class="compare-nav"><a href="/guide">← 攻略数据库</a><a href="/shaft/plaza">排轴广场 ↗</a><a id="compare-login" href="/login?next=%2Fshaft%2Fcompare">登录</a></nav>
-  <header><p class="compare-eyebrow">BUILD LAB</p><h1>配装收益对比</h1><p>选一条实际操作轴，比较弧盘、卡带与主词条的组合。</p></header>
+<main class="compare-page" data-axis-id="{{ axis_id }}" data-worker-url="{{ url_for('shaft_module.static', filename='js/shaft_comparison_worker.js', v=compare_asset_version) }}">
+  <nav class="compare-nav"><a href="/guide">← 攻略数据库</a><a href="/shaft/plaza">排轴广场 ↗</a><a id="compare-login" href="/login">登录</a></nav>
+  <header><p class="compare-eyebrow">BUILD LAB</p><h1>配装收益对比</h1><p>沿用已选轴，比较弧盘、卡带与主词条的组合。</p></header>
   <section class="compare-card" aria-labelledby="source-heading">
-    <h2 id="source-heading">01 · 选择参考轴</h2>
-    <div class="compare-controls"><label>角色筛选<select id="compare-filter-character"><option value="">全部角色</option></select></label><label>排轴范围<select id="compare-scope"><option value="public">公开排轴</option><option value="mine">我的排轴</option><option value="favorites">收藏排轴</option></select></label><button type="button" id="compare-refresh">刷新列表</button></div>
-    <div class="compare-controls"><label class="compare-grow">参考排轴<select id="compare-axis"><option value="">正在读取…</option></select></label><button type="button" id="compare-load">载入参考轴</button><button type="button" id="compare-more" hidden>更多排轴</button></div>
-    <div class="compare-controls"><button type="button" id="compare-draft">用浏览器当前轴</button><button type="button" id="compare-example">用示例轴试用</button><a id="compare-source-link" hidden target="_blank" rel="noopener">在排轴页预览 ↗</a></div>
+    <h2 id="source-heading">01 · 已选参考轴</h2>
+    <p><a id="compare-source-link" hidden target="_blank" rel="noopener">在排轴页原生预览 ↗</a></p>
     <p id="compare-source-status" role="status" aria-live="polite">正在读取排轴目录…</p>
     <div id="compare-axis-info" hidden></div>
   </section>

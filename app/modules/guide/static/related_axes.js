@@ -16,8 +16,7 @@
   }
   function compareUrl(axisId) {
     const query = new URLSearchParams({character:character.id, guide_character:section.dataset.guideCharacterId, locked:'1'});
-    if (axisId) query.set('axis', axisId);
-    return `/shaft/compare?${query}`;
+    return `/shaft/axes/${axisId}/compare?${query}`;
   }
   function teamHtml(team) {
     return `<div class="guide-axis-team">${(team || []).map(member => `<span>${member.character_avatar ? `<img src="${esc(member.character_avatar)}" alt="" loading="lazy">` : ''}${esc(member.character_name)}<small>${esc(member.awakening_nodes?.length ?? member.awakening ?? 0)}觉</small></span>`).join('')}</div>`;
@@ -50,7 +49,7 @@
       items = more ? [...new Map([...items,...incoming].map(item => [item.id,item])).values()] : incoming;
       currentPage = more ? currentPage + 1 : 1;
       render();
-      $('related-status').textContent = items.length ? `已显示 ${items.length} 条相关排轴；数值为保存时结果，比较配装时会重新计算。` : '暂未找到符合条件的排轴。可调整队友或范围，也可以前往收益对比使用浏览器当前轴。';
+      $('related-status').textContent = items.length ? `已显示 ${items.length} 条相关排轴；数值为保存时结果，比较配装时会重新计算。` : '暂未找到符合条件的排轴，请调整队友或范围。找到轴后可使用该轴比较配装。';
       $('related-more').hidden = scope !== 'public' || !payload.has_more;
     } catch(error) { if (id === requestId) { $('related-list').replaceChildren(); $('related-status').textContent = error.message; } }
     finally { if (id === requestId) { $('related-refresh').disabled = false; $('related-list').setAttribute('aria-busy','false'); } }
@@ -58,15 +57,13 @@
   async function preview(axisId) {
     const id = ++previewRequest;
     const dialog = $('related-preview');
-    $('related-preview-title').textContent = '正在读取排轴…'; $('related-preview-body').replaceChildren(); $('related-preview-compare').hidden = true;
+    $('related-preview-title').textContent = '正在读取排轴…'; $('related-preview-frame').src = 'about:blank'; $('related-preview-compare').hidden = true;
     if (!dialog.open) dialog.showModal();
     try {
       const payload = await request(`/api/shaft/axes/${axisId}`);
       if (id !== previewRequest || !dialog.open) return;
       $('related-preview-title').textContent = payload.title;
-      const axis = payload.axis;
-      const actions = new Map(catalog.actions.map(action => [action.id,action]));
-      $('related-preview-body').innerHTML = `${teamHtml(payload.team)}<p class="guide-muted">${esc(payload.description || '暂无备注')}</p><p class="guide-muted">原轴 ${Number(payload.duration_seconds || 0).toFixed(1)} 秒 · ${format(payload.dps)} DPS。下列为轴内编辑位置，零秒时停的展示位置不计入真实轴长。</p><ol class="guide-axis-sequence">${[...(axis.steps || [])].sort((a,b) => Number(a.start_tick) - Number(b.start_tick)).map(step => `<li>${(Number(step.start_tick || 0)/10).toFixed(1)}s · ${esc(payload.team.find(member => Number(member.slot) === Number(step.slot))?.character_name)} · ${esc(actions.get(step.action_id)?.name || step.action_name || step.action_id)}${step.placement === 'background' ? '（后台）' : ''}</li>`).join('')}</ol>`;
+      $('related-preview-frame').src = `/shaft/rotation?preview=${axisId}&embedded=1`;
       $('related-preview-compare').href = compareUrl(axisId); $('related-preview-compare').hidden = false;
     } catch(error) { if (id === previewRequest) $('related-preview-title').textContent = error.message; }
   }
@@ -74,15 +71,16 @@
     $('related-refresh').onclick = () => load(); $('related-more').onclick = () => load(true);
     for (const id of ['related-scope','related-teammate','related-sort']) $(id).onchange = () => load();
     $('related-list').onclick = event => { const button = event.target.closest('[data-axis-preview]'); if (button) preview(Number(button.dataset.axisPreview)); };
-    $('related-preview').addEventListener('close', () => { ++previewRequest; });
+    $('related-preview').addEventListener('close', () => { ++previewRequest; $('related-preview-frame').src = 'about:blank'; });
+    window.addEventListener('message', event => {
+      if (event.origin === location.origin && event.source === $('related-preview-frame').contentWindow && event.data?.type === 'shaft-preview-close') $('related-preview').close();
+    });
     try {
       catalog = await request('/api/shaft/catalog');
       // Both protagonist entries use the same existing shaft character.
       const name = ['1046','1051'].includes(section.dataset.guideCharacterId) ? '主角' : section.dataset.guideCharacterName;
       character = catalog.characters.find(item => item.name === name);
       if (!character) { $('related-status').textContent = '排轴模块暂未接入该角色。'; $('related-list').setAttribute('aria-busy','false'); return; }
-      $('related-compare').href = compareUrl();
-      $('related-compare').removeAttribute('aria-disabled');
       for (const teammate of catalog.characters.filter(item => item.id !== character.id && !item.selection_disabled)) $('related-teammate').add(new Option(teammate.name,teammate.id));
       await load();
     } catch(error) { $('related-status').textContent = error.message; $('related-list').setAttribute('aria-busy','false'); }

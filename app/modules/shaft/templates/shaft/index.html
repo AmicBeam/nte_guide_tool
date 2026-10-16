@@ -1,8 +1,9 @@
 {% extends 'common/base.html' %}
 {% block title %}异环云配队——排轴计算{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ url_for('shaft_module.static', filename='css/shaft-page.css', v=shaft_asset_version('css/shaft-page.css')) }}">{% endblock %}
+{% block head %}{% if request.args.get('embedded') == '1' and request.args.get('preview', '').isdigit() %}<link rel="stylesheet" href="{{ url_for('shaft_module.static', filename='css/shaft-preview-embedded.css') }}">{% endif %}<link rel="stylesheet" href="{{ url_for('shaft_module.static', filename='css/shaft-page.css', v=shaft_asset_version('css/shaft-page.css')) }}">{% endblock %}
 {% block body %}
-<main class="shaft-page" data-active-page="{{ active_shaft_page }}">
+<main class="shaft-page" data-active-page="{{ active_shaft_page }}" data-preview-only="{{ 'true' if request.args.get('embedded') == '1' and request.args.get('preview', '').isdigit() else 'false' }}">
+    {% if request.args.get('embedded') == '1' %}<p id="shaft-embedded-preview-status" role="status">正在读取原生排轴预览…</p>{% endif %}
     <section class="glass-card panel-header shaft-header">
         <div>
             <p class="eyebrow">Shaft Lab</p>
@@ -12,7 +13,6 @@
             <a class="shaft-page-tab" data-shaft-page-link="build" href="{{ url_for('main.shaft_page', page='build') }}">配装</a>
             <a class="shaft-page-tab" data-shaft-page-link="rotation" href="{{ url_for('main.shaft_page', page='rotation') }}">排轴</a>
             <a class="shaft-page-tab" data-shaft-page-link="plaza" href="{{ url_for('main.shaft_page', page='plaza') }}">广场</a>
-            <a class="shaft-page-tab" href="/shaft/compare" target="_blank" rel="noopener">收益对比 ↗</a>
         </nav>
         <div class="header-actions">
             <button class="secondary-btn shaft-shortcut-help-btn" id="shaft-build-info-btn" type="button" aria-label="查看配装页说明" aria-haspopup="dialog" title="配装页说明" hidden>?</button>

@@ -57,6 +57,7 @@ HOST_CUDA_SHIMS = r'''
 #define __host__
 #define __shared__
 #define __forceinline__ inline
+#define __noinline__ __attribute__((noinline))
 #define __restrict__
 #define __syncthreads() ((void)0)
 struct uint3 { unsigned int x, y, z; };
@@ -265,7 +266,7 @@ def pack_call_arguments(arguments, layout):
     return packed, np.ascontiguousarray(refs, dtype=np.int32)
 
 
-def _require_native_array_source(image, limits):
+def _require_native_array_source(image, limits, **source_options):
     try:
         from .native_array_codegen import emit_native_array_source, native_array_plan
     except ImportError as exc:
@@ -278,7 +279,7 @@ def _require_native_array_source(image, limits):
     plan.verify()
     if plan.interpreter_fallback:
         raise NativeArrayCapabilityError('Interpreter fallback is rejected')
-    source = emit_native_array_source(image, limits)
+    source = emit_native_array_source(image, limits, **source_options)
     if not isinstance(source, str) or 'native_dispatch_pc' not in source:
         raise NativeArrayCapabilityError('Native array source must be statically compiled')
     if 'c->instructions+pc*4' in source:

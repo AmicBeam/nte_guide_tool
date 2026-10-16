@@ -17,6 +17,28 @@ SOA_NAMES = ('soa_i64', 'soa_f64', 'soa_i32', 'soa_u8', 'soa_views',
              'soa_constant_adopt', 'soa_arguments', 'soa_output_roots', 'soa_active')
 
 
+def separate_soa_calls(source):
+    """Bound PC shards while retaining inlined opcode/library specialization.
+
+    One shared step specialization handles each opcode. Its arguments remain
+    unchanged; native_handlers and native_opcode can still inline within that
+    specialization. Avoid a deep noinline chain through language libraries.
+    """
+    names=r'native_pc_shard_\d+|native_dispatch_pc|native_step|execute'
+    pattern=re.compile(r'(?m)^(__device__ )inline( void ('+names+r')\()')
+    changed=set()
+    def replace(match):
+        changed.add(match[3])
+        return match[1]+'__noinline__'+match[2]
+    result=pattern.sub(replace,source)
+    required={'native_dispatch_pc','native_step','execute'}
+    if not required<=changed:
+        raise ValueError('Native SoA call boundary changed: '+str(sorted(required-changed)))
+    from .vm_library_boundaries import separate_library_calls_source
+    return separate_library_calls_source(result,functions=(
+        'stdlib_invoke','stdlib_resume','stdlib_call','object_attribute'))
+
+
 def _kernel(source, name):
     start = source.index('extern "C" __global__ void '+name+'(')
     opening = source.index('{', start)
@@ -30,7 +52,8 @@ def _kernel(source, name):
 
 def emit_native_soa_source(image, schema, limits):
     from .vm_soa_views import integrate_soa_source
-    source, plan = _require_native_array_source(image, limits)
+    source, plan = _require_native_array_source(image, limits,
+        direct_stack_dispatch=True, compact_frame_init=True)
     source = integrate_soa_source(source, schema, image=image)
     from .vm_soa_constant_fields import integrate_constant_fields
     source = integrate_constant_fields(source,schema,image)
@@ -69,7 +92,12 @@ def emit_native_soa_source(image, schema, limits):
                             'soa_output_roots[tid]=soa_is_view(&c.h,c.output)?soa_global_ref(&c.h,c.output):0;'
                             'if(c.h.error&&domain.failed_pool>=0)soa_output_roots[tid]=-domain.failed_pool-1;outputs[tid]=c.output;')
     from .native_soa_projection import emit_soa_projection_source
+    # The generic graph entry points do not have a domain context and are
+    # never launched by this backend. Do not compile extra copies of execute.
+    for name in ('vm_execute', 'vm_execute_device'):
+        source = source.replace(_kernel(source, name), '', 1)
     source += '\n'+kernel+'\n'+emit_soa_projection_source(schema)
+    source = separate_soa_calls(source)
     return source, plan
 
 

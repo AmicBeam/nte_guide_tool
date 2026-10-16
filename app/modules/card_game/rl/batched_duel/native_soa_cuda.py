@@ -52,12 +52,15 @@ class CudaSoARules:
     supports_full_duel_rules = False
     gpu_qualified = False
 
-    def __init__(self, image, schema, *, device='cuda', limits=VmLimits(), threads=32):
+    def __init__(self, image, schema, *, device='cuda', limits=VmLimits(), threads=1,
+                 stack_bytes=131072):
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():
             raise RuntimeError('Actual CUDA required; CPU fallback is forbidden')
         if type(threads) is not int or not 1 <= threads <= 1024:
             raise ValueError('Bounded CUDA block size required')
+        if type(stack_bytes) is not int or not 131072 <= stack_bytes <= 1024**2:
+            raise ValueError('Native SoA requires a bounded device stack of at least 128 KiB')
         self.torch, self.device = torch, torch.device(device)
         if self.device.index is None:
             self.device = torch.device('cuda', torch.cuda.current_device())
@@ -76,13 +79,28 @@ class CudaSoARules:
             'vm_clock':['int64*'],
             'vm_compact': ['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
                 'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*',
-                'int32*','int32*','int32*','int32','int32','int32','int32','int32']}, device=str(self.device))
-        self.module.ensure_stack()
+                'int32*','int32*','int32*','int32','int32','int32','int32','int32']},
+            device=str(self.device), binary_format='cubin')
+        self.module.ensure_stack(stack_bytes)
         self.constants = {key: torch.tensor(getattr(image, key).copy(), device=self.device)
                           for key in ('nodes', 'edges', 'payload', 'functions', 'classes', 'modules')}
         self.constants['instructions'] = torch.full((1, 4), MISSING, dtype=torch.int32, device=self.device)
         self._buffers = self.constants
+        self._result_paths = {}
+        for path in ((), (0,), (1,0,0), (1,0,1), (1,1,0), (1,1,1)):
+            self.prepare_result_path(path)
         self.closed = False
+
+    def prepare_result_path(self, path):
+        """Upload static packet indices before capture, retaining their lifetime."""
+        if type(path) not in (list,tuple) or len(path)>8 or any(type(i) is not int or not 0<=i<2**31 for i in path):
+            raise ValueError('Bounded static packet path required')
+        key=tuple(path)
+        if key not in self._result_paths:
+            if self.torch.cuda.is_current_stream_capturing():
+                raise RuntimeError('Prepare static SoA result paths before CUDA graph capture')
+            self._result_paths[key]=self.torch.tensor(key or (0,),dtype=self.torch.int32,device=self.device)
+        return self._result_paths[key]
 
     def clock_ns(self):
         """Explicit setup/diagnostic clock boundary, never a captured search step."""
@@ -238,9 +256,7 @@ class CudaSoARules:
     def select_result(self, call, path, *, active=None):
         from dataclasses import replace
         torch, rows = self.torch, call.state.rows
-        if type(path) not in (list,tuple) or len(path)>8 or any(type(i) is not int or i<0 for i in path):
-            raise ValueError('Bounded static packet path required')
-        path_tensor = torch.tensor(path or [0],dtype=torch.int32,device=self.device)
+        path_tensor = self.prepare_result_path(path)
         selected = torch.empty(rows,dtype=torch.int32,device=self.device)
         typed, errors = torch.zeros_like(selected), torch.zeros_like(selected)
         if active is None:

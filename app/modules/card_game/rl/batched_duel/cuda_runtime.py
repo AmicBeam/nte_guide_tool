@@ -3,7 +3,7 @@
 This module provides a generic, pure-CUDA compilation and launch runtime:
 - No CPU fallbacks or fake emulation.
 - Deferred torch import and CUDA initialization (only upon explicit CudaModule construction).
-- In-memory NVRTC compilation to PTX using PyTorch's bundled NVRTC DLL/SO without requiring nvcc.
+- In-memory NVRTC compilation to PTX or device-specific CUBIN using PyTorch's bundled NVRTC, without nvcc.
 - CUDA Driver API module loading and kernel dispatch with explicit 64-bit ctypes signatures.
 - Dedicated module stream lifecycle management with producer stream synchronization and event recording.
 - Strict argument validation (rejects boolean scalars, integer overflows, non-finite floats,
@@ -17,6 +17,7 @@ from functools import wraps
 import hashlib
 import math
 import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
@@ -45,9 +46,11 @@ class CudaCompilationError(CudaError):
     pass
 
 
-def cuda_compilation_profile() -> dict:
+def cuda_compilation_profile(*, default_fast_compile='0') -> dict:
     """Explicit short-test profile; defaults preserve strict FP and driver behavior."""
-    fast = os.environ.get('NTE_CUDA_FAST_COMPILE', '0')
+    if default_fast_compile not in ('0', 'min', 'mid', 'max'):
+        raise ValueError('Bounded default CUDA compilation profile required')
+    fast = os.environ.get('NTE_CUDA_FAST_COMPILE', default_fast_compile)
     if fast not in ('0', 'min', 'mid', 'max'):
         raise ValueError('NTE_CUDA_FAST_COMPILE must be 0/min/mid/max')
     raw = os.environ.get('NTE_CUDA_JIT_OPT_LEVEL')
@@ -70,6 +73,17 @@ def _load_driver_module(drv, module, ptx, jit_level):
         operation = 'cuModuleLoadDataEx'
     if rc != 0:
         raise CudaDriverError(_format_cuda_error(drv, rc, operation))
+
+
+def validate_cubin_profile(binary_format, profile):
+    """NVRTC fast compilation chooses its assembler optimization level."""
+    fast, level = profile['fast_compile'], profile['jit_optimization_level']
+    if binary_format == 'cubin' and fast != '0' and level is not None and (fast, level) != ('max', 0):
+        raise ValueError('CUBIN fast compilation conflicts with an explicit assembler level; '
+                         'unset NTE_CUDA_JIT_OPT_LEVEL or set NTE_CUDA_FAST_COMPILE=0')
+    if binary_format == 'cubin' and fast == 'mid':
+        raise ValueError('CUBIN fast_compile=mid failed frozen/mutable scalar comparison parity; '
+                         'use min, or explicit max with assembler level 0 for diagnostics')
 
 
 class CudaDriverError(CudaError):
@@ -423,10 +437,22 @@ def _setup_nvrtc_signatures(nv: Any) -> None:
     ]
     nv.nvrtcGetPTX.restype = ctypes.c_int
 
+    for name, arguments in (
+        ('nvrtcGetCUBINSize', [ctypes.c_void_p, ctypes.POINTER(ctypes.c_size_t)]),
+        ('nvrtcGetCUBIN', [ctypes.c_void_p, ctypes.c_void_p]),
+    ):
+        if hasattr(nv, name):
+            getattr(nv, name).argtypes = arguments
+            getattr(nv, name).restype = ctypes.c_int
+
     nv.nvrtcDestroyProgram.argtypes = [
         ctypes.POINTER(ctypes.c_void_p),
     ]
     nv.nvrtcDestroyProgram.restype = ctypes.c_int
+
+    if hasattr(nv, 'nvrtcVersion'):
+        nv.nvrtcVersion.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+        nv.nvrtcVersion.restype = ctypes.c_int
 
     if hasattr(nv, "nvrtcGetErrorString"):
         nv.nvrtcGetErrorString.argtypes = [ctypes.c_int]
@@ -437,6 +463,9 @@ def _setup_cuda_driver_signatures(drv: Any) -> None:
     """Set explicit argtypes and restypes for CUDA driver API to prevent 64-bit truncation."""
     drv.cuInit.argtypes = [ctypes.c_uint]
     drv.cuInit.restype = ctypes.c_int
+    if hasattr(drv, 'cuDriverGetVersion'):
+        drv.cuDriverGetVersion.argtypes = [ctypes.POINTER(ctypes.c_int)]
+        drv.cuDriverGetVersion.restype = ctypes.c_int
 
     drv.cuModuleLoadData.argtypes = [
         ctypes.POINTER(ctypes.c_void_p),
@@ -520,11 +549,14 @@ class CudaModule:
         device: str = "cuda:0",
         *,
         extra_compile_options: Optional[Sequence[str]] = None,
+        binary_format: str = 'cubin',
     ) -> None:
         if not isinstance(source, str) or not source.strip():
             raise ValueError("source must be a non-empty string containing CUDA C/C++ code")
         if not isinstance(kernel_specs, Mapping) or not kernel_specs:
             raise ValueError("kernel_specs must be a non-empty mapping of kernel names to specs")
+        if binary_format not in ('ptx', 'cubin'):
+            raise ValueError('Explicit ptx or cubin binary format required')
 
         # Parse kernel specs before doing heavy CUDA operations
         self._kernel_specs: Dict[str, KernelSpec] = {}
@@ -535,7 +567,11 @@ class CudaModule:
 
         self._source = source
         self._source_sha = hashlib.sha256(source.encode("utf-8")).hexdigest()
-        self._compilation_profile = cuda_compilation_profile()
+        default_fast = ('min' if binary_format == 'cubin'
+                        and 'NTE_CUDA_JIT_OPT_LEVEL' not in os.environ else '0')
+        self._compilation_profile = cuda_compilation_profile(default_fast_compile=default_fast)
+        self._compilation_profile['binary_format'] = binary_format
+        validate_cubin_profile(binary_format, self._compilation_profile)
         self._closed = False
         self._module: Optional[ctypes.c_void_p] = None
         self._kernels: Dict[str, ctypes.c_void_p] = {}
@@ -598,8 +634,9 @@ class CudaModule:
             if rc != 0:
                 raise CudaDriverError(_format_cuda_error(self._drv, rc, "cuInit"))
 
-            # Strict NVRTC compiler options: C++17, explicit architecture, no fast-math FMAD relaxation
-            arch_flag = f"--gpu-architecture=compute_{self._gpu_capability[0]}{self._gpu_capability[1]}"
+            # Explicit virtual/PTX or actual/CUBIN architecture; strict FP in both.
+            target = 'sm' if binary_format == 'cubin' else 'compute'
+            arch_flag = f"--gpu-architecture={target}_{self._gpu_capability[0]}{self._gpu_capability[1]}"
             flags = [
                 "--std=c++17",
                 arch_flag,
@@ -607,6 +644,11 @@ class CudaModule:
             ]
             if self._compilation_profile['fast_compile'] != '0':
                 flags.append('--Ofast-compile=' + self._compilation_profile['fast_compile'])
+            level = self._compilation_profile['jit_optimization_level']
+            if binary_format == 'cubin' and level is not None:
+                # CUBIN already contains device machine code; apply the explicit
+                # assembler level while compiling instead of silently ignoring it.
+                flags.append('--ptxas-options=-O'+str(level))
             if extra_compile_options:
                 if any(not isinstance(flag, str) or not flag.startswith('-D')
                        for flag in extra_compile_options):
@@ -614,14 +656,17 @@ class CudaModule:
                 flags.extend(extra_compile_options)
             self._compile_options = tuple(flags)
 
-            # Compile CUDA source code to PTX
-            ptx = self._compile_source_to_ptx(source, flags)
+            binary = self._compiled_binary(source, flags, binary_format)
+            self._compilation_profile['binary_bytes'] = len(binary)
+            self._compilation_profile['binary_sha256'] = hashlib.sha256(binary).hexdigest()
 
             # Load module into CUDA primary context
             mod = ctypes.c_void_p()
             try:
-                _load_driver_module(self._drv, mod, ptx,
-                                    self._compilation_profile['jit_optimization_level'])
+                before = time.perf_counter()
+                _load_driver_module(self._drv, mod, binary,
+                                    None if binary_format == 'cubin' else level)
+                self._compilation_profile['load_seconds'] = time.perf_counter()-before
 
                 self._module = mod
 
@@ -651,8 +696,67 @@ class CudaModule:
             # Dedicated stream owned by this CudaModule
             self._stream = torch.cuda.Stream(device=self._device)
 
+    def _cache_inputs(self, flags):
+        major, minor, driver = ctypes.c_int(), ctypes.c_int(), ctypes.c_int()
+        for rc in (self._nv.nvrtcVersion(ctypes.byref(major), ctypes.byref(minor)),
+                   self._drv.cuDriverGetVersion(ctypes.byref(driver))):
+            if rc:
+                raise CudaError('Cannot determine CUDA binary cache compatibility')
+        return dict(source_sha256=self._source_sha, compile_options=list(flags),
+                    gpu_capability=list(self._gpu_capability),
+                    nvrtc_version=[major.value, minor.value], driver_api_version=driver.value,
+                    kernel_specs={name: [p.normalized for p in spec.params]
+                                  for name, spec in self._kernel_specs.items()})
+
+    def _compiled_binary(self, source, flags, binary_format):
+        """Cache is a compiler optimization; rejected images are never loaded."""
+        cache = identity = None
+        self._compilation_profile['cache_status'] = 'disabled'
+        if binary_format == 'cubin':
+            default = Path(__file__).resolve().parents[5]/'artifacts'/'rl-evals'/'cuda-cache'
+            directory = os.environ.get('NTE_CUDA_BINARY_CACHE_DIR', str(default))
+            if directory:
+                from .cuda_binary_cache import CudaBinaryCache
+                before = time.perf_counter()
+                try:
+                    cache = CudaBinaryCache(directory)
+                    identity = self._cache_inputs(flags)
+                    self._compilation_profile['cache_key'] = cache.key(identity)
+                    self._compilation_profile['cache_directory'] = str(cache.directory)
+                    binary, status = cache.read(identity)
+                    self._compilation_profile['cache_status'] = status
+                except (OSError, AttributeError, CudaError) as error:
+                    self._compilation_profile['cache_status'] = 'unavailable'
+                    self._compilation_profile['cache_error'] = str(error)
+                    cache, binary = None, None
+                self._compilation_profile['cache_read_seconds'] = time.perf_counter()-before
+                if binary is not None:
+                    self._compilation_profile['compile_seconds'] = 0.0
+                    return binary
+        before = time.perf_counter()
+        binary = (self._compile_source_to_cubin(source, flags) if binary_format == 'cubin'
+                  else self._compile_source_to_ptx(source, flags))
+        self._compilation_profile['compile_seconds'] = time.perf_counter()-before
+        if cache is not None:
+            before = time.perf_counter()
+            try:
+                cache.write(identity, binary)
+            except OSError as error:
+                self._compilation_profile['cache_write_error'] = str(error)
+            self._compilation_profile['cache_write_seconds'] = time.perf_counter()-before
+        return binary
+
     def _compile_source_to_ptx(self, source: str, flags: Sequence[str]) -> bytes:
         """Compile source string to PTX bytes with strictly managed NVRTC program lifecycle."""
+        return self._compile_source_to_binary(source, flags, 'ptx')
+
+    def _compile_source_to_cubin(self, source: str, flags: Sequence[str]) -> bytes:
+        """Compile for the actual GPU; avoid a second assembler in driver JIT."""
+        if not all(hasattr(self._nv, name) for name in ('nvrtcGetCUBINSize', 'nvrtcGetCUBIN')):
+            raise CudaCompilationError('Requested CUBIN requires NVRTC CUBIN support; no PTX fallback')
+        return self._compile_source_to_binary(source, flags, 'cubin')
+
+    def _compile_source_to_binary(self, source: str, flags: Sequence[str], binary_format: str) -> bytes:
         prog = ctypes.c_void_p()
         src_bytes = source.encode("utf-8")
         prog_name = b"batched_kernel.cu"
@@ -683,15 +787,19 @@ class CudaModule:
                     f"NVRTC compilation failed (code {compile_rc}) with flags {flags}:\n{log_text}"
                 )
 
+            get_size = self._nv.nvrtcGetCUBINSize if binary_format == 'cubin' else self._nv.nvrtcGetPTXSize
+            get_binary = self._nv.nvrtcGetCUBIN if binary_format == 'cubin' else self._nv.nvrtcGetPTX
             ptx_size = ctypes.c_size_t()
-            rc = self._nv.nvrtcGetPTXSize(prog, ctypes.byref(ptx_size))
+            rc = get_size(prog, ctypes.byref(ptx_size))
             if rc != 0:
-                raise CudaCompilationError(_format_nvrtc_error(self._nv, rc, "nvrtcGetPTXSize"))
+                raise CudaCompilationError(_format_nvrtc_error(self._nv, rc, 'nvrtcGet'+binary_format.upper()+'Size'))
+            if not ptx_size.value:
+                raise CudaCompilationError('NVRTC produced an empty '+binary_format+' image')
 
             ptx_buf = ctypes.create_string_buffer(ptx_size.value)
-            rc = self._nv.nvrtcGetPTX(prog, ptx_buf)
+            rc = get_binary(prog, ptx_buf)
             if rc != 0:
-                raise CudaCompilationError(_format_nvrtc_error(self._nv, rc, "nvrtcGetPTX"))
+                raise CudaCompilationError(_format_nvrtc_error(self._nv, rc, 'nvrtcGet'+binary_format.upper()))
 
             return ptx_buf.raw
 

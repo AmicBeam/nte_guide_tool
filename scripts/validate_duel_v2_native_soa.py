@@ -1,7 +1,8 @@
 """Bounded native SoA software conformance: typed games, mechanisms, Gumbel32.
 
 Default prints a plan. --run writes a new artifacts/rl-evals directory.
-CPU NativeSoACPU only; never CUDA throughput, training, or host rule fallback.
+CPU reference or explicit CUDA queries; never closed-device throughput,
+training, or host rule fallback.
 Formal oracle compares after actual native results and cannot compute them.
 """
 from pathlib import Path
@@ -166,6 +167,10 @@ def main(args):
             backend=NativeSoACUDAQuery
         with backend(image, schema, directory=args.output/'native-code', **config) as executor:
             report['native_source_sha256'] = executor.source_sha256
+            if args.backend=='cuda':
+                report['cuda_compilation_profile']=executor.executor.module.compilation_profile
+                report['cuda_compile_options']=list(executor.executor.module.compile_options)
+                report['rule_threads_per_block']=executor.executor.threads
             (args.output/'source-metadata.json').write_text(json.dumps(dict(
                 program_identity=program.identity, image_identity=image.identity,
                 schema_identity=schema.identity, source_sha256=executor.source_sha256,

@@ -57,7 +57,7 @@ class SoACudaRuleIntegrationTests(unittest.TestCase):
         from app.modules.card_game.rl.information_search import sample_world
         from app.modules.card_game.rl import seven_runtime
         decks={deck['id']:deck for deck in STARTER_DECKS}
-        params=[dict(seed=1016+i,first_side='ab'[i],decks={
+        params=[dict(seed=1016+i,first_side='ab'[i],skip_mulligan=bool(i),decks={
             'a':decks['zhenhong'],'b':decks['lingke']}) for i in range(2)]
         roots=self.rules.initialize_device(params)
         torch.cuda.synchronize()
@@ -73,8 +73,13 @@ class SoACudaRuleIntegrationTests(unittest.TestCase):
             stepped=self.rules.step_device(roots,meta.actors,decision,indices,physical=True)
             sampled=self.rules.sample_world_device(roots,meta.actors,seeds)
         graph.replay();torch.cuda.synchronize()
-        self.assertEqual(meta.actors.cpu().tolist(),[0,1])
-        self.assertEqual(meta.phases.cpu().tolist(),[0,0])
+        actors=['ab'.index(acting_side(state)) for state in expected]
+        from app.modules.card_game.rl.batched_duel.device_rule_results import DeviceRuleResultReader
+        phases=[DeviceRuleResultReader.phase_codes.index(state['phase']) for state in expected]
+        self.assertNotEqual(actors[0],actors[1])
+        self.assertNotEqual(phases[0],phases[1])
+        self.assertEqual(meta.actors.cpu().tolist(),actors)
+        self.assertEqual(meta.phases.cpu().tolist(),phases)
         self.assertEqual(meta.errors.cpu().tolist(),[0,0])
         self.assertEqual(decision.errors.cpu().tolist(),[0,0])
         self.assertEqual(stepped.errors.cpu().tolist(),[0,0])

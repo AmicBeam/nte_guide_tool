@@ -45,7 +45,7 @@ def build_parser():
     p.add_argument('--warmup', type=int, default=2)
     p.add_argument('--repeats', type=int, default=3)
     p.add_argument('--seed', type=int, default=202610161600)
-    p.add_argument('--setup-seconds', type=int, default=300)
+    p.add_argument('--setup-seconds', type=int, default=600)
     p.add_argument('--execution-seconds', type=int, default=900)
     p.add_argument('--proof-seconds', type=int, default=300)
     p.add_argument('--max-actions', type=int, default=800)
@@ -679,6 +679,10 @@ def run(args):
         checkpoint('program')
         executor = CudaSoARules(image, schema, device=str(device),
                                 limits=VmLimits(steps=args.rule_steps))
+        report.update(native_source_sha256=executor.source_sha256,
+                      cuda_compilation_profile=executor.module.compilation_profile,
+                      cuda_compile_options=list(executor.module.compile_options),
+                      rule_threads_per_block=executor.threads)
         inference = DeviceValueOnlyInference(
             models, device=str(device), max_rows=args.rows,
             max_candidate_elements=args.rows * args.max_actions * 1576)

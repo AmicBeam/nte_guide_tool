@@ -1,0 +1,363 @@
+{
+  "classes": [],
+  "codes": [],
+  "compiler_python": "3.10.11",
+  "constants": [
+    {
+      "id": 0,
+      "kind": "literal",
+      "type": "str",
+      "value": "a"
+    },
+    {
+      "id": 1,
+      "kind": "literal",
+      "type": "str",
+      "value": "A"
+    },
+    {
+      "id": 2,
+      "kind": "literal",
+      "type": "str",
+      "value": "B"
+    },
+    {
+      "id": 3,
+      "kind": "literal",
+      "type": "int",
+      "value": 0
+    },
+    {
+      "id": 4,
+      "kind": "literal",
+      "type": "int",
+      "value": 5
+    }
+  ],
+  "entries": {
+    "scalar_compare_values": "func:tests.test_duel_v2_soa_cuda_loading:scalar_compare_values:83:0",
+    "scalar_literal_branch": "func:tests.test_duel_v2_soa_cuda_loading:scalar_literal_branch:87:1"
+  },
+  "format": "duel_rule_bytecode_310_v1",
+  "functions": [
+    {
+      "argcount": 2,
+      "cellvars": [],
+      "closure": [],
+      "constants": [
+        {
+          "kind": "singleton",
+          "name": "None"
+        }
+      ],
+      "defaults": [],
+      "firstlineno": 83,
+      "flags": 67,
+      "freevars": [],
+      "globals": {},
+      "id": "func:tests.test_duel_v2_soa_cuda_loading:scalar_compare_values:83:0",
+      "instructions": [
+        {
+          "arg": 0,
+          "argval": "a",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 1,
+          "argval": "b",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 2,
+          "argval": "==",
+          "op": "COMPARE_OP",
+          "target": null
+        },
+        {
+          "arg": 0,
+          "argval": "a",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 1,
+          "argval": "b",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 3,
+          "argval": "!=",
+          "op": "COMPARE_OP",
+          "target": null
+        },
+        {
+          "arg": 0,
+          "argval": "a",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 0,
+          "argval": "a",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 2,
+          "argval": "==",
+          "op": "COMPARE_OP",
+          "target": null
+        },
+        {
+          "arg": 1,
+          "argval": "b",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 1,
+          "argval": "b",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 2,
+          "argval": "==",
+          "op": "COMPARE_OP",
+          "target": null
+        },
+        {
+          "arg": 0,
+          "argval": "a",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 1,
+          "argval": "b",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 0,
+          "argval": "<",
+          "op": "COMPARE_OP",
+          "target": null
+        },
+        {
+          "arg": 1,
+          "argval": "b",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 0,
+          "argval": "a",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 0,
+          "argval": "<",
+          "op": "COMPARE_OP",
+          "target": null
+        },
+        {
+          "arg": 6,
+          "argval": 6,
+          "op": "BUILD_TUPLE",
+          "target": null
+        },
+        {
+          "arg": null,
+          "argval": null,
+          "op": "RETURN_VALUE",
+          "target": null
+        }
+      ],
+      "kwdefaults": {},
+      "kwonlyargcount": 0,
+      "module": "tests.test_duel_v2_soa_cuda_loading",
+      "name": "scalar_compare_values",
+      "nlocals": 2,
+      "posonlyargcount": 0,
+      "qualname": "scalar_compare_values",
+      "stacksize": 7,
+      "varnames": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "argcount": 1,
+      "cellvars": [],
+      "closure": [],
+      "constants": [
+        {
+          "kind": "singleton",
+          "name": "None"
+        },
+        {
+          "id": 0,
+          "kind": "constant"
+        },
+        {
+          "id": 1,
+          "kind": "constant"
+        },
+        {
+          "id": 2,
+          "kind": "constant"
+        },
+        {
+          "id": 3,
+          "kind": "constant"
+        },
+        {
+          "id": 4,
+          "kind": "constant"
+        }
+      ],
+      "defaults": [],
+      "firstlineno": 87,
+      "flags": 67,
+      "freevars": [],
+      "globals": {},
+      "id": "func:tests.test_duel_v2_soa_cuda_loading:scalar_literal_branch:87:1",
+      "instructions": [
+        {
+          "arg": 0,
+          "argval": "side",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 1,
+          "argval": "a",
+          "op": "LOAD_CONST",
+          "target": null
+        },
+        {
+          "arg": 2,
+          "argval": "==",
+          "op": "COMPARE_OP",
+          "target": null
+        },
+        {
+          "arg": 6,
+          "argval": 12,
+          "op": "POP_JUMP_IF_FALSE",
+          "target": 6
+        },
+        {
+          "arg": 2,
+          "argval": "A",
+          "op": "LOAD_CONST",
+          "target": null
+        },
+        {
+          "arg": 1,
+          "argval": 14,
+          "op": "JUMP_FORWARD",
+          "target": 7
+        },
+        {
+          "arg": 3,
+          "argval": "B",
+          "op": "LOAD_CONST",
+          "target": null
+        },
+        {
+          "arg": 0,
+          "argval": "side",
+          "op": "LOAD_FAST",
+          "target": null
+        },
+        {
+          "arg": 1,
+          "argval": "a",
+          "op": "LOAD_CONST",
+          "target": null
+        },
+        {
+          "arg": 2,
+          "argval": "==",
+          "op": "COMPARE_OP",
+          "target": null
+        },
+        {
+          "arg": 14,
+          "argval": 28,
+          "op": "POP_JUMP_IF_FALSE",
+          "target": 14
+        },
+        {
+          "arg": 4,
+          "argval": 0,
+          "op": "LOAD_CONST",
+          "target": null
+        },
+        {
+          "arg": 2,
+          "argval": 2,
+          "op": "BUILD_TUPLE",
+          "target": null
+        },
+        {
+          "arg": null,
+          "argval": null,
+          "op": "RETURN_VALUE",
+          "target": null
+        },
+        {
+          "arg": 5,
+          "argval": 5,
+          "op": "LOAD_CONST",
+          "target": null
+        },
+        {
+          "arg": 2,
+          "argval": 2,
+          "op": "BUILD_TUPLE",
+          "target": null
+        },
+        {
+          "arg": null,
+          "argval": null,
+          "op": "RETURN_VALUE",
+          "target": null
+        }
+      ],
+      "kwdefaults": {},
+      "kwonlyargcount": 0,
+      "module": "tests.test_duel_v2_soa_cuda_loading",
+      "name": "scalar_literal_branch",
+      "nlocals": 1,
+      "posonlyargcount": 0,
+      "qualname": "scalar_literal_branch",
+      "stacksize": 3,
+      "varnames": [
+        "side"
+      ]
+    }
+  ],
+  "identity": "e5099195e2645e4ef51c16ec19a50c6cd837ef2fcce2aaf8a0156633f48a8b65",
+  "modules": {
+    "tests.test_duel_v2_soa_cuda_loading": {
+      "scalar_compare_values": {
+        "id": "func:tests.test_duel_v2_soa_cuda_loading:scalar_compare_values:83:0",
+        "kind": "function"
+      },
+      "scalar_literal_branch": {
+        "id": "func:tests.test_duel_v2_soa_cuda_loading:scalar_literal_branch:87:1",
+        "kind": "function"
+      }
+    }
+  },
+  "required_intrinsics": [],
+  "source_hashes": {},
+  "unresolved": []
+}

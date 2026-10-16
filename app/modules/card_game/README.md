@@ -1178,6 +1178,8 @@ VM可显式设置 `direct_stack_dispatch=True`，让LOAD_CONST／LOAD_FAST／STO
 
 语言临时对象与标量装箱仍有有界工作区，后续按实机计时优化。`NativeSoACPU` 只作显式软件语义参考；CUDA捕获、性能、自然终局与容量资格须另行实测。早期 `domain_soa_codec.py` 仍仅支持换牌阶段，其他局部组件也不授予完整规则资格；输入生成器的完整局不算SoA规则执行。
 
+SoA 及辅助 CUDA 内核默认以 `min` 档直接编译并加载当前 GPU 的 CUBIN，指令分片、共享操作和大型库入口保留调用边界，基础栈与帧初始化启用已有快路，设备调用栈至少 128 KiB，默认每行一个线程块，采样路径索引在图捕获前准备；编译、驱动加载和规则执行分别计时。不支持的编译格式、冲突优化配置及未通过标量比较的 `mid` 档明确拒绝。加载与捕获契约检查见 `tests.test_duel_v2_soa_cuda_loading`，两路真实设备初始化／推进／采样仍由 `tests.test_duel_v2_device_soa_rules` 单独验收；加载通过不代表搜索性能通过。已核验的 CUBIN 按源码、选项、GPU／编译器及参数契约缓存到 `artifacts/rl-evals/cuda-cache/`，可用 `NTE_CUDA_BINARY_CACHE_DIR` 改目录或设空禁用；回归见 `tests.test_duel_v2_cuda_binary_cache`。
+
 [1016验收协议](../../../docs/duel-v2-soa-1016-acceptance.md)覆盖完整状态与规则对拍、Windows 8路每根32搜索、自然终局与逐级扩容，以及官方Mctx的算法结果和真实规则性能对照。离线数值树工具默认仅计划；显式运行使用可选JAX/Mctx依赖，不自动安装。单轮结果保存在 `artifacts/rl-evals/`。
 
 ```bash

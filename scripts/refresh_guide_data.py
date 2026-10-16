@@ -15,6 +15,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from guide_skill_details import enrich_catalog, load_tables, table_rows
 from guide_cultivation_data import load_cultivation_data
+from guide_challenge_schedule import apply_challenge_schedule
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = 'https://static.nanoka.cc'
@@ -120,6 +121,7 @@ def build(version, fetcher=fetch):
     for kind in ('characters', 'arcs', 'challenges'):
         if not result[kind]:
             raise ValueError(f'Empty collection: {kind}')
+    apply_challenge_schedule(result['challenges'])
     return result
 
 

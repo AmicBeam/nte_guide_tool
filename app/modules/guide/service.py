@@ -83,6 +83,8 @@ def catalog():
         character['element_icon'] = f'/static/images/elements/{character["element_name"]}.png'
         character['assets'] = {key: binding[key] for key in ('avatar', 'portrait', 'fullbody')}
     for arc in data['arcs']:
+        rank = {3: 'B', 4: 'A', 5: 'S'}[arc['rarity']]
+        arc['rarity_icon'] = f'/static/images/rarities/YH_UI_star{rank}.webp'
         arc['image'] = f'/static/images/arcs/{arc["id"]}.webp'
     monsters = json.loads((Path(__file__).parent / 'data/monster_metadata.json').read_text(encoding='utf-8'))
     for challenge in data['challenges']:
@@ -120,7 +122,7 @@ def search(kind=None, query='', element='', rarity=None, arc_type=''):
                 continue
             if rarity is not None and record.get('rarity') != rarity:
                 continue
-            if arc_type and str(record.get('arc_type', {}).get('id', '')) != arc_type:
+            if arc_type and str(record.get('type_id', '') if group == 'arcs' else record.get('arc_type', {}).get('id', '')) != arc_type:
                 continue
             # Full text includes skills, nouns, arc effects and enemy names.
             if query.casefold() not in json.dumps(record, ensure_ascii=False).casefold():
@@ -129,8 +131,8 @@ def search(kind=None, query='', element='', rarity=None, arc_type=''):
     return result
 
 
-def character_index_items():
-    """Provide all cards and compact text for request-free browser filtering."""
+def filter_index_items(kind):
+    """Provide all character or arc cards for request-free browser filtering."""
     def strings(value):
         if isinstance(value, str):
             yield value
@@ -140,9 +142,9 @@ def character_index_items():
         elif isinstance(value, list):
             for child in value:
                 yield from strings(child)
-    return [{**summary('characters', record), 'arc_type_id': record['arc_type']['id'],
+    return [{**summary(kind, record), 'arc_type_id': str(record['type_id'] if kind == 'arcs' else record['arc_type']['id']),
              'filter_text': '\n'.join(dict.fromkeys(strings(record))).casefold()}
-            for record in catalog()['characters']]
+            for record in catalog()[kind]]
 
 
 def detail(kind, identifier, section=None, stage=None):

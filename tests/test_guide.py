@@ -67,6 +67,22 @@ class GuideTest(unittest.TestCase):
         self.assertTrue(any(item['id'] == '1042' for item in
             self.client.get('/api/guide/characters?q=黑羽&arc_type=4').json['items']))
 
+    def test_arc_icon_filters_and_rarity_images(self):
+        html = self.client.get('/guide?kind=arcs&rarity=3&arc_type=1').text
+        self.assertEqual(html.count('data-filter-card '), 51)
+        self.assertIn('aria-label="3星"', html)
+        self.assertIn('data-guide-filter-group', html)
+        self.assertNotIn('class="guide-arc-types"', html)
+        matches = self.client.get('/api/guide/arcs?rarity=3&arc_type=1').json['items']
+        self.assertGreater(len(matches), 0)
+        for arc in matches:
+            self.assertEqual(arc['rarity'], 3)
+            self.assertEqual(arc['type_name'], '固态')
+        for arc in service.catalog()['arcs']:
+            self.assertTrue((ROOT / 'app' / arc['rarity_icon'].removeprefix('/')).is_file())
+            self.assertIn(arc['rarity_icon'], self.client.get('/guide/arcs/' + arc['id']).text)
+        self.assertNotRegex(self.client.get('/guide?kind=arcs').text, r'[345]★')
+
     def test_narrow_reads_and_numbers(self):
         full = self.client.get('/api/guide/characters/1042').json['data']
         narrowed = self.client.get('/api/guide/characters/1042?section=abilities').json['data']

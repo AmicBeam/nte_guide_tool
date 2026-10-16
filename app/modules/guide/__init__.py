@@ -57,8 +57,8 @@ def index():
     items = service.search(kind, **filters())
     selected_ids = {item['id'] for item in items}
     result_count = len(items)
-    if kind == 'characters':
-        items = service.character_index_items()
+    if kind in ('characters', 'arcs'):
+        items = service.filter_index_items(kind)
     counts = {key: len(service.catalog()[key]) for key in service.KINDS}
     return render_template('guide/index.html', kind=kind, kinds=service.KINDS, items=items, counts=counts, selected_ids=selected_ids, result_count=result_count,
         arc_types=sorted({c['arc_type']['id']: c['arc_type'] for c in service.catalog()['characters']}.values(),

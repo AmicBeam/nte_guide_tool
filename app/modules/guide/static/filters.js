@@ -1,7 +1,7 @@
 "use strict";
 document.querySelectorAll("[data-guide-filters]").forEach(filters => {
   const form = filters.closest("form");
-  const cards = Array.from(document.querySelectorAll("[data-character-card]"));
+  const cards = Array.from(document.querySelectorAll("[data-filter-card]"));
   const count = document.querySelector("[data-guide-result-count]");
   const empty = document.querySelector("[data-guide-empty]");
   function refresh() {
@@ -15,6 +15,11 @@ document.querySelectorAll("[data-guide-filters]").forEach(filters => {
         (!query || card.dataset.filterText.includes(query));
       card.hidden = !shown;
       if (shown) matches += 1;
+    });
+    document.querySelectorAll("[data-guide-filter-group]").forEach(group => {
+      const visible = group.querySelectorAll('[data-filter-card]:not([hidden])').length;
+      group.hidden = visible === 0;
+      group.querySelector("[data-guide-group-count]").textContent = `${visible} 个弧盘`;
     });
     count.textContent = `${matches} 条结果`;
     empty.hidden = matches > 0;

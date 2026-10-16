@@ -70,7 +70,7 @@ def main():
         temporary = target.with_suffix('.tmp')
         temporary.write_bytes(data)
         temporary.replace(target)
-    for rank in ('A', 'S'):
+    for rank in ('B', 'A', 'S'):
         icon_binding(f'/Game/UI/UI/Gacha/YH_UI_star{rank}', 'rarities')
     with ThreadPoolExecutor(max_workers=6) as executor:
         list(executor.map(download, icons.items()))

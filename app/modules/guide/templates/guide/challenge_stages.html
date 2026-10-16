@@ -10,10 +10,10 @@
     <h4>{{ half.id|guide_label }}</h4><p class="guide-muted">推荐属性：{% for element in half.recommended_elements %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>
     {% for wave in half.waves %}<section class="guide-challenge-wave">
       <h5>第 {{ wave.wave }} 波</h5>
-      <div class="guide-monster-grid">{% for monster in wave.monsters|guide_group_monsters %}<article class="guide-monster-card">
+      <div class="guide-monster-grid">{% for monster in wave.monsters %}<article class="guide-monster-card">
         <div class="guide-monster-overview">
           {% if monster.image %}<img src="{{ monster.image }}" alt="{{ monster.name }}" width="112" height="112" loading="lazy">{% else %}<span class="guide-monster-placeholder">暂无贴图</span>{% endif %}
-          <div><h6>{{ monster.name }}</h6><p>Lv.{{ monster.level }} · × {{ monster.count }}{% if monster.is_boss %} · 首领{% endif %}</p>
+          <div><h6 class="guide-monster-name"><span>{{ monster.name }}</span><small class="guide-monster-id">{{ monster.id }}</small></h6><p>Lv.{{ monster.level }} · × {{ monster.count }}{% if monster.is_boss %} · 首领{% endif %}</p>
           <p class="guide-monster-hp">单体生命：<strong>{{ '{:,.0f}'.format(monster.stats.hp) if monster.stats.hp is number else '未提供' }}</strong></p>
           <p class="guide-monster-weakness">弱点：{% for element in monster.weaknesses %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p></div>
         </div>

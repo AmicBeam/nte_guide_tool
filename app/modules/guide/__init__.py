@@ -192,7 +192,3 @@ register_user_routes(blueprint)
 
 from .challenge_view import stage_selection
 blueprint.add_app_template_filter(stage_selection, 'guide_stage_selection')
-
-
-from .challenge_view import group_monsters
-blueprint.add_app_template_filter(group_monsters, 'guide_group_monsters')

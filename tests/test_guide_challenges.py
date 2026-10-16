@@ -56,8 +56,8 @@ class GuideChallengesTest(unittest.TestCase):
         self.assertNotIn('鬼郎丸：', html)
         full_html = html
         html = html.split('id="stage-12"', 1)[1].split('<article class="guide-challenge-stage"', 1)[0]
-        self.assertEqual(html.count('class="guide-swallow-badge"'), 1)
-        self.assertEqual(html.count('alt="可被鬼郎丸吞噬"'), 1)
+        self.assertEqual(html.count('class="guide-swallow-badge"'), 3)
+        self.assertEqual(html.count('alt="可被鬼郎丸吞噬"'), 3)
         badge = self.client.get('/static/guide/monsters/swallow-badge.webp')
         self.assertEqual(badge.status_code, 200)
         badge.close()
@@ -66,7 +66,7 @@ class GuideChallengesTest(unittest.TestCase):
         parser = DetailsParser()
         parser.feed(html)
         monster_details = [d for d in parser.details if d.get('class') == 'guide-monster-details']
-        self.assertEqual(len(monster_details), 3)
+        self.assertEqual(len(monster_details), 5)
         self.assertTrue(all('open' not in d for d in monster_details))
         all_stages = self.client.get('/guide/challenges/Abyss_12').text
         self.assertLess(all_stages.index('id="stage-12"'), all_stages.index('id="stage-1"'))
@@ -91,29 +91,19 @@ class GuideChallengesTest(unittest.TestCase):
         self.assertIn('rewards', api)
 
 
-    def test_hp_overview_and_identical_configuration_grouping(self):
-        from copy import deepcopy
-        from app.modules.guide.challenge_view import group_monsters
+    def test_hp_overview_and_distinct_configuration_ids(self):
         raw = service.detail('challenges', 'Abyss_12', stage=12)['stages'][0]['halves'][0]['waves'][1]['monsters']
-        original = deepcopy(raw)
-        self.assertEqual([item['id'] for item in raw], ['mon_030_BP', 'mon_030_BP_Snow', 'mon_030_BP_Rain'])
-        grouped = group_monsters(raw)
-        self.assertEqual(len(grouped), 1)
-        self.assertEqual(grouped[0]['count'], 3)
-        self.assertEqual(grouped[0]['stats']['hp'], 630707)
-        self.assertEqual(raw, original)
-        for field, value in [('level', 89), ('swallowable', False), ('attach', {'effect': 'different'})]:
-            variant = deepcopy(raw[0])
-            variant[field] = value
-            self.assertEqual(len(group_monsters([raw[0], variant])), 2, field)
-        variant = deepcopy(raw[0])
-        variant['stats']['hp'] += 1
-        self.assertEqual(len(group_monsters([raw[0], variant])), 2)
+        identifiers = ['mon_030_BP', 'mon_030_BP_Snow', 'mon_030_BP_Rain']
+        self.assertEqual([item['id'] for item in raw], identifiers)
+        self.assertEqual([item['count'] for item in raw], [1, 1, 1])
         html = self.client.get('/guide/challenges/Abyss_12?stage=12').text
         stage = html.split('id="stage-12"', 1)[1].split('<article class="guide-challenge-stage"', 1)[0]
-        monster_card = stage.split('<h6>扫晴娘</h6>', 1)[1].split('</article>', 1)[0]
-        overview = monster_card.split('<details', 1)[0]
-        self.assertIn('× 3', overview)
+        self.assertEqual(stage.count('<span>扫晴娘</span>'), 3)
+        self.assertEqual(stage.count('单体生命：<strong>630,707</strong>'), 3)
+        for identifier in identifiers:
+            self.assertIn(f'<small class="guide-monster-id">{identifier}</small>', stage)
+        overview = stage.split('<span>扫晴娘</span>', 1)[1].split('<details', 1)[0]
+        self.assertIn('× 1', overview)
         self.assertIn('单体生命：<strong>630,707</strong>', overview)
         api = self.client.get('/api/guide/challenges/Abyss_12?stage=12').json['data']
         self.assertEqual(len(api['stages'][0]['halves'][0]['waves'][1]['monsters']), 3)

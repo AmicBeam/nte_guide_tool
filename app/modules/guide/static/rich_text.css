@@ -1,0 +1,5 @@
+.guide-page button.guide-term { display:inline; padding:0; margin:0; border:0; border-radius:0; background:none; color:inherit; font:inherit; line-height:inherit; text-align:inherit; vertical-align:baseline; cursor:help; text-decoration:underline dotted; text-underline-offset:4px; }
+.guide-term-tip { position:fixed; z-index:1000; display:block; box-sizing:border-box; width:360px; max-width:calc(100vw - 32px); max-height:min(420px,calc(100dvh - 32px)); overflow:auto; padding:18px 20px; border:1px solid #8eaccc80; border-radius:12px; background:#13202bf5; box-shadow:0 12px 36px #0009; color:#e7ebef; font-size:15px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; font-style:normal; text-align:left; }
+.guide-term-tip[hidden] { display:none; }
+.guide-term-tip>strong { display:block; margin-bottom:10px; font-size:17px; color:#fff; }
+.guide-term-tip>span { display:block; }

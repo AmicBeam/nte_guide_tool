@@ -9,7 +9,7 @@
 {% endmacro %}
 {% block page_class %}guide-detail-page{% endblock %}
 {% block title %}{{ record.name }} · {{ kinds[kind] }} · NTE Tools{% endblock %}
-{% block head %}{{ super() }}<script src="{{ url_for('guide_module.static', filename='guide.js') }}" defer></script>{% if kind == 'characters' %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='character_tools.css') }}">{% endif %}{% if kind == 'challenges' %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='challenges.css') }}"><script defer src="{{ url_for('guide_module.static', filename='challenge_stages.js') }}"></script>{% endif %}<link rel="alternate" type="text/markdown" href="/guide/{{ kind }}/{{ record.id }}.md">{% endblock %}
+{% block head %}{{ super() }}<script src="{{ url_for('guide_module.static', filename='guide.js') }}" defer></script>{% if kind == 'characters' %}<script src="{{ url_for('guide_module.static', filename='rich_text.js') }}" defer></script><link rel="stylesheet" href="{{ url_for('guide_module.static', filename='rich_text.css') }}"><link rel="stylesheet" href="{{ url_for('guide_module.static', filename='character_tools.css') }}">{% endif %}{% if kind == 'challenges' %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='challenges.css') }}"><script defer src="{{ url_for('guide_module.static', filename='challenge_stages.js') }}"></script>{% endif %}<link rel="alternate" type="text/markdown" href="/guide/{{ kind }}/{{ record.id }}.md">{% endblock %}
 {% block content %}
 <a class="guide-back" href="/guide?kind={{ kind }}">← {{ kinds[kind] }}档案</a>
 {% if kind == 'characters' %}<div class="guide-character-intro">{% endif %}
@@ -29,12 +29,12 @@
 {% if key == 'abilities' %}<div class="guide-toc-skills" aria-label="技能目录">{% for ability in value %}<a href="#skill-{{ loop.index }}">{{ ability|guide_ability_title }}</a>{% endfor %}</div>{% endif %}{% endfor %}
 </nav></aside>
 <div class="guide-detail-body">{% for key, value in sections.items() if kind != 'challenges' or key != 'rewards' %}<section class="guide-detail-section" id="section-{{ key }}"><h2>{{ key|guide_label }}</h2>{% if key == 'abilities' %}
-{% for ability in value %}{{ skill(ability, loop.index) }}{% endfor %}
+{% for ability in value %}{{ skill(ability, loop.index, record.id) }}{% endfor %}
 {% elif key == 'exclusive_character_ids' %}<div class="guide-links">{% for identifier in value %}<a href="/guide/characters/{{ identifier }}">{{ identifier|guide_character_name }} ↗</a>{% endfor %}</div>
 {% elif key == 'stats' %}{{ levels(value, record.name ~ '属性', 'stat-level', 'max') }}
 {% elif kind == 'challenges' and key == 'stages' %}{% include 'guide/challenge_stages.html' %}
 {% elif kind == 'challenges' and key == 'resonance' %}<article class="guide-passive-card guide-challenge-resonance"><h3>{{ value['name'] }}</h3><p class="guide-text">{{ value['description'] }}</p></article>
-{% elif kind == 'characters' and key in ['awaken', 'resonance', 'nouns'] %}<div class="guide-passive-grid">{% for item in value %}<article class="guide-passive-card"><span class="guide-eyebrow">{{ ('共鸣 ' ~ item.resonance_level) if item.resonance_level is defined else ('觉醒 ' ~ loop.index if key == 'awaken' else '机制词条') }}</span><h3>{{ item.name|default(item.title|default('')) }}</h3><p>{{ item.desc }}</p></article>{% endfor %}</div>
+{% elif kind == 'characters' and key in ['awaken', 'resonance', 'nouns'] %}<div class="guide-passive-grid">{% for item in value %}<article class="guide-passive-card"><span class="guide-eyebrow">{{ ('共鸣 ' ~ item.resonance_level) if item.resonance_level is defined else ('觉醒 ' ~ loop.index if key == 'awaken' else '机制词条') }}</span><h3>{{ item.name|default(item.title|default('')) }}</h3><p>{{ item.desc|guide_description_html(record.id) }}</p></article>{% endfor %}</div>
 {% elif key == 'materials' %}<p class="guide-links">{% if kind == 'characters' %}<a class="guide-cultivation-inline" href="/guide/characters/{{ record.id }}/cultivation">打开养成计算器 ↗</a>{% endif %}</p><p class="guide-muted">以下为每次升级的单次消耗，非累计材料。</p>{% if value is mapping %}{{ materials(value.breakthrough, '角色突破') }}{% for skill in value.skills %}{{ materials(skill.levels, skill.name ~ ' · 技能升级') }}{% endfor %}{% else %}{{ materials(value, '弧盘突破') }}{% endif %}
 {% elif key == 'affinity' %}{% include 'guide/affinity.html' %}
 {% elif key == 'experience' %}

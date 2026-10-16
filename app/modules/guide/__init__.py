@@ -4,9 +4,11 @@ from pathlib import Path
 from flask import Blueprint, Response, jsonify, render_template, request, send_file
 from . import service, cultivation, presentation
 from .challenge_calendar import is_current_challenge
+from .rich_text import description_html
 
 blueprint = Blueprint('guide_module', __name__, template_folder='templates',
                       static_folder='static', static_url_path='/static/guide')
+blueprint.add_app_template_filter(description_html, 'guide_description_html')
 blueprint.add_app_template_filter(is_current_challenge, 'guide_current_challenge')
 blueprint.add_app_template_filter(presentation.material_display, 'guide_material_display')
 blueprint.add_app_template_filter(service.label, 'guide_label')

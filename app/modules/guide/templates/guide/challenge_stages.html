@@ -1,6 +1,8 @@
-<nav class="guide-stage-nav" aria-label="关卡跳转">{% for stage in value|sort(attribute='id', reverse=true) %}<a href="#stage-{{ stage.id }}">第 {{ stage.id }} 关</a>{% endfor %}</nav>
-{% for stage in value|sort(attribute='id', reverse=true) %}
-<article class="guide-challenge-stage" id="stage-{{ stage.id }}">
+{% set stage_view = record|guide_stage_selection(request.args.get('stage')) %}
+<div data-challenge-stage-selector>
+<fieldset class="guide-stage-nav"><legend>选择关卡</legend><div class="guide-filter-options">{% for stage in stage_view.stages %}<label class="guide-filter-choice"><input type="radio" name="challenge-stage" value="{{ stage.id }}" aria-label="第 {{ stage.id }} 关" {% if stage.id|string == stage_view.selected %}checked{% endif %}><span>第 {{ stage.id }} 关</span></label>{% endfor %}</div></fieldset>
+{% for stage in stage_view.stages %}
+<article class="guide-challenge-stage" id="stage-{{ stage.id }}" data-challenge-stage="{{ stage.id }}" {% if stage.id|string != stage_view.selected %}hidden{% endif %}>
   <header><p class="guide-eyebrow">第 {{ stage.id }} 关 · 限时 {{ stage.maximum_time|int }} 秒</p><h3>{{ stage.name }}</h3></header>
   <ul class="guide-challenge-objectives">{% for objective in stage.objectives %}<li>{{ objective.text }}</li>{% endfor %}</ul>
   <div class="guide-challenge-halves">
@@ -22,3 +24,5 @@
   </section>{% endfor %}
   </div>
 </article>{% endfor %}
+
+</div>

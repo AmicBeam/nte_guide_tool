@@ -185,3 +185,7 @@ CLI：python nte-guide.py --base-url http://127.0.0.1:5001 get characters 1042 -
 from .user_routes import register as register_user_routes
 register_user_routes(blueprint)
 
+
+
+from .challenge_view import stage_selection
+blueprint.add_app_template_filter(stage_selection, 'guide_stage_selection')

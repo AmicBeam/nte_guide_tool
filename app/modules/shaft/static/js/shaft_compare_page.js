@@ -104,6 +104,17 @@
   }
   function renderRows() {
     state.rows.sort((a,b) => b.total_damage - a.total_damage);
+    const ratios = state.rows.map(row => row.baseline_percent).filter(Number.isFinite);
+    const minimum = Math.min(100, ...ratios);
+    const maximum = Math.max(100, ...ratios);
+    const tone = ratio => {
+      if (!Number.isFinite(ratio)) return '--compare-cell-color:var(--dim);--compare-cell-bg:transparent';
+      const distance = ratio < 100 ? (100 - ratio) / Math.max(100 - minimum, 1e-9) : (ratio - 100) / Math.max(maximum - 100, 1e-9);
+      const weight = Math.max(0, Math.min(1, distance));
+      const edge = ratio < 100 ? [255, 153, 132] : [132, 230, 168];
+      const color = [231, 235, 239].map((value, index) => Math.round(value + (edge[index] - value) * weight));
+      return `--compare-cell-color:rgb(${color.join(',')});--compare-cell-bg:rgba(${edge.join(',')},${(weight * 0.14).toFixed(3)})`;
+    };
     const indexed = state.rows.map((row, index) => ({row, index}));
     const cartridges = [...new Set(state.rows.map(row => row.cartridge_id))];
     const statNames = state.catalog.formula_constants.cartridge_main_stat_options;
@@ -116,8 +127,7 @@
         const entry = cellMap.get(JSON.stringify([arcId, stat]));
         if (!entry) return '<td>—</td>';
         const ratio = entry.row.baseline_percent;
-        const color = ratio > 100 ? 'compare-positive' : ratio != null && ratio < 100 ? 'compare-negative' : '';
-        return `<td><button type="button" class="compare-cell ${color}" data-result-index="${entry.index}" aria-haspopup="dialog" aria-label="${esc(label('arcs', arcId))}，${esc(statNames[stat].label)}，${percent(ratio)}，查看详情">${percent(ratio)}</button></td>`;
+        return `<td><button type="button" class="compare-cell" style="${tone(ratio)}" data-result-index="${entry.index}" aria-haspopup="dialog" aria-label="${esc(label('arcs', arcId))}，${esc(statNames[stat].label)}，${percent(ratio)}，查看详情">${percent(ratio)}</button></td>`;
       }).join('')}</tr>`).join('')}</tbody></table></div></section>`;
     }).join('');
   }
@@ -126,10 +136,11 @@
     const b = state.baseline;
     if (!row || !b) return;
     const dialog = $('compare-detail');
+    const toneStyle = $('compare-matrices').querySelector(`[data-result-index="${index}"]`)?.getAttribute('style') || '';
     $('compare-detail-title').textContent = `${label('arcs', row.arc_id)} · ${row.arc_refinement} 精`;
     const stat = state.catalog.formula_constants.cartridge_main_stat_options[row.main_stat]?.label || row.main_stat;
     const metrics = [['全队总伤','total_damage'],['全队 DPS','dps'],['角色自身伤害','own_damage'],['全队环合伤害','harmony_damage'],['全队倾陷伤害','stagger_damage'],['其他伤害','other_damage']];
-    $('compare-detail-body').innerHTML = `<p>${esc(label('cartridges', row.cartridge_id))} · 主词条 ${esc(stat)}</p><p class="compare-detail-ratio">${percent(row.baseline_percent)}<small>原轴基准为100%</small></p><div class="compare-table-scroll"><table class="compare-detail-table"><thead><tr><th>指标</th><th>原轴</th><th>该组合</th><th>变化</th></tr></thead><tbody>${metrics.map(([name,key]) => `<tr><th scope="row">${name}</th><td>${format(b[key])}</td><td>${format(row[key])}</td><td>${delta(row[key], b[key])}</td></tr>`).join('')}</tbody></table></div><h3>主要动作变化</h3><ul>${row.action_changes.map(item => `<li>${esc(item.name)}：${format(item.damage)}（${delta(item.delta, 0)}）</li>`).join('')}</ul>${row.warnings.length ? `<h3 class="compare-warning">自检提示（${row.warnings.length}）</h3><ul class="compare-warning">${row.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : '<p class="compare-note">本组合未检出动作与资源问题。</p>'}`;
+    $('compare-detail-body').innerHTML = `<p>${esc(label('cartridges', row.cartridge_id))} · 主词条 ${esc(stat)}</p><p class="compare-detail-ratio" style="${esc(toneStyle)}">${percent(row.baseline_percent)}<small>原轴基准为100%</small></p><div class="compare-table-scroll"><table class="compare-detail-table"><thead><tr><th>指标</th><th>原轴</th><th>该组合</th><th>变化</th></tr></thead><tbody>${metrics.map(([name,key]) => `<tr><th scope="row">${name}</th><td>${format(b[key])}</td><td>${format(row[key])}</td><td>${delta(row[key], b[key])}</td></tr>`).join('')}</tbody></table></div><h3>主要动作变化</h3><ul>${row.action_changes.map(item => `<li>${esc(item.name)}：${format(item.damage)}（${delta(item.delta, 0)}）</li>`).join('')}</ul>${row.warnings.length ? `<h3 class="compare-warning">自检提示（${row.warnings.length}）</h3><ul class="compare-warning">${row.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : '<p class="compare-note">本组合未检出动作与资源问题。</p>'}`;
     dialog.showModal();
   }
   function run(event) {

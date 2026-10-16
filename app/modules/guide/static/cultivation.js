@@ -119,39 +119,28 @@ if (cultivationForm) {
     const list = $('account-characters');
     list.replaceChildren();
     $('account-summary').textContent = profile ? `账号 ${profile.role_id} · ${profile.characters.length} 名角色 · 同步于 ${new Date(profile.updated_at).toLocaleString('zh-CN')}` : '';
-    if (!profile) return;
+    if (!profile) { window.guideAccountDetails.close(); return; }
     const catalog = JSON.parse($('account-catalog').textContent);
+    window.guideAccountDetails.close();
     for (const saved of profile.characters) {
       const local = catalog[saved.id];
-      const card = document.createElement('details');
-      card.className = 'account-character';
-      const summary = document.createElement('summary');
+      const card = document.createElement('button');
+      card.type = 'button'; card.className = 'account-character';
+      card.setAttribute('aria-haspopup', 'dialog');
+      card.setAttribute('aria-controls', 'account-detail-dialog');
       if (local?.avatar) {
         const image = document.createElement('img');
         image.src = local.avatar; image.alt = ''; image.loading = 'lazy';
-        summary.append(image);
+        card.append(image);
       }
-      const title = document.createElement('div');
+      const title = document.createElement('span');
       const name = document.createElement('strong');
       name.textContent = local?.name || saved.name || saved.id;
       const level = document.createElement('small');
       level.textContent = `Lv.${saved.level ?? '未提供'} · 觉醒 ${saved.awaken_level ?? '未提供'}`;
-      title.append(name, level); summary.append(title);
-      const body = document.createElement('div'); body.className = 'account-character-body';
-      const text = document.createElement('p');
-      const lines = guideSavedCharacterLines(saved, local?.skills);
-      lines.push(`好感经验：${saved.affinity_experience ?? '未提供'}`);
-      for (const [label, props] of [['角色面板', saved.properties], ['弧盘属性', saved.equipment?.fork?.properties]]) {
-        lines.push(`${label}：${props?.length ? props.map(p => `${p.name || p.id} ${p.value}`).join('、') : '未提供'}`);
-      }
-      text.textContent = lines.join('\n'); body.append(text);
-      if (local) {
-        for (const [label, suffix] of [['角色资料', ''], ['养成计算', '/cultivation']]) {
-          const link = document.createElement('a'); link.textContent = label;
-          link.href = '/guide/characters/' + encodeURIComponent(saved.id) + suffix; body.append(link);
-        }
-      }
-      card.append(summary, body); list.append(card);
+      title.append(name, level); card.append(title);
+      card.addEventListener('click', () => window.guideAccountDetails.open(saved, profile, local));
+      list.append(card);
     }
     if (!profile.characters.length) list.textContent = '此账号暂无已保存角色，请重新同步。';
   };
@@ -162,7 +151,7 @@ if (cultivationForm) {
     if (profiles.some(p => p.role_id === previous)) $('profile-select').value = previous;
     $('personal-controls').hidden = profiles.length === 0;
     if (profiles.length) {
-      status(accountPage ? '选择游戏账号，点击角色可展开练度、技能与装备详情。' : `已保存 ${profiles.length} 个游戏账号。选择账号后，可将当前角色的练度填入下方。`);
+      status(accountPage ? '选择游戏账号，点击角色查看练度、技能与装备详情。' : `已保存 ${profiles.length} 个游戏账号。选择账号后，可将当前角色的练度填入下方。`);
       equipment();
     } else {
       status(accountPage ? '尚未同步游戏数据。点击“同步游戏数据”，短信验证后即可保存和查看。' : '尚未同步游戏数据。可短信验证后保存，也可直接手填计算。');

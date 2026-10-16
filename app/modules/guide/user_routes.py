@@ -36,9 +36,15 @@ def register(blueprint):
     def account_page():
         characters = {item['id']: {
             'name': item['name'], 'avatar': item.get('assets', {}).get('avatar'),
-            'skills': {skill['id']: service.ability_title(skill) for skill in item['abilities']}
+            'portrait': item.get('assets', {}).get('fullbody') or item.get('assets', {}).get('portrait'),
+            'skills': {skill['id']: service.ability_title(skill) for skill in item['abilities']},
+            'skill_details': {skill['id'].casefold(): {
+                'name': service.ability_title(skill), 'icon': skill.get('icon'), 'type': skill.get('type')
+            } for skill in item['abilities']}
         } for item in service.catalog()['characters']}
-        return render_template('guide/account.html', characters=characters,
+        arcs = {item['id']: {'name': item['name'], 'image': item.get('image')}
+                for item in service.catalog()['arcs']}
+        return render_template('guide/account.html', characters=characters, arcs=arcs,
             kinds=service.KINDS, counts={key: len(service.catalog()[key]) for key in service.KINDS})
 
     def body():

@@ -89,9 +89,13 @@ class DeviceGumbelSearch:
             raise NotImplementedError('Unknown device leaf evaluation mode')
         if teacher_mode == 'network_value' and terminal_horizon != 0:
             raise ValueError('network_value requires zero teacher horizon')
+        if teacher_mode != 'network_value' and not getattr(rules, 'require_teacher', True):
+            raise ValueError('Teacher-free rule adapter requires network_value')
         self.teacher_mode = teacher_mode
         if opponent_mode not in ('rule', 'policy'):
             raise ValueError('Unknown device opponent mode')
+        if opponent_mode == 'rule' and not getattr(rules, 'require_teacher', True):
+            raise ValueError('Teacher-free rule adapter requires policy opponents')
         if opponent_mode == 'policy' and not callable(getattr(random, 'categorical', None)):
             raise ValueError('Exact device categorical RNG required for policy opponents')
         self.opponent_mode = opponent_mode

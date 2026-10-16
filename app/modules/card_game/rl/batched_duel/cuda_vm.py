@@ -839,6 +839,13 @@ class CudaVm:
     """CUDA-only IR execution. Capability checks are entry-specific and mandatory."""
     supports_full_duel_rules=False
     rule_threads_per_block=1
+    execution_mode='bytecode_interpreter'
+
+    def _instruction_input(self, image):
+        return image.instructions
+
+    def _emit_execution_source(self, image, limits, **options):
+        return emit_vm_source(image, limits, **options)
     def __init__(self,image,*,device='cuda',limits=VmLimits(),guard_standalone_entities=False,
                  rule_threads_per_block=1,compiled_blocks=None,constant_lookup=False,compact_frame_init=False,device_call_boundaries=False,library_call_boundaries=False,mutable_lookup_cache=False,frozen_class_lookup=False,direct_stack_dispatch=False):
         if not isinstance(image,VmImage):raise TypeError('Numeric VM image required')
@@ -883,7 +890,7 @@ class CudaVm:
         from .cuda_runtime import CudaModule
         self.image=image;self.limits=limits;self.torch=torch;self.device=torch.device(device)
         if self.device.index is None:self.device=torch.device('cuda',torch.cuda.current_device())
-        self._buffers={k:torch.tensor(np.array(getattr(image,k),copy=True),device=self.device) for k in
+        self._buffers={k:torch.tensor(np.array(self._instruction_input(image) if k=='instructions' else getattr(image,k),copy=True),device=self.device) for k in
             ('instructions','functions','nodes','edges','payload','classes','modules')}
         signature=['int32*','int32*','uint8*','int32*','int32*','int32',
             'int32*','int32*','uint8*','int32*','int32*','int32','int32','int32','int32',
@@ -891,7 +898,7 @@ class CudaVm:
         compact_signature=['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
             'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*','int32*','int32*','int32*',
             'int32','int32','int32','int32','int32']
-        self.module=CudaModule(emit_vm_source(image,limits,compiled_blocks=self.compiled_blocks_config,constant_lookup=constant_lookup,compact_frame_init=compact_frame_init,device_call_boundaries=device_call_boundaries,library_call_boundaries=library_call_boundaries,mutable_lookup_cache=mutable_lookup_cache,frozen_class_lookup=frozen_class_lookup,direct_stack_dispatch=direct_stack_dispatch),{
+        self.module=CudaModule(self._emit_execution_source(image,limits,compiled_blocks=self.compiled_blocks_config,constant_lookup=constant_lookup,compact_frame_init=compact_frame_init,device_call_boundaries=device_call_boundaries,library_call_boundaries=library_call_boundaries,mutable_lookup_cache=mutable_lookup_cache,frozen_class_lookup=frozen_class_lookup,direct_stack_dispatch=direct_stack_dispatch),{
             'vm_execute':signature,'vm_execute_device':signature+['uint8*'],
             'vm_clock':['int64*'],'vm_compact':compact_signature,
             'vm_compact_device':compact_signature+['int32','int32','int32','uint8*','int32*'],

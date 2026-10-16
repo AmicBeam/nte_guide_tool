@@ -102,9 +102,13 @@ def source_teacher_horizon():
     return TEACHER_HORIZON
 
 
-def inspect_device_frozen_rule_dependencies(calls, presentation, action_store):
+def inspect_device_frozen_rule_dependencies(calls, presentation, action_store, *, require_teacher=True):
     """Exact missing capabilities for primary integration. Never grants ready."""
+    if type(require_teacher) is not bool:
+        raise TypeError('Explicit teacher dependency selection required')
     gaps = []
+    required_calls = tuple(name for name in REQUIRED_CALL_ENTRIES
+                           if require_teacher or name != 'teacher_continue')
     if not isinstance(calls, DeviceRuleGraphCalls) or getattr(calls, 'closed', True):
         gaps.append('live DeviceRuleGraphCalls (or PhysicalActionRecordingCalls subclass) required')
         return gaps
@@ -143,7 +147,7 @@ def inspect_device_frozen_rule_dependencies(calls, presentation, action_store):
             gaps.append('action arena must share the CUDA device')
     if not callable(getattr(calls, 'prepare_call', None)):
         gaps.append('DeviceRuleGraphCalls.prepare_call missing')
-    missing_allowed = [name for name in REQUIRED_CALL_ENTRIES if name not in ALLOWED_ENTRIES]
+    missing_allowed = [name for name in required_calls if name not in ALLOWED_ENTRIES]
     if missing_allowed:
         gaps.append('DeviceRuleGraphCalls.ALLOWED_ENTRIES missing %s' % ','.join(missing_allowed))
     for name in ('prepare_metadata', 'prepare_decision', 'prepare_value', 'release_decision_device'):
@@ -154,7 +158,10 @@ def inspect_device_frozen_rule_dependencies(calls, presentation, action_store):
     if not isinstance(getattr(presentation, 'reader', None), DeviceRuleResultReader):
         gaps.append('DeviceRulePresentation.reader DeviceRuleResultReader required')
     entries = getattr(getattr(vm, 'image', None), 'entries', {}) or {}
-    for name in REQUIRED_CALL_ENTRIES + REQUIRED_PRESENTATION_ENTRIES + (REQUIRED_TEACHER_ENTRY,):
+    required_entries = required_calls + REQUIRED_PRESENTATION_ENTRIES
+    if require_teacher:
+        required_entries += (REQUIRED_TEACHER_ENTRY,)
+    for name in required_entries:
         if name not in entries:
             gaps.append('missing frozen VM entry %s' % name)
             continue
@@ -167,15 +174,17 @@ def inspect_device_frozen_rule_dependencies(calls, presentation, action_store):
             continue
         if not cap.get('ready'):
             gaps.append('frozen VM entry %s is not ready: %s' % (name, cap.get('missing')))
-    horizon = source_teacher_horizon()
-    if horizon != TEACHER_HORIZON:
+    horizon = source_teacher_horizon() if require_teacher else None
+    if require_teacher and horizon != TEACHER_HORIZON:
         gaps.append('canonical teacher_continue source is not globally configured horizon %s'
                     % TEACHER_HORIZON)
     return gaps
 
 
-def _positive_sites(sites):
+def _positive_sites(sites, *, require_teacher=True):
     """Static quotas; explicit zero leaves an operation unavailable at capture."""
+    if type(require_teacher) is not bool:
+        raise TypeError('Explicit teacher dependency selection required')
     if sites is None:
         chosen = dict(DEFAULT_SITES)
     else:
@@ -189,6 +198,11 @@ def _positive_sites(sites):
     for name, value in chosen.items():
         if type(value) is not int or value < 0:
             raise ValueError('Nonnegative static site quota required for ' + name)
+    if not require_teacher:
+        for key in ('rule_decision', 'teacher_continue'):
+            if sites is not None and sites.get(key, 0) != 0:
+                raise ValueError('Teacher-free rule adapter cannot allocate teacher sites')
+            chosen[key] = 0
     return chosen
 
 
@@ -368,14 +382,15 @@ class DeviceFrozenRules:
     operations = OPERATIONS
     execution_kind = 'device_frozen_rules_composition'
 
-    def __init__(self, calls, presentation, *, action_store, sites=None):
+    def __init__(self, calls, presentation, *, action_store, sites=None, require_teacher=True):
         if not isinstance(calls, DeviceRuleGraphCalls) or calls.closed:
             raise TypeError('Live DeviceRuleGraphCalls (or PhysicalActionRecordingCalls subclass) required')
         if not isinstance(presentation, DeviceRulePresentation) or presentation.closed:
             raise TypeError('Live DeviceRulePresentation required')
         if not isinstance(action_store, CompactDeviceGraphStore) or action_store.closed:
             raise TypeError('Live compact action graph store required')
-        gaps = inspect_device_frozen_rule_dependencies(calls, presentation, action_store)
+        gaps = inspect_device_frozen_rule_dependencies(calls, presentation, action_store,
+                                                      require_teacher=require_teacher)
         if gaps:
             raise FrozenRuleGap('Frozen DeviceFrozenRules gap: ' + '; '.join(gaps))
         t = calls.t
@@ -388,7 +403,9 @@ class DeviceFrozenRules:
         self.t = t
         self.device = calls.device
         self.rows = calls.rows
-        self.sites = _positive_sites(sites)
+        self.sites = _positive_sites(sites, require_teacher=require_teacher)
+        self.require_teacher = require_teacher
+        self.teacher_horizon = TEACHER_HORIZON if require_teacher else 0
         self.closed = False
         self.gaps = ()
         self._decoder = None
@@ -514,6 +531,8 @@ class DeviceFrozenRules:
         return decision
 
     def rule_decision_device(self, states, observers):
+        if not getattr(self, 'require_teacher', True):
+            raise RuntimeError('Rule teacher is absent from this rule adapter')
         return self._consume('rule_decision').capture_device(states, observers)
 
     def value_observation_device(self, states, viewers):
@@ -536,6 +555,8 @@ class DeviceFrozenRules:
         return self._consume('clean').capture_device(states)
 
     def teacher_continue_device(self, states, viewers, *, horizon=3):
+        if not getattr(self, 'require_teacher', True):
+            raise RuntimeError('Teacher continuation is absent from this rule adapter')
         if type(horizon) is not int or horizon != TEACHER_HORIZON:
             raise ValueError(
                 'Frozen teacher_continue is globally configured horizon %s; refusing horizon %r'

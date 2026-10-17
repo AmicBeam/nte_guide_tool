@@ -94,6 +94,44 @@ class SoAPureJobsTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 adapt_pure_jobs([original, other], models(FOLDER, HISTORICAL), reference_models=models(HISTORICAL))
 
+    def test_identical_weights_copied_to_another_folder_cannot_create_a_physical_game(self):
+        bank = models(FOLDER, HISTORICAL)
+        # Loaded copies of the same numerical npz have the same version/digest,
+        # even though their exact source aliases and folders are different.
+        for key in DECKS:
+            current = bank[policy_source_alias(FOLDER, key)]
+            copied = bank[policy_source_alias(HISTORICAL, key)]
+            copied.version = current.version
+            copied.manifest['sha256'] = current.version
+        original = calibration()[0]
+        copied = deepcopy(original)
+        copied['id'] = 'copied-weights'
+        copied['policies'] = {side: (HISTORICAL, spec[1])
+                              for side, spec in original['policies'].items()}
+        before = pickle.dumps((original, copied, bank))
+        with self.assertRaisesRegex(ValueError, 'Duplicate physical pure job'):
+            adapt_pure_jobs([original, copied], bank)
+        self.assertEqual(pickle.dumps((original, copied, bank)), before)
+        metadata = adapt_pure_jobs([copied], bank)
+        for side in ('a', 'b'):
+            binding = metadata.identities[0]['policy_bindings'][side]
+            self.assertEqual(binding['folder'], str(Path(HISTORICAL).resolve()))
+            self.assertEqual(binding['alias'], policy_source_alias(*copied['policies'][side]))
+            self.assertEqual(binding['version'], bank[policy_source_alias(*original['policies'][side])].version)
+        reordered = deepcopy(copied)
+        reordered['id'] = 'same-weights-different-original-order'
+        reordered['decks']['a']['card_ids'].reverse()
+        self.assertNotEqual(reordered['decks']['a']['card_ids'], original['decks']['a']['card_ids'])
+        ordered = adapt_pure_jobs([original, reordered], bank)
+        self.assertEqual(len(ordered.jobs), 2)
+        self.assertEqual(ordered.initializers[1]['decks'], reordered['decks'])
+        # Policy role remains meaningful even when candidate/reference weights
+        # are copied equivalents rather than identical directory strings.
+        reference_bank = {alias: deepcopy(model) for alias, model in bank.items()
+                          if model.directory == HISTORICAL}
+        paired = comparison()
+        self.assertEqual(len(adapt_pure_jobs(paired, bank, reference_models=reference_bank).jobs), len(paired))
+
     def test_wrong_source_version_build_flags_and_comparison_identity_rejected(self):
         original = comparison()[0]
         for field, value in (('pure', False), ('pure', 1), ('training', True), ('training', 0),

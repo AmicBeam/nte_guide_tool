@@ -156,7 +156,9 @@ def adapt_pure_jobs(jobs, models, *, reference_models=None):
             if label == 'reference' and bindings[learner] != reference_bindings[learner]:
                 raise ValueError('Reference-labelled policy differs from the actual reference snapshot')
             role = dict(key=key, label=label, learner=learner)
-        fingerprint = json.dumps([seed, job['first'], bindings,
+        # Source aliases/folders remain in the audit bindings above. Physical
+        # identity follows numerical policies, so copying weights cannot add games.
+        fingerprint = json.dumps([seed, job['first'], version_row,
             {s: [job['decks'][s]['character_ids'], job['decks'][s]['card_ids']] for s in _SIDES}, role],
             sort_keys=True, separators=(',', ':'))
         if fingerprint in physical:

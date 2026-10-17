@@ -291,6 +291,16 @@ class DeviceGameLoop:
         self._errors.bitwise_or_(stop.to(self.t.int32) * GUARD_ERROR)
         self._unfinished.masked_fill_(failed, 0)
 
+    def _drain_interrupted_search(self):
+        # A conditional-loop deadline can stop between any two search ticks.
+        # Reclaim only already-issued leases on the parent capture stream;
+        # never continue simulations or turn an incomplete search into success.
+        leftover=self._search_mask & (self.search.unfinished_device!=0)
+        self._error(leftover,leftover,GUARD_ERROR)
+        abort=getattr(self.search,'abort_device',None)
+        if callable(abort):
+            abort(leftover,error_code=GUARD_ERROR)
+
     def _commit_turn(self):
         t = self.t
         result = self.search.result_device()
@@ -397,6 +407,7 @@ class DeviceGameLoop:
                 raise RuntimeError('Formal nested search requires a captured inner WHILE')
             self._start_search()
             self._fake_search_while()
+        self._drain_interrupted_search()
         self._commit_turn()
 
     def capture(self, roots, job_seeds, policy_index_by_side, auxiliary_index_by_side,

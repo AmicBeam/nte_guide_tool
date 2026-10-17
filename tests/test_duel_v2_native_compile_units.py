@@ -21,6 +21,31 @@ extern "C" __global__ void vm_soa_execute(int* x){x[0]=1;}
 
 
 class NativeCompileUnitTests(unittest.TestCase):
+    def test_full_projection_is_runtime_only_and_rule_objects_match_execute_prefix(self):
+        from app.modules.card_game.rl.batched_duel.native_soa_source import emit_native_soa_source, execute_only_source
+        from app.modules.card_game.rl.batched_duel.cuda_vm import VmLimits
+        from app.modules.card_game.rl.batched_duel.domain_soa_records import compile_execution_schema
+        from app.modules.card_game.rl.batched_duel.vm_image import lower_program
+        from tests.test_duel_v2_native_rule_stages import fixture_program
+        source, _ = emit_native_soa_source(lower_program(fixture_program()), compile_execution_schema(),
+            VmLimits(), native_functions=True, native_values=True)
+        full = split_native_source(source, functions_per_unit=2)
+        execute = split_native_source(execute_only_source(source), functions_per_unit=2)
+        self.assertEqual(full[1:], execute[1:])
+        for kernel in ('soa_export_projection', 'soa_select_result', 'soa_decode_metadata',
+                       'soa_decode_pair', 'soa_decode_float', 'vm_compact'):
+            self.assertIn('void '+kernel+'(', full[0].source)
+        for unit in full[1:]:
+            self.assertNotIn('soa_export_index', unit.source)
+            self.assertNotIn('RESULT_INVALID', unit.source)
+        with self.assertRaisesRegex(ValueError, 'prefix references'):
+            split_native_source(source.replace('int* f=frame(c,id);',
+                'int* f=frame(c,id);soa_export_index(0,0);', 1))
+        with self.assertRaisesRegex(ValueError, 'Unknown full-module'):
+            split_native_source(source+'\n__device__ inline int surprise(){return 1;}\n')
+        with self.assertRaisesRegex(ValueError, 'Unrecognized declarations'):
+            split_native_source(source+'\n__device__ int extra_projection_data[1];\n')
+
     def test_unique_definitions_and_template_instantiation(self):
         units = split_native_source(SOURCE, functions_per_unit=1)
         self.assertEqual([u.name for u in units], ['runtime', 'rules_000', 'rules_001', 'values_000'])

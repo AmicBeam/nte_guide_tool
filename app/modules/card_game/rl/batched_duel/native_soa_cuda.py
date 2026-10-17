@@ -64,7 +64,7 @@ class CudaSoARules:
                  stack_bytes=131072,stack_runs=False,native_functions=False,native_values=False,
                  execute_only=False, separate_compilation=False, indexed_attributes=False,
                  direct_runtime_calls=False, indexed_container_methods=False,
-                 direct_type_queries=False):
+                 direct_type_queries=False, indexed_entity_queries=False):
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():
             raise RuntimeError('Actual CUDA required; CPU fallback is forbidden')
@@ -73,7 +73,8 @@ class CudaSoARules:
         _validate_soa_stack(stack_bytes, execute_only)
         if type(indexed_attributes) is not bool or (indexed_attributes and not separate_compilation):
             raise ValueError('Runtime attribute indexing requires separate compilation')
-        for option in (direct_runtime_calls, indexed_container_methods, direct_type_queries):
+        for option in (direct_runtime_calls, indexed_container_methods, direct_type_queries,
+                       indexed_entity_queries):
             if type(option) is not bool or (option and not separate_compilation):
                 raise ValueError('Runtime specialization requires separate compilation')
         if type(separate_compilation) is not bool or separate_compilation and not native_functions:
@@ -95,6 +96,7 @@ class CudaSoARules:
         self.direct_runtime_calls = direct_runtime_calls
         self.indexed_container_methods = indexed_container_methods
         self.direct_type_queries = direct_type_queries
+        self.indexed_entity_queries = indexed_entity_queries
         if execute_only:
             from .native_soa_source import execute_only_source
             source = execute_only_source(source)
@@ -120,6 +122,9 @@ class CudaSoARules:
             if indexed_attributes:
                 from .native_runtime_index import index_runtime_attributes
                 compiled_units[0] = index_runtime_attributes(compiled_units[0], image)
+            if indexed_entity_queries:
+                from .native_entity_queries import specialize_entity_queries
+                compiled_units[0] = specialize_entity_queries(compiled_units[0], image)
             if direct_runtime_calls or direct_type_queries:
                 from .native_runtime_calls import transform_runtime_calls
                 compiled_units[0] = transform_runtime_calls(compiled_units[0], image,
@@ -129,7 +134,10 @@ class CudaSoARules:
                 from .native_effect_queries import specialize_effect_queries
                 compiled_units[0] = specialize_effect_queries(compiled_units[0], image)
             units = [(unit.name, unit.source) for unit in compiled_units]
+        object_specs = ({name: signatures[name] for name in ('vm_soa_execute', 'vm_clock')}
+                        if separate_compilation else None)
         self.module = CudaModule(source, signatures, compilation_units=units,
+            compilation_unit_specs=object_specs,
             device=str(self.device), binary_format='cubin')
         self.module.ensure_stack(stack_bytes)
         self.constants = {key: torch.tensor(getattr(image, key).copy(), device=self.device)

@@ -77,6 +77,69 @@ class CudaCompileUnitTests(unittest.TestCase):
             CudaModule('source', {'kernel': []}, compilation_units=[])
         with self.assertRaisesRegex(ValueError, 'requires CUBIN'):
             CudaModule('source', {'kernel': []}, compilation_units=[('a', 'code')], binary_format='ptx')
+        for specs in ({}, {'missing': []}, {'kernel': ['int32*']}):
+            with self.assertRaises(ValueError):
+                CudaModule('source', {'kernel': []}, compilation_units=[('a', 'code')],
+                           compilation_unit_specs=specs)
+        with self.assertRaisesRegex(ValueError, 'requires separate'):
+            CudaModule('source', {'kernel': []}, compilation_unit_specs={'kernel': []})
+
+    def test_full_host_module_reuses_old_subset_objects_but_not_link_bindings(self):
+        from app.modules.card_game.rl.batched_duel.cuda_runtime import CudaModule, KernelSpec
+        import json
+        module = CudaModule.__new__(CudaModule)
+        def nvrtc_version(major, minor):
+            major._obj.value, minor._obj.value = 13, 0
+            return 0
+        def driver_version(driver):
+            driver._obj.value = 13000
+            return 0
+        module._nv = SimpleNamespace(nvrtcVersion=nvrtc_version)
+        module._drv = SimpleNamespace(cuDriverGetVersion=driver_version)
+        module._gpu_capability = (12, 0)
+        module._source_sha = sha256(b'execute-only-parent').hexdigest()
+        subset = {'vm_soa_execute': KernelSpec.from_spec(['int32*']),
+                  'vm_clock': KernelSpec.from_spec(['int64*'])}
+        module._kernel_specs = dict(subset)
+        module._compilation_profile = {'jit_optimization_level': None, 'fast_compile': 'min'}
+        compiled = []
+        def fake_nvrtc(source, flags):
+            compiled.append(source)
+            return b'\x7fELF' + sha256(source.encode()).digest()
+        module._compile_source_to_cubin = fake_nvrtc
+        old_units = [('runtime', 'old-runtime'), ('rules_000', 'same-rules'), ('values_000', 'same-values')]
+        full_units = [('runtime', 'full-runtime'), *old_units[1:]]
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, NTE_CUDA_BINARY_CACHE_DIR=directory), patch(
+                'app.modules.card_game.rl.batched_duel.cuda_linker.link_cuda_objects', return_value=b'\x7fELFlinked') as link:
+            compile_linked_binary(module, old_units, ['--fmad=false'])
+            self.assertCountEqual(compiled, ['old-runtime', 'same-rules', 'same-values'])
+            module._source_sha = sha256(b'full-parent').hexdigest()
+            full_specs = dict(subset, soa_export_projection=KernelSpec.from_spec(['float64*']))
+            module._kernel_specs = full_specs
+            module._compilation_profile = {'jit_optimization_level': None, 'fast_compile': 'min'}
+            with self.assertRaisesRegex(ValueError, 'source hash'):
+                module._compiled_binary('same-rules', ['--device-c'], 'cubin',
+                                        source_sha='wrong', cache_specs=subset)
+            compile_linked_binary(module, full_units, ['--fmad=false'], compilation_unit_specs=subset)
+            self.assertCountEqual(compiled, ['old-runtime', 'same-rules', 'same-values', 'full-runtime'])
+            self.assertEqual([r['cache_status'] for r in module._compilation_profile['compilation_units']],
+                             ['miss', 'hit', 'hit'])
+            self.assertEqual(link.call_count, 2)
+            self.assertIs(module._kernel_specs, full_specs)
+            compile_linked_binary(module, full_units, ['--fmad=false'], compilation_unit_specs=subset)
+            self.assertEqual(link.call_count, 2)
+            self.assertEqual(module._compilation_profile['cache_status'], 'hit')
+            from pathlib import Path
+            receipts = [json.loads(path.read_text())['inputs'] for path in Path(directory).glob('*.json')]
+            linked = [row for row in receipts if row.get('format') == 'linked_relocatable_cubin_v1']
+            self.assertEqual(len(linked), 2)
+            self.assertIn({'vm_soa_execute': ['int32*'], 'vm_clock': ['int64*'],
+                           'soa_export_projection': ['float64*']}, [row['kernel_specs'] for row in linked])
+            for row in receipts:
+                self.assertEqual(row['gpu_capability'], [12, 0])
+                self.assertEqual(row['nvrtc_version'], [13, 0])
+                self.assertEqual(row['driver_api_version'], 13000)
+        module._closed = True
 
     def test_independent_concurrent_compiles_keep_identity_and_link_order(self):
         import threading

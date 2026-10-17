@@ -141,6 +141,35 @@ class NativeArrayProgramTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             create_native_array_search(fake, None, None, None, None, rows=8, random=None)
 
+    @unittest.skipUnless(sys.version_info[:2] == (3, 10), 'Source capture requires CPython 3.10')
+    def test_effect_fastpath_is_explicit_freeze_local_and_protocol_bound(self):
+        from pathlib import Path
+        import tempfile
+        from app.modules.card_game.engine.duel_v2 import modifiers
+        from app.modules.card_game.rl.batched_duel.native_array_program import (
+            capture_native_array_program, load_native_array_program)
+        from app.modules.card_game.rl.rule_ir.portable_program import ValidationError, compute_identity
+        original = modifiers.legacy_effects
+        with self.assertRaises(TypeError):
+            capture_native_array_program(effect_query_fastpaths=1)
+        program = capture_native_array_program(effect_query_fastpaths=True)
+        names = {fn['name'] for fn in program.functions}
+        self.assertIn('query_legacy_effects', names)
+        self.assertNotIn('legacy_effects', names)
+        self.assertIn('query_all_effects', names)
+        self.assertNotIn('all_effects', names)
+        self.assertIs(modifiers.legacy_effects, original)
+        self.assertTrue(program.data['native_array']['effect_query_fastpaths'])
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'program.json'
+            path.write_text(program.to_json(), encoding='utf8')
+            self.assertEqual(load_native_array_program(path).identity, program.identity)
+            program.data['native_array']['effect_query_fastpaths'] = 1
+            program.data['identity'] = compute_identity(program.data)
+            path.write_text(program.to_json(), encoding='utf8')
+            with self.assertRaisesRegex(ValidationError, 'protocol'):
+                load_native_array_program(path)
+
     def test_cuda_query_refuses_unbounded_budgets_before_device_setup(self):
         from app.modules.card_game.rl.batched_duel.native_array_cuda_query import NativeArrayCUDAQuery
         for seconds in (0, -1, True, float('inf'), float('nan'), 3601):

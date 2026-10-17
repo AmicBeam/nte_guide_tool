@@ -67,8 +67,8 @@ class DeviceSparseSoAStore(DeviceSoAStore):
 
     def prepare_workspace(self, rows):
         self._open()
-        if type(rows) is not int or not 1 <= rows <= min(self.capacity, 32):
-            raise ValueError('Sparse pack workspace must use 1..32 bounded work rows')
+        if type(rows) is not int or not 1 <= rows <= min(self.capacity, 64):
+            raise ValueError('Sparse pack workspace must use 1..64 bounded work rows')
         if rows not in self._workspaces:
             if self.device.type == 'cuda' and self.t.cuda.is_current_stream_capturing():
                 raise RuntimeError('Prepare sparse pack work rows before capture')
@@ -85,8 +85,8 @@ class DeviceSparseSoAStore(DeviceSoAStore):
         if not isinstance(batch, TorchRecordSoABatch) or batch.schema.identity != self.schema.identity:
             raise ValueError('Matching typed column batch required')
         rows = batch.rows
-        if not 1 <= rows <= min(self.capacity, 32) or set(batch.buffers) != set(WIDTHS):
-            raise ValueError('Typed pack uses 1..32 bounded work rows and four columns')
+        if not 1 <= rows <= min(self.capacity, 64) or set(batch.buffers) != set(WIDTHS):
+            raise ValueError('Typed pack uses 1..64 bounded work rows and four columns')
         for k, value in batch.buffers.items():
             if (value.device != self.device or value.dtype != self.dtypes[k]
                     or value.shape != (self.schema.lengths[k], rows) or not value.is_contiguous()):
@@ -164,8 +164,8 @@ class DeviceSparseSoAStore(DeviceSoAStore):
 
     def gather_into_device(self, states, destination, *, shared_reads=False):
         self._open(); t = self.t; rows = len(states.slots)
-        if not 1 <= rows <= 32:
-            raise ValueError('Dense gather must use 1..32 bounded work rows')
+        if not 1 <= rows <= 64:
+            raise ValueError('Dense gather must use 1..64 bounded work rows')
         if (not isinstance(destination, TorchRecordSoABatch) or destination.schema.identity != self.schema.identity
                 or destination.rows != rows or set(destination.buffers) != set(WIDTHS)):
             raise ValueError('Matching dense typed work rows required')
@@ -202,8 +202,8 @@ class DeviceSparseSoAStore(DeviceSoAStore):
 
     def gather_device(self, states, *, shared_reads=False):
         rows = len(states.slots)
-        if not 1 <= rows <= 32:
-            raise ValueError('Dense gather must use 1..32 bounded work rows')
+        if not 1 <= rows <= 64:
+            raise ValueError('Dense gather must use 1..64 bounded work rows')
         buffers = {k: self.t.empty((self.schema.lengths[k], rows), dtype=v, device=self.device)
                    for k, v in self.dtypes.items()}
         roots = self.t.empty(rows, dtype=self.t.int32, device=self.device)

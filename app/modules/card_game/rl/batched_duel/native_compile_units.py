@@ -1,8 +1,9 @@
 """Separate native rule bodies from the shared runtime without rewriting them.
 
-This accepts only the generated native-control-flow source. Runtime ABI types
-and inline helpers remain identical in every unit; out-of-line implementations
-and device tables have one owner. No function/candidate is pruned.
+This accepts only the generated native-control-flow source. Common runtime ABI
+types and rule inline helpers remain identical in every unit; out-of-line
+implementations and device tables have one owner. Projection-only helpers stay
+with the runtime kernels. No function/candidate is pruned.
 """
 from dataclasses import dataclass
 from hashlib import sha256
@@ -26,6 +27,61 @@ _FUNCTION = re.compile(
     r'(?P<signature>__device__ __noinline__ (?:int|void) (?P<name>\w+)\([^;{}]*\))\s*\{')
 _GLOBAL = re.compile(r'(?m)^extern "C" (?:__global__ )?void \w+\([^;{}]*\)\s*\{')
 _TABLE = re.compile(r'(?m)^__device__ (?P<decl>(?:const )?[\w ]+\s+\w+\[[^;{}]*)(?P<init>\s*=\s*\{|;)')
+_TRAILER_HELPERS = frozenset(('soa_export_index', 'soa_export_enqueue', 'soa_export_into',
+                              'literal_equal', 'field_ref', 'integer64', 'side_code'))
+_TRAILER_KERNELS = frozenset(('soa_export_projection', 'soa_select_result', 'soa_decode_metadata',
+                              'soa_decode_pair', 'soa_decode_float'))
+_TRAILER_HOST = frozenset('native_' + name for name in ('soa_execute', *_TRAILER_KERNELS))
+_INLINE = re.compile(r'(?m)^__device__ (?:inline|__noinline__) [\w *]+? (\w+)\([^;{}]*\)\s*\{')
+
+
+def _runtime_trailer(source):
+    """Move only the known, unreferenced projection trailer to its owner.
+
+    This runs after the common ABI prefix was generated. Any new helper,
+    declaration, table or backwards reference fails closed instead of silently
+    changing cached rule units or omitting a dependency they need.
+    """
+    mask = _LEXICAL.sub(lambda m: re.sub(r'[^\n]', ' ', m[0]), source)
+    kernels = [m for m in _GLOBAL.finditer(source) if mask[m.end()-1] == '{'
+               and re.search(r'\bvm_soa_execute\(', m[0])]
+    if len(kernels) != 1:
+        raise ValueError('Unique native rule kernel boundary required')
+    cut = _end(mask, kernels[0].end()-1)
+    trailer, tail_mask = source[cut:], mask[cut:]
+    if not tail_mask.strip():
+        return source, ''
+    helpers = list(_INLINE.finditer(tail_mask))
+    globals_ = [m for m in _GLOBAL.finditer(trailer) if tail_mask[m.end()-1] == '{']
+    helper_names = [m[1] for m in helpers]
+    global_names = [re.search(r'void (\w+)\(', m[0])[1] for m in globals_]
+    if (len(helper_names) != len(set(helper_names)) or set(helper_names) != _TRAILER_HELPERS
+            or len(global_names) != len(set(global_names))
+            or not _TRAILER_KERNELS <= set(global_names)
+            or not set(global_names) <= _TRAILER_KERNELS | _TRAILER_HOST):
+        raise ValueError('Unknown full-module projection trailer definitions')
+    for name in (*helper_names, *global_names):
+        if re.search(r'\b' + name + r'\b', mask[:cut]):
+            raise ValueError('Rule prefix references a projection-only symbol: ' + name)
+    spans = sorted((m.start(), _end(tail_mask, m.end()-1)) for m in (*helpers, *globals_))
+    cursor, residual = 0, []
+    for begin, end in spans:
+        if begin < cursor:
+            raise ValueError('Overlapping full-module trailer definitions')
+        residual.append(tail_mask[cursor:begin])
+        cursor = end
+    residual.append(tail_mask[cursor:])
+    residue = ''.join(residual)
+    if (residue.count('using namespace duel_vm_heap;') != 1
+            or residue.count('const int RESULT_INVALID=150;') != 1):
+        raise ValueError('Canonical projection metadata declarations changed')
+    residue = residue.replace('using namespace duel_vm_heap;', '').replace('const int RESULT_INVALID=150;', '')
+    namespaces = len(re.findall(r'namespace\s+(?:duel_vm_heap|soa_metadata_result)\s*\{', residue))
+    residue = re.sub(r'namespace\s+(?:duel_vm_heap|soa_metadata_result)\s*\{', '', residue)
+    residue = re.sub(r'(?m)^\s*#(?:ifndef __CUDACC__|endif)\s*$', '', residue)
+    if residue.count('}') != namespaces or residue.replace('}', '').strip():
+        raise ValueError('Unrecognized declarations in full-module projection trailer')
+    return source[:cut], trailer
 
 
 def _end(mask, opening):
@@ -50,6 +106,7 @@ def split_native_source(source, *, functions_per_unit=64):
         raise ValueError('functions_per_unit must be an integer from 1 to 256')
     if not isinstance(source, str) or 'void vm_soa_execute(' not in source:
         raise ValueError('Generated native SoA source required')
+    source, trailer = _runtime_trailer(source)
     mask = _LEXICAL.sub(lambda m: re.sub(r'[^\n]', ' ', m[0]), source)
     functions = []
     for match in _FUNCTION.finditer(mask):
@@ -114,6 +171,7 @@ def split_native_source(source, *, functions_per_unit=64):
         text = ''.join(body if owner is None or owner == name else declaration
                        for owner, body, declaration in segments)
         if name == 'runtime':
+            text += trailer
             # All template declarations live in this namespace in the emitter.
             text += '\nnamespace duel_rule_vm {\n' + '\n'.join(instantiations) + '\n}\n'
         result.append(NativeCompileUnit(name, text))

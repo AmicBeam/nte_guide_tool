@@ -4,10 +4,21 @@ import subprocess
 import sys
 import unittest
 
-from app.modules.card_game.rl.batched_search.soa_capacity import SoACapacityConfig, legacy_dense_state_bytes, archive_capacities
+from app.modules.card_game.rl.batched_search.soa_capacity import (SoACapacityConfig,
+    legacy_dense_state_bytes, archive_capacities,rule_workspace_minimum_bytes,check_workspace_budget)
 
 
 class SoACapacityTests(unittest.TestCase):
+    def test_workspace_dimensions_cannot_reduce_the_rejection_bound(self):
+        for name in ('total_objects','value_cache_entries','constant_nodes','max_strings',
+                     'frames','local_cells','stack_cells','closure_cells'):
+            for value in (-1,True,1.5):
+                with self.assertRaises(ValueError):
+                    rule_workspace_minimum_bytes(8,**{name:value})
+        for value in (-1,True,1.5):
+            with self.assertRaises(ValueError):
+                rule_workspace_minimum_bytes(8,schema_lengths=dict(i64=value,f64=0,i32=0,u8=0))
+
     def test_plan_import_is_cuda_and_file_free(self):
         command = "from app.modules.card_game.rl.batched_search.soa_capacity import SoACapacityConfig; import sys,json; assert 'torch' not in sys.modules; print(json.dumps(SoACapacityConfig(roots=1600).plan()))"
         result = subprocess.run([sys.executable, '-c', command], capture_output=True, text=True,
@@ -28,12 +39,30 @@ class SoACapacityTests(unittest.TestCase):
             self.assertEqual(plan['world_sampling'], 'per_decision')
 
     def test_invalid_or_nonfinite_resource_contract_rejected(self):
-        for options in ({'roots':True}, {'roots':0}, {'roots':1601}, {'rule_lanes':33},
+        for options in ({'roots':True}, {'roots':0}, {'roots':1601}, {'rule_lanes':65},
                         {'inference_rows':False}, {'max_actions':0}, {'max_decisions':0},
                         {'execution_seconds':float('nan')}, {'proof_seconds':float('inf')},
                         {'gpu_budget_mib':False}, {'state_budget_mib':20000}):
             with self.subTest(options=options), self.assertRaises(ValueError):
                 SoACapacityConfig(**options)
+
+    def test_explicit64_lanes_and_preallocation_memory_rejection(self):
+        config=SoACapacityConfig(roots=65,rule_lanes=64)
+        self.assertEqual(config.lanes,64)
+        self.assertEqual(SoACapacityConfig().rule_lanes,8)
+        self.assertEqual(config.plan()['minimum_device_stack_bytes'],131072)
+        self.assertFalse(config.plan()['capacity_qualified'])
+        minimum=rule_workspace_minimum_bytes(64)
+        self.assertEqual(minimum,32*rule_workspace_minimum_bytes(2))
+        with self.assertRaises(MemoryError):
+            SoACapacityConfig(roots=65,rule_lanes=64,gpu_budget_mib=4096,state_budget_mib=2048)
+        with self.assertRaises(MemoryError):
+            check_workspace_budget(config,minimum,resident_bytes=config.gpu_budget_mib<<20)
+        receipt=check_workspace_budget(config,minimum)
+        self.assertFalse(receipt['fit_qualified'])
+        typed=rule_workspace_minimum_bytes(64,schema_lengths=dict(i64=10,f64=2,i32=11,u8=16),
+            total_objects=12,value_cache_entries=4,constant_nodes=10,max_strings=4)
+        self.assertGreater(typed,minimum)
 
     def test_dense_formula_includes_slot_metadata_and_types(self):
         lengths = {'i64':10, 'f64':3, 'i32':7, 'u8':11}

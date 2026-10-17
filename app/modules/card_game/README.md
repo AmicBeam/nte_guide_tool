@@ -1276,3 +1276,13 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 `create_soa_search` 同时默认开启 `reuse_root_observation`，初始化后的根价值评估复用本次相同租约、同观察者的非终局决策观察；仍运行独立辅助 WDL 模型。终局及其他观察者回退独立查询，陈旧 arena／slot／generation／owner 拒绝，根价值复用核验保留独立查询。可显式关闭作对照；重建搜索并重新捕获图。验证 `tests.test_duel_v2_soa_root_observation_reuse` 对照完整 Gumbel32、辅助推理输入／次数、随机状态、错误、租约和有效观察查询数；不提供真实规则完整终局或400并发资格。
 
 完整 SoA 搜索验收脚本可显式传 `--native-complete`，实际启用完整原生函数、局部值和独立编译；`--indexed-attributes` 要求该模式。计划与运行回执记录这些实际选项，默认仍保留原配置。搜索使用完整 CUDA 模块及至少128 KiB栈，不开放 execute-only 或64 KiB诊断配置。验证 `tests.test_duel_v2_soa_device_cli`；选项存在不等于完整搜索或并发验收通过。
+
+无缓存效果快路由 `gpu_effect_queries.query_legacy_effects` 和 `query_all_effects` 从当前正式函数派生：仅 exact flags dict、全部七个旧式效果键缺失且 holder 是普通字典或三种正式实体时提前返回空效果；`query_all_effects` 仅对正式 holder 的 exact 空 list／tuple 效果及 None／exact 空字典 flags 提前返回新空列表；自定义读取、迭代、类覆盖、异常及实时标记修改保留正式顺序，其他输入完整回退，不缓存可变结果。`capture_native_array_program(effect_query_fastpaths=True)` 显式接入冻结替换并记录协议／源码身份，默认关闭；`tests.test_duel_v2_policy_effect_queries` 和 `tests.test_duel_v2_native_array_program` 验证派生、替换及原生结果。生成新规则程序会改变其编译身份，不能沿用旧规则或模型的验收资格。
+
+`indexed_entity_queries=True` 只为有界冻结纯字符串 tuple 建立精确 UTF-8 二分索引，支持运行时动态字符串查询；其他容器／类型／坏引用保持原路，不缓存可变实体或跳过恢复校验。要求独立完整编译，默认关闭，CLI 显式 `--native-complete --indexed-entity-queries` 可选；验证 `tests.test_duel_v2_native_entity_queries` 包括真实角色顺序、实体恢复、别名、容量与步数截止。
+
+完整模块的投影／导出／解码附加源码仅归运行库；未知定义、声明或规则对投影符号的反向引用拒绝拆分。完整及 execute-only 的非运行库对象源码逐字一致。`CudaModule.compilation_unit_specs` 可显式指定完整绑定的非空同签名子集，仅用于对象缓存；最终链接与实际主机绑定保留完整签名，源码／GPU／NVRTC／驱动／编译选项校验不变，不修改并行共享状态。SoA 使用相同规则／时钟对象身份复用缓存；完整模块仍保留全部功能和至少128 KiB栈。验证 `tests.test_duel_v2_native_compile_units`、`tests.test_duel_v2_cuda_compile_units`。
+
+规则工作行显式支持1–64，默认8；稀疏及分页状态工作区同步支持64。容量计划、编译前及 cohort 分配前检查已知 scratch／typed 工作区下界和当前整卡占用；下界通过不表示显存必定足够，捕获后仍核对总预算。完整搜索回执绑定独立种子／owner／slot、有效行覆盖、尾批、错误、固定Gumbel32及临时租约回收；复制状态吞吐和CPU分块对照不授予GPU容量资格。短连续入口可用 `--native-complete --indexed-attributes --rows 65 --rule-work-rows 64 --cohort-only --max-decisions 2 --warmup 0 --repeats 1 --execution-seconds 60 --proof-seconds 30`，同时提供冻结输入与新输出目录。验证 `tests.test_duel_v2_wide_soa_search`、`tests.test_duel_v2_soa_capacity`、`tests.test_duel_v2_sparse_soa_storage`、`tests.test_duel_v2_soa_device_cli`。
+
+设备内层循环被deadline或tick guard打断时，在物理提交前通过 `DeviceGumbelSearch.abort_device` 排空已签发的临时世界、粒子、当前动作及统计租约；根动作继续由物理层统一消费／释放。排空幂等，不推进模拟，不改变已请求／完成计数、信息键、随机流或原错误，不允许将中断结果写为成功。验收脚本先持久化原始执行计数、阶段与捕获后显存分项，再核验租约，避免失败回执丢失。验证 `tests.test_duel_v2_device_action_leases` 的独立动作arena、各阶段截断与重复排空。

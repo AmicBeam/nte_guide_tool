@@ -785,6 +785,17 @@ class DeviceGumbelSearch:
         self.phase.copy_(t.where(final, CLEANUP, self.phase))
 
         cleanup = (before == CLEANUP)
+        self._drain_device(cleanup)
+        self.phase.copy_(t.where((self.errors != 0) & (self.phase != DONE), CLEANUP, self.phase))
+        self._update_predicate()
+
+    def _drain_device(self, cleanup):
+        """Retire issued transient leases/statistics, retaining root actions.
+
+        Runs in the captured graph both on normal CLEANUP and after an inner
+        WHILE guard stops before the search can reach its next cleanup tick.
+        """
+        t=self.t
         self._release_decision_actions(cleanup)
         # Execution errors must not strand already-issued hypothetical leases.
         # Release is a checked ownership operation, not further rule execution;
@@ -806,7 +817,20 @@ class DeviceGumbelSearch:
             self._error(released.error, active, STATISTICS_ERROR)
             self.node_generations[:, column].add_((active & ~released.error).long())
         self.phase.copy_(t.where(cleanup, DONE, self.phase))
-        self.phase.copy_(t.where((self.errors != 0) & (self.phase != DONE), CLEANUP, self.phase))
+
+    def abort_device(self, active, *, error_code):
+        """Fail unfinished rows and drain them without a simulation or commit.
+
+        Completed counts, requested budgets, keys and random streams remain
+        unchanged. The physical driver still consumes/releases root actions.
+        """
+        self._build_context()
+        self._vector(active,self.t.bool,(self.rows,))
+        if type(error_code) is not int or error_code<1:
+            raise ValueError('Explicit nonzero device abort error required')
+        stopped=active & self._roots.active & (self.phase!=DONE)
+        self._error(stopped,stopped,error_code)
+        self._drain_device(stopped)
         self._update_predicate()
 
     def result_device(self):

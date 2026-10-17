@@ -32,6 +32,61 @@ def _stderr(argv):
 
 
 class SoADeviceCliTests(unittest.TestCase):
+    def test_wide_lanes_full_native_short_continuous_search_plan(self):
+        flags=['--native-complete','--indexed-attributes','--rows','65','--rule-work-rows','64',
+               '--cohort-only','--max-decisions','2','--warmup','0','--repeats','1',
+               '--execution-seconds','60','--proof-seconds','30']
+        buf=io.StringIO()
+        with redirect_stdout(buf):self.assertEqual(_main(flags),0)
+        result=json.loads(buf.getvalue())
+        self.assertEqual((result['rows'],result['capacity']['effective_rule_lanes']),(65,64))
+        self.assertEqual(result['max_decisions'],2)
+        self.assertTrue(result['cohort_only']);self.assertTrue(result['rule_executor']['native_functions'])
+        self.assertFalse(result['rule_executor']['execute_only'])
+        self.assertGreaterEqual(result['rule_executor']['stack_bytes'],131072)
+        self.assertTrue(result['capacity']['distinct_roots_required'])
+        self.assertEqual(result['search']['simulations'],32)
+        self.assertFalse(result['capacity']['capacity_qualified'])
+        self.assertFalse(result['gpu_qualified']);self.assertFalse(result['passed'])
+        self.assertIn('rule-work-rows',_stderr(['--rule-work-rows','65']))
+        self.assertIn('workspace',_stderr(['--rows','65','--rule-work-rows','64',
+            '--gpu-budget-mib','4096','--state-budget-mib','2048']))
+
+    def test_root_identity_rejects_copies_and_lane_receipt_checks_tail_errors(self):
+        import torch as t
+        from types import SimpleNamespace as NS
+        from scripts.benchmark_duel_v2_soa_device import root_identity_receipt,work_lane_receipt
+        roots=NS(slots=t.arange(65),generations=t.ones(65,dtype=t.int64),owners=t.arange(65))
+        jobs=[dict(seed=100+i) for i in range(65)]
+        result=root_identity_receipt(roots,jobs)
+        self.assertEqual(result['independent_roots'],65)
+        self.assertFalse(result['copied_state_capacity_qualified'])
+        jobs[1]['seed']=jobs[0]['seed']
+        with self.assertRaisesRegex(AssertionError,'Distinct'):root_identity_receipt(roots,jobs)
+        q=NS(total_rows=t.tensor([65]),total_dispatches=t.tensor([2]),peak_selected=t.tensor([64]),
+             root_visits=t.ones(65,dtype=t.int64),tail_dispatches=t.tensor([1]),
+             errored_rows=t.tensor([0]),loop=NS(errors=t.tensor([0],dtype=t.int32)))
+        rules=NS(rows=65,work_rows=64,_queues=[q])
+        receipt=work_lane_receipt(rules)
+        self.assertEqual(receipt['sites'][0]['tail_dispatches'],1)
+        self.assertEqual(receipt['distinct_roots'],65)
+        self.assertFalse(receipt['capacity_qualified'])
+        q.loop.errors[0]=1
+        with self.assertRaisesRegex(AssertionError,'tail/error'):work_lane_receipt(rules)
+
+    def test_complete_batch_lease_receipt_rejects_orphans_and_stale_owner(self):
+        import torch as t
+        from types import SimpleNamespace as NS
+        from scripts.benchmark_duel_v2_soa_device import completed_lease_receipt
+        store=NS(live=t.tensor([True,True,False]),generation=t.tensor([2,3,0]),owner=t.tensor([7,8,-1]))
+        actions=NS(live=t.zeros(3,dtype=t.bool))
+        states=NS(slots=t.tensor([0,1]),generations=t.tensor([2,3]),owners=t.tensor([7,8]))
+        self.assertEqual(completed_lease_receipt(store,actions,states,2)['checked_physical_leases'],2)
+        store.live[2]=True
+        with self.assertRaisesRegex(AssertionError,'leaked'):completed_lease_receipt(store,actions,states,2)
+        store.live[2]=False;states.owners[1]=9
+        with self.assertRaisesRegex(AssertionError,'lease mismatch'):completed_lease_receipt(store,actions,states,2)
+
     def test_native_complete_and_attribute_indexing_are_explicit_in_plan(self):
         for flags,native,indexed in (([],False,False),(['--native-complete'],True,False),
                                      (['--native-complete','--indexed-attributes'],True,True)):
@@ -39,13 +94,19 @@ class SoADeviceCliTests(unittest.TestCase):
             with redirect_stdout(buf):self.assertEqual(_main(flags),0)
             result=json.loads(buf.getvalue())
             self.assertEqual(result['rule_executor'],dict(native_functions=native,native_values=native,
-                separate_compilation=native,indexed_attributes=indexed,execute_only=False,stack_bytes=131072))
+                separate_compilation=native,indexed_attributes=indexed,indexed_entity_queries=False,
+                execute_only=False,stack_bytes=131072))
             self.assertEqual(result['search']['simulations'],32)
             self.assertEqual(result['search']['gumbel_candidates'],16)
             self.assertFalse(result['passed']);self.assertFalse(result['gpu_qualified'])
             self.assertFalse(result['cuda_imported']);self.assertFalse(result['models_loaded'])
             self.assertEqual(result['learning_updates'],0)
         self.assertIn('--native-complete',_stderr(['--indexed-attributes']))
+        self.assertIn('--native-complete',_stderr(['--indexed-entity-queries']))
+        buf=io.StringIO()
+        with redirect_stdout(buf):
+            self.assertEqual(_main(['--native-complete','--indexed-entity-queries']),0)
+        self.assertTrue(json.loads(buf.getvalue())['rule_executor']['indexed_entity_queries'])
 
     def test_native_plan_options_reach_actual_full_module_factory(self):
         from unittest.mock import Mock

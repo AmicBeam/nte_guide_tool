@@ -33,6 +33,7 @@ def load_native_array_program(path, *, repo_root=None):
             or meta.get('complete_native_compilation_required') is not True
             or type(meta.get('teacher_entries')) is not bool
             or type(meta.get('policy_query_cache',False)) is not bool
+            or type(meta.get('effect_query_fastpaths',False)) is not bool
             or meta.get('extra_zhenhong_simulations') != 0):
         raise ValidationError('Native array frozen protocol mismatch')
     if detect_frozen_runtime(program) != 'seven':
@@ -79,14 +80,16 @@ class NativeArrayExporter(ProgramExporter):
         return ref
 
 
-def capture_native_array_program(*, include_teacher_entries=False, owned_transitions=True,policy_query_cache=False):
+def capture_native_array_program(*, include_teacher_entries=False, owned_transitions=True,
+                                 policy_query_cache=False, effect_query_fastpaths=False):
     """Freeze public-seven rules; teachers are absent by default, not disabled later.
 
     State transfer/compaction and typed observation encoders use the existing
     checked array ABI. Sample packets still require BOTH complete encoded
     information guards before a world can be consumed by search.
     """
-    if any(type(value) is not bool for value in (include_teacher_entries,owned_transitions,policy_query_cache)):
+    if any(type(value) is not bool for value in (include_teacher_entries,owned_transitions,
+                                                policy_query_cache,effect_query_fastpaths)):
         raise TypeError('Explicit native-array capture options required')
     from ...content.duel_v2 import CARDS, PUBLIC_CHARACTER_IDS
     from ...engine.duel_v2 import state, flow, simulation
@@ -114,6 +117,11 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
     if owned_transitions:
         replacements.update({flow.apply_action: scratch_apply_action,
                              simulation.simulate_action: scratch_simulate_action})
+    if effect_query_fastpaths:
+        from ...engine.duel_v2 import modifiers
+        from .gpu_effect_queries import query_legacy_effects, query_all_effects
+        replacements[modifiers.legacy_effects] = query_legacy_effects
+        replacements[modifiers.all_effects] = query_all_effects
     characters = tuple(PUBLIC_CHARACTER_IDS)
     cards = tuple(cid for cid, card in CARDS.items() if card['character_id'] in characters)
     exporter = NativeArrayExporter(replacements, allowed_module_prefixes=ALLOWED_MODULE_PREFIXES,
@@ -126,6 +134,8 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
     source_names=['native_array_program.py','array_rule_sources.py','gpu_owned_transitions.py','gpu_policy_projection.py']
     if policy_query_cache:
         source_names.append('gpu_cached_policy_projection.py')
+    if effect_query_fastpaths:
+        source_names.append('gpu_effect_queries.py')
     for name in source_names:
         p = Path(__file__).with_name(name)
         rel = p.relative_to(exporter.repo_root).as_posix()
@@ -134,6 +144,7 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
         runtime='seven', characters=sorted(characters), cards=sorted(cards),
         owned_workspace=owned_transitions, teacher_entries=include_teacher_entries,
         policy_query_cache=policy_query_cache,
+        effect_query_fastpaths=effect_query_fastpaths,
         extra_zhenhong_simulations=0, complete_native_compilation_required=True,
         interpreter_fallback=False, gpu_qualified=False)
     program.data['identity'] = compute_identity(program.data)

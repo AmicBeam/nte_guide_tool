@@ -5,6 +5,48 @@ import math
 
 CHANNEL_BYTES = {'i64': 8, 'f64': 8, 'i32': 4, 'u8': 1}
 DEFAULT_COLUMN_CELLS = {'i64': 4096, 'f64': 1024, 'i32': 16384, 'u8': 32768}
+MAX_RULE_LANES = 64
+
+
+def rule_workspace_minimum_bytes(lanes, *, schema_lengths=None, total_objects=0,
+                                 value_cache_entries=0, constant_nodes=0,
+                                 max_strings=0, frames=64, local_cells=128,
+                                 stack_cells=256, closure_cells=64):
+    """Known shared scratch/typed allocations; excludes drivers/models/archives.
+
+    This is a rejection lower bound, never a claim that a batch fits. Runtime
+    whole-device checks still apply after all graphs and stores are allocated.
+    """
+    _integer('lanes',lanes,1,MAX_RULE_LANES)
+    for name,value in (('total_objects',total_objects),('value_cache_entries',value_cache_entries),
+                       ('constant_nodes',constant_nodes),('max_strings',max_strings),
+                       ('frames',frames),('local_cells',local_cells),
+                       ('stack_cells',stack_cells),('closure_cells',closure_cells)):
+        _integer(name,value,1 if name=='frames' else 0,2**31-1)
+    nodes,edges,payload=1048576,2097152,33554432
+    row=nodes*16+edges*8+payload+16
+    row+=frames*(14+local_cells+stack_cells+closure_cells)*4
+    row+=(nodes+constant_nodes)*8+nodes*4
+    row+=(total_objects*3+value_cache_entries+constant_nodes)*4
+    if schema_lengths is not None:
+        if set(schema_lengths)!=set(CHANNEL_BYTES):
+            raise ValueError('All four typed columns required')
+        for name,value in schema_lengths.items():
+            _integer(name,value,0,2**31-1)
+        # Shared input plus compactor destination and its mapping tables.
+        row+=2*(sum(schema_lengths[k]*v for k,v in CHANNEL_BYTES.items())+4)
+        row+=total_objects*9+max_strings*4+4
+    return lanes*row
+
+
+def check_workspace_budget(config, workspace_bytes, *, resident_bytes=0):
+    for name,value in (('workspace_bytes',workspace_bytes),('resident_bytes',resident_bytes)):
+        _integer(name,value,0,2**63-1)
+    if workspace_bytes+resident_bytes > config.gpu_budget_mib << 20:
+        raise MemoryError('Known rule workspace plus resident device memory exceeds GPU budget')
+    return dict(rule_workspace_minimum_bytes=workspace_bytes,resident_device_bytes=resident_bytes,
+                remaining_budget_bytes=(config.gpu_budget_mib<<20)-workspace_bytes-resident_bytes,
+                fit_qualified=False)
 
 
 def _integer(name, value, low, high):
@@ -70,7 +112,7 @@ class SoACapacityConfig:
 
     def __post_init__(self):
         for name, low, high in (
-            ('roots', 1, 1600), ('rule_lanes', 1, 32), ('inference_rows', 1, 32),
+            ('roots', 1, 1600), ('rule_lanes', 1, MAX_RULE_LANES), ('inference_rows', 1, 32),
             ('max_actions', 1, 4096), ('max_decisions', 1, 10000),
             ('state_slots_per_root', 1, 16), ('state_reserve_slots', 0, 1600),
             ('action_slots_per_root', 1, 16), ('action_reserve_slots', 0, 1600),
@@ -86,6 +128,7 @@ class SoACapacityConfig:
                 raise ValueError(name+' must be finite and in (0,86400]')
         if self.state_budget_mib > self.gpu_budget_mib or self.action_budget_mib > self.gpu_budget_mib:
             raise ValueError('Each arena must fit the declared total GPU budget')
+        check_workspace_budget(self,rule_workspace_minimum_bytes(self.lanes))
 
     @property
     def lanes(self):
@@ -106,6 +149,8 @@ class SoACapacityConfig:
     def plan(self):
         return dict(schema='soa_capacity_h0_frozen_v1', **asdict(self),
             effective_rule_lanes=self.lanes, effective_inference_rows=self.inference_tile,
+            rule_workspace_minimum_bytes=rule_workspace_minimum_bytes(self.lanes),
+            distinct_roots_required=True,full_module_required=True,minimum_device_stack_bytes=131072,
             state_slots=self.state_slots, action_slots=self.action_slots,
             simulations=32, root_cap=16, max_depth=10, terminal_horizon=0,
             teacher_mode='network_value', opponent_mode='policy',

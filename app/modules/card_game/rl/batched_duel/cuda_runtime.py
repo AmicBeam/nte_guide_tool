@@ -557,6 +557,7 @@ class CudaModule:
         extra_compile_options: Optional[Sequence[str]] = None,
         binary_format: str = 'cubin',
         compilation_units=None,
+        compilation_unit_specs=None,
     ) -> None:
         if not isinstance(source, str) or not source.strip():
             raise ValueError("source must be a non-empty string containing CUDA C/C++ code")
@@ -565,7 +566,7 @@ class CudaModule:
         if binary_format not in ('ptx', 'cubin'):
             raise ValueError('Explicit ptx or cubin binary format required')
 
-        from .cuda_compile_units import validate_compilation_units
+        from .cuda_compile_units import validate_compilation_units, validate_compilation_unit_specs
         compilation_units = validate_compilation_units(compilation_units)
         if compilation_units is not None and binary_format != 'cubin':
             raise ValueError('Separate CUDA compilation requires CUBIN')
@@ -576,6 +577,9 @@ class CudaModule:
             if not isinstance(name, str) or not name.strip():
                 raise ValueError(f"Kernel name must be a non-empty string, got {name!r}")
             self._kernel_specs[name] = KernelSpec.from_spec(spec)
+        compilation_unit_specs = validate_compilation_unit_specs(compilation_unit_specs, self._kernel_specs)
+        if compilation_unit_specs is not None and compilation_units is None:
+            raise ValueError('compilation_unit_specs requires separate compilation units')
 
         self._source = source
         self._source_sha = hashlib.sha256(source.encode("utf-8")).hexdigest()
@@ -674,7 +678,8 @@ class CudaModule:
                 binary = self._compiled_binary(source, flags, binary_format)
             else:
                 from .cuda_compile_units import compile_linked_binary
-                binary = compile_linked_binary(self, compilation_units, flags)
+                binary = compile_linked_binary(self, compilation_units, flags,
+                    compilation_unit_specs=compilation_unit_specs)
             self._compilation_profile['binary_bytes'] = len(binary)
             self._compilation_profile['binary_sha256'] = hashlib.sha256(binary).hexdigest()
 
@@ -726,8 +731,15 @@ class CudaModule:
                     kernel_specs={name: [p.normalized for p in spec.params]
                                   for name, spec in self._kernel_specs.items()})
 
-    def _compiled_binary(self, source, flags, binary_format, *, source_sha=None, profile=None):
+    def _compiled_binary(self, source, flags, binary_format, *, source_sha=None, profile=None, cache_specs=None):
         """Cache is a compiler optimization; rejected images are never loaded."""
+        if cache_specs is not None:
+            from .cuda_compile_units import validate_compilation_unit_specs
+            cache_specs = validate_compilation_unit_specs(cache_specs, self._kernel_specs)
+            actual_sha = hashlib.sha256(source.encode('utf8')).hexdigest()
+            if source_sha is not None and source_sha != actual_sha:
+                raise ValueError('Compilation object source hash does not match source')
+            source_sha = actual_sha
         profile = self._compilation_profile if profile is None else profile
         cache = identity = None
         profile['cache_status'] = 'disabled'
@@ -740,6 +752,9 @@ class CudaModule:
                 try:
                     cache = CudaBinaryCache(directory)
                     identity = self._cache_inputs(flags)
+                    if cache_specs is not None:
+                        identity['kernel_specs'] = {name: [p.normalized for p in spec.params]
+                                                  for name, spec in cache_specs.items()}
                     if source_sha is not None:
                         identity['source_sha256'] = source_sha
                     profile['cache_key'] = cache.key(identity)

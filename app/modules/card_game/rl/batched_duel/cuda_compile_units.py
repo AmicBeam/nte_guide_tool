@@ -1,5 +1,6 @@
 """Cache relocatable objects independently, then cache the linked CUDA image."""
 from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Mapping
 from hashlib import sha256
 import os
 from pathlib import Path
@@ -24,12 +25,32 @@ def validate_compilation_units(units):
     return tuple(result)
 
 
-def compile_linked_binary(module, units, flags, *, workers=2):
+def validate_compilation_unit_specs(specs, host_specs):
+    """Copy a nonempty, exactly typed subset used only for object identities."""
+    if specs is None:
+        return None
+    from .cuda_runtime import KernelSpec
+    if not isinstance(specs, Mapping) or not specs:
+        raise ValueError('Nonempty compilation_unit_specs mapping required')
+    result = {}
+    for name, spec in specs.items():
+        if not isinstance(name, str) or name not in host_specs:
+            raise ValueError('Compilation unit specs must be a subset of host kernel specs')
+        parsed = KernelSpec.from_spec(spec)
+        if parsed != KernelSpec.from_spec(host_specs[name]):
+            raise ValueError('Compilation unit specs must exactly match host kernel signatures')
+        result[name] = parsed
+    return result
+
+
+def compile_linked_binary(module, units, flags, *, workers=2, compilation_unit_specs=None):
     from .cuda_binary_cache import CudaBinaryCache
     from .cuda_linker import link_cuda_objects
     units = validate_compilation_units(units)
     if units is None or type(workers) is not int or not 1 <= workers <= 4:
         raise ValueError('Named compilation units and one to four workers required')
+    cache_specs = validate_compilation_unit_specs(compilation_unit_specs,
+        module._kernel_specs if compilation_unit_specs is not None else {})
     profile = module._compilation_profile
     object_flags = [*flags, '--device-c']
     objects, receipts = [], []
@@ -43,8 +64,10 @@ def compile_linked_binary(module, units, flags, *, workers=2):
         receipt = {}
         # NVRTC owns a distinct program per call. Source identity and timing
         # are local to this job; no shared module fields are temporarily changed.
-        binary = module._compiled_binary(source, object_flags, 'cubin',
-                                         source_sha=source_sha, profile=receipt)
+        options = dict(source_sha=source_sha, profile=receipt)
+        if cache_specs is not None:
+            options['cache_specs'] = cache_specs
+        binary = module._compiled_binary(source, object_flags, 'cubin', **options)
         return (name, binary), dict(name=name, source_sha256=source_sha,
             binary_sha256=sha256(binary).hexdigest(), binary_bytes=len(binary), **receipt)
 

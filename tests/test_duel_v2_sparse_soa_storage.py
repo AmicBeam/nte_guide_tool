@@ -21,6 +21,32 @@ def assert_bits(test, actual, expected):
 
 
 class SparseSoAStorageTests(unittest.TestCase):
+    def test_64_work_rows_sparse_and_paged_preserve_tail_bits_and_reclaim(self):
+        from app.modules.card_game.rl.batched_duel.device_paged_soa_storage import DevicePagedSoAStore
+        for cls in (DeviceSparseSoAStore,DevicePagedSoAStore):
+            spec=compile_schema({'Game':{'kind':'record','capacity':4,'fields':{'hp':'int','rate':'float'}}},
+                                max_strings=4,max_string_bytes=32)
+            store=cls(spec,70,device='cpu',allow_cpu_reference=True)
+            self.addCleanup(store.close)
+            for rows in (33,64):
+                source=pack_game_states([{'hp':i+1,'rate':-0.} for i in range(rows)],spec).to_torch('cpu')
+                active=torch.ones(rows,dtype=torch.bool);active[1]=False
+                owners=torch.arange(rows,dtype=torch.int64)+100
+                lease=store.put_device(source,owners,active)
+                self.assertEqual(lease.errors.tolist(),[0]*rows)
+                actual=store.gather_device(lease)
+                for key in source.buffers:
+                    a,b=actual.buffers[key][:,active],source.buffers[key][:,active]
+                    if key=='f64':a,b=a.view(torch.int64),b.view(torch.int64)
+                    self.assertTrue(torch.equal(a,b))
+                self.assertEqual(int(store.live.sum()),rows-1)
+                store.release_device(lease)
+                self.assertEqual(int(store.live.sum()),0)
+                stale=replace(lease,errors=torch.zeros_like(lease.errors))
+                store.gather_device(stale)
+                self.assertTrue(bool((stale.errors[active]&INVALID_LEASE).all()))
+            with self.assertRaises(ValueError):store.prepare_workspace(65)
+
     def setUp(self):
         self.schema = schema()
         self.store = DeviceSparseSoAStore(self.schema, 4, device='cpu', allow_cpu_reference=True)

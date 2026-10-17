@@ -41,6 +41,67 @@ def distinct_actions(fixture):
 
 
 class DistinctActionLeaseTest(unittest.TestCase):
+    def test_interrupted_search_drains_independent_action_arena_and_worlds_on_device_path(self):
+        import torch
+        from app.modules.card_game.rl.batched_search.device_games import GUARD_ERROR
+        case=game_cases.DeviceGameLoopTest()
+        for cutoff in (1,3,5,9,400):
+            for particle in (False,True):
+                loop,fixture,sink,roots,seeds,ids,train=case.make(simulations=32,max_decisions=1,
+                                                              active=[True,False])
+                loop._inner_max_ticks=cutoff
+                loop.search.reuse_sampled_world=particle
+                loop.search.reuse_root_decision=particle
+                arena=graph_cases.DeviceGraphStorageTest().store(slots=16,pages=32)
+                self.addCleanup(arena.close)
+                graph=graph_cases._graph([{'type':'end_turn'}]*fixture.rows,'cpu')
+                original=fixture.decision_device
+                def decision(states,viewers):
+                    result=original(states,viewers)
+                    lease=arena.put_device(graph,states.owners,states.active.view(torch.uint8))
+                    return replace(result,action_pool=arena,action_slots=lease.slots,
+                                   action_generations=lease.generations,errors=result.errors|lease.errors)
+                def value(states,viewers):
+                    meta=fixture.metadata_device(states)
+                    return DeviceValueObservation(original(states,viewers).observations,
+                        (meta.actors==viewers).float()[:,None],meta.finished,
+                        torch.where(meta.winners==viewers,1.,torch.where(meta.winners>=0,-1.,0.)).double(),meta.errors)
+                fixture.decision_device=decision;fixture.value_observation_device=value
+                result=case.finish_cpu(loop,roots,seeds,ids,train)
+                self.assertEqual(result.errors.tolist(),[0 if cutoff==400 else GUARD_ERROR,0],(cutoff,particle))
+                self.assertEqual(result.steps.tolist(),[1 if cutoff==400 else 0,0])
+                self.assertFalse(bool(result.complete.any()))
+                self.assertEqual(result.truncated.tolist(),[cutoff==400,False])
+                self.assertEqual(int(arena.live.sum()),0,(cutoff,particle,'action arena'))
+                self.assertEqual(int(fixture.live.sum()),2,(cutoff,particle,'state arena'))
+                self.assertTrue(bool(fixture.live[result.states.slots].all()))
+                if cutoff!=400:self.assertTrue(bool(fixture.live[roots.slots].all()))
+                self.assertEqual(int(loop.search.statistics._occupied.sum()),0)
+                self.assertFalse(bool(loop.search.unfinished_device.any()))
+                self.assertEqual(bool((loop.search.completed<loop.search.requested)[0]),cutoff!=400)
+
+    def test_explicit_abort_is_idempotent_and_keeps_budget_keys_and_counts(self):
+        import torch
+        from app.modules.card_game.rl.batched_search.device_games import GUARD_ERROR
+        case=search_cases.DeviceSearchTest();search,fixture=case.engine(simulations=32)
+        released=distinct_actions(fixture)
+        roots=case.initialize(search,fixture)
+        search.tick();search.tick()
+        before={name:getattr(search,name).clone() for name in ('completed','requested','keys','world_samples')}
+        for _ in range(2):
+            search.abort_device(roots.active,error_code=GUARD_ERROR)
+            for name,value in before.items():torch.testing.assert_close(getattr(search,name),value)
+            self.assertFalse(bool(search.unfinished_device.any()))
+            self.assertEqual(int(search.statistics._occupied.sum()),0)
+            self.assertEqual(int(fixture.live.sum()),4) # physical roots plus borrowed root actions
+        result=search.result_device()
+        self.assertFalse(bool(result.complete.any()))
+        self.assertEqual(result.errors.tolist(),[GUARD_ERROR,GUARD_ERROR])
+        self.assertEqual(release_actions_device(result.decision,roots.active,roots.owners,
+                                               protected=(roots,)).tolist(),[0,0])
+        self.assertEqual(int(fixture.live.sum()),2)
+        self.assertLessEqual(int(released.max()),1)
+
     def test_first_zero_generation_physical_roots_are_admitted(self):
         import torch
         case = game_cases.DeviceGameLoopTest()

@@ -17,6 +17,8 @@ class _ActiveSoALanes(DeviceRuleLanes):
         self.total_dispatches=self.t.zeros(1,dtype=self.t.int64,device=self.device)
         self.peak_selected=self.t.zeros(1,dtype=self.t.int64,device=self.device)
         self.root_visits=self.t.zeros(self.rows,dtype=self.t.int64,device=self.device)
+        self.tail_dispatches=self.t.zeros(1,dtype=self.t.int64,device=self.device)
+        self.errored_rows=self.t.zeros(1,dtype=self.t.int64,device=self.device)
 
     def capture_dispatch(self, states, operation):
         if self.closed:
@@ -35,6 +37,8 @@ class _ActiveSoALanes(DeviceRuleLanes):
             selected=self.selected.long()
             self.total_rows.add_(selected.sum().reshape(1))
             self.total_dispatches.add_(1)
+            self.tail_dispatches.add_((self.valid.long().sum()<self.lanes).long().reshape(1))
+            self.errored_rows.add_((local.active & (local.errors!=0)).long().sum().reshape(1))
             self.t.maximum(self.peak_selected,selected.sum().reshape(1),out=self.peak_selected)
             self.root_visits.index_add_(0,self.ids,selected)
             operation(local, self.ids, self.valid)
@@ -75,8 +79,8 @@ class DeviceTiledSoARules(DeviceSoARules):
         if type(candidate_int32) is not bool:raise ValueError('Explicit candidate storage width required')
         if type(rows) is not int or not 1 <= rows <= 1600:
             raise ValueError('Independent root count must be 1..1600')
-        if type(work_rows) is not int or not 1 <= work_rows <= 32:
-            raise ValueError('Native rule work lanes must be 1..32')
+        if type(work_rows) is not int or not 1 <= work_rows <= 64:
+            raise ValueError('Native rule work lanes must be 1..64')
         if type(inference_rows) is not int or not 1 <= inference_rows <= 32:
             raise ValueError('Independent inference tile must be 1..32')
         self.rows, self.work_rows, self.inference_rows = rows, min(rows, work_rows), min(rows, inference_rows)
@@ -319,7 +323,7 @@ class DeviceTiledSoARules(DeviceSoARules):
     def workspace_bytes(self):
         return self.inner.workspace_bytes+sum(v.numel()*v.element_size() for q in self._queues for v in
             (q.cursor,q.pending,q.ids,q.selected,q.valid,q.processed,q.peak,q.total_rows,
-             q.total_dispatches,q.peak_selected,q.root_visits))
+             q.total_dispatches,q.peak_selected,q.root_visits,q.tail_dispatches,q.errored_rows))
 
     def close(self):
         if not self.closed:

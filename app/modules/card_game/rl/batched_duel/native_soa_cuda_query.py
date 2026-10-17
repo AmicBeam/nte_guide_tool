@@ -26,7 +26,7 @@ class NativeSoACUDAQuery:
                  seconds=120,stack_runs=False,native_functions=False,native_values=False,
                  execute_only=False, separate_compilation=False, indexed_attributes=False,
                  stack_bytes=131072, direct_runtime_calls=False, indexed_container_methods=False,
-                 direct_type_queries=False):
+                 direct_type_queries=False, indexed_entity_queries=False):
         if type(seconds) not in (int,float) or not 0<seconds<=3600:
             raise ValueError('Bounded CUDA diagnostic call budget required')
         for value in (max_nodes,max_edges,max_payload_bytes):
@@ -37,7 +37,7 @@ class NativeSoACUDAQuery:
             execute_only=execute_only, separate_compilation=separate_compilation,
             indexed_attributes=indexed_attributes, direct_runtime_calls=direct_runtime_calls,
             indexed_container_methods=indexed_container_methods,
-            direct_type_queries=direct_type_queries)
+            direct_type_queries=direct_type_queries, indexed_entity_queries=indexed_entity_queries)
         self.image,self.schema,self.limits,self.seconds=image,schema,limits,seconds
         self.max_nodes,self.max_edges,self.max_payload_bytes=max_nodes,max_edges,max_payload_bytes
         self.source_sha256=self.executor.source_sha256

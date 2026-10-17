@@ -52,6 +52,8 @@ def build_parser():
                    help='Complete native rule functions and values, using cached separate compilation')
     p.add_argument('--indexed-attributes', action='store_true',
                    help='Frozen attribute lookup index; requires --native-complete')
+    p.add_argument('--indexed-entity-queries', action='store_true',
+                   help='Bounded immutable string membership index; requires --native-complete')
     p.add_argument('--candidate-int32',action='store_true',help='Checked narrower candidate indices; retains complete legal sets')
     p.add_argument('--gpu-budget-mib', type=int, default=14336)
     p.add_argument('--state-budget-mib', type=int, default=4096)
@@ -102,7 +104,7 @@ def _bounded(parser, name, value, low, high):
 
 def validate_bounds(parser, args):
     _bounded(parser, 'rows', args.rows, 1, 1600)
-    _bounded(parser, 'rule-work-rows', args.rule_work_rows, 1, 32)
+    _bounded(parser, 'rule-work-rows', args.rule_work_rows, 1, 64)
     _bounded(parser, 'inference-rows', args.inference_rows, 1, 32)
     for name in ('gpu_budget_mib', 'state_budget_mib', 'raw_tape_budget_mib', 'policy_tape_budget_mib','training_tape_budget_mib','state_page_budget_mib'):
         _bounded(parser, name.replace('_','-'), getattr(args,name), 1, 1024**2)
@@ -114,6 +116,8 @@ def validate_bounds(parser, args):
         parser.error('--candidate-int32 requires tiled rule dispatch')
     if args.indexed_attributes and not args.native_complete:
         parser.error('--indexed-attributes requires --native-complete')
+    if args.indexed_entity_queries and not args.native_complete:
+        parser.error('--indexed-entity-queries requires --native-complete')
     if args.cohort_only and args.max_decisions <= 1:
         parser.error('--cohort-only requires --max-decisions greater than1')
     _bounded(parser, 'max-decisions', args.max_decisions, 1, 400)
@@ -131,7 +135,7 @@ def validate_bounds(parser, args):
         parser.error('CUDA-only acceptance; CPU fallback is forbidden')
     try:
         capacity_config(args)
-    except ValueError as exc:
+    except (ValueError,MemoryError) as exc:
         parser.error(str(exc))
 
 
@@ -149,10 +153,13 @@ def rule_executor_options(args):
     """Explicit full search module options, without importing CUDA/model code."""
     if args.indexed_attributes and not args.native_complete:
         raise ValueError('--indexed-attributes requires --native-complete')
+    if args.indexed_entity_queries and not args.native_complete:
+        raise ValueError('--indexed-entity-queries requires --native-complete')
     return dict(native_functions=bool(args.native_complete),
                 native_values=bool(args.native_complete),
                 separate_compilation=bool(args.native_complete),
                 indexed_attributes=bool(args.indexed_attributes),
+                indexed_entity_queries=bool(args.indexed_entity_queries),
                 execute_only=False, stack_bytes=131072)
 
 
@@ -337,15 +344,57 @@ def work_lane_receipt(rules):
     for index,queue in enumerate(rules._queues):
         rows=int(queue.total_rows.cpu()[0]);calls=int(queue.total_dispatches.cpu()[0])
         peak=int(queue.peak_selected.cpu()[0]);seen=queue.root_visits.cpu().tolist()
+        tail=int(queue.tail_dispatches.cpu()[0]) if hasattr(queue,'tail_dispatches') else 0
+        failed=int(queue.errored_rows.cpu()[0]) if hasattr(queue,'errored_rows') else 0
+        errors=int(queue.loop.errors.cpu().reshape(-1)[0]) if hasattr(queue,'loop') else 0
         if min(rows,calls,peak,*seen)<0 or peak>rules.work_rows or sum(seen)!=rows:
             raise AssertionError('Invalid device rule-lane coverage receipt')
         visits=[a+b for a,b in zip(visits,seen)]
         if calls:
-            sites.append(dict(site=index, selected_rows=rows, dispatches=calls, peak_selected=peak))
+            sites.append(dict(site=index, selected_rows=rows, dispatches=calls, peak_selected=peak,
+                              tail_dispatches=tail,errored_rows=failed,dispatch_errors=errors))
+        if min(tail,failed)<0 or tail>calls or errors:
+            raise AssertionError('Invalid device rule-lane tail/error receipt')
     if not all(visits):
         raise AssertionError('Independent root never reached the native rule work lanes')
     return dict(dispatch='tiled', roots=rules.rows, work_rows=rules.work_rows,
-                per_root_visits=visits, sites=sites)
+                distinct_roots=len(visits),per_root_visits=visits, sites=sites,
+                capacity_qualified=False)
+
+
+def root_identity_receipt(roots,jobs):
+    """Post-initialization evidence, after formal new_game boundary comparison."""
+    slots=roots.slots.cpu().tolist();generations=roots.generations.cpu().tolist()
+    owners=roots.owners.cpu().tolist();seeds=[row['seed'] for row in jobs]
+    count=len(jobs)
+    if any(len(values)!=count for values in (slots,generations,owners)):
+        raise AssertionError('Root identity row count mismatch')
+    if (len(set(seeds))!=count or len(set(owners))!=count or len(set(slots))!=count
+            or min(slots,default=-1)<0 or min(owners,default=-1)<0 or min(generations,default=0)<1):
+        raise AssertionError('Distinct seeded roots and checked independent leases required')
+    return dict(independent_roots=count,distinct_seeds=len(set(seeds)),distinct_owners=len(set(owners)),
+                distinct_state_slots=len(set(slots)),initial_boundary_verified=True,
+                copied_state_capacity_qualified=False)
+
+
+def completed_lease_receipt(store,actions,states,rows):
+    """Checked postbatch physical leases; temporary search/action slots are gone."""
+    slots=states.slots
+    bad=(slots<0)|(slots>=store.live.numel())
+    safe=slots.clamp(0,store.live.numel()-1)
+    bad|=(~store.live[safe].bool())|(store.generation[safe]!=states.generations)
+    bad|=store.owner[safe]!=states.owners
+    state_count=int(store.live.long().sum().cpu())
+    action_count=int(actions.live.long().sum().cpu())
+    distinct=len(set(slots.cpu().tolist()))==rows
+    if (getattr(states,'pool',store) is not store or not distinct
+            or bool(bad.any().cpu()) or state_count!=rows or action_count):
+        raise AssertionError('Physical lease mismatch or temporary search/action leases leaked: '+
+            json.dumps(dict(live_state_slots=state_count,live_action_slots=action_count,
+                            expected_physical_state_slots=rows,distinct_slots=distinct,
+                            invalid_physical_leases=int(bad.long().sum().cpu()))))
+    return dict(live_state_slots=state_count,live_action_slots=action_count,
+                expected_physical_state_slots=rows,checked_physical_leases=rows)
 
 
 def install_root_diagnostics(cohort,torch,rows,width):
@@ -397,6 +446,11 @@ class IsolatedCohort:
         self.shared, self.max_decisions, self.closed = shared, max_decisions, False
         B, device = shared['rows'], shared['device']
         capacity = shared['capacity']
+        if 'rule_workspace_minimum_bytes' in shared:
+            from app.modules.card_game.rl.batched_search.soa_capacity import check_workspace_budget
+            free,total=torch.cuda.mem_get_info()
+            check_workspace_budget(capacity,shared['rule_workspace_minimum_bytes'],
+                                   resident_bytes=int(total-free))
         if shared['state_storage']=='paged':
             from app.modules.card_game.rl.batched_duel.device_paged_soa_storage import DevicePagedSoAStore
             self.store=DevicePagedSoAStore(shared['schema'],capacity.state_slots,device=device,
@@ -567,6 +621,7 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
     from scripts.validate_duel_v2_native_soa import compare_boundary
     for actual,reference in zip(initial,expected):
         compare_boundary(actual,reference,'CUDA initial boundary')
+    identities=root_identity_receipt(roots,shared['jobs'])
     if 'output' in shared:
         (shared['output']/'initial-states.json').write_text(json.dumps(initial,ensure_ascii=False),encoding='utf8')
     seed_tensor = torch.arange(shared['seed'], shared['seed'] + B, dtype=torch.int64, device=device)
@@ -583,6 +638,12 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
     capture_seconds = time.monotonic() - capture_started
     before_memory=memory_snapshot(torch,cohort.store,cohort.rules,cohort.actions,cohort.raw,cohort.light)
     before_memory['training_tape']=cohort.training_tape.collection_allocated_bytes if cohort.training_tape is not None else 0
+    if 'output' in shared:
+        memory_path=shared['output']/'pre-replay-memory.json'
+        temporary=memory_path.with_suffix('.json.tmp')
+        temporary.write_text(json.dumps(dict(capture_seconds=capture_seconds,memory=before_memory,
+            roots=B,rule_lanes=shared['capacity'].lanes),indent=2),encoding='utf8')
+        temporary.replace(memory_path)
     check_memory_budget(before_memory,shared['capacity'])
     if time.monotonic() >= deadline:
         raise TimeoutError('Execution budget exhausted during capture')
@@ -625,6 +686,20 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
         memory=memory_snapshot(torch, cohort.store, cohort.rules, cohort.actions,
                                cohort.raw, cohort.light),
         graph_executed=int(cohort.loop._outer.counter[0].cpu()) > 0)
+    payload['root_identity']=identities
+    payload['rule_executor']=dict(shared['rule_executor'])
+    payload['search_contract']=dict(SEARCH,physical_decision_limit=cohort.max_decisions,
+                                  independent_roots=B,rule_lanes=shared['capacity'].lanes)
+    # Persist actual work before any diagnostic acceptance can reject it.
+    # Failed/timed-out cohorts must retain their counters and phase evidence.
+    if 'output' in shared:
+        (shared['output']/'raw-replay.json').write_text(json.dumps(payload,indent=2),encoding='utf8')
+        (shared['output']/'search-device-snapshot.json').write_text(json.dumps(dict(
+            diagnostics={name:value.cpu().tolist() for name,value in cohort.diagnostics.items()},
+            phase=cohort.search.phase.cpu().tolist(),depth=cohort.search.depth.cpu().tolist(),
+            completed=searched.completed.cpu().tolist(),errors=searched.errors.cpu().tolist()),
+            ensure_ascii=False),encoding='utf8')
+    payload['leases']=completed_lease_receipt(cohort.store,cohort.actions,result.states,B)
     payload['peak_device_search_roots']=int(searched.peak_device_roots.cpu())
     payload['candidate_index_bits_actual']=searched.decision.candidates.tokens.int_tokens.element_size()*8
     if payload['candidate_index_bits_actual']!=(32 if shared.get('candidate_int32') else 64):
@@ -970,6 +1045,15 @@ def run(args):
         program = load_native_array_program(args.program, repo_root=ROOT)
         image = lower_program(program)
         schema = compile_execution_schema()
+        from app.modules.card_game.rl.batched_search.soa_capacity import (
+            rule_workspace_minimum_bytes,check_workspace_budget)
+        from app.modules.card_game.rl.batched_duel.vm_soa_views import value_cache_extent
+        free,total=torch.cuda.mem_get_info()
+        lanes=capacity.lanes if args.rule_dispatch=='tiled' else args.rows
+        minimum=rule_workspace_minimum_bytes(lanes,schema_lengths=schema.lengths,
+            total_objects=schema.total_objects,value_cache_entries=value_cache_extent(schema),
+            constant_nodes=len(image.nodes),max_strings=schema.max_strings)
+        report['workspace_preflight']=check_workspace_budget(capacity,minimum,resident_bytes=int(total-free))
         report.update(program_identity=program.identity, image_identity=image.identity,
                       schema_identity=schema.identity, gpu_name=torch.cuda.get_device_name(device),
                       torch=torch.__version__)
@@ -1000,6 +1084,8 @@ def run(args):
             parameters.append(row)
         shared = dict(
             rows=args.rows, device=str(device), schema=schema, executor=executor,
+            rule_executor=rule_executor_options(args),
+            rule_workspace_minimum_bytes=minimum,
             output=args.output, progress=checkpoint,
             capacity=capacity,state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
             capture_training=args.capture_training,

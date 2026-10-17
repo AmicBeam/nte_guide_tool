@@ -1301,3 +1301,6 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 
 
 纯策略价值预热使用独立 `batched_search/device_pure_value_tape.py`，接受真实零模拟决策并保存双方公开价值输入，不产生策略搜索标签；整批自然结束、无错且容量足够后才允许导出。`soa_pure_jobs.adapt_pure_jobs` 绑定原任务、原牌序、起手换牌与独立 policy/reference 来源和版本，保留候选／基线比较身份。两者不构成闭环 driver 或模型校准资格。验证 `tests.test_duel_v2_device_pure_value_tape`、`tests.test_duel_v2_soa_pure_jobs`。
+
+
+局部引用片段预算优先覆盖实际观察主体 `_cached_observe`／`_policy_observe`，而非只标外层入口；共享 cell 每次读原 cell、立即写回，global 每次查原 globals，均保留原引用与装箱。`EXTENDED_ARG`／`NOP` 仍逐指令核对预算，不跨调用或异常边界。`native_values=False` 不变；开启该实验会改变编译单元，必须重新核验新缓存和实际 GPU，不能继承旧源码资格。验证 `tests.test_duel_v2_native_values` 的闭包、globals、扩展参数及完整堆／状态切点对拍。

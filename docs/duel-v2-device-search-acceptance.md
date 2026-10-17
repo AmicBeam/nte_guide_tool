@@ -268,3 +268,6 @@ SoA工厂还默认开启 `reuse_root_observation`：只复用本次初始化、�
 
 
 价值预热的纯策略采集与 Gumbel 策略标签分开：`DevicePureValueTape` 直接兼容物理游戏 sink，核对零 requested/completed/visits、合法选择、状态／动作租约、所有者、步号、版本及双方数值观察；完整自然终局后记录双观察者 WDL。任一原始行失败、截断或未结束都拒绝整批训练导出；冻结观察者可显式审计，但保留不可学习标记。`soa_pure_jobs` 不要求或伪造首次价值预检证据，完整保留真实 jobs_for／compare_jobs 的身份、牌序及独立 reference bank；不把任务残留 teacher 元数据当作实际搜索，也不授予完整训练资格。
+
+
+引用片段支持真实共享 cell 的 `LOAD_DEREF`／`STORE_DEREF`，不缓存可变 cell 值；`LOAD_GLOBAL` 每次通过原字典查询，并保留缺失错误及入栈行为。`EXTENDED_ARG`／`NOP` 是零栈效应指令，仍分别消耗原逻辑步数、检查 deadline 并维护错误 PC。所有原调用和不支持指令继续作为片段边界；静态预算不因热点观察主体提优而扩大。须比较共享闭包写后读、跨调用 globals 替换／删除、未绑定错误、真实扩展参数、各步截止、全部临时堆／typed 列及输出别名；CPU 通过不代表新 GPU 编译或吞吐通过。编译公共声明变化须按真实单元 SHA 重建缓存，不能将旧对象冒充新实现。

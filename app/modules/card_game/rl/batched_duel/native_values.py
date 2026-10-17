@@ -15,14 +15,18 @@ from .vm_numeric import NUMERIC_OPS
 
 
 SUPPORTED = frozenset(('LOAD_FAST', 'LOAD_CONST', 'STORE_FAST', 'POP_TOP',
+                       'LOAD_DEREF', 'STORE_DEREF',
+                       'LOAD_GLOBAL', 'NOP', 'EXTENDED_ARG',
                        'DUP_TOP', 'DUP_TOP_TWO', 'ROT_TWO', 'BINARY_SUBSCR',
                        'STORE_SUBSCR', 'COMPARE_OP', 'CONTAINS_OP', 'IS_OP',
                        'UNARY_NOT', 'UNARY_NEGATIVE', 'BINARY_ADD',
                        'BINARY_SUBTRACT', 'BINARY_MULTIPLY')) | NUMERIC_OPS
 _BINARY = NUMERIC_OPS | frozenset(('BINARY_ADD', 'BINARY_SUBTRACT', 'BINARY_MULTIPLY'))
+# Projection wrappers delegate their field/local work to these observe bodies.
 _HOT_FUNCTIONS = ('legal_actions', 'attack', 'damage', 'attack_value',
                   'apply_owned_action', 'scratch_apply_action', 'scratch_simulate_action',
-                  'policy_public_legal_decision', 'cached_policy_public_legal_decision')
+                  'policy_public_legal_decision', 'cached_policy_public_legal_decision',
+                  '_policy_observe', '_cached_observe')
 
 
 @dataclass(frozen=True)
@@ -50,6 +54,8 @@ def _effect(op):
     if op == 'STORE_SUBSCR':
         return 3, -3
     return {'LOAD_FAST': (0, 1), 'LOAD_CONST': (0, 1), 'STORE_FAST': (1, -1),
+            'LOAD_DEREF': (0, 1), 'STORE_DEREF': (1, -1),
+            'LOAD_GLOBAL': (0, 1), 'NOP': (0, 0), 'EXTENDED_ARG': (0, 0),
             'POP_TOP': (1, -1), 'DUP_TOP': (1, 1), 'DUP_TOP_TWO': (2, 2),
             'ROT_TWO': (2, 0), 'BINARY_SUBSCR': (2, -1)}[op]
 
@@ -84,8 +90,15 @@ def _read_keys(rows, keys):
             stack.append(row['operand'] if row['operand'] in keys else None)
         elif op == 'LOAD_FAST':
             stack.append(locals_.get(row['arg']))
+        elif op in ('LOAD_DEREF', 'LOAD_GLOBAL'):
+            # Mutable cells/globals are read live; never propagate their value.
+            stack.append(None)
         elif op == 'STORE_FAST':
             locals_[row['arg']] = stack.pop()
+        elif op == 'STORE_DEREF':
+            stack.pop()
+        elif op in ('NOP', 'EXTENDED_ARG'):
+            pass
         elif op == 'POP_TOP':
             stack.pop()
         elif op == 'DUP_TOP':
@@ -129,7 +142,7 @@ def compile_native_values(image, schema, plan, *, max_regions=256, max_region_op
         candidates, run = [], []
         def finish():
             if len(run) >= 2 and (_read_keys(run, keys) or
-                    len(run) >= 4 and any(r['op'] == 'STORE_FAST' for r in run)):
+                    len(run) >= 4 and any(r['op'] in ('STORE_FAST', 'STORE_DEREF') for r in run)):
                 candidates.append(tuple(run))
             run.clear()
         for row in body:
@@ -170,6 +183,12 @@ def compile_native_values(image, schema, plan, *, max_regions=256, max_region_op
 __device__ inline void native_value_store(Context* c,int owner,int key,int value){
  if(stdlib_store(c,owner,key,value))return;
  collection_store(c,owner,key,value);
+}
+__device__ inline int* native_value_cell(Context* c,int* f,int arg){
+ if(arg<0||arg>=f[11]){c->error=BAD_PROGRAM;return 0;}
+ int* cell=mutable_node(c,f[CBASE+arg]);
+ if(!cell||cell[0]!=T_CELL){c->error=BAD_PROGRAM;return 0;}
+ return cell;
 }
 '''
     source += ''.join(_field_helper(key, keys[key], schema) for key in used_keys)
@@ -250,11 +269,33 @@ def _emit_region(fn, rows, keys):
         elif op == 'LOAD_CONST':
             text += ' int ' + value + '=' + _c_int(row['operand']) + ';\n'
             stack.append((value, row['operand'] if row['operand'] in keys else None))
+        elif op == 'LOAD_GLOBAL':
+            text += (' int ' + value + '=dict_get(&c->h,f[8],' + _c_int(row['operand']) + ',MISSING);\n'
+                     ' if(' + value + '==MISSING){c->error=UNBOUND_LOCAL;' + flush() + 'return 1;}\n')
+            stack.append((value, None))
+        elif op in ('NOP', 'EXTENDED_ARG'):
+            # Operands are already expanded by image lowering. Admission above
+            # still consumes the original no-op's step and deadline boundary.
+            pass
         elif op == 'STORE_FAST':
             ref, key = stack.pop()
             text += ' local_' + str(index) + '=' + ref + ';\n'
             known_locals[index] = key
             written_locals.add(index)
+        elif op in ('LOAD_DEREF', 'STORE_DEREF'):
+            # Mirror the canonical slot/type checks before reading or popping.
+            # Resolve every opcode anew; a cell is a shared mutable heap object.
+            cell = 'cell_' + str(offset)
+            text += (' int* ' + cell + '=native_value_cell(c,f,' + str(index) + ');\n'
+                     ' if(!' + cell + '){' + flush() + 'return 1;}\n')
+            if op == 'LOAD_DEREF':
+                text += (' if(' + cell + '[1]==MISSING){c->error=UNBOUND_LOCAL;' +
+                         flush() + 'return 1;}\n'
+                         ' int ' + value + '=' + cell + '[1];\n')
+                stack.append((value, None))
+            else:
+                ref, _ = stack.pop()
+                text += ' ' + cell + '[1]=' + ref + ';\n'
         elif op == 'POP_TOP':
             stack.pop()
         elif op == 'DUP_TOP':

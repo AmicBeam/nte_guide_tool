@@ -43,9 +43,11 @@ class _ActiveSoALanes(DeviceRuleLanes):
         self.loop.capture_loop(self.pending, body, initialize=initialize)
 
 
-def _empty_tokens(t, rows, actions, device):
+def _empty_tokens(t, rows, actions, device, *, integer_dtype=None):
     from ..batched_duel.gpu_seven_candidates import RawCandidateTokens, MAX_MULLIGAN_SELECTIONS, ORDER_SLOTS
-    ints = lambda shape: t.full(shape, -1, dtype=t.int64, device=device)
+    integer_dtype=t.int64 if integer_dtype is None else integer_dtype
+    if integer_dtype not in (t.int32,t.int64):raise ValueError('Exact int32 or int64 candidate indices required')
+    ints = lambda shape: t.full(shape, -1, dtype=integer_dtype, device=device)
     floats = lambda shape: t.zeros(shape, dtype=t.float32, device=device)
     return RawCandidateTokens(
         int_tokens=ints((rows, actions, 7)), float_tokens=floats((rows, actions, 8)),
@@ -58,11 +60,19 @@ def _empty_tokens(t, rows, actions, device):
         extra_ap=floats((rows, actions)))
 
 
+def _candidate_indices(t,source,target_dtype,active):
+    if source.dtype!=t.int64 or target_dtype!=t.int32 or source.shape[0]!=active.shape[0]:
+        raise ValueError('Checked int64 to int32 candidate transport required')
+    overflow=((source<-(2**31))|(source>=2**31)).reshape(source.shape[0],-1).any(-1)
+    return source.to(t.int32),(overflow&active).to(t.int32)*156
+
+
 class DeviceTiledSoARules(DeviceSoARules):
     """The same canonical native rules; persistent roots and scratch are separate."""
 
     def __init__(self, executor, state_store, action_store, *, rows, work_rows=8,
-                 inference_rows=2, max_actions=800, raw_tape=None, seconds=1800, **scratch):
+                 inference_rows=2, max_actions=800, raw_tape=None, seconds=1800,candidate_int32=False, **scratch):
+        if type(candidate_int32) is not bool:raise ValueError('Explicit candidate storage width required')
         if type(rows) is not int or not 1 <= rows <= 1600:
             raise ValueError('Independent root count must be 1..1600')
         if type(work_rows) is not int or not 1 <= work_rows <= 32:
@@ -74,6 +84,7 @@ class DeviceTiledSoARules(DeviceSoARules):
                                    max_actions=max_actions, **scratch)
         self.executor, self.store, self.action_store = executor, state_store, action_store
         self.t, self.device, self.max_actions = self.inner.t, self.inner.device, max_actions
+        self.candidate_integer_dtype=self.t.int32 if candidate_int32 else self.t.int64
         self.templates = self.inner.templates
         self.layout = self.inner.layout
         from ..batched_duel.schema import GraphLayout
@@ -142,7 +153,7 @@ class DeviceTiledSoARules(DeviceSoARules):
         self._check_states(states); t = self.t; queue = self._site('decision')
         from ..batched_duel.gpu_seven_observation import OBS_DIM
         from .compact_device_candidates import CompactDeviceCandidates
-        tokens = _empty_tokens(t, self.rows, self.max_actions, self.device)
+        tokens = _empty_tokens(t, self.rows, self.max_actions, self.device,integer_dtype=self.candidate_integer_dtype)
         candidates = CompactDeviceCandidates(tokens, scratch_rows=self.inference_rows,
                                               device=self.device, template_table=self.templates)
         output = DeviceDecision(states, self.action_store,
@@ -155,12 +166,17 @@ class DeviceTiledSoARules(DeviceSoARules):
 
         def operation(local, ids, valid):
             result = self.inner.decision_device(local, observers.index_select(0, ids))
-            for name in ('action_slots', 'action_generations', 'action_refs', 'action_types',
-                         'observations', 'errors'):
+            for name in ('action_slots', 'action_generations', 'action_refs', 'action_types','observations'):
                 queue.scatter_tensor_device(getattr(result, name), getattr(output, name))
+            extra=t.zeros_like(result.errors)
             for field in fields(tokens):
                 if field.name != 'request_ids':
-                    queue.scatter_tensor_device(getattr(result.candidates.tokens, field.name), getattr(tokens, field.name))
+                    source,target=getattr(result.candidates.tokens,field.name),getattr(tokens,field.name)
+                    if source.dtype!=target.dtype:
+                        source,errors=_candidate_indices(t,source,target.dtype,local.active)
+                        extra.bitwise_or_(errors)
+                    queue.scatter_tensor_device(source,target)
+            queue.scatter_tensor_device(result.errors|extra,output.errors)
         queue.capture_dispatch(states, operation)
         return self._finish(queue, states, output)
 

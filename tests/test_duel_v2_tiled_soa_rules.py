@@ -28,12 +28,20 @@ class TiledSoARuleTests(unittest.TestCase):
         stack_runs=os.environ.get('NTE_SOA_STACK_RUNS','0')
         if stack_runs not in ('0','1'):raise ValueError('Explicit stack-run fixture flag required')
         cls.executor=CudaSoARules(lower_program(program),cls.schema,limits=VmLimits(steps=48000000),stack_runs=stack_runs=='1')
-        cls.store=DeviceSparseSoAStore(cls.schema,32)
+        storage=os.environ.get('NTE_SOA_STATE_STORAGE','sparse')
+        if storage=='paged':
+            from app.modules.card_game.rl.batched_duel.device_paged_soa_storage import DevicePagedSoAStore
+            cls.store=DevicePagedSoAStore(cls.schema,32)
+        elif storage=='sparse':cls.store=DeviceSparseSoAStore(cls.schema,32)
+        else:raise ValueError('Explicit typed storage fixture required')
         cls.actions=CompactDeviceGraphStore(slots=32,node_pages=128,edge_pages=128,payload_pages=256,
             node_page_bytes=16384,edge_page_bytes=16384,payload_page_bytes=4096,
             max_node_pages_per_slot=16,max_edge_pages_per_slot=16,max_payload_pages_per_slot=32)
+        candidate_int32=os.environ.get('NTE_SOA_CANDIDATE_INT32','0')
+        if candidate_int32 not in ('0','1'):raise ValueError('Explicit candidate-width fixture flag required')
         cls.rules=DeviceTiledSoARules(cls.executor,cls.store,cls.actions,rows=3,work_rows=2,
-                                    inference_rows=2,seconds=240)
+                                    inference_rows=2,seconds=240,
+                                    candidate_int32=candidate_int32=='1')
 
     @classmethod
     def tearDownClass(cls):

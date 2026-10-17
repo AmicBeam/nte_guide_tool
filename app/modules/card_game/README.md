@@ -1228,3 +1228,7 @@ SoA 深拷贝不再为原子值清空整张复制映射表；非空临时图在�
 原生执行器和CUDA诊断的 `stack_runs=True` 是默认关闭的编译实验：合并连续局部栈操作，保留原PC、逐指令预算及异常检查。`tests.test_duel_v2_native_stack_runs` 验证独立编译的开关两版逐步截断与状态／错误一致性；启用必须另过实际设备与完整搜索验收，不能作为已经提速的证据。
 
 `capture_native_array_program(policy_query_cache=True)` 可选择 `gpu_cached_policy_projection.py` 的单次投影属性效果索引，默认关闭；复用正式适用条件与归约，观察结束即丢弃缓存。测试 `tests.test_duel_v2_cached_policy_projection` 覆盖完整视图、编码和跨调用失效，仍需独立的原生／CUDA及闭环搜索核验。
+
+有界队列可显式使用 `--candidate-int32` 保存经范围检查的32位候选类别索引，计数仍为64位，完整候选宽度与数值编码不变；训练轨迹原型按相同dtype计费。默认关闭，`tests.test_duel_v2_candidate_index_storage` 验证完整前缀、溢出拒绝和布局字节数，实际设备与闭环资格仍需另验。
+
+`device_paged_soa_storage.py` 将四条稀疏类型列放入有界共享页，保留原逻辑偏移与类型位值；`--state-storage paged --state-page-budget-mib 1536` 显式选择，默认仍为固定稀疏槽。页不足整批拒绝，页归属、重复映射、长度和租约在设备上核验。`tests.test_duel_v2_paged_soa_storage` 验证逐位运输、跨页、复用及损坏拒绝；实际规则与完整搜索分别验收。

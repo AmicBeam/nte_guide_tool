@@ -32,6 +32,12 @@ def _stderr(argv):
 
 
 class SoADeviceCliTests(unittest.TestCase):
+    def test_narrow_indices_require_the_supported_dispatch_and_are_explicit_in_plan(self):
+        self.assertIn('tiled',_stderr(['--candidate-int32','--rule-dispatch','direct']))
+        buf=io.StringIO()
+        with redirect_stdout(buf):self.assertEqual(_main(['--candidate-int32']),0)
+        self.assertEqual(json.loads(buf.getvalue())['candidate_index_bits'],32)
+
     def test_freeze_check_detects_resident_tensor_changes_and_gradient_inputs(self):
         import torch
         from types import SimpleNamespace

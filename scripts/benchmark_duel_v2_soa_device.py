@@ -45,8 +45,10 @@ def build_parser():
     p.add_argument('--rows', type=int, default=8)
     p.add_argument('--rule-work-rows', type=int, default=8)
     p.add_argument('--inference-rows', type=int, default=2)
-    p.add_argument('--state-storage', choices=('sparse', 'dense'), default='sparse')
+    p.add_argument('--state-storage', choices=('sparse', 'dense','paged'), default='sparse')
+    p.add_argument('--state-page-budget-mib',type=int,default=1536)
     p.add_argument('--rule-dispatch', choices=('tiled', 'direct'), default='tiled')
+    p.add_argument('--candidate-int32',action='store_true',help='Checked narrower candidate indices; retains complete legal sets')
     p.add_argument('--gpu-budget-mib', type=int, default=14336)
     p.add_argument('--state-budget-mib', type=int, default=4096)
     p.add_argument('--raw-tape-budget-mib', type=int, default=512)
@@ -80,7 +82,8 @@ def plan(args):
         execution_budget_scope='per_trial',proof_budget_scope='after_each_batch',
         typed_state_slots=args.rows*6+8,
         capacity=capacity.plan(), state_storage=args.state_storage, rule_dispatch=args.rule_dispatch,
-        cohort_only=args.cohort_only, capture_training=args.capture_training,
+        cohort_only=args.cohort_only, capture_training=args.capture_training,candidate_index_bits=32 if args.candidate_int32 else 64,
+        state_page_budget_mib=args.state_page_budget_mib,
         mixed_first_sides=True, skip_mulligan=True, search=dict(SEARCH),
         cuda_imported=False, models_loaded=False, files_created=False,
         learning_updates=0, gpu_qualified=False, passed=False,
@@ -96,12 +99,14 @@ def validate_bounds(parser, args):
     _bounded(parser, 'rows', args.rows, 1, 1600)
     _bounded(parser, 'rule-work-rows', args.rule_work_rows, 1, 32)
     _bounded(parser, 'inference-rows', args.inference_rows, 1, 32)
-    for name in ('gpu_budget_mib', 'state_budget_mib', 'raw_tape_budget_mib', 'policy_tape_budget_mib','training_tape_budget_mib'):
+    for name in ('gpu_budget_mib', 'state_budget_mib', 'raw_tape_budget_mib', 'policy_tape_budget_mib','training_tape_budget_mib','state_page_budget_mib'):
         _bounded(parser, name.replace('_','-'), getattr(args,name), 1, 1024**2)
     if args.rule_dispatch == 'direct' and args.rows > 32:
         parser.error('Direct SoA calls are bounded to32; use device tiled dispatch for larger root cohorts')
     if args.capture_training and not args.cohort_only:
         parser.error('--capture-training requires a single --cohort-only multi-decision acceptance batch')
+    if args.candidate_int32 and args.rule_dispatch!='tiled':
+        parser.error('--candidate-int32 requires tiled rule dispatch')
     if args.cohort_only and args.max_decisions <= 1:
         parser.error('--cohort-only requires --max-decisions greater than1')
     _bounded(parser, 'max-decisions', args.max_decisions, 1, 400)
@@ -368,7 +373,11 @@ class IsolatedCohort:
         self.shared, self.max_decisions, self.closed = shared, max_decisions, False
         B, device = shared['rows'], shared['device']
         capacity = shared['capacity']
-        if shared['state_storage'] == 'sparse':
+        if shared['state_storage']=='paged':
+            from app.modules.card_game.rl.batched_duel.device_paged_soa_storage import DevicePagedSoAStore
+            self.store=DevicePagedSoAStore(shared['schema'],capacity.state_slots,device=device,
+                max_bytes=capacity.state_budget_mib << 20,resident_bytes=shared['state_page_budget_mib'] << 20)
+        elif shared['state_storage'] == 'sparse':
             self.store = DeviceSparseSoAStore(shared['schema'], capacity.state_slots, device=device,
                                               max_bytes=capacity.state_budget_mib << 20)
         else:
@@ -388,6 +397,7 @@ class IsolatedCohort:
         if shared['rule_dispatch'] == 'tiled':
             self.rules = DeviceTiledSoARules(shared['executor'], self.store, self.actions, rows=B,
                 work_rows=capacity.lanes, inference_rows=capacity.inference_tile, seconds=seconds,
+                candidate_int32=shared.get('candidate_int32',False),
                 max_actions=shared['max_actions'], raw_tape=self.raw)
         else:
             self.rules = DeviceSoARules(shared['executor'], self.store, self.actions, rows=B,
@@ -592,6 +602,13 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
                                cohort.raw, cohort.light),
         graph_executed=int(cohort.loop._outer.counter[0].cpu()) > 0)
     payload['peak_device_search_roots']=int(searched.peak_device_roots.cpu())
+    payload['candidate_index_bits_actual']=searched.decision.candidates.tokens.int_tokens.element_size()*8
+    if payload['candidate_index_bits_actual']!=(32 if shared.get('candidate_int32') else 64):
+        raise AssertionError('Declared candidate storage width was not executed')
+    if callable(getattr(cohort.store,'metrics_device',None)):
+        def host_metric(value):
+            return {k:host_metric(v) for k,v in value.items()} if isinstance(value,dict) else value.cpu().tolist()
+        payload['state_storage_metrics']=host_metric(cohort.store.metrics_device())
     payload['memory_before_replay']=before_memory
     payload['memory']['training_tape']=int(cohort.training_tape.collection_allocated_bytes) if cohort.training_tape is not None else 0
     payload['work_lanes']=work_lane_receipt(cohort.rules)
@@ -902,7 +919,9 @@ def run(args):
         search=dict(SEARCH), learning_updates=0, gpu_qualified=False,frozen_training_chain_passed=False,
         one_step_cannot_qualify_natural=True, skip_mulligan=True, mixed_first_sides=True)
     report.update(capacity=capacity.plan(),state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
-                  cohort_only=args.cohort_only,capture_training=args.capture_training,stable_throughput_qualified=False)
+                  cohort_only=args.cohort_only,capture_training=args.capture_training,
+                  state_page_budget_mib=args.state_page_budget_mib,
+                  candidate_index_bits=32 if args.candidate_int32 else 64,stable_throughput_qualified=False)
     report['static'] = dict(
         search=dict(SEARCH), rows=args.rows, max_decisions=args.max_decisions,
         max_actions=args.max_actions, inner_max_ticks=args.inner_max_ticks,
@@ -952,6 +971,8 @@ def run(args):
             output=args.output, progress=checkpoint,
             capacity=capacity,state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
             capture_training=args.capture_training,
+            candidate_int32=args.candidate_int32,
+            state_page_budget_mib=args.state_page_budget_mib,
             inference=inference, seed=args.seed, max_actions=args.max_actions,models=models,
             proof_seconds=args.proof_seconds,
             inner_max_ticks=args.inner_max_ticks, jobs=jobs, parameters=parameters,

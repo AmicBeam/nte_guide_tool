@@ -37,7 +37,8 @@ def create_training_tape(rules, capacity, *, decisions, max_bytes):
     from ..batched_duel.gpu_seven_observation import OBS_DIM
     if not isinstance(rules,DeviceSoARules) or rules.device.type!='cuda':
         raise TypeError('Actual native CUDA SoA rules required for frozen collection')
-    compact=CompactDeviceCandidates(_empty_tokens(rules.t,rules.rows,rules.max_actions,rules.device),
+    compact=CompactDeviceCandidates(_empty_tokens(rules.t,rules.rows,rules.max_actions,rules.device,
+        integer_dtype=getattr(rules,'candidate_integer_dtype',rules.t.int64)),
         scratch_rows=capacity.inference_tile,device=rules.device,template_table=rules.templates)
     dimensions=training_tape_capacity(compact,roots=rules.rows,decisions=decisions,
         observation_dim=OBS_DIM,max_bytes=max_bytes)

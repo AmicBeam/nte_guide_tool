@@ -105,6 +105,7 @@ class SoADeviceCliTests(unittest.TestCase):
             result=json.loads(buf.getvalue())
             self.assertEqual(result['rule_executor'],dict(native_functions=native,native_values=native,
                 separate_compilation=native,indexed_attributes=indexed,indexed_entity_queries=False,
+                runtime_primitive_compare=False,direct_deepcopy_calls=False,
                 execute_only=False,stack_bytes=131072))
             self.assertEqual(result['search']['simulations'],32)
             self.assertEqual(result['search']['gumbel_candidates'],16)
@@ -122,7 +123,10 @@ class SoADeviceCliTests(unittest.TestCase):
         from unittest.mock import Mock
         from scripts.benchmark_duel_v2_soa_device import (
             build_parser,create_rule_executor,rule_executor_options)
-        for flags in ([],['--native-complete'],['--native-complete','--indexed-attributes']):
+        for flags in ([],['--native-complete'],['--native-complete','--indexed-attributes'],
+                ['--native-complete','--runtime-primitive-compare'],
+                ['--native-complete','--direct-deepcopy-calls'],
+                ['--native-complete','--runtime-primitive-compare','--direct-deepcopy-calls']):
             args=build_parser().parse_args(flags)
             factory=Mock();image=object();schema=object();limits=object()
             executor=create_rule_executor(factory,image,schema,args,device='cuda:0',limits=limits)
@@ -134,6 +138,88 @@ class SoADeviceCliTests(unittest.TestCase):
             self.assertGreaterEqual(kwargs['stack_bytes'],131072)
             for name in ('direct_runtime_calls','indexed_container_methods','direct_type_queries'):
                 self.assertNotIn(name,kwargs)
+            self.assertEqual(kwargs['runtime_primitive_compare'],'--runtime-primitive-compare' in flags)
+            self.assertEqual(kwargs['direct_deepcopy_calls'],'--direct-deepcopy-calls' in flags)
+
+    def test_optional_runtime_routes_require_native_mode_and_are_bound_in_metadata(self):
+        for flag,name in (('--runtime-primitive-compare','runtime_primitive_compare'),
+                ('--direct-deepcopy-calls','direct_deepcopy_calls')):
+            self.assertIn('--native-complete',_stderr([flag]))
+            output=io.StringIO()
+            with redirect_stdout(output):self.assertEqual(_main(['--native-complete',flag]),0)
+            metadata=json.loads(output.getvalue())
+            self.assertIs(metadata['rule_executor'][name],True)
+            self.assertIs(metadata['passed'],False)
+            self.assertIs(metadata['gpu_qualified'],False)
+
+    def test_optional_runtime_routes_reject_invalid_cuda_options_before_allocation(self):
+        from unittest.mock import patch
+        from app.modules.card_game.rl.batched_duel.native_soa_cuda import CudaSoARules
+        with patch('torch.cuda.is_available',return_value=True):
+            for name in ('runtime_primitive_compare','direct_deepcopy_calls'):
+                for value in (0,1,None,'true'):
+                    with self.assertRaisesRegex(ValueError,'Runtime specialization'):
+                        CudaSoARules(None,None,**{name:value})
+                with self.assertRaisesRegex(ValueError,'separate compilation'):
+                    CudaSoARules(None,None,**{name:True})
+                with self.assertRaisesRegex(ValueError,'complete native functions'):
+                    CudaSoARules(None,None,separate_compilation=True,**{name:True})
+
+    def test_query_forwards_explicit_runtime_routes_without_changing_scratch(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        import numpy as np
+        from app.modules.card_game.rl.batched_duel.native_soa_cuda_query import NativeSoACUDAQuery
+        image=SimpleNamespace(nodes=np.zeros((1,4),dtype=np.int32),
+            edges=np.zeros((1,2),dtype=np.int32),payload=np.zeros(1,dtype=np.uint8))
+        with patch('app.modules.card_game.rl.batched_duel.native_soa_cuda_query.CudaSoARules') as factory:
+            with NativeSoACUDAQuery(image,None,native_functions=True,native_values=True,
+                    separate_compilation=True,runtime_primitive_compare=True,direct_deepcopy_calls=True) as query:
+                options=factory.call_args.kwargs
+                self.assertIs(options['runtime_primitive_compare'],True)
+                self.assertIs(options['direct_deepcopy_calls'],True)
+                self.assertIs(options['separate_compilation'],True)
+                self.assertEqual(query.max_nodes,1048576)
+                self.assertEqual(options['stack_bytes'],131072)
+
+    def test_runtime_routes_compose_once_and_keep_other_object_sources_identical(self):
+        from unittest.mock import patch
+        import torch
+        from app.modules.card_game.rl.batched_duel.native_soa_cuda import CudaSoARules
+        from app.modules.card_game.rl.batched_duel.native_runtime_calls import transform_runtime_calls
+        from app.modules.card_game.rl.batched_duel.native_runtime_compare import specialize_runtime_compare
+        from app.modules.card_game.rl.batched_duel.vm_image import lower_program
+        from tests.test_duel_v2_native_functions import fixture_program,fixture_schema
+        image=lower_program(fixture_program());schema=fixture_schema()
+        tensor,full=torch.tensor,torch.full
+        def cpu_tensor(*args,**kwargs):
+            kwargs.pop('device',None);return tensor(*args,**kwargs)
+        def cpu_full(*args,**kwargs):
+            kwargs.pop('device',None);return full(*args,**kwargs)
+        with patch('torch.cuda.is_available',return_value=True), \
+                patch('torch.cuda.current_device',return_value=0), \
+                patch('torch.cuda.is_current_stream_capturing',return_value=False), \
+                patch('torch.tensor',side_effect=cpu_tensor),patch('torch.full',side_effect=cpu_full), \
+                patch('app.modules.card_game.rl.batched_duel.cuda_runtime.CudaModule') as factory:
+            original=CudaSoARules(image,schema,native_functions=True,native_values=True,
+                separate_compilation=True,indexed_attributes=True)
+            baseline=factory.call_args.kwargs
+            with patch('app.modules.card_game.rl.batched_duel.native_runtime_calls.transform_runtime_calls',
+                    wraps=transform_runtime_calls) as route, \
+                    patch('app.modules.card_game.rl.batched_duel.native_runtime_compare.specialize_runtime_compare',
+                    wraps=specialize_runtime_compare) as comparison:
+                candidate=CudaSoARules(image,schema,native_functions=True,native_values=True,
+                    separate_compilation=True,indexed_attributes=True,direct_runtime_calls=True,
+                    direct_type_queries=True,direct_deepcopy_calls=True,runtime_primitive_compare=True)
+                configured=factory.call_args.kwargs
+                self.assertEqual(route.call_count,1)
+                self.assertEqual(comparison.call_count,1)
+                self.assertIs(route.call_args.kwargs['deepcopy_calls'],True)
+                self.assertIs(route.call_args.kwargs['function_calls'],True)
+            self.assertEqual(baseline['compilation_unit_specs'],configured['compilation_unit_specs'])
+            self.assertNotEqual(baseline['compilation_units'][0],configured['compilation_units'][0])
+            self.assertEqual(baseline['compilation_units'][1:],configured['compilation_units'][1:])
+            original.close();candidate.close()
 
     def test_search_cli_does_not_expose_execute_only_or_small_stack(self):
         for flags in (['--execute-only'],['--stack-bytes','65536'],['--direct-runtime-calls'],

@@ -1295,3 +1295,6 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 
 
 正式 covered_value/H3 的显式组件工厂为 `rl/batched_search/soa_covered_search.py`：校验七队独立辅助模型范围，固定逐模拟世界采样、三步规则对手续推和 Gumbel32；不加载策略同名模型冒充辅助模型，不授予执行资格。训练任务适配保留 covered scope 和 teacher 语义。`DeviceTieredSoARules` 提供默认不接线的小工作区宽队列与大工作区窄队列，仅对来源明确的 VM 容量失败重试；物理推进始终只执行一次。验证入口为 `tests.test_duel_v2_soa_covered_search`、`tests.test_duel_v2_soa_training_jobs`、`tests.test_duel_v2_tiered_soa_rules`，实际 GPU、完整搜索和自然终局另行验收。
+
+
+原生规则运行库的整数／布尔比较和精确 deepcopy 调用可分别通过 `--runtime-primitive-compare`、`--direct-deepcopy-calls` 做单变量短测，要求 `--native-complete`，默认关闭。仅变换共享 runtime 编译单元，其他缓存及规则保持；宽整数、浮点、自定义对象和未知类型沿原规则处理。验证入口为 `tests.test_duel_v2_native_runtime_compare`、`tests.test_duel_v2_native_runtime_calls`、`tests.test_duel_v2_soa_device_cli`；收益须另作未插桩 GPU 配对测量。

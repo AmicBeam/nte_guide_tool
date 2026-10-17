@@ -54,6 +54,10 @@ def build_parser():
                    help='Frozen attribute lookup index; requires --native-complete')
     p.add_argument('--indexed-entity-queries', action='store_true',
                    help='Bounded immutable string membership index; requires --native-complete')
+    p.add_argument('--runtime-primitive-compare',action='store_true',
+                   help='Optional primitive comparison routing; requires --native-complete')
+    p.add_argument('--direct-deepcopy-calls',action='store_true',
+                   help='Optional exact deepcopy call routing; requires --native-complete')
     p.add_argument('--candidate-int32',action='store_true',help='Checked narrower candidate indices; retains complete legal sets')
     p.add_argument('--fused-rule-steps',action='store_true',help='Exact hypothetical step/clean with one final state store')
     p.add_argument('--gpu-budget-mib', type=int, default=14336)
@@ -119,6 +123,9 @@ def validate_bounds(parser, args):
         parser.error('--indexed-attributes requires --native-complete')
     if args.indexed_entity_queries and not args.native_complete:
         parser.error('--indexed-entity-queries requires --native-complete')
+    for option in ('runtime_primitive_compare','direct_deepcopy_calls'):
+        if getattr(args,option) and not args.native_complete:
+            parser.error('--'+option.replace('_','-')+' requires --native-complete')
     if args.cohort_only and args.max_decisions <= 1:
         parser.error('--cohort-only requires --max-decisions greater than1')
     _bounded(parser, 'max-decisions', args.max_decisions, 1, 400)
@@ -156,11 +163,16 @@ def rule_executor_options(args):
         raise ValueError('--indexed-attributes requires --native-complete')
     if args.indexed_entity_queries and not args.native_complete:
         raise ValueError('--indexed-entity-queries requires --native-complete')
+    for option in ('runtime_primitive_compare','direct_deepcopy_calls'):
+        if getattr(args,option) and not args.native_complete:
+            raise ValueError('--'+option.replace('_','-')+' requires --native-complete')
     return dict(native_functions=bool(args.native_complete),
                 native_values=bool(args.native_complete),
                 separate_compilation=bool(args.native_complete),
                 indexed_attributes=bool(args.indexed_attributes),
                 indexed_entity_queries=bool(args.indexed_entity_queries),
+                runtime_primitive_compare=bool(args.runtime_primitive_compare),
+                direct_deepcopy_calls=bool(args.direct_deepcopy_calls),
                 execute_only=False, stack_bytes=131072)
 
 

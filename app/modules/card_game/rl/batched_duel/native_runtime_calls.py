@@ -28,13 +28,13 @@ def _body(source, name):
 
 
 def transform_runtime_calls(unit, image, *, function_calls=True, scalar_builtins=True,
-                            type_builtins=False, mapping_get=False):
+                            type_builtins=False, mapping_get=False, deepcopy_calls=False):
     """Return the modified runtime unit; optional routes allow GPU ablations.
 
-    The two optional routes default off so the original scalar/function source
+    The optional routes default off so the original scalar/function source
     and cached binary remain unchanged until their own timing is qualified.
     """
-    options = (function_calls, scalar_builtins, type_builtins, mapping_get)
+    options = (function_calls, scalar_builtins, type_builtins, mapping_get, deepcopy_calls)
     if any(type(option) is not bool for option in options):
         raise TypeError('Call route options must be booleans')
     if not any(options):
@@ -46,7 +46,7 @@ def transform_runtime_calls(unit, image, *, function_calls=True, scalar_builtins
     _, _, fast = _body(source, 'native_fast_call')
     function_marker = ' if(n[0]==T_FUNCTION||n[0]==T_DYNFN){'
     if any(marker in caller for marker in (
-            'native_runtime_scalar_done', 'native_runtime_get_done', function_marker,
+            'native_runtime_scalar_done', 'native_runtime_get_done', 'native_runtime_copy_done', function_marker,
             'if(NATIVE_STDLIB_TYPE>=0&&id==NATIVE_STDLIB_TYPE)')):
         raise ValueError('Shared call routing already specialized')
     if fast.count(function_marker) != 1 or caller.count(_HOOK) != 1:
@@ -129,8 +129,31 @@ def transform_runtime_calls(unit, image, *, function_calls=True, scalar_builtins
   return;
  }
 '''
+    copies = ''
+    if deepcopy_calls:
+        # Keep the canonical argument/memo validation and deepcopy_tick. This
+        # changes only routing, including the old blanket keyword rejection.
+        from .vm_deepcopy import emit_deepcopy_source
+        canonical_copy = emit_deepcopy_source(image.intrinsic_names)
+        marker = '__device__ inline int deepcopy_call('
+        begin = canonical_copy.index(marker)
+        stop = _matching_brace_end(canonical_copy, canonical_copy.index('{', begin))
+        if source.count(canonical_copy[begin:stop]) != 1:
+            raise ValueError('Canonical deepcopy call body changed')
+        if caller.count('if(deepcopy_call(c,callable,args,nargs,&native_result)||') != 1:
+            raise ValueError('Canonical deepcopy routing boundary changed')
+        copies = '''
+ if(n[0]==T_NATIVE&&((NATIVE_DEEPCOPY>=0&&n[3]==NATIVE_DEEPCOPY)||
+                    (NATIVE_GRAPH_COPY>=0&&n[3]==NATIVE_GRAPH_COPY))){
+  if(nkw){c->error=BAD_CALL;return;}
+  int native_runtime_copy_done=MISSING;
+  if(!deepcopy_call(c,callable,args,nargs,&native_runtime_copy_done)){c->error=BAD_CALL;return;}
+  if(!c->error&&!c->h.error)push(c,frame(c,caller),native_runtime_copy_done);
+  return;
+ }
+'''
     caller = caller.replace(_HOOK, (functions if function_calls else '') +
                             (scalars if scalar_builtins else '') +
                             (types if type_builtins else '') +
-                            (get if mapping_get else '') + _HOOK)
+                            (get if mapping_get else '') + copies + _HOOK)
     return replace(unit, source=source[:start] + caller + source[end:])

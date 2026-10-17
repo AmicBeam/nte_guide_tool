@@ -1,6 +1,7 @@
 """Shared-only call routing: scalar/function results and full heap parity."""
 import ctypes
 import copy
+from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 import subprocess
@@ -18,6 +19,7 @@ from app.modules.card_game.rl.batched_duel.native_runtime_index import index_run
 from app.modules.card_game.rl.batched_duel.native_effect_queries import specialize_effect_queries
 from app.modules.card_game.rl.batched_duel.record_soa import pack_game_states
 from app.modules.card_game.rl.batched_duel.vm_image import lower_program
+from app.modules.card_game.engine.duel_v2.entities import copy_state_graph
 
 
 def scalar_calls(state, value):
@@ -40,6 +42,26 @@ def scalar_errors(state, value):
     if value == 5:
         return int(value=1)
     return len(1)
+
+
+def copied_values(state, value):
+    first = deepcopy(value)
+    second = deepcopy(value, None)
+    copied_state = deepcopy(state)
+    graph = copy_state_graph(value)
+    return state, first, second, copied_state, graph
+
+
+def copy_errors(state, value):
+    if value == 0:
+        return deepcopy()
+    if value == 1:
+        return deepcopy(state, None, None)
+    if value == 2:
+        return deepcopy(state, {})
+    if value == 3:
+        return deepcopy(state, memo=None)
+    return deepcopy(x=state)
 
 
 class GetBase:
@@ -98,6 +120,8 @@ class NativeRuntimeCallTests(unittest.TestCase):
         self.assertNotEqual(original_routes.sha256, optimized.sha256)
         self.assertEqual('native_runtime_get_done' in optimized.source, routes.get('mapping_get', False))
         self.assertNotIn('native_runtime_get_done', original_routes.source)
+        self.assertNotIn('native_runtime_copy_done', original_routes.source)
+        self.assertEqual('native_runtime_copy_done' in optimized.source, routes.get('deepcopy_calls', False))
         with self.assertRaises(TypeError):
             transform_runtime_calls(indexed, image, type_builtins=1)
         if effects:
@@ -119,6 +143,9 @@ class NativeRuntimeCallTests(unittest.TestCase):
             path = Path(directory) / (unit.name + '.cpp')
             path.write_text(unit.source)
             paths.append(str(path))
+        for before, after in zip(units[1:], (optimized, *units[1:])[1:]):
+            self.assertEqual(before.source, after.source)
+            self.assertEqual(before.sha256, after.sha256)
         library = Path(directory) / 'calls.dylib'
         result = subprocess.run([_cxx_compiler(), '-std=c++17', '-shared', '-fPIC', '-O1',
             '-fno-fast-math', '-ffp-contract=off', *paths, '-o', str(library)],
@@ -127,7 +154,7 @@ class NativeRuntimeCallTests(unittest.TestCase):
             self.fail(result.stderr[-12000:])
         return ctypes.CDLL(str(library))
 
-    def pair(self, program, schema, cases, *, golden=None, routes=None, effects=True):
+    def pair(self, program, schema, cases, *, golden=None, routes=None, effects=True, bounds=()):
         image = lower_program(program)
         options = dict(native_functions=True, native_values=True, limits=VmLimits(steps=100000),
             max_nodes=16384, max_edges=32768, max_payload_bytes=131072)
@@ -149,10 +176,42 @@ class NativeRuntimeCallTests(unittest.TestCase):
                                                           err_msg=(entry, steps, key))
                         if not calls[0].statuses[:, 0].any():
                             self.assertEqual(calls[0].decode(), calls[1].decode())
+                            if entry == 'copied':
+                                for row in calls[1].decode():
+                                    self.assertIsNot(row[0], row[3])
+                                    if isinstance(row[1],dict) and 'a' in row[1]:
+                                        self.assertIs(row[1]['a'],row[1]['b'])
+                                        self.assertIsNot(row[1],row[2])
+                                        self.assertIsNot(row[1],row[4])
                         if steps == 100000 and golden and entry in golden:
                             calls[1].check()
                             self.assertEqual(calls[1].decode(), [golden[entry](copy.deepcopy(s), *a[1:])
                                              for s, a in zip(states, args)])
+                for entry, states, args, positions, capacities in bounds:
+                    for backend in (baseline, optimized):
+                        for name, value in capacities.items():setattr(backend, name, value)
+                    calls = [backend.call(entry, pack_game_states(states, schema), args,
+                        state_positions=positions) for backend in (baseline, optimized)]
+                    np.testing.assert_array_equal(calls[0].statuses, calls[1].statuses)
+                    np.testing.assert_array_equal(calls[0].outputs, calls[1].outputs)
+                    for key in ('nodes', 'edges', 'payload', 'counts'):
+                        np.testing.assert_array_equal(calls[0].heap[key], calls[1].heap[key])
+                    self.assertTrue(calls[0].statuses[:, 0].any(), 'Capacity fixture did not hit a bound')
+
+    def test_explicit_deepcopy_routes_scalars_aliases_memo_errors_and_capacity(self):
+        from app.modules.card_game.rl.rule_ir.portable_program import capture_program, DEFAULT_ALLOWED_MODULE_PREFIXES
+        from tests.test_duel_v2_native_values import fixture_schema, states
+        program = capture_program({'copied': copied_values, 'errors': copy_errors},
+            scope_character_ids=(), scope_card_ids=(),
+            allowed_module_prefixes=DEFAULT_ALLOWED_MODULE_PREFIXES+(__name__,))
+        shared=[1,2];payload={'a':shared,'b':shared}
+        cases = [('copied', states(), [[None,v]]*3, (0,)) for v in (None,False,2**53+1,'汉字🙂',payload)]
+        cases.extend(('errors',states(),[[None,code]]*3,(0,)) for code in range(5))
+        self.pair(program,fixture_schema(),cases,
+            routes=dict(function_calls=False,scalar_builtins=False,deepcopy_calls=True),effects=False,
+            golden={'copied':copied_values},bounds=[
+                ('copied',states(),[[None,payload]]*3,(0,),dict(max_nodes=16,max_edges=128,max_payload_bytes=256)),
+                ('copied',states(),[[None,payload]]*3,(0,),dict(max_nodes=256,max_edges=16,max_payload_bytes=256))])
 
     def test_function_keywords_generators_bound_methods_and_errors(self):
         from tests.test_duel_v2_native_calls import fixture_program
@@ -215,7 +274,14 @@ class NativeRuntimeCallTests(unittest.TestCase):
             for repeated in ({}, routes):
                 with self.assertRaises(ValueError):
                     transform_runtime_calls(unit, image, **repeated)
-        for name in names:
+        self.assertEqual(transform_runtime_calls(indexed,image).source,
+            transform_runtime_calls(indexed,image,deepcopy_calls=False).source)
+        only_copy=transform_runtime_calls(indexed,image,function_calls=False,
+            scalar_builtins=False,deepcopy_calls=True)
+        self.assertIn('native_runtime_copy_done',only_copy.source)
+        with self.assertRaises(ValueError):
+            transform_runtime_calls(only_copy,image,deepcopy_calls=True)
+        for name in (*names,'deepcopy_calls'):
             for invalid in (0, 1, None, 'true'):
                 with self.assertRaises(TypeError):
                     transform_runtime_calls(indexed, image, **{name: invalid})

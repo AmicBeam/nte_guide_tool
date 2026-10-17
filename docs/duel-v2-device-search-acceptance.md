@@ -262,3 +262,6 @@ SoA工厂还默认开启 `reuse_root_observation`：只复用本次初始化、�
 `soa_covered_search.create_soa_covered_search_bundle` 显式绑定已核验且独立的七队辅助价值模型，固定 covered_value、horizon3、rule opponent、32 次模拟及逐模拟世界采样；必须使用 staged teacher，不能覆盖规则／算法身份或沿用过期 scope。组件工厂和训练任务元数据绑定不授予训练资格。
 
 `DeviceTieredSoARules` 为显式组件，默认未接入验收 CLI：宽队列使用较小 scratch，窄队列保留原容量，共用执行器、编译缓存和状态／动作存储。只有原始输入租约有效、静态调用确实返回 VM 容量错误且队列保护无错的行才重试；错误码 1 本身不足以证明容量失败。失败输出只能释放本次新发且归属已核验的租约；物理动作始终走大工作区一次，不重写录像。CPU 测试不证明实际显存或吞吐收益，须另做真实状态、容量压力、完整 Gumbel 与自然终局验收。
+
+
+运行库单元可显式启用 `runtime_primitive_compare=True` 或 `direct_deepcopy_calls=True`，默认关闭且要求完整函数分单元编译。前者只对经边界核验的有限整数／布尔及字符串相等比较跳过已知拒绝这些类型的库探测；宽整数、浮点、Decimal、自定义对象及未知／坏引用走原处理。后者直接路由至原 deepcopy 实现，保留 memo、别名、参数、分配、步数和错误。两者均不改变 Context／Heap ABI 或非 runtime 编译单元；CPU 堆／错误／步数对拍和构造接线测试不代替真实 GPU、完整搜索及自然终局验收。

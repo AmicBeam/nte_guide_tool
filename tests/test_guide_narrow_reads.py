@@ -80,7 +80,7 @@ class NarrowReadTest(unittest.TestCase):
         with patch.object(cli.urllib.request, 'urlopen', return_value=response) as opening, redirect_stdout(io.StringIO()):
             self.assertEqual(cli.main(['get', 'characters', '1042', '--ability', 'GA_BlackBird_Melee', '--level', '10']), 0)
         self.assertEqual(parse_qs(urlsplit(opening.call_args.args[0]).query),
-                         {'ability_id': ['GA_BlackBird_Melee'], 'level': ['10']})
+                         {'ability_id': ['GA_BlackBird_Melee'], 'skill_level': ['10'], 'hit_details': ['0']})
 
     def test_status_distinguishes_model_processing_from_local_read(self):
         calls = 0

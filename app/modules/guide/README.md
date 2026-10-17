@@ -326,10 +326,20 @@ HTTP入口为`GET /api/guide/axes`（重复`character`参数）和`GET /api/guid
 
 ## 按需读取与助手查询体积
 
-CLI可用`get characters 1042 --section overview`读取角色机制、技能ID和可读章节；`get characters 1042 --ability GA_BlackBird_Melee --level 10`只取指定技能的10级参数。`--ability`对应`ability_id`查询参数，仅适用于角色技能；`--level`为1–13，JSON和Markdown均支持。原有`--section`与`--stage`继续有效，无参数的完整详情契约保持不变。
+CLI可用`get characters 1042 --section overview`读取角色机制、技能ID和可读章节；`get characters 1042 --ability GA_BlackBird_Melee --level 10`只取指定技能的10级参数。`--ability`对应`ability_id`查询参数，仅适用于角色技能；`--level`为1–13，JSON和Markdown均支持。原有`--section`与`--stage`继续有效。CLI角色读取默认技能10级、不含逐命中与资源明细；完整等级和明细须显式开启，公共API未传参数时仍返回完整数据。
 
 `section=overview`不含角色全部倍率、成长和材料表；关卡概览只列关卡目录，敌人数值用`stage`读取。指定技能时，招式分组中重复的参数行通过`parameter_keys`引用该技能顶层`param_rows`，不同内容的行仍独立保留。显式指定等级后，`values`、`attack_values`、`defense_values`、`hp_values`等级数组变为`{level,max_level,value}`；不足目标档时取已有最高档并标明实际档位，不插值、不推算。不指定等级保留原数组。概览中觉醒等绑定参数默认取10级，显式`level`可覆盖；技能精确参数仍需指定技能读取。
 
-助手`wiki_get`默认读取概览；角色技能章节未给`ability_id`时也只返回机制与技能目录，精确参数用`ability_id`和`level`，其余数据按章节／关卡读取。已有准确ID时直接读取，避免重复搜索和整份资料往返。工具执行后显示“查询已完成，正在整理回答…”，区分本地查询与后续模型处理。公共API与CLI的默认输出不跟随助手缩略。
+助手`wiki_get`默认读取概览；角色技能章节未给`ability_id`时也只返回机制与技能目录，精确参数用`ability_id`和`level`，其余数据按章节／关卡读取。已有准确ID时直接读取，避免重复搜索和整份资料往返。工具执行后显示“查询已完成，正在整理回答…”，区分本地查询与后续模型处理。公共API的默认输出不跟随助手缩略；CLI按下节规定采用10级技能与可选命中明细。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_narrow_reads tests.test_guide tests.test_guide_chat tests.test_guide_bot_tools tests.test_guide_challenge_visibility tests.test_module_routes -q`。覆盖全角色概览体积、原始数据不被修改、指定技能及等级精确值、分组引用、无效参数、Markdown与CLI参数传递及阶段提示。
+
+## CLI默认技能等级与明细
+
+CLI的`get characters <ID>`、`--section abilities`及`--ability <技能ID>`默认只返回10级技能参数，不返回`hit_details`及回能、环合值、倾陷等资源参数行。技能机制正文、持续时间和强化效果等常规参数仍保留，角色属性成长、经验、养成材料以及弧盘／关卡数据不受影响。`--level 8`指定其他技能等级，`--all-levels`保留全部技能等级数组，两者互斥；不足目标等级时取已有最高档并标明实际等级。`--hit-details`显式包含逐命中明细和资源参数；与`--all-levels`组合恢复全部等级及明细。JSON和Markdown使用相同规则，`--section overview`继续只看机制概览。
+
+CLI通过`skill_level=10&hit_details=0`请求服务端裁剪，省去无用传输。`--all-levels`省略`skill_level`，`--hit-details`改为`hit_details=1`；公共API未传这两个参数时保留原始完整输出。`skill_level`只影响技能及关联觉醒／共鸣／词条参数，不将角色面板改为10级；显式`level`参数仍按原有通用档位接口处理。参数行的key不唯一时不转换为分组引用，避免不同招式数值混淆。
+
+示例：`python nte-guide.py get characters 1042 --section abilities`；`python nte-guide.py get characters 1042 --ability GA_BlackBird_Melee --hit-details`；`python nte-guide.py get characters 1042 --section abilities --all-levels --hit-details`。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_cli_skill_defaults tests.test_guide_narrow_reads tests.test_guide tests.test_guide_bot_tools tests.test_guide_chat tests.test_guide_challenge_visibility tests.test_module_routes -q`，覆盖全角色等级数值、明细开关、分组引用、默认成长资料不变、Markdown、API兼容及互斥参数。更新服务端后须重新下载CLI才能使用新默认值与开关。

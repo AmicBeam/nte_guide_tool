@@ -1,10 +1,15 @@
 """Explicit, non-mutating projections for narrow public reference reads."""
+import re
+from collections import Counter
+
 LEVEL_FIELDS = {'values', 'attack_values', 'defense_values', 'hp_values'}
 
 
 def ability_parameters(ability):
     """Reference identical parameter rows rather than sending them twice."""
-    rows = {row.get('key'): row for row in ability.get('param_rows', []) if row.get('key')}
+    counts = Counter(row.get('key') for row in ability.get('param_rows', []))
+    rows = {row.get('key'): row for row in ability.get('param_rows', [])
+            if row.get('key') and counts[row['key']] == 1}
     groups = []
     for group in ability.get('groups', []):
         references, extra = [], []
@@ -61,9 +66,57 @@ def overview(kind, record, level=10):
     return result
 
 
-def select(record, kind, section=None, ability_id=None, level=None):
+def skill_parameters(record, level, hit_details):
+    def basic(value):
+        if isinstance(value, list):
+            return [basic(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        result = {}
+        for key, item in value.items():
+            if key in ('hit_details', 'hit_detail_status'):
+                continue
+            if key == 'param_rows':
+                item = [row for row in item if not resource_row(row)]
+            result[key] = basic(item)
+        return result
+
+    def resource_row(row):
+        label = row.get('label', '')
+        return bool(re.search('环合值|基础环合|回能|倾陷|削韧|能量', label)
+                    and not re.search('伤害|倍率', label))
+
+    result = dict(record)
+    if 'abilities' in result:
+        abilities = result['abilities']
+        if hit_details is False:
+            abilities = basic(abilities)
+        # Deduplicate after filtering so group references cannot point at hidden rows.
+        abilities = [ability_parameters(ability) for ability in abilities]
+        if level is not None:
+            abilities = at_level(abilities, level)
+        result['abilities'] = abilities
+        result['skill_parameters'] = {'level': level if level is not None else 'all',
+                                      'hit_details': hit_details is not False}
+    if level is not None:
+        for key in ('awaken', 'resonance', 'nouns'):
+            if key in result:
+                result[key] = at_level(result[key], level)
+    return result
+
+
+def select(record, kind, section=None, ability_id=None, level=None, skill_level=None, hit_details=None):
     if level is not None and (isinstance(level, bool) or not isinstance(level, int) or not 1 <= level <= 13):
         raise ValueError('level 须为1–13')
+    if skill_level is not None and (isinstance(skill_level, bool) or not isinstance(skill_level, int) or not 1 <= skill_level <= 13):
+        raise ValueError('skill_level 须为1–13')
+    if skill_level is not None or hit_details is not None:
+        if kind != 'characters':
+            raise ValueError('skill_level 和 hit_details 仅适用于角色资料')
+        if hit_details is not None and not isinstance(hit_details, bool):
+            raise ValueError('hit_details 须为0或1')
+        # Filter before ability selection introduces parameter-key references.
+        record = skill_parameters(record, skill_level, hit_details)
     if ability_id is not None:
         if kind != 'characters' or section not in (None, 'abilities'):
             raise ValueError('ability_id 仅适用于角色技能章节')
@@ -73,11 +126,14 @@ def select(record, kind, section=None, ability_id=None, level=None):
         record = {**record, 'abilities': [ability_parameters(ability) for ability in abilities]}
         section = 'abilities'
     if section == 'overview':
-        return overview(kind, record, level if level is not None else 10)
+        return overview(kind, record, level if level is not None else skill_level if skill_level is not None else 10)
     if section:
         if section not in record:
             raise LookupError('未找到指定字段')
         record = {'id': record['id'], 'name': record['name'], section: record[section]}
+        if section == 'abilities' and (skill_level is not None or hit_details is not None):
+            record['skill_parameters'] = {'level': skill_level if skill_level is not None else 'all',
+                                          'hit_details': hit_details is not False}
     if level is not None:
         record = at_level(record, level)
         record = {**record, 'requested_level': level,

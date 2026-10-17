@@ -43,7 +43,9 @@ def get_record(kind, identifier, *, narrow=False):
     kind_check(kind)
     return service.detail(kind, identifier, request.args.get('section'), request.args.get('stage') or None,
                           request.args.get('ability_id') if narrow else None,
-                          integer('level', 10, 1, 13) if narrow and 'level' in request.args else None)
+                          integer('level', 10, 1, 13) if narrow and 'level' in request.args else None,
+                          skill_level=integer('skill_level', 10, 1, 13) if narrow and 'skill_level' in request.args else None,
+                          hit_details=bool(integer('hit_details', 0, 0, 1)) if narrow and 'hit_details' in request.args else None)
 
 
 @blueprint.errorhandler(ValueError)

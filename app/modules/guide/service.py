@@ -177,7 +177,7 @@ def filter_index_items(kind):
             for record in catalog()[kind]]
 
 
-def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None):
+def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None, *, skill_level=None, hit_details=None):
     record = next((r for r in public_records(kind) if str(r['id']) == identifier), None)
     if record is None:
         raise LookupError('未找到条目')
@@ -188,7 +188,7 @@ def detail(kind, identifier, section=None, stage=None, ability_id=None, level=No
         record['stages'] = [x for x in record['stages'] if str(x['id']) == str(stage)]
         if not record['stages']:
             raise LookupError('未找到关卡')
-    return reference_view.select(record, kind, section, ability_id, level)
+    return reference_view.select(record, kind, section, ability_id, level, skill_level, hit_details)
 
 
 def markdown_value(value, depth=2):
@@ -229,6 +229,8 @@ def schema():
         'search': '/api/guide/search?q={query}',
         'detail': '/api/guide/{collection}/{id}?section={field}&stage={stage_id}&ability_id={ability_id}&level={level}',
         'reference_views': {'overview': 'section=overview返回机制和可读章节，不含所有等级参数或全部关卡。',
+            'skill_level': '仅选择角色技能及关联觉醒、共鸣、词条的参数等级，不改变角色属性成长表。CLI默认10级，--all-levels省略此限制。',
+            'hit_details': '0隐藏逐命中明细及回能、环合值、倾陷等资源参数行，1保留；不改写机制正文。CLI默认0，--hit-details设为1。公共API未传参数时保持完整数据。',
             'ability_id': '仅角色技能，可省略section或使用section=abilities；按准确技能ID只取一个技能。',
             'level': '可选1–13；values、attack_values等等级数组变为{level,max_level,value}，不足指定档时标明实际最高档。',
             'parameter_keys': '指定技能时，groups中与顶层param_rows相同的行改用parameter_keys引用，按key查找原行。'},

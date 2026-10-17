@@ -52,7 +52,10 @@ def main(argv=None):
     getting.add_argument('--section')
     getting.add_argument('--stage', type=int)
     getting.add_argument('--ability', dest='ability_id', help='Read one exact character ability ID (section=abilities)')
-    getting.add_argument('--level', type=int, choices=range(1, 14), help='Return only one level of parameter arrays')
+    levels = getting.add_mutually_exclusive_group()
+    levels.add_argument('--level', type=int, choices=range(1, 14), help='Skill level (characters default: 10)')
+    levels.add_argument('--all-levels', action='store_true', help='Return every character skill level')
+    getting.add_argument('--hit-details', action='store_true', help='Include per-hit energy, harmony and stagger data')
     getting.add_argument('--format', choices=('json', 'markdown'), default='json')
     commands.add_parser('schema', help='Read API and numeric conventions')
     personal = commands.add_parser('me', help='Read your saved game profiles (NTE_GUIDE_TOKEN required)')
@@ -93,6 +96,13 @@ def main(argv=None):
         ident = urllib.parse.quote(args.id, safe='')
         path = f'/guide/{args.kind}/{ident}.md' if args.format == 'markdown' else f'/api/guide/{args.kind}/{ident}'
         query = {k: getattr(args, k) for k in ('section', 'stage', 'ability_id', 'level') if getattr(args, k) is not None}
+        if args.kind == 'characters':
+            query.pop('level', None)
+            if not args.all_levels:
+                query['skill_level'] = args.level if args.level is not None else 10
+            query['hit_details'] = int(args.hit_details)
+        elif args.all_levels or args.hit_details:
+            parser.error('--all-levels and --hit-details are only supported for characters')
     elif args.command == 'me':
         path = '/api/guide/me/profiles'
     elif args.command == 'axes':

@@ -25,6 +25,17 @@ def _key(node):
     return None
 
 
+DISPLAY_FIELDS = frozenset(('name', 'description', 'resource_name', 'faction',
+    'avatar', 'portrait', 'passive', 'awakened_passive', 'flavor'))
+
+
+def _trim_display_tuple(node):
+    if isinstance(node, ast.Tuple) and all(isinstance(v, ast.Constant) and isinstance(v.value, str)
+                                         for v in node.elts):
+        node.elts = [v for v in node.elts if v.value not in DISPLAY_FIELDS]
+    return node
+
+
 class _Observe(ast.NodeTransformer):
     def __init__(self):self.counts={}
     def hit(self,key):self.counts[key]=self.counts.get(key,0)+1
@@ -45,7 +56,7 @@ class _Observe(ast.NodeTransformer):
         return self.generic_visit(node)
     def visit_Assign(self,node):
         target=node.targets[0] if len(node.targets)==1 else None
-        if isinstance(target,ast.Name) and target.id in ('card_index','playable','form'):
+        if isinstance(target,ast.Name) and target.id in ('card_index','playable','form','template'):
             self.hit(target.id);return None
         field=_key(target)
         if field==('c','attack_breakdown'):
@@ -59,6 +70,15 @@ class _Observe(ast.NodeTransformer):
             return [self.generic_visit(node),ast.copy_location(assignment,node)]
         return self.generic_visit(node)
     def visit_If(self,node):
+        if isinstance(node.test,ast.Call) and ast.unparse(node.test)=="h.get('summoned')":
+            if len(node.body)!=2 or _key(node.body[-1].targets[0])!=('c','passive'):
+                raise ProjectionSpecializationError('Summon text branch gained non-display work')
+            self.hit('summon_text');return None
+        if any(isinstance(n,ast.Name) and n.id=='template' for n in ast.walk(node.test)):
+            if (len(node.body)!=1 or not isinstance(node.body[0],ast.For)
+                    or ast.literal_eval(node.body[0].iter)!=('passive','awakened_passive')):
+                raise ProjectionSpecializationError('Current passive text branch changed')
+            self.hit('template_text');return None
         if isinstance(node.test,ast.Name) and node.test.id=='form':
             self.hit('form_if');return None
         if any(isinstance(n,ast.Name) and n.id=='playable' for n in ast.walk(node.test)):
@@ -75,9 +95,23 @@ class _Observe(ast.NodeTransformer):
             self.hit('cache_sides');return [first,node]
         return self.generic_visit(node)
     def visit_ImportFrom(self,node):
+        if (node.module=='tutorial' and [n.name for n in node.names]==['is_tutorial']
+                or node.module=='equipment' and [n.name for n in node.names]==['stat_layers','public_equipment']
+                or node.module=='app.modules.card_game.content.duel_v2.tutorial' and [n.name for n in node.names]==['lookup_card']):
+            return None
         if node.module=='policy_state' and any(n.name=='public_policy_state' for n in node.names):
             self.hit('policy_import');return None
         return node
+    def visit_DictComp(self,node):
+        # Only specialize the canonical copied team/character field tuples.
+        if (isinstance(node.value,ast.Call) and isinstance(node.value.func,ast.Name)
+                and node.value.func.id=='deepcopy' and len(node.generators)==1
+                and isinstance(node.value.args[0],ast.Subscript)
+                and isinstance(node.value.args[0].value,ast.Name)
+                and node.value.args[0].value.id in ('source','h')):
+            node.generators[0].iter=_trim_display_tuple(node.generators[0].iter)
+            self.hit('display_fields')
+        return self.generic_visit(node)
     def visit_Call(self,node):
         if isinstance(node.func,ast.Name) and node.func.id=='legal_entry':
             if len(node.args)!=3:raise ProjectionSpecializationError('Canonical legal call changed')
@@ -92,6 +126,10 @@ class _Observe(ast.NodeTransformer):
 
 
 class _Card(ast.NodeTransformer):
+    def visit_DictComp(self,node):
+        for generator in node.generators:
+            generator.iter=_trim_display_tuple(generator.iter)
+        return self.generic_visit(node)
     def visit_If(self,node):
         fields=[_key(n.targets[0]) for n in ast.walk(node) if isinstance(n,ast.Assign) and len(n.targets)==1]
         if ('result','description') in fields:
@@ -143,13 +181,14 @@ def _compile(original,name,transform,extra=None,extra_arg=None):
 
 
 _policy_card,_card_globals=_compile(presentation.public_card,'_policy_card',_Card(),
-    {'CARD_FIELDS':tuple(k for k in presentation.CARD_FIELDS if k!='description')})
+    {'CARD_FIELDS':tuple(k for k in presentation.CARD_FIELDS if k not in DISPLAY_FIELDS)})
 _card_globals['public_card']=_policy_card
 _policy_state,_state_globals=_compile(policy_state.public_policy_state,'_policy_state',_PolicyState(),extra_arg='_flags')
 _observe_transform=_Observe()
 _policy_observe,_observe_globals=_compile(projection.observe,'_policy_observe',_observe_transform,
     {'public_card':_policy_card,'_policy_state':_policy_state})
-_REQUIRED={'entry':1,'card_index':1,'playable':1,'form':1,'form_if':1,'attack':1,'cache_flags':1,'cache_sides':1,'policy_import':1,'policy_call':1,'unavailable':1,'character_update':1}
+_REQUIRED={'entry':1,'card_index':1,'playable':1,'form':1,'form_if':1,'attack':1,'cache_flags':1,'cache_sides':1,'policy_import':1,'policy_call':1,'unavailable':1,'character_update':1,
+           'template':1,'template_text':1,'summon_text':1,'display_fields':2}
 if any(_observe_transform.counts.get(key)!=count for key,count in _REQUIRED.items()):
     raise ProjectionSpecializationError('Canonical projection specialization sites changed')
 

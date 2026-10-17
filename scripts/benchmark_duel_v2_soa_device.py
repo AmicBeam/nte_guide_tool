@@ -51,6 +51,8 @@ def build_parser():
     p.add_argument('--state-budget-mib', type=int, default=4096)
     p.add_argument('--raw-tape-budget-mib', type=int, default=512)
     p.add_argument('--policy-tape-budget-mib', type=int, default=128)
+    p.add_argument('--training-tape-budget-mib', type=int, default=512)
+    p.add_argument('--capture-training', action='store_true', help='Capture frozen policy and both-viewer WDL rows; never update weights')
     p.add_argument('--max-decisions', type=int, default=1)
     p.add_argument('--require-natural', action='store_true')
     p.add_argument('--cohort-only', action='store_true', help='Bounded multi-decision diagnostic; no separate one-step timing repetitions')
@@ -78,7 +80,7 @@ def plan(args):
         execution_budget_scope='per_trial',proof_budget_scope='after_each_batch',
         typed_state_slots=args.rows*6+8,
         capacity=capacity.plan(), state_storage=args.state_storage, rule_dispatch=args.rule_dispatch,
-        cohort_only=args.cohort_only,
+        cohort_only=args.cohort_only, capture_training=args.capture_training,
         mixed_first_sides=True, skip_mulligan=True, search=dict(SEARCH),
         cuda_imported=False, models_loaded=False, files_created=False,
         learning_updates=0, gpu_qualified=False, passed=False,
@@ -94,10 +96,12 @@ def validate_bounds(parser, args):
     _bounded(parser, 'rows', args.rows, 1, 1600)
     _bounded(parser, 'rule-work-rows', args.rule_work_rows, 1, 32)
     _bounded(parser, 'inference-rows', args.inference_rows, 1, 32)
-    for name in ('gpu_budget_mib', 'state_budget_mib', 'raw_tape_budget_mib', 'policy_tape_budget_mib'):
+    for name in ('gpu_budget_mib', 'state_budget_mib', 'raw_tape_budget_mib', 'policy_tape_budget_mib','training_tape_budget_mib'):
         _bounded(parser, name.replace('_','-'), getattr(args,name), 1, 1024**2)
     if args.rule_dispatch == 'direct' and args.rows > 32:
         parser.error('Direct SoA calls are bounded to32; use device tiled dispatch for larger root cohorts')
+    if args.capture_training and not args.cohort_only:
+        parser.error('--capture-training requires a single --cohort-only multi-decision acceptance batch')
     if args.cohort_only and args.max_decisions <= 1:
         parser.error('--cohort-only requires --max-decisions greater than1')
     _bounded(parser, 'max-decisions', args.max_decisions, 1, 400)
@@ -125,6 +129,7 @@ def capacity_config(args):
         inference_rows=args.inference_rows, max_actions=args.max_actions, max_decisions=args.max_decisions,
         gpu_budget_mib=args.gpu_budget_mib, state_budget_mib=args.state_budget_mib,
         raw_tape_budget_mib=args.raw_tape_budget_mib, policy_tape_budget_mib=args.policy_tape_budget_mib,
+        training_tape_budget_mib=args.training_tape_budget_mib,
         execution_seconds=args.execution_seconds, proof_seconds=args.proof_seconds)
 
 
@@ -261,11 +266,57 @@ def host_states(store, roots):
 
 
 def memory_snapshot(torch, store, rules, actions, raw, light):
+    free,total=torch.cuda.mem_get_info()
     return dict(
         allocated=int(torch.cuda.memory_allocated()), reserved=int(torch.cuda.memory_reserved()),
+        device_free=int(free), device_total=int(total), device_used=int(total-free),
+        process_peak_allocated=int(torch.cuda.max_memory_allocated()),
+        process_peak_reserved=int(torch.cuda.max_memory_reserved()),
         typed_store=int(store.allocated_bytes), workspace=int(rules.workspace_bytes),
         action_store=int(actions.allocated_bytes), raw_tape=int(raw.allocated_bytes),
         policy_tape=int(getattr(light, 'allocated_bytes', 0)))
+
+
+def check_memory_budget(snapshot, capacity):
+    limit=capacity.gpu_budget_mib << 20
+    # Reserved allocator memory and non-PyTorch/other-process device use are
+    # different measurements. Neither may silently exceed this job's budget.
+    if any(snapshot[name]>limit for name in ('device_used','reserved','process_peak_reserved')):
+        raise MemoryError('Whole-device or allocator memory exceeded the declared GPU budget')
+    if snapshot['action_store']>capacity.action_budget_mib << 20:
+        raise MemoryError('Action arena exceeded the declared action byte budget')
+    if snapshot.get('training_tape',0)>capacity.training_tape_budget_mib << 20:
+        raise MemoryError('Training archive and prototype exceeded the declared collection byte budget')
+
+
+def inference_weight_digest(bank):
+    import hashlib
+    digest=hashlib.sha256()
+    for group in ('weights','legacy_weights'):
+        for name,value in sorted(getattr(bank,group,{}).items()):
+            if value.requires_grad:
+                raise ValueError('Frozen device inference weights cannot require gradients')
+            digest.update((group+'/'+name+':'+str(value.dtype)+':'+str(tuple(value.shape))).encode())
+            digest.update(value.detach().cpu().contiguous().numpy().tobytes())
+    return digest.hexdigest()
+
+
+def work_lane_receipt(rules):
+    if not hasattr(rules,'_queues'):
+        return dict(dispatch='direct', roots=rules.rows, work_rows=rules.rows)
+    visits=[0]*rules.rows;sites=[]
+    for index,queue in enumerate(rules._queues):
+        rows=int(queue.total_rows.cpu()[0]);calls=int(queue.total_dispatches.cpu()[0])
+        peak=int(queue.peak_selected.cpu()[0]);seen=queue.root_visits.cpu().tolist()
+        if min(rows,calls,peak,*seen)<0 or peak>rules.work_rows or sum(seen)!=rows:
+            raise AssertionError('Invalid device rule-lane coverage receipt')
+        visits=[a+b for a,b in zip(visits,seen)]
+        if calls:
+            sites.append(dict(site=index, selected_rows=rows, dispatches=calls, peak_selected=peak))
+    if not all(visits):
+        raise AssertionError('Independent root never reached the native rule work lanes')
+    return dict(dispatch='tiled', roots=rules.rows, work_rows=rules.work_rows,
+                per_root_visits=visits, sites=sites)
 
 
 def install_root_diagnostics(cohort,torch,rows,width):
@@ -359,11 +410,16 @@ class IsolatedCohort:
             row_work_seconds=seconds, reuse_root_policy_value=True,
             group_ready_leaves=True, reuse_interior_observation=True)
         policy = DeviceGamePolicySink(self.light)
-        self.sink = RawActionPolicySink(policy, self.raw)
+        self.training_tape=None
+        if shared.get('capture_training'):
+            from app.modules.card_game.rl.batched_search.soa_frozen_collection import create_training_tape
+            self.training_tape=create_training_tape(self.rules,capacity,decisions=max_decisions,
+                max_bytes=capacity.training_tape_budget_mib << 20)
+        self.sink = RawActionPolicySink(self.training_tape or policy, self.raw)
         self.loop = DeviceGameLoop(
             self.rules, self.search, self.sink, self.seeds, max_decisions=max_decisions,
             random_plan=self.random_plan, device=device, inner_max_ticks=shared['inner_max_ticks'],
-            seconds=seconds)
+            seconds=seconds, search_audit_sink=policy if self.training_tape is not None else None)
         self.rules.bind_game_loop(self.loop)
         policy.bind_game_loop(self.loop)
         self.timing = None
@@ -484,13 +540,16 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
         [[shared['inference'].keys.index(job['keys']['a']),
           shared['inference'].keys.index(job['keys']['b'])] for job in shared['jobs']],
         dtype=torch.int64, device=device)
-    train = torch.zeros((B, 2), dtype=torch.bool, device=device)
+    train = torch.full((B, 2),cohort.training_tape is not None,dtype=torch.bool,device=device)
     torch.cuda.synchronize()
     torch.cuda.empty_cache()
     progress('capturing_cohort')
     capture_started = time.monotonic()
     cohort.loop.capture(roots, seed_tensor, ids, ids, train)
     capture_seconds = time.monotonic() - capture_started
+    before_memory=memory_snapshot(torch,cohort.store,cohort.rules,cohort.actions,cohort.raw,cohort.light)
+    before_memory['training_tape']=cohort.training_tape.collection_allocated_bytes if cohort.training_tape is not None else 0
+    check_memory_budget(before_memory,shared['capacity'])
     if time.monotonic() >= deadline:
         raise TimeoutError('Execution budget exhausted during capture')
     progress('executing_cohort')
@@ -533,6 +592,9 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
                                cohort.raw, cohort.light),
         graph_executed=int(cohort.loop._outer.counter[0].cpu()) > 0)
     payload['peak_device_search_roots']=int(searched.peak_device_roots.cpu())
+    payload['memory_before_replay']=before_memory
+    payload['memory']['training_tape']=int(cohort.training_tape.collection_allocated_bytes) if cohort.training_tape is not None else 0
+    payload['work_lanes']=work_lane_receipt(cohort.rules)
     if 'output' in shared:
         (shared['output'] / 'last-replay.json').write_text(
             json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf8')
@@ -543,6 +605,7 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
             ensure_ascii=False),encoding='utf8')
     if time.monotonic()>deadline:
         raise TimeoutError('Per-trial CUDA execution budget exceeded')
+    check_memory_budget(payload['memory'],shared['capacity'])
     if not payload['graph_executed']:
         raise AssertionError('Closed nested CUDA WHILE did not execute')
     if payload['game_error_rows'] or payload['search_error_rows']:
@@ -555,11 +618,33 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
     if verify:
         progress('verifying_cohort')
         final = host_states(cohort.store, result.states)
+        proof_deadline=time.monotonic()+shared['proof_seconds']
         payload['postbatch'] = verify_postbatch(
-            cohort, shared, initial, final, result, searched,time.monotonic()+shared['proof_seconds'])
+            cohort, shared, initial, final, result, searched,proof_deadline)
+        if cohort.training_tape is not None:
+            payload['frozen_collection']=export_frozen_collection(cohort,shared,payload,initial,final,proof_deadline)
     if not payload['root_prior_separated']:
         payload['root_prior_timing'] = 'included_in_complete_gumbel32_not_separated'
     return payload, initial, final, result, searched
+
+
+def export_frozen_collection(cohort,shared,payload,initial,final,deadline):
+    from app.modules.card_game.rl.batched_search.soa_frozen_collection import (
+        completed_rows_after_batch,write_verified_episodes)
+    dataset=completed_rows_after_batch(cohort.training_tape,verified=payload['postbatch']['verified'],
+        natural_games=payload['natural_games'],roots=shared['rows'])
+    references={};light=cohort.light
+    if dataset['complete']:
+        count=int(light._record_count.cpu())
+        for i in range(count):
+            start=int(light._rec_offset[i].cpu());n=int(light._rec_count[i].cpu())
+            key=int(light._rec_game[i].cpu()),int(light._rec_step[i].cpu())
+            references[key]=dict(pi=light._packed_pi[start:start+n].cpu().numpy().copy(),
+                visits=light._packed_visits[start:start+n].cpu().numpy().copy())
+    return write_verified_episodes(dataset,initial=initial,final=final,
+        records=payload['postbatch']['records'],jobs=shared['jobs'],
+        versions={k:m.version for k,m in shared['models'].items()},policy_reference=references,
+        output=shared['output']/'frozen-episodes',deadline=deadline)
 
 
 def verify_postbatch(cohort, shared, initial, final, result, searched, deadline):
@@ -654,7 +739,7 @@ def verify_postbatch(cohort, shared, initial, final, result, searched, deadline)
             records.append(dict(
                 game=row, seed=shared['jobs'][row]['seed'], step=step, actor=actor,
                 raw_action=action, legal_count=len(legal), chosen=chosen, info_hash=info_hash,
-                requested=requested,completed=completed))
+                phase=view['phase'],requested=requested,completed=completed))
     from scripts.validate_duel_v2_native_soa import compare_boundary
     for left,right in zip(final,expected):
         compare_boundary(left,right,'CUDA raw replay final boundary')
@@ -814,10 +899,10 @@ def run(args):
         passed=False, rows=args.rows, max_decisions=args.max_decisions,
         require_natural=bool(args.require_natural), device=str(device),
         warmup=args.warmup, repeats=args.repeats, seed=args.seed, presets=list(KEYS),
-        search=dict(SEARCH), learning_updates=0, gpu_qualified=False,
+        search=dict(SEARCH), learning_updates=0, gpu_qualified=False,frozen_training_chain_passed=False,
         one_step_cannot_qualify_natural=True, skip_mulligan=True, mixed_first_sides=True)
     report.update(capacity=capacity.plan(),state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
-                  cohort_only=args.cohort_only,stable_throughput_qualified=False)
+                  cohort_only=args.cohort_only,capture_training=args.capture_training,stable_throughput_qualified=False)
     report['static'] = dict(
         search=dict(SEARCH), rows=args.rows, max_decisions=args.max_decisions,
         max_actions=args.max_actions, inner_max_ticks=args.inner_max_ticks,
@@ -853,6 +938,7 @@ def run(args):
         inference = DeviceValueOnlyInference(
             models, device=str(device), max_rows=capacity.inference_tile,
             max_candidate_elements=capacity.inference_tile * args.max_actions * 1576)
+        report['inference_weight_sha256']=inference_weight_digest(inference)
         engine_parameters, parameters = [], []
         for job in jobs:
             decks = {'a': models[job['keys']['a']].serving_deck,
@@ -865,6 +951,7 @@ def run(args):
             rows=args.rows, device=str(device), schema=schema, executor=executor,
             output=args.output, progress=checkpoint,
             capacity=capacity,state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
+            capture_training=args.capture_training,
             inference=inference, seed=args.seed, max_actions=args.max_actions,models=models,
             proof_seconds=args.proof_seconds,
             inner_max_ticks=args.inner_max_ticks, jobs=jobs, parameters=parameters,
@@ -934,6 +1021,11 @@ def run(args):
             if args.require_natural and payload['natural_games'] != args.rows:
                 raise AssertionError('require-natural rejected truncated or incomplete games')
             report['natural_claim_from_step1'] = False
+            after_weights={key:hashlib.sha256((args.models/(key+'.npz')).read_bytes()).hexdigest() for key in models}
+            if after_weights!=report['weight_sha256'] or inference_weight_digest(inference)!=report['inference_weight_sha256']:
+                raise AssertionError('Frozen source or resident inference weights changed')
+            report['weights_unchanged']=True
+            report['frozen_collection_complete']=bool(payload.get('frozen_collection',{}).get('complete'))
             report['passed'] = (
                 payload['graph_executed'] and payload['game_error_rows'] == 0
                 and payload['search_error_rows'] == 0 and payload['postbatch']['verified']

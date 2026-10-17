@@ -13,9 +13,16 @@ from app.modules.card_game.content.duel_v2 import STARTER_DECKS
 
 def without_card_display(value):
     if isinstance(value,dict):
-        return {k:without_card_display(v) for k,v in value.items() if k not in ('description','action_point_free','unavailable_reason')}
+        return {k:without_card_display(v) for k,v in value.items() if k not in (
+            'name','description','resource_name','faction','avatar','portrait',
+            'passive','awakened_passive','flavor','action_point_free','unavailable_reason')}
     if isinstance(value,list):return [without_card_display(v) for v in value]
     return value
+
+
+def without_character_display(character):
+    return without_card_display({k:v for k,v in character.items() if k not in (
+        'attack_breakdown','stat_layers','equipment','effect_markers','shape','shape_description')})
 
 
 def trace_states(max_steps=48):
@@ -47,6 +54,12 @@ class PolicyProjectionTest(unittest.TestCase):
                 self.assertEqual(actions,[e['action'] for e in canonical['legal_actions']])
                 self.assertEqual(state,before)
                 for ps in ('a','b'):
+                    self.assertNotIn('name',view['sides'][ps])
+                    for character in view['sides'][ps]['characters']:
+                        self.assertFalse(set(character)&{'name','avatar','portrait','passive',
+                                                       'awakened_passive','flavor','faction','resource_name'})
+                    self.assertEqual([without_character_display(c) for c in view['sides'][ps]['characters']],
+                                     [without_character_display(c) for c in canonical['sides'][ps]['characters']])
                     self.assertEqual(without_card_display(view['sides'][ps]['hand']),without_card_display(canonical['sides'][ps]['hand']))
                     self.assertEqual(without_card_display(view['sides'][ps]['discard']),without_card_display(canonical['sides'][ps]['discard']))
                 self.assertEqual(without_card_display(view.get('pending_choice')),without_card_display(canonical.get('pending_choice')))

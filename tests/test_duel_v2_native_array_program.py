@@ -89,6 +89,7 @@ class NativeArrayProgramTest(unittest.TestCase):
         from app.modules.card_game.rl.rule_ir.portable_program import ValidationError, compute_identity
         program = capture_native_array_program()
         self.assertFalse(program.data['native_array']['teacher_entries'])
+        self.assertFalse(program.data['native_array']['policy_query_cache'])
         self.assertNotIn('teacher_continue', program.entries)
         self.assertNotIn('rule_decision', program.entries)
         with tempfile.TemporaryDirectory(prefix='native_array_freeze_') as folder:
@@ -107,6 +108,25 @@ class NativeArrayProgramTest(unittest.TestCase):
             path.write_text(program.to_json(), encoding='utf8')
             with self.assertRaisesRegex(ValidationError, 'source hash mismatch'):
                 load_native_array_program(path)
+
+    @unittest.skipUnless(sys.version_info[:2]==(3,10),'Source capture requires CPython 3.10')
+    def test_indexed_projection_is_explicit_and_bound_to_its_real_capture_source(self):
+        from pathlib import Path
+        import tempfile
+        from app.modules.card_game.rl.batched_duel.native_array_program import capture_native_array_program,load_native_array_program
+        from app.modules.card_game.rl.rule_ir.portable_program import ValidationError,compute_identity
+        with self.assertRaises(TypeError):capture_native_array_program(policy_query_cache=1)
+        program=capture_native_array_program(policy_query_cache=True)
+        self.assertTrue(program.data['native_array']['policy_query_cache'])
+        names={fn['name'] for fn in program.functions}
+        self.assertIn('cached_policy_public_legal_decision',names);self.assertIn('_indexed_evaluate',names)
+        self.assertIn('app/modules/card_game/rl/batched_duel/gpu_cached_policy_projection.py',program.data['source_hashes'])
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'program.json';path.write_text(program.to_json())
+            self.assertEqual(load_native_array_program(path).identity,program.identity)
+            program.data['native_array']['policy_query_cache']=1
+            program.data['identity']=compute_identity(program.data);path.write_text(program.to_json())
+            with self.assertRaises(ValidationError):load_native_array_program(path)
 
     def test_native_recipe_rejects_an_interpreter_with_a_native_label(self):
         from types import SimpleNamespace

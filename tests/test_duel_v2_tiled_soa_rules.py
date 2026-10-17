@@ -25,7 +25,9 @@ class TiledSoARuleTests(unittest.TestCase):
             raise unittest.SkipTest('Packaged frozen program required')
         program=load_native_array_program(path) if path else capture_native_array_program()
         cls.schema=compile_execution_schema()
-        cls.executor=CudaSoARules(lower_program(program),cls.schema,limits=VmLimits(steps=48000000))
+        stack_runs=os.environ.get('NTE_SOA_STACK_RUNS','0')
+        if stack_runs not in ('0','1'):raise ValueError('Explicit stack-run fixture flag required')
+        cls.executor=CudaSoARules(lower_program(program),cls.schema,limits=VmLimits(steps=48000000),stack_runs=stack_runs=='1')
         cls.store=DeviceSparseSoAStore(cls.schema,32)
         cls.actions=CompactDeviceGraphStore(slots=32,node_pages=128,edge_pages=128,payload_pages=256,
             node_page_bytes=16384,edge_page_bytes=16384,payload_page_bytes=4096,

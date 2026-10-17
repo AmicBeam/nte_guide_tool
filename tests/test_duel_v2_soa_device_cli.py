@@ -32,6 +32,49 @@ def _stderr(argv):
 
 
 class SoADeviceCliTests(unittest.TestCase):
+    def test_freeze_check_detects_resident_tensor_changes_and_gradient_inputs(self):
+        import torch
+        from types import SimpleNamespace
+        from scripts.benchmark_duel_v2_soa_device import inference_weight_digest
+        bank=SimpleNamespace(weights={'a':torch.tensor([1.,2.])},legacy_weights={'b':torch.tensor([3.])})
+        before=inference_weight_digest(bank)
+        self.assertEqual(before,inference_weight_digest(bank))
+        bank.legacy_weights['b'][0]+=1
+        self.assertNotEqual(before,inference_weight_digest(bank))
+        bank.weights['a'].requires_grad_(True)
+        with self.assertRaises(ValueError):inference_weight_digest(bank)
+
+    def test_memory_budget_rejects_driver_use_and_allocator_cache_separately(self):
+        from scripts.benchmark_duel_v2_soa_device import check_memory_budget
+        from app.modules.card_game.rl.batched_search.soa_capacity import SoACapacityConfig
+        cfg=SoACapacityConfig(gpu_budget_mib=4096,state_budget_mib=2048)
+        receipt=dict(device_used=3<<30,reserved=2<<30,process_peak_reserved=2<<30,
+                     action_store=100<<20)
+        check_memory_budget(receipt,cfg)
+        for field in ('device_used','reserved','process_peak_reserved'):
+            with self.assertRaises(MemoryError):
+                check_memory_budget(dict(receipt,**{field:(4096<<20)+1}),cfg)
+        with self.assertRaises(MemoryError):
+            check_memory_budget(dict(receipt,action_store=(512<<20)+1),cfg)
+        with self.assertRaises(MemoryError):
+            check_memory_budget(dict(receipt,training_tape=(512<<20)+1),cfg)
+
+    def test_lane_receipt_checks_tail_coverage_without_counting_work_slots_as_roots(self):
+        import torch
+        from types import SimpleNamespace as NS
+        from scripts.benchmark_duel_v2_soa_device import work_lane_receipt
+        q=NS(total_rows=torch.tensor([3]),total_dispatches=torch.tensor([2]),
+             peak_selected=torch.tensor([2]),root_visits=torch.tensor([1,1,1]))
+        rules=NS(rows=3,work_rows=2,_queues=[q])
+        result=work_lane_receipt(rules)
+        self.assertEqual((result['roots'],result['work_rows']),(3,2))
+        q.root_visits=torch.tensor([2,1,0])
+        with self.assertRaisesRegex(AssertionError,'never reached'):
+            work_lane_receipt(rules)
+        q.root_visits=torch.tensor([1,1,1]);q.peak_selected[0]=3
+        with self.assertRaisesRegex(AssertionError,'coverage'):
+            work_lane_receipt(rules)
+
     def test_direct_script_large_capacity_plan_without_cuda(self):
         result=subprocess.run([sys.executable,str(CLI),'--rows','1600'],
             cwd=REPO,capture_output=True,text=True,timeout=20)
@@ -50,6 +93,14 @@ class SoADeviceCliTests(unittest.TestCase):
             self.assertEqual(_main(['--cohort-only','--max-decisions','4']),0)
         plan=json.loads(buf.getvalue())
         self.assertTrue(plan['cohort_only'])
+        self.assertFalse(plan['passed'])
+
+    def test_training_capture_is_one_cohort_not_repeated_timing_exports(self):
+        self.assertIn('--cohort-only',_stderr(['--capture-training']))
+        buf=io.StringIO()
+        with redirect_stdout(buf):
+            self.assertEqual(_main(['--capture-training','--cohort-only','--max-decisions','4']),0)
+        plan=json.loads(buf.getvalue());self.assertTrue(plan['capture_training'])
         self.assertFalse(plan['passed'])
 
     def test_numerical_receipt_with_numpy_reference_q_serializes(self):

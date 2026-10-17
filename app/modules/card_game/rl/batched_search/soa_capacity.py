@@ -64,6 +64,7 @@ class SoACapacityConfig:
     action_budget_mib: int = 512
     raw_tape_budget_mib: int = 512
     policy_tape_budget_mib: int = 128
+    training_tape_budget_mib: int = 512
     execution_seconds: float = 1800.
     proof_seconds: float = 600.
 
@@ -76,6 +77,7 @@ class SoACapacityConfig:
             ('gpu_budget_mib', 1, 2**20), ('state_budget_mib', 1, 2**20),
             ('action_budget_mib', 1, 2**20), ('raw_tape_budget_mib', 1, 2**20),
             ('policy_tape_budget_mib', 1, 2**20),
+            ('training_tape_budget_mib', 1, 2**20),
         ):
             _integer(name, getattr(self, name), low, high)
         for name in ('execution_seconds', 'proof_seconds'):

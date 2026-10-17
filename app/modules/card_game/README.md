@@ -1222,3 +1222,9 @@ SoA 深拷贝不再为原子值清空整张复制映射表；非空临时图在�
 `benchmark_duel_v2_soa_device.py` 默认采用稀疏状态和有界队列；可用 `--rows 1600 --rule-work-rows 8 --inference-rows 2` 只列静态计划。原始动作与策略前缀追加空间受独立字节预算约束，耗尽明确失败；批次后状态／动作导出也使用有界分块。`--cohort-only --max-decisions N` 用于有界多步诊断，完整自然局仍需 `--require-natural`；稳定计时、逐级容量和数据完整性要求见 [1016协议](../../../docs/duel-v2-soa-1016-acceptance.md)。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_soa_capacity tests.test_duel_v2_sparse_soa_storage tests.test_duel_v2_tiled_soa_rules tests.test_duel_v2_soa_device_cli`。实际CUDA项与CPU参考分别记账，跳过不算通过。
+
+搜索专用观察进一步省去名称、头像和被动等展示文本，仍保留完整数值、身份、可见性和合法候选；网站投影不变。`--capture-training` 可同时保存既有设备训练轨迹与独立策略审计，按 `--training-tape-budget-mib` 拒绝超预算；只有整批自然终局及回放／双视角数值对拍完成后才导出七队episode。`soa_frozen_collection.py` 负责冻结采集边界，`outcome_runtime.update(..., gradient_only=True)` 要求优化器为 `None`，只核验既有联合损失与梯度。对应检查为 `tests.test_duel_v2_policy_projection`、`tests.test_duel_v2_soa_frozen_collection` 和 `tests.test_duel_v2_device_training_tape`；组件通过不替代真实自然局和正式训练保护。
+
+原生执行器和CUDA诊断的 `stack_runs=True` 是默认关闭的编译实验：合并连续局部栈操作，保留原PC、逐指令预算及异常检查。`tests.test_duel_v2_native_stack_runs` 验证独立编译的开关两版逐步截断与状态／错误一致性；启用必须另过实际设备与完整搜索验收，不能作为已经提速的证据。
+
+`capture_native_array_program(policy_query_cache=True)` 可选择 `gpu_cached_policy_projection.py` 的单次投影属性效果索引，默认关闭；复用正式适用条件与归约，观察结束即丢弃缓存。测试 `tests.test_duel_v2_cached_policy_projection` 覆盖完整视图、编码和跨调用失效，仍需独立的原生／CUDA及闭环搜索核验。

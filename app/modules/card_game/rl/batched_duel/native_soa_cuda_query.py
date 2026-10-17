@@ -22,13 +22,13 @@ class NativeSoACUDAQuery:
     gpu_throughput_qualified=False
 
     def __init__(self,image,schema,*,limits=VmLimits(),device='cuda',directory=None,
-                 max_nodes=1048576,max_edges=2097152,max_payload_bytes=33554432,seconds=120):
+                 max_nodes=1048576,max_edges=2097152,max_payload_bytes=33554432,seconds=120,stack_runs=False):
         if type(seconds) not in (int,float) or not 0<seconds<=3600:
             raise ValueError('Bounded CUDA diagnostic call budget required')
         for value in (max_nodes,max_edges,max_payload_bytes):
             if type(value) is not int or not 0<value<2**31:
                 raise ValueError('Positive bounded diagnostic scratch required')
-        self.executor=CudaSoARules(image,schema,device=device,limits=limits)
+        self.executor=CudaSoARules(image,schema,device=device,limits=limits,stack_runs=stack_runs)
         self.image,self.schema,self.limits,self.seconds=image,schema,limits,seconds
         self.max_nodes,self.max_edges,self.max_payload_bytes=max_nodes,max_edges,max_payload_bytes
         self.source_sha256=self.executor.source_sha256
@@ -37,7 +37,7 @@ class NativeSoACUDAQuery:
         if directory is not None:
             from .native_soa_source import emit_native_soa_source
             output=Path(directory);output.mkdir(parents=True,exist_ok=True)
-            (output/'native_soa.cu').write_text(emit_native_soa_source(image,schema,limits)[0],encoding='utf8')
+            (output/'native_soa.cu').write_text(emit_native_soa_source(image,schema,limits,stack_runs=stack_runs)[0],encoding='utf8')
 
     def call(self,entry,state,arguments,*,state_positions=(0,),steps=None):
         if self.closed:

@@ -226,9 +226,12 @@ def export(net, directory, key, build, origin):
 
 
 def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.,
-           ranking_coefficient=0., ranking_confidence=DEFAULT_RANKING_CONFIDENCE):
+           ranking_coefficient=0., ranking_confidence=DEFAULT_RANKING_CONFIDENCE,
+           gradient_only=False):
     import torch
     from .league_learning import tensors
+    if type(gradient_only) is not bool or (gradient_only and opt is not None) or (not gradient_only and opt is None):
+        raise ValueError('Gradient-only validation requires no optimizer; updates require an optimizer')
     if not rows:
         raise ValueError('Empty WDL batch')
     if not np.isfinite(self_imitation) or not 0<=self_imitation<=1:
@@ -314,14 +317,19 @@ def update(net, opt, rows, *, warmup=False, value_only=False, self_imitation=0.,
         policy_gradient_norms.update({prefix: float(np.sqrt(total)) for prefix, total in totals.items()})
         if any(not np.isfinite(totals[prefix]) for prefix in prefixes):
             raise ValueError('Non-finite policy gradient')
-    opt.zero_grad()
+    if gradient_only:
+        net.zero_grad(set_to_none=True)
+    else:
+        opt.zero_grad()
     loss.backward()
     torch.nn.utils.clip_grad_norm_(net.parameters(), 1., error_if_nonfinite=True)
-    opt.step()
+    if not gradient_only:
+        opt.step()
     return dict(policy_loss=float(policy_loss.detach()), value_loss=float(value_loss.detach()),
                 self_imitation_loss=float(imitation_loss.detach()),self_imitation_value_loss=float(imitation_value_loss.detach()),
                 self_imitation_coefficient=self_imitation,self_imitation_samples=imitation_samples,
                 samples=len(rows), policy_samples=len(selected), value_only=bool(value_only),
+                optimizer_steps=0 if gradient_only else 1,
                 policy_gradient_norms=policy_gradient_norms,
                 unique_row_ids=[r.get('row_id') for r in rows if r.get('row_id') and 'pi' in r],
                 ranking_loss=float(ranking_loss.detach()),

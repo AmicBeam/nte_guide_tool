@@ -50,10 +50,15 @@ def _kernel(source, name):
     return source[start:end]
 
 
-def emit_native_soa_source(image, schema, limits):
+def emit_native_soa_source(image, schema, limits, *, stack_runs=False):
+    if type(stack_runs) is not bool:
+        raise TypeError('Explicit native stack-run option required')
     from .vm_soa_views import integrate_soa_source
     source, plan = _require_native_array_source(image, limits,
         direct_stack_dispatch=True, compact_frame_init=True, constant_lookup=True)
+    if stack_runs:
+        from .native_stack_runs import fuse_stack_runs
+        source=fuse_stack_runs(source,plan)
     source = integrate_soa_source(source, schema, image=image)
     from .vm_soa_constant_fields import integrate_constant_fields
     source = integrate_constant_fields(source,schema,image)

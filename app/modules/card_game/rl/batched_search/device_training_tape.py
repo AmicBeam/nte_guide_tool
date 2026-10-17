@@ -151,15 +151,18 @@ class DeviceTrainingTape:
         if self.allocated_bytes > max_bytes:
             raise MemoryError('Declared device training tape exceeds byte budget')
 
-    def _estimate_bytes(self, compact, rows, record_n, legal_n, observation_dim):
-        total = rows * 120 + record_n * (120 + observation_dim * 8) + legal_n * 16
-        total += (rows + record_n + legal_n + compact.max_candidates) * 8
+    @staticmethod
+    def _estimate_bytes(compact, rows, record_n, legal_n, observation_dim):
+        """Exact owned tensor layout, including sentinels and dtype-sized pads."""
+        total = (rows*102 + record_n*(110+compact.tokens.turn_counts.element_size()+observation_dim*8)
+                 + legal_n*20 + compact.max_candidates*8 + 32)
         for name in _PER_ACTION:
             source = getattr(compact.tokens, name)
             n = 1
             for size in source.shape[2:]:
                 n *= int(size)
             total += legal_n * n * int(source.element_size())
+            total += int(source.element_size())  # One typed padding scalar.
         return int(total)
 
     def _allocated_bytes(self):

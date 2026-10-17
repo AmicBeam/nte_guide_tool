@@ -93,7 +93,9 @@ class PagedTypedStorageTests(unittest.TestCase):
             lease=store.put_device(source,torch.tensor([0,1]),torch.tensor([True,True]));slot=int(lease.slots[0])
             first=int(store.pages.page_table[slot,0])
             if corruption=='owner':store.pages.page_owner[first]+=1
-            elif corruption=='duplicate':store.pages.page_table[slot,1]=first
+            elif corruption=='duplicate':
+                self.assertGreater(int(store.pages.page_count[slot]),1)
+                store.pages.page_table[slot,1]=first
             elif corruption=='count':store.counts['i64'][slot]+=1
             else:store.pages.data[first,:4]=torch.tensor([self.schema.lengths['i64']],dtype=torch.int32).view(torch.uint8)
             out=store.gather_device(lease);self.assertEqual(lease.errors.tolist(),[CORRUPT_COLUMN,0],corruption)
@@ -152,6 +154,34 @@ class PagedTypedStorageTests(unittest.TestCase):
         expected=source.to_host().to_torch('cpu')
         for value in expected.buffers.values():value[:,0]=0
         expected.roots[0]=0;assert_bits(self,rejected,expected)
+
+    def test_actual_cuda_atomic_slot_and_shared_page_exhaustion(self):
+        if not torch.cuda.is_available():self.skipTest('Actual CUDA required')
+        for page_limited in (False,True):
+            capacity=4 if page_limited else 2;caps=self.schema.lengths
+            size=sum(caps[k]*(4+WIDTHS[k]) for k in WIDTHS);per_slot=(size+63)//64
+            fixed=capacity*(per_slot*8+68)+per_slot*8+16
+            budget=fixed+(per_slot+1)*80 if page_limited else 1<<24
+            store=DevicePagedSoAStore(self.schema,capacity,column_cells=caps,page_bytes=64,
+                max_bytes=budget,resident_bytes=budget,device='cuda');self.addCleanup(store.close)
+            store.prepare_workspace(1);store.prepare_workspace(2)
+            full=self.schema.allocate(2).to_torch('cuda')
+            for value in full.buffers.values():value.fill_(1)
+            full.roots.fill_(1)
+            one=TorchRecordSoABatch(self.schema,{k:v[:,:1].contiguous() for k,v in full.buffers.items()},full.roots[:1].contiguous())
+            output=self.schema.allocate(1).to_torch('cuda')
+            owner=torch.tensor([9],device='cuda');owners=torch.tensor([1,2],device='cuda')
+            active=torch.ones(1,dtype=torch.bool,device='cuda');both=torch.ones(2,dtype=torch.bool,device='cuda')
+            graph=torch.cuda.CUDAGraph()
+            with torch.cuda.graph(graph):
+                first=store.put_device(one,owner,active)
+                failed=store.put_device(full,owners,both)
+                store.gather_into_device(first,output);store.release_device(first)
+            graph.replay();torch.cuda.synchronize()
+            self.assertEqual(first.errors.cpu().tolist(),[0])
+            self.assertEqual(failed.errors.cpu().tolist(),[CAPACITY,CAPACITY])
+            self.assertEqual(failed.active.cpu().tolist(),[False,False])
+            self.assertEqual(int(store.live.sum().cpu()),0);assert_bits(self,output,one)
 
 
 if __name__=='__main__':unittest.main()

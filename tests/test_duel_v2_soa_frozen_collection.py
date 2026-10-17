@@ -106,6 +106,28 @@ class FrozenCollectionTests(unittest.TestCase):
             self.assertTrue(result['complete']);self.assertFalse(result['formal_training_qualified'])
             self.assertEqual(len(episode['rows']),3)
             np.testing.assert_array_equal(episode['rows'][0]['pi'],pi)
+            # The real seven-team consumer accepts completed diagnostic rows,
+            # while both formal launch and learning admission remain blocked.
+            import json,shutil
+            from app.modules.card_game.rl.batched_search.soa_frozen_episode_batch import FrozenSoAEpisodeBatch
+            from app.modules.card_game.rl.batched_search.device_execution_contract import require_closed_device_driver,DeviceExecutionNotReady
+            from app.modules.card_game.rl.seven_round import collect
+            from scripts.benchmark_duel_v2_soa_device import SEARCH
+            parent=Path(directory)/'controller';parent.mkdir();shutil.copytree(out,parent/'frozen-episodes')
+            (parent/'raw-replay.json').write_text(json.dumps(dict(final=[final],records=arguments['records'])))
+            receipt=dict(passed=True,rows=1,capture_training=True,weights_unchanged=True,frozen_collection_complete=True,
+                natural_games=1,error_rows=0,learning_updates=0,graph_executed=True,gpu_qualified=False,
+                search=dict(SEARCH),postbatch=dict(verified=True,information_hashes_verified=True),frozen_collection=result,
+                per_root=[dict(seed=17,first='a',decks={'a':'starter','b':'starter'})],weight_sha256={'starter':'frozen'})
+            report=parent/'report.json';report.write_text(json.dumps(receipt))
+            batch=FrozenSoAEpisodeBatch(report)
+            consumed=collect(None,batch.jobs,parent/'consumer',rollout=batch,require_search=True)
+            self.assertEqual(len(consumed),1);self.assertEqual(consumed[0]['searched'],1)
+            self.assertFalse(consumed[0]['learning_eligible'])
+            with self.assertRaises(ValueError):collect(None,batch.jobs,parent/'learn',rollout=batch,learning=True)
+            with self.assertRaises(DeviceExecutionNotReady):require_closed_device_driver(batch,purpose='training')
+            receipt['natural_games']=0;report.write_text(json.dumps(receipt))
+            with self.assertRaises(ValueError):FrozenSoAEpisodeBatch(report)
             for field in ('pi','opponent'):
                 broken=deepcopy(dataset)
                 if field=='pi':broken['policy'][0]['pi'][chosen]+=.01

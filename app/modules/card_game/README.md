@@ -1232,3 +1232,5 @@ SoA 深拷贝不再为原子值清空整张复制映射表；非空临时图在�
 有界队列可显式使用 `--candidate-int32` 保存经范围检查的32位候选类别索引，计数仍为64位，完整候选宽度与数值编码不变；训练轨迹原型按相同dtype计费。默认关闭，`tests.test_duel_v2_candidate_index_storage` 验证完整前缀、溢出拒绝和布局字节数，实际设备与闭环资格仍需另验。
 
 `device_paged_soa_storage.py` 将四条稀疏类型列放入有界共享页，保留原逻辑偏移与类型位值；`--state-storage paged --state-page-budget-mib 1536` 显式选择，默认仍为固定稀疏槽。页不足整批拒绝，页归属、重复映射、长度和租约在设备上核验。`tests.test_duel_v2_paged_soa_storage` 验证逐位运输、跨页、复用及损坏拒绝；实际规则与完整搜索分别验收。
+
+`soa_frozen_episode_batch.py` 将完整设备诊断episode接入既有七队消费接口，交叉核验控制器回执、原始动作、模型身份、完整pi及双视角终局标签。它不是实时驱动，正式训练保护继续拒绝，`learning_eligible=False`；仅用于冻结消费、损失／梯度和检查点恢复验收。

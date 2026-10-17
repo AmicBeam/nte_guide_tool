@@ -317,3 +317,9 @@ HTTP入口为`GET /api/guide/axes`（重复`character`参数）和`GET /api/guid
 模型指令要求使用`[中文说明](/站内路径)`，不添加本机地址或猜测域名。`chat_links.py`为已核实的攻略条目生成HTML链接，`wiki_search`与`wiki_get`直接返回`links.detail`；角色另含养成、排轴配装，以及有明确绑定时的空幕与合轴入口。关卡详情保留已选层号。在线轴使用工具提供的`preview_url`，不将JSON接口当网页链接，不混用攻略角色ID与排轴角色ID。回答正文及引用继续通过安全DOM渲染链接，禁止模型HTML注入。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_chat_stream tests.test_guide_chat tests.test_guide_bot_tools tests.test_guide tests.test_module_routes -q`；`node --test tests/test_guide_chat_state.cjs`。浏览器使用隔离合成账号与延迟模型验证首段先于完成显示、站内链接跳转、停止后部分回答保留及刷新恢复。真实模型服务需支持SSE和工具调用，反向代理需关闭响应缓冲。
+
+## 轨外之境公开赛期范围
+
+网页目录、分类计数、JSON列表与全文搜索、HTML／JSON／Markdown详情、攻略助手及CLI统一只返回常驻环线和截至当前已开始的轮换赛期。轮换赛期在配置开始日北京时间05:00（含）开放，历史赛期继续可读；未来赛期不进入搜索或分页分母，直接请求返回404，CLI的JSON／Markdown读取同样失败。没有有效开始日期的非常驻赛期不公开，不按编号推断开放。
+
+`service.public_records`在每次查询时过滤，离线完整快照继续保留未来配置；日期切换无需刷新数据或重启服务。CLI共用服务端判定，不依赖客户端时钟。验证：`.venv/bin/python -m unittest tests.test_guide_challenge_visibility tests.test_guide_challenge_schedule tests.test_guide_current_challenge tests.test_guide_challenges tests.test_guide tests.test_module_routes -q`，覆盖05:00边界、跨时区、缓存后时间推进、分类计数、直接链接、搜索及CLI。

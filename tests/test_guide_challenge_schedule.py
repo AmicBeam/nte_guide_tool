@@ -3,7 +3,8 @@ import importlib.util
 import re
 from pathlib import Path
 import unittest
-from datetime import date
+from unittest.mock import patch
+from datetime import date, datetime
 from flask import Flask
 from app.modules.guide import blueprint, service
 
@@ -29,7 +30,8 @@ class ChallengeScheduleTest(unittest.TestCase):
         self.assertIsNone(records[14]['begin_date'])
         self.assertIsNone(records[15]['begin_date'])
 
-    def test_every_challenge_shows_resonance_name_and_effect(self):
+    @patch('app.modules.guide.challenge_calendar.current_time', return_value=datetime.fromisoformat('2026-11-14T12:00:00+08:00'))
+    def test_every_challenge_shows_resonance_name_and_effect(self, _clock):
         app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
         app.register_blueprint(blueprint)
         client = app.test_client()
@@ -43,7 +45,8 @@ class ChallengeScheduleTest(unittest.TestCase):
                 self.assertIn(challenge['resonance']['description'], unescape(section))
                 self.assertNotIn('built-in method', section)
 
-    def test_public_dates_and_unnamed_last_season(self):
+    @patch('app.modules.guide.challenge_calendar.current_time', return_value=datetime.fromisoformat('2026-11-14T12:00:00+08:00'))
+    def test_public_dates_and_unnamed_last_season(self, _clock):
         app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
         app.register_blueprint(blueprint)
         client = app.test_client()

@@ -8,6 +8,7 @@ import re
 from markupsafe import Markup, escape
 from .affinity import with_gift_costs
 from .description_parameters import bind_description_parameters
+from .challenge_calendar import is_released_challenge
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境', 'endless': '全站深境'}
 LABELS = {
@@ -118,6 +119,13 @@ def label(key):
     return LABELS.get(str(key), str(key))
 
 
+def public_records(kind):
+    records = catalog()[kind]
+    if kind == 'challenges':
+        return [record for record in records if is_released_challenge(record)]
+    return records
+
+
 def summary(kind, record):
     identifier = str(record['id'])
     result = {k: record[k] for k in ('id', 'name', 'aliases', 'element_name', 'rarity',
@@ -137,7 +145,7 @@ def summary(kind, record):
 def search(kind=None, query='', element='', rarity=None, arc_type=''):
     result = []
     for group in ([kind] if kind else KINDS):
-        records = reversed(catalog()[group]) if group == 'challenges' else catalog()[group]
+        records = reversed(public_records(group)) if group == 'challenges' else public_records(group)
         for record in records:
             if element and element not in (record.get('element_name'), record.get('element_id'), record.get('element')):
                 continue
@@ -169,7 +177,7 @@ def filter_index_items(kind):
 
 
 def detail(kind, identifier, section=None, stage=None):
-    record = next((r for r in catalog()[kind] if str(r['id']) == identifier), None)
+    record = next((r for r in public_records(kind) if str(r['id']) == identifier), None)
     if record is None:
         raise LookupError('未找到条目')
     if stage is not None:

@@ -88,7 +88,7 @@ class GuideTest(unittest.TestCase):
         narrowed = self.client.get('/api/guide/characters/1042?section=abilities').json['data']
         self.assertEqual(narrowed['abilities'], full['abilities'])
         self.assertNotIn('stats', narrowed)
-        challenge = self.client.get('/api/guide/challenges/Abyss_14?stage=12').json['data']
+        challenge = self.client.get('/api/guide/challenges/Abyss_12?stage=12').json['data']
         self.assertEqual([x['id'] for x in challenge['stages']], [12])
         stats = challenge['stages'][0]['halves'][0]['waves'][0]['monsters'][0]['stats']
         self.assertGreater(stats['hp'], 0)
@@ -97,8 +97,8 @@ class GuideTest(unittest.TestCase):
         self.assertEqual(md.mimetype, 'text/markdown')
         self.assertIn('叛逃者', md.text)
         self.assertNotIn('<NumGreen>', md.text)
-        self.assertEqual(self.client.get('/guide/challenges/Abyss_14?stage=').status_code, 200)
-        stage_html = self.client.get('/guide/challenges/Abyss_14?stage=12').text
+        self.assertEqual(self.client.get('/guide/challenges/Abyss_12?stage=').status_code, 200)
+        stage_html = self.client.get('/guide/challenges/Abyss_12?stage=12').text
         self.assertIn('魂', stage_html)
         self.assertNotIn('>psyche<', stage_html)
         self.assertNotIn('1 · 始发站', stage_html)
@@ -338,7 +338,7 @@ class GuideTest(unittest.TestCase):
                 ('/api/guide/arcs?limit=abc',400),('/api/guide/characters?rarity=9',400),
                 ('/api/guide/characters/1042?section=missing',404),
                 ('/api/guide/characters/1042?stage=1',400),
-                ('/api/guide/challenges/Abyss_14?stage=999',404)]:
+                ('/api/guide/challenges/Abyss_12?stage=999',404)]:
             response = self.client.get(path)
             self.assertEqual(response.status_code,status,path)
             self.assertIn('error',response.json)

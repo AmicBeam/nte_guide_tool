@@ -49,7 +49,7 @@ def register(blueprint):
                 for item in service.catalog()['arcs']}
         return render_template('guide/account.html', characters=characters, arcs=arcs,
             equipment_images=presentation.equipment_images(),
-            kinds=service.KINDS, counts={key: len(service.catalog()[key]) for key in service.KINDS})
+            kinds=service.KINDS, counts={key: len(service.public_records(key)) for key in service.KINDS})
 
     def body():
         payload = request.get_json(silent=True)

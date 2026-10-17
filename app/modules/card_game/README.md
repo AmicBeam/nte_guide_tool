@@ -1234,3 +1234,5 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 `device_paged_soa_storage.py` 将四条稀疏类型列放入有界共享页，保留原逻辑偏移与类型位值；`--state-storage paged --state-page-budget-mib 1536` 显式选择，默认仍为固定稀疏槽。页不足整批拒绝，页归属、重复映射、长度和租约在设备上核验。`tests.test_duel_v2_paged_soa_storage` 验证逐位运输、跨页、复用及损坏拒绝；实际规则与完整搜索分别验收。
 
 `soa_frozen_episode_batch.py` 将完整设备诊断episode接入既有七队消费接口，交叉核验控制器回执、原始动作、模型身份、完整pi及双视角终局标签。它不是实时驱动，正式训练保护继续拒绝，`learning_eligible=False`；仅用于冻结消费、损失／梯度和检查点恢复验收。
+
+原生 SoA 字段访问沿用常量名直达列，动态字符串名在所属记录类型内使用精确 UTF-8 二分索引；读取与成员判断不再为了找值扫描插入顺序或构造字段名。删除和遍历继续使用原有顺序，缺失标记实时读取，非字符串查询保留原拒绝／比较路径。记录适配与编码的字段匹配复用同一索引。验证：`.venv/bin/python -m unittest tests.test_duel_v2_soa_record_fields tests.test_duel_v2_native_soa_cpu`；短时实际 CUDA 可通过 `NTE_SOA_RECORD_FIELDS_PROGRAM` 指定同源小型冻结用例。局部访问或CPU组件收益不授予完整GPU搜索吞吐与并发资格。

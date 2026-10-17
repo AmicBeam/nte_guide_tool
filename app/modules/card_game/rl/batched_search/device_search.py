@@ -74,7 +74,7 @@ class DeviceGumbelSearch:
                  random=None, noise=False, device='cuda', allow_cpu_reference=False,
                  allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False,
                  reuse_root_policy_value=False, verify_root_value_reuse=False,
-                 group_ready_leaves=False,reuse_interior_observation=False,opponent_mode='rule',
+                 group_ready_leaves=False,reuse_interior_observation=False,reuse_root_observation=False,opponent_mode='rule',
                  prior_guide=None, reuse_sampled_world=False, reuse_root_decision=False):
         import torch
         from ..search_policy import visit_schedule
@@ -127,6 +127,9 @@ class DeviceGumbelSearch:
         if type(reuse_interior_observation) is not bool:
             raise TypeError('Explicit interior observation reuse option required')
         self.reuse_interior_observation=reuse_interior_observation
+        if type(reuse_root_observation) is not bool:
+            raise TypeError('Explicit root observation reuse option required')
+        self.reuse_root_observation=reuse_root_observation
         self.t = torch
         self.device = torch.device(device)
         if self.device.type == 'cuda' and self.device.index is None:
@@ -277,7 +280,37 @@ class DeviceGumbelSearch:
         return ((states.slots == self._roots.slots[root])
                 & (states.generations == self._roots.generations[root]))
 
-    def _fixed_value(self, states, viewers, model_ids, mask, *, observed=None):
+    def _root_observation(self, states, viewers, decision, meta, mask):
+        """Borrow only this initialization's checked own-view decision encoding.
+
+        This saves a rule query, never auxiliary inference or random draws.
+        Terminal and other-viewer rows retain the canonical observation path.
+        Stale/foreign decisions are execution errors, not cache misses.
+        """
+        t=self.t
+        saved=decision.states
+        if saved.pool is not states.pool:
+            raise ValueError('Root decision observation must use the same state arena')
+        stale=((saved.slots!=states.slots)|(saved.generations!=states.generations)
+               |(saved.owners!=states.owners))
+        self._error(stale,mask,METADATA_ERROR)
+        self._error(saved.errors|decision.errors|meta.errors,mask,RULE_ERROR)
+        eligible=(mask & states.active & saved.active & ~stale & (self.errors==0)
+                  & ~meta.finished & (meta.actors==viewers) & (viewers>=0) & (viewers<=1)
+                  & (states.slots>=0) & (states.generations>0) & (states.owners>=0)
+                  & (decision.counts>0)
+                  & t.isfinite(decision.observations).all(-1))
+        fallback=self.rules.value_observation_device(
+            self._masked(states,mask & ~eligible & (self.errors==0)),viewers)
+        observed=DeviceValueObservation(
+            t.where(eligible[:,None],decision.observations,fallback.observations),
+            t.where(eligible[:,None],t.ones_like(fallback.viewer_is_actor),fallback.viewer_is_actor),
+            t.where(eligible,t.zeros_like(fallback.terminal),fallback.terminal),
+            t.where(eligible,t.zeros_like(fallback.terminal_value),fallback.terminal_value),
+            t.where(eligible,decision.errors,fallback.errors))
+        return observed,eligible
+
+    def _fixed_value(self, states, viewers, model_ids, mask, *, observed=None,reuse_mask=None):
         t = self.t
         reused=observed is not None
         if not reused:
@@ -287,7 +320,8 @@ class DeviceGumbelSearch:
         meta = self.rules.metadata_device(self._masked(states, mask))
         self._error(meta.errors, mask, RULE_ERROR)
         if reused:
-            self._error(meta.finished|(meta.actors!=viewers),mask,METADATA_ERROR)
+            self._error(meta.finished|(meta.actors!=viewers),
+                mask if reuse_mask is None else mask & reuse_mask,METADATA_ERROR)
         invalid_terminal_meta = meta.finished & ((meta.winners < -1) | (meta.winners > 1))
         self._error(invalid_terminal_meta | (meta.finished != observed.terminal), mask, METADATA_ERROR)
         expected_terminal = t.where(meta.winners == viewers, 1.,
@@ -472,6 +506,13 @@ class DeviceGumbelSearch:
         self.requested.copy_(t.where(decision.counts == 1, 1, self.simulations))
         self._limits = decision.counts.clamp(1, self._candidate_cap) - 1
         prior = self._policy_prediction(decision, viewers, mask, root=True)
+        observed,observation_mask=None,None
+        # Verification deliberately keeps its independent rule query.
+        if self.reuse_root_observation and not self.verify_root_value_reuse:
+            observed,observation_mask=self._root_observation(roots,viewers,decision,meta,mask)
+        def fixed_root_value(value_mask):
+            return self._fixed_value(roots,viewers,self._aux_ids,value_mask,
+                observed=observed,reuse_mask=observation_mask)
         reuse = self.root_value_reuse
         if reuse is not None and reuse.enabled:
             ids = self._policy_ids.gather(1, viewers.clamp(0, 1)[:, None])[:, 0]
@@ -479,7 +520,7 @@ class DeviceGumbelSearch:
                 self._last_policy_prediction, viewers, ids, self._aux_ids, mask)
             self.root_value_reuse_rows.copy_(eligible.to(t.int64).sum())
             fallback_mask = mask if self.verify_root_value_reuse else mask & ~eligible
-            original = self._fixed_value(roots, viewers, self._aux_ids, fallback_mask)
+            original = fixed_root_value(fallback_mask)
             if self.verify_root_value_reuse:
                 observed = self._last_value_observation
                 mismatch = eligible & ((cached != original)
@@ -491,7 +532,7 @@ class DeviceGumbelSearch:
             else:
                 value = t.where(eligible, cached, original)
         else:
-            value = self._fixed_value(roots, viewers, self._aux_ids, mask)
+            value = fixed_root_value(mask)
         hashed = self._hash_decision(decision, mask)
         self._error(hashed.errors, mask, KEY_ERROR)
         active = mask & (self.errors == 0)

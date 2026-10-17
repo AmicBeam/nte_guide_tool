@@ -1270,3 +1270,9 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 `create_soa_search` 默认启用已有的 `reuse_interior_observation`：非终局己方新节点的价值评估复用同一状态租约下的决策观察，省去重复 `public_legal_decision`；仍核对 arena、slot、generation、owner、行动者和终局元数据。终局、不同观察者与深度截止保留独立观察路径，Gumbel32／cap16、随机流、价值和信息集协议不变；可显式传 `False` 做对照，重建搜索时重新捕获图。验证 `tests.test_duel_v2_soa_observation_reuse` 同时比较完整预算结果、随机状态和租约回收，并确认有效价值观察查询减少；合成搜索测试不提供正式规则或并发资格。
 
 可显式设 `NTE_CUDA_COMPILE_THREADS=4` 启用有界并行编译，范围1–16；不设置时原编译旗标与缓存身份保持不变。线程数与实际旗标进入编译回执／缓存键，不允许0或任意编译选项，也不改变严格浮点设置。验证：`tests.test_duel_v2_cuda_compile_profile`、`tests.test_duel_v2_cuda_binary_cache`。编译超时与执行失败分别记录，不通过延长同次截止取得通过。
+
+运行库还提供默认关闭的 `direct_runtime_calls`、`direct_type_queries` 与 `indexed_container_methods`，均要求完整原生函数和独立编译，可与 `indexed_attributes` 组合。调用选项将普通函数及标量内建的原始分支接入运行库 `call`，类型查询选项只提前处理 `type/isinstance` 和已解析的原生字典 `.get()`，容器选项用冻结名称引用解析字典／列表／元组方法；保留参数绑定、动态名称回退、类覆盖／描述符、分配、错误及逻辑步数，不缓存可变效果。只改运行库独占函数，共享内联定义和 ABI 保持，其他单元按身份复用。验证 `tests.test_duel_v2_native_runtime_calls`、`tests.test_duel_v2_native_effect_queries`；实际收益须由同配置未插桩 GPU 对照证明。
+
+`create_soa_search` 同时默认开启 `reuse_root_observation`，初始化后的根价值评估复用本次相同租约、同观察者的非终局决策观察；仍运行独立辅助 WDL 模型。终局及其他观察者回退独立查询，陈旧 arena／slot／generation／owner 拒绝，根价值复用核验保留独立查询。可显式关闭作对照；重建搜索并重新捕获图。验证 `tests.test_duel_v2_soa_root_observation_reuse` 对照完整 Gumbel32、辅助推理输入／次数、随机状态、错误、租约和有效观察查询数；不提供真实规则完整终局或400并发资格。
+
+完整 SoA 搜索验收脚本可显式传 `--native-complete`，实际启用完整原生函数、局部值和独立编译；`--indexed-attributes` 要求该模式。计划与运行回执记录这些实际选项，默认仍保留原配置。搜索使用完整 CUDA 模块及至少128 KiB栈，不开放 execute-only 或64 KiB诊断配置。验证 `tests.test_duel_v2_soa_device_cli`；选项存在不等于完整搜索或并发验收通过。

@@ -62,7 +62,9 @@ class CudaSoARules:
 
     def __init__(self, image, schema, *, device='cuda', limits=VmLimits(), threads=1,
                  stack_bytes=131072,stack_runs=False,native_functions=False,native_values=False,
-                 execute_only=False, separate_compilation=False, indexed_attributes=False):
+                 execute_only=False, separate_compilation=False, indexed_attributes=False,
+                 direct_runtime_calls=False, indexed_container_methods=False,
+                 direct_type_queries=False):
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():
             raise RuntimeError('Actual CUDA required; CPU fallback is forbidden')
@@ -71,6 +73,9 @@ class CudaSoARules:
         _validate_soa_stack(stack_bytes, execute_only)
         if type(indexed_attributes) is not bool or (indexed_attributes and not separate_compilation):
             raise ValueError('Runtime attribute indexing requires separate compilation')
+        for option in (direct_runtime_calls, indexed_container_methods, direct_type_queries):
+            if type(option) is not bool or (option and not separate_compilation):
+                raise ValueError('Runtime specialization requires separate compilation')
         if type(separate_compilation) is not bool or separate_compilation and not native_functions:
             raise ValueError('Separate compilation requires complete native functions')
         self.torch, self.device = torch, torch.device(device)
@@ -87,6 +92,9 @@ class CudaSoARules:
         self.execute_only = execute_only
         self.separate_compilation = separate_compilation
         self.indexed_attributes = indexed_attributes
+        self.direct_runtime_calls = direct_runtime_calls
+        self.indexed_container_methods = indexed_container_methods
+        self.direct_type_queries = direct_type_queries
         if execute_only:
             from .native_soa_source import execute_only_source
             source = execute_only_source(source)
@@ -112,6 +120,14 @@ class CudaSoARules:
             if indexed_attributes:
                 from .native_runtime_index import index_runtime_attributes
                 compiled_units[0] = index_runtime_attributes(compiled_units[0], image)
+            if direct_runtime_calls or direct_type_queries:
+                from .native_runtime_calls import transform_runtime_calls
+                compiled_units[0] = transform_runtime_calls(compiled_units[0], image,
+                    function_calls=direct_runtime_calls, scalar_builtins=direct_runtime_calls,
+                    type_builtins=direct_type_queries, mapping_get=direct_type_queries)
+            if indexed_container_methods:
+                from .native_effect_queries import specialize_effect_queries
+                compiled_units[0] = specialize_effect_queries(compiled_units[0], image)
             units = [(unit.name, unit.source) for unit in compiled_units]
         self.module = CudaModule(source, signatures, compilation_units=units,
             device=str(self.device), binary_format='cubin')

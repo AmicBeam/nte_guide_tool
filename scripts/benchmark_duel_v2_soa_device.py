@@ -48,6 +48,10 @@ def build_parser():
     p.add_argument('--state-storage', choices=('sparse', 'dense','paged'), default='sparse')
     p.add_argument('--state-page-budget-mib',type=int,default=1536)
     p.add_argument('--rule-dispatch', choices=('tiled', 'direct'), default='tiled')
+    p.add_argument('--native-complete', action='store_true',
+                   help='Complete native rule functions and values, using cached separate compilation')
+    p.add_argument('--indexed-attributes', action='store_true',
+                   help='Frozen attribute lookup index; requires --native-complete')
     p.add_argument('--candidate-int32',action='store_true',help='Checked narrower candidate indices; retains complete legal sets')
     p.add_argument('--gpu-budget-mib', type=int, default=14336)
     p.add_argument('--state-budget-mib', type=int, default=4096)
@@ -82,6 +86,7 @@ def plan(args):
         execution_budget_scope='per_trial',proof_budget_scope='after_each_batch',
         typed_state_slots=args.rows*6+8,
         capacity=capacity.plan(), state_storage=args.state_storage, rule_dispatch=args.rule_dispatch,
+        rule_executor=rule_executor_options(args),
         cohort_only=args.cohort_only, capture_training=args.capture_training,candidate_index_bits=32 if args.candidate_int32 else 64,
         state_page_budget_mib=args.state_page_budget_mib,
         mixed_first_sides=True, skip_mulligan=True, search=dict(SEARCH),
@@ -107,6 +112,8 @@ def validate_bounds(parser, args):
         parser.error('--capture-training requires a single --cohort-only multi-decision acceptance batch')
     if args.candidate_int32 and args.rule_dispatch!='tiled':
         parser.error('--candidate-int32 requires tiled rule dispatch')
+    if args.indexed_attributes and not args.native_complete:
+        parser.error('--indexed-attributes requires --native-complete')
     if args.cohort_only and args.max_decisions <= 1:
         parser.error('--cohort-only requires --max-decisions greater than1')
     _bounded(parser, 'max-decisions', args.max_decisions, 1, 400)
@@ -136,6 +143,23 @@ def capacity_config(args):
         raw_tape_budget_mib=args.raw_tape_budget_mib, policy_tape_budget_mib=args.policy_tape_budget_mib,
         training_tape_budget_mib=args.training_tape_budget_mib,
         execution_seconds=args.execution_seconds, proof_seconds=args.proof_seconds)
+
+
+def rule_executor_options(args):
+    """Explicit full search module options, without importing CUDA/model code."""
+    if args.indexed_attributes and not args.native_complete:
+        raise ValueError('--indexed-attributes requires --native-complete')
+    return dict(native_functions=bool(args.native_complete),
+                native_values=bool(args.native_complete),
+                separate_compilation=bool(args.native_complete),
+                indexed_attributes=bool(args.indexed_attributes),
+                execute_only=False, stack_bytes=131072)
+
+
+def create_rule_executor(factory, image, schema, args, *, device, limits):
+    """The real acceptance constructor shares its exact kwargs with the plan."""
+    return factory(image,schema,device=str(device),limits=limits,
+                   **rule_executor_options(args))
 
 
 def validate_run(parser, args):
@@ -171,7 +195,7 @@ def compact_summary(report):
     keys = ('passed', 'phase', 'rows', 'max_decisions', 'natural_games', 'truncated_games',
             'error_rows', 'require_natural', 'one_step_cannot_qualify_natural',
             'capture_seconds', 'replay_wall_seconds', 'replay_gpu_seconds',
-            'setup_seconds', 'complete_root_decisions')
+            'setup_seconds', 'complete_root_decisions', 'rule_executor')
     return {key: report[key] for key in keys if key in report}
 
 
@@ -919,6 +943,7 @@ def run(args):
         search=dict(SEARCH), learning_updates=0, gpu_qualified=False,frozen_training_chain_passed=False,
         one_step_cannot_qualify_natural=True, skip_mulligan=True, mixed_first_sides=True)
     report.update(capacity=capacity.plan(),state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
+                  rule_executor=rule_executor_options(args),
                   cohort_only=args.cohort_only,capture_training=args.capture_training,
                   state_page_budget_mib=args.state_page_budget_mib,
                   candidate_index_bits=32 if args.candidate_int32 else 64,stable_throughput_qualified=False)
@@ -926,6 +951,7 @@ def run(args):
         search=dict(SEARCH), rows=args.rows, max_decisions=args.max_decisions,
         max_actions=args.max_actions, inner_max_ticks=args.inner_max_ticks,
         rule_steps=args.rule_steps, seed=args.seed, warmup=args.warmup, repeats=args.repeats,
+        rule_executor=rule_executor_options(args),
         require_natural=bool(args.require_natural), skip_mulligan=True, mixed_first_sides=True,
         presets=list(KEYS), cpu_fallback=False, training=False)
 
@@ -948,8 +974,14 @@ def run(args):
                       schema_identity=schema.identity, gpu_name=torch.cuda.get_device_name(device),
                       torch=torch.__version__)
         checkpoint('program')
-        executor = CudaSoARules(image, schema, device=str(device),
-                                limits=VmLimits(steps=args.rule_steps))
+        executor = create_rule_executor(CudaSoARules,image,schema,args,device=device,
+                                        limits=VmLimits(steps=args.rule_steps))
+        # Report the actual constructor state, including refusal of diagnostic
+        # execute-only modules. Device stack size is in compilation_profile.
+        options=rule_executor_options(args)
+        for name,value in options.items():
+            if name!='stack_bytes' and getattr(executor,name)!=value:
+                raise RuntimeError('Rule executor option mismatch: '+name)
         report.update(native_source_sha256=executor.source_sha256,
                       cuda_compilation_profile=executor.module.compilation_profile,
                       cuda_compile_options=list(executor.module.compile_options),

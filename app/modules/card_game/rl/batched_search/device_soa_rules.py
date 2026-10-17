@@ -336,6 +336,7 @@ def create_soa_search(rules,inference,auxiliary,statistics,keys,*,rows,random,
     # Both paths use public_legal_decision. Borrow the matching nonterminal
     # own-node observation; terminal/opponent inspections retain their queries.
     options.setdefault('reuse_interior_observation', True)
+    options.setdefault('reuse_root_observation', True)
     return DeviceGumbelSearch(rules,inference,auxiliary,statistics,keys,rows=rows,
         max_actions=max_actions,simulations=32,gumbel_candidates=16,terminal_horizon=0,
         teacher_mode='network_value',opponent_mode='policy',prior_guide=prior,random=random,

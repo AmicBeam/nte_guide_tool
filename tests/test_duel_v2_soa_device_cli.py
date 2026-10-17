@@ -32,6 +32,43 @@ def _stderr(argv):
 
 
 class SoADeviceCliTests(unittest.TestCase):
+    def test_native_complete_and_attribute_indexing_are_explicit_in_plan(self):
+        for flags,native,indexed in (([],False,False),(['--native-complete'],True,False),
+                                     (['--native-complete','--indexed-attributes'],True,True)):
+            buf=io.StringIO()
+            with redirect_stdout(buf):self.assertEqual(_main(flags),0)
+            result=json.loads(buf.getvalue())
+            self.assertEqual(result['rule_executor'],dict(native_functions=native,native_values=native,
+                separate_compilation=native,indexed_attributes=indexed,execute_only=False,stack_bytes=131072))
+            self.assertEqual(result['search']['simulations'],32)
+            self.assertEqual(result['search']['gumbel_candidates'],16)
+            self.assertFalse(result['passed']);self.assertFalse(result['gpu_qualified'])
+            self.assertFalse(result['cuda_imported']);self.assertFalse(result['models_loaded'])
+            self.assertEqual(result['learning_updates'],0)
+        self.assertIn('--native-complete',_stderr(['--indexed-attributes']))
+
+    def test_native_plan_options_reach_actual_full_module_factory(self):
+        from unittest.mock import Mock
+        from scripts.benchmark_duel_v2_soa_device import (
+            build_parser,create_rule_executor,rule_executor_options)
+        for flags in ([],['--native-complete'],['--native-complete','--indexed-attributes']):
+            args=build_parser().parse_args(flags)
+            factory=Mock();image=object();schema=object();limits=object()
+            executor=create_rule_executor(factory,image,schema,args,device='cuda:0',limits=limits)
+            self.assertIs(executor,factory.return_value)
+            factory.assert_called_once_with(image,schema,device='cuda:0',limits=limits,
+                **rule_executor_options(args))
+            kwargs=factory.call_args.kwargs
+            self.assertIs(kwargs['execute_only'],False)
+            self.assertGreaterEqual(kwargs['stack_bytes'],131072)
+            for name in ('direct_runtime_calls','indexed_container_methods','direct_type_queries'):
+                self.assertNotIn(name,kwargs)
+
+    def test_search_cli_does_not_expose_execute_only_or_small_stack(self):
+        for flags in (['--execute-only'],['--stack-bytes','65536'],['--direct-runtime-calls'],
+                      ['--indexed-container-methods'],['--direct-type-queries']):
+            self.assertIn('unrecognized arguments',_stderr(flags))
+
     def test_narrow_indices_require_the_supported_dispatch_and_are_explicit_in_plan(self):
         self.assertIn('tiled',_stderr(['--candidate-int32','--rule-dispatch','direct']))
         buf=io.StringIO()

@@ -235,3 +235,9 @@ VM的 `Random.sample(population, k)` 支持已物化列表／元组与整数k，
 SoA搜索构建器默认复用已保存的非终局己方新节点观察供价值评估，避免同状态再次调用完整合法动作／观察。复用必须绑定相同 arena／slot／generation／owner，核对行动者和终局元数据，不能借给对手、终局或深度截止查询；显式 `reuse_interior_observation=False` 保留对照。模拟预算、cap、信息集、随机消费、模型及终局价值不变。重建图后验证完整预算结果、随机状态、租约回收与有效查询次数；`tests.test_duel_v2_soa_observation_reuse` 的合成搜索及真实规则两状态检查仍不能代替正常终局、完整Gumbel和400并发验收。
 
 原生实验对大型动态调用、参数绑定及SoA写入／复制库设置共享调用边界，仅更改函数调用属性，不修改规则或布局。`NTE_CUDA_COMPILE_THREADS` 只允许显式1–16，默认原旗标不变；并行编译参数进入回执和缓存身份，严格浮点不变。编译、准备与执行耗时分别报告；小组件通过和完整模块编译超时必须同时保留，不得以组件通过替代完整规则／Gumbel／自然局／并发验收。
+
+可组合启用默认关闭的 `direct_runtime_calls`、`direct_type_queries` 与 `indexed_container_methods`，均要求完整函数原生化与独立编译。调用优化只复制原始参数绑定、普通函数及标量内建分支到运行库独占 `call`，类型查询选项只提前处理 `type/isinstance` 和已解析的原生字典 `.get()`；容器方法优化仅对冻结名称引用直接分派，动态名称保留原查询。不得缓存可变效果、绕过类覆盖／描述符或改变逻辑步数、分配及错误时机。共享内联定义和 ABI 必须逐字保持，只有 runtime 单元身份改变；主机对拍覆盖两项与属性索引组合后的状态、原始堆、别名、错误和预算截止，入口 `tests.test_duel_v2_native_runtime_calls`、`tests.test_duel_v2_native_effect_queries`。编译通过或CPU等价不代表GPU提速。
+
+SoA工厂还默认开启 `reuse_root_observation`：只复用本次初始化、相同 arena／slot／generation／owner、actor==viewer 且非终局的完整根观察；独立辅助价值推理及其输入、模型选择和错误必须保持。终局及不同观察者走原路径，陈旧绑定失败关闭；根价值复用核验仍独立读取观察。允许显式关闭，并须重新捕获图。`tests.test_duel_v2_soa_root_observation_reuse` 核对完整32次结果、随机状态、独立价值推理、租约及有效查询减少；规则编译单元不变，不代替真实GPU搜索和400并发整局验收。
+
+完整 SoA 搜索验收脚本可显式传 `--native-complete`，实际启用完整原生函数、局部值和独立编译；`--indexed-attributes` 要求该模式。计划与运行回执记录这些实际选项，默认仍保留原配置。搜索使用完整 CUDA 模块及至少128 KiB栈，不开放 execute-only 或64 KiB诊断配置。验证 `tests.test_duel_v2_soa_device_cli`；选项存在不等于完整搜索或并发验收通过。

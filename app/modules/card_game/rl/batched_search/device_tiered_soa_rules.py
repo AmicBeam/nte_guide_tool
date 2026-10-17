@@ -173,7 +173,13 @@ class DeviceTieredSoARules(DeviceSoARules):
         return output
 
     def _write(self,queue,result,output,local):
-        if isinstance(output,DeviceStateBatch):queue.scatter_states_device(result,output);return
+        if isinstance(output,DeviceStateBatch):
+            queue.scatter_states_device(result,output)
+            # State scatter ORs errors. This queue is restricted to authorized
+            # retries, so replace their recovered fast capacity status with
+            # the slow result, including any slow failure.
+            queue.scatter_tensor_device(result.errors,output.errors)
+            return
         if isinstance(output,DeviceDecision):
             for name in ('action_slots','action_generations','action_refs','action_types','counts','valid','observations'):
                 if name=='observations' and not output.observations.numel():continue

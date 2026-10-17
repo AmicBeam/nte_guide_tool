@@ -55,8 +55,12 @@ class FakeQueue:
         if not local.numel():raise ValueError('Empty payload cannot scatter')
         valid=self.valid.bool();output[self.ids[valid]]=local[valid]
     def scatter_states_device(self,local,output):
-        for name in ('slots','generations','owners','active','errors'):
+        for name in ('slots','generations','owners','active'):
             self.scatter_tensor_device(getattr(local,name),getattr(output,name))
+        # Match the actual scatter_rule_leases CUDA kernel: state scatter ORs
+        # errors, unlike the replacing tensor scatter used by a checked retry.
+        valid=self.valid.bool()
+        output.errors[self.ids[valid]]|=local.errors[valid]
 
 
 class FakeInner:
@@ -210,6 +214,26 @@ class TieredSoARuleTests(unittest.TestCase):
         rules,roots,_,_=self.make();rules.fast.vm_errors[('metadata',11)]=1;rules.slow.vm_errors[('metadata',11)]=1
         out=rules.metadata_device(roots)
         self.assertEqual(int(out.errors[0]),1);self.assertEqual(int(rules.fallback_counts.sum()),1)
+
+    def test_state_retry_replaces_only_proven_capacity_rows_and_preserves_slow_failures(self):
+        for slow_error in (0,1,2):
+            with self.subTest(slow_error=slow_error):
+                rules,roots,_,_=self.make()
+                before=rules.store.data[roots.slots].clone()
+                # Include a retry in the last partial batch, an original error,
+                # and a capacity-looking error without VM provenance.
+                for owner in (11,17):rules.fast.vm_errors[('clean',owner)]=1
+                rules.fast.other_errors[('clean',14)]=2
+                rules.fast.other_errors[('clean',15)]=1
+                if slow_error:rules.slow.vm_errors[('clean',11)]=slow_error
+                out=rules.clean_device(roots)
+                self.assertEqual(out.errors.tolist(),[slow_error,0,77,2,1,0,0])
+                self.assertEqual(int(rules.fallback_counts.sum()),2)
+                self.assertTrue(bool(rules.store.live[roots.slots].all()))
+                t.testing.assert_close(rules.store.data[roots.slots],before)
+                self.assertEqual(int(out.owners[-1]),17)
+                self.assertTrue(bool(rules.store.live[out.slots[-1]]))
+                self.assertEqual(int(rules.store.generation[out.slots[-1]]),int(out.generations[-1]))
 
     def test_compact_candidates_reuse_fast_full_batch_and_checked_narrow_transport(self):
         rules,roots,viewers,allocations=self.make();rules.fast.vm_errors[('decision',11)]=1

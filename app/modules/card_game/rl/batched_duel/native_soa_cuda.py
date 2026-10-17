@@ -54,7 +54,7 @@ class CudaSoARules:
 
     def __init__(self, image, schema, *, device='cuda', limits=VmLimits(), threads=1,
                  stack_bytes=131072,stack_runs=False,native_functions=False,native_values=False,
-                 execute_only=False):
+                 execute_only=False, separate_compilation=False):
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():
             raise RuntimeError('Actual CUDA required; CPU fallback is forbidden')
@@ -62,6 +62,8 @@ class CudaSoARules:
             raise ValueError('Bounded CUDA block size required')
         if type(stack_bytes) is not int or not 131072 <= stack_bytes <= 1024**2:
             raise ValueError('Native SoA requires a bounded device stack of at least 128 KiB')
+        if type(separate_compilation) is not bool or separate_compilation and not native_functions:
+            raise ValueError('Separate compilation requires complete native functions')
         if type(execute_only) is not bool:
             raise TypeError('Explicit diagnostic kernel selection required')
         self.torch, self.device = torch, torch.device(device)
@@ -76,6 +78,7 @@ class CudaSoARules:
         self.native_values=native_values
         self.rule_source_sha256 = source_identity(source)
         self.execute_only = execute_only
+        self.separate_compilation = separate_compilation
         if execute_only:
             from .native_soa_source import execute_only_source
             source = execute_only_source(source)
@@ -94,7 +97,11 @@ class CudaSoARules:
                 'int32*','int32*','int32*','int32','int32','int32','int32','int32']}
         if execute_only:
             signatures = {name: signatures[name] for name in ('vm_soa_execute', 'vm_clock')}
-        self.module = CudaModule(source, signatures,
+        units = None
+        if separate_compilation:
+            from .native_compile_units import split_native_source
+            units = [(unit.name, unit.source) for unit in split_native_source(source)]
+        self.module = CudaModule(source, signatures, compilation_units=units,
             device=str(self.device), binary_format='cubin')
         self.module.ensure_stack(stack_bytes)
         self.constants = {key: torch.tensor(getattr(image, key).copy(), device=self.device)

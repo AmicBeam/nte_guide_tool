@@ -1263,4 +1263,6 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 
 `NativeSoACUDAQuery(..., execute_only=True)` 是显式诊断入口：保留相同规则内核与全部所选冻结函数，只编译执行／时钟入口，省去未使用的投影、导出、解码和压缩内核；后面这些接口会主动拒绝。`rule_source_sha256` 记录完整规则源码，`source_sha256` 记录实际编译源码，二者不得混用。默认关闭，不用于批准闭环设备搜索。`tests.test_duel_v2_native_rule_stages` 核对正式规则辅助函数的完整状态与实体别名；它是组件，不是完整对局。
 
+`CudaSoARules` 和 `NativeSoACUDAQuery` 可显式传入 `separate_compilation=True`，须同时启用 `native_functions=True`，默认关闭。`native_compile_units.py` 保留同一份规则函数体和 ABI，将运行库、局部值片段与全部规则函数分开编译；不剪枝冻结函数或合法动作。CUDA 使用严格浮点的可重定位 CUBIN 和设备链接；两个独立编译任务并行，各自持有源码身份和回执，保留最终链接顺序；每个编译单元及最终链接结果分别按源码、编译旗标、设备／编译器／驱动身份校验缓存，记录对象编译与链接时间。`execute_only` 的诊断限制仍生效。验证：`.venv/bin/python -m unittest tests.test_duel_v2_native_compile_units tests.test_duel_v2_cuda_compile_units tests.test_duel_v2_cuda_linker`；主机多文件对拍只证明语义与链接边界，不提供 GPU 吞吐证据。完整函数模式复用现有直接栈路径的四类操作：局部值读取／写入、常量读取和弹栈直接执行原操作，不再实例化不处理这些操作的通用字符串／异常／标准库／容器处理器；逐步预算、错误和局部值未绑定检查保持。
+
 可显式设 `NTE_CUDA_COMPILE_THREADS=4` 启用有界并行编译，范围1–16；不设置时原编译旗标与缓存身份保持不变。线程数与实际旗标进入编译回执／缓存键，不允许0或任意编译选项，也不改变严格浮点设置。验证：`tests.test_duel_v2_cuda_compile_profile`、`tests.test_duel_v2_cuda_binary_cache`。编译超时与执行失败分别记录，不通过延长同次截止取得通过。

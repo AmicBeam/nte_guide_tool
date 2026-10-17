@@ -556,6 +556,7 @@ class CudaModule:
         *,
         extra_compile_options: Optional[Sequence[str]] = None,
         binary_format: str = 'cubin',
+        compilation_units=None,
     ) -> None:
         if not isinstance(source, str) or not source.strip():
             raise ValueError("source must be a non-empty string containing CUDA C/C++ code")
@@ -563,6 +564,11 @@ class CudaModule:
             raise ValueError("kernel_specs must be a non-empty mapping of kernel names to specs")
         if binary_format not in ('ptx', 'cubin'):
             raise ValueError('Explicit ptx or cubin binary format required')
+
+        from .cuda_compile_units import validate_compilation_units
+        compilation_units = validate_compilation_units(compilation_units)
+        if compilation_units is not None and binary_format != 'cubin':
+            raise ValueError('Separate CUDA compilation requires CUBIN')
 
         # Parse kernel specs before doing heavy CUDA operations
         self._kernel_specs: Dict[str, KernelSpec] = {}
@@ -664,7 +670,11 @@ class CudaModule:
                 flags.extend(extra_compile_options)
             self._compile_options = tuple(flags)
 
-            binary = self._compiled_binary(source, flags, binary_format)
+            if compilation_units is None:
+                binary = self._compiled_binary(source, flags, binary_format)
+            else:
+                from .cuda_compile_units import compile_linked_binary
+                binary = compile_linked_binary(self, compilation_units, flags)
             self._compilation_profile['binary_bytes'] = len(binary)
             self._compilation_profile['binary_sha256'] = hashlib.sha256(binary).hexdigest()
 
@@ -716,10 +726,11 @@ class CudaModule:
                     kernel_specs={name: [p.normalized for p in spec.params]
                                   for name, spec in self._kernel_specs.items()})
 
-    def _compiled_binary(self, source, flags, binary_format):
+    def _compiled_binary(self, source, flags, binary_format, *, source_sha=None, profile=None):
         """Cache is a compiler optimization; rejected images are never loaded."""
+        profile = self._compilation_profile if profile is None else profile
         cache = identity = None
-        self._compilation_profile['cache_status'] = 'disabled'
+        profile['cache_status'] = 'disabled'
         if binary_format == 'cubin':
             default = Path(__file__).resolve().parents[5]/'artifacts'/'rl-evals'/'cuda-cache'
             directory = os.environ.get('NTE_CUDA_BINARY_CACHE_DIR', str(default))
@@ -729,29 +740,31 @@ class CudaModule:
                 try:
                     cache = CudaBinaryCache(directory)
                     identity = self._cache_inputs(flags)
-                    self._compilation_profile['cache_key'] = cache.key(identity)
-                    self._compilation_profile['cache_directory'] = str(cache.directory)
+                    if source_sha is not None:
+                        identity['source_sha256'] = source_sha
+                    profile['cache_key'] = cache.key(identity)
+                    profile['cache_directory'] = str(cache.directory)
                     binary, status = cache.read(identity)
-                    self._compilation_profile['cache_status'] = status
+                    profile['cache_status'] = status
                 except (OSError, AttributeError, CudaError) as error:
-                    self._compilation_profile['cache_status'] = 'unavailable'
-                    self._compilation_profile['cache_error'] = str(error)
+                    profile['cache_status'] = 'unavailable'
+                    profile['cache_error'] = str(error)
                     cache, binary = None, None
-                self._compilation_profile['cache_read_seconds'] = time.perf_counter()-before
+                profile['cache_read_seconds'] = time.perf_counter()-before
                 if binary is not None:
-                    self._compilation_profile['compile_seconds'] = 0.0
+                    profile['compile_seconds'] = 0.0
                     return binary
         before = time.perf_counter()
         binary = (self._compile_source_to_cubin(source, flags) if binary_format == 'cubin'
                   else self._compile_source_to_ptx(source, flags))
-        self._compilation_profile['compile_seconds'] = time.perf_counter()-before
+        profile['compile_seconds'] = time.perf_counter()-before
         if cache is not None:
             before = time.perf_counter()
             try:
                 cache.write(identity, binary)
             except OSError as error:
-                self._compilation_profile['cache_write_error'] = str(error)
-            self._compilation_profile['cache_write_seconds'] = time.perf_counter()-before
+                profile['cache_write_error'] = str(error)
+            profile['cache_write_seconds'] = time.perf_counter()-before
         return binary
 
     def _compile_source_to_ptx(self, source: str, flags: Sequence[str]) -> bytes:

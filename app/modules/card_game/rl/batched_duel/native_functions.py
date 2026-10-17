@@ -9,7 +9,9 @@ from dataclasses import dataclass
 from hashlib import sha256
 import json
 
-from .native_array_codegen import _EXECUTE_PREAMBLE, _c_int, _matching_brace_end
+from .native_array_codegen import (
+    _EXECUTE_PREAMBLE, _c_int, _matching_brace_end, _DIRECT_STACK_OPS,
+)
 from .cuda_vm import SUPPORTED_OPS
 from .vm_compiled_blocks import SAFE_OPS, _emit_op
 
@@ -202,7 +204,11 @@ def _emit_function(fn, rows, guards, *, complete=False, entry_pcs=None):
         parts.append('op_' + str(pc) + ':{\n')
         # execute() already admitted and advanced the first operation. The
         # admission label is used only by internal edges, exactly once each.
-        if complete and op not in ('LOAD_FAST', 'STORE_FAST', 'LOAD_CONST', 'POP_TOP'):
+        if complete and op in _DIRECT_STACK_OPS:
+            # Match the existing direct-stack dispatcher: these operations
+            # cannot be handled by string/exception/stdlib/collection hooks.
+            parts.append(_body(row))
+        elif complete:
             # Keep large primitive/library implementations shared. Inlining
             # them into every rule function makes optimization scale with
             # every PC instead of with the small opcode specialization set.

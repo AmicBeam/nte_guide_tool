@@ -130,6 +130,8 @@ class NativeFunctionTests(unittest.TestCase):
         self.assertEqual(complete.function_indexes, tuple(range(len(self.image.functions))))
         self.assertEqual(complete.instruction_count, len(self.image.instructions))
         self.assertEqual(complete.rejected, ())
+        for op in ('LOAD_FAST', 'STORE_FAST', 'LOAD_CONST', 'POP_TOP'):
+            self.assertNotIn('native_handlers<OP_'+op+'>', complete.source)
         compact = compile_native_functions(plan, complete=True, max_function_ops=16384, resume_pcs=())
         self.assertEqual(compact.function_ids, complete.function_ids)
         self.assertLess(compact.source.count(':goto op_'), complete.source.count(':goto op_'))

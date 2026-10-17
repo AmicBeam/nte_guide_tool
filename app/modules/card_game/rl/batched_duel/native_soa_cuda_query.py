@@ -24,7 +24,7 @@ class NativeSoACUDAQuery:
     def __init__(self,image,schema,*,limits=VmLimits(),device='cuda',directory=None,
                  max_nodes=1048576,max_edges=2097152,max_payload_bytes=33554432,
                  seconds=120,stack_runs=False,native_functions=False,native_values=False,
-                 execute_only=False):
+                 execute_only=False, separate_compilation=False):
         if type(seconds) not in (int,float) or not 0<seconds<=3600:
             raise ValueError('Bounded CUDA diagnostic call budget required')
         for value in (max_nodes,max_edges,max_payload_bytes):
@@ -32,7 +32,7 @@ class NativeSoACUDAQuery:
                 raise ValueError('Positive bounded diagnostic scratch required')
         self.executor=CudaSoARules(image,schema,device=device,limits=limits,
             stack_runs=stack_runs,native_functions=native_functions,native_values=native_values,
-            execute_only=execute_only)
+            execute_only=execute_only, separate_compilation=separate_compilation)
         self.image,self.schema,self.limits,self.seconds=image,schema,limits,seconds
         self.max_nodes,self.max_edges,self.max_payload_bytes=max_nodes,max_edges,max_payload_bytes
         self.source_sha256=self.executor.source_sha256

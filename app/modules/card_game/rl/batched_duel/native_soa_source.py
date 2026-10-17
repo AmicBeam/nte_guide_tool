@@ -59,6 +59,9 @@ def emit_native_soa_source(image, schema, limits, *, stack_runs=False):
     if stack_runs:
         from .native_stack_runs import fuse_stack_runs
         source=fuse_stack_runs(source,plan)
+    else:
+        from .native_shard_runs import run_native_shards
+        source=run_native_shards(source,plan)
     source = integrate_soa_source(source, schema, image=image)
     from .vm_soa_constant_fields import integrate_constant_fields
     source = integrate_constant_fields(source,schema,image)

@@ -1236,3 +1236,5 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 `soa_frozen_episode_batch.py` 将完整设备诊断episode接入既有七队消费接口，交叉核验控制器回执、原始动作、模型身份、完整pi及双视角终局标签。它不是实时驱动，正式训练保护继续拒绝，`learning_eligible=False`；仅用于冻结消费、损失／梯度和检查点恢复验收。
 
 原生 SoA 字段访问沿用常量名直达列，动态字符串名在所属记录类型内使用精确 UTF-8 二分索引；读取与成员判断不再为了找值扫描插入顺序或构造字段名。删除和遍历继续使用原有顺序，缺失标记实时读取，非字符串查询保留原拒绝／比较路径。记录适配与编码的字段匹配复用同一索引。验证：`.venv/bin/python -m unittest tests.test_duel_v2_soa_record_fields tests.test_duel_v2_native_soa_cpu`；短时实际 CUDA 可通过 `NTE_SOA_RECORD_FIELDS_PROGRAM` 指定同源小型冻结用例。局部访问或CPU组件收益不授予完整GPU搜索吞吐与并发资格。
+
+原生 SoA 默认允许同一指令片段内连续执行，减少逐指令返回外层分发。后续每条指令仍执行原步数、截止、错误上下文、函数／PC边界检查；异常、错误、帧切换和跨片段跳转先交回原执行循环。opcode与规则正文保持不变；无法识别的片段结构明确拒绝。显式 `stack_runs=True` 保留原独立栈融合实验，不与此模式叠加。验证：`.venv/bin/python -m unittest tests.test_duel_v2_native_shard_runs tests.test_duel_v2_native_stack_runs tests.test_duel_v2_native_soa_cpu`。小型CUDA循环和CPU组件结果不批准整批搜索、自然局或400并发。

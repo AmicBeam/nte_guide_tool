@@ -56,7 +56,13 @@ def cuda_compilation_profile(*, default_fast_compile='0') -> dict:
     raw = os.environ.get('NTE_CUDA_JIT_OPT_LEVEL')
     if raw is not None and raw not in ('0', '1', '2', '3', '4'):
         raise ValueError('NTE_CUDA_JIT_OPT_LEVEL must be an integer from 0 to 4')
-    return dict(fast_compile=fast, jit_optimization_level=None if raw is None else int(raw))
+    profile = dict(fast_compile=fast, jit_optimization_level=None if raw is None else int(raw))
+    threads = os.environ.get('NTE_CUDA_COMPILE_THREADS')
+    if threads is not None:
+        if threads not in tuple(str(i) for i in range(1, 17)):
+            raise ValueError('NTE_CUDA_COMPILE_THREADS must be an integer from 1 to 16')
+        profile['compile_threads'] = int(threads)
+    return profile
 
 
 def _load_driver_module(drv, module, ptx, jit_level):
@@ -644,6 +650,8 @@ class CudaModule:
             ]
             if self._compilation_profile['fast_compile'] != '0':
                 flags.append('--Ofast-compile=' + self._compilation_profile['fast_compile'])
+            if self._compilation_profile.get('compile_threads', 1) > 1:
+                flags.append('--split-compile=' + str(self._compilation_profile['compile_threads']))
             level = self._compilation_profile['jit_optimization_level']
             if binary_format == 'cubin' and level is not None:
                 # CUBIN already contains device machine code; apply the explicit

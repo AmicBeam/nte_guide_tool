@@ -49,6 +49,16 @@ def fallback_reads(state, n):
     return state, value, constant
 
 
+def scalar_values(state, n):
+    before = state['hp']
+    amount = (before + n) * 3
+    positive = amount >= 0
+    negative = -amount
+    inverted = not positive
+    state['hp'] = amount // 2
+    return state, amount, negative, inverted, positive, (amount & 3), (amount % 3)
+
+
 def fixture_program():
     from app.modules.card_game.rl.rule_ir.portable_program import (
         FrozenRuleProgram, capture_program, DEFAULT_ALLOWED_MODULE_PREFIXES)
@@ -58,7 +68,7 @@ def fixture_program():
     if sys.version_info[:2] != (3, 10):
         raise unittest.SkipTest('CPython3.10 frozen fixture required')
     functions = [base.branch_leaf, base.lookup_leaf, base.checked_lookup, base.indexed_leaf,
-                 alias_reads, counter_reads, unbound_reads, fallback_reads]
+                 alias_reads, counter_reads, unbound_reads, fallback_reads, scalar_values]
     return capture_program({f.__name__: f for f in functions},
         scope_character_ids=None, scope_card_ids=None,
         allowed_module_prefixes=DEFAULT_ALLOWED_MODULE_PREFIXES + (__name__, base.__name__))
@@ -120,8 +130,9 @@ class NativeValueTests(unittest.TestCase):
                  ('counter_reads', counter_reads, [[-2], [0], [3]]),
                  ('unbound_reads', unbound_reads, [[1], [2], [3]]),
                  ('fallback_reads', fallback_reads, [[-2], [0], [3]]))
+        cases = (*cases, ('scalar_values', scalar_values, [[-7], [0], [3]]))
         with NativeSoACPU(self.image, self.schema, **options) as baseline, \
-             NativeSoACPU(self.image, self.schema, native_values=True, **options) as native:
+             NativeSoACPU(self.image, self.schema, native_values=True, native_functions=True, **options) as native:
             for entry, formal, extras in cases:
                 args = [[None, *extra] for extra in extras]
                 complete = baseline.call(entry, pack_game_states(states(), self.schema), args)

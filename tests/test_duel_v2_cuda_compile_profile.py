@@ -18,6 +18,16 @@ class CompileProfileTest(unittest.TestCase):
             with patch.dict(os.environ,{key:'unsupported'},clear=True):
                 with self.assertRaises(ValueError):cuda_compilation_profile()
 
+    def test_bounded_parallel_compiler_preserves_other_defaults(self):
+        for threads in (1, 4, 16):
+            with patch.dict(os.environ, {'NTE_CUDA_COMPILE_THREADS': str(threads)}, clear=True):
+                self.assertEqual(cuda_compilation_profile(), {
+                    'fast_compile': '0', 'jit_optimization_level': None, 'compile_threads': threads})
+        for invalid in ('0', '17', '-1', '4.0', ' 4', 'unbounded'):
+            with patch.dict(os.environ, {'NTE_CUDA_COMPILE_THREADS': invalid}, clear=True):
+                with self.assertRaises(ValueError):
+                    cuda_compilation_profile()
+
     def test_driver_default_and_cast_integer_optimization_abi(self):
         calls=[]
         class Driver:

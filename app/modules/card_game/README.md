@@ -1242,15 +1242,25 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 
 ### 规则 VM 的逐函数原生迁移
 
-`rl/batched_duel/native_functions.py` 为冻结规则中的受支持叶子函数生成完整 C++ 控制流。函数内直线与条件边直接连接，不逐条返回 PC 分派；函数入口保留可恢复的 PC 跳转表。原步数／截止、错误位置、状态修改顺序、对象别名与返回帧 ABI 保持。选择按整函数核验，含调用、属性访问、闭包、生成器、异常处理或未支持操作的函数整体留在既有设备路径，不编译截断前缀。
+`rl/batched_duel/native_functions.py` 的 `native_functions=True` 完整模式为冻结程序的全部函数生成原生控制流，覆盖调用、属性、闭包、生成器挂起及异常恢复；有未支持函数时整体拒绝，不保留旧 PC 分片作为回退，也不编译截断前缀。入口／恢复保留 PC 跳转表，函数内直线直接顺接、分支直接跳转；逐指令步数／截止、错误、对象别名和帧 ABI 保持。兼容对象／帧运行时仍保留，不把完整控制流覆盖称为领域数据已完全去对象化。
 
-`NativeSoACPU`、`CudaSoARules`、`NativeSoACUDAQuery` 显式传入 `native_functions=True` 试用；默认关闭，与 `stack_runs=True` 不叠加。可通过 `compile_native_functions(native_plan)` 查看函数名单、拒绝原因和静态指令覆盖。验证：`.venv/bin/python -m unittest tests.test_duel_v2_native_functions`；跨 Python 版本使用 `NTE_NATIVE_FUNCTION_PROGRAM` 加载同源冻结夹具。
+`NativeSoACPU`、`CudaSoARules`、`NativeSoACUDAQuery` 显式传入 `native_functions=True` 试用；默认关闭，与 `stack_runs=True` 不叠加。完整覆盖通过 `compile_native_functions(native_plan, complete=True, max_function_ops=16384)` 核验；不带 `complete` 的接口保留早期叶子函数规划作为诊断。验证：`.venv/bin/python -m unittest tests.test_duel_v2_native_functions`；跨 Python 版本使用 `NTE_NATIVE_FUNCTION_PROGRAM` 加载同源冻结夹具。
 
-这是控制流迁移的第一阶段，仍使用原有带类型标签的对象、栈和调用帧，不等于规则热路径已经脱离 VM。后续依次迁移局部变量／操作数、类型化字段访问及函数调用；每阶段均需完整状态、候选／观察字节、别名、异常与预算对拍，并单独测量真实 CUDA。默认路径切换前还须完整搜索与正常终局验收，组件结果不提供 400 路容量或一小时吞吐结论。
+当前具备完整冻结控制流、局部引用提升、常量字段读取及原生调用路由，但仍使用带类型标签的对象与兼容帧，未完成全部标量／对象去装箱。优化构建、实际 CUDA 全规则、完整搜索与正常终局分别验收；组件或静态覆盖结果不提供 400 路容量或一小时吞吐结论，默认开关保持关闭。
 
 
-`rl/batched_duel/native_values.py` 提供默认关闭的 `native_values=True` 局部引用提升与常量字段读取实验，可独立于整函数编译使用。静态选择有界直线片段，优先合法动作、攻击／伤害和行动推进；不跨函数、跳转目标、调用或未支持操作。每段使用 C++ 局部引用保存操作数和局部值，仅在退出、预算／截止或错误时回写活跃栈及已修改局部值；原逻辑指令计数、错误位置、部分修改与外层异常处理保持。普通 PC 仍可独立进入，栈形状不适合时保留原执行。
+`rl/batched_duel/native_values.py` 提供默认关闭的 `native_values=True` 局部引用提升与常量字段读取实验，可独立于整函数编译使用。静态选择有界直线片段，优先合法动作、攻击／伤害和行动推进；不跨函数、跳转目标、调用或未支持操作。每段使用 C++ 局部引用保存操作数和局部值，仅在退出、预算／截止或错误时回写活跃栈及已修改局部值；原逻辑指令计数、错误位置、部分修改与外层异常处理保持。分片模式仍可独立进入普通 PC，栈形状不适合时保留原执行；完整函数模式保留所有合法的调用／挂起、异常／分支及局部片段退出恢复入口，不为直线指令增加不可能的恢复分支。
 
-常量字符串下标绑定 schema 的记录类型／列偏移，绕过通用字段查找；仍核验记录、缺失值和类型化对象边界，并保留原值装箱及缓存／别名语义。动态键、普通对象、列表和 Counter 特殊读取继续调用相应原语。当前提升的是值引用，尚未完成标量去装箱、通用方法调用或完整规则 VM 替换。
+常量字符串下标绑定 schema 的记录类型／列偏移，绕过通用字段查找；仍核验记录、缺失值和类型化对象边界，并保留原值装箱及缓存／别名语义。动态键、普通对象、列表和 Counter 特殊读取继续调用相应原语。片段同时支持数值运算、比较、逻辑取反、身份／成员判断和字段写入；整数／布尔运算使用原数值算法的受保护快路径，浮点、序列和其它对象调用原语。原装箱、缓存及分配错误保留，不声称全部标量已去装箱。
 
 `NativeSoACPU`、`CudaSoARules`、`NativeSoACUDAQuery` 均接收此显式选项；与 `stack_runs=True` 互斥。`compile_native_values(image, schema, native_plan)` 返回所选函数／PC范围、常量读取点及代码身份。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_native_values tests.test_duel_v2_native_functions tests.test_duel_v2_native_shard_runs`。组件及CPU短测不提供GPU性能或并发资格，默认路径切换仍需独立CUDA、完整搜索和正常终局验收。
+
+
+`native_calls.py` 在上述显式原生模式中直接路由普通／闭包函数和已知同步字典／列表方法，复用原参数绑定、生成器和返回逻辑；生成器式extend、关键字update及其它特殊方法继续使用对应原语。`native_scalar_ops.py` 的整数／布尔快路径复用原溢出算法；比较／取反返回原始真假值，运算结果仍按原协议装箱。验证 `tests.test_duel_v2_native_calls`、`tests.test_duel_v2_native_scalar_ops` 与 `tests.test_duel_v2_native_scalar_cuda`。后一项使用真实完整堆／库原语执行独立设备探针，对比节点、边、载荷、计数、结果与错误，并核验独立期望；不运行完整规则搜索，不提供整局或并发资格。
+
+
+原生实验把大型调用、参数绑定、数值回退和 SoA 写入／复制实现保留为共享设备函数，避免在各规则函数中反复内联；函数正文与布局不变。只读字段访问仍可内联，控制流完整模式不会裁剪规则函数或合法动作。
+
+`NativeSoACUDAQuery(..., execute_only=True)` 是显式诊断入口：保留相同规则内核与全部所选冻结函数，只编译执行／时钟入口，省去未使用的投影、导出、解码和压缩内核；后面这些接口会主动拒绝。`rule_source_sha256` 记录完整规则源码，`source_sha256` 记录实际编译源码，二者不得混用。默认关闭，不用于批准闭环设备搜索。`tests.test_duel_v2_native_rule_stages` 核对正式规则辅助函数的完整状态与实体别名；它是组件，不是完整对局。
+
+可显式设 `NTE_CUDA_COMPILE_THREADS=4` 启用有界并行编译，范围1–16；不设置时原编译旗标与缓存身份保持不变。线程数与实际旗标进入编译回执／缓存键，不允许0或任意编译选项，也不改变严格浮点设置。验证：`tests.test_duel_v2_cuda_compile_profile`、`tests.test_duel_v2_cuda_binary_cache`。编译超时与执行失败分别记录，不通过延长同次截止取得通过。

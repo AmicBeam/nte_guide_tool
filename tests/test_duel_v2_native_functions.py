@@ -124,6 +124,35 @@ class NativeFunctionTests(unittest.TestCase):
             emit_native_soa_source(self.image, self.schema, VmLimits(),
                                    stack_runs=True, native_functions=True)
 
+    def test_complete_mode_covers_calls_exceptions_and_generators_without_shards(self):
+        plan = native_array_plan(self.image)
+        complete = compile_native_functions(plan, complete=True, max_function_ops=16384)
+        self.assertEqual(complete.function_indexes, tuple(range(len(self.image.functions))))
+        self.assertEqual(complete.instruction_count, len(self.image.instructions))
+        self.assertEqual(complete.rejected, ())
+        compact = compile_native_functions(plan, complete=True, max_function_ops=16384, resume_pcs=())
+        self.assertEqual(compact.function_ids, complete.function_ids)
+        self.assertLess(compact.source.count(':goto op_'), complete.source.count(':goto op_'))
+        from app.modules.card_game.rl.batched_duel.native_soa_source import emit_native_soa_source
+        source, _ = emit_native_soa_source(self.image, self.schema, VmLimits(), native_functions=True)
+        self.assertNotIn('native_pc_shard_', source)
+        self.assertIn('native_function_admit(', source)
+        from app.modules.card_game.rl.batched_duel.native_soa_source import execute_only_source, _kernel
+        diagnostic = execute_only_source(source)
+        self.assertEqual(_kernel(diagnostic, 'vm_soa_execute'), _kernel(source, 'vm_soa_execute'))
+        self.assertIn('native_function_dispatch', diagnostic)
+        self.assertNotIn('void soa_export_projection(', diagnostic)
+        self.assertNotIn('void vm_compact(', diagnostic)
+        from app.modules.card_game.rl.batched_duel.native_soa_cuda import CudaSoARules
+        diagnostic_backend = object.__new__(CudaSoARules)
+        diagnostic_backend.execute_only = True
+        with self.assertRaises(RuntimeError):
+            diagnostic_backend.metadata(None, None, None)
+        with self.assertRaises(RuntimeError):
+            diagnostic_backend.export_projection(None)
+        with self.assertRaises(ValueError):
+            compile_native_functions(plan, complete=True, max_function_ops=1)
+
     def test_results_mutations_aliases_and_every_step_cut(self):
         options = dict(limits=VmLimits(frames=64, locals=128, stack=128, cells=64, steps=100000),
                        max_nodes=8192, max_edges=16384, max_payload_bytes=65536)

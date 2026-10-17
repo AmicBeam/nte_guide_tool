@@ -53,7 +53,8 @@ class CudaSoARules:
     gpu_qualified = False
 
     def __init__(self, image, schema, *, device='cuda', limits=VmLimits(), threads=1,
-                 stack_bytes=131072,stack_runs=False,native_functions=False,native_values=False):
+                 stack_bytes=131072,stack_runs=False,native_functions=False,native_values=False,
+                 execute_only=False):
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():
             raise RuntimeError('Actual CUDA required; CPU fallback is forbidden')
@@ -61,6 +62,8 @@ class CudaSoARules:
             raise ValueError('Bounded CUDA block size required')
         if type(stack_bytes) is not int or not 131072 <= stack_bytes <= 1024**2:
             raise ValueError('Native SoA requires a bounded device stack of at least 128 KiB')
+        if type(execute_only) is not bool:
+            raise TypeError('Explicit diagnostic kernel selection required')
         self.torch, self.device = torch, torch.device(device)
         if self.device.index is None:
             self.device = torch.device('cuda', torch.cuda.current_device())
@@ -71,10 +74,15 @@ class CudaSoARules:
         self.stack_runs=stack_runs
         self.native_functions=native_functions
         self.native_values=native_values
+        self.rule_source_sha256 = source_identity(source)
+        self.execute_only = execute_only
+        if execute_only:
+            from .native_soa_source import execute_only_source
+            source = execute_only_source(source)
         self.source_sha256 = source_identity(source)
         from .cuda_runtime import CudaModule
         from .device_rule_results import _SPEC, _VALUE_PREFIX
-        self.module = CudaModule(source, {'vm_soa_execute': _SIGNATURE,
+        signatures = {'vm_soa_execute': _SIGNATURE,
             'soa_export_projection': _EXPORT_SIGNATURE,
             'soa_decode_metadata': _SPEC+['int64*','float64*','int32*','uint8*']+['int32*']*6,
             'soa_decode_pair': _VALUE_PREFIX+['int32*']*3+['int32']*4,
@@ -83,7 +91,10 @@ class CudaSoARules:
             'vm_clock':['int64*'],
             'vm_compact': ['int32*','int32*','uint8*','int32*','int32*','int32*','uint8*',
                 'int32','int32','int32','int32*','int32*','int32*','uint8*','int32*','int32*',
-                'int32*','int32*','int32*','int32','int32','int32','int32','int32']},
+                'int32*','int32*','int32*','int32','int32','int32','int32','int32']}
+        if execute_only:
+            signatures = {name: signatures[name] for name in ('vm_soa_execute', 'vm_clock')}
+        self.module = CudaModule(source, signatures,
             device=str(self.device), binary_format='cubin')
         self.module.ensure_stack(stack_bytes)
         self.constants = {key: torch.tensor(getattr(image, key).copy(), device=self.device)
@@ -202,9 +213,14 @@ class CudaSoARules:
                             clone_map, clone_queue, constant_adopt, argument_refs, typed_arguments, active),
                            (views, cache, clone_map, clone_queue, constant_adopt))
 
+    def _require_full_module(self):
+        if getattr(self, 'execute_only', False):
+            raise RuntimeError('Execute-only diagnostics cannot export/decode/compact device results')
+
     def export_projection(self, call, *, max_nodes=16384, max_edges=32768,
                           max_payload_bytes=131072, active=None):
         """Materialize a public result only; native source refuses Game records."""
+        self._require_full_module()
         from types import SimpleNamespace
         from .cuda_vm import DeviceGraph
         from .schema import GraphLayout
@@ -239,6 +255,7 @@ class CudaSoARules:
                                mapping=mapping,keepalive=(call,queue,errors,active))
 
     def metadata(self, actor_call, finished_call, active):
+        self._require_full_module()
         torch, rows = self.torch, finished_call.state.rows
         self._tensor(active, torch.uint8, (rows,), 'metadata active mask')
         make = lambda dtype: torch.zeros(rows,dtype=dtype,device=self.device)
@@ -258,6 +275,7 @@ class CudaSoARules:
                           (actor_call,finished_call,input_errors,finished,active))
 
     def select_result(self, call, path, *, active=None):
+        self._require_full_module()
         from dataclasses import replace
         torch, rows = self.torch, call.state.rows
         path_tensor = self.prepare_result_path(path)
@@ -280,6 +298,7 @@ class CudaSoARules:
 
     def read_result(self, call, active, *, pair=False):
         """Decode scalar or packet references, entirely on device."""
+        self._require_full_module()
         from types import SimpleNamespace
         torch = self.torch
         arena = getattr(call,'arena',None)
@@ -305,6 +324,7 @@ class CudaSoARules:
 
     def compact_transient(self, arena, roots, active):
         """Copy selected action/projection subgraphs; state is never passed here."""
+        self._require_full_module()
         from types import SimpleNamespace
         from .cuda_vm import DeviceGraph
         torch, rows, c = self.torch, arena.rows, self.constants

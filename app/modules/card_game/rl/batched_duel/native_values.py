@@ -11,10 +11,15 @@ import json
 
 from .native_array_codegen import _c_int, native_array_plan
 from .native_functions import _admission_guards
+from .vm_numeric import NUMERIC_OPS
 
 
 SUPPORTED = frozenset(('LOAD_FAST', 'LOAD_CONST', 'STORE_FAST', 'POP_TOP',
-                       'DUP_TOP', 'DUP_TOP_TWO', 'ROT_TWO', 'BINARY_SUBSCR'))
+                       'DUP_TOP', 'DUP_TOP_TWO', 'ROT_TWO', 'BINARY_SUBSCR',
+                       'STORE_SUBSCR', 'COMPARE_OP', 'CONTAINS_OP', 'IS_OP',
+                       'UNARY_NOT', 'UNARY_NEGATIVE', 'BINARY_ADD',
+                       'BINARY_SUBTRACT', 'BINARY_MULTIPLY')) | NUMERIC_OPS
+_BINARY = NUMERIC_OPS | frozenset(('BINARY_ADD', 'BINARY_SUBTRACT', 'BINARY_MULTIPLY'))
 _HOT_FUNCTIONS = ('legal_actions', 'attack', 'damage', 'attack_value',
                   'apply_owned_action', 'scratch_apply_action', 'scratch_simulate_action',
                   'policy_public_legal_decision', 'cached_policy_public_legal_decision')
@@ -38,6 +43,12 @@ def _identity(*values):
 
 
 def _effect(op):
+    if op in _BINARY or op in ('COMPARE_OP', 'CONTAINS_OP', 'IS_OP'):
+        return 2, -1
+    if op in ('UNARY_NOT', 'UNARY_NEGATIVE'):
+        return 1, 0
+    if op == 'STORE_SUBSCR':
+        return 3, -3
     return {'LOAD_FAST': (0, 1), 'LOAD_CONST': (0, 1), 'STORE_FAST': (1, -1),
             'POP_TOP': (1, -1), 'DUP_TOP': (1, 1), 'DUP_TOP_TWO': (2, 2),
             'ROT_TWO': (2, 0), 'BINARY_SUBSCR': (2, -1)}[op]
@@ -83,10 +94,14 @@ def _read_keys(rows, keys):
             stack.extend(stack[-2:])
         elif op == 'ROT_TWO':
             stack[-2:] = stack[-2:][::-1]
+        elif op in ('UNARY_NOT', 'UNARY_NEGATIVE'):
+            stack[-1] = None
+        elif op == 'STORE_SUBSCR':
+            del stack[-3:]
         else:
             key = stack.pop()
             stack.pop()
-            if key is not None:
+            if row['op'] == 'BINARY_SUBSCR' and key is not None:
                 result.append(key)
             stack.append(None)
     return result
@@ -146,9 +161,15 @@ def compile_native_values(image, schema, plan, *, max_regions=256, max_region_op
                     selected.append((fn, candidates.pop(0)))
     selected.sort(key=lambda item: item[1][0]['pc'])
     used_keys = sorted({key for _, run in selected for key in _read_keys(run, keys)})
-    source = '''__device__ inline int native_value_subscript(Context* c,int owner,int key){
+    from .native_scalar_ops import emit_native_scalar_source
+    source = emit_native_scalar_source()
+    source += '''__device__ inline int native_value_subscript(Context* c,int owner,int key){
  int out=MISSING;if(stdlib_subscript(c,owner,key,&out))return out;
  return collection_subscript(c,owner,key);
+}
+__device__ inline void native_value_store(Context* c,int owner,int key,int value){
+ if(stdlib_store(c,owner,key,value))return;
+ collection_store(c,owner,key,value);
 }
 '''
     source += ''.join(_field_helper(key, keys[key], schema) for key in used_keys)
@@ -242,6 +263,46 @@ def _emit_region(fn, rows, keys):
             stack.extend(stack[-2:])
         elif op == 'ROT_TWO':
             stack[-2:] = stack[-2:][::-1]
+        elif op == 'STORE_SUBSCR':
+            key_ref, _ = stack.pop()
+            owner_ref, _ = stack.pop()
+            stored_ref, _ = stack.pop()
+            text += ' native_value_store(c,' + ','.join((owner_ref, key_ref, stored_ref)) + ');\n'
+        elif op in _BINARY:
+            right, _ = stack.pop()
+            left, _ = stack.pop()
+            text += ' int ' + value + '=native_scalar_binary<OP_' + op + '>(c,' + left + ',' + right + ');\n'
+            stack.append((value, None))
+        elif op == 'COMPARE_OP':
+            right, _ = stack.pop()
+            left, _ = stack.pop()
+            text += (' int ' + value + '=native_scalar_compare<' + str(row['arg']) +
+                     '>(c,' + left + ',' + right + ')?TRUE_REF:FALSE_REF;\n')
+            stack.append((value, None))
+        elif op == 'CONTAINS_OP':
+            owner_ref, _ = stack.pop()
+            needle, _ = stack.pop()
+            text += ' int ' + value + '=contains(c,' + needle + ',' + owner_ref + ');\n'
+            text += value + '=' + ('!' if row['arg'] else '') + value + '?TRUE_REF:FALSE_REF;\n'
+            stack.append((value, None))
+        elif op == 'IS_OP':
+            right, _ = stack.pop()
+            left, _ = stack.pop()
+            text += (' int tag_a_' + str(offset) + '=kind(c,' + left + '),tag_b_' + str(offset) + '=kind(c,' + right + ');\n'
+                     ' int yes_' + str(offset) + '=' + left + '==' + right + ';\n'
+                     ' if(tag_a_' + str(offset) + '==TAG_NONE&&tag_b_' + str(offset) + '==TAG_NONE)yes_' + str(offset) + '=1;\n'
+                     ' else if(tag_a_' + str(offset) + '==TAG_BOOL&&tag_b_' + str(offset) + '==TAG_BOOL)yes_' + str(offset) + '=node(c,' + left + ')[3]==node(c,' + right + ')[3];\n'
+                     ' int ' + value + '=' + ('!' if row['arg'] else '') + 'yes_' + str(offset) + '?TRUE_REF:FALSE_REF;\n')
+            stack.append((value, None))
+        elif op == 'UNARY_NOT':
+            operand, _ = stack.pop()
+            text += ' int ' + value + '=native_scalar_not(c,' + operand + ')?TRUE_REF:FALSE_REF;\n'
+            stack.append((value, None))
+        elif op == 'UNARY_NEGATIVE':
+            operand, _ = stack.pop()
+            text += ' int ' + value + '=native_scalar_negative(c,' + operand + ');\n'
+            text += ' if(c->h.error==ERROR_INT_OVERFLOW){' + flush() + 'return 1;}\n'
+            stack.append((value, None))
         elif op == 'BINARY_SUBSCR':
             key_ref, key = stack.pop()
             owner_ref, _ = stack.pop()
@@ -249,8 +310,8 @@ def _emit_region(fn, rows, keys):
                     'native_value_subscript(c,' + owner_ref + ',' + key_ref + ')')
             text += ' int ' + value + '=' + read + ';\n'
             stack.append((value, None))
-            text += (' if(c->error||c->h.error||c->raised!=MISSING||c->current!=owner){' +
-                     flush() + 'return 1;}\n')
+        if op not in ('LOAD_CONST', 'LOAD_FAST', 'STORE_FAST', 'POP_TOP', 'DUP_TOP', 'DUP_TOP_TWO', 'ROT_TWO'):
+            text += (' if(c->error||c->h.error||c->raised!=MISSING||c->current!=owner){' + flush() + 'return 1;}\n')
     return text + flush() + ' return 1;\n}\n'
 
 
@@ -258,11 +319,20 @@ def integrate_native_values(source, image, schema, plan):
     from .native_array_codegen import _emit_pc_case
     from .native_shard_runs import _continued_case
     compiled = compile_native_values(image, schema, plan)
-    marker = '__device__ inline void native_pc_shard_0('
-    if source.count(marker) != 1:
+    complete = '__device__ inline void native_pc_shard_0(' not in source
+    marker = ('__device__ __noinline__ void native_function_' if complete else
+              '__device__ inline void native_pc_shard_0(')
+    if not source.count(marker) or not complete and source.count(marker) != 1:
         raise ValueError('Canonical native value definition boundary changed')
     source = source.replace(marker, compiled.source + '\n' + marker, 1)
     for _, _, begin, _ in compiled.regions:
+        if complete:
+            label = 'op_' + str(begin) + ':{\n'
+            if source.count(label) != 1:
+                raise ValueError('Canonical native function value boundary changed: ' + str(begin))
+            hook = ' if(native_values_' + str(begin) + '(c,f,fn,pc))return;\n'
+            source = source.replace(label, label + hook, 1)
+            continue
         row = plan.coverage['instructions'][begin]
         case = _continued_case(''.join(_emit_pc_case(row, direct_stack_dispatch=True)))
         if source.count(case) != 1:

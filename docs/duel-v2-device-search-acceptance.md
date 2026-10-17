@@ -265,3 +265,6 @@ SoA工厂还默认开启 `reuse_root_observation`：只复用本次初始化、�
 
 
 运行库单元可显式启用 `runtime_primitive_compare=True` 或 `direct_deepcopy_calls=True`，默认关闭且要求完整函数分单元编译。前者只对经边界核验的有限整数／布尔及字符串相等比较跳过已知拒绝这些类型的库探测；宽整数、浮点、Decimal、自定义对象及未知／坏引用走原处理。后者直接路由至原 deepcopy 实现，保留 memo、别名、参数、分配、步数和错误。两者均不改变 Context／Heap ABI 或非 runtime 编译单元；CPU 堆／错误／步数对拍和构造接线测试不代替真实 GPU、完整搜索及自然终局验收。
+
+
+价值预热的纯策略采集与 Gumbel 策略标签分开：`DevicePureValueTape` 直接兼容物理游戏 sink，核对零 requested/completed/visits、合法选择、状态／动作租约、所有者、步号、版本及双方数值观察；完整自然终局后记录双观察者 WDL。任一原始行失败、截断或未结束都拒绝整批训练导出；冻结观察者可显式审计，但保留不可学习标记。`soa_pure_jobs` 不要求或伪造首次价值预检证据，完整保留真实 jobs_for／compare_jobs 的身份、牌序及独立 reference bank；不把任务残留 teacher 元数据当作实际搜索，也不授予完整训练资格。

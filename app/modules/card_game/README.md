@@ -1298,3 +1298,6 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 
 
 原生规则运行库的整数／布尔比较和精确 deepcopy 调用可分别通过 `--runtime-primitive-compare`、`--direct-deepcopy-calls` 做单变量短测，要求 `--native-complete`，默认关闭。仅变换共享 runtime 编译单元，其他缓存及规则保持；宽整数、浮点、自定义对象和未知类型沿原规则处理。验证入口为 `tests.test_duel_v2_native_runtime_compare`、`tests.test_duel_v2_native_runtime_calls`、`tests.test_duel_v2_soa_device_cli`；收益须另作未插桩 GPU 配对测量。
+
+
+纯策略价值预热使用独立 `batched_search/device_pure_value_tape.py`，接受真实零模拟决策并保存双方公开价值输入，不产生策略搜索标签；整批自然结束、无错且容量足够后才允许导出。`soa_pure_jobs.adapt_pure_jobs` 绑定原任务、原牌序、起手换牌与独立 policy/reference 来源和版本，保留候选／基线比较身份。两者不构成闭环 driver 或模型校准资格。验证 `tests.test_duel_v2_device_pure_value_tape`、`tests.test_duel_v2_soa_pure_jobs`。

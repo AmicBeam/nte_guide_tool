@@ -33,8 +33,19 @@ class DeviceGameLoop:
     def __init__(self, rules, search, sink, world_seed_provider, *, max_decisions,
                  random_plan=None, device='cuda', allow_cpu_reference=False,
                  allow_synthetic=False, outer_loop=None, inner_loop=None,
-                 outer_max_ticks=None, inner_max_ticks=None, seconds=60, root_guide=None, search_audit_sink=None):
+                 outer_max_ticks=None, inner_max_ticks=None, seconds=60, root_guide=None, search_audit_sink=None,
+                 defer_physical_presentation=False):
         import torch
+        if type(defer_physical_presentation) is not bool:
+            raise TypeError('Explicit deferred physical presentation boolean required')
+        self.defer_physical_presentation=defer_physical_presentation
+        self._deferred_physical_contract=None
+        self._deferred_raw_tape=None
+        self._deferred_step_open=False
+        if defer_physical_presentation:
+            from .deferred_physical_presentation import validate_deferred_rules
+            self._deferred_physical_contract=validate_deferred_rules(rules)
+            self._deferred_raw_tape=rules.raw_tape
         if type(max_decisions) is not int or max_decisions < 1:
             raise ValueError('Positive bounded physical decision count required')
         if type(allow_synthetic) is not bool or type(allow_cpu_reference) is not bool:
@@ -325,8 +336,15 @@ class DeviceGameLoop:
         self._error(sink_err, ready, SINK_ERROR)
         commit = ready & (sink_err == 0) & (self._errors == 0)
         old = self._physical(commit)
-        advanced = self.rules.step_device(old, self._actors, result.decision, result.actions,
-                                          physical=True)
+        if self.defer_physical_presentation:
+            self._deferred_step_open=True
+            try:
+                advanced = self.rules.step_deferred_physical_device(old,self._actors,result.decision,result.actions)
+            finally:
+                self._deferred_step_open=False
+        else:
+            advanced = self.rules.step_device(old, self._actors, result.decision, result.actions,
+                                              physical=True)
         if advanced.pool is not self._pool:
             raise ValueError('Physical results must share the stable checked state arena')
         self._error(advanced.errors, commit, RULE_ERROR)

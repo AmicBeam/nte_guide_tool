@@ -266,6 +266,10 @@ class DeviceTiledSoARules(DeviceSoARules):
     def step_device(self, states, actors, decision, action_indices, *, physical=False):
         return self._step_device(states,actors,decision,action_indices,physical=physical)
 
+    def step_deferred_physical_device(self,states,actors,decision,action_indices):
+        """Use the physical raw hook and shared step queue, then loop-owned clean."""
+        return self._step_device(states,actors,decision,action_indices,physical=True,_defer=True)
+
     def step_clean_device(self,states,actors,decision,action_indices,*,physical=False):
         if physical is not False:raise ValueError('Fused clean currently accepts hypothetical steps only')
         return self._step_device(states,actors,decision,action_indices,fused=True)
@@ -278,7 +282,14 @@ class DeviceTiledSoARules(DeviceSoARules):
             self._sites['step_clean']=[self._new_queue()]
             self._site_index['step_clean']=0
 
-    def _step_device(self, states, actors, decision, action_indices, *, physical=False,fused=False):
+    def _step_device(self, states, actors, decision, action_indices, *, physical=False,fused=False,_defer=False):
+        if type(_defer) is not bool:
+            raise TypeError('Explicit private deferred step control required')
+        if _defer:
+            if physical is not True or fused:
+                raise ValueError('Deferred presentation requires an unfused physical step')
+            from .deferred_physical_presentation import require_deferred_step
+            require_deferred_step(self)
         if type(physical) is not bool or not isinstance(decision, DeviceDecision):
             raise ValueError('Explicit physical mode and full legal decision required')
         if decision.states.pool is not self.store or decision.action_pool is not self.action_store:
@@ -312,6 +323,9 @@ class DeviceTiledSoARules(DeviceSoARules):
                     graph, ids, owners, self.physical_loop.steps_device.index_select(0, ids),
                     self.physical_loop.source_versions_device.index_select(0, ids), who, active)
             try:
+                if _defer:
+                    return self.inner._step_device(local,actors.index_select(0,ids),selected,
+                        action_indices.index_select(0,ids),physical=True,_defer=True,_deferred_owner=self)
                 step=self.inner.step_clean_device if fused else self.inner.step_device
                 return step(local, actors.index_select(0, ids), selected,
                             action_indices.index_select(0, ids), physical=physical)

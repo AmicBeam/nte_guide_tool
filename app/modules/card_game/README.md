@@ -1307,3 +1307,8 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 
 
 `soa_pure_results.verified_pure_calibration_games` 在批次结束后核对真实纯策略任务、原始初始化、完整自然终局、双观察者 GPU 价值记录及独立 CUDA 策略回执，再转换为既有价值学习输入；不生成搜索策略标签或补造缺失记录。比较任务须另走比较协议，不由本适配器接收。验证 `tests.test_duel_v2_soa_pure_results`、`tests.test_duel_v2_soa_pure_jobs`；转换通过不等于学习、完整评估或闭环资格。
+
+
+`DeviceGameLoop(defer_physical_presentation=True)` 为默认关闭的闭环选项：仅已核验冻结程序、绑定同一真实原始动作记录器且立即执行原 `clean` 的物理提交，可通过专用入口使用模拟演出边界；普通 `step_device(physical=True)` 仍执行完整公开动作。Tiled 共用原队列，Tiered 物理只执行大工作区一次；缺补丁的中间事件不得公开播放，公开录像须批后按原始动作走完整正式入口重建。源检查发生在静态构建／捕获，不进入 GPU replay 的每步。验证 `tests.test_deferred_physical_presentation`。
+
+冻结可显式启用 `capture_native_array_program(policy_query_cache=True, value_observation_entry=True)`，默认关闭；专用价值投影从正式公开投影派生，仅去掉合法动作枚举与复制，保留可见性、数值公式及每查询缓存。SoA 只接受精确冻结的专用入口，旧程序仍沿原查询路径。验证 `tests.test_duel_v2_gpu_value_projection`、`tests.test_duel_v2_value_observation_entry`；新程序／编译缓存和 GPU 收益须独立验证。

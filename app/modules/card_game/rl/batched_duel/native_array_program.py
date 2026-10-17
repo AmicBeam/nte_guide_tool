@@ -34,6 +34,7 @@ def load_native_array_program(path, *, repo_root=None):
             or type(meta.get('teacher_entries')) is not bool
             or type(meta.get('policy_query_cache',False)) is not bool
             or type(meta.get('effect_query_fastpaths',False)) is not bool
+            or type(meta.get('value_observation_entry',False)) is not bool
             or meta.get('extra_zhenhong_simulations') != 0):
         raise ValidationError('Native array frozen protocol mismatch')
     if detect_frozen_runtime(program) != 'seven':
@@ -44,6 +45,9 @@ def load_native_array_program(path, *, repo_root=None):
                 'sample_world_transition_packet', 'checked_apply_action'}
     if not required <= set(program.entries):
         raise ValidationError('Native array frozen entries incomplete')
+    if (('value_observation' in program.entries) != meta.get('value_observation_entry',False)
+            or meta.get('value_observation_entry',False) and not meta.get('policy_query_cache',False)):
+        raise ValidationError('Native array value observation entry identity mismatch')
     teachers = {'teacher_continue', 'rule_decision'}
     if (not meta['teacher_entries'] and teachers & set(program.entries)
             or meta['teacher_entries'] and not teachers <= set(program.entries)):
@@ -81,7 +85,8 @@ class NativeArrayExporter(ProgramExporter):
 
 
 def capture_native_array_program(*, include_teacher_entries=False, owned_transitions=True,
-                                 policy_query_cache=False, effect_query_fastpaths=False):
+                                 policy_query_cache=False, effect_query_fastpaths=False,
+                                 value_observation_entry=False):
     """Freeze public-seven rules; teachers are absent by default, not disabled later.
 
     State transfer/compaction and typed observation encoders use the existing
@@ -89,8 +94,10 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
     information guards before a world can be consumed by search.
     """
     if any(type(value) is not bool for value in (include_teacher_entries,owned_transitions,
-                                                policy_query_cache,effect_query_fastpaths)):
+                                                policy_query_cache,effect_query_fastpaths,value_observation_entry)):
         raise TypeError('Explicit native-array capture options required')
+    if value_observation_entry and not policy_query_cache:
+        raise ValueError('Value-only observation requires the indexed policy projection')
     from ...content.duel_v2 import CARDS, PUBLIC_CHARACTER_IDS
     from ...engine.duel_v2 import state, flow, simulation
     from .array_rule_sources import array_reduce_max_hp
@@ -108,6 +115,9 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
     if policy_query_cache:
         from .gpu_cached_policy_projection import cached_policy_public_legal_decision
         entries['public_legal_decision']=cached_policy_public_legal_decision
+    if value_observation_entry:
+        from .gpu_value_projection import cached_policy_value_observation
+        entries['value_observation']=cached_policy_value_observation
     entries['sample_world_guard_views_packet'] = seven_sample_guard_views_packet
     entries['sample_world_transition_packet'] = seven_sample_transition_packet
     entries['checked_apply_action'] = checked_apply_action
@@ -134,6 +144,8 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
     source_names=['native_array_program.py','array_rule_sources.py','gpu_owned_transitions.py','gpu_policy_projection.py']
     if policy_query_cache:
         source_names.append('gpu_cached_policy_projection.py')
+    if value_observation_entry:
+        source_names.append('gpu_value_projection.py')
     if effect_query_fastpaths:
         source_names.append('gpu_effect_queries.py')
     for name in source_names:
@@ -144,6 +156,7 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
         runtime='seven', characters=sorted(characters), cards=sorted(cards),
         owned_workspace=owned_transitions, teacher_entries=include_teacher_entries,
         policy_query_cache=policy_query_cache,
+        value_observation_entry=value_observation_entry,
         effect_query_fastpaths=effect_query_fastpaths,
         extra_zhenhong_simulations=0, complete_native_compilation_required=True,
         interpreter_fallback=False, gpu_qualified=False)

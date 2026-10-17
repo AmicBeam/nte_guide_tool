@@ -279,6 +279,11 @@ class DeviceTieredSoARules(DeviceSoARules):
 
     def step_device(self,states,actors,decision,indices,*,physical=False):
         return self._step(states,actors,decision,indices,physical=physical)
+    def step_deferred_physical_device(self,states,actors,decision,indices):
+        from .deferred_physical_presentation import require_deferred_step
+        require_deferred_step(self)
+        # Raw physical capture is not replayable: execute the slow tier once.
+        return self.slow.step_deferred_physical_device(states,actors,decision,indices)
     def step_clean_device(self,states,actors,decision,indices,*,physical=False):
         return self._step(states,actors,decision,indices,physical=physical,fused=True)
     def prepare_fused_steps(self):self.fast.prepare_fused_steps();self.slow.prepare_fused_steps()

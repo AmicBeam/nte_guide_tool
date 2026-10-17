@@ -28,6 +28,18 @@ def _validate_fused_clean(image):
         raise ValueError('Exact frozen canonical clean entry required')
 
 
+def _value_observation_path(image):
+    """Select only the explicitly frozen value projection; old images keep their path."""
+    if 'value_observation' not in image.entries:
+        return 'public_legal_decision', (1,)
+    index=image.entries['value_observation']
+    prefix='func:app.modules.card_game.rl.batched_duel.gpu_value_projection:cached_policy_value_observation:'
+    if (type(index) is not int or not 0<=index<len(image.function_ids)
+            or not image.function_ids[index].startswith(prefix)):
+        raise ValueError('Exact frozen value-only observation entry required')
+    return 'value_observation', ()
+
+
 class DeviceSoARules:
     supports_full_duel_rules = False
     require_teacher = False
@@ -43,6 +55,7 @@ class DeviceSoARules:
             raise ValueError('Staged teacher requires explicit frozen teacher entries')
         if not isinstance(executor,CudaSoARules) or not isinstance(state_store,DeviceSoAStore):
             raise TypeError('Native typed SoA CUDA executor and state arena required')
+        _value_observation_path(executor.image)
         if require_teacher and not {'teacher_continue','rule_decision'} <= set(executor.image.entries):
             raise ValueError('Both frozen SoA teacher entries required')
         from ..batched_duel.device_graph_storage import CompactDeviceGraphStore
@@ -107,6 +120,9 @@ class DeviceSoARules:
             raise ValueError('Bind the SoA physical loop once')
         if loop.rows!=self.rows or loop.device!=self.device:
             raise ValueError('Matching SoA physical loop required')
+        if getattr(loop,'defer_physical_presentation',False):
+            from .deferred_physical_presentation import validate_deferred_binding
+            validate_deferred_binding(self,loop)
         self.physical_loop=loop
 
     def initialize_device(self, parameters, *, owners=None):
@@ -221,8 +237,9 @@ class DeviceSoARules:
         active=(states.active & (errors==0)).view(self.t.uint8)
         # A fixed viewer need not be the actor at the depth limit or terminal.
         # Its public observation is valid even when it has no legal actions.
-        call=self._invoke('public_legal_decision',batch,scratch,refs,active)
-        view=self.executor.select_result(call,(1,),active=active)
+        entry,path=_value_observation_path(self.executor.image)
+        call=self._invoke(entry,batch,scratch,refs,active)
+        view=self.executor.select_result(call,path,active=active) if path else call
         exported=self.executor.export_projection(view,active=active)
         observed,observation_errors=self.projection.project_observation(
             exported,exported.outputs,active=active)
@@ -302,7 +319,23 @@ class DeviceSoARules:
     def step_device(self, states, actors, decision, action_indices, *, physical=False):
         return self._step_device(states,actors,decision,action_indices,physical=physical)
 
-    def _step_device(self, states, actors, decision, action_indices, *, physical=False,commit=True):
+    def step_deferred_physical_device(self,states,actors,decision,action_indices):
+        """Closed-loop-only step; the bound loop must immediately canonical-clean."""
+        return self._step_device(states,actors,decision,action_indices,physical=True,_defer=True)
+
+    def _step_device(self, states, actors, decision, action_indices, *, physical=False,commit=True,
+                     _defer=False,_deferred_owner=None):
+        if type(_defer) is not bool:
+            raise TypeError('Explicit private deferred step control required')
+        if _defer:
+            if physical is not True or commit is not True:
+                raise ValueError('Deferred presentation requires one committed physical step')
+            from .deferred_physical_presentation import require_deferred_step
+            owner=self if _deferred_owner is None else _deferred_owner
+            require_deferred_step(owner)
+            if owner is not self and (getattr(owner,'inner',None) is not self
+                    or not callable(self._raw_capture_hook)):
+                raise ValueError('Only the bound tiled owner may forward deferred raw capture')
         if type(physical) is not bool or not isinstance(decision,DeviceDecision):
             raise ValueError('Explicit physical mode and full legal decision required')
         t=self.t
@@ -345,7 +378,7 @@ class DeviceSoARules:
             argument_refs=refs,errors=extra)
         errors.bitwise_or_(extra)
         active=(states.active & (errors==0)).view(t.uint8)
-        call=self._invoke('apply_action' if physical else 'simulate_action',batch,scratch,refs,active)
+        call=self._invoke('apply_action' if physical and not _defer else 'simulate_action',batch,scratch,refs,active)
         self._keepalive.extend((action_graph,gathered,compact,refs,extra))
         if not commit:return call,errors,active
         return self._commit(call,states.owners,active,errors)

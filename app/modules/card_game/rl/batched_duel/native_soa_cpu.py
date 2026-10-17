@@ -192,7 +192,8 @@ class NativeSoACPU:
     supports_full_duel_rules = False
 
     def __init__(self, image, schema, *, limits=VmLimits(), directory=None,
-                 max_nodes=1048576, max_edges=2097152, max_payload_bytes=33554432,stack_runs=False):
+                 max_nodes=1048576, max_edges=2097152, max_payload_bytes=33554432,
+                 stack_runs=False, native_functions=False):
         self.image, self.schema, self.limits = image, schema, limits
         for value in (max_nodes, max_edges, max_payload_bytes):
             if type(value) is not int or not 1 <= value <= 2**30:
@@ -200,7 +201,8 @@ class NativeSoACPU:
         self.max_nodes, self.max_edges, self.max_payload_bytes = max_nodes, max_edges, max_payload_bytes
         self._temp = tempfile.TemporaryDirectory(prefix='native_soa_cpu_') if directory is None else None
         self.directory = Path(self._temp.name if self._temp else directory).resolve()
-        self.source, self.native_plan = emit_native_soa_source(image, schema, limits,stack_runs=stack_runs)
+        self.source, self.native_plan = emit_native_soa_source(image, schema, limits,
+            stack_runs=stack_runs, native_functions=native_functions)
         self.source_sha256 = source_identity(self.source)
         self._library = compile_host_native_library(emit_host_soa_source(self.source), self.directory)
         self._execute = self._library.native_soa_execute

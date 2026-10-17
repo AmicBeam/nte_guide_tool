@@ -50,9 +50,11 @@ def _kernel(source, name):
     return source[start:end]
 
 
-def emit_native_soa_source(image, schema, limits, *, stack_runs=False):
-    if type(stack_runs) is not bool:
-        raise TypeError('Explicit native stack-run option required')
+def emit_native_soa_source(image, schema, limits, *, stack_runs=False, native_functions=False):
+    if type(stack_runs) is not bool or type(native_functions) is not bool:
+        raise TypeError('Explicit native compilation options required')
+    if stack_runs and native_functions:
+        raise ValueError('Stack fusion and native functions require separate validation')
     from .vm_soa_views import integrate_soa_source
     source, plan = _require_native_array_source(image, limits,
         direct_stack_dispatch=True, compact_frame_init=True, constant_lookup=True)
@@ -62,6 +64,9 @@ def emit_native_soa_source(image, schema, limits, *, stack_runs=False):
     else:
         from .native_shard_runs import run_native_shards
         source=run_native_shards(source,plan)
+    if native_functions:
+        from .native_functions import integrate_native_functions
+        source, _ = integrate_native_functions(source, plan)
     source = integrate_soa_source(source, schema, image=image)
     from .vm_soa_constant_fields import integrate_constant_fields
     source = integrate_constant_fields(source,schema,image)

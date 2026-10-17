@@ -70,6 +70,7 @@
 
 /* Affinity gain tiers remain readable as numbers as well as colors. */
 .guide-affinity-gain{font-weight:650;font-variant-numeric:tabular-nums;color:var(--g-ink)}.guide-affinity-gain-100{color:#8ecbff}.guide-affinity-gain-200{color:#9ee7b0}.guide-affinity-gain-400{color:#d4a4ff}.guide-affinity-gain-1200{color:#ffd078}.guide-affinity-gain-2000{color:#ff9bb8}
+.guide-affinity-price-recommended{color:#9ee766;font-weight:650}
 
 .guide-top-actions{display:flex;align-items:center;gap:12px}.guide-top .guide-top-actions a{margin:0;padding:8px 12px;border:1px solid var(--g-line);border-radius:7px;font-weight:500;letter-spacing:0;white-space:nowrap}.guide-top-actions a:hover{border-color:var(--g-accent);color:var(--g-accent)}@media(max-width:480px){.guide-top{gap:10px}.guide-top-actions{gap:6px}.guide-top .guide-top-actions a{padding:8px}}
 

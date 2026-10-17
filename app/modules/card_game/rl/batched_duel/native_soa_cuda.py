@@ -53,7 +53,7 @@ class CudaSoARules:
     gpu_qualified = False
 
     def __init__(self, image, schema, *, device='cuda', limits=VmLimits(), threads=1,
-                 stack_bytes=131072,stack_runs=False,native_functions=False):
+                 stack_bytes=131072,stack_runs=False,native_functions=False,native_values=False):
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():
             raise RuntimeError('Actual CUDA required; CPU fallback is forbidden')
@@ -67,9 +67,10 @@ class CudaSoARules:
         image.verify()
         self.image, self.schema, self.limits, self.threads = image, schema, limits, threads
         source, self.native_plan = emit_native_soa_source(image, schema, limits,
-            stack_runs=stack_runs, native_functions=native_functions)
+            stack_runs=stack_runs, native_functions=native_functions, native_values=native_values)
         self.stack_runs=stack_runs
         self.native_functions=native_functions
+        self.native_values=native_values
         self.source_sha256 = source_identity(source)
         from .cuda_runtime import CudaModule
         from .device_rule_results import _SPEC, _VALUE_PREFIX

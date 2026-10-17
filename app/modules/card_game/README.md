@@ -1247,3 +1247,10 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 `NativeSoACPU`、`CudaSoARules`、`NativeSoACUDAQuery` 显式传入 `native_functions=True` 试用；默认关闭，与 `stack_runs=True` 不叠加。可通过 `compile_native_functions(native_plan)` 查看函数名单、拒绝原因和静态指令覆盖。验证：`.venv/bin/python -m unittest tests.test_duel_v2_native_functions`；跨 Python 版本使用 `NTE_NATIVE_FUNCTION_PROGRAM` 加载同源冻结夹具。
 
 这是控制流迁移的第一阶段，仍使用原有带类型标签的对象、栈和调用帧，不等于规则热路径已经脱离 VM。后续依次迁移局部变量／操作数、类型化字段访问及函数调用；每阶段均需完整状态、候选／观察字节、别名、异常与预算对拍，并单独测量真实 CUDA。默认路径切换前还须完整搜索与正常终局验收，组件结果不提供 400 路容量或一小时吞吐结论。
+
+
+`rl/batched_duel/native_values.py` 提供默认关闭的 `native_values=True` 局部引用提升与常量字段读取实验，可独立于整函数编译使用。静态选择有界直线片段，优先合法动作、攻击／伤害和行动推进；不跨函数、跳转目标、调用或未支持操作。每段使用 C++ 局部引用保存操作数和局部值，仅在退出、预算／截止或错误时回写活跃栈及已修改局部值；原逻辑指令计数、错误位置、部分修改与外层异常处理保持。普通 PC 仍可独立进入，栈形状不适合时保留原执行。
+
+常量字符串下标绑定 schema 的记录类型／列偏移，绕过通用字段查找；仍核验记录、缺失值和类型化对象边界，并保留原值装箱及缓存／别名语义。动态键、普通对象、列表和 Counter 特殊读取继续调用相应原语。当前提升的是值引用，尚未完成标量去装箱、通用方法调用或完整规则 VM 替换。
+
+`NativeSoACPU`、`CudaSoARules`、`NativeSoACUDAQuery` 均接收此显式选项；与 `stack_runs=True` 互斥。`compile_native_values(image, schema, native_plan)` 返回所选函数／PC范围、常量读取点及代码身份。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_native_values tests.test_duel_v2_native_functions tests.test_duel_v2_native_shard_runs`。组件及CPU短测不提供GPU性能或并发资格，默认路径切换仍需独立CUDA、完整搜索和正常终局验收。

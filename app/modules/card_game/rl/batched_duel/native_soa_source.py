@@ -50,11 +50,12 @@ def _kernel(source, name):
     return source[start:end]
 
 
-def emit_native_soa_source(image, schema, limits, *, stack_runs=False, native_functions=False):
-    if type(stack_runs) is not bool or type(native_functions) is not bool:
+def emit_native_soa_source(image, schema, limits, *, stack_runs=False, native_functions=False,
+                           native_values=False):
+    if any(type(value) is not bool for value in (stack_runs, native_functions, native_values)):
         raise TypeError('Explicit native compilation options required')
-    if stack_runs and native_functions:
-        raise ValueError('Stack fusion and native functions require separate validation')
+    if stack_runs and (native_functions or native_values):
+        raise ValueError('Stack fusion and native lowering require separate validation')
     from .vm_soa_views import integrate_soa_source
     source, plan = _require_native_array_source(image, limits,
         direct_stack_dispatch=True, compact_frame_init=True, constant_lookup=True)
@@ -70,6 +71,9 @@ def emit_native_soa_source(image, schema, limits, *, stack_runs=False, native_fu
     source = integrate_soa_source(source, schema, image=image)
     from .vm_soa_constant_fields import integrate_constant_fields
     source = integrate_constant_fields(source,schema,image)
+    if native_values:
+        from .native_values import integrate_native_values
+        source, _ = integrate_native_values(source, image, schema, plan)
     kernel = _kernel(source, 'vm_execute')
     marker = 'DOMAIN_SOA_ATTACH_POINT'
     if kernel.count(marker) != 1:

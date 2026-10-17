@@ -1304,3 +1304,6 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 
 
 局部引用片段预算优先覆盖实际观察主体 `_cached_observe`／`_policy_observe`，而非只标外层入口；共享 cell 每次读原 cell、立即写回，global 每次查原 globals，均保留原引用与装箱。`EXTENDED_ARG`／`NOP` 仍逐指令核对预算，不跨调用或异常边界。`native_values=False` 不变；开启该实验会改变编译单元，必须重新核验新缓存和实际 GPU，不能继承旧源码资格。验证 `tests.test_duel_v2_native_values` 的闭包、globals、扩展参数及完整堆／状态切点对拍。
+
+
+`soa_pure_results.verified_pure_calibration_games` 在批次结束后核对真实纯策略任务、原始初始化、完整自然终局、双观察者 GPU 价值记录及独立 CUDA 策略回执，再转换为既有价值学习输入；不生成搜索策略标签或补造缺失记录。比较任务须另走比较协议，不由本适配器接收。验证 `tests.test_duel_v2_soa_pure_results`、`tests.test_duel_v2_soa_pure_jobs`；转换通过不等于学习、完整评估或闭环资格。

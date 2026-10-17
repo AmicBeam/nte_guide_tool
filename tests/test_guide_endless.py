@@ -118,12 +118,16 @@ class GuideEndlessTest(unittest.TestCase):
         self.assertEqual(sum(s['rules']['buff_selection']['enabled'] for g in service.catalog()['endless'] for s in g['stages']), 20)
         html = self.client.get('/guide/endless/EndlessTrial_1_50?stage=10').text
         selected = html.split('id="stage-10"', 1)[1].split('<article class="guide-challenge-stage"', 1)[0]
-        self.assertIn('关底增益与代价', selected)
+        self.assertIn('关底正向效果与反向效果', selected)
+        self.assertIn('<th>正向效果</th><th>反向效果</th>', selected)
+        self.assertIn('默认正向效果数量：2', selected)
         self.assertIn('怪物的全属性抗性增加8%', selected)
         self.assertIn('限时 120 秒', selected)
         self.assertIn('强化抗性', selected)
         md = self.client.get('/guide/endless/EndlessTrial_1_50.md?stage=10').text
         self.assertIn('怪物的全属性抗性增加8%', md)
+        self.assertIn('正向效果', md)
+        self.assertIn('反向效果', md)
 
     def test_importer_rejects_missing_floor_pack_and_growth(self):
         pack = {key: 0 for key in ('HPMaxUp', 'HPMaxAdd', 'AtkUp', 'AtkAdd', 'DefUp', 'DefAdd')}

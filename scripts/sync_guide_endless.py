@@ -18,7 +18,7 @@ def text(value):
 
 
 def floor_rules(payload, descriptions):
-    """Keep per-floor conditions and the paired benefit/cost options together."""
+    """Keep per-floor conditions and the paired positive/negative effects together."""
     entries = {key.casefold(): value for key, value in descriptions[0]['StringTable']['KeysToEntries'].items()}
     result = {}
     for rule in rows(payload).values():
@@ -103,7 +103,7 @@ def build(spawns, packs, identities, rules=None):
         stages.append(stage)
     return {'schema_version': 1, 'groups': [
         {'id': f'EndlessTrial_{start}_{start + 49}', 'name': f'全站深境 · {start}–{start + 49} 层',
-         'description': '逐层敌人、强化抗性、挑战目标及关底增益与代价。',
+         'description': '逐层敌人、强化抗性、挑战目标及关底正向效果与反向效果。',
          'floor_begin': start, 'floor_end': start + 49, 'stage_count': 50,
          'stages': stages[start - 1:start + 49]} for start in range(1, 201, 50)]}
 

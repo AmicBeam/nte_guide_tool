@@ -82,6 +82,19 @@ def clone_empty_twice(state):
     return state,first,second,first is second
 
 
+def mixed_clone_scopes(state):
+    first = copy.deepcopy(state)
+    empty = copy.deepcopy(state['items'])
+    wrapper = copy.deepcopy({'left': state['left'], 'right': state['right']})
+    second = copy.deepcopy(state)
+    first['left']['n'] += 10
+    wrapper['left']['n'] += 20
+    second['left']['n'] += 30
+    return (state, first, empty, wrapper, second,
+            first['left'] is first['right'], wrapper['left'] is wrapper['right'],
+            second['left'] is second['right'], first['left'] is second['left'])
+
+
 def public_item(state):
     return {'left':state['left'],'right':state['right']}
 
@@ -110,7 +123,7 @@ class NativeSoACPUTests(unittest.TestCase):
         program = capture_program({fn.__name__: fn for fn in (
             mutate_hp, mutate_alias, mutate_containers, clone_alias, scalar_result,
             sequence_operators,shuffle_items,clone_tuple,clone_transient_views_twice,
-            clone_empty_twice,public_item,inplace_concat)},
+            clone_empty_twice,mixed_clone_scopes,public_item,inplace_concat)},
             scope_character_ids=None, scope_card_ids=None,
             allowed_module_prefixes=DEFAULT_ALLOWED_MODULE_PREFIXES+(__name__,))
         cls.schema = view_schema()
@@ -188,6 +201,15 @@ class NativeSoACPUTests(unittest.TestCase):
         state,first,second,shared=self.backend.call('clone_empty_twice',batch,[[None]]).decode()[0]
         self.assertFalse(shared)
         self.assertEqual(state['items'],[]);self.assertEqual(first,[{'n':9}]);self.assertEqual(second,[])
+
+    def test_mixed_typed_empty_and_transient_copy_scopes_keep_separate_memos(self):
+        item = {'n': 3}
+        state = {'left': item, 'right': item, 'items': []}
+        batch = pack_game_states([state], self.schema)
+        actual = self.backend.call('mixed_clone_scopes', batch, [[None]]).decode()[0]
+        self.assertEqual(actual, mixed_clone_scopes(copy.deepcopy(state)))
+        self.assertEqual([actual[i]['left']['n'] for i in (0, 1, 3, 4)], [3, 13, 23, 33])
+        self.assertEqual(actual[5:], (True, True, True, False))
 
     def test_cuda_launch_signatures_match_generated_kernels(self):
         from app.modules.card_game.rl.batched_duel.native_soa_source import _kernel

@@ -291,7 +291,7 @@ struct DomainSoAContext {
  long long* i64; double* f64; int* i32; unsigned char* u8;
  int rows; int row;
  int* views; int* value_cache; int* clone_map; int* clone_queue; int* constant_adopt;
- int constant_node_count;
+ int constant_node_count; int clone_epoch;
 };
 __device__ inline int make_none(Heap* heap);
 __device__ inline int make_bool(Heap* heap, int val);
@@ -346,7 +346,7 @@ __device__ inline int soa_header_view(const Heap* heap,int ref){
 __device__ inline int soa_is_view(Heap* heap,int vm_ref){
  return soa_ready(heap)&&soa_header_view(heap,vm_ref);
 }
-__device__ inline void soa_attach(Heap* heap,DomainSoAContext* soa){if(heap)heap->soa=soa;}
+__device__ inline void soa_attach(Heap* heap,DomainSoAContext* soa){if(soa)soa->clone_epoch=0;if(heap)heap->soa=soa;}
 __device__ inline void soa_reset_range(int* buf,int count,DomainSoAContext* s){
  if(!buf)return;
  for(int i=0;i<count;i++)buf[(long long)i*s->rows+s->row]=SOA_MISSING;
@@ -357,7 +357,18 @@ __device__ inline void soa_reset_caches(Heap* heap){
  soa_reset_range(s->value_cache,SOA_VALUE_CACHE_EXTENT,s);
  soa_reset_range(s->clone_map,SOA_TOTAL_OBJECTS,s);
  soa_reset_range(s->clone_queue,SOA_TOTAL_OBJECTS,s);
+ s->clone_epoch=0;
  if(s->constant_adopt&&s->constant_node_count>0)soa_reset_range(s->constant_adopt,s->constant_node_count,s);
+}
+__device__ inline void soa_reset_clone_memo(DomainSoAContext* s){
+ // clone_queue is the existing per-object workspace, now holding memo epochs.
+ // Only integer wrap requires a full scan; ordinary copies start in O(1).
+ if(s->clone_epoch==2147483647){soa_reset_range(s->clone_queue,SOA_TOTAL_OBJECTS,s);s->clone_epoch=1;}
+ else s->clone_epoch++;
+}
+__device__ inline void soa_store_clone(DomainSoAContext* s,int gid,int value){
+ long long index=(long long)gid*s->rows+s->row;
+ s->clone_map[index]=value;s->clone_queue[index]=s->clone_epoch;
 }
 __device__ inline int soa_alloc_header(Heap* heap,int tag,int global_ref,int count){
  if(heap->counts[0]+1>heap->max_nodes)return soa_fail(heap,ERROR_NODE_CAPACITY);
@@ -784,16 +795,17 @@ __device__ inline int soa_tuple_is_pure(Heap* heap,int global,int depth){
 __device__ inline int soa_clone_gid(Heap* heap,int global_ref){
  DomainSoAContext* s=soa_ctx(heap);
  int pool=0,slot=0;if(!soa_locate(global_ref,&pool,&slot))return soa_fail(heap,ERROR_INVALID_REF);
- int gid=global_ref-1;int mapped=s->clone_map[(long long)gid*s->rows+s->row];
+ int gid=global_ref-1;long long memo_index=(long long)gid*s->rows+s->row;
+ int mapped=s->clone_queue[memo_index]==s->clone_epoch?s->clone_map[memo_index]:0;
  if(mapped>0)return mapped;
  if(soa_tuple_is_pure(heap,global_ref,0)){
-  s->clone_map[(long long)gid*s->rows+s->row]=global_ref;return global_ref;
+  soa_store_clone(s,gid,global_ref);return global_ref;
  }
  int used=soa_load_i32(s,SOA_POOL_USED[pool]);
  if(used>=SOA_POOL_CAP[pool])return soa_fail(heap,ERROR_NODE_CAPACITY);
  int dst=used;soa_store_i32(s,SOA_POOL_USED[pool],used+1);
  int neu=SOA_POOL_BASE[pool]+dst+1;
- s->clone_map[(long long)gid*s->rows+s->row]=neu;
+ soa_store_clone(s,gid,neu);
  soa_store_u8(s,SOA_POOL_TAG[pool]+dst,soa_load_u8(s,SOA_POOL_TAG[pool]+slot));
  int count=soa_load_i32(s,SOA_POOL_COUNT_COL[pool]+slot);
  soa_store_i32(s,SOA_POOL_COUNT_COL[pool]+dst,count);
@@ -826,14 +838,7 @@ __device__ inline int soa_clone(Heap* heap,int vm_ref,int reset_memo){
  DomainSoAContext* s=soa_ctx(heap);
  if(!soa_ready(heap)||!soa_is_view(heap,vm_ref))return soa_fail(heap,ERROR_INVALID_REF);
  int gid=heap->nodes[vm_ref*4+3];
- if(reset_memo){
-  int pool=0,slot=0;if(!soa_locate(gid,&pool,&slot))return soa_fail(heap,ERROR_INVALID_REF);
-  // Empty sequence/map roots have no child references. Reset their own memo
-  // entry so repeated copies stay independent without scanning unrelated IDs.
-  if(SOA_POOL_KIND[pool]!=SOA_KIND_RECORD && soa_load_i32(s,SOA_POOL_COUNT_COL[pool]+slot)==0)
-   s->clone_map[(long long)(gid-1)*s->rows+s->row]=0;
-  else for(int i=0;i<SOA_TOTAL_OBJECTS;i++)s->clone_map[(long long)i*s->rows+s->row]=0;
- }
+ if(reset_memo)soa_reset_clone_memo(s);
  int cloned=soa_clone_gid(heap,gid);if(cloned<1)return -1;
  return soa_view_ref(heap,cloned);
 }
@@ -1185,7 +1190,7 @@ def _patch_dict_list(source):
 
 def _patch_clone_gc_numeric(source):
     deep = '__device__ inline int deep_clone(Heap* heap, int root_ref) {\n    if (heap->error != ERROR_OK) return -1;'
-    deep_new = '__device__ inline int deep_clone(Heap* heap, int root_ref) {\n    if (heap->error != ERROR_OK) return -1;\n    if (soa_is_view(heap, root_ref)) return soa_clone(heap, root_ref, 1);\n    if (soa_ready(heap)) {DomainSoAContext* s=heap->soa;for(int i=0;i<SOA_TOTAL_OBJECTS;i++)s->clone_map[(long long)i*s->rows+s->row]=0;}'
+    deep_new = '__device__ inline int deep_clone(Heap* heap, int root_ref) {\n    if (heap->error != ERROR_OK) return -1;\n    if (soa_is_view(heap, root_ref)) return soa_clone(heap, root_ref, 1);\n    if (soa_ready(heap)) soa_reset_clone_memo(heap->soa);'
     if deep in source:
         source = _replace_all(source, deep, deep_new, 'deep_clone')
     discover_heap = '        if (!get_node(heap, curr_ref, &node)) {\n            heap->error = ERROR_INVALID_REF;\n            break;\n        }'

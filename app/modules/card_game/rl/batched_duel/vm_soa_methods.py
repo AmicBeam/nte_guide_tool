@@ -85,7 +85,7 @@ def integrate_soa_methods(source):
     clone='__device__ inline int soa_clone_gid(Heap* heap,int global_ref){'
     source=source.replace(clone,_IMMUTABLE+'\n'+clone+'''
  if(soa_tuple_immutable(heap,global_ref,0)){
-  heap->soa->clone_map[(long long)(global_ref-1)*heap->soa->rows+heap->soa->row]=global_ref;
+  soa_store_clone(heap->soa,global_ref-1,global_ref);
   return global_ref;
  }
 ''',1)
@@ -98,8 +98,7 @@ def integrate_soa_methods(source):
         if source.count(copy_marker)!=1:
             raise ValueError('Canonical non-atomic deepcopy boundary changed')
         source=source.replace(copy_marker,'''
- if(root_node.count>0 && soa_ready(&c->h))for(int i=0;i<SOA_TOTAL_OBJECTS;i++)
-  c->h.soa->clone_map[(long long)i*c->h.soa->rows+c->h.soa->row]=0;
+ if(root_node.count>0 && soa_ready(&c->h))soa_reset_clone_memo(c->h.soa);
 '''+copy_marker,1)
     for declaration, body in (
         (marker,'return soa_method_pop(c,list_ref,index,out_val);'),

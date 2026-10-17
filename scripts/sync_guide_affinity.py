@@ -10,6 +10,7 @@ import re
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
+AFFINITY_ROLE_IDS = {'1052': '1029', '1054': '1005', '1055': '1014'}
 TABLES = {
     'roles': 'LikeabilitySystem/DT_LikeabilityRoleData.json',
     'gifts': 'LikeabilitySystem/DT_LikeabilityGiftData.json',
@@ -68,19 +69,20 @@ def build_affinity(ids, tables):
         offers[item_id] = list(grouped.values())
     result = []
     for identifier in ids:
-        role = tables['roles'].get(identifier)
+        role_id = AFFINITY_ROLE_IDS.get(identifier, identifier)
+        role = tables['roles'].get(role_id)
         gifts = []
         for gift_id, row in tables['gifts'].items():
             gain = next((entry['LikeabilityValue'] for entry in row['SpeicalGiftDatas']
-                         if str(entry['RoleId']) == identifier), None)
+                         if str(entry['RoleId']) == role_id), None)
             exclusive = row['ExclusiveLikeabilityID']
-            if gain is None or exclusive not in ('None', identifier):
+            if gain is None or exclusive not in ('None', role_id, identifier):
                 continue
             if gain < 0:
                 raise ValueError('Negative affinity gain')
             gifts.append({'id': gift_id, 'name': item_name(gift_id),
                           'affinity_gain': gain, 'default_gain': row['DefaultLikeabilityValue'],
-                          'exclusive': exclusive == identifier, 'unlimited': bool(row['bUnlimit']),
+                          'exclusive': exclusive in (role_id, identifier), 'unlimited': bool(row['bUnlimit']),
                           'offers': offers.get(gift_id.casefold(), [])})
         gifts.sort(key=lambda g: (g['affinity_gain'], g['id']))
         levels = [{'level': index, 'max_value': entry['MaxValue']}

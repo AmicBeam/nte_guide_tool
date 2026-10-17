@@ -97,6 +97,22 @@ class GuideAffinityTest(unittest.TestCase):
         self.assertIn('尚未提供喜好礼物配置', html)
         self.assertNotIn('>免费<', html)
 
+    def test_legacy_affinity_ids_match_current_characters(self):
+        for identifier, name in [('1052', '浔'), ('1054', '达芙蒂尔'), ('1055', '九原')]:
+            with self.subTest(character=name):
+                affinity = service.detail('characters', identifier)['affinity']
+                self.assertTrue(affinity['available'])
+                self.assertEqual(len(affinity['levels']), 10)
+                self.assertTrue(affinity['gifts'])
+                self.assertTrue(any(g['costs'] for g in affinity['gifts']))
+                html = self.client.get(f'/guide/characters/{identifier}?section=affinity').text
+                self.assertIn('喜好礼物与总花费', html)
+                self.assertNotIn('尚未提供好感度等级配置', html)
+        gifts = service.detail('characters', '1052')['affinity']['gifts']
+        exclusive = next(g for g in gifts if g['id'] == 'SpecialGift_1052')
+        self.assertTrue(exclusive['exclusive'])
+        self.assertEqual(exclusive['affinity_gain'], 1200)
+
     def test_import_preserves_multi_currency_and_unpriced_gifts(self):
         spec = importlib.util.spec_from_file_location('sync_affinity', ROOT / 'scripts/sync_guide_affinity.py')
         module = importlib.util.module_from_spec(spec)

@@ -18,8 +18,9 @@ TOOLS = [
                {'query': TEXT, 'kind': KINDS, 'limit': {'type': 'integer', 'minimum': 1, 'maximum': 20},
                 'offset': {'type': 'integer', 'minimum': 0}, 'element': TEXT,
                 'rarity': {'type': 'integer', 'minimum': 1, 'maximum': 5}}),
-    definition('wiki_get', '读取角色、弧盘、轨外之境或全站深境，等同CLI get。大条目请用section或stage缩小；links提供详情、养成、配装等可用网页跳转。',
-               {'kind': KINDS, 'id': TEXT, 'section': TEXT, 'stage': {'type': 'integer'}}, ['kind', 'id']),
+    definition('wiki_get', '默认读取机制概览和可读章节。section=abilities未指定ability_id时仅列技能机制与ID；精确参数用ability_id和level（1–13）。关卡用stage。links为网页跳转。',
+               {'kind': KINDS, 'id': TEXT, 'section': TEXT, 'stage': {'type': 'integer'},
+                'ability_id': TEXT, 'level': {'type': 'integer', 'minimum': 1, 'maximum': 13}}, ['kind', 'id']),
     definition('wiki_schema', '读取本站数据范围和数值含义，等同CLI schema。', {}),
     definition('my_profiles', '仅在用户询问本人已同步练度或配装时读取当前登录者自己的快照，等同CLI me。不会同步游戏。',
                {'role_id': TEXT, 'character': TEXT}),
@@ -64,7 +65,11 @@ class Toolkit:
             for row in value['items']:
                 self.source(row['name'], row['links']['detail'])
         elif name == 'wiki_get':
-            value = service.detail(args['kind'], args['id'], args.get('section'), args.get('stage'))
+            section = args.get('section') or ('abilities' if args.get('ability_id') else None if args.get('stage') is not None else 'overview')
+            if args['kind'] == 'characters' and section == 'abilities' and not args.get('ability_id'):
+                section = 'overview'
+            value = service.detail(args['kind'], args['id'], section, args.get('stage'),
+                                   args.get('ability_id'), args.get('level'))
             value = {**value, 'links': chat_links.entry_links(args['kind'], value, args.get('stage'))}
             self.source(value['name'], value['links']['detail'])
         elif name == 'wiki_schema':

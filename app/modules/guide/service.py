@@ -9,6 +9,7 @@ from markupsafe import Markup, escape
 from .affinity import with_gift_costs
 from .description_parameters import bind_description_parameters
 from .challenge_calendar import is_released_challenge
+from . import reference_view
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境', 'endless': '全站深境'}
 LABELS = {
@@ -176,7 +177,7 @@ def filter_index_items(kind):
             for record in catalog()[kind]]
 
 
-def detail(kind, identifier, section=None, stage=None):
+def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None):
     record = next((r for r in public_records(kind) if str(r['id']) == identifier), None)
     if record is None:
         raise LookupError('未找到条目')
@@ -187,11 +188,7 @@ def detail(kind, identifier, section=None, stage=None):
         record['stages'] = [x for x in record['stages'] if str(x['id']) == str(stage)]
         if not record['stages']:
             raise LookupError('未找到关卡')
-    if section:
-        if section not in record:
-            raise LookupError('未找到指定字段')
-        record = {'id': record['id'], 'name': record['name'], section: record[section]}
-    return record
+    return reference_view.select(record, kind, section, ability_id, level)
 
 
 def markdown_value(value, depth=2):
@@ -230,7 +227,11 @@ def schema():
     return {'schema_version': 1, 'collections': KINDS,
         'list': '/api/guide/{collection}?q=&element=&rarity=&limit=20&offset=0',
         'search': '/api/guide/search?q={query}',
-        'detail': '/api/guide/{collection}/{id}?section={field}&stage={stage_id}',
+        'detail': '/api/guide/{collection}/{id}?section={field}&stage={stage_id}&ability_id={ability_id}&level={level}',
+        'reference_views': {'overview': 'section=overview返回机制和可读章节，不含所有等级参数或全部关卡。',
+            'ability_id': '仅角色技能，可省略section或使用section=abilities；按准确技能ID只取一个技能。',
+            'level': '可选1–13；values、attack_values等等级数组变为{level,max_level,value}，不足指定档时标明实际最高档。',
+            'parameter_keys': '指定技能时，groups中与顶层param_rows相同的行改用parameter_keys引用，按key查找原行。'},
         'markdown': '/guide/{collection}/{id}.md',
         'cultivation': {'url': '/api/guide/characters/{id}/cultivation', 'method': 'POST',
             'fields': ['current_level', 'target_level', 'current_ascended', 'target_ascended', 'current_skill_<index>', 'target_skill_<index>'],

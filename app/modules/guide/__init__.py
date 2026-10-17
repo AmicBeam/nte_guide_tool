@@ -39,9 +39,11 @@ def filters():
                 arc_type=request.args.get('arc_type', ''))
 
 
-def get_record(kind, identifier):
+def get_record(kind, identifier, *, narrow=False):
     kind_check(kind)
-    return service.detail(kind, identifier, request.args.get('section'), request.args.get('stage') or None)
+    return service.detail(kind, identifier, request.args.get('section'), request.args.get('stage') or None,
+                          request.args.get('ability_id') if narrow else None,
+                          integer('level', 10, 1, 13) if narrow and 'level' in request.args else None)
 
 
 @blueprint.errorhandler(ValueError)
@@ -137,7 +139,7 @@ def api_cultivation(identifier):
 
 @blueprint.get('/guide/<kind>/<identifier>.md')
 def markdown(kind, identifier):
-    return Response(service.markdown_record(get_record(kind, identifier)), content_type='text/markdown; charset=utf-8')
+    return Response(service.markdown_record(get_record(kind, identifier, narrow=True)), content_type='text/markdown; charset=utf-8')
 
 
 @blueprint.get('/api/guide/schema')
@@ -160,7 +162,7 @@ def listing(kind=None):
 
 @blueprint.get('/api/guide/<kind>/<identifier>')
 def api_detail(kind, identifier):
-    return jsonify(schema_version=1, kind=kind, data=get_record(kind, identifier))
+    return jsonify(schema_version=1, kind=kind, data=get_record(kind, identifier, narrow=True))
 
 
 @blueprint.get('/guide/cli.py')

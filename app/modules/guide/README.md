@@ -323,3 +323,13 @@ HTTP入口为`GET /api/guide/axes`（重复`character`参数）和`GET /api/guid
 网页目录、分类计数、JSON列表与全文搜索、HTML／JSON／Markdown详情、攻略助手及CLI统一只返回常驻环线和截至当前已开始的轮换赛期。轮换赛期在配置开始日北京时间05:00（含）开放，历史赛期继续可读；未来赛期不进入搜索或分页分母，直接请求返回404，CLI的JSON／Markdown读取同样失败。没有有效开始日期的非常驻赛期不公开，不按编号推断开放。
 
 `service.public_records`在每次查询时过滤，离线完整快照继续保留未来配置；日期切换无需刷新数据或重启服务。CLI共用服务端判定，不依赖客户端时钟。验证：`.venv/bin/python -m unittest tests.test_guide_challenge_visibility tests.test_guide_challenge_schedule tests.test_guide_current_challenge tests.test_guide_challenges tests.test_guide tests.test_module_routes -q`，覆盖05:00边界、跨时区、缓存后时间推进、分类计数、直接链接、搜索及CLI。
+
+## 按需读取与助手查询体积
+
+CLI可用`get characters 1042 --section overview`读取角色机制、技能ID和可读章节；`get characters 1042 --ability GA_BlackBird_Melee --level 10`只取指定技能的10级参数。`--ability`对应`ability_id`查询参数，仅适用于角色技能；`--level`为1–13，JSON和Markdown均支持。原有`--section`与`--stage`继续有效，无参数的完整详情契约保持不变。
+
+`section=overview`不含角色全部倍率、成长和材料表；关卡概览只列关卡目录，敌人数值用`stage`读取。指定技能时，招式分组中重复的参数行通过`parameter_keys`引用该技能顶层`param_rows`，不同内容的行仍独立保留。显式指定等级后，`values`、`attack_values`、`defense_values`、`hp_values`等级数组变为`{level,max_level,value}`；不足目标档时取已有最高档并标明实际档位，不插值、不推算。不指定等级保留原数组。概览中觉醒等绑定参数默认取10级，显式`level`可覆盖；技能精确参数仍需指定技能读取。
+
+助手`wiki_get`默认读取概览；角色技能章节未给`ability_id`时也只返回机制与技能目录，精确参数用`ability_id`和`level`，其余数据按章节／关卡读取。已有准确ID时直接读取，避免重复搜索和整份资料往返。工具执行后显示“查询已完成，正在整理回答…”，区分本地查询与后续模型处理。公共API与CLI的默认输出不跟随助手缩略。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_narrow_reads tests.test_guide tests.test_guide_chat tests.test_guide_bot_tools tests.test_guide_challenge_visibility tests.test_module_routes -q`。覆盖全角色概览体积、原始数据不被修改、指定技能及等级精确值、分组引用、无效参数、Markdown与CLI参数传递及阶段提示。

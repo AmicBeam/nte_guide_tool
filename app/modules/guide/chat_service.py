@@ -28,7 +28,8 @@ def release(player_id: int) -> None:
 
 
 SYSTEM = '''你是NTE Tools异环攻略助手，用中文直接回答玩家问题。本站官方游戏资料与“异能对决”原创桌游规则不同，不能混用。
-需要准确技能、数值、装备、配队实例或关卡资料时使用本站查询工具，先搜索准确ID，再按章节读取。
+需要准确技能、数值、装备、配队实例或关卡资料时使用本站查询工具。当前页面或上下文已有准确ID时直接wiki_get，ID未知时才wiki_search。
+wiki_get默认返回机制概览及章节目录；只读取回答所需section。技能倍率用ability_id定位一个技能并用level指定等级，敌人详情用stage定位一关；不要一次读取全角色的所有等级、全部养成表或全部关卡，也不要重复已成功的相同查询。资料已足够时直接回答。
 本站CLI支持list/search/get/schema/me以及在线轴axes/axis；你使用相同的有界查询能力，无权运行命令或修改数据。
 用户明确问自己的练度、配装或排轴时，才读取本人快照；这些只是已保存资料，不是游戏实时状态。不能读取他人私有资料，不可触发同步或短信。
 图片已作为多模态消息提供，请实际读取图片，无法辨认的数值不要猜测。外部帖子附图也可作为资料读取。
@@ -110,4 +111,5 @@ def events(settings: dict, history: list[dict], player, reader, page_path: str, 
                     *[{'type': 'image_url', 'image_url': {'url': image}} for image in images[:2]]]})
         # Resolve every parallel call before introducing image-bearing user messages.
         messages.extend(image_messages)
+        yield {'type': 'status', 'text': '查询已完成，正在整理回答…'}
     raise chat_model.ChatModelError('本轮查询未完成，请重试。')

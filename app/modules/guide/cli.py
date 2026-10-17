@@ -51,6 +51,8 @@ def main(argv=None):
     getting.add_argument('id')
     getting.add_argument('--section')
     getting.add_argument('--stage', type=int)
+    getting.add_argument('--ability', dest='ability_id', help='Read one exact character ability ID (section=abilities)')
+    getting.add_argument('--level', type=int, choices=range(1, 14), help='Return only one level of parameter arrays')
     getting.add_argument('--format', choices=('json', 'markdown'), default='json')
     commands.add_parser('schema', help='Read API and numeric conventions')
     personal = commands.add_parser('me', help='Read your saved game profiles (NTE_GUIDE_TOKEN required)')
@@ -90,7 +92,7 @@ def main(argv=None):
     elif args.command == 'get':
         ident = urllib.parse.quote(args.id, safe='')
         path = f'/guide/{args.kind}/{ident}.md' if args.format == 'markdown' else f'/api/guide/{args.kind}/{ident}'
-        query = {k: getattr(args, k) for k in ('section', 'stage') if getattr(args, k) is not None}
+        query = {k: getattr(args, k) for k in ('section', 'stage', 'ability_id', 'level') if getattr(args, k) is not None}
     elif args.command == 'me':
         path = '/api/guide/me/profiles'
     elif args.command == 'axes':

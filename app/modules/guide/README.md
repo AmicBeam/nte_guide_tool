@@ -343,3 +343,11 @@ CLI通过`skill_level=10&hit_details=0`请求服务端裁剪，省去无用传�
 示例：`python nte-guide.py get characters 1042 --section abilities`；`python nte-guide.py get characters 1042 --ability GA_BlackBird_Melee --hit-details`；`python nte-guide.py get characters 1042 --section abilities --all-levels --hit-details`。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_cli_skill_defaults tests.test_guide_narrow_reads tests.test_guide tests.test_guide_bot_tools tests.test_guide_chat tests.test_guide_challenge_visibility tests.test_module_routes -q`，覆盖全角色等级数值、明细开关、分组引用、默认成长资料不变、Markdown、API兼容及互斥参数。更新服务端后须重新下载CLI才能使用新默认值与开关。
+
+## 攻略助手配装判断口径
+
+网页助手的实际系统提示词包含异环配装基础：满级橙色卡带主属性、驱动块固定主属性与副词条类别／每格基数、卡带和全部驱动块副词条的单项合计上限，以及基础暴击率和暴击伤害。副词条上限不视为角色最终属性上限；弧盘、卡带主词条、套装与角色被动等合法增益另算。
+
+常规成型配装默认空幕特性已拿满；用户明确未完成时才按实际调整。好感度、家具、噗咔特训的小额常驻增益须核对具体值，并区分快照面板已包含项，避免错误扣除或重复叠加。双暴建议以适用伤害的战斗最终属性评估1:2附近与100%有效暴击率上限，计入弧盘、卡带、角色与队伍效果时核对触发条件、覆盖率和伤害范围，不仅凭静态面板判断。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_chat tests.test_guide_chat_stream tests.test_guide_narrow_reads -q`，并通过合成模型请求核对配装知识确实进入系统消息；不以提示词同步代表模型建议或伤害结论已经完成实战验证。

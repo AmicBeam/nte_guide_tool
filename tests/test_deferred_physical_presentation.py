@@ -26,6 +26,51 @@ def numeric_image():
     return replace(image,identity=_image_identity(image))
 
 
+class CrossVersionDeferredAstTests(unittest.TestCase):
+    def tree(self):
+        import ast
+        return ast.parse('class A:\n def f(self,x=1):\n  return x\n')
+    def add_type_params(self,tree,value):
+        import ast
+        for node in ast.walk(tree):
+            if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef,ast.ClassDef)):
+                node._fields=tuple(name for name in node._fields if name!='type_params')+('type_params',)
+                node.type_params=list(value)
+        return tree
+    def test_empty_new_fields_match_legacy_without_mutating_ast_classes(self):
+        import ast,copy
+        original=self.tree();expected=contract._contract_ast_dump(copy.deepcopy(original))
+        class_fields={cls:cls._fields for cls in (ast.FunctionDef,ast.AsyncFunctionDef,ast.ClassDef)}
+        modern=self.add_type_params(copy.deepcopy(original),[])
+        self.assertEqual(contract._contract_ast_dump(modern),expected)
+        for cls,fields in class_fields.items():self.assertIs(cls._fields,fields)
+        self.assertEqual(contract._contract_ast_dump(modern),expected) # idempotent
+        modern.body[0].type_params=[ast.Name(id='T',ctx=ast.Load())]
+        with self.assertRaises(ValueError):contract._contract_ast_dump(modern)
+    def test_nonempty_or_unknown_field_value_fails_closed(self):
+        import ast
+        with self.assertRaisesRegex(ValueError,'nonempty type_params'):
+            contract._contract_ast_dump(self.add_type_params(self.tree(),[ast.Name(id='T',ctx=ast.Load())]))
+        tree=self.add_type_params(self.tree(),[]);tree.body[0].type_params=None
+        with self.assertRaises(ValueError):contract._contract_ast_dump(tree)
+    def test_modern_dump_is_told_to_preserve_all_other_empty_fields(self):
+        import ast
+        original=ast.dump;seen=[]
+        def modern(node,annotate_fields=True,include_attributes=False,*,indent=None,show_empty=False):
+            seen.append(show_empty)
+            if not show_empty:raise AssertionError('Other empty fields must remain checked')
+            return original(node,annotate_fields=annotate_fields,include_attributes=include_attributes,indent=indent)
+        with patch.object(contract.ast,'dump',modern):
+            contract._contract_ast_dump(self.tree())
+        self.assertEqual(seen,[True])
+    def test_other_ast_changes_are_not_normalized_and_existing14_hashes_stay(self):
+        import ast,copy
+        tree=self.add_type_params(self.tree(),[]);other=copy.deepcopy(tree)
+        other.body[0].body[0].body[0].value=ast.Constant(value=2)
+        self.assertNotEqual(contract._contract_ast_dump(tree),contract._contract_ast_dump(other))
+        self.assertEqual(contract._current_contract(),contract._AST)
+
+
 class DeferredSourceContractTests(unittest.TestCase):
     def setUp(self):t.set_num_threads(1)
     def rules(self):

@@ -33,6 +33,26 @@ _AST=(
     '8428e0bd3310b9b71be7b0254e426fdb760c3cff434508a287160d597cc20507')
 
 
+def _contract_ast_dump(tree):
+    """Normalize only empty Python3.12+ generic-parameter fields, per node.
+
+    All other fields retain the legacy dump and every nonempty generic list
+    fails closed. Never mutate the global AST classes or their field tuples.
+    """
+    for node in ast.walk(tree):
+        if 'type_params' in node._fields or hasattr(node,'type_params'):
+            value=getattr(node,'type_params',None)
+            if type(value) is not list or value:
+                raise ValueError('Unknown canonical source shape: nonempty type_params')
+            node._fields=tuple(name for name in node._fields if name!='type_params')
+    options=dict(include_attributes=False)
+    # Python3.13 omits empty lists by default. Keep them checked, matching
+    #3.10 dumps; this does not discard any additional AST field.
+    if 'show_empty' in inspect.signature(ast.dump).parameters:
+        options['show_empty']=True
+    return ast.dump(tree,**options)
+
+
 def _current_contract():
     # Setup/static CUDA graph construction only. GPU WHILE replay never calls
     # Python rule methods, inspect, or this source admission function.
@@ -43,13 +63,17 @@ def _current_contract():
         simulation.simulate_action,simulation.collecting_patches,simulation._without_patches,
         presentation.capture_public_board,presentation.bump_public_patch,presentation.enrich_log,
         clean,DeviceGameLoop._commit_turn,DeviceGameLoop._cross_alias,DeviceGameLoop._error)
-    try:
-        actual=tuple(sha256(ast.dump(ast.parse(textwrap.dedent(inspect.getsource(fn))),
-            include_attributes=False).encode()).hexdigest() for fn in functions)
-    except (TypeError,OSError,SyntaxError) as error:
-        raise ValueError('Unknown canonical deferred-presentation source shape') from error
-    if actual!=_AST:
-        raise ValueError('Unknown canonical deferred-presentation source shape')
+    actual=[]
+    for fn,expected in zip(functions,_AST):
+        name=fn.__module__+'.'+fn.__qualname__
+        try:
+            value=sha256(_contract_ast_dump(ast.parse(textwrap.dedent(inspect.getsource(fn)))).encode()).hexdigest()
+        except (TypeError,OSError,SyntaxError,ValueError) as error:
+            raise ValueError('Unknown canonical deferred-presentation source shape: '+name) from error
+        if value!=expected:
+            raise ValueError('Unknown canonical deferred-presentation source shape: '+name)
+        actual.append(value)
+    actual=tuple(actual)
     variable=simulation._collect_patches
     if (not isinstance(variable,ContextVar) or variable.name!='duel_v2_collect_presentation_patches'
             or variable.get() is not True or presentation.collecting_patches is not simulation.collecting_patches):

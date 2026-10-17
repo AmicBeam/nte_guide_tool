@@ -44,6 +44,8 @@ def at_level(value, level):
 
 
 def overview(kind, record, level=10):
+    if record.get('status') == 'preview':
+        return {key: record[key] for key in ('id', 'name', 'status', 'preview_image', 'materials') if key in record}
     result = {key: value for key, value in record.items() if key in (
         'id', 'name', 'aliases', 'element_name', 'rarity', 'arc_type', 'char_tags',
         'type_name', 'effect', 'exclusive_desc', 'exclusive_character_ids',
@@ -120,7 +122,7 @@ def select(record, kind, section=None, ability_id=None, level=None, skill_level=
     if ability_id is not None:
         if kind != 'characters' or section not in (None, 'abilities'):
             raise ValueError('ability_id 仅适用于角色技能章节')
-        abilities = [ability for ability in record['abilities'] if ability['id'] == ability_id]
+        abilities = [ability for ability in record.get('abilities', []) if ability['id'] == ability_id]
         if not abilities:
             raise LookupError('未找到指定技能')
         record = {**record, 'abilities': [ability_parameters(ability) for ability in abilities]}

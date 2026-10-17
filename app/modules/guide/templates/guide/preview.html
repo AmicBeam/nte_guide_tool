@@ -1,0 +1,9 @@
+{% extends 'guide/layout.html' %}
+{% from 'guide/components.html' import material_cards %}
+{% block title %}{{ record.name }} · 预告 · NTE Tools{% endblock %}
+{% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='preview.css') }}">{% endblock %}
+{% block guide_back %}<a class="guide-top-back" href="/guide?kind=characters" aria-label="返回角色档案">← 返回</a>{% endblock %}
+{% block content %}
+<figure class="guide-preview-hero"><img src="{{ record.preview_image }}" alt="{{ record.name }}角色预告" width="1052" height="592" fetchpriority="high"></figure>
+{% if material_preview %}<section class="guide-preview-materials" aria-label="所需升级材料"><h2>所需升级材料</h2>{{ material_cards(material_preview, false) }}</section>{% endif %}
+{% endblock %}

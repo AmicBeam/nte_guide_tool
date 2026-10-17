@@ -1,0 +1,28 @@
+[
+  {
+    "id": "preview-exe",
+    "name": "Exe",
+    "aliases": [],
+    "element_name": "暗",
+    "rarity": 5,
+    "assets": {
+      "avatar": "/static/guide/character-previews/exe-avatar.webp"
+    },
+    "preview_image": "/static/guide/character-previews/exe.webp",
+    "materials": {}
+  },
+  {
+    "id": "1090",
+    "name": "曳尔沐",
+    "aliases": [
+      "Elyms"
+    ],
+    "element_name": "光",
+    "rarity": 5,
+    "assets": {
+      "avatar": "/static/guide/character-previews/elyms-avatar.webp"
+    },
+    "preview_image": "/static/guide/character-previews/elyms.webp",
+    "materials": {}
+  }
+]

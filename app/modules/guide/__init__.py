@@ -78,6 +78,11 @@ def index():
 @blueprint.get('/guide/<kind>/<identifier>')
 def entry(kind, identifier):
     record = get_record(kind, identifier)
+    if kind == 'characters':
+        profile = service.detail(kind, identifier)
+        if profile.get('status') == 'preview':
+            return render_template('guide/preview.html', record=profile,
+                                   material_preview=presentation.upgrade_material_preview(profile))
     sections = service.page_sections(kind, record)
     profile = service.detail(kind, identifier) if kind == 'characters' else None
     art = profile.get('assets') if profile else None
@@ -93,7 +98,7 @@ def entry(kind, identifier):
 def axis_compare_page(identifier, axis_id):
     if axis_id <= 0:
         raise LookupError('未找到排轴')
-    record = service.detail('characters', identifier)
+    record = service.playable_character(identifier)
     static = Path(__file__).parent.parent / 'shaft' / 'static'
     version = max(int(path.stat().st_mtime) for path in static.glob('js/shaft*.js'))
     arc_rarities = {arc['name']: arc['rarity'] for arc in service.catalog()['arcs']}
@@ -103,7 +108,7 @@ def axis_compare_page(identifier, axis_id):
 
 @blueprint.get('/guide/characters/<identifier>/cultivation')
 def cultivation_page(identifier):
-    record = service.detail('characters', identifier)
+    record = service.playable_character(identifier)
     config = service.catalog()['cultivation']
     values = arc_cultivation.defaults(record, config)
     values.update({key: request.args[key] for key in values if key in request.args})
@@ -120,7 +125,7 @@ def cultivation_page(identifier):
 
 @blueprint.get('/guide/characters/<identifier>/builds')
 def character_builds_page(identifier):
-    record = service.detail('characters', identifier)
+    record = service.playable_character(identifier)
     static = Path(__file__).parent / 'static'
     version = max(int((static / name).stat().st_mtime) for name in ['related_axes.js', 'related_axes.css'])
     return render_template('guide/builds.html', record=record, related_asset_version=version)
@@ -128,7 +133,7 @@ def character_builds_page(identifier):
 
 @blueprint.post('/api/guide/characters/<identifier>/cultivation')
 def api_cultivation(identifier):
-    record = service.detail('characters', identifier)
+    record = service.playable_character(identifier)
     config = service.catalog()['cultivation']
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):

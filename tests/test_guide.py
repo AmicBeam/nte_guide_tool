@@ -54,7 +54,7 @@ class GuideTest(unittest.TestCase):
         self.assertIn('name="arc_type"', page.text)
         self.assertIn('type="radio"', page.text)
         self.assertNotIn('<select name="element"', page.text)
-        self.assertEqual(page.text.count('data-character-card'), 25)
+        self.assertEqual(page.text.count('data-character-card'), 27)
         self.assertIn('data-filter-text=', page.text)
         result = self.client.get('/api/guide/characters?element=魂&rarity=5&arc_type=4').json
         self.assertGreater(result['total'], 0)
@@ -62,7 +62,7 @@ class GuideTest(unittest.TestCase):
             self.assertEqual(item['element_name'], '魂')
             self.assertEqual(item['rarity'], 5)
             self.assertEqual(service.detail('characters', item['id'])['arc_type']['id'], '4')
-        self.assertEqual(self.client.get('/api/guide/characters?arc_type=').json['total'], 25)
+        self.assertEqual(self.client.get('/api/guide/characters?arc_type=').json['total'], 27)
         self.assertEqual(self.client.get('/api/guide/characters?arc_type=unknown').json['total'], 0)
         self.assertTrue(any(item['id'] == '1042' for item in
             self.client.get('/api/guide/characters?q=黑羽&arc_type=4').json['items']))

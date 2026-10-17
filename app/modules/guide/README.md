@@ -353,3 +353,13 @@ CLI通过`skill_level=10&hit_details=0`请求服务端裁剪，省去无用传�
 验证：`.venv/bin/python -m unittest tests.test_guide_chat tests.test_guide_chat_stream tests.test_guide_narrow_reads -q`，并通过合成模型请求核对配装知识确实进入系统消息；不以提示词同步代表模型建议或伤害结论已经完成实战验证。
 
 轨外之境目录将起止日期作为一个不可换行的行内布局，统一行高并禁止收缩；卡片底部ID与日期按基线对齐。卡片保留16px内边距，700px及以下使用单列，为完整日期范围留出空间；常驻环线仍显示“长期开放”。验证时同时检查320、390、700、701、1024和1280px宽度下的日期同排、卡片边界及页面横向溢出。
+
+## 角色预告模式
+
+目录额外提供 Exe（暗属性S级）和曳尔沐（光属性S级）的预告卡片，左上角显示“预告”，属性、星级和搜索筛选沿用现有目录。预告详情只显示完整宣传图及已确认的所需升级材料；材料为空时省略材料区，即使记录中有其他字段也不显示技能、面板、羁遇、定位或工具入口。
+
+`data/character_previews.json` 独立维护预告，`previews.py` 在公共查询中与完整角色合并，不写入正式计算目录；同ID已有完整资料时优先使用完整条目。曳尔沐使用1090，Exe暂用`preview-exe`，取得正式角色编号时再修改，不以NPC编号猜测。`preview_image`绑定模块本地WebP横幅，`assets.avatar`绑定目录头像。可选`materials`沿用角色材料结构（`breakthrough[].items`和`skills[].levels[].items`）；顶部按现有规则去重展示最高品质材料及名称，不显示数量。当前两人的升级材料尚未配置。
+
+HTML、列表、搜索、JSON、Markdown和CLI支持预告条目，`status=preview`表示资料状态；预告概览仅返回身份、状态、图片及材料，不补正式角色字段。养成、排轴、比较入口对预告返回404，助手不生成这些工具链接。普通离线刷新不覆盖预告文件；图片随应用提交，不依赖用户本地下载目录或外部图床。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_previews tests.test_guide tests.test_guide_narrow_reads tests.test_module_routes -q`。浏览器检查目录角标与属性／星级筛选、两张横幅完整显示、无材料时仅显示图片、有材料时显示材料卡，以及桌面／手机无横向溢出。

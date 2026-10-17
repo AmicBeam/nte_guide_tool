@@ -9,10 +9,11 @@ from markupsafe import Markup, escape
 from .affinity import with_gift_costs
 from .description_parameters import bind_description_parameters
 from .challenge_calendar import is_released_challenge
-from . import reference_view
+from . import reference_view, previews
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境', 'endless': '全站深境'}
 LABELS = {
+    'status': '资料状态', 'preview': '预告', 'preview_image': '预告图',
     'rules': '楼层机制', 'enhanced_resistances': '强化抗性', 'node_first': '节点起始层', 'node_last': '关底',
     'reserve_character_count': '备选角色数', 'floor_slot_count': '角色栏位数',
     'buff_selection': '关底增益与代价', 'enabled': '开放选择', 'default_count': '默认增益数量', 'count_bonuses': '数量加成',
@@ -122,6 +123,9 @@ def label(key):
 
 def public_records(kind):
     records = catalog()[kind]
+    if kind == 'characters':
+        complete_ids = {str(record['id']) for record in records}
+        return records + [row for row in previews.characters() if str(row['id']) not in complete_ids]
     if kind == 'challenges':
         return [record for record in records if is_released_challenge(record)]
     return records
@@ -130,7 +134,7 @@ def public_records(kind):
 def summary(kind, record):
     identifier = str(record['id'])
     result = {k: record[k] for k in ('id', 'name', 'aliases', 'element_name', 'rarity',
-        'type_name', 'image', 'element_icon', 'rarity_icon', 'is_permanent', 'begin_date', 'end_date', 'stage_count', 'floor_begin', 'floor_end') if k in record}
+        'type_name', 'image', 'element_icon', 'rarity_icon', 'is_permanent', 'begin_date', 'end_date', 'stage_count', 'floor_begin', 'floor_end', 'status', 'preview_image') if k in record}
     result.update(kind=kind, url=f'/guide/{kind}/{identifier}',
                   json_url=f'/api/guide/{kind}/{identifier}',
                   markdown_url=f'/guide/{kind}/{identifier}.md')
@@ -172,9 +176,16 @@ def filter_index_items(kind):
         elif isinstance(value, list):
             for child in value:
                 yield from strings(child)
-    return [{**summary(kind, record), 'arc_type_id': str(record['type_id'] if kind == 'arcs' else record['arc_type']['id']),
+    return [{**summary(kind, record), 'arc_type_id': str(record['type_id'] if kind == 'arcs' else record.get('arc_type', {}).get('id', '')),
              'filter_text': '\n'.join(dict.fromkeys(strings(record))).casefold()}
-            for record in catalog()[kind]]
+            for record in public_records(kind)]
+
+
+def playable_character(identifier):
+    record = detail('characters', identifier)
+    if record.get('status') == 'preview':
+        raise LookupError('预告角色暂未开放此工具')
+    return record
 
 
 def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None, *, skill_level=None, hit_details=None):

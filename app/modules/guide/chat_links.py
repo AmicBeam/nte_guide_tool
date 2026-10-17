@@ -7,7 +7,7 @@ from . import presentation
 def entry_links(kind: str, record: dict, stage=None) -> dict:
     path = f'/guide/{kind}/{quote(str(record["id"]), safe="")}'
     links = {'detail': path + ('?' + urlencode({'stage': stage}) if stage is not None else '')}
-    if kind == 'characters':
+    if kind == 'characters' and record.get('status') != 'preview':
         links.update(cultivation=path + '/cultivation', builds=path + '/builds')
         kongmu = presentation.kongmu_entry(record)
         if kongmu:

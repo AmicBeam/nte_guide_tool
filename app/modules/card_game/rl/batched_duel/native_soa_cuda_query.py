@@ -24,15 +24,17 @@ class NativeSoACUDAQuery:
     def __init__(self,image,schema,*,limits=VmLimits(),device='cuda',directory=None,
                  max_nodes=1048576,max_edges=2097152,max_payload_bytes=33554432,
                  seconds=120,stack_runs=False,native_functions=False,native_values=False,
-                 execute_only=False, separate_compilation=False):
+                 execute_only=False, separate_compilation=False, indexed_attributes=False,
+                 stack_bytes=131072):
         if type(seconds) not in (int,float) or not 0<seconds<=3600:
             raise ValueError('Bounded CUDA diagnostic call budget required')
         for value in (max_nodes,max_edges,max_payload_bytes):
             if type(value) is not int or not 0<value<2**31:
                 raise ValueError('Positive bounded diagnostic scratch required')
-        self.executor=CudaSoARules(image,schema,device=device,limits=limits,
+        self.executor=CudaSoARules(image,schema,device=device,limits=limits,stack_bytes=stack_bytes,
             stack_runs=stack_runs,native_functions=native_functions,native_values=native_values,
-            execute_only=execute_only, separate_compilation=separate_compilation)
+            execute_only=execute_only, separate_compilation=separate_compilation,
+            indexed_attributes=indexed_attributes)
         self.image,self.schema,self.limits,self.seconds=image,schema,limits,seconds
         self.max_nodes,self.max_edges,self.max_payload_bytes=max_nodes,max_edges,max_payload_bytes
         self.source_sha256=self.executor.source_sha256

@@ -45,6 +45,14 @@ class CudaSoAMeta(DeviceMeta):
     keepalive: tuple = ()
 
 
+def _validate_soa_stack(stack_bytes, execute_only):
+    if type(execute_only) is not bool:
+        raise TypeError('Explicit diagnostic kernel selection required')
+    if type(stack_bytes) is not int or not (
+            131072 <= stack_bytes <= 1024**2 or (execute_only and stack_bytes == 65536)):
+        raise ValueError('Full SoA requires 128 KiB to 1 MiB stack; execute-only diagnostics also allow 64 KiB')
+
+
 class CudaSoARules:
     execution_mode = 'native_domain_soa_aot_cuda'
     interpreter_fallback = False
@@ -54,18 +62,17 @@ class CudaSoARules:
 
     def __init__(self, image, schema, *, device='cuda', limits=VmLimits(), threads=1,
                  stack_bytes=131072,stack_runs=False,native_functions=False,native_values=False,
-                 execute_only=False, separate_compilation=False):
+                 execute_only=False, separate_compilation=False, indexed_attributes=False):
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():
             raise RuntimeError('Actual CUDA required; CPU fallback is forbidden')
         if type(threads) is not int or not 1 <= threads <= 1024:
             raise ValueError('Bounded CUDA block size required')
-        if type(stack_bytes) is not int or not 131072 <= stack_bytes <= 1024**2:
-            raise ValueError('Native SoA requires a bounded device stack of at least 128 KiB')
+        _validate_soa_stack(stack_bytes, execute_only)
+        if type(indexed_attributes) is not bool or (indexed_attributes and not separate_compilation):
+            raise ValueError('Runtime attribute indexing requires separate compilation')
         if type(separate_compilation) is not bool or separate_compilation and not native_functions:
             raise ValueError('Separate compilation requires complete native functions')
-        if type(execute_only) is not bool:
-            raise TypeError('Explicit diagnostic kernel selection required')
         self.torch, self.device = torch, torch.device(device)
         if self.device.index is None:
             self.device = torch.device('cuda', torch.cuda.current_device())
@@ -79,6 +86,7 @@ class CudaSoARules:
         self.rule_source_sha256 = source_identity(source)
         self.execute_only = execute_only
         self.separate_compilation = separate_compilation
+        self.indexed_attributes = indexed_attributes
         if execute_only:
             from .native_soa_source import execute_only_source
             source = execute_only_source(source)
@@ -100,7 +108,11 @@ class CudaSoARules:
         units = None
         if separate_compilation:
             from .native_compile_units import split_native_source
-            units = [(unit.name, unit.source) for unit in split_native_source(source)]
+            compiled_units = list(split_native_source(source))
+            if indexed_attributes:
+                from .native_runtime_index import index_runtime_attributes
+                compiled_units[0] = index_runtime_attributes(compiled_units[0], image)
+            units = [(unit.name, unit.source) for unit in compiled_units]
         self.module = CudaModule(source, signatures, compilation_units=units,
             device=str(self.device), binary_format='cubin')
         self.module.ensure_stack(stack_bytes)

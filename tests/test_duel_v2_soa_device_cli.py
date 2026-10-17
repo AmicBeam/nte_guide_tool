@@ -32,6 +32,38 @@ def _stderr(argv):
 
 
 class SoADeviceCliTests(unittest.TestCase):
+    def test_deferred_physical_is_default_off_explicit_and_preserves_search_and_mulligan(self):
+        for flags,enabled in (([],False),(['--defer-physical-presentation'],True)):
+            output=io.StringIO()
+            with redirect_stdout(output):self.assertEqual(_main(flags),0)
+            metadata=json.loads(output.getvalue())
+            self.assertIs(metadata['search']['defer_physical_presentation'],enabled)
+            self.assertEqual(metadata['search']['simulations'],32)
+            self.assertEqual(metadata['search']['gumbel_candidates'],16)
+            self.assertTrue(metadata['skip_mulligan'])
+            self.assertFalse(metadata['cuda_imported']);self.assertFalse(metadata['files_created'])
+            self.assertFalse(metadata['passed']);self.assertFalse(metadata['gpu_qualified'])
+
+    def test_deferred_option_reaches_real_loop_factory_without_budget_overrides(self):
+        from unittest.mock import Mock
+        from scripts.benchmark_duel_v2_soa_device import create_game_loop
+        for enabled in (False,True):
+            factory=Mock();rules=object();search=object();sink=object();seeds=object()
+            result=create_game_loop(factory,rules,search,sink,seeds,max_decisions=2,seconds=30,
+                                    defer_physical_presentation=enabled)
+            self.assertIs(result,factory.return_value)
+            factory.assert_called_once_with(rules,search,sink,seeds,max_decisions=2,seconds=30,
+                                           defer_physical_presentation=enabled)
+        factory=Mock()
+        with self.assertRaises(TypeError):create_game_loop(factory,defer_physical_presentation=1)
+        factory.assert_not_called()
+        tree=ast.parse(CLI.read_text())
+        calls=[node for node in ast.walk(tree) if isinstance(node,ast.Call)
+               and isinstance(node.func,ast.Name) and node.func.id=='create_game_loop']
+        self.assertEqual(len(calls),1)
+        self.assertEqual(calls[0].args[0].id,'DeviceGameLoop')
+        self.assertTrue(any(k.arg=='defer_physical_presentation' for k in calls[0].keywords))
+
     def test_fused_steps_are_explicit_without_changing_search_budget(self):
         buf=io.StringIO()
         with redirect_stdout(buf):self.assertEqual(_main(['--fused-rule-steps']),0)
@@ -415,6 +447,7 @@ class SoADeviceCliTests(unittest.TestCase):
             'prior': 'array_zhenhong', 'extra_guidance_simulations': 0,
             'cpu_fallback': False,
             'world_sampling': 'per_decision', 'fused_rule_steps': False,
+            'defer_physical_presentation': False,
         })
         self.assertEqual(plan['presets'], [
             'starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke'])

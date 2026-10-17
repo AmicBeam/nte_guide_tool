@@ -59,6 +59,8 @@ def build_parser():
     p.add_argument('--direct-deepcopy-calls',action='store_true',
                    help='Optional exact deepcopy call routing; requires --native-complete')
     p.add_argument('--candidate-int32',action='store_true',help='Checked narrower candidate indices; retains complete legal sets')
+    p.add_argument('--defer-physical-presentation',action='store_true',
+                   help='Closed training-state step followed immediately by clean; raw actions rebuild public replay after the batch')
     p.add_argument('--fused-rule-steps',action='store_true',help='Exact hypothetical step/clean with one final state store')
     p.add_argument('--gpu-budget-mib', type=int, default=14336)
     p.add_argument('--state-budget-mib', type=int, default=4096)
@@ -96,7 +98,8 @@ def plan(args):
         rule_executor=rule_executor_options(args),
         cohort_only=args.cohort_only, capture_training=args.capture_training,candidate_index_bits=32 if args.candidate_int32 else 64,
         state_page_budget_mib=args.state_page_budget_mib,
-        mixed_first_sides=True, skip_mulligan=True, search=dict(SEARCH,fused_rule_steps=args.fused_rule_steps),
+        mixed_first_sides=True, skip_mulligan=True, search=dict(SEARCH,fused_rule_steps=args.fused_rule_steps,
+                    defer_physical_presentation=args.defer_physical_presentation),
         cuda_imported=False, models_loaded=False, files_created=False,
         learning_updates=0, gpu_qualified=False, passed=False,
         output=None if args.output is None else str(args.output))
@@ -180,6 +183,13 @@ def create_rule_executor(factory, image, schema, args, *, device, limits):
     """The real acceptance constructor shares its exact kwargs with the plan."""
     return factory(image,schema,device=str(device),limits=limits,
                    **rule_executor_options(args))
+
+
+def create_game_loop(factory,*args,defer_physical_presentation=False,**kwargs):
+    """Pass the explicit closed-state option to the actual physical driver."""
+    if type(defer_physical_presentation) is not bool:
+        raise TypeError('Explicit deferred physical presentation boolean required')
+    return factory(*args,defer_physical_presentation=defer_physical_presentation,**kwargs)
 
 
 def validate_run(parser, args):
@@ -518,10 +528,11 @@ class IsolatedCohort:
             self.training_tape=create_training_tape(self.rules,capacity,decisions=max_decisions,
                 max_bytes=capacity.training_tape_budget_mib << 20)
         self.sink = RawActionPolicySink(self.training_tape or policy, self.raw)
-        self.loop = DeviceGameLoop(
+        self.loop = create_game_loop(DeviceGameLoop,
             self.rules, self.search, self.sink, self.seeds, max_decisions=max_decisions,
             random_plan=self.random_plan, device=device, inner_max_ticks=shared['inner_max_ticks'],
-            seconds=seconds, search_audit_sink=policy if self.training_tape is not None else None)
+            seconds=seconds, search_audit_sink=policy if self.training_tape is not None else None,
+            defer_physical_presentation=shared.get('defer_physical_presentation',False))
         self.rules.bind_game_loop(self.loop)
         policy.bind_game_loop(self.loop)
         self.timing = None
@@ -532,7 +543,7 @@ class IsolatedCohort:
         try:
             self.timing = StageTiming(self.loop.device)
             for name in ('sample_world_device', 'decision_device', 'step_device','step_clean_device',
-                         'clean_device', 'metadata_device', 'value_observation_device'):
+                         'clean_device', 'metadata_device', 'value_observation_device','step_deferred_physical_device'):
                 original_rule = getattr(self.rules, name)
                 def timed_rule(states, *args, _name=name, _original=original_rule, **kwargs):
                     return self.timing.call_mask(_name, states.active,
@@ -702,7 +713,9 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
         graph_executed=int(cohort.loop._outer.counter[0].cpu()) > 0)
     payload['root_identity']=identities
     payload['rule_executor']=dict(shared['rule_executor'])
-    payload['search_contract']=dict(SEARCH,fused_rule_steps=shared.get('fused_rule_steps',False),physical_decision_limit=cohort.max_decisions,
+    payload['search_contract']=dict(SEARCH,fused_rule_steps=shared.get('fused_rule_steps',False),
+                                  defer_physical_presentation=cohort.loop.defer_physical_presentation,
+                                  physical_decision_limit=cohort.max_decisions,
                                   independent_roots=B,rule_lanes=shared['capacity'].lanes)
     # Persist actual work before any diagnostic acceptance can reject it.
     # Failed/timed-out cohorts must retain their counters and phase evidence.
@@ -1029,7 +1042,8 @@ def run(args):
         passed=False, rows=args.rows, max_decisions=args.max_decisions,
         require_natural=bool(args.require_natural), device=str(device),
         warmup=args.warmup, repeats=args.repeats, seed=args.seed, presets=list(KEYS),
-        search=dict(SEARCH,fused_rule_steps=args.fused_rule_steps), learning_updates=0, gpu_qualified=False,frozen_training_chain_passed=False,
+        search=dict(SEARCH,fused_rule_steps=args.fused_rule_steps,
+                    defer_physical_presentation=args.defer_physical_presentation), learning_updates=0, gpu_qualified=False,frozen_training_chain_passed=False,
         one_step_cannot_qualify_natural=True, skip_mulligan=True, mixed_first_sides=True)
     report.update(capacity=capacity.plan(),state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
                   rule_executor=rule_executor_options(args),
@@ -1037,7 +1051,8 @@ def run(args):
                   state_page_budget_mib=args.state_page_budget_mib,
                   candidate_index_bits=32 if args.candidate_int32 else 64,stable_throughput_qualified=False)
     report['static'] = dict(
-        search=dict(SEARCH,fused_rule_steps=args.fused_rule_steps), rows=args.rows, max_decisions=args.max_decisions,
+        search=dict(SEARCH,fused_rule_steps=args.fused_rule_steps,
+                    defer_physical_presentation=args.defer_physical_presentation), rows=args.rows, max_decisions=args.max_decisions,
         max_actions=args.max_actions, inner_max_ticks=args.inner_max_ticks,
         rule_steps=args.rule_steps, seed=args.seed, warmup=args.warmup, repeats=args.repeats,
         rule_executor=rule_executor_options(args),
@@ -1105,6 +1120,7 @@ def run(args):
             capture_training=args.capture_training,
             candidate_int32=args.candidate_int32,
             fused_rule_steps=args.fused_rule_steps,
+            defer_physical_presentation=args.defer_physical_presentation,
             state_page_budget_mib=args.state_page_budget_mib,
             inference=inference, seed=args.seed, max_actions=args.max_actions,models=models,
             proof_seconds=args.proof_seconds,

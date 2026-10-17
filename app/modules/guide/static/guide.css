@@ -86,3 +86,7 @@
 #section-equip_slots .guide-equip-description{font-size:16px;line-height:1.9}#section-equip_slots .guide-muted{font-size:14px}
 
 .guide-skill-identity{display:flex;align-items:center;gap:16px;min-width:0}.guide-skill-identity>div{min-width:0}.guide-skill-icon{width:56px;height:56px;flex:0 0 56px;object-fit:contain}.guide-skill-identity h3{overflow-wrap:anywhere}@media(max-width:700px){.guide-skill-icon{width:48px;height:48px;flex-basis:48px}.guide-skill-identity{gap:12px}}
+
+/* Text-only depth cards do not need portrait spacing above their title. */
+.guide-card[href^="/guide/endless/"] .guide-card-identity,
+.guide-card[href^="/guide/endless/"] .guide-card-identity h3 { margin-top:0; }

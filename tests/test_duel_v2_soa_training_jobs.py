@@ -6,6 +6,7 @@ import subprocess
 import sys
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from app.modules.card_game.content.duel_v2 import STARTER_DECKS
 from app.modules.card_game.rl.league_schema import build_hash
@@ -63,6 +64,7 @@ class SoATrainingJobsTests(unittest.TestCase):
             self.assertEqual(result.train_masks[owner], tuple(side in job['train_sides'] for side in ('a', 'b')))
         self.assertEqual(result.search['terminal_horizon'], 3)
         self.assertEqual(result.search['teacher_mode'], 'network')
+        self.assertEqual(result.search['world_sampling'], 'per_simulation')
         self.assertFalse(result.formal_training_qualified)
         self.assertFalse(result.gpu_qualified)
         result.jobs[0]['decks']['a']['card_ids'].reverse()
@@ -142,6 +144,58 @@ class SoATrainingJobsTests(unittest.TestCase):
         from app.modules.card_game.rl.batched_search.training_rollout import source_alias
         for key in ROSTER:
             self.assertEqual(policy_source_alias(FOLDER, key), source_alias((FOLDER, key)))
+
+    def test_covered_value_scope_is_explicit_normalized_and_never_upgrades_qualification(self):
+        scope = '/tmp/soa-covered-scope-not-loaded'
+        source = jobs(teacher_mode='covered_value', covered_value_source=scope)[:2]
+        source[1]['covered_value_source'] = scope+'/child/..'
+        original = deepcopy(source)
+        result = adapt_training_jobs(source, models())
+        canonical = str(Path(scope).resolve())
+        self.assertEqual(result.jobs, tuple(original))
+        self.assertEqual(result.search['teacher_mode'], 'covered_value')
+        self.assertEqual(result.search['covered_value_source'], canonical)
+        self.assertEqual(result.search['world_sampling'], 'per_simulation')
+        self.assertEqual((result.search['terminal_horizon'], result.search['simulations'],
+                          result.search['gumbel_candidates'], result.search['max_depth']), (3, 32, 16, 10))
+        self.assertTrue(all(row['covered_value_source'] == canonical and row['search'] == result.search
+                            for row in result.identities))
+        self.assertFalse(result.formal_training_qualified)
+        self.assertFalse(result.gpu_qualified)
+
+    def test_mixed_teacher_or_scope_and_diagnostic_sampling_contracts_rejected(self):
+        covered = jobs(teacher_mode='covered_value', covered_value_source='/tmp/covered-a')[:2]
+        for value in (None, '', ' ', True, Path('/tmp/covered-a')):
+            bad = deepcopy(covered[:1]); bad[0]['covered_value_source'] = value
+            with self.subTest(scope=value), self.assertRaises(ValueError):
+                adapt_training_jobs(bad, models())
+        for change in (dict(teacher_mode='network', covered_value_source=None),
+                       dict(covered_value_source='/tmp/covered-b')):
+            bad = deepcopy(covered); bad[1].update(change)
+            with self.assertRaises(ValueError): adapt_training_jobs(bad, models())
+        for source in (jobs()[:1], covered[:1]):
+            for value in ('per_decision', None, True):
+                bad = deepcopy(source); bad[0]['world_sampling'] = value
+                with self.assertRaises(ValueError): adapt_training_jobs(bad, models())
+            for change in (dict(terminal_horizon=0), dict(teacher_mode='covered_terminal'),
+                           dict(teacher_mode='covered_expert'), dict(teacher_mode='network_value')):
+                bad = deepcopy(source); bad[0].update(change)
+                with self.assertRaises(ValueError): adapt_training_jobs(bad, models())
+
+    def test_covered_receipt_passes_through_postbatch_without_network_relabel(self):
+        from tests.test_duel_v2_soa_training_results import fixture, STUB
+        from app.modules.card_game.rl.batched_search.soa_training_results import verified_training_games
+        arguments = fixture()
+        source = deepcopy(list(arguments['metadata'].jobs))
+        for job in source:
+            job.update(teacher_mode='covered_value', covered_value_source='/tmp/covered-a')
+        arguments['metadata'] = adapt_training_jobs(source, arguments['models'])
+        arguments['dataset']['search'] = deepcopy(arguments['metadata'].search)
+        with patch('app.modules.card_game.rl.batched_search.soa_training_results._oracle', return_value=STUB):
+            games = verified_training_games(**arguments)
+        self.assertTrue(all(row['teacher_mode'] == 'covered_value' and row['terminal_horizon'] == 3
+                            for game in games for row in game['rows']))
+        self.assertTrue(all(not game['formal_training_qualified'] for game in games))
 
     def test_import_and_metadata_admission_never_import_cuda_or_load_models(self):
         code = '''

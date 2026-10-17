@@ -2,8 +2,9 @@
 
 Folder/key sources bind independently, including historical opponents with the
 same team key. Initializers preserve mulligans and source job order. The actual
-network/horizon-three contract is retained; this adapter grants no execution,
-capacity, learning or serving qualification and performs no model loading.
+covered_value/horizon-three contract is distinct from legacy network/horizon
+three metadata. Neither grants execution, capacity, learning or serving
+qualification; this adapter performs no model or covered-scope loading.
 """
 from collections.abc import Mapping
 from copy import deepcopy
@@ -20,7 +21,7 @@ from ..seven_schedule import ROSTER
 _SIDES = ('a', 'b')
 _PROFILE = dict(search_algorithm='gumbel', teacher_mode='network', q_scale='natural_wdl',
                 simulations=32, gumbel_candidates=16, terminal_horizon=3,
-                max_depth=10, max_actions=800)
+                max_depth=10, max_actions=800, world_sampling='per_simulation')
 _FIELDS = frozenset(('id', 'seed', 'first', 'left', 'right', 'policies', 'decks',
     'pure', 'training', 'train_sides', 'deadline', 'value_precheck', 'collection_replica',
     'covered_value_source', 'runtime', 'first_side', 'skip_mulligan', 'escalation',
@@ -36,6 +37,29 @@ def _source(folder, key):
 def policy_source_alias(folder, key):
     """Match training_rollout.source_alias without importing its execution graph."""
     return key + '@' + sha256(_source(folder, key).encode()).hexdigest()
+
+
+def _batch_profile(jobs):
+    """Preserve one declared teacher/scope; do not infer or load scope approval."""
+    result = None
+    for job in jobs:
+        if not isinstance(job, dict):
+            raise ValueError('Exact supported seven_round job fields required')
+        mode = job.get('teacher_mode', 'network')
+        if type(mode) is not str or mode not in ('network', 'covered_value'):
+            raise ValueError('Unsupported teacher mode')
+        profile = dict(_PROFILE, teacher_mode=mode)
+        source = job.get('covered_value_source')
+        if mode == 'covered_value':
+            if not isinstance(source, str) or not source.strip() or '\0' in source:
+                raise ValueError('Covered-value jobs require an explicit nonempty scope directory')
+            profile['covered_value_source'] = str(Path(source).resolve())
+        elif source is not None:
+            raise ValueError('Legacy network jobs cannot carry a covered-value scope')
+        if result is not None and profile != result:
+            raise ValueError('One teacher mode and normalized covered scope required per batch')
+        result = profile
+    return result
 
 
 def _hash(value, label):
@@ -109,6 +133,7 @@ def adapt_training_jobs(jobs, models):
     """
     if not isinstance(jobs, (tuple, list)) or not 1 <= len(jobs) <= 1600:
         raise ValueError('One to 1600 explicit seven-round jobs required')
+    profile = _batch_profile(jobs)
     bank = _models(models)
     inference_keys = tuple(sorted(bank))
     indices = {alias: index for index, alias in enumerate(inference_keys)}
@@ -142,14 +167,16 @@ def adapt_training_jobs(jobs, models):
         if (not isinstance(sides, (tuple, list)) or not sides or
                 any(side not in _SIDES for side in sides) or len(set(sides)) != len(sides)):
             raise ValueError('Distinct known training sides required')
-        for field, expected in _PROFILE.items():
+        for field, expected in profile.items():
+            if field == 'covered_value_source':
+                continue  # Exact normalized scope was checked without rewriting the job.
             actual = job.get(field, expected)
             if type(actual) is not type(expected) or actual != expected:
                 raise ValueError('Unsupported formal search setting: ' + field)
         if job.get('runtime', 'seven') != 'seven':
             raise ValueError('Only the seven runtime is supported')
-        if any(job.get(field) is not None for field in ('guided_policy', 'covered_value_source')):
-            raise ValueError('Unsupported guide or covered teacher source')
+        if job.get('guided_policy') is not None:
+            raise ValueError('Unsupported guide')
         if job.get('zhenhong_passive_reward') is not None and (
                 type(job['zhenhong_passive_reward']) not in (int, float) or job['zhenhong_passive_reward'] != 0):
             raise ValueError('Unsupported shaped reward')
@@ -193,6 +220,7 @@ def adapt_training_jobs(jobs, models):
             model_versions=deepcopy(row_versions), policy_bindings=bindings,
             train_sides=deepcopy(sides), training=job['training'], pure=False,
             exploration=job.get('exploration', job['training']), deadline=deadline,
-            collection_replica=job.get('collection_replica'), search=deepcopy(_PROFILE)))
+            collection_replica=job.get('collection_replica'),
+            covered_value_source=profile.get('covered_value_source'), search=deepcopy(profile)))
     return SoATrainingJobs(tuple(copied), tuple(initializers), inference_keys, tuple(model_indices),
-        tuple(versions), tuple(keys), tuple(masks), tuple(identities), deepcopy(_PROFILE))
+        tuple(versions), tuple(keys), tuple(masks), tuple(identities), deepcopy(profile))

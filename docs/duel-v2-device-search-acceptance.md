@@ -257,3 +257,8 @@ SoA工厂还默认开启 `reuse_root_observation`：只复用本次初始化、�
 假想推进可显式启用 `fused_rule_steps=True`（验收 CLI：`--fused-rule-steps`），默认关闭。推进与原 `clean` 之间保留独占 typed 列和有效新根，重置临时堆／视图／克隆缓存后仅保存最终状态；`EventList` 无新槽余量的行仍走原先压实／保存／重新加载路径直接使用第一次推进的新根而不重做动作，并释放中间租约，保留 fresh events 与旧列表别名。分配证明绑定当前正式 clean 与冻结入口，拒绝物理提交，避免原始动作录像重复；不变更规则程序和编译对象身份。验证 `tests.test_duel_v2_soa_fused_steps`；组件通过与完整搜索、自然终局及400并发资格分别验收。
 
 `soa_training_results.verified_training_games` 只在批次结束后校验并适配完整 GPU 标签：真实任务和模型版本、执行搜索回执、完整动作顺序、策略／访问数、双观察者 WDL、自然终局及独立原始动作重放必须一致。缺少 GPU 行或证据不在 CPU 补造，不写文件或授予闭环训练资格。`DeviceTrainingTape.value_rows_after_batch(include_frozen=True)` 显式导出完整双观察者记录，冻结对手仍不可学习；策略审计同时用 `numerical_rows_after_batch(include_frozen=True)`，默认导出行为不变。验证 `tests.test_duel_v2_soa_training_results`、`tests.test_duel_v2_device_training_tape`。
+
+
+`soa_covered_search.create_soa_covered_search_bundle` 显式绑定已核验且独立的七队辅助价值模型，固定 covered_value、horizon3、rule opponent、32 次模拟及逐模拟世界采样；必须使用 staged teacher，不能覆盖规则／算法身份或沿用过期 scope。组件工厂和训练任务元数据绑定不授予训练资格。
+
+`DeviceTieredSoARules` 为显式组件，默认未接入验收 CLI：宽队列使用较小 scratch，窄队列保留原容量，共用执行器、编译缓存和状态／动作存储。只有原始输入租约有效、静态调用确实返回 VM 容量错误且队列保护无错的行才重试；错误码 1 本身不足以证明容量失败。失败输出只能释放本次新发且归属已核验的租约；物理动作始终走大工作区一次，不重写录像。CPU 测试不证明实际显存或吞吐收益，须另做真实状态、容量压力、完整 Gumbel 与自然终局验收。

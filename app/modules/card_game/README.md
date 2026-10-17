@@ -1292,3 +1292,6 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 假想推进可显式启用 `fused_rule_steps=True`（验收 CLI：`--fused-rule-steps`），默认关闭。推进与原 `clean` 之间保留独占 typed 列和有效新根，重置临时堆／视图／克隆缓存后仅保存最终状态；`EventList` 无新槽余量的行仍走原先压实／保存／重新加载路径直接使用第一次推进的新根而不重做动作，并释放中间租约，保留 fresh events 与旧列表别名。分配证明绑定当前正式 clean 与冻结入口，拒绝物理提交，避免原始动作录像重复；不变更规则程序和编译对象身份。验证 `tests.test_duel_v2_soa_fused_steps`；组件通过与完整搜索、自然终局及400并发资格分别验收。
 
 `soa_training_results.verified_training_games` 只在批次结束后校验并适配完整 GPU 标签：真实任务和模型版本、执行搜索回执、完整动作顺序、策略／访问数、双观察者 WDL、自然终局及独立原始动作重放必须一致。缺少 GPU 行或证据不在 CPU 补造，不写文件或授予闭环训练资格。`DeviceTrainingTape.value_rows_after_batch(include_frozen=True)` 显式导出完整双观察者记录，冻结对手仍不可学习；策略审计同时用 `numerical_rows_after_batch(include_frozen=True)`，默认导出行为不变。验证 `tests.test_duel_v2_soa_training_results`、`tests.test_duel_v2_device_training_tape`。
+
+
+正式 covered_value/H3 的显式组件工厂为 `rl/batched_search/soa_covered_search.py`：校验七队独立辅助模型范围，固定逐模拟世界采样、三步规则对手续推和 Gumbel32；不加载策略同名模型冒充辅助模型，不授予执行资格。训练任务适配保留 covered scope 和 teacher 语义。`DeviceTieredSoARules` 提供默认不接线的小工作区宽队列与大工作区窄队列，仅对来源明确的 VM 容量失败重试；物理推进始终只执行一次。验证入口为 `tests.test_duel_v2_soa_covered_search`、`tests.test_duel_v2_soa_training_jobs`、`tests.test_duel_v2_tiered_soa_rules`，实际 GPU、完整搜索和自然终局另行验收。

@@ -51,9 +51,13 @@ class DeviceSoARules:
         self._shared_batch=executor.schema.allocate(rows).to_torch(self.device)
         self._shared_scratch=_empty_graph(self.t,self.layout,self.device)
         self.executor.prepare_workspace(self._shared_batch,self._shared_scratch)
+        prepare_store=getattr(self.store,'prepare_workspace',None)
+        if callable(prepare_store):
+            prepare_store(rows)
         self._compact_workspace=self.compactor.prepare_workspace(rows)
         self._keepalive=[]
         self.raw_tape=raw_tape
+        self._raw_capture_hook=None  # Optional static graph-building sink, never a replay-time Python call.
         self.physical_loop=None
         if raw_tape is not None and (raw_tape.rows!=rows or raw_tape.device!=self.device):
             raise ValueError('Raw action tape must match the exact SoA cohort')
@@ -278,6 +282,9 @@ class DeviceSoARules:
                 t.arange(self.rows,dtype=t.int64,device=self.device),states.owners,
                 self.physical_loop.steps_device,self.physical_loop.source_versions_device,
                 actors,active.bool()))
+        if physical and self._raw_capture_hook is not None:
+            active=(states.active & (errors==0)).view(t.uint8)
+            errors.bitwise_or_(self._raw_capture_hook(compact.arena,states.owners,actors,active.bool()))
         refs=t.empty((self.rows,3),dtype=t.int32,device=self.device)
         extra=t.zeros_like(errors)
         active=(states.active & (errors==0)).view(t.uint8)
@@ -312,7 +319,7 @@ class DeviceSoARules:
             *self._compact_workspace.destination.buffers.values(),self._compact_workspace.destination.roots,
             self._compact_workspace.obj_map,self._compact_workspace.stack,self._compact_workspace.color,
             self._compact_workspace.strings,self._compact_workspace.status]
-        return sum(value.numel()*value.element_size() for value in tensors)
+        return sum(value.numel()*value.element_size() for value in tensors)+getattr(self.store,'workspace_bytes',0)
 
 
 def create_soa_search(rules,inference,auxiliary,statistics,keys,*,rows,random,

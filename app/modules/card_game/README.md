@@ -1212,3 +1212,13 @@ SoA 对象定位按 schema 的递增、互不重叠编号区间做精确二分�
 SoA 深拷贝不再为原子值清空整张复制映射表；非空临时图在进入遍历前重置映射，类型化根由自身复制入口重置一次，空序列／映射只重置自身条目。复制实现、同次复制的共享子对象、不同复制的独立性及不可变元组身份保留，回归见 `tests.test_duel_v2_native_soa_cpu`。重复计时在每批核验结束后释放批次资源及回执，再创建下一批，初始化／回收不混入设备执行时间。
 
 完整搜索核验把网络前向与树计算分别检查：批次外独立 Python 规则搜索重新编码、重算 CUDA 价值前向，每个输入同时按既有推理容差对照冻结 NumPy WDL；访问、完成 Q、pi、先验、Gumbel 与动作仍保持原搜索容差和精确比较项。报告记录前向误差，不读取设备搜索的估值作为参考；见 `tests.test_duel_v2_soa_device_cli` 与 1016 协议。
+
+### 冻结权重 SoA 高并发容量分支
+
+`rl/batched_search/soa_capacity.py` 将独立根、规则工作槽、推理分块和各类字节预算分开，固定本研究分支的 Gumbel32／cap16／horizon0、策略对手、每决策一次世界采样及真红数组根评分。现有模型和网站数值冻结，不执行优化器步；容量、自然终局、训练采集、梯度／保存恢复分别验收，不改正式长训的教师与启动保护。
+
+`rl/batched_duel/device_sparse_soa_storage.py` 保存稀疏类型列的逻辑下标与原始同类型值，浮点按位保留负零；`rl/batched_search/device_tiled_soa_rules.py` 在有界原生工作槽恢复完整列，由嵌套设备队列执行相同正式规则并散回真实根。初始化、完整候选、采样、价值、推进与全局根ID动作归档共用此边界，旧稠密存储和直接调用仍为独立小批对照。工作槽、配置或单步通过不批准1600容量。
+
+`benchmark_duel_v2_soa_device.py` 默认采用稀疏状态和有界队列；可用 `--rows 1600 --rule-work-rows 8 --inference-rows 2` 只列静态计划。原始动作与策略前缀追加空间受独立字节预算约束，耗尽明确失败；批次后状态／动作导出也使用有界分块。`--cohort-only --max-decisions N` 用于有界多步诊断，完整自然局仍需 `--require-natural`；稳定计时、逐级容量和数据完整性要求见 [1016协议](../../../docs/duel-v2-soa-1016-acceptance.md)。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_soa_capacity tests.test_duel_v2_sparse_soa_storage tests.test_duel_v2_tiled_soa_rules tests.test_duel_v2_soa_device_cli`。实际CUDA项与CPU参考分别记账，跳过不算通过。

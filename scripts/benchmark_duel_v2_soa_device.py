@@ -16,6 +16,8 @@ import traceback
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0,str(ROOT))
 KEYS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke')
 SEARCH = dict(
     simulations=32, gumbel_candidates=16, terminal_horizon=0,
@@ -41,8 +43,17 @@ def build_parser():
     p.add_argument('--teachers', type=Path)
     p.add_argument('--output', type=Path)
     p.add_argument('--rows', type=int, default=8)
+    p.add_argument('--rule-work-rows', type=int, default=8)
+    p.add_argument('--inference-rows', type=int, default=2)
+    p.add_argument('--state-storage', choices=('sparse', 'dense'), default='sparse')
+    p.add_argument('--rule-dispatch', choices=('tiled', 'direct'), default='tiled')
+    p.add_argument('--gpu-budget-mib', type=int, default=14336)
+    p.add_argument('--state-budget-mib', type=int, default=4096)
+    p.add_argument('--raw-tape-budget-mib', type=int, default=512)
+    p.add_argument('--policy-tape-budget-mib', type=int, default=128)
     p.add_argument('--max-decisions', type=int, default=1)
     p.add_argument('--require-natural', action='store_true')
+    p.add_argument('--cohort-only', action='store_true', help='Bounded multi-decision diagnostic; no separate one-step timing repetitions')
     p.add_argument('--device', default='cuda')
     p.add_argument('--warmup', type=int, default=2)
     p.add_argument('--repeats', type=int, default=3)
@@ -57,6 +68,7 @@ def build_parser():
 
 
 def plan(args):
+    capacity = capacity_config(args)
     return dict(
         mode='plan',
         scope='bounded CUDA DeviceSoARules DeviceGameLoop acceptance; not training or CPU fallback',
@@ -65,6 +77,8 @@ def plan(args):
         warmup=args.warmup, repeats=args.repeats, presets=list(KEYS),
         execution_budget_scope='per_trial',proof_budget_scope='after_each_batch',
         typed_state_slots=args.rows*6+8,
+        capacity=capacity.plan(), state_storage=args.state_storage, rule_dispatch=args.rule_dispatch,
+        cohort_only=args.cohort_only,
         mixed_first_sides=True, skip_mulligan=True, search=dict(SEARCH),
         cuda_imported=False, models_loaded=False, files_created=False,
         learning_updates=0, gpu_qualified=False, passed=False,
@@ -77,7 +91,15 @@ def _bounded(parser, name, value, low, high):
 
 
 def validate_bounds(parser, args):
-    _bounded(parser, 'rows', args.rows, 1, 128)
+    _bounded(parser, 'rows', args.rows, 1, 1600)
+    _bounded(parser, 'rule-work-rows', args.rule_work_rows, 1, 32)
+    _bounded(parser, 'inference-rows', args.inference_rows, 1, 32)
+    for name in ('gpu_budget_mib', 'state_budget_mib', 'raw_tape_budget_mib', 'policy_tape_budget_mib'):
+        _bounded(parser, name.replace('_','-'), getattr(args,name), 1, 1024**2)
+    if args.rule_dispatch == 'direct' and args.rows > 32:
+        parser.error('Direct SoA calls are bounded to32; use device tiled dispatch for larger root cohorts')
+    if args.cohort_only and args.max_decisions <= 1:
+        parser.error('--cohort-only requires --max-decisions greater than1')
     _bounded(parser, 'max-decisions', args.max_decisions, 1, 400)
     _bounded(parser, 'warmup', args.warmup, 0, 8)
     _bounded(parser, 'repeats', args.repeats, 1, 8)
@@ -91,6 +113,19 @@ def validate_bounds(parser, args):
         parser.error('Nonnegative int64 seed range must include every independent row')
     if not str(args.device).startswith('cuda'):
         parser.error('CUDA-only acceptance; CPU fallback is forbidden')
+    try:
+        capacity_config(args)
+    except ValueError as exc:
+        parser.error(str(exc))
+
+
+def capacity_config(args):
+    from app.modules.card_game.rl.batched_search.soa_capacity import SoACapacityConfig
+    return SoACapacityConfig(roots=args.rows, rule_lanes=args.rule_work_rows,
+        inference_rows=args.inference_rows, max_actions=args.max_actions, max_decisions=args.max_decisions,
+        gpu_budget_mib=args.gpu_budget_mib, state_budget_mib=args.state_budget_mib,
+        raw_tape_budget_mib=args.raw_tape_budget_mib, policy_tape_budget_mib=args.policy_tape_budget_mib,
+        execution_seconds=args.execution_seconds, proof_seconds=args.proof_seconds)
 
 
 def validate_run(parser, args):
@@ -214,8 +249,15 @@ def unpack_graph(graph, mask=None):
 
 
 def host_states(store, roots):
+    from app.modules.card_game.rl.batched_duel.device_rule_protocol import DeviceStateBatch
     from app.modules.card_game.rl.batched_duel.record_soa import unpack_game_states
-    return unpack_game_states(store.gather_device(roots, shared_reads=True).to_host())
+    result=[]
+    # Diagnostic egress only, after a whole device batch. Never densify B roots.
+    for start in range(0,len(roots.slots),8):
+        selected=DeviceStateBatch(roots.pool,*[getattr(roots,name)[start:start+8].contiguous()
+            for name in ('slots','generations','owners','active','errors')])
+        result.extend(unpack_game_states(store.gather_device(selected, shared_reads=True).to_host()))
+    return result
 
 
 def memory_snapshot(torch, store, rules, actions, raw, light):
@@ -258,7 +300,10 @@ class IsolatedCohort:
         import numpy as np
         import torch
         from app.modules.card_game.rl.batched_duel.device_soa_storage import DeviceSoAStore
+        from app.modules.card_game.rl.batched_duel.device_sparse_soa_storage import DeviceSparseSoAStore
         from app.modules.card_game.rl.batched_search.device_soa_rules import DeviceSoARules, create_soa_search
+        from app.modules.card_game.rl.batched_search.device_tiled_soa_rules import DeviceTiledSoARules
+        from app.modules.card_game.rl.batched_search.soa_capacity import archive_capacities
         from app.modules.card_game.rl.batched_search.device_raw_action_tape import DeviceRawActionTape
         from app.modules.card_game.rl.batched_search.device_replay_policy_tape import DeviceReplayPolicyTape
         from app.modules.card_game.rl.batched_search.device_game_policy_sink import DeviceGamePolicySink
@@ -271,18 +316,31 @@ class IsolatedCohort:
         from app.modules.card_game.rl.batched_search.device_games import DeviceGameLoop
         self.shared, self.max_decisions, self.closed = shared, max_decisions, False
         B, device = shared['rows'], shared['device']
-        self.store = DeviceSoAStore(shared['schema'], B * 6 + 8, device=device)
+        capacity = shared['capacity']
+        if shared['state_storage'] == 'sparse':
+            self.store = DeviceSparseSoAStore(shared['schema'], capacity.state_slots, device=device,
+                                              max_bytes=capacity.state_budget_mib << 20)
+        else:
+            from app.modules.card_game.rl.batched_search.soa_capacity import legacy_dense_state_bytes
+            if legacy_dense_state_bytes(shared['schema'].lengths,B) > capacity.state_budget_mib << 20:
+                raise MemoryError('Legacy dense state arena exceeds declared state budget')
+            self.store = DeviceSoAStore(shared['schema'], capacity.state_slots, device=device)
         self.actions = action_store(device, B)
+        archive = archive_capacities(capacity,max_decisions)
         self.raw = DeviceRawActionTape(
-            B, B * max_decisions, B * max_decisions * 1024, B * max_decisions * 1024,
-            B * max_decisions * 4096, device=device)
+            B, archive['max_records'], archive['node_capacity'], archive['edge_capacity'],
+            archive['payload_capacity'], device=device)
         self.light = DeviceReplayPolicyTape(
-            B, B * max_decisions, B * max_decisions * shared['max_actions'], shared['max_actions'],
-            128 << 20,
+            B, archive['max_records'], archive['max_legal_entries'], shared['max_actions'],
+            capacity.policy_tape_budget_mib << 20,
             device=device)
-        self.rules = DeviceSoARules(
-            shared['executor'], self.store, self.actions, rows=B,
-            max_actions=shared['max_actions'], raw_tape=self.raw)
+        if shared['rule_dispatch'] == 'tiled':
+            self.rules = DeviceTiledSoARules(shared['executor'], self.store, self.actions, rows=B,
+                work_rows=capacity.lanes, inference_rows=capacity.inference_tile, seconds=seconds,
+                max_actions=shared['max_actions'], raw_tape=self.raw)
+        else:
+            self.rules = DeviceSoARules(shared['executor'], self.store, self.actions, rows=B,
+                max_actions=shared['max_actions'], raw_tape=self.raw)
         self.random = DevicePCG64(
             [np.random.PCG64(shared['seed'] + i).state for i in range(B)],
             device=device, max_rows=B, max_draws=shared['max_actions'],
@@ -297,7 +355,7 @@ class IsolatedCohort:
         self.search = create_soa_search(
             self.rules, shared['inference'], shared['inference'], self.stats, self.keys,
             rows=B, random=self.random, max_actions=shared['max_actions'], zhenhong_prior=True,
-            noise=True, max_depth=10, value_batch_rows=min(8, B), queued_row_work=True,
+            noise=True, max_depth=10, value_batch_rows=capacity.inference_tile, queued_row_work=True,
             row_work_seconds=seconds, reuse_root_policy_value=True,
             group_ready_leaves=True, reuse_interior_observation=True)
         policy = DeviceGamePolicySink(self.light)
@@ -374,7 +432,7 @@ class IsolatedCohort:
             return
         self.closed = True
         for obj in (self.timing, self.loop, self.search, self.rules, self.raw, self.actions,
-                    self.random, self.keys, self.seeds):
+                    self.random, self.keys, self.seeds, self.store):
             closer = getattr(obj, 'close', None)
             if callable(closer):
                 closer()
@@ -383,6 +441,7 @@ class IsolatedCohort:
 def warmup_inference(inference, loop, rows, max_actions):
     import torch
     device = loop.device
+    rows = min(rows,inference.max_rows)
     wx = torch.zeros((rows, inference.feature_dim), dtype=torch.float32, device=device)
     wc = torch.zeros((rows, max_actions, inference.candidate_dim), dtype=torch.float32, device=device)
     wm = torch.zeros((rows, max_actions), dtype=torch.bool, device=device)
@@ -418,6 +477,8 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
     from scripts.validate_duel_v2_native_soa import compare_boundary
     for actual,reference in zip(initial,expected):
         compare_boundary(actual,reference,'CUDA initial boundary')
+    if 'output' in shared:
+        (shared['output']/'initial-states.json').write_text(json.dumps(initial,ensure_ascii=False),encoding='utf8')
     seed_tensor = torch.arange(shared['seed'], shared['seed'] + B, dtype=torch.int64, device=device)
     ids = torch.tensor(
         [[shared['inference'].keys.index(job['keys']['a']),
@@ -475,6 +536,11 @@ def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
     if 'output' in shared:
         (shared['output'] / 'last-replay.json').write_text(
             json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf8')
+        (shared['output']/'search-device-snapshot.json').write_text(json.dumps(dict(
+            diagnostics={name:value.cpu().tolist() for name,value in cohort.diagnostics.items()},
+            phase=cohort.search.phase.cpu().tolist(),depth=cohort.search.depth.cpu().tolist(),
+            completed=searched.completed.cpu().tolist(),errors=searched.errors.cpu().tolist()),
+            ensure_ascii=False),encoding='utf8')
     if time.monotonic()>deadline:
         raise TimeoutError('Per-trial CUDA execution budget exceeded')
     if not payload['graph_executed']:
@@ -526,17 +592,25 @@ def verify_postbatch(cohort, shared, initial, final, result, searched, deadline)
     expected = list(initial)
     last_roots=[None]*B
     records = []
-    graph = _empty_graph(torch, cohort.rules.action_layout, cohort.rules.device)
     for step in range(max(counts) if counts else 0):
         if time.monotonic() >= deadline:
             raise TimeoutError('Postbatch proof budget exhausted')
         ids = [raw_map.get((row, step), raw.max_records) for row in range(B)]
-        on = torch.tensor([step < counts[row] for row in range(B)], dtype=torch.bool, device=raw.device)
-        errors = raw.gather_into_device(torch.tensor(ids, dtype=torch.int64, device=raw.device), graph, on)
-        torch.cuda.synchronize()
-        if bool((errors != 0).any().cpu()):
-            raise AssertionError(['raw gather errors', errors.cpu().tolist()])
-        actions = unpack_graph(graph, [step < counts[row] for row in range(B)])
+        actions=[]
+        # Batch is already complete: bounded audit copies must not allocate
+        # a dense action/projection arena for every resident root.
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        layout=cohort.rules.action_layout
+        for start in range(0,B,8):
+            stop=min(start+8,B);mask=[step < counts[row] for row in range(start,stop)]
+            graph=_empty_graph(torch,GraphLayout(stop-start,layout.max_nodes,layout.max_edges,
+                layout.max_payload_bytes),cohort.rules.device)
+            on=torch.tensor(mask,dtype=torch.bool,device=raw.device)
+            errors=raw.gather_into_device(torch.tensor(ids[start:stop],dtype=torch.int64,device=raw.device),graph,on)
+            torch.cuda.synchronize()
+            if bool((errors!=0).any().cpu()):
+                raise AssertionError(['raw gather errors',start,errors.cpu().tolist()])
+            actions.extend(unpack_graph(graph,mask))
         for row in range(B):
             if step >= counts[row]:
                 continue
@@ -726,6 +800,7 @@ def run(args):
     torch.backends.cudnn.allow_tf32 = False
     torch.set_num_threads(1)
     device = torch.device(args.device)
+    capacity=capacity_config(args)
     if device.type != 'cuda':
         raise RuntimeError('CUDA-only acceptance; CPU fallback is forbidden')
     if device.index is None:
@@ -741,6 +816,8 @@ def run(args):
         warmup=args.warmup, repeats=args.repeats, seed=args.seed, presets=list(KEYS),
         search=dict(SEARCH), learning_updates=0, gpu_qualified=False,
         one_step_cannot_qualify_natural=True, skip_mulligan=True, mixed_first_sides=True)
+    report.update(capacity=capacity.plan(),state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
+                  cohort_only=args.cohort_only,stable_throughput_qualified=False)
     report['static'] = dict(
         search=dict(SEARCH), rows=args.rows, max_decisions=args.max_decisions,
         max_actions=args.max_actions, inner_max_ticks=args.inner_max_ticks,
@@ -774,8 +851,8 @@ def run(args):
                       cuda_compile_options=list(executor.module.compile_options),
                       rule_threads_per_block=executor.threads)
         inference = DeviceValueOnlyInference(
-            models, device=str(device), max_rows=args.rows,
-            max_candidate_elements=args.rows * args.max_actions * 1576)
+            models, device=str(device), max_rows=capacity.inference_tile,
+            max_candidate_elements=capacity.inference_tile * args.max_actions * 1576)
         engine_parameters, parameters = [], []
         for job in jobs:
             decks = {'a': models[job['keys']['a']].serving_deck,
@@ -787,6 +864,7 @@ def run(args):
         shared = dict(
             rows=args.rows, device=str(device), schema=schema, executor=executor,
             output=args.output, progress=checkpoint,
+            capacity=capacity,state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
             inference=inference, seed=args.seed, max_actions=args.max_actions,models=models,
             proof_seconds=args.proof_seconds,
             inner_max_ticks=args.inner_max_ticks, jobs=jobs, parameters=parameters,
@@ -799,7 +877,7 @@ def run(args):
         with ExitStack() as cleanup:
             cleanup.callback(inference.close)
             cleanup.callback(executor.close)
-            for trial in range(args.warmup + args.repeats):
+            for trial in range(0 if args.cohort_only else args.warmup + args.repeats):
                 exec_deadline=time.monotonic()+args.execution_seconds
                 with ExitStack() as trial_cleanup:
                     cohort = IsolatedCohort(shared, max_decisions=1, seconds=args.execution_seconds)
@@ -829,7 +907,7 @@ def run(args):
                 gc.collect()
                 torch.cuda.empty_cache()
             measured = [row for row in timings if not row['warmup']]
-            if len(measured) != args.repeats:
+            if not args.cohort_only and len(measured) != args.repeats:
                 raise AssertionError('One-step repeats incomplete')
             report['one_step_repeat_seconds'] = [row['replay_gpu_seconds'] for row in measured]
             report['one_step_capture_seconds'] = [row['capture_seconds'] for row in measured]

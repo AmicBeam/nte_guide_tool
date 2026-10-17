@@ -32,6 +32,26 @@ def _stderr(argv):
 
 
 class SoADeviceCliTests(unittest.TestCase):
+    def test_direct_script_large_capacity_plan_without_cuda(self):
+        result=subprocess.run([sys.executable,str(CLI),'--rows','1600'],
+            cwd=REPO,capture_output=True,text=True,timeout=20)
+        self.assertEqual(result.returncode,0,result.stderr)
+        plan=json.loads(result.stdout)
+        self.assertEqual(plan['rows'],1600)
+        self.assertEqual(plan['capacity']['effective_rule_lanes'],8)
+        self.assertEqual(plan['capacity']['effective_inference_rows'],2)
+        self.assertFalse(plan['cuda_imported'])
+        self.assertFalse(plan['passed'])
+
+    def test_cohort_only_requires_multiple_physical_decisions(self):
+        self.assertIn('cohort-only',_stderr(['--cohort-only']))
+        buf=io.StringIO()
+        with redirect_stdout(buf):
+            self.assertEqual(_main(['--cohort-only','--max-decisions','4']),0)
+        plan=json.loads(buf.getvalue())
+        self.assertTrue(plan['cohort_only'])
+        self.assertFalse(plan['passed'])
+
     def test_numerical_receipt_with_numpy_reference_q_serializes(self):
         import time
         import numpy as np
@@ -152,7 +172,8 @@ class SoADeviceCliTests(unittest.TestCase):
     def test_plan_rejects_cpu_and_out_of_range_schema(self):
         self.assertIn('CUDA-only', _stderr(['--device', 'cpu']))
         self.assertIn('rows', _stderr(['--rows', '0']))
-        self.assertIn('rows', _stderr(['--rows', '129']))
+        self.assertIn('rows', _stderr(['--rows', '1601']))
+        self.assertIn('Direct SoA', _stderr(['--rows','128','--rule-dispatch','direct']))
         self.assertIn('max-decisions', _stderr(['--max-decisions', '0']))
         self.assertIn('max-decisions', _stderr(['--max-decisions', '401']))
         self.assertIn('warmup', _stderr(['--warmup', '-1']))

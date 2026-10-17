@@ -75,7 +75,11 @@ class DeviceTiledSoARules(DeviceSoARules):
     """The same canonical native rules; persistent roots and scratch are separate."""
 
     def __init__(self, executor, state_store, action_store, *, rows, work_rows=8,
-                 inference_rows=2, max_actions=800, raw_tape=None, seconds=1800,candidate_int32=False, **scratch):
+                 inference_rows=2, max_actions=800, raw_tape=None, seconds=1800,candidate_int32=False,
+                 require_teacher=False,staged_teacher=False, **scratch):
+        if type(require_teacher) is not bool:raise TypeError('Explicit frozen teacher selection required')
+        if type(staged_teacher) is not bool or (staged_teacher and not require_teacher):
+            raise ValueError('Staged teacher requires explicit frozen teacher entries')
         if type(candidate_int32) is not bool:raise ValueError('Explicit candidate storage width required')
         if type(rows) is not int or not 1 <= rows <= 1600:
             raise ValueError('Independent root count must be 1..1600')
@@ -85,7 +89,11 @@ class DeviceTiledSoARules(DeviceSoARules):
             raise ValueError('Independent inference tile must be 1..32')
         self.rows, self.work_rows, self.inference_rows = rows, min(rows, work_rows), min(rows, inference_rows)
         self.inner = DeviceSoARules(executor, state_store, action_store, rows=self.work_rows,
-                                   max_actions=max_actions, **scratch)
+                                   max_actions=max_actions, require_teacher=require_teacher,
+                                   staged_teacher=staged_teacher, **scratch)
+        self.require_teacher=require_teacher
+        self.staged_teacher=staged_teacher
+        self.teacher_horizon=3 if require_teacher else 0
         self.executor, self.store, self.action_store = executor, state_store, action_store
         self.t, self.device, self.max_actions = self.inner.t, self.inner.device, max_actions
         self.candidate_integer_dtype=self.t.int32 if candidate_int32 else self.t.int64
@@ -106,6 +114,9 @@ class DeviceTiledSoARules(DeviceSoARules):
         for name, count in (('metadata', 16), ('decision', 6), ('value', 6),
                             ('sample', 2), ('step', 4), ('clean', 4)):
             self._sites[name] = [self._new_queue() for _ in range(count)]
+        if require_teacher:
+            for name in ('teacher','rule_decision'):
+                self._sites[name]=[self._new_queue()]
         self._site_index = {name: 0 for name in self._sites}
 
     def _new_queue(self):
@@ -116,6 +127,8 @@ class DeviceTiledSoARules(DeviceSoARules):
     def _site(self, name):
         if self.closed or not self.t.cuda.is_current_stream_capturing():
             raise RuntimeError('Bounded SoA sites require an active parent capture')
+        if name not in self._sites:
+            raise RuntimeError('Prepare the SoA '+name+' capture site before capture')
         index = self._site_index[name]
         if index >= len(self._sites[name]):
             raise RuntimeError('No prepared SoA '+name+' capture site remains')
@@ -217,7 +230,55 @@ class DeviceTiledSoARules(DeviceSoARules):
     def clean_device(self, states):
         return self._state_call('clean', states, lambda local, ids, valid: self.inner.clean_device(local))
 
+    def teacher_continue_device(self,states,viewers,*,horizon=3):
+        if not self.require_teacher:
+            raise RuntimeError('Three-step teacher is absent from the SoA rule path')
+        if type(horizon) is not int or horizon!=3:
+            raise ValueError('Frozen SoA teacher_continue requires horizon=3')
+        return self._state_call('teacher',states,lambda local,ids,valid:
+            self.inner.teacher_continue_device(local,viewers.index_select(0,ids),horizon=horizon))
+
+    def rule_decision_device(self,states,observers):
+        if not self.require_teacher:
+            raise RuntimeError('Rule opponent is absent from the SoA rule path')
+        self._check_states(states);t=self.t;queue=self._site('rule_decision')
+        output=DeviceDecision(states,self.action_store,
+            t.full((self.rows,),-1,dtype=t.int64,device=self.device),
+            t.zeros(self.rows,dtype=t.int64,device=self.device),
+            t.full((self.rows,self.max_actions),-1,dtype=t.int32,device=self.device),
+            t.full((self.rows,self.max_actions),-1,dtype=t.int64,device=self.device),
+            t.zeros(self.rows,dtype=t.int64,device=self.device),
+            t.zeros((self.rows,self.max_actions),dtype=t.bool,device=self.device),
+            t.empty((self.rows,0),dtype=t.float32,device=self.device),
+            t.empty((self.rows,self.max_actions,0),dtype=t.float32,device=self.device),states.errors.clone())
+        choices=t.full((self.rows,),-1,dtype=t.int64,device=self.device)
+        def operation(local,ids,valid):
+            result,chosen,errors=self.inner.rule_decision_device(local,observers.index_select(0,ids))
+            for name in ('action_slots','action_generations','action_refs','action_types','counts','valid'):
+                queue.scatter_tensor_device(getattr(result,name),getattr(output,name))
+            queue.scatter_tensor_device(errors,output.errors)
+            queue.scatter_tensor_device(chosen,choices)
+        queue.capture_dispatch(states,operation)
+        self._finish(queue,states,output)
+        self._keepalive.append(choices)
+        return output,choices,output.errors
+
     def step_device(self, states, actors, decision, action_indices, *, physical=False):
+        return self._step_device(states,actors,decision,action_indices,physical=physical)
+
+    def step_clean_device(self,states,actors,decision,action_indices,*,physical=False):
+        if physical is not False:raise ValueError('Fused clean currently accepts hypothetical steps only')
+        return self._step_device(states,actors,decision,action_indices,fused=True)
+
+    def prepare_fused_steps(self):
+        if self.closed or self.t.cuda.is_current_stream_capturing():
+            raise RuntimeError('Prepare fused steps before CUDA capture')
+        self.inner.prepare_fused_steps()
+        if 'step_clean' not in self._sites:
+            self._sites['step_clean']=[self._new_queue()]
+            self._site_index['step_clean']=0
+
+    def _step_device(self, states, actors, decision, action_indices, *, physical=False,fused=False):
         if type(physical) is not bool or not isinstance(decision, DeviceDecision):
             raise ValueError('Explicit physical mode and full legal decision required')
         if decision.states.pool is not self.store or decision.action_pool is not self.action_store:
@@ -225,11 +286,16 @@ class DeviceTiledSoARules(DeviceSoARules):
         from .compact_device_candidates import CompactDeviceCandidates
 
         def operation(local, ids, valid):
-            tokens = type(decision.candidates.tokens)(**{
-                field.name: getattr(decision.candidates.tokens, field.name).index_select(0, ids)
-                for field in fields(decision.candidates.tokens) if field.name != 'request_ids'})
-            candidates = CompactDeviceCandidates(tokens, scratch_rows=self.inference_rows,
-                                                  device=self.device, template_table=self.templates)
+            if isinstance(decision.candidates,self.t.Tensor):
+                if decision.candidates.shape!=(self.rows,self.max_actions,0):
+                    raise ValueError('Only internal raw teacher tensors may bypass candidate transport')
+                candidates=decision.candidates.index_select(0,ids)
+            else:
+                tokens = type(decision.candidates.tokens)(**{
+                    field.name: getattr(decision.candidates.tokens, field.name).index_select(0, ids)
+                    for field in fields(decision.candidates.tokens) if field.name != 'request_ids'})
+                candidates = CompactDeviceCandidates(tokens, scratch_rows=self.inference_rows,
+                                                      device=self.device, template_table=self.templates)
             saved = decision.states
             selected_states = DeviceStateBatch(self.store, *[
                 getattr(saved, name).index_select(0, ids)
@@ -246,11 +312,12 @@ class DeviceTiledSoARules(DeviceSoARules):
                     graph, ids, owners, self.physical_loop.steps_device.index_select(0, ids),
                     self.physical_loop.source_versions_device.index_select(0, ids), who, active)
             try:
-                return self.inner.step_device(local, actors.index_select(0, ids), selected,
-                                              action_indices.index_select(0, ids), physical=physical)
+                step=self.inner.step_clean_device if fused else self.inner.step_device
+                return step(local, actors.index_select(0, ids), selected,
+                            action_indices.index_select(0, ids), physical=physical)
             finally:
                 self.inner._raw_capture_hook = original
-        return self._state_call('step', states, operation)
+        return self._state_call('step_clean' if fused else 'step', states, operation)
 
     def initialize_device(self, parameters, *, owners=None):
         """Static option ingress; all actual games are created by native CUDA."""

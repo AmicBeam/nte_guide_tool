@@ -9,6 +9,25 @@ from ..batched_duel.device_soa_storage import DeviceSoAStore
 from ..batched_duel.native_soa_cuda import CudaSoARules
 
 
+def _validate_fused_clean(image):
+    """Bind the one-list allocation proof to the exact frozen clean source."""
+    import ast
+    import inspect
+    import textwrap
+    from ..league_rollout import clean
+    body=ast.parse(textwrap.dedent(inspect.getsource(clean))).body[0].body
+    expected=ast.parse("s['events']=[]\ns.pop('_public_board',None)\nreturn s").body
+    if [ast.dump(v) for v in body]!=[ast.dump(v) for v in expected]:
+        raise ValueError('Canonical clean allocation behavior changed')
+    functions=image.function_ids
+    entry=image.entries.get('clean')
+    if (type(entry) is not int or not 0<=entry<len(functions)
+            or not functions[entry].startswith(('func:app.modules.card_game.rl.batched_duel.gpu_rule_entries:clean:',
+                'func:app.modules.card_game.rl.batched_duel.gpu_rule_entries:seven_clean:'))
+            or not any(name.startswith('func:app.modules.card_game.rl.league_rollout:clean:') for name in functions)):
+        raise ValueError('Exact frozen canonical clean entry required')
+
+
 class DeviceSoARules:
     supports_full_duel_rules = False
     require_teacher = False
@@ -17,9 +36,15 @@ class DeviceSoARules:
 
     def __init__(self, executor, state_store, action_store, *, rows, max_actions=800,
                  scratch_nodes=1048576, scratch_edges=2097152, scratch_payload=33554432,
-                 raw_tape=None):
+                 raw_tape=None, require_teacher=False,staged_teacher=False):
+        if type(require_teacher) is not bool:
+            raise TypeError('Explicit frozen teacher selection required')
+        if type(staged_teacher) is not bool or (staged_teacher and not require_teacher):
+            raise ValueError('Staged teacher requires explicit frozen teacher entries')
         if not isinstance(executor,CudaSoARules) or not isinstance(state_store,DeviceSoAStore):
             raise TypeError('Native typed SoA CUDA executor and state arena required')
+        if require_teacher and not {'teacher_continue','rule_decision'} <= set(executor.image.entries):
+            raise ValueError('Both frozen SoA teacher entries required')
         from ..batched_duel.device_graph_storage import CompactDeviceGraphStore
         if not isinstance(action_store,CompactDeviceGraphStore):
             raise TypeError('Independent transient action arena required')
@@ -57,10 +82,25 @@ class DeviceSoARules:
         self._compact_workspace=self.compactor.prepare_workspace(rows)
         self._keepalive=[]
         self.raw_tape=raw_tape
+        self.require_teacher=require_teacher
+        self.teacher_horizon=3 if require_teacher else 0
+        self._teacher=None
+        self._teacher_pipeline=None
+        self.staged_teacher=staged_teacher
         self._raw_capture_hook=None  # Optional static graph-building sink, never a replay-time Python call.
         self.physical_loop=None
         if raw_tape is not None and (raw_tape.rows!=rows or raw_tape.device!=self.device):
             raise ValueError('Raw action tape must match the exact SoA cohort')
+        if require_teacher:
+            from .device_soa_teacher import DeviceSoATeacher
+            try:
+                self._teacher=DeviceSoATeacher(self,max_actions=max_actions)
+                if staged_teacher:
+                    from .device_soa_teacher_pipeline import DeviceSoATeacherPipeline
+                    self._teacher_pipeline=DeviceSoATeacherPipeline(self,self._teacher)
+            except BaseException:
+                self.close()
+                raise
 
     def bind_game_loop(self,loop):
         if self.physical_loop is not None:
@@ -197,15 +237,25 @@ class DeviceSoARules:
             ((meta.actors==viewers)&states.active).float()[:,None],meta.finished,
             self.t.where(meta.finished,value.values,0.),errors)
 
-    def _commit(self, call, owners, active, errors):
+    def _result_errors(self,call,active,errors):
         t=self.t
         errors=errors|call.statuses[:,0]
         root=call.state.schema.pools[call.state.schema.root]
         invalid=(call.roots<=root.base)|(call.roots>root.base+root.capacity)
-        errors.bitwise_or_((active.bool() & invalid).to(t.int32)*150)
-        batch=call.typed_result()
+        errors.bitwise_or_((active.bool() & (errors==0) & invalid).to(t.int32)*150)
+        return errors
+
+    def _commit(self, call, owners, active, errors):
+        t=self.t
+        errors=self._result_errors(call,active,errors)
+        eligible=active.bool() & (errors==0)
+        from ..batched_duel.record_soa import TorchRecordSoABatch
+        # Compaction has no active argument. Do not traverse failed/inactive
+        # roots, including the inactive half of a fused-clean capacity split.
+        batch=TorchRecordSoABatch(call.state.schema,call.state.buffers,
+            t.where(eligible,call.roots,0))
         compact,status,event=self.compactor.compact_into_device(batch,self._compact_workspace)
-        errors.bitwise_or_(t.where(active.bool(),status,0))
+        errors.bitwise_or_(t.where(eligible,status,0))
         put=self.store.put_device(compact,owners,active.bool() & (errors==0),errors=errors)
         self._keepalive.append((call,compact,status,event,put))
         return put
@@ -250,6 +300,9 @@ class DeviceSoARules:
         return self._commit(world,states.owners,active,errors)
 
     def step_device(self, states, actors, decision, action_indices, *, physical=False):
+        return self._step_device(states,actors,decision,action_indices,physical=physical)
+
+    def _step_device(self, states, actors, decision, action_indices, *, physical=False,commit=True):
         if type(physical) is not bool or not isinstance(decision,DeviceDecision):
             raise ValueError('Explicit physical mode and full legal decision required')
         t=self.t
@@ -294,18 +347,74 @@ class DeviceSoARules:
         active=(states.active & (errors==0)).view(t.uint8)
         call=self._invoke('apply_action' if physical else 'simulate_action',batch,scratch,refs,active)
         self._keepalive.extend((action_graph,gathered,compact,refs,extra))
+        if not commit:return call,errors,active
         return self._commit(call,states.owners,active,errors)
+
+    def step_clean_device(self,states,actors,decision,action_indices,*,physical=False):
+        """Keep disposable typed columns between exact step and exact clean.
+
+        Reset the transient heap and clone memo before clean. Rows with no
+        spare EventList object use the original compact/store/gather path;
+        clean must still allocate a fresh list without changing capacity errors.
+        No persistent input lease or random search stream is modified here.
+        """
+        if physical is not False:
+            raise ValueError('Fused clean currently accepts hypothetical steps only')
+        if not getattr(self,'_fused_clean_checked',False):
+            _validate_fused_clean(self.executor.image)
+            self._fused_clean_checked=True
+        t=self.t
+        call,errors,active=self._step_device(states,actors,decision,action_indices,
+            physical=physical,commit=False)
+        errors=self._result_errors(call,active,errors)
+        batch,scratch=call.state,call.scratch
+        pool=next((p for p in batch.schema.pools if p.name=='EventList'),None)
+        if pool is None:raise ValueError('Exact typed EventList capacity required for fused clean')
+        retry=states.active & (errors==0) & (batch.buffers['i32'][pool.used]>=pool.capacity)
+        fast=(states.active & (errors==0) & ~retry).view(t.uint8)
+        batch.roots.copy_(t.where(fast.bool(),call.roots,batch.roots))
+        self.executor.reset_workspace(batch,scratch)
+        cleaned=self._invoke('clean',batch,scratch,scratch.roots[:,None].contiguous(),fast)
+        result=self._commit(cleaned,states.owners,fast,errors)
+        # Static graph sites remain present; the device mask makes this slow
+        # path inert when clean has its one required fresh typed list available.
+        # Inactive clean rows retain their original typed step result. Compact
+        # that result directly instead of executing the canonical action twice.
+        advanced=self._commit(call,states.owners,retry,errors)
+        fallback=self.clean_device(advanced)
+        self.release_device(advanced)
+        self._keepalive.extend((call,errors,retry,fast,result,advanced,fallback))
+        return DeviceStateBatch(self.store,
+            t.where(retry,fallback.slots,result.slots),
+            t.where(retry,fallback.generations,result.generations),states.owners,
+            result.active|fallback.active,t.where(retry,fallback.errors,result.errors))
+
+    def prepare_fused_steps(self):
+        if self.t.cuda.is_current_stream_capturing():
+            raise RuntimeError('Prepare fused steps before CUDA capture')
+        _validate_fused_clean(self.executor.image)
+        self._fused_clean_checked=True
 
     def release_device(self, states):
         self.store.release_device(states)
 
-    def teacher_continue_device(self,*args,**kwargs):
-        raise RuntimeError('Three-step teacher is absent from the SoA rule path')
+    def teacher_continue_device(self,states,viewers,*,horizon=3):
+        if self._teacher is None:
+            raise RuntimeError('Three-step teacher is absent from the SoA rule path')
+        if self._teacher_pipeline is not None:
+            return self._teacher_pipeline.teacher_continue_device(states,viewers,horizon=horizon)
+        return self._teacher.teacher_continue_device(states,viewers,horizon=horizon)
 
-    def rule_decision_device(self,*args,**kwargs):
-        raise RuntimeError('Rule opponent is absent from the SoA rule path')
+    def rule_decision_device(self,states,observers):
+        if self._teacher is None:
+            raise RuntimeError('Rule opponent is absent from the SoA rule path')
+        return self._teacher.rule_decision_device(states,observers)
 
     def close(self):
+        if self._teacher_pipeline is not None:
+            self._teacher_pipeline.close()
+        if self._teacher is not None:
+            self._teacher.close()
         self._keepalive.clear()
         self.binder.close();self.projection.close();self.compactor.close()
 

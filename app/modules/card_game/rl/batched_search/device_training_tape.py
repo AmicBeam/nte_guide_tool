@@ -542,14 +542,16 @@ class DeviceTrainingTape:
                 ))
         return rows
 
-    def value_rows_after_batch(self):
-        """Both trained viewers at each completed decision, including opponent turns.
+    def value_rows_after_batch(self, *, include_frozen=False):
+        """Export trained viewers, or both viewers for explicit postbatch audits.
 
         Policy eligibility depends on the acting side. Value eligibility depends
         on the viewer, so a frozen actor must not hide the learning opponent's
         already recorded public observation. Export happens after the whole batch.
         """
         self._export_forbidden()
+        if type(include_frozen) is not bool:
+            raise TypeError('Explicit boolean frozen-viewer audit export required')
         t = self.t
         if self.device.type == 'cuda':
             t.cuda.synchronize()
@@ -571,7 +573,8 @@ class DeviceTrainingTape:
             actor, game_id = int(host['actor'][i]), int(host['game'][i])
             winner = int(winners[game_id])
             for viewer in (actor, 1 - actor):
-                if not bool(train[game_id, viewer]):
+                eligible = bool(train[game_id, viewer])
+                if not include_frozen and not eligible:
                     continue
                 own = viewer == actor
                 rows.append(dict(
@@ -581,7 +584,7 @@ class DeviceTrainingTape:
                     step=int(host['step'][i]), version=int(host['version'][i]),
                     job_seed=int(host['seed'][i]), owner=int(host['owner'][i]),
                     z=0.0 if winner == -1 else (1.0 if winner == viewer else -1.0),
-                    learning_eligible=True, caveat=CAVEAT,
+                    learning_eligible=eligible, caveat=CAVEAT,
                 ))
         return rows
 

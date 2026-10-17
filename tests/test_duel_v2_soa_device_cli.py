@@ -32,6 +32,16 @@ def _stderr(argv):
 
 
 class SoADeviceCliTests(unittest.TestCase):
+    def test_fused_steps_are_explicit_without_changing_search_budget(self):
+        buf=io.StringIO()
+        with redirect_stdout(buf):self.assertEqual(_main(['--fused-rule-steps']),0)
+        result=json.loads(buf.getvalue())
+        self.assertTrue(result['search']['fused_rule_steps'])
+        self.assertEqual(result['search']['simulations'],32)
+        self.assertEqual(result['search']['gumbel_candidates'],16)
+        self.assertFalse(result['cuda_imported'])
+        self.assertFalse(result['gpu_qualified'])
+
     def test_wide_lanes_full_native_short_continuous_search_plan(self):
         flags=['--native-complete','--indexed-attributes','--rows','65','--rule-work-rows','64',
                '--cohort-only','--max-decisions','2','--warmup','0','--repeats','1',
@@ -318,7 +328,7 @@ class SoADeviceCliTests(unittest.TestCase):
             'teacher_mode': 'network_value', 'opponent_mode': 'policy',
             'prior': 'array_zhenhong', 'extra_guidance_simulations': 0,
             'cpu_fallback': False,
-            'world_sampling': 'per_decision',
+            'world_sampling': 'per_decision', 'fused_rule_steps': False,
         })
         self.assertEqual(plan['presets'], [
             'starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke'])

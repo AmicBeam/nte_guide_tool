@@ -383,6 +383,52 @@ class DeviceTrainingTapeTest(unittest.TestCase):
                            roots.active, torch.zeros(2, dtype=torch.int32))
         self.assertEqual(tape.value_rows_after_batch(), [])
 
+    def test_frozen_viewer_audit_exports_both_viewers_without_granting_eligibility(self):
+        import torch
+        tape, compact, rules, obs, roots, seeds, ids, train = self._tape(self.openings[:2])
+        train[:, 0] = False
+        rules.value_obs.copy_(obs + 3)
+        result = _search_result(compact, obs, compact.tokens.counts,
+                                torch.zeros(2, dtype=torch.int64))
+        tape.begin_device(roots, ids, ids, seeds, train, roots.active)
+        tape.append_device(roots, rules.actors, torch.zeros(2, dtype=torch.int64), result, roots.active)
+        self.assertEqual(tape.value_rows_after_batch(include_frozen=True), [])
+        for invalid in (None, 0, 1, 'true', np.bool_(True)):
+            with self.assertRaises(TypeError):
+                tape.value_rows_after_batch(include_frozen=invalid)
+        tape.finish_device(roots, torch.tensor([0, -1]), torch.ones(2, dtype=torch.int64),
+                           roots.active, torch.zeros(2, dtype=torch.int32))
+        ordinary = tape.value_rows_after_batch()
+        explicit = tape.value_rows_after_batch(include_frozen=False)
+        audit = tape.value_rows_after_batch(include_frozen=True)
+        self.assertEqual([r['actor'] for r in ordinary], [1, 1])
+        self.assertEqual([r['actor'] for r in explicit], [1, 1])
+        self.assertEqual([r['actor'] for r in audit], [0, 1, 0, 1])
+        self.assertEqual([r['learning_eligible'] for r in audit], [False, True, False, True])
+        self.assertEqual([r['value_actor'] for r in audit], [1, 0, 1, 0])
+        self.assertEqual([r['z'] for r in audit], [1, -1, 0, 0])
+        for row in audit:
+            expected = obs if row['actor'] == 0 else obs+3
+            np.testing.assert_array_equal(row['x'], expected[row['owner']].numpy())
+        self.assertEqual([r['learning_eligible'] for r in tape.numerical_rows_after_batch(include_frozen=True)], [False, False])
+
+    def test_frozen_viewer_audit_excludes_truncation_game_error_and_record_error(self):
+        import torch
+        tape, compact, rules, obs, roots, seeds, ids, train = self._tape(self.openings[:4])
+        train[:, 0] = False
+        result = _search_result(compact, obs, compact.tokens.counts,
+                                torch.zeros(4, dtype=torch.int64))
+        tape.begin_device(roots, ids, ids, seeds, train, roots.active)
+        tape.append_device(roots, rules.actors, torch.zeros(4, dtype=torch.int64), result, roots.active)
+        tape.finish_device(roots, torch.tensor([0, -2, 1, 1]), torch.ones(4, dtype=torch.int64),
+                           torch.tensor([True, False, True, True]), torch.tensor([0, 0, 4, 0], dtype=torch.int32))
+        # Corrupt one captured numerical record after a valid finish. Even an
+        # audit must not export that failed observer's synthetic terminal label.
+        tape._rec_errors[3] = 8
+        audit = tape.value_rows_after_batch(include_frozen=True)
+        self.assertEqual([(r['owner'], r['actor']) for r in audit], [(0, 0), (0, 1)])
+        self.assertEqual([r['learning_eligible'] for r in audit], [False, True])
+
     def test_opponent_value_context_cannot_claim_to_be_the_actor(self):
         import torch
         tape, compact, rules, obs, roots, seeds, ids, train = self._tape(self.openings[:1])

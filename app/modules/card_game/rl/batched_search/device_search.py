@@ -75,7 +75,7 @@ class DeviceGumbelSearch:
                  allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False,
                  reuse_root_policy_value=False, verify_root_value_reuse=False,
                  group_ready_leaves=False,reuse_interior_observation=False,reuse_root_observation=False,opponent_mode='rule',
-                 prior_guide=None, reuse_sampled_world=False, reuse_root_decision=False):
+                 prior_guide=None, reuse_sampled_world=False, reuse_root_decision=False,fused_rule_steps=False):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -92,6 +92,13 @@ class DeviceGumbelSearch:
         if teacher_mode != 'network_value' and not getattr(rules, 'require_teacher', True):
             raise ValueError('Teacher-free rule adapter requires network_value')
         self.teacher_mode = teacher_mode
+        if type(fused_rule_steps) is not bool:
+            raise TypeError('Explicit fused rule-step selection required')
+        if fused_rule_steps and not callable(getattr(rules,'step_clean_device',None)):
+            raise ValueError('Fused rule steps require an exact step/clean rule adapter')
+        self.fused_rule_steps=fused_rule_steps
+        if fused_rule_steps and callable(getattr(rules,'prepare_fused_steps',None)):
+            rules.prepare_fused_steps()
         if type(reuse_sampled_world) is not bool:
             raise TypeError('Explicit decision-world reuse option required')
         self.reuse_sampled_world = reuse_sampled_world
@@ -749,8 +756,12 @@ class DeviceGumbelSearch:
         old = self._world(step)
         meta = self.rules.metadata_device(old)
         self._error(meta.errors, step, RULE_ERROR)
-        advanced = self.rules.step_device(old, meta.actors, self._decision, self.actions, physical=False)
-        cleaned = self.rules.clean_device(self._masked(advanced, step))
+        if self.fused_rule_steps:
+            advanced=self.rules.step_clean_device(old,meta.actors,self._decision,self.actions,physical=False)
+            cleaned=advanced
+        else:
+            advanced = self.rules.step_device(old, meta.actors, self._decision, self.actions, physical=False)
+            cleaned = self.rules.clean_device(self._masked(advanced, step))
         self._release_replaced(advanced, cleaned, step)
         distinct_advanced = ((old.slots != advanced.slots)
                              | (old.generations != advanced.generations))

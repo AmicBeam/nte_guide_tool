@@ -1,4 +1,6 @@
 .guide-page{padding-top:calc(88px + env(safe-area-inset-top,0px))}
+.shell:has(>.guide-page>.guide-tabs){padding-top:0}
+.guide-page>.guide-tabs{margin-top:0}
 .guide-fixed-header{position:fixed;inset:0 0 auto;z-index:50;padding-top:env(safe-area-inset-top,0px);background:#101a22ed;border-bottom:1px solid var(--g-line);backdrop-filter:blur(14px)}
 .guide-fixed-header .guide-top{max-width:1240px;min-height:72px;margin:0 auto;padding:12px 30px;box-sizing:border-box;border:0;gap:20px}
 .guide-fixed-header .guide-top>.guide-brand{margin-right:0;flex-shrink:0;white-space:nowrap}

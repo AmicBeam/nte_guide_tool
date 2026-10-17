@@ -21,7 +21,7 @@ def bind_description_parameters(character):
         ability = next(a for a in character['abilities'] if a['id'] == ability_id)
         row = next(r for r in ability['param_rows'] if r['key'] == 'GA_Lacrimosa_Dot_num')
         values = [number(Decimal(v.removesuffix('%')) * 4 / 3) for v in row['values']]
-        formula = '噩梦伤害倍率 × 4/3'
+        formula = '噩梦伤害倍率'
     elif identifier in awakening_damage():
         binding = awakening_damage()[identifier]
         ability_id, index = binding['ability_id'], binding['awaken_index']

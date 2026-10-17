@@ -33,6 +33,7 @@ class DescriptionParametersTest(unittest.TestCase):
         self.assertIn('当前技能等级：10 级', plain)
         self.assertNotIn('{0}', plain)
         self.assertIn('data-linked-ability="GA_Lacrimosa_Melee"', html)
+        self.assertIn('<strong>噩梦伤害倍率</strong>', html)
 
     def test_other_awakenings_bind_damage_and_unknown_text_stays_safe(self):
         for identifier, index, first, tenth in [('1010', 2, '50', '100'), ('1072', 3, '100', '199.9')]:

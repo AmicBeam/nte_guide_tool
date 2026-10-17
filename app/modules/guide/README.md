@@ -198,7 +198,7 @@ python scripts/refresh_guide_data.py --transport curl
 
 怪物详细数据中的抗性按配置与数值标色：明确标记的强化抗性数值使用橙色，并提供“强化抗性”提示；其余数值并非全相同时，最低抗性（含并列最低）使用弱点绿色。缺失值不标色；没有强化标记且全部相同时不标色。数值仍按原有小数比例显示。
 
-安魂曲觉醒A的参数按普通攻击当前等级下“噩梦”伤害倍率乘以4/3显示，默认跟随10级，展示最多保留两位小数。`description_parameters.py` 提供显式技能ID绑定与逐级展示数组；网页保留原有颜色和名词注释，对应技能滑块同时更新觉醒正文与提示中的等级／倍率。娜娜莉觉醒C跟随普通攻击，灵可觉醒D跟随极轨终结，逐级倍率由本地 `data/awakening_damage.json` 提供。三处倍率均可悬停、聚焦或点按查看依据技能、当前技能等级、当前倍率和1级倍率。显式更新追加伤害数组：`python scripts/sync_guide_awakening_damage.py --damage-table /path/to/DT_SkillDamageData.json`。JSON／Markdown保留说明模板及 `parameters`，不修改技能原始倍率数组。未建立明确参数绑定的占位符不猜测补值。
+安魂曲觉醒A的参数按普通攻击当前等级下“噩梦”伤害倍率乘以4/3显示，默认跟随10级，展示最多保留两位小数。倍率提示标题显示“噩梦伤害倍率”，不展示计算式；等级联动与实际倍率保持原有计算。`description_parameters.py` 提供显式技能ID绑定与逐级展示数组；网页保留原有颜色和名词注释，对应技能滑块同时更新觉醒正文与提示中的等级／倍率。娜娜莉觉醒C跟随普通攻击，灵可觉醒D跟随极轨终结，逐级倍率由本地 `data/awakening_damage.json` 提供。三处倍率均可悬停、聚焦或点按查看依据技能、当前技能等级、当前倍率和1级倍率。显式更新追加伤害数组：`python scripts/sync_guide_awakening_damage.py --damage-table /path/to/DT_SkillDamageData.json`。JSON／Markdown保留说明模板及 `parameters`，不修改技能原始倍率数组。未建立明确参数绑定的占位符不猜测补值。
 
 角色详情空幕特化说明使用16px正文，格位说明使用14px；空幕计算入口位于顶部工具区，不插入格位正文。跳转使用 `/kongmu?character=<正式角色ID>&cartridge=<推荐卡带ID>`，预选对应角色和推荐卡带。`data/kongmu_links.json` 保存离线映射；显式刷新 `python scripts/sync_guide_kongmu_links.py`，支持 `--plan-table` 与 `--equipment-table` 读取本地表，请求和启动不联网。未知角色不生成跳转，缺推荐配置时只携带角色，不推断推荐。
 

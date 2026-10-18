@@ -875,3 +875,11 @@ Windows验收前可仅输出配置：
 ### 无三步延续与真红设备指导的诊断边界
 
 显式设备诊断可用 `network_value`／horizon0 对照原covered_value／horizon3：叶子由固定观察者WDL网络直接估值，Gumbel32、候选上限、规则和信息集采样保持。真红固定24计划指导在根搜索后独立执行，原搜索输出及额外成本单列，细则见设备搜索协议与真红指导协议。现有WDL可能反映原教师后续策略，须另做价值校准和独立互搏，不能依据短测加速直接批准强度或完整训练。旧冻结批次不热改，默认完整训练入口不借此解除closed-service闸门。
+
+### 设备端价值预热与短训连接
+
+首次价值预热可以先于完整 Gumbel 驱动资格验证，但只能使用真实 GPU 纯策略完整轨迹；这不解除策略搜索学习的资格检查。`seven_round.run_device_value_calibration` 使用 `DeviceValueCalibrationContext` 将既有 `warm_value` 的训练、选择及独立留出收集交给 `DevicePureCollector`。它按至多32局分批，检查跨批任务身份，保存各批诊断，禁止 CPU 规则回调。构造器、源码或普通 JSON 回执不授予完整搜索资格。
+
+`seven_round.run_device_value_smoke` 是单独的有界价值链路检查：固定配牌、正常起手换牌、独立训练／评估种子，设备内 argmax 采样，整批自然终局后核验原始动作、公开输入哈希、双方观察、CUDA／NumPy 分数、实体与随机状态，再使用既有 WDL 更新器进行有限价值更新。更新只拥有独立价值主干与 WDL 参数；逐张量检查策略不变，实际导出并恢复数值，随后用新权重重新构建设备推理库做冻结评估。它不生成 Gumbel 策略标签，不执行策略梯度，也不替代正式价值校准的多批训练／择温／留出或完整七队评估。
+
+任一轨迹未自然结束、设备错误、证明不一致或截止不足，整批不得进入更新；失败报告保留实际步数、完成数、错误和清理结果。后续正式联合学习仍必须具备合格辅助 scope、同源完整 H3 Gumbel 搜索预检及真实训练／评估驱动，不接受该纯策略组件作为替身。相关验证：`python -m unittest tests.test_duel_v2_device_value_training tests.test_duel_v2_device_learning_context tests.test_duel_v2_soa_pure_results tests.test_duel_v2_device_pure_value_tape`。

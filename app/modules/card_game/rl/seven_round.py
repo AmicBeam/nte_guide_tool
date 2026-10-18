@@ -277,8 +277,9 @@ def projected_learning_work(config, receipt, *, resume=False, completed_batches=
 def collect(pool, jobs, folder, *, learning=False, require_search=False, rollout=None):
     from .episode_replay import dump_episode
     from .batched_search.device_learning_context import ClosedDeviceLearningContext
+    from .batched_search.device_learning_context import DeviceValueCalibrationContext
     folder = Path(folder); records = []; games = []
-    if isinstance(pool, ClosedDeviceLearningContext):
+    if isinstance(pool, (ClosedDeviceLearningContext, DeviceValueCalibrationContext)):
         if rollout is not None and rollout is not pool.collector:
             raise ValueError('Closed collection cannot substitute a cooperative rollout')
         rollout = pool.collector
@@ -890,6 +891,48 @@ def resume_completed_batches(out, config):
     if type(completed) is not int or not 0 <= completed < config['planned_batches']:
         raise ValueError('Valid incomplete checkpoint progress required')
     return completed
+
+
+def run_device_value_calibration(out, config, *, collector):
+    """Run existing train/selection/heldout value calibration with live GPU games.
+
+    This explicit bootstrap precedes formal Gumbel readiness. It neither calls
+    the historical CPU collector nor qualifies a later policy-learning run.
+    """
+    from .batched_search.device_learning_context import DeviceValueCalibrationContext
+    context = DeviceValueCalibrationContext(collector)
+    if config.get('runtime') != 'seven' or config.get('device') != 'cuda':
+        raise ValueError('Explicit seven-team CUDA value calibration required')
+    deadline = config['train_until']
+    if type(deadline) not in (int, float) or not math.isfinite(deadline) or deadline <= time.time():
+        raise ValueError('Future original value-calibration deadline required')
+    import torch
+    torch.set_num_threads(1)
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    out = Path(out)
+    if out.exists():
+        raise FileExistsError('Fresh value-calibration output required')
+    nets, decks, origins = initialize(out/'uncalibrated-initial', config['hidden'], config['device'],
+        config['seeds']['foundation'], config.get('recovery_source'))
+    with context:
+        models, report = warm_value(context, nets, decks, origins, out/'uncalibrated-initial',
+            out/'value', config, 0, deadline)
+    result = dict(models=str(models), value_precheck=report, formal_policy_updates=0,
+                  formal_training_complete=False, stage='value_calibration')
+    write(out/'value-calibration-result.json', result)
+    return result
+
+
+def run_device_value_smoke(out, *, collector, models, train_jobs, evaluation_jobs, deadline):
+    """Bootstrap value collection before full-search qualification, without granting it.
+
+    This bounded stage never enters the formal policy-learning loop. Complete
+    GPU argmax games feed the existing value optimizer and frozen evaluation.
+    """
+    from .device_value_training import run_value_training_smoke
+    return run_value_training_smoke(out, collector=collector, models=models,
+        train_jobs=train_jobs, evaluation_jobs=evaluation_jobs, deadline=deadline)
 
 
 def run(out, config, *, resume=False, device_driver=None):

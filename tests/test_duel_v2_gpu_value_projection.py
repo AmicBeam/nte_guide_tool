@@ -1,5 +1,7 @@
 """Public value parity only; these host tests do not qualify a GPU driver."""
 import ast
+import inspect
+import textwrap
 from copy import deepcopy
 import unittest
 from unittest.mock import patch
@@ -109,6 +111,29 @@ class ValueProjectionTests(unittest.TestCase):
         malformed = ast.parse('if include_previews:\n    legal_entries = []\nelse:\n    legal_entries = []').body[0]
         with self.assertRaises(ProjectionSpecializationError):
             _ValueObserve().visit(malformed)
+
+    def test_near_canonical_removed_work_changes_fail_closed(self):
+        from app.modules.card_game.engine.duel_v2 import projection
+        original=ast.parse(textwrap.dedent(inspect.getsource(projection.observe)))
+        for mutation in ('extra_else_work','entry_arity','attribute_enumeration','action_dependency'):
+            tree=deepcopy(original)
+            if mutation in ('extra_else_work','entry_arity'):
+                branch=next(n for n in ast.walk(tree) if isinstance(n,ast.If)
+                            and isinstance(n.test,ast.Name) and n.test.id=='include_previews')
+                if mutation=='extra_else_work':
+                    branch.orelse.append(ast.parse("result['unexpected_value_field']=1").body[0])
+                else:
+                    call=next(n for n in ast.walk(branch) if isinstance(n,ast.Call)
+                              and isinstance(n.func,ast.Name) and n.func.id=='legal_entry')
+                    call.args.pop()
+            elif mutation=='attribute_enumeration':
+                call=next(n for n in ast.walk(tree) if isinstance(n,ast.Call)
+                          and isinstance(n.func,ast.Name) and n.func.id=='legal_actions')
+                call.func=ast.Attribute(ast.Name('flow',ast.Load()),'legal_actions',ast.Load())
+            else:
+                tree.body[0].body.insert(-1,ast.parse("result['unexpected_value_field']=actions").body[0])
+            with self.subTest(mutation=mutation),self.assertRaises(ProjectionSpecializationError):
+                _ValueObserve().visit(ast.fix_missing_locations(tree))
 
 
 if __name__ == '__main__':

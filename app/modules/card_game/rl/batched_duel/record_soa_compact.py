@@ -747,14 +747,25 @@ class CudaRecordSoACompact:
 
     gpu_qualified = False
 
-    def __init__(self, schema, device='cuda'):
+    def __init__(self, schema, device='cuda', *, threads_per_block=128):
         if not isinstance(schema, CompiledRecordSchema):
             raise RecordSoAError('Compiled schema required')
         self.schema = schema
         self.device = device
+        self.threads_per_block = threads_per_block
         self._module = None
         self._keepalive = []
         self._last_workspace = None
+
+    @property
+    def threads_per_block(self):
+        return self._threads_per_block
+
+    @threads_per_block.setter
+    def threads_per_block(self, value):
+        if type(value) is not int or value not in (1, 2, 4, 8, 16, 32, 64, 128):
+            raise RecordSoAError('Compact threads_per_block must be a power of two from 1 through 128')
+        self._threads_per_block = value
 
     def _ensure(self):
         if self._module is not None:
@@ -836,7 +847,8 @@ class CudaRecordSoACompact:
             batch.buffers['i64'], batch.buffers['f64'], batch.buffers['i32'], batch.buffers['u8'], batch.roots,
             dest_buffers['i64'], dest_buffers['f64'], dest_buffers['i32'], dest_buffers['u8'], dest_roots,
             obj_map, stack, color, str_map, status, rows,
-        ], grid=(max(rows, 1) + 127) // 128, block=128,capture_safe=True)
+        ], grid=(rows + self.threads_per_block - 1) // self.threads_per_block,
+            block=self.threads_per_block,capture_safe=True)
         return workspace.destination,status,event
 
     def close(self):

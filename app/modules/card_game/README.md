@@ -1334,3 +1334,6 @@ SoA 验收 CLI 可显式传 `--defer-physical-presentation` 接入上述闭环�
 正常分段暂停不修改终局、截断或错误标记，也不提前生成终局标签。恢复核对原始动作前缀、完整状态与别名、PCG 状态、版本及源码绑定，上传原有 GPU 价值记录，并由最终 GPU 终局处理补齐整段历史标签。只有全批自然终局、完整核验且无历史错误的轨迹可导出价值样本。组件接管并释放调用方交入的三个独立存储区，借用的规则执行器仍由调用方管理。它不提供正式闭环 Gumbel driver、辅助模型 scope 或评估资格。
 
 相关 CPU 契约验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_auxiliary_collection tests.test_duel_v2_seven_auxiliary_jobs tests.test_duel_v2_device_pure_value_tape -q`。GPU 对拍和本轮性能记录保存在 `artifacts/rl-evals/`，不由这些 CPU 测试代替。
+
+
+`CudaRecordSoACompact` 可在构造时或后续捕获前显式设置 `threads_per_block`，允许 1、2、4、8、16、32、64、128，默认 128。该参数只改变每行独立压实任务的 CUDA 启动网格，不改变 CUDA 源码、schema、容量、遍历顺序或错误处理。已经捕获的图保留捕获时的启动配置；数值参数不代替实际 GPU 性能和正确性核验。相关检查：`.venv/bin/python -m unittest tests.test_duel_v2_record_soa_compact_launch tests.test_duel_v2_record_soa_compact -q`。

@@ -1077,10 +1077,12 @@ class GraphProjectionKernel:
                 extras['choice_kind'], extras['choice_cards'],
             ])
         args.extend([status, rows, arena.layout.max_nodes, arena.layout.max_edges, arena.layout.max_payload_bytes, m])
+        # Small raw-token cohorts otherwise run every independent row on one SM.
+        threads = 1 if device_path and raw_candidates and rows <= 32 else 128
         event = self.module.launch(
             'project_public_decision_device' if device_path else 'project_public_decision',
             args+[active] if device_path else args,
-            grid=(rows + 127) // 128, block=128, capture_safe=device_path,
+            grid=(rows + threads - 1) // threads, block=threads, capture_safe=device_path,
         )
         if not device_path:
             event.synchronize()

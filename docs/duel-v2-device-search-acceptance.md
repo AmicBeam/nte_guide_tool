@@ -300,3 +300,5 @@ SoA工厂还默认开启 `reuse_root_observation`：只复用本次初始化、�
 
 
 小批次规则适配器默认压实配置只覆盖 `rows <= 32` 的工作通道。通用压实器和更大批次的默认值不随之改变。默认接线需要直接读取实际压实器配置，并保留二进制缓存身份、父状态与完整推进结果的 GPU 核验，不以脚本手动设置候选参数代替构造路径验收。
+
+公开合法动作的GPU raw-token解析在1～32行默认每block1线程，超过32行及非raw-token路径保留128线程。CUDA源码和容量不随此调整改变；验收须核实际默认调用的grid/block、动作顺序、x/c编码、状态／RNG／别名及错误路径，不能把手动覆盖启动参数的脚本当默认接线证据。CPU验证见 `tests.test_duel_v2_projection_geometry` 与 `tests.test_duel_v2_device_projection`；完整搜索、自然终局和训练资格仍单独验收。

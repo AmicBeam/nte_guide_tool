@@ -1337,3 +1337,6 @@ SoA 验收 CLI 可显式传 `--defer-physical-presentation` 接入上述闭环�
 
 
 `CudaRecordSoACompact` 可在构造时或后续捕获前显式设置 `threads_per_block`，允许 1、2、4、8、16、32、64、128，默认 128。该参数只改变每行独立压实任务的 CUDA 启动网格，不改变 CUDA 源码、schema、容量、遍历顺序或错误处理。已经捕获的图保留捕获时的启动配置；数值参数不代替实际 GPU 性能和正确性核验。相关检查：`.venv/bin/python -m unittest tests.test_duel_v2_record_soa_compact_launch tests.test_duel_v2_record_soa_compact -q`。
+
+
+原生 SoA 规则适配器对不超过 32 行的工作批次默认采用单线程块压实，使各行独立分布到不同 block；更大工作批次及通用压实器仍保留原 128 线程配置。只改变启动网格，规则程序、CUDA 源码、容量与二进制缓存身份保持不变；新捕获会读取实际配置。

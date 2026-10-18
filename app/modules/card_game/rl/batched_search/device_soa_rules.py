@@ -79,7 +79,10 @@ class DeviceSoARules:
         from .device_inplace_guard_encoding import prepare_inplace_guard_encoding
         self.binder=DeviceRuleArgumentBinder(device=self.device)
         self.projection=GraphProjectionKernel(device=self.device,max_candidates=max_actions,runtime='seven')
-        self.compactor=CudaRecordSoACompact(executor.schema,device=str(self.device))
+        # Small cohorts otherwise put every independent traversal on one SM.
+        # Keep the generic geometry for larger, separately measured cohorts.
+        self.compactor=CudaRecordSoACompact(executor.schema,device=str(self.device),
+            threads_per_block=1 if rows<=32 else 128)
         self.compactor._ensure()  # Compile before CUDA graph capture.
         self.templates=get_card_template_table(self.device)
         prepare_inplace_guard_encoding(self.device)

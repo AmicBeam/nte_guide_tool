@@ -1355,3 +1355,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 `seven_round.run_device_joint_smoke` 仅接收真实 `DeviceH3Collector` 与同执行器的 `DevicePureCollector`：完整自然终局的 Gumbel32／16候选／H3 记录通过独立核验后，调用原 `update_batch` 联合更新，核对策略及价值参数实际变化、冻结队伍不变、数值导出恢复和独立种子冻结评估。`DeviceChunkedGameLoop` 允许单根搜索跨短图重放保留完整设备状态；默认每段一个搜索 tick，未完成32次模拟不能提交物理动作。纯策略校准可显式使用 `segment_decisions` 保留完整前缀；历史错误与截断不能产生学习标签。
 
 相关验证：`python -m unittest tests.test_duel_v2_device_joint_training tests.test_duel_v2_device_auxiliary_calibration tests.test_duel_v2_device_chunked_games tests.test_duel_v2_device_h3_segments tests.test_duel_v2_device_h3_collection tests.test_duel_v2_device_pure_segments`。这些组件及CPU验证不解除正式长训入口的设备资格检查；GPU完整局、实测联合更新、容量与模型强度须分别验收。
+
+辅助采集的持久队列由 `DeviceAuxiliaryCalibrationLedger` 维护；`device_auxiliary_continuation` 只接受有明确预算授权且历史干净的无损前缀。纯策略与 H3 收集器可将完整轨迹、设备搜索中间状态和独立证明分段持久化；`seven_round` 的价值拟合与联合短训另存阶段回执，续跑复用数值和完成缓存。失败记录禁止回退清洗，未完成自然终局或独立证明不得更新。接口、进程预算及验证见[跨进程短段恢复](../../../docs/duel-v2-public-training.md#跨进程短段恢复)。

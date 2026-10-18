@@ -133,4 +133,125 @@ class H3SegmentsTests(unittest.TestCase):
         self.assertNotEqual(collector.last_diagnostics.get('complete'), True)
 
 
+class H3OwnedStorageCheckpointTests(unittest.TestCase):
+    def fixture(self):
+        backing=torch.arange(48,dtype=torch.int32)
+        search=NS(phase=backing[:2],completed=backing[2:4],errors=torch.zeros(2,dtype=torch.int32),
+            pcg=torch.arange(12,dtype=torch.int64).reshape(2,6),
+            decision=NS(data=backing[4:20].reshape(4,4).t()),
+            row_work=NS(plans={'policy':NS(buffer=backing[20:28])}))
+        loop=NS(search=search,_ready=True,_captured=True,_errors=torch.zeros(2,dtype=torch.int32),
+            steps=torch.zeros(2,dtype=torch.int64),teacher=NS(pending=backing[28:36]),
+            _keepalive=[search.decision,backing[36:]],shared=backing)
+        return dict(loop=loop,search=search)
+
+    def test_full_storage_bits_alias_views_and_pending_root_roundtrip(self):
+        import tempfile
+        from pathlib import Path
+        from app.modules.card_game.rl.batched_search.device_h3_segments import snapshot_h3_tensors,restore_h3_tensors
+        from app.modules.card_game.rl.batched_search.pure_checkpoint import write_payload,read_payload
+        original=self.fixture();original['search'].phase.fill_(4);original['search'].completed.fill_(17)
+        snapshot=snapshot_h3_tensors(original,allow_cpu_reference=True)
+        with tempfile.TemporaryDirectory()as root:
+            path=Path(root)/'chunk'
+            write_payload(path,snapshot,dict(metadata=dict(jobs=[])),kind='h3_cpu_fixture')
+            saved=read_payload(path,dict(metadata=dict(jobs=[])),kind='h3_cpu_fixture')
+            fresh=self.fixture(); before_id=id(fresh['search'].decision.data)
+            restore_h3_tensors(fresh,saved,allow_cpu_reference=True)
+            self.assertEqual(id(fresh['search'].decision.data),before_id)
+            self.assertEqual(fresh['search'].completed.tolist(),[17,17])
+            self.assertTrue(torch.equal(fresh['loop'].shared,original['loop'].shared))
+            self.assertEqual(fresh['search'].decision.data.stride(),(1,4))
+            fresh['loop'].shared[4]=999
+            self.assertEqual(int(fresh['search'].decision.data[0,0]),999)
+            self.assertIs(fresh['loop']._keepalive[0],fresh['search'].decision)
+            self.assertTrue(fresh['loop']._ready)
+            # Resume the same hypothetical root progress, without initialization.
+            fresh['search'].completed.add_(1);original['search'].completed.add_(1)
+            self.assertTrue(torch.equal(fresh['search'].completed,original['search'].completed))
+
+    def test_missing_layout_stride_alias_and_initialized_flag_fail_before_writes(self):
+        from app.modules.card_game.rl.batched_search.device_h3_segments import snapshot_h3_tensors,restore_h3_tensors
+        original=self.fixture();snapshot=snapshot_h3_tensors(original,allow_cpu_reference=True)
+        for change in ('missing','stride','alias','initialization'):
+            with self.subTest(change=change):
+                fresh=self.fixture();before=fresh['loop'].shared.clone()
+                saved=deepcopy(snapshot)
+                if change=='missing':saved['storage'].pop(next(iter(saved['storage'])))
+                if change=='stride':saved['layout']['loop.search.decision.data']['stride']=[4,1]
+                if change=='alias':fresh['search'].decision.data=fresh['search'].decision.data.clone()
+                if change=='initialization':fresh['loop']._ready=False
+                with self.assertRaisesRegex(ValueError,'layout/view/alias'):
+                    restore_h3_tensors(fresh,saved,allow_cpu_reference=True)
+                self.assertTrue(torch.equal(before,fresh['loop'].shared))
+
+    def test_guard_and_semantic_error_prefix_cannot_be_saved(self):
+        from app.modules.card_game.rl.batched_search.device_h3_segments import snapshot_h3_tensors
+        for field in ('search','loop'):
+            owned=self.fixture()
+            (owned['search'].errors if field=='search'else owned['loop']._errors).fill_(256)
+            with self.assertRaisesRegex(RuntimeError,'Failed'):
+                snapshot_h3_tensors(owned,allow_cpu_reference=True)
+        owned=self.fixture();owned['loop']._inner=NS(errors=torch.ones(1,dtype=torch.int32))
+        with self.assertRaisesRegex(RuntimeError,'guard'):
+            snapshot_h3_tensors(owned,allow_cpu_reference=True)
+
+
+class H3ClockExclusionTests(unittest.TestCase):
+    def test_only_conditional_guard_clock_is_nonpersistent(self):
+        from app.modules.card_game.rl.batched_search.device_h3_segments import snapshot_h3_tensors,restore_h3_tensors
+        Runner=type('CudaConditionalWhile',(NS,),{})
+        old=NS(_outer=Runner(start=torch.tensor([999]),counter=torch.tensor([3]),errors=torch.zeros(1,dtype=torch.int32)),
+            teacher=NS(start=torch.tensor([17])))
+        fresh=NS(_outer=Runner(start=torch.tensor([111]),counter=torch.tensor([0]),errors=torch.zeros(1,dtype=torch.int32)),
+            teacher=NS(start=torch.tensor([0])))
+        saved=snapshot_h3_tensors(dict(loop=old),allow_cpu_reference=True)
+        restore_h3_tensors(dict(loop=fresh),saved,allow_cpu_reference=True)
+        self.assertEqual(fresh._outer.start.tolist(),[111])
+        self.assertEqual(fresh._outer.counter.tolist(),[3])
+        self.assertEqual(fresh.teacher.start.tolist(),[17])
+
+
+class H3DurableSessionTests(unittest.TestCase):
+    def test_pending_root_session_restores_new_buffers_and_rejects_failed_lineage(self):
+        import tempfile
+        from unittest.mock import patch
+        from app.modules.card_game.rl.batched_search import device_h3_segments as module
+        owner=H3OwnedStorageCheckpointTests()
+        original=owner.fixture();original['search'].completed.fill_(19)
+        snapshot,restore=module.snapshot_h3_tensors,module.restore_h3_tensors
+        binding=dict(metadata=dict(jobs=[dict(deadline=time.time()+600)]),source='strict-fixture')
+        with tempfile.TemporaryDirectory()as root, patch.object(module,'snapshot_h3_tensors',
+                side_effect=lambda roots:snapshot(roots,allow_cpu_reference=True)), patch.object(module,'restore_h3_tensors',
+                side_effect=lambda roots,data:restore(roots,data,allow_cpu_reference=True)):
+            session=module.H3CheckpointSession(root,None,binding,max_chunks=1)
+            path=session.save(original,[dict(version=0,phase='playing')],dict(steps=[0],complete_rows=[False]))
+            loaded=module.H3CheckpointSession(root,None,binding,max_chunks=1)
+            fresh=owner.fixture(); loaded.restore(fresh)
+            self.assertTrue(loaded.restored)
+            self.assertEqual(loaded.total,1)
+            self.assertEqual(fresh['search'].completed.tolist(),[19,19])
+            self.assertEqual(loaded.payload['initial'],[dict(version=0,phase='playing')])
+            self.assertEqual(loaded.path,path)
+            loaded.reject(RuntimeError('actual guard'))
+            with self.assertRaisesRegex(RuntimeError,'rejected'):
+                module.H3CheckpointSession(root,None,binding,max_chunks=1)
+
+
+class H3ThreadOwnerExclusionTests(unittest.TestCase):
+    def test_statistics_pool_rebinds_new_thread_but_keeps_semantic_flags_strict(self):
+        from app.modules.card_game.rl.batched_search.device_h3_segments import snapshot_h3_tensors,restore_h3_tensors
+        Pool=type('DeviceStatisticsPool',(NS,),{})
+        old=Pool(_owner_thread=111,_stream=7,_ready=True,total=torch.tensor([3.]))
+        fresh=Pool(_owner_thread=222,_stream=9,_ready=True,total=torch.tensor([0.]))
+        saved=snapshot_h3_tensors(dict(statistics=old),allow_cpu_reference=True)
+        restore_h3_tensors(dict(statistics=fresh),saved,allow_cpu_reference=True)
+        self.assertEqual(fresh._owner_thread,222)
+        self.assertEqual(fresh._stream,9)
+        self.assertEqual(fresh.total.tolist(),[3.])
+        fresh._ready=False
+        with self.assertRaisesRegex(ValueError,'topology'):
+            restore_h3_tensors(dict(statistics=fresh),saved,allow_cpu_reference=True)
+
+
 if __name__ == '__main__': unittest.main()

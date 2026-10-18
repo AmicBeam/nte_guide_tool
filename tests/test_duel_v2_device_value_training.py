@@ -191,5 +191,50 @@ class DevicePureRawExportTest(unittest.TestCase):
         self.assertIs(result[1]['raw_action']['xs'][0],result[1]['raw_action']['xs'][1])
 
 
+class ValueCalibrationResumeEntryTests(unittest.TestCase):
+    def test_clean_pause_resume_keeps_input_binding_and_frozen_initial_source(self):
+        from unittest.mock import MagicMock
+        from app.modules.card_game.rl.seven_round import run_device_value_calibration
+        from app.modules.card_game.rl.batched_search.device_pure_segments import PureSegmentPaused
+        import tempfile
+        import json
+        from types import SimpleNamespace
+        from app.modules.card_game.rl.seven_schedule import ROSTER
+        def initialize_fixture(initial,*args,**kwargs):
+            initial.mkdir(parents=True)
+            for key in ROSTER:
+                for suffix in('.json','.npz'):(initial/(key+suffix)).write_bytes(b'explicit stage fixture')
+            return {},{},{}
+        with tempfile.TemporaryDirectory()as folder:
+            out=Path(folder)/'value'
+            config=dict(runtime='seven',device='cuda',hidden=16,train_until=time.time()+600,
+                recovery_source=str(Path(folder)/'source'),starting_decks={'explicit':'fixture'},
+                seeds={'foundation':1},rule_hash='fixture',value_full_tower=True)
+            context=MagicMock()
+            context.last_diagnostics={'planned_pause':True}
+            with patch('app.modules.card_game.rl.batched_search.device_learning_context.DeviceValueCalibrationContext',
+                       return_value=context), \
+                 patch('app.modules.card_game.rl.seven_round.versions',return_value={'fixture':'same'}), \
+                 patch('app.modules.card_game.rl.seven_round.initialize',side_effect=initialize_fixture)as initialize, \
+                 patch('app.modules.card_game.rl.seven_runtime.restore',return_value=(None,{},{})), \
+                 patch('app.modules.card_game.rl.seven_round.warm_value',side_effect=[PureSegmentPaused('segment-1'),
+                       ('models',{'passed':True})])as warm:
+                # A normal pause returns no training/readiness claim and keeps
+                # exact source/seed/build input binding for the next process.
+                first=run_device_value_calibration(out,config,collector=object(),cache_dir=Path(folder)/'cache',max_segments=1)
+                self.assertEqual(first['stage'],'value_calibration_planned_pause')
+                self.assertFalse(first['ready']);self.assertEqual(first['formal_policy_updates'],0)
+                signature=(out/'input-binding.json').read_bytes()
+                second=run_device_value_calibration(out,config,collector=object(),resume=True,
+                    cache_dir=Path(folder)/'cache',max_segments=1,resume_authorization='explicit continuation')
+                self.assertTrue(second['value_precheck']['passed'])
+                self.assertEqual((out/'input-binding.json').read_bytes(),signature)
+                self.assertEqual(warm.call_count,2)
+                self.assertEqual(initialize.call_count,1)
+                with self.assertRaisesRegex(ValueError,'source/build/seed/protocol'):
+                    run_device_value_calibration(out,dict(config,hidden=32),collector=object(),resume=True,
+                        resume_authorization='must not bypass binding')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -58,11 +58,20 @@ class DeviceValueCalibrationContext:
     The real GPU sampler is deliberately separate from formal policy learning.
     It cannot run search jobs, comparison telemetry or host rule callbacks.
     """
-    def __init__(self, collector):
+    def __init__(self, collector, *, cache_dir=None, continuation=None, max_segments=None,
+                 max_new_batches=None):
         from .device_pure_collection import DevicePureCollector
         if not isinstance(collector, DevicePureCollector):
             raise TypeError('Live CUDA pure collector required for value calibration')
         self._collector = collector
+        if cache_dir is not None and getattr(collector, 'segment_decisions', None) is None:
+            raise ValueError('Persistent calibration cache requires segmented collection')
+        if cache_dir is None and (continuation is not None or max_segments is not None or max_new_batches is not None):
+            raise ValueError('Continuation/process bounds require explicit calibration cache_dir')
+        if max_new_batches is not None and (type(max_new_batches) is not int or max_new_batches < 1):
+            raise ValueError('Explicit positive new-batch process limit required')
+        self.cache_dir, self.continuation, self.max_segments = cache_dir, continuation, max_segments
+        self.max_new_batches = max_new_batches
         self._diagnostics = dict(batches=[], completed_games=0)
 
     def __enter__(self): return self
@@ -88,16 +97,37 @@ class DeviceValueCalibrationContext:
         adapt_pure_jobs(jobs, models)
         self._diagnostics = dict(batches=[], completed_games=0)
         results = []
+        new_batches = 0
         # Segment restore retains both full device archives and their uploaded
         # history; bound simultaneous roots separately from the phase job count.
         batch_rows = 8 if getattr(self._collector, 'segment_decisions', None) is not None else 32
         for start in range(0, len(jobs), batch_rows):
             batch = jobs[start:start+batch_rows]
+            attempted, cached = False, False
             try:
-                returned = self._collector.collect(batch, models)
+                options = {}
+                if self.cache_dir is not None:
+                    from .pure_checkpoint import binding_for, batch_cache_path
+                    binding = binding_for(adapt_pure_jobs(batch, models), self._collector.executor,
+                                          self._collector.max_decisions)
+                    path = batch_cache_path(self.cache_dir, binding)
+                    receipt = self.continuation(binding, path) if callable(self.continuation) else self.continuation
+                    cached = (path/'completed').exists()
+                    if not cached and self.max_new_batches is not None and new_batches >= self.max_new_batches:
+                        from .device_pure_segments import PureSegmentPaused
+                        self._diagnostics['new_batches'] = new_batches
+                        self._diagnostics['paused_before_batch'] = start
+                        raise PureSegmentPaused(str(path))
+                    options = dict(checkpoint_dir=path, continuation=receipt, max_segments=self.max_segments)
+                attempted = True
+                returned = self._collector.collect(batch, models, **options)
+                if self.cache_dir is not None and not cached:
+                    new_batches += 1
+                    self._diagnostics['new_batches'] = new_batches
                 results.extend(ClosedDeviceLearningContext._checked_results(self, batch, returned))
                 self._diagnostics['completed_games'] += sum(r.get('complete') is True for r in returned)
             finally:
                 self._diagnostics['batches'].append(dict(offset=start, jobs=len(batch),
-                    diagnostic=deepcopy(getattr(self._collector, 'last_diagnostics', None))))
+                    attempted=attempted, cache_hit=cached,
+                    diagnostic=deepcopy(getattr(self._collector, 'last_diagnostics', None)) if attempted else None))
         return results

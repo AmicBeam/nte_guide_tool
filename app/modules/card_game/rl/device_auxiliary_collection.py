@@ -37,6 +37,7 @@ class AuxiliarySegment:
     replay_verified: bool = False
     formal_training_qualified: bool = False
     gpu_qualified: bool = False
+    budget_continuations: tuple = ()
 
 
 def _metadata(metadata):
@@ -87,6 +88,8 @@ def verify_auxiliary_segment(segment, *, proof_deadline=None):
     if not isinstance(segment, AuxiliarySegment):raise TypeError('Actual auxiliary segment required')
     if segment.export_errors:raise ValueError('Incomplete/corrupt GPU archive export remains audit-only')
     metadata = _metadata(segment.metadata);rows = len(metadata.jobs)
+    from .device_auxiliary_continuation import verify_auxiliary_budget_history
+    verify_auxiliary_budget_history(segment)
     if set(segment.source_binding)!={'rule_source','image','schema'} or any(
             not isinstance(v,str)or len(v)!=64 or any(c not in '0123456789abcdef'for c in v)
             for v in segment.source_binding.values()):
@@ -415,24 +418,29 @@ class DeviceAuxiliaryCollector:
         except BaseException:
             if exc is None:raise
         return False
-    def run_segment(self,metadata,*,deadline,resume=None,seconds=90,soft_seconds=150):
+    def run_segment(self,metadata,*,deadline,resume=None,seconds=90,soft_seconds=150,continuation_budget=None):
         if self._closed:raise RuntimeError('Auxiliary collector closed')
         try:
-            result=self._run_segment(metadata,deadline=deadline,resume=resume,seconds=seconds,soft_seconds=soft_seconds)
+            result=self._run_segment(metadata,deadline=deadline,resume=resume,seconds=seconds,soft_seconds=soft_seconds,continuation_budget=continuation_budget)
         except BaseException:
             try:self.close()
             except BaseException:pass
             raise
         self.close()
         return result
-    def _run_segment(self,metadata,*,deadline,resume=None,seconds=90,soft_seconds=150):
+    def _run_segment(self,metadata,*,deadline,resume=None,seconds=90,soft_seconds=150,continuation_budget=None):
         metadata=_metadata(metadata);started=time.monotonic()
+        if continuation_budget is not None:
+            from .device_auxiliary_continuation import validate_auxiliary_continuation
+            if resume is None:raise ValueError('Continuation budget requires actual previous segment')
+            metadata=validate_auxiliary_continuation(continuation_budget,resume=resume,metadata=metadata,
+                deadline=deadline,source_binding=self._source_binding,seconds=seconds,soft_seconds=soft_seconds)
         if self._used:raise RuntimeError('One actual graph replay per collector; use fresh arenas for next segment')
         if len(metadata.jobs)!=self.rows:raise ValueError('Actual job cohort must match arenas')
         if type(seconds)not in (int,float) or not 0<seconds<=90:raise ValueError('At most90s device loop required')
         _deadline(deadline,metadata,started,soft_seconds);self._memory()
         if resume is not None:
-            if not isinstance(resume,AuxiliarySegment) or (resume.metadata!=metadata or resume.decision_limit!=self.max_decisions or resume.source_binding!=self._source_binding):raise ValueError('Same actual job cohort required for resume')
+            if not isinstance(resume,AuxiliarySegment) or ((continuation_budget is None and resume.metadata!=metadata) or resume.decision_limit!=self.max_decisions or resume.source_binding!=self._source_binding):raise ValueError('Same actual job cohort required for resume')
             if not resume.replay_verified or any(code not in (0,256)for code in resume.errors):raise ValueError('Only verified clean/guard segment may resume')
             verify_auxiliary_segment(resume,proof_deadline=time.monotonic()+_deadline(deadline,metadata,started,soft_seconds))
             if all(resume.complete) or any(n>=self.max_decisions and not done for n,done in zip(resume.steps,resume.complete)):
@@ -500,7 +508,7 @@ class DeviceAuxiliaryCollector:
         self._memory()
         loop.replay();t.cuda.synchronize()  # No host rule/selector/metadata callback during replay.
         result=loop.result_device();used=self._memory(enforce=False)
-        outcome=self._export(metadata,initial,ingress,resume,raw,tape,sink,controller,result,used)
+        outcome=self._export(metadata,initial,ingress,resume,raw,tape,sink,controller,result,used,continuation_budget=continuation_budget)
         export_memory=self._memory(enforce=False)
         outcome.attempts[-1]['device_used_bytes']=max(used,export_memory)
         outcome.attempts[-1]['memory_limit_exceeded']=max(used,export_memory)>self.max_device_bytes
@@ -512,7 +520,7 @@ class DeviceAuxiliaryCollector:
             outcome=replace(outcome,reason=outcome.reason+'; proof_failed:'+str(error))
         return outcome
 
-    def _export(self,metadata,initial,ingress,resume,raw,tape,sink,controller,result,used):
+    def _export(self,metadata,initial,ingress,resume,raw,tape,sink,controller,result,used,continuation_budget=None):
         """Postbatch only. Preserve uncommitted raw/value records and all errors."""
         t=self.t;n=self.rows;export_errors=[]
         from .batched_duel.device_rule_protocol import DeviceStateBatch
@@ -568,7 +576,9 @@ class DeviceAuxiliaryCollector:
         reason='natural'if all(complete)and not any(combined)else('device_error'if any(v not in (0,256)for v in combined)
             else 'device_guard_stop'if any(combined)else 'global_decision_limit'if any(truncated)else 'incomplete')
         return AuxiliarySegment(metadata,tuple(initial),tuple(final),steps,complete,truncated,combined,tuple(pcg),
-            tuple(records),tuple(audit),tuple(values),attempts,reason,decision_limit=self.max_decisions,source_binding=deepcopy(self._source_binding),export_errors=tuple(export_errors))
+            tuple(records),tuple(audit),tuple(values),attempts,reason,decision_limit=self.max_decisions,source_binding=deepcopy(self._source_binding),export_errors=tuple(export_errors),
+            budget_continuations=(() if resume is None else deepcopy(resume.budget_continuations))
+                +(() if continuation_budget is None else (deepcopy(continuation_budget),)))
 
 
 def _graph_values(graph):

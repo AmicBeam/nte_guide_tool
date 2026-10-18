@@ -96,4 +96,33 @@ class H3ArchiveTest(unittest.TestCase):
         self.assertFalse(archive['errors'].any())
 
 
+class H3TiledSchedulingContractTests(unittest.TestCase):
+    def test_seven_logical_jobs_keep_full_profile_with_two_work_and_inference_rows(self):
+        from app.modules.card_game.rl.batched_search.device_h3_collection import _h3_work_tiles
+        from app.modules.card_game.rl.batched_search.soa_capacity import SoACapacityConfig
+        lanes,tile=_h3_work_tiles(7,2,2)
+        capacity=SoACapacityConfig(roots=7,rule_lanes=lanes,inference_rows=tile,max_actions=800,max_decisions=800)
+        self.assertEqual((capacity.roots,capacity.lanes,capacity.inference_tile),(7,2,2))
+        self.assertEqual(capacity.max_decisions,800)
+        self.assertEqual((PROFILE['simulations'],PROFILE['gumbel_candidates'],PROFILE['terminal_horizon'],PROFILE['max_depth']),(32,16,3,10))
+        self.assertEqual(_h3_work_tiles(7),(7,7))
+        self.assertEqual(_h3_work_tiles(1,2,2),(1,1))
+        for field,value in (('rule_lanes',0),('rule_lanes',True),('rule_lanes',65),('inference_rows',33)):
+            with self.assertRaises(ValueError):_h3_work_tiles(7,**{field:value})
+
+    def test_warm_inputs_use_inference_tile_not_all_seven_roots(self):
+        import torch
+        from app.modules.card_game.rl.batched_search.device_h3_collection import _h3_warm_inputs
+        inference=NS(torch=torch,device=torch.device('cpu'),max_rows=2,feature_dim=3,candidate_dim=5)
+        policy=torch.arange(14).reshape(7,2);aux=policy+100
+        before=policy.clone()
+        x,c,valid,pids,aids,context,value_only=_h3_warm_inputs(inference,policy,aux,width=800)
+        self.assertEqual((tuple(x.shape),tuple(c.shape),tuple(valid.shape)),((2,3),(2,800,5),(2,800)))
+        self.assertEqual(pids.tolist(),[0,2]);self.assertEqual(aids.tolist(),[100,102])
+        self.assertEqual(tuple(context.shape),(2,1));self.assertEqual(value_only.tolist(),[True,True])
+        self.assertEqual((x.dtype,c.dtype,context.dtype),(torch.float32,)*3)
+        self.assertEqual(valid.sum(-1).tolist(),[1,1])
+        self.assertTrue(torch.equal(policy,before));self.assertEqual(tuple(policy.shape),(7,2))
+
+
 if __name__=='__main__':unittest.main()

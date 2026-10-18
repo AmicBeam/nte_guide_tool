@@ -124,6 +124,18 @@ class DeferredSourceContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'binding changed'):contract.require_deferred_step(rules)
         loop._deferred_raw_tape=rules.raw_tape;loop.rules=object()
         with self.assertRaisesRegex(ValueError,'different rule'):contract.require_deferred_step(rules)
+
+    def test_only_reviewed_chunked_driver_can_use_same_immediate_clean_contract(self):
+        from app.modules.card_game.rl.batched_search.device_chunked_games import DeviceChunkedGameLoop
+        rules=self.rules();self.admit_synthetic_image(rules)
+        original=self.bound_loop(rules)
+        loop=object.__new__(DeviceChunkedGameLoop);vars(loop).update(vars(original))
+        rules.bind_game_loop(loop)
+        with self.assertRaisesRegex(ValueError,'immediate-clean'):contract.require_deferred_step(rules)
+        loop._deferred_step_open=True;contract.require_deferred_step(rules)
+        class UnknownLoop(DeviceChunkedGameLoop):pass
+        unknown=object.__new__(UnknownLoop);vars(unknown).update(vars(loop))
+        with self.assertRaisesRegex(ValueError,'DeviceGameLoop'):contract.validate_deferred_binding(rules,unknown)
     def test_default_step_public_semantics_and_private_controls(self):
         rules=object.__new__(DeviceSoARules);calls=[]
         rules._step_device=lambda *a,**kw:calls.append(kw)

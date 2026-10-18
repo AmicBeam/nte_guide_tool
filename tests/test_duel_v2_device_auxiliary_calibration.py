@@ -261,4 +261,171 @@ class AuxiliaryCalibrationIngressTest(unittest.TestCase):
             collector.collect(self.plans['selection'][:2],deadline=self.deadline)
 
 
+
+
+class AuxiliaryCalibrationLedgerTest(unittest.TestCase):
+    """Real safe-checkpoint IO plus tiny CPU oracle; no CUDA qualification."""
+    def setUp(self):
+        import time
+        from app.modules.card_game.rl.device_auxiliary_calibration import DeviceAuxiliaryCalibrationLedger
+        from app.modules.card_game.rl.build_acceptance import SEED_PHASES
+        from tests import test_duel_v2_device_auxiliary_collection as fixtures
+        self.fixtures=fixtures;self.oracle=fixtures.Oracle()
+        meta=fixtures.metadata();self.starts=meta.starting_decks
+        self.seeds={name:71+i*10000 for i,name in enumerate(SEED_PHASES)}
+        self.deadline=time.time()+2000
+        self.binding=dict(rule_source='0'*64,image='1'*64,schema='2'*64)
+        self.models={k:'f'*64 for k in ROSTER}
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.directory=Path(self.temp.name)/'ledger'
+        self.cls=DeviceAuxiliaryCalibrationLedger
+        self.ledger=self.reopen()
+
+    def reopen(self,**changes):
+        args=dict(starting_decks=self.starts,seed_reservation=self.seeds,deadline=self.deadline,
+                  source_model_versions=self.models,source_binding=self.binding)
+        args.update(changes);return self.cls(self.directory,**args)
+
+    def metadata(self,phase,offset,count,deadline=None):
+        from app.modules.card_game.rl.seven_auxiliary_jobs import adapt_auxiliary_jobs
+        jobs=[dict(deepcopy(j),deadline=self.deadline if deadline is None else deadline)
+              for j in self.ledger.contract['physical_plans'][phase][offset:offset+count]]
+        return adapt_auxiliary_jobs(jobs,starting_decks=self.starts)
+
+    def segment(self,metadata,steps=8,prior=None,receipt=None,errors=False):
+        from app.modules.card_game.rl.seven_auxiliary_jobs import adapt_auxiliary_jobs
+        from app.modules.card_game.rl.device_auxiliary_collection import AuxiliarySegment
+        parts=[];raw=[];audit=[];values=[]
+        for owner,job in enumerate(metadata.jobs):
+            one=adapt_auxiliary_jobs([job],starting_decks=self.starts)
+            part=self.fixtures.segment(one,self.oracle,steps=steps)
+            parts.append(part)
+            for source,dest in ((part.raw_records,raw),(part.audit_records,audit),(part.value_records,values)):
+                for row in deepcopy(source):
+                    row['owner']=owner
+                    if 'game'in row:row['game']=owner
+                    dest.append(row)
+        if prior is not None:
+            raw=list(deepcopy(prior.raw_records))+[r for r in raw if r['step']>=prior.steps[r['owner']]]
+            audit=list(deepcopy(prior.audit_records))+[r for r in audit if r['step']>=prior.steps[r['owner']]]
+        n=len(parts)
+        return AuxiliarySegment(metadata,tuple(p.initial[0]for p in parts),tuple(p.final[0]for p in parts),
+            (steps,)*n,(steps==8,)*n,(False,)*n,((256 if errors else 0),)*n,
+            tuple(p.pcg_states[0]for p in parts),tuple(raw),tuple(audit),tuple(values),
+            ()if prior is None else deepcopy(prior.attempts),'CPU_fixture',decision_limit=512,
+            source_binding=self.binding,replay_verified=True,
+            budget_continuations=(()if prior is None else deepcopy(prior.budget_continuations))+
+                (()if receipt is None else(receipt,)))
+
+    def admit(self,phase='training',offset=0,count=2,steps=7):
+        actual=self.segment(self.metadata(phase,offset,count,deadline=time.time()-100),steps)
+        with patch('app.modules.card_game.rl.device_auxiliary_collection._oracle',self.oracle.api):
+            entry=self.ledger.admit_phase_prefix(phase,offset=offset,segment=actual,
+                parent_report_sha256='a'*64,parent_checkpoint_sha256='b'*64,authorization='explicit continue existing prefix')
+        return actual,entry
+
+    def factory(self,calls,*,errors=False,steps=8):
+        from app.modules.card_game.rl.device_auxiliary_collection import DeviceAuxiliaryCollector
+        outer=self
+        class CPUFixtureCollector(DeviceAuxiliaryCollector):
+            def __init__(self,metadata):self.metadata=metadata
+            def __enter__(self):return self
+            def __exit__(self,*args):return False
+            def run_segment(self,metadata,**kwargs):
+                calls.append((metadata,kwargs))
+                return outer.segment(metadata,steps,prior=kwargs['resume'],receipt=kwargs['continuation_budget'],errors=errors)
+        return CPUFixtureCollector
+
+    def test_admit_existing_two_rows_roundtrip_continue_and_next_offset(self):
+        from app.modules.card_game.rl.device_auxiliary_continuation import auxiliary_content_sha256
+        old,entry=self.admit();before=auxiliary_content_sha256(old)
+        self.ledger=self.reopen();calls=[]
+        with patch('app.modules.card_game.rl.device_auxiliary_collection._oracle',self.oracle.api):
+            result=self.ledger.run_window(self.factory(calls),deadline=self.deadline,max_segments=1,
+                rows=8,authorization='new explicit bounded continuation')
+        self.assertEqual(result['status'],'planned_pause');self.assertEqual(len(calls),1)
+        self.assertEqual(calls[0][1]['resume'].steps,(7,7))
+        self.assertIsNotNone(calls[0][1]['continuation_budget'])
+        self.assertEqual(auxiliary_content_sha256(old),before)
+        self.assertEqual(self.ledger.manifest['cohorts'][0]['status'],'COMPLETE')
+        self.assertEqual(len(self.ledger.manifest['cohorts'][0]['checkpoints']),2)
+        calls=[]
+        with patch('app.modules.card_game.rl.device_auxiliary_collection._oracle',self.oracle.api):
+            self.ledger.run_window(self.factory(calls),deadline=self.deadline,max_segments=1,rows=8,authorization='same authorized run')
+        self.assertEqual(self.ledger.manifest['cohorts'][1]['offset'],2)
+        self.assertEqual(len(calls[0][0].jobs),8)
+        self.assertIsNone(calls[0][1]['resume'])
+        with patch('app.modules.card_game.rl.device_auxiliary_collection._oracle',self.oracle.api),self.assertRaises(ValueError):
+            self.ledger.admit_phase_prefix('training',offset=0,segment=old,parent_report_sha256='a'*64,
+                parent_checkpoint_sha256='b'*64,authorization='cannot count again')
+
+    def test_guard_rejection_is_durable_and_earlier_clean_cannot_wash(self):
+        self.admit();calls=[]
+        with patch('app.modules.card_game.rl.device_auxiliary_collection._oracle',self.oracle.api):
+            result=self.ledger.run_window(self.factory(calls,errors=True,steps=7),deadline=self.deadline,
+                authorization='authorized short segment')
+        self.assertEqual(result['status'],'rejected')
+        self.ledger=self.reopen();again=[]
+        result=self.ledger.run_window(self.factory(again),deadline=self.deadline,authorization='no rewind')
+        self.assertEqual(result['status'],'rejected');self.assertEqual(again,[])
+        self.assertEqual(len(self.ledger.manifest['cohorts'][0]['checkpoints']),2)
+
+    def test_source_seed_build_binding_and_manifest_rollback_rejected(self):
+        self.admit()
+        with self.assertRaises(ValueError):self.reopen(source_model_versions=dict(self.models,starter='e'*64))
+        seeds=dict(self.seeds,foundation=999)
+        with self.assertRaises(ValueError):self.reopen(seed_reservation=seeds)
+        starts=deepcopy(self.starts);starts['starter']['character_ids'].reverse()
+        with self.assertRaises(ValueError):self.reopen(starting_decks=starts)
+        oldest=sorted(self.directory.glob('manifest-revision-*.json'))[0]
+        (self.directory/'manifest.json').write_bytes(oldest.read_bytes())
+        with self.assertRaisesRegex(ValueError,'rollback'):self.reopen()
+
+    def test_clean_pause_persists_latest_steps_and_uncertain_running_cannot_rewind(self):
+        calls=[]
+        with patch('app.modules.card_game.rl.device_auxiliary_collection._oracle',self.oracle.api):
+            first=self.ledger.run_window(self.factory(calls,steps=4),deadline=self.deadline,max_segments=1,
+                rows=2,seconds=20,authorization='bounded clean sampling')
+            self.assertEqual(first['status'],'planned_pause')
+            self.ledger=self.reopen()
+            second=self.ledger.run_window(self.factory(calls,steps=5),deadline=self.deadline,max_segments=1,
+                rows=8,seconds=20,authorization='continue latest actual prefix')
+        self.assertEqual(second['status'],'planned_pause')
+        self.assertEqual(calls[1][1]['resume'].steps,(4,4))
+        self.assertEqual(len(calls[1][0].jobs),2)
+        entry=self.ledger.manifest['cohorts'][0]
+        self.assertEqual(entry['checkpoints'][-1]['steps'],[5,5])
+        entry['status']='RUNNING';self.ledger._persist()  # Simulated process loss after durable start.
+        self.ledger=self.reopen();never=[]
+        stopped=self.ledger.run_window(self.factory(never),deadline=self.deadline,authorization='cannot rewind unknown run')
+        self.assertEqual(stopped['status'],'rejected');self.assertEqual(never,[])
+
+    def test_checkpoint_corruption_and_mutable_contract_tampering_rejected(self):
+        self.admit();entry=self.ledger.manifest['cohorts'][0]
+        checkpoint=self.directory/entry['checkpoints'][-1]['path']
+        checkpoint.write_bytes(checkpoint.read_bytes()+b'corruption')
+        never=[]
+        with self.assertRaises(ValueError):
+            self.ledger.run_window(self.factory(never),deadline=self.deadline,authorization='must load latest only')
+        self.assertEqual(never,[])
+        self.ledger.contract['physical_plans']['training'][0]['seed']+=1
+        with self.assertRaises(ValueError):self.ledger.completed_phase_segments(deadline=self.deadline)
+
+    def test_full280_actual_fixture_cache_reuses_without_factory_and_only_explicit_ledger_ignores_deadline(self):
+        from app.modules.card_game.rl.device_auxiliary_calibration import auxiliary_phase_plans,validate_auxiliary_phases
+        with patch('app.modules.card_game.rl.device_auxiliary_collection._oracle',self.oracle.api):
+            for phase,count in dict(training=168,selection=56,heldout=56).items():
+                for offset in range(0,count,8):self.admit(phase,offset,min(8,count-offset),steps=8)
+            phases=self.ledger.completed_phase_segments(deadline=self.deadline)
+            self.assertEqual(sum(len(s.metadata.jobs)for batch in phases.values()for s in batch),280)
+            never=[];result=self.ledger.run_window(self.factory(never),deadline=self.deadline,authorization='reuse complete actual cache')
+            self.assertEqual(result['status'],'complete');self.assertEqual(never,[])
+            plans=auxiliary_phase_plans(starting_decks=self.starts,seed_reservation=self.seeds,deadline=self.deadline+1)
+            with self.assertRaises(ValueError):validate_auxiliary_phases(phases,plans=plans,deadline=self.deadline)
+            games,binding=validate_auxiliary_phases(phases,plans=plans,deadline=self.deadline,ledger=self.ledger)
+            self.assertEqual({p:len(v)for p,v in games.items()},dict(training=168,selection=56,heldout=56))
+            self.assertEqual(binding,self.binding)
+        self.assertTrue(all(not name.startswith('value_')for name in self.ledger.manifest['contract']))
+
+
 if __name__=='__main__':unittest.main()

@@ -149,4 +149,148 @@ class DeviceJointPreparationTest(unittest.TestCase):
                     hard_deadline=until+300,checkpoint_segment=lambda *args:None)
             self.assertFalse((Path(folder)/'bad').exists())
 
+
+
+class DeviceJointPersistentStagesTest(unittest.TestCase):
+    """Actual tiny CPU optimizer with explicitly mocked CUDA collection ingress."""
+    def setUp(self):
+        import numpy as np
+        import torch
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.rl import seven_runtime as rt
+        from app.modules.card_game.rl.seven_schedule import ROSTER
+        torch.set_num_threads(1);torch.manual_seed(967)
+        self.temp=TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.source=Path(self.temp.name)/'source';self.out=Path(self.temp.name)/'out';self.deadline=time.time()+600
+        decks={d['id']:d for d in STARTER_DECKS}
+        for key in ROSTER:rt.export(rt.create_network(key,16,'cpu'),self.source,key,decks[key],dict(fixture=True))
+        state=new_game(seed=1,decks={'a':decks['starter'],'b':decks['starter']})
+        actions,(x,c)=rt.decision(state,'a');pi=np.zeros(len(actions),np.float32);pi[-1]=1
+        self.game=dict(id='joint',complete=True,learning_eligible=True,winner='a',decisions=1,searched=1,
+            episode_actions=[dict(side='a',action=actions[-1])],
+            rows=[dict(x=x,c=c,pi=pi,z=1.,side='a',key='starter',step=0,value_actor=1,search_budget=32,search_algorithm='gumbel')],
+            value_rows=[dict(x=x,z=-1.,side='b',key='starter',step=0,value_actor=0)])
+        common=dict(first='a',left='starter',right='starter',deadline=self.deadline,train_sides=['a'],
+            policies={s:(str(self.source),'starter')for s in('a','b')})
+        self.train=[dict(common,id='joint',seed=1,training=True,pure=False)]
+        self.evaluation=[dict(common,id='eval',seed=2,training=False,pure=True)]
+        self.h3validate=patch('app.modules.card_game.rl.batched_search.device_h3_collection.validate_h3_inputs').start()
+        self.purevalidate=patch('app.modules.card_game.rl.batched_search.soa_pure_jobs.adapt_pure_jobs').start()
+        self.addCleanup(patch.stopall)
+
+    def collectors(self,sample=None,evaluation=None):
+        import torch
+        h3=object.__new__(DeviceH3Collector);pure=object.__new__(DevicePureCollector)
+        h3.executor=pure.executor=NS(device=torch.device('cpu'),rule_source_sha256='a'*64,
+            image=NS(identity='b'*64),schema=NS(identity='c'*64))
+        h3.last_diagnostics={'complete':True,'cpu_fixture':True,'all_full_budget_roots':True}
+        pure.last_diagnostics={'complete':True,'cpu_fixture':True}
+        h3.collect=Mock(return_value=[deepcopy(self.game)])if sample is None else Mock(side_effect=sample)
+        def evaluated(jobs,bank,**kwargs):
+            self.assertTrue(all(Path(model.directory).resolve()==(self.out/'models').resolve()for model in bank.values()))
+            return[dict(deepcopy(self.game),id=jobs[0]['id'],rows=[],searched=0)]
+        pure.collect=Mock(side_effect=evaluated if evaluation is None else evaluation)
+        return h3,pure
+
+    def run_stage(self,h3,pure,resume=False,**kwargs):
+        args=dict(collector=h3,pure_collector=pure,source=self.source,train_jobs=self.train,
+            evaluation_jobs=self.evaluation,deadline=self.deadline,policy_passes=4,resume=resume,
+            max_chunks=1,evaluation_max_segments=1)
+        args.update(kwargs)
+        return run_joint_training_smoke(self.out,**args)
+
+    def test_new_process_sampling_update_once_evaluation_pause_cache_complete(self):
+        from app.modules.card_game.rl.batched_search.device_h3_segments import H3SegmentPaused
+        from app.modules.card_game.rl.batched_search.device_pure_segments import PureSegmentPaused
+        from app.modules.card_game.rl.seven_round import update_batch
+        import json
+        with patch('app.modules.card_game.rl.seven_round.update_batch',wraps=update_batch)as update:
+            h3,pure=self.collectors(sample=H3SegmentPaused('actual-synthetic-checkpoint'))
+            report=self.run_stage(h3,pure)
+            self.assertEqual(report['stage'],'gumbel_h3_sampling_paused');self.assertEqual(report['formal_policy_updates'],0)
+            h3,pure=self.collectors();report=self.run_stage(h3,pure,resume=True)
+            self.assertEqual(report['stage'],'joint_training_samples_cached');self.assertEqual(report['formal_policy_updates'],0)
+            self.assertTrue((self.out/'training-episodes/arrays.npz').is_file());pure.collect.assert_not_called()
+            h3,pure=self.collectors(sample=AssertionError('must reuse complete sampling cache'))
+            report=self.run_stage(h3,pure,resume=True)
+            self.assertEqual(report['stage'],'joint_update_committed');self.assertEqual(report['formal_policy_updates'],4)
+            h3.collect.assert_not_called();pure.collect.assert_not_called();self.assertEqual(update.call_count,1)
+            committed=json.loads((self.out/'stage.json').read_text())
+            self.assertEqual(len(committed['updated_models']),14);self.assertEqual(len(committed['optimizer_files']),1)
+            h3,pure=self.collectors(sample=AssertionError('no sample'),evaluation=PureSegmentPaused('eval-synthetic-checkpoint'))
+            report=self.run_stage(h3,pure,resume=True)
+            self.assertEqual(report['stage'],'frozen_evaluation_paused');self.assertEqual(report['formal_policy_updates'],4)
+            h3,pure=self.collectors(sample=AssertionError('no sample'));report=self.run_stage(h3,pure,resume=True)
+            self.assertEqual(report['stage'],'frozen_evaluation_cached');self.assertEqual(update.call_count,1)
+            h3,pure=self.collectors(sample=AssertionError('no sample'),evaluation=AssertionError('no eval'))
+            report=self.run_stage(h3,pure,resume=True)
+            self.assertTrue(report['passed']);self.assertEqual(report['stage'],'complete')
+            import gzip
+            with gzip.open(self.out/'evaluation/eval.json.gz','rt')as stream:replay=json.load(stream)
+            self.assertTrue(all(Path(v[0]).resolve()==(self.out/'models').resolve()for v in replay['job']['policies'].values()))
+            again=self.run_stage(h3,pure,resume=True)
+            self.assertEqual(again,report);h3.collect.assert_not_called();pure.collect.assert_not_called()
+            self.assertEqual(update.call_count,1)
+
+    def test_source_or_cached_episode_tamper_cannot_reach_update(self):
+        h3,pure=self.collectors();self.run_stage(h3,pure)
+        path=self.out/'training-episodes/arrays.npz';path.write_bytes(path.read_bytes()+b'tampered')
+        with patch('app.modules.card_game.rl.seven_round.update_batch')as update,self.assertRaises(ValueError):
+            self.run_stage(*self.collectors(),resume=True)
+        update.assert_not_called()
+        source=self.source/'starter.json';source.write_text(source.read_text()+' ')
+        with self.assertRaisesRegex(ValueError,'source/model/profile'):
+            self.run_stage(*self.collectors(),resume=True)
+
+    def test_optimizer_uncertainty_is_sticky_and_updated_bank_tamper_rejected(self):
+        h3,pure=self.collectors();self.run_stage(h3,pure)
+        with patch('app.modules.card_game.rl.seven_round.update_batch',side_effect=RuntimeError('crash during actual update')):
+            with self.assertRaisesRegex(RuntimeError,'crash during'):
+                self.run_stage(*self.collectors(),resume=True)
+        with patch('app.modules.card_game.rl.seven_round.update_batch')as update,self.assertRaisesRegex(RuntimeError,'cannot be repeated'):
+            self.run_stage(*self.collectors(),resume=True)
+        update.assert_not_called()
+
+    def test_new_deadline_requires_receipt_authorization_and_keeps_original_jobs(self):
+        from app.modules.card_game.rl.batched_search.device_h3_segments import H3SegmentPaused
+        import json
+        old=self.deadline
+        self.run_stage(*self.collectors(sample=H3SegmentPaused('old-checkpoint')))
+        self.deadline+=600
+        self.train[0]['deadline']=self.evaluation[0]['deadline']=self.deadline
+        with self.assertRaisesRegex(ValueError,'continuation receipt'):
+            self.run_stage(*self.collectors(),resume=True)
+        h3,pure=self.collectors()
+        result=self.run_stage(h3,pure,resume=True,continuation={'training':{'explicit':'CPU_fixture_only'}},
+                              resume_authorization='new explicit deadline-only budget')
+        self.assertEqual(result['stage'],'joint_training_samples_cached')
+        self.assertEqual(h3.collect.call_args.kwargs['continuation'],{'explicit':'CPU_fixture_only'})
+        binding=json.loads((self.out/'input-binding.json').read_text())
+        self.assertEqual(binding['original_deadline'],old)
+        self.assertEqual(binding['original_train_jobs'][0]['deadline'],old)
+        self.train[0]['seed']+=9
+        with self.assertRaisesRegex(ValueError,'source/model/profile'):
+            self.run_stage(*self.collectors(),resume=True)
+
+    def test_committed_updated_bank_and_report_are_sha_frozen(self):
+        import json
+        self.run_stage(*self.collectors())
+        self.run_stage(*self.collectors(),resume=True)
+        marker=json.loads((self.out/'stage.json').read_text())
+        self.assertEqual(marker['stage'],'evaluation')
+        path=self.out/'models/starter.npz';path.write_bytes(path.read_bytes()+b'changed')
+        h3,pure=self.collectors()
+        with patch('app.modules.card_game.rl.seven_round.update_batch')as update,self.assertRaisesRegex(ValueError,'numerical models changed'):
+            self.run_stage(h3,pure,resume=True)
+        update.assert_not_called();h3.collect.assert_not_called();pure.collect.assert_not_called()
+
+    def test_short_root_budget_cannot_become_cached_learning_rows(self):
+        bad=deepcopy(self.game);bad['rows'][0]['search_budget']=17
+        h3,pure=self.collectors();h3.collect.return_value=[bad]
+        with patch('app.modules.card_game.rl.seven_round.update_batch')as update,self.assertRaisesRegex(ValueError,'root budget'):
+            self.run_stage(h3,pure)
+        update.assert_not_called();self.assertFalse((self.out/'training-episodes').exists())
+
+
 if __name__=='__main__':unittest.main()

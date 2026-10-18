@@ -152,17 +152,65 @@ def _cleanup(owned):
         raise RuntimeError('Pure segment cleanup failed: ' + repr(failures))
 
 
-def collect_segments(collector, metadata, models):
-    resume = None
+class PureSegmentPaused(RuntimeError):
+    """Explicit clean process boundary; no partial learning result is returned."""
+    def __init__(self, checkpoint):
+        self.checkpoint = checkpoint
+        super().__init__('Pure collection cleanly paused at ' + str(checkpoint))
+
+
+def collect_segments(collector, metadata, models, *, resume_checkpoint=None,
+                     checkpoint_dir=None, continuation=None, max_segments=None,process_seconds=None):
+    from pathlib import Path
+    from .pure_checkpoint import binding_for, load_history, latest_checkpoint, read_payload, write_payload
+    if max_segments is not None and (type(max_segments) is not int or not 1 <= max_segments <= 800):
+        raise ValueError('Explicit bounded process segment count required')
+    if process_seconds is not None and(type(process_seconds)not in(int,float)or not 0<process_seconds<=150):
+        raise ValueError('Pure process budget must be positive and at most150seconds')
+    persistent = checkpoint_dir is not None or resume_checkpoint is not None
+    if (continuation is not None or max_segments is not None or process_seconds is not None) and not persistent:
+        raise ValueError('Process pauses/continuations require an actual persisted checkpoint')
+    process_stop=None if process_seconds is None else collector._process_started+process_seconds
+    binding = binding_for(metadata, collector.executor, collector.max_decisions) if persistent else None
+    directory = Path(checkpoint_dir) if checkpoint_dir is not None else (
+        Path(resume_checkpoint).parent if resume_checkpoint is not None else None)
+    if directory is not None:
+        directory.mkdir(parents=True, exist_ok=True)
+        if (directory/'REJECTED.json').exists():
+            raise RuntimeError('Prior pure guard/archive failure remains rejected; no prefix laundering')
+        completed = directory/'completed'
+        if completed.exists():
+            games = read_payload(completed, binding, kind='episodes', continuation=continuation)
+            if not isinstance(games, list) or len(games) != len(metadata.jobs) or any(
+                    not isinstance(game, dict) or game.get('complete') is not True for game in games):
+                raise ValueError('Completed pure cache omitted natural verified games')
+            collector.last_diagnostics.update(complete=True, verified=True, reused_completed_batch=True,
+                optimizer_steps=0, natural_games=len(games), checkpoint=str(completed))
+            return games
+        if resume_checkpoint is None: resume_checkpoint = latest_checkpoint(directory)
+    resume = load_history(resume_checkpoint, binding, continuation=continuation) if resume_checkpoint else None
     attempts = []
     for index in range((collector.max_decisions + collector.segment_decisions - 1) // collector.segment_decisions):
+        if process_stop is not None and time.monotonic()+collector.seconds+20>process_stop:
+            raise PureSegmentPaused(latest_checkpoint(directory)or str(directory))
         remaining = min(job['deadline'] for job in metadata.jobs) - time.time()
         if remaining < collector.seconds + collector.proof_seconds + 10:
             raise TimeoutError('Original pure job deadline exhausted before next bounded segment')
         owned = []
         try:
-            resume, games, diag = _segment(collector, metadata, models, owned, resume)
+            if directory is None:
+                resume, games, diag = _segment(collector, metadata, models, owned, resume)
+            else:
+                resume, games, diag = _segment(collector, metadata, models, owned, resume,
+                    checkpoint_dir=directory, checkpoint_binding=binding, checkpoint_continuation=continuation,
+                    process_stop=process_stop)
             attempts.append(diag)
+        except (RuntimeError, ValueError, MemoryError) as error:
+            if directory is not None and not isinstance(error,PureSegmentPaused):
+                import json
+                with (directory/'REJECTED.json').open('x') as output:
+                    json.dump(dict(error=repr(error), learning_rejected=True), output)
+            raise
         finally:
             _cleanup(owned)
         collector.last_diagnostics.update(diag, segments=deepcopy(attempts), segment_decisions=collector.segment_decisions,
@@ -170,11 +218,16 @@ def collect_segments(collector, metadata, models):
         if collector.on_segment is not None:
             collector.on_segment(deepcopy(collector.last_diagnostics))
         if games is not None:
+            if directory is not None:
+                write_payload(directory/'completed', games, binding, kind='episodes', continuation=continuation)
             return games
+        if max_segments is not None and len(attempts) >= max_segments:
+            raise PureSegmentPaused(latest_checkpoint(directory))
     raise RuntimeError('Original physical decision limit exhausted without entire natural cohort')
 
 
-def _segment(self, metadata, models, owned, resume):
+def _segment(self, metadata, models, owned, resume, *, checkpoint_dir=None, checkpoint_binding=None,
+             checkpoint_continuation=None,process_stop=None):
     from ..batched_duel.device_sparse_soa_storage import DeviceSparseSoAStore
     from ..batched_duel.device_graph_storage import CompactDeviceGraphStore
     from .device_tiled_soa_rules import DeviceTiledSoARules
@@ -277,6 +330,9 @@ def _segment(self, metadata, models, owned, resume):
     self._memory()
     if min(j['deadline'] for j in metadata.jobs) - time.time() < self.seconds + self.proof_seconds:
         raise TimeoutError('Capture exhausted reserved replay/proof margin')
+    if process_stop is not None and time.monotonic()+self.seconds+20>process_stop:
+        from .pure_checkpoint import latest_checkpoint
+        raise PureSegmentPaused(latest_checkpoint(checkpoint_dir)or str(checkpoint_dir))
     before = time.monotonic(); loop.replay(); t.cuda.synchronize()
     result = loop.result_device()
     diag = dict(
@@ -297,10 +353,30 @@ def _segment(self, metadata, models, owned, resume):
     # The inactive natural parents still have checked leases; gather them read-only.
     result = replace(result, states=replace(result.states, active=t.ones_like(result.states.active)))
     final = _host_states(store, result.states)
-    if not all(diag['complete_rows']):
+    frame = None
+    if checkpoint_dir is not None or not all(diag['complete_rows']):
         frame = _snapshot(initial, final, steps, diag['complete_rows'], raw, tape, audit)
         _validate_history(frame, rows, decisions)
+        if checkpoint_dir is not None:
+            from .pure_checkpoint import save_history, load_history
+            path = checkpoint_dir / ('segment-%08d' % sum(steps))
+            if not path.exists(): save_history(path, frame, checkpoint_binding,
+                                               continuation=checkpoint_continuation)
+            else:
+                saved = load_history(path, checkpoint_binding, continuation=checkpoint_continuation)
+                from .soa_training_results import _same_graph
+                for before, after in zip(saved.initial, frame.initial): _same_graph(before, after)
+                for before, after in zip(saved.final, frame.final): _same_graph(before, after)
+                for group in ('raw', 'value', 'audit'):
+                    a, b = getattr(saved, group), getattr(frame, group)
+                    if set(a) != set(b) or any(not t.equal(a[k], b[k]) for k in a):
+                        raise ValueError('Existing immutable pure prefix differs from resumed output')
+            diag['checkpoint'] = str(path)
+    if not all(diag['complete_rows']):
         return frame, None, diag
+    if process_stop is not None and time.monotonic()+self.proof_seconds+10>process_stop:
+        from .pure_checkpoint import latest_checkpoint
+        raise PureSegmentPaused(latest_checkpoint(checkpoint_dir))
     records = _raw_records(raw)
     hashes = audit.hashes[:rows * decisions].cpu().numpy().reshape(rows, decisions, 8)
     choices = audit.chosen[:rows * decisions].cpu().numpy().reshape(rows, decisions)

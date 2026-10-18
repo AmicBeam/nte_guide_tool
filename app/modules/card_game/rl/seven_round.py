@@ -336,11 +336,133 @@ def value_calibration_protocol(config):
                 temperature_candidates=[1., 2., 4.])
 
 
+def _value_fit_bank_hash(folder):
+    folder=Path(folder)
+    return {key+ext:sha256((folder/(key+ext)).read_bytes()).hexdigest()
+            for key in ROSTER for ext in('.json','.npz')}
+
+
+def _value_fit_digest(value):
+    from .device_auxiliary_continuation import auxiliary_content_sha256
+    return auxiliary_content_sha256(value)
+
+
+def _value_fit_new_json(path,data):
+    """One owned writer, atomic new final receipt; never overwrite evidence."""
+    import os
+    from uuid import uuid4
+    path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
+    lock=path.with_name(path.name+'.lock')
+    claim=os.open(lock,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);temporary=None
+    try:
+        os.close(claim)
+        if path.exists():raise ValueError('Existing value-fit receipt cannot be overwritten')
+        temporary=path.with_name(path.name+'.'+uuid4().hex+'.tmp')
+        with temporary.open('x',encoding='utf8')as stream:
+            json.dump(data,stream,ensure_ascii=False,indent=2,allow_nan=False);stream.flush();os.fsync(stream.fileno())
+        os.replace(temporary,path);temporary=None
+    finally:
+        if temporary is not None:temporary.unlink(missing_ok=True)
+        lock.unlink(missing_ok=True)
+
+
+def _value_fit_binding(models,nets,decks,origins,config,protocol,cycle,seed_offset,games):
+    import numpy as np
+    from . import seven_runtime as rt
+    from .build_acceptance import SEED_PHASES,canonical_build
+    from .seven_lineup import identity
+    if (set(config['seeds'])!=set(SEED_PHASES)or any(type(v)is not int or v<0 for v in config['seeds'].values())
+            or config['rule_hash']!=identity()):
+        raise ValueError('Complete actual seed reservation and current rule identity required')
+    if set(nets)!=set(ROSTER)or set(decks)!=set(ROSTER)or set(origins)!=set(ROSTER):
+        raise ValueError('All seven actual value-fit heads/builds/origins required')
+    sources={str(Path(models).resolve()):_value_fit_bank_hash(models)}
+    if config.get('recovery_source'):
+        directory=Path(config['recovery_source']).resolve();sources[str(directory)]=_value_fit_bank_hash(directory)
+    for key,net in nets.items():
+        model=rt.model(models,key)
+        if canonical_build(model.serving_deck)!=canonical_build(decks[key]):
+            raise ValueError('Value-fit explicit starting build differs from actual source')
+        if set(net.state_dict())!=set(model.weights):raise ValueError('Value-fit input tensor schema differs from source bank')
+        for name,tensor in net.state_dict().items():
+            # Initial value tensors may already be selected when callers retry
+            # in the same live process; policy inputs must always stay frozen.
+            if not name.startswith(('wdl.','value_net.')):
+                np.testing.assert_array_equal(tensor.detach().cpu().numpy(),model.weights[name])
+    return dict(schema='seven_value_fit_binding_v1',source_banks=sources,
+        source_versions=versions(models),starting_decks=deepcopy(decks),origins=deepcopy(origins),
+        seeds=deepcopy(config['seeds']),cycle=cycle,seed_offset=seed_offset,protocol=deepcopy(protocol),
+        rule_hash=config['rule_hash'],metric_backend=config.get('value_metric_backend','numpy'),
+        device=config['device'],train_evidence_sha256=_value_fit_digest(games))
+
+
+def _value_fit_read(folder,binding,nets,selection,full):
+    import numpy as np
+    import torch
+    from . import seven_runtime as rt
+    path=folder/'value-fit-checkpoint.json';start=folder/'value-fit-start.json'
+    if not path.exists():
+        if start.exists()or any((folder/name).exists()for name in('models','candidates','uncalibrated','value-precheck.json')):
+            raise ValueError('Incomplete/orphan value fitting cannot be replayed or overwritten')
+        _value_fit_new_json(start,dict(binding=binding,status='fitting'))
+        return None
+    marker=json.loads(path.read_text());expected=marker.pop('receipt_sha256',None)
+    if expected!=sha256(json.dumps(marker,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest():
+        raise ValueError('Value-fit checkpoint receipt changed')
+    marker['receipt_sha256']=expected
+    if (marker.get('schema')!='seven_value_fit_checkpoint_v1'or marker.get('status')!='complete'
+            or marker.get('binding')!=binding or not start.exists()
+            or json.loads(start.read_text())!=dict(binding=binding,status='fitting')
+            or marker.get('models')!=_value_fit_bank_hash(folder/'models')):
+        raise ValueError('Value-fit source/seeds/build/protocol/evidence or selected bank changed')
+    if set(marker.get('temperatures',{}))!=set(ROSTER)or set(marker.get('updates',{}))!=set(ROSTER):
+        raise ValueError('All seven original chosen heads and counts required')
+    if full:
+        if set(marker.get('selected_epochs',{}))!=set(ROSTER)or marker['selection_evidence_sha256']!=_value_fit_digest(selection):
+            raise ValueError('Value-fit selection evidence/epoch choices changed')
+    elif marker.get('uncalibrated_models')!=_value_fit_bank_hash(folder/'uncalibrated'):
+        raise ValueError('Value-fit original uncalibrated bank changed')
+    for key,net in nets.items():
+        if marker['temperatures'][key]not in binding['protocol']['temperature_candidates']:
+            raise ValueError('Original value-fit temperature outside protocol')
+        count=marker['updates'][key]
+        if (set(count)!={'total_attempted','selected'}or any(type(v)is not int or v<1 for v in count.values())
+                or count['selected']>count['total_attempted']):raise ValueError('Actual original optimizer counts required')
+        if full and marker['selected_epochs'][key]not in binding['protocol']['epoch_candidates']:
+            raise ValueError('Original value-fit epoch outside protocol')
+        selected=rt.model(folder/'models',key)
+        origin=selected.manifest['origin']
+        if (origin.get('value_temperature')!=marker['temperatures'][key]
+                or(full and(origin.get('value_epoch')!=marker['selected_epochs'][key]
+                             or origin.get('value_calibration')!=binding['protocol']))):
+            raise ValueError('Selected bank differs from original fit epoch/temperature protocol')
+        with torch.no_grad():
+            for name,tensor in net.state_dict().items():
+                if name.startswith(('wdl.','value_net.')):
+                    tensor.copy_(torch.as_tensor(selected.weights[name].copy(),device=tensor.device,dtype=tensor.dtype))
+                else:np.testing.assert_array_equal(tensor.detach().cpu().numpy(),selected.weights[name])
+    return marker
+
+
+def _value_fit_finish(folder,binding,selection,chosen,epochs,counts,full):
+    for directory,signature in binding['source_banks'].items():
+        if _value_fit_bank_hash(directory)!=signature:raise ValueError('Original value-fit source bank changed')
+    marker=dict(schema='seven_value_fit_checkpoint_v1',status='complete',binding=binding,
+        models=_value_fit_bank_hash(folder/'models'),temperatures=chosen,selected_epochs=epochs,updates=counts,
+        selection_evidence_sha256=_value_fit_digest(selection),
+        uncalibrated_models=None if full else _value_fit_bank_hash(folder/'uncalibrated'))
+    marker['receipt_sha256']=sha256(json.dumps(marker,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+    _value_fit_new_json(folder/'value-fit-checkpoint.json',marker)
+    return marker
+
+
 def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadline,*,seed_offset=0):
     """Separate value training, selection, and heldout; policy arrays are frozen."""
     import numpy as np
     import torch
     from . import seven_runtime as rt
+    checkpoint_enabled=config.get('value_fit_checkpoint',False)
+    if type(checkpoint_enabled)is not bool:raise TypeError('Explicit value-fit checkpoint boolean required')
     if seed_offset not in (0,6000):raise ValueError('Declared disjoint value seed slot required')
     protocol = value_calibration_protocol(config)
     metric_fn = value_metrics
@@ -350,6 +472,9 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
     full = protocol['full_tower']
     folder = Path(folder); before = {k: {n: t.detach().clone() for n, t in net.state_dict().items()
                                        if not n.startswith(('wdl.', 'value_net.'))} for k, net in nets.items()}
+    if not checkpoint_enabled and any((folder/name).exists()for name in
+            ('value-fit-start.json','value-fit-checkpoint.json','value-precheck-complete.json')):
+        raise ValueError('Persistent value-fit evidence cannot be bypassed by disabling its checkpoint')
     if full and any(not hasattr(n, 'value_net') for n in nets.values()):
         raise ValueError('Full calibration requires a separate value tower')
     # Disjoint per-cycle 10k blocks; each phase uses fewer than 1k roots.
@@ -365,73 +490,116 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
     # neither the epoch grid nor temperature grid can change these opponents.
     selection = collect(pool, check_jobs(models,
         config['seeds']['selection']+cycle*10000+seed_offset), folder / 'selection') if full else None
-    chosen = {}; chosen_epochs = {}; update_counts = {}
-    for key, net in nets.items():
-        parameters = list(net.wdl.parameters()) + (list(net.value_net.parameters()) if full else [])
-        opt = torch.optim.Adam(parameters, lr=.0003 if full else .003)
-        rows = [r for g in games for r in g['value_rows'] if r['key'] == key]
-        if not rows: raise ValueError('Missing complete calibration training rows')
-        if full:
-            # Give complete games equal total weight, as in heldout metrics.
-            represented = [g for g in games if any(r['key'] == key for r in g['value_rows'])]
-            rows = [dict(r, sample_weight=len(rows)/len(represented)/len(own))
-                    for g in represented for own in [[r for r in g['value_rows'] if r['key']==key]] for r in own]
-        rng = np.random.default_rng(config['seeds']['adaptation']+cycle*10000)
-        best = None; updates = 0
-        for epoch in range(1, max(protocol['epoch_candidates'])+1):
-            indexes = rng.permutation(len(rows))
-            for start in range(0, len(rows), 128):
-                if time.time() >= deadline: raise TimeoutError('Value warmup deadline')
-                # The dedicated optimizer does not own policy tensors. Clear
-                # their previous joint-step gradients before global clipping.
-                net.zero_grad(set_to_none=True)
-                rt.update(net, opt, [rows[int(i)] for i in indexes[start:start+128]],
-                          warmup=not full, value_only=full)
-                updates += 1
-            if full and epoch in protocol['epoch_candidates']:
-                original_w = net.wdl.weight.detach().clone(); original_b = net.wdl.bias.detach().clone()
-                for temperature in protocol['temperature_candidates']:
+    fit_binding=(_value_fit_binding(models,nets,decks,origins,config,protocol,cycle,seed_offset,games)
+                 if checkpoint_enabled else None)
+    fit_marker=(_value_fit_read(folder,fit_binding,nets,selection,full)if checkpoint_enabled else None)
+    if fit_marker is not None:
+        chosen=deepcopy(fit_marker['temperatures']);chosen_epochs=deepcopy(fit_marker['selected_epochs'])
+        update_counts=deepcopy(fit_marker['updates'])
+        if not full:
+            selection=collect(pool,check_jobs(folder/'uncalibrated',
+                config['seeds']['selection']+cycle*10000+seed_offset),folder/'selection')
+            if _value_fit_digest(selection)!=fit_marker['selection_evidence_sha256']:
+                raise ValueError('Value-fit original selection cache evidence changed')
+    else:
+        chosen = {}; chosen_epochs = {}; update_counts = {}
+        for key, net in nets.items():
+            parameters = list(net.wdl.parameters()) + (list(net.value_net.parameters()) if full else [])
+            opt = torch.optim.Adam(parameters, lr=.0003 if full else .003)
+            rows = [r for g in games for r in g['value_rows'] if r['key'] == key]
+            if not rows: raise ValueError('Missing complete calibration training rows')
+            if full:
+                # Give complete games equal total weight, as in heldout metrics.
+                represented = [g for g in games if any(r['key'] == key for r in g['value_rows'])]
+                rows = [dict(r, sample_weight=len(rows)/len(represented)/len(own))
+                        for g in represented for own in [[r for r in g['value_rows'] if r['key']==key]] for r in own]
+            rng = np.random.default_rng(config['seeds']['adaptation']+cycle*10000)
+            best = None; updates = 0
+            for epoch in range(1, max(protocol['epoch_candidates'])+1):
+                indexes = rng.permutation(len(rows))
+                for start in range(0, len(rows), 128):
+                    if time.time() >= deadline: raise TimeoutError('Value warmup deadline')
+                    # The dedicated optimizer does not own policy tensors. Clear
+                    # their previous joint-step gradients before global clipping.
+                    net.zero_grad(set_to_none=True)
+                    rt.update(net, opt, [rows[int(i)] for i in indexes[start:start+128]],
+                              warmup=not full, value_only=full)
+                    updates += 1
+                if full and epoch in protocol['epoch_candidates']:
+                    original_w = net.wdl.weight.detach().clone(); original_b = net.wdl.bias.detach().clone()
+                    for temperature in protocol['temperature_candidates']:
+                        with torch.no_grad():
+                            net.wdl.weight.copy_(original_w/temperature); net.wdl.bias.copy_(original_b/temperature)
+                        target=folder/'candidates'/f'epoch-{epoch}-temperature-{temperature}'
+                        rt.export(net,target,key,decks[key],origins[key])
+                        metric=metric_fn(selection,{key:rt.model(target,key)})[key]
+                        score=(metric['log_loss'],epoch,temperature)
+                        if best is None or score < best[0]:
+                            best=(score,{n:t.detach().clone() for n,t in net.state_dict().items()
+                                         if n.startswith(('wdl.','value_net.'))},updates)
                     with torch.no_grad():
-                        net.wdl.weight.copy_(original_w/temperature); net.wdl.bias.copy_(original_b/temperature)
-                    target=folder/'candidates'/f'epoch-{epoch}-temperature-{temperature}'
-                    rt.export(net,target,key,decks[key],origins[key])
-                    metric=metric_fn(selection,{key:rt.model(target,key)})[key]
-                    score=(metric['log_loss'],epoch,temperature)
-                    if best is None or score < best[0]:
-                        best=(score,{n:t.detach().clone() for n,t in net.state_dict().items()
-                                     if n.startswith(('wdl.','value_net.'))},updates)
+                        net.wdl.weight.copy_(original_w); net.wdl.bias.copy_(original_b)
+            update_counts[key]=dict(total_attempted=updates,selected=updates)
+            if full:
+                for n,t in best[1].items():net.state_dict()[n].copy_(t)
+                chosen_epochs[key]=best[0][1];chosen[key]=best[0][2]
+                update_counts[key]['selected']=best[2]
+                rt.export(net,folder/'models',key,decks[key],dict(origins[key],value_temperature=chosen[key],
+                          value_epoch=chosen_epochs[key],value_calibration=protocol))
+            if any(not torch.equal(t, net.state_dict()[n]) for n, t in before[key].items()):
+                raise ValueError('Value calibration changed policy')
+            if not full: rt.export(net, folder / 'uncalibrated', key, decks[key], origins[key])
+        if not full:
+            selection = collect(pool, check_jobs(folder / 'uncalibrated',
+                config['seeds']['selection']+cycle*10000+seed_offset), folder / 'selection')
+        # Temperature selection is confined to selection, never the heldout check.
+        for key, net in ([] if full else nets.items()):
+            scores = []
+            original_w = net.wdl.weight.detach().clone(); original_b = net.wdl.bias.detach().clone()
+            for temperature in (1., 2., 4.):
                 with torch.no_grad():
-                    net.wdl.weight.copy_(original_w); net.wdl.bias.copy_(original_b)
-        update_counts[key]=dict(total_attempted=updates,selected=updates)
-        if full:
-            for n,t in best[1].items():net.state_dict()[n].copy_(t)
-            chosen_epochs[key]=best[0][1];chosen[key]=best[0][2]
-            update_counts[key]['selected']=best[2]
-            rt.export(net,folder/'models',key,decks[key],dict(origins[key],value_temperature=chosen[key],
-                      value_epoch=chosen_epochs[key],value_calibration=protocol))
-        if any(not torch.equal(t, net.state_dict()[n]) for n, t in before[key].items()):
-            raise ValueError('Value calibration changed policy')
-        if not full: rt.export(net, folder / 'uncalibrated', key, decks[key], origins[key])
-    if not full:
-        selection = collect(pool, check_jobs(folder / 'uncalibrated',
-            config['seeds']['selection']+cycle*10000+seed_offset), folder / 'selection')
-    # Temperature selection is confined to selection, never the heldout check.
-    for key, net in ([] if full else nets.items()):
-        scores = []
-        original_w = net.wdl.weight.detach().clone(); original_b = net.wdl.bias.detach().clone()
-        for temperature in (1., 2., 4.):
+                    net.wdl.weight.copy_(original_w/temperature); net.wdl.bias.copy_(original_b/temperature)
+                rt.export(net, folder / f'temperature-{temperature}', key, decks[key], origins[key])
+                metric = metric_fn(selection, {key: rt.model(folder / f'temperature-{temperature}', key)})[key]
+                scores.append((metric['log_loss'], temperature))
+            chosen[key] = min(scores)[1]
             with torch.no_grad():
-                net.wdl.weight.copy_(original_w/temperature); net.wdl.bias.copy_(original_b/temperature)
-            rt.export(net, folder / f'temperature-{temperature}', key, decks[key], origins[key])
-            metric = metric_fn(selection, {key: rt.model(folder / f'temperature-{temperature}', key)})[key]
-            scores.append((metric['log_loss'], temperature))
-        chosen[key] = min(scores)[1]
-        with torch.no_grad():
-            net.wdl.weight.copy_(original_w/chosen[key]); net.wdl.bias.copy_(original_b/chosen[key])
-        rt.export(net, folder / 'models', key, decks[key], dict(origins[key], value_temperature=chosen[key]))
+                net.wdl.weight.copy_(original_w/chosen[key]); net.wdl.bias.copy_(original_b/chosen[key])
+            rt.export(net, folder / 'models', key, decks[key], dict(origins[key], value_temperature=chosen[key]))
+        if checkpoint_enabled:
+            fit_marker=_value_fit_finish(folder,fit_binding,selection,chosen,chosen_epochs,update_counts,full)
+    if checkpoint_enabled:
+        for key,net in nets.items():
+            if any(not torch.equal(t,net.state_dict()[n])for n,t in before[key].items()):
+                raise ValueError('Cached value-fit restoration changed policy')
+        for directory,signature in fit_binding['source_banks'].items():
+            if _value_fit_bank_hash(directory)!=signature:raise ValueError('Original value-fit source bank changed')
+    if checkpoint_enabled and (folder/'value-precheck.json').exists()!=(folder/'value-precheck-complete.json').exists():
+        raise ValueError('Incomplete/orphan value-precheck report cannot be regenerated or overwritten')
     held = collect(pool, check_jobs(folder / 'models',
                    config['seeds']['selection']+cycle*10000+1000+seed_offset), folder / 'heldout')
     policies = {k: rt.model(folder / 'models', k) for k in ROSTER}
+    if checkpoint_enabled:
+        if _value_fit_bank_hash(folder/'models')!=fit_marker['models']:
+            raise ValueError('Frozen heldout changed the selected value bank')
+        for directory,signature in fit_binding['source_banks'].items():
+            if _value_fit_bank_hash(directory)!=signature:raise ValueError('Heldout changed original value-fit source bank')
+        if any(not torch.equal(t,nets[key].state_dict()[n])for key in nets for n,t in before[key].items()):
+            raise ValueError('Heldout changed original policy arrays')
+    if checkpoint_enabled and(folder/'value-precheck.json').exists():
+        finished=folder/'value-precheck-complete.json'
+        if not finished.is_file():raise ValueError('Uncommitted value-precheck report cannot be overwritten')
+        cached=json.loads(finished.read_text())
+        if (cached.get('fit_receipt_sha256')!=fit_marker['receipt_sha256']
+                or cached.get('held_evidence_sha256')!=_value_fit_digest(held)
+                or cached.get('report_sha256')!=sha256((folder/'value-precheck.json').read_bytes()).hexdigest()
+                or _value_fit_bank_hash(folder/'models')!=fit_marker['models']):
+            raise ValueError('Original value-precheck heldout evidence/report changed')
+        report=json.loads((folder/'value-precheck.json').read_text())
+        if report.get('updates')!=update_counts or report.get('temperatures')!=chosen or report.get('selected_epochs')!=chosen_epochs:
+            raise ValueError('Original value-precheck fit accounting changed')
+        if report.get('passed')!=rt.value_precheck_ok(report,policies):raise ValueError('Original value-precheck qualification changed')
+        return folder/'models',report
     report = dict(schema='seven_value_precheck_v1', complete=True, heldout=True,
                   passed=True, rule_hash=config['rule_hash'], models=versions(folder / 'models'),
                   metrics=metric_fn(held, policies), temperatures=chosen,
@@ -439,7 +607,18 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
                   calibration=protocol, selected_epochs=chosen_epochs, updates=update_counts,
                   phase_games=dict(training=len(games),selection=len(selection),heldout=len(held)))
     report['passed'] = rt.value_precheck_ok(report, policies)
-    write(folder / 'value-precheck.json', report)
+    if checkpoint_enabled:
+        if _value_fit_bank_hash(folder/'models')!=fit_marker['models']:
+            raise ValueError('Value metrics changed the selected model bank')
+        for directory,signature in fit_binding['source_banks'].items():
+            if _value_fit_bank_hash(directory)!=signature:raise ValueError('Value metrics changed original source bank')
+        if any(not torch.equal(t,nets[key].state_dict()[n])for key in nets for n,t in before[key].items()):
+            raise ValueError('Value metrics changed original policy arrays')
+        _value_fit_new_json(folder/'value-precheck.json',report)
+        _value_fit_new_json(folder/'value-precheck-complete.json',dict(fit_receipt_sha256=fit_marker['receipt_sha256'],
+            held_evidence_sha256=_value_fit_digest(held),report_sha256=sha256((folder/'value-precheck.json').read_bytes()).hexdigest()))
+    else:
+        write(folder / 'value-precheck.json', report)
     return folder / 'models', report
 
 
@@ -896,14 +1075,19 @@ def resume_completed_batches(out, config):
     return completed
 
 
-def run_device_value_calibration(out, config, *, collector):
+def run_device_value_calibration(out, config, *, collector, resume=False, cache_dir=None,
+                                 continuation=None, max_segments=None, max_new_batches=None,
+                                 resume_authorization=None):
     """Run existing train/selection/heldout value calibration with live GPU games.
 
     This explicit bootstrap precedes formal Gumbel readiness. It neither calls
     the historical CPU collector nor qualifies a later policy-learning run.
     """
     from .batched_search.device_learning_context import DeviceValueCalibrationContext
-    context = DeviceValueCalibrationContext(collector)
+    config=dict(config)
+    if cache_dir is not None:config.setdefault('value_fit_checkpoint',True)
+    context = DeviceValueCalibrationContext(collector, cache_dir=cache_dir,
+        continuation=continuation, max_segments=max_segments, max_new_batches=max_new_batches)
     if config.get('runtime') != 'seven' or config.get('device') != 'cuda':
         raise ValueError('Explicit seven-team CUDA value calibration required')
     deadline = config['train_until']
@@ -914,14 +1098,60 @@ def run_device_value_calibration(out, config, *, collector):
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.backends.cudnn.allow_tf32 = False
     out = Path(out)
-    if out.exists():
+    if out.exists() and not resume:
         raise FileExistsError('Fresh value-calibration output required')
-    nets, decks, origins = initialize(out/'uncalibrated-initial', config['hidden'], config['device'],
-        config['seeds']['foundation'], config.get('recovery_source'),
-        starting_decks=config.get('starting_decks'))
-    with context:
-        models, report = warm_value(context, nets, decks, origins, out/'uncalibrated-initial',
-            out/'value', config, 0, deadline)
+    from .next_training import plan
+    source = config.get('recovery_source')
+    fixed = dict(runtime=config['runtime'],device=config['device'],hidden=config['hidden'],
+        source=None if source is None else str(Path(source).resolve()),
+        source_versions=None if source is None else versions(source),
+        starting_decks=config.get('starting_decks') or plan()['builds'],
+        seeds=config['seeds'],rule_hash=config['rule_hash'],protocol=value_calibration_protocol(config),
+        value_fit_checkpoint=config.get('value_fit_checkpoint',False),
+        collection_cache_dir=None if cache_dir is None else str(Path(cache_dir).resolve()))
+    binding_file = out/'input-binding.json'
+    if resume:
+        if not binding_file.is_file() or json.loads(binding_file.read_text()) != fixed:
+            raise ValueError('Current-policy preparation source/build/seed/protocol changed')
+        if not isinstance(resume_authorization,str) or not resume_authorization.strip():
+            raise ValueError('Explicit current-policy preparation resume authorization required')
+        windows=json.loads((out/'budget-windows.json').read_text())
+        if deadline < windows[-1]['deadline']:
+            raise ValueError('Current-policy preparation cannot shorten its bound budget')
+        windows.append(dict(deadline=deadline,authorization=resume_authorization.strip()))
+    else:
+        out.mkdir(parents=True)
+        write(binding_file,fixed)
+        windows=[dict(deadline=deadline,authorization='initial explicit calibration budget')]
+    write(out/'budget-windows.json',windows)
+    initial=out/'uncalibrated-initial'
+    def initial_hashes():
+        return {key+suffix:sha256((initial/(key+suffix)).read_bytes()).hexdigest()
+                for key in ROSTER for suffix in('.json','.npz')}
+    if resume:
+        if initial_hashes()!=json.loads((out/'initial-bank-sha.json').read_text()):
+            raise ValueError('Frozen initial calibration bank changed')
+        from . import seven_runtime as rt
+        restored={key:rt.restore(initial,key,config['device'])for key in ROSTER}
+        nets={key:value[0]for key,value in restored.items()}
+        decks={key:value[1]for key,value in restored.items()}
+        origins={key:value[2]for key,value in restored.items()}
+    else:
+        nets, decks, origins = initialize(initial, config['hidden'], config['device'],
+            config['seeds']['foundation'], config.get('recovery_source'),
+            starting_decks=config.get('starting_decks'))
+        write(out/'initial-bank-sha.json',initial_hashes())
+    from .batched_search.device_pure_segments import PureSegmentPaused
+    try:
+        with context:
+            models, report = warm_value(context, nets, decks, origins, out/'uncalibrated-initial',
+                out/'value', config, 0, deadline)
+    except PureSegmentPaused as paused:
+        result=dict(stage='value_calibration_planned_pause',ready=False,
+            formal_policy_updates=0,formal_training_complete=False,checkpoint=str(paused.checkpoint),
+            diagnostics=deepcopy(context.last_diagnostics))
+        write(out/'value-calibration-progress.json',result)
+        return result
     result = dict(models=str(models), value_precheck=report, formal_policy_updates=0,
                   formal_training_complete=False, stage='value_calibration')
     write(out/'value-calibration-result.json', result)
@@ -940,12 +1170,12 @@ def run_device_value_smoke(out, *, collector, models, train_jobs, evaluation_job
 
 
 def run_device_joint_smoke(out, *, collector, pure_collector, source, train_jobs,
-                           evaluation_jobs, deadline, policy_passes=4):
+                           evaluation_jobs, deadline, policy_passes=4, **persistent_options):
     """Real full-budget H3 Gumbel episodes feed the existing joint updater."""
     from .device_joint_training import run_joint_training_smoke
     return run_joint_training_smoke(out, collector=collector, pure_collector=pure_collector,
         source=source, train_jobs=train_jobs, evaluation_jobs=evaluation_jobs,
-        deadline=deadline, policy_passes=policy_passes)
+        deadline=deadline, policy_passes=policy_passes, **persistent_options)
 
 
 def run(out, config, *, resume=False, device_driver=None):

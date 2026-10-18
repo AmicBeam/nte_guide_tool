@@ -898,3 +898,14 @@ Windows验收前可仅输出配置：
 整批自然终局后，独立核验所有原始动作、双方价值记录及每根原始搜索统计。单根证明窗口由 `proof_seconds` 约束，整批证明和结果适配仍受原始绝对截止与单调截止约束，不因分段延长任务。随后调用既有 `update_batch`，要求有限策略梯度、完整新样本覆盖、策略及价值参数实际变化、其他队伍冻结；实际保存数值模型和优化器检查点，再用新模型执行独立种子纯策略冻结设备评估。该入口记录真实联合更新数，不能把价值预热计入其中；它不替代正式长训驱动资格、完整七队评估或强度批准。
 
 验证：`python -m unittest tests.test_duel_v2_device_joint_training tests.test_duel_v2_device_auxiliary_calibration tests.test_duel_v2_device_chunked_games tests.test_duel_v2_device_h3_segments tests.test_duel_v2_device_h3_collection tests.test_duel_v2_device_pure_segments tests.test_duel_v2_seven_auxiliary_reattestation`。CPU合成分段等价与学习器更新测试只证明相应软件边界，实际CUDA图、自然完整Gumbel局、联合更新和吞吐须单独短测并保存原始证据。
+
+
+### 跨进程短段恢复
+
+辅助采集使用 `DeviceAuxiliaryCalibrationLedger` 保存完整计划、队列偏移、不可变修订与无损检查点。已有自然完整局按原任务身份接纳，剩余局从实际前缀继续；规则、归档、显存错误以及无法确认完成的运行记录均停止该队列，不能退回早期干净记录掩盖失败。显式延长执行预算须通过 `device_auxiliary_continuation` 的续跑回执，只改变截止，旧记录及历史错误仍参与核验。
+
+纯策略采集的 `checkpoint_dir` 保存完整动作、双观察与状态前缀；H3 检查点另外保存未完成根的设备张量存储、视图与别名、树统计、随机状态和控制器进度。恢复先核源码、模型、规则和任务合同，再向新建的同构设备存储原位恢复。工作通道数可小于逻辑对局数，不改变每根32次搜索预算。自然终局后逐根保存独立搜索证明，跨进程复用已核证明；全部轨迹和证明完成前不得训练。CPU存储测试不代替CUDA跨进程恢复对拍。
+
+`run_device_value_calibration(resume=True)` 核对初始模型银行的实际文件后恢复，避免重新初始化或覆盖导出。持久化价值拟合在训练／选择完成后保存七队数值及拟合回执，留出采集跨段恢复时不重复拟合。`run_device_joint_smoke` 透传持久化选项，联合短训分别保存采样完成、更新完成和冻结评估阶段；恢复绑定源码、检查点目录、种子、构筑、scope与模型文件。无法确认的优化器更新拒绝继续，不能重复更新后冒充一次成功。
+
+单个设备进程使用至多150秒软预算和180秒外部保护，GPU整卡上限14336MiB。正常短段暂停不改变自然终局、独立校准或完整搜索验收要求。验证：`python -m unittest tests.test_duel_v2_device_auxiliary_continuation tests.test_duel_v2_pure_checkpoint tests.test_duel_v2_device_h3_proof_cache tests.test_duel_v2_value_fit_cache`，并运行相应采集、学习上下文和联合学习回归。

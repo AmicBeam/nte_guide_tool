@@ -113,8 +113,9 @@ def validate_deferred_rules(rules):
 
 def validate_deferred_binding(rules,loop):
     from .device_games import DeviceGameLoop
+    from .device_chunked_games import DeviceChunkedGameLoop
     from .device_tiered_soa_rules import DeviceTieredSoARules
-    if type(loop) is not DeviceGameLoop or loop.defer_physical_presentation is not True:
+    if type(loop) not in (DeviceGameLoop,DeviceChunkedGameLoop) or loop.defer_physical_presentation is not True:
         raise ValueError('Explicit enabled physical DeviceGameLoop binding required')
     owner=loop.rules
     if owner is not rules and not (type(owner) is DeviceTieredSoARules and owner.slow is rules):

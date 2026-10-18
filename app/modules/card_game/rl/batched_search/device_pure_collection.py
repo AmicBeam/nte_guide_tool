@@ -124,7 +124,7 @@ class DevicePureCollector:
     formal_training_qualified = False
 
     def __init__(self, executor, *, seconds=90, proof_seconds=30, max_decisions=800,
-                 memory_limit_mib=14336, segment_decisions=None, on_segment=None):
+                 memory_limit_mib=14336, segment_decisions=None, on_segment=None,process_seconds=None):
         from ..batched_duel.native_soa_cuda import CudaSoARules
         if not isinstance(executor, CudaSoARules) or executor.execute_only or executor.device.type != 'cuda':
             raise TypeError('Actual full native CUDA rules required')
@@ -140,7 +140,10 @@ class DevicePureCollector:
             raise ValueError('Optional planned pure segment must contain one to16 decisions')
         if on_segment is not None and not callable(on_segment):
             raise TypeError('Optional segment callback must be callable')
+        if process_seconds is not None and(type(process_seconds)not in(int,float)or not 0<process_seconds<=150):
+            raise ValueError('Pure process budget must be positive and at most150seconds')
         self.segment_decisions, self.on_segment = segment_decisions, on_segment
+        self.process_seconds=process_seconds
         self.last_diagnostics = None
 
     def _memory(self):
@@ -149,7 +152,12 @@ class DevicePureCollector:
             raise MemoryError('Pure collection exceeds whole-device budget')
         return total - free
 
-    def collect(self, jobs, models):
+    def collect(self, jobs, models, *, resume_checkpoint=None, checkpoint_dir=None,
+                continuation=None, max_segments=None,process_seconds=None):
+        self._process_started=time.monotonic()
+        process_seconds=getattr(self,'process_seconds',None) if process_seconds is None else process_seconds
+        if process_seconds is not None and(type(process_seconds)not in(int,float)or not 0<process_seconds<=150):
+            raise ValueError('Pure process budget must be positive and at most150seconds')
         if not isinstance(jobs, (list, tuple)) or not 1 <= len(jobs) <= 32:
             raise ValueError('One to32 explicit small-batch pure jobs required')
         metadata = adapt_pure_jobs(jobs, models)
@@ -164,7 +172,11 @@ class DevicePureCollector:
         try:
             if self.segment_decisions is not None:
                 from .device_pure_segments import collect_segments
-                return collect_segments(self, metadata, models)
+                return collect_segments(self, metadata, models, resume_checkpoint=resume_checkpoint,
+                    checkpoint_dir=checkpoint_dir, continuation=continuation, max_segments=max_segments,
+                    process_seconds=process_seconds)
+            if any(v is not None for v in (resume_checkpoint, checkpoint_dir, continuation, max_segments,process_seconds)):
+                raise ValueError('Persistent pure checkpoints require explicit segmented collection')
             return self._collect(metadata, models, owned)
         finally:
             errors = []

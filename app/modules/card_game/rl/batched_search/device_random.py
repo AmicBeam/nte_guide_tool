@@ -6,7 +6,7 @@ GPU training. Importing this module does not import Torch or CUDA.
 Setup expands arbitrary-width seeds through NumPy PCG64 / SeedSequence on
 CPU, then uploads the verified 128-bit state, increment, and uint32 cache.
 The hot path advances that state on CUDA: raw 64-bit outputs, uniform
-doubles, Gumbel noise, and categorical choice. Inactive rows are not
+doubles, Gumbel noise, categorical choice, and bounded integers. Inactive rows are not
 advanced. CPU is an explicit numerical oracle only.
 """
 from __future__ import annotations
@@ -30,6 +30,8 @@ PCG64_ERR_PROB = 1
 PCG64_ERR_EMPTY = 2
 PCG64_ERR_SCALE = 3
 PCG64_ERR_STATE = 5
+PCG64_ERR_BOUNDS = 6
+PCG64_ERR_REJECTION = 7
 
 _CUDA_SOURCE = r'''
 /* duel_v2_device_pcg64_v1: NumPy PCG64 XSL-RR, 128-bit state/inc, uint64 limbs. */
@@ -231,6 +233,47 @@ extern "C" __global__ void pcg64_categorical(
  state_hi[row] = s_hi;
  state_lo[row] = s_lo;
 }
+__device__ __forceinline__ unsigned int pcg64_next32(
+ unsigned long long* s_hi, unsigned long long* s_lo,
+ unsigned long long inc_hi, unsigned long long inc_lo,
+ unsigned int* has, unsigned int* cached) {
+ if (*has) { *has=0u; return *cached; }
+ unsigned long long value=pcg64_next64(s_hi,s_lo,inc_hi,inc_lo);
+ *has=1u; *cached=(unsigned int)(value>>32);
+ return (unsigned int)value;
+}
+extern "C" __global__ void pcg64_bounded_integers(
+ unsigned long long* state_hi, unsigned long long* state_lo,
+ const unsigned long long* inc_hi, const unsigned long long* inc_lo,
+ unsigned int* has_uint32, unsigned int* uinteger,
+ const long long* highs, const unsigned char* active,
+ long long* indices, int* errors, int rows, int max_retries) {
+ int row=blockIdx.x*blockDim.x+threadIdx.x;
+ if(row>=rows)return;
+ indices[row]=0; errors[row]=0;
+ if(!active[row])return;
+ long long high=highs[row];
+ if(high<1||high>2147483647LL){indices[row]=-1;errors[row]=6;return;}
+ unsigned long long hi=state_hi[row],lo=state_lo[row];
+ unsigned long long ihi=inc_hi[row],ilo=inc_lo[row];
+ unsigned int has=has_uint32[row],cached=uinteger[row];
+ if(!(ilo&1ULL)||has>1u){indices[row]=-1;errors[row]=5;return;}
+ if(high==1)return;
+ unsigned int bound=(unsigned int)high;
+ unsigned int threshold=(0u-bound)%bound;
+ // Commit all mutable limbs/cache only after an accepted Lemire draw.
+ // Rejection exhaustion is an explicit failure, never a biased choice.
+ for(int retry=0;retry<max_retries;retry++){
+  unsigned int value=pcg64_next32(&hi,&lo,ihi,ilo,&has,&cached);
+  unsigned long long product=(unsigned long long)value*bound;
+  if((unsigned int)product<threshold)continue;
+  indices[row]=(long long)(product>>32);
+  state_hi[row]=hi;state_lo[row]=lo;
+  has_uint32[row]=has;uinteger[row]=cached;
+  return;
+ }
+ indices[row]=-1;errors[row]=7;
+}
 '''
 
 _KERNEL_SPECS = {
@@ -255,6 +298,9 @@ _KERNEL_SPECS = {
 }
 
 _KERNEL_SPECS['pcg64_gumbel_valid'] = _KERNEL_SPECS['pcg64_gumbel'] + ('uint8*',)
+_KERNEL_SPECS['pcg64_bounded_integers'] = (
+    ('uint64*',) * 4 + ('uint32*',) * 2
+    + ('int64*', 'uint8*', 'int64*', 'int32*', 'int32', 'int32'))
 
 def _reject_bool(value: Any, name: str) -> None:
     if type(value) is bool:
@@ -780,6 +826,67 @@ class DevicePCG64:
         if counts is None:
             counts=self.t.full((probs.shape[0],),probs.shape[1],dtype=self.t.int64,device=self.device)
         return self.categorical(probs,counts,active)
+
+    def integers_device(self, highs, active, *, max_retries=128) -> DeviceCategorical:
+        """One exact NumPy PCG64 integers(high) draw per admitted row, low=0.
+
+        Supports int64 highs in 1..2**31-1, using the uint32 Lemire branch.
+        high=1 and inactive/invalid rows consume no randomness. Bounds error6
+        and rejection-budget error7 return index -1; budget failure rolls back
+        all six state fields. Errors must abort the caller's trajectory.
+        CPU mode is only the explicitly constructed numerical oracle.
+        """
+        rows = self._active(active)
+        t = self.t
+        if (not isinstance(highs, t.Tensor) or highs.device != self.device
+                or highs.dtype != t.int64 or highs.shape != (rows,) or not highs.is_contiguous()):
+            raise ValueError('Exact contiguous device int64 upper bounds required')
+        _reject_bool(max_retries, 'max_retries')
+        if type(max_retries) is not int or not 1 <= max_retries <= 1024:
+            raise ValueError('Explicit bounded rejection budget in 1..1024 required')
+        if self.device.type == 'cpu':
+            indices, errors = self._indices[:rows], self._errors[:rows]
+            indices.zero_(); errors.zero_()
+            for row in range(rows):
+                if not bool(active[row]):
+                    continue
+                high = int(highs[row].item())
+                if not 1 <= high <= 2**31-1:
+                    indices[row] = -1; errors[row] = PCG64_ERR_BOUNDS
+                    continue
+                if not int(self._inc_lo[row].item()) & 1 or int(self._has_uint32[row].item()) > 1:
+                    indices[row] = -1; errors[row] = PCG64_ERR_STATE
+                    continue
+                if high == 1:
+                    continue
+                generator = _generator_from_packed(self._packed_row(row))
+                state = generator.bit_generator.state
+                has, cached = state['has_uint32'], state['uinteger']
+                threshold = ((-high) & MASK32) % high
+                for _ in range(max_retries):
+                    if has:
+                        value, has = cached, 0
+                    else:
+                        word = int(generator.bit_generator.random_raw())
+                        value, has, cached = word & MASK32, 1, word >> 32
+                    product = value * high
+                    if (product & MASK32) < threshold:
+                        continue
+                    state = generator.bit_generator.state
+                    state['has_uint32'], state['uinteger'] = has, cached
+                    generator.bit_generator.state = state
+                    self._store_packed(row, generator)
+                    indices[row] = product >> 32
+                    break
+                else:
+                    indices[row] = -1; errors[row] = PCG64_ERR_REJECTION
+        else:
+            self._launch('pcg64_bounded_integers', [
+                self._state_hi, self._state_lo, self._inc_hi, self._inc_lo,
+                self._has_uint32, self._uinteger, highs, active.view(t.uint8),
+                self._indices, self._errors, rows, max_retries,
+            ])
+        return DeviceCategorical(self._indices[:rows], self._errors[:rows], self.state)
 
     def close(self) -> None:
         if self.module is not None:

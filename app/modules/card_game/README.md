@@ -1315,3 +1315,8 @@ SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进�
 
 
 SoA 验收 CLI 可显式传 `--defer-physical-presentation` 接入上述闭环物理选项，默认关闭；计划及实际运行回执记录该值，实际回执从已构造循环读取。原始动作记录、立即清理、完整公开回放批后重建及源门控仍必须满足；不改变模拟次数、起手配置、预算或资格。验证 `tests.test_duel_v2_soa_device_cli`。
+
+
+`DevicePCG64.integers_device(highs, active, max_retries=128)` 提供精确 NumPy PCG64 的 low=0、逐行 high≤2³¹−1 整数抽样，保留 uint32 半字缓存；上界1及未激活行不消费随机数，非法上界和拒绝重试耗尽返回明确错误，后者回滚全部六字段状态。原 raw／uniform／Gumbel／categorical 不变。验证 `tests.test_duel_v2_device_bounded_integers` 的真实 CUDA 源 CPU shim 与 NumPy 对拍，GPU 数值与设备循环另行验收。
+
+`batched_search/device_rule_policy.py` 是独立的零模拟规则控制器，绑定真实 SoA teacher，保留完整原始合法顺序与规则选择，并另取真实 GPU 行动方价值观察。可显式启用 `explore_first_six=True, exploration_seeds=tuple(job_seeds)`：setup 建立自有 PCG64，构造循环后调用 `bind_game_loop`，仅在物理步号小于6且处于行动阶段时精确整数抽样；不在每次决策重置随机数，原规则选择保留审计。控制器仅关闭自有 RNG，不拥有外部规则及动作租约。验证 `tests.test_duel_v2_device_rule_policy`；这不是 Gumbel、辅助模型 scope 或完整训练服务，不能通过要求 NN argmax 的纯策略结果适配器。

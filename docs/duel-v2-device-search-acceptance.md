@@ -304,3 +304,12 @@ SoA工厂还默认开启 `reuse_root_observation`：只复用本次初始化、�
 公开合法动作的GPU raw-token解析在1～32行默认每block1线程，超过32行及非raw-token路径保留128线程。CUDA源码和容量不随此调整改变；验收须核实际默认调用的grid/block、动作顺序、x/c编码、状态／RNG／别名及错误路径，不能把手动覆盖启动参数的脚本当默认接线证据。CPU验证见 `tests.test_duel_v2_projection_geometry` 与 `tests.test_duel_v2_device_projection`；完整搜索、自然终局和训练资格仍单独验收。
 
 实体恢复原生探针为默认关闭的完整 SoA opt-in：`native_hydration_probe=True, hydration_program=program` 仅允许完整 native functions、分离编译及 `execute_only=False`。验收需绑定实际 FrozenRuleProgram/image、规范 AST/函数与类及globals、typed schema和完整 post-split 编译单元顺序／SHA／recipe。`source_sha256` 仍指未变换的 monolithic 源码，不足以单独代表启用后的程序；应核 `hydration_probe_binding.identity` 与完整binding。HIT只省略无需改变语义的实体恢复，MISS继续完整原body；额外原生探针工作消耗真实VM预算，HIT的临时分配改变，不能声称旧opcode或分配等价。关闭路径、异常身份／别名／字段、预算边界、跨Python稳定AST及实际GPU完整状态／动作／编码／RNG对拍均须覆盖；不得据此将局部通过登记为H3／400并发／完整训练通过。相关CPU测试为 `tests.test_duel_v2_native_hydration_probe` 与 `tests.test_duel_v2_soa_cuda_loading`。
+
+
+### H3 联合短训与持久化搜索分段
+
+`DeviceH3Collector` 固定 Gumbel32／候选16／depth10／covered_value horizon3／rule opponent／per_simulation／natural_wdl；主价值预检和独立辅助 scope 均须从实际模型及当前身份验证。辅助准备保持168／56／56自然完整局，主价值校准保持112／56／56局，不能用少量短局降低验收门槛。显式冻结构筑须一直传到主模型初始化，不能在辅助准备完成后换回全局构筑。
+
+`DeviceChunkedGameLoop` 采用同一GPU存储的 start／search／commit 条件图，bootstrap只重放一次。计划暂停仅清除本段 predicate，保留整根FSM、累计tick上限、树统计、PCG、租约及原始轨迹；CPU只监督整批短段及原截止，不决定单根动作。真实图保护、段墙钟超限、全局决策上限、规则或租约错误均拒绝学习；失败与取消必须清理未完成搜索及物理根。
+
+每个物理决策保存原始动作、信息哈希、完整 visits／pi／Q／prior／mean／Gumbel／value／errors，终局后按原种子独立重算完整搜索；单根证明仍受短窗口限制，所有证明受原始绝对与单调截止限制。区分GPU自然终局与独立证明通过，未完整或证明失败的批次不能进入 `update_batch`。联合短训须证明策略和价值张量均有有限更新、其他队伍冻结、实际数值导出恢复及独立种子冻结设备评估；通过也不自动授予完整训练或400并发吞吐资格。

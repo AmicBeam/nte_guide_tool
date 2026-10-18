@@ -79,6 +79,7 @@ class DeviceValueTrainingTest(unittest.TestCase):
     def test_collector_closes_owned_partial_arenas_on_failure(self):
         collector=object.__new__(DevicePureCollector)
         collector.seconds,collector.proof_seconds=1,1
+        collector.segment_decisions=None
         resource=SimpleNamespace(close=Mock(),physical_loop=object())
         def failed(metadata,models,owned):
             owned.append(resource)

@@ -883,3 +883,18 @@ Windows验收前可仅输出配置：
 `seven_round.run_device_value_smoke` 是单独的有界价值链路检查：固定配牌、正常起手换牌、独立训练／评估种子，设备内 argmax 采样，整批自然终局后核验原始动作、公开输入哈希、双方观察、CUDA／NumPy 分数、实体与随机状态，再使用既有 WDL 更新器进行有限价值更新。更新只拥有独立价值主干与 WDL 参数；逐张量检查策略不变，实际导出并恢复数值，随后用新权重重新构建设备推理库做冻结评估。它不生成 Gumbel 策略标签，不执行策略梯度，也不替代正式价值校准的多批训练／择温／留出或完整七队评估。
 
 任一轨迹未自然结束、设备错误、证明不一致或截止不足，整批不得进入更新；失败报告保留实际步数、完成数、错误和清理结果。后续正式联合学习仍必须具备合格辅助 scope、同源完整 H3 Gumbel 搜索预检及真实训练／评估驱动，不接受该纯策略组件作为替身。相关验证：`python -m unittest tests.test_duel_v2_device_value_training tests.test_duel_v2_device_learning_context tests.test_duel_v2_soa_pure_results tests.test_duel_v2_device_pure_value_tape`。
+
+
+### 设备 H3 Gumbel 联合学习准备与短训
+
+`device_joint_training.prepare_joint_training_inputs` 接收本轮七队实际冻结构筑、两份独立共享种子预留、已加载完整CUDA规则执行器、分段检查点回调，以及依次递增的辅助采集／辅助拟合／主价值／硬截止。辅助准备调用 `DeviceAuxiliaryPhaseCollector`，保持168局训练、56局选择和56局留出；默认8路、每段4次物理决策，512次全局上限。每段使用新存储并核验完整前缀、原始动作、双观察、PCG和版本；任何历史保护错误均不能通过后续恢复变成合格样本。
+
+`fit_device_auxiliary_calibration` 复用独立价值塔、AdamW、1／2／4／8 epoch和1／2／4温度选择，策略参数冻结；只用选择集择优，再用留出集及现有 `load_scope` 验收。它只训练辅助价值，不计入主策略更新。旧辅助轨迹只有全量当前规则、动作、双观察及标签重证通过后才可复用，不能仅重写规则身份；`seven_auxiliary_reattestation` 保留这一独立重证边界，不宣称新GPU采集。
+
+主价值准备继续使用原 `warm_value` 完整协议：112局训练、56局选择、56局留出，按显式冻结构筑初始化。`DevicePureCollector(segment_decisions=16)` 可将完整轨迹分段恢复，保留800次全局上限、原截止、全部原始记录和双方价值输入；配合该模式的校准上下文每批至多8局。未终局前缀不能导出标签。默认未启用分段的纯策略路径仍按原批次合同运行。
+
+`seven_round.run_device_joint_smoke` 使用已合格辅助scope与主价值预检、真实 `DeviceH3Collector`，完整保留Gumbel32／16候选／depth10／horizon3／规则对手／逐模拟世界采样／natural_wdl。默认每次图重放执行一个搜索tick，同一GPU存储保留单根进度，设备条件图决定何时初始化搜索及提交动作；CPU不参与逐根规则或动作选择。真实时间保护、累计tick、全局800次决策及原始截止均有效，计划暂停不提前提交动作或生成终局价值。
+
+整批自然终局后，独立核验所有原始动作、双方价值记录及每根原始搜索统计。单根证明窗口由 `proof_seconds` 约束，整批证明和结果适配仍受原始绝对截止与单调截止约束，不因分段延长任务。随后调用既有 `update_batch`，要求有限策略梯度、完整新样本覆盖、策略及价值参数实际变化、其他队伍冻结；实际保存数值模型和优化器检查点，再用新模型执行独立种子纯策略冻结设备评估。该入口记录真实联合更新数，不能把价值预热计入其中；它不替代正式长训驱动资格、完整七队评估或强度批准。
+
+验证：`python -m unittest tests.test_duel_v2_device_joint_training tests.test_duel_v2_device_auxiliary_calibration tests.test_duel_v2_device_chunked_games tests.test_duel_v2_device_h3_segments tests.test_duel_v2_device_h3_collection tests.test_duel_v2_device_pure_segments tests.test_duel_v2_seven_auxiliary_reattestation`。CPU合成分段等价与学习器更新测试只证明相应软件边界，实际CUDA图、自然完整Gumbel局、联合更新和吞吐须单独短测并保存原始证据。

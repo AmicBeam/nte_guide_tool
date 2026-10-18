@@ -1346,3 +1346,12 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 完整 SoA 后端可显式设置 `native_hydration_probe=True, hydration_program=program` 启用实体恢复原生探针，要求 `native_functions=True`、`separate_compilation=True` 和 `execute_only=False`。默认关闭，不额外解析程序且保留原编译单元。启用时核对实际 FrozenRuleProgram、image、规范函数／实体类／全局绑定、稳定 AST 和 typed schema；只有确认无需恢复实体或修复别名的状态才走快路，其余继续完整原函数。探针工作计入额外 VM 预算，命中会省去临时分配，因此不承诺旧 opcode／分配计数等价。必须同时保存 `hydration_probe_binding` 的实际 ordered-unit SHA、recipe 与 program／image／schema 身份，原 monolithic `source_sha256` 不能单独描述启用后的程序；独立完成对应GPU对拍后方可用于验收，不自动获得H3或完整训练资格。CPU验证运行 `python -m unittest tests.test_duel_v2_native_hydration_probe tests.test_duel_v2_soa_cuda_loading`。
 
 设备价值预热已提供独立连接：`seven_round.run_device_value_calibration` 复用现有 `warm_value` 的训练／选择／留出流程，由 `DeviceValueCalibrationContext` 和 `DevicePureCollector` 收集真实 GPU 纯策略自然完整局；`run_device_value_smoke` 检查有限 WDL 更新、策略逐张量不变、数值导出恢复及独立种子的冻结设备评估。此阶段不要求预先具备完整 Gumbel 驱动，但也不授予搜索或正式训练资格；截断批次不产生学习标签。接口及限制见[设备端价值预热](../../../docs/duel-v2-public-training.md#设备端价值预热与短训连接)。验证：`python -m unittest tests.test_duel_v2_device_value_training tests.test_duel_v2_device_learning_context tests.test_duel_v2_soa_pure_results tests.test_duel_v2_device_pure_value_tape`。
+
+
+### H3 Gumbel 联合学习连接
+
+`rl/device_joint_training.py` 将辅助价值准备、主价值预检和真正策略／WDL 联合更新分开。`prepare_joint_training_inputs` 使用显式七队冻结起点（包含人工起点），依次收集辅助168／56／56局、选择温度并验收 scope，再执行既有主价值112／56／56局校准；各阶段使用独立种子与显式截止，辅助轨迹以4步短段推进。
+
+`seven_round.run_device_joint_smoke` 仅接收真实 `DeviceH3Collector` 与同执行器的 `DevicePureCollector`：完整自然终局的 Gumbel32／16候选／H3 记录通过独立核验后，调用原 `update_batch` 联合更新，核对策略及价值参数实际变化、冻结队伍不变、数值导出恢复和独立种子冻结评估。`DeviceChunkedGameLoop` 允许单根搜索跨短图重放保留完整设备状态；默认每段一个搜索 tick，未完成32次模拟不能提交物理动作。纯策略校准可显式使用 `segment_decisions` 保留完整前缀；历史错误与截断不能产生学习标签。
+
+相关验证：`python -m unittest tests.test_duel_v2_device_joint_training tests.test_duel_v2_device_auxiliary_calibration tests.test_duel_v2_device_chunked_games tests.test_duel_v2_device_h3_segments tests.test_duel_v2_device_h3_collection tests.test_duel_v2_device_pure_segments`。这些组件及CPU验证不解除正式长训入口的设备资格检查；GPU完整局、实测联合更新、容量与模型强度须分别验收。

@@ -124,7 +124,7 @@ class DevicePureCollector:
     formal_training_qualified = False
 
     def __init__(self, executor, *, seconds=90, proof_seconds=30, max_decisions=800,
-                 memory_limit_mib=14336):
+                 memory_limit_mib=14336, segment_decisions=None, on_segment=None):
         from ..batched_duel.native_soa_cuda import CudaSoARules
         if not isinstance(executor, CudaSoARules) or executor.execute_only or executor.device.type != 'cuda':
             raise TypeError('Actual full native CUDA rules required')
@@ -135,6 +135,12 @@ class DevicePureCollector:
         self.executor = executor
         self.seconds, self.proof_seconds = seconds, proof_seconds
         self.max_decisions, self.memory_limit_mib = max_decisions, memory_limit_mib
+        if segment_decisions is not None and (type(segment_decisions) is not int
+                or not 1 <= segment_decisions <= 16):
+            raise ValueError('Optional planned pure segment must contain one to16 decisions')
+        if on_segment is not None and not callable(on_segment):
+            raise TypeError('Optional segment callback must be callable')
+        self.segment_decisions, self.on_segment = segment_decisions, on_segment
         self.last_diagnostics = None
 
     def _memory(self):
@@ -156,6 +162,9 @@ class DevicePureCollector:
             algorithm='argmax', counts_as_search=False, simulations=0, steps=[], errors=[], natural_games=0)
         owned = []
         try:
+            if self.segment_decisions is not None:
+                from .device_pure_segments import collect_segments
+                return collect_segments(self, metadata, models)
             return self._collect(metadata, models, owned)
         finally:
             errors = []

@@ -639,19 +639,22 @@ def merged_reports(*reports):
     return result
 
 
-def initialize(folder, hidden, device, seed, source=None):
+def initialize(folder, hidden, device, seed, source=None, *, starting_decks=None):
     import torch
     from . import seven_runtime as rt
     from .next_training import plan
     torch.manual_seed(seed)
-    decks = plan()['builds']
+    decks = plan()['builds'] if starting_decks is None else deepcopy(starting_decks)
     if set(decks) != set(ROSTER):
         raise ValueError('Seven-team declared builds required')
     nets = {}; origins = {}
     for key in ROSTER:
         if source:
             net, build, origin = rt.restore(source, key, device)
-            if build != decks[key]:
+            from .build_acceptance import canonical_build
+            matches = (build == decks[key] if starting_decks is None else
+                       canonical_build(build) == canonical_build(decks[key]))
+            if not matches:
                 raise ValueError('Seven source must match this fixed build')
             origin = dict(origin, recovery_source=str(source),
                           recovery_source_sha=rt.model(source,key).version)
@@ -914,7 +917,8 @@ def run_device_value_calibration(out, config, *, collector):
     if out.exists():
         raise FileExistsError('Fresh value-calibration output required')
     nets, decks, origins = initialize(out/'uncalibrated-initial', config['hidden'], config['device'],
-        config['seeds']['foundation'], config.get('recovery_source'))
+        config['seeds']['foundation'], config.get('recovery_source'),
+        starting_decks=config.get('starting_decks'))
     with context:
         models, report = warm_value(context, nets, decks, origins, out/'uncalibrated-initial',
             out/'value', config, 0, deadline)
@@ -933,6 +937,15 @@ def run_device_value_smoke(out, *, collector, models, train_jobs, evaluation_job
     from .device_value_training import run_value_training_smoke
     return run_value_training_smoke(out, collector=collector, models=models,
         train_jobs=train_jobs, evaluation_jobs=evaluation_jobs, deadline=deadline)
+
+
+def run_device_joint_smoke(out, *, collector, pure_collector, source, train_jobs,
+                           evaluation_jobs, deadline, policy_passes=4):
+    """Real full-budget H3 Gumbel episodes feed the existing joint updater."""
+    from .device_joint_training import run_joint_training_smoke
+    return run_joint_training_smoke(out, collector=collector, pure_collector=pure_collector,
+        source=source, train_jobs=train_jobs, evaluation_jobs=evaluation_jobs,
+        deadline=deadline, policy_passes=policy_passes)
 
 
 def run(out, config, *, resume=False, device_driver=None):

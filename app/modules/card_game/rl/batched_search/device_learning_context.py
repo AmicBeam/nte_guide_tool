@@ -88,8 +88,11 @@ class DeviceValueCalibrationContext:
         adapt_pure_jobs(jobs, models)
         self._diagnostics = dict(batches=[], completed_games=0)
         results = []
-        for start in range(0, len(jobs), 32):
-            batch = jobs[start:start+32]
+        # Segment restore retains both full device archives and their uploaded
+        # history; bound simultaneous roots separately from the phase job count.
+        batch_rows = 8 if getattr(self._collector, 'segment_decisions', None) is not None else 32
+        for start in range(0, len(jobs), batch_rows):
+            batch = jobs[start:start+batch_rows]
             try:
                 returned = self._collector.collect(batch, models)
                 results.extend(ClosedDeviceLearningContext._checked_results(self, batch, returned))

@@ -291,7 +291,9 @@ class DisabledHydrationTests(unittest.TestCase):
         from app.modules.card_game.rl.batched_duel import native_soa_cuda_query as query
         image=SimpleNamespace(**{n:np.zeros(1,dtype=np.int32)for n in('nodes','edges','payload')})
         program=object();binding=object()
-        executor=SimpleNamespace(source_sha256='emitter-only',hydration_probe_binding=binding)
+        executor=SimpleNamespace(source_sha256='emitter-only',hydration_probe_binding=binding,
+            canonical_rule_source_sha256='canonical-rule',rule_source_sha256='canonical-rule',
+            preview_arena_binding=None,preview_arena_identity=None)
         with patch.object(query,'CudaSoARules',return_value=executor)as ctor:
             result=query.NativeSoACUDAQuery(image,object(),native_functions=True,separate_compilation=True,
                 native_hydration_probe=True,hydration_program=program)

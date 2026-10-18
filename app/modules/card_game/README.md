@@ -1357,3 +1357,7 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 相关验证：`python -m unittest tests.test_duel_v2_device_joint_training tests.test_duel_v2_device_auxiliary_calibration tests.test_duel_v2_device_chunked_games tests.test_duel_v2_device_h3_segments tests.test_duel_v2_device_h3_collection tests.test_duel_v2_device_pure_segments`。这些组件及CPU验证不解除正式长训入口的设备资格检查；GPU完整局、实测联合更新、容量与模型强度须分别验收。
 
 辅助采集的持久队列由 `DeviceAuxiliaryCalibrationLedger` 维护；`device_auxiliary_continuation` 只接受有明确预算授权且历史干净的无损前缀。纯策略与 H3 收集器可将完整轨迹、设备搜索中间状态和独立证明分段持久化；`seven_round` 的价值拟合与联合短训另存阶段回执，续跑复用数值和完成缓存。失败记录禁止回退清洗，未完成自然终局或独立证明不得更新。接口、进程预算及验证见[跨进程短段恢复](../../../docs/duel-v2-public-training.md#跨进程短段恢复)。
+
+设备条件循环使用 PyTorch 原生子图分配池，并在捕获期登记实际子流，避免后续独立图捕获回收仍被搜索使用的临时张量。设备迭代／时间／显存保护、所有者线程和外来流拒绝保留；支持边界及GPU回归要求见设备搜索验收协议。
+
+规则预览可显式选择 `batched_duel/native_preview_arena.py` 的精确私有 typed 临时区回收，采用独立后端身份且保留默认执行路径；CUDA模块在实际图捕获时持有张量参数，图停止、设备同步后再释放，避免短命原生子流的析构错误。边界及独立GPU验收见设备搜索协议；组件CPU测试不能代替完整Gumbel训练成功。

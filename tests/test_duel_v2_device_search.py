@@ -626,6 +626,13 @@ class DeviceSearchTest(unittest.TestCase):
         self.assertEqual(int(captured.peak_device_roots), 1600)
         self.assertTrue(bool((captured.completed == 4).all()))
 
+    def _bind_native_runner(self,engine,runner):
+        from app.modules.card_game.rl.batched_search.device_games import DeviceGameLoop
+        owner=object.__new__(DeviceGameLoop)
+        owner.t=engine.t;owner.device=engine.device;owner.search=engine
+        owner.random_plan=None;owner._counts_as_search=True;owner._outer=runner
+        owner._prepare_capture_streams((runner,))
+
     def test_actual_cuda_ready_leaf_groups_capture_and_preserve_full_budget(self):
         import torch
         if not torch.cuda.is_available():self.skipTest('Actual CUDA required; controlled fixture only')
@@ -637,7 +644,7 @@ class DeviceSearchTest(unittest.TestCase):
         ids=torch.zeros((8,2),dtype=torch.int64,device=fixture.device)
         runner=CudaConditionalWhile(device=str(fixture.device),max_ticks=3000,seconds=120)
         self.addCleanup(runner.close)
-        engine.statistics.bind_capture_streams(runner.capture_stream,runner.body_stream)
+        self._bind_native_runner(engine,runner)
         with engine.statistics.capture_scope():
             runner.capture(engine.unfinished_device,engine.tick,
                 initialize=lambda:engine.initialize(roots,fixture.viewer,seeds,ids,ids))
@@ -660,7 +667,7 @@ class DeviceSearchTest(unittest.TestCase):
         ids = torch.zeros((1600, 2), dtype=torch.int64, device=fixture.device)
         runner = CudaConditionalWhile(device=str(fixture.device), max_ticks=3000, seconds=120)
         self.addCleanup(runner.close)
-        engine.statistics.bind_capture_streams(runner.capture_stream, runner.body_stream)
+        self._bind_native_runner(engine,runner)
         with engine.statistics.capture_scope():
             runner.capture(engine.unfinished_device, engine.tick,
                 initialize=lambda: engine.initialize(roots, fixture.viewer, seeds, ids, ids))

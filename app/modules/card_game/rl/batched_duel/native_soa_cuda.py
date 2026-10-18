@@ -66,7 +66,19 @@ class CudaSoARules:
                  direct_runtime_calls=False, indexed_container_methods=False,
                  direct_type_queries=False, indexed_entity_queries=False,
                  runtime_primitive_compare=False,direct_deepcopy_calls=False,
-                 native_hydration_probe=False,hydration_program=None):
+                 native_hydration_probe=False,hydration_program=None,
+                 native_preview_arena=False,preview_program=None):
+        if type(native_preview_arena) is not bool:
+            raise ValueError('Explicit native preview arena bool required')
+        if native_preview_arena:
+            if native_hydration_probe is not False:
+                raise ValueError('Native preview arena and hydration probe are incompatible')
+            if (execute_only is not False or separate_compilation is not True
+                    or native_functions is not True):
+                raise ValueError('Native preview arena requires full separate native functions')
+            from ..rule_ir.portable_program import FrozenRuleProgram
+            if not isinstance(preview_program,FrozenRuleProgram):
+                raise ValueError('Native preview arena requires the actual FrozenRuleProgram')
         if type(native_hydration_probe) is not bool:
             raise ValueError('Explicit native hydration probe bool required')
         if native_hydration_probe and execute_only is not False:
@@ -100,7 +112,8 @@ class CudaSoARules:
         self.stack_runs=stack_runs
         self.native_functions=native_functions
         self.native_values=native_values
-        self.rule_source_sha256 = source_identity(source)
+        self.canonical_rule_source_sha256 = source_identity(source)
+        self.rule_source_sha256 = self.canonical_rule_source_sha256
         self.execute_only = execute_only
         self.separate_compilation = separate_compilation
         self.indexed_attributes = indexed_attributes
@@ -112,6 +125,9 @@ class CudaSoARules:
         self.direct_deepcopy_calls = direct_deepcopy_calls
         self.native_hydration_probe = native_hydration_probe
         self.hydration_probe_binding = None
+        self.native_preview_arena = native_preview_arena
+        self.preview_arena_binding = None
+        self.preview_arena_identity = None
         if execute_only:
             from .native_soa_source import execute_only_source
             source = execute_only_source(source)
@@ -156,6 +172,14 @@ class CudaSoARules:
                 from .native_hydration_probe import specialize_hydration_probe
                 compiled_units, self.hydration_probe_binding = specialize_hydration_probe(
                     compiled_units, image, schema, program=hydration_program, enabled=True)
+            if native_preview_arena:
+                from .native_preview_arena import transform_units
+                transform = transform_units(compiled_units,image,schema,preview_program)
+                transform.verify()
+                compiled_units = transform.units
+                self.preview_arena_binding = dict(transform.binding)
+                self.preview_arena_identity = transform.identity
+                self.rule_source_sha256 = transform.identity
             units = [(unit.name, unit.source) for unit in compiled_units]
         object_specs = ({name: signatures[name] for name in ('vm_soa_execute', 'vm_clock')}
                         if separate_compilation else None)
@@ -166,6 +190,11 @@ class CudaSoARules:
         # post-split transform is active. Retain the complete actual binding.
         if self.hydration_probe_binding is not None:
             self.module._compilation_profile['native_hydration_probe'] = self.hydration_probe_binding.to_dict()
+        if self.preview_arena_binding is not None:
+            self.module._compilation_profile['native_preview_arena'] = dict(
+                enabled=True,identity=self.preview_arena_identity,
+                canonical_rule_source_sha256=self.canonical_rule_source_sha256,
+                binding=self.preview_arena_binding)
         self.module.ensure_stack(stack_bytes)
         self.constants = {key: torch.tensor(getattr(image, key).copy(), device=self.device)
                           for key in ('nodes', 'edges', 'payload', 'functions', 'classes', 'modules')}

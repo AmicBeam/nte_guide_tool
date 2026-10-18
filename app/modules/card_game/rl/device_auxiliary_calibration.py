@@ -891,7 +891,7 @@ class DeviceAuxiliaryCalibrationLedger:
                 and not any(a.get('memory_limit_exceeded',False)for a in segment.attempts))
 
     def _save_segment(self,entry,segment):
-        from .device_auxiliary_continuation import dump_auxiliary_checkpoint,auxiliary_content_sha256
+        from .device_auxiliary_continuation import dump_auxiliary_checkpoint,auxiliary_content_sha256,auxiliary_kernel_lineage
         ordinal=len(entry['checkpoints'])
         name=f"checkpoints/{entry['phase']}-{entry['offset']:03d}-{entry['count']:02d}-{ordinal:05d}.json.gz"
         path=self._checkpoint_path(name)
@@ -901,11 +901,13 @@ class DeviceAuxiliaryCalibrationLedger:
             truncated=list(segment.truncated),metadata_sha256=auxiliary_content_sha256(segment.metadata),
             job_deadlines=[j['deadline']for j in segment.metadata.jobs],
             budget_continuation_sha256=[v.receipt_sha256 for v in segment.budget_continuations])
+        lineage=auxiliary_kernel_lineage(segment)
+        if lineage:item['kernel_lineage']=lineage
         entry['checkpoints'].append(item)
         return item
 
     def _load_segment(self,entry,*,deadline,verify=True):
-        from .device_auxiliary_continuation import load_auxiliary_checkpoint,auxiliary_content_sha256
+        from .device_auxiliary_continuation import load_auxiliary_checkpoint,auxiliary_content_sha256,auxiliary_kernel_lineage
         item=entry['checkpoints'][-1]
         segment=load_auxiliary_checkpoint(self._checkpoint_path(item['path']),expected_sha256=item['sha256'])
         if (auxiliary_content_sha256(segment)!=item['content_sha256']
@@ -913,7 +915,8 @@ class DeviceAuxiliaryCalibrationLedger:
                 or list(segment.steps)!=item['steps']or list(segment.complete)!=item['complete']
                 or list(segment.errors)!=item['errors']or list(segment.truncated)!=item['truncated']
                 or [j['deadline']for j in segment.metadata.jobs]!=item['job_deadlines']
-                or [v.receipt_sha256 for v in segment.budget_continuations]!=item['budget_continuation_sha256']):
+                or [v.receipt_sha256 for v in segment.budget_continuations]!=item['budget_continuation_sha256']
+                or auxiliary_kernel_lineage(segment)!=item.get('kernel_lineage',[])):
             raise ValueError('Latest auxiliary checkpoint/metadata/status/budget ancestry differs')
         return self._check_segment(entry,segment,deadline=deadline,verify=verify)
 
@@ -934,7 +937,20 @@ class DeviceAuxiliaryCalibrationLedger:
             raise ValueError('Physical auxiliary cohort already admitted; never rerun or count twice')
         self._check_segment(entry,segment,deadline=self.deadline)
         if not self._clean(segment):raise ValueError('Only historically clean planned prefixes may be admitted')
+        from .device_auxiliary_continuation import auxiliary_kernel_lineage
+        lineage=auxiliary_kernel_lineage(segment)
+        if lineage:
+            for event in segment.attempts:
+                if event.get('kind')!='kernel_revalidation':continue
+                original=event['old_ledger']['contract']
+                for key in('source_model_versions','starting_decks','seed_reservation','physical_plans','decision_limit','rule_hash'):
+                    if original.get(key)!=self.contract.get(key):
+                        raise ValueError('Corrective ledger must preserve old models/builds/seeds/physical plan/rules')
         self._save_segment(entry,segment)
+        if lineage:
+            entry['kernel_lineage']=lineage
+            self.manifest['events'].append(dict(event='kernel_revalidation_admit',phase=phase,offset=offset,
+                                                lineage=deepcopy(lineage)))
         entry['status']='COMPLETE'if all(segment.complete)else'PAUSED'
         self.manifest['cohorts'].append(entry)
         self.manifest['events'].append(dict(event='admit_prefix',phase=phase,offset=offset))

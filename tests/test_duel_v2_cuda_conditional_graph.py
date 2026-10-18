@@ -166,3 +166,182 @@ class ConditionalStreamOwnershipTest(unittest.TestCase):
             for loop in loops:
                 loop.close();loop.close()
                 self.assertEqual(loop._owned_streams,[])
+
+
+class NativeConditionalContractTest(unittest.TestCase):
+    def fixture(self):
+        from types import SimpleNamespace
+        from app.modules.card_game.rl.batched_search.cuda_conditional_graph import CudaConditionalWhile
+        events=[]
+        parent=SimpleNamespace(cuda_stream=11,device='cuda:0')
+        child=SimpleNamespace(cuda_stream=99,device='cuda:0')
+        state=SimpleNamespace(stream=parent,capturing=False)
+        class Graph:
+            @staticmethod
+            def get_currently_capturing_graph():return graph
+            def begin_capture_to_while_node(self,pred):
+                events.append(('begin',pred));state.stream=child
+            def set_conditional_handle_for_current_node(self,pred):events.append(('set',pred))
+            def end_capture_to_conditional_node(self):events.append(('end',));state.stream=parent
+        graph=Graph()
+        t=SimpleNamespace(cuda=SimpleNamespace(CUDAGraph=Graph,
+            current_stream=lambda device:state.stream,
+            is_current_stream_capturing=lambda:state.capturing))
+        runner=object.__new__(CudaConditionalWhile)
+        runner.t=t;runner.device='cuda:0';runner._closed=False;runner._loop_built=False
+        runner._condition_scalar=object();runner._condition_bytes=object()
+        runner.counter=object();runner.start=object();runner.errors=object()
+        runner.max_ticks=7;runner.budget_ns=2500000000;runner._capture_stream_callbacks=[]
+        runner.module=SimpleNamespace(launch=lambda name,args,**kw:events.append((name,args,kw)))
+        predicate=SimpleNamespace(numel=lambda:1600)
+        return runner,predicate,events,state,parent,child
+
+    def test_native_graph_owns_child_and_observer_sees_exact_stream(self):
+        runner,pred,events,state,parent,child=self.fixture()
+        runner.register_capture_stream_callback(lambda p,b:events.append(('observer',p,b,state.stream)))
+        state.capturing=True
+        with runner._while_body(pred):events.append(('body',state.stream))
+        self.assertEqual([e[0] for e in events],['update_condition','begin','observer','body','update_condition','set','end'])
+        self.assertEqual(events[2][1:],(parent,child,child))
+        self.assertIs(runner.body_stream,child)
+        self.assertIs(state.stream,parent)
+        for event,advance in ((events[0],0),(events[4],1)):
+            self.assertIs(event[1][0],runner._condition_bytes)
+            self.assertIs(event[1][1],pred)
+            self.assertEqual(event[1][2:], [1600,runner.counter,runner.start,runner.errors,7,2500000000,advance])
+            self.assertEqual(event[2],dict(grid=1,block=1,capture_safe=True))
+
+    def test_capture_exception_always_ends_native_child_without_rearming(self):
+        runner,pred,events,state,parent,_=self.fixture();state.capturing=True
+        with self.assertRaisesRegex(ValueError,'body failed'):
+            with runner._while_body(pred):raise ValueError('body failed')
+        self.assertEqual([e[0] for e in events],['update_condition','begin','end'])
+        self.assertIs(state.stream,parent)
+
+    def test_missing_native_api_fails_closed(self):
+        from types import SimpleNamespace
+        from app.modules.card_game.rl.batched_search.cuda_conditional_graph import CudaConditionalWhile
+        runner,_,_,_,_,_=self.fixture()
+        CudaConditionalWhile._require_native_api(runner.t)
+        with self.assertRaisesRegex(RuntimeError,'native conditional.*no raw fallback'):
+            CudaConditionalWhile._require_native_api(SimpleNamespace(cuda=SimpleNamespace(CUDAGraph=object)))
+
+    def test_stream_observers_frozen_before_capture(self):
+        runner,_,_,state,_,_=self.fixture()
+        with self.assertRaises(TypeError):runner.register_capture_stream_callback(None)
+        state.capturing=True
+        with self.assertRaisesRegex(RuntimeError,'before static'):runner.register_capture_stream_callback(lambda *_:None)
+        state.capturing=False;runner._loop_built=True
+        with self.assertRaisesRegex(RuntimeError,'before static'):runner.register_capture_stream_callback(lambda *_:None)
+
+    def test_guard_preserves_iteration_clock_and_unfinished_failure_condition(self):
+        from app.modules.card_game.rl.batched_search.cuda_conditional_graph import _SOURCE
+        self.assertIn('if(advance)(*counter)++',_SOURCE)
+        self.assertIn('unfinished&&(*counter>=max_ticks||elapsed>=(unsigned long long)budget_ns)',_SOURCE)
+        self.assertIn('*errors|=1',_SOURCE)
+        self.assertIn('*proceed=(unsigned char)(unfinished&&!*errors)',_SOURCE)
+        self.assertIn('%%globaltimer',_SOURCE)
+        self.assertNotIn('cudaGraphSetConditional',_SOURCE)
+
+
+class NativeChunkStreamContractTest(unittest.TestCase):
+    def fixture(self):
+        import threading
+        from types import SimpleNamespace
+        from app.modules.card_game.rl.batched_search.device_chunked_games import DeviceChunkedGameLoop
+        class Stream:
+            def __init__(self,handle,device='cuda:0'):self.cuda_stream=handle;self.device=device
+        parent=Stream(11);body=Stream(99)
+        state=SimpleNamespace(stream=body,capturing=True)
+        owner=SimpleNamespace(_owner_thread=threading.get_ident(),_capture_depth=1,_capture_streams=frozenset((11,)))
+        random=SimpleNamespace(_thread=threading.get_ident(),_capture_streams=frozenset((11,)))
+        loop=object.__new__(DeviceChunkedGameLoop);loop.device='cuda:0';loop._counts_as_search=True
+        loop.search=SimpleNamespace(statistics=owner);loop.random_plan=random
+        loop.t=SimpleNamespace(cuda=SimpleNamespace(Stream=Stream,
+            current_stream=lambda device:state.stream,is_current_stream_capturing=lambda:state.capturing))
+        return loop,parent,body,state,owner,random
+
+    def test_exact_native_child_registration_retains_existing_owners(self):
+        loop,parent,body,_,owner,random=self.fixture()
+        loop._register_native_capture_stream(parent,body)
+        self.assertEqual(owner._capture_streams,frozenset((11,99)))
+        self.assertEqual(random._capture_streams,frozenset((11,99)))
+        grandchild=type(body)(101)
+        loop.t.cuda.current_stream=lambda device:grandchild
+        loop._register_native_capture_stream(body,grandchild)
+        self.assertEqual(owner._capture_streams,frozenset((11,99,101)))
+
+    def test_base_and_chunked_prepare_only_known_parent_then_observe_native_child(self):
+        from types import SimpleNamespace
+        from app.modules.card_game.rl.batched_search.device_games import DeviceGameLoop
+        for cls in (DeviceGameLoop,type(self.fixture()[0])):
+            with self.subTest(driver=cls.__name__):
+                fixture,parent,body,state,owner,random=self.fixture()
+                loop=object.__new__(cls);loop.__dict__.update(fixture.__dict__)
+                observed=[]
+                def bind(target):
+                    def apply(a,b):
+                        self.assertIs(a,parent);self.assertIs(b,parent)
+                        target._capture_streams=frozenset((a.cuda_stream,b.cuda_stream))
+                    return apply
+                owner.bind_capture_streams=bind(owner);random.bind_capture_streams=bind(random)
+                outer=SimpleNamespace(capture_stream=parent,
+                    register_capture_stream_callback=lambda cb:observed.append(cb))
+                inner=SimpleNamespace(register_capture_stream_callback=lambda cb:observed.append(cb))
+                loop._outer=outer;loop._prepare_capture_streams((outer,inner))
+                self.assertEqual(owner._capture_streams,frozenset((11,)))
+                self.assertEqual(len(observed),2)
+                observed[0](parent,body)
+                self.assertEqual(random._capture_streams,frozenset((11,99)))
+
+    def test_foreign_parent_thread_scope_device_or_current_stream_rejected_atomically(self):
+        for mutation in ('parent','thread','scope','device','current','eager'):
+            with self.subTest(mutation=mutation):
+                loop,parent,body,state,owner,random=self.fixture()
+                if mutation=='parent':parent.cuda_stream=777
+                if mutation=='thread':random._thread=-1
+                if mutation=='scope':owner._capture_depth=0
+                if mutation=='device':body.device='cuda:1'
+                if mutation=='current':state.stream=parent
+                if mutation=='eager':state.capturing=False
+                with self.assertRaises((RuntimeError,ValueError)):
+                    loop._register_native_capture_stream(parent,body)
+                self.assertEqual(owner._capture_streams,frozenset((11,)))
+                self.assertEqual(random._capture_streams,frozenset((11,)))
+
+
+class NativeAllocatorOwnershipTest(unittest.TestCase):
+    def test_actual_cuda_large_nested_temporaries_survive_independent_graph_capture(self):
+        import torch
+        from app.modules.card_game.rl.batched_search.cuda_conditional_graph import CudaConditionalWhile
+        if not torch.cuda.is_available():self.skipTest('Actual CUDA required')
+        outer=CudaConditionalWhile(max_ticks=3,seconds=10)
+        inner=CudaConditionalWhile(max_ticks=3,seconds=10)
+        x=torch.arange(2**21,device='cuda',dtype=torch.float32)
+        out=torch.zeros_like(x)
+        outer_pred=torch.ones(1,device='cuda',dtype=torch.uint8)
+        inner_pred=torch.ones_like(outer_pred)
+        def body():
+            # This 8MiB allocation has no Python reference after static capture.
+            work=torch.empty_like(x)
+            torch.mul(x,2,out=work);work.add_(3);out.copy_(work)
+            inner_pred.zero_()
+        def turn():
+            inner.capture_loop(inner_pred,body,initialize=lambda:inner_pred.fill_(1))
+            outer_pred.zero_()
+        try:
+            outer.capture(outer_pred,turn,initialize=lambda:outer_pred.fill_(1))
+            later=torch.cuda.CUDAGraph();later_stream=torch.cuda.Stream()
+            later_stream.wait_stream(torch.cuda.current_stream())
+            scratch=torch.zeros(1,device='cuda')
+            # torch.cuda.graph empties the allocator cache on entry; a raw
+            # unowned conditional child's temporary allocation was reclaimed.
+            with torch.cuda.graph(later,stream=later_stream,capture_error_mode='thread_local'):
+                scratch.add_(1)
+            for _ in range(4):
+                outer.replay();later.replay();torch.cuda.synchronize()
+                self.assertTrue(torch.equal(out,x*2+3))
+                self.assertEqual(outer.errors.item(),0)
+                self.assertEqual(inner.errors.item(),0)
+        finally:
+            outer.close();inner.close()

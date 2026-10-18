@@ -88,8 +88,9 @@ def verify_auxiliary_segment(segment, *, proof_deadline=None):
     if not isinstance(segment, AuxiliarySegment):raise TypeError('Actual auxiliary segment required')
     if segment.export_errors:raise ValueError('Incomplete/corrupt GPU archive export remains audit-only')
     metadata = _metadata(segment.metadata);rows = len(metadata.jobs)
-    from .device_auxiliary_continuation import verify_auxiliary_budget_history
+    from .device_auxiliary_continuation import verify_auxiliary_budget_history,verify_auxiliary_kernel_history
     verify_auxiliary_budget_history(segment)
+    kernel_boundaries=verify_auxiliary_kernel_history(segment,proof_deadline=proof_deadline)
     if set(segment.source_binding)!={'rule_source','image','schema'} or any(
             not isinstance(v,str)or len(v)!=64 or any(c not in '0123456789abcdef'for c in v)
             for v in segment.source_binding.values()):
@@ -121,6 +122,14 @@ def verify_auxiliary_segment(segment, *, proof_deadline=None):
         state = new_game(**deepcopy(metadata.initializers[owner]))
         _same_graph(segment.initial[owner], state)  # Normal init retains events/cache.
         rng = np.random.default_rng(job['seed'])
+        def kernel_boundary(step):
+            for original in kernel_boundaries:
+                if original.steps[owner]==step:
+                    _same_graph(original.final[owner],state)
+                    if (original.pcg_states[owner]!=rng.bit_generator.state
+                            or original.complete[owner]!=(state['phase']=='finished')):
+                        raise ValueError('Historical kernel boundary state/RNG/terminal changed')
+        kernel_boundary(0)
         for step in range(segment.steps[owner]):
             if proof_deadline is not None and time.monotonic() >= proof_deadline:
                 raise TimeoutError('Auxiliary postbatch proof deadline exhausted')
@@ -157,6 +166,7 @@ def verify_auxiliary_segment(segment, *, proof_deadline=None):
                 if v['context'][viewer]!=int(actor==side):raise ValueError('GPU value actor context differs')
             _same_graph(state,before)
             state=clean(apply_action(state,actor,deepcopy(r['raw_action'])))
+            kernel_boundary(step+1)
         if segment.final[owner] is None:raise ValueError('Missing registry-verified final state')
         _same_graph(segment.final[owner],state)
         if segment.pcg_states[owner]!=rng.bit_generator.state:raise ValueError('Final six-field PCG state differs')
@@ -212,6 +222,9 @@ def verified_auxiliary_games(segment, *, proof_deadline=None):
             seed=job['seed'],first=job['first'],job=deepcopy(job),rule_backend='cuda_soa',
             auxiliary_value_only=True,formal_training_qualified=False,decision_limit=segment.decision_limit,
             source_binding=deepcopy(segment.source_binding),execution=deepcopy(metadata.execution)))
+        from .device_auxiliary_continuation import auxiliary_kernel_lineage
+        lineage=auxiliary_kernel_lineage(segment)
+        if lineage:games[-1]['source_lineage']=lineage
     return games
 
 

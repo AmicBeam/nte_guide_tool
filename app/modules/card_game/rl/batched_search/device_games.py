@@ -428,6 +428,42 @@ class DeviceGameLoop:
         self._drain_interrupted_search()
         self._commit_turn()
 
+    def _register_native_capture_stream(self, parent, body):
+        """Admit only an observed native conditional child of a bound stream."""
+        import threading
+        t=self.t
+        if not t.cuda.is_current_stream_capturing():
+            raise RuntimeError('Native child streams are registered during capture only')
+        if any(not isinstance(s,t.cuda.Stream) or s.device!=self.device for s in (parent,body)):
+            raise ValueError('Exact same-device native capture streams required')
+        if t.cuda.current_stream(self.device).cuda_stream!=body.cuda_stream:
+            raise RuntimeError('Native child must be the actual current capture stream')
+        owners=(self.search.statistics if self._counts_as_search else None,self.random_plan)
+        for owner in owners:
+            if owner is None:continue
+            owner_thread=(owner._owner_thread if owner is getattr(self.search,'statistics',None)
+                          else owner._thread)
+            if threading.get_ident()!=owner_thread:
+                raise RuntimeError('Native capture streams require their owning driver thread')
+            if owner is getattr(self.search,'statistics',None) and not owner._capture_depth:
+                raise RuntimeError('Statistics native child requires active capture scope')
+            if parent.cuda_stream not in owner._capture_streams:
+                raise RuntimeError('Native child has an unbound parent stream')
+        # Validate all owners before changing any whitelist.
+        for owner in owners:
+            if owner is not None:
+                owner._capture_streams=owner._capture_streams | frozenset((body.cuda_stream,))
+
+    def _prepare_capture_streams(self, runners):
+        # Only this known parent is admitted before capture. Native child
+        # streams are observed at their creation, never inferred from capture.
+        stream=self._outer.capture_stream
+        for owner in (self.search.statistics if self._counts_as_search else None,self.random_plan):
+            if owner is not None and callable(getattr(owner,'bind_capture_streams',None)):
+                owner.bind_capture_streams(stream,stream)
+        for runner in runners:
+            runner.register_capture_stream_callback(self._register_native_capture_stream)
+
     def capture(self, roots, job_seeds, policy_index_by_side, auxiliary_index_by_side,
                 train_sides):
         if self._outer is None or self._inner is None:
@@ -435,10 +471,7 @@ class DeviceGameLoop:
         if (self._outer.graph is not None or self._outer._loop_built
                 or self._inner.graph is not None or self._inner._loop_built):
             raise RuntimeError('Device loop is already frozen')
-        if self._counts_as_search:
-            self.search.statistics.bind_capture_streams(self._outer.body_stream, self._inner.body_stream)
-        if self.random_plan is not None and callable(getattr(self.random_plan, 'bind_capture_streams', None)):
-            self.random_plan.bind_capture_streams(self._outer.body_stream, self._inner.body_stream)
+        self._prepare_capture_streams((self._outer,self._inner))
         from contextlib import nullcontext
         scope = self.search.statistics.capture_scope() if self._counts_as_search else nullcontext()
         with scope:

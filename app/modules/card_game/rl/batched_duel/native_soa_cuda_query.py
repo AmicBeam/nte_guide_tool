@@ -28,7 +28,8 @@ class NativeSoACUDAQuery:
                  stack_bytes=131072, direct_runtime_calls=False, indexed_container_methods=False,
                  direct_type_queries=False, indexed_entity_queries=False,
                  runtime_primitive_compare=False,direct_deepcopy_calls=False,
-                 native_hydration_probe=False,hydration_program=None):
+                 native_hydration_probe=False,hydration_program=None,
+                 native_preview_arena=False,preview_program=None):
         if type(seconds) not in (int,float) or not 0<seconds<=3600:
             raise ValueError('Bounded CUDA diagnostic call budget required')
         for value in (max_nodes,max_edges,max_payload_bytes):
@@ -41,11 +42,16 @@ class NativeSoACUDAQuery:
             indexed_container_methods=indexed_container_methods,
             direct_type_queries=direct_type_queries, indexed_entity_queries=indexed_entity_queries,
             runtime_primitive_compare=runtime_primitive_compare,direct_deepcopy_calls=direct_deepcopy_calls,
-            native_hydration_probe=native_hydration_probe,hydration_program=hydration_program)
+            native_hydration_probe=native_hydration_probe,hydration_program=hydration_program,
+            native_preview_arena=native_preview_arena,preview_program=preview_program)
         self.image,self.schema,self.limits,self.seconds=image,schema,limits,seconds
         self.max_nodes,self.max_edges,self.max_payload_bytes=max_nodes,max_edges,max_payload_bytes
         self.source_sha256=self.executor.source_sha256
         self.hydration_probe_binding=self.executor.hydration_probe_binding
+        self.canonical_rule_source_sha256=self.executor.canonical_rule_source_sha256
+        self.rule_source_sha256=self.executor.rule_source_sha256
+        self.preview_arena_binding=self.executor.preview_arena_binding
+        self.preview_arena_identity=self.executor.preview_arena_identity
         self._constants={key:np.ascontiguousarray(getattr(image,key)) for key in ('nodes','edges','payload')}
         self.closed=False
         if directory is not None:
@@ -62,6 +68,14 @@ class NativeSoACUDAQuery:
                 (output/'native_hydration_probe_binding.json').write_text(
                     json.dumps(dict(unpatched_monolithic_source_sha256=self.source_sha256,
                         actual_post_split_binding=self.hydration_probe_binding.to_dict()),indent=2)+'\n',encoding='utf8')
+            if self.preview_arena_binding is not None:
+                import json
+                (output/'native_preview_arena_binding.json').write_text(
+                    json.dumps(dict(unpatched_monolithic_source_sha256=self.source_sha256,
+                        canonical_rule_source_sha256=self.canonical_rule_source_sha256,
+                        actual_rule_source_sha256=self.rule_source_sha256,
+                        identity=self.preview_arena_identity,
+                        actual_post_split_binding=self.preview_arena_binding),indent=2)+'\n',encoding='utf8')
 
     def call(self,entry,state,arguments,*,state_positions=(0,),steps=None):
         if self.closed:

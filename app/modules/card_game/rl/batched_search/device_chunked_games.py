@@ -108,11 +108,7 @@ class DeviceChunkedGameLoop(DeviceGameLoop):
         t=self.t
         # Register exactly the actual nested dependency-linked capture streams.
         runners=(self._outer,self._inner,self._start_gate,self._commit_gate,self._abort_gate)
-        streams=[r.body_stream for r in runners]+[self._outer.capture_stream]
-        for owner in (self.search.statistics if self._counts_as_search else None,self.random_plan):
-            if owner is not None and callable(getattr(owner,'bind_capture_streams',None)):
-                owner.bind_capture_streams(streams[0],streams[1])
-                owner._capture_streams=frozenset(s.cuda_stream for s in streams)
+        self._prepare_capture_streams(runners)
         scope=self.search.statistics.capture_scope()if self._counts_as_search else nullcontext()
         stream=self._outer.capture_stream
         stream.wait_stream(t.cuda.current_stream(self.device))

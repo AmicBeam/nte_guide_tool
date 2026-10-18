@@ -911,3 +911,7 @@ Windows验收前可仅输出配置：
 `value_fit_collect_only=True` 在持久化全价值塔的训练／选择采集完成后、优化器启动前返回 `value_calibration_ready_to_fit`；已有拟合完成回执时继续留出采集。`max_new_batches` 对同一校准上下文中的所有阶段累计，完成缓存不占新批次名额。
 
 单个设备进程使用至多150秒软预算和180秒外部保护，GPU整卡上限14336MiB。正常短段暂停不改变自然终局、独立校准或完整搜索验收要求。验证：`python -m unittest tests.test_duel_v2_device_auxiliary_continuation tests.test_duel_v2_pure_checkpoint tests.test_duel_v2_device_h3_proof_cache tests.test_duel_v2_value_fit_cache`，并运行相应采集、学习上下文和联合学习回归。
+
+辅助拟合可通过 `checkpoint_dir`、`resume`、`process_seconds` 和显式续预算授权逐 cohort 证明、优化器批次与指标单位恢复；主价值对应 `value_fit_process_seconds`。每单位执行前标记 RUNNING，完成后保存真实数值、优化器与随机状态，再提交 READY；不确定或失败单位拒绝重算。单元之间的软截止不代替180秒进程与整卡显存保护。
+
+派生规则后端修复后，必须保留旧 REJECTED ledger、失败报告及其检查点。`create_auxiliary_kernel_revalidation` 仅接纳历史完全干净的实际前缀：先核修复GPU原始数组、完整合法动作／选点与CPU状态对拍、源单元绑定及文件完整性，再完整重证旧前缀，写入新纠正队列。审计事件明确 `gpu_replay_executed=False`，保存旧完整快照与预算祖链、旧／新执行绑定及失败回指；原前缀不宣称由新GPU内核采集。原字段、旧安全codec和旧内容哈希不改，未来恢复在同一次CPU重放中核原步数边界的final／PCG；失败段本身不得迁入，不能原地清除REJECTED。

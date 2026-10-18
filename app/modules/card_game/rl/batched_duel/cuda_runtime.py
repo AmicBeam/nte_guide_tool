@@ -594,6 +594,7 @@ class CudaModule:
         self._nv: Any = None
         self._drv: Any = None
         self._stream: Any = None
+        self._capture_tensor_refs: Dict[int, Any] = {}
 
         # Deferred torch import and CUDA verification
         import torch
@@ -930,7 +931,7 @@ class CudaModule:
         """Asynchronously launch a kernel on the module's stream and return a completion event.
 
         - Coordinates caller stream with self._stream.wait_stream.
-        - Calls Tensor.record_stream for all tensor arguments.
+        - Retains tensor arguments during actual capture; otherwise uses record_stream.
         - Guarantees ctypes parameter pointer structures stay alive across cuLaunchKernel.
         - Does NOT synchronize on CPU or evaluate elements synchronously.
         - Returns a real torch.cuda.Event recorded on completion.
@@ -1020,9 +1021,18 @@ class CudaModule:
         if caller_stream != launch_stream:
             self._stream.wait_stream(caller_stream)
 
-        # Extend asynchronous memory lifetime for tensor arguments
-        for t in tensors_to_record:
-            t.record_stream(launch_stream)
+        # Native conditional body streams belong to PyTorch's graph and may
+        # be destroyed at capture end. Recording borrowed allocations against
+        # those streams leaves allocator events targeting an expired handle.
+        # Keep every captured argument alive instead; close synchronizes the
+        # device before releasing these references. Ordinary asynchronous
+        # launches keep their existing allocator/event/stream ordering.
+        if capture_safe and torch.cuda.is_current_stream_capturing():
+            for tensor in tensors_to_record:
+                self._capture_tensor_refs[id(tensor)] = tensor
+        else:
+            for tensor in tensors_to_record:
+                tensor.record_stream(launch_stream)
 
         # Construct parameter pointers array; elements remain alive on Python stack across call
         param_ptrs = (ctypes.c_void_p * len(c_values))()
@@ -1060,9 +1070,21 @@ class CudaModule:
 
     @_bound_cuda_device
     def close(self) -> None:
-        """Idempotently close the module, synchronize its own stream, and unload module."""
+        """Stop use before close; retained capture arguments require device completion.
+
+        A captured graph must not be replayed after its kernel module closes.
+        A failed synchronization preserves the references/module for retry.
+        """
         if self._closed:
             return
+        retained = getattr(self, '_capture_tensor_refs', {})
+        if retained:
+            import torch
+            if torch.cuda.is_current_stream_capturing():
+                raise RuntimeError('Cannot release captured kernel arguments during CUDA capture')
+            # The module stream does not own native conditional replay work.
+            # Synchronize once at lifetime end, never once per captured kernel.
+            torch.cuda.synchronize(self._device)
         self._closed = True
 
         if self._stream is not None:
@@ -1079,6 +1101,7 @@ class CudaModule:
             self._module = None
 
         self._kernels.clear()
+        retained.clear()
 
     def __enter__(self) -> CudaModule:
         return self

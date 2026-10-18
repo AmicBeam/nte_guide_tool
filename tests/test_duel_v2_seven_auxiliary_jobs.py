@@ -1,6 +1,7 @@
 """Pure planning/reference checks only; no rules, CUDA, rollout or qualification."""
 import ast
 import json
+import inspect
 from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
@@ -9,7 +10,7 @@ import unittest
 from app.modules.card_game.content.duel_v2 import STARTER_DECKS, CARDS
 from app.modules.card_game.rl.build_acceptance import canonical_build
 from app.modules.card_game.rl.seven_schedule import ROSTER
-from app.modules.card_game.rl.seven_auxiliary_jobs import auxiliary_jobs, adapt_auxiliary_jobs
+from app.modules.card_game.rl.seven_auxiliary_jobs import AUXILIARY_DECISION_LIMIT, auxiliary_jobs, adapt_auxiliary_jobs
 from app.modules.card_game.rl import seven_covered_value
 
 
@@ -70,6 +71,8 @@ class AuxiliaryJobsTest(unittest.TestCase):
         self.assertFalse(bound.gpu_qualified);self.assertFalse(bound.formal_training_qualified)
         self.assertEqual(bound.execution['exploration_steps'],6);self.assertEqual(bound.execution['value_start_step'],6)
         self.assertFalse(bound.execution['counts_as_search'])
+        self.assertEqual(bound.execution['max_decisions'],AUXILIARY_DECISION_LIMIT)
+        self.assertEqual(AUXILIARY_DECISION_LIMIT,512)
         for job,init,keys in zip(jobs,bound.initializers,bound.keys):
             self.assertEqual(init,dict(seed=job['seed'],first_side=job['first'],decks=job['decks'],skip_mulligan=False,escalation=True))
             self.assertEqual(keys,job['keys'])
@@ -141,6 +144,10 @@ class AuxiliaryJobsTest(unittest.TestCase):
         names=('seven_covered_value.py','covered_rollout.py','seven_sampler.py','policies.py','seven_auxiliary_jobs.py')
         for name in names:digest.update((folder/name).read_bytes())
         self.assertEqual(seven_covered_value.identity(),digest.hexdigest())
+        collector=ast.parse(inspect.getsource(seven_covered_value.collect_game))
+        loops=[n for n in ast.walk(collector)if isinstance(n,ast.For)]
+        physical=next(n for n in loops if isinstance(n.target,ast.Name)and n.target.id=='step')
+        self.assertEqual(physical.iter.args[0].id,'AUXILIARY_DECISION_LIMIT')
         legacy=sha256()
         for name in names[:-1]:legacy.update((folder/name).read_bytes())
         self.assertNotEqual(seven_covered_value.identity(),legacy.hexdigest())

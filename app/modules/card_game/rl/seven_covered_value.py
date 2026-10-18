@@ -5,6 +5,8 @@ from pathlib import Path
 import time
 import numpy as np
 
+from .seven_auxiliary_jobs import AUXILIARY_DECISION_LIMIT
+
 
 def identity():
     root=Path(__file__).parent;digest=sha256()
@@ -73,7 +75,7 @@ def collect_game(job):
     from .information_search import terminal_value
     state=new_game(seed=job['seed'],first_side=job['first'],decks=job['decks'])
     rng=np.random.default_rng(job['seed']);rows=[];trace=[]
-    for step in range(512):
+    for step in range(AUXILIARY_DECISION_LIMIT):
         if state['phase']=='finished':break
         if time.time()>=job['deadline']:return dict(complete=False,rows=[],value_rows=[])
         actor=acting_side(state);legal,index=rule_decision(state,actor)

@@ -17,10 +17,14 @@ from .seven_schedule import ROSTER, learning_schedule
 from ..content.duel_v2 import CARDS, validate_deck
 
 
+AUXILIARY_DECISION_LIMIT = 512
+
+
 _FIELDS = frozenset(('seed', 'first', 'keys', 'decks', 'deadline'))
 _EXECUTION = dict(policy='visible_rule', counts_as_search=False, simulations=0,
                   exploration_steps=6, exploration_phase='playing',
-                  exploration_rng='numpy_pcg64_bounded_integers', value_start_step=6)
+                  exploration_rng='numpy_pcg64_bounded_integers', value_start_step=6,
+                  max_decisions=AUXILIARY_DECISION_LIMIT)
 
 
 def _deadline(value):

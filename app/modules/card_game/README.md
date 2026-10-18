@@ -1325,3 +1325,12 @@ SoA 验收 CLI 可显式传 `--defer-physical-presentation` 接入上述闭环�
 `seven_auxiliary_jobs.auxiliary_jobs` 复用既有七队广覆盖计划的配对种子、变化卡牌及顺序；调用方显式传本轮冻结起点。`adapt_auxiliary_jobs(..., starting_decks=...)` 必须绑定真实七队起点，逐侧核对角色及顺序，允许合法卡牌变化，保留原 job 牌序与截止，初始化保留正常起手换牌。计划和元数据适配均不执行规则、推理或学习；辅助算法身份包含该计划代码，不能沿用过期 scope。验证 `tests.test_duel_v2_seven_auxiliary_jobs`。
 
 冻结可显式选择 `aura_query_fastpaths=True`，默认关闭。该选项从正式 `modifiers.evaluate` 派生，仅跳过三个经源结构核验、属性不匹配时必为空的 aura 生成器；Context 构造、参数求值、库存、条件、贡献顺序与归约保留，自定义类型及未知 provider 原路执行，不缓存效果。宿主先核对构造／provider／依赖身份，冻结体仅使用不可变函数引用，不调用源码检查。验证 `tests.test_duel_v2_gpu_aura_queries`、`tests.test_duel_v2_native_array_program`；实际 GPU 与收益另验。
+
+
+### 设备辅助价值采样组件
+
+`rl/device_auxiliary_collection.py` 的 `DeviceAuxiliaryCollector` 组合真实规则策略、设备对局循环、原始动作与双视角价值记录；只在批后使用正式规则核验。调用方显式提供对局决策上限、绝对截止时间、显存预算和进程级超时保护。当前辅助价值合同绑定 512 次决策；其他上限仅可诊断，不能导出该合同的学习数据。
+
+正常分段暂停不修改终局、截断或错误标记，也不提前生成终局标签。恢复核对原始动作前缀、完整状态与别名、PCG 状态、版本及源码绑定，上传原有 GPU 价值记录，并由最终 GPU 终局处理补齐整段历史标签。只有全批自然终局、完整核验且无历史错误的轨迹可导出价值样本。组件接管并释放调用方交入的三个独立存储区，借用的规则执行器仍由调用方管理。它不提供正式闭环 Gumbel driver、辅助模型 scope 或评估资格。
+
+相关 CPU 契约验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_auxiliary_collection tests.test_duel_v2_seven_auxiliary_jobs tests.test_duel_v2_device_pure_value_tape -q`。GPU 对拍和本轮性能记录保存在 `artifacts/rl-evals/`，不由这些 CPU 测试代替。

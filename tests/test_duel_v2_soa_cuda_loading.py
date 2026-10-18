@@ -75,7 +75,7 @@ class DeviceStackBoundsTests(unittest.TestCase):
         from app.modules.card_game.rl.batched_duel.native_soa_cuda import CudaSoARules
         with patch('torch.cuda.is_available',return_value=True):
             for invalid in (True,0,65536,2**21):
-                with self.subTest(stack=invalid),self.assertRaisesRegex(ValueError,'at least 128 KiB'):
+                with self.subTest(stack=invalid),self.assertRaisesRegex(ValueError,'Full SoA requires 128 KiB to 1 MiB'):
                     CudaSoARules(None,None,device='cuda:0',stack_bytes=invalid)
 
 

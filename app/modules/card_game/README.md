@@ -1342,3 +1342,5 @@ SoA 验收 CLI 可显式传 `--defer-physical-presentation` 接入上述闭环�
 原生 SoA 规则适配器对不超过 32 行的工作批次默认采用单线程块压实，使各行独立分布到不同 block；更大工作批次及通用压实器仍保留原 128 线程配置。只改变启动网格，规则程序、CUDA 源码、容量与二进制缓存身份保持不变；新捕获会读取实际配置。
 
 GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超过32行保留128线程；其他投影路径保持原启动配置。此项仅调整行独立kernel的启动几何，CUDA源码、候选顺序、可见信息、错误和容量行为不变。验证运行 `python -m unittest tests.test_duel_v2_projection_geometry tests.test_duel_v2_device_projection`，并补GPU完整状态、动作与编码对拍；局部优化不代表完整Gumbel或训练资格。
+
+完整 SoA 后端可显式设置 `native_hydration_probe=True, hydration_program=program` 启用实体恢复原生探针，要求 `native_functions=True`、`separate_compilation=True` 和 `execute_only=False`。默认关闭，不额外解析程序且保留原编译单元。启用时核对实际 FrozenRuleProgram、image、规范函数／实体类／全局绑定、稳定 AST 和 typed schema；只有确认无需恢复实体或修复别名的状态才走快路，其余继续完整原函数。探针工作计入额外 VM 预算，命中会省去临时分配，因此不承诺旧 opcode／分配计数等价。必须同时保存 `hydration_probe_binding` 的实际 ordered-unit SHA、recipe 与 program／image／schema 身份，原 monolithic `source_sha256` 不能单独描述启用后的程序；独立完成对应GPU对拍后方可用于验收，不自动获得H3或完整训练资格。CPU验证运行 `python -m unittest tests.test_duel_v2_native_hydration_probe tests.test_duel_v2_soa_cuda_loading`。

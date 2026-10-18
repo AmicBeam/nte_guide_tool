@@ -302,3 +302,5 @@ SoA工厂还默认开启 `reuse_root_observation`：只复用本次初始化、�
 小批次规则适配器默认压实配置只覆盖 `rows <= 32` 的工作通道。通用压实器和更大批次的默认值不随之改变。默认接线需要直接读取实际压实器配置，并保留二进制缓存身份、父状态与完整推进结果的 GPU 核验，不以脚本手动设置候选参数代替构造路径验收。
 
 公开合法动作的GPU raw-token解析在1～32行默认每block1线程，超过32行及非raw-token路径保留128线程。CUDA源码和容量不随此调整改变；验收须核实际默认调用的grid/block、动作顺序、x/c编码、状态／RNG／别名及错误路径，不能把手动覆盖启动参数的脚本当默认接线证据。CPU验证见 `tests.test_duel_v2_projection_geometry` 与 `tests.test_duel_v2_device_projection`；完整搜索、自然终局和训练资格仍单独验收。
+
+实体恢复原生探针为默认关闭的完整 SoA opt-in：`native_hydration_probe=True, hydration_program=program` 仅允许完整 native functions、分离编译及 `execute_only=False`。验收需绑定实际 FrozenRuleProgram/image、规范 AST/函数与类及globals、typed schema和完整 post-split 编译单元顺序／SHA／recipe。`source_sha256` 仍指未变换的 monolithic 源码，不足以单独代表启用后的程序；应核 `hydration_probe_binding.identity` 与完整binding。HIT只省略无需改变语义的实体恢复，MISS继续完整原body；额外原生探针工作消耗真实VM预算，HIT的临时分配改变，不能声称旧opcode或分配等价。关闭路径、异常身份／别名／字段、预算边界、跨Python稳定AST及实际GPU完整状态／动作／编码／RNG对拍均须覆盖；不得据此将局部通过登记为H3／400并发／完整训练通过。相关CPU测试为 `tests.test_duel_v2_native_hydration_probe` 与 `tests.test_duel_v2_soa_cuda_loading`。

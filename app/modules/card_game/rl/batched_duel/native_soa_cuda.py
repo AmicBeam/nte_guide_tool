@@ -65,7 +65,17 @@ class CudaSoARules:
                  execute_only=False, separate_compilation=False, indexed_attributes=False,
                  direct_runtime_calls=False, indexed_container_methods=False,
                  direct_type_queries=False, indexed_entity_queries=False,
-                 runtime_primitive_compare=False,direct_deepcopy_calls=False):
+                 runtime_primitive_compare=False,direct_deepcopy_calls=False,
+                 native_hydration_probe=False,hydration_program=None):
+        if type(native_hydration_probe) is not bool:
+            raise ValueError('Explicit native hydration probe bool required')
+        if native_hydration_probe and execute_only is not False:
+            raise ValueError('Native hydration probe requires the full module; execute-only diagnostics are unsupported')
+        if native_hydration_probe and (separate_compilation is not True or native_functions is not True or hydration_program is None):
+            raise ValueError('Native hydration probe requires complete separate functions and the actual FrozenRuleProgram')
+        if native_hydration_probe:
+            from .native_hydration_probe import validate_hydration_probe_inputs
+            validate_hydration_probe_inputs(hydration_program,image,schema)
         import torch
         if not str(device).startswith('cuda') or not torch.cuda.is_available():
             raise RuntimeError('Actual CUDA required; CPU fallback is forbidden')
@@ -100,6 +110,8 @@ class CudaSoARules:
         self.indexed_entity_queries = indexed_entity_queries
         self.runtime_primitive_compare = runtime_primitive_compare
         self.direct_deepcopy_calls = direct_deepcopy_calls
+        self.native_hydration_probe = native_hydration_probe
+        self.hydration_probe_binding = None
         if execute_only:
             from .native_soa_source import execute_only_source
             source = execute_only_source(source)
@@ -140,12 +152,20 @@ class CudaSoARules:
             if indexed_container_methods:
                 from .native_effect_queries import specialize_effect_queries
                 compiled_units[0] = specialize_effect_queries(compiled_units[0], image)
+            if native_hydration_probe:
+                from .native_hydration_probe import specialize_hydration_probe
+                compiled_units, self.hydration_probe_binding = specialize_hydration_probe(
+                    compiled_units, image, schema, program=hydration_program, enabled=True)
             units = [(unit.name, unit.source) for unit in compiled_units]
         object_specs = ({name: signatures[name] for name in ('vm_soa_execute', 'vm_clock')}
                         if separate_compilation else None)
         self.module = CudaModule(source, signatures, compilation_units=units,
             compilation_unit_specs=object_specs,
             device=str(self.device), binary_format='cubin')
+        # Emitted monolithic source_sha256 is insufficient when the opt-in
+        # post-split transform is active. Retain the complete actual binding.
+        if self.hydration_probe_binding is not None:
+            self.module._compilation_profile['native_hydration_probe'] = self.hydration_probe_binding.to_dict()
         self.module.ensure_stack(stack_bytes)
         self.constants = {key: torch.tensor(getattr(image, key).copy(), device=self.device)
                           for key in ('nodes', 'edges', 'payload', 'functions', 'classes', 'modules')}

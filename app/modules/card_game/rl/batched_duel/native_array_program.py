@@ -35,6 +35,7 @@ def load_native_array_program(path, *, repo_root=None):
             or type(meta.get('policy_query_cache',False)) is not bool
             or type(meta.get('effect_query_fastpaths',False)) is not bool
             or type(meta.get('value_observation_entry',False)) is not bool
+            or type(meta.get('aura_query_fastpaths',False)) is not bool
             or meta.get('extra_zhenhong_simulations') != 0):
         raise ValidationError('Native array frozen protocol mismatch')
     if detect_frozen_runtime(program) != 'seven':
@@ -86,7 +87,7 @@ class NativeArrayExporter(ProgramExporter):
 
 def capture_native_array_program(*, include_teacher_entries=False, owned_transitions=True,
                                  policy_query_cache=False, effect_query_fastpaths=False,
-                                 value_observation_entry=False):
+                                 value_observation_entry=False,aura_query_fastpaths=False):
     """Freeze public-seven rules; teachers are absent by default, not disabled later.
 
     State transfer/compaction and typed observation encoders use the existing
@@ -94,7 +95,8 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
     information guards before a world can be consumed by search.
     """
     if any(type(value) is not bool for value in (include_teacher_entries,owned_transitions,
-                                                policy_query_cache,effect_query_fastpaths,value_observation_entry)):
+                                                policy_query_cache,effect_query_fastpaths,value_observation_entry,
+                                                aura_query_fastpaths)):
         raise TypeError('Explicit native-array capture options required')
     if value_observation_entry and not policy_query_cache:
         raise ValueError('Value-only observation requires the indexed policy projection')
@@ -132,6 +134,10 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
         from .gpu_effect_queries import query_legacy_effects, query_all_effects
         replacements[modifiers.legacy_effects] = query_legacy_effects
         replacements[modifiers.all_effects] = query_all_effects
+    if aura_query_fastpaths:
+        from ...engine.duel_v2 import modifiers
+        from .gpu_aura_queries import capture_aura_evaluate
+        replacements[modifiers.evaluate]=capture_aura_evaluate()
     characters = tuple(PUBLIC_CHARACTER_IDS)
     cards = tuple(cid for cid, card in CARDS.items() if card['character_id'] in characters)
     exporter = NativeArrayExporter(replacements, allowed_module_prefixes=ALLOWED_MODULE_PREFIXES,
@@ -146,6 +152,8 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
         source_names.append('gpu_cached_policy_projection.py')
     if value_observation_entry:
         source_names.append('gpu_value_projection.py')
+    if aura_query_fastpaths:
+        source_names.append('gpu_aura_queries.py')
     if effect_query_fastpaths:
         source_names.append('gpu_effect_queries.py')
     for name in source_names:
@@ -157,6 +165,7 @@ def capture_native_array_program(*, include_teacher_entries=False, owned_transit
         owned_workspace=owned_transitions, teacher_entries=include_teacher_entries,
         policy_query_cache=policy_query_cache,
         value_observation_entry=value_observation_entry,
+        aura_query_fastpaths=aura_query_fastpaths,
         effect_query_fastpaths=effect_query_fastpaths,
         extra_zhenhong_simulations=0, complete_native_compilation_required=True,
         interpreter_fallback=False, gpu_qualified=False)

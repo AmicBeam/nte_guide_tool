@@ -59,24 +59,10 @@ def main():
         learning_rate=.0003,epochs=[1,2,4,8],temperatures=[1.,2.,4.],phase_counts=counts,
         value_only=True,learner_updates=0,objective='visible_rule_after_six_exploration_actions'))
     snapshot(ROOT,a.output/'source',EXTRA+('app/modules/card_game/rl/covered_value.py','app/modules/card_game/rl/recovery_sampler.py','scripts/prepare_duel_v2_covered_value.py'))
-    decks=preset_decks();plan=learning_schedule()+[dict(left=k,right=k,first=f) for k in ROSTER for f in ('a','b')]
+    from app.modules.card_game.rl.seven_auxiliary_jobs import auxiliary_jobs
+    decks=preset_decks()
     def jobs(base,replicas):
-        result=[]
-        for replica in range(replicas):
-            for i,item in enumerate(plan):
-                seed=base+replica*100+i//2;rng=np.random.default_rng(seed);builds={}
-                for side,key in (('a',item['left']),('b',item['right'])):
-                    cards=[]
-                    for hero in decks[key]['character_ids']:
-                        kit=[c for c,v in CARDS.items() if v['character_id']==hero and not v.get('derived')]
-                        if (replica+i//2)%3==0:cards+=kit
-                        else:
-                            bag=[c for c in kit for _ in range(2)]
-                            cards+=[bag[int(j)] for j in rng.choice(len(bag),8,replace=False)]
-                    builds[side]=canonical_build(dict(decks[key],card_ids=cards))
-                result.append(dict(seed=seed,first=item['first'],keys={'a':item['left'],'b':item['right']},
-                    decks=builds,deadline=end-30))
-        return result
+        return auxiliary_jobs(base,replicas,decks=decks,deadline=end-30)
     def collect(pool,phase,planned):
         games=[]
         for i,g in enumerate(pool.map(cv.collect_game,planned)):

@@ -8,7 +8,7 @@ import numpy as np
 
 def identity():
     root=Path(__file__).parent;digest=sha256()
-    for name in ('seven_covered_value.py','covered_rollout.py','seven_sampler.py','policies.py'):
+    for name in ('seven_covered_value.py','covered_rollout.py','seven_sampler.py','policies.py','seven_auxiliary_jobs.py'):
         digest.update((root/name).read_bytes())
     return digest.hexdigest()
 

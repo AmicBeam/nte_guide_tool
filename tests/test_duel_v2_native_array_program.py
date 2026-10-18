@@ -176,6 +176,38 @@ class NativeArrayProgramTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'budget'):
                 NativeArrayCUDAQuery(None, seconds=seconds)
 
+    @unittest.skipUnless(sys.version_info[:2]==(3,10),'Source capture requires CPython 3.10')
+    def test_aura_gate_is_explicit_freeze_local_and_source_bound(self):
+        from pathlib import Path
+        import tempfile
+        from app.modules.card_game.engine.duel_v2 import modifiers
+        from app.modules.card_game.rl.batched_duel.native_array_program import (
+            capture_native_array_program,load_native_array_program)
+        from app.modules.card_game.rl.rule_ir.portable_program import compute_identity,ValidationError
+        original=modifiers.evaluate
+        with self.assertRaises(TypeError):capture_native_array_program(aura_query_fastpaths=1)
+        program=capture_native_array_program(aura_query_fastpaths=True)
+        names={fn['name']for fn in program.functions}
+        self.assertIn('_aura_evaluate',names)
+        self.assertIn('_frozen_skip_aura',names)
+        self.assertNotIn('_host_skip_aura',names)
+        self.assertNotIn('validate_aura_query_sources',names)
+        self.assertIs(modifiers.evaluate,original)
+        self.assertTrue(program.data['native_array']['aura_query_fastpaths'])
+        source='app/modules/card_game/rl/batched_duel/gpu_aura_queries.py'
+        self.assertIn(source,program.data['source_hashes'])
+        with tempfile.TemporaryDirectory()as folder:
+            path=Path(folder)/'program.json';path.write_text(program.to_json())
+            self.assertEqual(load_native_array_program(path).identity,program.identity)
+            program.data['native_array']['aura_query_fastpaths']=1
+            program.data['identity']=compute_identity(program.data);path.write_text(program.to_json())
+            with self.assertRaises(ValidationError):load_native_array_program(path)
+            program.data['native_array']['aura_query_fastpaths']=True
+            program.data['source_hashes'][source]='0'*64
+            program.data['identity']=compute_identity(program.data);path.write_text(program.to_json())
+            with self.assertRaisesRegex(ValidationError,'source hash'):
+                load_native_array_program(path)
+
 
 if __name__ == '__main__':
     unittest.main()

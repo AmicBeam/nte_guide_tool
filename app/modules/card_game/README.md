@@ -1320,3 +1320,8 @@ SoA 验收 CLI 可显式传 `--defer-physical-presentation` 接入上述闭环�
 `DevicePCG64.integers_device(highs, active, max_retries=128)` 提供精确 NumPy PCG64 的 low=0、逐行 high≤2³¹−1 整数抽样，保留 uint32 半字缓存；上界1及未激活行不消费随机数，非法上界和拒绝重试耗尽返回明确错误，后者回滚全部六字段状态。原 raw／uniform／Gumbel／categorical 不变。验证 `tests.test_duel_v2_device_bounded_integers` 的真实 CUDA 源 CPU shim 与 NumPy 对拍，GPU 数值与设备循环另行验收。
 
 `batched_search/device_rule_policy.py` 是独立的零模拟规则控制器，绑定真实 SoA teacher，保留完整原始合法顺序与规则选择，并另取真实 GPU 行动方价值观察。可显式启用 `explore_first_six=True, exploration_seeds=tuple(job_seeds)`：setup 建立自有 PCG64，构造循环后调用 `bind_game_loop`，仅在物理步号小于6且处于行动阶段时精确整数抽样；不在每次决策重置随机数，原规则选择保留审计。控制器仅关闭自有 RNG，不拥有外部规则及动作租约。验证 `tests.test_duel_v2_device_rule_policy`；这不是 Gumbel、辅助模型 scope 或完整训练服务，不能通过要求 NN argmax 的纯策略结果适配器。
+
+
+`seven_auxiliary_jobs.auxiliary_jobs` 复用既有七队广覆盖计划的配对种子、变化卡牌及顺序；调用方显式传本轮冻结起点。`adapt_auxiliary_jobs(..., starting_decks=...)` 必须绑定真实七队起点，逐侧核对角色及顺序，允许合法卡牌变化，保留原 job 牌序与截止，初始化保留正常起手换牌。计划和元数据适配均不执行规则、推理或学习；辅助算法身份包含该计划代码，不能沿用过期 scope。验证 `tests.test_duel_v2_seven_auxiliary_jobs`。
+
+冻结可显式选择 `aura_query_fastpaths=True`，默认关闭。该选项从正式 `modifiers.evaluate` 派生，仅跳过三个经源结构核验、属性不匹配时必为空的 aura 生成器；Context 构造、参数求值、库存、条件、贡献顺序与归约保留，自定义类型及未知 provider 原路执行，不缓存效果。宿主先核对构造／provider／依赖身份，冻结体仅使用不可变函数引用，不调用源码检查。验证 `tests.test_duel_v2_gpu_aura_queries`、`tests.test_duel_v2_native_array_program`；实际 GPU 与收益另验。

@@ -456,8 +456,254 @@ def _value_fit_finish(folder,binding,selection,chosen,epochs,counts,full):
     return marker
 
 
+class ValueFitPaused(RuntimeError):
+    """A clean numeric value-fit boundary; never partial heldout qualification."""
+    def __init__(self,folder,checkpoint,progress):
+        self.folder=Path(folder);self.checkpoint=str(checkpoint);self.progress=progress
+        super().__init__('Value fitting paused at durable numeric boundary: '+self.checkpoint)
+
+
+def _value_fit_cpu(value):
+    import torch
+    if isinstance(value,torch.Tensor):return value.detach().cpu().clone()
+    if isinstance(value,dict):return{k:_value_fit_cpu(v)for k,v in value.items()}
+    if isinstance(value,list):return[_value_fit_cpu(v)for v in value]
+    if isinstance(value,tuple):return tuple(_value_fit_cpu(v)for v in value)
+    return deepcopy(value)
+
+
+class _ValueFitProcess:
+    """One Adam batch, temperature, epoch, export, or heldout-key per unit.
+
+    READY snapshots use the safe numerical NPZ codec. RUNNING before effects,
+    then a new immutable snapshot and atomic head, prevents duplicate updates.
+    A killed/failed unit remains rejected, never retried from an older head.
+    """
+    def __init__(self,folder,binding,nets,decks,origins,games,selection,metric_fn,deadline,stop,authorization,frozen):
+        import torch
+        from .batched_search.pure_checkpoint import read_payload,write_payload
+        self.t=torch;self.read_payload=read_payload;self.write_payload=write_payload
+        self.folder=folder;self.root=folder/'value-fit-process';self.head=self.root/'head.json'
+        self.running=self.root/'RUNNING.json';self.rejected=self.root/'REJECTED.json';self.owner=self.root/'OWNER'
+        self.binding=binding;self.nets=nets;self.decks=decks;self.origins=origins;self.games=games;self.frozen=frozen
+        self.selection=selection;self.metric_fn=metric_fn;self.deadline=deadline;self.stop=stop
+        import inspect
+        self.contract=dict(schema='main_value_fit_units_v1',binding=binding,
+            selection_evidence_sha256=_value_fit_digest(selection),teams=list(nets),
+            updater='seven_runtime.update_value_only_Adam_lr0.0003_batch128_equal_games',
+            implementation=sha256(inspect.getsource(type(self)).encode()).hexdigest())
+        self.contract=json.loads(json.dumps(self.contract,sort_keys=True,allow_nan=False))
+        self._active=None;self._opt=None;self._rng=None;self._rows=None;self._owned=False
+        if self.head.exists():
+            if self.running.exists()or self.rejected.exists()or self.owner.exists():
+                raise ValueError('Uncertain/rejected value-fit unit cannot be replayed')
+            self.record=json.loads(self.head.read_text())
+            if self.record.get('status')!='READY':raise ValueError('Value-fit process head is not an actual READY boundary')
+            if self.record['contract']!=self.contract:raise ValueError('Value-fit process input/protocol/evidence changed')
+            previous=self.record['deadline']
+            if deadline!=previous:
+                if deadline<=previous or not isinstance(authorization,str)or not authorization.strip():
+                    raise ValueError('Explicit future value-fit budget authorization required')
+                self.record['budgets'].append(dict(before=previous,after=deadline,authorization=authorization.strip()))
+                self.record['deadline']=deadline
+            revisions=sorted(self.root.glob('revision-*'))
+            if not revisions or revisions[-1].name!=self.record['checkpoint']:
+                raise ValueError('Value-fit process checkpoint rewind/orphan rejected')
+            path=self.root/self.record['checkpoint']
+            if sha256((path/'manifest.json').read_bytes()).hexdigest()!=self.record['manifest_sha256']:
+                raise ValueError('Value-fit numeric checkpoint head changed')
+            self.state=read_payload(path,self.contract,kind='main_value_fit')
+            if self._inventory()!=self.state['outputs']:raise ValueError('Completed value-fit artifacts changed')
+            self._restore_rng();write(self.head,self.record)
+        else:
+            if self.root.exists():raise ValueError('Incomplete value-fit numeric journal cannot be restarted')
+            final=folder/'value-fit-checkpoint.json'
+            if not final.exists()and any((folder/name).exists()for name in('value-fit-start.json','models','candidates','value-precheck.json')):
+                raise ValueError('Legacy uncertain value fitting cannot become a numeric resume')
+            self.root.mkdir(parents=True)
+            if not final.exists():_value_fit_new_json(folder/'value-fit-start.json',dict(binding=binding,status='fitting'))
+            self.record=dict(contract=self.contract,deadline=deadline,budgets=[],revision=-1)
+            self.state=dict(phase='fit',team=0,epoch=1,offset=0,permutation=None,temperature=0,
+                net=None,optimizer=None,numpy_rng=None,best=None,updates=0,chosen={},epochs={},counts={},
+                metrics={},metric_cursor=0,held_evidence=None,torch_rng=torch.get_rng_state(),
+                cuda_rng=[v.cpu()for v in torch.cuda.get_rng_state_all()]if torch.cuda.is_initialized()else[],outputs=self._inventory())
+            if final.exists():
+                marker=_value_fit_read(folder,binding,nets,selection,True)
+                self.state.update(phase='fit_complete',team=len(nets),chosen=marker['temperatures'],
+                                  epochs=marker['selected_epochs'],counts=marker['updates'])
+            self._commit()
+        self._restore_completed()
+
+    def _inventory(self):
+        paths=[]
+        for name in('models','candidates'):
+            if(self.folder/name).exists():paths.extend(p for p in(self.folder/name).rglob('*')if p.is_file())
+        paths.extend(self.folder/name for name in('value-fit-start.json','value-fit-checkpoint.json',
+                     'value-precheck.json','value-precheck-complete.json')if(self.folder/name).is_file())
+        return{p.relative_to(self.folder).as_posix():sha256(p.read_bytes()).hexdigest()for p in paths}
+
+    def _register(self,paths):
+        for path in paths:self.state['outputs'][path.relative_to(self.folder).as_posix()]=sha256(path.read_bytes()).hexdigest()
+
+    def _restore_rng(self):
+        self.t.set_rng_state(self.state['torch_rng'])
+        if self.state['cuda_rng']:
+            if not self.t.cuda.is_initialized():raise ValueError('Recorded CUDA RNG requires actual existing CUDA context')
+            self.t.cuda.set_rng_state_all(self.state['cuda_rng'])
+
+    def _restore_completed(self):
+        from . import seven_runtime as rt
+        for key in self.state['chosen']:
+            model=rt.model(self.folder/'models',key)
+            self._copy_heads(self.nets[key],model.weights)
+
+    def _copy_heads(self,net,values):
+        with self.t.no_grad():
+            for name,tensor in net.state_dict().items():
+                if name.startswith(('wdl.','value_net.')):
+                    value=values[name]
+                    if not isinstance(value,self.t.Tensor):value=self.t.as_tensor(value.copy())
+                    tensor.copy_(value.to(device=tensor.device,dtype=tensor.dtype))
+
+    def _progress(self):
+        return dict(phase=self.state['phase'],team=self.state['team'],epoch=self.state['epoch'],
+            offset=self.state['offset'],temperature=self.state['temperature'],metric_cursor=self.state['metric_cursor'],
+            actual_value_updates=sum(v['total_attempted']for v in self.state['counts'].values())+self.state['updates'])
+
+    def _pause(self):raise ValueFitPaused(self.folder,self.root/self.record['checkpoint'],self._progress())
+
+    def _admit(self,label,reserve=5.):
+        import os
+        if min(self.stop-time.monotonic(),self.deadline-time.time())<reserve+5:self._pause()
+        claim=os.open(self.owner,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(claim)
+        if json.loads(self.head.read_text())!=self.record:
+            self.owner.unlink();raise ValueError('Concurrent/stale value-fit worker rejected before effects')
+        self._owned=True
+        write(self.running,dict(checkpoint=self.record['checkpoint'],unit=label,status='RUNNING'))
+
+    def _commit(self):
+        if self._owned and(time.monotonic()>=self.stop or time.time()>=self.deadline):
+            raise TimeoutError('Started value-fit unit exceeded its explicit process/absolute budget')
+        self.state['torch_rng']=self.t.get_rng_state()
+        self.state['cuda_rng']=[v.cpu()for v in self.t.cuda.get_rng_state_all()]if self.t.cuda.is_initialized()else[]
+        self.record['revision']+=1;name='revision-%06d'%self.record['revision']
+        self.write_payload(self.root/name,self.state,self.contract,kind='main_value_fit')
+        self.record.update(checkpoint=name,status='READY',manifest_sha256=sha256((self.root/name/'manifest.json').read_bytes()).hexdigest())
+        write(self.head,self.record)
+        self.running.unlink(missing_ok=True);self.owner.unlink(missing_ok=True);self._owned=False
+
+    def _reject(self,error):
+        if self._owned:
+            write(self.rejected,dict(status='REJECTED',error=repr(error),checkpoint=self.record['checkpoint']))
+            self.owner.unlink(missing_ok=True);self._owned=False
+
+    def _activate(self,key):
+        import numpy as np
+        if self._active==key:return
+        net=self.nets[key];self._opt=self.t.optim.Adam(list(net.wdl.parameters())+list(net.value_net.parameters()),lr=.0003)
+        rows=[r for game in self.games for r in game['value_rows']if r['key']==key]
+        represented=[game for game in self.games if any(r['key']==key for r in game['value_rows'])]
+        if not rows:raise ValueError('Missing complete value-fit rows')
+        self._rows=[dict(r,sample_weight=len(rows)/len(represented)/len(own))
+            for game in represented for own in[[r for r in game['value_rows']if r['key']==key]]for r in own]
+        self._rng=np.random.default_rng(self.binding['seeds']['adaptation']+self.binding['cycle']*10000)
+        if self.state['net']is not None:
+            self._copy_heads(net,self.state['net']);self._opt.load_state_dict(self.state['optimizer'])
+            self._rng.bit_generator.state=self.state['numpy_rng']
+        self._active=key
+
+    def _save_net(self,net):
+        self.state.update(net=_value_fit_cpu({n:t for n,t in net.state_dict().items()if n.startswith(('wdl.','value_net.'))}),
+            optimizer=_value_fit_cpu(self._opt.state_dict()),numpy_rng=deepcopy(self._rng.bit_generator.state))
+
+    def _export(self,net,target,key,origin):
+        from . import seven_runtime as rt
+        paths=[target/(key+ext)for ext in('.json','.npz')]
+        if any(p.exists()for p in paths):raise ValueError('Completed numerical value-fit artifact cannot be overwritten')
+        rt.export(net,target,key,self.decks[key],origin);self._register(paths)
+
+    def fit(self):
+        from . import seven_runtime as rt
+        try:
+            while self.state['phase']=='fit':
+                s=self.state
+                if s['team']==len(self.nets):
+                    self._admit('selected-seven-bank',5)
+                    marker=_value_fit_finish(self.folder,self.binding,self.selection,s['chosen'],s['epochs'],s['counts'],True)
+                    self._register([self.folder/'value-fit-checkpoint.json']);s['phase']='fit_complete';self._commit();break
+                key=list(self.nets)[s['team']];self._activate(key);net=self.nets[key]
+                if s['epoch']>max(self.binding['protocol']['epoch_candidates']):
+                    self._admit('selected-'+key,5)
+                    best=s['best'];self._copy_heads(net,best['heads'])
+                    if any(not self.t.equal(value,self.frozen[key][name])
+                           for name,value in net.state_dict().items()if not name.startswith(('wdl.','value_net.'))):
+                        raise ValueError('Value fitting changed frozen policy tensors')
+                    self._export(net,self.folder/'models',key,dict(self.origins[key],value_temperature=best['score'][2],
+                        value_epoch=best['score'][1],value_calibration=self.binding['protocol']))
+                    s['chosen'][key]=best['score'][2];s['epochs'][key]=best['score'][1]
+                    s['counts'][key]=dict(total_attempted=s['updates'],selected=best['updates'])
+                    s.update(team=s['team']+1,epoch=1,offset=0,permutation=None,temperature=0,net=None,
+                        optimizer=None,numpy_rng=None,best=None,updates=0)
+                    self._active=None;self._commit();continue
+                if s['offset']<len(self._rows):
+                    self._admit('batch-'+key,3)
+                    if s['permutation']is None:s['permutation']=self._rng.permutation(len(self._rows))
+                    indexes=s['permutation'][s['offset']:s['offset']+128]
+                    net.zero_grad(set_to_none=True);rt.update(net,self._opt,[self._rows[int(i)]for i in indexes],value_only=True)
+                    s['offset']+=len(indexes);s['updates']+=1;self._save_net(net);self._commit();continue
+                if s['epoch']in self.binding['protocol']['epoch_candidates']and s['temperature']<3:
+                    self._admit('temperature-'+key,15)
+                    temperature=self.binding['protocol']['temperature_candidates'][s['temperature']]
+                    weight,bias=net.wdl.weight.detach().clone(),net.wdl.bias.detach().clone()
+                    with self.t.no_grad():net.wdl.weight.copy_(weight/temperature);net.wdl.bias.copy_(bias/temperature)
+                    target=self.folder/'candidates'/f"epoch-{s['epoch']}-temperature-{temperature}"
+                    self._export(net,target,key,self.origins[key]);metric=self.metric_fn(self.selection,{key:rt.model(target,key)})[key]
+                    if not math.isfinite(metric['log_loss']):raise ValueError('Nonfinite original selection metric')
+                    score=(metric['log_loss'],s['epoch'],temperature)
+                    if s['best']is None or score<tuple(s['best']['score']):
+                        s['best']=dict(score=score,heads=_value_fit_cpu({n:t for n,t in net.state_dict().items()
+                            if n.startswith(('wdl.','value_net.'))}),updates=s['updates'])
+                    with self.t.no_grad():net.wdl.weight.copy_(weight);net.wdl.bias.copy_(bias)
+                    s['temperature']+=1;self._save_net(net);self._commit();continue
+                self._admit('epoch-'+key,1);s.update(epoch=s['epoch']+1,offset=0,permutation=None,temperature=0)
+                self._save_net(net);self._commit()
+            return _value_fit_read(self.folder,self.binding,self.nets,self.selection,True)
+        except ValueFitPaused:raise
+        except BaseException as error:self._reject(error);raise
+
+    def heldout_metrics(self,held,policies):
+        digest=_value_fit_digest(held)
+        if self.state['held_evidence']is None:
+            self._admit('heldout-input',1);self.state.update(held_evidence=digest,phase='heldout_metrics');self._commit()
+        elif self.state['held_evidence']!=digest:raise ValueError('Original heldout evidence changed during value-fit resume')
+        try:
+            while self.state['metric_cursor']<len(ROSTER):
+                key=ROSTER[self.state['metric_cursor']];self._admit('heldout-'+key,15)
+                self.state['metrics'][key]=self.metric_fn(held,{key:policies[key]})[key]
+                self.state['metric_cursor']+=1;self._commit()
+            return deepcopy(self.state['metrics'])
+        except ValueFitPaused:raise
+        except BaseException as error:self._reject(error);raise
+
+    def begin_report(self):self._admit('value-precheck-report',3)
+
+    def finish_report(self):
+        try:
+            self._register([self.folder/'value-precheck.json',self.folder/'value-precheck-complete.json'])
+            self.state['phase']='complete';self._commit()
+        except BaseException as error:self._reject(error);raise
+
+
+class ValueFitReady(RuntimeError):
+    """Collection-only boundary; no optimizer or fit receipt has been started."""
+    def __init__(self,folder,phase_games):
+        self.folder=Path(folder);self.phase_games=phase_games
+        super().__init__('Value calibration collection is ready for fitting: '+str(folder))
+
+
 def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadline,*,seed_offset=0):
     """Separate value training, selection, and heldout; policy arrays are frozen."""
+    entered=time.monotonic()
     import numpy as np
     import torch
     from . import seven_runtime as rt
@@ -465,6 +711,20 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
     if type(checkpoint_enabled)is not bool:raise TypeError('Explicit value-fit checkpoint boolean required')
     if seed_offset not in (0,6000):raise ValueError('Declared disjoint value seed slot required')
     protocol = value_calibration_protocol(config)
+    process_seconds=config.get('value_fit_process_seconds')
+    process_stop=None
+    if process_seconds is not None:
+        if (type(process_seconds)not in(int,float)or not 0<process_seconds<=150
+                or not checkpoint_enabled or not protocol['full_tower']):
+            raise ValueError('Bounded persistent value fitting requires full tower/checkpoint and at most150seconds')
+        process_stop=entered+process_seconds
+        if config.get('value_fit_process_stop')is not None:
+            stop=config['value_fit_process_stop']
+            if type(stop)not in(int,float)or not math.isfinite(stop):raise ValueError('Finite process monotonic stop required')
+            process_stop=min(process_stop,stop)
+    collect_only=config.get('value_fit_collect_only',False)
+    if type(collect_only)is not bool or (collect_only and not(checkpoint_enabled and protocol['full_tower'])):
+        raise ValueError('Collection-only fit boundary requires persistent full-tower calibration')
     metric_fn = value_metrics
     if config.get('value_metric_backend', 'numpy') != 'numpy':
         from functools import partial
@@ -492,7 +752,18 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
         config['seeds']['selection']+cycle*10000+seed_offset), folder / 'selection') if full else None
     fit_binding=(_value_fit_binding(models,nets,decks,origins,config,protocol,cycle,seed_offset,games)
                  if checkpoint_enabled else None)
-    fit_marker=(_value_fit_read(folder,fit_binding,nets,selection,full)if checkpoint_enabled else None)
+    if collect_only and not(folder/'value-fit-checkpoint.json').exists():
+        if (folder/'value-fit-start.json').exists():
+            raise ValueError('Uncertain value fitting cannot become a collection-only pause')
+        raise ValueFitReady(folder,dict(training=len(games),selection=len(selection),heldout=0))
+    fit_process=None
+    if process_stop is not None:
+        fit_process=_ValueFitProcess(folder,fit_binding,nets,decks,origins,games,selection,metric_fn,
+            deadline,process_stop,config.get('value_fit_resume_authorization'),before)
+        fit_marker=fit_process.fit()
+    else:
+        if(folder/'value-fit-process').exists():raise ValueError('Persistent numeric value fitting cannot be bypassed')
+        fit_marker=(_value_fit_read(folder,fit_binding,nets,selection,full)if checkpoint_enabled else None)
     if fit_marker is not None:
         chosen=deepcopy(fit_marker['temperatures']);chosen_epochs=deepcopy(fit_marker['selected_epochs'])
         update_counts=deepcopy(fit_marker['updates'])
@@ -602,12 +873,13 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
         return folder/'models',report
     report = dict(schema='seven_value_precheck_v1', complete=True, heldout=True,
                   passed=True, rule_hash=config['rule_hash'], models=versions(folder / 'models'),
-                  metrics=metric_fn(held, policies), temperatures=chosen,
+                  metrics=(fit_process.heldout_metrics(held,policies)if fit_process is not None else metric_fn(held,policies)), temperatures=chosen,
                   independent_current_rule_seeds=True, policy_preserved=True,
                   calibration=protocol, selected_epochs=chosen_epochs, updates=update_counts,
                   phase_games=dict(training=len(games),selection=len(selection),heldout=len(held)))
     report['passed'] = rt.value_precheck_ok(report, policies)
     if checkpoint_enabled:
+        if fit_process is not None:fit_process.begin_report()
         if _value_fit_bank_hash(folder/'models')!=fit_marker['models']:
             raise ValueError('Value metrics changed the selected model bank')
         for directory,signature in fit_binding['source_banks'].items():
@@ -617,6 +889,7 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
         _value_fit_new_json(folder/'value-precheck.json',report)
         _value_fit_new_json(folder/'value-precheck-complete.json',dict(fit_receipt_sha256=fit_marker['receipt_sha256'],
             held_evidence_sha256=_value_fit_digest(held),report_sha256=sha256((folder/'value-precheck.json').read_bytes()).hexdigest()))
+        if fit_process is not None:fit_process.finish_report()
     else:
         write(folder / 'value-precheck.json', report)
     return folder / 'models', report
@@ -1146,6 +1419,19 @@ def run_device_value_calibration(out, config, *, collector, resume=False, cache_
         with context:
             models, report = warm_value(context, nets, decks, origins, out/'uncalibrated-initial',
                 out/'value', config, 0, deadline)
+    except ValueFitPaused as paused:
+        result=dict(stage='value_fit_planned_pause',ready=False,formal_policy_updates=0,
+            formal_training_complete=False,checkpoint=paused.checkpoint,fit_directory=str(paused.folder),
+            progress=paused.progress,diagnostics=deepcopy(context.last_diagnostics))
+        write(out/'value-calibration-progress.json',result)
+        return result
+    except ValueFitReady as paused:
+        result=dict(stage='value_calibration_ready_to_fit',ready=False,
+            formal_policy_updates=0,formal_training_complete=False,
+            phase_games=paused.phase_games,fit_directory=str(paused.folder),
+            diagnostics=deepcopy(context.last_diagnostics))
+        write(out/'value-calibration-progress.json',result)
+        return result
     except PureSegmentPaused as paused:
         result=dict(stage='value_calibration_planned_pause',ready=False,
             formal_policy_updates=0,formal_training_complete=False,checkpoint=str(paused.checkpoint),

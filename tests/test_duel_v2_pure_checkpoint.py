@@ -228,6 +228,12 @@ class PureNewBatchWindowTests(unittest.TestCase):
             self.assertFalse(context.last_diagnostics['batches'][-1]['attempted'])
             second = binding_for(adapt_pure_jobs(jobs[8:16],bank),collector.executor,800)
             self.assertTrue((batch_cache_path(root,second)/'completed').exists())
+            # A later warm_value phase uses the same context/process budget.
+            with patch('app.modules.card_game.rl.batched_search.training_rollout.models_for_jobs',return_value=bank):
+                self.assertEqual(context.collect(jobs[:8]),episodes(jobs[:8]))
+                with self.assertRaises(PureSegmentPaused):context.collect(jobs[16:])
+            self.assertEqual(len(gpu),1)
+            self.assertEqual(context.last_diagnostics['new_batches'],1)
 
 
 class PureProcessBudgetTests(unittest.TestCase):

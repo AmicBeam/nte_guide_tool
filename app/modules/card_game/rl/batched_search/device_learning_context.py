@@ -72,6 +72,7 @@ class DeviceValueCalibrationContext:
             raise ValueError('Explicit positive new-batch process limit required')
         self.cache_dir, self.continuation, self.max_segments = cache_dir, continuation, max_segments
         self.max_new_batches = max_new_batches
+        self._new_batches_in_window = 0
         self._diagnostics = dict(batches=[], completed_games=0)
 
     def __enter__(self): return self
@@ -97,7 +98,7 @@ class DeviceValueCalibrationContext:
         adapt_pure_jobs(jobs, models)
         self._diagnostics = dict(batches=[], completed_games=0)
         results = []
-        new_batches = 0
+        new_batches = self._new_batches_in_window
         # Segment restore retains both full device archives and their uploaded
         # history; bound simultaneous roots separately from the phase job count.
         batch_rows = 8 if getattr(self._collector, 'segment_decisions', None) is not None else 32
@@ -123,6 +124,7 @@ class DeviceValueCalibrationContext:
                 returned = self._collector.collect(batch, models, **options)
                 if self.cache_dir is not None and not cached:
                     new_batches += 1
+                    self._new_batches_in_window = new_batches
                     self._diagnostics['new_batches'] = new_batches
                 results.extend(ClosedDeviceLearningContext._checked_results(self, batch, returned))
                 self._diagnostics['completed_games'] += sum(r.get('complete') is True for r in returned)

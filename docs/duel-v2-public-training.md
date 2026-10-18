@@ -908,4 +908,6 @@ Windows验收前可仅输出配置：
 
 `run_device_value_calibration(resume=True)` 核对初始模型银行的实际文件后恢复，避免重新初始化或覆盖导出。持久化价值拟合在训练／选择完成后保存七队数值及拟合回执，留出采集跨段恢复时不重复拟合。`run_device_joint_smoke` 透传持久化选项，联合短训分别保存采样完成、更新完成和冻结评估阶段；恢复绑定源码、检查点目录、种子、构筑、scope与模型文件。无法确认的优化器更新拒绝继续，不能重复更新后冒充一次成功。
 
+`value_fit_collect_only=True` 在持久化全价值塔的训练／选择采集完成后、优化器启动前返回 `value_calibration_ready_to_fit`；已有拟合完成回执时继续留出采集。`max_new_batches` 对同一校准上下文中的所有阶段累计，完成缓存不占新批次名额。
+
 单个设备进程使用至多150秒软预算和180秒外部保护，GPU整卡上限14336MiB。正常短段暂停不改变自然终局、独立校准或完整搜索验收要求。验证：`python -m unittest tests.test_duel_v2_device_auxiliary_continuation tests.test_duel_v2_pure_checkpoint tests.test_duel_v2_device_h3_proof_cache tests.test_duel_v2_value_fit_cache`，并运行相应采集、学习上下文和联合学习回归。

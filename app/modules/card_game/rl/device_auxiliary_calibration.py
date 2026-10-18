@@ -156,7 +156,9 @@ class DeviceAuxiliaryPhaseCollector:
 
 
 def fit_device_auxiliary_calibration(source, output, *, starting_decks, seed_reservation,
-                                     phase_segments=None, deadline, phase_counts=None, device='cuda', ledger=None):
+                                     phase_segments=None, deadline, phase_counts=None, device='cuda', ledger=None,
+                                     checkpoint_dir=None, resume=False, process_seconds=None,
+                                     resume_authorization=None, proof_seconds=20.):
     """Fit value-only AdamW candidates, select temperatures, qualify heldout scope.
 
     Returns ``(models, report)`` only after current ``load_scope`` succeeds.
@@ -164,7 +166,21 @@ def fit_device_auxiliary_calibration(source, output, *, starting_decks, seed_res
     scopes are never modified. This is auxiliary fitting, zero learner updates.
     A supplied durable ledger must be fully complete and match actual source
     model versions; its original cohort deadlines and budget chains are kept.
+
+    Optional checkpoint_dir enables immutable per-cohort proof and numerical
+    batch/metric checkpoints. Use resume=True after AuxiliaryFitPaused; deadline
+    extensions require resume_authorization. process_seconds is a soft boundary
+    budget at most150 seconds. CUDA work cannot be preempted here: retain the
+    caller's180-second process watchdog and whole-device memory protection.
     """
+    if checkpoint_dir is not None:
+        return _fit_auxiliary_resumable(source, output, starting_decks=starting_decks,
+            seed_reservation=seed_reservation, phase_segments=phase_segments, deadline=deadline,
+            phase_counts=phase_counts, device=device, ledger=ledger, checkpoint_dir=checkpoint_dir,
+            resume=resume, process_seconds=process_seconds,
+            resume_authorization=resume_authorization, proof_seconds=proof_seconds)
+    if resume or process_seconds is not None or resume_authorization is not None:
+        raise ValueError('Persistent fitting options require checkpoint_dir')
     import torch
     from . import seven_runtime as rt, seven_round as rr
     from .seven_lineup import identity as rule_identity
@@ -274,6 +290,363 @@ def fit_device_auxiliary_calibration(source, output, *, starting_decks, seed_res
     rr.write(output/'scope.json', report)
     _deadline(deadline)
     return cv.load_scope(output)
+
+
+class AuxiliaryFitPaused(RuntimeError):
+    """A clean numerical/proof boundary, never a qualified calibration scope."""
+    def __init__(self, checkpoint):
+        self.checkpoint = str(checkpoint)
+        super().__init__('Auxiliary fit paused at durable boundary: '+self.checkpoint)
+
+
+def _fit_fingerprint(value):
+    from .batched_search.pure_checkpoint import _encode
+    graph, arrays = _encode(value)
+    digest = sha256(json.dumps(graph, sort_keys=True, allow_nan=False).encode())
+    for name, array in sorted(arrays.items()):
+        digest.update(name.encode()); digest.update(array.dtype.str.encode())
+        digest.update(str(array.shape).encode()); digest.update(array.tobytes())
+    return digest.hexdigest()
+
+
+def _fit_cpu(value):
+    import torch
+    if isinstance(value, torch.Tensor): return value.detach().cpu().clone()
+    if isinstance(value, dict): return {k:_fit_cpu(v) for k,v in value.items()}
+    if isinstance(value, tuple): return tuple(_fit_cpu(v) for v in value)
+    if isinstance(value, list): return [_fit_cpu(v) for v in value]
+    return deepcopy(value)
+
+
+def _fit_files(folder):
+    return {str(p.relative_to(folder)):sha256(p.read_bytes()).hexdigest()
+            for p in sorted(folder.rglob('*')) if p.is_file()}
+
+
+def _fit_auxiliary_resumable(source, output, **options):
+    # Exclude concurrent resumes before either can observe the same READY head.
+    root = Path(options['checkpoint_dir']).resolve()
+    root.parent.mkdir(parents=True, exist_ok=True)
+    claim = root.with_name(root.name+'.fit-owner')
+    try:
+        with claim.open('x') as stream: stream.write('exclusive auxiliary fit worker')
+    except FileExistsError as exc:
+        raise ValueError('Auxiliary fit worker is active or uncertain') from exc
+    try:
+        return _fit_auxiliary_units(source, output, **options)
+    finally:
+        claim.unlink()
+
+
+def _fit_auxiliary_units(source, output, *, starting_decks, seed_reservation,
+        phase_segments, deadline, phase_counts, device, ledger, checkpoint_dir,
+        resume, process_seconds, resume_authorization, proof_seconds):
+    """Fail-closed unit journal: proof cohort, update batch, metric, or export.
+
+    A RUNNING marker precedes every side effect. An interrupted unit is sticky:
+    its previous numerical state cannot be replayed as if no update occurred.
+    Clean pauses include exact AdamW/NumPy/Torch RNG state, including permutation
+    and batch cursor. No partial scope is ever passed to load_scope.
+    """
+    import torch
+    from . import seven_runtime as rt, seven_round as rr
+    from .seven_lineup import identity as rule_identity
+    from .build_acceptance import canonical_build
+    from .device_auxiliary_collection import AuxiliarySegment, verified_auxiliary_games
+    from .batched_search.pure_checkpoint import write_payload, read_payload
+    started = time.monotonic()
+    _deadline(deadline)
+    if device != 'cuda' or not torch.cuda.is_available():
+        raise ValueError('Actual CUDA fitting required; no fallback')
+    if (type(process_seconds) not in (int,float) or not math.isfinite(process_seconds)
+            or not 0 < process_seconds <= 150):
+        raise ValueError('Persistent auxiliary fitting requires process_seconds in (0,150]')
+    if (type(proof_seconds) not in (int,float) or not math.isfinite(proof_seconds)
+            or not 0 < proof_seconds < process_seconds):
+        raise ValueError('Proof unit must fit strictly inside process budget')
+    source, output, root = Path(source).resolve(), Path(output).resolve(), Path(checkpoint_dir).resolve()
+    if root == output or root.is_relative_to(output) or output.is_relative_to(root):
+        raise ValueError('Separate isolated output and checkpoint directories required')
+    plans = auxiliary_phase_plans(starting_decks=starting_decks, seed_reservation=seed_reservation,
+                                  deadline=deadline, phase_counts=phase_counts)
+    lazy_ledger = phase_segments is None and ledger is not None
+    if lazy_ledger:
+        if not isinstance(ledger,DeviceAuxiliaryCalibrationLedger):
+            raise TypeError('Actual durable auxiliary ledger required')
+        ledger._assert_current()
+        if {p:[_physical_job(j) for j in jobs] for p,jobs in plans.items()} != ledger.contract['physical_plans']:
+            raise ValueError('Fit plans differ from frozen auxiliary ledger')
+        flattened=[]
+        for phase in _PHASE_SEEDS:
+            entries=sorted((e for e in ledger.manifest['cohorts'] if e['phase']==phase),key=lambda e:e['offset'])
+            if (any(e['status']!='COMPLETE' for e in entries)
+                    or sum(e['count'] for e in entries)!=len(plans[phase])):
+                raise ValueError('All280 actual natural games required before auxiliary fitting')
+            flattened.extend((phase,i,deepcopy(entry)) for i,entry in enumerate(entries))
+        binding=deepcopy(ledger.contract['source_binding'])
+        raw_binding=[]
+        for phase,index,entry in flattened:
+            item=entry['checkpoints'][-1]
+            # Hash original files, without repeating their rule/archive proofs.
+            if sha256(ledger._checkpoint_path(item['path']).read_bytes()).hexdigest()!=item['sha256']:
+                raise ValueError('Original auxiliary ledger checkpoint changed')
+            raw_binding.append((phase,index,deepcopy(item)))
+    else:
+        if phase_segments is None: raise ValueError('Actual auxiliary segments or durable ledger required')
+        segments={p:tuple(v) for p,v in phase_segments.items()}
+        if set(segments)!=set(_PHASE_SEEDS):raise ValueError('All auxiliary phases required')
+        if ledger is not None:ledger.validate_phase_segments(segments,plans=plans,deadline=deadline)
+        flattened=[(p,i,v) for p in _PHASE_SEEDS for i,v in enumerate(segments[p])]
+        if not flattened or any(not isinstance(v,AuxiliarySegment) for _,_,v in flattened):
+            raise TypeError('Actual AuxiliarySegment evidence required')
+        if not resume and ledger is None and any(j.get('deadline')!=deadline
+                for _,_,v in flattened for j in v.metadata.jobs):
+            raise ValueError('Initial auxiliary evidence must match the exact explicit deadline')
+        binding=deepcopy(flattened[0][2].source_binding)
+        if any(v.source_binding!=binding for _,_,v in flattened):
+            raise ValueError('Auxiliary CUDA source binding differs')
+        raw_binding=[(p,i,_fit_fingerprint(asdict(v))) for p,i,v in flattened]
+    signature = rr.versions(source)
+    if ledger is not None and (signature!=ledger.contract['source_model_versions']
+            or binding!=ledger.contract['source_binding']
+            or seed_reservation!=ledger.contract['seed_reservation']
+            or starting_decks!=ledger.contract['starting_decks']):
+        raise ValueError('Fit differs from frozen auxiliary ledger')
+    for key in ROSTER:
+        if canonical_build(rt.model(source,key).serving_deck) != canonical_build(starting_decks[key]):
+            raise ValueError('Source model differs from explicit frozen starting build')
+    physical_plans = {p:[_physical_job(j) if ledger is not None else j for j in jobs]
+                      for p,jobs in plans.items()}
+    # Deadline-only continuation is handled separately from the immutable contract.
+    plan_contract = deepcopy(physical_plans)
+    for jobs in plan_contract.values():
+        for job in jobs: job.pop('deadline',None)
+    source_root = Path(__file__).parent
+    implementation = {name:sha256((source_root/name).read_bytes()).hexdigest() for name in (
+        'device_auxiliary_calibration.py','device_auxiliary_collection.py',
+        'device_auxiliary_continuation.py','seven_runtime.py','seven_round.py',
+        'seven_covered_value.py','seven_auxiliary_jobs.py','seven_value_metrics.py',
+        'outcome_runtime.py','seven_policy.py','seven_grounded.py','seven_lineup.py',
+        'build_acceptance.py','league_schema.py','batched_search/pure_checkpoint.py')}
+    metric_script=source_root.parents[3]/'scripts'/'check_duel_v2_value_calibration.py'
+    implementation['scripts/check_duel_v2_value_calibration.py']=sha256(metric_script.read_bytes()).hexdigest()
+    contract = dict(schema='auxiliary_fit_units_v1', source=str(source), output=str(output),
+        source_models=signature, source_files=_fit_files(source), implementation=implementation,
+        rule_hash=rule_identity(), algorithm_sha256=cv.identity(), plans=plan_contract,
+        starting_decks=starting_decks, seeds=seed_reservation, source_binding=binding,
+        raw=raw_binding,
+        ledger=None if ledger is None else dict(contract=ledger.contract_sha256,
+            manifest=ledger.manifest_sha256), device=device, epochs=[1,2,4,8],
+        temperatures=[1.,2.,4.], lr=.0003, weight_decay=.001)
+    # JSON normalization prevents tuple/list drift without weakening the raw graph hash.
+    contract = json.loads(json.dumps(contract,sort_keys=True,allow_nan=False))
+    head = root/'head.json'; running = root/'RUNNING.json'; rejected = root/'REJECTED.json'
+    def write_json(path,value):
+        temporary = path.with_name(path.name+'.tmp')
+        temporary.write_text(json.dumps(value,sort_keys=True,allow_nan=False)); temporary.replace(path)
+    if resume:
+        if not head.is_file() or running.exists() or rejected.exists():
+            raise ValueError('Missing, rejected, or uncertain auxiliary fit; previous state cannot be replayed')
+        record = json.loads(head.read_text())
+        revisions = sorted(p.name for p in root.glob('revision-*') if p.is_dir())
+        if not revisions or revisions[-1] != record['checkpoint']:
+            raise ValueError('Auxiliary fit revision rewind or orphan checkpoint')
+        if record['contract'] != contract: raise ValueError('Auxiliary fit input/source/evidence binding changed')
+        before = record['deadline']
+        if deadline != before:
+            if deadline <= before or not isinstance(resume_authorization,str) or not resume_authorization.strip():
+                raise ValueError('Only explicitly authorized future deadline extension is allowed')
+            record['budgets'].append(dict(before=before,after=deadline,authorization=resume_authorization))
+            record['deadline'] = deadline
+        state = read_payload(root/record['checkpoint'],contract,kind='auxiliary_fit')
+        if _fit_files(output) != state['output_files']:
+            raise ValueError('Auxiliary fit output changed since numerical checkpoint')
+    else:
+        if root.exists() or output.exists(): raise ValueError('New isolated auxiliary fit directories required')
+        root.mkdir(parents=True); output.mkdir(parents=True)
+        record = dict(contract=contract,deadline=deadline,budgets=[],revision=-1)
+        state = dict(stage='proof',proof_cursor=0,proofs=[],team=0,epoch=1,offset=0,
+            permutation=None,net=None,optimizer=None,numpy_rng=None,torch_rng=torch.get_rng_state(),
+            cuda_rng=[t.cpu() for t in torch.cuda.get_rng_state_all()],
+            candidates=[],temperature=0,choices={},metrics={},updates=0,output_files={})
+    unit_deadline = min(deadline,time.time()+max(0,process_seconds-(time.monotonic()-started)))
+    def check():
+        _deadline(unit_deadline)
+    def commit():
+        state['output_files'] = _fit_files(output)
+        record['revision'] += 1
+        name = 'revision-%06d'%record['revision']
+        write_payload(root/name,state,contract,kind='auxiliary_fit')
+        record['checkpoint'] = name
+        record['checkpoint_manifest_sha256'] = sha256((root/name/'manifest.json').read_bytes()).hexdigest()
+        write_json(head,record)
+        running.unlink(missing_ok=True)
+    if not resume: commit()
+    else:
+        if sha256((root/record['checkpoint']/'manifest.json').read_bytes()).hexdigest()!=record['checkpoint_manifest_sha256']:
+            raise ValueError('Fit checkpoint head hash differs')
+        write_json(head,record)
+    def admit(label,seconds=5.):
+        # Reserve proof runtime plus serialization/cleanup. A started failed unit
+        # is rejected rather than silently replaying an uncertain optimizer step.
+        remaining = min(unit_deadline-time.time(),process_seconds-(time.monotonic()-started))
+        if remaining < seconds+3: raise AuxiliaryFitPaused(root/record['checkpoint'])
+        write_json(running,dict(checkpoint=record['checkpoint'],unit=label,started=time.time()))
+    def load_games():
+        games = {p:[] for p in _PHASE_SEEDS}
+        for entry in state['proofs']:
+            actual = read_payload(root/entry['path'],contract,kind='auxiliary_fit_proof')
+            if sha256((root/entry['path']/'manifest.json').read_bytes()).hexdigest()!=entry['sha256']:
+                raise ValueError('Cached auxiliary proof changed')
+            games[entry['phase']].extend(actual)
+        key = lambda j:_job_key(_physical_job(j))
+        for phase in _PHASE_SEEDS:
+            found = {key(g['job']):g for g in games[phase]}
+            expected = [key(j) for j in plans[phase]]
+            if len(set(expected))!=len(expected) or len(found)!=len(games[phase]) or set(found)!=set(expected):
+                raise ValueError('Exact disjoint complete planned auxiliary games required')
+            games[phase] = [found[k] for k in expected]
+        return games
+    def restore_rng():
+        if state['torch_rng'] is not None:
+            torch.set_rng_state(state['torch_rng'])
+            torch.cuda.set_rng_state_all(state['cuda_rng'])
+    def save_net(net,opt,rng):
+        state.update(net=_fit_cpu(dict(net.state_dict())),optimizer=_fit_cpu(opt.state_dict()),
+            numpy_rng=deepcopy(rng.bit_generator.state),torch_rng=torch.get_rng_state(),
+            cuda_rng=[t.cpu() for t in torch.cuda.get_rng_state_all()])
+    games = None
+    try:
+        while state['stage'] != 'complete':
+            if min(unit_deadline-time.time(),process_seconds-(time.monotonic()-started)) < 3:
+                raise AuxiliaryFitPaused(root/record['checkpoint'])
+            if state['stage']=='proof':
+                cursor = state['proof_cursor']
+                if cursor == len(flattened):
+                    games = load_games()
+                    admit('archive',5.)
+                    rr.write(output/'config.json',dict(source_models=signature,seeds=seed_reservation,
+                        deadline=deadline,starting_decks=starting_decks,source_binding=binding,
+                        phase_counts={p:len(v) for p,v in plans.items()},value_only=True,learner_updates=0))
+                    if ledger is not None:
+                        rr.write(output/'auxiliary-ledger.json',dict(manifest=deepcopy(ledger.manifest),
+                            manifest_sha256=ledger.manifest_sha256,contract_sha256=ledger.contract_sha256))
+                    for phase in _PHASE_SEEDS:
+                        rr.write(output/(phase+'.json'),dict(games=len(games[phase]),complete=True,
+                            seeds=[j['seed'] for j in plans[phase]],first=[j['first'] for j in plans[phase]],
+                            source_binding=binding,rule_backend='cuda_soa',replay_verified=True))
+                    state['stage']='fit'; commit(); continue
+                phase,index,segment = flattened[cursor]
+                admit('proof-%s-%d'%(phase,index),proof_seconds)
+                if lazy_ledger:
+                    segment=ledger._load_segment(segment,deadline=deadline,verify=False)
+                    if not ledger._clean(segment) or not all(segment.complete):
+                        raise ValueError('Frozen ledger checkpoint is not naturally complete')
+                actual = verified_auxiliary_games(segment,
+                    proof_deadline=min(time.monotonic()+proof_seconds,time.monotonic()+unit_deadline-time.time()-3))
+                if any(g.get('complete') is not True or not g.get('value_rows')
+                       or g.get('rule_backend')!='cuda_soa' or g.get('source_binding')!=binding for g in actual):
+                    raise ValueError('Only natural verified CUDA auxiliary games accepted')
+                name='proof-%04d'%cursor
+                write_payload(root/name,actual,contract,kind='auxiliary_fit_proof')
+                state['proofs'].append(dict(path=name,phase=phase,
+                    sha256=sha256((root/name/'manifest.json').read_bytes()).hexdigest()))
+                # Archive the exact original raw evidence and each private game
+                # inside this cohort unit; subsequent calls reuse these files.
+                raw_path=output/f'{phase}-segment-{index}-raw.json.gz'
+                if ledger is None: _gzip(raw_path,asdict(segment))
+                else:
+                    from .device_auxiliary_continuation import dump_auxiliary_checkpoint
+                    dump_auxiliary_checkpoint(segment,raw_path)
+                offset=sum(len(read_payload(root/e['path'],contract,kind='auxiliary_fit_proof'))
+                           for e in state['proofs'][:-1] if e['phase']==phase)
+                for i,game in enumerate(actual): _gzip(output/f'{phase}-{offset+i}-private.json.gz',game)
+                state['proof_cursor']+=1; commit(); continue
+            if games is None: games=load_games()
+            if state['stage']=='fit':
+                if state['team']==len(ROSTER):
+                    state['stage']='heldout';state['team']=0;commit();continue
+                key=ROSTER[state['team']]
+                rows=[r for g in games['training'] for r in g['value_rows'] if r['key']==key]
+                if not rows: raise ValueError('Missing complete training rows for '+key)
+                admit('fit-'+key,20. if state['offset'] >= len(rows) else 5.)
+                net,build,origin=rt.restore(source,key,device)
+                origin=dict(origin,usage='covered_expert_value_auxiliary',quality_approved=False)
+                frozen={n:t.detach().clone() for n,t in net.state_dict().items()
+                        if not n.startswith(('value_net.','wdl.'))}
+                opt=torch.optim.AdamW([p for n,p in net.named_parameters()
+                    if n.startswith(('value_net.','wdl.'))],lr=.0003,weight_decay=.001)
+                rng=np.random.default_rng(seed_reservation['adaptation'])
+                if state['net'] is not None:
+                    net.load_state_dict(state['net']);opt.load_state_dict(state['optimizer'])
+                    rng.bit_generator.state=state['numpy_rng']
+                restore_rng()
+                epoch=state['epoch']
+                if epoch==9:
+                    chosen=min(state['candidates'],key=lambda c:c[0])
+                    selected,_,_=rt.restore(output/f'epoch-{chosen[1]}'/'models',key,device)
+                    with torch.no_grad():
+                        selected.wdl.weight.div_(chosen[2]);selected.wdl.bias.div_(chosen[2])
+                    if any(not torch.equal(v,selected.state_dict()[n]) for n,v in frozen.items()):
+                        raise ValueError('Auxiliary fitting moved policy arrays')
+                    rt.export(selected,output/'models',key,build,dict(origin,value_temperature=chosen[2]))
+                    state['choices'][key]=dict(epoch=chosen[1],temperature=chosen[2],selection=chosen[3])
+                    state.update(team=state['team']+1,epoch=1,offset=0,permutation=None,net=None,
+                        optimizer=None,numpy_rng=None,torch_rng=torch.get_rng_state(),
+                        cuda_rng=[t.cpu() for t in torch.cuda.get_rng_state_all()],candidates=[],temperature=0)
+                    commit();continue
+                if state['permutation'] is None:
+                    state['permutation']=rng.permutation(len(rows))
+                if state['offset'] < len(rows):
+                    offset=state['offset']; indexes=state['permutation'][offset:offset+128]
+                    check();rt.update(net,opt,[rows[int(i)] for i in indexes],value_only=True)
+                    state['offset']+=len(indexes);state['updates']+=1
+                    save_net(net,opt,rng);commit();continue
+                if epoch in (1,2,4,8) and state['temperature']<3:
+                    temperature=(1.,2.,4.)[state['temperature']]
+                    if state['temperature']==0: rt.export(net,output/f'epoch-{epoch}'/'models',key,build,origin)
+                    weight,bias=net.wdl.weight.detach().clone(),net.wdl.bias.detach().clone()
+                    with torch.no_grad():
+                        net.wdl.weight.div_(temperature);net.wdl.bias.div_(temperature)
+                    calibrated=output/f'epoch-{epoch}-temperature-{temperature}'/'models'
+                    rt.export(net,calibrated,key,build,dict(origin,value_temperature=temperature))
+                    check();metric=rr.value_metrics(games['selection'],{key:rt.model(calibrated,key)},
+                        backend='cuda_batched',device=device)[key]
+                    if not np.isfinite(metric['log_loss']):raise ValueError('Nonfinite selection metric')
+                    state['candidates'].append((metric['log_loss'],epoch,temperature,metric))
+                    with torch.no_grad():net.wdl.weight.copy_(weight);net.wdl.bias.copy_(bias)
+                    state['temperature']+=1;save_net(net,opt,rng);commit();continue
+                state.update(epoch=epoch+1,offset=0,permutation=None,temperature=0)
+                save_net(net,opt,rng);commit();continue
+            if state['stage']=='heldout':
+                if state['team']<len(ROSTER):
+                    key=ROSTER[state['team']];admit('heldout-'+key,20.)
+                    check();metric=rr.value_metrics(games['heldout'],{key:rt.model(output/'models',key)},
+                        backend='cuda_batched',device=device)[key]
+                    state['metrics'][key]=metric;state['team']+=1;commit();continue
+                admit('scope')
+                if rr.versions(source)!=signature or _fit_files(source)!=contract['source_files']:
+                    raise ValueError('Primary source models changed')
+                metrics=state['metrics']
+                passed=set(metrics)==set(ROSTER) and all(m.get('normal_games',0)>=8
+                    and np.isfinite(m.get('brier',np.nan)) and m['brier']<.7
+                    and np.isfinite(m.get('log_loss',np.nan)) and m['log_loss']<1.2 for m in metrics.values())
+                files=_fit_files(output)
+                report=dict(schema='seven_expert_value_v2',passed=passed,
+                    phase_counts={p:len(v) for p,v in plans.items()},rule_hash=rule_identity(),
+                    algorithm_sha256=cv.identity(),objective='visible_rule_after_six_exploration_actions',
+                    models=rr.versions(output/'models'),metrics=metrics,choices=state['choices'],
+                    files=files,source_binding=binding,primary_policy_arrays_unchanged=True,
+                    real_learner_updates=0,quality_approved=False,auxiliary_optimizer_updates=state['updates'])
+                rr.write(output/'scope.json',report)
+                cv.load_scope(output) # gate before marking complete; failure remains sticky
+                state['stage']='complete';commit()
+        return cv.load_scope(output)
+    except AuxiliaryFitPaused:
+        raise
+    except BaseException as exc:
+        write_json(rejected,dict(checkpoint=record['checkpoint'],error=repr(exc),stage=state['stage']))
+        raise
 
 
 def create_device_auxiliary_phase_collector(executor, *, starting_decks, rows=8,

@@ -72,6 +72,7 @@ class ValueFitCheckpointTest(unittest.TestCase):
             (models,report),nets=self.fit(self.collect,self.metrics)
             self.assertEqual(update.call_count,7*8)
             self.assertEqual(rr._value_fit_bank_hash(models),original_bank)
+
             self.assertEqual(report['updates'],marker['updates'])
             self.assertTrue(report['passed'])
             for key,net in nets.items():
@@ -83,6 +84,22 @@ class ValueFitCheckpointTest(unittest.TestCase):
             self.assertEqual(again,report);self.assertEqual(update.call_count,7*8)
             self.assertEqual((self.out/'value-precheck.json').read_bytes(),report_bytes)
             self.assertEqual(rr._value_fit_bank_hash(models),original_bank)
+
+    def test_collection_only_pauses_before_optimizer_and_resumes_existing_evidence(self):
+        self.config['value_fit_collect_only']=True
+        with patch.object(rt,'update',side_effect=AssertionError('Collection boundary must not fit')):
+            with self.assertRaises(rr.ValueFitReady)as pause:self.fit(self.collect,self.metrics)
+        self.assertEqual(pause.exception.phase_games,dict(training=7,selection=7,heldout=0))
+        self.assertFalse((self.out/'value-fit-start.json').exists())
+        self.assertFalse((self.out/'value-fit-checkpoint.json').exists())
+        self.config['value_fit_collect_only']=False
+        (models,report),_=self.fit(self.collect,self.metrics)
+        self.assertTrue(report['passed'])
+        bank=rr._value_fit_bank_hash(models)
+        self.config['value_fit_collect_only']=True
+        with patch.object(rt,'update',side_effect=AssertionError('Committed fit must not repeat')):
+            (again,_),_=self.fit(self.collect,self.metrics)
+        self.assertEqual(rr._value_fit_bank_hash(again),bank)
 
     def test_source_evidence_model_and_incomplete_marker_refuse_refitting(self):
         def held_pause(pool,jobs,folder):
@@ -142,6 +159,81 @@ class ValueFitCheckpointTest(unittest.TestCase):
             self.fit(self.collect,self.metrics);self.assertEqual(update.call_count,14)
         self.assertFalse((self.out/'value-fit-start.json').exists())
         self.assertFalse((self.out/'value-fit-checkpoint.json').exists())
+
+
+    def test_numeric_batch_and_temperature_pauses_resume_exact_adam_once(self):
+        # Compare the real existing one-shot learner to staged numeric recovery.
+        (_,baseline),_=self.fit(self.collect,self.metrics)
+        expected=rr._value_fit_bank_hash(self.out/'models')
+        self.out=Path(self.temp.name)/'incremental'
+        self.config.update(value_fit_process_seconds=150,value_fit_resume_authorization='explicit numeric continuation')
+        original_admit=rr._ValueFitProcess._admit
+        def before_first_temperature(session,label,reserve=5.):
+            if label.startswith('temperature-'):session._pause()
+            return original_admit(session,label,reserve)
+        def after_first_temperature(session,label,reserve=5.):
+            if label.startswith('temperature-')and session.state['temperature']==1:session._pause()
+            return original_admit(session,label,reserve)
+        with patch.object(rt,'update',wraps=rt.update)as update:
+            with patch.object(rr._ValueFitProcess,'_admit',before_first_temperature),self.assertRaises(rr.ValueFitPaused):
+                self.fit(self.collect,self.metrics)
+            self.assertEqual(update.call_count,1)
+            first=json.loads((self.out/'value-fit-process/head.json').read_text())
+            self.assertEqual(first['status'],'READY')
+            with patch.object(rr._ValueFitProcess,'_admit',after_first_temperature),self.assertRaises(rr.ValueFitPaused):
+                self.fit(self.collect,self.metrics)
+            self.assertEqual(update.call_count,1)
+            def after_first_held_metric(session,label,reserve=5.):
+                if label=='heldout-weave-rush':session._pause()
+                return original_admit(session,label,reserve)
+            with patch.object(rr._ValueFitProcess,'_admit',after_first_held_metric),self.assertRaises(rr.ValueFitPaused):
+                self.fit(self.collect,self.metrics)
+            self.assertEqual(update.call_count,56)
+            saved=json.loads((self.out/'value-fit-process/head.json').read_text())
+            from app.modules.card_game.rl.batched_search.pure_checkpoint import read_payload
+            payload=read_payload(self.out/'value-fit-process'/saved['checkpoint'],saved['contract'],kind='main_value_fit')
+            self.assertEqual(payload['metric_cursor'],1)
+            self.assertEqual(set(payload['metrics']),{'starter'})
+            (_,report),_=self.fit(self.collect,self.metrics)
+            self.assertEqual(update.call_count,56)
+            self.assertEqual(rr._value_fit_bank_hash(self.out/'models'),expected)
+            self.assertEqual(report['updates'],baseline['updates'])
+            self.assertEqual(report['metrics'],baseline['metrics'])
+            self.assertFalse((self.out/'value-fit-process/RUNNING.json').exists())
+            self.assertFalse((self.out/'value-fit-process/REJECTED.json').exists())
+            self.fit(self.collect,lambda *a,**k:(_ for _ in()).throw(AssertionError('completed metrics replay')))
+            self.assertEqual(update.call_count,56)
+
+
+    def test_numeric_running_or_rejected_batch_cannot_replay(self):
+        self.config.update(value_fit_process_seconds=150)
+        original=rt.update
+        calls=[]
+        def interrupted(*args,**kwargs):
+            calls.append(1);original(*args,**kwargs);raise RuntimeError('actual Adam step then lost checkpoint')
+        with patch.object(rt,'update',side_effect=interrupted),self.assertRaisesRegex(RuntimeError,'Adam step'):
+            self.fit(self.collect,self.metrics)
+        self.assertEqual(calls,[1])
+        self.assertTrue((self.out/'value-fit-process/RUNNING.json').is_file())
+        self.assertTrue((self.out/'value-fit-process/REJECTED.json').is_file())
+        with patch.object(rt,'update')as update,self.assertRaisesRegex(ValueError,'Uncertain/rejected'):
+            self.fit(self.collect,self.metrics)
+        update.assert_not_called()
+
+    def test_numeric_checkpoint_arrays_tampering_is_rejected_before_update(self):
+        self.config.update(value_fit_process_seconds=150)
+        original=rr._ValueFitProcess._admit
+        def paused(session,label,reserve=5.):
+            if label.startswith('temperature-'):session._pause()
+            return original(session,label,reserve)
+        with patch.object(rr._ValueFitProcess,'_admit',paused),self.assertRaises(rr.ValueFitPaused):
+            self.fit(self.collect,self.metrics)
+        head=json.loads((self.out/'value-fit-process/head.json').read_text())
+        array=self.out/'value-fit-process'/head['checkpoint']/'arrays.npz'
+        array.write_bytes(array.read_bytes()+b'changed')
+        with patch.object(rt,'update')as update,self.assertRaisesRegex(ValueError,'numerical integrity'):
+            self.fit(self.collect,self.metrics)
+        update.assert_not_called()
 
 
 if __name__=='__main__':unittest.main()

@@ -1710,5 +1710,18 @@
         "text": "祝大家都能抽出自己想要的角色和盲盒，不要碰刮刮乐喔！"
       }
     ]
+  },
+  {
+    "id": "combat-mechanics",
+    "name": "战斗机制深入攻略",
+    "description": "异环战斗机制视频攻略，可直接在本页观看。",
+    "article_url": "https://www.bilibili.com/video/BV1JFeb6vE6o",
+    "gameplay": [
+      {
+        "type": "video",
+        "bvid": "BV1JFeb6vE6o",
+        "title": "战斗机制深入攻略"
+      }
+    ]
   }
 ]

@@ -19,7 +19,7 @@ class BeginnerGuideTest(unittest.TestCase):
 
     def test_discovery_detail_and_shared_toc(self):
         listing = self.client.get('/api/guide/beginner').json
-        self.assertEqual(listing['total'], 1)
+        self.assertEqual(listing['total'], 2)
         item = listing['items'][0]
         self.assertEqual(item['id'], 'getting-started')
         self.assertIn('萌新攻略', self.client.get('/guide').text)
@@ -104,3 +104,18 @@ class BeginnerGuideTest(unittest.TestCase):
             self.assertEqual(image_response.status_code, 200)
         self.assertEqual(self.client.get('/api/guide/beginner/getting-started?section=events').json['data']['events'], record['events'])
         self.assertNotIn('gameplay', self.client.get('/api/guide/beginner/getting-started?section=events').json['data'])
+
+    def test_combat_video_embeds_official_player_without_autoplay(self):
+        page = self.client.get('/guide/beginner/combat-mechanics')
+        self.assertEqual(page.status_code, 200)
+        self.assertIn('战斗机制深入攻略', page.text)
+        self.assertIn('https://player.bilibili.com/player.html?bvid=BV1JFeb6vE6o&amp;page=1&amp;autoplay=0', page.text)
+        self.assertIn('allowfullscreen', page.text)
+        self.assertIn('title="战斗机制深入攻略"', page.text)
+        self.assertIn('在哔哩哔哩观看', page.text)
+        self.assertIn('/guide/beginner/combat-mechanics', self.client.get('/guide?kind=beginner').text)
+        data = self.client.get('/api/guide/beginner/combat-mechanics').json['data']
+        self.assertEqual(data['gameplay'][0]['bvid'], 'BV1JFeb6vE6o')
+        md = self.client.get('/guide/beginner/combat-mechanics.md').text
+        self.assertIn('[战斗机制深入攻略](https://www.bilibili.com/video/BV1JFeb6vE6o)', md)
+        self.assertNotIn('<iframe', md)

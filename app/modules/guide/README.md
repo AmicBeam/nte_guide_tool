@@ -376,3 +376,5 @@ HTML、列表、搜索、JSON、Markdown和CLI支持预告条目，`status=previ
 CLI：`python nte-guide.py beginner`，`python nte-guide.py beginner --format markdown`，`python nte-guide.py beginner --section events`；也支持 `list beginner` 与 `get beginner getting-started`。更新后需重新下载CLI。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_beginner tests.test_guide tests.test_module_routes -q`；核对正文完整性、本地图片可解码和尺寸、JSON／Markdown／CLI全量及分节一致；浏览器检查分类入口、两级目录跳转、长文图片及窄屏布局。
+
+萌新分类另提供 `/guide/beginner/combat-mechanics`「战斗机制深入攻略」，通过B站官方网页播放器内嵌视频，默认关闭自动播放、支持全屏并提供原视频入口。播放器随容器保持16:9；仅浏览器加载外部播放器，后端不请求视频服务。JSON及Markdown提供视频BV号和观看链接，CLI可用 `get beginner combat-mechanics --format markdown` 读取。

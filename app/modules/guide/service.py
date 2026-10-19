@@ -209,7 +209,7 @@ def detail(kind, identifier, section=None, stage=None, ability_id=None, level=No
             raise LookupError('未找到关卡')
     selected = reference_view.select(record, kind, section, ability_id, level, skill_level, hit_details)
     if kind == 'beginner':
-        selected = {**selected, **{key: record[key] for key in ('description', 'author', 'article_url')}}
+        selected = {**selected, **{key: record[key] for key in ('description', 'author', 'article_url') if key in record}}
     return selected
 
 
@@ -242,16 +242,19 @@ def scalar(value):
 
 
 def markdown_record(record):
-    if record.get('id') == 'getting-started':
+    if 'article_url' in record and any(key in record for key in BEGINNER_SECTIONS):
         lines = [f'# {record["name"]}', '', record.get('description', ''), '']
         if 'article_url' in record:
-            lines += [f'[作者原帖（{record["author"]}）]({record["article_url"]})', '']
+            caption = f'作者原帖（{record["author"]}）' if record.get('author') else '在哔哩哔哩观看'
+            lines += [f'[{caption}]({record["article_url"]})', '']
         for key in BEGINNER_SECTIONS:
             if key in record:
                 lines += [f'## {label(key)}', '']
                 for block in record[key]:
                     if block['type'] == 'heading':
                         lines += ['### ' + block['text'], '']
+                    elif block['type'] == 'video':
+                        lines += [f'[{block["title"]}](https://www.bilibili.com/video/{block["bvid"]})', '']
                     elif block['type'] == 'image':
                         lines += [f'![{block["alt"]}]({block["src"]})', '']
                     else:

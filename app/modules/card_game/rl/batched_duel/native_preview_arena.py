@@ -243,17 +243,19 @@ def _emit_helpers(schema, entry):
             for channel, offset, zero in (('i64', col.integer, '0'), ('f64', col.real, '0.0'), ('i32', col.word, '0')):
                 if offset >= 0:
                     stores.append(f'soa_store_{channel}(s,{offset}+slot*{stride}+j,{zero});')
-            rows.append(f'''for(int j=0;j<{stride};j++){{
+            rows.append(f'''#pragma unroll 1
+ for(int j=0;j<{stride};j++){{
  if(!preview_arena_charge(c))return 0;
  soa_store_cache(s,{col.tag}+slot*{stride}+j,SOA_MISSING);
  {' '.join(stores)}
  }}''')
         if pool.order >= 0:
-            rows.append(f'''for(int j=0;j<{pool.max_items};j++){{
+            rows.append(f'''#pragma unroll 1
+ for(int j=0;j<{pool.max_items};j++){{
  if(!preview_arena_charge(c))return 0;
  soa_store_i32(s,{pool.order}+slot*{pool.max_items}+j,0);
  }}''')
-        cases.append(f'case {i}:{{' + '\n'.join(rows) + '}break;')
+        cases.append(f'case {i}:{{\n' + '\n'.join(rows) + '\n}break;')
     source=_HELPERS.replace('@ENTRY@', str(entry)).replace('@COUNT@', str(len(schema.pools))).replace('@CASES@', '\n'.join(cases))
     for placeholder,key in (('@ATTACK_KEY@','attack'),('@COUNTER_KEY@','counter'),
                             ('@ATTACK_COUNT_KEY@','攻击次数'),('@FLOWER_DAMAGE_KEY@','创生花伤害')):
@@ -264,17 +266,18 @@ def _emit_helpers(schema, entry):
 
 _HELPERS = r'''
 // Scope belongs to the real VM frame, not a C++ activation (calls may suspend).
-__device__ inline int preview_arena_charge(Context* c){
+__device__ __noinline__ int preview_arena_charge(Context* c){
  if(c->error||c->h.error||c->raised!=MISSING)return 0;
  if(++c->steps>c->step_limit){c->error=STEP_LIMIT;return 0;}
  if(c->deadline&&clock_ns()>=(unsigned long long)c->deadline){c->error=DEADLINE;return 0;}
  return 1;
 }
-__device__ inline int preview_arena_enter(Context* c,int* f,int pc){
+__device__ __noinline__ int preview_arena_enter(Context* c,int* f,int pc){
  const int* code=function(c,597);
  if(!code||f[0]!=597||code[5]!=9||!soa_ready(&c->h)){c->error=BAD_PROGRAM;return 0;}
  DomainSoAContext* s=soa_ctx(&c->h);
  if(pc==@ENTRY@){
+  #pragma unroll 1
   for(int p=0;p<@COUNT@;p++){
    if(!preview_arena_charge(c))return 0;
    int used=soa_load_i32(s,SOA_POOL_USED[p]);
@@ -285,13 +288,13 @@ __device__ inline int preview_arena_enter(Context* c,int* f,int pc){
  }else if(f[LBASE+9+@COUNT@]!=19088743){c->error=BAD_PROGRAM;return 0;}
  return 1;
 }
-__device__ inline int preview_arena_released(Context* c,int* f,int ref){
+__device__ __noinline__ int preview_arena_released(Context* c,int* f,int ref){
  if(!soa_header_view(&c->h,ref))return 0;
  int p=0,slot=0;
  if(!soa_locate(c->h.nodes[ref*4+3],&p,&slot)){c->error=BAD_PROGRAM;return 0;}
  return slot>=f[LBASE+9+p];
 }
-__device__ inline int preview_arena_leave(Context* c,int* f,int result){
+__device__ __noinline__ int preview_arena_leave(Context* c,int* f,int result){
  if(f[LBASE+9+@COUNT@]!=19088743||!preview_arena_charge(c))return 0;
  // The ONLY escaping value is an ordinary dictionary of whitelisted numeric
  // scores. No typed view, even an old live view, is accepted as its payload.
@@ -299,6 +302,7 @@ __device__ inline int preview_arena_leave(Context* c,int* f,int result){
  const int* out=node(c,result);
  if(!out||out[0]!=TAG_DICT||out[2]<0||out[2]>4){c->error=BAD_PROGRAM;return 0;}
  int seen=0;
+ #pragma unroll 1
  for(int i=0;i<out[2];i++){
   if(!preview_arena_charge(c))return 0;
   int key=edge(c,result,i,0),value=edge(c,result,i,1),bit=0;
@@ -314,6 +318,7 @@ __device__ inline int preview_arena_leave(Context* c,int* f,int result){
  }
  DomainSoAContext* s=soa_ctx(&c->h);
  // Validate every range before changing any allocation counter.
+ #pragma unroll 1
  for(int p=0;p<@COUNT@;p++){
   if(!preview_arena_charge(c))return 0;
   int old=f[LBASE+9+p],used=soa_load_i32(s,SOA_POOL_USED[p]);
@@ -321,14 +326,17 @@ __device__ inline int preview_arena_leave(Context* c,int* f,int result){
  }
  // Constant adoption may have interned a newly allocated typed view. Clear
  // only those entries; preserve existing object headers and Python id().
+ #pragma unroll 1
  for(int i=0;i<s->constant_node_count;i++){
   if(!preview_arena_charge(c))return 0;
   long long at=(long long)i*s->rows+s->row;
   if(s->constant_adopt&&preview_arena_released(c,f,s->constant_adopt[at]))s->constant_adopt[at]=SOA_MISSING;
   if(c->error)return 0;
  }
+ #pragma unroll 1
  for(int p=0;p<@COUNT@;p++){
   int used=soa_load_i32(s,SOA_POOL_USED[p]);
+  #pragma unroll 1
   for(int slot=f[LBASE+9+p];slot<used;slot++){
    if(!preview_arena_charge(c))return 0;
    soa_store_view(s,SOA_POOL_BASE[p]+slot,SOA_MISSING);
@@ -339,12 +347,14 @@ __device__ inline int preview_arena_leave(Context* c,int* f,int result){
  }
  // Memo epochs, including wrap, are budgeted. No live view cache is reset.
  if(s->clone_epoch==2147483647){
+  #pragma unroll 1
   for(int i=0;i<SOA_TOTAL_OBJECTS;i++){
    if(!preview_arena_charge(c))return 0;
    s->clone_queue[(long long)i*s->rows+s->row]=SOA_MISSING;
   }
   s->clone_epoch=1;
  }else s->clone_epoch++;
+ #pragma unroll 1
  for(int p=0;p<@COUNT@;p++){
   if(!preview_arena_charge(c))return 0;
   soa_store_i32(s,SOA_POOL_USED[p],f[LBASE+9+p]);

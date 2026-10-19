@@ -53,6 +53,13 @@ class TransformTests(unittest.TestCase):
             self.assertEqual(literal[1:-1],''.join('\\'+part for part in escapes))
             self.assertEqual(bytes(int(part,8)for part in escapes),key.encode('utf8'))
 
+    def test_scope_helpers_are_noinline_and_all_runtime_loops_stay_rolled(self):
+        helper=arena._emit_helpers(small_schema(),10)
+        for name in('charge','enter','released','leave'):
+            self.assertIn('__device__ __noinline__ int preview_arena_'+name+'(',helper)
+        for match in re.finditer(r'(?m)^\s*for\(',helper):
+            self.assertRegex(helper[:match.start()].rstrip(),r'#pragma unroll 1$')
+
     def test_stable_ast_ignores_only_empty_type_parameters(self):
         fn=ast.parse('def example(a):\n return a+1\n').body[0]
         baseline=arena._digest(arena._stable_ast(fn))
@@ -158,6 +165,7 @@ _HARNESS_HEAD = r'''
 #include <cstring>
 #include <iostream>
 #define __device__
+#define __noinline__ __attribute__((noinline))
 enum { TAG_INT=2,TAG_FLOAT=3,TAG_DICT=7,MISSING=-999,STEP_LIMIT=100,DEADLINE=101,BAD_PROGRAM=102,LBASE=14 };
 struct DomainSoAContext {int rows=1,row=0,clone_epoch=7,constant_node_count=3;
  int used[512]={},views[512]={},value_cache[2048]={},adopt[3]={},clone_queue[512]={};

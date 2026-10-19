@@ -13,6 +13,7 @@ document.querySelectorAll("[data-guide-filters]").forEach(filters => {
         (!values.get("rarity") || card.dataset.rarity === values.get("rarity")) &&
         (!values.get("arc_type") || card.dataset.arcType === values.get("arc_type")) &&
         (!values.get("function") || card.dataset.foodFunction === values.get("function")) &&
+        (!values.get("bonus") || card.dataset.foodBonus === values.get("bonus")) &&
         (!query || card.dataset.filterText.includes(query));
       card.hidden = !shown;
       if (shown) matches += 1;
@@ -25,7 +26,7 @@ document.querySelectorAll("[data-guide-filters]").forEach(filters => {
     count.textContent = `${matches} 条结果`;
     empty.hidden = matches > 0;
     const url = new URL(location.href);
-    ["q", "element", "rarity", "arc_type", "function"].forEach(key => {
+    ["q", "element", "rarity", "arc_type", "function", "bonus"].forEach(key => {
       const value = String(values.get(key) || "").trim();
       if (value) url.searchParams.set(key, value);
       else url.searchParams.delete(key);

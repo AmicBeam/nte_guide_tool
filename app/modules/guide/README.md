@@ -405,10 +405,10 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 
 ## 料理
 
-`/guide?kind=foods` 提供料理卡片，按攻击、防御、单次恢复、持续恢复、复活、探索六种配置功能分组；分组内展示本地图片、名称与效果。功能单选与名称／效果搜索均在浏览器过滤，隐藏空分组、更新数量并同步 `function` 与 `q` 参数，保留无JavaScript的查询提交。分类直接来自配置，不按名称猜测。当前142种料理不表示所有条目均已开放或可购买。
+`/guide?kind=foods` 提供料理卡片，按攻击力、暴击率、暴击伤害、防御力、即时恢复、持续恢复、复活、降低体力消耗、加快体力回复九种具体加成分组；分组内展示本地图片、名称与效果，加成／恢复量高亮而持续时间不高亮；卡片底部标注最低方斯标价，缺价显示未提供。加成单选与名称／效果搜索均在浏览器过滤，隐藏空分组、更新数量并同步 `bonus` 与 `q` 参数，保留无JavaScript的查询提交。分类直接来自配置，不按名称猜测。当前142种料理不表示所有条目均已开放或可购买。
 
-`/guide/foods/<ID>` 展示功能效果、说明与配置使用冷却；JSON、Markdown、CLI以及攻略助手共用 `foods` 分类。`/api/guide/foods?function=Revive` 按功能筛选。料理只提供资料，不自动计入角色面板或排轴计算。
+料理卡片点击后在本页打开详情弹窗，展示完整效果、物品说明、获取途径与方斯商店标价，支持关闭按钮、Esc与点击遮罩，关闭后恢复焦点与页面滚动。`food=<ID>`可分享并恢复弹窗；旧`/guide/foods/<ID>`网页地址跳转到目录弹窗，不再提供独立料理详情页。JSON、Markdown、CLI以及攻略助手共用 `foods` 分类，原机器读取详情接口继续保留。`/api/guide/foods?bonus=crit_rate`按具体加成筛选，原`function=Revive`等宽分类API参数继续支持。料理只提供资料，不自动计入角色面板或排轴计算。
 
-显式刷新：`python scripts/sync_guide_foods.py`，支持 `--ntedata-dir` 读取本地 `DT_FoodItemData.json` 与 `DT_ItemEffectTypeData.json`。图片保存于模块 `static/foods/`；数据、分类与图片全部通过校验后原子替换 `data/foods.json`，请求和启动不联网。
+显式刷新：`python scripts/sync_guide_foods.py`，支持 `--ntedata-dir` 读取本地 `DT_FoodItemData.json`、`DT_ItemEffectTypeData.json`、商品／商店及物品来源关联／明细表。加成从明确的效果正文匹配，未知类型拒绝导入；方斯价格仅取方斯商品最低标价，不混算其他货币或限时折扣。获取途径从实际来源关联读取，缺失不猜地点。图片保存于模块 `static/foods/`；数据、分类与图片全部通过校验后原子替换 `data/foods.json`，请求和启动不联网。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_foods tests.test_guide_affinity tests.test_guide tests.test_module_routes tests.test_guide_account tests.test_guide_bot_tools tests.test_guide_chat -q`；浏览器检查料理分组／搜索／详情和窄屏、等级奖励、不同角色满好感属性、购买渠道tooltip的悬停／键盘／点按及原推荐单价。

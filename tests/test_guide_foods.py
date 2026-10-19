@@ -27,7 +27,7 @@ class GuideFoodsTest(unittest.TestCase):
         self.assertTrue(all(r['function'] == 'Revive' for r in filtered['items']))
         self.assertTrue(service.search('foods', query='攻击力增加75'))
         html = self.client.get('/guide?kind=foods&function=Revive').text
-        self.assertIn('料理功能', html)
+        self.assertIn('料理加成', html)
         self.assertIn('data-food-function="Revive"', html)
         self.assertIn('12 条结果', html)
         self.assertIn('data-guide-filter-group', html)
@@ -37,9 +37,24 @@ class GuideFoodsTest(unittest.TestCase):
         self.assertEqual(data['name'], '极点')
         self.assertIn('攻击力增加75', data['effect'])
         self.assertIn('持续180秒', data['effect'])
-        html = self.client.get('/guide/foods/Food_001').text
-        self.assertIn('料理效果', html)
-        self.assertIn(data['effect'], html)
+        self.assertEqual(data['bonus_group'], 'attack')
+        self.assertEqual(data['fons_price'], 450)
+        self.assertIn('2-Four便利店(桥间地)', data['sources'])
+        filtered = self.client.get('/api/guide/foods?bonus=crit_rate&limit=100').json
+        self.assertGreater(filtered['total'], 0)
+        self.assertTrue(all(r['bonus_group'] == 'crit_rate' for r in filtered['items']))
+        self.assertTrue(all('暴击率增加' in r['effect'] for r in filtered['items']))
+        self.assertEqual(self.client.get('/api/guide/foods/Food_001').json['data']['fons_price'], 450)
+        response = self.client.get('/guide/foods/Food_001')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.location, '/guide?kind=foods&food=Food_001')
+        html = self.client.get(response.location).text
+        self.assertIn('food-detail-dialog', html)
+        self.assertIn('获取途径', html)
+        self.assertNotIn('href="/guide/foods/', html)
+        self.assertIn('450 <small>方斯</small>', html)
+        self.assertIn('class="guide-food-bonus">75</strong>', html)
+        self.assertNotIn('class="guide-food-bonus">180</strong>', html)
         md = self.client.get('/guide/foods/Food_001.md').text
         self.assertIn(data['effect'], md)
         self.assertIn('料理效果', md)
@@ -65,7 +80,30 @@ class GuideFoodsTest(unittest.TestCase):
                'UseContext': {'LocalizedString': '攻击力增加75'}, 'Description': {},
                'ItemQuality': 'EItemQuality::ITEM_QUALITY_BLUE', 'ItemCD': 0}
         tables = {'foods': {'Food_1': row}, 'types': {'Attack': {'EffectTypeName': '攻击'}}}
-        self.assertEqual(module.build_foods(tables)[0]['function_name'], '攻击')
+        food = module.build_foods(tables)[0]
+        self.assertEqual(food['function_name'], '攻击')
+        self.assertEqual(food['bonus_group'], 'attack')
+        self.assertIsNone(food['fons_price'])
+        self.assertEqual(food['sources'], [])
+        segments = module.effect_segments('暴击率增加6.4%，持续180秒')
+        self.assertEqual([r['text'] for r in segments if r['highlight']], ['6.4%'])
+        row['OutputSourceID'] = 'food_source'
+        tables.update(sources={'food_source': {'SourceArray': ['shop_a ']}},
+                      source_details={'shop_a': {'ContentDesc': {'LocalizedString': '便利店'}}},
+                      goods={'a': {'ItemID': 'food_1', 'PriceType': 'PriceShowType::Cost',
+                                   'CurrencyID': 'Fons', 'Price': 450, 'OwnerShopID': 'shop_a'},
+                             'b': {'ItemID': 'Food_1', 'PriceType': 'PriceShowType::Cost',
+                                   'CurrencyID': 'Fons', 'Price': 300, 'OwnerShopID': 'shop_a'},
+                             'c': {'ItemID': 'Food_1', 'PriceType': 'PriceShowType::Cost',
+                                   'CurrencyID': 'other', 'Price': 1, 'OwnerShopID': 'shop_a'}})
+        food = module.build_foods(tables)[0]
+        self.assertEqual(food['fons_price'], 300)
+        self.assertEqual(food['sources'], ['便利店'])
+        self.assertEqual(len(food['offers']), 2)
+        tables['goods']['a']['Price'] = -1
+        with self.assertRaises(ValueError):
+            module.build_foods(tables)
+        tables['goods']['a']['Price'] = 450
         row['UseContext'] = {}
         with self.assertRaises(ValueError):
             module.build_foods(tables)

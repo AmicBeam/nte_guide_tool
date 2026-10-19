@@ -1,7 +1,7 @@
 """Public NTE reference, cultivation calculator and authenticated private imports."""
 from pathlib import Path
 
-from flask import Blueprint, Response, jsonify, render_template, request, send_file
+from flask import Blueprint, Response, redirect, jsonify, render_template, request, send_file
 from . import service, cultivation, presentation, arc_cultivation
 from .challenge_calendar import is_current_challenge
 from .rich_text import description_html
@@ -36,7 +36,7 @@ def integer(name, default, low, high):
 def filters():
     return dict(query=request.args.get('q', '').strip(), element=request.args.get('element', ''),
                 rarity=integer('rarity', 5, 1, 5) if request.args.get('rarity') else None,
-                arc_type=request.args.get('arc_type', ''), function=request.args.get('function', ''))
+                arc_type=request.args.get('arc_type', ''), function=request.args.get('function', ''), bonus=request.args.get('bonus', ''))
 
 
 def get_record(kind, identifier, *, narrow=False):
@@ -71,6 +71,8 @@ def index():
     authored = public_items(request.args.get('q', '').strip()) if kind == 'beginner' else []
     counts = {key: len(service.public_records(key)) for key in service.KINDS}
     return render_template('guide/index.html', kind=kind, kinds=service.KINDS, items=items, counts=counts, selected_ids=selected_ids, result_count=result_count, authored_articles=authored,
+        food_groups=list({row['bonus_group']: row['bonus_name'] for row in service.catalog()['foods']}.items()),
+        food_asset_version=max((Path(__file__).parent / 'static' / name).stat().st_mtime_ns for name in ('foods.js', 'foods.css')),
         catalog_asset_version=(Path(__file__).parent / 'static/catalog_cards.css').stat().st_mtime_ns,
         challenge_asset_version=(Path(__file__).parent / 'static/challenge_index.css').stat().st_mtime_ns,
         arc_types=sorted({c['arc_type']['id']: c['arc_type'] for c in service.catalog()['characters']}.values(),
@@ -80,6 +82,8 @@ def index():
 @blueprint.get('/guide/<kind>/<identifier>')
 def entry(kind, identifier):
     record = get_record(kind, identifier)
+    if kind == 'foods':
+        return redirect('/guide?kind=foods&food=' + record['id'])
     if kind == 'characters':
         profile = service.detail(kind, identifier)
         if profile.get('status') == 'preview':

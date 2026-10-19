@@ -24,6 +24,9 @@ LABELS = {
     'floor_begin': '起始层', 'floor_end': '结束层', 'single': '敌人配置',
     'total_affinity': '从零到满好感所需好感值', 'required_gifts': '所需礼物份数',
     'costs': '礼物花费', 'unit_price': '单价', 'total_cost': '总花费',
+    'bonus_group': '具体加成分类', 'bonus_name': '加成类型', 'fons_price': '最低方斯标价',
+    'sources': '获取途径', 'shop': '商店', 'limited': '限时商品', 'requires_unlock': '需要解锁',
+    'card_segments': '卡片效果片段', 'effect_segments': '效果片段', 'highlight': '加成数值',
     'food_effect': '料理效果', 'quality': '品质',
     'function': '料理功能', 'function_name': '功能', 'cooldown': '使用冷却（秒）',
     'recommended': '推荐单价', 'percent': '百分比',
@@ -148,7 +151,8 @@ def summary(kind, record):
                   json_url=f'/api/guide/{kind}/{identifier}',
                   markdown_url=f'/guide/{kind}/{identifier}.md')
     if kind == 'foods':
-        result.update({key: record[key] for key in ('function', 'function_name', 'effect', 'quality')})
+        result['url'] = f'/guide?kind=foods&food={identifier}'
+        result.update({key: record[key] for key in ('function', 'function_name', 'effect', 'quality', 'bonus_group', 'bonus_name', 'card_segments', 'effect_segments', 'description', 'sources', 'offers', 'fons_price')})
     if kind == 'characters':
         result['assets'] = record['assets']
     if kind == 'endless':
@@ -160,7 +164,7 @@ def summary(kind, record):
     return result
 
 
-def search(kind=None, query='', element='', rarity=None, arc_type='', function=''):
+def search(kind=None, query='', element='', rarity=None, arc_type='', function='', bonus=''):
     result = []
     for group in ([kind] if kind else KINDS):
         records = reversed(public_records(group)) if group == 'challenges' else public_records(group)
@@ -172,6 +176,8 @@ def search(kind=None, query='', element='', rarity=None, arc_type='', function='
             if arc_type and str(record.get('type_id', '') if group == 'arcs' else record.get('arc_type', {}).get('id', '')) != arc_type:
                 continue
             if function and record.get('function') != function:
+                continue
+            if bonus and record.get('bonus_group') != bonus:
                 continue
             # Full text includes skills, nouns, arc effects and enemy names.
             if query.casefold() not in json.dumps(record, ensure_ascii=False).casefold():

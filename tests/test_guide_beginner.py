@@ -138,7 +138,7 @@ class BeginnerGuideTest(unittest.TestCase):
         data = self.client.get('/api/guide/beginner/damage-mechanics').json['data']
         keys = ['intro', 'regular_damage', 'harmony', 'stagger', 'other_mechanics', 'appendices']
         self.assertEqual(set(data['chapter_titles']), set(keys))
-        self.assertEqual(sum(block['type'] == 'missing' for key in keys for block in data[key]), 25)
+        self.assertEqual(sum(block['type'] == 'missing' for key in keys for block in data[key]), 0)
         page = self.client.get('/guide/beginner/damage-mechanics').text
         self.assertEqual(sorted(keys, key=lambda key: page.index(f'id="section-{key}"')), keys)
         for key in keys:
@@ -146,7 +146,7 @@ class BeginnerGuideTest(unittest.TestCase):
             self.assertIn(f'id="section-{key}"', page)
         for text in ('基础伤害区= Σ(伤害倍率* 对应属性)+ 额外伤害值', '注意倾陷状态不提供易伤。', '倾陷伤害= Σ角色贡献的倾陷伤害'):
             self.assertIn(text, page)
-        self.assertIn('当前提供的正文未包含展开内容', page)
+        self.assertNotIn('当前提供的正文未包含展开内容', page)
         self.assertNotIn('点击显示隐藏的内容', page)
         md = self.client.get('/guide/beginner/damage-mechanics.md').text
         for token in ('DUEVxck1xTFpoZ0ZU', 'DUFFaVGFDRmxaRUF6', 'DUGxzWGhNc2RsZ3B0', 'DUGhWeGZ3YkNRUXJt'):
@@ -159,3 +159,26 @@ class BeginnerGuideTest(unittest.TestCase):
         short_md = self.client.get('/guide/beginner/damage-mechanics.md?section=stagger').text
         self.assertIn('## PART 03 倾陷', short_md)
         self.assertNotIn('## PART 01', short_md)
+
+    def test_nga_expanded_text_and_figures_are_all_visible(self):
+        data = self.client.get('/api/guide/beginner/damage-mechanics').json['data']
+        blocks = [block for key in data['chapter_titles'] for block in data[key]]
+        figures = [block for block in blocks if block['type'] == 'image']
+        self.assertEqual(len(figures), 17)
+        page = self.client.get('/guide/beginner/damage-mechanics').text
+        for text in ('敌人基础防御= 600+ 6* 敌人等级', '环合强度区= 1+ 环合强度/ 600', '倾陷增伤区= 1+ 倾陷强度/ 300+ 倾陷增伤', '经验= FLOOR(基础经验+ 经验系数* 渔获质量)', '剧情平衡模式下角色造成的伤害= 剧情平衡倍率× 10000'):
+            self.assertIn(text, page)
+        self.assertNotIn('<details', page)
+        self.assertNotIn('点击显示隐藏', page)
+        self.assertNotIn('guide-article-missing"', page)
+        self.assertGreater(sum(len(block.get('text', '')) for block in blocks), 9000)
+        md = self.client.get('/guide/beginner/damage-mechanics.md').text
+        self.assertEqual(md.count('![数据机制图表 '), 17)
+        for figure in figures:
+            path = Path(__file__).resolve().parents[1] / 'app/modules/guide/static' / figure['src'].removeprefix('/static/guide/')
+            with Image.open(path) as image:
+                self.assertEqual(image.size, (figure['width'], figure['height']))
+                image.verify()
+            self.assertIn(figure['src'], page)
+        # Formula lines must preserve multiplication when rendered as Markdown.
+        self.assertIn('基础伤害区\\* 增伤区', md)

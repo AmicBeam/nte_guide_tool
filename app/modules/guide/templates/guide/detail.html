@@ -19,7 +19,7 @@
 {% if kind == 'challenges' %}<p class="guide-muted">{{ '常驻环线' if record.is_permanent|default(false) else '轮换环线' }} · {{ '长期开放' if record.is_permanent|default(false) else (record.begin_date|default(none) or '日期未提供') }}{% if record.end_date|default(none) %} → {{ record.end_date }}{% endif %} · {{ record.stage_count|default('') }} 关</p>{% if not record.is_permanent|default(false) %}<p class="guide-muted">国服日历：开始日05:00至结束日04:59:59（北京时间）。未来规律排期可能调整。</p>{% endif %}{% endif %}
 {% if kind == 'endless' %}<nav class="guide-links" aria-label="深境层数组">{% for group in range(4) %}<a href="/guide/endless/EndlessTrial_{{ group * 50 + 1 }}_{{ (group + 1) * 50 }}" {% if record.floor_begin == group * 50 + 1 %}aria-current="page"{% endif %}>{{ group * 50 + 1 }}–{{ (group + 1) * 50 }} 层</a>{% endfor %}</nav><p class="guide-muted">{{ record.description|default('') }} · {{ record.stage_count|default('') }} 层</p>{% endif %}
 {% if kind == 'arcs' and record.description is defined %}<p class="guide-muted">{{ record.description }}</p>{% endif %}
-<p class="guide-muted">数值按等级或精炼档位顺序列出；敌人抗性为小数比例。完整字段可通过 JSON 查看。</p>
+{% if kind == 'beginner' %}<p class="guide-text">{{ record.description|default('') }}</p><p class="guide-links"><a href="{{ record.article_url }}" target="_blank" rel="noopener noreferrer">阅读完整图文 · {{ record.author }} ↗</a></p>{% else %}<p class="guide-muted">数值按等级或精炼档位顺序列出；敌人抗性为小数比例。完整字段可通过 JSON 查看。</p>{% endif %}
 
 {% if kind == 'characters' %}{% include 'guide/character_tools.html' %}{% endif %}
 <button class="guide-toc-toggle" type="button" aria-expanded="false" aria-controls="guide-toc" data-toc-toggle>目录</button>
@@ -45,6 +45,7 @@
 {% elif key == 'equip_slots' %}
 <p class="guide-text guide-equip-description">{{ value|guide_equip_description }}</p>
 <div class="guide-slot-layout"><table class="guide-slot-grid" aria-label="空幕格位"><tbody>{% for row in value.slots %}{% set row_index = loop.index %}<tr>{% for cell in row %}<td class="{{ 'slot-blocked' if cell == -1 else 'slot-open' }}" aria-label="第{{ row_index }}行第{{ loop.index }}列：{{ '不可用' if cell == -1 else '可装配' }}">{{ '×' if cell == -1 else '·' }}</td>{% endfor %}</tr>{% endfor %}</tbody></table><div><p class="guide-muted">亮格：可装配 · 暗格：不可用</p></div></div>
+{% elif kind == 'beginner' %}<p class="guide-text">{{ value }}</p>
 {% else %}{{ tree(value) }}{% endif %}</section>{% endfor %}</div>
-<details class="guide-notes"><summary>数值阅读约定</summary>{% for note in notes %}<p>{{ note }}</p>{% endfor %}</details>
+{% if kind != 'beginner' %}<details class="guide-notes"><summary>数值阅读约定</summary>{% for note in notes %}<p>{{ note }}</p>{% endfor %}</details>{% endif %}
 {% endblock %}

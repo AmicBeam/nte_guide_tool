@@ -11,8 +11,9 @@ from .description_parameters import bind_description_parameters
 from .challenge_calendar import is_released_challenge
 from . import reference_view, previews
 
-KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境', 'endless': '全站深境'}
+KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '萌新攻略'}
 LABELS = {
+    'gameplay': '游戏玩法', 'currencies': '货币与消费', 'progression': '养成方向', 'wishes': '自选与抽取规划',
     'status': '资料状态', 'preview': '预告', 'preview_image': '预告图',
     'rules': '楼层机制', 'enhanced_resistances': '强化抗性', 'node_first': '节点起始层', 'node_last': '关底',
     'reserve_character_count': '备选角色数', 'floor_slot_count': '角色栏位数',
@@ -107,6 +108,7 @@ def catalog():
         arc['rarity_icon'] = f'/static/images/rarities/YH_UI_star{rank}.webp'
         arc['image'] = f'/static/images/arcs/{arc["id"]}.webp'
     data['endless'] = json.loads((Path(__file__).parent / 'data/endless.json').read_text(encoding='utf-8'))['groups']
+    data['beginner'] = json.loads((Path(__file__).parent / 'data/beginner.json').read_text(encoding='utf-8'))
     monsters = json.loads((Path(__file__).parent / 'data/monster_metadata.json').read_text(encoding='utf-8'))
     for challenge in data['challenges'] + data['endless']:
         for stage in challenge['stages']:
@@ -142,6 +144,8 @@ def summary(kind, record):
         result['assets'] = record['assets']
     if kind == 'endless':
         result['description'] = record.get('description', '')
+    if kind == 'beginner':
+        result['description'] = record['description']
     if kind == 'challenges':
         result['description'] = record.get('resonance', {}).get('description', '')
     return result
@@ -199,7 +203,10 @@ def detail(kind, identifier, section=None, stage=None, ability_id=None, level=No
         record['stages'] = [x for x in record['stages'] if str(x['id']) == str(stage)]
         if not record['stages']:
             raise LookupError('未找到关卡')
-    return reference_view.select(record, kind, section, ability_id, level, skill_level, hit_details)
+    selected = reference_view.select(record, kind, section, ability_id, level, skill_level, hit_details)
+    if kind == 'beginner':
+        selected = {**selected, **{key: record[key] for key in ('description', 'author', 'article_url')}}
+    return selected
 
 
 def markdown_value(value, depth=2):
@@ -231,6 +238,14 @@ def scalar(value):
 
 
 def markdown_record(record):
+    if record.get('id') == 'getting-started':
+        lines = [f'# {record["name"]}', '', record.get('description', ''), '']
+        if 'article_url' in record:
+            lines += [f'[阅读全文（{record["author"]}）]({record["article_url"]})', '']
+        for key in ('gameplay', 'currencies', 'progression', 'wishes'):
+            if key in record:
+                lines += [f'## {label(key)}', '', record[key], '']
+        return '\n'.join(lines)
     return f'# {record["name"]}\n\n' + markdown_value(record)
 
 
@@ -246,6 +261,8 @@ def schema():
             'level': '可选1–13；values、attack_values等等级数组变为{level,max_level,value}，不足指定档时标明实际最高档。',
             'parameter_keys': '指定技能时，groups中与顶层param_rows相同的行改用parameter_keys引用，按key查找原行。'},
         'markdown': '/guide/{collection}/{id}.md',
+        'beginner': {'id': 'getting-started', 'cli': 'beginner --format markdown',
+                     'sections': ['gameplay', 'currencies', 'progression', 'wishes']},
         'cultivation': {'url': '/api/guide/characters/{id}/cultivation', 'method': 'POST',
             'fields': ['current_level', 'target_level', 'current_ascended', 'target_ascended', 'current_skill_<index>', 'target_skill_<index>'],
             'skill_index': '按角色 materials.skills 顺序；技能等级不含觉醒和共鸣加成',
@@ -272,6 +289,7 @@ def page_sections(kind, record):
         'arcs': ('effect', 'exclusive_desc', 'exclusive_character_ids'),
         'challenges': ('resonance', 'stages', 'rewards'),
         'endless': ('stages',),
+        'beginner': ('gameplay', 'currencies', 'progression', 'wishes'),
     }
     keys = preferred[kind] if len(record) > 3 else tuple(key for key in record if key not in ('id', 'name'))
     result = {key: record[key] for key in keys if key in record and record[key] is not None and record[key] != [] and record[key] != {}}

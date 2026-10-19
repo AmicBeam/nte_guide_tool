@@ -365,3 +365,14 @@ HTML、列表、搜索、JSON、Markdown和CLI支持预告条目，`status=previ
 验证：`.venv/bin/python -m unittest tests.test_guide_previews tests.test_guide tests.test_guide_narrow_reads tests.test_module_routes -q`。浏览器检查目录角标与属性／星级筛选、两张横幅完整显示、无材料时仅显示图片、有材料时显示材料卡，以及桌面／手机无横向溢出。
 
 目录与账号练度页的分类栏取消外层容器叠加的顶部留白和分类栏额外上边距，保留固定导航及安全区域所需占位，导航下方约15px进入分类栏。该调整仅作用于直接包含分类栏的攻略页，角色详情等其他页面的正文间距保持原有布局。浏览器验收覆盖桌面、390px和320px窄屏，分类栏不得被固定导航遮挡或产生整页横向溢出。
+
+
+## 萌新攻略
+
+`/guide?kind=beginner` 提供萌新攻略分类，`/guide/beginner/getting-started` 展示新手入坑攻略导读与完整图文阅读入口。四节正文复用详情页的悬浮目录、滚动高亮和窄屏目录按钮，不另建目录脚本。导读是简要整理，详细图文在原帖阅读；消费与抽取观点不作为本站长期强度结论。
+
+`data/beginner.json` 为独立本地内容，普通资料刷新不覆盖；启动和请求不联网。列表、全文搜索、JSON、Markdown和CLI共用此内容。JSON：`/api/guide/beginner/getting-started`；Markdown：`/guide/beginner/getting-started.md`。支持 `section=gameplay|currencies|progression|wishes`，分节返回保留完整阅读入口。
+
+CLI：`python nte-guide.py beginner`，`python nte-guide.py beginner --format markdown`，`python nte-guide.py beginner --section wishes`；也支持 `list beginner` 与 `get beginner getting-started`。更新后需重新下载CLI。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_beginner tests.test_guide tests.test_module_routes -q`；浏览器检查分类入口、四节目录跳转与高亮、窄屏展开／关闭。

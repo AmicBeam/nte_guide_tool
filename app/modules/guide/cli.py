@@ -9,7 +9,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-KINDS = ('characters', 'arcs', 'challenges', 'endless')
+KINDS = ('characters', 'arcs', 'challenges', 'endless', 'beginner')
 
 
 def filter_profiles(payload, role_id=None, character_id=None):
@@ -58,6 +58,9 @@ def main(argv=None):
     getting.add_argument('--hit-details', action='store_true', help='Include per-hit energy, harmony and stagger data')
     getting.add_argument('--format', choices=('json', 'markdown'), default='json')
     commands.add_parser('schema', help='Read API and numeric conventions')
+    beginner = commands.add_parser('beginner', help='拉取新手入坑攻略导读与原文入口')
+    beginner.add_argument('--section', choices=('gameplay', 'currencies', 'progression', 'wishes'))
+    beginner.add_argument('--format', choices=('json', 'markdown'), default='json')
     personal = commands.add_parser('me', help='Read your saved game profiles (NTE_GUIDE_TOKEN required)')
     personal.add_argument('--role-id', help='Select one of your own game accounts')
     personal.add_argument('--character', help='Select a character ID in the saved profiles')
@@ -103,6 +106,11 @@ def main(argv=None):
             query['hit_details'] = int(args.hit_details)
         elif args.all_levels or args.hit_details:
             parser.error('--all-levels and --hit-details are only supported for characters')
+    elif args.command == 'beginner':
+        path = ('/guide/beginner/getting-started.md' if args.format == 'markdown'
+                else '/api/guide/beginner/getting-started')
+        if args.section:
+            query['section'] = args.section
     elif args.command == 'me':
         path = '/api/guide/me/profiles'
     elif args.command == 'axes':

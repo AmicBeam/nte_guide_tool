@@ -872,7 +872,7 @@ class DeviceAuxiliaryCalibrationLedger:
     def _expected(self,phase,offset,count):
         return self.contract['physical_plans'][phase][offset:offset+count]
 
-    def _check_segment(self,entry,segment,*,deadline,verify=True):
+    def _check_segment(self,entry,segment,*,deadline,verify=True,parent_proof=None):
         from .device_auxiliary_collection import AuxiliarySegment,verify_auxiliary_segment
         _deadline(deadline)
         if (not isinstance(segment,AuxiliarySegment)or segment.decision_limit!=512
@@ -880,7 +880,9 @@ class DeviceAuxiliaryCalibrationLedger:
                 or [_physical_job(j)for j in segment.metadata.jobs]!=self._expected(entry['phase'],entry['offset'],entry['count'])
                 or segment.metadata.starting_decks!=self.contract['starting_decks']):
             raise ValueError('Actual cohort physical plan/build/source binding differs')
-        if verify:verify_auxiliary_segment(segment,proof_deadline=time.monotonic()+deadline-time.time())
+        if verify:
+            options={}if parent_proof is None else dict(parent_proof=parent_proof)
+            verify_auxiliary_segment(segment,proof_deadline=time.monotonic()+deadline-time.time(),**options)
         return segment
 
     @staticmethod
@@ -958,7 +960,7 @@ class DeviceAuxiliaryCalibrationLedger:
         return deepcopy(entry)
 
     def commit_phase_segment(self,phase,*,offset,segment,expected_parent_checkpoint_sha256,
-                             producer_report_sha256,producer_checkpoint_sha256,authorization,pending_candidate=False):
+                             producer_report_sha256,producer_checkpoint_sha256,authorization,pending_candidate=False,parent_proof=None):
         """Commit independently verified progress to an existing PAUSED cohort.
 
         No execution or status repair occurs here. Uncertain/rejected records
@@ -984,6 +986,11 @@ class DeviceAuxiliaryCalibrationLedger:
         entry=entries[0]
         if entry['checkpoints'][-1]['sha256']!=expected_parent_checkpoint_sha256:
             raise ValueError('Latest actual parent checkpoint SHA differs')
+        proof_binding=None
+        if parent_proof is not None:
+            from .device_auxiliary_proof import require_auxiliary_parent_proof
+            proof_binding=require_auxiliary_parent_proof(parent_proof,checkpoint_sha256=expected_parent_checkpoint_sha256,
+                contract_sha256=self.contract_sha256,phase=phase,offset=offset)
         old=self._load_segment(entry,deadline=self.deadline,verify=False)
         producer_segment=segment
         if not self._clean(old):raise ValueError('Actual latest parent is not a clean verified prefix')
@@ -993,12 +1000,12 @@ class DeviceAuxiliaryCalibrationLedger:
                     or not segment.reason.endswith('; pending_independent_cpu_proof')
                     or not self._clean(replace(segment,replay_verified=True))):
                 raise ValueError('Only explicitly pending actual-clean GPU candidates may request independent full proof')
-            self._check_segment(entry,segment,deadline=self.deadline)
+            self._check_segment(entry,segment,deadline=self.deadline,parent_proof=parent_proof)
             segment=replace(segment,replay_verified=True)
         else:
             if not self._clean(segment):
                 raise ValueError('Only clean independently replay-verified prefixes may be committed')
-            self._check_segment(entry,segment,deadline=self.deadline)
+            self._check_segment(entry,segment,deadline=self.deadline,parent_proof=parent_proof)
         if (not _same(segment.initial,old.initial)
                 or not _same(segment.attempts[:len(old.attempts)],old.attempts)
                 or not _same(segment.budget_continuations[:len(old.budget_continuations)],old.budget_continuations)):
@@ -1043,7 +1050,9 @@ class DeviceAuxiliaryCalibrationLedger:
             producer_report_sha256=producer_report_sha256,producer_checkpoint_sha256=producer_checkpoint_sha256,
             authorization=authorization.strip(),checkpoint_sha256=replacement['checkpoints'][-1]['sha256'],
             pending_candidate=pending_candidate,producer_replay_verified=producer_segment.replay_verified,
-            producer_reason=producer_segment.reason,full_replay_proof_applied=True))
+            producer_reason=producer_segment.reason,full_replay_proof_applied=parent_proof is None))
+        if parent_proof is not None:
+            updated['events'][-1].update(full_prefix_proof_applied=True,proof_mode='inductive',parent_proof=proof_binding)
         original=self.manifest
         self.manifest=updated
         try:self._persist()

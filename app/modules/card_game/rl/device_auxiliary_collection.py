@@ -83,14 +83,18 @@ def _coordinates(records, rows):
     return out
 
 
-def verify_auxiliary_segment(segment, *, proof_deadline=None):
+def verify_auxiliary_segment(segment, *, proof_deadline=None, parent_proof=None):
     """Verify supplied GPU evidence; never fill missing x/context/z or actions."""
     if not isinstance(segment, AuxiliarySegment):raise TypeError('Actual auxiliary segment required')
     if segment.export_errors:raise ValueError('Incomplete/corrupt GPU archive export remains audit-only')
     metadata = _metadata(segment.metadata);rows = len(metadata.jobs)
     from .device_auxiliary_continuation import verify_auxiliary_budget_history,verify_auxiliary_kernel_history
     verify_auxiliary_budget_history(segment)
-    kernel_boundaries=verify_auxiliary_kernel_history(segment,proof_deadline=proof_deadline)
+    parent=None
+    if parent_proof is None:
+        kernel_boundaries=verify_auxiliary_kernel_history(segment,proof_deadline=proof_deadline)
+    else:
+        kernel_boundaries=()
     if set(segment.source_binding)!={'rule_source','image','schema'} or any(
             not isinstance(v,str)or len(v)!=64 or any(c not in '0123456789abcdef'for c in v)
             for v in segment.source_binding.values()):
@@ -116,12 +120,27 @@ def verify_auxiliary_segment(segment, *, proof_deadline=None):
         if (any(type(v)is not int or v not in (0,256)for v in attempt['errors'])
                 or any(attempt['raw_errors']) or any(attempt['value_errors']) or any(attempt.get('audit_append_errors',())) or attempt.get('memory_limit_exceeded',False)):
             raise ValueError('Prior semantic/archive/memory failure cannot be washed by resume')
+    if parent_proof is not None:
+        from .device_auxiliary_proof import _verified_parent_for_segment
+        parent=_verified_parent_for_segment(parent_proof,segment)
+    return _verify_auxiliary_rows(segment,metadata,raw,audit,values,kernel_boundaries,
+                                  proof_deadline=proof_deadline,parent=parent)
+
+
+def _verify_auxiliary_rows(segment,metadata,raw,audit,values,kernel_boundaries,*,proof_deadline,parent=None):
+    """One oracle implementation for full replay and certified continuation."""
     new_game, observe, acting_side, apply_action, clean, encode, rule_decision = _oracle()
     from .batched_search.device_random import verify_numpy_pcg64_state
     for owner, job in enumerate(metadata.jobs):
-        state = new_game(**deepcopy(metadata.initializers[owner]))
-        _same_graph(segment.initial[owner], state)  # Normal init retains events/cache.
-        rng = np.random.default_rng(job['seed'])
+        if parent is None:
+            state = new_game(**deepcopy(metadata.initializers[owner]))
+            _same_graph(segment.initial[owner], state)  # Normal init retains events/cache.
+            rng=np.random.default_rng(job['seed']);start=0
+        else:
+            state=deepcopy(parent.final[owner]);start=parent.steps[owner]
+            rng=np.random.default_rng(job['seed'])
+            verify_numpy_pcg64_state(parent.pcg_states[owner])
+            rng.bit_generator.state=deepcopy(parent.pcg_states[owner])
         def kernel_boundary(step):
             for original in kernel_boundaries:
                 if original.steps[owner]==step:
@@ -129,8 +148,8 @@ def verify_auxiliary_segment(segment, *, proof_deadline=None):
                     if (original.pcg_states[owner]!=rng.bit_generator.state
                             or original.complete[owner]!=(state['phase']=='finished')):
                         raise ValueError('Historical kernel boundary state/RNG/terminal changed')
-        kernel_boundary(0)
-        for step in range(segment.steps[owner]):
+        kernel_boundary(start)
+        for step in range(start,segment.steps[owner]):
             if proof_deadline is not None and time.monotonic() >= proof_deadline:
                 raise TimeoutError('Auxiliary postbatch proof deadline exhausted')
             key=owner,step;r,a,v=raw[key],audit[key],values[key]
@@ -432,7 +451,7 @@ class DeviceAuxiliaryCollector:
             if exc is None:raise
         return False
     def run_segment(self,metadata,*,deadline,resume=None,seconds=90,soft_seconds=150,continuation_budget=None,
-                    defer_replay_proof=False):
+                    defer_replay_proof=False,parent_proof=None):
         """Replay/export once, optionally leaving only the final CPU proof pending.
 
         The opt-in result stays unverified and cannot enter a clean ledger or
@@ -441,7 +460,7 @@ class DeviceAuxiliaryCollector:
         if self._closed:raise RuntimeError('Auxiliary collector closed')
         try:
             result=self._run_segment(metadata,deadline=deadline,resume=resume,seconds=seconds,soft_seconds=soft_seconds,continuation_budget=continuation_budget,
-                                     defer_replay_proof=defer_replay_proof)
+                                     defer_replay_proof=defer_replay_proof,parent_proof=parent_proof)
         except BaseException:
             try:self.close()
             except BaseException:pass
@@ -449,7 +468,7 @@ class DeviceAuxiliaryCollector:
         self.close()
         return result
     def _run_segment(self,metadata,*,deadline,resume=None,seconds=90,soft_seconds=150,continuation_budget=None,
-                     defer_replay_proof=False):
+                     defer_replay_proof=False,parent_proof=None):
         if type(defer_replay_proof)is not bool:
             raise TypeError('defer_replay_proof must be an explicit bool')
         metadata=_metadata(metadata);started=time.monotonic()
@@ -458,6 +477,7 @@ class DeviceAuxiliaryCollector:
             if resume is None:raise ValueError('Continuation budget requires actual previous segment')
             metadata=validate_auxiliary_continuation(continuation_budget,resume=resume,metadata=metadata,
                 deadline=deadline,source_binding=self._source_binding,seconds=seconds,soft_seconds=soft_seconds)
+        if parent_proof is not None and resume is None:raise ValueError('Parent proof requires its exact actual resume checkpoint')
         if self._used:raise RuntimeError('One actual graph replay per collector; use fresh arenas for next segment')
         if len(metadata.jobs)!=self.rows:raise ValueError('Actual job cohort must match arenas')
         if type(seconds)not in (int,float) or not 0<seconds<=90:raise ValueError('At most90s device loop required')
@@ -465,7 +485,11 @@ class DeviceAuxiliaryCollector:
         if resume is not None:
             if not isinstance(resume,AuxiliarySegment) or ((continuation_budget is None and resume.metadata!=metadata) or resume.decision_limit!=self.max_decisions or resume.source_binding!=self._source_binding):raise ValueError('Same actual job cohort required for resume')
             if not resume.replay_verified or any(code not in (0,256)for code in resume.errors):raise ValueError('Only verified clean/guard segment may resume')
-            verify_auxiliary_segment(resume,proof_deadline=time.monotonic()+_deadline(deadline,metadata,started,soft_seconds))
+            if parent_proof is None:
+                verify_auxiliary_segment(resume,proof_deadline=time.monotonic()+_deadline(deadline,metadata,started,soft_seconds))
+            else:
+                from .device_auxiliary_proof import verify_auxiliary_parent_checkpoint
+                verify_auxiliary_parent_checkpoint(resume,parent_proof)
             if all(resume.complete) or any(n>=self.max_decisions and not done for n,done in zip(resume.steps,resume.complete)):
                 raise ValueError('Finished or global-decision-limit cohort cannot resume')
         self._used=True;objects=self._objects
@@ -536,10 +560,10 @@ class DeviceAuxiliaryCollector:
         outcome.attempts[-1]['device_used_bytes']=max(used,export_memory)
         outcome.attempts[-1]['memory_limit_exceeded']=max(used,export_memory)>self.max_device_bytes
         return self._post_export_replay_proof(outcome,deadline=deadline,metadata=metadata,started=started,
-            soft_seconds=soft_seconds,defer_replay_proof=defer_replay_proof)
+            soft_seconds=soft_seconds,defer_replay_proof=defer_replay_proof,parent_proof=parent_proof)
 
     @staticmethod
-    def _post_export_replay_proof(outcome,*,deadline,metadata,started,soft_seconds,defer_replay_proof=False):
+    def _post_export_replay_proof(outcome,*,deadline,metadata,started,soft_seconds,defer_replay_proof=False,parent_proof=None):
         """A deferred actual export is audit-only until an independent CPU proof.
 
         Resume ingress was still fully verified before any CUDA capture. This
@@ -550,7 +574,8 @@ class DeviceAuxiliaryCollector:
             return replace(outcome,replay_verified=False,
                 reason=outcome.reason+'; pending_independent_cpu_proof')
         try:
-            verify_auxiliary_segment(outcome,proof_deadline=time.monotonic()+_deadline(deadline,metadata,started,soft_seconds))
+            proof_options={}if parent_proof is None else dict(parent_proof=parent_proof)
+            verify_auxiliary_segment(outcome,proof_deadline=time.monotonic()+_deadline(deadline,metadata,started,soft_seconds),**proof_options)
             outcome=replace(outcome,replay_verified=True)
             if outcome.reason=='incomplete':outcome=replace(outcome,reason='planned_segment_pause')
         except (ValueError,KeyError,TypeError,TimeoutError,AssertionError)as error:

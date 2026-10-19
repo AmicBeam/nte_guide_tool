@@ -182,3 +182,26 @@ class BeginnerGuideTest(unittest.TestCase):
             self.assertIn(figure['src'], page)
         # Formula lines must preserve multiplication when rendered as Markdown.
         self.assertIn('基础伤害区\\* 增伤区', md)
+
+    def test_nga_colors_preserve_exact_text_and_inline_ranges(self):
+        data = self.client.get('/api/guide/beginner/damage-mechanics').json['data']
+        blocks = [block for key in data['chapter_titles'] for block in data[key]]
+        colored = [block for block in blocks if 'runs' in block]
+        colors = {run.get('color') for block in colored for run in block['runs'] if 'color' in run}
+        self.assertEqual(colors, {'blue', 'red', 'purple'})
+        for block in colored:
+            self.assertEqual(''.join(run['text'] for run in block['runs']), block['text'])
+        inline = next(block for block in blocks if block.get('text', '').startswith('属性异能伤害增强和心灵伤害增强'))
+        self.assertEqual([run['text'] for run in inline['runs'] if run.get('color') == 'purple'], ['伤害类型伤害增强'])
+        formula = next(block for block in blocks if block.get('text') == '环合强度区= 1+ 环合强度/ 600')
+        self.assertEqual(formula['runs'], [{'text': formula['text'], 'color': 'blue'}])
+        uncolored = next(block for block in blocks if block.get('text', '').startswith('角色的充能效率显示在面板上'))
+        self.assertNotIn('runs', uncolored)
+        page = self.client.get('/guide/beginner/damage-mechanics').text
+        for color in colors:
+            self.assertIn(f'class="guide-article-{color}"', page)
+        self.assertIn('<span class="guide-article-purple">伤害类型伤害增强</span>', page)
+        self.assertIn('<span class="guide-article-red">终结能量</span>', page)
+        md = self.client.get('/guide/beginner/damage-mechanics.md').text
+        self.assertNotIn('guide-article-blue', md)
+        self.assertIn('属性异能伤害增强和心灵伤害增强是伤害类型伤害增强的两种不同类型', md)

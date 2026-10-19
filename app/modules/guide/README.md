@@ -382,3 +382,5 @@ CLI：`python nte-guide.py beginner`，`python nte-guide.py beginner --format ma
 萌新列表按本地内容数组顺序展示：新手入坑图文、`/guide/beginner/damage-mechanics`「异环数据机制导论」、战斗机制视频。数据机制条目完整展开正文及图表，保留NGA原帖和附表入口；网页、列表API及CLI使用相同顺序。
 
 数据机制导论按 `chapter_titles` 配置顺序渲染前言及五个PART；JSON、Markdown和CLI支持按 `regular_damage`、`harmony`、`stagger`、`other_mechanics`、`appendices` 分节读取。正文与17张本地图表全部展开，不保留折叠按钮、缺失占位或更新日志区。图表位于模块 `static/beginner/damage-mechanics/`，延迟加载、保持原始分辨率并可点击查看原图；延迟加载不隐藏章节正文。正文、公式、附表链接与图片路径在网页和机器读取接口中保持一致。
+
+数据机制导论的文字颜色由段落内 `runs[].color` 按蓝、红、紫三种语义标记；模板只接受固定颜色类，深色背景使用可读的浅色调，保留原文着色范围。相同词语在其他未标色位置不自动着色，公式与普通段落共用安全文本渲染；JSON提供颜色标记，Markdown仍输出原正文。

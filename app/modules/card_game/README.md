@@ -1363,3 +1363,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 规则预览可显式选择 `batched_duel/native_preview_arena.py` 的精确私有 typed 临时区回收，采用独立后端身份且保留默认执行路径；CUDA模块在实际图捕获时持有张量参数，图停止、设备同步后再释放，避免短命原生子流的析构错误。边界及独立GPU验收见设备搜索协议；组件CPU测试不能代替完整Gumbel训练成功。
 
 无 VM 的普通出击实验位于 `rl/batched_duel/native_attack_slice.py`：固定数值字段直接生成受限创生队局面的完整合法动作，并计算普通出击的战斗字段；环合和未知效果明确拒绝。尚未输出完整实体／事件后继状态，不能接入正式搜索或训练。支持边界见[原生出击数值样例](../../../docs/duel-v2-native-attack-slice.md)，本机对拍命令为 `python -m unittest tests.test_duel_v2_native_attack_slice`；CUDA 实测仍须独立短验。
+
+显式授权的混合训练可使用 `batched_search/training_checkpoint.py` 保存完整决策边界前缀，并通过 `hybrid_joint_update.py` 执行一次性联合更新、`hybrid_capacity.py` 接续原容量拟合；辅助／主WDL、自然终局、原搜索预算及P0门槛保留。入口边界与验证命令见[显式授权的混合训练](../../../docs/duel-v2-public-training.md#显式授权的混合训练)，默认设备内训练入口不因这些组件解除资格校验。

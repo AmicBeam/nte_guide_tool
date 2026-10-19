@@ -275,7 +275,9 @@ class TrainingRollout:
     last_diagnostics: Optional[dict] = None
     async_rule_dispatch: Optional[bool] = None
 
-    def collect(self, jobs, *, deadline=None, max_actions=DEFAULT_MAX_ACTIONS):
+    def collect(self, jobs, *, deadline=None, max_actions=DEFAULT_MAX_ACTIONS,
+                resume_checkpoint=None, checkpoint_callback=None, segment_deadline=None,
+                segment_max_decisions=None):
         self.last_diagnostics = {}
         return collect_training_games(
             jobs, inference=self.inference, backend=self.backend, models=self.models,
@@ -290,6 +292,8 @@ class TrainingRollout:
             max_buffer_bytes=self.max_buffer_bytes,
             diagnostics=self.last_diagnostics,
             async_rule_dispatch=self.async_rule_dispatch,
+            resume_checkpoint=resume_checkpoint, checkpoint_callback=checkpoint_callback,
+            segment_deadline=segment_deadline, segment_max_decisions=segment_max_decisions,
         )
 
 
@@ -336,11 +340,24 @@ def _collect_training_games(
     max_buffer_bytes=8 * 1024**3,
     diagnostics=None,
     async_rule_dispatch=None,
+    resume_checkpoint=None,
+    checkpoint_callback=None,
+    segment_deadline=None,
+    segment_max_decisions=None,
 ):
     """Stream complete official games and admit training rows only after terminal WDL.
 
     search_roots is the live Gumbel-root window (up to 1600). query_batch_rows is
     the kernel/call workspace (default 32) and is never reported as root concurrency.
+
+    Opt-in segmented collection stops new root admission at segment_deadline
+    (epoch seconds), drains already admitted complete searches, then calls
+    checkpoint_callback with a detached lossless prefix. Allow enough time for
+    a full root between this soft stop and the enclosing process's hard limit.
+    segment_max_decisions bounds each game's additional committed decisions.
+    Pending games return empty learning rows; only the checkpoint retains their
+    unlabeled prefixes. Resume requires identical original jobs/deadlines,
+    model arrays and search profile and never invokes the state factory again.
     """
     jobs = validate_training_jobs(jobs)
     if async_rule_dispatch is not None and type(async_rule_dispatch) is not bool:
@@ -359,6 +376,13 @@ def _collect_training_games(
         raise ValueError('Positive max_actions required')
     if type(max_buffer_bytes) is not int or max_buffer_bytes < 1:
         raise ValueError('Positive bounded training buffer required')
+    segmented = any(v is not None for v in (resume_checkpoint, checkpoint_callback,
+                                             segment_deadline, segment_max_decisions))
+    if segmented and not callable(checkpoint_callback):
+        raise ValueError('Segmented collection requires a checkpoint callback')
+    if segment_max_decisions is not None and (type(segment_max_decisions) is not int or segment_max_decisions < 1):
+        raise ValueError('Positive per-game segment decision limit required')
+    segment_stop = monotonic_deadline(segment_deadline, clock)
     resolved_backend = report_rule_backend(backend, rule_backend)
     if runtime_name != RUNTIME_SEVEN:
         raise ValueError('Seven-team training runtime required')
@@ -408,6 +432,23 @@ def _collect_training_games(
                     {k:model.version for k,model in value_scopes[source].items()}):
                 raise ValueError('Covered value inference arrays differ from qualified scope')
 
+    checkpoint_contract = None
+    if segmented:
+        from .training_checkpoint import collection_contract, validate_checkpoint
+        checkpoint_contract = collection_contract(jobs, models, value_models,
+            search_roots=search_roots, query_batch_rows=query_batch_rows, simulations=simulations,
+            max_actions=max_actions, max_buffer_bytes=max_buffer_bytes, runtime=runtime_name,
+            rule_backend=resolved_backend, async_rule_dispatch=async_rule_dispatch,
+            allow_cpu_oracle=allow_cpu_oracle, fixture=fixture,
+            deadline=deadline, capacity_plan=capacity_plan,
+            inference_type=type(inference).__module__ + '.' + type(inference).__qualname__,
+            inference_device=getattr(inference, '_device_str', None),
+            inference_batch_rows=getattr(inference, '_max_batch_rows', None),
+            backend_program=getattr(getattr(backend, 'program', None), 'identity', None))
+        if resume_checkpoint is not None:
+            validate_checkpoint(resume_checkpoint, checkpoint_contract, [job['id'] for job in jobs])
+            resume_checkpoint = deepcopy(resume_checkpoint)
+
     entered = False
     stats_entered = False
     if own_backend and hasattr(backend, '__enter__'):
@@ -430,6 +471,16 @@ def _collect_training_games(
     peak = 0
     ready = deque()
     buffer_bytes = 0
+    checkpointed = False
+    if resume_checkpoint is not None:
+        records = resume_checkpoint['records']
+        finished = resume_checkpoint['finished']
+        uncompleted = resume_checkpoint['uncompleted']
+        action_counts = resume_checkpoint['action_counts']
+        buffer_bytes = resume_checkpoint['buffer_bytes']
+        if buffer_bytes > max_buffer_bytes:
+            raise MemoryError('Restored training trajectory exceeds buffer budget')
+    segment_start_counts = dict(action_counts)
 
     def retain(value):
         nonlocal buffer_bytes
@@ -490,7 +541,8 @@ def _collect_training_games(
 
     def admit():
         nonlocal peak
-        while ready:
+        # Keep paused games in FIFO order while already admitted roots drain.
+        for _ in range(len(ready)):
             gid, ready_at = ready.popleft()
             job, ref = active[gid]
             if getattr(ref, 'phase', None) == 'finished':
@@ -501,6 +553,11 @@ def _collect_training_games(
                 continue
             if search_deadline is not None and clock() >= search_deadline:
                 retire([ref], [job], reason='deadline')
+                continue
+            if segmented and ((segment_stop is not None and clock() >= segment_stop) or
+                    (segment_max_decisions is not None and
+                     action_counts[gid] - segment_start_counts[gid] >= segment_max_decisions)):
+                ready.append((gid, ready_at))
                 continue
             actor = getattr(ref, 'actor', None)
             if actor not in ('a', 'b'):
@@ -611,16 +668,23 @@ def _collect_training_games(
                 retire(refs, job_rows, reason=reason)
 
     try:
-        states = create_initial_states()
-        if len(states) != len(jobs):
-            raise ValueError('State factory must return one state per job')
-        refs = backend.import_states(states, game_ids, [1] * len(jobs))
+        if resume_checkpoint is None:
+            import_ids = game_ids
+            states = create_initial_states()
+            if len(states) != len(jobs):
+                raise ValueError('State factory must return one state per job')
+            generations = [1] * len(jobs)
+        else:
+            import_ids = resume_checkpoint['ready']
+            states = [resume_checkpoint['states'][gid] for gid in import_ids]
+            generations = [resume_checkpoint['root_generations'][gid] for gid in import_ids]
+        refs = backend.import_states(states, import_ids, generations)
         del states
-        if len(refs) != len(jobs):
+        if len(refs) != len(import_ids):
             raise ValueError('Backend import lost a training game')
-        for job, ref in zip(jobs, refs):
-            active[job['id']] = (job, ref)
-            ready.append((job['id'], clock()))
+        for gid, ref in zip(import_ids, refs):
+            active[gid] = (job_map[gid], ref)
+            ready.append((gid, clock()))
         scheduler = CooperativeScheduler(
             inference, max_roots=search_roots, allow_cpu_oracle=allow_cpu_oracle,
             async_rule_dispatch=async_rule_dispatch,
@@ -628,13 +692,35 @@ def _collect_training_games(
         cancelled = (lambda: clock() >= search_deadline) if search_deadline is not None else None
         scheduler_stats = scheduler.run_stream(admit, completed, cancelled=cancelled)
         peak = max(peak, scheduler_stats.get('peak_outstanding_roots', 0))
+        if segmented:
+            if searching:
+                raise RuntimeError('Cannot checkpoint outstanding cooperative searches')
+            from .training_checkpoint import SCHEMA, digest, validate_checkpoint
+            export_ids = [gid for gid, _ in ready]
+            exports = backend.export_states([active[gid][1] for gid in export_ids])
+            if len(exports) != len(export_ids):
+                raise ValueError('Checkpoint export lost an active training game')
+            checkpoint = dict(schema=SCHEMA, contract=checkpoint_contract,
+                records=records, finished=finished, uncompleted=uncompleted,
+                action_counts=action_counts, states=dict(zip(export_ids, exports)),
+                root_generations={gid: active[gid][1].root_generation for gid in export_ids},
+                ready=export_ids, buffer_bytes=buffer_bytes)
+            checkpoint['payload_sha256'] = digest(checkpoint)
+            validate_checkpoint(checkpoint, checkpoint_contract, game_ids)
+            checkpoint_callback(deepcopy(checkpoint))
+            checkpointed = True
     except Exception as exc:
         method_error = repr(exc)
         raise
     finally:
         leftover = [ref for _, ref in active.values()]
         leftover_jobs = [job for job, _ in active.values()]
-        if leftover:
+        if leftover and checkpointed:
+            backend.release(leftover)
+            for job in leftover_jobs:
+                uncompleted[job['id']] = _incomplete(job, 'segment_pause', records[job['id']]['roots'])
+            active.clear()
+        elif leftover:
             reason = 'method_error' if method_error else (
                 'deadline' if search_deadline is not None and clock() >= search_deadline else 'evaluation_stopped'
             )

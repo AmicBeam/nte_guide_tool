@@ -1,5 +1,19 @@
 # 公开卡池训练、按需分析与录像
 
+## 显式授权的混合训练
+
+用户明确选择吞吐优先的混合架构时，可在独立冻结任务中使用正式 Python 驻留规则、CUDA 批量推理／树统计和 CUDA 联合更新。该授权必须绑定本轮完整构筑、原始数值、种子、绝对截止及实际用户确认；不因 GPU 方法失败自动切换，也不把混合结果写成设备内全规则验收通过。下节的默认 GPU 训练入口和 closed-device 资格要求继续保留。
+
+混合任务复用 `TrainingRollout` 的 Gumbel32／cap16／H3、逐模拟世界采样、自然终局标签和独立校准。`rollout_from_config` 必须通过真实 `load_scope` 绑定独立辅助价值；把主价值头换名为 `aux@` 的诊断模型不能用于学习。未完成的无 VM 出击数值样例不能承担完整规则推进。
+
+`TrainingRollout.collect` 可显式提供 `resume_checkpoint`、`checkpoint_callback`、`segment_deadline` 和 `segment_max_decisions`。软截止停止新根入队，排空已开始的完整搜索后才导出状态；外层进程须留出排空、保存和清理余量。检查点不保留设备引用，而保存完整私有状态、动作／双观察／搜索前缀、全局决策与世代、已结束局、模型数组及规则／源码／任务合同。恢复不重新开局、不重置根种子；暂停局对学习者返回空标签。实际错误或不确定中断保留失败证据，不借恢复清洗。
+
+`hybrid_joint_update.run_joint_update` 仅接纳自然完整、同源回放核验的真实七队搜索批次，复用现有 `update_batch`。七队均须有有限正策略／价值梯度、完整新行覆盖、策略及价值数组实际变化、CUDA／NumPy数值与下一步 Adam／RNG 恢复证明。更新前写入 RUNNING；不确定或 FAILED 拒绝重做，COMPLETE 校验真实数值、优化器、经验池及 RNG 后直接返回。重新校准价值塔后续训须提供匹配新数组的主价值报告：策略、旧教师及掩码逐数组不变，仅替换价值参数，并按现行循环只清理这些参数的 Adam 状态。
+
+`hybrid_capacity.fit_capacity_segment` 将既有独立容量拟合拆为干净数值单位，保留完整排列、游标、Adam 和随机状态。200 epoch、训练 KL／95% 准确率、独立留出 KL／75% 准确率及正梯度门槛不变；READY 仅表示可恢复，全部单位完成且达到原阈值才通过。辅助／主价值预热不计入策略更新。首批、中段、末段 P0、择优回退、独立矩阵和实际回传仍按本手册执行，不能以组件成功或一次联合更新宣布完整训练完成。
+
+本机验证：`python -m unittest tests.test_duel_v2_hybrid_training_resume tests.test_duel_v2_hybrid_joint_update tests.test_duel_v2_hybrid_capacity`。受控 CPU 对拍不授予 CUDA、完整对局吞吐或策略质量资格；实际任务须另保存有界 GPU 结果。单轮合同、回执、数值和报告只写入 `artifacts/rl-evals/`。
+
 ## 当前硬要求：GPU设备内批量并行，禁止CPU规则回退
 
 2026-10-11用户明确要求：正式搜索训练、GPU搜索互搏及其容量／耗时验收，必须使用GPU设备内批量并行执行。下文历史CPU入口和混合采样实现说明不能覆盖本节，也不能成为GPU规则失败后的替代路径。

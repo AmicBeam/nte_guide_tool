@@ -1714,19 +1714,383 @@
   {
     "id": "damage-mechanics",
     "name": "异环数据机制导论",
-    "description": "NGA数据机制攻略：伤害乘区、环合、倾陷与其他数据机制。",
+    "description": "伤害乘区、环合、倾陷与其他数据机制正文。折叠段落尚未展开，已在对应位置标明；附表保留可点击链接。",
     "author": "666bj",
     "article_url": "https://bbs.nga.cn/read.php?tid=46659382",
     "intro": [
       {
         "type": "paragraph",
-        "text": "这篇攻略从数值关系解释异环战斗，适合了解基础操作后继续阅读。完整公式、折叠说明和附表请查看作者原帖。"
-      }
-    ],
-    "gameplay": [
+        "text": "各位好，这里是 666bj。最近几天研究了一下异环目前游戏的伤害乘区以及数值设计，本文是一些初步结论与各位分享："
+      },
       {
         "type": "paragraph",
-        "text": "内容包括常规伤害的各个乘区、环合的基础伤害与结算、倾陷伤害与队伍成员的关系，以及终结能量等补充机制。原帖还附有角色、敌人、轨外之境和渔获数据表入口。"
+        "text": "为简化起见，本文并不包含复杂的数学推导，相信各位只要在阅读本文前对异环的战斗系统有一些简单的了解即可顺利阅读。本文是指南性质，因此笔者会对一些内容做额外的阐述。"
+      },
+      {
+        "type": "heading",
+        "text": "更新日志",
+        "id": "update-log"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      }
+    ],
+    "chapter_titles": {
+      "intro": "前言",
+      "regular_damage": "PART 01 常规伤害",
+      "harmony": "PART 02 环合",
+      "stagger": "PART 03 倾陷",
+      "other_mechanics": "PART 04 其他数据机制",
+      "appendices": "PART 05 附表"
+    },
+    "regular_damage": [
+      {
+        "type": "formula",
+        "text": "常规伤害= 基础伤害区* 增伤区* 暴击区* 防御区* 抗性区* 浸染易伤区* 最终增伤区* 特殊乘区"
+      },
+      {
+        "type": "paragraph",
+        "text": "常规伤害乘区不仅适用于角色对敌人造成伤害，也适用于敌人对角色造成伤害。目前游戏中，伤害的显示是向下取整的。游戏默认的伤害上限为 9999999。"
+      },
+      {
+        "type": "paragraph",
+        "text": "联机会影响敌人的属性："
+      },
+      {
+        "type": "paragraph",
+        "text": "1/2/3/4 人联机，敌人生命上限 1/1.75/2.5/3.25 倍，攻击力 1/1.2/1.4/1.6 倍，倾陷值上限 1/2/3/4 倍。"
+      },
+      {
+        "type": "heading",
+        "text": "1.1'基础伤害区'",
+        "id": "base-damage"
+      },
+      {
+        "type": "formula",
+        "text": "基础伤害区= Σ(伤害倍率* 对应属性)+ 额外伤害值"
+      },
+      {
+        "type": "heading",
+        "text": "1.1.1'伤害倍率'",
+        "id": "multipliers"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "1.1.2'额外伤害值'",
+        "id": "extra-damage"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "1.2'增伤区'",
+        "id": "damage-bonus"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "1.3'暴击区'",
+        "id": "critical"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "1.4'防御区'",
+        "id": "defense"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "1.5'抗性区'",
+        "id": "resistance"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "1.6'浸染易伤区'",
+        "id": "vulnerability"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "1.7'最终增伤区'",
+        "id": "final-bonus"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "paragraph",
+        "text": "对于特殊乘区，目前游戏中暂未有具体实例，此处不做展开。不同来源的特殊乘区通常情况下都是各自独立乘算的。"
+      }
+    ],
+    "harmony": [
+      {
+        "type": "formula",
+        "text": "环合伤害= 环合基础伤害* 环合强度区* 暴击区* 防御区* 抗性区* 浸染易伤区* 最终增伤区* 特殊乘区"
+      },
+      {
+        "type": "heading",
+        "text": "2.1'异能环合'",
+        "id": "harmony-overview"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "2.2'环合基础伤害'",
+        "id": "harmony-base"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "2.3'环合强度'",
+        "id": "harmony-strength"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "2.4'环合的结算'",
+        "id": "harmony-resolution"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "2.5'暴击区'",
+        "id": "harmony-critical"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "2.6'环合值'",
+        "id": "harmony-gauge"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "2.7'环合天赋'",
+        "id": "harmony-talents"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      }
+    ],
+    "stagger": [
+      {
+        "type": "paragraph",
+        "text": "通常情况下，当敌人受到攻击时会扣除'倾陷值'，敌人的'倾陷值'会显示在生命值的下方；当'倾陷值'完全扣除时敌人会进入'倾陷状态'，陷入瘫痪无法行动并受到一次'倾陷伤害'，伤害量与队伍中所有角色相关。'倾陷状态'会在一段时间后解除。"
+      },
+      {
+        "type": "paragraph",
+        "text": "注意倾陷状态不提供易伤。"
+      },
+      {
+        "type": "paragraph",
+        "text": "倾陷伤害由队伍成员共同影响，当对敌人触发倾陷时，会立即基于队伍中所有角色的属性和敌人属性实时计算倾陷伤害，每个角色根据自身的异能属性各自结算抗性区："
+      },
+      {
+        "type": "formula",
+        "text": "角色贡献的倾陷伤害= 倾陷基础伤害* 倾陷增伤区* 倾陷上限区* 防御区* 抗性区* 特殊乘区"
+      },
+      {
+        "type": "paragraph",
+        "text": "倾陷伤害与触发倾陷的方式无关，无论队伍中角色是否出场、参与攻击，都会贡献倾陷伤害。但是如果角色阵亡则不会参与倾陷伤害的贡献，最终的倾陷伤害就是角色贡献的倾陷伤害的累加："
+      },
+      {
+        "type": "formula",
+        "text": "倾陷伤害= Σ角色贡献的倾陷伤害"
+      },
+      {
+        "type": "heading",
+        "text": "3.1'倾陷值'",
+        "id": "stagger-gauge"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "3.2'倾陷基础伤害'",
+        "id": "stagger-base"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "3.3'倾陷增伤区'",
+        "id": "stagger-bonus"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "3.4'倾陷上限区'",
+        "id": "stagger-cap"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      }
+    ],
+    "other_mechanics": [
+      {
+        "type": "heading",
+        "text": "4.1'渔获系统'",
+        "id": "fishing"
+      },
+      {
+        "type": "heading",
+        "text": "4.1.1'渔获系统简介'",
+        "id": "fishing-overview"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "4.1.2'渔获的获取'",
+        "id": "fishing-acquisition"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "4.1.3'渔获的产出'",
+        "id": "fishing-output"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "4.2'终结能量'",
+        "id": "ultimate-energy"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      },
+      {
+        "type": "heading",
+        "text": "4.3'粉爪大劫案的伤害机制'",
+        "id": "heist-damage"
+      },
+      {
+        "type": "missing",
+        "text": "此处为原帖折叠内容，当前提供的正文未包含展开内容。请查看原帖。"
+      }
+    ],
+    "appendices": [
+      {
+        "type": "paragraph",
+        "text": "鉴于目前已经有了 Everness.info 这样较为优秀的 wiki 网站，本部分仅用于信息补充，在文章发布会笔者会根据读者反馈的需求更新相应的数据："
+      },
+      {
+        "type": "link",
+        "text": "Everness.info",
+        "url": "https://everness.info/zh-Hans/"
+      },
+      {
+        "type": "heading",
+        "text": "5.1'角色属性'",
+        "id": "character-table"
+      },
+      {
+        "type": "paragraph",
+        "text": "下表包含角色的基础属性、技能描述、技能数值、觉醒效果："
+      },
+      {
+        "type": "link",
+        "text": "角色属性",
+        "url": "https://docs.qq.com/sheet/DUEVxck1xTFpoZ0ZU"
+      },
+      {
+        "type": "heading",
+        "text": "5.2'轨外之境'",
+        "id": "challenge-table"
+      },
+      {
+        "type": "paragraph",
+        "text": "下表包含轨外之境的全部敌人信息、站点信息、补给信息和奖励信息："
+      },
+      {
+        "type": "link",
+        "text": "轨外之境",
+        "url": "https://docs.qq.com/sheet/DUFFaVGFDRmxaRUF6"
+      },
+      {
+        "type": "heading",
+        "text": "5.3'敌人属性'",
+        "id": "enemy-table"
+      },
+      {
+        "type": "paragraph",
+        "text": "下表包含游戏中可能出现的所有敌人属性情况，尽可能添加了敌人的名称："
+      },
+      {
+        "type": "link",
+        "text": "敌人属性",
+        "url": "https://docs.qq.com/sheet/DUGxzWGhNc2RsZ3B0"
+      },
+      {
+        "type": "heading",
+        "text": "5.4'渔获'",
+        "id": "fishing-table"
+      },
+      {
+        "type": "link",
+        "text": "渔获",
+        "url": "https://docs.qq.com/sheet/DUGhWeGZ3YkNRUXJt"
       }
     ]
   },

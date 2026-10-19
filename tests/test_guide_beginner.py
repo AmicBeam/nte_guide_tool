@@ -133,3 +133,29 @@ class BeginnerGuideTest(unittest.TestCase):
         self.assertIn('666bj', page.text)
         self.assertNotIn('在哔哩哔哩观看', page.text)
         self.assertIn('https://bbs.nga.cn/read.php?tid=46659382', self.client.get('/guide/beginner/damage-mechanics.md').text)
+
+    def test_nga_supplied_body_chapters_formulas_and_tables(self):
+        data = self.client.get('/api/guide/beginner/damage-mechanics').json['data']
+        keys = ['intro', 'regular_damage', 'harmony', 'stagger', 'other_mechanics', 'appendices']
+        self.assertEqual(set(data['chapter_titles']), set(keys))
+        self.assertEqual(sum(block['type'] == 'missing' for key in keys for block in data[key]), 25)
+        page = self.client.get('/guide/beginner/damage-mechanics').text
+        self.assertEqual(sorted(keys, key=lambda key: page.index(f'id="section-{key}"')), keys)
+        for key in keys:
+            self.assertIn(f'href="#section-{key}"', page)
+            self.assertIn(f'id="section-{key}"', page)
+        for text in ('基础伤害区= Σ(伤害倍率* 对应属性)+ 额外伤害值', '注意倾陷状态不提供易伤。', '倾陷伤害= Σ角色贡献的倾陷伤害'):
+            self.assertIn(text, page)
+        self.assertIn('当前提供的正文未包含展开内容', page)
+        self.assertNotIn('点击显示隐藏的内容', page)
+        md = self.client.get('/guide/beginner/damage-mechanics.md').text
+        for token in ('DUEVxck1xTFpoZ0ZU', 'DUFFaVGFDRmxaRUF6', 'DUGxzWGhNc2RsZ3B0', 'DUGhWeGZ3YkNRUXJt'):
+            self.assertIn(token, page)
+            self.assertIn(token, md)
+        self.assertIn('## PART 05 附表', md)
+        short = self.client.get('/api/guide/beginner/damage-mechanics?section=stagger').json['data']
+        self.assertEqual(short['stagger'], data['stagger'])
+        self.assertNotIn('regular_damage', short)
+        short_md = self.client.get('/guide/beginner/damage-mechanics.md?section=stagger').text
+        self.assertIn('## PART 03 倾陷', short_md)
+        self.assertNotIn('## PART 01', short_md)

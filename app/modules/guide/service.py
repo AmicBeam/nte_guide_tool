@@ -209,7 +209,7 @@ def detail(kind, identifier, section=None, stage=None, ability_id=None, level=No
             raise LookupError('未找到关卡')
     selected = reference_view.select(record, kind, section, ability_id, level, skill_level, hit_details)
     if kind == 'beginner':
-        selected = {**selected, **{key: record[key] for key in ('description', 'author', 'article_url') if key in record}}
+        selected = {**selected, **{key: record[key] for key in ('description', 'author', 'article_url', 'chapter_titles') if key in record}}
     return selected
 
 
@@ -242,17 +242,24 @@ def scalar(value):
 
 
 def markdown_record(record):
-    if 'article_url' in record and any(key in record for key in BEGINNER_SECTIONS):
+    chapters = record.get('chapter_titles') or {key: label(key) for key in BEGINNER_SECTIONS}
+    if 'article_url' in record and any(key in record for key in chapters):
         lines = [f'# {record["name"]}', '', record.get('description', ''), '']
         if 'article_url' in record:
             caption = f'作者原帖（{record["author"]}）' if record.get('author') else '在哔哩哔哩观看'
             lines += [f'[{caption}]({record["article_url"]})', '']
-        for key in BEGINNER_SECTIONS:
+        for key in chapters:
             if key in record:
-                lines += [f'## {label(key)}', '']
+                lines += [f'## {chapters[key]}', '']
                 for block in record[key]:
                     if block['type'] == 'heading':
                         lines += ['### ' + block['text'], '']
+                    elif block['type'] == 'formula':
+                        lines += ['**' + block['text'].replace('*', '\\*') + '**', '']
+                    elif block['type'] == 'link':
+                        lines += [f'[{block["text"]}]({block["url"]})', '']
+                    elif block['type'] == 'missing':
+                        lines += ['> ' + block['text'], '']
                     elif block['type'] == 'video':
                         lines += [f'[{block["title"]}](https://www.bilibili.com/video/{block["bvid"]})', '']
                     elif block['type'] == 'image':
@@ -307,7 +314,7 @@ def page_sections(kind, record):
         'arcs': ('effect', 'exclusive_desc', 'exclusive_character_ids'),
         'challenges': ('resonance', 'stages', 'rewards'),
         'endless': ('stages',),
-        'beginner': BEGINNER_SECTIONS,
+        'beginner': tuple(record.get('chapter_titles', {})) or BEGINNER_SECTIONS,
     }
     keys = preferred[kind] if len(record) > 3 else tuple(key for key in record if key not in ('id', 'name'))
     result = {key: record[key] for key in keys if key in record and record[key] is not None and record[key] != [] and record[key] != {}}

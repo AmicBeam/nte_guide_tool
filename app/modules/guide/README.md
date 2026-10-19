@@ -379,4 +379,6 @@ CLI：`python nte-guide.py beginner`，`python nte-guide.py beginner --format ma
 
 萌新分类另提供 `/guide/beginner/combat-mechanics`「战斗机制深入攻略」，通过B站官方网页播放器内嵌视频，默认关闭自动播放、支持全屏并提供原视频入口。播放器随容器保持16:9；仅浏览器加载外部播放器，后端不请求视频服务。JSON及Markdown提供视频BV号和观看链接，CLI可用 `get beginner combat-mechanics --format markdown` 读取。
 
-萌新列表按本地内容数组顺序展示：新手入坑图文、`/guide/beginner/damage-mechanics`「异环数据机制导论」、战斗机制视频。数据机制条目提供简短概览与NGA原帖入口，完整公式及附表在原帖阅读；网页、列表API及CLI使用相同顺序。
+萌新列表按本地内容数组顺序展示：新手入坑图文、`/guide/beginner/damage-mechanics`「异环数据机制导论」、战斗机制视频。数据机制条目按现有正文及缺失提示展示，保留NGA原帖和附表入口；网页、列表API及CLI使用相同顺序。
+
+数据机制导论已录入现有正文、公式和四个附表链接，按 `chapter_titles` 配置顺序渲染前言及五个PART；JSON、Markdown和CLI支持按 `regular_damage`、`harmony`、`stagger`、`other_mechanics`、`appendices` 分节读取。尚未提供展开文字的25段折叠内容明确显示缺失提示，不作为完整正文；不生成无内容的展开按钮。后续补充展开内容时替换对应 `missing` 块。

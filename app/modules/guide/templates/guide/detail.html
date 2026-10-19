@@ -1,7 +1,7 @@
 {% extends 'guide/layout.html' %}
 {% from 'guide/components.html' import levels, materials, skill, material_cards %}
 {% macro tree(value) %}
-{% if value is mapping %}<dl class="guide-tree">{% for key, child in value.items() if key not in ['id', 'type', 'type_id', 'element_id', 'id_stats', 'key', 'class_id', 'ability_type', 'ability_index', 'drop_id', 'simple_desc', 'type_name', 'index'] and not (key in ['items_id', 'amount'] and 'items' in value) and not (key == 'materials' and 'phases' in value) %}<div><dt>{{ key|guide_label }}</dt><dd>{{ tree(child) }}</dd></div>{% endfor %}</dl>
+{% if value is mapping %}<dl class="guide-tree">{% for key, child in value.items() if key not in ['id', 'type', 'type_id', 'element_id', 'id_stats', 'key', 'class_id', 'ability_type', 'ability_index', 'drop_id', 'simple_desc', 'type_name', 'index'] and not (key in ['items_id', 'amount'] and 'items' in value) and not (key == 'materials' and 'phases' in value) %}<div><dt>{{ record.chapter_titles[key] if kind == 'beginner' and record.chapter_titles is defined and key in record.chapter_titles else key|guide_label }}</dt><dd>{{ tree(child) }}</dd></div>{% endfor %}</dl>
 {% elif value is sequence and value is not string %}
 {% if value and value[0] is mapping %}<div class="guide-objects">{% for child in value %}<section class="guide-object">{% if child.name is defined %}<h3>{% if child.id is defined and child.id is number %}{{ child.id }} · {% endif %}{{ child.name }}</h3>{% elif child.title is defined %}<h3>{{ child.title }}</h3>{% elif child.label is defined %}<h3>{{ child.label }}</h3>{% elif child.id is defined %}<h3>{{ child.id|guide_label }}</h3>{% elif child.wave is defined %}<h3>第 {{ child.wave }} 波</h3>{% endif %}{{ tree(child) }}</section>{% endfor %}</div>
 {% elif value %}<div class="guide-values">{% for child in value %}<span><small>{{ loop.index }}</small>{{ tree(child) }}</span>{% endfor %}</div>{% else %}<span class="guide-muted">无条目</span>{% endif %}
@@ -26,11 +26,11 @@
 <aside class="guide-toc" id="guide-toc" data-guide-toc data-open="false">
 <p class="guide-toc-title">本页目录</p><nav aria-label="详情章节">
 {% if overview %}<a href="#section-stats">属性数值</a>{% endif %}
-{% for key, value in sections.items() if kind != 'challenges' or key != 'rewards' %}<a href="#section-{{ key }}">{{ key|guide_label }}</a>
+{% for key, value in sections.items() if kind != 'challenges' or key != 'rewards' %}<a href="#section-{{ key }}">{{ record.chapter_titles[key] if kind == 'beginner' and record.chapter_titles is defined and key in record.chapter_titles else key|guide_label }}</a>
 {% if kind == 'beginner' %}<div class="guide-toc-skills">{% for block in value if block.type == 'heading' %}<a href="#article-{{ block.id }}">{{ block.text }}</a>{% endfor %}</div>{% endif %}
 {% if key == 'abilities' %}<div class="guide-toc-skills" aria-label="技能目录">{% for ability in value %}<a href="#skill-{{ loop.index }}">{{ ability|guide_ability_title }}</a>{% endfor %}</div>{% endif %}{% endfor %}
 </nav></aside>
-<div class="guide-detail-body">{% for key, value in sections.items() if kind != 'challenges' or key != 'rewards' %}<section class="guide-detail-section" id="section-{{ key }}"><h2>{{ key|guide_label }}</h2>{% if key == 'abilities' %}
+<div class="guide-detail-body">{% for key, value in sections.items() if kind != 'challenges' or key != 'rewards' %}<section class="guide-detail-section" id="section-{{ key }}"><h2>{{ record.chapter_titles[key] if kind == 'beginner' and record.chapter_titles is defined and key in record.chapter_titles else key|guide_label }}</h2>{% if key == 'abilities' %}
 {% for ability in value %}{{ skill(ability, loop.index, record.id) }}{% endfor %}
 {% elif key == 'exclusive_character_ids' %}<div class="guide-links">{% for identifier in value %}<a href="/guide/characters/{{ identifier }}">{{ identifier|guide_character_name }} ↗</a>{% endfor %}</div>
 {% elif key == 'stats' %}{{ levels(value, record.name ~ '属性', 'stat-level', 'max') }}

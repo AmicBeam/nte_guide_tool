@@ -305,6 +305,20 @@ def _preview_derived_binding(binding,identity):
     return dict(rule_source=identity,image=arena.IMAGE_IDENTITY,schema=arena.SCHEMA_IDENTITY)
 
 
+def _kernel_evidence_path(directory,name):
+    """Read archived Windows-relative descriptors after repatriation too."""
+    from pathlib import PureWindowsPath
+    if not isinstance(name,str) or not name or '\0' in name:
+        raise ValueError('Ordinary relative kernel evidence path required')
+    normalized=name.replace('\\','/')
+    if PureWindowsPath(name).drive or Path(normalized).is_absolute():
+        raise ValueError('Contained immutable kernel evidence path required')
+    directory=Path(directory).resolve();actual=(directory/normalized).resolve()
+    if not actual.is_relative_to(directory):
+        raise ValueError('Contained immutable kernel evidence path required')
+    return actual
+
+
 def _read_kernel_file(path,expected_sha256,*,maximum=256<<20):
     path=Path(path)
     if not _sha(expected_sha256)or not path.is_file()or path.stat().st_size>maximum:
@@ -373,8 +387,8 @@ def verify_auxiliary_kernel_fix_report(path,*,expected_sha256,proof_deadline):
         if time.monotonic()>=proof_deadline:raise TimeoutError('Kernel evidence proof deadline exhausted')
         if not isinstance(desc,dict)or set(desc)!={'path','sha256'}or not isinstance(desc['path'],str):
             raise ValueError('Exact raw evidence descriptor required')
-        name=desc['path'];actual=(path.parent/name).resolve()
-        if Path(name).is_absolute()or not actual.is_relative_to(path.parent)or actual==path:
+        name=desc['path'];actual=_kernel_evidence_path(path.parent,name)
+        if actual==path:
             raise ValueError('Contained immutable kernel evidence path required')
         raw=_read_kernel_file(actual,desc['sha256'])
         if name in checked and checked[name]!=desc['sha256']:raise ValueError('Conflicting raw file identity')

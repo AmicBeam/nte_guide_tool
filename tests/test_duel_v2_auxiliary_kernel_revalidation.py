@@ -17,6 +17,18 @@ from tests import test_duel_v2_device_auxiliary_collection as fixtures
 ACTUAL_REPORT_VERIFIER=continuation.verify_auxiliary_kernel_fix_report
 
 
+class KernelEvidencePathTests(unittest.TestCase):
+    def test_windows_relative_archive_path_reads_after_repatriation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'evidence').mkdir()
+            expected=root/'evidence'/'program.json';expected.write_text('{}')
+            self.assertEqual(continuation._kernel_evidence_path(root,r'evidence\program.json'),expected.resolve())
+            self.assertEqual(continuation._kernel_evidence_path(root,'evidence/program.json'),expected.resolve())
+            for path in (r'C:\private\program.json',r'C:program.json',r'\\server\share\program.json',
+                         '/private/program.json',r'..\outside.json','../outside.json',''):
+                with self.assertRaises(ValueError):continuation._kernel_evidence_path(root,path)
+
+
 class KernelRevalidationTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)

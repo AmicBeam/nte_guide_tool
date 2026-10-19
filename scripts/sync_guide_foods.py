@@ -77,6 +77,15 @@ def purchase_info(identifier, row, tables):
 GROUPS = ('Attack', 'Defense', 'AddHPInstant', 'AddHPConstant', 'Revive', 'Explore', 'Special')
 
 
+def food_sort_key(food):
+    amounts = tuple(-float(segment['text'].removesuffix('%'))
+                    for segment in food['card_segments'] if segment['highlight'])
+    if not amounts:
+        raise ValueError('Missing food bonus amount')
+    return (list(BONUS_GROUPS).index(food['bonus_group']), amounts + (float('inf'),),
+            food['fons_price'] if food['fons_price'] is not None else float('inf'), food['id'])
+
+
 def build_foods(tables):
     result = []
     for identifier, row in tables['foods'].items():
@@ -96,7 +105,7 @@ def build_foods(tables):
                        'quality': row['ItemQuality'].split('_')[-1].lower(),
                        'cooldown': row['ItemCD'],
                        'image': f'/static/guide/foods/{identifier.lower()}.webp'})
-    result.sort(key=lambda r: (list(BONUS_GROUPS).index(r['bonus_group']), r['id']))
+    result.sort(key=food_sort_key)
     return result
 
 

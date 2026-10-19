@@ -369,7 +369,7 @@ HTML、列表、搜索、JSON、Markdown和CLI支持预告条目，`status=previ
 
 ## 萌新攻略
 
-`/guide?kind=beginner` 提供萌新攻略分类，`/guide/beginner/getting-started` 展示完整新手入坑图文。正文包含前言、游戏玩法、货币与消费、版本活动、抽卡规划及结语，保留作者的版本语境与个人观点。一级、二级标题复用详情页悬浮目录、滚动高亮和窄屏目录按钮，不另建目录脚本。正文仅渲染结构化段落、标题和图片，不执行文章HTML。
+`/guide?kind=beginner` 提供萌新攻略分类，`/guide/beginner/getting-started` 展示完整新手入坑图文。正文包含前言、游戏玩法、货币与消费、版本活动、抽卡规划及结语，保留作者的版本语境与个人观点。一级、二级标题复用详情页悬浮目录、滚动高亮和窄屏目录按钮，不另建目录脚本。正文仅渲染结构化段落、标题和图片，不执行文章HTML。攻略正文统一18px、1.9倍行高，一级／二级章节标题为26px／22px，目录为15px／14px，手机端保持相同可读字号。
 
 `data/beginner.json` 为独立本地内容，65张正文配图及表情由模块 `static/beginner/getting-started/` 持有；图片保留原始分辨率，延迟加载并可打开原图。普通资料刷新不覆盖；启动和请求不联网。网页、全文搜索、JSON、Markdown和CLI共用完整内容。JSON：`/api/guide/beginner/getting-started`；Markdown：`/guide/beginner/getting-started.md`。支持 `section=intro|gameplay|currencies|events|wishes|closing`，分节返回保留作者链接。旧 `progression` 参数映射到 `gameplay`。图片链接均为本站根路径，与CLI的站点地址组合即可读取原图。
 

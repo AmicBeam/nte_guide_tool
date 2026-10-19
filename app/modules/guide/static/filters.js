@@ -12,6 +12,7 @@ document.querySelectorAll("[data-guide-filters]").forEach(filters => {
       const shown = (!values.get("element") || card.dataset.element === values.get("element")) &&
         (!values.get("rarity") || card.dataset.rarity === values.get("rarity")) &&
         (!values.get("arc_type") || card.dataset.arcType === values.get("arc_type")) &&
+        (!values.get("function") || card.dataset.foodFunction === values.get("function")) &&
         (!query || card.dataset.filterText.includes(query));
       card.hidden = !shown;
       if (shown) matches += 1;
@@ -19,12 +20,12 @@ document.querySelectorAll("[data-guide-filters]").forEach(filters => {
     document.querySelectorAll("[data-guide-filter-group]").forEach(group => {
       const visible = group.querySelectorAll('[data-filter-card]:not([hidden])').length;
       group.hidden = visible === 0;
-      group.querySelector("[data-guide-group-count]").textContent = `${visible} 个弧盘`;
+      group.querySelector("[data-guide-group-count]").textContent = `${visible} ${group.dataset.groupUnit || "个弧盘"}`;
     });
     count.textContent = `${matches} 条结果`;
     empty.hidden = matches > 0;
     const url = new URL(location.href);
-    ["q", "element", "rarity", "arc_type"].forEach(key => {
+    ["q", "element", "rarity", "arc_type", "function"].forEach(key => {
       const value = String(values.get(key) || "").trim();
       if (value) url.searchParams.set(key, value);
       else url.searchParams.delete(key);

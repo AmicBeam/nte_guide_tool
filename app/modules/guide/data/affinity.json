@@ -7,43 +7,191 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：早雾",
+                "amount": 1,
+                "description": "解锁早雾副驾驶乘坐功能。可以邀请早雾来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              },
+              {
+                "name": "鬼狼丸磨牙棒",
+                "amount": 1,
+                "description": "可以用它来模拟你的战斗招式。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "成长纪念",
+                "amount": 1,
+                "description": "获得贴纸“成长纪念”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "晚雾",
+                "amount": 1,
+                "description": "获得头像：晚雾"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "捉迷藏",
+                "amount": 1,
+                "description": "获得头像框：捉迷藏"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "家族成员",
+                "amount": 1,
+                "description": "获得名片“家族成员”"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "攻击力",
+                "value": 5.0,
+                "percent": true,
+                "text": "攻击力＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -407,6 +555,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "攻击力",
+            "value": 5.0,
+            "percent": true,
+            "text": "攻击力＋5%"
+          }
         ]
       }
     },
@@ -417,43 +574,206 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：安魂曲",
+                "amount": 1,
+                "description": "解锁安魂曲副驾驶乘坐功能。可以邀请安魂曲来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：安魂曲",
+                "amount": 1,
+                "description": "解锁安魂曲基础交互动作，可邀请安魂曲来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "至交密友：安魂曲",
+                "amount": 1,
+                "description": "解锁安魂曲特殊交互动作。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "倒悬之心",
+                "amount": 1,
+                "description": "获得贴纸“倒悬之心”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "进行曲",
+                "amount": 1,
+                "description": "获得头像：进行曲"
+              },
+              {
+                "name": "契心之交：安魂曲",
+                "amount": 1,
+                "description": "解锁安魂曲特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "626号番茄",
+                "amount": 1,
+                "description": "获得头像框：626号番茄"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "以下省略",
+                "amount": 1,
+                "description": "获得名片“以下省略”"
+              },
+              {
+                "name": "新月摇篮曲",
+                "amount": 1,
+                "description": "获得「安魂曲」专属角色时装「新月摇篮曲」及「头像-新月摇篮曲」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击率",
+                "value": 4.0,
+                "percent": true,
+                "text": "暴击率＋4%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -802,6 +1122,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击率",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击率＋4%"
+          }
         ]
       }
     },
@@ -812,43 +1141,191 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：翳",
+                "amount": 1,
+                "description": "可以邀请翳来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              },
+              {
+                "name": "我之为我",
+                "amount": 1,
+                "description": "可以装饰家里的挂画，收录后增加收藏值，摆放在家中可增加舒适度。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "上班像做狗",
+                "amount": 1,
+                "description": "获得贴纸“上班像做狗”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "第四声",
+                "amount": 1,
+                "description": "获得头像：第四声"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "皆为皮囊",
+                "amount": 1,
+                "description": "获得头像框：皆为皮囊"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "商务模版",
+                "amount": 1,
+                "description": "获得名片“商务模版”"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "攻击力",
+                "value": 5.0,
+                "percent": true,
+                "text": "攻击力＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -1238,6 +1715,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "攻击力",
+            "value": 5.0,
+            "percent": true,
+            "text": "攻击力＋5%"
+          }
         ]
       }
     },
@@ -1248,43 +1734,206 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：娜娜莉",
+                "amount": 1,
+                "description": "解锁娜娜莉副驾驶乘坐功能。可以邀请娜娜莉来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：娜娜莉",
+                "amount": 1,
+                "description": "解锁娜娜莉基础交互动作，可邀请娜娜莉来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "至交密友：娜娜莉",
+                "amount": 1,
+                "description": "解锁娜娜莉特殊交互动作。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "呼叫老大",
+                "amount": 1,
+                "description": "获得贴纸“呼叫老大”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "这这莉",
+                "amount": 1,
+                "description": "获得头像：这这莉"
+              },
+              {
+                "name": "契心之交：娜娜莉",
+                "amount": 1,
+                "description": "解锁娜娜莉特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "果壳之王",
+                "amount": 1,
+                "description": "获得头像框：果壳之王"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "老大的派头",
+                "amount": 1,
+                "description": "获得名片“老大的派头”"
+              },
+              {
+                "name": "绵绵飞虎",
+                "amount": 1,
+                "description": "获得「娜娜莉」专属角色时装「绵绵飞虎」及「头像-绵绵飞虎」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击率",
+                "value": 4.0,
+                "percent": true,
+                "text": "暴击率＋4%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -1837,6 +2486,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击率",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击率＋4%"
+          }
         ]
       }
     },
@@ -1847,43 +2505,216 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：薄荷",
+                "amount": 1,
+                "description": "解锁薄荷副驾驶乘坐功能。可以邀请薄荷来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：薄荷",
+                "amount": 1,
+                "description": "解锁薄荷基础交互动作，可邀请薄荷来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              },
+              {
+                "name": "万物之味",
+                "amount": 1,
+                "description": "可以装饰家里的挂画，收录后增加收藏值，摆放在家中可增加舒适度。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "至交密友：薄荷",
+                "amount": 1,
+                "description": "解锁薄荷特殊交互动作。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "爪爪与铃铛",
+                "amount": 1,
+                "description": "获得贴纸“爪爪与铃铛”"
+              },
+              {
+                "name": "薄荷的密钥",
+                "amount": 1,
+                "description": "薄荷办公室的进入权限。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "厚荷",
+                "amount": 1,
+                "description": "获得头像：厚荷"
+              },
+              {
+                "name": "契心之交：薄荷",
+                "amount": 1,
+                "description": "解锁薄荷特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "长夏",
+                "amount": 1,
+                "description": "获得头像框：长夏"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "微风的悄悄话",
+                "amount": 1,
+                "description": "获得名片“微风的悄悄话”"
+              },
+              {
+                "name": "悠闲假日",
+                "amount": 1,
+                "description": "获得「薄荷」专属角色时装「悠闲假日」及「头像-悠闲假日」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "攻击力",
+                "value": 5.0,
+                "percent": true,
+                "text": "攻击力＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -2321,6 +3152,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "攻击力",
+            "value": 5.0,
+            "percent": true,
+            "text": "攻击力＋5%"
+          }
         ]
       }
     },
@@ -2331,43 +3171,186 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：哈尼娅",
+                "amount": 1,
+                "description": "解锁哈尼娅副驾驶乘坐功能。可以邀请哈尼娅来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "记得好评",
+                "amount": 1,
+                "description": "获得贴纸“记得好评”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "哈尼冠",
+                "amount": 1,
+                "description": "获得头像：哈尼冠"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "蜜糖序曲",
+                "amount": 1,
+                "description": "获得头像框：蜜糖序曲"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "谜底是十字路口",
+                "amount": 1,
+                "description": "获得名片“谜底是十字路口”"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "攻击力",
+                "value": 5.0,
+                "percent": true,
+                "text": "攻击力＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -2877,6 +3860,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "攻击力",
+            "value": 5.0,
+            "percent": true,
+            "text": "攻击力＋5%"
+          }
         ]
       }
     },
@@ -2887,43 +3879,191 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：埃德嘉",
+                "amount": 1,
+                "description": "解锁埃德嘉副驾驶乘坐功能。可以邀请埃德嘉来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "探索未知",
+                "amount": 1,
+                "description": "获得贴纸“探索未知”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "埃德减",
+                "amount": 1,
+                "description": "获得头像：埃德减"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "全知悖论",
+                "amount": 1,
+                "description": "获得头像框：全知悖论"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "正式申请",
+                "amount": 1,
+                "description": "获得名片“正式申请”"
+              },
+              {
+                "name": "读后感",
+                "amount": 1,
+                "description": "白鲸书店的会员卡，和埃德嘉一起读书吧。(使用后获取随机猎人攻略。)"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "生命值",
+                "value": 5.0,
+                "percent": true,
+                "text": "生命值＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -3373,6 +4513,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "生命值",
+            "value": 5.0,
+            "percent": true,
+            "text": "生命值＋5%"
+          }
         ]
       }
     },
@@ -3383,43 +4532,196 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：白藏",
+                "amount": 1,
+                "description": "解锁白藏副驾驶乘坐功能。可以邀请白藏来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              },
+              {
+                "name": "旧茧",
+                "amount": 1,
+                "description": "可以装饰家里的挂画，收录后增加收藏值，摆放在家中可增加舒适度。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "梦中茧",
+                "amount": 1,
+                "description": "可以装饰家里的摆件，收录后增加收藏值，摆放在家中可增加舒适度。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "游仙去",
+                "amount": 1,
+                "description": "获得贴纸“游仙去”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "黑藏",
+                "amount": 1,
+                "description": "获得头像：黑藏"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "未晞",
+                "amount": 1,
+                "description": "获得头像框：未晞"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "小小纸片",
+                "amount": 1,
+                "description": "获得名片“小小纸片”"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击率",
+                "value": 4.0,
+                "percent": true,
+                "text": "暴击率＋4%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -3881,6 +5183,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击率",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击率＋4%"
+          }
         ]
       }
     },
@@ -3891,43 +5202,191 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：哈索尔",
+                "amount": 1,
+                "description": "解锁哈索尔副驾驶乘坐功能。可以邀请哈索尔来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              },
+              {
+                "name": "疾速物流",
+                "amount": 1,
+                "description": "可以装饰家里的挂画，收录后增加收藏值，摆放在家中可增加舒适度。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "非对称连接",
+                "amount": 1,
+                "description": "获得贴纸“非对称连接”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "呜索尔",
+                "amount": 1,
+                "description": "获得头像：呜索尔"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "我非我",
+                "amount": 1,
+                "description": "获得头像框：我非我"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "S级执行担当",
+                "amount": 1,
+                "description": "获得名片“S级执行担当”"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击率",
+                "value": 4.0,
+                "percent": true,
+                "text": "暴击率＋4%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -4301,6 +5760,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击率",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击率＋4%"
+          }
         ]
       }
     },
@@ -4311,43 +5779,196 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：阿德勒",
+                "amount": 1,
+                "description": "解锁阿德勒副驾驶乘坐功能。可以邀请阿德勒来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              },
+              {
+                "name": "管家的修养",
+                "amount": 1,
+                "description": "可以装饰家里的挂画，收录后增加收藏值，摆放在家中可增加舒适度。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "亦复如是",
+                "amount": 1,
+                "description": "获得贴纸“亦复如是”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "啊啊啊",
+                "amount": 1,
+                "description": "获得头像：啊啊啊"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "自在自见",
+                "amount": 1,
+                "description": "获得头像框：自在自见"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "欢迎光临",
+                "amount": 1,
+                "description": "获得名片“欢迎光临”"
+              },
+              {
+                "name": "「莲-C198」唱片机",
+                "amount": 1,
+                "description": "可以播放音乐的家装，收录后增加收藏值，摆放在家中可增加舒适度。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "防御力",
+                "value": 8.0,
+                "percent": true,
+                "text": "防御力＋8%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -4723,6 +6344,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "防御力",
+            "value": 8.0,
+            "percent": true,
+            "text": "防御力＋8%"
+          }
         ]
       }
     },
@@ -4733,43 +6363,206 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：残虹",
+                "amount": 1,
+                "description": "解锁残虹副驾驶乘坐功能。可以邀请残虹来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：残虹",
+                "amount": 1,
+                "description": "解锁残虹基础交互动作，可邀请残虹来家做客。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "至交密友：残虹",
+                "amount": 1,
+                "description": "解锁残虹特殊交互动作。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "花刃",
+                "amount": 1,
+                "description": "获得贴纸：花刃"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "全虹",
+                "amount": 1,
+                "description": "获得头像：全虹"
+              },
+              {
+                "name": "契心之交：残虹",
+                "amount": 1,
+                "description": "解锁残虹特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "绯夜花庭",
+                "amount": 1,
+                "description": "获得头像框：绯夜花庭"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "余烬花名",
+                "amount": 1,
+                "description": "获得名片“余烬花名”"
+              },
+              {
+                "name": "月下闲庭",
+                "amount": 1,
+                "description": "获得「残虹」专属角色时装「月下闲庭」及「头像-月下闲庭」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击率",
+                "value": 4.0,
+                "percent": true,
+                "text": "暴击率＋4%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -5156,6 +6949,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击率",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击率＋4%"
+          }
         ]
       }
     },
@@ -5166,43 +6968,201 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：法帝娅",
+                "amount": 1,
+                "description": "解锁法帝娅副驾驶乘坐功能。可以邀请法帝娅来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：法帝娅",
+                "amount": 1,
+                "description": "解锁法帝娅基础交互动作，可邀请法帝娅来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "至交密友：法帝娅",
+                "amount": 1,
+                "description": "解锁法帝娅特殊交互动作。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "欲望本源",
+                "amount": 1,
+                "description": "获得贴纸“欲望本源”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "法高娅",
+                "amount": 1,
+                "description": "获得头像：法高娅"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "救世主",
+                "amount": 1,
+                "description": "获得头像框：救世主"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "测试游戏",
+                "amount": 1,
+                "description": "获得名片“测试游戏”"
+              },
+              {
+                "name": "夜色秘辛",
+                "amount": 1,
+                "description": "获得「法帝娅」专属角色时装「夜色秘辛」及「头像-夜色秘辛」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "生命值",
+                "value": 5.0,
+                "percent": true,
+                "text": "生命值＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -5512,6 +7472,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "生命值",
+            "value": 5.0,
+            "percent": true,
+            "text": "生命值＋5%"
+          }
         ]
       }
     },
@@ -5522,43 +7491,206 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：黑羽",
+                "amount": 1,
+                "description": "解锁黑羽副驾驶乘坐功能。可以邀请黑羽来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：黑羽",
+                "amount": 1,
+                "description": "解锁黑羽基础交互动作，可邀请黑羽来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "至交密友：黑羽",
+                "amount": 1,
+                "description": "解锁黑羽特殊交互动作。解锁都市偕游事件。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "命运注脚",
+                "amount": 1,
+                "description": "获得贴纸：命运注脚"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "白羽",
+                "amount": 1,
+                "description": "获得头像：白羽"
+              },
+              {
+                "name": "契心之交：黑羽",
+                "amount": 1,
+                "description": "解锁黑羽特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "孤鸟哀歌",
+                "amount": 1,
+                "description": "获得头像框：孤鸟哀歌"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "百年孤独",
+                "amount": 1,
+                "description": "获得名片“百年孤独”"
+              },
+              {
+                "name": "不凋羽",
+                "amount": 1,
+                "description": "获得「黑羽」专属角色时装「不凋羽」及「头像-不凋羽」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击伤害",
+                "value": 8.0,
+                "percent": true,
+                "text": "暴击伤害＋8%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -6067,6 +8199,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击伤害",
+            "value": 8.0,
+            "percent": true,
+            "text": "暴击伤害＋8%"
+          }
         ]
       }
     },
@@ -6075,7 +8216,8 @@
       "affinity": {
         "available": false,
         "levels": [],
-        "gifts": []
+        "gifts": [],
+        "full_affinity_bonus": []
       }
     },
     {
@@ -6083,7 +8225,8 @@
       "affinity": {
         "available": false,
         "levels": [],
-        "gifts": []
+        "gifts": [],
+        "full_affinity_bonus": []
       }
     },
     {
@@ -6093,43 +8236,216 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：浔",
+                "amount": 1,
+                "description": "解锁浔副驾驶乘坐功能。可以邀请浔来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：浔",
+                "amount": 1,
+                "description": "解锁浔基础交互动作，可邀请浔来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              },
+              {
+                "name": "时间以外的",
+                "amount": 1,
+                "description": "可以装饰家里的挂画，收录后增加收藏值，摆放在家中可增加舒适度。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "专属客服",
+                "amount": 1,
+                "description": "招财进宝，摆放在店铺中将增加人流量。"
+              },
+              {
+                "name": "至交密友：浔",
+                "amount": 1,
+                "description": "解锁浔特殊交互动作。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "水無月",
+                "amount": 1,
+                "description": "获得贴纸“水無月”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "寻",
+                "amount": 1,
+                "description": "获得头像：寻"
+              },
+              {
+                "name": "契心之交：浔",
+                "amount": 1,
+                "description": "解锁浔特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "花遍雪",
+                "amount": 1,
+                "description": "获得头像框：花遍雪"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "风水问题",
+                "amount": 1,
+                "description": "获得名片“风水问题”"
+              },
+              {
+                "name": "闲满庭",
+                "amount": 1,
+                "description": "获得「浔」专属角色时装「闲满庭」及「头像-闲满庭」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击率",
+                "value": 4.0,
+                "percent": true,
+                "text": "暴击率＋4%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -6449,6 +8765,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击率",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击率＋4%"
+          }
         ]
       }
     },
@@ -6459,43 +8784,186 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：达芙蒂尔",
+                "amount": 1,
+                "description": "解锁达芙蒂尔副驾驶乘坐功能。可以邀请达芙蒂尔来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "镜里万华",
+                "amount": 1,
+                "description": "获得贴纸“镜里万华”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "达芙第一",
+                "amount": 1,
+                "description": "获得头像：达芙第一"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "在湖中央",
+                "amount": 1,
+                "description": "获得头像框：在湖中央"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "唯一确定性",
+                "amount": 1,
+                "description": "获得名片“唯一确定性”"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "攻击力",
+                "value": 5.0,
+                "percent": true,
+                "text": "攻击力＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -6831,6 +9299,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "攻击力",
+            "value": 5.0,
+            "percent": true,
+            "text": "攻击力＋5%"
+          }
         ]
       }
     },
@@ -6841,43 +9318,201 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：九原",
+                "amount": 1,
+                "description": "解锁九原副驾驶乘坐功能。可以邀请九原来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：九原",
+                "amount": 1,
+                "description": "解锁九原基础交互动作，可邀请九原来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "至交密友：九原",
+                "amount": 1,
+                "description": "解锁九原特殊交互动作。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "赠礼亦是试探",
+                "amount": 1,
+                "description": "获得贴纸“赠礼亦是试探”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "十原",
+                "amount": 1,
+                "description": "获得头像：十原"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "致夜莺",
+                "amount": 1,
+                "description": "获得头像框：致夜莺"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "玫约在先",
+                "amount": 1,
+                "description": "获得名片“玫约在先”"
+              },
+              {
+                "name": "自律时间",
+                "amount": 1,
+                "description": "获得「九原」专属角色时装「自律时间」及「头像-自律时间」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "攻击力",
+                "value": 5.0,
+                "percent": true,
+                "text": "攻击力＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -7218,6 +9853,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "攻击力",
+            "value": 5.0,
+            "percent": true,
+            "text": "攻击力＋5%"
+          }
         ]
       }
     },
@@ -7228,43 +9872,206 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：明音凛",
+                "amount": 1,
+                "description": "解锁明音凛副驾驶乘坐功能。可以邀请明音凛来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：明音凛",
+                "amount": 1,
+                "description": "解锁明音凛基础交互动作，可邀请明音凛来家做客。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "至交密友：明音凛",
+                "amount": 1,
+                "description": "解锁明音凛特殊交互动作，解锁都市偕游事件。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "同音律",
+                "amount": 1,
+                "description": "获得贴纸：同音律"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "静音",
+                "amount": 1,
+                "description": "获得头像：静音"
+              },
+              {
+                "name": "契心之交：明音凛",
+                "amount": 1,
+                "description": "解锁明音凛特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "强音节拍",
+                "amount": 1,
+                "description": "获得头像框：强音节拍"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "音乐之星",
+                "amount": 1,
+                "description": "获得名片“音乐之星”"
+              },
+              {
+                "name": "节能生活",
+                "amount": 1,
+                "description": "获得「明音凛」专属角色时装「节能生活」及「头像-节能生活」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击伤害",
+                "value": 8.0,
+                "percent": true,
+                "text": "暴击伤害＋8%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -7651,6 +10458,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击伤害",
+            "value": 8.0,
+            "percent": true,
+            "text": "暴击伤害＋8%"
+          }
         ]
       }
     },
@@ -7661,43 +10477,186 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：海月",
+                "amount": 1,
+                "description": "解锁海月副驾驶乘坐功能。可以邀请海月来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "潮汐之歌",
+                "amount": 1,
+                "description": "获得贴纸：潮汐之歌"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "海星",
+                "amount": 1,
+                "description": "获得头像：海星"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "夜海洄游",
+                "amount": 1,
+                "description": "获得头像框：夜海洄游"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "见字不如面",
+                "amount": 1,
+                "description": "获得名片：见字不如面"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "攻击力",
+                "value": 5.0,
+                "percent": true,
+                "text": "攻击力＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -8092,6 +11051,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "攻击力",
+            "value": 5.0,
+            "percent": true,
+            "text": "攻击力＋5%"
+          }
         ]
       }
     },
@@ -8102,43 +11070,206 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：卡厄斯",
+                "amount": 1,
+                "description": "解锁卡厄斯副驾驶乘坐功能。可以邀请卡厄斯来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：卡厄斯",
+                "amount": 1,
+                "description": "解锁卡厄斯基础交互动作，可邀请卡厄斯来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "至交密友：卡厄斯",
+                "amount": 1,
+                "description": "解锁卡厄斯特殊交互动作。解锁都市偕游事件。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "无序烟尘",
+                "amount": 1,
+                "description": "获得贴纸：无序烟尘"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "卡好斯",
+                "amount": 1,
+                "description": "获得头像：卡好斯"
+              },
+              {
+                "name": "契心之交：卡厄斯",
+                "amount": 1,
+                "description": "解锁卡厄斯特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "此夜启航",
+                "amount": 1,
+                "description": "获得头像框：此夜启航"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "新身份",
+                "amount": 1,
+                "description": "获得名片“新身份”"
+              },
+              {
+                "name": "保持锻炼",
+                "amount": 1,
+                "description": "获得「卡厄斯」专属角色时装「保持锻炼」及「头像-保持锻炼」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击率",
+                "value": 4.0,
+                "percent": true,
+                "text": "暴击率＋4%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -8620,6 +11751,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击率",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击率＋4%"
+          }
         ]
       }
     },
@@ -8630,43 +11770,206 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：灵可",
+                "amount": 1,
+                "description": "解锁灵可副驾驶乘坐功能。可以邀请灵可来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：灵可",
+                "amount": 1,
+                "description": "解锁灵可基础交互动作，可邀请灵可来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "至交密友：灵可",
+                "amount": 1,
+                "description": "解锁灵可特殊交互动作。解锁都市偕游事件。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "幽灵频道",
+                "amount": 1,
+                "description": "获得贴纸：幽灵频道"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "可灵",
+                "amount": 1,
+                "description": "获得头像：可灵"
+              },
+              {
+                "name": "契心之交：灵可",
+                "amount": 1,
+                "description": "解锁灵可特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "世界来电",
+                "amount": 1,
+                "description": "获得头像框：世界来电"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "迷路电波",
+                "amount": 1,
+                "description": "获得名片“迷路电波”"
+              },
+              {
+                "name": "待机状态",
+                "amount": 1,
+                "description": "获得「灵可」专属角色时装「待机状态」及「头像-待机状态」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击率",
+                "value": 4.0,
+                "percent": true,
+                "text": "暴击率＋4%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -9092,6 +12395,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击率",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击率＋4%"
+          }
         ]
       }
     },
@@ -9102,43 +12414,201 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：小吱",
+                "amount": 1,
+                "description": "解锁小吱副驾驶乘坐功能。可以邀请小吱来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：小吱",
+                "amount": 1,
+                "description": "解锁小吱基础交互动作，可邀请小吱来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "至交密友：小吱",
+                "amount": 1,
+                "description": "解锁小吱特殊交互动作。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "拼凑的笛音",
+                "amount": 1,
+                "description": "获得贴纸“拼凑的笛音”"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "百日",
+                "amount": 1,
+                "description": "获得头像：百日"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "如露如电",
+                "amount": 1,
+                "description": "获得头像框：如露如电"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "告白信",
+                "amount": 1,
+                "description": "获得名片“告白信”"
+              },
+              {
+                "name": "绒绒春日",
+                "amount": 1,
+                "description": "获得「小吱」专属角色时装「绒绒春日」及「头像-绒绒春日」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "攻击力",
+                "value": 5.0,
+                "percent": true,
+                "text": "攻击力＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -9520,6 +12990,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "攻击力",
+            "value": 5.0,
+            "percent": true,
+            "text": "攻击力＋5%"
+          }
         ]
       }
     },
@@ -9530,43 +13009,206 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：伊洛伊",
+                "amount": 1,
+                "description": "解锁伊洛伊副驾驶乘坐功能。可以邀请伊洛伊来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：伊洛伊",
+                "amount": 1,
+                "description": "解锁伊洛伊基础交互动作，可邀请伊洛伊来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "至交密友：伊洛伊",
+                "amount": 1,
+                "description": "解锁伊洛伊特殊交互动作。解锁都市偕游事件。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "梦羊",
+                "amount": 1,
+                "description": "获得贴纸：梦羊"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "二洛二",
+                "amount": 1,
+                "description": "获得头像：二洛二"
+              },
+              {
+                "name": "契心之交：伊洛伊",
+                "amount": 1,
+                "description": "解锁伊洛伊特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "心律不齐",
+                "amount": 1,
+                "description": "获得头像框：心律不齐"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "名字咒语",
+                "amount": 1,
+                "description": "获得名片“名字咒语”"
+              },
+              {
+                "name": "星月夜",
+                "amount": 1,
+                "description": "获得「伊洛伊」专属角色时装「星月夜」及「头像-星月夜」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "攻击力",
+                "value": 5.0,
+                "percent": true,
+                "text": "攻击力＋5%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -10033,6 +13675,15 @@
               }
             ]
           }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "攻击力",
+            "value": 5.0,
+            "percent": true,
+            "text": "攻击力＋5%"
+          }
         ]
       }
     },
@@ -10043,43 +13694,206 @@
         "levels": [
           {
             "level": 1,
-            "max_value": 100
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 2,
-            "max_value": 500
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：真红",
+                "amount": 1,
+                "description": "解锁真红副驾驶乘坐功能。可以邀请真红来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 3,
-            "max_value": 1000
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 4,
-            "max_value": 2000
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：真红",
+                "amount": 1,
+                "description": "解锁真红基础交互动作，可邀请真红来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 5,
-            "max_value": 3500
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 6,
-            "max_value": 5000
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "至交密友：真红",
+                "amount": 1,
+                "description": "解锁真红特殊交互动作。解锁都市偕游事件。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 7,
-            "max_value": 7000
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "恶龙因何咆哮",
+                "amount": 1,
+                "description": "获得贴纸：恶龙因何咆哮"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 8,
-            "max_value": 9000
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "伪红",
+                "amount": 1,
+                "description": "获得头像：伪红"
+              },
+              {
+                "name": "契心之交：真红",
+                "amount": 1,
+                "description": "解锁真红特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 9,
-            "max_value": 12000
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "赤月之下",
+                "amount": 1,
+                "description": "获得头像框：赤月之下"
+              }
+            ],
+            "bonuses": []
           },
           {
             "level": 10,
-            "max_value": 16000
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "用途未知",
+                "amount": 1,
+                "description": "获得名片"
+              },
+              {
+                "name": "迷宫屋主",
+                "amount": 1,
+                "description": "获得「真红」专属角色时装「迷宫屋主」及「头像-迷宫屋主」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "暴击率",
+                "value": 4.0,
+                "percent": true,
+                "text": "暴击率＋4%"
+              }
+            ]
           }
         ],
         "gifts": [
@@ -10605,6 +14419,15 @@
                 ]
               }
             ]
+          }
+        ],
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "暴击率",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击率＋4%"
           }
         ]
       }

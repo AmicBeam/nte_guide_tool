@@ -11,7 +11,7 @@ from .description_parameters import bind_description_parameters
 from .challenge_calendar import is_released_challenge
 from . import reference_view, previews
 
-KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '攻略'}
+KINDS = {'characters': '角色', 'arcs': '弧盘', 'foods': '料理', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '攻略'}
 BEGINNER_SECTIONS = ('intro', 'gameplay', 'currencies', 'events', 'wishes', 'closing')
 LABELS = {
     'intro': '前言', 'gameplay': '一.游戏玩法讲解', 'currencies': '二.货币讲解及氪金建议',
@@ -24,6 +24,10 @@ LABELS = {
     'floor_begin': '起始层', 'floor_end': '结束层', 'single': '敌人配置',
     'total_affinity': '从零到满好感所需好感值', 'required_gifts': '所需礼物份数',
     'costs': '礼物花费', 'unit_price': '单价', 'total_cost': '总花费',
+    'food_effect': '料理效果', 'quality': '品质',
+    'function': '料理功能', 'function_name': '功能', 'cooldown': '使用冷却（秒）',
+    'recommended': '推荐单价', 'percent': '百分比',
+    'full_affinity_bonus': '满好感属性加成', 'bonuses': '属性加成', 'reward_texts': '等级奖励',
     'affinity': '好感度', 'available': '已提供好感度配置', 'gifts': '喜好礼物',
     'affinity_gain': '赠送好感值', 'default_gain': '基础好感值', 'exclusive': '专属礼物',
     'unlimited': '不受普通赠礼次数限制', 'offers': '购买渠道', 'shop_name': '商店',
@@ -109,6 +113,7 @@ def catalog():
         rank = {3: 'B', 4: 'A', 5: 'S'}[arc['rarity']]
         arc['rarity_icon'] = f'/static/images/rarities/YH_UI_star{rank}.webp'
         arc['image'] = f'/static/images/arcs/{arc["id"]}.webp'
+    data['foods'] = json.loads((Path(__file__).parent / 'data/foods.json').read_text(encoding='utf-8'))
     data['endless'] = json.loads((Path(__file__).parent / 'data/endless.json').read_text(encoding='utf-8'))['groups']
     data['beginner'] = json.loads((Path(__file__).parent / 'data/beginner.json').read_text(encoding='utf-8'))
     monsters = json.loads((Path(__file__).parent / 'data/monster_metadata.json').read_text(encoding='utf-8'))
@@ -142,6 +147,8 @@ def summary(kind, record):
     result.update(kind=kind, url=f'/guide/{kind}/{identifier}',
                   json_url=f'/api/guide/{kind}/{identifier}',
                   markdown_url=f'/guide/{kind}/{identifier}.md')
+    if kind == 'foods':
+        result.update({key: record[key] for key in ('function', 'function_name', 'effect', 'quality')})
     if kind == 'characters':
         result['assets'] = record['assets']
     if kind == 'endless':
@@ -153,7 +160,7 @@ def summary(kind, record):
     return result
 
 
-def search(kind=None, query='', element='', rarity=None, arc_type=''):
+def search(kind=None, query='', element='', rarity=None, arc_type='', function=''):
     result = []
     for group in ([kind] if kind else KINDS):
         records = reversed(public_records(group)) if group == 'challenges' else public_records(group)
@@ -163,6 +170,8 @@ def search(kind=None, query='', element='', rarity=None, arc_type=''):
             if rarity is not None and record.get('rarity') != rarity:
                 continue
             if arc_type and str(record.get('type_id', '') if group == 'arcs' else record.get('arc_type', {}).get('id', '')) != arc_type:
+                continue
+            if function and record.get('function') != function:
                 continue
             # Full text includes skills, nouns, arc effects and enemy names.
             if query.casefold() not in json.dumps(record, ensure_ascii=False).casefold():
@@ -241,7 +250,9 @@ def scalar(value):
     return str(value)
 
 
-def markdown_record(record):
+def markdown_record(record, *, kind=None):
+    if kind == 'foods':
+        record = {('food_effect' if key == 'effect' else key): value for key, value in record.items()}
     chapters = record.get('chapter_titles') or {key: label(key) for key in BEGINNER_SECTIONS}
     if 'article_url' in record and any(key in record for key in chapters):
         lines = [f'# {record["name"]}', '', record.get('description', ''), '']
@@ -297,7 +308,7 @@ def schema():
         'hit_detail_fields': {'harmony_gain': 'HeterochromeAdd，单次命中基础环合',
             'energy_gain': 'ChargeAdd，单次命中基础终结回能', 'stagger': 'UnbalValue，单次命中基础倾陷',
             'repeat': '当前参数展示式中的重复次数，未知为 null，不推算技能实际总命中次数'},
-        'character_sections': {'affinity': '好感度等级上限、喜好及专属礼物、赠送好感值与各商店标价；不表示玩家当前好感度或实时库存', 'experience': '角色1–80级配置及升入对应等级的经验需求；等级1不计入升级消耗',
+        'character_sections': {'affinity': '好感度等级、文字奖励与解锁、满好感属性、喜好及专属礼物、赠送好感值与各商店标价；不表示玩家当前好感度或实时库存', 'experience': '角色1–80级配置及升入对应等级的经验需求；等级1不计入升级消耗',
             'equip_slots': '空幕格位矩阵、驱动特化和加成属性',
             'materials': '突破与技能升级：每阶段所需材料、数量和突破条件'},
         'notes': ['空幕 slots 中 -1 为不可用格，0 为可装配格；矩阵按从上到下、从左到右排列。',
@@ -314,6 +325,7 @@ def page_sections(kind, record):
     preferred = {
         'characters': ('abilities', 'awaken', 'resonance', 'nouns', 'equip_slots', 'affinity', 'aliases'),
         'arcs': ('effect', 'exclusive_desc', 'exclusive_character_ids'),
+        'foods': ('effect', 'description', 'cooldown'),
         'challenges': ('resonance', 'stages', 'rewards'),
         'endless': ('stages',),
         'beginner': tuple(record.get('chapter_titles', {})) or BEGINNER_SECTIONS,

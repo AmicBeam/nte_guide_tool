@@ -9,7 +9,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-KINDS = ('characters', 'arcs', 'challenges', 'endless', 'beginner', 'articles')
+KINDS = ('characters', 'arcs', 'foods', 'challenges', 'endless', 'beginner', 'articles')
 
 
 def filter_profiles(payload, role_id=None, character_id=None):

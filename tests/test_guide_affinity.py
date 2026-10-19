@@ -68,8 +68,8 @@ class GuideAffinityTest(unittest.TestCase):
         self.assertIn('2,115,000 方斯', html)
         self.assertIn('总花费</th>', html)
         self.assertNotIn('购买渠道与标价', html)
-        self.assertNotIn('Oops！Chest', html)
-        self.assertNotIn('630 黑铁螺钉', html)
+        self.assertIn('role="tooltip" hidden', html)
+        self.assertIn('Oops！Chest', html)
         ticket_row = html.split('浮冰影券', 1)[1].split('</tr>', 1)[0]
         self.assertNotIn('共 141 份', ticket_row)
         self.assertEqual(ticket_row.count('>—</span>'), 2)
@@ -78,6 +78,23 @@ class GuideAffinityTest(unittest.TestCase):
         self.assertEqual(costs, sorted(costs))
         self.assertEqual(affinity['gifts'][0]['name'], '咕比奇原味薯片')
         self.assertEqual(affinity['gifts'][-1]['costs'], [])
+
+    def test_rewards_and_character_specific_full_affinity_bonus(self):
+        for identifier, bonus in [('1019', '攻击力＋5%'), ('1023', '暴击率＋4%'),
+                                  ('1033', '防御力＋8%'), ('1057', '暴击伤害＋8%')]:
+            with self.subTest(character=identifier):
+                affinity = service.detail('characters', identifier)['affinity']
+                self.assertEqual(affinity['full_affinity_bonus'][0]['text'], bonus)
+                self.assertEqual(affinity['levels'][-1]['bonuses'][0]['text'], bonus)
+                self.assertTrue(all(level['rewards'] for level in affinity['levels']))
+                html = self.client.get(f'/guide/characters/{identifier}?section=affinity').text
+                self.assertIn(bonus, html)
+                self.assertIn('奖励与解锁', html)
+        mint = service.detail('characters', '1019')['affinity']
+        unlock = next(r for r in mint['levels'][1]['rewards'] if r['name'] == '相逢初识：薄荷')
+        self.assertIn('副驾驶', unlock['description'])
+        self.assertTrue(any('悠闲假日' == r['name'] for r in mint['levels'][-1]['rewards']))
+        self.assertEqual(service.detail('characters', '1046')['affinity']['full_affinity_bonus'], [])
 
     def test_all_character_coverage_and_missing_configuration(self):
         for character in service.catalog()['characters']:

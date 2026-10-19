@@ -12,7 +12,7 @@ def definition(name: str, description: str, properties: dict, required: list[str
 
 
 TEXT = {'type': 'string'}
-KINDS = {'type': 'string', 'enum': ['characters', 'arcs', 'challenges', 'endless']}
+KINDS = {'type': 'string', 'enum': ['characters', 'arcs', 'foods', 'challenges', 'endless']}
 TOOLS = [
     definition('wiki_search', '查询本站资料目录或跨分类全文搜索，等同CLI list/search。先搜索获得准确ID；links为可直接使用的本站网页链接。',
                {'query': TEXT, 'kind': KINDS, 'limit': {'type': 'integer', 'minimum': 1, 'maximum': 20},

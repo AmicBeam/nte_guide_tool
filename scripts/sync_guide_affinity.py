@@ -12,6 +12,9 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 AFFINITY_ROLE_IDS = {'1052': '1029', '1054': '1005', '1055': '1014'}
 TABLES = {
+    'reward_groups': 'Drop/Client/ClientDropGroupDataTable.json',
+    'reward_sequences': 'Drop/DropSequenceDataTable.json',
+    'modifiers': 'PackData/ModifyData/DT_LikeabilityModifyData.json',
     'roles': 'LikeabilitySystem/DT_LikeabilityRoleData.json',
     'gifts': 'LikeabilitySystem/DT_LikeabilityGiftData.json',
     'goods': 'Shop/GoodsDataTable.json',
@@ -26,6 +29,59 @@ def text(value):
     if isinstance(value, dict):
         value = value.get('LocalizedString') or value.get('SourceString') or ''
     return re.sub(r'<[^>]*>', '', value or '').strip()
+
+
+ATTRIBUTE_NAMES = {'AtkUp': '攻击力', 'HPMaxUp': '生命值', 'DefUp': '防御力',
+                   'CritBase': '暴击率', 'CritDamageBase': '暴击伤害'}
+
+
+def level_rewards(award_id, tables, names):
+    if not award_id or award_id == 'None':
+        return []
+    groups = [(key, row) for key, row in tables.get('reward_groups', {}).items()
+              if re.fullmatch(re.escape(award_id) + r'_\d+', key)]
+    rewards = []
+    for _, group in groups:
+        sequence_id = group['SequenceId']
+        sequences = [row for key, row in tables.get('reward_sequences', {}).items()
+                     if key == sequence_id or re.fullmatch(re.escape(sequence_id) + r'_\d+', key)]
+        if not sequences:
+            raise ValueError(f'Missing reward sequence: {sequence_id}')
+        if len(sequences) != 1 or group.get('DropConditions'):
+            raise ValueError('Variable or conditional affinity reward requires explicit handling')
+        for row in sequences:
+            if row['SequenceNumType'] != 'EDropSequenceNumType::DROPSEQUENCENUMTYPE_FIXED':
+                raise ValueError('Unsupported variable affinity reward')
+            item = names.get(row['ItemID'].casefold(), {})
+            name = text(item.get('ItemName'))
+            if not name:
+                raise ValueError(f'Missing reward name: {row["ItemID"]}')
+            rewards.append({'name': name, 'amount': row['Num'],
+                            'description': text(item.get('UseContext'))})
+    if tables.get('reward_groups') and not groups:
+        raise ValueError(f'Missing reward group: {award_id}')
+    return rewards
+
+
+def affinity_bonuses(role, tables):
+    bonuses = []
+    for binding in role.get('MapModifyData', []):
+        level = int(binding['Key'])
+        modifier = tables.get('modifiers', {}).get(binding['Value'])
+        if modifier is None:
+            if 'modifiers' in tables:
+                raise ValueError('Missing affinity modifier')
+            continue
+        if modifier.get('ConditionArray'):
+            raise ValueError('Conditional affinity modifier requires explicit handling')
+        for row in modifier['ModifyData']:
+            if row['PropName'] not in ATTRIBUTE_NAMES or row['ModifierOp'] != 'EModifyModOp::MODIFY_MODOP_ADDITIVE':
+                raise ValueError('Unknown affinity attribute')
+            value = round(row['PropValue'] * 100, 8)
+            name = ATTRIBUTE_NAMES[row['PropName']]
+            bonuses.append({'level': level, 'name': name, 'value': value, 'percent': True,
+                            'text': f'{name}＋{value:g}%'})
+    return bonuses
 
 
 def build_affinity(ids, tables):
@@ -85,13 +141,17 @@ def build_affinity(ids, tables):
                           'exclusive': exclusive in (role_id, identifier), 'unlimited': bool(row['bUnlimit']),
                           'offers': offers.get(gift_id.casefold(), [])})
         gifts.sort(key=lambda g: (g['affinity_gain'], g['id']))
-        levels = [{'level': index, 'max_value': entry['MaxValue']}
+        bonuses = affinity_bonuses(role, tables) if role else []
+        levels = [{'level': index, 'max_value': entry['MaxValue'],
+                   'rewards': level_rewards(entry.get('AwardID'), tables, names),
+                   'bonuses': [b for b in bonuses if b['level'] == index]}
                   for index, entry in enumerate(role['LevelInfo'], 1)] if role else []
         if role and (not levels or any(isinstance(row['max_value'], bool) or
                 not isinstance(row['max_value'], (int, float)) or row['max_value'] < 0 for row in levels)):
             raise ValueError('Invalid affinity levels')
         result.append({'id': identifier, 'affinity': {
-            'available': role is not None, 'levels': levels, 'gifts': gifts}})
+            'available': role is not None, 'levels': levels, 'gifts': gifts,
+            'full_affinity_bonus': [b for b in bonuses if b['level'] <= len(levels)]}})
     return {'characters': result}
 
 

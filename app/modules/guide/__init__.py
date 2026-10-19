@@ -23,7 +23,7 @@ blueprint.add_app_template_filter(service.display_scalar, 'guide_scalar')
 
 def kind_check(kind):
     if kind not in service.KINDS:
-        raise LookupError('未知分类；可选 characters、arcs、challenges、endless、beginner')
+        raise LookupError('未知分类；可选 characters、arcs、foods、challenges、endless、beginner')
 
 
 def integer(name, default, low, high):
@@ -36,7 +36,7 @@ def integer(name, default, low, high):
 def filters():
     return dict(query=request.args.get('q', '').strip(), element=request.args.get('element', ''),
                 rarity=integer('rarity', 5, 1, 5) if request.args.get('rarity') else None,
-                arc_type=request.args.get('arc_type', ''))
+                arc_type=request.args.get('arc_type', ''), function=request.args.get('function', ''))
 
 
 def get_record(kind, identifier, *, narrow=False):
@@ -65,7 +65,7 @@ def index():
     items = service.search(kind, **filters())
     selected_ids = {item['id'] for item in items}
     result_count = len(items)
-    if kind in ('characters', 'arcs'):
+    if kind in ('characters', 'arcs', 'foods'):
         items = service.filter_index_items(kind)
     from .article_routes import public_items
     authored = public_items(request.args.get('q', '').strip()) if kind == 'beginner' else []
@@ -150,7 +150,7 @@ def api_cultivation(identifier):
 
 @blueprint.get('/guide/<kind>/<identifier>.md')
 def markdown(kind, identifier):
-    return Response(service.markdown_record(get_record(kind, identifier, narrow=True)), content_type='text/markdown; charset=utf-8')
+    return Response(service.markdown_record(get_record(kind, identifier, narrow=True), kind=kind), content_type='text/markdown; charset=utf-8')
 
 
 @blueprint.get('/api/guide/schema')
@@ -191,12 +191,13 @@ def cli_download():
 def llms():
     text = '''# NTE Tools 攻略数据库
 
-范围：角色、弧盘、轨外之境、全站深境、通用攻略与自建攻略。匿名只读；网页正文由服务端渲染。
+范围：角色、弧盘、料理、轨外之境、全站深境、通用攻略与自建攻略。匿名只读；网页正文由服务端渲染。
 
 - [网页入口](/guide)
 - [接口与数值约定](/api/guide/schema)
 - [角色列表](/api/guide/characters)
 - [弧盘列表](/api/guide/arcs)
+- [料理列表](/api/guide/foods)
 - [轨外之境赛期](/api/guide/challenges)
 - [全站深境（每50层一组）](/api/guide/endless)
 - [攻略](/api/guide/beginner)
@@ -204,8 +205,8 @@ def llms():
 - [CLI 下载](/guide/cli.py)
 
 检索：GET /api/guide/search?q=关键词&limit=20&offset=0
-详情：GET /api/guide/{characters|arcs|challenges|endless|beginner|articles}/{id}
-纯文本：GET /guide/{characters|arcs|challenges|endless|beginner|articles}/{id}.md
+详情：GET /api/guide/{characters|arcs|foods|challenges|endless|beginner|articles}/{id}
+纯文本：GET /guide/{characters|arcs|foods|challenges|endless|beginner|articles}/{id}.md
 空幕：角色详情加 ?section=equip_slots；升级材料：详情加 ?section=materials。
 等级经验：角色详情加 ?section=experience。
 好感度与喜好礼物：角色详情加 ?section=affinity，包含赠送数值和各商店标价。

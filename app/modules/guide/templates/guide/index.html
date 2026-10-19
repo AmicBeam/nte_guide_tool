@@ -1,7 +1,8 @@
 {% extends 'guide/layout.html' %}
 {% block title %}攻略数据库 · NTE Tools{% endblock %}
-{% block head %}{{ super() }}{% if kind in ['characters', 'arcs'] %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='catalog_cards.css', v=catalog_asset_version) }}">{% endif %}{% if kind in ['challenges', 'endless'] %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='challenge_index.css', v=challenge_asset_version) }}">{% endif %}<script src="{{ url_for('guide_module.static', filename='filters.js') }}" defer></script>{% endblock %}
+{% block head %}{{ super() }}{% if kind in ['characters', 'arcs', 'foods'] %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='catalog_cards.css', v=catalog_asset_version) }}">{% endif %}{% if kind in ['challenges', 'endless'] %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='challenge_index.css', v=challenge_asset_version) }}">{% endif %}<script src="{{ url_for('guide_module.static', filename='filters.js') }}" defer></script>{% endblock %}
 {% block content %}
+{% if kind == 'foods' %}{% include 'guide/foods_index.html' %}{% else %}
 {% include 'guide/tabs.html' %}
 <form class="guide-search" action="/guide" method="get" role="search">
 <input type="hidden" name="kind" value="{{ kind }}">
@@ -34,4 +35,5 @@ python nte-guide.py get characters 1042 \
 python nte-guide.py list challenges
 
 # 远程站点：在子命令前指定 --base-url</code></pre></section>
+{% endif %}
 {% endblock %}

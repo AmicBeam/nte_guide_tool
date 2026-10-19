@@ -1712,6 +1712,25 @@
     ]
   },
   {
+    "id": "damage-mechanics",
+    "name": "异环数据机制导论",
+    "description": "NGA数据机制攻略：伤害乘区、环合、倾陷与其他数据机制。",
+    "author": "666bj",
+    "article_url": "https://bbs.nga.cn/read.php?tid=46659382",
+    "intro": [
+      {
+        "type": "paragraph",
+        "text": "这篇攻略从数值关系解释异环战斗，适合了解基础操作后继续阅读。完整公式、折叠说明和附表请查看作者原帖。"
+      }
+    ],
+    "gameplay": [
+      {
+        "type": "paragraph",
+        "text": "内容包括常规伤害的各个乘区、环合的基础伤害与结算、倾陷伤害与队伍成员的关系，以及终结能量等补充机制。原帖还附有角色、敌人、轨外之境和渔获数据表入口。"
+      }
+    ]
+  },
+  {
     "id": "combat-mechanics",
     "name": "战斗机制深入攻略",
     "description": "异环战斗机制视频攻略，可直接在本页观看。",

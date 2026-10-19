@@ -19,7 +19,7 @@ class BeginnerGuideTest(unittest.TestCase):
 
     def test_discovery_detail_and_shared_toc(self):
         listing = self.client.get('/api/guide/beginner').json
-        self.assertEqual(listing['total'], 2)
+        self.assertEqual(listing['total'], 3)
         item = listing['items'][0]
         self.assertEqual(item['id'], 'getting-started')
         self.assertIn('萌新攻略', self.client.get('/guide').text)
@@ -119,3 +119,17 @@ class BeginnerGuideTest(unittest.TestCase):
         md = self.client.get('/guide/beginner/combat-mechanics.md').text
         self.assertIn('[战斗机制深入攻略](https://www.bilibili.com/video/BV1JFeb6vE6o)', md)
         self.assertNotIn('<iframe', md)
+
+    def test_nga_guide_is_second_in_web_and_api(self):
+        rows = self.client.get('/api/guide/beginner').json['items']
+        self.assertEqual([row['id'] for row in rows], ['getting-started', 'damage-mechanics', 'combat-mechanics'])
+        index = self.client.get('/guide?kind=beginner').text
+        self.assertLess(index.index('href="/guide/beginner/getting-started"'), index.index('href="/guide/beginner/damage-mechanics"'))
+        self.assertLess(index.index('href="/guide/beginner/damage-mechanics"'), index.index('href="/guide/beginner/combat-mechanics"'))
+        page = self.client.get('/guide/beginner/damage-mechanics')
+        self.assertEqual(page.status_code, 200)
+        self.assertIn('异环数据机制导论', page.text)
+        self.assertIn('https://bbs.nga.cn/read.php?tid=46659382', page.text)
+        self.assertIn('666bj', page.text)
+        self.assertNotIn('在哔哩哔哩观看', page.text)
+        self.assertIn('https://bbs.nga.cn/read.php?tid=46659382', self.client.get('/guide/beginner/damage-mechanics.md').text)

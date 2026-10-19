@@ -412,3 +412,7 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 显式刷新：`python scripts/sync_guide_foods.py`，支持 `--ntedata-dir` 读取本地 `DT_FoodItemData.json`、`DT_ItemEffectTypeData.json`、商品／商店及物品来源关联／明细表。加成从明确的效果正文匹配，未知类型拒绝导入；方斯价格仅取方斯商品最低标价，不混算其他货币或限时折扣。获取途径从实际来源关联读取，缺失不猜地点。图片保存于模块 `static/foods/`；数据、分类与图片全部通过校验后原子替换 `data/foods.json`，请求和启动不联网。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_foods tests.test_guide_affinity tests.test_guide tests.test_module_routes tests.test_guide_account tests.test_guide_bot_tools tests.test_guide_chat -q`；浏览器检查料理分组／搜索／详情和窄屏、等级奖励、不同角色满好感属性、购买渠道tooltip的悬停／键盘／点按及原推荐单价。
+
+## Wiki 顶部标题与游戏版本
+
+所有攻略模块页面共用顶部居中标题与游戏数据版本，独立于左侧工具站／返回入口和右侧首页／账号按钮。`data/site_metadata.json` 维护运行时展示的站点标题、`game_version` 和 `logic_version`；游戏版本显示在标题下方，数据逻辑版本放在版本说明中。版本不是接口 `schema_version`，不按当前日期或角色名单推断；更新采用的数据版本时同步维护这两个展示字段。网页请求不联网查询版本。手机端压缩左侧品牌文字与按钮间距，保留中间标题及版本，320px起不遮挡两侧导航。验证：`.venv/bin/python -m unittest tests.test_guide_header tests.test_guide -q`；浏览器核对320、390和桌面宽度下的居中、间距及横向溢出。

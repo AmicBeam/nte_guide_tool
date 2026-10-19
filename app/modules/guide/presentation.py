@@ -69,3 +69,19 @@ def overlap_links():
 def overlap_entry(record):
     identifier = overlap_links().get(str(record['id']))
     return '/overlap?' + urlencode({'character': identifier}) if identifier else None
+
+
+@lru_cache(maxsize=1)
+def site_metadata():
+    return json.loads((Path(__file__).parent / 'data/site_metadata.json').read_text(encoding='utf-8'))
+
+
+def site_header():
+    metadata = site_metadata()
+    version = metadata.get('game_version')
+    if not isinstance(version, str) or not re.fullmatch(r'\d+(?:\.\d+){1,3}', version):
+        version = None
+    logic = metadata.get('logic_version')
+    if not isinstance(logic, str) or not logic.isdecimal():
+        logic = None
+    return {'title': metadata['title'], 'game_version': version, 'logic_version': logic}

@@ -4,7 +4,7 @@ import json
 
 from flask import Response, current_app, g, jsonify, render_template, request
 from app.auth import token_required
-from . import articles, article_markdown
+from . import articles, article_markdown, presentation
 
 
 def public_items(query='', **target):
@@ -17,7 +17,9 @@ def register(blueprint):
     @blueprint.context_processor
     def article_assets():
         static = Path(__file__).parent / 'static'
-        return {'article_asset_version': max((static / name).stat().st_mtime_ns
+        return {'guide_header': presentation.site_header(),
+                'guide_nav_asset_version': (static / 'navigation.css').stat().st_mtime_ns,
+                'article_asset_version': max((static / name).stat().st_mtime_ns
                                             for name in ('articles.css', 'article_editor.js', 'article_view.js')),
                 'guide_authored_count': articles.GuideArticle.select().where(articles.GuideArticle.published_at.is_null(False)).count()
                 if current_app.extensions.get('guide_articles_ready') else 0}

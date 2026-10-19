@@ -9,7 +9,7 @@
 {% endmacro %}
 {% block page_class %}guide-detail-page{% endblock %}
 {% block title %}{{ record.name }} · {{ kinds[kind] }} · NTE Tools{% endblock %}
-{% block head %}{{ super() }}<script src="{{ url_for('guide_module.static', filename='guide.js') }}" defer></script>{% if kind == 'characters' %}<script src="{{ url_for('guide_module.static', filename='rich_text.js') }}" defer></script><link rel="stylesheet" href="{{ url_for('guide_module.static', filename='rich_text.css') }}"><link rel="stylesheet" href="{{ url_for('guide_module.static', filename='character_tools.css') }}">{% endif %}{% if kind in ['challenges', 'endless'] %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='challenges.css') }}"><script defer src="{{ url_for('guide_module.static', filename='challenge_stages.js') }}"></script>{% endif %}<link rel="alternate" type="text/markdown" href="/guide/{{ kind }}/{{ record.id }}.md">{% endblock %}
+{% block head %}{{ super() }}{% if kind == 'beginner' %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='beginner.css') }}">{% endif %}<script src="{{ url_for('guide_module.static', filename='guide.js') }}" defer></script>{% if kind == 'characters' %}<script src="{{ url_for('guide_module.static', filename='rich_text.js') }}" defer></script><link rel="stylesheet" href="{{ url_for('guide_module.static', filename='rich_text.css') }}"><link rel="stylesheet" href="{{ url_for('guide_module.static', filename='character_tools.css') }}">{% endif %}{% if kind in ['challenges', 'endless'] %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='challenges.css') }}"><script defer src="{{ url_for('guide_module.static', filename='challenge_stages.js') }}"></script>{% endif %}<link rel="alternate" type="text/markdown" href="/guide/{{ kind }}/{{ record.id }}.md">{% endblock %}
 {% block guide_back %}<a class="guide-top-back" href="/guide?kind={{ kind }}" aria-label="返回{{ kinds[kind] }}档案">← 返回</a>{% endblock %}
 {% block content %}
 {% if kind == 'characters' %}<div class="guide-character-intro">{% endif %}
@@ -19,7 +19,7 @@
 {% if kind == 'challenges' %}<p class="guide-muted">{{ '常驻环线' if record.is_permanent|default(false) else '轮换环线' }} · {{ '长期开放' if record.is_permanent|default(false) else (record.begin_date|default(none) or '日期未提供') }}{% if record.end_date|default(none) %} → {{ record.end_date }}{% endif %} · {{ record.stage_count|default('') }} 关</p>{% if not record.is_permanent|default(false) %}<p class="guide-muted">国服日历：开始日05:00至结束日04:59:59（北京时间）。未来规律排期可能调整。</p>{% endif %}{% endif %}
 {% if kind == 'endless' %}<nav class="guide-links" aria-label="深境层数组">{% for group in range(4) %}<a href="/guide/endless/EndlessTrial_{{ group * 50 + 1 }}_{{ (group + 1) * 50 }}" {% if record.floor_begin == group * 50 + 1 %}aria-current="page"{% endif %}>{{ group * 50 + 1 }}–{{ (group + 1) * 50 }} 层</a>{% endfor %}</nav><p class="guide-muted">{{ record.description|default('') }} · {{ record.stage_count|default('') }} 层</p>{% endif %}
 {% if kind == 'arcs' and record.description is defined %}<p class="guide-muted">{{ record.description }}</p>{% endif %}
-{% if kind == 'beginner' %}<p class="guide-text">{{ record.description|default('') }}</p><p class="guide-links"><a href="{{ record.article_url }}" target="_blank" rel="noopener noreferrer">阅读完整图文 · {{ record.author }} ↗</a></p>{% else %}<p class="guide-muted">数值按等级或精炼档位顺序列出；敌人抗性为小数比例。完整字段可通过 JSON 查看。</p>{% endif %}
+{% if kind == 'beginner' %}<p class="guide-text">{{ record.description|default('') }}</p><p class="guide-links"><a href="{{ record.article_url }}" target="_blank" rel="noopener noreferrer">作者原帖 · {{ record.author }} ↗</a></p>{% else %}<p class="guide-muted">数值按等级或精炼档位顺序列出；敌人抗性为小数比例。完整字段可通过 JSON 查看。</p>{% endif %}
 
 {% if kind == 'characters' %}{% include 'guide/character_tools.html' %}{% endif %}
 <button class="guide-toc-toggle" type="button" aria-expanded="false" aria-controls="guide-toc" data-toc-toggle>目录</button>
@@ -27,6 +27,7 @@
 <p class="guide-toc-title">本页目录</p><nav aria-label="详情章节">
 {% if overview %}<a href="#section-stats">属性数值</a>{% endif %}
 {% for key, value in sections.items() if kind != 'challenges' or key != 'rewards' %}<a href="#section-{{ key }}">{{ key|guide_label }}</a>
+{% if kind == 'beginner' %}<div class="guide-toc-skills">{% for block in value if block.type == 'heading' %}<a href="#article-{{ block.id }}">{{ block.text }}</a>{% endfor %}</div>{% endif %}
 {% if key == 'abilities' %}<div class="guide-toc-skills" aria-label="技能目录">{% for ability in value %}<a href="#skill-{{ loop.index }}">{{ ability|guide_ability_title }}</a>{% endfor %}</div>{% endif %}{% endfor %}
 </nav></aside>
 <div class="guide-detail-body">{% for key, value in sections.items() if kind != 'challenges' or key != 'rewards' %}<section class="guide-detail-section" id="section-{{ key }}"><h2>{{ key|guide_label }}</h2>{% if key == 'abilities' %}
@@ -45,7 +46,7 @@
 {% elif key == 'equip_slots' %}
 <p class="guide-text guide-equip-description">{{ value|guide_equip_description }}</p>
 <div class="guide-slot-layout"><table class="guide-slot-grid" aria-label="空幕格位"><tbody>{% for row in value.slots %}{% set row_index = loop.index %}<tr>{% for cell in row %}<td class="{{ 'slot-blocked' if cell == -1 else 'slot-open' }}" aria-label="第{{ row_index }}行第{{ loop.index }}列：{{ '不可用' if cell == -1 else '可装配' }}">{{ '×' if cell == -1 else '·' }}</td>{% endfor %}</tr>{% endfor %}</tbody></table><div><p class="guide-muted">亮格：可装配 · 暗格：不可用</p></div></div>
-{% elif kind == 'beginner' %}<p class="guide-text">{{ value }}</p>
+{% elif kind == 'beginner' %}{% include 'guide/beginner_blocks.html' %}
 {% else %}{{ tree(value) }}{% endif %}</section>{% endfor %}</div>
 {% if kind != 'beginner' %}<details class="guide-notes"><summary>数值阅读约定</summary>{% for note in notes %}<p>{{ note }}</p>{% endfor %}</details>{% endif %}
 {% endblock %}

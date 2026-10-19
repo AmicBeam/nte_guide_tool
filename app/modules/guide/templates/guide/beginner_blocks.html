@@ -1,0 +1,5 @@
+{% for block in value %}
+{% if block.type == 'heading' %}<h3 id="article-{{ block.id }}">{{ block.text }}</h3>
+{% elif block.type == 'image' %}<figure class="guide-article-figure" style="width:min(100%, {{ block.width }}px)"><a href="{{ block.src }}" target="_blank" rel="noopener noreferrer" aria-label="查看{{ block.alt }}原图"><img src="{{ block.src }}" alt="{{ block.alt }}" width="{{ block.width }}" height="{{ block.height }}" loading="lazy" decoding="async"></a></figure>
+{% else %}<p class="guide-text">{% if block.runs is defined %}{% for run in block.runs %}{% if run.src is defined %}<img class="guide-article-emoji" src="{{ run.src }}" alt="{{ run.alt }}" width="32" height="32" loading="lazy">{% else %}{{ run.text }}{% endif %}{% endfor %}{% else %}{{ block.text }}{% endif %}</p>{% endif %}
+{% endfor %}

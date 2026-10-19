@@ -1,0 +1,5 @@
+.guide-article-figure{margin:24px 0;max-width:960px}
+.guide-article-figure a{display:block}
+.guide-article-figure img{display:block;width:100%;max-width:100%;height:auto;border-radius:8px}
+.guide-article-emoji{display:inline-block;width:32px;height:32px;object-fit:contain;vertical-align:middle}
+.guide-detail-section h3[id^="article-"]{scroll-margin-top:100px;margin:32px 0 18px;overflow-wrap:anywhere}

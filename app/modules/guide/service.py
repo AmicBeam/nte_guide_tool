@@ -12,8 +12,10 @@ from .challenge_calendar import is_released_challenge
 from . import reference_view, previews
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '萌新攻略'}
+BEGINNER_SECTIONS = ('intro', 'gameplay', 'currencies', 'events', 'wishes', 'closing')
 LABELS = {
-    'gameplay': '游戏玩法', 'currencies': '货币与消费', 'progression': '养成方向', 'wishes': '自选与抽取规划',
+    'intro': '前言', 'gameplay': '一.游戏玩法讲解', 'currencies': '二.货币讲解及氪金建议',
+    'events': '三.游戏活动讲解', 'wishes': '四.抽卡资源规划', 'closing': '结语',
     'status': '资料状态', 'preview': '预告', 'preview_image': '预告图',
     'rules': '楼层机制', 'enhanced_resistances': '强化抗性', 'node_first': '节点起始层', 'node_last': '关底',
     'reserve_character_count': '备选角色数', 'floor_slot_count': '角色栏位数',
@@ -193,6 +195,8 @@ def playable_character(identifier):
 
 
 def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None, *, skill_level=None, hit_details=None):
+    if kind == 'beginner' and section == 'progression':
+        section = 'gameplay'
     record = next((r for r in public_records(kind) if str(r['id']) == identifier), None)
     if record is None:
         raise LookupError('未找到条目')
@@ -241,10 +245,21 @@ def markdown_record(record):
     if record.get('id') == 'getting-started':
         lines = [f'# {record["name"]}', '', record.get('description', ''), '']
         if 'article_url' in record:
-            lines += [f'[阅读全文（{record["author"]}）]({record["article_url"]})', '']
-        for key in ('gameplay', 'currencies', 'progression', 'wishes'):
+            lines += [f'[作者原帖（{record["author"]}）]({record["article_url"]})', '']
+        for key in BEGINNER_SECTIONS:
             if key in record:
-                lines += [f'## {label(key)}', '', record[key], '']
+                lines += [f'## {label(key)}', '']
+                for block in record[key]:
+                    if block['type'] == 'heading':
+                        lines += ['### ' + block['text'], '']
+                    elif block['type'] == 'image':
+                        lines += [f'![{block["alt"]}]({block["src"]})', '']
+                    else:
+                        text = block['text']
+                        for run in block.get('runs', []):
+                            if 'src' in run:
+                                text = text.replace(run['alt'], f'![{run["alt"].strip("[]")}]({run["src"]})')
+                        lines += [text, '']
         return '\n'.join(lines)
     return f'# {record["name"]}\n\n' + markdown_value(record)
 
@@ -262,7 +277,7 @@ def schema():
             'parameter_keys': '指定技能时，groups中与顶层param_rows相同的行改用parameter_keys引用，按key查找原行。'},
         'markdown': '/guide/{collection}/{id}.md',
         'beginner': {'id': 'getting-started', 'cli': 'beginner --format markdown',
-                     'sections': ['gameplay', 'currencies', 'progression', 'wishes']},
+                     'sections': list(BEGINNER_SECTIONS)},
         'cultivation': {'url': '/api/guide/characters/{id}/cultivation', 'method': 'POST',
             'fields': ['current_level', 'target_level', 'current_ascended', 'target_ascended', 'current_skill_<index>', 'target_skill_<index>'],
             'skill_index': '按角色 materials.skills 顺序；技能等级不含觉醒和共鸣加成',
@@ -289,7 +304,7 @@ def page_sections(kind, record):
         'arcs': ('effect', 'exclusive_desc', 'exclusive_character_ids'),
         'challenges': ('resonance', 'stages', 'rewards'),
         'endless': ('stages',),
-        'beginner': ('gameplay', 'currencies', 'progression', 'wishes'),
+        'beginner': BEGINNER_SECTIONS,
     }
     keys = preferred[kind] if len(record) > 3 else tuple(key for key in record if key not in ('id', 'name'))
     result = {key: record[key] for key in keys if key in record and record[key] is not None and record[key] != [] and record[key] != {}}

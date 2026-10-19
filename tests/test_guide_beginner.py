@@ -7,7 +7,8 @@ from unittest.mock import patch
 from urllib.parse import urlsplit
 
 from flask import Flask
-from app.modules.guide import blueprint, cli
+from app.modules.guide import blueprint, cli, service
+from PIL import Image
 
 
 class BeginnerGuideTest(unittest.TestCase):
@@ -28,10 +29,12 @@ class BeginnerGuideTest(unittest.TestCase):
         page = self.client.get(item['url'])
         self.assertEqual(page.status_code, 200)
         self.assertIn('data-guide-toc', page.text)
-        for key in ('gameplay', 'currencies', 'progression', 'wishes'):
+        for key in service.BEGINNER_SECTIONS:
             self.assertIn(f'href="#section-{key}"', page.text)
             self.assertIn(f'id="section-{key}"', page.text)
-        self.assertIn('阅读完整图文', page.text)
+        self.assertIn('作者原帖', page.text)
+        self.assertIn('href="#article-hunter"', page.text)
+        self.assertIn('id="article-hunter"', page.text)
         self.assertNotIn('数值阅读约定', page.text)
         self.assertEqual(self.client.get('/api/guide/beginner/missing').status_code, 404)
 
@@ -42,9 +45,9 @@ class BeginnerGuideTest(unittest.TestCase):
         self.assertNotIn('gameplay', short)
         self.assertEqual(short['article_url'], full['article_url'])
         md = self.client.get('/guide/beginner/getting-started.md?section=wishes')
-        self.assertIn('## 自选与抽取规划', md.text)
+        self.assertIn('## 四.抽卡资源规划', md.text)
         self.assertIn(full['article_url'], md.text)
-        self.assertNotIn('## 游戏玩法', md.text)
+        self.assertNotIn('## 一.游戏玩法讲解', md.text)
         self.assertEqual(self.client.get('/api/guide/beginner/getting-started?section=bad').status_code, 404)
         self.assertEqual(self.client.get('/api/guide/beginner/getting-started?stage=1').status_code, 400)
 
@@ -69,3 +72,35 @@ class BeginnerGuideTest(unittest.TestCase):
                 self.assertIn('新手入坑', output.getvalue())
                 if args == ['beginner']:
                     self.assertEqual(json.loads(output.getvalue())['kind'], 'beginner')
+
+    def test_full_text_and_local_images_are_complete(self):
+        record = self.client.get('/api/guide/beginner/getting-started').json['data']
+        blocks = [block for key in service.BEGINNER_SECTIONS for block in record[key]]
+        text = '\n'.join(block.get('text', '') for block in blocks)
+        self.assertGreater(len(text), 12000)
+        for phrase in ('前言', '结语'):
+            self.assertIn(phrase, self.client.get('/guide/beginner/getting-started.md').text)
+        for phrase in ('2700*1.09*24=70632', '3.2异环1.4版本活动简述', '祝大家都能抽出自己想要的角色和盲盒，不要碰刮刮乐喔！'):
+            self.assertIn(phrase, text)
+        figures = [block for block in blocks if block['type'] == 'image']
+        self.assertEqual(len(figures), 65)
+        self.assertEqual(sum(block['type'] == 'heading' for block in blocks), 9)
+        images = figures + [run for block in blocks for run in block.get('runs', []) if 'src' in run]
+        self.assertEqual(len(images), 72)
+        folder = Path(__file__).resolve().parents[1] / 'app/modules/guide/static'
+        for image in images:
+            self.assertTrue(image['src'].startswith('/static/guide/beginner/getting-started/'))
+            with Image.open(folder / image['src'].removeprefix('/static/guide/')) as picture:
+                self.assertEqual(picture.size, (image['width'], image['height']))
+                picture.verify()
+        md = self.client.get('/guide/beginner/getting-started.md').text
+        self.assertEqual(md.count('![攻略配图 '), 65)
+        for image in figures:
+            self.assertIn(image['src'], md)
+        response = self.client.get('/guide/beginner/getting-started')
+        self.assertEqual(response.text.count('class="guide-article-figure"'), 65)
+        self.assertNotIn('>TapTap<', response.text)
+        with self.client.get(figures[0]['src']) as image_response:
+            self.assertEqual(image_response.status_code, 200)
+        self.assertEqual(self.client.get('/api/guide/beginner/getting-started?section=events').json['data']['events'], record['events'])
+        self.assertNotIn('gameplay', self.client.get('/api/guide/beginner/getting-started?section=events').json['data'])

@@ -7,6 +7,7 @@ document.querySelectorAll("[data-guide-filters]").forEach(filters => {
   function refresh() {
     const values = new FormData(form);
     const query = String(values.get("q") || "").trim().toLocaleLowerCase();
+    const hideStory = form.querySelector('input[type="checkbox"][name="hide_story"]')?.checked || false;
     let matches = 0;
     cards.forEach(card => {
       const shown = (!values.get("element") || card.dataset.element === values.get("element")) &&
@@ -14,6 +15,7 @@ document.querySelectorAll("[data-guide-filters]").forEach(filters => {
         (!values.get("arc_type") || card.dataset.arcType === values.get("arc_type")) &&
         (!values.get("function") || card.dataset.foodFunction === values.get("function")) &&
         (!values.get("bonus") || card.dataset.foodBonus === values.get("bonus")) &&
+        (!hideStory || card.dataset.storyFood !== "true") &&
         (!query || card.dataset.filterText.includes(query));
       card.hidden = !shown;
       if (shown) matches += 1;
@@ -31,6 +33,8 @@ document.querySelectorAll("[data-guide-filters]").forEach(filters => {
       if (value) url.searchParams.set(key, value);
       else url.searchParams.delete(key);
     });
+    const storyFilter = form.querySelector('input[type="checkbox"][name="hide_story"]');
+    if (storyFilter) url.searchParams.set("hide_story", storyFilter.checked ? "1" : "0");
     history.replaceState(null, "", url);
   }
   empty.querySelector("a").addEventListener("click", event => {

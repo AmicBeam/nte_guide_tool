@@ -32,6 +32,29 @@ class GuideFoodsTest(unittest.TestCase):
         self.assertIn('12 条结果', html)
         self.assertIn('data-guide-filter-group', html)
 
+    def test_story_food_filter_defaults_on_only_for_web(self):
+        foods = service.catalog()['foods']
+        by_id = {r['id']: r for r in foods}
+        self.assertTrue(by_id['Food_108']['story_only'])
+        self.assertTrue(by_id['Food_060_01']['story_only'])
+        self.assertTrue(by_id['Food_103']['story_only'])
+        self.assertFalse(by_id['Food_115']['story_only'])
+        self.assertFalse(by_id['Food_122']['story_only'])
+        html = self.client.get('/guide?kind=foods').text
+        self.assertIn('129 条结果', html)
+        self.assertIn('name="hide_story" value="1" checked', html)
+        html = self.client.get('/guide?kind=foods&hide_story=0').text
+        self.assertIn('142 条结果', html)
+        self.assertNotIn('name="hide_story" value="1" checked', html)
+        self.assertEqual(self.client.get('/api/guide/foods').json['total'], 142)
+        self.assertEqual(self.client.get('/api/guide/foods?hide_story=1').json['total'], 129)
+        self.assertEqual(self.client.get('/guide?kind=foods&hide_story=0&hide_story=1').status_code, 200)
+
+    def test_healing_sort_uses_22000_hp(self):
+        names = [r['name'] for r in service.search('foods', bonus='heal')]
+        self.assertLess(names.index('魔法膨胀全麦面包'), names.index('经典三重奏'))
+        self.assertLess(names.index('扭扭饼干'), names.index('经典三重奏'))
+
     def test_detail_formats_and_all_local_images(self):
         data = self.client.get('/api/guide/foods/Food_001').json['data']
         self.assertEqual(data['name'], '极点')
@@ -85,6 +108,10 @@ class GuideFoodsTest(unittest.TestCase):
         self.assertEqual(food['bonus_group'], 'attack')
         self.assertIsNone(food['fons_price'])
         self.assertEqual(food['sources'], [])
+        self.assertEqual(module.estimated_healing('恢复生命值上限的12%，并额外恢复850点生命值。'), 3490)
+        self.assertEqual(module.estimated_healing('为当前角色恢复生命值上限的10%，并在之后的30秒内，每5秒恢复260点生命值。'), 3760)
+        self.assertEqual(module.estimated_healing('当前角色在之后的30秒内，每5秒回复455生命值'), 2730)
+        self.assertEqual(module.estimated_healing('复活选中角色，并恢复生命值上限的30%。'), 6600)
         segments = module.effect_segments('暴击率增加6.4%，持续180秒')
         self.assertEqual([r['text'] for r in segments if r['highlight']], ['6.4%'])
         row['OutputSourceID'] = 'food_source'

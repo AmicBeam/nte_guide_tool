@@ -71,10 +71,24 @@ def purchase_info(identifier, row, tables):
                  'requires_unlock': goods.get('UnLockID', 'None') != 'None'}
         if offer not in offers:
             offers.append(offer)
-    return {'sources': sources, 'offers': offers,
+    story_sources = {'QuestReward', 'skia_linkquest_01'}
+    story_only = bool(source_keys) and all(key.strip() in story_sources for key in source_keys)
+    return {'sources': sources, 'offers': offers, 'story_only': story_only,
             'fons_price': min((offer['price'] for offer in offers), default=None)}
 
 GROUPS = ('Attack', 'Defense', 'AddHPInstant', 'AddHPConstant', 'Revive', 'Explore', 'Special')
+
+
+def estimated_healing(effect, hp=22000):
+    percent = sum(float(value) for value in re.findall(r'恢复生命值上限的(\d+(?:\.\d+)?)%', effect))
+    fixed = sum(float(value) for value in re.findall(r'(?:恢复|回复)(\d+(?:\.\d+)?)(?:点)?生命值', effect))
+    periodic = re.search(r'每(\d+(?:\.\d+)?)秒(?:恢复|回复)(\d+(?:\.\d+)?)(?:点)?生命值', effect)
+    duration = re.search(r'之后的(\d+(?:\.\d+)?)秒内', effect)
+    if periodic:
+        if not duration or float(periodic[1]) <= 0:
+            raise ValueError('Missing recovery duration or period')
+        fixed += float(periodic[2]) * (float(duration[1]) // float(periodic[1]) - 1)
+    return round(hp * percent / 100 + fixed, 8)
 
 
 def food_sort_key(food):
@@ -82,6 +96,8 @@ def food_sort_key(food):
                     for segment in food['card_segments'] if segment['highlight'])
     if not amounts:
         raise ValueError('Missing food bonus amount')
+    if food['bonus_group'] in ('heal', 'regen', 'revive'):
+        amounts = (-estimated_healing(food['effect']),)
     return (list(BONUS_GROUPS).index(food['bonus_group']), amounts + (float('inf'),),
             food['fons_price'] if food['fons_price'] is not None else float('inf'), food['id'])
 

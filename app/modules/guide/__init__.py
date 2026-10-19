@@ -34,9 +34,13 @@ def integer(name, default, low, high):
 
 
 def filters():
+    story = request.args.getlist('hide_story')[-1] if 'hide_story' in request.args else '0'
+    if story not in ('0', '1'):
+        raise ValueError('hide_story 须为0或1')
     return dict(query=request.args.get('q', '').strip(), element=request.args.get('element', ''),
                 rarity=integer('rarity', 5, 1, 5) if request.args.get('rarity') else None,
-                arc_type=request.args.get('arc_type', ''), function=request.args.get('function', ''), bonus=request.args.get('bonus', ''))
+                arc_type=request.args.get('arc_type', ''), function=request.args.get('function', ''), bonus=request.args.get('bonus', ''),
+                hide_story=story == '1')
 
 
 def get_record(kind, identifier, *, narrow=False):
@@ -62,7 +66,10 @@ def missing(error):
 def index():
     kind = request.args.get('kind', 'characters')
     kind_check(kind)
-    items = service.search(kind, **filters())
+    selected_filters = filters()
+    if kind == 'foods' and 'hide_story' not in request.args:
+        selected_filters['hide_story'] = True
+    items = service.search(kind, **selected_filters)
     selected_ids = {item['id'] for item in items}
     result_count = len(items)
     if kind in ('characters', 'arcs', 'foods'):
@@ -71,6 +78,7 @@ def index():
     authored = public_items(request.args.get('q', '').strip()) if kind == 'beginner' else []
     counts = {key: len(service.public_records(key)) for key in service.KINDS}
     return render_template('guide/index.html', kind=kind, kinds=service.KINDS, items=items, counts=counts, selected_ids=selected_ids, result_count=result_count, authored_articles=authored,
+        hide_story=selected_filters['hide_story'],
         food_groups=list({row['bonus_group']: row['bonus_name'] for row in service.catalog()['foods']}.items()),
         food_asset_version=max((Path(__file__).parent / 'static' / name).stat().st_mtime_ns for name in ('foods.js', 'foods.css')),
         catalog_asset_version=(Path(__file__).parent / 'static/catalog_cards.css').stat().st_mtime_ns,

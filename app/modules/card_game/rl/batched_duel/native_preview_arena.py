@@ -221,6 +221,15 @@ def _transform_owner(source, schema, entry):
     return source[:start] + _emit_helpers(schema, entry) + body + source[end:]
 
 
+def _utf8_literal(text):
+    """ASCII C++ literal with bounded three-digit octal UTF-8 byte escapes.
+
+    NVRTC input must not depend on the Windows source execution code page.
+    Fixed-width octal also prevents a following digit extending an escape.
+    """
+    return '"'+''.join('\\%03o'%byte for byte in text.encode('utf8'))+'"'
+
+
 def _emit_helpers(schema, entry):
     # Generate exact scalar-cache ranges for every physical slot, including
     # unused list capacity. Do not clear caches belonging to old live objects.
@@ -245,7 +254,12 @@ def _emit_helpers(schema, entry):
  soa_store_i32(s,{pool.order}+slot*{pool.max_items}+j,0);
  }}''')
         cases.append(f'case {i}:{{' + '\n'.join(rows) + '}break;')
-    return _HELPERS.replace('@ENTRY@', str(entry)).replace('@COUNT@', str(len(schema.pools))).replace('@CASES@', '\n'.join(cases))
+    source=_HELPERS.replace('@ENTRY@', str(entry)).replace('@COUNT@', str(len(schema.pools))).replace('@CASES@', '\n'.join(cases))
+    for placeholder,key in (('@ATTACK_KEY@','attack'),('@COUNTER_KEY@','counter'),
+                            ('@ATTACK_COUNT_KEY@','攻击次数'),('@FLOWER_DAMAGE_KEY@','创生花伤害')):
+        source=source.replace(placeholder,_utf8_literal(key))
+    if not source.isascii():raise PreviewArenaError('Preview helper must remain ASCII-only C++')
+    return source
 
 
 _HELPERS = r'''
@@ -291,10 +305,10 @@ __device__ inline int preview_arena_leave(Context* c,int* f,int result){
   if(soa_header_view(&c->h,key)||soa_header_view(&c->h,value)){c->error=BAD_PROGRAM;return 0;}
   const int* v=node(c,value);
   if(!v||(v[0]!=TAG_INT&&v[0]!=TAG_FLOAT)){c->error=BAD_PROGRAM;return 0;}
-  if(vm_text_equals(c,key,"attack"))bit=1;
-  else if(vm_text_equals(c,key,"counter"))bit=2;
-  else if(vm_text_equals(c,key,"攻击次数"))bit=4;
-  else if(vm_text_equals(c,key,"创生花伤害"))bit=8;
+  if(vm_text_equals(c,key,@ATTACK_KEY@))bit=1;
+  else if(vm_text_equals(c,key,@COUNTER_KEY@))bit=2;
+  else if(vm_text_equals(c,key,@ATTACK_COUNT_KEY@))bit=4;
+  else if(vm_text_equals(c,key,@FLOWER_DAMAGE_KEY@))bit=8;
   if(!bit||(seen&bit)||c->error||c->h.error){c->error=BAD_PROGRAM;return 0;}
   seen|=bit;
  }

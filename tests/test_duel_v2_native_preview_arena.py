@@ -3,6 +3,7 @@ import copy
 import ast
 from dataclasses import replace
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -42,6 +43,16 @@ __device__ __noinline__ void native_function_597(Context* c,int* f,const int* fn
 
 
 class TransformTests(unittest.TestCase):
+    def test_cpp_keys_are_ascii_and_exact_utf8_bytes(self):
+        helper=arena._emit_helpers(small_schema(),10)
+        self.assertTrue(helper.isascii())
+        literals=re.findall(r'vm_text_equals\(c,key,("[^"\n]*")\)',helper)
+        self.assertEqual(len(literals),4)
+        for literal,key in zip(literals,('attack','counter','攻击次数','创生花伤害')):
+            escapes=re.findall(r'\\([0-7]{3})',literal[1:-1])
+            self.assertEqual(literal[1:-1],''.join('\\'+part for part in escapes))
+            self.assertEqual(bytes(int(part,8)for part in escapes),key.encode('utf8'))
+
     def test_stable_ast_ignores_only_empty_type_parameters(self):
         fn=ast.parse('def example(a):\n return a+1\n').body[0]
         baseline=arena._digest(arena._stable_ast(fn))
@@ -170,7 +181,8 @@ int* node(Context*c,int r){return r<0?nullptr:c->h.nodes+r*4;}
 int soa_header_view(Heap*h,int r){return r>=0&&h->nodes[r*4+1]==SOA_VIEW_OFFSET;}
 int soa_locate(int gid,int*p,int*slot){for(int i=0;i<SOA_POOL_COUNT;i++)if(gid>SOA_POOL_BASE[i]&&gid<=SOA_POOL_BASE[i]+SOA_POOL_CAP[i]){*p=i;*slot=gid-SOA_POOL_BASE[i]-1;return 1;}return 0;}
 int edge(Context*,int,int i,int which){return which==0?20+i:30+i;}
-bool vm_text_equals(Context*,int key,const char*s){return key==20&&std::strcmp(s,"attack")==0;}
+const char* fixture_keys[]={"attack","counter","\346\224\273\345\207\273\346\254\241\346\225\260","\345\210\233\347\224\237\350\212\261\344\274\244\345\256\263"};
+bool vm_text_equals(Context*,int key,const char*s){return key>=20&&key<=23&&std::strcmp(s,fixture_keys[key-20])==0;}
 '''
 _HARNESS_MAIN = r'''
 void setup(Context&c,DomainSoAContext&s,int*f){c.h.soa=&s;f[0]=597;
@@ -225,6 +237,14 @@ int main(){
   assert(c.h.nodes[120]==TAG_INT); // escaped score still boxed and alive
  }
  assert(s.clone_epoch==31&&c.steps>0);
+ // Exercise all four actual key comparisons (independent fixture bytes),
+ // preserving each boxed numeric score after reclamation.
+ Context scores{};DomainSoAContext sc{};int fs[160]={};setup(scores,sc,fs);
+ scores.h.nodes[42]=4;
+ for(int i=0;i<4;i++){scores.h.nodes[(30+i)*4]=i==1?TAG_FLOAT:TAG_INT;scores.h.nodes[(30+i)*4+3]=100+i;}
+ assert(preview_arena_enter(&scores,fs,10));sc.used[SOA_POOL_USED[0]]=3;
+ assert(preview_arena_leave(&scores,fs,10));
+ for(int i=0;i<4;i++)assert(scores.h.nodes[(30+i)*4+3]==100+i);
  // A typed score, even an old one, fails before reclaiming any slots.
  Context bad{};DomainSoAContext b{};int fb[160]={};setup(bad,b,fb);
  assert(preview_arena_enter(&bad,fb,10));b.used[SOA_POOL_USED[0]]=2;

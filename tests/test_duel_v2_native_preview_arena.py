@@ -23,9 +23,10 @@ PROGRAM = ROOT / 'artifacts/rl-evals/soa-capacity-1017-01/teacher-native-program
 
 def small_schema():
     return compile_schema({
-        'Game': dict(kind='record', capacity=4, fields={'hp': 'int', 'items': '@Items', 'meta': '@Meta'}),
+        'Game': dict(kind='record', capacity=4, fields={'hp': 'int', 'items': '@Items', 'meta': '@Meta', 'pair': '@Pair'}),
         'Items': dict(kind='list', capacity=4, max_items=2, value='number'),
         'Meta': dict(kind='map', capacity=4, max_items=2, key='str', value='number'),
+        'Pair': dict(kind='tuple', capacity=4, items=['int','@Items']),
     }, max_strings=16, max_string_bytes=128)
 
 
@@ -55,10 +56,19 @@ class TransformTests(unittest.TestCase):
 
     def test_scope_helpers_are_noinline_and_all_runtime_loops_stay_rolled(self):
         helper=arena._emit_helpers(small_schema(),10)
-        for name in('charge','enter','released','leave'):
+        for name in('charge','enter','released','leave','clear_column','clear_slot'):
             self.assertIn('__device__ __noinline__ int preview_arena_'+name+'(',helper)
         for match in re.finditer(r'(?m)^\s*for\(',helper):
             self.assertRegex(helper[:match.start()].rstrip(),r'#pragma unroll 1$')
+
+    def test_emitted_body_is_constant_size_not_a_schema_expansion(self):
+        from types import SimpleNamespace
+        small=arena._emit_helpers(small_schema(),10)
+        large=arena._emit_helpers(SimpleNamespace(pools=(None,)*83),10)
+        self.assertLess(abs(len(small)-len(large)),10)
+        self.assertNotIn('switch(p)',large)
+        self.assertIn('SOA_POOL_FIELD_START[pool]+i',large)
+        self.assertIn('SOA_COL_STRIDE[col]',large)
 
     def test_stable_ast_ignores_only_empty_type_parameters(self):
         fn=ast.parse('def example(a):\n return a+1\n').body[0]
@@ -147,8 +157,15 @@ class CompiledCPUHarnessTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('c++'), 'Host C++ compiler unavailable')
     def test_emitted_scope_reuse_alias_identity_escape_and_budget(self):
         schema = small_schema()
+        cells=sum(sum(c.stride for c in (*p.fields,*((p.keys,)if p.keys is not None else()),*p.values))
+                  +(p.max_items if p.order>=0 else 0)for p in schema.pools)
+        pools=len(schema.pools)
+        # One enter charge/pool, leave admission+score+range checks+three
+        # constant roots+headers+cells+counter restore, for full then empty.
+        leave_fixed=1+1+pools+3+pools
+        expected_steps=12*((pools+leave_fixed+2*pools+2*cells)+(pools+leave_fixed+pools+cells))
         source = (_HARNESS_HEAD + _emit_schema_tables(schema) + _HARNESS_RUNTIME +
-                  arena._emit_helpers(schema, 10) + _HARNESS_MAIN)
+                  arena._emit_helpers(schema, 10) + _HARNESS_MAIN.replace('@EXPECTED_STEPS@',str(expected_steps)))
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'scope.cpp'
             path.write_text(source)
@@ -197,6 +214,12 @@ void setup(Context&c,DomainSoAContext&s,int*f){c.h.soa=&s;f[0]=597;
  for(int p=0;p<SOA_POOL_COUNT;p++)s.used[SOA_POOL_USED[p]]=1;
  for(int i=0;i<512;i++)s.views[i]=77;
  for(int i=0;i<2048;i++)s.value_cache[i]=77;
+ for(int col=0;col<SOA_TOTAL_RECORD_FIELDS;col++)for(int j=0;j<SOA_COL_STRIDE[col];j++){
+  s.u8[SOA_COL_TAG[col]+j]=123;
+  if(SOA_COL_INTEGER[col]>=0)s.i64[SOA_COL_INTEGER[col]+j]=777;
+  if(SOA_COL_REAL[col]>=0)s.f64[SOA_COL_REAL[col]+j]=-2.5;
+  if(SOA_COL_WORD[col]>=0)s.used[SOA_COL_WORD[col]+j]=444;
+ }
  c.h.nodes[40]=TAG_DICT;c.h.nodes[42]=1;c.h.nodes[120]=TAG_INT;
  // Ref 40 is the pre-existing caller object; ref41 belongs to this scope.
  c.h.nodes[160]=TAG_DICT;c.h.nodes[161]=SOA_VIEW_OFFSET;c.h.nodes[163]=1;
@@ -221,6 +244,7 @@ int main(){
   assert(preview_arena_leave(&c,f,10));
   assert(s.used[SOA_POOL_USED[0]]==1&&s.used[SOA_POOL_USED[1]]==1);
   assert(s.views[0]==77&&s.views[1]==SOA_MISSING&&s.views[2]==SOA_MISSING);
+  for(int p=0;p<SOA_POOL_COUNT;p++)assert(s.views[SOA_POOL_BASE[p]]==77);
   assert(s.value_cache[SOA_COL_TAG[0]]==77);
   assert(s.value_cache[SOA_COL_TAG[0]+1]==SOA_MISSING);
   for(int i=0;i<SOA_TOTAL_RECORD_FIELDS;i++){
@@ -228,6 +252,13 @@ int main(){
    if(SOA_COL_INTEGER[i]>=0)assert(s.i64[SOA_COL_INTEGER[i]+SOA_COL_STRIDE[i]]==0);
    if(SOA_COL_REAL[i]>=0)assert(s.f64[SOA_COL_REAL[i]+SOA_COL_STRIDE[i]]==0.0);
    if(SOA_COL_WORD[i]>=0)assert(s.used[SOA_COL_WORD[i]+SOA_COL_STRIDE[i]]==0);
+   for(int j=0;j<SOA_COL_STRIDE[i];j++){
+    assert(s.u8[SOA_COL_TAG[i]+j]==123);
+    assert(s.u8[SOA_COL_TAG[i]+SOA_COL_STRIDE[i]+j]==SOA_ABSENT);
+    if(SOA_COL_INTEGER[i]>=0)assert(s.i64[SOA_COL_INTEGER[i]+j]==777);
+    if(SOA_COL_REAL[i]>=0)assert(s.f64[SOA_COL_REAL[i]+j]==-2.5);
+    if(SOA_COL_WORD[i]>=0)assert(s.used[SOA_COL_WORD[i]+j]==444);
+   }
   }
   assert(s.used[SOA_POOL_COUNT_COL[0]+1]==0);
   // Reallocate the released position as an EMPTY record/list: an allocator
@@ -244,7 +275,7 @@ int main(){
   assert(c.h.nodes[160]==TAG_DICT&&c.h.nodes[163]==1); // old VM id preserved
   assert(c.h.nodes[120]==TAG_INT); // escaped score still boxed and alive
  }
- assert(s.clone_epoch==31&&c.steps>0);
+ assert(s.clone_epoch==31&&c.steps==@EXPECTED_STEPS@);
  // Exercise all four actual key comparisons (independent fixture bytes),
  // preserving each boxed numeric score after reclamation.
  Context scores{};DomainSoAContext sc{};int fs[160]={};setup(scores,sc,fs);

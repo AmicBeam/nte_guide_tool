@@ -231,32 +231,9 @@ def _utf8_literal(text):
 
 
 def _emit_helpers(schema, entry):
-    # Generate exact scalar-cache ranges for every physical slot, including
-    # unused list capacity. Do not clear caches belonging to old live objects.
-    cases = []
-    for i, pool in enumerate(schema.pools):
-        columns = (*pool.fields, *((pool.keys,) if pool.keys is not None else ()), *pool.values)
-        rows = []
-        for col in columns:
-            stride = col.stride
-            stores = [f'soa_store_u8(s,{col.tag}+slot*{stride}+j,SOA_ABSENT);']
-            for channel, offset, zero in (('i64', col.integer, '0'), ('f64', col.real, '0.0'), ('i32', col.word, '0')):
-                if offset >= 0:
-                    stores.append(f'soa_store_{channel}(s,{offset}+slot*{stride}+j,{zero});')
-            rows.append(f'''#pragma unroll 1
- for(int j=0;j<{stride};j++){{
- if(!preview_arena_charge(c))return 0;
- soa_store_cache(s,{col.tag}+slot*{stride}+j,SOA_MISSING);
- {' '.join(stores)}
- }}''')
-        if pool.order >= 0:
-            rows.append(f'''#pragma unroll 1
- for(int j=0;j<{pool.max_items};j++){{
- if(!preview_arena_charge(c))return 0;
- soa_store_i32(s,{pool.order}+slot*{pool.max_items}+j,0);
- }}''')
-        cases.append(f'case {i}:{{\n' + '\n'.join(rows) + '\n}break;')
-    source=_HELPERS.replace('@ENTRY@', str(entry)).replace('@COUNT@', str(len(schema.pools))).replace('@CASES@', '\n'.join(cases))
+    # Existing pinned column tables describe every address/stride. Keeping one
+    # rolled body avoids cloning stores/branches for all83pools during NVRTC.
+    source=_HELPERS.replace('@ENTRY@', str(entry)).replace('@COUNT@', str(len(schema.pools)))
     for placeholder,key in (('@ATTACK_KEY@','attack'),('@COUNTER_KEY@','counter'),
                             ('@ATTACK_COUNT_KEY@','攻击次数'),('@FLOWER_DAMAGE_KEY@','创生花伤害')):
         source=source.replace(placeholder,_utf8_literal(key))
@@ -270,6 +247,43 @@ __device__ __noinline__ int preview_arena_charge(Context* c){
  if(c->error||c->h.error||c->raised!=MISSING)return 0;
  if(++c->steps>c->step_limit){c->error=STEP_LIMIT;return 0;}
  if(c->deadline&&clock_ns()>=(unsigned long long)c->deadline){c->error=DEADLINE;return 0;}
+ return 1;
+}
+__device__ __noinline__ int preview_arena_clear_column(Context* c,DomainSoAContext* s,int col,int slot){
+ const int stride=SOA_COL_STRIDE[col];
+ #pragma unroll 1
+ for(int j=0;j<stride;j++){
+  if(!preview_arena_charge(c))return 0;
+  const int index=slot*stride+j;
+  soa_store_cache(s,SOA_COL_TAG[col]+index,SOA_MISSING);
+  soa_store_u8(s,SOA_COL_TAG[col]+index,SOA_ABSENT);
+  if(SOA_COL_INTEGER[col]>=0)soa_store_i64(s,SOA_COL_INTEGER[col]+index,0);
+  if(SOA_COL_REAL[col]>=0)soa_store_f64(s,SOA_COL_REAL[col]+index,0.0);
+  if(SOA_COL_WORD[col]>=0)soa_store_i32(s,SOA_COL_WORD[col]+index,0);
+ }
+ return 1;
+}
+__device__ __noinline__ int preview_arena_clear_slot(Context* c,DomainSoAContext* s,int pool,int slot){
+ // Preserve fields -> keys -> values -> order and one charge per cell/order
+ // entry, including unused list/map capacity, exactly as the expanded scope.
+ #pragma unroll 1
+ for(int i=0;i<SOA_POOL_NFIELDS[pool];i++){
+  if(!preview_arena_clear_column(c,s,SOA_POOL_FIELD_START[pool]+i,slot))return 0;
+ }
+ if(SOA_POOL_KEY_COL[pool]>=0){
+  if(!preview_arena_clear_column(c,s,SOA_POOL_KEY_COL[pool],slot))return 0;
+ }
+ #pragma unroll 1
+ for(int i=0;i<SOA_POOL_VALUE_COUNT[pool];i++){
+  if(!preview_arena_clear_column(c,s,SOA_POOL_VALUE_START[pool]+i,slot))return 0;
+ }
+ if(SOA_POOL_ORDER[pool]>=0){
+  #pragma unroll 1
+  for(int j=0;j<SOA_POOL_MAX_ITEMS[pool];j++){
+   if(!preview_arena_charge(c))return 0;
+   soa_store_i32(s,SOA_POOL_ORDER[pool]+slot*SOA_POOL_MAX_ITEMS[pool]+j,0);
+  }
+ }
  return 1;
 }
 __device__ __noinline__ int preview_arena_enter(Context* c,int* f,int pc){
@@ -342,7 +356,7 @@ __device__ __noinline__ int preview_arena_leave(Context* c,int* f,int result){
    soa_store_view(s,SOA_POOL_BASE[p]+slot,SOA_MISSING);
    soa_store_u8(s,SOA_POOL_TAG[p]+slot,SOA_ABSENT);
    soa_store_i32(s,SOA_POOL_COUNT_COL[p]+slot,0);
-   switch(p){@CASES@ default:c->error=BAD_PROGRAM;return 0;}
+   if(!preview_arena_clear_slot(c,s,p,slot))return 0;
   }
  }
  // Memo epochs, including wrap, are budgeted. No live view cache is reset.

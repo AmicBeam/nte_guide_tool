@@ -22,7 +22,7 @@ class BeginnerGuideTest(unittest.TestCase):
         self.assertEqual(listing['total'], 3)
         item = listing['items'][0]
         self.assertEqual(item['id'], 'getting-started')
-        self.assertIn('萌新攻略', self.client.get('/guide').text)
+        self.assertIn('攻略', self.client.get('/guide').text)
         self.assertIn(item['url'], self.client.get('/guide?kind=beginner').text)
         self.assertTrue(any(row['kind'] == 'beginner' for row in
                             self.client.get('/api/guide/search?q=新手入坑').json['items']))

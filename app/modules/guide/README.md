@@ -1,6 +1,6 @@
 # 攻略数据库
 
-公共资料匿名只读，提供异环角色、弧盘、轨外之境、全站深境四类攻略数据；个人练度同步须登录本站，养成计算仍可匿名使用。角色工具页通过排轴公开接口展示相关轴，并链接到排轴模块的配装收益比较。工具主页可进入 `/guide`；不依赖其他模块的领域服务，不使用异能对决的原创卡牌数值。当前快照包含 25 个角色条目（男女主分别计数）、51 个弧盘、15 个环线，以及全站深境200层（每50层一组）；包含数据集中已提供的条目，不以列表顺序推断实装或赛期开放状态。
+公共资料可匿名阅读，提供异环角色、弧盘、轨外之境、全站深境及攻略文章；攻略撰写和个人练度同步须登录本站，养成计算仍可匿名使用。角色工具页通过排轴公开接口展示相关轴，并链接到排轴模块的配装收益比较。工具主页可进入 `/guide`；不依赖其他模块的领域服务，不使用异能对决的原创卡牌数值。当前快照包含 25 个角色条目（男女主分别计数）、51 个弧盘、15 个环线，以及全站深境200层（每50层一组）；包含数据集中已提供的条目，不以列表顺序推断实装或赛期开放状态。
 
 ## 网页和机器读取
 
@@ -367,9 +367,9 @@ HTML、列表、搜索、JSON、Markdown和CLI支持预告条目，`status=previ
 目录与账号练度页的分类栏取消外层容器叠加的顶部留白和分类栏额外上边距，保留固定导航及安全区域所需占位，导航下方约15px进入分类栏。该调整仅作用于直接包含分类栏的攻略页，角色详情等其他页面的正文间距保持原有布局。浏览器验收覆盖桌面、390px和320px窄屏，分类栏不得被固定导航遮挡或产生整页横向溢出。
 
 
-## 萌新攻略
+## 攻略与撰写
 
-`/guide?kind=beginner` 提供萌新攻略分类，`/guide/beginner/getting-started` 展示完整新手入坑图文。正文包含前言、游戏玩法、货币与消费、版本活动、抽卡规划及结语，保留作者的版本语境与个人观点。一级、二级标题复用详情页悬浮目录、滚动高亮和窄屏目录按钮，不另建目录脚本。正文仅渲染结构化段落、标题和图片，不执行文章HTML。攻略正文统一18px、1.9倍行高，一级／二级章节标题为26px／22px，目录为15px／14px，手机端保持相同可读字号。
+`/guide?kind=beginner` 提供攻略分类，`/guide/beginner/getting-started` 展示完整新手入坑图文。正文包含前言、游戏玩法、货币与消费、版本活动、抽卡规划及结语，保留作者的版本语境与个人观点。一级、二级标题复用详情页悬浮目录、滚动高亮和窄屏目录按钮，不另建目录脚本。正文仅渲染结构化段落、标题和图片，不执行文章HTML。攻略正文统一18px、1.9倍行高，一级／二级章节标题为26px／22px，目录为15px／14px，手机端保持相同可读字号。
 
 `data/beginner.json` 为独立本地内容，65张正文配图及表情由模块 `static/beginner/getting-started/` 持有；图片保留原始分辨率，延迟加载并可打开原图。普通资料刷新不覆盖；启动和请求不联网。网页、全文搜索、JSON、Markdown和CLI共用完整内容。JSON：`/api/guide/beginner/getting-started`；Markdown：`/guide/beginner/getting-started.md`。支持 `section=intro|gameplay|currencies|events|wishes|closing`，分节返回保留作者链接。旧 `progression` 参数映射到 `gameplay`。图片链接均为本站根路径，与CLI的站点地址组合即可读取原图。
 
@@ -377,10 +377,28 @@ CLI：`python nte-guide.py beginner`，`python nte-guide.py beginner --format ma
 
 验证：`.venv/bin/python -m unittest tests.test_guide_beginner tests.test_guide tests.test_module_routes -q`；核对正文完整性、本地图片可解码和尺寸、JSON／Markdown／CLI全量及分节一致；浏览器检查分类入口、两级目录跳转、长文图片及窄屏布局。
 
-萌新分类另提供 `/guide/beginner/combat-mechanics`「战斗机制深入攻略」，通过B站官方网页播放器内嵌视频，默认关闭自动播放、支持全屏并提供原视频入口。播放器随容器保持16:9；仅浏览器加载外部播放器，后端不请求视频服务。JSON及Markdown提供视频BV号和观看链接，CLI可用 `get beginner combat-mechanics --format markdown` 读取。
+通用攻略另提供 `/guide/beginner/combat-mechanics`「战斗机制深入攻略」，通过B站官方网页播放器内嵌视频，默认关闭自动播放、支持全屏并提供原视频入口。播放器随容器保持16:9；仅浏览器加载外部播放器，后端不请求视频服务。JSON及Markdown提供视频BV号和观看链接，CLI可用 `get beginner combat-mechanics --format markdown` 读取。
 
-萌新列表按本地内容数组顺序展示：新手入坑图文、`/guide/beginner/damage-mechanics`「异环数据机制导论」、战斗机制视频。数据机制条目完整展开正文及图表，保留NGA原帖和附表入口；网页、列表API及CLI使用相同顺序。
+通用攻略列表按本地内容数组顺序展示：新手入坑图文、`/guide/beginner/damage-mechanics`「异环数据机制导论」、战斗机制视频。数据机制条目完整展开正文及图表，保留NGA原帖和附表入口；网页、列表API及CLI使用相同顺序。
 
 数据机制导论按 `chapter_titles` 配置顺序渲染前言及五个PART；JSON、Markdown和CLI支持按 `regular_damage`、`harmony`、`stagger`、`other_mechanics`、`appendices` 分节读取。正文与17张本地图表全部展开，不保留折叠按钮、缺失占位或更新日志区。图表位于模块 `static/beginner/damage-mechanics/`，延迟加载、保持原始分辨率并可点击查看原图；延迟加载不隐藏章节正文。正文、公式、附表链接与图片路径在网页和机器读取接口中保持一致。
 
 数据机制导论的文字颜色由段落内 `runs[].color` 按蓝、红、紫三种语义标记；模板只接受固定颜色类，深色背景使用可读的浅色调，保留原文着色范围。相同词语在其他未标色位置不自动着色，公式与普通段落共用安全文本渲染；JSON提供颜色标记，Markdown仍输出原正文。
+
+### 自建攻略与草稿
+
+攻略页分“通用攻略”和“自建攻略”，原 `kind=beginner` 与既有详情／CLI链接兼容。搜索栏右侧“我要撰写”进入 `/guide/write`；登录后编辑Markdown，支持标题、加粗、列表、链接、图片、表格、实时预览与B站视频插入。通用及自建攻略卡片均使用无图片卡片样式，标题没有额外顶部空行，不显示内部英文ID。
+
+草稿每次输入立即按本站账号和草稿ID保留本机备份，停止输入约800ms后通过鉴权API同步入库；失败时保留内容并提示重试，恢复网络后继续同步。刷新可恢复未同步备份；本机与云端版本冲突时明确选择版本，禁止无提示覆盖。草稿列表支持继续编辑和新建；只有点击“发布攻略”才生成公开快照，再次自动保存不改动已发布正文。作者可从公开页“编辑攻略”继续修改。账号切换后停止旧会话的编辑与保存。
+
+模块本地 `articles.py` 持有 `GuideArticle` 专表与同步写事务，应用启动注册建表；不使用对局异步队列。草稿和公开快照分别保存标题、Markdown及挂载位置，版本号防止多标签页旧写覆盖，冲突返回409。私有API仅以本站Bearer身份确定作者，并返回 `Cache-Control: no-store`；不能读取、修改或发布其他账号草稿。公开列表与详情只读已发布快照，不暴露草稿或账号凭据。
+
+挂载可选角色、弧盘、已开放轨外之境或全站深境的一个详情页，也可不挂载；发布前校验目标可见性。已发布文章同时进入自建攻略和目标页“相关攻略”。角色页位于养成／排轴／空幕工具组件下方，轨外之境位于共鸣效果上方，弧盘与全站深境位于顶部资料下方。无挂载文章不展示空模块；所有详情页移除重复的数值顺序／JSON说明句。
+
+Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许安全地址。视频使用固定B站播放器和经过校验的BV号，默认不自动播放；编辑器负责生成 `bilibili` 围栏代码块，不接受用户任意iframe。标题生成稳定章节锚点，发布页复用现有目录能力。网站更新须安装 `requirements.txt` 中的Mistune依赖；本机已安装。
+
+接口：`GET /api/guide/article-targets`；`GET /api/guide/me/articles`；`GET|PUT /api/guide/me/articles/<uuid>`；`POST /api/guide/me/articles/<uuid>/publish`；`POST /api/guide/articles/preview`。保存字段为 `title`、`markdown`、`target_kind`、`target_id`、`revision`；发布需提交当前 `revision`。标题最长160字，正文最长150000字。
+
+公开读取：`GET /api/guide/articles`、`GET /api/guide/articles/<uuid>`、`/guide/articles/<uuid>`、`/guide/articles/<uuid>.md`；全文搜索及攻略分类列表包含已发布自建攻略。CLI支持 `list articles`、`get articles <uuid> --format markdown`。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_articles tests.test_guide_beginner tests.test_guide tests.test_module_routes tests.test_guide_challenges tests.test_guide_previews -q`；`node --test tests/test_guide_article_editor.cjs`。覆盖账号隔离、重连数据库、过期版本、发布快照隔离、Markdown注入与视频、四类挂载和位置、分类搜索、离线备份恢复、保存途中继续输入及冲突版本选择；浏览器用隔离合成账号验收撰写、自动保存、刷新恢复、预览、发布和手机排版。

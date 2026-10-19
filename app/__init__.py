@@ -40,9 +40,11 @@ def create_app() -> Flask:
     app.config['GUIDE_CHAT_SETTINGS'] = dict(GUIDE_CHAT_SETTINGS)
     from app.modules.guide.user_data import GuideGameProfile
     from app.modules.guide.chat_quota import GuideChatQuota
+    from app.modules.guide.articles import GuideArticle
     init_db([
         Player,
         GuideGameProfile,
+        GuideArticle,
         GuideChatQuota,
         PlayerTutorial,
         LoginCode,
@@ -65,6 +67,7 @@ def create_app() -> Flask:
         ShaftAxisDislike,
         ShaftAxisFavorite,
     ])
+    app.extensions['guide_articles_ready'] = True
     from app.modules.shaft.service import initialize_shaft_character_publications
     initialize_shaft_character_publications()
     # Composition root supplies a read-only adapter; guide never imports shaft services.

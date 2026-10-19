@@ -1,0 +1,10 @@
+{% extends 'guide/layout.html' %}
+{% block title %}{{ article.name }} · 自建攻略 · NTE Tools{% endblock %}
+{% block page_class %}guide-detail-page{% endblock %}
+{% block head %}{{ super() }}<script defer src="{{ url_for('guide_module.static', filename='guide.js') }}"></script><script defer src="{{ url_for('guide_module.static', filename='article_view.js', v=article_asset_version) }}"></script><link rel="alternate" type="text/markdown" href="{{ article.markdown_url }}">{% endblock %}
+{% block guide_back %}<a class="guide-top-back" href="/guide?kind=beginner">← 攻略</a>{% endblock %}
+{% block content %}
+<header class="guide-detail-header"><div><p class="guide-eyebrow">自建攻略</p><h1>{{ article.name }}</h1><p>作者 · {{ article.author }}</p><p class="guide-links">{% if target %}<a href="{{ target.url }}">{{ target.name }} ↗</a>{% endif %}<a data-article-edit="{{ article.id }}" href="/guide/write?id={{ article.id }}" hidden>编辑攻略</a></p></div></header>
+{% if toc %}<button class="guide-toc-toggle" type="button" aria-expanded="false" aria-controls="guide-toc" data-toc-toggle>目录</button><aside class="guide-toc" id="guide-toc" data-guide-toc data-open="false"><p class="guide-toc-title">本页目录</p><nav aria-label="攻略章节">{% for heading in toc %}<a href="#{{ heading.id }}"{% if heading.level > 2 %} class="guide-author-subheading"{% endif %}>{{ heading.title }}</a>{% endfor %}</nav></aside>{% endif %}
+<article class="guide-markdown-body guide-published-body">{{ article_html }}</article>
+{% endblock %}

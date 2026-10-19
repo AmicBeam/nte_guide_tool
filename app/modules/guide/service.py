@@ -11,7 +11,7 @@ from .description_parameters import bind_description_parameters
 from .challenge_calendar import is_released_challenge
 from . import reference_view, previews
 
-KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '萌新攻略'}
+KINDS = {'characters': '角色', 'arcs': '弧盘', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '攻略'}
 BEGINNER_SECTIONS = ('intro', 'gameplay', 'currencies', 'events', 'wishes', 'closing')
 LABELS = {
     'intro': '前言', 'gameplay': '一.游戏玩法讲解', 'currencies': '二.货币讲解及氪金建议',
@@ -286,6 +286,8 @@ def schema():
             'level': '可选1–13；values、attack_values等等级数组变为{level,max_level,value}，不足指定档时标明实际最高档。',
             'parameter_keys': '指定技能时，groups中与顶层param_rows相同的行改用parameter_keys引用，按key查找原行。'},
         'markdown': '/guide/{collection}/{id}.md',
+        'articles': {'list': '/api/guide/articles', 'detail': '/api/guide/articles/{uuid}',
+                     'markdown': '/guide/articles/{uuid}.md', 'editor': '/guide/write'},
         'beginner': {'id': 'getting-started', 'cli': 'beginner --format markdown',
                      'sections': list(BEGINNER_SECTIONS)},
         'cultivation': {'url': '/api/guide/characters/{id}/cultivation', 'method': 'POST',

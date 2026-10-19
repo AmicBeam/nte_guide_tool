@@ -1,0 +1,19 @@
+{% extends 'guide/layout.html' %}
+{% block title %}我要撰写 · 攻略 · NTE Tools{% endblock %}
+{% block page_class %}guide-editor-page{% endblock %}
+{% block head %}{{ super() }}<script defer src="{{ url_for('guide_module.static', filename='article_editor.js', v=article_asset_version) }}"></script>{% endblock %}
+{% block guide_back %}<a class="guide-top-back" href="/guide?kind=beginner">← 攻略</a>{% endblock %}
+{% block content %}
+<header class="guide-author-heading"><div><p class="guide-eyebrow">撰写与分享</p><h1>写下你的攻略</h1><p>草稿自动保存，仅自己可见。发布后会展示在自建攻略中。</p></div><p id="article-save-state" role="status" aria-live="polite">正在检查登录状态…</p></header>
+<div id="article-login" class="guide-empty" hidden><h2>登录后开始撰写</h2><p>使用本站账号保存并继续编辑你的草稿。</p><a id="article-login-link" class="guide-author-button" href="/login?next=%2Fguide%2Fwrite">登录</a></div>
+<div id="article-workspace" hidden>
+<div class="guide-author-actions"><label>我的草稿 <select id="article-drafts" aria-label="我的草稿"></select></label><button type="button" id="article-new">新建攻略</button><button type="button" id="article-save">保存草稿</button><button type="button" id="article-reload" hidden>重新读取云端</button><button type="button" id="article-publish">发布攻略</button><a id="article-published-link" hidden>查看已发布攻略 ↗</a></div>
+<div id="article-recovery" class="guide-author-recovery" hidden><p>发现本机未同步的内容。云端草稿已有更新，请选择继续使用的版本。</p><button type="button" id="article-restore">恢复本机内容</button><button type="button" id="article-discard-backup">使用云端内容</button></div>
+<fieldset id="article-fields" class="guide-author-fields"><label for="article-title">攻略标题</label><input id="article-title" maxlength="160" placeholder="为这篇攻略起个标题" autocomplete="off">
+<label for="article-target">挂载页面</label><select id="article-target"><option value="">通用攻略（不挂载）</option></select><small>可挂载到角色、弧盘、轨外之境或全站深境页面；发布后也会出现在该页的相关攻略中。</small>
+<div class="guide-markdown-toolbar" aria-label="编辑工具"><button type="button" data-insert="heading">标题</button><button type="button" data-insert="bold">加粗</button><button type="button" data-insert="list">列表</button><button type="button" data-insert="link">链接</button><button type="button" data-insert="image">图片</button></div>
+<div class="guide-video-insert"><label class="guide-sr-only" for="article-video">B站视频链接或BV号</label><input id="article-video" placeholder="粘贴B站视频链接或BV号"><button type="button" id="article-insert-video">插入 B 站视频</button></div>
+<div class="guide-editor-columns"><div class="guide-markdown-source"><label for="article-markdown">Markdown 正文</label><textarea id="article-markdown" maxlength="150000" spellcheck="false" placeholder="从一个标题开始，分享你的经验…"></textarea><small id="article-word-count">0 字</small></div><section class="guide-markdown-preview"><h2>实时预览</h2><p id="article-preview-state" role="status"></p><div id="article-preview" class="guide-markdown-body"><p>你的攻略预览会显示在这里。</p></div></section></div>
+</fieldset>
+</div>
+{% endblock %}

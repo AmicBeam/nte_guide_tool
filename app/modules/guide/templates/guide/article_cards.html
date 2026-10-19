@@ -1,0 +1,1 @@
+{% macro article_card(item) %}<a class="guide-card guide-article-card" href="{{ item.url }}"><div class="guide-card-identity"><h3>{{ item.name }}</h3></div><p>{{ item.description }}</p>{% if item.author is defined %}<small>{{ item.author }}</small>{% endif %}</a>{% endmacro %}

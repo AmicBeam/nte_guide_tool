@@ -67,8 +67,10 @@ def index():
     result_count = len(items)
     if kind in ('characters', 'arcs'):
         items = service.filter_index_items(kind)
+    from .article_routes import public_items
+    authored = public_items(request.args.get('q', '').strip()) if kind == 'beginner' else []
     counts = {key: len(service.public_records(key)) for key in service.KINDS}
-    return render_template('guide/index.html', kind=kind, kinds=service.KINDS, items=items, counts=counts, selected_ids=selected_ids, result_count=result_count,
+    return render_template('guide/index.html', kind=kind, kinds=service.KINDS, items=items, counts=counts, selected_ids=selected_ids, result_count=result_count, authored_articles=authored,
         catalog_asset_version=(Path(__file__).parent / 'static/catalog_cards.css').stat().st_mtime_ns,
         challenge_asset_version=(Path(__file__).parent / 'static/challenge_index.css').stat().st_mtime_ns,
         arc_types=sorted({c['arc_type']['id']: c['arc_type'] for c in service.catalog()['characters']}.values(),
@@ -88,7 +90,9 @@ def entry(kind, identifier):
     art = profile.get('assets') if profile else None
     overview = profile if profile else (service.detail(kind, identifier) if kind == 'arcs' else None)
     arc_image = overview.get('image') if kind == 'arcs' else None
-    return render_template('guide/detail.html', record=record, sections=sections, kind=kind,
+    from .article_routes import public_items
+    attached = public_items(target_kind=kind, target_id=str(record['id']))
+    return render_template('guide/detail.html', attached_articles=attached, record=record, sections=sections, kind=kind,
                            kinds=service.KINDS, art=art, profile=profile, overview=overview, arc_image=arc_image,
                            material_preview=presentation.upgrade_material_preview(overview) if overview else [],
                            notes=service.schema()['notes'], recommended_arc=arc_cultivation.recommended(profile) if profile else None)
@@ -161,7 +165,11 @@ def listing(kind=None):
         kind_check(kind)
     limit = integer('limit', 20, 1, 100)
     offset = integer('offset', 0, 0, 1000000)
-    rows = service.search(kind, **filters())
+    selected_filters = filters()
+    rows = service.search(kind, **selected_filters)
+    if kind in (None, 'beginner') and not any(selected_filters[key] for key in ('element', 'rarity', 'arc_type')):
+        from .article_routes import public_items
+        rows += public_items(selected_filters['query'])
     return jsonify(schema_version=1, total=len(rows), limit=limit, offset=offset,
                    next_offset=offset + limit if offset + limit < len(rows) else None,
                    items=rows[offset:offset + limit])
@@ -183,7 +191,7 @@ def cli_download():
 def llms():
     text = '''# NTE Tools 攻略数据库
 
-范围：角色、弧盘、轨外之境、全站深境、萌新攻略全文与图片。匿名只读；网页正文由服务端渲染。
+范围：角色、弧盘、轨外之境、全站深境、通用攻略与自建攻略。匿名只读；网页正文由服务端渲染。
 
 - [网页入口](/guide)
 - [接口与数值约定](/api/guide/schema)
@@ -191,12 +199,13 @@ def llms():
 - [弧盘列表](/api/guide/arcs)
 - [轨外之境赛期](/api/guide/challenges)
 - [全站深境（每50层一组）](/api/guide/endless)
-- [萌新攻略](/api/guide/beginner)
+- [攻略](/api/guide/beginner)
+- [自建攻略](/api/guide/articles)
 - [CLI 下载](/guide/cli.py)
 
 检索：GET /api/guide/search?q=关键词&limit=20&offset=0
-详情：GET /api/guide/{characters|arcs|challenges|endless|beginner}/{id}
-纯文本：GET /guide/{characters|arcs|challenges|endless|beginner}/{id}.md
+详情：GET /api/guide/{characters|arcs|challenges|endless|beginner|articles}/{id}
+纯文本：GET /guide/{characters|arcs|challenges|endless|beginner|articles}/{id}.md
 空幕：角色详情加 ?section=equip_slots；升级材料：详情加 ?section=materials。
 等级经验：角色详情加 ?section=experience。
 好感度与喜好礼物：角色详情加 ?section=affinity，包含赠送数值和各商店标价。
@@ -225,3 +234,7 @@ from .axis_routes import register as register_axis_routes
 from .chat_routes import register as register_chat_routes
 register_axis_routes(blueprint)
 register_chat_routes(blueprint)
+
+
+from .article_routes import register as register_article_routes
+register_article_routes(blueprint)

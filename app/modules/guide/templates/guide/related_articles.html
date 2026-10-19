@@ -1,0 +1,4 @@
+{% if attached_articles %}
+{% from 'guide/article_cards.html' import article_card %}
+<section class="guide-related-articles" aria-label="相关攻略"><div class="guide-section-heading"><h2>相关攻略</h2><a href="/guide/write?target_kind={{ kind }}&amp;target_id={{ record.id|urlencode }}">撰写攻略 ↗</a></div><div class="guide-grid">{% for item in attached_articles %}{{ article_card(item) }}{% endfor %}</div></section>
+{% endif %}
